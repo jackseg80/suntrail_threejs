@@ -12,33 +12,24 @@ export function lngLatToTile(lon, lat, zoom) {
     return { x, y, z: zoom };
 }
 
-// CONVERSION GPS -> MONDE 3D (PRÉCISION ABSOLUE)
 export function lngLatToWorld(lon, lat) {
     const zoom = state.ZOOM;
     const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
-    
     const xfrac = (lon + 180) / 360 * Math.pow(2, zoom);
     const yfrac = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom);
-    
-    // On aligne (0,0,0) sur le CENTRE de la tuile d'origine (important pour Three.js)
     const worldX = (xfrac - (state.originTile.x + 0.5)) * tileSizeMeters;
     const worldZ = (yfrac - (state.originTile.y + 0.5)) * tileSizeMeters;
-    
     return { x: worldX, z: worldZ };
 }
 
-// CONVERSION MONDE 3D -> GPS (PRÉCISION ABSOLUE)
 export function worldToLngLat(worldX, worldZ) {
     const zoom = state.ZOOM;
     const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
-    
     const xfrac = (worldX / tileSizeMeters) + (state.originTile.x + 0.5);
     const yfrac = (worldZ / tileSizeMeters) + (state.originTile.y + 0.5);
-    
     const lon = xfrac / Math.pow(2, zoom) * 360 - 180;
     const n = Math.PI - 2 * Math.PI * yfrac / Math.pow(2, zoom);
     const lat = 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
-    
     return { lat, lon };
 }
 
@@ -56,7 +47,6 @@ export function clearLabels() {
 
 export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
     if (!state.mapCenter) state.mapCenter = { lat: state.TARGET_LAT, lon: state.TARGET_LON };
-    
     const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, state.ZOOM);
     let centerTile;
     if (worldX !== undefined && worldZ !== undefined) {
@@ -65,13 +55,12 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
         centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, state.ZOOM);
     }
 
-    // Nettoyage des labels distants (> 40km)
     const currentX = worldX || 0;
     const currentZ = worldZ || 0;
     for (const [name, obj] of activeLabels.entries()) {
         const dx = obj.sprite.position.x - currentX;
         const dz = obj.sprite.position.z - currentZ;
-        if (dx*dx + dz*dz > 1600000000) { // 40km^2
+        if (dx*dx + dz*dz > 1600000000) { 
             state.scene.remove(obj.sprite);
             state.scene.remove(obj.line);
             activeLabels.delete(name);
@@ -86,7 +75,6 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
                 sprite.position.set(pos.x, 6000, pos.z); 
                 sprite.renderOrder = 9999;
                 state.scene.add(sprite);
-
                 const points = [new THREE.Vector3(pos.x, 5950, pos.z), new THREE.Vector3(pos.x, p.alt || 0, pos.z)];
                 const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
                 const lineMat = new THREE.LineBasicMaterial({ color: 0xd4af37, transparent: true, opacity: 0.5 });
@@ -127,9 +115,33 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
     try {
         const opts = { colorSpaceConversion: 'none', premultiplyAlpha: 'none' };
         const pElev = fetch(`https://api.maptiler.com/tiles/terrain-rgb-v2/${zoom}/${tx}/${ty}.png?key=${state.MK}`).then(r => r.blob()).then(b => createImageBitmap(b, opts));
-        const mapType = state.SHOW_TRAILS ? 'outdoor-v2' : 'satellite';
-        const ext = mapType === 'satellite' ? 'jpg' : 'png';
-        const pColor = fetch(`https://api.maptiler.com/maps/${mapType}/256/${zoom}/${tx}/${ty}@2x.${ext}?key=${state.MK}`).then(r => r.ok ? r.blob() : fetch(`https://api.maptiler.com/maps/${mapType}/256/${zoom}/${tx}/${ty}.${ext}?key=${state.MK}`).then(r2 => r2.blob())).then(b => createImageBitmap(b));
+
+        // --- GESTION DES SOURCES DE CARTES ---
+        let urlColor = "";
+        if (!state.SHOW_TRAILS) {
+            urlColor = `https://api.maptiler.com/maps/satellite/256/${zoom}/${tx}/${ty}@2x.jpg?key=${state.MK}`;
+        } else {
+            switch(state.MAP_SOURCE) {
+                case 'opentopomap':
+                    // OpenTopoMap utilise a, b, c comme sous-domaines
+                    const s = ['a', 'b', 'c'][Math.floor(Math.random() * 3)];
+                    urlColor = `https://${s}.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`;
+                    break;
+                case 'swisstopo':
+                    urlColor = `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${zoom}/${tx}/${ty}.jpeg`;
+                    break;
+                case 'maptiler-topo':
+                    urlColor = `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.png?key=${state.MK}`;
+                    break;
+                default: // outdoor-v2
+                    urlColor = `https://api.maptiler.com/maps/outdoor-v2/256/${zoom}/${tx}/${ty}@2x.png?key=${state.MK}`;
+            }
+        }
+
+        const pColor = fetch(urlColor).then(r => {
+            if(!r.ok) throw new Error('404');
+            return r.blob();
+        }).then(b => createImageBitmap(b));
 
         const [imgElev, imgColor] = await Promise.all([pElev, pColor]);
         if (activeTiles.get(key) !== tileObj) return;

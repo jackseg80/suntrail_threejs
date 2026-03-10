@@ -113,6 +113,16 @@
                 <input type="range" id="fog-slider" min="0" max="80" step="5" value="10">
             </div>
 
+            <div style="margin-bottom: 1rem;">
+                <label style="font-size: 0.7rem; color: var(--t2);">Fond de carte (Topo)</label>
+                <select id="map-source-select" style="width:100%; font-size:0.75rem;">
+                    <option value="opentopomap" selected>OpenTopoMap (Monde)</option>
+                    <option value="swisstopo">Swisstopo (Suisse)</option>
+                    <option value="maptiler-topo">MapTiler Topo</option>
+                    <option value="outdoor-v2">MapTiler Outdoor</option>
+                </select>
+            </div>
+
             <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
                 <div style="flex: 1;">
                     <label style="font-size: 0.7rem; color: var(--t2);">Ombres</label>

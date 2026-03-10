@@ -85,8 +85,14 @@ export function initUI() {
     const trailsToggle = document.getElementById('trails-toggle');
     const shadowResSelect = document.getElementById('shadow-res-select');
     const pixelLimitSelect = document.getElementById('pixel-limit-select');
+    const mapSourceSelect = document.getElementById('map-source-select');
     const playBtn = document.getElementById('play-btn');
     const speedSelect = document.getElementById('speed-select');
+
+    mapSourceSelect.addEventListener('change', async (e) => {
+        state.MAP_SOURCE = e.target.value;
+        await refreshTerrain();
+    });
 
     playBtn.addEventListener('click', () => {
         state.isAnimating = !state.isAnimating;
