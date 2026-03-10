@@ -77,6 +77,7 @@ export function initUI() {
     });
 
     // --- CONTRÔLES DE PERFORMANCE ---
+    // --- CONTRÔLES DE PERFORMANCE ---
     const zoomSlider = document.getElementById('zoom-slider');
     const resSlider = document.getElementById('res-slider');
     const rangeSlider = document.getElementById('range-slider');
@@ -91,6 +92,12 @@ export function initUI() {
     const speedSelect = document.getElementById('speed-select');
 
     zoomSlider.addEventListener('change', async (e) => {
+        state.ZOOM = parseInt(e.target.value);
+        document.getElementById('zoom-disp').textContent = state.ZOOM;
+        await refreshTerrain();
+    });
+
+    mapSourceSelect.addEventListener('change', async (e) => {
         state.ZOOM = parseInt(e.target.value);
         document.getElementById('zoom-disp').textContent = state.ZOOM;
         await refreshTerrain();
