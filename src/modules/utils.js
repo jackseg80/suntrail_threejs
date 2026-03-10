@@ -14,18 +14,19 @@ export function throttle(func, limit) {
     }
 }
 
-let lastSearchPos = { lat: 0, lon: 0 };
+// Initialisé à null pour forcer la 1ère requête
+let lastSearchPos = null;
 
 export async function fetchNearbyPeaks(lat, lon) {
-    // ANTI-SPAM : On ne relance une recherche que si on a bougé de ~2km (0.02 degré)
-    const dist = Math.sqrt(Math.pow(lat - lastSearchPos.lat, 2) + Math.pow(lon - lastSearchPos.lon, 2));
-    if (dist < 0.02) return [];
+    if (lastSearchPos) {
+        const dist = Math.sqrt(Math.pow(lat - lastSearchPos.lat, 2) + Math.pow(lon - lastSearchPos.lon, 2));
+        if (dist < 0.05) return []; // On attend d'avoir bougé de ~5km
+    }
     lastSearchPos = { lat, lon };
 
     try {
-        // Recherche par mot-clé "peak" avec biais de proximité sur vos coordonnées
-        const query = encodeURIComponent("peak");
-        const url = `https://api.maptiler.com/geocoding/${query}.json?key=${state.MK}&proximity=${lon},${lat}&limit=10`;
+        // Recherche de POI de type "mountain_peak" autour de la position
+        const url = `https://api.maptiler.com/geocoding/peak.json?key=${state.MK}&proximity=${lon},${lat}&limit=15`;
         
         const r = await fetch(url);
         if (!r.ok) return [];
@@ -47,27 +48,31 @@ export function createLabelSprite(text) {
     canvas.width = 512;
     canvas.height = 128;
     
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-    ctx.roundRect(20, 20, 472, 88, 44);
+    // Design ultra-visible (Bulle noire et or)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    ctx.beginPath();
+    ctx.roundRect(10, 10, 492, 108, 54);
     ctx.fill();
     
     ctx.strokeStyle = '#ffcc33';
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 8;
     ctx.stroke();
 
-    ctx.font = 'bold 32px "DM Sans", sans-serif';
+    ctx.font = 'bold 42px Arial';
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
-    ctx.fillText(text.toUpperCase(), 256, 78);
+    ctx.fillText(text.toUpperCase(), 256, 75);
 
     const texture = new THREE.CanvasTexture(canvas);
     const spriteMaterial = new THREE.SpriteMaterial({ 
         map: texture, 
         transparent: true, 
-        depthTest: false,
+        depthTest: false, // Passe à travers les montagnes
         sizeAttenuation: true 
     });
     const sprite = new THREE.Sprite(spriteMaterial);
-    sprite.scale.set(3000, 750, 1);
+    
+    // On agrandit massivement pour être sûr de les voir
+    sprite.scale.set(5000, 1250, 1);
     return sprite;
 }
