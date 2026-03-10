@@ -23,11 +23,11 @@ export async function initScene() {
     state.renderer.setSize(window.innerWidth, window.innerHeight);
     state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
     state.renderer.shadowMap.enabled = true;
-    state.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    state.renderer.shadowMap.type = THREE.PCFShadowMap; // Ombres plus nettes/tranchantes
 
-    // Ton mapping Reinhard : excellent pour le contraste sans brûler les blancs
-    state.renderer.toneMapping = THREE.ReinhardToneMapping;
-    state.renderer.toneMappingExposure = 2.2;
+    // AgX est le meilleur pour gérer les intensités extrêmes
+    state.renderer.toneMapping = THREE.AgXToneMapping;
+    state.renderer.toneMappingExposure = 0.8;
 
     container.appendChild(state.renderer.domElement);
 
@@ -65,11 +65,11 @@ export async function initScene() {
     
     state.controls.addEventListener('change', throttledUpdate);
 
-    // 4. Éclairage : Contraste élevé pour que les ombres "percent" le satellite
-    state.ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
+    // 4. Éclairage : Contraste "Lunaire" pour que les ombres percent le satellite
+    state.ambientLight = new THREE.AmbientLight(0xffffff, 0.05);
     state.scene.add(state.ambientLight);
 
-    state.sunLight = new THREE.DirectionalLight(0xffffff, 5.0);
+    state.sunLight = new THREE.DirectionalLight(0xffffff, 10.0);
     state.sunLight.castShadow = state.SHADOWS;
     
     state.sunLight.shadow.mapSize.width = 4096;
