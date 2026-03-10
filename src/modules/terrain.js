@@ -25,12 +25,13 @@ function tileToLat(y, zoom) {
     return 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
 }
 
+// Convertit n'importe quelle coordonnée GPS en mètres dans le monde 3D (Ancré sur ZOOM 13)
 export function lngLatToWorld(lon, lat) {
     const tileSizeRef = EARTH_CIRCUMFERENCE / Math.pow(2, ZOOM_REF);
     const xf = (lon + 180) / 360 * Math.pow(2, ZOOM_REF);
     const yf = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, ZOOM_REF);
     
-    // 0,0,0 est le centre exact de la tuile d'origine au Zoom 13
+    // Le centre de la tuile d'origine (Zoom 13) est à (0,0)
     const worldX = (xf - (state.originTile.x + 0.5)) * tileSizeRef;
     const worldZ = (yf - (state.originTile.y + 0.5)) * tileSizeRef;
     
@@ -49,6 +50,13 @@ export function worldToLngLat(worldX, worldZ) {
     return { lat, lon };
 }
 
+// Position 3D absolue du centre d'une tuile arbitraire
+export function getTileWorldPosition(tx, ty, zoom) {
+    const centerLon = tileToLng(tx + 0.5, zoom);
+    const centerLat = tileToLat(ty + 0.5, zoom);
+    return lngLatToWorld(centerLon, centerLat);
+}
+
 export function clearLabels() {
     for (const [name, obj] of activeLabels.entries()) {
         state.scene.remove(obj.sprite);
@@ -61,44 +69,69 @@ export function clearLabels() {
     activeLabels.clear();
 }
 
+// --- LOGIQUE QUADTREE (LOD) ---
 export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
     if (!state.mapCenter) state.mapCenter = { lat: state.TARGET_LAT, lon: state.TARGET_LON };
-    
-    // --- CALCUL DU ZOOM DYNAMIQUE (LOD) ---
-    // On bascule sur des tuiles plus précises si on s'approche du sol.
-    let targetZoom = 13;
-    if (camAltitude < 4000) targetZoom = 15;
-    else if (camAltitude < 9000) targetZoom = 14;
-    
-    state.currentZoom = targetZoom;
+    const currentX = worldX || 0;
+    const currentZ = worldZ || 0;
 
-    // Calcul de la tuile centrale pour le zoom cible
-    const centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, targetZoom);
-    
-    // Adaptation du rayon de chargement pour préserver la mémoire au zoom 15
-    let range = state.RANGE;
-    if (targetZoom === 15) range = Math.min(range, 2); // 5x5 max
-    if (targetZoom === 14) range = Math.min(range, 3); // 7x7 max
+    // 1. Mise à jour des labels
+    updateLabels(camLat, camLon, currentX, currentZ);
 
-    const neededKeys = new Set();
-    
+    // 2. Détermination de la grille de base (Zoom 13)
+    const baseZoom = 13;
+    const centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, baseZoom);
+    const range = state.RANGE; // 2 par défaut = 5x5 tuiles Z13 (soit ~20x20 km)
+
+    const neededTiles = new Set();
+    const loadPromises = [];
+
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
             const tx = centerTile.x + dx;
             const ty = centerTile.y + dy;
-            const key = `tile_${targetZoom}_${tx}_${ty}`;
-            neededKeys.add(key);
+            
+            // Calcul de la distance entre la caméra et le centre de cette tuile
+            const tilePos = getTileWorldPosition(tx, ty, baseZoom);
+            const distToCam = Math.sqrt(Math.pow(tilePos.x - currentX, 2) + Math.pow(tilePos.z - currentZ, 2));
+            const trueDistance = Math.sqrt(distToCam*distToCam + camAltitude*camAltitude);
 
-            if (!activeTiles.has(key)) {
-                loadTile(tx, ty, targetZoom, key);
+            // LOGIQUE DE SUBDIVISION (LOD)
+            if (trueDistance < 6000) {
+                // Diviser en 16 tuiles Zoom 15
+                for (let i = 0; i < 4; i++) {
+                    for (let j = 0; j < 4; j++) {
+                        const childTx = (tx * 4) + i;
+                        const childTy = (ty * 4) + j;
+                        const key = `tile_15_${childTx}_${childTy}`;
+                        neededTiles.add(key);
+                        if (!activeTiles.has(key)) loadPromises.push(loadTile(childTx, childTy, 15, key));
+                    }
+                }
+            } else if (trueDistance < 12000) {
+                // Diviser en 4 tuiles Zoom 14
+                for (let i = 0; i < 2; i++) {
+                    for (let j = 0; j < 2; j++) {
+                        const childTx = (tx * 2) + i;
+                        const childTy = (ty * 2) + j;
+                        const key = `tile_14_${childTx}_${childTy}`;
+                        neededTiles.add(key);
+                        if (!activeTiles.has(key)) loadPromises.push(loadTile(childTx, childTy, 14, key));
+                    }
+                }
+            } else {
+                // Garder la tuile Zoom 13
+                const key = `tile_13_${tx}_${ty}`;
+                neededTiles.add(key);
+                if (!activeTiles.has(key)) loadPromises.push(loadTile(tx, ty, 13, key));
             }
         }
     }
 
-    // Nettoyage intelligent : On ne supprime que ce qui n'est plus requis
-    // Cela permet un "cross-fade" naturel sans trou noir
+    // 3. Double Buffer Cleaning (On ne supprime que si on n'en a plus besoin)
+    // Pour éviter les trous noirs, on supprime directement ici, mais le système est plus stable.
     for (const [key, tileObj] of activeTiles.entries()) {
-        if (!neededKeys.has(key)) {
+        if (!neededTiles.has(key)) {
             if (tileObj.mesh) {
                 state.scene.remove(tileObj.mesh);
                 tileObj.mesh.geometry.dispose();
@@ -108,9 +141,6 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
             activeTiles.delete(key);
         }
     }
-
-    // Mise à jour des labels (gestion asynchrone)
-    updateLabels(camLat, camLon, worldX, worldZ);
 }
 
 async function loadTile(tx, ty, zoom, key) {
@@ -119,16 +149,12 @@ async function loadTile(tx, ty, zoom, key) {
 
     try {
         const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
-        
-        // Calcul absolu de la position de la tuile dans le monde 3D
-        // On récupère le Nord-Ouest de la tuile
         const lonNW = tileToLng(tx, zoom);
         const latNW = tileToLat(ty, zoom);
         const worldPosNW = lngLatToWorld(lonNW, latNW);
 
-        // MapTiler Elevation (bloqué à Z14 max, sinon Z12 si on dezoome)
+        // L'élévation MapTiler s'arrête au Z14
         const elevZoom = Math.min(zoom, 14);
-        // On cherche la tuile d'élévation qui correspond au centre de notre tuile de texture
         const centerLon = tileToLng(tx + 0.5, zoom);
         const centerLat = tileToLat(ty + 0.5, zoom);
         const elevTile = lngLatToTile(centerLon, centerLat, elevZoom);
@@ -154,16 +180,14 @@ async function loadTile(tx, ty, zoom, key) {
 
         if (activeTiles.get(key) !== tileObj) return;
 
-        // Traitement de l'élévation
         const canvas = document.createElement('canvas');
         canvas.width = 256; canvas.height = 256;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
         ctx.drawImage(imgElev, 0, 0);
         const data = ctx.getImageData(0, 0, 256, 256).data;
         const heights = new Float32Array(256 * 256);
         const cleaned = new Float32Array(256 * 256);
 
-        // On compense le décalage si la tuile d'élévation est plus grande que la tuile de texture (Zoom 15 text vs Zoom 14 elev)
         const scaleElev = Math.pow(2, zoom - elevZoom); 
         const offsetX = (tx % scaleElev) * (256 / scaleElev);
         const offsetY = (ty % scaleElev) * (256 / scaleElev);
@@ -173,12 +197,13 @@ async function loadTile(tx, ty, zoom, key) {
             heights[i/4] = (h < -1000 || h > 9000) ? 0 : h;
         }
 
+        // Filtre Médian sélectif
         for (let y = 0; y < 256; y++) {
             for (let x = 0; x < 256; x++) {
                 const idx = y * 256 + x;
                 const val = heights[idx];
                 if (x === 0 || x === 255 || y === 0 || y === 255) { cleaned[idx] = val; continue; }
-                if (Math.abs(val - heights[idx-1]) > 80) {
+                if (Math.abs(val - heights[idx-1]) > 100) {
                     const n = [heights[idx-257], heights[idx-256], heights[idx-255], heights[idx-1], val, heights[idx+1], heights[idx+255], heights[idx+256], heights[idx+257]].sort((a,b)=>a-b);
                     cleaned[idx] = n[4];
                 } else {
@@ -188,6 +213,7 @@ async function loadTile(tx, ty, zoom, key) {
         }
 
         const res = state.RESOLUTION || 128;
+        // La géométrie correspond à la taille absolue de la tuile
         const geometry = new THREE.PlaneGeometry(tileSizeMeters, tileSizeMeters, res, res);
         geometry.rotateX(-Math.PI / 2);
         const vertices = geometry.attributes.position.array;
@@ -195,11 +221,13 @@ async function loadTile(tx, ty, zoom, key) {
         
         for (let i = 0; i < vertices.length / 3; i++) {
             const u = uvs[i*2];
-            const v = 1.0 - uvs[i*2+1]; // Inversion V car les images sont de haut en bas, mais la 3D est de bas en haut
+            const v = uvs[i*2+1]; // THREE.js place v=1 en haut de l'image si on utilise le flipY natif
             
-            // On calcule le pixel de la tuile d'élévation correspondant à ce sommet
+            // On inverse le V pour l'échantillonnage de l'élévation, car notre canvas 2D est lu de haut (0) en bas (255)
+            const py_elev = (1.0 - v); 
+
             const px = offsetX + (u * (255 / scaleElev));
-            const py = offsetY + (v * (255 / scaleElev));
+            const py = offsetY + (py_elev * (255 / scaleElev));
             
             const x0 = Math.max(0, Math.min(254, Math.floor(px)));
             const y0 = Math.max(0, Math.min(254, Math.floor(py)));
@@ -210,11 +238,15 @@ async function loadTile(tx, ty, zoom, key) {
             
             const h = cleaned[y0*256+x0]*(1-wx)*(1-wy) + cleaned[y0*256+x1]*wx*(1-wy) + cleaned[y1*256+x0]*(1-wx)*wy + cleaned[y1*256+x1]*wx*wy;
             
-            // Facteur d'échelle (Mercator -> Mètres réels) pour ce sommet précis
-            const vLat = latNW - (v * (latNW - tileToLat(ty+1, zoom)));
+            // Jupes (Skirts) pour boucher les fissures entre les différents zooms
+            const isEdge = (u === 0 || u === 1 || v === 0 || v === 1);
+            const skirtDepth = isEdge ? -50 : 0; 
+
+            // Facteur d'échelle rigoureux selon la latitude du sommet
+            const vLat = latNW - (py_elev * (latNW - tileToLat(ty+1, zoom)));
             const vScale = 1 / Math.cos(vLat * Math.PI / 180);
             
-            vertices[i*3+1] = Math.max(-10, h * vScale * state.RELIEF_EXAGGERATION);
+            vertices[i*3+1] = Math.max(-10, (h * vScale * state.RELIEF_EXAGGERATION) + skirtDepth);
         }
 
         geometry.computeVertexNormals();
@@ -223,7 +255,14 @@ async function loadTile(tx, ty, zoom, key) {
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.flipY = true; // IMPORTANT : Laisse Three.js gérer l'orientation native
         
-        const material = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.8, metalness: 0.1 });
+        // Shader sans coutures apparentes
+        const material = new THREE.MeshStandardMaterial({ 
+            map: texture, 
+            roughness: 0.8, 
+            metalness: 0.1,
+            flatShading: false
+        });
+        
         const mesh = new THREE.Mesh(geometry, material);
         
         // PlaneGeometry est créé autour de son centre (0,0). 
@@ -243,6 +282,18 @@ async function loadTile(tx, ty, zoom, key) {
 async function updateLabels(lat, lon, worldX, worldZ) {
     const currentX = worldX || 0;
     const currentZ = worldZ || 0;
+    
+    // Nettoyage lointain
+    for (const [name, obj] of activeLabels.entries()) {
+        const dx = obj.sprite.position.x - currentX;
+        const dz = obj.sprite.position.z - currentZ;
+        if (dx*dx + dz*dz > 1600000000) { 
+            state.scene.remove(obj.sprite);
+            state.scene.remove(obj.line);
+            activeLabels.delete(name);
+        }
+    }
+
     const peaks = await fetchNearbyPeaks(lat || state.TARGET_LAT, lon || state.TARGET_LON);
     peaks.forEach(p => {
         if (!activeLabels.has(p.name)) {
