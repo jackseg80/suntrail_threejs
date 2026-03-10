@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import SunCalc from 'suncalc';
 import { state } from './state.js';
 
@@ -17,32 +18,57 @@ export function updateSunPosition(minutes) {
     const az = pos.azimuth; // 0 = Sud, Positif = Ouest, Négatif = Est
     const alt = pos.altitude;
     
+    const altDeg = alt * 180 / Math.PI;
     document.getElementById('az-disp').textContent = ((az * 180 / Math.PI) + 180).toFixed(1);
-    document.getElementById('alt-disp').textContent = (alt * 180 / Math.PI).toFixed(1);
+    document.getElementById('alt-disp').textContent = altDeg.toFixed(1);
     
-    if (alt < 0) {
-        state.sunLight.intensity = 0;
-        state.scene.background.setHex(0x050510);
-        state.scene.fog.color.setHex(0x050510);
+    // 1. Calcul de l'intensité et des couleurs selon l'altitude
+    let sunIntensity = 0;
+    let skyColor = new THREE.Color(0x87CEEB);
+    let sunColor = new THREE.Color(0xffffff);
+    let ambientIntensity = 0.4;
+
+    if (altDeg > 5) {
+        // Plein jour
+        sunIntensity = Math.min(2.5, Math.sin(alt) * 3);
+        skyColor.setHex(0x87CEEB);
+        sunColor.setHex(0xffffff);
+        ambientIntensity = 0.5;
+    } else if (altDeg > -6) {
+        // Crépuscule (Transition douce)
+        const t = (altDeg + 6) / 11; // 0 à 1
+        sunIntensity = t * 0.8;
+        
+        // Interpolation entre Orange/Rouge et Bleu ciel
+        const sunsetColor = new THREE.Color(0xff7b00);
+        const dayColor = new THREE.Color(0x87CEEB);
+        skyColor.lerpColors(sunsetColor, dayColor, t);
+        
+        sunColor.setHex(0xffa500);
+        ambientIntensity = 0.2 + (t * 0.3);
     } else {
-        state.sunLight.intensity = Math.max(0, Math.sin(alt) * 2.5);
-        
-        if (alt < 0.2) {
-            state.scene.background.setHex(0xff7b00);
-            state.scene.fog.color.setHex(0xff7b00);
-            state.sunLight.color.setHex(0xffa500);
-        } else {
-            state.scene.background.setHex(0x87CEEB);
-            state.scene.fog.color.setHex(0x87CEEB);
-            state.sunLight.color.setHex(0xffffff);
-        }
-        
-        const distance = 20000;
-        const phi = alt;
-        
-        // Correction des axes Three.js: +Z = Sud, -Z = Nord, +X = Est, -X = Ouest
-        state.sunLight.position.x = distance * Math.cos(phi) * -Math.sin(az);
-        state.sunLight.position.y = distance * Math.sin(phi);
-        state.sunLight.position.z = distance * Math.cos(phi) * Math.cos(az);
+        // Nuit (Clair de lune)
+        sunIntensity = 0.05; // Lumière résiduelle
+        skyColor.setHex(0x050515);
+        sunColor.setHex(0x9999ff); // Teinte bleutée
+        ambientIntensity = 0.15; // Nuit moins sombre
     }
+
+    // 2. Application au moteur
+    state.sunLight.intensity = sunIntensity;
+    state.sunLight.color.copy(sunColor);
+    state.scene.background.copy(skyColor);
+    state.scene.fog.color.copy(skyColor);
+    
+    if (state.ambientLight) {
+        state.ambientLight.intensity = ambientIntensity;
+    }
+
+    // 3. Positionnement (même si sous l'horizon, on garde la source pour la lune)
+    const distance = 25000;
+    const phi = Math.max(-0.1, alt); // On bloque un peu sous l'horizon pour la lune
+    
+    state.sunLight.position.x = distance * Math.cos(phi) * -Math.sin(az);
+    state.sunLight.position.y = distance * Math.sin(phi);
+    state.sunLight.position.z = distance * Math.cos(phi) * Math.cos(az);
 }

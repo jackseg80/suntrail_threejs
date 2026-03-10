@@ -21,5 +21,6 @@ export const state = {
     renderer: null,
     controls: null,
     sunLight: null,
+    ambientLight: null,
     terrainMesh: null
 };

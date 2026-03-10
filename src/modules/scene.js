@@ -61,8 +61,8 @@ export async function initScene() {
     state.controls.addEventListener('change', throttledUpdate);
 
     // 4. Éclairage
-    const ambientLight = new THREE.AmbientLight(0x404050, 0.4);
-    state.scene.add(ambientLight);
+    state.ambientLight = new THREE.AmbientLight(0x404050, 0.4);
+    state.scene.add(state.ambientLight);
 
     state.sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
     state.sunLight.castShadow = state.SHADOWS;
