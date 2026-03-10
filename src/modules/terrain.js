@@ -28,7 +28,7 @@ export function lngLatToWorld(lon, lat) {
     }
     return {
         x: m.x - state.worldOriginMeters.x,
-        z: -(m.y - state.worldOriginMeters.y) // Z positif vers le Sud en 3D
+        z: state.worldOriginMeters.y - m.y
     };
 }
 
@@ -58,7 +58,6 @@ export function clearLabels() {
 
 export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
     if (!state.mapCenter) state.mapCenter = { lat: state.TARGET_LAT, lon: state.TARGET_LON };
-    
     if (!state.worldOriginMeters) {
         state.worldOriginMeters = lngLatToMeters(state.initialLon || state.TARGET_LON, state.initialLat || state.TARGET_LAT);
     }
@@ -76,14 +75,12 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
             const sx = centerSector.x + dx;
             const sy = centerSector.y + dy;
             
-            // Calcul NW du secteur Z13
             const tileSizeZ13 = (2 * MAX_EXTENT) / Math.pow(2, baseZoom);
             const mxNW = -MAX_EXTENT + sx * tileSizeZ13;
             const myNW = MAX_EXTENT - sy * tileSizeZ13;
             
-            // Position 3D du centre du secteur
             const secCenterX = (mxNW + tileSizeZ13/2) - state.worldOriginMeters.x;
-            const secCenterZ = -( (myNW - tileSizeZ13/2) - state.worldOriginMeters.y );
+            const secCenterZ = state.worldOriginMeters.y - (myNW - tileSizeZ13/2);
             
             const dist = Math.sqrt(Math.pow(secCenterX - curX, 2) + Math.pow(secCenterZ - curZ, 2));
             const trueDist = Math.sqrt(dist*dist + camAltitude*camAltitude);
@@ -136,13 +133,11 @@ async function loadTile(tx, ty, zoom, key) {
         const numTiles = Math.pow(2, zoom);
         const tileSizeMeters = (2 * MAX_EXTENT) / numTiles;
         
-        // --- POSITION NW ABSOLUE ---
         const mxNW = -MAX_EXTENT + tx * tileSizeMeters;
         const myNW = MAX_EXTENT - ty * tileSizeMeters;
         
-        // Position relative NW
         const worldX_NW = mxNW - state.worldOriginMeters.x;
-        const worldZ_NW = -(myNW - state.worldOriginMeters.y);
+        const worldZ_NW = state.worldOriginMeters.y - myNW;
 
         const elevZoom = Math.min(zoom, 14);
         let eTx = tx, eTy = ty;
@@ -187,14 +182,13 @@ async function loadTile(tx, ty, zoom, key) {
         const step = (zoom === 15) ? 0.5 : 1.0;
 
         for (let i = 0; i < vertices.length / 3; i++) {
-            const u = uvs[i * 2], v = uvs[i * 2 + 1]; // v=0 est le haut
+            const u = uvs[i * 2], v = uvs[i * 2 + 1]; 
             const px = offX + u * 255 * step;
             const py = offY + v * 255 * step;
             const x0 = Math.floor(px), y0 = Math.floor(py), x1 = Math.min(255, x0+1), y1 = Math.min(255, y0+1);
             const wx = px - x0, wy = py - y0;
             const h = heights[y0*256+x0]*(1-wx)*(1-wy) + heights[y0*256+x1]*wx*(1-wy) + heights[y1*256+x0]*(1-wx)*wy + heights[y1*256+x1]*wx*wy;
             
-            // Correction distorsion Mercator
             const my_vertex = myNW - v * tileSizeMeters;
             const vScale = Math.cosh(my_vertex / R);
             vertices[i * 3 + 1] = Math.max(-10, h * vScale * state.RELIEF_EXAGGERATION);
@@ -205,7 +199,6 @@ async function loadTile(tx, ty, zoom, key) {
         texture.colorSpace = THREE.SRGBColorSpace; texture.flipY = false; 
         
         const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ map: texture, roughness: 0.8, metalness: 0.1 }));     
-        // NW Corner placement (v2.0.0 style shift)
         mesh.position.set(worldX_NW + tileSizeMeters/2, 0, worldZ_NW + tileSizeMeters/2);
         mesh.castShadow = mesh.receiveShadow = true;
         state.scene.add(mesh);
