@@ -17,6 +17,7 @@ const terrainVertexInjection = {
     header: `
         uniform sampler2D uElevationMap;
         uniform float uExaggeration;
+        uniform float uTileSize;
 
         float decodeHeight(vec4 rgba) {
             return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1);
@@ -30,12 +31,16 @@ const terrainVertexInjection = {
         }
     `,
     normal: `
-        float texelSize = 1.0 / 256.0;
-        float hL = getTerrainHeight(uv + vec2(-texelSize, 0.0));
-        float hR = getTerrainHeight(uv + vec2(texelSize, 0.0));
-        float hD = getTerrainHeight(uv + vec2(0.0, -texelSize));
-        float hU = getTerrainHeight(uv + vec2(0.0, texelSize));
-        objectNormal = normalize(vec3(hL - hR, 2.0, hD - hU));
+        // Distance entre deux pixels en mètres
+        float delta = uTileSize / 256.0;
+        
+        float hL = getTerrainHeight(uv + vec2(-1.0/256.0, 0.0));
+        float hR = getTerrainHeight(uv + vec2(1.0/256.0, 0.0));
+        float hD = getTerrainHeight(uv + vec2(0.0, -1.0/256.0));
+        float hU = getTerrainHeight(uv + vec2(0.0, 1.0/256.0));
+        
+        // Calcul de la normale avec l'échelle réelle (delta * 2.0 pour l'écart central)
+        objectNormal = normalize(vec3(hL - hR, delta * 2.0, hD - hU));
     `,
     position: `
         transformed.y = getTerrainHeight(uv);
@@ -139,6 +144,7 @@ export class Tile {
         material.onBeforeCompile = (shader) => {
             shader.uniforms.uElevationMap = { value: this.elevationTex };
             shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
+            shader.uniforms.uTileSize = { value: this.tileSizeMeters };
             
             shader.vertexShader = shader.vertexShader.replace(
                 '#include <common>',
@@ -159,15 +165,17 @@ export class Tile {
 
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.position.set(this.worldX, 0, this.worldZ);
+        
+        // Ajustement du bias pour éviter les ombres parasites (shadow acne)
         this.mesh.castShadow = this.mesh.receiveShadow = true;
         
-        // Correction pour les ombres
         this.mesh.customDepthMaterial = new THREE.MeshDepthMaterial({
             depthPacking: THREE.RGBADepthPacking
         });
         this.mesh.customDepthMaterial.onBeforeCompile = (shader) => {
             shader.uniforms.uElevationMap = { value: this.elevationTex };
             shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
+            shader.uniforms.uTileSize = { value: this.tileSizeMeters };
             shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${terrainVertexInjection.header}`);
             shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${terrainVertexInjection.position}`);
         };
