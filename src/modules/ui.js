@@ -3,7 +3,7 @@ import gpxParser from 'gpxparser';
 import { state } from './state.js';
 import { updateSunPosition } from './sun.js';
 import { initScene } from './scene.js';
-import { loadTerrain, updateVisibleTiles, activeTiles, lngLatToTile, clearLabels, lngLatToWorld, worldToLngLat, lngLatToMeters } from './terrain.js';
+import { loadTerrain, updateVisibleTiles, activeTiles, lngLatToTile, clearLabels, lngLatToWorld, worldToLngLat } from './terrain.js';
 
 export function initUI() {
     const s1 = localStorage.getItem('maptiler_key_3d');
@@ -193,7 +193,6 @@ async function refreshTerrain() {
         if (tileObj && tileObj.mesh) {
             state.scene.remove(tileObj.mesh);
             tileObj.mesh.geometry.dispose();
-            if (tileObj.mesh.material.map) tileObj.mesh.material.map.dispose();
             tileObj.mesh.material.dispose();
         }
     }
@@ -209,14 +208,11 @@ async function handleGPX(xml) {
     const points = track.points;
     if (state.gpxMesh) state.scene.remove(state.gpxMesh);
     
-    // INITIALISATION DE L'ANCRE SUR LE DÉBUT DU GPX
+    // RE-CENTRAGE DU MONDE SUR LE GPX
     const startPt = points[0];
     state.TARGET_LAT = startPt.lat;
     state.TARGET_LON = startPt.lon;
-    state.initialLat = startPt.lat;
-    state.initialLon = startPt.lon;
-    state.worldOriginMeters = lngLatToMeters(startPt.lon, startPt.lat);
-    state.originTile = lngLatToTile(startPt.lon, startPt.lat, 13);
+    state.originTile = lngLatToTile(startPt.lon, startPt.lat, state.ZOOM);
     
     const threePoints = points.map(p => {
         const pos = lngLatToWorld(p.lon, p.lat);
@@ -282,13 +278,8 @@ function initGeocoding() {
                         geoInput.value = name;
                         state.TARGET_LAT = lat;
                         state.TARGET_LON = lng;
-                        state.initialLat = lat;
-                        state.initialLon = lng;
-                        // INITIALISATION DE L'ANCRE MONDE SUR LA RECHERCHE
-                        state.worldOriginMeters = lngLatToMeters(lng, lat);
-                        state.originTile = lngLatToTile(lng, lat, 13);
-                        
                         if (state.controls) {
+                            state.originTile = lngLatToTile(lng, lat, state.ZOOM);
                             state.controls.target.set(0, 0, 0);
                             state.camera.position.set(0, 8000, 12000);
                             state.controls.update();
