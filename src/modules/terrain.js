@@ -73,7 +73,7 @@ export class Tile {
     }
 
     async load() {
-        if (this.status === 'loading' || this.status === 'loaded') return;
+        if (this.status === 'loading' || this.status === 'loaded' || this.status === 'disposed') return;
         if (!this.isVisible()) return;
 
         this.status = 'loading';
@@ -91,6 +91,13 @@ export class Tile {
 
             const [imgElev, imgColor] = await Promise.all([pElev, pColor]);
             
+            // SÉCURITÉ : Si la tuile a été jetée entre temps, on arrête tout
+            if (this.status === 'disposed') {
+                if (imgElev.close) imgElev.close();
+                if (imgColor.close) imgColor.close();
+                return;
+            }
+
             this.elevationTex = new THREE.CanvasTexture(imgElev);
             this.elevationTex.minFilter = THREE.LinearFilter;
             this.elevationTex.flipY = false;
@@ -102,8 +109,10 @@ export class Tile {
             this.status = 'loaded';
             this.buildMesh(state.RESOLUTION);
         } catch (e) {
-            console.error(`Erreur chargement tuile ${this.key}:`, e);
-            this.status = 'failed';
+            if (this.status !== 'disposed') {
+                console.error(`Erreur chargement tuile ${this.key}:`, e);
+                this.status = 'failed';
+            }
         }
     }
 
@@ -125,6 +134,7 @@ export class Tile {
     }
 
     buildMesh(resolution) {
+        if (this.status === 'disposed') return;
         if (!this.elevationTex || !this.colorTex) return;
         if (this.currentResolution === resolution && this.mesh) return;
         if (!this.isVisible()) return;
@@ -185,15 +195,22 @@ export class Tile {
     }
 
     dispose() {
+        this.status = 'disposed';
         if (this.mesh) {
             state.scene.remove(this.mesh);
             this.mesh.geometry.dispose();
             this.mesh.material.dispose();
             if (this.mesh.customDepthMaterial) this.mesh.customDepthMaterial.dispose();
+            this.mesh = null;
         }
-        if (this.elevationTex) this.elevationTex.dispose();
-        if (this.colorTex) this.colorTex.dispose();
-        this.status = 'disposed';
+        if (this.elevationTex) {
+            this.elevationTex.dispose();
+            this.elevationTex = null;
+        }
+        if (this.colorTex) {
+            this.colorTex.dispose();
+            this.colorTex = null;
+        }
     }
 }
 
@@ -203,6 +220,16 @@ export function resetTerrain() {
         if (tile) tile.dispose();
     }
     activeTiles.clear();
+    
+    // NETTOYAGE RADICAL DE LA SCÈNE (Sécurité supplémentaire)
+    // On parcourt la scène pour enlever tout ce qui pourrait être un résidu de terrain
+    if (state.scene) {
+        state.scene.children.forEach(child => {
+            if (child.isMesh && child.material && child.material.onBeforeCompile && child.geometry.type === 'PlaneGeometry') {
+                state.scene.remove(child);
+            }
+        });
+    }
 }
 
 export function lngLatToTile(lon, lat, zoom) {
