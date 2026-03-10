@@ -123,13 +123,9 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         const dx = (tx - state.originTile.x) * tileSizeMeters;
         const dz = (ty - state.originTile.y) * tileSizeMeters;
 
-        // Micro-recouvrement pour boucher les trous physiques (0.1%)
-        const overlapMeters = tileSizeMeters * 1.001;
-        const geometry = new THREE.PlaneGeometry(overlapMeters, overlapMeters, state.RESOLUTION, state.RESOLUTION);
+        // Utilisation de la taille EXACTE (pas d'overlap, pour une soudure parfaite)
+        const geometry = new THREE.PlaneGeometry(tileSizeMeters, tileSizeMeters, state.RESOLUTION, state.RESOLUTION);
         geometry.rotateX(-Math.PI / 2);
-
-        const lat = tileToLat(ty + 0.5, zoom);
-        const heightScale = 1 / Math.cos(lat * Math.PI / 180);
 
         const vertices = geometry.attributes.position.array;
         const uvs = geometry.attributes.uv.array;
@@ -139,35 +135,24 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         }
 
         function getElevationBilinear(px, py) {
-            // Sécurité absolue des indices (0 à 255)
             const x0 = Math.max(0, Math.min(254, Math.floor(px)));
             const y0 = Math.max(0, Math.min(254, Math.floor(py)));
             const x1 = x0 + 1;
             const y1 = y0 + 1;
-
             const wx = px - x0;
             const wy = py - y0;
-
             const h00 = heights[y0 * 256 + x0];
             const h10 = heights[y0 * 256 + x1];
             const h01 = heights[y1 * 256 + x0];
             const h11 = heights[y1 * 256 + x1];
-
             if (h00 < -9000 || h10 < -9000 || h01 < -9000 || h11 < -9000) return h00;
-
-            return h00 * (1 - wx) * (1 - wy) +
-                   h10 * wx * (1 - wy) +
-                   h01 * (1 - wx) * wy +
-                   h11 * wx * wy;
+            return h00 * (1 - wx) * (1 - wy) + h10 * wx * (1 - wy) + h01 * (1 - wx) * wy + h11 * wx * wy;
         }
 
-        // On soulève les sommets en lisant les UV modifiés
+        // On soulève les sommets
         for (let i = 0; i < vertices.length / 3; i++) {
             const u = uvs[i * 2];
             const v = uvs[i * 2 + 1];
-            
-            // Détection des sommets sur les bords (U ou V = 0 ou 1)
-            const isEdge = u < 0.001 || u > 0.999 || v < 0.001 || v > 0.999;
             
             const canvasX = u * 255;
             const canvasY = v * 255; 
@@ -175,12 +160,12 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
             let h = getElevationBilinear(canvasX, canvasY);
             if (h < -9000) h = minH;
 
-            if (isEdge) {
-                // Technique de la "Jupe" : on descend les bords de 100m pour boucher les fissures
-                vertices[i * 3 + 1] = (h * heightScale) - 100;
-            } else {
-                vertices[i * 3 + 1] = h * heightScale;
-            }
+            // VITAL : On calcule le heightScale précis pour CHAQUE sommet selon sa latitude
+            // v=1 est le haut de la tuile (ty), v=0 est le bas (ty + 1)
+            const vertexLat = tileToLat(ty + (1.0 - v), zoom);
+            const vertexHeightScale = 1 / Math.cos(vertexLat * Math.PI / 180);
+
+            vertices[i * 3 + 1] = h * vertexHeightScale;
         }
         
         // Lissage des ombres
