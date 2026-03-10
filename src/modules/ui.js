@@ -47,7 +47,7 @@ export function initUI() {
         updateSunPosition(e.target.value);
     });
 
-    // --- CLIC POUR ALTITUDE (Optimisé V3) ---
+    // --- CLIC POUR ALTITUDE (Version V3 "Raymarching" - Précision Max) ---
     window.addEventListener('click', (e) => {
         if (!state.renderer || !state.camera || !state.scene) return;
         if (e.target.tagName !== 'CANVAS') return;
@@ -56,48 +56,37 @@ export function initUI() {
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, state.camera);
         
-        const meshes = [];
-        const meshToTile = new Map();
-        for (const tile of activeTiles.values()) { 
-            if (tile && tile.mesh) {
-                meshes.push(tile.mesh);
-                meshToTile.set(tile.mesh.id, tile);
-            }
-        }
+        // On ne peut pas utiliser hit.point car le mesh est plat.
+        // On va marcher le long du rayon pour trouver l'intersection avec le relief.
+        const ray = raycaster.ray;
+        let found = false;
+        let currentPos = new THREE.Vector3().copy(ray.origin);
+        const step = ray.direction.clone().multiplyScalar(50); // Pas de 50m
         
-        const intersects = raycaster.intersectObjects(meshes, false);
-        if (intersects.length > 0) {
-            const hit = intersects[0];
-            const tile = meshToTile.get(hit.object.id);
-            const gps = worldToLngLat(hit.point.x, hit.point.z);
+        // On cherche sur 60km max
+        for (let i = 0; i < 1200; i++) {
+            currentPos.add(step);
+            const gps = worldToLngLat(currentPos.x, currentPos.z);
+            const tileKey = getTileKeyAt(currentPos.x, currentPos.z);
+            const tile = activeTiles.get(tileKey);
             
-            // Calcul de l'altitude depuis les données d'élévation de la tuile (Plus précis que le Raycaster GPU)
-            let realAlt = 0;
             if (tile && tile.elevationTex && tile.elevationTex.image) {
-                const img = tile.elevationTex.image;
-                const canvas = document.createElement('canvas');
-                canvas.width = 256; canvas.height = 256;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
+                const h = getAltitudeAt(tile, currentPos.x, currentPos.z);
+                const worldH = h * state.RELIEF_EXAGGERATION;
                 
-                // On calcule la position locale dans la tuile (0.0 à 1.0)
-                const localX = (hit.point.x - (tile.worldX - tile.tileSizeMeters/2)) / tile.tileSizeMeters;
-                const localZ = (hit.point.z - (tile.worldZ - tile.tileSizeMeters/2)) / tile.tileSizeMeters;
-                
-                const px = Math.floor(Math.max(0, Math.min(255, localX * 255)));
-                const py = Math.floor(Math.max(0, Math.min(255, localZ * 255)));
-                
-                const data = ctx.getImageData(px, py, 1, 1).data;
-                realAlt = -10000 + ((data[0] * 65536 + data[1] * 256 + data[2]) * 0.1);
+                if (currentPos.y <= worldH) {
+                    // On a traversé le sol !
+                    const panel = document.getElementById('coords-panel');
+                    panel.style.display = 'block';
+                    document.getElementById('click-latlon').textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
+                    document.getElementById('click-alt').textContent = `${Math.round(h)} m`;
+                    found = true;
+                    break;
+                }
             }
-
-            const panel = document.getElementById('coords-panel');
-            panel.style.display = 'block';
-            document.getElementById('click-latlon').textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
-            document.getElementById('click-alt').textContent = `${Math.round(realAlt)} m`;
-        } else {
-            document.getElementById('coords-panel').style.display = 'none';
         }
+
+        if (!found) document.getElementById('coords-panel').style.display = 'none';
     });
 
     const resSlider = document.getElementById('res-slider');
@@ -142,7 +131,7 @@ export function initUI() {
     exagSlider.addEventListener('change', async (e) => {
         state.RELIEF_EXAGGERATION = parseFloat(e.target.value);
         document.getElementById('exag-disp').textContent = state.RELIEF_EXAGGERATION.toFixed(1);
-        await updateVisibleTiles(); // Instantané via Shader
+        // Instantané via Shader (V2.1)
     });
 
     trailsToggle.addEventListener('change', async (e) => {
@@ -192,6 +181,29 @@ export function initUI() {
 
     initGeocoding();
     initCollapsibles();
+}
+
+// Fonctions utilitaires pour le clic altitude V3
+function getTileKeyAt(worldX, worldZ) {
+    const EARTH_CIRCUMFERENCE = 40075016.68;
+    const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, state.ZOOM);
+    const tx = state.originTile.x + Math.round(worldX / tileSizeMeters);
+    const ty = state.originTile.y + Math.round(worldZ / tileSizeMeters);
+    return `${tx}_${ty}_${state.ZOOM}`;
+}
+
+const hCanvas = document.createElement('canvas');
+hCanvas.width = 256; hCanvas.height = 256;
+const hCtx = hCanvas.getContext('2d', { willReadFrequently: true });
+
+function getAltitudeAt(tile, worldX, worldZ) {
+    hCtx.drawImage(tile.elevationTex.image, 0, 0);
+    const localX = (worldX - (tile.worldX - tile.tileSizeMeters/2)) / tile.tileSizeMeters;
+    const localZ = (worldZ - (tile.worldZ - tile.tileSizeMeters/2)) / tile.tileSizeMeters;
+    const px = Math.floor(Math.max(0, Math.min(255, localX * 255)));
+    const py = Math.floor(Math.max(0, Math.min(255, localZ * 255)));
+    const data = hCtx.getImageData(px, py, 1, 1).data;
+    return -10000 + ((data[0] * 65536 + data[1] * 256 + data[2]) * 0.1);
 }
 
 function initCollapsibles() {
