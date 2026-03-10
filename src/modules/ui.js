@@ -73,6 +73,7 @@ export function initUI() {
     const exagSlider = document.getElementById('exag-slider');
     const fogSlider = document.getElementById('fog-slider');
     const shadowToggle = document.getElementById('shadow-toggle');
+    const trailsToggle = document.getElementById('trails-toggle');
     const shadowResSelect = document.getElementById('shadow-res-select');
     const pixelLimitSelect = document.getElementById('pixel-limit-select');
 
@@ -91,6 +92,11 @@ export function initUI() {
     exagSlider.addEventListener('change', async (e) => {
         state.RELIEF_EXAGGERATION = parseFloat(e.target.value);
         document.getElementById('exag-disp').textContent = state.RELIEF_EXAGGERATION.toFixed(1);
+        await refreshTerrain();
+    });
+
+    trailsToggle.addEventListener('change', async (e) => {
+        state.SHOW_TRAILS = e.target.checked;
         await refreshTerrain();
     });
 

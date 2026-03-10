@@ -12,6 +12,7 @@ export const state = {
     SHADOW_RES: 2048, // Résolution des ombres (moyenne par défaut)
     PIXEL_RATIO_LIMIT: window.devicePixelRatio > 1.5 ? 1.5 : window.devicePixelRatio,
     RELIEF_EXAGGERATION: 1.3, // Boost visuel par défaut
+    SHOW_TRAILS: true, // Affiche les sentiers par défaut (Outdoor map)
     FOG_DENSITY: 0.00002, // Intensité du brouillard par défaut (20)
     
     // Position initiale pour le repère 3D (évite les superpositions)
