@@ -230,15 +230,14 @@ async function handleGPX(xml) {
     // 1. Nettoyage de l'ancien tracé
     if (state.gpxMesh) state.scene.remove(state.gpxMesh);
     
-    // 2. Conversion des coordonnées en points 3D
-    // On se base sur le premier point pour recentrer le monde si nécessaire
+    // 2. Mise à jour de l'origine du monde pour alignement parfait
     const startPt = points[0];
-    state.TARGET_LAT = startPt.lat;
-    state.TARGET_LON = startPt.lon;
     state.initialLat = startPt.lat;
     state.initialLon = startPt.lon;
     state.originTile = lngLatToTile(startPt.lon, startPt.lat, state.ZOOM);
     
+    console.log("Nouvelle origine GPX:", startPt.lat, startPt.lon);
+
     const threePoints = points.map(p => {
         const pos = lngLatToWorld(p.lon, p.lat);
         // On place le tracé un peu au dessus du sol pour éviter le z-fighting
