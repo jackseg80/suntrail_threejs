@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { updateSunPosition } from './sun.js';
 import { initScene } from './scene.js';
-import { loadTerrain, updateVisibleTiles, activeTiles } from './terrain.js';
+import { loadTerrain, updateVisibleTiles, activeTiles, lngLatToTile } from './terrain.js';
 
 export function initUI() {
     const s1 = localStorage.getItem('maptiler_key_3d');
@@ -107,30 +107,19 @@ function initGeocoding() {
                         // 1. Mise à jour des coordonnées globales
                         state.TARGET_LAT = lat;
                         state.TARGET_LON = lng;
+                        state.initialLat = lat;
+                        state.initialLon = lng;
                         
                         // 2. Réinitialisation de la caméra et du point d'origine du monde
                         if (state.controls) {
-                            state.initialLat = lat;
-                            state.initialLon = lng;
                             state.originTile = lngLatToTile(lng, lat, state.ZOOM);
                             state.controls.target.set(0, 0, 0);
                             state.camera.position.set(0, 3000, 8000);
-                            state.controls.update(); // Validation vitale du déplacement
+                            state.controls.update();
                         }
                         
-                        // 3. Destruction absolue de toutes les anciennes montagnes (tuiles)
-                        for (const [key, tileObj] of activeTiles.entries()) {
-                            if (tileObj && tileObj.mesh) {
-                                state.scene.remove(tileObj.mesh);
-                                tileObj.mesh.geometry.dispose();
-                                if (tileObj.mesh.material.map) tileObj.mesh.material.map.dispose();
-                                tileObj.mesh.material.dispose();
-                            }
-                        }
-                        activeTiles.clear();
-                        
-                        // 4. Reconstruction du nouveau monde et du soleil
-                        await updateVisibleTiles();
+                        // 3. Reconstruction du nouveau monde et du soleil
+                        await refreshTerrain();
                         updateSunPosition(document.getElementById('time-slider').value);
                     });
                     geoResults.appendChild(item);
