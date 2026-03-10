@@ -19,11 +19,16 @@ export async function initScene() {
     state.scene.fog = new THREE.FogExp2(0x87CEEB, 0.00004); 
 
     // 2. Moteur de rendu
-    state.renderer = new THREE.WebGLRenderer({ antialias: true });
+    state.renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
     state.renderer.setSize(window.innerWidth, window.innerHeight);
-    state.renderer.setPixelRatio(window.devicePixelRatio);
+    state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
     state.renderer.shadowMap.enabled = true;
     state.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    // Ton mapping pro pour supprimer le voile gris
+    state.renderer.toneMapping = THREE.AgXToneMapping;
+    state.renderer.toneMappingExposure = 1.2;
+
     container.appendChild(state.renderer.domElement);
 
     // 3. Caméra et Contrôles "Type Carte" (MapControls)
@@ -61,10 +66,10 @@ export async function initScene() {
     state.controls.addEventListener('change', throttledUpdate);
 
     // 4. Éclairage
-    state.ambientLight = new THREE.AmbientLight(0x404050, 0.4);
+    state.ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     state.scene.add(state.ambientLight);
 
-    state.sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    state.sunLight = new THREE.DirectionalLight(0xffffff, 3.5);
     state.sunLight.castShadow = state.SHADOWS;
     
     state.sunLight.shadow.mapSize.width = 4096;
