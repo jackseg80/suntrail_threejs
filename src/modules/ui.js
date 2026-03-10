@@ -47,7 +47,7 @@ export function initUI() {
         updateSunPosition(e.target.value);
     });
 
-    // --- CLIC POUR ALTITUDE (Version V2.1+ "Math Intersection") ---
+    // --- CLIC POUR ALTITUDE (Version V2.4 - Précision Géométrique CPU) ---
     window.addEventListener('click', (e) => {
         if (!state.renderer || !state.camera || !state.scene) return;
         if (e.target.tagName !== 'CANVAS') return;
@@ -56,48 +56,22 @@ export function initUI() {
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, state.camera);
         
-        // Comme le mesh est plat au sol (y=0), on doit "marcher" le long du rayon 
-        // pour trouver où il croise les données d'élévation.
-        const ray = raycaster.ray;
-        let dist = 0;
-        let found = false;
-        let lastDiff = 0;
-        let finalAlt = 0;
-        let finalGps = { lat: 0, lon: 0 };
-
-        // On cherche sur 100km max, avec des pas adaptatifs
-        for (let i = 0; i < 500; i++) {
-            const p = ray.at(dist, new THREE.Vector3());
-            const gps = worldToLngLat(p.x, p.z);
-            const tileKey = getTileKeyAt(p.x, p.z);
-            const tile = activeTiles.get(tileKey);
-
-            if (tile && tile.elevationTex && tile.elevationTex.image) {
-                const h = getSampledAltitude(tile, p.x, p.z);
-                const worldH = h * state.RELIEF_EXAGGERATION;
-                const diff = p.y - worldH;
-
-                if (i > 0 && Math.sign(diff) !== Math.sign(lastDiff)) {
-                    // On a croisé le sol !
-                    finalAlt = h;
-                    finalGps = gps;
-                    found = true;
-                    break;
-                }
-                lastDiff = diff;
-                // Pas adaptatif : plus on est proche du sol, plus on ralentit
-                dist += Math.max(10, Math.abs(diff) * 0.5);
-            } else {
-                dist += 200; // Pas rapide si pas de tuile
-            }
-            if (dist > 100000) break;
+        const meshes = [];
+        for (const tile of activeTiles.values()) { 
+            if (tile && tile.mesh) meshes.push(tile.mesh);
         }
+        
+        const intersects = raycaster.intersectObjects(meshes, false);
+        if (intersects.length > 0) {
+            const hit = intersects[0];
+            const gps = worldToLngLat(hit.point.x, hit.point.z);
+            // Comme le relief est physique en V2.4, hit.point.y est la hauteur exacte multipliée par l'exagération
+            const realAlt = hit.point.y / state.RELIEF_EXAGGERATION;
 
-        if (found) {
             const panel = document.getElementById('coords-panel');
             panel.style.display = 'block';
-            document.getElementById('click-latlon').textContent = `${finalGps.lat.toFixed(5)}, ${finalGps.lon.toFixed(5)}`;
-            document.getElementById('click-alt').textContent = `${Math.round(finalAlt)} m`;
+            document.getElementById('click-latlon').textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
+            document.getElementById('click-alt').textContent = `${Math.round(realAlt)} m`;
         } else {
             document.getElementById('coords-panel').style.display = 'none';
         }
@@ -145,6 +119,7 @@ export function initUI() {
     exagSlider.addEventListener('change', async (e) => {
         state.RELIEF_EXAGGERATION = parseFloat(e.target.value);
         document.getElementById('exag-disp').textContent = state.RELIEF_EXAGGERATION.toFixed(1);
+        await updateVisibleTiles(); // Rebuild CPU fluide car data en cache
     });
 
     trailsToggle.addEventListener('change', async (e) => {
@@ -194,29 +169,6 @@ export function initUI() {
 
     initGeocoding();
     initCollapsibles();
-}
-
-// --- UTILS POUR L'ALTITUDE V2.1+ ---
-function getTileKeyAt(worldX, worldZ) {
-    const EARTH_CIRCUMFERENCE = 40075016.68;
-    const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, state.ZOOM);
-    const tx = state.originTile.x + Math.round(worldX / tileSizeMeters);
-    const ty = state.originTile.y + Math.round(worldZ / tileSizeMeters);
-    return `${tx}_${ty}_${state.ZOOM}`;
-}
-
-const pickingCanvas = document.createElement('canvas');
-pickingCanvas.width = 256; pickingCanvas.height = 256;
-const pickingCtx = pickingCanvas.getContext('2d', { willReadFrequently: true });
-
-function getSampledAltitude(tile, worldX, worldZ) {
-    pickingCtx.drawImage(tile.elevationTex.image, 0, 0);
-    const localX = (worldX - (tile.worldX - tile.tileSizeMeters/2)) / tile.tileSizeMeters;
-    const localZ = (worldZ - (tile.worldZ - tile.tileSizeMeters/2)) / tile.tileSizeMeters;
-    const px = Math.floor(Math.max(0, Math.min(255, localX * 255)));
-    const py = Math.floor(Math.max(0, Math.min(255, localZ * 255)));
-    const data = pickingCtx.getImageData(px, py, 1, 1).data;
-    return -10000 + ((data[0] * 65536 + data[1] * 256 + data[2]) * 0.1);
 }
 
 function initCollapsibles() {
