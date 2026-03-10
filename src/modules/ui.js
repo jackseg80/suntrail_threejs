@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { state } from './state.js';
 import { updateSunPosition } from './sun.js';
 import { initScene } from './scene.js';
@@ -24,8 +25,10 @@ export function initUI() {
     });
 
     // --- CLIC POUR ALTITUDE ---
-    window.addEventListener('mousedown', (e) => {
-        if (!state.renderer || e.target !== state.renderer.domElement) return;
+    window.addEventListener('click', (e) => {
+        // On ne déclenche que si on clique sur le canvas Three.js
+        if (!state.renderer || !state.camera || !state.scene) return;
+        if (e.target.tagName !== 'CANVAS') return;
         
         const mouse = new THREE.Vector2(
             (e.clientX / window.innerWidth) * 2 - 1,
@@ -35,27 +38,29 @@ export function initUI() {
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, state.camera);
         
-        // On cherche l'intersection avec tous les objets de la scène (les tuiles)
-        const intersects = raycaster.intersectObjects(state.scene.children, true);
+        // On récupère toutes les tuiles chargées dans la scène
+        const tiles = [];
+        for (const tileObj of activeTiles.values()) {
+            if (tileObj && tileObj.mesh) tiles.push(tileObj.mesh);
+        }
+        
+        const intersects = raycaster.intersectObjects(tiles, false);
         
         if (intersects.length > 0) {
             const pt = intersects[0].point;
             
-            // Conversion inverse Position Monde -> Lat/Lon
+            // Calcul de la position inverse (monde -> GPS)
             const dLon = (pt.x / (111320 * Math.cos(state.initialLat * Math.PI / 180)));
             const dLat = -(pt.z / 111320); 
             const lat = state.initialLat + dLat;
             const lon = state.initialLon + dLon;
             
-            // L'altitude est directement la coordonnée Y du point d'impact
-            // (Mais attention, on avait appliqué un vertexHeightScale dans terrain.js)
-            // Pour être précis, on affiche la valeur brute Y qui correspond aux mètres 3D.
-            const alt = pt.y;
-
             const panel = document.getElementById('coords-panel');
             panel.style.display = 'block';
             document.getElementById('click-latlon').textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-            document.getElementById('click-alt').textContent = `${Math.round(alt)} m`;
+            document.getElementById('click-alt').textContent = `${Math.round(pt.y)} m`;
+        } else {
+            document.getElementById('coords-panel').style.display = 'none';
         }
     });
 

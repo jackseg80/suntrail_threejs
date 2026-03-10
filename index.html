@@ -42,16 +42,18 @@
         <input type="range" id="time-slider" min="0" max="1439" value="720">
     </div>
 
-    <div id="compass-container" style="position:absolute; top:20px; right:20px; width:60px; height:60px; background:var(--panel); border:1px solid var(--border); border-radius:50%; display:flex; align-items:center; justify-content:center; z-index:100; backdrop-filter:blur(8px);">
-        <div id="compass-needle" style="width:2px; height:40px; background:linear-gradient(to bottom, #ff4444 50%, #ffffff 50%); transform:rotate(0deg); transition:0.1s linear;"></div>
-        <div style="position:absolute; top:2px; font-size:10px; font-weight:700; color:#ff4444;">N</div>
-    </div>
+</div>
 
-    <div id="coords-panel" style="display:none; position:absolute; bottom:20px; left:20px; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:1rem; font-size:0.8rem; z-index:10; backdrop-filter:blur(8px);">
-        <div style="color:var(--gold); font-weight:700; margin-bottom:0.3rem;">📍 Analyse du point</div>
-        <div id="click-latlon" style="color:var(--t1);">—</div>
-        <div id="click-alt" style="color:var(--gold); font-size:1rem; font-weight:700; margin-top:0.2rem;">—</div>
-    </div>
+<div id="compass-container" style="position:fixed; top:20px; right:20px; width:60px; height:60px; background:var(--panel); border:1px solid var(--border); border-radius:50%; display:flex; align-items:center; justify-content:center; z-index:1000; backdrop-filter:blur(8px); pointer-events:none;">
+    <div id="compass-needle" style="width:2px; height:40px; background:linear-gradient(to bottom, #ff4444 50%, #ffffff 50%); transform:rotate(0deg);"></div>
+    <div style="position:absolute; top:2px; font-size:10px; font-weight:700; color:#ff4444;">N</div>
+</div>
+
+<div id="coords-panel" style="display:none; position:fixed; bottom:20px; left:20px; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:1rem; font-size:0.8rem; z-index:1000; backdrop-filter:blur(8px); pointer-events:none;">
+    <div style="color:var(--gold); font-weight:700; margin-bottom:0.3rem;">📍 Analyse du point</div>
+    <div id="click-latlon" style="color:var(--t1);">—</div>
+    <div id="click-alt" style="color:var(--gold); font-size:1rem; font-weight:700; margin-top:0.2rem;">—</div>
+</div>
 
     <div class="control-group" style="border-top: 1px solid var(--border); padding-top: 1rem;">
         <label>⚙️ Performance</label>
