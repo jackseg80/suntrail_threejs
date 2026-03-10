@@ -13,12 +13,10 @@ const terrainUniforms = {
     uExaggeration: { value: state.RELIEF_EXAGGERATION }
 };
 
-// Injection chirurgicale dans le Vertex Shader
 const terrainVertexInjection = {
     header: `
         uniform sampler2D uElevationMap;
         uniform float uExaggeration;
-        varying vec2 vTerrainUv;
 
         float decodeHeight(vec4 rgba) {
             return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1);
@@ -31,21 +29,16 @@ const terrainVertexInjection = {
             return h * uExaggeration;
         }
     `,
-    main: `
-        vTerrainUv = uv;
-        float h = getTerrainHeight(vTerrainUv);
-        
-        // Déplacement effectif du vertex
-        transformed.y = h;
-
-        // Calcul des normales au vol pour l'éclairage
+    normal: `
         float texelSize = 1.0 / 256.0;
-        float hL = getTerrainHeight(vTerrainUv + vec2(-texelSize, 0.0));
-        float hR = getTerrainHeight(vTerrainUv + vec2(texelSize, 0.0));
-        float hD = getTerrainHeight(vTerrainUv + vec2(0.0, -texelSize));
-        float hU = getTerrainHeight(vTerrainUv + vec2(0.0, texelSize));
-        
+        float hL = getTerrainHeight(uv + vec2(-texelSize, 0.0));
+        float hR = getTerrainHeight(uv + vec2(texelSize, 0.0));
+        float hD = getTerrainHeight(uv + vec2(0.0, -texelSize));
+        float hU = getTerrainHeight(uv + vec2(0.0, texelSize));
         objectNormal = normalize(vec3(hL - hR, 2.0, hD - hU));
+    `,
+    position: `
+        transformed.y = getTerrainHeight(uv);
     `
 };
 
@@ -155,14 +148,12 @@ export class Tile {
             shader.vertexShader = shader.vertexShader.replace(
                 '#include <beginnormal_vertex>',
                 `#include <beginnormal_vertex>
-                ${terrainVertexInjection.main}`
+                ${terrainVertexInjection.normal}`
             );
             shader.vertexShader = shader.vertexShader.replace(
                 '#include <begin_vertex>',
-                `// Replacement by begin_vertex handled in beginnormal_vertex for elevation
-                vec3 transformed = vec3( position );
-                transformed.y = getTerrainHeight(uv);
-                `
+                `#include <begin_vertex>
+                ${terrainVertexInjection.position}`
             );
         };
 
@@ -178,7 +169,7 @@ export class Tile {
             shader.uniforms.uElevationMap = { value: this.elevationTex };
             shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
             shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${terrainVertexInjection.header}`);
-            shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `vec3 transformed = vec3( position );\ntransformed.y = getTerrainHeight(uv);`);
+            shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${terrainVertexInjection.position}`);
         };
 
         state.scene.add(this.mesh);
