@@ -81,8 +81,7 @@ export class Tile {
         const data = ctx.getImageData(0, 0, 256, 256).data;
         const raw = new Float32Array(256 * 256);
         for (let i = 0; i < data.length; i += 4) {
-            const h = -10000 + ((data[i] * 65536 + data[i+1] * 256 + data[i+2]) * 0.1);
-            raw[i/4] = (h < -1000 || h > 9000) ? 0 : h;
+            raw[i/4] = -10000 + ((data[i] * 65536 + data[i+1] * 256 + data[i+2]) * 0.1);
         }
         return raw;
     }
@@ -98,25 +97,27 @@ export class Tile {
     }
 
     buildMesh(resolution) {
-        if (this.status !== 'loaded' || !this.elevationData) return;
+        if (this.status !== 'loaded' || !this.elevationData || !this.colorImage) return;
         if (this.currentResolution === resolution && this.currentExaggeration === state.RELIEF_EXAGGERATION && this.mesh) return;
 
         const oldMesh = this.mesh;
-        
-        // On force la géométrie à être calée sur la grille 256x256 pour éviter les trous
         const geometry = new THREE.PlaneGeometry(this.tileSizeMeters, this.tileSizeMeters, resolution, resolution);
         geometry.rotateX(-Math.PI / 2);
 
         const pos = geometry.attributes.position.array;
         const uvs = geometry.attributes.uv.array;
 
-        for (let i = 0; i < pos.length / 3; i++) {
-            const u = uvs[i * 2];
-            const v = uvs[i * 2 + 1];
-            
-            // Échantillonnage précis (Bilinear) pour un raccord fluide
+        // --- SYNCHRONISATION NORD/SUD ---
+        // Dans MapTiler, Y=0 est le NORD (Haut). Dans Three.js Plane, UV.y=1 est le HAUT.
+        // On inverse donc l'UV pour que la texture soit dans le bon sens.
+        for (let i = 1; i < uvs.length; i += 2) uvs[i] = 1.0 - uvs[i];
+
+        const getH = (u, vInverted) => {
             const px = u * 255;
-            const py = (1.0 - v) * 255; // Inversion Y pour correspondre au scan MapTiler
+            // Comme vInverted est déjà inversé (1.0 - uv.y), 
+            // vInverted = 0 quand on est en haut du mesh.
+            // Pixel 0 est le haut de l'image MapTiler. Ça MATCH !
+            const py = vInverted * 255; 
             
             const x0 = Math.floor(px), y0 = Math.floor(py);
             const x1 = Math.min(255, x0 + 1), y1 = Math.min(255, y0 + 1);
@@ -128,14 +129,17 @@ export class Tile {
             const h11 = this.elevationData[y1 * 256 + x1];
 
             const h = h00 * (1 - wx) * (1 - wy) + h10 * wx * (1 - wy) + h01 * (1 - wx) * wy + h11 * wx * wy;
-            pos[i * 3 + 1] = h * state.RELIEF_EXAGGERATION;
+            return h * state.RELIEF_EXAGGERATION;
+        };
+
+        for (let i = 0; i < pos.length / 3; i++) {
+            pos[i * 3 + 1] = getH(uvs[i * 2], uvs[i * 2 + 1]);
         }
-        
         geometry.computeVertexNormals();
 
         const tex = new THREE.CanvasTexture(this.colorImage);
         tex.colorSpace = THREE.SRGBColorSpace;
-        tex.flipY = false;
+        tex.flipY = false; // Important: on a déjà inversé les UVs manuellement
 
         this.mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9, metalness: 0.0 }));
         this.mesh.position.set(this.worldX, 0, this.worldZ);
