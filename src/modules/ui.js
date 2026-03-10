@@ -3,7 +3,7 @@ import gpxParser from 'gpxparser';
 import { state } from './state.js';
 import { updateSunPosition } from './sun.js';
 import { initScene } from './scene.js';
-import { loadTerrain, updateVisibleTiles, activeTiles, lngLatToTile, clearLabels, lngLatToWorld } from './terrain.js';
+import { loadTerrain, updateVisibleTiles, activeTiles, lngLatToTile, clearLabels, lngLatToWorld, worldToLngLat } from './terrain.js';
 
 export function initUI() {
     const s1 = localStorage.getItem('maptiler_key_3d');
@@ -51,41 +51,25 @@ export function initUI() {
 
     // --- CLIC POUR ALTITUDE ---
     window.addEventListener('click', (e) => {
-        // On ne déclenche que si on clique sur le canvas Three.js
         if (!state.renderer || !state.camera || !state.scene) return;
         if (e.target.tagName !== 'CANVAS') return;
         
-        const mouse = new THREE.Vector2(
-            (e.clientX / window.innerWidth) * 2 - 1,
-            -(e.clientY / window.innerHeight) * 2 + 1
-        );
-        
+        const mouse = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, state.camera);
         
-        // On récupère toutes les tuiles chargées dans la scène
         const tiles = [];
-        for (const tileObj of activeTiles.values()) {
-            if (tileObj && tileObj.mesh) tiles.push(tileObj.mesh);
-        }
+        for (const tileObj of activeTiles.values()) { if (tileObj && tileObj.mesh) tiles.push(tileObj.mesh); }
         
         const intersects = raycaster.intersectObjects(tiles, false);
-        
         if (intersects.length > 0) {
             const pt = intersects[0].point;
-            
-            // Calcul de la position inverse (monde -> GPS)
-            const dLon = (pt.x / (111320 * Math.cos(state.initialLat * Math.PI / 180)));
-            const dLat = -(pt.z / 111320); 
-            const lat = state.initialLat + dLat;
-            const lon = state.initialLon + dLon;
-            
-            // L'altitude réelle est pt.y divisé par l'exagération visuelle
+            const gps = worldToLngLat(pt.x, pt.z);
             const realAlt = pt.y / state.RELIEF_EXAGGERATION;
 
             const panel = document.getElementById('coords-panel');
             panel.style.display = 'block';
-            document.getElementById('click-latlon').textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+            document.getElementById('click-latlon').textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
             document.getElementById('click-alt').textContent = `${Math.round(realAlt)} m`;
         } else {
             document.getElementById('coords-panel').style.display = 'none';
@@ -171,7 +155,6 @@ export function initUI() {
         }
     });
 
-    // Empêcher les contrôles de la caméra sur tous les sliders
     [timeSlider, resSlider, rangeSlider, fogSlider].forEach(slider => {
         ['mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend'].forEach(evt => {
             slider.addEventListener(evt, (e) => e.stopPropagation(), { passive: false });
@@ -183,20 +166,15 @@ export function initUI() {
 }
 
 function initCollapsibles() {
-    // Repliement du panneau principal
     const panel = document.getElementById('panel');
     const panelToggle = document.getElementById('panel-toggle');
     const toggleIcon = document.getElementById('toggle-icon');
-
     panelToggle.addEventListener('click', () => {
         panel.classList.toggle('collapsed');
         toggleIcon.textContent = panel.classList.contains('collapsed') ? '▶' : '◀';
     });
-
-    // Repliement de la section Performance
     const perfHeader = document.getElementById('perf-header');
     const perfContent = document.getElementById('perf-content');
-
     perfHeader.addEventListener('click', () => {
         perfContent.classList.toggle('collapsed');
         perfHeader.classList.toggle('collapsed');
@@ -204,13 +182,11 @@ function initCollapsibles() {
 }
 
 async function refreshTerrain() {
-    // Destruction totale et reconstruction
     clearLabels();
     for (const [key, tileObj] of activeTiles.entries()) {
         if (tileObj && tileObj.mesh) {
             state.scene.remove(tileObj.mesh);
             tileObj.mesh.geometry.dispose();
-            if (tileObj.mesh.material.map) tileObj.mesh.material.map.dispose();
             tileObj.mesh.material.dispose();
         }
     }
@@ -221,51 +197,39 @@ async function refreshTerrain() {
 async function handleGPX(xml) {
     const gpx = new gpxParser();
     gpx.parse(xml);
-    
     if (!gpx.tracks || !gpx.tracks.length) return;
-    
     const track = gpx.tracks[0];
     const points = track.points;
-    
-    // 1. Nettoyage de l'ancien tracé
     if (state.gpxMesh) state.scene.remove(state.gpxMesh);
     
-    // 2. Mise à jour de l'origine du monde pour alignement parfait
+    // RE-CENTRAGE DU MONDE SUR LE GPX
     const startPt = points[0];
-    state.initialLat = startPt.lat;
-    state.initialLon = startPt.lon;
+    state.TARGET_LAT = startPt.lat;
+    state.TARGET_LON = startPt.lon;
     state.originTile = lngLatToTile(startPt.lon, startPt.lat, state.ZOOM);
     
-    console.log("Nouvelle origine GPX:", startPt.lat, startPt.lon);
-
     const threePoints = points.map(p => {
         const pos = lngLatToWorld(p.lon, p.lat);
-        // On place le tracé un peu au dessus du sol pour éviter le z-fighting
         const worldY = (p.ele || 0) * state.RELIEF_EXAGGERATION + 5; 
         return new THREE.Vector3(pos.x, worldY, pos.z);
     });
-    
     state.gpxPoints = threePoints;
 
-    // 3. Création du tracé 3D (Tube lumineux)
     const curve = new THREE.CatmullRomCurve3(threePoints);
     const geometry = new THREE.TubeGeometry(curve, threePoints.length, 10, 8, false);
     const material = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 });
     state.gpxMesh = new THREE.Mesh(geometry, material);
     state.scene.add(state.gpxMesh);
 
-    // 4. Mise à jour de l'UI
     document.getElementById('trail-controls').style.display = 'block';
     document.getElementById('gpx-dist').textContent = `${(track.distance.total / 1000).toFixed(1)} km`;
     document.getElementById('gpx-elev').textContent = `+${Math.round(track.elevation.pos)}m / -${Math.round(track.elevation.neg)}m`;
 
-    // 5. Repositionnement
     if (state.controls) {
         state.controls.target.set(threePoints[0].x, threePoints[0].y, threePoints[0].z);
         state.camera.position.set(threePoints[0].x, threePoints[0].y + 2000, threePoints[0].z + 4000);
         state.controls.update();
     }
-    
     await refreshTerrain();
 }
 
@@ -286,46 +250,34 @@ function initGeocoding() {
     const geoInput = document.getElementById('geo-input');
     const geoResults = document.getElementById('geo-results');
     let geoTimer = null;
-    
     geoInput.addEventListener('input', () => {
         clearTimeout(geoTimer);
         const q = geoInput.value.trim();
         if (q.length < 2) { geoResults.style.display = 'none'; return; }
-        
         geoTimer = setTimeout(async () => {
             try {
                 const r = await fetch(`https://api.maptiler.com/geocoding/${encodeURIComponent(q)}.json?key=${state.MK}&language=fr&limit=6`);
                 if (!r.ok) return;
                 const data = await r.json();
                 if (!data.features || !data.features.length) { geoResults.style.display = 'none'; return; }
-                
                 geoResults.innerHTML = '';
                 data.features.forEach(f => {
                     const item = document.createElement('div');
                     item.style.cssText = 'padding:0.6rem 0.75rem; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.8rem;';
                     const name = f.text || f.place_name || '';
                     item.innerHTML = `<div style="color:white; font-weight:500">${name}</div><div style="color:#8b8d98; font-size:0.7rem;">${f.place_name || ''}</div>`;
-                    
                     item.addEventListener('click', async () => {
                         const [lng, lat] = f.center || f.geometry.coordinates;
                         geoResults.style.display = 'none';
                         geoInput.value = name;
-                        
-                        // 1. Mise à jour des coordonnées globales
                         state.TARGET_LAT = lat;
                         state.TARGET_LON = lng;
-                        state.initialLat = lat;
-                        state.initialLon = lng;
-                        
-                        // 2. Réinitialisation de la caméra et du point d'origine du monde
                         if (state.controls) {
                             state.originTile = lngLatToTile(lng, lat, state.ZOOM);
                             state.controls.target.set(0, 0, 0);
-                            state.camera.position.set(0, 8000, 12000); // Plus haut
+                            state.camera.position.set(0, 8000, 12000);
                             state.controls.update();
                         }
-                        
-                        // 3. Reconstruction du nouveau monde et du soleil
                         await refreshTerrain();
                         updateSunPosition(document.getElementById('time-slider').value);
                     });

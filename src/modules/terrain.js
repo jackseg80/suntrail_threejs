@@ -12,19 +12,41 @@ export function lngLatToTile(lon, lat, zoom) {
     return { x, y, z: zoom };
 }
 
+// CONVERSION GPS -> MONDE 3D (PRÉCISION ABSOLUE)
 export function lngLatToWorld(lon, lat) {
     const zoom = state.ZOOM;
     const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
-    const x = (lon + 180) / 360 * Math.pow(2, zoom);
-    const y = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom);
-    return { x: (x - state.originTile.x) * tileSizeMeters, z: (y - state.originTile.y) * tileSizeMeters };
+    
+    const xfrac = (lon + 180) / 360 * Math.pow(2, zoom);
+    const yfrac = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom);
+    
+    // On aligne (0,0,0) sur le CENTRE de la tuile d'origine (important pour Three.js)
+    const worldX = (xfrac - (state.originTile.x + 0.5)) * tileSizeMeters;
+    const worldZ = (yfrac - (state.originTile.y + 0.5)) * tileSizeMeters;
+    
+    return { x: worldX, z: worldZ };
+}
+
+// CONVERSION MONDE 3D -> GPS (PRÉCISION ABSOLUE)
+export function worldToLngLat(worldX, worldZ) {
+    const zoom = state.ZOOM;
+    const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
+    
+    const xfrac = (worldX / tileSizeMeters) + (state.originTile.x + 0.5);
+    const yfrac = (worldZ / tileSizeMeters) + (state.originTile.y + 0.5);
+    
+    const lon = xfrac / Math.pow(2, zoom) * 360 - 180;
+    const n = Math.PI - 2 * Math.PI * yfrac / Math.pow(2, zoom);
+    const lat = 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+    
+    return { lat, lon };
 }
 
 export function clearLabels() {
     for (const [name, obj] of activeLabels.entries()) {
         state.scene.remove(obj.sprite);
         state.scene.remove(obj.line);
-        obj.sprite.material.map.dispose();
+        if (obj.sprite.material.map) obj.sprite.material.map.dispose();
         obj.sprite.material.dispose();
         obj.line.geometry.dispose();
         obj.line.material.dispose();
@@ -43,19 +65,19 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
         centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, state.ZOOM);
     }
 
-    // 1. Nettoyage des labels trop éloignés (> 40km)
+    // Nettoyage des labels distants (> 40km)
     const currentX = worldX || 0;
     const currentZ = worldZ || 0;
     for (const [name, obj] of activeLabels.entries()) {
-        const dist = Math.sqrt(Math.pow(obj.sprite.position.x - currentX, 2) + Math.pow(obj.sprite.position.z - currentZ, 2));
-        if (dist > 40000) {
+        const dx = obj.sprite.position.x - currentX;
+        const dz = obj.sprite.position.z - currentZ;
+        if (dx*dx + dz*dz > 1600000000) { // 40km^2
             state.scene.remove(obj.sprite);
             state.scene.remove(obj.line);
             activeLabels.delete(name);
         }
     }
 
-    // 2. Chargement des nouveaux labels
     fetchNearbyPeaks(camLat || state.TARGET_LAT, camLon || state.TARGET_LON).then(peaks => {
         peaks.forEach(p => {
             if (!activeLabels.has(p.name)) {
@@ -70,7 +92,6 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
                 const lineMat = new THREE.LineBasicMaterial({ color: 0xd4af37, transparent: true, opacity: 0.5 });
                 const line = new THREE.Line(lineGeo, lineMat);
                 state.scene.add(line);
-
                 activeLabels.set(p.name, { sprite, line });
             }
         });
@@ -170,6 +191,7 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         mesh.castShadow = mesh.receiveShadow = true;
         state.scene.add(mesh);
         tileObj.status = 'loaded'; tileObj.mesh = mesh;
+        if (document.getElementById('bgo')) document.getElementById('bgo').textContent = "Recharger le relief";
     } catch (e) {
         if (activeTiles.get(key) === tileObj) tileObj.status = 'failed';
     }
