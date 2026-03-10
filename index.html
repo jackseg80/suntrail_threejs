@@ -85,7 +85,7 @@
         </div>
     </div>
 
-    <!-- SECTION PERFORMANCE (REPLIABLE) -->
+    <!-- SECTION PERFORMANCE (RÉTABLIE) -->
     <div class="control-group" style="border-top: 1px solid var(--border); padding-top: 1rem;">
         <div class="collapsible-header" id="perf-header">
             <h3>⚙️ Paramètres Rendu</h3>
@@ -94,16 +94,6 @@
         
         <div class="collapsible-content collapsed" id="perf-content">
             <div style="margin-top: 1rem; margin-bottom: 0.8rem;">
-                <label style="font-size: 0.75rem; color: var(--t2);">Détail Carte (Zoom) : <span id="zoom-disp">13</span></label>
-                <input type="range" id="zoom-slider" min="12" max="15" step="1" value="13">
-            </div>
-
-            <div style="margin-bottom: 0.8rem;">
-                <label style="font-size: 0.75rem; color: var(--t2);">Densité maillage : <span id="res-disp">128</span></label>
-                <input type="range" id="res-slider" min="32" max="256" step="32" value="128">
-            </div>
-
-            <div style="margin-bottom: 0.8rem;">
                 <label style="font-size: 0.75rem; color: var(--t2);">Densité maillage : <span id="res-disp">128</span></label>
                 <input type="range" id="res-slider" min="32" max="256" step="32" value="128">
             </div>
@@ -126,10 +116,10 @@
             <div style="margin-bottom: 1rem;">
                 <label style="font-size: 0.7rem; color: var(--t2);">Fond de carte (Topo)</label>
                 <select id="map-source-select" style="width:100%; font-size:0.75rem;">
+                    <option value="opentopomap" selected>OpenTopoMap (Monde)</option>
                     <option value="swisstopo">Swisstopo (Suisse)</option>
-                    <option value="opentopomap">OpenTopoMap (Monde)</option>
                     <option value="maptiler-topo">MapTiler Topo</option>
-                    <option value="outdoor-v2" selected>MapTiler Outdoor</option>
+                    <option value="outdoor-v2">MapTiler Outdoor</option>
                 </select>
             </div>
 
