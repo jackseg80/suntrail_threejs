@@ -10,7 +10,6 @@ export function updateSunPosition(minutes) {
     
     document.getElementById('time-disp').textContent = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
     
-    // Utilisation de la date de simulation choisie
     const date = new Date(state.simDate);
     date.setHours(hours, mins, 0, 0);
     
@@ -23,7 +22,6 @@ export function updateSunPosition(minutes) {
     document.getElementById('az-disp').textContent = ((pos.azimuth * 180 / Math.PI) + 180).toFixed(1);
     document.getElementById('alt-disp').textContent = altDeg.toFixed(1);
 
-    // --- MISE À JOUR ÉPHÉMÉRIDES UI ---
     const times = SunCalc.getTimes(date, state.TARGET_LAT, state.TARGET_LON);
     const fmt = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     document.getElementById('sunrise-disp').textContent = fmt(times.sunrise);
@@ -41,34 +39,32 @@ export function updateSunPosition(minutes) {
     else phase = "Dernier Croissant";
     document.getElementById('moon-phase-disp').textContent = `${phase} (${(moonIllum.fraction * 100).toFixed(0)}%)`;
     
-    // --- CALCUL DE LA POSITION FINALE (Soleil ou Lune) ---
+    // --- POSITION FINALE ---
     let finalPhi = pos.altitude;
     let finalAz = pos.azimuth;
     let sunIntensity = 0;
     let sunColor = new THREE.Color(0xffffff);
-    let ambientIntensity = 0.4;
+    let ambientIntensity = 0.3;
 
-    if (altDeg > 2) {
+    if (altDeg > 1) {
         // Jour
-        sunIntensity = Math.min(6.0, Math.sin(pos.altitude) * 10);
-        sunColor.set(0xffffff);
-        ambientIntensity = 0.2 + (Math.sin(pos.altitude) * 0.3);
+        sunIntensity = Math.min(6.0, Math.sin(pos.altitude) * 12);
+        ambientIntensity = 0.2 + (Math.sin(pos.altitude) * 0.4);
     } else if (altDeg > -12) {
-        // Crépuscule
-        const t = (altDeg + 12) / 14; 
-        sunIntensity = 0.2 + (t * 5.8);
+        // Crépuscule : Le ciel s'éteint progressivement
+        const t = (altDeg + 12) / 13; 
+        sunIntensity = t * 6.0;
         sunColor.lerpColors(new THREE.Color(0x9999ff), new THREE.Color(0xffaa44), t);
         ambientIntensity = 0.05 + (t * 0.15);
     } else {
-        // Nuit (Lune)
-        finalPhi = moonPos.altitude > 0 ? moonPos.altitude : Math.PI/8;
+        // Nuit Noire : On passe sur la lune
+        finalPhi = moonPos.altitude > 0 ? moonPos.altitude : -Math.PI/4;
         finalAz = moonPos.azimuth;
-        sunIntensity = 0.1 + (moonIllum.fraction * 0.4);
+        sunIntensity = 0.1 + (moonIllum.fraction * 0.5);
         sunColor.set(0x9999ff);
         ambientIntensity = 0.05 + (moonIllum.fraction * 0.05);
     }
 
-    // --- APPLICATION AU MOTEUR ---
     const distance = 400000;
     const sunVector = new THREE.Vector3();
     sunVector.x = distance * Math.cos(finalPhi) * -Math.sin(finalAz);
@@ -78,21 +74,24 @@ export function updateSunPosition(minutes) {
     state.sunLight.position.copy(sunVector);
     state.sunLight.intensity = sunIntensity;
     state.sunLight.color.copy(sunColor);
+    if (state.ambientLight) state.ambientLight.intensity = ambientIntensity;
 
-    if (state.ambientLight) {
-        state.ambientLight.intensity = ambientIntensity;
-    }
-
-    // Mise à jour du Ciel
+    // --- CORRECTION DU CIEL ---
     if (state.sky) {
-        state.sky.material.uniforms['sunPosition'].value.copy(sunVector);
+        const uniforms = state.sky.material.uniforms;
+        uniforms['sunPosition'].value.copy(sunVector);
+        
+        // On réduit la diffusion la nuit pour éviter le ciel blanc
+        const dayFactor = Math.max(0, Math.min(1, (altDeg + 5) / 10));
+        uniforms['turbidity'].value = 1 + (dayFactor * 9);
+        uniforms['rayleigh'].value = 0.2 + (dayFactor * 2.8);
+        uniforms['mieCoefficient'].value = 0.005;
     }
 
-    // Mise à jour du Brouillard (couleur ciel)
     if (state.scene.fog) {
         const fogColor = new THREE.Color();
         if (altDeg > 0) {
-            fogColor.setHSL(0.6, 0.4, 0.4 + (Math.sin(pos.altitude) * 0.4));
+            fogColor.setHSL(0.6, 0.4, 0.3 + (Math.sin(pos.altitude) * 0.5));
         } else {
             fogColor.setHSL(0.6, 0.8, 0.05);
         }
