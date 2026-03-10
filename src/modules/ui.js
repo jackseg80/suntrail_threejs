@@ -212,7 +212,7 @@ async function handleGPX(xml) {
     const startPt = points[0];
     state.TARGET_LAT = startPt.lat;
     state.TARGET_LON = startPt.lon;
-    state.originTile = lngLatToTile(startPt.lon, startPt.lat, state.ZOOM);
+    state.originTile = lngLatToTile(startPt.lon, startPt.lat, 13); // TOUJOURS Z13
     
     const threePoints = points.map(p => {
         const pos = lngLatToWorld(p.lon, p.lat);
@@ -279,7 +279,7 @@ function initGeocoding() {
                         state.TARGET_LAT = lat;
                         state.TARGET_LON = lng;
                         if (state.controls) {
-                            state.originTile = lngLatToTile(lng, lat, state.ZOOM);
+                            state.originTile = lngLatToTile(lng, lat, 13); // TOUJOURS Z13
                             state.controls.target.set(0, 0, 0);
                             state.camera.position.set(0, 8000, 12000);
                             state.controls.update();
