@@ -189,11 +189,9 @@ function initCollapsibles() {
 
 async function refreshTerrain() {
     clearLabels();
-    for (const [key, tileObj] of activeTiles.entries()) {
-        if (tileObj && tileObj.mesh) {
-            state.scene.remove(tileObj.mesh);
-            tileObj.mesh.geometry.dispose();
-            tileObj.mesh.material.dispose();
+    for (const [key, tile] of activeTiles.entries()) {
+        if (tile) {
+            tile.dispose();
         }
     }
     activeTiles.clear();
