@@ -6,32 +6,39 @@ const EARTH_CIRCUMFERENCE = 40075016.68;
 export const activeTiles = new Map(); 
 export const activeLabels = new Map(); 
 
-const BASE_ZOOM = 13; // La grille de référence immuable
+const BASE_ZOOM = 13; 
 const TILE_SIZE_BASE = EARTH_CIRCUMFERENCE / Math.pow(2, BASE_ZOOM);
 
-// --- FONCTIONS DE PROJECTION (v2.0.0) ---
+// --- MERCATOR MATH (FIXED NW ANCHOR) ---
 
 export function lngLatToTile(lon, lat, zoom) {
-    const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
-    const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
-    return { x, y, z: zoom };
+    const x = (lon + 180) / 360 * Math.pow(2, zoom);
+    const y = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom);
+    return { x: Math.floor(x), y: Math.floor(y), z: zoom };
 }
 
+// Position 3D (X, Z) relative to the NW corner of state.originTile (Z13)
 export function lngLatToWorld(lon, lat) {
-    const xf = (lon + 180) / 360 * Math.pow(2, BASE_ZOOM);
-    const yf = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, BASE_ZOOM);
+    const scale = Math.pow(2, BASE_ZOOM);
+    const x = (lon + 180) / 360 * scale;
+    const y = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * scale;
+    
+    // Position relative to NW of originTile
     return {
-        x: (xf - (state.originTile.x + 0.5)) * TILE_SIZE_BASE,
-        z: (yf - (state.originTile.y + 0.5)) * TILE_SIZE_BASE
+        x: (x - state.originTile.x) * TILE_SIZE_BASE,
+        z: (y - state.originTile.y) * TILE_SIZE_BASE
     };
 }
 
 export function worldToLngLat(worldX, worldZ) {
-    const xf = (worldX / TILE_SIZE_BASE) + (state.originTile.x + 0.5);
-    const yf = (worldZ / TILE_SIZE_BASE) + (state.originTile.y + 0.5);
-    const lon = xf / Math.pow(2, BASE_ZOOM) * 360 - 180;
-    const n = Math.PI - 2 * Math.PI * yf / Math.pow(2, BASE_ZOOM);
-    return { lat: 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))), lon };
+    const scale = Math.pow(2, BASE_ZOOM);
+    const x = (worldX / TILE_SIZE_BASE) + state.originTile.x;
+    const y = (worldZ / TILE_SIZE_BASE) + state.originTile.y;
+    
+    const lon = x / scale * 360 - 180;
+    const n = Math.PI - 2 * Math.PI * y / scale;
+    const lat = 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+    return { lat, lon };
 }
 
 export function clearLabels() {
@@ -43,13 +50,12 @@ export function clearLabels() {
     activeLabels.clear();
 }
 
-// --- LOGIQUE LOD (SECTEURS) ---
+// --- TERRAIN ENGINE ---
 
 export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
     if (!state.mapCenter) state.mapCenter = { lat: state.TARGET_LAT, lon: state.TARGET_LON };
     
-    // 1. Déterminer les secteurs Z13 visibles autour de la caméra
-    const centerSector = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, BASE_ZOOM);
+    const centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, BASE_ZOOM);
     const range = state.RANGE;
     const neededTiles = new Set();
 
@@ -58,20 +64,18 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
 
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
-            const sx = centerSector.x + dx;
-            const sy = centerSector.y + dy;
+            const sx = centerTile.x + dx;
+            const sy = centerTile.y + dy;
             
-            // Position du centre du secteur en 3D
-            const sectorPosX = (sx - state.originTile.x) * TILE_SIZE_BASE;
-            const sectorPosZ = (sy - state.originTile.y) * TILE_SIZE_BASE;
+            // Sector center in world space
+            const sectorX = (sx - state.originTile.x + 0.5) * TILE_SIZE_BASE;
+            const sectorZ = (sy - state.originTile.y + 0.5) * TILE_SIZE_BASE;
             
-            // Distance à la caméra
-            const dist = Math.sqrt(Math.pow(sectorPosX - curX, 2) + Math.pow(sectorPosZ - curZ, 2));
+            const dist = Math.sqrt(Math.pow(sectorX - curX, 2) + Math.pow(sectorZ - curZ, 2));
             const trueDist = Math.sqrt(dist*dist + camAltitude*camAltitude);
 
-            // 2. Décider du niveau de subdivision
-            if (trueDist < 6000) {
-                // Subdivision en 16 (Zoom 15)
+            // LOD Decision
+            if (trueDist < 5000) {
                 for (let i = 0; i < 4; i++) {
                     for (let j = 0; j < 4; j++) {
                         const tx = sx * 4 + i, ty = sy * 4 + j;
@@ -80,8 +84,7 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
                         if (!activeTiles.has(key)) loadTile(tx, ty, 15, key);
                     }
                 }
-            } else if (trueDist < 12000) {
-                // Subdivision en 4 (Zoom 14)
+            } else if (trueDist < 10000) {
                 for (let i = 0; i < 2; i++) {
                     for (let j = 0; j < 2; j++) {
                         const tx = sx * 2 + i, ty = sy * 2 + j;
@@ -91,7 +94,6 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
                     }
                 }
             } else {
-                // Pas de subdivision (Zoom 13)
                 const key = `tile_13_${sx}_${sy}`;
                 neededTiles.add(key);
                 if (!activeTiles.has(key)) loadTile(sx, sy, 13, key);
@@ -99,7 +101,6 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
         }
     }
 
-    // 3. Nettoyage des tuiles obsolètes
     for (const [key, tileObj] of activeTiles.entries()) {
         if (!neededTiles.has(key)) {
             if (tileObj.mesh) {
@@ -111,7 +112,6 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
             activeTiles.delete(key);
         }
     }
-
     updateLabels(camLat, camLon, worldX, worldZ);
 }
 
@@ -120,12 +120,13 @@ async function loadTile(tx, ty, zoom, key) {
     activeTiles.set(key, tileObj);
 
     try {
-        const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
+        const numTiles = Math.pow(2, zoom);
+        const tileSizeMeters = EARTH_CIRCUMFERENCE / numTiles;
         
-        // --- POSITIONNEMENT RELATIF v2.0.0 ---
+        // PERFECT GRID POSITIONING (Relative to NW origin)
         const scale = Math.pow(2, zoom - BASE_ZOOM);
-        const worldX = (tx / scale - (state.originTile.x + 0.5)) * TILE_SIZE_BASE;
-        const worldZ = (ty / scale - (state.originTile.y + 0.5)) * TILE_SIZE_BASE;
+        const worldX = (tx / scale - state.originTile.x) * TILE_SIZE_BASE;
+        const worldZ = (ty / scale - state.originTile.y) * TILE_SIZE_BASE;
 
         const elevZoom = Math.min(zoom, 14);
         let eTx = tx, eTy = ty;
@@ -151,8 +152,8 @@ async function loadTile(tx, ty, zoom, key) {
 
         const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256;
         const ctx = canvas.getContext('2d'); ctx.drawImage(imgElev, 0, 0);
-        const data = ctx.getImageData(0, 0, 256, 256).data;
         const heights = new Float32Array(256 * 256);
+        const data = ctx.getImageData(0, 0, 256, 256).data;
         for (let i = 0; i < data.length; i += 4) {
             heights[i/4] = -10000 + ((data[i] * 65536 + data[i+1] * 256 + data[i+2]) * 0.1);
         }
@@ -162,16 +163,16 @@ async function loadTile(tx, ty, zoom, key) {
         const vertices = geometry.attributes.position.array;
         const uvs = geometry.attributes.uv.array;
 
-        // --- INVERSION UV v2.0.0 ---
-        for (let i = 1; i < uvs.length; i += 2) uvs[i] = 1.0 - uvs[i];
+        // Sample elevation based on zoom offset
+        const offX = (zoom === 15) ? (tx % 2) * 128 : 0;
+        const offY = (zoom === 15) ? (ty % 2) * 128 : 0;
+        const step = (zoom === 15) ? 0.5 : 1.0;
 
         for (let i = 0; i < vertices.length / 3; i++) {
-            const u = uvs[i * 2], v = uvs[i * 2 + 1]; 
-            let px = u * 255, py = v * 255;
-            if (zoom === 15) {
-                px = (tx % 2 === 0 ? u * 127.5 : 128 + u * 127.5);
-                py = (ty % 2 === 0 ? v * 127.5 : 128 + v * 127.5);
-            }
+            const u = uvs[i * 2], v = uvs[i * 2 + 1];
+            // Standard UV logic (v=1 is North)
+            const px = offX + (u * 255 * step);
+            const py = offY + ((1.0 - v) * 255 * step);
             const x0 = Math.floor(px), y0 = Math.floor(py), x1 = Math.min(255, x0+1), y1 = Math.min(255, y0+1);
             const wx = px - x0, wy = py - y0;
             const h = heights[y0*256+x0]*(1-wx)*(1-wy) + heights[y0*256+x1]*wx*(1-wy) + heights[y1*256+x0]*(1-wx)*wy + heights[y1*256+x1]*wx*wy;
@@ -180,9 +181,11 @@ async function loadTile(tx, ty, zoom, key) {
 
         geometry.computeVertexNormals();
         const texture = new THREE.CanvasTexture(imgColor);
-        texture.colorSpace = THREE.SRGBColorSpace; texture.flipY = false; 
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.flipY = true; // STANDARD THREE.JS
         
         const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ map: texture, roughness: 0.8, metalness: 0.1 }));     
+        // NW positioning: Center the mesh by adding half its size to its NW corner
         mesh.position.set(worldX + tileSizeMeters/2, 0, worldZ + tileSizeMeters/2);
         mesh.castShadow = mesh.receiveShadow = true;
         state.scene.add(mesh);

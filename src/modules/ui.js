@@ -193,6 +193,7 @@ async function refreshTerrain() {
         if (tileObj && tileObj.mesh) {
             state.scene.remove(tileObj.mesh);
             tileObj.mesh.geometry.dispose();
+            if (tileObj.mesh.material.map) tileObj.mesh.material.map.dispose();
             tileObj.mesh.material.dispose();
         }
     }
@@ -208,11 +209,13 @@ async function handleGPX(xml) {
     const points = track.points;
     if (state.gpxMesh) state.scene.remove(state.gpxMesh);
     
-    // RE-CENTRAGE DU MONDE SUR LE GPX
+    // VERROUILLAGE DE L'ORIGINE MONDE SUR LE DÉBUT DU GPX
     const startPt = points[0];
     state.TARGET_LAT = startPt.lat;
     state.TARGET_LON = startPt.lon;
-    state.originTile = lngLatToTile(startPt.lon, startPt.lat, state.ZOOM);
+    state.initialLat = startPt.lat;
+    state.initialLon = startPt.lon;
+    state.originTile = lngLatToTile(startPt.lon, startPt.lat, 13);
     
     const threePoints = points.map(p => {
         const pos = lngLatToWorld(p.lon, p.lat);
@@ -278,8 +281,10 @@ function initGeocoding() {
                         geoInput.value = name;
                         state.TARGET_LAT = lat;
                         state.TARGET_LON = lng;
+                        state.initialLat = lat;
+                        state.initialLon = lng;
                         if (state.controls) {
-                            state.originTile = lngLatToTile(lng, lat, state.ZOOM);
+                            state.originTile = lngLatToTile(lng, lat, 13);
                             state.controls.target.set(0, 0, 0);
                             state.camera.position.set(0, 8000, 12000);
                             state.controls.update();
