@@ -6,32 +6,10 @@ const EARTH_CIRCUMFERENCE = 40075016.68;
 export const activeTiles = new Map(); 
 export const activeLabels = new Map(); 
 
-// --- MATHÉMATIQUES MERCATOR ABSOLUES ---
+const REF_ZOOM = 13;
+const TILE_SIZE_REF = EARTH_CIRCUMFERENCE / Math.pow(2, REF_ZOOM);
 
-// Convertit Lon/Lat en Mètres Web Mercator (EPSG:3857)
-export function lngLatToMeters(lon, lat) {
-    const x = lon * EARTH_CIRCUMFERENCE / 360;
-    const y = Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180);
-    const ym = y * EARTH_CIRCUMFERENCE / 360;
-    return { x, y: ym };
-}
-
-// Position 3D dans Three.js par rapport à l'Ancre du Monde
-export function lngLatToWorld(lon, lat) {
-    const meters = lngLatToMeters(lon, lat);
-    return {
-        x: meters.x - state.worldOrigin.x,
-        z: -(meters.y - state.worldOrigin.y) // Inversion Y car en 3D Z positif est vers le Sud
-    };
-}
-
-export function worldToLngLat(worldX, worldZ) {
-    const mx = worldX + state.worldOrigin.x;
-    const my = -worldZ + state.worldOrigin.y;
-    const lon = mx * 360 / EARTH_CIRCUMFERENCE;
-    const lat = 360 / Math.PI * Math.atan(Math.exp(my * (Math.PI / 180) * 360 / EARTH_CIRCUMFERENCE)) - 90;
-    return { lat, lon };
-}
+// --- CONVERSIONS (LOGIQUE v2.0.0) ---
 
 export function lngLatToTile(lon, lat, zoom) {
     const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
@@ -39,11 +17,32 @@ export function lngLatToTile(lon, lat, zoom) {
     return { x, y, z: zoom };
 }
 
+export function lngLatToWorld(lon, lat) {
+    const xfrac = (lon + 180) / 360 * Math.pow(2, REF_ZOOM);
+    const yfrac = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, REF_ZOOM);
+    return {
+        x: (xfrac - (state.originTile.x + 0.5)) * TILE_SIZE_REF,
+        z: (yfrac - (state.originTile.y + 0.5)) * TILE_SIZE_REF
+    };
+}
+
+export function worldToLngLat(worldX, worldZ) {
+    const xfrac = (worldX / TILE_SIZE_REF) + (state.originTile.x + 0.5);
+    const yfrac = (worldZ / TILE_SIZE_REF) + (state.originTile.y + 0.5);
+    const lon = xfrac / Math.pow(2, REF_ZOOM) * 360 - 180;
+    const n = Math.PI - 2 * Math.PI * yfrac / Math.pow(2, REF_ZOOM);
+    const lat = 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+    return { lat, lon };
+}
+
 export function clearLabels() {
     for (const [name, obj] of activeLabels.entries()) {
-        state.scene.remove(obj.sprite); state.scene.remove(obj.line);
+        state.scene.remove(obj.sprite);
+        state.scene.remove(obj.line);
         if (obj.sprite.material.map) obj.sprite.material.map.dispose();
-        obj.sprite.material.dispose(); obj.line.geometry.dispose(); obj.line.material.dispose();
+        obj.sprite.material.dispose();
+        obj.line.geometry.dispose();
+        obj.line.material.dispose();
     }
     activeLabels.clear();
 }
@@ -53,12 +52,7 @@ export function clearLabels() {
 export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
     if (!state.mapCenter) state.mapCenter = { lat: state.TARGET_LAT, lon: state.TARGET_LON };
     
-    // Initialisation de l'ancre si vide
-    if (state.worldOrigin.x === 0) {
-        state.worldOrigin = lngLatToMeters(state.TARGET_LON, state.TARGET_LAT);
-    }
-
-    const zoom = state.ZOOM;
+    const zoom = state.ZOOM; 
     const centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, zoom);
     
     updateLabels(camLat, camLon, worldX, worldZ);
@@ -75,11 +69,13 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
             if (!activeTiles.has(key)) loadSingleTile(tx, ty, zoom, key);
         }
     }
+
     for (const [key, tileObj] of activeTiles.entries()) {
         if (!neededKeys.has(key)) {
-            if (tileObj && tileObj.mesh) {
+            if (tileObj.mesh) {
                 state.scene.remove(tileObj.mesh);
                 tileObj.mesh.geometry.dispose();
+                if (tileObj.mesh.material.map) tileObj.mesh.material.map.dispose();
                 tileObj.mesh.material.dispose();
             }
             activeTiles.delete(key);
@@ -87,39 +83,36 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
     }
 }
 
-async function loadSingleTile(tx, ty, zoom, key) {
+async function loadTile(tx, ty, zoom, key) {
     const tileObj = { status: 'loading', mesh: null };
     activeTiles.set(key, tileObj);
-    try {
-        const numTiles = Math.pow(2, zoom);
-        const tileSizeProj = EARTH_CIRCUMFERENCE / numTiles;
-        
-        // Position NW de la tuile en mètres Mercator absolus
-        const mxNW = (tx / numTiles) * EARTH_CIRCUMFERENCE - (EARTH_CIRCUMFERENCE / 2);
-        const myNW = (EARTH_CIRCUMFERENCE / 2) - (ty / numTiles) * EARTH_CIRCUMFERENCE;
 
-        // Position relative par rapport à l'ancre du monde
-        const worldX = mxNW - state.worldOrigin.x;
-        const worldZ = -(myNW - state.worldOrigin.y);
+    try {
+        const scale = Math.pow(2, zoom - REF_ZOOM);
+        const tileSizeMeters = TILE_SIZE_REF / scale;
+        
+        // Position relative par rapport à la tuile d'origine Z13 (Logique v2.0.0)
+        const dx = (tx / scale - state.originTile.x) * TILE_SIZE_REF;
+        const dz = (ty / scale - state.originTile.y) * TILE_SIZE_REF;
 
         const elevZoom = Math.min(zoom, 14);
         let eTx = tx, eTy = ty;
         if (zoom === 15) { eTx = Math.floor(tx/2); eTy = Math.floor(ty/2); }
-
+        
         const opts = { colorSpaceConversion: 'none', premultiplyAlpha: 'none' };
         const pElev = fetch(`https://api.maptiler.com/tiles/terrain-rgb-v2/${elevZoom}/${eTx}/${eTy}.png?key=${state.MK}`).then(r => r.blob()).then(b => createImageBitmap(b, opts));
 
-        let urlColor = "";
+        let urlMap = "";
         if (!state.SHOW_TRAILS) {
-            urlColor = `https://api.maptiler.com/maps/satellite/256/${zoom}/${tx}/${ty}@2x.jpg?key=${state.MK}`;
+            urlMap = `https://api.maptiler.com/maps/satellite/256/${zoom}/${tx}/${ty}@2x.jpg?key=${state.MK}`;
         } else {
             switch(state.MAP_SOURCE) {
-                case 'swisstopo': urlColor = `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${zoom}/${tx}/${ty}.jpeg`; break;
-                case 'opentopomap': urlColor = `https://a.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`; break;
-                default: urlColor = `https://api.maptiler.com/maps/outdoor-v2/256/${zoom}/${tx}/${ty}@2x.png?key=${state.MK}`;
+                case 'swisstopo': urlMap = `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${zoom}/${tx}/${ty}.jpeg`; break;
+                case 'opentopomap': urlMap = `https://a.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`; break;
+                default: urlMap = `https://api.maptiler.com/maps/outdoor-v2/256/${zoom}/${tx}/${ty}@2x.png?key=${state.MK}`;
             }
         }
-        const pColor = fetch(urlColor).then(r => r.ok ? r.blob() : Promise.reject('404')).then(b => createImageBitmap(b));
+        const pColor = fetch(urlMap).then(r => r.ok ? r.blob() : Promise.reject('404')).then(b => createImageBitmap(b));
         const [imgElev, imgColor] = await Promise.all([pElev, pColor]);
 
         if (activeTiles.get(key) !== tileObj) return;
@@ -132,21 +125,21 @@ async function loadSingleTile(tx, ty, zoom, key) {
             heights[i/4] = -10000 + ((data[i] * 65536 + data[i+1] * 256 + data[i+2]) * 0.1);
         }
 
-        const geometry = new THREE.PlaneGeometry(tileSizeProj, tileSizeProj, state.RESOLUTION, state.RESOLUTION);
+        const geometry = new THREE.PlaneGeometry(tileSizeMeters, tileSizeMeters, state.RESOLUTION, state.RESOLUTION);
         geometry.rotateX(-Math.PI / 2);
         const vertices = geometry.attributes.position.array;
         const uvs = geometry.attributes.uv.array;
 
-        // OFFSET POUR ZOOM 15
-        const offX = (zoom === 15) ? (tx % 2) * 128 : 0;
-        const offY = (zoom === 15) ? (ty % 2) * 128 : 0;
-        const step = (zoom === 15) ? 0.5 : 1.0;
+        // INVERSION UV v2.0.0 (Indispensable pour texte à l'endroit)
+        for (let i = 1; i < uvs.length; i += 2) uvs[i] = 1.0 - uvs[i];
 
         for (let i = 0; i < vertices.length / 3; i++) {
-            const u = uvs[i * 2], v = uvs[i * 2 + 1];
-            // Avec flipY = true (Three.js standard), v=1 est le Nord (NW)
-            const px = offX + (u * 255 * step);
-            const py = offY + ((1.0 - v) * 255 * step);
+            const u = uvs[i * 2], v = uvs[i * 2 + 1]; // v=0 est le Nord
+            let px = u * 255, py = v * 255;
+            if (zoom === 15) {
+                px = (tx % 2 === 0 ? u * 127.5 : 128 + u * 127.5);
+                py = (ty % 2 === 0 ? v * 127.5 : 128 + v * 127.5);
+            }
             const x0 = Math.floor(px), y0 = Math.floor(py), x1 = Math.min(255, x0+1), y1 = Math.min(255, y0+1);
             const wx = px - x0, wy = py - y0;
             const h = heights[y0*256+x0]*(1-wx)*(1-wy) + heights[y0*256+x1]*wx*(1-wy) + heights[y1*256+x0]*(1-wx)*wy + heights[y1*256+x1]*wx*wy;
@@ -154,15 +147,15 @@ async function loadSingleTile(tx, ty, zoom, key) {
         }
 
         geometry.computeVertexNormals();
-        const colorTex = new THREE.CanvasTexture(imgColor);
-        colorTex.colorSpace = THREE.SRGBColorSpace;
-        colorTex.flipY = true; 
-        const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ map: colorTex, roughness: 0.8, metalness: 0.1 }));     
-        // NW + half car PlaneGeometry est centré
-        mesh.position.set(worldX + tileSizeProj/2, 0, worldZ + tileSizeProj/2);
+        const texture = new THREE.CanvasTexture(imgColor);
+        texture.colorSpace = THREE.SRGBColorSpace; texture.flipY = false; 
+        
+        const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ map: texture, roughness: 0.8, metalness: 0.1 }));     
+        // Position relative par rapport au NW de la tuile d'origine
+        mesh.position.set(dx + tileSizeMeters/2 - TILE_SIZE_REF/2, 0, dz + tileSizeMeters/2 - TILE_SIZE_REF/2);
         mesh.castShadow = mesh.receiveShadow = true;
         state.scene.add(mesh);
-        tileObj.status = 'loaded'; tileObj.mesh = mesh;
+        tileObj.mesh = mesh; tileObj.status = 'loaded';
     } catch (e) { activeTiles.delete(key); }
 }
 
