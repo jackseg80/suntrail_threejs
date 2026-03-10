@@ -193,7 +193,7 @@ function initGeocoding() {
                         if (state.controls) {
                             state.originTile = lngLatToTile(lng, lat, state.ZOOM);
                             state.controls.target.set(0, 0, 0);
-                            state.camera.position.set(0, 3000, 8000);
+                            state.camera.position.set(0, 8000, 12000); // Plus haut
                             state.controls.update();
                         }
                         

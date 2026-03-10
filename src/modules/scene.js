@@ -28,7 +28,7 @@ export async function initScene() {
 
     // 3. Caméra et Contrôles "Type Carte" (MapControls)
     state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 100000);
-    state.camera.position.set(0, 5000, 5000); // Départ un peu plus haut
+    state.camera.position.set(0, 8000, 12000); // Vue plus haute et plus reculée au départ
 
     // MapControls inverse les boutons : Clic gauche = Déplacement (Pan), Clic droit = Rotation
     state.controls = new MapControls(state.camera, state.renderer.domElement);
