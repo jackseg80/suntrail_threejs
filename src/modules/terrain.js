@@ -104,12 +104,33 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         const data = ctx.getImageData(0, 0, 256, 256).data;
 
         const heights = new Float32Array(256 * 256);
-        let minH = Infinity;
+        let minH = 0;
+        let validCount = 0;
+        let sumH = 0;
+
         for (let i = 0; i < data.length; i += 4) {
-            // CORRECTION DE LA FAUTE DE FRAPPE ICI (data[i+2] au lieu de data[data[i+2]])
-            const h = -10000 + ((data[i] * 65536 + data[i+1] * 256 + data[i+2]) * 0.1);
+            const r = data[i];
+            const g = data[i+1];
+            const b = data[i+2];
+            const a = data[i+3];
+
+            // Formule MapTiler: -10000 + (R * 256 * 256 + G * 256 + B) * 0.1
+            let h = -10000 + ((r * 65536 + g * 256 + b) * 0.1);
+            
+            // Sécurité Brave/Fingerprinting : Si l'alpha est nul ou si la valeur est trop extrême, on marque comme invalide
+            if (a < 128 || h < -500 || h > 9000) {
+                h = -99999; 
+            } else {
+                sumH += h;
+                validCount++;
+            }
             heights[i/4] = h;
-            if (h < minH && h > -9000) minH = h;
+        }
+
+        const avgH = validCount > 0 ? sumH / validCount : 0;
+        // Remplissage des trous par la moyenne pour éviter les pics
+        for (let i = 0; i < heights.length; i++) {
+            if (heights[i] < -1000) heights[i] = avgH;
         }
 
         const colorTex = new THREE.CanvasTexture(imgColor);
