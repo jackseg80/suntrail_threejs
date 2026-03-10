@@ -92,7 +92,20 @@ export async function initScene() {
 
     window.addEventListener('resize', onWindowResize);
     state.renderer.setAnimationLoop(() => {
-        state.controls.update();
+        // SUIVI DE SENTIER (GPX)
+        if (state.isFollowingTrail && state.gpxPoints.length > 1) {
+            state.trailProgress += 0.0005; // Vitesse de parcours
+            if (state.trailProgress > 1) state.trailProgress = 0;
+            
+            const curve = new THREE.CatmullRomCurve3(state.gpxPoints);
+            const pos = curve.getPoint(state.trailProgress);
+            const lookAt = curve.getPoint(Math.min(1, state.trailProgress + 0.01));
+            
+            state.camera.position.set(pos.x, pos.y + 100, pos.z + 200);
+            state.camera.lookAt(lookAt.x, lookAt.y + 50, lookAt.z);
+        } else {
+            state.controls.update();
+        }
 
         // ANIMATION DU TEMPS
         if (state.isAnimating) {

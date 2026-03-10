@@ -6,6 +6,7 @@
     "build": "vite build"
   },
   "dependencies": {
+    "gpxparser": "^3.0.8",
     "suncalc": "^1.9.0",
     "three": "^0.160.0"
   },

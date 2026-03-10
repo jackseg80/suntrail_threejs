@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import gpxParser from 'gpxparser';
 import { state } from './state.js';
 import { updateSunPosition } from './sun.js';
 import { initScene } from './scene.js';
@@ -11,6 +12,30 @@ export function initUI() {
     document.getElementById('bgo').addEventListener('click', go);
     document.getElementById('k1').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
     
+    // --- GPX ---
+    const gpxBtn = document.getElementById('gpx-btn');
+    const gpxUpload = document.getElementById('gpx-upload');
+    const trailFollowToggle = document.getElementById('trail-follow-toggle');
+
+    gpxBtn.addEventListener('click', () => gpxUpload.click());
+    gpxUpload.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => handleGPX(event.target.result);
+        reader.readAsText(file);
+    });
+
+    trailFollowToggle.addEventListener('change', (e) => {
+        state.isFollowingTrail = e.target.checked;
+        if (state.isFollowingTrail && state.gpxPoints.length > 0) {
+            state.trailProgress = 0;
+            if (state.controls) state.controls.enabled = false;
+        } else {
+            if (state.controls) state.controls.enabled = true;
+        }
+    });
+
     // --- CALENDRIER ---
     const dateInput = document.getElementById('date-input');
     dateInput.valueAsDate = state.simDate;
@@ -191,6 +216,65 @@ async function refreshTerrain() {
     }
     activeTiles.clear();
     await updateVisibleTiles();
+}
+
+async function handleGPX(xml) {
+    const gpx = new gpxParser();
+    gpx.parse(xml);
+    
+    if (!gpx.tracks || !gpx.tracks.length) return;
+    
+    const track = gpx.tracks[0];
+    const points = track.points;
+    
+    // 1. Nettoyage de l'ancien tracé
+    if (state.gpxMesh) state.scene.remove(state.gpxMesh);
+    
+    // 2. Conversion des coordonnées en points 3D
+    // On se base sur le premier point pour recentrer le monde si nécessaire
+    const startPt = points[0];
+    state.TARGET_LAT = startPt.lat;
+    state.TARGET_LON = startPt.lon;
+    state.initialLat = startPt.lat;
+    state.initialLon = startPt.lon;
+    state.originTile = lngLatToTile(startPt.lon, startPt.lat, state.ZOOM);
+    
+    const threePoints = points.map(p => {
+        // Utilisation de la même logique de projection que les labels
+        const zoom = state.ZOOM;
+        const tileSizeMeters = 40075016.68 / Math.pow(2, zoom);
+        const x = (p.lon + 180) / 360 * Math.pow(2, zoom);
+        const y = (1 - Math.log(Math.tan(p.lat * Math.PI / 180) + 1 / Math.cos(p.lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom);
+        const worldX = (x - state.originTile.x) * tileSizeMeters;
+        const worldZ = (y - state.originTile.y) * tileSizeMeters;
+        
+        // On place le tracé un peu au dessus du sol (ou on utilise l'élévation du GPX)
+        const worldY = (p.ele || 0) * state.RELIEF_EXAGGERATION + 5; 
+        return new THREE.Vector3(worldX, worldY, worldZ);
+    });
+    
+    state.gpxPoints = threePoints;
+
+    // 3. Création du tracé 3D (Tube lumineux)
+    const curve = new THREE.CatmullRomCurve3(threePoints);
+    const geometry = new THREE.TubeGeometry(curve, threePoints.length, 10, 8, false);
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 });
+    state.gpxMesh = new THREE.Mesh(geometry, material);
+    state.scene.add(state.gpxMesh);
+
+    // 4. Mise à jour de l'UI
+    document.getElementById('trail-controls').style.display = 'block';
+    document.getElementById('gpx-dist').textContent = `${(track.distance.total / 1000).toFixed(1)} km`;
+    document.getElementById('gpx-elev').textContent = `+${Math.round(track.elevation.pos)}m / -${Math.round(track.elevation.neg)}m`;
+
+    // 5. Repositionnement
+    if (state.controls) {
+        state.controls.target.set(threePoints[0].x, threePoints[0].y, threePoints[0].z);
+        state.camera.position.set(threePoints[0].x, threePoints[0].y + 2000, threePoints[0].z + 4000);
+        state.controls.update();
+    }
+    
+    await refreshTerrain();
 }
 
 function go() {

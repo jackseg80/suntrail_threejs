@@ -19,6 +19,13 @@ export const state = {
     isAnimating: false,
     animationSpeed: 1, // Minutes par frame de simulation
     
+    // GPX & Parcours
+    gpxData: null,
+    gpxPoints: [], // Points THREE.Vector3 du tracé
+    gpxMesh: null,
+    isFollowingTrail: false,
+    trailProgress: 0, // 0 à 1
+    
     // Position initiale pour le repère 3D (évite les superpositions)
     initialLat: 45.8326,
     initialLon: 6.8652,
