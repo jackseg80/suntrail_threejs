@@ -21,7 +21,6 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
     }
 
     const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, state.ZOOM);
-    
     let centerTile;
     if (worldX !== undefined && worldZ !== undefined) {
         centerTile = {
@@ -38,7 +37,6 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
     
     const cleanBuffer = 1;
     const cleanRange = range + cleanBuffer;
-    
     const neededTiles = new Set();
     const keptTiles = new Set();
 
@@ -47,12 +45,9 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
             const tx = centerTile.x + dx;
             const ty = centerTile.y + dy;
             const key = `${tx}_${ty}_${state.ZOOM}`;
-            
             if (Math.abs(dx) <= range && Math.abs(dy) <= range) {
                 neededTiles.add(key);
-                if (!activeTiles.has(key)) {
-                    loadSingleTile(tx, ty, state.ZOOM, centerTile, key);
-                }
+                if (!activeTiles.has(key)) loadSingleTile(tx, ty, state.ZOOM, centerTile, key);
             }
             keptTiles.add(key);
         }
@@ -85,7 +80,6 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
             .then(b => createImageBitmap(b));
 
         const [imgElev, imgColor] = await Promise.all([pElev, pColor]);
-
         if (activeTiles.get(key) !== tileObj) return;
 
         const canvas = document.createElement('canvas');
@@ -96,45 +90,41 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         
         const heights = new Float32Array(256 * 256);
         const cleaned = new Float32Array(256 * 256);
-        let minH = Infinity;
+        let sumH = 0, countH = 0;
 
-        // 1. Décodage initial
+        // 1. Décodage avec filtrage des valeurs terrestres valides
         for (let i = 0; i < data.length; i += 4) {
             const r = data[i], g = data[i+1], b = data[i+2];
             let h = -10000 + ((r * 65536 + g * 256 + b) * 0.1);
-            if (h < -1000 || h > 9000) h = 0; 
+            
+            // On ignore le fond des océans (-10000) et les pics aberrants
+            if (h < -450 || h > 8900) h = NaN; 
+            else { sumH += h; countH++; }
             heights[i/4] = h;
         }
+        const fallbackH = countH > 0 ? sumH / countH : 0;
 
-        // 2. FILTRE ANTI-PICS ULTRA-ROBUSTE (Spatial)
+        // 2. Filtre Médian Local pour supprimer les "Pics de Red Channel"
         for (let y = 0; y < 256; y++) {
             for (let x = 0; x < 256; x++) {
                 const i = y * 256 + x;
-                const val = heights[i];
+                let val = heights[i];
                 
-                if (x > 0 && x < 255 && y > 0 && y < 255) {
-                    const n = heights[i - 256], s = heights[i + 256], w = heights[i - 1], e = heights[i + 1];
-                    const avgNeighbors = (n + s + w + e) / 4;
-
-                    // Si le point diverge de plus de 200m de ses voisins, c'est du bruit Brave
-                    if (Math.abs(val - avgNeighbors) > 200) {
-                        cleaned[i] = avgNeighbors;
-                    } else {
-                        cleaned[i] = val;
-                    }
-                } else {
-                    cleaned[i] = val;
+                if (isNaN(val)) {
+                    val = fallbackH;
+                } else if (x > 0 && x < 255 && y > 0 && y < 255) {
+                    const n = heights[i-256], s = heights[i+256], w = heights[i-1], e = heights[i+1];
+                    // Si un voisin est valide et que l'on diverge trop (> 300m), on lisse
+                    if (!isNaN(n) && Math.abs(val - n) > 300) val = n;
                 }
-                if (cleaned[i] < minH) minH = cleaned[i];
+                cleaned[i] = val;
             }
         }
-        if (minH === Infinity) minH = 0;
 
         const colorTex = new THREE.CanvasTexture(imgColor);
         colorTex.colorSpace = THREE.SRGBColorSpace;
         colorTex.flipY = false; 
         colorTex.wrapS = colorTex.wrapT = THREE.ClampToEdgeWrapping;
-        if (state.renderer) colorTex.anisotropy = state.renderer.capabilities.getMaxAnisotropy();
 
         const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
         const dx = (tx - state.originTile.x) * tileSizeMeters;
@@ -145,24 +135,17 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
 
         const vertices = geometry.attributes.position.array;
         const uvs = geometry.attributes.uv.array;
-        
-        for (let i = 1; i < uvs.length; i += 2) {
-            uvs[i] = 1.0 - uvs[i];
-        }
+        for (let i = 1; i < uvs.length; i += 2) uvs[i] = 1.0 - uvs[i];
 
-        // Fonction d'échantillonnage bilinéaire utilisant le tableau NETTOYÉ
         function getElevationBilinear(px, py) {
             const x0 = Math.max(0, Math.min(254, Math.floor(px)));
             const y0 = Math.max(0, Math.min(254, Math.floor(py)));
-            const x1 = x0 + 1;
-            const y1 = y0 + 1;
-            const wx = px - x0;
-            const wy = py - y0;
-            const h00 = cleaned[y0 * 256 + x0];
-            const h10 = cleaned[y0 * 256 + x1];
-            const h01 = cleaned[y1 * 256 + x0];
-            const h11 = cleaned[y1 * 256 + x1];
-            return h00 * (1 - wx) * (1 - wy) + h10 * wx * (1 - wy) + h01 * (1 - wx) * wy + h11 * wx * wy;
+            const x1 = x0 + 1, y1 = y0 + 1;
+            const wx = px - x0, wy = py - y0;
+            return cleaned[y0 * 256 + x0] * (1 - wx) * (1 - wy) +
+                   cleaned[y0 * 256 + x1] * wx * (1 - wy) +
+                   cleaned[y1 * 256 + x0] * (1 - wx) * wy +
+                   cleaned[y1 * 256 + x1] * wx * wy;
         }
 
         for (let i = 0; i < vertices.length / 3; i++) {
@@ -170,7 +153,8 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
             const h = getElevationBilinear(u * 255, v * 255);
             const vertexLat = tileToLat(ty + (1.0 - v), zoom);
             const vertexHeightScale = 1 / Math.cos(vertexLat * Math.PI / 180);
-            vertices[i * 3 + 1] = h * vertexHeightScale;
+            // SÉCURITÉ ULTIME : Clamp Y pour éviter les pics sous la carte
+            vertices[i * 3 + 1] = Math.max(-50, h * vertexHeightScale);
         }
         
         geometry.computeVertexNormals();
@@ -183,7 +167,6 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         state.scene.add(mesh);
         tileObj.status = 'loaded';
         tileObj.mesh = mesh;
-
         const btn = document.getElementById('bgo');
         if (btn) btn.textContent = "Recharger le relief";
 
