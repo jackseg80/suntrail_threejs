@@ -27,6 +27,26 @@ export function updateSunPosition(minutes) {
     
     document.getElementById('az-disp').textContent = ((az * 180 / Math.PI) + 180).toFixed(1);
     document.getElementById('alt-disp').textContent = altDeg.toFixed(1);
+
+    // --- MISE À JOUR ÉPHÉMÉRIDES UI ---
+    const times = SunCalc.getTimes(date, state.TARGET_LAT, state.TARGET_LON);
+    const moonIllum = SunCalc.getMoonIllumination(date);
+    
+    const fmt = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    document.getElementById('sunrise-disp').textContent = fmt(times.sunrise);
+    document.getElementById('sunset-disp').textContent = fmt(times.sunset);
+    
+    let phase = "Inconnue";
+    const p = moonIllum.phase;
+    if (p < 0.05 || p > 0.95) phase = "Nouvelle";
+    else if (p < 0.2) phase = "Premier Croissant";
+    else if (p < 0.3) phase = "Premier Quartier";
+    else if (p < 0.45) phase = "Gibbeuse Croissante";
+    else if (p < 0.55) phase = "Pleine";
+    else if (p < 0.7) phase = "Gibbeuse Décroissante";
+    else if (p < 0.8) phase = "Dernier Quartier";
+    else phase = "Dernier Croissant";
+    document.getElementById('moon-phase-disp').textContent = `${phase} (${(moonIllum.fraction * 100).toFixed(0)}%)`;
     
     // 1. Détermination de la source principale (Soleil ou Lune)
     let sunIntensity = 0;
@@ -37,12 +57,12 @@ export function updateSunPosition(minutes) {
     let finalAz = az;
 
     const colorDay = new THREE.Color(0x87CEEB);
-    const colorSunset = new THREE.Color(0xff5f00); // Orange plus profond
-    const colorNight = new THREE.Color(0x050510); // Retour au noir bleu profond
+    const colorSunset = new THREE.Color(0xff5f00); 
+    const colorNight = new THREE.Color(0x050510); 
     
     const sunColorDay = new THREE.Color(0xffffff);
-    const sunColorSunset = new THREE.Color(0xff7000); // Solaire rasant
-    const sunColorMoon = new THREE.Color(0x9999ff); // Lune plus bleutée
+    const sunColorSunset = new THREE.Color(0xff7000); 
+    const sunColorMoon = new THREE.Color(0x9999ff);
 
     if (altDeg > 5) {
         // Plein jour : Soleil
@@ -64,7 +84,7 @@ export function updateSunPosition(minutes) {
         }
 
         sunColor.lerpColors(sunColorMoon, sunColorDay, t);
-        ambientIntensity = 0.1 + (t * 0.4); // Baisse progressive de la clarté
+        ambientIntensity = 0.1 + (t * 0.4); 
         
         const targetMoonPhi = moonAltDeg > 0 ? moonAlt : Math.PI / 8;
         const targetMoonAz = moonAltDeg > 0 ? moonAz : az;
@@ -73,10 +93,10 @@ export function updateSunPosition(minutes) {
         finalAz = THREE.MathUtils.lerp(targetMoonAz, az, t);
     } else {
         // Nuit : Lune réelle
-        sunIntensity = 0.25; // Lune douce
+        sunIntensity = 0.05 + (moonIllum.fraction * 0.25); 
         skyColor.copy(colorNight);
         sunColor.copy(sunColorMoon);
-        ambientIntensity = 0.1; // Nuit vraiment sombre mais lisible
+        ambientIntensity = 0.05 + (moonIllum.fraction * 0.05); 
         
         if (moonAltDeg > 0) {
             finalPhi = moonAlt;
