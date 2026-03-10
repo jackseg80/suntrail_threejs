@@ -279,7 +279,7 @@ function initGeocoding() {
                         state.TARGET_LAT = lat;
                         state.TARGET_LON = lng;
                         if (state.controls) {
-                            state.originTile = lngLatToTile(lng, lat, state.ZOOM);
+                            state.originTile = lngLatToTile(lng, lat, 13);
                             state.controls.target.set(0, 0, 0);
                             state.camera.position.set(0, 8000, 12000);
                             state.controls.update();
