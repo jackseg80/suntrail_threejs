@@ -77,6 +77,7 @@ export function initUI() {
     });
 
     // --- CONTRÔLES DE PERFORMANCE ---
+    const zoomSlider = document.getElementById('zoom-slider');
     const resSlider = document.getElementById('res-slider');
     const rangeSlider = document.getElementById('range-slider');
     const exagSlider = document.getElementById('exag-slider');
@@ -88,6 +89,12 @@ export function initUI() {
     const mapSourceSelect = document.getElementById('map-source-select');
     const playBtn = document.getElementById('play-btn');
     const speedSelect = document.getElementById('speed-select');
+
+    zoomSlider.addEventListener('change', async (e) => {
+        state.ZOOM = parseInt(e.target.value);
+        document.getElementById('zoom-disp').textContent = state.ZOOM;
+        await refreshTerrain();
+    });
 
     mapSourceSelect.addEventListener('change', async (e) => {
         state.MAP_SOURCE = e.target.value;
@@ -161,7 +168,7 @@ export function initUI() {
         }
     });
 
-    [timeSlider, resSlider, rangeSlider, fogSlider].forEach(slider => {
+    [timeSlider, zoomSlider, resSlider, rangeSlider, fogSlider].forEach(slider => {
         ['mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend'].forEach(evt => {
             slider.addEventListener(evt, (e) => e.stopPropagation(), { passive: false });
         });
@@ -193,6 +200,7 @@ async function refreshTerrain() {
         if (tileObj && tileObj.mesh) {
             state.scene.remove(tileObj.mesh);
             tileObj.mesh.geometry.dispose();
+            if (tileObj.mesh.material.map) tileObj.mesh.material.map.dispose();
             tileObj.mesh.material.dispose();
         }
     }
@@ -208,11 +216,12 @@ async function handleGPX(xml) {
     const points = track.points;
     if (state.gpxMesh) state.scene.remove(state.gpxMesh);
     
-    // RE-CENTRAGE DU MONDE SUR LE GPX
     const startPt = points[0];
     state.TARGET_LAT = startPt.lat;
     state.TARGET_LON = startPt.lon;
-    state.originTile = lngLatToTile(startPt.lon, startPt.lat, state.ZOOM);
+    state.initialLat = startPt.lat;
+    state.initialLon = startPt.lon;
+    state.originTile = lngLatToTile(startPt.lon, startPt.lat, 13); // On garde Z13 comme référence monde
     
     const threePoints = points.map(p => {
         const pos = lngLatToWorld(p.lon, p.lat);
@@ -278,8 +287,10 @@ function initGeocoding() {
                         geoInput.value = name;
                         state.TARGET_LAT = lat;
                         state.TARGET_LON = lng;
+                        state.initialLat = lat;
+                        state.initialLon = lng;
                         if (state.controls) {
-                            state.originTile = lngLatToTile(lng, lat, state.ZOOM);
+                            state.originTile = lngLatToTile(lng, lat, 13);
                             state.controls.target.set(0, 0, 0);
                             state.camera.position.set(0, 8000, 12000);
                             state.controls.update();
