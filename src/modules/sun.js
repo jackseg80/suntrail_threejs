@@ -37,25 +37,25 @@ export function updateSunPosition(minutes) {
     let finalAz = az;
 
     const colorDay = new THREE.Color(0x87CEEB);
-    const colorSunset = new THREE.Color(0xff7b00);
-    const colorNight = new THREE.Color(0x0a0a25);
+    const colorSunset = new THREE.Color(0xff8c2e); // Orange plus lumineux
+    const colorNight = new THREE.Color(0x1a1a3a); // Nuit plus claire
     
     const sunColorDay = new THREE.Color(0xffffff);
-    const sunColorSunset = new THREE.Color(0xffa500);
+    const sunColorSunset = new THREE.Color(0xffb040); // Solaire plus chaud
     const sunColorMoon = new THREE.Color(0xccccff);
 
     if (altDeg > 5) {
         // Plein jour : Soleil
-        sunIntensity = Math.min(2.5, Math.sin(alt) * 3);
+        sunIntensity = Math.min(3.0, Math.sin(alt) * 3.5);
         skyColor.copy(colorDay);
         sunColor.copy(sunColorDay);
-        ambientIntensity = 0.5;
+        ambientIntensity = 0.6;
         finalPhi = alt;
         finalAz = az;
     } else if (altDeg > -12) {
         // Crépuscule : Transition Soleil -> Lune
         const t = (altDeg + 12) / 17; // 1 (jour) à 0 (nuit)
-        sunIntensity = 0.25 + (t * 2.25);
+        sunIntensity = 0.5 + (t * 2.5); // Boosté
         
         if (altDeg > 0) {
             skyColor.lerpColors(colorSunset, colorDay, altDeg / 5);
@@ -64,7 +64,7 @@ export function updateSunPosition(minutes) {
         }
 
         sunColor.lerpColors(sunColorMoon, sunColorDay, t);
-        ambientIntensity = 0.35 + (t * 0.15);
+        ambientIntensity = 0.45 + (t * 0.15); // Ambiante boostée
         
         // Transition de position (vers la Lune si elle est visible, sinon vers une position haute par défaut)
         const targetMoonPhi = moonAltDeg > 0 ? moonAlt : Math.PI / 7;
@@ -74,10 +74,10 @@ export function updateSunPosition(minutes) {
         finalAz = THREE.MathUtils.lerp(targetMoonAz, az, t);
     } else {
         // Nuit : Lune réelle (ou secours si pas de lune)
-        sunIntensity = 0.25;
+        sunIntensity = 0.5; // Lune bien visible
         skyColor.copy(colorNight);
         sunColor.copy(sunColorMoon);
-        ambientIntensity = 0.35;
+        ambientIntensity = 0.45; // Nuit claire
         
         if (moonAltDeg > 0) {
             finalPhi = moonAlt;
