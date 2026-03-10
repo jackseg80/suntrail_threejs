@@ -14,29 +14,44 @@ export function throttle(func, limit) {
     }
 }
 
-// Initialisé à null pour forcer la 1ère requête
 let lastSearchPos = null;
+let lastSearchTime = 0;
 
 export async function fetchNearbyPeaks(lat, lon) {
+    const now = Date.now();
+    // On ne cherche que toutes les 10 secondes minimum
+    if (now - lastSearchTime < 10000) return [];
+    
     if (lastSearchPos) {
         const dist = Math.sqrt(Math.pow(lat - lastSearchPos.lat, 2) + Math.pow(lon - lastSearchPos.lon, 2));
-        if (dist < 0.05) return []; // On attend d'avoir bougé de ~5km
+        if (dist < 0.1) return []; // ~10km minimum de déplacement
     }
+    
+    lastSearchTime = now;
     lastSearchPos = { lat, lon };
 
     try {
-        // Recherche de POI de type "mountain_peak" autour de la position
-        const url = `https://api.maptiler.com/geocoding/peak.json?key=${state.MK}&proximity=${lon},${lat}&limit=15`;
+        // Recherche ultra-simplifiée pour éviter l'erreur 400
+        // On cherche "mount" (très commun) avec proximité
+        const url = `https://api.maptiler.com/geocoding/mount.json?key=${state.MK}&proximity=${lon},${lat}`;
         
         const r = await fetch(url);
         if (!r.ok) return [];
         const data = await r.json();
         
-        return data.features.map(f => ({
-            name: f.text,
-            lat: f.center[1],
-            lon: f.center[0]
-        }));
+        if (!data.features) return [];
+
+        return data.features
+            .filter(f => {
+                const name = (f.text || '').toLowerCase();
+                // On exclut les trucs urbains pour ne garder que le relief
+                return !['rue', 'chemin', 'hotel', 'restau', 'parking'].some(k => name.includes(k));
+            })
+            .map(f => ({
+                name: f.text,
+                lat: f.center[1],
+                lon: f.center[0]
+            }));
     } catch (e) {
         return [];
     }
@@ -48,17 +63,14 @@ export function createLabelSprite(text) {
     canvas.width = 512;
     canvas.height = 128;
     
-    // Design ultra-visible (Bulle noire et or)
+    // Style "Pancarte de montagne"
     ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-    ctx.beginPath();
-    ctx.roundRect(10, 10, 492, 108, 54);
-    ctx.fill();
-    
+    ctx.fillRect(10, 20, 492, 80);
     ctx.strokeStyle = '#ffcc33';
-    ctx.lineWidth = 8;
-    ctx.stroke();
+    ctx.lineWidth = 6;
+    ctx.strokeRect(10, 20, 492, 80);
 
-    ctx.font = 'bold 42px Arial';
+    ctx.font = 'bold 38px Arial';
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.fillText(text.toUpperCase(), 256, 75);
@@ -67,12 +79,10 @@ export function createLabelSprite(text) {
     const spriteMaterial = new THREE.SpriteMaterial({ 
         map: texture, 
         transparent: true, 
-        depthTest: false, // Passe à travers les montagnes
+        depthTest: false,
         sizeAttenuation: true 
     });
     const sprite = new THREE.Sprite(spriteMaterial);
-    
-    // On agrandit massivement pour être sûr de les voir
-    sprite.scale.set(5000, 1250, 1);
+    sprite.scale.set(4000, 1000, 1);
     return sprite;
 }
