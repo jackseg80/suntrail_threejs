@@ -14,32 +14,29 @@ export function throttle(func, limit) {
     }
 }
 
-// BASE DE DONNÉES LOCALE DES SOMMETS (Fiabilité 100%)
 const PEAKS_DB = [
-    { name: "Mont Blanc", lat: 45.8326, lon: 6.8652 },
-    { name: "Aiguille du Midi", lat: 45.8794, lon: 6.8874 },
-    { name: "Mont Maudit", lat: 45.8486, lon: 6.8711 },
-    { name: "Mont Blanc du Tacul", lat: 45.8572, lon: 6.8861 },
-    { name: "Grandes Jorasses", lat: 45.8691, lon: 7.0031 },
-    { name: "Dent du Géant", lat: 45.8664, lon: 6.9533 },
-    { name: "Aiguille Verte", lat: 45.9364, lon: 6.9703 },
-    { name: "Les Drus", lat: 45.9333, lon: 6.9533 },
-    { name: "Aiguille de Bionnassay", lat: 45.8461, lon: 6.7858 },
-    { name: "Dôme du Goûter", lat: 45.8475, lon: 6.8447 },
-    { name: "Mont Tondu", lat: 45.7725, lon: 6.7486 },
-    { name: "Aiguille du Tour", lat: 45.9939, lon: 7.0061 },
-    { name: "Brévent", lat: 45.9336, lon: 6.8375 },
-    { name: "Flégère", lat: 45.9606, lon: 6.8858 },
-    { name: "Aiguilles Rouges", lat: 45.9858, lon: 6.8522 },
-    { name: "Grand Muveran", lat: 46.2372, lon: 7.1250 },
-    { name: "Matterhorn (Cervin)", lat: 45.9763, lon: 7.6586 },
-    { name: "Eiger", lat: 46.5775, lon: 8.0053 },
-    { name: "Jungfrau", lat: 46.5367, lon: 7.9625 },
-    { name: "Monch", lat: 46.5586, lon: 7.9922 }
+    { name: "Mont Blanc", lat: 45.8326, lon: 6.8652, alt: 4808 },
+    { name: "Aiguille du Midi", lat: 45.8794, lon: 6.8874, alt: 3842 },
+    { name: "Mont Maudit", lat: 45.8486, lon: 6.8711, alt: 4465 },
+    { name: "Mont Blanc du Tacul", lat: 45.8572, lon: 6.8861, alt: 4248 },
+    { name: "Grandes Jorasses", lat: 45.8691, lon: 7.0031, alt: 4208 },
+    { name: "Dent du Géant", lat: 45.8664, lon: 6.9533, alt: 4013 },
+    { name: "Aiguille Verte", lat: 45.9364, lon: 6.9703, alt: 4122 },
+    { name: "Les Drus", lat: 45.9333, lon: 6.9533, alt: 3754 },
+    { name: "Aiguille de Bionnassay", lat: 45.8461, lon: 6.7858, alt: 4052 },
+    { name: "Dôme du Goûter", lat: 45.8475, lon: 6.8447, alt: 4304 },
+    { name: "Mont Tondu", lat: 45.7725, lon: 6.7486, alt: 3196 },
+    { name: "Aiguille du Tour", lat: 45.9939, lon: 7.0061, alt: 3540 },
+    { name: "Brévent", lat: 45.9336, lon: 6.8375, alt: 2525 },
+    { name: "Flégère", lat: 45.9606, lon: 6.8858, alt: 1877 },
+    { name: "Aiguilles Rouges", lat: 45.9858, lon: 6.8522, alt: 2965 },
+    { name: "Matterhorn (Cervin)", lat: 45.9763, lon: 7.6586, alt: 4478 },
+    { name: "Eiger", lat: 46.5775, lon: 8.0053, alt: 3967 },
+    { name: "Jungfrau", lat: 46.5367, lon: 7.9625, alt: 4158 },
+    { name: "Monch", lat: 46.5586, lon: 7.9922, alt: 4107 }
 ];
 
 export async function fetchNearbyPeaks(lat, lon) {
-    // On filtre simplement la base locale selon la proximité (~50km)
     return PEAKS_DB.filter(p => {
         const d = Math.sqrt(Math.pow(lat - p.lat, 2) + Math.pow(lon - p.lon, 2));
         return d < 0.5; 
@@ -52,28 +49,23 @@ export function createLabelSprite(text) {
     canvas.width = 512;
     canvas.height = 128;
     
-    // Style Bulle Alpine
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-    ctx.roundRect(10, 10, 492, 108, 54);
+    // Design compact et élégant
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.roundRect(100, 20, 312, 60, 30);
     ctx.fill();
     
-    ctx.strokeStyle = '#ffcc33';
-    ctx.lineWidth = 8;
+    ctx.strokeStyle = '#d4af37';
+    ctx.lineWidth = 4;
     ctx.stroke();
 
-    ctx.font = 'bold 40px Arial';
-    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 32px "DM Sans", sans-serif';
+    ctx.fillStyle = 'white';
     ctx.textAlign = 'center';
-    ctx.fillText(text.toUpperCase(), 256, 78);
+    ctx.fillText(text.toUpperCase(), 256, 62);
 
     const texture = new THREE.CanvasTexture(canvas);
-    const spriteMaterial = new THREE.SpriteMaterial({ 
-        map: texture, 
-        transparent: true, 
-        depthTest: false,
-        sizeAttenuation: true 
-    });
+    const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
     const sprite = new THREE.Sprite(spriteMaterial);
-    sprite.scale.set(4500, 1125, 1);
+    sprite.scale.set(2500, 625, 1); // Taille divisée par 2
     return sprite;
 }

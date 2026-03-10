@@ -31,17 +31,30 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
         centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, state.ZOOM);
     }
 
-    // Gestion asynchrone des labels (sans bloquer le terrain)
+    // Gestion asynchrone des labels avec ligne de rappel
     fetchNearbyPeaks(camLat || state.TARGET_LAT, camLon || state.TARGET_LON).then(peaks => {
         peaks.forEach(p => {
             if (!activeLabels.has(p.name)) {
                 const pos = lngLatToWorld(p.lon, p.lat);
+                
+                // 1. Création du label flottant
                 const sprite = createLabelSprite(p.name);
-                // On place le label au dessus du relief moyen
                 sprite.position.set(pos.x, 6000, pos.z); 
                 sprite.renderOrder = 9999;
                 state.scene.add(sprite);
-                activeLabels.set(p.name, sprite);
+
+                // 2. Création du "mât" (ligne de rappel)
+                // On fait descendre la ligne de 6000m jusqu'au sommet réel (ou un peu en dessous)
+                const points = [
+                    new THREE.Vector3(pos.x, 5950, pos.z),
+                    new THREE.Vector3(pos.x, p.alt || 0, pos.z)
+                ];
+                const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+                const lineMat = new THREE.LineBasicMaterial({ color: 0xd4af37, transparent: true, opacity: 0.5 });
+                const line = new THREE.Line(lineGeo, lineMat);
+                state.scene.add(line);
+
+                activeLabels.set(p.name, { sprite, line });
             }
         });
     });
