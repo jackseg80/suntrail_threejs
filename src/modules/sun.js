@@ -37,25 +37,25 @@ export function updateSunPosition(minutes) {
     let finalAz = az;
 
     const colorDay = new THREE.Color(0x87CEEB);
-    const colorSunset = new THREE.Color(0xff8c2e); // Orange plus lumineux
-    const colorNight = new THREE.Color(0x1a1a3a); // Nuit plus claire
+    const colorSunset = new THREE.Color(0xff5f00); // Orange plus profond
+    const colorNight = new THREE.Color(0x050510); // Retour au noir bleu profond
     
     const sunColorDay = new THREE.Color(0xffffff);
-    const sunColorSunset = new THREE.Color(0xffb040); // Solaire plus chaud
-    const sunColorMoon = new THREE.Color(0xccccff);
+    const sunColorSunset = new THREE.Color(0xff7000); // Solaire rasant
+    const sunColorMoon = new THREE.Color(0x9999ff); // Lune plus bleutée
 
     if (altDeg > 5) {
         // Plein jour : Soleil
-        sunIntensity = Math.min(3.0, Math.sin(alt) * 3.5);
+        sunIntensity = Math.min(2.5, Math.sin(alt) * 3);
         skyColor.copy(colorDay);
         sunColor.copy(sunColorDay);
-        ambientIntensity = 0.6;
+        ambientIntensity = 0.5;
         finalPhi = alt;
         finalAz = az;
     } else if (altDeg > -12) {
         // Crépuscule : Transition Soleil -> Lune
         const t = (altDeg + 12) / 17; // 1 (jour) à 0 (nuit)
-        sunIntensity = 0.5 + (t * 2.5); // Boosté
+        sunIntensity = 0.25 + (t * 2.25);
         
         if (altDeg > 0) {
             skyColor.lerpColors(colorSunset, colorDay, altDeg / 5);
@@ -64,28 +64,26 @@ export function updateSunPosition(minutes) {
         }
 
         sunColor.lerpColors(sunColorMoon, sunColorDay, t);
-        ambientIntensity = 0.45 + (t * 0.15); // Ambiante boostée
+        ambientIntensity = 0.1 + (t * 0.4); // Baisse progressive de la clarté
         
-        // Transition de position (vers la Lune si elle est visible, sinon vers une position haute par défaut)
-        const targetMoonPhi = moonAltDeg > 0 ? moonAlt : Math.PI / 7;
+        const targetMoonPhi = moonAltDeg > 0 ? moonAlt : Math.PI / 8;
         const targetMoonAz = moonAltDeg > 0 ? moonAz : az;
         
         finalPhi = THREE.MathUtils.lerp(targetMoonPhi, alt, t);
         finalAz = THREE.MathUtils.lerp(targetMoonAz, az, t);
     } else {
-        // Nuit : Lune réelle (ou secours si pas de lune)
-        sunIntensity = 0.5; // Lune bien visible
+        // Nuit : Lune réelle
+        sunIntensity = 0.25; // Lune douce
         skyColor.copy(colorNight);
         sunColor.copy(sunColorMoon);
-        ambientIntensity = 0.45; // Nuit claire
+        ambientIntensity = 0.1; // Nuit vraiment sombre mais lisible
         
         if (moonAltDeg > 0) {
             finalPhi = moonAlt;
             finalAz = moonAz;
         } else {
-            // Pas de lune visible : on garde une lumière fixe en hauteur pour voir le relief
-            finalPhi = Math.PI / 7; 
-            finalAz = az; // On garde l'azimut du soleil pour une rotation cohérente
+            finalPhi = Math.PI / 8; 
+            finalAz = az;
         }
     }
 
