@@ -6,9 +6,6 @@ const EARTH_CIRCUMFERENCE = 40075016.68;
 export const activeTiles = new Map(); 
 export const activeLabels = new Map(); 
 
-const frustum = new THREE.Frustum();
-const projScreenMatrix = new THREE.Matrix4();
-
 export class Tile {
     constructor(tx, ty, zoom, key) {
         this.tx = tx;
@@ -21,22 +18,11 @@ export class Tile {
         this.colorImage = null;    
         this.currentResolution = -1;
         this.currentExaggeration = -1;
-        
         this.tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
+        
+        // Positionnement V2 pur
         this.worldX = (tx - state.originTile.x) * this.tileSizeMeters;
         this.worldZ = (ty - state.originTile.y) * this.tileSizeMeters;
-
-        this.bounds = new THREE.Box3(
-            new THREE.Vector3(this.worldX - this.tileSizeMeters/2, -1000, this.worldZ - this.tileSizeMeters/2),
-            new THREE.Vector3(this.worldX + this.tileSizeMeters/2, 9000, this.worldZ + this.tileSizeMeters/2)
-        );
-    }
-
-    isVisible() {
-        if (!state.camera) return true;
-        projScreenMatrix.multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
-        frustum.setFromProjectionMatrix(projScreenMatrix);
-        return frustum.intersectsBox(this.bounds);
     }
 
     async load() {
@@ -73,17 +59,32 @@ export class Tile {
         }
     }
 
-    decodeElevation(img) {
+    decodeElevation(imgElev) {
         const canvas = document.createElement('canvas');
         canvas.width = 256; canvas.height = 256;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(imgElev, 0, 0, 256, 256);
         const data = ctx.getImageData(0, 0, 256, 256).data;
         const raw = new Float32Array(256 * 256);
+        const cleaned = new Float32Array(256 * 256);
+
         for (let i = 0; i < data.length; i += 4) {
-            raw[i/4] = -10000 + ((data[i] * 65536 + data[i+1] * 256 + data[i+2]) * 0.1);
+            const h = -10000 + ((data[i] * 65536 + data[i+1] * 256 + data[i+2]) * 0.1);
+            raw[i/4] = (h < -1000 || h > 9000) ? 0 : h;
         }
-        return raw;
+
+        for (let y = 0; y < 256; y++) {
+            for (let x = 0; x < 256; x++) {
+                const idx = y * 256 + x;
+                const val = raw[idx];
+                if (x === 0 || x === 255 || y === 0 || y === 255) { cleaned[idx] = val; continue; }
+                if (Math.abs(val - raw[idx-1]) > 80) {
+                    const n = [raw[idx-257], raw[idx-256], raw[idx-255], raw[idx-1], val, raw[idx+1], raw[idx+255], raw[idx+256], raw[idx+257]].sort((a, b) => a - b);
+                    cleaned[idx] = n[4];
+                } else { cleaned[idx] = val; }
+            }
+        }
+        return cleaned;
     }
 
     getColorUrl() {
@@ -104,44 +105,30 @@ export class Tile {
         const geometry = new THREE.PlaneGeometry(this.tileSizeMeters, this.tileSizeMeters, resolution, resolution);
         geometry.rotateX(-Math.PI / 2);
 
-        const pos = geometry.attributes.position.array;
+        const vertices = geometry.attributes.position.array;
         const uvs = geometry.attributes.uv.array;
-
-        // --- SYNCHRONISATION NORD/SUD ---
-        // Dans MapTiler, Y=0 est le NORD (Haut). Dans Three.js Plane, UV.y=1 est le HAUT.
-        // On inverse donc l'UV pour que la texture soit dans le bon sens.
+        
+        // Inversion Y pour synchroniser texture et relief (Logique V2)
         for (let i = 1; i < uvs.length; i += 2) uvs[i] = 1.0 - uvs[i];
 
-        const getH = (u, vInverted) => {
-            const px = u * 255;
-            // Comme vInverted est déjà inversé (1.0 - uv.y), 
-            // vInverted = 0 quand on est en haut du mesh.
-            // Pixel 0 est le haut de l'image MapTiler. Ça MATCH !
-            const py = vInverted * 255; 
-            
-            const x0 = Math.floor(px), y0 = Math.floor(py);
-            const x1 = Math.min(255, x0 + 1), y1 = Math.min(255, y0 + 1);
-            const wx = px - x0, wy = py - y0;
-            
-            const h00 = this.elevationData[y0 * 256 + x0];
-            const h10 = this.elevationData[y0 * 256 + x1];
-            const h01 = this.elevationData[y1 * 256 + x0];
-            const h11 = this.elevationData[y1 * 256 + x1];
-
-            const h = h00 * (1 - wx) * (1 - wy) + h10 * wx * (1 - wy) + h01 * (1 - wx) * wy + h11 * wx * wy;
-            return h * state.RELIEF_EXAGGERATION;
+        const getH = (px, py) => {
+            const x0 = Math.max(0, Math.min(254, Math.floor(px))), y0 = Math.max(0, Math.min(254, Math.floor(py)));
+            const x1 = x0 + 1, y1 = y0 + 1, wx = px - x0, wy = py - y0;
+            return this.elevationData[y0*256+x0]*(1-wx)*(1-wy) + this.elevationData[y0*256+x1]*wx*(1-wy) + this.elevationData[y1*256+x0]*(1-wx)*wy + this.elevationData[y1*256+x1]*wx*wy;
         };
 
-        for (let i = 0; i < pos.length / 3; i++) {
-            pos[i * 3 + 1] = getH(uvs[i * 2], uvs[i * 2 + 1]);
+        for (let i = 0; i < vertices.length / 3; i++) {
+            const u = uvs[i * 2], v = uvs[i * 2 + 1];
+            const h = getH(u * 255, v * 255);
+            vertices[i * 3 + 1] = Math.max(-10, h * state.RELIEF_EXAGGERATION);
         }
+
         geometry.computeVertexNormals();
+        const colorTex = new THREE.CanvasTexture(this.colorImage);
+        colorTex.colorSpace = THREE.SRGBColorSpace;
+        colorTex.flipY = false; 
 
-        const tex = new THREE.CanvasTexture(this.colorImage);
-        tex.colorSpace = THREE.SRGBColorSpace;
-        tex.flipY = false; // Important: on a déjà inversé les UVs manuellement
-
-        this.mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9, metalness: 0.0 }));
+        this.mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ map: colorTex, roughness: 0.9, metalness: 0.0 }));
         this.mesh.position.set(this.worldX, 0, this.worldZ);
         this.mesh.castShadow = this.mesh.receiveShadow = true;
         
@@ -250,11 +237,9 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
             let tile = activeTiles.get(key);
             if (!tile) {
                 tile = new Tile(tx, ty, state.ZOOM, key);
-                if (tile.isVisible()) {
-                    activeTiles.set(key, tile);
-                    tile.load();
-                    keptTiles.add(key);
-                }
+                activeTiles.set(key, tile);
+                tile.load();
+                keptTiles.add(key);
             } else {
                 keptTiles.add(key);
                 if (tile.status === 'loaded') {
