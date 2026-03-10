@@ -6,10 +6,10 @@ const EARTH_CIRCUMFERENCE = 40075016.68;
 export const activeTiles = new Map(); 
 export const activeLabels = new Map(); 
 
-const WORLD_ZOOM = 13;
-const TILE_SIZE_WORLD = EARTH_CIRCUMFERENCE / Math.pow(2, WORLD_ZOOM);
+const REF_ZOOM = 13; // LA RÉFÉRENCE ABSOLUE DE LA V2.0.0
+const TILE_SIZE_REF = EARTH_CIRCUMFERENCE / Math.pow(2, REF_ZOOM);
 
-// --- FONCTIONS DE PROJECTION (PIXELS EXACTS v2.0.0) ---
+// --- FONCTIONS DE PROJECTION (v2.0.0 STRICTES) ---
 
 export function lngLatToTile(lon, lat, zoom) {
     const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
@@ -18,19 +18,23 @@ export function lngLatToTile(lon, lat, zoom) {
 }
 
 export function lngLatToWorld(lon, lat) {
-    const xfrac = (lon + 180) / 360 * Math.pow(2, WORLD_ZOOM);
-    const yfrac = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, WORLD_ZOOM);
+    const zoom = 13;
+    const tileSize = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
+    const xf = (lon + 180) / 360 * Math.pow(2, zoom);
+    const yf = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom);
     return {
-        x: (xfrac - (state.originTile.x + 0.5)) * TILE_SIZE_WORLD,
-        z: (yfrac - (state.originTile.y + 0.5)) * TILE_SIZE_WORLD
+        x: (xf - (state.originTile.x + 0.5)) * tileSize,
+        z: (yf - (state.originTile.y + 0.5)) * tileSize
     };
 }
 
 export function worldToLngLat(worldX, worldZ) {
-    const xfrac = (worldX / TILE_SIZE_WORLD) + (state.originTile.x + 0.5);
-    const yfrac = (worldZ / TILE_SIZE_WORLD) + (state.originTile.y + 0.5);
-    const lon = xfrac / Math.pow(2, WORLD_ZOOM) * 360 - 180;
-    const n = Math.PI - 2 * Math.PI * yfrac / Math.pow(2, WORLD_ZOOM);
+    const zoom = 13;
+    const tileSize = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
+    const xf = (worldX / tileSize) + (state.originTile.x + 0.5);
+    const yf = (worldZ / tileSize) + (state.originTile.y + 0.5);
+    const lon = xf / Math.pow(2, zoom) * 360 - 180;
+    const n = Math.PI - 2 * Math.PI * yf / Math.pow(2, zoom);
     return { lat: 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))), lon };
 }
 
@@ -43,13 +47,12 @@ export function clearLabels() {
     activeLabels.clear();
 }
 
-// --- LOGIQUE LOD PAR SUBDIVISION (Z13 -> Z15) ---
+// --- MOTEUR DE TERRAIN (LOD PAR SECTEURS) ---
 
 export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
     if (!state.mapCenter) state.mapCenter = { lat: state.TARGET_LAT, lon: state.TARGET_LON };
     
-    // On travaille toujours sur la grille Z13 de la v2.0.0
-    const centerSector = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, WORLD_ZOOM);
+    const centerSector = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, REF_ZOOM);
     const range = state.RANGE;
     const neededTiles = new Set();
 
@@ -61,16 +64,15 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
             const sx = centerSector.x + dx;
             const sy = centerSector.y + dy;
             
-            // Position NW du secteur Z13 (v2.0.0 pure)
-            const secWorldX = (sx - (state.originTile.x + 0.5)) * TILE_SIZE_WORLD;
-            const secWorldZ = (sy - (state.originTile.y + 0.5)) * TILE_SIZE_WORLD;
+            // Position du centre du secteur Z13 (v2.0.0)
+            const secWorldX = (sx - state.originTile.x) * TILE_SIZE_REF;
+            const secWorldZ = (sy - state.originTile.y) * TILE_SIZE_REF;
             
-            // Distance au centre du secteur
             const dist = Math.sqrt(Math.pow(secWorldX - curX, 2) + Math.pow(secWorldZ - curZ, 2));
             const trueDist = Math.sqrt(dist*dist + camAltitude*camAltitude);
 
+            // Décision LOD (Subdivision de la grille Z13)
             if (trueDist < 6000) {
-                // Diviser ce secteur en 16 tuiles Z15
                 for (let i = 0; i < 4; i++) {
                     for (let j = 0; j < 4; j++) {
                         const tx = sx * 4 + i, ty = sy * 4 + j;
@@ -80,7 +82,6 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
                     }
                 }
             } else if (trueDist < 12000) {
-                // Diviser ce secteur en 4 tuiles Z14
                 for (let i = 0; i < 2; i++) {
                     for (let j = 0; j < 2; j++) {
                         const tx = sx * 2 + i, ty = sy * 2 + j;
@@ -90,7 +91,6 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
                     }
                 }
             } else {
-                // Garder le secteur Z13 entier
                 const key = `tile_13_${sx}_${sy}`;
                 neededTiles.add(key);
                 if (!activeTiles.has(key)) loadTile(sx, sy, 13, key);
@@ -120,10 +120,10 @@ async function loadTile(tx, ty, zoom, key) {
         const numTiles = Math.pow(2, zoom);
         const tileSizeMeters = EARTH_CIRCUMFERENCE / numTiles;
         
-        // --- MATHÉMATIQUE DE PLACEMENT INFALLIBLE ---
-        // On calcule la position en mètres par rapport au centre du monde (originTile Z13)
-        const worldX = ( (tx + 0.5) / Math.pow(2, zoom - WORLD_ZOOM) - (state.originTile.x + 0.5) ) * TILE_SIZE_WORLD;
-        const worldZ = ( (ty + 0.5) / Math.pow(2, zoom - WORLD_ZOOM) - (state.originTile.y + 0.5) ) * TILE_SIZE_WORLD;
+        // --- PLACEMENT RELATIF v2.0.0 (Garantie sans décalage) ---
+        const scale = Math.pow(2, zoom - REF_ZOOM);
+        const worldX = ( (tx + 0.5) / scale - (state.originTile.x + 0.5) ) * TILE_SIZE_REF;
+        const worldZ = ( (ty + 0.5) / scale - (state.originTile.y + 0.5) ) * TILE_SIZE_REF;
 
         const elevZoom = Math.min(zoom, 14);
         let eTx = tx, eTy = ty;
@@ -155,31 +155,27 @@ async function loadTile(tx, ty, zoom, key) {
             heights[i/4] = -10000 + ((data[i] * 65536 + data[i+1] * 256 + data[i+2]) * 0.1);
         }
 
-        // Ajout d'une "jupe" (Skirt) de 10m pour boucher les fissures entre les zooms
-        const overlapSize = tileSizeMeters * 1.005; 
-        const geometry = new THREE.PlaneGeometry(overlapSize, overlapSize, state.RESOLUTION, state.RESOLUTION);
+        const geometry = new THREE.PlaneGeometry(tileSizeMeters, tileSizeMeters, state.RESOLUTION, state.RESOLUTION);
         geometry.rotateX(-Math.PI / 2);
         const vertices = geometry.attributes.position.array;
         const uvs = geometry.attributes.uv.array;
 
-        // INVERSION UV v2.0.0 (La seule qui marche)
+        // --- INVERSION UV v2.0.0 (Le secret des textes à l'endroit) ---
         for (let i = 1; i < uvs.length; i += 2) uvs[i] = 1.0 - uvs[i];
 
         for (let i = 0; i < vertices.length / 3; i++) {
             const u = uvs[i * 2], v = uvs[i * 2 + 1]; 
-            let px = u * 255, py = v * 255;
+            // Échantillonnage relief (Hybrid Z14/Z15)
+            let pu = u, pv = v;
             if (zoom === 15) {
-                px = (tx % 2 === 0 ? u * 127.5 : 128 + u * 127.5);
-                py = (ty % 2 === 0 ? v * 127.5 : 128 + v * 127.5);
+                pu = (tx % 2) * 0.5 + u * 0.5;
+                pv = (ty % 2) * 0.5 + v * 0.5;
             }
+            const px = pu * 255, py = pv * 255;
             const x0 = Math.floor(px), y0 = Math.floor(py), x1 = Math.min(255, x0+1), y1 = Math.min(255, y0+1);
             const wx = px - x0, wy = py - y0;
             const h = heights[y0*256+x0]*(1-wx)*(1-wy) + heights[y0*256+x1]*wx*(1-wy) + heights[y1*256+x0]*(1-wx)*wy + heights[y1*256+x1]*wx*wy;
-            
-            // On tire les bords légèrement vers le bas pour masquer les trous
-            const isEdge = (u < 0.01 || u > 0.99 || v < 0.01 || v > 0.99);
-            const offset = isEdge ? -10 : 0;
-            vertices[i * 3 + 1] = Math.max(-10, (h * state.RELIEF_EXAGGERATION) + offset);
+            vertices[i * 3 + 1] = Math.max(-10, h * state.RELIEF_EXAGGERATION);
         }
 
         geometry.computeVertexNormals();
