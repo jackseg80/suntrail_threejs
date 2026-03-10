@@ -123,8 +123,9 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         const dx = (tx - state.originTile.x) * tileSizeMeters;
         const dz = (ty - state.originTile.y) * tileSizeMeters;
 
-        // Utilisation de segments = RESOLUTION pour que les sommets soient exactement sur les bords
-        const geometry = new THREE.PlaneGeometry(tileSizeMeters, tileSizeMeters, state.RESOLUTION, state.RESOLUTION);
+        // Micro-recouvrement pour boucher les trous physiques (0.1%)
+        const overlapMeters = tileSizeMeters * 1.001;
+        const geometry = new THREE.PlaneGeometry(overlapMeters, overlapMeters, state.RESOLUTION, state.RESOLUTION);
         geometry.rotateX(-Math.PI / 2);
 
         const lat = tileToLat(ty + 0.5, zoom);
@@ -133,18 +134,14 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         const vertices = geometry.attributes.position.array;
         const uvs = geometry.attributes.uv.array;
         
-        // Inversion absolue de l'axe V de la géométrie pour correspondre à flipY = false
-        // Cela garantit que la physique (montagnes) s'aligne 1:1 avec la peinture (texture)
         for (let i = 1; i < uvs.length; i += 2) {
             uvs[i] = 1.0 - uvs[i];
         }
 
         function getElevationBilinear(px, py) {
-            if (px < 0) px = 0; if (px >= 255) px = 254.999;
-            if (py < 0) py = 0; if (py >= 255) py = 254.999;
-
-            const x0 = Math.floor(px);
-            const y0 = Math.floor(py);
+            // Sécurité absolue des indices (0 à 255)
+            const x0 = Math.max(0, Math.min(254, Math.floor(px)));
+            const y0 = Math.max(0, Math.min(254, Math.floor(py)));
             const x1 = x0 + 1;
             const y1 = y0 + 1;
 
