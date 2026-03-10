@@ -20,11 +20,6 @@ function lngLatToWorld(lon, lat) {
     return { x: (x - state.originTile.x) * tileSizeMeters, z: (y - state.originTile.y) * tileSizeMeters };
 }
 
-function tileToLat(y, z) {
-    const n = Math.PI - 2 * Math.PI * y / Math.pow(2, z);
-    return (180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))));
-}
-
 export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
     if (!state.mapCenter) state.mapCenter = { lat: state.TARGET_LAT, lon: state.TARGET_LON };
     const centerTile = worldX !== undefined ? { x: state.originTile.x + Math.round(worldX / (EARTH_CIRCUMFERENCE / Math.pow(2, state.ZOOM))), y: state.originTile.y + Math.round(worldZ / (EARTH_CIRCUMFERENCE / Math.pow(2, state.ZOOM))), z: state.ZOOM } : lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, state.ZOOM);
@@ -56,29 +51,16 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
 }
 
 async function loadNearbySummitLabels(lat, lon) {
-    // ÉTIQUETTE DE TEST : Doit apparaître au centre
-    if (!activeLabels.has('TEST_CENTER')) {
-        const testSprite = createLabelSprite("DEBUG: CENTRE");
-        testSprite.position.set(0, 6000, 0);
-        testSprite.renderOrder = 10000;
-        state.scene.add(testSprite);
-        activeLabels.set('TEST_CENTER', testSprite);
-        console.log("Label de test ajouté à (0, 6000, 0)");
-    }
-
     const peaks = await fetchNearbyPeaks(lat, lon);
-    console.log(`API a renvoyé ${peaks.length} sommets potentiels.`);
-    
     peaks.forEach(p => {
         const labelKey = `peak_${p.name}`;
         if (!activeLabels.has(labelKey)) {
             const pos = lngLatToWorld(p.lon, p.lat);
             const sprite = createLabelSprite(p.name);
-            sprite.position.set(pos.x, 6000, pos.z); 
+            sprite.position.set(pos.x, 6500, pos.z); 
             sprite.renderOrder = 9999;
             state.scene.add(sprite);
             activeLabels.set(labelKey, sprite);
-            console.log(`Label ajouté : ${p.name} à x:${Math.round(pos.x)} z:${Math.round(pos.z)}`);
         }
     });
 }

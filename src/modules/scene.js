@@ -21,7 +21,7 @@ export async function initScene() {
     state.renderer.setSize(window.innerWidth, window.innerHeight);
     state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
     state.renderer.shadowMap.enabled = true;
-    state.renderer.shadowMap.type = THREE.PCFShadowMap; 
+    state.renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
 
     state.renderer.toneMapping = THREE.AgXToneMapping;
     state.renderer.toneMappingExposure = 1.0; 
