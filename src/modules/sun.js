@@ -48,10 +48,10 @@ export function updateSunPosition(minutes) {
         ambientIntensity = 0.2 + (t * 0.3);
     } else {
         // Nuit (Clair de lune)
-        sunIntensity = 0.05; // Lumière résiduelle
-        skyColor.setHex(0x050515);
-        sunColor.setHex(0x9999ff); // Teinte bleutée
-        ambientIntensity = 0.15; // Nuit moins sombre
+        sunIntensity = 0.25; // Lune plus puissante
+        skyColor.setHex(0x0a0a25); // Ciel nocturne légèrement plus clair
+        sunColor.setHex(0xccccff); // Lune plus blanche/bleutée
+        ambientIntensity = 0.35; // Visibilité générale augmentée
     }
 
     // 2. Application au moteur
@@ -64,9 +64,11 @@ export function updateSunPosition(minutes) {
         state.ambientLight.intensity = ambientIntensity;
     }
 
-    // 3. Positionnement (même si sous l'horizon, on garde la source pour la lune)
+    // 3. Positionnement
     const distance = 25000;
-    const phi = Math.max(-0.1, alt); // On bloque un peu sous l'horizon pour la lune
+    // VITAL : Si c'est la nuit (alt < 0), on force la lune à être HAUTE dans le ciel (ex: 25°)
+    // Sinon la lumière vient d'en dessous et on ne voit rien.
+    const phi = alt < -0.1 ? Math.PI / 7 : alt; 
     
     state.sunLight.position.x = distance * Math.cos(phi) * -Math.sin(az);
     state.sunLight.position.y = distance * Math.sin(phi);
