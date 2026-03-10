@@ -31,6 +31,7 @@ export const state = {
     initialLat: 45.8326,
     initialLon: 6.8652,
     originTile: { x: 0, y: 0 },
+    worldOriginMeters: null, // Ancre NW fixe en mètres EPSG:3857
     
     // Three.js instances
     scene: null,
