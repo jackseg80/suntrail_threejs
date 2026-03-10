@@ -3,7 +3,7 @@ import gpxParser from 'gpxparser';
 import { state } from './state.js';
 import { updateSunPosition } from './sun.js';
 import { initScene } from './scene.js';
-import { loadTerrain, updateVisibleTiles, activeTiles, lngLatToTile, clearLabels, lngLatToWorld, worldToLngLat } from './terrain.js';
+import { loadTerrain, updateVisibleTiles, activeTiles, lngLatToTile, clearLabels, lngLatToWorld, worldToLngLat, resetTerrain } from './terrain.js';
 
 export function initUI() {
     const s1 = localStorage.getItem('maptiler_key_3d');
@@ -188,13 +188,7 @@ function initCollapsibles() {
 }
 
 async function refreshTerrain() {
-    clearLabels();
-    for (const [key, tile] of activeTiles.entries()) {
-        if (tile) {
-            tile.dispose();
-        }
-    }
-    activeTiles.clear();
+    resetTerrain();
     await updateVisibleTiles();
 }
 
@@ -202,16 +196,25 @@ async function handleGPX(xml) {
     const gpx = new gpxParser();
     gpx.parse(xml);
     if (!gpx.tracks || !gpx.tracks.length) return;
+    
+    // 1. NETTOYAGE COMPLET AVANT LE CHANGEMENT D'ORIGINE
+    resetTerrain();
+    if (state.gpxMesh) {
+        state.scene.remove(state.gpxMesh);
+        state.gpxMesh.geometry.dispose();
+        state.gpxMesh.material.dispose();
+    }
+    
     const track = gpx.tracks[0];
     const points = track.points;
-    if (state.gpxMesh) state.scene.remove(state.gpxMesh);
-    
-    // RE-CENTRAGE DU MONDE SUR LE GPX
     const startPt = points[0];
+
+    // 2. MISE À JOUR DE L'ORIGINE DU MONDE
     state.TARGET_LAT = startPt.lat;
     state.TARGET_LON = startPt.lon;
     state.originTile = lngLatToTile(startPt.lon, startPt.lat, state.ZOOM);
     
+    // 3. CRÉATION DU TRACÉ GPX (AVEC LA NOUVELLE ORIGINE)
     const threePoints = points.map(p => {
         const pos = lngLatToWorld(p.lon, p.lat);
         const worldY = (p.ele || 0) * state.RELIEF_EXAGGERATION + 5; 
@@ -229,12 +232,14 @@ async function handleGPX(xml) {
     document.getElementById('gpx-dist').textContent = `${(track.distance.total / 1000).toFixed(1)} km`;
     document.getElementById('gpx-elev').textContent = `+${Math.round(track.elevation.pos)}m / -${Math.round(track.elevation.neg)}m`;
 
+    // 4. REPOSITIONNEMENT CAMÉRA ET CHARGEMENT DU TERRAIN
     if (state.controls) {
         state.controls.target.set(threePoints[0].x, threePoints[0].y, threePoints[0].z);
         state.camera.position.set(threePoints[0].x, threePoints[0].y + 2000, threePoints[0].z + 4000);
         state.controls.update();
     }
-    await refreshTerrain();
+    
+    await updateVisibleTiles();
 }
 
 function go() {
@@ -274,6 +279,10 @@ function initGeocoding() {
                         const [lng, lat] = f.center || f.geometry.coordinates;
                         geoResults.style.display = 'none';
                         geoInput.value = name;
+                        
+                        // Sécurité : Reset avant changement de destination
+                        resetTerrain();
+                        
                         state.TARGET_LAT = lat;
                         state.TARGET_LON = lng;
                         if (state.controls) {
@@ -282,7 +291,7 @@ function initGeocoding() {
                             state.camera.position.set(0, 8000, 12000);
                             state.controls.update();
                         }
-                        await refreshTerrain();
+                        await updateVisibleTiles();
                         updateSunPosition(document.getElementById('time-slider').value);
                     });
                     geoResults.appendChild(item);

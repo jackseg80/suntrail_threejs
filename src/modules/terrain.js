@@ -31,15 +31,11 @@ const terrainVertexInjection = {
         }
     `,
     normal: `
-        // Distance entre deux pixels en mètres
         float delta = uTileSize / 256.0;
-        
         float hL = getTerrainHeight(uv + vec2(-1.0/256.0, 0.0));
         float hR = getTerrainHeight(uv + vec2(1.0/256.0, 0.0));
         float hD = getTerrainHeight(uv + vec2(0.0, -1.0/256.0));
         float hU = getTerrainHeight(uv + vec2(0.0, 1.0/256.0));
-        
-        // Calcul de la normale avec l'échelle réelle (delta * 2.0 pour l'écart central)
         objectNormal = normalize(vec3(hL - hR, delta * 2.0, hD - hU));
     `,
     position: `
@@ -165,8 +161,6 @@ export class Tile {
 
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.position.set(this.worldX, 0, this.worldZ);
-        
-        // Ajustement du bias pour éviter les ombres parasites (shadow acne)
         this.mesh.castShadow = this.mesh.receiveShadow = true;
         
         this.mesh.customDepthMaterial = new THREE.MeshDepthMaterial({
@@ -201,6 +195,14 @@ export class Tile {
         if (this.colorTex) this.colorTex.dispose();
         this.status = 'disposed';
     }
+}
+
+export function resetTerrain() {
+    clearLabels();
+    for (const [key, tile] of activeTiles.entries()) {
+        if (tile) tile.dispose();
+    }
+    activeTiles.clear();
 }
 
 export function lngLatToTile(lon, lat, zoom) {
