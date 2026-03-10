@@ -12,7 +12,6 @@ export function initUI() {
     document.getElementById('bgo').addEventListener('click', go);
     document.getElementById('k1').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
     
-    // --- GPX ---
     const gpxBtn = document.getElementById('gpx-btn');
     const gpxUpload = document.getElementById('gpx-upload');
     const trailFollowToggle = document.getElementById('trail-follow-toggle');
@@ -36,7 +35,6 @@ export function initUI() {
         }
     });
 
-    // --- CALENDRIER ---
     const dateInput = document.getElementById('date-input');
     dateInput.valueAsDate = state.simDate;
     dateInput.addEventListener('change', (e) => {
@@ -49,7 +47,7 @@ export function initUI() {
         updateSunPosition(e.target.value);
     });
 
-    // --- CLIC POUR ALTITUDE ---
+    // --- CLIC POUR ALTITUDE (Optimisé V3) ---
     window.addEventListener('click', (e) => {
         if (!state.renderer || !state.camera || !state.scene) return;
         if (e.target.tagName !== 'CANVAS') return;
@@ -58,14 +56,40 @@ export function initUI() {
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, state.camera);
         
-        const tiles = [];
-        for (const tileObj of activeTiles.values()) { if (tileObj && tileObj.mesh) tiles.push(tileObj.mesh); }
+        const meshes = [];
+        const meshToTile = new Map();
+        for (const tile of activeTiles.values()) { 
+            if (tile && tile.mesh) {
+                meshes.push(tile.mesh);
+                meshToTile.set(tile.mesh.id, tile);
+            }
+        }
         
-        const intersects = raycaster.intersectObjects(tiles, false);
+        const intersects = raycaster.intersectObjects(meshes, false);
         if (intersects.length > 0) {
-            const pt = intersects[0].point;
-            const gps = worldToLngLat(pt.x, pt.z);
-            const realAlt = pt.y / state.RELIEF_EXAGGERATION;
+            const hit = intersects[0];
+            const tile = meshToTile.get(hit.object.id);
+            const gps = worldToLngLat(hit.point.x, hit.point.z);
+            
+            // Calcul de l'altitude depuis les données d'élévation de la tuile (Plus précis que le Raycaster GPU)
+            let realAlt = 0;
+            if (tile && tile.elevationTex && tile.elevationTex.image) {
+                const img = tile.elevationTex.image;
+                const canvas = document.createElement('canvas');
+                canvas.width = 256; canvas.height = 256;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                
+                // On calcule la position locale dans la tuile (0.0 à 1.0)
+                const localX = (hit.point.x - (tile.worldX - tile.tileSizeMeters/2)) / tile.tileSizeMeters;
+                const localZ = (hit.point.z - (tile.worldZ - tile.tileSizeMeters/2)) / tile.tileSizeMeters;
+                
+                const px = Math.floor(Math.max(0, Math.min(255, localX * 255)));
+                const py = Math.floor(Math.max(0, Math.min(255, localZ * 255)));
+                
+                const data = ctx.getImageData(px, py, 1, 1).data;
+                realAlt = -10000 + ((data[0] * 65536 + data[1] * 256 + data[2]) * 0.1);
+            }
 
             const panel = document.getElementById('coords-panel');
             panel.style.display = 'block';
@@ -76,7 +100,6 @@ export function initUI() {
         }
     });
 
-    // --- CONTRÔLES DE PERFORMANCE ---
     const resSlider = document.getElementById('res-slider');
     const rangeSlider = document.getElementById('range-slider');
     const exagSlider = document.getElementById('exag-slider');
@@ -119,7 +142,7 @@ export function initUI() {
     exagSlider.addEventListener('change', async (e) => {
         state.RELIEF_EXAGGERATION = parseFloat(e.target.value);
         document.getElementById('exag-disp').textContent = state.RELIEF_EXAGGERATION.toFixed(1);
-        await refreshTerrain();
+        await updateVisibleTiles(); // Instantané via Shader
     });
 
     trailsToggle.addEventListener('change', async (e) => {
@@ -197,7 +220,6 @@ async function handleGPX(xml) {
     gpx.parse(xml);
     if (!gpx.tracks || !gpx.tracks.length) return;
     
-    // 1. NETTOYAGE COMPLET AVANT LE CHANGEMENT D'ORIGINE
     resetTerrain();
     if (state.gpxMesh) {
         state.scene.remove(state.gpxMesh);
@@ -209,12 +231,10 @@ async function handleGPX(xml) {
     const points = track.points;
     const startPt = points[0];
 
-    // 2. MISE À JOUR DE L'ORIGINE DU MONDE
     state.TARGET_LAT = startPt.lat;
     state.TARGET_LON = startPt.lon;
     state.originTile = lngLatToTile(startPt.lon, startPt.lat, state.ZOOM);
     
-    // 3. CRÉATION DU TRACÉ GPX (AVEC LA NOUVELLE ORIGINE)
     const threePoints = points.map(p => {
         const pos = lngLatToWorld(p.lon, p.lat);
         const worldY = (p.ele || 0) * state.RELIEF_EXAGGERATION + 5; 
@@ -232,7 +252,6 @@ async function handleGPX(xml) {
     document.getElementById('gpx-dist').textContent = `${(track.distance.total / 1000).toFixed(1)} km`;
     document.getElementById('gpx-elev').textContent = `+${Math.round(track.elevation.pos)}m / -${Math.round(track.elevation.neg)}m`;
 
-    // 4. REPOSITIONNEMENT CAMÉRA ET CHARGEMENT DU TERRAIN
     if (state.controls) {
         state.controls.target.set(threePoints[0].x, threePoints[0].y, threePoints[0].z);
         state.camera.position.set(threePoints[0].x, threePoints[0].y + 2000, threePoints[0].z + 4000);
@@ -280,7 +299,6 @@ function initGeocoding() {
                         geoResults.style.display = 'none';
                         geoInput.value = name;
                         
-                        // Sécurité : Reset avant changement de destination
                         resetTerrain();
                         
                         state.TARGET_LAT = lat;
