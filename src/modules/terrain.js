@@ -6,65 +6,48 @@ const EARTH_CIRCUMFERENCE = 40075016.68;
 export const activeTiles = new Map(); 
 export const activeLabels = new Map(); 
 
-// Pour le Frustum Culling
 const frustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
 
-// Uniforms partagés
 const terrainUniforms = {
     uExaggeration: { value: state.RELIEF_EXAGGERATION }
 };
 
-const terrainVertexShader = `
-    uniform sampler2D uElevationMap;
-    uniform float uExaggeration;
-    varying vec2 vUv;
+// Injection chirurgicale dans le Vertex Shader
+const terrainVertexInjection = {
+    header: `
+        uniform sampler2D uElevationMap;
+        uniform float uExaggeration;
+        varying vec2 vTerrainUv;
 
-    float decodeHeight(vec4 rgba) {
-        return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1);
-    }
+        float decodeHeight(vec4 rgba) {
+            return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1);
+        }
 
-    float getHeight(vec2 uv) {
-        vec4 col = texture2D(uElevationMap, uv);
-        float h = decodeHeight(col);
-        if (h < -1000.0 || h > 9000.0) return 0.0;
-        return h * uExaggeration;
-    }
-
-    #include <common>
-    #include <displacementmap_pars_vertex>
-    #include <fog_pars_vertex>
-    #include <morphtarget_pars_vertex>
-    #include <skinning_pars_vertex>
-    #include <shadowmap_pars_vertex>
-    #include <logdepthbuffer_pars_vertex>
-    #include <clipping_planes_pars_vertex>
-
-    void main() {
-        vUv = uv;
-        float h = getHeight(vUv);
-        vec3 transformed = vec3(position.x, h, position.z);
-
-        float texelSize = 1.0 / 256.0;
-        float hL = getHeight(vUv + vec2(-texelSize, 0.0));
-        float hR = getHeight(vUv + vec2(texelSize, 0.0));
-        float hD = getHeight(vUv + vec2(0.0, -texelSize));
-        float hU = getHeight(vUv + vec2(0.0, texelSize));
+        float getTerrainHeight(vec2 uv) {
+            vec4 col = texture2D(uElevationMap, uv);
+            float h = decodeHeight(col);
+            if (h < -1000.0 || h > 9000.0) return 0.0;
+            return h * uExaggeration;
+        }
+    `,
+    main: `
+        vTerrainUv = uv;
+        float h = getTerrainHeight(vTerrainUv);
         
-        vec3 normal = normalize(vec3(hL - hR, 2.0, hD - hU));
-        vNormal = normalMatrix * normal;
+        // Déplacement effectif du vertex
+        transformed.y = h;
 
-        #include <morphtarget_vertex>
-        #include <skinning_vertex>
-        #include <displacementmap_vertex>
-        #include <project_vertex>
-        #include <logdepthbuffer_vertex>
-        #include <clipping_planes_vertex>
-        #include <worldpos_vertex>
-        #include <shadowmap_vertex>
-        #include <fog_vertex>
-    }
-`;
+        // Calcul des normales au vol pour l'éclairage
+        float texelSize = 1.0 / 256.0;
+        float hL = getTerrainHeight(vTerrainUv + vec2(-texelSize, 0.0));
+        float hR = getTerrainHeight(vTerrainUv + vec2(texelSize, 0.0));
+        float hD = getTerrainHeight(vTerrainUv + vec2(0.0, -texelSize));
+        float hU = getTerrainHeight(vTerrainUv + vec2(0.0, texelSize));
+        
+        objectNormal = normalize(vec3(hL - hR, 2.0, hD - hU));
+    `
+};
 
 export class Tile {
     constructor(tx, ty, zoom, key) {
@@ -82,7 +65,6 @@ export class Tile {
         this.worldX = (tx - state.originTile.x) * this.tileSizeMeters;
         this.worldZ = (ty - state.originTile.y) * this.tileSizeMeters;
 
-        // Bounding Box pour le culling (approximate, on met une hauteur max de 9000m)
         this.bounds = new THREE.Box3(
             new THREE.Vector3(this.worldX - this.tileSizeMeters/2, -1000, this.worldZ - this.tileSizeMeters/2),
             new THREE.Vector3(this.worldX + this.tileSizeMeters/2, 9000, this.worldZ + this.tileSizeMeters/2)
@@ -90,6 +72,7 @@ export class Tile {
     }
 
     isVisible() {
+        if (!state.camera) return true;
         projScreenMatrix.multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
         frustum.setFromProjectionMatrix(projScreenMatrix);
         return frustum.intersectsBox(this.bounds);
@@ -97,8 +80,6 @@ export class Tile {
 
     async load() {
         if (this.status === 'loading' || this.status === 'loaded') return;
-        
-        // On ne charge les textures que si la tuile est visible au moins une fois
         if (!this.isVisible()) return;
 
         this.status = 'loading';
@@ -152,8 +133,6 @@ export class Tile {
     buildMesh(resolution) {
         if (!this.elevationTex || !this.colorTex) return;
         if (this.currentResolution === resolution && this.mesh) return;
-
-        // Même si chargée, on ne build le mesh que si visible
         if (!this.isVisible()) return;
 
         const oldMesh = this.mesh;
@@ -163,24 +142,43 @@ export class Tile {
         for (let i = 1; i < uvs.length; i += 2) uvs[i] = 1.0 - uvs[i];
 
         const material = new THREE.MeshStandardMaterial({ map: this.colorTex, roughness: 0.9, metalness: 0.0 });
+        
         material.onBeforeCompile = (shader) => {
             shader.uniforms.uElevationMap = { value: this.elevationTex };
             shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
-            shader.vertexShader = terrainVertexShader;
+            
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <common>',
+                `#include <common>
+                ${terrainVertexInjection.header}`
+            );
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <beginnormal_vertex>',
+                `#include <beginnormal_vertex>
+                ${terrainVertexInjection.main}`
+            );
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <begin_vertex>',
+                `// Replacement by begin_vertex handled in beginnormal_vertex for elevation
+                vec3 transformed = vec3( position );
+                transformed.y = getTerrainHeight(uv);
+                `
+            );
         };
 
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.position.set(this.worldX, 0, this.worldZ);
         this.mesh.castShadow = this.mesh.receiveShadow = true;
         
+        // Correction pour les ombres
         this.mesh.customDepthMaterial = new THREE.MeshDepthMaterial({
-            depthPacking: THREE.RGBADepthPacking,
-            displacementMap: this.elevationTex, 
+            depthPacking: THREE.RGBADepthPacking
         });
         this.mesh.customDepthMaterial.onBeforeCompile = (shader) => {
             shader.uniforms.uElevationMap = { value: this.elevationTex };
             shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
-            shader.vertexShader = terrainVertexShader.replace('#include <shadowmap_pars_vertex>', '');
+            shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${terrainVertexInjection.header}`);
+            shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `vec3 transformed = vec3( position );\ntransformed.y = getTerrainHeight(uv);`);
         };
 
         state.scene.add(this.mesh);
@@ -249,18 +247,14 @@ function calculateTargetLOD(tile, camX, camZ) {
     const dx = tile.worldX - camX;
     const dz = tile.worldZ - camZ;
     const dist = Math.sqrt(dx * dx + dz * dz);
-    
     const tileSize = tile.tileSizeMeters;
-    // Si la caméra est proche, haute résolution
     if (dist < tileSize * 1.5) return state.RESOLUTION; 
-    // Si la caméra est loin, résolution proportionnelle
     if (dist < tileSize * 4.0) return Math.floor(state.RESOLUTION / 2); 
     return Math.floor(state.RESOLUTION / 4); 
 }
 
 export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
     terrainUniforms.uExaggeration.value = state.RELIEF_EXAGGERATION;
-
     if (!state.mapCenter) state.mapCenter = { lat: state.TARGET_LAT, lon: state.TARGET_LON };
     const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, state.ZOOM);
     
@@ -271,7 +265,6 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
         centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, state.ZOOM);
     }
 
-    // RANGE DYNAMIQUE : Si la caméra est haute, on voit plus de tuiles
     const altitudeEffect = Math.max(0, Math.floor((camAltitude || state.camera.position.y) / 10000));
     let range = state.RANGE + altitudeEffect; 
     
@@ -279,11 +272,9 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
             const tx = centerTile.x + dx, ty = centerTile.y + dy, key = `${tx}_${ty}_${state.ZOOM}`;
-            
             let tile = activeTiles.get(key);
             if (!tile) {
                 tile = new Tile(tx, ty, state.ZOOM, key);
-                // On n'ajoute et ne charge la tuile QUE si elle est dans le champ de vision
                 if (tile.isVisible()) {
                     activeTiles.set(key, tile);
                     tile.load();
@@ -303,7 +294,6 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
         }
     }
 
-    // Nettoyage agressif des tuiles hors champ ou hors range
     for (const [key, tile] of activeTiles.entries()) {
         if (!keptTiles.has(key)) {
             tile.dispose();
