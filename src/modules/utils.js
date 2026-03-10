@@ -81,9 +81,9 @@ export function createLabelSprite(text) {
     const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
     const sprite = new THREE.Sprite(spriteMaterial);
     
-    // Mise à l'échelle : on garde une hauteur fixe (1200m), la largeur est proportionnelle
+    // Mise à l'échelle : on garde une hauteur fixe (250m), la largeur est proportionnelle
     const ratio = canvas.width / canvas.height;
-    sprite.scale.set(1200 * ratio, 1200, 1);
+    sprite.scale.set(250 * ratio, 250, 1);
     
     return sprite;
 }
