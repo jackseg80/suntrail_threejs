@@ -38,6 +38,25 @@
         <label>Heure de la journée : <span id="time-disp">12:00</span></label>
         <input type="range" id="time-slider" min="0" max="1439" value="720">
     </div>
+
+    <div class="control-group" style="border-top: 1px solid var(--border); padding-top: 1rem;">
+        <label>⚙️ Performance</label>
+        
+        <div style="margin-bottom: 0.8rem;">
+            <label style="font-size: 0.75rem; color: var(--t2);">Densité maillage : <span id="res-disp">128</span></label>
+            <input type="range" id="res-slider" min="32" max="256" step="32" value="128">
+        </div>
+
+        <div style="margin-bottom: 0.8rem;">
+            <label style="font-size: 0.75rem; color: var(--t2);">Distance d'affichage : <span id="range-disp">2</span></label>
+            <input type="range" id="range-slider" min="1" max="4" step="1" value="2">
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <label style="font-size: 0.75rem; color: var(--t2);">Ombres dynamiques</label>
+            <input type="checkbox" id="shadow-toggle" checked>
+        </div>
+    </div>
     
     <div class="stats">
         <div>Azimut: <span id="az-disp">—</span>°</div>

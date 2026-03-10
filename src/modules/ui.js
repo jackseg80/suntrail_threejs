@@ -14,13 +14,53 @@ export function initUI() {
     timeSlider.addEventListener('input', (e) => {
         updateSunPosition(e.target.value);
     });
-    
-    // Empêcher les contrôles de la caméra (OrbitControls/MapControls) d'intercepter le drag du slider
-    ['mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend'].forEach(evt => {
-        timeSlider.addEventListener(evt, (e) => e.stopPropagation(), { passive: false });
+
+    // --- CONTRÔLES DE PERFORMANCE ---
+    const resSlider = document.getElementById('res-slider');
+    const rangeSlider = document.getElementById('range-slider');
+    const shadowToggle = document.getElementById('shadow-toggle');
+
+    resSlider.addEventListener('change', async (e) => {
+        state.RESOLUTION = parseInt(e.target.value);
+        document.getElementById('res-disp').textContent = state.RESOLUTION;
+        await refreshTerrain();
+    });
+
+    rangeSlider.addEventListener('change', async (e) => {
+        state.RANGE = parseInt(e.target.value);
+        document.getElementById('range-disp').textContent = state.RANGE;
+        await refreshTerrain();
+    });
+
+    shadowToggle.addEventListener('change', (e) => {
+        state.SHADOWS = e.target.checked;
+        if (state.sunLight) {
+            state.sunLight.castShadow = state.SHADOWS;
+        }
+    });
+
+    // Empêcher les contrôles de la caméra sur tous les sliders
+    [timeSlider, resSlider, rangeSlider].forEach(slider => {
+        ['mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend'].forEach(evt => {
+            slider.addEventListener(evt, (e) => e.stopPropagation(), { passive: false });
+        });
     });
 
     initGeocoding();
+}
+
+async function refreshTerrain() {
+    // Destruction totale et reconstruction
+    for (const [key, tileObj] of activeTiles.entries()) {
+        if (tileObj && tileObj.mesh) {
+            state.scene.remove(tileObj.mesh);
+            tileObj.mesh.geometry.dispose();
+            if (tileObj.mesh.material.map) tileObj.mesh.material.map.dispose();
+            tileObj.mesh.material.dispose();
+        }
+    }
+    activeTiles.clear();
+    await updateVisibleTiles();
 }
 
 function go() {

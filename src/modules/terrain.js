@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { state } from './state.js';
 
 const EARTH_CIRCUMFERENCE = 40075016.68;
-const RESOLUTION = 256; // 256x256 segments par tuile pour un maillage HD
 export const activeTiles = new Map(); 
 
 export function lngLatToTile(lon, lat, zoom) {
@@ -26,12 +25,9 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude) {
 
     const centerTile = lngLatToTile(currentLon, currentLat, state.ZOOM);
     
-    // Range dynamique : si la caméra est très haute (dézoom), on charge plus loin !
-    let range = 2; // Par défaut : 5x5 tuiles
-    if (camAltitude) {
-        if (camAltitude > 12000) range = 4; // 9x9 = 81 tuiles
-        else if (camAltitude > 6000) range = 3; // 7x7 = 49 tuiles
-    }
+    // Range dynamique : Utilisation de la valeur du state (ou boostée si altitude élevée)
+    let range = state.RANGE; 
+    if (camAltitude && camAltitude > 12000) range += 1; 
     
     const neededTiles = new Set();
 
@@ -111,7 +107,7 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         const dz = (ty - state.originTile.y) * tileSizeMeters;
 
         const overlapSize = tileSizeMeters * 1.005;
-        const geometry = new THREE.PlaneGeometry(overlapSize, overlapSize, RESOLUTION, RESOLUTION);
+        const geometry = new THREE.PlaneGeometry(overlapSize, overlapSize, state.RESOLUTION, state.RESOLUTION);
         geometry.rotateX(-Math.PI / 2);
 
         const lat = tileToLat(ty + 0.5, zoom);

@@ -65,7 +65,7 @@ export async function initScene() {
     state.scene.add(ambientLight);
 
     state.sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
-    state.sunLight.castShadow = true;
+    state.sunLight.castShadow = state.SHADOWS;
     
     state.sunLight.shadow.mapSize.width = 4096;
     state.sunLight.shadow.mapSize.height = 4096;
