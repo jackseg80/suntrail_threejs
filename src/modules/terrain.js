@@ -4,12 +4,27 @@ import { fetchNearbyPeaks, createLabelSprite } from './utils.js';
 
 const EARTH_CIRCUMFERENCE = 40075016.68;
 export const activeTiles = new Map(); 
-export const activeLabels = new Map(); // Pour ne pas afficher deux fois le même sommet
+export const activeLabels = new Map(); 
 
 export function lngLatToTile(lon, lat, zoom) {
     const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
     const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
     return { x, y, z: zoom };
+}
+
+// Fonction cruciale pour aligner les étiquettes avec les tuiles
+function lngLatToWorld(lon, lat) {
+    const zoom = state.ZOOM;
+    const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
+    
+    // Coordonnées Mercator fractionnaires (non arrondies)
+    const x = (lon + 180) / 360 * Math.pow(2, zoom);
+    const y = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom);
+    
+    const worldX = (x - state.originTile.x) * tileSizeMeters;
+    const worldZ = (y - state.originTile.y) * tileSizeMeters;
+    
+    return { x: worldX, z: worldZ };
 }
 
 function tileToLat(y, z) {
@@ -27,19 +42,16 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
         centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, state.ZOOM);
     }
 
-    // Charger les sommets environnants
     loadNearbySummitLabels(camLat || state.TARGET_LAT, camLon || state.TARGET_LON);
 
     let range = state.RANGE; 
     if (camAltitude && camAltitude > 12000) range += 1; 
     const cleanRange = range + 1;
-    const neededTiles = new Set();
     const keptTiles = new Set();
     for (let dy = -cleanRange; dy <= cleanRange; dy++) {
         for (let dx = -cleanRange; dx <= cleanRange; dx++) {
             const tx = centerTile.x + dx, ty = centerTile.y + dy, key = `${tx}_${ty}_${state.ZOOM}`;
             if (Math.abs(dx) <= range && Math.abs(dy) <= range) {
-                neededTiles.add(key);
                 if (!activeTiles.has(key)) loadSingleTile(tx, ty, state.ZOOM, centerTile, key);
             }
             keptTiles.add(key);
@@ -63,13 +75,12 @@ async function loadNearbySummitLabels(lat, lon) {
     peaks.forEach(p => {
         const labelKey = `peak_${p.name}_${p.lat.toFixed(3)}`;
         if (!activeLabels.has(labelKey)) {
-            const dx = (p.lon - state.initialLon) * (111320 * Math.cos(state.initialLat * Math.PI / 180));
-            const dz = (p.lat - state.initialLat) * -111320;
+            // Conversion Mercator identique au terrain
+            const pos = lngLatToWorld(p.lon, p.lat);
 
-            // Création du label flottant à 6500m pour survoler tout le relief
             const sprite = createLabelSprite(p.name);
-            sprite.position.set(dx, 6500, dz); 
-            sprite.renderOrder = 999;
+            sprite.position.set(pos.x, 7000, pos.z); // Encore plus haut pour être sûr
+            sprite.renderOrder = 9999;
             state.scene.add(sprite);
             activeLabels.set(labelKey, sprite);
         }
@@ -84,11 +95,8 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         const pElev = fetch(`https://api.maptiler.com/tiles/terrain-rgb-v2/${zoom}/${tx}/${ty}.png?key=${state.MK}`)
             .then(r => r.blob()).then(b => createImageBitmap(b, opts));
 
-        // Choix du type de carte : Outdoor (complet) ou Satellite (photo pure)
         const mapType = state.SHOW_TRAILS ? 'outdoor-v2' : 'satellite';
         const ext = mapType === 'satellite' ? 'jpg' : 'png';
-
-        // Tentative en HD (@2x), sinon repli sur standard
         const pColor = fetch(`https://api.maptiler.com/maps/${mapType}/256/${zoom}/${tx}/${ty}@2x.${ext}?key=${state.MK}`)
             .then(r => r.ok ? r.blob() : fetch(`https://api.maptiler.com/maps/${mapType}/256/${zoom}/${tx}/${ty}.${ext}?key=${state.MK}`).then(r2 => r2.blob()))
             .then(b => createImageBitmap(b));
@@ -118,13 +126,8 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
                     cleaned[idx] = val;
                     continue;
                 }
-                // Filtre Médian Sélectif renforcé
                 if (Math.abs(val - raw[idx-1]) > 80) {
-                    const n = [
-                        raw[idx-257], raw[idx-256], raw[idx-255],
-                        raw[idx-1],   val,          raw[idx+1],
-                        raw[idx+255], raw[idx+256], raw[idx+257]
-                    ].sort((a, b) => a - b);
+                    const n = [raw[idx-257], raw[idx-256], raw[idx-255], raw[idx-1], val, raw[idx+1], raw[idx+255], raw[idx+256], raw[idx+257]].sort((a, b) => a - b);
                     cleaned[idx] = n[4];
                 } else {
                     cleaned[idx] = val;
@@ -156,7 +159,6 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         for (let i = 0; i < vertices.length / 3; i++) {
             const u = uvs[i * 2], v = uvs[i * 2 + 1];
             const h = getH(u * 255, v * 255);
-            // On applique l'exagération visuelle UNIQUEMENT sur le rendu 3D
             vertices[i * 3 + 1] = Math.max(-10, h * state.RELIEF_EXAGGERATION);
         }
 
@@ -166,7 +168,6 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         mesh.castShadow = mesh.receiveShadow = true;
         state.scene.add(mesh);
         tileObj.status = 'loaded'; tileObj.mesh = mesh;
-        if (document.getElementById('bgo')) document.getElementById('bgo').textContent = "Recharger le relief";
     } catch (e) {
         if (activeTiles.get(key) === tileObj) tileObj.status = 'failed';
     }
