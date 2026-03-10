@@ -94,10 +94,10 @@ export async function initScene() {
     state.renderer.setAnimationLoop(() => {
         state.controls.update();
         if (state.camera) {
-            const needle = document.getElementById('compass-needle');
-            if (needle) {
+            const disk = document.getElementById('compass-disk');
+            if (disk) {
                 const angle = state.controls.getAzimuthalAngle();
-                needle.style.transform = `rotate(${angle * (180 / Math.PI)}deg)`;
+                disk.style.transform = `rotate(${angle * (180 / Math.PI)}deg)`;
             }
         }
         state.renderer.render(state.scene, state.camera);
