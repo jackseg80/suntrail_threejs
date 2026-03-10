@@ -18,6 +18,7 @@ export function initUI() {
     // --- CONTRÔLES DE PERFORMANCE ---
     const resSlider = document.getElementById('res-slider');
     const rangeSlider = document.getElementById('range-slider');
+    const fogSlider = document.getElementById('fog-slider');
     const shadowToggle = document.getElementById('shadow-toggle');
 
     resSlider.addEventListener('change', async (e) => {
@@ -32,6 +33,14 @@ export function initUI() {
         await refreshTerrain();
     });
 
+    fogSlider.addEventListener('input', (e) => {
+        state.FOG_DENSITY = parseFloat(e.target.value) / 1000000;
+        document.getElementById('fog-disp').textContent = e.target.value;
+        if (state.scene && state.scene.fog) {
+            state.scene.fog.density = state.FOG_DENSITY;
+        }
+    });
+
     shadowToggle.addEventListener('change', (e) => {
         state.SHADOWS = e.target.checked;
         if (state.sunLight) {
@@ -40,7 +49,7 @@ export function initUI() {
     });
 
     // Empêcher les contrôles de la caméra sur tous les sliders
-    [timeSlider, resSlider, rangeSlider].forEach(slider => {
+    [timeSlider, resSlider, rangeSlider, fogSlider].forEach(slider => {
         ['mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend'].forEach(evt => {
             slider.addEventListener(evt, (e) => e.stopPropagation(), { passive: false });
         });
