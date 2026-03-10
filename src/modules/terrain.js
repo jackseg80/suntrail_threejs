@@ -60,10 +60,13 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         const pElev = fetch(`https://api.maptiler.com/tiles/terrain-rgb-v2/${zoom}/${tx}/${ty}.png?key=${state.MK}`)
             .then(r => r.blob()).then(b => createImageBitmap(b, opts));
             
-        // Choix du type de carte : Outdoor (avec sentiers) ou Satellite (photo pure)
-        const mapType = state.SHOW_TRAILS ? 'outdoor-v2' : 'satellite-v2';
-        const pColor = fetch(`https://api.maptiler.com/maps/${mapType}/256/${zoom}/${tx}/${ty}@2x.png?key=${state.MK}`)
-            .then(r => r.ok ? r.blob() : fetch(`https://api.maptiler.com/maps/${mapType}/256/${zoom}/${tx}/${ty}.png?key=${state.MK}`).then(r2 => r2.blob()))
+        // Choix du type de carte : Outdoor (complet) ou Satellite (photo pure)
+        const mapType = state.SHOW_TRAILS ? 'outdoor-v2' : 'satellite';
+        const ext = mapType === 'satellite' ? 'jpg' : 'png';
+        
+        // Tentative en HD (@2x), sinon repli sur standard
+        const pColor = fetch(`https://api.maptiler.com/maps/${mapType}/256/${zoom}/${tx}/${ty}@2x.${ext}?key=${state.MK}`)
+            .then(r => r.ok ? r.blob() : fetch(`https://api.maptiler.com/maps/${mapType}/256/${zoom}/${tx}/${ty}.${ext}?key=${state.MK}`).then(r2 => r2.blob()))
             .then(b => createImageBitmap(b));
 
         const [imgElev, imgColor] = await Promise.all([pElev, pColor]);
