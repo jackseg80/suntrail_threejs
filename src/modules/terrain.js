@@ -65,9 +65,10 @@ async function loadNearbySummitLabels(lat, lon) {
             const dx = (p.lon - state.initialLon) * (111320 * Math.cos(state.initialLat * Math.PI / 180));
             const dz = (p.lat - state.initialLat) * -111320;
 
-            // On crée le label flottant (un peu plus haut que le sol)
+            // Création du label flottant à 3500m (Visible car depthTest=false)
             const sprite = createLabelSprite(p.name);
-            sprite.position.set(dx, 5500, dz); // On le place haut au départ
+            sprite.position.set(dx, 3500, dz); 
+            sprite.renderOrder = 999; // Toujours devant tout le monde
             state.scene.add(sprite);
             activeLabels.set(p.name, sprite);
         }

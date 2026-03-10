@@ -16,19 +16,23 @@ export function throttle(func, limit) {
 
 export async function fetchNearbyPeaks(lat, lon) {
     try {
-        // Filtrage strict sur les types de sommets et relief
-        const r = await fetch(`https://api.maptiler.com/geocoding/${lon},${lat}.json?key=${state.MK}&types=poi&limit=20`);
+        // On cherche plus large pour être sûr d'avoir des résultats
+        const r = await fetch(`https://api.maptiler.com/geocoding/${lon},${lat}.json?key=${state.MK}&types=poi&limit=30`);
         if (!r.ok) return [];
         const data = await r.json();
         
-        const peakKeywords = ['peak', 'mountain', 'sommet', 'mont', 'aiguille', 'crête', 'volcan'];
-        
+        // Mots-clés élargis pour les Alpes et le relief
+        const peakKeywords = ['peak', 'mountain', 'sommet', 'mont', 'aiguille', 'crête', 'volcan', 'col ', 'pointe', 'rocher', 'massif', 'tête'];
+        const excludeKeywords = ['restaurant', 'hôtel', 'hotel', 'parking', 'garage', 'shop', 'cafe', 'bar', 'bus', 'station', 'pizzeria'];
+
         return data.features
             .filter(f => {
                 const name = (f.text || '').toLowerCase();
                 const category = (f.properties?.category || '').toLowerCase();
-                // On ne garde que si le nom ou la catégorie évoque une montagne
-                return peakKeywords.some(k => name.includes(k) || category.includes(k));
+                const isExclude = excludeKeywords.some(k => name.includes(k) || category.includes(k));
+                if (isExclude) return false;
+                
+                return peakKeywords.some(k => name.includes(k) || category.includes(k)) || f.properties?.class === 'mountain_peak';
             })
             .map(f => ({
                 name: f.text,
@@ -46,30 +50,29 @@ export function createLabelSprite(text) {
     canvas.width = 512;
     canvas.height = 128;
     
-    // Design plus discret et élégant
-    ctx.fillStyle = 'rgba(20, 20, 25, 0.8)';
-    ctx.roundRect(50, 20, 412, 70, 35);
+    // Fond plus contrasté
+    ctx.fillStyle = 'rgba(10, 10, 15, 0.9)';
+    ctx.roundRect(40, 20, 432, 70, 35);
     ctx.fill();
     
-    ctx.strokeStyle = 'rgba(212, 175, 55, 0.5)';
-    ctx.lineWidth = 3;
+    // Bordure dorée plus vive
+    ctx.strokeStyle = '#ffcc33';
+    ctx.lineWidth = 4;
     ctx.stroke();
 
-    ctx.font = 'bold 32px "DM Sans", sans-serif';
+    ctx.font = 'bold 34px "DM Sans", sans-serif';
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = 4;
     ctx.fillText(text.toUpperCase(), 256, 65);
 
     const texture = new THREE.CanvasTexture(canvas);
     const spriteMaterial = new THREE.SpriteMaterial({ 
         map: texture, 
         transparent: true, 
-        depthTest: true, // Pour qu'ils puissent passer derrière les montagnes
+        depthTest: false, // CRITIQUE : Toujours visible par-dessus le relief
         sizeAttenuation: true 
     });
     const sprite = new THREE.Sprite(spriteMaterial);
-    sprite.scale.set(1800, 450, 1);
+    sprite.scale.set(2200, 550, 1);
     return sprite;
 }
