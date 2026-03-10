@@ -22,9 +22,29 @@ function lngLatToWorld(lon, lat) {
 
 export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
     if (!state.mapCenter) state.mapCenter = { lat: state.TARGET_LAT, lon: state.TARGET_LON };
-    const centerTile = worldX !== undefined ? { x: state.originTile.x + Math.round(worldX / (EARTH_CIRCUMFERENCE / Math.pow(2, state.ZOOM))), y: state.originTile.y + Math.round(worldZ / (EARTH_CIRCUMFERENCE / Math.pow(2, state.ZOOM))), z: state.ZOOM } : lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, state.ZOOM);
+    
+    const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, state.ZOOM);
+    let centerTile;
+    if (worldX !== undefined && worldZ !== undefined) {
+        centerTile = { x: state.originTile.x + Math.round(worldX / tileSizeMeters), y: state.originTile.y + Math.round(worldZ / tileSizeMeters), z: state.ZOOM };
+    } else {
+        centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, state.ZOOM);
+    }
 
-    loadNearbySummitLabels(camLat || state.TARGET_LAT, camLon || state.TARGET_LON);
+    // Gestion asynchrone des labels (sans bloquer le terrain)
+    fetchNearbyPeaks(camLat || state.TARGET_LAT, camLon || state.TARGET_LON).then(peaks => {
+        peaks.forEach(p => {
+            if (!activeLabels.has(p.name)) {
+                const pos = lngLatToWorld(p.lon, p.lat);
+                const sprite = createLabelSprite(p.name);
+                // On place le label au dessus du relief moyen
+                sprite.position.set(pos.x, 6000, pos.z); 
+                sprite.renderOrder = 9999;
+                state.scene.add(sprite);
+                activeLabels.set(p.name, sprite);
+            }
+        });
+    });
 
     let range = state.RANGE; 
     const cleanRange = range + 1;
@@ -48,21 +68,6 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
             activeTiles.delete(key);
         }
     }
-}
-
-async function loadNearbySummitLabels(lat, lon) {
-    const peaks = await fetchNearbyPeaks(lat, lon);
-    peaks.forEach(p => {
-        const labelKey = `peak_${p.name}`;
-        if (!activeLabels.has(labelKey)) {
-            const pos = lngLatToWorld(p.lon, p.lat);
-            const sprite = createLabelSprite(p.name);
-            sprite.position.set(pos.x, 6500, pos.z); 
-            sprite.renderOrder = 9999;
-            state.scene.add(sprite);
-            activeLabels.set(labelKey, sprite);
-        }
-    });
 }
 
 async function loadSingleTile(tx, ty, zoom, originTile, key) {

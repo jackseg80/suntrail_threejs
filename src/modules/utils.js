@@ -14,32 +14,28 @@ export function throttle(func, limit) {
     }
 }
 
+let lastSearchPos = { lat: 0, lon: 0 };
+
 export async function fetchNearbyPeaks(lat, lon) {
+    // ANTI-SPAM : On ne relance une recherche que si on a bougé de ~2km (0.02 degré)
+    const dist = Math.sqrt(Math.pow(lat - lastSearchPos.lat, 2) + Math.pow(lon - lastSearchPos.lon, 2));
+    if (dist < 0.02) return [];
+    lastSearchPos = { lat, lon };
+
     try {
-        // Limite fixée à 10 pour éviter l'erreur 400
-        const r = await fetch(`https://api.maptiler.com/geocoding/${lon},${lat}.json?key=${state.MK}&limit=10`);
-        if (!r.ok) {
-            console.error("MapTiler API Error:", r.status);
-            return [];
-        }
+        // Recherche par mot-clé "peak" avec biais de proximité sur vos coordonnées
+        const query = encodeURIComponent("peak");
+        const url = `https://api.maptiler.com/geocoding/${query}.json?key=${state.MK}&proximity=${lon},${lat}&limit=10`;
+        
+        const r = await fetch(url);
+        if (!r.ok) return [];
         const data = await r.json();
         
-        // Mots-clés pour identifier les sommets dans les résultats globaux
-        const peakKeywords = ['peak', 'mountain', 'sommet', 'mont', 'aiguille', 'crête', 'volcan', 'col ', 'pointe', 'rocher', 'massif', 'tête', 'dent ', 'brèche'];
-        const excludeKeywords = ['restaurant', 'hôtel', 'hotel', 'parking', 'shop', 'cafe', 'bar', 'pizzeria', 'chalet'];
-
-        return data.features
-            .filter(f => {
-                const name = (f.text || '').toLowerCase();
-                const place = (f.place_name || '').toLowerCase();
-                if (excludeKeywords.some(k => name.includes(k) || place.includes(k))) return false;
-                return peakKeywords.some(k => name.includes(k) || place.includes(k));
-            })
-            .map(f => ({
-                name: f.text,
-                lat: f.center[1],
-                lon: f.center[0]
-            }));
+        return data.features.map(f => ({
+            name: f.text,
+            lat: f.center[1],
+            lon: f.center[0]
+        }));
     } catch (e) {
         return [];
     }
@@ -51,17 +47,15 @@ export function createLabelSprite(text) {
     canvas.width = 512;
     canvas.height = 128;
     
-    // Fond noir semi-opaque
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
     ctx.roundRect(20, 20, 472, 88, 44);
     ctx.fill();
     
-    // Bordure or
     ctx.strokeStyle = '#ffcc33';
     ctx.lineWidth = 4;
     ctx.stroke();
 
-    ctx.font = 'bold 36px "DM Sans", sans-serif';
+    ctx.font = 'bold 32px "DM Sans", sans-serif';
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.fillText(text.toUpperCase(), 256, 78);
@@ -74,6 +68,6 @@ export function createLabelSprite(text) {
         sizeAttenuation: true 
     });
     const sprite = new THREE.Sprite(spriteMaterial);
-    sprite.scale.set(2800, 700, 1);
+    sprite.scale.set(3000, 750, 1);
     return sprite;
 }
