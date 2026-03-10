@@ -56,7 +56,6 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
     const tileObj = { status: 'loading', mesh: null };
     activeTiles.set(key, tileObj);
     try {
-        // VITAL : On désactive toute conversion de couleur pour garder les données RGB pures (Anti-Brave)
         const opts = { colorSpaceConversion: 'none', premultiplyAlpha: 'none' };
         const pElev = fetch(`https://api.maptiler.com/tiles/terrain-rgb-v2/${zoom}/${tx}/${ty}.png?key=${state.MK}`)
             .then(r => r.blob()).then(b => createImageBitmap(b, opts));
@@ -76,26 +75,21 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         const raw = new Float32Array(256 * 256);
         const cleaned = new Float32Array(256 * 256);
 
-        // 1. Décodage brut
         for (let i = 0; i < data.length; i += 4) {
             const h = -10000 + ((data[i] * 65536 + data[i+1] * 256 + data[i+2]) * 0.1);
-            raw[i/4] = (h < -500 || h > 9000) ? 0 : h;
+            raw[i/4] = (h < -1000 || h > 9000) ? 0 : h;
         }
 
-        // 2. FILTRE ANTI-PICS SÉLECTIF (Beaucoup plus rapide)
         for (let y = 0; y < 256; y++) {
             for (let x = 0; x < 256; x++) {
                 const idx = y * 256 + x;
                 const val = raw[idx];
-                
                 if (x === 0 || x === 255 || y === 0 || y === 255) {
                     cleaned[idx] = val;
                     continue;
                 }
-
-                // Détection d'anomalie : on ne trie que si le point diverge de son voisin de gauche
-                // Cela divise le travail par 10 sur les zones propres
-                if (Math.abs(val - raw[idx-1]) > 100) {
+                // Filtre Médian Sélectif renforcé
+                if (Math.abs(val - raw[idx-1]) > 80) {
                     const n = [
                         raw[idx-257], raw[idx-256], raw[idx-255],
                         raw[idx-1],   val,          raw[idx+1],
@@ -132,8 +126,8 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         for (let i = 0; i < vertices.length / 3; i++) {
             const u = uvs[i * 2], v = uvs[i * 2 + 1];
             const h = getH(u * 255, v * 255);
-            const vertexLat = tileToLat(ty + (1.0 - v), zoom);
-            vertices[i * 3 + 1] = Math.max(-20, h * (1 / Math.cos(vertexLat * Math.PI / 180)));
+            // TERMINÉ LE MULTIPLICATEUR : 1 unité = 1 mètre réel
+            vertices[i * 3 + 1] = Math.max(-10, h);
         }
         
         geometry.computeVertexNormals();
