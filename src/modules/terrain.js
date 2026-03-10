@@ -13,7 +13,7 @@ export function lngLatToTile(lon, lat, zoom) {
 }
 
 export function lngLatToWorld(lon, lat) {
-    const zoom = state.ZOOM;
+    const zoom = state.ZOOM; // Toujours se baser sur le zoom de référence pour le monde 3D
     const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
     const xfrac = (lon + 180) / 360 * Math.pow(2, zoom);
     const yfrac = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom);
@@ -47,26 +47,24 @@ export function clearLabels() {
 
 export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
     if (!state.mapCenter) state.mapCenter = { lat: state.TARGET_LAT, lon: state.TARGET_LON };
+    
+    // --- CALCUL DU ZOOM DYNAMIQUE (LOD) ---
+    let newZoom = 13;
+    if (camAltitude < 3000) newZoom = 15;
+    else if (camAltitude < 8000) newZoom = 14;
+    else if (camAltitude < 15000) newZoom = 13;
+    else newZoom = 12;
+
+    // Si le zoom change, on force un rafraîchissement total pour la netteté
+    if (newZoom !== state.currentZoom) {
+        state.currentZoom = newZoom;
+        // On ne clear pas tout violemment pour éviter le clignotement, 
+        // les tuiles se remplaceront au fur et à mesure.
+    }
+
     const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, state.ZOOM);
-    let centerTile;
-    if (worldX !== undefined && worldZ !== undefined) {
-        centerTile = { x: state.originTile.x + Math.round(worldX / tileSizeMeters), y: state.originTile.y + Math.round(worldZ / tileSizeMeters), z: state.ZOOM };
-    } else {
-        centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, state.ZOOM);
-    }
-
-    const currentX = worldX || 0;
-    const currentZ = worldZ || 0;
-    for (const [name, obj] of activeLabels.entries()) {
-        const dx = obj.sprite.position.x - currentX;
-        const dz = obj.sprite.position.z - currentZ;
-        if (dx*dx + dz*dz > 1600000000) { 
-            state.scene.remove(obj.sprite);
-            state.scene.remove(obj.line);
-            activeLabels.delete(name);
-        }
-    }
-
+    const centerTileRef = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, state.ZOOM);
+    
     fetchNearbyPeaks(camLat || state.TARGET_LAT, camLon || state.TARGET_LON).then(peaks => {
         peaks.forEach(p => {
             if (!activeLabels.has(p.name)) {
@@ -88,15 +86,24 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
     let range = state.RANGE; 
     const cleanRange = range + 1;
     const keptTiles = new Set();
+
+    // On calcule les tuiles à charger selon le zoom actuel
+    // Mais on garde le repère de la grille ZOOM 13 pour le placement
     for (let dy = -cleanRange; dy <= cleanRange; dy++) {
         for (let dx = -cleanRange; dx <= cleanRange; dx++) {
-            const tx = centerTile.x + dx, ty = centerTile.y + dy, key = `${tx}_${ty}_${state.ZOOM}`;
+            const txRef = centerTileRef.x + dx;
+            const tyRef = centerTileRef.y + dy;
+            const key = `${txRef}_${tyRef}_${state.currentZoom}`; // Clé unique incluant le zoom actuel
+            
             if (Math.abs(dx) <= range && Math.abs(dy) <= range) {
-                if (!activeTiles.has(key)) loadSingleTile(tx, ty, state.ZOOM, centerTile, key);
+                if (!activeTiles.has(key)) {
+                    loadSingleTileMultiZoom(txRef, tyRef, state.ZOOM, state.currentZoom, key);
+                }
             }
             keptTiles.add(key);
         }
     }
+
     for (const [key, tileObj] of activeTiles.entries()) {
         if (!keptTiles.has(key)) {
             if (tileObj && tileObj.mesh) {
@@ -109,21 +116,32 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
     }
 }
 
-async function loadSingleTile(tx, ty, zoom, originTile, key) {
+// Nouvelle fonction capable de charger une sous-tuile haute résolution pour une zone donnée
+async function loadSingleTileMultiZoom(txRef, tyRef, zoomRef, targetZoom, key) {
     const tileObj = { status: 'loading', mesh: null };
     activeTiles.set(key, tileObj);
+
+    // Calcul des coordonnées GPS du coin de la tuile de référence
+    const lonMin = txRef / Math.pow(2, zoomRef) * 360 - 180;
+    const nMin = Math.PI - 2 * Math.PI * tyRef / Math.pow(2, zoomRef);
+    const latMax = 180 / Math.PI * Math.atan(0.5 * (Math.exp(nMin) - Math.exp(-nMin)));
+
+    // Si on veut un zoom plus élevé, on doit trouver la tuile correspondante au targetZoom
+    const targetTile = lngLatToTile(lonMin + 0.0001, latMax - 0.0001, targetZoom);
+    const tx = targetTile.x;
+    const ty = targetTile.y;
+    const zoom = targetZoom;
+
     try {
         const opts = { colorSpaceConversion: 'none', premultiplyAlpha: 'none' };
         const pElev = fetch(`https://api.maptiler.com/tiles/terrain-rgb-v2/${zoom}/${tx}/${ty}.png?key=${state.MK}`).then(r => r.blob()).then(b => createImageBitmap(b, opts));
 
-        // --- GESTION DES SOURCES DE CARTES ---
         let urlColor = "";
         if (!state.SHOW_TRAILS) {
             urlColor = `https://api.maptiler.com/maps/satellite/256/${zoom}/${tx}/${ty}@2x.jpg?key=${state.MK}`;
         } else {
             switch(state.MAP_SOURCE) {
                 case 'opentopomap':
-                    // OpenTopoMap utilise a, b, c comme sous-domaines
                     const s = ['a', 'b', 'c'][Math.floor(Math.random() * 3)];
                     urlColor = `https://${s}.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`;
                     break;
@@ -133,16 +151,12 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
                 case 'maptiler-topo':
                     urlColor = `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.png?key=${state.MK}`;
                     break;
-                default: // outdoor-v2
+                default: 
                     urlColor = `https://api.maptiler.com/maps/outdoor-v2/256/${zoom}/${tx}/${ty}@2x.png?key=${state.MK}`;
             }
         }
 
-        const pColor = fetch(urlColor).then(r => {
-            if(!r.ok) throw new Error('404');
-            return r.blob();
-        }).then(b => createImageBitmap(b));
-
+        const pColor = fetch(urlColor).then(r => r.ok ? r.blob() : Promise.reject('404')).then(b => createImageBitmap(b));
         const [imgElev, imgColor] = await Promise.all([pElev, pColor]);
         if (activeTiles.get(key) !== tileObj) return;
 
@@ -175,9 +189,14 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         colorTex.colorSpace = THREE.SRGBColorSpace;
         colorTex.flipY = false; 
 
+        // Important : On dimensionne la tuile selon sa taille réelle au zoom actuel
         const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
-        const dx = (tx - state.originTile.x) * tileSizeMeters;
-        const dz = (ty - state.originTile.y) * tileSizeMeters;
+        
+        // On calcule sa position par rapport à l'origine (qui est restée au zoomRef)
+        const xWorld = (tx / Math.pow(2, zoom) * 360 - 180);
+        const nWorld = Math.PI - 2 * Math.PI * ty / Math.pow(2, zoom);
+        const yWorld = 180 / Math.PI * Math.atan(0.5 * (Math.exp(nWorld) - Math.exp(-nWorld)));
+        const posWorld = lngLatToWorld(xWorld, yWorld);
 
         const geometry = new THREE.PlaneGeometry(tileSizeMeters, tileSizeMeters, state.RESOLUTION, state.RESOLUTION);
         geometry.rotateX(-Math.PI / 2);
@@ -194,16 +213,19 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         for (let i = 0; i < vertices.length / 3; i++) {
             const u = uvs[i * 2], v = uvs[i * 2 + 1];
             const h = getH(u * 255, v * 255);
+            const vertexLat = yWorld - (v * (tileSizeMeters / 111320)); // Approximation locale pour le scale
             vertices[i * 3 + 1] = Math.max(-10, h * state.RELIEF_EXAGGERATION);
         }
 
         geometry.computeVertexNormals();
         const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ map: colorTex, roughness: 0.9, metalness: 0.0 }));
-        mesh.position.set(dx, 0, dz);
+        
+        // On décale de la moitié de la tuile car PlaneGeometry est centrée
+        mesh.position.set(posWorld.x + tileSizeMeters/2, 0, posWorld.z + tileSizeMeters/2);
+        
         mesh.castShadow = mesh.receiveShadow = true;
         state.scene.add(mesh);
         tileObj.status = 'loaded'; tileObj.mesh = mesh;
-        if (document.getElementById('bgo')) document.getElementById('bgo').textContent = "Recharger le relief";
     } catch (e) {
         if (activeTiles.get(key) === tileObj) tileObj.status = 'failed';
     }

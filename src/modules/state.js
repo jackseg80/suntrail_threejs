@@ -3,7 +3,8 @@ export const state = {
     simDate: new Date(),
     TARGET_LAT: 45.8326, // Mont Blanc par défaut
     TARGET_LON: 6.8652,
-    ZOOM: 13, // HD Zoom
+    ZOOM: 13, // Zoom de référence
+    currentZoom: 13, // Zoom dynamique réel
     
     // Paramètres de Performance
     RESOLUTION: 128, // Par défaut réduit à 128 pour la fluidité
