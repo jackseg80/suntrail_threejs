@@ -6,10 +6,11 @@ const EARTH_CIRCUMFERENCE = 40075016.68;
 export const activeTiles = new Map(); 
 export const activeLabels = new Map(); 
 
+// LA RÉFÉRENCE ABSOLUE DU MONDE (v2.0.0)
 const REF_ZOOM = 13;
 const TILE_SIZE_REF = EARTH_CIRCUMFERENCE / Math.pow(2, REF_ZOOM);
 
-// --- CONVERSIONS (LOGIQUE v2.0.0) ---
+// --- FONCTIONS DE CONVERSION (STABLES v2.0.0) ---
 
 export function lngLatToTile(lon, lat, zoom) {
     const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
@@ -91,9 +92,9 @@ async function loadTile(tx, ty, zoom, key) {
         const scale = Math.pow(2, zoom - REF_ZOOM);
         const tileSizeMeters = TILE_SIZE_REF / scale;
         
-        // Position relative par rapport à la tuile d'origine Z13 (Logique v2.0.0)
-        const dx = (tx / scale - state.originTile.x) * TILE_SIZE_REF;
-        const dz = (ty / scale - state.originTile.y) * TILE_SIZE_REF;
+        // Position NW de la tuile par rapport à l'origine du monde Z13
+        const worldX_NW = (tx / scale - (state.originTile.x + 0.5)) * TILE_SIZE_REF;
+        const worldZ_NW = (ty / scale - (state.originTile.y + 0.5)) * TILE_SIZE_REF;
 
         const elevZoom = Math.min(zoom, 14);
         let eTx = tx, eTy = ty;
@@ -130,7 +131,7 @@ async function loadTile(tx, ty, zoom, key) {
         const vertices = geometry.attributes.position.array;
         const uvs = geometry.attributes.uv.array;
 
-        // INVERSION UV v2.0.0 (Indispensable pour texte à l'endroit)
+        // INVERSION UV v2.0.0 (Essentiel pour texte à l'endroit)
         for (let i = 1; i < uvs.length; i += 2) uvs[i] = 1.0 - uvs[i];
 
         for (let i = 0; i < vertices.length / 3; i++) {
@@ -151,8 +152,8 @@ async function loadTile(tx, ty, zoom, key) {
         texture.colorSpace = THREE.SRGBColorSpace; texture.flipY = false; 
         
         const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ map: texture, roughness: 0.8, metalness: 0.1 }));     
-        // Position relative par rapport au NW de la tuile d'origine
-        mesh.position.set(dx + tileSizeMeters/2 - TILE_SIZE_REF/2, 0, dz + tileSizeMeters/2 - TILE_SIZE_REF/2);
+        // Placement NW + décalage vers le centre (PlaneGeometry est centrée)
+        mesh.position.set(worldX_NW + tileSizeMeters/2, 0, worldZ_NW + tileSizeMeters/2);
         mesh.castShadow = mesh.receiveShadow = true;
         state.scene.add(mesh);
         tileObj.mesh = mesh; tileObj.status = 'loaded';
