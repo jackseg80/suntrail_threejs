@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { state } from './state.js';
 import { updateSunPosition } from './sun.js';
 import { initScene } from './scene.js';
-import { loadTerrain, updateVisibleTiles, activeTiles, lngLatToTile } from './terrain.js';
+import { loadTerrain, updateVisibleTiles, activeTiles, lngLatToTile, clearLabels } from './terrain.js';
 
 export function initUI() {
     const s1 = localStorage.getItem('maptiler_key_3d');
@@ -146,6 +146,7 @@ export function initUI() {
 
 async function refreshTerrain() {
     // Destruction totale et reconstruction
+    clearLabels();
     for (const [key, tileObj] of activeTiles.entries()) {
         if (tileObj && tileObj.mesh) {
             state.scene.remove(tileObj.mesh);

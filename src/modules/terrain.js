@@ -20,6 +20,18 @@ function lngLatToWorld(lon, lat) {
     return { x: (x - state.originTile.x) * tileSizeMeters, z: (y - state.originTile.y) * tileSizeMeters };
 }
 
+export function clearLabels() {
+    for (const [name, obj] of activeLabels.entries()) {
+        state.scene.remove(obj.sprite);
+        state.scene.remove(obj.line);
+        obj.sprite.material.map.dispose();
+        obj.sprite.material.dispose();
+        obj.line.geometry.dispose();
+        obj.line.material.dispose();
+    }
+    activeLabels.clear();
+}
+
 export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
     if (!state.mapCenter) state.mapCenter = { lat: state.TARGET_LAT, lon: state.TARGET_LON };
     
@@ -31,24 +43,29 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
         centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, state.ZOOM);
     }
 
-    // Gestion asynchrone des labels avec ligne de rappel
+    // 1. Nettoyage des labels trop éloignés (> 40km)
+    const currentX = worldX || 0;
+    const currentZ = worldZ || 0;
+    for (const [name, obj] of activeLabels.entries()) {
+        const dist = Math.sqrt(Math.pow(obj.sprite.position.x - currentX, 2) + Math.pow(obj.sprite.position.z - currentZ, 2));
+        if (dist > 40000) {
+            state.scene.remove(obj.sprite);
+            state.scene.remove(obj.line);
+            activeLabels.delete(name);
+        }
+    }
+
+    // 2. Chargement des nouveaux labels
     fetchNearbyPeaks(camLat || state.TARGET_LAT, camLon || state.TARGET_LON).then(peaks => {
         peaks.forEach(p => {
             if (!activeLabels.has(p.name)) {
                 const pos = lngLatToWorld(p.lon, p.lat);
-                
-                // 1. Création du label flottant
                 const sprite = createLabelSprite(p.name);
                 sprite.position.set(pos.x, 6000, pos.z); 
                 sprite.renderOrder = 9999;
                 state.scene.add(sprite);
 
-                // 2. Création du "mât" (ligne de rappel)
-                // On fait descendre la ligne de 6000m jusqu'au sommet réel (ou un peu en dessous)
-                const points = [
-                    new THREE.Vector3(pos.x, 5950, pos.z),
-                    new THREE.Vector3(pos.x, p.alt || 0, pos.z)
-                ];
+                const points = [new THREE.Vector3(pos.x, 5950, pos.z), new THREE.Vector3(pos.x, p.alt || 0, pos.z)];
                 const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
                 const lineMat = new THREE.LineBasicMaterial({ color: 0xd4af37, transparent: true, opacity: 0.5 });
                 const line = new THREE.Line(lineGeo, lineMat);
