@@ -93,6 +93,16 @@ export async function initScene() {
     window.addEventListener('resize', onWindowResize);
     state.renderer.setAnimationLoop(() => {
         state.controls.update();
+
+        // ANIMATION DU TEMPS
+        if (state.isAnimating) {
+            const slider = document.getElementById('time-slider');
+            let currentMins = parseInt(slider.value);
+            currentMins = (currentMins + state.animationSpeed) % 1440;
+            slider.value = currentMins;
+            updateSunPosition(currentMins);
+        }
+
         if (state.camera) {
             const disk = document.getElementById('compass-disk');
             if (disk) {

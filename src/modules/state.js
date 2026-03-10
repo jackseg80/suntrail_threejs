@@ -15,6 +15,10 @@ export const state = {
     SHOW_TRAILS: true, // Affiche les sentiers par défaut (Outdoor map)
     FOG_DENSITY: 0.00001, // Intensité du brouillard par défaut (10)
     
+    // Animation temporelle
+    isAnimating: false,
+    animationSpeed: 1, // Minutes par frame de simulation
+    
     // Position initiale pour le repère 3D (évite les superpositions)
     initialLat: 45.8326,
     initialLon: 6.8652,

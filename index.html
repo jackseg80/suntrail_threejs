@@ -39,6 +39,16 @@
         
         <label>Heure : <span id="time-disp" style="color:var(--accent); font-weight:700;">12:00</span></label>
         <input type="range" id="time-slider" min="0" max="1439" value="720">
+        
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.8rem; align-items: center;">
+            <button id="play-btn" style="flex: 1; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: white; cursor: pointer; font-size: 0.8rem; font-weight: 700;">▶ Lecture</button>
+            <select id="speed-select" style="padding: 0.5rem; border-radius: 8px; font-size: 0.75rem;">
+                <option value="0.5">Vitesse 0.5x</option>
+                <option value="1" selected>Vitesse 1x</option>
+                <option value="2">Vitesse 2x</option>
+                <option value="5">Vitesse 5x</option>
+            </select>
+        </div>
     </div>
 
     <!-- BOUSSOLE SOLAIRE (NOUVEAU) -->

@@ -76,6 +76,18 @@ export function initUI() {
     const trailsToggle = document.getElementById('trails-toggle');
     const shadowResSelect = document.getElementById('shadow-res-select');
     const pixelLimitSelect = document.getElementById('pixel-limit-select');
+    const playBtn = document.getElementById('play-btn');
+    const speedSelect = document.getElementById('speed-select');
+
+    playBtn.addEventListener('click', () => {
+        state.isAnimating = !state.isAnimating;
+        playBtn.textContent = state.isAnimating ? "⏸ Pause" : "▶ Lecture";
+        playBtn.style.background = state.isAnimating ? "rgba(59, 130, 246, 0.2)" : "rgba(255,255,255,0.05)";
+    });
+
+    speedSelect.addEventListener('change', (e) => {
+        state.animationSpeed = parseFloat(e.target.value);
+    });
 
     resSlider.addEventListener('change', async (e) => {
         state.RESOLUTION = parseInt(e.target.value);
