@@ -54,8 +54,8 @@ export async function initScene() {
         state.TARGET_LON = state.initialLon + dLon;
         state.TARGET_LAT = state.initialLat + dLat;
 
-        // Passe la distance de la caméra au sol pour adapter le rayon de chargement
-        updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, state.controls.getDistance());
+        // Passe la position X,Z exacte pour un calcul de tuiles sans erreur d'approximation
+        updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, state.controls.getDistance(), dx, dz);
     }, 200);
     
     state.controls.addEventListener('change', throttledUpdate);

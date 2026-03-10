@@ -15,15 +15,24 @@ function tileToLat(y, z) {
     return (180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))));
 }
 
-export async function updateVisibleTiles(camLat, camLon, camAltitude) {
+export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
     if (!state.mapCenter) {
         state.mapCenter = { lat: state.TARGET_LAT, lon: state.TARGET_LON };
     }
 
-    const currentLat = camLat || state.TARGET_LAT;
-    const currentLon = camLon || state.TARGET_LON;
-
-    const centerTile = lngLatToTile(currentLon, currentLat, state.ZOOM);
+    const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, state.ZOOM);
+    
+    // Calcul de la tuile centrale basé DIRECTEMENT sur la position 3D (évite les décalages lat/lon)
+    let centerTile;
+    if (worldX !== undefined && worldZ !== undefined) {
+        centerTile = {
+            x: state.originTile.x + Math.round(worldX / tileSizeMeters),
+            y: state.originTile.y + Math.round(worldZ / tileSizeMeters),
+            z: state.ZOOM
+        };
+    } else {
+        centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, state.ZOOM);
+    }
     
     // Range dynamique : Utilisation de la valeur du state (ou boostée si altitude élevée)
     let range = state.RANGE; 
