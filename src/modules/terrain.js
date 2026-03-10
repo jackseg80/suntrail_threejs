@@ -6,201 +6,207 @@ const EARTH_CIRCUMFERENCE = 40075016.68;
 export const activeTiles = new Map(); 
 export const activeLabels = new Map(); 
 
-const WORLD_ZOOM = 13; // Le monde est ancré sur le Zoom 13
-const TILE_SIZE_WORLD = EARTH_CIRCUMFERENCE / Math.pow(2, WORLD_ZOOM);
-
-// --- MERCATOR MATH (v2.0.0 STABLE) ---
-
 export function lngLatToTile(lon, lat, zoom) {
-    const x = (lon + 180) / 360 * Math.pow(2, zoom);
-    const y = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom);
-    return { x: Math.floor(x), y: Math.floor(y), z: zoom };
+    const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
+    const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
+    return { x, y, z: zoom };
 }
 
 export function lngLatToWorld(lon, lat) {
-    const scale = Math.pow(2, WORLD_ZOOM);
-    const x = (lon + 180) / 360 * scale;
-    const y = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * scale;
-    // v2.0.0 logic: center based on originTile
-    return {
-        x: (x - (state.originTile.x + 0.5)) * TILE_SIZE_WORLD,
-        z: (y - (state.originTile.y + 0.5)) * TILE_SIZE_WORLD
-    };
+    const zoom = state.ZOOM;
+    const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
+    const xfrac = (lon + 180) / 360 * Math.pow(2, zoom);
+    const yfrac = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom);
+    const worldX = (xfrac - (state.originTile.x + 0.5)) * tileSizeMeters;
+    const worldZ = (yfrac - (state.originTile.y + 0.5)) * tileSizeMeters;
+    return { x: worldX, z: worldZ };
 }
 
 export function worldToLngLat(worldX, worldZ) {
-    const scale = Math.pow(2, WORLD_ZOOM);
-    const x = (worldX / TILE_SIZE_WORLD) + (state.originTile.x + 0.5);
-    const y = (worldZ / TILE_SIZE_WORLD) + (state.originTile.y + 0.5);
-    const lon = x / scale * 360 - 180;
-    const n = Math.PI - 2 * Math.PI * y / scale;
+    const zoom = state.ZOOM;
+    const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
+    const xfrac = (worldX / tileSizeMeters) + (state.originTile.x + 0.5);
+    const yfrac = (worldZ / tileSizeMeters) + (state.originTile.y + 0.5);
+    const lon = xfrac / Math.pow(2, zoom) * 360 - 180;
+    const n = Math.PI - 2 * Math.PI * yfrac / Math.pow(2, zoom);
     const lat = 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
     return { lat, lon };
 }
 
 export function clearLabels() {
     for (const [name, obj] of activeLabels.entries()) {
-        state.scene.remove(obj.sprite); state.scene.remove(obj.line);
+        state.scene.remove(obj.sprite);
+        state.scene.remove(obj.line);
         if (obj.sprite.material.map) obj.sprite.material.map.dispose();
-        obj.sprite.material.dispose(); obj.line.geometry.dispose(); obj.line.material.dispose();
+        obj.sprite.material.dispose();
+        obj.line.geometry.dispose();
+        obj.line.material.dispose();
     }
     activeLabels.clear();
 }
 
-// --- MOTEUR DE TERRAIN ---
-
 export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
     if (!state.mapCenter) state.mapCenter = { lat: state.TARGET_LAT, lon: state.TARGET_LON };
-    
-    // On travaille toujours par rapport au secteur Z13 (v2.0.0)
-    const centerSector = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, WORLD_ZOOM);
-    const range = state.RANGE;
-    const neededTiles = new Set();
+    const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, state.ZOOM);
+    let centerTile;
+    if (worldX !== undefined && worldZ !== undefined) {
+        centerTile = { x: state.originTile.x + Math.round(worldX / tileSizeMeters), y: state.originTile.y + Math.round(worldZ / tileSizeMeters), z: state.ZOOM };
+    } else {
+        centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, state.ZOOM);
+    }
 
-    const curX = worldX || 0;
-    const curZ = worldZ || 0;
-
-    for (let dy = -range; dy <= range; dy++) {
-        for (let dx = -range; dx <= range; dx++) {
-            const sx = centerSector.x + dx;
-            const sy = centerSector.y + dy;
-            
-            const sectorX = (sx - state.originTile.x) * TILE_SIZE_WORLD;
-            const sectorZ = (sy - state.originTile.y) * TILE_SIZE_WORLD;
-            const dist = Math.sqrt(Math.pow(sectorX - curX, 2) + Math.pow(sectorZ - curZ, 2));
-            const trueDist = Math.sqrt(dist*dist + camAltitude*camAltitude);
-
-            // LOGIQUE DE SUBDIVISION (LOD)
-            if (trueDist < 5000) {
-                for (let i = 0; i < 4; i++) {
-                    for (let j = 0; j < 4; j++) {
-                        const tx = sx * 4 + i, ty = sy * 4 + j;
-                        const key = `tile_15_${tx}_${ty}`;
-                        neededTiles.add(key);
-                        if (!activeTiles.has(key)) loadTile(tx, ty, 15, key);
-                    }
-                }
-            } else if (trueDist < 10000) {
-                for (let i = 0; i < 2; i++) {
-                    for (let j = 0; j < 2; j++) {
-                        const tx = sx * 2 + i, ty = sy * 2 + j;
-                        const key = `tile_14_${tx}_${ty}`;
-                        neededTiles.add(key);
-                        if (!activeTiles.has(key)) loadTile(tx, ty, 14, key);
-                    }
-                }
-            } else {
-                const key = `tile_13_${sx}_${sy}`;
-                neededTiles.add(key);
-                if (!activeTiles.has(key)) loadTile(sx, sy, 13, key);
-            }
+    const currentX = worldX || 0;
+    const currentZ = worldZ || 0;
+    for (const [name, obj] of activeLabels.entries()) {
+        const dx = obj.sprite.position.x - currentX;
+        const dz = obj.sprite.position.z - currentZ;
+        if (dx*dx + dz*dz > 1600000000) { 
+            state.scene.remove(obj.sprite);
+            state.scene.remove(obj.line);
+            activeLabels.delete(name);
         }
     }
 
+    fetchNearbyPeaks(camLat || state.TARGET_LAT, camLon || state.TARGET_LON).then(peaks => {
+        peaks.forEach(p => {
+            if (!activeLabels.has(p.name)) {
+                const pos = lngLatToWorld(p.lon, p.lat);
+                const sprite = createLabelSprite(p.name);
+                sprite.position.set(pos.x, 6000, pos.z); 
+                sprite.renderOrder = 9999;
+                state.scene.add(sprite);
+                const points = [new THREE.Vector3(pos.x, 5950, pos.z), new THREE.Vector3(pos.x, p.alt || 0, pos.z)];
+                const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+                const lineMat = new THREE.LineBasicMaterial({ color: 0xd4af37, transparent: true, opacity: 0.5 });
+                const line = new THREE.Line(lineGeo, lineMat);
+                state.scene.add(line);
+                activeLabels.set(p.name, { sprite, line });
+            }
+        });
+    });
+
+    let range = state.RANGE; 
+    const cleanRange = range + 1;
+    const keptTiles = new Set();
+    for (let dy = -cleanRange; dy <= cleanRange; dy++) {
+        for (let dx = -cleanRange; dx <= cleanRange; dx++) {
+            const tx = centerTile.x + dx, ty = centerTile.y + dy, key = `${tx}_${ty}_${state.ZOOM}`;
+            if (Math.abs(dx) <= range && Math.abs(dy) <= range) {
+                if (!activeTiles.has(key)) loadSingleTile(tx, ty, state.ZOOM, centerTile, key);
+            }
+            keptTiles.add(key);
+        }
+    }
     for (const [key, tileObj] of activeTiles.entries()) {
-        if (!neededTiles.has(key)) {
-            if (tileObj.mesh) {
+        if (!keptTiles.has(key)) {
+            if (tileObj && tileObj.mesh) {
                 state.scene.remove(tileObj.mesh);
                 tileObj.mesh.geometry.dispose();
-                if (tileObj.mesh.material.map) tileObj.mesh.material.map.dispose();
                 tileObj.mesh.material.dispose();
             }
             activeTiles.delete(key);
         }
     }
-    updateLabels(camLat, camLon, worldX, worldZ);
 }
 
-async function loadTile(tx, ty, zoom, key) {
+async function loadSingleTile(tx, ty, zoom, originTile, key) {
     const tileObj = { status: 'loading', mesh: null };
     activeTiles.set(key, tileObj);
-
     try {
-        const numTiles = Math.pow(2, zoom);
-        const tileSizeMeters = EARTH_CIRCUMFERENCE / numTiles;
-        
-        // --- POSITIONNEMENT PAR SUBDIVISION (ZÉRO ERREUR) ---
-        // Le centre du monde est le centre de originTile (Zoom 13)
-        const scale = Math.pow(2, zoom - WORLD_ZOOM);
-        const worldX = ( (tx + 0.5) / scale - (state.originTile.x + 0.5) ) * TILE_SIZE_WORLD;
-        const worldZ = ( (ty + 0.5) / scale - (state.originTile.y + 0.5) ) * TILE_SIZE_WORLD;
-
-        const elevZoom = Math.min(zoom, 14);
-        let eTx = tx, eTy = ty;
-        if (zoom === 15) { eTx = Math.floor(tx/2); eTy = Math.floor(ty/2); }
-        
         const opts = { colorSpaceConversion: 'none', premultiplyAlpha: 'none' };
-        const pElev = fetch(`https://api.maptiler.com/tiles/terrain-rgb-v2/${elevZoom}/${eTx}/${eTy}.png?key=${state.MK}`).then(r => r.blob()).then(b => createImageBitmap(b, opts));
+        const pElev = fetch(`https://api.maptiler.com/tiles/terrain-rgb-v2/${zoom}/${tx}/${ty}.png?key=${state.MK}`).then(r => r.blob()).then(b => createImageBitmap(b, opts));
 
-        let urlMap = "";
+        // --- GESTION DES SOURCES DE CARTES ---
+        let urlColor = "";
         if (!state.SHOW_TRAILS) {
-            urlMap = `https://api.maptiler.com/maps/satellite/256/${zoom}/${tx}/${ty}@2x.jpg?key=${state.MK}`;
+            urlColor = `https://api.maptiler.com/maps/satellite/256/${zoom}/${tx}/${ty}@2x.jpg?key=${state.MK}`;
         } else {
             switch(state.MAP_SOURCE) {
-                case 'swisstopo': urlMap = `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${zoom}/${tx}/${ty}.jpeg`; break;
-                case 'opentopomap': urlMap = `https://a.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`; break;
-                default: urlMap = `https://api.maptiler.com/maps/outdoor-v2/256/${zoom}/${tx}/${ty}@2x.png?key=${state.MK}`;
+                case 'opentopomap':
+                    // OpenTopoMap utilise a, b, c comme sous-domaines
+                    const s = ['a', 'b', 'c'][Math.floor(Math.random() * 3)];
+                    urlColor = `https://${s}.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`;
+                    break;
+                case 'swisstopo':
+                    urlColor = `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${zoom}/${tx}/${ty}.jpeg`;
+                    break;
+                case 'maptiler-topo':
+                    urlColor = `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.png?key=${state.MK}`;
+                    break;
+                default: // outdoor-v2
+                    urlColor = `https://api.maptiler.com/maps/outdoor-v2/256/${zoom}/${tx}/${ty}@2x.png?key=${state.MK}`;
             }
         }
-        const pColor = fetch(urlMap).then(r => r.ok ? r.blob() : Promise.reject('404')).then(b => createImageBitmap(b));
-        const [imgElev, imgColor] = await Promise.all([pElev, pColor]);
 
+        const pColor = fetch(urlColor).then(r => {
+            if(!r.ok) throw new Error('404');
+            return r.blob();
+        }).then(b => createImageBitmap(b));
+
+        const [imgElev, imgColor] = await Promise.all([pElev, pColor]);
         if (activeTiles.get(key) !== tileObj) return;
 
-        const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256;
-        const ctx = canvas.getContext('2d'); ctx.drawImage(imgElev, 0, 0);
-        const heights = new Float32Array(256 * 256);
+        const canvas = document.createElement('canvas');
+        canvas.width = 256; canvas.height = 256;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(imgElev, 0, 0, 256, 256);
         const data = ctx.getImageData(0, 0, 256, 256).data;
+        const raw = new Float32Array(256 * 256);
+        const cleaned = new Float32Array(256 * 256);
+
         for (let i = 0; i < data.length; i += 4) {
-            heights[i/4] = -10000 + ((data[i] * 65536 + data[i+1] * 256 + data[i+2]) * 0.1);
+            const h = -10000 + ((data[i] * 65536 + data[i+1] * 256 + data[i+2]) * 0.1);
+            raw[i/4] = (h < -1000 || h > 9000) ? 0 : h;
         }
+
+        for (let y = 0; y < 256; y++) {
+            for (let x = 0; x < 256; x++) {
+                const idx = y * 256 + x;
+                const val = raw[idx];
+                if (x === 0 || x === 255 || y === 0 || y === 255) { cleaned[idx] = val; continue; }
+                if (Math.abs(val - raw[idx-1]) > 80) {
+                    const n = [raw[idx-257], raw[idx-256], raw[idx-255], raw[idx-1], val, raw[idx+1], raw[idx+255], raw[idx+256], raw[idx+257]].sort((a, b) => a - b);
+                    cleaned[idx] = n[4];
+                } else { cleaned[idx] = val; }
+            }
+        }
+
+        const colorTex = new THREE.CanvasTexture(imgColor);
+        colorTex.colorSpace = THREE.SRGBColorSpace;
+        colorTex.flipY = false; 
+
+        const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
+        const dx = (tx - state.originTile.x) * tileSizeMeters;
+        const dz = (ty - state.originTile.y) * tileSizeMeters;
 
         const geometry = new THREE.PlaneGeometry(tileSizeMeters, tileSizeMeters, state.RESOLUTION, state.RESOLUTION);
         geometry.rotateX(-Math.PI / 2);
         const vertices = geometry.attributes.position.array;
         const uvs = geometry.attributes.uv.array;
-
-        // INVERSION UV v2.0.0 (Garantie textes à l'endroit)
         for (let i = 1; i < uvs.length; i += 2) uvs[i] = 1.0 - uvs[i];
 
+        function getH(px, py) {
+            const x0 = Math.max(0, Math.min(254, Math.floor(px))), y0 = Math.max(0, Math.min(254, Math.floor(py)));
+            const x1 = x0 + 1, y1 = y0 + 1, wx = px - x0, wy = py - y0;
+            return cleaned[y0*256+x0]*(1-wx)*(1-wy) + cleaned[y0*256+x1]*wx*(1-wy) + cleaned[y1*256+x0]*(1-wx)*wy + cleaned[y1*256+x1]*wx*wy;
+        }
+
         for (let i = 0; i < vertices.length / 3; i++) {
-            const u = uvs[i * 2], v = uvs[i * 2 + 1]; 
-            let pu = u, pv = v;
-            if (zoom === 15) {
-                pu = (tx % 2) * 0.5 + u * 0.5;
-                pv = (ty % 2) * 0.5 + v * 0.5;
-            }
-            const px = pu * 255, py = pv * 255;
-            const x0 = Math.floor(px), y0 = Math.floor(py), x1 = Math.min(255, x0+1), y1 = Math.min(255, y0+1);
-            const wx = px - x0, wy = py - y0;
-            const h = heights[y0*256+x0]*(1-wx)*(1-wy) + heights[y0*256+x1]*wx*(1-wy) + heights[y1*256+x0]*(1-wx)*wy + heights[y1*256+x1]*wx*wy;
+            const u = uvs[i * 2], v = uvs[i * 2 + 1];
+            const h = getH(u * 255, v * 255);
             vertices[i * 3 + 1] = Math.max(-10, h * state.RELIEF_EXAGGERATION);
         }
 
         geometry.computeVertexNormals();
-        const texture = new THREE.CanvasTexture(imgColor);
-        texture.colorSpace = THREE.SRGBColorSpace; texture.flipY = false; 
-        
-        const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ map: texture, roughness: 0.8, metalness: 0.1 }));     
-        mesh.position.set(worldX, 0, worldZ); 
+        const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ map: colorTex, roughness: 0.9, metalness: 0.0 }));
+        mesh.position.set(dx, 0, dz);
         mesh.castShadow = mesh.receiveShadow = true;
         state.scene.add(mesh);
-        tileObj.mesh = mesh; tileObj.status = 'loaded';
-    } catch (e) { activeTiles.delete(key); }
-}
-
-async function updateLabels(lat, lon, worldX, worldZ) {
-    const peaks = await fetchNearbyPeaks(lat || state.TARGET_LAT, lon || state.TARGET_LON);
-    peaks.forEach(p => {
-        if (!activeLabels.has(p.name)) {
-            const pos = lngLatToWorld(p.lon, p.lat);
-            const sprite = createLabelSprite(p.name);
-            sprite.position.set(pos.x, 6000, pos.z);
-            const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(pos.x, 5950, pos.z), new THREE.Vector3(pos.x, 0, pos.z)]);
-            state.scene.add(sprite); state.scene.add(new THREE.Line(lineGeo, new THREE.LineBasicMaterial({color: 0xd4af37, transparent: true, opacity: 0.5})));
-            activeLabels.set(p.name, {sprite});
-        }
-    });
+        tileObj.status = 'loaded'; tileObj.mesh = mesh;
+        if (document.getElementById('bgo')) document.getElementById('bgo').textContent = "Recharger le relief";
+    } catch (e) {
+        if (activeTiles.get(key) === tileObj) tileObj.status = 'failed';
+    }
 }
 
 export async function loadTerrain() { await updateVisibleTiles(); }
