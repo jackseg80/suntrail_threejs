@@ -82,22 +82,29 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
             raw[i/4] = (h < -500 || h > 9000) ? 0 : h;
         }
 
-        // 2. FILTRE MÉDIAN 3x3 (L'arme fatale contre les pics isolés)
+        // 2. FILTRE ANTI-PICS SÉLECTIF (Beaucoup plus rapide)
         for (let y = 0; y < 256; y++) {
             for (let x = 0; x < 256; x++) {
                 const idx = y * 256 + x;
+                const val = raw[idx];
+                
                 if (x === 0 || x === 255 || y === 0 || y === 255) {
-                    cleaned[idx] = raw[idx];
+                    cleaned[idx] = val;
                     continue;
                 }
-                // On récupère les 9 voisins
-                const neighbors = [
-                    raw[idx-257], raw[idx-256], raw[idx-255],
-                    raw[idx-1],   raw[idx],     raw[idx+1],
-                    raw[idx+255], raw[idx+256], raw[idx+257]
-                ].sort((a, b) => a - b);
-                // On prend la valeur du milieu (médiane) : élimine radicalement les pics
-                cleaned[idx] = neighbors[4];
+
+                // Détection d'anomalie : on ne trie que si le point diverge de son voisin de gauche
+                // Cela divise le travail par 10 sur les zones propres
+                if (Math.abs(val - raw[idx-1]) > 100) {
+                    const n = [
+                        raw[idx-257], raw[idx-256], raw[idx-255],
+                        raw[idx-1],   val,          raw[idx+1],
+                        raw[idx+255], raw[idx+256], raw[idx+257]
+                    ].sort((a, b) => a - b);
+                    cleaned[idx] = n[4];
+                } else {
+                    cleaned[idx] = val;
+                }
             }
         }
 
