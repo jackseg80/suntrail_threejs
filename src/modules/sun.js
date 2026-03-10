@@ -16,30 +16,59 @@ export function updateSunPosition(minutes) {
     const pos = SunCalc.getPosition(date, state.TARGET_LAT, state.TARGET_LON);
     const moonPos = SunCalc.getMoonPosition(date, state.TARGET_LAT, state.TARGET_LON);
     const moonIllum = SunCalc.getMoonIllumination(date);
+    const times = SunCalc.getTimes(date, state.TARGET_LAT, state.TARGET_LON);
     
     const altDeg = pos.altitude * 180 / Math.PI;
+    const azDeg = (pos.azimuth * 180 / Math.PI) + 180;
     
-    document.getElementById('az-disp').textContent = ((pos.azimuth * 180 / Math.PI) + 180).toFixed(1);
-    document.getElementById('alt-disp').textContent = altDeg.toFixed(1);
+    // --- MISE À JOUR INFOS PRÉCISES ---
+    document.getElementById('az-val').textContent = `${azDeg.toFixed(1)}°`;
+    document.getElementById('alt-val').textContent = `${altDeg.toFixed(1)}°`;
+    
+    // Boussole Solaire (Radar)
+    const sunNeedle = document.getElementById('sun-needle');
+    if (sunNeedle) sunNeedle.style.transform = `translate(-50%, -50%) rotate(${azDeg}deg)`;
 
-    const times = SunCalc.getTimes(date, state.TARGET_LAT, state.TARGET_LON);
+    // Phase du soleil
+    const phaseSpan = document.getElementById('sun-phase');
+    if (altDeg > 5) {
+        phaseSpan.textContent = "☀️ Plein jour";
+        phaseSpan.style.color = "#FFD700";
+    } else if (altDeg > 0) {
+        phaseSpan.textContent = "🌅 Lever/Coucher";
+        phaseSpan.style.color = "#FF8C00";
+    } else if (altDeg > -6) {
+        phaseSpan.textContent = "🌆 Crépuscule civil";
+        phaseSpan.style.color = "#ADFF2F";
+    } else {
+        phaseSpan.textContent = "🌙 Nuit";
+        phaseSpan.style.color = "#87CEEB";
+    }
+
+    // Durée du jour
+    const diff = times.sunset - times.sunrise;
+    const dayHrs = Math.floor(diff / 3600000);
+    const dayMins = Math.floor((diff % 3600000) / 60000);
+    document.getElementById('day-duration').textContent = `${dayHrs}h${String(dayMins).padStart(2, '0')}`;
+
+    // Éphémérides classiques
     const fmt = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     document.getElementById('sunrise-disp').textContent = fmt(times.sunrise);
     document.getElementById('sunset-disp').textContent = fmt(times.sunset);
     
-    let phase = "Inconnue";
+    let moonPhaseText = "Inconnue";
     const p = moonIllum.phase;
-    if (p < 0.05 || p > 0.95) phase = "Nouvelle";
-    else if (p < 0.2) phase = "Premier Croissant";
-    else if (p < 0.3) phase = "Premier Quartier";
-    else if (p < 0.45) phase = "Gibbeuse Croissante";
-    else if (p < 0.55) phase = "Pleine";
-    else if (p < 0.7) phase = "Gibbeuse Décroissante";
-    else if (p < 0.8) phase = "Dernier Quartier";
-    else phase = "Dernier Croissant";
-    document.getElementById('moon-phase-disp').textContent = `${phase} (${(moonIllum.fraction * 100).toFixed(0)}%)`;
+    if (p < 0.05 || p > 0.95) moonPhaseText = "Nouvelle";
+    else if (p < 0.2) moonPhaseText = "Premier Croissant";
+    else if (p < 0.3) moonPhaseText = "Premier Quartier";
+    else if (p < 0.45) moonPhaseText = "Gibbeuse Croissante";
+    else if (p < 0.55) moonPhaseText = "Pleine";
+    else if (p < 0.7) moonPhaseText = "Gibbeuse Décroissante";
+    else if (p < 0.8) moonPhaseText = "Dernier Quartier";
+    else moonPhaseText = "Dernier Croissant";
+    document.getElementById('moon-phase-disp').textContent = `${moonPhaseText} (${(moonIllum.fraction * 100).toFixed(0)}%)`;
     
-    // --- POSITION FINALE ---
+    // --- POSITION FINALE POUR LE MOTEUR 3D ---
     let finalPhi = pos.altitude;
     let finalAz = pos.azimuth;
     let sunIntensity = 0;
@@ -47,17 +76,14 @@ export function updateSunPosition(minutes) {
     let ambientIntensity = 0.3;
 
     if (altDeg > 1) {
-        // Jour
         sunIntensity = Math.min(6.0, Math.sin(pos.altitude) * 12);
         ambientIntensity = 0.2 + (Math.sin(pos.altitude) * 0.4);
     } else if (altDeg > -12) {
-        // Crépuscule : Le ciel s'éteint progressivement
         const t = (altDeg + 12) / 13; 
         sunIntensity = t * 6.0;
         sunColor.lerpColors(new THREE.Color(0x9999ff), new THREE.Color(0xffaa44), t);
         ambientIntensity = 0.05 + (t * 0.15);
     } else {
-        // Nuit Noire : On passe sur la lune
         finalPhi = moonPos.altitude > 0 ? moonPos.altitude : -Math.PI/4;
         finalAz = moonPos.azimuth;
         sunIntensity = 0.1 + (moonIllum.fraction * 0.5);
@@ -76,12 +102,9 @@ export function updateSunPosition(minutes) {
     state.sunLight.color.copy(sunColor);
     if (state.ambientLight) state.ambientLight.intensity = ambientIntensity;
 
-    // --- CORRECTION DU CIEL ---
     if (state.sky) {
         const uniforms = state.sky.material.uniforms;
         uniforms['sunPosition'].value.copy(sunVector);
-        
-        // On réduit la diffusion la nuit pour éviter le ciel blanc
         const dayFactor = Math.max(0, Math.min(1, (altDeg + 5) / 10));
         uniforms['turbidity'].value = 1 + (dayFactor * 9);
         uniforms['rayleigh'].value = 0.2 + (dayFactor * 2.8);

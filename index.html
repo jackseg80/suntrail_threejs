@@ -41,10 +41,45 @@
         <input type="range" id="time-slider" min="0" max="1439" value="720">
     </div>
 
+    <!-- BOUSSOLE SOLAIRE (NOUVEAU) -->
+    <div class="control-group" style="border-top: 1px solid var(--border); padding-top: 1rem; text-align: center;">
+        <label style="text-align:left; font-size:0.75rem; color:var(--gold); text-transform:uppercase; letter-spacing:1px;">🧭 Boussole Solaire</label>
+        <div id="solar-radar" style="position:relative; width:120px; height:120px; margin: 1rem auto; border: 2px solid var(--border); border-radius: 50%; background: rgba(255,255,255,0.02);">
+            <div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:10px; font-weight:700;">N</div>
+            <div style="position:absolute; bottom:-12px; left:50%; transform:translateX(-50%); font-size:10px; font-weight:700;">S</div>
+            <div style="position:absolute; right:-12px; top:50%; transform:translateY(-50%); font-size:10px; font-weight:700;">E</div>
+            <div style="position:absolute; left:-12px; top:50%; transform:translateY(-50%); font-size:10px; font-weight:700;">O</div>
+            <!-- Aiguille du soleil -->
+            <div id="sun-needle" style="position:absolute; top:50%; left:50%; width:2px; height:50px; background:linear-gradient(to top, transparent 50%, var(--gold) 50%); transform-origin: center; transform: translate(-50%, -50%) rotate(0deg);">
+                <div style="position:absolute; top:0; left:-4px; width:10px; height:10px; background:var(--gold); border-radius:50%; box-shadow: 0 0 10px var(--gold);"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- POSITION PRÉCISE DU SOLEIL -->
+    <div class="control-group" style="font-size: 0.8rem; background:rgba(255,255,255,0.03); padding:0.8rem; border-radius:10px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
+            <span style="color:var(--t2);">Azimut :</span>
+            <span id="az-val" style="color:var(--accent); font-weight:700;">— °</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
+            <span style="color:var(--t2);">Élévation :</span>
+            <span id="alt-val" style="color:var(--gold); font-weight:700;">— °</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
+            <span style="color:var(--t2);">Phase :</span>
+            <span id="sun-phase" style="font-weight:500;">—</span>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+            <span style="color:var(--t2);">Durée jour :</span>
+            <span id="day-duration" style="color:white;">—</span>
+        </div>
+    </div>
+
     <!-- SECTION PERFORMANCE (REPLIABLE) -->
     <div class="control-group" style="border-top: 1px solid var(--border); padding-top: 1rem;">
         <div class="collapsible-header" id="perf-header">
-            <h3>⚙️ Performance</h3>
+            <h3>⚙️ Paramètres Rendu</h3>
             <span class="chevron">▼</span>
         </div>
         
@@ -98,12 +133,6 @@
                 <input type="checkbox" id="shadow-toggle" checked>
             </div>
         </div>
-    </div>
-    
-    <!-- STATS & EPHÉMÉRIDES -->
-    <div class="stats">
-        <div>Azimut: <span id="az-disp">—</span>°</div>
-        <div>Élévation: <span id="alt-disp">—</span>°</div>
     </div>
 
     <div class="control-group" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.8rem;">
