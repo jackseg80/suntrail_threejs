@@ -9,6 +9,8 @@ export const state = {
     RESOLUTION: 128, // Par défaut réduit à 128 pour la fluidité
     RANGE: 2,        // 2 = 5x5 tuiles
     SHADOWS: true,   // Ombres activées par défaut
+    SHADOW_RES: 2048, // Résolution des ombres (moyenne par défaut)
+    PIXEL_RATIO_LIMIT: window.devicePixelRatio > 1.5 ? 1.5 : window.devicePixelRatio,
     FOG_DENSITY: 0.00002, // Intensité du brouillard par défaut (20)
     
     // Position initiale pour le repère 3D (évite les superpositions)

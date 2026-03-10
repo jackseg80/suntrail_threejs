@@ -60,6 +60,25 @@
             <input type="range" id="fog-slider" min="0" max="80" step="5" value="20">
         </div>
 
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.8rem;">
+            <div style="flex: 1;">
+                <label style="font-size: 0.7rem; color: var(--t2);">Qualité Ombres</label>
+                <select id="shadow-res-select" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; font-size:0.75rem; border-radius:4px; padding:2px;">
+                    <option value="1024">Basse (1K)</option>
+                    <option value="2048" selected>Moyenne (2K)</option>
+                    <option value="4096">Haute (4K)</option>
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size: 0.7rem; color: var(--t2);">Limite Pixels</label>
+                <select id="pixel-limit-select" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; font-size:0.75rem; border-radius:4px; padding:2px;">
+                    <option value="1">Standard (1x)</option>
+                    <option value="1.5" selected>Optimisé (1.5x)</option>
+                    <option value="2">Retina (2x)</option>
+                </select>
+            </div>
+        </div>
+
         <div style="display: flex; align-items: center; justify-content: space-between;">
             <label style="font-size: 0.75rem; color: var(--t2);">Ombres dynamiques</label>
             <input type="checkbox" id="shadow-toggle" checked>

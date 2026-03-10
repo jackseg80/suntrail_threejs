@@ -69,6 +69,8 @@ export function initUI() {
     const rangeSlider = document.getElementById('range-slider');
     const fogSlider = document.getElementById('fog-slider');
     const shadowToggle = document.getElementById('shadow-toggle');
+    const shadowResSelect = document.getElementById('shadow-res-select');
+    const pixelLimitSelect = document.getElementById('pixel-limit-select');
 
     resSlider.addEventListener('change', async (e) => {
         state.RESOLUTION = parseInt(e.target.value);
@@ -80,6 +82,25 @@ export function initUI() {
         state.RANGE = parseInt(e.target.value);
         document.getElementById('range-disp').textContent = state.RANGE;
         await refreshTerrain();
+    });
+
+    shadowResSelect.addEventListener('change', (e) => {
+        state.SHADOW_RES = parseInt(e.target.value);
+        if (state.sunLight) {
+            state.sunLight.shadow.mapSize.width = state.SHADOW_RES;
+            state.sunLight.shadow.mapSize.height = state.SHADOW_RES;
+            if (state.sunLight.shadow.map) {
+                state.sunLight.shadow.map.dispose();
+                state.sunLight.shadow.map = null;
+            }
+        }
+    });
+
+    pixelLimitSelect.addEventListener('change', (e) => {
+        state.PIXEL_RATIO_LIMIT = parseFloat(e.target.value);
+        if (state.renderer) {
+            state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
+        }
     });
 
     fogSlider.addEventListener('input', (e) => {
