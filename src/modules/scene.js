@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { MapControls } from 'three/addons/controls/MapControls.js';
-import { Sky } from 'three/addons/controls/Sky.js';
+import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
+import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { state } from './state.js';
 import { updateSunPosition } from './sun.js';
 import { loadTerrain, updateVisibleTiles, lngLatToTile } from './terrain.js';
