@@ -166,11 +166,21 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
             const u = uvs[i * 2];
             const v = uvs[i * 2 + 1];
             
+            // Détection des sommets sur les bords (U ou V = 0 ou 1)
+            const isEdge = u < 0.001 || u > 0.999 || v < 0.001 || v > 0.999;
+            
             const canvasX = u * 255;
             const canvasY = v * 255; 
             
-            const h = getElevationBilinear(canvasX, canvasY);
-            vertices[i * 3 + 1] = (h > -9000 ? h : minH) * heightScale;
+            let h = getElevationBilinear(canvasX, canvasY);
+            if (h < -9000) h = minH;
+
+            if (isEdge) {
+                // Technique de la "Jupe" : on descend les bords de 100m pour boucher les fissures
+                vertices[i * 3 + 1] = (h * heightScale) - 100;
+            } else {
+                vertices[i * 3 + 1] = h * heightScale;
+            }
         }
         
         // Lissage des ombres
