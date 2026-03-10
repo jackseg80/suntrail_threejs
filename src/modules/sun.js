@@ -65,7 +65,7 @@ export function updateSunPosition(minutes) {
         ambientIntensity = 0.05 + (moonIllum.fraction * 0.05);
     }
 
-    const distance = 400000;
+    const distance = 40000;
     const sunVector = new THREE.Vector3();
     sunVector.x = distance * Math.cos(finalPhi) * -Math.sin(finalAz);
     sunVector.y = distance * Math.sin(finalPhi);

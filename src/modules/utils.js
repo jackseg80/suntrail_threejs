@@ -16,23 +16,26 @@ export function throttle(func, limit) {
 
 export async function fetchNearbyPeaks(lat, lon) {
     try {
-        // On cherche plus large pour être sûr d'avoir des résultats
-        const r = await fetch(`https://api.maptiler.com/geocoding/${lon},${lat}.json?key=${state.MK}&types=poi&limit=30`);
+        // On ne met PAS de filtre "types=poi" car il est trop restrictif pour les sommets.
+        // On demande tous les résultats et on filtre nous-mêmes.
+        const r = await fetch(`https://api.maptiler.com/geocoding/${lon},${lat}.json?key=${state.MK}&limit=50`);
         if (!r.ok) return [];
         const data = await r.json();
         
-        // Mots-clés élargis pour les Alpes et le relief
-        const peakKeywords = ['peak', 'mountain', 'sommet', 'mont', 'aiguille', 'crête', 'volcan', 'col ', 'pointe', 'rocher', 'massif', 'tête'];
-        const excludeKeywords = ['restaurant', 'hôtel', 'hotel', 'parking', 'garage', 'shop', 'cafe', 'bar', 'bus', 'station', 'pizzeria'];
+        const peakKeywords = ['peak', 'mountain', 'sommet', 'mont', 'aiguille', 'crête', 'volcan', 'col ', 'pointe', 'rocher', 'massif', 'tête', 'dent ', 'praz', 'brèche'];
+        const excludeKeywords = ['restaurant', 'hôtel', 'hotel', 'parking', 'garage', 'shop', 'cafe', 'bar', 'bus', 'station', 'pizzeria', 'résidence', 'chalet'];
 
         return data.features
             .filter(f => {
                 const name = (f.text || '').toLowerCase();
-                const category = (f.properties?.category || '').toLowerCase();
-                const isExclude = excludeKeywords.some(k => name.includes(k) || category.includes(k));
+                const placeName = (f.place_name || '').toLowerCase();
+                
+                // Exclusion stricte des commerces/logements
+                const isExclude = excludeKeywords.some(k => name.includes(k) || placeName.includes(k));
                 if (isExclude) return false;
                 
-                return peakKeywords.some(k => name.includes(k) || category.includes(k)) || f.properties?.class === 'mountain_peak';
+                // On garde si le mot-clé est présent
+                return peakKeywords.some(k => name.includes(k) || placeName.includes(k));
             })
             .map(f => ({
                 name: f.text,
@@ -50,29 +53,27 @@ export function createLabelSprite(text) {
     canvas.width = 512;
     canvas.height = 128;
     
-    // Fond plus contrasté
-    ctx.fillStyle = 'rgba(10, 10, 15, 0.9)';
-    ctx.roundRect(40, 20, 432, 70, 35);
+    ctx.fillStyle = 'rgba(10, 10, 15, 0.95)';
+    ctx.roundRect(40, 20, 432, 75, 37);
     ctx.fill();
     
-    // Bordure dorée plus vive
     ctx.strokeStyle = '#ffcc33';
     ctx.lineWidth = 4;
     ctx.stroke();
 
-    ctx.font = 'bold 34px "DM Sans", sans-serif';
+    ctx.font = 'bold 36px "DM Sans", sans-serif';
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
-    ctx.fillText(text.toUpperCase(), 256, 65);
+    ctx.fillText(text.toUpperCase(), 256, 68);
 
     const texture = new THREE.CanvasTexture(canvas);
     const spriteMaterial = new THREE.SpriteMaterial({ 
         map: texture, 
         transparent: true, 
-        depthTest: false, // CRITIQUE : Toujours visible par-dessus le relief
+        depthTest: false,
         sizeAttenuation: true 
     });
     const sprite = new THREE.Sprite(spriteMaterial);
-    sprite.scale.set(2200, 550, 1);
+    sprite.scale.set(2500, 625, 1);
     return sprite;
 }

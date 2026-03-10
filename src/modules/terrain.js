@@ -61,16 +61,17 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
 async function loadNearbySummitLabels(lat, lon) {
     const peaks = await fetchNearbyPeaks(lat, lon);
     peaks.forEach(p => {
-        if (!activeLabels.has(p.name)) {
+        const labelKey = `peak_${p.name}_${p.lat.toFixed(3)}`;
+        if (!activeLabels.has(labelKey)) {
             const dx = (p.lon - state.initialLon) * (111320 * Math.cos(state.initialLat * Math.PI / 180));
             const dz = (p.lat - state.initialLat) * -111320;
 
-            // Création du label flottant à 3500m (Visible car depthTest=false)
+            // Création du label flottant à 6500m pour survoler tout le relief
             const sprite = createLabelSprite(p.name);
-            sprite.position.set(dx, 3500, dz); 
-            sprite.renderOrder = 999; // Toujours devant tout le monde
+            sprite.position.set(dx, 6500, dz); 
+            sprite.renderOrder = 999;
             state.scene.add(sprite);
-            activeLabels.set(p.name, sprite);
+            activeLabels.set(labelKey, sprite);
         }
     });
 }

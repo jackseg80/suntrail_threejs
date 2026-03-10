@@ -82,8 +82,8 @@ export async function initScene() {
     state.sunLight.shadow.camera.top = d;
     state.sunLight.shadow.camera.bottom = -d;
     state.sunLight.shadow.camera.near = 100;
-    state.sunLight.shadow.camera.far = 50000;
-    state.sunLight.shadow.bias = -0.0005;
+    state.sunLight.shadow.camera.far = 100000;
+    state.sunLight.shadow.bias = -0.0002;
     
     state.scene.add(state.sunLight);
 
