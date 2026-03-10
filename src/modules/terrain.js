@@ -2,12 +2,47 @@ import * as THREE from 'three';
 import { state } from './state.js';
 import { fetchNearbyPeaks, createLabelSprite } from './utils.js';
 
-const EARTH_CIRCUMFERENCE = 40075016.68;
+const R = 6378137.0;
+const MAX_EXTENT = Math.PI * R;
+
 export const activeTiles = new Map(); 
 export const activeLabels = new Map(); 
 
-const REF_ZOOM = 13;
-const TILE_SIZE_REF = EARTH_CIRCUMFERENCE / Math.pow(2, REF_ZOOM);
+// --- MATHÉMATIQUES EPSG:3857 (LA NORME ABSOLUE) ---
+
+// GPS -> Web Mercator Mètres
+export function lngLatToMeters(lon, lat) {
+    const x = lon * MAX_EXTENT / 180.0;
+    const y = Math.log(Math.tan((90.0 + lat) * Math.PI / 360.0)) * R;
+    return { x, y };
+}
+
+// Web Mercator Mètres -> GPS
+export function metersToLngLat(x, y) {
+    const lon = x * 180.0 / MAX_EXTENT;
+    const lat = (2.0 * Math.atan(Math.exp(y / R)) - Math.PI / 2.0) * 180.0 / Math.PI;
+    return { lat, lon };
+}
+
+// Position 3D -> Web Mercator Mètres -> GPS
+export function worldToLngLat(worldX, worldZ) {
+    if (!state.worldOriginMeters) return { lat: 0, lon: 0 };
+    const mx = worldX + state.worldOriginMeters.x;
+    const my = state.worldOriginMeters.y - worldZ; // Z positif = Sud, donc Y Mercator diminue
+    return metersToLngLat(mx, my);
+}
+
+// GPS -> Web Mercator Mètres -> Position 3D
+export function lngLatToWorld(lon, lat) {
+    const m = lngLatToMeters(lon, lat);
+    if (!state.worldOriginMeters) {
+        state.worldOriginMeters = lngLatToMeters(state.initialLon || state.TARGET_LON, state.initialLat || state.TARGET_LAT);
+    }
+    return {
+        x: m.x - state.worldOriginMeters.x,
+        z: state.worldOriginMeters.y - m.y
+    };
+}
 
 export function lngLatToTile(lon, lat, zoom) {
     const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
@@ -15,37 +50,31 @@ export function lngLatToTile(lon, lat, zoom) {
     return { x, y, z: zoom };
 }
 
-export function lngLatToWorld(lon, lat) {
-    const xfrac = (lon + 180) / 360 * Math.pow(2, REF_ZOOM);
-    const yfrac = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, REF_ZOOM);
-    return {
-        x: (xfrac - (state.originTile.x + 0.5)) * TILE_SIZE_REF,
-        z: (yfrac - (state.originTile.y + 0.5)) * TILE_SIZE_REF
-    };
-}
-
-export function worldToLngLat(worldX, worldZ) {
-    const xfrac = (worldX / TILE_SIZE_REF) + (state.originTile.x + 0.5);
-    const yfrac = (worldZ / TILE_SIZE_REF) + (state.originTile.y + 0.5);
-    const lon = xfrac / Math.pow(2, REF_ZOOM) * 360 - 180;
-    const n = Math.PI - 2 * Math.PI * yfrac / Math.pow(2, REF_ZOOM);
-    const lat = 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
-    return { lat, lon };
-}
-
 export function clearLabels() {
     for (const [name, obj] of activeLabels.entries()) {
-        state.scene.remove(obj.sprite); state.scene.remove(obj.line);
+        state.scene.remove(obj.sprite);
+        state.scene.remove(obj.line);
         if (obj.sprite.material.map) obj.sprite.material.map.dispose();
-        obj.sprite.material.dispose(); obj.line.geometry.dispose(); obj.line.material.dispose();
+        obj.sprite.material.dispose();
+        obj.line.geometry.dispose();
+        obj.line.material.dispose();
     }
     activeLabels.clear();
 }
 
+// --- MOTEUR DE TERRAIN (LOD EPSG:3857) ---
+
 export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
     if (!state.mapCenter) state.mapCenter = { lat: state.TARGET_LAT, lon: state.TARGET_LON };
     
-    const centerSector = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, REF_ZOOM);
+    // Initialisation de l'ancre du monde si pas encore fait
+    if (!state.worldOriginMeters) {
+        state.worldOriginMeters = lngLatToMeters(state.initialLon || state.TARGET_LON, state.initialLat || state.TARGET_LAT);
+    }
+
+    // Grille de base (Secteurs de Zoom 13)
+    const baseZoom = 13;
+    const centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, baseZoom);
     const range = state.RANGE;
     const neededTiles = new Set();
 
@@ -54,17 +83,26 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
 
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
-            const sx = centerSector.x + dx;
-            const sy = centerSector.y + dy;
+            const sx = centerTile.x + dx;
+            const sy = centerTile.y + dy;
             
-            // Distance au centre du secteur
-            const secWorldX = (sx - state.originTile.x) * TILE_SIZE_REF;
-            const secWorldZ = (sy - state.originTile.y) * TILE_SIZE_REF;
-            const dist = Math.sqrt(Math.pow(secWorldX - curX, 2) + Math.pow(secWorldZ - curZ, 2));
+            // Calcul du centre du secteur Z13 en mètres Mercator
+            const tileSizeZ13 = (2 * MAX_EXTENT) / Math.pow(2, baseZoom);
+            const mx_NW = -MAX_EXTENT + sx * tileSizeZ13;
+            const my_NW = MAX_EXTENT - sy * tileSizeZ13;
+            const mx_Center = mx_NW + tileSizeZ13 / 2;
+            const my_Center = my_NW - tileSizeZ13 / 2;
+            
+            // Position 3D du centre du secteur
+            const secX = mx_Center - state.worldOriginMeters.x;
+            const secZ = state.worldOriginMeters.y - my_Center;
+            
+            const dist = Math.sqrt(Math.pow(secX - curX, 2) + Math.pow(secZ - curZ, 2));
             const trueDist = Math.sqrt(dist*dist + camAltitude*camAltitude);
 
+            // LOD Decision
             if (trueDist < 5000) {
-                // Zoom 15
+                // Zoom 15 (16 tuiles)
                 for (let i = 0; i < 4; i++) {
                     for (let j = 0; j < 4; j++) {
                         const tx = sx * 4 + i, ty = sy * 4 + j;
@@ -74,7 +112,7 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
                     }
                 }
             } else if (trueDist < 10000) {
-                // Zoom 14
+                // Zoom 14 (4 tuiles)
                 for (let i = 0; i < 2; i++) {
                     for (let j = 0; j < 2; j++) {
                         const tx = sx * 2 + i, ty = sy * 2 + j;
@@ -84,7 +122,7 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
                     }
                 }
             } else {
-                // Zoom 13
+                // Zoom 13 (1 tuile)
                 const key = `tile_13_${sx}_${sy}`;
                 neededTiles.add(key);
                 if (!activeTiles.has(key)) loadTile(sx, sy, 13, key);
@@ -111,13 +149,22 @@ async function loadTile(tx, ty, zoom, key) {
     activeTiles.set(key, tileObj);
 
     try {
-        const scale = Math.pow(2, zoom - REF_ZOOM);
-        const tileSizeMeters = TILE_SIZE_REF / scale;
+        // --- MATHÉMATIQUE EPSG:3857 (INFEAILLIBLE) ---
+        const tileSizeMeters = (2 * MAX_EXTENT) / Math.pow(2, zoom);
         
-        // --- LE SECRET DE L'ALIGNEMENT PARFAIT ---
-        const dx = ( (tx + 0.5) / scale - (state.originTile.x + 0.5) ) * TILE_SIZE_REF;
-        const dz = ( (ty + 0.5) / scale - (state.originTile.y + 0.5) ) * TILE_SIZE_REF;
+        // Coordonnées Mercator du coin NW de la tuile
+        const mx_NW = -MAX_EXTENT + tx * tileSizeMeters;
+        const my_NW = MAX_EXTENT - ty * tileSizeMeters;
+        
+        // Coordonnées Mercator du Centre de la tuile
+        const mx_Center = mx_NW + tileSizeMeters / 2;
+        const my_Center = my_NW - tileSizeMeters / 2; // Y va vers le bas
+        
+        // Position 3D du centre
+        const worldX = mx_Center - state.worldOriginMeters.x;
+        const worldZ = state.worldOriginMeters.y - my_Center;
 
+        // Élévation bloquée à Z14 max
         const elevZoom = Math.min(zoom, 14);
         let eTx = tx, eTy = ty;
         if (zoom === 15) { eTx = Math.floor(tx/2); eTy = Math.floor(ty/2); }
@@ -142,47 +189,54 @@ async function loadTile(tx, ty, zoom, key) {
 
         const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256;
         const ctx = canvas.getContext('2d'); ctx.drawImage(imgElev, 0, 0);
-        const heights = new Float32Array(256 * 256);
         const data = ctx.getImageData(0, 0, 256, 256).data;
+        const heights = new Float32Array(256 * 256);
         for (let i = 0; i < data.length; i += 4) {
             heights[i/4] = -10000 + ((data[i] * 65536 + data[i+1] * 256 + data[i+2]) * 0.1);
         }
 
+        // On crée la géométrie (Plane est sur le plan XY, centré sur 0,0, puis on le tourne sur XZ)
         const geometry = new THREE.PlaneGeometry(tileSizeMeters, tileSizeMeters, state.RESOLUTION, state.RESOLUTION);
-        geometry.rotateX(-Math.PI / 2);
+        geometry.rotateX(-Math.PI / 2); // Le plan est maintenant sur XZ
+        
         const vertices = geometry.attributes.position.array;
         const uvs = geometry.attributes.uv.array;
 
-        // INVERSION UV v2.0.0
-        for (let i = 1; i < uvs.length; i += 2) uvs[i] = 1.0 - uvs[i];
+        // Échantillonnage de l'élévation Z14 si on est en Z15
+        const offX = (zoom === 15) ? (tx % 2) * 127.5 : 0;
+        const offY = (zoom === 15) ? (ty % 2) * 127.5 : 0;
+        const step = (zoom === 15) ? 0.5 : 1.0;
 
         for (let i = 0; i < vertices.length / 3; i++) {
-            const u = uvs[i * 2], v = uvs[i * 2 + 1]; 
+            const u = uvs[i * 2], v = uvs[i * 2 + 1];
             
-            let px = u * 255;
-            let py = v * 255;
+            // Dans Three.js PlaneGeometry, v=1 est le haut (Nord), v=0 est le bas (Sud).
+            // Notre canvas d'élévation a y=0 en haut et y=255 en bas.
+            // Donc py_elev = 1.0 - v
+            const py_elev = 1.0 - v; 
             
-            if (zoom === 15) {
-                const offX = (tx % 2) * 127.5;
-                const offY = (ty % 2) * 127.5;
-                px = offX + u * 127.5;
-                py = offY + v * 127.5;
-            }
-
+            const px = offX + u * 255 * step;
+            const py = offY + py_elev * 255 * step;
+            
             const x0 = Math.floor(px), y0 = Math.floor(py), x1 = Math.min(255, x0+1), y1 = Math.min(255, y0+1);
             const wx = px - x0, wy = py - y0;
             const h = heights[y0*256+x0]*(1-wx)*(1-wy) + heights[y0*256+x1]*wx*(1-wy) + heights[y1*256+x0]*(1-wx)*wy + heights[y1*256+x1]*wx*wy;
             
-            // Hauteur directe (Comme v2.0.0 - Pas de correction Mercator)
-            vertices[i * 3 + 1] = Math.max(-10, h * state.RELIEF_EXAGGERATION);
+            // Correction de l'échelle verticale due à la distorsion de Mercator
+            // La latitude de ce sommet précis en mètres Mercator est :
+            const my_vertex = my_NW - py_elev * tileSizeMeters;
+            const vScale = Math.cosh(my_vertex / R);
+            
+            vertices[i * 3 + 1] = Math.max(-10, h * vScale * state.RELIEF_EXAGGERATION);
         }
 
         geometry.computeVertexNormals();
         const texture = new THREE.CanvasTexture(imgColor);
-        texture.colorSpace = THREE.SRGBColorSpace; texture.flipY = false; 
+        texture.colorSpace = THREE.SRGBColorSpace; 
+        texture.flipY = true; // STANDARD THREE.JS
         
         const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ map: texture, roughness: 0.8, metalness: 0.1 }));     
-        mesh.position.set(dx, 0, dz); 
+        mesh.position.set(worldX, 0, worldZ); 
         mesh.castShadow = mesh.receiveShadow = true;
         state.scene.add(mesh);
         tileObj.mesh = mesh; tileObj.status = 'loaded';
