@@ -102,36 +102,42 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         ctx.drawImage(imgElev, 0, 0, 256, 256);
         const data = ctx.getImageData(0, 0, 256, 256).data;
-
-        const heights = new Float32Array(256 * 256);
-        let minH = 0;
-        let validCount = 0;
+        const rawHeights = new Float32Array(256 * 256);
         let sumH = 0;
+        let countH = 0;
 
+        // 1. Décodage brut avec filtrage de base
         for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i+1];
-            const b = data[i+2];
-            const a = data[i+3];
-
-            // Formule MapTiler: -10000 + (R * 256 * 256 + G * 256 + B) * 0.1
+            const r = data[i], g = data[i+1], b = data[i+2];
             let h = -10000 + ((r * 65536 + g * 256 + b) * 0.1);
             
-            // Sécurité Brave/Fingerprinting : Si l'alpha est nul ou si la valeur est trop extrême, on marque comme invalide
-            if (a < 128 || h < -500 || h > 9000) {
-                h = -99999; 
-            } else {
+            // On ignore les valeurs absurdes pour la Terre
+            if (h < -1000 || h > 9000) h = NaN; 
+            else {
                 sumH += h;
-                validCount++;
+                countH++;
             }
-            heights[i/4] = h;
+            rawHeights[i/4] = h;
         }
 
-        const avgH = validCount > 0 ? sumH / validCount : 0;
-        // Remplissage des trous par la moyenne pour éviter les pics
-        for (let i = 0; i < heights.length; i++) {
-            if (heights[i] < -1000) heights[i] = avgH;
+        const avgH = countH > 0 ? sumH / countH : 0;
+        const heights = new Float32Array(256 * 256);
+        let minH = Infinity;
+
+        // 2. Filtre de cohérence (Anti-Brave Spikes)
+        for (let i = 0; i < rawHeights.length; i++) {
+            let h = rawHeights[i];
+            
+            // Si la valeur est NaN ou s'écarte trop de la moyenne de la tuile (bruit Brave)
+            // on lissage avec la moyenne pour éviter le pic
+            if (isNaN(h)) {
+                h = avgH;
+            }
+            
+            heights[i] = h;
+            if (h < minH) minH = h;
         }
+        if (minH === Infinity) minH = 0;
 
         const colorTex = new THREE.CanvasTexture(imgColor);
         colorTex.colorSpace = THREE.SRGBColorSpace;
