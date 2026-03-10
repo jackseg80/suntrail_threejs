@@ -88,6 +88,17 @@ export async function initScene() {
     window.addEventListener('resize', onWindowResize);
     state.renderer.setAnimationLoop(() => {
         state.controls.update();
+        
+        // Mise à jour de la boussole
+        if (state.camera) {
+            const needle = document.getElementById('compass-needle');
+            if (needle) {
+                // On récupère l'angle horizontal de la caméra (en radians)
+                const angle = state.controls.getAzimuthalAngle();
+                needle.style.transform = `rotate(${angle * (180 / Math.PI)}deg)`;
+            }
+        }
+
         state.renderer.render(state.scene, state.camera);
     });
 }

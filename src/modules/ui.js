@@ -10,9 +10,53 @@ export function initUI() {
     document.getElementById('bgo').addEventListener('click', go);
     document.getElementById('k1').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
     
+    // --- CALENDRIER ---
+    const dateInput = document.getElementById('date-input');
+    dateInput.valueAsDate = state.simDate;
+    dateInput.addEventListener('change', (e) => {
+        state.simDate = new Date(e.target.value);
+        updateSunPosition(document.getElementById('time-slider').value);
+    });
+
     const timeSlider = document.getElementById('time-slider');
     timeSlider.addEventListener('input', (e) => {
         updateSunPosition(e.target.value);
+    });
+
+    // --- CLIC POUR ALTITUDE ---
+    window.addEventListener('mousedown', (e) => {
+        if (!state.renderer || e.target !== state.renderer.domElement) return;
+        
+        const mouse = new THREE.Vector2(
+            (e.clientX / window.innerWidth) * 2 - 1,
+            -(e.clientY / window.innerHeight) * 2 + 1
+        );
+        
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, state.camera);
+        
+        // On cherche l'intersection avec tous les objets de la scène (les tuiles)
+        const intersects = raycaster.intersectObjects(state.scene.children, true);
+        
+        if (intersects.length > 0) {
+            const pt = intersects[0].point;
+            
+            // Conversion inverse Position Monde -> Lat/Lon
+            const dLon = (pt.x / (111320 * Math.cos(state.initialLat * Math.PI / 180)));
+            const dLat = -(pt.z / 111320); 
+            const lat = state.initialLat + dLat;
+            const lon = state.initialLon + dLon;
+            
+            // L'altitude est directement la coordonnée Y du point d'impact
+            // (Mais attention, on avait appliqué un vertexHeightScale dans terrain.js)
+            // Pour être précis, on affiche la valeur brute Y qui correspond aux mètres 3D.
+            const alt = pt.y;
+
+            const panel = document.getElementById('coords-panel');
+            panel.style.display = 'block';
+            document.getElementById('click-latlon').textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+            document.getElementById('click-alt').textContent = `${Math.round(alt)} m`;
+        }
     });
 
     // --- CONTRÔLES DE PERFORMANCE ---

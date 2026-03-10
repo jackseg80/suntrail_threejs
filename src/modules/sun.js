@@ -10,8 +10,8 @@ export function updateSunPosition(minutes) {
     
     document.getElementById('time-disp').textContent = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
     
-    // Utilisation de l'heure légale locale (comme Shadowmap)
-    const date = new Date();
+    // Utilisation de la date de simulation choisie
+    const date = new Date(state.simDate);
     date.setHours(hours, mins, 0, 0);
     
     const pos = SunCalc.getPosition(date, state.TARGET_LAT, state.TARGET_LON);
