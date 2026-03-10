@@ -25,9 +25,9 @@ export async function initScene() {
     state.renderer.shadowMap.enabled = true;
     state.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    // Ton mapping pro pour supprimer le voile gris
-    state.renderer.toneMapping = THREE.AgXToneMapping;
-    state.renderer.toneMappingExposure = 1.1;
+    // Ton mapping mat pour un look plus naturel
+    state.renderer.toneMapping = THREE.LinearToneMapping;
+    state.renderer.toneMappingExposure = 1.0;
 
     container.appendChild(state.renderer.domElement);
 
@@ -66,10 +66,10 @@ export async function initScene() {
     state.controls.addEventListener('change', throttledUpdate);
 
     // 4. Éclairage
-    state.ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    state.ambientLight = new THREE.AmbientLight(0xe0eaff, 0.35);
     state.scene.add(state.ambientLight);
 
-    state.sunLight = new THREE.DirectionalLight(0xffffff, 3.0);
+    state.sunLight = new THREE.DirectionalLight(0xffffff, 2.5);
     state.sunLight.castShadow = state.SHADOWS;
     
     state.sunLight.shadow.mapSize.width = 4096;
