@@ -66,13 +66,13 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
             const tx = centerTile.x + dx, ty = centerTile.y + dy;
             const key = `tile_${zoom}_${tx}_${ty}`;
             neededKeys.add(key);
-            if (!activeTiles.has(key)) loadSingleTile(tx, ty, zoom, key);
+            if (!activeTiles.has(key)) loadTile(tx, ty, zoom, key);
         }
     }
 
     for (const [key, tileObj] of activeTiles.entries()) {
         if (!neededKeys.has(key)) {
-            if (tileObj.mesh) {
+            if (tileObj && tileObj.mesh) {
                 state.scene.remove(tileObj.mesh);
                 tileObj.mesh.geometry.dispose();
                 if (tileObj.mesh.material.map) tileObj.mesh.material.map.dispose();
