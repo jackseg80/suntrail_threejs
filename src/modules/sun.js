@@ -22,36 +22,54 @@ export function updateSunPosition(minutes) {
     document.getElementById('az-disp').textContent = ((az * 180 / Math.PI) + 180).toFixed(1);
     document.getElementById('alt-disp').textContent = altDeg.toFixed(1);
     
-    // 1. Calcul de l'intensité et des couleurs selon l'altitude
+    // 1. Calcul des paramètres
     let sunIntensity = 0;
-    let skyColor = new THREE.Color(0x87CEEB);
-    let sunColor = new THREE.Color(0xffffff);
+    let skyColor = new THREE.Color();
+    let sunColor = new THREE.Color();
     let ambientIntensity = 0.4;
+    let phi = alt;
+
+    const colorDay = new THREE.Color(0x87CEEB);
+    const colorSunset = new THREE.Color(0xff7b00);
+    const colorNight = new THREE.Color(0x0a0a25);
+    
+    const sunColorDay = new THREE.Color(0xffffff);
+    const sunColorSunset = new THREE.Color(0xffa500);
+    const sunColorMoon = new THREE.Color(0xccccff);
 
     if (altDeg > 5) {
         // Plein jour
         sunIntensity = Math.min(2.5, Math.sin(alt) * 3);
-        skyColor.setHex(0x87CEEB);
-        sunColor.setHex(0xffffff);
+        skyColor.copy(colorDay);
+        sunColor.copy(sunColorDay);
         ambientIntensity = 0.5;
-    } else if (altDeg > -6) {
-        // Crépuscule (Transition douce)
-        const t = (altDeg + 6) / 11; // 0 à 1
-        sunIntensity = t * 0.8;
+        phi = alt;
+    } else if (altDeg > 0) {
+        // Transition Jour -> Crépuscule (5° à 0°)
+        const t = altDeg / 5; // 1 (jour) à 0 (sunset)
+        sunIntensity = 0.8 + (t * 1.7);
+        skyColor.lerpColors(colorSunset, colorDay, t);
+        sunColor.lerpColors(sunColorSunset, sunColorDay, t);
+        ambientIntensity = 0.3 + (t * 0.2);
+        phi = alt;
+    } else if (altDeg > -12) {
+        // Transition Crépuscule -> Nuit (0° à -12°)
+        const t = (altDeg + 12) / 12; // 1 (sunset) à 0 (nuit)
+        sunIntensity = 0.25 + (t * 0.55);
+        skyColor.lerpColors(colorNight, colorSunset, t);
+        sunColor.lerpColors(sunColorMoon, sunColorSunset, t);
+        ambientIntensity = 0.35 - (t * 0.05);
         
-        // Interpolation entre Orange/Rouge et Bleu ciel
-        const sunsetColor = new THREE.Color(0xff7b00);
-        const dayColor = new THREE.Color(0x87CEEB);
-        skyColor.lerpColors(sunsetColor, dayColor, t);
-        
-        sunColor.setHex(0xffa500);
-        ambientIntensity = 0.2 + (t * 0.3);
+        // Transition fluide de la position de la lumière vers la position "Lune" (25°)
+        const targetMoonPhi = Math.PI / 7; 
+        phi = THREE.MathUtils.lerp(targetMoonPhi, alt, t);
     } else {
-        // Nuit (Clair de lune)
-        sunIntensity = 0.25; // Lune plus puissante
-        skyColor.setHex(0x0a0a25); // Ciel nocturne légèrement plus clair
-        sunColor.setHex(0xccccff); // Lune plus blanche/bleutée
-        ambientIntensity = 0.35; // Visibilité générale augmentée
+        // Nuit totale
+        sunIntensity = 0.25;
+        skyColor.copy(colorNight);
+        sunColor.copy(sunColorMoon);
+        ambientIntensity = 0.35;
+        phi = Math.PI / 7;
     }
 
     // 2. Application au moteur
@@ -66,10 +84,6 @@ export function updateSunPosition(minutes) {
 
     // 3. Positionnement
     const distance = 25000;
-    // VITAL : Si c'est la nuit (alt < 0), on force la lune à être HAUTE dans le ciel (ex: 25°)
-    // Sinon la lumière vient d'en dessous et on ne voit rien.
-    const phi = alt < -0.1 ? Math.PI / 7 : alt; 
-    
     state.sunLight.position.x = distance * Math.cos(phi) * -Math.sin(az);
     state.sunLight.position.y = distance * Math.sin(phi);
     state.sunLight.position.z = distance * Math.cos(phi) * Math.cos(az);
