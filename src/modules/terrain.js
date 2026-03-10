@@ -12,7 +12,7 @@ export function lngLatToTile(lon, lat, zoom) {
     return { x, y, z: zoom };
 }
 
-function lngLatToWorld(lon, lat) {
+export function lngLatToWorld(lon, lat) {
     const zoom = state.ZOOM;
     const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
     const x = (lon + 180) / 360 * Math.pow(2, zoom);

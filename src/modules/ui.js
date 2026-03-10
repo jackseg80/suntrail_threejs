@@ -3,7 +3,7 @@ import gpxParser from 'gpxparser';
 import { state } from './state.js';
 import { updateSunPosition } from './sun.js';
 import { initScene } from './scene.js';
-import { loadTerrain, updateVisibleTiles, activeTiles, lngLatToTile, clearLabels } from './terrain.js';
+import { loadTerrain, updateVisibleTiles, activeTiles, lngLatToTile, clearLabels, lngLatToWorld } from './terrain.js';
 
 export function initUI() {
     const s1 = localStorage.getItem('maptiler_key_3d');
@@ -240,17 +240,10 @@ async function handleGPX(xml) {
     state.originTile = lngLatToTile(startPt.lon, startPt.lat, state.ZOOM);
     
     const threePoints = points.map(p => {
-        // Utilisation de la même logique de projection que les labels
-        const zoom = state.ZOOM;
-        const tileSizeMeters = 40075016.68 / Math.pow(2, zoom);
-        const x = (p.lon + 180) / 360 * Math.pow(2, zoom);
-        const y = (1 - Math.log(Math.tan(p.lat * Math.PI / 180) + 1 / Math.cos(p.lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom);
-        const worldX = (x - state.originTile.x) * tileSizeMeters;
-        const worldZ = (y - state.originTile.y) * tileSizeMeters;
-        
-        // On place le tracé un peu au dessus du sol (ou on utilise l'élévation du GPX)
+        const pos = lngLatToWorld(p.lon, p.lat);
+        // On place le tracé un peu au dessus du sol pour éviter le z-fighting
         const worldY = (p.ele || 0) * state.RELIEF_EXAGGERATION + 5; 
-        return new THREE.Vector3(worldX, worldY, worldZ);
+        return new THREE.Vector3(pos.x, worldY, pos.z);
     });
     
     state.gpxPoints = threePoints;
