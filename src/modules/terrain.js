@@ -29,24 +29,34 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude) {
     let range = state.RANGE; 
     if (camAltitude && camAltitude > 12000) range += 1; 
     
+    // Buffer de nettoyage : on garde les tuiles un peu plus loin pour éviter les trous lors des mouvements
+    const cleanBuffer = 1;
+    const cleanRange = range + cleanBuffer;
+    
     const neededTiles = new Set();
+    const keptTiles = new Set();
 
-    for (let dy = -range; dy <= range; dy++) {
-        for (let dx = -range; dx <= range; dx++) {
+    for (let dy = -cleanRange; dy <= cleanRange; dy++) {
+        for (let dx = -cleanRange; dx <= cleanRange; dx++) {
             const tx = centerTile.x + dx;
             const ty = centerTile.y + dy;
             const key = `${tx}_${ty}_${state.ZOOM}`;
-            neededTiles.add(key);
-
-            if (!activeTiles.has(key)) {
-                loadSingleTile(tx, ty, state.ZOOM, centerTile, key);
+            
+            // Si dans le range de chargement immédiat
+            if (Math.abs(dx) <= range && Math.abs(dy) <= range) {
+                neededTiles.add(key);
+                if (!activeTiles.has(key)) {
+                    loadSingleTile(tx, ty, state.ZOOM, centerTile, key);
+                }
             }
+            // On marque comme "à garder" (ne pas supprimer)
+            keptTiles.add(key);
         }
     }
 
-    // Nettoyage des tuiles lointaines (hors du nouveau range)
+    // Nettoyage des tuiles vraiment trop lointaines (hors du cleanRange)
     for (const [key, tileObj] of activeTiles.entries()) {
-        if (!neededTiles.has(key)) {
+        if (!keptTiles.has(key)) {
             if (tileObj && tileObj.mesh) {
                 state.scene.remove(tileObj.mesh);
                 tileObj.mesh.geometry.dispose();

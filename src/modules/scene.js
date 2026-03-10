@@ -56,7 +56,7 @@ export async function initScene() {
 
         // Passe la distance de la caméra au sol pour adapter le rayon de chargement
         updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, state.controls.getDistance());
-    }, 500);
+    }, 200);
     
     state.controls.addEventListener('change', throttledUpdate);
 
