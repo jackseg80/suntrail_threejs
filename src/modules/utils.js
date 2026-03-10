@@ -46,26 +46,44 @@ export async function fetchNearbyPeaks(lat, lon) {
 export function createLabelSprite(text) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = 512;
-    canvas.height = 128;
+    const fontSize = 32;
+    ctx.font = `bold ${fontSize}px "DM Sans", sans-serif`;
     
-    // Design compact et élégant
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-    ctx.roundRect(100, 20, 312, 60, 30);
+    // Mesure du texte pour adapter la largeur
+    const textWidth = ctx.measureText(text.toUpperCase()).width;
+    const padding = 40;
+    const badgeWidth = textWidth + padding * 2;
+    const badgeHeight = 60;
+    
+    // On dimensionne le canvas au plus juste
+    canvas.width = badgeWidth + 20; // +20 pour l'ombre/bordure
+    canvas.height = badgeHeight + 20;
+    
+    // On redéfinit la font après le redimensionnement du canvas
+    ctx.font = `bold ${fontSize}px "DM Sans", sans-serif`;
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+
+    // Dessin du badge
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.roundRect(10, 10, badgeWidth, badgeHeight, 30);
     ctx.fill();
     
     ctx.strokeStyle = '#d4af37';
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 3;
     ctx.stroke();
 
-    ctx.font = 'bold 32px "DM Sans", sans-serif';
+    // Texte
     ctx.fillStyle = 'white';
-    ctx.textAlign = 'center';
-    ctx.fillText(text.toUpperCase(), 256, 62);
+    ctx.fillText(text.toUpperCase(), canvas.width / 2, canvas.height / 2);
 
     const texture = new THREE.CanvasTexture(canvas);
     const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
     const sprite = new THREE.Sprite(spriteMaterial);
-    sprite.scale.set(2500, 625, 1); // Taille divisée par 2
+    
+    // Mise à l'échelle : on garde une hauteur fixe (1200m), la largeur est proportionnelle
+    const ratio = canvas.width / canvas.height;
+    sprite.scale.set(1200 * ratio, 1200, 1);
+    
     return sprite;
 }
