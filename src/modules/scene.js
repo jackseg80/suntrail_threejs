@@ -14,7 +14,7 @@ export async function initScene() {
     
     // 1. Scène et Brouillard
     state.scene = new THREE.Scene();
-    state.scene.fog = new THREE.FogExp2(0x87CEEB, 0.00004); 
+    state.scene.fog = new THREE.FogExp2(0x87CEEB, state.FOG_DENSITY); 
 
     // 2. Moteur de rendu
     state.renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
