@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SunTrail - Moteur Three.js (Shadowmap Clone)</title>
+    <title>SunTrail - Moteur Three.js</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="./style.css" rel="stylesheet">
 </head>
@@ -11,112 +11,129 @@
 
 <div id="setup-screen">
     <div class="setup-card">
-        <h1>⛰️ SunTrail V10 (Three.js)</h1>
-        <p class="sub">Le moteur ultime avec de vraies ombres 3D polygonales.</p>
+        <h1>⛰️ SunTrail 3D</h1>
+        <p class="sub">Visualisation topographique et simulation solaire.</p>
         <div class="fg">
             <label>Clé API MapTiler</label>
             <input type="text" id="k1" placeholder="ex: a1b2c3d4e5f6g7h8" autocomplete="off" spellcheck="false">
         </div>
         <p class="setup-error" id="serr"></p>
-        <button class="btn-go" id="bgo">Charger le relief 3D →</button>
+        <button class="btn-go" id="bgo">Lancer l'expérience →</button>
     </div>
 </div>
 
 <div id="canvas-container"></div>
 
 <div id="panel" style="display:none;">
-    <h2>☀️ SunTrail 3D</h2>
+    <h2 style="color:var(--gold); margin-top:0;">☀️ SunTrail</h2>
     
-    <div class="control-group" style="position:relative; margin-bottom: 1rem;">
-        <input type="text" id="geo-input" placeholder="🔍 Rechercher un sommet, une ville..." autocomplete="off" style="width:100%; padding:0.6rem; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; color:white; font-size:0.85rem;">
-        <div id="geo-results" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--panel); border:1px solid var(--border); border-radius:8px; z-index:100; max-height:200px; overflow-y:auto;"></div>
+    <div class="control-group" style="position:relative; margin-bottom: 1.5rem;">
+        <input type="text" id="geo-input" placeholder="🔍 Rechercher un lieu..." autocomplete="off" style="width:100%; padding:0.7rem; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:10px; color:white; font-size:0.85rem;">
+        <div id="geo-results" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--panel-solid); border:1px solid var(--border); border-radius:10px; z-index:100; max-height:250px; overflow-y:auto; margin-top:5px;"></div>
     </div>
 
-    <div class="info">Clic gauche : Glisser. Clic droit : Tourner. Molette : Zoomer.</div>
-    
+    <!-- SECTION TEMPS -->
     <div class="control-group">
-        <label>Date de simulation :</label>
-        <input type="date" id="date-input" style="width:100%; padding:0.5rem; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; color:white; font-size:0.85rem; margin-bottom: 0.5rem;">
+        <label>Date de simulation</label>
+        <input type="date" id="date-input" style="width:100%; padding:0.6rem; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; color:white; font-size:0.85rem; margin-bottom: 1rem;">
         
-        <label>Heure de la journée : <span id="time-disp">12:00</span></label>
+        <label>Heure : <span id="time-disp" style="color:var(--accent); font-weight:700;">12:00</span></label>
         <input type="range" id="time-slider" min="0" max="1439" value="720">
     </div>
 
+    <!-- SECTION PERFORMANCE (REPLIABLE) -->
     <div class="control-group" style="border-top: 1px solid var(--border); padding-top: 1rem;">
-        <label>⚙️ Performance</label>
+        <div class="collapsible-header" id="perf-header">
+            <h3>⚙️ Performance</h3>
+            <span class="chevron">▼</span>
+        </div>
         
-        <div style="margin-bottom: 0.8rem;">
-            <label style="font-size: 0.75rem; color: var(--t2);">Densité maillage : <span id="res-disp">128</span></label>
-            <input type="range" id="res-slider" min="32" max="256" step="32" value="128">
-        </div>
-
-        <div style="margin-bottom: 0.8rem;">
-            <label style="font-size: 0.75rem; color: var(--t2);">Distance d'affichage : <span id="range-disp">2</span></label>
-            <input type="range" id="range-slider" min="1" max="4" step="1" value="2">
-        </div>
-
-        <div style="margin-bottom: 0.8rem;">
-            <label style="font-size: 0.75rem; color: var(--t2);">Exagération Relief : <span id="exag-disp">1.3</span>x</label>
-            <input type="range" id="exag-slider" min="1.0" max="2.0" step="0.1" value="1.3">
-        </div>
-
-        <div style="margin-bottom: 0.8rem;">
-            <label style="font-size: 0.75rem; color: var(--t2);">Intensité Brouillard : <span id="fog-disp">10</span></label>
-            <input type="range" id="fog-slider" min="0" max="80" step="5" value="10">
-        </div>
-
-        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.8rem;">
-            <div style="flex: 1;">
-                <label style="font-size: 0.7rem; color: var(--t2);">Qualité Ombres</label>
-                <select id="shadow-res-select" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; font-size:0.75rem; border-radius:4px; padding:2px;">
-                    <option value="1024">Basse (1K)</option>
-                    <option value="2048" selected>Moyenne (2K)</option>
-                    <option value="4096">Haute (4K)</option>
-                </select>
+        <div class="collapsible-content collapsed" id="perf-content">
+            <div style="margin-top: 1rem; margin-bottom: 0.8rem;">
+                <label style="font-size: 0.75rem; color: var(--t2);">Densité maillage : <span id="res-disp">128</span></label>
+                <input type="range" id="res-slider" min="32" max="256" step="32" value="128">
             </div>
-            <div style="flex: 1;">
-                <label style="font-size: 0.7rem; color: var(--t2);">Limite Pixels</label>
-                <select id="pixel-limit-select" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; font-size:0.75rem; border-radius:4px; padding:2px;">
-                    <option value="1">Standard (1x)</option>
-                    <option value="1.5" selected>Optimisé (1.5x)</option>
-                    <option value="2">Retina (2x)</option>
-                </select>
+
+            <div style="margin-bottom: 0.8rem;">
+                <label style="font-size: 0.75rem; color: var(--t2);">Distance affichage : <span id="range-disp">2</span></label>
+                <input type="range" id="range-slider" min="1" max="4" step="1" value="2">
             </div>
-        </div>
 
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-            <label style="font-size: 0.75rem; color: var(--t2);">Sentiers de randonnée</label>
-            <input type="checkbox" id="trails-toggle" checked>
-        </div>
+            <div style="margin-bottom: 0.8rem;">
+                <label style="font-size: 0.75rem; color: var(--t2);">Exagération Relief : <span id="exag-disp">1.3</span>x</label>
+                <input type="range" id="exag-slider" min="1.0" max="2.0" step="0.1" value="1.3">
+            </div>
 
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-            <label style="font-size: 0.75rem; color: var(--t2);">Ombres dynamiques</label>
-            <input type="checkbox" id="shadow-toggle" checked>
+            <div style="margin-bottom: 0.8rem;">
+                <label style="font-size: 0.75rem; color: var(--t2);">Brouillard : <span id="fog-disp">10</span></label>
+                <input type="range" id="fog-slider" min="0" max="80" step="5" value="10">
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                <div style="flex: 1;">
+                    <label style="font-size: 0.7rem; color: var(--t2);">Ombres</label>
+                    <select id="shadow-res-select" style="width:100%; font-size:0.75rem;">
+                        <option value="1024">1K (Eco)</option>
+                        <option value="2048" selected>2K (Std)</option>
+                        <option value="4096">4K (High)</option>
+                    </select>
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 0.7rem; color: var(--t2);">Rendu</label>
+                    <select id="pixel-limit-select" style="width:100%; font-size:0.75rem;">
+                        <option value="1">1x</option>
+                        <option value="1.5" selected>1.5x</option>
+                        <option value="2">2x</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem;">
+                <label style="font-size: 0.75rem; margin:0;">📍 Sentiers & Noms</label>
+                <input type="checkbox" id="trails-toggle" checked>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <label style="font-size: 0.75rem; margin:0;">🌑 Ombres 3D</label>
+                <input type="checkbox" id="shadow-toggle" checked>
+            </div>
         </div>
     </div>
     
+    <!-- STATS & EPHÉMÉRIDES -->
     <div class="stats">
         <div>Azimut: <span id="az-disp">—</span>°</div>
         <div>Élévation: <span id="alt-disp">—</span>°</div>
     </div>
 
-    <div class="control-group" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.8rem;">
-        <label>📅 Éphémérides du jour</label>
-        <div id="eph-content" style="color: var(--t2); line-height: 1.4;">
-            <div>🌅 Lever : <span id="sunrise-disp">—</span></div>
-            <div>🌇 Coucher : <span id="sunset-disp">—</span></div>
-            <div>🌙 Lune : <span id="moon-phase-disp">—</span></div>
+    <div class="control-group" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.8rem;">
+        <label>📅 Éphémérides</label>
+        <div style="color: var(--t2); line-height: 1.6;">
+            <div>🌅 Lever : <span id="sunrise-disp" style="color:white;">—</span></div>
+            <div>🌇 Coucher : <span id="sunset-disp" style="color:white;">—</span></div>
+            <div>🌙 Lune : <span id="moon-phase-disp" style="color:white;">—</span></div>
         </div>
     </div>
+
+    <div class="info" style="margin-top: 2rem;">
+        Clic gauche : Panoramique<br>
+        Clic droit : Rotation<br>
+        Clic sol : Altitude
+    </div>
 </div>
+
+<!-- Bouton escamotable -->
+<button id="panel-toggle" style="display:none;" title="Masquer/Afficher le panneau">
+    <span id="toggle-icon">◀</span>
+</button>
 
 <div id="compass-container" style="position:fixed; top:20px; right:20px; width:60px; height:60px; background:var(--panel); border:1px solid var(--border); border-radius:50%; display:flex; align-items:center; justify-content:center; z-index:1000; backdrop-filter:blur(8px); pointer-events:none;">
     <div id="compass-needle" style="width:2px; height:40px; background:linear-gradient(to bottom, #ff4444 50%, #ffffff 50%); transform:rotate(0deg);"></div>
     <div style="position:absolute; top:2px; font-size:10px; font-weight:700; color:#ff4444;">N</div>
 </div>
 
-<div id="coords-panel" style="display:none; position:fixed; bottom:20px; left:20px; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:1rem; font-size:0.8rem; z-index:1000; backdrop-filter:blur(8px); pointer-events:none;">
-    <div style="color:var(--gold); font-weight:700; margin-bottom:0.3rem;">📍 Analyse du point</div>
+<div id="coords-panel" style="display:none; position:fixed; bottom:20px; right:20px; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:1rem; font-size:0.8rem; z-index:1000; backdrop-filter:blur(8px); pointer-events:none;">
+    <div style="color:var(--gold); font-weight:700; margin-bottom:0.3rem;">📍 Analyse topographique</div>
     <div id="click-latlon" style="color:var(--t1);">—</div>
     <div id="click-alt" style="color:var(--gold); font-size:1rem; font-weight:700; margin-top:0.2rem;">—</div>
 </div>

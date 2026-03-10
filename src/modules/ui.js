@@ -142,6 +142,28 @@ export function initUI() {
     });
 
     initGeocoding();
+    initCollapsibles();
+}
+
+function initCollapsibles() {
+    // Repliement du panneau principal
+    const panel = document.getElementById('panel');
+    const panelToggle = document.getElementById('panel-toggle');
+    const toggleIcon = document.getElementById('toggle-icon');
+
+    panelToggle.addEventListener('click', () => {
+        panel.classList.toggle('collapsed');
+        toggleIcon.textContent = panel.classList.contains('collapsed') ? '▶' : '◀';
+    });
+
+    // Repliement de la section Performance
+    const perfHeader = document.getElementById('perf-header');
+    const perfContent = document.getElementById('perf-content');
+
+    perfHeader.addEventListener('click', () => {
+        perfContent.classList.toggle('collapsed');
+        perfHeader.classList.toggle('collapsed');
+    });
 }
 
 async function refreshTerrain() {
@@ -168,6 +190,7 @@ function go() {
     localStorage.setItem('maptiler_key_3d', state.MK);
     document.getElementById('setup-screen').style.display = 'none';
     document.getElementById('panel').style.display = 'block';
+    document.getElementById('panel-toggle').style.display = 'flex';
     initScene();
 }
 
