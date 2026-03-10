@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import { state } from './state.js';
+import { fetchNearbyPeaks, createLabelSprite } from './utils.js';
 
 const EARTH_CIRCUMFERENCE = 40075016.68;
 export const activeTiles = new Map(); 
+export const activeLabels = new Map(); // Pour ne pas afficher deux fois le même sommet
 
 export function lngLatToTile(lon, lat, zoom) {
     const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
@@ -24,6 +26,10 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
     } else {
         centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, state.ZOOM);
     }
+
+    // Charger les sommets environnants
+    loadNearbySummitLabels(camLat || state.TARGET_LAT, camLon || state.TARGET_LON);
+
     let range = state.RANGE; 
     if (camAltitude && camAltitude > 12000) range += 1; 
     const cleanRange = range + 1;
@@ -52,6 +58,22 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
     }
 }
 
+async function loadNearbySummitLabels(lat, lon) {
+    const peaks = await fetchNearbyPeaks(lat, lon);
+    peaks.forEach(p => {
+        if (!activeLabels.has(p.name)) {
+            const dx = (p.lon - state.initialLon) * (111320 * Math.cos(state.initialLat * Math.PI / 180));
+            const dz = (p.lat - state.initialLat) * -111320;
+
+            // On crée le label flottant (un peu plus haut que le sol)
+            const sprite = createLabelSprite(p.name);
+            sprite.position.set(dx, 5500, dz); // On le place haut au départ
+            state.scene.add(sprite);
+            activeLabels.set(p.name, sprite);
+        }
+    });
+}
+
 async function loadSingleTile(tx, ty, zoom, originTile, key) {
     const tileObj = { status: 'loading', mesh: null };
     activeTiles.set(key, tileObj);
@@ -59,11 +81,11 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         const opts = { colorSpaceConversion: 'none', premultiplyAlpha: 'none' };
         const pElev = fetch(`https://api.maptiler.com/tiles/terrain-rgb-v2/${zoom}/${tx}/${ty}.png?key=${state.MK}`)
             .then(r => r.blob()).then(b => createImageBitmap(b, opts));
-            
+
         // Choix du type de carte : Outdoor (complet) ou Satellite (photo pure)
         const mapType = state.SHOW_TRAILS ? 'outdoor-v2' : 'satellite';
         const ext = mapType === 'satellite' ? 'jpg' : 'png';
-        
+
         // Tentative en HD (@2x), sinon repli sur standard
         const pColor = fetch(`https://api.maptiler.com/maps/${mapType}/256/${zoom}/${tx}/${ty}@2x.${ext}?key=${state.MK}`)
             .then(r => r.ok ? r.blob() : fetch(`https://api.maptiler.com/maps/${mapType}/256/${zoom}/${tx}/${ty}.${ext}?key=${state.MK}`).then(r2 => r2.blob()))
@@ -77,7 +99,7 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         ctx.drawImage(imgElev, 0, 0, 256, 256);
         const data = ctx.getImageData(0, 0, 256, 256).data;
-        
+
         const raw = new Float32Array(256 * 256);
         const cleaned = new Float32Array(256 * 256);
 
@@ -135,7 +157,7 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
             // On applique l'exagération visuelle UNIQUEMENT sur le rendu 3D
             vertices[i * 3 + 1] = Math.max(-10, h * state.RELIEF_EXAGGERATION);
         }
-        
+
         geometry.computeVertexNormals();
         const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ map: colorTex, roughness: 0.9, metalness: 0.0 }));
         mesh.position.set(dx, 0, dz);
@@ -147,5 +169,8 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         if (activeTiles.get(key) === tileObj) tileObj.status = 'failed';
     }
 }
+
+export async function loadTerrain() { await updateVisibleTiles(); }
+
 
 export async function loadTerrain() { await updateVisibleTiles(); }

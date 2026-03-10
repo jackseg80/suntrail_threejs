@@ -16,22 +16,15 @@ export function updateSunPosition(minutes) {
     
     const pos = SunCalc.getPosition(date, state.TARGET_LAT, state.TARGET_LON);
     const moonPos = SunCalc.getMoonPosition(date, state.TARGET_LAT, state.TARGET_LON);
+    const moonIllum = SunCalc.getMoonIllumination(date);
     
-    const az = pos.azimuth; 
-    const alt = pos.altitude;
-    const altDeg = alt * 180 / Math.PI;
-
-    const moonAz = moonPos.azimuth;
-    const moonAlt = moonPos.altitude;
-    const moonAltDeg = moonAlt * 180 / Math.PI;
+    const altDeg = pos.altitude * 180 / Math.PI;
     
-    document.getElementById('az-disp').textContent = ((az * 180 / Math.PI) + 180).toFixed(1);
+    document.getElementById('az-disp').textContent = ((pos.azimuth * 180 / Math.PI) + 180).toFixed(1);
     document.getElementById('alt-disp').textContent = altDeg.toFixed(1);
 
     // --- MISE À JOUR ÉPHÉMÉRIDES UI ---
     const times = SunCalc.getTimes(date, state.TARGET_LAT, state.TARGET_LON);
-    const moonIllum = SunCalc.getMoonIllumination(date);
-    
     const fmt = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     document.getElementById('sunrise-disp').textContent = fmt(times.sunrise);
     document.getElementById('sunset-disp').textContent = fmt(times.sunset);
@@ -48,78 +41,61 @@ export function updateSunPosition(minutes) {
     else phase = "Dernier Croissant";
     document.getElementById('moon-phase-disp').textContent = `${phase} (${(moonIllum.fraction * 100).toFixed(0)}%)`;
     
-    // 1. Détermination de la source principale (Soleil ou Lune)
+    // --- CALCUL DE LA POSITION FINALE (Soleil ou Lune) ---
+    let finalPhi = pos.altitude;
+    let finalAz = pos.azimuth;
     let sunIntensity = 0;
-    let skyColor = new THREE.Color();
-    let sunColor = new THREE.Color();
+    let sunColor = new THREE.Color(0xffffff);
     let ambientIntensity = 0.4;
-    let finalPhi = alt;
-    let finalAz = az;
 
-    const colorDay = new THREE.Color(0x87CEEB);
-    const colorSunset = new THREE.Color(0xff5f00); 
-    const colorNight = new THREE.Color(0x050510); 
-    
-    const sunColorDay = new THREE.Color(0xffffff);
-    const sunColorSunset = new THREE.Color(0xff7000); 
-    const sunColorMoon = new THREE.Color(0x9999ff);
-
-    if (altDeg > 5) {
-        // Plein jour : Soleil
-        sunIntensity = Math.min(2.5, Math.sin(alt) * 3);
-        skyColor.copy(colorDay);
-        sunColor.copy(sunColorDay);
-        ambientIntensity = 0.5;
-        finalPhi = alt;
-        finalAz = az;
+    if (altDeg > 2) {
+        // Jour
+        sunIntensity = Math.min(6.0, Math.sin(pos.altitude) * 10);
+        sunColor.set(0xffffff);
+        ambientIntensity = 0.2 + (Math.sin(pos.altitude) * 0.3);
     } else if (altDeg > -12) {
-        // Crépuscule : Transition Soleil -> Lune
-        const t = (altDeg + 12) / 17; // 1 (jour) à 0 (nuit)
-        sunIntensity = 0.25 + (t * 2.25);
-        
-        if (altDeg > 0) {
-            skyColor.lerpColors(colorSunset, colorDay, altDeg / 5);
-        } else {
-            skyColor.lerpColors(colorNight, colorSunset, (altDeg + 12) / 12);
-        }
-
-        sunColor.lerpColors(sunColorMoon, sunColorDay, t);
-        ambientIntensity = 0.1 + (t * 0.4); 
-        
-        const targetMoonPhi = moonAltDeg > 0 ? moonAlt : Math.PI / 8;
-        const targetMoonAz = moonAltDeg > 0 ? moonAz : az;
-        
-        finalPhi = THREE.MathUtils.lerp(targetMoonPhi, alt, t);
-        finalAz = THREE.MathUtils.lerp(targetMoonAz, az, t);
+        // Crépuscule
+        const t = (altDeg + 12) / 14; 
+        sunIntensity = 0.2 + (t * 5.8);
+        sunColor.lerpColors(new THREE.Color(0x9999ff), new THREE.Color(0xffaa44), t);
+        ambientIntensity = 0.05 + (t * 0.15);
     } else {
-        // Nuit : Lune réelle
-        sunIntensity = 0.05 + (moonIllum.fraction * 0.25); 
-        skyColor.copy(colorNight);
-        sunColor.copy(sunColorMoon);
-        ambientIntensity = 0.05 + (moonIllum.fraction * 0.05); 
-        
-        if (moonAltDeg > 0) {
-            finalPhi = moonAlt;
-            finalAz = moonAz;
-        } else {
-            finalPhi = Math.PI / 8; 
-            finalAz = az;
-        }
+        // Nuit (Lune)
+        finalPhi = moonPos.altitude > 0 ? moonPos.altitude : Math.PI/8;
+        finalAz = moonPos.azimuth;
+        sunIntensity = 0.1 + (moonIllum.fraction * 0.4);
+        sunColor.set(0x9999ff);
+        ambientIntensity = 0.05 + (moonIllum.fraction * 0.05);
     }
 
-    // 2. Application au moteur
+    // --- APPLICATION AU MOTEUR ---
+    const distance = 400000;
+    const sunVector = new THREE.Vector3();
+    sunVector.x = distance * Math.cos(finalPhi) * -Math.sin(finalAz);
+    sunVector.y = distance * Math.sin(finalPhi);
+    sunVector.z = distance * Math.cos(finalPhi) * Math.cos(finalAz);
+
+    state.sunLight.position.copy(sunVector);
     state.sunLight.intensity = sunIntensity;
     state.sunLight.color.copy(sunColor);
-    state.scene.background.copy(skyColor);
-    state.scene.fog.color.copy(skyColor);
-    
+
     if (state.ambientLight) {
         state.ambientLight.intensity = ambientIntensity;
     }
 
-    // 3. Positionnement
-    const distance = 25000;
-    state.sunLight.position.x = distance * Math.cos(finalPhi) * -Math.sin(finalAz);
-    state.sunLight.position.y = distance * Math.sin(finalPhi);
-    state.sunLight.position.z = distance * Math.cos(finalPhi) * Math.cos(finalAz);
+    // Mise à jour du Ciel
+    if (state.sky) {
+        state.sky.material.uniforms['sunPosition'].value.copy(sunVector);
+    }
+
+    // Mise à jour du Brouillard (couleur ciel)
+    if (state.scene.fog) {
+        const fogColor = new THREE.Color();
+        if (altDeg > 0) {
+            fogColor.setHSL(0.6, 0.4, 0.4 + (Math.sin(pos.altitude) * 0.4));
+        } else {
+            fogColor.setHSL(0.6, 0.8, 0.05);
+        }
+        state.scene.fog.color.copy(fogColor);
+    }
 }

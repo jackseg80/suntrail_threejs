@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { MapControls } from 'three/addons/controls/MapControls.js';
+import { Sky } from 'three/addons/controls/Sky.js';
 import { state } from './state.js';
 import { updateSunPosition } from './sun.js';
 import { loadTerrain, updateVisibleTiles, lngLatToTile } from './terrain.js';
@@ -7,15 +8,12 @@ import { throttle } from './utils.js';
 
 export async function initScene() {
     const container = document.getElementById('canvas-container');
-    // Sécurité : on nettoie tout canevas existant pour éviter les doublons
     container.innerHTML = '';
     
-    // Fixation de l'origine mathématique du monde (Tile Origin)
     state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, state.ZOOM);
     
     // 1. Scène et Brouillard
     state.scene = new THREE.Scene();
-    state.scene.background = new THREE.Color(0x87CEEB);
     state.scene.fog = new THREE.FogExp2(0x87CEEB, 0.00004); 
 
     // 2. Moteur de rendu
@@ -23,58 +21,62 @@ export async function initScene() {
     state.renderer.setSize(window.innerWidth, window.innerHeight);
     state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
     state.renderer.shadowMap.enabled = true;
-    state.renderer.shadowMap.type = THREE.PCFShadowMap; // Ombres plus nettes/tranchantes
+    state.renderer.shadowMap.type = THREE.PCFShadowMap; 
 
-    // AgX est le meilleur pour gérer les intensités extrêmes
     state.renderer.toneMapping = THREE.AgXToneMapping;
-    state.renderer.toneMappingExposure = 0.8;
+    state.renderer.toneMappingExposure = 1.0; 
 
     container.appendChild(state.renderer.domElement);
 
-    // 3. Caméra et Contrôles "Type Carte" (MapControls)
-    state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 100000);
-    state.camera.position.set(0, 8000, 12000); // Vue plus haute et plus reculée au départ
+    // 3. CIEL ATMOSPHÉRIQUE
+    const sky = new Sky();
+    sky.scale.setScalar(450000);
+    state.scene.add(sky);
+    state.sky = sky; // On le stocke dans le state pour la mise à jour par le soleil
 
-    // MapControls inverse les boutons : Clic gauche = Déplacement (Pan), Clic droit = Rotation
+    const skyUniforms = sky.material.uniforms;
+    skyUniforms['turbidity'].value = 10;
+    skyUniforms['rayleigh'].value = 3;
+    skyUniforms['mieCoefficient'].value = 0.005;
+    skyUniforms['mieDirectionalG'].value = 0.7;
+
+    // 3. Caméra et Contrôles
+    state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 2000000);
+    state.camera.position.set(0, 8000, 12000); 
+
     state.controls = new MapControls(state.camera, state.renderer.domElement);
     state.controls.enableDamping = true;
     state.controls.dampingFactor = 0.05;
     state.controls.maxPolarAngle = Math.PI / 2 - 0.05;
-    state.controls.screenSpacePanning = false; // Mouvement de pan parallèle au sol (essentiel pour les cartes)
-    state.controls.minDistance = 500; // Bloque le zoom avant pour ne pas traverser le sol
-    state.controls.maxDistance = 40000; // Limite le dézoom
+    state.controls.screenSpacePanning = false; 
+    state.controls.minDistance = 500; 
+    state.controls.maxDistance = 60000; 
 
-    // Constantes pour la conversion Mètres <-> Degrés
     state.initialLat = state.TARGET_LAT;
     state.initialLon = state.TARGET_LON;
 
-    // Mise à jour des tuiles lors du mouvement panoramique
     const throttledUpdate = throttle(() => {
         const dx = state.controls.target.x;
         const dz = state.controls.target.z;
-
         const dLon = (dx / (111320 * Math.cos(state.initialLat * Math.PI / 180)));
         const dLat = -(dz / 111320); 
-
         state.TARGET_LON = state.initialLon + dLon;
         state.TARGET_LAT = state.initialLat + dLat;
-
-        // Passe la position X,Z exacte pour un calcul de tuiles sans erreur d'approximation
         updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, state.controls.getDistance(), dx, dz);
     }, 200);
     
     state.controls.addEventListener('change', throttledUpdate);
 
-    // 4. Éclairage : Contraste "Lunaire" pour que les ombres percent le satellite
-    state.ambientLight = new THREE.AmbientLight(0xffffff, 0.05);
+    // 4. Éclairage
+    state.ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
     state.scene.add(state.ambientLight);
 
-    state.sunLight = new THREE.DirectionalLight(0xffffff, 10.0);
+    state.sunLight = new THREE.DirectionalLight(0xffffff, 6.0);
     state.sunLight.castShadow = state.SHADOWS;
     
     state.sunLight.shadow.mapSize.width = 4096;
     state.sunLight.shadow.mapSize.height = 4096;
-    const d = 20000; // Étendu pour couvrir plus de tuiles
+    const d = 20000; 
     state.sunLight.shadow.camera.left = -d;
     state.sunLight.shadow.camera.right = d;
     state.sunLight.shadow.camera.top = d;
@@ -85,25 +87,19 @@ export async function initScene() {
     
     state.scene.add(state.sunLight);
 
-    // 5. Chargement initial
     await loadTerrain();
     updateSunPosition(720); 
 
-    // 6. Boucle d'animation
     window.addEventListener('resize', onWindowResize);
     state.renderer.setAnimationLoop(() => {
         state.controls.update();
-        
-        // Mise à jour de la boussole
         if (state.camera) {
             const needle = document.getElementById('compass-needle');
             if (needle) {
-                // On récupère l'angle horizontal de la caméra (en radians)
                 const angle = state.controls.getAzimuthalAngle();
                 needle.style.transform = `rotate(${angle * (180 / Math.PI)}deg)`;
             }
         }
-
         state.renderer.render(state.scene, state.camera);
     });
 }
