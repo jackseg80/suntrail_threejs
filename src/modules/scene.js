@@ -27,7 +27,7 @@ export async function initScene() {
 
     // Ton mapping pro pour supprimer le voile gris
     state.renderer.toneMapping = THREE.AgXToneMapping;
-    state.renderer.toneMappingExposure = 1.2;
+    state.renderer.toneMappingExposure = 1.1;
 
     container.appendChild(state.renderer.domElement);
 
@@ -66,10 +66,10 @@ export async function initScene() {
     state.controls.addEventListener('change', throttledUpdate);
 
     // 4. Éclairage
-    state.ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    state.ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     state.scene.add(state.ambientLight);
 
-    state.sunLight = new THREE.DirectionalLight(0xffffff, 3.5);
+    state.sunLight = new THREE.DirectionalLight(0xffffff, 3.0);
     state.sunLight.castShadow = state.SHADOWS;
     
     state.sunLight.shadow.mapSize.width = 4096;
