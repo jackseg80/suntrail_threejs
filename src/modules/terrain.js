@@ -22,7 +22,6 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
 
     const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, state.ZOOM);
     
-    // Calcul de la tuile centrale basé DIRECTEMENT sur la position 3D (évite les décalages lat/lon)
     let centerTile;
     if (worldX !== undefined && worldZ !== undefined) {
         centerTile = {
@@ -34,11 +33,9 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
         centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, state.ZOOM);
     }
     
-    // Range dynamique : Utilisation de la valeur du state (ou boostée si altitude élevée)
     let range = state.RANGE; 
     if (camAltitude && camAltitude > 12000) range += 1; 
     
-    // Buffer de nettoyage : on garde les tuiles un peu plus loin pour éviter les trous lors des mouvements
     const cleanBuffer = 1;
     const cleanRange = range + cleanBuffer;
     
@@ -51,19 +48,16 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
             const ty = centerTile.y + dy;
             const key = `${tx}_${ty}_${state.ZOOM}`;
             
-            // Si dans le range de chargement immédiat
             if (Math.abs(dx) <= range && Math.abs(dy) <= range) {
                 neededTiles.add(key);
                 if (!activeTiles.has(key)) {
                     loadSingleTile(tx, ty, state.ZOOM, centerTile, key);
                 }
             }
-            // On marque comme "à garder" (ne pas supprimer)
             keptTiles.add(key);
         }
     }
 
-    // Nettoyage des tuiles vraiment trop lointaines (hors du cleanRange)
     for (const [key, tileObj] of activeTiles.entries()) {
         if (!keptTiles.has(key)) {
             if (tileObj && tileObj.mesh) {
@@ -78,7 +72,6 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
 }
 
 async function loadSingleTile(tx, ty, zoom, originTile, key) {
-    // Objet d'état sécurisé pour éviter les Race Conditions lors des déplacements rapides
     const tileObj = { status: 'loading', mesh: null };
     activeTiles.set(key, tileObj);
 
@@ -93,64 +86,60 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
 
         const [imgElev, imgColor] = await Promise.all([pElev, pColor]);
 
-        // Vérification de sécurité : Si l'utilisateur s'est éloigné trop vite, la tuile a été supprimée ou rechargée. On annule l'affichage.
         if (activeTiles.get(key) !== tileObj) return;
 
-        // Décodage de l'élévation RGB
         const canvas = document.createElement('canvas');
         canvas.width = 256; canvas.height = 256;
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         ctx.drawImage(imgElev, 0, 0, 256, 256);
         const data = ctx.getImageData(0, 0, 256, 256).data;
-        const rawHeights = new Float32Array(256 * 256);
-        let sumH = 0;
-        let countH = 0;
+        
+        const heights = new Float32Array(256 * 256);
+        const cleaned = new Float32Array(256 * 256);
+        let minH = Infinity;
 
-        // 1. Décodage brut avec filtrage de base
+        // 1. Décodage initial
         for (let i = 0; i < data.length; i += 4) {
             const r = data[i], g = data[i+1], b = data[i+2];
             let h = -10000 + ((r * 65536 + g * 256 + b) * 0.1);
-            
-            // On ignore les valeurs absurdes pour la Terre
-            if (h < -1000 || h > 9000) h = NaN; 
-            else {
-                sumH += h;
-                countH++;
-            }
-            rawHeights[i/4] = h;
+            if (h < -1000 || h > 9000) h = 0; 
+            heights[i/4] = h;
         }
 
-        const avgH = countH > 0 ? sumH / countH : 0;
-        const heights = new Float32Array(256 * 256);
-        let minH = Infinity;
+        // 2. FILTRE ANTI-PICS ULTRA-ROBUSTE (Spatial)
+        for (let y = 0; y < 256; y++) {
+            for (let x = 0; x < 256; x++) {
+                const i = y * 256 + x;
+                const val = heights[i];
+                
+                if (x > 0 && x < 255 && y > 0 && y < 255) {
+                    const n = heights[i - 256], s = heights[i + 256], w = heights[i - 1], e = heights[i + 1];
+                    const avgNeighbors = (n + s + w + e) / 4;
 
-        // 2. Filtre de cohérence (Anti-Brave Spikes)
-        for (let i = 0; i < rawHeights.length; i++) {
-            let h = rawHeights[i];
-            
-            // Si la valeur est NaN ou s'écarte trop de la moyenne de la tuile (bruit Brave)
-            // on lissage avec la moyenne pour éviter le pic
-            if (isNaN(h)) {
-                h = avgH;
+                    // Si le point diverge de plus de 200m de ses voisins, c'est du bruit Brave
+                    if (Math.abs(val - avgNeighbors) > 200) {
+                        cleaned[i] = avgNeighbors;
+                    } else {
+                        cleaned[i] = val;
+                    }
+                } else {
+                    cleaned[i] = val;
+                }
+                if (cleaned[i] < minH) minH = cleaned[i];
             }
-            
-            heights[i] = h;
-            if (h < minH) minH = h;
         }
         if (minH === Infinity) minH = 0;
 
         const colorTex = new THREE.CanvasTexture(imgColor);
         colorTex.colorSpace = THREE.SRGBColorSpace;
         colorTex.flipY = false; 
-        colorTex.wrapS = colorTex.wrapT = THREE.ClampToEdgeWrapping; // Évite les coutures de texture
+        colorTex.wrapS = colorTex.wrapT = THREE.ClampToEdgeWrapping;
         if (state.renderer) colorTex.anisotropy = state.renderer.capabilities.getMaxAnisotropy();
 
-        // Calcul exact de la taille de la tuile
         const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
         const dx = (tx - state.originTile.x) * tileSizeMeters;
         const dz = (ty - state.originTile.y) * tileSizeMeters;
 
-        // Utilisation de la taille EXACTE (pas d'overlap, pour une soudure parfaite)
         const geometry = new THREE.PlaneGeometry(tileSizeMeters, tileSizeMeters, state.RESOLUTION, state.RESOLUTION);
         geometry.rotateX(-Math.PI / 2);
 
@@ -161,6 +150,7 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
             uvs[i] = 1.0 - uvs[i];
         }
 
+        // Fonction d'échantillonnage bilinéaire utilisant le tableau NETTOYÉ
         function getElevationBilinear(px, py) {
             const x0 = Math.max(0, Math.min(254, Math.floor(px)));
             const y0 = Math.max(0, Math.min(254, Math.floor(py)));
@@ -168,51 +158,29 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
             const y1 = y0 + 1;
             const wx = px - x0;
             const wy = py - y0;
-            const h00 = heights[y0 * 256 + x0];
-            const h10 = heights[y0 * 256 + x1];
-            const h01 = heights[y1 * 256 + x0];
-            const h11 = heights[y1 * 256 + x1];
-            if (h00 < -9000 || h10 < -9000 || h01 < -9000 || h11 < -9000) return h00;
+            const h00 = cleaned[y0 * 256 + x0];
+            const h10 = cleaned[y0 * 256 + x1];
+            const h01 = cleaned[y1 * 256 + x0];
+            const h11 = cleaned[y1 * 256 + x1];
             return h00 * (1 - wx) * (1 - wy) + h10 * wx * (1 - wy) + h01 * (1 - wx) * wy + h11 * wx * wy;
         }
 
-        // On soulève les sommets
         for (let i = 0; i < vertices.length / 3; i++) {
-            const u = uvs[i * 2];
-            const v = uvs[i * 2 + 1];
-            
-            const canvasX = u * 255;
-            const canvasY = v * 255; 
-            
-            let h = getElevationBilinear(canvasX, canvasY);
-            if (h < -9000) h = minH;
-
-            // VITAL : On calcule le heightScale précis pour CHAQUE sommet selon sa latitude
-            // v=1 est le haut de la tuile (ty), v=0 est le bas (ty + 1)
+            const u = uvs[i * 2], v = uvs[i * 2 + 1];
+            const h = getElevationBilinear(u * 255, v * 255);
             const vertexLat = tileToLat(ty + (1.0 - v), zoom);
             const vertexHeightScale = 1 / Math.cos(vertexLat * Math.PI / 180);
-
             vertices[i * 3 + 1] = h * vertexHeightScale;
         }
         
-        // Lissage des ombres
         geometry.computeVertexNormals();
-
-        const material = new THREE.MeshStandardMaterial({ 
-            map: colorTex, 
-            roughness: 0.9,
-            metalness: 0.0,
-            flatShading: false 
-        });
-        
+        const material = new THREE.MeshStandardMaterial({ map: colorTex, roughness: 0.9, metalness: 0.0 });
         const mesh = new THREE.Mesh(geometry, material);
-        // On place la tuile exactement à côté de sa voisine
         mesh.position.set(dx, 0, dz);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
 
         state.scene.add(mesh);
-        // On met à jour l'objet d'état sécurisé (on n'écrase pas la map avec le mesh brut !)
         tileObj.status = 'loaded';
         tileObj.mesh = mesh;
 
@@ -220,11 +188,7 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         if (btn) btn.textContent = "Recharger le relief";
 
     } catch (e) {
-        // En cas d'erreur (ex: 404 océan), on marque comme failed au lieu de supprimer
-        // Cela évite que le système ne retente de télécharger cette zone morte 60 fois par seconde.
-        if (activeTiles.get(key) === tileObj) {
-            tileObj.status = 'failed';
-        }
+        if (activeTiles.get(key) === tileObj) tileObj.status = 'failed';
     }
 }
 
