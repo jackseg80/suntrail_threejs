@@ -55,10 +55,13 @@ export function initUI() {
             const lat = state.initialLat + dLat;
             const lon = state.initialLon + dLon;
             
+            // L'altitude réelle est pt.y divisé par l'exagération visuelle
+            const realAlt = pt.y / state.RELIEF_EXAGGERATION;
+
             const panel = document.getElementById('coords-panel');
             panel.style.display = 'block';
             document.getElementById('click-latlon').textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-            document.getElementById('click-alt').textContent = `${Math.round(pt.y)} m`;
+            document.getElementById('click-alt').textContent = `${Math.round(realAlt)} m`;
         } else {
             document.getElementById('coords-panel').style.display = 'none';
         }
@@ -67,6 +70,7 @@ export function initUI() {
     // --- CONTRÔLES DE PERFORMANCE ---
     const resSlider = document.getElementById('res-slider');
     const rangeSlider = document.getElementById('range-slider');
+    const exagSlider = document.getElementById('exag-slider');
     const fogSlider = document.getElementById('fog-slider');
     const shadowToggle = document.getElementById('shadow-toggle');
     const shadowResSelect = document.getElementById('shadow-res-select');
@@ -81,6 +85,12 @@ export function initUI() {
     rangeSlider.addEventListener('change', async (e) => {
         state.RANGE = parseInt(e.target.value);
         document.getElementById('range-disp').textContent = state.RANGE;
+        await refreshTerrain();
+    });
+
+    exagSlider.addEventListener('change', async (e) => {
+        state.RELIEF_EXAGGERATION = parseFloat(e.target.value);
+        document.getElementById('exag-disp').textContent = state.RELIEF_EXAGGERATION.toFixed(1);
         await refreshTerrain();
     });
 

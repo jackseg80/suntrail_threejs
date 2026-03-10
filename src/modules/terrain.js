@@ -126,8 +126,8 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
         for (let i = 0; i < vertices.length / 3; i++) {
             const u = uvs[i * 2], v = uvs[i * 2 + 1];
             const h = getH(u * 255, v * 255);
-            // TERMINÉ LE MULTIPLICATEUR : 1 unité = 1 mètre réel
-            vertices[i * 3 + 1] = Math.max(-10, h);
+            // On applique l'exagération visuelle UNIQUEMENT sur le rendu 3D
+            vertices[i * 3 + 1] = Math.max(-10, h * state.RELIEF_EXAGGERATION);
         }
         
         geometry.computeVertexNormals();
