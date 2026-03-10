@@ -14,6 +14,11 @@ export function initUI() {
     timeSlider.addEventListener('input', (e) => {
         updateSunPosition(e.target.value);
     });
+    
+    // Empêcher les contrôles de la caméra (OrbitControls/MapControls) d'intercepter le drag du slider
+    ['mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend'].forEach(evt => {
+        timeSlider.addEventListener(evt, (e) => e.stopPropagation(), { passive: false });
+    });
 
     initGeocoding();
 }
