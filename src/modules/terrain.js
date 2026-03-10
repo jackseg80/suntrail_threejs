@@ -171,6 +171,3 @@ async function loadSingleTile(tx, ty, zoom, originTile, key) {
 }
 
 export async function loadTerrain() { await updateVisibleTiles(); }
-
-
-export async function loadTerrain() { await updateVisibleTiles(); }
