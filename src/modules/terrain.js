@@ -6,11 +6,7 @@ const EARTH_CIRCUMFERENCE = 40075016.68;
 export const activeTiles = new Map(); 
 export const activeLabels = new Map(); 
 
-// LA RÉFÉRENCE ABSOLUE DU MONDE (v2.0.0)
-const REF_ZOOM = 13;
-const TILE_SIZE_REF = EARTH_CIRCUMFERENCE / Math.pow(2, REF_ZOOM);
-
-// --- FONCTIONS DE CONVERSION (STABLES v2.0.0) ---
+// --- FONCTIONS DE CONVERSION (STRICT v2.0.0) ---
 
 export function lngLatToTile(lon, lat, zoom) {
     const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
@@ -19,31 +15,33 @@ export function lngLatToTile(lon, lat, zoom) {
 }
 
 export function lngLatToWorld(lon, lat) {
-    const xfrac = (lon + 180) / 360 * Math.pow(2, REF_ZOOM);
-    const yfrac = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, REF_ZOOM);
-    return {
-        x: (xfrac - (state.originTile.x + 0.5)) * TILE_SIZE_REF,
-        z: (yfrac - (state.originTile.y + 0.5)) * TILE_SIZE_REF
-    };
+    const zoom = 13; // FIXÉ À 13 POUR TOUTE LA SCÈNE
+    const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
+    const xfrac = (lon + 180) / 360 * Math.pow(2, zoom);
+    const yfrac = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom);
+    
+    // originTile est toujours au Zoom 13
+    const worldX = (xfrac - (state.originTile.x + 0.5)) * tileSizeMeters;
+    const worldZ = (yfrac - (state.originTile.y + 0.5)) * tileSizeMeters;
+    return { x: worldX, z: worldZ };
 }
 
 export function worldToLngLat(worldX, worldZ) {
-    const xfrac = (worldX / TILE_SIZE_REF) + (state.originTile.x + 0.5);
-    const yfrac = (worldZ / TILE_SIZE_REF) + (state.originTile.y + 0.5);
-    const lon = xfrac / Math.pow(2, REF_ZOOM) * 360 - 180;
-    const n = Math.PI - 2 * Math.PI * yfrac / Math.pow(2, REF_ZOOM);
+    const zoom = 13;
+    const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
+    const xfrac = (worldX / tileSizeMeters) + (state.originTile.x + 0.5);
+    const yfrac = (worldZ / tileSizeMeters) + (state.originTile.y + 0.5);
+    const lon = xfrac / Math.pow(2, zoom) * 360 - 180;
+    const n = Math.PI - 2 * Math.PI * yfrac / Math.pow(2, zoom);
     const lat = 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
     return { lat, lon };
 }
 
 export function clearLabels() {
     for (const [name, obj] of activeLabels.entries()) {
-        state.scene.remove(obj.sprite);
-        state.scene.remove(obj.line);
+        state.scene.remove(obj.sprite); state.scene.remove(obj.line);
         if (obj.sprite.material.map) obj.sprite.material.map.dispose();
-        obj.sprite.material.dispose();
-        obj.line.geometry.dispose();
-        obj.line.material.dispose();
+        obj.sprite.material.dispose(); obj.line.geometry.dispose(); obj.line.material.dispose();
     }
     activeLabels.clear();
 }
@@ -53,7 +51,7 @@ export function clearLabels() {
 export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
     if (!state.mapCenter) state.mapCenter = { lat: state.TARGET_LAT, lon: state.TARGET_LON };
     
-    const zoom = state.ZOOM; 
+    const zoom = state.ZOOM; // Zoom des données (12-15)
     const centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, zoom);
     
     updateLabels(camLat, camLon, worldX, worldZ);
@@ -65,7 +63,7 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
             const tx = centerTile.x + dx, ty = centerTile.y + dy;
-            const key = `tile_${zoom}_${tx}_${ty}`;
+            const key = `${tx}_${ty}_${zoom}`;
             neededKeys.add(key);
             if (!activeTiles.has(key)) loadTile(tx, ty, zoom, key);
         }
@@ -73,7 +71,7 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
 
     for (const [key, tileObj] of activeTiles.entries()) {
         if (!neededKeys.has(key)) {
-            if (tileObj && tileObj.mesh) {
+            if (tileObj.mesh) {
                 state.scene.remove(tileObj.mesh);
                 tileObj.mesh.geometry.dispose();
                 if (tileObj.mesh.material.map) tileObj.mesh.material.map.dispose();
@@ -89,12 +87,17 @@ async function loadTile(tx, ty, zoom, key) {
     activeTiles.set(key, tileObj);
 
     try {
-        const scale = Math.pow(2, zoom - REF_ZOOM);
-        const tileSizeMeters = TILE_SIZE_REF / scale;
+        const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
         
-        // Position NW de la tuile par rapport à l'origine du monde Z13
-        const worldX_NW = (tx / scale - (state.originTile.x + 0.5)) * TILE_SIZE_REF;
-        const worldZ_NW = (ty / scale - (state.originTile.y + 0.5)) * TILE_SIZE_REF;
+        // --- PLACEMENT RELATIF ABSOLU (LOGIQUE v2.0.0) ---
+        // On calcule la position par rapport au NW de state.originTile (toujours en Z13)
+        const scale = Math.pow(2, zoom - 13);
+        const dx = (tx - state.originTile.x * scale) * tileSizeMeters;
+        const dz = (ty - state.originTile.y * scale) * tileSizeMeters;
+        
+        // Décalage pour centrer sur 0,0,0 (qui est le centre de originTile)
+        const posX = dx - (tileSizeMeters * scale / 2) + tileSizeMeters / 2;
+        const posZ = dz - (tileSizeMeters * scale / 2) + tileSizeMeters / 2;
 
         const elevZoom = Math.min(zoom, 14);
         let eTx = tx, eTy = ty;
@@ -131,11 +134,11 @@ async function loadTile(tx, ty, zoom, key) {
         const vertices = geometry.attributes.position.array;
         const uvs = geometry.attributes.uv.array;
 
-        // INVERSION UV v2.0.0 (Essentiel pour texte à l'endroit)
+        // --- INVERSION UV v2.0.0 ---
         for (let i = 1; i < uvs.length; i += 2) uvs[i] = 1.0 - uvs[i];
 
         for (let i = 0; i < vertices.length / 3; i++) {
-            const u = uvs[i * 2], v = uvs[i * 2 + 1]; // v=0 est le Nord
+            const u = uvs[i * 2], v = uvs[i * 2 + 1]; 
             let px = u * 255, py = v * 255;
             if (zoom === 15) {
                 px = (tx % 2 === 0 ? u * 127.5 : 128 + u * 127.5);
@@ -152,8 +155,7 @@ async function loadTile(tx, ty, zoom, key) {
         texture.colorSpace = THREE.SRGBColorSpace; texture.flipY = false; 
         
         const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ map: texture, roughness: 0.8, metalness: 0.1 }));     
-        // Placement NW + décalage vers le centre (PlaneGeometry est centrée)
-        mesh.position.set(worldX_NW + tileSizeMeters/2, 0, worldZ_NW + tileSizeMeters/2);
+        mesh.position.set(posX, 0, posZ);
         mesh.castShadow = mesh.receiveShadow = true;
         state.scene.add(mesh);
         tileObj.mesh = mesh; tileObj.status = 'loaded';
