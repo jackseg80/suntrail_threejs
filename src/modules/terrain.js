@@ -9,7 +9,7 @@ export const activeLabels = new Map();
 const BASE_ZOOM = 13; 
 const TILE_SIZE_BASE = EARTH_CIRCUMFERENCE / Math.pow(2, BASE_ZOOM);
 
-// --- MATHÉMATIQUES MERCATOR RIGOUREUSES (Ancre NW) ---
+// --- MERCATOR MATH (STABLE & UNIFIED) ---
 
 export function lngLatToTile(lon, lat, zoom) {
     const x = (lon + 180) / 360 * Math.pow(2, zoom);
@@ -17,22 +17,22 @@ export function lngLatToTile(lon, lat, zoom) {
     return { x: Math.floor(x), y: Math.floor(y), z: zoom };
 }
 
-// Convertit Lon/Lat en mètres par rapport au coin NW de la zone de départ
+// Convertit Lon/Lat en coordonnées Monde Three.js (v2.0.0 logic)
 export function lngLatToWorld(lon, lat) {
     const scale = Math.pow(2, BASE_ZOOM);
     const x = (lon + 180) / 360 * scale;
     const y = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * scale;
     
     return {
-        x: (x - state.originTile.x) * TILE_SIZE_BASE,
-        z: (y - state.originTile.y) * TILE_SIZE_BASE
+        x: (x - (state.originTile.x + 0.5)) * TILE_SIZE_BASE,
+        z: (y - (state.originTile.y + 0.5)) * TILE_SIZE_BASE
     };
 }
 
 export function worldToLngLat(worldX, worldZ) {
     const scale = Math.pow(2, BASE_ZOOM);
-    const x = (worldX / TILE_SIZE_BASE) + state.originTile.x;
-    const y = (worldZ / TILE_SIZE_BASE) + state.originTile.y;
+    const x = (worldX / TILE_SIZE_BASE) + (state.originTile.x + 0.5);
+    const y = (worldZ / TILE_SIZE_BASE) + (state.originTile.y + 0.5);
     
     const lon = x / scale * 360 - 180;
     const n = Math.PI - 2 * Math.PI * y / scale;
@@ -49,7 +49,7 @@ export function clearLabels() {
     activeLabels.clear();
 }
 
-// --- MOTEUR DE TERRAIN (LOD SECTORISÉ) ---
+// --- MOTEUR DE TERRAIN ---
 
 export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
     if (!state.mapCenter) state.mapCenter = { lat: state.TARGET_LAT, lon: state.TARGET_LON };
@@ -61,15 +61,17 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
     const curX = worldX || 0;
     const curZ = worldZ || 0;
 
+    // Échelle verticale globale pour TOUTE la scène (évite les décalages de bords)
+    const globalVScale = 1 / Math.cos((camLat || state.TARGET_LAT) * Math.PI / 180);
+
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
             const sx = centerTile.x + dx;
             const sy = centerTile.y + dy;
             
-            // Calcul de la distance au centre du secteur
-            const secWorldX = (sx - state.originTile.x + 0.5) * TILE_SIZE_BASE;
-            const secWorldZ = (sy - state.originTile.y + 0.5) * TILE_SIZE_BASE;
-            const dist = Math.sqrt(Math.pow(secWorldX - curX, 2) + Math.pow(secWorldZ - curZ, 2));
+            const sectorX = (sx - state.originTile.x) * TILE_SIZE_BASE;
+            const sectorZ = (sy - state.originTile.y) * TILE_SIZE_BASE;
+            const dist = Math.sqrt(Math.pow(sectorX - curX, 2) + Math.pow(sectorZ - curZ, 2));
             const trueDist = Math.sqrt(dist*dist + camAltitude*camAltitude);
 
             if (trueDist < 5000) {
@@ -78,7 +80,7 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
                         const tx = sx * 4 + i, ty = sy * 4 + j;
                         const key = `tile_15_${tx}_${ty}`;
                         neededTiles.add(key);
-                        if (!activeTiles.has(key)) loadTile(tx, ty, 15, key);
+                        if (!activeTiles.has(key)) loadTile(tx, ty, 15, key, globalVScale);
                     }
                 }
             } else if (trueDist < 10000) {
@@ -87,13 +89,13 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
                         const tx = sx * 2 + i, ty = sy * 2 + j;
                         const key = `tile_14_${tx}_${ty}`;
                         neededTiles.add(key);
-                        if (!activeTiles.has(key)) loadTile(tx, ty, 14, key);
+                        if (!activeTiles.has(key)) loadTile(tx, ty, 14, key, globalVScale);
                     }
                 }
             } else {
                 const key = `tile_13_${sx}_${sy}`;
                 neededTiles.add(key);
-                if (!activeTiles.has(key)) loadTile(sx, sy, 13, key);
+                if (!activeTiles.has(key)) loadTile(sx, sy, 13, key, globalVScale);
             }
         }
     }
@@ -112,7 +114,7 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
     updateLabels(camLat, camLon, worldX, worldZ);
 }
 
-async function loadTile(tx, ty, zoom, key) {
+async function loadTile(tx, ty, zoom, key, globalVScale) {
     const tileObj = { status: 'loading', mesh: null };
     activeTiles.set(key, tileObj);
 
@@ -120,10 +122,10 @@ async function loadTile(tx, ty, zoom, key) {
         const numTiles = Math.pow(2, zoom);
         const tileSizeMeters = EARTH_CIRCUMFERENCE / numTiles;
         
-        // POSITIONNEMENT NW ABSOLU (Le secret de la stabilité)
+        // PLACEMENT RELATIF v2.0.0 (NW based)
         const scale = Math.pow(2, zoom - BASE_ZOOM);
-        const worldX_NW = (tx / scale - state.originTile.x) * TILE_SIZE_BASE;
-        const worldZ_NW = (ty / scale - state.originTile.y) * TILE_SIZE_BASE;
+        const worldX = (tx / scale - (state.originTile.x + 0.5)) * TILE_SIZE_BASE;
+        const worldZ = (ty / scale - (state.originTile.y + 0.5)) * TILE_SIZE_BASE;
 
         const elevZoom = Math.min(zoom, 14);
         let eTx = tx, eTy = ty;
@@ -155,43 +157,40 @@ async function loadTile(tx, ty, zoom, key) {
             heights[i/4] = -10000 + ((data[i] * 65536 + data[i+1] * 256 + data[i+2]) * 0.1);
         }
 
-        // Géométrie NW Anchor
         const geometry = new THREE.PlaneGeometry(tileSizeMeters, tileSizeMeters, state.RESOLUTION, state.RESOLUTION);
         geometry.rotateX(-Math.PI / 2);
-        geometry.translate(tileSizeMeters / 2, 0, tileSizeMeters / 2); // NW is now 0,0
-        
         const vertices = geometry.attributes.position.array;
         const uvs = geometry.attributes.uv.array;
 
-        // Inversion UV v2.0.0
-        for (let i = 1; i < uvs.length; i += 2) uvs[i] = 1.0 - uvs[i];
+        // OFFSET ÉLÉVATION (Zoom 15 vs Zoom 14)
+        const offX = (zoom === 15) ? (tx % 2) * 128 : 0;
+        const offY = (zoom === 15) ? (ty % 2) * 128 : 0;
+        const step = (zoom === 15) ? 0.5 : 1.0;
 
         for (let i = 0; i < vertices.length / 3; i++) {
-            const u = uvs[i * 2], v = uvs[i * 2 + 1]; 
-            let pu = u, pv = v;
-            if (zoom === 15) {
-                pu = (tx % 2) * 0.5 + u * 0.5;
-                pv = (ty % 2) * 0.5 + v * 0.5;
-            }
-            const px = pu * 255, py = pv * 255;
+            const u = uvs[i * 2], v = uvs[i * 2 + 1];
+            // Inversion v2.0.0 pour texte à l'endroit
+            const py_canvas = 1.0 - v;
+            
+            const px = offX + (u * 255 * step);
+            const py = offY + (py_canvas * 255 * step);
+            
             const x0 = Math.floor(px), y0 = Math.floor(py), x1 = Math.min(255, x0+1), y1 = Math.min(255, y0+1);
             const wx = px - x0, wy = py - y0;
             const h = heights[y0*256+x0]*(1-wx)*(1-wy) + heights[y0*256+x1]*wx*(1-wy) + heights[y1*256+x0]*(1-wx)*wy + heights[y1*256+x1]*wx*wy;
             
-            // Facteur d'échelle Mercator (Essentiel pour souder Z13 et Z15)
-            const latNW = 180 / Math.PI * Math.atan(Math.sinh(Math.PI * (1 - 2 * ty / numTiles)));
-            const latSE = 180 / Math.PI * Math.atan(Math.sinh(Math.PI * (1 - 2 * (ty + 1) / numTiles)));
-            const vScale = 1 / Math.cos((latNW + v * (latSE - latNW)) * Math.PI / 180);
-            
-            vertices[i * 3 + 1] = Math.max(-10, h * vScale * state.RELIEF_EXAGGERATION);
+            // UTILISATION DE L'ÉCHELLE GLOBALE UNIQUE (Soudure parfaite)
+            vertices[i * 3 + 1] = Math.max(-5, h * globalVScale * state.RELIEF_EXAGGERATION);
         }
 
         geometry.computeVertexNormals();
         const texture = new THREE.CanvasTexture(imgColor);
-        texture.colorSpace = THREE.SRGBColorSpace; texture.flipY = false; 
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.flipY = false; // Match v2.0.0 UV inversion
         
         const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ map: texture, roughness: 0.8, metalness: 0.1 }));     
-        mesh.position.set(worldX_NW, 0, worldZ_NW); 
+        // Center-relative NW positioning (v2.0.0)
+        mesh.position.set(worldX + tileSizeMeters/2, 0, worldZ + tileSizeMeters/2);
         mesh.castShadow = mesh.receiveShadow = true;
         state.scene.add(mesh);
         tileObj.mesh = mesh; tileObj.status = 'loaded';
