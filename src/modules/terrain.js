@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { state } from './state.js';
-import { fetchNearbyPeaks, createLabelSprite } from './utils.js';
+import { fetchNearbyPeaks, createLabelSprite, showToast } from './utils.js';
 
 export const EARTH_CIRCUMFERENCE = 40075016.68;
 export const activeTiles = new Map(); 
@@ -176,6 +176,12 @@ export class Tile {
         if (!this.elevationTex || !this.colorTex || this.status === 'disposed') return;
         
         const oldMesh = this.mesh;
+
+        // --- UX : Notification de changement LOD ---
+        // On ne notifie que pour les tuiles au centre pour ne pas spammer
+        if (oldMesh && resolution !== this.currentResolution && this.tx === state.originTile.x && this.ty === state.originTile.y) {
+            showToast(`Optimisation Relief : ${resolution}²`);
+        }
         const geometry = new THREE.PlaneGeometry(this.tileSizeMeters, this.tileSizeMeters, resolution, resolution);
         geometry.rotateX(-Math.PI / 2);
         const uvs = geometry.attributes.uv.array;

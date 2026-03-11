@@ -15,6 +15,33 @@ export function isPositionInSwitzerland(lat, lon) {
     return (lat >= 45.8 && lat <= 47.8 && lon >= 5.9 && lon <= 10.5);
 }
 
+/**
+ * Affiche une notification temporaire à l'écran
+ */
+export function showToast(message) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    // On limite à 2 toasts simultanés
+    if (container.children.length > 1) {
+        container.removeChild(container.firstChild);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        if (toast.parentNode === container) {
+            container.removeChild(toast);
+        }
+    }, 1500);
+}
+
+/**
+ * Limite la fréquence d'exécution d'une fonction
+ */
 export function throttle(func, limit) {
     let inThrottle;
     return function() {
@@ -63,22 +90,18 @@ export function createLabelSprite(text) {
     const fontSize = 32;
     ctx.font = `bold ${fontSize}px "DM Sans", sans-serif`;
     
-    // Mesure du texte pour adapter la largeur
     const textWidth = ctx.measureText(text.toUpperCase()).width;
     const padding = 40;
     const badgeWidth = textWidth + padding * 2;
     const badgeHeight = 60;
     
-    // On dimensionne le canvas au plus juste
-    canvas.width = badgeWidth + 20; // +20 pour l'ombre/bordure
+    canvas.width = badgeWidth + 20; 
     canvas.height = badgeHeight + 20;
     
-    // On redéfinit la font après le redimensionnement du canvas
     ctx.font = `bold ${fontSize}px "DM Sans", sans-serif`;
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'center';
 
-    // Dessin du badge
     ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
     ctx.roundRect(10, 10, badgeWidth, badgeHeight, 30);
     ctx.fill();
@@ -87,7 +110,6 @@ export function createLabelSprite(text) {
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    // Texte
     ctx.fillStyle = 'white';
     ctx.fillText(text.toUpperCase(), canvas.width / 2, canvas.height / 2);
 
@@ -95,7 +117,6 @@ export function createLabelSprite(text) {
     const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
     const sprite = new THREE.Sprite(spriteMaterial);
     
-    // Mise à l'échelle : on garde une hauteur fixe (250m), la largeur est proportionnelle
     const ratio = canvas.width / canvas.height;
     sprite.scale.set(250 * ratio, 250, 1);
     

@@ -173,12 +173,19 @@ input[type="range"] { accent-color: var(--accent); }
     border: 1px solid rgba(0,255,255,0.2); pointer-events: none;
 }
 
-@media (max-width: 600px) {
-    #top-search-container { left: 10px; top: 10px; width: calc(100% - 80px); }
-    #layer-btn { top: 10px; right: 10px; }
-    #layer-menu { top: 70px; right: 10px; width: calc(100% - 20px); left: 10px; }
-    #bottom-bar { width: calc(100% - 20px); bottom: 10px; }
-    #gps-btn { bottom: 90px; right: 10px; }
-    #settings-toggle { top: 70px; left: 10px; }
-    #zoom-indicator { bottom: 85px; }
+/* TOAST NOTIFICATION */
+#toast-container {
+    position: fixed; bottom: 160px; left: 50%; transform: translateX(-50%);
+    z-index: 5000; pointer-events: none;
 }
+
+.toast {
+    background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px);
+    color: var(--gold); padding: 6px 16px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 8px; border: 1px solid rgba(245, 158, 11, 0.2);
+    animation: toast-in 0.3s ease-out, toast-out 0.3s ease-in 1.2s forwards;
+}
+
+@keyframes toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toast-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-10px); } }
