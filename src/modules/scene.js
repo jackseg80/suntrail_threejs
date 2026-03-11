@@ -141,10 +141,13 @@ export async function initScene() {
 
         if (state.isAnimating) {
             const slider = document.getElementById('time-slider');
-            let currentMins = parseInt(slider.value);
-            currentMins = (currentMins + state.animationSpeed) % 1440;
-            slider.value = currentMins;
-            updateSunPosition(currentMins);
+            if (slider) {
+                let currentMins = parseInt(slider.value);
+                if (isNaN(currentMins)) currentMins = 720; // Default to noon if error
+                currentMins = (currentMins + state.animationSpeed) % 1440;
+                slider.value = Math.floor(currentMins);
+                updateSunPosition(currentMins);
+            }
         }
 
         if (state.camera) {
