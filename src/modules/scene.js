@@ -3,7 +3,7 @@ import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { state } from './state.js';
 import { updateSunPosition } from './sun.js';
-import { loadTerrain, updateVisibleTiles, lngLatToTile, worldToLngLat, resetTerrain, EARTH_CIRCUMFERENCE } from './terrain.js';
+import { loadTerrain, updateVisibleTiles, lngLatToTile, worldToLngLat, repositionAllTiles, animateTiles, EARTH_CIRCUMFERENCE } from './terrain.js';
 import { updateGPXMesh } from './ui.js';
 import { throttle } from './utils.js';
 
@@ -30,7 +30,7 @@ export async function initScene() {
     state.scene.add(sky);
     state.sky = sky;
 
-    state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 2000000);
+    state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 3000000);
     state.camera.position.set(0, 8000, 12000); 
 
     state.controls = new MapControls(state.camera, state.renderer.domElement);
@@ -39,7 +39,16 @@ export async function initScene() {
     state.controls.maxPolarAngle = Math.PI / 2 - 0.05;
     state.controls.screenSpacePanning = false; 
     state.controls.minDistance = 500; 
-    state.controls.maxDistance = 60000; 
+    state.controls.maxDistance = 150000; 
+
+    // Fonction utilitaire pour mettre à jour l'indicateur
+    const updateUIZoom = (zoom) => {
+        const indicator = document.getElementById('zoom-indicator');
+        if (indicator) {
+            const sourceName = state.MAP_SOURCE.toUpperCase();
+            indicator.textContent = `${sourceName}: Lvl ${zoom}`;
+        }
+    };
 
     const throttledUpdate = throttle(() => {
         const dx = state.controls.target.x;
@@ -47,46 +56,42 @@ export async function initScene() {
         const dist = state.camera.position.y;
 
         let newZoom = state.ZOOM;
-        if (dist < 10000) newZoom = 14;
-        else if (dist < 25000) newZoom = 13;
-        else newZoom = 12;
+        if (state.ZOOM === 13) {
+            if (dist < 6000) newZoom = 14;
+            else if (dist > 30000) newZoom = 12;
+        } else if (state.ZOOM === 14) {
+            if (dist > 8000) newZoom = 13;
+        } else if (state.ZOOM === 12) {
+            if (dist < 25000) newZoom = 13;
+        }
 
         if (newZoom !== state.ZOOM) {
-            console.log(`Auto-Zoom: Switching to ${newZoom}`);
-            
-            // --- LOGIQUE DE COMPENSATION D'ORIGINE (Zéro Saut) ---
             const gpsCenter = worldToLngLat(dx, dz);
-            
-            // 1. Sauvegarde de l'ancienne origine normalisée
             const oldOriginX = (state.originTile.x + 0.5) / Math.pow(2, state.ZOOM);
             const oldOriginZ = (state.originTile.y + 0.5) / Math.pow(2, state.ZOOM);
             
             state.ZOOM = newZoom;
             state.originTile = lngLatToTile(gpsCenter.lon, gpsCenter.lat, newZoom);
             
-            // 2. Nouvelle origine normalisée
             const newOriginX = (state.originTile.x + 0.5) / Math.pow(2, state.ZOOM);
             const newOriginZ = (state.originTile.y + 0.5) / Math.pow(2, state.ZOOM);
             
-            // 3. Calcul du décalage physique en mètres
             const offsetX = (oldOriginX - newOriginX) * EARTH_CIRCUMFERENCE;
             const offsetZ = (oldOriginZ - newOriginZ) * EARTH_CIRCUMFERENCE;
             
-            // 4. On déplace la caméra et sa cible de la même distance
             state.camera.position.x += offsetX;
             state.camera.position.z += offsetZ;
             state.controls.target.x += offsetX;
             state.controls.target.z += offsetZ;
             state.controls.update();
 
-            resetTerrain();
+            repositionAllTiles();
             if (state.rawGpxData) updateGPXMesh(); 
-            
-            const indicator = document.getElementById('zoom-indicator');
-            if (indicator) indicator.textContent = `SWISSTOPO: Lvl ${newZoom}`;
+            updateUIZoom(newZoom);
         } else {
-            // Même sans changement de zoom, on rafraîchit l'épaisseur GPX si nécessaire
             if (state.rawGpxData) updateGPXMesh(); 
+            // On s'assure que le nom de la source est à jour même si le zoom ne change pas
+            updateUIZoom(state.ZOOM);
         }
 
         updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, dist, state.controls.target.x, state.controls.target.z);
@@ -113,12 +118,15 @@ export async function initScene() {
 
     await loadTerrain();
     updateSunPosition(720); 
+    updateUIZoom(state.ZOOM);
 
-    const indicator = document.getElementById('zoom-indicator');
-    if (indicator) indicator.textContent = `SWISSTOPO: Lvl ${state.ZOOM}`;
+    const clock = new THREE.Clock();
 
     window.addEventListener('resize', onWindowResize);
     state.renderer.setAnimationLoop(() => {
+        const delta = clock.getDelta();
+        animateTiles(delta);
+
         if (state.isFollowingTrail && state.gpxPoints.length > 1) {
             state.trailProgress += 0.0005;
             if (state.trailProgress > 1) state.trailProgress = 0;
