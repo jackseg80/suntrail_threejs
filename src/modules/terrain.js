@@ -70,7 +70,7 @@ export class Tile {
         this.worldX = (txNorm - oxNorm) * EARTH_CIRCUMFERENCE;
         this.worldZ = (tyNorm - oyNorm) * EARTH_CIRCUMFERENCE;
 
-        if (this.mesh) this.mesh.position.set(this.worldX, this.zoom <= 10 ? -100 : 0, this.worldZ);
+        if (this.mesh) this.mesh.position.set(this.worldX, 0, this.worldZ);
         
         this.bounds = new THREE.Box3(
             new THREE.Vector3(this.worldX - this.tileSizeMeters/2, -1000, this.worldZ - this.tileSizeMeters/2),
@@ -80,10 +80,9 @@ export class Tile {
 
     isVisible() {
         if (!state.camera) return true;
-        if (this.zoom <= 10) return true;
         projScreenMatrix.multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
         frustum.setFromProjectionMatrix(projScreenMatrix);
-        return frustum.intersectsBox(this.bounds.clone().expandByScalar(this.tileSizeMeters));
+        return frustum.intersectsBox(this.bounds.clone().expandByScalar(this.tileSizeMeters * 0.2));
     }
 
     async load() {
@@ -94,16 +93,13 @@ export class Tile {
             this.elevationTex = cached.elev;
             this.colorTex = cached.color;
             this.status = 'loaded';
-            this.buildMesh(this.zoom <= 10 ? 32 : state.RESOLUTION);
+            this.buildMesh(state.RESOLUTION);
             return;
         }
-        await new Promise(r => setTimeout(r, Math.random() * (this.zoom <= 10 ? 200 : 800)));
-        if (this.status === 'disposed') return;
         this.status = 'loading';
         try {
-            const opts = { colorSpaceConversion: 'none', premultiplyAlpha: 'none' };
             const pElev = fetch(`https://api.maptiler.com/tiles/terrain-rgb-v2/${this.zoom}/${this.tx}/${this.ty}.png?key=${state.MK}`)
-                .then(r => r.blob()).then(b => createImageBitmap(b, opts));
+                .then(r => r.blob()).then(b => createImageBitmap(b, { colorSpaceConversion: 'none' }));
             const pColor = fetch(this.getColorUrl()).then(r => r.blob()).then(b => createImageBitmap(b));
             const [imgElev, imgColor] = await Promise.all([pElev, pColor]);
             if (this.status === 'disposed') return;
@@ -114,7 +110,7 @@ export class Tile {
             this.colorTex.flipY = false;
             dataCache.set(cacheKey, { elev: this.elevationTex, color: this.colorTex });
             this.status = 'loaded';
-            this.buildMesh(this.zoom <= 10 ? 32 : state.RESOLUTION);
+            this.buildMesh(state.RESOLUTION);
         } catch (e) { this.status = 'failed'; }
     }
 
@@ -146,14 +142,10 @@ export class Tile {
         };
 
         this.mesh = new THREE.Mesh(geometry, material);
-        this.mesh.position.set(this.worldX, this.zoom <= 10 ? -100 : 0, this.worldZ); 
+        this.mesh.position.set(this.worldX, 0, this.worldZ);
         this.mesh.renderOrder = this.zoom; 
-        
-        // --- ACTIVATION DES OMBRES SUR CHAQUE TUILE ---
-        this.mesh.castShadow = true;
-        this.mesh.receiveShadow = true;
+        this.mesh.castShadow = this.mesh.receiveShadow = true;
 
-        // --- MATÉRIAU DE PROFONDEUR PERSONNALISÉ POUR LES OMBRES ---
         this.mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
         this.mesh.customDepthMaterial.onBeforeCompile = (shader) => {
             shader.uniforms.uElevationMap = { value: this.elevationTex };
@@ -264,13 +256,12 @@ export function updateGPXMesh() {
 }
 
 function calculateTargetLOD(tile, camX, camZ) {
-    if (tile.zoom <= 10) return 32;
     const dx = tile.worldX - camX;
     const dz = tile.worldZ - camZ;
     const dist = Math.sqrt(dx * dx + dz * dz);
     const tileSize = tile.tileSizeMeters;
-    if (dist < tileSize * 1.2) return state.RESOLUTION; 
-    if (dist < tileSize * 2.5) return Math.floor(state.RESOLUTION / 2); 
+    if (dist < tileSize * 3.0) return state.RESOLUTION; 
+    if (dist < tileSize * 6.0) return Math.floor(state.RESOLUTION / 2); 
     return Math.floor(state.RESOLUTION / 4); 
 }
 
@@ -280,18 +271,14 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
     const keptTiles = new Set();
 
     const zoom = state.ZOOM;
-    const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
-    const txCenter = Math.floor((currentGPS.lon + 180) / 360 * Math.pow(2, zoom));
-    const tyCenter = Math.floor((1 - Math.log(Math.tan(currentGPS.lat * Math.PI / 180) + 1 / Math.cos(currentGPS.lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
+    const centerTile = lngLatToTile(currentGPS.lon, currentGPS.lat, zoom);
     
-    const coverageMeters = zoom >= 14 ? 25000 : 40000; 
-    const baseRange = Math.ceil(coverageMeters / tileSizeMeters / 2);
-    const altitudeEffect = Math.max(0, Math.floor((camAltitude || state.camera.position.y) / 10000));
-    let range = Math.min(Math.max(state.RANGE, baseRange) + altitudeEffect, 10);
+    // On garde une portée généreuse (6 tuiles de rayon) pour boucher l'écran
+    const range = 6; 
 
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
-            const tx = txCenter + dx, ty = tyCenter + dy, key = `${tx}_${ty}_${zoom}`;
+            const tx = centerTile.x + dx, ty = centerTile.y + dy, key = `${tx}_${ty}_${zoom}`;
             keptTiles.add(key);
             let tile = activeTiles.get(key);
             if (!tile) {
@@ -300,23 +287,6 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
             } else if (tile.status === 'loaded') {
                 const targetRes = calculateTargetLOD(tile, state.camera.position.x, state.camera.position.z);
                 if (targetRes !== tile.currentResolution) tile.buildMesh(targetRes);
-            }
-        }
-    }
-
-    const hZoom = 9;
-    const hTX = Math.floor((currentGPS.lon + 180) / 360 * Math.pow(2, hZoom));
-    const hTY = Math.floor((1 - Math.log(Math.tan(currentGPS.lat * Math.PI / 180) + 1 / Math.cos(currentGPS.lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, hZoom));
-    for (let dy = -2; dy <= 2; dy++) {
-        for (let dx = -2; dx <= 2; dx++) {
-            if (dx === 0 && dy === 0) continue;
-            const tx = hTX + dx, ty = hTY + dy, key = `${tx}_${ty}_${hZoom}`;
-            keptTiles.add(key);
-            let tile = activeTiles.get(key);
-            if (!tile) {
-                tile = new Tile(tx, ty, hZoom, key);
-                activeTiles.set(key, tile);
-                tile.load();
             }
         }
     }

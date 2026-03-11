@@ -45,29 +45,28 @@ export async function initScene() {
     state.scene.add(sky);
     state.sky = sky;
 
-    state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 500000);
+    // --- OPTIMISATION : Plan FAR réduit car inclinaison bridée ---
+    state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 150000);
     state.camera.position.set(0, 8000, 12000); 
 
     // --- CHOIX DU CONTRÔLEUR SELON L'APPAREIL ---
     const mobile = isMobileDevice();
     if (mobile) {
-        console.log("Mobile/Touch detected: Using OrbitControls");
         state.controls = new OrbitControls(state.camera, state.renderer.domElement);
-        // Sur mobile, on préfère que le doigt fasse pivoter (Orbit)
-        state.controls.enablePan = true; // 2 doigts pour déplacer
+        state.controls.enablePan = true;
     } else {
-        console.log("Desktop detected: Using MapControls");
         state.controls = new MapControls(state.camera, state.renderer.domElement);
-        // Sur PC, on préfère que le clic gauche déplace (Map)
     }
 
     state.controls.enableDamping = true;
     state.controls.dampingFactor = 0.05;
-    state.controls.maxPolarAngle = 1.45; 
-    state.controls.minPolarAngle = 0; 
     state.controls.screenSpacePanning = false; 
     state.controls.minDistance = 500; 
     state.controls.maxDistance = 150000; 
+
+    // --- LIMITES D'ORIENTATION (Comme Google Maps) ---
+    state.controls.maxPolarAngle = 1.3; 
+    state.controls.minPolarAngle = 0; 
 
     const updateUIZoom = (zoom) => {
         const indicator = document.getElementById('zoom-indicator');
@@ -103,7 +102,6 @@ export async function initScene() {
 
         if (shouldRecentre) {
             lastRecenterTime = now;
-            console.log(`Recentering World (Zoom ${newZoom})...`);
             const oldOriginX = (state.originTile.x + 0.5) / Math.pow(2, state.ZOOM);
             const oldOriginZ = (state.originTile.y + 0.5) / Math.pow(2, state.ZOOM);
             state.ZOOM = newZoom;
@@ -136,16 +134,16 @@ export async function initScene() {
     state.sunLight.castShadow = state.SHADOWS;
     state.sunLight.shadow.mapSize.width = 4096;
     state.sunLight.shadow.mapSize.height = 4096;
-    const d = 40000; // Augmenté à 40km pour englober les sommets environnants
+    const d = 40000; 
     state.sunLight.shadow.camera.left = -d;
     state.sunLight.shadow.camera.right = d;
     state.sunLight.shadow.camera.top = d;
     state.sunLight.shadow.camera.bottom = -d;
     state.sunLight.shadow.camera.near = 1000;
-    state.sunLight.shadow.camera.far = 300000; // Augmenté pour voir le soleil très haut
-    state.sunLight.shadow.bias = -0.0001; // Bias plus faible pour plus de précision au sol
+    state.sunLight.shadow.camera.far = 300000; 
+    state.sunLight.shadow.bias = -0.0001; 
     state.scene.add(state.sunLight);
-    state.scene.add(state.sunLight.target); // Très important pour que le soleil pointe vers sa cible
+    state.scene.add(state.sunLight.target); 
 
     await loadTerrain();
     updateSunPosition(720); 
