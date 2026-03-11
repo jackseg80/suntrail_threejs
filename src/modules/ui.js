@@ -47,7 +47,6 @@ export function initUI() {
         updateSunPosition(e.target.value);
     });
 
-    // --- CLIC POUR ALTITUDE (Version V2.4 - Précision Géométrique CPU) ---
     window.addEventListener('click', (e) => {
         if (!state.renderer || !state.camera || !state.scene) return;
         if (e.target.tagName !== 'CANVAS') return;
@@ -57,16 +56,32 @@ export function initUI() {
         raycaster.setFromCamera(mouse, state.camera);
         
         const meshes = [];
-        for (const tile of activeTiles.values()) { 
-            if (tile && tile.mesh) meshes.push(tile.mesh);
+        const meshToTile = new Map();
+        for (const tile of activeTiles.values()) {
+            if (tile && tile.mesh) {
+                meshes.push(tile.mesh);
+                meshToTile.set(tile.mesh.id, tile);
+            }
         }
-        
-        const intersects = raycaster.intersectObjects(meshes, false);
+
+        const intersects = raycaster.intersectObjects(meshes);
         if (intersects.length > 0) {
             const hit = intersects[0];
+            const tile = meshToTile.get(hit.object.id);
             const gps = worldToLngLat(hit.point.x, hit.point.z);
-            // Comme le relief est physique en V2.4, hit.point.y est la hauteur exacte multipliée par l'exagération
-            const realAlt = hit.point.y / state.RELIEF_EXAGGERATION;
+            
+            let realAlt = 0;
+            if (tile && tile.elevationTex && tile.elevationTex.image) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 256; canvas.height = 256;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(tile.elevationTex.image, 0, 0);
+                const uv = hit.uv; 
+                const px = Math.floor(uv.x * 255);
+                const py = Math.floor((1.0 - uv.y) * 255);
+                const data = ctx.getImageData(px, py, 1, 1).data;
+                realAlt = -10000 + ((data[0] * 65536 + data[1] * 256 + data[2]) * 0.1);
+            }
 
             const panel = document.getElementById('coords-panel');
             panel.style.display = 'block';
@@ -119,7 +134,6 @@ export function initUI() {
     exagSlider.addEventListener('change', async (e) => {
         state.RELIEF_EXAGGERATION = parseFloat(e.target.value);
         document.getElementById('exag-disp').textContent = state.RELIEF_EXAGGERATION.toFixed(1);
-        await updateVisibleTiles(); // Rebuild CPU fluide car data en cache
     });
 
     trailsToggle.addEventListener('change', async (e) => {
@@ -189,7 +203,51 @@ function initCollapsibles() {
 
 async function refreshTerrain() {
     resetTerrain();
+    if (state.rawGpxData) updateGPXMesh(); 
     await updateVisibleTiles();
+}
+
+/**
+ * Version V3 : Trace GPX Haute Visibilité (ROUGE)
+ */
+export function updateGPXMesh() {
+    if (!state.rawGpxData) return;
+    
+    if (state.gpxMesh) {
+        state.scene.remove(state.gpxMesh);
+        state.gpxMesh.geometry.dispose();
+        state.gpxMesh.material.dispose();
+    }
+
+    const track = state.rawGpxData.tracks[0];
+    const points = track.points;
+
+    const threePoints = points.map(p => {
+        const pos = lngLatToWorld(p.lon, p.lat);
+        const worldY = (p.ele || 0) * state.RELIEF_EXAGGERATION + 10; 
+        return new THREE.Vector3(pos.x, worldY, pos.z);
+    });
+    state.gpxPoints = threePoints;
+
+    const curve = new THREE.CatmullRomCurve3(threePoints);
+    const camAlt = state.camera ? state.camera.position.y : 5000;
+    const thickness = Math.max(8, camAlt / 250); 
+
+    const geometry = new THREE.TubeGeometry(curve, threePoints.length, thickness, 8, false);
+    
+    const material = new THREE.MeshStandardMaterial({ 
+        color: 0xff0000,      // Rouge pur
+        emissive: 0xaa0000,   // Brillance rouge sombre
+        emissiveIntensity: 0.8,
+        roughness: 0.3,
+        metalness: 0.5,
+        transparent: true,
+        opacity: 0.9
+    });
+
+    state.gpxMesh = new THREE.Mesh(geometry, material);
+    state.gpxMesh.renderOrder = 1000;
+    state.scene.add(state.gpxMesh);
 }
 
 async function handleGPX(xml) {
@@ -197,41 +255,23 @@ async function handleGPX(xml) {
     gpx.parse(xml);
     if (!gpx.tracks || !gpx.tracks.length) return;
     
-    resetTerrain();
-    if (state.gpxMesh) {
-        state.scene.remove(state.gpxMesh);
-        state.gpxMesh.geometry.dispose();
-        state.gpxMesh.material.dispose();
-    }
-    
-    const track = gpx.tracks[0];
-    const points = track.points;
-    const startPt = points[0];
+    state.rawGpxData = gpx;
+    const startPt = gpx.tracks[0].points[0];
 
+    resetTerrain();
     state.TARGET_LAT = startPt.lat;
     state.TARGET_LON = startPt.lon;
     state.originTile = lngLatToTile(startPt.lon, startPt.lat, state.ZOOM);
     
-    const threePoints = points.map(p => {
-        const pos = lngLatToWorld(p.lon, p.lat);
-        const worldY = (p.ele || 0) * state.RELIEF_EXAGGERATION + 5; 
-        return new THREE.Vector3(pos.x, worldY, pos.z);
-    });
-    state.gpxPoints = threePoints;
-
-    const curve = new THREE.CatmullRomCurve3(threePoints);
-    const geometry = new THREE.TubeGeometry(curve, threePoints.length, 10, 8, false);
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 });
-    state.gpxMesh = new THREE.Mesh(geometry, material);
-    state.scene.add(state.gpxMesh);
+    updateGPXMesh();
 
     document.getElementById('trail-controls').style.display = 'block';
-    document.getElementById('gpx-dist').textContent = `${(track.distance.total / 1000).toFixed(1)} km`;
-    document.getElementById('gpx-elev').textContent = `+${Math.round(track.elevation.pos)}m / -${Math.round(track.elevation.neg)}m`;
+    document.getElementById('gpx-dist').textContent = `${(gpx.tracks[0].distance.total / 1000).toFixed(1)} km`;
+    document.getElementById('gpx-elev').textContent = `+${Math.round(gpx.tracks[0].elevation.pos)}m / -${Math.round(gpx.tracks[0].elevation.neg)}m`;
 
     if (state.controls) {
-        state.controls.target.set(threePoints[0].x, threePoints[0].y, threePoints[0].z);
-        state.camera.position.set(threePoints[0].x, threePoints[0].y + 2000, threePoints[0].z + 4000);
+        state.controls.target.set(state.gpxPoints[0].x, state.gpxPoints[0].y, state.gpxPoints[0].z);
+        state.camera.position.set(state.gpxPoints[0].x, state.gpxPoints[0].y + 2000, state.gpxPoints[0].z + 4000);
         state.controls.update();
     }
     
@@ -277,7 +317,6 @@ function initGeocoding() {
                         geoInput.value = name;
                         
                         resetTerrain();
-                        
                         state.TARGET_LAT = lat;
                         state.TARGET_LON = lng;
                         if (state.controls) {

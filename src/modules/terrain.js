@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { state } from './state.js';
 import { fetchNearbyPeaks, createLabelSprite } from './utils.js';
 
-const EARTH_CIRCUMFERENCE = 40075016.68;
+export const EARTH_CIRCUMFERENCE = 40075016.68;
 export const activeTiles = new Map(); 
 export const activeLabels = new Map(); 
 
