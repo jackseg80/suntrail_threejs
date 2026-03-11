@@ -36,18 +36,19 @@
     <h3 style="margin:0 0 15px 0; font-size:14px; color:var(--gold); text-transform:uppercase;">Type de carte</h3>
     <div class="layer-grid">
         <div class="layer-item active" data-source="swisstopo">
-            <div class="layer-thumb" style="background-image:url('https://api.maptiler.com/maps/topo-v2/static/0,0,1/100x100.png?key=')"></div>
-            Topo
+            <div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/outdoor-v2.png')"></div>
+            Topo CH
         </div>
         <div class="layer-item" data-source="satellite">
-            <div class="layer-thumb" style="background-image:url('https://api.maptiler.com/maps/satellite/static/0,0,1/100x100.jpg?key=')"></div>
+            <div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/satellite.png')"></div>
             Satellite
         </div>
         <div class="layer-item" data-source="opentopomap">
-            <div class="layer-thumb" style="background-image:url('https://a.tile.opentopomap.org/0/0/0.png')"></div>
+            <div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/topo.png')"></div>
             OpenTopo
         </div>
     </div>
+
     <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid var(--border);">
         <label style="font-size:13px;">📍 Sentiers & Noms</label>
         <input type="checkbox" id="trails-toggle" checked style="width:20px; height:20px;">
@@ -63,7 +64,10 @@
 <!-- BARRE DE TEMPS BASSE -->
 <div id="bottom-bar" style="display:none;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div style="font-weight:700; font-size:18px;"><span id="time-disp">12:00</span></div>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div style="font-weight:700; font-size:18px;"><span id="time-disp">12:00</span></div>
+            <input type="date" id="date-input" style="background:rgba(255,255,255,0.05); border:none; color:var(--t2); font-size:12px; padding:4px 8px; border-radius:8px; cursor:pointer;">
+        </div>
         <div style="display:flex; gap:10px;">
             <button id="play-btn" style="background:none; border:none; color:white; font-size:18px; cursor:pointer;">▶</button>
             <select id="speed-select" style="background:none; border:none; color:var(--t2); font-size:12px;">

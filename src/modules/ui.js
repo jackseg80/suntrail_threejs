@@ -96,6 +96,14 @@ export function initUI() {
 
     // --- TEMPS ---
     const timeSlider = document.getElementById('time-slider');
+    const dateInput = document.getElementById('date-input');
+
+    dateInput.valueAsDate = state.simDate;
+    dateInput.addEventListener('change', (e) => {
+        state.simDate = new Date(e.target.value);
+        updateSunPosition(timeSlider.value);
+    });
+
     timeSlider.addEventListener('input', (e) => {
         updateSunPosition(e.target.value);
     });
@@ -244,14 +252,6 @@ function go() {
     }
     localStorage.setItem('maptiler_key_3d', state.MK);
     
-    // Remplacement des clés dans les vignettes (optionnel mais propre)
-    document.querySelectorAll('.layer-thumb').forEach(thumb => {
-        const bg = thumb.style.backgroundImage;
-        if (bg.includes('key=')) {
-            thumb.style.backgroundImage = bg.replace('key=', `key=${state.MK}`);
-        }
-    });
-
     document.getElementById('setup-screen').style.display = 'none';
     document.getElementById('top-search-container').style.display = 'block';
     document.getElementById('layer-btn').style.display = 'flex';
