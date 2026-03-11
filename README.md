@@ -9,6 +9,16 @@ Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et 
 - **Bouton GPS :** Positionnement temps réel sur le terrain.
 - **Optimisation RTX :** Support complet des GPU dédiés pour un rendu fluide à 144 FPS.
 
+## 📱 Application Mobile (Android)
+
+Suntrail 3D est désormais disponible en application Android native grâce à **Capacitor**. 
+Elle supporte :
+- Le rendu 3D haute performance.
+- Les icônes et écrans de démarrage personnalisés.
+- Le chargement de fichiers GPX depuis le stockage du téléphone.
+
+Pour plus de détails sur le développement et le déploiement mobile, consultez le [Guide Android](./ANDROID.md).
+
 ## 🛠️ Installation
 1. Clonez le dépôt.
 2. `npm install`

@@ -3,14 +3,21 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "cap:sync": "npx cap sync",
+    "cap:open": "npx cap open android",
+    "android:update": "npm run build && npm run cap:sync"
   },
   "dependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
     "gpxparser": "^3.0.8",
     "suncalc": "^1.9.0",
     "three": "^0.160.0"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "vite": "^5.0.0"
   }
 }
