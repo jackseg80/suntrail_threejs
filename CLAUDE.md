@@ -1,35 +1,34 @@
-# 🤖 CLAUDE.md (Guide Assistant IA)
+# 🤖 CLAUDE.md (Guide Assistant IA) - SunTrail v3.0
 
-Ce fichier définit les standards de développement et l'architecture de **SunTrail v2.5** pour les assistants IA.
+Ce fichier définit les standards de développement pour le moteur **SunTrail v3.0**.
 
-## 🏗️ Architecture du Projet
+## 🏗️ Architecture Technique
 
-Le projet utilise une architecture **Orientée Objet** pour la gestion du terrain.
-- **`src/modules/terrain.js`** : Contient la classe `Tile`. Chaque tuile gère son propre chargement, son maillage et son effet de fondu (`Fade-in`).
-- **`src/modules/scene.js`** : Gère la boucle de rendu et l'**Auto-Zoom**. Implémente une logique de compensation d'origine pour des transitions fluides entre niveaux Swisstopo.
-- **`src/modules/state.js`** : État global réactif. `state.originTile` est l'ancre du monde 3D.
-- **`src/modules/ui.js`** : Gestion du DOM et synchronisation de la trace GPX.
-- **`src/modules/sun.js`** : Calculs astronomiques via SunCalc.
+1. **Terrain & Tuiles (`terrain.js`) :**
+   - Classe `Tile` : Gère le cycle de vie (Idle -> Loading -> Loaded -> Disposed).
+   - Multi-Grilles : Coexistence de tuiles de différents zooms (Z9 pour l'horizon, Z12-14 pour le détail).
+   - Positionnement : Utilisation de coordonnées normalisées 0-1 pour un alignement parfait entre niveaux.
+   - GPX : La logique de rendu du mesh GPX (`updateGPXMesh`) réside ici pour éviter les dépendances circulaires avec `ui.js`.
 
-## 🚀 Concepts Clés (v2.5)
+2. **Scène & Contrôles (`scene.js`) :**
+   - Boucle de rendu : Inclut `animateTiles` (fondu) et `stats.update`.
+   - Contrôles Adaptatifs : `isMobileDevice()` décide entre `MapControls` (translation) et `OrbitControls` (pivot).
+   - Origine Flottante : Recentrage du monde tous les 15-20 km pour maintenir la précision des flottants (Z-fighting prevention).
 
-1. **LOD (Level of Detail) :**
-   - **Géométrique :** Résolution adaptative (128 à 32 segments) selon la distance caméra-tuile.
-   - **Zoom :** Changement automatique du niveau de tuile MapTiler (12, 13, 14) selon l'altitude.
-2. **Gestion de l'Origine :** L'origine flottante est mise à jour lors des déplacements importants (>10km) pour maintenir la précision. Les positions des objets existants sont compensées mathématiquement pour éviter les sauts visuels.
-3. **Mise en cache :** `dataCache` (Map) stocke les textures pour un rechargement instantané.
-4. **Précision Altitude :** Récupérée via Raycasting sur la géométrie physique (CPU displacement).
+3. **État Global (`state.js`) :**
+   - Source unique de vérité. Ne jamais utiliser de variables globales hors de cet objet.
+
+## 🚀 Concepts Clés v3.0
+
+- **Hystérésis :** Utilisé pour les seuils de zoom et les frontières géographiques pour éviter le clignotement (flickering).
+- **Anti-Burst :** Délai aléatoire sur les `fetch` pour respecter les quotas API.
+- **VRAM Monitor :** Panneau Stats personnalisé surveillant `textures + geometries` pour valider le nettoyage (`dispose`).
 
 ## 📏 Standards de Code
 
-- **Performance :** Toujours utiliser `dispose()` sur les géométries, textures et matériaux dans `Tile.dispose()`.
-- **Coordonnées :** Toujours utiliser `lngLatToWorld` et `worldToLngLat` pour toute conversion spatiale.
-- **Stabilité :** Ne pas modifier la logique de positionnement des tuiles sans tester l'alignement aux bords (Gaps).
-
-## 🌐 Services
-
-- **MapTiler :** Terrain-RGB v2 et Swisstopo.
-- **SunCalc :** Précision solaire.
+- **Mémoire :** Tout objet Three.js créé doit être libéré via `.dispose()` dans `Tile.dispose()`.
+- **CORS/429 :** Les échecs réseau doivent être gérés silencieusement dans `Tile.load()`.
+- **Conversions :** Utiliser exclusivement `lngLatToWorld` et `worldToLngLat`.
 
 ---
-Dernière mise à jour : v2.5 stable.
+Dernière mise à jour : 11 Mars 2026 (v3.0).

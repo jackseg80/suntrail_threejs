@@ -1,16 +1,15 @@
-# ⛰️ SunTrail V2.5 (Three.js)
+# ⛰️ SunTrail V3.0 (Three.js)
 
-**SunTrail** est un moteur de visualisation de terrain 3D haute performance développé avec Three.js. Il génère des reliefs réalistes en temps réel à partir de données topographiques mondiales et simule la position exacte du soleil pour projeter des ombres physiques sur le paysage.
+**SunTrail** est un moteur de visualisation de terrain 3D haute performance développé avec Three.js. Il génère des reliefs réalistes en temps réel à partir de données topographiques mondiales et simule la position exacte du soleil.
 
-## 🚀 Fonctionnalités (v2.5)
+## 🚀 Nouveautés de la Version 3.0
 
-- **Architecture Orientée Objet :** Chaque tuile est une instance de la classe `Tile` avec son propre cycle de vie.
-- **LOD Dynamique Universel :** Ajustement automatique de la résolution du maillage (128, 64, 32) et du niveau de zoom (12 à 14) selon la distance et l'altitude.
-- **Transitions Fluides :** Système de fondu (Fade-in) à l'apparition des nouvelles tuiles et compensation mathématique des changements d'origine pour éviter les sauts visuels.
-- **Mise en cache intelligente :** Cache mémoire (RAM) pour les textures et données d'élévation afin d'accélérer les allers-retours entre niveaux de zoom.
-- **Trace GPX Haute Visibilité :** Import de fichiers GPX avec rendu en tube rouge brillant, épaisseur adaptative et synchronisation automatique avec le relief.
-- **Simulation Solaire Réelle :** Calcul de l'azimut et de l'élévation via `SunCalc` avec boussole solaire intégrée.
-- **Relief 3D Haute Fidélité :** Interpolation bilinéaire pour des raccords de tuiles parfaits et sans cassures.
+- **Horizon Infini (Multi-Zoom) :** Système de double grille combinant des tuiles de haute précision (Z12-14) sous la caméra et un fond de carte planétaire (Z9) couvrant plus de 400 km.
+- **Intelligence Géographique :** Détection automatique des frontières suisses pour basculer dynamiquement entre les données ultra-précises de **Swisstopo** et la couverture mondiale d'**OpenTopoMap**.
+- **Ergonomie Adaptative :** Détection automatique de l'appareil pour utiliser des contrôles optimisés : mode "Map" (translation) pour PC et mode "Orbit" (pivot) pour Mobile/Tablette.
+- **Monitoring Performance :** Intégration d'un module de statistiques (FPS, temps de rendu, mémoire) et d'un indicateur de charge GPU (textures + géométries).
+- **Stabilité Réseau :** Système "Anti-Burst" pour étaler les requêtes API et éviter les erreurs de quota (429) ou CORS lors des déplacements rapides.
+- **Transitions Luxueuses :** Fondu (Fade-in) à l'apparition des tuiles et compensation mathématique des changements d'origine pour une navigation sans aucun saut visuel.
 
 ## 🛠️ Installation
 
@@ -30,16 +29,13 @@
    npm run dev
    ```
 
-## 🔑 Configuration
-
-Le projet nécessite une **clé API MapTiler**. Elle vous sera demandée au lancement de l'application.
-
 ## 📦 Stack Technique
 
-- **Moteur 3D :** [Three.js](https://threejs.org/)
-- **Données Cartographiques :** [MapTiler Cloud](https://www.maptiler.com/cloud/) (Swisstopo par défaut)
-- **Calculs Astronomiques :** [SunCalc](https://github.com/mourner/suncalc)
-- **Outil de Build :** [Vite](https://vitejs.dev/)
+- **Moteur 3D :** Three.js (R160+)
+- **Données :** MapTiler Cloud (Terrain-RGB v2)
+- **Astronomie :** SunCalc
+- **Contrôles :** MapControls & OrbitControls (Adaptatifs)
+- **Stats :** Stats.js
 
 ---
-Développé avec passion pour l'exploration 3D.
+Version 3.0 - Stable & Performante.
