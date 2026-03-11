@@ -96,6 +96,7 @@ export function initUI() {
     const mapSourceSelect = document.getElementById('map-source-select');
     mapSourceSelect.addEventListener('change', async (e) => {
         state.MAP_SOURCE = e.target.value;
+        state.hasManualSource = true; // L'utilisateur a pris le contrôle
         await refreshTerrain();
     });
 
@@ -160,6 +161,9 @@ export function initUI() {
 }
 
 export function autoSelectMapSource(lat, lon) {
+    // Si l'utilisateur a déjà choisi une source manuellement (autre que swisstopo/opentopomap par défaut), on n'y touche plus
+    if (state.hasManualSource) return;
+
     const isSwiss = isPositionInSwitzerland(lat, lon);
     if (state.MAP_SOURCE === 'swisstopo' && !isSwiss) {
         const isReallyOutside = (lat < 45.75 || lat > 47.85 || lon < 5.85 || lon > 10.55);

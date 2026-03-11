@@ -14,6 +14,7 @@ export const state = {
     RELIEF_EXAGGERATION: 1.4, 
     SHOW_TRAILS: true, 
     MAP_SOURCE: 'swisstopo', 
+    hasManualSource: false,
     FOG_DENSITY: 0.00001, 
     
     // Animation temporelle

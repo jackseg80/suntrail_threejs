@@ -19,6 +19,12 @@ export async function initScene() {
     state.scene.fog = new THREE.FogExp2(0x87CEEB, state.FOG_DENSITY); 
 
     state.renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
+    
+    const gl = state.renderer.getContext();
+    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+    const gpuName = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : "Inconnu";
+    console.log("%c GPU UTILISÉ : " + gpuName, "background: #222; color: #ff00ff; font-weight: bold; padding: 5px;");
+
     state.renderer.setSize(window.innerWidth, window.innerHeight);
     state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
     state.renderer.shadowMap.enabled = true;
@@ -45,11 +51,9 @@ export async function initScene() {
     state.scene.add(sky);
     state.sky = sky;
 
-    // --- OPTIMISATION : Plan FAR réduit car inclinaison bridée ---
     state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 150000);
     state.camera.position.set(0, 8000, 12000); 
 
-    // --- CHOIX DU CONTRÔLEUR SELON L'APPAREIL ---
     const mobile = isMobileDevice();
     if (mobile) {
         state.controls = new OrbitControls(state.camera, state.renderer.domElement);
@@ -64,7 +68,6 @@ export async function initScene() {
     state.controls.minDistance = 500; 
     state.controls.maxDistance = 150000; 
 
-    // --- LIMITES D'ORIENTATION (Comme Google Maps) ---
     state.controls.maxPolarAngle = 1.3; 
     state.controls.minPolarAngle = 0; 
 
@@ -77,6 +80,7 @@ export async function initScene() {
     };
 
     let lastRecenterTime = 0;
+    let lastGpxPos = new THREE.Vector3();
 
     const throttledUpdate = throttle(() => {
         const dx = state.controls.target.x;
@@ -119,7 +123,11 @@ export async function initScene() {
             if (state.rawGpxData) updateGPXMesh(); 
             updateUIZoom(newZoom);
         } else {
-            if (state.rawGpxData) updateGPXMesh(); 
+            const currentPos = new THREE.Vector3(dx, 0, dz);
+            if (state.rawGpxData && currentPos.distanceTo(lastGpxPos) > 50) {
+                updateGPXMesh(); 
+                lastGpxPos.copy(currentPos);
+            }
             updateUIZoom(state.ZOOM);
         }
         updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, dist, state.controls.target.x, state.controls.target.z);

@@ -7,6 +7,28 @@ export const activeTiles = new Map();
 export const activeLabels = new Map(); 
 
 const dataCache = new Map();
+const MAX_CACHE_SIZE = 400; 
+
+function addToCache(key, elevTex, colorTex, overlayTex) {
+    if (dataCache.size >= MAX_CACHE_SIZE) {
+        const oldestKey = dataCache.keys().next().value;
+        const oldestEntry = dataCache.get(oldestKey);
+        if (oldestEntry.elev) oldestEntry.elev.dispose();
+        if (oldestEntry.color) oldestEntry.color.dispose();
+        if (oldestEntry.overlay) oldestEntry.overlay.dispose();
+        dataCache.delete(oldestKey);
+    }
+    dataCache.set(key, { elev: elevTex, color: colorTex, overlay: overlayTex });
+}
+
+function getFromCache(key) {
+    if (!dataCache.has(key)) return null;
+    const data = dataCache.get(key);
+    dataCache.delete(key);
+    dataCache.set(key, data);
+    return data;
+}
+
 const frustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
 
@@ -52,6 +74,7 @@ export class Tile {
         this.mesh = null;
         this.elevationTex = null; 
         this.colorTex = null;    
+        this.overlayTex = null;  
         this.currentResolution = -1;
         this.tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
         this.opacity = 0;
@@ -66,12 +89,9 @@ export class Tile {
         const originUnit = 1.0 / Math.pow(2, state.originTile.z);
         const oxNorm = (state.originTile.x + 0.5) * originUnit;
         const oyNorm = (state.originTile.y + 0.5) * originUnit;
-
         this.worldX = (txNorm - oxNorm) * EARTH_CIRCUMFERENCE;
         this.worldZ = (tyNorm - oyNorm) * EARTH_CIRCUMFERENCE;
-
         if (this.mesh) this.mesh.position.set(this.worldX, 0, this.worldZ);
-        
         this.bounds = new THREE.Box3(
             new THREE.Vector3(this.worldX - this.tileSizeMeters/2, -1000, this.worldZ - this.tileSizeMeters/2),
             new THREE.Vector3(this.worldX + this.tileSizeMeters/2, 9000, this.worldZ + this.tileSizeMeters/2)
@@ -87,58 +107,117 @@ export class Tile {
 
     async load() {
         if (this.status === 'loading' || this.status === 'loaded' || this.status === 'disposed') return;
-        const cacheKey = `${state.MAP_SOURCE}_${this.key}`;
-        if (dataCache.has(cacheKey)) {
-            const cached = dataCache.get(cacheKey);
+        
+        // La clé de cache inclut l'état du calque sentiers car on veut cacher les textures prêtes
+        const cacheKey = `${state.MAP_SOURCE}_${state.SHOW_TRAILS}_${this.key}`;
+        const cached = getFromCache(cacheKey);
+        if (cached) {
             this.elevationTex = cached.elev;
             this.colorTex = cached.color;
+            this.overlayTex = cached.overlay;
             this.status = 'loaded';
             this.buildMesh(state.RESOLUTION);
             return;
         }
+
+        await new Promise(r => setTimeout(r, Math.random() * 600));
+        if (this.status === 'disposed') return;
         this.status = 'loading';
+        
         try {
-            const pElev = fetch(`https://api.maptiler.com/tiles/terrain-rgb-v2/${this.zoom}/${this.tx}/${this.ty}.png?key=${state.MK}`)
-                .then(r => r.blob()).then(b => createImageBitmap(b, { colorSpaceConversion: 'none' }));
-            const pColor = fetch(this.getColorUrl()).then(r => r.blob()).then(b => createImageBitmap(b));
-            const [imgElev, imgColor] = await Promise.all([pElev, pColor]);
+            const promises = [
+                fetch(`https://api.maptiler.com/tiles/terrain-rgb-v2/${this.zoom}/${this.tx}/${this.ty}.png?key=${state.MK}`)
+                    .then(r => r.blob()).then(b => createImageBitmap(b, { colorSpaceConversion: 'none' })),
+                fetch(this.getColorUrl()).then(r => r.blob()).then(b => createImageBitmap(b))
+            ];
+
+            // Si les sentiers sont actifs, on charge une 3ème texture (calque transparent)
+            if (state.SHOW_TRAILS) {
+                promises.push(fetch(this.getOverlayUrl()).then(r => r.blob()).then(b => createImageBitmap(b)));
+            }
+
+            const [imgElev, imgColor, imgOverlay] = await Promise.all(promises);
             if (this.status === 'disposed') return;
+
             this.elevationTex = new THREE.CanvasTexture(imgElev);
             this.elevationTex.flipY = false;
+            
             this.colorTex = new THREE.CanvasTexture(imgColor);
             this.colorTex.colorSpace = THREE.SRGBColorSpace;
             this.colorTex.flipY = false;
-            dataCache.set(cacheKey, { elev: this.elevationTex, color: this.colorTex });
+
+            if (imgOverlay) {
+                this.overlayTex = new THREE.CanvasTexture(imgOverlay);
+                this.overlayTex.colorSpace = THREE.SRGBColorSpace;
+                this.overlayTex.flipY = false;
+            }
+
+            addToCache(cacheKey, this.elevationTex, this.colorTex, this.overlayTex);
             this.status = 'loaded';
             this.buildMesh(state.RESOLUTION);
         } catch (e) { this.status = 'failed'; }
     }
 
     getColorUrl() {
-        if (!state.SHOW_TRAILS) return `https://api.maptiler.com/maps/satellite/256/${this.zoom}/${this.tx}/${this.ty}@2x.jpg?key=${state.MK}`;
         switch(state.MAP_SOURCE) {
+            case 'satellite': return `https://api.maptiler.com/maps/satellite/256/${this.zoom}/${this.tx}/${this.ty}@2x.jpg?key=${state.MK}`;
             case 'opentopomap': return `https://a.tile.opentopomap.org/${this.zoom}/${this.tx}/${this.ty}.png`;
             case 'swisstopo': return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.jpeg`;
-            default: return `https://api.maptiler.com/maps/outdoor-v2/256/${this.zoom}/${this.tx}/${this.ty}@2x.png?key=${state.MK}`;
+            default: return `https://api.maptiler.com/maps/topo-v2/256/${this.zoom}/${this.tx}/${this.ty}@2x.png?key=${state.MK}`;
         }
+    }
+
+    getOverlayUrl() {
+        // Calque "Wanderwege" de Swisstopo (transparent)
+        return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.png`;
     }
 
     buildMesh(resolution) {
         if (!this.elevationTex || !this.colorTex || this.status === 'disposed') return;
+        
         const oldMesh = this.mesh;
         const geometry = new THREE.PlaneGeometry(this.tileSizeMeters, this.tileSizeMeters, resolution, resolution);
         geometry.rotateX(-Math.PI / 2);
         const uvs = geometry.attributes.uv.array;
         for (let i = 1; i < uvs.length; i += 2) uvs[i] = 1.0 - uvs[i];
 
-        const material = new THREE.MeshStandardMaterial({ map: this.colorTex, roughness: 1.0, metalness: 0.0, transparent: true, opacity: this.mesh ? 1 : 0 });
+        const material = new THREE.MeshStandardMaterial({ 
+            map: this.colorTex, 
+            roughness: 1.0, 
+            metalness: 0.0, 
+            transparent: true, 
+            opacity: oldMesh ? 1 : 0 
+        });
+
         material.onBeforeCompile = (shader) => {
             shader.uniforms.uElevationMap = { value: this.elevationTex };
             shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
             shader.uniforms.uTileSize = { value: this.tileSizeMeters };
+            
+            // Injection du calque Overlay
+            shader.uniforms.uOverlayMap = { value: this.overlayTex || null };
+            shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
+
             shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${terrainVertexInjection.header}`);
             shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n${terrainVertexInjection.normal}`);
             shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${terrainVertexInjection.position}`);
+
+            // Injection dans le fragment shader pour fusionner les textures
+            shader.fragmentShader = `
+                uniform sampler2D uOverlayMap;
+                uniform bool uHasOverlay;
+                ${shader.fragmentShader}
+            `.replace(
+                '#include <map_fragment>',
+                `
+                #include <map_fragment>
+                if (uHasOverlay) {
+                    vec4 overlayCol = texture2D(uOverlayMap, vMapUv);
+                    // On mélange l'overlay par-dessus la couleur de base en utilisant l'alpha de l'overlay
+                    diffuseColor.rgb = mix(diffuseColor.rgb, overlayCol.rgb, overlayCol.a);
+                }
+                `
+            );
         };
 
         this.mesh = new THREE.Mesh(geometry, material);
@@ -157,7 +236,16 @@ export class Tile {
 
         state.scene.add(this.mesh);
         this.currentResolution = resolution;
-        if (!oldMesh) { this.opacity = 0; this.isFadingIn = true; } else { state.scene.remove(oldMesh); }
+
+        if (oldMesh) {
+            state.scene.remove(oldMesh);
+            oldMesh.geometry.dispose();
+            oldMesh.material.dispose();
+            if (oldMesh.customDepthMaterial) oldMesh.customDepthMaterial.dispose();
+        } else {
+            this.opacity = 0;
+            this.isFadingIn = true;
+        }
     }
 
     updateFade(delta) {
@@ -260,21 +348,25 @@ function calculateTargetLOD(tile, camX, camZ) {
     const dz = tile.worldZ - camZ;
     const dist = Math.sqrt(dx * dx + dz * dz);
     const tileSize = tile.tileSizeMeters;
-    if (dist < tileSize * 3.0) return state.RESOLUTION; 
-    if (dist < tileSize * 6.0) return Math.floor(state.RESOLUTION / 2); 
-    return Math.floor(state.RESOLUTION / 4); 
+    
+    let targetRes = Math.floor(state.RESOLUTION / 4);
+    if (dist < tileSize * 3.0) targetRes = state.RESOLUTION; 
+    else if (dist < tileSize * 6.0) targetRes = Math.floor(state.RESOLUTION / 2); 
+
+    if (tile.currentResolution > 0) {
+        const diff = Math.abs(targetRes - tile.currentResolution);
+        if (diff < 16) return tile.currentResolution; 
+    }
+    return targetRes;
 }
 
 export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
     terrainUniforms.uExaggeration.value = state.RELIEF_EXAGGERATION;
     const currentGPS = worldToLngLat(worldX || 0, worldZ || 0);
     const keptTiles = new Set();
-
     const zoom = state.ZOOM;
     const centerTile = lngLatToTile(currentGPS.lon, currentGPS.lat, zoom);
-    
-    // On garde une portée généreuse (6 tuiles de rayon) pour boucher l'écran
-    const range = 6; 
+    const range = state.RANGE; 
 
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {

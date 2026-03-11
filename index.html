@@ -101,7 +101,8 @@
 
             <div style="margin-bottom: 0.8rem;">
                 <label style="font-size: 0.75rem; color: var(--t2);">Distance affichage : <span id="range-disp">2</span></label>
-                <input type="range" id="range-slider" min="1" max="4" step="1" value="2">
+                <input type="range" id="range-slider" min="1" max="10" step="1" value="3">
+
             </div>
 
             <div style="margin-bottom: 0.8rem;">
@@ -117,10 +118,10 @@
             <div style="margin-bottom: 1rem;">
                 <label style="font-size: 0.7rem; color: var(--t2);">Fond de carte (Topo)</label>
                 <select id="map-source-select" style="width:100%; font-size:0.75rem;">
-                    <option value="opentopomap">OpenTopoMap (Monde)</option>
                     <option value="swisstopo" selected>Swisstopo (Suisse)</option>
+                    <option value="satellite">Satellite (Monde)</option>
+                    <option value="opentopomap">OpenTopoMap (Monde)</option>
                     <option value="maptiler-topo">MapTiler Topo</option>
-                    <option value="outdoor-v2">MapTiler Outdoor</option>
                 </select>
             </div>
 
