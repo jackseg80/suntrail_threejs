@@ -7,7 +7,7 @@ export const state = {
     
     // Paramètres de Performance
     RESOLUTION: 128, 
-    RANGE: 3,        
+    RANGE: 4,        
     SHADOWS: true,   
     SHADOW_RES: 2048, 
     PIXEL_RATIO_LIMIT: window.devicePixelRatio > 1.5 ? 1.5 : window.devicePixelRatio,

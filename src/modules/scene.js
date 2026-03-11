@@ -52,7 +52,7 @@ export async function initScene() {
     state.sky = sky;
 
     state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 150000);
-    state.camera.position.set(0, 8000, 12000); 
+    state.camera.position.set(0, 12000, 15000); 
 
     const mobile = isMobileDevice();
     if (mobile) {
