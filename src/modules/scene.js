@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
+import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { state } from './state.js';
 import { updateSunPosition } from './sun.js';
-import { loadTerrain, updateVisibleTiles, lngLatToTile, worldToLngLat, repositionAllTiles, animateTiles, EARTH_CIRCUMFERENCE } from './terrain.js';
-import { updateGPXMesh } from './ui.js';
-import { throttle } from './utils.js';
+import { loadTerrain, updateVisibleTiles, lngLatToTile, worldToLngLat, repositionAllTiles, animateTiles, EARTH_CIRCUMFERENCE, updateGPXMesh } from './terrain.js';
+import { autoSelectMapSource } from './ui.js';
+import { throttle, isMobileDevice } from './utils.js';
 
 export async function initScene() {
     const container = document.getElementById('canvas-container');
@@ -25,23 +27,48 @@ export async function initScene() {
     state.renderer.toneMappingExposure = 1.0; 
     container.appendChild(state.renderer.domElement);
 
+    state.stats = new Stats();
+    state.stats.showPanel(0);
+    container.appendChild(state.stats.dom);
+    state.stats.dom.style.position = 'fixed';
+    state.stats.dom.style.top = 'auto';
+    state.stats.dom.style.bottom = '160px'; 
+    state.stats.dom.style.right = '20px';
+    state.stats.dom.style.left = 'auto';
+    state.stats.dom.style.zIndex = '10000';
+
+    const vramPanel = state.stats.addPanel(new Stats.Panel('GPU', '#ff8', '#221'));
+    state.vramPanel = vramPanel;
+
     const sky = new Sky();
     sky.scale.setScalar(450000);
     state.scene.add(sky);
     state.sky = sky;
 
-    state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 3000000);
+    state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 500000);
     state.camera.position.set(0, 8000, 12000); 
 
-    state.controls = new MapControls(state.camera, state.renderer.domElement);
+    // --- CHOIX DU CONTRÔLEUR SELON L'APPAREIL ---
+    const mobile = isMobileDevice();
+    if (mobile) {
+        console.log("Mobile/Touch detected: Using OrbitControls");
+        state.controls = new OrbitControls(state.camera, state.renderer.domElement);
+        // Sur mobile, on préfère que le doigt fasse pivoter (Orbit)
+        state.controls.enablePan = true; // 2 doigts pour déplacer
+    } else {
+        console.log("Desktop detected: Using MapControls");
+        state.controls = new MapControls(state.camera, state.renderer.domElement);
+        // Sur PC, on préfère que le clic gauche déplace (Map)
+    }
+
     state.controls.enableDamping = true;
     state.controls.dampingFactor = 0.05;
-    state.controls.maxPolarAngle = Math.PI / 2 - 0.05;
+    state.controls.maxPolarAngle = 1.45; 
+    state.controls.minPolarAngle = 0; 
     state.controls.screenSpacePanning = false; 
     state.controls.minDistance = 500; 
     state.controls.maxDistance = 150000; 
 
-    // Fonction utilitaire pour mettre à jour l'indicateur
     const updateUIZoom = (zoom) => {
         const indicator = document.getElementById('zoom-indicator');
         if (indicator) {
@@ -49,6 +76,8 @@ export async function initScene() {
             indicator.textContent = `${sourceName}: Lvl ${zoom}`;
         }
     };
+
+    let lastRecenterTime = 0;
 
     const throttledUpdate = throttle(() => {
         const dx = state.controls.target.x;
@@ -65,35 +94,36 @@ export async function initScene() {
             if (dist < 25000) newZoom = 13;
         }
 
-        if (newZoom !== state.ZOOM) {
-            const gpsCenter = worldToLngLat(dx, dz);
+        const gpsCenter = worldToLngLat(dx, dz);
+        autoSelectMapSource(gpsCenter.lat, gpsCenter.lon);
+
+        const distFromCenter = Math.sqrt(dx * dx + dz * dz);
+        const now = Date.now();
+        const shouldRecentre = (distFromCenter > 20000 || newZoom !== state.ZOOM) && (now - lastRecenterTime > 3000);
+
+        if (shouldRecentre) {
+            lastRecenterTime = now;
+            console.log(`Recentering World (Zoom ${newZoom})...`);
             const oldOriginX = (state.originTile.x + 0.5) / Math.pow(2, state.ZOOM);
             const oldOriginZ = (state.originTile.y + 0.5) / Math.pow(2, state.ZOOM);
-            
             state.ZOOM = newZoom;
             state.originTile = lngLatToTile(gpsCenter.lon, gpsCenter.lat, newZoom);
-            
             const newOriginX = (state.originTile.x + 0.5) / Math.pow(2, state.ZOOM);
             const newOriginZ = (state.originTile.y + 0.5) / Math.pow(2, state.ZOOM);
-            
             const offsetX = (oldOriginX - newOriginX) * EARTH_CIRCUMFERENCE;
             const offsetZ = (oldOriginZ - newOriginZ) * EARTH_CIRCUMFERENCE;
-            
             state.camera.position.x += offsetX;
             state.camera.position.z += offsetZ;
             state.controls.target.x += offsetX;
             state.controls.target.z += offsetZ;
             state.controls.update();
-
             repositionAllTiles();
             if (state.rawGpxData) updateGPXMesh(); 
             updateUIZoom(newZoom);
         } else {
             if (state.rawGpxData) updateGPXMesh(); 
-            // On s'assure que le nom de la source est à jour même si le zoom ne change pas
             updateUIZoom(state.ZOOM);
         }
-
         updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, dist, state.controls.target.x, state.controls.target.z);
     }, 200);
     
@@ -124,6 +154,7 @@ export async function initScene() {
 
     window.addEventListener('resize', onWindowResize);
     state.renderer.setAnimationLoop(() => {
+        state.stats.begin();
         const delta = clock.getDelta();
         animateTiles(delta);
 
@@ -143,7 +174,7 @@ export async function initScene() {
             const slider = document.getElementById('time-slider');
             if (slider) {
                 let currentMins = parseInt(slider.value);
-                if (isNaN(currentMins)) currentMins = 720; // Default to noon if error
+                if (isNaN(currentMins)) currentMins = 720;
                 currentMins = (currentMins + state.animationSpeed) % 1440;
                 slider.value = Math.floor(currentMins);
                 updateSunPosition(currentMins);
@@ -158,6 +189,14 @@ export async function initScene() {
             }
         }
         state.renderer.render(state.scene, state.camera);
+
+        if (state.vramPanel) {
+            const textures = state.renderer.info.memory.textures;
+            const geometries = state.renderer.info.memory.geometries;
+            state.vramPanel.update(textures + geometries, 200); 
+        }
+
+        state.stats.end();
     });
 }
 

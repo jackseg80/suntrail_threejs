@@ -33,6 +33,7 @@ export const state = {
     sunLight: null,
     ambientLight: null,
     sky: null,
+    stats: null,
     rawGpxData: null,
     gpxPoints: [],
     gpxMesh: null,

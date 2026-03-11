@@ -1,6 +1,20 @@
 import * as THREE from 'three';
 import { state } from './state.js';
 
+/**
+ * Détecte si l'appareil est un mobile ou une tablette (tactile)
+ */
+export function isMobileDevice() {
+    return (('ontouchstart' in window) || (navigator.maxTouchPoints > 0));
+}
+
+/**
+ * Vérifie si une position GPS est à l'intérieur des frontières approximatives de la Suisse
+ */
+export function isPositionInSwitzerland(lat, lon) {
+    return (lat >= 45.8 && lat <= 47.8 && lon >= 5.9 && lon <= 10.5);
+}
+
 export function throttle(func, limit) {
     let inThrottle;
     return function() {

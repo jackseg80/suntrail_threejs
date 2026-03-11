@@ -60,9 +60,18 @@ export class Tile {
     }
 
     updateWorldPosition() {
-        this.worldX = (this.tx - state.originTile.x) * this.tileSizeMeters;
-        this.worldZ = (this.ty - state.originTile.y) * this.tileSizeMeters;
-        if (this.mesh) this.mesh.position.set(this.worldX, 0, this.worldZ);
+        const unit = 1.0 / Math.pow(2, this.zoom);
+        const txNorm = (this.tx + 0.5) * unit;
+        const tyNorm = (this.ty + 0.5) * unit;
+        const originUnit = 1.0 / Math.pow(2, state.originTile.z);
+        const oxNorm = (state.originTile.x + 0.5) * originUnit;
+        const oyNorm = (state.originTile.y + 0.5) * originUnit;
+
+        this.worldX = (txNorm - oxNorm) * EARTH_CIRCUMFERENCE;
+        this.worldZ = (tyNorm - oyNorm) * EARTH_CIRCUMFERENCE;
+
+        if (this.mesh) this.mesh.position.set(this.worldX, this.zoom <= 10 ? -100 : 0, this.worldZ);
+        
         this.bounds = new THREE.Box3(
             new THREE.Vector3(this.worldX - this.tileSizeMeters/2, -1000, this.worldZ - this.tileSizeMeters/2),
             new THREE.Vector3(this.worldX + this.tileSizeMeters/2, 9000, this.worldZ + this.tileSizeMeters/2)
@@ -71,9 +80,10 @@ export class Tile {
 
     isVisible() {
         if (!state.camera) return true;
+        if (this.zoom <= 10) return true;
         projScreenMatrix.multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
         frustum.setFromProjectionMatrix(projScreenMatrix);
-        return frustum.intersectsBox(this.bounds);
+        return frustum.intersectsBox(this.bounds.clone().expandByScalar(this.tileSizeMeters));
     }
 
     async load() {
@@ -84,9 +94,11 @@ export class Tile {
             this.elevationTex = cached.elev;
             this.colorTex = cached.color;
             this.status = 'loaded';
-            this.buildMesh(state.RESOLUTION);
+            this.buildMesh(this.zoom <= 10 ? 32 : state.RESOLUTION);
             return;
         }
+        await new Promise(r => setTimeout(r, Math.random() * (this.zoom <= 10 ? 200 : 800)));
+        if (this.status === 'disposed') return;
         this.status = 'loading';
         try {
             const opts = { colorSpaceConversion: 'none', premultiplyAlpha: 'none' };
@@ -102,7 +114,7 @@ export class Tile {
             this.colorTex.flipY = false;
             dataCache.set(cacheKey, { elev: this.elevationTex, color: this.colorTex });
             this.status = 'loaded';
-            this.buildMesh(state.RESOLUTION);
+            this.buildMesh(this.zoom <= 10 ? 32 : state.RESOLUTION);
         } catch (e) { this.status = 'failed'; }
     }
 
@@ -111,8 +123,6 @@ export class Tile {
         switch(state.MAP_SOURCE) {
             case 'opentopomap': return `https://a.tile.opentopomap.org/${this.zoom}/${this.tx}/${this.ty}.png`;
             case 'swisstopo': return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.jpeg`;
-            case 'maptiler-topo': return `https://api.maptiler.com/maps/topo-v2/256/${this.zoom}/${this.tx}/${this.ty}@2x.png?key=${state.MK}`;
-            case 'outdoor-v2': return `https://api.maptiler.com/maps/outdoor-v2/256/${this.zoom}/${this.tx}/${this.ty}@2x.png?key=${state.MK}`;
             default: return `https://api.maptiler.com/maps/outdoor-v2/256/${this.zoom}/${this.tx}/${this.ty}@2x.png?key=${state.MK}`;
         }
     }
@@ -124,7 +134,15 @@ export class Tile {
         geometry.rotateX(-Math.PI / 2);
         const uvs = geometry.attributes.uv.array;
         for (let i = 1; i < uvs.length; i += 2) uvs[i] = 1.0 - uvs[i];
-        const material = new THREE.MeshStandardMaterial({ map: this.colorTex, roughness: 0.9, metalness: 0.0, transparent: true, opacity: this.mesh ? 1 : 0 });
+
+        const material = new THREE.MeshStandardMaterial({ 
+            map: this.colorTex, 
+            roughness: 1.0, 
+            metalness: 0.0, 
+            transparent: true, 
+            opacity: this.mesh ? 1 : 0 
+        });
+
         material.onBeforeCompile = (shader) => {
             shader.uniforms.uElevationMap = { value: this.elevationTex };
             shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
@@ -133,17 +151,12 @@ export class Tile {
             shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n${terrainVertexInjection.normal}`);
             shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${terrainVertexInjection.position}`);
         };
+
         this.mesh = new THREE.Mesh(geometry, material);
-        this.mesh.position.set(this.worldX, 0, this.worldZ);
-        this.mesh.castShadow = this.mesh.receiveShadow = true;
-        this.mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
-        this.mesh.customDepthMaterial.onBeforeCompile = (shader) => {
-            shader.uniforms.uElevationMap = { value: this.elevationTex };
-            shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
-            shader.uniforms.uTileSize = { value: this.tileSizeMeters };
-            shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${terrainVertexInjection.header}`);
-            shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${terrainVertexInjection.position}`);
-        };
+        // On descend les tuiles d'horizon de 100m pour être sûr qu'elles ne polluent pas le centre
+        this.mesh.position.set(this.worldX, this.zoom <= 10 ? -100 : 0, this.worldZ); 
+        this.mesh.renderOrder = this.zoom; // Les tuiles de précision (Z14) se dessinent après les tuiles d'horizon (Z9)
+        
         state.scene.add(this.mesh);
         this.currentResolution = resolution;
         if (!oldMesh) { this.opacity = 0; this.isFadingIn = true; } else { state.scene.remove(oldMesh); }
@@ -162,7 +175,6 @@ export class Tile {
             state.scene.remove(this.mesh);
             this.mesh.geometry.dispose();
             this.mesh.material.dispose();
-            if (this.mesh.customDepthMaterial) this.mesh.customDepthMaterial.dispose();
             this.mesh = null;
         }
     }
@@ -189,22 +201,22 @@ export function lngLatToTile(lon, lat, zoom) {
 }
 
 export function lngLatToWorld(lon, lat) {
-    const zoom = state.ZOOM;
-    const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
-    const xfrac = (lon + 180) / 360 * Math.pow(2, zoom);
-    const yfrac = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom);
-    const worldX = (xfrac - (state.originTile.x + 0.5)) * tileSizeMeters;
-    const worldZ = (yfrac - (state.originTile.y + 0.5)) * tileSizeMeters;
-    return { x: worldX, z: worldZ };
+    const xNorm = (lon + 180) / 360;
+    const yNorm = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2;
+    const originUnit = 1.0 / Math.pow(2, state.originTile.z);
+    const oxNorm = (state.originTile.x + 0.5) * originUnit;
+    const oyNorm = (state.originTile.y + 0.5) * originUnit;
+    return { x: (xNorm - oxNorm) * EARTH_CIRCUMFERENCE, z: (yNorm - oyNorm) * EARTH_CIRCUMFERENCE };
 }
 
 export function worldToLngLat(worldX, worldZ) {
-    const zoom = state.ZOOM;
-    const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
-    const xfrac = (worldX / tileSizeMeters) + (state.originTile.x + 0.5);
-    const yfrac = (worldZ / tileSizeMeters) + (state.originTile.y + 0.5);
-    const lon = xfrac / Math.pow(2, zoom) * 360 - 180;
-    const n = Math.PI - 2 * Math.PI * yfrac / Math.pow(2, zoom);
+    const originUnit = 1.0 / Math.pow(2, state.originTile.z);
+    const oxNorm = (state.originTile.x + 0.5) * originUnit;
+    const oyNorm = (state.originTile.y + 0.5) * originUnit;
+    const xNorm = worldX / EARTH_CIRCUMFERENCE + oxNorm;
+    const yNorm = worldZ / EARTH_CIRCUMFERENCE + oyNorm;
+    const lon = xNorm * 360 - 180;
+    const n = Math.PI - 2 * Math.PI * yNorm;
     const lat = 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
     return { lat, lon };
 }
@@ -220,39 +232,97 @@ export function clearLabels() {
     activeLabels.clear();
 }
 
+export function updateGPXMesh() {
+    if (!state.rawGpxData) return;
+    if (state.gpxMesh) {
+        state.scene.remove(state.gpxMesh);
+        state.gpxMesh.geometry.dispose();
+        state.gpxMesh.material.dispose();
+    }
+    const track = state.rawGpxData.tracks[0];
+    const threePoints = track.points.map(p => {
+        const pos = lngLatToWorld(p.lon, p.lat);
+        const worldY = (p.ele || 0) * state.RELIEF_EXAGGERATION + 10; 
+        return new THREE.Vector3(pos.x, worldY, pos.z);
+    });
+    state.gpxPoints = threePoints;
+    const curve = new THREE.CatmullRomCurve3(threePoints);
+    const camAlt = state.camera ? state.camera.position.y : 5000;
+    const thickness = Math.max(8, camAlt / 250); 
+    const geometry = new THREE.TubeGeometry(curve, threePoints.length, thickness, 8, false);
+    const material = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xaa0000, emissiveIntensity: 0.8, roughness: 0.3, metalness: 0.5, transparent: true, opacity: 0.9 });
+    state.gpxMesh = new THREE.Mesh(geometry, material);
+    state.gpxMesh.renderOrder = 1000;
+    state.scene.add(state.gpxMesh);
+}
+
 function calculateTargetLOD(tile, camX, camZ) {
+    if (tile.zoom <= 10) return 32;
     const dx = tile.worldX - camX;
     const dz = tile.worldZ - camZ;
     const dist = Math.sqrt(dx * dx + dz * dz);
     const tileSize = tile.tileSizeMeters;
-    if (dist < tileSize * 1.2) return state.RESOLUTION; 
-    if (dist < tileSize * 2.5) return Math.floor(state.RESOLUTION / 2); 
+    if (dist < tileSize * 1.5) return state.RESOLUTION; 
+    if (dist < tileSize * 3.0) return Math.floor(state.RESOLUTION / 2); 
     return Math.floor(state.RESOLUTION / 4); 
 }
 
 export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
     terrainUniforms.uExaggeration.value = state.RELIEF_EXAGGERATION;
-    const zoom = state.ZOOM;
-    const centerTile = lngLatToTile(camLon || state.TARGET_LON, camLat || state.TARGET_LAT, zoom);
-    const altitudeEffect = Math.max(0, Math.floor((camAltitude || state.camera.position.y) / 10000));
-    let range = state.RANGE + altitudeEffect; 
+    const currentGPS = worldToLngLat(worldX || 0, worldZ || 0);
     const keptTiles = new Set();
+
+    // --- COUCHE 1 : DÉTAIL (Z12-Z14) ---
+    const zoom = state.ZOOM;
+    const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
+    const txCenter = Math.floor((currentGPS.lon + 180) / 360 * Math.pow(2, zoom));
+    const tyCenter = Math.floor((1 - Math.log(Math.tan(currentGPS.lat * Math.PI / 180) + 1 / Math.cos(currentGPS.lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
+    
+    const coverageMeters = zoom >= 14 ? 25000 : 40000; 
+    const baseRange = Math.ceil(coverageMeters / tileSizeMeters / 2);
+    const altitudeEffect = Math.max(0, Math.floor((camAltitude || state.camera.position.y) / 10000));
+    let range = Math.min(Math.max(state.RANGE, baseRange) + altitudeEffect, 10);
+
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
-            const tx = centerTile.x + dx, ty = centerTile.y + dy, key = `${tx}_${ty}_${zoom}`;
+            const tx = txCenter + dx, ty = tyCenter + dy, key = `${tx}_${ty}_${zoom}`;
             keptTiles.add(key);
             let tile = activeTiles.get(key);
             if (!tile) {
                 tile = new Tile(tx, ty, zoom, key);
-                activeTiles.set(key, tile);
-                tile.load();
+                if (tile.isVisible()) { activeTiles.set(key, tile); tile.load(); }
             } else if (tile.status === 'loaded') {
                 const targetRes = calculateTargetLOD(tile, state.camera.position.x, state.camera.position.z);
                 if (targetRes !== tile.currentResolution) tile.buildMesh(targetRes);
             }
         }
     }
-    for (const [key, tile] of activeTiles.entries()) { if (!keptTiles.has(key)) { tile.dispose(); activeTiles.delete(key); } }
+
+    // --- COUCHE 2 : HORIZON (Z9) AVEC TROU CENTRAL ---
+    const hZoom = 9;
+    const hTX = Math.floor((currentGPS.lon + 180) / 360 * Math.pow(2, hZoom));
+    const hTY = Math.floor((1 - Math.log(Math.tan(currentGPS.lat * Math.PI / 180) + 1 / Math.cos(currentGPS.lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, hZoom));
+    
+    for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
+            // SI C'EST LA TUILE CENTRALE (Celle où on se trouve), ON LA SAUTE
+            // Elle est couverte par les tuiles de précision (Z12-14)
+            if (dx === 0 && dy === 0) continue;
+
+            const tx = hTX + dx, ty = hTY + dy, key = `${tx}_${ty}_${hZoom}`;
+            keptTiles.add(key);
+            let tile = activeTiles.get(key);
+            if (!tile) {
+                tile = new Tile(tx, ty, hZoom, key);
+                activeTiles.set(key, tile);
+                tile.load();
+            }
+        }
+    }
+
+    for (const [key, tile] of activeTiles.entries()) {
+        if (!keptTiles.has(key)) { tile.dispose(); activeTiles.delete(key); }
+    }
 }
 
 export async function loadTerrain() { await updateVisibleTiles(); }
