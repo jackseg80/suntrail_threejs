@@ -3,7 +3,7 @@ import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { state } from './state.js';
 import { updateSunPosition } from './sun.js';
-import { loadTerrain, updateVisibleTiles, lngLatToTile, worldToLngLat } from './terrain.js';
+import { loadTerrain, updateVisibleTiles, lngLatToTile, worldToLngLat, resetTerrain } from './terrain.js';
 import { throttle } from './utils.js';
 
 export async function initScene() {
@@ -43,13 +43,30 @@ export async function initScene() {
     const throttledUpdate = throttle(() => {
         const dx = state.controls.target.x;
         const dz = state.controls.target.z;
+        const dist = state.camera.position.y;
 
-        // SYNCHRONISATION GPS 100% PRÉCISE
+        // --- LOGIQUE AUTO-ZOOM (Niveaux 12, 13, 14) ---
+        let newZoom = state.ZOOM;
+        if (dist < 10000) newZoom = 14;
+        else if (dist < 25000) newZoom = 13;
+        else newZoom = 12;
+
+        if (newZoom !== state.ZOOM) {
+            console.log(`Auto-Zoom: Switching to ${newZoom}`);
+            const gpsCenter = worldToLngLat(dx, dz);
+            state.ZOOM = newZoom;
+            state.originTile = lngLatToTile(gpsCenter.lon, gpsCenter.lat, newZoom);
+            resetTerrain();
+            
+            const indicator = document.getElementById('zoom-indicator');
+            if (indicator) indicator.textContent = `SWISSTOPO: Lvl ${newZoom}`;
+        }
+
         const gps = worldToLngLat(dx, dz);
         state.TARGET_LON = gps.lon;
         state.TARGET_LAT = gps.lat;
 
-        updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, state.controls.getDistance(), dx, dz);
+        updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, dist, dx, dz);
     }, 200);
     
     state.controls.addEventListener('change', throttledUpdate);
@@ -73,6 +90,10 @@ export async function initScene() {
 
     await loadTerrain();
     updateSunPosition(720); 
+
+    // Initialisation de l'indicateur UI
+    const indicator = document.getElementById('zoom-indicator');
+    if (indicator) indicator.textContent = `SWISSTOPO: Lvl ${state.ZOOM}`;
 
     window.addEventListener('resize', onWindowResize);
     state.renderer.setAnimationLoop(() => {
