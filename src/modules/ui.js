@@ -13,6 +13,64 @@ export function initUI() {
     document.getElementById('bgo').addEventListener('click', go);
     document.getElementById('k1').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
     
+    // --- GESTION DU PANNEAU RÉGLAGES ---
+    const panel = document.getElementById('panel');
+    const settingsToggle = document.getElementById('settings-toggle');
+    const closePanel = document.getElementById('close-panel');
+
+    settingsToggle.addEventListener('click', () => panel.classList.add('open'));
+    closePanel.addEventListener('click', () => panel.classList.remove('open'));
+
+    // --- SÉLECTEUR DE CALQUES (VIGNETTES) ---
+    const layerBtn = document.getElementById('layer-btn');
+    const layerMenu = document.getElementById('layer-menu');
+    const layerItems = document.querySelectorAll('.layer-item');
+
+    layerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        layerMenu.style.display = layerMenu.style.display === 'block' ? 'none' : 'block';
+    });
+
+    window.addEventListener('click', () => layerMenu.style.display = 'none');
+    layerMenu.addEventListener('click', (e) => e.stopPropagation());
+
+    layerItems.forEach(item => {
+        item.addEventListener('click', async () => {
+            layerItems.forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            state.MAP_SOURCE = item.dataset.source;
+            state.hasManualSource = true;
+            layerMenu.style.display = 'none';
+            await refreshTerrain();
+        });
+    });
+
+    // --- GESTION DU GPS ---
+    const gpsBtn = document.getElementById('gps-btn');
+    gpsBtn.addEventListener('click', () => {
+        if (!navigator.geolocation) return;
+        gpsBtn.classList.add('active');
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            const { latitude, longitude } = pos.coords;
+            autoSelectMapSource(latitude, longitude);
+            resetTerrain();
+            state.TARGET_LAT = latitude;
+            state.TARGET_LON = longitude;
+            if (state.controls) {
+                state.originTile = lngLatToTile(longitude, latitude, state.ZOOM);
+                state.controls.target.set(0, 0, 0);
+                state.camera.position.set(0, 5000, 8000);
+                state.controls.update();
+            }
+            await updateVisibleTiles();
+            gpsBtn.classList.remove('active');
+        }, (err) => {
+            console.warn("GPS Error:", err);
+            gpsBtn.classList.remove('active');
+        });
+    });
+
+    // --- GPX ---
     const gpxBtn = document.getElementById('gpx-btn');
     const gpxUpload = document.getElementById('gpx-upload');
     const trailFollowToggle = document.getElementById('trail-follow-toggle');
@@ -36,18 +94,23 @@ export function initUI() {
         }
     });
 
-    const dateInput = document.getElementById('date-input');
-    dateInput.valueAsDate = state.simDate;
-    dateInput.addEventListener('change', (e) => {
-        state.simDate = new Date(e.target.value);
-        updateSunPosition(document.getElementById('time-slider').value);
-    });
-
+    // --- TEMPS ---
     const timeSlider = document.getElementById('time-slider');
     timeSlider.addEventListener('input', (e) => {
         updateSunPosition(e.target.value);
     });
 
+    document.getElementById('play-btn').addEventListener('click', () => {
+        state.isAnimating = !state.isAnimating;
+        const btn = document.getElementById('play-btn');
+        btn.textContent = state.isAnimating ? "⏸" : "▶";
+    });
+
+    document.getElementById('speed-select').addEventListener('change', (e) => {
+        state.animationSpeed = parseFloat(e.target.value);
+    });
+
+    // --- CLIC SUR CARTE (COORDONNÉES) ---
     window.addEventListener('click', (e) => {
         if (!state.renderer || !state.camera || !state.scene) return;
         if (e.target.tagName !== 'CANVAS') return;
@@ -93,23 +156,7 @@ export function initUI() {
         }
     });
 
-    const mapSourceSelect = document.getElementById('map-source-select');
-    mapSourceSelect.addEventListener('change', async (e) => {
-        state.MAP_SOURCE = e.target.value;
-        state.hasManualSource = true; // L'utilisateur a pris le contrôle
-        await refreshTerrain();
-    });
-
-    document.getElementById('play-btn').addEventListener('click', () => {
-        state.isAnimating = !state.isAnimating;
-        const btn = document.getElementById('play-btn');
-        btn.textContent = state.isAnimating ? "⏸ Pause" : "▶ Lecture";
-    });
-
-    document.getElementById('speed-select').addEventListener('change', (e) => {
-        state.animationSpeed = parseFloat(e.target.value);
-    });
-
+    // --- RÉGLAGES TECHNIQUES ---
     document.getElementById('res-slider').addEventListener('change', async (e) => {
         state.RESOLUTION = parseInt(e.target.value);
         document.getElementById('res-disp').textContent = state.RESOLUTION;
@@ -128,70 +175,36 @@ export function initUI() {
         await updateVisibleTiles();
     });
 
-    // --- RÉTABLISSEMENT DU BROUILLARD ---
-    const fogSlider = document.getElementById('fog-slider');
-    fogSlider.addEventListener('input', (e) => {
+    document.getElementById('fog-slider').addEventListener('input', (e) => {
         state.FOG_DENSITY = parseFloat(e.target.value) / 1000000;
-        document.getElementById('fog-disp').textContent = e.target.value;
-        if (state.scene && state.scene.fog) {
-            state.scene.fog.density = state.FOG_DENSITY;
-        }
+        if (state.scene && state.scene.fog) state.scene.fog.density = state.FOG_DENSITY;
     });
 
-    // --- RÉTABLISSEMENT DES OMBRES ---
     document.getElementById('shadow-toggle').addEventListener('change', (e) => {
         state.SHADOWS = e.target.checked;
         if (state.sunLight) state.sunLight.castShadow = state.SHADOWS;
     });
 
-    // --- RÉTABLISSEMENT DES SENTIERS ---
     document.getElementById('trails-toggle').addEventListener('change', async (e) => {
         state.SHOW_TRAILS = e.target.checked;
         await refreshTerrain();
     });
 
-    // --- RÉTABLISSEMENT PIXEL RATIO ---
-    document.getElementById('pixel-limit-select').addEventListener('change', (e) => {
-        state.PIXEL_RATIO_LIMIT = parseFloat(e.target.value);
-        if (state.renderer) state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
-    });
-
     initGeocoding();
-    initCollapsibles();
 }
 
 export function autoSelectMapSource(lat, lon) {
-    // Si l'utilisateur a déjà choisi une source manuellement (autre que swisstopo/opentopomap par défaut), on n'y touche plus
     if (state.hasManualSource) return;
-
     const isSwiss = isPositionInSwitzerland(lat, lon);
-    if (state.MAP_SOURCE === 'swisstopo' && !isSwiss) {
-        const isReallyOutside = (lat < 45.75 || lat > 47.85 || lon < 5.85 || lon > 10.55);
-        if (!isReallyOutside) return; 
-    }
     const newSource = isSwiss ? 'swisstopo' : 'opentopomap';
     if (state.MAP_SOURCE !== newSource) {
         state.MAP_SOURCE = newSource;
-        const select = document.getElementById('map-source-select');
-        if (select) select.value = newSource;
-        console.log(`Auto-switching map source to: ${newSource}`);
+        const items = document.querySelectorAll('.layer-item');
+        items.forEach(i => {
+            i.classList.remove('active');
+            if (i.dataset.source === newSource) i.classList.add('active');
+        });
     }
-}
-
-function initCollapsibles() {
-    const panel = document.getElementById('panel');
-    const panelToggle = document.getElementById('panel-toggle');
-    const toggleIcon = document.getElementById('toggle-icon');
-    panelToggle.addEventListener('click', () => {
-        panel.classList.toggle('collapsed');
-        toggleIcon.textContent = panel.classList.contains('collapsed') ? '▶' : '◀';
-    });
-    const perfHeader = document.getElementById('perf-header');
-    const perfContent = document.getElementById('perf-content');
-    perfHeader.addEventListener('click', () => {
-        perfContent.classList.toggle('collapsed');
-        perfHeader.classList.toggle('collapsed');
-    });
 }
 
 async function refreshTerrain() {
@@ -230,9 +243,22 @@ function go() {
         return;
     }
     localStorage.setItem('maptiler_key_3d', state.MK);
+    
+    // Remplacement des clés dans les vignettes (optionnel mais propre)
+    document.querySelectorAll('.layer-thumb').forEach(thumb => {
+        const bg = thumb.style.backgroundImage;
+        if (bg.includes('key=')) {
+            thumb.style.backgroundImage = bg.replace('key=', `key=${state.MK}`);
+        }
+    });
+
     document.getElementById('setup-screen').style.display = 'none';
-    document.getElementById('panel').style.display = 'block';
-    document.getElementById('panel-toggle').style.display = 'flex';
+    document.getElementById('top-search-container').style.display = 'block';
+    document.getElementById('layer-btn').style.display = 'flex';
+    document.getElementById('settings-toggle').style.display = 'flex';
+    document.getElementById('gps-btn').style.display = 'flex';
+    document.getElementById('bottom-bar').style.display = 'flex';
+    
     autoSelectMapSource(state.TARGET_LAT, state.TARGET_LON);
     initScene();
 }
@@ -248,15 +274,14 @@ function initGeocoding() {
         geoTimer = setTimeout(async () => {
             try {
                 const r = await fetch(`https://api.maptiler.com/geocoding/${encodeURIComponent(q)}.json?key=${state.MK}&language=fr&limit=6`);
-                if (!r.ok) return;
                 const data = await r.json();
                 if (!data.features || !data.features.length) { geoResults.style.display = 'none'; return; }
                 geoResults.innerHTML = '';
                 data.features.forEach(f => {
                     const item = document.createElement('div');
-                    item.style.cssText = 'padding:0.6rem 0.75rem; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.8rem;';
+                    item.style.cssText = 'padding:15px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.05);';
                     const name = f.text || f.place_name || '';
-                    item.innerHTML = `<div style="color:white; font-weight:500">${name}</div><div style="color:#8b8d98; font-size:0.7rem;">${f.place_name || ''}</div>`;
+                    item.innerHTML = `<div style="color:white; font-weight:500">${name}</div><div style="color:var(--t2); font-size:12px;">${f.place_name || ''}</div>`;
                     item.addEventListener('click', async () => {
                         const [lng, lat] = f.center || f.geometry.coordinates;
                         geoResults.style.display = 'none';
@@ -268,7 +293,7 @@ function initGeocoding() {
                         if (state.controls) {
                             state.originTile = lngLatToTile(lng, lat, state.ZOOM);
                             state.controls.target.set(0, 0, 0);
-                            state.camera.position.set(0, 8000, 12000);
+                            state.camera.position.set(0, 5000, 8000);
                             state.controls.update();
                         }
                         await updateVisibleTiles();

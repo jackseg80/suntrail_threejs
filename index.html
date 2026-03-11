@@ -2,209 +2,138 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SunTrail - Moteur Three.js</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="./style.css" rel="stylesheet">
 </head>
 <body>
 
-<div id="zoom-indicator" style="position:fixed; top:110px; right:25px; background:rgba(0,0,0,0.8); color:#00ffff; padding:0.3rem 0.8rem; border-radius:10px; font-family:monospace; font-size:0.75rem; z-index:1000; border:1px solid rgba(0,255,255,0.2); pointer-events:none; width:100px; text-align:center;">ZOOM: --</div>
 <div id="setup-screen">
     <div class="setup-card">
         <h1>⛰️ SunTrail 3D</h1>
-        <p class="sub">Visualisation topographique et simulation solaire.</p>
-        <div class="fg">
-            <label>Clé API MapTiler</label>
-            <input type="text" id="k1" placeholder="ex: a1b2c3d4e5f6g7h8" autocomplete="off" spellcheck="false">
+        <p style="color:var(--t2); margin-bottom:30px;">Visualisation topographique et simulation solaire.</p>
+        <div style="text-align:left; margin-bottom:20px;">
+            <label style="font-size:12px; color:var(--gold); text-transform:uppercase;">Clé API MapTiler</label>
+            <input type="text" id="k1" placeholder="ex: a1b2c3d4e5f6g7h8" style="width:100%; padding:15px; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:12px; color:white; margin-top:8px;">
         </div>
-        <p class="setup-error" id="serr"></p>
+        <p id="serr" style="color:#ef4444; font-size:13px;"></p>
         <button class="btn-go" id="bgo">Lancer l'expérience →</button>
     </div>
 </div>
 
 <div id="canvas-container"></div>
 
-<div id="panel" style="display:none;">
-    <h2 style="color:var(--gold); margin-top:0;">☀️ SunTrail</h2>
-    
-    <div class="control-group" style="position:relative; margin-bottom: 1.5rem;">
-        <input type="text" id="geo-input" placeholder="🔍 Rechercher un lieu..." autocomplete="off" style="width:100%; padding:0.7rem; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:10px; color:white; font-size:0.85rem;">
-        <div id="geo-results" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--panel-solid); border:1px solid var(--border); border-radius:10px; z-index:100; max-height:250px; overflow-y:auto; margin-top:5px;"></div>
-    </div>
+<!-- BARRE DE RECHERCHE FLOTTANTE -->
+<div id="top-search-container" style="display:none;">
+    <input type="text" id="geo-input" placeholder="🔍 Rechercher un lieu...">
+    <div id="geo-results"></div>
+</div>
 
-    <!-- SECTION TEMPS -->
-    <div class="control-group">
-        <label>Date de simulation</label>
-        <input type="date" id="date-input" style="width:100%; padding:0.6rem; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; color:white; font-size:0.85rem; margin-bottom: 1rem;">
-        
-        <label>Heure : <span id="time-disp" style="color:var(--accent); font-weight:700;">12:00</span></label>
-        <input type="range" id="time-slider" min="0" max="1439" value="720">
-        
-        <div style="display: flex; gap: 0.5rem; margin-top: 0.8rem; align-items: center;">
-            <button id="play-btn" style="flex: 1; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: white; cursor: pointer; font-size: 0.8rem; font-weight: 700;">▶ Lecture</button>
-            <select id="speed-select" style="padding: 0.5rem; border-radius: 8px; font-size: 0.75rem;">
-                <option value="0.5">Vitesse 0.5x</option>
-                <option value="1" selected>Vitesse 1x</option>
-                <option value="2">Vitesse 2x</option>
-                <option value="5">Vitesse 5x</option>
+<!-- BOUTON CALQUES -->
+<div id="layer-btn" style="display:none;" title="Changer de carte">🗺️</div>
+<div id="layer-menu">
+    <h3 style="margin:0 0 15px 0; font-size:14px; color:var(--gold); text-transform:uppercase;">Type de carte</h3>
+    <div class="layer-grid">
+        <div class="layer-item active" data-source="swisstopo">
+            <div class="layer-thumb" style="background-image:url('https://api.maptiler.com/maps/topo-v2/static/0,0,1/100x100.png?key=')"></div>
+            Topo
+        </div>
+        <div class="layer-item" data-source="satellite">
+            <div class="layer-thumb" style="background-image:url('https://api.maptiler.com/maps/satellite/static/0,0,1/100x100.jpg?key=')"></div>
+            Satellite
+        </div>
+        <div class="layer-item" data-source="opentopomap">
+            <div class="layer-thumb" style="background-image:url('https://a.tile.opentopomap.org/0/0/0.png')"></div>
+            OpenTopo
+        </div>
+    </div>
+    <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid var(--border);">
+        <label style="font-size:13px;">📍 Sentiers & Noms</label>
+        <input type="checkbox" id="trails-toggle" checked style="width:20px; height:20px;">
+    </div>
+</div>
+
+<!-- BOUTON RÉGLAGES -->
+<div id="settings-toggle" style="display:none;" title="Réglages techniques">⚙️</div>
+
+<!-- BOUTON GPS -->
+<div id="gps-btn" style="display:none;" title="Ma position">🎯</div>
+
+<!-- BARRE DE TEMPS BASSE -->
+<div id="bottom-bar" style="display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-weight:700; font-size:18px;"><span id="time-disp">12:00</span></div>
+        <div style="display:flex; gap:10px;">
+            <button id="play-btn" style="background:none; border:none; color:white; font-size:18px; cursor:pointer;">▶</button>
+            <select id="speed-select" style="background:none; border:none; color:var(--t2); font-size:12px;">
+                <option value="1">1x</option>
+                <option value="5">5x</option>
+                <option value="10">10x</option>
             </select>
         </div>
     </div>
+    <input type="range" id="time-slider" min="0" max="1439" value="720">
+</div>
 
-    <!-- BOUSSOLE SOLAIRE -->
-    <div class="control-group" style="border-top: 1px solid var(--border); padding-top: 1rem; text-align: center;">
-        <label style="text-align:left; font-size:0.75rem; color:var(--gold); text-transform:uppercase; letter-spacing:1px;">🧭 Boussole Solaire</label>
-        <div id="solar-radar" style="position:relative; width:120px; height:120px; margin: 1rem auto; border: 2px solid var(--border); border-radius: 50%; background: rgba(255,255,255,0.02);">
-            <div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:10px; font-weight:700;">N</div>
-            <div style="position:absolute; bottom:-12px; left:50%; transform:translateX(-50%); font-size:10px; font-weight:700;">S</div>
-            <div style="position:absolute; right:-12px; top:50%; transform:translateY(-50%); font-size:10px; font-weight:700;">E</div>
-            <div style="position:absolute; left:-12px; top:50%; transform:translateY(-50%); font-size:10px; font-weight:700;">O</div>
-            <div id="sun-needle" style="position:absolute; top:50%; left:50%; width:2px; height:50px; background:linear-gradient(to top, transparent 50%, var(--gold) 50%); transform-origin: center; transform: translate(-50%, -50%) rotate(0deg);">
-                <div style="position:absolute; top:0; left:-4px; width:10px; height:10px; background:var(--gold); border-radius:50%; box-shadow: 0 0 10px var(--gold);"></div>
-            </div>
+<!-- PANNEAU RÉGLAGES (CACHÉ PAR DÉFAUT) -->
+<div id="panel">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+        <h2 style="margin:0; color:var(--gold); font-size:18px;">RÉGLAGES</h2>
+        <button id="close-panel" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">×</button>
+    </div>
+
+    <div class="control-group">
+        <label style="font-size:12px; color:var(--t2); text-transform:uppercase;">Maillage (LOD)</label>
+        <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;">
+            <span>Densité : <span id="res-disp">128</span></span>
+            <span>Portée : <span id="range-disp">3</span></span>
+        </div>
+        <input type="range" id="res-slider" min="32" max="256" step="32" value="128">
+        <input type="range" id="range-slider" min="1" max="10" step="1" value="3" style="margin-top:10px;">
+    </div>
+
+    <div class="control-group" style="margin-top:25px;">
+        <label style="font-size:12px; color:var(--t2); text-transform:uppercase;">Visuel</label>
+        <div style="margin:15px 0;">
+            <label style="display:flex; justify-content:space-between; font-size:14px;">
+                Exagération Relief : <span id="exag-disp">1.4</span>x
+            </label>
+            <input type="range" id="exag-slider" min="1.0" max="2.0" step="0.1" value="1.4">
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <span style="font-size:14px;">🌑 Ombres 3D</span>
+            <input type="checkbox" id="shadow-toggle" checked>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:14px;">🌫️ Brouillard</span>
+            <input type="range" id="fog-slider" min="0" max="80" step="5" value="10" style="width:120px;">
         </div>
     </div>
 
-    <!-- POSITION PRÉCISE DU SOLEIL -->
-    <div class="control-group" style="font-size: 0.8rem; background:rgba(255,255,255,0.03); padding:0.8rem; border-radius:10px;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
-            <span style="color:var(--t2);">Azimut :</span>
-            <span id="az-val" style="color:var(--accent); font-weight:700;">— °</span>
-        </div>
-        <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
-            <span style="color:var(--t2);">Élévation :</span>
-            <span id="alt-val" style="color:var(--gold); font-weight:700;">— °</span>
-        </div>
-        <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
-            <span style="color:var(--t2);">Phase :</span>
-            <span id="sun-phase" style="font-weight:500;">—</span>
-        </div>
-        <div style="display:flex; justify-content:space-between;">
-            <span style="color:var(--t2);">Durée jour :</span>
-            <span id="day-duration" style="color:white;">—</span>
-        </div>
-    </div>
-
-    <!-- SECTION PERFORMANCE (RÉTABLIE) -->
-    <div class="control-group" style="border-top: 1px solid var(--border); padding-top: 1rem;">
-        <div class="collapsible-header" id="perf-header">
-            <h3>⚙️ Paramètres Rendu</h3>
-            <span class="chevron">▼</span>
-        </div>
-        
-        <div class="collapsible-content collapsed" id="perf-content">
-            <div style="margin-top: 1rem; margin-bottom: 0.8rem;">
-                <label style="font-size: 0.75rem; color: var(--t2);">Densité maillage : <span id="res-disp">128</span></label>
-                <input type="range" id="res-slider" min="32" max="256" step="32" value="128">
-            </div>
-
-            <div style="margin-bottom: 0.8rem;">
-                <label style="font-size: 0.75rem; color: var(--t2);">Distance affichage : <span id="range-disp">2</span></label>
-                <input type="range" id="range-slider" min="1" max="10" step="1" value="3">
-
-            </div>
-
-            <div style="margin-bottom: 0.8rem;">
-                <label style="font-size: 0.75rem; color: var(--t2);">Exagération Relief : <span id="exag-disp">1.4</span>x</label>
-                <input type="range" id="exag-slider" min="1.0" max="2.0" step="0.1" value="1.4">
-            </div>
-
-            <div style="margin-bottom: 0.8rem;">
-                <label style="font-size: 0.75rem; color: var(--t2);">Brouillard : <span id="fog-disp">10</span></label>
-                <input type="range" id="fog-slider" min="0" max="80" step="5" value="10">
-            </div>
-
-            <div style="margin-bottom: 1rem;">
-                <label style="font-size: 0.7rem; color: var(--t2);">Fond de carte (Topo)</label>
-                <select id="map-source-select" style="width:100%; font-size:0.75rem;">
-                    <option value="swisstopo" selected>Swisstopo (Suisse)</option>
-                    <option value="satellite">Satellite (Monde)</option>
-                    <option value="opentopomap">OpenTopoMap (Monde)</option>
-                    <option value="maptiler-topo">MapTiler Topo</option>
-                </select>
-            </div>
-
-            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                <div style="flex: 1;">
-                    <label style="font-size: 0.7rem; color: var(--t2);">Ombres</label>
-                    <select id="shadow-res-select" style="width:100%; font-size:0.75rem;">
-                        <option value="1024">1K (Eco)</option>
-                        <option value="2048" selected>2K (Std)</option>
-                        <option value="4096">4K (High)</option>
-                    </select>
-                </div>
-                <div style="flex: 1;">
-                    <label style="font-size: 0.7rem; color: var(--t2);">Rendu</label>
-                    <select id="pixel-limit-select" style="width:100%; font-size:0.75rem;">
-                        <option value="1">1x</option>
-                        <option value="1.5" selected>1.5x</option>
-                        <option value="2">2x</option>
-                    </select>
-                </div>
-            </div>
-
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem;">
-                <label style="font-size: 0.75rem; margin:0;">📍 Sentiers & Noms</label>
-                <input type="checkbox" id="trails-toggle" checked>
-            </div>
-
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <label style="font-size: 0.75rem; margin:0;">🌑 Ombres 3D</label>
-                <input type="checkbox" id="shadow-toggle" checked>
-            </div>
-        </div>
-    </div>
-
-    <!-- SECTION GPX -->
-    <div class="control-group" style="border-top: 1px solid var(--border); padding-top: 1rem;">
-        <h3 style="font-size: 0.85rem; color: var(--gold); text-transform: uppercase; margin-bottom: 1rem; letter-spacing: 1px;">🏃 Parcours & GPX</h3>
+    <div class="control-group" style="margin-top:25px; border-top:1px solid var(--border); padding-top:20px;">
+        <label style="font-size:12px; color:var(--gold); text-transform:uppercase;">Parcours GPX</label>
         <input type="file" id="gpx-upload" accept=".gpx" style="display:none;">
-        <button id="gpx-btn" style="width:100%; padding:0.7rem; border-radius:10px; border:1px solid var(--border); background:rgba(59, 130, 246, 0.1); color:var(--accent); cursor:pointer; font-size:0.8rem; font-weight:700; margin-bottom:0.8rem;">📥 Importer un GPX</button>
+        <button id="gpx-btn" style="width:100%; padding:12px; border-radius:12px; border:1px solid var(--accent); background:rgba(59, 130, 246, 0.1); color:var(--accent); cursor:pointer; font-weight:700; margin:15px 0;">📥 Importer GPX</button>
         <div id="trail-controls" style="display:none;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem;">
-                <label style="font-size: 0.75rem; margin:0;">🎥 Suivi de sentier</label>
+             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:14px;">🎥 Suivi caméra</span>
                 <input type="checkbox" id="trail-follow-toggle">
             </div>
-            <div style="background:rgba(255,255,255,0.03); padding:0.6rem; border-radius:8px; font-size:0.75rem; color:var(--t2);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem;">
-                    <span>Distance :</span><span id="gpx-dist" style="color:white;">0 km</span>
-                </div>
-                <div style="display:flex; justify-content:space-between;">
-                    <span>Dénivelé :</span><span id="gpx-elev" style="color:var(--gold);">+0m / -0m</span>
-                </div>
+            <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:10px; font-size:12px;">
+                Distance: <span id="gpx-dist" style="color:white; font-weight:700;">0 km</span><br>
+                Dénivelé: <span id="gpx-elev" style="color:var(--gold);">+0m / -0m</span>
             </div>
         </div>
     </div>
-
-    <div class="control-group" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.8rem;">
-        <label>📅 Éphémérides</label>
-        <div style="color: var(--t2); line-height: 1.6;">
-            <div>🌅 Lever : <span id="sunrise-disp" style="color:white;">—</span></div>
-            <div>🌇 Coucher : <span id="sunset-disp" style="color:white;">—</span></div>
-            <div>🌙 Lune : <span id="moon-phase-disp" style="color:white;">—</span></div>
-        </div>
-    </div>
 </div>
 
-<button id="panel-toggle" style="display:none;" title="Masquer/Afficher le panneau">
-    <span id="toggle-icon">◀</span>
-</button>
+<!-- INDICATEURS FIXES -->
+<div id="zoom-indicator" style="position:fixed; top:25px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); color:#00ffff; padding:4px 12px; border-radius:20px; font-family:monospace; font-size:11px; z-index:500; border:1px solid rgba(0,255,255,0.2); pointer-events:none;">LVL --</div>
 
-<div id="compass-container">
-    <div id="compass-disk">
-        <div class="compass-mark mark-n">N</div>
-        <div class="compass-mark mark-e">E</div>
-        <div class="compass-mark mark-s">S</div>
-        <div class="compass-mark mark-w">O</div>
-        <div id="compass-needle-main"></div>
-    </div>
-</div>
-
-<div id="coords-panel" style="display:none; position:fixed; bottom:20px; right:20px; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:1rem; font-size:0.8rem; z-index:1000; backdrop-filter:blur(8px); pointer-events:none;">
-    <div style="color:var(--gold); font-weight:700; margin-bottom:0.3rem;">📍 Analyse topographique</div>
-    <div id="click-latlon" style="color:var(--t1);">—</div>
-    <div id="click-alt" style="color:var(--gold); font-size:1rem; font-weight:700; margin-top:0.2rem;">—</div>
+<div id="coords-panel" style="display:none; position:fixed; bottom:100px; left:20px; background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:12px; font-size:13px; z-index:500; backdrop-filter:var(--glass); pointer-events:none; box-shadow:0 5px 15px rgba(0,0,0,0.3);">
+    <div id="click-latlon" style="color:var(--t2);">—</div>
+    <div id="click-alt" style="color:var(--gold); font-size:16px; font-weight:700;">—</div>
 </div>
 
 <script type="module" src="./main.js"></script>

@@ -9,7 +9,8 @@ export function updateSunPosition(minutes) {
     const hours = Math.floor(totalMinutes / 60);
     const mins = totalMinutes % 60;
     
-    document.getElementById('time-disp').textContent = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+    const timeDisp = document.getElementById('time-disp');
+    if (timeDisp) timeDisp.textContent = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
     
     const date = new Date(state.simDate);
     date.setHours(hours, mins, 0, 0);
@@ -22,52 +23,62 @@ export function updateSunPosition(minutes) {
     const altDeg = pos.altitude * 180 / Math.PI;
     const azDeg = (pos.azimuth * 180 / Math.PI) + 180;
     
-    // --- MISE À JOUR INFOS PRÉCISES ---
-    document.getElementById('az-val').textContent = `${azDeg.toFixed(1)}°`;
-    document.getElementById('alt-val').textContent = `${altDeg.toFixed(1)}°`;
+    // --- MISE À JOUR INFOS (Sécurisée) ---
+    const azVal = document.getElementById('az-val');
+    if (azVal) azVal.textContent = `${azDeg.toFixed(1)}°`;
     
-    // Boussole Solaire (Radar)
+    const altVal = document.getElementById('alt-val');
+    if (altVal) altVal.textContent = `${altDeg.toFixed(1)}°`;
+    
     const sunNeedle = document.getElementById('sun-needle');
     if (sunNeedle) sunNeedle.style.transform = `translate(-50%, -50%) rotate(${azDeg}deg)`;
 
-    // Phase du soleil
     const phaseSpan = document.getElementById('sun-phase');
-    if (altDeg > 5) {
-        phaseSpan.textContent = "☀️ Plein jour";
-        phaseSpan.style.color = "#FFD700";
-    } else if (altDeg > 0) {
-        phaseSpan.textContent = "🌅 Lever/Coucher";
-        phaseSpan.style.color = "#FF8C00";
-    } else if (altDeg > -6) {
-        phaseSpan.textContent = "🌆 Crépuscule civil";
-        phaseSpan.style.color = "#ADFF2F";
-    } else {
-        phaseSpan.textContent = "🌙 Nuit";
-        phaseSpan.style.color = "#87CEEB";
+    if (phaseSpan) {
+        if (altDeg > 5) {
+            phaseSpan.textContent = "☀️ Plein jour";
+            phaseSpan.style.color = "#FFD700";
+        } else if (altDeg > 0) {
+            phaseSpan.textContent = "🌅 Lever/Coucher";
+            phaseSpan.style.color = "#FF8C00";
+        } else if (altDeg > -6) {
+            phaseSpan.textContent = "🌆 Crépuscule civil";
+            phaseSpan.style.color = "#ADFF2F";
+        } else {
+            phaseSpan.textContent = "🌙 Nuit";
+            phaseSpan.style.color = "#87CEEB";
+        }
     }
 
-    // Durée du jour
-    const diff = times.sunset - times.sunrise;
-    const dayHrs = Math.floor(diff / 3600000);
-    const dayMins = Math.floor((diff % 3600000) / 60000);
-    document.getElementById('day-duration').textContent = `${dayHrs}h${String(dayMins).padStart(2, '0')}`;
+    const dayDuration = document.getElementById('day-duration');
+    if (dayDuration) {
+        const diff = times.sunset - times.sunrise;
+        const dayHrs = Math.floor(diff / 3600000);
+        const dayMins = Math.floor((diff % 3600000) / 60000);
+        dayDuration.textContent = `${dayHrs}h${String(dayMins).padStart(2, '0')}`;
+    }
 
-    // Éphémérides classiques
     const fmt = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-    document.getElementById('sunrise-disp').textContent = fmt(times.sunrise);
-    document.getElementById('sunset-disp').textContent = fmt(times.sunset);
+    const sunriseDisp = document.getElementById('sunrise-disp');
+    if (sunriseDisp) sunriseDisp.textContent = fmt(times.sunrise);
     
-    let moonPhaseText = "Inconnue";
-    const p = moonIllum.phase;
-    if (p < 0.05 || p > 0.95) moonPhaseText = "Nouvelle";
-    else if (p < 0.2) moonPhaseText = "Premier Croissant";
-    else if (p < 0.3) moonPhaseText = "Premier Quartier";
-    else if (p < 0.45) moonPhaseText = "Gibbeuse Croissante";
-    else if (p < 0.55) moonPhaseText = "Pleine";
-    else if (p < 0.7) moonPhaseText = "Gibbeuse Décroissante";
-    else if (p < 0.8) moonPhaseText = "Dernier Quartier";
-    else moonPhaseText = "Dernier Croissant";
-    document.getElementById('moon-phase-disp').textContent = `${moonPhaseText} (${(moonIllum.fraction * 100).toFixed(0)}%)`;
+    const sunsetDisp = document.getElementById('sunset-disp');
+    if (sunsetDisp) sunsetDisp.textContent = fmt(times.sunset);
+    
+    const moonDisp = document.getElementById('moon-phase-disp');
+    if (moonDisp) {
+        let moonPhaseText = "Inconnue";
+        const p = moonIllum.phase;
+        if (p < 0.05 || p > 0.95) moonPhaseText = "Nouvelle";
+        else if (p < 0.2) moonPhaseText = "Premier Croissant";
+        else if (p < 0.3) moonPhaseText = "Premier Quartier";
+        else if (p < 0.45) moonPhaseText = "Gibbeuse Croissante";
+        else if (p < 0.55) moonPhaseText = "Pleine";
+        else if (p < 0.7) moonPhaseText = "Gibbeuse Décroissante";
+        else if (p < 0.8) moonPhaseText = "Dernier Quartier";
+        else moonPhaseText = "Dernier Croissant";
+        moonDisp.textContent = `${moonPhaseText} (${(moonIllum.fraction * 100).toFixed(0)}%)`;
+    }
     
     // --- POSITION FINALE POUR LE MOTEUR 3D ---
     let finalPhi = pos.altitude;
@@ -92,13 +103,12 @@ export function updateSunPosition(minutes) {
         ambientIntensity = 0.05 + (moonIllum.fraction * 0.05);
     }
 
-    const distance = 150000; // 150km au lieu de 40km
+    const distance = 150000;
     const sunVector = new THREE.Vector3();
     sunVector.x = distance * Math.cos(finalPhi) * -Math.sin(finalAz);
     sunVector.y = distance * Math.sin(finalPhi);
     sunVector.z = distance * Math.cos(finalPhi) * Math.cos(finalAz);
 
-    // --- CORRECTION V3 : Le soleil suit la caméra mais de très haut ---
     if (state.controls && state.controls.target) {
         state.sunLight.position.set(
             state.controls.target.x + sunVector.x,
