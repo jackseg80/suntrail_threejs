@@ -3,7 +3,8 @@ import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { state } from './state.js';
 import { updateSunPosition } from './sun.js';
-import { loadTerrain, updateVisibleTiles, lngLatToTile, worldToLngLat, resetTerrain } from './terrain.js';
+import { loadTerrain, updateVisibleTiles, lngLatToTile, worldToLngLat, resetTerrain, EARTH_CIRCUMFERENCE } from './terrain.js';
+import { updateGPXMesh } from './ui.js';
 import { throttle } from './utils.js';
 
 export async function initScene() {
@@ -45,7 +46,6 @@ export async function initScene() {
         const dz = state.controls.target.z;
         const dist = state.camera.position.y;
 
-        // --- LOGIQUE AUTO-ZOOM (Niveaux 12, 13, 14) ---
         let newZoom = state.ZOOM;
         if (dist < 10000) newZoom = 14;
         else if (dist < 25000) newZoom = 13;
@@ -53,20 +53,43 @@ export async function initScene() {
 
         if (newZoom !== state.ZOOM) {
             console.log(`Auto-Zoom: Switching to ${newZoom}`);
+            
+            // --- LOGIQUE DE COMPENSATION D'ORIGINE (Zéro Saut) ---
             const gpsCenter = worldToLngLat(dx, dz);
+            
+            // 1. Sauvegarde de l'ancienne origine normalisée
+            const oldOriginX = (state.originTile.x + 0.5) / Math.pow(2, state.ZOOM);
+            const oldOriginZ = (state.originTile.y + 0.5) / Math.pow(2, state.ZOOM);
+            
             state.ZOOM = newZoom;
             state.originTile = lngLatToTile(gpsCenter.lon, gpsCenter.lat, newZoom);
+            
+            // 2. Nouvelle origine normalisée
+            const newOriginX = (state.originTile.x + 0.5) / Math.pow(2, state.ZOOM);
+            const newOriginZ = (state.originTile.y + 0.5) / Math.pow(2, state.ZOOM);
+            
+            // 3. Calcul du décalage physique en mètres
+            const offsetX = (oldOriginX - newOriginX) * EARTH_CIRCUMFERENCE;
+            const offsetZ = (oldOriginZ - newOriginZ) * EARTH_CIRCUMFERENCE;
+            
+            // 4. On déplace la caméra et sa cible de la même distance
+            state.camera.position.x += offsetX;
+            state.camera.position.z += offsetZ;
+            state.controls.target.x += offsetX;
+            state.controls.target.z += offsetZ;
+            state.controls.update();
+
             resetTerrain();
+            if (state.rawGpxData) updateGPXMesh(); 
             
             const indicator = document.getElementById('zoom-indicator');
             if (indicator) indicator.textContent = `SWISSTOPO: Lvl ${newZoom}`;
+        } else {
+            // Même sans changement de zoom, on rafraîchit l'épaisseur GPX si nécessaire
+            if (state.rawGpxData) updateGPXMesh(); 
         }
 
-        const gps = worldToLngLat(dx, dz);
-        state.TARGET_LON = gps.lon;
-        state.TARGET_LAT = gps.lat;
-
-        updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, dist, dx, dz);
+        updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, dist, state.controls.target.x, state.controls.target.z);
     }, 200);
     
     state.controls.addEventListener('change', throttledUpdate);
@@ -91,7 +114,6 @@ export async function initScene() {
     await loadTerrain();
     updateSunPosition(720); 
 
-    // Initialisation de l'indicateur UI
     const indicator = document.getElementById('zoom-indicator');
     if (indicator) indicator.textContent = `SWISSTOPO: Lvl ${state.ZOOM}`;
 
