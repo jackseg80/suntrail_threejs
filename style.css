@@ -139,6 +139,15 @@ body, html {
 
 input[type="range"] { accent-color: var(--accent); }
 
+/* INDICATEUR ZOOM (Bas-Milieu) */
+#zoom-indicator {
+    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+    background: var(--panel); backdrop-filter: var(--glass);
+    color: #00ffff; padding: 4px 15px; border-radius: 20px;
+    font-family: monospace; font-size: 11px; z-index: 500;
+    border: 1px solid rgba(0,255,255,0.2); pointer-events: none;
+}
+
 @media (max-width: 600px) {
     #top-search-container { left: 10px; top: 10px; width: calc(100% - 80px); }
     #layer-btn { top: 10px; right: 10px; }
@@ -146,4 +155,5 @@ input[type="range"] { accent-color: var(--accent); }
     #bottom-bar { width: calc(100% - 20px); bottom: 10px; }
     #gps-btn { bottom: 90px; right: 10px; }
     #settings-toggle { top: 70px; left: 10px; }
+    #zoom-indicator { bottom: 85px; }
 }
