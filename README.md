@@ -1,14 +1,16 @@
-# ⛰️ SunTrail V10 (Three.js)
+# ⛰️ SunTrail V2.5 (Three.js)
 
 **SunTrail** est un moteur de visualisation de terrain 3D haute performance développé avec Three.js. Il génère des reliefs réalistes en temps réel à partir de données topographiques mondiales et simule la position exacte du soleil pour projeter des ombres physiques sur le paysage.
 
-## 🚀 Fonctionnalités
+## 🚀 Fonctionnalités (v2.5)
 
-- **Relief 3D Haute Fidélité :** Génération de maillages denses à partir de tuiles Terrain-RGB (MapTiler).
-- **Simulation Solaire Réelle :** Calcul de l'azimut et de l'élévation du soleil via `SunCalc`.
-- **Ombres Portées Physiques :** Utilisation de Shadow Maps pour un rendu réaliste des reliefs.
-- **Navigation Géographique :** Système de géocodage intégré pour explorer n'importe quel sommet ou ville dans le monde.
-- **Chargement Dynamique :** Gestion intelligente des tuiles (LOD de base) pour une exploration fluide.
+- **Architecture Orientée Objet :** Chaque tuile est une instance de la classe `Tile` avec son propre cycle de vie.
+- **LOD Dynamique Universel :** Ajustement automatique de la résolution du maillage (128, 64, 32) et du niveau de zoom (12 à 14) selon la distance et l'altitude.
+- **Transitions Fluides :** Système de fondu (Fade-in) à l'apparition des nouvelles tuiles et compensation mathématique des changements d'origine pour éviter les sauts visuels.
+- **Mise en cache intelligente :** Cache mémoire (RAM) pour les textures et données d'élévation afin d'accélérer les allers-retours entre niveaux de zoom.
+- **Trace GPX Haute Visibilité :** Import de fichiers GPX avec rendu en tube rouge brillant, épaisseur adaptative et synchronisation automatique avec le relief.
+- **Simulation Solaire Réelle :** Calcul de l'azimut et de l'élévation via `SunCalc` avec boussole solaire intégrée.
+- **Relief 3D Haute Fidélité :** Interpolation bilinéaire pour des raccords de tuiles parfaits et sans cassures.
 
 ## 🛠️ Installation
 
@@ -30,12 +32,12 @@
 
 ## 🔑 Configuration
 
-Le projet nécessite une **clé API MapTiler** (gratuite pour un usage personnel). Elle vous sera demandée au lancement de l'application.
+Le projet nécessite une **clé API MapTiler**. Elle vous sera demandée au lancement de l'application.
 
 ## 📦 Stack Technique
 
 - **Moteur 3D :** [Three.js](https://threejs.org/)
-- **Données Cartographiques :** [MapTiler Cloud](https://www.maptiler.com/cloud/)
+- **Données Cartographiques :** [MapTiler Cloud](https://www.maptiler.com/cloud/) (Swisstopo par défaut)
 - **Calculs Astronomiques :** [SunCalc](https://github.com/mourner/suncalc)
 - **Outil de Build :** [Vite](https://vitejs.dev/)
 

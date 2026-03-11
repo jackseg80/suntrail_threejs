@@ -1,37 +1,35 @@
 # 🤖 CLAUDE.md (Guide Assistant IA)
 
-Ce fichier définit les standards de développement et l'architecture de **SunTrail** pour les assistants IA (Gemini, Claude, etc.).
+Ce fichier définit les standards de développement et l'architecture de **SunTrail v2.5** pour les assistants IA.
 
 ## 🏗️ Architecture du Projet
 
-Le projet est modulaire et utilise des **ES Modules** (JS moderne).
-- **`main.js`** : Point d'entrée, lance l'initialisation de l'UI.
-- **`src/modules/state.js`** : Source unique de vérité pour l'état global (caméra, scène, coordonnées).
-- **`src/modules/terrain.js`** : Logique de conversion géographique (Mercator), chargement des tuiles MapTiler et génération des maillages 3D.
-- **`src/modules/sun.js`** : Calcul de la position du soleil (SunCalc) et mise à jour de la lumière directionnelle.
-- **`src/modules/scene.js`** : Initialisation de Three.js, rendu et contrôles (OrbitControls).
-- **`src/modules/ui.js`** : Gestion du DOM, événements et recherche (géocodage).
+Le projet utilise une architecture **Orientée Objet** pour la gestion du terrain.
+- **`src/modules/terrain.js`** : Contient la classe `Tile`. Chaque tuile gère son propre chargement, son maillage et son effet de fondu (`Fade-in`).
+- **`src/modules/scene.js`** : Gère la boucle de rendu et l'**Auto-Zoom**. Implémente une logique de compensation d'origine pour des transitions fluides entre niveaux Swisstopo.
+- **`src/modules/state.js`** : État global réactif. `state.originTile` est l'ancre du monde 3D.
+- **`src/modules/ui.js`** : Gestion du DOM et synchronisation de la trace GPX.
+- **`src/modules/sun.js`** : Calculs astronomiques via SunCalc.
 
-## 🛠️ Commandes de Développement
+## 🚀 Concepts Clés (v2.5)
 
-- **Serveur local :** `npm run dev` (Vite)
-- **Build de production :** `npm run build`
-- **Installation :** `npm install`
+1. **LOD (Level of Detail) :**
+   - **Géométrique :** Résolution adaptative (128 à 32 segments) selon la distance caméra-tuile.
+   - **Zoom :** Changement automatique du niveau de tuile MapTiler (12, 13, 14) selon l'altitude.
+2. **Gestion de l'Origine :** L'origine flottante est mise à jour lors des déplacements importants (>10km) pour maintenir la précision. Les positions des objets existants sont compensées mathématiquement pour éviter les sauts visuels.
+3. **Mise en cache :** `dataCache` (Map) stocke les textures pour un rechargement instantané.
+4. **Précision Altitude :** Récupérée via Raycasting sur la géométrie physique (CPU displacement).
 
-## 📏 Règles de Code et Standards
+## 📏 Standards de Code
 
-- **JavaScript :** ES6+, modules natifs, pas de framework (Vanilla JS).
-- **Three.js :** 
-    - Garder la `RESOLUTION` à 256 pour un bon équilibre entre détail et performance.
-    - Utiliser `state.originTile` pour ancrer le monde 3D et éviter les erreurs de précision flottante.
-    - Toujours disposer (`dispose()`) des géométries et matériaux lors de la suppression des tuiles.
-- **Performances :** Limiter le `range` de chargement des tuiles pour préserver le GPU.
-- **Variables Globales :** Interdites. Utiliser l'objet `state` importé depuis `state.js`.
+- **Performance :** Toujours utiliser `dispose()` sur les géométries, textures et matériaux dans `Tile.dispose()`.
+- **Coordonnées :** Toujours utiliser `lngLatToWorld` et `worldToLngLat` pour toute conversion spatiale.
+- **Stabilité :** Ne pas modifier la logique de positionnement des tuiles sans tester l'alignement aux bords (Gaps).
 
-## 🌐 Services Externes
+## 🌐 Services
 
-- **MapTiler :** Fournisseur unique de tuiles (Terrain-RGB et Satellite).
-- **SunCalc :** Utilisé pour la précision astronomique.
+- **MapTiler :** Terrain-RGB v2 et Swisstopo.
+- **SunCalc :** Précision solaire.
 
 ---
-En cas de modification structurelle, mettre à jour ce fichier.
+Dernière mise à jour : v2.5 stable.
