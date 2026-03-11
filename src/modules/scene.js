@@ -136,15 +136,16 @@ export async function initScene() {
     state.sunLight.castShadow = state.SHADOWS;
     state.sunLight.shadow.mapSize.width = 4096;
     state.sunLight.shadow.mapSize.height = 4096;
-    const d = 20000; 
+    const d = 40000; // Augmenté à 40km pour englober les sommets environnants
     state.sunLight.shadow.camera.left = -d;
     state.sunLight.shadow.camera.right = d;
     state.sunLight.shadow.camera.top = d;
     state.sunLight.shadow.camera.bottom = -d;
-    state.sunLight.shadow.camera.near = 100;
-    state.sunLight.shadow.camera.far = 100000;
-    state.sunLight.shadow.bias = -0.0002;
+    state.sunLight.shadow.camera.near = 1000;
+    state.sunLight.shadow.camera.far = 300000; // Augmenté pour voir le soleil très haut
+    state.sunLight.shadow.bias = -0.0001; // Bias plus faible pour plus de précision au sol
     state.scene.add(state.sunLight);
+    state.scene.add(state.sunLight.target); // Très important pour que le soleil pointe vers sa cible
 
     await loadTerrain();
     updateSunPosition(720); 

@@ -92,13 +92,25 @@ export function updateSunPosition(minutes) {
         ambientIntensity = 0.05 + (moonIllum.fraction * 0.05);
     }
 
-    const distance = 40000;
+    const distance = 150000; // 150km au lieu de 40km
     const sunVector = new THREE.Vector3();
     sunVector.x = distance * Math.cos(finalPhi) * -Math.sin(finalAz);
     sunVector.y = distance * Math.sin(finalPhi);
     sunVector.z = distance * Math.cos(finalPhi) * Math.cos(finalAz);
 
-    state.sunLight.position.copy(sunVector);
+    // --- CORRECTION V3 : Le soleil suit la caméra mais de très haut ---
+    if (state.controls && state.controls.target) {
+        state.sunLight.position.set(
+            state.controls.target.x + sunVector.x,
+            state.controls.target.y + sunVector.y,
+            state.controls.target.z + sunVector.z
+        );
+        state.sunLight.target.position.copy(state.controls.target);
+        state.sunLight.target.updateMatrixWorld();
+    } else {
+        state.sunLight.position.copy(sunVector);
+    }
+
     state.sunLight.intensity = sunIntensity;
     state.sunLight.color.copy(sunColor);
     if (state.ambientLight) state.ambientLight.intensity = ambientIntensity;

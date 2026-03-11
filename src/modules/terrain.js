@@ -135,14 +135,7 @@ export class Tile {
         const uvs = geometry.attributes.uv.array;
         for (let i = 1; i < uvs.length; i += 2) uvs[i] = 1.0 - uvs[i];
 
-        const material = new THREE.MeshStandardMaterial({ 
-            map: this.colorTex, 
-            roughness: 1.0, 
-            metalness: 0.0, 
-            transparent: true, 
-            opacity: this.mesh ? 1 : 0 
-        });
-
+        const material = new THREE.MeshStandardMaterial({ map: this.colorTex, roughness: 1.0, metalness: 0.0, transparent: true, opacity: this.mesh ? 1 : 0 });
         material.onBeforeCompile = (shader) => {
             shader.uniforms.uElevationMap = { value: this.elevationTex };
             shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
@@ -153,10 +146,23 @@ export class Tile {
         };
 
         this.mesh = new THREE.Mesh(geometry, material);
-        // On descend les tuiles d'horizon de 100m pour être sûr qu'elles ne polluent pas le centre
         this.mesh.position.set(this.worldX, this.zoom <= 10 ? -100 : 0, this.worldZ); 
-        this.mesh.renderOrder = this.zoom; // Les tuiles de précision (Z14) se dessinent après les tuiles d'horizon (Z9)
+        this.mesh.renderOrder = this.zoom; 
         
+        // --- ACTIVATION DES OMBRES SUR CHAQUE TUILE ---
+        this.mesh.castShadow = true;
+        this.mesh.receiveShadow = true;
+
+        // --- MATÉRIAU DE PROFONDEUR PERSONNALISÉ POUR LES OMBRES ---
+        this.mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
+        this.mesh.customDepthMaterial.onBeforeCompile = (shader) => {
+            shader.uniforms.uElevationMap = { value: this.elevationTex };
+            shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
+            shader.uniforms.uTileSize = { value: this.tileSizeMeters };
+            shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${terrainVertexInjection.header}`);
+            shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${terrainVertexInjection.position}`);
+        };
+
         state.scene.add(this.mesh);
         this.currentResolution = resolution;
         if (!oldMesh) { this.opacity = 0; this.isFadingIn = true; } else { state.scene.remove(oldMesh); }
@@ -175,6 +181,7 @@ export class Tile {
             state.scene.remove(this.mesh);
             this.mesh.geometry.dispose();
             this.mesh.material.dispose();
+            if (this.mesh.customDepthMaterial) this.mesh.customDepthMaterial.dispose();
             this.mesh = null;
         }
     }
@@ -262,8 +269,8 @@ function calculateTargetLOD(tile, camX, camZ) {
     const dz = tile.worldZ - camZ;
     const dist = Math.sqrt(dx * dx + dz * dz);
     const tileSize = tile.tileSizeMeters;
-    if (dist < tileSize * 1.5) return state.RESOLUTION; 
-    if (dist < tileSize * 3.0) return Math.floor(state.RESOLUTION / 2); 
+    if (dist < tileSize * 1.2) return state.RESOLUTION; 
+    if (dist < tileSize * 2.5) return Math.floor(state.RESOLUTION / 2); 
     return Math.floor(state.RESOLUTION / 4); 
 }
 
@@ -272,7 +279,6 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
     const currentGPS = worldToLngLat(worldX || 0, worldZ || 0);
     const keptTiles = new Set();
 
-    // --- COUCHE 1 : DÉTAIL (Z12-Z14) ---
     const zoom = state.ZOOM;
     const tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
     const txCenter = Math.floor((currentGPS.lon + 180) / 360 * Math.pow(2, zoom));
@@ -298,17 +304,12 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
         }
     }
 
-    // --- COUCHE 2 : HORIZON (Z9) AVEC TROU CENTRAL ---
     const hZoom = 9;
     const hTX = Math.floor((currentGPS.lon + 180) / 360 * Math.pow(2, hZoom));
     const hTY = Math.floor((1 - Math.log(Math.tan(currentGPS.lat * Math.PI / 180) + 1 / Math.cos(currentGPS.lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, hZoom));
-    
     for (let dy = -2; dy <= 2; dy++) {
         for (let dx = -2; dx <= 2; dx++) {
-            // SI C'EST LA TUILE CENTRALE (Celle où on se trouve), ON LA SAUTE
-            // Elle est couverte par les tuiles de précision (Z12-14)
             if (dx === 0 && dy === 0) continue;
-
             const tx = hTX + dx, ty = hTY + dy, key = `${tx}_${ty}_${hZoom}`;
             keptTiles.add(key);
             let tile = activeTiles.get(key);
