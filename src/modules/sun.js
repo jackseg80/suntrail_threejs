@@ -3,7 +3,7 @@ import SunCalc from 'suncalc';
 import { state } from './state.js';
 
 export function updateSunPosition(minutes) {
-    if (!state.sunLight) return;
+    if (!state.sunLight || isNaN(minutes)) return;
     
     const totalMinutes = Math.floor(minutes);
     const hours = Math.floor(totalMinutes / 60);

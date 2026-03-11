@@ -16,6 +16,10 @@ export const state = {
     MAP_SOURCE: 'swisstopo', 
     FOG_DENSITY: 0.00001, 
     
+    // Animation temporelle
+    isAnimating: false,
+    animationSpeed: 1.0, 
+    
     // Position initiale
     initialLat: 46.6863,
     initialLon: 7.6617,
@@ -28,5 +32,10 @@ export const state = {
     controls: null,
     sunLight: null,
     ambientLight: null,
-    terrainMesh: null
+    sky: null,
+    rawGpxData: null,
+    gpxPoints: [],
+    gpxMesh: null,
+    trailProgress: 0,
+    isFollowingTrail: false
 };
