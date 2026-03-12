@@ -14,10 +14,10 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Marqueur de Profil :** Pastille bleu cyan lumineuse, agrandie et surélevée de 20m pour rester visible au-dessus du tracé.
 - **Stabilité LOD :** Recalcul dynamique des positions monde lors des changements de niveau de détail ou de recentrage.
 
-### 🐞 Corrections
-- **Précision Altimétrique :** Refonte de la récupération de l'altitude au clic. Utilisation directe des données `pixelData` au lieu d'un canvas temporaire, supprimant les erreurs de lecture sur les hauts plateaux.
-- **Cache de Terrain :** Correction d'une corruption de données qui causait l'affichage de tuiles noires.
-- **Sécurité Swisstopo :** Gestion robuste des textures vides ou manquantes.
+### 🛠️ Qualité & Maintenance
+- **Refonte des Tests :** Suite de 34 tests validés couvrant le picking, la sonde solaire et le profil d'altitude.
+- **Correction TypeScript :** Résolution des erreurs de types et nettoyage des imports inutilisés pour un build de production propre.
+- **Ray-marching CPU :** Implémentation d'un algorithme haute précision (~6m) pour le picking altitude, contournant les limites du Raycaster natif.
 
 ## [3.9.1] - 2026-03-12
 ### ✨ Ajouté
