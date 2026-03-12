@@ -266,8 +266,6 @@ export class Tile {
             showToast(`Optimisation Relief : ${resolution}²`);
         }
         
-        // Utilisation du cache de géométries (v3.6.1)
-        // La géométrie a déjà la taille tileSizeMeters, donc PAS besoin de mesh.scale
         const geometry = getPlaneGeometry(resolution, this.tileSizeMeters);
         
         const material = new THREE.MeshStandardMaterial({ 
@@ -275,35 +273,20 @@ export class Tile {
             roughness: 1.0, 
             metalness: 0.0, 
             transparent: true, 
-            opacity: oldMesh ? 1 : 0 // Évite le flash blanc si la tuile existe déjà
+            opacity: 0 // On commence toujours à 0 pour un fondu propre
         });
 
+        // ... (onBeforeCompile identique)
         material.onBeforeCompile = (shader) => {
             shader.uniforms.uElevationMap = { value: this.elevationTex };
             shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
             shader.uniforms.uTileSize = { value: this.tileSizeMeters };
-            
             shader.uniforms.uOverlayMap = { value: this.overlayTex || null };
             shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
-
             shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${terrainVertexInjection.header}`);
             shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n${terrainVertexInjection.normal}`);
             shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${terrainVertexInjection.position}`);
-
-            shader.fragmentShader = `
-                uniform sampler2D uOverlayMap;
-                uniform bool uHasOverlay;
-                ${shader.fragmentShader}
-            `.replace(
-                '#include <map_fragment>',
-                `
-                #include <map_fragment>
-                if (uHasOverlay) {
-                    vec4 overlayCol = texture2D(uOverlayMap, vMapUv);
-                    diffuseColor.rgb = mix(diffuseColor.rgb, overlayCol.rgb, overlayCol.a);
-                }
-                `
-            );
+            shader.fragmentShader = `uniform sampler2D uOverlayMap; uniform bool uHasOverlay; ${shader.fragmentShader}`.replace('#include <map_fragment>', `#include <map_fragment>\nif (uHasOverlay) { vec4 overlayCol = texture2D(uOverlayMap, vMapUv); diffuseColor.rgb = mix(diffuseColor.rgb, overlayCol.rgb, overlayCol.a); }`);
         };
 
         this.mesh = new THREE.Mesh(geometry, material);
@@ -312,6 +295,7 @@ export class Tile {
         this.mesh.castShadow = this.mesh.receiveShadow = true;
 
         this.mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
+        // ... (customDepthMaterial onBeforeCompile)
         this.mesh.customDepthMaterial.onBeforeCompile = (shader) => {
             shader.uniforms.uElevationMap = { value: this.elevationTex };
             shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
@@ -323,10 +307,17 @@ export class Tile {
         if (state.scene) state.scene.add(this.mesh);
         this.currentResolution = resolution;
 
+        // --- TRANSITION FLUIDE (v3.6.3) ---
         if (oldMesh) {
-            if (state.scene) state.scene.remove(oldMesh);
-            if (oldMesh.material instanceof THREE.Material) oldMesh.material.dispose();
-            if (oldMesh.customDepthMaterial) oldMesh.customDepthMaterial.dispose();
+            // On garde l'ancien maillage temporairement le temps que le nouveau apparaisse
+            this.opacity = 0;
+            this.isFadingIn = true;
+            // On programme la suppression de l'ancien maillage après le fondu (0.5s)
+            setTimeout(() => {
+                if (state.scene) state.scene.remove(oldMesh);
+                if (oldMesh.material instanceof THREE.Material) oldMesh.material.dispose();
+                if (oldMesh.customDepthMaterial) oldMesh.customDepthMaterial.dispose();
+            }, 500);
         } else {
             this.opacity = 0;
             this.isFadingIn = true;
