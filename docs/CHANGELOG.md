@@ -4,6 +4,30 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [3.6.0] - 2026-03-12 (L'Intelligence Adaptative)
+### Ajouté
+- **Auto-Performance (GPU Detection) :** Nouveau module `performance.ts` détectant le GPU via WebGL pour adapter les réglages au matériel.
+- **Presets de Performance :** Introduction de 4 profils (Éco, Standard, High, Ultra) simplifiant l'expérience utilisateur.
+- **Mode Expert :** Transition automatique en profil "Custom" lors de la manipulation manuelle des réglages.
+- **Mise à jour UI :** Intégration de boutons de presets rapides dans le panneau latéral.
+
+### Changé
+- **LOD & Shadows :** Paramétrage granulaire des résolutions de maillage et d'ombres par profil de performance.
+
+---
+
+## [3.5.1] - 2026-03-12 (Qualité & Organisation)
+### Ajouté
+- **Tests Automatisés :** Mise en place d'une suite de 28 tests unitaires et d'intégration avec **Vitest** et **JSDOM**.
+- **Couverture Critique :** Validation des calculs GPS, cycles solaires, import GPX et décodage d'altitude RGB.
+- **CI/CD Robuste :** Intégration des tests dans le workflow GitHub Actions (blocage du déploiement en cas d'erreur).
+
+### Changé
+- **Restructuration Pro :** Réorganisation complète du projet (Dossiers `/src`, `/docs`, `/public`).
+- **Standardisation :** Séparation du code source, de la documentation et des assets statiques.
+
+---
+
 ## [3.5.0] - 2026-03-12 (L'Ère de la Stabilité)
 ### Ajouté
 - **Migration TypeScript :** Refonte totale de la structure logicielle (.js -> .ts). Typage strict de l'état global et des interfaces Three.js.

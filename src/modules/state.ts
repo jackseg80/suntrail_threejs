@@ -3,6 +3,47 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 
+export type PresetType = 'eco' | 'balanced' | 'performance' | 'ultra' | 'custom';
+
+export interface PerformanceSettings {
+    RESOLUTION: number;
+    RANGE: number;
+    SHADOWS: boolean;
+    SHADOW_RES: number;
+    PIXEL_RATIO_LIMIT: number;
+}
+
+export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings> = {
+    eco: {
+        RESOLUTION: 64,
+        RANGE: 2,
+        SHADOWS: false,
+        SHADOW_RES: 512,
+        PIXEL_RATIO_LIMIT: 1.0
+    },
+    balanced: {
+        RESOLUTION: 128,
+        RANGE: 4,
+        SHADOWS: true,
+        SHADOW_RES: 1024,
+        PIXEL_RATIO_LIMIT: 1.2
+    },
+    performance: {
+        RESOLUTION: 192,
+        RANGE: 6,
+        SHADOWS: true,
+        SHADOW_RES: 2048,
+        PIXEL_RATIO_LIMIT: 1.5
+    },
+    ultra: {
+        RESOLUTION: 256,
+        RANGE: 8,
+        SHADOWS: true,
+        SHADOW_RES: 4096,
+        PIXEL_RATIO_LIMIT: window.devicePixelRatio
+    }
+};
+
 export interface State {
     MK: string;
     simDate: Date;
@@ -11,6 +52,7 @@ export interface State {
     ZOOM: number;
     
     // Paramètres de Performance
+    PERFORMANCE_PRESET: PresetType;
     RESOLUTION: number;
     RANGE: number;
     SHADOWS: boolean;
@@ -56,11 +98,12 @@ export const state: State = {
     ZOOM: 13, 
     
     // Paramètres de Performance
-    RESOLUTION: 128, 
-    RANGE: 4,        
-    SHADOWS: true,   
-    SHADOW_RES: 2048, 
-    PIXEL_RATIO_LIMIT: window.devicePixelRatio > 1.5 ? 1.5 : window.devicePixelRatio,
+    PERFORMANCE_PRESET: 'balanced',
+    RESOLUTION: PRESETS.balanced.RESOLUTION, 
+    RANGE: PRESETS.balanced.RANGE,        
+    SHADOWS: PRESETS.balanced.SHADOWS,   
+    SHADOW_RES: PRESETS.balanced.SHADOW_RES, 
+    PIXEL_RATIO_LIMIT: PRESETS.balanced.PIXEL_RATIO_LIMIT,
     RELIEF_EXAGGERATION: 1.4, 
     SHOW_TRAILS: true, 
     MAP_SOURCE: 'swisstopo', 

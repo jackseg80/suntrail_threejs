@@ -7,8 +7,13 @@ import { updateSunPosition } from './sun';
 import { initScene } from './scene';
 import { updateVisibleTiles, activeTiles, lngLatToTile, worldToLngLat, resetTerrain, updateGPXMesh } from './terrain';
 import { isPositionInSwitzerland } from './utils';
+import { applyPreset, detectBestPreset } from './performance';
 
 export function initUI(): void {
+    // --- DÉTECTION PERFORMANCE (v3.6) ---
+    const bestPreset = detectBestPreset();
+    applyPreset(bestPreset);
+
     const s1 = localStorage.getItem('maptiler_key_3d');
     const k1 = document.getElementById('k1') as HTMLInputElement;
     if (s1 && k1) k1.value = s1;
@@ -25,6 +30,16 @@ export function initUI(): void {
 
     if (settingsToggle && panel) settingsToggle.addEventListener('click', () => panel.classList.add('open'));
     if (closePanel && panel) closePanel.addEventListener('click', () => panel.classList.remove('open'));
+
+    // --- PRESETS PERFORMANCE (v3.6) ---
+    const presetButtons = document.querySelectorAll('.preset-btn');
+    presetButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const preset = btn.getAttribute('data-preset') as any;
+            applyPreset(preset);
+            refreshTerrain();
+        });
+    });
 
     // --- SÉLECTEUR DE CALQUES (VIGNETTES) ---
     const layerBtn = document.getElementById('layer-btn');
@@ -222,6 +237,7 @@ export function initUI(): void {
     if (resSlider) {
         resSlider.addEventListener('change', async (e: Event) => {
             const target = e.target as HTMLInputElement;
+            applyPreset('custom');
             state.RESOLUTION = parseInt(target.value);
             const resDisp = document.getElementById('res-disp');
             if (resDisp) resDisp.textContent = state.RESOLUTION.toString();
@@ -233,6 +249,7 @@ export function initUI(): void {
     if (rangeSlider) {
         rangeSlider.addEventListener('change', async (e: Event) => {
             const target = e.target as HTMLInputElement;
+            applyPreset('custom');
             state.RANGE = parseInt(target.value);
             const rangeDisp = document.getElementById('range-disp');
             if (rangeDisp) rangeDisp.textContent = state.RANGE.toString();
@@ -244,6 +261,7 @@ export function initUI(): void {
     if (exagSlider) {
         exagSlider.addEventListener('change', async (e: Event) => {
             const target = e.target as HTMLInputElement;
+            // Note: Exaggeration is not part of performance presets, so we don't trigger 'custom'
             state.RELIEF_EXAGGERATION = parseFloat(target.value);
             const exagDisp = document.getElementById('exag-disp');
             if (exagDisp) exagDisp.textContent = state.RELIEF_EXAGGERATION.toFixed(1);
@@ -266,6 +284,7 @@ export function initUI(): void {
     if (shadowToggle) {
         shadowToggle.addEventListener('change', (e: Event) => {
             const target = e.target as HTMLInputElement;
+            applyPreset('custom');
             state.SHADOWS = target.checked;
             if (state.sunLight) state.sunLight.castShadow = state.SHADOWS;
         });

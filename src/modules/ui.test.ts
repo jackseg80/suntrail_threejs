@@ -13,6 +13,10 @@ vi.mock('@capacitor/geolocation', () => ({
 
 // Mock other modules to avoid circular dependencies in tests
 vi.mock('./scene', () => ({ initScene: vi.fn() }));
+vi.mock('./performance', () => ({ 
+    applyPreset: vi.fn(),
+    detectBestPreset: vi.fn(() => 'balanced')
+}));
 vi.mock('./terrain', () => ({ 
     updateVisibleTiles: vi.fn(),
     resetTerrain: vi.fn(),
@@ -35,6 +39,13 @@ describe('ui.ts', () => {
             <input id="gpx-upload" type="file" />
             <input id="trail-follow-toggle" type="checkbox" />
             <div id="toast-container"></div>
+            <div id="res-disp"></div>
+            <div id="range-disp"></div>
+            <input id="res-slider" type="range" />
+            <input id="range-slider" type="range" />
+            <input id="shadow-toggle" type="checkbox" />
+            <button class="preset-btn" data-preset="eco"></button>
+            <button class="preset-btn" data-preset="balanced"></button>
         `;
         localStorage.clear();
     });

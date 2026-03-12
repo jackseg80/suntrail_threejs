@@ -97,7 +97,15 @@
     </div>
 
     <div class="control-group">
-        <label style="font-size:12px; color:var(--t2); text-transform:uppercase;">Maillage (LOD)</label>
+        <label style="font-size:12px; color:var(--gold); text-transform:uppercase; letter-spacing:1px; margin-bottom:15px; display:block;">Profil de Performance</label>
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; margin-bottom:20px;">
+            <button class="preset-btn" data-preset="eco">Éco</button>
+            <button class="preset-btn" data-preset="balanced">Standard</button>
+            <button class="preset-btn" data-preset="performance">High</button>
+            <button class="preset-btn" data-preset="ultra">Ultra</button>
+        </div>
+        
+        <label style="font-size:12px; color:var(--t2); text-transform:uppercase; margin-bottom:10px; display:block;">Réglages Expert</label>
         <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;">
             <span>Densité : <span id="res-disp">128</span></span>
             <span>Portée : <span id="range-disp">4</span></span>

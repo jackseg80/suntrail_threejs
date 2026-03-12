@@ -2,12 +2,16 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
-## 🏁 En cours (v3.5.x)
-- [x] Migration complète vers TypeScript.
-- [x] Optimisation de la mémoire GPU (disposeScene).
-- [x] Heures Magiques (Dorée/Bleue).
-- [x] Réorganisation pro du projet (src/, docs/, public/).
+## 🏁 En cours (v3.6.x)
+- [x] Détection automatique du GPU (Performance Presets).
+- [x] Organisation Pro du projet (Dossiers /src, /docs, /public).
+- [x] Suite de tests automatisés (Vitest).
 - [ ] Ajouter une boussole 3D en bas de l'écran.
+
+## 🚀 Prochaine version (v3.7)
+- [ ] Graphique d'élévation dynamique pour les fichiers GPX.
+- [ ] Partage de capture d'écran du rendu 3D.
+- [ ] Mode sombre/clair synchronisé avec le système.
 
 ## 🌟 Version 4.0 - Réalité Augmentée & Offline
 - [ ] **Mode Hors-ligne (Offline Zones)** : Sélectionner et télécharger une zone de terrain (textures + élévation) pour un usage sans réseau.
