@@ -281,12 +281,28 @@ export class Tile {
             shader.uniforms.uElevationMap = { value: this.elevationTex };
             shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
             shader.uniforms.uTileSize = { value: this.tileSizeMeters };
+            
             shader.uniforms.uOverlayMap = { value: this.overlayTex || null };
             shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
+
             shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${terrainVertexInjection.header}`);
             shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n${terrainVertexInjection.normal}`);
             shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${terrainVertexInjection.position}`);
-            shader.fragmentShader = `uniform sampler2D uOverlayMap; uniform bool uHasOverlay; ${shader.fragmentShader}`.replace('#include <map_fragment>', `#include <map_fragment>\nif (uHasOverlay) { vec4 overlayCol = texture2D(uOverlayMap, vMapUv); diffuseColor.rgb = mix(diffuseColor.rgb, overlayCol.rgb, overlayCol.a); }`);
+
+            shader.fragmentShader = `
+                uniform sampler2D uOverlayMap;
+                uniform bool uHasOverlay;
+                ${shader.fragmentShader}
+            `.replace(
+                '#include <map_fragment>',
+                `
+                #include <map_fragment>
+                if (uHasOverlay) {
+                    vec4 overlayCol = texture2D(uOverlayMap, vMapUv);
+                    diffuseColor.rgb = mix(diffuseColor.rgb, overlayCol.rgb, overlayCol.a);
+                }
+                `
+            );
         };
 
         this.mesh = new THREE.Mesh(geometry, material);
