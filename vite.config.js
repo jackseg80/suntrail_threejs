@@ -9,7 +9,17 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
-    // Désactiver le multithreading pour stabiliser JSDOM en CI si besoin
-    threads: false, 
+    environmentOptions: {
+      jsdom: {
+        url: 'http://localhost/'
+      }
+    },
+    // Nouvelle façon de configurer les threads dans Vitest
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true
+      }
+    }
   }
 });

@@ -90,16 +90,8 @@ export interface State {
     isFollowingTrail: boolean;
 }
 
-function getInitialKey(): string {
-    try {
-        return localStorage.getItem('maptiler_key_3d') || '';
-    } catch (e) {
-        return '';
-    }
-}
-
 export const state: State = {
-    MK: getInitialKey(),
+    MK: '', // Sera initialisé dans initUI ou au besoin
     simDate: new Date(),
     TARGET_LAT: 46.6863, // Spiez
     TARGET_LON: 7.6617,

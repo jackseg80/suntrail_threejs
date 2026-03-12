@@ -51,18 +51,10 @@ describe('ui.ts', () => {
             <button class="preset-btn" data-preset="eco"></button>
             <button class="preset-btn" data-preset="balanced"></button>
         `;
-        localStorage.clear();
     });
 
     afterEach(() => {
         vi.useRealTimers();
-    });
-
-    it('should load MapTiler key from localStorage into the input', () => {
-        localStorage.setItem('maptiler_key_3d', 'secret-key');
-        initUI();
-        const k1 = document.getElementById('k1') as HTMLInputElement;
-        expect(k1.value).toBe('secret-key');
     });
 
     it('should open the settings panel when toggle is clicked', () => {

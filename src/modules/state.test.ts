@@ -4,7 +4,6 @@ import { state } from './state';
 describe('state.ts', () => {
     beforeEach(() => {
         vi.useFakeTimers();
-        localStorage.clear();
     });
 
     afterEach(() => {
@@ -14,13 +13,6 @@ describe('state.ts', () => {
     it('should have a default TARGET_LAT and TARGET_LON (Spiez)', () => {
         expect(state.TARGET_LAT).toBe(46.6863);
         expect(state.TARGET_LON).toBe(7.6617);
-    });
-
-    it('should initialize MK from localStorage', () => {
-        localStorage.setItem('maptiler_key_3d', 'test-key');
-        // Simuler la ré-initialisation
-        state.MK = localStorage.getItem('maptiler_key_3d') || '';
-        expect(state.MK).toBe('test-key');
     });
 
     it('should have initial three.js instances as null', () => {
