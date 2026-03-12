@@ -24,13 +24,22 @@ Pour plus de détails sur le développement mobile, consultez le [Guide Android]
 3. `npm run dev` (Web) ou `npm run deploy` (Android).
 4. Entrez votre clé API MapTiler au lancement.
 
+## 🧪 Tests & Qualité
+Le projet intègre une suite de tests unitaires et d'intégration complète avec **Vitest** pour garantir la fiabilité des calculs cartographiques et astronomiques.
+
+- **Couverture :** 28 tests validés (Terrain, Sun, UI, Utils).
+- **CI/CD :** Validation automatique des tests avant chaque déploiement GitHub Pages.
+- **Détails :** Consultez le [Guide des Tests](./TESTS.md).
+
 ## ⚙️ Technologies
 - **Moteur :** Three.js (WebGL) + TypeScript
+- **Tests :** Vitest + JSDOM
 - **Plateforme :** Capacitor (Hybride Natif)
 - **Données :** MapTiler Cloud & Swisstopo
 - **Calculs :** SunCalc (Astronomie)
 
 ## 📄 Documentation
+- [Guide des Tests](./TESTS.md)
 - [Historique des versions (Changelog)](./CHANGELOG.md)
 - [Feuille de route (TODO)](./TODO.md)
 - [Guide Développeur](./CLAUDE.md)
