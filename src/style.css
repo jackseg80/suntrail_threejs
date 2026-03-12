@@ -201,6 +201,8 @@ input[type="range"] { accent-color: var(--accent); }
     #layer-menu { top: 70px; right: 15px; width: calc(100% - 30px); max-width: 320px; }
     #bottom-bar { width: calc(100% - 30px); padding: 10px 15px; }
     #panel { width: 85%; }
+    #zoom-indicator { bottom: 140px; } 
+    #compass-canvas { bottom: 140px; right: 15px; width: 100px; height: 100px; } /* Position mobile corrigée */
 }
 
 /* --- BOUSSOLE NATIVE CANVAS (v3.8.2) --- */

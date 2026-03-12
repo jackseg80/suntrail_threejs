@@ -10,7 +10,7 @@ import { loadTerrain, updateVisibleTiles, lngLatToTile, worldToLngLat, repositio
 import { autoSelectMapSource } from './ui';
 import { throttle, isMobileDevice } from './utils';
 
-// --- BOUSSOLE 3D NATIVE SECONDAIRE (v3.8.2) ---
+// --- BOUSSOLE 3D NATIVE SECONDAIRE (v3.8.3) ---
 let compassScene: THREE.Scene;
 let compassCamera: THREE.PerspectiveCamera;
 let compassRenderer: THREE.WebGLRenderer;
@@ -22,17 +22,18 @@ function initCompass() {
 
     compassScene = new THREE.Scene();
     compassCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-    compassCamera.position.set(0, 0, 18); // Recul augmenté pour éviter les coupures (v3.8.2)
+    compassCamera.position.set(0, 0, 18); // Recul pour visibilité totale
 
     compassRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    compassRenderer.setSize(120, 120);
     compassRenderer.setPixelRatio(window.devicePixelRatio);
+    // La taille est gérée par le CSS, mais on l'initialise ici
+    compassRenderer.setSize(120, 120);
 
     compassObject = new THREE.Group();
 
     // Aiguille Nord (Rouge Fluo)
     const geoNorth = new THREE.ConeGeometry(1, 2.5, 16);
-    const matNorth = new THREE.MeshBasicMaterial({ color: 0xff3333 });
+    const matNorth = new THREE.MeshBasicMaterial({ color: 0xff0000 });
     const north = new THREE.Mesh(geoNorth, matNorth);
     north.position.y = 1.25;
     compassObject.add(north);
@@ -46,8 +47,8 @@ function initCompass() {
     compassObject.add(south);
 
     // Anneau de base
-    const geoRing = new THREE.TorusGeometry(3.2, 0.05, 8, 64);
-    const matRing = new THREE.MeshBasicMaterial({ color: 0x666666, transparent: true, opacity: 0.5 });
+    const geoRing = new THREE.TorusGeometry(3.2, 0.1, 8, 64);
+    const matRing = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2 });
     const ring = new THREE.Mesh(geoRing, matRing);
     ring.rotation.x = Math.PI / 2;
     compassObject.add(ring);
@@ -60,7 +61,7 @@ function initCompass() {
         if (ctx) {
             ctx.font = 'Bold 90px DM Sans, Arial';
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.strokeStyle = '#000000'; ctx.lineWidth = 14; ctx.strokeText(text, 64, 64);
+            ctx.strokeStyle = '#000000'; ctx.lineWidth = 16; ctx.strokeText(text, 64, 64);
             ctx.fillStyle = color; ctx.fillText(text, 64, 64);
         }
         const tex = new THREE.CanvasTexture(ctxCanvas);
@@ -70,10 +71,10 @@ function initCompass() {
         compassObject.add(sprite);
     };
 
-    createLetter('N', '#ff3333', new THREE.Vector3(0, 5.2, 0));
+    createLetter('N', '#ff0000', new THREE.Vector3(0, 5.2, 0));
     createLetter('S', '#ffffff', new THREE.Vector3(0, -5.2, 0));
-    createLetter('E', '#bbbbbb', new THREE.Vector3(5.2, 0, 0));
-    createLetter('O', '#bbbbbb', new THREE.Vector3(-5.2, 0, 0));
+    createLetter('E', '#ffffff', new THREE.Vector3(5.2, 0, 0));
+    createLetter('O', '#ffffff', new THREE.Vector3(-5.2, 0, 0));
 
     compassScene.add(compassObject);
     compassScene.add(new THREE.AmbientLight(0xffffff, 1.5));
@@ -118,6 +119,8 @@ export async function initScene(): Promise<void> {
     state.renderer.toneMapping = THREE.AgXToneMapping;
     container.appendChild(state.renderer.domElement);
 
+    const mobile = isMobileDevice();
+
     state.stats = new Stats();
     state.stats.showPanel(0);
     const vramPanel = state.stats.addPanel(new Stats.Panel('GPU', '#ff8', '#221'));
@@ -125,7 +128,8 @@ export async function initScene(): Promise<void> {
     state.stats.showPanel(3);
     
     container.appendChild(state.stats.dom);
-    state.stats.dom.style.top = '20px'; state.stats.dom.style.left = '80px';
+    state.stats.dom.style.top = mobile ? '80px' : '20px'; 
+    state.stats.dom.style.left = mobile ? '20px' : '80px';
     state.stats.dom.style.bottom = 'auto'; state.stats.dom.style.right = 'auto';
 
     initCompass();
@@ -138,7 +142,6 @@ export async function initScene(): Promise<void> {
     state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 150000);
     state.camera.position.set(0, 12000, 15000); 
 
-    const mobile = isMobileDevice();
     state.controls = mobile ? new OrbitControls(state.camera, state.renderer.domElement) : new MapControls(state.camera, state.renderer.domElement);
     if (mobile) (state.controls as OrbitControls).enablePan = true;
 
@@ -226,10 +229,9 @@ export async function initScene(): Promise<void> {
             }
         }
 
-        // --- RENDU SCÈNE PRINCIPALE ---
+        // --- RENDU FINAL (v3.8.3) ---
         state.renderer.render(state.scene, state.camera);
 
-        // --- RENDU BOUSSOLE 3D (Second Renderer) ---
         if (compassObject && state.camera && compassRenderer) {
             compassObject.quaternion.copy(state.camera.quaternion);
             compassRenderer.render(compassScene, compassCamera);

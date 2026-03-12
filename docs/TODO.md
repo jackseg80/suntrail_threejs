@@ -2,7 +2,8 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
-## 🏁 En cours (v3.8.2)
+## 🏁 En cours (v3.8.3)
+- [x] Optimisation de l'ergonomie mobile (Stats & Boussole).
 - [x] Boussole 3D Native Multi-Canvas (Finition visuelle et cardinale).
 - [x] Partage de Vue (Deep Linking via URL Hash).
 - [x] Moteur de recherche gratuit (Nominatim).

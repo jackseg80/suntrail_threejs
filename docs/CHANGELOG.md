@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [3.8.3] - 2026-03-12 (Raffinement Mobile)
+### Changé
+- **Ergonomie Mobile :** Repositionnement des statistiques de performance sous le bouton réglages et remontée de la boussole au-dessus de la barre de temps.
+- **Transparence Boussole :** Utilisation d'un second canvas HTML indépendant pour éliminer les zones de découpe et assurer une transparence parfaite sur la carte.
+
+---
+
 ## [3.8.2] - 2026-03-12 (Instrumentation & Partage)
 ### Ajouté
 - **Boussole 3D Native :** Implémentation d'un second renderer Three.js indépendant pour une boussole haute visibilité avec points cardinaux (N, E, S, O).
