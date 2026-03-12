@@ -414,17 +414,20 @@ function initGeocoding(): void {
             if (q.length < 2) { geoResults.style.display = 'none'; return; }
             geoTimer = setTimeout(async () => {
                 try {
-                    const r = await fetch(`https://api.maptiler.com/geocoding/${encodeURIComponent(q)}.json?key=${state.MK}&language=fr&limit=6`);
+                    // Passage à Nominatim (OpenStreetMap) - Gratuit et illimité
+                    const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=6&addressdetails=1`);
                     const data = await r.json();
-                    if (!data.features || !data.features.length) { geoResults.style.display = 'none'; return; }
+                    if (!data || !data.length) { geoResults.style.display = 'none'; return; }
+                    
                     geoResults.innerHTML = '';
-                    data.features.forEach((f: any) => {
+                    data.forEach((f: any) => {
                         const item = document.createElement('div');
                         item.style.cssText = 'padding:15px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.05);';
-                        const name = f.text || f.place_name || '';
-                        item.innerHTML = `<div style="color:white; font-weight:500">${name}</div><div style="color:var(--t2); font-size:12px;">${f.place_name || ''}</div>`;
+                        const name = f.display_name.split(',')[0];
+                        item.innerHTML = `<div style="color:white; font-weight:500">${name}</div><div style="color:var(--t2); font-size:12px;">${f.display_name}</div>`;
                         item.addEventListener('click', async () => {
-                            const [lng, lat] = f.center || f.geometry.coordinates;
+                            const lat = parseFloat(f.lat);
+                            const lng = parseFloat(f.lon);
                             geoResults.style.display = 'none';
                             geoInput.value = name;
                             autoSelectMapSource(lat, lng);
@@ -445,7 +448,7 @@ function initGeocoding(): void {
                     });
                     geoResults.style.display = 'block';
                 } catch (e) { console.warn('Geocoding error:', e); }
-            }, 300);
+            }, 400);
         });
     }
 }

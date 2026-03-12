@@ -4,11 +4,14 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
-## [3.7.1] - 2026-03-12 (Optimisation des Coûts)
+## [3.7.2] - 2026-03-12 (Économie de Quota & Survie)
+### Ajouté
+- **Cache Persistant (Cache API) :** Stockage permanent des tuiles de relief MapTiler sur le disque local. Une zone déjà visitée ne consomme plus **aucune** requête réseau lors des prochaines sessions.
+- **Moteur de Recherche Gratuit :** Migration de MapTiler Geocoding vers **Nominatim (OpenStreetMap)** pour supprimer les coûts liés à la barre de recherche.
+
 ### Changé
-- **Réduction de Portée (Eco-Range) :** Ajustement du `state.RANGE` sur les presets pour limiter la consommation de tuiles MapTiler (économie de ~40% de requêtes).
-- **Cache Local Boosté :** Doublement de la taille du cache LRU (800 tuiles sur PC / 200 sur Mobile) pour minimiser les rechargements réseau.
-- **Optimisation Swisstopo :** Correction de l'URL WMTS pour le calque des pentes et sécurisation du chargement des tuiles.
+- **Réduction de Portée (Eco-Range) :** Ajustement du rayon de chargement des tuiles pour économiser ~40% de requêtes par mouvement.
+- **Cache LRU Boosté :** Augmentation de la mémoire vive allouée aux tuiles (800 tuiles PC / 200 Mobile).
 
 ---
 

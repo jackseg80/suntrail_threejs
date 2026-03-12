@@ -15,7 +15,8 @@ export const activeTiles = new Map<string, Tile>();
 export const activeLabels = new Map<string, any>(); 
 
 const dataCache = new Map<string, CachedData>();
-const MAX_CACHE_SIZE = isMobileDevice() ? 200 : 800; // Doublé (v3.7.1)
+const MAX_CACHE_SIZE = isMobileDevice() ? 200 : 800; 
+
 // --- CACHE DE GÉOMÉTRIES ---
 const geometryCache = new Map<string, THREE.PlaneGeometry>();
 
@@ -119,6 +120,36 @@ const terrainVertexInjection = {
     position: `transformed.y = getTerrainHeight(uv);`
 };
 
+// --- SYSTÈME DE CACHE PERSISTANT (v3.7.2) ---
+const CACHE_NAME = 'suntrail-tiles-v1';
+
+async function fetchWithCache(url: string, usePersistentCache: boolean = false): Promise<Blob | null> {
+    if (!usePersistentCache) {
+        try {
+            const r = await fetch(url);
+            return r.ok ? await r.blob() : null;
+        } catch (e) { return null; }
+    }
+
+    try {
+        const cache = await caches.open(CACHE_NAME);
+        const cachedResponse = await cache.match(url);
+        if (cachedResponse) return await cachedResponse.blob();
+
+        const networkResponse = await fetch(url);
+        if (networkResponse.ok) {
+            cache.put(url, networkResponse.clone());
+            return await networkResponse.blob();
+        }
+        return null;
+    } catch (e) {
+        try {
+            const r = await fetch(url);
+            return r.ok ? await r.blob() : null;
+        } catch (err) { return null; }
+    }
+}
+
 export class Tile {
     tx: number; ty: number; zoom: number; key: string;
     status: 'idle' | 'loading' | 'loaded' | 'failed' | 'disposed' = 'idle';
@@ -173,32 +204,23 @@ export class Tile {
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
             return;
         }
-        if ((this.status as string) === 'disposed') return;
+        if (this.status as any === 'disposed') return;
         this.status = 'loading';
         try {
-            // Fonctions de fetch sécurisées (retournent null au lieu de throw)
-            const safeFetchImg = async (url: string) => {
-                try {
-                    const r = await fetch(url);
-                    if (!r.ok) return null;
-                    const b = await r.blob();
-                    return await createImageBitmap(b);
-                } catch (e) { return null; }
-            };
+            const elevBlob = await fetchWithCache(`https://api.maptiler.com/tiles/terrain-rgb-v2/${this.zoom}/${this.tx}/${this.ty}.png?key=${state.MK}`, true);
+            const colorBlob = await fetchWithCache(this.getColorUrl());
+            const trailsBlob = state.SHOW_TRAILS ? await fetchWithCache(this.getOverlayUrl()) : null;
+            const slopesBlob = state.SHOW_SLOPES ? await fetchWithCache(this.getSlopesUrl()) : null;
 
-            const promises = [
-                fetch(`https://api.maptiler.com/tiles/terrain-rgb-v2/${this.zoom}/${this.tx}/${this.ty}.png?key=${state.MK}`)
-                    .then(r => r.blob()).then(b => createImageBitmap(b, { colorSpaceConversion: 'none' })),
-                safeFetchImg(this.getColorUrl()),
-                state.SHOW_TRAILS ? safeFetchImg(this.getOverlayUrl()) : Promise.resolve(null),
-                state.SHOW_SLOPES ? safeFetchImg(this.getSlopesUrl()) : Promise.resolve(null)
-            ];
+            if (this.status as any === 'disposed') return;
+            if (!elevBlob || !colorBlob) { this.status = 'failed'; return; }
 
-            const [imgElev, imgColor, imgOverlay, imgSlopes] = await Promise.all(promises);
-            if ((this.status as string) === 'disposed') return;
-
-            // Le relief et la couleur sont indispensables
-            if (!imgElev || !imgColor) { this.status = 'failed'; return; }
+            const [imgElev, imgColor, imgOverlay, imgSlopes] = await Promise.all([
+                createImageBitmap(elevBlob, { colorSpaceConversion: 'none' }),
+                createImageBitmap(colorBlob),
+                trailsBlob ? createImageBitmap(trailsBlob) : Promise.resolve(null),
+                slopesBlob ? createImageBitmap(slopesBlob) : Promise.resolve(null)
+            ]);
 
             this.elevationTex = new THREE.Texture(imgElev); this.elevationTex.flipY = false; this.elevationTex.needsUpdate = true;
             this.colorTex = new THREE.Texture(imgColor); this.colorTex.flipY = false; this.colorTex.needsUpdate = true;
@@ -221,13 +243,10 @@ export class Tile {
         }
     }
     getOverlayUrl(): string { return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.png`; }
-    getSlopesUrl(): string { 
-        // Identifiant officiel Swisstopo corrigé : underscore avant le 30
-        return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.hangneigung-ueber_30/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.png`;
-    }
+    getSlopesUrl(): string { return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.terrain.hangneigung-ueber_30/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.png`; }
 
     buildMesh(resolution: number): void {
-        if (!this.elevationTex || !this.colorTex || (this.status as string) === 'disposed') return;
+        if (!this.elevationTex || !this.colorTex || this.status as any === 'disposed') return;
         const oldMesh = this.mesh;
         const geometry = getPlaneGeometry(resolution, this.tileSizeMeters);
         const material = new THREE.MeshStandardMaterial({ map: this.colorTex, roughness: 1.0, metalness: 0.0, transparent: true, opacity: 0 });
