@@ -15,7 +15,9 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [ ] Partage de capture d'écran du rendu 3D.
 - [ ] Mode sombre/clair synchronisé avec le système.
 
-## 🌟 Version 4.0 - Réalité Augmentée & Offline
+## 🌟 Version 4.0 - Réalité Augmentée, Offline & Environnement
+- [ ] **Météo Dynamique Temps Réel** : Intégration de données météo en direct (OpenWeather/MeteoBlue).
+- [ ] **Rendu Atmosphérique** : Systèmes de particules pour la pluie/neige et shaders de couverture nuageuse dynamique sur la carte.
 - [ ] **Mode Hors-ligne (Offline Zones)** : Sélectionner et télécharger une zone de terrain (textures + élévation) pour un usage sans réseau.
 - [ ] **Accélération Cache** : Utilisation de l'IndexedDB pour un chargement instantané des zones sauvegardées.
 - [ ] Intégration de WebXR pour le mode AR.
