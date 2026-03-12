@@ -110,7 +110,7 @@ export async function initScene(): Promise<void> {
     
     state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, state.ZOOM);
     state.scene = new THREE.Scene();
-    state.scene.fog = new THREE.FogExp2(0x87CEEB, state.FOG_DENSITY); 
+    state.scene.fog = new THREE.Fog(0x87CEEB, state.FOG_NEAR, state.FOG_FAR); 
 
     state.renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true, alpha: true });
     state.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -141,7 +141,7 @@ export async function initScene(): Promise<void> {
     state.scene.add(sky);
     state.sky = sky;
 
-    state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 150000);
+    state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 250000);
     state.camera.position.set(0, 12000, 15000); 
 
     state.controls = mobile ? new OrbitControls(state.camera, state.renderer.domElement) : new MapControls(state.camera, state.renderer.domElement);
@@ -150,7 +150,7 @@ export async function initScene(): Promise<void> {
     state.controls.enableDamping = true;
     state.controls.dampingFactor = 0.05;
     state.controls.minDistance = 500; 
-    state.controls.maxDistance = 150000; 
+    state.controls.maxDistance = 100000; 
     state.controls.maxPolarAngle = 1.3; 
 
     const updateUIZoom = (zoom: number) => {
@@ -186,6 +186,15 @@ export async function initScene(): Promise<void> {
         } else {
             updateUIZoom(state.ZOOM);
         }
+
+        // --- BROUILLARD ADAPTATIF (v3.9.3) ---
+        // On lie le brouillard à la distance de la caméra pour garder une proportion visuelle constante
+        if (state.scene && state.scene.fog && state.scene.fog instanceof THREE.Fog) {
+            // Le coefficient est basé sur le réglage utilisateur (near)
+            state.scene.fog.near = dist * (state.FOG_NEAR / 5000); 
+            state.scene.fog.far = dist * (state.FOG_FAR / 5000);
+        }
+
         updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, dist, state.controls.target.x, state.controls.target.z);
         const lat = gpsCenter.lat.toFixed(5), lon = gpsCenter.lon.toFixed(5), zoom = state.ZOOM;
         const timeSlider = document.getElementById('time-slider') as HTMLInputElement;

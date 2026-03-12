@@ -308,10 +308,13 @@ export function initUI(): void {
     if (fogSlider) {
         fogSlider.addEventListener('input', (e: Event) => {
             const target = e.target as HTMLInputElement;
-            state.FOG_DENSITY = parseFloat(target.value) / 1000000;
-            if (state.scene && state.scene.fog && 'density' in state.scene.fog) {
-                (state.scene.fog as THREE.FogExp2).density = state.FOG_DENSITY;
-            }
+            const val = parseFloat(target.value);
+            // On stocke des valeurs qui serviront de base de calcul proportionnel
+            // Plus la valeur est haute, plus on repousse le brouillard loin
+            state.FOG_NEAR = val * 250; 
+            state.FOG_FAR = state.FOG_NEAR * 4; 
+
+            // Note: Le calcul final dist * (FOG_NEAR / 5000) se fait dans scene.ts
         });
     }
 

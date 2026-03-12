@@ -4,6 +4,15 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [3.9.3] - 2026-03-12
+### ✨ Ajouté
+- **Brouillard Adaptatif :** Système de brouillard linéaire dynamique lié à la distance de la caméra. L'horizon reste masqué proportionnellement, garantissant une clarté parfaite au premier plan quel que soit le zoom.
+- **Voile Atmosphérique :** Nouveau curseur de réglage (plage 20-100km) pour ajuster la profondeur de visibilité.
+
+### ✨ Améliorations
+- **Portée Horizon :** Extension du plan de coupe lointain (`far`) à 250km pour éviter les trous à l'horizon en vue satellite.
+- **Optimisation Dézoom :** Bridage du dézoom maximal à 100km pour prévenir les chutes de performances et la saturation mémoire.
+
 ## [3.9.2] - 2026-03-12
 ### ✨ Ajouté
 - **Profil d'Altitude Interactif :** Nouveau panneau dynamique affichant le dénivelé d'un tracé GPX.

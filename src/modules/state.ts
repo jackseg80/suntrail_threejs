@@ -63,7 +63,8 @@ export interface State {
     SHOW_SLOPES: boolean;
     MAP_SOURCE: string;
     hasManualSource: boolean;
-    FOG_DENSITY: number;
+    FOG_NEAR: number;
+    FOG_FAR: number;
     
     // Paramètres Debug (v3.8.5)
     SHOW_DEBUG: boolean;
@@ -119,7 +120,8 @@ export const state: State = {
     SHOW_SLOPES: false,
     MAP_SOURCE: 'swisstopo', 
     hasManualSource: false,
-    FOG_DENSITY: 0.00001, 
+    FOG_NEAR: 5000, 
+    FOG_FAR: 40000, 
     
     // Debug (v3.8.5)
     SHOW_DEBUG: true,

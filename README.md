@@ -1,13 +1,12 @@
-# ⛰️ SunTail 3D (v3.9.2)
+# ⛰️ SunTail 3D (v3.9.3)
 
 Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données Swisstopo / MapTiler.
 
-## ✨ Nouveautés v3.9.2
-- **Profil d'Altitude Interactif :** Visualisez le dénivelé de vos traces GPX dans un panneau dynamique synchronisé avec la vue 3D.
-- **Précision Altimétrique :** Lecture ultra-précise de l'altitude au clic via l'accès direct aux données `pixelData`.
-- **Esthétique GPX :** Tracé néon haute visibilité et marqueur de position bleu cyan surélevé.
-- **Correctifs de Rendu :** Stabilisation du cache de terrain (fin des tuiles noires) et synchronisation parfaite des coordonnées lors des changements de zoom.
-- **Sonde Solaire (Analyse 24h) :** Calculez la durée d'ensoleillement réelle d'un point au clic.
+## ✨ Nouveautés v3.9.3
+- **Brouillard Adaptatif :** Système de voile atmosphérique intelligent lié à l'altitude. La visibilité reste constante et naturelle, quel que soit le niveau de zoom.
+- **Optimisation de l'Horizon :** Extension de la portée visuelle à 250 km et bridage du dézoom à 100 km pour un équilibre parfait entre spectacle et performance.
+- **Profil d'Altitude Interactif :** Visualisez le dénivelé de vos traces GPX synchronisé avec la vue 3D.
+- **Moteur de Picking 3D :** Lecture d'altitude ultra-précise par Ray-marching CPU (Précision ~6m).
 - **Full TypeScript :** Codebase entièrement typée pour une stabilité et une maintenance de niveau professionnel.
 - **Heures Magiques :** Rendu immersif des phases dorées et bleues (Golden & Blue Hours) avec interpolation des couleurs.
 - **GPS Natif (Capacitor) :** Géolocalisation haute précision avec gestion native des permissions Android.

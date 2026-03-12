@@ -147,13 +147,12 @@ export function updateSunPosition(minutes: number): void {
         uniforms['mieCoefficient'].value = 0.005;
     }
 
-    if (state.scene && state.scene.fog && (state.scene.fog instanceof THREE.FogExp2 || state.scene.fog instanceof THREE.Fog)) {
+    if (state.scene && state.scene.fog && (state.scene.fog instanceof THREE.Fog || state.scene.fog instanceof THREE.FogExp2)) {
         const fogColor = new THREE.Color();
         if (altDeg > 6) {
             fogColor.setHSL(0.6, 0.4, 0.3 + (Math.sin(pos.altitude) * 0.5));
         } else if (altDeg > -6) {
-            // Transition vers l'heure bleue/dorée
-            const t = (altDeg + 6) / 12; // 0 à 1 entre -6° et 6°
+            const t = (altDeg + 6) / 12;
             const nightFog = new THREE.Color(0x050510);
             const dayFog = new THREE.Color().setHSL(0.6, 0.4, 0.3);
             fogColor.lerpColors(nightFog, dayFog, t);

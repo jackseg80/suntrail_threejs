@@ -2,8 +2,13 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
-## 🏁 En cours (v3.9.3) - Végétation
+## 🏁 En cours (v3.9.4) - Végétation
 - [ ] **Forêts & Arbres 3D** : Génération de végétation 3D (InstancedMesh) basée sur la couverture forestière.
+
+## ✅ Terminé (v3.9.3)
+- [x] **Brouillard Adaptatif** : Système de voile atmosphérique intelligent lié à l'altitude.
+- [x] **Optimisation de l'Horizon** : Extension de la portée (250km) et bridage du dézoom (100km).
+- [x] **Refonte du Picking** : Précision ~6m par Ray-marching CPU (validé v3.9.2 stable).
 
 ## ✅ Terminé (v3.9.2)
 - [x] **Profil d'Altitude Interactif** : Graphique de dénivelé dynamique synchronisé avec la trace GPX en 3D.
