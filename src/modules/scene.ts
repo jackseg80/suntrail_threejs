@@ -10,6 +10,8 @@ import { loadTerrain, updateVisibleTiles, lngLatToTile, worldToLngLat, repositio
 import { autoSelectMapSource } from './ui';
 import { throttle, isMobileDevice } from './utils';
 
+import { initVegetationResources } from './vegetation';
+
 // --- BOUSSOLE 3D NATIVE SECONDAIRE (v3.8.3) ---
 let compassScene: THREE.Scene;
 let compassCamera: THREE.PerspectiveCamera;
@@ -227,6 +229,7 @@ export async function initScene(): Promise<void> {
     state.scene.add(state.sunLight); state.scene.add(state.sunLight.target); 
 
     await loadTerrain();
+    initVegetationResources();
     updateSunPosition(720); updateUIZoom(state.ZOOM);
 
     const clock = new THREE.Clock();

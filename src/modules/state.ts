@@ -69,6 +69,7 @@ export interface State {
     // Paramètres Debug (v3.8.5)
     SHOW_DEBUG: boolean;
     SHOW_STATS: boolean;
+    SHOW_VEGETATION: boolean;
     
     // Animation temporelle
     isAnimating: boolean;
@@ -126,6 +127,7 @@ export const state: State = {
     // Debug (v3.8.5)
     SHOW_DEBUG: true,
     SHOW_STATS: true,
+    SHOW_VEGETATION: true,
     
     // Animation temporelle
     isAnimating: false,

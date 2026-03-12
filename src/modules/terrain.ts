@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { state } from './state';
 import { showToast, isMobileDevice, isPositionInSwitzerland } from './utils';
 import { updateElevationProfile } from './profile';
+import { createForestForTile } from './vegetation';
 
 export const EARTH_CIRCUMFERENCE = 40075016.68;
 
@@ -161,6 +162,7 @@ export class Tile {
     colorTex: THREE.Texture | null = null;
     overlayTex: THREE.Texture | null = null;
     slopesTex: THREE.Texture | null = null;
+    forestMesh: THREE.InstancedMesh | null = null;
     currentResolution: number = -1;
     tileSizeMeters: number;
     opacity: number = 0;
@@ -322,11 +324,18 @@ export class Tile {
             shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${terrainVertexInjection.header}`);
             shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${terrainVertexInjection.position}`);
         };
+if (state.scene) state.scene.add(this.mesh);
+this.currentResolution = resolution;
+this.opacity = 0; 
+this.isFadingIn = true;
 
-        if (state.scene) state.scene.add(this.mesh);
-        this.currentResolution = resolution;
-        this.opacity = 0; 
-        this.isFadingIn = true;
+        // --- GÉNÉRATION FORÊT (v3.9.4) ---
+        if (this.forestMesh && state.scene) state.scene.remove(this.forestMesh);
+        this.forestMesh = createForestForTile(this);
+        if (this.forestMesh && state.scene) {
+            this.forestMesh.position.set(this.worldX, 0, this.worldZ);
+            state.scene.add(this.forestMesh);
+        }
 
         if (oldMesh) {
             oldMesh.position.y -= 0.1;
@@ -348,6 +357,7 @@ export class Tile {
     dispose(): void {
         this.status = 'disposed'; loadQueue = loadQueue.filter(t => t !== this);
         if (this.mesh) { if (state.scene) state.scene.remove(this.mesh); if (this.mesh.material instanceof THREE.Material) this.mesh.material.dispose(); this.mesh = null; }
+        if (this.forestMesh) { if (state.scene) state.scene.remove(this.forestMesh); this.forestMesh.dispose(); this.forestMesh = null; }
     }
 }
 

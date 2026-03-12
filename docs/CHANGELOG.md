@@ -4,6 +4,16 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [3.9.4] - 2026-03-12
+### ✨ Ajouté
+- **Forêts 3D Denses :** Système de végétation haute performance capable d'afficher jusqu'à 12 000 arbres par tuile.
+- **Analyse de Voisinage :** Algorithme intelligent supprimant les arbres isolés pour ne garder que de véritables massifs forestiers cohérents.
+- **Détection par Source :** Paramétrages spécifiques pour Swisstopo et OpenTopoMap afin de garantir une plantation précise selon le style de carte.
+
+### ✨ Améliorations
+- **Performances Végétation :** Utilisation d'`InstancedMesh` et limitation de l'affichage au Zoom 14 pour préserver la fluidité (60 FPS maintenus sur mobile moderne).
+- **Contrôle Utilisateur :** Ajout d'une option pour activer/désactiver les forêts 3D dans les réglages.
+
 ## [3.9.3] - 2026-03-12
 ### ✨ Ajouté
 - **Brouillard Adaptatif :** Système de brouillard linéaire dynamique lié à la distance de la caméra.

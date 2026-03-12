@@ -5,7 +5,7 @@ import { Geolocation } from '@capacitor/geolocation';
 import { state } from './state';
 import { updateSunPosition } from './sun';
 import { initScene } from './scene';
-import { updateVisibleTiles, lngLatToTile, worldToLngLat, resetTerrain, updateGPXMesh, deleteTerrainCache } from './terrain';
+import { updateVisibleTiles, lngLatToTile, worldToLngLat, resetTerrain, updateGPXMesh, deleteTerrainCache, loadTerrain } from './terrain';
 import { isPositionInSwitzerland, showToast } from './utils';
 import { applyPreset, detectBestPreset } from './performance';
 import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';
@@ -371,6 +371,16 @@ export function initUI(): void {
             // mais on s'assure qu'il respecte l'état ici si déjà ouvert.
             const coordsPanel = document.getElementById('coords-panel');
             if (coordsPanel && !state.SHOW_DEBUG) coordsPanel.style.display = 'none';
+        });
+    }
+
+    const vegToggle = document.getElementById('veg-toggle') as HTMLInputElement;
+    if (vegToggle) {
+        vegToggle.addEventListener('change', async (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            state.SHOW_VEGETATION = target.checked;
+            resetTerrain();
+            await loadTerrain();
         });
     }
 

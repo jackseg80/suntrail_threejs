@@ -2,8 +2,15 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
-## 🏁 En cours (v3.9.4) - Végétation
-- [ ] **Forêts & Arbres 3D** : Génération de végétation 3D (InstancedMesh) basée sur la couverture forestière.
+## 🏁 En cours (v3.9.5) - Randonnée HD
+- [ ] **Panneaux de Signalisation** : Affichage des icônes officielles de randonnée (Swisstopo) sur les carrefours importants.
+- [ ] **Optimisation VRAM Végétation** : Gestion dynamique du nombre d'arbres selon les performances réelles du device.
+
+## ✅ Terminé (v3.9.4)
+- [x] **Forêts 3D Denses** : Plantation de milliers d'arbres via `InstancedMesh`.
+- [x] **Détection Adaptative** : Algorithme de détection par couleur spécifique à chaque source (CH, OpenTopo).
+- [x] **Filtre de Voisinage** : Suppression des arbres isolés pour des massifs forestiers réalistes.
+- [x] **Contrôle UI** : Option d'activation de la végétation dans les réglages.
 
 ## ✅ Terminé (v3.9.3)
 - [x] **Brouillard Adaptatif** : Système de voile atmosphérique intelligent lié à l'altitude.
