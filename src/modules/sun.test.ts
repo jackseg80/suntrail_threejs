@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { updateSunPosition } from './sun';
 import { state } from './state';
 
 describe('sun.ts', () => {
     beforeEach(() => {
+        vi.useFakeTimers();
         // Mock DOM elements
         document.body.innerHTML = `
             <div id="time-disp"></div>
@@ -26,6 +27,12 @@ describe('sun.ts', () => {
         state.simDate = new Date('2026-03-21T12:00:00Z'); // Equinox
         state.TARGET_LAT = 46.6863;
         state.TARGET_LON = 7.6617;
+    });
+
+    afterEach(() => {
+        vi.clearAllMocks();
+        vi.clearAllTimers();
+        vi.useRealTimers();
     });
 
     it('should update the time display', () => {

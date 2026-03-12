@@ -1,7 +1,16 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { isPositionInSwitzerland, fetchNearbyPeaks, showToast, throttle } from './utils';
 
 describe('utils.ts', () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+        vi.clearAllMocks();
+        vi.clearAllTimers();
+        vi.useRealTimers();
+    });
     
     describe('isPositionInSwitzerland', () => {
         it('should return true for a position inside Switzerland (Spiez)', () => {

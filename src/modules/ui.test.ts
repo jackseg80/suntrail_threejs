@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { initUI } from './ui';
 import { state } from './state';
 
@@ -20,11 +20,15 @@ vi.mock('./performance', () => ({
 vi.mock('./terrain', () => ({ 
     updateVisibleTiles: vi.fn(),
     resetTerrain: vi.fn(),
-    lngLatToTile: vi.fn(() => ({ x: 0, y: 0, z: 13 }))
+    lngLatToTile: vi.fn(() => ({ x: 0, y: 0, z: 13 })),
+    updateGPXMesh: vi.fn(),
+    worldToLngLat: vi.fn(() => ({ lat: 0, lon: 0 })),
+    activeTiles: new Map()
 }));
 
 describe('ui.ts', () => {
     beforeEach(() => {
+        vi.useFakeTimers();
         document.body.innerHTML = `
             <input id="k1" />
             <button id="bgo"></button>
@@ -47,11 +51,17 @@ describe('ui.ts', () => {
             <button class="preset-btn" data-preset="eco"></button>
             <button class="preset-btn" data-preset="balanced"></button>
         `;
-        localStorage.clear();
+        window.localStorage.clear();
+    });
+
+    afterEach(() => {
+        vi.clearAllMocks();
+        vi.clearAllTimers();
+        vi.useRealTimers();
     });
 
     it('should load MapTiler key from localStorage into the input', () => {
-        localStorage.setItem('maptiler_key_3d', 'secret-key');
+        window.localStorage.setItem('maptiler_key_3d', 'secret-key');
         initUI();
         const k1 = document.getElementById('k1') as HTMLInputElement;
         expect(k1.value).toBe('secret-key');

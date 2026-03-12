@@ -11,6 +11,7 @@ describe('terrain.ts', () => {
     afterEach(() => {
         vi.restoreAllMocks();
         vi.clearAllTimers();
+        vi.useRealTimers();
     });
     
     describe('GPX transformation', () => {
