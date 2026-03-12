@@ -23,7 +23,7 @@ body, html {
 /* BARRE DE RECHERCHE FLOTTANTE */
 #top-search-container {
     position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-    width: 400px; max-width: calc(100% - 120px);
+    width: 400px; max-width: calc(100% - 160px);
     z-index: 1000; background: var(--panel); backdrop-filter: var(--glass);
     border: 1px solid var(--border); border-radius: 16px; padding: 6px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.4); transition: all 0.3s ease;
@@ -195,3 +195,15 @@ input[type="range"] { accent-color: var(--accent); }
 .preset-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--t1); }
 .preset-btn.active { background: rgba(59, 130, 246, 0.2); border-color: var(--accent); color: var(--accent); }
 
+
+/* --- RESPONSIVITÉ MOBILE --- */
+@media (max-width: 600px) {
+    #top-search-container { width: calc(100% - 140px); max-width: none; top: 15px; }
+    #settings-toggle, #layer-btn { top: 15px; width: 44px; height: 44px; font-size: 20px; }
+    #settings-toggle { left: 15px; }
+    #layer-btn { right: 15px; }
+    #geo-input { padding: 8px 12px; font-size: 14px; }
+    #layer-menu { top: 70px; right: 15px; width: calc(100% - 30px); max-width: 320px; }
+    #bottom-bar { width: calc(100% - 30px); padding: 10px 15px; }
+    #panel { width: 85%; }
+}
