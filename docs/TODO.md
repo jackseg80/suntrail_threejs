@@ -2,7 +2,7 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
-## 🏁 En cours (v3.7.x)
+## 🏁 En cours (v3.7.0)
 - [x] Carte des Pentes > 30° (Sécurité).
 - [x] Transitions invisibles (Superposition différée).
 - [x] Détection automatique du GPU (Performance Presets).

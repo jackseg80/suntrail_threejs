@@ -10,7 +10,7 @@ import { isPositionInSwitzerland } from './utils';
 import { applyPreset, detectBestPreset } from './performance';
 
 export function initUI(): void {
-    // --- DÉTECTION PERFORMANCE (v3.6) ---
+    // --- DÉTECTION PERFORMANCE (v3.7.0) ---
     const bestPreset = detectBestPreset();
     applyPreset(bestPreset);
 
@@ -33,7 +33,7 @@ export function initUI(): void {
     if (settingsToggle && panel) settingsToggle.addEventListener('click', () => panel.classList.add('open'));
     if (closePanel && panel) closePanel.addEventListener('click', () => panel.classList.remove('open'));
 
-    // --- PRESETS PERFORMANCE (v3.6) ---
+    // --- PRESETS PERFORMANCE (v3.7.0) ---
     const presetButtons = document.querySelectorAll('.preset-btn');
     presetButtons.forEach(btn => {
         btn.addEventListener('click', () => {

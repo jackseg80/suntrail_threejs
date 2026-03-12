@@ -190,13 +190,13 @@ input[type="range"] { accent-color: var(--accent); }
 @keyframes toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes toast-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-10px); } }
 
-/* --- PRESETS PERFORMANCE (v3.6) --- */
+/* --- PRESETS PERFORMANCE (v3.7.0) --- */
 .preset-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); color: var(--t2); padding: 10px 5px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
 .preset-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--t1); }
 .preset-btn.active { background: rgba(59, 130, 246, 0.2); border-color: var(--accent); color: var(--accent); }
 
 
-/* --- RESPONSIVITÉ MOBILE --- */
+/* --- RESPONSIVITï¿½ MOBILE --- */
 @media (max-width: 600px) {
     #top-search-container { width: calc(100% - 140px); max-width: none; top: 15px; }
     #settings-toggle, #layer-btn { top: 15px; width: 44px; height: 44px; font-size: 20px; }
