@@ -1,0 +1,18 @@
+# Dossiers de build et dépendances
+node_modules/
+dist/
+build/
+.gradle/
+.idea/
+
+# Plateforme native Android (sauf si nécessaire spécifiquement)
+android/
+
+# Ressources multimédias lourdes
+screenshots/
+public/assets/models/
+public/assets/textures/
+
+# Fichiers de configuration IDE
+.vscode/
+*.iml

@@ -22,18 +22,17 @@ function initCompass() {
 
     compassScene = new THREE.Scene();
     compassCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-    compassCamera.position.set(0, 0, 18); // Recul pour visibilité totale
+    compassCamera.position.set(0, 0, 18);
 
     compassRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     compassRenderer.setPixelRatio(window.devicePixelRatio);
-    // La taille est gérée par le CSS, mais on l'initialise ici
     compassRenderer.setSize(120, 120);
 
     compassObject = new THREE.Group();
 
     // Aiguille Nord (Rouge Fluo)
     const geoNorth = new THREE.ConeGeometry(1, 2.5, 16);
-    const matNorth = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const matNorth = new THREE.MeshBasicMaterial({ color: 0xff3333 });
     const north = new THREE.Mesh(geoNorth, matNorth);
     north.position.y = 1.25;
     compassObject.add(north);
@@ -71,7 +70,7 @@ function initCompass() {
         compassObject.add(sprite);
     };
 
-    createLetter('N', '#ff0000', new THREE.Vector3(0, 5.2, 0));
+    createLetter('N', '#ff3333', new THREE.Vector3(0, 5.2, 0));
     createLetter('S', '#ffffff', new THREE.Vector3(0, -5.2, 0));
     createLetter('E', '#ffffff', new THREE.Vector3(5.2, 0, 0));
     createLetter('O', '#ffffff', new THREE.Vector3(-5.2, 0, 0));
@@ -229,7 +228,7 @@ export async function initScene(): Promise<void> {
             }
         }
 
-        // --- RENDU FINAL (v3.8.3) ---
+        // --- RENDU FINAL (Simple et Robuste) ---
         state.renderer.render(state.scene, state.camera);
 
         if (compassObject && state.camera && compassRenderer) {

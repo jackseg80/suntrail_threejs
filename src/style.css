@@ -190,6 +190,8 @@ input[type="range"] { accent-color: var(--accent); }
 .preset-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--t1); }
 .preset-btn.active { background: rgba(59, 130, 246, 0.2); border-color: var(--accent); color: var(--accent); }
 
+/* --- BOUSSOLE NATIVE CANVAS (v3.8.2) --- */
+#compass-canvas { position: fixed; bottom: 10px; right: 10px; width: 120px; height: 120px; z-index: 1000; pointer-events: none; }
 
 /* --- RESPONSIVITÉ MOBILE --- */
 @media (max-width: 600px) {
@@ -201,10 +203,6 @@ input[type="range"] { accent-color: var(--accent); }
     #layer-menu { top: 70px; right: 15px; width: calc(100% - 30px); max-width: 320px; }
     #bottom-bar { width: calc(100% - 30px); padding: 10px 15px; }
     #panel { width: 85%; }
-    #zoom-indicator { bottom: 140px; } 
-    #compass-canvas { bottom: 140px; right: 15px; width: 100px; height: 100px; } /* Position mobile corrigée */
+    #zoom-indicator { bottom: 160px; } 
+    #compass-canvas { bottom: 160px; right: 15px; width: 100px; height: 100px; display: block !important; } 
 }
-
-/* --- BOUSSOLE NATIVE CANVAS (v3.8.2) --- */
-#compass-canvas { position: fixed; bottom: 10px; right: 10px; width: 120px; height: 120px; z-index: 1000; pointer-events: none; }
-

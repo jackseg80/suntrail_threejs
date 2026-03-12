@@ -1,0 +1,9 @@
+{
+  "general": {
+    "maxAttempts": 10,
+    "retryFetchErrors": true
+  },
+  "ui": {
+    "errorVerbosity": "full"
+  }
+}
