@@ -13,10 +13,13 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 ## 🚀 Prochaine version (v3.7) - Immersion & Analyse
 - [ ] **Forêts & Arbres 3D** : Génération de végétation 3D (InstancedMesh) basée sur la couverture forestière pour visualiser l'ombre réelle sur les sentiers.
 - [ ] **Sonde Solaire** : Outil d'analyse au clic permettant de calculer la durée d'ensoleillement sur 24h pour un point précis (avec recommandations rando).
+- [ ] **Profil d'Altitude Interactif** : Graphique de dénivelé dynamique synchronisé avec la trace GPX en 3D.
+- [ ] **Carte des Pentes (Sécurité)** : Calque optionnel colorant les zones > 30° pour identifier les dangers (avalanches, barres rocheuses).
 - [ ] **Partage de Vue (Deep Linking)** : Mise à jour de l'URL avec les coordonnées et l'heure pour partager une simulation via un lien.
 - [ ] Ajouter une boussole 3D en bas de l'écran.
 
 ## 🌟 Version 4.0 - Réalité Augmentée & Environnement Avancé
+- [ ] **Signalétique Officielle Suisse** : Typage couleur des sentiers (Jaune/Rouge/Bleu) selon la classification Swisstopo.
 - [ ] **Bâtiments 3D (LOD léger)** : Extrusion des bâtiments (OSM/MapTiler) pour les zones habitées et refuges, optimisée pour mobile.
 - [ ] **Météo Dynamique Temps Réel** : Intégration de données météo en direct (OpenWeather/MeteoBlue).
 - [ ] **Rendu Atmosphérique** : Systèmes de particules pour la pluie/neige et shaders de couverture nuageuse dynamique sur la carte.
