@@ -433,3 +433,11 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
 }
 
 export async function loadTerrain(): Promise<void> { await updateVisibleTiles(); }
+
+export async function deleteTerrainCache(): Promise<void> {
+    try {
+        const success = await caches.delete(CACHE_NAME);
+        if (success) showToast('Cache vidé avec succès');
+        else showToast('Le cache était déjà vide');
+    } catch (e) { showToast('Erreur lors de la purge du cache'); }
+}

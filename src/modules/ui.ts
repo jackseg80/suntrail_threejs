@@ -5,8 +5,8 @@ import { Geolocation } from '@capacitor/geolocation';
 import { state } from './state';
 import { updateSunPosition } from './sun';
 import { initScene } from './scene';
-import { updateVisibleTiles, activeTiles, lngLatToTile, worldToLngLat, resetTerrain, updateGPXMesh } from './terrain';
-import { isPositionInSwitzerland } from './utils';
+import { updateVisibleTiles, activeTiles, lngLatToTile, worldToLngLat, resetTerrain, updateGPXMesh, deleteTerrainCache } from './terrain';
+import { isPositionInSwitzerland, showToast } from './utils';
 import { applyPreset, detectBestPreset } from './performance';
 
 export function initUI(): void {
@@ -307,6 +307,36 @@ export function initUI(): void {
             const target = e.target as HTMLInputElement;
             state.SHOW_SLOPES = target.checked;
             await refreshTerrain();
+        });
+    }
+
+    // --- GESTION CACHE & CLÉ (v3.7.3) ---
+    const keyInput = document.getElementById('maptiler-key-input') as HTMLInputElement;
+    const updateKeyBtn = document.getElementById('update-key-btn');
+    const clearCacheBtn = document.getElementById('clear-cache-btn');
+
+    if (keyInput) keyInput.value = state.MK;
+    
+    if (updateKeyBtn && keyInput) {
+        updateKeyBtn.addEventListener('click', async () => {
+            const newKey = keyInput.value.trim();
+            if (newKey.length < 5) {
+                showToast("Clé invalide");
+                return;
+            }
+            state.MK = newKey;
+            localStorage.setItem('maptiler_key_3d', newKey);
+            showToast("Clé mise à jour !");
+            await refreshTerrain();
+        });
+    }
+
+    if (clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', async () => {
+            if (confirm("Voulez-vous vraiment vider tout le cache local ? Les tuiles devront être re-téléchargées.")) {
+                await deleteTerrainCache();
+                await refreshTerrain();
+            }
         });
     }
 

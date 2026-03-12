@@ -4,6 +4,16 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [3.7.3] - 2026-03-12 (Gestion du Stockage)
+### Ajouté
+- **Gestion du Cache :** Nouveau bouton dans les réglages pour vider manuellement le cache persistant des tuiles.
+- **Mise à jour de Clé API :** Possibilité de modifier et sauvegarder une nouvelle clé MapTiler Cloud directement depuis l'interface, sans rechargement.
+
+### Changé
+- **Sécurité :** Masquage de la clé API dans le panneau de réglages.
+
+---
+
 ## [3.7.2] - 2026-03-12 (Économie de Quota & Survie)
 ### Ajouté
 - **Cache Persistant (Cache API) :** Stockage permanent des tuiles de relief MapTiler sur le disque local. Une zone déjà visitée ne consomme plus **aucune** requête réseau lors des prochaines sessions.

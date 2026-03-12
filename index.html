@@ -137,6 +137,18 @@
     </div>
 
     <div class="control-group" style="margin-top:25px; border-top:1px solid var(--border); padding-top:20px;">
+        <label style="font-size:12px; color:var(--gold); text-transform:uppercase;">Stockage & API</label>
+        <div style="margin-top:15px;">
+            <label style="font-size:11px; color:var(--t2); text-transform:uppercase;">Clé MapTiler Cloud</label>
+            <div style="display:flex; gap:8px; margin-top:5px;">
+                <input type="password" id="maptiler-key-input" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; color:white; padding:8px; font-family:monospace; font-size:12px;">
+                <button id="update-key-btn" style="background:var(--accent); border:none; color:white; border-radius:8px; padding:0 12px; cursor:pointer; font-size:12px;">OK</button>
+            </div>
+        </div>
+        <button id="clear-cache-btn" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ef4444; background:rgba(239, 68, 68, 0.1); color:#ef4444; cursor:pointer; font-weight:700; font-size:12px; margin-top:15px;">🗑️ Vider le cache local</button>
+    </div>
+
+    <div class="control-group" style="margin-top:25px; border-top:1px solid var(--border); padding-top:20px;">
         <label style="font-size:12px; color:var(--gold); text-transform:uppercase;">Parcours GPX</label>
         <input type="file" id="gpx-upload" accept=".gpx" style="display:none;">
         <button id="gpx-btn" style="width:100%; padding:12px; border-radius:12px; border:1px solid var(--accent); background:rgba(59, 130, 246, 0.1); color:var(--accent); cursor:pointer; font-weight:700; margin:15px 0;">📥 Importer GPX</button>
