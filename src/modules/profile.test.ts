@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import * as THREE from 'three';
 import { haversineDistance, updateElevationProfile } from './profile';
 import { state } from './state';

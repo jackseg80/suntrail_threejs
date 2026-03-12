@@ -163,10 +163,22 @@ export async function initScene(): Promise<void> {
         if (!state.controls || !state.camera) return;
         const dx = state.controls.target.x, dz = state.controls.target.z, dist = state.camera.position.y;
         let newZoom = state.ZOOM;
-        if (state.ZOOM === 13) { if (dist < 2500) newZoom = 14; else if (dist > 18000) newZoom = 12; }
-        else if (state.ZOOM === 14) { if (dist > 3500) newZoom = 13; }
-        else if (state.ZOOM === 12) { if (dist < 15000) newZoom = 13; else if (dist > 55000) newZoom = 11; }
-        else if (state.ZOOM === 11) { if (dist < 45000) newZoom = 12; }
+        // --- SEUILS DE ZOOM ULTRA-AGRESSIFS (v3.9.3) ---
+        // On demande le niveau de détail maximal (Lvl 14) dès 15km d'altitude
+        if (state.ZOOM === 13) { 
+            if (dist < 15000) newZoom = 14; 
+            else if (dist > 45000) newZoom = 12; 
+        }
+        else if (state.ZOOM === 14) { 
+            if (dist > 18000) newZoom = 13; 
+        }
+        else if (state.ZOOM === 12) { 
+            if (dist < 35000) newZoom = 13; 
+            else if (dist > 90000) newZoom = 11; 
+        }
+        else if (state.ZOOM === 11) { 
+            if (dist < 75000) newZoom = 12; 
+        }
 
         const gpsCenter = worldToLngLat(dx, dz);
         autoSelectMapSource(gpsCenter.lat, gpsCenter.lon);

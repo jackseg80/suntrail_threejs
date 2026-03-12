@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { state } from './state';
-import { showToast, isMobileDevice } from './utils';
+import { showToast, isMobileDevice, isPositionInSwitzerland } from './utils';
 import { updateElevationProfile } from './profile';
 
 export const EARTH_CIRCUMFERENCE = 40075016.68;
@@ -19,7 +19,6 @@ export const activeLabels = new Map<string, any>();
 const dataCache = new Map<string, CachedData>();
 const MAX_CACHE_SIZE = isMobileDevice() ? 200 : 800; 
 
-// --- CACHE DE GÉOMÉTRIES ---
 const geometryCache = new Map<string, THREE.PlaneGeometry>();
 
 function getPlaneGeometry(res: number, size: number): THREE.PlaneGeometry {
@@ -34,29 +33,31 @@ function getPlaneGeometry(res: number, size: number): THREE.PlaneGeometry {
     return geometryCache.get(key)!;
 }
 
-// --- QUEUE DE CHARGEMENT ---
 let loadQueue: Tile[] = [];
 let isProcessingQueue = false;
 
 async function processLoadQueue() {
     if (isProcessingQueue || loadQueue.length === 0) return;
     isProcessingQueue = true;
-
-    if (state.camera) {
-        const camX = state.camera.position.x;
-        const camZ = state.camera.position.z;
-        loadQueue.sort((a, b) => {
-            const da = Math.pow(a.worldX - camX, 2) + Math.pow(a.worldZ - camZ, 2);
-            const db = Math.pow(b.worldX - camX, 2) + Math.pow(b.worldZ - camZ, 2);
-            return da - db;
-        });
+    try {
+        if (state.camera) {
+            const camX = state.camera.position.x;
+            const camZ = state.camera.position.z;
+            loadQueue.sort((a, b) => {
+                const da = Math.pow(a.worldX - camX, 2) + Math.pow(a.worldZ - camZ, 2);
+                const db = Math.pow(b.worldX - camX, 2) + Math.pow(b.worldZ - camZ, 2);
+                return da - db;
+            });
+        }
+        const batch = loadQueue.splice(0, 6);
+        await Promise.all(batch.map(async (tile) => {
+            try { if (tile.status === 'idle' || tile.status === 'failed') await tile.load(); }
+            catch (e) { tile.status = 'failed'; }
+        }));
+    } finally {
+        isProcessingQueue = false;
+        if (loadQueue.length > 0) setTimeout(processLoadQueue, 4); 
     }
-
-    const batch = loadQueue.splice(0, 6);
-    await Promise.all(batch.map(tile => (tile.status === 'idle' || tile.status === 'failed') ? tile.load() : Promise.resolve()));
-
-    isProcessingQueue = false;
-    if (loadQueue.length > 0) setTimeout(processLoadQueue, 4); 
 }
 
 function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8ClampedArray | null, colorTex: THREE.Texture, overlayTex: THREE.Texture | null, slopesTex: THREE.Texture | null): void {
@@ -78,7 +79,7 @@ function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8Clamped
 function getFromCache(key: string): CachedData | null {
     const data = dataCache.get(key);
     if (!data) return null;
-    dataCache.delete(key); dataCache.set(key, data); // LRU
+    dataCache.delete(key); dataCache.set(key, data);
     return data;
 }
 
@@ -93,7 +94,6 @@ export function clearCache(): void {
 
 const frustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
-
 const terrainUniforms = { uExaggeration: { value: state.RELIEF_EXAGGERATION } };
 
 const terrainVertexInjection = {
@@ -122,55 +122,29 @@ const terrainVertexInjection = {
     position: `transformed.y = getTerrainHeight(uv);`
 };
 
-// --- SYSTÈME DE CACHE PERSISTANT (v3.8.2) ---
 const CACHE_NAME = 'suntrail-tiles-v1';
 
 async function fetchWithCache(url: string, usePersistentCache: boolean = false): Promise<Blob | null> {
-    if (!usePersistentCache) {
-        try {
-            const r = await fetch(url);
-            if (r.ok) {
-                state.networkRequests++;
-                updateStorageUI();
-                return await r.blob();
-            }
-            return null;
-        } catch (e) { return null; }
-    }
-
     try {
-        const cache = await caches.open(CACHE_NAME);
-        const cachedResponse = await cache.match(url);
-        if (cachedResponse) {
-            state.cacheHits++;
-            updateStorageUI();
-            return await cachedResponse.blob();
+        if (usePersistentCache) {
+            const cache = await caches.open(CACHE_NAME);
+            const cached = await cache.match(url);
+            if (cached) { state.cacheHits++; updateStorageUI(); return await cached.blob(); }
         }
-
-        const networkResponse = await fetch(url);
-        if (networkResponse.ok) {
-            state.networkRequests++;
-            updateStorageUI();
-            cache.put(url, networkResponse.clone());
-            return await networkResponse.blob();
+        const r = await fetch(url, { mode: 'cors' });
+        if (r.ok) {
+            const blob = await r.blob();
+            state.networkRequests++; updateStorageUI();
+            if (usePersistentCache) {
+                const cache = await caches.open(CACHE_NAME);
+                cache.put(url, new Response(blob));
+            }
+            return blob;
         }
         return null;
-    } catch (e) {
-        try {
-            const r = await fetch(url);
-            if (r.ok) {
-                state.networkRequests++;
-                updateStorageUI();
-                return await r.blob();
-            }
-            return null;
-        } catch (err) { return null; }
-    }
+    } catch (e) { return null; }
 }
 
-/**
- * Met à jour les compteurs dans l'UI (appelé depuis terrain.ts pour réactivité)
- */
 function updateStorageUI() {
     const netCount = document.getElementById('net-count');
     const cacheCount = document.getElementById('cache-count');
@@ -183,7 +157,7 @@ export class Tile {
     status: 'idle' | 'loading' | 'loaded' | 'failed' | 'disposed' = 'idle';
     mesh: THREE.Mesh | null = null;
     elevationTex: THREE.Texture | null = null;
-    pixelData: Uint8ClampedArray | null = null; // Données brutes pour calcul CPU (Sonde Solaire)
+    pixelData: Uint8ClampedArray | null = null;
     colorTex: THREE.Texture | null = null;
     overlayTex: THREE.Texture | null = null;
     slopesTex: THREE.Texture | null = null;
@@ -228,49 +202,49 @@ export class Tile {
         const cacheKey = `${state.MAP_SOURCE}_${state.SHOW_TRAILS}_${state.SHOW_SLOPES}_${this.key}`;
         const cached = getFromCache(cacheKey);
         if (cached) {
-            this.elevationTex = cached.elev; 
-            this.pixelData = cached.pixelData; // Restauration du cache
-            this.colorTex = cached.color;
-            this.overlayTex = cached.overlay; this.slopesTex = cached.slopes;
+            this.elevationTex = cached.elev; this.pixelData = cached.pixelData;
+            this.colorTex = cached.color; this.overlayTex = cached.overlay; this.slopesTex = cached.slopes;
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
             return;
         }
         if (this.status as any === 'disposed') return;
         this.status = 'loading';
         try {
+            // 1. RELIEF (Bloquant)
             const elevBlob = await fetchWithCache(`https://api.maptiler.com/tiles/terrain-rgb-v2/${this.zoom}/${this.tx}/${this.ty}.png?key=${state.MK}`, true);
-            const colorBlob = await fetchWithCache(this.getColorUrl());
-            const trailsBlob = state.SHOW_TRAILS ? await fetchWithCache(this.getOverlayUrl()) : null;
-            const slopesBlob = state.SHOW_SLOPES ? await fetchWithCache(this.getSlopesUrl()) : null;
-
-            if (this.status as any === 'disposed') return;
-            if (!elevBlob || !colorBlob) { this.status = 'failed'; return; }
-
-            const [imgElev, imgColor, imgOverlay, imgSlopes] = await Promise.all([
-                createImageBitmap(elevBlob, { colorSpaceConversion: 'none' }),
-                createImageBitmap(colorBlob),
-                trailsBlob ? createImageBitmap(trailsBlob) : Promise.resolve(null),
-                slopesBlob ? createImageBitmap(slopesBlob) : Promise.resolve(null)
-            ]);
-
-            this.elevationTex = new THREE.Texture(imgElev); this.elevationTex.flipY = false; this.elevationTex.needsUpdate = true;
+            if (!elevBlob) throw new Error("Elevation failed");
+            const imgElev = await createImageBitmap(elevBlob, { colorSpaceConversion: 'none' });
+            this.elevationTex = new THREE.Texture(imgElev);
+            this.elevationTex.flipY = false; this.elevationTex.needsUpdate = true;
             
-            // --- EXTRACTION DES DONNÉES PIXEL (v3.9.1) ---
-            const offCanvas = document.createElement('canvas');
-            offCanvas.width = imgElev.width; offCanvas.height = imgElev.height;
+            const offCanvas = document.createElement('canvas'); offCanvas.width = imgElev.width; offCanvas.height = imgElev.height;
             const offCtx = offCanvas.getContext('2d');
-            if (offCtx) {
-                offCtx.drawImage(imgElev, 0, 0);
-                this.pixelData = offCtx.getImageData(0, 0, imgElev.width, imgElev.height).data;
+            if (offCtx) { offCtx.drawImage(imgElev, 0, 0); this.pixelData = offCtx.getImageData(0, 0, imgElev.width, imgElev.height).data; }
+
+            // 2. COULEUR (Non-bloquant)
+            let colorBlob = await fetchWithCache(this.getColorUrl());
+            if (!colorBlob) {
+                const fallback = `https://api.maptiler.com/maps/satellite/256/${this.zoom}/${this.tx}/${this.ty}@2x.jpg?key=${state.MK}`;
+                colorBlob = await fetchWithCache(fallback);
+            }
+            
+            if (colorBlob) {
+                const img = await createImageBitmap(colorBlob);
+                this.colorTex = new THREE.Texture(img); this.colorTex.flipY = false; this.colorTex.needsUpdate = true; this.colorTex.colorSpace = THREE.SRGBColorSpace;
+            } else {
+                const dummy = document.createElement('canvas'); dummy.width = 2; dummy.height = 2;
+                const dCtx = dummy.getContext('2d'); if (dCtx) { dCtx.fillStyle = '#333'; dCtx.fillRect(0,0,2,2); }
+                this.colorTex = new THREE.CanvasTexture(dummy);
             }
 
-            this.colorTex = new THREE.Texture(imgColor); this.colorTex.flipY = false; this.colorTex.needsUpdate = true;
-            this.colorTex.colorSpace = THREE.SRGBColorSpace;
+            // 3. CALQUES
+            const [tBlob, sBlob] = await Promise.all([
+                state.SHOW_TRAILS ? fetchWithCache(this.getOverlayUrl()) : Promise.resolve(null),
+                state.SHOW_SLOPES ? fetchWithCache(this.getSlopesUrl()) : Promise.resolve(null)
+            ]);
+            if (tBlob) { const i = await createImageBitmap(tBlob); this.overlayTex = new THREE.Texture(i); this.overlayTex.flipY = false; this.overlayTex.needsUpdate = true; this.overlayTex.colorSpace = THREE.SRGBColorSpace; }
+            if (sBlob) { const i = await createImageBitmap(sBlob); this.slopesTex = new THREE.Texture(i); this.slopesTex.flipY = false; this.slopesTex.needsUpdate = true; this.slopesTex.colorSpace = THREE.SRGBColorSpace; }
 
-            if (imgOverlay) { this.overlayTex = new THREE.Texture(imgOverlay); this.overlayTex.flipY = false; this.overlayTex.needsUpdate = true; this.overlayTex.colorSpace = THREE.SRGBColorSpace; }
-            if (imgSlopes) { this.slopesTex = new THREE.Texture(imgSlopes); this.slopesTex.flipY = false; this.slopesTex.needsUpdate = true; this.slopesTex.colorSpace = THREE.SRGBColorSpace; }
-
-            // CORRECTION ORDRE ARGUMENTS (v3.9.2) : pixelData doit être le 3ème argument
             addToCache(cacheKey, this.elevationTex, this.pixelData, this.colorTex, this.overlayTex, this.slopesTex);
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
         } catch (e) { this.status = 'failed'; }
@@ -278,9 +252,13 @@ export class Tile {
 
     getColorUrl(): string {
         switch(state.MAP_SOURCE) {
-            case 'satellite': return `https://api.maptiler.com/maps/satellite/256/${this.zoom}/${this.tx}/${this.ty}@2x.jpg?key=${state.MK}`;
-            case 'opentopomap': return `https://a.tile.opentopomap.org/${this.zoom}/${this.tx}/${this.ty}.png`;
+            case 'satellite': 
+                if (isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON)) {
+                    return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.jpeg`;
+                }
+                return `https://api.maptiler.com/maps/satellite/256/${this.zoom}/${this.tx}/${this.ty}@2x.jpg?key=${state.MK}`;
             case 'swisstopo': return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.jpeg`;
+            case 'opentopomap': return `https://a.tile.opentopomap.org/${this.zoom}/${this.tx}/${this.ty}.png`;
             default: return `https://api.maptiler.com/maps/topo-v2/256/${this.zoom}/${this.tx}/${this.ty}@2x.png?key=${state.MK}`;
         }
     }
@@ -290,8 +268,7 @@ export class Tile {
     buildMesh(resolution: number): void {
         if (!this.elevationTex || !this.colorTex || this.status as any === 'disposed') return;
         
-        // --- VÉRIFICATION DE VALIDITÉ (v3.9.2) ---
-        // Si Swisstopo renvoie du vide ou 404, on évite de créer un mesh noir
+        // --- VÉRIFICATION DE VALIDITÉ ---
         const img = this.colorTex.image as any;
         if (!img || img.width === 0) return;
 
@@ -333,22 +310,26 @@ export class Tile {
 
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.position.set(this.worldX, 0, this.worldZ);
-        this.mesh.renderOrder = this.zoom; this.mesh.castShadow = this.mesh.receiveShadow = true;
+        this.mesh.renderOrder = this.zoom; 
+        this.mesh.castShadow = true;
+        this.mesh.receiveShadow = true;
+
         this.mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
         this.mesh.customDepthMaterial.onBeforeCompile = (shader) => {
-            shader.uniforms.uElevationMap = { value: this.elevationTex }; shader.uniforms.uExaggeration = terrainUniforms.uExaggeration; shader.uniforms.uTileSize = { value: this.tileSizeMeters };
+            shader.uniforms.uElevationMap = { value: this.elevationTex }; 
+            shader.uniforms.uExaggeration = terrainUniforms.uExaggeration; 
+            shader.uniforms.uTileSize = { value: this.tileSizeMeters };
             shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${terrainVertexInjection.header}`);
             shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${terrainVertexInjection.position}`);
         };
 
         if (state.scene) state.scene.add(this.mesh);
         this.currentResolution = resolution;
-        this.opacity = 0; this.isFadingIn = true;
+        this.opacity = 0; 
+        this.isFadingIn = true;
 
         if (oldMesh) {
-            // On descend l'ancien maillage très légèrement (10cm) pour éviter le Z-Fighting durant la superposition (v3.8.2)
             oldMesh.position.y -= 0.1;
-
             setTimeout(() => {
                 if (state.scene) state.scene.remove(oldMesh);
                 if (oldMesh.material instanceof THREE.Material) oldMesh.material.dispose();
@@ -366,12 +347,7 @@ export class Tile {
 
     dispose(): void {
         this.status = 'disposed'; loadQueue = loadQueue.filter(t => t !== this);
-        if (this.mesh) {
-            if (state.scene) state.scene.remove(this.mesh);
-            if (this.mesh.material instanceof THREE.Material) this.mesh.material.dispose();
-            if (this.mesh.customDepthMaterial) this.mesh.customDepthMaterial.dispose();
-            this.mesh = null;
-        }
+        if (this.mesh) { if (state.scene) state.scene.remove(this.mesh); if (this.mesh.material instanceof THREE.Material) this.mesh.material.dispose(); this.mesh = null; }
     }
 }
 
@@ -393,31 +369,21 @@ export function lngLatToTile(lon: number, lat: number, zoom: number): { x: numbe
 export function lngLatToWorld(lon: number, lat: number): { x: number; z: number } {
     const xNorm = (lon + 180) / 360;
     const yNorm = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2;
-    
-    // Référentiel fixe basé sur la tuile d'origine actuelle
-    // On utilise state.originTile.z pour rester cohérent avec le placement des tuiles
     const originUnit = 1.0 / Math.pow(2, state.originTile.z);
     const oxNorm = (state.originTile.x + 0.5) * originUnit;
     const oyNorm = (state.originTile.y + 0.5) * originUnit;
-    
-    return { 
-        x: (xNorm - oxNorm) * EARTH_CIRCUMFERENCE, 
-        z: (yNorm - oyNorm) * EARTH_CIRCUMFERENCE 
-    };
+    return { x: (xNorm - oxNorm) * EARTH_CIRCUMFERENCE, z: (yNorm - oyNorm) * EARTH_CIRCUMFERENCE };
 }
 
 export function worldToLngLat(worldX: number, worldZ: number): { lat: number; lon: number } {
     const originUnit = 1.0 / Math.pow(2, state.originTile.z);
     const oxNorm = (state.originTile.x + 0.5) * originUnit;
     const oyNorm = (state.originTile.y + 0.5) * originUnit;
-    
     const xNorm = worldX / EARTH_CIRCUMFERENCE + oxNorm;
     const yNorm = worldZ / EARTH_CIRCUMFERENCE + oyNorm;
-    
     const lon = xNorm * 360 - 180;
     const n = Math.PI - 2 * Math.PI * yNorm;
     const lat = 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
-    
     return { lat, lon };
 }
 
@@ -443,26 +409,12 @@ export function updateGPXMesh(): void {
     state.gpxPoints = threePoints;
     const curve = new THREE.CatmullRomCurve3(threePoints);
     const camAlt = state.camera ? state.camera.position.y : 5000;
-    // Rayon plus fin et dépendant de l'altitude pour rester élégant
     const thickness = Math.max(4, camAlt / 400); 
     const geometry = new THREE.TubeGeometry(curve, threePoints.length * 2, thickness, 8, false);
-    
-    const material = new THREE.MeshStandardMaterial({ 
-        color: 0xff3300, 
-        emissive: 0xff0000, 
-        emissiveIntensity: 2.0, 
-        roughness: 0.2, 
-        metalness: 0.8, 
-        transparent: true, 
-        opacity: 0.8 
-    });
-    
+    const material = new THREE.MeshStandardMaterial({ color: 0xff3300, emissive: 0xff0000, emissiveIntensity: 2.0, roughness: 0.2, metalness: 0.8, transparent: true, opacity: 0.8 });
     state.gpxMesh = new THREE.Mesh(geometry, material);
     state.gpxMesh.renderOrder = 1000;
     if (state.scene) state.scene.add(state.gpxMesh);
-
-    // --- SYNCHRONISATION PROFIL (v3.9.2) ---
-    // On recalcule les données du profil car les coordonnées monde ont changé
     updateElevationProfile();
 }
 
@@ -482,12 +434,9 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
     const currentGPS = worldToLngLat(worldX, worldZ);
     const zoom = state.ZOOM; const centerTile = lngLatToTile(currentGPS.lon, currentGPS.lat, zoom);
     const range = state.RANGE; const margin = 1; 
-    const keptKeys = new Set<string>();
-
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
             const tx = centerTile.x + dx, ty = centerTile.y + dy, key = `${tx}_${ty}_${zoom}`;
-            keptKeys.add(key);
             let tile = activeTiles.get(key);
             if (!tile) {
                 tile = new Tile(tx, ty, zoom, key);
@@ -498,7 +447,6 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
             }
         }
     }
-
     for (const [key, tile] of activeTiles.entries()) {
         const [tx, ty, tz] = key.split('_').map(Number);
         if (tz !== zoom || Math.abs(tx - centerTile.x) > range + margin || Math.abs(ty - centerTile.y) > range + margin) {
@@ -513,7 +461,7 @@ export async function loadTerrain(): Promise<void> { await updateVisibleTiles();
 export async function deleteTerrainCache(): Promise<void> {
     try {
         const success = await caches.delete(CACHE_NAME);
-        if (success) showToast('Cache vid� avec succ�s');
-        else showToast('Le cache �tait d�j� vide');
+        if (success) showToast('Cache vidé avec succès');
+        else showToast('Le cache était déjà vide');
     } catch (e) { showToast('Erreur lors de la purge du cache'); }
 }

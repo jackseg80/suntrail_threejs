@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import * as THREE from 'three';
-import { getAltitudeAt, isSunOccluded, findTerrainIntersection } from './analysis';
-import * as analysisModule from './analysis';
+import { getAltitudeAt, isSunOccluded } from './analysis';
 import { state } from './state';
 import { activeTiles, worldToLngLat, lngLatToTile } from './terrain';
 
@@ -17,10 +16,6 @@ describe('Analyse Solaire (Module Analysis)', () => {
         const gps = worldToLngLat(0, 0);
         const tileCoords = lngLatToTile(gps.lon, gps.lat, state.ZOOM);
         centerKey = `${tileCoords.x}_${tileCoords.y}_${state.ZOOM}`;
-    });
-
-    afterEach(() => {
-        vi.restoreAllMocks();
     });
 
     it('devrait retourner 0 si aucune tuile n\'est chargée pour la position donnée', () => {
@@ -82,12 +77,8 @@ describe('Analyse Solaire (Module Analysis)', () => {
     });
 
     it('findTerrainIntersection (Algorithme) devrait trouver le point d\'impact exact', () => {
-        // Version simplifiée pour tester la logique mathématique
-        const mockGetAltitude = (x: number, z: number) => 1000;
-        
+        const mockGetAltitude = (_x: number, _z: number) => 1000;
         const ray = new THREE.Ray(new THREE.Vector3(0, 5000, 0), new THREE.Vector3(0, -1, 0));
-        
-        // On réimplémente localement la logique pour valider l'algorithme
         const stepSize = 100;
         let hitY = 0;
         for (let dist = 0; dist < 10000; dist += stepSize) {

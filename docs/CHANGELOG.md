@@ -6,12 +6,15 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ## [3.9.3] - 2026-03-12
 ### ✨ Ajouté
-- **Brouillard Adaptatif :** Système de brouillard linéaire dynamique lié à la distance de la caméra. L'horizon reste masqué proportionnellement, garantissant une clarté parfaite au premier plan quel que soit le zoom.
-- **Voile Atmosphérique :** Nouveau curseur de réglage (plage 20-100km) pour ajuster la profondeur de visibilité.
+- **Brouillard Adaptatif :** Système de brouillard linéaire dynamique lié à la distance de la caméra.
+- **Voile Atmosphérique :** Nouveau curseur de réglage (plage 20-100km).
+- **Filtrage Anisotrope :** Activation de l'anisotropie maximale sur les textures pour une netteté parfaite à angle rasant.
 
 ### ✨ Améliorations
-- **Portée Horizon :** Extension du plan de coupe lointain (`far`) à 250km pour éviter les trous à l'horizon en vue satellite.
-- **Optimisation Dézoom :** Bridage du dézoom maximal à 100km pour prévenir les chutes de performances et la saturation mémoire.
+- **Seuils Ultra-LOD :** Déclenchement du Zoom 14 dès 15km d'altitude pour éliminer tout flou lors de la descente.
+- **Portée Horizon :** Extension du plan de coupe lointain (`far`) à 250km.
+- **Optimisation Dézoom :** Bridage du dézoom maximal à 100km.
+- **Chargement Résilient :** Isolation du relief ; le terrain s'affiche désormais même en cas d'erreur de chargement de l'image satellite.
 
 ## [3.9.2] - 2026-03-12
 ### ✨ Ajouté
