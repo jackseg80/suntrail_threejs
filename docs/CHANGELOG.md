@@ -4,6 +4,20 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [3.9.2] - 2026-03-12
+### ✨ Ajouté
+- **Profil d'Altitude Interactif :** Nouveau panneau dynamique affichant le dénivelé d'un tracé GPX.
+- **Synchronisation 3D :** Survol du graphique synchronisé avec un marqueur sphérique sur la carte.
+
+### ✨ Améliorations
+- **Esthétique GPX :** Tracé affiné avec effet néon orange/rouge haute intensité.
+- **Marqueur de Profil :** Pastille bleu cyan lumineuse, agrandie et surélevée de 20m pour rester visible au-dessus du tracé.
+- **Stabilité LOD :** Recalcul dynamique des positions monde lors des changements de niveau de détail ou de recentrage.
+
+### 🐞 Corrections
+- **Cache de Terrain :** Correction d'une corruption de données qui causait l'affichage de tuiles noires.
+- **Sécurité Swisstopo :** Gestion robuste des textures vides ou manquantes.
+
 ## [3.9.1] - 2026-03-12
 ### ✨ Ajouté
 - **Sonde Solaire (Analyse 24h) :** Nouvel outil d'analyse permettant de calculer la durée d'ensoleillement réelle d'un point cliqué, en tenant compte de l'obstruction par les montagnes environnantes.

@@ -114,14 +114,23 @@ function setupProfileInteractions(): void {
 
     // Création du marqueur 3D s'il n'existe pas
     if (!state.profileMarker) {
-        const geo = new THREE.SphereGeometry(15, 16, 16);
-        const mat = new THREE.MeshBasicMaterial({ color: 0x3b82f6 });
+        const geo = new THREE.SphereGeometry(25, 32, 32);
+        const mat = new THREE.MeshStandardMaterial({ 
+            color: 0x00ffff, 
+            emissive: 0x00ffff, 
+            emissiveIntensity: 2,
+            roughness: 0,
+            metalness: 1
+        });
         state.profileMarker = new THREE.Mesh(geo, mat);
+        
         // Ajout d'une ligne verticale sous le marqueur
-        const lineGeo = new THREE.CylinderGeometry(2, 2, 1000, 8);
-        const line = new THREE.Mesh(lineGeo, new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.5 }));
-        line.position.y = -500;
+        const lineGeo = new THREE.CylinderGeometry(2, 2, 2000, 8);
+        const line = new THREE.Mesh(lineGeo, new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.4 }));
+        line.position.y = -1000;
         state.profileMarker.add(line);
+        
+        state.profileMarker.renderOrder = 2000; // S'assurer qu'il passe devant le tracé
         state.profileMarker.visible = false;
         if (state.scene) state.scene.add(state.profileMarker);
     }
@@ -154,7 +163,8 @@ function setupProfileInteractions(): void {
 
         // Mise à jour du marqueur 3D
         if (state.profileMarker) {
-            state.profileMarker.position.copy(point.pos);
+            // On l'élève de 20m pour qu'il survole le tracé (évite d'être caché dedans)
+            state.profileMarker.position.copy(point.pos).add(new THREE.Vector3(0, 20, 0));
             state.profileMarker.visible = true;
         }
     };

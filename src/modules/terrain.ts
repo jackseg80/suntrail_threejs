@@ -432,9 +432,20 @@ export function updateGPXMesh(): void {
     state.gpxPoints = threePoints;
     const curve = new THREE.CatmullRomCurve3(threePoints);
     const camAlt = state.camera ? state.camera.position.y : 5000;
-    const thickness = Math.max(8, camAlt / 250); 
-    const geometry = new THREE.TubeGeometry(curve, threePoints.length, thickness, 8, false);
-    const material = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xaa0000, emissiveIntensity: 0.8, roughness: 0.3, metalness: 0.5, transparent: true, opacity: 0.9 });
+    // Rayon plus fin et dépendant de l'altitude pour rester élégant
+    const thickness = Math.max(4, camAlt / 400); 
+    const geometry = new THREE.TubeGeometry(curve, threePoints.length * 2, thickness, 8, false);
+    
+    const material = new THREE.MeshStandardMaterial({ 
+        color: 0xff3300, 
+        emissive: 0xff0000, 
+        emissiveIntensity: 2.0, 
+        roughness: 0.2, 
+        metalness: 0.8, 
+        transparent: true, 
+        opacity: 0.8 
+    });
+    
     state.gpxMesh = new THREE.Mesh(geometry, material);
     state.gpxMesh.renderOrder = 1000;
     if (state.scene) state.scene.add(state.gpxMesh);

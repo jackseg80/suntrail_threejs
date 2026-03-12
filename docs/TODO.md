@@ -2,9 +2,14 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
-## 🏁 En cours (v3.9.2) - Végétation & Analyse
-- [ ] **Profil d'Altitude Interactif** : Graphique de dénivelé dynamique synchronisé avec la trace GPX en 3D.
+## 🏁 En cours (v3.9.3) - Végétation
 - [ ] **Forêts & Arbres 3D** : Génération de végétation 3D (InstancedMesh) basée sur la couverture forestière.
+
+## ✅ Terminé (v3.9.2)
+- [x] **Profil d'Altitude Interactif** : Graphique de dénivelé dynamique synchronisé avec la trace GPX en 3D.
+- [x] **Refonte Esthétique GPX** : Tracé néon orange affiné et marqueur bleu cyan surélevé (+20m).
+- [x] **Correction Synchronisation** : Recalcul des positions lors des changements de LOD/Zoom.
+- [x] **Correctif Rendu** : Résolution du bug des tuiles noires (correction cache).
 
 ## ✅ Terminé (v3.9.1)
 - [x] **Sonde Solaire** : Outil d'analyse au clic (durée d'ensoleillement 24h avec occlusion relief).
