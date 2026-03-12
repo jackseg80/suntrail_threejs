@@ -8,9 +8,11 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 ### ✨ Ajouté
 - **Sonde Solaire (Analyse 24h) :** Nouvel outil d'analyse permettant de calculer la durée d'ensoleillement réelle d'un point cliqué, en tenant compte de l'obstruction par les montagnes environnantes.
 - **Ray-marching CPU :** Implémentation d'un algorithme de suivi de rayon performant pour détecter l'occlusion solaire sur une portée de 40km.
+- **Interface d'Analyse :** Panneau agrandi avec échelle temporelle (quarts d'heure), légende des couleurs et fermeture intelligente au clic extérieur.
 - **Tests de Validation :** Ajout d'une suite de tests unitaires pour le module d'analyse (`analysis.test.ts`) garantissant la précision des calculs d'altitude et d'occlusion.
 
 ### ✨ Améliorations
+- **Alignement Solaire :** Synchronisation parfaite entre le vecteur de calcul de la sonde et le rendu visuel des ombres.
 - **Extraction Pixel Terrain :** La classe `Tile` stocke désormais les données brutes d'élévation (`pixelData`) pour un accès CPU instantané sans solliciter le GPU.
 
 ## [3.8.5] - 2026-03-12

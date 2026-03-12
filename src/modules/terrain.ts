@@ -6,6 +6,7 @@ export const EARTH_CIRCUMFERENCE = 40075016.68;
 
 interface CachedData {
     elev: THREE.Texture;
+    pixelData: Uint8ClampedArray | null;
     color: THREE.Texture;
     overlay: THREE.Texture | null;
     slopes: THREE.Texture | null;
@@ -57,7 +58,7 @@ async function processLoadQueue() {
     if (loadQueue.length > 0) setTimeout(processLoadQueue, 4); 
 }
 
-function addToCache(key: string, elevTex: THREE.Texture, colorTex: THREE.Texture, overlayTex: THREE.Texture | null, slopesTex: THREE.Texture | null): void {
+function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8ClampedArray | null, colorTex: THREE.Texture, overlayTex: THREE.Texture | null, slopesTex: THREE.Texture | null): void {
     if (dataCache.size >= MAX_CACHE_SIZE) {
         const oldestKey = dataCache.keys().next().value;
         if (oldestKey) {
@@ -70,7 +71,7 @@ function addToCache(key: string, elevTex: THREE.Texture, colorTex: THREE.Texture
             dataCache.delete(oldestKey);
         }
     }
-    dataCache.set(key, { elev: elevTex, color: colorTex, overlay: overlayTex, slopes: slopesTex });
+    dataCache.set(key, { elev: elevTex, pixelData, color: colorTex, overlay: overlayTex, slopes: slopesTex });
 }
 
 function getFromCache(key: string): CachedData | null {
@@ -226,7 +227,9 @@ export class Tile {
         const cacheKey = `${state.MAP_SOURCE}_${state.SHOW_TRAILS}_${state.SHOW_SLOPES}_${this.key}`;
         const cached = getFromCache(cacheKey);
         if (cached) {
-            this.elevationTex = cached.elev; this.colorTex = cached.color;
+            this.elevationTex = cached.elev; 
+            this.pixelData = cached.pixelData; // Restauration du cache
+            this.colorTex = cached.color;
             this.overlayTex = cached.overlay; this.slopesTex = cached.slopes;
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
             return;

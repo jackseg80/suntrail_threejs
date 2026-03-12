@@ -44,7 +44,7 @@ export function isSunOccluded(origin: THREE.Vector3, sunDir: THREE.Vector3): boo
 
     const stepSize = 150; // Pas de 150m pour le ray-marching
     const maxDist = 40000; // On cherche jusqu'à 40km
-    let currentDist = stepSize * 2; // On commence un peu plus loin pour éviter l'auto-occlusion
+    let currentDist = stepSize * 5; // Marge accrue pour éviter l'auto-occlusion (v3.9.1 stable)
 
     while (currentDist < maxDist) {
         const testPt = origin.clone().add(sunDir.clone().multiplyScalar(currentDist));
@@ -81,41 +81,52 @@ export async function runSolarProbe(worldX: number, worldZ: number, altitude: nu
     date.setHours(0, 0, 0, 0);
 
     let sunMinutes = 0;
-    const samples = 48; // Toutes les 30 min
+    const samples = 96; // Toutes les 15 min pour plus de précision
     const results: number[] = []; // 0: Nuit, 1: Ombre, 2: Soleil
 
     // On utilise un générateurs ou des délais pour ne pas freezer l'UI
     for (let i = 0; i < samples; i++) {
-        const sampleDate = new Date(date.getTime() + i * 30 * 60000);
-        const sunPos = SunCalc.getPosition(sampleDate, state.TARGET_LAT, state.TARGET_LON);
+        const sampleDate = new Date(date.getTime() + i * 15 * 60000);
+        // Utilisation des coordonnées GPS réelles du point pour SunCalc
+        const currentGPS = worldToLngLat(worldX, worldZ);
+        const sunPos = SunCalc.getPosition(sampleDate, currentGPS.lat, currentGPS.lon);
         
         let res = 0;
         if (sunPos.altitude > 0) {
             const sunDir = new THREE.Vector3();
-            sunDir.x = -Math.sin(sunPos.azimuth) * Math.cos(sunPos.altitude);
-            sunDir.y = Math.sin(sunPos.altitude);
-            sunDir.z = Math.cos(sunPos.azimuth) * Math.cos(sunPos.altitude);
+            const phi = sunPos.altitude;
+            const az = sunPos.azimuth;
             
-            if (isSunOccluded(origin, sunDir)) {
+            sunDir.x = Math.cos(phi) * -Math.sin(az);
+            sunDir.y = Math.sin(phi);
+            sunDir.z = Math.cos(phi) * Math.cos(az);
+            sunDir.normalize();
+            
+            const probeOrigin = origin.clone().add(new THREE.Vector3(0, 5, 0));
+            
+            if (isSunOccluded(probeOrigin, sunDir)) {
                 res = 1;
             } else {
                 res = 2;
-                sunMinutes += 30;
+                sunMinutes += 15;
             }
         }
         results.push(res);
 
         // Mise à jour visuelle progressive
-        if (i % 8 === 0) {
+        if (i % 12 === 0) {
             statusDisp.textContent = `Analyse ${Math.round((i/samples)*100)}%`;
             await new Promise(r => setTimeout(r, 0));
         }
     }
 
     // Rendu de la timeline
-    results.forEach(res => {
+    results.forEach((res, i) => {
         const segment = document.createElement('div');
         segment.style.flex = '1';
+        // Bordure subtile toutes les heures (tous les 4 segments de 15min)
+        if (i % 4 === 0 && i > 0) segment.style.borderLeft = '1px solid rgba(255,255,255,0.1)';
+        
         if (res === 0) segment.style.background = '#000';
         else if (res === 1) segment.style.background = '#444';
         else segment.style.background = '#ffd700';

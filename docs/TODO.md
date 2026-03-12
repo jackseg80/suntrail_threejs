@@ -8,6 +8,8 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 
 ## ✅ Terminé (v3.9.1)
 - [x] **Sonde Solaire** : Outil d'analyse au clic (durée d'ensoleillement 24h avec occlusion relief).
+- [x] **Stabilisation Solaire** : Alignement du vecteur sonde avec le moteur 3D et prévention auto-occlusion.
+- [x] **Refonte Interface Sonde** : Panneau agrandi, échelle au 1/4 d'heure, légende et fermeture au clic extérieur.
 - [x] **Extraction Pixel Terrain** : Stockage CPU `pixelData` pour analyse instantanée.
 - [x] **Tests Unitaires d'Analyse** : Validation Vitest du ray-marching et du décodage Terrain-RGB.
 
@@ -20,6 +22,7 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 
 
 ## 🌟 Version 4.0 - Réalité Augmentée & Moteur Avancé
+- [ ] **Moteur d'Analyse Solaire Avancé** : Refonte de l'algorithme d'occlusion pour une précision métrique (Horizon Mapping ou interpolation bi-linéaire des textures d'élévation).
 - [ ] **Moteur QuadTree LOD** : Refonte du système de tuiles pour mixer les résolutions (ex: Zoom 15 au centre, Zoom 11 au loin).
 - [ ] **Zoom 15 (Ultra-Détail)** : Intégration du niveau de détail maximal (précision ~1m).
 - [ ] **Signalétique Officielle Suisse** : Typage couleur des sentiers (Jaune/Rouge/Bleu).

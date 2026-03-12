@@ -265,12 +265,29 @@ export function initUI(): void {
     }
 
     const closeProbe = document.getElementById('close-probe');
+    const probeResult = document.getElementById('probe-result');
+
     if (closeProbe) {
         closeProbe.addEventListener('click', () => {
-            const res = document.getElementById('probe-result');
-            if (res) res.style.display = 'none';
+            if (probeResult) probeResult.style.display = 'none';
         });
     }
+
+    if (probeResult) {
+        // Empêche la fermeture quand on clique dans le panneau lui-même
+        probeResult.addEventListener('click', (e) => e.stopPropagation());
+    }
+
+    // Fermeture globale des panels au clic ailleurs (v3.9.1)
+    window.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        if (probeResult && probeResult.style.display === 'block') {
+            // Si on clique sur le canvas ou ailleurs que sur le bouton de lancement
+            if (target.tagName === 'CANVAS' || !target.closest('#probe-btn')) {
+                probeResult.style.display = 'none';
+            }
+        }
+    });
 
     // --- RÉGLAGES TECHNIQUES ---
     const resSlider = document.getElementById('res-slider') as HTMLInputElement;
