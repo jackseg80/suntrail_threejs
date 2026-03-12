@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { initUI } from './ui';
-import { state } from './state';
 
 // Mock Capacitor Geolocation
 vi.mock('@capacitor/geolocation', () => ({

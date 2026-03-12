@@ -130,7 +130,6 @@ describe('terrain.ts', () => {
 
         it('should calculate correct world position for neighbor tile', () => {
             const zoom = 5;
-            const originX = 10;
             const tileX = 11;
             const tile = new Tile(tileX, 10, zoom, '5/11/10');
             
