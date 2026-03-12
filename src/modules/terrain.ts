@@ -269,7 +269,8 @@ export class Tile {
             if (imgOverlay) { this.overlayTex = new THREE.Texture(imgOverlay); this.overlayTex.flipY = false; this.overlayTex.needsUpdate = true; this.overlayTex.colorSpace = THREE.SRGBColorSpace; }
             if (imgSlopes) { this.slopesTex = new THREE.Texture(imgSlopes); this.slopesTex.flipY = false; this.slopesTex.needsUpdate = true; this.slopesTex.colorSpace = THREE.SRGBColorSpace; }
 
-            addToCache(cacheKey, this.elevationTex, this.colorTex, this.overlayTex, this.slopesTex);
+            // CORRECTION ORDRE ARGUMENTS (v3.9.2) : pixelData doit être le 3ème argument
+            addToCache(cacheKey, this.elevationTex, this.pixelData, this.colorTex, this.overlayTex, this.slopesTex);
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
         } catch (e) { this.status = 'failed'; }
     }
@@ -287,6 +288,11 @@ export class Tile {
 
     buildMesh(resolution: number): void {
         if (!this.elevationTex || !this.colorTex || this.status as any === 'disposed') return;
+        
+        // --- VÉRIFICATION DE VALIDITÉ (v3.9.2) ---
+        // Si Swisstopo renvoie du vide ou 404, on évite de créer un mesh noir
+        if (!this.colorTex.image || this.colorTex.image.width === 0) return;
+
         const oldMesh = this.mesh;
         const geometry = getPlaneGeometry(resolution, this.tileSizeMeters);
         const material = new THREE.MeshStandardMaterial({ map: this.colorTex, roughness: 1.0, metalness: 0.0, transparent: true, opacity: 0 });

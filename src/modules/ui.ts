@@ -9,6 +9,7 @@ import { updateVisibleTiles, activeTiles, lngLatToTile, worldToLngLat, resetTerr
 import { isPositionInSwitzerland, showToast } from './utils';
 import { applyPreset, detectBestPreset } from './performance';
 import { runSolarProbe } from './analysis';
+import { updateElevationProfile } from './profile';
 
 let lastClickedCoords = { x: 0, z: 0, alt: 0 };
 
@@ -424,6 +425,11 @@ export function initUI(): void {
     }
 
     initGeocoding();
+
+    // --- RESIZE PROFILE (v3.9.2) ---
+    window.addEventListener('resize', () => {
+        if (state.rawGpxData) updateElevationProfile();
+    });
 }
 
 let lastSourceCheck = 0;
@@ -484,6 +490,7 @@ async function handleGPX(xml: string): Promise<void> {
         state.camera.position.set(state.gpxPoints[0].x, state.gpxPoints[0].y + 2000, state.gpxPoints[0].z + 4000);
         state.controls.update();
     }
+    updateElevationProfile(); // v3.9.2
     await updateVisibleTiles();
 }
 

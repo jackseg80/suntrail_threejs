@@ -91,6 +91,7 @@ export interface State {
     rawGpxData: any; // gpxParser result
     gpxPoints: THREE.Vector3[];
     gpxMesh: THREE.Mesh | null;
+    profileMarker: THREE.Mesh | null;
     trailProgress: number;
     isFollowingTrail: boolean;
     
@@ -146,6 +147,7 @@ export const state: State = {
     rawGpxData: null,
     gpxPoints: [],
     gpxMesh: null,
+    profileMarker: null,
     trailProgress: 0,
     isFollowingTrail: false,
 
