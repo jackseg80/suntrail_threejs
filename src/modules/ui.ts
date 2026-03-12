@@ -19,6 +19,18 @@ export function initUI(): void {
     
     const k1 = document.getElementById('k1') as HTMLInputElement;
     if (s1 && k1) k1.value = s1;
+
+    // --- DEEP LINKING (v3.8) - LECTURE INITIALE ---
+    const hash = window.location.hash;
+    if (hash && hash.includes('lat=')) {
+        const params = new URLSearchParams(hash.substring(1));
+        state.TARGET_LAT = parseFloat(params.get('lat') || '46.6863');
+        state.TARGET_LON = parseFloat(params.get('lon') || '7.6617');
+        state.ZOOM = parseInt(params.get('z') || '13');
+        const time = parseInt(params.get('t') || '720');
+        // Note: l'application de l'heure se fera après l'initialisation complète
+        state.simDate.setHours(Math.floor(time / 60), time % 60);
+    }
     
     const bgo = document.getElementById('bgo');
     if (bgo) bgo.addEventListener('click', go);

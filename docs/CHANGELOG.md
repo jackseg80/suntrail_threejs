@@ -4,7 +4,18 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
-## [3.7.3] - 2026-03-12 (Gestion du Stockage)
+## [3.8.0] - 2026-03-12 (Navigation & Partage)
+### Ajouté
+- **Partage de Vue (Deep Linking) :** Mise à jour automatique de l'URL avec les coordonnées, le zoom et l'heure (`#lat=&lon=&z=&t=`). Permet de partager une simulation exacte via un simple lien.
+- **Boussole 3D :** Nouvel indicateur visuel synchronisé avec l'orientation de la caméra (Nord magnétique dynamique).
+- **Moteur de Recherche Gratuit :** Migration finale vers **Nominatim (OSM)** pour des recherches illimitées et sans coût API.
+
+### Changé
+- **LOD Naturel :** Recalibrage des seuils de zoom pour une transition plus douce entre les niveaux de détail.
+
+---
+
+## [3.7.6] - 2026-03-12 (Zoom Naturel)
 ### Ajouté
 - **Gestion du Cache :** Nouveau bouton dans les réglages pour vider manuellement le cache persistant des tuiles.
 - **Mise à jour de Clé API :** Possibilité de modifier et sauvegarder une nouvelle clé MapTiler Cloud directement depuis l'interface, sans rechargement.

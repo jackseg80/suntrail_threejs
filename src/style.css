@@ -207,3 +207,14 @@ input[type="range"] { accent-color: var(--accent); }
     #bottom-bar { width: calc(100% - 30px); padding: 10px 15px; }
     #panel { width: 85%; }
 }
+
+/* --- BOUSSOLE 3D (v3.8) --- */
+#compass { position: fixed; bottom: 100px; right: 20px; width: 60px; height: 60px; z-index: 1000; pointer-events: none; }
+#compass-disk { position: relative; width: 100%; height: 100%; border-radius: 50%; background: rgba(18, 20, 28, 0.6); backdrop-filter: blur(10px); border: 2px solid var(--border); transition: transform 0.1s ease-out; }
+#compass-disk span { position: absolute; font-size: 10px; font-weight: 900; color: var(--t2); transform: translate(-50%, -50%); }
+#compass-disk .n { top: 15%; left: 50%; color: #ef4444; }
+#compass-disk .e { top: 50%; left: 85%; }
+#compass-disk .s { top: 85%; left: 50%; }
+#compass-disk .w { top: 50%; left: 15%; }
+#compass-needle { position: absolute; top: 50%; left: 50%; width: 2px; height: 30px; background: var(--accent); transform: translate(-50%, -100%); box-shadow: 0 0 10px var(--accent); }
+

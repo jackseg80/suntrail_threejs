@@ -2,22 +2,16 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
-## 🏁 En cours (v3.7.6)
-- [x] Optimisation des seuils de zoom (LOD) et hystérésis (v3.7.6).
-- [x] Correction du Z-Fighting (Offset vertical 10cm).
-- [x] Stabilité visuelle sur mobile (Logarithmic Depth Buffer).
-- [x] Optimisation drastique des requêtes MapTiler (Plan de Sauvetage).
-- [x] Cache Persistant (Cache API) pour les tuiles de relief.
-- [x] Recherche gratuite via Nominatim (OpenStreetMap).
-- [x] Statistiques Session (Réseau vs Cache).
-- [x] GPS Hybride résilient (Web + Mobile).
-- [x] Carte des Pentes > 30° (Sécurité Swisstopo).
-- [ ] Ajouter une boussole 3D en bas de l'écran.
-
-## 🚀 Prochaine version (v3.8) - Immersion & Analyse
-- [ ] **Forêts & Arbres 3D** : Génération de végétation 3D (InstancedMesh) basée sur la couverture forestière.
+## 🏁 En cours (v3.8.0)
+- [x] Partage de Vue (Deep Linking via URL Hash).
+- [x] Boussole 3D synchronisée (Finition visuelle).
+- [x] Moteur de recherche gratuit (Nominatim).
+- [x] Optimisation des seuils de zoom (LOD) et hystérésis.
 - [ ] **Sonde Solaire** : Outil d'analyse au clic (durée d'ensoleillement 24h).
-- [ ] **Partage de Vue (Deep Linking)** : Partage de position/heure via URL.
+
+## 🚀 Prochaine version (v3.9) - Végétation & Analyse
+- [ ] **Forêts & Arbres 3D** : Génération de végétation 3D (InstancedMesh) basée sur la couverture forestière.
+- [ ] **Profil d'Altitude Interactif** : Graphique de dénivelé dynamique synchronisé avec la trace GPX en 3D.
 
 ## 🌟 Version 4.0 - Réalité Augmentée & Moteur Avancé
 - [ ] **Moteur QuadTree LOD** : Refonte du système de tuiles pour mixer les résolutions (ex: Zoom 15 au centre, Zoom 11 au loin).

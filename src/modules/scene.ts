@@ -128,10 +128,10 @@ export async function initScene(): Promise<void> {
         let newZoom = state.ZOOM;
         // --- SEUILS DE ZOOM OPTIMISÉS (v3.7.6) ---
         if (state.ZOOM === 13) {
-            if (dist < 2500) newZoom = 14;      // Plus proche du sol pour le Zoom 14
-            else if (dist > 18000) newZoom = 12; // Plus tôt vers le Zoom 12
+            if (dist < 2500) newZoom = 14;      
+            else if (dist > 18000) newZoom = 12; 
         } else if (state.ZOOM === 14) {
-            if (dist > 3500) newZoom = 13;      // Zone tampon (Hystérésis) pour éviter le clignotement
+            if (dist > 3500) newZoom = 13;      
         } else if (state.ZOOM === 12) {
             if (dist < 15000) newZoom = 13;
             else if (dist > 55000) newZoom = 11;
@@ -173,6 +173,14 @@ export async function initScene(): Promise<void> {
             updateUIZoom(state.ZOOM);
         }
         updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, dist, state.controls.target.x, state.controls.target.z);
+
+        // --- DEEP LINKING (v3.8) ---
+        const lat = gpsCenter.lat.toFixed(5);
+        const lon = gpsCenter.lon.toFixed(5);
+        const zoom = state.ZOOM;
+        const timeSlider = document.getElementById('time-slider') as HTMLInputElement;
+        const time = timeSlider ? timeSlider.value : 720;
+        window.history.replaceState(null, '', `#lat=${lat}&lon=${lon}&z=${zoom}&t=${time}`);
     }, 200);
     
     state.controls.addEventListener('change', throttledUpdate);
