@@ -2,7 +2,9 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
-## 🏁 En cours (v3.7.4)
+## 🏁 En cours (v3.7.5)
+- [x] Correction du Z-Fighting (Offset vertical 10cm).
+- [x] Stabilité visuelle sur mobile (Logarithmic Depth Buffer).
 - [x] Optimisation drastique des requêtes MapTiler (Plan de Sauvetage).
 - [x] Cache Persistant (Cache API) pour les tuiles de relief.
 - [x] Recherche gratuite via Nominatim (OpenStreetMap).

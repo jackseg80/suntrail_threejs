@@ -324,6 +324,9 @@ export class Tile {
         this.opacity = 0; this.isFadingIn = true;
 
         if (oldMesh) {
+            // On descend l'ancien maillage très légèrement (10cm) pour éviter le Z-Fighting durant la superposition (v3.7.5)
+            oldMesh.position.y -= 0.1;
+
             setTimeout(() => {
                 if (state.scene) state.scene.remove(oldMesh);
                 if (oldMesh.material instanceof THREE.Material) oldMesh.material.dispose();

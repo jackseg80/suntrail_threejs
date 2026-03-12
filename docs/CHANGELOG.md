@@ -14,6 +14,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [3.7.5] - 2026-03-12 (Stabilité Visuelle Mobile)
+### Corrigé
+- **Z-Fighting & Scintillements :** Implémentation d'un décalage vertical (offset de 10cm) sur l'ancien maillage durant les transitions. Supprime les fourmillements visuels lors des mouvements de caméra sur mobile.
+- **Cycle de Vie Tile :** Correction d'un bug dans la classe `Tile` (méthode `isVisible`) qui causait un écran noir.
+
+---
+
 ## [3.7.4] - 2026-03-12 (Conformité & Transparence)
 ### Ajouté
 - **Statistiques Réseau :** Affichage en temps réel des requêtes économisées grâce au cache (Compteurs Réseau vs Cache).
