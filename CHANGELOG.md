@@ -1,34 +1,74 @@
-# Changelog - SunTrail 3D
+# 📜 Journal des Modifications - SunTrail 3D
 
-Toutes les modifications notables de ce projet sont documentées dans ce fichier.
+L'historique complet du développement, des prototypes initiaux à la plateforme professionnelle actuelle.
 
-## [3.5.0] - 2026-03-12
+---
+
+## [3.5.0] - 2026-03-12 (L'Ère de la Stabilité)
 ### Ajouté
-- **Migration TypeScript :** Conversion de l'intégralité du code source (.js -> .ts) pour une stabilité accrue et un meilleur typage Three.js.
-- **Heures Magiques :** Détection et rendu visuel de l'Heure Dorée et de l'Heure Bleue dans `sun.ts`.
-- **GPS Natif :** Intégration de `@capacitor/geolocation` pour une meilleure fiabilité sur Android.
-- **Workflow Deploy :** Nouveau script `npm run deploy` automatisant Check-Type + Build + Sync.
-- **Dossier Public :** Organisation structurée des assets dans `/public/assets`.
+- **Migration TypeScript :** Refonte totale de la structure logicielle (.js -> .ts). Typage strict de l'état global et des interfaces Three.js.
+- **Heures Magiques :** Système d'ambiance dynamique (Golden Hour & Blue Hour) avec interpolation des couleurs du ciel, de la lumière et du brouillard.
+- **GPS Natif :** Intégration du plugin `@capacitor/geolocation` pour Android, remplaçant l'API Web instable.
+- **Assets Pro :** Automatisation de la génération des ressources Android (74 fichiers d'icônes et splash screens).
+- **Workflow Deploy :** Script `npm run deploy` (Check -> Build -> Sync).
 
 ### Changé
-- **Gestion Mémoire :** Implémentation de `disposeScene` et `clearCache` pour éviter les fuites GPU.
-- **Cache Dynamique :** Limitation du cache à 100 tuiles sur mobile et 400 sur PC.
-- **Interface :** Mise à jour du label de phase solaire en temps réel.
+- **Gestion Mémoire :** Implémentation du nettoyage GPU via `disposeScene()` et d'un cache de textures dynamique (100 tuiles Mobile / 400 PC).
 
-## [3.4.0] - 2026-03-11
-### Ajouté
-- Page d'accueil immersive avec guide pour la clé MapTiler.
-- Notifications Toast pour l'optimisation du maillage (LOD).
-- Signature Jackseg dans l'interface.
+---
 
-## [3.3.0] - 2026-03-10
+## [3.4.0] - 2026-03-11 (Immersion & UX)
 ### Ajouté
-- Refonte majeure de l'UI pour le tactile (boutons larges, glassmorphism).
-- Sélecteur de calques visuel avec vignettes.
-- Barre temporelle ergonomique en bas de l'écran.
+- **Landing Page :** Écran d'accueil stylisé avec aide contextuelle pour les clés MapTiler Cloud.
+- **Notifications :** Feedback visuel (Toasts) lors des changements de résolution du maillage (LOD).
+- **Stabilité :** Utilisation des previews statiques officielles pour les vignettes du sélecteur de calques.
 
-## [3.0.0] - 2026-03-05
+---
+
+## [3.3.0] - 2026-03-10 (Refonte Mobile & Tactile)
 ### Ajouté
-- Support multi-grilles pour un horizon infini.
-- Ombres portées spectaculaires en montagne.
-- Détection automatique de la source de carte (Swisstopo vs Reste du monde).
+- **UI "Touch-First" :** Nouvelle interface ergonomique avec boutons larges et panneau de réglages coulissant.
+- **Contrôles Adaptatifs :** Utilisation de `OrbitControls` sur mobile et `MapControls` sur PC.
+- **Boussole 3D :** Indicateur d'orientation synchronisé avec la caméra.
+
+---
+
+## [3.1.0] - [3.2.0] - 2026-03-08 (Cartographie Avancée)
+### Ajouté
+- **Fusion de Calques :** Algorithme de mélange (mix) dans le shader pour superposer les sentiers Swisstopo sur n'importe quel fond de carte.
+- **Moteur de Sommets :** Base de données locale des cimes alpines avec étiquetage dynamique en 3D.
+- **Analyse de Performance :** Intégration d'un moniteur FPS et d'un compteur de mémoire VRAM.
+
+---
+
+## [3.0.0] - 2026-03-05 (Le Grand Horizon)
+### Ajouté
+- **Multi-Résolution :** Support du Zoom 9 permettant une visibilité topographique jusqu'à l'horizon.
+- **Ombres de Montagne :** Optimisation de la Shadow Map pour des ombres portées réalistes sur de grandes distances.
+- **Auto-Source :** Basculement automatique Swisstopo/OpenTopoMap selon la position géographique.
+
+---
+
+## [2.0.0] - [2.5.0] - 2026-02-15 (La Révolution Technique)
+### Ajouté
+- **Moteur par Tuiles (Tile System) :** Passage d'un maillage unique à un système de tuiles dynamiques avec cache LRU.
+- **GPU Displacement :** Décodage de l'élévation RGB directement dans le Vertex Shader (gain de performance majeur).
+- **Intégration GPX :** Support des tracés de randonnée avec calcul automatique du dénivelé cumulé.
+- **Picking Altitude :** Système de lecture des données d'élévation au clic pour une précision métrique.
+
+### Corrigé (La Guerre des Coordonnées)
+- Migration vers la projection **Web Mercator (EPSG:3857)** rigoureuse pour aligner parfaitement le relief, les sentiers et les traces GPX.
+- **Anti-Spike Filter :** Implémentation d'un filtre Médian 3x3 pour supprimer les "pics" de relief causés par le Canvas Farbling (Brave Browser).
+
+---
+
+## [1.0.0] - 2026-02-01 (La Genèse)
+### Ajouté
+- **Moteur de base :** Initialisation du rendu Three.js et intégration de SunCalc pour la course du soleil.
+- **Interface primitive :** Curseur de temps simple et recherche de lieu basique.
+
+---
+
+### 💡 Anecdotes & Défis Techniques
+- **Le Mystère des Pics :** Découverte que certains navigateurs injectent du "bruit" dans les données d'image pour empêcher le tracking (Fingerprinting). Ce bruit créait des montagnes de 9000m de haut. Résolu par un filtrage spatial intelligent.
+- **L'Inversion de Mercator :** Long combat contre l'inversion de l'axe Y entre les tuiles cartographiques et le système de coordonnées de Three.js.
