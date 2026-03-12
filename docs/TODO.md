@@ -4,6 +4,8 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 
 ## 🏁 En cours (v3.6.x)
 - [x] Détection automatique du GPU (Performance Presets).
+- [x] Système de File d'Attente Prioritaire (Flux de chargement).
+- [x] Cache de Géométries Partagé (Réutilisation mémoire).
 - [x] Organisation Pro du projet (Dossiers /src, /docs, /public).
 - [x] Suite de tests automatisés (Vitest).
 - [ ] Ajouter une boussole 3D en bas de l'écran.

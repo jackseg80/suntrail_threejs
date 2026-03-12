@@ -16,6 +16,59 @@ export const activeLabels = new Map<string, any>();
 const dataCache = new Map<string, CachedData>();
 const MAX_CACHE_SIZE = isMobileDevice() ? 100 : 400; 
 
+// --- CACHE DE GÉOMÉTRIES (v3.6.1) ---
+const geometryCache = new Map<string, THREE.PlaneGeometry>();
+
+function getPlaneGeometry(res: number, size: number): THREE.PlaneGeometry {
+    const key = `${res}_${size}`;
+    if (!geometryCache.has(key)) {
+        const geometry = new THREE.PlaneGeometry(size, size, res, res);
+        geometry.rotateX(-Math.PI / 2);
+        
+        // Correction des UV pour l'alignement des textures (flip vertical)
+        const uvs = geometry.attributes.uv.array as Float32Array;
+        for (let i = 1; i < uvs.length; i += 2) {
+            uvs[i] = 1.0 - uvs[i];
+        }
+        geometryCache.set(key, geometry);
+    }
+    return geometryCache.get(key)!;
+}
+
+// --- QUEUE DE CHARGEMENT (v3.6.1) ---
+let loadQueue: Tile[] = [];
+let isProcessingQueue = false;
+
+async function processLoadQueue() {
+    if (isProcessingQueue || loadQueue.length === 0) return;
+    isProcessingQueue = true;
+
+    // Priorisation par distance
+    if (state.camera) {
+        const camX = state.camera.position.x;
+        const camZ = state.camera.position.z;
+        loadQueue.sort((a, b) => {
+            const da = Math.pow(a.worldX - camX, 2) + Math.pow(a.worldZ - camZ, 2);
+            const db = Math.pow(b.worldX - camX, 2) + Math.pow(b.worldZ - camZ, 2);
+            return da - db;
+        });
+    }
+
+    // On augmente le batch à 6 tuiles simultanées (v3.6.1)
+    const batch = loadQueue.splice(0, 6);
+    // On lance les chargements en PARALLÈLE
+    await Promise.all(batch.map(tile => {
+        if (tile.status === 'idle' || tile.status === 'failed') {
+            return tile.load();
+        }
+        return Promise.resolve();
+    }));
+
+    isProcessingQueue = false;
+    // On réduit le délai entre les batches pour plus de réactivité
+    if (loadQueue.length > 0) setTimeout(processLoadQueue, 4); 
+}
+
 export function clearCache(): void {
     for (const entry of dataCache.values()) {
         if (entry.elev) entry.elev.dispose();
@@ -150,7 +203,6 @@ export class Tile {
             return;
         }
 
-        await new Promise(r => setTimeout(r, Math.random() * 600));
         if ((this.status as string) === 'disposed') return;
         this.status = 'loading';
         
@@ -213,17 +265,17 @@ export class Tile {
         if (oldMesh && resolution !== this.currentResolution && this.tx === state.originTile.x && this.ty === state.originTile.y) {
             showToast(`Optimisation Relief : ${resolution}²`);
         }
-        const geometry = new THREE.PlaneGeometry(this.tileSizeMeters, this.tileSizeMeters, resolution, resolution);
-        geometry.rotateX(-Math.PI / 2);
-        const uvs = geometry.attributes.uv.array as Float32Array;
-        for (let i = 1; i < uvs.length; i += 2) uvs[i] = 1.0 - uvs[i];
-
+        
+        // Utilisation du cache de géométries (v3.6.1)
+        // La géométrie a déjà la taille tileSizeMeters, donc PAS besoin de mesh.scale
+        const geometry = getPlaneGeometry(resolution, this.tileSizeMeters);
+        
         const material = new THREE.MeshStandardMaterial({ 
             map: this.colorTex, 
             roughness: 1.0, 
             metalness: 0.0, 
             transparent: true, 
-            opacity: oldMesh ? 1 : 0 
+            opacity: oldMesh ? 1 : 0 // Évite le flash blanc si la tuile existe déjà
         });
 
         material.onBeforeCompile = (shader) => {
@@ -273,7 +325,6 @@ export class Tile {
 
         if (oldMesh) {
             if (state.scene) state.scene.remove(oldMesh);
-            oldMesh.geometry.dispose();
             if (oldMesh.material instanceof THREE.Material) oldMesh.material.dispose();
             if (oldMesh.customDepthMaterial) oldMesh.customDepthMaterial.dispose();
         } else {
@@ -295,9 +346,12 @@ export class Tile {
 
     dispose(): void {
         this.status = 'disposed';
+        // On retire de la file d'attente si elle y était
+        loadQueue = loadQueue.filter(t => t !== this);
+        
         if (this.mesh) {
             if (state.scene) state.scene.remove(this.mesh);
-            this.mesh.geometry.dispose();
+            // Géométrie partagée, on ne dispose pas !
             if (this.mesh.material instanceof THREE.Material) this.mesh.material.dispose();
             if (this.mesh.customDepthMaterial) this.mesh.customDepthMaterial.dispose();
             this.mesh = null;
@@ -306,6 +360,7 @@ export class Tile {
 }
 
 export function resetTerrain(): void {
+    loadQueue = []; // On vide la file
     clearLabels();
     for (const tile of activeTiles.values()) tile.dispose();
     activeTiles.clear();
@@ -415,7 +470,10 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
             let tile = activeTiles.get(key);
             if (!tile) {
                 tile = new Tile(tx, ty, zoom, key);
-                if (tile.isVisible()) { activeTiles.set(key, tile); tile.load(); }
+                if (tile.isVisible()) { 
+                    activeTiles.set(key, tile); 
+                    loadQueue.push(tile); // On ajoute à la file d'attente
+                }
             } else if (tile.status === 'loaded') {
                 const targetRes = calculateTargetLOD(tile, state.camera ? state.camera.position.x : 0, state.camera ? state.camera.position.z : 0);
                 if (targetRes !== tile.currentResolution) tile.buildMesh(targetRes);
@@ -426,6 +484,9 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
     for (const [key, tile] of activeTiles.entries()) {
         if (!keptTiles.has(key)) { tile.dispose(); activeTiles.delete(key); }
     }
+
+    // On lance le traitement de la file si ce n'est pas déjà fait
+    processLoadQueue();
 }
 
 export async function loadTerrain(): Promise<void> { await updateVisibleTiles(); }

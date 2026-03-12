@@ -4,6 +4,21 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [3.6.1] - 2026-03-12 (Fluidité Critique)
+### Ajouté
+- **Système de File d'Attente (Priority Queue) :** Chargement asynchrone des tuiles bridé au niveau CPU pour maintenir des FPS constants (144 FPS sur RTX 4080).
+- **Priorisation par Distance :** Les tuiles les plus proches de la caméra sont chargées et affichées en premier.
+- **Cache de Géométries Partagé :** Réutilisation massive des objets `PlaneGeometry` pour réduire la consommation mémoire et le temps de création des maillages.
+
+### Changé
+- **Parallélisme Adaptatif :** Chargement réseau de 6 tuiles en simultané sans blocage du thread principal.
+- **Interpolation LOD :** Suppression des flashs blancs lors des changements de résolution grâce à une gestion intelligente de l'opacité.
+
+### Corrigé
+- **Normales & Ombres :** Correction du calcul des ombres portées en revenant à des géométries à taille réelle (suppression du `mesh.scale` déformant).
+
+---
+
 ## [3.6.0] - 2026-03-12 (L'Intelligence Adaptative)
 ### Ajouté
 - **Auto-Performance (GPU Detection) :** Nouveau module `performance.ts` détectant le GPU via WebGL pour adapter les réglages au matériel.
