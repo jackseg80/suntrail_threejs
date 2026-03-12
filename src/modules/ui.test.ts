@@ -1,4 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+// Mocker localStorage AVANT toute chose pour éviter le SecurityError de JSDOM
+const storage: Record<string, string> = {};
+const localStorageMock = {
+    getItem: vi.fn((key: string) => storage[key] || null),
+    setItem: vi.fn((key: string, value: string) => { storage[key] = value.toString(); }),
+    removeItem: vi.fn((key: string) => { delete storage[key]; }),
+    clear: vi.fn(() => { Object.keys(storage).forEach(k => delete storage[k]); }),
+    length: 0,
+    key: vi.fn((i: number) => Object.keys(storage)[i] || null)
+};
+vi.stubGlobal('localStorage', localStorageMock);
+
 import { initUI } from './ui';
 import { state } from './state';
 
@@ -11,7 +24,7 @@ vi.mock('@capacitor/geolocation', () => ({
     }
 }));
 
-// Mock other modules to avoid circular dependencies in tests
+// Mock other modules
 vi.mock('./scene', () => ({ initScene: vi.fn() }));
 vi.mock('./performance', () => ({ 
     applyPreset: vi.fn(),
@@ -51,7 +64,7 @@ describe('ui.ts', () => {
             <button class="preset-btn" data-preset="eco"></button>
             <button class="preset-btn" data-preset="balanced"></button>
         `;
-        window.localStorage.clear();
+        localStorage.clear();
     });
 
     afterEach(() => {
@@ -61,7 +74,7 @@ describe('ui.ts', () => {
     });
 
     it('should load MapTiler key from localStorage into the input', () => {
-        window.localStorage.setItem('maptiler_key_3d', 'secret-key');
+        localStorage.setItem('maptiler_key_3d', 'secret-key');
         initUI();
         const k1 = document.getElementById('k1') as HTMLInputElement;
         expect(k1.value).toBe('secret-key');

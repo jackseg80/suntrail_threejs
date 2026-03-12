@@ -14,7 +14,9 @@ export function initUI(): void {
     const bestPreset = detectBestPreset();
     applyPreset(bestPreset);
 
-    const s1 = localStorage.getItem('maptiler_key_3d');
+    let s1 = '';
+    try { s1 = localStorage.getItem('maptiler_key_3d') || ''; } catch (e) {}
+    
     const k1 = document.getElementById('k1') as HTMLInputElement;
     if (s1 && k1) k1.value = s1;
     
