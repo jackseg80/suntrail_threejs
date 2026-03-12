@@ -457,11 +457,18 @@ function calculateTargetLOD(tile: Tile, camX: number, camZ: number): number {
 
 export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number = 0, worldZ: number = 0): Promise<void> {
     terrainUniforms.uExaggeration.value = state.RELIEF_EXAGGERATION;
+    
+    // Sécurité : si la caméra n'est pas encore prête, on ne fait rien pour éviter de tout vider
+    if (state.camera && Math.abs(state.camera.position.y) < 1) return;
+
     const currentGPS = worldToLngLat(worldX, worldZ);
     const keptTiles = new Set<string>();
     const zoom = state.ZOOM;
     const centerTile = lngLatToTile(currentGPS.lon, currentGPS.lat, zoom);
     const range = state.RANGE; 
+
+    // On crée une marge de sécurité pour éviter de supprimer/recréer sans arrêt aux bords
+    const margin = 1; 
 
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
@@ -470,22 +477,29 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
             let tile = activeTiles.get(key);
             if (!tile) {
                 tile = new Tile(tx, ty, zoom, key);
+                // On n'affiche que si c'est dans le frustum (optimisation)
                 if (tile.isVisible()) { 
                     activeTiles.set(key, tile); 
-                    loadQueue.push(tile); // On ajoute à la file d'attente
+                    loadQueue.push(tile);
                 }
             } else if (tile.status === 'loaded') {
                 const targetRes = calculateTargetLOD(tile, state.camera ? state.camera.position.x : 0, state.camera ? state.camera.position.z : 0);
-                if (targetRes !== tile.currentResolution) tile.buildMesh(targetRes);
+                if (targetRes !== tile.currentResolution) {
+                    tile.buildMesh(targetRes);
+                }
             }
         }
     }
 
+    // Suppression différée : on garde une marge pour éviter les flashs lors des rotations/mouvements légers
     for (const [key, tile] of activeTiles.entries()) {
-        if (!keptTiles.has(key)) { tile.dispose(); activeTiles.delete(key); }
+        const [tx, ty, tz] = key.split('_').map(Number);
+        if (tz !== zoom || Math.abs(tx - centerTile.x) > range + margin || Math.abs(ty - centerTile.y) > range + margin) {
+            tile.dispose(); 
+            activeTiles.delete(key); 
+        }
     }
 
-    // On lance le traitement de la file si ce n'est pas déjà fait
     processLoadQueue();
 }
 

@@ -308,6 +308,8 @@ export function autoSelectMapSource(lat: number, lon: number): void {
     if (state.hasManualSource) return;
     const isSwiss = isPositionInSwitzerland(lat, lon);
     const newSource = isSwiss ? 'swisstopo' : 'opentopomap';
+    
+    // On ne change la source que si elle est différente ET qu'on n'est pas déjà en train de charger
     if (state.MAP_SOURCE !== newSource) {
         state.MAP_SOURCE = newSource;
         const items = document.querySelectorAll('.layer-item');
@@ -315,6 +317,9 @@ export function autoSelectMapSource(lat: number, lon: number): void {
             i.classList.remove('active');
             if ((i as HTMLElement).dataset.source === newSource) i.classList.add('active');
         });
+        // refreshTerrain est appelé ici, ce qui vide tout. 
+        // On pourrait l'optimiser pour ne vider que les textures, mais resetTerrain est plus sûr pour l'instant.
+        refreshTerrain();
     }
 }
 
