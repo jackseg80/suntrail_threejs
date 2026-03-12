@@ -1,9 +1,17 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { lngLatToTile, worldToLngLat, Tile, EARTH_CIRCUMFERENCE, updateGPXMesh } from './terrain';
 import { state } from './state';
 
 describe('terrain.ts', () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.clearAllTimers();
+    });
     
     describe('GPX transformation', () => {
         beforeEach(() => {

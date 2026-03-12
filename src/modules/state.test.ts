@@ -1,18 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { state } from './state';
 
 describe('state.ts', () => {
     beforeEach(() => {
-        // Mock localStorage
-        const localStorageMock = (function() {
-            let store: Record<string, string> = {};
-            return {
-                getItem: (key: string) => store[key] || null,
-                setItem: (key: string, value: string) => { store[key] = value.toString(); },
-                clear: () => { store = {}; }
-            };
-        })();
-        Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+        // Utiliser le localStorage natif de JSDOM plutôt que de le redéfinir
+        window.localStorage.clear();
     });
 
     it('should have a default TARGET_LAT and TARGET_LON (Spiez)', () => {
@@ -21,11 +13,9 @@ describe('state.ts', () => {
     });
 
     it('should initialize MK from localStorage', () => {
-        localStorage.setItem('maptiler_key_3d', 'test-key');
-        // Re-import or re-evaluate state is tricky because it's a singleton
-        // But we can check if it reads it correctly on first load
-        // Since state is already imported, we test if we can set it
-        state.MK = localStorage.getItem('maptiler_key_3d') || '';
+        window.localStorage.setItem('maptiler_key_3d', 'test-key');
+        // On simule manuellement la lecture qui se fait normalement à l'import
+        state.MK = window.localStorage.getItem('maptiler_key_3d') || '';
         expect(state.MK).toBe('test-key');
     });
 
