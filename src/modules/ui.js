@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import gpxParser from 'gpxparser';
+import { Geolocation } from '@capacitor/geolocation';
 import { state } from './state.js';
 import { updateSunPosition } from './sun.js';
 import { initScene } from './scene.js';
@@ -44,10 +45,6 @@ export function initUI() {
             await refreshTerrain();
         });
     });
-
-import { Geolocation } from '@capacitor/geolocation';
-
-...
 
     // --- GESTION DU GPS ---
     const gpsBtn = document.getElementById('gps-btn');
