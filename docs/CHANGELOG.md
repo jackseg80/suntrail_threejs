@@ -14,6 +14,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [3.7.6] - 2026-03-12 (Zoom Naturel)
+### Changé
+- **Optimisation LOD :** Ajustement des seuils de zoom automatique pour des transitions plus douces (Zoom 14 activé plus près du sol).
+- **Hystérésis Zoom :** Élargissement des zones tampons pour supprimer le clignotement entre niveaux de détail lors de l'inclinaison caméra.
+
+---
+
 ## [3.7.5] - 2026-03-12 (Stabilité Visuelle Mobile)
 ### Corrigé
 - **Z-Fighting & Scintillements :** Implémentation d'un décalage vertical (offset de 10cm) sur l'ancien maillage durant les transitions. Supprime les fourmillements visuels lors des mouvements de caméra sur mobile.
