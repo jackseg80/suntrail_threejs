@@ -35,14 +35,17 @@ export function updateSunPosition(minutes) {
 
     const phaseSpan = document.getElementById('sun-phase');
     if (phaseSpan) {
-        if (altDeg > 5) {
+        if (altDeg > 6) {
             phaseSpan.textContent = "☀️ Plein jour";
             phaseSpan.style.color = "#FFD700";
-        } else if (altDeg > 0) {
-            phaseSpan.textContent = "🌅 Lever/Coucher";
+        } else if (altDeg > -4) {
+            phaseSpan.textContent = "🌅 Heure Dorée";
             phaseSpan.style.color = "#FF8C00";
         } else if (altDeg > -6) {
-            phaseSpan.textContent = "🌆 Crépuscule civil";
+            phaseSpan.textContent = "🌆 Heure Bleue";
+            phaseSpan.style.color = "#5F9EA0";
+        } else if (altDeg > -12) {
+            phaseSpan.textContent = "🌌 Crépuscule civil";
             phaseSpan.style.color = "#ADFF2F";
         } else {
             phaseSpan.textContent = "🌙 Nuit";
@@ -87,15 +90,25 @@ export function updateSunPosition(minutes) {
     let sunColor = new THREE.Color(0xffffff);
     let ambientIntensity = 0.3;
 
-    if (altDeg > 1) {
+    if (altDeg > 6) {
+        // Plein jour
         sunIntensity = Math.min(6.0, Math.sin(pos.altitude) * 12);
         ambientIntensity = 0.2 + (Math.sin(pos.altitude) * 0.4);
-    } else if (altDeg > -12) {
-        const t = (altDeg + 12) / 13; 
+        sunColor.set(0xffffff);
+    } else if (altDeg > -4) {
+        // Heure Dorée (Transition entre jour et crépuscule)
+        const t = (altDeg + 4) / 10; // 0 à 1 entre -4° et 6°
         sunIntensity = t * 6.0;
-        sunColor.lerpColors(new THREE.Color(0x9999ff), new THREE.Color(0xffaa44), t);
-        ambientIntensity = 0.05 + (t * 0.15);
+        sunColor.lerpColors(new THREE.Color(0xff4400), new THREE.Color(0xffffff), t);
+        ambientIntensity = 0.1 + (t * 0.1);
+    } else if (altDeg > -6) {
+        // Heure Bleue (Ambiance froide)
+        const t = (altDeg + 6) / 2; // 0 à 1 entre -6° et -4°
+        sunIntensity = 0.2; // Faible lumière résiduelle
+        sunColor.lerpColors(new THREE.Color(0x3344ff), new THREE.Color(0xff4400), t);
+        ambientIntensity = 0.05 + (t * 0.05);
     } else {
+        // Nuit / Lune
         finalPhi = moonPos.altitude > 0 ? moonPos.altitude : -Math.PI/4;
         finalAz = moonPos.azimuth;
         sunIntensity = 0.1 + (moonIllum.fraction * 0.5);
@@ -136,10 +149,16 @@ export function updateSunPosition(minutes) {
 
     if (state.scene.fog) {
         const fogColor = new THREE.Color();
-        if (altDeg > 0) {
+        if (altDeg > 6) {
             fogColor.setHSL(0.6, 0.4, 0.3 + (Math.sin(pos.altitude) * 0.5));
+        } else if (altDeg > -6) {
+            // Transition vers l'heure bleue/dorée
+            const t = (altDeg + 6) / 12; // 0 à 1 entre -6° et 6°
+            const nightFog = new THREE.Color(0x050510);
+            const dayFog = new THREE.Color().setHSL(0.6, 0.4, 0.3);
+            fogColor.lerpColors(nightFog, dayFog, t);
         } else {
-            fogColor.setHSL(0.6, 0.8, 0.05);
+            fogColor.set(0x050510);
         }
         state.scene.fog.color.copy(fogColor);
     }
