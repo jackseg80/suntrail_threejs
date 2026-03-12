@@ -269,7 +269,7 @@ export class Tile {
         }
     }
     getOverlayUrl(): string { return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.png`; }
-    getSlopesUrl(): string { return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.terrain.hangneigung-ueber_30/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.png`; }
+    getSlopesUrl(): string { return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.hangneigung-ueber_30/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.png`; }
 
     buildMesh(resolution: number): void {
         if (!this.elevationTex || !this.colorTex || this.status as any === 'disposed') return;
