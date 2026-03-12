@@ -292,7 +292,8 @@ export class Tile {
         
         // --- VÉRIFICATION DE VALIDITÉ (v3.9.2) ---
         // Si Swisstopo renvoie du vide ou 404, on évite de créer un mesh noir
-        if (!this.colorTex.image || this.colorTex.image.width === 0) return;
+        const img = this.colorTex.image as any;
+        if (!img || img.width === 0) return;
 
         const oldMesh = this.mesh;
         const geometry = getPlaneGeometry(resolution, this.tileSizeMeters);

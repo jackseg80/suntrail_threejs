@@ -48,10 +48,10 @@ export function findTerrainIntersection(ray: THREE.Ray): THREE.Vector3 | null {
         const terrainH = getAltitudeAt(p.x, p.z);
         
         if (p.y <= terrainH) {
-            // 2. Raffinement par dichotomie (4 itérations pour une précision ~6m)
+            // 2. Raffinement par dichotomie (10 itérations pour une précision < 0.1m)
             let dMin = dist - stepSize;
             let dMax = dist;
-            for (let i = 0; i < 4; i++) {
+            for (let i = 0; i < 10; i++) {
                 const dMid = (dMin + dMax) / 2;
                 const pMid = ray.at(dMid, new THREE.Vector3());
                 const hMid = getAltitudeAt(pMid.x, pMid.z);
