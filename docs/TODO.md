@@ -7,6 +7,10 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [ ] **Profil d'Altitude Interactif** : Graphique de dénivelé dynamique synchronisé avec la trace GPX en 3D.
 - [ ] **Forêts & Arbres 3D** : Génération de végétation 3D (InstancedMesh) basée sur la couverture forestière.
 
+## ✅ Terminé (v3.8.5)
+- [x] Contrôle de l'interface (Toggle Stats & Debug).
+- [x] Correctif majeur des ombres (Shadow Camera Near/Far).
+
 ## ✅ Terminé (v3.8.4)
 - [x] Optimisation de l'ergonomie mobile (LOD sous la recherche, boussole abaissée).
 - [x] Boussole 3D Native Multi-Canvas Stabilisée (Rotation par caméra secondaire).

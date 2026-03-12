@@ -4,6 +4,11 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [3.8.5] - 2026-03-12
+### ✨ Améliorations
+- **Contrôle de l'Interface :** Ajout d'options dans les réglages pour masquer/afficher les statistiques de performance et les informations de navigation (LOD, coordonnées).
+- **Correctif Ombres :** Restauration des paramètres de la caméra d'ombre (Near/Far) pour assurer la visibilité des ombres sur de grandes distances.
+
 ## [3.8.4] - 2026-03-12
 ### ✨ Améliorations
 - **Boussole 3D Stabilisée :** Refonte du système de rotation. La boussole utilise désormais une caméra secondaire synchronisée sur le vecteur de vue, assurant une précision parfaite en lacet (yaw) et en tangage (pitch).

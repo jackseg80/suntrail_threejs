@@ -65,6 +65,10 @@ export interface State {
     hasManualSource: boolean;
     FOG_DENSITY: number;
     
+    // Paramètres Debug (v3.8.5)
+    SHOW_DEBUG: boolean;
+    SHOW_STATS: boolean;
+    
     // Animation temporelle
     isAnimating: boolean;
     animationSpeed: number;
@@ -115,6 +119,10 @@ export const state: State = {
     MAP_SOURCE: 'swisstopo', 
     hasManualSource: false,
     FOG_DENSITY: 0.00001, 
+    
+    // Debug (v3.8.5)
+    SHOW_DEBUG: true,
+    SHOW_STATS: true,
     
     // Animation temporelle
     isAnimating: false,

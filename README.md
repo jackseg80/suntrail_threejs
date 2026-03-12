@@ -1,8 +1,10 @@
-# ⛰️ SunTrail 3D (v3.8.4)
+# ⛰️ SunTrail 3D (v3.8.5)
 
 Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données Swisstopo / MapTiler.
 
-## ✨ Nouveautés v3.8.4
+## ✨ Nouveautés v3.8.5
+- **Contrôle Interface :** Options pour masquer/afficher les stats performance et infos debug.
+- **Correctif Ombres :** Stabilisation des ombres portées sur de grandes distances (Shadow Camera).
 - **Boussole 3D Stabilisée :** Instrumentation de précision synchronisée sur la caméra secondaire pour un lacet et un tangage parfaits.
 - **Ergonomie Mobile :** Repositionnement intelligent de l'indicateur de zoom (LOD) sous la recherche et abaissement de la boussole pour une navigation fluide.
 - **Deep Linking :** Partagez votre position, zoom et heure via une simple URL (#lat=...&lon=...&z=...&t=...).

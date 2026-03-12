@@ -240,7 +240,7 @@ export function initUI(): void {
             const clickLatLon = document.getElementById('click-latlon');
             const clickAlt = document.getElementById('click-alt');
 
-            if (coordsPanel) coordsPanel.style.display = 'block';
+            if (coordsPanel) coordsPanel.style.display = state.SHOW_DEBUG ? 'block' : 'none';
             if (clickLatLon) clickLatLon.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
             if (clickAlt) clickAlt.textContent = `${Math.round(realAlt)} m`;
         } else {
@@ -322,6 +322,34 @@ export function initUI(): void {
             const target = e.target as HTMLInputElement;
             state.SHOW_SLOPES = target.checked;
             await refreshTerrain();
+        });
+    }
+
+    // --- GESTION DEBUG & STATS (v3.8.5) ---
+    const statsToggle = document.getElementById('stats-toggle') as HTMLInputElement;
+    if (statsToggle) {
+        statsToggle.addEventListener('change', (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            state.SHOW_STATS = target.checked;
+            if (state.stats && state.stats.dom) {
+                state.stats.dom.style.display = state.SHOW_STATS ? 'block' : 'none';
+            }
+        });
+    }
+
+    const debugToggle = document.getElementById('debug-toggle') as HTMLInputElement;
+    if (debugToggle) {
+        debugToggle.addEventListener('change', (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            state.SHOW_DEBUG = target.checked;
+            
+            const zoomIndicator = document.getElementById('zoom-indicator');
+            if (zoomIndicator) zoomIndicator.style.display = state.SHOW_DEBUG ? 'block' : 'none';
+            
+            // Note: Le panel de coordonnées se cache tout seul si pas de clic, 
+            // mais on s'assure qu'il respecte l'état ici si déjà ouvert.
+            const coordsPanel = document.getElementById('coords-panel');
+            if (coordsPanel && !state.SHOW_DEBUG) coordsPanel.style.display = 'none';
         });
     }
 

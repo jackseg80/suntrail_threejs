@@ -132,6 +132,7 @@ export async function initScene(): Promise<void> {
     state.stats.dom.style.top = mobile ? '80px' : '20px'; 
     state.stats.dom.style.left = mobile ? '20px' : '80px';
     state.stats.dom.style.bottom = 'auto'; state.stats.dom.style.right = 'auto';
+    state.stats.dom.style.display = state.SHOW_STATS ? 'block' : 'none';
 
     initCompass();
 
@@ -199,6 +200,8 @@ export async function initScene(): Promise<void> {
     state.sunLight.shadow.mapSize.set(4096, 4096);
     const d = 40000; 
     state.sunLight.shadow.camera.left = -d; state.sunLight.shadow.camera.right = d; state.sunLight.shadow.camera.top = d; state.sunLight.shadow.camera.bottom = -d;
+    state.sunLight.shadow.camera.near = 1000;
+    state.sunLight.shadow.camera.far = 300000;
     state.sunLight.shadow.bias = -0.0001; 
     state.scene.add(state.sunLight); state.scene.add(state.sunLight.target); 
 
