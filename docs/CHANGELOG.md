@@ -4,6 +4,16 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [3.6.2] - 2026-03-12 (Confort Mobile)
+### Ajouté
+- **Media Queries Responsives :** Adaptation de l'interface pour les écrans mobiles étroits (< 600px).
+- **Optimisation Barre de Recherche :** Largeur dynamique et marges accrues pour éviter le chevauchement des boutons `settings` et `layer`.
+
+### Changé
+- **Taille des Contrôles :** Réduction de la taille des boutons et menus sur mobile pour maximiser la visibilité de la carte.
+
+---
+
 ## [3.6.1] - 2026-03-12 (Fluidité Critique)
 ### Ajouté
 - **Système de File d'Attente (Priority Queue) :** Chargement asynchrone des tuiles bridé au niveau CPU pour maintenir des FPS constants (144 FPS sur RTX 4080).
