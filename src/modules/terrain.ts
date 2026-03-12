@@ -1,15 +1,22 @@
 import * as THREE from 'three';
-import { state } from './state.js';
-import { fetchNearbyPeaks, createLabelSprite, showToast, isMobileDevice } from './utils.js';
+import { state } from './state';
+import { showToast, isMobileDevice } from './utils';
 
 export const EARTH_CIRCUMFERENCE = 40075016.68;
-export const activeTiles = new Map(); 
-export const activeLabels = new Map(); 
 
-const dataCache = new Map();
+interface CachedData {
+    elev: THREE.Texture;
+    color: THREE.Texture;
+    overlay: THREE.Texture | null;
+}
+
+export const activeTiles = new Map<string, Tile>(); 
+export const activeLabels = new Map<string, any>(); 
+
+const dataCache = new Map<string, CachedData>();
 const MAX_CACHE_SIZE = isMobileDevice() ? 100 : 400; 
 
-export function clearCache() {
+export function clearCache(): void {
     for (const entry of dataCache.values()) {
         if (entry.elev) entry.elev.dispose();
         if (entry.color) entry.color.dispose();
@@ -18,21 +25,26 @@ export function clearCache() {
     dataCache.clear();
 }
 
-function addToCache(key, elevTex, colorTex, overlayTex) {
+function addToCache(key: string, elevTex: THREE.Texture, colorTex: THREE.Texture, overlayTex: THREE.Texture | null): void {
     if (dataCache.size >= MAX_CACHE_SIZE) {
         const oldestKey = dataCache.keys().next().value;
-        const oldestEntry = dataCache.get(oldestKey);
-        if (oldestEntry.elev) oldestEntry.elev.dispose();
-        if (oldestEntry.color) oldestEntry.color.dispose();
-        if (oldestEntry.overlay) oldestEntry.overlay.dispose();
-        dataCache.delete(oldestKey);
+        if (oldestKey) {
+            const oldestEntry = dataCache.get(oldestKey);
+            if (oldestEntry) {
+                if (oldestEntry.elev) oldestEntry.elev.dispose();
+                if (oldestEntry.color) oldestEntry.color.dispose();
+                if (oldestEntry.overlay) oldestEntry.overlay.dispose();
+            }
+            dataCache.delete(oldestKey);
+        }
     }
     dataCache.set(key, { elev: elevTex, color: colorTex, overlay: overlayTex });
 }
 
-function getFromCache(key) {
+function getFromCache(key: string): CachedData | null {
     if (!dataCache.has(key)) return null;
     const data = dataCache.get(key);
+    if (!data) return null;
     dataCache.delete(key);
     dataCache.set(key, data);
     return data;
@@ -74,24 +86,34 @@ const terrainVertexInjection = {
 };
 
 export class Tile {
-    constructor(tx, ty, zoom, key) {
+    tx: number;
+    ty: number;
+    zoom: number;
+    key: string;
+    status: 'idle' | 'loading' | 'loaded' | 'failed' | 'disposed';
+    mesh: THREE.Mesh | null = null;
+    elevationTex: THREE.Texture | null = null;
+    colorTex: THREE.Texture | null = null;
+    overlayTex: THREE.Texture | null = null;
+    currentResolution: number = -1;
+    tileSizeMeters: number;
+    opacity: number = 0;
+    isFadingIn: boolean = false;
+    worldX: number = 0;
+    worldZ: number = 0;
+    bounds: THREE.Box3 = new THREE.Box3();
+
+    constructor(tx: number, ty: number, zoom: number, key: string) {
         this.tx = tx;
         this.ty = ty;
         this.zoom = zoom;
         this.key = key;
         this.status = 'idle';
-        this.mesh = null;
-        this.elevationTex = null; 
-        this.colorTex = null;    
-        this.overlayTex = null;  
-        this.currentResolution = -1;
         this.tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
-        this.opacity = 0;
-        this.isFadingIn = false;
         this.updateWorldPosition();
     }
 
-    updateWorldPosition() {
+    updateWorldPosition(): void {
         const unit = 1.0 / Math.pow(2, this.zoom);
         const txNorm = (this.tx + 0.5) * unit;
         const tyNorm = (this.ty + 0.5) * unit;
@@ -107,17 +129,16 @@ export class Tile {
         );
     }
 
-    isVisible() {
+    isVisible(): boolean {
         if (!state.camera) return true;
         projScreenMatrix.multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
         frustum.setFromProjectionMatrix(projScreenMatrix);
         return frustum.intersectsBox(this.bounds.clone().expandByScalar(this.tileSizeMeters * 0.2));
     }
 
-    async load() {
-        if (this.status === 'loading' || this.status === 'loaded' || this.status === 'disposed') return;
+    async load(): Promise<void> {
+        if (this.status !== 'idle' && this.status !== 'failed') return;
         
-        // La clé de cache inclut l'état du calque sentiers car on veut cacher les textures prêtes
         const cacheKey = `${state.MAP_SOURCE}_${state.SHOW_TRAILS}_${this.key}`;
         const cached = getFromCache(cacheKey);
         if (cached) {
@@ -130,44 +151,48 @@ export class Tile {
         }
 
         await new Promise(r => setTimeout(r, Math.random() * 600));
-        if (this.status === 'disposed') return;
+        if ((this.status as string) === 'disposed') return;
         this.status = 'loading';
         
         try {
-            const promises = [
+            const promises: Promise<ImageBitmap>[] = [
                 fetch(`https://api.maptiler.com/tiles/terrain-rgb-v2/${this.zoom}/${this.tx}/${this.ty}.png?key=${state.MK}`)
                     .then(r => r.blob()).then(b => createImageBitmap(b, { colorSpaceConversion: 'none' })),
                 fetch(this.getColorUrl()).then(r => r.blob()).then(b => createImageBitmap(b))
             ];
 
-            // Si les sentiers sont actifs, on charge une 3ème texture (calque transparent)
             if (state.SHOW_TRAILS) {
                 promises.push(fetch(this.getOverlayUrl()).then(r => r.blob()).then(b => createImageBitmap(b)));
             }
 
             const [imgElev, imgColor, imgOverlay] = await Promise.all(promises);
-            if (this.status === 'disposed') return;
+            if ((this.status as string) === 'disposed') return;
 
-            this.elevationTex = new THREE.CanvasTexture(imgElev);
+            this.elevationTex = new THREE.Texture(imgElev);
             this.elevationTex.flipY = false;
+            this.elevationTex.needsUpdate = true;
             
-            this.colorTex = new THREE.CanvasTexture(imgColor);
+            this.colorTex = new THREE.Texture(imgColor);
             this.colorTex.colorSpace = THREE.SRGBColorSpace;
             this.colorTex.flipY = false;
+            this.colorTex.needsUpdate = true;
 
             if (imgOverlay) {
-                this.overlayTex = new THREE.CanvasTexture(imgOverlay);
+                this.overlayTex = new THREE.Texture(imgOverlay);
                 this.overlayTex.colorSpace = THREE.SRGBColorSpace;
                 this.overlayTex.flipY = false;
+                this.overlayTex.needsUpdate = true;
             }
 
-            addToCache(cacheKey, this.elevationTex, this.colorTex, this.overlayTex);
+            if (this.elevationTex && this.colorTex) {
+                addToCache(cacheKey, this.elevationTex, this.colorTex, this.overlayTex);
+            }
             this.status = 'loaded';
             this.buildMesh(state.RESOLUTION);
         } catch (e) { this.status = 'failed'; }
     }
 
-    getColorUrl() {
+    getColorUrl(): string {
         switch(state.MAP_SOURCE) {
             case 'satellite': return `https://api.maptiler.com/maps/satellite/256/${this.zoom}/${this.tx}/${this.ty}@2x.jpg?key=${state.MK}`;
             case 'opentopomap': return `https://a.tile.opentopomap.org/${this.zoom}/${this.tx}/${this.ty}.png`;
@@ -176,24 +201,21 @@ export class Tile {
         }
     }
 
-    getOverlayUrl() {
-        // Calque "Wanderwege" de Swisstopo (transparent)
+    getOverlayUrl(): string {
         return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.png`;
     }
 
-    buildMesh(resolution) {
-        if (!this.elevationTex || !this.colorTex || this.status === 'disposed') return;
+    buildMesh(resolution: number): void {
+        if (!this.elevationTex || !this.colorTex || (this.status as string) === 'disposed') return;
         
         const oldMesh = this.mesh;
 
-        // --- UX : Notification de changement LOD ---
-        // On ne notifie que pour les tuiles au centre pour ne pas spammer
         if (oldMesh && resolution !== this.currentResolution && this.tx === state.originTile.x && this.ty === state.originTile.y) {
             showToast(`Optimisation Relief : ${resolution}²`);
         }
         const geometry = new THREE.PlaneGeometry(this.tileSizeMeters, this.tileSizeMeters, resolution, resolution);
         geometry.rotateX(-Math.PI / 2);
-        const uvs = geometry.attributes.uv.array;
+        const uvs = geometry.attributes.uv.array as Float32Array;
         for (let i = 1; i < uvs.length; i += 2) uvs[i] = 1.0 - uvs[i];
 
         const material = new THREE.MeshStandardMaterial({ 
@@ -209,7 +231,6 @@ export class Tile {
             shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
             shader.uniforms.uTileSize = { value: this.tileSizeMeters };
             
-            // Injection du calque Overlay
             shader.uniforms.uOverlayMap = { value: this.overlayTex || null };
             shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
 
@@ -217,7 +238,6 @@ export class Tile {
             shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n${terrainVertexInjection.normal}`);
             shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${terrainVertexInjection.position}`);
 
-            // Injection dans le fragment shader pour fusionner les textures
             shader.fragmentShader = `
                 uniform sampler2D uOverlayMap;
                 uniform bool uHasOverlay;
@@ -228,7 +248,6 @@ export class Tile {
                 #include <map_fragment>
                 if (uHasOverlay) {
                     vec4 overlayCol = texture2D(uOverlayMap, vMapUv);
-                    // On mélange l'overlay par-dessus la couleur de base en utilisant l'alpha de l'overlay
                     diffuseColor.rgb = mix(diffuseColor.rgb, overlayCol.rgb, overlayCol.a);
                 }
                 `
@@ -249,13 +268,13 @@ export class Tile {
             shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${terrainVertexInjection.position}`);
         };
 
-        state.scene.add(this.mesh);
+        if (state.scene) state.scene.add(this.mesh);
         this.currentResolution = resolution;
 
         if (oldMesh) {
-            state.scene.remove(oldMesh);
+            if (state.scene) state.scene.remove(oldMesh);
             oldMesh.geometry.dispose();
-            oldMesh.material.dispose();
+            if (oldMesh.material instanceof THREE.Material) oldMesh.material.dispose();
             if (oldMesh.customDepthMaterial) oldMesh.customDepthMaterial.dispose();
         } else {
             this.opacity = 0;
@@ -263,46 +282,50 @@ export class Tile {
         }
     }
 
-    updateFade(delta) {
+    updateFade(delta: number): void {
         if (!this.isFadingIn || !this.mesh) return;
         this.opacity += delta * 2.0;
-        if (this.opacity >= 1) { this.opacity = 1; this.isFadingIn = false; this.mesh.material.transparent = false; }
-        this.mesh.material.opacity = this.opacity;
+        if (this.opacity >= 1) { 
+            this.opacity = 1; 
+            this.isFadingIn = false; 
+            if (this.mesh.material instanceof THREE.Material) this.mesh.material.transparent = false; 
+        }
+        if (this.mesh.material instanceof THREE.Material) this.mesh.material.opacity = this.opacity;
     }
 
-    dispose() {
+    dispose(): void {
         this.status = 'disposed';
         if (this.mesh) {
-            state.scene.remove(this.mesh);
+            if (state.scene) state.scene.remove(this.mesh);
             this.mesh.geometry.dispose();
-            this.mesh.material.dispose();
+            if (this.mesh.material instanceof THREE.Material) this.mesh.material.dispose();
             if (this.mesh.customDepthMaterial) this.mesh.customDepthMaterial.dispose();
             this.mesh = null;
         }
     }
 }
 
-export function resetTerrain() {
+export function resetTerrain(): void {
     clearLabels();
     for (const tile of activeTiles.values()) tile.dispose();
     activeTiles.clear();
 }
 
-export function repositionAllTiles() {
+export function repositionAllTiles(): void {
     for (const tile of activeTiles.values()) tile.updateWorldPosition();
 }
 
-export function animateTiles(delta) {
+export function animateTiles(delta: number): void {
     for (const tile of activeTiles.values()) { if (tile.isFadingIn) tile.updateFade(delta); }
 }
 
-export function lngLatToTile(lon, lat, zoom) {
+export function lngLatToTile(lon: number, lat: number, zoom: number): { x: number; y: number; z: number } {
     const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
     const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
     return { x, y, z: zoom };
 }
 
-export function lngLatToWorld(lon, lat) {
+export function lngLatToWorld(lon: number, lat: number): { x: number; z: number } {
     const xNorm = (lon + 180) / 360;
     const yNorm = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2;
     const originUnit = 1.0 / Math.pow(2, state.originTile.z);
@@ -311,7 +334,7 @@ export function lngLatToWorld(lon, lat) {
     return { x: (xNorm - oxNorm) * EARTH_CIRCUMFERENCE, z: (yNorm - oyNorm) * EARTH_CIRCUMFERENCE };
 }
 
-export function worldToLngLat(worldX, worldZ) {
+export function worldToLngLat(worldX: number, worldZ: number): { lat: number; lon: number } {
     const originUnit = 1.0 / Math.pow(2, state.originTile.z);
     const oxNorm = (state.originTile.x + 0.5) * originUnit;
     const oyNorm = (state.originTile.y + 0.5) * originUnit;
@@ -323,10 +346,12 @@ export function worldToLngLat(worldX, worldZ) {
     return { lat, lon };
 }
 
-export function clearLabels() {
-    for (const [name, obj] of activeLabels.entries()) {
-        state.scene.remove(obj.sprite);
-        state.scene.remove(obj.line);
+export function clearLabels(): void {
+    for (const obj of activeLabels.values()) {
+        if (state.scene) {
+            state.scene.remove(obj.sprite);
+            state.scene.remove(obj.line);
+        }
         obj.sprite.material.dispose();
         obj.line.geometry.dispose();
         obj.line.material.dispose();
@@ -334,15 +359,15 @@ export function clearLabels() {
     activeLabels.clear();
 }
 
-export function updateGPXMesh() {
+export function updateGPXMesh(): void {
     if (!state.rawGpxData) return;
     if (state.gpxMesh) {
-        state.scene.remove(state.gpxMesh);
+        if (state.scene) state.scene.remove(state.gpxMesh);
         state.gpxMesh.geometry.dispose();
-        state.gpxMesh.material.dispose();
+        if (state.gpxMesh.material instanceof THREE.Material) state.gpxMesh.material.dispose();
     }
     const track = state.rawGpxData.tracks[0];
-    const threePoints = track.points.map(p => {
+    const threePoints = track.points.map((p: any) => {
         const pos = lngLatToWorld(p.lon, p.lat);
         const worldY = (p.ele || 0) * state.RELIEF_EXAGGERATION + 10; 
         return new THREE.Vector3(pos.x, worldY, pos.z);
@@ -355,10 +380,10 @@ export function updateGPXMesh() {
     const material = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xaa0000, emissiveIntensity: 0.8, roughness: 0.3, metalness: 0.5, transparent: true, opacity: 0.9 });
     state.gpxMesh = new THREE.Mesh(geometry, material);
     state.gpxMesh.renderOrder = 1000;
-    state.scene.add(state.gpxMesh);
+    if (state.scene) state.scene.add(state.gpxMesh);
 }
 
-function calculateTargetLOD(tile, camX, camZ) {
+function calculateTargetLOD(tile: Tile, camX: number, camZ: number): number {
     const dx = tile.worldX - camX;
     const dz = tile.worldZ - camZ;
     const dist = Math.sqrt(dx * dx + dz * dz);
@@ -375,10 +400,10 @@ function calculateTargetLOD(tile, camX, camZ) {
     return targetRes;
 }
 
-export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, worldZ) {
+export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number = 0, worldZ: number = 0): Promise<void> {
     terrainUniforms.uExaggeration.value = state.RELIEF_EXAGGERATION;
-    const currentGPS = worldToLngLat(worldX || 0, worldZ || 0);
-    const keptTiles = new Set();
+    const currentGPS = worldToLngLat(worldX, worldZ);
+    const keptTiles = new Set<string>();
     const zoom = state.ZOOM;
     const centerTile = lngLatToTile(currentGPS.lon, currentGPS.lat, zoom);
     const range = state.RANGE; 
@@ -392,7 +417,7 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
                 tile = new Tile(tx, ty, zoom, key);
                 if (tile.isVisible()) { activeTiles.set(key, tile); tile.load(); }
             } else if (tile.status === 'loaded') {
-                const targetRes = calculateTargetLOD(tile, state.camera.position.x, state.camera.position.z);
+                const targetRes = calculateTargetLOD(tile, state.camera ? state.camera.position.x : 0, state.camera ? state.camera.position.z : 0);
                 if (targetRes !== tile.currentResolution) tile.buildMesh(targetRes);
             }
         }
@@ -403,4 +428,4 @@ export async function updateVisibleTiles(camLat, camLon, camAltitude, worldX, wo
     }
 }
 
-export async function loadTerrain() { await updateVisibleTiles(); }
+export async function loadTerrain(): Promise<void> { await updateVisibleTiles(); }

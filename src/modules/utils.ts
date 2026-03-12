@@ -1,30 +1,30 @@
 import * as THREE from 'three';
-import { state } from './state.js';
 
 /**
  * Détecte si l'appareil est un mobile ou une tablette (tactile)
  */
-export function isMobileDevice() {
+export function isMobileDevice(): boolean {
     return (('ontouchstart' in window) || (navigator.maxTouchPoints > 0));
 }
 
 /**
  * Vérifie si une position GPS est à l'intérieur des frontières approximatives de la Suisse
  */
-export function isPositionInSwitzerland(lat, lon) {
+export function isPositionInSwitzerland(lat: number, lon: number): boolean {
     return (lat >= 45.8 && lat <= 47.8 && lon >= 5.9 && lon <= 10.5);
 }
 
 /**
  * Affiche une notification temporaire à l'écran
  */
-export function showToast(message) {
+export function showToast(message: string): void {
     const container = document.getElementById('toast-container');
     if (!container) return;
     
     // On limite à 2 toasts simultanés
     if (container.children.length > 1) {
-        container.removeChild(container.firstChild);
+        const first = container.firstChild;
+        if (first) container.removeChild(first);
     }
 
     const toast = document.createElement('div');
@@ -42,20 +42,25 @@ export function showToast(message) {
 /**
  * Limite la fréquence d'exécution d'une fonction
  */
-export function throttle(func, limit) {
-    let inThrottle;
-    return function() {
-        const args = arguments;
-        const context = this;
+export function throttle<T extends (...args: any[]) => any>(func: T, limit: number): (...args: Parameters<T>) => void {
+    let inThrottle: boolean = false;
+    return function(this: any, ...args: Parameters<T>) {
         if (!inThrottle) {
-            func.apply(context, args);
+            func.apply(this, args);
             inThrottle = true;
             setTimeout(() => inThrottle = false, limit);
         }
     }
 }
 
-const PEAKS_DB = [
+interface Peak {
+    name: string;
+    lat: number;
+    lon: number;
+    alt: number;
+}
+
+const PEAKS_DB: Peak[] = [
     { name: "Mont Blanc", lat: 45.8326, lon: 6.8652, alt: 4808 },
     { name: "Aiguille du Midi", lat: 45.8794, lon: 6.8874, alt: 3842 },
     { name: "Mont Maudit", lat: 45.8486, lon: 6.8711, alt: 4465 },
@@ -77,16 +82,18 @@ const PEAKS_DB = [
     { name: "Monch", lat: 46.5586, lon: 7.9922, alt: 4107 }
 ];
 
-export async function fetchNearbyPeaks(lat, lon) {
+export async function fetchNearbyPeaks(lat: number, lon: number): Promise<Peak[]> {
     return PEAKS_DB.filter(p => {
         const d = Math.sqrt(Math.pow(lat - p.lat, 2) + Math.pow(lon - p.lon, 2));
         return d < 0.5; 
     });
 }
 
-export function createLabelSprite(text) {
+export function createLabelSprite(text: string): THREE.Sprite {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error("Could not get 2D context");
+    
     const fontSize = 32;
     ctx.font = `bold ${fontSize}px "DM Sans", sans-serif`;
     
@@ -103,7 +110,10 @@ export function createLabelSprite(text) {
     ctx.textAlign = 'center';
 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-    ctx.roundRect(10, 10, badgeWidth, badgeHeight, 30);
+    // @ts-ignore - roundRect is modern and might not be in all TS libs yet
+    if (ctx.roundRect) ctx.roundRect(10, 10, badgeWidth, badgeHeight, 30);
+    else ctx.rect(10, 10, badgeWidth, badgeHeight);
+    
     ctx.fill();
     
     ctx.strokeStyle = '#d4af37';

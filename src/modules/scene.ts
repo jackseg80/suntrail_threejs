@@ -2,14 +2,15 @@ import * as THREE from 'three';
 import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
+// @ts-ignore
 import Stats from 'three/examples/jsm/libs/stats.module.js';
-import { state } from './state.js';
-import { updateSunPosition } from './sun.js';
-import { loadTerrain, updateVisibleTiles, lngLatToTile, worldToLngLat, repositionAllTiles, animateTiles, EARTH_CIRCUMFERENCE, updateGPXMesh, resetTerrain, clearCache } from './terrain.js';
-import { autoSelectMapSource } from './ui.js';
-import { throttle, isMobileDevice } from './utils.js';
+import { state } from './state';
+import { updateSunPosition } from './sun';
+import { loadTerrain, updateVisibleTiles, lngLatToTile, worldToLngLat, repositionAllTiles, animateTiles, EARTH_CIRCUMFERENCE, updateGPXMesh, resetTerrain, clearCache } from './terrain';
+import { autoSelectMapSource } from './ui';
+import { throttle, isMobileDevice } from './utils';
 
-export async function disposeScene() {
+export async function disposeScene(): Promise<void> {
     resetTerrain(); // Supprime les tuiles et labels de la scène
     clearCache();   // Libère les textures du cache mémoire GPU
 
@@ -20,12 +21,14 @@ export async function disposeScene() {
     
     if (state.scene) {
         state.scene.traverse((object) => {
-            if (object.geometry) object.geometry.dispose();
-            if (object.material) {
-                if (Array.isArray(object.material)) {
-                    object.material.forEach(material => material.dispose());
-                } else {
-                    object.material.dispose();
+            if (object instanceof THREE.Mesh) {
+                if (object.geometry) object.geometry.dispose();
+                if (object.material) {
+                    if (Array.isArray(object.material)) {
+                        object.material.forEach(material => material.dispose());
+                    } else {
+                        object.material.dispose();
+                    }
                 }
             }
         });
@@ -39,10 +42,11 @@ export async function disposeScene() {
     window.removeEventListener('resize', onWindowResize);
 }
 
-export async function initScene() {
+export async function initScene(): Promise<void> {
     await disposeScene(); // Nettoyage de l'ancienne scène avant l'initialisation
 
     const container = document.getElementById('canvas-container');
+    if (!container) return;
     container.innerHTML = '';
     
     state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, state.ZOOM);
@@ -89,7 +93,7 @@ export async function initScene() {
     const mobile = isMobileDevice();
     if (mobile) {
         state.controls = new OrbitControls(state.camera, state.renderer.domElement);
-        state.controls.enablePan = true;
+        (state.controls as OrbitControls).enablePan = true;
     } else {
         state.controls = new MapControls(state.camera, state.renderer.domElement);
     }
@@ -103,7 +107,7 @@ export async function initScene() {
     state.controls.maxPolarAngle = 1.3; 
     state.controls.minPolarAngle = 0; 
 
-    const updateUIZoom = (zoom) => {
+    const updateUIZoom = (zoom: number) => {
         const indicator = document.getElementById('zoom-indicator');
         if (indicator) {
             const sourceName = state.MAP_SOURCE.toUpperCase();
@@ -115,6 +119,8 @@ export async function initScene() {
     let lastGpxPos = new THREE.Vector3();
 
     const throttledUpdate = throttle(() => {
+        if (!state.controls || !state.camera) return;
+
         const dx = state.controls.target.x;
         const dz = state.controls.target.z;
         const dist = state.camera.position.y;
@@ -193,6 +199,8 @@ export async function initScene() {
 
     window.addEventListener('resize', onWindowResize);
     state.renderer.setAnimationLoop(() => {
+        if (!state.renderer || !state.scene || !state.camera) return;
+
         state.stats.begin();
         const delta = clock.getDelta();
         animateTiles(delta);
@@ -205,22 +213,22 @@ export async function initScene() {
             const lookAt = curve.getPoint(Math.min(1, state.trailProgress + 0.01));
             state.camera.position.set(pos.x, pos.y + 100, pos.z + 200);
             state.camera.lookAt(lookAt.x, lookAt.y + 50, lookAt.z);
-        } else {
+        } else if (state.controls) {
             state.controls.update();
         }
 
         if (state.isAnimating) {
-            const slider = document.getElementById('time-slider');
+            const slider = document.getElementById('time-slider') as HTMLInputElement;
             if (slider) {
                 let currentMins = parseInt(slider.value);
                 if (isNaN(currentMins)) currentMins = 720;
                 currentMins = (currentMins + state.animationSpeed) % 1440;
-                slider.value = Math.floor(currentMins);
+                slider.value = Math.floor(currentMins).toString();
                 updateSunPosition(currentMins);
             }
         }
 
-        if (state.camera) {
+        if (state.camera && state.controls) {
             const disk = document.getElementById('compass-disk');
             if (disk) {
                 const angle = state.controls.getAzimuthalAngle();
@@ -239,7 +247,7 @@ export async function initScene() {
     });
 }
 
-function onWindowResize() {
+function onWindowResize(): void {
     if (state.camera && state.renderer) {
         state.camera.aspect = window.innerWidth / window.innerHeight;
         state.camera.updateProjectionMatrix();

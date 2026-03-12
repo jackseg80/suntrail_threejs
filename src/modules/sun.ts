@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import SunCalc from 'suncalc';
-import { state } from './state.js';
+import { state } from './state';
 
-export function updateSunPosition(minutes) {
+export function updateSunPosition(minutes: number): void {
     if (!state.sunLight || isNaN(minutes)) return;
     
     const totalMinutes = Math.floor(minutes);
@@ -55,13 +55,13 @@ export function updateSunPosition(minutes) {
 
     const dayDuration = document.getElementById('day-duration');
     if (dayDuration) {
-        const diff = times.sunset - times.sunrise;
+        const diff = times.sunset.getTime() - times.sunrise.getTime();
         const dayHrs = Math.floor(diff / 3600000);
         const dayMins = Math.floor((diff % 3600000) / 60000);
         dayDuration.textContent = `${dayHrs}h${String(dayMins).padStart(2, '0')}`;
     }
 
-    const fmt = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    const fmt = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     const sunriseDisp = document.getElementById('sunrise-disp');
     if (sunriseDisp) sunriseDisp.textContent = fmt(times.sunrise);
     
@@ -147,7 +147,7 @@ export function updateSunPosition(minutes) {
         uniforms['mieCoefficient'].value = 0.005;
     }
 
-    if (state.scene.fog) {
+    if (state.scene && state.scene.fog && (state.scene.fog instanceof THREE.FogExp2 || state.scene.fog instanceof THREE.Fog)) {
         const fogColor = new THREE.Color();
         if (altDeg > 6) {
             fogColor.setHSL(0.6, 0.4, 0.3 + (Math.sin(pos.altitude) * 0.5));
