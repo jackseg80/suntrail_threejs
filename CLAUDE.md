@@ -1,18 +1,23 @@
-# SunTrail - Guide Développeur (v3.3)
+# SunTrail - Guide Développeur (v3.5)
 
-## Architecture UI Tactile
-- **Barre de Recherche :** Flottante (top-left), accès direct via MapTiler Geocoding.
-- **Sélecteur de Calques :** Menu visuel (top-right) avec vignettes. Fusion dynamique Base/Overlay dans le shader.
-- **Barre Temporelle :** Contrôle au pouce en bas de l'écran.
-- **Bouton GPS :** Centrage dynamique via `navigator.geolocation`.
-- **Réglages :** Panneau coulissant (left) pour les paramètres techniques.
+## Architecture Technique (Full TypeScript)
+- **State Management :** État global centralisé dans `state.ts` avec interface `State` stricte.
+- **GPS :** Migration vers `@capacitor/geolocation`. Permission système requise sur Android.
+- **Cycle Solaire :** Basé sur `suncalc`. Interpolation des couleurs pour les Heures Magiques (Dorée/Bleue).
+- **Rendu Terrain :** Custom shader injecté dans `MeshStandardMaterial`. Supporte la fusion dynamique Base/Overlay (Sentiers).
 
-## Contraintes Actives
-- **Performance :** Cache LRU limité à 400 tuiles (Protection VRAM).
-- **Stabilité :** Vérification systématique de l'existence des éléments DOM dans `sun.js`.
-- **LOD :** Hystérésis de 16 unités pour éviter les micro-saccades de reconstruction.
-- **GPU :** Forçage recommandé de la puce Haute Performance (RTX) dans les paramètres OS/Navigateur.
+## Gestion de la Mémoire (Crucial pour Mobile)
+- **Nettoyage :** Toujours appeler `disposeScene()` avant de recréer un renderer.
+- **Cache GPU (LRU) :**
+  - Mobile : 100 tuiles (Protection VRAM agressive).
+  - PC : 400 tuiles (Confort de navigation).
+- **LOD :** Utilisation de l'hystérésis (seuil de 16) pour éviter le clignotement lors des calculs de résolution.
 
-## Commandes Utiles
-- `npm run dev` : Lancement serveur local.
-- `npm run build` : Compilation production.
+## Commandes de Développement
+- `npm run dev` : Serveur de dev Vite.
+- `npm run check` : Vérification des types TS.
+- `npm run deploy` : **Commande recommandée** pour synchroniser avec Android.
+- `npm run cap:assets` : Régénération des ressources visuelles Android.
+
+## Workflow Mobile
+Les modifications Web sont compilées dans `dist/` puis injectées dans `android/app/src/main/assets/public/`. Ne jamais modifier manuellement les fichiers dans le dossier Android.

@@ -3,31 +3,34 @@
 Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données Swisstopo / MapTiler.
 
 ## ✨ Nouveautés v3.5
-- **GPS Natif (Capacitor) :** Géolocalisation haute précision avec gestion des permissions système Android.
-- **Optimisation Mémoire :** Gestion intelligente des ressources GPU (VRAM) et nettoyage des scènes 3D.
+- **Full TypeScript :** Codebase entièrement typée pour une stabilité et une maintenance de niveau professionnel.
+- **Heures Magiques :** Rendu immersif des phases dorées et bleues (Golden & Blue Hours) avec interpolation des couleurs.
+- **GPS Natif (Capacitor) :** Géolocalisation haute précision avec gestion native des permissions Android.
+- **Optimisation Mobile :** Gestion intelligente de la VRAM (cache dynamique) et nettoyage automatique des scènes.
 - **LOD Adaptatif :** Résolution dynamique du maillage terrain en fonction de la distance caméra.
-- **Interface Touch-First :** Ergonomie repensée pour tablettes et mobiles (boutons larges, glassmorphism).
-- **Sélecteur de Calques Visuel :** Basculez entre Satellite, Topo et OpenTopoMap avec prévisualisation.
-- **Fusion de Couches :** Superposez les chemins de randonnée officiels sur n'importe quel fond de carte.
 
 ## 📱 Application Mobile (Android)
 
-Suntrail 3D est désormais disponible en application Android native grâce à **Capacitor**. 
-Elle supporte :
-- Le rendu 3D haute performance.
-- Les icônes et écrans de démarrage personnalisés.
-- Le chargement de fichiers GPX depuis le stockage du téléphone.
+Suntrail 3D est optimisé pour les appareils mobiles grâce à **Capacitor**. 
+- Icônes et Splash Screens adaptatifs.
+- Gestion fluide de l'orientation (Portrait/Paysage).
+- Importation et suivi de traces GPX.
 
-Pour plus de détails sur le développement et le déploiement mobile, consultez le [Guide Android](./ANDROID.md).
+Pour plus de détails sur le développement mobile, consultez le [Guide Android](./ANDROID.md).
 
 ## 🛠️ Installation
 1. Clonez le dépôt.
 2. `npm install`
-3. `npm run dev`
+3. `npm run dev` (Web) ou `npm run deploy` (Android).
 4. Entrez votre clé API MapTiler au lancement.
 
 ## ⚙️ Technologies
-- **Moteur :** Three.js (WebGL)
-- **Données :** MapTiler Cloud (Terrain RGB + Sat) & Swisstopo (WMTS)
-- **Calculs :** SunCalc (Astronomie précise)
-- **Style :** CSS Moderne (Glassmorphism & Flexbox)
+- **Moteur :** Three.js (WebGL) + TypeScript
+- **Plateforme :** Capacitor (Hybride Natif)
+- **Données :** MapTiler Cloud & Swisstopo
+- **Calculs :** SunCalc (Astronomie)
+
+## 📄 Documentation
+- [Historique des versions (Changelog)](./CHANGELOG.md)
+- [Feuille de route (TODO)](./TODO.md)
+- [Guide Développeur](./CLAUDE.md)
