@@ -6,10 +6,12 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [x] Migration complète vers TypeScript.
 - [x] Optimisation de la mémoire GPU (disposeScene).
 - [x] Heures Magiques (Dorée/Bleue).
-- [ ] Finaliser l'organisation du dossier `/public/assets`.
+- [x] Réorganisation pro du projet (src/, docs/, public/).
 - [ ] Ajouter une boussole 3D en bas de l'écran.
 
-## 🌟 Version 4.0 - Réalité Augmentée (AR)
+## 🌟 Version 4.0 - Réalité Augmentée & Offline
+- [ ] **Mode Hors-ligne (Offline Zones)** : Sélectionner et télécharger une zone de terrain (textures + élévation) pour un usage sans réseau.
+- [ ] **Accélération Cache** : Utilisation de l'IndexedDB pour un chargement instantané des zones sauvegardées.
 - [ ] Intégration de WebXR pour le mode AR.
 - [ ] Projection de la courbe solaire sur le flux caméra.
 - [ ] Marqueurs de sommets en réalité augmentée.
