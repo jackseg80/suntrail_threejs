@@ -126,13 +126,17 @@ export async function initScene(): Promise<void> {
         const dist = state.camera.position.y;
 
         let newZoom = state.ZOOM;
+        // --- SEUILS DE ZOOM OPTIMISÉS (v3.7.6) ---
         if (state.ZOOM === 13) {
-            if (dist < 6000) newZoom = 14;
-            else if (dist > 30000) newZoom = 12;
+            if (dist < 2500) newZoom = 14;      // Plus proche du sol pour le Zoom 14
+            else if (dist > 18000) newZoom = 12; // Plus tôt vers le Zoom 12
         } else if (state.ZOOM === 14) {
-            if (dist > 8000) newZoom = 13;
+            if (dist > 3500) newZoom = 13;      // Zone tampon (Hystérésis) pour éviter le clignotement
         } else if (state.ZOOM === 12) {
-            if (dist < 25000) newZoom = 13;
+            if (dist < 15000) newZoom = 13;
+            else if (dist > 55000) newZoom = 11;
+        } else if (state.ZOOM === 11) {
+            if (dist < 45000) newZoom = 12;
         }
 
         const gpsCenter = worldToLngLat(dx, dz);

@@ -2,7 +2,8 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
-## 🏁 En cours (v3.7.5)
+## 🏁 En cours (v3.7.6)
+- [x] Optimisation des seuils de zoom (LOD) et hystérésis (v3.7.6).
 - [x] Correction du Z-Fighting (Offset vertical 10cm).
 - [x] Stabilité visuelle sur mobile (Logarithmic Depth Buffer).
 - [x] Optimisation drastique des requêtes MapTiler (Plan de Sauvetage).
@@ -14,14 +15,15 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [ ] Ajouter une boussole 3D en bas de l'écran.
 
 ## 🚀 Prochaine version (v3.8) - Immersion & Analyse
-- [ ] **Forêts & Arbres 3D** : Génération de végétation 3D (InstancedMesh) basée sur la couverture forestière pour visualiser l'ombre réelle sur les sentiers.
-- [ ] **Sonde Solaire** : Outil d'analyse au clic permettant de calculer la durée d'ensoleillement sur 24h pour un point précis (avec recommandations rando).
-- [ ] **Profil d'Altitude Interactif** : Graphique de dénivelé dynamique synchronisé avec la trace GPX en 3D.
-- [ ] **Partage de Vue (Deep Linking)** : Mise à jour de l'URL avec les coordonnées et l'heure pour partager une simulation via un lien.
+- [ ] **Forêts & Arbres 3D** : Génération de végétation 3D (InstancedMesh) basée sur la couverture forestière.
+- [ ] **Sonde Solaire** : Outil d'analyse au clic (durée d'ensoleillement 24h).
+- [ ] **Partage de Vue (Deep Linking)** : Partage de position/heure via URL.
 
-## 🌟 Version 4.0 - Réalité Augmentée & Environnement Avancé
-- [ ] **Signalétique Officielle Suisse** : Typage couleur des sentiers (Jaune/Rouge/Bleu) selon la classification Swisstopo.
-- [ ] **Bâtiments 3D (LOD léger)** : Extrusion des bâtiments (OSM/MapTiler) pour les zones habitées et refuges, optimisée pour mobile.
+## 🌟 Version 4.0 - Réalité Augmentée & Moteur Avancé
+- [ ] **Moteur QuadTree LOD** : Refonte du système de tuiles pour mixer les résolutions (ex: Zoom 15 au centre, Zoom 11 au loin).
+- [ ] **Zoom 15 (Ultra-Détail)** : Intégration du niveau de détail maximal (précision ~1m).
+- [ ] **Signalétique Officielle Suisse** : Typage couleur des sentiers (Jaune/Rouge/Bleu).
+- [ ] **Bâtiments 3D (LOD léger)** : Extrusion des bâtiments (OSM/MapTiler).
 - [ ] **Météo Dynamique Temps Réel** : Intégration de données météo en direct (OpenWeather/MeteoBlue).
 - [ ] **Rendu Atmosphérique** : Systèmes de particules pour la pluie/neige et shaders de couverture nuageuse dynamique sur la carte.
 - [ ] **Mode Hors-ligne (Offline Zones)** : Sélectionner et télécharger une zone de terrain (textures + élévation) pour un usage sans réseau.
