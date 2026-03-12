@@ -60,6 +60,7 @@ export interface State {
     PIXEL_RATIO_LIMIT: number;
     RELIEF_EXAGGERATION: number;
     SHOW_TRAILS: boolean;
+    SHOW_SLOPES: boolean;
     MAP_SOURCE: string;
     hasManualSource: boolean;
     FOG_DENSITY: number;
@@ -106,6 +107,7 @@ export const state: State = {
     PIXEL_RATIO_LIMIT: PRESETS.balanced.PIXEL_RATIO_LIMIT,
     RELIEF_EXAGGERATION: 1.4, 
     SHOW_TRAILS: true, 
+    SHOW_SLOPES: false,
     MAP_SOURCE: 'swisstopo', 
     hasManualSource: false,
     FOG_DENSITY: 0.00001, 

@@ -301,6 +301,15 @@ export function initUI(): void {
         });
     }
 
+    const slopesToggle = document.getElementById('slopes-toggle') as HTMLInputElement;
+    if (slopesToggle) {
+        slopesToggle.addEventListener('change', async (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            state.SHOW_SLOPES = target.checked;
+            await refreshTerrain();
+        });
+    }
+
     initGeocoding();
 }
 
