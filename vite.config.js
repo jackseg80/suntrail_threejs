@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: './', // Vital pour GitHub Pages (chemins relatifs)
+  base: './', 
   build: {
     outDir: 'dist',
   },
@@ -9,5 +9,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    // Désactiver le multithreading pour stabiliser JSDOM en CI si besoin
+    threads: false, 
   }
 });

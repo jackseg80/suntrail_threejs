@@ -1,17 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-
-// Mock localStorage avant toute chose
-const storage: Record<string, string> = {};
-const localStorageMock = {
-    getItem: vi.fn((key: string) => storage[key] || null),
-    setItem: vi.fn((key: string, value: string) => { storage[key] = value.toString(); }),
-    removeItem: vi.fn((key: string) => { delete storage[key]; }),
-    clear: vi.fn(() => { Object.keys(storage).forEach(k => delete storage[k]); }),
-    length: 0,
-    key: vi.fn((i: number) => Object.keys(storage)[i] || null)
-};
-vi.stubGlobal('localStorage', localStorageMock);
-
 import { state } from './state';
 
 describe('state.ts', () => {
@@ -21,7 +8,6 @@ describe('state.ts', () => {
     });
 
     afterEach(() => {
-        vi.clearAllTimers();
         vi.useRealTimers();
     });
 

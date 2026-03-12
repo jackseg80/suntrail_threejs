@@ -1,17 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-
-// Mocker localStorage AVANT toute chose pour éviter le SecurityError de JSDOM
-const storage: Record<string, string> = {};
-const localStorageMock = {
-    getItem: vi.fn((key: string) => storage[key] || null),
-    setItem: vi.fn((key: string, value: string) => { storage[key] = value.toString(); }),
-    removeItem: vi.fn((key: string) => { delete storage[key]; }),
-    clear: vi.fn(() => { Object.keys(storage).forEach(k => delete storage[k]); }),
-    length: 0,
-    key: vi.fn((i: number) => Object.keys(storage)[i] || null)
-};
-vi.stubGlobal('localStorage', localStorageMock);
-
 import { initUI } from './ui';
 import { state } from './state';
 
@@ -68,8 +55,6 @@ describe('ui.ts', () => {
     });
 
     afterEach(() => {
-        vi.clearAllMocks();
-        vi.clearAllTimers();
         vi.useRealTimers();
     });
 
