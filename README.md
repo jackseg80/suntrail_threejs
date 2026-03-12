@@ -16,7 +16,7 @@ Suntrail 3D est optimisé pour les appareils mobiles grâce à **Capacitor**.
 - Gestion fluide de l'orientation (Portrait/Paysage).
 - Importation et suivi de traces GPX.
 
-Pour plus de détails sur le développement mobile, consultez le [Guide Android](./ANDROID.md).
+Pour plus de détails sur le développement mobile, consultez le [Guide Android](./docs/ANDROID.md).
 
 ## 🛠️ Installation
 1. Clonez le dépôt.
@@ -29,7 +29,7 @@ Le projet intègre une suite de tests unitaires et d'intégration complète avec
 
 - **Couverture :** 28 tests validés (Terrain, Sun, UI, Utils).
 - **CI/CD :** Validation automatique des tests avant chaque déploiement GitHub Pages.
-- **Détails :** Consultez le [Guide des Tests](./TESTS.md).
+- **Détails :** Consultez le [Guide des Tests](./docs/TESTS.md).
 
 ## ⚙️ Technologies
 - **Moteur :** Three.js (WebGL) + TypeScript
@@ -39,7 +39,8 @@ Le projet intègre une suite de tests unitaires et d'intégration complète avec
 - **Calculs :** SunCalc (Astronomie)
 
 ## 📄 Documentation
-- [Guide des Tests](./TESTS.md)
-- [Historique des versions (Changelog)](./CHANGELOG.md)
-- [Feuille de route (TODO)](./TODO.md)
-- [Guide Développeur](./CLAUDE.md)
+- [Guide des Tests](./docs/TESTS.md)
+- [Historique des versions (Changelog)](./docs/CHANGELOG.md)
+- [Feuille de route (TODO)](./docs/TODO.md)
+- [Guide Développeur (Claude)](./CLAUDE.md)
+- [Guide Android](./docs/ANDROID.md)
