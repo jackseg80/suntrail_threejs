@@ -120,7 +120,7 @@ const terrainVertexInjection = {
     position: `transformed.y = getTerrainHeight(uv);`
 };
 
-// --- SYSTÈME DE CACHE PERSISTANT (v3.7.2) ---
+// --- SYSTÈME DE CACHE PERSISTANT (v3.8.2) ---
 const CACHE_NAME = 'suntrail-tiles-v1';
 
 async function fetchWithCache(url: string, usePersistentCache: boolean = false): Promise<Blob | null> {
@@ -324,7 +324,7 @@ export class Tile {
         this.opacity = 0; this.isFadingIn = true;
 
         if (oldMesh) {
-            // On descend l'ancien maillage très légèrement (10cm) pour éviter le Z-Fighting durant la superposition (v3.7.5)
+            // On descend l'ancien maillage très légèrement (10cm) pour éviter le Z-Fighting durant la superposition (v3.8.2)
             oldMesh.position.y -= 0.1;
 
             setTimeout(() => {

@@ -2,9 +2,9 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
-## 🏁 En cours (v3.8.0)
+## 🏁 En cours (v3.8.2)
+- [x] Boussole 3D Native Multi-Canvas (Finition visuelle et cardinale).
 - [x] Partage de Vue (Deep Linking via URL Hash).
-- [x] Boussole 3D synchronisée (Finition visuelle).
 - [x] Moteur de recherche gratuit (Nominatim).
 - [x] Optimisation des seuils de zoom (LOD) et hystérésis.
 - [ ] **Sonde Solaire** : Outil d'analyse au clic (durée d'ensoleillement 24h).
@@ -12,6 +12,7 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 ## 🚀 Prochaine version (v3.9) - Végétation & Analyse
 - [ ] **Forêts & Arbres 3D** : Génération de végétation 3D (InstancedMesh) basée sur la couverture forestière.
 - [ ] **Profil d'Altitude Interactif** : Graphique de dénivelé dynamique synchronisé avec la trace GPX en 3D.
+- [ ] **Sonde Solaire** : Outil d'analyse au clic.
 
 ## 🌟 Version 4.0 - Réalité Augmentée & Moteur Avancé
 - [ ] **Moteur QuadTree LOD** : Refonte du système de tuiles pour mixer les résolutions (ex: Zoom 15 au centre, Zoom 11 au loin).

@@ -90,7 +90,7 @@ export interface State {
     trailProgress: number;
     isFollowingTrail: boolean;
     
-    // Statistiques Session (v3.7.4)
+    // Statistiques Session (v3.8.2)
     networkRequests: number;
     cacheHits: number;
 }
@@ -141,7 +141,7 @@ export const state: State = {
     trailProgress: 0,
     isFollowingTrail: false,
 
-    // Statistiques Session (v3.7.4)
+    // Statistiques Session (v3.8.2)
     networkRequests: 0,
     cacheHits: 0
 };

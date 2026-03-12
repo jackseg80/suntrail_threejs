@@ -10,7 +10,7 @@ import { isPositionInSwitzerland, showToast } from './utils';
 import { applyPreset, detectBestPreset } from './performance';
 
 export function initUI(): void {
-    // --- DÉTECTION PERFORMANCE (v3.7.0) ---
+    // --- DÉTECTION PERFORMANCE (v3.8.2) ---
     const bestPreset = detectBestPreset();
     applyPreset(bestPreset);
 
@@ -20,7 +20,7 @@ export function initUI(): void {
     const k1 = document.getElementById('k1') as HTMLInputElement;
     if (s1 && k1) k1.value = s1;
 
-    // --- DEEP LINKING (v3.8) - LECTURE INITIALE ---
+    // --- DEEP LINKING (v3.8.2) - LECTURE INITIALE ---
     const hash = window.location.hash;
     if (hash && hash.includes('lat=')) {
         const params = new URLSearchParams(hash.substring(1));
@@ -45,7 +45,7 @@ export function initUI(): void {
     if (settingsToggle && panel) settingsToggle.addEventListener('click', () => panel.classList.add('open'));
     if (closePanel && panel) closePanel.addEventListener('click', () => panel.classList.remove('open'));
 
-    // --- PRESETS PERFORMANCE (v3.7.0) ---
+    // --- PRESETS PERFORMANCE (v3.8.2) ---
     const presetButtons = document.querySelectorAll('.preset-btn');
     presetButtons.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -325,7 +325,7 @@ export function initUI(): void {
         });
     }
 
-    // --- GESTION CACHE & CLÉ (v3.7.3) ---
+    // --- GESTION CACHE & CLÉ (v3.8.2) ---
     const keyInput = document.getElementById('maptiler-key-input') as HTMLInputElement;
     const updateKeyBtn = document.getElementById('update-key-btn');
     const clearCacheBtn = document.getElementById('clear-cache-btn');

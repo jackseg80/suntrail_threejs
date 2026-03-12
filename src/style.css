@@ -185,7 +185,7 @@ input[type="range"] { accent-color: var(--accent); }
 @keyframes toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes toast-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-10px); } }
 
-/* --- PRESETS PERFORMANCE (v3.7.0) --- */
+/* --- PRESETS PERFORMANCE (v3.8.2) --- */
 .preset-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); color: var(--t2); padding: 10px 5px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
 .preset-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--t1); }
 .preset-btn.active { background: rgba(59, 130, 246, 0.2); border-color: var(--accent); color: var(--accent); }
@@ -203,6 +203,6 @@ input[type="range"] { accent-color: var(--accent); }
     #panel { width: 85%; }
 }
 
-/* --- BOUSSOLE NATIVE CANVAS (v3.8.3) --- */
+/* --- BOUSSOLE NATIVE CANVAS (v3.8.2) --- */
 #compass-canvas { position: fixed; bottom: 10px; right: 10px; width: 120px; height: 120px; z-index: 1000; pointer-events: none; }
 

@@ -10,7 +10,7 @@ import { loadTerrain, updateVisibleTiles, lngLatToTile, worldToLngLat, repositio
 import { autoSelectMapSource } from './ui';
 import { throttle, isMobileDevice } from './utils';
 
-// --- BOUSSOLE 3D NATIVE SECONDAIRE (v3.8.3) ---
+// --- BOUSSOLE 3D NATIVE SECONDAIRE (v3.8.2) ---
 let compassScene: THREE.Scene;
 let compassCamera: THREE.PerspectiveCamera;
 let compassRenderer: THREE.WebGLRenderer;
@@ -22,7 +22,7 @@ function initCompass() {
 
     compassScene = new THREE.Scene();
     compassCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-    compassCamera.position.set(0, 0, 18); // Recul augmenté de 12 à 18 (v3.8.3)
+    compassCamera.position.set(0, 0, 18); // Recul augmenté pour éviter les coupures (v3.8.2)
 
     compassRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     compassRenderer.setSize(120, 120);

@@ -4,14 +4,15 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
-## [3.8.0] - 2026-03-12 (Navigation & Partage)
+## [3.8.2] - 2026-03-12 (Instrumentation & Partage)
 ### Ajouté
-- **Partage de Vue (Deep Linking) :** Mise à jour automatique de l'URL avec les coordonnées, le zoom et l'heure (`#lat=&lon=&z=&t=`). Permet de partager une simulation exacte via un simple lien.
-- **Boussole 3D :** Nouvel indicateur visuel synchronisé avec l'orientation de la caméra (Nord magnétique dynamique).
-- **Moteur de Recherche Gratuit :** Migration finale vers **Nominatim (OSM)** pour des recherches illimitées et sans coût API.
+- **Boussole 3D Native :** Implémentation d'un second renderer Three.js indépendant pour une boussole haute visibilité avec points cardinaux (N, E, S, O).
+- **Deep Linking :** Synchronisation automatique de l'URL avec les coordonnées GPS, le niveau de zoom et l'heure de simulation.
+- **Moteur Nominatim :** Passage à la recherche de lieux via OpenStreetMap (gratuit et illimité).
 
 ### Changé
-- **LOD Naturel :** Recalibrage des seuils de zoom pour une transition plus douce entre les niveaux de détail.
+- **Refonte UI :** Repositionnement des contrôles pour une meilleure ergonomie (Stats en haut-gauche, Boussole en bas-droite, GPS sous les calques).
+- **LOD & Stabilité :** Optimisation des seuils de zoom et correction du Z-Fighting (offset 10cm) pour une fluidité visuelle parfaite sur mobile.
 
 ---
 
