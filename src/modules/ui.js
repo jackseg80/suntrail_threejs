@@ -45,12 +45,29 @@ export function initUI() {
         });
     });
 
+import { Geolocation } from '@capacitor/geolocation';
+
+...
+
     // --- GESTION DU GPS ---
     const gpsBtn = document.getElementById('gps-btn');
-    gpsBtn.addEventListener('click', () => {
-        if (!navigator.geolocation) return;
-        gpsBtn.classList.add('active');
-        navigator.geolocation.getCurrentPosition(async (pos) => {
+    gpsBtn.addEventListener('click', async () => {
+        try {
+            const permissions = await Geolocation.checkPermissions();
+            if (permissions.location !== 'granted') {
+                const req = await Geolocation.requestPermissions();
+                if (req.location !== 'granted') {
+                    console.warn("Permission GPS refusée.");
+                    return;
+                }
+            }
+
+            gpsBtn.classList.add('active');
+            const pos = await Geolocation.getCurrentPosition({
+                enableHighAccuracy: true,
+                timeout: 10000
+            });
+
             const { latitude, longitude } = pos.coords;
             autoSelectMapSource(latitude, longitude);
             resetTerrain();
@@ -64,10 +81,10 @@ export function initUI() {
             }
             await updateVisibleTiles();
             gpsBtn.classList.remove('active');
-        }, (err) => {
+        } catch (err) {
             console.warn("GPS Error:", err);
             gpsBtn.classList.remove('active');
-        });
+        }
     });
 
     // --- GPX ---
