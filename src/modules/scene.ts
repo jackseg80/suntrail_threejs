@@ -30,22 +30,23 @@ function initCompass() {
 
     compassObject = new THREE.Group();
 
-    // Aiguille Nord (Rouge Fluo)
+    // Aiguille Nord (Rouge Fluo) - Pointe vers -Z (Nord Monde)
     const geoNorth = new THREE.ConeGeometry(1, 2.5, 16);
     const matNorth = new THREE.MeshBasicMaterial({ color: 0xff3333 });
     const north = new THREE.Mesh(geoNorth, matNorth);
-    north.position.y = 1.25;
+    north.rotation.x = -Math.PI / 2;
+    north.position.z = -1.25;
     compassObject.add(north);
 
-    // Aiguille Sud (Blanc)
+    // Aiguille Sud (Blanc) - Pointe vers +Z (Sud Monde)
     const geoSouth = new THREE.ConeGeometry(1, 2.5, 16);
     const matSouth = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const south = new THREE.Mesh(geoSouth, matSouth);
-    south.position.y = -1.25;
-    south.rotation.x = Math.PI;
+    south.rotation.x = Math.PI / 2;
+    south.position.z = 1.25;
     compassObject.add(south);
 
-    // Anneau de base
+    // Anneau de base (Horizontal XZ)
     const geoRing = new THREE.TorusGeometry(3.2, 0.1, 8, 64);
     const matRing = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2 });
     const ring = new THREE.Mesh(geoRing, matRing);
@@ -70,8 +71,9 @@ function initCompass() {
         compassObject.add(sprite);
     };
 
-    createLetter('N', '#ff3333', new THREE.Vector3(0, 5.2, 0));
-    createLetter('S', '#ffffff', new THREE.Vector3(0, -5.2, 0));
+    // Alignement Monde: N=-Z, S=+Z, E=+X, O=-X
+    createLetter('N', '#ff3333', new THREE.Vector3(0, 0, -5.2));
+    createLetter('S', '#ffffff', new THREE.Vector3(0, 0, 5.2));
     createLetter('E', '#ffffff', new THREE.Vector3(5.2, 0, 0));
     createLetter('O', '#ffffff', new THREE.Vector3(-5.2, 0, 0));
 
@@ -232,7 +234,9 @@ export async function initScene(): Promise<void> {
         state.renderer.render(state.scene, state.camera);
 
         if (compassObject && state.camera && compassRenderer) {
-            compassObject.quaternion.copy(state.camera.quaternion);
+            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(state.camera.quaternion);
+            compassCamera.position.copy(forward).multiplyScalar(-18);
+            compassCamera.quaternion.copy(state.camera.quaternion);
             compassRenderer.render(compassScene, compassCamera);
         }
 

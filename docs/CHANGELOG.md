@@ -4,6 +4,14 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [3.8.4] - 2026-03-12
+### ✨ Améliorations
+- **Boussole 3D Stabilisée :** Refonte du système de rotation. La boussole utilise désormais une caméra secondaire synchronisée sur le vecteur de vue, assurant une précision parfaite en lacet (yaw) et en tangage (pitch).
+- **Alignement Monde :** Recalage des points cardinaux sur les axes réels de la scène (Nord à -Z).
+- **Ergonomie Mobile :** 
+  - Repositionnement de l'indicateur de zoom (LOD) juste sous la barre de recherche pour une meilleure visibilité.
+  - Abaissement de la boussole 3D pour éviter les zones de confort du pouce et libérer le centre de l'écran.
+
 ## [3.8.3] - 2026-03-12 (Raffinement Mobile)
 ### Changé
 - **Ergonomie Mobile :** Repositionnement des statistiques de performance sous le bouton réglages et remontée de la boussole au-dessus de la barre de temps.

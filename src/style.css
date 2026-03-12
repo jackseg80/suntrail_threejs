@@ -203,6 +203,6 @@ input[type="range"] { accent-color: var(--accent); }
     #layer-menu { top: 70px; right: 15px; width: calc(100% - 30px); max-width: 320px; }
     #bottom-bar { width: calc(100% - 30px); padding: 10px 15px; }
     #panel { width: 85%; }
-    #zoom-indicator { bottom: 160px; } 
-    #compass-canvas { bottom: 160px; right: 15px; width: 100px; height: 100px; display: block !important; } 
+    #zoom-indicator { top: 75px; bottom: auto; } 
+    #compass-canvas { bottom: 110px; right: 15px; width: 100px; height: 100px; display: block !important; } 
 }
