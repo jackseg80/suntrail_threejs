@@ -1,31 +1,34 @@
 import { vi, afterEach } from 'vitest';
 
-// Mock de localStorage robuste
+// --- MOCK LOCALSTORAGE ---
 const storage = new Map<string, string>();
-
 const localStorageMock = {
-  getItem: (key: string) => storage.get(key) || null,
-  setItem: (key: string, value: string) => storage.set(key, value.toString()),
-  removeItem: (key: string) => storage.delete(key),
-  clear: () => storage.clear(),
-  key: (i: number) => Array.from(storage.keys())[i] || null,
+  getItem: vi.fn((key: string) => storage.get(key) || null),
+  setItem: vi.fn((key: string, value: string) => storage.set(key, value.toString())),
+  removeItem: vi.fn((key: string) => storage.delete(key)),
+  clear: vi.fn(() => storage.clear()),
+  key: vi.fn((i: number) => Array.from(storage.keys())[i] || null),
   get length() { return storage.size; }
 };
 
-// On écrase localStorage sur window proprement
-Object.defineProperty(window, 'localStorage', {
-  value: localStorageMock,
-  configurable: true,
-  enumerable: true,
-  writable: true
-});
+vi.stubGlobal('localStorage', localStorageMock);
 
-// Polyfills pour APIs manquantes dans JSDOM
+// --- PATCH TEARDOWN (Fix JSDOM/HappyDOM EventTarget Error) ---
+const originalRemove = window.removeEventListener;
+window.removeEventListener = function(type: string, listener: any, options?: any) {
+  try {
+    originalRemove.call(this, type, listener, options);
+  } catch (e) {
+    // On ignore silencieusement les erreurs de suppression durant le Teardown
+  }
+};
+
+// --- POLYFILLS ---
 if (typeof window.URL.createObjectURL === 'undefined') {
   window.URL.createObjectURL = vi.fn();
 }
 
-// Nettoyage global après chaque test
+// --- CLEANUP ---
 afterEach(() => {
   vi.clearAllMocks();
   vi.clearAllTimers();

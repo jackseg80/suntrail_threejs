@@ -6,15 +6,10 @@ export default defineConfig({
     outDir: 'dist',
   },
   test: {
-    environment: 'jsdom',
+    environment: 'happy-dom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
-    environmentOptions: {
-      jsdom: {
-        url: 'http://localhost/'
-      }
-    },
-    // Nouvelle façon de configurer les threads dans Vitest
+    // On désactive les threads pour éviter les corruptions de mémoire en CI
     pool: 'forks',
     poolOptions: {
       forks: {
