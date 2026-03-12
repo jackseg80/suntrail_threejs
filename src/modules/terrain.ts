@@ -15,8 +15,7 @@ export const activeTiles = new Map<string, Tile>();
 export const activeLabels = new Map<string, any>(); 
 
 const dataCache = new Map<string, CachedData>();
-const MAX_CACHE_SIZE = isMobileDevice() ? 100 : 400; 
-
+const MAX_CACHE_SIZE = isMobileDevice() ? 200 : 800; // Doublé (v3.7.1)
 // --- CACHE DE GÉOMÉTRIES ---
 const geometryCache = new Map<string, THREE.PlaneGeometry>();
 

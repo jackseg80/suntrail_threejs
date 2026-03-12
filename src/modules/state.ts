@@ -23,21 +23,21 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
     },
     balanced: {
         RESOLUTION: 128,
-        RANGE: 4,
+        RANGE: 3, // Réduit de 4 à 3
         SHADOWS: true,
         SHADOW_RES: 1024,
         PIXEL_RATIO_LIMIT: 1.2
     },
     performance: {
         RESOLUTION: 192,
-        RANGE: 6,
+        RANGE: 5, // Réduit de 6 à 5
         SHADOWS: true,
         SHADOW_RES: 2048,
         PIXEL_RATIO_LIMIT: 1.5
     },
     ultra: {
         RESOLUTION: 256,
-        RANGE: 8,
+        RANGE: 7, // Réduit de 8 à 7
         SHADOWS: true,
         SHADOW_RES: 4096,
         PIXEL_RATIO_LIMIT: window.devicePixelRatio

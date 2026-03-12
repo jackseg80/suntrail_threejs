@@ -4,6 +4,14 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [3.7.1] - 2026-03-12 (Optimisation des Coûts)
+### Changé
+- **Réduction de Portée (Eco-Range) :** Ajustement du `state.RANGE` sur les presets pour limiter la consommation de tuiles MapTiler (économie de ~40% de requêtes).
+- **Cache Local Boosté :** Doublement de la taille du cache LRU (800 tuiles sur PC / 200 sur Mobile) pour minimiser les rechargements réseau.
+- **Optimisation Swisstopo :** Correction de l'URL WMTS pour le calque des pentes et sécurisation du chargement des tuiles.
+
+---
+
 ## [3.7.0] - 2026-03-12 (Sécurité & Clarté)
 ### Ajouté
 - **Carte des Pentes (> 30°)** : Intégration du calque officiel Swisstopo pour identifier les zones à risque.
