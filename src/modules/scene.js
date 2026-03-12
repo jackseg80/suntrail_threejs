@@ -5,11 +5,43 @@ import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { state } from './state.js';
 import { updateSunPosition } from './sun.js';
-import { loadTerrain, updateVisibleTiles, lngLatToTile, worldToLngLat, repositionAllTiles, animateTiles, EARTH_CIRCUMFERENCE, updateGPXMesh } from './terrain.js';
+import { loadTerrain, updateVisibleTiles, lngLatToTile, worldToLngLat, repositionAllTiles, animateTiles, EARTH_CIRCUMFERENCE, updateGPXMesh, resetTerrain, clearCache } from './terrain.js';
 import { autoSelectMapSource } from './ui.js';
 import { throttle, isMobileDevice } from './utils.js';
 
+export async function disposeScene() {
+    resetTerrain(); // Supprime les tuiles et labels de la scène
+    clearCache();   // Libère les textures du cache mémoire GPU
+
+    if (state.renderer) {
+        state.renderer.setAnimationLoop(null);
+        state.renderer.dispose();
+    }
+    
+    if (state.scene) {
+        state.scene.traverse((object) => {
+            if (object.geometry) object.geometry.dispose();
+            if (object.material) {
+                if (Array.isArray(object.material)) {
+                    object.material.forEach(material => material.dispose());
+                } else {
+                    object.material.dispose();
+                }
+            }
+        });
+        state.scene.clear();
+    }
+    
+    if (state.stats && state.stats.dom && state.stats.dom.parentNode) {
+        state.stats.dom.parentNode.removeChild(state.stats.dom);
+    }
+    
+    window.removeEventListener('resize', onWindowResize);
+}
+
 export async function initScene() {
+    await disposeScene(); // Nettoyage de l'ancienne scène avant l'initialisation
+
     const container = document.getElementById('canvas-container');
     container.innerHTML = '';
     

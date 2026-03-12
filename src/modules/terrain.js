@@ -1,13 +1,22 @@
 import * as THREE from 'three';
 import { state } from './state.js';
-import { fetchNearbyPeaks, createLabelSprite, showToast } from './utils.js';
+import { fetchNearbyPeaks, createLabelSprite, showToast, isMobileDevice } from './utils.js';
 
 export const EARTH_CIRCUMFERENCE = 40075016.68;
 export const activeTiles = new Map(); 
 export const activeLabels = new Map(); 
 
 const dataCache = new Map();
-const MAX_CACHE_SIZE = 400; 
+const MAX_CACHE_SIZE = isMobileDevice() ? 100 : 400; 
+
+export function clearCache() {
+    for (const entry of dataCache.values()) {
+        if (entry.elev) entry.elev.dispose();
+        if (entry.color) entry.color.dispose();
+        if (entry.overlay) entry.overlay.dispose();
+    }
+    dataCache.clear();
+}
 
 function addToCache(key, elevTex, colorTex, overlayTex) {
     if (dataCache.size >= MAX_CACHE_SIZE) {
