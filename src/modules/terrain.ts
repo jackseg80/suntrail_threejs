@@ -181,6 +181,7 @@ export class Tile {
     status: 'idle' | 'loading' | 'loaded' | 'failed' | 'disposed' = 'idle';
     mesh: THREE.Mesh | null = null;
     elevationTex: THREE.Texture | null = null;
+    pixelData: Uint8ClampedArray | null = null; // Données brutes pour calcul CPU (Sonde Solaire)
     colorTex: THREE.Texture | null = null;
     overlayTex: THREE.Texture | null = null;
     slopesTex: THREE.Texture | null = null;
@@ -249,6 +250,16 @@ export class Tile {
             ]);
 
             this.elevationTex = new THREE.Texture(imgElev); this.elevationTex.flipY = false; this.elevationTex.needsUpdate = true;
+            
+            // --- EXTRACTION DES DONNÉES PIXEL (v3.9.1) ---
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = imgElev.width; offCanvas.height = imgElev.height;
+            const offCtx = offCanvas.getContext('2d');
+            if (offCtx) {
+                offCtx.drawImage(imgElev, 0, 0);
+                this.pixelData = offCtx.getImageData(0, 0, imgElev.width, imgElev.height).data;
+            }
+
             this.colorTex = new THREE.Texture(imgColor); this.colorTex.flipY = false; this.colorTex.needsUpdate = true;
             this.colorTex.colorSpace = THREE.SRGBColorSpace;
 

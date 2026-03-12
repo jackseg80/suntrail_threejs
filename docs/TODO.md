@@ -2,14 +2,14 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
-## 🏁 En cours (v3.9) - Végétation & Analyse
-- [ ] **Sonde Solaire** : Outil d'analyse au clic (durée d'ensoleillement 24h).
+## 🏁 En cours (v3.9.2) - Végétation & Analyse
 - [ ] **Profil d'Altitude Interactif** : Graphique de dénivelé dynamique synchronisé avec la trace GPX en 3D.
 - [ ] **Forêts & Arbres 3D** : Génération de végétation 3D (InstancedMesh) basée sur la couverture forestière.
 
-## ✅ Terminé (v3.8.5)
-- [x] Contrôle de l'interface (Toggle Stats & Debug).
-- [x] Correctif majeur des ombres (Shadow Camera Near/Far).
+## ✅ Terminé (v3.9.1)
+- [x] **Sonde Solaire** : Outil d'analyse au clic (durée d'ensoleillement 24h avec occlusion relief).
+- [x] **Extraction Pixel Terrain** : Stockage CPU `pixelData` pour analyse instantanée.
+- [x] **Tests Unitaires d'Analyse** : Validation Vitest du ray-marching et du décodage Terrain-RGB.
 
 ## ✅ Terminé (v3.8.4)
 - [x] Optimisation de l'ergonomie mobile (LOD sous la recherche, boussole abaissée).

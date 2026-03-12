@@ -1,13 +1,14 @@
-# ⛰️ SunTrail 3D (v3.8.5)
+# ⛰️ SunTail 3D (v3.9.1)
 
 Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données Swisstopo / MapTiler.
 
-## ✨ Nouveautés v3.8.5
+## ✨ Nouveautés v3.9.1
+- **Sonde Solaire (Analyse 24h) :** Calculez la durée d'ensoleillement réelle d'un point au clic, en tenant compte de l'ombre portée des montagnes environnantes.
+- **Ray-marching CPU :** Algorithme de détection d'occlusion haute précision validé par tests unitaires.
+- **Échantillonnage Direct :** Accès instantané aux données d'altitude via l'extraction `pixelData` sur le CPU.
 - **Contrôle Interface :** Options pour masquer/afficher les stats performance et infos debug.
 - **Correctif Ombres :** Stabilisation des ombres portées sur de grandes distances (Shadow Camera).
-- **Boussole 3D Stabilisée :** Instrumentation de précision synchronisée sur la caméra secondaire pour un lacet et un tangage parfaits.
-- **Ergonomie Mobile :** Repositionnement intelligent de l'indicateur de zoom (LOD) sous la recherche et abaissement de la boussole pour une navigation fluide.
-- **Deep Linking :** Partagez votre position, zoom et heure via une simple URL (#lat=...&lon=...&z=...&t=...).
+- **Boussole 3D Stabilisée :** Instrumentation de précision synchronisée sur la caméra secondaire.
 - **Full TypeScript :** Codebase entièrement typée pour une stabilité et une maintenance de niveau professionnel.
 - **Heures Magiques :** Rendu immersif des phases dorées et bleues (Golden & Blue Hours) avec interpolation des couleurs.
 - **GPS Natif (Capacitor) :** Géolocalisation haute précision avec gestion native des permissions Android.

@@ -10,7 +10,7 @@
 
 <div id="setup-screen">
     <div class="setup-card">
-        <div style="margin-bottom:8px; font-size:10px; color:var(--gold); font-weight:700; letter-spacing:3px; text-transform:uppercase;">Version 3.8.5</div>
+        <div style="margin-bottom:8px; font-size:10px; color:var(--gold); font-weight:700; letter-spacing:3px; text-transform:uppercase;">Version 3.9.1</div>
         <h1>⛰️ SunTrail 3D</h1>
         <p style="color:var(--t2);">Explorez les reliefs de Suisse et du monde avec une simulation solaire haute précision en temps réel.</p>
         
@@ -25,7 +25,7 @@
         <button class="btn-go" id="bgo">Lancer l'expérience</button>
         
         <div style="margin-top:40px; font-size:11px; color:rgba(255,255,255,0.2); text-transform:uppercase; letter-spacing:2px;">
-            SunTrail v3.8.5 • Jackseg • Three.js
+            SunTrail v3.9.1 • Jackseg • Three.js
         </div>
     </div>
 </div>
@@ -198,6 +198,20 @@
 <div id="coords-panel" style="display:none; position:fixed; bottom:100px; left:20px; background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:12px; font-size:13px; z-index:500; backdrop-filter:var(--glass); pointer-events:none; box-shadow:0 5px 15px rgba(0,0,0,0.3);">
     <div id="click-latlon" style="color:var(--t2);">—</div>
     <div id="click-alt" style="color:var(--gold); font-size:16px; font-weight:700;">—</div>
+    <button id="probe-btn" style="pointer-events:auto; margin-top:10px; width:100%; padding:8px; border-radius:8px; background:var(--accent); color:white; border:none; font-weight:700; cursor:pointer; font-size:11px;">☀️ ANALYSE SOLAIRE</button>
+</div>
+
+<!-- OVERLAY ANALYSE SOLAIRE (v3.9.1) -->
+<div id="probe-result" style="display:none; position:fixed; bottom:160px; left:20px; width:300px; background:var(--panel-solid); border:1px solid var(--border); border-radius:20px; padding:20px; z-index:1000; box-shadow:0 20px 50px rgba(0,0,0,0.6);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h3 style="margin:0; font-size:14px; color:var(--gold); text-transform:uppercase;">Ensoleillement (24h)</h3>
+        <button id="close-probe" style="background:none; border:none; color:var(--t2); font-size:20px; cursor:pointer;">×</button>
+    </div>
+    <div id="probe-timeline" style="height:30px; background:rgba(255,255,255,0.05); border-radius:6px; overflow:hidden; display:flex; margin-bottom:15px;"></div>
+    <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--t1);">
+        <span>Total : <span id="probe-total" style="font-weight:700;">--h--</span></span>
+        <span id="probe-status" style="color:var(--accent);">Prêt</span>
+    </div>
 </div>
 
 <script type="module" src="/src/main.ts"></script>

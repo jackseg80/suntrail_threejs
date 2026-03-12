@@ -8,6 +8,9 @@ import { initScene } from './scene';
 import { updateVisibleTiles, activeTiles, lngLatToTile, worldToLngLat, resetTerrain, updateGPXMesh, deleteTerrainCache } from './terrain';
 import { isPositionInSwitzerland, showToast } from './utils';
 import { applyPreset, detectBestPreset } from './performance';
+import { runSolarProbe } from './analysis';
+
+let lastClickedCoords = { x: 0, z: 0, alt: 0 };
 
 export function initUI(): void {
     // --- DÉTECTION PERFORMANCE (v3.8.2) ---
@@ -243,11 +246,31 @@ export function initUI(): void {
             if (coordsPanel) coordsPanel.style.display = state.SHOW_DEBUG ? 'block' : 'none';
             if (clickLatLon) clickLatLon.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
             if (clickAlt) clickAlt.textContent = `${Math.round(realAlt)} m`;
+
+            // Mémorisation pour la sonde (v3.9.1)
+            lastClickedCoords = { x: hit.point.x, z: hit.point.z, alt: realAlt };
         } else {
             const coordsPanel = document.getElementById('coords-panel');
             if (coordsPanel) coordsPanel.style.display = 'none';
         }
     });
+
+    // --- SONDE SOLAIRE (v3.9.1) ---
+    const probeBtn = document.getElementById('probe-btn');
+    if (probeBtn) {
+        probeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            runSolarProbe(lastClickedCoords.x, lastClickedCoords.z, lastClickedCoords.alt);
+        });
+    }
+
+    const closeProbe = document.getElementById('close-probe');
+    if (closeProbe) {
+        closeProbe.addEventListener('click', () => {
+            const res = document.getElementById('probe-result');
+            if (res) res.style.display = 'none';
+        });
+    }
 
     // --- RÉGLAGES TECHNIQUES ---
     const resSlider = document.getElementById('res-slider') as HTMLInputElement;
