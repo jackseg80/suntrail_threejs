@@ -89,6 +89,10 @@ export interface State {
     gpxMesh: THREE.Mesh | null;
     trailProgress: number;
     isFollowingTrail: boolean;
+    
+    // Statistiques Session (v3.7.4)
+    networkRequests: number;
+    cacheHits: number;
 }
 
 export const state: State = {
@@ -98,7 +102,7 @@ export const state: State = {
     TARGET_LON: 7.6617,
     ZOOM: 13, 
     
-    // Paramètres de Performance
+    // ... (paramètres performance identiques)
     PERFORMANCE_PRESET: 'balanced',
     RESOLUTION: PRESETS.balanced.RESOLUTION, 
     RANGE: PRESETS.balanced.RANGE,        
@@ -135,5 +139,9 @@ export const state: State = {
     gpxPoints: [],
     gpxMesh: null,
     trailProgress: 0,
-    isFollowingTrail: false
+    isFollowingTrail: false,
+
+    // Statistiques Session (v3.7.4)
+    networkRequests: 0,
+    cacheHits: 0
 };

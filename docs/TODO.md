@@ -2,12 +2,13 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
-## 🏁 En cours (v3.7.0)
-- [x] Carte des Pentes > 30° (Sécurité).
-- [x] Transitions invisibles (Superposition différée).
-- [x] Détection automatique du GPU (Performance Presets).
-- [x] Système de File d'Attente Prioritaire (Flux de chargement).
-- [x] Cache de Géométries Partagé (Réutilisation mémoire).
+## 🏁 En cours (v3.7.4)
+- [x] Optimisation drastique des requêtes MapTiler (Plan de Sauvetage).
+- [x] Cache Persistant (Cache API) pour les tuiles de relief.
+- [x] Recherche gratuite via Nominatim (OpenStreetMap).
+- [x] Statistiques Session (Réseau vs Cache).
+- [x] GPS Hybride résilient (Web + Mobile).
+- [x] Carte des Pentes > 30° (Sécurité Swisstopo).
 - [ ] Ajouter une boussole 3D en bas de l'écran.
 
 ## 🚀 Prochaine version (v3.8) - Immersion & Analyse

@@ -74,22 +74,24 @@ export function initUI(): void {
     if (gpsBtn) {
         gpsBtn.addEventListener('click', async () => {
             try {
-                const permissions = await Geolocation.checkPermissions();
-                if (permissions.location !== 'granted') {
-                    const req = await Geolocation.requestPermissions();
-                    if (req.location !== 'granted') {
-                        console.warn("Permission GPS refusée.");
-                        return;
-                    }
+                gpsBtn.classList.add('active');
+                
+                let latitude: number, longitude: number;
+
+                // --- DÉTECTION GPS HYBRIDE (Mobile vs Web) ---
+                try {
+                    const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+                    latitude = pos.coords.latitude;
+                    longitude = pos.coords.longitude;
+                } catch (e) {
+                    // Fallback Web natif si Capacitor échoue
+                    const webPos = await new Promise<GeolocationPosition>((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true });
+                    });
+                    latitude = webPos.coords.latitude;
+                    longitude = webPos.coords.longitude;
                 }
 
-                gpsBtn.classList.add('active');
-                const pos = await Geolocation.getCurrentPosition({
-                    enableHighAccuracy: true,
-                    timeout: 10000
-                });
-
-                const { latitude, longitude } = pos.coords;
                 autoSelectMapSource(latitude, longitude);
                 resetTerrain();
                 state.TARGET_LAT = latitude;
@@ -104,6 +106,7 @@ export function initUI(): void {
                 gpsBtn.classList.remove('active');
             } catch (err) {
                 console.warn("GPS Error:", err);
+                showToast("Impossible d'accéder au GPS");
                 gpsBtn.classList.remove('active');
             }
         });

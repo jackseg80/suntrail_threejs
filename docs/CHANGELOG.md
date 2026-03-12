@@ -14,7 +14,18 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
-## [3.7.2] - 2026-03-12 (Économie de Quota & Survie)
+## [3.7.4] - 2026-03-12 (Conformité & Transparence)
+### Ajouté
+- **Statistiques Réseau :** Affichage en temps réel des requêtes économisées grâce au cache (Compteurs Réseau vs Cache).
+- **GPS Hybride :** Support automatique du GPS Web (navigateur) si Capacitor n'est pas disponible.
+- **Accessibilité DOM :** Correction des avertissements de sécurité Chrome sur les formulaires de mot de passe (clés API).
+
+### Changé
+- **Cache API :** Optimisation du système de stockage pour une meilleure gestion de l'espace disque.
+
+---
+
+## [3.7.3] - 2026-03-12 (Gestion du Stockage)
 ### Ajouté
 - **Cache Persistant (Cache API) :** Stockage permanent des tuiles de relief MapTiler sur le disque local. Une zone déjà visitée ne consomme plus **aucune** requête réseau lors des prochaines sessions.
 - **Moteur de Recherche Gratuit :** Migration de MapTiler Geocoding vers **Nominatim (OpenStreetMap)** pour supprimer les coûts liés à la barre de recherche.

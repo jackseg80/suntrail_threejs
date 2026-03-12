@@ -127,17 +127,28 @@ async function fetchWithCache(url: string, usePersistentCache: boolean = false):
     if (!usePersistentCache) {
         try {
             const r = await fetch(url);
-            return r.ok ? await r.blob() : null;
+            if (r.ok) {
+                state.networkRequests++;
+                updateStorageUI();
+                return await r.blob();
+            }
+            return null;
         } catch (e) { return null; }
     }
 
     try {
         const cache = await caches.open(CACHE_NAME);
         const cachedResponse = await cache.match(url);
-        if (cachedResponse) return await cachedResponse.blob();
+        if (cachedResponse) {
+            state.cacheHits++;
+            updateStorageUI();
+            return await cachedResponse.blob();
+        }
 
         const networkResponse = await fetch(url);
         if (networkResponse.ok) {
+            state.networkRequests++;
+            updateStorageUI();
             cache.put(url, networkResponse.clone());
             return await networkResponse.blob();
         }
@@ -145,9 +156,24 @@ async function fetchWithCache(url: string, usePersistentCache: boolean = false):
     } catch (e) {
         try {
             const r = await fetch(url);
-            return r.ok ? await r.blob() : null;
+            if (r.ok) {
+                state.networkRequests++;
+                updateStorageUI();
+                return await r.blob();
+            }
+            return null;
         } catch (err) { return null; }
     }
+}
+
+/**
+ * Met Ã  jour les compteurs dans l'UI (appelÃ© depuis terrain.ts pour rÃ©activitÃ©)
+ */
+function updateStorageUI() {
+    const netCount = document.getElementById('net-count');
+    const cacheCount = document.getElementById('cache-count');
+    if (netCount) netCount.textContent = state.networkRequests.toString();
+    if (cacheCount) cacheCount.textContent = state.cacheHits.toString();
 }
 
 export class Tile {
@@ -437,7 +463,7 @@ export async function loadTerrain(): Promise<void> { await updateVisibleTiles();
 export async function deleteTerrainCache(): Promise<void> {
     try {
         const success = await caches.delete(CACHE_NAME);
-        if (success) showToast('Cache vidé avec succès');
-        else showToast('Le cache était déjà vide');
+        if (success) showToast('Cache vidï¿½ avec succï¿½s');
+        else showToast('Le cache ï¿½tait dï¿½jï¿½ vide');
     } catch (e) { showToast('Erreur lors de la purge du cache'); }
 }
