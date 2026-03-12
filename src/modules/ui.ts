@@ -8,7 +8,7 @@ import { initScene } from './scene';
 import { updateVisibleTiles, activeTiles, lngLatToTile, worldToLngLat, resetTerrain, updateGPXMesh, deleteTerrainCache } from './terrain';
 import { isPositionInSwitzerland, showToast } from './utils';
 import { applyPreset, detectBestPreset } from './performance';
-import { runSolarProbe } from './analysis';
+import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';
 import { updateElevationProfile } from './profile';
 
 let lastClickedCoords = { x: 0, z: 0, alt: 0 };
@@ -208,35 +208,14 @@ export function initUI(): void {
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, state.camera);
         
-        const meshes: THREE.Mesh[] = [];
-        const meshToTile = new Map<number, any>();
-        for (const tile of activeTiles.values()) {
-            if (tile && tile.mesh) {
-                meshes.push(tile.mesh);
-                meshToTile.set(tile.mesh.id, tile);
-            }
-        }
+        // --- NOUVELLE MÉTHODE DE PICKING PAR RAY-MARCHING (v3.9.2) ---
+        // Le Raycaster standard est trompé par les montagnes (il ne voit que le sol plat).
+        // On utilise notre algorithme qui "marche" le long du rayon pour trouver le relief.
+        const hitPoint = findTerrainIntersection(raycaster.ray);
 
-        const intersects = raycaster.intersectObjects(meshes);
-        if (intersects.length > 0) {
-            const hit = intersects[0];
-            const tile = meshToTile.get(hit.object.id);
-            const gps = worldToLngLat(hit.point.x, hit.point.z);
-            
-            let realAlt = 0;
-            if (tile && tile.pixelData) {
-                const uv = hit.uv; 
-                if (uv) {
-                    // Les textures elevation sont en 256x256
-                    const px = Math.floor(THREE.MathUtils.clamp(uv.x, 0, 0.999) * 256);
-                    const py = Math.floor(THREE.MathUtils.clamp(1.0 - uv.y, 0, 0.999) * 256);
-                    const idx = (py * 256 + px) * 4;
-                    const r = tile.pixelData[idx];
-                    const g = tile.pixelData[idx + 1];
-                    const b = tile.pixelData[idx + 2];
-                    realAlt = -10000 + ((r * 65536 + g * 256 + b) * 0.1);
-                }
-            }
+        if (hitPoint) {
+            const gps = worldToLngLat(hitPoint.x, hitPoint.z);
+            const realAlt = getAltitudeAt(hitPoint.x, hitPoint.z) / state.RELIEF_EXAGGERATION;
 
             const coordsPanel = document.getElementById('coords-panel');
             const clickLatLon = document.getElementById('click-latlon');
@@ -247,7 +226,7 @@ export function initUI(): void {
             if (clickAlt) clickAlt.textContent = `${Math.round(realAlt)} m`;
 
             // Mémorisation pour la sonde (v3.9.1)
-            lastClickedCoords = { x: hit.point.x, z: hit.point.z, alt: realAlt };
+            lastClickedCoords = { x: hitPoint.x, z: hitPoint.z, alt: realAlt * state.RELIEF_EXAGGERATION };
         } else {
             const coordsPanel = document.getElementById('coords-panel');
             if (coordsPanel) coordsPanel.style.display = 'none';

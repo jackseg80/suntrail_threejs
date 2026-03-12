@@ -392,21 +392,31 @@ export function lngLatToTile(lon: number, lat: number, zoom: number): { x: numbe
 export function lngLatToWorld(lon: number, lat: number): { x: number; z: number } {
     const xNorm = (lon + 180) / 360;
     const yNorm = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2;
+    
+    // Référentiel fixe basé sur la tuile d'origine actuelle
+    // On utilise state.originTile.z pour rester cohérent avec le placement des tuiles
     const originUnit = 1.0 / Math.pow(2, state.originTile.z);
     const oxNorm = (state.originTile.x + 0.5) * originUnit;
     const oyNorm = (state.originTile.y + 0.5) * originUnit;
-    return { x: (xNorm - oxNorm) * EARTH_CIRCUMFERENCE, z: (yNorm - oyNorm) * EARTH_CIRCUMFERENCE };
+    
+    return { 
+        x: (xNorm - oxNorm) * EARTH_CIRCUMFERENCE, 
+        z: (yNorm - oyNorm) * EARTH_CIRCUMFERENCE 
+    };
 }
 
 export function worldToLngLat(worldX: number, worldZ: number): { lat: number; lon: number } {
     const originUnit = 1.0 / Math.pow(2, state.originTile.z);
     const oxNorm = (state.originTile.x + 0.5) * originUnit;
     const oyNorm = (state.originTile.y + 0.5) * originUnit;
+    
     const xNorm = worldX / EARTH_CIRCUMFERENCE + oxNorm;
     const yNorm = worldZ / EARTH_CIRCUMFERENCE + oyNorm;
+    
     const lon = xNorm * 360 - 180;
     const n = Math.PI - 2 * Math.PI * yNorm;
     const lat = 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+    
     return { lat, lon };
 }
 

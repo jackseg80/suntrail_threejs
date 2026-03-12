@@ -9,30 +9,59 @@ import { activeTiles, worldToLngLat, lngLatToTile } from './terrain';
  */
 export function getAltitudeAt(worldX: number, worldZ: number): number {
     const gps = worldToLngLat(worldX, worldZ);
-    // On utilise le zoom actuel de la scène pour chercher la tuile
     const tileCoords = lngLatToTile(gps.lon, gps.lat, state.ZOOM);
     const key = `${tileCoords.x}_${tileCoords.y}_${state.ZOOM}`;
     const tile = activeTiles.get(key);
 
     if (!tile || !tile.pixelData) return 0;
 
-    // Calcul des UV locaux à la tuile
+    // Détection automatique de la résolution (256 ou 512)
+    const res = Math.sqrt(tile.pixelData.length / 4);
+
     const relX = (worldX - tile.worldX) / tile.tileSizeMeters + 0.5;
     const relZ = (worldZ - tile.worldZ) / tile.tileSizeMeters + 0.5;
 
-    const px = Math.floor(THREE.MathUtils.clamp(relX, 0, 0.999) * 256);
-    const py = Math.floor(THREE.MathUtils.clamp(relZ, 0, 0.999) * 256);
-    
-    const idx = (py * 256 + px) * 4;
+    const px = Math.floor(THREE.MathUtils.clamp(relX, 0, 0.999) * res);
+    const py = Math.floor(THREE.MathUtils.clamp(relZ, 0, 0.999) * res);
+
+    const idx = (py * res + px) * 4;
     if (idx < 0 || idx >= tile.pixelData.length) return 0;
 
     const r = tile.pixelData[idx];
     const g = tile.pixelData[idx + 1];
     const b = tile.pixelData[idx + 2];
-    
-    // Décodage Terrain-RGB (v3.9.1)
-    // Formula: -10000 + (R * 65536 + G * 256 + B) * 0.1
+
     return (-10000 + (r * 65536 + g * 256 + b) * 0.1) * state.RELIEF_EXAGGERATION;
+}
+
+/**
+ * Trouve l'intersection précise entre un rayon (clic souris) et le relief (v3.9.2)
+ * Utilise un algorithme de ray-marching sur CPU car le Raycaster Three.js 
+ * ne voit pas les déformations du Vertex Shader.
+ */
+export function findTerrainIntersection(ray: THREE.Ray): THREE.Vector3 | null {
+    const stepSize = 100; // Pas de 100m pour la recherche globale
+    const maxDist = 150000;
+    
+    for (let dist = 0; dist < maxDist; dist += stepSize) {
+        const p = ray.at(dist, new THREE.Vector3());
+        const terrainH = getAltitudeAt(p.x, p.z);
+        
+        if (p.y <= terrainH) {
+            // 2. Raffinement par dichotomie (4 itérations pour une précision ~6m)
+            let dMin = dist - stepSize;
+            let dMax = dist;
+            for (let i = 0; i < 4; i++) {
+                const dMid = (dMin + dMax) / 2;
+                const pMid = ray.at(dMid, new THREE.Vector3());
+                const hMid = getAltitudeAt(pMid.x, pMid.z);
+                if (pMid.y <= hMid) dMax = dMid;
+                else dMin = dMid;
+            }
+            return ray.at(dMax, new THREE.Vector3());
+        }
+    }
+    return null;
 }
 
 /**
