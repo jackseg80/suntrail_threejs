@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "vite",
+    "check": "tsc --noEmit",
     "build": "vite build",
     "cap:sync": "npx cap sync",
     "cap:open": "npx cap open android",
-    "android:update": "npm run build && npm run cap:sync"
+    "cap:assets": "npx capacitor-assets generate --android",
+    "deploy": "npm run check && npm run build && npm run cap:sync",
+    "android:update": "npm run deploy"
   },
   "dependencies": {
     "@capacitor/android": "^8.2.0",
