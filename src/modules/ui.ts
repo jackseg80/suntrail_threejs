@@ -224,19 +224,17 @@ export function initUI(): void {
             const gps = worldToLngLat(hit.point.x, hit.point.z);
             
             let realAlt = 0;
-            if (tile && tile.elevationTex && tile.elevationTex.image) {
-                const canvas = document.createElement('canvas');
-                canvas.width = 256; canvas.height = 256;
-                const ctx = canvas.getContext('2d');
-                if (ctx) {
-                    ctx.drawImage(tile.elevationTex.image, 0, 0);
-                    const uv = hit.uv; 
-                    if (uv) {
-                        const px = Math.floor(uv.x * 255);
-                        const py = Math.floor((1.0 - uv.y) * 255);
-                        const data = ctx.getImageData(px, py, 1, 1).data;
-                        realAlt = -10000 + ((data[0] * 65536 + data[1] * 256 + data[2]) * 0.1);
-                    }
+            if (tile && tile.pixelData) {
+                const uv = hit.uv; 
+                if (uv) {
+                    // Les textures elevation sont en 256x256
+                    const px = Math.floor(THREE.MathUtils.clamp(uv.x, 0, 0.999) * 256);
+                    const py = Math.floor(THREE.MathUtils.clamp(1.0 - uv.y, 0, 0.999) * 256);
+                    const idx = (py * 256 + px) * 4;
+                    const r = tile.pixelData[idx];
+                    const g = tile.pixelData[idx + 1];
+                    const b = tile.pixelData[idx + 2];
+                    realAlt = -10000 + ((r * 65536 + g * 256 + b) * 0.1);
                 }
             }
 

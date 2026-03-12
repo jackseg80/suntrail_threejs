@@ -4,6 +4,7 @@ Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et 
 
 ## ✨ Nouveautés v3.9.2
 - **Profil d'Altitude Interactif :** Visualisez le dénivelé de vos traces GPX dans un panneau dynamique synchronisé avec la vue 3D.
+- **Précision Altimétrique :** Lecture ultra-précise de l'altitude au clic via l'accès direct aux données `pixelData`.
 - **Esthétique GPX :** Tracé néon haute visibilité et marqueur de position bleu cyan surélevé.
 - **Correctifs de Rendu :** Stabilisation du cache de terrain (fin des tuiles noires) et synchronisation parfaite des coordonnées lors des changements de zoom.
 - **Sonde Solaire (Analyse 24h) :** Calculez la durée d'ensoleillement réelle d'un point au clic.

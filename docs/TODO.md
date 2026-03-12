@@ -7,6 +7,7 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 
 ## ✅ Terminé (v3.9.2)
 - [x] **Profil d'Altitude Interactif** : Graphique de dénivelé dynamique synchronisé avec la trace GPX en 3D.
+- [x] **Précision Altimétrique** : Refonte du picking altitude via `pixelData` (fin des erreurs sur les plateaux).
 - [x] **Refonte Esthétique GPX** : Tracé néon orange affiné et marqueur bleu cyan surélevé (+20m).
 - [x] **Correction Synchronisation** : Recalcul des positions lors des changements de LOD/Zoom.
 - [x] **Correctif Rendu** : Résolution du bug des tuiles noires (correction cache).

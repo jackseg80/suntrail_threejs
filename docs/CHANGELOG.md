@@ -15,6 +15,7 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Stabilité LOD :** Recalcul dynamique des positions monde lors des changements de niveau de détail ou de recentrage.
 
 ### 🐞 Corrections
+- **Précision Altimétrique :** Refonte de la récupération de l'altitude au clic. Utilisation directe des données `pixelData` au lieu d'un canvas temporaire, supprimant les erreurs de lecture sur les hauts plateaux.
 - **Cache de Terrain :** Correction d'une corruption de données qui causait l'affichage de tuiles noires.
 - **Sécurité Swisstopo :** Gestion robuste des textures vides ou manquantes.
 
