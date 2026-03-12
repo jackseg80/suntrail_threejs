@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { state } from './state';
 import { showToast, isMobileDevice } from './utils';
+import { updateElevationProfile } from './profile';
 
 export const EARTH_CIRCUMFERENCE = 40075016.68;
 
@@ -437,6 +438,10 @@ export function updateGPXMesh(): void {
     state.gpxMesh = new THREE.Mesh(geometry, material);
     state.gpxMesh.renderOrder = 1000;
     if (state.scene) state.scene.add(state.gpxMesh);
+
+    // --- SYNCHRONISATION PROFIL (v3.9.2) ---
+    // On recalcule les données du profil car les coordonnées monde ont changé
+    updateElevationProfile();
 }
 
 function calculateTargetLOD(tile: Tile, camX: number, camZ: number): number {
