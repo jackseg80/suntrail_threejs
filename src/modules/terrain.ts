@@ -177,19 +177,32 @@ export class Tile {
         if ((this.status as string) === 'disposed') return;
         this.status = 'loading';
         try {
-            const fetchImg = (url: string) => fetch(url).then(r => r.blob()).then(b => createImageBitmap(b));
-            const promises: Promise<ImageBitmap | null>[] = [
+            // Fonctions de fetch sécurisées (retournent null au lieu de throw)
+            const safeFetchImg = async (url: string) => {
+                try {
+                    const r = await fetch(url);
+                    if (!r.ok) return null;
+                    const b = await r.blob();
+                    return await createImageBitmap(b);
+                } catch (e) { return null; }
+            };
+
+            const promises = [
                 fetch(`https://api.maptiler.com/tiles/terrain-rgb-v2/${this.zoom}/${this.tx}/${this.ty}.png?key=${state.MK}`)
                     .then(r => r.blob()).then(b => createImageBitmap(b, { colorSpaceConversion: 'none' })),
-                fetchImg(this.getColorUrl()),
-                state.SHOW_TRAILS ? fetchImg(this.getOverlayUrl()) : Promise.resolve(null),
-                state.SHOW_SLOPES ? fetchImg(this.getSlopesUrl()) : Promise.resolve(null)
+                safeFetchImg(this.getColorUrl()),
+                state.SHOW_TRAILS ? safeFetchImg(this.getOverlayUrl()) : Promise.resolve(null),
+                state.SHOW_SLOPES ? safeFetchImg(this.getSlopesUrl()) : Promise.resolve(null)
             ];
+
             const [imgElev, imgColor, imgOverlay, imgSlopes] = await Promise.all(promises);
             if ((this.status as string) === 'disposed') return;
 
-            this.elevationTex = new THREE.Texture(imgElev!); this.elevationTex.flipY = false; this.elevationTex.needsUpdate = true;
-            this.colorTex = new THREE.Texture(imgColor!); this.colorTex.flipY = false; this.colorTex.needsUpdate = true;
+            // Le relief et la couleur sont indispensables
+            if (!imgElev || !imgColor) { this.status = 'failed'; return; }
+
+            this.elevationTex = new THREE.Texture(imgElev); this.elevationTex.flipY = false; this.elevationTex.needsUpdate = true;
+            this.colorTex = new THREE.Texture(imgColor); this.colorTex.flipY = false; this.colorTex.needsUpdate = true;
             this.colorTex.colorSpace = THREE.SRGBColorSpace;
 
             if (imgOverlay) { this.overlayTex = new THREE.Texture(imgOverlay); this.overlayTex.flipY = false; this.overlayTex.needsUpdate = true; this.overlayTex.colorSpace = THREE.SRGBColorSpace; }
@@ -209,7 +222,10 @@ export class Tile {
         }
     }
     getOverlayUrl(): string { return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.png`; }
-    getSlopesUrl(): string { return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.hangneigung-ueber-30/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.png`; }
+    getSlopesUrl(): string { 
+        // Identifiant officiel Swisstopo corrigé : underscore avant le 30
+        return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.hangneigung-ueber_30/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.png`;
+    }
 
     buildMesh(resolution: number): void {
         if (!this.elevationTex || !this.colorTex || (this.status as string) === 'disposed') return;

@@ -2,21 +2,19 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
-## 🏁 En cours (v3.6.x)
+## 🏁 En cours (v3.7.x)
+- [x] Carte des Pentes > 30° (Sécurité).
+- [x] Transitions invisibles (Superposition différée).
 - [x] Détection automatique du GPU (Performance Presets).
 - [x] Système de File d'Attente Prioritaire (Flux de chargement).
 - [x] Cache de Géométries Partagé (Réutilisation mémoire).
-- [x] Organisation Pro du projet (Dossiers /src, /docs, /public).
-- [x] Suite de tests automatisés (Vitest).
 - [ ] Ajouter une boussole 3D en bas de l'écran.
 
-## 🚀 Prochaine version (v3.7) - Immersion & Analyse
+## 🚀 Prochaine version (v3.8) - Immersion & Analyse
 - [ ] **Forêts & Arbres 3D** : Génération de végétation 3D (InstancedMesh) basée sur la couverture forestière pour visualiser l'ombre réelle sur les sentiers.
 - [ ] **Sonde Solaire** : Outil d'analyse au clic permettant de calculer la durée d'ensoleillement sur 24h pour un point précis (avec recommandations rando).
 - [ ] **Profil d'Altitude Interactif** : Graphique de dénivelé dynamique synchronisé avec la trace GPX en 3D.
-- [ ] **Carte des Pentes (Sécurité)** : Calque optionnel colorant les zones > 30° pour identifier les dangers (avalanches, barres rocheuses).
 - [ ] **Partage de Vue (Deep Linking)** : Mise à jour de l'URL avec les coordonnées et l'heure pour partager une simulation via un lien.
-- [ ] Ajouter une boussole 3D en bas de l'écran.
 
 ## 🌟 Version 4.0 - Réalité Augmentée & Environnement Avancé
 - [ ] **Signalétique Officielle Suisse** : Typage couleur des sentiers (Jaune/Rouge/Bleu) selon la classification Swisstopo.

@@ -4,6 +4,18 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [3.7.0] - 2026-03-12 (Sécurité & Clarté)
+### Ajouté
+- **Carte des Pentes (> 30°)** : Intégration du calque officiel Swisstopo pour identifier les zones à risque.
+- **Shader Multi-Calques** : Support de la superposition simultanée de plusieurs textures (Terrain + Sentiers + Pentes).
+- **Hystérésis GPS** : Bridage temporel du changement automatique de source pour éviter les clignotements aux frontières.
+
+### Changé
+- **Transitions Invisibles** : Implémentation d'une suppression différée des maillages (superposition de 500ms) éliminant 100% des flashs blancs.
+- **Chargement Résilient** : L'échec d'un calque optionnel (ex: pentes hors Suisse) ne bloque plus l'affichage du relief.
+
+---
+
 ## [3.6.2] - 2026-03-12 (Confort Mobile)
 ### Ajouté
 - **Media Queries Responsives :** Adaptation de l'interface pour les écrans mobiles étroits (< 600px).
