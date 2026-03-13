@@ -4,12 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
-## [4.2.4] - 2026-03-13
-### 🕹️ Ergonomie Mobile & Unification
-- **Contrôles "Map" Natifs :** Unification du comportement sur mobile et desktop. Le glissement à 1 doigt permet désormais de se déplacer sur la carte (Pan) tandis que la rotation et le zoom se font à 2 doigts, comme sur Google Maps ou Swisstopo.
-- **Damping & Fluidité :** Ajustement des paramètres de MapControls pour une sensation de glisse plus naturelle sur les écrans tactiles.
+## [4.2.5] - 2026-03-13
+### 🕹️ Ergonomie Mobile Avancée
+- **Rotation Multi-Touch libre :** Remplacement de MapControls par une instance OrbitControls configurée manuellement. La rotation à deux doigts (Twist) est désormais asymétrique et beaucoup plus fluide, ne nécessitant plus de point fixe.
+- **Réactivité Doublée :** Augmentation du Damping Factor (0.1) pour un feeling de glisse plus nerveux et précis.
+- **Robustesse TS :** Correction des erreurs de typage liées aux nouveaux contrôles pour garantir un build APK sans faille.
 
-## [4.2.3] - 2026-03-13
+## [4.2.4] - 2026-03-13
 ### 📊 Solar Insight Dashboard
 - **Analyse Interactive :** La timeline est désormais cliquable pour déplacer instantanément le soleil à l'heure choisie et visualiser l'ombre portée.
 - **KPIs Avancés :** Affichage du lever de soleil réel (tenant compte du relief) et du cumul total d'ensoleillement.

@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 // @ts-ignore
@@ -146,17 +145,31 @@ export async function initScene(): Promise<void> {
     state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 250000);
     state.camera.position.set(0, 12000, 15000); 
 
-    // --- CONTRÔLES UNIFIÉS (v4.2.4) ---
-    // Utiliser MapControls partout pour garantir le comportement "Google Maps" :
-    // 1 doigt = Pan (avancer/glisser), 2 doigts = Rotation / Zoom
-    state.controls = new MapControls(state.camera, state.renderer.domElement);
+    // --- CONTRÔLES STYLE MAPS (v4.2.5) ---
+    // On utilise OrbitControls manuellement pour un contrôle total
+    const controls = new OrbitControls(state.camera, state.renderer.domElement);
+    state.controls = controls;
 
-    state.controls.enableDamping = true;
-    state.controls.dampingFactor = 0.05;
-    state.controls.minDistance = 500; 
-    state.controls.maxDistance = 100000; 
-    state.controls.maxPolarAngle = 1.3; 
-    state.controls.screenSpacePanning = false; // Important pour le comportement "Map" (on glisse sur le sol)
+    // Mode "Map" : le clic gauche (1 doigt) déplace la carte au lieu de tourner
+    controls.mouseButtons = {
+        LEFT: THREE.MOUSE.PAN,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.ROTATE
+    };
+
+    // Configuration tactile (v4.2.5)
+    controls.touches = {
+        ONE: THREE.TOUCH.PAN,           // 1 doigt = Glisser (Pan)
+        TWO: THREE.TOUCH.DOLLY_ROTATE   // 2 doigts = Zoom + Rotation
+    };
+
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.1;       // Plus réactif (était 0.05)
+    controls.screenSpacePanning = false; // On glisse sur le sol (comportement carte)
+    controls.minDistance = 500; 
+    controls.maxDistance = 100000; 
+    controls.maxPolarAngle = 1.3; 
+
     const updateUIZoom = (zoom: number) => {
         const indicator = document.getElementById('zoom-indicator');
         if (indicator) indicator.textContent = `${state.MAP_SOURCE.toUpperCase()}: Lvl ${zoom}`;
@@ -221,7 +234,9 @@ export async function initScene(): Promise<void> {
         window.history.replaceState(null, '', `#lat=${lat}&lon=${lon}&z=${zoom}&t=${timeSlider?.value || 720}`);
     }, 200);
     
-    state.controls.addEventListener('change', throttledUpdate);
+    if (state.controls) {
+        state.controls.addEventListener('change', throttledUpdate);
+    }
 
     state.ambientLight = new THREE.AmbientLight(0xffffff, 0.2); state.scene.add(state.ambientLight);
     state.sunLight = new THREE.DirectionalLight(0xffffff, 6.0);
