@@ -31,13 +31,13 @@ export function detectBestPreset(): PresetType {
         return 'performance';
     }
 
-    // Détection des mobiles récents (S23, iPhone récents, Pixel) ou GPU intégrés corrects
-    if (r.includes('apple') || r.includes('m1') || r.includes('m2') || r.includes('m3') || r.includes('iris xe')) {
-        return 'performance';
+    // Mobiles ultra haut de gamme (Snapdragon Elite / Adreno 8xx, Apple M-series)
+    if (r.includes('adreno (tm) 8') || r.includes('m2') || r.includes('m3') || r.includes('m4')) {
+        return 'ultra';
     }
 
-    // Mobiles haut de gamme Android (Adreno 7xx ou Mali-G7xx)
-    if (r.includes('adreno (tm) 7') || r.includes('mali-g7')) {
+    // Mobiles haut de gamme Android (Adreno 7xx ou Mali-G7xx/G8xx) ou Apple M1
+    if (r.includes('adreno (tm) 7') || r.includes('mali-g7') || r.includes('mali-g8') || r.includes('apple m1')) {
         return 'performance';
     }
 
