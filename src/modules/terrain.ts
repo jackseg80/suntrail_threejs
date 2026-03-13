@@ -102,11 +102,15 @@ const terrainVertexInjection = {
         uniform sampler2D uElevationMap;
         uniform float uExaggeration;
         uniform float uTileSize;
+        uniform vec2 uElevOffset;
+        uniform float uElevScale;
+
         float decodeHeight(vec4 rgba) {
             return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1);
         }
         float getTerrainHeight(vec2 uv) {
-            vec4 col = texture2D(uElevationMap, uv);
+            vec2 elevUv = uElevOffset + (uv * uElevScale);
+            vec4 col = texture2D(uElevationMap, elevUv);
             float h = decodeHeight(col);
             if (h < -1000.0 || h > 9000.0) return 0.0;
             return h * uExaggeration;
@@ -169,6 +173,8 @@ export class Tile {
     isFadingIn: boolean = false;
     worldX: number = 0; worldZ: number = 0;
     bounds: THREE.Box3 = new THREE.Box3();
+    elevOffset: THREE.Vector2 = new THREE.Vector2(0, 0);
+    elevScale: number = 1.0;
 
     constructor(tx: number, ty: number, zoom: number, key: string) {
         this.tx = tx; this.ty = ty; this.zoom = zoom; this.key = key;
@@ -206,14 +212,44 @@ export class Tile {
         if (cached) {
             this.elevationTex = cached.elev; this.pixelData = cached.pixelData;
             this.colorTex = cached.color; this.overlayTex = cached.overlay; this.slopesTex = cached.slopes;
+            
+            if (this.zoom >= 15) {
+                this.elevScale = 1.0 / Math.pow(2, this.zoom - 14);
+                const parentX = Math.floor(this.tx / Math.pow(2, this.zoom - 14));
+                const parentY = Math.floor(this.ty / Math.pow(2, this.zoom - 14));
+                const offsetX = (this.tx % Math.pow(2, this.zoom - 14)) * this.elevScale;
+                const offsetY = (this.ty % Math.pow(2, this.zoom - 14)) * this.elevScale;
+                this.elevOffset.set(offsetX, offsetY);
+            } else {
+                this.elevScale = 1.0;
+                this.elevOffset.set(0, 0);
+            }
+
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
             return;
         }
         if (this.status as any === 'disposed') return;
         this.status = 'loading';
         try {
-            // 1. RELIEF (Bloquant)
-            const elevBlob = await fetchWithCache(`https://api.maptiler.com/tiles/terrain-rgb-v2/${this.zoom}/${this.tx}/${this.ty}.png?key=${state.MK}`, true);
+            // 1. RELIEF (Bloquant) - HYBRIDE Z15 (v3.9.7)
+            let elevZoom = this.zoom;
+            let elevTx = this.tx;
+            let elevTy = this.ty;
+
+            if (this.zoom >= 15) {
+                elevZoom = 14;
+                this.elevScale = 1.0 / Math.pow(2, this.zoom - 14);
+                elevTx = Math.floor(this.tx / Math.pow(2, this.zoom - 14));
+                elevTy = Math.floor(this.ty / Math.pow(2, this.zoom - 14));
+                const offsetX = (this.tx % Math.pow(2, this.zoom - 14)) * this.elevScale;
+                const offsetY = (this.ty % Math.pow(2, this.zoom - 14)) * this.elevScale;
+                this.elevOffset.set(offsetX, offsetY);
+            } else {
+                this.elevScale = 1.0;
+                this.elevOffset.set(0, 0);
+            }
+
+            const elevBlob = await fetchWithCache(`https://api.maptiler.com/tiles/terrain-rgb-v2/${elevZoom}/${elevTx}/${elevTy}.png?key=${state.MK}`, true);
             if (!elevBlob) throw new Error("Elevation failed");
             const imgElev = await createImageBitmap(elevBlob, { colorSpaceConversion: 'none' });
             this.elevationTex = new THREE.Texture(imgElev);
@@ -223,7 +259,7 @@ export class Tile {
             const offCtx = offCanvas.getContext('2d');
             if (offCtx) { offCtx.drawImage(imgElev, 0, 0); this.pixelData = offCtx.getImageData(0, 0, imgElev.width, imgElev.height).data; }
 
-            // 2. COULEUR (Non-bloquant)
+            // 2. COULEUR (Non-bloquant) - Toujours au zoom natif (Z15)
             let colorBlob = await fetchWithCache(this.getColorUrl());
             if (!colorBlob) {
                 const fallback = `https://api.maptiler.com/maps/satellite/256/${this.zoom}/${this.tx}/${this.ty}@2x.jpg?key=${state.MK}`;
@@ -282,6 +318,8 @@ export class Tile {
             shader.uniforms.uElevationMap = { value: this.elevationTex };
             shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
             shader.uniforms.uTileSize = { value: this.tileSizeMeters };
+            shader.uniforms.uElevOffset = { value: this.elevOffset };
+            shader.uniforms.uElevScale = { value: this.elevScale };
             shader.uniforms.uOverlayMap = { value: this.overlayTex || null };
             shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
             shader.uniforms.uSlopesMap = { value: this.slopesTex || null };
@@ -321,6 +359,8 @@ export class Tile {
             shader.uniforms.uElevationMap = { value: this.elevationTex }; 
             shader.uniforms.uExaggeration = terrainUniforms.uExaggeration; 
             shader.uniforms.uTileSize = { value: this.tileSizeMeters };
+            shader.uniforms.uElevOffset = { value: this.elevOffset };
+            shader.uniforms.uElevScale = { value: this.elevScale };
             shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${terrainVertexInjection.header}`);
             shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${terrainVertexInjection.position}`);
         };

@@ -9,9 +9,10 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Ultra-LOD (Zoom 15) :** Détails topographiques extrêmes avec une résolution de ~1.5m par pixel (Suisse).
 - **Seuils Adaptatifs :** Transition fluide vers le Zoom 15 dès que la caméra descend sous les 5km d'altitude.
 
-### 🚀 Optimisations
+### 🚀 Optimisations & Fixes
+- **Relief Hybride Z15 :** Correction des erreurs 400 MapTiler en utilisant le relief du Zoom 14 ré-échantillonné dynamiquement pour les tuiles du Zoom 15.
+- **Végétation Hybride :** Adaptation du moteur de plantation pour aligner parfaitement les arbres sur le relief hybride du Zoom 15.
 - **VRAM L15 :** Bridage automatique du rayon de chargement à 2 tuiles lors de l'utilisation du Zoom 15 pour éviter la saturation mémoire.
-- **Végétation :** Désactivation de la génération de forêts au Zoom 15 (les forêts du Zoom 14 restent visibles en dessous) pour économiser le CPU.
 
 ## [3.9.6] - 2026-03-13
 ### ✨ Ajouté
