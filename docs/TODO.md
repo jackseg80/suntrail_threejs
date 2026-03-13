@@ -85,3 +85,10 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [ ] Mode sombre/clair synchronisé avec le système.
 - [ ] Partage de capture d'écran du rendu 3D.
 - [ ] Graphique d'élévation dynamique pour les fichiers GPX.
+
+## 💼 Stratégie Business & Diversification
+- [ ] **Monétisation B2C** : Réfléchir à un modèle Freemium (Analyse solaire avancée et Offline illimité en Premium).
+- [ ] **Sponsorisation POI** : Affichage de refuges et commerces partenaires sur la carte 3D.
+- [ ] **Diversification Immobilière** : Créer un fork du projet pour le calcul d'ensoleillement des bâtiments (B2B).
+- [ ] **Marketing Outdoor** : Préparer des visuels pour présenter le projet sur les réseaux sociaux (Instagram/LinkedIn).
+

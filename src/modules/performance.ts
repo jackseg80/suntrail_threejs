@@ -67,6 +67,7 @@ export function applyPreset(preset: PresetType): void {
     state.SHADOW_RES = settings.SHADOW_RES;
     state.PIXEL_RATIO_LIMIT = settings.PIXEL_RATIO_LIMIT;
     state.SHOW_VEGETATION = settings.SHOW_VEGETATION;
+    state.SHOW_SIGNPOSTS = settings.SHOW_SIGNPOSTS;
 
     // Mise à jour de l'UI si nécessaire (ex: sliders)
     updatePerformanceUI(preset);
@@ -84,6 +85,7 @@ function updatePerformanceUI(preset: PresetType): void {
     const rangeSlider = document.getElementById('range-slider') as HTMLInputElement;
     const shadowToggle = document.getElementById('shadow-toggle') as HTMLInputElement;
     const vegToggle = document.getElementById('veg-toggle') as HTMLInputElement;
+    const poiToggle = document.getElementById('poi-toggle') as HTMLInputElement;
 
     if (resDisp) resDisp.textContent = state.RESOLUTION.toString();
     if (rangeDisp) rangeDisp.textContent = state.RANGE.toString();
@@ -91,6 +93,7 @@ function updatePerformanceUI(preset: PresetType): void {
     if (rangeSlider) rangeSlider.value = state.RANGE.toString();
     if (shadowToggle) shadowToggle.checked = state.SHADOWS;
     if (vegToggle) vegToggle.checked = state.SHOW_VEGETATION;
+    if (poiToggle) poiToggle.checked = state.SHOW_SIGNPOSTS;
 
     // Mise en évidence du bouton de preset actif
     const buttons = document.querySelectorAll('.preset-btn');

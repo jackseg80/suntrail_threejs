@@ -3,6 +3,7 @@ import { state } from './state';
 import { showToast, isMobileDevice, isPositionInSwitzerland } from './utils';
 import { updateElevationProfile } from './profile';
 import { createForestForTile } from './vegetation';
+import { loadPOIsForTile } from './poi';
 
 export const EARTH_CIRCUMFERENCE = 40075016.68;
 
@@ -181,6 +182,7 @@ export class Tile {
     overlayTex: THREE.Texture | null = null;
     slopesTex: THREE.Texture | null = null;
     forestMesh: THREE.InstancedMesh | null = null;
+    poiGroup: THREE.Group | null = null;
     currentResolution: number = -1;
     tileSizeMeters: number;
     opacity: number = 0;
@@ -424,6 +426,19 @@ export class Tile {
             state.scene.add(this.forestMesh);
         }
 
+        // --- CHARGEMENT SIGNALISATION (v4.0 - Béton) ---
+        if (state.SHOW_SIGNPOSTS && this.zoom >= 14) {
+            loadPOIsForTile(this).then(group => {
+                // On ne retire l'ancien groupe que si on en a un nouveau prêt
+                if (group && this.status !== 'disposed' && state.scene) {
+                    if (this.poiGroup) state.scene.remove(this.poiGroup);
+                    this.poiGroup = group;
+                    this.poiGroup.position.set(this.worldX, 0, this.worldZ);
+                    state.scene.add(this.poiGroup);
+                }
+            });
+        }
+
         if (oldMesh) {
             oldMesh.position.y -= 0.1;
             setTimeout(() => {
@@ -451,6 +466,10 @@ export class Tile {
         if (this.forestMesh) { 
             if (state.scene) state.scene.remove(this.forestMesh); 
             this.forestMesh = null; 
+        }
+        if (this.poiGroup) {
+            if (state.scene) state.scene.remove(this.poiGroup);
+            this.poiGroup = null;
         }
     }
 }

@@ -12,6 +12,7 @@ export interface PerformanceSettings {
     SHADOW_RES: number;
     PIXEL_RATIO_LIMIT: number;
     SHOW_VEGETATION: boolean;
+    SHOW_SIGNPOSTS: boolean;
 }
 
 export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings> = {
@@ -21,7 +22,8 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHADOWS: false,
         SHADOW_RES: 512,
         PIXEL_RATIO_LIMIT: 1.0,
-        SHOW_VEGETATION: false
+        SHOW_VEGETATION: false,
+        SHOW_SIGNPOSTS: false
     },
     balanced: {
         RESOLUTION: 128,
@@ -29,7 +31,8 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHADOWS: true,
         SHADOW_RES: 1024,
         PIXEL_RATIO_LIMIT: 1.2,
-        SHOW_VEGETATION: true
+        SHOW_VEGETATION: true,
+        SHOW_SIGNPOSTS: true
     },
     performance: {
         RESOLUTION: 192,
@@ -37,7 +40,8 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHADOWS: true,
         SHADOW_RES: 2048,
         PIXEL_RATIO_LIMIT: 1.5,
-        SHOW_VEGETATION: true
+        SHOW_VEGETATION: true,
+        SHOW_SIGNPOSTS: true
     },
     ultra: {
         RESOLUTION: 256,
@@ -45,7 +49,8 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHADOWS: true,
         SHADOW_RES: 4096,
         PIXEL_RATIO_LIMIT: window.devicePixelRatio,
-        SHOW_VEGETATION: true
+        SHOW_VEGETATION: true,
+        SHOW_SIGNPOSTS: true
     }
 };
 
@@ -66,6 +71,7 @@ export interface State {
     RELIEF_EXAGGERATION: number;
     SHOW_TRAILS: boolean;
     SHOW_SLOPES: boolean;
+    SHOW_SIGNPOSTS: boolean;
     MAP_SOURCE: string;
     hasManualSource: boolean;
     FOG_NEAR: number;
@@ -130,6 +136,7 @@ export const state: State = {
     RELIEF_EXAGGERATION: 1.4, 
     SHOW_TRAILS: true, 
     SHOW_SLOPES: false,
+    SHOW_SIGNPOSTS: PRESETS.balanced.SHOW_SIGNPOSTS,
     MAP_SOURCE: 'swisstopo', 
     hasManualSource: false,
     FOG_NEAR: 5000, 

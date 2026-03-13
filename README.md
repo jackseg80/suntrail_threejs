@@ -1,13 +1,13 @@
-# ⛰️ SunTail 3D (v3.10.0)
+# ⛰️ SunTail 3D (v4.0.0)
 
 Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données Swisstopo / MapTiler.
 
-## ✨ Nouveautés v3.10.0 (Consolidation)
-- **Stabilité Totale :** Moteur hybride Zoom 15 finalisé et bétonné pour une utilisation mondiale.
-- **Optimisation Critique :** Système anti-fantôme pour les tuiles asynchrones et correction du cycle de vie des ressources.
-- **Précision Altimétrique :** Picking et plantation de végétation synchronisés sur le relief hybride.
+## ✨ Nouveautés v4.0.0 (Randonnée HD)
+- **Signalétique 3D :** Affichage des panneaux de signalisation de randonnée (données OSM) directement sur le relief.
+- **Cache Persistant Global :** Stockage local de toutes les données (Relief, Couleur, Sentiers) pour un usage fluide et offline.
+- **Optimisation Industrielle :** File d'attente de requêtes intelligentes et miroirs Overpass pour une stabilité totale.
 
-## ✨ Nouveautés v3.9.7
+## ✨ Nouveautés v3.10.0 (Consolidation)
 - **Indicateur de Position Live :** Suivez vos déplacements en temps réel avec un marqueur 3D haute visibilité.
 - **Champ de Vision Dynamique :** Cône de direction synchronisé avec la boussole magnétique de votre appareil.
 - **Mode Suivi Automatique :** La caméra reste verrouillée sur votre position pendant votre marche.

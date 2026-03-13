@@ -402,6 +402,16 @@ export function initUI(): void {
         });
     }
 
+    const poiToggle = document.getElementById('poi-toggle') as HTMLInputElement;
+    if (poiToggle) {
+        poiToggle.addEventListener('change', async (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            state.SHOW_SIGNPOSTS = target.checked;
+            resetTerrain();
+            await loadTerrain();
+        });
+    }
+
     // --- GESTION CACHE & CLÉ (v3.8.2) ---
     const keyInput = document.getElementById('maptiler-key-input') as HTMLInputElement;
     const updateKeyBtn = document.getElementById('update-key-btn');
