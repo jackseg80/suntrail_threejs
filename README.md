@@ -1,6 +1,10 @@
-# ⛰️ SunTail 3D (v4.0.2)
+# ⛰️ SunTail 3D (v4.0.3)
 
 Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données Swisstopo / MapTiler.
+
+## ✨ Nouveautés v4.0.3 (Performance Flagships)
+- **Optimisation Galaxy S23 :** Augmentation de la densité du maillage à 160 pour le profil "High", offrant un relief plus ciselé sur les écrans haute résolution.
+- **Correctifs TS :** Résolution des erreurs de typage dans le module de signalétique.
 
 ## ✨ Nouveautés v4.0.2 (Turbo & Stabilité)
 - **Format WebP :** Migration vers le format WebP pour toutes les sources MapTiler, réduisant le poids des tuiles de 30 à 50%.

@@ -35,7 +35,7 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHOW_SIGNPOSTS: true
     },
     performance: {
-        RESOLUTION: 192,
+        RESOLUTION: 160,
         RANGE: 5, 
         SHADOWS: true,
         SHADOW_RES: 2048,

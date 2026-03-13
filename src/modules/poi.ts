@@ -50,12 +50,12 @@ export async function loadPOIsForTile(tile: any): Promise<THREE.Group | null> {
     if (failTime && Date.now() < failTime) return null;
 
     // 2. Vérifier le cache mémoire
-    let signposts = signpostMemoryCache.get(zoneKey);
+    let signposts: Signpost[] | null | undefined = signpostMemoryCache.get(zoneKey);
 
     if (!signposts) {
         let fetchPromise = signpostFetchPromises.get(zoneKey);
         if (!fetchPromise) {
-            fetchPromise = fetchWithGlobalLock(zoneZ, zx, zy, zoneKey);
+            fetchPromise = fetchWithGlobalLock(zoneZ, zx, zy);
             signpostFetchPromises.set(zoneKey, fetchPromise);
         }
         signposts = await fetchPromise;
@@ -80,7 +80,7 @@ export async function loadPOIsForTile(tile: any): Promise<THREE.Group | null> {
     return createSignpostGroup(tileSignposts, tile);
 }
 
-async function fetchWithGlobalLock(z: number, x: number, y: number, zoneKey: string): Promise<Signpost[] | null> {
+async function fetchWithGlobalLock(z: number, x: number, y: number): Promise<Signpost[] | null> {
     const res = await globalRequestLock.then(() => fetchPOIsWithCache(z, x, y));
     // Délai de 5s entre chaque appel global pour la v4.0.2
     globalRequestLock = new Promise(resolve => setTimeout(resolve, 5000));
