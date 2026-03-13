@@ -1,6 +1,9 @@
-# ⛰️ SunTrail 3D (v4.2.3)
+# ⛰️ SunTrail 3D (v4.2.4)
 
 Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données Swisstopo / MapTiler.
+
+## ✨ Nouveautés v4.2.4 (Ergonomie)
+- **Contrôles Unifiés :** Le comportement sur mobile a été aligné sur les standards (Google Maps). Le glissement à 1 doigt déplace la carte (Pan), et les 2 doigts sont réservés à la rotation et au zoom.
 
 ## ✨ Nouveautés v4.2.3 (Analytique Solaire)
 - **Solar Insight Dashboard :** Nouvel outil d'analyse complet avec calcul du lever de soleil réel (tenant compte du relief) et cumul d'ensoleillement ultra-précis.

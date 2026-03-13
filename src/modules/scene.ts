@@ -146,15 +146,17 @@ export async function initScene(): Promise<void> {
     state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 250000);
     state.camera.position.set(0, 12000, 15000); 
 
-    state.controls = mobile ? new OrbitControls(state.camera, state.renderer.domElement) : new MapControls(state.camera, state.renderer.domElement);
-    if (mobile) (state.controls as OrbitControls).enablePan = true;
+    // --- CONTRÔLES UNIFIÉS (v4.2.4) ---
+    // Utiliser MapControls partout pour garantir le comportement "Google Maps" :
+    // 1 doigt = Pan (avancer/glisser), 2 doigts = Rotation / Zoom
+    state.controls = new MapControls(state.camera, state.renderer.domElement);
 
     state.controls.enableDamping = true;
     state.controls.dampingFactor = 0.05;
     state.controls.minDistance = 500; 
     state.controls.maxDistance = 100000; 
     state.controls.maxPolarAngle = 1.3; 
-
+    state.controls.screenSpacePanning = false; // Important pour le comportement "Map" (on glisse sur le sol)
     const updateUIZoom = (zoom: number) => {
         const indicator = document.getElementById('zoom-indicator');
         if (indicator) indicator.textContent = `${state.MAP_SOURCE.toUpperCase()}: Lvl ${zoom}`;

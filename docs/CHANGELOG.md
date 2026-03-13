@@ -4,6 +4,11 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.2.4] - 2026-03-13
+### 🕹️ Ergonomie Mobile & Unification
+- **Contrôles "Map" Natifs :** Unification du comportement sur mobile et desktop. Le glissement à 1 doigt permet désormais de se déplacer sur la carte (Pan) tandis que la rotation et le zoom se font à 2 doigts, comme sur Google Maps ou Swisstopo.
+- **Damping & Fluidité :** Ajustement des paramètres de MapControls pour une sensation de glisse plus naturelle sur les écrans tactiles.
+
 ## [4.2.3] - 2026-03-13
 ### 📊 Solar Insight Dashboard
 - **Analyse Interactive :** La timeline est désormais cliquable pour déplacer instantanément le soleil à l'heure choisie et visualiser l'ombre portée.
