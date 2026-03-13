@@ -8,13 +8,15 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [x] **Mode Suivi Caméra** : Option pour garder l'utilisateur au centre de l'écran.
 - [x] **Positionnement sur Relief** : Algorithme garantissant que le marqueur reste au-dessus du sol.
 
-## 🏁 En cours (v3.9.5) - Randonnée HD
-- [ ] **Panneaux de Signalisation** : Affichage des icônes officielles de randonnée (Swisstopo) sur les carrefours importants.
-- [x] **Optimisation VRAM Végétation** : Gestion dynamique de la densité et de la portée selon le profil de performance.
-- [x] **Frustum Culling Avancé** : Calcul précis des sphères de délimitation pour les forêts instanciées.
-- [x] **Monitoring Mémoire** : Estimation de la VRAM en Mo dans le panel de statistiques.
+## 🏁 En cours (v3.9.7) - Ultra-LOD (Zoom 15)
+- [ ] **Support Zoom 15** : Intégration du niveau de détail maximal (~1.5m/px en Suisse).
+- [ ] **Seuils Adaptatifs** : Déclenchement automatique du Zoom 15 sous les 5km d'altitude.
+- [ ] **Optimisation Cache L15** : Gestion agressive de la VRAM pour le chargement massif de micro-tuiles.
 
-## ✅ Terminé (v3.9.4)
+## 📅 À venir (v3.9.8) - Signalétique HD
+- [ ] **Panneaux de Signalisation** : Affichage des icônes officielles de randonnée (Swisstopo) sur les carrefours importants.
+
+## ✅ Terminé (v3.9.6)
 - [x] **Forêts 3D Denses** : Plantation de milliers d'arbres via `InstancedMesh`.
 - [x] **Détection Adaptative** : Algorithme de détection par couleur spécifique à chaque source (CH, OpenTopo).
 - [x] **Filtre de Voisinage** : Suppression des arbres isolés pour des massifs forestiers réalistes.

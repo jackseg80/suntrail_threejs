@@ -4,6 +4,15 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [3.9.7] - 2026-03-13
+### ✨ Ajouté
+- **Ultra-LOD (Zoom 15) :** Détails topographiques extrêmes avec une résolution de ~1.5m par pixel (Suisse).
+- **Seuils Adaptatifs :** Transition fluide vers le Zoom 15 dès que la caméra descend sous les 5km d'altitude.
+
+### 🚀 Optimisations
+- **VRAM L15 :** Bridage automatique du rayon de chargement à 2 tuiles lors de l'utilisation du Zoom 15 pour éviter la saturation mémoire.
+- **Végétation :** Désactivation de la génération de forêts au Zoom 15 (les forêts du Zoom 14 restent visibles en dessous) pour économiser le CPU.
+
 ## [3.9.6] - 2026-03-13
 ### ✨ Ajouté
 - **Indicateur de Position Live :** Affichage d'un marqueur 3D (point bleu) représentant la position GPS réelle de l'utilisateur.

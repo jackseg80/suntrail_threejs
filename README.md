@@ -1,6 +1,11 @@
-# ⛰️ SunTail 3D (v3.9.6)
+# ⛰️ SunTail 3D (v3.9.7)
 
 Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données Swisstopo / MapTiler.
+
+## ✨ Nouveautés v3.9.7
+- **Ultra-LOD (Zoom 15) :** Détails topographiques extrêmes avec une résolution de ~1.5m par pixel (Suisse).
+- **Seuils Adaptatifs :** Transition fluide vers le Zoom 15 dès que la caméra descend sous les 5km d'altitude.
+- **Optimisation VRAM L15 :** Gestion intelligente du rayon de chargement pour maintenir des performances fluides malgré l'explosion du nombre de tuiles.
 
 ## ✨ Nouveautés v3.9.6
 - **Indicateur de Position Live :** Suivez vos déplacements en temps réel avec un marqueur 3D haute visibilité.

@@ -443,7 +443,13 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
     if (state.camera && Math.abs(state.camera.position.y) < 1) return;
     const currentGPS = worldToLngLat(worldX, worldZ);
     const zoom = state.ZOOM; const centerTile = lngLatToTile(currentGPS.lon, currentGPS.lat, zoom);
-    const range = state.RANGE; const margin = 1; 
+    
+    // --- ADAPTIVE RANGE (v3.9.7) ---
+    // Au Zoom 15, on réduit le rayon pour préserver la VRAM car les tuiles sont 4x plus nombreuses
+    let range = state.RANGE;
+    if (zoom >= 15) range = Math.min(2, state.RANGE); 
+    
+    const margin = 1; 
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
             const tx = centerTile.x + dx, ty = centerTile.y + dy, key = `${tx}_${ty}_${zoom}`;
