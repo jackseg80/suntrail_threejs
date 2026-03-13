@@ -7,10 +7,12 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 ## [3.10.0] - 2026-03-13
 ### 🧱 Consolidation & "Bétonnage"
 - **Cache Persistant Global :** Mise en cache automatique de toutes les données (Relief, Couleur, Sentiers). Accélération majeure du démarrage et support du mode hors-ligne.
-- **Moteur Hybride Finalisé :** Refonte de la classe Tile pour une gestion stable du relief et de la couleur au Zoom 15 partout dans le monde.
-- **Protection Anti-Fantôme :** Sécurisation des chargements asynchrones éliminant les bugs visuels lors des déplacements rapides.
-- **Splash Screen Opti :** Suppression du flash blanc au démarrage via un style CSS critique injecté en HTML.
-- **Bridage Robuste :** Clamping strict des coordonnées pour éliminer les erreurs 404 sur les bordures du monde.
+- **Moteur Hybride Stable :** Refonte de la classe Tile et des Shaders pour un Zoom 15 fluide et parfaitement aligné mondialement.
+- **Suite de Tests Étendue :** Ajout de tests unitaires (Vitest) validant la précision de l'altitude au Zoom 15 et les calculs d'offsets hybrides.
+- **Robustesse Réseau :** Implémentation de Timeouts (10s) et de mécanismes de repli (retry) pour éviter les blocages lors de connexions montagneuses instables.
+- **Protection Anti-Fantôme :** Sécurisation des chargements asynchrones éliminant les glitches visuels lors des déplacements rapides.
+- **Splash Screen Opti :** Suppression du flash blanc au démarrage via un style CSS critique et un fond noir immédiat.
+- **Bridage Robuste :** Clamping strict des coordonnées de tuiles pour éliminer les erreurs 404.
 
 ## [3.9.7] - 2026-03-13
 ### ✨ Ajouté

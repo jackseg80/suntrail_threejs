@@ -27,6 +27,7 @@ describe('Analyse Solaire (Module Analysis)', () => {
         const mockTile: any = {
             tx: 0, ty: 0, zoom: 13,
             worldX: 0, worldZ: 0, tileSizeMeters: 4891.97,
+            bounds: new THREE.Box3(new THREE.Vector3(-2500, -1000, -2500), new THREE.Vector3(2500, 9000, 2500)),
             pixelData: new Uint8ClampedArray(256 * 256 * 4)
         };
         for (let i = 0; i < mockTile.pixelData.length; i += 4) {
@@ -45,6 +46,7 @@ describe('Analyse Solaire (Module Analysis)', () => {
         const mockTile: any = {
             tx: 0, ty: 0, zoom: 13,
             worldX: 0, worldZ: 0, tileSizeMeters: 1000,
+            bounds: new THREE.Box3(new THREE.Vector3(-500, -1000, -500), new THREE.Vector3(500, 9000, 500)),
             pixelData: new Uint8ClampedArray(res512 * res512 * 4)
         };
         for (let i = 0; i < mockTile.pixelData.length; i += 4) {
@@ -62,6 +64,7 @@ describe('Analyse Solaire (Module Analysis)', () => {
         const mockTile: any = {
             tx: 0, ty: 0, zoom: 13,
             worldX: 0, worldZ: 0, tileSizeMeters: 1000000, 
+            bounds: new THREE.Box3(new THREE.Vector3(-500000, -1000, -500000), new THREE.Vector3(500000, 9000, 500000)),
             pixelData: new Uint8ClampedArray(256 * 256 * 4)
         };
         for (let i = 0; i < mockTile.pixelData.length; i += 4) {

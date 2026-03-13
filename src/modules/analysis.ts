@@ -13,7 +13,7 @@ export function getAltitudeAt(worldX: number, worldZ: number): number {
     const testPoint = new THREE.Vector3(worldX, 0, worldZ);
     
     for (const t of activeTiles.values()) {
-        if (t.bounds.containsPoint(testPoint)) {
+        if (t.bounds && t.bounds.containsPoint(testPoint)) {
             // On privilégie le zoom le plus élevé pour la précision
             if (!tile || t.zoom > tile.zoom) tile = t;
         }
