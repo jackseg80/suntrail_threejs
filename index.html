@@ -38,14 +38,14 @@
 <div id="canvas-container"></div>
 
 <!-- BARRE DE RECHERCHE FLOTTANTE -->
-<div id="top-search-container" style="display:none;">
+<div id="top-search-container" class="ui-element" style="display:none;">
     <input type="text" id="geo-input" placeholder="🔍 Rechercher un lieu...">
     <div id="geo-results"></div>
 </div>
 
 <!-- BOUTON CALQUES -->
-<div id="layer-btn" style="display:none;" title="Changer de carte">🗺️</div>
-<div id="layer-menu">
+<div id="layer-btn" class="ui-element" style="display:none;" title="Changer de carte">🗺️</div>
+<div id="layer-menu" class="ui-element">
     <h3 style="margin:0 0 15px 0; font-size:14px; color:var(--gold); text-transform:uppercase;">Type de carte</h3>
     <div class="layer-grid">
         <div class="layer-item active" data-source="swisstopo">
@@ -73,14 +73,17 @@
 </div>
 
 <!-- BOUTON RÉGLAGES -->
-<div id="settings-toggle" style="display:none;" title="Réglages techniques">⚙️</div>
+<div id="settings-toggle" class="ui-element" style="display:none;" title="Réglages techniques">⚙️</div>
 
 <!-- BOUTON GPS -->
-<div id="gps-btn" style="display:none;" title="Ma position">🎯</div>
-<div id="gps-follow-btn" style="display:none;" title="Suivre ma position">🚶</div>
+<div id="gps-btn" class="ui-element" style="display:none;" title="Ma position">🎯</div>
+<div id="gps-follow-btn" class="ui-element" style="display:none;" title="Suivre ma position">🚶</div>
+
+<!-- BOUTON CAPTURE (v4.1.0) -->
+<div id="screenshot-btn" class="ui-element" style="display:none; position:fixed; top:200px; right:20px; width:50px; height:50px; background:var(--panel); backdrop-filter:var(--glass); border:1px solid var(--border); border-radius:12px; z-index:1000; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 5px 15px rgba(0,0,0,0.3);" title="Capturer la vue">📸</div>
 
 <!-- BARRE DE TEMPS BASSE -->
-<div id="bottom-bar" style="display:none;">
+<div id="bottom-bar" class="ui-element" style="display:none;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <div style="display:flex; align-items:center; gap:12px;">
             <div style="font-weight:700; font-size:18px;"><span id="time-disp">12:00</span></div>
@@ -205,7 +208,7 @@
 </div>
 
 <!-- PROFIL D'ALTITUDE (v4.0.3) -->
-<div id="elevation-profile" style="display:none; position:fixed; bottom:100px; left:50%; transform:translateX(-50%); width:calc(100% - 40px); max-width:800px; height:120px; background:var(--panel); border:1px solid var(--border); border-radius:16px; backdrop-filter:var(--glass); z-index:400; padding:15px; box-shadow:0 10px 30px rgba(0,0,0,0.5); overflow:hidden;">
+<div id="elevation-profile" class="ui-element" style="display:none; position:fixed; bottom:100px; left:50%; transform:translateX(-50%); width:calc(100% - 40px); max-width:800px; height:120px; background:var(--panel); border:1px solid var(--border); border-radius:16px; backdrop-filter:var(--glass); z-index:400; padding:15px; box-shadow:0 10px 30px rgba(0,0,0,0.5); overflow:hidden;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <span style="font-size:11px; color:var(--gold); font-weight:700; text-transform:uppercase; letter-spacing:1px;">Profil Altimétrique</span>
         <div id="profile-info" style="font-size:11px; color:var(--t2);">Distance : 0km | Alt : 0m</div>
@@ -219,18 +222,18 @@
 </div>
 
 <!-- INDICATEURS FIXES -->
-<div id="zoom-indicator">LVL --</div>
-<canvas id="compass-canvas"></canvas>
+<div id="zoom-indicator" class="ui-element">LVL --</div>
+<canvas id="compass-canvas" class="ui-element"></canvas>
 <div id="toast-container"></div>
 
-<div id="coords-panel" style="display:none; position:fixed; bottom:100px; left:20px; background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:12px; font-size:13px; z-index:500; backdrop-filter:var(--glass); pointer-events:none; box-shadow:0 5px 15px rgba(0,0,0,0.3);">
+<div id="coords-panel" class="ui-element" style="display:none; position:fixed; bottom:100px; left:20px; background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:12px; font-size:13px; z-index:500; backdrop-filter:var(--glass); pointer-events:none; box-shadow:0 5px 15px rgba(0,0,0,0.3);">
     <div id="click-latlon" style="color:var(--t2);">—</div>
     <div id="click-alt" style="color:var(--gold); font-size:16px; font-weight:700;">—</div>
     <button id="probe-btn" style="pointer-events:auto; margin-top:10px; width:100%; padding:8px; border-radius:8px; background:var(--accent); color:white; border:none; font-weight:700; cursor:pointer; font-size:11px;">☀️ ANALYSE SOLAIRE</button>
 </div>
 
 <!-- OVERLAY ANALYSE SOLAIRE (v4.0.3) -->
-<div id="probe-result" style="display:none; position:fixed; bottom:160px; left:20px; width:400px; background:var(--panel-solid); border:1px solid var(--border); border-radius:24px; padding:25px; z-index:1000; box-shadow:0 20px 50px rgba(0,0,0,0.6); backdrop-filter:var(--glass);">
+<div id="probe-result" class="ui-element" style="display:none; position:fixed; bottom:160px; left:20px; width:400px; background:var(--panel-solid); border:1px solid var(--border); border-radius:24px; padding:25px; z-index:1000; box-shadow:0 20px 50px rgba(0,0,0,0.6); backdrop-filter:var(--glass);">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
         <h3 style="margin:0; font-size:16px; color:var(--gold); text-transform:uppercase; letter-spacing:1px;">Analyse d'ensoleillement</h3>
         <button id="close-probe" style="background:none; border:none; color:var(--t2); font-size:24px; cursor:pointer;">×</button>

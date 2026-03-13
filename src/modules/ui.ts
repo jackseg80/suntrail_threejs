@@ -5,7 +5,7 @@ import { Geolocation } from '@capacitor/geolocation';
 import { state } from './state';
 import { updateSunPosition } from './sun';
 import { initScene } from './scene';
-import { updateVisibleTiles, lngLatToTile, worldToLngLat, resetTerrain, updateGPXMesh, deleteTerrainCache, loadTerrain } from './terrain';
+import { updateVisibleTiles, lngLatToTile, worldToLngLat, resetTerrain, updateGPXMesh, deleteTerrainCache, loadTerrain, activeTiles } from './terrain';
 import { isPositionInSwitzerland, showToast } from './utils';
 import { applyPreset, detectBestPreset } from './performance';
 import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';
@@ -224,8 +224,21 @@ export function initUI(): void {
         
         const mouse = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
         const raycaster = new THREE.Raycaster();
+        // Augmenter un peu la précision pour les petits objets sur mobile
+        raycaster.params.Sprite = { threshold: 10 }; 
         raycaster.setFromCamera(mouse, state.camera);
         
+        // --- DÉTECTION SIGNALISATION (v4.1.0) ---
+        // On cherche tous les sprites dans la scène qui ont un ID (tous les POI en ont un)
+        const intersects = raycaster.intersectObjects(state.scene.children, true);
+        const hitPOI = intersects.find(hit => hit.object instanceof THREE.Sprite && hit.object.userData.id);
+        
+        if (hitPOI) {
+            const name = hitPOI.object.userData.name || "Signalétique de randonnée";
+            showToast(`📍 ${name}`);
+            return; 
+        }
+
         // --- NOUVELLE MÉTHODE DE PICKING PAR RAY-MARCHING (v3.9.2) ---
         // Le Raycaster standard est trompé par les montagnes (il ne voit que le sol plat).
         // On utilise notre algorithme qui "marche" le long du rayon pour trouver le relief.
@@ -528,6 +541,7 @@ function go(): void {
     const settingsToggle = document.getElementById('settings-toggle');
     const gpsBtn = document.getElementById('gps-btn');
     const gpsFollowBtn = document.getElementById('gps-follow-btn');
+    const screenshotBtn = document.getElementById('screenshot-btn');
     const bottomBar = document.getElementById('bottom-bar');
 
     if (setupScreen) setupScreen.style.display = 'none';
@@ -536,10 +550,93 @@ function go(): void {
     if (settingsToggle) settingsToggle.style.display = 'flex';
     if (gpsBtn) gpsBtn.style.display = 'flex';
     if (gpsFollowBtn) gpsFollowBtn.style.display = 'flex';
+    if (screenshotBtn) {
+        screenshotBtn.style.display = 'flex';
+        screenshotBtn.addEventListener('click', takeScreenshot);
+    }
     if (bottomBar) bottomBar.style.display = 'flex';
     
     autoSelectMapSource(state.TARGET_LAT, state.TARGET_LON);
     initScene();
+    initEphemeralUI();
+}
+
+function initEphemeralUI(): void {
+    const HIDE_DELAY = 5000; // 5 secondes d'inactivité
+
+    const resetTimer = () => {
+        state.lastUIInteraction = Date.now();
+        if (!state.uiVisible) {
+            state.uiVisible = true;
+            document.body.classList.remove('ui-hidden');
+        }
+    };
+
+    // Événements d'interaction globaux
+    window.addEventListener('mousemove', resetTimer);
+    window.addEventListener('mousedown', resetTimer);
+    window.addEventListener('touchstart', resetTimer, { passive: true });
+    window.addEventListener('keydown', resetTimer);
+
+    // Boucle de vérification d'inactivité
+    setInterval(() => {
+        if (state.uiVisible && Date.now() - state.lastUIInteraction > HIDE_DELAY) {
+            // Ne pas masquer si des menus critiques sont ouverts
+            const panel = document.getElementById('panel');
+            if (panel && panel.classList.contains('open')) return;
+            
+            const layerMenu = document.getElementById('layer-menu');
+            if (layerMenu && layerMenu.style.display === 'block') return;
+
+            const geoResults = document.getElementById('geo-results');
+            if (geoResults && geoResults.style.display === 'block') return;
+
+            // Ne pas masquer si on est en train de taper dans la recherche
+            const geoInput = document.getElementById('geo-input') as HTMLInputElement;
+            if (geoInput && document.activeElement === geoInput) return;
+
+            state.uiVisible = false;
+            document.body.classList.add('ui-hidden');
+        }
+    }, 1000);
+}
+
+async function takeScreenshot(): Promise<void> {
+    if (!state.renderer || !state.scene || !state.camera) return;
+
+    // Masquer l'UI pour la capture
+    const wasVisible = state.uiVisible;
+    if (wasVisible) {
+        document.body.classList.add('ui-hidden');
+    }
+
+    // Petit délai pour laisser les transitions CSS se faire (ou on peut juste forcer un rendu sans UI)
+    // Mais ici on utilise toDataURL sur le canvas WebGL, l'UI DOM n'apparaîtra pas de toute façon !
+    // Sauf si on utilise html2canvas, ce qui n'est pas le cas ici.
+    
+    // On force un rendu immédiat pour être sûr d'avoir l'image à jour
+    state.renderer.render(state.scene, state.camera);
+    
+    try {
+        const dataURL = state.renderer.domElement.toDataURL('image/png');
+        
+        const link = document.createElement('a');
+        const now = new Date();
+        const timestamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+        
+        link.download = `SunTrail_3D_${timestamp}.png`;
+        link.href = dataURL;
+        link.click();
+        
+        showToast("📸 Capture d'écran enregistrée");
+    } catch (e) {
+        console.error("Screenshot error:", e);
+        showToast("❌ Échec de la capture");
+    }
+
+    if (wasVisible) {
+        document.body.classList.remove('ui-hidden');
+    }
 }
 
 function initGeocoding(): void {

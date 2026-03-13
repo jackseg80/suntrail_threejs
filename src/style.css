@@ -9,6 +9,16 @@
     --glass: blur(12px) saturate(180%);
 }
 
+@media (prefers-color-scheme: light) {
+    :root {
+        --panel: rgba(255, 255, 255, 0.8);
+        --panel-solid: #f8f9fa;
+        --t1: #1a1c23;
+        --t2: #5f6368;
+        --border: rgba(0, 0, 0, 0.08);
+    }
+}
+
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 body, html {
@@ -166,6 +176,25 @@ body, html {
 
 /* UTILITAIRES */
 .collapsed { display: none !important; }
+
+.ui-element {
+    transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.ui-hidden .ui-element {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Effets de translation spécifiques pour une sortie élégante */
+body.ui-hidden #top-search-container { transform: translate(-50%, -20px); }
+body.ui-hidden #bottom-bar { transform: translate(-50%, 20px); }
+body.ui-hidden #elevation-profile { transform: translate(-50%, 20px); }
+body.ui-hidden #layer-btn, body.ui-hidden #gps-btn, body.ui-hidden #gps-follow-btn { transform: translateX(20px); }
+body.ui-hidden #settings-toggle { transform: translateX(-20px); }
+body.ui-hidden #zoom-indicator { transform: translate(-50%, 20px); }
+body.ui-hidden #compass-canvas { transform: translate(20px, 20px); }
+body.ui-hidden #coords-panel, body.ui-hidden #probe-result { transform: translateX(-20px); }
 
 input[type="range"] { accent-color: var(--accent); }
 

@@ -87,6 +87,10 @@ async function fetchWithGlobalLock(z: number, x: number, y: number): Promise<Sig
     return res;
 }
 
+import { isPositionInSwitzerland, showToast } from './utils';
+
+// ... (existing imports)
+
 async function fetchPOIsWithCache(z: number, x: number, y: number): Promise<Signpost[] | null> {
     const cacheKey = `poi_${z}_${x}_${y}`;
     
@@ -97,13 +101,13 @@ async function fetchPOIsWithCache(z: number, x: number, y: number): Promise<Sign
     } catch (e) {}
 
     const bounds = getTileBounds({ zoom: z, tx: x, ty: y });
-    const query = `[out:json][timeout:60];node["information"~"guidepost|map|board"](${bounds.south.toFixed(6)},${bounds.west.toFixed(6)},${bounds.north.toFixed(6)},${bounds.east.toFixed(6)});out body;`;
+    const query = `[out:json][timeout:30];node["information"~"guidepost|map|board"](${bounds.south.toFixed(6)},${bounds.west.toFixed(6)},${bounds.north.toFixed(6)},${bounds.east.toFixed(6)});out body;`;
     
     for (let attempt = 0; attempt < OVERPASS_SERVERS.length; attempt++) {
         const server = OVERPASS_SERVERS[currentServerIdx];
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 65000);
+            const timeoutId = setTimeout(() => controller.abort(), 35000); // Timeout réduit
 
             const response = await fetch(`${server}?data=${encodeURIComponent(query)}`, { signal: controller.signal });
             clearTimeout(timeoutId);
@@ -118,13 +122,22 @@ async function fetchPOIsWithCache(z: number, x: number, y: number): Promise<Sign
                 return signposts;
             }
 
-            // Si erreur critique, on tourne sur le serveur suivant
+            if (response.status === 429) {
+                currentServerIdx = (currentServerIdx + 1) % OVERPASS_SERVERS.length;
+                // Attendre un peu avant de changer de serveur
+                await new Promise(r => setTimeout(r, 2000));
+                continue; 
+            }
+            
             currentServerIdx = (currentServerIdx + 1) % OVERPASS_SERVERS.length;
-            if (response.status === 429) break; // Rate limit global, on arrête les frais pour cette zone
         } catch (e) {
             currentServerIdx = (currentServerIdx + 1) % OVERPASS_SERVERS.length;
+            await new Promise(r => setTimeout(r, 1000));
         }
     }
+    
+    console.warn("Overpass API: Tous les serveurs ont échoué ou sont saturés.");
+    showToast("📍 Signalétique : Réseau saturé");
     return null;
 }
 
@@ -141,7 +154,7 @@ function createSignpostGroup(signposts: Signpost[], tile: any): THREE.Group {
 
         const sprite = new THREE.Sprite(material);
         sprite.scale.set(25, 25, 1);
-        sprite.position.set(localX, alt + 10, localZ);
+        sprite.position.set(localX, alt + 25, localZ);
         sprite.userData = { name: poi.name, id: poi.id };
         group.add(sprite);
     });

@@ -117,6 +117,10 @@ export interface State {
     // Statistiques Session (v3.8.2)
     networkRequests: number;
     cacheHits: number;
+
+    // Interface Éphémère (v4.1.0)
+    uiVisible: boolean;
+    lastUIInteraction: number;
 }
 
 export const state: State = {
@@ -181,5 +185,9 @@ export const state: State = {
 
     // Statistiques Session (v3.8.2)
     networkRequests: 0,
-    cacheHits: 0
+    cacheHits: 0,
+
+    // Interface Éphémère (v4.1.0)
+    uiVisible: true,
+    lastUIInteraction: Date.now()
 };
