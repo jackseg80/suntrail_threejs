@@ -1,6 +1,11 @@
-# ⛰️ SunTail 3D (v3.9.4)
+# ⛰️ SunTail 3D (v3.9.6)
 
 Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données Swisstopo / MapTiler.
+
+## ✨ Nouveautés v3.9.6
+- **Indicateur de Position Live :** Suivez vos déplacements en temps réel avec un marqueur 3D haute visibilité.
+- **Champ de Vision Dynamique :** Cône de direction synchronisé avec la boussole magnétique de votre appareil.
+- **Mode Suivi Automatique :** La caméra reste verrouillée sur votre position pendant votre marche.
 
 ## ✨ Nouveautés v3.9.4
 - **Forêts 3D Denses :** Immersion totale avec des milliers d'arbres générés en temps réel là où les forêts existent réellement (Swisstopo & OpenTopoMap).

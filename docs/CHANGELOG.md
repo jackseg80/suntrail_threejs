@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [3.9.6] - 2026-03-13
+### ✨ Ajouté
+- **Indicateur de Position Live :** Affichage d'un marqueur 3D (point bleu) représentant la position GPS réelle de l'utilisateur.
+- **Indicateur de Direction (Heading) :** Cône de vision dynamique synchronisé avec la boussole magnétique de l'appareil (iOS & Android).
+- **Mode Suivi Automatique :** Nouveau bouton "Suivre ma position" permettant de garder la caméra centrée sur l'utilisateur durant ses déplacements.
+- **Positionnement Intelligent :** Le marqueur utilise un mix entre l'altitude GPS et l'altitude du relief local pour rester visible même en cas de signal GPS imprécis.
+
 ## [3.9.4] - 2026-03-12
 ### ✨ Ajouté
 - **Forêts 3D Denses :** Système de végétation haute performance capable d'afficher jusqu'à 12 000 arbres par tuile.

@@ -10,6 +10,7 @@ import { isPositionInSwitzerland, showToast } from './utils';
 import { applyPreset, detectBestPreset } from './performance';
 import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';
 import { updateElevationProfile } from './profile';
+import { startLocationTracking, centerOnUser } from './location';
 
 let lastClickedCoords = { x: 0, z: 0, alt: 0 };
 
@@ -124,6 +125,23 @@ export function initUI(): void {
                 console.warn("GPS Error:", err);
                 showToast("Impossible d'accéder au GPS");
                 gpsBtn.classList.remove('active');
+            }
+        });
+    }
+
+    // --- GESTION DU SUIVI GPS (v3.9.6) ---
+    const gpsFollowBtn = document.getElementById('gps-follow-btn');
+    if (gpsFollowBtn) {
+        gpsFollowBtn.addEventListener('click', async () => {
+            state.isFollowingUser = !state.isFollowingUser;
+            if (state.isFollowingUser) {
+                gpsFollowBtn.classList.add('active');
+                await startLocationTracking();
+                centerOnUser();
+                showToast("Suivi GPS activé");
+            } else {
+                gpsFollowBtn.classList.remove('active');
+                showToast("Suivi GPS désactivé");
             }
         });
     }
@@ -499,6 +517,7 @@ function go(): void {
     const layerBtn = document.getElementById('layer-btn');
     const settingsToggle = document.getElementById('settings-toggle');
     const gpsBtn = document.getElementById('gps-btn');
+    const gpsFollowBtn = document.getElementById('gps-follow-btn');
     const bottomBar = document.getElementById('bottom-bar');
 
     if (setupScreen) setupScreen.style.display = 'none';
@@ -506,6 +525,7 @@ function go(): void {
     if (layerBtn) layerBtn.style.display = 'flex';
     if (settingsToggle) settingsToggle.style.display = 'flex';
     if (gpsBtn) gpsBtn.style.display = 'flex';
+    if (gpsFollowBtn) gpsFollowBtn.style.display = 'flex';
     if (bottomBar) bottomBar.style.display = 'flex';
     
     autoSelectMapSource(state.TARGET_LAT, state.TARGET_LON);

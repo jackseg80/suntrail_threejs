@@ -102,6 +102,16 @@ body, html {
 
 #gps-btn.active { color: var(--accent); }
 
+#gps-follow-btn {
+    position: fixed; top: 140px; right: 20px; width: 50px; height: 50px;
+    background: var(--panel); backdrop-filter: var(--glass); border: 1px solid var(--border);
+    border-radius: 12px; z-index: 1000; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; font-size: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: color 0.3s;
+}
+
+#gps-follow-btn.active { color: #007AFF; }
+
 /* PANNEAU RÉGLAGES (PLUS DISCRET) */
 #panel {
     position: fixed; top: 0; left: 0; width: 320px; height: 100%;

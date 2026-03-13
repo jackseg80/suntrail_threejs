@@ -102,6 +102,12 @@ export interface State {
     trailProgress: number;
     isFollowingTrail: boolean;
     
+    // Localisation Utilisateur (v3.9.6)
+    userLocation: { lat: number; lon: number; alt: number } | null;
+    userHeading: number | null;
+    isFollowingUser: boolean;
+    userMarker: THREE.Group | null;
+    
     // Statistiques Session (v3.8.2)
     networkRequests: number;
     cacheHits: number;
@@ -159,6 +165,12 @@ export const state: State = {
     profileMarker: null,
     trailProgress: 0,
     isFollowingTrail: false,
+
+    // Localisation Utilisateur (v3.9.6)
+    userLocation: null,
+    userHeading: null,
+    isFollowingUser: false,
+    userMarker: null,
 
     // Statistiques Session (v3.8.2)
     networkRequests: 0,

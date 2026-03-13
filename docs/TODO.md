@@ -2,6 +2,12 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
+## ✅ Terminé (v3.9.6)
+- [x] **Indicateur de Position Live** : Point bleu 3D synchronisé avec le GPS.
+- [x] **Champ de Vision (Heading)** : Cône de direction basé sur la boussole magnétique.
+- [x] **Mode Suivi Caméra** : Option pour garder l'utilisateur au centre de l'écran.
+- [x] **Positionnement sur Relief** : Algorithme garantissant que le marqueur reste au-dessus du sol.
+
 ## 🏁 En cours (v3.9.5) - Randonnée HD
 - [ ] **Panneaux de Signalisation** : Affichage des icônes officielles de randonnée (Swisstopo) sur les carrefours importants.
 - [ ] **Optimisation VRAM Végétation** : Gestion dynamique du nombre d'arbres selon les performances réelles du device.
