@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [3.10.0] - 2026-03-13
+### 🧱 Consolidation & "Bétonnage"
+- **Moteur Hybride Finalisé :** Refonte de la classe Tile pour une gestion élégante du relief et de la couleur hybride au Zoom 15.
+- **Protection Anti-Fantôme :** Sécurisation complète des chargements asynchrones pour éviter les tuiles et arbres orphelins lors de navigations rapides.
+- **Clamping des Tuiles :** Bridage strict des coordonnées pour éliminer les erreurs 404 sur les bordures du monde.
+- **Optimisation VRAM :** Amélioration du cycle de vie des ressources et nettoyage automatique du cache.
+
 ## [3.9.7] - 2026-03-13
 ### ✨ Ajouté
 - **Ultra-LOD (Zoom 15) :** Détails topographiques extrêmes avec une résolution de ~1.5m par pixel (Suisse).

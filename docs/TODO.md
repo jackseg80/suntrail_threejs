@@ -8,13 +8,22 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [x] **Mode Suivi Caméra** : Option pour garder l'utilisateur au centre de l'écran.
 - [x] **Positionnement sur Relief** : Algorithme garantissant que le marqueur reste au-dessus du sol.
 
-## 🏁 En cours (v3.9.7) - Ultra-LOD (Zoom 15)
-- [ ] **Support Zoom 15** : Intégration du niveau de détail maximal (~1.5m/px en Suisse).
-- [ ] **Seuils Adaptatifs** : Déclenchement automatique du Zoom 15 sous les 5km d'altitude.
-- [ ] **Optimisation Cache L15** : Gestion agressive de la VRAM pour le chargement massif de micro-tuiles.
+## 🏁 En cours (v3.10.0) - Consolidation & "Bétonnage"
+- [ ] **Refactoring Hybride** : Nettoyage et centralisation des réglages dans la classe Tile.
+- [ ] **Tests de Précision** : Validation de l'altitude Zoom 15 vs Zoom 14.
+- [ ] **Robustesse Réseau** : Fallback et timeouts sur les sources MapTiler/OpenTopo.
+- [ ] **Lissage FPS** : Optimisation des batchs de chargement pour éviter les saccades.
 
-## 📅 À venir (v3.9.8) - Signalétique HD
-- [ ] **Panneaux de Signalisation** : Affichage des icônes officielles de randonnée (Swisstopo) sur les carrefours importants.
+## 📅 À venir (v4.0) - Randonnée HD & Immersion
+- [ ] **Panneaux de Signalisation** : Affichage des icônes officielles de randonnée (Swisstopo) sur les carrefours.
+- [ ] **Interface Éphémère** : Masquage automatique des contrôles pour maximiser la vue 3D.
+- [ ] **Capture d'écran 3D** : Outil de partage de vue panoramique.
+
+## ✅ Terminé (v3.9.7)
+- [x] **Support Zoom 15** : Niveau de détail maximal fonctionnel.
+- [x] **Moteur Hybride** : Relief Z14 sur tuiles Z15 pour la stabilité mondiale.
+- [x] **Sécurité Anti-Ghost** : Nettoyage asynchrone des ressources.
+- [x] **Protection VRAM** : Rayon adaptatif au Zoom 15.
 
 ## ✅ Terminé (v3.9.6)
 - [x] **Forêts 3D Denses** : Plantation de milliers d'arbres via `InstancedMesh`.

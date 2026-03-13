@@ -111,10 +111,19 @@ export function createForestForTile(tile: any): THREE.InstancedMesh | null {
     return mesh;
 }
 
-function getSimpleAltitude(tile: any, localX: number, lz: number): number {
+function getSimpleAltitude(tile: any, localX: number, localZ: number): number {
     const res = Math.sqrt(tile.pixelData.length / 4);
-    const relX = (localX / tile.tileSizeMeters) + 0.5;
-    const relZ = (lz / tile.tileSizeMeters) + 0.5;
+    
+    let relX = (localX / tile.tileSizeMeters) + 0.5;
+    let relZ = (localZ / tile.tileSizeMeters) + 0.5;
+
+    // --- SUPPORT HYBRIDE Z15 (v3.9.7) ---
+    // Si la tuile utilise un relief parent, on ajuste les coordonnées d'échantillonnage
+    if (tile.elevScale < 1.0) {
+        relX = tile.elevOffset.x + (relX * tile.elevScale);
+        relZ = tile.elevOffset.y + (relZ * tile.elevScale);
+    }
+
     const px = Math.floor(THREE.MathUtils.clamp(relX, 0, 0.999) * res);
     const py = Math.floor(THREE.MathUtils.clamp(relZ, 0, 0.999) * res);
     const idx = (py * res + px) * 4;

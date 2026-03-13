@@ -165,14 +165,17 @@ export async function initScene(): Promise<void> {
         if (!state.controls || !state.camera) return;
         const dx = state.controls.target.x, dz = state.controls.target.z, dist = state.camera.position.y;
         let newZoom = state.ZOOM;
-        // --- SEUILS DE ZOOM ULTRA-AGRESSIFS (v3.9.3) ---
-        // On demande le niveau de détail maximal (Lvl 14) dès 15km d'altitude
+        // --- SEUILS DE ZOOM ADAPTATIFS (v3.9.7) ---
         if (state.ZOOM === 13) { 
             if (dist < 15000) newZoom = 14; 
             else if (dist > 45000) newZoom = 12; 
         }
         else if (state.ZOOM === 14) { 
-            if (dist > 18000) newZoom = 13; 
+            if (dist > 18000) newZoom = 13;
+            else if (dist < 5000) newZoom = 15;
+        }
+        else if (state.ZOOM === 15) {
+            if (dist > 6500) newZoom = 14;
         }
         else if (state.ZOOM === 12) { 
             if (dist < 35000) newZoom = 13; 
