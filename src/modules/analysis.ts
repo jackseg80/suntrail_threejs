@@ -40,15 +40,15 @@ export function getAltitudeAt(worldX: number, worldZ: number): number {
  * ne voit pas les déformations du Vertex Shader.
  */
 export function findTerrainIntersection(ray: THREE.Ray): THREE.Vector3 | null {
-    const stepSize = 100; // Pas de 100m pour la recherche globale
-    const maxDist = 150000;
+    const stepSize = 150; // Pas de 150m pour la recherche globale
+    const maxDist = Math.min(120000, state.FOG_FAR || 100000); // On ne cherche pas plus loin que le voile atmosphérique
     
     for (let dist = 0; dist < maxDist; dist += stepSize) {
         const p = ray.at(dist, new THREE.Vector3());
         const terrainH = getAltitudeAt(p.x, p.z);
         
         if (p.y <= terrainH) {
-            // 2. Raffinement par dichotomie (10 itérations pour une précision < 0.1m)
+            // 2. Raffinement par dichotomie (10 itérations pour une précision < 0.1m interne)
             let dMin = dist - stepSize;
             let dMax = dist;
             for (let i = 0; i < 10; i++) {

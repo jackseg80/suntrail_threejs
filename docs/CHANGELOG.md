@@ -11,8 +11,11 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Détection par Source :** Paramétrages spécifiques pour Swisstopo et OpenTopoMap afin de garantir une plantation précise selon le style de carte.
 
 ### ✨ Améliorations
-- **Performances Végétation :** Utilisation d'`InstancedMesh` et limitation de l'affichage au Zoom 14 pour préserver la fluidité (60 FPS maintenus sur mobile moderne).
+- **Performances Végétation :** Utilisation d'`InstancedMesh` et limitation de l'affichage au Zoom 14.
+- **Gestion des Ressources :** Destruction systématique (GPU dispose) des forêts lors du nettoyage des tuiles pour prévenir la saturation VRAM.
+- **Optimisation du Picking :** Limitation de la portée du Ray-marching à la distance de visibilité réelle (FOG_FAR).
 - **Contrôle Utilisateur :** Ajout d'une option pour activer/désactiver les forêts 3D dans les réglages.
+- **Auto-Performance :** Détection des GPU haut de gamme (Adreno 7xx+) pour activer automatiquement le profil Performance.
 
 ## [3.9.3] - 2026-03-12
 ### ✨ Ajouté

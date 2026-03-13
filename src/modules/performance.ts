@@ -31,8 +31,13 @@ export function detectBestPreset(): PresetType {
         return 'performance';
     }
 
-    // Détection des mobiles récents ou GPU intégrés corrects
+    // Détection des mobiles récents (S23, iPhone récents, Pixel) ou GPU intégrés corrects
     if (r.includes('apple') || r.includes('m1') || r.includes('m2') || r.includes('m3') || r.includes('iris xe')) {
+        return 'performance';
+    }
+
+    // Mobiles haut de gamme Android (Adreno 7xx ou Mali-G7xx)
+    if (r.includes('adreno (tm) 7') || r.includes('mali-g7')) {
         return 'performance';
     }
 
@@ -61,6 +66,7 @@ export function applyPreset(preset: PresetType): void {
     state.SHADOWS = settings.SHADOWS;
     state.SHADOW_RES = settings.SHADOW_RES;
     state.PIXEL_RATIO_LIMIT = settings.PIXEL_RATIO_LIMIT;
+    state.SHOW_VEGETATION = settings.SHOW_VEGETATION;
 
     // Mise à jour de l'UI si nécessaire (ex: sliders)
     updatePerformanceUI(preset);
@@ -77,12 +83,14 @@ function updatePerformanceUI(preset: PresetType): void {
     const resSlider = document.getElementById('res-slider') as HTMLInputElement;
     const rangeSlider = document.getElementById('range-slider') as HTMLInputElement;
     const shadowToggle = document.getElementById('shadow-toggle') as HTMLInputElement;
+    const vegToggle = document.getElementById('veg-toggle') as HTMLInputElement;
 
     if (resDisp) resDisp.textContent = state.RESOLUTION.toString();
     if (rangeDisp) rangeDisp.textContent = state.RANGE.toString();
     if (resSlider) resSlider.value = state.RESOLUTION.toString();
     if (rangeSlider) rangeSlider.value = state.RANGE.toString();
     if (shadowToggle) shadowToggle.checked = state.SHADOWS;
+    if (vegToggle) vegToggle.checked = state.SHOW_VEGETATION;
 
     // Mise en évidence du bouton de preset actif
     const buttons = document.querySelectorAll('.preset-btn');

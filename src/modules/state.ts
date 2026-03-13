@@ -11,6 +11,7 @@ export interface PerformanceSettings {
     SHADOWS: boolean;
     SHADOW_RES: number;
     PIXEL_RATIO_LIMIT: number;
+    SHOW_VEGETATION: boolean;
 }
 
 export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings> = {
@@ -19,28 +20,32 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         RANGE: 2,
         SHADOWS: false,
         SHADOW_RES: 512,
-        PIXEL_RATIO_LIMIT: 1.0
+        PIXEL_RATIO_LIMIT: 1.0,
+        SHOW_VEGETATION: false
     },
     balanced: {
         RESOLUTION: 128,
-        RANGE: 3, // Réduit de 4 à 3
+        RANGE: 3, 
         SHADOWS: true,
         SHADOW_RES: 1024,
-        PIXEL_RATIO_LIMIT: 1.2
+        PIXEL_RATIO_LIMIT: 1.2,
+        SHOW_VEGETATION: true
     },
     performance: {
         RESOLUTION: 192,
-        RANGE: 5, // Réduit de 6 à 5
+        RANGE: 5, 
         SHADOWS: true,
         SHADOW_RES: 2048,
-        PIXEL_RATIO_LIMIT: 1.5
+        PIXEL_RATIO_LIMIT: 1.5,
+        SHOW_VEGETATION: true
     },
     ultra: {
         RESOLUTION: 256,
-        RANGE: 7, // Réduit de 8 à 7
+        RANGE: 7, 
         SHADOWS: true,
         SHADOW_RES: 4096,
-        PIXEL_RATIO_LIMIT: window.devicePixelRatio
+        PIXEL_RATIO_LIMIT: window.devicePixelRatio,
+        SHOW_VEGETATION: true
     }
 };
 
