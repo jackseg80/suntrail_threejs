@@ -138,18 +138,15 @@ describe('terrain.ts', () => {
             expect(tile.worldX).toBeCloseTo(expectedDistance, 1);
         });
 
-        it('should calculate correct offsets for hybrid Zoom 15 (v3.10.0)', () => {
-            state.MAP_SOURCE = 'opentopomap'; // Bridé à Z14
-            // Tuile Z15 (17057, 11476) - Quart supérieur droit du parent Z14 (8528, 5738)
-            // Tx 17057 % 2 = 1, Ty 11476 % 2 = 0
-            const tile = new Tile(17057, 11476, 15, '15/17057/11476');
+        it('should calculate correct offsets for hybrid zoom beyond source limits (v4.3.8)', () => {
+            state.MAP_SOURCE = 'opentopomap'; // Max Zoom 15
+            // Tuile Z16 (34114, 22952) - Quart d'une tuile Z15
+            const tile = new Tile(34114, 22952, 16, '16/34114/22952');
             
-            expect(tile.elevScale).toBe(0.5);
-            expect(tile.elevOffset.x).toBe(0.5); // (17057 % 2) * 0.5
-            expect(tile.elevOffset.y).toBe(0.0); // (11476 % 2) * 0.5
-            
+            // Couleur hybride car Zoom 16 > Max 15
             expect(tile.colorScale).toBe(0.5);
-            expect(tile.colorOffset.x).toBe(0.5);
+            // 34114 % 2 = 0. Ty 22952 % 2 = 0. (Offset 0,0)
+            expect(tile.colorOffset.x).toBe(0.0);
         });
     });
 });

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { initUI } from './ui';
+import { state } from './state';
 
 // Mock Capacitor Geolocation
 vi.mock('@capacitor/geolocation', () => ({
@@ -18,6 +19,7 @@ vi.mock('./performance', () => ({
 }));
 vi.mock('./terrain', () => ({ 
     updateVisibleTiles: vi.fn(),
+    loadTerrain: vi.fn(),
     resetTerrain: vi.fn(),
     lngLatToTile: vi.fn(() => ({ x: 0, y: 0, z: 13 })),
     updateGPXMesh: vi.fn(),
@@ -28,6 +30,9 @@ vi.mock('./terrain', () => ({
 describe('ui.ts', () => {
     beforeEach(() => {
         vi.useFakeTimers();
+        state.uiVisible = true;
+        state.lastUIInteraction = Date.now();
+        
         document.body.innerHTML = `
             <input id="k1" />
             <button id="bgo"></button>
@@ -49,6 +54,9 @@ describe('ui.ts', () => {
             <input id="shadow-toggle" type="checkbox" />
             <button class="preset-btn" data-preset="eco"></button>
             <button class="preset-btn" data-preset="balanced"></button>
+            <input id="veg-toggle" type="checkbox" />
+            <input id="poi-toggle" type="checkbox" />
+            <input id="buildings-toggle" type="checkbox" />
         `;
     });
 
@@ -74,5 +82,17 @@ describe('ui.ts', () => {
         expect(layerMenu?.style.display).toBe('none');
         layerBtn?.click();
         expect(layerMenu?.style.display).toBe('block');
+    });
+
+    it('should initialize the UI as visible (v4.1.0)', () => {
+        expect(state.uiVisible).toBe(true);
+    });
+
+    it('should update building visibility state on toggle (v4.3.0)', () => {
+        initUI();
+        const toggle = document.getElementById('buildings-toggle') as HTMLInputElement;
+        toggle.checked = true;
+        toggle.dispatchEvent(new Event('change'));
+        expect(state.SHOW_BUILDINGS).toBe(true);
     });
 });

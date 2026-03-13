@@ -1,0 +1,44 @@
+import { describe, it, expect } from 'vitest';
+import { lngLatToWorld, worldToLngLat, lngLatToTile, getTileBounds, EARTH_CIRCUMFERENCE } from './geo';
+
+describe('Module Géo (geo.ts)', () => {
+    const originTile = { x: 4270, y: 2891, z: 13 }; // Spiez, Suisse
+
+    it('lngLatToTile devrait retourner les bonnes coordonnées pour Spiez', () => {
+        const coords = lngLatToTile(7.6617, 46.6863, 13);
+        expect(coords.x).toBe(4270);
+        expect(coords.y).toBe(2891);
+    });
+
+    it('worldToLngLat devrait être l\'inverse de lngLatToWorld', () => {
+        const lon = 7.6617;
+        const lat = 46.6863;
+        
+        const world = lngLatToWorld(lon, lat, originTile);
+        const result = worldToLngLat(world.x, world.z, originTile);
+        
+        expect(result.lon).toBeCloseTo(lon, 5);
+        expect(result.lat).toBeCloseTo(lat, 5);
+    });
+
+    it('getTileBounds devrait calculer des bornes cohérentes', () => {
+        const bounds = getTileBounds({ zoom: 13, tx: 4270, ty: 2891 });
+        expect(bounds.north).toBeGreaterThan(bounds.south);
+        expect(bounds.east).toBeGreaterThan(bounds.west);
+        // Spiez est à environ 46.68, 7.66
+        expect(bounds.south).toBeLessThan(46.6863);
+        expect(bounds.north).toBeGreaterThan(46.6863);
+    });
+
+    it('lngLatToWorld à l\'origine devrait être proche de 0,0', () => {
+        // Le centre de la tuile d'origine
+        const n = Math.pow(2, originTile.z);
+        const lon = (originTile.x + 0.5) / n * 360 - 180;
+        const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (originTile.y + 0.5) / n)));
+        const lat = latRad * 180 / Math.PI;
+
+        const world = lngLatToWorld(lon, lat, originTile);
+        expect(world.x).toBeCloseTo(0, 1);
+        expect(world.z).toBeCloseTo(0, 1);
+    });
+});

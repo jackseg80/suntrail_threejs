@@ -103,6 +103,44 @@ describe('Analyse Solaire (Module Analysis)', () => {
         expect(hitY).toBeCloseTo(1000, 0);
     });
 
+    it('devrait interpoler l\'altitude entre 4 pixels (v4.2.3)', () => {
+        const mockTile: any = {
+            tx: 0, ty: 0, zoom: 13,
+            worldX: 0, worldZ: 0, tileSizeMeters: 1000,
+            bounds: new THREE.Box3(new THREE.Vector3(-500, -1000, -500), new THREE.Vector3(500, 9000, 500)),
+            pixelData: new Uint8ClampedArray(256 * 256 * 4),
+            elevScale: 1.0,
+            elevOffset: new THREE.Vector2(0, 0)
+        };
+        
+        // On crée une pente douce entre 1000m et 2000m
+        // Pixel (0,0) = 1000m
+        // Pixel (1,0) = 2000m
+        const setPixelAlt = (px: number, py: number, alt: number) => {
+            const i = (py * 256 + px) * 4;
+            const val = (alt + 10000) * 10;
+            mockTile.pixelData[i] = Math.floor(val / 65536);
+            mockTile.pixelData[i+1] = Math.floor((val % 65536) / 256);
+            mockTile.pixelData[i+2] = Math.floor(val % 256);
+            mockTile.pixelData[i+3] = 255;
+        };
+
+        setPixelAlt(0, 0, 1000);
+        setPixelAlt(1, 0, 2000);
+        setPixelAlt(0, 1, 1000);
+        setPixelAlt(1, 1, 2000);
+
+        activeTiles.set('test_interp', mockTile);
+        
+        // On teste au milieu exact entre deux pixels (relX = 0.5 / 256)
+        // La position monde correspondante dépend de tileSizeMeters
+        const halfPixelDist = (1000 / 256) * 0.5;
+        const alt = getAltitudeAt(-500 + halfPixelDist, -500); 
+        
+        // L'altitude interpolée devrait être 1500m
+        expect(alt).toBeCloseTo(1500, 0);
+    });
+
     it('devrait calculer l\'altitude correcte au Zoom 15 hybride (v3.10.0)', () => {
         // Mock d'une tuile Zoom 15 qui est le quart supérieur droit (0.5, 0) de sa parente
         const mockTile: any = {
