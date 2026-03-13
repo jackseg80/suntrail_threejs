@@ -18,15 +18,8 @@ export function getAltitudeAt(worldX: number, worldZ: number): number {
     // Détection automatique de la résolution (256 ou 512)
     const res = Math.sqrt(tile.pixelData.length / 4);
 
-    let relX = (worldX - tile.worldX) / tile.tileSizeMeters + 0.5;
-    let relZ = (worldZ - tile.worldZ) / tile.tileSizeMeters + 0.5;
-
-    // --- SUPPORT HYBRIDE Z15 ---
-    // Si la tuile utilise un relief parent (Scale < 1), on ajuste les coordonnées UV
-    if (tile.elevScale < 1.0) {
-        relX = tile.elevOffset.x + (relX * tile.elevScale);
-        relZ = tile.elevOffset.y + (relZ * tile.elevScale);
-    }
+    const relX = (worldX - tile.worldX) / tile.tileSizeMeters + 0.5;
+    const relZ = (worldZ - tile.worldZ) / tile.tileSizeMeters + 0.5;
 
     const px = Math.floor(THREE.MathUtils.clamp(relX, 0, 0.999) * res);
     const py = Math.floor(THREE.MathUtils.clamp(relZ, 0, 0.999) * res);

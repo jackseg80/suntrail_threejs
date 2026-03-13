@@ -102,15 +102,11 @@ const terrainVertexInjection = {
         uniform sampler2D uElevationMap;
         uniform float uExaggeration;
         uniform float uTileSize;
-        uniform vec2 uElevOffset;
-        uniform float uElevScale;
-
         float decodeHeight(vec4 rgba) {
             return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1);
         }
         float getTerrainHeight(vec2 uv) {
-            vec2 elevUv = uElevOffset + (uv * uElevScale);
-            vec4 col = texture2D(uElevationMap, elevUv);
+            vec4 col = texture2D(uElevationMap, uv);
             float h = decodeHeight(col);
             if (h < -1000.0 || h > 9000.0) return 0.0;
             return h * uExaggeration;
@@ -173,8 +169,6 @@ export class Tile {
     isFadingIn: boolean = false;
     worldX: number = 0; worldZ: number = 0;
     bounds: THREE.Box3 = new THREE.Box3();
-    elevOffset: THREE.Vector2 = new THREE.Vector2(0, 0);
-    elevScale: number = 1.0;
 
     constructor(tx: number, ty: number, zoom: number, key: string) {
         this.tx = tx; this.ty = ty; this.zoom = zoom; this.key = key;
@@ -212,46 +206,18 @@ export class Tile {
         if (cached) {
             this.elevationTex = cached.elev; this.pixelData = cached.pixelData;
             this.colorTex = cached.color; this.overlayTex = cached.overlay; this.slopesTex = cached.slopes;
-            
-            if (this.zoom >= 15) {
-                this.elevScale = 1.0 / Math.pow(2, this.zoom - 14);
-                const parentX = Math.floor(this.tx / Math.pow(2, this.zoom - 14));
-                const parentY = Math.floor(this.ty / Math.pow(2, this.zoom - 14));
-                const offsetX = (this.tx % Math.pow(2, this.zoom - 14)) * this.elevScale;
-                const offsetY = (this.ty % Math.pow(2, this.zoom - 14)) * this.elevScale;
-                this.elevOffset.set(offsetX, offsetY);
-            } else {
-                this.elevScale = 1.0;
-                this.elevOffset.set(0, 0);
-            }
-
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
             return;
         }
         if (this.status as any === 'disposed') return;
         this.status = 'loading';
         try {
-            // 1. RELIEF (Bloquant) - HYBRIDE Z15 (v3.9.7)
-            let elevZoom = this.zoom;
-            let elevTx = this.tx;
-            let elevTy = this.ty;
-
-            if (this.zoom >= 15) {
-                elevZoom = 14;
-                this.elevScale = 1.0 / Math.pow(2, this.zoom - 14);
-                elevTx = Math.floor(this.tx / Math.pow(2, this.zoom - 14));
-                elevTy = Math.floor(this.ty / Math.pow(2, this.zoom - 14));
-                const offsetX = (this.tx % Math.pow(2, this.zoom - 14)) * this.elevScale;
-                const offsetY = (this.ty % Math.pow(2, this.zoom - 14)) * this.elevScale;
-                this.elevOffset.set(offsetX, offsetY);
-            } else {
-                this.elevScale = 1.0;
-                this.elevOffset.set(0, 0);
-            }
-
-            const elevBlob = await fetchWithCache(`https://api.maptiler.com/tiles/terrain-rgb-v2/${elevZoom}/${elevTx}/${elevTy}.png?key=${state.MK}`, true);
+            // 1. RELIEF (Bloquant)
+            const elevBlob = await fetchWithCache(`https://api.maptiler.com/tiles/terrain-rgb-v2/${this.zoom}/${this.tx}/${this.ty}.png?key=${state.MK}`, true);
+            if (this.status as any === 'disposed') return;
             if (!elevBlob) throw new Error("Elevation failed");
             const imgElev = await createImageBitmap(elevBlob, { colorSpaceConversion: 'none' });
+            if (this.status as any === 'disposed') return;
             this.elevationTex = new THREE.Texture(imgElev);
             this.elevationTex.flipY = false; this.elevationTex.needsUpdate = true;
             
@@ -259,15 +225,18 @@ export class Tile {
             const offCtx = offCanvas.getContext('2d');
             if (offCtx) { offCtx.drawImage(imgElev, 0, 0); this.pixelData = offCtx.getImageData(0, 0, imgElev.width, imgElev.height).data; }
 
-            // 2. COULEUR (Non-bloquant) - Toujours au zoom natif (Z15)
+            // 2. COULEUR (Non-bloquant)
             let colorBlob = await fetchWithCache(this.getColorUrl());
+            if (this.status as any === 'disposed') return;
             if (!colorBlob) {
                 const fallback = `https://api.maptiler.com/maps/satellite/256/${this.zoom}/${this.tx}/${this.ty}@2x.jpg?key=${state.MK}`;
                 colorBlob = await fetchWithCache(fallback);
             }
+            if (this.status as any === 'disposed') return;
             
             if (colorBlob) {
                 const img = await createImageBitmap(colorBlob);
+                if (this.status as any === 'disposed') return;
                 this.colorTex = new THREE.Texture(img); this.colorTex.flipY = false; this.colorTex.needsUpdate = true; this.colorTex.colorSpace = THREE.SRGBColorSpace;
             } else {
                 const dummy = document.createElement('canvas'); dummy.width = 2; dummy.height = 2;
@@ -280,9 +249,11 @@ export class Tile {
                 state.SHOW_TRAILS ? fetchWithCache(this.getOverlayUrl()) : Promise.resolve(null),
                 state.SHOW_SLOPES ? fetchWithCache(this.getSlopesUrl()) : Promise.resolve(null)
             ]);
+            if (this.status as any === 'disposed') return;
             if (tBlob) { const i = await createImageBitmap(tBlob); this.overlayTex = new THREE.Texture(i); this.overlayTex.flipY = false; this.overlayTex.needsUpdate = true; this.overlayTex.colorSpace = THREE.SRGBColorSpace; }
             if (sBlob) { const i = await createImageBitmap(sBlob); this.slopesTex = new THREE.Texture(i); this.slopesTex.flipY = false; this.slopesTex.needsUpdate = true; this.slopesTex.colorSpace = THREE.SRGBColorSpace; }
 
+            if (this.status as any === 'disposed') return;
             addToCache(cacheKey, this.elevationTex, this.pixelData, this.colorTex, this.overlayTex, this.slopesTex);
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
         } catch (e) { this.status = 'failed'; }
@@ -318,8 +289,6 @@ export class Tile {
             shader.uniforms.uElevationMap = { value: this.elevationTex };
             shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
             shader.uniforms.uTileSize = { value: this.tileSizeMeters };
-            shader.uniforms.uElevOffset = { value: this.elevOffset };
-            shader.uniforms.uElevScale = { value: this.elevScale };
             shader.uniforms.uOverlayMap = { value: this.overlayTex || null };
             shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
             shader.uniforms.uSlopesMap = { value: this.slopesTex || null };
@@ -359,8 +328,6 @@ export class Tile {
             shader.uniforms.uElevationMap = { value: this.elevationTex }; 
             shader.uniforms.uExaggeration = terrainUniforms.uExaggeration; 
             shader.uniforms.uTileSize = { value: this.tileSizeMeters };
-            shader.uniforms.uElevOffset = { value: this.elevOffset };
-            shader.uniforms.uElevScale = { value: this.elevScale };
             shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${terrainVertexInjection.header}`);
             shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${terrainVertexInjection.position}`);
         };
@@ -396,8 +363,15 @@ this.isFadingIn = true;
 
     dispose(): void {
         this.status = 'disposed'; loadQueue = loadQueue.filter(t => t !== this);
-        if (this.mesh) { if (state.scene) state.scene.remove(this.mesh); if (this.mesh.material instanceof THREE.Material) this.mesh.material.dispose(); this.mesh = null; }
-        if (this.forestMesh) { if (state.scene) state.scene.remove(this.forestMesh); this.forestMesh.dispose(); this.forestMesh = null; }
+        if (this.mesh) { 
+            if (state.scene) state.scene.remove(this.mesh); 
+            if (this.mesh.material instanceof THREE.Material) this.mesh.material.dispose(); 
+            this.mesh = null; 
+        }
+        if (this.forestMesh) { 
+            if (state.scene) state.scene.remove(this.forestMesh); 
+            this.forestMesh = null; 
+        }
     }
 }
 
@@ -483,13 +457,7 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
     if (state.camera && Math.abs(state.camera.position.y) < 1) return;
     const currentGPS = worldToLngLat(worldX, worldZ);
     const zoom = state.ZOOM; const centerTile = lngLatToTile(currentGPS.lon, currentGPS.lat, zoom);
-    
-    // --- ADAPTIVE RANGE (v3.9.7) ---
-    // Au Zoom 15, on réduit le rayon pour préserver la VRAM car les tuiles sont 4x plus nombreuses
-    let range = state.RANGE;
-    if (zoom >= 15) range = Math.min(2, state.RANGE); 
-    
-    const margin = 1; 
+    const range = state.RANGE; const margin = 1; 
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
             const tx = centerTile.x + dx, ty = centerTile.y + dy, key = `${tx}_${ty}_${zoom}`;

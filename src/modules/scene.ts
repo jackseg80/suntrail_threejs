@@ -165,18 +165,14 @@ export async function initScene(): Promise<void> {
         if (!state.controls || !state.camera) return;
         const dx = state.controls.target.x, dz = state.controls.target.z, dist = state.camera.position.y;
         let newZoom = state.ZOOM;
-        // --- SEUILS DE ZOOM ULTRA-AGRESSIFS (v3.9.7) ---
-        // On demande le niveau de détail maximal (Lvl 15) dès 5km d'altitude
+        // --- SEUILS DE ZOOM ULTRA-AGRESSIFS (v3.9.3) ---
+        // On demande le niveau de détail maximal (Lvl 14) dès 15km d'altitude
         if (state.ZOOM === 13) { 
             if (dist < 15000) newZoom = 14; 
             else if (dist > 45000) newZoom = 12; 
         }
         else if (state.ZOOM === 14) { 
-            if (dist > 18000) newZoom = 13;
-            else if (dist < 5000) newZoom = 15;
-        }
-        else if (state.ZOOM === 15) {
-            if (dist > 6500) newZoom = 14;
+            if (dist > 18000) newZoom = 13; 
         }
         else if (state.ZOOM === 12) { 
             if (dist < 35000) newZoom = 13; 
@@ -274,12 +270,7 @@ export async function initScene(): Promise<void> {
         if (state.vramPanel) {
             const textures = state.renderer.info.memory.textures;
             const geometries = state.renderer.info.memory.geometries;
-            
-            // Estimation plus réaliste de la VRAM (approximation)
-            // - Tuile 512x512 RGB/RGBA ~ 1.0 MB
-            // - Géométrie ~ 0.1 MB
-            const estimatedMB = (textures * 1.2) + (geometries * 0.1);
-            state.vramPanel.update(estimatedMB, 1024); // Limite à 1024 MB pour l'échelle du graphique
+            state.vramPanel.update(textures + geometries, 200); 
         }
 
         state.stats.end();

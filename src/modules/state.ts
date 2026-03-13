@@ -12,8 +12,6 @@ export interface PerformanceSettings {
     SHADOW_RES: number;
     PIXEL_RATIO_LIMIT: number;
     SHOW_VEGETATION: boolean;
-    VEGETATION_DENSITY: number; // 0.0 to 1.0
-    VEGETATION_RANGE: number;   // distance in meters
 }
 
 export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings> = {
@@ -23,9 +21,7 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHADOWS: false,
         SHADOW_RES: 512,
         PIXEL_RATIO_LIMIT: 1.0,
-        SHOW_VEGETATION: false,
-        VEGETATION_DENSITY: 0,
-        VEGETATION_RANGE: 0
+        SHOW_VEGETATION: false
     },
     balanced: {
         RESOLUTION: 128,
@@ -33,9 +29,7 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHADOWS: true,
         SHADOW_RES: 1024,
         PIXEL_RATIO_LIMIT: 1.2,
-        SHOW_VEGETATION: true,
-        VEGETATION_DENSITY: 0.5,
-        VEGETATION_RANGE: 10000
+        SHOW_VEGETATION: true
     },
     performance: {
         RESOLUTION: 192,
@@ -43,9 +37,7 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHADOWS: true,
         SHADOW_RES: 2048,
         PIXEL_RATIO_LIMIT: 1.5,
-        SHOW_VEGETATION: true,
-        VEGETATION_DENSITY: 0.8,
-        VEGETATION_RANGE: 20000
+        SHOW_VEGETATION: true
     },
     ultra: {
         RESOLUTION: 256,
@@ -53,9 +45,7 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHADOWS: true,
         SHADOW_RES: 4096,
         PIXEL_RATIO_LIMIT: window.devicePixelRatio,
-        SHOW_VEGETATION: true,
-        VEGETATION_DENSITY: 1.0,
-        VEGETATION_RANGE: 40000
+        SHOW_VEGETATION: true
     }
 };
 
@@ -80,13 +70,11 @@ export interface State {
     hasManualSource: boolean;
     FOG_NEAR: number;
     FOG_FAR: number;
-    SHOW_VEGETATION: boolean;
-    VEGETATION_DENSITY: number;
-    VEGETATION_RANGE: number;
     
     // Paramètres Debug (v3.8.5)
     SHOW_DEBUG: boolean;
     SHOW_STATS: boolean;
+    SHOW_VEGETATION: boolean;
     
     // Animation temporelle
     isAnimating: boolean;
@@ -146,13 +134,11 @@ export const state: State = {
     hasManualSource: false,
     FOG_NEAR: 5000, 
     FOG_FAR: 40000, 
-    SHOW_VEGETATION: PRESETS.balanced.SHOW_VEGETATION,
-    VEGETATION_DENSITY: PRESETS.balanced.VEGETATION_DENSITY,
-    VEGETATION_RANGE: PRESETS.balanced.VEGETATION_RANGE,
     
     // Debug (v3.8.5)
     SHOW_DEBUG: true,
     SHOW_STATS: true,
+    SHOW_VEGETATION: true,
     
     // Animation temporelle
     isAnimating: false,

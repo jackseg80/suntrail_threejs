@@ -43,19 +43,11 @@ export function createForestForTile(tile: any): THREE.InstancedMesh | null {
     ctx.drawImage(img, 0, 0, scanRes, scanRes);
     const colorData = ctx.getImageData(0, 0, scanRes, scanRes).data;
 
-    const maxTreesForDevice = isMobileDevice() ? 4000 : 12000;
-    const maxTrees = Math.floor(maxTreesForDevice * state.VEGETATION_DENSITY);
-    if (maxTrees <= 0) return null;
-
+    const maxTrees = isMobileDevice() ? 4000 : 12000; 
     const mesh = new THREE.InstancedMesh(treeGeometry!, treeMaterial!, maxTrees);
     const dummy = new THREE.Object3D();
     const size = tile.tileSizeMeters;
     let activeTrees = 0;
-
-    // Calcul de la distance à la caméra pour limiter le rendu
-    const camPos = state.camera ? state.camera.position : new THREE.Vector3();
-    const distToTile = Math.sqrt(Math.pow(tile.worldX - camPos.x, 2) + Math.pow(tile.worldZ - camPos.z, 2));
-    if (distToTile > state.VEGETATION_RANGE) return null;
 
     const checkIsForest = (x: number, y: number) => {
         if (x < 0 || x >= scanRes || y < 0 || y >= scanRes) return false;
@@ -116,29 +108,13 @@ export function createForestForTile(tile: any): THREE.InstancedMesh | null {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     
-    // Optimisation : On définit une sphère de délimitation précise pour le frustum culling
-    // au lieu de laisser Three.js calculer une sphère globale géante ou imprécise.
-    mesh.geometry.computeBoundingSphere();
-    if (mesh.geometry.boundingSphere) {
-        mesh.boundingSphere = mesh.geometry.boundingSphere.clone();
-        mesh.boundingSphere.radius += size; // On élargit pour couvrir toute la tuile
-    }
-    
     return mesh;
 }
 
-function getSimpleAltitude(tile: any, localX: number, localZ: number): number {
+function getSimpleAltitude(tile: any, localX: number, lz: number): number {
     const res = Math.sqrt(tile.pixelData.length / 4);
-    
-    let relX = (localX / tile.tileSizeMeters) + 0.5;
-    let relZ = (localZ / tile.tileSizeMeters) + 0.5;
-
-    // --- SUPPORT HYBRIDE Z15 (v3.9.7) ---
-    if (tile.elevScale < 1.0) {
-        relX = tile.elevOffset.x + (relX * tile.elevScale);
-        relZ = tile.elevOffset.y + (relZ * tile.elevScale);
-    }
-
+    const relX = (localX / tile.tileSizeMeters) + 0.5;
+    const relZ = (lz / tile.tileSizeMeters) + 0.5;
     const px = Math.floor(THREE.MathUtils.clamp(relX, 0, 0.999) * res);
     const py = Math.floor(THREE.MathUtils.clamp(relZ, 0, 0.999) * res);
     const idx = (py * res + px) * 4;
