@@ -8,18 +8,30 @@ import { activeTiles, worldToLngLat, lngLatToTile } from './terrain';
  * Utilise les données pixelData des tuiles actives.
  */
 export function getAltitudeAt(worldX: number, worldZ: number): number {
-    const gps = worldToLngLat(worldX, worldZ);
-    const tileCoords = lngLatToTile(gps.lon, gps.lat, state.ZOOM);
-    const key = `${tileCoords.x}_${tileCoords.y}_${state.ZOOM}`;
-    const tile = activeTiles.get(key);
+    // 1. Recherche de la meilleure tuile couvrant ce point (v3.10.0)
+    let tile: any = null;
+    const testPoint = new THREE.Vector3(worldX, 0, worldZ);
+    
+    for (const t of activeTiles.values()) {
+        if (t.bounds.containsPoint(testPoint)) {
+            // On privilégie le zoom le plus élevé pour la précision
+            if (!tile || t.zoom > tile.zoom) tile = t;
+        }
+    }
 
     if (!tile || !tile.pixelData) return 0;
 
-    // Détection automatique de la résolution (256 ou 512)
+    // 2. Détection de la résolution (256 ou 512)
     const res = Math.sqrt(tile.pixelData.length / 4);
 
-    const relX = (worldX - tile.worldX) / tile.tileSizeMeters + 0.5;
-    const relZ = (worldZ - tile.worldZ) / tile.tileSizeMeters + 0.5;
+    let relX = (worldX - tile.worldX) / tile.tileSizeMeters + 0.5;
+    let relZ = (worldZ - tile.worldZ) / tile.tileSizeMeters + 0.5;
+
+    // 3. --- SUPPORT HYBRIDE (v3.10.0) ---
+    if (tile.elevScale < 1.0) {
+        relX = tile.elevOffset.x + (relX * tile.elevScale);
+        relZ = tile.elevOffset.y + (relZ * tile.elevScale);
+    }
 
     const px = Math.floor(THREE.MathUtils.clamp(relX, 0, 0.999) * res);
     const py = Math.floor(THREE.MathUtils.clamp(relZ, 0, 0.999) * res);

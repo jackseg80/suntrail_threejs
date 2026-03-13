@@ -40,7 +40,19 @@ export function createForestForTile(tile: any): THREE.InstancedMesh | null {
     canvas.width = scanRes; canvas.height = scanRes; 
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return null;
-    ctx.drawImage(img, 0, 0, scanRes, scanRes);
+
+    // --- SUPPORT HYBRIDE COULEUR (v3.10.0) ---
+    if (tile.colorScale < 1.0) {
+        // On n'échantillonne que la portion de l'image parente correspondant à cette tuile
+        const sx = img.width * tile.colorOffset.x;
+        const sy = img.height * tile.colorOffset.y;
+        const sw = img.width * tile.colorScale;
+        const sh = img.height * tile.colorScale;
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, scanRes, scanRes);
+    } else {
+        ctx.drawImage(img, 0, 0, scanRes, scanRes);
+    }
+    
     const colorData = ctx.getImageData(0, 0, scanRes, scanRes).data;
 
     const maxTrees = isMobileDevice() ? 4000 : 12000; 
@@ -54,17 +66,11 @@ export function createForestForTile(tile: any): THREE.InstancedMesh | null {
         const i = (y * scanRes + x) * 4;
         const r = colorData[i], g = colorData[i+1], b = colorData[i+2];
         
-        if (state.MAP_SOURCE === 'satellite') {
-            // DÉSACTIVÉ POUR LE SATELLITE (Trop complexe/imprécis)
-            return false;
-        } 
+        if (state.MAP_SOURCE === 'satellite') return false;
         else if (state.MAP_SOURCE === 'opentopomap') {
-            // OPENTOPOMAP : On élargit pour capter les verts et les teintes vert-jaune/orange
-            // On cherche la dominance du (Vert + un peu de Rouge) sur le Bleu
             return (g > b * 1.1 && (g + r * 0.3) > b * 1.3 && g > 30);
         }
         else {
-            // SWISSTOPO / DEFAULT : Critère actuel quasi parfait
             const isNeutral = (Math.abs(r - g) < 15 && Math.abs(g - b) < 15 && r > 160);
             return (g > r * 1.1 && g > b * 1.1 && !isNeutral);
         }
@@ -75,7 +81,6 @@ export function createForestForTile(tile: any): THREE.InstancedMesh | null {
             if (activeTrees >= maxTrees) break;
 
             if (checkIsForest(px, py)) {
-                // Filtre de voisinage pour supprimer l'isolement
                 let forestNeighbors = 0;
                 if (checkIsForest(px - 1, py)) forestNeighbors++;
                 if (checkIsForest(px + 1, py)) forestNeighbors++;
@@ -117,8 +122,7 @@ function getSimpleAltitude(tile: any, localX: number, localZ: number): number {
     let relX = (localX / tile.tileSizeMeters) + 0.5;
     let relZ = (localZ / tile.tileSizeMeters) + 0.5;
 
-    // --- SUPPORT HYBRIDE Z15 (v3.9.7) ---
-    // Si la tuile utilise un relief parent, on ajuste les coordonnées d'échantillonnage
+    // --- SUPPORT HYBRIDE Z15 (v3.10.0) ---
     if (tile.elevScale < 1.0) {
         relX = tile.elevOffset.x + (relX * tile.elevScale);
         relZ = tile.elevOffset.y + (relZ * tile.elevScale);

@@ -104,6 +104,8 @@ const terrainVertexInjection = {
         uniform float uTileSize;
         uniform vec2 uElevOffset;
         uniform float uElevScale;
+        uniform vec2 uColorOffset;
+        uniform float uColorScale;
 
         float decodeHeight(vec4 rgba) {
             return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1);
@@ -124,7 +126,8 @@ const terrainVertexInjection = {
         float hU = getTerrainHeight(uv + vec2(0.0, 1.0/256.0));
         objectNormal = normalize(vec3(hL - hR, delta * 2.0, hD - hU));
     `,
-    position: `transformed.y = getTerrainHeight(uv);`
+    position: `transformed.y = getTerrainHeight(uv);`,
+    uv: `vMapUv = uColorOffset + (uv * uColorScale);`
 };
 
 const CACHE_NAME = 'suntrail-tiles-v1';
@@ -174,9 +177,11 @@ export class Tile {
     worldX: number = 0; worldZ: number = 0;
     bounds: THREE.Box3 = new THREE.Box3();
     
-    // Paramètres Hybrides (v3.10.0)
+    // Paramètres Hybrides
     elevOffset: THREE.Vector2 = new THREE.Vector2(0, 0);
     elevScale: number = 1.0;
+    colorOffset: THREE.Vector2 = new THREE.Vector2(0, 0);
+    colorScale: number = 1.0;
 
     constructor(tx: number, ty: number, zoom: number, key: string) {
         this.tx = tx; this.ty = ty; this.zoom = zoom; this.key = key;
@@ -208,14 +213,33 @@ export class Tile {
         return frustum.intersectsBox(this.bounds.clone().expandByScalar(this.tileSizeMeters * 0.2));
     }
 
+    getNativeColorZoom(): number {
+        if (state.MAP_SOURCE === 'opentopomap') return 14;
+        return 15;
+    }
+
     updateHybridSettings(): void {
-        if (this.zoom >= 15) {
-            const ratio = Math.pow(2, this.zoom - 14);
+        const MAX_RGB_ZOOM = 14;
+        const colorSourceMaxZoom = this.getNativeColorZoom();
+
+        // 1. RELIEF HYBRIDE
+        if (this.zoom > MAX_RGB_ZOOM) {
+            const ratio = Math.pow(2, this.zoom - MAX_RGB_ZOOM);
             this.elevScale = 1.0 / ratio;
             this.elevOffset.set((this.tx % ratio) * this.elevScale, (this.ty % ratio) * this.elevScale);
         } else {
             this.elevScale = 1.0;
             this.elevOffset.set(0, 0);
+        }
+
+        // 2. COULEUR HYBRIDE
+        if (this.zoom > colorSourceMaxZoom) {
+            const ratio = Math.pow(2, this.zoom - colorSourceMaxZoom);
+            this.colorScale = 1.0 / ratio;
+            this.colorOffset.set((this.tx % ratio) * this.colorScale, (this.ty % ratio) * this.colorScale);
+        } else {
+            this.colorScale = 1.0;
+            this.colorOffset.set(0, 0);
         }
     }
 
@@ -235,15 +259,12 @@ export class Tile {
         try {
             this.updateHybridSettings();
             
-            // 1. RELIEF (Bloquant)
-            let elevZoom = this.zoom;
-            let elevTx = this.tx;
-            let elevTy = this.ty;
-
-            if (this.zoom >= 15) {
-                elevZoom = 14;
-                elevTx = Math.floor(this.tx / Math.pow(2, this.zoom - 14));
-                elevTy = Math.floor(this.ty / Math.pow(2, this.zoom - 14));
+            // 1. RELIEF
+            let elevZoom = Math.min(this.zoom, 14);
+            let elevTx = this.tx; let elevTy = this.ty;
+            if (this.zoom > 14) {
+                const ratio = Math.pow(2, this.zoom - 14);
+                elevTx = Math.floor(this.tx / ratio); elevTy = Math.floor(this.ty / ratio);
             }
 
             const elevBlob = await fetchWithCache(`https://api.maptiler.com/tiles/terrain-rgb-v2/${elevZoom}/${elevTx}/${elevTy}.png?key=${state.MK}`, true);
@@ -258,13 +279,16 @@ export class Tile {
             const offCtx = offCanvas.getContext('2d');
             if (offCtx) { offCtx.drawImage(imgElev, 0, 0); this.pixelData = offCtx.getImageData(0, 0, imgElev.width, imgElev.height).data; }
 
-            // 2. COULEUR (Non-bloquant)
-            let colorBlob = await fetchWithCache(this.getColorUrl());
-            if (this.status as any === 'disposed') return;
-            if (!colorBlob) {
-                const fallback = `https://api.maptiler.com/maps/satellite/256/${this.zoom}/${this.tx}/${this.ty}@2x.jpg?key=${state.MK}`;
-                colorBlob = await fetchWithCache(fallback);
+            // 2. COULEUR
+            const nativeZoom = this.getNativeColorZoom();
+            let colorZoom = Math.min(this.zoom, nativeZoom);
+            let colorTx = this.tx; let colorTy = this.ty;
+            if (this.zoom > nativeZoom) {
+                const ratio = Math.pow(2, this.zoom - nativeZoom);
+                colorTx = Math.floor(this.tx / ratio); colorTy = Math.floor(this.ty / ratio);
             }
+
+            let colorBlob = await fetchWithCache(this.getColorUrl(colorZoom, colorTx, colorTy));
             if (this.status as any === 'disposed') return;
             
             if (colorBlob) {
@@ -277,10 +301,18 @@ export class Tile {
                 this.colorTex = new THREE.CanvasTexture(dummy);
             }
 
-            // 3. CALQUES
+            // 3. CALQUES (Toujours bridés à 14 pour Swisstopo)
+            const inCH = isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON);
+            let layerZoom = Math.min(this.zoom, 14);
+            let layerTx = this.tx; let layerTy = this.ty;
+            if (this.zoom > 14) {
+                const ratio = Math.pow(2, this.zoom - 14);
+                layerTx = Math.floor(this.tx / ratio); layerTy = Math.floor(this.ty / ratio);
+            }
+
             const [tBlob, sBlob] = await Promise.all([
-                state.SHOW_TRAILS ? fetchWithCache(this.getOverlayUrl()) : Promise.resolve(null),
-                state.SHOW_SLOPES ? fetchWithCache(this.getSlopesUrl()) : Promise.resolve(null)
+                (state.SHOW_TRAILS && inCH) ? fetchWithCache(this.getOverlayUrl(layerZoom, layerTx, layerTy)) : Promise.resolve(null),
+                (state.SHOW_SLOPES && inCH) ? fetchWithCache(this.getSlopesUrl(layerZoom, layerTx, layerTy)) : Promise.resolve(null)
             ]);
             if (this.status as any === 'disposed') return;
             if (tBlob) { const i = await createImageBitmap(tBlob); this.overlayTex = new THREE.Texture(i); this.overlayTex.flipY = false; this.overlayTex.needsUpdate = true; this.overlayTex.colorSpace = THREE.SRGBColorSpace; }
@@ -292,27 +324,25 @@ export class Tile {
         } catch (e) { this.status = 'failed'; }
     }
 
-    getColorUrl(): string {
+    getColorUrl(z: number, x: number, y: number): string {
+        const inCH = isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON);
         switch(state.MAP_SOURCE) {
             case 'satellite': 
-                if (isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON)) {
-                    return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.jpeg`;
-                }
-                return `https://api.maptiler.com/maps/satellite/256/${this.zoom}/${this.tx}/${this.ty}@2x.jpg?key=${state.MK}`;
-            case 'swisstopo': return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.jpeg`;
-            case 'opentopomap': return `https://a.tile.opentopomap.org/${this.zoom}/${this.tx}/${this.ty}.png`;
-            default: return `https://api.maptiler.com/maps/topo-v2/256/${this.zoom}/${this.tx}/${this.ty}@2x.png?key=${state.MK}`;
+                if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${z}/${x}/${y}.jpeg`;
+                return `https://api.maptiler.com/maps/satellite/256/${z}/${x}/${y}@2x.jpg?key=${state.MK}`;
+            case 'swisstopo': 
+                if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${z}/${x}/${y}.jpeg`;
+                return `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.png?key=${state.MK}`;
+            case 'opentopomap': return `https://a.tile.opentopomap.org/${z}/${x}/${y}.png`;
+            default: return `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.png?key=${state.MK}`;
         }
     }
-    getOverlayUrl(): string { return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.png`; }
-    getSlopesUrl(): string { return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.hangneigung-ueber_30/default/current/3857/${this.zoom}/${this.tx}/${this.ty}.png`; }
+    getOverlayUrl(z: number, x: number, y: number): string { return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${z}/${x}/${y}.png`; }
+    getSlopesUrl(z: number, x: number, y: number): string { return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.hangneigung-ueber_30/default/current/3857/${z}/${x}/${y}.png`; }
 
     buildMesh(resolution: number): void {
         if (!this.elevationTex || !this.colorTex || this.status as any === 'disposed') return;
         
-        const img = this.colorTex.image as any;
-        if (!img || img.width === 0) return;
-
         const oldMesh = this.mesh;
         const geometry = getPlaneGeometry(resolution, this.tileSizeMeters);
         const material = new THREE.MeshStandardMaterial({ map: this.colorTex, roughness: 1.0, metalness: 0.0, transparent: true, opacity: 0 });
@@ -323,12 +353,15 @@ export class Tile {
             shader.uniforms.uTileSize = { value: this.tileSizeMeters };
             shader.uniforms.uElevOffset = { value: this.elevOffset };
             shader.uniforms.uElevScale = { value: this.elevScale };
+            shader.uniforms.uColorOffset = { value: this.colorOffset };
+            shader.uniforms.uColorScale = { value: this.colorScale };
             shader.uniforms.uOverlayMap = { value: this.overlayTex || null };
             shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
             shader.uniforms.uSlopesMap = { value: this.slopesTex || null };
             shader.uniforms.uHasSlopes = { value: !!this.slopesTex };
 
             shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${terrainVertexInjection.header}`);
+            shader.vertexShader = shader.vertexShader.replace('#include <uv_vertex>', `#include <uv_vertex>\n${terrainVertexInjection.uv}`);
             shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n${terrainVertexInjection.normal}`);
             shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${terrainVertexInjection.position}`);
 
@@ -493,15 +526,21 @@ function calculateTargetLOD(tile: Tile, camX: number, camZ: number): number {
 
 export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number = 0, worldZ: number = 0): Promise<void> {
     terrainUniforms.uExaggeration.value = state.RELIEF_EXAGGERATION;
-    if (state.camera && Math.abs(state.camera.position.y) < 1) return;
+    if (!state.camera || Math.abs(state.camera.position.y) < 1) return;
+
     const currentGPS = worldToLngLat(worldX, worldZ);
-    const zoom = state.ZOOM; const centerTile = lngLatToTile(currentGPS.lon, currentGPS.lat, zoom);
+    const zoom = state.ZOOM; 
+    const centerTile = lngLatToTile(currentGPS.lon, currentGPS.lat, zoom);
     
+    // --- PORTÉE ADAPTATIVE (v3.10.0) ---
+    // Au Zoom 15, on réduit légèrement le rayon pour préserver la VRAM, 
+    // mais on reste proportionnel au réglage expert de l'utilisateur.
     let range = state.RANGE;
-    if (zoom >= 15) range = Math.min(2, state.RANGE); 
+    if (zoom >= 15) range = Math.max(2, Math.floor(state.RANGE * 0.7)); 
     
     const margin = 1; 
     const maxTile = Math.pow(2, zoom);
+    const currentActiveKeys = new Set<string>();
 
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
@@ -511,20 +550,33 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
             if (tx < 0 || tx >= maxTile || ty < 0 || ty >= maxTile) continue;
 
             const key = `${tx}_${ty}_${zoom}`;
+            currentActiveKeys.add(key);
+
             let tile = activeTiles.get(key);
             if (!tile) {
                 tile = new Tile(tx, ty, zoom, key);
-                if (tile.isVisible()) { activeTiles.set(key, tile); loadQueue.push(tile); }
+                
+                // --- CORRECTIF DÉMARRAGE (v3.10.0) ---
+                // On force le chargement des tuiles très proches (rayon de 2) 
+                // même si le Frustum Culling hésite au démarrage.
+                const isNearby = Math.abs(dx) <= 2 && Math.abs(dy) <= 2;
+                
+                if (isNearby || tile.isVisible()) { 
+                    activeTiles.set(key, tile); 
+                    loadQueue.push(tile); 
+                }
             } else if (tile.status === 'loaded') {
-                const targetRes = calculateTargetLOD(tile, state.camera ? state.camera.position.x : 0, state.camera ? state.camera.position.z : 0);
+                const targetRes = calculateTargetLOD(tile, state.camera.position.x, state.camera.position.z);
                 if (targetRes !== tile.currentResolution) tile.buildMesh(targetRes);
             }
         }
     }
+
+    // Nettoyage strict
     for (const [key, tile] of activeTiles.entries()) {
-        const [tx, ty, tz] = key.split('_').map(Number);
-        if (tz !== zoom || Math.abs(tx - centerTile.x) > range + margin || Math.abs(ty - centerTile.y) > range + margin) {
-            tile.dispose(); activeTiles.delete(key); 
+        if (!currentActiveKeys.has(key)) {
+            tile.dispose();
+            activeTiles.delete(key);
         }
     }
     processLoadQueue();
