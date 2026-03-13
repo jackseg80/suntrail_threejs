@@ -5,7 +5,9 @@ import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { state } from './state';
 import { updateSunPosition } from './sun';
-import { loadTerrain, updateVisibleTiles, lngLatToTile, worldToLngLat, repositionAllTiles, animateTiles, EARTH_CIRCUMFERENCE, updateGPXMesh, resetTerrain, clearCache } from './terrain';
+import { getAltitudeAt } from './analysis';
+import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, updateGPXMesh, resetTerrain, clearCache } from './terrain';
+import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat } from './geo';
 import { autoSelectMapSource } from './ui';
 import { throttle, isMobileDevice } from './utils';
 
@@ -146,30 +148,30 @@ export async function initScene(): Promise<void> {
     state.camera.position.set(0, 12000, 15000); 
 
     // --- CONTRÔLES STYLE MAPS (v4.2.5) ---
-    // On utilise OrbitControls manuellement pour un contrôle total
     const controls = new OrbitControls(state.camera, state.renderer.domElement);
     state.controls = controls;
+    controls.target.set(0, 0, 0); 
+    controls.update();
 
-    // Mode "Map" : le clic gauche (1 doigt) déplace la carte au lieu de tourner
     controls.mouseButtons = {
         LEFT: THREE.MOUSE.PAN,
         MIDDLE: THREE.MOUSE.DOLLY,
         RIGHT: THREE.MOUSE.ROTATE
     };
 
-    // Configuration tactile (v4.2.5)
     controls.touches = {
-        ONE: THREE.TOUCH.PAN,           // 1 doigt = Glisser (Pan)
-        TWO: THREE.TOUCH.DOLLY_ROTATE   // 2 doigts = Zoom + Rotation
+        ONE: THREE.TOUCH.PAN,
+        TWO: THREE.TOUCH.DOLLY_ROTATE
     };
 
     controls.enableDamping = true;
-    controls.dampingFactor = 0.1;       // Plus réactif (était 0.05)
-    controls.screenSpacePanning = false; // On glisse sur le sol (comportement carte)
+    controls.dampingFactor = 0.1;
+    controls.screenSpacePanning = false;
     controls.minDistance = 500; 
     controls.maxDistance = 100000; 
     controls.maxPolarAngle = 1.3; 
 
+    // ... (rest of the UI helpers)
     const updateUIZoom = (zoom: number) => {
         const indicator = document.getElementById('zoom-indicator');
         if (indicator) indicator.textContent = `${state.MAP_SOURCE.toUpperCase()}: Lvl ${zoom}`;
@@ -180,18 +182,32 @@ export async function initScene(): Promise<void> {
         if (!state.controls || !state.camera) return;
         const dx = state.controls.target.x, dz = state.controls.target.z, dist = state.camera.position.y;
         let newZoom = state.ZOOM;
-        // --- SEUILS DE ZOOM ADAPTATIFS (v4.0.1) ---
-        // On privilégie le Zoom 13 pour la fluidité jusqu'à 8km d'altitude.
+        // --- SEUILS DE ZOOM ADAPTATIFS PAR SOURCE (v4.3.18) ---
+        const isSat = (state.MAP_SOURCE === 'satellite');
+        const boost = isSat ? 2.5 : 1.5; 
+
         if (state.ZOOM === 13) { 
-            if (dist < 8000) newZoom = 14; // Switch Z14 plus bas (était 15000)
-            else if (dist > 45000) newZoom = 12; 
+            if (dist < 8000 * boost) newZoom = 14; 
+            else if (dist > 55000 * boost) newZoom = 12; 
         }
         else if (state.ZOOM === 14) { 
-            if (dist > 10000) newZoom = 13; // Hystérésis 10km
-            else if (dist < 3500) newZoom = 15; // Switch Z15 plus bas (était 5000)
+            if (dist > 15000 * boost) newZoom = 13; 
+            else if (dist < 2200 * boost) newZoom = 15; 
         }
         else if (state.ZOOM === 15) {
-            if (dist > 4500) newZoom = 14; // Hystérésis 4.5km
+            if (dist > 6000 * boost) newZoom = 14; 
+            else if (dist < 2500 * boost) newZoom = 16; 
+        }
+        else if (state.ZOOM === 16) {
+            if (dist > 3500 * boost) newZoom = 15;
+            else if (dist < 1200 * boost) newZoom = 17; 
+        }
+        else if (state.ZOOM === 17) {
+            if (dist > 1800 * boost) newZoom = 16;
+            else if (dist < 600 * boost) newZoom = 18; 
+        }
+        else if (state.ZOOM === 18) {
+            if (dist > 1000 * boost) newZoom = 17;
         }
         else if (state.ZOOM === 12) { 
             if (dist < 35000) newZoom = 13; 
@@ -201,8 +217,15 @@ export async function initScene(): Promise<void> {
             if (dist < 75000) newZoom = 12; 
         }
 
-        const gpsCenter = worldToLngLat(dx, dz);
+        const gpsCenter = worldToLngLat(dx, dz, state.originTile);
         autoSelectMapSource(gpsCenter.lat, gpsCenter.lon);
+
+        // --- BRIDAGE DYNAMIQUE DU TILT (v4.3.12) ---
+        if (state.controls) {
+            if (newZoom >= 17) state.controls.maxPolarAngle = 0.6; 
+            else if (newZoom >= 15) state.controls.maxPolarAngle = 1.0; 
+            else state.controls.maxPolarAngle = 1.3; 
+        }
 
         if ((Math.sqrt(dx*dx + dz*dz) > 20000 || newZoom !== state.ZOOM) && (Date.now() - lastRecenterTime > 3000)) {
             lastRecenterTime = Date.now();
@@ -220,10 +243,7 @@ export async function initScene(): Promise<void> {
             updateUIZoom(state.ZOOM);
         }
 
-        // --- BROUILLARD ADAPTATIF (v3.9.3) ---
-        // On lie le brouillard à la distance de la caméra pour garder une proportion visuelle constante
         if (state.scene && state.scene.fog && state.scene.fog instanceof THREE.Fog) {
-            // Le coefficient est basé sur le réglage utilisateur (near)
             state.scene.fog.near = dist * (state.FOG_NEAR / 5000); 
             state.scene.fog.far = dist * (state.FOG_FAR / 5000);
         }
@@ -241,7 +261,7 @@ export async function initScene(): Promise<void> {
     state.ambientLight = new THREE.AmbientLight(0xffffff, 0.2); state.scene.add(state.ambientLight);
     state.sunLight = new THREE.DirectionalLight(0xffffff, 6.0);
     state.sunLight.castShadow = state.SHADOWS;
-    state.sunLight.shadow.mapSize.set(4096, 4096);
+    state.sunLight.shadow.mapSize.set(state.SHADOW_RES, state.SHADOW_RES);
     const d = 40000; 
     state.sunLight.shadow.camera.left = -d; state.sunLight.shadow.camera.right = d; state.sunLight.shadow.camera.top = d; state.sunLight.shadow.camera.bottom = -d;
     state.sunLight.shadow.camera.near = 1000;
@@ -249,6 +269,8 @@ export async function initScene(): Promise<void> {
     state.sunLight.shadow.bias = -0.0001; 
     state.scene.add(state.sunLight); state.scene.add(state.sunLight.target); 
 
+    // PREMIER CALCUL DE TERRAIN IMMÉDIAT
+    console.log(`[Scene] Initial Terrain Load (Alt: ${state.camera.position.y})`);
     await loadTerrain();
     initVegetationResources();
     updateSunPosition(720); updateUIZoom(state.ZOOM);
@@ -279,6 +301,16 @@ export async function initScene(): Promise<void> {
         }
 
         // --- RENDU FINAL (Simple et Robuste) ---
+        // Sécurité anti-collision sol (v4.3.15)
+        if (state.camera && state.controls) {
+            const groundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
+            const minH = groundH + 30; // Marge réduite à 30m pour plus de souplesse
+            if (state.camera.position.y < minH) {
+                state.camera.position.y = minH;
+                if (state.controls.target.y < groundH) state.controls.target.y = groundH;
+            }
+        }
+
         state.renderer.render(state.scene, state.camera);
 
         if (compassObject && state.camera && compassRenderer) {

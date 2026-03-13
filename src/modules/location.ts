@@ -1,6 +1,6 @@
 import { Geolocation } from '@capacitor/geolocation';
 import { state } from './state';
-import { lngLatToWorld } from './terrain';
+import { lngLatToWorld } from './geo';
 import { getAltitudeAt } from './analysis';
 import * as THREE from 'three';
 
@@ -92,7 +92,7 @@ export function updateUserMarker() {
         state.scene.add(state.userMarker);
     }
 
-    const pos = lngLatToWorld(state.userLocation.lon, state.userLocation.lat);
+    const pos = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
     
     // Si l'altitude GPS est absente ou peu fiable, on utilise les données du terrain
     let alt = state.userLocation.alt;
@@ -149,9 +149,8 @@ function createUserMarker(): THREE.Group {
 export function centerOnUser() {
     if (!state.userLocation || !state.controls || !state.camera) return;
     
-    const pos = lngLatToWorld(state.userLocation.lon, state.userLocation.lat);
-    const terrainAlt = getAltitudeAt(pos.x, pos.z); // Déjà multiplié par exaggeration dans getAltitudeAt?
-    // Vérifions getAltitudeAt
+    const pos = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
+    const terrainAlt = getAltitudeAt(pos.x, pos.z); 
     
     state.controls.target.set(pos.x, terrainAlt, pos.z);
     state.controls.update();

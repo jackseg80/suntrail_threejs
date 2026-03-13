@@ -5,7 +5,8 @@ import { Geolocation } from '@capacitor/geolocation';
 import { state } from './state';
 import { updateSunPosition } from './sun';
 import { initScene } from './scene';
-import { updateVisibleTiles, lngLatToTile, worldToLngLat, resetTerrain, updateGPXMesh, deleteTerrainCache, loadTerrain } from './terrain';
+import { updateVisibleTiles, resetTerrain, updateGPXMesh, deleteTerrainCache, loadTerrain } from './terrain';
+import { lngLatToTile, worldToLngLat } from './geo';
 import { isPositionInSwitzerland, showToast } from './utils';
 import { applyPreset, detectBestPreset } from './performance';
 import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';
@@ -244,8 +245,8 @@ export function initUI(): void {
         // On utilise notre algorithme qui "marche" le long du rayon pour trouver le relief.
         const hitPoint = findTerrainIntersection(raycaster.ray);
 
-        if (hitPoint) {
-            const gps = worldToLngLat(hitPoint.x, hitPoint.z);
+        if (hitPoint && state.originTile) {
+            const gps = worldToLngLat(hitPoint.x, hitPoint.z, state.originTile);
             const realAlt = getAltitudeAt(hitPoint.x, hitPoint.z) / state.RELIEF_EXAGGERATION;
 
             const coordsPanel = document.getElementById('coords-panel');
@@ -425,6 +426,17 @@ export function initUI(): void {
         });
     }
 
+    const buildingsToggle = document.getElementById('buildings-toggle') as HTMLInputElement;
+    if (buildingsToggle) {
+        buildingsToggle.addEventListener('change', async (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            console.log(`[UI] Buildings Toggle changed to: ${target.checked}`);
+            state.SHOW_BUILDINGS = target.checked;
+            resetTerrain();
+            await loadTerrain();
+        });
+    }
+
     // --- GESTION CACHE & CLÉ (v3.8.2) ---
     const keyInput = document.getElementById('maptiler-key-input') as HTMLInputElement;
     const updateKeyBtn = document.getElementById('update-key-btn');
@@ -525,7 +537,7 @@ async function handleGPX(xml: string): Promise<void> {
     await updateVisibleTiles();
 }
 
-function go(): void {
+async function go(): Promise<void> {
     const k1 = document.getElementById('k1') as HTMLInputElement;
     state.MK = k1 ? k1.value.trim() : '';
     if (!state.MK || state.MK.length < 5) {
@@ -557,8 +569,15 @@ function go(): void {
     if (bottomBar) bottomBar.style.display = 'flex';
     
     autoSelectMapSource(state.TARGET_LAT, state.TARGET_LON);
-    initScene();
-    initEphemeralUI();
+    
+    // Initialisation scène (Caméra + Controls)
+    await initScene();
+    
+    // Petit délai pour laisser le moteur se stabiliser avant le premier chargement massif
+    setTimeout(async () => {
+        await loadTerrain();
+        initEphemeralUI();
+    }, 100);
 }
 
 function initEphemeralUI(): void {

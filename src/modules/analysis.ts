@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import SunCalc from 'suncalc';
 import { state } from './state';
 import { updateSunPosition } from './sun';
-import { activeTiles, worldToLngLat } from './terrain';
+import { activeTiles } from './terrain';
+import { worldToLngLat } from './geo';
 import { showToast } from './utils';
 
 /**
@@ -147,7 +148,7 @@ export async function runSolarProbe(worldX: number, worldZ: number, altitude: nu
     sunriseDisp.textContent = '--:--';
     statusDisp.textContent = 'Calcul...';
 
-    const currentGPS = worldToLngLat(worldX, worldZ);
+    const currentGPS = worldToLngLat(worldX, worldZ, state.originTile);
     if (coordInfo) coordInfo.textContent = `LAT: ${currentGPS.lat.toFixed(4)} LON: ${currentGPS.lon.toFixed(4)}`;
 
     const origin = new THREE.Vector3(worldX, altitude + 1, worldZ);

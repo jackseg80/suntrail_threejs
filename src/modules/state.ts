@@ -13,6 +13,9 @@ export interface PerformanceSettings {
     PIXEL_RATIO_LIMIT: number;
     SHOW_VEGETATION: boolean;
     SHOW_SIGNPOSTS: boolean;
+    SHOW_BUILDINGS: boolean;
+    BUILDINGS_SHADOWS: boolean; // v4.3.13
+    MAX_ALLOWED_ZOOM: number;    // v4.3.13
 }
 
 export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings> = {
@@ -23,7 +26,10 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHADOW_RES: 512,
         PIXEL_RATIO_LIMIT: 1.0,
         SHOW_VEGETATION: false,
-        SHOW_SIGNPOSTS: false
+        SHOW_SIGNPOSTS: false,
+        SHOW_BUILDINGS: false,
+        BUILDINGS_SHADOWS: false,
+        MAX_ALLOWED_ZOOM: 15
     },
     balanced: {
         RESOLUTION: 128,
@@ -32,25 +38,34 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHADOW_RES: 1024,
         PIXEL_RATIO_LIMIT: 1.2,
         SHOW_VEGETATION: true,
-        SHOW_SIGNPOSTS: true
+        SHOW_SIGNPOSTS: true,
+        SHOW_BUILDINGS: true,
+        BUILDINGS_SHADOWS: false,
+        MAX_ALLOWED_ZOOM: 16
     },
     performance: {
         RESOLUTION: 160,
-        RANGE: 5, 
+        RANGE: 4, 
         SHADOWS: true,
         SHADOW_RES: 2048,
         PIXEL_RATIO_LIMIT: 1.5,
         SHOW_VEGETATION: true,
-        SHOW_SIGNPOSTS: true
+        SHOW_SIGNPOSTS: true,
+        SHOW_BUILDINGS: true,
+        BUILDINGS_SHADOWS: true,
+        MAX_ALLOWED_ZOOM: 18
     },
     ultra: {
         RESOLUTION: 256,
-        RANGE: 7, 
+        RANGE: 6, 
         SHADOWS: true,
         SHADOW_RES: 4096,
         PIXEL_RATIO_LIMIT: window.devicePixelRatio,
         SHOW_VEGETATION: true,
-        SHOW_SIGNPOSTS: true
+        SHOW_SIGNPOSTS: true,
+        SHOW_BUILDINGS: true,
+        BUILDINGS_SHADOWS: true,
+        MAX_ALLOWED_ZOOM: 18
     }
 };
 
@@ -72,6 +87,7 @@ export interface State {
     SHOW_TRAILS: boolean;
     SHOW_SLOPES: boolean;
     SHOW_SIGNPOSTS: boolean;
+    SHOW_BUILDINGS: boolean;
     MAP_SOURCE: string;
     hasManualSource: boolean;
     FOG_NEAR: number;
@@ -141,6 +157,7 @@ export const state: State = {
     SHOW_TRAILS: true, 
     SHOW_SLOPES: false,
     SHOW_SIGNPOSTS: PRESETS.balanced.SHOW_SIGNPOSTS,
+    SHOW_BUILDINGS: PRESETS.balanced.SHOW_BUILDINGS,
     MAP_SOURCE: 'swisstopo', 
     hasManualSource: false,
     FOG_NEAR: 5000, 

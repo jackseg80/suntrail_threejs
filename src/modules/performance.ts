@@ -68,6 +68,17 @@ export function applyPreset(preset: PresetType): void {
     state.PIXEL_RATIO_LIMIT = settings.PIXEL_RATIO_LIMIT;
     state.SHOW_VEGETATION = settings.SHOW_VEGETATION;
     state.SHOW_SIGNPOSTS = settings.SHOW_SIGNPOSTS;
+    state.SHOW_BUILDINGS = settings.SHOW_BUILDINGS;
+
+    // Mise à jour dynamique des ombres (v4.3.13)
+    if (state.sunLight) {
+        state.sunLight.castShadow = state.SHADOWS;
+        state.sunLight.shadow.mapSize.set(state.SHADOW_RES, state.SHADOW_RES);
+        if (state.sunLight.shadow.map) {
+            state.sunLight.shadow.map.dispose();
+            state.sunLight.shadow.map = null as any; 
+        }
+    }
 
     // Mise à jour de l'UI si nécessaire (ex: sliders)
     updatePerformanceUI(preset);
@@ -86,6 +97,7 @@ function updatePerformanceUI(preset: PresetType): void {
     const shadowToggle = document.getElementById('shadow-toggle') as HTMLInputElement;
     const vegToggle = document.getElementById('veg-toggle') as HTMLInputElement;
     const poiToggle = document.getElementById('poi-toggle') as HTMLInputElement;
+    const buildingsToggle = document.getElementById('buildings-toggle') as HTMLInputElement;
 
     if (resDisp) resDisp.textContent = state.RESOLUTION.toString();
     if (rangeDisp) rangeDisp.textContent = state.RANGE.toString();
@@ -94,6 +106,7 @@ function updatePerformanceUI(preset: PresetType): void {
     if (shadowToggle) shadowToggle.checked = state.SHADOWS;
     if (vegToggle) vegToggle.checked = state.SHOW_VEGETATION;
     if (poiToggle) poiToggle.checked = state.SHOW_SIGNPOSTS;
+    if (buildingsToggle) buildingsToggle.checked = state.SHOW_BUILDINGS;
 
     // Mise en évidence du bouton de preset actif
     const buttons = document.querySelectorAll('.preset-btn');

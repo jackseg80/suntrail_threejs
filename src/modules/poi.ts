@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { state } from './state';
 import { getAltitudeAt } from './analysis';
-import { lngLatToWorld } from './terrain';
+import { lngLatToWorld, getTileBounds } from './geo';
+import { showToast } from './utils';
 
 interface Signpost {
     id: number; lat: number; lon: number; name?: string;
@@ -9,7 +10,7 @@ interface Signpost {
 
 const signpostMemoryCache = new Map<string, Signpost[]>();
 const signpostFetchPromises = new Map<string, Promise<Signpost[] | null>>();
-const zoneFailureCooldown = new Map<string, number>(); // ZoneKey -> Timestamp expiration
+const zoneFailureCooldown = new Map<string, number>(); 
 const signpostTexture = createSignpostTexture();
 
 const CACHE_NAME = 'suntrail-poi-v1';
@@ -38,18 +39,15 @@ function createSignpostTexture(): THREE.Texture {
 export async function loadPOIsForTile(tile: any): Promise<THREE.Group | null> {
     if (tile.zoom < 14 || !state.SHOW_SIGNPOSTS) return null;
 
-    // --- MEGA-ZONES Z10 (~40km) ---
     const zoneZ = 10;
     const ratio = Math.pow(2, tile.zoom - zoneZ);
     const zx = Math.floor(tile.tx / ratio);
     const zy = Math.floor(tile.ty / ratio);
     const zoneKey = `${zoneZ}_${zx}_${zy}`;
 
-    // 1. Vérifier si la zone est en "cooldown" suite à un échec récent
     const failTime = zoneFailureCooldown.get(zoneKey);
     if (failTime && Date.now() < failTime) return null;
 
-    // 2. Vérifier le cache mémoire
     let signposts: Signpost[] | null | undefined = signpostMemoryCache.get(zoneKey);
 
     if (!signposts) {
@@ -62,7 +60,6 @@ export async function loadPOIsForTile(tile: any): Promise<THREE.Group | null> {
         if (signposts) {
             signpostMemoryCache.set(zoneKey, signposts);
         } else {
-            // En cas d'échec, on met la zone en sommeil 2 minutes pour ne pas harceler l'API
             zoneFailureCooldown.set(zoneKey, Date.now() + 120000);
         }
         signpostFetchPromises.delete(zoneKey);
@@ -82,14 +79,9 @@ export async function loadPOIsForTile(tile: any): Promise<THREE.Group | null> {
 
 async function fetchWithGlobalLock(z: number, x: number, y: number): Promise<Signpost[] | null> {
     const res = await globalRequestLock.then(() => fetchPOIsWithCache(z, x, y));
-    // Délai de 5s entre chaque appel global pour la v4.0.2
     globalRequestLock = new Promise(resolve => setTimeout(resolve, 5000));
     return res;
 }
-
-import { showToast } from './utils';
-
-// ... (existing imports)
 
 async function fetchPOIsWithCache(z: number, x: number, y: number): Promise<Signpost[] | null> {
     const cacheKey = `poi_${z}_${x}_${y}`;
@@ -107,7 +99,7 @@ async function fetchPOIsWithCache(z: number, x: number, y: number): Promise<Sign
         const server = OVERPASS_SERVERS[currentServerIdx];
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 35000); // Timeout réduit
+            const timeoutId = setTimeout(() => controller.abort(), 35000);
 
             const response = await fetch(`${server}?data=${encodeURIComponent(query)}`, { signal: controller.signal });
             clearTimeout(timeoutId);
@@ -124,7 +116,6 @@ async function fetchPOIsWithCache(z: number, x: number, y: number): Promise<Sign
 
             if (response.status === 429) {
                 currentServerIdx = (currentServerIdx + 1) % OVERPASS_SERVERS.length;
-                // Attendre un peu avant de changer de serveur
                 await new Promise(r => setTimeout(r, 2000));
                 continue; 
             }
@@ -146,7 +137,7 @@ function createSignpostGroup(signposts: Signpost[], tile: any): THREE.Group {
     const material = new THREE.SpriteMaterial({ map: signpostTexture, transparent: true, depthTest: true });
 
     signposts.forEach(poi => {
-        const worldPos = lngLatToWorld(poi.lon, poi.lat);
+        const worldPos = lngLatToWorld(poi.lon, poi.lat, state.originTile);
         const localX = worldPos.x - tile.worldX;
         const localZ = worldPos.z - tile.worldZ;
         const alt = getAltitudeAt(worldPos.x, worldPos.z);
@@ -160,15 +151,4 @@ function createSignpostGroup(signposts: Signpost[], tile: any): THREE.Group {
     });
 
     return group;
-}
-
-function getTileBounds(tile: {zoom: number, tx: number, ty: number}) {
-    const n = Math.pow(2, tile.zoom);
-    const lonWest = tile.tx / n * 360 - 180;
-    const lonEast = (tile.tx + 1) / n * 360 - 180;
-    const latRadNorth = Math.atan(Math.sinh(Math.PI * (1 - 2 * tile.ty / n)));
-    const latNorth = latRadNorth * 180 / Math.PI;
-    const latRadSouth = Math.atan(Math.sinh(Math.PI * (1 - 2 * (tile.ty + 1) / n)));
-    const latSouth = latRadSouth * 180 / Math.PI;
-    return { north: latNorth, south: latSouth, west: lonWest, east: lonEast };
 }

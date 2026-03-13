@@ -4,7 +4,15 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
-## [4.2.5] - 2026-03-13
+## [4.3.0] - 2026-03-13
+### 🏗️ Bâtiments 3D & Haute Définition
+- **Bâtiments OSM :** Intégration de l'extrusion 3D des bâtiments avec gestion des fondations pour les pentes de montagne. Optimisation via fusion de géométries (1 seul draw call par tuile).
+- **Boost de Résolution :** Passage aux textures 512px (@2x) et ajustement des seuils de LOD pour une netteté satellite immédiate.
+- **Caméra Intelligente :** Système anti-collision sol (marge 30m) et limitation du Tilt (inclinaison) proportionnelle au zoom pour cacher l'horizon vide.
+- **Refonte Géo :** Migration vers un module `geo.ts` centralisé pour supprimer les dépendances circulaires et stabiliser le rendu.
+- **Sentiers HD :** Alignement des calques Swisstopo jusqu'au LOD 18.
+
+## [4.2.6] - 2026-03-13
 ### 🕹️ Ergonomie Mobile Avancée
 - **Rotation Multi-Touch libre :** Remplacement de MapControls par une instance OrbitControls configurée manuellement. La rotation à deux doigts (Twist) est désormais asymétrique et beaucoup plus fluide, ne nécessitant plus de point fixe.
 - **Réactivité Doublée :** Augmentation du Damping Factor (0.1) pour un feeling de glisse plus nerveux et précis.
