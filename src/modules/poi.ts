@@ -87,7 +87,7 @@ async function fetchWithGlobalLock(z: number, x: number, y: number): Promise<Sig
     return res;
 }
 
-import { isPositionInSwitzerland, showToast } from './utils';
+import { showToast } from './utils';
 
 // ... (existing imports)
 

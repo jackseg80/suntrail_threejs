@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import SunCalc from 'suncalc';
 import { state } from './state';
+import { updateSunPosition } from './sun';
 import { activeTiles, worldToLngLat } from './terrain';
+import { showToast } from './utils';
 
 /**
  * Récupère l'altitude à des coordonnées monde (x, z)
@@ -124,13 +126,6 @@ export function isSunOccluded(origin: THREE.Vector3, sunDir: THREE.Vector3): boo
 
     return false;
 }
-
-import { state } from './state';
-import { updateSunPosition } from './sun';
-import { activeTiles, worldToLngLat } from './terrain';
-import { showToast } from './utils';
-
-// ... (getAltitudeAt, findTerrainIntersection, isSunOccluded remain unchanged)
 
 /**
  * Lance l'analyse d'ensoleillement sur 24h (Précision 5 min - v4.2.3)
