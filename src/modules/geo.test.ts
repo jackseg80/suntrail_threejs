@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lngLatToWorld, worldToLngLat, lngLatToTile, getTileBounds, EARTH_CIRCUMFERENCE } from './geo';
+import { lngLatToWorld, worldToLngLat, lngLatToTile, getTileBounds } from './geo';
 
 describe('Module Géo (geo.ts)', () => {
     const originTile = { x: 4270, y: 2891, z: 13 }; // Spiez, Suisse
