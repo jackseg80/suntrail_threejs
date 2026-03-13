@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.2.0] - 2026-03-13
+### ☀️ Analyse Solaire Haute Précision
+- **Interpolation Bi-linéaire :** Nouveau moteur de calcul d'altitude offrant une précision métrique et un lissage parfait entre les points de données.
+- **Échantillonnage 5 min :** Passage à 288 tests d'occlusion par analyse (vs 96 auparavant) pour un cumul d'ensoleillement ultra-précis.
+- **Ray-Marching Adaptatif :** Algorithme d'occlusion affiné (pas de 100m + accélération adaptative) pour détecter les crêtes les plus fines sur 50km.
+- **Optimisation UI :** Calculs asynchrones par lots pour maintenir la fluidité de l'interface pendant l'analyse.
+
 ## [4.1.1] - 2026-03-13
 ### 🔧 Fiabilité & Robustesse
 - **Clic POI Précis :** Optimisation du Raycasting (threshold et recherche directe) pour garantir la détection des clics sur les panneaux, même sur mobile.
