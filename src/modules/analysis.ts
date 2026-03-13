@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import SunCalc from 'suncalc';
 import { state } from './state';
-import { activeTiles, worldToLngLat, lngLatToTile } from './terrain';
+import { activeTiles, worldToLngLat } from './terrain';
 
 /**
  * Récupère l'altitude à des coordonnées monde (x, z)

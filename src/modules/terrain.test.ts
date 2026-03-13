@@ -136,5 +136,19 @@ describe('terrain.ts', () => {
             const expectedDistance = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
             expect(tile.worldX).toBeCloseTo(expectedDistance, 1);
         });
+
+        it('should calculate correct offsets for hybrid Zoom 15 (v3.10.0)', () => {
+            state.MAP_SOURCE = 'opentopomap'; // Bridé à Z14
+            // Tuile Z15 (17057, 11476) - Quart supérieur droit du parent Z14 (8528, 5738)
+            // Tx 17057 % 2 = 1, Ty 11476 % 2 = 0
+            const tile = new Tile(17057, 11476, 15, '15/17057/11476');
+            
+            expect(tile.elevScale).toBe(0.5);
+            expect(tile.elevOffset.x).toBe(0.5); // (17057 % 2) * 0.5
+            expect(tile.elevOffset.y).toBe(0.0); // (11476 % 2) * 0.5
+            
+            expect(tile.colorScale).toBe(0.5);
+            expect(tile.colorOffset.x).toBe(0.5);
+        });
     });
 });

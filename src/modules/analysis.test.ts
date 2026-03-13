@@ -98,4 +98,36 @@ describe('Analyse Solaire (Module Analysis)', () => {
         }
         expect(hitY).toBeCloseTo(1000, 0);
     });
+
+    it('devrait calculer l\'altitude correcte au Zoom 15 hybride (v3.10.0)', () => {
+        // Mock d'une tuile Zoom 15 qui est le quart supérieur droit (0.5, 0) de sa parente
+        const mockTile: any = {
+            tx: 1, ty: 0, zoom: 15,
+            worldX: 0, worldZ: 0, tileSizeMeters: 1000,
+            bounds: new THREE.Box3(new THREE.Vector3(-500, -1000, -500), new THREE.Vector3(500, 9000, 500)),
+            pixelData: new Uint8ClampedArray(256 * 256 * 4),
+            elevScale: 0.5,
+            elevOffset: new THREE.Vector2(0.5, 0)
+        };
+        
+        // On remplit la pixelData avec deux zones : 1000m à gauche, 2000m à droite
+        for (let py = 0; py < 256; py++) {
+            for (let px = 0; px < 256; px++) {
+                const i = (py * 256 + px) * 4;
+                const h = (px < 128) ? 1000 : 2000;
+                const val = (h + 10000) * 10;
+                mockTile.pixelData[i] = Math.floor(val / 65536);
+                mockTile.pixelData[i+1] = Math.floor((val % 65536) / 256);
+                mockTile.pixelData[i+2] = Math.floor(val % 256);
+                mockTile.pixelData[i+3] = 255;
+            }
+        }
+        
+        activeTiles.set('test_hybrid', mockTile);
+        
+        // Au Zoom 15 hybride, le point (0,0) de la tuile correspond au milieu du parent (px=128)
+        // car l'offset est 0.5. On devrait donc lire 2000m.
+        const alt = getAltitudeAt(0, 0);
+        expect(alt).toBeCloseTo(2000, 0);
+    });
 });

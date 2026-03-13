@@ -8,16 +8,18 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [x] **Mode Suivi Caméra** : Option pour garder l'utilisateur au centre de l'écran.
 - [x] **Positionnement sur Relief** : Algorithme garantissant que le marqueur reste au-dessus du sol.
 
-## 🏁 En cours (v3.10.0) - Consolidation & "Bétonnage"
-- [ ] **Refactoring Hybride** : Nettoyage et centralisation des réglages dans la classe Tile.
-- [ ] **Tests de Précision** : Validation de l'altitude Zoom 15 vs Zoom 14.
-- [ ] **Robustesse Réseau** : Fallback et timeouts sur les sources MapTiler/OpenTopo.
-- [ ] **Lissage FPS** : Optimisation des batchs de chargement pour éviter les saccades.
-
-## 📅 À venir (v4.0) - Randonnée HD & Immersion
+## 🏁 En cours (v4.0) - Randonnée HD & Immersion
 - [ ] **Panneaux de Signalisation** : Affichage des icônes officielles de randonnée (Swisstopo) sur les carrefours.
 - [ ] **Interface Éphémère** : Masquage automatique des contrôles pour maximiser la vue 3D.
 - [ ] **Capture d'écran 3D** : Outil de partage de vue panoramique.
+- [ ] **Mode Sombre/Clair** : Synchronisation avec le thème système.
+
+## ✅ Terminé (v3.10.0)
+- [x] **Cache Persistant Global** : Mise en cache locale de toutes les données (Couleur, Relief, Overlays).
+- [x] **Moteur Hybride Stable** : Refactorisation complète de la classe Tile et des Shaders pour le Zoom 15.
+- [x] **Correctif Démarrage** : Chargement forcé des tuiles proches dès l'initialisation.
+- [x] **Robustesse Réseau** : Gestion des timeouts et des erreurs de coordonnées mondiales.
+- [x] **Suppression Flash Blanc** : CSS critique injecté en HTML pour un démarrage sur fond noir.
 
 ## ✅ Terminé (v3.9.7)
 - [x] **Support Zoom 15** : Niveau de détail maximal fonctionnel.

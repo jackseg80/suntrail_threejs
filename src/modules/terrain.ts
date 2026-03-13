@@ -133,13 +133,21 @@ const terrainVertexInjection = {
 const CACHE_NAME = 'suntrail-tiles-v1';
 
 async function fetchWithCache(url: string, usePersistentCache: boolean = false): Promise<Blob | null> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); 
+
     try {
         if (usePersistentCache) {
             const cache = await caches.open(CACHE_NAME);
             const cached = await cache.match(url);
-            if (cached) { state.cacheHits++; updateStorageUI(); return await cached.blob(); }
+            if (cached) { 
+                state.cacheHits++; updateStorageUI(); 
+                clearTimeout(timeoutId);
+                return await cached.blob(); 
+            }
         }
-        const r = await fetch(url, { mode: 'cors' });
+        const r = await fetch(url, { mode: 'cors', signal: controller.signal });
+        clearTimeout(timeoutId);
         if (r.ok) {
             const blob = await r.blob();
             state.networkRequests++; updateStorageUI();
@@ -150,7 +158,10 @@ async function fetchWithCache(url: string, usePersistentCache: boolean = false):
             return blob;
         }
         return null;
-    } catch (e) { return null; }
+    } catch (e) { 
+        clearTimeout(timeoutId);
+        return null; 
+    }
 }
 
 function updateStorageUI() {
@@ -259,7 +270,7 @@ export class Tile {
         try {
             this.updateHybridSettings();
             
-            // 1. RELIEF
+            // 1. RELIEF (Toujours avec cache persistant)
             let elevZoom = Math.min(this.zoom, 14);
             let elevTx = this.tx; let elevTy = this.ty;
             if (this.zoom > 14) {
@@ -279,7 +290,7 @@ export class Tile {
             const offCtx = offCanvas.getContext('2d');
             if (offCtx) { offCtx.drawImage(imgElev, 0, 0); this.pixelData = offCtx.getImageData(0, 0, imgElev.width, imgElev.height).data; }
 
-            // 2. COULEUR
+            // 2. COULEUR (Activation du cache persistant v3.10.0)
             const nativeZoom = this.getNativeColorZoom();
             let colorZoom = Math.min(this.zoom, nativeZoom);
             let colorTx = this.tx; let colorTy = this.ty;
@@ -288,7 +299,7 @@ export class Tile {
                 colorTx = Math.floor(this.tx / ratio); colorTy = Math.floor(this.ty / ratio);
             }
 
-            let colorBlob = await fetchWithCache(this.getColorUrl(colorZoom, colorTx, colorTy));
+            let colorBlob = await fetchWithCache(this.getColorUrl(colorZoom, colorTx, colorTy), true);
             if (this.status as any === 'disposed') return;
             
             if (colorBlob) {
@@ -301,7 +312,7 @@ export class Tile {
                 this.colorTex = new THREE.CanvasTexture(dummy);
             }
 
-            // 3. CALQUES (Toujours bridés à 14 pour Swisstopo)
+            // 3. CALQUES (Activation du cache persistant v3.10.0)
             const inCH = isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON);
             let layerZoom = Math.min(this.zoom, 14);
             let layerTx = this.tx; let layerTy = this.ty;
@@ -311,8 +322,8 @@ export class Tile {
             }
 
             const [tBlob, sBlob] = await Promise.all([
-                (state.SHOW_TRAILS && inCH) ? fetchWithCache(this.getOverlayUrl(layerZoom, layerTx, layerTy)) : Promise.resolve(null),
-                (state.SHOW_SLOPES && inCH) ? fetchWithCache(this.getSlopesUrl(layerZoom, layerTx, layerTy)) : Promise.resolve(null)
+                (state.SHOW_TRAILS && inCH) ? fetchWithCache(this.getOverlayUrl(layerZoom, layerTx, layerTy), true) : Promise.resolve(null),
+                (state.SHOW_SLOPES && inCH) ? fetchWithCache(this.getSlopesUrl(layerZoom, layerTx, layerTy), true) : Promise.resolve(null)
             ]);
             if (this.status as any === 'disposed') return;
             if (tBlob) { const i = await createImageBitmap(tBlob); this.overlayTex = new THREE.Texture(i); this.overlayTex.flipY = false; this.overlayTex.needsUpdate = true; this.overlayTex.colorSpace = THREE.SRGBColorSpace; }
@@ -538,7 +549,6 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
     let range = state.RANGE;
     if (zoom >= 15) range = Math.max(2, Math.floor(state.RANGE * 0.7)); 
     
-    const margin = 1; 
     const maxTile = Math.pow(2, zoom);
     const currentActiveKeys = new Set<string>();
 
