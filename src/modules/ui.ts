@@ -430,7 +430,6 @@ export function initUI(): void {
     if (buildingsToggle) {
         buildingsToggle.addEventListener('change', async (e: Event) => {
             const target = e.target as HTMLInputElement;
-            console.log(`[UI] Buildings Toggle changed to: ${target.checked}`);
             state.SHOW_BUILDINGS = target.checked;
             resetTerrain();
             await loadTerrain();

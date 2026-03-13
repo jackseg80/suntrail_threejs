@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.3.25] - 2026-03-13
+### 🔧 Stabilisation & Rendu Final
+- **Ombres Géométriques :** Correction majeure permettant au relief de projeter des ombres réelles sur lui-même (customDepthMaterial). Les vallées sont maintenant plongées dans l'ombre des sommets de façon réaliste.
+- **LOD Symétriques :** Réglage fin de l'hystérésis pour des transitions de zoom naturelles et sans effet de ressort.
+- **Nettoyage Code :** Suppression de tous les logs de debug et optimisation des imports pour un build de production ultra-léger.
+- **Z-Buffer Logarithmique :** Activation par défaut pour supprimer tout scintillement (flickering) sur le relief lointain.
+
 ## [4.3.0] - 2026-03-13
 ### 🏗️ Bâtiments 3D & Haute Définition
 - **Bâtiments OSM :** Intégration de l'extrusion 3D des bâtiments avec gestion des fondations pour les pentes de montagne. Optimisation via fusion de géométries (1 seul draw call par tuile).

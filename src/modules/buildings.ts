@@ -34,7 +34,6 @@ const buildingMaterial = new THREE.MeshStandardMaterial({
 export async function loadBuildingsForTile(tile: any): Promise<THREE.Mesh | null> {
     if (!state.SHOW_BUILDINGS) return null;
     
-    // On respecte le zoom max du preset (v4.3.13)
     const preset = state.PERFORMANCE_PRESET !== 'custom' ? PRESETS[state.PERFORMANCE_PRESET] : null;
     const maxZoom = preset ? preset.MAX_ALLOWED_ZOOM : 18;
     if (tile.zoom < 14 || tile.zoom > maxZoom) return null;
@@ -56,8 +55,10 @@ export async function loadBuildingsForTile(tile: any): Promise<THREE.Mesh | null
             fetchPromise = fetchBuildingsWithLock(zoneZ, zx, zy);
             buildingFetchPromises.set(zoneKey, fetchPromise);
         }
-        buildings = await fetchPromise;
-        if (buildings && buildings.length > 0) {
+        
+        const fetched = await fetchPromise;
+        if (fetched && fetched.length > 0) {
+            buildings = fetched;
             buildingMemoryCache.set(zoneKey, buildings);
         } else {
             zoneFailureCooldown.set(zoneKey, Date.now() + 30000); 
@@ -77,7 +78,7 @@ export async function loadBuildingsForTile(tile: any): Promise<THREE.Mesh | null
 
     if (tileBuildings.length === 0) return null;
 
-    return createBuildingMesh(tileBuildings, tile);
+    return createBuildingMesh(tileBuildings);
 }
 
 async function fetchBuildingsWithLock(z: number, x: number, y: number): Promise<BuildingFeature[] | null> {
@@ -134,7 +135,7 @@ async function fetchBuildingsWithCache(z: number, x: number, y: number): Promise
     return null;
 }
 
-function createBuildingMesh(buildings: BuildingFeature[], tile: any): THREE.Mesh | null {
+function createBuildingMesh(buildings: BuildingFeature[]): THREE.Mesh | null {
     const geometries: THREE.BufferGeometry[] = [];
 
     buildings.forEach(bldg => {
@@ -179,7 +180,6 @@ function createBuildingMesh(buildings: BuildingFeature[], tile: any): THREE.Mesh
         if (!mergedGeometry) return null;
         const mesh = new THREE.Mesh(mergedGeometry, buildingMaterial);
         
-        // Gestion des ombres selon le preset (v4.3.13)
         const preset = state.PERFORMANCE_PRESET !== 'custom' ? PRESETS[state.PERFORMANCE_PRESET] : null;
         const allowShadows = preset ? preset.BUILDINGS_SHADOWS : true;
         

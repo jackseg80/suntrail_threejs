@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import * as THREE from 'three';
 import { getAltitudeAt, isSunOccluded } from './analysis';
 import { state } from './state';
-import { activeTiles, worldToLngLat, lngLatToTile } from './terrain';
+import { activeTiles } from './terrain';
+import { worldToLngLat, lngLatToTile } from './geo';
 
 describe('Analyse Solaire (Module Analysis)', () => {
     let centerKey: string;
@@ -13,7 +14,7 @@ describe('Analyse Solaire (Module Analysis)', () => {
         state.RELIEF_EXAGGERATION = 1.0;
         state.originTile = { x: 4272, y: 2883, z: 13 }; // Thune, Suisse
         
-        const gps = worldToLngLat(0, 0);
+        const gps = worldToLngLat(0, 0, state.originTile);
         const tileCoords = lngLatToTile(gps.lon, gps.lat, state.ZOOM);
         centerKey = `${tileCoords.x}_${tileCoords.y}_${state.ZOOM}`;
     });

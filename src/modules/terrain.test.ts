@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
-import { lngLatToTile, worldToLngLat, Tile, EARTH_CIRCUMFERENCE, updateGPXMesh } from './terrain';
+import { Tile, updateGPXMesh } from './terrain';
+import { lngLatToTile, worldToLngLat, EARTH_CIRCUMFERENCE } from './geo';
 import { state } from './state';
 
 describe('terrain.ts', () => {
@@ -93,7 +94,7 @@ describe('terrain.ts', () => {
             const worldX = (xNorm - oxNorm) * EARTH_CIRCUMFERENCE;
             const worldZ = (yNorm - oyNorm) * EARTH_CIRCUMFERENCE;
             
-            const result = worldToLngLat(worldX, worldZ);
+            const result = worldToLngLat(worldX, worldZ, state.originTile);
             
             expect(result.lon).toBeCloseTo(initialLon, 4);
             expect(result.lat).toBeCloseTo(initialLat, 4);

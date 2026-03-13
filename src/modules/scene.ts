@@ -188,26 +188,26 @@ export async function initScene(): Promise<void> {
 
         if (state.ZOOM === 13) { 
             if (dist < 8000 * boost) newZoom = 14; 
-            else if (dist > 55000 * boost) newZoom = 12; 
+            else if (dist > 60000 * boost) newZoom = 12; 
         }
         else if (state.ZOOM === 14) { 
-            if (dist > 15000 * boost) newZoom = 13; 
+            if (dist > 10000 * boost) newZoom = 13; 
             else if (dist < 2200 * boost) newZoom = 15; 
         }
         else if (state.ZOOM === 15) {
-            if (dist > 6000 * boost) newZoom = 14; 
-            else if (dist < 2500 * boost) newZoom = 16; 
+            if (dist > 3000 * boost) newZoom = 14; // Sortie plus proche de l'entrée
+            else if (dist < 1000 * boost) newZoom = 16; 
         }
         else if (state.ZOOM === 16) {
-            if (dist > 3500 * boost) newZoom = 15;
-            else if (dist < 1200 * boost) newZoom = 17; 
+            if (dist > 1500 * boost) newZoom = 15;
+            else if (dist < 500 * boost) newZoom = 17; 
         }
         else if (state.ZOOM === 17) {
-            if (dist > 1800 * boost) newZoom = 16;
-            else if (dist < 600 * boost) newZoom = 18; 
+            if (dist > 800 * boost) newZoom = 16;
+            else if (dist < 250 * boost) newZoom = 18; 
         }
         else if (state.ZOOM === 18) {
-            if (dist > 1000 * boost) newZoom = 17;
+            if (dist > 400 * boost) newZoom = 17;
         }
         else if (state.ZOOM === 12) { 
             if (dist < 35000) newZoom = 13; 
@@ -262,12 +262,23 @@ export async function initScene(): Promise<void> {
     state.sunLight = new THREE.DirectionalLight(0xffffff, 6.0);
     state.sunLight.castShadow = state.SHADOWS;
     state.sunLight.shadow.mapSize.set(state.SHADOW_RES, state.SHADOW_RES);
-    const d = 40000; 
-    state.sunLight.shadow.camera.left = -d; state.sunLight.shadow.camera.right = d; state.sunLight.shadow.camera.top = d; state.sunLight.shadow.camera.bottom = -d;
+    
+    // Rayon de couverture optimal (v4.3.23)
+    const d = 25000; // Plus petit = plus net
+    state.sunLight.shadow.camera.left = -d; 
+    state.sunLight.shadow.camera.right = d; 
+    state.sunLight.shadow.camera.top = d; 
+    state.sunLight.shadow.camera.bottom = -d;
+    
     state.sunLight.shadow.camera.near = 1000;
-    state.sunLight.shadow.camera.far = 300000;
+    state.sunLight.shadow.camera.far = 500000;
+    
+    // Biais équilibrés pour le relief et les bâtiments
     state.sunLight.shadow.bias = -0.0001; 
-    state.scene.add(state.sunLight); state.scene.add(state.sunLight.target); 
+    state.sunLight.shadow.normalBias = 0.02; 
+    
+    state.scene.add(state.sunLight); 
+    state.scene.add(state.sunLight.target); 
 
     // PREMIER CALCUL DE TERRAIN IMMÉDIAT
     console.log(`[Scene] Initial Terrain Load (Alt: ${state.camera.position.y})`);

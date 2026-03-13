@@ -98,39 +98,6 @@ const frustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
 const terrainUniforms = { uExaggeration: { value: state.RELIEF_EXAGGERATION } };
 
-const terrainVertexInjection = {
-    header: `
-        uniform sampler2D uElevationMap;
-        uniform float uExaggeration;
-        uniform float uTileSize;
-        uniform vec2 uElevOffset;
-        uniform float uElevScale;
-        uniform vec2 uColorOffset;
-        uniform float uColorScale;
-
-        float decodeHeight(vec4 rgba) {
-            return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1);
-        }
-        float getTerrainHeight(vec2 uv) {
-            vec2 elevUv = uElevOffset + (uv * uElevScale);
-            vec4 col = texture2D(uElevationMap, elevUv);
-            float h = decodeHeight(col);
-            if (h < -1000.0 || h > 9000.0) return 0.0;
-            return h * uExaggeration;
-        }
-    `,
-    normal: `
-        float delta = uTileSize / 256.0;
-        float hL = getTerrainHeight(uv + vec2(-1.0/256.0, 0.0));
-        float hR = getTerrainHeight(uv + vec2(1.0/256.0, 0.0));
-        float hD = getTerrainHeight(uv + vec2(0.0, -1.0/256.0));
-        float hU = getTerrainHeight(uv + vec2(0.0, 1.0/256.0));
-        objectNormal = normalize(vec3(hL - hR, delta * 2.0, hD - hU));
-    `,
-    position: `transformed.y = getTerrainHeight(uv);`,
-    uv: `vMapUv = uColorOffset + (uv * uColorScale);`
-};
-
 const CACHE_NAME = 'suntrail-tiles-v1';
 
 async function fetchWithCache(url: string, usePersistentCache: boolean = false): Promise<Blob | null> {
@@ -229,9 +196,9 @@ export class Tile {
 
     getNativeColorZoom(): number {
         switch(state.MAP_SOURCE) {
-            case 'satellite': return 18; // Satellite va jusqu'à 18
-            case 'swisstopo': return 18; // Topo CH va jusqu'à 18
-            case 'opentopomap': return 15; // Limite stricte pour OpenTopo
+            case 'satellite': return 18;
+            case 'swisstopo': return 18;
+            case 'opentopomap': return 15;
             default: return 18;
         }
     }
@@ -240,7 +207,6 @@ export class Tile {
         const MAX_RGB_ZOOM = 14;
         const colorSourceMaxZoom = this.getNativeColorZoom();
 
-        // 1. RELIEF HYBRIDE
         if (this.zoom > MAX_RGB_ZOOM) {
             const ratio = Math.pow(2, this.zoom - MAX_RGB_ZOOM);
             this.elevScale = 1.0 / ratio;
@@ -250,7 +216,6 @@ export class Tile {
             this.elevOffset.set(0, 0);
         }
 
-        // 2. COULEUR (v4.3.9 - Retour à l'alignement 1:1 stable)
         if (this.zoom > colorSourceMaxZoom) {
             const ratio = Math.pow(2, this.zoom - colorSourceMaxZoom);
             this.colorScale = 1.0 / ratio;
@@ -277,7 +242,6 @@ export class Tile {
         try {
             this.updateHybridSettings();
             
-            // 1. RELIEF 
             let elevZoom = Math.min(this.zoom, 14);
             let elevTx = this.tx; let elevTy = this.ty;
             if (this.zoom > 14) {
@@ -297,7 +261,6 @@ export class Tile {
             const offCtx = offCanvas.getContext('2d');
             if (offCtx) { offCtx.drawImage(imgElev, 0, 0); this.pixelData = offCtx.getImageData(0, 0, imgElev.width, imgElev.height).data; }
 
-            // 2. COULEUR (v4.3.9 - Nettoyage complet du boost problématique)
             const nativeMax = this.getNativeColorZoom();
             let colorZoom = Math.min(this.zoom, nativeMax);
             let colorTx = this.tx;
@@ -325,9 +288,7 @@ export class Tile {
                 this.colorTex = new THREE.CanvasTexture(dummy);
             }
 
-            // 3. CALQUES (Synchronisation 1:1 avec le terrain v4.3.17)
             const inCH = isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON);
-            // On autorise maintenant les calques jusqu'au Z18 comme la couleur
             let layerZoom = Math.min(this.zoom, 18);
             let layerTx = this.tx; let layerTy = this.ty;
 
@@ -368,6 +329,25 @@ export class Tile {
         const geometry = getPlaneGeometry(resolution, this.tileSizeMeters);
         const material = new THREE.MeshStandardMaterial({ map: this.colorTex, roughness: 1.0, metalness: 0.0, transparent: true, opacity: 0 });
 
+        const sharedShaderChunk = `
+            uniform sampler2D uElevationMap;
+            uniform float uExaggeration;
+            uniform float uTileSize;
+            uniform vec2 uElevOffset;
+            uniform float uElevScale;
+
+            float decodeHeight(vec4 rgba) {
+                return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1);
+            }
+            float getTerrainHeight(vec2 uv) {
+                vec2 elevUv = uElevOffset + (uv * uElevScale);
+                vec4 col = texture2D(uElevationMap, elevUv);
+                float h = decodeHeight(col);
+                if (h < -1000.0 || h > 9000.0) return 0.0;
+                return h * uExaggeration;
+            }
+        `;
+
         material.onBeforeCompile = (shader) => {
             shader.uniforms.uElevationMap = { value: this.elevationTex };
             shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
@@ -382,24 +362,9 @@ export class Tile {
             shader.uniforms.uHasSlopes = { value: !!this.slopesTex };
 
             shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n
-                uniform sampler2D uElevationMap;
-                uniform float uExaggeration;
-                uniform float uTileSize;
-                uniform vec2 uElevOffset;
-                uniform float uElevScale;
                 uniform vec2 uColorOffset;
                 uniform float uColorScale;
-
-                float decodeHeight(vec4 rgba) {
-                    return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1);
-                }
-                float getTerrainHeight(vec2 uv) {
-                    vec2 elevUv = uElevOffset + (uv * uElevScale);
-                    vec4 col = texture2D(uElevationMap, elevUv);
-                    float h = decodeHeight(col);
-                    if (h < -1000.0 || h > 9000.0) return 0.0;
-                    return h * uExaggeration;
-                }
+                ${sharedShaderChunk}
             `);
             shader.vertexShader = shader.vertexShader.replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);`);
             shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n
@@ -437,6 +402,23 @@ export class Tile {
         this.mesh.castShadow = true;
         this.mesh.receiveShadow = true;
 
+        // --- OMBRES PORTÉES RÉELLES (v4.3.25) ---
+        const customDepthMaterial = new THREE.MeshDepthMaterial({
+            depthPacking: THREE.RGBADepthPacking,
+            alphaTest: 0.5
+        });
+
+        customDepthMaterial.onBeforeCompile = (shader) => {
+            shader.uniforms.uElevationMap = { value: this.elevationTex };
+            shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
+            shader.uniforms.uElevOffset = { value: this.elevOffset };
+            shader.uniforms.uElevScale = { value: this.elevScale };
+
+            shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${sharedShaderChunk}`);
+            shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv);`);
+        };
+        this.mesh.customDepthMaterial = customDepthMaterial;
+
         if (state.scene) state.scene.add(this.mesh);
         this.currentResolution = resolution;
         this.opacity = 0; 
@@ -449,7 +431,6 @@ export class Tile {
             state.scene.add(this.forestMesh);
         }
 
-        // --- CHARGEMENT SIGNALISATION (v4.0) ---
         if (state.SHOW_SIGNPOSTS && this.zoom >= 14) {
             loadPOIsForTile(this).then(group => {
                 if (group && this.status !== 'disposed' && state.scene) {
@@ -461,7 +442,6 @@ export class Tile {
             });
         }
 
-        // --- CHARGEMENT BÂTIMENTS 3D (v4.3.0) ---
         if (state.SHOW_BUILDINGS && this.zoom >= 14) {
             loadBuildingsForTile(this)
                 .then(mesh => {
@@ -495,6 +475,7 @@ export class Tile {
         if (this.mesh) { 
             if (state.scene) state.scene.remove(this.mesh); 
             if (this.mesh.material instanceof THREE.Material) this.mesh.material.dispose(); 
+            if (this.mesh.customDepthMaterial) this.mesh.customDepthMaterial.dispose();
             this.mesh = null; 
         }
         if (this.forestMesh) { if (state.scene) state.scene.remove(this.forestMesh); this.forestMesh = null; }
@@ -520,7 +501,6 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
     const zoom = state.ZOOM; 
     const centerTile = lngLatToTile(currentGPS.lon, currentGPS.lat, zoom);
     
-    // --- RAYON DYNAMIQUE ÉQUILIBRÉ (v4.3.12) ---
     let range = state.RANGE;
     if (zoom >= 15) range = Math.max(3, Math.min(range, 4)); 
     if (zoom >= 17) range = 2; 
@@ -528,7 +508,6 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
     const maxTile = Math.pow(2, zoom);
     const currentActiveKeys = new Set<string>();
 
-    // COUCHE UNIQUE (Simple et robuste)
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
             const tx = centerTile.x + dx;
