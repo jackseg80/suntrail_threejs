@@ -173,6 +173,8 @@ export class Tile {
     isFadingIn: boolean = false;
     worldX: number = 0; worldZ: number = 0;
     bounds: THREE.Box3 = new THREE.Box3();
+    
+    // Paramètres Hybrides (v3.10.0)
     elevOffset: THREE.Vector2 = new THREE.Vector2(0, 0);
     elevScale: number = 1.0;
 
@@ -180,6 +182,7 @@ export class Tile {
         this.tx = tx; this.ty = ty; this.zoom = zoom; this.key = key;
         this.tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
         this.updateWorldPosition();
+        this.updateHybridSettings();
     }
 
     updateWorldPosition(): void {
@@ -205,6 +208,17 @@ export class Tile {
         return frustum.intersectsBox(this.bounds.clone().expandByScalar(this.tileSizeMeters * 0.2));
     }
 
+    updateHybridSettings(): void {
+        if (this.zoom >= 15) {
+            const ratio = Math.pow(2, this.zoom - 14);
+            this.elevScale = 1.0 / ratio;
+            this.elevOffset.set((this.tx % ratio) * this.elevScale, (this.ty % ratio) * this.elevScale);
+        } else {
+            this.elevScale = 1.0;
+            this.elevOffset.set(0, 0);
+        }
+    }
+
     async load(): Promise<void> {
         if (this.status !== 'idle' && this.status !== 'failed') return;
         const cacheKey = `${state.MAP_SOURCE}_${state.SHOW_TRAILS}_${state.SHOW_SLOPES}_${this.key}`;
@@ -212,36 +226,24 @@ export class Tile {
         if (cached) {
             this.elevationTex = cached.elev; this.pixelData = cached.pixelData;
             this.colorTex = cached.color; this.overlayTex = cached.overlay; this.slopesTex = cached.slopes;
-            
-            // Recalcul des offsets au cas où
-            if (this.zoom >= 15) {
-                this.elevScale = 0.5;
-                this.elevOffset.set((this.tx % 2) * 0.5, (this.ty % 2) * 0.5);
-            } else {
-                this.elevScale = 1.0;
-                this.elevOffset.set(0, 0);
-            }
-
+            this.updateHybridSettings();
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
             return;
         }
         if (this.status as any === 'disposed') return;
         this.status = 'loading';
         try {
-            // 1. RELIEF (Bloquant) - HYBRIDE Z15 (v3.9.7)
+            this.updateHybridSettings();
+            
+            // 1. RELIEF (Bloquant)
             let elevZoom = this.zoom;
             let elevTx = this.tx;
             let elevTy = this.ty;
 
             if (this.zoom >= 15) {
                 elevZoom = 14;
-                this.elevScale = 0.5;
-                elevTx = Math.floor(this.tx / 2);
-                elevTy = Math.floor(this.ty / 2);
-                this.elevOffset.set((this.tx % 2) * 0.5, (this.ty % 2) * 0.5);
-            } else {
-                this.elevScale = 1.0;
-                this.elevOffset.set(0, 0);
+                elevTx = Math.floor(this.tx / Math.pow(2, this.zoom - 14));
+                elevTy = Math.floor(this.ty / Math.pow(2, this.zoom - 14));
             }
 
             const elevBlob = await fetchWithCache(`https://api.maptiler.com/tiles/terrain-rgb-v2/${elevZoom}/${elevTx}/${elevTy}.png?key=${state.MK}`, true);
@@ -308,7 +310,6 @@ export class Tile {
     buildMesh(resolution: number): void {
         if (!this.elevationTex || !this.colorTex || this.status as any === 'disposed') return;
         
-        // --- VÉRIFICATION DE VALIDITÉ ---
         const img = this.colorTex.image as any;
         if (!img || img.width === 0) return;
 
@@ -366,12 +367,12 @@ export class Tile {
             shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${terrainVertexInjection.header}`);
             shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${terrainVertexInjection.position}`);
         };
-if (state.scene) state.scene.add(this.mesh);
-this.currentResolution = resolution;
-this.opacity = 0; 
-this.isFadingIn = true;
 
-        // --- GÉNÉRATION FORÊT (v3.9.4) ---
+        if (state.scene) state.scene.add(this.mesh);
+        this.currentResolution = resolution;
+        this.opacity = 0; 
+        this.isFadingIn = true;
+
         if (this.forestMesh && state.scene) state.scene.remove(this.forestMesh);
         this.forestMesh = createForestForTile(this);
         if (this.forestMesh && state.scene) {
@@ -420,8 +421,11 @@ export function repositionAllTiles(): void { for (const tile of activeTiles.valu
 export function animateTiles(delta: number): void { for (const tile of activeTiles.values()) { if (tile.isFadingIn) tile.updateFade(delta); } }
 
 export function lngLatToTile(lon: number, lat: number, zoom: number): { x: number; y: number; z: number } {
-    const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
-    const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
+    const n = Math.pow(2, zoom);
+    let x = Math.floor((lon + 180) / 360 * n);
+    let y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n);
+    x = Math.max(0, Math.min(n - 1, x));
+    y = Math.max(0, Math.min(n - 1, y));
     return { x, y, z: zoom };
 }
 
@@ -493,15 +497,20 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
     const currentGPS = worldToLngLat(worldX, worldZ);
     const zoom = state.ZOOM; const centerTile = lngLatToTile(currentGPS.lon, currentGPS.lat, zoom);
     
-    // --- ADAPTIVE RANGE (v3.9.7) ---
-    // Au Zoom 15, on réduit le rayon pour préserver la VRAM car les tuiles sont 4x plus nombreuses
     let range = state.RANGE;
     if (zoom >= 15) range = Math.min(2, state.RANGE); 
     
     const margin = 1; 
+    const maxTile = Math.pow(2, zoom);
+
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
-            const tx = centerTile.x + dx, ty = centerTile.y + dy, key = `${tx}_${ty}_${zoom}`;
+            const tx = centerTile.x + dx;
+            const ty = centerTile.y + dy;
+            
+            if (tx < 0 || tx >= maxTile || ty < 0 || ty >= maxTile) continue;
+
+            const key = `${tx}_${ty}_${zoom}`;
             let tile = activeTiles.get(key);
             if (!tile) {
                 tile = new Tile(tx, ty, zoom, key);
