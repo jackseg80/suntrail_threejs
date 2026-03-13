@@ -4,61 +4,67 @@ import { getAltitudeAt } from './analysis';
 import { lngLatToWorld } from './terrain';
 
 interface Signpost {
-    id: number;
-    lat: number;
-    lon: number;
-    name?: string;
+    id: number; lat: number; lon: number; name?: string;
 }
 
 const signpostMemoryCache = new Map<string, Signpost[]>();
 const signpostFetchPromises = new Map<string, Promise<Signpost[] | null>>();
+const zoneFailureCooldown = new Map<string, number>(); // ZoneKey -> Timestamp expiration
 const signpostTexture = createSignpostTexture();
 
 const CACHE_NAME = 'suntrail-poi-v1';
 const OVERPASS_SERVERS = [
-    'https://overpass.openstreetmap.fr/api/interpreter',
+    'https://overpass-api.de/api/interpreter',
     'https://lz4.overpass-api.de/api/interpreter',
-    'https://overpass.kumi.systems/api/interpreter'
+    'https://z.overpass-api.de/api/interpreter'
 ];
 let currentServerIdx = 0;
-let lastRequestTime = 0;
-const GLOBAL_FETCH_DELAY = 2500;
+let globalRequestLock = Promise.resolve(); 
 
 function createSignpostTexture(): THREE.Texture {
     const canvas = document.createElement('canvas');
     canvas.width = 64; canvas.height = 64;
     const ctx = canvas.getContext('2d');
     if (ctx) {
-        // Losange Jaune (Style Swisstopo)
         ctx.beginPath();
-        ctx.moveTo(32, 8); ctx.lineTo(56, 32); ctx.lineTo(32, 56); ctx.lineTo(8, 32);
+        ctx.moveTo(32, 10); ctx.lineTo(54, 32); ctx.lineTo(32, 54); ctx.lineTo(10, 32);
         ctx.closePath();
         ctx.fillStyle = '#FFD700'; ctx.fill();
-        ctx.strokeStyle = '#000'; ctx.lineWidth = 5; ctx.stroke();
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.stroke();
     }
-    const tex = new THREE.CanvasTexture(canvas);
-    return tex;
+    return new THREE.CanvasTexture(canvas);
 }
 
 export async function loadPOIsForTile(tile: any): Promise<THREE.Group | null> {
     if (tile.zoom < 14 || !state.SHOW_SIGNPOSTS) return null;
 
-    const zoneZ = 12;
+    // --- MEGA-ZONES Z10 (~40km) ---
+    const zoneZ = 10;
     const ratio = Math.pow(2, tile.zoom - zoneZ);
     const zx = Math.floor(tile.tx / ratio);
     const zy = Math.floor(tile.ty / ratio);
     const zoneKey = `${zoneZ}_${zx}_${zy}`;
 
+    // 1. Vérifier si la zone est en "cooldown" suite à un échec récent
+    const failTime = zoneFailureCooldown.get(zoneKey);
+    if (failTime && Date.now() < failTime) return null;
+
+    // 2. Vérifier le cache mémoire
     let signposts = signpostMemoryCache.get(zoneKey);
 
     if (!signposts) {
         let fetchPromise = signpostFetchPromises.get(zoneKey);
         if (!fetchPromise) {
-            fetchPromise = fetchPOIsWithRetry(zoneZ, zx, zy);
+            fetchPromise = fetchWithGlobalLock(zoneZ, zx, zy, zoneKey);
             signpostFetchPromises.set(zoneKey, fetchPromise);
         }
         signposts = await fetchPromise;
-        if (signposts) signpostMemoryCache.set(zoneKey, signposts);
+        if (signposts) {
+            signpostMemoryCache.set(zoneKey, signposts);
+        } else {
+            // En cas d'échec, on met la zone en sommeil 2 minutes pour ne pas harceler l'API
+            zoneFailureCooldown.set(zoneKey, Date.now() + 120000);
+        }
         signpostFetchPromises.delete(zoneKey);
     }
 
@@ -74,7 +80,14 @@ export async function loadPOIsForTile(tile: any): Promise<THREE.Group | null> {
     return createSignpostGroup(tileSignposts, tile);
 }
 
-async function fetchPOIsWithRetry(z: number, x: number, y: number): Promise<Signpost[] | null> {
+async function fetchWithGlobalLock(z: number, x: number, y: number, zoneKey: string): Promise<Signpost[] | null> {
+    const res = await globalRequestLock.then(() => fetchPOIsWithCache(z, x, y));
+    // Délai de 5s entre chaque appel global pour la v4.0.2
+    globalRequestLock = new Promise(resolve => setTimeout(resolve, 5000));
+    return res;
+}
+
+async function fetchPOIsWithCache(z: number, x: number, y: number): Promise<Signpost[] | null> {
     const cacheKey = `poi_${z}_${x}_${y}`;
     
     try {
@@ -83,18 +96,18 @@ async function fetchPOIsWithRetry(z: number, x: number, y: number): Promise<Sign
         if (cached) return await cached.json();
     } catch (e) {}
 
-    const now = Date.now();
-    const waitTime = Math.max(0, (lastRequestTime + GLOBAL_FETCH_DELAY) - now);
-    if (waitTime > 0) await new Promise(r => setTimeout(r, waitTime));
-    lastRequestTime = Date.now();
-
     const bounds = getTileBounds({ zoom: z, tx: x, ty: y });
-    const query = `[out:json][timeout:15];node["information"~"guidepost|map|board"](${bounds.south.toFixed(6)},${bounds.west.toFixed(6)},${bounds.north.toFixed(6)},${bounds.east.toFixed(6)});out body;`;
+    const query = `[out:json][timeout:60];node["information"~"guidepost|map|board"](${bounds.south.toFixed(6)},${bounds.west.toFixed(6)},${bounds.north.toFixed(6)},${bounds.east.toFixed(6)});out body;`;
     
     for (let attempt = 0; attempt < OVERPASS_SERVERS.length; attempt++) {
         const server = OVERPASS_SERVERS[currentServerIdx];
         try {
-            const response = await fetch(`${server}?data=${encodeURIComponent(query)}`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 65000);
+
+            const response = await fetch(`${server}?data=${encodeURIComponent(query)}`, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
             if (response.ok) {
                 const data = await response.json();
                 const signposts = data.elements.map((el: any) => ({
@@ -104,7 +117,10 @@ async function fetchPOIsWithRetry(z: number, x: number, y: number): Promise<Sign
                 await cache.put(cacheKey, new Response(JSON.stringify(signposts)));
                 return signposts;
             }
+
+            // Si erreur critique, on tourne sur le serveur suivant
             currentServerIdx = (currentServerIdx + 1) % OVERPASS_SERVERS.length;
+            if (response.status === 429) break; // Rate limit global, on arrête les frais pour cette zone
         } catch (e) {
             currentServerIdx = (currentServerIdx + 1) % OVERPASS_SERVERS.length;
         }
@@ -114,24 +130,18 @@ async function fetchPOIsWithRetry(z: number, x: number, y: number): Promise<Sign
 
 function createSignpostGroup(signposts: Signpost[], tile: any): THREE.Group {
     const group = new THREE.Group();
-    const material = new THREE.SpriteMaterial({ 
-        map: signpostTexture, 
-        transparent: true, 
-        depthTest: true,
-        sizeAttenuation: true 
-    });
+    const material = new THREE.SpriteMaterial({ map: signpostTexture, transparent: true, depthTest: true });
 
     signposts.forEach(poi => {
         const worldPos = lngLatToWorld(poi.lon, poi.lat);
         const localX = worldPos.x - tile.worldX;
         const localZ = worldPos.z - tile.worldZ;
-        
-        let alt = getAltitudeAt(worldPos.x, worldPos.z);
-        if (alt === 0) alt = 1500; 
+        const alt = getAltitudeAt(worldPos.x, worldPos.z);
+        if (alt === 0) return;
 
         const sprite = new THREE.Sprite(material);
         sprite.scale.set(25, 25, 1);
-        sprite.position.set(localX, alt + 10, localZ); 
+        sprite.position.set(localX, alt + 10, localZ);
         sprite.userData = { name: poi.name, id: poi.id };
         group.add(sprite);
     });

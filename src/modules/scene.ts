@@ -165,17 +165,18 @@ export async function initScene(): Promise<void> {
         if (!state.controls || !state.camera) return;
         const dx = state.controls.target.x, dz = state.controls.target.z, dist = state.camera.position.y;
         let newZoom = state.ZOOM;
-        // --- SEUILS DE ZOOM ADAPTATIFS (v3.9.7) ---
+        // --- SEUILS DE ZOOM ADAPTATIFS (v4.0.1) ---
+        // On privilégie le Zoom 13 pour la fluidité jusqu'à 8km d'altitude.
         if (state.ZOOM === 13) { 
-            if (dist < 15000) newZoom = 14; 
+            if (dist < 8000) newZoom = 14; // Switch Z14 plus bas (était 15000)
             else if (dist > 45000) newZoom = 12; 
         }
         else if (state.ZOOM === 14) { 
-            if (dist > 18000) newZoom = 13;
-            else if (dist < 5000) newZoom = 15;
+            if (dist > 10000) newZoom = 13; // Hystérésis 10km
+            else if (dist < 3500) newZoom = 15; // Switch Z15 plus bas (était 5000)
         }
         else if (state.ZOOM === 15) {
-            if (dist > 6500) newZoom = 14;
+            if (dist > 4500) newZoom = 14; // Hystérésis 4.5km
         }
         else if (state.ZOOM === 12) { 
             if (dist < 35000) newZoom = 13; 

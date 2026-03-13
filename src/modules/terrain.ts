@@ -51,7 +51,7 @@ async function processLoadQueue() {
                 return da - db;
             });
         }
-        const batch = loadQueue.splice(0, 6);
+        const batch = loadQueue.splice(0, 12);
         await Promise.all(batch.map(async (tile) => {
             try { if (tile.status === 'idle' || tile.status === 'failed') await tile.load(); }
             catch (e) { tile.status = 'failed'; }
@@ -342,12 +342,13 @@ export class Tile {
         switch(state.MAP_SOURCE) {
             case 'satellite': 
                 if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${z}/${x}/${y}.jpeg`;
-                return `https://api.maptiler.com/maps/satellite/256/${z}/${x}/${y}@2x.jpg?key=${state.MK}`;
+                // MapTiler supporte nativement le .webp pour le satellite
+                return `https://api.maptiler.com/maps/satellite/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
             case 'swisstopo': 
                 if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${z}/${x}/${y}.jpeg`;
-                return `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.png?key=${state.MK}`;
+                return `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
             case 'opentopomap': return `https://a.tile.opentopomap.org/${z}/${x}/${y}.png`;
-            default: return `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.png?key=${state.MK}`;
+            default: return `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
         }
     }
     getOverlayUrl(z: number, x: number, y: number): string { return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${z}/${x}/${y}.png`; }

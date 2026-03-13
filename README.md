@@ -1,6 +1,12 @@
-# ⛰️ SunTail 3D (v4.0.0)
+# ⛰️ SunTail 3D (v4.0.2)
 
 Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données Swisstopo / MapTiler.
+
+## ✨ Nouveautés v4.0.2 (Turbo & Stabilité)
+- **Format WebP :** Migration vers le format WebP pour toutes les sources MapTiler, réduisant le poids des tuiles de 30 à 50%.
+- **Chargement Parallèle :** Augmentation du parallélisme à 12 requêtes simultanées pour un remplissage ultra-rapide.
+- **Robustesse Signalétique :** Système de "Mega-Zones" (Z10) et file d'attente globale pour l'API Overpass, éliminant les erreurs 429/504.
+- **Seuils de Fluidité :** Optimisation des paliers de zoom pour privilégier l'exploration fluide à haute altitude.
 
 ## ✨ Nouveautés v4.0.0 (Randonnée HD)
 - **Signalétique 3D :** Affichage des panneaux de signalisation de randonnée (données OSM) directement sur le relief.

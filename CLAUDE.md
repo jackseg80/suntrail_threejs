@@ -1,4 +1,4 @@
-# SunTrail - Guide Développeur (v3.9.6)
+# SunTrail - Guide Développeur (v4.0.2)
 
 ## Architecture Technique (Full TypeScript)
 - **State Management :** État global centralisé dans `state.ts` avec interface `State` stricte.
