@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.2.3] - 2026-03-13
+### 📊 Solar Insight Dashboard
+- **Analyse Interactive :** La timeline est désormais cliquable pour déplacer instantanément le soleil à l'heure choisie et visualiser l'ombre portée.
+- **KPIs Avancés :** Affichage du lever de soleil réel (tenant compte du relief) et du cumul total d'ensoleillement.
+- **Rapport Exportable :** Nouveau bouton de copie pour extraire les données d'analyse (coordonnées, cumul, lever).
+- **Interface Premium :** Nouveau design du panneau d'analyse avec dégradés solaires et indicateurs de précision.
+
 ## [4.2.0] - 2026-03-13
 ### ☀️ Analyse Solaire Haute Précision
 - **Interpolation Bi-linéaire :** Nouveau moteur de calcul d'altitude offrant une précision métrique et un lissage parfait entre les points de données.

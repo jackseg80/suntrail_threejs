@@ -125,6 +125,13 @@ export function isSunOccluded(origin: THREE.Vector3, sunDir: THREE.Vector3): boo
     return false;
 }
 
+import { state } from './state';
+import { updateSunPosition } from './sun';
+import { activeTiles, worldToLngLat } from './terrain';
+import { showToast } from './utils';
+
+// ... (getAltitudeAt, findTerrainIntersection, isSunOccluded remain unchanged)
+
 /**
  * Lance l'analyse d'ensoleillement sur 24h (Précision 5 min - v4.2.3)
  */
@@ -133,26 +140,33 @@ export async function runSolarProbe(worldX: number, worldZ: number, altitude: nu
     const timeline = document.getElementById('probe-timeline');
     const totalDisp = document.getElementById('probe-total');
     const statusDisp = document.getElementById('probe-status');
+    const sunriseDisp = document.getElementById('probe-sunrise');
+    const coordInfo = document.getElementById('probe-coord-info');
+    const copyBtn = document.getElementById('copy-report-btn');
 
-    if (!resultOverlay || !timeline || !totalDisp || !statusDisp) return;
+    if (!resultOverlay || !timeline || !totalDisp || !statusDisp || !sunriseDisp) return;
 
     resultOverlay.style.display = 'block';
     timeline.innerHTML = '';
     totalDisp.textContent = '--h--';
+    sunriseDisp.textContent = '--:--';
     statusDisp.textContent = 'Calcul...';
 
-    const origin = new THREE.Vector3(worldX, altitude + 1, worldZ); // +1m pour être au ras du sol
+    const currentGPS = worldToLngLat(worldX, worldZ);
+    if (coordInfo) coordInfo.textContent = `LAT: ${currentGPS.lat.toFixed(4)} LON: ${currentGPS.lon.toFixed(4)}`;
+
+    const origin = new THREE.Vector3(worldX, altitude + 1, worldZ);
     const date = new Date(state.simDate);
     date.setHours(0, 0, 0, 0);
 
     let sunMinutes = 0;
-    const interval = 5; // Toutes les 5 minutes
-    const samples = 288; // 24h * 12 segments
-    const results: number[] = []; // 0: Nuit, 1: Ombre, 2: Soleil
+    let firstSunMinute = -1;
+    const interval = 5; 
+    const samples = 288; 
+    const results: number[] = []; 
 
     for (let i = 0; i < samples; i++) {
         const sampleDate = new Date(date.getTime() + i * interval * 60000);
-        const currentGPS = worldToLngLat(worldX, worldZ);
         const sunPos = SunCalc.getPosition(sampleDate, currentGPS.lat, currentGPS.lon);
         
         let res = 0;
@@ -166,38 +180,67 @@ export async function runSolarProbe(worldX: number, worldZ: number, altitude: nu
             sunDir.z = Math.cos(phi) * Math.cos(az);
             sunDir.normalize();
             
-            // On vérifie l'occlusion
             if (isSunOccluded(origin, sunDir)) {
                 res = 1;
             } else {
                 res = 2;
                 sunMinutes += interval;
+                if (firstSunMinute === -1) firstSunMinute = i * interval;
             }
         }
         results.push(res);
 
-        // Mise à jour visuelle toutes les 2h simulées (24 samples) pour fluidité
-        if (i % 24 === 0) {
-            statusDisp.textContent = `Analyse ${Math.round((i/samples)*100)}%`;
+        if (i % 36 === 0) {
+            statusDisp.textContent = `${Math.round((i/samples)*100)}%`;
             await new Promise(r => setTimeout(r, 0));
         }
     }
 
-    // Rendu de la timeline
+    // Lever de soleil effectif
+    if (firstSunMinute !== -1) {
+        const h = Math.floor(firstSunMinute / 60);
+        const m = firstSunMinute % 60;
+        sunriseDisp.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+
+    // Rendu de la timeline + Interaction
     results.forEach((res, i) => {
         const segment = document.createElement('div');
         segment.style.flex = '1';
-        // Bordure toutes les heures (tous les 12 segments de 5min)
-        if (i % 12 === 0 && i > 0) segment.style.borderLeft = '1px solid rgba(255,255,255,0.1)';
+        if (i % 12 === 0 && i > 0) segment.style.borderLeft = '1px solid rgba(255,255,255,0.05)';
         
         if (res === 0) segment.style.background = '#000';
-        else if (res === 1) segment.style.background = '#444';
-        else segment.style.background = '#ffd700';
+        else if (res === 1) segment.style.background = '#333';
+        else segment.style.background = 'linear-gradient(to bottom, #ffd700, #f59e0b)';
+
+        // Interaction au survol/clic
+        segment.addEventListener('click', () => {
+            const minutes = i * interval;
+            const timeSlider = document.getElementById('time-slider') as HTMLInputElement;
+            if (timeSlider) {
+                timeSlider.value = minutes.toString();
+                updateSunPosition(minutes);
+            }
+            // Feedback visuel sur la timeline
+            Array.from(timeline.children).forEach(c => (c as HTMLElement).style.opacity = '1');
+            segment.style.opacity = '0.5';
+        });
+
         timeline.appendChild(segment);
     });
 
     const hours = Math.floor(sunMinutes / 60);
     const mins = sunMinutes % 60;
-    totalDisp.textContent = `${hours}h${mins.toString().padStart(2, '0')}`;
-    statusDisp.textContent = 'Terminé';
+    const totalStr = `${hours}h${mins.toString().padStart(2, '0')}`;
+    totalDisp.textContent = totalStr;
+    statusDisp.textContent = 'Précision 5m';
+
+    // Bouton de copie
+    if (copyBtn) {
+        copyBtn.onclick = () => {
+            const report = `SunTrail Solar Report\nLocation: ${currentGPS.lat.toFixed(5)}, ${currentGPS.lon.toFixed(5)}\nTotal Sunlight: ${totalStr}\nActual Sunrise: ${sunriseDisp.textContent}`;
+            navigator.clipboard.writeText(report);
+            showToast("📋 Rapport copié");
+        };
+    }
 }

@@ -15,7 +15,7 @@
 
 <div id="setup-screen">
     <div class="setup-card">
-        <div style="margin-bottom:8px; font-size:10px; color:var(--gold); font-weight:700; letter-spacing:3px; text-transform:uppercase;">Version 4.0.3</div>
+        <div style="margin-bottom:8px; font-size:10px; color:var(--gold); font-weight:700; letter-spacing:3px; text-transform:uppercase;">Version 4.2.0</div>
         <h1>⛰️ SunTrail 3D</h1>
         <p style="color:var(--t2);">Explorez les reliefs de Suisse et du monde avec une simulation solaire haute précision en temps réel.</p>
         
@@ -30,7 +30,7 @@
         <button class="btn-go" id="bgo">Lancer l'expérience</button>
         
         <div style="margin-top:40px; font-size:11px; color:rgba(255,255,255,0.2); text-transform:uppercase; letter-spacing:2px;">
-            SunTrail v4.0.3 • Jackseg • Three.js
+            SunTrail v4.2.0 • Jackseg • Three.js
         </div>
     </div>
 </div>
@@ -79,7 +79,7 @@
 <div id="gps-btn" class="ui-element" style="display:none;" title="Ma position">🎯</div>
 <div id="gps-follow-btn" class="ui-element" style="display:none;" title="Suivre ma position">🚶</div>
 
-<!-- BOUTON CAPTURE (v4.1.0) -->
+<!-- BOUTON CAPTURE -->
 <div id="screenshot-btn" class="ui-element" style="display:none; position:fixed; top:200px; right:20px; width:50px; height:50px; background:var(--panel); backdrop-filter:var(--glass); border:1px solid var(--border); border-radius:12px; z-index:1000; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 5px 15px rgba(0,0,0,0.3);" title="Capturer la vue">📸</div>
 
 <!-- BARRE DE TEMPS BASSE -->
@@ -207,7 +207,7 @@
     </div>
 </div>
 
-<!-- PROFIL D'ALTITUDE (v4.0.3) -->
+<!-- PROFIL D'ALTITUDE -->
 <div id="elevation-profile" class="ui-element" style="display:none; position:fixed; bottom:100px; left:50%; transform:translateX(-50%); width:calc(100% - 40px); max-width:800px; height:120px; background:var(--panel); border:1px solid var(--border); border-radius:16px; backdrop-filter:var(--glass); z-index:400; padding:15px; box-shadow:0 10px 30px rgba(0,0,0,0.5); overflow:hidden;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <span style="font-size:11px; color:var(--gold); font-weight:700; text-transform:uppercase; letter-spacing:1px;">Profil Altimétrique</span>
@@ -232,29 +232,41 @@
     <button id="probe-btn" style="pointer-events:auto; margin-top:10px; width:100%; padding:8px; border-radius:8px; background:var(--accent); color:white; border:none; font-weight:700; cursor:pointer; font-size:11px;">☀️ ANALYSE SOLAIRE</button>
 </div>
 
-<!-- OVERLAY ANALYSE SOLAIRE (v4.0.3) -->
-<div id="probe-result" class="ui-element" style="display:none; position:fixed; bottom:160px; left:20px; width:400px; background:var(--panel-solid); border:1px solid var(--border); border-radius:24px; padding:25px; z-index:1000; box-shadow:0 20px 50px rgba(0,0,0,0.6); backdrop-filter:var(--glass);">
+<!-- OVERLAY ANALYSE SOLAIRE (v4.2.3) -->
+<div id="probe-result" class="ui-element" style="display:none; position:fixed; bottom:160px; left:20px; width:420px; background:var(--panel-solid); border:1px solid var(--border); border-radius:24px; padding:25px; z-index:1000; box-shadow:0 20px 50px rgba(0,0,0,0.6); backdrop-filter:var(--glass);">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <h3 style="margin:0; font-size:16px; color:var(--gold); text-transform:uppercase; letter-spacing:1px;">Analyse d'ensoleillement</h3>
-        <button id="close-probe" style="background:none; border:none; color:var(--t2); font-size:24px; cursor:pointer;">×</button>
+        <h3 style="margin:0; font-size:16px; color:var(--gold); text-transform:uppercase; letter-spacing:1px;">📊 Solar Insight</h3>
+        <button id="close-probe" style="background:none; border:none; color:var(--t2); font-size:24px; cursor:pointer;">&times;</button>
     </div>
-    <div id="probe-timeline" style="height:45px; background:rgba(255,255,255,0.05); border-radius:10px; overflow:hidden; display:flex; margin-bottom:8px; border:1px solid rgba(255,255,255,0.1);"></div>
     
-    <!-- Échelle des heures -->
-    <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--t2); margin-bottom:20px; padding:0 5px; font-weight:500;">
-        <span>0h</span><span>4h</span><span>8h</span><span>12h</span><span>16h</span><span>20h</span><span>24h</span>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:25px;">
+        <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:16px; border:1px solid var(--border);">
+            <div style="font-size:10px; color:var(--t2); text-transform:uppercase; margin-bottom:5px;">Total Sunlight</div>
+            <div id="probe-total" style="font-size:24px; font-weight:700; color:var(--gold);">--h--</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:16px; border:1px solid var(--border);">
+            <div style="font-size:10px; color:var(--t2); text-transform:uppercase; margin-bottom:5px;">Actual Sunrise</div>
+            <div id="probe-sunrise" style="font-size:24px; font-weight:700; color:var(--t1);">--:--</div>
+        </div>
     </div>
 
-    <!-- Légende -->
-    <div style="display:flex; justify-content:space-around; font-size:12px; margin-bottom:20px; padding:15px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); background:rgba(255,255,255,0.02); border-radius:12px;">
-        <div style="display:flex; align-items:center; gap:6px;"><div style="width:12px; height:12px; background:#ffd700; border-radius:3px; box-shadow:0 0 10px rgba(255,215,0,0.3);"></div> Soleil</div>
-        <div style="display:flex; align-items:center; gap:6px;"><div style="width:12px; height:12px; background:#444; border-radius:3px;"></div> Ombre</div>
-        <div style="display:flex; align-items:center; gap:6px;"><div style="width:12px; height:12px; background:#000; border-radius:3px;"></div> Nuit</div>
+    <div style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:11px; color:var(--t2);">00h</span>
+        <span id="probe-status" style="font-size:11px; color:var(--accent); font-weight:700;">Prêt</span>
+        <span style="font-size:11px; color:var(--t2);">24h</span>
+    </div>
+    
+    <div id="probe-timeline" style="display:flex; height:35px; border-radius:10px; overflow:hidden; background:#1a1c23; margin-bottom:20px; cursor:pointer; border:1px solid var(--border);"></div>
+
+    <div style="display:flex; gap:15px; font-size:11px; color:var(--t2); margin-bottom:20px;">
+        <div style="display:flex; align-items:center; gap:6px;"><div style="width:10px; height:10px; background:#ffd700; border-radius:2px;"></div> Sun</div>
+        <div style="display:flex; align-items:center; gap:6px;"><div style="width:10px; height:10px; background:#444; border-radius:2px;"></div> Shadow</div>
+        <div style="display:flex; align-items:center; gap:6px;"><div style="width:10px; height:10px; background:#000; border-radius:2px;"></div> Night</div>
     </div>
 
-    <div style="display:flex; justify-content:space-between; align-items:center; font-size:15px; color:var(--t1);">
-        <span>Cumul : <span id="probe-total" style="font-weight:700; color:var(--gold); font-size:18px;">--h--</span></span>
-        <span id="probe-status" style="color:var(--accent); font-size:12px; font-weight:700; text-transform:uppercase;">Prêt</span>
+    <div style="padding-top:15px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+        <button id="copy-report-btn" style="background:none; border:none; color:var(--accent); font-size:12px; font-weight:700; cursor:pointer; text-transform:uppercase; padding:0;">📋 Copy Report</button>
+        <div id="probe-coord-info" style="font-size:10px; color:var(--t2); font-family:monospace;">Coord: --, --</div>
     </div>
 </div>
 
