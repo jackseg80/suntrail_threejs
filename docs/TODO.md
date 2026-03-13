@@ -10,7 +10,9 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 
 ## 🏁 En cours (v3.9.5) - Randonnée HD
 - [ ] **Panneaux de Signalisation** : Affichage des icônes officielles de randonnée (Swisstopo) sur les carrefours importants.
-- [ ] **Optimisation VRAM Végétation** : Gestion dynamique du nombre d'arbres selon les performances réelles du device.
+- [x] **Optimisation VRAM Végétation** : Gestion dynamique de la densité et de la portée selon le profil de performance.
+- [x] **Frustum Culling Avancé** : Calcul précis des sphères de délimitation pour les forêts instanciées.
+- [x] **Monitoring Mémoire** : Estimation de la VRAM en Mo dans le panel de statistiques.
 
 ## ✅ Terminé (v3.9.4)
 - [x] **Forêts 3D Denses** : Plantation de milliers d'arbres via `InstancedMesh`.
@@ -66,6 +68,7 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [ ] Transition vers `@capacitor/assets` pour toutes les plateformes (iOS inclus).
 
 ## 🎨 UX / UI
+- [ ] **Interface Éphémère** : Masquage automatique des contrôles après inactivité pour maximiser la vue 3D (réapparition au clic/touch).
 - [ ] Mode sombre/clair synchronisé avec le système.
 - [ ] Partage de capture d'écran du rendu 3D.
 - [ ] Graphique d'élévation dynamique pour les fichiers GPX.

@@ -11,6 +11,12 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Mode Suivi Automatique :** Nouveau bouton "Suivre ma position" permettant de garder la caméra centrée sur l'utilisateur durant ses déplacements.
 - **Positionnement Intelligent :** Le marqueur utilise un mix entre l'altitude GPS et l'altitude du relief local pour rester visible même en cas de signal GPS imprécis.
 
+### 🚀 Optimisations VRAM & Performance
+- **Végétation Adaptative :** La densité des forêts et leur portée d'affichage sont désormais liées dynamiquement au profil de performance choisi (Éco, Standard, High, Ultra).
+- **Culling Avancé :** Implémentation d'une vérification de distance et d'un Frustum Culling optimisé pour les forêts instanciées, réduisant drastiquement les draw calls inutiles.
+- **Monitoring VRAM Précis :** Le panel de statistiques affiche désormais une estimation réaliste de la consommation mémoire GPU en Mega-Octets (Mo).
+- **Nettoyage Automatique :** Amélioration du cycle de vie des tuiles pour garantir la libération immédiate des ressources lors des déplacements rapides.
+
 ## [3.9.4] - 2026-03-12
 ### ✨ Ajouté
 - **Forêts 3D Denses :** Système de végétation haute performance capable d'afficher jusqu'à 12 000 arbres par tuile.

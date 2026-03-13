@@ -67,6 +67,8 @@ export function applyPreset(preset: PresetType): void {
     state.SHADOW_RES = settings.SHADOW_RES;
     state.PIXEL_RATIO_LIMIT = settings.PIXEL_RATIO_LIMIT;
     state.SHOW_VEGETATION = settings.SHOW_VEGETATION;
+    state.VEGETATION_DENSITY = settings.VEGETATION_DENSITY;
+    state.VEGETATION_RANGE = settings.VEGETATION_RANGE;
 
     // Mise à jour de l'UI si nécessaire (ex: sliders)
     updatePerformanceUI(preset);

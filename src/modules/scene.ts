@@ -270,7 +270,12 @@ export async function initScene(): Promise<void> {
         if (state.vramPanel) {
             const textures = state.renderer.info.memory.textures;
             const geometries = state.renderer.info.memory.geometries;
-            state.vramPanel.update(textures + geometries, 200); 
+            
+            // Estimation plus réaliste de la VRAM (approximation)
+            // - Tuile 512x512 RGB/RGBA ~ 1.0 MB
+            // - Géométrie ~ 0.1 MB
+            const estimatedMB = (textures * 1.2) + (geometries * 0.1);
+            state.vramPanel.update(estimatedMB, 1024); // Limite à 1024 MB pour l'échelle du graphique
         }
 
         state.stats.end();
