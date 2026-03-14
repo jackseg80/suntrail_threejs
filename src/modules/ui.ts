@@ -254,13 +254,18 @@ function openExpertWeatherPanel() {
     getSet('ex-vis', `${(state.weatherData.visibility || 0).toFixed(1)} km`);
     getSet('ex-precip', `${Math.round(state.weatherData.precProb || 0)} %`);
     getSet('ex-dew', `${(state.weatherData.dewPoint || 0).toFixed(1)}°C`);
-    
-    getSet('ex-golden', state.weatherData.goldenHour || '--:--');
-    getSet('ex-blue', state.weatherData.blueHour || '--:--');
     getSet('ex-freezing', `${Math.round(state.weatherData.freezingLevel || 0)} m`);
     
-    const mi = document.getElementById('ex-moon-icon'); if (mi) mi.textContent = state.weatherData.moonPhase || '🌑';
-    getSet('ex-moon-text', `${state.weatherData.moonIllum || 0}% illuminée`);
+    if (state.ephemeris) {
+        getSet('ex-golden', state.ephemeris.goldenHour || '--:--');
+        getSet('ex-blue', state.ephemeris.blueHour || '--:--');
+        const mi = document.getElementById('ex-moon-icon'); if (mi) mi.textContent = state.ephemeris.moonPhaseIcon || '🌑';
+        getSet('ex-moon-text', `${state.ephemeris.moonPhaseText} (${state.ephemeris.moonIllum || 0}%)`);
+    } else {
+        getSet('ex-golden', '--:--');
+        getSet('ex-blue', '--:--');
+        getSet('ex-moon-text', '--');
+    }
 
     const chart = document.getElementById('ex-chart-container')!;
     if (state.weatherData.hourly) {

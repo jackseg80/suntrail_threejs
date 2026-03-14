@@ -14,6 +14,7 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ## [4.5.35] - 2026-03-14
 ### 🧹 Clean Architecture & Refactoring
+- **Centralisation Météo/Soleil (Phase 1.2)** : Suppression des calculs redondants de `SunCalc` dans la météo. Les éphémérides (heure dorée, phase lunaire) sont désormais gérées globalement par `sun.ts` via `state.ephemeris`, assurant une cohérence parfaite sur toute l'interface.
 - **Découpage de `scene.ts` (Phase 1.1)** : Extraction de la logique de la boussole 3D (initialisation, rendu, animation) vers un module dédié `compass.ts`. Allègement significatif du fichier principal et ajout de tests unitaires dédiés.
 
 ## [4.5.34] - 2026-03-14

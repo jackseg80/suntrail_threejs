@@ -80,8 +80,11 @@ export interface State {
         windGusts?: number; dewPoint?: number;
         humidity: number; cloudCover: number; locationName?: string;
         freezingLevel?: number; uvIndex?: number; visibility?: number; precProb?: number;
-        goldenHour?: string; blueHour?: string; moonPhase?: string; moonIllum?: number;
         hourly?: { time: string; temp: number; code: number }[];
+    } | null;
+    ephemeris: {
+        sunrise: string; sunset: string; goldenHour: string; blueHour: string;
+        moonPhase: string; moonIllum: number;
     } | null;
 }
 
@@ -101,5 +104,6 @@ export const state: State = {
     scene: null, camera: null, renderer: null, controls: null, sunLight: null, ambientLight: null, sky: null,
     stats: null, vramPanel: null, rawGpxData: null, gpxPoints: [], gpxMesh: null, profileMarker: null, trailProgress: 0, isFollowingTrail: false,
     userLocation: null, userHeading: null, isFollowingUser: false, userMarker: null, networkRequests: 0, cacheHits: 0,
-    uiVisible: true, lastUIInteraction: Date.now(), currentWeather: 'clear', weatherIntensity: 0, weatherData: null
+    uiVisible: true, lastUIInteraction: Date.now(), currentWeather: 'clear', weatherIntensity: 0, weatherData: null,
+    ephemeris: null
 };

@@ -41,18 +41,10 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
         const current = data.current || data.current_weather;
         const code = current?.weather_code ?? current?.weathercode ?? 0;
 
-        const date = new Date();
-        const times = SunCalc.getTimes(date, lat, lon);
-        const moonIllum = SunCalc.getMoonIllumination(date);
-        
-        const fmtTime = (d: Date) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-        
-        const phases = ['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];
-        const phaseIdx = Math.floor(moonIllum.phase * 8) % 8;
-
         // --- LOGIQUE DE DÉCALAGE TEMPOREL (FIX v4.5.5) ---
         // On trouve l'index de l'heure actuelle dans les données horaires
-        const nowISO = new Date().toISOString().split(':')[0] + ':00';
+        const date = new Date();
+        const nowISO = date.toISOString().split(':')[0] + ':00';
         let startIndex = data.hourly.time.findIndex((t: string) => t.startsWith(nowISO));
         if (startIndex === -1) startIndex = date.getHours();
 
@@ -97,10 +89,6 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
                 freezingLevel: data.hourly?.freezing_level_height[startIndex] || 0,
                 visibility: (data.hourly?.visibility[startIndex] || 0) / 1000,
                 precProb: data.hourly?.precipitation_probability[startIndex] || 0,
-                goldenHour: fmtTime(times.goldenHour),
-                blueHour: fmtTime(times.dawn),
-                moonPhase: phases[phaseIdx],
-                moonIllum: Math.round(moonIllum.fraction * 100),
                 hourly: hourlyForecast
             };
         }

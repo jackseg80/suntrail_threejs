@@ -68,20 +68,35 @@ export function updateSunPosition(minutes: number): void {
     const sunsetDisp = document.getElementById('sunset-disp');
     if (sunsetDisp) sunsetDisp.textContent = fmt(times.sunset);
     
+    let moonPhaseText = "Inconnue";
+    const p = moonIllum.phase;
+    if (p < 0.05 || p > 0.95) moonPhaseText = "Nouvelle";
+    else if (p < 0.2) moonPhaseText = "Premier Croissant";
+    else if (p < 0.3) moonPhaseText = "Premier Quartier";
+    else if (p < 0.45) moonPhaseText = "Gibbeuse Croissante";
+    else if (p < 0.55) moonPhaseText = "Pleine";
+    else if (p < 0.7) moonPhaseText = "Gibbeuse Décroissante";
+    else if (p < 0.8) moonPhaseText = "Dernier Quartier";
+    else moonPhaseText = "Dernier Croissant";
+
+    const phasesIcons = ['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];
+    const phaseIdx = Math.floor(p * 8) % 8;
+
     const moonDisp = document.getElementById('moon-phase-disp');
     if (moonDisp) {
-        let moonPhaseText = "Inconnue";
-        const p = moonIllum.phase;
-        if (p < 0.05 || p > 0.95) moonPhaseText = "Nouvelle";
-        else if (p < 0.2) moonPhaseText = "Premier Croissant";
-        else if (p < 0.3) moonPhaseText = "Premier Quartier";
-        else if (p < 0.45) moonPhaseText = "Gibbeuse Croissante";
-        else if (p < 0.55) moonPhaseText = "Pleine";
-        else if (p < 0.7) moonPhaseText = "Gibbeuse Décroissante";
-        else if (p < 0.8) moonPhaseText = "Dernier Quartier";
-        else moonPhaseText = "Dernier Croissant";
         moonDisp.textContent = `${moonPhaseText} (${(moonIllum.fraction * 100).toFixed(0)}%)`;
     }
+
+    // --- ENREGISTREMENT DANS LE STATE GLOBAL (Refactoring Phase 1.2) ---
+    state.ephemeris = {
+        sunrise: fmt(times.sunrise),
+        sunset: fmt(times.sunset),
+        goldenHour: fmt(times.goldenHour),
+        blueHour: fmt(times.dawn),
+        moonPhaseText: moonPhaseText,
+        moonPhaseIcon: phasesIcons[phaseIdx],
+        moonIllum: Math.round(moonIllum.fraction * 100)
+    };
     
     // --- POSITION FINALE POUR LE MOTEUR 3D ---
     let finalPhi = pos.altitude;
