@@ -5,7 +5,7 @@ import { Geolocation } from '@capacitor/geolocation';
 import { state } from './state';
 import { updateSunPosition } from './sun';
 import { initScene } from './scene';
-import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain, autoSelectMapSource, deleteTerrainCache } from './terrain';
+import { updateVisibleTiles, resetTerrain, updateGPXMesh, deleteTerrainCache, loadTerrain, autoSelectMapSource } from './terrain';
 import { lngLatToTile, worldToLngLat } from './geo';
 import { showToast } from './utils';
 import { applyPreset, detectBestPreset } from './performance';
@@ -30,10 +30,10 @@ export function initUI(): void {
         const id = target.id;
 
         if (id === 'bgo') go();
-        if (id === 'settings-toggle') document.getElementById('panel')!.classList.add('open');
-        if (id === 'close-panel') document.getElementById('panel')!.classList.remove('open');
+        if (target.closest('#settings-toggle')) document.getElementById('panel')!.classList.add('open');
+        if (target.closest('#close-panel')) document.getElementById('panel')!.classList.remove('open');
 
-        if (id === 'layer-btn') {
+        if (target.closest('#layer-btn')) {
             const menu = document.getElementById('layer-menu');
             if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
         }
@@ -69,15 +69,14 @@ export function initUI(): void {
             if (state.isFollowingUser) { await startLocationTracking(); centerOnUser(); }
         }
 
-        // MÉTÉO (Simple & Expert)
+        // MÉTÉO
         if (id === 'zoom-indicator' || target.closest('#zoom-indicator') || id === 'weather-clickable') {
             openWeatherPanel();
         }
         if (id === 'close-weather') document.getElementById('weather-panel')!.style.display = 'none';
         
         if (id === 'open-expert-weather') {
-            const wp = document.getElementById('weather-panel');
-            if (wp) wp.style.display = 'none';
+            document.getElementById('weather-panel')!.style.display = 'none';
             openExpertWeatherPanel();
         }
         if (id === 'close-expert-weather') document.getElementById('expert-weather-panel')!.style.display = 'none';
@@ -116,7 +115,7 @@ export function initUI(): void {
         }
     });
 
-    // --- ÉCOUTEURS D'INPUTS (SLIDERS / CHECKBOXES) ---
+    // --- ÉCOUTEURS D'INPUTS ---
     const hookInput = (id: string, callback: (val: any) => void) => {
         document.getElementById(id)?.addEventListener('input', (e) => callback((e.target as HTMLInputElement).value));
     };
@@ -214,7 +213,7 @@ function openWeatherPanel() {
     if (hCont && state.weatherData.hourly) {
         hCont.innerHTML = state.weatherData.hourly.slice(0, 24).map(h => `
             <div style="min-width:65px; background:rgba(255,255,255,0.03); padding:10px; border-radius:12px; text-align:center; border:1px solid var(--border); flex-shrink:0;">
-                <div style="font-size:10px; color:var(--t2); margin-bottom:5px;">${h.time}</div>
+                <div style="font-size:10px; color:var(--t2); mb:4px;">${h.time}</div>
                 <div style="font-size:18px; margin-bottom:5px;">${h.code >= 51 ? (h.code >= 71 ? '❄️' : '🌧️') : '☀️'}</div>
                 <div style="font-size:12px; font-weight:700;">${Math.round(h.temp)}°</div>
             </div>
