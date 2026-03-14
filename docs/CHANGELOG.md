@@ -12,6 +12,17 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Correctif Ombres :** recalibrage du frustum d'ombre (50km) pour une projection fidèle des sommets sur les vallées.
 - **UI Météo :** Intégration du Dashboard expert avec Isotherme 0°C, UV et prévisions horaires sur 6h.
 
+## [4.5.7] - 2026-03-14
+### ☁️ Station Météo Expert & Ergonomie Mobile
+- **Expert Dashboard (Central) :** Nouveau panneau majestueux avec graphique de tendance 24h, éphémérides photo et radars de sécurité.
+- **Météogramme Interactif :** Visualisation dynamique de la température et du ciel sur 24h (Jaune=Soleil, Bleu=Précipitations).
+- **Éphéméride Photo :** Calcul des Heures Dorées (Golden Hour) et Heures Bleues (Blue Hour) pour chaque lieu cliqué.
+- **Cycle Lunaire :** Intégration de la phase réelle de la lune et de son pourcentage d'illumination.
+- **Sécurité Montagne :** Nouveaux indicateurs de rafales max, visibilité réelle (km) et probabilité de précipitations.
+- **Ergonomie Mobile (Portrait) :** Refonte responsive du dashboard (passage automatique en mode colonne) et fix de la visibilité du calendrier.
+- **Optimisation PC :** Ajout du défilement horizontal à la molette pour les prévisions horaires.
+- **Recherche :** Restauration de la barre de recherche topographique en haut de l'écran.
+
 ## [4.4.1] - 2026-03-14
 ### 🛠️ Stabilization & Pro Architecture
 - **Global Click Delegation:** Implemented a "Bunker" UI architecture using document-level event delegation, ensuring buttons (Solar Insight, Weather) never become unresponsive during dynamic updates.

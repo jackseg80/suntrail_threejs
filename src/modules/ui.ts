@@ -286,7 +286,12 @@ async function go() {
     const ss = document.getElementById('setup-screen'); if (ss) ss.style.display = 'none';
     const zi = document.getElementById('zoom-indicator'); if (zi) zi.style.display = 'block';
     const bb = document.getElementById('bottom-bar'); if (bb) bb.style.display = 'block';
+    const ts = document.getElementById('top-search-container'); if (ts) ts.style.display = 'block';
     
+    // Initialisation Date (v4.5.6)
+    const dateInput = document.getElementById('date-input') as HTMLInputElement;
+    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+
     ['layer-btn', 'settings-toggle', 'gps-btn', 'gps-follow-btn', 'screenshot-btn'].forEach(id => {
         const el = document.getElementById(id); if (el) el.style.display = 'flex';
     });
