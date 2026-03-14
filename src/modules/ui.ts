@@ -33,7 +33,7 @@ export function initUI(): void {
         if (target.closest('#settings-toggle')) document.getElementById('panel')!.classList.add('open');
         if (target.closest('#close-panel')) document.getElementById('panel')!.classList.remove('open');
 
-        if (target.closest('#layer-btn')) {
+        if (id === 'layer-btn' || target.closest('#layer-btn')) {
             const menu = document.getElementById('layer-menu');
             if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
         }
