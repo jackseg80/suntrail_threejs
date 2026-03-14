@@ -45,5 +45,10 @@ describe('state.ts', () => {
             expect(PRESETS.balanced.RESOLUTION).toBe(96);
             expect(PRESETS.balanced.SHADOW_RES).toBe(512);
         });
+
+        it('should have a performance preset with 160 resolution', () => {
+            expect(PRESETS.performance.RESOLUTION).toBe(160);
+            expect(PRESETS.performance.RANGE).toBe(4);
+        });
     });
 });
