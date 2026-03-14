@@ -4,6 +4,11 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.3.44] - 2026-03-14
+### ✨ Optimisation Finale & Stabilité
+- **Version Cumulative :** Regroupement de toutes les optimisations de performance et corrections de stabilité mondiale (Origin Shift, Lat/Lon Fix).
+- **README Refonte :** Mise à jour de la documentation pour refléter le nouvel état du moteur "Zero-Stutter".
+
 ## [4.3.43] - 2026-03-14
 ### 🛠️ Stabilité & Robustesse Mondiale
 - **Inversion Lat/Lon Fix :** Correction d'une inversion critique des coordonnées dans le re-centrage du monde (Origin Shift), résolvant les écrans noirs.

@@ -1,13 +1,14 @@
-# ⛰️ SunTrail 3D (v4.3.26)
+# ⛰️ SunTrail 3D (v4.3.44)
 
 Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données Swisstopo / MapTiler.
 
-## ✨ Nouveautés v4.3.26 (Fluidité Extrême & Zero Latence)
-- **Zero-Stutter Zoom :** Séquençage intelligent du chargement des détails (POI, bâtiments, forêt) pour éliminer les saccades lors du zoom.
-- **Ombres Statiques Intelligentes :** Les ombres ne sont recalculées que si le soleil bouge, libérant le GPU pendant l'exploration de la caméra.
-- **Smart GPX Geometry :** Optimisation radicale de la génération du tracé GPX avec mise à jour adaptative (gain CPU massif).
-- **Végétation Non-Bloquante :** Génération asynchrone des forêts par petits lots pour maintenir 60/120 FPS constants.
-- **Cache de Proximité Altitude :** Nouveau système de cache spatial pour les collisions sol, divisant par 10 la charge CPU de la boucle de rendu.
+## ✨ Nouveautés v4.3.44 (Stabilité Mondiale & Fluidité)
+- **Zero-Stutter Engine :** Séquençage asynchrone des détails (Arbres, Bâtiments, POI) et limitation du maillage par cycle pour une fluidité constante (120 FPS stables sur RTX 4080).
+- **Navigation Spatiale Robuste :** Correction du re-centrage du monde (Origin Shift) et des inversions de coordonnées pour une exploration sans limite de la Suisse vers le monde entier.
+- **LOD Haute Définition :** Recalibration des seuils pour afficher les détails 3D beaucoup plus haut (Zoom 14 dès 20km).
+- **Gestion Éco des Ombres :** Mise à jour des ombres uniquement sur mouvement du soleil, économisant 80% de ressources GPU lors de l'exploration.
+- **Réglages Expert :** Nouveau panneau permettant de piloter la densité de végétation et la vitesse de chargement séquentiel.
+- **Sûreté Géographique :** Filtrage intelligent des calques locaux (Wanderwege) pour éviter les erreurs hors-zone.
 
 ## ✨ Nouveautés v4.3.25 (Optimisation & Rendu)
 - **Ombres de Montagne Réelles :** Les sommets projettent désormais des ombres réalistes sur les vallées (Custom Depth Material), offrant une immersion digne des versions les plus abouties.
