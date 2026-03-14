@@ -1,14 +1,13 @@
-# ⛰️ SunTrail 3D (v4.3.44)
+# ⛰️ SunTrail 3D (v4.3.63)
 
 Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données Swisstopo / MapTiler.
 
-## ✨ Nouveautés v4.3.44 (Stabilité Mondiale & Fluidité)
-- **Zero-Stutter Engine :** Séquençage asynchrone des détails (Arbres, Bâtiments, POI) et limitation du maillage par cycle pour une fluidité constante (120 FPS stables sur RTX 4080).
-- **Navigation Spatiale Robuste :** Correction du re-centrage du monde (Origin Shift) et des inversions de coordonnées pour une exploration sans limite de la Suisse vers le monde entier.
-- **LOD Haute Définition :** Recalibration des seuils pour afficher les détails 3D beaucoup plus haut (Zoom 14 dès 20km).
-- **Gestion Éco des Ombres :** Mise à jour des ombres uniquement sur mouvement du soleil, économisant 80% de ressources GPU lors de l'exploration.
-- **Réglages Expert :** Nouveau panneau permettant de piloter la densité de végétation et la vitesse de chargement séquentiel.
-- **Sûreté Géographique :** Filtrage intelligent des calques locaux (Wanderwege) pour éviter les erreurs hors-zone.
+## ✨ Nouveautés v4.3.63 (Navigation & Immersion HD)
+- **Décollage Global :** Démarrage et recherche de lieux en vue régionale HD (LOD 12) pour un meilleur contexte géographique.
+- **Trajectoire Parabolique :** Zoom intelligent (Auto-Tilt) qui redresse la vue vers la 2D en montant et l'incline vers le relief en descendant.
+- **Turbo Space Engine :** Rendu 2D ultra-léger pour les hautes altitudes (Space View), économisant 50% de ressources.
+- **Boussole Interactive :** Boussole 3D native avec points cardinaux HD.
+- **LOD Stable :** Calcul de résolution insensible à l'inclinaison pour une image calme et stable.
 
 ## ✨ Nouveautés v4.3.25 (Optimisation & Rendu)
 - **Ombres de Montagne Réelles :** Les sommets projettent désormais des ombres réalistes sur les vallées (Custom Depth Material), offrant une immersion digne des versions les plus abouties.

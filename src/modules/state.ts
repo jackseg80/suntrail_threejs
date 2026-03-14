@@ -170,7 +170,7 @@ export const state: State = {
     simDate: new Date(),
     TARGET_LAT: 46.6863, // Spiez
     TARGET_LON: 7.6617,
-    ZOOM: 13, 
+    ZOOM: 12, // Zoom initial à 12 (v4.3.62)
     
     // ... (paramètres performance identiques)
     PERFORMANCE_PRESET: 'balanced',
@@ -207,7 +207,7 @@ export const state: State = {
     // Position initiale
     initialLat: 46.6863,
     initialLon: 7.6617,
-    originTile: { x: 0, y: 0, z: 13 },
+    originTile: { x: 0, y: 0, z: 12 }, // Zoom initial à 12 (v4.3.62)
     
     // Three.js instances
     scene: null,

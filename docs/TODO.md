@@ -2,11 +2,13 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
+## ✅ Terminé (v4.3.63)
+- [x] **Global Overview** : Vue régionale (LOD 12) au démarrage et à la recherche.
+- [x] **Parabolic Zoom** : Trajectoire de caméra organique avec Auto-Tilt.
+- [x] **2D Space Optimization** : Désactivation du relief en haute altitude.
+- [x] **Compass Fix** : Restauration des points cardinaux N/S/E/O.
+
 ## ✅ Terminé (v4.3.44)
-- [x] **Zero-Stutter Engine** : Fluidité totale sur RTX 4080 / i9.
-- [x] **Stabilité Mondiale** : Navigation sans plantage hors-frontière.
-- [x] **Predictive Loading** : Pré-chargement des tuiles LOD+1/-1.
-- [x] **Expert Settings** : Contrôles UI de densité et de vitesse.
 
 ## ✅ Terminé (v4.3.26)
 - [x] **Bâtiments 3D (LOD léger)** : Extrusion simplifiée des volumes urbains (OSM) avec Geometry Merging.
@@ -25,9 +27,10 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [x] **Capture d'écran 3D** : Export PNG sans interface.
 
 ## 🏁 Prochainement (v4.4+) - Immersion Atmosphérique
-- [ ] **Météo Dynamique** : Effets de pluie et neige en temps réel basés sur le GPS.
-- [ ] **Moteur QuadTree Natif** : Mélange dynamique de résolutions (v5.0).
-- [ ] **Recherche de Sommets AR** : Identification des pics via le flux caméra.
+- [ ] **Météo Dynamique** (v4.4) : Effets de pluie et neige en temps réel basés sur le GPS.
+- [ ] **Recherche & Intelligence** (v4.5) : Moteur de recherche de sommets et fiches détaillées POI.
+- [ ] **Identification Sommets AR** (v4.6) : Identification des pics via le flux caméra (Réalité Augmentée).
+- [ ] **Moteur QuadTree Natif** (v5.0) : Mélange dynamique de résolutions.
 
 ## 💼 Stratégie Business & Diversification
 - [ ] **Monétisation B2C** : Modèle Freemium.

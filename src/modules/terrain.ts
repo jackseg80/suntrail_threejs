@@ -245,24 +245,32 @@ export class Tile {
         try {
             this.updateHybridSettings();
             
-            let elevZoom = Math.min(this.zoom, 14);
-            let elevTx = this.tx; let elevTy = this.ty;
-            if (this.zoom > 14) {
-                const ratio = Math.pow(2, this.zoom - 14);
-                elevTx = Math.floor(this.tx / ratio); elevTy = Math.floor(this.ty / ratio);
-            }
+            // --- OPTIMISATION 2D HAUTE ALTITUDE (v4.3.58) ---
+            if (this.zoom <= 10) {
+                const dummy = document.createElement('canvas'); dummy.width = 2; dummy.height = 2;
+                const dCtx = dummy.getContext('2d'); if (dCtx) { dCtx.fillStyle = '#000000'; dCtx.fillRect(0,0,2,2); }
+                this.elevationTex = new THREE.CanvasTexture(dummy);
+                this.pixelData = new Uint8ClampedArray(16); // Vide
+            } else {
+                let elevZoom = Math.min(this.zoom, 14);
+                let elevTx = this.tx; let elevTy = this.ty;
+                if (this.zoom > 14) {
+                    const ratio = Math.pow(2, this.zoom - 14);
+                    elevTx = Math.floor(this.tx / ratio); elevTy = Math.floor(this.ty / ratio);
+                }
 
-            const elevBlob = await fetchWithCache(`https://api.maptiler.com/tiles/terrain-rgb-v2/${elevZoom}/${elevTx}/${elevTy}.png?key=${state.MK}`, true);
-            if (this.status as any === 'disposed') return;
-            if (!elevBlob) throw new Error("Elevation failed");
-            const imgElev = await createImageBitmap(elevBlob, { colorSpaceConversion: 'none' });
-            if (this.status as any === 'disposed') return;
-            this.elevationTex = new THREE.Texture(imgElev);
-            this.elevationTex.flipY = false; this.elevationTex.needsUpdate = true;
-            
-            const offCanvas = document.createElement('canvas'); offCanvas.width = imgElev.width; offCanvas.height = imgElev.height;
-            const offCtx = offCanvas.getContext('2d');
-            if (offCtx) { offCtx.drawImage(imgElev, 0, 0); this.pixelData = offCtx.getImageData(0, 0, imgElev.width, imgElev.height).data; }
+                const elevBlob = await fetchWithCache(`https://api.maptiler.com/tiles/terrain-rgb-v2/${elevZoom}/${elevTx}/${elevTy}.png?key=${state.MK}`, true);
+                if (this.status as any === 'disposed') return;
+                if (!elevBlob) throw new Error("Elevation failed");
+                const imgElev = await createImageBitmap(elevBlob, { colorSpaceConversion: 'none' });
+                if (this.status as any === 'disposed') return;
+                this.elevationTex = new THREE.Texture(imgElev);
+                this.elevationTex.flipY = false; this.elevationTex.needsUpdate = true;
+                
+                const offCanvas = document.createElement('canvas'); offCanvas.width = imgElev.width; offCanvas.height = imgElev.height;
+                const offCtx = offCanvas.getContext('2d');
+                if (offCtx) { offCtx.drawImage(imgElev, 0, 0); this.pixelData = offCtx.getImageData(0, 0, imgElev.width, imgElev.height).data; }
+            }
 
             const nativeMax = this.getNativeColorZoom();
             let colorZoom = Math.min(this.zoom, nativeMax);
@@ -543,9 +551,24 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
     const zoom = state.ZOOM; 
     const centerTile = lngLatToTile(currentGPS.lon, currentGPS.lat, zoom);
     
+    // --- BRIDAGE DYNAMIQUE DU RAYON (v4.3.45) ---
+    // On adapte la limite de sécurité selon la puissance de la machine
     let range = state.RANGE;
-    if (zoom >= 15) range = Math.max(3, Math.min(range, 4)); 
-    if (zoom >= 17) range = 2; 
+    let maxSafetyRange = 4; // Par défaut (Balanced)
+
+    if (state.PERFORMANCE_PRESET === 'ultra' || state.RESOLUTION >= 256) maxSafetyRange = 8;
+    else if (state.PERFORMANCE_PRESET === 'performance') maxSafetyRange = 5;
+    else if (state.PERFORMANCE_PRESET === 'eco') maxSafetyRange = 3;
+
+    if (zoom >= 15) {
+        range = Math.min(range, maxSafetyRange);
+    }
+    
+    if (zoom >= 17) {
+        // Très haute résolution : limite plus stricte
+        const extremeRange = Math.max(2, Math.floor(maxSafetyRange / 2));
+        range = Math.min(range, extremeRange);
+    }
     
     const maxTile = Math.pow(2, zoom);
     const currentActiveKeys = new Set<string>();

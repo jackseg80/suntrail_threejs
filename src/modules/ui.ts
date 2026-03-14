@@ -115,9 +115,10 @@ export function initUI(): void {
                 state.TARGET_LAT = latitude;
                 state.TARGET_LON = longitude;
                 if (state.controls && state.camera) {
-                    state.originTile = lngLatToTile(longitude, latitude, state.ZOOM);
+                    state.ZOOM = 12;
+                    state.originTile = lngLatToTile(longitude, latitude, 12);
                     state.controls.target.set(0, 0, 0);
-                    state.camera.position.set(0, 5000, 8000);
+                    state.camera.position.set(0, 35000, 40000); // Vue globale LOD 12
                     state.controls.update();
                 }
                 await updateVisibleTiles();
@@ -558,11 +559,13 @@ async function handleGPX(xml: string): Promise<void> {
     if (gpxElev) gpxElev.textContent = `+${Math.round(gpx.tracks[0].elevation.pos)}m / -${Math.round(gpx.tracks[0].elevation.neg)}m`;
     
     if (state.controls && state.camera && state.gpxPoints.length > 0) {
+        state.ZOOM = 12;
+        state.originTile = lngLatToTile(startPt.lon, startPt.lat, 12);
         state.controls.target.set(state.gpxPoints[0].x, state.gpxPoints[0].y, state.gpxPoints[0].z);
-        state.camera.position.set(state.gpxPoints[0].x, state.gpxPoints[0].y + 2000, state.gpxPoints[0].z + 4000);
+        state.camera.position.set(state.gpxPoints[0].x, state.gpxPoints[0].y + 35000, state.gpxPoints[0].z + 40000);
         state.controls.update();
     }
-    updateElevationProfile(); // v3.9.2
+    updateElevationProfile(); 
     await updateVisibleTiles();
 }
 
@@ -719,10 +722,14 @@ function initGeocoding(): void {
                             resetTerrain();
                             state.TARGET_LAT = lat;
                             state.TARGET_LON = lng;
+                            
                             if (state.controls && state.camera) {
-                                state.originTile = lngLatToTile(lng, lat, state.ZOOM);
+                                // --- VUE GLOBALE À LA RECHERCHE (v4.3.60) ---
+                                // On remet le zoom à 13 (base) et l'altitude à 35km pour le LOD 12
+                                state.ZOOM = 13; 
+                                state.originTile = lngLatToTile(lng, lat, 13);
                                 state.controls.target.set(0, 0, 0);
-                                state.camera.position.set(0, 5000, 8000);
+                                state.camera.position.set(0, 35000, 40000); 
                                 state.controls.update();
                             }
                             await updateVisibleTiles();

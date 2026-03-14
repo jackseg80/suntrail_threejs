@@ -4,6 +4,15 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.3.63] - 2026-03-14
+### 🚀 Navigation & Immersion Initiale
+- **Vue Globale au Démarrage :** L'altitude initiale est désormais fixée à 35 km, déclenchant automatiquement une vue régionale en **LOD 12** pour une meilleure mise en contexte.
+- **Saut Géographique HD :** La recherche de lieu et le centrage GPS réinitialisent maintenant l'altitude à 35 km (LOD 12), évitant d'arriver "au sol" dans le flou.
+- **Optimisation 2D Spatiale :** Désactivation du chargement de l'élévation et réduction du maillage à 2 triangles pour les zooms <= 10 (gain massif de VRAM et bande passante).
+- **Parabole de Zoom Pro :** La trajectoire de la caméra suit désormais une courbe parabolique qui redresse la vue vers la verticale à haute altitude (Auto-Tilt).
+- **Boussole Restaurée :** Retour des points cardinaux (N, S, E, O) en haute définition sur l'interface 3D.
+- **Stabilité LOD :** Le niveau de détail est désormais calculé sur la distance réelle à la cible, éliminant les clignotements lors des rotations.
+
 ## [4.3.44] - 2026-03-14
 ### ✨ Optimisation Finale & Stabilité
 - **Version Cumulative :** Regroupement de toutes les optimisations de performance et corrections de stabilité mondiale (Origin Shift, Lat/Lon Fix).
