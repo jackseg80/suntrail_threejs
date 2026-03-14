@@ -85,8 +85,8 @@ export function getAltitudeAt(worldX: number, worldZ: number): number {
  * ne voit pas les déformations du Vertex Shader.
  */
 export function findTerrainIntersection(ray: THREE.Ray): THREE.Vector3 | null {
-    const stepSize = 150; // Pas de 150m pour la recherche globale
-    const maxDist = Math.min(120000, state.FOG_FAR || 100000); // On ne cherche pas plus loin que le voile atmosphérique
+    const stepSize = 250; 
+    const maxDist = 500000; // Étendu à 500km pour le clic haute altitude (v4.4.1)
     
     for (let dist = 0; dist < maxDist; dist += stepSize) {
         const p = ray.at(dist, new THREE.Vector3());

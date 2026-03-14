@@ -4,6 +4,14 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.4.1] - 2026-03-14
+### 🛠️ Corrections & Stabilité (Hotfix)
+- **Fix Raycasting :** Augmentation de la distance de détection du relief à 500 km pour permettre le clic à haute altitude (LOD 12+).
+- **Navigation Pro :** Restauration complète du moteur stable v4.3.65 avec Auto-Tilt parabolique et Turbo 2D.
+- **Sécurité 2D :** Désactivation intelligente du clic carte et du panneau de hauteur pour les zooms <= 10 (mode plan plat).
+- **Correctif Ombres :** recalibrage du frustum d'ombre (50km) pour une projection fidèle des sommets sur les vallées.
+- **UI Météo :** Intégration du Dashboard expert avec Isotherme 0°C, UV et prévisions horaires sur 6h.
+
 ## [4.4.0] - 2026-03-14
 ### ☁️ Météo Dynamique & Immersion
 - **Moteur de Particules GPU :** Système de pluie et neige 100% calculé sur GPU (Shaders) pour maintenir 120 FPS.

@@ -2,6 +2,12 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
+## ✅ Terminé (v4.4.1)
+- [x] **Fix Clic Haute Altitude** : Relevé opérationnel dès le lancement (35km).
+- [x] **Correctif Ombres** : Projection pro sur 50km.
+- [x] **Sécurité 2D** : Blocage intelligent des relevés en mode plan plat.
+- [x] **Météo Avancée** : Isotherme 0°C et prévisions 6h.
+
 ## ✅ Terminé (v4.4.0)
 - [x] **Météo Dynamique** : Système de particules GPU pour la pluie et la neige.
 - [x] **Physique du Vent** : Inclinaison et vitesse des effets basées sur l'API réelle.

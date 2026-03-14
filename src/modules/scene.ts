@@ -183,11 +183,15 @@ export async function initScene(): Promise<void> {
             }
             else if (state.ZOOM === 12) { 
                 if (dist < 45000) newZoom = 13; 
-                else if (dist > 140000) newZoom = 11; 
+                else if (dist > 120000) newZoom = 11; 
             }
-            else if (state.ZOOM <= 11) { 
-                if (dist < 100000) newZoom = 12; 
-                else if (dist > 280000) newZoom = 10; 
+            else if (state.ZOOM === 11) {
+                if (dist < 90000) newZoom = 12;
+                else if (dist > 220000) newZoom = 10;
+            }
+            else if (state.ZOOM <= 10) { 
+                if (dist < 180000) newZoom = 11; 
+                else if (dist > 400000) newZoom = 9; 
             }
 
             if (newZoom !== state.ZOOM) { 
@@ -235,6 +239,18 @@ export async function initScene(): Promise<void> {
     state.ambientLight = new THREE.AmbientLight(0xffffff, 0.2); state.scene.add(state.ambientLight);
     state.sunLight = new THREE.DirectionalLight(0xffffff, 6.0);
     state.sunLight.castShadow = state.SHADOWS;
+    
+    // --- CONFIGURATION OMBRES PRO (v4.5.4) ---
+    state.sunLight.shadow.mapSize.set(2048, 2048);
+    state.sunLight.shadow.camera.left = -50000;
+    state.sunLight.shadow.camera.right = 50000;
+    state.sunLight.shadow.camera.top = 50000;
+    state.sunLight.shadow.camera.bottom = -50000;
+    state.sunLight.shadow.camera.near = 1000;
+    state.sunLight.shadow.camera.far = 500000;
+    state.sunLight.shadow.bias = -0.0005;
+    state.sunLight.shadow.normalBias = 0.05;
+    
     state.scene.add(state.sunLight); state.scene.add(state.sunLight.target);
 
     await loadTerrain();

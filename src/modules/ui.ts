@@ -21,24 +21,11 @@ export function initUI(): void {
 
     let s1 = '';
     try { s1 = localStorage.getItem('maptiler_key_3d') || ''; } catch (e) {}
-    
     const k1 = document.getElementById('k1') as HTMLInputElement;
     if (s1 && k1) k1.value = s1;
 
-    const hash = window.location.hash;
-    if (hash && hash.includes('lat=')) {
-        const params = new URLSearchParams(hash.substring(1));
-        state.TARGET_LAT = parseFloat(params.get('lat') || '46.6863');
-        state.TARGET_LON = parseFloat(params.get('lon') || '7.6617');
-        state.ZOOM = parseInt(params.get('z') || '13');
-        const time = parseInt(params.get('t') || '720');
-        state.simDate.setHours(Math.floor(time / 60), time % 60);
-    }
-    
     const bgo = document.getElementById('bgo');
     if (bgo) bgo.addEventListener('click', go);
-    
-    if (k1) k1.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter') go(); });
     
     const panel = document.getElementById('panel');
     const settingsToggle = document.getElementById('settings-toggle');
@@ -56,22 +43,20 @@ export function initUI(): void {
         });
     });
 
+    // --- CALQUES ---
     const layerBtn = document.getElementById('layer-btn');
     const layerMenu = document.getElementById('layer-menu');
-    const layerItems = document.querySelectorAll('.layer-item');
-
     if (layerBtn && layerMenu) {
         layerBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             layerMenu.style.display = layerMenu.style.display === 'block' ? 'none' : 'block';
         });
-        window.addEventListener('click', () => layerMenu.style.display = 'none');
-        layerMenu.addEventListener('click', (e) => e.stopPropagation());
+        window.addEventListener('click', () => { if (layerMenu) layerMenu.style.display = 'none'; });
     }
 
-    layerItems.forEach(item => {
+    document.querySelectorAll('.layer-item').forEach(item => {
         item.addEventListener('click', async () => {
-            layerItems.forEach(i => i.classList.remove('active'));
+            document.querySelectorAll('.layer-item').forEach(i => i.classList.remove('active'));
             item.classList.add('active');
             state.MAP_SOURCE = (item as HTMLElement).dataset.source || 'swisstopo';
             state.hasManualSource = true;
@@ -80,37 +65,23 @@ export function initUI(): void {
         });
     });
 
+    // --- GPS ---
     const gpsBtn = document.getElementById('gps-btn');
     if (gpsBtn) {
         gpsBtn.addEventListener('click', async () => {
             try {
                 gpsBtn.classList.add('active');
-                let latitude: number, longitude: number;
-                try {
-                    const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
-                    latitude = pos.coords.latitude; longitude = pos.coords.longitude;
-                } catch (e) {
-                    const webPos = await new Promise<GeolocationPosition>((resolve, reject) => {
-                        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true });
-                    });
-                    latitude = webPos.coords.latitude; longitude = webPos.coords.longitude;
-                }
-                autoSelectMapSource(latitude, longitude);
-                resetTerrain();
-                state.TARGET_LAT = latitude; state.TARGET_LON = longitude;
+                const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true });
+                state.TARGET_LAT = pos.coords.latitude; state.TARGET_LON = pos.coords.longitude;
+                state.ZOOM = 13; state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, 13);
                 if (state.controls && state.camera) {
-                    state.ZOOM = 12;
-                    state.originTile = lngLatToTile(longitude, latitude, 12);
                     state.controls.target.set(0, 0, 0);
                     state.camera.position.set(0, 35000, 40000);
                     state.controls.update();
                 }
-                await updateVisibleTiles();
+                resetTerrain(); await updateVisibleTiles();
                 gpsBtn.classList.remove('active');
-            } catch (err) {
-                showToast("Impossible d'accéder au GPS");
-                gpsBtn.classList.remove('active');
-            }
+            } catch (err) { showToast("GPS indisponible"); gpsBtn.classList.remove('active'); }
         });
     }
 
@@ -129,81 +100,53 @@ export function initUI(): void {
         });
     }
 
+    // --- GPX ---
     const gpxBtn = document.getElementById('gpx-btn');
     const gpxUpload = document.getElementById('gpx-upload') as HTMLInputElement;
-    const trailFollowToggle = document.getElementById('trail-follow-toggle') as HTMLInputElement;
-
     if (gpxBtn && gpxUpload) {
         gpxBtn.addEventListener('click', () => gpxUpload.click());
         gpxUpload.addEventListener('change', (e: Event) => {
             const target = e.target as HTMLInputElement;
-            const file = target.files ? target.files[0] : null;
+            const file = target.files?.[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = (event: ProgressEvent<FileReader>) => {
-                if (event.target && typeof event.target.result === 'string') handleGPX(event.target.result);
-            };
+            reader.onload = (ev) => { if (typeof ev.target?.result === 'string') handleGPX(ev.target.result); };
             reader.readAsText(file);
         });
     }
 
+    const trailFollowToggle = document.getElementById('trail-follow-toggle') as HTMLInputElement;
     if (trailFollowToggle) {
         trailFollowToggle.addEventListener('change', (e: Event) => {
             const target = e.target as HTMLInputElement;
             state.isFollowingTrail = target.checked;
-            if (state.isFollowingTrail && state.gpxPoints.length > 0) {
-                state.trailProgress = 0;
-                if (state.controls) state.controls.enabled = false;
-            } else {
-                if (state.controls) state.controls.enabled = true;
-            }
+            if (state.controls) state.controls.enabled = !state.isFollowingTrail;
         });
     }
 
-    const timeSlider = document.getElementById('time-slider') as HTMLInputElement;
-    const dateInput = document.getElementById('date-input') as HTMLInputElement;
-
-    if (dateInput) {
-        dateInput.valueAsDate = state.simDate;
-        dateInput.addEventListener('change', (e: Event) => {
-            const target = e.target as HTMLInputElement;
-            state.simDate = new Date(target.value);
-            if (timeSlider) updateSunPosition(parseInt(timeSlider.value));
-        });
-    }
-
-    if (timeSlider) {
-        timeSlider.addEventListener('input', (e: Event) => {
-            updateSunPosition(parseInt((e.target as HTMLInputElement).value));
-        });
-    }
-
-    const playBtn = document.getElementById('play-btn');
-    if (playBtn) {
-        playBtn.addEventListener('click', () => {
-            state.isAnimating = !state.isAnimating;
-            playBtn.textContent = state.isAnimating ? "⏸" : "▶";
-        });
-    }
-
-    const speedSelect = document.getElementById('speed-select') as HTMLSelectElement;
-    if (speedSelect) {
-        speedSelect.addEventListener('change', (e: Event) => {
-            state.animationSpeed = parseFloat((e.target as HTMLSelectElement).value);
-        });
-    }
-
-    // --- CLIC SUR CARTE (COORDONNÉES) ---
+    // --- CLIC SUR CARTE (ROBUSTE) ---
     window.addEventListener('click', (e: MouseEvent) => {
         if (!state.renderer || !state.camera || !state.scene) return;
         const target = e.target as HTMLElement;
         
-        if (target.tagName === 'CANVAS' && panel && panel.classList.contains('open')) {
-            panel.classList.remove('open');
+        // Sécurité : On ignore si on clique sur un bouton ou panneau
+        if (target.closest('button') || target.closest('input') || target.closest('select') || 
+            target.closest('summary') || target.closest('details') || target.id === 'weather-clickable' ||
+            target.closest('.ui-element:not(#coords-panel)')) return;
+
+        // On ne traite que si on vise le canvas
+        if (target.tagName !== 'CANVAS') return;
+
+        // Sécurité 2D (v4.5 fix)
+        if (state.ZOOM <= 10) {
+            const cp = document.getElementById('coords-panel');
+            if (cp) cp.style.display = 'none';
+            return;
         }
 
-        if (target.tagName !== 'CANVAS' && target.id !== 'canvas-container') return;
-        
+        // Fermeture automatique réglages
+        if (panel && panel.classList.contains('open')) panel.classList.remove('open');
+
         const mouse = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
         const raycaster = new THREE.Raycaster();
         raycaster.params.Sprite = { threshold: 10 }; 
@@ -211,29 +154,21 @@ export function initUI(): void {
         
         const intersects = raycaster.intersectObjects(state.scene.children, true);
         const hitPOI = intersects.find(hit => hit.object instanceof THREE.Sprite && hit.object.userData.id);
-        
-        if (hitPOI) {
-            showToast(`📍 ${hitPOI.object.userData.name || "POI"}`);
-            return; 
-        }
+        if (hitPOI) { showToast(`📍 ${hitPOI.object.userData.name || "POI"}`); return; }
 
         const hitPoint = findTerrainIntersection(raycaster.ray);
         if (hitPoint && state.originTile) {
             const gps = worldToLngLat(hitPoint.x, hitPoint.z, state.originTile);
             const realAlt = getAltitudeAt(hitPoint.x, hitPoint.z) / state.RELIEF_EXAGGERATION;
-
             const coordsPanel = document.getElementById('coords-panel');
-            const clickLatLon = document.getElementById('click-latlon');
-            const clickAlt = document.getElementById('click-alt');
-
-            if (coordsPanel) coordsPanel.style.display = state.SHOW_DEBUG ? 'block' : 'none';
-            if (clickLatLon) clickLatLon.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
-            if (clickAlt) clickAlt.textContent = `${Math.round(realAlt)} m`;
-
+            if (coordsPanel) {
+                coordsPanel.style.display = 'block';
+                document.getElementById('click-latlon')!.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
+                document.getElementById('click-alt')!.textContent = `${Math.round(realAlt)} m`;
+            }
             lastClickedCoords = { x: hitPoint.x, z: hitPoint.z, alt: realAlt * state.RELIEF_EXAGGERATION };
         } else {
-            const coordsPanel = document.getElementById('coords-panel');
-            if (coordsPanel) coordsPanel.style.display = 'none';
+            const cp = document.getElementById('coords-panel'); if (cp) cp.style.display = 'none';
         }
     });
 
@@ -244,148 +179,92 @@ export function initUI(): void {
             runSolarProbe(lastClickedCoords.x, lastClickedCoords.z, lastClickedCoords.alt);
         });
     }
-
     const closeProbe = document.getElementById('close-probe');
-    const probeResult = document.getElementById('probe-result');
-    if (closeProbe) closeProbe.addEventListener('click', () => { if (probeResult) probeResult.style.display = 'none'; });
-    if (probeResult) probeResult.addEventListener('click', (e) => e.stopPropagation());
-
-    const resSlider = document.getElementById('res-slider') as HTMLInputElement;
-    if (resSlider) {
-        resSlider.addEventListener('input', () => {
-            const resDisp = document.getElementById('res-disp');
-            if (resDisp) resDisp.textContent = resSlider.value;
-        });
-        resSlider.addEventListener('change', async (e: Event) => {
-            state.RESOLUTION = parseInt((e.target as HTMLInputElement).value);
-            applyPreset('custom'); await refreshTerrain();
-        });
-    }
-
-    const rangeSlider = document.getElementById('range-slider') as HTMLInputElement;
-    if (rangeSlider) {
-        rangeSlider.addEventListener('input', () => {
-            const rangeDisp = document.getElementById('range-disp');
-            if (rangeDisp) rangeDisp.textContent = rangeSlider.value;
-        });
-        rangeSlider.addEventListener('change', async (e: Event) => {
-            state.RANGE = parseInt((e.target as HTMLInputElement).value);
-            applyPreset('custom'); await refreshTerrain();
-        });
-    }
-
-    const shadowToggle = document.getElementById('shadow-toggle') as HTMLInputElement;
-    if (shadowToggle) shadowToggle.addEventListener('change', (e: Event) => {
-        state.SHADOWS = (e.target as HTMLInputElement).checked;
-        applyPreset('custom'); if (state.sunLight) state.sunLight.castShadow = state.SHADOWS;
+    if (closeProbe) closeProbe.addEventListener('click', () => { 
+        const pr = document.getElementById('probe-result'); if (pr) pr.style.display = 'none'; 
     });
 
-    const trailsToggle = document.getElementById('trails-toggle') as HTMLInputElement;
-    if (trailsToggle) trailsToggle.addEventListener('change', async (e: Event) => { state.SHOW_TRAILS = (e.target as HTMLInputElement).checked; await refreshTerrain(); });
-
-    const slopesToggle = document.getElementById('slopes-toggle') as HTMLInputElement;
-    if (slopesToggle) slopesToggle.addEventListener('change', async (e: Event) => { state.SHOW_SLOPES = (e.target as HTMLInputElement).checked; await refreshTerrain(); });
-
-    const vegToggle = document.getElementById('veg-toggle') as HTMLInputElement;
-    if (vegToggle) vegToggle.addEventListener('change', async (e: Event) => { state.SHOW_VEGETATION = (e.target as HTMLInputElement).checked; resetTerrain(); await loadTerrain(); });
-
-    const poiToggle = document.getElementById('poi-toggle') as HTMLInputElement;
-    if (poiToggle) poiToggle.addEventListener('change', async (e: Event) => { state.SHOW_SIGNPOSTS = (e.target as HTMLInputElement).checked; resetTerrain(); await loadTerrain(); });
-
-    const buildingsToggle = document.getElementById('buildings-toggle') as HTMLInputElement;
-    if (buildingsToggle) buildingsToggle.addEventListener('change', async (e: Event) => { state.SHOW_BUILDINGS = (e.target as HTMLInputElement).checked; resetTerrain(); await loadTerrain(); });
-
-    // --- MÉTÉO (v4.4) ---
+    // --- MÉTÉO ---
     const weatherDensitySlider = document.getElementById('weather-density-slider') as HTMLInputElement;
-    const weatherDensityDisp = document.getElementById('weather-density-disp');
     if (weatherDensitySlider) {
         weatherDensitySlider.addEventListener('input', () => {
             state.WEATHER_DENSITY = parseInt(weatherDensitySlider.value);
-            if (weatherDensityDisp) weatherDensityDisp.textContent = state.WEATHER_DENSITY.toString();
+            const d = document.getElementById('weather-density-disp'); if (d) d.textContent = state.WEATHER_DENSITY.toString();
         });
     }
-
     const weatherSpeedSlider = document.getElementById('weather-speed-slider') as HTMLInputElement;
-    const weatherSpeedDisp = document.getElementById('weather-speed-disp');
     if (weatherSpeedSlider) {
         weatherSpeedSlider.addEventListener('input', () => {
             state.WEATHER_SPEED = parseFloat(weatherSpeedSlider.value);
-            if (weatherSpeedDisp) weatherSpeedDisp.textContent = state.WEATHER_SPEED.toFixed(1);
+            const d = document.getElementById('weather-speed-disp'); if (d) d.textContent = state.WEATHER_SPEED.toFixed(1);
         });
     }
-
-    const weatherBtns = document.querySelectorAll('.weather-btn');
-    weatherBtns.forEach(btn => btn.addEventListener('click', (e) => {
+    document.querySelectorAll('.weather-btn').forEach(btn => btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const type = btn.getAttribute('data-weather') as any;
-        state.currentWeather = type;
-        if (type !== 'clear' && state.WEATHER_DENSITY <= 0) {
-            state.WEATHER_DENSITY = 2500;
-            if (weatherDensitySlider) weatherDensitySlider.value = "2500";
-            if (weatherDensityDisp) weatherDensityDisp.textContent = "2500";
-        }
-        weatherBtns.forEach(b => b.classList.remove('active'));
+        state.currentWeather = btn.getAttribute('data-weather') as any;
+        document.querySelectorAll('.weather-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         import('./weather').then(m => m.updateWeatherUIIndicator());
     }));
 
     const weatherIndicator = document.getElementById('zoom-indicator');
     const weatherPanel = document.getElementById('weather-panel');
-    const closeWeather = document.getElementById('close-weather');
+    if (weatherIndicator) {
+        weatherIndicator.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (state.weatherData && weatherPanel) {
+                const titleEl = weatherPanel.querySelector('h3');
+                if (titleEl) titleEl.textContent = `☁️ ${state.weatherData.locationName || 'Météo'}`;
+                
+                const getSet = (id: string, val: string) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+                getSet('w-temp', `${state.weatherData.temp.toFixed(1)}°C`);
+                getSet('w-apparent', `Ressenti ${state.weatherData.apparentTemp.toFixed(1)}°C`);
+                getSet('w-wind', `${Math.round(state.weatherData.windSpeed)} km/h`);
+                getSet('w-freezing', `${Math.round(state.weatherData.freezingLevel || 0)} m`);
+                getSet('w-uv', (state.weatherData.uvIndex || 0).toFixed(1));
+                getSet('w-hum', `${state.weatherData.humidity}%`);
+                getSet('w-clouds', `${state.weatherData.cloudCover}%`);
 
-    if (weatherIndicator && weatherPanel) {
-        document.addEventListener('click', (e) => {
-            const target = e.target as HTMLElement;
-            if (target.id === 'weather-clickable' || target.closest('#weather-clickable')) {
-                e.stopPropagation();
-                if (state.weatherData) {
-                    const titleEl = weatherPanel.querySelector('h3');
-                    if (titleEl) titleEl.textContent = `☁️ ${state.weatherData.locationName || 'Bulletin Météo'}`;
-                    
-                    const tempEl = document.getElementById('w-temp');
-                    const apparentEl = document.getElementById('w-apparent');
-                    const windEl = document.getElementById('w-wind');
-                    const windArrow = document.getElementById('w-wind-arrow');
-                    const windDirEl = document.getElementById('w-wind-dir');
-                    const humEl = document.getElementById('w-hum');
-                    const cloudsEl = document.getElementById('w-clouds');
-
-                    if (tempEl) tempEl.textContent = `${state.weatherData.temp.toFixed(1)}°C`;
-                    if (apparentEl) apparentEl.textContent = `Ressenti ${state.weatherData.apparentTemp.toFixed(1)}°C`;
-                    if (windEl) windEl.textContent = `${state.weatherData.windSpeed.toFixed(1)} km/h`;
-                    if (windArrow) windArrow.style.transform = `rotate(${state.weatherData.windDir}deg)`;
-                    if (windDirEl) {
-                        const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO', 'N'];
-                        const index = Math.round(state.weatherData.windDir / 45);
-                        windDirEl.textContent = `Dir. ${directions[index]} (${state.weatherData.windDir}°)`;
-                    }
-                    if (humEl) humEl.textContent = `${state.weatherData.humidity}%`;
-                    if (cloudsEl) cloudsEl.textContent = `${state.weatherData.cloudCover}%`;
-                    
-                    weatherPanel.style.display = 'block';
+                const arrow = document.getElementById('w-wind-arrow');
+                if (arrow) arrow.style.transform = `rotate(${state.weatherData.windDir}deg)`;
+                
+                const hCont = document.getElementById('w-hourly');
+                if (hCont && state.weatherData.hourly) {
+                    hCont.innerHTML = state.weatherData.hourly.map(h => `
+                        <div style="min-width:55px; background:rgba(255,255,255,0.03); padding:8px; border-radius:10px; text-align:center; border:1px solid var(--border);">
+                            <div style="font-size:9px; color:var(--t2); mb:4px;">${h.time}</div>
+                            <div style="font-size:14px;">${h.code >= 51 ? '🌧️' : h.code >= 71 ? '❄️' : '☀️'}</div>
+                            <div style="font-size:11px; font-weight:700;">${Math.round(h.temp)}°</div>
+                        </div>
+                    `).join('');
                 }
+                weatherPanel.style.display = 'block';
             }
         });
     }
-    if (closeWeather) closeWeather.addEventListener('click', (e) => { e.stopPropagation(); if (weatherPanel) weatherPanel.style.display = 'none'; });
+    const closeWeather = document.getElementById('close-weather');
+    if (closeWeather) closeWeather.addEventListener('click', () => { if (weatherPanel) weatherPanel.style.display = 'none'; });
 
+    // --- AUTRES RÉGLAGES ---
+    const shadowToggle = document.getElementById('shadow-toggle') as HTMLInputElement;
+    if (shadowToggle) shadowToggle.addEventListener('change', () => { state.SHADOWS = shadowToggle.checked; refreshTerrain(); });
+    const vegToggle = document.getElementById('veg-toggle') as HTMLInputElement;
+    if (vegToggle) vegToggle.addEventListener('change', () => { state.SHOW_VEGETATION = vegToggle.checked; resetTerrain(); loadTerrain(); });
+    const buildingsToggle = document.getElementById('buildings-toggle') as HTMLInputElement;
+    if (buildingsToggle) buildingsToggle.addEventListener('change', () => { state.SHOW_BUILDINGS = buildingsToggle.checked; resetTerrain(); loadTerrain(); });
+    const clearCacheBtn = document.getElementById('clear-cache-btn');
+    if (clearCacheBtn) clearCacheBtn.addEventListener('click', async () => { if (confirm("Vider le cache ?")) { await deleteTerrainCache(); refreshTerrain(); } });
+
+    const timeSlider = document.getElementById('time-slider') as HTMLInputElement;
+    if (timeSlider) timeSlider.addEventListener('input', () => updateSunPosition(parseInt(timeSlider.value)));
     const screenshotBtn = document.getElementById('screenshot-btn');
     if (screenshotBtn) screenshotBtn.addEventListener('click', takeScreenshot);
 
-    const keyInput = document.getElementById('maptiler-key-input') as HTMLInputElement;
-    const updateKeyBtn = document.getElementById('update-key-btn');
-    const clearCacheBtn = document.getElementById('clear-cache-btn');
-    if (keyInput) keyInput.value = state.MK;
-    if (updateKeyBtn) updateKeyBtn.addEventListener('click', async () => { state.MK = keyInput.value.trim(); localStorage.setItem('maptiler_key_3d', state.MK); await refreshTerrain(); });
-    if (clearCacheBtn) clearCacheBtn.addEventListener('click', async () => { if (confirm("Vider le cache ?")) { await deleteTerrainCache(); await refreshTerrain(); } });
-
     initGeocoding();
-    window.addEventListener('resize', () => { if (state.rawGpxData) updateElevationProfile(); });
 }
 
 export function autoSelectMapSource(lat: number, lon: number): void {
-    if (state.hasManualSource) return;
-    if (isNaN(lat) || Math.abs(lat) > 80 || lat === 0) return;
+    if (state.hasManualSource || isNaN(lat) || lat === 0) return;
     const isSwiss = isPositionInSwitzerland(lat, lon);
     const newSource = isSwiss ? 'swisstopo' : 'opentopomap';
     if (state.MAP_SOURCE !== newSource) {
@@ -398,40 +277,23 @@ export function autoSelectMapSource(lat: number, lon: number): void {
     }
 }
 
-async function refreshTerrain(): Promise<void> { resetTerrain(); if (state.rawGpxData) updateGPXMesh(); await updateVisibleTiles(); }
+async function refreshTerrain(): Promise<void> { resetTerrain(); await updateVisibleTiles(); }
 
-async function handleGPX(xml: string): Promise<void> {
+async function handleGPX(xml: string) {
     const gpx = new gpxParser(); gpx.parse(xml);
-    if (!gpx.tracks || !gpx.tracks.length) return;
+    if (!gpx.tracks?.length) return;
     state.rawGpxData = gpx;
     const startPt = gpx.tracks[0].points[0];
-    autoSelectMapSource(startPt.lat, startPt.lon);
-    resetTerrain();
     state.TARGET_LAT = startPt.lat; state.TARGET_LON = startPt.lon;
-    state.originTile = lngLatToTile(startPt.lon, startPt.lat, state.ZOOM);
-    updateGPXMesh();
-    
-    const trailControls = document.getElementById('trail-controls');
-    const gpxDist = document.getElementById('gpx-dist');
-    const gpxElev = document.getElementById('gpx-elev');
-    if (trailControls) trailControls.style.display = 'block';
-    if (gpxDist) gpxDist.textContent = `${(gpx.tracks[0].distance.total / 1000).toFixed(1)} km`;
-    if (gpxElev) gpxElev.textContent = `+${Math.round(gpx.tracks[0].elevation.pos)}m / -${Math.round(gpx.tracks[0].elevation.neg)}m`;
-    
-    if (state.controls && state.camera && state.gpxPoints.length > 0) {
-        state.ZOOM = 12;
-        state.originTile = lngLatToTile(startPt.lon, startPt.lat, 12);
-        state.controls.target.set(state.gpxPoints[0].x, state.gpxPoints[0].y, state.gpxPoints[0].z);
-        state.camera.position.set(state.gpxPoints[0].x, state.gpxPoints[0].y + 35000, state.gpxPoints[0].z + 40000);
-        state.controls.update();
-    }
-    updateElevationProfile(); await updateVisibleTiles();
+    state.ZOOM = 13; state.originTile = lngLatToTile(startPt.lon, startPt.lat, 13);
+    updateGPXMesh(); updateElevationProfile(); await updateVisibleTiles();
+    const tc = document.getElementById('trail-controls'); if (tc) tc.style.display = 'block';
 }
 
 async function go(): Promise<void> {
     const k1 = document.getElementById('k1') as HTMLInputElement;
-    state.MK = k1 ? k1.value.trim() : '';
-    if (!state.MK || state.MK.length < 5) return;
+    state.MK = k1?.value.trim() || '';
+    if (state.MK.length < 5) return;
     localStorage.setItem('maptiler_key_3d', state.MK);
     document.getElementById('setup-screen')!.style.display = 'none';
     document.getElementById('top-search-container')!.style.display = 'block';
@@ -439,76 +301,65 @@ async function go(): Promise<void> {
     document.getElementById('settings-toggle')!.style.display = 'flex';
     document.getElementById('gps-btn')!.style.display = 'flex';
     document.getElementById('gps-follow-btn')!.style.display = 'flex';
-    document.getElementById('screenshot-btn')!.style.display = 'flex';
     document.getElementById('bottom-bar')!.style.display = 'flex';
-    autoSelectMapSource(state.TARGET_LAT, state.TARGET_LON);
+    document.getElementById('zoom-indicator')!.style.display = 'block';
+    document.getElementById('screenshot-btn')!.style.display = 'flex';
     await initScene();
+    
+    if (state.camera && state.controls) {
+        state.ZOOM = 12;
+        state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, 12);
+        state.camera.position.set(0, 35000, 40000);
+        state.controls.target.set(0, 0, 0);
+        state.controls.update();
+    }
     setTimeout(async () => { await loadTerrain(); initEphemeralUI(); }, 100);
 }
 
 function initEphemeralUI(): void {
-    const resetTimer = () => { state.lastUIInteraction = Date.now(); if (!state.uiVisible) { state.uiVisible = true; document.body.classList.remove('ui-hidden'); } };
-    ['mousemove', 'mousedown', 'touchstart', 'keydown'].forEach(ev => window.addEventListener(ev, resetTimer));
+    const reset = () => { state.lastUIInteraction = Date.now(); if (!state.uiVisible) { state.uiVisible = true; document.body.classList.remove('ui-hidden'); } };
+    ['mousemove', 'mousedown', 'touchstart', 'keydown'].forEach(ev => window.addEventListener(ev, reset));
     setInterval(() => {
-        if (state.uiVisible && Date.now() - state.lastUIInteraction > 5000) {
-            if (document.querySelector('#panel.open') || document.activeElement?.tagName === 'INPUT') return;
+        if (state.uiVisible && Date.now() - state.lastUIInteraction > 15000) {
+            const p = document.getElementById('panel');
+            if (p && p.classList.contains('open')) return;
             state.uiVisible = false; document.body.classList.add('ui-hidden');
         }
     }, 1000);
 }
 
-async function takeScreenshot(): Promise<void> {
-    if (!state.renderer || !state.scene || !state.camera) return;
-    const wasVisible = state.uiVisible;
-    if (wasVisible) document.body.classList.add('ui-hidden');
+async function takeScreenshot() {
+    if (!state.renderer || !state.camera || !state.scene) return;
     state.renderer.render(state.scene, state.camera);
-    try {
-        const dataURL = state.renderer.domElement.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.download = `SunTrail_3D_${Date.now()}.png`;
-        link.href = dataURL; link.click();
-        showToast("📸 Capture enregistrée");
-    } catch (e) { showToast("❌ Échec capture"); }
-    if (wasVisible) document.body.classList.remove('ui-hidden');
+    const link = document.createElement('a');
+    link.download = `SunTrail_${Date.now()}.png`;
+    link.href = state.renderer.domElement.toDataURL();
+    link.click();
 }
 
-function initGeocoding(): void {
+function initGeocoding() {
     const geoInput = document.getElementById('geo-input') as HTMLInputElement;
     const geoResults = document.getElementById('geo-results');
-    let geoTimer: any = null;
-    if (geoInput && geoResults) {
-        geoInput.addEventListener('input', () => {
-            if (geoTimer) clearTimeout(geoTimer);
+    if (!geoInput || !geoResults) return;
+    let timer: any = null;
+    geoInput.addEventListener('input', () => {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(async () => {
             const q = geoInput.value.trim();
-            if (q.length < 2) { geoResults.style.display = 'none'; return; }
-            geoTimer = setTimeout(async () => {
-                try {
-                    const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=6`);
-                    const data = await r.json();
-                    if (!data || !data.length) { geoResults.style.display = 'none'; return; }
-                    geoResults.innerHTML = '';
-                    data.forEach((f: any) => {
-                        const item = document.createElement('div');
-                        item.style.cssText = 'padding:15px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.05);';
-                        const name = f.display_name.split(',')[0];
-                        item.innerHTML = `<div style="color:white; font-weight:500">${name}</div><div style="color:var(--t2); font-size:12px;">${f.display_name}</div>`;
-                        item.addEventListener('click', async () => {
-                            geoResults.style.display = 'none'; geoInput.value = name;
-                            const lat = parseFloat(f.lat), lng = parseFloat(f.lon);
-                            autoSelectMapSource(lat, lng); resetTerrain();
-                            state.TARGET_LAT = lat; state.TARGET_LON = lng;
-                            if (state.controls && state.camera) {
-                                state.ZOOM = 13; state.originTile = lngLatToTile(lng, lat, 13);
-                                state.controls.target.set(0, 0, 0); state.camera.position.set(0, 35000, 40000);
-                                state.controls.update();
-                            }
-                            await updateVisibleTiles();
-                        });
-                        geoResults.appendChild(item);
-                    });
-                    geoResults.style.display = 'block';
-                } catch (e) {}
-            }, 400);
-        });
-    }
+            if (q.length < 2) return;
+            const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5`);
+            const data = await r.json();
+            geoResults.innerHTML = data.map((f: any) => `<div class="geo-item" data-lat="${f.lat}" data-lon="${f.lon}" style="padding:12px; cursor:pointer; color:white; border-bottom:1px solid rgba(255,255,255,0.05);">${f.display_name}</div>`).join('');
+            geoResults.style.display = 'block';
+            geoResults.querySelectorAll('.geo-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    state.TARGET_LAT = parseFloat((item as HTMLElement).dataset.lat!);
+                    state.TARGET_LON = parseFloat((item as HTMLElement).dataset.lon!);
+                    state.ZOOM = 13; state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, 13);
+                    if (state.controls && state.camera) { state.controls.target.set(0, 0, 0); state.camera.position.set(0, 35000, 40000); state.controls.update(); }
+                    geoResults.style.display = 'none'; resetTerrain(); updateVisibleTiles();
+                });
+            });
+        }, 400);
+    });
 }
