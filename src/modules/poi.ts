@@ -1,154 +1,57 @@
 import * as THREE from 'three';
 import { state } from './state';
 import { getAltitudeAt } from './analysis';
-import { lngLatToWorld, getTileBounds } from './geo';
-import { showToast } from './utils';
+import { fetchOverpassData } from './utils';
 
-interface Signpost {
-    id: number; lat: number; lon: number; name?: string;
-}
+const poiCache = new Map<string, any>();
 
-const signpostMemoryCache = new Map<string, Signpost[]>();
-const signpostFetchPromises = new Map<string, Promise<Signpost[] | null>>();
-const zoneFailureCooldown = new Map<string, number>(); 
-const signpostTexture = createSignpostTexture();
+export async function loadPOIsForTile(tile: any) {
+    if (!state.SHOW_SIGNPOSTS || tile.zoom < 14) return;
+    if (state.controls && (state.controls as any)._isMoving) return;
 
-const CACHE_NAME = 'suntrail-poi-v1';
-const OVERPASS_SERVERS = [
-    'https://overpass-api.de/api/interpreter',
-    'https://lz4.overpass-api.de/api/interpreter',
-    'https://z.overpass-api.de/api/interpreter'
-];
-let currentServerIdx = 0;
-let globalRequestLock = Promise.resolve(); 
-
-function createSignpostTexture(): THREE.Texture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 64; canvas.height = 64;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-        ctx.beginPath();
-        ctx.moveTo(32, 10); ctx.lineTo(54, 32); ctx.lineTo(32, 54); ctx.lineTo(10, 32);
-        ctx.closePath();
-        ctx.fillStyle = '#FFD700'; ctx.fill();
-        ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.stroke();
-    }
-    return new THREE.CanvasTexture(canvas);
-}
-
-export async function loadPOIsForTile(tile: any): Promise<THREE.Group | null> {
-    if (tile.zoom < 14 || !state.SHOW_SIGNPOSTS) return null;
-
-    const zoneZ = 10;
-    const ratio = Math.pow(2, tile.zoom - zoneZ);
-    const zx = Math.floor(tile.tx / ratio);
-    const zy = Math.floor(tile.ty / ratio);
-    const zoneKey = `${zoneZ}_${zx}_${zy}`;
-
-    const failTime = zoneFailureCooldown.get(zoneKey);
-    if (failTime && Date.now() < failTime) return null;
-
-    let signposts: Signpost[] | null | undefined = signpostMemoryCache.get(zoneKey);
-
-    if (!signposts) {
-        let fetchPromise = signpostFetchPromises.get(zoneKey);
-        if (!fetchPromise) {
-            fetchPromise = fetchWithGlobalLock(zoneZ, zx, zy);
-            signpostFetchPromises.set(zoneKey, fetchPromise);
-        }
-        signposts = await fetchPromise;
-        if (signposts) {
-            signpostMemoryCache.set(zoneKey, signposts);
-        } else {
-            zoneFailureCooldown.set(zoneKey, Date.now() + 120000);
-        }
-        signpostFetchPromises.delete(zoneKey);
+    const cacheKey = `${tile.zoom}_${tile.tx}_${tile.ty}`;
+    if (poiCache.has(cacheKey)) {
+        renderPOIs(tile, poiCache.get(cacheKey));
+        return;
     }
 
-    if (!signposts || signposts.length === 0) return null;
+    const bounds = tile.getBounds();
+    const query = `[out:json][timeout:30];node["information"~"guidepost|map|board"](${bounds.south},${bounds.west},${bounds.north},${bounds.east});out body;`;
 
-    const bounds = getTileBounds(tile);
-    const tileSignposts = signposts.filter(p => 
-        p.lat >= bounds.south && p.lat <= bounds.north &&
-        p.lon >= bounds.west && p.lon <= bounds.east
-    );
-
-    if (tileSignposts.length === 0) return null;
-    return createSignpostGroup(tileSignposts, tile);
-}
-
-async function fetchWithGlobalLock(z: number, x: number, y: number): Promise<Signpost[] | null> {
-    const res = await globalRequestLock.then(() => fetchPOIsWithCache(z, x, y));
-    globalRequestLock = new Promise(resolve => setTimeout(resolve, 5000));
-    return res;
-}
-
-async function fetchPOIsWithCache(z: number, x: number, y: number): Promise<Signpost[] | null> {
-    const cacheKey = `poi_${z}_${x}_${y}`;
-    
     try {
-        const cache = await caches.open(CACHE_NAME);
-        const cached = await cache.match(cacheKey);
-        if (cached) return await cached.json();
-    } catch (e) {}
-
-    const bounds = getTileBounds({ zoom: z, tx: x, ty: y });
-    const query = `[out:json][timeout:30];node["information"~"guidepost|map|board"](${bounds.south.toFixed(6)},${bounds.west.toFixed(6)},${bounds.north.toFixed(6)},${bounds.east.toFixed(6)});out body;`;
-    
-    for (let attempt = 0; attempt < OVERPASS_SERVERS.length; attempt++) {
-        const server = OVERPASS_SERVERS[currentServerIdx];
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 35000);
-
-            const response = await fetch(`${server}?data=${encodeURIComponent(query)}`, { signal: controller.signal });
-            clearTimeout(timeoutId);
-
-            if (response.ok) {
-                const data = await response.json();
-                const signposts = data.elements.map((el: any) => ({
-                    id: el.id, lat: el.lat, lon: el.lon, name: el.tags.name
-                }));
-                const cache = await caches.open(CACHE_NAME);
-                await cache.put(cacheKey, new Response(JSON.stringify(signposts)));
-                return signposts;
-            }
-
-            if (response.status === 429) {
-                currentServerIdx = (currentServerIdx + 1) % OVERPASS_SERVERS.length;
-                await new Promise(r => setTimeout(r, 2000));
-                continue; 
-            }
-            
-            currentServerIdx = (currentServerIdx + 1) % OVERPASS_SERVERS.length;
-        } catch (e) {
-            currentServerIdx = (currentServerIdx + 1) % OVERPASS_SERVERS.length;
-            await new Promise(r => setTimeout(r, 1000));
+        const data = await fetchOverpassData(query);
+        if (data && data.elements) {
+            poiCache.set(cacheKey, data.elements);
+            renderPOIs(tile, data.elements);
         }
-    }
-    
-    console.warn("Overpass API: Tous les serveurs ont échoué ou sont saturés.");
-    showToast("📍 Signalétique : Réseau saturé");
-    return null;
+    } catch (e) {}
 }
 
-function createSignpostGroup(signposts: Signpost[], tile: any): THREE.Group {
-    const group = new THREE.Group();
-    const material = new THREE.SpriteMaterial({ map: signpostTexture, transparent: true, depthTest: true });
+function renderPOIs(tile: any, elements: any[]) {
+    if (!elements || elements.length === 0 || !tile.mesh) return;
 
-    signposts.forEach(poi => {
-        const worldPos = lngLatToWorld(poi.lon, poi.lat, state.originTile);
-        const localX = worldPos.x - tile.worldX;
-        const localZ = worldPos.z - tile.worldZ;
-        const alt = getAltitudeAt(worldPos.x, worldPos.z);
-        if (alt === 0) return;
+    elements.forEach(el => {
+        if (el.type === 'node') {
+            const worldPos = tile.lngLatToLocal(el.lon, el.lat);
+            const groundH = getAltitudeAt(tile.mesh.position.x + worldPos.x, tile.mesh.position.z + worldPos.z);
+            
+            const markerGroup = new THREE.Group();
+            const poleGeo = new THREE.CylinderGeometry(0.2, 0.2, 3);
+            const poleMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
+            const pole = new THREE.Mesh(poleGeo, poleMat);
+            pole.position.y = 1.5;
+            markerGroup.add(pole);
 
-        const sprite = new THREE.Sprite(material);
-        sprite.scale.set(25, 25, 1);
-        sprite.position.set(localX, alt + 25, localZ);
-        sprite.userData = { name: poi.name, id: poi.id };
-        group.add(sprite);
+            const signGeo = new THREE.BoxGeometry(1.2, 0.4, 0.1);
+            const signMat = new THREE.MeshStandardMaterial({ color: 0xffd700 });
+            const sign = new THREE.Mesh(signGeo, signMat);
+            sign.position.y = 2.8;
+            markerGroup.add(sign);
+
+            markerGroup.position.set(worldPos.x, groundH, worldPos.z);
+            markerGroup.userData = { id: el.id, name: el.tags?.name || "Signalétique randonnée" };
+            
+            tile.mesh.add(markerGroup);
+        }
     });
-
-    return group;
 }

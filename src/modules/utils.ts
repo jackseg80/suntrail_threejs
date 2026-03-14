@@ -1,134 +1,97 @@
-import * as THREE from 'three';
-
 /**
- * Détecte si l'appareil est un mobile ou une tablette (tactile)
+ * Throttle function to limit execution frequency
  */
-export function isMobileDevice(): boolean {
-    return (('ontouchstart' in window) || (navigator.maxTouchPoints > 0));
+export function throttle<T extends (...args: any[]) => any>(func: T, limit: number): T {
+    let lastFunc: any;
+    let lastRan: number;
+    return ((...args: any[]) => {
+        if (!lastRan) {
+            func(...args);
+            lastRan = Date.now();
+        } else {
+            clearTimeout(lastFunc);
+            lastFunc = setTimeout(() => {
+                if ((Date.now() - lastRan) >= limit) {
+                    func(...args);
+                    lastRan = Date.now();
+                }
+            }, limit - (Date.now() - lastRan));
+        }
+    }) as T;
 }
 
 /**
- * Vérifie si une position GPS est à l'intérieur des frontières approximatives de la Suisse
- */
-export function isPositionInSwitzerland(lat: number, lon: number): boolean {
-    return (lat >= 45.8 && lat <= 47.8 && lon >= 5.9 && lon <= 10.5);
-}
-
-/**
- * Affiche une notification temporaire à l'écran
+ * Affiche un toast temporaire
  */
 export function showToast(message: string): void {
     const container = document.getElementById('toast-container');
     if (!container) return;
-    
-    // On limite à 2 toasts simultanés
-    if (container.children.length > 1) {
-        const first = container.firstChild;
-        if (first) container.removeChild(first);
-    }
-
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.textContent = message;
     container.appendChild(toast);
-
-    setTimeout(() => {
-        if (toast.parentNode === container) {
-            container.removeChild(toast);
-        }
-    }, 1500);
+    setTimeout(() => { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 500); }, 3000);
 }
 
 /**
- * Limite la fréquence d'exécution d'une fonction
+ * Détection de plateforme
  */
-export function throttle<T extends (...args: any[]) => any>(func: T, limit: number): (...args: Parameters<T>) => void {
-    let inThrottle: boolean = false;
-    return function(this: any, ...args: Parameters<T>) {
-        if (!inThrottle) {
-            func.apply(this, args);
-            inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
-        }
+export function isMobileDevice(): boolean {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+/**
+ * Vérifie si une coordonnée est en Suisse (Bounding Box approximative)
+ */
+export function isPositionInSwitzerland(lat: number, lon: number): boolean {
+    return (lat > 45.8 && lat < 47.8 && lon > 5.9 && lon < 10.5);
+}
+
+// --- OVERPASS GLOBAL ORCHESTRATOR (v4.5.21) ---
+let isOverpassLocked = false;
+let lastOverpassRequest = 0;
+const OVERPASS_COOLDOWN = 1200; // 1.2s entre chaque tuile
+const serverQuarantine: Record<string, number> = {};
+
+export async function fetchOverpassData(query: string): Promise<any> {
+    const now = Date.now();
+    
+    // 1. Verrou Global Strict
+    if (isOverpassLocked || (now - lastOverpassRequest < OVERPASS_COOLDOWN)) {
+        return null;
     }
-}
 
-interface Peak {
-    name: string;
-    lat: number;
-    lon: number;
-    alt: number;
-}
+    const servers = [
+        'https://overpass-api.de/api/interpreter',
+        'https://lz4.overpass-api.de/api/interpreter',
+        'https://z.overpass-api.de/api/interpreter'
+    ];
 
-const PEAKS_DB: Peak[] = [
-    { name: "Mont Blanc", lat: 45.8326, lon: 6.8652, alt: 4808 },
-    { name: "Aiguille du Midi", lat: 45.8794, lon: 6.8874, alt: 3842 },
-    { name: "Mont Maudit", lat: 45.8486, lon: 6.8711, alt: 4465 },
-    { name: "Mont Blanc du Tacul", lat: 45.8572, lon: 6.8861, alt: 4248 },
-    { name: "Grandes Jorasses", lat: 45.8691, lon: 7.0031, alt: 4208 },
-    { name: "Dent du Géant", lat: 45.8664, lon: 6.9533, alt: 4013 },
-    { name: "Aiguille Verte", lat: 45.9364, lon: 6.9703, alt: 4122 },
-    { name: "Les Drus", lat: 45.9333, lon: 6.9533, alt: 3754 },
-    { name: "Aiguille de Bionnassay", lat: 45.8461, lon: 6.7858, alt: 4052 },
-    { name: "Dôme du Goûter", lat: 45.8475, lon: 6.8447, alt: 4304 },
-    { name: "Mont Tondu", lat: 45.7725, lon: 6.7486, alt: 3196 },
-    { name: "Aiguille du Tour", lat: 45.9939, lon: 7.0061, alt: 3540 },
-    { name: "Brévent", lat: 45.9336, lon: 6.8375, alt: 2525 },
-    { name: "Flégère", lat: 45.9606, lon: 6.8858, alt: 1877 },
-    { name: "Aiguilles Rouges", lat: 45.9858, lon: 6.8522, alt: 2965 },
-    { name: "Matterhorn (Cervin)", lat: 45.9763, lon: 7.6586, alt: 4478 },
-    { name: "Eiger", lat: 46.5775, lon: 8.0053, alt: 3967 },
-    { name: "Jungfrau", lat: 46.5367, lon: 7.9625, alt: 4158 },
-    { name: "Monch", lat: 46.5586, lon: 7.9922, alt: 4107 }
-];
+    // 2. Sélection d'un serveur non-quarantiné
+    const availableServers = servers.filter(s => !serverQuarantine[s] || now > serverQuarantine[s]);
+    if (availableServers.length === 0) return null;
+    
+    const server = availableServers[Math.floor(Math.random() * availableServers.length)];
 
-export async function fetchNearbyPeaks(lat: number, lon: number): Promise<Peak[]> {
-    return PEAKS_DB.filter(p => {
-        const d = Math.sqrt(Math.pow(lat - p.lat, 2) + Math.pow(lon - p.lon, 2));
-        return d < 0.5; 
-    });
-}
+    isOverpassLocked = true;
+    lastOverpassRequest = now;
 
-export function createLabelSprite(text: string): THREE.Sprite {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error("Could not get 2D context");
-    
-    const fontSize = 32;
-    ctx.font = `bold ${fontSize}px "DM Sans", sans-serif`;
-    
-    const textWidth = ctx.measureText(text.toUpperCase()).width;
-    const padding = 40;
-    const badgeWidth = textWidth + padding * 2;
-    const badgeHeight = 60;
-    
-    canvas.width = badgeWidth + 20; 
-    canvas.height = badgeHeight + 20;
-    
-    ctx.font = `bold ${fontSize}px "DM Sans", sans-serif`;
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'center';
+    try {
+        const response = await fetch(server, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `data=${encodeURIComponent(query)}`
+        });
 
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-    // @ts-ignore - roundRect is modern and might not be in all TS libs yet
-    if (ctx.roundRect) ctx.roundRect(10, 10, badgeWidth, badgeHeight, 30);
-    else ctx.rect(10, 10, badgeWidth, badgeHeight);
-    
-    ctx.fill();
-    
-    ctx.strokeStyle = '#d4af37';
-    ctx.lineWidth = 3;
-    ctx.stroke();
+        if (response.status === 429) {
+            serverQuarantine[server] = now + 30000; // 30s de pause pour ce serveur
+            throw new Error('429');
+        }
 
-    ctx.fillStyle = 'white';
-    ctx.fillText(text.toUpperCase(), canvas.width / 2, canvas.height / 2);
-
-    const texture = new THREE.CanvasTexture(canvas);
-    const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
-    const sprite = new THREE.Sprite(spriteMaterial);
-    
-    const ratio = canvas.width / canvas.height;
-    sprite.scale.set(250 * ratio, 250, 1);
-    
-    return sprite;
+        if (!response.ok) throw new Error('OSM Error');
+        const data = await response.json();
+        return data;
+    } finally {
+        setTimeout(() => { isOverpassLocked = false; }, 200);
+    }
 }

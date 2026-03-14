@@ -8,11 +8,10 @@ import { updateSunPosition } from './sun';
 import { getAltitudeAt } from './analysis';
 import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, resetTerrain, clearCache, autoSelectMapSource, updateGPXMesh } from './terrain';
 import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat } from './geo';
-import { throttle } from './utils';
+import { throttle, showToast } from './utils';
 import { initVegetationResources } from './vegetation';
 import { initWeatherSystem, updateWeatherSystem, fetchWeather, updateWeatherUIIndicator } from './weather';
 
-// --- BOUSSOLE 3D NATIVE ---
 let compassScene: THREE.Scene;
 let compassCamera: THREE.PerspectiveCamera;
 let compassRenderer: THREE.WebGLRenderer;
@@ -28,14 +27,10 @@ function initCompass() {
     compassRenderer.setPixelRatio(window.devicePixelRatio);
     compassRenderer.setSize(120, 120);
     compassObject = new THREE.Group();
-    const geoNorth = new THREE.ConeGeometry(1, 2.5, 16);
-    const matNorth = new THREE.MeshBasicMaterial({ color: 0xff3333 });
-    const north = new THREE.Mesh(geoNorth, matNorth);
+    const north = new THREE.Mesh(new THREE.ConeGeometry(1, 2.5, 16), new THREE.MeshBasicMaterial({ color: 0xff3333 }));
     north.rotation.x = -Math.PI / 2; north.position.z = -1.25;
     compassObject.add(north);
-    const geoSouth = new THREE.ConeGeometry(1, 2.5, 16);
-    const matSouth = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    const south = new THREE.Mesh(geoSouth, matSouth);
+    const south = new THREE.Mesh(new THREE.ConeGeometry(1, 2.5, 16), new THREE.MeshBasicMaterial({ color: 0xffffff }));
     south.rotation.x = Math.PI / 2; south.position.z = 1.25;
     compassObject.add(south);
 
@@ -86,7 +81,7 @@ export async function initScene(): Promise<void> {
     state.renderer.setSize(window.innerWidth, window.innerHeight);
     state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
     state.renderer.shadowMap.enabled = true;
-    state.renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
+    state.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     state.renderer.toneMapping = THREE.AgXToneMapping;
     container.appendChild(state.renderer.domElement);
 
@@ -102,15 +97,20 @@ export async function initScene(): Promise<void> {
     state.scene.add(sky);
     state.sky = sky;
 
-    state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 1000000);
+    state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 2000000);
     state.camera.position.set(0, 35000, 40000);
 
     const controls = new OrbitControls(state.camera, state.renderer.domElement);
     state.controls = controls;
     controls.enableDamping = true;
     controls.dampingFactor = 0.1;
-    controls.minDistance = 100; // Butée physique (v4.5.11)
-    controls.maxDistance = 650000;
+    controls.minDistance = 100; 
+    controls.maxDistance = 800000;
+    
+    (controls as any)._isMoving = false;
+    controls.addEventListener('start', () => { (controls as any)._isMoving = true; });
+    controls.addEventListener('end', () => { (controls as any)._isMoving = false; });
+
     controls.screenSpacePanning = false;
     controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
     controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
@@ -125,40 +125,57 @@ export async function initScene(): Promise<void> {
         if (!state.controls || !state.camera) return;
         const dx = state.controls.target.x, dz = state.controls.target.z;
         const dist = state.camera.position.distanceTo(state.controls.target);
-        let newZoom = state.ZOOM;
+        
+        // --- SÉCURITÉ ANTI-CRASH (NaN) ---
+        if (!isFinite(dx) || !isFinite(dz) || !isFinite(dist)) {
+            console.error("OrbitControls Singularity detected. Emergency Reset.");
+            state.camera.position.set(0, 35000, 40000);
+            state.controls.target.set(0, 0, 0);
+            state.controls.update();
+            return;
+        }
 
+        let newZoom = state.ZOOM;
         const boost = (state.MAP_SOURCE === 'satellite') ? 2.0 : 1.2;
         if (state.ZOOM === 13) { if (dist < 22000) newZoom = 14; else if (dist > 65000) newZoom = 12; }
         else if (state.ZOOM === 14) { if (dist > 35000) newZoom = 13; else if (dist < 9000 * boost) newZoom = 15; }
+        else if (state.ZOOM === 15) { if (dist > 14000 * boost) newZoom = 14; else if (dist < 4000 * boost) newZoom = 16; }
+        else if (state.ZOOM === 16) { if (dist > 6000 * boost) newZoom = 15; else if (dist < 1800 * boost) newZoom = 17; }
+        else if (state.ZOOM === 17) { if (dist > 2500 * boost) newZoom = 16; else if (dist < 800 * boost) newZoom = 18; }
+        else if (state.ZOOM === 18) { if (dist > 1200 * boost) newZoom = 17; }
         else if (state.ZOOM === 12) { if (dist < 45000) newZoom = 13; else if (dist > 120000) newZoom = 11; }
         else if (state.ZOOM === 11) { if (dist < 90000) newZoom = 12; else if (dist > 220000) newZoom = 10; }
         else if (state.ZOOM <= 10) { if (dist < 180000) newZoom = 11; else if (dist > 400000) newZoom = 9; }
 
         if (newZoom !== state.ZOOM) { state.ZOOM = newZoom; updateUIZoom(newZoom); }
 
-        // --- BUTÉE SOL INTELLIGENTE (v4.5.11) ---
-        // On cale la cible au sol pour que minDistance=100 nous arrête à 100m du sol réel
-        const groundAtTarget = getAltitudeAt(dx, dz);
-        state.controls.target.y = groundAtTarget;
-
         const gpsCenter = worldToLngLat(dx, dz, state.originTile);
         autoSelectMapSource(gpsCenter.lat, gpsCenter.lon);
 
-        if (state.ZOOM >= 12 && (newZoom === state.ZOOM) && (Math.sqrt(dx*dx + dz*dz) > 25000) && (Date.now() - lastRecenterTime > 4000)) {
-            lastRecenterTime = Date.now();
-            const oldOriginX = (state.originTile.x + 0.5) / Math.pow(2, state.ZOOM);
-            const oldOriginZ = (state.originTile.y + 0.5) / Math.pow(2, state.ZOOM);
-            const newTile = lngLatToTile(gpsCenter.lon, gpsCenter.lat, state.ZOOM);
-            if (!isNaN(newTile.x)) {
-                state.originTile = newTile;
-                const newOriginX = (state.originTile.x + 0.5) / Math.pow(2, state.ZOOM);
-                const newOriginZ = (state.originTile.y + 0.5) / Math.pow(2, state.ZOOM);
-                const offsetX = (oldOriginX - newOriginX) * EARTH_CIRCUMFERENCE;
-                const offsetZ = (oldOriginZ - newOriginZ) * EARTH_CIRCUMFERENCE;
-                state.camera.position.x += offsetX; state.camera.position.z += offsetZ;
-                state.controls.target.x += offsetX; state.controls.target.z += offsetZ;
-                state.controls.update(); repositionAllTiles(); if (state.rawGpxData) updateGPXMesh();
-                fetchWeather(gpsCenter.lat, gpsCenter.lon);
+        // --- RECENTRAGE GÉANT SÉCURISÉ (v4.5.25) ---
+        const isUserInteracting = (state.controls as any)._isMoving;
+        if (state.ZOOM >= 12 && !isUserInteracting && (newZoom === state.ZOOM) && (Math.sqrt(dx*dx + dz*dz) > 35000) && (Date.now() - lastRecenterTime > 5000)) {
+            const newTile = lngLatToTile(gpsCenter.lon, gpsCenter.lat, state.originTile.z);
+            if (!isNaN(newTile.x) && !isNaN(newTile.y)) {
+                
+                const oldOriginXN = (state.originTile.x + 0.5) / Math.pow(2, state.originTile.z);
+                const oldOriginYN = (state.originTile.y + 0.5) / Math.pow(2, state.originTile.z);
+                const newOriginXN = (newTile.x + 0.5) / Math.pow(2, state.originTile.z);
+                const newOriginYN = (newTile.y + 0.5) / Math.pow(2, state.originTile.z);
+                
+                const offsetX = (oldOriginXN - newOriginXN) * EARTH_CIRCUMFERENCE;
+                const offsetZ = (oldOriginYN - newOriginYN) * EARTH_CIRCUMFERENCE;
+                
+                if (Math.abs(offsetX) < 250000 && Math.abs(offsetZ) < 250000) {
+                    state.originTile = newTile;
+                    lastRecenterTime = Date.now();
+                    state.camera.position.x += offsetX; state.camera.position.z += offsetZ;
+                    state.controls.target.x += offsetX; state.controls.target.z += offsetZ;
+                    state.controls.update(); 
+                    repositionAllTiles(); 
+                    if (state.rawGpxData) updateGPXMesh();
+                    fetchWeather(gpsCenter.lat, gpsCenter.lon);
+                }
             }
         }
         updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, dist, state.controls.target.x, state.controls.target.z);
@@ -194,7 +211,25 @@ export async function initScene(): Promise<void> {
 
         const delta = clock.getDelta();
         const hasWeather = state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0;
-        const needsUpdate = state.controls.update() || state.isAnimating || hasWeather;
+        
+        // --- LOGIQUE ANIMATION BOUSSOLE (v4.5.26) ---
+        if (isResettingNorth) {
+            const elapsed = Date.now() - resetStartTime;
+            const progress = Math.min(elapsed / RESET_DURATION, 1.0);
+            
+            // On utilise une courbe easeInOut pour plus de douceur
+            const ease = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+            
+            state.camera.position.lerpVectors(startCamPos, endCamPos, ease);
+            state.controls.update();
+            
+            if (progress >= 1.0) {
+                isResettingNorth = false;
+                showToast("Orientation Nord rétablie");
+            }
+        }
+
+        const needsUpdate = state.controls.update() || state.isAnimating || hasWeather || isResettingNorth;
 
         if (needsUpdate) {
             state.stats?.begin();
@@ -203,11 +238,16 @@ export async function initScene(): Promise<void> {
 
             const dist = state.camera.position.distanceTo(state.controls.target);
             const hFactor = THREE.MathUtils.clamp((dist - 2000) / 200000, 0, 1);
+            
+            // Parabole de Tilt
             let hardMaxTilt = THREE.MathUtils.lerp(1.2, 0.05, Math.pow(hFactor, 0.5));
             if (state.ZOOM <= 8) hardMaxTilt = 0.05; 
-            else if (state.ZOOM <= 11) hardMaxTilt = Math.max(hardMaxTilt, 0.4);
-            else if (state.ZOOM <= 13) hardMaxTilt = Math.max(hardMaxTilt, 0.8); 
-            else if (state.ZOOM >= 16) hardMaxTilt = Math.min(hardMaxTilt, 0.85);
+            else if (state.ZOOM <= 11) hardMaxTilt = Math.min(hardMaxTilt, 0.4);
+            else if (state.ZOOM <= 13) hardMaxTilt = Math.min(hardMaxTilt, 0.8); 
+            else if (state.ZOOM === 14) hardMaxTilt = Math.min(hardMaxTilt, 0.9);
+            else if (state.ZOOM === 15) hardMaxTilt = Math.min(hardMaxTilt, 0.8); 
+            else if (state.ZOOM === 16) hardMaxTilt = Math.min(hardMaxTilt, 0.7); 
+            else if (state.ZOOM >= 17) hardMaxTilt = Math.min(hardMaxTilt, 0.65);
 
             const targetTilt = THREE.MathUtils.lerp(1.1, 0.05, Math.pow(hFactor, 0.6));
             const currentTilt = state.controls.getPolarAngle();
@@ -225,6 +265,13 @@ export async function initScene(): Promise<void> {
                 }
             }
 
+            // --- BUTÉE SOL ULTRA-LÉGÈRE (v4.5.25) ---
+            // On utilise le cache de getAltitudeAt qui est désormais instantané (O(1))
+            const groundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
+            if (state.camera.position.y < groundH + 45) {
+                state.camera.position.y = groundH + 45;
+            }
+
             if (state.scene.fog instanceof THREE.Fog) {
                 const alt = state.camera.position.y;
                 state.scene.fog.near = alt * 2.0; state.scene.fog.far = alt * 12.0;
@@ -238,6 +285,35 @@ export async function initScene(): Promise<void> {
             state.stats?.end();
         }
     });
+}
+
+// --- ANIMATION BOUSSOLE (v4.5.26) ---
+let isResettingNorth = false;
+let resetStartTime = 0;
+const RESET_DURATION = 800; // 800ms : Le juste milieu (v4.5.29)
+let startCamPos = new THREE.Vector3();
+let endCamPos = new THREE.Vector3();
+
+export function resetToNorth(): void {
+    if (!state.controls || !state.camera || isResettingNorth) return;
+    
+    isResettingNorth = true;
+    resetStartTime = Date.now();
+    startCamPos.copy(state.camera.position);
+    
+    const distance = state.camera.position.distanceTo(state.controls.target);
+    
+    // --- CALCUL CIBLE ARC (v4.5.27) ---
+    // On place la caméra très haut (Y) mais très légèrement au SUD (Z+) 
+    // pour que le Nord soit toujours "en haut" sans perte de repère.
+    const tinyOffset = distance * 0.001; // 0.1% de distance
+    endCamPos.set(
+        state.controls.target.x,
+        state.controls.target.y + distance,
+        state.controls.target.z + tinyOffset
+    );
+    
+    showToast("Réalignement cinématique...");
 }
 
 function onWindowResize(): void {

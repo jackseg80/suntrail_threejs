@@ -4,8 +4,8 @@ import gpxParser from 'gpxparser';
 import { Geolocation } from '@capacitor/geolocation';
 import { state } from './state';
 import { updateSunPosition } from './sun';
-import { initScene } from './scene';
-import { updateVisibleTiles, resetTerrain, updateGPXMesh, deleteTerrainCache, loadTerrain, autoSelectMapSource } from './terrain';
+import { initScene, resetToNorth } from './scene';
+import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain, autoSelectMapSource, deleteTerrainCache } from './terrain';
 import { lngLatToTile, worldToLngLat } from './geo';
 import { showToast } from './utils';
 import { applyPreset, detectBestPreset } from './performance';
@@ -29,11 +29,17 @@ export function initUI(): void {
         const target = e.target as HTMLElement;
         const id = target.id;
 
+        // BOUSSOLE (v4.5.24 FIX) - On vérifie le canvas et le conteneur
+        if (id === 'compass-canvas' || target.closest('#compass-canvas')) {
+            resetToNorth();
+            return;
+        }
+
         if (id === 'bgo') go();
         if (target.closest('#settings-toggle')) document.getElementById('panel')!.classList.add('open');
         if (target.closest('#close-panel')) document.getElementById('panel')!.classList.remove('open');
 
-        if (id === 'layer-btn' || target.closest('#layer-btn')) {
+        if (target.closest('#layer-btn')) {
             const menu = document.getElementById('layer-menu');
             if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
         }
@@ -49,18 +55,22 @@ export function initUI(): void {
             refreshTerrain();
         }
 
-        // 4. GPS
         if (target.closest('#gps-btn')) {
             try {
                 const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true });
                 const { latitude, longitude } = pos.coords;
-                autoSelectMapSource(latitude, longitude);
                 state.TARGET_LAT = latitude; state.TARGET_LON = longitude;
-                state.ZOOM = 13; state.originTile = lngLatToTile(longitude, latitude, 13);
+                state.ZOOM = 13;
+                state.originTile = lngLatToTile(longitude, latitude, 13);
+                resetTerrain();
                 if (state.controls && state.camera) {
-                    state.controls.target.set(0, 0, 0); state.camera.position.set(0, 15000, 20000); state.controls.update();
+                    state.controls.target.set(0, 0, 0);
+                    state.camera.position.set(0, 15000, 20000);
+                    state.controls.update();
                 }
-                refreshTerrain();
+                autoSelectMapSource(latitude, longitude);
+                await updateVisibleTiles();
+                showToast("Position actualisée");
             } catch (err) { showToast("GPS indisponible"); }
         }
 
@@ -117,7 +127,6 @@ export function initUI(): void {
         }
     });
 
-    // --- ÉCOUTEURS D'INPUTS ---
     const hookInput = (id: string, callback: (val: any) => void) => {
         document.getElementById(id)?.addEventListener('input', (e) => callback((e.target as HTMLInputElement).value));
     };
@@ -288,16 +297,15 @@ async function go() {
     const ss = document.getElementById('setup-screen'); if (ss) ss.style.display = 'none';
     const zi = document.getElementById('zoom-indicator'); if (zi) zi.style.display = 'block';
     const bb = document.getElementById('bottom-bar'); if (bb) bb.style.display = 'block';
-    const ts = document.getElementById('top-search-container'); if (ts) ts.style.display = 'block';
     
-    // Initialisation Date (v4.5.6)
-    const dateInput = document.getElementById('date-input') as HTMLInputElement;
-    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
-
     ['layer-btn', 'settings-toggle', 'gps-btn', 'gps-follow-btn', 'screenshot-btn'].forEach(id => {
         const el = document.getElementById(id); if (el) el.style.display = 'flex';
     });
     
+    const ts = document.getElementById('top-search-container'); if (ts) ts.style.display = 'block';
+    const dateInput = document.getElementById('date-input') as HTMLInputElement;
+    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+
     autoSelectMapSource(state.TARGET_LAT, state.TARGET_LON);
     await initScene();
     if (state.camera && state.controls) {

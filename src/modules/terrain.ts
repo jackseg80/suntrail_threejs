@@ -206,6 +206,32 @@ export class Tile {
         }
     }
 
+    lngLatToLocal(lon: number, lat: number): THREE.Vector3 {
+        const n = Math.pow(2, this.zoom);
+        const xNorm = (lon + 180) / 360;
+        const yNorm = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2;
+        
+        const txNorm = (this.tx + 0.5) / n;
+        const tyNorm = (this.ty + 0.5) / n;
+        
+        return new THREE.Vector3(
+            (xNorm - txNorm) * EARTH_CIRCUMFERENCE,
+            0,
+            (yNorm - tyNorm) * EARTH_CIRCUMFERENCE
+        );
+    }
+
+    getBounds() {
+        const n = Math.pow(2, this.zoom);
+        const lonWest = this.tx / n * 360 - 180;
+        const lonEast = (this.tx + 1) / n * 360 - 180;
+        const latRadNorth = Math.atan(Math.sinh(Math.PI * (1 - 2 * this.ty / n)));
+        const latNorth = latRadNorth * 180 / Math.PI;
+        const latRadSouth = Math.atan(Math.sinh(Math.PI * (1 - 2 * (this.ty + 1) / n)));
+        const latSouth = latRadSouth * 180 / Math.PI;
+        return { north: latNorth, south: latSouth, west: lonWest, east: lonEast };
+    }
+
     updateHybridSettings(): void {
         const MAX_RGB_ZOOM = 14;
         const colorSourceMaxZoom = this.getNativeColorZoom();
@@ -473,14 +499,7 @@ export class Tile {
         if (state.SHOW_SIGNPOSTS && this.zoom >= 14) {
             setTimeout(() => {
                 if (this.status === 'disposed') return;
-                loadPOIsForTile(this).then(group => {
-                    if (group && this.status !== 'disposed' && state.scene) {
-                        if (this.poiGroup) state.scene.remove(this.poiGroup); // Nettoyage ancien (v4.3.28)
-                        this.poiGroup = group;
-                        this.poiGroup.position.set(this.worldX, 0, this.worldZ);
-                        state.scene.add(this.poiGroup);
-                    }
-                });
+                loadPOIsForTile(this);
             }, delay(50));
         }
 
@@ -488,15 +507,7 @@ export class Tile {
         if (state.SHOW_BUILDINGS && this.zoom >= 14) {
             setTimeout(() => {
                 if (this.status === 'disposed') return;
-                loadBuildingsForTile(this)
-                    .then(mesh => {
-                        if (mesh && this.status !== 'disposed' && state.scene) {
-                            if (this.buildingMesh) state.scene.remove(this.buildingMesh); // Nettoyage ancien (v4.3.28)
-                            this.buildingMesh = mesh;
-                            state.scene.add(this.buildingMesh);
-                        }
-                    })
-                    .catch(err => console.error("[Terrain] Error loading buildings:", err));
+                loadBuildingsForTile(this);
             }, delay(150));
         }
 
