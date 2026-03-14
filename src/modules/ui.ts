@@ -5,9 +5,9 @@ import { Geolocation } from '@capacitor/geolocation';
 import { state } from './state';
 import { updateSunPosition } from './sun';
 import { initScene } from './scene';
-import { updateVisibleTiles, resetTerrain, updateGPXMesh, deleteTerrainCache, loadTerrain, autoSelectMapSource } from './terrain';
+import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain, autoSelectMapSource, deleteTerrainCache } from './terrain';
 import { lngLatToTile, worldToLngLat } from './geo';
-import { isPositionInSwitzerland, showToast } from './utils';
+import { showToast } from './utils';
 import { applyPreset, detectBestPreset } from './performance';
 import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';
 import { updateElevationProfile } from './profile';
@@ -24,7 +24,7 @@ export function initUI(): void {
     const k1 = document.getElementById('k1') as HTMLInputElement;
     if (s1 && k1) k1.value = s1;
 
-    // --- DÉLÉGATION GLOBALE DES CLICS ---
+    // --- DÉLÉGATION GLOBALE DES CLICS (INCASSABLE) ---
     document.addEventListener('click', async (e) => {
         const target = e.target as HTMLElement;
         const id = target.id;
@@ -46,18 +46,20 @@ export function initUI(): void {
             state.hasManualSource = true;
             const menu = document.getElementById('layer-menu');
             if (menu) menu.style.display = 'none';
-            resetTerrain(); await updateVisibleTiles();
+            refreshTerrain();
         }
 
         if (id === 'gps-btn') {
             try {
                 const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true });
-                state.TARGET_LAT = pos.coords.latitude; state.TARGET_LON = pos.coords.longitude;
-                state.ZOOM = 13; state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, 13);
+                const { latitude, longitude } = pos.coords;
+                autoSelectMapSource(latitude, longitude);
+                state.TARGET_LAT = latitude; state.TARGET_LON = longitude;
+                state.ZOOM = 13; state.originTile = lngLatToTile(longitude, latitude, 13);
                 if (state.controls && state.camera) {
                     state.controls.target.set(0, 0, 0); state.camera.position.set(0, 15000, 20000); state.controls.update();
                 }
-                resetTerrain(); await updateVisibleTiles();
+                refreshTerrain();
             } catch (err) { showToast("GPS indisponible"); }
         }
 
@@ -67,12 +69,19 @@ export function initUI(): void {
             if (state.isFollowingUser) { await startLocationTracking(); centerOnUser(); }
         }
 
-        // 5. MÉTÉO (Dashboard & Simulation)
+        // MÉTÉO (Simple & Expert)
         if (id === 'zoom-indicator' || target.closest('#zoom-indicator') || id === 'weather-clickable') {
             openWeatherPanel();
         }
         if (id === 'close-weather') document.getElementById('weather-panel')!.style.display = 'none';
         
+        if (id === 'open-expert-weather') {
+            const wp = document.getElementById('weather-panel');
+            if (wp) wp.style.display = 'none';
+            openExpertWeatherPanel();
+        }
+        if (id === 'close-expert-weather') document.getElementById('expert-weather-panel')!.style.display = 'none';
+
         const wBtn = target.closest('.weather-btn') as HTMLElement;
         if (wBtn) {
             state.currentWeather = wBtn.dataset.weather as any;
@@ -81,7 +90,7 @@ export function initUI(): void {
             import('./weather').then(m => m.updateWeatherUIIndicator());
         }
 
-        // 6. ANALYSE SOLAIRE
+        // ANALYSE SOLAIRE
         if (id === 'probe-btn') {
             e.stopPropagation();
             runSolarProbe(lastClickedCoords.x, lastClickedCoords.z, lastClickedCoords.alt);
@@ -92,7 +101,6 @@ export function initUI(): void {
             navigator.clipboard.writeText(report); showToast("Copié !");
         }
 
-        // 7. GPX & Capture
         if (id === 'gpx-btn') document.getElementById('gpx-upload')!.click();
         if (id === 'screenshot-btn') takeScreenshot();
 
@@ -100,7 +108,7 @@ export function initUI(): void {
         if (pBtn) {
             const preset = pBtn.dataset.preset as any;
             applyPreset(preset);
-            resetTerrain(); await updateVisibleTiles();
+            refreshTerrain();
         }
 
         if (target.tagName === 'CANVAS') {
@@ -108,6 +116,7 @@ export function initUI(): void {
         }
     });
 
+    // --- ÉCOUTEURS D'INPUTS (SLIDERS / CHECKBOXES) ---
     const hookInput = (id: string, callback: (val: any) => void) => {
         document.getElementById(id)?.addEventListener('input', (e) => callback((e.target as HTMLInputElement).value));
     };
@@ -117,19 +126,19 @@ export function initUI(): void {
 
     hookInput('res-slider', (v) => { state.RESOLUTION = parseInt(v); document.getElementById('res-disp')!.textContent = v; applyPreset('custom'); });
     hookInput('range-slider', (v) => { state.RANGE = parseInt(v); document.getElementById('range-disp')!.textContent = v; applyPreset('custom'); });
-    hookInput('exag-slider', (v) => { state.RELIEF_EXAGGERATION = parseFloat(v); document.getElementById('exag-disp')!.textContent = v; resetTerrain(); loadTerrain(); });
+    hookInput('exag-slider', (v) => { state.RELIEF_EXAGGERATION = parseFloat(v); document.getElementById('exag-disp')!.textContent = v; refreshTerrain(); loadTerrain(); });
     hookInput('time-slider', (v) => updateSunPosition(parseInt(v)));
     hookInput('weather-density-slider', (v) => { state.WEATHER_DENSITY = parseInt(v); document.getElementById('weather-density-disp')!.textContent = v; });
     hookInput('weather-speed-slider', (v) => { state.WEATHER_SPEED = parseFloat(v); document.getElementById('weather-speed-disp')!.textContent = parseFloat(v).toFixed(1); });
-    hookInput('veg-density-slider', (v) => { state.VEGETATION_DENSITY = parseInt(v); document.getElementById('veg-density-disp')!.textContent = v; resetTerrain(); loadTerrain(); });
-    hookInput('fog-slider', (v) => { state.FOG_FAR = parseInt(v) * 1000; resetTerrain(); loadTerrain(); });
+    hookInput('veg-density-slider', (v) => { state.VEGETATION_DENSITY = parseInt(v); document.getElementById('veg-density-disp')!.textContent = v; refreshTerrain(); loadTerrain(); });
+    hookInput('fog-slider', (v) => { state.FOG_FAR = parseInt(v) * 1000; refreshTerrain(); loadTerrain(); });
 
     hookChange('shadow-toggle', (v) => { state.SHADOWS = v; if (state.sunLight) state.sunLight.castShadow = v; });
-    hookChange('veg-toggle', (v) => { state.SHOW_VEGETATION = v; resetTerrain(); loadTerrain(); });
-    hookChange('buildings-toggle', (v) => { state.SHOW_BUILDINGS = v; resetTerrain(); loadTerrain(); });
-    hookChange('poi-toggle', (v) => { state.SHOW_SIGNPOSTS = v; resetTerrain(); loadTerrain(); });
-    hookChange('trails-toggle', (v) => { state.SHOW_TRAILS = v; resetTerrain(); loadTerrain(); });
-    hookChange('slopes-toggle', (v) => { state.SHOW_SLOPES = v; resetTerrain(); loadTerrain(); });
+    hookChange('veg-toggle', (v) => { state.SHOW_VEGETATION = v; refreshTerrain(); loadTerrain(); });
+    hookChange('buildings-toggle', (v) => { state.SHOW_BUILDINGS = v; refreshTerrain(); loadTerrain(); });
+    hookChange('poi-toggle', (v) => { state.SHOW_SIGNPOSTS = v; refreshTerrain(); loadTerrain(); });
+    hookChange('trails-toggle', (v) => { state.SHOW_TRAILS = v; refreshTerrain(); loadTerrain(); });
+    hookChange('slopes-toggle', (v) => { state.SHOW_SLOPES = v; refreshTerrain(); loadTerrain(); });
     hookChange('stats-toggle', (v) => { state.SHOW_STATS = v; if (state.stats) state.stats.dom.style.display = v ? 'block' : 'none'; });
     hookChange('debug-toggle', (v) => { state.SHOW_DEBUG = v; });
 
@@ -137,14 +146,17 @@ export function initUI(): void {
         state.LOAD_DELAY_FACTOR = parseFloat((e.target as HTMLSelectElement).value);
     });
 
-    document.getElementById('api-key-form')?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const input = document.getElementById('maptiler-key-input') as HTMLInputElement;
-        if (input.value.length > 5) {
-            state.MK = input.value;
-            localStorage.setItem('maptiler_key_3d', state.MK);
-            showToast("Clé mise à jour");
-            resetTerrain(); loadTerrain();
+    document.getElementById('clear-cache-btn')?.addEventListener('click', async () => {
+        if (confirm("Vider le cache local ?")) { await deleteTerrainCache(); refreshTerrain(); }
+    });
+
+    document.getElementById('gpx-upload')?.addEventListener('change', (e) => {
+        const target = e.target as HTMLInputElement;
+        const file = target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => { if (typeof ev.target?.result === 'string') handleGPX(ev.target.result); };
+            reader.readAsText(file);
         }
     });
 
@@ -167,11 +179,11 @@ function handleMapClick(e: MouseEvent) {
         const realAlt = getAltitudeAt(hitPoint.x, hitPoint.z) / state.RELIEF_EXAGGERATION;
         const cp = document.getElementById('coords-panel')!;
         cp.style.display = 'block';
-        document.getElementById('click-latlon')!.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
-        document.getElementById('click-alt')!.textContent = `${Math.round(realAlt)} m`;
+        const cll = document.getElementById('click-latlon'); if (cll) cll.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
+        const cal = document.getElementById('click-alt'); if (cal) cal.textContent = `${Math.round(realAlt)} m`;
         lastClickedCoords = { x: hitPoint.x, z: hitPoint.z, alt: realAlt * state.RELIEF_EXAGGERATION };
     } else {
-        document.getElementById('coords-panel')!.style.display = 'none';
+        const cp = document.getElementById('coords-panel'); if (cp) cp.style.display = 'none';
     }
 }
 
@@ -200,15 +212,70 @@ function openWeatherPanel() {
 
     const hCont = document.getElementById('w-hourly');
     if (hCont && state.weatherData.hourly) {
-        hCont.innerHTML = state.weatherData.hourly.map(h => `
-            <div style="min-width:55px; background:rgba(255,255,255,0.03); padding:8px; border-radius:10px; text-align:center; border:1px solid var(--border);">
-                <div style="font-size:9px; color:var(--t2); mb:4px;">${h.time}</div>
-                <div style="font-size:14px;">${h.code >= 51 ? '🌧️' : h.code >= 71 ? '❄️' : '☀️'}</div>
-                <div style="font-size:11px; font-weight:700;">${Math.round(h.temp)}°</div>
+        hCont.innerHTML = state.weatherData.hourly.slice(0, 24).map(h => `
+            <div style="min-width:65px; background:rgba(255,255,255,0.03); padding:10px; border-radius:12px; text-align:center; border:1px solid var(--border); flex-shrink:0;">
+                <div style="font-size:10px; color:var(--t2); margin-bottom:5px;">${h.time}</div>
+                <div style="font-size:18px; margin-bottom:5px;">${h.code >= 51 ? (h.code >= 71 ? '❄️' : '🌧️') : '☀️'}</div>
+                <div style="font-size:12px; font-weight:700;">${Math.round(h.temp)}°</div>
             </div>
         `).join('');
+
+        hCont.onwheel = (e) => {
+            if (e.deltaY !== 0) {
+                e.preventDefault();
+                hCont.scrollLeft += e.deltaY;
+            }
+        };
     }
     wp.style.display = 'block';
+}
+
+function openExpertWeatherPanel() {
+    const ep = document.getElementById('expert-weather-panel')!;
+    if (!state.weatherData) return;
+
+    const getSet = (id: string, val: string) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    
+    getSet('ex-location', state.weatherData.locationName || 'Station Expert');
+    getSet('ex-coords', `${state.TARGET_LAT.toFixed(4)}, ${state.TARGET_LON.toFixed(4)}`);
+    
+    getSet('ex-gusts', `${Math.round(state.weatherData.windGusts || 0)} km/h`);
+    getSet('ex-vis', `${(state.weatherData.visibility || 0).toFixed(1)} km`);
+    getSet('ex-precip', `${Math.round(state.weatherData.precProb || 0)} %`);
+    getSet('ex-dew', `${(state.weatherData.dewPoint || 0).toFixed(1)}°C`);
+    
+    getSet('ex-golden', state.weatherData.goldenHour || '--:--');
+    getSet('ex-blue', state.weatherData.blueHour || '--:--');
+    getSet('ex-freezing', `${Math.round(state.weatherData.freezingLevel || 0)} m`);
+    
+    const mi = document.getElementById('ex-moon-icon'); if (mi) mi.textContent = state.weatherData.moonPhase || '🌑';
+    getSet('ex-moon-text', `${state.weatherData.moonIllum || 0}% illuminée`);
+
+    const chart = document.getElementById('ex-chart-container')!;
+    if (state.weatherData.hourly) {
+        const hourly = state.weatherData.hourly;
+        const maxT = Math.max(...hourly.map(h => h.temp));
+        const minT = Math.min(...hourly.map(h => h.temp));
+        const range = maxT - minT || 1;
+
+        chart.innerHTML = hourly.map((h, i) => {
+            const hFactor = (h.temp - minT) / range;
+            const height = 20 + hFactor * 100;
+            const opacity = (i % 2 === 0) ? 0.4 : 0.2;
+            const color = h.code >= 51 ? '#3b82f6' : '#f59e0b';
+            const timeLabel = (i % 3 === 0) ? `<div style="position:absolute; bottom:-25px; left:0; font-size:8px; color:var(--t2);">${h.time}</div>` : '';
+
+            return `
+                <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; position:relative;" title="${h.time}: ${h.temp}°C">
+                    ${timeLabel}
+                    <div style="height:${height}px; background:${color}; opacity:${opacity}; border-radius:4px 4px 0 0;"></div>
+                    <div style="position:absolute; bottom:${height + 5}px; left:50%; transform:translateX(-50%); font-size:8px; color:white; font-weight:700;">${Math.round(h.temp)}°</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    ep.style.display = 'block';
 }
 
 async function go() {
@@ -216,12 +283,15 @@ async function go() {
     if (!k1 || k1.value.length < 5) return;
     state.MK = k1.value;
     localStorage.setItem('maptiler_key_3d', state.MK);
-    document.getElementById('setup-screen')!.style.display = 'none';
-    document.getElementById('zoom-indicator')!.style.display = 'block';
-    document.getElementById('bottom-bar')!.style.display = 'block';
+    
+    const ss = document.getElementById('setup-screen'); if (ss) ss.style.display = 'none';
+    const zi = document.getElementById('zoom-indicator'); if (zi) zi.style.display = 'block';
+    const bb = document.getElementById('bottom-bar'); if (bb) bb.style.display = 'block';
+    
     ['layer-btn', 'settings-toggle', 'gps-btn', 'gps-follow-btn', 'screenshot-btn'].forEach(id => {
         const el = document.getElementById(id); if (el) el.style.display = 'flex';
     });
+    
     autoSelectMapSource(state.TARGET_LAT, state.TARGET_LON);
     await initScene();
     if (state.camera && state.controls) {
@@ -276,7 +346,7 @@ function initGeocoding() {
                         autoSelectMapSource(state.TARGET_LAT, state.TARGET_LON);
                         state.ZOOM = 13; state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, 13);
                         if (state.controls && state.camera) { state.controls.target.set(0, 0, 0); state.camera.position.set(0, 35000, 40000); state.controls.update(); }
-                        geoResults.style.display = 'none'; resetTerrain(); updateVisibleTiles();
+                        geoResults.style.display = 'none'; refreshTerrain();
                     });
                 });
             } catch (e) {}

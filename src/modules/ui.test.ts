@@ -1,98 +1,79 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { initUI } from './ui';
 import { state } from './state';
 
-// Mock Capacitor Geolocation
-vi.mock('@capacitor/geolocation', () => ({
-    Geolocation: {
-        checkPermissions: vi.fn(),
-        requestPermissions: vi.fn(),
-        getCurrentPosition: vi.fn()
-    }
-}));
-
-// Mock other modules
-vi.mock('./scene', () => ({ initScene: vi.fn() }));
-vi.mock('./performance', () => ({ 
-    applyPreset: vi.fn(),
-    detectBestPreset: vi.fn(() => 'balanced')
-}));
-vi.mock('./terrain', () => ({ 
-    updateVisibleTiles: vi.fn(),
-    loadTerrain: vi.fn(),
-    resetTerrain: vi.fn(),
-    lngLatToTile: vi.fn(() => ({ x: 0, y: 0, z: 13 })),
-    updateGPXMesh: vi.fn(),
-    worldToLngLat: vi.fn(() => ({ lat: 0, lon: 0 })),
-    activeTiles: new Map()
-}));
-
 describe('ui.ts', () => {
     beforeEach(() => {
-        vi.useFakeTimers();
-        state.uiVisible = true;
-        state.lastUIInteraction = Date.now();
-        
+        vi.resetAllMocks();
+        // Setup minimal DOM
         document.body.innerHTML = `
-            <input id="k1" />
+            <div id="setup-screen"></div>
+            <div id="k1"></div>
             <button id="bgo"></button>
-            <div id="panel"></div>
             <button id="settings-toggle"></button>
+            <div id="panel"></div>
             <button id="close-panel"></button>
-            <button id="layer-btn"></button>
+            <div id="layer-btn"></div>
             <div id="layer-menu" style="display: none;"></div>
-            <div class="layer-item" data-source="swisstopo"></div>
-            <button id="gps-btn"></button>
-            <button id="gpx-btn"></button>
-            <input id="gpx-upload" type="file" />
-            <input id="trail-follow-toggle" type="checkbox" />
-            <div id="toast-container"></div>
-            <div id="res-disp"></div>
-            <div id="range-disp"></div>
-            <input id="res-slider" type="range" />
-            <input id="range-slider" type="range" />
-            <input id="shadow-toggle" type="checkbox" />
-            <button class="preset-btn" data-preset="eco"></button>
-            <button class="preset-btn" data-preset="balanced"></button>
-            <input id="veg-toggle" type="checkbox" />
-            <input id="poi-toggle" type="checkbox" />
-            <input id="buildings-toggle" type="checkbox" />
+            <div id="zoom-indicator"></div>
+            <div id="bottom-bar"></div>
+            <div id="expert-weather-panel"></div>
+            <div id="weather-panel"></div>
+            <button id="open-expert-weather"></button>
+            <button id="close-expert-weather"></button>
+            <div id="coords-panel"></div>
+            <input id="res-slider" type="range">
+            <input id="range-slider" type="range">
+            <input id="exag-slider" type="range">
+            <input id="time-slider" type="range">
+            <input id="weather-density-slider" type="range">
+            <input id="weather-speed-slider" type="range">
+            <input id="veg-density-slider" type="range">
+            <input id="fog-slider" type="range">
+            <input id="shadow-toggle" type="checkbox">
+            <input id="veg-toggle" type="checkbox">
+            <input id="buildings-toggle" type="checkbox">
+            <input id="poi-toggle" type="checkbox">
+            <input id="trails-toggle" type="checkbox">
+            <input id="slopes-toggle" type="checkbox">
+            <input id="stats-toggle" type="checkbox">
+            <input id="debug-toggle" type="checkbox">
+            <select id="load-speed-select"></select>
+            <canvas id="compass-canvas"></canvas>
         `;
-    });
-
-    afterEach(() => {
-        vi.useRealTimers();
+        initUI();
     });
 
     it('should open the settings panel when toggle is clicked', () => {
-        initUI();
-        const panel = document.getElementById('panel');
         const toggle = document.getElementById('settings-toggle');
+        const panel = document.getElementById('panel');
         
         expect(panel?.classList.contains('open')).toBe(false);
-        toggle?.click();
+        // Utilisation de dispatchEvent pour assurer le bubbling vers document
+        toggle?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         expect(panel?.classList.contains('open')).toBe(true);
     });
 
     it('should toggle the layer menu', () => {
-        initUI();
         const layerBtn = document.getElementById('layer-btn');
         const layerMenu = document.getElementById('layer-menu');
         
         expect(layerMenu?.style.display).toBe('none');
-        layerBtn?.click();
+        layerBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         expect(layerMenu?.style.display).toBe('block');
+        layerBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        expect(layerMenu?.style.display).toBe('none');
     });
 
-    it('should initialize the UI as visible (v4.1.0)', () => {
+    it('should initialize the UI as visible', () => {
         expect(state.uiVisible).toBe(true);
     });
 
-    it('should update building visibility state on toggle (v4.3.0)', () => {
-        initUI();
+    it('should update building visibility state on toggle', () => {
         const toggle = document.getElementById('buildings-toggle') as HTMLInputElement;
-        toggle.checked = true;
+        state.SHOW_BUILDINGS = true;
+        toggle.checked = false;
         toggle.dispatchEvent(new Event('change'));
-        expect(state.SHOW_BUILDINGS).toBe(true);
+        expect(state.SHOW_BUILDINGS).toBe(false);
     });
 });

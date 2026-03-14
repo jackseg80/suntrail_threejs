@@ -12,7 +12,8 @@ const BOX_SIZE = 15000.0;
 export async function fetchWeather(lat: number, lon: number): Promise<void> {
     try {
         const [weatherRes, geoRes] = await Promise.all([
-            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,weather_code,freezing_level_height,uv_index,visibility,precipitation_probability&forecast_days=1`),
+            // On demande 3 jours pour toujours avoir du futur devant nous (v4.5.5 fix)
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,weather_code,freezing_level_height,uv_index,visibility,precipitation_probability&forecast_days=3`),
             fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`)
         ]);
 
@@ -24,27 +25,29 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
         const code = current?.weather_code ?? current?.weathercode ?? 0;
         const locationName = geoData.address?.city || geoData.address?.town || geoData.address?.village || geoData.address?.county || "Zone Inconnue";
 
-        // --- CALCULS ASTRONOMIQUES (v4.5.4) ---
         const date = new Date();
         const times = SunCalc.getTimes(date, lat, lon);
         const moonIllum = SunCalc.getMoonIllumination(date);
         
         const fmtTime = (d: Date) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
         
-        // Phases de la lune
         const phases = ['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];
         const phaseIdx = Math.floor(moonIllum.phase * 8) % 8;
 
-        // Prévisions horaires
-        const nowIdx = date.getHours();
+        // --- LOGIQUE DE DÉCALAGE TEMPOREL (FIX v4.5.5) ---
+        // On trouve l'index de l'heure actuelle dans les données horaires
+        const nowISO = new Date().toISOString().split(':')[0] + ':00';
+        let startIndex = data.hourly.time.findIndex((t: string) => t.startsWith(nowISO));
+        if (startIndex === -1) startIndex = date.getHours();
+
         const hourlyForecast = [];
-        for (let i = 1; i <= 6; i++) {
-            const idx = nowIdx + i;
-            if (data.hourly && data.hourly.time[idx]) {
+        // On prend les 24 prochaines heures à partir de MAINTENANT
+        for (let i = startIndex; i < startIndex + 24; i++) {
+            if (data.hourly && data.hourly.time[i]) {
                 hourlyForecast.push({
-                    time: data.hourly.time[idx].split('T')[1],
-                    temp: data.hourly.temperature_2m[idx],
-                    code: data.hourly.weather_code[idx]
+                    time: data.hourly.time[i].split('T')[1],
+                    temp: data.hourly.temperature_2m[i],
+                    code: data.hourly.weather_code[i]
                 });
             }
         }
@@ -67,15 +70,17 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
             state.weatherData = {
                 temp: data.current.temperature_2m,
                 apparentTemp: data.current.apparent_temperature,
+                dewPoint: data.current.dew_point_2m,
                 windSpeed: data.current.wind_speed_10m,
                 windDir: data.current.wind_direction_10m,
+                windGusts: data.current.wind_gusts_10m,
                 humidity: data.current.relative_humidity_2m,
                 cloudCover: data.current.cloud_cover,
                 locationName: locationName,
-                uvIndex: data.hourly?.uv_index[nowIdx] || 0,
-                freezingLevel: data.hourly?.freezing_level_height[nowIdx] || 0,
-                visibility: (data.hourly?.visibility[nowIdx] || 0) / 1000,
-                precProb: data.hourly?.precipitation_probability[nowIdx] || 0,
+                uvIndex: data.hourly?.uv_index[startIndex] || 0,
+                freezingLevel: data.hourly?.freezing_level_height[startIndex] || 0,
+                visibility: (data.hourly?.visibility[startIndex] || 0) / 1000,
+                precProb: data.hourly?.precipitation_probability[startIndex] || 0,
                 goldenHour: fmtTime(times.goldenHour),
                 blueHour: fmtTime(times.dawn),
                 moonPhase: phases[phaseIdx],
