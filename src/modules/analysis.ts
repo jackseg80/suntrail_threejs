@@ -10,20 +10,26 @@ import { showToast } from './utils';
  * Récupère l'altitude à des coordonnées monde (x, z)
  * Utilise les données pixelData des tuiles actives.
  */
+let lastTile: any = null;
+
 export function getAltitudeAt(worldX: number, worldZ: number): number {
-    // 1. Recherche de la meilleure tuile couvrant ce point (v3.10.0)
-    let tile: any = null;
     const testPoint = new THREE.Vector3(worldX, 0, worldZ);
-    
-    for (const t of activeTiles.values()) {
-        if (t.bounds && t.bounds.containsPoint(testPoint)) {
-            // On privilégie le zoom le plus élevé pour la précision
-            if (!tile || t.zoom > tile.zoom) tile = t;
+    let tile: any = null;
+
+    // 1. Essayer d'abord la dernière tuile (Spatial Locality)
+    if (lastTile && lastTile.status === 'loaded' && lastTile.bounds && lastTile.bounds.containsPoint(testPoint)) {
+        tile = lastTile;
+    } else {
+        // 2. Recherche complète si nécessaire
+        for (const t of activeTiles.values()) {
+            if (t.bounds && t.bounds.containsPoint(testPoint)) {
+                if (!tile || t.zoom > tile.zoom) tile = t;
+            }
         }
+        if (tile) lastTile = tile;
     }
 
     if (!tile || !tile.pixelData) return 0;
-
     // 2. Détection de la résolution (256 ou 512)
     const res = Math.sqrt(tile.pixelData.length / 4);
 

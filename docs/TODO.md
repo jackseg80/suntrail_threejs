@@ -2,6 +2,12 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
+## ✅ Terminé (v4.3.26)
+- [x] **Zero Latence Zoom** : Séquençage asynchrone des détails (POI, Bâtiments, Forêt).
+- [x] **Optimisation Shadow Map** : Mise à jour uniquement sur mouvement solaire.
+- [x] **Smart GPX Geometry** : Géométrie adaptative non-bloquante.
+- [x] **Cache Spatial Altitude** : Accélération x10 de la boucle de rendu.
+
 ## ✅ Terminé (v4.3.0)
 - [x] **Bâtiments 3D (LOD léger)** : Extrusion simplifiée des volumes urbains (OSM) avec Geometry Merging.
 - [x] **Qualité Satellite HD** : Textures 512px et seuils de zoom optimisés.

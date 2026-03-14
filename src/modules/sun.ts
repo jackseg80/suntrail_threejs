@@ -147,6 +147,11 @@ export function updateSunPosition(minutes: number): void {
         uniforms['mieCoefficient'].value = 0.005;
     }
 
+    // --- MISE À JOUR UNIQUE DES OMBRES (v4.3.26) ---
+    if (state.renderer) {
+        state.renderer.shadowMap.needsUpdate = true;
+    }
+
     if (state.scene && state.scene.fog && (state.scene.fog instanceof THREE.Fog || state.scene.fog instanceof THREE.FogExp2)) {
         const fogColor = new THREE.Color();
         if (altDeg > 6) {

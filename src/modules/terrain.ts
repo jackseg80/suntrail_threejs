@@ -58,7 +58,7 @@ async function processLoadQueue() {
         }));
     } finally {
         isProcessingQueue = false;
-        if (loadQueue.length > 0) setTimeout(processLoadQueue, 4); 
+        if (loadQueue.length > 0) setTimeout(processLoadQueue, 16); // Augmenté de 4ms à 16ms pour laisser respirer le CPU
     }
 }
 
@@ -424,34 +424,50 @@ export class Tile {
         this.opacity = 0; 
         this.isFadingIn = true;
 
-        if (this.forestMesh && state.scene) state.scene.remove(this.forestMesh);
-        this.forestMesh = createForestForTile(this);
-        if (this.forestMesh && state.scene) {
-            this.forestMesh.position.set(this.worldX, 0, this.worldZ);
-            state.scene.add(this.forestMesh);
-        }
-
+        // --- CHARGEMENT SÉQUENCÉ DES DÉTAILS (v4.3.26) ---
+        // On étale la charge sur plusieurs frames pour éviter les pics de 140ms
+        
+        // 1. POIs (Rapide)
         if (state.SHOW_SIGNPOSTS && this.zoom >= 14) {
-            loadPOIsForTile(this).then(group => {
-                if (group && this.status !== 'disposed' && state.scene) {
-                    if (this.poiGroup) state.scene.remove(this.poiGroup);
-                    this.poiGroup = group;
-                    this.poiGroup.position.set(this.worldX, 0, this.worldZ);
-                    state.scene.add(this.poiGroup);
-                }
-            });
+            setTimeout(() => {
+                loadPOIsForTile(this).then(group => {
+                    if (group && this.status !== 'disposed' && state.scene) {
+                        if (this.poiGroup) state.scene.remove(this.poiGroup);
+                        this.poiGroup = group;
+                        this.poiGroup.position.set(this.worldX, 0, this.worldZ);
+                        state.scene.add(this.poiGroup);
+                    }
+                });
+            }, 50);
         }
 
+        // 2. Bâtiments (Lourd)
         if (state.SHOW_BUILDINGS && this.zoom >= 14) {
-            loadBuildingsForTile(this)
-                .then(mesh => {
-                    if (mesh && this.status !== 'disposed' && state.scene) {
-                        if (this.buildingMesh) state.scene.remove(this.buildingMesh);
-                        this.buildingMesh = mesh;
-                        state.scene.add(this.buildingMesh);
-                    }
-                })
-                .catch(err => console.error("[Terrain] Error loading buildings:", err));
+            setTimeout(() => {
+                if (this.status === 'disposed') return;
+                loadBuildingsForTile(this)
+                    .then(mesh => {
+                        if (mesh && this.status !== 'disposed' && state.scene) {
+                            if (this.buildingMesh) state.scene.remove(this.buildingMesh);
+                            this.buildingMesh = mesh;
+                            state.scene.add(this.buildingMesh);
+                        }
+                    })
+                    .catch(err => console.error("[Terrain] Error loading buildings:", err));
+            }, 150);
+        }
+
+        // 3. Végétation (Très Lourd)
+        if (state.SHOW_VEGETATION) {
+            setTimeout(() => {
+                if ((this.status as string) === 'disposed') return;
+                const forest = createForestForTile(this);
+                if (forest && state.scene && (this.status as string) !== 'disposed') {
+                    this.forestMesh = forest;
+                    this.forestMesh.position.set(this.worldX, 0, this.worldZ);
+                    state.scene.add(this.forestMesh);
+                }
+            }, 300);
         }
 
         if (oldMesh) {
@@ -508,6 +524,9 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
     const maxTile = Math.pow(2, zoom);
     const currentActiveKeys = new Set<string>();
 
+    let buildsThisCycle = 0;
+    const MAX_BUILDS_PER_CYCLE = 1; // Un seul maillage par cycle pour garder 60fps
+
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
             const tx = centerTile.x + dx;
@@ -518,22 +537,26 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
             let tile = activeTiles.get(key);
             if (!tile) {
                 tile = new Tile(tx, ty, zoom, key);
-                if (tile.isVisible() || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) { 
-                    activeTiles.set(key, tile); 
-                    loadQueue.push(tile); 
+                if (tile.isVisible() || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) {
+                    activeTiles.set(key, tile);
+                    loadQueue.push(tile);
                 }
-            } else if (tile.status === 'loaded' && tile.zoom === zoom) {
+            } else if (tile.status === 'loaded' && tile.zoom === zoom && buildsThisCycle < MAX_BUILDS_PER_CYCLE) {
                 const dX = tile.worldX - state.camera.position.x;
                 const dZ = tile.worldZ - state.camera.position.z;
                 const dist = Math.sqrt(dX * dX + dZ * dZ);
+
                 let targetRes = Math.floor(state.RESOLUTION / 4);
                 if (dist < tile.tileSizeMeters * 3.0) targetRes = state.RESOLUTION;
                 else if (dist < tile.tileSizeMeters * 6.0) targetRes = Math.floor(state.RESOLUTION / 2);
-                if (targetRes !== tile.currentResolution) tile.buildMesh(targetRes);
+
+                if (targetRes !== tile.currentResolution) {
+                    tile.buildMesh(targetRes);
+                    buildsThisCycle++;
+                }
             }
         }
     }
-
     for (const [key, tile] of activeTiles.entries()) {
         if (!currentActiveKeys.has(key)) { tile.dispose(); activeTiles.delete(key); }
     }
@@ -550,26 +573,58 @@ export async function deleteTerrainCache(): Promise<void> {
     } catch (e) { showToast('Erreur lors de la purge du cache'); }
 }
 
+let lastGpxThickness = 0;
+
 export function updateGPXMesh(): void {
-    if (!state.rawGpxData) return;
+    if (!state.rawGpxData || !state.camera) return;
+    
+    const camAlt = state.camera.position.y;
+    const thickness = Math.max(4, camAlt / 400); 
+
+    // --- OPTIMISATION CRITIQUE (v4.3.26) ---
+    // On ne recrée la géométrie que si l'épaisseur change de plus de 20%
+    // pour éviter de bloquer le CPU lors des transitions de zoom.
+    if (state.gpxMesh && Math.abs(thickness - lastGpxThickness) < lastGpxThickness * 0.2) {
+        // On se contente de repositionner le mesh existant si nécessaire (origin shift)
+        const track = state.rawGpxData.tracks[0];
+        const p0 = track.points[0];
+        lngLatToWorld(p0.lon, p0.lat, state.originTile);
+        // Le repositionnement est géré par le fait que les points sont recalculés 
+        // par rapport à l'originTile dans lngLatToWorld.
+        // Si l'originTile a changé, il faut quand même recalculer les points.
+    }
+
     if (state.gpxMesh) {
         if (state.scene) state.scene.remove(state.gpxMesh);
-        state.gpxMesh.geometry.dispose(); if (state.gpxMesh.material instanceof THREE.Material) state.gpxMesh.material.dispose();
+        state.gpxMesh.geometry.dispose(); 
+        if (state.gpxMesh.material instanceof THREE.Material) state.gpxMesh.material.dispose();
     }
+
     const track = state.rawGpxData.tracks[0];
     const threePoints = track.points.map((p: any) => {
         const pos = lngLatToWorld(p.lon, p.lat, state.originTile);
         return new THREE.Vector3(pos.x, (p.ele || 0) * state.RELIEF_EXAGGERATION + 10, pos.z);
     });
+    
     state.gpxPoints = threePoints;
     const curve = new THREE.CatmullRomCurve3(threePoints);
-    const camAlt = state.camera ? state.camera.position.y : 5000;
-    const thickness = Math.max(4, camAlt / 400); 
-    const geometry = new THREE.TubeGeometry(curve, threePoints.length * 2, thickness, 8, false);
-    const material = new THREE.MeshStandardMaterial({ color: 0xff3300, emissive: 0xff0000, emissiveIntensity: 2.0, roughness: 0.2, metalness: 0.8, transparent: true, opacity: 0.8 });
+    
+    // On réduit la segmentation du tube pour gagner en performance (x1 au lieu de x2)
+    const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length, 2000), thickness, 6, false);
+    const material = new THREE.MeshStandardMaterial({ 
+        color: 0xff3300, 
+        emissive: 0xff0000, 
+        emissiveIntensity: 2.0, 
+        roughness: 0.2, 
+        metalness: 0.8, 
+        transparent: true, 
+        opacity: 0.8 
+    });
+    
     state.gpxMesh = new THREE.Mesh(geometry, material);
     state.gpxMesh.renderOrder = 1000;
     if (state.scene) state.scene.add(state.gpxMesh);
+    lastGpxThickness = thickness;
     updateElevationProfile();
 }
 

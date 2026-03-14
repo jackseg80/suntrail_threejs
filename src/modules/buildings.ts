@@ -135,10 +135,18 @@ async function fetchBuildingsWithCache(z: number, x: number, y: number): Promise
     return null;
 }
 
-function createBuildingMesh(buildings: BuildingFeature[]): THREE.Mesh | null {
+async function createBuildingMesh(buildings: BuildingFeature[]): Promise<THREE.Mesh | null> {
     const geometries: THREE.BufferGeometry[] = [];
+    const MAX_BATCH_SIZE = 20; // On traite par petits paquets pour laisser respirer le CPU
 
-    buildings.forEach(bldg => {
+    for (let i = 0; i < buildings.length; i++) {
+        const bldg = buildings[i];
+        
+        // --- PAUSE CPU (v4.3.26) ---
+        if (i > 0 && i % MAX_BATCH_SIZE === 0) {
+            await new Promise(resolve => setTimeout(resolve, 0));
+        }
+
         try {
             const worldPoints = bldg.coordinates.map(gps => lngLatToWorld(gps.lon, gps.lat, state.originTile));
             let cx = 0, cz = 0;
@@ -147,18 +155,8 @@ function createBuildingMesh(buildings: BuildingFeature[]): THREE.Mesh | null {
             cz /= worldPoints.length;
             
             const alt = getAltitudeAt(cx, cz);
-            if (alt === 0) return; 
+            if (alt === 0) continue; 
 
-            const shapePoints: THREE.Vector2[] = [];
-            worldPoints.forEach(p => {
-                shapePoints.push(new THREE.Vector2(p.x - cx, -(p.z - cz)));
-            });
-
-            if (shapePoints.length > 2 && shapePoints[0].distanceTo(shapePoints[shapePoints.length-1]) < 0.1) {
-                shapePoints.pop();
-            }
-
-            const shape = new THREE.Shape(shapePoints);
             let heightMeters = 6; 
             if (bldg.tags['height']) heightMeters = parseFloat(bldg.tags['height']) || 6;
             else if (bldg.tags['building:levels']) heightMeters = (parseFloat(bldg.tags['building:levels']) || 2) * 3.5;
@@ -166,17 +164,49 @@ function createBuildingMesh(buildings: BuildingFeature[]): THREE.Mesh | null {
             const foundationDepth = 30; 
             const totalHeight = (heightMeters + foundationDepth) * state.RELIEF_EXAGGERATION;
 
-            const geom = new THREE.ExtrudeGeometry(shape, { depth: totalHeight, bevelEnabled: false });
-            geom.rotateX(-Math.PI / 2);
+            // --- OPTIMISATION GÉOMÉTRIE (v4.3.26) ---
+            let geom: THREE.BufferGeometry;
+            if (worldPoints.length <= 5) {
+                // Pour les rectangles simples, on utilise toujours Extrude mais avec une forme très simple
+                // Cela garantit la compatibilité des attributs avec les autres bâtiments complexes.
+                const shapePoints: THREE.Vector2[] = [];
+                worldPoints.forEach(p => { shapePoints.push(new THREE.Vector2(p.x - cx, -(p.z - cz))); });
+                if (shapePoints.length > 2 && shapePoints[0].distanceTo(shapePoints[shapePoints.length-1]) < 0.1) shapePoints.pop();
+                const shape = new THREE.Shape(shapePoints);
+                geom = new THREE.ExtrudeGeometry(shape, { depth: totalHeight, bevelEnabled: false });
+                geom.rotateX(-Math.PI / 2);
+            } else {
+                const shapePoints: THREE.Vector2[] = [];
+                worldPoints.forEach(p => { shapePoints.push(new THREE.Vector2(p.x - cx, -(p.z - cz))); });
+                if (shapePoints.length > 2 && shapePoints[0].distanceTo(shapePoints[shapePoints.length-1]) < 0.1) shapePoints.pop();
+                
+                const shape = new THREE.Shape(shapePoints);
+                geom = new THREE.ExtrudeGeometry(shape, { depth: totalHeight, bevelEnabled: false });
+                geom.rotateX(-Math.PI / 2);
+            }
+            
             geom.translate(cx, alt - (foundationDepth * state.RELIEF_EXAGGERATION), cz);
-            geometries.push(geom);
+            
+            // --- FIX COMPATIBILITÉ (v4.3.26) ---
+            // On s'assure que toutes les géométries sont non-indexées pour mergeGeometries
+            // Mais on n'appelle toNonIndexed() que si c'est nécessaire pour éviter les warnings
+            if (geom.index) {
+                const nonIndexedGeom = geom.toNonIndexed();
+                geom.dispose();
+                geometries.push(nonIndexedGeom);
+            } else {
+                geometries.push(geom);
+            }
         } catch (e) {}
-    });
+    }
 
     if (geometries.length === 0) return null;
 
     try {
+        // Fusion finale asynchrone (conceptuellement)
         const mergedGeometry = mergeGeometries(geometries, false);
+        geometries.forEach(g => g.dispose()); // Nettoyage mémoire agressif
+        
         if (!mergedGeometry) return null;
         const mesh = new THREE.Mesh(mergedGeometry, buildingMaterial);
         

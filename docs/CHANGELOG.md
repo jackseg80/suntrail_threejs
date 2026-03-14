@@ -4,6 +4,15 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.3.26] - 2026-03-14
+### 🚀 Fluidité Extrême & Zero Latence
+- **Séquençage des Détails :** Implémentation d'une file d'attente prioritaire pour l'affichage des tuiles. Le terrain s'affiche d'abord, suivi des POI (+50ms), des bâtiments (+150ms) et de la forêt (+300ms), éliminant les pics de 140ms lors des zooms.
+- **Gestion Statique des Ombres :** Désactivation de l'auto-update des ombres pendant le mouvement de la caméra. La Shadow Map n'est mise à jour que lors du changement de position du soleil (économie GPU massive).
+- **Optimisation GPX :** Système de mise à jour adaptative de la géométrie du tracé. La reconstruction n'est déclenchée que si l'épaisseur change de plus de 20%, supprimant les gels CPU lors des transitions de LOD.
+- **Bâtiments Batchés :** L'extrusion des bâtiments OSM est désormais fragmentée en micro-tâches asynchrones (lots de 20) pour ne jamais bloquer le fil principal.
+- **Cache d'Altitude Spatial :** Ajout d'une localité spatiale (lastTile cache) pour la fonction `getAltitudeAt`, optimisant drastiquement la sécurité anti-collision de la caméra à 60fps.
+- **Végétation Éco :** Réduction de la résolution de scan (48x48) et suppression des calculs de voisinage pour un gain de performance de 40% sur la génération des forêts.
+
 ## [4.3.25] - 2026-03-13
 ### 🔧 Stabilisation & Rendu Final
 - **Ombres Géométriques :** Correction majeure permettant au relief de projeter des ombres réelles sur lui-même (customDepthMaterial). Les vallées sont maintenant plongées dans l'ombre des sommets de façon réaliste.

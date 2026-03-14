@@ -20,6 +20,11 @@ describe('terrain.ts', () => {
             state.scene = new THREE.Scene();
             state.RELIEF_EXAGGERATION = 1.4;
             state.originTile = { x: 4270, y: 2891, z: 13 }; // Spiez
+            // Mock camera pour passer les vérifications de performance (v4.3.26)
+            state.camera = new THREE.PerspectiveCamera();
+            state.camera.position.set(0, 10000, 0);
+            state.gpxMesh = null;
+            state.gpxPoints = [];
         });
 
         it('should transform GPX points to correct world Vector3', () => {
@@ -42,15 +47,20 @@ describe('terrain.ts', () => {
             expect(p2.y).toBeCloseTo(1100 * 1.4 + 10, 1);
         });
 
-        it('should cleanup old GPX mesh when updating', () => {
+        it('should cleanup old GPX mesh and update when thickness changes', () => {
             const mockDispose = vi.fn();
-            state.gpxMesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial());
-            state.gpxMesh.geometry.dispose = mockDispose;
+            const geometry = new THREE.BufferGeometry();
+            geometry.dispose = mockDispose;
+            state.gpxMesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial());
             
             state.rawGpxData = { tracks: [{ points: [
                 { lat: 0, lon: 0, ele: 0 },
                 { lat: 1, lon: 1, ele: 1 }
             ] }] };
+
+            // On change radicalement l'altitude pour forcer le recalcul malgré l'optimisation
+            state.camera!.position.y = 50000; 
+            
             updateGPXMesh();
             
             expect(mockDispose).toHaveBeenCalled();

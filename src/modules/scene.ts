@@ -288,9 +288,12 @@ export async function initScene(): Promise<void> {
 
     const clock = new THREE.Clock();
     window.addEventListener('resize', onWindowResize);
+    let frameCount = 0;
     state.renderer.setAnimationLoop(() => {
         if (!state.renderer || !state.scene || !state.camera) return;
         state.stats.begin();
+        frameCount++;
+        
         const delta = clock.getDelta();
         animateTiles(delta);
 
@@ -311,16 +314,21 @@ export async function initScene(): Promise<void> {
             }
         }
 
-        // --- RENDU FINAL (Simple et Robuste) ---
-        // Sécurité anti-collision sol (v4.3.15)
-        if (state.camera && state.controls) {
+        // --- OPTIMISATION COLLISION SOL (v4.3.26) ---
+        // On ne vérifie la collision que toutes les 2 frames pour économiser du CPU
+        if (frameCount % 2 === 0 && state.camera && state.controls) {
             const groundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
-            const minH = groundH + 30; // Marge réduite à 30m pour plus de souplesse
+            const minH = groundH + 30;
             if (state.camera.position.y < minH) {
                 state.camera.position.y = minH;
                 if (state.controls.target.y < groundH) state.controls.target.y = groundH;
             }
         }
+
+        // --- OPTIMISATION DES OMBRES (v4.3.26) ---
+        // Les ombres ne sont plus recalculées lors du mouvement de la caméra.
+        // C'est updateSunPosition qui déclenchera une mise à jour unique si nécessaire.
+        if (state.renderer) state.renderer.shadowMap.autoUpdate = false;
 
         state.renderer.render(state.scene, state.camera);
 
