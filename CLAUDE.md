@@ -12,9 +12,10 @@ Toute intervention majeure (feature ou refactor) DOIT suivre ce cycle itératif 
 ## Architecture Technique (v4.5+)
 - **State Management :** État global centralisé et strictement typé dans `state.ts`. Séparation Config vs Runtime.
 - **Moteur Géographique (`geo.ts`) :** Pivot central pour toutes les conversions de coordonnées.
+- **Soleil & Éphémérides :** `sun.ts` centralise tous les calculs astronomiques dans `state.ephemeris`. Aucun calcul `SunCalc` ne doit être fait ailleurs.
 - **Gestion Mémoire (`memory.ts`) :** Utilisation systématique de `disposeObject()` pour prévenir les fuites de VRAM sur mobile.
 - **Bâtiments & POI :** Optimisation via fusion de géométries et instanciation pour limiter les Draw Calls.
-- **Données :** Priorité MapTiler (Key requise) pour le géocodage et les tuiles afin d'éviter les erreurs 429/CORS.
+- **Données :** Usage exclusif de MapTiler (Key requise) pour le géocodage et les tuiles afin d'éviter les erreurs 429/CORS de Nominatim.
 
 ## Gestion de la Qualité (LOD & Vision)
 - **Hystérésis de Zoom :** Marge de sécurité pour éviter le clignotement lors des transitions de LOD.
@@ -26,7 +27,10 @@ Toute intervention majeure (feature ou refactor) DOIT suivre ce cycle itératif 
 - `npm test` : Lancement de la suite de tests (Vitest). **Obligatoire.**
 - `npm run check` : Vérification du typage TypeScript.
 - `npm run build` : Build de production Web.
-- `npx cap sync android` : Synchronisation vers le projet Android.
+- `npm run cap:sync` : Synchronisation vers le projet Android.
+
+## Tests & Mocks
+- Pour les tests unitaires Three.js, mocker `WebGLRenderer` avec une classe factice dans le fichier de test pour éviter les échecs de contexte GPU.
 
 ## Stratégie de Versioning
 - **Messages de Commit** : Prefixes `feat:`, `fix:`, `perf:`, `refactor:`, `docs:`, `test:`.
