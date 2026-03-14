@@ -9,7 +9,7 @@ import { resetToNorth } from './compass';
 import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain, autoSelectMapSource, deleteTerrainCache } from './terrain';
 import { lngLatToTile, worldToLngLat } from './geo';
 import { showToast, fetchGeocoding } from './utils';
-import { applyPreset, detectBestPreset } from './performance';
+import { applyPreset, detectBestPreset, getGpuInfo } from './performance';
 import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';
 import { updateElevationProfile } from './profile';
 import { startLocationTracking, centerOnUser } from './location';
@@ -19,6 +19,21 @@ let lastClickedCoords = { x: 0, z: 0, alt: 0 };
 export function initUI(): void {
     const bestPreset = detectBestPreset();
     applyPreset(bestPreset);
+
+    // --- DIAGNOSTIC MATÉRIEL (v4.5.35) ---
+    const techInfo = document.getElementById('tech-info');
+    if (techInfo) {
+        techInfo.style.display = 'block';
+        const gpu = getGpuInfo();
+        const gpuEl = document.getElementById('diag-gpu');
+        if (gpuEl) gpuEl.textContent = `GPU: ${gpu.renderer.split(' (')[0]}`; // On simplifie le nom
+        
+        const cpuEl = document.getElementById('diag-cpu');
+        if (cpuEl) cpuEl.textContent = `CPU: ${navigator.hardwareConcurrency || '--'} logical cores`;
+        
+        const presetEl = document.getElementById('diag-preset');
+        if (presetEl) presetEl.textContent = `PROFIL AUTO: ${bestPreset.toUpperCase()}`;
+    }
 
     let s1 = '';
     try { s1 = localStorage.getItem('maptiler_key_3d') || ''; } catch (e) {}
