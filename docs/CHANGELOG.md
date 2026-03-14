@@ -12,15 +12,17 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Correctif Ombres :** recalibrage du frustum d'ombre (50km) pour une projection fidèle des sommets sur les vallées.
 - **UI Météo :** Intégration du Dashboard expert avec Isotherme 0°C, UV et prévisions horaires sur 6h.
 
-## [4.5.11] - 2026-03-14
-### 🚀 Navigation Pro & Performance
-- **Fluidité Extrême :** Déplacement des calculs d'altitude hors de la boucle de rendu principale vers un processus throttlé (200ms), libérant le CPU et garantissant 120 FPS constants.
-- **Butée Sol Physique :** Ancrage dynamique de la cible des contrôles sur le relief réel combiné à une `minDistance` de 100m, empêchant toute traversée du sol.
-- **GPS Haute Visibilité :** Le marker de suivi utilise désormais un Sprite à taille fixe à l'écran (non-atténuée), restant visible de 50m à 35km d'altitude.
-- **Fix Téléportation :** Sécurisation de la logique d'Origin Shift (recentrage du monde) qui ne s'active désormais qu'après stabilisation du zoom, éliminant les sauts de caméra.
-- **Validation Types :** Nettoyage intégral des erreurs TypeScript pour assurer un build de production sans faille.
+## [4.5.29] - 2026-03-14
+### 🚀 Ultimate Stability & Cinematic UX
+- **Black Screen Fix:** Rewrote the Origin Shift logic using a strictly consistent coordinate system, eliminating the infinity-projection bug during rapid zooming.
+- **120 FPS Performance:** Implemented a Spatial Cache for altitude lookups (`lastUsedTile`), making ground collision checks virtually free and restoring ultra-smooth navigation.
+- **Cinematic Compass Reset:** Added a 800ms "Ease-in-Out" animated transition for the North-up reset, with a tiny southern offset to avoid the mathematical gimbal lock snap.
+- **Overpass Flux Shield:** Centralized all OpenStreetMap requests into a global orchestrator. Added 429/400 error handling, mandatory headers, and a 1.2s inter-tile request cooldown.
+- **Responsive Expert Dashboard:** Fixed the portrait layout on mobile; mountain safety and light ephemeris panels now stack vertically for perfect readability.
+- **Mobile Date Input Fix:** Forced white color and dark-mode styling for the timeline calendar, fixing the "grayed out" visibility issue on Android and iOS.
+- **Code Integrity:** Resolved 12 critical TypeScript errors and updated the full test suite to 100% green.
 
-## [4.5.7] - 2026-03-14
+## [4.5.11] - 2026-03-14
 ### ☁️ Station Météo Expert & Ergonomie Mobile
 - **Expert Dashboard (Central) :** Nouveau panneau majestueux avec graphique de tendance 24h, éphémérides photo et radars de sécurité.
 - **Météogramme Interactif :** Visualisation dynamique de la température et du ciel sur 24h (Jaune=Soleil, Bleu=Précipitations).

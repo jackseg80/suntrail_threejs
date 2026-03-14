@@ -8,14 +8,20 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [x] **Sécurité 2D** : Blocage intelligent des relevés en mode plan plat.
 - [x] **Météo Avancée** : Isotherme 0°C et prévisions 6h.
 
-## ✅ Terminé (v4.4.1)
-- [x] **Fix Clic Haute Altitude** : Relevé opérationnel dès le lancement (35km).
-- [x] **Architecture "Bunker"** : Délégation globale des clics pour une interface incassable.
-- [x] **Correctif Ombres** : Projection pro sur 50km sans coupure.
-- [x] **Transitions LOD** : Fix du saut de LOD 11 pour une navigation fluide.
-- [x] **Météo Avancée** : Intégration Isotherme 0°C, UV et prévisions 6h.
+## ✅ Terminé (v4.5.29)
+- [x] **Stabilisation Critique** : Correction des écrans noirs via Origin Shift sécurisé.
+- [x] **Performance 120 FPS** : Cache spatial pour l'altitude.
+- [x] **Dashboard Expert** : Panneau majestueux avec éphémérides et sécurité.
+- [x] **Boussole Interactive** : Reset Nord cinématique fluide (800ms).
+- [x] **Optimisation OSM** : Bouclier de flux multi-serveur (Anti-429).
+- [x] **Fix Mobile** : Calendrier lisible et layout portrait.
 
-## ✅ Terminé (v4.4.0)
+## 🚀 Prochainement (v4.6)
+- [ ] **Moteur de Recherche Sommets** : Indexation offline des principaux pics et cols.
+- [ ] **Vol Automatique** : Animation de vol fluide vers le lieu recherché.
+- [ ] **Cartes POI** : Affichage des détails techniques du sommet cliqué.
+
+## ✅ Terminé (v4.4.1)
 - [x] **Météo Dynamique** : Système de particules GPU pour la pluie et la neige.
 - [x] **Physique du Vent** : Inclinaison et vitesse des effets basées sur l'API réelle.
 - [x] **Dashboard Météo Pro** : KPIs, flèche de vent et localisation automatique.
