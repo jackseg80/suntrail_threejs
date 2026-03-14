@@ -553,6 +553,24 @@ export function resetTerrain(): void {
 export function repositionAllTiles(): void { for (const tile of activeTiles.values()) tile.updateWorldPosition(); }
 export function animateTiles(delta: number): void { for (const tile of activeTiles.values()) { if (tile.isFadingIn) tile.updateFade(delta); } }
 
+let lastSourceCheck = 0;
+export function autoSelectMapSource(lat: number, lon: number): void {
+    if (state.hasManualSource || isNaN(lat) || lat === 0) return;
+    const now = Date.now();
+    if (now - lastSourceCheck < 2000) return;
+    lastSourceCheck = now;
+    const isSwiss = isPositionInSwitzerland(lat, lon);
+    const newSource = isSwiss ? 'swisstopo' : 'opentopomap';
+    if (state.MAP_SOURCE !== newSource) {
+        state.MAP_SOURCE = newSource;
+        document.querySelectorAll('.layer-item').forEach(i => {
+            i.classList.remove('active');
+            if ((i as HTMLElement).dataset.source === newSource) i.classList.add('active');
+        });
+        updateVisibleTiles();
+    }
+}
+
 export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number = 0, worldZ: number = 0): Promise<void> {
     terrainUniforms.uExaggeration.value = state.RELIEF_EXAGGERATION;
     if (!state.camera || Math.abs(state.camera.position.y) < 1) return;

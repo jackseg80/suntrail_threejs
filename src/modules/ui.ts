@@ -7,7 +7,7 @@ import { updateSunPosition } from './sun';
 import { initScene } from './scene';
 import { updateVisibleTiles, resetTerrain, updateGPXMesh, deleteTerrainCache, loadTerrain } from './terrain';
 import { lngLatToTile, worldToLngLat } from './geo';
-import { isPositionInSwitzerland, showToast } from './utils';
+import { showToast } from './utils';
 import { applyPreset, detectBestPreset } from './performance';
 import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';
 import { updateElevationProfile } from './profile';
@@ -26,6 +26,7 @@ export function initUI(): void {
 
     const bgo = document.getElementById('bgo');
     if (bgo) bgo.addEventListener('click', go);
+    if (k1) k1.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter') go(); });
     
     const panel = document.getElementById('panel');
     const settingsToggle = document.getElementById('settings-toggle');
@@ -43,7 +44,6 @@ export function initUI(): void {
         });
     });
 
-    // --- CALQUES ---
     const layerBtn = document.getElementById('layer-btn');
     const layerMenu = document.getElementById('layer-menu');
     if (layerBtn && layerMenu) {
@@ -52,6 +52,7 @@ export function initUI(): void {
             layerMenu.style.display = layerMenu.style.display === 'block' ? 'none' : 'block';
         });
         window.addEventListener('click', () => { if (layerMenu) layerMenu.style.display = 'none'; });
+        layerMenu.addEventListener('click', (e) => e.stopPropagation());
     }
 
     document.querySelectorAll('.layer-item').forEach(item => {
@@ -65,21 +66,25 @@ export function initUI(): void {
         });
     });
 
-    // --- GPS ---
     const gpsBtn = document.getElementById('gps-btn');
     if (gpsBtn) {
         gpsBtn.addEventListener('click', async () => {
             try {
                 gpsBtn.classList.add('active');
                 const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true });
-                state.TARGET_LAT = pos.coords.latitude; state.TARGET_LON = pos.coords.longitude;
-                state.ZOOM = 13; state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, 13);
+                const { latitude, longitude } = pos.coords;
+                // autoSelectMapSource est importé de terrain.ts maintenant
+                import('./terrain').then(m => m.autoSelectMapSource(latitude, longitude));
+                resetTerrain();
+                state.TARGET_LAT = latitude; state.TARGET_LON = longitude;
                 if (state.controls && state.camera) {
+                    state.ZOOM = 12;
+                    state.originTile = lngLatToTile(longitude, latitude, 12);
                     state.controls.target.set(0, 0, 0);
                     state.camera.position.set(0, 35000, 40000);
                     state.controls.update();
                 }
-                resetTerrain(); await updateVisibleTiles();
+                await updateVisibleTiles();
                 gpsBtn.classList.remove('active');
             } catch (err) { showToast("GPS indisponible"); gpsBtn.classList.remove('active'); }
         });
@@ -115,34 +120,26 @@ export function initUI(): void {
         });
     }
 
-    const trailFollowToggle = document.getElementById('trail-follow-toggle') as HTMLInputElement;
-    if (trailFollowToggle) {
-        trailFollowToggle.addEventListener('change', (e: Event) => {
-            const target = e.target as HTMLInputElement;
-            state.isFollowingTrail = target.checked;
-            if (state.controls) state.controls.enabled = !state.isFollowingTrail;
-        });
-    }
-
-    // --- CLIC SUR CARTE (ROBUSTE) ---
+    // --- CLIC SUR CARTE ---
     window.addEventListener('click', (e: MouseEvent) => {
         if (!state.renderer || !state.camera || !state.scene) return;
         const target = e.target as HTMLElement;
         
-        // Sécurité : On ignore si on clique sur un bouton ou panneau
+        // 1. PRIORITÉ UI : Si on clique sur un élément d'interface, on s'arrête ici
         if (target.closest('button') || target.closest('input') || target.closest('select') || 
-            target.closest('summary') || target.closest('details') || target.id === 'weather-clickable' ||
+            target.closest('summary') || target.closest('details') || 
+            target.id === 'weather-clickable' || target.closest('#weather-clickable') ||
             target.closest('.ui-element:not(#coords-panel)')) return;
 
-        // On ne traite que si on vise le canvas
-        if (target.tagName !== 'CANVAS') return;
-
-        // Sécurité 2D (v4.5 fix)
+        // 2. SÉCURITÉ 2D : Pas de relevé d'altitude si zoom <= 10
         if (state.ZOOM <= 10) {
             const cp = document.getElementById('coords-panel');
             if (cp) cp.style.display = 'none';
             return;
         }
+
+        // 3. SEUL LE CANVAS DÉCLENCHE LE RELEVÉ
+        if (target.tagName !== 'CANVAS') return;
 
         // Fermeture automatique réglages
         if (panel && panel.classList.contains('open')) panel.classList.remove('open');
@@ -163,8 +160,10 @@ export function initUI(): void {
             const coordsPanel = document.getElementById('coords-panel');
             if (coordsPanel) {
                 coordsPanel.style.display = 'block';
-                document.getElementById('click-latlon')!.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
-                document.getElementById('click-alt')!.textContent = `${Math.round(realAlt)} m`;
+                const latEl = document.getElementById('click-latlon');
+                const altEl = document.getElementById('click-alt');
+                if (latEl) latEl.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
+                if (altEl) altEl.textContent = `${Math.round(realAlt)} m`;
             }
             lastClickedCoords = { x: hitPoint.x, z: hitPoint.z, alt: realAlt * state.RELIEF_EXAGGERATION };
         } else {
@@ -183,6 +182,16 @@ export function initUI(): void {
     if (closeProbe) closeProbe.addEventListener('click', () => { 
         const pr = document.getElementById('probe-result'); if (pr) pr.style.display = 'none'; 
     });
+
+    const copyReportBtn = document.getElementById('copy-report-btn');
+    if (copyReportBtn) {
+        copyReportBtn.addEventListener('click', () => {
+            const latlon = document.getElementById('click-latlon')?.textContent;
+            const report = `SunTrail Report - Location: ${latlon}`;
+            navigator.clipboard.writeText(report);
+            showToast("📋 Rapport copié");
+        });
+    }
 
     // --- MÉTÉO ---
     const weatherDensitySlider = document.getElementById('weather-density-slider') as HTMLInputElement;
@@ -214,7 +223,7 @@ export function initUI(): void {
             e.stopPropagation();
             if (state.weatherData && weatherPanel) {
                 const titleEl = weatherPanel.querySelector('h3');
-                if (titleEl) titleEl.textContent = `☁️ ${state.weatherData.locationName || 'Météo'}`;
+                if (titleEl) titleEl.textContent = `☁️ ${state.weatherData.locationName || 'Bulletin Météo'}`;
                 
                 const getSet = (id: string, val: string) => { const el = document.getElementById(id); if (el) el.textContent = val; };
                 getSet('w-temp', `${state.weatherData.temp.toFixed(1)}°C`);
@@ -263,20 +272,6 @@ export function initUI(): void {
     initGeocoding();
 }
 
-export function autoSelectMapSource(lat: number, lon: number): void {
-    if (state.hasManualSource || isNaN(lat) || lat === 0) return;
-    const isSwiss = isPositionInSwitzerland(lat, lon);
-    const newSource = isSwiss ? 'swisstopo' : 'opentopomap';
-    if (state.MAP_SOURCE !== newSource) {
-        state.MAP_SOURCE = newSource;
-        document.querySelectorAll('.layer-item').forEach(i => {
-            i.classList.remove('active');
-            if ((i as HTMLElement).dataset.source === newSource) i.classList.add('active');
-        });
-        updateVisibleTiles();
-    }
-}
-
 async function refreshTerrain(): Promise<void> { resetTerrain(); await updateVisibleTiles(); }
 
 async function handleGPX(xml: string) {
@@ -310,7 +305,6 @@ async function go(): Promise<void> {
         state.ZOOM = 12;
         state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, 12);
         state.camera.position.set(0, 35000, 40000);
-        state.controls.target.set(0, 0, 0);
         state.controls.update();
     }
     setTimeout(async () => { await loadTerrain(); initEphemeralUI(); }, 100);
@@ -349,12 +343,14 @@ function initGeocoding() {
             if (q.length < 2) return;
             const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5`);
             const data = await r.json();
-            geoResults.innerHTML = data.map((f: any) => `<div class="geo-item" data-lat="${f.lat}" data-lon="${f.lon}" style="padding:12px; cursor:pointer; color:white; border-bottom:1px solid rgba(255,255,255,0.05);">${f.display_name}</div>`).join('');
+            geoResults.innerHTML = data.map((f: any) => `<div class="geo-item" data-lat="${f.lat}" data-lon="${f.lon}" style="padding:12px; cursor:pointer; color:white;">${f.display_name}</div>`).join('');
             geoResults.style.display = 'block';
             geoResults.querySelectorAll('.geo-item').forEach(item => {
                 item.addEventListener('click', () => {
                     state.TARGET_LAT = parseFloat((item as HTMLElement).dataset.lat!);
                     state.TARGET_LON = parseFloat((item as HTMLElement).dataset.lon!);
+                    // autoSelectMapSource est importé de terrain.ts maintenant
+                    import('./terrain').then(m => m.autoSelectMapSource(state.TARGET_LAT, state.TARGET_LON));
                     state.ZOOM = 13; state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, 13);
                     if (state.controls && state.camera) { state.controls.target.set(0, 0, 0); state.camera.position.set(0, 35000, 40000); state.controls.update(); }
                     geoResults.style.display = 'none'; resetTerrain(); updateVisibleTiles();

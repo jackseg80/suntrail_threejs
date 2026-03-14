@@ -78,7 +78,8 @@ export interface State {
     weatherData: {
         temp: number; apparentTemp: number; windSpeed: number; windDir: number;
         humidity: number; cloudCover: number; locationName?: string;
-        freezingLevel?: number; uvIndex?: number;
+        freezingLevel?: number; uvIndex?: number; visibility?: number; precProb?: number;
+        goldenHour?: string; blueHour?: string; moonPhase?: string; moonIllum?: number;
         hourly?: { time: string; temp: number; code: number }[];
     } | null;
 }
