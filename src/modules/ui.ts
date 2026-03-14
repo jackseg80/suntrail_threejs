@@ -28,7 +28,22 @@ export function initUI(): void {
         const gpuEl = document.getElementById('diag-gpu');
         if (gpuEl) {
             const vendorPrefix = gpu.vendor.includes('NVIDIA') ? 'NVIDIA ' : (gpu.vendor.includes('Qualcomm') ? 'Qualcomm ' : '');
-            gpuEl.textContent = `GPU: ${vendorPrefix}${gpu.renderer}`;
+            let cleanRenderer = gpu.renderer;
+            
+            // Nettoyage agressif pour ne garder que le nom commercial (RTX, Adreno, etc.)
+            // On coupe avant les parenthèses, Direct3D, vs_5_0, etc.
+            const noise = [' (', ' Direct3D', ' vs_', ' ps_', ' OpenGL'];
+            noise.forEach(n => {
+                const idx = cleanRenderer.indexOf(n);
+                if (idx !== -1) cleanRenderer = cleanRenderer.substring(0, idx);
+            });
+
+            // Suppression des doublons de vendor (ex: NVIDIA NVIDIA)
+            if (vendorPrefix && cleanRenderer.startsWith(vendorPrefix.trim())) {
+                gpuEl.textContent = `GPU: ${cleanRenderer}`;
+            } else {
+                gpuEl.textContent = `GPU: ${vendorPrefix}${cleanRenderer}`;
+            }
         }
         
         const cpuEl = document.getElementById('diag-cpu');
