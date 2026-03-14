@@ -13,10 +13,16 @@ export function getGpuInfo(): { renderer: string, vendor: string } {
     const debugInfo = (gl as WebGLRenderingContext).getExtension('WEBGL_debug_renderer_info');
     if (!debugInfo) return { renderer: 'Unknown', vendor: 'Unknown' };
     
-    return {
-        renderer: (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_RENDERER_WEBGL),
-        vendor: (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_VENDOR_WEBGL)
-    };
+    let renderer = (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+    let vendor = (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+
+    // Nettoyage ANGLE pour plus de clarté
+    if (renderer.includes('ANGLE')) {
+        const parts = renderer.split(', ');
+        if (parts.length > 1) renderer = parts[1]; // Souvent le 2ème élément contient la puce réelle
+    }
+
+    return { renderer, vendor };
 }
 
 /**

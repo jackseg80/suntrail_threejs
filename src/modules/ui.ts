@@ -26,7 +26,10 @@ export function initUI(): void {
         techInfo.style.display = 'block';
         const gpu = getGpuInfo();
         const gpuEl = document.getElementById('diag-gpu');
-        if (gpuEl) gpuEl.textContent = `GPU: ${gpu.renderer.split(' (')[0]}`; // On simplifie le nom
+        if (gpuEl) {
+            const vendorPrefix = gpu.vendor.includes('NVIDIA') ? 'NVIDIA ' : (gpu.vendor.includes('Qualcomm') ? 'Qualcomm ' : '');
+            gpuEl.textContent = `GPU: ${vendorPrefix}${gpu.renderer}`;
+        }
         
         const cpuEl = document.getElementById('diag-cpu');
         if (cpuEl) cpuEl.textContent = `CPU: ${navigator.hardwareConcurrency || '--'} logical cores`;
