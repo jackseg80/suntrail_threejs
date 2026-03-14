@@ -140,11 +140,11 @@ export async function initScene(): Promise<void> {
     initCompass();
 
     const sky = new Sky();
-    sky.scale.setScalar(450000);
+    sky.scale.setScalar(1000000); // Augmenté pour supporter la haute altitude
     state.scene.add(sky);
     state.sky = sky;
 
-    state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 250000);
+    state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 1000000); // Far à 1000km
     state.camera.position.set(0, 12000, 15000); 
 
     // --- CONTRÔLES STYLE MAPS (v4.2.5) ---
@@ -168,8 +168,9 @@ export async function initScene(): Promise<void> {
     controls.dampingFactor = 0.1;
     controls.screenSpacePanning = false;
     controls.minDistance = 500; 
-    controls.maxDistance = 100000; 
-    controls.maxPolarAngle = 1.3; 
+    controls.maxDistance = 500000; // Augmenté à 500km selon votre demande
+    controls.maxPolarAngle = 1.2; 
+
 
     // ... (rest of the UI helpers)
     const updateUIZoom = (zoom: number) => {
@@ -184,63 +185,103 @@ export async function initScene(): Promise<void> {
         let newZoom = state.ZOOM;
         // --- SEUILS DE ZOOM ADAPTATIFS PAR SOURCE (v4.3.18) ---
         const isSat = (state.MAP_SOURCE === 'satellite');
-        const boost = isSat ? 2.5 : 1.5; 
+        const boost = isSat ? 2.0 : 1.2; // Boost légèrement réduit car on augmente les seuils de base
 
         if (state.ZOOM === 13) { 
-            if (dist < 8000 * boost) newZoom = 14; 
-            else if (dist > 60000 * boost) newZoom = 12; 
+            if (dist < 20000) newZoom = 14; 
+            else if (dist > 45000) newZoom = 12; 
         }
         else if (state.ZOOM === 14) { 
-            if (dist > 10000 * boost) newZoom = 13; 
-            else if (dist < 2200 * boost) newZoom = 15; 
+            if (dist > 25000) newZoom = 13; 
+            else if (dist < 8000 * boost) newZoom = 15; 
         }
         else if (state.ZOOM === 15) {
-            if (dist > 3000 * boost) newZoom = 14; // Sortie plus proche de l'entrée
-            else if (dist < 1000 * boost) newZoom = 16; 
+            if (dist > 11000 * boost) newZoom = 14;
+            else if (dist < 3500 * boost) newZoom = 16; 
         }
         else if (state.ZOOM === 16) {
-            if (dist > 1500 * boost) newZoom = 15;
-            else if (dist < 500 * boost) newZoom = 17; 
+            if (dist > 5000 * boost) newZoom = 15;
+            else if (dist < 1500 * boost) newZoom = 17; 
         }
         else if (state.ZOOM === 17) {
-            if (dist > 800 * boost) newZoom = 16;
-            else if (dist < 250 * boost) newZoom = 18; 
+            if (dist > 2200 * boost) newZoom = 16;
+            else if (dist < 600 * boost) newZoom = 18; 
         }
         else if (state.ZOOM === 18) {
-            if (dist > 400 * boost) newZoom = 17;
+            if (dist > 900 * boost) newZoom = 17;
         }
         else if (state.ZOOM === 12) { 
             if (dist < 35000) newZoom = 13; 
-            else if (dist > 90000) newZoom = 11; 
+            else if (dist > 85000) newZoom = 11; 
         }
         else if (state.ZOOM === 11) { 
-            if (dist < 75000) newZoom = 12; 
+            if (dist < 65000) newZoom = 12; 
+            else if (dist > 150000) newZoom = 10; 
         }
-
+        else if (state.ZOOM === 10) {
+            if (dist < 120000) newZoom = 11;
+            else if (dist > 280000) newZoom = 9;
+        }
+        else if (state.ZOOM === 9) {
+            if (dist < 220000) newZoom = 10;
+            else if (dist > 450000) newZoom = 8;
+        }
+        else if (state.ZOOM === 8) {
+            if (dist < 380000) newZoom = 9;
+            else if (dist > 800000) newZoom = 7;
+        }
+        else if (state.ZOOM === 7) {
+            if (dist < 450000) newZoom = 8;
+            else if (dist > 1200000) newZoom = 6;
+        }
+        else if (state.ZOOM <= 6) {
+            if (dist < 900000) newZoom = 7;
+        }
         const gpsCenter = worldToLngLat(dx, dz, state.originTile);
         autoSelectMapSource(gpsCenter.lat, gpsCenter.lon);
 
-        // --- BRIDAGE DYNAMIQUE DU TILT (v4.3.12) ---
+        // --- BRIDAGE DYNAMIQUE 2D/3D (v4.3.34) ---
         if (state.controls) {
-            if (newZoom >= 17) state.controls.maxPolarAngle = 0.6; 
-            else if (newZoom >= 15) state.controls.maxPolarAngle = 1.0; 
-            else state.controls.maxPolarAngle = 1.3; 
+            if (state.ZOOM <= 8) {
+                // Vue 2D forcée en haute altitude (Space View)
+                state.controls.maxPolarAngle = 0.05; 
+            } else if (state.ZOOM >= 16) {
+                // Protection détail au sol
+                state.controls.maxPolarAngle = 0.8; 
+            } else {
+                // Transition fluide : Zoom 9 (0.1 rad) -> Zoom 14 (1.2 rad)
+                const zoomFactor = THREE.MathUtils.mapLinear(state.ZOOM, 9, 14, 0.1, 1.2);
+                state.controls.maxPolarAngle = THREE.MathUtils.clamp(zoomFactor, 0.05, 1.2);
+            }
         }
 
-        if ((Math.sqrt(dx*dx + dz*dz) > 20000 || newZoom !== state.ZOOM) && (Date.now() - lastRecenterTime > 3000)) {
+        // --- MISE À JOUR IMMÉDIATE DU ZOOM (v4.3.32) ---
+        if (newZoom !== state.ZOOM) {
+            state.ZOOM = newZoom;
+            updateUIZoom(newZoom);
+        }
+
+        // --- RE-CENTRAGE DU MONDE (Origin Shift) ---
+        // On ne re-centre QUE à basse/moyenne altitude (v4.3.39)
+        // À haute altitude (Zoom < 12), le re-centrage cause des instabilités et des écrans noirs.
+        if (state.ZOOM >= 12 && (Math.sqrt(dx*dx + dz*dz) > 20000 || newZoom !== state.ZOOM) && (Date.now() - lastRecenterTime > 3000)) {
             lastRecenterTime = Date.now();
             const oldOriginX = (state.originTile.x + 0.5) / Math.pow(2, state.ZOOM), oldOriginZ = (state.originTile.y + 0.5) / Math.pow(2, state.ZOOM);
-            state.ZOOM = newZoom;
-            state.originTile = lngLatToTile(gpsCenter.lon, gpsCenter.lat, newZoom);
-            const newOriginX = (state.originTile.x + 0.5) / Math.pow(2, state.ZOOM), newOriginZ = (state.originTile.y + 0.5) / Math.pow(2, state.ZOOM);
-            const offsetX = (oldOriginX - newOriginX) * EARTH_CIRCUMFERENCE, offsetZ = (oldOriginZ - newOriginZ) * EARTH_CIRCUMFERENCE;
-            state.camera.position.x += offsetX; state.camera.position.z += offsetZ;
-            state.controls.target.x += offsetX; state.controls.target.z += offsetZ;
-            state.controls.update(); repositionAllTiles();
-            if (state.rawGpxData) updateGPXMesh();
-            updateUIZoom(newZoom);
-        } else {
-            updateUIZoom(state.ZOOM);
+            const newTile = lngLatToTile(gpsCenter.lon, gpsCenter.lat, state.ZOOM);
+            
+            // Sécurité anti-NaN/aberration
+            if (!isNaN(newTile.x) && !isNaN(newTile.y)) {
+                state.originTile = newTile;
+                const newOriginX = (state.originTile.x + 0.5) / Math.pow(2, state.ZOOM), newOriginZ = (state.originTile.y + 0.5) / Math.pow(2, state.ZOOM);
+                const offsetX = (oldOriginX - newOriginX) * EARTH_CIRCUMFERENCE, offsetZ = (oldOriginZ - newOriginZ) * EARTH_CIRCUMFERENCE;
+                
+                if (!isNaN(offsetX) && !isNaN(offsetZ)) {
+                    state.camera.position.x += offsetX; state.camera.position.z += offsetZ;
+                    state.controls.target.x += offsetX; state.controls.target.z += offsetZ;
+                    state.controls.update(); repositionAllTiles();
+                    if (state.rawGpxData) updateGPXMesh();
+                }
+            }
         }
 
         if (state.scene && state.scene.fog && state.scene.fog instanceof THREE.Fog) {
@@ -329,6 +370,14 @@ export async function initScene(): Promise<void> {
         // Les ombres ne sont plus recalculées lors du mouvement de la caméra.
         // C'est updateSunPosition qui déclenchera une mise à jour unique si nécessaire.
         if (state.renderer) state.renderer.shadowMap.autoUpdate = false;
+
+        // --- MISE À JOUR DYNAMIQUE DU BROUILLARD (v4.3.30) ---
+        // Le voile s'adapte à l'altitude de la caméra pour garder une opacité constante au zoom
+        if (state.scene && state.scene.fog && state.scene.fog instanceof THREE.Fog && state.camera) {
+            const dist = state.camera.position.y;
+            state.scene.fog.near = dist * (state.FOG_NEAR / 5000);
+            state.scene.fog.far = dist * (state.FOG_FAR / 5000);
+        }
 
         state.renderer.render(state.scene, state.camera);
 

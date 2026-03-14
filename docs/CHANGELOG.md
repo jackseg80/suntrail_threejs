@@ -4,6 +4,15 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.3.43] - 2026-03-14
+### 🛠️ Stabilité & Robustesse Mondiale
+- **Inversion Lat/Lon Fix :** Correction d'une inversion critique des coordonnées dans le re-centrage du monde (Origin Shift), résolvant les écrans noirs.
+- **LOD Calibration :** Recalibration complète des seuils de zoom pour une vue plus nette et détaillée plus tôt lors de la descente (Zoom 14 dès 20km).
+- **Sûreté Géographique :** Désactivation automatique des calques spécifiques à la Suisse (Sentiers, Pentes) hors zone ou à haute altitude pour éliminer les erreurs 400.
+- **Ultra Range :** Augmentation du rayon de vue (`RANGE`) à 8 tuiles pour le preset Ultra (RTX 4080).
+- **Interface Lisible :** Amélioration du contraste du menu "Vitesse de Chargement" pour une meilleure visibilité.
+- **Tests Unitaires :** Mise à jour et extension de la suite de tests (51 tests au vert) couvrant la sécurité géographique et les nouveaux paramètres.
+
 ## [4.3.26] - 2026-03-14
 ### 🚀 Fluidité Extrême & Zero Latence
 - **Séquençage des Détails :** Implémentation d'une file d'attente prioritaire pour l'affichage des tuiles. Le terrain s'affiche d'abord, suivi des POI (+50ms), des bâtiments (+150ms) et de la forêt (+300ms), éliminant les pics de 140ms lors des zooms.

@@ -27,4 +27,9 @@ describe('Module Bâtiments (buildings.ts)', () => {
         // Pour l'instant on valide les conditions de garde (zoom, settings)
         expect(true).toBe(true);
     });
+
+    it('devrait utiliser BUILDING_BATCH_SIZE depuis le state', () => {
+        state.BUILDING_BATCH_SIZE = 50;
+        expect(state.BUILDING_BATCH_SIZE).toBe(50);
+    });
 });

@@ -69,6 +69,12 @@ export function applyPreset(preset: PresetType): void {
     state.SHOW_VEGETATION = settings.SHOW_VEGETATION;
     state.SHOW_SIGNPOSTS = settings.SHOW_SIGNPOSTS;
     state.SHOW_BUILDINGS = settings.SHOW_BUILDINGS;
+    
+    // Nouveaux paramètres (v4.3.27)
+    state.VEGETATION_DENSITY = settings.VEGETATION_DENSITY;
+    state.BUILDING_BATCH_SIZE = settings.BUILDING_BATCH_SIZE;
+    state.MAX_BUILDS_PER_CYCLE = settings.MAX_BUILDS_PER_CYCLE;
+    state.LOAD_DELAY_FACTOR = settings.LOAD_DELAY_FACTOR;
 
     // Mise à jour dynamique des ombres (v4.3.13)
     if (state.sunLight) {
@@ -77,6 +83,12 @@ export function applyPreset(preset: PresetType): void {
         if (state.sunLight.shadow.map) {
             state.sunLight.shadow.map.dispose();
             state.sunLight.shadow.map = null as any; 
+        }
+        
+        // --- FORCE RECALCUL UNIQUE (v4.3.29) ---
+        // On force le moteur à recalculer la Shadow Map une fois avec les nouveaux réglages
+        if (state.renderer) {
+            state.renderer.shadowMap.needsUpdate = true;
         }
     }
 
@@ -98,6 +110,9 @@ function updatePerformanceUI(preset: PresetType): void {
     const vegToggle = document.getElementById('veg-toggle') as HTMLInputElement;
     const poiToggle = document.getElementById('poi-toggle') as HTMLInputElement;
     const buildingsToggle = document.getElementById('buildings-toggle') as HTMLInputElement;
+    const vegDensitySlider = document.getElementById('veg-density-slider') as HTMLInputElement;
+    const vegDensityDisp = document.getElementById('veg-density-disp');
+    const loadSpeedSelect = document.getElementById('load-speed-select') as HTMLSelectElement;
 
     if (resDisp) resDisp.textContent = state.RESOLUTION.toString();
     if (rangeDisp) rangeDisp.textContent = state.RANGE.toString();
@@ -107,6 +122,11 @@ function updatePerformanceUI(preset: PresetType): void {
     if (vegToggle) vegToggle.checked = state.SHOW_VEGETATION;
     if (poiToggle) poiToggle.checked = state.SHOW_SIGNPOSTS;
     if (buildingsToggle) buildingsToggle.checked = state.SHOW_BUILDINGS;
+    
+    // Nouveaux contrôles (v4.3.27)
+    if (vegDensitySlider) vegDensitySlider.value = state.VEGETATION_DENSITY.toString();
+    if (vegDensityDisp) vegDensityDisp.textContent = state.VEGETATION_DENSITY.toString();
+    if (loadSpeedSelect) loadSpeedSelect.value = state.LOAD_DELAY_FACTOR.toString();
 
     // Mise en évidence du bouton de preset actif
     const buttons = document.querySelectorAll('.preset-btn');

@@ -53,7 +53,10 @@ async function processLoadQueue() {
         }
         const batch = loadQueue.splice(0, 12);
         await Promise.all(batch.map(async (tile) => {
-            try { if (tile.status === 'idle' || tile.status === 'failed') await tile.load(); }
+            try { 
+                // On ne charge QUE si c'est idle. Si ça a échoué, on attend un reset manuel ou un changement de zone.
+                if (tile.status === 'idle') await tile.load(); 
+            }
             catch (e) { tile.status = 'failed'; }
         }));
     } finally {
@@ -276,6 +279,14 @@ export class Tile {
             if (colorUrl.includes('maptiler')) colorUrl = colorUrl.replace('/256/', '/512/'); 
 
             let colorBlob = await fetchWithCache(colorUrl, true);
+            
+            // --- FALLBACK SWISSTOPO (v4.3.35) ---
+            // Si Swisstopo échoue (400/404), on tente MapTiler Satellite en secours
+            if (!colorBlob && state.MAP_SOURCE === 'swisstopo') {
+                const fallbackUrl = `https://api.maptiler.com/maps/satellite/256/${colorZoom}/${colorTx}/${colorTy}@2x.webp?key=${state.MK}`;
+                colorBlob = await fetchWithCache(fallbackUrl, true);
+            }
+
             if (this.status as any === 'disposed') return;
             
             if (colorBlob) {
@@ -288,13 +299,20 @@ export class Tile {
                 this.colorTex = new THREE.CanvasTexture(dummy);
             }
 
+            // --- SÉCURITÉ GÉOGRAPHIQUE (v4.3.38) ---
             const inCH = isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON);
+            const isHighAlt = (this.zoom < 10);
+            
             let layerZoom = Math.min(this.zoom, 18);
             let layerTx = this.tx; let layerTy = this.ty;
 
+            // On ne demande les calques suisses que si on est en Suisse ET à basse/moyenne altitude
+            const wantTrails = state.SHOW_TRAILS && inCH && !isHighAlt;
+            const wantSlopes = state.SHOW_SLOPES && inCH && !isHighAlt;
+
             const [tBlob, sBlob] = await Promise.all([
-                (state.SHOW_TRAILS && inCH) ? fetchWithCache(this.getOverlayUrl(layerZoom, layerTx, layerTy), true) : Promise.resolve(null),
-                (state.SHOW_SLOPES && inCH) ? fetchWithCache(this.getSlopesUrl(layerZoom, layerTx, layerTy), true) : Promise.resolve(null)
+                wantTrails ? fetchWithCache(this.getOverlayUrl(layerZoom, layerTx, layerTy), true) : Promise.resolve(null),
+                wantSlopes ? fetchWithCache(this.getSlopesUrl(layerZoom, layerTx, layerTy), true) : Promise.resolve(null)
             ]);
             if (this.status as any === 'disposed') return;
             if (tBlob) { const i = await createImageBitmap(tBlob); this.overlayTex = new THREE.Texture(i); this.overlayTex.flipY = false; this.overlayTex.needsUpdate = true; this.overlayTex.colorSpace = THREE.SRGBColorSpace; }
@@ -325,6 +343,11 @@ export class Tile {
     buildMesh(resolution: number): void {
         if (!this.elevationTex || !this.colorTex || this.status as any === 'disposed') return;
         
+        // --- SÉCURITÉ ANTI-FANTÔME (v4.3.32) ---
+        // Si la tuile n'est pas dans les tuiles actives, on ne construit rien.
+        // Cela évite que le préchargement prédictif n'ajoute des objets orphelins dans la scène.
+        if (activeTiles.get(this.key) !== this) return;
+
         const oldMesh = this.mesh;
         const geometry = getPlaneGeometry(resolution, this.tileSizeMeters);
         const material = new THREE.MeshStandardMaterial({ map: this.colorTex, roughness: 1.0, metalness: 0.0, transparent: true, opacity: 0 });
@@ -424,21 +447,23 @@ export class Tile {
         this.opacity = 0; 
         this.isFadingIn = true;
 
-        // --- CHARGEMENT SÉQUENCÉ DES DÉTAILS (v4.3.26) ---
-        // On étale la charge sur plusieurs frames pour éviter les pics de 140ms
+        // --- CHARGEMENT SÉQUENCÉ DES DÉTAILS (v4.3.27) ---
+        // On étale la charge selon LOAD_DELAY_FACTOR (0.2 pour Ultra, 2.0 pour Eco)
+        const delay = (ms: number) => ms * state.LOAD_DELAY_FACTOR;
         
         // 1. POIs (Rapide)
         if (state.SHOW_SIGNPOSTS && this.zoom >= 14) {
             setTimeout(() => {
+                if (this.status === 'disposed') return;
                 loadPOIsForTile(this).then(group => {
                     if (group && this.status !== 'disposed' && state.scene) {
-                        if (this.poiGroup) state.scene.remove(this.poiGroup);
+                        if (this.poiGroup) state.scene.remove(this.poiGroup); // Nettoyage ancien (v4.3.28)
                         this.poiGroup = group;
                         this.poiGroup.position.set(this.worldX, 0, this.worldZ);
                         state.scene.add(this.poiGroup);
                     }
                 });
-            }, 50);
+            }, delay(50));
         }
 
         // 2. Bâtiments (Lourd)
@@ -448,13 +473,13 @@ export class Tile {
                 loadBuildingsForTile(this)
                     .then(mesh => {
                         if (mesh && this.status !== 'disposed' && state.scene) {
-                            if (this.buildingMesh) state.scene.remove(this.buildingMesh);
+                            if (this.buildingMesh) state.scene.remove(this.buildingMesh); // Nettoyage ancien (v4.3.28)
                             this.buildingMesh = mesh;
                             state.scene.add(this.buildingMesh);
                         }
                     })
                     .catch(err => console.error("[Terrain] Error loading buildings:", err));
-            }, 150);
+            }, delay(150));
         }
 
         // 3. Végétation (Très Lourd)
@@ -463,11 +488,12 @@ export class Tile {
                 if ((this.status as string) === 'disposed') return;
                 const forest = createForestForTile(this);
                 if (forest && state.scene && (this.status as string) !== 'disposed') {
+                    if (this.forestMesh) state.scene.remove(this.forestMesh); // Nettoyage ancien (v4.3.28)
                     this.forestMesh = forest;
                     this.forestMesh.position.set(this.worldX, 0, this.worldZ);
                     state.scene.add(this.forestMesh);
                 }
-            }, 300);
+            }, delay(300));
         }
 
         if (oldMesh) {
@@ -525,7 +551,7 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
     const currentActiveKeys = new Set<string>();
 
     let buildsThisCycle = 0;
-    const MAX_BUILDS_PER_CYCLE = 1; // Un seul maillage par cycle pour garder 60fps
+    const MAX_BUILDS_PER_CYCLE = state.MAX_BUILDS_PER_CYCLE; 
 
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
@@ -561,6 +587,49 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
         if (!currentActiveKeys.has(key)) { tile.dispose(); activeTiles.delete(key); }
     }
     processLoadQueue();
+
+    // --- PRE-CHARGEMENT PRÉDICTIF (v4.3.31) ---
+    // On anticipe le prochain mouvement de l'utilisateur si la file principale est vide
+    if (loadQueue.length === 0) {
+        const nextZoom = zoom + 1;
+        const prevZoom = zoom - 1;
+        
+        // 1. Anticiper le Zoom Avant (LOD +1) - Centre uniquement
+        if (nextZoom <= 18) {
+            const maxNext = Math.pow(2, nextZoom);
+            const ct = lngLatToTile(currentGPS.lon, currentGPS.lat, nextZoom);
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    const tx = ct.x + dx;
+                    const ty = ct.y + dy;
+                    if (tx < 0 || tx >= maxNext || ty < 0 || ty >= maxNext) continue; // Sécurité bornes (v4.3.37)
+
+                    const pKey = `${tx}_${ty}_${nextZoom}`;
+                    const cacheKey = `${state.MAP_SOURCE}_${state.SHOW_TRAILS}_${state.SHOW_SLOPES}_${pKey}`;
+                    if (!dataCache.has(cacheKey)) {
+                        const pTile = new Tile(tx, ty, nextZoom, pKey);
+                        loadQueue.push(pTile);
+                    }
+                }
+            }
+        }
+
+        // 2. Anticiper le Zoom Arrière (LOD -1)
+        if (prevZoom >= 6) {
+            const maxPrev = Math.pow(2, prevZoom);
+            const ct = lngLatToTile(currentGPS.lon, currentGPS.lat, prevZoom);
+            if (ct.x >= 0 && ct.x < maxPrev && ct.y >= 0 && ct.y < maxPrev) {
+                const pKey = `${ct.x}_${ct.y}_${prevZoom}`;
+                const cacheKey = `${state.MAP_SOURCE}_${state.SHOW_TRAILS}_${state.SHOW_SLOPES}_${pKey}`;
+                if (!dataCache.has(cacheKey)) {
+                    const pTile = new Tile(ct.x, ct.y, prevZoom, pKey);
+                    loadQueue.push(pTile);
+                }
+            }
+        }
+        
+        if (loadQueue.length > 0) processLoadQueue();
+    }
 }
 
 export async function loadTerrain(): Promise<void> { await updateVisibleTiles(); }

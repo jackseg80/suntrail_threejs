@@ -16,6 +16,10 @@ export interface PerformanceSettings {
     SHOW_BUILDINGS: boolean;
     BUILDINGS_SHADOWS: boolean; // v4.3.13
     MAX_ALLOWED_ZOOM: number;    // v4.3.13
+    VEGETATION_DENSITY: number;  // v4.3.27
+    BUILDING_BATCH_SIZE: number; // v4.3.27
+    MAX_BUILDS_PER_CYCLE: number; // v4.3.27
+    LOAD_DELAY_FACTOR: number;   // v4.3.27 (1.0 = normal, 2.0 = lent, 0.5 = rapide)
 }
 
 export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings> = {
@@ -29,7 +33,11 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHOW_SIGNPOSTS: false,
         SHOW_BUILDINGS: false,
         BUILDINGS_SHADOWS: false,
-        MAX_ALLOWED_ZOOM: 15
+        MAX_ALLOWED_ZOOM: 15,
+        VEGETATION_DENSITY: 1000,
+        BUILDING_BATCH_SIZE: 5,
+        MAX_BUILDS_PER_CYCLE: 1,
+        LOAD_DELAY_FACTOR: 2.0
     },
     balanced: {
         RESOLUTION: 128,
@@ -41,7 +49,11 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHOW_SIGNPOSTS: true,
         SHOW_BUILDINGS: true,
         BUILDINGS_SHADOWS: false,
-        MAX_ALLOWED_ZOOM: 16
+        MAX_ALLOWED_ZOOM: 16,
+        VEGETATION_DENSITY: 4000,
+        BUILDING_BATCH_SIZE: 20,
+        MAX_BUILDS_PER_CYCLE: 1,
+        LOAD_DELAY_FACTOR: 1.0
     },
     performance: {
         RESOLUTION: 160,
@@ -53,11 +65,15 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHOW_SIGNPOSTS: true,
         SHOW_BUILDINGS: true,
         BUILDINGS_SHADOWS: true,
-        MAX_ALLOWED_ZOOM: 18
+        MAX_ALLOWED_ZOOM: 18,
+        VEGETATION_DENSITY: 8000,
+        BUILDING_BATCH_SIZE: 50,
+        MAX_BUILDS_PER_CYCLE: 2,
+        LOAD_DELAY_FACTOR: 0.5
     },
     ultra: {
         RESOLUTION: 256,
-        RANGE: 6, 
+        RANGE: 8, // Augmenté de 6 à 8 pour une vue massive
         SHADOWS: true,
         SHADOW_RES: 4096,
         PIXEL_RATIO_LIMIT: window.devicePixelRatio,
@@ -65,7 +81,11 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHOW_SIGNPOSTS: true,
         SHOW_BUILDINGS: true,
         BUILDINGS_SHADOWS: true,
-        MAX_ALLOWED_ZOOM: 18
+        MAX_ALLOWED_ZOOM: 18,
+        VEGETATION_DENSITY: 15000,
+        BUILDING_BATCH_SIZE: 200,
+        MAX_BUILDS_PER_CYCLE: 4,
+        LOAD_DELAY_FACTOR: 0.2
     }
 };
 
@@ -92,6 +112,12 @@ export interface State {
     hasManualSource: boolean;
     FOG_NEAR: number;
     FOG_FAR: number;
+    
+    // Paramètres avancés de performance (v4.3.27)
+    VEGETATION_DENSITY: number;
+    BUILDING_BATCH_SIZE: number;
+    MAX_BUILDS_PER_CYCLE: number;
+    LOAD_DELAY_FACTOR: number;
     
     // Paramètres Debug (v3.8.5)
     SHOW_DEBUG: boolean;
@@ -154,7 +180,7 @@ export const state: State = {
     SHADOW_RES: PRESETS.balanced.SHADOW_RES, 
     PIXEL_RATIO_LIMIT: PRESETS.balanced.PIXEL_RATIO_LIMIT,
     RELIEF_EXAGGERATION: 1.4, 
-    SHOW_TRAILS: true, 
+    SHOW_TRAILS: false, // Désactivé par défaut (v4.3.42)
     SHOW_SLOPES: false,
     SHOW_SIGNPOSTS: PRESETS.balanced.SHOW_SIGNPOSTS,
     SHOW_BUILDINGS: PRESETS.balanced.SHOW_BUILDINGS,
@@ -162,6 +188,12 @@ export const state: State = {
     hasManualSource: false,
     FOG_NEAR: 5000, 
     FOG_FAR: 40000, 
+    
+    // Performance (v4.3.27)
+    VEGETATION_DENSITY: PRESETS.balanced.VEGETATION_DENSITY,
+    BUILDING_BATCH_SIZE: PRESETS.balanced.BUILDING_BATCH_SIZE,
+    MAX_BUILDS_PER_CYCLE: PRESETS.balanced.MAX_BUILDS_PER_CYCLE,
+    LOAD_DELAY_FACTOR: PRESETS.balanced.LOAD_DELAY_FACTOR,
     
     // Debug (v3.8.5)
     SHOW_DEBUG: true,

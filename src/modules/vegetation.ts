@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { state } from './state';
-import { isMobileDevice } from './utils';
 
 let treeGeometry: THREE.BufferGeometry | null = null;
 let treeMaterial: THREE.MeshStandardMaterial | null = null;
@@ -50,7 +49,7 @@ export function createForestForTile(tile: any): THREE.InstancedMesh | null {
     
     const colorData = ctx.getImageData(0, 0, scanRes, scanRes).data;
 
-    const maxTrees = isMobileDevice() ? 3000 : 8000; // Limite ajustée pour la stabilité
+    const maxTrees = state.VEGETATION_DENSITY; // Dynamique (v4.3.27)
     const mesh = new THREE.InstancedMesh(treeGeometry!, treeMaterial!, maxTrees);
     const dummy = new THREE.Object3D();
     const size = tile.tileSizeMeters;

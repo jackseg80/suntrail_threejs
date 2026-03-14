@@ -137,7 +137,7 @@ async function fetchBuildingsWithCache(z: number, x: number, y: number): Promise
 
 async function createBuildingMesh(buildings: BuildingFeature[]): Promise<THREE.Mesh | null> {
     const geometries: THREE.BufferGeometry[] = [];
-    const MAX_BATCH_SIZE = 20; // On traite par petits paquets pour laisser respirer le CPU
+    const MAX_BATCH_SIZE = state.BUILDING_BATCH_SIZE; // Dynamique selon le preset (v4.3.27)
 
     for (let i = 0; i < buildings.length; i++) {
         const bldg = buildings[i];

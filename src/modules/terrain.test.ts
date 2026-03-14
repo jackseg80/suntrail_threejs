@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { Tile, updateGPXMesh } from './terrain';
 import { lngLatToTile, worldToLngLat, EARTH_CIRCUMFERENCE } from './geo';
+import { isPositionInSwitzerland } from './utils';
 import { state } from './state';
 
 describe('terrain.ts', () => {
@@ -157,6 +158,16 @@ describe('terrain.ts', () => {
             expect(tile.colorScale).toBe(0.5);
             // 34114 % 2 = 0. Ty 22952 % 2 = 0. (Offset 0,0)
             expect(tile.colorOffset.x).toBe(0.0);
+        });
+    });
+
+    describe('Geographical Safety (v4.3.38)', () => {
+        it('should correctly identify points in Switzerland', () => {
+            const spiez = { lat: 46.6863, lon: 7.6617 };
+            const paris = { lat: 48.8566, lon: 2.3522 };
+            
+            expect(isPositionInSwitzerland(spiez.lat, spiez.lon)).toBe(true);
+            expect(isPositionInSwitzerland(paris.lat, paris.lon)).toBe(false);
         });
     });
 });

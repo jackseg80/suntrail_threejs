@@ -302,25 +302,55 @@ export function initUI(): void {
     // --- RÉGLAGES TECHNIQUES ---
     const resSlider = document.getElementById('res-slider') as HTMLInputElement;
     if (resSlider) {
+        resSlider.addEventListener('input', () => {
+            const resDisp = document.getElementById('res-disp');
+            if (resDisp) resDisp.textContent = resSlider.value;
+        });
         resSlider.addEventListener('change', async (e: Event) => {
             const target = e.target as HTMLInputElement;
             applyPreset('custom');
             state.RESOLUTION = parseInt(target.value);
-            const resDisp = document.getElementById('res-disp');
-            if (resDisp) resDisp.textContent = state.RESOLUTION.toString();
             await refreshTerrain();
         });
     }
 
     const rangeSlider = document.getElementById('range-slider') as HTMLInputElement;
     if (rangeSlider) {
+        rangeSlider.addEventListener('input', () => {
+            const rangeDisp = document.getElementById('range-disp');
+            if (rangeDisp) rangeDisp.textContent = rangeSlider.value;
+        });
         rangeSlider.addEventListener('change', async (e: Event) => {
             const target = e.target as HTMLInputElement;
             applyPreset('custom');
             state.RANGE = parseInt(target.value);
-            const rangeDisp = document.getElementById('range-disp');
-            if (rangeDisp) rangeDisp.textContent = state.RANGE.toString();
             await refreshTerrain();
+        });
+    }
+
+    // --- Nouveaux contrôles (v4.3.27) ---
+    const vegDensitySlider = document.getElementById('veg-density-slider') as HTMLInputElement;
+    if (vegDensitySlider) {
+        vegDensitySlider.addEventListener('input', () => {
+            const vegDensityDisp = document.getElementById('veg-density-disp');
+            if (vegDensityDisp) vegDensityDisp.textContent = vegDensitySlider.value;
+        });
+        vegDensitySlider.addEventListener('change', async (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            applyPreset('custom');
+            state.VEGETATION_DENSITY = parseInt(target.value);
+            resetTerrain();
+            await loadTerrain();
+        });
+    }
+
+    const loadSpeedSelect = document.getElementById('load-speed-select') as HTMLSelectElement;
+    if (loadSpeedSelect) {
+        loadSpeedSelect.addEventListener('change', (e: Event) => {
+            const target = e.target as HTMLSelectElement;
+            applyPreset('custom');
+            state.LOAD_DELAY_FACTOR = parseFloat(target.value);
+            showToast(`Vitesse de chargement : ${target.options[target.selectedIndex].text}`);
         });
     }
 

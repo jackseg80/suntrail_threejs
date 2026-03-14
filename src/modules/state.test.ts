@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { state } from './state';
+import { state, PRESETS } from './state';
 
 describe('state.ts', () => {
     beforeEach(() => {
@@ -19,5 +19,26 @@ describe('state.ts', () => {
         expect(state.scene).toBeNull();
         expect(state.camera).toBeNull();
         expect(state.renderer).toBeNull();
+    });
+
+    it('should have new performance parameters defined (v4.3.27)', () => {
+        expect(state.VEGETATION_DENSITY).toBeDefined();
+        expect(state.BUILDING_BATCH_SIZE).toBeDefined();
+        expect(state.MAX_BUILDS_PER_CYCLE).toBeDefined();
+        expect(state.LOAD_DELAY_FACTOR).toBeDefined();
+    });
+
+    describe('PRESETS', () => {
+        it('should have an ultra preset with high range and resolution', () => {
+            expect(PRESETS.ultra.RANGE).toBe(8);
+            expect(PRESETS.ultra.RESOLUTION).toBe(256);
+            expect(PRESETS.ultra.VEGETATION_DENSITY).toBe(15000);
+        });
+
+        it('should have an eco preset with disabled details', () => {
+            expect(PRESETS.eco.SHOW_VEGETATION).toBe(false);
+            expect(PRESETS.eco.SHOW_BUILDINGS).toBe(false);
+            expect(PRESETS.eco.RANGE).toBe(2);
+        });
     });
 });
