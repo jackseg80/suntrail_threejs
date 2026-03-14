@@ -2,6 +2,10 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
+## ✅ Terminé (v4.3.65)
+- [x] **2D Turbo Mobile** : Optimisation drastique des FPS en haute altitude via MeshBasicMaterial.
+- [x] **Fix Production Build** : Résolution des erreurs de scope shader.
+
 ## ✅ Terminé (v4.3.63)
 - [x] **Global Overview** : Vue régionale (LOD 12) au démarrage et à la recherche.
 - [x] **Parabolic Zoom** : Trajectoire de caméra organique avec Auto-Tilt.

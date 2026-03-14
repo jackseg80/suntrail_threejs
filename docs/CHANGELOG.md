@@ -4,6 +4,12 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.3.65] - 2026-03-14
+### 🚀 Optimisation Mobile Extreme
+- **Mode 2D Turbo :** Utilisation d'un `MeshBasicMaterial` pour les tuiles de haute altitude (Zoom <= 10). Gain de FPS massif sur mobile (S23) en supprimant les calculs de lumière et d'ombres inutiles.
+- **Réduction du Draw Call :** Désactivation des ombres portées et reçues pour les vues spatiales.
+- **Fix Build :** Correction d'une erreur de portée (scope) sur les shaders lors du build de production.
+
 ## [4.3.64] - 2026-03-14
 ### 🎨 UI & Réglages Fins
 - **Stats Performance :** Repositionnement du compteur FPS directement sous le bouton des réglages pour une meilleure ergonomie.

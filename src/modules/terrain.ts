@@ -358,7 +358,13 @@ export class Tile {
 
         const oldMesh = this.mesh;
         const geometry = getPlaneGeometry(resolution, this.tileSizeMeters);
-        const material = new THREE.MeshStandardMaterial({ map: this.colorTex, roughness: 1.0, metalness: 0.0, transparent: true, opacity: 0 });
+        
+        // --- OPTIMISATION 2D MOBILE (v4.3.65) ---
+        // Pour Zoom <= 10, on utilise un matériau basique sans calculs de lumière/ombre.
+        const is2D = (this.zoom <= 10);
+        const material = is2D 
+            ? new THREE.MeshBasicMaterial({ map: this.colorTex, transparent: true, opacity: 0 })
+            : new THREE.MeshStandardMaterial({ map: this.colorTex, roughness: 1.0, metalness: 0.0, transparent: true, opacity: 0 });
 
         const sharedShaderChunk = `
             uniform sampler2D uElevationMap;
@@ -379,76 +385,80 @@ export class Tile {
             }
         `;
 
-        material.onBeforeCompile = (shader) => {
-            shader.uniforms.uElevationMap = { value: this.elevationTex };
-            shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
-            shader.uniforms.uTileSize = { value: this.tileSizeMeters };
-            shader.uniforms.uElevOffset = { value: this.elevOffset };
-            shader.uniforms.uElevScale = { value: this.elevScale };
-            shader.uniforms.uColorOffset = { value: this.colorOffset };
-            shader.uniforms.uColorScale = { value: this.colorScale };
-            shader.uniforms.uOverlayMap = { value: this.overlayTex || null };
-            shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
-            shader.uniforms.uSlopesMap = { value: this.slopesTex || null };
-            shader.uniforms.uHasSlopes = { value: !!this.slopesTex };
+        if (!is2D) {
+            material.onBeforeCompile = (shader) => {
+                shader.uniforms.uElevationMap = { value: this.elevationTex };
+                shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
+                shader.uniforms.uTileSize = { value: this.tileSizeMeters };
+                shader.uniforms.uElevOffset = { value: this.elevOffset };
+                shader.uniforms.uElevScale = { value: this.elevScale };
+                shader.uniforms.uColorOffset = { value: this.colorOffset };
+                shader.uniforms.uColorScale = { value: this.colorScale };
+                shader.uniforms.uOverlayMap = { value: this.overlayTex || null };
+                shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
+                shader.uniforms.uSlopesMap = { value: this.slopesTex || null };
+                shader.uniforms.uHasSlopes = { value: !!this.slopesTex };
 
-            shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n
-                uniform vec2 uColorOffset;
-                uniform float uColorScale;
-                ${sharedShaderChunk}
-            `);
-            shader.vertexShader = shader.vertexShader.replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);`);
-            shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n
-                float delta = uTileSize / 256.0;
-                float hL = getTerrainHeight(uv + vec2(-1.0/256.0, 0.0));
-                float hR = getTerrainHeight(uv + vec2(1.0/256.0, 0.0));
-                float hD = getTerrainHeight(uv + vec2(0.0, -1.0/256.0));
-                float hU = getTerrainHeight(uv + vec2(0.0, 1.0/256.0));
-                objectNormal = normalize(vec3(hL - hR, delta * 2.0, hD - hU));
-            `);
-            shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv);`);
+                shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n
+                    uniform vec2 uColorOffset;
+                    uniform float uColorScale;
+                    ${sharedShaderChunk}
+                `);
+                shader.vertexShader = shader.vertexShader.replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);`);
+                shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n
+                    float delta = uTileSize / 256.0;
+                    float hL = getTerrainHeight(uv + vec2(-1.0/256.0, 0.0));
+                    float hR = getTerrainHeight(uv + vec2(1.0/256.0, 0.0));
+                    float hD = getTerrainHeight(uv + vec2(0.0, -1.0/256.0));
+                    float hU = getTerrainHeight(uv + vec2(0.0, 1.0/256.0));
+                    objectNormal = normalize(vec3(hL - hR, delta * 2.0, hD - hU));
+                `);
+                shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv);`);
 
-            shader.fragmentShader = `
-                uniform sampler2D uOverlayMap;
-                uniform sampler2D uSlopesMap;
-                uniform bool uHasOverlay;
-                uniform bool uHasSlopes;
-                ${shader.fragmentShader}
-            `.replace('#include <map_fragment>', `
-                #include <map_fragment>
-                if (uHasOverlay) {
-                    vec4 oCol = texture2D(uOverlayMap, vMapUv);
-                    diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a);
-                }
-                if (uHasSlopes) {
-                    vec4 sCol = texture2D(uSlopesMap, vMapUv);
-                    diffuseColor.rgb = mix(diffuseColor.rgb, sCol.rgb, sCol.a * 0.6);
-                }
-            `);
-        };
+                shader.fragmentShader = `
+                    uniform sampler2D uOverlayMap;
+                    uniform sampler2D uSlopesMap;
+                    uniform bool uHasOverlay;
+                    uniform bool uHasSlopes;
+                    ${shader.fragmentShader}
+                `.replace('#include <map_fragment>', `
+                    #include <map_fragment>
+                    if (uHasOverlay) {
+                        vec4 oCol = texture2D(uOverlayMap, vMapUv);
+                        diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a);
+                    }
+                    if (uHasSlopes) {
+                        vec4 sCol = texture2D(uSlopesMap, vMapUv);
+                        diffuseColor.rgb = mix(diffuseColor.rgb, sCol.rgb, sCol.a * 0.6);
+                    }
+                `);
+            };
+        }
 
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.position.set(this.worldX, 0, this.worldZ);
         this.mesh.renderOrder = this.zoom; 
-        this.mesh.castShadow = true;
-        this.mesh.receiveShadow = true;
+        this.mesh.castShadow = !is2D;
+        this.mesh.receiveShadow = !is2D;
 
         // --- OMBRES PORTÉES RÉELLES (v4.3.25) ---
-        const customDepthMaterial = new THREE.MeshDepthMaterial({
-            depthPacking: THREE.RGBADepthPacking,
-            alphaTest: 0.5
-        });
+        if (!is2D) {
+            const customDepthMaterial = new THREE.MeshDepthMaterial({
+                depthPacking: THREE.RGBADepthPacking,
+                alphaTest: 0.5
+            });
 
-        customDepthMaterial.onBeforeCompile = (shader) => {
-            shader.uniforms.uElevationMap = { value: this.elevationTex };
-            shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
-            shader.uniforms.uElevOffset = { value: this.elevOffset };
-            shader.uniforms.uElevScale = { value: this.elevScale };
+            customDepthMaterial.onBeforeCompile = (shader) => {
+                shader.uniforms.uElevationMap = { value: this.elevationTex };
+                shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
+                shader.uniforms.uElevOffset = { value: this.elevOffset };
+                shader.uniforms.uElevScale = { value: this.elevScale };
 
-            shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${sharedShaderChunk}`);
-            shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv);`);
-        };
-        this.mesh.customDepthMaterial = customDepthMaterial;
+                shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${sharedShaderChunk}`);
+                shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv);`);
+            };
+            this.mesh.customDepthMaterial = customDepthMaterial;
+        }
 
         if (state.scene) state.scene.add(this.mesh);
         this.currentResolution = resolution;

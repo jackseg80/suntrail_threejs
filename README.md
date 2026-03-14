@@ -1,8 +1,9 @@
-# ⛰️ SunTrail 3D (v4.3.63)
+# ⛰️ SunTrail 3D (v4.3.65)
 
 Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données Swisstopo / MapTiler.
 
-## ✨ Nouveautés v4.3.63 (Navigation & Immersion HD)
+## ✨ Nouveautés v4.3.65 (Turbo Mobile & Space View)
+- **2D Turbo Engine :** Rendu spatial (LOD <= 10) utilisant des matériaux basiques sans calculs GPU, garantissant 120 FPS même sur mobile à haute altitude.
 - **Décollage Global :** Démarrage et recherche de lieux en vue régionale HD (LOD 12) pour un meilleur contexte géographique.
 - **Trajectoire Parabolique :** Zoom intelligent (Auto-Tilt) qui redresse la vue vers la 2D en montant et l'incline vers le relief en descendant.
 - **Turbo Space Engine :** Rendu 2D ultra-léger pour les hautes altitudes (Space View), économisant 50% de ressources.
