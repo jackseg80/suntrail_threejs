@@ -630,7 +630,8 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
     const currentActiveKeys = new Set<string>();
 
     let buildsThisCycle = 0;
-    const MAX_BUILDS_PER_CYCLE = state.MAX_BUILDS_PER_CYCLE; 
+    const isUserInteracting = (state.controls as any)._isMoving;
+    const MAX_BUILDS_PER_CYCLE = isUserInteracting ? state.MAX_BUILDS_PER_CYCLE : state.MAX_BUILDS_PER_CYCLE * 2; 
 
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {

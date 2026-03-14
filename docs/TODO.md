@@ -85,7 +85,8 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [ ] **Companion App (Watch)** : Extension pour montres connectées (Data-view : Altitude, Cap, Prochain WP).
 
 ## 🏗️ Vision & Architecture (v5.0+)
-- [ ] **Audit Complet** : Revue globale de la performance, de la sécurité et de la maintenabilité du code.
+- [x] **Audit de Performance & Presets** : Optimisation complète des paliers de qualité et du moteur de chargement (v4.5.35).
+- [ ] **Audit de Sécurité & Maintenabilité** : Revue globale de la sécurité et de la structure du code.
 - [ ] **Tests de Régression Visuelle** : Automatisation de la validation du rendu 3D.
 - [ ] **Modularisation (Split Produit)** : Étudier le découpage en modules distincts pour spécialisation :
     - *SunTrail Explorer* (Rando/Alpi : focus GPS, Offline, Sécurité).

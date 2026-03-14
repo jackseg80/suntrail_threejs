@@ -182,3 +182,22 @@ export function updateSunPosition(minutes: number): void {
         state.scene.fog.color.copy(fogColor);
     }
 }
+
+/**
+ * Met à jour la résolution de la shadow map du soleil
+ */
+export function updateShadowMapResolution(): void {
+    if (!state.sunLight) return;
+    const res = state.SHADOW_RES;
+    state.sunLight.shadow.mapSize.set(res, res);
+    
+    // Il faut recréer le buffer de la shadow map si elle existe déjà
+    if (state.sunLight.shadow.map) {
+        state.sunLight.shadow.map.dispose();
+        state.sunLight.shadow.map = null;
+    }
+    
+    if (state.renderer) {
+        state.renderer.shadowMap.needsUpdate = true;
+    }
+}

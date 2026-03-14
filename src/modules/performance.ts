@@ -1,5 +1,6 @@
 import { state, PRESETS, PresetType } from './state';
 import { showToast } from './utils';
+import { updateShadowMapResolution } from './sun';
 
 /**
  * Détecte les informations du GPU
@@ -63,6 +64,7 @@ export function applyPreset(preset: PresetType): void {
     state.BUILDING_BATCH_SIZE = settings.BUILDING_BATCH_SIZE;
     state.MAX_BUILDS_PER_CYCLE = settings.MAX_BUILDS_PER_CYCLE;
     state.LOAD_DELAY_FACTOR = settings.LOAD_DELAY_FACTOR;
+    state.SHADOW_RES = settings.SHADOW_RES;
 
     // Paramètres météo (v4.4)
     state.SHOW_WEATHER = settings.SHOW_WEATHER;
@@ -72,6 +74,7 @@ export function applyPreset(preset: PresetType): void {
     // Mise à jour dynamique des ombres
     if (state.sunLight) {
         state.sunLight.castShadow = state.SHADOWS;
+        updateShadowMapResolution();
     }
 
     updatePerformanceUI(preset);
