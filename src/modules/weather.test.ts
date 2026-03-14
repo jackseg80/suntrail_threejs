@@ -11,6 +11,7 @@ describe('Weather Module', () => {
     });
 
     it('should set currentWeather to rain for WMO code 61 and get location name', async () => {
+        state.MK = 'test-key'; // Requis par fetchGeocoding
         const mockWeather = {
             current: {
                 temperature_2m: 10, apparent_temperature: 8, weather_code: 61,
@@ -27,7 +28,7 @@ describe('Weather Module', () => {
                 precipitation_probability: Array(48).fill(80)
             }
         };
-        const mockGeo = { address: { city: 'Delémont' } };
+        const mockGeo = { features: [{ place_name_fr: 'Delémont' }] };
         global.fetch = vi.fn()
             .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockWeather) })
             .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockGeo) });

@@ -12,6 +12,10 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Correctif Ombres :** recalibrage du frustum d'ombre (50km) pour une projection fidèle des sommets sur les vallées.
 - **UI Météo :** Intégration du Dashboard expert avec Isotherme 0°C, UV et prévisions horaires sur 6h.
 
+## [4.5.35] - 2026-03-14
+### 🧹 Clean Architecture & Refactoring
+- **Découpage de `scene.ts` (Phase 1.1)** : Extraction de la logique de la boussole 3D (initialisation, rendu, animation) vers un module dédié `compass.ts`. Allègement significatif du fichier principal et ajout de tests unitaires dédiés.
+
 ## [4.5.34] - 2026-03-14
 ### ✨ Nouveautés
 - **Zoom Européen** : Augmentation de la distance de dézoom (`maxDistance` à 1.8M) et ajout de paliers de LOD (zoom 7-9) pour une vue continentale.
