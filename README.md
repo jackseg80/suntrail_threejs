@@ -1,6 +1,12 @@
-# ⛰️ SunTrail 3D (v4.3.65)
+# ⛰️ SunTrail 3D (v4.4.0)
 
 Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données Swisstopo / MapTiler.
+
+## ✨ Nouveautés v4.4.0 (Atmosphere & Real-time Weather)
+- **Météo Dynamique :** Rendu de pluie et neige 100% GPU basé sur les données réelles (Open-Meteo).
+- **Physique du Vent :** Inclinaison et vitesse des particules pilotées par les conditions réelles de la zone.
+- **Dashboard Météo :** Bulletin complet avec température, ressenti, vent, humidité et nom du lieu (Reverse Geocoding).
+- **Navigation Pro :** Système d'auto-tilt et zoom parabolique stabilisé.
 
 ## ✨ Nouveautés v4.3.65 (Turbo Mobile & Space View)
 - **2D Turbo Engine :** Rendu spatial (LOD <= 10) utilisant des matériaux basiques sans calculs GPU, garantissant 120 FPS même sur mobile à haute altitude.

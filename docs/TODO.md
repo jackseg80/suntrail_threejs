@@ -2,6 +2,12 @@
 
 Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
 
+## ✅ Terminé (v4.4.0)
+- [x] **Météo Dynamique** : Système de particules GPU pour la pluie et la neige.
+- [x] **Physique du Vent** : Inclinaison et vitesse des effets basées sur l'API réelle.
+- [x] **Dashboard Météo Pro** : KPIs, flèche de vent et localisation automatique.
+- [x] **Simulateur d'Effets** : Contrôles manuels pour le test visuel.
+
 ## ✅ Terminé (v4.3.65)
 - [x] **2D Turbo Mobile** : Optimisation drastique des FPS en haute altitude via MeshBasicMaterial.
 - [x] **Fix Production Build** : Résolution des erreurs de scope shader.
@@ -31,7 +37,7 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [x] **Capture d'écran 3D** : Export PNG sans interface.
 
 ## 🏁 Prochainement (v4.4+) - Immersion Atmosphérique
-- [ ] **Météo Dynamique** (v4.4) : Effets de pluie et neige en temps réel basés sur le GPS.
+- [x] **Météo Dynamique** (v4.4) : Effets de pluie et neige en temps réel basés sur le GPS.
 - [ ] **Recherche & Intelligence** (v4.5) : Moteur de recherche de sommets et fiches détaillées POI.
 - [ ] **Identification Sommets AR** (v4.6) : Identification des pics via le flux caméra (Réalité Augmentée).
 - [ ] **Moteur QuadTree Natif** (v5.0) : Mélange dynamique de résolutions.

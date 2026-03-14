@@ -11,6 +11,7 @@ import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat } from './geo';
 import { autoSelectMapSource } from './ui';
 import { throttle } from './utils';
 import { initVegetationResources } from './vegetation';
+import { initWeatherSystem, updateWeatherSystem, fetchWeather, updateWeatherUIIndicator } from './weather';
 
 // --- BOUSSOLE 3D NATIVE ---
 let compassScene: THREE.Scene;
@@ -39,7 +40,6 @@ function initCompass() {
     south.rotation.x = Math.PI / 2; south.position.z = 1.25;
     compassObject.add(south);
 
-    // --- POINTS CARDINAUX (Restauration v4.3.59) ---
     const createLetter = (text: string, color: string, pos: THREE.Vector3) => {
         const ctxCanvas = document.createElement('canvas');
         ctxCanvas.width = 128; ctxCanvas.height = 128;
@@ -90,7 +90,6 @@ export async function initScene(): Promise<void> {
     await disposeScene();
     const container = document.getElementById('canvas-container');
     if (!container) return;
-    container.innerHTML = '';
     
     state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, state.ZOOM);
     state.scene = new THREE.Scene();
@@ -105,12 +104,11 @@ export async function initScene(): Promise<void> {
     container.appendChild(state.renderer.domElement);
 
     state.stats = new Stats();
-    state.stats.showPanel(0); 
     container.appendChild(state.stats.dom);
     state.stats.dom.style.position = 'absolute';
-    state.stats.dom.style.top = '80px'; // Sous le bouton réglages (20+50+10)
-    state.stats.dom.style.left = '20px'; // Aligné avec le bouton
-    state.stats.dom.style.zIndex = '1000'; // Toujours au-dessus mais sous les menus critiques
+    state.stats.dom.style.top = '80px';
+    state.stats.dom.style.left = '20px';
+    state.stats.dom.style.zIndex = '1000';
     state.stats.dom.style.display = state.SHOW_STATS ? 'block' : 'none';
 
     initCompass();
@@ -121,7 +119,7 @@ export async function initScene(): Promise<void> {
     state.sky = sky;
 
     state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 1000000);
-    state.camera.position.set(0, 35000, 40000); // Altitude initiale à 35km pour LOD 12
+    state.camera.position.set(0, 35000, 40000);
 
     const controls = new OrbitControls(state.camera, state.renderer.domElement);
     state.controls = controls;
@@ -129,25 +127,19 @@ export async function initScene(): Promise<void> {
     controls.dampingFactor = 0.1;
     controls.minDistance = 500; 
     controls.maxDistance = 600000;
-    
-    // --- PANORAMIQUE HORIZONTAL (v4.3.51) ---
-    controls.screenSpacePanning = false; // Force le panoramique sur le plan XZ (au sol)
-    
+    controls.screenSpacePanning = false;
     controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
     controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
 
     const updateUIZoom = (zoom: number) => {
-        const indicator = document.getElementById('zoom-indicator');
-        if (indicator) indicator.textContent = `${state.MAP_SOURCE.toUpperCase()}: Lvl ${zoom}`;
+        state.ZOOM = zoom;
+        updateWeatherUIIndicator();
     };
 
     let lastRecenterTime = 0;
     let isUserInteracting = false; 
-
-    // Détection robuste de l'interaction (v4.3.53)
     const startInteracting = () => { isUserInteracting = true; };
     const stopInteracting = () => { setTimeout(() => { isUserInteracting = false; }, 500); };
-    
     state.renderer.domElement.addEventListener('mousedown', startInteracting);
     state.renderer.domElement.addEventListener('touchstart', startInteracting, {passive: true});
     window.addEventListener('mouseup', stopInteracting);
@@ -156,22 +148,16 @@ export async function initScene(): Promise<void> {
     const throttledUpdate = throttle(() => {
         if (!state.controls || !state.camera) return;
         const dx = state.controls.target.x, dz = state.controls.target.z;
-        
-        // --- MÉTRIQUE LOD STABLE (v4.3.53) ---
-        // On utilise la distance au target au lieu de l'altitude Y
-        // Cela permet d'incliner la vue sans changer de LOD
         const dist = state.camera.position.distanceTo(state.controls.target);
         let newZoom = state.ZOOM;
 
         const lastDist = (state.camera as any)._lastLodDist || dist;
         const distChange = Math.abs(dist - lastDist) / lastDist;
 
-        // On ne change de zoom que si on ne manipule pas la vue OU si le zoom est massif
         if (!isUserInteracting || distChange > 0.25) {
             (state.camera as any)._lastLodDist = dist;
             const boost = (state.MAP_SOURCE === 'satellite') ? 2.0 : 1.2;
             
-            // --- SEUILS LOGIQUES ET COHÉRENTS (v4.3.56) ---
             if (state.ZOOM === 13) { 
                 if (dist < 22000) newZoom = 14; 
                 else if (dist > 65000) newZoom = 12; 
@@ -199,21 +185,9 @@ export async function initScene(): Promise<void> {
                 if (dist < 45000) newZoom = 13; 
                 else if (dist > 140000) newZoom = 11; 
             }
-            else if (state.ZOOM === 11) { 
+            else if (state.ZOOM <= 11) { 
                 if (dist < 100000) newZoom = 12; 
                 else if (dist > 280000) newZoom = 10; 
-            }
-            else if (state.ZOOM === 10) { 
-                if (dist < 180000) newZoom = 11; 
-                else if (dist > 500000) newZoom = 9; 
-            }
-            else if (state.ZOOM === 9) { 
-                if (dist < 350000) newZoom = 10; 
-                else if (dist > 900000) newZoom = 8; 
-            }
-            else if (state.ZOOM === 8) { 
-                if (dist < 700000) newZoom = 9; 
-                else if (dist > 1800000) newZoom = 7; 
             }
 
             if (newZoom !== state.ZOOM) { 
@@ -225,29 +199,35 @@ export async function initScene(): Promise<void> {
         const gpsCenter = worldToLngLat(dx, dz, state.originTile);
         autoSelectMapSource(gpsCenter.lat, gpsCenter.lon);
 
-        // Origin Shift (v4.3.39)
+        // --- DÉTECTION DÉPLACEMENT POUR MÉTÉO (v4.4.7) ---
+        // On rafraîchit si on a bougé de plus de ~5km
+        const dLat = gpsCenter.lat - state.lastWeatherLat;
+        const dLon = gpsCenter.lon - state.lastWeatherLon;
+        if (Math.sqrt(dLat*dLat + dLon*dLon) > 0.05) {
+            state.lastWeatherLat = gpsCenter.lat;
+            state.lastWeatherLon = gpsCenter.lon;
+            fetchWeather(gpsCenter.lat, gpsCenter.lon);
+        }
+
         if (state.ZOOM >= 12 && (Math.sqrt(dx*dx + dz*dz) > 20000 || newZoom !== state.ZOOM) && (Date.now() - lastRecenterTime > 3000)) {
             lastRecenterTime = Date.now();
             const oldOriginX = (state.originTile.x + 0.5) / Math.pow(2, state.ZOOM);
             const oldOriginZ = (state.originTile.y + 0.5) / Math.pow(2, state.ZOOM);
             const newTile = lngLatToTile(gpsCenter.lon, gpsCenter.lat, state.ZOOM);
-            if (!isNaN(newTile.x) && !isNaN(newTile.y)) {
+            if (!isNaN(newTile.x)) {
                 state.originTile = newTile;
                 const newOriginX = (state.originTile.x + 0.5) / Math.pow(2, state.ZOOM);
                 const newOriginZ = (state.originTile.y + 0.5) / Math.pow(2, state.ZOOM);
                 const offsetX = (oldOriginX - newOriginX) * EARTH_CIRCUMFERENCE;
                 const offsetZ = (oldOriginZ - newOriginZ) * EARTH_CIRCUMFERENCE;
-                if (!isNaN(offsetX) && !isNaN(offsetZ)) {
-                    state.camera.position.x += offsetX; state.camera.position.z += offsetZ;
-                    state.controls.target.x += offsetX; state.controls.target.z += offsetZ;
-                    state.controls.update(); repositionAllTiles(); if (state.rawGpxData) updateGPXMesh();
-                }
+                state.camera.position.x += offsetX; state.camera.position.z += offsetZ;
+                state.controls.target.x += offsetX; state.controls.target.z += offsetZ;
+                state.controls.update(); repositionAllTiles(); if (state.rawGpxData) updateGPXMesh();
+                fetchWeather(gpsCenter.lat, gpsCenter.lon);
             }
         }
 
         updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, dist, state.controls.target.x, state.controls.target.z);
-        const timeSlider = document.getElementById('time-slider') as HTMLInputElement;
-        window.history.replaceState(null, '', `#lat=${gpsCenter.lat.toFixed(5)}&lon=${gpsCenter.lon.toFixed(5)}&z=${state.ZOOM}&t=${timeSlider?.value || 720}`);
     }, 200);
     
     controls.addEventListener('change', throttledUpdate);
@@ -255,16 +235,12 @@ export async function initScene(): Promise<void> {
     state.ambientLight = new THREE.AmbientLight(0xffffff, 0.2); state.scene.add(state.ambientLight);
     state.sunLight = new THREE.DirectionalLight(0xffffff, 6.0);
     state.sunLight.castShadow = state.SHADOWS;
-    state.sunLight.shadow.mapSize.set(state.SHADOW_RES, state.SHADOW_RES);
-    const d = 25000;
-    state.sunLight.shadow.camera.left = -d; state.sunLight.shadow.camera.right = d;
-    state.sunLight.shadow.camera.top = d; state.sunLight.shadow.camera.bottom = -d;
-    state.sunLight.shadow.camera.near = 1000; state.sunLight.shadow.camera.far = 500000;
-    state.sunLight.shadow.bias = -0.0001; state.sunLight.shadow.normalBias = 0.02;
     state.scene.add(state.sunLight); state.scene.add(state.sunLight.target);
 
     await loadTerrain();
     initVegetationResources();
+    initWeatherSystem(state.scene);
+    fetchWeather(state.TARGET_LAT, state.TARGET_LON);
     updateSunPosition(720); updateUIZoom(state.ZOOM);
 
     const clock = new THREE.Clock();
@@ -272,88 +248,69 @@ export async function initScene(): Promise<void> {
     let frameCount = 0;
 
     state.renderer.setAnimationLoop(() => {
-        if (!state.renderer || !state.scene || !state.camera) return;
-        state.stats.begin();
-        frameCount++;
-        const delta = clock.getDelta();
-        animateTiles(delta);
+        if (!state.renderer || !state.camera || !state.scene || !state.controls) return;
 
-        // --- COMPORTEMENT CAMÉRA PRO (v4.3.54) ---
-        if (state.controls && state.camera) {
+        const delta = clock.getDelta();
+        const hasWeather = state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0;
+        const needsUpdate = state.controls.update() || state.isAnimating || hasWeather;
+
+        if (needsUpdate) {
+            state.stats?.begin();
+            frameCount++;
+            animateTiles(delta);
+            updateWeatherSystem(delta, state.camera.position);
+
+            // --- COMPORTEMENT CAMÉRA PRO (v4.3.54) ---
             const dist = state.camera.position.distanceTo(state.controls.target);
-            
-            // 1. DÉFINITION DE LA PARABOLE (Garde-fous dynamiques)
-            // On calcule un facteur de hauteur (0 au sol, 1 dans l'espace)
             const hFactor = THREE.MathUtils.clamp((dist - 2000) / 200000, 0, 1);
-            
-            // La limite d'inclinaison baisse paraboliquement avec la hauteur
-            // On augmente la liberté sur les LOD moyens (v4.3.57)
             let hardMaxTilt = THREE.MathUtils.lerp(1.2, 0.05, Math.pow(hFactor, 0.5));
             
             if (state.ZOOM <= 8) hardMaxTilt = 0.05; 
             else if (state.ZOOM <= 11) hardMaxTilt = Math.max(hardMaxTilt, 0.4);
-            else if (state.ZOOM <= 13) hardMaxTilt = Math.max(hardMaxTilt, 0.8); // + de liberté au LOD 12-13
+            else if (state.ZOOM <= 13) hardMaxTilt = Math.max(hardMaxTilt, 0.8); 
             else if (state.ZOOM >= 16) hardMaxTilt = Math.min(hardMaxTilt, 0.85);
 
-            // 2. COURBE DE TILT IDÉALE (Cible de guidage)
-            // On suit une courbe légèrement plus ouverte
             const targetTilt = THREE.MathUtils.lerp(1.1, 0.05, Math.pow(hFactor, 0.6));
-
-            // 3. GUIDAGE ÉLASTIQUE ET BRIDAGE (60fps)
             const currentTilt = state.controls.getPolarAngle();
             
-            // On laisse l'utilisateur pivoter librement SOUS le garde-fou,
-            // mais on applique une force de rappel pendant le zoom.
             if (Math.abs(currentTilt - targetTilt) > 0.01) {
-                const speed = 0.05; 
-                state.controls.maxPolarAngle = THREE.MathUtils.lerp(currentTilt, hardMaxTilt, speed);
-                state.controls.minPolarAngle = 0;
+                state.controls.maxPolarAngle = THREE.MathUtils.lerp(currentTilt, hardMaxTilt, 0.05);
             } else {
                 state.controls.maxPolarAngle = hardMaxTilt;
-                state.controls.minPolarAngle = 0;
             }
-            state.controls.update();
-        }
 
-        if (state.isAnimating) {
-            const slider = document.getElementById('time-slider') as HTMLInputElement;
-            if (slider) {
-                let mins = (parseInt(slider.value) + state.animationSpeed) % 1440;
-                slider.value = Math.floor(mins).toString(); updateSunPosition(mins);
-            }
-        }
-
-        // Collision sol (v4.3.51 - Smooth)
-        if (frameCount % 2 === 0 && state.camera && state.controls) {
-            const groundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
-            const minH = groundH + 30;
-            if (state.camera.position.y < minH) {
-                // Interpolation douce pour éviter les sauts brutaux
-                state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, minH, 0.1);
-                if (state.controls.target.y < groundH) {
-                    state.controls.target.y = THREE.MathUtils.lerp(state.controls.target.y, groundH, 0.1);
+            if (state.isAnimating) {
+                const slider = document.getElementById('time-slider') as HTMLInputElement;
+                if (slider) {
+                    let mins = (parseInt(slider.value) + state.animationSpeed) % 1440;
+                    slider.value = Math.floor(mins).toString(); updateSunPosition(mins);
                 }
             }
-        }
 
-        if (state.renderer) state.renderer.shadowMap.autoUpdate = false;
-        
-        // Brouillard proportionnel
-        if (state.scene.fog instanceof THREE.Fog) {
-            const alt = state.camera.position.y;
-            state.scene.fog.near = alt * (state.FOG_NEAR / 5000);
-            state.scene.fog.far = alt * (state.FOG_FAR / 5000);
-        }
+            // Collision sol
+            if (frameCount % 2 === 0) {
+                const groundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
+                const minH = groundH + 30;
+                if (state.camera.position.y < minH) {
+                    state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, minH, 0.1);
+                }
+            }
 
-        state.renderer.render(state.scene, state.camera);
+            // Fix Brouillard (v4.4.5)
+            if (state.scene.fog instanceof THREE.Fog) {
+                const alt = state.camera.position.y;
+                state.scene.fog.near = alt * 2.0;
+                state.scene.fog.far = alt * 12.0;
+            }
 
-        if (compassObject && state.camera && compassRenderer) {
-            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(state.camera.quaternion);
-            compassCamera.position.copy(forward).multiplyScalar(-18);
-            compassCamera.quaternion.copy(state.camera.quaternion);
-            compassRenderer.render(compassScene, compassCamera);
+            state.renderer.render(state.scene, state.camera);
+
+            if (compassRenderer && compassObject) {
+                compassObject.quaternion.copy(state.camera.quaternion).invert();
+                compassRenderer.render(compassScene, compassCamera);
+            }
+            state.stats?.end();
         }
-        state.stats.end();
     });
 }
 

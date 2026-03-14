@@ -4,6 +4,21 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.4.0] - 2026-03-14
+### ☁️ Météo Dynamique & Immersion
+- **Moteur de Particules GPU :** Système de pluie et neige 100% calculé sur GPU (Shaders) pour maintenir 120 FPS.
+- **Physique du Vent Réel :** Les particules sont inclinées et leur vitesse est modulée par les données de vent réelles (API Open-Meteo).
+- **Dashboard Météo Haute-Montagne :** Nouveau panneau interactif affichant température, ressenti, vent (avec flèche directionnelle), humidité et couverture nuageuse.
+- **Géo-Localisation Automatique :** Identification automatique du nom de la ville ou région via Reverse Geocoding (Nominatim).
+- **Rafraîchissement Intelligent :** Mise à jour automatique de la météo tous les 5 km de déplacement sur la carte.
+- **Contrôles de Simulation :** Possibilité de forcer la pluie ou la neige pour tester les effets visuels indépendamment de la météo réelle.
+
+### 🛠️ Corrections & Stabilité
+- **Fix Logarithmic Depth :** Support complet du buffer logarithmique pour les particules (visibilité LOD 12-18).
+- **Anti-Collision Caméra :** Fading progressif des particules proches de l'objectif pour éviter l'effet "tunnel".
+- **Auto-Fermeture UI :** Les panneaux de réglages se ferment désormais au clic sur la carte pour une meilleure ergonomie mobile.
+- **Sécurité Arctique :** Protection contre les sauts de coordonnées aberrants lors des zooms rapides.
+
 ## [4.3.65] - 2026-03-14
 ### 🚀 Optimisation Mobile Extreme
 - **Mode 2D Turbo :** Utilisation d'un `MeshBasicMaterial` pour les tuiles de haute altitude (Zoom <= 10). Gain de FPS massif sur mobile (S23) en supprimant les calculs de lumière et d'ombres inutiles.
