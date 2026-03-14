@@ -7,7 +7,7 @@ import { updateSunPosition } from './sun';
 import { initScene, resetToNorth } from './scene';
 import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain, autoSelectMapSource, deleteTerrainCache } from './terrain';
 import { lngLatToTile, worldToLngLat } from './geo';
-import { showToast } from './utils';
+import { showToast, fetchGeocoding } from './utils';
 import { applyPreset, detectBestPreset } from './performance';
 import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';
 import { updateElevationProfile } from './profile';
@@ -349,18 +349,37 @@ function initGeocoding() {
             const q = geoInput.value.trim();
             if (q.length < 2) return;
             try {
-                const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5`);
-                const data = await r.json();
+                const data = await fetchGeocoding(q);
+                if (!data) return;
                 geoResults.innerHTML = data.map((f: any) => `<div class="geo-item" data-lat="${f.lat}" data-lon="${f.lon}" style="padding:12px; cursor:pointer; color:white; border-bottom:1px solid rgba(255,255,255,0.05);">${f.display_name}</div>`).join('');
                 geoResults.style.display = 'block';
                 geoResults.querySelectorAll('.geo-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        state.TARGET_LAT = parseFloat((item as HTMLElement).dataset.lat!);
-                        state.TARGET_LON = parseFloat((item as HTMLElement).dataset.lon!);
-                        autoSelectMapSource(state.TARGET_LAT, state.TARGET_LON);
-                        state.ZOOM = 13; state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, 13);
-                        if (state.controls && state.camera) { state.controls.target.set(0, 0, 0); state.camera.position.set(0, 35000, 40000); state.controls.update(); }
-                        geoResults.style.display = 'none'; refreshTerrain();
+                    item.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const lat = parseFloat((item as HTMLElement).dataset.lat!);
+                        const lon = parseFloat((item as HTMLElement).dataset.lon!);
+                        
+                        if (isNaN(lat) || isNaN(lon)) return;
+
+                        state.TARGET_LAT = lat;
+                        state.TARGET_LON = lon;
+                        autoSelectMapSource(lat, lon);
+                        
+                        // Recentrage total
+                        state.ZOOM = 13; 
+                        state.originTile = lngLatToTile(lon, lat, 13);
+                        
+                        if (state.controls && state.camera) { 
+                            state.controls.target.set(0, 0, 0); 
+                            state.camera.position.set(0, 35000, 40000); 
+                            state.controls.update(); 
+                        }
+                        
+                        geoResults.style.display = 'none'; 
+                        geoInput.value = '';
+                        
+                        refreshTerrain(); // Reset et recharge
+                        fetchWeather(lat, lon);
                     });
                 });
             } catch (e) {}

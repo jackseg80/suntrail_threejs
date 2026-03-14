@@ -1,3 +1,5 @@
+import { state } from './state';
+
 /**
  * Throttle function to limit execution frequency
  */
@@ -45,6 +47,42 @@ export function isMobileDevice(): boolean {
  */
 export function isPositionInSwitzerland(lat: number, lon: number): boolean {
     return (lat > 45.8 && lat < 47.8 && lon > 5.9 && lon < 10.5);
+}
+
+// --- GEOCoding GLOBAL ORCHESTRATOR (v4.5.34) ---
+export async function fetchGeocoding(query: string | {lat: number, lon: number}): Promise<any> {
+    const key = state.MK || localStorage.getItem('maptiler_key_3d');
+    if (!key) return null;
+
+    let url = "";
+    if (typeof query === 'string') {
+        url = `https://api.maptiler.com/geocoding/${encodeURIComponent(query)}.json?key=${key}&limit=5&language=fr`;
+    } else {
+        // MapTiler Reverse Geocoding attend lon,lat
+        url = `https://api.maptiler.com/geocoding/${query.lon},${query.lat}.json?key=${key}&limit=1&language=fr`;
+    }
+
+    try {
+        const r = await fetch(url);
+        if (!r.ok) return null;
+        const data = await r.json();
+        
+        if (!data || !data.features || data.features.length === 0) return null;
+
+        if (typeof query === 'string') {
+            return data.features.map((f: any) => ({
+                display_name: f.place_name_fr || f.place_name || f.text_fr || f.text,
+                lat: f.center[1],
+                lon: f.center[0]
+            }));
+        } else {
+            // Pour le reverse, on renvoie la feature complète
+            return data.features[0];
+        }
+    } catch (e) {
+        console.error("Geocoding fetch error:", e);
+        return null;
+    }
 }
 
 // --- OVERPASS GLOBAL ORCHESTRATOR (v4.5.21) ---

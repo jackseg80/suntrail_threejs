@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import SunCalc from 'suncalc';
 import { state } from './state';
+import { fetchGeocoding, showToast } from './utils';
 
 let weatherPoints: THREE.Points | null = null;
 let weatherMaterial: THREE.ShaderMaterial | null = null;
@@ -9,21 +10,36 @@ let geometry: THREE.BufferGeometry | null = null;
 const MAX_PARTICLES = 15000;
 const BOX_SIZE = 15000.0; 
 
-export async function fetchWeather(lat: number, lon: number): Promise<void> {
-    try {
-        const [weatherRes, geoRes] = await Promise.all([
-            // On demande 3 jours pour toujours avoir du futur devant nous (v4.5.5 fix)
-            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,weather_code,freezing_level_height,uv_index,visibility,precipitation_probability&forecast_days=3`),
-            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`)
-        ]);
+let lastRequestId = 0;
 
+export async function fetchWeather(lat: number, lon: number): Promise<void> {
+    const requestId = ++lastRequestId;
+    try {
+        state.lastWeatherLat = lat;
+        state.lastWeatherLon = lon;
+
+        // Appel météo
+        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,weather_code,freezing_level_height,uv_index,visibility,precipitation_probability&forecast_days=3`);
         if (!weatherRes.ok) throw new Error('Weather API error');
         const data = await weatherRes.json();
-        const geoData = await geoRes.json();
+
+        // Si une requête plus récente a été lancée entre temps, on abandonne celle-ci
+        if (requestId !== lastRequestId) return;
+
+        // Appel géocodage MapTiler (Reverse)
+        let locationName = `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+        try {
+            const geoData = await fetchGeocoding({ lat, lon });
+            if (geoData) {
+                locationName = geoData.place_name_fr || geoData.place_name || geoData.text_fr || geoData.text || locationName;
+                locationName = locationName.split(',')[0];
+            }
+        } catch (geoErr) {
+            console.warn("Geocoding failed");
+        }
         
         const current = data.current || data.current_weather;
         const code = current?.weather_code ?? current?.weathercode ?? 0;
-        const locationName = geoData.address?.city || geoData.address?.town || geoData.address?.village || geoData.address?.county || "Zone Inconnue";
 
         const date = new Date();
         const times = SunCalc.getTimes(date, lat, lon);

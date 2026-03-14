@@ -12,7 +12,20 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Correctif Ombres :** recalibrage du frustum d'ombre (50km) pour une projection fidèle des sommets sur les vallées.
 - **UI Météo :** Intégration du Dashboard expert avec Isotherme 0°C, UV et prévisions horaires sur 6h.
 
-## [4.5.29] - 2026-03-14
+## [4.5.34] - 2026-03-14
+### ✨ Nouveautés
+- **Zoom Européen** : Augmentation de la distance de dézoom (`maxDistance` à 1.8M) et ajout de paliers de LOD (zoom 7-9) pour une vue continentale.
+- **Auto-Map OpenTopo** : Passage automatique en mode OpenTopoMap en dessous du zoom 9 pour une lisibilité optimale à grande échelle.
+- **Météo Dynamique Mondiale** : La météo s'actualise désormais automatiquement lors de déplacements importants (> 5km).
+
+### 🔧 Fixes & Optimisations
+- **Migration Geocoding** : Passage de Nominatim (OSM) vers MapTiler API pour supprimer les erreurs 429 et les blocages CORS.
+- **Robustesse Recherche** : Correction du recentrage du monde 3D lors de la sélection d'un résultat de recherche.
+- **Fix Écran Noir** : Optimisation de la boucle de rendu pour garantir l'affichage des tuiles pendant le fade-in initial.
+- **Fiabilité Météo** : Système de jetons (requestId) pour éviter les collisions d'appels et garantir que le nom du lieu affiché correspond toujours aux coordonnées actuelles.
+
+## [4.5.29] - 2026-03-10
+
 ### 🚀 Ultimate Stability & Cinematic UX
 - **Black Screen Fix:** Rewrote the Origin Shift logic using a strictly consistent coordinate system, eliminating the infinity-projection bug during rapid zooming.
 - **120 FPS Performance:** Implemented a Spatial Cache for altitude lookups (`lastUsedTile`), making ground collision checks virtually free and restoring ultra-smooth navigation.

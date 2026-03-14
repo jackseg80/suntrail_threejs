@@ -55,11 +55,42 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [x] **Signalétique Interactive** : Panneaux cliquables.
 - [x] **Capture d'écran 3D** : Export PNG sans interface.
 
-## 🏁 Prochainement (v4.4+) - Immersion Atmosphérique
-- [x] **Météo Dynamique** (v4.4) : Effets de pluie et neige en temps réel basés sur le GPS.
-- [ ] **Recherche & Intelligence** (v4.5) : Moteur de recherche de sommets et fiches détaillées POI.
-- [ ] **Identification Sommets AR** (v4.6) : Identification des pics via le flux caméra (Réalité Augmentée).
-- [ ] **Moteur QuadTree Natif** (v5.0) : Mélange dynamique de résolutions.
+## 🏁 Prochainement (v4.6+) - Immersion & Services
+- [ ] **Moteur de Recherche Sommets** (v4.6) : Indexation offline des principaux pics et cols.
+- [ ] **Vol Automatique** : Animation de vol fluide vers le lieu recherché.
+- [ ] **Cartes POI** : Affichage des détails techniques du sommet cliqué.
+
+## 🌍 Internationalisation & Données (Priorité)
+- [ ] **Adaptation Hors-Suisse** : Intégration de sources d'élévation mondiales gratuites (SRTM/Copernicus) pour garantir la précision hors des Alpes suisses.
+- [x] **Basculement MapTiler Geocoding** : Remplacement de Nominatim par MapTiler pour la recherche et la météo (v4.5.34).
+- [x] **Auto-Détection de Source** : Basculement intelligent sur la meilleure source de données disponible selon la zone géographique.
+
+## 🔋 Optimisations & Mobilité (v4.7)
+- [ ] **Mode 2D par défaut** : Option pour forcer le rendu 2D sur les appareils peu puissants ou pour économiser la batterie en rando.
+- [ ] **Mode "Sentinelle"** : Réduction du FPS (30 au lieu de 120) et désactivation des calculs d'ombres quand la batterie est < 20%.
+- [ ] **Gestion Offline** : Système de mise en cache des tuiles pour une utilisation sans réseau (fondamental en montagne).
+
+## 🧭 Sécurité & Alpinisme (v4.8)
+- [ ] **Carte des Pentes (Inclinomètre 3D)** : Coloration dynamique du relief selon l'inclinaison (Aide à la décision avalanche).
+- [ ] **SOS SMS Low-Bandwidth** : Générateur de message de secours ultra-léger avec coordonnées GPS et état système.
+- [ ] **Gestion GPX Avancée** : Import/Export de traces, profil altimétrique dynamique et suivi de progression.
+
+## ✨ Immersion Visuelle Pro (v4.9)
+- [x] **Zoom Européen** : Vue continentale fluide avec paliers de LOD 7-9 (v4.5.34).
+- [ ] **Hydrologie Dynamique** : Rendu des plans d'eau avec shaders de réflexion basés sur les données OSM.
+- [ ] **Végétation Avancée** : Diversification des modèles d'arbres instanciés selon la zone (forêt vs zone urbaine).
+
+## 📱 Écosystème & Connectivité
+- [ ] **Sync Web-to-Mobile** : Préparation de parcours sur grand écran et transfert fluide vers l'application.
+- [ ] **Companion App (Watch)** : Extension pour montres connectées (Data-view : Altitude, Cap, Prochain WP).
+
+## 🏗️ Vision & Architecture (v5.0+)
+- [ ] **Audit Complet** : Revue globale de la performance, de la sécurité et de la maintenabilité du code.
+- [ ] **Tests de Régression Visuelle** : Automatisation de la validation du rendu 3D.
+- [ ] **Modularisation (Split Produit)** : Étudier le découpage en modules distincts pour spécialisation :
+    - *SunTrail Explorer* (Rando/Alpi : focus GPS, Offline, Sécurité).
+    - *SunTrail Architect* (Analyse Solaire : focus ombres précises, intégration BIM/Modèles).
+    - *SunTrail Weather Station* (Widget météo 3D expert).
 
 ## 💼 Stratégie Business & Diversification
 - [ ] **Monétisation B2C** : Modèle Freemium.

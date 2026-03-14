@@ -97,16 +97,15 @@ export async function initScene(): Promise<void> {
     state.scene.add(sky);
     state.sky = sky;
 
-    state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 2000000);
+    state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 4000000);
     state.camera.position.set(0, 35000, 40000);
 
     const controls = new OrbitControls(state.camera, state.renderer.domElement);
     state.controls = controls;
     controls.enableDamping = true;
     controls.dampingFactor = 0.1;
-    controls.minDistance = 100; 
-    controls.maxDistance = 800000;
-    
+    controls.minDistance = 100;
+    controls.maxDistance = 1800000;
     (controls as any)._isMoving = false;
     controls.addEventListener('start', () => { (controls as any)._isMoving = true; });
     controls.addEventListener('end', () => { (controls as any)._isMoving = false; });
@@ -145,12 +144,21 @@ export async function initScene(): Promise<void> {
         else if (state.ZOOM === 18) { if (dist > 1200 * boost) newZoom = 17; }
         else if (state.ZOOM === 12) { if (dist < 45000) newZoom = 13; else if (dist > 120000) newZoom = 11; }
         else if (state.ZOOM === 11) { if (dist < 90000) newZoom = 12; else if (dist > 220000) newZoom = 10; }
-        else if (state.ZOOM <= 10) { if (dist < 180000) newZoom = 11; else if (dist > 400000) newZoom = 9; }
+        else if (state.ZOOM === 10) { if (dist < 180000) newZoom = 11; else if (dist > 450000) newZoom = 9; }
+        else if (state.ZOOM === 9)  { if (dist < 380000) newZoom = 10; else if (dist > 850000) newZoom = 8; }
+        else if (state.ZOOM === 8)  { if (dist < 750000) newZoom = 9;  else if (dist > 1400000) newZoom = 7; }
+        else if (state.ZOOM <= 7)  { if (dist < 1200000) newZoom = 8; }
 
         if (newZoom !== state.ZOOM) { state.ZOOM = newZoom; updateUIZoom(newZoom); }
 
         const gpsCenter = worldToLngLat(dx, dz, state.originTile);
         autoSelectMapSource(gpsCenter.lat, gpsCenter.lon);
+
+        // --- MISE À JOUR MÉTÉO DYNAMIQUE (v4.5.31) ---
+        const distToLastWeather = Math.sqrt(Math.pow(gpsCenter.lat - state.lastWeatherLat, 2) + Math.pow(gpsCenter.lon - state.lastWeatherLon, 2));
+        if (distToLastWeather > 0.05) { // Env. 5-6km de déplacement
+            fetchWeather(gpsCenter.lat, gpsCenter.lon);
+        }
 
         // --- RECENTRAGE GÉANT SÉCURISÉ (v4.5.25) ---
         const isUserInteracting = (state.controls as any)._isMoving;
@@ -174,6 +182,10 @@ export async function initScene(): Promise<void> {
                     state.controls.update(); 
                     repositionAllTiles(); 
                     if (state.rawGpxData) updateGPXMesh();
+                    
+                    // On force la mise à jour météo ici car le monde a glissé
+                    state.lastWeatherLat = gpsCenter.lat;
+                    state.lastWeatherLon = gpsCenter.lon;
                     fetchWeather(gpsCenter.lat, gpsCenter.lon);
                 }
             }
@@ -200,11 +212,18 @@ export async function initScene(): Promise<void> {
     await loadTerrain();
     initVegetationResources();
     initWeatherSystem(state.scene);
+    
+    state.lastWeatherLat = state.TARGET_LAT;
+    state.lastWeatherLon = state.TARGET_LON;
     fetchWeather(state.TARGET_LAT, state.TARGET_LON);
+    
     updateSunPosition(720); updateUIZoom(state.ZOOM);
 
     const clock = new THREE.Clock();
     window.addEventListener('resize', onWindowResize);
+
+    let needsInitialRender = 60; // On force 60 frames au début pour garantir l'affichage
+    let tilesFading = true;
 
     state.renderer.setAnimationLoop(() => {
         if (!state.renderer || !state.camera || !state.scene || !state.controls) return;
@@ -229,11 +248,13 @@ export async function initScene(): Promise<void> {
             }
         }
 
-        const needsUpdate = state.controls.update() || state.isAnimating || hasWeather || isResettingNorth;
+        const needsUpdate = state.controls.update() || state.isAnimating || hasWeather || isResettingNorth || tilesFading || needsInitialRender > 0;
 
         if (needsUpdate) {
             state.stats?.begin();
-            animateTiles(delta);
+            tilesFading = animateTiles(delta);
+            if (needsInitialRender > 0) needsInitialRender--;
+            
             updateWeatherSystem(delta, state.camera.position);
 
             const dist = state.camera.position.distanceTo(state.controls.target);

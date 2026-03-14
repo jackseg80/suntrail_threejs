@@ -562,7 +562,16 @@ export function resetTerrain(): void {
 }
 
 export function repositionAllTiles(): void { for (const tile of activeTiles.values()) tile.updateWorldPosition(); }
-export function animateTiles(delta: number): void { for (const tile of activeTiles.values()) { if (tile.isFadingIn) tile.updateFade(delta); } }
+export function animateTiles(delta: number): boolean { 
+    let stillFading = false;
+    for (const tile of activeTiles.values()) { 
+        if (tile.isFadingIn) {
+            tile.updateFade(delta); 
+            stillFading = true;
+        }
+    }
+    return stillFading;
+}
 
 let lastSourceCheck = 0;
 export function autoSelectMapSource(lat: number, lon: number): void {
@@ -570,8 +579,16 @@ export function autoSelectMapSource(lat: number, lon: number): void {
     const now = Date.now();
     if (now - lastSourceCheck < 2000) return;
     lastSourceCheck = now;
-    const isSwiss = isPositionInSwitzerland(lat, lon);
-    const newSource = isSwiss ? 'swisstopo' : 'opentopomap';
+
+    // --- LOGIQUE DE SOURCE AUTO (v4.5.30) ---
+    let newSource = 'opentopomap';
+    
+    // Si on est à haute altitude (Europe), on force OpenTopoMap pour la lisibilité
+    if (state.ZOOM > 9) {
+        const isSwiss = isPositionInSwitzerland(lat, lon);
+        newSource = isSwiss ? 'swisstopo' : 'opentopomap';
+    }
+
     if (state.MAP_SOURCE !== newSource) {
         state.MAP_SOURCE = newSource;
         document.querySelectorAll('.layer-item').forEach(i => {
@@ -677,7 +694,7 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
         }
 
         // 2. Anticiper le Zoom Arrière (LOD -1)
-        if (prevZoom >= 6) {
+        if (prevZoom >= 4) {
             const maxPrev = Math.pow(2, prevZoom);
             const ct = lngLatToTile(currentGPS.lon, currentGPS.lat, prevZoom);
             if (ct.x >= 0 && ct.x < maxPrev && ct.y >= 0 && ct.y < maxPrev) {
