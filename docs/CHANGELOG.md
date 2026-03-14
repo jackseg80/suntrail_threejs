@@ -12,6 +12,14 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Correctif Ombres :** recalibrage du frustum d'ombre (50km) pour une projection fidèle des sommets sur les vallées.
 - **UI Météo :** Intégration du Dashboard expert avec Isotherme 0°C, UV et prévisions horaires sur 6h.
 
+## [4.5.11] - 2026-03-14
+### 🚀 Navigation Pro & Performance
+- **Fluidité Extrême :** Déplacement des calculs d'altitude hors de la boucle de rendu principale vers un processus throttlé (200ms), libérant le CPU et garantissant 120 FPS constants.
+- **Butée Sol Physique :** Ancrage dynamique de la cible des contrôles sur le relief réel combiné à une `minDistance` de 100m, empêchant toute traversée du sol.
+- **GPS Haute Visibilité :** Le marker de suivi utilise désormais un Sprite à taille fixe à l'écran (non-atténuée), restant visible de 50m à 35km d'altitude.
+- **Fix Téléportation :** Sécurisation de la logique d'Origin Shift (recentrage du monde) qui ne s'active désormais qu'après stabilisation du zoom, éliminant les sauts de caméra.
+- **Validation Types :** Nettoyage intégral des erreurs TypeScript pour assurer un build de production sans faille.
+
 ## [4.5.7] - 2026-03-14
 ### ☁️ Station Météo Expert & Ergonomie Mobile
 - **Expert Dashboard (Central) :** Nouveau panneau majestueux avec graphique de tendance 24h, éphémérides photo et radars de sécurité.

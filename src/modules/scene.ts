@@ -69,19 +69,7 @@ export async function disposeScene(): Promise<void> {
     resetTerrain(); clearCache();
     if (state.renderer) { state.renderer.setAnimationLoop(null); state.renderer.dispose(); }
     if (compassRenderer) compassRenderer.dispose();
-    if (state.scene) {
-        state.scene.traverse((o) => {
-            if (o instanceof THREE.Mesh) {
-                if (o.geometry) o.geometry.dispose();
-                if (o.material) {
-                    if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
-                    else o.material.dispose();
-                }
-            }
-        });
-        state.scene.clear();
-    }
-    if (state.stats && state.stats.dom && state.stats.dom.parentNode) state.stats.dom.parentNode.removeChild(state.stats.dom);
+    if (state.scene) state.scene.clear();
     window.removeEventListener('resize', onWindowResize);
 }
 
@@ -104,10 +92,7 @@ export async function initScene(): Promise<void> {
 
     state.stats = new Stats();
     container.appendChild(state.stats.dom);
-    state.stats.dom.style.position = 'absolute';
     state.stats.dom.style.top = '80px';
-    state.stats.dom.style.left = '20px';
-    state.stats.dom.style.zIndex = '1000';
     state.stats.dom.style.display = state.SHOW_STATS ? 'block' : 'none';
 
     initCompass();
@@ -124,8 +109,8 @@ export async function initScene(): Promise<void> {
     state.controls = controls;
     controls.enableDamping = true;
     controls.dampingFactor = 0.1;
-    controls.minDistance = 500; 
-    controls.maxDistance = 600000;
+    controls.minDistance = 100; // Butée physique (v4.5.11)
+    controls.maxDistance = 650000;
     controls.screenSpacePanning = false;
     controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
     controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
@@ -136,83 +121,30 @@ export async function initScene(): Promise<void> {
     };
 
     let lastRecenterTime = 0;
-    let isUserInteracting = false; 
-    const startInteracting = () => { isUserInteracting = true; };
-    const stopInteracting = () => { setTimeout(() => { isUserInteracting = false; }, 500); };
-    state.renderer.domElement.addEventListener('mousedown', startInteracting);
-    state.renderer.domElement.addEventListener('touchstart', startInteracting, {passive: true});
-    window.addEventListener('mouseup', stopInteracting);
-    window.addEventListener('touchend', stopInteracting);
-
     const throttledUpdate = throttle(() => {
         if (!state.controls || !state.camera) return;
         const dx = state.controls.target.x, dz = state.controls.target.z;
         const dist = state.camera.position.distanceTo(state.controls.target);
         let newZoom = state.ZOOM;
 
-        const lastDist = (state.camera as any)._lastLodDist || dist;
-        const distChange = Math.abs(dist - lastDist) / lastDist;
+        const boost = (state.MAP_SOURCE === 'satellite') ? 2.0 : 1.2;
+        if (state.ZOOM === 13) { if (dist < 22000) newZoom = 14; else if (dist > 65000) newZoom = 12; }
+        else if (state.ZOOM === 14) { if (dist > 35000) newZoom = 13; else if (dist < 9000 * boost) newZoom = 15; }
+        else if (state.ZOOM === 12) { if (dist < 45000) newZoom = 13; else if (dist > 120000) newZoom = 11; }
+        else if (state.ZOOM === 11) { if (dist < 90000) newZoom = 12; else if (dist > 220000) newZoom = 10; }
+        else if (state.ZOOM <= 10) { if (dist < 180000) newZoom = 11; else if (dist > 400000) newZoom = 9; }
 
-        if (!isUserInteracting || distChange > 0.25) {
-            (state.camera as any)._lastLodDist = dist;
-            const boost = (state.MAP_SOURCE === 'satellite') ? 2.0 : 1.2;
-            
-            if (state.ZOOM === 13) { 
-                if (dist < 22000) newZoom = 14; 
-                else if (dist > 65000) newZoom = 12; 
-            }
-            else if (state.ZOOM === 14) { 
-                if (dist > 35000) newZoom = 13; 
-                else if (dist < 9000 * boost) newZoom = 15; 
-            }
-            else if (state.ZOOM === 15) {
-                if (dist > 14000 * boost) newZoom = 14;
-                else if (dist < 4000 * boost) newZoom = 16; 
-            }
-            else if (state.ZOOM === 16) {
-                if (dist > 6000 * boost) newZoom = 15;
-                else if (dist < 1800 * boost) newZoom = 17; 
-            }
-            else if (state.ZOOM === 17) {
-                if (dist > 2500 * boost) newZoom = 16;
-                else if (dist < 800 * boost) newZoom = 18; 
-            }
-            else if (state.ZOOM === 18) {
-                if (dist > 1200 * boost) newZoom = 17;
-            }
-            else if (state.ZOOM === 12) { 
-                if (dist < 45000) newZoom = 13; 
-                else if (dist > 120000) newZoom = 11; 
-            }
-            else if (state.ZOOM === 11) {
-                if (dist < 90000) newZoom = 12;
-                else if (dist > 220000) newZoom = 10;
-            }
-            else if (state.ZOOM <= 10) { 
-                if (dist < 180000) newZoom = 11; 
-                else if (dist > 400000) newZoom = 9; 
-            }
+        if (newZoom !== state.ZOOM) { state.ZOOM = newZoom; updateUIZoom(newZoom); }
 
-            if (newZoom !== state.ZOOM) { 
-                state.ZOOM = newZoom; 
-                updateUIZoom(newZoom); 
-            }
-        }
+        // --- BUTÉE SOL INTELLIGENTE (v4.5.11) ---
+        // On cale la cible au sol pour que minDistance=100 nous arrête à 100m du sol réel
+        const groundAtTarget = getAltitudeAt(dx, dz);
+        state.controls.target.y = groundAtTarget;
 
         const gpsCenter = worldToLngLat(dx, dz, state.originTile);
         autoSelectMapSource(gpsCenter.lat, gpsCenter.lon);
 
-        // --- DÉTECTION DÉPLACEMENT POUR MÉTÉO (v4.4.7) ---
-        // On rafraîchit si on a bougé de plus de ~5km
-        const dLat = gpsCenter.lat - state.lastWeatherLat;
-        const dLon = gpsCenter.lon - state.lastWeatherLon;
-        if (Math.sqrt(dLat*dLat + dLon*dLon) > 0.05) {
-            state.lastWeatherLat = gpsCenter.lat;
-            state.lastWeatherLon = gpsCenter.lon;
-            fetchWeather(gpsCenter.lat, gpsCenter.lon);
-        }
-
-        if (state.ZOOM >= 12 && (Math.sqrt(dx*dx + dz*dz) > 20000 || newZoom !== state.ZOOM) && (Date.now() - lastRecenterTime > 3000)) {
+        if (state.ZOOM >= 12 && (newZoom === state.ZOOM) && (Math.sqrt(dx*dx + dz*dz) > 25000) && (Date.now() - lastRecenterTime > 4000)) {
             lastRecenterTime = Date.now();
             const oldOriginX = (state.originTile.x + 0.5) / Math.pow(2, state.ZOOM);
             const oldOriginZ = (state.originTile.y + 0.5) / Math.pow(2, state.ZOOM);
@@ -229,7 +161,6 @@ export async function initScene(): Promise<void> {
                 fetchWeather(gpsCenter.lat, gpsCenter.lon);
             }
         }
-
         updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, dist, state.controls.target.x, state.controls.target.z);
     }, 200);
     
@@ -238,8 +169,6 @@ export async function initScene(): Promise<void> {
     state.ambientLight = new THREE.AmbientLight(0xffffff, 0.2); state.scene.add(state.ambientLight);
     state.sunLight = new THREE.DirectionalLight(0xffffff, 6.0);
     state.sunLight.castShadow = state.SHADOWS;
-    
-    // --- CONFIGURATION OMBRES PRO (v4.5.4) ---
     state.sunLight.shadow.mapSize.set(2048, 2048);
     state.sunLight.shadow.camera.left = -50000;
     state.sunLight.shadow.camera.right = 50000;
@@ -249,7 +178,6 @@ export async function initScene(): Promise<void> {
     state.sunLight.shadow.camera.far = 500000;
     state.sunLight.shadow.bias = -0.0005;
     state.sunLight.shadow.normalBias = 0.05;
-    
     state.scene.add(state.sunLight); state.scene.add(state.sunLight.target);
 
     await loadTerrain();
@@ -260,7 +188,6 @@ export async function initScene(): Promise<void> {
 
     const clock = new THREE.Clock();
     window.addEventListener('resize', onWindowResize);
-    let frameCount = 0;
 
     state.renderer.setAnimationLoop(() => {
         if (!state.renderer || !state.camera || !state.scene || !state.controls) return;
@@ -271,15 +198,12 @@ export async function initScene(): Promise<void> {
 
         if (needsUpdate) {
             state.stats?.begin();
-            frameCount++;
             animateTiles(delta);
             updateWeatherSystem(delta, state.camera.position);
 
-            // --- COMPORTEMENT CAMÉRA PRO (v4.3.54) ---
             const dist = state.camera.position.distanceTo(state.controls.target);
             const hFactor = THREE.MathUtils.clamp((dist - 2000) / 200000, 0, 1);
             let hardMaxTilt = THREE.MathUtils.lerp(1.2, 0.05, Math.pow(hFactor, 0.5));
-            
             if (state.ZOOM <= 8) hardMaxTilt = 0.05; 
             else if (state.ZOOM <= 11) hardMaxTilt = Math.max(hardMaxTilt, 0.4);
             else if (state.ZOOM <= 13) hardMaxTilt = Math.max(hardMaxTilt, 0.8); 
@@ -287,7 +211,6 @@ export async function initScene(): Promise<void> {
 
             const targetTilt = THREE.MathUtils.lerp(1.1, 0.05, Math.pow(hFactor, 0.6));
             const currentTilt = state.controls.getPolarAngle();
-            
             if (Math.abs(currentTilt - targetTilt) > 0.01) {
                 state.controls.maxPolarAngle = THREE.MathUtils.lerp(currentTilt, hardMaxTilt, 0.05);
             } else {
@@ -302,24 +225,12 @@ export async function initScene(): Promise<void> {
                 }
             }
 
-            // Collision sol
-            if (frameCount % 2 === 0) {
-                const groundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
-                const minH = groundH + 30;
-                if (state.camera.position.y < minH) {
-                    state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, minH, 0.1);
-                }
-            }
-
-            // Fix Brouillard (v4.4.5)
             if (state.scene.fog instanceof THREE.Fog) {
                 const alt = state.camera.position.y;
-                state.scene.fog.near = alt * 2.0;
-                state.scene.fog.far = alt * 12.0;
+                state.scene.fog.near = alt * 2.0; state.scene.fog.far = alt * 12.0;
             }
 
             state.renderer.render(state.scene, state.camera);
-
             if (compassRenderer && compassObject) {
                 compassObject.quaternion.copy(state.camera.quaternion).invert();
                 compassRenderer.render(compassScene, compassCamera);

@@ -49,7 +49,8 @@ export function initUI(): void {
             refreshTerrain();
         }
 
-        if (id === 'gps-btn') {
+        // 4. GPS
+        if (target.closest('#gps-btn')) {
             try {
                 const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true });
                 const { latitude, longitude } = pos.coords;
@@ -63,9 +64,10 @@ export function initUI(): void {
             } catch (err) { showToast("GPS indisponible"); }
         }
 
-        if (id === 'gps-follow-btn') {
+        const followBtn = target.closest('#gps-follow-btn');
+        if (followBtn) {
             state.isFollowingUser = !state.isFollowingUser;
-            target.classList.toggle('active', state.isFollowingUser);
+            followBtn.classList.toggle('active', state.isFollowingUser);
             if (state.isFollowingUser) { await startLocationTracking(); centerOnUser(); }
         }
 

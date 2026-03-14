@@ -1,35 +1,28 @@
-# ⛰️ SunTrail 3D (v4.4.0)
+# ⛰️ SunTrail 3D (v4.5.11)
 
 Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données Swisstopo / MapTiler.
+
+## ✨ Nouveautés v4.5.11 (Stability & Pro Navigation)
+- **Fluidité 120 FPS :** Optimisation majeure de la boucle de rendu. Les calculs d'altitude lourds sont désormais asynchrones, garantissant une navigation sans saccades même sur mobile.
+- **Butée Sol Infranchissable :** Système de collision intelligent ancrant la cible au relief. La caméra s'arrête désormais à 100m du sol réel, empêchant toute traversée du terrain.
+- **Marker GPS Haute Visibilité :** Le signal de suivi utilise un système de Sprite à taille constante à l'écran. Il reste parfaitement visible, du sentier (50m) jusqu'à l'espace (35km).
+- **Anti-Téléportation :** Sécurisation de l'Origin Shift qui attend la stabilisation du zoom avant de recentrer le monde, éliminant les sauts de caméra brusques.
+
+## ✨ Nouveautés v4.5.x (Station Météo Expert)
+- **Dashboard Centralisé :** Panneau majestueux regroupant l'analyse profonde des conditions.
+- **Météogramme 24h :** Graphique dynamique de l'évolution de la température et du ciel (soleil/précipitations).
+- **Éphéméride & Lumière :** Calcul automatique des Heures Dorées/Bleues et affichage de la phase lunaire réelle.
+- **Sécurité Montagne :** Radars de rafales, visibilité réelle (km) et probabilité de précipitations.
+- **Ergonomie Responsive :** Refonte totale du dashboard pour les mobiles en mode portrait.
 
 ## ✨ Nouveautés v4.4.0 (Atmosphere & Real-time Weather)
 - **Météo Dynamique :** Rendu de pluie et neige 100% GPU basé sur les données réelles (Open-Meteo).
 - **Physique du Vent :** Inclinaison et vitesse des particules pilotées par les conditions réelles de la zone.
-- **Dashboard Météo :** Bulletin complet avec température, ressenti, vent, humidité et nom du lieu (Reverse Geocoding).
-- **Navigation Pro :** Système d'auto-tilt et zoom parabolique stabilisé.
 
-## ✨ Nouveautés v4.3.65 (Turbo Mobile & Space View)
-- **2D Turbo Engine :** Rendu spatial (LOD <= 10) utilisant des matériaux basiques sans calculs GPU, garantissant 120 FPS même sur mobile à haute altitude.
-- **Décollage Global :** Démarrage et recherche de lieux en vue régionale HD (LOD 12) pour un meilleur contexte géographique.
-- **Trajectoire Parabolique :** Zoom intelligent (Auto-Tilt) qui redresse la vue vers la 2D en montant et l'incline vers le relief en descendant.
-- **Turbo Space Engine :** Rendu 2D ultra-léger pour les hautes altitudes (Space View), économisant 50% de ressources.
-- **Boussole Interactive :** Boussole 3D native avec points cardinaux HD.
-- **LOD Stable :** Calcul de résolution insensible à l'inclinaison pour une image calme et stable.
-
-## ✨ Nouveautés v4.3.25 (Optimisation & Rendu)
-- **Ombres de Montagne Réelles :** Les sommets projettent désormais des ombres réalistes sur les vallées (Custom Depth Material), offrant une immersion digne des versions les plus abouties.
-- **Bâtiments 3D (OSM) :** Intégration fluide de l'extrusion urbaine avec gestion des fondations pour les terrains escarpés.
-- **Netteté Satellite HD :** Utilisation systématique de tuiles 512px (@2x) et seuils de zoom anticipés.
-- **Stabilité Totale :** Correction des effets de rebond (hystérésis) et bouclier anti-collision sol pour la caméra.
-- **Architecture Pro :** Nouveau moteur géographique modulaire (`geo.ts`) et nettoyage complet des dépendances circulaires.
-
-## ✨ Nouveautés v4.2.3 (Analytique Solaire)
-- **Solar Insight Dashboard :** Nouvel outil d'analyse complet avec calcul du lever de soleil réel et cumul d'ensoleillement métrique.
-- **Timeline Interactive :** Visualisation instantanée de l'ombre portée à une heure précise.
-
-## ✨ Nouveautés v4.1.x (Immersion & UX)
-- **Interface Éphémère :** Masquage automatique des contrôles pour une immersion totale.
-- **Signalétique Interactive :** Panneaux de randonnée cliquables avec informations de lieu.
+## ✨ Nouveautés v4.3.x (Turbo Mobile & Space View)
+- **2D Turbo Engine :** Rendu spatial (LOD <= 10) garantissant 120 FPS à haute altitude.
+- **Trajectoire Parabolique :** Zoom intelligent (Auto-Tilt) qui redresse la vue vers la 2D en montant.
+- **Ombres de Montagne Réelles :** Les sommets projettent des ombres réalistes sur les vallées (50km de portée).
 
 ## 📱 Application Mobile (Android)
 SunTrail 3D est optimisé pour les processeurs de dernière génération (Snapdragon Elite, Apple M4) avec des profils de performance automatiques.
