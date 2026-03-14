@@ -8,6 +8,13 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [x] **Sécurité 2D** : Blocage intelligent des relevés en mode plan plat.
 - [x] **Météo Avancée** : Isotherme 0°C et prévisions 6h.
 
+## ✅ Terminé (v4.4.1)
+- [x] **Fix Clic Haute Altitude** : Relevé opérationnel dès le lancement (35km).
+- [x] **Architecture "Bunker"** : Délégation globale des clics pour une interface incassable.
+- [x] **Correctif Ombres** : Projection pro sur 50km sans coupure.
+- [x] **Transitions LOD** : Fix du saut de LOD 11 pour une navigation fluide.
+- [x] **Météo Avancée** : Intégration Isotherme 0°C, UV et prévisions 6h.
+
 ## ✅ Terminé (v4.4.0)
 - [x] **Météo Dynamique** : Système de particules GPU pour la pluie et la neige.
 - [x] **Physique du Vent** : Inclinaison et vitesse des effets basées sur l'API réelle.

@@ -12,6 +12,15 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Correctif Ombres :** recalibrage du frustum d'ombre (50km) pour une projection fidèle des sommets sur les vallées.
 - **UI Météo :** Intégration du Dashboard expert avec Isotherme 0°C, UV et prévisions horaires sur 6h.
 
+## [4.4.1] - 2026-03-14
+### 🛠️ Stabilization & Pro Architecture
+- **Global Click Delegation:** Implemented a "Bunker" UI architecture using document-level event delegation, ensuring buttons (Solar Insight, Weather) never become unresponsive during dynamic updates.
+- **Space-Grade Raycasting:** Extended terrain detection distance to 500km, enabling mountain clicks immediately from the 35km launch altitude (LOD 12).
+- **Pro Shadows:** Extended shadow camera frustum to 50km with 2048px resolution and fine-tuned bias, ensuring peak shadows correctly cover entire valleys.
+- **LOD Continuity:** Fixed the "LOD skip" bug; the engine now transitions smoothly through LOD 11 during zooming.
+- **Expert Dashboard:** Restored all expert metrics (0°C Isotherm, UV Index, Wind Cardinal Directions, 6h Hourly Forecast).
+- **Atmospheric Fix:** Recalibrated fog logic to eliminate the high-altitude blue veil while maintaining ground-level atmosphere.
+
 ## [4.4.0] - 2026-03-14
 ### ☁️ Météo Dynamique & Immersion
 - **Moteur de Particules GPU :** Système de pluie et neige 100% calculé sur GPU (Shaders) pour maintenir 120 FPS.

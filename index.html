@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SunTrail - Moteur Three.js</title>
+    <title>SunTail - Moteur Three.js</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/style.css">
     <style>
@@ -16,13 +16,13 @@
 
 <div id="setup-screen">
     <div class="setup-card">
-        <div style="margin-bottom:8px; font-size:10px; color:var(--gold); font-weight:700; letter-spacing:3px; text-transform:uppercase;">Version 4.5.1</div>
+        <div style="margin-bottom:8px; font-size:10px; color:var(--gold); font-weight:700; letter-spacing:3px; text-transform:uppercase;">Version 4.4.1</div>
         <h1>⛰️ SunTrail 3D</h1>
-        <p style="color:var(--t2);">Visualisation topographique haute précision, simulation solaire en temps réel & météo dynamique.</p>
+        <p style="color:var(--t2);">Visualisation topographique haute précision, simulation solaire en temps réel & météo experte.</p>
         
         <div style="text-align:left;">
             <label style="font-size:11px; color:var(--gold); text-transform:uppercase; font-weight:700; letter-spacing:1px;">Clé API MapTiler Cloud</label>
-            <input type="text" id="k1" placeholder="Collez votre clé ici..." style="width:100%; padding:16px; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:14px; color:white; margin-top:10px; font-family:monospace; outline:none; focus:border-var(--accent);">
+            <input type="text" id="k1" placeholder="Collez votre clé ici..." style="width:100%; padding:16px; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:14px; color:white; margin-top:10px; font-family:monospace; outline:none;">
             <a href="https://cloud.maptiler.com/account/keys/" target="_blank" class="key-link" style="color:var(--accent); font-size:11px; text-decoration:none; margin-top:8px; display:inline-block;">Obtenir une clé gratuite sur MapTiler.com ↗</a>
         </div>
 
@@ -31,7 +31,7 @@
         <button class="btn-go" id="bgo">Lancer l'expérience</button>
         
         <div style="margin-top:40px; font-size:11px; color:rgba(255,255,255,0.2); text-transform:uppercase; letter-spacing:2px;">
-            SunTrail v4.5 • Jackseg • Three.js
+            SunTrail v4.4.1 • Jackseg • Three.js
         </div>
     </div>
 </div>
@@ -114,11 +114,90 @@
             <button class="preset-btn" data-preset="performance">HIGH</button>
             <button class="preset-btn" data-preset="ultra">ULTRA</button>
         </div>
-        <div style="display:flex; flex-direction:column; gap:15px; border-top:1px solid var(--border); padding-top:20px;">
-            <label style="display:flex; justify-content:space-between; font-size:13px;">🌲 Forêts 3D (Suisse) <input type="checkbox" id="veg-toggle" checked></label>
-            <label style="display:flex; justify-content:space-between; font-size:13px;">🏢 Bâtiments OSM <input type="checkbox" id="buildings-toggle" checked></label>
-            <label style="display:flex; justify-content:space-between; font-size:13px;">🌑 Ombres Portées <input type="checkbox" id="shadow-toggle" checked></label>
+        
+        <label style="font-size:12px; color:var(--t2); text-transform:uppercase; margin-bottom:10px; display:block;">Maillage & Distance</label>
+        <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;">
+            <span>Détail Maillage : <span id="res-disp">128</span></span>
+            <span>Distance Vue : <span id="range-disp">4</span></span>
         </div>
+        <input type="range" id="res-slider" min="32" max="256" step="32" value="128">
+        <input type="range" id="range-slider" min="1" max="10" step="1" value="4" style="margin-top:10px;">
+
+        <div style="margin-top:20px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:14px;">⚡ Vitesse Chargement</span>
+            <select id="load-speed-select" style="background:#1a1a1a; border:1px solid var(--border); color:white; border-radius:8px; padding:4px 8px; font-size:12px; cursor:pointer;">
+                <option value="2.0">Stable</option>
+                <option value="1.0">Normal</option>
+                <option value="0.5">Turbo</option>
+                <option value="0.2">Ultra (RTX)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="control-group" style="margin-top:25px;">
+        <label style="font-size:12px; color:var(--t2); text-transform:uppercase;">Visuel Environnement</label>
+        <div style="margin:15px 0;">
+            <label style="display:flex; justify-content:space-between; font-size:14px;">
+                Exagération Relief : <span id="exag-disp">1.4</span>x
+            </label>
+            <input type="range" id="exag-slider" min="1.0" max="2.0" step="0.1" value="1.4">
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <span style="font-size:14px;">🌑 Ombres 3D</span>
+            <input type="checkbox" id="shadow-toggle" checked>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:14px;">🌫️ Voile Atmosphérique</span>
+            <input type="range" id="fog-slider" min="20" max="100" step="5" value="40" style="width:120px;">
+        </div>
+    </div>
+
+    <div class="control-group" style="margin-top:25px; border-top:1px solid var(--border); padding-top:20px;">
+        <label style="font-size:12px; color:var(--gold); text-transform:uppercase;">Éléments 3D & Debug</label>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; margin-bottom:10px;">
+            <span style="font-size:14px;">📊 Stats de performance</span>
+            <input type="checkbox" id="stats-toggle" checked>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:14px;">🛠️ Infos de navigation</span>
+            <input type="checkbox" id="debug-toggle" checked>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:14px;">🌲 Forêts 3D (Suisse) <span id="veg-density-disp">4000</span></span>
+            <input type="checkbox" id="veg-toggle" checked>
+        </div>
+        <input type="range" id="veg-density-slider" min="0" max="15000" step="500" value="4000" style="margin-bottom:15px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:14px;">🏢 Bâtiments OSM</span>
+            <input type="checkbox" id="buildings-toggle" checked>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:14px;">🪧 Signalisation 3D</span>
+            <input type="checkbox" id="poi-toggle" checked>
+        </div>
+    </div>
+
+    <div class="control-group" style="margin-top:25px; border-top:1px solid var(--border); padding-top:20px;">
+        <label style="font-size:12px; color:var(--gold); text-transform:uppercase;">Stockage & API</label>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
+            <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:10px; text-align:center;">
+                <div style="font-size:10px; color:var(--t2); text-transform:uppercase;">🌐 Réseau</div>
+                <div id="net-count" style="font-size:18px; font-weight:700; color:white;">0</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:10px; text-align:center;">
+                <div style="font-size:10px; color:var(--t2); text-transform:uppercase;">📦 Cache</div>
+                <div id="cache-count" style="font-size:18px; font-weight:700; color:#10b981;">0</div>
+            </div>
+        </div>
+        <div style="margin-top:15px;">
+            <label style="font-size:11px; color:var(--t2); text-transform:uppercase;">Clé MapTiler Cloud</label>
+            <form id="api-key-form" style="display:flex; gap:8px; margin-top:5px;">
+                <input type="text" name="username" autocomplete="username" style="display:none;" value="maptiler-user">
+                <input type="password" id="maptiler-key-input" autocomplete="current-password" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; color:white; padding:8px; font-family:monospace; font-size:12px;">
+                <button type="submit" id="update-key-btn" style="background:var(--accent); border:none; color:white; border-radius:8px; padding:0 12px; cursor:pointer; font-size:12px;">OK</button>
+            </form>
+        </div>
+        <button id="clear-cache-btn" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ef4444; background:rgba(239, 68, 68, 0.1); color:#ef4444; cursor:pointer; font-weight:700; font-size:12px; margin-top:15px;">🗑️ Vider le cache local</button>
     </div>
 
     <div class="control-group" style="margin-top:25px; border-top:1px solid var(--border); padding-top:20px;">
@@ -135,10 +214,6 @@
                 Dénivelé: <span id="gpx-elev" style="color:var(--gold);">+0m / -0m</span>
             </div>
         </div>
-    </div>
-
-    <div class="control-group" style="margin-top:25px; border-top:1px solid var(--border); padding-top:20px;">
-        <button id="clear-cache-btn" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ef4444; background:rgba(239, 68, 68, 0.1); color:#ef4444; cursor:pointer; font-weight:700; font-size:12px;">🗑️ Vider le cache local</button>
     </div>
 </div>
 
@@ -181,7 +256,7 @@
         </div>
     </div>
 
-    <!-- Prévisions Horaires (v4.5) -->
+    <!-- Prévisions Horaires -->
     <div style="margin-bottom:20px;">
         <label style="font-size:11px; color:var(--t2); text-transform:uppercase; margin-bottom:10px; display:block;">Prochaines heures</label>
         <div id="w-hourly" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:5px; scrollbar-width: none;"></div>
@@ -199,7 +274,13 @@
                 <button class="weather-btn" data-weather="rain">🌧️</button>
                 <button class="weather-btn" data-weather="snow">❄️</button>
             </div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;">
+                <span>Intensité : <span id="weather-density-disp">2500</span></span>
+            </div>
             <input type="range" id="weather-density-slider" min="0" max="15000" step="500" value="2500">
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px; margin-top:10px;">
+                <span>Vitesse : <span id="weather-speed-disp">1.0</span>x</span>
+            </div>
             <input type="range" id="weather-speed-slider" min="0.5" max="3.0" step="0.1" value="1.0">
         </div>
     </details>
@@ -238,7 +319,8 @@
     <button id="copy-report-btn" style="width:100%; background:none; border:none; color:var(--accent); font-size:11px; font-weight:700; cursor:pointer; text-align:left; padding:0; text-transform:uppercase;">📋 Copier le rapport complet</button>
 </div>
 
-<div id="zoom-indicator" class="ui-element">LVL --</div>
+<!-- INDICATEUR FIXE -->
+<div id="zoom-indicator" class="ui-element" style="pointer-events: auto;">LVL --</div>
 <canvas id="compass-canvas" class="ui-element"></canvas>
 <div id="toast-container"></div>
 

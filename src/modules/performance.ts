@@ -6,48 +6,35 @@ import { showToast } from './utils';
  */
 export function getGpuInfo(): { renderer: string, vendor: string } {
     const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl') as WebGLRenderingContext;
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     if (!gl) return { renderer: 'Unknown', vendor: 'Unknown' };
-
-    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+    
+    const debugInfo = (gl as WebGLRenderingContext).getExtension('WEBGL_debug_renderer_info');
     if (!debugInfo) return { renderer: 'Unknown', vendor: 'Unknown' };
-
+    
     return {
-        renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL),
-        vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL)
+        renderer: (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_RENDERER_WEBGL),
+        vendor: (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_VENDOR_WEBGL)
     };
 }
 
 /**
- * Détermine le meilleur preset en fonction du matériel
+ * Détecte le meilleur preset en fonction du matériel
  */
 export function detectBestPreset(): PresetType {
-    const { renderer } = getGpuInfo();
-    const r = renderer.toLowerCase();
-
-    // Détection des GPU haute performance (NVIDIA/AMD dédiés)
-    if (r.includes('nvidia') || r.includes('geforce') || r.includes('rtx') || r.includes('radeon')) {
-        if (r.includes('rtx') || r.includes('6000') || r.includes('7000')) return 'ultra';
-        return 'performance';
-    }
-
-    // Mobiles ultra haut de gamme (Snapdragon Elite / Adreno 8xx, Apple M-series)
-    if (r.includes('adreno (tm) 8') || r.includes('m2') || r.includes('m3') || r.includes('m4')) {
+    const gpu = getGpuInfo().renderer.toLowerCase();
+    
+    // Détection Snapdragon Elite (v4.2.5)
+    if (gpu.includes('adreno') && (gpu.includes('750') || gpu.includes('800') || gpu.includes('elite'))) {
+        console.log("Snapdragon Elite détecté -> Profil ULTRA");
         return 'ultra';
     }
-
-    // Mobiles haut de gamme Android (Adreno 7xx ou Mali-G7xx/G8xx) ou Apple M1
-    if (r.includes('adreno (tm) 7') || r.includes('mali-g7') || r.includes('mali-g8') || r.includes('apple m1')) {
-        return 'performance';
-    }
-
-    // GPU intégrés Intel standards ou mobiles milieu de gamme
-    if (r.includes('intel') || r.includes('adreno') || r.includes('mali') || r.includes('graphics')) {
-        return 'balanced';
-    }
-
-    // Par défaut
-    return 'eco';
+    
+    if (gpu.includes('rtx') || gpu.includes('apple m')) return 'ultra';
+    if (gpu.includes('gtx') || gpu.includes('radeon')) return 'performance';
+    
+    // Mobile standard
+    return 'balanced';
 }
 
 /**
@@ -56,15 +43,16 @@ export function detectBestPreset(): PresetType {
 export function applyPreset(preset: PresetType): void {
     if (preset === 'custom') {
         state.PERFORMANCE_PRESET = 'custom';
+        updatePerformanceUI('custom');
         return;
     }
 
     const settings = PRESETS[preset];
     state.PERFORMANCE_PRESET = preset;
+    
     state.RESOLUTION = settings.RESOLUTION;
     state.RANGE = settings.RANGE;
     state.SHADOWS = settings.SHADOWS;
-    state.SHADOW_RES = settings.SHADOW_RES;
     state.PIXEL_RATIO_LIMIT = settings.PIXEL_RATIO_LIMIT;
     state.SHOW_VEGETATION = settings.SHOW_VEGETATION;
     state.SHOW_SIGNPOSTS = settings.SHOW_SIGNPOSTS;
@@ -76,34 +64,24 @@ export function applyPreset(preset: PresetType): void {
     state.MAX_BUILDS_PER_CYCLE = settings.MAX_BUILDS_PER_CYCLE;
     state.LOAD_DELAY_FACTOR = settings.LOAD_DELAY_FACTOR;
 
-    // Mise à jour dynamique des ombres (v4.3.13)
+    // Paramètres météo (v4.4)
+    state.SHOW_WEATHER = settings.SHOW_WEATHER;
+    state.WEATHER_DENSITY = settings.WEATHER_DENSITY;
+    state.WEATHER_SPEED = settings.WEATHER_SPEED;
+
+    // Mise à jour dynamique des ombres
     if (state.sunLight) {
         state.sunLight.castShadow = state.SHADOWS;
-        state.sunLight.shadow.mapSize.set(state.SHADOW_RES, state.SHADOW_RES);
-        if (state.sunLight.shadow.map) {
-            state.sunLight.shadow.map.dispose();
-            state.sunLight.shadow.map = null as any; 
-        }
-        
-        // --- FORCE RECALCUL UNIQUE (v4.3.29) ---
-        // On force le moteur à recalculer la Shadow Map une fois avec les nouveaux réglages
-        if (state.renderer) {
-            state.renderer.shadowMap.needsUpdate = true;
-        }
     }
 
-    // Mise à jour de l'UI si nécessaire (ex: sliders)
     updatePerformanceUI(preset);
-    
-    showToast(`Mode Performance : ${preset.toUpperCase()}`);
+    showToast(`Profil appliqué : ${preset.toUpperCase()}`);
 }
 
 /**
- * Met à jour les éléments de l'UI liés à la performance
+ * Met à jour les éléments de l'interface
  */
-function updatePerformanceUI(preset: PresetType): void {
-    const resDisp = document.getElementById('res-disp');
-    const rangeDisp = document.getElementById('range-disp');
+export function updatePerformanceUI(preset: PresetType): void {
     const resSlider = document.getElementById('res-slider') as HTMLInputElement;
     const rangeSlider = document.getElementById('range-slider') as HTMLInputElement;
     const shadowToggle = document.getElementById('shadow-toggle') as HTMLInputElement;
@@ -111,8 +89,16 @@ function updatePerformanceUI(preset: PresetType): void {
     const poiToggle = document.getElementById('poi-toggle') as HTMLInputElement;
     const buildingsToggle = document.getElementById('buildings-toggle') as HTMLInputElement;
     const vegDensitySlider = document.getElementById('veg-density-slider') as HTMLInputElement;
+    
+    const resDisp = document.getElementById('res-disp');
+    const rangeDisp = document.getElementById('range-disp');
     const vegDensityDisp = document.getElementById('veg-density-disp');
     const loadSpeedSelect = document.getElementById('load-speed-select') as HTMLSelectElement;
+    
+    const weatherDensitySlider = document.getElementById('weather-density-slider') as HTMLInputElement;
+    const weatherDensityDisp = document.getElementById('weather-density-disp');
+    const weatherSpeedSlider = document.getElementById('weather-speed-slider') as HTMLInputElement;
+    const weatherSpeedDisp = document.getElementById('weather-speed-disp');
 
     if (resDisp) resDisp.textContent = state.RESOLUTION.toString();
     if (rangeDisp) rangeDisp.textContent = state.RANGE.toString();
@@ -127,6 +113,12 @@ function updatePerformanceUI(preset: PresetType): void {
     if (vegDensitySlider) vegDensitySlider.value = state.VEGETATION_DENSITY.toString();
     if (vegDensityDisp) vegDensityDisp.textContent = state.VEGETATION_DENSITY.toString();
     if (loadSpeedSelect) loadSpeedSelect.value = state.LOAD_DELAY_FACTOR.toString();
+
+    // Météo (v4.4)
+    if (weatherDensitySlider) weatherDensitySlider.value = state.WEATHER_DENSITY.toString();
+    if (weatherDensityDisp) weatherDensityDisp.textContent = state.WEATHER_DENSITY.toString();
+    if (weatherSpeedSlider) weatherSpeedSlider.value = state.WEATHER_SPEED.toString();
+    if (weatherSpeedDisp) weatherSpeedDisp.textContent = state.WEATHER_SPEED.toFixed(1);
 
     // Mise en évidence du bouton de preset actif
     const buttons = document.querySelectorAll('.preset-btn');
