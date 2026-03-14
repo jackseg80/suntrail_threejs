@@ -4,6 +4,12 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.3.64] - 2026-03-14
+### 🎨 UI & Réglages Fins
+- **Stats Performance :** Repositionnement du compteur FPS directement sous le bouton des réglages pour une meilleure ergonomie.
+- **Preset Performance+ :** Augmentation du rayon de vue (`RANGE`) à 5 tuiles pour le preset "Performance" (High).
+- **Stabilité LOD 12 :** Élargissement des seuils de transition pour garantir une vue régionale stable même avec une caméra inclinée.
+
 ## [4.3.63] - 2026-03-14
 ### 🚀 Navigation & Immersion Initiale
 - **Vue Globale au Démarrage :** L'altitude initiale est désormais fixée à 35 km, déclenchant automatiquement une vue régionale en **LOD 12** pour une meilleure mise en contexte.

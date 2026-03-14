@@ -57,7 +57,7 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
     },
     performance: {
         RESOLUTION: 160,
-        RANGE: 4, 
+        RANGE: 5, // Augmenté de 4 à 5
         SHADOWS: true,
         SHADOW_RES: 2048,
         PIXEL_RATIO_LIMIT: 1.5,

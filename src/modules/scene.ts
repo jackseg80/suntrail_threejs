@@ -105,8 +105,12 @@ export async function initScene(): Promise<void> {
     container.appendChild(state.renderer.domElement);
 
     state.stats = new Stats();
-    state.stats.showPanel(3); // GPU/VRAM
+    state.stats.showPanel(0); 
     container.appendChild(state.stats.dom);
+    state.stats.dom.style.position = 'absolute';
+    state.stats.dom.style.top = '80px'; // Sous le bouton réglages (20+50+10)
+    state.stats.dom.style.left = '20px'; // Aligné avec le bouton
+    state.stats.dom.style.zIndex = '1000'; // Toujours au-dessus mais sous les menus critiques
     state.stats.dom.style.display = state.SHOW_STATS ? 'block' : 'none';
 
     initCompass();
