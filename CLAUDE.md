@@ -1,31 +1,33 @@
-# SunTrail - Guide Développeur (v4.3.25)
+# SunTrail - Guide Développeur (v4.5.35)
 
-## Architecture Technique (v4.3+)
-- **State Management :** État global centralisé dans `state.ts`.
-- **Moteur Géographique (`geo.ts`) :** **Pivot central.** Toutes les conversions (Lat/Lon <-> Monde <-> Tuile) DOIVENT passer par ce module pour éviter les dépendances circulaires et garantir l'alignement des calques.
-- **Bâtiments 3D (`buildings.ts`) :** Extrusion OSM asynchrone avec fusion de géométries (`BufferGeometryUtils`) pour limiter les Draw Calls à 1 par tuile.
-- **Ombres Portées :** Utilisation impérative de `customDepthMaterial` dans `terrain.ts` pour que les ombres "voient" le relief displace par le shader.
+## Méthodologie de Développement "Partner Engineer"
+Toute intervention majeure (feature ou refactor) DOIT suivre ce cycle itératif :
+1.  **Analyse & Intelligence** : Analyse approfondie du besoin avec l'intelligence maximale du modèle pour identifier les impacts collatéraux et les opportunités de nettoyage.
+2.  **Planification** : Création d'un plan d'action structuré (étape par étape) avant toute modification de code.
+3.  **Implémentation Chirurgicale** : Une seule modification à la fois. Code propre, typé et idiomatic.
+4.  **Tests & Qualité** : Création ou mise à jour systématique des tests unitaires (`vitest`). **100% de succès exigé.**
+5.  **Documentation** : Mise à jour immédiate de `CHANGELOG.md`, `TODO.md` et des fichiers de doc spécifiques.
+6.  **Livraison** : `npm run check` suivi d'un commit normé et d'un push après chaque étape validée.
+
+## Architecture Technique (v4.5+)
+- **State Management :** État global centralisé et strictement typé dans `state.ts`. Séparation Config vs Runtime.
+- **Moteur Géographique (`geo.ts`) :** Pivot central pour toutes les conversions de coordonnées.
+- **Gestion Mémoire (`memory.ts`) :** Utilisation systématique de `disposeObject()` pour prévenir les fuites de VRAM sur mobile.
+- **Bâtiments & POI :** Optimisation via fusion de géométries et instanciation pour limiter les Draw Calls.
+- **Données :** Priorité MapTiler (Key requise) pour le géocodage et les tuiles afin d'éviter les erreurs 429/CORS.
 
 ## Gestion de la Qualité (LOD & Vision)
-- **Hystérésis de Zoom :** Toujours maintenir une marge de ~800m à 1000m entre l'activation et la désactivation d'un LOD pour éviter l'effet ressort (bouncing).
-- **Boost Satellite :** La source Satellite utilise des seuils de zoom anticipés (facteur 2.5x) pour offrir de la netteté plus tôt.
-- **textures HD :** Utilisation systématique du suffixe `@2x` (512px) pour les sources MapTiler.
-- **Sécurité Caméra :** Garde-fou d'altitude (min 30m) et bridage du Tilt (maxPolarAngle) proportionnel au zoom pour cacher les bords de carte.
-
-## Stratégie de Versioning (Git)
-- **Numérotation :** Format SEMVER (Major.Minor.Patch).
-- **Tags Git :** Utilisés pour chaque sous-version stable (ex: `v4.3.15`).
-- **Releases GitHub :** Réservées aux versions majeures ou "testables" (milestones). Doivent inclure les notes de version et le fichier `app-debug.apk` en asset.
+- **Hystérésis de Zoom :** Marge de sécurité pour éviter le clignotement lors des transitions de LOD.
+- **Zoom Européen :** Support du dézoom jusqu'au niveau 4 avec basculement automatique en OpenTopoMap pour la lisibilité.
+- **Sécurité Caméra :** Système anti-collision sol (O(1) via cache spatial) et parabole de Tilt automatique.
 
 ## Commandes de Développement
 - `npm run dev` : Serveur de dev Vite.
-- `npm test` : Lancement de la suite de tests (Vitest). **Obligatoire avant chaque commit.**
-- `npm run deploy` : Check TS + Build + Sync Capacitor (Android).
-- `cd android; .\gradlew assembleDebug` : Génération manuelle de l'APK (nécessite `JAVA_HOME`).
+- `npm test` : Lancement de la suite de tests (Vitest). **Obligatoire.**
+- `npm run check` : Vérification du typage TypeScript.
+- `npm run build` : Build de production Web.
+- `npx cap sync android` : Synchronisation vers le projet Android.
 
-## Workflow de Travail
-1.  **Code** : Modifications dans `src/`.
-2.  **Validation** : `npm run check` et `npm test`.
-3.  **Docs** : Mise à jour systématique de `README.md`, `CHANGELOG.md` et `TODO.md`.
-4.  **Sync** : `npm run deploy`.
-5.  **Commit/Push** : Messages clairs avec préfixe `feat:`, `fix:`, `docs:` ou `test:`.
+## Stratégie de Versioning
+- **Messages de Commit** : Prefixes `feat:`, `fix:`, `perf:`, `refactor:`, `docs:`, `test:`.
+- **Atomicité** : Un commit = Une étape du plan validée.
