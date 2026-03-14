@@ -53,28 +53,68 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
 };
 
 export interface State {
-    MK: string; simDate: Date; TARGET_LAT: number; TARGET_LON: number; ZOOM: number;
-    PERFORMANCE_PRESET: PresetType; RESOLUTION: number; RANGE: number; SHADOWS: boolean;
-    SHADOW_RES: number; PIXEL_RATIO_LIMIT: number; RELIEF_EXAGGERATION: number;
-    SHOW_TRAILS: boolean; SHOW_SLOPES: boolean; SHOW_SIGNPOSTS: boolean; SHOW_BUILDINGS: boolean;
-    SHOW_WEATHER: boolean; WEATHER_DENSITY: number; WEATHER_SPEED: number;
-    lastWeatherLat: number; lastWeatherLon: number;
-    MAP_SOURCE: string; hasManualSource: boolean; FOG_NEAR: number; FOG_FAR: number;
-    VEGETATION_DENSITY: number; BUILDING_BATCH_SIZE: number; MAX_BUILDS_PER_CYCLE: number; LOAD_DELAY_FACTOR: number;
-    SHOW_DEBUG: boolean; SHOW_STATS: boolean; SHOW_VEGETATION: boolean;
-    isAnimating: boolean; animationSpeed: number;
-    initialLat: number; initialLon: number; originTile: { x: number; y: number; z: number };
-    scene: THREE.Scene | null; camera: THREE.PerspectiveCamera | null; renderer: THREE.WebGLRenderer | null;
-    controls: OrbitControls | MapControls | null; sunLight: THREE.DirectionalLight | null;
-    ambientLight: THREE.AmbientLight | null; sky: Sky | null; stats: any; vramPanel: any;
-    rawGpxData: any; gpxPoints: THREE.Vector3[]; gpxMesh: THREE.Mesh | null;
-    profileMarker: THREE.Mesh | null; trailProgress: number; isFollowingTrail: boolean;
-    userLocation: { lat: number; lon: number; alt: number } | null;
-    userHeading: number | null; isFollowingUser: boolean; userMarker: THREE.Group | null;
-    networkRequests: number; cacheHits: number;
-    uiVisible: boolean; lastUIInteraction: number;
+    // ==========================================
+    // ⚙️ CONFIGURATION & PRÉFÉRENCES
+    // ==========================================
+    MK: string;
+    MAP_SOURCE: string;
+    hasManualSource: boolean;
+    PERFORMANCE_PRESET: PresetType;
+    RESOLUTION: number;
+    RANGE: number;
+    PIXEL_RATIO_LIMIT: number;
+    LOAD_DELAY_FACTOR: number;
+    
+    SHOW_TRAILS: boolean;
+    SHOW_SLOPES: boolean;
+    SHOW_SIGNPOSTS: boolean;
+    SHOW_BUILDINGS: boolean;
+    SHOW_VEGETATION: boolean;
+    SHOW_WEATHER: boolean;
+    SHOW_DEBUG: boolean;
+    SHOW_STATS: boolean;
+
+    SHADOWS: boolean;
+    SHADOW_RES: number;
+    VEGETATION_DENSITY: number;
+    BUILDING_BATCH_SIZE: number;
+    MAX_BUILDS_PER_CYCLE: number;
+
+    // ==========================================
+    // 🌍 POSITIONNEMENT & MOTEUR 3D
+    // ==========================================
+    TARGET_LAT: number;
+    TARGET_LON: number;
+    initialLat: number;
+    initialLon: number;
+    ZOOM: number;
+    RELIEF_EXAGGERATION: number;
+    FOG_NEAR: number;
+    FOG_FAR: number;
+    originTile: { x: number; y: number; z: number };
+
+    scene: THREE.Scene | null;
+    camera: THREE.PerspectiveCamera | null;
+    renderer: THREE.WebGLRenderer | null;
+    controls: OrbitControls | MapControls | null;
+    sunLight: THREE.DirectionalLight | null;
+    ambientLight: THREE.AmbientLight | null;
+    sky: Sky | null;
+    stats: any | null; // Stats.js instance
+    vramPanel: any | null;
+
+    // ==========================================
+    // 🌦️ MÉTÉO & ÉPHÉMÉRIDES
+    // ==========================================
+    simDate: Date;
+    isAnimating: boolean;
+    animationSpeed: number;
+    lastWeatherLat: number;
+    lastWeatherLon: number;
     currentWeather: 'clear' | 'rain' | 'snow';
     weatherIntensity: number;
+    WEATHER_DENSITY: number;
+    WEATHER_SPEED: number;
     weatherData: {
         temp: number; apparentTemp: number; windSpeed: number; windDir: number;
         windGusts?: number; dewPoint?: number;
@@ -84,26 +124,60 @@ export interface State {
     } | null;
     ephemeris: {
         sunrise: string; sunset: string; goldenHour: string; blueHour: string;
-        moonPhase: string; moonIllum: number;
+        moonPhaseText: string; moonPhaseIcon: string; moonIllum: number;
     } | null;
+
+    // ==========================================
+    // 🥾 GPX & NAVIGATION (GPS)
+    // ==========================================
+    rawGpxData: Record<string, any> | null;
+    gpxPoints: THREE.Vector3[];
+    gpxMesh: THREE.Mesh | null;
+    profileMarker: THREE.Mesh | null;
+    trailProgress: number;
+    isFollowingTrail: boolean;
+    userLocation: { lat: number; lon: number; alt: number } | null;
+    userHeading: number | null;
+    isFollowingUser: boolean;
+    userMarker: THREE.Group | null;
+
+    // ==========================================
+    // 🖥️ INTERFACE & SYSTÈME
+    // ==========================================
+    networkRequests: number;
+    cacheHits: number;
+    uiVisible: boolean;
+    lastUIInteraction: number;
 }
 
 export const state: State = {
-    MK: '', simDate: new Date(), TARGET_LAT: 46.6863, TARGET_LON: 7.6617, ZOOM: 12,
+    // --- Config ---
+    MK: '', MAP_SOURCE: 'swisstopo', hasManualSource: false,
     PERFORMANCE_PRESET: 'balanced', RESOLUTION: PRESETS.balanced.RESOLUTION, RANGE: PRESETS.balanced.RANGE,
-    SHADOWS: PRESETS.balanced.SHADOWS, SHADOW_RES: PRESETS.balanced.SHADOW_RES, PIXEL_RATIO_LIMIT: PRESETS.balanced.PIXEL_RATIO_LIMIT,
-    RELIEF_EXAGGERATION: 1.4, SHOW_TRAILS: false, SHOW_SLOPES: false,
-    SHOW_SIGNPOSTS: PRESETS.balanced.SHOW_SIGNPOSTS, SHOW_BUILDINGS: PRESETS.balanced.SHOW_BUILDINGS,
-    SHOW_WEATHER: PRESETS.balanced.SHOW_WEATHER, WEATHER_DENSITY: PRESETS.balanced.WEATHER_DENSITY,
-    WEATHER_SPEED: PRESETS.balanced.WEATHER_SPEED, lastWeatherLat: 0, lastWeatherLon: 0,
-    MAP_SOURCE: 'swisstopo', hasManualSource: false, FOG_NEAR: 5000, FOG_FAR: 40000,
+    PIXEL_RATIO_LIMIT: PRESETS.balanced.PIXEL_RATIO_LIMIT, LOAD_DELAY_FACTOR: PRESETS.balanced.LOAD_DELAY_FACTOR,
+    SHOW_TRAILS: false, SHOW_SLOPES: false, SHOW_SIGNPOSTS: PRESETS.balanced.SHOW_SIGNPOSTS,
+    SHOW_BUILDINGS: PRESETS.balanced.SHOW_BUILDINGS, SHOW_VEGETATION: true, SHOW_WEATHER: PRESETS.balanced.SHOW_WEATHER,
+    SHOW_DEBUG: true, SHOW_STATS: true, SHADOWS: PRESETS.balanced.SHADOWS, SHADOW_RES: PRESETS.balanced.SHADOW_RES,
     VEGETATION_DENSITY: PRESETS.balanced.VEGETATION_DENSITY, BUILDING_BATCH_SIZE: PRESETS.balanced.BUILDING_BATCH_SIZE,
-    MAX_BUILDS_PER_CYCLE: PRESETS.balanced.MAX_BUILDS_PER_CYCLE, LOAD_DELAY_FACTOR: PRESETS.balanced.LOAD_DELAY_FACTOR,
-    SHOW_DEBUG: true, SHOW_STATS: true, SHOW_VEGETATION: true, isAnimating: false, animationSpeed: 1.0,
-    initialLat: 46.6863, initialLon: 7.6617, originTile: { x: 0, y: 0, z: 12 },
+    MAX_BUILDS_PER_CYCLE: PRESETS.balanced.MAX_BUILDS_PER_CYCLE,
+
+    // --- Moteur 3D ---
+    TARGET_LAT: 46.6863, TARGET_LON: 7.6617, initialLat: 46.6863, initialLon: 7.6617,
+    ZOOM: 12, RELIEF_EXAGGERATION: 1.4, FOG_NEAR: 5000, FOG_FAR: 40000,
+    originTile: { x: 0, y: 0, z: 12 },
     scene: null, camera: null, renderer: null, controls: null, sunLight: null, ambientLight: null, sky: null,
-    stats: null, vramPanel: null, rawGpxData: null, gpxPoints: [], gpxMesh: null, profileMarker: null, trailProgress: 0, isFollowingTrail: false,
-    userLocation: null, userHeading: null, isFollowingUser: false, userMarker: null, networkRequests: 0, cacheHits: 0,
-    uiVisible: true, lastUIInteraction: Date.now(), currentWeather: 'clear', weatherIntensity: 0, weatherData: null,
-    ephemeris: null
+    stats: null, vramPanel: null,
+
+    // --- Météo ---
+    simDate: new Date(), isAnimating: false, animationSpeed: 1.0,
+    lastWeatherLat: 0, lastWeatherLon: 0, currentWeather: 'clear', weatherIntensity: 0,
+    WEATHER_DENSITY: PRESETS.balanced.WEATHER_DENSITY, WEATHER_SPEED: PRESETS.balanced.WEATHER_SPEED,
+    weatherData: null, ephemeris: null,
+
+    // --- Navigation ---
+    rawGpxData: null, gpxPoints: [], gpxMesh: null, profileMarker: null, trailProgress: 0, isFollowingTrail: false,
+    userLocation: null, userHeading: null, isFollowingUser: false, userMarker: null,
+
+    // --- Système ---
+    networkRequests: 0, cacheHits: 0, uiVisible: true, lastUIInteraction: Date.now()
 };

@@ -14,6 +14,7 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ## [4.5.35] - 2026-03-14
 ### 🧹 Clean Architecture & Refactoring
+- **Restructuration de l'État Global (Phase 3)** : Le fichier `state.ts` a été entièrement refactorisé. Séparation visuelle nette entre la configuration statique et les variables d'exécution (Moteur 3D, Météo, GPS). Amélioration du typage TypeScript pour plus de sécurité lors des futurs développements.
 - **Gestion Mémoire VRAM (Phase 2)** : Création d'un utilitaire `disposeObject` pour forcer la destruction récursive des géométries/matériaux dans la VRAM. Application de ce nettoyeur à toutes les tuiles, parcours GPX et POIs lors de leur déchargement, éliminant les fuites de mémoire (Memory Leaks) responsables des crashs sur mobile.
 - **Optimisation massive POI (Phase 2)** : Mutualisation des géométries et matériaux pour les panneaux OSM (gain de centaines d'objets en mémoire par tuile).
 - **Centralisation Météo/Soleil (Phase 1.2)** : Suppression des calculs redondants de `SunCalc` dans la météo. Les éphémérides (heure dorée, phase lunaire) sont désormais gérées globalement par `sun.ts` via `state.ephemeris`, assurant une cohérence parfaite sur toute l'interface.
