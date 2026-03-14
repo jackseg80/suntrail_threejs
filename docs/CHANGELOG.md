@@ -14,7 +14,8 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ## [4.5.35] - 2026-03-14
 ### 🧹 Clean Architecture & Refactoring
-- **Optimisation des Performances (Phase 4)** : Refonte des presets de performance pour un meilleur équilibre entre qualité visuelle et fluidité. Ajout d'une mise à jour dynamique de la résolution des ombres (`SHADOW_RES`) et d'un système de "burst" de chargement lorsque l'utilisateur n'interagit pas avec la carte (accélération du rendu initial).
+- **Optimisation des Performances (Phase 4)** : Refonte des presets de performance pour un meilleur équilibre entre qualité visuelle et fluidité. Le profil **ULTRA** bénéficie désormais d'un horizon maximal (`RANGE: 8`) et d'un système de "burst" de chargement lorsque l'utilisateur n'interagit pas avec la carte (accélération du rendu initial).
+- **Mise à jour Dynamique des Ombres** : Ajout d'une mise à jour automatique de la résolution des ombres (`SHADOW_RES`) lors du changement de preset.
 - **Restructuration de l'État Global (Phase 3)** : Le fichier `state.ts` a été entièrement refactorisé. Séparation visuelle nette entre la configuration statique et les variables d'exécution (Moteur 3D, Météo, GPS). Amélioration du typage TypeScript pour plus de sécurité lors des futurs développements.
 - **Gestion Mémoire VRAM (Phase 2)** : Création d'un utilitaire `disposeObject` pour forcer la destruction récursive des géométries/matériaux dans la VRAM. Application de ce nettoyeur à toutes les tuiles, parcours GPX et POIs lors de leur déchargement, éliminant les fuites de mémoire (Memory Leaks) responsables des crashs sur mobile.
 - **Optimisation massive POI (Phase 2)** : Mutualisation des géométries et matériaux pour les panneaux OSM (gain de centaines d'objets en mémoire par tuile).
