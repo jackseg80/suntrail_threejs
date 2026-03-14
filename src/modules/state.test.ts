@@ -40,5 +40,10 @@ describe('state.ts', () => {
             expect(PRESETS.eco.SHOW_BUILDINGS).toBe(false);
             expect(PRESETS.eco.RANGE).toBe(2);
         });
+
+        it('should have a balanced preset with 96 resolution', () => {
+            expect(PRESETS.balanced.RESOLUTION).toBe(96);
+            expect(PRESETS.balanced.SHADOW_RES).toBe(512);
+        });
     });
 });

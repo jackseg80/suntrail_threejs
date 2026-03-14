@@ -25,17 +25,30 @@ export function getGpuInfo(): { renderer: string, vendor: string } {
 export function detectBestPreset(): PresetType {
     const gpu = getGpuInfo().renderer.toLowerCase();
     
-    // Détection Snapdragon Elite (v4.2.5)
+    // 1. Profil ULTRA : Flagships et Desktop
+    if (gpu.includes('rtx') || gpu.includes('apple m')) return 'ultra';
     if (gpu.includes('adreno') && (gpu.includes('750') || gpu.includes('800') || gpu.includes('elite'))) {
-        console.log("Snapdragon Elite détecté -> Profil ULTRA");
+        console.log("SunTrail: Flagship Adreno détecté -> ULTRA");
         return 'ultra';
     }
     
-    if (gpu.includes('rtx') || gpu.includes('apple m')) return 'ultra';
+    // 2. Profil PERFORMANCE : Milieu-Haut de gamme
     if (gpu.includes('gtx') || gpu.includes('radeon')) return 'performance';
     
-    // Mobile standard
-    return 'balanced';
+    // 3. Cas critique : GPU MALI (Samsung Série A, Redmi, etc.)
+    // Ces GPUs gèrent mal les Shadow Maps et la haute résolution de sommets.
+    if (gpu.includes('mali')) {
+        console.log("SunTrail: GPU Mali détecté (Milieu de gamme standard) -> ECO par sécurité");
+        return 'eco';
+    }
+
+    // 4. Profil BALANCED : Snapdragon milieu de gamme (Adreno série 600/700 standard)
+    if (gpu.includes('adreno')) {
+        return 'balanced';
+    }
+    
+    // Par défaut, prudence sur mobile inconnu
+    return 'eco';
 }
 
 /**
