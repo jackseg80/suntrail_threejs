@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { disposeObject } from './memory';
 import { state } from './state';
 import { showToast, isMobileDevice, isPositionInSwitzerland } from './utils';
 import { updateElevationProfile } from './profile';
@@ -545,13 +546,12 @@ export class Tile {
         this.status = 'disposed'; loadQueue = loadQueue.filter(t => t !== this);
         if (this.mesh) { 
             if (state.scene) state.scene.remove(this.mesh); 
-            if (this.mesh.material instanceof THREE.Material) this.mesh.material.dispose(); 
-            if (this.mesh.customDepthMaterial) this.mesh.customDepthMaterial.dispose();
+            disposeObject(this.mesh);
             this.mesh = null; 
         }
-        if (this.forestMesh) { if (state.scene) state.scene.remove(this.forestMesh); this.forestMesh = null; }
-        if (this.poiGroup) { if (state.scene) state.scene.remove(this.poiGroup); this.poiGroup = null; }
-        if (this.buildingMesh) { if (state.scene) state.scene.remove(this.buildingMesh); this.buildingMesh = null; }
+        if (this.forestMesh) { if (state.scene) state.scene.remove(this.forestMesh); disposeObject(this.forestMesh); this.forestMesh = null; }
+        if (this.poiGroup) { if (state.scene) state.scene.remove(this.poiGroup); disposeObject(this.poiGroup); this.poiGroup = null; }
+        if (this.buildingMesh) { if (state.scene) state.scene.remove(this.buildingMesh); disposeObject(this.buildingMesh); this.buildingMesh = null; }
     }
 }
 
@@ -744,8 +744,7 @@ export function updateGPXMesh(): void {
 
     if (state.gpxMesh) {
         if (state.scene) state.scene.remove(state.gpxMesh);
-        state.gpxMesh.geometry.dispose(); 
-        if (state.gpxMesh.material instanceof THREE.Material) state.gpxMesh.material.dispose();
+        disposeObject(state.gpxMesh);
     }
 
     const track = state.rawGpxData.tracks[0];
@@ -779,7 +778,8 @@ export function updateGPXMesh(): void {
 export function clearLabels(): void {
     for (const obj of activeLabels.values()) {
         if (state.scene) { state.scene.remove(obj.sprite); state.scene.remove(obj.line); }
-        obj.sprite.material.dispose(); obj.line.geometry.dispose(); obj.line.material.dispose();
+        disposeObject(obj.sprite);
+        disposeObject(obj.line);
     }
     activeLabels.clear();
 }
