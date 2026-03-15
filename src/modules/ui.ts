@@ -7,7 +7,7 @@ import { updateSunPosition } from './sun';
 import { initScene, flyTo } from './scene';
 import { resetToNorth } from './compass';
 import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain, autoSelectMapSource, deleteTerrainCache } from './terrain';
-import { lngLatToTile, worldToLngLat, lngLatToWorld } from './geo';
+import { lngLatToTile, worldToLngLat } from './geo';
 import { showToast, fetchGeocoding } from './utils';
 import { applyPreset, detectBestPreset, getGpuInfo } from './performance';
 import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';

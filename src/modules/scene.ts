@@ -23,7 +23,7 @@ export async function disposeScene(): Promise<void> {
 }
 
 // --- VOL CINÉMATIQUE (v4.6.5) ---
-export function flyTo(targetWorldX: number, targetWorldZ: number, targetZoom: number = 14, targetElevation: number = 0) {
+export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevation: number = 0) {
     if (!state.camera || !state.controls) return;
     
     // Désactiver le suivi GPS si actif

@@ -1,24 +1,25 @@
-# ⛰️ SunTrail 3D (v4.5.46)
+# ⛰️ SunTrail 3D (v4.6.6)
 
 Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données MapTiler / OpenStreetMap.
 
-## ✨ Nouveautés v4.5.46 (Extreme Performance & Stability)
-- **Fluidité 120 FPS Adaptative :** Chargement segmenté et cache adaptatif selon la puissance de l'appareil (Eco, Balanced, Ultra).
-- **Végétation Ultra-Light :** Réduction massive de la charge CPU lors de la génération des forêts sur mobile.
-- **Anti-Collision Sol Pro :** Système de sécurité garantissant que la caméra ne traverse jamais le relief, avec chargement forcé du sol sous les pieds.
-- **Suivi GPS Directionnel :** Boussole temps réel avec cône de vue (DeviceOrientation API) et rotation automatique de la carte.
-- **Diagnostics Matériels :** Détection et affichage dynamique du GPU et du CPU au démarrage.
-- **Support Safe-Areas :** Interface optimisée pour les écrans à encoche et barres système Android/iOS.
-- **Bâtiments OSM Optimisés :** Fusion des géométries pour un rendu urbain fluide (1 seul Draw Call par tuile).
+## ✨ Nouveautés v4.6.x (Peaks & Cinematic Exploration)
+- **Moteur de Recherche de Sommets :** Indexation locale intelligente (Overpass API) des sommets > 1000m avec auto-complétion hybride instantanée.
+- **Vol Cinématique (`flyTo`) :** Trajectoire de vol parabolique sécurisée (anti-collision terrain) pour une immersion totale lors de la sélection d'un sommet.
+- **Altitude Panoramique Automatique :** Stabilisation de la vue en LOD 14 (12km d'altitude) pour une observation optimale des massifs alpins.
 
+## ✨ Nouveautés v4.5.x (Ultimate Tracking & Battery)
+- **Suivi GPS & Boussole Pro :** Interpolation haute fréquence (60 FPS) et stabilisation par zone morte (1.5°) pour une navigation ultra-fluide sans tremblements.
+- **Ultra-Battery Save :** Mode "Deep Sleep" mettant en pause le moteur 3D (0 FPS) en arrière-plan et toggle global 30 FPS pour maximiser l'autonomie en rando.
+- **Voile Atmosphérique Dynamique :** Intégration du brouillard volumétrique aux presets de performance pour masquer le chargement des tuiles lointaines.
+- **Interface Mobile Stack :** UI responsive avec ancrage dynamique du panneau d'altitude au-dessus de la timeline sur mobile.
+- **Anti-Collision Sol Pro :** Système de sécurité garantissant que la caméra ne traverse jamais le relief.
 
 ## ✨ Nouveautés v4.3.x (Turbo Mobile & Space View)
-- **2D Turbo Engine :** Rendu spatial (LOD <= 10) garantissant 120 FPS à haute altitude.
-- **Trajectoire Parabolique :** Zoom intelligent (Auto-Tilt) qui redresse la vue vers la 2D en montant.
-- **Ombres de Montagne Réelles :** Les sommets projettent des ombres réalistes sur les vallées (50km de portée).
+- **2D Turbo Engine :** Rendu spatial (LOD <= 10) garantissant 120 FPS à haute altitude via maillages plats simplifiés.
+- **Trajectoire Parabolique :** Zoom intelligent (Auto-Tilt) qui redresse la vue vers la 2D en montant pour cacher le vide de l'horizon.
 
 ## 📱 Application Mobile (Android)
-SunTrail 3D est optimisé pour les processeurs de dernière génération (Snapdragon Elite, Apple M4) avec des profils de performance automatiques.
+SunTrail 3D est optimisé pour les processeurs de dernière génération (Snapdragon Elite, Apple M4) avec des profils de performance automatiques et une gestion rigoureuse de la VRAM.
 
 ## 📄 Documentation
 - [Guide des Tests](./docs/TESTS.md)
