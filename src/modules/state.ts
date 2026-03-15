@@ -146,6 +146,11 @@ export interface State {
     userHeading: number | null;
     isFollowingUser: boolean;
     userMarker: THREE.Group | null;
+    
+    // --- LISSAGE SUIVI (v4.5.60) ---
+    smoothUserPos: THREE.Vector3;
+    smoothUserHeading: number;
+    lastTrackingUpdate: number;
 
     // ==========================================
     // 🖥️ INTERFACE & SYSTÈME
@@ -186,6 +191,11 @@ export const state: State = {
     // --- Navigation ---
     rawGpxData: null, gpxPoints: [], gpxMesh: null, profileMarker: null, trailProgress: 0, isFollowingTrail: false,
     userLocation: null, userHeading: null, isFollowingUser: false, userMarker: null,
+    
+    // --- Lissage Suivi ---
+    smoothUserPos: new THREE.Vector3(),
+    smoothUserHeading: 0,
+    lastTrackingUpdate: 0,
 
     // --- Système ---
     networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isProcessingTiles: false, lastUIInteraction: Date.now()

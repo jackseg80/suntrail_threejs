@@ -7,7 +7,7 @@ import { getAltitudeAt } from './analysis';
 let watchId: string | null = null;
 let lastHeadingUpdate = 0;
 
-// --- DÉTECTION ORIENTATION MOBILE (v4.5.36) ---
+// --- DÉTECTION ORIENTATION MOBILE (v4.5.60) ---
 function initOrientationTracking() {
     const handleOrientation = (event: DeviceOrientationEvent) => {
         // @ts-ignore
@@ -16,12 +16,7 @@ function initOrientationTracking() {
         
         if (heading !== undefined && heading !== null) {
             state.userHeading = heading;
-            const now = Date.now();
-            if (now - lastHeadingUpdate > 50) { // Limiter à 20Hz
-                updateUserMarker();
-                if (state.isFollowingUser) centerOnUser();
-                lastHeadingUpdate = now;
-            }
+            updateUserMarker();
         }
     };
 
@@ -35,7 +30,7 @@ function initOrientationTracking() {
     }
 }
 
-let lastLat = 0, lastLon = 0, lastRawHeading = 0;
+let lastLat = 0, lastLon = 0;
 
 export async function startLocationTracking() {
     if (watchId !== null) return;
@@ -51,24 +46,17 @@ export async function startLocationTracking() {
             
             const { latitude, longitude, altitude, heading } = position.coords;
             
-            // --- FILTRAGE DE MOUVEMENT (v4.5.51) ---
-            // On n'actualise que si le mouvement est significatif (> 2 mètres env.)
+            // --- MISE À JOUR ÉTAT GPS (v4.5.60) ---
             const distMove = Math.sqrt(Math.pow(latitude - lastLat, 2) + Math.pow(longitude - lastLon, 2));
-            if (distMove > 0.00002) { 
+            if (distMove > 0.00001) { // Env. 1m de sensibilité
                 state.userLocation = { lat: latitude, lon: longitude, alt: altitude || 0 };
                 lastLat = latitude; lastLon = longitude;
                 updateUserMarker();
-                if (state.isFollowingUser) centerOnUser();
             }
             
             if (heading !== null && heading !== undefined) {
-                // Lissage du cap GPS
-                if (Math.abs(heading - lastRawHeading) > 3) {
-                    state.userHeading = heading;
-                    lastRawHeading = heading;
-                    updateUserMarker();
-                    if (state.isFollowingUser) centerOnUser();
-                }
+                state.userHeading = heading;
+                updateUserMarker();
             }
         });
     } catch (e) { console.error("Tracking error:", e); }
@@ -81,7 +69,11 @@ export function stopLocationTracking() {
     }
 }
 
-function updateUserMarker() {
+/**
+ * Met à jour visuellement le marqueur sur la carte.
+ * Les calculs de position monde sont faits ici, mais le lissage caméra est dans scene.ts
+ */
+export function updateUserMarker() {
     if (!state.userLocation || !state.scene || !state.originTile) return;
 
     const pos = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
@@ -91,71 +83,81 @@ function updateUserMarker() {
     if (!state.userMarker) {
         state.userMarker = new THREE.Group();
         
-        // --- CERCLE DE POSITION ---
+        // --- CERCLE DE POSITION (Bleu Glow) ---
         const ringGeo = new THREE.RingGeometry(8, 10, 32);
-        const ringMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.6 });
         const ring = new THREE.Mesh(ringGeo, ringMat);
         ring.rotation.x = -Math.PI / 2;
         state.userMarker.add(ring);
 
         // --- CÔNE DE VUE (SECTEUR) ---
-        const coneGeo = new THREE.CircleGeometry(40, 32, -Math.PI/6, Math.PI/3);
-        const coneMat = new THREE.MeshBasicMaterial({ 
-            color: 0x3b82f6, transparent: true, opacity: 0.2, side: THREE.DoubleSide 
-        });
+        const coneGeo = new THREE.CircleGeometry(45, 32, -Math.PI/6, Math.PI/3);
+        const coneMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.15 });
         const viewCone = new THREE.Mesh(coneGeo, coneMat);
         viewCone.rotation.x = -Math.PI / 2;
-        viewCone.rotation.z = Math.PI; // Aligner avec l'avant
+        viewCone.rotation.z = Math.PI; 
         state.userMarker.add(viewCone);
 
-        // --- POINT CENTRAL ---
+        // --- POINT BLANC ---
         const canvas = document.createElement('canvas');
         canvas.width = 64; canvas.height = 64;
         const ctx = canvas.getContext('2d');
         if (ctx) {
-            ctx.beginPath(); ctx.arc(32, 32, 25, 0, Math.PI * 2);
-            ctx.fillStyle = '#ffffff'; ctx.fill();
-            ctx.beginPath(); ctx.arc(32, 32, 18, 0, Math.PI * 2);
+            ctx.beginPath(); ctx.arc(32, 32, 22, 0, Math.PI * 2);
+            ctx.fillStyle = 'white'; ctx.fill();
+            ctx.beginPath(); ctx.arc(32, 32, 16, 0, Math.PI * 2);
             ctx.fillStyle = '#3b82f6'; ctx.fill();
         }
         const tex = new THREE.CanvasTexture(canvas);
         const spriteMat = new THREE.SpriteMaterial({ map: tex, sizeAttenuation: false });
         const dot = new THREE.Sprite(spriteMat);
-        dot.scale.set(0.02, 0.02, 1);
-        dot.position.y = 5;
+        dot.scale.set(0.018, 0.018, 1);
+        dot.position.y = 2;
         state.userMarker.add(dot);
 
         state.scene.add(state.userMarker);
     }
 
+    // Le marqueur suit immédiatement pour le feedback visuel, 
+    // mais la caméra le suit avec lissage.
     state.userMarker.position.set(pos.x, finalY, pos.z);
     
-    // Orientation si disponible
     if (state.userHeading !== null) {
         state.userMarker.rotation.y = -THREE.MathUtils.degToRad(state.userHeading);
     }
 }
 
-export function centerOnUser() {
+/**
+ * Cette fonction est maintenant un ORCHESTRATEUR DE LISSAGE (v4.5.60)
+ * Appelée à chaque frame (60fps) depuis scene.ts
+ */
+export function centerOnUser(delta: number) {
     if (!state.userLocation || !state.controls || !state.originTile || !state.camera) return;
-    const pos = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
     
-    // 1. Cible du sol (Lerp pour fluidité)
-    const targetPos = new THREE.Vector3(pos.x, 0, pos.z);
-    state.controls.target.lerp(targetPos, 0.1);
+    // 1. POSITION CIBLE
+    const targetWorldPos = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
+    
+    // --- LISSAGE EXPONENTIEL (Delta-based) ---
+    // On utilise un facteur de lissage qui s'adapte au temps écoulé
+    const posLerpFactor = 1 - Math.exp(-5 * delta); // Env. 5Hz de réactivité
+    state.smoothUserPos.lerp(new THREE.Vector3(targetWorldPos.x, 0, targetWorldPos.z), posLerpFactor);
+    
+    // Appliquer à la cible des contrôles
+    state.controls.target.copy(state.smoothUserPos);
 
-    // 2. Vision Rando (LOD 16/17) - On force une distance de ~1200m
-    const currentDist = state.camera.position.distanceTo(state.controls.target);
+    // 2. DISTANCE CAMÉRA (Vision Rando Fixe)
     const targetDist = 1200; 
+    const currentDist = state.camera.position.distanceTo(state.controls.target);
+    const distLerpFactor = 1 - Math.exp(-2 * delta); // Plus lent pour le zoom
     
-    if (Math.abs(currentDist - targetDist) > 10) {
-        const factor = (targetDist / currentDist);
+    if (Math.abs(currentDist - targetDist) > 1) {
+        const factor = THREE.MathUtils.lerp(1, targetDist / currentDist, distLerpFactor);
         state.camera.position.lerp(state.controls.target.clone().add(
             state.camera.position.clone().sub(state.controls.target).multiplyScalar(factor)
-        ), 0.05);
+        ), distLerpFactor);
     }
 
-    // 3. Alignement sur la vue (Heading)
+    // 3. CAP / ORIENTATION (Heading)
     if (state.userHeading !== null) {
         const currentAzimuth = state.controls.getAzimuthalAngle();
         const targetAzimuth = -THREE.MathUtils.degToRad(state.userHeading);
@@ -164,8 +166,10 @@ export function centerOnUser() {
         while (diff < -Math.PI) diff += Math.PI * 2;
         while (diff > Math.PI) diff -= Math.PI * 2;
         
-        if (Math.abs(diff) > 0.01) {
-            const angle = currentAzimuth + diff * 0.05;
+        // Filtre Passe-Bas sur la rotation
+        const headingLerpFactor = 1 - Math.exp(-3 * delta); 
+        if (Math.abs(diff) > 0.001) {
+            const angle = currentAzimuth + diff * headingLerpFactor;
             const distXZ = Math.sqrt(Math.pow(state.camera.position.x - state.controls.target.x, 2) + Math.pow(state.camera.position.z - state.controls.target.z, 2));
             state.camera.position.x = state.controls.target.x + Math.sin(angle) * distXZ;
             state.camera.position.z = state.controls.target.z + Math.cos(angle) * distXZ;

@@ -12,6 +12,7 @@ import { throttle } from './utils';
 import { initVegetationResources } from './vegetation';
 import { initWeatherSystem, updateWeatherSystem, fetchWeather, updateWeatherUIIndicator } from './weather';
 import { initCompass, disposeCompass, renderCompass, updateCompassAnimation, isCompassAnimating } from './compass';
+import { centerOnUser } from './location';
 
 export async function disposeScene(): Promise<void> {
     resetTerrain(); clearCache();
@@ -253,7 +254,7 @@ export async function initScene(): Promise<void> {
             }
         }
 
-        const needsUpdate = state.controls.update() || state.isSunAnimating || state.isInteractingWithUI || state.isProcessingTiles || hasWeather || isCompassAnimating() || tilesFading || needsInitialRender > 0;
+        const needsUpdate = state.controls.update() || state.isSunAnimating || state.isInteractingWithUI || state.isProcessingTiles || hasWeather || isCompassAnimating() || tilesFading || needsInitialRender > 0 || state.isFollowingUser;
 
         if (needsUpdate) {
             state.stats?.begin();
@@ -261,6 +262,10 @@ export async function initScene(): Promise<void> {
             if (needsInitialRender > 0) needsInitialRender--;
             
             updateWeatherSystem(delta, state.camera.position);
+
+            // --- SUIVI GPS LISSÉ (v4.5.60) ---
+            // On ne suit que si l'utilisateur ne touche pas l'écran
+            if (state.isFollowingUser && !interacting) centerOnUser(delta);
 
             if (state.isSunAnimating) {
                 const slider = document.getElementById('time-slider') as HTMLInputElement;

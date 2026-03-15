@@ -113,7 +113,11 @@ export function initUI(): void {
         if (followBtn) {
             state.isFollowingUser = !state.isFollowingUser;
             followBtn.classList.toggle('active', state.isFollowingUser);
-            if (state.isFollowingUser) { await startLocationTracking(); centerOnUser(); }
+            if (state.isFollowingUser) { 
+                // Initialiser la position de lissage sur la cible actuelle pour éviter un saut
+                if (state.controls) state.smoothUserPos.copy(state.controls.target);
+                await startLocationTracking(); 
+            }
         }
 
         // MÉTÉO
