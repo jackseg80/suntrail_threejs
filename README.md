@@ -1,23 +1,16 @@
-# ⛰️ SunTrail 3D (v4.5.11)
+# ⛰️ SunTrail 3D (v4.5.46)
 
-Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données Swisstopo / MapTiler.
+Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données MapTiler / OpenStreetMap.
 
-## ✨ Nouveautés v4.5.11 (Stability & Pro Navigation)
-- **Fluidité 120 FPS :** Optimisation majeure de la boucle de rendu. Les calculs d'altitude lourds sont désormais asynchrones, garantissant une navigation sans saccades même sur mobile.
-- **Butée Sol Infranchissable :** Système de collision intelligent ancrant la cible au relief. La caméra s'arrête désormais à 100m du sol réel, empêchant toute traversée du terrain.
-- **Marker GPS Haute Visibilité :** Le signal de suivi utilise un système de Sprite à taille constante à l'écran. Il reste parfaitement visible, du sentier (50m) jusqu'à l'espace (35km).
-- **Anti-Téléportation :** Sécurisation de l'Origin Shift qui attend la stabilisation du zoom avant de recentrer le monde, éliminant les sauts de caméra brusques.
+## ✨ Nouveautés v4.5.46 (Extreme Performance & Stability)
+- **Fluidité 120 FPS Adaptative :** Chargement segmenté et cache adaptatif selon la puissance de l'appareil (Eco, Balanced, Ultra).
+- **Végétation Ultra-Light :** Réduction massive de la charge CPU lors de la génération des forêts sur mobile.
+- **Anti-Collision Sol Pro :** Système de sécurité garantissant que la caméra ne traverse jamais le relief, avec chargement forcé du sol sous les pieds.
+- **Suivi GPS Directionnel :** Boussole temps réel avec cône de vue (DeviceOrientation API) et rotation automatique de la carte.
+- **Diagnostics Matériels :** Détection et affichage dynamique du GPU et du CPU au démarrage.
+- **Support Safe-Areas :** Interface optimisée pour les écrans à encoche et barres système Android/iOS.
+- **Bâtiments OSM Optimisés :** Fusion des géométries pour un rendu urbain fluide (1 seul Draw Call par tuile).
 
-## ✨ Nouveautés v4.5.x (Station Météo Expert)
-- **Dashboard Centralisé :** Panneau majestueux regroupant l'analyse profonde des conditions.
-- **Météogramme 24h :** Graphique dynamique de l'évolution de la température et du ciel (soleil/précipitations).
-- **Éphéméride & Lumière :** Calcul automatique des Heures Dorées/Bleues et affichage de la phase lunaire réelle.
-- **Sécurité Montagne :** Radars de rafales, visibilité réelle (km) et probabilité de précipitations.
-- **Ergonomie Responsive :** Refonte totale du dashboard pour les mobiles en mode portrait.
-
-## ✨ Nouveautés v4.4.0 (Atmosphere & Real-time Weather)
-- **Météo Dynamique :** Rendu de pluie et neige 100% GPU basé sur les données réelles (Open-Meteo).
-- **Physique du Vent :** Inclinaison et vitesse des particules pilotées par les conditions réelles de la zone.
 
 ## ✨ Nouveautés v4.3.x (Turbo Mobile & Space View)
 - **2D Turbo Engine :** Rendu spatial (LOD <= 10) garantissant 120 FPS à haute altitude.
