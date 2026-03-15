@@ -212,39 +212,44 @@ export async function initScene(): Promise<void> {
         
         updateCompassAnimation();
 
-        // --- GESTION DU TILT GOOGLE EARTH STYLE (v4.5.40 / v4.5.47) ---
+        // --- PARABOLE DU TILT (v4.5.56) ---
+        // On définit une courbe d'inclinaison qui culmine à LOD 14
+        let tiltCap = 1.40; 
+        if (state.ZOOM <= 10) tiltCap = 0;
+        else if (state.ZOOM === 11) tiltCap = 0.70;
+        else if (state.ZOOM === 12) tiltCap = 1.00;
+        else if (state.ZOOM === 13) tiltCap = 1.25;
+        else if (state.ZOOM === 14) tiltCap = 1.40; // PIC
+        else if (state.ZOOM === 15) tiltCap = 1.20; // REDRESSEMENT
+        else if (state.ZOOM === 16) tiltCap = 1.00;
+        else if (state.ZOOM === 17) tiltCap = 0.80;
+        else if (state.ZOOM >= 18)  tiltCap = 0.60;
+
         const interacting = (state.controls as any)._isMoving;
         const currentTilt = state.controls.getPolarAngle();
         const distToTarget = state.camera.position.distanceTo(state.controls.target);
         
         // On force la 2D si la résolution est très basse (Mode ECO)
-        const isForce2D = state.RESOLUTION <= 2;
+        const isForce2D = state.RESOLUTION <= 2 || state.ZOOM <= 10;
 
         if (isForce2D) {
-            // MODE 2D : Vue de dessus stricte
             state.controls.minPolarAngle = 0;
             state.controls.maxPolarAngle = 0;
         } else if (interacting) {
-            // PENDANT L'INTERACTION : LIBERTÉ SEMI-TOTALE (v4.5.51)
-            // On laisse une plage de mouvement vertical libre pour l'ajustement manuel
+            // PENDANT L'INTERACTION : Liberté bridée par la parabole
             state.controls.minPolarAngle = 0.05; 
-            state.controls.maxPolarAngle = 1.4; 
+            state.controls.maxPolarAngle = tiltCap; 
         } else {
-            // HORS INTERACTION : RECENTRAGE AUTOMATIQUE (Auto-Tilt)
+            // HORS INTERACTION : Auto-Tilt doux (toujours sous le TiltCap)
             const hFactor = THREE.MathUtils.clamp((distToTarget - 2000) / 100000, 0, 1);
-            let desiredTilt = THREE.MathUtils.lerp(1.2, 0.05, Math.pow(hFactor, 0.4));
+            let desiredTilt = THREE.MathUtils.lerp(tiltCap * 0.95, 0.05, Math.pow(hFactor, 0.4));
             
-            if (state.ZOOM <= 8) desiredTilt = 0.05; 
-            else if (state.ZOOM <= 11) desiredTilt = Math.min(desiredTilt, 0.3);
-            else if (state.ZOOM <= 13) desiredTilt = Math.min(desiredTilt, 0.7); 
-            else if (state.ZOOM === 14) desiredTilt = Math.min(desiredTilt, 0.9);
-            else if (state.ZOOM >= 15) desiredTilt = Math.min(desiredTilt, 1.2);
+            if (state.ZOOM <= 11) desiredTilt = Math.min(desiredTilt, tiltCap * 0.9);
 
-            // Interpolation très douce (0.02) pour ne pas brusquer la caméra
             if (Math.abs(currentTilt - desiredTilt) > 0.01) {
                 const newTilt = THREE.MathUtils.lerp(currentTilt, desiredTilt, 0.02);
                 state.controls.minPolarAngle = Math.max(0.05, newTilt - 0.2); 
-                state.controls.maxPolarAngle = Math.min(1.4, newTilt + 0.2);
+                state.controls.maxPolarAngle = Math.min(tiltCap, newTilt + 0.2);
             }
         }
 
