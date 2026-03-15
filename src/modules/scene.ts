@@ -56,16 +56,29 @@ export async function initScene(): Promise<void> {
     const controls = new OrbitControls(state.camera, state.renderer.domElement);
     state.controls = controls;
     controls.enableDamping = true;
-    controls.dampingFactor = 0.1;
+    controls.dampingFactor = 0.1; 
+    controls.rotateSpeed = 1.0; 
+    controls.zoomSpeed = 1.2;
     controls.minDistance = 100;
     controls.maxDistance = 1800000;
+    
+    // --- CONFIGURATION TACTILE PRO (v4.5.39) ---
+    controls.screenSpacePanning = false; // Important : garde le panoramique parallèle au sol
+    controls.enableRotate = true;
+    
+    // On sépare strictement les gestes :
+    // 1 doigt = Déplacement (PAN)
+    // 2 doigts = Zoom (DOLLY) + Rotation (ROTATE)
+    controls.touches = { 
+        ONE: THREE.TOUCH.PAN, 
+        TWO: THREE.TOUCH.DOLLY_ROTATE 
+    };
+
     (controls as any)._isMoving = false;
     controls.addEventListener('start', () => { (controls as any)._isMoving = true; });
     controls.addEventListener('end', () => { (controls as any)._isMoving = false; });
 
-    controls.screenSpacePanning = false;
     controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
-    controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
 
     const updateUIZoom = (zoom: number) => {
         state.ZOOM = zoom;
@@ -186,7 +199,41 @@ export async function initScene(): Promise<void> {
         
         updateCompassAnimation();
 
-        const needsUpdate = state.controls.update() || state.isAnimating || hasWeather || isCompassAnimating() || tilesFading || needsInitialRender > 0;
+        // --- GESTION DU TILT ULTRA-STABLE (v4.5.37) ---
+        // Exécuté AVANT controls.update() pour garantir que l'angle est respecté
+        const interacting = (state.controls as any)._isMoving;
+        const currentTilt = state.controls.getPolarAngle();
+        const distToTarget = state.camera.position.distanceTo(state.controls.target);
+        
+        if (interacting) {
+            // VERROUILLAGE PENDANT L'INTERACTION
+            // Garantit que le Twist (rotation 2 doigts) se fait sans aucune variation d'altitude.
+            state.controls.minPolarAngle = currentTilt;
+            state.controls.maxPolarAngle = currentTilt;
+        } else {
+            // AUTO-TILT FLUIDE (ZOOM-BASED)
+            const hFactor = THREE.MathUtils.clamp((distToTarget - 2000) / 100000, 0, 1);
+            let desiredTilt = THREE.MathUtils.lerp(1.2, 0.05, Math.pow(hFactor, 0.4));
+            
+            // Sécurité de plafond selon le zoom
+            if (state.ZOOM <= 8) desiredTilt = 0.05; 
+            else if (state.ZOOM <= 11) desiredTilt = Math.min(desiredTilt, 0.3);
+            else if (state.ZOOM <= 13) desiredTilt = Math.min(desiredTilt, 0.7); 
+            else if (state.ZOOM === 14) desiredTilt = Math.min(desiredTilt, 0.9);
+            else if (state.ZOOM >= 15) desiredTilt = Math.min(desiredTilt, 1.2);
+
+            // Lerp fluide vers l'angle idéal
+            if (Math.abs(currentTilt - desiredTilt) > 0.001) {
+                const newTilt = THREE.MathUtils.lerp(currentTilt, desiredTilt, 0.05);
+                state.controls.minPolarAngle = newTilt;
+                state.controls.maxPolarAngle = newTilt;
+            } else {
+                state.controls.minPolarAngle = desiredTilt;
+                state.controls.maxPolarAngle = desiredTilt;
+            }
+        }
+
+        const needsUpdate = state.controls.update() || state.isSunAnimating || state.isInteractingWithUI || hasWeather || isCompassAnimating() || tilesFading || needsInitialRender > 0;
 
         if (needsUpdate) {
             state.stats?.begin();
@@ -195,28 +242,7 @@ export async function initScene(): Promise<void> {
             
             updateWeatherSystem(delta, state.camera.position);
 
-            const dist = state.camera.position.distanceTo(state.controls.target);
-            const hFactor = THREE.MathUtils.clamp((dist - 2000) / 200000, 0, 1);
-            
-            // Parabole de Tilt
-            let hardMaxTilt = THREE.MathUtils.lerp(1.2, 0.05, Math.pow(hFactor, 0.5));
-            if (state.ZOOM <= 8) hardMaxTilt = 0.05; 
-            else if (state.ZOOM <= 11) hardMaxTilt = Math.min(hardMaxTilt, 0.4);
-            else if (state.ZOOM <= 13) hardMaxTilt = Math.min(hardMaxTilt, 0.8); 
-            else if (state.ZOOM === 14) hardMaxTilt = Math.min(hardMaxTilt, 0.9);
-            else if (state.ZOOM === 15) hardMaxTilt = Math.min(hardMaxTilt, 0.8); 
-            else if (state.ZOOM === 16) hardMaxTilt = Math.min(hardMaxTilt, 0.7); 
-            else if (state.ZOOM >= 17) hardMaxTilt = Math.min(hardMaxTilt, 0.65);
-
-            const targetTilt = THREE.MathUtils.lerp(1.1, 0.05, Math.pow(hFactor, 0.6));
-            const currentTilt = state.controls.getPolarAngle();
-            if (Math.abs(currentTilt - targetTilt) > 0.01) {
-                state.controls.maxPolarAngle = THREE.MathUtils.lerp(currentTilt, hardMaxTilt, 0.05);
-            } else {
-                state.controls.maxPolarAngle = hardMaxTilt;
-            }
-
-            if (state.isAnimating) {
+            if (state.isSunAnimating) {
                 const slider = document.getElementById('time-slider') as HTMLInputElement;
                 if (slider) {
                     let mins = (parseInt(slider.value) + state.animationSpeed) % 1440;

@@ -107,7 +107,7 @@ export interface State {
     // 🌦️ MÉTÉO & ÉPHÉMÉRIDES
     // ==========================================
     simDate: Date;
-    isAnimating: boolean;
+    isSunAnimating: boolean;
     animationSpeed: number;
     lastWeatherLat: number;
     lastWeatherLon: number;
@@ -147,6 +147,7 @@ export interface State {
     networkRequests: number;
     cacheHits: number;
     uiVisible: boolean;
+    isInteractingWithUI: boolean;
     lastUIInteraction: number;
 }
 
@@ -169,7 +170,7 @@ export const state: State = {
     stats: null, vramPanel: null,
 
     // --- Météo ---
-    simDate: new Date(), isAnimating: false, animationSpeed: 1.0,
+    simDate: new Date(), isSunAnimating: false, animationSpeed: 1.0,
     lastWeatherLat: 0, lastWeatherLon: 0, currentWeather: 'clear', weatherIntensity: 0,
     WEATHER_DENSITY: PRESETS.balanced.WEATHER_DENSITY, WEATHER_SPEED: PRESETS.balanced.WEATHER_SPEED,
     weatherData: null, ephemeris: null,
@@ -179,5 +180,5 @@ export const state: State = {
     userLocation: null, userHeading: null, isFollowingUser: false, userMarker: null,
 
     // --- Système ---
-    networkRequests: 0, cacheHits: 0, uiVisible: true, lastUIInteraction: Date.now()
+    networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, lastUIInteraction: Date.now()
 };

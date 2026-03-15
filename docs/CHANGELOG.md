@@ -12,6 +12,10 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Correctif Ombres :** recalibrage du frustum d'ombre (50km) pour une projection fidèle des sommets sur les vallées.
 - **UI Météo :** Intégration du Dashboard expert avec Isotherme 0°C, UV et prévisions horaires sur 6h.
 
+## [4.5.37] - 2026-03-15
+### ✨ Nouveautés & UX
+- **Refonte Interaction Mobile (Style Google Earth)** : La rotation à deux doigts (Twist) est désormais d'une stabilité absolue. Le système "d'Auto-Tilt" est intelligemment suspendu pendant que l'utilisateur touche l'écran, empêchant la caméra de monter ou descendre inopinément. L'inclinaison s'ajuste ensuite de manière fluide dès que les doigts sont relâchés.
+
 ## [4.5.36] - 2026-03-14
 ### ✨ Nouveautés
 - **Suivi GPS Directionnel** : Refonte totale du mode suivi. Le marqueur utilisateur affiche désormais un cône de vue (sector) indiquant la direction du regard.

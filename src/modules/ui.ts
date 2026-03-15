@@ -148,8 +148,8 @@ export function initUI(): void {
         }
 
         if (id === 'play-btn') {
-            state.isAnimating = !state.isAnimating;
-            target.textContent = state.isAnimating ? '⏸' : '▶';
+            state.isSunAnimating = !state.isSunAnimating;
+            target.textContent = state.isSunAnimating ? '⏸' : '▶';
             return;
         }
 
@@ -169,11 +169,14 @@ export function initUI(): void {
     });
 
     const hookInput = (id: string, callback: (val: any) => void) => {
-        document.getElementById(id)?.addEventListener('input', (e) => {
-            state.isAnimating = true; // On force le rendu pendant l'interaction
+        const el = document.getElementById(id) as HTMLInputElement;
+        if (!el) return;
+        el.addEventListener('input', (e) => {
+            state.isInteractingWithUI = true;
             callback((e.target as HTMLInputElement).value);
-            // On relâche après un court délai pour laisser la boucle de rendu faire son travail
-            setTimeout(() => { state.isAnimating = false; }, 500);
+        });
+        el.addEventListener('change', () => {
+            state.isInteractingWithUI = false;
         });
     };
     const hookChange = (id: string, callback: (val: boolean) => void) => {
