@@ -58,9 +58,14 @@ export function createForestForTile(tile: any): THREE.InstancedMesh | null {
     // Cache pour éviter les recalculs dans la boucle
     const exaggeration = state.RELIEF_EXAGGERATION;
 
-    for (let py = 0; py < scanRes; py++) {
+    // --- OPTIMISATION SCAN ADAPTATIF (v4.5.45) ---
+    // On réduit le nombre d'itérations selon la puissance de l'appareil
+    const step = (state.PERFORMANCE_PRESET === 'ultra') ? 1 : ((state.PERFORMANCE_PRESET === 'performance') ? 2 : 4);
+    const densityBoost = (step === 4) ? 1.5 : 1.0; // On agrandit un peu les arbres pour compenser visuellement
+
+    for (let py = 0; py < scanRes; py += step) {
         const rowOffset = py * scanRes;
-        for (let px = 0; px < scanRes; px++) {
+        for (let px = 0; px < scanRes; px += step) {
             if (activeTrees >= maxTrees) break;
 
             const i = (rowOffset + px) * 4;
@@ -76,14 +81,14 @@ export function createForestForTile(tile: any): THREE.InstancedMesh | null {
             }
 
             if (isForest) {
-                const lx = ((px / scanRes) - 0.5) * size + (Math.random() - 0.5) * (size / scanRes);
-                const lz = ((py / scanRes) - 0.5) * size + (Math.random() - 0.5) * (size / scanRes);
+                const lx = ((px / scanRes) - 0.5) * size + (Math.random() - 0.5) * (size / scanRes) * step;
+                const lz = ((py / scanRes) - 0.5) * size + (Math.random() - 0.5) * (size / scanRes) * step;
 
                 const h = getSimpleAltitude(tile, lx, lz, exaggeration);
                 if (h > 2450 * exaggeration || h < 2) continue;
 
                 dummy.position.set(lx, h, lz);
-                const scale = 0.3 + Math.random() * 0.7; 
+                const scale = (0.3 + Math.random() * 0.7) * densityBoost; 
                 dummy.scale.set(scale, scale * (0.8 + Math.random() * 0.5), scale);
                 dummy.rotation.y = Math.random() * Math.PI;
                 dummy.updateMatrix();

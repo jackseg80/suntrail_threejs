@@ -8,6 +8,9 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [x] **Sécurité 2D** : Blocage intelligent des relevés en mode plan plat.
 - [x] **Météo Avancée** : Isotherme 0°C et prévisions 6h.
 
+## ✅ Terminé (v4.5.45)
+- [x] **Végétation Ultra-Light** : Scan adaptatif des forêts divisant par 16 la charge CPU en mode Balanced.
+
 ## ✅ Terminé (v4.5.44)
 - [x] **Chargement Adaptatif** : Le moteur ajuste le batching et le cache selon la puissance de l'appareil.
 - [x] **Zéro Saccade** : Segmentation drastique des tâches CPU lors des déplacements.

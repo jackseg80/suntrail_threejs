@@ -12,6 +12,10 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Correctif Ombres :** recalibrage du frustum d'ombre (50km) pour une projection fidèle des sommets sur les vallées.
 - **UI Météo :** Intégration du Dashboard expert avec Isotherme 0°C, UV et prévisions horaires sur 6h.
 
+## [4.5.45] - 2026-03-15
+### 🚀 Optimisation CPU
+- **Végétation Ultra-Light** : Refonte de l'algorithme de plantation des forêts. Le scan de texture est désormais adaptatif (pas de 1, 2 ou 4 pixels selon le preset), divisant par 16 la charge CPU sur les profils Standard (Balanced) sans perte de densité visuelle grâce à un boost d'échelle des arbres.
+
 ## [4.5.44] - 2026-03-15
 ### 🚀 Optimisation Fluidité
 - **Chargement Adaptatif** : Le moteur de tuiles ajuste désormais le nombre de chargements simultanés et la taille du cache mémoire en fonction du profil de performance (Eco, Balanced, Ultra).
