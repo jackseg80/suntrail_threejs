@@ -57,18 +57,19 @@ export async function initScene(): Promise<void> {
     state.controls = controls;
     controls.enableDamping = true;
     controls.dampingFactor = 0.1; 
-    controls.rotateSpeed = 1.0; 
+    controls.rotateSpeed = 1.2; // Plus réactif pour le geste de rotation
     controls.zoomSpeed = 1.2;
+    controls.panSpeed = 0.8;   // Un peu plus lent pour stabiliser la rotation
     controls.minDistance = 100;
     controls.maxDistance = 1800000;
     
-    // --- CONFIGURATION TACTILE PRO (v4.5.39) ---
-    controls.screenSpacePanning = false; // Important : garde le panoramique parallèle au sol
+    // --- CONFIGURATION GOOGLE EARTH STYLE (v4.5.40) ---
+    controls.screenSpacePanning = false; 
     controls.enableRotate = true;
     
-    // On sépare strictement les gestes :
-    // 1 doigt = Déplacement (PAN)
-    // 2 doigts = Zoom (DOLLY) + Rotation (ROTATE)
+    // Support complet des gestes Google Earth :
+    // 1 doigt = PAN
+    // 2 doigts = ZOOM (Dolly) + ROTATION (Rotate) + TILT (via OrbitControls interne)
     controls.touches = { 
         ONE: THREE.TOUCH.PAN, 
         TWO: THREE.TOUCH.DOLLY_ROTATE 
@@ -199,37 +200,33 @@ export async function initScene(): Promise<void> {
         
         updateCompassAnimation();
 
-        // --- GESTION DU TILT ULTRA-STABLE (v4.5.37) ---
-        // Exécuté AVANT controls.update() pour garantir que l'angle est respecté
+        // --- GESTION DU TILT GOOGLE EARTH STYLE (v4.5.40) ---
         const interacting = (state.controls as any)._isMoving;
         const currentTilt = state.controls.getPolarAngle();
         const distToTarget = state.camera.position.distanceTo(state.controls.target);
         
         if (interacting) {
-            // VERROUILLAGE PENDANT L'INTERACTION
-            // Garantit que le Twist (rotation 2 doigts) se fait sans aucune variation d'altitude.
-            state.controls.minPolarAngle = currentTilt;
-            state.controls.maxPolarAngle = currentTilt;
+            // PENDANT L'INTERACTION : LIBERTÉ TOTALE
+            // On réinitialise les limites pour permettre à l'utilisateur d'incliner manuellement (geste 2 doigts verticaux)
+            state.controls.minPolarAngle = 0.05; 
+            state.controls.maxPolarAngle = 1.5; 
         } else {
-            // AUTO-TILT FLUIDE (ZOOM-BASED)
+            // HORS INTERACTION : RECENTRAGE AUTOMATIQUE (Auto-Tilt)
+            // L'inclinaison revient doucement vers l'angle idéal calculé par le moteur
             const hFactor = THREE.MathUtils.clamp((distToTarget - 2000) / 100000, 0, 1);
             let desiredTilt = THREE.MathUtils.lerp(1.2, 0.05, Math.pow(hFactor, 0.4));
             
-            // Sécurité de plafond selon le zoom
             if (state.ZOOM <= 8) desiredTilt = 0.05; 
             else if (state.ZOOM <= 11) desiredTilt = Math.min(desiredTilt, 0.3);
             else if (state.ZOOM <= 13) desiredTilt = Math.min(desiredTilt, 0.7); 
             else if (state.ZOOM === 14) desiredTilt = Math.min(desiredTilt, 0.9);
             else if (state.ZOOM >= 15) desiredTilt = Math.min(desiredTilt, 1.2);
 
-            // Lerp fluide vers l'angle idéal
+            // Interpolation fluide
             if (Math.abs(currentTilt - desiredTilt) > 0.001) {
                 const newTilt = THREE.MathUtils.lerp(currentTilt, desiredTilt, 0.05);
                 state.controls.minPolarAngle = newTilt;
                 state.controls.maxPolarAngle = newTilt;
-            } else {
-                state.controls.minPolarAngle = desiredTilt;
-                state.controls.maxPolarAngle = desiredTilt;
             }
         }
 

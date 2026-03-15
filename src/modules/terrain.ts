@@ -492,38 +492,40 @@ export class Tile {
         this.opacity = 0; 
         this.isFadingIn = true;
 
-        // --- CHARGEMENT SÉQUENCÉ DES DÉTAILS (v4.3.27) ---
-        // On étale la charge selon LOAD_DELAY_FACTOR (0.2 pour Ultra, 2.0 pour Eco)
+        // --- CHARGEMENT SÉQUENCÉ DES DÉTAILS (v4.5.41) ---
+        // On n'affiche les détails (Bâtiments, Arbres, POI) qu'au Zoom 15+
         const delay = (ms: number) => ms * state.LOAD_DELAY_FACTOR;
         
-        // 1. POIs (Rapide)
-        if (state.SHOW_SIGNPOSTS && this.zoom >= 14) {
-            setTimeout(() => {
-                if (this.status === 'disposed') return;
-                loadPOIsForTile(this);
-            }, delay(50));
-        }
+        if (this.zoom >= 15) {
+            // 1. POIs (Rapide)
+            if (state.SHOW_SIGNPOSTS) {
+                setTimeout(() => {
+                    if (this.status === 'disposed') return;
+                    loadPOIsForTile(this);
+                }, delay(100));
+            }
 
-        // 2. Bâtiments (Lourd)
-        if (state.SHOW_BUILDINGS && this.zoom >= 14) {
-            setTimeout(() => {
-                if (this.status === 'disposed') return;
-                loadBuildingsForTile(this);
-            }, delay(150));
-        }
+            // 2. Bâtiments (Lourd)
+            if (state.SHOW_BUILDINGS) {
+                setTimeout(() => {
+                    if (this.status === 'disposed') return;
+                    loadBuildingsForTile(this);
+                }, delay(300));
+            }
 
-        // 3. Végétation (Très Lourd)
-        if (state.SHOW_VEGETATION) {
-            setTimeout(() => {
-                if ((this.status as string) === 'disposed') return;
-                const forest = createForestForTile(this);
-                if (forest && state.scene && (this.status as string) !== 'disposed') {
-                    if (this.forestMesh) state.scene.remove(this.forestMesh); // Nettoyage ancien (v4.3.28)
-                    this.forestMesh = forest;
-                    this.forestMesh.position.set(this.worldX, 0, this.worldZ);
-                    state.scene.add(this.forestMesh);
-                }
-            }, delay(300));
+            // 3. Végétation (Très Lourd)
+            if (state.SHOW_VEGETATION) {
+                setTimeout(() => {
+                    if ((this.status as string) === 'disposed') return;
+                    const forest = createForestForTile(this);
+                    if (forest && state.scene && (this.status as string) !== 'disposed') {
+                        if (this.forestMesh) state.scene.remove(this.forestMesh);
+                        this.forestMesh = forest;
+                        this.forestMesh.position.set(this.worldX, 0, this.worldZ);
+                        state.scene.add(this.forestMesh);
+                    }
+                }, delay(600));
+            }
         }
 
         if (oldMesh) {

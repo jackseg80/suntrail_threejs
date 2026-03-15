@@ -15,6 +15,7 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 ## [4.5.37] - 2026-03-15
 ### ✨ Nouveautés & UX
 - **Refonte Interaction Mobile (Style Google Earth)** : La rotation à deux doigts (Twist) est désormais d'une stabilité absolue. Le système "d'Auto-Tilt" est intelligemment suspendu pendant que l'utilisateur touche l'écran, empêchant la caméra de monter ou descendre inopinément. L'inclinaison s'ajuste ensuite de manière fluide dès que les doigts sont relâchés.
+- **Migration MapTiler Buildings** : Basculement complet du moteur de bâtiments 3D d'Overpass API vers MapTiler Planet API. Résout les erreurs 504/429 d'OpenStreetMap et offre un affichage instantané et stable des villes mondiales dès le Zoom 15.
 
 ## [4.5.36] - 2026-03-14
 ### ✨ Nouveautés
