@@ -432,20 +432,37 @@ function initGeocoding() {
         geoInput.value = '';
 
         if (isPeak && state.originTile) {
-            // VOL CINÉMATIQUE POUR LES SOMMETS (v4.6)
-            const targetPos = lngLatToWorld(lon, lat, state.originTile);
-            flyTo(targetPos.x, targetPos.z, 14);
+            // VOL CINÉMATIQUE POUR LES SOMMETS (v4.6.2 - FIXED)
+            // 1. Reset total du monde sur le nouveau point (Méthode la plus fiable)
+            state.TARGET_LAT = lat;
+            state.TARGET_LON = lon;
+            autoSelectMapSource(lat, lon);
+            
+            state.ZOOM = 14; 
+            state.originTile = lngLatToTile(lon, lat, 14);
+            
+            if (state.controls && state.camera) { 
+                // On pré-positionne la caméra en hauteur pour le "décollage" du vol
+                state.controls.target.set(0, 0, 0); 
+                state.camera.position.set(0, 15000, 20000); 
+                state.controls.update(); 
+            }
+            
+            // 2. On recharge le terrain immédiatement
+            refreshTerrain(); 
+
+            // 3. On lance le vol cinématique LOCAL (vers le point 0,0 qui est notre sommet)
+            // Cela donne l'impression d'une arrivée fluide après un chargement rapide
+            setTimeout(() => {
+                flyTo(0, 0, 14, peakEle);
+            }, 100);
             
             // Affichage de la Peak Card
             const cp = document.getElementById('coords-panel')!;
             cp.style.display = 'block';
             const cll = document.getElementById('click-latlon'); if (cll) cll.textContent = `🏔️ ${peakName}`;
             const cal = document.getElementById('click-alt'); if (cal) cal.textContent = `${Math.round(peakEle)} m`;
-            lastClickedCoords = { x: targetPos.x, z: targetPos.z, alt: peakEle };
-            
-            // Mise à jour silencieuse pour le moteur
-            state.TARGET_LAT = lat;
-            state.TARGET_LON = lon;
+            lastClickedCoords = { x: 0, z: 0, alt: peakEle };
             
         } else {
             // RESET COMPLET POUR LES RECHERCHES DISTANTES

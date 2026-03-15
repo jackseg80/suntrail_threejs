@@ -4,6 +4,12 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.6.5] - 2026-03-15
+### 🛠️ Correctifs Recherche & Vol Cinématique
+- **Précision du Vol** : Correction d'un bug de destination lors de la recherche de sommets (synchronisation de l'Origin Shift avant le vol).
+- **Altitude Panoramique** : Ajustement de l'altitude d'arrivée à 12 000m au-dessus des pics pour garantir une vue stable en LOD 14 et éviter les collisions avec le relief.
+- **Sécurité Vol** : Implémentation d'une vérification d'altitude en temps réel pendant le vol pour empêcher la caméra de traverser les montagnes.
+
 ## [4.6.0] - 2026-03-15
 ### 🏔️ Moteur de Recherche de Sommets
 - **Indexation Locale (Overpass)** : L'application télécharge et met en cache automatiquement (7 jours) tous les sommets de plus de 1000m d'altitude dans un rayon de 50km autour du point de départ.
