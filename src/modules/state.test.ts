@@ -38,12 +38,12 @@ describe('state.ts', () => {
         it('should have an eco preset with disabled details', () => {
             expect(PRESETS.eco.SHOW_VEGETATION).toBe(false);
             expect(PRESETS.eco.SHOW_BUILDINGS).toBe(false);
-            expect(PRESETS.eco.RANGE).toBe(2);
+            expect(PRESETS.eco.RANGE).toBe(6);
         });
 
-        it('should have a balanced preset with 96 resolution', () => {
-            expect(PRESETS.balanced.RESOLUTION).toBe(96);
-            expect(PRESETS.balanced.SHADOW_RES).toBe(512);
+        it('should have a balanced preset with 64 resolution', () => {
+            expect(PRESETS.balanced.RESOLUTION).toBe(64);
+            expect(PRESETS.balanced.SHADOW_RES).toBe(256);
         });
 
         it('should have a performance preset with 160 resolution', () => {
