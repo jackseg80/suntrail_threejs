@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { state } from './state';
 import { getAltitudeAt } from './analysis';
 import { fetchOverpassData } from './utils';
@@ -8,7 +9,6 @@ const buildingCache = new Map<string, any>();
 export async function loadBuildingsForTile(tile: any) {
     if (!state.SHOW_BUILDINGS || tile.zoom < 14) return;
     
-    // On ne charge QUE si on ne bouge pas (évite de saturer l'API en glissant)
     if (state.controls && (state.controls as any)._isMoving) return;
 
     const cacheKey = `${tile.zoom}_${tile.tx}_${tile.ty}`;
@@ -32,7 +32,6 @@ export async function loadBuildingsForTile(tile: any) {
 function renderBuildings(tile: any, elements: any[]) {
     if (!elements || elements.length === 0 || !tile.mesh) return;
 
-    // Nettoyage si déjà présent
     if (tile.buildingMesh) {
         tile.mesh.remove(tile.buildingMesh);
         tile.buildingMesh = null;
@@ -47,7 +46,10 @@ function renderBuildings(tile: any, elements: any[]) {
         polygonOffsetUnits: 1
     });
 
-    const group = new THREE.Group();
+    // --- OPTIMISATION MASSIVE (v4.5.43) ---
+    // Au lieu de créer un Mesh par bâtiment (des centaines de Draw Calls),
+    // on collecte toutes les géométries et on les fusionne en UNE SEULE.
+    const geometries: THREE.BufferGeometry[] = [];
 
     elements.forEach(el => {
         if (el.type === 'way' && el.geometry) {
@@ -68,16 +70,21 @@ function renderBuildings(tile: any, elements: any[]) {
                 geometry.rotateX(-Math.PI / 2);
                 geometry.translate(0, baseAlt, 0);
                 
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
-                group.add(mesh);
+                geometries.push(geometry);
             } catch(e) {}
         }
     });
 
-    if (group.children.length > 0) {
-        tile.buildingMesh = group;
-        tile.mesh.add(group);
+    if (geometries.length > 0) {
+        // Fusion (Merge) de toutes les géométries en une seule
+        const mergedGeometry = BufferGeometryUtils.mergeGeometries(geometries);
+        if (mergedGeometry) {
+            const mergedMesh = new THREE.Mesh(mergedGeometry, material);
+            mergedMesh.castShadow = true;
+            mergedMesh.receiveShadow = true;
+            
+            tile.buildingMesh = mergedMesh;
+            tile.mesh.add(mergedMesh);
+        }
     }
 }

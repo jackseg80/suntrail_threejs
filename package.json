@@ -19,7 +19,8 @@
     "@capacitor/geolocation": "^8.1.0",
     "gpxparser": "^3.0.8",
     "suncalc": "^1.9.0",
-    "three": "^0.160.0"
+    "three": "^0.160.0",
+    "three-stdlib": "^2.36.1"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

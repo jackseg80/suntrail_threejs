@@ -260,7 +260,6 @@ export async function initScene(): Promise<void> {
             }
 
             // On ajuste dynamiquement la distance minimale pour ne pas "traverser" les montagnes en zoomant
-            const distToTarget = state.camera.position.distanceTo(state.controls.target);
             state.controls.minDistance = Math.max(100, groundH * 0.1); 
 
             if (state.scene.fog instanceof THREE.Fog) {
