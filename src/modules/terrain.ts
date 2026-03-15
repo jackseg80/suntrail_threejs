@@ -133,6 +133,13 @@ async function fetchWithCache(url: string, usePersistentCache: boolean = false):
                 return await cached.blob(); 
             }
         }
+
+        // --- MODE OFFLINE STRICT (v4.7.1) ---
+        if (state.IS_OFFLINE) {
+            clearTimeout(timeoutId);
+            return null;
+        }
+
         const r = await fetch(url, { mode: 'cors', signal: controller.signal });
         clearTimeout(timeoutId);
         if (r.ok) {
@@ -149,6 +156,56 @@ async function fetchWithCache(url: string, usePersistentCache: boolean = false):
         clearTimeout(timeoutId);
         return null; 
     }
+}
+
+// --- TÉLÉCHARGEMENT DE ZONE OFFLINE (v4.7.2) ---
+export async function downloadOfflineZone(lat: number, lon: number, onProgress: (done: number, total: number) => void): Promise<void> {
+    const radiusKm = 6;
+    const zooms = [12, 13, 14, 15];
+    const latOffset = radiusKm / 111.0;
+    const lonOffset = radiusKm / (111.0 * Math.cos(lat * Math.PI / 180));
+    const bbox = { n: lat + latOffset, s: lat - latOffset, e: lon + lonOffset, w: lon - lonOffset };
+    const urls: string[] = [];
+    const inCH = isPositionInSwitzerland(lat, lon);
+
+    for (const z of zooms) {
+        const t1 = lngLatToTile(bbox.w, bbox.n, z);
+        const t2 = lngLatToTile(bbox.e, bbox.s, z);
+        for (let x = t1.x; x <= t2.x; x++) {
+            for (let y = t1.y; y <= t2.y; y++) {
+                let colorUrl = '';
+                switch(state.MAP_SOURCE) {
+                    case 'satellite': 
+                        colorUrl = inCH ? `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${z}/${x}/${y}.jpeg`
+                                        : `https://api.maptiler.com/maps/satellite/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
+                        break;
+                    case 'swisstopo': 
+                        colorUrl = inCH ? `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${z}/${x}/${y}.jpeg`
+                                        : `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
+                        break;
+                    default:
+                        colorUrl = `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
+                }
+                urls.push(colorUrl);
+                if (state.PERFORMANCE_PRESET !== 'eco') {
+                    urls.push(`https://api.maptiler.com/tiles/terrain-rgb-v2/${z}/${x}/${y}.png?key=${state.MK}`);
+                }
+            }
+        }
+        await new Promise(r => setTimeout(r, 10));
+    }
+
+    const total = urls.length;
+    let done = 0;
+    for (const url of urls) {
+        try { await fetchWithCache(url, true); } catch (e) {}
+        done++;
+        if (done % 5 === 0) { 
+            onProgress(done, total);
+            await new Promise(r => setTimeout(r, 20)); 
+        }
+    }
+    onProgress(total, total);
 }
 
 function updateStorageUI() {

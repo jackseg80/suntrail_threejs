@@ -166,6 +166,7 @@ export interface State {
     // ==========================================
     // 🖥️ INTERFACE & SYSTÈME
     // ==========================================
+    IS_OFFLINE: boolean;
     networkRequests: number;
     cacheHits: number;
     uiVisible: boolean;
@@ -212,5 +213,6 @@ export const state: State = {
     lastTrackingUpdate: 0,
 
     // --- Système ---
+    IS_OFFLINE: false,
     networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isProcessingTiles: false, lastUIInteraction: Date.now()
 };

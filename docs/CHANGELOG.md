@@ -4,7 +4,14 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
-## [4.6.5] - 2026-03-15
+## [4.7.3] - 2026-03-15
+### 📦 Gestion Offline & Nettoyage
+- **Indicateur Réseau** : Badge "📡 HORS-LIGNE" automatique basé sur l'état de la connexion.
+- **Téléchargement de Zone** : Scraper optimisé (rayon 6km) pour mettre en cache les tuiles topo/satellite sans figer l'interface.
+- **Refonte UI** : Nettoyage complet du module `ui.ts` et restauration de la timeline/altitude sur mobile.
+- **Zéro Horizon** : Suppression définitive de la couche d'horizon continental pour garantir une carte HD 100% propre.
+
+## [4.6.6] - 2026-03-15
 ### 🛠️ Correctifs Recherche & Vol Cinématique
 - **Précision du Vol** : Correction d'un bug de destination lors de la recherche de sommets (synchronisation de l'Origin Shift avant le vol).
 - **Altitude Panoramique** : Ajustement de l'altitude d'arrivée à 12 000m au-dessus des pics pour garantir une vue stable en LOD 14 et éviter les collisions avec le relief.

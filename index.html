@@ -11,7 +11,7 @@
 
 <div id="setup-screen">
     <div class="setup-card">
-        <div style="margin-bottom:8px; font-size:10px; color:var(--gold); font-weight:700; letter-spacing:3px; text-transform:uppercase;">Version 4.6.6</div>
+        <div style="margin-bottom:8px; font-size:10px; color:var(--gold); font-weight:700; letter-spacing:3px; text-transform:uppercase;">Version 4.7.3</div>
         <h1>⛰️ SunTrail 3D</h1>
         <p style="color:var(--t2);">Visualisation topographique haute précision, simulation solaire en temps réel & météo experte.</p>
         
@@ -40,6 +40,11 @@
 <div id="top-search-container" class="ui-element" style="display:none;">
     <input type="text" id="geo-input" placeholder="🔍 Rechercher un lieu ou sommet...">
     <div id="geo-results"></div>
+</div>
+
+<!-- INDICATEUR OFFLINE (v4.7) -->
+<div id="offline-indicator" class="ui-element" style="display:none; position:fixed; top:calc(20px + env(safe-area-inset-top, 0px)); right:calc(20px + env(safe-area-inset-right, 0px)); background:rgba(239, 68, 68, 0.8); border:1px solid rgba(255, 255, 255, 0.2); padding:6px 10px; border-radius:12px; font-size:10px; font-weight:700; color:white; z-index:2000; box-shadow:0 5px 15px rgba(0,0,0,0.3); backdrop-filter:var(--glass);">
+    📡 HORS-LIGNE
 </div>
 
 <!-- BOUTON CALQUES -->
@@ -212,7 +217,10 @@
                 <button type="submit" id="update-key-btn" style="background:var(--accent); border:none; color:white; border-radius:8px; padding:0 12px; cursor:pointer; font-size:12px;">OK</button>
             </form>
         </div>
-        <button id="clear-cache-btn" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ef4444; background:rgba(239, 68, 68, 0.1); color:#ef4444; cursor:pointer; font-weight:700; font-size:12px; margin-top:15px;">🗑️ Vider le cache local</button>
+        <button id="download-zone-btn" style="width:100%; padding:10px; border-radius:10px; border:1px solid var(--accent); background:rgba(59, 130, 246, 0.1); color:white; cursor:pointer; font-weight:700; font-size:12px; margin-top:15px; display:flex; justify-content:center; align-items:center; gap:8px;">
+            <span>⬇️ Télécharger Zone (10km)</span>
+        </button>
+        <button id="clear-cache-btn" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ef4444; background:rgba(239, 68, 68, 0.1); color:#ef4444; cursor:pointer; font-weight:700; font-size:12px; margin-top:10px;">🗑️ Vider le cache local</button>
     </div>
 
     <div class="control-group" style="margin-top:25px; border-top:1px solid var(--border); padding-top:20px;">

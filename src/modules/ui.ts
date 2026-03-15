@@ -6,14 +6,14 @@ import { state } from './state';
 import { updateSunPosition } from './sun';
 import { initScene, flyTo } from './scene';
 import { resetToNorth } from './compass';
-import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain, autoSelectMapSource, deleteTerrainCache } from './terrain';
+import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain, autoSelectMapSource, deleteTerrainCache, downloadOfflineZone } from './terrain';
 import { lngLatToTile, worldToLngLat } from './geo';
 import { showToast, fetchGeocoding } from './utils';
 import { applyPreset, detectBestPreset, getGpuInfo } from './performance';
 import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';
 import { updateElevationProfile } from './profile';
 import { startLocationTracking } from './location';
-import { fetchWeather } from './weather';
+import { fetchWeather, updateWeatherUIIndicator } from './weather';
 import { fetchLocalPeaks } from './peaks';
 
 let lastClickedCoords = { x: 0, z: 0, alt: 0 };
@@ -22,7 +22,19 @@ export function initUI(): void {
     const bestPreset = detectBestPreset();
     applyPreset(bestPreset);
 
-    // --- DIAGNOSTIC MATÉRIEL (v4.5.35) ---
+    // --- GESTION RÉSEAU & OFFLINE (v4.7.3) ---
+    const offlineIndicator = document.getElementById('offline-indicator');
+    const updateNetworkStatus = () => {
+        state.IS_OFFLINE = !navigator.onLine;
+        if (offlineIndicator) {
+            offlineIndicator.style.display = state.IS_OFFLINE ? 'block' : 'none';
+        }
+    };
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+    updateNetworkStatus();
+
+    // --- DIAGNOSTIC MATÉRIEL ---
     const techInfo = document.getElementById('tech-info');
     if (techInfo) {
         techInfo.style.display = 'block';
@@ -31,44 +43,29 @@ export function initUI(): void {
         if (gpuEl) {
             const vendorPrefix = gpu.vendor.includes('NVIDIA') ? 'NVIDIA ' : (gpu.vendor.includes('Qualcomm') ? 'Qualcomm ' : '');
             let cleanRenderer = gpu.renderer;
-            
-            // Nettoyage agressif pour ne garder que le nom commercial (RTX, Adreno, etc.)
-            // On coupe avant les parenthèses, Direct3D, vs_5_0, etc.
             const noise = [' (', ' Direct3D', ' vs_', ' ps_', ' OpenGL'];
             noise.forEach(n => {
                 const idx = cleanRenderer.indexOf(n);
                 if (idx !== -1) cleanRenderer = cleanRenderer.substring(0, idx);
             });
-
-            // Suppression des doublons de vendor (ex: NVIDIA NVIDIA)
-            if (vendorPrefix && cleanRenderer.startsWith(vendorPrefix.trim())) {
-                gpuEl.textContent = `GPU: ${cleanRenderer}`;
-            } else {
-                gpuEl.textContent = `GPU: ${vendorPrefix}${cleanRenderer}`;
-            }
+            gpuEl.textContent = `GPU: ${vendorPrefix}${cleanRenderer}`;
         }
-        
         const cpuEl = document.getElementById('diag-cpu');
         if (cpuEl) cpuEl.textContent = `CPU: ${navigator.hardwareConcurrency || '--'} logical cores`;
-        
         const presetEl = document.getElementById('diag-preset');
         if (presetEl) presetEl.textContent = `PROFIL AUTO: ${bestPreset.toUpperCase()}`;
     }
 
-    let s1 = '';
-    try { s1 = localStorage.getItem('maptiler_key_3d') || ''; } catch (e) {}
     const k1 = document.getElementById('k1') as HTMLInputElement;
-    if (s1 && k1) k1.value = s1;
+    if (k1) k1.value = localStorage.getItem('maptiler_key_3d') || '';
 
-    // --- DÉLÉGATION GLOBALE DES CLICS (INCASSABLE) ---
+    // --- DÉLÉGATION GLOBALE DES CLICS ---
     document.addEventListener('click', async (e) => {
         const target = e.target as HTMLElement;
         const id = target.id;
 
-        // BOUSSOLE (v4.5.24 FIX) - On vérifie le canvas et le conteneur
         if (id === 'compass-canvas' || target.closest('#compass-canvas')) {
-            resetToNorth();
-            return;
+            resetToNorth(); return;
         }
 
         if (id === 'bgo') go();
@@ -96,8 +93,7 @@ export function initUI(): void {
                 const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true });
                 const { latitude, longitude } = pos.coords;
                 state.TARGET_LAT = latitude; state.TARGET_LON = longitude;
-                state.ZOOM = 13;
-                state.originTile = lngLatToTile(longitude, latitude, 13);
+                state.ZOOM = 13; state.originTile = lngLatToTile(longitude, latitude, 13);
                 resetTerrain();
                 if (state.controls && state.camera) {
                     state.controls.target.set(0, 0, 0);
@@ -115,14 +111,12 @@ export function initUI(): void {
             state.isFollowingUser = !state.isFollowingUser;
             followBtn.classList.toggle('active', state.isFollowingUser);
             if (state.isFollowingUser) { 
-                // Initialiser la position de lissage sur la cible actuelle pour éviter un saut
                 if (state.controls) state.smoothUserPos.copy(state.controls.target);
-                state.lastTrackingUpdate = Date.now(); // Déclenche la transition rapide
+                state.lastTrackingUpdate = Date.now();
                 await startLocationTracking(); 
             }
         }
 
-        // MÉTÉO
         if (id === 'zoom-indicator' || target.closest('#zoom-indicator') || id === 'weather-clickable') {
             openWeatherPanel();
         }
@@ -139,19 +133,14 @@ export function initUI(): void {
             state.currentWeather = wBtn.dataset.weather as any;
             document.querySelectorAll('.weather-btn').forEach(b => b.classList.remove('active'));
             wBtn.classList.add('active');
-            import('./weather').then(m => m.updateWeatherUIIndicator());
+            updateWeatherUIIndicator();
         }
 
-        // ANALYSE SOLAIRE
         if (id === 'probe-btn') {
             e.stopPropagation();
             runSolarProbe(lastClickedCoords.x, lastClickedCoords.z, lastClickedCoords.alt);
         }
         if (id === 'close-probe') document.getElementById('probe-result')!.style.display = 'none';
-        if (id === 'copy-report-btn') {
-            const report = `SunTrail Report - Lat: ${state.TARGET_LAT.toFixed(4)} Lon: ${state.TARGET_LON.toFixed(4)}`;
-            navigator.clipboard.writeText(report); showToast("Copié !");
-        }
 
         if (id === 'play-btn') {
             state.isSunAnimating = !state.isSunAnimating;
@@ -164,8 +153,7 @@ export function initUI(): void {
 
         const pBtn = target.closest('.preset-btn') as HTMLElement;
         if (pBtn) {
-            const preset = pBtn.dataset.preset as any;
-            applyPreset(preset);
+            applyPreset(pBtn.dataset.preset as any);
             refreshTerrain();
         }
 
@@ -174,16 +162,12 @@ export function initUI(): void {
         }
     });
 
+    // --- HOOKS SLIDERS ---
     const hookInput = (id: string, callback: (val: any) => void) => {
         const el = document.getElementById(id) as HTMLInputElement;
         if (!el) return;
-        el.addEventListener('input', (e) => {
-            state.isInteractingWithUI = true;
-            callback((e.target as HTMLInputElement).value);
-        });
-        el.addEventListener('change', () => {
-            state.isInteractingWithUI = false;
-        });
+        el.addEventListener('input', (e) => { state.isInteractingWithUI = true; callback((e.target as HTMLInputElement).value); });
+        el.addEventListener('change', () => { state.isInteractingWithUI = false; });
     };
     const hookChange = (id: string, callback: (val: boolean) => void) => {
         document.getElementById(id)?.addEventListener('change', (e) => callback((e.target as HTMLInputElement).checked));
@@ -198,9 +182,7 @@ export function initUI(): void {
     hookInput('veg-density-slider', (v) => { state.VEGETATION_DENSITY = parseInt(v); document.getElementById('veg-density-disp')!.textContent = v; refreshTerrain(); loadTerrain(); });
     hookInput('fog-slider', (v) => { 
         state.FOG_FAR = parseInt(v) * 1000; 
-        if (state.scene && state.scene.fog && state.scene.fog instanceof THREE.Fog) {
-            state.scene.fog.far = state.FOG_FAR;
-        }
+        if (state.scene?.fog instanceof THREE.Fog) state.scene.fog.far = state.FOG_FAR;
         applyPreset('custom');
     });
 
@@ -223,17 +205,32 @@ export function initUI(): void {
     hookChange('stats-toggle', (v) => { state.SHOW_STATS = v; if (state.stats) state.stats.dom.style.display = v ? 'block' : 'none'; });
     hookChange('debug-toggle', (v) => { state.SHOW_DEBUG = v; });
 
-    document.getElementById('load-speed-select')?.addEventListener('change', (e) => {
-        state.LOAD_DELAY_FACTOR = parseFloat((e.target as HTMLSelectElement).value);
-    });
+    document.getElementById('load-speed-select')?.addEventListener('change', (e) => { state.LOAD_DELAY_FACTOR = parseFloat((e.target as HTMLSelectElement).value); });
 
     document.getElementById('clear-cache-btn')?.addEventListener('click', async () => {
         if (confirm("Vider le cache local ?")) { await deleteTerrainCache(); refreshTerrain(); }
     });
 
+    document.getElementById('download-zone-btn')?.addEventListener('click', async () => {
+        const btn = document.getElementById('download-zone-btn') as HTMLButtonElement;
+        if (!btn || btn.disabled) return;
+        if (confirm("Télécharger la zone (rayon 6km) pour un usage hors-ligne ?")) {
+            btn.disabled = true; btn.innerHTML = `<span>⏳ Préparation...</span>`;
+            try {
+                await downloadOfflineZone(state.TARGET_LAT, state.TARGET_LON, (progress, total) => {
+                    const pct = Math.round((progress / total) * 100);
+                    btn.innerHTML = `<span>⏳ Téléchargement... ${pct}% (${progress}/${total})</span>`;
+                });
+                showToast("Zone téléchargée !");
+                btn.innerHTML = `<span>✅ Zone Hors-Ligne</span>`;
+                btn.style.borderColor = '#10b981';
+            } catch (e) { showToast("Erreur lors du téléchargement"); btn.innerHTML = `<span>❌ Échec</span>`; }
+            finally { setTimeout(() => { btn.disabled = false; btn.innerHTML = `<span>⬇️ Télécharger Zone (10km)</span>`; btn.style.borderColor = 'var(--accent)'; }, 5000); }
+        }
+    });
+
     document.getElementById('gpx-upload')?.addEventListener('change', (e) => {
-        const target = e.target as HTMLInputElement;
-        const file = target.files?.[0];
+        const file = (e.target as HTMLInputElement).files?.[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = (ev) => { if (typeof ev.target?.result === 'string') handleGPX(ev.target.result); };
@@ -271,11 +268,8 @@ function handleMapClick(e: MouseEvent) {
 function openWeatherPanel() {
     const wp = document.getElementById('weather-panel')!;
     if (!state.weatherData) return;
-    
     const getSet = (id: string, val: string) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    const titleEl = wp.querySelector('h3');
-    if (titleEl) titleEl.textContent = `☁️ ${state.weatherData.locationName || 'Bulletin Météo'}`;
-    
+    const titleEl = wp.querySelector('h3'); if (titleEl) titleEl.textContent = `☁️ ${state.weatherData.locationName || 'Bulletin Météo'}`;
     getSet('w-temp', `${state.weatherData.temp.toFixed(1)}°C`);
     getSet('w-apparent', `Ressenti ${state.weatherData.apparentTemp.toFixed(1)}°C`);
     getSet('w-wind', `${Math.round(state.weatherData.windSpeed)} km/h`);
@@ -283,14 +277,7 @@ function openWeatherPanel() {
     getSet('w-uv', (state.weatherData.uvIndex || 0).toFixed(1));
     getSet('w-hum', `${state.weatherData.humidity}%`);
     getSet('w-clouds', `${state.weatherData.cloudCover}%`);
-
-    const arrow = document.getElementById('w-wind-arrow');
-    if (arrow) arrow.style.transform = `rotate(${state.weatherData.windDir}deg)`;
-
-    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
-    const dirTxt = directions[Math.round(state.weatherData.windDir / 45) % 8];
-    getSet('w-wind-dir', dirTxt);
-
+    const arrow = document.getElementById('w-wind-arrow'); if (arrow) arrow.style.transform = `rotate(${state.weatherData.windDir}deg)`;
     const hCont = document.getElementById('w-hourly');
     if (hCont && state.weatherData.hourly) {
         hCont.innerHTML = state.weatherData.hourly.slice(0, 24).map(h => `
@@ -300,13 +287,6 @@ function openWeatherPanel() {
                 <div style="font-size:12px; font-weight:700;">${Math.round(h.temp)}°</div>
             </div>
         `).join('');
-
-        hCont.onwheel = (e) => {
-            if (e.deltaY !== 0) {
-                e.preventDefault();
-                hCont.scrollLeft += e.deltaY;
-            }
-        };
     }
     wp.style.display = 'block';
 }
@@ -314,65 +294,34 @@ function openWeatherPanel() {
 function openExpertWeatherPanel() {
     const ep = document.getElementById('expert-weather-panel')!;
     if (!state.weatherData) return;
-
     const getSet = (id: string, val: string) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    
     getSet('ex-location', state.weatherData.locationName || 'Station Expert');
     getSet('ex-coords', `${state.TARGET_LAT.toFixed(4)}, ${state.TARGET_LON.toFixed(4)}`);
-    
     getSet('ex-gusts', `${Math.round(state.weatherData.windGusts || 0)} km/h`);
     getSet('ex-vis', `${(state.weatherData.visibility || 0).toFixed(1)} km`);
     getSet('ex-precip', `${Math.round(state.weatherData.precProb || 0)} %`);
     getSet('ex-dew', `${(state.weatherData.dewPoint || 0).toFixed(1)}°C`);
     getSet('ex-freezing', `${Math.round(state.weatherData.freezingLevel || 0)} m`);
-    
     if (state.ephemeris) {
         getSet('ex-golden', state.ephemeris.goldenHour || '--:--');
         getSet('ex-blue', state.ephemeris.blueHour || '--:--');
         const mi = document.getElementById('ex-moon-icon'); if (mi) mi.textContent = state.ephemeris.moonPhaseIcon || '🌑';
         getSet('ex-moon-text', `${state.ephemeris.moonPhaseText} (${state.ephemeris.moonIllum || 0}%)`);
-    } else {
-        getSet('ex-golden', '--:--');
-        getSet('ex-blue', '--:--');
-        getSet('ex-moon-text', '--');
     }
-
-    const chart = document.getElementById('ex-chart-container')!;
-    if (state.weatherData.hourly) {
-        const hourly = state.weatherData.hourly;
-        const maxT = Math.max(...hourly.map(h => h.temp));
-        const minT = Math.min(...hourly.map(h => h.temp));
-        const range = maxT - minT || 1;
-
-        chart.innerHTML = hourly.map((h, i) => {
-            const hFactor = (h.temp - minT) / range;
-            const height = 20 + hFactor * 100;
-            const opacity = (i % 2 === 0) ? 0.4 : 0.2;
-            const color = h.code >= 51 ? '#3b82f6' : '#f59e0b';
-            const timeLabel = (i % 3 === 0) ? `<div style="position:absolute; bottom:-25px; left:0; font-size:8px; color:var(--t2);">${h.time}</div>` : '';
-
-            return `
-                <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; position:relative;" title="${h.time}: ${h.temp}°C">
-                    ${timeLabel}
-                    <div style="height:${height}px; background:${color}; opacity:${opacity}; border-radius:4px 4px 0 0;"></div>
-                    <div style="position:absolute; bottom:${height + 5}px; left:50%; transform:translateX(-50%); font-size:8px; color:white; font-weight:700;">${Math.round(h.temp)}°</div>
-                </div>
-            `;
-        }).join('');
-    }
-
     ep.style.display = 'block';
 }
 
 async function go() {
     const k1 = document.getElementById('k1') as HTMLInputElement;
     if (!k1 || k1.value.length < 5) return;
-    state.MK = k1.value;
-    localStorage.setItem('maptiler_key_3d', state.MK);
+    state.MK = k1.value; localStorage.setItem('maptiler_key_3d', state.MK);
     
     const ss = document.getElementById('setup-screen'); if (ss) ss.style.display = 'none';
     const zi = document.getElementById('zoom-indicator'); if (zi) zi.style.display = 'block';
+    
+    // --- FIX AFFICHAGE UI GLOBALE (v4.7.3) ---
     const bb = document.getElementById('bottom-bar'); if (bb) bb.style.display = 'block';
+    const bstack = document.getElementById('bottom-stack'); if (bstack) bstack.style.display = 'flex';
     
     ['layer-btn', 'settings-toggle', 'gps-btn', 'gps-follow-btn', 'screenshot-btn'].forEach(id => {
         const el = document.getElementById(id); if (el) el.style.display = 'flex';
@@ -385,15 +334,10 @@ async function go() {
     autoSelectMapSource(state.TARGET_LAT, state.TARGET_LON);
     await initScene();
     if (state.camera && state.controls) {
-        state.ZOOM = 12;
-        state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, 12);
-        state.camera.position.set(0, 35000, 40000);
-        state.controls.update();
+        state.ZOOM = 12; state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, 12);
+        state.camera.position.set(0, 35000, 40000); state.controls.update();
     }
-    
-    // Initialiser les sommets locaux (v4.6)
     fetchLocalPeaks(state.TARGET_LAT, state.TARGET_LON);
-    
     setTimeout(async () => { await loadTerrain(); initEphemeralUI(); }, 100);
 }
 
@@ -412,125 +356,52 @@ function initEphemeralUI() {
 async function takeScreenshot() {
     if (!state.renderer || !state.scene || !state.camera) return;
     state.renderer.render(state.scene, state.camera);
-    const link = document.createElement('a');
-    link.download = `SunTrail_${Date.now()}.png`;
-    link.href = state.renderer.domElement.toDataURL();
-    link.click();
+    const link = document.createElement('a'); link.download = `SunTrail_${Date.now()}.png`; link.href = state.renderer.domElement.toDataURL(); link.click();
 }
 
 function initGeocoding() {
     const geoInput = document.getElementById('geo-input') as HTMLInputElement;
     const geoResults = document.getElementById('geo-results');
     if (!geoInput || !geoResults) return;
-    
     let timer: any = null;
-    
     const handleResultClick = (lat: number, lon: number, isPeak: boolean = false, peakName: string = '', peakEle: number = 0) => {
         if (isNaN(lat) || isNaN(lon)) return;
-
-        geoResults.style.display = 'none'; 
-        geoInput.value = '';
-
+        geoResults.style.display = 'none'; geoInput.value = '';
         if (isPeak && state.originTile) {
-            // VOL CINÉMATIQUE POUR LES SOMMETS (v4.6.2 - FIXED)
-            // 1. Reset total du monde sur le nouveau point (Méthode la plus fiable)
-            state.TARGET_LAT = lat;
-            state.TARGET_LON = lon;
+            state.TARGET_LAT = lat; state.TARGET_LON = lon;
             autoSelectMapSource(lat, lon);
-            
-            state.ZOOM = 14; 
-            state.originTile = lngLatToTile(lon, lat, 14);
-            
-            if (state.controls && state.camera) { 
-                // On pré-positionne la caméra en hauteur pour le "décollage" du vol
-                state.controls.target.set(0, 0, 0); 
-                state.camera.position.set(0, 15000, 20000); 
-                state.controls.update(); 
-            }
-            
-            // 2. On recharge le terrain immédiatement
+            state.ZOOM = 14; state.originTile = lngLatToTile(lon, lat, 14);
+            if (state.controls && state.camera) { state.controls.target.set(0, 0, 0); state.camera.position.set(0, 15000, 20000); state.controls.update(); }
             refreshTerrain(); 
-
-            // 3. On lance le vol cinématique LOCAL (vers le point 0,0 qui est notre sommet)
-            // Cela donne l'impression d'une arrivée fluide après un chargement rapide
-            setTimeout(() => {
-                flyTo(0, 0, 14, peakEle);
-            }, 100);
-            
-            // Affichage de la Peak Card
-            const cp = document.getElementById('coords-panel')!;
-            cp.style.display = 'block';
+            setTimeout(() => { flyTo(0, 0, peakEle); }, 100);
+            const cp = document.getElementById('coords-panel')!; cp.style.display = 'block';
             const cll = document.getElementById('click-latlon'); if (cll) cll.textContent = `🏔️ ${peakName}`;
             const cal = document.getElementById('click-alt'); if (cal) cal.textContent = `${Math.round(peakEle)} m`;
             lastClickedCoords = { x: 0, z: 0, alt: peakEle };
-            
         } else {
-            // RESET COMPLET POUR LES RECHERCHES DISTANTES
-            state.TARGET_LAT = lat;
-            state.TARGET_LON = lon;
+            state.TARGET_LAT = lat; state.TARGET_LON = lon;
             autoSelectMapSource(lat, lon);
-            
-            state.ZOOM = 13; 
-            state.originTile = lngLatToTile(lon, lat, 13);
-            
-            if (state.controls && state.camera) { 
-                state.controls.target.set(0, 0, 0); 
-                state.camera.position.set(0, 35000, 40000); 
-                state.controls.update(); 
-            }
+            state.ZOOM = 13; state.originTile = lngLatToTile(lon, lat, 13);
+            if (state.controls && state.camera) { state.controls.target.set(0, 0, 0); state.camera.position.set(0, 35000, 40000); state.controls.update(); }
             refreshTerrain(); 
         }
-
         fetchWeather(lat, lon);
     };
-
     geoInput.addEventListener('input', () => {
         if (timer) clearTimeout(timer);
         const q = geoInput.value.trim().toLowerCase();
-        
-        if (q.length < 2) {
-            geoResults.style.display = 'none';
-            return;
-        }
-
-        // 1. Recherche Locale (Sommets) instantanée
-        const localMatches = state.localPeaks
-            .filter(p => p.name.toLowerCase().includes(q))
-            .slice(0, 5); // Max 5 sommets
-
-        let html = localMatches.map(p => `
-            <div class="geo-item peak-item" data-lat="${p.lat}" data-lon="${p.lon}" data-name="${p.name}" data-ele="${p.ele}" style="padding:12px; cursor:pointer; color:var(--gold); border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between;">
-                <span>🏔️ ${p.name}</span>
-                <span style="color:var(--t2); font-size:11px;">${Math.round(p.ele)}m</span>
-            </div>
-        `).join('');
-
-        if (html) {
-            geoResults.innerHTML = html;
-            geoResults.style.display = 'block';
-            attachResultListeners();
-        }
-
-        // 2. Recherche distante après délai
+        if (q.length < 2) { geoResults.style.display = 'none'; return; }
+        const localMatches = state.localPeaks.filter(p => p.name.toLowerCase().includes(q)).slice(0, 5);
+        let html = localMatches.map(p => `<div class="geo-item peak-item" data-lat="${p.lat}" data-lon="${p.lon}" data-name="${p.name}" data-ele="${p.ele}" style="padding:12px; cursor:pointer; color:var(--gold); border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between;"><span>🏔️ ${p.name}</span><span style="color:var(--t2); font-size:11px;">${Math.round(p.ele)}m</span></div>`).join('');
+        if (html) { geoResults.innerHTML = html; geoResults.style.display = 'block'; attachResultListeners(); }
         timer = setTimeout(async () => {
             try {
-                const data = await fetchGeocoding(q);
-                if (!data) return;
-                
-                // On ajoute les résultats distants sous les sommets locaux
-                const remoteHtml = data.map((f: any) => `
-                    <div class="geo-item" data-lat="${f.lat}" data-lon="${f.lon}" style="padding:12px; cursor:pointer; color:white; border-bottom:1px solid rgba(255,255,255,0.05);">
-                        📍 ${f.display_name}
-                    </div>
-                `).join('');
-                
-                geoResults.innerHTML = html + remoteHtml; // Combine local et distant
-                geoResults.style.display = 'block';
-                attachResultListeners();
+                const data = await fetchGeocoding(q); if (!data) return;
+                const remoteHtml = data.map((f: any) => `<div class="geo-item" data-lat="${f.lat}" data-lon="${f.lon}" style="padding:12px; cursor:pointer; color:white; border-bottom:1px solid rgba(255,255,255,0.05);">📍 ${f.display_name}</div>`).join('');
+                geoResults.innerHTML = html + remoteHtml; geoResults.style.display = 'block'; attachResultListeners();
             } catch (e) {}
         }, 400);
     });
-
     function attachResultListeners() {
         geoResults?.querySelectorAll('.geo-item').forEach(item => {
             item.addEventListener('click', (e) => {
@@ -538,12 +409,8 @@ function initGeocoding() {
                 const lat = parseFloat((item as HTMLElement).dataset.lat!);
                 const lon = parseFloat((item as HTMLElement).dataset.lon!);
                 const isPeak = item.classList.contains('peak-item');
-                let peakName = '';
-                let peakEle = 0;
-                if (isPeak) {
-                    peakName = (item as HTMLElement).dataset.name || '';
-                    peakEle = parseFloat((item as HTMLElement).dataset.ele!) || 0;
-                }
+                let peakName = '', peakEle = 0;
+                if (isPeak) { peakName = (item as HTMLElement).dataset.name || ''; peakEle = parseFloat((item as HTMLElement).dataset.ele!) || 0; }
                 handleResultClick(lat, lon, isPeak, peakName, peakEle);
             });
         });
@@ -561,7 +428,4 @@ async function handleGPX(xml: string) {
     const tc = document.getElementById('trail-controls'); if (tc) tc.style.display = 'block';
 }
 
-function refreshTerrain() {
-    resetTerrain();
-    updateVisibleTiles();
-}
+function refreshTerrain() { resetTerrain(); updateVisibleTiles(); }
