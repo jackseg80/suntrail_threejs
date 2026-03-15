@@ -71,6 +71,8 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [ ] **Gestion Offline** : Système de mise en cache des tuiles pour une utilisation sans réseau (fondamental en montagne).
 
 ## 🧭 Sécurité & Alpinisme (v4.8)
+- [x] **Suivi GPS Directionnel** : Refonte totale avec cône de vue et centrage rando (v4.5.36).
+- [x] **Orientation Temps Réel** : Intégration DeviceOrientation pour une boussole réactive (v4.5.36).
 - [ ] **Carte des Pentes (Inclinomètre 3D)** : Coloration dynamique du relief selon l'inclinaison (Aide à la décision avalanche).
 - [ ] **SOS SMS Low-Bandwidth** : Générateur de message de secours ultra-léger avec coordonnées GPS et état système.
 - [ ] **Gestion GPX Avancée** : Import/Export de traces, profil altimétrique dynamique et suivi de progression.

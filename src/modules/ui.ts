@@ -13,6 +13,7 @@ import { applyPreset, detectBestPreset, getGpuInfo } from './performance';
 import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';
 import { updateElevationProfile } from './profile';
 import { startLocationTracking, centerOnUser } from './location';
+import { fetchWeather } from './weather';
 
 let lastClickedCoords = { x: 0, z: 0, alt: 0 };
 
@@ -146,6 +147,12 @@ export function initUI(): void {
             navigator.clipboard.writeText(report); showToast("Copié !");
         }
 
+        if (id === 'play-btn') {
+            state.isAnimating = !state.isAnimating;
+            target.textContent = state.isAnimating ? '⏸' : '▶';
+            return;
+        }
+
         if (id === 'gpx-btn') document.getElementById('gpx-upload')!.click();
         if (id === 'screenshot-btn') takeScreenshot();
 
@@ -162,7 +169,12 @@ export function initUI(): void {
     });
 
     const hookInput = (id: string, callback: (val: any) => void) => {
-        document.getElementById(id)?.addEventListener('input', (e) => callback((e.target as HTMLInputElement).value));
+        document.getElementById(id)?.addEventListener('input', (e) => {
+            state.isAnimating = true; // On force le rendu pendant l'interaction
+            callback((e.target as HTMLInputElement).value);
+            // On relâche après un court délai pour laisser la boucle de rendu faire son travail
+            setTimeout(() => { state.isAnimating = false; }, 500);
+        });
     };
     const hookChange = (id: string, callback: (val: boolean) => void) => {
         document.getElementById(id)?.addEventListener('change', (e) => callback((e.target as HTMLInputElement).checked));

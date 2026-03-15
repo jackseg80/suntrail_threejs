@@ -8,7 +8,7 @@ import { updateSunPosition } from './sun';
 import { getAltitudeAt } from './analysis';
 import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, resetTerrain, clearCache, autoSelectMapSource, updateGPXMesh } from './terrain';
 import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat } from './geo';
-import { throttle, showToast } from './utils';
+import { throttle } from './utils';
 import { initVegetationResources } from './vegetation';
 import { initWeatherSystem, updateWeatherSystem, fetchWeather, updateWeatherUIIndicator } from './weather';
 import { initCompass, disposeCompass, renderCompass, updateCompassAnimation, isCompassAnimating } from './compass';

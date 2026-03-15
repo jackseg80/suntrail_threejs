@@ -12,6 +12,12 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Correctif Ombres :** recalibrage du frustum d'ombre (50km) pour une projection fidèle des sommets sur les vallées.
 - **UI Météo :** Intégration du Dashboard expert avec Isotherme 0°C, UV et prévisions horaires sur 6h.
 
+## [4.5.36] - 2026-03-14
+### ✨ Nouveautés
+- **Suivi GPS Directionnel** : Refonte totale du mode suivi. Le marqueur utilisateur affiche désormais un cône de vue (sector) indiquant la direction du regard.
+- **Orientation Temps Réel** : Intégration de l'API `DeviceOrientation` pour une boussole réactive même à l'arrêt.
+- **Vue Rando Immersive** : Centrage automatique à basse altitude (~1200m) pour forcer le LOD 16/17 et alignement automatique de la vue 3D avec le cap de l'utilisateur.
+
 ## [4.5.35] - 2026-03-14
 ### 🧹 Clean Architecture & Refactoring
 - **Support Safe-Areas Mobiles** : Intégration des variables CSS `env(safe-area-inset-*)` pour empêcher le chevauchement de l'UI avec les barres système Android/iOS (encoche en haut, navigation en bas).

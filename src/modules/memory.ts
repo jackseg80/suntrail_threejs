@@ -1,5 +1,3 @@
-import * as THREE from 'three';
-
 /**
  * Nettoie proprement un objet Three.js (Géométrie, Matériaux, Textures)
  * pour éviter les fuites de mémoire (VRAM).

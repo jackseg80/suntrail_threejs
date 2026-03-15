@@ -1,7 +1,6 @@
 import * as THREE from 'three';
-import SunCalc from 'suncalc';
 import { state } from './state';
-import { fetchGeocoding, showToast } from './utils';
+import { fetchGeocoding } from './utils';
 
 let weatherPoints: THREE.Points | null = null;
 let weatherMaterial: THREE.ShaderMaterial | null = null;
