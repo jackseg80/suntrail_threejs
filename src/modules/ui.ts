@@ -4,16 +4,17 @@ import gpxParser from 'gpxparser';
 import { Geolocation } from '@capacitor/geolocation';
 import { state } from './state';
 import { updateSunPosition } from './sun';
-import { initScene } from './scene';
+import { initScene, flyTo } from './scene';
 import { resetToNorth } from './compass';
 import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain, autoSelectMapSource, deleteTerrainCache } from './terrain';
-import { lngLatToTile, worldToLngLat } from './geo';
+import { lngLatToTile, worldToLngLat, lngLatToWorld } from './geo';
 import { showToast, fetchGeocoding } from './utils';
 import { applyPreset, detectBestPreset, getGpuInfo } from './performance';
 import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';
 import { updateElevationProfile } from './profile';
 import { startLocationTracking } from './location';
 import { fetchWeather } from './weather';
+import { fetchLocalPeaks } from './peaks';
 
 let lastClickedCoords = { x: 0, z: 0, alt: 0 };
 
@@ -389,6 +390,10 @@ async function go() {
         state.camera.position.set(0, 35000, 40000);
         state.controls.update();
     }
+    
+    // Initialiser les sommets locaux (v4.6)
+    fetchLocalPeaks(state.TARGET_LAT, state.TARGET_LON);
+    
     setTimeout(async () => { await loadTerrain(); initEphemeralUI(); }, 100);
 }
 
@@ -417,49 +422,115 @@ function initGeocoding() {
     const geoInput = document.getElementById('geo-input') as HTMLInputElement;
     const geoResults = document.getElementById('geo-results');
     if (!geoInput || !geoResults) return;
+    
     let timer: any = null;
+    
+    const handleResultClick = (lat: number, lon: number, isPeak: boolean = false, peakName: string = '', peakEle: number = 0) => {
+        if (isNaN(lat) || isNaN(lon)) return;
+
+        geoResults.style.display = 'none'; 
+        geoInput.value = '';
+
+        if (isPeak && state.originTile) {
+            // VOL CINÉMATIQUE POUR LES SOMMETS (v4.6)
+            const targetPos = lngLatToWorld(lon, lat, state.originTile);
+            flyTo(targetPos.x, targetPos.z, 14);
+            
+            // Affichage de la Peak Card
+            const cp = document.getElementById('coords-panel')!;
+            cp.style.display = 'block';
+            const cll = document.getElementById('click-latlon'); if (cll) cll.textContent = `🏔️ ${peakName}`;
+            const cal = document.getElementById('click-alt'); if (cal) cal.textContent = `${Math.round(peakEle)} m`;
+            lastClickedCoords = { x: targetPos.x, z: targetPos.z, alt: peakEle };
+            
+            // Mise à jour silencieuse pour le moteur
+            state.TARGET_LAT = lat;
+            state.TARGET_LON = lon;
+            
+        } else {
+            // RESET COMPLET POUR LES RECHERCHES DISTANTES
+            state.TARGET_LAT = lat;
+            state.TARGET_LON = lon;
+            autoSelectMapSource(lat, lon);
+            
+            state.ZOOM = 13; 
+            state.originTile = lngLatToTile(lon, lat, 13);
+            
+            if (state.controls && state.camera) { 
+                state.controls.target.set(0, 0, 0); 
+                state.camera.position.set(0, 35000, 40000); 
+                state.controls.update(); 
+            }
+            refreshTerrain(); 
+        }
+
+        fetchWeather(lat, lon);
+    };
+
     geoInput.addEventListener('input', () => {
         if (timer) clearTimeout(timer);
+        const q = geoInput.value.trim().toLowerCase();
+        
+        if (q.length < 2) {
+            geoResults.style.display = 'none';
+            return;
+        }
+
+        // 1. Recherche Locale (Sommets) instantanée
+        const localMatches = state.localPeaks
+            .filter(p => p.name.toLowerCase().includes(q))
+            .slice(0, 5); // Max 5 sommets
+
+        let html = localMatches.map(p => `
+            <div class="geo-item peak-item" data-lat="${p.lat}" data-lon="${p.lon}" data-name="${p.name}" data-ele="${p.ele}" style="padding:12px; cursor:pointer; color:var(--gold); border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between;">
+                <span>🏔️ ${p.name}</span>
+                <span style="color:var(--t2); font-size:11px;">${Math.round(p.ele)}m</span>
+            </div>
+        `).join('');
+
+        if (html) {
+            geoResults.innerHTML = html;
+            geoResults.style.display = 'block';
+            attachResultListeners();
+        }
+
+        // 2. Recherche distante après délai
         timer = setTimeout(async () => {
-            const q = geoInput.value.trim();
-            if (q.length < 2) return;
             try {
                 const data = await fetchGeocoding(q);
                 if (!data) return;
-                geoResults.innerHTML = data.map((f: any) => `<div class="geo-item" data-lat="${f.lat}" data-lon="${f.lon}" style="padding:12px; cursor:pointer; color:white; border-bottom:1px solid rgba(255,255,255,0.05);">${f.display_name}</div>`).join('');
+                
+                // On ajoute les résultats distants sous les sommets locaux
+                const remoteHtml = data.map((f: any) => `
+                    <div class="geo-item" data-lat="${f.lat}" data-lon="${f.lon}" style="padding:12px; cursor:pointer; color:white; border-bottom:1px solid rgba(255,255,255,0.05);">
+                        📍 ${f.display_name}
+                    </div>
+                `).join('');
+                
+                geoResults.innerHTML = html + remoteHtml; // Combine local et distant
                 geoResults.style.display = 'block';
-                geoResults.querySelectorAll('.geo-item').forEach(item => {
-                    item.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const lat = parseFloat((item as HTMLElement).dataset.lat!);
-                        const lon = parseFloat((item as HTMLElement).dataset.lon!);
-                        
-                        if (isNaN(lat) || isNaN(lon)) return;
-
-                        state.TARGET_LAT = lat;
-                        state.TARGET_LON = lon;
-                        autoSelectMapSource(lat, lon);
-                        
-                        // Recentrage total
-                        state.ZOOM = 13; 
-                        state.originTile = lngLatToTile(lon, lat, 13);
-                        
-                        if (state.controls && state.camera) { 
-                            state.controls.target.set(0, 0, 0); 
-                            state.camera.position.set(0, 35000, 40000); 
-                            state.controls.update(); 
-                        }
-                        
-                        geoResults.style.display = 'none'; 
-                        geoInput.value = '';
-                        
-                        refreshTerrain(); // Reset et recharge
-                        fetchWeather(lat, lon);
-                    });
-                });
+                attachResultListeners();
             } catch (e) {}
         }, 400);
     });
+
+    function attachResultListeners() {
+        geoResults?.querySelectorAll('.geo-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const lat = parseFloat((item as HTMLElement).dataset.lat!);
+                const lon = parseFloat((item as HTMLElement).dataset.lon!);
+                const isPeak = item.classList.contains('peak-item');
+                let peakName = '';
+                let peakEle = 0;
+                if (isPeak) {
+                    peakName = (item as HTMLElement).dataset.name || '';
+                    peakEle = parseFloat((item as HTMLElement).dataset.ele!) || 0;
+                }
+                handleResultClick(lat, lon, isPeak, peakName, peakEle);
+            });
+        });
+    }
 }
 
 async function handleGPX(xml: string) {

@@ -32,66 +32,34 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [x] **Optimisation OSM** : Bouclier de flux multi-serveur (Anti-429).
 - [x] **Fix Mobile** : Calendrier lisible et layout portrait.
 
-## 🚀 Prochainement (v4.6)
-- [ ] **Moteur de Recherche Sommets** : Indexation offline des principaux pics et cols.
+## ✅ Terminé (v4.5.70)
+- [x] **Moteur de Suivi Ultra-Fluide** : Interpolation haute fréquence (60 FPS) pour un suivi GPS sans saccades.
+- [x] **Stabilisation de Boussole Pro** : Zone morte et amortissement lourd pour éliminer les tremblements.
+- [x] **Transition Diagonale Unifiée** : Approche cinématique vers l'utilisateur finissant en vue de dessus.
+- [x] **Parabole du Tilt** : Inclinaison dynamique selon le LOD pour cacher le vide de l'horizon.
+- [x] **Ultra-Battery Save** : Toggle 30 FPS global et mode "Deep Sleep" (0 FPS) en arrière-plan.
+- [x] **Fog Dynamique** : Intégration du voile atmosphérique dans les presets de performance.
+
+## 🚀 Prochainement (v4.6) - Immersion & Sommets
+- [ ] **Moteur de Recherche Sommets** : Indexation locale des principaux pics et cols (Overpass).
 - [ ] **Vol Automatique** : Animation de vol fluide vers le lieu recherché.
-- [ ] **Cartes POI** : Affichage des détails techniques du sommet cliqué.
-
-## ✅ Terminé (v4.4.1)
-- [x] **Météo Dynamique** : Système de particules GPU pour la pluie et la neige.
-- [x] **Physique du Vent** : Inclinaison et vitesse des effets basées sur l'API réelle.
-- [x] **Dashboard Météo Pro** : KPIs, flèche de vent et localisation automatique.
-- [x] **Simulateur d'Effets** : Contrôles manuels pour le test visuel.
-
-## ✅ Terminé (v4.3.65)
-- [x] **2D Turbo Mobile** : Optimisation drastique des FPS en haute altitude via MeshBasicMaterial.
-- [x] **Fix Production Build** : Résolution des erreurs de scope shader.
-
-## ✅ Terminé (v4.3.63)
-- [x] **Global Overview** : Vue régionale (LOD 12) au démarrage et à la recherche.
-- [x] **Parabolic Zoom** : Trajectoire de caméra organique avec Auto-Tilt.
-- [x] **2D Space Optimization** : Désactivation du relief en haute altitude.
-- [x] **Compass Fix** : Restauration des points cardinaux N/S/E/O.
-
-## ✅ Terminé (v4.3.44)
-
-## ✅ Terminé (v4.3.26)
-- [x] **Bâtiments 3D (LOD léger)** : Extrusion simplifiée des volumes urbains (OSM) avec Geometry Merging.
-- [x] **Qualité Satellite HD** : Textures 512px et seuils de zoom optimisés.
-- [x] **Sécurité Caméra** : Anti-collision sol et Tilt adaptatif.
-- [x] **Refonte Géo** : Module modulaire `geo.ts` sans dépendances circulaires.
-
-## ✅ Terminé (v4.2.x)
-- [x] **Solar Insight Dashboard** : Nouvelle interface responsive avec KPIs et timeline interactive.
-- [x] **Moteur d'Analyse Solaire Avancé** : Interpolation bi-linéaire (précision métrique).
-- [x] **Détection Snapdragon Elite** : Profil Ultra automatique pour les nouveaux flagships.
-
-## ✅ Terminé (v4.1.x)
-- [x] **Interface Éphémère** : Masquage automatique des contrôles.
-- [x] **Signalétique Interactive** : Panneaux cliquables.
-- [x] **Capture d'écran 3D** : Export PNG sans interface.
-
-## 🏁 Prochainement (v4.6+) - Immersion & Services
-- [ ] **Moteur de Recherche Sommets** (v4.6) : Indexation offline des principaux pics et cols.
-- [ ] **Vol Automatique** : Animation de vol fluide vers le lieu recherché.
-- [ ] **Cartes POI** : Affichage des détails techniques du sommet cliqué.
+- [ ] **Cartes POI** : Affichage des détails techniques (Altitude, Massif) du sommet cliqué.
 
 ## 🌍 Internationalisation & Données (Priorité)
-- [ ] **Adaptation Hors-Suisse** : Intégration de sources d'élévation mondiales gratuites (SRTM/Copernicus) pour garantir la précision hors des Alpes suisses.
-- [x] **Basculement MapTiler Geocoding** : Remplacement de Nominatim par MapTiler pour la recherche et la météo (v4.5.34).
-- [x] **Auto-Détection de Source** : Basculement intelligent sur la meilleure source de données disponible selon la zone géographique.
+- [ ] **Adaptation Hors-Suisse** : Intégration de sources d'élévation mondiales gratuites (SRTM/Copernicus).
+- [x] **Basculement MapTiler Geocoding** : Remplacement de Nominatim par MapTiler pour la recherche et la météo.
+- [x] **Auto-Détection de Source** : Basculement intelligent selon la zone géographique.
 
 ## 🔋 Optimisations & Mobilité (v4.7)
-- [ ] **Mode 2D par défaut** : Option pour forcer le rendu 2D sur les appareils peu puissants ou pour économiser la batterie en rando.
-- [ ] **Mode "Sentinelle"** : Réduction du FPS (30 au lieu de 120) et désactivation des calculs d'ombres quand la batterie est < 20%.
-- [ ] **Gestion Offline** : Système de mise en cache des tuiles pour une utilisation sans réseau (fondamental en montagne).
+- [x] **Mode "Sentinelle"** : Réduction du FPS et Deep Sleep intégrés (v4.5.52).
+- [ ] **Gestion Offline** : Système de mise en cache des tuiles pour une utilisation sans réseau.
 
 ## 🧭 Sécurité & Alpinisme (v4.8)
-- [x] **Suivi GPS Directionnel** : Refonte totale avec cône de vue et centrage rando (v4.5.36).
-- [x] **Orientation Temps Réel** : Intégration DeviceOrientation pour une boussole réactive (v4.5.36).
-- [ ] **Carte des Pentes (Inclinomètre 3D)** : Coloration dynamique du relief selon l'inclinaison (Aide à la décision avalanche).
-- [ ] **SOS SMS Low-Bandwidth** : Générateur de message de secours ultra-léger avec coordonnées GPS et état système.
-- [ ] **Gestion GPX Avancée** : Import/Export de traces, profil altimétrique dynamique et suivi de progression.
+- [x] **Suivi GPS Directionnel** : Refonte totale avec cône de vue et centrage rando.
+- [x] **Orientation Temps Réel** : Intégration DeviceOrientation pour une boussole réactive.
+- [ ] **Carte des Pentes (Inclinomètre 3D)** : Coloration dynamique du relief selon l'inclinaison.
+- [ ] **SOS SMS Low-Bandwidth** : Générateur de message de secours ultra-léger.
+- [ ] **Gestion GPX Avancée** : Profil altimétrique dynamique et suivi de progression.
 
 ## ✨ Immersion Visuelle Pro (v4.9)
 - [x] **Zoom Européen** : Vue continentale fluide avec paliers de LOD 7-9 (v4.5.34).

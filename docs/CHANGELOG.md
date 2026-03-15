@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.6.0] - 2026-03-15
+### 🏔️ Moteur de Recherche de Sommets
+- **Indexation Locale (Overpass)** : L'application télécharge et met en cache automatiquement (7 jours) tous les sommets de plus de 1000m d'altitude dans un rayon de 50km autour du point de départ.
+- **Auto-complétion Hybride** : La barre de recherche propose désormais instantanément les sommets locaux (signalés par 🏔️ et leur altitude) en priorité, suivis des résultats géocodés mondiaux.
+- **Vol Cinématique (`flyTo`)** : Au lieu d'une "téléportation" basique, cliquer sur un sommet déclenche une trajectoire de vol en cloche d'une durée de 2.5 secondes. La caméra monte pour survoler le relief, avance, et atterrit en douceur en visant le sommet sélectionné.
+- **Peak Cards** : Le clic sur un sommet depuis la barre de recherche ouvre automatiquement le panneau d'information (Altitude et Nom précis de l'Overpass API).
+
 ## [4.5.70] - 2026-03-15
 ### 🎯 Suivi GPS & Boussole Haute Précision
 - **Moteur de Suivi Ultra-Fluide** : Refonte totale du suivi GPS utilisant une interpolation haute fréquence (60 FPS) avec lissage exponentiel temporel. La caméra glisse désormais sans aucune saccade vers la position utilisateur.

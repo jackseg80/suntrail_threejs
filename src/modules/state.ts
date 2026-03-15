@@ -57,6 +57,14 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
     }
 };
 
+export interface Peak {
+    id: number;
+    name: string;
+    lat: number;
+    lon: number;
+    ele: number;
+}
+
 export interface State {
     // ==========================================
     // ⚙️ CONFIGURATION & PRÉFÉRENCES
@@ -132,6 +140,9 @@ export interface State {
         sunrise: string; sunset: string; goldenHour: string; blueHour: string;
         moonPhaseText: string; moonPhaseIcon: string; moonIllum: number;
     } | null;
+    
+    // --- Sommets & Recherche (v4.6) ---
+    localPeaks: Peak[];
 
     // ==========================================
     // 🥾 GPX & NAVIGATION (GPS)
@@ -187,6 +198,9 @@ export const state: State = {
     lastWeatherLat: 0, lastWeatherLon: 0, currentWeather: 'clear', weatherIntensity: 0,
     WEATHER_DENSITY: PRESETS.balanced.WEATHER_DENSITY, WEATHER_SPEED: PRESETS.balanced.WEATHER_SPEED,
     weatherData: null, ephemeris: null,
+    
+    // --- Sommets & Recherche (v4.6) ---
+    localPeaks: [],
 
     // --- Navigation ---
     rawGpxData: null, gpxPoints: [], gpxMesh: null, profileMarker: null, trailProgress: 0, isFollowingTrail: false,

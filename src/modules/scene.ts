@@ -22,6 +22,56 @@ export async function disposeScene(): Promise<void> {
     window.removeEventListener('resize', onWindowResize);
 }
 
+// --- VOL CINÉMATIQUE (v4.6) ---
+export function flyTo(targetWorldX: number, targetWorldZ: number, targetZoom: number = 14) {
+    if (!state.camera || !state.controls) return;
+    
+    // Désactiver le suivi GPS si actif
+    if (state.isFollowingUser) {
+        state.isFollowingUser = false;
+        const btn = document.getElementById('gps-follow-btn');
+        if (btn) btn.classList.remove('active');
+    }
+
+    const startPos = state.camera.position.clone();
+    const startTarget = state.controls.target.clone();
+    
+    const endTarget = new THREE.Vector3(targetWorldX, 0, targetWorldZ);
+    // On calcule une position caméra idéale : au sud du sommet pour le voir, à une altitude confortable
+    const offsetZ = targetZoom >= 14 ? 3000 : 8000;
+    const endPos = new THREE.Vector3(targetWorldX, 2500, targetWorldZ + offsetZ);
+
+    const duration = 2500; // 2.5 secondes de vol
+    const startTime = performance.now();
+
+    // On utilise une animation temporaire dans la render loop
+    const animateFlight = (time: number) => {
+        const elapsed = time - startTime;
+        const progress = Math.min(elapsed / duration, 1.0);
+        
+        // Easing easeInOutCubic pour un décollage et atterrissage doux
+        const ease = progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+        // 1. Interpolation cible (Mouvement horizontal)
+        state.controls!.target.lerpVectors(startTarget, endTarget, ease);
+
+        // 2. Trajectoire en Cloche (Parabole d'altitude)
+        // La caméra monte à mi-parcours pour survoler le relief
+        const currentPos = new THREE.Vector3().lerpVectors(startPos, endPos, ease);
+        const parabolaHeight = Math.sin(progress * Math.PI) * 5000; // Monte de 5000m au milieu du vol
+        currentPos.y += parabolaHeight;
+        
+        state.camera!.position.copy(currentPos);
+        state.controls!.update();
+
+        if (progress < 1.0) {
+            requestAnimationFrame(animateFlight);
+        }
+    };
+
+    requestAnimationFrame(animateFlight);
+}
+
 export async function initScene(): Promise<void> {
     await disposeScene();
     const container = document.getElementById('canvas-container');
