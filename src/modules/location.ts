@@ -5,7 +5,6 @@ import { lngLatToWorld } from './geo';
 import { getAltitudeAt } from './analysis';
 
 let watchId: string | null = null;
-let lastHeadingUpdate = 0;
 
 // --- DÉTECTION ORIENTATION MOBILE (v4.5.60) ---
 function initOrientationTracking() {
@@ -48,7 +47,10 @@ export async function startLocationTracking() {
             
             // --- MISE À JOUR ÉTAT GPS (v4.5.60) ---
             const distMove = Math.sqrt(Math.pow(latitude - lastLat, 2) + Math.pow(longitude - lastLon, 2));
-            if (distMove > 0.00001) { // Env. 1m de sensibilité
+            if (distMove > 0.00001) { 
+                // Si c'est la toute première position depuis l'activation du suivi, on marque le temps
+                if (state.userLocation === null) state.lastTrackingUpdate = Date.now();
+                
                 state.userLocation = { lat: latitude, lon: longitude, alt: altitude || 0 };
                 lastLat = latitude; lastLon = longitude;
                 updateUserMarker();
@@ -114,13 +116,12 @@ export function updateUserMarker() {
         dot.scale.set(0.018, 0.018, 1);
         dot.position.y = 2;
         state.userMarker.add(dot);
-
+        state.userMarker.renderOrder = 9999;
         state.scene.add(state.userMarker);
     }
 
-    // Le marqueur suit immédiatement pour le feedback visuel, 
-    // mais la caméra le suit avec lissage.
-    state.userMarker.position.set(pos.x, finalY, pos.z);
+    const is2D = state.RESOLUTION <= 2;
+    state.userMarker.position.set(pos.x, is2D ? 100 : finalY, pos.z);
     
     if (state.userHeading !== null) {
         state.userMarker.rotation.y = -THREE.MathUtils.degToRad(state.userHeading);
@@ -134,31 +135,46 @@ export function updateUserMarker() {
 export function centerOnUser(delta: number) {
     if (!state.userLocation || !state.controls || !state.originTile || !state.camera) return;
     
-    // 1. POSITION CIBLE
+    // 1. CALCUL DES DESTINATIONS (v4.5.69)
     const targetWorldPos = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
+    const finalTarget = new THREE.Vector3(targetWorldPos.x, 0, targetWorldPos.z);
     
-    // --- LISSAGE EXPONENTIEL (Delta-based) ---
-    // On utilise un facteur de lissage qui s'adapte au temps écoulé
-    const posLerpFactor = 1 - Math.exp(-5 * delta); // Env. 5Hz de réactivité
-    state.smoothUserPos.lerp(new THREE.Vector3(targetWorldPos.x, 0, targetWorldPos.z), posLerpFactor);
+    // Altitude confortable pour le suivi (1500m)
+    const preferredDist = 1500;
     
-    // Appliquer à la cible des contrôles
-    state.controls.target.copy(state.smoothUserPos);
+    // --- VUE DE DESSUS (v4.5.69) ---
+    // On veut finir pile au-dessus de l'utilisateur
+    const finalCamPos = finalTarget.clone().add(new THREE.Vector3(0, preferredDist, 10)); // Légèrement décalé Z pour stabilité controls
 
-    // 2. DISTANCE CAMÉRA (Vision Rando Fixe)
-    const targetDist = 1200; 
-    const currentDist = state.camera.position.distanceTo(state.controls.target);
-    const distLerpFactor = 1 - Math.exp(-2 * delta); // Plus lent pour le zoom
+    // 2. DYNAMIQUE DE MOUVEMENT CALIBRÉE
+    const isInitial = (Date.now() - state.lastTrackingUpdate < 3000);
+    const distToUser = state.controls.target.distanceTo(finalTarget);
     
-    if (Math.abs(currentDist - targetDist) > 1) {
-        const factor = THREE.MathUtils.lerp(1, targetDist / currentDist, distLerpFactor);
-        state.camera.position.lerp(state.controls.target.clone().add(
-            state.camera.position.clone().sub(state.controls.target).multiplyScalar(factor)
-        ), distLerpFactor);
+    // Vitesse proportionnelle bridée
+    const distFactor = Math.min(5.0, Math.sqrt(distToUser / 500) + 1.0); 
+    const speedBoost = isInitial ? 2.5 : 1.0; 
+    
+    const lerpFactor = 1 - Math.exp(-2.5 * distFactor * speedBoost * delta); 
+
+    // 3. DÉPLACEMENT SYNCHRONISÉ
+    state.controls.target.lerp(finalTarget, lerpFactor);
+    
+    const currentCamDist = state.camera.position.distanceTo(state.controls.target);
+    if (isInitial || currentCamDist > 5000) {
+        // Transition Diagonale vers la vue de dessus
+        state.camera.position.lerp(finalCamPos, lerpFactor);
+        
+        // Redressement forcé du tilt
+        state.controls.minPolarAngle = THREE.MathUtils.lerp(state.controls.minPolarAngle, 0, lerpFactor);
+        state.controls.maxPolarAngle = THREE.MathUtils.lerp(state.controls.maxPolarAngle, 0.1, lerpFactor);
+    } else {
+        // En marche normale
+        const targetH = new THREE.Vector3(finalTarget.x, state.camera.position.y, finalTarget.z);
+        state.camera.position.lerp(targetH, lerpFactor);
     }
 
-    // 3. CAP / ORIENTATION (Heading)
-    if (state.userHeading !== null) {
+    // 4. CAP / ORIENTATION (Heading) - STABILISATION PRO (v4.5.70)
+    if (state.userHeading !== null && !isInitial) {
         const currentAzimuth = state.controls.getAzimuthalAngle();
         const targetAzimuth = -THREE.MathUtils.degToRad(state.userHeading);
         
@@ -166,11 +182,19 @@ export function centerOnUser(delta: number) {
         while (diff < -Math.PI) diff += Math.PI * 2;
         while (diff > Math.PI) diff -= Math.PI * 2;
         
-        // Filtre Passe-Bas sur la rotation
-        const headingLerpFactor = 1 - Math.exp(-3 * delta); 
-        if (Math.abs(diff) > 0.001) {
+        // --- FILTRE ZONE MORTE & AMORTISSEMENT ---
+        // On ignore les micro-mouvements < 1.5 degrés pour supprimer le tremblement
+        const deadzone = THREE.MathUtils.degToRad(1.5);
+        if (Math.abs(diff) > deadzone) {
+            // Lissage très lourd (facteur 1.5 au lieu de 3) pour une rotation stable
+            const headingLerpFactor = 1 - Math.exp(-1.5 * delta); 
             const angle = currentAzimuth + diff * headingLerpFactor;
-            const distXZ = Math.sqrt(Math.pow(state.camera.position.x - state.controls.target.x, 2) + Math.pow(state.camera.position.z - state.controls.target.z, 2));
+            
+            const distXZ = Math.sqrt(
+                Math.pow(state.camera.position.x - state.controls.target.x, 2) + 
+                Math.pow(state.camera.position.z - state.controls.target.z, 2)
+            );
+            
             state.camera.position.x = state.controls.target.x + Math.sin(angle) * distXZ;
             state.camera.position.z = state.controls.target.z + Math.cos(angle) * distXZ;
         }

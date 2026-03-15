@@ -4,6 +4,17 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.5.70] - 2026-03-15
+### 🎯 Suivi GPS & Boussole Haute Précision
+- **Moteur de Suivi Ultra-Fluide** : Refonte totale du suivi GPS utilisant une interpolation haute fréquence (60 FPS) avec lissage exponentiel temporel. La caméra glisse désormais sans aucune saccade vers la position utilisateur.
+- **Approche Diagonale Unifiée** : La transition initiale vers l'utilisateur s'effectue désormais en une seule trajectoire diagonale cinématique (position et cible synchronisées), éliminant les effets de Yo-Yo et de rebond.
+- **Stabilisation de Boussole Pro** : Implémentation d'un filtre à zone morte (Deadzone 1.5°) et d'un amortissement lourd sur la rotation pour éliminer 100% du bruit magnétique et des tremblements gauche/droite sur mobile.
+- **Intelligence de Transition** :
+    - Déclenchement d'un boost de vitesse intelligent lors du clic initial.
+    - Vue de dessus automatique à la fin du suivi.
+    - Respect du zoom manuel de l'utilisateur après la transition.
+- **Fix Visibilité 2D** : Le marqueur GPS est désormais parfaitement visible au-dessus de la carte en mode 2D Turbo (priorité de rendu et position Y ajustée).
+
 ## [4.5.54] - 2026-03-15
 ### 🌫️ Voile Atmosphérique Dynamique par Preset
 - **Intégration Presets** : Le réglage du brouillard est désormais lié aux profils de performance.

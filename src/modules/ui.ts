@@ -12,7 +12,7 @@ import { showToast, fetchGeocoding } from './utils';
 import { applyPreset, detectBestPreset, getGpuInfo } from './performance';
 import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';
 import { updateElevationProfile } from './profile';
-import { startLocationTracking, centerOnUser } from './location';
+import { startLocationTracking } from './location';
 import { fetchWeather } from './weather';
 
 let lastClickedCoords = { x: 0, z: 0, alt: 0 };
@@ -116,6 +116,7 @@ export function initUI(): void {
             if (state.isFollowingUser) { 
                 // Initialiser la position de lissage sur la cible actuelle pour éviter un saut
                 if (state.controls) state.smoothUserPos.copy(state.controls.target);
+                state.lastTrackingUpdate = Date.now(); // Déclenche la transition rapide
                 await startLocationTracking(); 
             }
         }
