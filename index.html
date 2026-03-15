@@ -3,36 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SunTail - Moteur Three.js</title>
+    <title>SunTrail - Moteur Three.js</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/style.css">
-    <style>
-        body { background: #000; color: white; margin: 0; padding: 0; }
-        #setup-screen { background: #000; display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; z-index: 9999; }
-        #canvas-container { position: absolute; inset: 0; z-index: 1; }
-
-        /* RESPONSIVE EXPERT MÉTÉO (v4.5.7) */
-        .expert-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
-        @media (max-width: 768px) {
-            .expert-grid { grid-template-columns: 1fr !important; gap: 15px !important; }
-            #expert-weather-panel { padding: 25px !important; width: 95% !important; height: 90% !important; border-radius: 20px !important; }
-            #expert-weather-panel h2 { font-size: 22px !important; }
-            .expert-full-width { grid-column: span 1 !important; }
-        }
-
-        /* COMPASS UI (v4.5.24) */
-        #compass-canvas {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 120px;
-            height: 120px;
-            z-index: 2000;
-            cursor: pointer;
-            pointer-events: auto !important;
-            display: block;
-        }
-    </style>
 </head>
 <body>
 
@@ -102,7 +75,7 @@
 <div id="settings-toggle" class="ui-element" style="display:none;" title="Réglages techniques">⚙️</div>
 <div id="gps-btn" class="ui-element" style="display:none;" title="Ma position">🎯</div>
 <div id="gps-follow-btn" class="ui-element" style="display:none;" title="Suivre ma position">🚶</div>
-<div id="screenshot-btn" class="ui-element" style="display:none; position:fixed; top:200px; right:20px; width:50px; height:50px; background:var(--panel); backdrop-filter:var(--glass); border:1px solid var(--border); border-radius:12px; z-index:1000; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 5px 15px rgba(0,0,0,0.3);" title="Capturer la vue">📸</div>
+<div id="screenshot-btn" class="ui-element" style="display:none;" title="Capturer la vue">📸</div>
 
 <!-- BARRE DE TEMPS BASSE -->
 <div id="bottom-bar" class="ui-element" style="display:none;">
@@ -128,25 +101,27 @@
 <div id="panel">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
         <h2 style="margin:0; color:var(--gold); font-size:18px;">RÉGLAGES</h2>
-        <button id="close-panel" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">×</button>
+        <button id="close-panel" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">&times;</button>
     </div>
 
     <div class="control-group">
         <label style="font-size:12px; color:var(--gold); text-transform:uppercase; letter-spacing:1px; margin-bottom:15px; display:block;">Profil de Performance</label>
-        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; margin-bottom:20px;">
-            <button class="preset-btn" data-preset="eco">ÉCO</button>
+        <div class="preset-grid" style="margin-bottom:20px;">
+            <button class="preset-btn" data-preset="eco">2D</button>
             <button class="preset-btn" data-preset="balanced">STD</button>
             <button class="preset-btn" data-preset="performance">HIGH</button>
             <button class="preset-btn" data-preset="ultra">ULTRA</button>
         </div>
-        
-        <label style="font-size:12px; color:var(--t2); text-transform:uppercase; margin-bottom:10px; display:block;">Maillage & Distance</label>
-        <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;">
-            <span>Détail Maillage : <span id="res-disp">128</span></span>
-            <span>Distance Vue : <span id="range-disp">4</span></span>
+
+        <div class="control-group-3d">
+            <label style="font-size:12px; color:var(--t2); text-transform:uppercase; margin-bottom:10px; display:block;">Maillage & Distance</label>
+            <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;">
+                <span>Détail Maillage : <span id="res-disp">128</span></span>
+                <span>Distance Vue : <span id="range-disp">4</span></span>
+            </div>
+            <input type="range" id="res-slider" min="32" max="256" step="32" value="128">
+            <input type="range" id="range-slider" min="1" max="10" step="1" value="4" style="margin-top:10px;">
         </div>
-        <input type="range" id="res-slider" min="32" max="256" step="32" value="128">
-        <input type="range" id="range-slider" min="1" max="10" step="1" value="4" style="margin-top:10px;">
 
         <div style="margin-top:20px; display:flex; justify-content:space-between; align-items:center;">
             <span style="font-size:14px;">⚡ Vitesse Chargement</span>
@@ -159,7 +134,7 @@
         </div>
     </div>
 
-    <div class="control-group" style="margin-top:25px;">
+    <div class="control-group-3d" style="margin-top:25px;">
         <label style="font-size:12px; color:var(--t2); text-transform:uppercase;">Visuel Environnement</label>
         <div style="margin:15px 0;">
             <label style="display:flex; justify-content:space-between; font-size:14px;">
@@ -177,7 +152,7 @@
         </div>
     </div>
 
-    <div class="control-group" style="margin-top:25px; border-top:1px solid var(--border); padding-top:20px;">
+    <div class="control-group-3d" style="margin-top:25px; border-top:1px solid var(--border); padding-top:20px;">
         <label style="font-size:12px; color:var(--gold); text-transform:uppercase;">Éléments 3D & Debug</label>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; margin-bottom:10px;">
             <span style="font-size:14px;">📊 Stats de performance</span>
@@ -426,7 +401,7 @@
 </div>
 
 <!-- INDICATEUR FIXE -->
-<div id="zoom-indicator" class="ui-element" style="pointer-events: auto;">LVL --</div>
+<div id="zoom-indicator" class="ui-element">LVL --</div>
 <canvas id="compass-canvas" class="ui-element"></canvas>
 <div id="toast-container"></div>
 

@@ -187,6 +187,7 @@ export async function initScene(): Promise<void> {
     updateSunPosition(720); updateUIZoom(state.ZOOM);
 
     const clock = new THREE.Clock();
+    let lastRenderTime = 0;
     window.addEventListener('resize', onWindowResize);
 
     let needsInitialRender = 60; // On force 60 frames au début pour garantir l'affichage
@@ -195,24 +196,37 @@ export async function initScene(): Promise<void> {
     state.renderer.setAnimationLoop(() => {
         if (!state.renderer || !state.camera || !state.scene || !state.controls) return;
 
+        const now = performance.now();
         const delta = clock.getDelta();
+        
+        // --- OPTIMISATION BATTERIE 2D (v4.5.49) ---
+        // En mode 2D, on bride à 30 FPS (33.3ms entre chaque frame)
+        const is2D = state.RESOLUTION <= 2;
+        if (is2D && (now - lastRenderTime < 33)) return;
+        lastRenderTime = now;
+
         const hasWeather = state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0;
         
         updateCompassAnimation();
 
-        // --- GESTION DU TILT GOOGLE EARTH STYLE (v4.5.40) ---
+        // --- GESTION DU TILT GOOGLE EARTH STYLE (v4.5.40 / v4.5.47) ---
         const interacting = (state.controls as any)._isMoving;
         const currentTilt = state.controls.getPolarAngle();
         const distToTarget = state.camera.position.distanceTo(state.controls.target);
         
-        if (interacting) {
-            // PENDANT L'INTERACTION : LIBERTÉ TOTALE
-            // On réinitialise les limites pour permettre à l'utilisateur d'incliner manuellement (geste 2 doigts verticaux)
+        // On force la 2D si la résolution est très basse (Mode ECO)
+        const isForce2D = state.RESOLUTION <= 2;
+
+        if (isForce2D) {
+            // MODE 2D : Vue de dessus stricte, pas de rotation verticale possible
+            state.controls.minPolarAngle = 0;
+            state.controls.maxPolarAngle = 0;
+        } else if (interacting) {
+            // PENDANT L'INTERACTION : LIBERTÉ TOTALE (si pas force 2D)
             state.controls.minPolarAngle = 0.05; 
             state.controls.maxPolarAngle = 1.5; 
         } else {
             // HORS INTERACTION : RECENTRAGE AUTOMATIQUE (Auto-Tilt)
-            // L'inclinaison revient doucement vers l'angle idéal calculé par le moteur
             const hFactor = THREE.MathUtils.clamp((distToTarget - 2000) / 100000, 0, 1);
             let desiredTilt = THREE.MathUtils.lerp(1.2, 0.05, Math.pow(hFactor, 0.4));
             
@@ -222,7 +236,6 @@ export async function initScene(): Promise<void> {
             else if (state.ZOOM === 14) desiredTilt = Math.min(desiredTilt, 0.9);
             else if (state.ZOOM >= 15) desiredTilt = Math.min(desiredTilt, 1.2);
 
-            // Interpolation fluide
             if (Math.abs(currentTilt - desiredTilt) > 0.001) {
                 const newTilt = THREE.MathUtils.lerp(currentTilt, desiredTilt, 0.05);
                 state.controls.minPolarAngle = newTilt;
@@ -230,7 +243,7 @@ export async function initScene(): Promise<void> {
             }
         }
 
-        const needsUpdate = state.controls.update() || state.isSunAnimating || state.isInteractingWithUI || hasWeather || isCompassAnimating() || tilesFading || needsInitialRender > 0;
+        const needsUpdate = state.controls.update() || state.isSunAnimating || state.isInteractingWithUI || state.isProcessingTiles || hasWeather || isCompassAnimating() || tilesFading || needsInitialRender > 0;
 
         if (needsUpdate) {
             state.stats?.begin();

@@ -12,6 +12,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Correctif Ombres :** recalibrage du frustum d'ombre (50km) pour une projection fidèle des sommets sur les vallées.
 - **UI Météo :** Intégration du Dashboard expert avec Isotherme 0°C, UV et prévisions horaires sur 6h.
 
+## [4.5.49] - 2026-03-15
+### 🔋 Vrai Mode 2D Turbo (Économie d'Énergie)
+- **Zéro Relief** : En mode 2D, le moteur ne télécharge plus les textures d'élévation et utilise des maillages plats (2 triangles), divisant par 100 la charge géométrique.
+- **Bridage 30 FPS** : Limitation volontaire du frame-rate en mode 2D pour quadrupler l'autonomie batterie sur mobile.
+- **UI Intelligente** : Masquage automatique de la timeline et des options de réglages 3D (relief, ombres, végétation) pour une interface épurée.
+- **Verrouillage Vertical** : La caméra est bloquée en vue de dessus stricte en mode 2D, empêchant toute plongée sous l'horizon.
+
 ## [4.5.46] - 2026-03-15
 ### 🚀 Optimisation GPU
 - **Shader Light pour Milieu de Gamme** : Implémentation d'un mode de rendu simplifié pour les presets Eco et Balanced. Réduction de 75% des lectures de textures dans le Vertex Shader en désactivant le calcul dynamique des normales, stabilisant les FPS sur les processeurs Mali (Galaxy A53).

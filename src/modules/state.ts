@@ -27,16 +27,16 @@ export interface PerformanceSettings {
 
 export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings> = {
     eco: {
-        RESOLUTION: 64, RANGE: 2, SHADOWS: false, SHADOW_RES: 256, PIXEL_RATIO_LIMIT: 1.0,
+        RESOLUTION: 2, RANGE: 6, SHADOWS: false, SHADOW_RES: 128, PIXEL_RATIO_LIMIT: 1.0,
         SHOW_VEGETATION: false, SHOW_SIGNPOSTS: false, SHOW_BUILDINGS: false, BUILDINGS_SHADOWS: false,
-        MAX_ALLOWED_ZOOM: 15, VEGETATION_DENSITY: 1000, BUILDING_BATCH_SIZE: 5, MAX_BUILDS_PER_CYCLE: 1,
+        MAX_ALLOWED_ZOOM: 15, VEGETATION_DENSITY: 0, BUILDING_BATCH_SIZE: 0, MAX_BUILDS_PER_CYCLE: 1,
         LOAD_DELAY_FACTOR: 2.0, SHOW_WEATHER: false, WEATHER_DENSITY: 0, WEATHER_SPEED: 1.0
     },
     balanced: {
-        RESOLUTION: 96, RANGE: 3, SHADOWS: true, SHADOW_RES: 512, PIXEL_RATIO_LIMIT: 1.1,
+        RESOLUTION: 64, RANGE: 3, SHADOWS: true, SHADOW_RES: 256, PIXEL_RATIO_LIMIT: 1.0,
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, BUILDINGS_SHADOWS: false,
-        MAX_ALLOWED_ZOOM: 16, VEGETATION_DENSITY: 4000, BUILDING_BATCH_SIZE: 20, MAX_BUILDS_PER_CYCLE: 2,
-        LOAD_DELAY_FACTOR: 1.0, SHOW_WEATHER: true, WEATHER_DENSITY: 2500, WEATHER_SPEED: 1.0
+        MAX_ALLOWED_ZOOM: 16, VEGETATION_DENSITY: 2000, BUILDING_BATCH_SIZE: 15, MAX_BUILDS_PER_CYCLE: 2,
+        LOAD_DELAY_FACTOR: 1.2, SHOW_WEATHER: true, WEATHER_DENSITY: 2000, WEATHER_SPEED: 1.0
     },
     performance: {
         RESOLUTION: 160, RANGE: 4, SHADOWS: true, SHADOW_RES: 2048, PIXEL_RATIO_LIMIT: 1.5,
@@ -148,6 +148,7 @@ export interface State {
     cacheHits: number;
     uiVisible: boolean;
     isInteractingWithUI: boolean;
+    isProcessingTiles: boolean;
     lastUIInteraction: number;
 }
 
@@ -180,5 +181,5 @@ export const state: State = {
     userLocation: null, userHeading: null, isFollowingUser: false, userMarker: null,
 
     // --- Système ---
-    networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, lastUIInteraction: Date.now()
+    networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isProcessingTiles: false, lastUIInteraction: Date.now()
 };

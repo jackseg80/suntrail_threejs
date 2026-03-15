@@ -47,8 +47,12 @@ let loadQueue: Tile[] = [];
 let isProcessingQueue = false;
 
 async function processLoadQueue() {
-    if (isProcessingQueue || loadQueue.length === 0) return;
+    if (isProcessingQueue || loadQueue.length === 0) {
+        state.isProcessingTiles = false;
+        return;
+    }
     isProcessingQueue = true;
+    state.isProcessingTiles = true;
     try {
         if (state.camera) {
             const camX = state.camera.position.x;
@@ -283,8 +287,9 @@ export class Tile {
         try {
             this.updateHybridSettings();
             
-            // --- OPTIMISATION 2D HAUTE ALTITUDE (v4.3.58) ---
-            if (this.zoom <= 10) {
+            // --- OPTIMISATION 2D MOBILE (v4.3.58 / v4.5.49) ---
+            // On saute le relief si zoom faible OU mode 2D forcé
+            if (this.zoom <= 10 || state.RESOLUTION <= 2) {
                 const dummy = document.createElement('canvas'); dummy.width = 2; dummy.height = 2;
                 const dCtx = dummy.getContext('2d'); if (dCtx) { dCtx.fillStyle = '#000000'; dCtx.fillRect(0,0,2,2); }
                 this.elevationTex = new THREE.CanvasTexture(dummy);
@@ -390,16 +395,15 @@ export class Tile {
         if (!this.elevationTex || !this.colorTex || this.status as any === 'disposed') return;
         
         // --- SÉCURITÉ ANTI-FANTÔME (v4.3.32) ---
-        // Si la tuile n'est pas dans les tuiles actives, on ne construit rien.
-        // Cela évite que le préchargement prédictif n'ajoute des objets orphelins dans la scène.
         if (activeTiles.get(this.key) !== this) return;
 
+        // --- OPTIMISATION 2D MOBILE (v4.3.65 / v4.5.47) ---
+        // On force 2D si zoom faible ou résolution ECO (<= 2)
+        const is2D = (this.zoom <= 10 || resolution <= 2);
+        
         const oldMesh = this.mesh;
         const geometry = getPlaneGeometry(resolution, this.tileSizeMeters);
         
-        // --- OPTIMISATION 2D MOBILE (v4.3.65) ---
-        // Pour Zoom <= 10, on utilise un matériau basique sans calculs de lumière/ombre.
-        const is2D = (this.zoom <= 10);
         const material = is2D 
             ? new THREE.MeshBasicMaterial({ map: this.colorTex, transparent: true, opacity: 0 })
             : new THREE.MeshStandardMaterial({ map: this.colorTex, roughness: 1.0, metalness: 0.0, transparent: true, opacity: 0 });
@@ -693,9 +697,9 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
                 const dZ = tile.worldZ - state.camera.position.z;
                 const dist = Math.sqrt(dX * dX + dZ * dZ);
 
-                let targetRes = Math.floor(state.RESOLUTION / 4);
+                let targetRes = Math.max(1, Math.floor(state.RESOLUTION / 4));
                 if (dist < tile.tileSizeMeters * 3.0) targetRes = state.RESOLUTION;
-                else if (dist < tile.tileSizeMeters * 6.0) targetRes = Math.floor(state.RESOLUTION / 2);
+                else if (dist < tile.tileSizeMeters * 6.0) targetRes = Math.max(1, Math.floor(state.RESOLUTION / 2));
 
                 if (targetRes !== tile.currentResolution) {
                     tile.buildMesh(targetRes);

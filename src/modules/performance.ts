@@ -88,6 +88,13 @@ export function applyPreset(preset: PresetType): void {
     state.WEATHER_DENSITY = settings.WEATHER_DENSITY;
     state.WEATHER_SPEED = settings.WEATHER_SPEED;
 
+    // Mise à jour de l'UI (Masquage timeline et options 3D)
+    if (preset === 'eco') {
+        document.body.classList.add('mode-2d');
+    } else {
+        document.body.classList.remove('mode-2d');
+    }
+
     // Mise à jour dynamique des ombres
     if (state.sunLight) {
         state.sunLight.castShadow = state.SHADOWS;
