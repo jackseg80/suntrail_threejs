@@ -8,6 +8,9 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [x] **Sécurité 2D** : Blocage intelligent des relevés en mode plan plat.
 - [x] **Météo Avancée** : Isotherme 0°C et prévisions 6h.
 
+## ✅ Terminé (v4.5.46)
+- [x] **Shader Light GPU** : Division par 4 des lectures de textures sur le relief pour les mobiles milieu de gamme.
+
 ## ✅ Terminé (v4.5.45)
 - [x] **Végétation Ultra-Light** : Scan adaptatif des forêts divisant par 16 la charge CPU en mode Balanced.
 

@@ -424,6 +424,7 @@ export class Tile {
         `;
 
         if (!is2D) {
+            const isLight = (state.PERFORMANCE_PRESET === 'eco' || state.PERFORMANCE_PRESET === 'balanced');
             material.onBeforeCompile = (shader) => {
                 shader.uniforms.uElevationMap = { value: this.elevationTex };
                 shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
@@ -437,20 +438,36 @@ export class Tile {
                 shader.uniforms.uSlopesMap = { value: this.slopesTex || null };
                 shader.uniforms.uHasSlopes = { value: !!this.slopesTex };
 
+                shader.vertexShader = `
+                    #define IS_LIGHT ${isLight ? '1' : '0'}
+                    ${shader.vertexShader}
+                `;
+
                 shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n
                     uniform vec2 uColorOffset;
                     uniform float uColorScale;
                     ${sharedShaderChunk}
                 `);
                 shader.vertexShader = shader.vertexShader.replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);`);
-                shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n
-                    float delta = uTileSize / 256.0;
-                    float hL = getTerrainHeight(uv + vec2(-1.0/256.0, 0.0));
-                    float hR = getTerrainHeight(uv + vec2(1.0/256.0, 0.0));
-                    float hD = getTerrainHeight(uv + vec2(0.0, -1.0/256.0));
-                    float hU = getTerrainHeight(uv + vec2(0.0, 1.0/256.0));
-                    objectNormal = normalize(vec3(hL - hR, delta * 2.0, hD - hU));
-                `);
+                
+                // --- OPTIMISATION SHADER (v4.5.46) ---
+                // En mode Light, on ne calcule pas de normales précises par échantillonnage.
+                // On utilise les normales par défaut du plan (orientées vers le haut) pour gagner du FPS GPU.
+                if (isLight) {
+                    shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n
+                        objectNormal = vec3(0.0, 1.0, 0.0);
+                    `);
+                } else {
+                    shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n
+                        float delta = uTileSize / 256.0;
+                        float hL = getTerrainHeight(uv + vec2(-1.0/256.0, 0.0));
+                        float hR = getTerrainHeight(uv + vec2(1.0/256.0, 0.0));
+                        float hD = getTerrainHeight(uv + vec2(0.0, -1.0/256.0));
+                        float hU = getTerrainHeight(uv + vec2(0.0, 1.0/256.0));
+                        objectNormal = normalize(vec3(hL - hR, delta * 2.0, hD - hU));
+                    `);
+                }
+                
                 shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv);`);
 
                 shader.fragmentShader = `
