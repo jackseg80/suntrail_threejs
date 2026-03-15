@@ -35,6 +35,8 @@ function initOrientationTracking() {
     }
 }
 
+let lastLat = 0, lastLon = 0, lastRawHeading = 0;
+
 export async function startLocationTracking() {
     if (watchId !== null) return;
     initOrientationTracking();
@@ -48,12 +50,26 @@ export async function startLocationTracking() {
             if (err || !position) return;
             
             const { latitude, longitude, altitude, heading } = position.coords;
-            state.userLocation = { lat: latitude, lon: longitude, alt: altitude || 0 };
             
-            if (heading !== null && heading !== undefined) state.userHeading = heading;
-
-            updateUserMarker();
-            if (state.isFollowingUser) centerOnUser();
+            // --- FILTRAGE DE MOUVEMENT (v4.5.51) ---
+            // On n'actualise que si le mouvement est significatif (> 2 mètres env.)
+            const distMove = Math.sqrt(Math.pow(latitude - lastLat, 2) + Math.pow(longitude - lastLon, 2));
+            if (distMove > 0.00002) { 
+                state.userLocation = { lat: latitude, lon: longitude, alt: altitude || 0 };
+                lastLat = latitude; lastLon = longitude;
+                updateUserMarker();
+                if (state.isFollowingUser) centerOnUser();
+            }
+            
+            if (heading !== null && heading !== undefined) {
+                // Lissage du cap GPS
+                if (Math.abs(heading - lastRawHeading) > 3) {
+                    state.userHeading = heading;
+                    lastRawHeading = heading;
+                    updateUserMarker();
+                    if (state.isFollowingUser) centerOnUser();
+                }
+            }
         });
     } catch (e) { console.error("Tracking error:", e); }
 }

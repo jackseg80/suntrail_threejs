@@ -218,13 +218,14 @@ export async function initScene(): Promise<void> {
         const isForce2D = state.RESOLUTION <= 2;
 
         if (isForce2D) {
-            // MODE 2D : Vue de dessus stricte, pas de rotation verticale possible
+            // MODE 2D : Vue de dessus stricte
             state.controls.minPolarAngle = 0;
             state.controls.maxPolarAngle = 0;
         } else if (interacting) {
-            // PENDANT L'INTERACTION : LIBERTÉ TOTALE (si pas force 2D)
+            // PENDANT L'INTERACTION : LIBERTÉ SEMI-TOTALE (v4.5.51)
+            // On laisse une plage de mouvement vertical libre pour l'ajustement manuel
             state.controls.minPolarAngle = 0.05; 
-            state.controls.maxPolarAngle = 1.5; 
+            state.controls.maxPolarAngle = 1.4; 
         } else {
             // HORS INTERACTION : RECENTRAGE AUTOMATIQUE (Auto-Tilt)
             const hFactor = THREE.MathUtils.clamp((distToTarget - 2000) / 100000, 0, 1);
@@ -236,10 +237,11 @@ export async function initScene(): Promise<void> {
             else if (state.ZOOM === 14) desiredTilt = Math.min(desiredTilt, 0.9);
             else if (state.ZOOM >= 15) desiredTilt = Math.min(desiredTilt, 1.2);
 
-            if (Math.abs(currentTilt - desiredTilt) > 0.001) {
-                const newTilt = THREE.MathUtils.lerp(currentTilt, desiredTilt, 0.05);
-                state.controls.minPolarAngle = newTilt;
-                state.controls.maxPolarAngle = newTilt;
+            // Interpolation très douce (0.02) pour ne pas brusquer la caméra
+            if (Math.abs(currentTilt - desiredTilt) > 0.01) {
+                const newTilt = THREE.MathUtils.lerp(currentTilt, desiredTilt, 0.02);
+                state.controls.minPolarAngle = Math.max(0.05, newTilt - 0.2); 
+                state.controls.maxPolarAngle = Math.min(1.4, newTilt + 0.2);
             }
         }
 
