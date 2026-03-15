@@ -1,6 +1,15 @@
 import { state, PRESETS, PresetType } from './state';
 import { showToast } from './utils';
 import { updateShadowMapResolution } from './sun';
+import { resetTerrain, updateVisibleTiles } from './terrain';
+
+/**
+ * Force le rechargement complet du terrain
+ */
+function refreshTerrain() {
+    resetTerrain();
+    updateVisibleTiles();
+}
 
 /**
  * Détecte les informations du GPU
@@ -102,6 +111,7 @@ export function applyPreset(preset: PresetType): void {
     }
 
     updatePerformanceUI(preset);
+    refreshTerrain();
     showToast(`Profil appliqué : ${preset.toUpperCase()}`);
 }
 

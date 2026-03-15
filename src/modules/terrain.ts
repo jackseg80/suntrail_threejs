@@ -273,7 +273,10 @@ export class Tile {
 
     async load(): Promise<void> {
         if (this.status !== 'idle' && this.status !== 'failed') return;
-        const cacheKey = `${state.MAP_SOURCE}_${state.SHOW_TRAILS}_${state.SHOW_SLOPES}_${this.key}`;
+        
+        const is2D = (state.RESOLUTION <= 2);
+        const cacheKey = `${state.MAP_SOURCE}_${state.SHOW_TRAILS}_${state.SHOW_SLOPES}_${is2D ? '2D' : '3D'}_${this.key}`;
+        
         const cached = getFromCache(cacheKey);
         if (cached) {
             this.elevationTex = cached.elev; this.pixelData = cached.pixelData;

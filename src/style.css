@@ -294,7 +294,9 @@ input[type="range"] { accent-color: var(--accent); }
 
 body.mode-2d #bottom-bar,
 body.mode-2d #sun-phase,
-body.mode-2d .control-group-3d {
+body.mode-2d .control-group-3d,
+body.mode-2d #coords-panel,
+body.mode-2d #probe-result {
     display: none !important;
 }
 
