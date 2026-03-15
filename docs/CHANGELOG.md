@@ -4,6 +4,11 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.5.52] - 2026-03-15
+### 🔋 Ultra-Battery Save & Deep Sleep
+- **Mode Éco Global** : Ajout d'un réglage "Économie d'énergie (30 FPS)" dans l'interface, permettant de brider le taux de rafraîchissement à 30 FPS quel que soit le profil de performance choisi (Ultra, Balanced, etc.), réduisant drastiquement la consommation.
+- **Veille Intelligente (Deep Sleep)** : L'application détecte lorsqu'elle passe en arrière-plan (changement d'onglet ou téléphone verrouillé) et stoppe totalement le moteur 3D (0 FPS) tout en conservant le suivi GPS actif. Idéal pour garder l'app ouverte en randonnée sans vider la batterie.
+
 ## [4.4.1] - 2026-03-14
 ### 🛠️ Corrections & Stabilité (Hotfix)
 - **Fix Raycasting :** Augmentation de la distance de détection du relief à 500 km pour permettre le clic à haute altitude (LOD 12+).

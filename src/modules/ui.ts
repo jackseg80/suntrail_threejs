@@ -201,6 +201,7 @@ export function initUI(): void {
         }
     });
 
+    hookChange('energy-saver-toggle', (v) => { state.ENERGY_SAVER = v; });
     hookChange('shadow-toggle', (v) => { state.SHADOWS = v; if (state.sunLight) state.sunLight.castShadow = v; });
     hookChange('veg-toggle', (v) => { state.SHOW_VEGETATION = v; refreshTerrain(); loadTerrain(); });
     hookChange('buildings-toggle', (v) => { state.SHOW_BUILDINGS = v; refreshTerrain(); loadTerrain(); });

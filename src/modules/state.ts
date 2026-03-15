@@ -56,6 +56,7 @@ export interface State {
     // ==========================================
     // ⚙️ CONFIGURATION & PRÉFÉRENCES
     // ==========================================
+    ENERGY_SAVER: boolean;
     MK: string;
     MAP_SOURCE: string;
     hasManualSource: boolean;
@@ -154,6 +155,7 @@ export interface State {
 
 export const state: State = {
     // --- Config ---
+    ENERGY_SAVER: false,
     MK: '', MAP_SOURCE: 'swisstopo', hasManualSource: false,
     PERFORMANCE_PRESET: 'balanced', RESOLUTION: PRESETS.balanced.RESOLUTION, RANGE: PRESETS.balanced.RANGE,
     PIXEL_RATIO_LIMIT: PRESETS.balanced.PIXEL_RATIO_LIMIT, LOAD_DELAY_FACTOR: PRESETS.balanced.LOAD_DELAY_FACTOR,

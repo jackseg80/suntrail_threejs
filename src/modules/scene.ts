@@ -193,16 +193,19 @@ export async function initScene(): Promise<void> {
     let needsInitialRender = 60; // On force 60 frames au début pour garantir l'affichage
     let tilesFading = true;
 
-    state.renderer.setAnimationLoop(() => {
+    const renderLoopFn = () => {
         if (!state.renderer || !state.camera || !state.scene || !state.controls) return;
+
+        // --- DEEP SLEEP (MISE EN VEILLE) ---
+        // Si l'application est en arrière-plan, on stoppe tout calcul 3D
+        if (document.visibilityState === 'hidden') return;
 
         const now = performance.now();
         const delta = clock.getDelta();
         
-        // --- OPTIMISATION BATTERIE 2D (v4.5.49) ---
-        // En mode 2D, on bride à 30 FPS (33.3ms entre chaque frame)
-        const is2D = state.RESOLUTION <= 2;
-        if (is2D && (now - lastRenderTime < 33)) return;
+        // --- OPTIMISATION BATTERIE GLOBALE (v4.5.52) ---
+        // On bride à 30 FPS (33.3ms entre chaque frame) uniquement si l'économie d'énergie est active
+        if (state.ENERGY_SAVER && (now - lastRenderTime < 33)) return;
         lastRenderTime = now;
 
         const hasWeather = state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0;
@@ -286,7 +289,9 @@ export async function initScene(): Promise<void> {
             renderCompass();
             state.stats?.end();
         }
-    });
+    };
+
+    state.renderer.setAnimationLoop(renderLoopFn);
 }
 
 function onWindowResize(): void {

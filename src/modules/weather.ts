@@ -190,7 +190,9 @@ export function initWeatherSystem(scene: THREE.Scene): void {
 export function updateWeatherSystem(delta: number, cameraPos: THREE.Vector3): void {
     if (!weatherPoints || !weatherMaterial || !geometry) return;
     const altitude = cameraPos.y;
-    if (state.currentWeather === 'clear' || state.WEATHER_DENSITY <= 0 || altitude > 100000) {
+    const is2D = state.RESOLUTION <= 2;
+
+    if (state.currentWeather === 'clear' || state.WEATHER_DENSITY <= 0 || altitude > 100000 || is2D) {
         weatherPoints.visible = false; return;
     }
     weatherPoints.visible = true;

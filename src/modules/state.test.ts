@@ -28,6 +28,11 @@ describe('state.ts', () => {
         expect(state.LOAD_DELAY_FACTOR).toBeDefined();
     });
 
+    it('should have battery optimization parameters defined (v4.5.52)', () => {
+        expect(state.ENERGY_SAVER).toBeDefined();
+        expect(state.ENERGY_SAVER).toBe(false);
+    });
+
     describe('PRESETS', () => {
         it('should have an ultra preset with high range and resolution', () => {
             expect(PRESETS.ultra.RANGE).toBe(8);

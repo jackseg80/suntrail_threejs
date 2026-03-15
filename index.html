@@ -11,7 +11,7 @@
 
 <div id="setup-screen">
     <div class="setup-card">
-        <div style="margin-bottom:8px; font-size:10px; color:var(--gold); font-weight:700; letter-spacing:3px; text-transform:uppercase;">Version 4.5.50</div>
+        <div style="margin-bottom:8px; font-size:10px; color:var(--gold); font-weight:700; letter-spacing:3px; text-transform:uppercase;">Version 4.5.52</div>
         <h1>⛰️ SunTrail 3D</h1>
         <p style="color:var(--t2);">Visualisation topographique haute précision, simulation solaire en temps réel & météo experte.</p>
         
@@ -77,24 +77,34 @@
 <div id="gps-follow-btn" class="ui-element" style="display:none;" title="Suivre ma position">🚶</div>
 <div id="screenshot-btn" class="ui-element" style="display:none;" title="Capturer la vue">📸</div>
 
-<!-- BARRE DE TEMPS BASSE -->
-<div id="bottom-bar" class="ui-element" style="display:none;">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div style="display:flex; align-items:center; gap:12px;">
-            <div style="font-weight:700; font-size:18px;"><span id="time-disp">12:00</span></div>
-            <div id="sun-phase" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-left:5px;">☀️ Plein jour</div>
-            <input type="date" id="date-input" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white !important; font-size:12px; padding:8px 12px; border-radius:10px; cursor:pointer; color-scheme: dark; font-family: inherit; -webkit-appearance: none; display: flex; align-items: center; min-height: 35px;">
-        </div>
-        <div style="display:flex; gap:10px;">
-            <button id="play-btn" style="background:none; border:none; color:white; font-size:18px; cursor:pointer;">▶</button>
-            <select id="speed-select" style="background:none; border:none; color:var(--t2); font-size:12px;">
-                <option value="1">1x</option>
-                <option value="5">5x</option>
-                <option value="10">10x</option>
-            </select>
-        </div>
+<!-- ZONE BASSE (STACK) -->
+<div id="bottom-stack" class="ui-element">
+    <!-- PANNEAU COORDONNÉES -->
+    <div id="coords-panel" style="display:none;">
+        <div id="click-latlon" style="color:var(--t2); font-size:11px;">—</div>
+        <div id="click-alt" style="color:var(--gold); font-size:16px; font-weight:700;">—</div>
+        <button id="probe-btn" style="pointer-events:auto; margin-top:10px; width:100%; padding:8px; border-radius:8px; background:var(--accent); color:white; border:none; font-weight:700; cursor:pointer; font-size:11px;">☀️ ANALYSE SOLAIRE</button>
     </div>
-    <input type="range" id="time-slider" min="0" max="1439" value="720">
+
+    <!-- BARRE DE TEMPS BASSE -->
+    <div id="bottom-bar" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="font-weight:700; font-size:18px;"><span id="time-disp">12:00</span></div>
+                <div id="sun-phase" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-left:5px;">☀️ Plein jour</div>
+                <input type="date" id="date-input" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white !important; font-size:12px; padding:8px 12px; border-radius:10px; cursor:pointer; color-scheme: dark; font-family: inherit; -webkit-appearance: none; display: flex; align-items: center; min-height: 35px;">
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button id="play-btn" style="background:none; border:none; color:white; font-size:18px; cursor:pointer;">▶</button>
+                <select id="speed-select" style="background:none; border:none; color:var(--t2); font-size:12px;">
+                    <option value="1">1x</option>
+                    <option value="5">5x</option>
+                    <option value="10">10x</option>
+                </select>
+            </div>
+        </div>
+        <input type="range" id="time-slider" min="0" max="1439" value="720">
+    </div>
 </div>
 
 <!-- PANNEAU RÉGLAGES (CACHÉ PAR DÉFAUT) -->
@@ -106,11 +116,16 @@
 
     <div class="control-group">
         <label style="font-size:12px; color:var(--gold); text-transform:uppercase; letter-spacing:1px; margin-bottom:15px; display:block;">Profil de Performance</label>
-        <div class="preset-grid" style="margin-bottom:20px;">
+        <div class="preset-grid" style="margin-bottom:15px;">
             <button class="preset-btn" data-preset="eco">2D</button>
             <button class="preset-btn" data-preset="balanced">STD</button>
             <button class="preset-btn" data-preset="performance">HIGH</button>
             <button class="preset-btn" data-preset="ultra">ULTRA</button>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:12px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
+            <span style="font-size:13px; color:white; font-weight:500;">🔋 Économie d'énergie (30 FPS)</span>
+            <input type="checkbox" id="energy-saver-toggle" style="width:20px; height:20px; cursor:pointer;">
         </div>
 
         <div class="control-group-3d">
@@ -289,13 +304,6 @@
             <input type="range" id="weather-speed-slider" min="0.5" max="3.0" step="0.1" value="1.0">
         </div>
     </details>
-</div>
-
-<!-- PANNEAU COORDONNÉES -->
-<div id="coords-panel" class="ui-element" style="display:none; position:fixed; bottom:100px; left:20px; background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:12px; font-size:13px; z-index:500; backdrop-filter:var(--glass); pointer-events:none; box-shadow:0 5px 15px rgba(0,0,0,0.3);">
-    <div id="click-latlon" style="color:var(--t2); font-size:11px;">—</div>
-    <div id="click-alt" style="color:var(--gold); font-size:16px; font-weight:700;">—</div>
-    <button id="probe-btn" style="pointer-events:auto; margin-top:10px; width:100%; padding:8px; border-radius:8px; background:var(--accent); color:white; border:none; font-weight:700; cursor:pointer; font-size:11px;">☀️ ANALYSE SOLAIRE</button>
 </div>
 
 <!-- RÉSULTAT ANALYSE SOLAIRE -->

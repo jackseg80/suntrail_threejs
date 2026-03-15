@@ -90,7 +90,11 @@ body, html {
 .layer-item.active .layer-thumb { border-color: var(--accent); }
 .layer-item.active { color: white; font-weight: 700; }
 
-/* BARRE DE TEMPS BASSE */
+/* ZONE BASSE (STACK SUR MOBILE / INDÉPENDANT SUR PC) */
+#bottom-stack {
+    display: contents; /* Par défaut sur PC, les éléments se positionnent librement */
+}
+
 #bottom-bar {
     position: fixed; 
     bottom: calc(20px + env(safe-area-inset-bottom, 0px)); 
@@ -99,6 +103,7 @@ body, html {
     background: var(--panel); backdrop-filter: var(--glass);
     border: 1px solid var(--border); border-radius: 24px; padding: 12px 20px;
     box-shadow: 0 10px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 8px;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #time-slider {
@@ -208,13 +213,14 @@ body.ui-hidden .ui-element {
 
 /* Effets de translation spécifiques pour une sortie élégante */
 body.ui-hidden #top-search-container { transform: translate(-50%, calc(-20px - env(safe-area-inset-top, 0px))); }
-body.ui-hidden #bottom-bar { transform: translate(-50%, calc(20px + env(safe-area-inset-bottom, 0px))); }
+body.ui-hidden #bottom-bar { transform: translate(-50%, calc(100% + 40px)); }
 body.ui-hidden #elevation-profile { transform: translate(-50%, calc(20px + env(safe-area-inset-bottom, 0px))); }
 body.ui-hidden #layer-btn, body.ui-hidden #gps-btn, body.ui-hidden #gps-follow-btn { transform: translateX(calc(20px + env(safe-area-inset-right, 0px))); }
 body.ui-hidden #settings-toggle { transform: translateX(calc(-20px - env(safe-area-inset-left, 0px))); }
 body.ui-hidden #zoom-indicator { transform: translate(-50%, calc(20px + env(safe-area-inset-bottom, 0px))); }
 body.ui-hidden #compass-canvas { transform: translate(calc(20px + env(safe-area-inset-right, 0px)), calc(20px + env(safe-area-inset-bottom, 0px))); }
-body.ui-hidden #coords-panel, body.ui-hidden #probe-result { transform: translateX(calc(-20px - env(safe-area-inset-left, 0px))); }
+body.ui-hidden #coords-panel { transform: translateX(calc(-100% - 40px)); opacity: 0; }
+body.ui-hidden #probe-result { transform: translateX(calc(-20px - env(safe-area-inset-left, 0px))); }
 
 input[type="range"] { accent-color: var(--accent); }
 
@@ -224,7 +230,7 @@ input[type="range"] { accent-color: var(--accent); }
     background: var(--panel); backdrop-filter: var(--glass);
     color: #00ffff; padding: 4px 15px; border-radius: 20px;
     font-family: monospace; font-size: 11px; z-index: 500;
-    border: 1px solid rgba(0,255,255,0.2); pointer-events: none;
+    border: 1px solid rgba(0,255,255,0.2); pointer-events: auto; cursor: pointer;
 }
 
 /* TOAST NOTIFICATION */
@@ -302,9 +308,10 @@ body.mode-2d #probe-result {
 
 #coords-panel {
     position: fixed; 
-    bottom: calc(100px + env(safe-area-inset-bottom, 0px)); 
+    bottom: 100px; 
     left: calc(20px + env(safe-area-inset-left, 0px)); 
     background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 12px; font-size: 13px; z-index: 500; backdrop-filter: var(--glass); pointer-events: none; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s;
 }
 
 @media (max-width: 600px) {
@@ -312,8 +319,52 @@ body.mode-2d #probe-result {
         top: calc(200px + env(safe-area-inset-top, 0px)); 
         width: 44px; height: 44px;
     }
+
+    #bottom-stack {
+        display: flex;
+        flex-direction: column; /* Coordonnées EN HAUT, Timeline EN BAS */
+        align-items: flex-start; /* Force les enfants à ne prendre que leur largeur contenu */
+        gap: 12px;
+        position: fixed;
+        bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+        left: 50%; transform: translateX(-50%);
+        width: 90%; z-index: 1000;
+        pointer-events: none;
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #bottom-bar {
+        position: static;
+        width: 100%; /* La timeline prend toute la largeur du stack */
+        transform: none !important;
+        pointer-events: auto;
+    }
+
     #coords-panel {
-        bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+        position: static;
+        width: auto; /* Largeur limitée au contenu (comme sur PC) */
+        max-width: 80%; /* Sécurité pour ne pas toucher la boussole */
+        transform: none !important;
+        pointer-events: auto;
+        opacity: 1 !important;
+    }
+
+    #zoom-indicator {
+        bottom: auto;
+        top: calc(85px + env(safe-area-inset-top, 0px));
+        font-size: 10px;
+        padding: 4px 12px;
+        z-index: 900; /* Juste en-dessous de la recherche (1000) */
+        background: rgba(18, 20, 28, 0.4); /* Plus discret en haut */
+        border-color: rgba(0, 255, 255, 0.1);
+    }
+
+    body.ui-hidden #zoom-indicator { 
+        transform: translate(-50%, -100px); /* Sortie vers le haut sur mobile */
+    }
+
+    body.ui-hidden #bottom-stack { 
+        transform: translate(-50%, calc(100% + 150px)); /* Sortie plus profonde pour tout cacher */
     }
 }
 
