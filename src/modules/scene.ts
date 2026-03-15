@@ -212,18 +212,18 @@ export async function initScene(): Promise<void> {
         
         updateCompassAnimation();
 
-        // --- PARABOLE DU TILT (v4.5.56) ---
-        // On définit une courbe d'inclinaison qui culmine à LOD 14
-        let tiltCap = 1.40; 
+        // --- PARABOLE DU TILT CONSERVATRICE (v4.5.57) ---
+        // On resserre les limites pour ne jamais voir le vide
+        let tiltCap = 1.25; 
         if (state.ZOOM <= 10) tiltCap = 0;
-        else if (state.ZOOM === 11) tiltCap = 0.70;
-        else if (state.ZOOM === 12) tiltCap = 1.00;
-        else if (state.ZOOM === 13) tiltCap = 1.25;
-        else if (state.ZOOM === 14) tiltCap = 1.40; // PIC
-        else if (state.ZOOM === 15) tiltCap = 1.20; // REDRESSEMENT
-        else if (state.ZOOM === 16) tiltCap = 1.00;
-        else if (state.ZOOM === 17) tiltCap = 0.80;
-        else if (state.ZOOM >= 18)  tiltCap = 0.60;
+        else if (state.ZOOM === 11) tiltCap = 0.45;
+        else if (state.ZOOM === 12) tiltCap = 0.75;
+        else if (state.ZOOM === 13) tiltCap = 1.05;
+        else if (state.ZOOM === 14) tiltCap = 1.25; // NOUVEAU PIC PLUS BAS
+        else if (state.ZOOM === 15) tiltCap = 1.00; // REDRESSEMENT PLUS FERME
+        else if (state.ZOOM === 16) tiltCap = 0.80;
+        else if (state.ZOOM === 17) tiltCap = 0.60;
+        else if (state.ZOOM >= 18)  tiltCap = 0.45;
 
         const interacting = (state.controls as any)._isMoving;
         const currentTilt = state.controls.getPolarAngle();
