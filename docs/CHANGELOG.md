@@ -4,6 +4,14 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.5.54] - 2026-03-15
+### 🌫️ Voile Atmosphérique Dynamique par Preset
+- **Intégration Presets** : Le réglage du brouillard est désormais lié aux profils de performance.
+    - **Eco/Balanced** : Brouillard dense pour masquer le chargement des tuiles et économiser les ressources.
+    - **Ultra** : Visibilité maximale (100km) pour une expérience immersive totale.
+- **Auto-Custom Mode** : Le réglage manuel du voile atmosphérique fait désormais basculer automatiquement le profil vers "Custom".
+- **Sync UI** : Le slider de brouillard se synchronise instantanément lors du changement de preset.
+
 ## [4.5.53] - 2026-03-15
 ### 🌫️ Correction du Voile Atmosphérique
 - **Fog Slider Fix** : Le réglage "Voile atmosphérique" est désormais fonctionnel. La boucle de rendu respecte maintenant la valeur `FOG_FAR` définie par l'utilisateur tout en conservant une mise à l'échelle intelligente selon l'altitude de la caméra.

@@ -195,6 +195,7 @@ export function initUI(): void {
         if (state.scene && state.scene.fog && state.scene.fog instanceof THREE.Fog) {
             state.scene.fog.far = state.FOG_FAR;
         }
+        applyPreset('custom');
     });
 
     document.getElementById('date-input')?.addEventListener('change', (e) => {

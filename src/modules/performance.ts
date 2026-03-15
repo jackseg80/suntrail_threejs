@@ -96,6 +96,7 @@ export function applyPreset(preset: PresetType): void {
     state.SHOW_WEATHER = settings.SHOW_WEATHER;
     state.WEATHER_DENSITY = settings.WEATHER_DENSITY;
     state.WEATHER_SPEED = settings.WEATHER_SPEED;
+    state.FOG_FAR = settings.FOG_FAR;
 
     // Mise à jour de l'UI (Masquage timeline et options 3D)
     if (preset === 'eco') {
@@ -156,6 +157,10 @@ export function updatePerformanceUI(preset: PresetType): void {
     if (weatherDensityDisp) weatherDensityDisp.textContent = state.WEATHER_DENSITY.toString();
     if (weatherSpeedSlider) weatherSpeedSlider.value = state.WEATHER_SPEED.toString();
     if (weatherSpeedDisp) weatherSpeedDisp.textContent = state.WEATHER_SPEED.toFixed(1);
+
+    // Voile atmosphérique (v4.5.54)
+    const fogSlider = document.getElementById('fog-slider') as HTMLInputElement;
+    if (fogSlider) fogSlider.value = (state.FOG_FAR / 1000).toString();
 
     // Mise en évidence du bouton de preset actif
     const buttons = document.querySelectorAll('.preset-btn');
