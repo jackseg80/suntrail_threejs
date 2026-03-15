@@ -282,7 +282,11 @@ export async function initScene(): Promise<void> {
 
             if (state.scene.fog instanceof THREE.Fog) {
                 const alt = state.camera.position.y;
-                state.scene.fog.near = alt * 2.0; state.scene.fog.far = alt * 12.0;
+                // --- VOILE ATMOSPHÉRIQUE (v4.5.53) ---
+                // On combine les réglages utilisateur (FOG_FAR/NEAR) avec l'altitude 
+                // pour garder un horizon naturel tout en respectant le slider.
+                state.scene.fog.near = (state.FOG_NEAR * 0.5) + (alt * 1.5); 
+                state.scene.fog.far = (state.FOG_FAR * 0.5) + (alt * 8.0);
             }
 
             state.renderer.render(state.scene, state.camera);

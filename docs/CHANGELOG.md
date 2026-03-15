@@ -4,6 +4,11 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.5.53] - 2026-03-15
+### 🌫️ Correction du Voile Atmosphérique
+- **Fog Slider Fix** : Le réglage "Voile atmosphérique" est désormais fonctionnel. La boucle de rendu respecte maintenant la valeur `FOG_FAR` définie par l'utilisateur tout en conservant une mise à l'échelle intelligente selon l'altitude de la caméra.
+- **Optimisation UI** : Suppression des rechargements de terrain inutiles lors du réglage du brouillard.
+
 ## [4.5.52] - 2026-03-15
 ### 🔋 Ultra-Battery Save & Deep Sleep
 - **Mode Éco Global** : Ajout d'un réglage "Économie d'énergie (30 FPS)" dans l'interface, permettant de brider le taux de rafraîchissement à 30 FPS quel que soit le profil de performance choisi (Ultra, Balanced, etc.), réduisant drastiquement la consommation.

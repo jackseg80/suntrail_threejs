@@ -190,7 +190,12 @@ export function initUI(): void {
     hookInput('weather-density-slider', (v) => { state.WEATHER_DENSITY = parseInt(v); document.getElementById('weather-density-disp')!.textContent = v; });
     hookInput('weather-speed-slider', (v) => { state.WEATHER_SPEED = parseFloat(v); document.getElementById('weather-speed-disp')!.textContent = parseFloat(v).toFixed(1); });
     hookInput('veg-density-slider', (v) => { state.VEGETATION_DENSITY = parseInt(v); document.getElementById('veg-density-disp')!.textContent = v; refreshTerrain(); loadTerrain(); });
-    hookInput('fog-slider', (v) => { state.FOG_FAR = parseInt(v) * 1000; refreshTerrain(); loadTerrain(); });
+    hookInput('fog-slider', (v) => { 
+        state.FOG_FAR = parseInt(v) * 1000; 
+        if (state.scene && state.scene.fog && state.scene.fog instanceof THREE.Fog) {
+            state.scene.fog.far = state.FOG_FAR;
+        }
+    });
 
     document.getElementById('date-input')?.addEventListener('change', (e) => {
         const val = (e.target as HTMLInputElement).value;
