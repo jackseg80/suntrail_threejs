@@ -12,6 +12,12 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Correctif Ombres :** recalibrage du frustum d'ombre (50km) pour une projection fidèle des sommets sur les vallées.
 - **UI Météo :** Intégration du Dashboard expert avec Isotherme 0°C, UV et prévisions horaires sur 6h.
 
+## [4.5.44] - 2026-03-15
+### 🚀 Optimisation Fluidité
+- **Chargement Adaptatif** : Le moteur de tuiles ajuste désormais le nombre de chargements simultanés et la taille du cache mémoire en fonction du profil de performance (Eco, Balanced, Ultra).
+- **Suppression des Saccades** : Segmentation drastique des tâches CPU lors des déplacements pour libérer le fil principal et maintenir un FPS stable.
+- **Cache Mobile Sécurisé** : Réduction du cache sur mobile (60 tuiles) pour prévenir les gels provoqués par le Garbage Collector d'Android.
+
 ## [4.5.42] - 2026-03-15
 ### 🛠️ Corrections & Stabilité
 - **Anti-Collision Sol Pro** : Le moteur charge désormais systématiquement le terrain sous la caméra, garantissant une altitude de sécurité réelle (plus de passage sous le relief). Repositionnement fluide via interpolation.

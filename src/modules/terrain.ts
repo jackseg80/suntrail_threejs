@@ -19,8 +19,15 @@ interface CachedData {
 export const activeTiles = new Map<string, Tile>(); 
 export const activeLabels = new Map<string, any>(); 
 
+// --- OPTIMISATION CACHE ADAPTATIVE (Phase 4) ---
+function getMaxCacheSize(): number {
+    if (state.PERFORMANCE_PRESET === 'ultra') return 800;
+    if (state.PERFORMANCE_PRESET === 'performance') return 400;
+    if (state.PERFORMANCE_PRESET === 'balanced') return isMobileDevice() ? 100 : 250;
+    return 60; // Mode Eco
+}
+
 const dataCache = new Map<string, CachedData>();
-const MAX_CACHE_SIZE = isMobileDevice() ? 200 : 800; 
 
 const geometryCache = new Map<string, THREE.PlaneGeometry>();
 
@@ -52,22 +59,26 @@ async function processLoadQueue() {
                 return da - db;
             });
         }
-        const batch = loadQueue.splice(0, 12);
+        
+        // --- OPTIMISATION FLUIDITÉ (v4.5.44) ---
+        // On réduit le nombre de tuiles traitées simultanément (12 -> 4)
+        // pour ne pas saturer le thread principal lors des déplacements.
+        const batch = loadQueue.splice(0, 4);
         await Promise.all(batch.map(async (tile) => {
             try { 
-                // On ne charge QUE si c'est idle. Si ça a échoué, on attend un reset manuel ou un changement de zone.
                 if (tile.status === 'idle') await tile.load(); 
             }
             catch (e) { tile.status = 'failed'; }
         }));
     } finally {
         isProcessingQueue = false;
-        if (loadQueue.length > 0) setTimeout(processLoadQueue, 16); // Augmenté de 4ms à 16ms pour laisser respirer le CPU
+        // On augmente le délai entre deux lots (16ms -> 32ms) pour laisser le temps au moteur de rendu de souffler
+        if (loadQueue.length > 0) setTimeout(processLoadQueue, 32); 
     }
 }
 
 function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8ClampedArray | null, colorTex: THREE.Texture, overlayTex: THREE.Texture | null, slopesTex: THREE.Texture | null): void {
-    if (dataCache.size >= MAX_CACHE_SIZE) {
+    if (dataCache.size >= getMaxCacheSize()) {
         const oldestKey = dataCache.keys().next().value;
         if (oldestKey) {
             const entry = dataCache.get(oldestKey);
