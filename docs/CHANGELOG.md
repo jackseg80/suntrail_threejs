@@ -14,6 +14,7 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ## [4.5.35] - 2026-03-14
 ### 🧹 Clean Architecture & Refactoring
+- **Support Safe-Areas Mobiles** : Intégration des variables CSS `env(safe-area-inset-*)` pour empêcher le chevauchement de l'UI avec les barres système Android/iOS (encoche en haut, navigation en bas).
 - **Optimisation Milieu de Gamme (Mali GPU)** : Refonte de la détection automatique pour forcer le mode **ECO** sur les puces Mali (Galaxy A53, Redmi, etc.), garantissant une fluidité de 30 FPS. Allègement du mode **BALANCED** (Résolution 96, Ombres 512px) pour un meilleur compromis sur les Snapdragon série 600/700.
 - **Optimisation des Performances (Phase 4)** : Refonte des presets de performance pour un meilleur équilibre entre qualité visuelle et fluidité. Le profil **ULTRA** bénéficie désormais d'un horizon maximal (`RANGE: 8`) et d'un système de "burst" de chargement lorsque l'utilisateur n'interagit pas avec la carte (accélération du rendu initial).
 - **Restructuration de l'État Global (Phase 3)** : Le fichier `state.ts` a été entièrement refactorisé. Séparation visuelle nette entre la configuration statique et les variables d'exécution (Moteur 3D, Météo, GPS). Amélioration du typage TypeScript pour plus de sécurité lors des futurs développements.

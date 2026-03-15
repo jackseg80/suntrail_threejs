@@ -32,7 +32,9 @@ body, html {
 
 /* BARRE DE RECHERCHE FLOTTANTE */
 #top-search-container {
-    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    position: fixed; 
+    top: calc(20px + env(safe-area-inset-top, 0px)); 
+    left: 50%; transform: translateX(-50%);
     width: 400px; max-width: calc(100% - 160px);
     z-index: 1000; background: var(--panel); backdrop-filter: var(--glass);
     border: 1px solid var(--border); border-radius: 16px; padding: 6px;
@@ -51,7 +53,10 @@ body, html {
 
 /* SÉLECTEUR DE CALQUES (GOOGLE STYLE) */
 #layer-btn {
-    position: fixed; top: 20px; right: 20px; width: 50px; height: 50px;
+    position: fixed; 
+    top: calc(20px + env(safe-area-inset-top, 0px)); 
+    right: calc(20px + env(safe-area-inset-right, 0px)); 
+    width: 50px; height: 50px;
     background: var(--panel); backdrop-filter: var(--glass); border: 1px solid var(--border);
     border-radius: 12px; z-index: 1000; cursor: pointer; display: flex;
     align-items: center; justify-content: center; font-size: 24px;
@@ -59,7 +64,10 @@ body, html {
 }
 
 #layer-menu {
-    position: fixed; top: 80px; right: 20px; background: var(--panel);
+    position: fixed; 
+    top: calc(80px + env(safe-area-inset-top, 0px)); 
+    right: calc(20px + env(safe-area-inset-right, 0px)); 
+    background: var(--panel);
     backdrop-filter: var(--glass); border: 1px solid var(--border);
     border-radius: 20px; padding: 15px; z-index: 1000; display: none;
     width: 280px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
@@ -84,7 +92,9 @@ body, html {
 
 /* BARRE DE TEMPS BASSE */
 #bottom-bar {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    position: fixed; 
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px)); 
+    left: 50%; transform: translateX(-50%);
     width: 90%; max-width: 600px; z-index: 1000;
     background: var(--panel); backdrop-filter: var(--glass);
     border: 1px solid var(--border); border-radius: 24px; padding: 12px 20px;
@@ -103,7 +113,10 @@ body, html {
 
 /* BOUTON GPS */
 #gps-btn {
-    position: fixed; top: 80px; right: 20px; width: 50px; height: 50px;
+    position: fixed; 
+    top: calc(80px + env(safe-area-inset-top, 0px)); 
+    right: calc(20px + env(safe-area-inset-right, 0px)); 
+    width: 50px; height: 50px;
     background: var(--panel); backdrop-filter: var(--glass); border: 1px solid var(--border);
     border-radius: 12px; z-index: 1000; cursor: pointer; display: flex;
     align-items: center; justify-content: center; font-size: 20px;
@@ -113,7 +126,10 @@ body, html {
 #gps-btn.active { color: var(--accent); }
 
 #gps-follow-btn {
-    position: fixed; top: 140px; right: 20px; width: 50px; height: 50px;
+    position: fixed; 
+    top: calc(140px + env(safe-area-inset-top, 0px)); 
+    right: calc(20px + env(safe-area-inset-right, 0px)); 
+    width: 50px; height: 50px;
     background: var(--panel); backdrop-filter: var(--glass); border: 1px solid var(--border);
     border-radius: 12px; z-index: 1000; cursor: pointer; display: flex;
     align-items: center; justify-content: center; font-size: 20px;
@@ -125,7 +141,8 @@ body, html {
 /* PANNEAU RÉGLAGES (PLUS DISCRET) */
 #panel {
     position: fixed; top: 0; left: 0; width: 320px; height: 100%;
-    background: var(--panel-solid); z-index: 2000; padding: 25px;
+    background: var(--panel-solid); z-index: 2000; 
+    padding: calc(25px + env(safe-area-inset-top, 0px)) 25px calc(25px + env(safe-area-inset-bottom, 0px)) calc(25px + env(safe-area-inset-left, 0px));
     transform: translateX(-100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     overflow-y: auto; border-right: 1px solid var(--border);
 }
@@ -133,7 +150,10 @@ body, html {
 #panel.open { transform: translateX(0); }
 
 #settings-toggle {
-    position: fixed; top: 20px; left: 20px; width: 50px; height: 50px;
+    position: fixed; 
+    top: calc(20px + env(safe-area-inset-top, 0px)); 
+    left: calc(20px + env(safe-area-inset-left, 0px)); 
+    width: 50px; height: 50px;
     background: var(--panel); backdrop-filter: var(--glass); border: 1px solid var(--border);
     border-radius: 12px; z-index: 1000; cursor: pointer; display: flex;
     align-items: center; justify-content: center; font-size: 24px;
@@ -187,14 +207,14 @@ body.ui-hidden .ui-element {
 }
 
 /* Effets de translation spécifiques pour une sortie élégante */
-body.ui-hidden #top-search-container { transform: translate(-50%, -20px); }
-body.ui-hidden #bottom-bar { transform: translate(-50%, 20px); }
-body.ui-hidden #elevation-profile { transform: translate(-50%, 20px); }
-body.ui-hidden #layer-btn, body.ui-hidden #gps-btn, body.ui-hidden #gps-follow-btn { transform: translateX(20px); }
-body.ui-hidden #settings-toggle { transform: translateX(-20px); }
-body.ui-hidden #zoom-indicator { transform: translate(-50%, 20px); }
-body.ui-hidden #compass-canvas { transform: translate(20px, 20px); }
-body.ui-hidden #coords-panel, body.ui-hidden #probe-result { transform: translateX(-20px); }
+body.ui-hidden #top-search-container { transform: translate(-50%, calc(-20px - env(safe-area-inset-top, 0px))); }
+body.ui-hidden #bottom-bar { transform: translate(-50%, calc(20px + env(safe-area-inset-bottom, 0px))); }
+body.ui-hidden #elevation-profile { transform: translate(-50%, calc(20px + env(safe-area-inset-bottom, 0px))); }
+body.ui-hidden #layer-btn, body.ui-hidden #gps-btn, body.ui-hidden #gps-follow-btn { transform: translateX(calc(20px + env(safe-area-inset-right, 0px))); }
+body.ui-hidden #settings-toggle { transform: translateX(calc(-20px - env(safe-area-inset-left, 0px))); }
+body.ui-hidden #zoom-indicator { transform: translate(-50%, calc(20px + env(safe-area-inset-bottom, 0px))); }
+body.ui-hidden #compass-canvas { transform: translate(calc(20px + env(safe-area-inset-right, 0px)), calc(20px + env(safe-area-inset-bottom, 0px))); }
+body.ui-hidden #coords-panel, body.ui-hidden #probe-result { transform: translateX(calc(-20px - env(safe-area-inset-left, 0px))); }
 
 input[type="range"] { accent-color: var(--accent); }
 
@@ -246,14 +266,37 @@ input[type="range"] { accent-color: var(--accent); }
 
 /* --- RESPONSIVITÉ MOBILE --- */
 @media (max-width: 600px) {
-    #top-search-container { width: calc(100% - 140px); max-width: none; top: 15px; }
-    #settings-toggle, #layer-btn { top: 15px; width: 44px; height: 44px; font-size: 20px; }
-    #settings-toggle { left: 15px; }
-    #layer-btn { right: 15px; }
+    #top-search-container { 
+        width: calc(100% - 140px); max-width: none; 
+        top: calc(15px + env(safe-area-inset-top, 0px)); 
+    }
+    #settings-toggle, #layer-btn { 
+        top: calc(15px + env(safe-area-inset-top, 0px)); 
+        width: 44px; height: 44px; font-size: 20px; 
+    }
+    #settings-toggle { left: calc(15px + env(safe-area-inset-left, 0px)); }
+    #layer-btn { right: calc(15px + env(safe-area-inset-right, 0px)); }
+    
     #geo-input { padding: 8px 12px; font-size: 14px; }
-    #layer-menu { top: 70px; right: 15px; width: calc(100% - 30px); max-width: 320px; }
-    #bottom-bar { width: calc(100% - 30px); padding: 10px 15px; }
+    #layer-menu { 
+        top: calc(70px + env(safe-area-inset-top, 0px)); 
+        right: calc(15px + env(safe-area-inset-right, 0px)); 
+        width: calc(100% - 30px); max-width: 320px; 
+    }
+    #bottom-bar { 
+        width: calc(100% - 30px); 
+        padding: 10px 15px; 
+        bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+    }
     #panel { width: 85%; }
-    #zoom-indicator { top: 75px; bottom: auto; } 
-    #compass-canvas { bottom: 110px; right: 15px; width: 100px; height: 100px; display: block !important; } 
+    #zoom-indicator { 
+        top: calc(75px + env(safe-area-inset-top, 0px)); 
+        bottom: auto; 
+    } 
+    #compass-canvas { 
+        bottom: calc(110px + env(safe-area-inset-bottom, 0px)); 
+        right: calc(15px + env(safe-area-inset-right, 0px)); 
+        width: 100px; height: 100px; 
+        display: block !important; 
+    } 
 }
