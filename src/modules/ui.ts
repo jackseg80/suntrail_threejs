@@ -192,6 +192,15 @@ export function initUI(): void {
     hookInput('veg-density-slider', (v) => { state.VEGETATION_DENSITY = parseInt(v); document.getElementById('veg-density-disp')!.textContent = v; refreshTerrain(); loadTerrain(); });
     hookInput('fog-slider', (v) => { state.FOG_FAR = parseInt(v) * 1000; refreshTerrain(); loadTerrain(); });
 
+    document.getElementById('date-input')?.addEventListener('change', (e) => {
+        const val = (e.target as HTMLInputElement).value;
+        if (val) {
+            state.simDate = new Date(val);
+            const slider = document.getElementById('time-slider') as HTMLInputElement;
+            if (slider) updateSunPosition(parseInt(slider.value));
+        }
+    });
+
     hookChange('shadow-toggle', (v) => { state.SHADOWS = v; if (state.sunLight) state.sunLight.castShadow = v; });
     hookChange('veg-toggle', (v) => { state.SHOW_VEGETATION = v; refreshTerrain(); loadTerrain(); });
     hookChange('buildings-toggle', (v) => { state.SHOW_BUILDINGS = v; refreshTerrain(); loadTerrain(); });

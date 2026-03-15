@@ -8,6 +8,11 @@ Ce fichier liste les fonctionnalités et améliorations prévues pour les procha
 - [x] **Sécurité 2D** : Blocage intelligent des relevés en mode plan plat.
 - [x] **Météo Avancée** : Isotherme 0°C et prévisions 6h.
 
+## ✅ Terminé (v4.5.42)
+- [x] **Anti-Collision Sol Pro** : Repositionnement fluide et chargement forcé sous la caméra pour une stabilité absolue.
+- [x] **Fix Calendrier & Ombres** : Restauration de la simulation solaire via l'input de date.
+- [x] **Restauration Bâtiments** : Retour au moteur Overpass/OSM pour garantir la visibilité mondiale.
+
 ## ✅ Terminé (v4.5.29)
 - [x] **Stabilisation Critique** : Correction des écrans noirs via Origin Shift sécurisé.
 - [x] **Performance 120 FPS** : Cache spatial pour l'altitude.

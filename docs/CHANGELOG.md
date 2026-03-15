@@ -12,6 +12,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Correctif Ombres :** recalibrage du frustum d'ombre (50km) pour une projection fidèle des sommets sur les vallées.
 - **UI Météo :** Intégration du Dashboard expert avec Isotherme 0°C, UV et prévisions horaires sur 6h.
 
+## [4.5.42] - 2026-03-15
+### 🛠️ Corrections & Stabilité
+- **Anti-Collision Sol Pro** : Le moteur charge désormais systématiquement le terrain sous la caméra, garantissant une altitude de sécurité réelle (plus de passage sous le relief). Repositionnement fluide via interpolation.
+- **Fix Calendrier & Ombres** : Restauration du lien entre le calendrier et la simulation solaire. Les changements de date sont à nouveau appliqués instantanément aux ombres portées.
+- **Restauration Bâtiments 3D** : Retour à Overpass API pour les bâtiments (Zoom 14+) suite aux erreurs 404 rencontrées avec le service expérimental MapTiler.
+- **Interaction UI Fluide** : Le rendu 120 FPS est désormais maintenu pendant toute la manipulation des sliders (météo, temps) pour une réactivité visuelle parfaite.
+
 ## [4.5.37] - 2026-03-15
 ### ✨ Nouveautés & UX
 - **Refonte Interaction Mobile (Style Google Earth)** : La rotation à deux doigts (Twist) est désormais d'une stabilité absolue. Le système "d'Auto-Tilt" est intelligemment suspendu pendant que l'utilisateur touche l'écran, empêchant la caméra de monter ou descendre inopinément. L'inclinaison s'ajuste ensuite de manière fluide dès que les doigts sont relâchés.

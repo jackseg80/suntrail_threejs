@@ -247,12 +247,21 @@ export async function initScene(): Promise<void> {
                 }
             }
 
-            // --- BUTÉE SOL ULTRA-LÉGÈRE (v4.5.25) ---
-            // On utilise le cache de getAltitudeAt qui est désormais instantané (O(1))
+            // --- ANTI-COLLISION SOL PRO (v4.5.42) ---
+            // On récupère l'altitude réelle sous la caméra (O(1) via cache spatial)
             const groundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
-            if (state.camera.position.y < groundH + 45) {
-                state.camera.position.y = groundH + 45;
+            const safeMargin = 45;
+            
+            // Si la caméra est trop basse, on la remonte doucement
+            if (state.camera.position.y < groundH + safeMargin) {
+                state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, groundH + safeMargin, 0.2);
+                // On notifie les contrôles du changement pour éviter l'effet "snap back"
+                state.controls.update();
             }
+
+            // On ajuste dynamiquement la distance minimale pour ne pas "traverser" les montagnes en zoomant
+            const distToTarget = state.camera.position.distanceTo(state.controls.target);
+            state.controls.minDistance = Math.max(100, groundH * 0.1); 
 
             if (state.scene.fog instanceof THREE.Fog) {
                 const alt = state.camera.position.y;

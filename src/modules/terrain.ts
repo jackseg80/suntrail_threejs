@@ -493,39 +493,36 @@ export class Tile {
         this.isFadingIn = true;
 
         // --- CHARGEMENT SÉQUENCÉ DES DÉTAILS (v4.5.41) ---
-        // On n'affiche les détails (Bâtiments, Arbres, POI) qu'au Zoom 15+
         const delay = (ms: number) => ms * state.LOAD_DELAY_FACTOR;
         
-        if (this.zoom >= 15) {
-            // 1. POIs (Rapide)
-            if (state.SHOW_SIGNPOSTS) {
-                setTimeout(() => {
-                    if (this.status === 'disposed') return;
-                    loadPOIsForTile(this);
-                }, delay(100));
-            }
+        // 1. POIs (Rapide)
+        if (state.SHOW_SIGNPOSTS && this.zoom >= 14) {
+            setTimeout(() => {
+                if (this.status === 'disposed') return;
+                loadPOIsForTile(this);
+            }, delay(50));
+        }
 
-            // 2. Bâtiments (Lourd)
-            if (state.SHOW_BUILDINGS) {
-                setTimeout(() => {
-                    if (this.status === 'disposed') return;
-                    loadBuildingsForTile(this);
-                }, delay(300));
-            }
+        // 2. Bâtiments (Lourd)
+        if (state.SHOW_BUILDINGS && this.zoom >= 14) {
+            setTimeout(() => {
+                if (this.status === 'disposed') return;
+                loadBuildingsForTile(this);
+            }, delay(150));
+        }
 
-            // 3. Végétation (Très Lourd)
-            if (state.SHOW_VEGETATION) {
-                setTimeout(() => {
-                    if ((this.status as string) === 'disposed') return;
-                    const forest = createForestForTile(this);
-                    if (forest && state.scene && (this.status as string) !== 'disposed') {
-                        if (this.forestMesh) state.scene.remove(this.forestMesh);
-                        this.forestMesh = forest;
-                        this.forestMesh.position.set(this.worldX, 0, this.worldZ);
-                        state.scene.add(this.forestMesh);
-                    }
-                }, delay(600));
-            }
+        // 3. Végétation (Très Lourd)
+        if (state.SHOW_VEGETATION && this.zoom >= 15) {
+            setTimeout(() => {
+                if ((this.status as string) === 'disposed') return;
+                const forest = createForestForTile(this);
+                if (forest && state.scene && (this.status as string) !== 'disposed') {
+                    if (this.forestMesh) state.scene.remove(this.forestMesh);
+                    this.forestMesh = forest;
+                    this.forestMesh.position.set(this.worldX, 0, this.worldZ);
+                    state.scene.add(this.forestMesh);
+                }
+            }, delay(300));
         }
 
         if (oldMesh) {
@@ -607,8 +604,25 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
 
     const currentGPS = worldToLngLat(worldX, worldZ, state.originTile);
     const zoom = state.ZOOM; 
+    const maxTile = Math.pow(2, zoom);
     const centerTile = lngLatToTile(currentGPS.lon, currentGPS.lat, zoom);
     
+    // --- SÉCURITÉ ANTI-COLLISION SOL (v4.5.42) ---
+    // On s'assure de toujours charger la tuile sous la caméra pour avoir une altitude sol précise
+    const camGPS = worldToLngLat(state.camera.position.x, state.camera.position.z, state.originTile);
+    const camTile = lngLatToTile(camGPS.lon, camGPS.lat, zoom);
+    const currentActiveKeys = new Set<string>();
+    
+    // Ajout de la tuile sous caméra (prioritaire)
+    const camKey = `${camTile.x}_${camTile.y}_${zoom}`;
+    if (camTile.x >= 0 && camTile.x < maxTile && camTile.y >= 0 && camTile.y < maxTile) {
+        currentActiveKeys.add(camKey);
+        if (!activeTiles.has(camKey)) {
+            const t = new Tile(camTile.x, camTile.y, zoom, camKey);
+            activeTiles.set(camKey, t); loadQueue.push(t);
+        }
+    }
+
     // --- BRIDAGE DYNAMIQUE DU RAYON (v4.3.45) ---
     // On adapte la limite de sécurité selon la puissance de la machine
     let range = state.RANGE;
@@ -627,9 +641,6 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
         const extremeRange = Math.max(2, Math.floor(maxSafetyRange / 2));
         range = Math.min(range, extremeRange);
     }
-    
-    const maxTile = Math.pow(2, zoom);
-    const currentActiveKeys = new Set<string>();
 
     let buildsThisCycle = 0;
     const isUserInteracting = (state.controls as any)._isMoving;
