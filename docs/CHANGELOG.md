@@ -4,6 +4,12 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.7.6] - 2026-03-16
+### 🎯 Suivi GPS Sphérique & Stabilité Tests
+- **Navigation Sphérique** : Refonte du moteur de suivi (`centerOnUser`) utilisant des coordonnées sphériques pour des transitions de caméra fluides et sans à-coups ("Gimbal Lock" protégé).
+- **Qualité & Tests** : Création du module de test `location.test.ts` et validation de 100% de la suite de tests (55 tests au vert).
+- **Correction Boussole** : Alignement du cône de vue utilisateur sur le Nord réel (-Z) par défaut.
+
 ## [4.7.3] - 2026-03-15
 ### 📦 Gestion Offline & Nettoyage
 - **Indicateur Réseau** : Badge "📡 HORS-LIGNE" automatique basé sur l'état de la connexion.

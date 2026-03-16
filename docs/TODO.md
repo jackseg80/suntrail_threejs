@@ -2,20 +2,24 @@
 
 Ce document définit la trajectoire technologique de SunTrail pour devenir un moteur géospatial de référence, alliant accessibilité web et performances natives.
 
-## ✅ État Actuel (Terminé - v4.7.3)
-- [x] **Moteur de Recherche Sommets** : Indexation locale intelligente (Overpass) et cache 7 jours.
-- [x] **Suivi GPS Ultra-Lisse** : Interpolation 60 FPS et boussole stabilisée (Deadzone).
-- [x] **Gestion Offline** : Scraper de zone (6-10km) et détection de statut réseau.
-- [x] **Optimisation Batterie** : Mode Deep Sleep (0 FPS) et toggle 30 FPS global.
-- [x] **Stabilité & Clean Code** : Refonte du module UI et suppression de l'horizon instable.
+## ✅ Terminé (v4.7.6)
+- [x] **Suivi GPS Sphérique** : Interpolation ultra-lisse et protection Gimbal Lock.
+- [x] **Tests Robustes** : Création de `location.test.ts` et 100% de succès Vitest.
+- [x] **Gestion Offline** : Scraper de zone (6km) et badge de statut.
 
 ---
 
-## 🧭 Étape 1 : Sécurité & Outils Alpins (v4.8)
+## 🧭 Étape 1 : Sécurité & Outils Alpins (v4.8) - EN COURS
 *Objectif : Transformer le relief en un outil d'aide à la décision critique.*
-- [ ] **Carte des Pentes (Inclinomètre Shader)** : Coloration dynamique du relief selon l'inclinaison (Jaune 30° / Orange 35° / Rouge 40°+) pour le risque avalanche.
-- [ ] **Gestion GPX Pro** : Profil altimétrique dynamique et calcul de la pente en temps réel le long de la trace.
-- [ ] **SOS SMS Low-Bandwidth** : Générateur de message de secours ultra-léger (Lat/Lon, Altitude, État Batterie).
+- [ ] **Carte des Pentes (Inclinomètre Shader)** :
+    - [ ] Créer un shader custom pour les tuiles de terrain.
+    - [ ] Calculer la pente locale dans le fragment shader.
+    - [ ] Appliquer une coloration : Jaune (30°) / Orange (35°) / Rouge (40°+).
+    - [ ] Ajouter un toggle "Carte des pentes" dans le menu des calques.
+- [ ] **Gestion GPX Pro** :
+    - [ ] Affichage du profil altimétrique dynamique.
+    - [ ] Calcul de la pente en temps réel le long de la trace.
+- [ ] **SOS SMS Low-Bandwidth** : Générateur de message (Lat/Lon, Alt, Batt).
 
 ## 🌍 Étape 2 : Expansion & Immersion (v4.9)
 *Objectif : Sortir des Alpes et enrichir le rendu visuel.*

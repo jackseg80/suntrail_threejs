@@ -1,5 +1,9 @@
 # SunTrail - Guide Développeur (v4.6.6)
 
+## Environnement & Langue
+- **Langue :** Toutes les interactions et réponses doivent être en **Français**.
+- **Système :** Travail sur **Windows** (utiliser PowerShell pour les commandes shell).
+
 ## Méthodologie de Développement "Partner Engineer"
 Toute intervention majeure (feature ou refactor) DOIT suivre ce cycle itératif :
 1.  **Analyse & Intelligence** : Analyse approfondie du besoin avec l'intelligence maximale du modèle pour identifier les impacts collatéraux et les opportunités de nettoyage.
