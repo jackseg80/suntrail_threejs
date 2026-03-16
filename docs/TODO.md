@@ -1,46 +1,38 @@
-# 🚀 SunTrail 3D - Roadmap & TODO
+# 🚀 SunTrail 3D - Roadmap Stratégique (v4.7.3+)
 
-Ce fichier liste les fonctionnalités et améliorations prévues pour les prochaines versions.
+Ce document définit la trajectoire technologique de SunTrail pour devenir un moteur géospatial de référence, alliant accessibilité web et performances natives.
 
-## ✅ Terminé (v4.6.6)
-- [x] **Moteur de Recherche Sommets** : Indexation locale intelligente (Overpass) avec cache 7 jours.
-- [x] **Vol Cinématique (`flyTo`)** : Trajectoire parabolique sécurisée avec anti-collision terrain.
-- [x] **Altitude Panoramique Auto** : Stabilisation en LOD 14 (12km) lors de l'arrivée sur un sommet.
-- [x] **Moteur de Suivi Ultra-Fluide** : Interpolation haute fréquence (60 FPS) pour un suivi GPS sans saccades.
-- [x] **Stabilisation de Boussole Pro** : Zone morte et amortissement lourd pour éliminer les tremblements.
-- [x] **Transition Diagonale Unifiée** : Approche cinématique vers l'utilisateur finissant en vue de dessus.
-- [x] **Parabole du Tilt** : Inclinaison dynamique selon le LOD pour cacher le vide de l'horizon.
-- [x] **Ultra-Battery Save** : Toggle 30 FPS global et mode "Deep Sleep" (0 FPS) en arrière-plan.
-- [x] **Fog Dynamique** : Intégration du voile atmosphérique dans les presets de performance.
+## ✅ État Actuel (Terminé - v4.7.3)
+- [x] **Moteur de Recherche Sommets** : Indexation locale intelligente (Overpass) et cache 7 jours.
+- [x] **Suivi GPS Ultra-Lisse** : Interpolation 60 FPS et boussole stabilisée (Deadzone).
+- [x] **Gestion Offline** : Scraper de zone (6-10km) et détection de statut réseau.
+- [x] **Optimisation Batterie** : Mode Deep Sleep (0 FPS) et toggle 30 FPS global.
+- [x] **Stabilité & Clean Code** : Refonte du module UI et suppression de l'horizon instable.
 
-## 🚀 Prochainement (v4.7) - Mobilité & Offline
-- [ ] **Gestion Offline** : Système de mise en cache des tuiles pour une utilisation sans réseau.
-- [ ] **Mode Éco Automatique** : Activation automatique de l'économie d'énergie sous 20% de batterie.
-- [ ] **Optimisation VRAM Mobile** : Nettoyage encore plus agressif des textures non visibles.
+---
 
-## 🧭 Sécurité & Alpinisme (v4.8)
-- [ ] **Carte des Pentes (Inclinomètre 3D)** : Coloration dynamique du relief selon l'inclinaison (Aide avalanche).
-- [ ] **SOS SMS Low-Bandwidth** : Générateur de message de secours ultra-léger.
-- [ ] **Gestion GPX Avancée** : Profil altimétrique dynamique et suivi de progression le long de la trace.
+## 🧭 Étape 1 : Sécurité & Outils Alpins (v4.8)
+*Objectif : Transformer le relief en un outil d'aide à la décision critique.*
+- [ ] **Carte des Pentes (Inclinomètre Shader)** : Coloration dynamique du relief selon l'inclinaison (Jaune 30° / Orange 35° / Rouge 40°+) pour le risque avalanche.
+- [ ] **Gestion GPX Pro** : Profil altimétrique dynamique et calcul de la pente en temps réel le long de la trace.
+- [ ] **SOS SMS Low-Bandwidth** : Générateur de message de secours ultra-léger (Lat/Lon, Altitude, État Batterie).
 
-## 🌍 Internationalisation & Données
-- [ ] **Adaptation Hors-Suisse** : Intégration de sources d'élévation mondiales gratuites (SRTM/Copernicus).
-- [x] **Basculement MapTiler Geocoding** : Remplacement de Nominatim par MapTiler pour la recherche et la météo.
-- [x] **Auto-Détection de Source** : Basculement intelligent selon la zone géographique.
+## 🌍 Étape 2 : Expansion & Immersion (v4.9)
+*Objectif : Sortir des Alpes et enrichir le rendu visuel.*
+- [ ] **Données Mondiales (SRTM/Copernicus)** : Intégration de sources d'élévation globales pour la France et l'Europe (hors Suisse).
+- [ ] **Hydrologie Dynamique** : Rendu des lacs et rivières avec shaders de réflexion basés sur les données OSM.
+- [ ] **Végétation Bio-Fidèle** : Diversification des essences d'arbres et adaptation de la densité selon la zone géographique.
 
-## ✨ Immersion Visuelle Pro (v4.9)
-- [x] **Zoom Européen** : Vue continentale fluide avec paliers de LOD 7-9 (v4.5.34).
-- [ ] **Hydrologie Dynamique** : Rendu des plans d'eau avec shaders de réflexion basés sur les données OSM.
-- [ ] **Végétation Avancée** : Diversification des modèles d'arbres instanciés selon la zone (forêt vs zone urbaine).
+## ⚡ Étape 3 : La Révolution Hybride WebGL/WebGPU (v5.0)
+*Objectif : Atteindre la fluidité de Google Earth via une architecture de pointe.*
+- [ ] **Sélecteur de Moteur Intelligent** : Détection automatique `navigator.gpu` pour basculer entre WebGL (compatibilité) et WebGPU (performance).
+- [ ] **Architecture WebWorkers** : Déportation totale du décodage des tuiles et du calcul de relief sur les cœurs CPU secondaires (Zéro freeze UI).
+- [ ] **Compute Shaders (WebGPU)** : Utilisation du GPU pour générer instantanément les maillages de terrain et la végétation.
+- [ ] **Textures Compressées (KTX2)** : Streaming de tuiles 5x plus rapide grâce au support natif GPU (Basis Universal).
 
-## 📱 Écosystème & Connectivité
-- [ ] **Sync Web-to-Mobile** : Préparation de parcours sur grand écran et transfert fluide vers l'application.
-- [ ] **Companion App (Watch)** : Extension pour montres connectées (Data-view : Altitude, Cap, Prochain WP).
+---
 
-## 🏗️ Vision & Architecture (v5.0+)
-- [x] **Audit de Performance & Presets** : Optimisation complète des paliers de qualité et du moteur de chargement (v4.5.35).
-- [ ] **Audit de Sécurité & Maintenabilité** : Revue globale de la sécurité et de la structure du code.
-- [ ] **Modularisation (Split Produit)** : Étudier le découpage en modules distincts pour spécialisation :
-    - *SunTrail Explorer* (Rando/Alpi : focus GPS, Offline, Sécurité).
-    - *SunTrail Architect* (Analyse Solaire : focus ombres précises, intégration BIM/Modèles).
-    - *SunTrail Weather Station* (Widget météo 3D expert).
+## 📱 Vision Produit & Écosystème
+- [ ] **Companion App (Watch)** : Extension pour montres connectées (données critiques : Altitude, Cap).
+- [ ] **Modularisation** : Séparation technique des branches "Explorer" (Rando) et "Architect" (Solaire).
+- [ ] **Monétisation** : Modèle Freemium pour les fonctions de sécurité avalanche.

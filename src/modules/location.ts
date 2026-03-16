@@ -97,7 +97,7 @@ export function updateUserMarker() {
         const coneMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.15 });
         const viewCone = new THREE.Mesh(coneGeo, coneMat);
         viewCone.rotation.x = -Math.PI / 2;
-        viewCone.rotation.z = Math.PI; 
+        viewCone.rotation.z = Math.PI / 2; // Aligner sur le Nord (-Z) par défaut
         state.userMarker.add(viewCone);
 
         // --- POINT BLANC ---
@@ -129,76 +129,64 @@ export function updateUserMarker() {
 }
 
 /**
- * Cette fonction est maintenant un ORCHESTRATEUR DE LISSAGE (v4.5.60)
- * Appelée à chaque frame (60fps) depuis scene.ts
+ * Cette fonction est maintenant un ORCHESTRATEUR DE LISSAGE (v4.7.6)
  */
 export function centerOnUser(delta: number) {
     if (!state.userLocation || !state.controls || !state.originTile || !state.camera) return;
     
-    // 1. CALCUL DES DESTINATIONS (v4.5.69)
+    // 1. CALCUL DE LA RELATION CAMÉRA/CIBLE ACTUELLE (AVANT DÉPLACEMENT)
+    // On extrait l'orbite actuelle pour la manipuler sans sauts
+    const offset = state.camera.position.clone().sub(state.controls.target);
+    const spherical = new THREE.Spherical().setFromVector3(offset);
+
+    // 2. CALCUL DE LA DESTINATION AU SOL
     const targetWorldPos = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
     const finalTarget = new THREE.Vector3(targetWorldPos.x, 0, targetWorldPos.z);
     
-    // Altitude confortable pour le suivi (1500m)
-    const preferredDist = 1500;
-    
-    // --- VUE DE DESSUS (v4.5.69) ---
-    // On veut finir pile au-dessus de l'utilisateur
-    const finalCamPos = finalTarget.clone().add(new THREE.Vector3(0, preferredDist, 10)); // Légèrement décalé Z pour stabilité controls
-
-    // 2. DYNAMIQUE DE MOUVEMENT CALIBRÉE
     const isInitial = (Date.now() - state.lastTrackingUpdate < 3000);
-    const distToUser = state.controls.target.distanceTo(finalTarget);
     
-    // Vitesse proportionnelle bridée
-    const distFactor = Math.min(5.0, Math.sqrt(distToUser / 500) + 1.0); 
-    const speedBoost = isInitial ? 2.5 : 1.0; 
-    
-    const lerpFactor = 1 - Math.exp(-2.5 * distFactor * speedBoost * delta); 
+    // Vitesse de déplacement au sol
+    const moveFactor = 1 - Math.exp(-(isInitial ? 8 : 3) * delta);
+    state.controls.target.lerp(finalTarget, moveFactor);
 
-    // 3. DÉPLACEMENT SYNCHRONISÉ
-    state.controls.target.lerp(finalTarget, lerpFactor);
+    // 3. MISE À JOUR DE L'ORBITE (LISSAGE)
     
-    const currentCamDist = state.camera.position.distanceTo(state.controls.target);
-    if (isInitial || currentCamDist > 5000) {
-        // Transition Diagonale vers la vue de dessus
-        state.camera.position.lerp(finalCamPos, lerpFactor);
-        
-        // Redressement forcé du tilt
-        state.controls.minPolarAngle = THREE.MathUtils.lerp(state.controls.minPolarAngle, 0, lerpFactor);
-        state.controls.maxPolarAngle = THREE.MathUtils.lerp(state.controls.maxPolarAngle, 0.1, lerpFactor);
-    } else {
-        // En marche normale
-        const targetH = new THREE.Vector3(finalTarget.x, state.camera.position.y, finalTarget.z);
-        state.camera.position.lerp(targetH, lerpFactor);
+    // --- A. ZOOM (Distance) ---
+    const preferredDist = 1500;
+    if (isInitial || spherical.radius > 5000) {
+        const zoomFactor = 1 - Math.exp(-2 * delta);
+        spherical.radius = THREE.MathUtils.lerp(spherical.radius, preferredDist, zoomFactor);
     }
 
-    // 4. CAP / ORIENTATION (Heading) - STABILISATION PRO (v4.5.70)
+    // --- B. TILT (Inclinaison) ---
+    if (isInitial) {
+        const tiltFactor = 1 - Math.exp(-2 * delta);
+        // On tend vers la vue de dessus (phi = 0)
+        spherical.phi = THREE.MathUtils.lerp(spherical.phi, 0.01, tiltFactor);
+    }
+
+    // --- C. ROTATION (Azimuth) ---
     if (state.userHeading !== null && !isInitial) {
-        const currentAzimuth = state.controls.getAzimuthalAngle();
-        const targetAzimuth = -THREE.MathUtils.degToRad(state.userHeading);
+        // FORMULE FIXÉE (v4.7.6) : Nord = PI, Est = -PI/2, Sud = 0, Ouest = PI/2
+        const targetTheta = Math.PI + THREE.MathUtils.degToRad(state.userHeading);
         
-        let diff = targetAzimuth - currentAzimuth;
+        let diff = targetTheta - spherical.theta;
         while (diff < -Math.PI) diff += Math.PI * 2;
         while (diff > Math.PI) diff -= Math.PI * 2;
         
-        // --- FILTRE ZONE MORTE & AMORTISSEMENT ---
-        // On ignore les micro-mouvements < 1.5 degrés pour supprimer le tremblement
         const deadzone = THREE.MathUtils.degToRad(1.5);
         if (Math.abs(diff) > deadzone) {
-            // Lissage très lourd (facteur 1.5 au lieu de 3) pour une rotation stable
-            const headingLerpFactor = 1 - Math.exp(-1.5 * delta); 
-            const angle = currentAzimuth + diff * headingLerpFactor;
-            
-            const distXZ = Math.sqrt(
-                Math.pow(state.camera.position.x - state.controls.target.x, 2) + 
-                Math.pow(state.camera.position.z - state.controls.target.z, 2)
-            );
-            
-            state.camera.position.x = state.controls.target.x + Math.sin(angle) * distXZ;
-            state.camera.position.z = state.controls.target.z + Math.cos(angle) * distXZ;
+            const rotFactor = 1 - Math.exp(-1.5 * delta);
+            spherical.theta += diff * rotFactor;
         }
     }
+
+    // 4. RECONSTRUCTION ATOMIQUE DE LA CAMÉRA
+    // On replace la caméra en orbite parfaite autour de la NOUVELLE cible
+    spherical.makeSafe(); // Sécurité Three.js pour éviter le Gimbal Lock (phi=0 ou PI)
+    const newPos = new THREE.Vector3().setFromSpherical(spherical).add(state.controls.target);
+    state.camera.position.copy(newPos);
     
+    // On force la mise à jour des contrôles pour synchroniser leur état interne
     state.controls.update();
 }
