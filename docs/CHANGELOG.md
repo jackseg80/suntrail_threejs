@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.8.0] - 2026-03-16
+### 🏔️ Carte des Pentes & Sécurité Avalanche
+- **Inclinomètre Shader** : Remplacement de l'API Swisstopo par un calcul mathématique 100% GPU. La vraie pente est désormais calculée au pixel près pour le monde entier (sans le biais de l'exagération du relief).
+- **Colorimétrie Dynamique** : Ajout d'un dégradé de couleur mixé dynamiquement sur le terrain (Jaune > 30°, Orange > 35°, Rouge > 40°).
+- **Optimisation UI** : L'activation de la carte des pentes est désormais instantanée (mise à jour directe du shader) sans rechargement du terrain ni requêtes réseau.
+- **Nettoyage** : Suppression de `slopesTex` et de toutes les fonctions de téléchargement d'images de pente obsolètes.
+
 ## [4.7.6] - 2026-03-16
 ### 🎯 Suivi GPS Sphérique & Stabilité Tests
 - **Navigation Sphérique** : Refonte du moteur de suivi (`centerOnUser`) utilisant des coordonnées sphériques pour des transitions de caméra fluides et sans à-coups ("Gimbal Lock" protégé).

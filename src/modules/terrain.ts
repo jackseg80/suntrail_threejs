@@ -13,7 +13,6 @@ interface CachedData {
     pixelData: Uint8ClampedArray | null;
     color: THREE.Texture;
     overlay: THREE.Texture | null;
-    slopes: THREE.Texture | null;
 }
 
 export const activeTiles = new Map<string, Tile>(); 
@@ -81,7 +80,7 @@ async function processLoadQueue() {
     }
 }
 
-function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8ClampedArray | null, colorTex: THREE.Texture, overlayTex: THREE.Texture | null, slopesTex: THREE.Texture | null): void {
+function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8ClampedArray | null, colorTex: THREE.Texture, overlayTex: THREE.Texture | null): void {
     if (dataCache.size >= getMaxCacheSize()) {
         const oldestKey = dataCache.keys().next().value;
         if (oldestKey) {
@@ -89,12 +88,11 @@ function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8Clamped
             if (entry) {
                 entry.elev.dispose(); entry.color.dispose();
                 if (entry.overlay) entry.overlay.dispose();
-                if (entry.slopes) entry.slopes.dispose();
             }
             dataCache.delete(oldestKey);
         }
     }
-    dataCache.set(key, { elev: elevTex, pixelData, color: colorTex, overlay: overlayTex, slopes: slopesTex });
+    dataCache.set(key, { elev: elevTex, pixelData, color: colorTex, overlay: overlayTex });
 }
 
 function getFromCache(key: string): CachedData | null {
@@ -108,14 +106,16 @@ export function clearCache(): void {
     for (const entry of dataCache.values()) {
         entry.elev.dispose(); entry.color.dispose();
         if (entry.overlay) entry.overlay.dispose();
-        if (entry.slopes) entry.slopes.dispose();
     }
     dataCache.clear();
 }
 
 const frustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
-const terrainUniforms = { uExaggeration: { value: state.RELIEF_EXAGGERATION } };
+const terrainUniforms = { 
+    uExaggeration: { value: state.RELIEF_EXAGGERATION },
+    uShowSlopes: { value: state.SHOW_SLOPES ? 1.0 : 0.0 }
+};
 
 const CACHE_NAME = 'suntrail-tiles-v1';
 
@@ -223,7 +223,6 @@ export class Tile {
     pixelData: Uint8ClampedArray | null = null;
     colorTex: THREE.Texture | null = null;
     overlayTex: THREE.Texture | null = null;
-    slopesTex: THREE.Texture | null = null;
     forestMesh: THREE.InstancedMesh | null = null;
     poiGroup: THREE.Group | null = null;
     buildingMesh: THREE.Mesh | null = null;
@@ -332,12 +331,12 @@ export class Tile {
         if (this.status !== 'idle' && this.status !== 'failed') return;
         
         const is2D = (state.RESOLUTION <= 2);
-        const cacheKey = `${state.MAP_SOURCE}_${state.SHOW_TRAILS}_${state.SHOW_SLOPES}_${is2D ? '2D' : '3D'}_${this.key}`;
+        const cacheKey = `${state.MAP_SOURCE}_${state.SHOW_TRAILS}_${is2D ? '2D' : '3D'}_${this.key}`;
         
         const cached = getFromCache(cacheKey);
         if (cached) {
             this.elevationTex = cached.elev; this.pixelData = cached.pixelData;
-            this.colorTex = cached.color; this.overlayTex = cached.overlay; this.slopesTex = cached.slopes;
+            this.colorTex = cached.color; this.overlayTex = cached.overlay;
             this.updateHybridSettings();
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
             return;
@@ -419,18 +418,15 @@ export class Tile {
 
             // On ne demande les calques suisses que si on est en Suisse ET à basse/moyenne altitude
             const wantTrails = state.SHOW_TRAILS && inCH && !isHighAlt;
-            const wantSlopes = state.SHOW_SLOPES && inCH && !isHighAlt;
 
-            const [tBlob, sBlob] = await Promise.all([
-                wantTrails ? fetchWithCache(this.getOverlayUrl(layerZoom, layerTx, layerTy), true) : Promise.resolve(null),
-                wantSlopes ? fetchWithCache(this.getSlopesUrl(layerZoom, layerTx, layerTy), true) : Promise.resolve(null)
+            const [tBlob] = await Promise.all([
+                wantTrails ? fetchWithCache(this.getOverlayUrl(layerZoom, layerTx, layerTy), true) : Promise.resolve(null)
             ]);
             if (this.status as any === 'disposed') return;
             if (tBlob) { const i = await createImageBitmap(tBlob); this.overlayTex = new THREE.Texture(i); this.overlayTex.flipY = false; this.overlayTex.needsUpdate = true; this.overlayTex.colorSpace = THREE.SRGBColorSpace; }
-            if (sBlob) { const i = await createImageBitmap(sBlob); this.slopesTex = new THREE.Texture(i); this.slopesTex.flipY = false; this.slopesTex.needsUpdate = true; this.slopesTex.colorSpace = THREE.SRGBColorSpace; }
 
             if (this.status as any === 'disposed') return;
-            addToCache(cacheKey, this.elevationTex, this.pixelData, this.colorTex, this.overlayTex, this.slopesTex);
+            addToCache(cacheKey, this.elevationTex, this.pixelData, this.colorTex, this.overlayTex);
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
         } catch (e) { this.status = 'failed'; }
     }
@@ -449,7 +445,6 @@ export class Tile {
         }
     }
     getOverlayUrl(z: number, x: number, y: number): string { return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${z}/${x}/${y}.png`; }
-    getSlopesUrl(z: number, x: number, y: number): string { return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.hangneigung-ueber_30/default/current/3857/${z}/${x}/${y}.png`; }
 
     buildMesh(resolution: number): void {
         if (!this.elevationTex || !this.colorTex || this.status as any === 'disposed') return;
@@ -485,6 +480,13 @@ export class Tile {
                 if (h < -1000.0 || h > 9000.0) return 0.0;
                 return h * uExaggeration;
             }
+            float getTrueTerrainHeight(vec2 uv) {
+                vec2 elevUv = uElevOffset + (uv * uElevScale);
+                vec4 col = texture2D(uElevationMap, elevUv);
+                float h = decodeHeight(col);
+                if (h < -1000.0 || h > 9000.0) return 0.0;
+                return h; // Sans exagération pour la vraie pente
+            }
         `;
 
         if (!is2D) {
@@ -492,6 +494,7 @@ export class Tile {
             material.onBeforeCompile = (shader) => {
                 shader.uniforms.uElevationMap = { value: this.elevationTex };
                 shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
+                shader.uniforms.uShowSlopes = terrainUniforms.uShowSlopes;
                 shader.uniforms.uTileSize = { value: this.tileSizeMeters };
                 shader.uniforms.uElevOffset = { value: this.elevOffset };
                 shader.uniforms.uElevScale = { value: this.elevScale };
@@ -499,8 +502,6 @@ export class Tile {
                 shader.uniforms.uColorScale = { value: this.colorScale };
                 shader.uniforms.uOverlayMap = { value: this.overlayTex || null };
                 shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
-                shader.uniforms.uSlopesMap = { value: this.slopesTex || null };
-                shader.uniforms.uHasSlopes = { value: !!this.slopesTex };
 
                 shader.vertexShader = `
                     #define IS_LIGHT ${isLight ? '1' : '0'}
@@ -508,18 +509,17 @@ export class Tile {
                 `;
 
                 shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n
+                    varying vec3 vTrueNormal;
                     uniform vec2 uColorOffset;
                     uniform float uColorScale;
                     ${sharedShaderChunk}
                 `);
                 shader.vertexShader = shader.vertexShader.replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);`);
                 
-                // --- OPTIMISATION SHADER (v4.5.46) ---
-                // En mode Light, on ne calcule pas de normales précises par échantillonnage.
-                // On utilise les normales par défaut du plan (orientées vers le haut) pour gagner du FPS GPU.
                 if (isLight) {
                     shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n
                         objectNormal = vec3(0.0, 1.0, 0.0);
+                        vTrueNormal = vec3(0.0, 1.0, 0.0);
                     `);
                 } else {
                     shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n
@@ -529,6 +529,12 @@ export class Tile {
                         float hD = getTerrainHeight(uv + vec2(0.0, -1.0/256.0));
                         float hU = getTerrainHeight(uv + vec2(0.0, 1.0/256.0));
                         objectNormal = normalize(vec3(hL - hR, delta * 2.0, hD - hU));
+
+                        float thL = getTrueTerrainHeight(uv + vec2(-1.0/256.0, 0.0));
+                        float thR = getTrueTerrainHeight(uv + vec2(1.0/256.0, 0.0));
+                        float thD = getTrueTerrainHeight(uv + vec2(0.0, -1.0/256.0));
+                        float thU = getTrueTerrainHeight(uv + vec2(0.0, 1.0/256.0));
+                        vTrueNormal = normalize(vec3(thL - thR, delta * 2.0, thD - thU));
                     `);
                 }
                 
@@ -536,9 +542,9 @@ export class Tile {
 
                 shader.fragmentShader = `
                     uniform sampler2D uOverlayMap;
-                    uniform sampler2D uSlopesMap;
                     uniform bool uHasOverlay;
-                    uniform bool uHasSlopes;
+                    uniform float uShowSlopes;
+                    varying vec3 vTrueNormal;
                     ${shader.fragmentShader}
                 `.replace('#include <map_fragment>', `
                     #include <map_fragment>
@@ -546,9 +552,20 @@ export class Tile {
                         vec4 oCol = texture2D(uOverlayMap, vMapUv);
                         diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a);
                     }
-                    if (uHasSlopes) {
-                        vec4 sCol = texture2D(uSlopesMap, vMapUv);
-                        diffuseColor.rgb = mix(diffuseColor.rgb, sCol.rgb, sCol.a * 0.6);
+                    if (uShowSlopes > 0.5) {
+                        float slopeRad = acos(clamp(dot(normalize(vTrueNormal), vec3(0.0, 1.0, 0.0)), 0.0, 1.0));
+                        float slopeDeg = degrees(slopeRad);
+                        
+                        float yellowMix = smoothstep(28.0, 32.0, slopeDeg);
+                        float orangeMix = smoothstep(33.0, 37.0, slopeDeg);
+                        float redMix = smoothstep(38.0, 42.0, slopeDeg);
+                        
+                        vec3 slopeColor = vec3(1.0, 1.0, 0.0); // Jaune
+                        slopeColor = mix(slopeColor, vec3(1.0, 0.5, 0.0), orangeMix); // Orange
+                        slopeColor = mix(slopeColor, vec3(1.0, 0.0, 0.0), redMix); // Rouge
+                        
+                        // Opacité maximale de 55% pour préserver la lisibilité de la carte
+                        diffuseColor.rgb = mix(diffuseColor.rgb, slopeColor, yellowMix * 0.55);
                     }
                 `);
             };
@@ -690,9 +707,10 @@ export function autoSelectMapSource(lat: number, lon: number): void {
     }
 }
 
-export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number = 0, worldZ: number = 0): Promise<void> {
+export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number = 0, worldZ: number = 0): Promise<void> {
     terrainUniforms.uExaggeration.value = state.RELIEF_EXAGGERATION;
-    if (!state.camera || Math.abs(state.camera.position.y) < 1) return;
+    terrainUniforms.uShowSlopes.value = state.SHOW_SLOPES ? 1.0 : 0.0;
+    if (!state.camera || Math.abs(state.camera.position.y) < 1) return Promise.resolve();
 
     const currentGPS = worldToLngLat(worldX, worldZ, state.originTile);
     const zoom = state.ZOOM; 
@@ -790,7 +808,7 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
                     if (tx < 0 || tx >= maxNext || ty < 0 || ty >= maxNext) continue; // Sécurité bornes (v4.3.37)
 
                     const pKey = `${tx}_${ty}_${nextZoom}`;
-                    const cacheKey = `${state.MAP_SOURCE}_${state.SHOW_TRAILS}_${state.SHOW_SLOPES}_${pKey}`;
+                    const cacheKey = `${state.MAP_SOURCE}_${state.SHOW_TRAILS}_${pKey}`;
                     if (!dataCache.has(cacheKey)) {
                         const pTile = new Tile(tx, ty, nextZoom, pKey);
                         loadQueue.push(pTile);
@@ -815,6 +833,10 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
         
         if (loadQueue.length > 0) processLoadQueue();
     }
+}
+
+export function updateSlopeVisibility(visible: boolean): void {
+    terrainUniforms.uShowSlopes.value = visible ? 1.0 : 0.0;
 }
 
 export async function loadTerrain(): Promise<void> { await updateVisibleTiles(); }

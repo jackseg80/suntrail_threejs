@@ -11,11 +11,11 @@ Ce document définit la trajectoire technologique de SunTrail pour devenir un mo
 
 ## 🧭 Étape 1 : Sécurité & Outils Alpins (v4.8) - EN COURS
 *Objectif : Transformer le relief en un outil d'aide à la décision critique.*
-- [ ] **Carte des Pentes (Inclinomètre Shader)** :
-    - [ ] Créer un shader custom pour les tuiles de terrain.
-    - [ ] Calculer la pente locale dans le fragment shader.
-    - [ ] Appliquer une coloration : Jaune (30°) / Orange (35°) / Rouge (40°+).
-    - [ ] Ajouter un toggle "Carte des pentes" dans le menu des calques.
+- [x] **Carte des Pentes (Inclinomètre Shader)** :
+    - [x] Créer un shader custom pour les tuiles de terrain.
+    - [x] Calculer la pente locale dans le fragment shader.
+    - [x] Appliquer une coloration : Jaune (30°) / Orange (35°) / Rouge (40°+).
+    - [x] Ajouter un toggle "Carte des pentes" instantané.
 - [ ] **Gestion GPX Pro** :
     - [ ] Affichage du profil altimétrique dynamique.
     - [ ] Calcul de la pente en temps réel le long de la trace.

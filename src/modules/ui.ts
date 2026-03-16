@@ -6,7 +6,7 @@ import { state } from './state';
 import { updateSunPosition } from './sun';
 import { initScene, flyTo } from './scene';
 import { resetToNorth } from './compass';
-import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain, autoSelectMapSource, deleteTerrainCache, downloadOfflineZone } from './terrain';
+import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain, autoSelectMapSource, deleteTerrainCache, downloadOfflineZone, updateSlopeVisibility } from './terrain';
 import { lngLatToTile, worldToLngLat } from './geo';
 import { showToast, fetchGeocoding } from './utils';
 import { applyPreset, detectBestPreset, getGpuInfo } from './performance';
@@ -201,7 +201,7 @@ export function initUI(): void {
     hookChange('buildings-toggle', (v) => { state.SHOW_BUILDINGS = v; refreshTerrain(); loadTerrain(); });
     hookChange('poi-toggle', (v) => { state.SHOW_SIGNPOSTS = v; refreshTerrain(); loadTerrain(); });
     hookChange('trails-toggle', (v) => { state.SHOW_TRAILS = v; refreshTerrain(); loadTerrain(); });
-    hookChange('slopes-toggle', (v) => { state.SHOW_SLOPES = v; refreshTerrain(); loadTerrain(); });
+    hookChange('slopes-toggle', (v) => { state.SHOW_SLOPES = v; updateSlopeVisibility(v); });
     hookChange('stats-toggle', (v) => { state.SHOW_STATS = v; if (state.stats) state.stats.dom.style.display = v ? 'block' : 'none'; });
     hookChange('debug-toggle', (v) => { state.SHOW_DEBUG = v; });
 
