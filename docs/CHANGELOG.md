@@ -4,6 +4,12 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.9.1] - 2026-03-17
+### 🌲 Végétation Bio-Fidèle & Correction UI
+- **Multi-Essences** : Diversification des forêts avec 3 modèles d'arbres (Feuillus, Sapins, Mélèzes) et matériaux distincts.
+- **Intelligence d'Altitude** : Sélection automatique de l'essence selon l'altitude réelle (Feuillus en plaine, Sapins en moyenne montagne, Mélèzes en haute altitude).
+- **Z-Index Fix** : Correction définitive de la superposition du panneau de coordonnées qui s'affiche désormais correctement derrière les réglages.
+
 ## [4.9.0] - 2026-03-17
 ### 🌍 Extension France & Hydrologie
 - **Intégration IGN France** : Basculement automatique sur les serveurs de la Géoplateforme (`data.geopf.fr`) lors du survol de l'Hexagone. Accès aux flux Plan IGN et Orthoimagery HD.

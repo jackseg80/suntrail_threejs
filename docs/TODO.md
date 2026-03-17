@@ -14,7 +14,7 @@ Ce document définit la trajectoire technologique de SunTrail pour devenir un mo
 *Objectif : Sortir des Alpes et enrichir le rendu visuel.*
 - [x] **Données Mondiales (SRTM/Copernicus)** : Intégration de sources d'élévation globales et flux IGN France (Plan/Satellite).
 - [x] **Hydrologie Dynamique** : Rendu des lacs et rivières avec shaders de réflexion basés sur la détection de couleur (v5.4.1).
-- [ ] **Végétation Bio-Fidèle** : Diversification des essences d'arbres et adaptation de la densité selon la zone géographique.
+- [x] **Végétation Bio-Fidèle** : Diversification des essences d'arbres (Feuillus, Sapins, Mélèzes) et adaptation automatique selon l'altitude (v4.9.1).
 
 ## ⚡ Étape 3 : La Révolution Hybride WebGL/WebGPU (v5.0)
 *Objectif : Atteindre la fluidité de Google Earth via une architecture de pointe.*

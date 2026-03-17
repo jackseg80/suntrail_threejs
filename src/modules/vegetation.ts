@@ -1,46 +1,67 @@
 import * as THREE from 'three';
 import { state } from './state';
 
-let treeGeometry: THREE.BufferGeometry | null = null;
-let treeMaterial: THREE.MeshStandardMaterial | null = null;
+// --- RESSOURCES DES ESSENCES (v4.9.1) ---
+interface TreeEssence {
+    geometry: THREE.BufferGeometry;
+    material: THREE.MeshStandardMaterial;
+    mesh: THREE.InstancedMesh | null;
+}
+
+const essences: Record<string, TreeEssence> = {};
 
 /**
- * Initialise les ressources partagées pour les arbres
+ * Initialise les ressources partagées pour les arbres (Bio-Fidèles)
  */
 export function initVegetationResources() {
-    if (treeGeometry) return;
+    if (Object.keys(essences).length > 0) return;
 
-    const coneGeo = new THREE.ConeGeometry(12, 35, 8); 
-    coneGeo.translate(0, 17.5, 0);
-    treeGeometry = coneGeo;
-    
-    treeMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0x14331a, 
-        roughness: 0.9,
-        metalness: 0.0,
-        emissive: 0x050805,
-        emissiveIntensity: 0.2
-    });
+    // 1. SAPIN (Conifère standard)
+    const sapinGeo = new THREE.ConeGeometry(10, 35, 7); 
+    sapinGeo.translate(0, 17.5, 0);
+    essences.sapin = {
+        geometry: sapinGeo,
+        material: new THREE.MeshStandardMaterial({ color: 0x14331a, roughness: 0.9, emissive: 0x050805, emissiveIntensity: 0.2 }),
+        mesh: null
+    };
+
+    // 2. MÉLÈZE (Haute altitude)
+    const melezeGeo = new THREE.ConeGeometry(14, 28, 5); 
+    melezeGeo.translate(0, 14, 0);
+    essences.meleze = {
+        geometry: melezeGeo,
+        material: new THREE.MeshStandardMaterial({ color: 0x2d4c1e, roughness: 0.8, emissive: 0x0a1205, emissiveIntensity: 0.2 }),
+        mesh: null
+    };
+
+    // 3. FEUILLU (Plaine / Vallées)
+    const feuilluGeo = new THREE.SphereGeometry(15, 6, 6);
+    feuilluGeo.scale(1, 1.2, 1);
+    feuilluGeo.translate(0, 20, 0);
+    essences.feuillu = {
+        geometry: feuilluGeo,
+        material: new THREE.MeshStandardMaterial({ color: 0x2d5a27, roughness: 0.9, emissive: 0x051005, emissiveIntensity: 0.1 }),
+        mesh: null
+    };
 }
 
 /**
- * Génère une forêt dense et précise sur une tuile
+ * Génère une forêt bio-fidèle sur une tuile
  */
-export function createForestForTile(tile: any): THREE.InstancedMesh | null {
+export function createForestForTile(tile: any): THREE.Group | null {
     if (!state.SHOW_VEGETATION || !tile.colorTex || !tile.pixelData || tile.zoom < 14) return null;
 
     const img = tile.colorTex.image;
     if (!img || img.width === 0) return null;
 
-    if (!treeGeometry || !treeMaterial) initVegetationResources();
+    initVegetationResources();
 
-    const scanRes = 48; // Résolution réduite de 64 à 48 pour un gain de performance de 40%
+    const scanRes = 48;
     const canvas = document.createElement('canvas');
     canvas.width = scanRes; canvas.height = scanRes; 
     const ctx = canvas.getContext('2d', { willReadFrequently: true, alpha: false });
     if (!ctx) return null;
 
-    // Support hybride optimisé
     if (tile.colorScale < 1.0) {
         ctx.drawImage(img, img.width * tile.colorOffset.x, img.height * tile.colorOffset.y, img.width * tile.colorScale, img.height * tile.colorScale, 0, 0, scanRes, scanRes);
     } else {
@@ -48,36 +69,39 @@ export function createForestForTile(tile: any): THREE.InstancedMesh | null {
     }
     
     const colorData = ctx.getImageData(0, 0, scanRes, scanRes).data;
-
-    const maxTrees = state.VEGETATION_DENSITY; // Dynamique (v4.3.27)
-    const mesh = new THREE.InstancedMesh(treeGeometry!, treeMaterial!, maxTrees);
+    const maxTrees = state.VEGETATION_DENSITY;
     const dummy = new THREE.Object3D();
     const size = tile.tileSizeMeters;
-    let activeTrees = 0;
-
-    // Cache pour éviter les recalculs dans la boucle
     const exaggeration = state.RELIEF_EXAGGERATION;
 
-    // --- OPTIMISATION SCAN ADAPTATIF (v4.5.45) ---
-    // On réduit le nombre d'itérations selon la puissance de l'appareil
+    // On crée un groupe pour contenir les différents InstancedMesh
+    const forestGroup = new THREE.Group();
+    
+    // Initialisation des instances pour cette tuile
+    const instances: Record<string, { count: number, matrices: THREE.Matrix4[] }> = {
+        sapin: { count: 0, matrices: [] },
+        meleze: { count: 0, matrices: [] },
+        feuillu: { count: 0, matrices: [] }
+    };
+
     const step = (state.PERFORMANCE_PRESET === 'ultra') ? 1 : ((state.PERFORMANCE_PRESET === 'performance') ? 2 : 4);
-    const densityBoost = (step === 4) ? 1.5 : 1.0; // On agrandit un peu les arbres pour compenser visuellement
+    const densityBoost = (step === 4) ? 1.5 : 1.0;
+
+    let totalActive = 0;
 
     for (let py = 0; py < scanRes; py += step) {
-        const rowOffset = py * scanRes;
         for (let px = 0; px < scanRes; px += step) {
-            if (activeTrees >= maxTrees) break;
+            if (totalActive >= maxTrees) break;
 
-            const i = (rowOffset + px) * 4;
+            const i = (py * scanRes + px) * 4;
             const r = colorData[i], g = colorData[i+1], b = colorData[i+2];
             
-            // Logique de détection simplifiée et plus rapide
             let isForest = false;
             if (state.MAP_SOURCE === 'opentopomap') {
                 isForest = (g > b * 1.1 && (g + r * 0.3) > b * 1.3 && g > 30);
-            } else if (state.MAP_SOURCE !== 'satellite') {
+            } else {
                 const isNeutral = (Math.abs(r - g) < 15 && Math.abs(g - b) < 15 && r > 160);
-                isForest = (g > r * 1.1 && g > b * 1.1 && !isNeutral);
+                isForest = (g > r * 1.05 && g > b * 1.05 && !isNeutral);
             }
 
             if (isForest) {
@@ -85,7 +109,17 @@ export function createForestForTile(tile: any): THREE.InstancedMesh | null {
                 const lz = ((py / scanRes) - 0.5) * size + (Math.random() - 0.5) * (size / scanRes) * step;
 
                 const h = getSimpleAltitude(tile, lx, lz, exaggeration);
-                if (h > 2450 * exaggeration || h < 2) continue;
+                const realAlt = h / exaggeration;
+
+                if (realAlt > 2400 || realAlt < 2) continue;
+
+                // --- SÉLECTION DE L'ESSENCE SELON ALTITUDE (v4.9.1) ---
+                let type = 'sapin';
+                if (realAlt < 900) {
+                    type = Math.random() > 0.3 ? 'feuillu' : 'sapin';
+                } else if (realAlt > 1700) {
+                    type = Math.random() > 0.4 ? 'meleze' : 'sapin';
+                }
 
                 dummy.position.set(lx, h, lz);
                 const scale = (0.3 + Math.random() * 0.7) * densityBoost; 
@@ -93,19 +127,28 @@ export function createForestForTile(tile: any): THREE.InstancedMesh | null {
                 dummy.rotation.y = Math.random() * Math.PI;
                 dummy.updateMatrix();
                 
-                mesh.setMatrixAt(activeTrees++, dummy.matrix);
+                instances[type].matrices.push(dummy.matrix.clone());
+                instances[type].count++;
+                totalActive++;
             }
         }
     }
 
-    if (activeTrees === 0) return null;
+    // Création des InstancedMesh pour chaque essence présente sur la tuile
+    Object.keys(instances).forEach(type => {
+        const data = instances[type];
+        if (data.count > 0) {
+            const iMesh = new THREE.InstancedMesh(essences[type].geometry, essences[type].material, data.count);
+            for (let j = 0; j < data.count; j++) {
+                iMesh.setMatrixAt(j, data.matrices[j]);
+            }
+            iMesh.castShadow = true;
+            iMesh.receiveShadow = true;
+            forestGroup.add(iMesh);
+        }
+    });
 
-    mesh.count = activeTrees;
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    
-    return mesh;
+    return totalActive > 0 ? forestGroup : null;
 }
 
 function getSimpleAltitude(tile: any, localX: number, localZ: number, exaggeration: number): number {

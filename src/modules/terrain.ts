@@ -228,7 +228,7 @@ export class Tile {
     pixelData: Uint8ClampedArray | null = null;
     colorTex: THREE.Texture | null = null;
     overlayTex: THREE.Texture | null = null;
-    forestMesh: THREE.InstancedMesh | null = null;
+    forestMesh: THREE.Object3D | null = null;
     poiGroup: THREE.Group | null = null;
     buildingMesh: THREE.Mesh | null = null;
     currentResolution: number = -1;
