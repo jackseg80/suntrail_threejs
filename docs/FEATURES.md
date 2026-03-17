@@ -1,4 +1,4 @@
-# 📋 Fonctionnalités de SunTrail 3D (v4.6.6)
+# 📋 Fonctionnalités de SunTrail 3D (v4.9.0)
 
 Ce document dresse la liste exhaustive des capacités techniques et fonctionnelles du moteur SunTrail.
 
@@ -6,8 +6,10 @@ Ce document dresse la liste exhaustive des capacités techniques et fonctionnell
 
 ### 🌍 Moteur 3D & Terrain
 *   **Rendu de Relief Dynamique (LOD)** : Affichage du terrain 3D haute performance via MapTiler et OpenStreetMap avec un système de niveau de détail progressif (Level of Detail).
+*   **Support IGN France** : Basculement automatique vers les services officiels de la Géoplateforme (`data.geopf.fr`) pour une précision maximale en France (Plan & Orthophoto).
 *   **Hybride 2D/3D Adaptatif (Turbo Engine)** : Bascule automatique entre un rendu 2D optimisé à haute altitude (LOD <= 10) et une 3D détaillée au sol pour garantir 120 FPS.
 *   **Carte des Pentes (Inclinomètre)** : Shader personnalisé calculant et affichant les pentes en temps réel (Jaune 30° / Orange 35° / Rouge 40°+) pour l'aide à la décision en zone avalancheuse.
+*   **Hydrologie par Shader (Pure Alpin)** : Moteur 100% GPU détectant les surfaces d'eau pour appliquer des ondulations douces et des reflets de ciel dynamiques sans impact réseau.
 *   **Exagération du Relief** : Multiplicateur dynamique permettant d'accentuer la perception visuelle des versants.
 *   **Anti-Collision Sol Pro** : Algorithme de sécurité garantissant que la caméra ne traverse jamais le maillage du relief.
 *   **Brouillard Atmosphérique Dynamique** : Système de voile volumétrique intégré aux presets de performance pour masquer le chargement des tuiles lointaines.
