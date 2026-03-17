@@ -1,29 +1,33 @@
-# ⛰️ SunTrail 3D (v4.6.6)
+# ⛰️ SunTrail 3D (v4.9.1)
 
-Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données MapTiler / OpenStreetMap.
+Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données MapTiler / OpenStreetMap / IGN France.
 
-## ✨ Nouveautés v4.6.x (Peaks & Cinematic Exploration)
-- **Moteur de Recherche de Sommets :** Indexation locale intelligente (Overpass API) des sommets > 1000m avec auto-complétion hybride instantanée.
-- **Vol Cinématique (`flyTo`) :** Trajectoire de vol parabolique sécurisée (anti-collision terrain) pour une immersion totale lors de la sélection d'un sommet.
-- **Altitude Panoramique Automatique :** Stabilisation de la vue en LOD 14 (12km d'altitude) pour une observation optimale des massifs alpins.
+## ✨ Nouveautés v4.9.x (Expansion & Immersion)
+- **Végétation Bio-Fidèle :** Diversification des forêts avec 3 essences (Feuillus, Sapins, Mélèzes) sélectionnées dynamiquement selon l'altitude réelle.
+- **Support IGN France :** Basculement automatique sur les serveurs de la Géoplateforme (`data.geopf.fr`) pour une précision officielle lors du survol de l'Hexagone (Plan & Satellite).
+- **Hydrologie par Shader (Pure Alpin) :** Moteur de rendu d'eau 100% GPU avec détection dynamique, ondulations fluides et reflets cristallins sans impact réseau.
+- **Système SOS SMS :** Générateur de message de secours optimisé (Coordonnées, Altitude, Batterie) pour les zones à faible couverture (Sécurité Alpine).
+- **Optimisation Overpass :** File d'attente et quarantaine intelligente pour les services OSM, garantissant une fluidité de 60 FPS constante.
 
-## ✨ Nouveautés v4.5.x (Ultimate Tracking & Battery)
-- **Suivi GPS & Boussole Pro :** Interpolation haute fréquence (60 FPS) et stabilisation par zone morte (1.5°) pour une navigation ultra-fluide sans tremblements.
-- **Ultra-Battery Save :** Mode "Deep Sleep" mettant en pause le moteur 3D (0 FPS) en arrière-plan et toggle global 30 FPS pour maximiser l'autonomie en rando.
-- **Voile Atmosphérique Dynamique :** Intégration du brouillard volumétrique aux presets de performance pour masquer le chargement des tuiles lointaines.
-- **Interface Mobile Stack :** UI responsive avec ancrage dynamique du panneau d'altitude au-dessus de la timeline sur mobile.
-- **Anti-Collision Sol Pro :** Système de sécurité garantissant que la caméra ne traverse jamais le relief.
+## ✨ Nouveautés v4.8.x (Safety & Precision)
+- **Inclinomètre Mathématique :** Calcul de la pente réelle au pixel près (100% GPU) avec coloration de sécurité (Jaune > 30°, Orange > 35°, Rouge > 40°).
+- **Gestion GPX Pro :** Importation de traces avec profil altimétrique interactif (survol 3D) et calcul automatique des pentes le long du parcours.
 
-## ✨ Nouveautés v4.3.x (Turbo Mobile & Space View)
-- **2D Turbo Engine :** Rendu spatial (LOD <= 10) garantissant 120 FPS à haute altitude via maillages plats simplifiés.
-- **Trajectoire Parabolique :** Zoom intelligent (Auto-Tilt) qui redresse la vue vers la 2D en montant pour cacher le vide de l'horizon.
+## ✨ Nouveautés v4.7.x (Spherical Navigation & Offline)
+- **Suivi GPS Sphérique :** Moteur de caméra ultra-lisse protégé contre le "Gimbal Lock" pour un suivi utilisateur cinématique.
+- **Gestion Offline :** Système de mise en cache locale (Scraper) permettant de précharger des zones de 6km pour un usage sans réseau.
+
+## ✨ Nouveautés v4.5.x (Battery & Intelligence)
+- **Ultra-Battery Save :** Mode "Deep Sleep" mettant en pause le moteur 3D (0 FPS) en arrière-plan et toggle global 30 FPS pour maximiser l'autonomie.
+- **Anti-Collision Sol Pro :** Système de sécurité garantissant que la caméra ne traverse jamais le relief maillé.
 
 ## 📱 Application Mobile (Android)
-SunTrail 3D est optimisé pour les processeurs de dernière génération (Snapdragon Elite, Apple M4) avec des profils de performance automatiques et une gestion rigoureuse de la VRAM.
+SunTrail 3D est optimisé pour les processeurs mobiles de dernière génération avec des profils de performance adaptatifs (Eco, Standard, High, Ultra) et une gestion rigoureuse de la VRAM.
 
 ## 📄 Documentation
+- [Liste des Fonctionnalités](./docs/FEATURES.md)
 - [Guide des Tests](./docs/TESTS.md)
 - [Historique des versions (Changelog)](./docs/CHANGELOG.md)
 - [Feuille de route (TODO)](./docs/TODO.md)
-- [Guide Développeur (Claude)](./CLAUDE.md)
+- [Guide Développeur (Claude/Gemini)](./CLAUDE.md)
 - [Guide Android](./docs/ANDROID.md)
