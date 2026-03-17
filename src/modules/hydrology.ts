@@ -14,7 +14,6 @@ export async function loadHydrologyForTile(tile: any) {
 
     // --- STRATÉGIE : On télécharge une tuile de "Masque d'eau" (Ocean/Lakes)
     // MapTiler fournit des tuiles où l'eau est bien définie.
-    const url = `https://api.maptiler.com/tiles/contours-v2/${tile.zoom}/${tile.tx}/${tile.ty}.pbf?key=${state.MK}`;
     
     // Malheureusement, sans décodeur PBF, on va utiliser une astuce visuelle :
     // On crée un disque bleu plat sous le terrain qui ne dépasse que là où le relief est à 0 ou proche de l'eau.

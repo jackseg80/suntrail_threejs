@@ -4,8 +4,8 @@ import { state } from './state';
 import { showToast, isMobileDevice, isPositionInSwitzerland, isPositionInFrance } from './utils';
 import { updateElevationProfile, haversineDistance } from './profile';
 import { createForestForTile } from './vegetation';
-import { loadPOIsForTile } from './poi';
-import { loadBuildingsForTile } from './buildings';
+// import { loadPOIsForTile } from './poi';
+// import { loadBuildingsForTile } from './buildings';
 import { loadHydrologyForTile } from './hydrology';
 import { EARTH_CIRCUMFERENCE, lngLatToWorld, worldToLngLat, lngLatToTile } from './geo';
 import { flyTo } from './scene';
@@ -898,6 +898,7 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
         
         if (loadQueue.length > 0) processLoadQueue();
     }
+    return Promise.resolve();
 }
 
 export function updateHydrologyVisibility(visible: boolean): void {
