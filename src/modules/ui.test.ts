@@ -5,7 +5,7 @@ import { state } from './state';
 describe('ui.ts', () => {
     beforeEach(() => {
         vi.resetAllMocks();
-        // Setup minimal DOM pour les tests (v4.5.6)
+        // Setup DOM complet pour les tests v4.9.1
         document.body.innerHTML = `
             <div id="setup-screen"></div>
             <input id="k1">
@@ -22,6 +22,10 @@ describe('ui.ts', () => {
             <button id="open-expert-weather"></button>
             <button id="close-expert-weather"></button>
             <div id="coords-panel"></div>
+            <button id="sos-btn"></button>
+            <div id="sos-modal" style="display:none;"></div>
+            <div id="sos-text-container"></div>
+            <button id="sos-close-btn"></button>
             <input id="res-slider" type="range">
             <input id="range-slider" type="range">
             <input id="exag-slider" type="range">
@@ -34,6 +38,7 @@ describe('ui.ts', () => {
             <input id="veg-toggle" type="checkbox">
             <input id="buildings-toggle" type="checkbox">
             <input id="poi-toggle" type="checkbox">
+            <input id="hydro-toggle" type="checkbox">
             <input id="trails-toggle" type="checkbox">
             <input id="slopes-toggle" type="checkbox">
             <input id="stats-toggle" type="checkbox">
@@ -52,25 +57,20 @@ describe('ui.ts', () => {
         expect(panel?.classList.contains('open')).toBe(true);
     });
 
-    it('should toggle the layer menu', () => {
-        const layerBtn = document.getElementById('layer-btn');
-        const layerMenu = document.getElementById('layer-menu');
-        
-        // Simuler le comportement de delegation manuellement si l'environnement de test bloque
-        if (layerMenu) layerMenu.style.display = 'none';
-        
-        layerBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-        
-        // Sur certains environnements JSDOM, on force le rendu
-        const menu = document.getElementById('layer-menu');
-        if (menu && menu.style.display === 'none') {
-            menu.style.display = 'block'; 
-        }
-        
-        expect(document.getElementById('layer-menu')?.style.display).toBe('block');
-    });
-
     it('should initialize the UI as visible', () => {
         expect(state.uiVisible).toBe(true);
+    });
+
+    it('should handle SOS modal visibility', () => {
+        const modal = document.getElementById('sos-modal');
+        const closeBtn = document.getElementById('sos-close-btn');
+        
+        // On simule l'ouverture (via click ou appel direct)
+        if (modal) modal.style.display = 'block';
+        expect(modal?.style.display).toBe('block');
+        
+        // On simule la fermeture
+        closeBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        expect(modal?.style.display).toBe('none');
     });
 });

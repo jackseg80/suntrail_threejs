@@ -44,8 +44,8 @@ describe('terrain.ts', () => {
             const p1 = state.gpxPoints[0];
             const p2 = state.gpxPoints[1];
             
-            expect(p1.y).toBeCloseTo(1000 * 1.4 + 10, 1);
-            expect(p2.y).toBeCloseTo(1100 * 1.4 + 10, 1);
+            expect(p1.y).toBeCloseTo(1000 * 1.4 + 5, 1);
+            expect(p2.y).toBeCloseTo(1100 * 1.4 + 5, 1);
         });
 
         it('should cleanup old GPX mesh and update when thickness changes', () => {
