@@ -11,6 +11,7 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Hydrologie par Shader (v5.4.1)** : Implémentation d'un moteur de détection d'eau 100% GPU. Les lacs et rivières bénéficient désormais d'une couleur bleu profond et d'ondulations fluides, sans aucune requête réseau supplémentaire.
 - **Optimisation Overpass** : Mise en place d'une file d'attente et d'une quarantaine automatique pour les services OSM afin de garantir une fluidité totale même en cas de panne des serveurs tiers.
 - **Presets de Performance** : Activation par défaut de l'hydrologie animée sur les profils "Performance" et "Ultra".
+- **Fix UI Overlay** : Correction de la superposition des panneaux (le panneau de coordonnées s'affiche désormais derrière les réglages).
 
 ---
 

@@ -310,7 +310,7 @@ body.mode-2d #probe-result {
     position: fixed; 
     bottom: 100px; 
     left: calc(20px + env(safe-area-inset-left, 0px)); 
-    background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 12px; font-size: 13px; z-index: 500; backdrop-filter: var(--glass); pointer-events: none; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 12px; font-size: 13px; z-index: 1000; backdrop-filter: var(--glass); pointer-events: none; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s;
 }
 
