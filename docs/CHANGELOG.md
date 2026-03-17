@@ -9,6 +9,7 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Multi-Essences** : Diversification des forêts avec 3 modèles d'arbres (Feuillus, Sapins, Mélèzes) et matériaux distincts.
 - **Intelligence d'Altitude** : Sélection automatique de l'essence selon l'altitude réelle (Feuillus en plaine, Sapins en moyenne montagne, Mélèzes en haute altitude).
 - **Z-Index Fix** : Correction définitive de la superposition du panneau de coordonnées qui s'affiche désormais correctement derrière les réglages.
+- **SOS Mobile Fix** : Correction du centrage de la modale de secours sur les écrans mobiles (extraction du stack transformé).
 
 ## [4.9.0] - 2026-03-17
 ### 🌍 Extension France & Hydrologie
