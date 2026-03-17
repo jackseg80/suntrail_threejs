@@ -84,6 +84,7 @@ export function applyPreset(preset: PresetType): void {
     state.SHOW_VEGETATION = settings.SHOW_VEGETATION;
     state.SHOW_SIGNPOSTS = settings.SHOW_SIGNPOSTS;
     state.SHOW_BUILDINGS = settings.SHOW_BUILDINGS;
+    state.SHOW_HYDROLOGY = settings.SHOW_HYDROLOGY;
     
     // Nouveaux paramètres (v4.3.27)
     state.VEGETATION_DENSITY = settings.VEGETATION_DENSITY;
@@ -126,6 +127,7 @@ export function updatePerformanceUI(preset: PresetType): void {
     const vegToggle = document.getElementById('veg-toggle') as HTMLInputElement;
     const poiToggle = document.getElementById('poi-toggle') as HTMLInputElement;
     const buildingsToggle = document.getElementById('buildings-toggle') as HTMLInputElement;
+    const hydroToggle = document.getElementById('hydro-toggle') as HTMLInputElement;
     const vegDensitySlider = document.getElementById('veg-density-slider') as HTMLInputElement;
     
     const resDisp = document.getElementById('res-disp');
@@ -146,6 +148,7 @@ export function updatePerformanceUI(preset: PresetType): void {
     if (vegToggle) vegToggle.checked = state.SHOW_VEGETATION;
     if (poiToggle) poiToggle.checked = state.SHOW_SIGNPOSTS;
     if (buildingsToggle) buildingsToggle.checked = state.SHOW_BUILDINGS;
+    if (hydroToggle) hydroToggle.checked = state.SHOW_HYDROLOGY;
     
     // Nouveaux contrôles (v4.3.27)
     if (vegDensitySlider) vegDensitySlider.value = state.VEGETATION_DENSITY.toString();

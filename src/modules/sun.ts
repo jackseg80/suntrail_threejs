@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import SunCalc from 'suncalc';
 import { state } from './state';
+import { terrainUniforms } from './terrain';
 
 export function updateSunPosition(minutes: number): void {
     if (!state.sunLight || isNaN(minutes)) return;
@@ -136,6 +137,9 @@ export function updateSunPosition(minutes: number): void {
     sunVector.x = distance * Math.cos(finalPhi) * -Math.sin(finalAz);
     sunVector.y = distance * Math.sin(finalPhi);
     sunVector.z = distance * Math.cos(finalPhi) * Math.cos(finalAz);
+
+    // --- SYNCHRONISATION SHADER TERRAIN (v5.3.1) ---
+    terrainUniforms.uSunPos.value.copy(sunVector).normalize();
 
     if (state.controls && state.controls.target) {
         state.sunLight.position.set(

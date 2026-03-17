@@ -43,10 +43,20 @@ export function isMobileDevice(): boolean {
 }
 
 /**
- * Vérifie si une coordonnée est en Suisse (Bounding Box approximative)
+ * Vérifie si une coordonnée est en Suisse (Bounding Box resserrée v4.8.7)
+ * Chamonix est à 6.86 -> On coupe à 6.95 à l'Ouest.
  */
 export function isPositionInSwitzerland(lat: number, lon: number): boolean {
-    return (lat > 45.8 && lat < 47.8 && lon > 5.9 && lon < 10.5);
+    // Si Latitude < 46.1 (Chamonix), on exige une Longitude > 7.0 pour être en Suisse (Valais)
+    if (lat < 46.1) return (lon > 7.0 && lon < 10.49);
+    return (lat > 45.81 && lat < 47.81 && lon > 6.1 && lon < 10.49);
+}
+
+/**
+ * Vérifie si une coordonnée est en France (Bounding Box Hexagone)
+ */
+export function isPositionInFrance(lat: number, lon: number): boolean {
+    return (lat > 41.3 && lat < 51.1 && lon > -5.2 && lon < 9.6);
 }
 
 // --- GEOCoding GLOBAL ORCHESTRATOR (v4.5.34) ---
@@ -85,51 +95,83 @@ export async function fetchGeocoding(query: string | {lat: number, lon: number})
     }
 }
 
-// --- OVERPASS GLOBAL ORCHESTRATOR (v4.5.21) ---
-let isOverpassLocked = false;
-let lastOverpassRequest = 0;
-const OVERPASS_COOLDOWN = 1200; // 1.2s entre chaque tuile
+// --- OVERPASS GLOBAL QUEUE (v4.8.8) ---
+let overpassQueue: { query: string, resolve: (data: any) => void, reject: (e: any) => void }[] = [];
+let isProcessingOverpass = false;
+let lastOverpassTime = 0;
+const MIN_DELAY_OVERPASS = 2500; 
 const serverQuarantine: Record<string, number> = {};
 
 export async function fetchOverpassData(query: string): Promise<any> {
-    const now = Date.now();
-    
-    // 1. Verrou Global Strict
-    if (isOverpassLocked || (now - lastOverpassRequest < OVERPASS_COOLDOWN)) {
-        return null;
-    }
+    return new Promise((resolve, reject) => {
+        // Si trop de requêtes en attente (> 10), on rejette immédiatement pour éviter de ramer
+        if (overpassQueue.length > 10) {
+            return reject(new Error("Queue full"));
+        }
+        overpassQueue.push({ query, resolve, reject });
+        processOverpassQueue();
+    });
+}
 
+async function processOverpassQueue() {
+    if (isProcessingOverpass || overpassQueue.length === 0) return;
+    
+    const now = Date.now();
     const servers = [
         'https://overpass-api.de/api/interpreter',
         'https://lz4.overpass-api.de/api/interpreter',
         'https://z.overpass-api.de/api/interpreter'
     ];
 
-    // 2. Sélection d'un serveur non-quarantiné
+    // Filtrer les serveurs fonctionnels
     const availableServers = servers.filter(s => !serverQuarantine[s] || now > serverQuarantine[s]);
-    if (availableServers.length === 0) return null;
     
+    if (availableServers.length === 0) {
+        // Tous les serveurs sont KO : on vide la file pour libérer le navigateur
+        console.error("OSM Servers Down (Quarantine). Cleaning queue.");
+        const item = overpassQueue.shift();
+        if (item) item.reject(new Error("All servers down"));
+        setTimeout(processOverpassQueue, 5000); // On attend 5s avant de retenter quoi que ce soit
+        return;
+    }
+
+    const timeSinceLast = now - lastOverpassTime;
+    if (timeSinceLast < MIN_DELAY_OVERPASS) {
+        setTimeout(processOverpassQueue, MIN_DELAY_OVERPASS - timeSinceLast);
+        return;
+    }
+
+    isProcessingOverpass = true;
+    const { query, resolve, reject } = overpassQueue.shift()!;
     const server = availableServers[Math.floor(Math.random() * availableServers.length)];
 
-    isOverpassLocked = true;
-    lastOverpassRequest = now;
-
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s max
+
         const response = await fetch(server, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `data=${encodeURIComponent(query)}`
+            body: `data=${encodeURIComponent(query)}`,
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
-        if (response.status === 429) {
-            serverQuarantine[server] = now + 30000; // 30s de pause pour ce serveur
-            throw new Error('429');
+        if (response.status === 429 || response.status >= 500) {
+            console.warn(`Server ${server} failed (${response.status}). Quarantining for 2min.`);
+            serverQuarantine[server] = now + 120000; // 2 minutes de ban
+            reject(new Error(response.status.toString()));
+        } else if (!response.ok) {
+            reject(new Error('OSM Error'));
+        } else {
+            const data = await response.json();
+            lastOverpassTime = Date.now();
+            resolve(data);
         }
-
-        if (!response.ok) throw new Error('OSM Error');
-        const data = await response.json();
-        return data;
+    } catch (e) {
+        reject(e);
     } finally {
-        setTimeout(() => { isOverpassLocked = false; }, 200);
+        isProcessingOverpass = false;
+        setTimeout(processOverpassQueue, 200);
     }
 }

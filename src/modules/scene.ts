@@ -6,7 +6,7 @@ import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { state } from './state';
 import { updateSunPosition } from './sun';
 import { getAltitudeAt } from './analysis';
-import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, resetTerrain, clearCache, autoSelectMapSource, updateGPXMesh } from './terrain';
+import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, resetTerrain, clearCache, autoSelectMapSource, updateGPXMesh, terrainUniforms } from './terrain';
 import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat } from './geo';
 import { throttle } from './utils';
 import { initVegetationResources } from './vegetation';
@@ -306,10 +306,13 @@ export async function initScene(): Promise<void> {
             }
         }
 
-        const needsUpdate = state.controls.update() || state.isSunAnimating || state.isInteractingWithUI || state.isProcessingTiles || hasWeather || isCompassAnimating() || tilesFading || needsInitialRender > 0 || state.isFollowingUser;
+        const needsUpdate = state.controls.update() || state.SHOW_HYDROLOGY || state.isSunAnimating || state.isInteractingWithUI || state.isProcessingTiles || hasWeather || isCompassAnimating() || tilesFading || needsInitialRender > 0 || state.isFollowingUser;
 
         if (needsUpdate) {
             state.stats?.begin();
+            // --- MISE À JOUR HORLOGE GPU (v5.1.1) ---
+            terrainUniforms.uTime.value += delta;
+            
             tilesFading = animateTiles(delta);
             if (needsInitialRender > 0) needsInitialRender--;
             

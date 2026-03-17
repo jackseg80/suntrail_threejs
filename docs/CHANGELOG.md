@@ -4,6 +4,16 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [4.9.0] - 2026-03-17
+### 🌍 Extension France & Hydrologie
+- **Intégration IGN France** : Basculement automatique sur les serveurs de la Géoplateforme (`data.geopf.fr`) lors du survol de l'Hexagone. Accès aux flux Plan IGN et Orthoimagery HD.
+- **Système SOS SMS** : Nouvel outil de sécurité alpine générant un message de secours optimisé (GPS, Altitude, Batterie) prêt à être envoyé par SMS en zone blanche.
+- **Hydrologie par Shader (v5.4.1)** : Implémentation d'un moteur de détection d'eau 100% GPU. Les lacs et rivières bénéficient désormais d'une couleur bleu profond et d'ondulations fluides, sans aucune requête réseau supplémentaire.
+- **Optimisation Overpass** : Mise en place d'une file d'attente et d'une quarantaine automatique pour les services OSM afin de garantir une fluidité totale même en cas de panne des serveurs tiers.
+- **Presets de Performance** : Activation par défaut de l'hydrologie animée sur les profils "Performance" et "Ultra".
+
+---
+
 ## [4.8.0] - 2026-03-16
 ### 🏔️ Carte des Pentes & Sécurité Avalanche
 - **Inclinomètre Shader** : Remplacement de l'API Swisstopo par un calcul mathématique 100% GPU. La vraie pente est désormais calculée au pixel près pour le monde entier (sans le biais de l'exagération du relief).

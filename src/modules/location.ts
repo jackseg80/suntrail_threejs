@@ -139,14 +139,28 @@ export function centerOnUser(delta: number) {
     const offset = state.camera.position.clone().sub(state.controls.target);
     const spherical = new THREE.Spherical().setFromVector3(offset);
 
-    // 2. CALCUL DE LA DESTINATION AU SOL
+    // 2. CALCUL DE LA DESTINATION AU SOL (v4.8.2 - Look Ahead Offset)
     const targetWorldPos = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
     const finalTarget = new THREE.Vector3(targetWorldPos.x, 0, targetWorldPos.z);
     
+    // --- OPTIMISATION NAVIGATION (Look Ahead) ---
+    // Si on a un cap, on décale la cible "derrière" l'utilisateur
+    // pour qu'il soit affiché en bas de l'écran et voit devant lui.
+    if (state.userHeading !== null) {
+        const headingRad = THREE.MathUtils.degToRad(state.userHeading);
+        const lookAheadDist = 450; // Distance de décalage vers le bas de l'écran (ajustable)
+        const offsetX = Math.sin(headingRad) * lookAheadDist;
+        const offsetZ = Math.cos(headingRad) * lookAheadDist;
+        
+        // On recule la cible (le centre de la caméra) par rapport à la direction de marche
+        finalTarget.x -= offsetX;
+        finalTarget.z -= offsetZ;
+    }
+
     const isInitial = (Date.now() - state.lastTrackingUpdate < 3000);
     
     // Vitesse de déplacement au sol
-    const moveFactor = 1 - Math.exp(-(isInitial ? 8 : 3) * delta);
+    const moveFactor = 1 - Math.exp(-(isInitial ? 8 : 4) * delta); // Un peu plus rapide (3 -> 4)
     state.controls.target.lerp(finalTarget, moveFactor);
 
     // 3. MISE À JOUR DE L'ORBITE (LISSAGE)

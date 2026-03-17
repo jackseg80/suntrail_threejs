@@ -6,7 +6,7 @@ import { state } from './state';
 import { updateSunPosition } from './sun';
 import { initScene, flyTo } from './scene';
 import { resetToNorth } from './compass';
-import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain, autoSelectMapSource, deleteTerrainCache, downloadOfflineZone, updateSlopeVisibility } from './terrain';
+import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain, autoSelectMapSource, deleteTerrainCache, downloadOfflineZone, updateSlopeVisibility, updateHydrologyVisibility, clearGPX } from './terrain';
 import { lngLatToTile, worldToLngLat } from './geo';
 import { showToast, fetchGeocoding } from './utils';
 import { applyPreset, detectBestPreset, getGpuInfo } from './performance';
@@ -136,16 +136,36 @@ export function initUI(): void {
             updateWeatherUIIndicator();
         }
 
-        if (id === 'probe-btn') {
-            e.stopPropagation();
+        if (id === 'probe-btn' || target.closest('#probe-btn')) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
             runSolarProbe(lastClickedCoords.x, lastClickedCoords.z, lastClickedCoords.alt);
+            return;
         }
-        if (id === 'close-probe') document.getElementById('probe-result')!.style.display = 'none';
+        if (id === 'sos-btn' || target.closest('#sos-btn')) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            openSOSModal();
+            return;
+        }
 
+        if (id === 'close-probe') document.getElementById('probe-result')!.style.display = 'none';
         if (id === 'play-btn') {
             state.isSunAnimating = !state.isSunAnimating;
             target.textContent = state.isSunAnimating ? '⏸' : '▶';
             return;
+        }
+
+        if (id === 'sos-close-btn') document.getElementById('sos-modal')!.style.display = 'none';
+        if (id === 'sos-copy-btn') {
+            const text = document.getElementById('sos-text-container')!.textContent || '';
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('sos-copy-btn')!;
+                const oldText = btn.textContent;
+                btn.textContent = '✅ COPIÉ !';
+                btn.style.background = '#10b981';
+                setTimeout(() => { btn.textContent = oldText; btn.style.background = 'var(--accent)'; }, 2000);
+            });
         }
 
         if (id === 'gpx-btn') document.getElementById('gpx-upload')!.click();
@@ -199,6 +219,12 @@ export function initUI(): void {
     hookChange('shadow-toggle', (v) => { state.SHADOWS = v; if (state.sunLight) state.sunLight.castShadow = v; });
     hookChange('veg-toggle', (v) => { state.SHOW_VEGETATION = v; refreshTerrain(); loadTerrain(); });
     hookChange('buildings-toggle', (v) => { state.SHOW_BUILDINGS = v; refreshTerrain(); loadTerrain(); });
+    hookChange('hydro-toggle', (v) => { 
+        state.SHOW_HYDROLOGY = v; 
+        updateHydrologyVisibility(v);
+        refreshTerrain(); 
+        loadTerrain(); 
+    });
     hookChange('poi-toggle', (v) => { state.SHOW_SIGNPOSTS = v; refreshTerrain(); loadTerrain(); });
     hookChange('trails-toggle', (v) => { state.SHOW_TRAILS = v; refreshTerrain(); loadTerrain(); });
     hookChange('slopes-toggle', (v) => { state.SHOW_SLOPES = v; updateSlopeVisibility(v); });
@@ -226,6 +252,23 @@ export function initUI(): void {
                 btn.style.borderColor = '#10b981';
             } catch (e) { showToast("Erreur lors du téléchargement"); btn.innerHTML = `<span>❌ Échec</span>`; }
             finally { setTimeout(() => { btn.disabled = false; btn.innerHTML = `<span>⬇️ Télécharger Zone (10km)</span>`; btn.style.borderColor = 'var(--accent)'; }, 5000); }
+        }
+    });
+
+    document.getElementById('close-profile')?.addEventListener('click', () => {
+        const prof = document.getElementById('elevation-profile');
+        if (prof) prof.style.display = 'none';
+    });
+
+    // --- SUPPRESSION GPX AU CLIC (v4.8.1) ---
+    window.addEventListener('click', (e) => {
+        if (state.isInteractingWithUI || !state.camera || !state.gpxMesh) return;
+        const mouse = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, state.camera);
+        const intersects = raycaster.intersectObject(state.gpxMesh);
+        if (intersects.length > 0) {
+            if (confirm("Supprimer cette trace GPX ?")) clearGPX();
         }
     });
 
@@ -426,6 +469,52 @@ async function handleGPX(xml: string) {
     state.ZOOM = 13; state.originTile = lngLatToTile(startPt.lon, startPt.lat, 13);
     updateGPXMesh(); updateElevationProfile(); await updateVisibleTiles();
     const tc = document.getElementById('trail-controls'); if (tc) tc.style.display = 'block';
+}
+
+/**
+ * Génère et affiche le message SOS (v4.8)
+ */
+async function openSOSModal() {
+    const modal = document.getElementById('sos-modal');
+    const textContainer = document.getElementById('sos-text-container');
+    if (!modal || !textContainer) return;
+
+    modal.style.display = 'block';
+    textContainer.textContent = "⌛ Localisation en cours...";
+
+    let lat: number, lon: number, alt: number;
+
+    // 1. Position : Priorité au suivi utilisateur, sinon centre de la carte
+    if (state.userLocation) {
+        lat = state.userLocation.lat;
+        lon = state.userLocation.lon;
+        alt = state.userLocation.alt;
+    } else if (state.controls && state.originTile) {
+        const gps = worldToLngLat(state.controls.target.x, state.controls.target.z, state.originTile);
+        lat = gps.lat;
+        lon = gps.lon;
+        alt = getAltitudeAt(state.controls.target.x, state.controls.target.z) / state.RELIEF_EXAGGERATION;
+    } else {
+        lat = state.TARGET_LAT;
+        lon = state.TARGET_LON;
+        alt = 0;
+    }
+
+    // 2. Batterie
+    let batLevel = "??";
+    try {
+        // @ts-ignore
+        const battery = await navigator.getBattery();
+        batLevel = Math.round(battery.level * 100).toString();
+    } catch (e) {}
+
+    const now = new Date();
+    const timeStr = `${now.getHours()}h${now.getMinutes().toString().padStart(2, '0')}`;
+
+    // 3. Formatage (Optimisé pour SMS)
+    const msg = `🆘 SOS SUNTRAIL: ${lat.toFixed(5)},${lon.toFixed(5)} | ALT:${Math.round(alt)}m | BAT:${batLevel}% | ${timeStr}`;
+    
+    textContainer.textContent = msg;
 }
 
 function refreshTerrain() { resetTerrain(); updateVisibleTiles(); }

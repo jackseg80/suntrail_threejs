@@ -5,6 +5,7 @@ interface ProfilePoint {
     dist: number; // Distance cumulée en km
     ele: number;  // Altitude en m
     pos: THREE.Vector3; // Position 3D correspondante
+    slope: number; // Pente locale en %
 }
 
 let profileData: ProfilePoint[] = [];
@@ -21,27 +22,52 @@ export function updateElevationProfile(): void {
     
     profileData = [];
     let cumulativeDist = 0;
+    let totalDPlus = 0;
+    let totalDMinus = 0;
 
     for (let i = 0; i < points.length; i++) {
+        let slope = 0;
         if (i > 0) {
-            // Calcul de la distance entre deux points (en km)
             const p1 = points[i-1];
             const p2 = points[i];
-            const d = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
+            const d = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon); // en km
             cumulativeDist += d;
+
+            // Calcul D+ / D-
+            const diff = (p2.ele || 0) - (p1.ele || 0);
+            if (diff > 0) totalDPlus += diff;
+            else totalDMinus += Math.abs(diff);
+
+            // Calcul de la pente locale (%) : (m / m) * 100
+            if (d > 0.001) { // Éviter division par zéro (min 1m)
+                slope = (diff / (d * 1000)) * 100;
+            }
         }
         profileData.push({
             dist: cumulativeDist,
             ele: points[i].ele || 0,
-            pos: gpxPoints3D[i]
+            pos: gpxPoints3D[i],
+            slope: slope
         });
     }
+
+    // Mise à jour de l'UI des stats
+    updateStatsUI(cumulativeDist, totalDPlus, totalDMinus);
 
     drawProfileSVG();
     setupProfileInteractions();
     
     const profileEl = document.getElementById('elevation-profile');
     if (profileEl) profileEl.style.display = 'block';
+}
+
+function updateStatsUI(dist: number, dPlus: number, dMinus: number): void {
+    const dEl = document.getElementById('gpx-dist');
+    const pEl = document.getElementById('gpx-dplus');
+    const mEl = document.getElementById('gpx-dminus');
+    if (dEl) dEl.textContent = `${dist.toFixed(1)} km`;
+    if (pEl) pEl.textContent = `${Math.round(dPlus)} m D+`;
+    if (mEl) mEl.textContent = `${Math.round(dMinus)} m D-`;
 }
 
 /**
@@ -159,7 +185,7 @@ function setupProfileInteractions(): void {
         cursor.style.display = 'block';
         cursor.style.left = `${(point.dist / maxDist) * 100}%`;
         
-        info.textContent = `Distance : ${point.dist.toFixed(1)}km | Alt : ${Math.round(point.ele)}m`;
+        info.textContent = `Distance : ${point.dist.toFixed(1)}km | Alt : ${Math.round(point.ele)}m | Pente : ${Math.round(point.slope)}%`;
 
         // Mise à jour du marqueur 3D
         if (state.profileMarker) {

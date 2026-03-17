@@ -2,29 +2,18 @@
 
 Ce document définit la trajectoire technologique de SunTrail pour devenir un moteur géospatial de référence, alliant accessibilité web et performances natives.
 
-## ✅ Terminé (v4.7.6)
+## ✅ Terminé (v4.9.0)
 - [x] **Suivi GPS Sphérique** : Interpolation ultra-lisse et protection Gimbal Lock.
 - [x] **Tests Robustes** : Création de `location.test.ts` et 100% de succès Vitest.
 - [x] **Gestion Offline** : Scraper de zone (6km) et badge de statut.
+- [x] **Sécurité & Outils Alpins** : Inclinomètre Shader, GPX Pro et SOS SMS.
 
 ---
 
-## 🧭 Étape 1 : Sécurité & Outils Alpins (v4.8) - EN COURS
-*Objectif : Transformer le relief en un outil d'aide à la décision critique.*
-- [x] **Carte des Pentes (Inclinomètre Shader)** :
-    - [x] Créer un shader custom pour les tuiles de terrain.
-    - [x] Calculer la pente locale dans le fragment shader.
-    - [x] Appliquer une coloration : Jaune (30°) / Orange (35°) / Rouge (40°+).
-    - [x] Ajouter un toggle "Carte des pentes" instantané.
-- [ ] **Gestion GPX Pro** :
-    - [ ] Affichage du profil altimétrique dynamique.
-    - [ ] Calcul de la pente en temps réel le long de la trace.
-- [ ] **SOS SMS Low-Bandwidth** : Générateur de message (Lat/Lon, Alt, Batt).
-
-## 🌍 Étape 2 : Expansion & Immersion (v4.9)
+## 🌍 Étape 2 : Expansion & Immersion (v4.9) - EN COURS
 *Objectif : Sortir des Alpes et enrichir le rendu visuel.*
-- [ ] **Données Mondiales (SRTM/Copernicus)** : Intégration de sources d'élévation globales pour la France et l'Europe (hors Suisse).
-- [ ] **Hydrologie Dynamique** : Rendu des lacs et rivières avec shaders de réflexion basés sur les données OSM.
+- [x] **Données Mondiales (SRTM/Copernicus)** : Intégration de sources d'élévation globales et flux IGN France (Plan/Satellite).
+- [x] **Hydrologie Dynamique** : Rendu des lacs et rivières avec shaders de réflexion basés sur la détection de couleur (v5.4.1).
 - [ ] **Végétation Bio-Fidèle** : Diversification des essences d'arbres et adaptation de la densité selon la zone géographique.
 
 ## ⚡ Étape 3 : La Révolution Hybride WebGL/WebGPU (v5.0)

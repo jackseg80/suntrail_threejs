@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 import { disposeObject } from './memory';
 import { state } from './state';
-import { showToast, isMobileDevice, isPositionInSwitzerland } from './utils';
-import { updateElevationProfile } from './profile';
+import { showToast, isMobileDevice, isPositionInSwitzerland, isPositionInFrance } from './utils';
+import { updateElevationProfile, haversineDistance } from './profile';
 import { createForestForTile } from './vegetation';
 import { loadPOIsForTile } from './poi';
 import { loadBuildingsForTile } from './buildings';
+import { loadHydrologyForTile } from './hydrology';
 import { EARTH_CIRCUMFERENCE, lngLatToWorld, worldToLngLat, lngLatToTile } from './geo';
+import { flyTo } from './scene';
 
 interface CachedData {
     elev: THREE.Texture;
@@ -112,9 +114,12 @@ export function clearCache(): void {
 
 const frustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
-const terrainUniforms = { 
+export const terrainUniforms = { 
     uExaggeration: { value: state.RELIEF_EXAGGERATION },
-    uShowSlopes: { value: state.SHOW_SLOPES ? 1.0 : 0.0 }
+    uShowSlopes: { value: state.SHOW_SLOPES ? 1.0 : 0.0 },
+    uShowHydrology: { value: state.SHOW_HYDROLOGY ? 1.0 : 0.0 },
+    uTime: { value: 0.0 },
+    uSunPos: { value: new THREE.Vector3(0, 1, 0) }
 };
 
 const CACHE_NAME = 'suntrail-tiles-v1';
@@ -433,18 +438,30 @@ export class Tile {
 
     getColorUrl(z: number, x: number, y: number): string {
         const inCH = isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON);
+        const inFR = isPositionInFrance(state.TARGET_LAT, state.TARGET_LON);
+
         switch(state.MAP_SOURCE) {
             case 'satellite': 
                 if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${z}/${x}/${y}.jpeg`;
+                if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
                 return `https://api.maptiler.com/maps/satellite/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
             case 'swisstopo': 
                 if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${z}/${x}/${y}.jpeg`;
+                if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
                 return `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
             case 'opentopomap': return `https://a.tile.opentopomap.org/${z}/${x}/${y}.png`;
             default: return `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
         }
     }
-    getOverlayUrl(z: number, x: number, y: number): string { return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${z}/${x}/${y}.png`; }
+    getOverlayUrl(z: number, x: number, y: number): string { 
+        const inCH = isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON);
+        if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${z}/${x}/${y}.png`; 
+        
+        const inFR = isPositionInFrance(state.TARGET_LAT, state.TARGET_LON);
+        if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=TRANSPORT.WANDERWEGE&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
+        
+        return '';
+    }
 
     buildMesh(resolution: number): void {
         if (!this.elevationTex || !this.colorTex || this.status as any === 'disposed') return;
@@ -495,6 +512,8 @@ export class Tile {
                 shader.uniforms.uElevationMap = { value: this.elevationTex };
                 shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
                 shader.uniforms.uShowSlopes = terrainUniforms.uShowSlopes;
+                shader.uniforms.uShowHydrology = terrainUniforms.uShowHydrology;
+                shader.uniforms.uTime = terrainUniforms.uTime;
                 shader.uniforms.uTileSize = { value: this.tileSizeMeters };
                 shader.uniforms.uElevOffset = { value: this.elevOffset };
                 shader.uniforms.uElevScale = { value: this.elevScale };
@@ -539,35 +558,57 @@ export class Tile {
                 }
                 
                 shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv);`);
+shader.fragmentShader = `
+    uniform sampler2D uOverlayMap;
+    uniform bool uHasOverlay;
+    uniform float uShowSlopes;
+    uniform float uShowHydrology;
+    uniform float uTime;
+    uniform vec3 uSunPos;
+    varying vec3 vTrueNormal;
+    ${shader.fragmentShader}
+`.replace('#include <map_fragment>', `
+    #include <map_fragment>
 
-                shader.fragmentShader = `
-                    uniform sampler2D uOverlayMap;
-                    uniform bool uHasOverlay;
-                    uniform float uShowSlopes;
-                    varying vec3 vTrueNormal;
-                    ${shader.fragmentShader}
-                `.replace('#include <map_fragment>', `
-                    #include <map_fragment>
-                    if (uHasOverlay) {
-                        vec4 oCol = texture2D(uOverlayMap, vMapUv);
-                        diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a);
-                    }
-                    if (uShowSlopes > 0.5) {
-                        float slopeRad = acos(clamp(dot(normalize(vTrueNormal), vec3(0.0, 1.0, 0.0)), 0.0, 1.0));
-                        float slopeDeg = degrees(slopeRad);
-                        
-                        float yellowMix = smoothstep(28.0, 32.0, slopeDeg);
-                        float orangeMix = smoothstep(33.0, 37.0, slopeDeg);
-                        float redMix = smoothstep(38.0, 42.0, slopeDeg);
-                        
-                        vec3 slopeColor = vec3(1.0, 1.0, 0.0); // Jaune
-                        slopeColor = mix(slopeColor, vec3(1.0, 0.5, 0.0), orangeMix); // Orange
-                        slopeColor = mix(slopeColor, vec3(1.0, 0.0, 0.0), redMix); // Rouge
-                        
-                        // Opacité maximale de 55% pour préserver la lisibilité de la carte
-                        diffuseColor.rgb = mix(diffuseColor.rgb, slopeColor, yellowMix * 0.55);
-                    }
-                `);
+    // --- SHADER EAU SIMPLE (v5.2.0) ---
+    if (uShowHydrology > 0.5) {
+        vec3 colorIn = diffuseColor.rgb;
+        // Détection : Bleu dominant ET zone assez plate
+        float isWater = smoothstep(0.0, 0.1, colorIn.b - max(colorIn.r, colorIn.g)) * smoothstep(0.98, 0.999, vTrueNormal.y);
+        
+        if (isWater > 0.1) {
+            // Bleu profond simple
+            vec3 waterBlue = vec3(0.0, 0.2, 0.5);
+            
+            // Animation très large (vagues de fond) pour éviter le tramage
+            float wave = sin(vMapUv.x * 20.0 + uTime * 0.5) * 0.5 + 0.5;
+            
+            diffuseColor.rgb = mix(colorIn, waterBlue, 0.5 * isWater);
+            // Reflet global doux
+            diffuseColor.rgb += vec3(0.2, 0.4, 0.6) * wave * isWater * 0.3;
+        }
+    }
+
+    if (uHasOverlay) {
+        vec4 oCol = texture2D(uOverlayMap, vMapUv);
+        diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a);
+    }
+
+    if (uShowSlopes > 0.5) {
+        float slopeRad = acos(clamp(dot(normalize(vTrueNormal), vec3(0.0, 1.0, 0.0)), 0.0, 1.0));
+        float slopeDeg = degrees(slopeRad);
+        
+        float yellowMix = smoothstep(28.0, 32.0, slopeDeg);
+        float orangeMix = smoothstep(33.0, 37.0, slopeDeg);
+        float redMix = smoothstep(38.0, 42.0, slopeDeg);
+        
+        vec3 slopeColor = vec3(1.0, 1.0, 0.0); // Jaune
+        slopeColor = mix(slopeColor, vec3(1.0, 0.5, 0.0), orangeMix); // Orange
+        slopeColor = mix(slopeColor, vec3(1.0, 0.0, 0.0), redMix); // Rouge
+        
+        diffuseColor.rgb = mix(diffuseColor.rgb, slopeColor, yellowMix * 0.55);
+    }
+`);
             };
         }
 
@@ -604,20 +645,32 @@ export class Tile {
         // --- CHARGEMENT SÉQUENCÉ DES DÉTAILS (v4.5.41) ---
         const delay = (ms: number) => ms * state.LOAD_DELAY_FACTOR;
         
-        // 1. POIs (Rapide)
+        // 1. POIs (Désactivé car Overpass est en panne)
+        /*
         if (state.SHOW_SIGNPOSTS && this.zoom >= 14) {
             setTimeout(() => {
                 if (this.status === 'disposed') return;
                 loadPOIsForTile(this);
             }, delay(50));
         }
+        */
 
-        // 2. Bâtiments (Lourd)
+        // 2. Bâtiments (Désactivé car Overpass est en panne)
+        /*
         if (state.SHOW_BUILDINGS && this.zoom >= 14) {
             setTimeout(() => {
                 if (this.status === 'disposed') return;
                 loadBuildingsForTile(this);
             }, delay(150));
+        }
+        */
+
+        // 2b. Hydrologie (Nouveau système MapTiler Stable)
+        if (state.SHOW_HYDROLOGY && this.zoom >= 13) {
+            setTimeout(() => {
+                if (this.status === 'disposed') return;
+                loadHydrologyForTile(this);
+            }, delay(100));
         }
 
         // 3. Végétation (Très Lourd)
@@ -691,10 +744,11 @@ export function autoSelectMapSource(lat: number, lon: number): void {
     // --- LOGIQUE DE SOURCE AUTO (v4.5.30) ---
     let newSource = 'opentopomap';
     
-    // Si on est à haute altitude (Europe), on force OpenTopoMap pour la lisibilité
+    // Si on est à haute altitude (Europe), on force la topo locale pour la lisibilité
     if (state.ZOOM > 9) {
         const isSwiss = isPositionInSwitzerland(lat, lon);
-        newSource = isSwiss ? 'swisstopo' : 'opentopomap';
+        const isFrance = isPositionInFrance(lat, lon);
+        newSource = (isSwiss || isFrance) ? 'swisstopo' : 'opentopomap';
     }
 
     if (state.MAP_SOURCE !== newSource) {
@@ -710,6 +764,17 @@ export function autoSelectMapSource(lat: number, lon: number): void {
 export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number = 0, worldZ: number = 0): Promise<void> {
     terrainUniforms.uExaggeration.value = state.RELIEF_EXAGGERATION;
     terrainUniforms.uShowSlopes.value = state.SHOW_SLOPES ? 1.0 : 0.0;
+    terrainUniforms.uShowHydrology.value = state.SHOW_HYDROLOGY ? 1.0 : 0.0;
+    
+    // --- MISE À JOUR INDICATEUR SOURCE (v4.8.7) ---
+    const zi = document.getElementById('zoom-indicator');
+    if (zi) {
+        const inCH = isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON);
+        const inFR = isPositionInFrance(state.TARGET_LAT, state.TARGET_LON);
+        const sourceName = inCH ? 'SWISS' : (inFR ? 'IGN' : 'GLOBAL');
+        zi.textContent = `${sourceName}: LVL ${state.ZOOM}`;
+    }
+
     if (!state.camera || Math.abs(state.camera.position.y) < 1) return Promise.resolve();
 
     const currentGPS = worldToLngLat(worldX, worldZ, state.originTile);
@@ -835,8 +900,16 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
     }
 }
 
+export function updateHydrologyVisibility(visible: boolean): void {
+    state.SHOW_HYDROLOGY = visible;
+    resetTerrain();
+    updateVisibleTiles();
+}
+
 export function updateSlopeVisibility(visible: boolean): void {
-    terrainUniforms.uShowSlopes.value = visible ? 1.0 : 0.0;
+    state.SHOW_SLOPES = visible;
+    resetTerrain();
+    updateVisibleTiles();
 }
 
 export async function loadTerrain(): Promise<void> { await updateVisibleTiles(); }
@@ -855,20 +928,11 @@ export function updateGPXMesh(): void {
     if (!state.rawGpxData || !state.camera) return;
     
     const camAlt = state.camera.position.y;
-    const thickness = Math.max(4, camAlt / 400); 
+    // --- TRACE ÉLÉGANTE (v4.8.1) ---
+    // Épaisseur beaucoup plus fine : on divise par 1000 au lieu de 400
+    const thickness = Math.max(1.5, camAlt / 1200); 
 
-    // --- OPTIMISATION CRITIQUE (v4.3.26) ---
-    // On ne recrée la géométrie que si l'épaisseur change de plus de 20%
-    // pour éviter de bloquer le CPU lors des transitions de zoom.
-    if (state.gpxMesh && Math.abs(thickness - lastGpxThickness) < lastGpxThickness * 0.2) {
-        // On se contente de repositionner le mesh existant si nécessaire (origin shift)
-        const track = state.rawGpxData.tracks[0];
-        const p0 = track.points[0];
-        lngLatToWorld(p0.lon, p0.lat, state.originTile);
-        // Le repositionnement est géré par le fait que les points sont recalculés 
-        // par rapport à l'originTile dans lngLatToWorld.
-        // Si l'originTile a changé, il faut quand même recalculer les points.
-    }
+    if (state.gpxMesh && Math.abs(thickness - lastGpxThickness) < lastGpxThickness * 0.1) return;
 
     if (state.gpxMesh) {
         if (state.scene) state.scene.remove(state.gpxMesh);
@@ -876,31 +940,83 @@ export function updateGPXMesh(): void {
     }
 
     const track = state.rawGpxData.tracks[0];
-    const threePoints = track.points.map((p: any) => {
+    const points = track.points;
+    const box = new THREE.Box3();
+
+    const threePoints = points.map((p: any) => {
         const pos = lngLatToWorld(p.lon, p.lat, state.originTile);
-        return new THREE.Vector3(pos.x, (p.ele || 0) * state.RELIEF_EXAGGERATION + 10, pos.z);
+        const v = new THREE.Vector3(pos.x, (p.ele || 0) * state.RELIEF_EXAGGERATION + 5, pos.z);
+        box.expandByPoint(v);
+        return v;
     });
     
     state.gpxPoints = threePoints;
+    const segments = Math.min(threePoints.length, 1500);
     const curve = new THREE.CatmullRomCurve3(threePoints);
+    const geometry = new THREE.TubeGeometry(curve, segments, thickness, 4, false); // 4 faces seulement (plus léger)
     
-    // On réduit la segmentation du tube pour gagner en performance (x1 au lieu de x2)
-    const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length, 2000), thickness, 6, false);
+    const colors = [];
+    const color = new THREE.Color();
+    for (let i = 0; i <= segments; i++) {
+        const t = i / segments;
+        const gpxIdx = Math.floor(t * (points.length - 1));
+        const p1 = points[Math.max(0, gpxIdx - 1)];
+        const p2 = points[gpxIdx];
+        let slope = 0;
+        if (gpxIdx > 0) {
+            const d = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
+            const diff = (p2.ele || 0) - (p1.ele || 0);
+            if (d > 0.001) slope = Math.abs((diff / (d * 1000)) * 100);
+        }
+        if (slope < 5) color.set(0x22c55e);
+        else if (slope < 12) color.set(0xeab308);
+        else if (slope < 20) color.set(0xf97316);
+        else color.set(0xef4444);
+        for (let j = 0; j <= 4; j++) colors.push(color.r, color.g, color.b);
+    }
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
     const material = new THREE.MeshStandardMaterial({ 
-        color: 0xff3300, 
-        emissive: 0xff0000, 
-        emissiveIntensity: 2.0, 
-        roughness: 0.2, 
-        metalness: 0.8, 
+        vertexColors: true,
+        emissive: 0xffffff, 
+        emissiveIntensity: 0.2, 
         transparent: true, 
-        opacity: 0.8 
+        opacity: 0.9 
     });
     
     state.gpxMesh = new THREE.Mesh(geometry, material);
+    state.gpxMesh.name = 'gpx-trace'; // Pour l'identification au clic
     state.gpxMesh.renderOrder = 1000;
     if (state.scene) state.scene.add(state.gpxMesh);
+    
+    // --- ZOOM AUTOMATIQUE SUR LA TRACE (Fit View) ---
+    if (lastGpxThickness === 0) { // Uniquement au premier chargement
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const maxDim = Math.max(size.x, size.z);
+        
+        // Appel direct du vol cinématique
+        flyTo(center.x, center.z, maxDim * 1.5);
+    }
+
     lastGpxThickness = thickness;
     updateElevationProfile();
+}
+
+export function clearGPX(): void {
+    if (state.gpxMesh) {
+        if (state.scene) state.scene.remove(state.gpxMesh);
+        disposeObject(state.gpxMesh);
+        state.gpxMesh = null;
+    }
+    state.rawGpxData = null;
+    state.gpxPoints = [];
+    const prof = document.getElementById('elevation-profile');
+    if (prof) prof.style.display = 'none';
+    const tc = document.getElementById('trail-controls');
+    if (tc) tc.style.display = 'none';
 }
 
 export function clearLabels(): void {
