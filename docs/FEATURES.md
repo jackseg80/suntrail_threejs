@@ -1,4 +1,4 @@
-# 📋 Fonctionnalités de SunTrail 3D (v4.9.0)
+# 📋 Fonctionnalités de SunTrail 3D (v4.9.1)
 
 Ce document dresse la liste exhaustive des capacités techniques et fonctionnelles du moteur SunTrail.
 
