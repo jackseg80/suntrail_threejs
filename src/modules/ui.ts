@@ -51,6 +51,19 @@ export function initUI(): void {
 
     setInterval(updateStorageUI, 2000);
 
+    // --- INITIALISATION VALEURS TEMPORELLES (v5.4.8) ---
+    const dateInput = document.getElementById('date-input') as HTMLInputElement;
+    const timeSlider = document.getElementById('time-slider') as HTMLInputElement;
+    if (dateInput) {
+        const year = state.simDate.getFullYear();
+        const month = String(state.simDate.getMonth() + 1).padStart(2, '0');
+        const day = String(state.simDate.getDate()).padStart(2, '0');
+        dateInput.value = `${year}-${month}-${day}`;
+    }
+    if (timeSlider) {
+        timeSlider.value = (state.simDate.getHours() * 60 + state.simDate.getMinutes()).toString();
+    }
+
     // Setup Screen
     const setupK1 = document.getElementById('k1') as HTMLInputElement;
     const setupBgo = document.getElementById('bgo');
@@ -208,7 +221,6 @@ export function initUI(): void {
     });
 
     // Temps & Soleil
-    const timeSlider = document.getElementById('time-slider') as HTMLInputElement;
     if (timeSlider) {
         timeSlider.addEventListener('input', () => {
             const mins = parseInt(timeSlider.value);

@@ -50,7 +50,11 @@ export function initVegetationResources() {
  * Filtre amélioré pour exclure les terrains de sport (trop clairs/saturés)
  */
 export function createForestForTile(tile: any): THREE.Group | null {
-    if (!state.SHOW_VEGETATION || !tile.colorTex || !tile.pixelData || tile.zoom < 14) return null;
+    // --- SÉCURITÉ SATELLITE (v5.4.8) ---
+    // L'analyse de texture sur photo satellite produit trop de faux positifs (arbres partout).
+    // De plus, les arbres sont déjà visibles sur la photo elle-même.
+    const isSatellite = state.MAP_SOURCE === 'satellite' || state.MAP_SOURCE === 'ign-ortho';
+    if (!state.SHOW_VEGETATION || isSatellite || !tile.colorTex || !tile.pixelData || tile.zoom < 14) return null;
 
     const img = tile.colorTex.image;
     if (!img || img.width === 0) return null;

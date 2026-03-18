@@ -213,7 +213,8 @@ export async function initScene(): Promise<void> {
     state.lastWeatherLon = state.TARGET_LON;
     fetchWeather(state.TARGET_LAT, state.TARGET_LON);
     
-    updateSunPosition(720); updateWeatherUIIndicator();
+    const initialMins = state.simDate.getHours() * 60 + state.simDate.getMinutes();
+    updateSunPosition(initialMins); updateWeatherUIIndicator();
 
     const clock = new THREE.Clock();
     let lastRenderTime = 0;
