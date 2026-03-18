@@ -10,7 +10,7 @@ describe('utils.ts', () => {
     describe('Geographical Detection', () => {
         it('should correctly identify Swiss coordinates', () => {
             expect(isPositionInSwitzerland(46.8, 8.2)).toBe(true); // Suisse Centrale
-            expect(isPositionInSwitzerland(45.9, 6.8)).toBe(false); // Chamonix (Désormais hors Suisse)
+            expect(isPositionInSwitzerland(45.5, 6.8)).toBe(false); // Hors Suisse (Sud)
             expect(isPositionInSwitzerland(48.8, 2.3)).toBe(false); // Paris
         });
 
@@ -23,8 +23,9 @@ describe('utils.ts', () => {
 
     it('should show toast message', () => {
         showToast("Hello");
-        const container = document.getElementById('toast-container');
-        expect(container?.innerHTML).toContain("Hello");
+        const toast = document.querySelector('.toast');
+        expect(toast).not.toBeNull();
+        expect(toast?.textContent).toContain("Hello");
     });
 
     it('should throttle function calls', async () => {

@@ -25,10 +25,9 @@ export function getGpuInfo(): { renderer: string, vendor: string } {
     let renderer = (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
     let vendor = (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
 
-    // Nettoyage ANGLE pour plus de clarté
     if (renderer.includes('ANGLE')) {
         const parts = renderer.split(', ');
-        if (parts.length > 1) renderer = parts[1]; // Souvent le 2ème élément contient la puce réelle
+        if (parts.length > 1) renderer = parts[1];
     }
 
     return { renderer, vendor };
@@ -40,32 +39,23 @@ export function getGpuInfo(): { renderer: string, vendor: string } {
 export function detectBestPreset(): PresetType {
     const gpu = getGpuInfo().renderer.toLowerCase();
     
-    // 1. Profil ULTRA : Flagships 2024+ et Desktop
     if (gpu.includes('rtx') || gpu.includes('apple m')) return 'ultra';
     if (gpu.includes('adreno') && (gpu.includes('750') || gpu.includes('800') || gpu.includes('elite'))) {
         return 'ultra';
     }
     
-    // 2. Profil PERFORMANCE : Flagships récents (S22, S23, Adreno 730/740)
     if (gpu.includes('gtx') || gpu.includes('radeon') || (gpu.includes('adreno') && (gpu.includes('730') || gpu.includes('740')))) {
         return 'performance';
     }
     
-    // 3. Profil BALANCED : Snapdragon milieu de gamme (Adreno série 600)
-    if (gpu.includes('adreno')) {
-        return 'balanced';
-    }
-
-    // 4. Cas critique : GPU MALI (Samsung Série A, Redmi, etc.)
-    if (gpu.includes('mali')) {
-        return 'eco';
-    }
+    if (gpu.includes('adreno')) return 'balanced';
+    if (gpu.includes('mali')) return 'eco';
     
     return 'eco';
 }
 
 /**
- * Applique un preset de performance
+ * Applique un preset de performance (v5.4.1)
  */
 export function applyPreset(preset: PresetType): void {
     if (preset === 'custom') {
@@ -86,27 +76,25 @@ export function applyPreset(preset: PresetType): void {
     state.SHOW_BUILDINGS = settings.SHOW_BUILDINGS;
     state.SHOW_HYDROLOGY = settings.SHOW_HYDROLOGY;
     
-    // Nouveaux paramètres (v4.3.27)
     state.VEGETATION_DENSITY = settings.VEGETATION_DENSITY;
-    state.BUILDING_BATCH_SIZE = settings.BUILDING_BATCH_SIZE;
+    state.BUILDING_LIMIT = settings.BUILDING_LIMIT;
+    state.POI_ZOOM_THRESHOLD = settings.POI_ZOOM_THRESHOLD;
+    state.BUILDING_ZOOM_THRESHOLD = settings.BUILDING_ZOOM_THRESHOLD;
     state.MAX_BUILDS_PER_CYCLE = settings.MAX_BUILDS_PER_CYCLE;
     state.LOAD_DELAY_FACTOR = settings.LOAD_DELAY_FACTOR;
     state.SHADOW_RES = settings.SHADOW_RES;
 
-    // Paramètres météo (v4.4)
     state.SHOW_WEATHER = settings.SHOW_WEATHER;
     state.WEATHER_DENSITY = settings.WEATHER_DENSITY;
     state.WEATHER_SPEED = settings.WEATHER_SPEED;
     state.FOG_FAR = settings.FOG_FAR;
 
-    // Mise à jour de l'UI (Masquage timeline et options 3D)
     if (preset === 'eco') {
         document.body.classList.add('mode-2d');
     } else {
         document.body.classList.remove('mode-2d');
     }
 
-    // Mise à jour dynamique des ombres
     if (state.sunLight) {
         state.sunLight.castShadow = state.SHADOWS;
         updateShadowMapResolution();
@@ -150,22 +138,18 @@ export function updatePerformanceUI(preset: PresetType): void {
     if (buildingsToggle) buildingsToggle.checked = state.SHOW_BUILDINGS;
     if (hydroToggle) hydroToggle.checked = state.SHOW_HYDROLOGY;
     
-    // Nouveaux contrôles (v4.3.27)
     if (vegDensitySlider) vegDensitySlider.value = state.VEGETATION_DENSITY.toString();
     if (vegDensityDisp) vegDensityDisp.textContent = state.VEGETATION_DENSITY.toString();
     if (loadSpeedSelect) loadSpeedSelect.value = state.LOAD_DELAY_FACTOR.toString();
 
-    // Météo (v4.4)
     if (weatherDensitySlider) weatherDensitySlider.value = state.WEATHER_DENSITY.toString();
     if (weatherDensityDisp) weatherDensityDisp.textContent = state.WEATHER_DENSITY.toString();
     if (weatherSpeedSlider) weatherSpeedSlider.value = state.WEATHER_SPEED.toString();
     if (weatherSpeedDisp) weatherSpeedDisp.textContent = state.WEATHER_SPEED.toFixed(1);
 
-    // Voile atmosphérique (v4.5.54)
     const fogSlider = document.getElementById('fog-slider') as HTMLInputElement;
     if (fogSlider) fogSlider.value = (state.FOG_FAR / 1000).toString();
 
-    // Mise en évidence du bouton de preset actif
     const buttons = document.querySelectorAll('.preset-btn');
     buttons.forEach(btn => {
         if (btn.getAttribute('data-preset') === preset) {

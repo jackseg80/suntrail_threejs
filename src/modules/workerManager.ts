@@ -1,10 +1,12 @@
 
 /**
- * SunTrail Tile Worker Manager (v5.0.0)
+ * SunTrail Tile Worker Manager (v5.0.1)
  * Gère le pool de workers pour le chargement asynchrone des tuiles.
+ * Support des statistiques de cache/réseau.
  */
 
 import { state } from './state';
+import { updateStorageUI } from './terrain';
 
 interface WorkerTask {
     resolve: (value: any) => void;
@@ -29,7 +31,13 @@ class TileWorkerManager {
     }
 
     private handleMessage(e: MessageEvent) {
-        const { id, error, ...data } = e.data;
+        const { id, error, cacheHits, networkRequests, ...data } = e.data;
+        
+        // --- MISE À JOUR STATS (v5.0.1) ---
+        if (cacheHits) state.cacheHits += cacheHits;
+        if (networkRequests) state.networkRequests += networkRequests;
+        if (cacheHits || networkRequests) updateStorageUI();
+
         const task = this.tasks.get(id);
         if (!task) return;
 

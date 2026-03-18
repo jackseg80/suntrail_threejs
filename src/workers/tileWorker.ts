@@ -1,8 +1,9 @@
 /// <reference lib="webworker" />
 
 /**
- * SunTrail Tile Worker (v5.0.0)
+ * SunTrail Tile Worker (v5.0.1)
  * Déportation du fetch et du décodage d'images avec support CacheStorage.
+ * Ajout du reporting de cache/réseau.
  */
 
 const CACHE_NAME = 'suntrail-tiles-v1';
@@ -11,7 +12,7 @@ self.onmessage = async (e) => {
     const { id, elevUrl, colorUrl, overlayUrl, isOffline } = e.data;
 
     try {
-        const results: any = { id };
+        const results: any = { id, cacheHits: 0, networkRequests: 0 };
         const transferables: Transferable[] = [];
 
         // --- EXÉCUTION PARALLÈLE ---
@@ -20,6 +21,14 @@ self.onmessage = async (e) => {
             colorUrl ? fetchTile(colorUrl, isOffline) : Promise.resolve(null),
             overlayUrl ? fetchTile(overlayUrl, isOffline) : Promise.resolve(null)
         ]);
+
+        const resources = [elevRes, colorRes, overlayRes];
+        resources.forEach(res => {
+            if (res) {
+                if (res.fromCache) results.cacheHits++;
+                else results.networkRequests++;
+            }
+        });
 
         // --- TRAITEMENT ÉLÉVATION (RGBA -> pixelData) ---
         if (elevRes) {
@@ -54,7 +63,7 @@ self.onmessage = async (e) => {
     }
 };
 
-async function fetchTile(url: string, isOffline: boolean): Promise<{ bitmap: ImageBitmap } | null> {
+async function fetchTile(url: string, isOffline: boolean): Promise<{ bitmap: ImageBitmap, fromCache: boolean } | null> {
     try {
         const cache = await caches.open(CACHE_NAME);
         const cached = await cache.match(url);
@@ -62,7 +71,7 @@ async function fetchTile(url: string, isOffline: boolean): Promise<{ bitmap: Ima
         if (cached) {
             const blob = await cached.blob();
             const bitmap = await createImageBitmap(blob, { colorSpaceConversion: 'none' });
-            return { bitmap };
+            return { bitmap, fromCache: true };
         }
 
         if (isOffline) return null;
@@ -76,7 +85,7 @@ async function fetchTile(url: string, isOffline: boolean): Promise<{ bitmap: Ima
         cache.put(url, new Response(blob.slice()));
 
         const bitmap = await createImageBitmap(blob, { colorSpaceConversion: 'none' });
-        return { bitmap };
+        return { bitmap, fromCache: false };
     } catch (e) {
         return null;
     }

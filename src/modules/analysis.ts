@@ -5,29 +5,23 @@ import { activeTiles } from './terrain';
 import { worldToLngLat } from './geo';
 import { showToast } from './utils';
 
-// --- CACHE SPATIAL (v4.5.25) ---
 let lastUsedTile: any = null;
 
-/**
- * Récupère l'altitude à des coordonnées monde (x, z)
- * Version ultra-haute performance pour usage à 120 FPS.
- */
-export function getAltitudeAt(worldX: number, worldZ: number): number {
+export function getAltitudeAt(worldX: number, worldZ: number, hintTile: any = null): number {
     const testPoint = new THREE.Vector3(worldX, 0, worldZ);
-    let tile: any = null;
+    let tile = hintTile;
 
-    // 1. Priorité au cache (Spatial Locality)
-    if (lastUsedTile && lastUsedTile.status === 'loaded' && lastUsedTile.bounds && lastUsedTile.bounds.containsPoint(testPoint)) {
-        tile = lastUsedTile;
-    } else {
-        // 2. Sinon recherche rapide dans les tuiles actives
-        for (const t of activeTiles.values()) {
-            if (t.status === 'loaded' && t.bounds && t.bounds.containsPoint(testPoint)) {
-                // On privilégie la tuile la plus précise (zoom le plus élevé)
-                if (!tile || t.zoom > tile.zoom) tile = t;
+    if (!tile) {
+        if (lastUsedTile && lastUsedTile.status === 'loaded' && lastUsedTile.bounds && lastUsedTile.bounds.containsPoint(testPoint)) {
+            tile = lastUsedTile;
+        } else {
+            for (const t of activeTiles.values()) {
+                if (t.status === 'loaded' && t.bounds && t.bounds.containsPoint(testPoint)) {
+                    if (!tile || t.zoom > tile.zoom) tile = t;
+                }
             }
+            if (tile) lastUsedTile = tile;
         }
-        if (tile) lastUsedTile = tile;
     }
 
     if (!tile || !tile.pixelData) return 0;
@@ -36,155 +30,128 @@ export function getAltitudeAt(worldX: number, worldZ: number): number {
     let relX = (worldX - tile.worldX) / tile.tileSizeMeters + 0.5;
     let relZ = (worldZ - tile.worldZ) / tile.tileSizeMeters + 0.5;
 
-    // Support tuiles hybrides
     if (tile.elevScale < 1.0) {
         relX = tile.elevOffset.x + (relX * tile.elevScale);
         relZ = tile.elevOffset.y + (relZ * tile.elevScale);
     }
 
-    // Interpolation Bi-linéaire rapide
     const fx = relX * res;
     const fz = relZ * res;
     const x0 = Math.floor(fx);
     const z0 = Math.floor(fz);
-    
-    if (x0 < 0 || x0 >= res - 1 || z0 < 0 || z0 >= res - 1) {
-        const idx = (Math.max(0, Math.min(res-1, Math.floor(fx))) + Math.max(0, Math.min(res-1, Math.floor(fz))) * res) * 4;
-        return (-10000.0 + ((tile.pixelData[idx] * 65536.0 + tile.pixelData[idx+1] * 256.0 + tile.pixelData[idx+2]) * 0.1)) * state.RELIEF_EXAGGERATION;
-    }
+    const x1 = Math.min(x0 + 1, res - 1);
+    const z1 = Math.min(z0 + 1, res - 1);
+    const dx = fx - x0;
+    const dz = fz - z0;
 
     const getH = (x: number, z: number) => {
-        const i = (x + z * res) * 4;
-        return -10000.0 + ((tile.pixelData[i] * 65536.0 + tile.pixelData[i+1] * 256.0 + tile.pixelData[i+2]) * 0.1);
+        const i = (Math.max(0, Math.min(res - 1, z)) * res + Math.max(0, Math.min(res - 1, x))) * 4;
+        const r = tile.pixelData[i];
+        const g = tile.pixelData[i+1];
+        const b = tile.pixelData[i+2];
+        return (-10000 + ((r * 65536 + g * 256 + b) * 0.1)) * state.RELIEF_EXAGGERATION;
     };
 
     const h00 = getH(x0, z0);
-    const h10 = getH(x0 + 1, z0);
-    const h01 = getH(x0, z0 + 1);
-    const h11 = getH(x0 + 1, z0 + 1);
+    const h10 = getH(x1, z0);
+    const h01 = getH(x0, z1);
+    const h11 = getH(x1, z1);
 
-    const tx = fx - x0;
-    const tz = fz - z0;
-    const avgH = (1-tx)*(1-tz)*h00 + tx*(1-tz)*h10 + (1-tx)*tz*h01 + tx*tz*h11;
-
-    return avgH * state.RELIEF_EXAGGERATION;
+    return (h00 * (1 - dx) * (1 - dz) + h10 * dx * (1 - dz) + h01 * (1 - dx) * dz + h11 * dx * dz);
 }
 
 /**
- * Lance une sonde solaire sur un point précis
+ * Analyse solaire avancée (v5.4.2)
+ * Correction des IDs d'interface pour correspondre à index.html
  */
-export async function runSolarProbe(worldX: number, worldZ: number, elevation: number) {
-    const probeResult = document.getElementById('probe-result');
-    const probeStatus = document.getElementById('probe-status');
-    if (!probeResult || !probeStatus) return;
-
-    probeResult.style.display = 'block';
-    probeStatus.textContent = "Calcul de l'horizon...";
-    probeStatus.style.color = "var(--gold)";
-
-    const originTile = state.originTile;
-    if (!originTile) return;
-    
-    const currentGPS = worldToLngLat(worldX, worldZ, originTile);
-    const date = state.simDate || new Date();
-    
-    // On simule sur 24h
-    const steps = 96; // toutes les 15 min
+export function runSolarProbe(worldX: number, worldZ: number, altitude: number) {
+    if (!state.simDate) return;
+    const gps = worldToLngLat(worldX, worldZ, state.originTile);
+    const steps = 48; 
     const timeline = document.getElementById('probe-timeline');
     if (timeline) timeline.innerHTML = '';
+
+    const statusEl = document.getElementById('probe-status');
+    if (statusEl) statusEl.textContent = "⌛ Analyse en cours...";
 
     let totalSunlightMinutes = 0;
     let firstSunTime = null;
 
-    // Calcul de l'ensoleillement
+    // Simulation sur 24h
     for (let i = 0; i < steps; i++) {
-        const time = new Date(date);
-        time.setHours(0, i * 15, 0, 0);
+        const date = new Date(state.simDate);
+        date.setHours(0, i * 30, 0, 0);
+        const sunPos = SunCalc.getPosition(date, gps.lat, gps.lon);
+        const sunPosVector = new THREE.Vector3().setFromSphericalCoords(100000, Math.PI/2 - sunPos.altitude, sunPos.azimuth + Math.PI);
         
-        const sunPos = SunCalc.getPosition(time, currentGPS.lat, currentGPS.lon);
-        const altitude = sunPos.altitude; // en radians
+        const inShadow = isAtShadow(worldX, worldZ, altitude, sunPosVector);
+        const hasSun = (sunPos.altitude > 0) && !inShadow;
 
-        const slot = document.createElement('div');
-        slot.style.flex = "1";
-        slot.style.height = "100%";
-
-        if (altitude < 0) {
-            slot.style.background = "#000"; // Nuit
-        } else {
-            // Test d'ombre portée par le relief (Ray-marching)
-            const isShadowed = checkTerrainShadow(worldX, worldZ, elevation, sunPos.azimuth, sunPos.altitude);
-            if (isShadowed) {
-                slot.style.background = "#333"; // Ombre
-            } else {
-                slot.style.background = "#ffd700"; // Soleil
-                totalSunlightMinutes += 15;
-                if (!firstSunTime) firstSunTime = time;
-            }
+        if (hasSun) {
+            totalSunlightMinutes += 30;
+            if (firstSunTime === null) firstSunTime = date;
         }
-        timeline?.appendChild(slot);
+
+        const bar = document.createElement('div');
+        bar.style.flex = "1";
+        bar.style.height = "100%";
+        
+        // Couleur selon l'état : Or (Soleil), Gris (Ombre), Noir (Nuit)
+        if (sunPos.altitude <= 0) {
+            bar.style.background = "#000";
+        } else if (inShadow) {
+            bar.style.background = "#444";
+        } else {
+            bar.style.background = "#ffd700";
+        }
+        
+        if (timeline) timeline.appendChild(bar);
     }
 
-    const totalHours = Math.floor(totalSunlightMinutes / 60);
-    const totalMinutes = totalSunlightMinutes % 60;
-    document.getElementById('probe-total')!.textContent = `${totalHours}h${totalMinutes.toString().padStart(2, '0')}`;
-    
-    if (firstSunTime) {
-        document.getElementById('probe-sunrise')!.textContent = `${firstSunTime.getHours()}:${firstSunTime.getMinutes().toString().padStart(2, '0')}`;
-    } else {
-        document.getElementById('probe-sunrise')!.textContent = "--:--";
-    }
+    const resPanel = document.getElementById('probe-result');
+    if (resPanel) {
+        resPanel.style.display = 'block';
+        if (statusEl) statusEl.textContent = "Analyse terminée";
 
-    probeStatus.textContent = "Analyse terminée";
-    probeStatus.style.color = "#10b981";
+        const totalStr = `${Math.floor(totalSunlightMinutes / 60)}h ${totalSunlightMinutes % 60}m`;
+        const sunriseStr = firstSunTime ? firstSunTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—:—";
+        
+        // Mise à jour des éléments index.html
+        const totalEl = document.getElementById('probe-total');
+        const sunriseEl = document.getElementById('probe-sunrise');
+        if (totalEl) totalEl.textContent = totalStr;
+        if (sunriseEl) sunriseEl.textContent = sunriseStr;
 
-    const copyBtn = document.getElementById('copy-report-btn');
-    if (copyBtn) {
-        copyBtn.onclick = () => {
-            const totalStr = `${totalHours}h${totalMinutes.toString().padStart(2, '0')}`;
-            const sunriseStr = firstSunTime ? `${firstSunTime.getHours()}:${firstSunTime.getMinutes().toString().padStart(2, '0')}` : 'N/A';
-            const report = `SunTrail Insight\nLocation: ${currentGPS.lat.toFixed(5)}, ${currentGPS.lon.toFixed(5)}\nTotal Sunlight: ${totalStr}\nSunrise: ${sunriseStr}`;
-            navigator.clipboard.writeText(report);
-            showToast("📋 Rapport copié");
-        };
+        const copyBtn = document.getElementById('copy-report-btn');
+        if (copyBtn) {
+            copyBtn.onclick = () => {
+                const report = `SunTrail Solar Report\nLocation: ${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}\nSunlight: ${totalStr}\nSunrise: ${sunriseStr}`;
+                navigator.clipboard.writeText(report);
+                showToast("📋 Rapport copié");
+            };
+        }
     }
 }
 
-/**
- * Ray-marching pour tester si un point est à l'ombre du relief
- */
-function checkTerrainShadow(worldX: number, worldZ: number, elevation: number, azimuth: number, altitude: number): boolean {
-    const dirX = Math.sin(azimuth + Math.PI);
-    const dirZ = Math.cos(azimuth + Math.PI);
-    const dirY = Math.tan(altitude);
-
-    const stepSize = 300; 
-    const maxDist = 40000; // 40km suffisent pour l'horizon proche
-
-    for (let d = stepSize; d < maxDist; d += stepSize) {
-        const tx = worldX + dirX * d;
-        const tz = worldZ + dirZ * d;
-        const ty = elevation + dirY * d;
-
-        const groundH = getAltitudeAt(tx, tz);
-        if (groundH > ty) return true;
-    }
-    return false;
+export function isAtShadow(worldX: number, worldZ: number, altitude: number, sunPos: THREE.Vector3): boolean {
+    const ray = new THREE.Ray(new THREE.Vector3(worldX, altitude + 2, worldZ), sunPos.clone().normalize());
+    const hit = findTerrainIntersection(ray);
+    return hit !== null;
 }
 
-/**
- * Trouve l'intersection d'un rayon avec le terrain (pour le clic carte)
- */
 export function findTerrainIntersection(ray: THREE.Ray): THREE.Vector3 | null {
-    const stepSize = 250; 
-    const maxDist = 500000; 
-    
-    for (let dist = 0; dist < maxDist; dist += stepSize) {
-        const p = ray.at(dist, new THREE.Vector3());
+    const stepSize = 100; 
+    const maxDist = 500000; // Augmenté à 500km pour détecter le terrain depuis l'espace (LOD 12)
+    const p = new THREE.Vector3();
+    for (let dist = 100; dist < maxDist; dist += stepSize) {
+        ray.at(dist, p);
         const groundH = getAltitudeAt(p.x, p.z);
         if (p.y < groundH) {
             // Raffinement de précision
             return ray.at(dist - stepSize * 0.5, new THREE.Vector3());
         }
+        // Accélération adaptative : si on est très haut, on avance plus vite
+        if (p.y > 10000 && dist > 5000) dist += 500;
     }
     return null;
 }

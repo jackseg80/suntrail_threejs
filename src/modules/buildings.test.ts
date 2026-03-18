@@ -1,29 +1,26 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { loadBuildingsForTile } from './buildings';
 import { state } from './state';
 
-describe('Module Bâtiments (buildings.ts)', () => {
-    beforeEach(() => {
-        vi.resetAllMocks();
-        state.SHOW_BUILDINGS = true;
-        state.ZOOM = 14;
-    });
-
-    it('loadBuildingsForTile devrait sortir prématurément si SHOW_BUILDINGS est désactivé', async () => {
+describe('buildings.ts', () => {
+    it('should respect the SHOW_BUILDINGS state', async () => {
         state.SHOW_BUILDINGS = false;
-        const tile = { tx: 8540, ty: 5789, zoom: 14, key: '14/8540/5789', getBounds: () => ({}) };
-        const result = await loadBuildingsForTile(tile);
-        expect(result).toBeUndefined();
+        const tile = { zoom: 16, status: 'loaded' };
+        await loadBuildingsForTile(tile);
+        // On vérifie que le chargement n'a pas eu lieu (pas de mesh ajouté)
+        expect((tile as any).buildingMesh).toBeUndefined();
     });
 
-    it('loadBuildingsForTile devrait sortir prématurément si le zoom est trop bas (< 14)', async () => {
-        const tile = { tx: 4270, ty: 2894, zoom: 13, key: '13/4270/2894', getBounds: () => ({}) };
-        const result = await loadBuildingsForTile(tile);
-        expect(result).toBeUndefined();
+    it('should not load buildings if zoom level is below threshold', async () => {
+        state.SHOW_BUILDINGS = true;
+        state.BUILDING_ZOOM_THRESHOLD = 16;
+        const tile = { zoom: 14, status: 'loaded' };
+        await loadBuildingsForTile(tile);
+        expect((tile as any).buildingMesh).toBeUndefined();
     });
 
-    it('devrait utiliser BUILDING_BATCH_SIZE depuis le state', () => {
-        state.BUILDING_BATCH_SIZE = 50;
-        expect(state.BUILDING_BATCH_SIZE).toBe(50);
+    it('should handle building limits from state', () => {
+        state.BUILDING_LIMIT = 50;
+        expect(state.BUILDING_LIMIT).toBe(50);
     });
 });

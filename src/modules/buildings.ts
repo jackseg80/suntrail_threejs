@@ -4,87 +4,140 @@ import { state } from './state';
 import { getAltitudeAt } from './analysis';
 import { fetchOverpassData } from './utils';
 
-const buildingCache = new Map<string, any>();
+const buildingMemoryCache = new Map<string, any[]>();
+const buildingFetchPromises = new Map<string, Promise<any[] | null>>();
+const zoneFailureCooldown = new Map<string, number>();
+const CACHE_NAME = 'suntrail-buildings-v4';
 
 export async function loadBuildingsForTile(tile: any) {
-    if (!state.SHOW_BUILDINGS || tile.zoom < 14) return;
-    
-    if (state.controls && (state.controls as any)._isMoving) return;
+    // Utilisation du seuil dynamique du preset
+    if (!state.SHOW_BUILDINGS || tile.zoom < state.BUILDING_ZOOM_THRESHOLD || tile.status === 'disposed') return;
+    if (tile.buildingMesh) return;
 
-    const cacheKey = `${tile.zoom}_${tile.tx}_${tile.ty}`;
-    if (buildingCache.has(cacheKey)) {
-        renderBuildings(tile, buildingCache.get(cacheKey));
-        return;
+    if (state.controls && (state.controls as any)._isMoving) {
+        setTimeout(() => loadBuildingsForTile(tile), 1000);
+        return; 
     }
+
+    const zoneZ = 12;
+    const ratio = Math.pow(2, tile.zoom - zoneZ);
+    const zx = Math.floor(tile.tx / ratio);
+    const zy = Math.floor(tile.ty / ratio);
+    const zoneKey = `bld_z${zoneZ}_${zx}_${zy}`;
+
+    const failTime = zoneFailureCooldown.get(zoneKey);
+    if (failTime && Date.now() < failTime) return;
+
+    let buildings: any[] | null | undefined = buildingMemoryCache.get(zoneKey);
+
+    if (!buildings) {
+        let promise = buildingFetchPromises.get(zoneKey);
+        if (!promise) {
+            promise = fetchBuildingsWithCache(zoneZ, zx, zy, zoneKey);
+            buildingFetchPromises.set(zoneKey, promise);
+        }
+        buildings = await promise;
+        if (buildings) {
+            buildingMemoryCache.set(zoneKey, buildings);
+        } else {
+            zoneFailureCooldown.set(zoneKey, Date.now() + 10000); 
+        }
+        buildingFetchPromises.delete(zoneKey);
+    }
+
+    if (!buildings || buildings.length === 0 || tile.status === 'disposed') return;
 
     const bounds = tile.getBounds();
-    const query = `[out:json][timeout:30];(way["building"](${bounds.south},${bounds.west},${bounds.north},${bounds.east});way["tourism"="alpine_hut"](${bounds.south},${bounds.west},${bounds.north},${bounds.east}););out body geom;`;
+    const tileBuildings = buildings.filter(el => {
+        if (!el.geometry || el.geometry.length === 0) return false;
+        const lat = el.geometry[0].lat;
+        const lon = el.geometry[0].lon;
+        return lat <= bounds.north && lat >= bounds.south && lon <= bounds.east && lon >= bounds.west;
+    });
 
-    try {
-        const data = await fetchOverpassData(query);
-        if (data && data.elements) {
-            buildingCache.set(cacheKey, data.elements);
-            renderBuildings(tile, data.elements);
-        }
-    } catch (e) {}
+    if (tileBuildings.length > 0) {
+        renderBuildingsMerged(tile, tileBuildings);
+    }
 }
 
-function renderBuildings(tile: any, elements: any[]) {
-    if (!elements || elements.length === 0 || !tile.mesh) return;
+async function fetchBuildingsWithCache(z: number, x: number, y: number, key: string): Promise<any[] | null> {
+    try {
+        const cache = await caches.open(CACHE_NAME);
+        const cached = await cache.match(key);
+        if (cached) return await cached.json();
+    } catch (e) {}
 
-    if (tile.buildingMesh) {
-        tile.mesh.remove(tile.buildingMesh);
-        tile.buildingMesh = null;
+    const n = Math.pow(2, z);
+    const w = x / n * 360 - 180;
+    const e = (x + 1) / n * 360 - 180;
+    const latNorth = Math.atan(Math.sinh(Math.PI * (1 - 2 * y / n))) * 180 / Math.PI;
+    const latSouth = Math.atan(Math.sinh(Math.PI * (1 - 2 * (y + 1) / n))) * 180 / Math.PI;
+
+    const query = `[out:json][timeout:25];(way["building"](${latSouth.toFixed(4)},${w.toFixed(4)},${latNorth.toFixed(4)},${e.toFixed(4)});way["tourism"="alpine_hut"](${latSouth.toFixed(4)},${w.toFixed(4)},${latNorth.toFixed(4)},${e.toFixed(4)}););out body geom;`;
+    
+    const data = await fetchOverpassData(query);
+    if (data && data.elements) {
+        try {
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(key, new Response(JSON.stringify(data.elements)));
+        } catch(e) {}
+        return data.elements;
     }
+    return null;
+}
 
+function renderBuildingsMerged(tile: any, elements: any[]) {
+    if (tile.status === 'disposed' || !tile.mesh) return;
+
+    const geometries: THREE.BufferGeometry[] = [];
     const material = new THREE.MeshStandardMaterial({ 
         color: 0x888888, 
-        roughness: 0.7, 
-        metalness: 0.2,
+        roughness: 0.8,
         polygonOffset: true,
         polygonOffsetFactor: 1,
         polygonOffsetUnits: 1
     });
+    
+    // Utilisation de la limite dynamique du preset
+    const limit = state.BUILDING_LIMIT || 60;
 
-    // --- OPTIMISATION MASSIVE (v4.5.43) ---
-    // Au lieu de créer un Mesh par bâtiment (des centaines de Draw Calls),
-    // on collecte toutes les géométries et on les fusionne en UNE SEULE.
-    const geometries: THREE.BufferGeometry[] = [];
-
-    elements.forEach(el => {
+    elements.slice(0, limit).forEach(el => {
         if (el.type === 'way' && el.geometry) {
             const points: THREE.Vector2[] = [];
-            el.geometry.forEach((p: any) => {
-                const worldPos = tile.lngLatToLocal(p.lon, p.lat);
-                points.push(new THREE.Vector2(worldPos.x, worldPos.z));
-            });
+            for (let j = el.geometry.length - 1; j >= 0; j--) {
+                const p = el.geometry[j];
+                const localPos = tile.lngLatToLocal(p.lon, p.lat);
+                points.push(new THREE.Vector2(localPos.x, -localPos.z));
+            }
 
             try {
                 const shape = new THREE.Shape(points);
                 const height = (el.tags?.['building:levels'] ? el.tags['building:levels'] * 3.5 : 6) * state.RELIEF_EXAGGERATION;
-                const geometry = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false });
-                
-                const centerPoint = tile.lngLatToLocal(el.geometry[0].lon, el.geometry[0].lat);
-                const baseAlt = getAltitudeAt(tile.mesh.position.x + centerPoint.x, tile.mesh.position.z + centerPoint.z);
-                
-                geometry.rotateX(-Math.PI / 2);
-                geometry.translate(0, baseAlt, 0);
-                
-                geometries.push(geometry);
-            } catch(e) {}
+                const bGeo = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false });
+
+                const center = tile.lngLatToLocal(el.geometry[0].lon, el.geometry[0].lat);
+                const baseAlt = getAltitudeAt(tile.worldX + center.x, tile.worldZ + center.z, tile);
+
+                bGeo.rotateX(-Math.PI / 2);
+                bGeo.translate(0, baseAlt, 0);
+                geometries.push(bGeo);
+            } catch (e) {}
         }
     });
 
     if (geometries.length > 0) {
-        // Fusion (Merge) de toutes les géométries en une seule
-        const mergedGeometry = BufferGeometryUtils.mergeGeometries(geometries);
-        if (mergedGeometry) {
-            const mergedMesh = new THREE.Mesh(mergedGeometry, material);
-            mergedMesh.castShadow = true;
-            mergedMesh.receiveShadow = true;
+        try {
+            const merged = BufferGeometryUtils.mergeGeometries(geometries);
+            const mesh = new THREE.Mesh(merged, material);
+            mesh.matrixAutoUpdate = false;
+            mesh.updateMatrix();
             
-            tile.buildingMesh = mergedMesh;
-            tile.mesh.add(mergedMesh);
+            if (tile.buildingMesh) tile.mesh.remove(tile.buildingMesh);
+            tile.buildingMesh = mesh;
+            tile.mesh.add(mesh);
+        } catch (e) {
+        } finally {
+            geometries.forEach(g => g.dispose());
         }
     }
 }

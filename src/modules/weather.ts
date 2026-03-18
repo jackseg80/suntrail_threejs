@@ -17,38 +17,33 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
         state.lastWeatherLat = lat;
         state.lastWeatherLon = lon;
 
-        // Appel météo
         const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,weather_code,freezing_level_height,uv_index,visibility,precipitation_probability&forecast_days=3`);
         if (!weatherRes.ok) throw new Error('Weather API error');
         const data = await weatherRes.json();
 
-        // Si une requête plus récente a été lancée entre temps, on abandonne celle-ci
         if (requestId !== lastRequestId) return;
 
-        // Appel géocodage MapTiler (Reverse)
         let locationName = `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
         try {
             const geoData = await fetchGeocoding({ lat, lon });
             if (geoData) {
-                locationName = geoData.place_name_fr || geoData.place_name || geoData.text_fr || geoData.text || locationName;
-                locationName = locationName.split(',')[0];
+                const feature = Array.isArray(geoData) ? geoData[0] : (geoData.features ? geoData.features[0] : geoData);
+                if (feature) {
+                    locationName = feature.place_name_fr || feature.place_name || feature.display_name || feature.text_fr || feature.text || locationName;
+                    locationName = locationName.split(',')[0];
+                }
             }
-        } catch (geoErr) {
-            console.warn("Geocoding failed");
-        }
+        } catch (geoErr) {}
         
         const current = data.current || data.current_weather;
         const code = current?.weather_code ?? current?.weathercode ?? 0;
 
-        // --- LOGIQUE DE DÉCALAGE TEMPOREL (FIX v4.5.5) ---
-        // On trouve l'index de l'heure actuelle dans les données horaires
         const date = new Date();
         const nowISO = date.toISOString().split(':')[0] + ':00';
         let startIndex = data.hourly.time.findIndex((t: string) => t.startsWith(nowISO));
         if (startIndex === -1) startIndex = date.getHours();
 
         const hourlyForecast = [];
-        // On prend les 24 prochaines heures à partir de MAINTENANT
         for (let i = startIndex; i < startIndex + 24; i++) {
             if (data.hourly && data.hourly.time[i]) {
                 hourlyForecast.push({
@@ -59,7 +54,6 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
             }
         }
 
-        // --- INTELLIGENCE VISUELLE ---
         let targetDensity = 2500;
         let speedMult = 1.0;
         if (code >= 51) {
@@ -93,9 +87,80 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
         }
 
         updateWeatherUIIndicator();
+        updateWeatherPanel();
     } catch (e) {
         state.currentWeather = 'clear';
     }
+}
+
+export function updateWeatherPanel(): void {
+    const wd = state.weatherData;
+    if (!wd) return;
+
+    const getSet = (id: string, val: string) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    };
+
+    getSet('w-temp', `${Math.round(wd.temp)}°C`);
+    getSet('w-apparent', `Ressenti ${Math.round(wd.apparentTemp)}°C`);
+    getSet('w-wind', `${Math.round(wd.windSpeed)} km/h`);
+    getSet('w-wind-dir', `${wd.windDir}°`);
+    getSet('w-freezing', `${Math.round(wd.freezingLevel || 0)} m`);
+    getSet('w-uv', (wd.uvIndex || 0).toFixed(1));
+    getSet('w-hum', `${wd.humidity}%`);
+    getSet('w-clouds', `${wd.cloudCover}%`);
+
+    const arrow = document.getElementById('w-wind-arrow');
+    if (arrow) arrow.style.transform = `rotate(${wd.windDir}deg)`;
+
+    getSet('ex-location', wd.locationName || 'Station Expert');
+    getSet('ex-coords', `${state.lastWeatherLat.toFixed(4)}, ${state.lastWeatherLon.toFixed(4)}`);
+    getSet('ex-gusts', `${Math.round(wd.windGusts || 0)} km/h`);
+    getSet('ex-vis', `${Math.round(wd.visibility || 0)} km`);
+    getSet('ex-precip', `${Math.round(wd.precProb || 0)} %`);
+    getSet('ex-dew', `${Math.round(wd.dewPoint || 0)}°C`);
+    getSet('ex-freezing', `${Math.round(wd.freezingLevel || 0)} m`);
+
+    const hourlyContainer = document.getElementById('w-hourly');
+    if (hourlyContainer && wd.hourly) {
+        hourlyContainer.innerHTML = wd.hourly.map(h => `
+            <div style="min-width:50px; text-align:center;">
+                <div style="font-size:9px; color:var(--t2);">${h.time}</div>
+                <div style="font-size:14px; margin:5px 0;">${getWeatherIcon(h.code)}</div>
+                <div style="font-size:11px; font-weight:700;">${Math.round(h.temp)}°</div>
+            </div>
+        `).join('');
+    }
+
+    // --- GRAPHIQUE EXPERT (v5.4.5) ---
+    const chartContainer = document.getElementById('ex-chart-container');
+    if (chartContainer && wd.hourly) {
+        const temps = wd.hourly.map(h => h.temp);
+        const min = Math.min(...temps);
+        const max = Math.max(...temps);
+        const range = max - min || 1;
+
+        chartContainer.innerHTML = wd.hourly.map((h, i) => {
+            const hPerc = ((h.temp - min) / range) * 70 + 10;
+            return `
+                <div style="flex:1; height:${hPerc}%; background:var(--accent); opacity:${0.3 + (i/24)*0.7}; border-radius:4px 4px 0 0; position:relative;" title="${h.time}: ${h.temp}°C">
+                    <div style="position:absolute; top:-15px; width:100%; text-align:center; font-size:8px;">${Math.round(h.temp)}°</div>
+                </div>
+            `;
+        }).join('');
+    }
+}
+
+function getWeatherIcon(code: number): string {
+    if (code === 0) return '☀️';
+    if (code <= 3) return '🌤️';
+    if (code <= 48) return '☁️';
+    if (code <= 67) return '🌧️';
+    if (code <= 77) return '❄️';
+    if (code <= 82) return '🌦️';
+    if (code <= 86) return '🌨️';
+    return '⛈️';
 }
 
 export function updateWeatherUIIndicator(): void {

@@ -24,7 +24,7 @@ export function updateSunPosition(minutes: number): void {
     const altDeg = pos.altitude * 180 / Math.PI;
     const azDeg = (pos.azimuth * 180 / Math.PI) + 180;
     
-    // --- MISE À JOUR INFOS (Sécurisée) ---
+    // --- MISE À JOUR INFOS ---
     const azVal = document.getElementById('az-val');
     if (azVal) azVal.textContent = `${azDeg.toFixed(1)}°`;
     
@@ -36,38 +36,14 @@ export function updateSunPosition(minutes: number): void {
 
     const phaseSpan = document.getElementById('sun-phase');
     if (phaseSpan) {
-        if (altDeg > 6) {
-            phaseSpan.textContent = "☀️ Plein jour";
-            phaseSpan.style.color = "#FFD700";
-        } else if (altDeg > -4) {
-            phaseSpan.textContent = "🌅 Heure Dorée";
-            phaseSpan.style.color = "#FF8C00";
-        } else if (altDeg > -6) {
-            phaseSpan.textContent = "🌆 Heure Bleue";
-            phaseSpan.style.color = "#5F9EA0";
-        } else if (altDeg > -12) {
-            phaseSpan.textContent = "🌌 Crépuscule civil";
-            phaseSpan.style.color = "#ADFF2F";
-        } else {
-            phaseSpan.textContent = "🌙 Nuit";
-            phaseSpan.style.color = "#87CEEB";
-        }
-    }
-
-    const dayDuration = document.getElementById('day-duration');
-    if (dayDuration) {
-        const diff = times.sunset.getTime() - times.sunrise.getTime();
-        const dayHrs = Math.floor(diff / 3600000);
-        const dayMins = Math.floor((diff % 3600000) / 60000);
-        dayDuration.textContent = `${dayHrs}h${String(dayMins).padStart(2, '0')}`;
+        if (altDeg > 6) { phaseSpan.textContent = "☀️ Plein jour"; phaseSpan.style.color = "#FFD700"; }
+        else if (altDeg > -4) { phaseSpan.textContent = "🌅 Heure Dorée"; phaseSpan.style.color = "#FF8C00"; }
+        else if (altDeg > -6) { phaseSpan.textContent = "🌆 Heure Bleue"; phaseSpan.style.color = "#5F9EA0"; }
+        else if (altDeg > -12) { phaseSpan.textContent = "🌌 Crépuscule civil"; phaseSpan.style.color = "#ADFF2F"; }
+        else { phaseSpan.textContent = "🌙 Nuit"; phaseSpan.style.color = "#87CEEB"; }
     }
 
     const fmt = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-    const sunriseDisp = document.getElementById('sunrise-disp');
-    if (sunriseDisp) sunriseDisp.textContent = fmt(times.sunrise);
-    
-    const sunsetDisp = document.getElementById('sunset-disp');
-    if (sunsetDisp) sunsetDisp.textContent = fmt(times.sunset);
     
     let moonPhaseText = "Inconnue";
     const p = moonIllum.phase;
@@ -83,12 +59,7 @@ export function updateSunPosition(minutes: number): void {
     const phasesIcons = ['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];
     const phaseIdx = Math.floor(p * 8) % 8;
 
-    const moonDisp = document.getElementById('moon-phase-disp');
-    if (moonDisp) {
-        moonDisp.textContent = `${moonPhaseText} (${(moonIllum.fraction * 100).toFixed(0)}%)`;
-    }
-
-    // --- ENREGISTREMENT DANS LE STATE GLOBAL (Refactoring Phase 1.2) ---
+    // --- ENREGISTREMENT ET MISE À JOUR EXPERT (v5.4.5) ---
     state.ephemeris = {
         sunrise: fmt(times.sunrise),
         sunset: fmt(times.sunset),
@@ -98,6 +69,15 @@ export function updateSunPosition(minutes: number): void {
         moonPhaseIcon: phasesIcons[phaseIdx],
         moonIllum: Math.round(moonIllum.fraction * 100)
     };
+
+    const exGolden = document.getElementById('ex-golden');
+    if (exGolden) exGolden.textContent = state.ephemeris.goldenHour;
+    const exBlue = document.getElementById('ex-blue');
+    if (exBlue) exBlue.textContent = state.ephemeris.blueHour;
+    const exMoonIcon = document.getElementById('ex-moon-icon');
+    if (exMoonIcon) exMoonIcon.textContent = state.ephemeris.moonPhaseIcon;
+    const exMoonText = document.getElementById('ex-moon-text');
+    if (exMoonText) exMoonText.textContent = `${state.ephemeris.moonPhaseText} (${state.ephemeris.moonIllum}%)`;
     
     // --- POSITION FINALE POUR LE MOTEUR 3D ---
     let finalPhi = pos.altitude;
@@ -107,24 +87,20 @@ export function updateSunPosition(minutes: number): void {
     let ambientIntensity = 0.3;
 
     if (altDeg > 6) {
-        // Plein jour
         sunIntensity = Math.min(6.0, Math.sin(pos.altitude) * 12);
         ambientIntensity = 0.2 + (Math.sin(pos.altitude) * 0.4);
         sunColor.set(0xffffff);
     } else if (altDeg > -4) {
-        // Heure Dorée (Transition entre jour et crépuscule)
-        const t = (altDeg + 4) / 10; // 0 à 1 entre -4° et 6°
+        const t = (altDeg + 4) / 10;
         sunIntensity = t * 6.0;
         sunColor.lerpColors(new THREE.Color(0xff4400), new THREE.Color(0xffffff), t);
         ambientIntensity = 0.1 + (t * 0.1);
     } else if (altDeg > -6) {
-        // Heure Bleue (Ambiance froide)
-        const t = (altDeg + 6) / 2; // 0 à 1 entre -6° et -4°
-        sunIntensity = 0.2; // Faible lumière résiduelle
+        const t = (altDeg + 6) / 2;
+        sunIntensity = 0.2;
         sunColor.lerpColors(new THREE.Color(0x3344ff), new THREE.Color(0xff4400), t);
         ambientIntensity = 0.05 + (t * 0.05);
     } else {
-        // Nuit / Lune
         finalPhi = moonPos.altitude > 0 ? moonPos.altitude : -Math.PI/4;
         finalAz = moonPos.azimuth;
         sunIntensity = 0.1 + (moonIllum.fraction * 0.5);
@@ -138,23 +114,18 @@ export function updateSunPosition(minutes: number): void {
     sunVector.y = distance * Math.sin(finalPhi);
     sunVector.z = distance * Math.cos(finalPhi) * Math.cos(finalAz);
 
-    // --- SYNCHRONISATION SHADER TERRAIN (v5.3.1) ---
     terrainUniforms.uSunPos.value.copy(sunVector).normalize();
 
-    if (state.controls && state.controls.target) {
-        state.sunLight.position.set(
-            state.controls.target.x + sunVector.x,
-            state.controls.target.y + sunVector.y,
-            state.controls.target.z + sunVector.z
-        );
-        state.sunLight.target.position.copy(state.controls.target);
-        state.sunLight.target.updateMatrixWorld();
+    if (state.controls?.target) {
+        state.sunLight!.position.set(state.controls.target.x + sunVector.x, state.controls.target.y + sunVector.y, state.controls.target.z + sunVector.z);
+        state.sunLight!.target.position.copy(state.controls.target);
+        state.sunLight!.target.updateMatrixWorld();
     } else {
-        state.sunLight.position.copy(sunVector);
+        state.sunLight!.position.copy(sunVector);
     }
 
-    state.sunLight.intensity = sunIntensity;
-    state.sunLight.color.copy(sunColor);
+    state.sunLight!.intensity = sunIntensity;
+    state.sunLight!.color.copy(sunColor);
     if (state.ambientLight) state.ambientLight.intensity = ambientIntensity;
 
     if (state.sky) {
@@ -166,42 +137,25 @@ export function updateSunPosition(minutes: number): void {
         uniforms['mieCoefficient'].value = 0.005;
     }
 
-    // --- MISE À JOUR UNIQUE DES OMBRES (v4.3.26) ---
-    if (state.renderer) {
-        state.renderer.shadowMap.needsUpdate = true;
-    }
+    if (state.renderer) state.renderer.shadowMap.needsUpdate = true;
 
-    if (state.scene && state.scene.fog && (state.scene.fog instanceof THREE.Fog || state.scene.fog instanceof THREE.FogExp2)) {
+    if (state.scene?.fog && (state.scene.fog instanceof THREE.Fog || state.scene.fog instanceof THREE.FogExp2)) {
         const fogColor = new THREE.Color();
-        if (altDeg > 6) {
-            fogColor.setHSL(0.6, 0.4, 0.3 + (Math.sin(pos.altitude) * 0.5));
-        } else if (altDeg > -6) {
+        if (altDeg > 6) fogColor.setHSL(0.6, 0.4, 0.3 + (Math.sin(pos.altitude) * 0.5));
+        else if (altDeg > -6) {
             const t = (altDeg + 6) / 12;
             const nightFog = new THREE.Color(0x050510);
             const dayFog = new THREE.Color().setHSL(0.6, 0.4, 0.3);
             fogColor.lerpColors(nightFog, dayFog, t);
-        } else {
-            fogColor.set(0x050510);
-        }
+        } else fogColor.set(0x050510);
         state.scene.fog.color.copy(fogColor);
     }
 }
 
-/**
- * Met à jour la résolution de la shadow map du soleil
- */
 export function updateShadowMapResolution(): void {
     if (!state.sunLight) return;
     const res = state.SHADOW_RES;
     state.sunLight.shadow.mapSize.set(res, res);
-    
-    // Il faut recréer le buffer de la shadow map si elle existe déjà
-    if (state.sunLight.shadow.map) {
-        state.sunLight.shadow.map.dispose();
-        state.sunLight.shadow.map = null;
-    }
-    
-    if (state.renderer) {
-        state.renderer.shadowMap.needsUpdate = true;
-    }
+    if (state.sunLight.shadow.map) { state.sunLight.shadow.map.dispose(); state.sunLight.shadow.map = null; }
+    if (state.renderer) state.renderer.shadowMap.needsUpdate = true;
 }

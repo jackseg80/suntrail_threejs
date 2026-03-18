@@ -4,8 +4,8 @@ import { state } from './state';
 import { showToast, isMobileDevice, isPositionInSwitzerland, isPositionInFrance } from './utils';
 import { updateElevationProfile, haversineDistance } from './profile';
 import { createForestForTile } from './vegetation';
-// import { loadPOIsForTile } from './poi';
-// import { loadBuildingsForTile } from './buildings';
+import { loadPOIsForTile } from './poi';
+import { loadBuildingsForTile } from './buildings';
 import { loadHydrologyForTile } from './hydrology';
 import { EARTH_CIRCUMFERENCE, lngLatToWorld, worldToLngLat, lngLatToTile } from './geo';
 import { flyTo } from './scene';
@@ -57,11 +57,16 @@ async function processLoadQueue() {
     state.isProcessingTiles = true;
     try {
         if (state.camera) {
-            const camX = state.camera.position.x;
-            const camZ = state.camera.position.z;
+            const camPos = state.camera.position;
             loadQueue.sort((a, b) => {
-                const da = Math.pow(a.worldX - camX, 2) + Math.pow(a.worldZ - camZ, 2);
-                const db = Math.pow(b.worldX - camX, 2) + Math.pow(b.worldZ - camZ, 2);
+                // --- TRI PRIORITAIRE (v5.1.0) ---
+                // On privilégie les tuiles visibles devant la caméra
+                const aVis = a.isVisible() ? 1 : 0;
+                const bVis = b.isVisible() ? 1 : 0;
+                if (aVis !== bVis) return bVis - aVis;
+
+                const da = Math.pow(a.worldX - camPos.x, 2) + Math.pow(a.worldZ - camPos.z, 2);
+                const db = Math.pow(b.worldX - camPos.x, 2) + Math.pow(b.worldZ - camPos.z, 2);
                 return da - db;
             });
         }
@@ -214,7 +219,7 @@ export async function downloadOfflineZone(lat: number, lon: number, onProgress: 
     onProgress(total, total);
 }
 
-function updateStorageUI() {
+export function updateStorageUI() {
     const netCount = document.getElementById('net-count');
     const cacheCount = document.getElementById('cache-count');
     if (netCount) netCount.textContent = state.networkRequests.toString();
@@ -544,22 +549,19 @@ shader.fragmentShader = `
 `.replace('#include <map_fragment>', `
     #include <map_fragment>
 
-    // --- SHADER EAU SIMPLE (v5.2.0) ---
+    // --- SHADER EAU AMÉLIORÉ (v5.4.5) ---
     if (uShowHydrology > 0.5) {
         vec3 colorIn = diffuseColor.rgb;
-        // Détection : Bleu dominant ET zone assez plate
-        float isWater = smoothstep(0.0, 0.1, colorIn.b - max(colorIn.r, colorIn.g)) * smoothstep(0.98, 0.999, vTrueNormal.y);
+        // Détection stricte : Bleu doit être dominant ET la zone doit être quasi-horizontale (Y normal > 0.998)
+        // On exclut les zones trop lumineuses (neige/blanc) pour éviter les faux positifs
+        float brightness = (colorIn.r + colorIn.g + colorIn.b) / 3.0;
+        float isWater = smoothstep(0.05, 0.15, colorIn.b - max(colorIn.r, colorIn.g)) * smoothstep(0.998, 1.0, vTrueNormal.y) * (1.0 - smoothstep(0.7, 0.9, brightness));
         
         if (isWater > 0.1) {
-            // Bleu profond simple
-            vec3 waterBlue = vec3(0.0, 0.2, 0.5);
-            
-            // Animation très large (vagues de fond) pour éviter le tramage
-            float wave = sin(vMapUv.x * 20.0 + uTime * 0.5) * 0.5 + 0.5;
-            
-            diffuseColor.rgb = mix(colorIn, waterBlue, 0.5 * isWater);
-            // Reflet global doux
-            diffuseColor.rgb += vec3(0.2, 0.4, 0.6) * wave * isWater * 0.3;
+            vec3 waterBlue = vec3(0.02, 0.15, 0.45);
+            float wave = sin(vMapUv.x * 40.0 + uTime * 0.8) * cos(vMapUv.y * 40.0 + uTime * 0.5) * 0.5 + 0.5;
+            diffuseColor.rgb = mix(colorIn, waterBlue, 0.7 * isWater);
+            diffuseColor.rgb += vec3(0.1, 0.3, 0.5) * wave * isWater * 0.2;
         }
     }
 
@@ -619,25 +621,21 @@ shader.fragmentShader = `
         // --- CHARGEMENT SÉQUENCÉ DES DÉTAILS (v4.5.41) ---
         const delay = (ms: number) => ms * state.LOAD_DELAY_FACTOR;
         
-        // 1. POIs (Désactivé car Overpass est en panne)
-        /*
-        if (state.SHOW_SIGNPOSTS && this.zoom >= 14) {
+        // 1. POIs (Signalisation 3D)
+        if (state.SHOW_SIGNPOSTS && this.zoom >= 15) {
             setTimeout(() => {
                 if (this.status === 'disposed') return;
                 loadPOIsForTile(this);
-            }, delay(50));
+            }, delay(600)); 
         }
-        */
 
-        // 2. Bâtiments (Désactivé car Overpass est en panne)
-        /*
-        if (state.SHOW_BUILDINGS && this.zoom >= 14) {
+        // 2. Bâtiments 3D
+        if (state.SHOW_BUILDINGS && this.zoom >= 16) {
             setTimeout(() => {
                 if (this.status === 'disposed') return;
                 loadBuildingsForTile(this);
             }, delay(150));
         }
-        */
 
         // 2b. Hydrologie (Nouveau système MapTiler Stable)
         if (state.SHOW_HYDROLOGY && this.zoom >= 13) {
@@ -648,7 +646,7 @@ shader.fragmentShader = `
         }
 
         // 3. Végétation (Très Lourd)
-        if (state.SHOW_VEGETATION && this.zoom >= 15) {
+        if (state.SHOW_VEGETATION && this.zoom >= 14) {
             setTimeout(() => {
                 if ((this.status as string) === 'disposed') return;
                 const forest = createForestForTile(this);
@@ -735,19 +733,15 @@ export function autoSelectMapSource(lat: number, lon: number): void {
     }
 }
 
+import { updateWeatherUIIndicator } from './weather';
+
 export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number = 0, worldZ: number = 0): Promise<void> {
     terrainUniforms.uExaggeration.value = state.RELIEF_EXAGGERATION;
     terrainUniforms.uShowSlopes.value = state.SHOW_SLOPES ? 1.0 : 0.0;
     terrainUniforms.uShowHydrology.value = state.SHOW_HYDROLOGY ? 1.0 : 0.0;
     
-    // --- MISE À JOUR INDICATEUR SOURCE (v4.8.7) ---
-    const zi = document.getElementById('zoom-indicator');
-    if (zi) {
-        const inCH = isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON);
-        const inFR = isPositionInFrance(state.TARGET_LAT, state.TARGET_LON);
-        const sourceName = inCH ? 'SWISS' : (inFR ? 'IGN' : 'GLOBAL');
-        zi.textContent = `${sourceName}: LVL ${state.ZOOM}`;
-    }
+    // --- MISE À JOUR INDICATEUR SOURCE & MÉTÉO (v5.4.3) ---
+    updateWeatherUIIndicator();
 
     if (!state.camera || Math.abs(state.camera.position.y) < 1) return Promise.resolve();
 
@@ -781,13 +775,9 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
     if (zoom <= 10) {
         range = Math.max(state.RANGE, 3);
     } else {
-        let maxSafetyRange = 4; // Par défaut (Balanced)
-        if (state.PERFORMANCE_PRESET === 'ultra' || state.RESOLUTION >= 256) maxSafetyRange = 8;
-        else if (state.PERFORMANCE_PRESET === 'performance') maxSafetyRange = 5;
-        else if (state.PERFORMANCE_PRESET === 'eco') maxSafetyRange = 3;
-
-        if (zoom >= 15) range = Math.min(range, maxSafetyRange);
-        if (zoom >= 17) range = Math.min(range, Math.max(2, Math.floor(maxSafetyRange / 2)));
+        range = state.RANGE;
+        // On réduit un peu le rayon au zoom maximum pour garder les 144 FPS
+        if (zoom >= 17) range = Math.max(3, Math.floor(state.RANGE / 1.5));
     }
 
     let buildsThisCycle = 0;
@@ -804,6 +794,7 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
             let tile = activeTiles.get(key);
             if (!tile) {
                 tile = new Tile(tx, ty, zoom, key);
+                // On charge si c'est dans le champ de vision
                 if (tile.isVisible() || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) {
                     activeTiles.set(key, tile);
                     loadQueue.push(tile);
@@ -814,8 +805,8 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
                 const dist = Math.sqrt(dX * dX + dZ * dZ);
 
                 let targetRes = Math.max(1, Math.floor(state.RESOLUTION / 4));
-                if (dist < tile.tileSizeMeters * 3.0) targetRes = state.RESOLUTION;
-                else if (dist < tile.tileSizeMeters * 6.0) targetRes = Math.max(1, Math.floor(state.RESOLUTION / 2));
+                if (dist < tile.tileSizeMeters * 4.0) targetRes = state.RESOLUTION;
+                else if (dist < tile.tileSizeMeters * 8.0) targetRes = Math.max(1, Math.floor(state.RESOLUTION / 2));
 
                 if (targetRes !== tile.currentResolution) {
                     tile.buildMesh(targetRes);

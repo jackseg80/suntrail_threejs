@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { Tile, updateGPXMesh } from './terrain';
 import { lngLatToTile, worldToLngLat, EARTH_CIRCUMFERENCE } from './geo';
-import { isPositionInSwitzerland } from './utils';
 import { state } from './state';
 
 describe('terrain.ts', () => {

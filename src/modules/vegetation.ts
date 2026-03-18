@@ -46,7 +46,8 @@ export function initVegetationResources() {
 }
 
 /**
- * Génère une forêt bio-fidèle sur une tuile
+ * Génère une forêt bio-fidèle sur une tuile (v5.4.2)
+ * Filtre amélioré pour exclure les terrains de sport (trop clairs/saturés)
  */
 export function createForestForTile(tile: any): THREE.Group | null {
     if (!state.SHOW_VEGETATION || !tile.colorTex || !tile.pixelData || tile.zoom < 14) return null;
@@ -74,10 +75,7 @@ export function createForestForTile(tile: any): THREE.Group | null {
     const size = tile.tileSizeMeters;
     const exaggeration = state.RELIEF_EXAGGERATION;
 
-    // On crée un groupe pour contenir les différents InstancedMesh
     const forestGroup = new THREE.Group();
-    
-    // Initialisation des instances pour cette tuile
     const instances: Record<string, { count: number, matrices: THREE.Matrix4[] }> = {
         sapin: { count: 0, matrices: [] },
         meleze: { count: 0, matrices: [] },
@@ -100,8 +98,17 @@ export function createForestForTile(tile: any): THREE.Group | null {
             if (state.MAP_SOURCE === 'opentopomap') {
                 isForest = (g > b * 1.1 && (g + r * 0.3) > b * 1.3 && g > 30);
             } else {
+                const brightness = (r + g + b) / 3;
+                const saturation = (Math.max(r, g, b) - Math.min(r, g, b)) / 255;
+                
+                // --- FILTRE ANTI-PELOUSE (v5.4.2) ---
+                // Les forêts sont sombres (brightness < 100) et peu saturées.
+                // Les terrains de foot sont clairs (brightness > 120) et très verts.
+                const isTooBright = brightness > 130;
+                const isTooSaturated = saturation > 0.4 && g > r * 1.2;
+                
                 const isNeutral = (Math.abs(r - g) < 15 && Math.abs(g - b) < 15 && r > 160);
-                isForest = (g > r * 1.05 && g > b * 1.05 && !isNeutral);
+                isForest = (g > r * 1.05 && g > b * 1.05 && !isNeutral && !isTooBright && !isTooSaturated);
             }
 
             if (isForest) {
@@ -113,7 +120,6 @@ export function createForestForTile(tile: any): THREE.Group | null {
 
                 if (realAlt > 2400 || realAlt < 2) continue;
 
-                // --- SÉLECTION DE L'ESSENCE SELON ALTITUDE (v4.9.1) ---
                 let type = 'sapin';
                 if (realAlt < 900) {
                     type = Math.random() > 0.3 ? 'feuillu' : 'sapin';
@@ -134,7 +140,6 @@ export function createForestForTile(tile: any): THREE.Group | null {
         }
     }
 
-    // Création des InstancedMesh pour chaque essence présente sur la tuile
     Object.keys(instances).forEach(type => {
         const data = instances[type];
         if (data.count > 0) {
@@ -157,7 +162,6 @@ function getSimpleAltitude(tile: any, localX: number, localZ: number, exaggerati
     let relX = (localX / tile.tileSizeMeters) + 0.5;
     let relZ = (localZ / tile.tileSizeMeters) + 0.5;
 
-    // --- SUPPORT HYBRIDE Z15 (v3.10.0) ---
     if (tile.elevScale < 1.0) {
         relX = tile.elevOffset.x + (relX * tile.elevScale);
         relZ = tile.elevOffset.y + (relZ * tile.elevScale);

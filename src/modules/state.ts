@@ -18,7 +18,9 @@ export interface PerformanceSettings {
     BUILDINGS_SHADOWS: boolean; 
     MAX_ALLOWED_ZOOM: number;    
     VEGETATION_DENSITY: number;  
-    BUILDING_BATCH_SIZE: number; 
+    BUILDING_LIMIT: number;      // Max bâtiments par tuile
+    POI_ZOOM_THRESHOLD: number;  // Seuil d'apparition des POI
+    BUILDING_ZOOM_THRESHOLD: number; // Seuil d'apparition des bâtiments
     MAX_BUILDS_PER_CYCLE: number; 
     LOAD_DELAY_FACTOR: number;   
     SHOW_WEATHER: boolean;       
@@ -29,32 +31,32 @@ export interface PerformanceSettings {
 
 export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings> = {
     eco: {
-        RESOLUTION: 2, RANGE: 6, SHADOWS: false, SHADOW_RES: 128, PIXEL_RATIO_LIMIT: 1.0,
+        RESOLUTION: 2, RANGE: 3, SHADOWS: false, SHADOW_RES: 128, PIXEL_RATIO_LIMIT: 1.0,
         SHOW_VEGETATION: false, SHOW_SIGNPOSTS: false, SHOW_BUILDINGS: false, SHOW_HYDROLOGY: false, BUILDINGS_SHADOWS: false,
-        MAX_ALLOWED_ZOOM: 15, VEGETATION_DENSITY: 0, BUILDING_BATCH_SIZE: 0, MAX_BUILDS_PER_CYCLE: 1,
-        LOAD_DELAY_FACTOR: 2.0, SHOW_WEATHER: false, WEATHER_DENSITY: 0, WEATHER_SPEED: 1.0,
-        FOG_FAR: 25000 // Beaucoup de brouillard pour masquer le manque de détail
+        MAX_ALLOWED_ZOOM: 15, VEGETATION_DENSITY: 0, BUILDING_LIMIT: 0, POI_ZOOM_THRESHOLD: 16, BUILDING_ZOOM_THRESHOLD: 17,
+        MAX_BUILDS_PER_CYCLE: 1, LOAD_DELAY_FACTOR: 2.0, SHOW_WEATHER: false, WEATHER_DENSITY: 0, WEATHER_SPEED: 1.0,
+        FOG_FAR: 25000
     },
     balanced: {
-        RESOLUTION: 64, RANGE: 3, SHADOWS: true, SHADOW_RES: 256, PIXEL_RATIO_LIMIT: 1.0,
+        RESOLUTION: 64, RANGE: 4, SHADOWS: true, SHADOW_RES: 256, PIXEL_RATIO_LIMIT: 1.0,
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: false, BUILDINGS_SHADOWS: false,
-        MAX_ALLOWED_ZOOM: 16, VEGETATION_DENSITY: 2000, BUILDING_BATCH_SIZE: 15, MAX_BUILDS_PER_CYCLE: 2,
-        LOAD_DELAY_FACTOR: 1.2, SHOW_WEATHER: true, WEATHER_DENSITY: 2000, WEATHER_SPEED: 1.0,
-        FOG_FAR: 40000 // Brouillard standard
+        MAX_ALLOWED_ZOOM: 16, VEGETATION_DENSITY: 2000, BUILDING_LIMIT: 40, POI_ZOOM_THRESHOLD: 15, BUILDING_ZOOM_THRESHOLD: 16,
+        MAX_BUILDS_PER_CYCLE: 2, LOAD_DELAY_FACTOR: 1.2, SHOW_WEATHER: true, WEATHER_DENSITY: 2000, WEATHER_SPEED: 1.0,
+        FOG_FAR: 40000
     },
     performance: {
-        RESOLUTION: 160, RANGE: 4, SHADOWS: true, SHADOW_RES: 2048, PIXEL_RATIO_LIMIT: 1.5,
+        RESOLUTION: 160, RANGE: 8, SHADOWS: true, SHADOW_RES: 2048, PIXEL_RATIO_LIMIT: 1.5,
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: true, BUILDINGS_SHADOWS: true,
-        MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 8000, BUILDING_BATCH_SIZE: 50, MAX_BUILDS_PER_CYCLE: 4,
-        LOAD_DELAY_FACTOR: 0.5, SHOW_WEATHER: true, WEATHER_DENSITY: 5000, WEATHER_SPEED: 1.2,
-        FOG_FAR: 60000 // Vue dégagée
+        MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 8000, BUILDING_LIMIT: 80, POI_ZOOM_THRESHOLD: 14, BUILDING_ZOOM_THRESHOLD: 15,
+        MAX_BUILDS_PER_CYCLE: 4, LOAD_DELAY_FACTOR: 0.5, SHOW_WEATHER: true, WEATHER_DENSITY: 5000, WEATHER_SPEED: 1.2,
+        FOG_FAR: 60000
     },
     ultra: {
-        RESOLUTION: 256, RANGE: 8, SHADOWS: true, SHADOW_RES: 4096, PIXEL_RATIO_LIMIT: window.devicePixelRatio,
+        RESOLUTION: 256, RANGE: 12, SHADOWS: true, SHADOW_RES: 4096, PIXEL_RATIO_LIMIT: window.devicePixelRatio,
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: true, BUILDINGS_SHADOWS: true,
-        MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 12000, BUILDING_BATCH_SIZE: 200, MAX_BUILDS_PER_CYCLE: 8,
-        LOAD_DELAY_FACTOR: 0.2, SHOW_WEATHER: true, WEATHER_DENSITY: 15000, WEATHER_SPEED: 1.5,
-        FOG_FAR: 100000 // Minimum de brouillard
+        MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 12000, BUILDING_LIMIT: 150, POI_ZOOM_THRESHOLD: 14, BUILDING_ZOOM_THRESHOLD: 15,
+        MAX_BUILDS_PER_CYCLE: 8, LOAD_DELAY_FACTOR: 0.2, SHOW_WEATHER: true, WEATHER_DENSITY: 15000, WEATHER_SPEED: 1.5,
+        FOG_FAR: 100000
     }
 };
 
@@ -67,9 +69,6 @@ export interface Peak {
 }
 
 export interface State {
-    // ==========================================
-    // ⚙️ CONFIGURATION & PRÉFÉRENCES
-    // ==========================================
     ENERGY_SAVER: boolean;
     MK: string;
     MAP_SOURCE: string;
@@ -94,12 +93,11 @@ export interface State {
     SHADOWS: boolean;
     SHADOW_RES: number;
     VEGETATION_DENSITY: number;
-    BUILDING_BATCH_SIZE: number;
+    BUILDING_LIMIT: number;
+    POI_ZOOM_THRESHOLD: number;
+    BUILDING_ZOOM_THRESHOLD: number;
     MAX_BUILDS_PER_CYCLE: number;
 
-    // ==========================================
-    // 🌍 POSITIONNEMENT & MOTEUR 3D
-    // ==========================================
     TARGET_LAT: number;
     TARGET_LON: number;
     initialLat: number;
@@ -117,12 +115,9 @@ export interface State {
     sunLight: THREE.DirectionalLight | null;
     ambientLight: THREE.AmbientLight | null;
     sky: Sky | null;
-    stats: any | null; // Stats.js instance
+    stats: any | null; 
     vramPanel: any | null;
 
-    // ==========================================
-    // 🌦️ MÉTÉO & ÉPHÉMÉRIDES
-    // ==========================================
     simDate: Date;
     isSunAnimating: boolean;
     animationSpeed: number;
@@ -144,12 +139,8 @@ export interface State {
         moonPhaseText: string; moonPhaseIcon: string; moonIllum: number;
     } | null;
     
-    // --- Sommets & Recherche (v4.6) ---
     localPeaks: Peak[];
 
-    // ==========================================
-    // 🥾 GPX & NAVIGATION (GPS)
-    // ==========================================
     rawGpxData: Record<string, any> | null;
     gpxPoints: THREE.Vector3[];
     gpxMesh: THREE.Mesh | null;
@@ -161,14 +152,10 @@ export interface State {
     isFollowingUser: boolean;
     userMarker: THREE.Group | null;
     
-    // --- LISSAGE SUIVI (v4.5.60) ---
     smoothUserPos: THREE.Vector3;
     smoothUserHeading: number;
     lastTrackingUpdate: number;
 
-    // ==========================================
-    // 🖥️ INTERFACE & SYSTÈME
-    // ==========================================
     IS_OFFLINE: boolean;
     networkRequests: number;
     cacheHits: number;
@@ -179,7 +166,6 @@ export interface State {
 }
 
 export const state: State = {
-    // --- Config ---
     ENERGY_SAVER: false,
     MK: '', MAP_SOURCE: 'swisstopo', hasManualSource: false,
     PERFORMANCE_PRESET: 'balanced', RESOLUTION: PRESETS.balanced.RESOLUTION, RANGE: PRESETS.balanced.RANGE,
@@ -187,35 +173,32 @@ export const state: State = {
     SHOW_TRAILS: false, SHOW_SLOPES: false, SHOW_SIGNPOSTS: PRESETS.balanced.SHOW_SIGNPOSTS,
     SHOW_BUILDINGS: PRESETS.balanced.SHOW_BUILDINGS, SHOW_HYDROLOGY: PRESETS.balanced.SHOW_HYDROLOGY, SHOW_VEGETATION: true, SHOW_WEATHER: PRESETS.balanced.SHOW_WEATHER,
     SHOW_DEBUG: true, SHOW_STATS: true, USE_WORKERS: true, SHADOWS: PRESETS.balanced.SHADOWS, SHADOW_RES: PRESETS.balanced.SHADOW_RES,
-    VEGETATION_DENSITY: PRESETS.balanced.VEGETATION_DENSITY, BUILDING_BATCH_SIZE: PRESETS.balanced.BUILDING_BATCH_SIZE,
+    VEGETATION_DENSITY: PRESETS.balanced.VEGETATION_DENSITY, 
+    BUILDING_LIMIT: PRESETS.balanced.BUILDING_LIMIT,
+    POI_ZOOM_THRESHOLD: PRESETS.balanced.POI_ZOOM_THRESHOLD,
+    BUILDING_ZOOM_THRESHOLD: PRESETS.balanced.BUILDING_ZOOM_THRESHOLD,
     MAX_BUILDS_PER_CYCLE: PRESETS.balanced.MAX_BUILDS_PER_CYCLE,
 
-    // --- Moteur 3D ---
     TARGET_LAT: 46.6863, TARGET_LON: 7.6617, initialLat: 46.6863, initialLon: 7.6617,
     ZOOM: 12, RELIEF_EXAGGERATION: 1.4, FOG_NEAR: 5000, FOG_FAR: 40000,
     originTile: { x: 0, y: 0, z: 12 },
     scene: null, camera: null, renderer: null, controls: null, sunLight: null, ambientLight: null, sky: null,
     stats: null, vramPanel: null,
 
-    // --- Météo ---
     simDate: new Date(), isSunAnimating: false, animationSpeed: 1.0,
     lastWeatherLat: 0, lastWeatherLon: 0, currentWeather: 'clear', weatherIntensity: 0,
     WEATHER_DENSITY: PRESETS.balanced.WEATHER_DENSITY, WEATHER_SPEED: PRESETS.balanced.WEATHER_SPEED,
     weatherData: null, ephemeris: null,
     
-    // --- Sommets & Recherche (v4.6) ---
     localPeaks: [],
 
-    // --- Navigation ---
     rawGpxData: null, gpxPoints: [], gpxMesh: null, profileMarker: null, trailProgress: 0, isFollowingTrail: false,
     userLocation: null, userHeading: null, isFollowingUser: false, userMarker: null,
     
-    // --- Lissage Suivi ---
     smoothUserPos: new THREE.Vector3(),
     smoothUserHeading: 0,
     lastTrackingUpdate: 0,
 
-    // --- Système ---
     IS_OFFLINE: false,
     networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isProcessingTiles: false, lastUIInteraction: Date.now()
 };
