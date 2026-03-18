@@ -99,7 +99,7 @@ export async function initScene(): Promise<void> {
     initCompass();
 
     const sky = new Sky();
-    sky.scale.setScalar(1000000);
+    sky.scale.setScalar(10000000); // 10 000 km (au lieu de 1 000)
     state.scene.add(sky);
     state.sky = sky;
 
@@ -110,34 +110,17 @@ export async function initScene(): Promise<void> {
     state.controls = controls;
     controls.enableDamping = true;
     controls.dampingFactor = 0.1; 
-    controls.rotateSpeed = 1.2; // Plus réactif pour le geste de rotation
+    controls.rotateSpeed = 1.2;
     controls.zoomSpeed = 1.2;
-    controls.panSpeed = 0.8;   // Un peu plus lent pour stabiliser la rotation
+    controls.panSpeed = 0.8;
     controls.minDistance = 100;
-    controls.maxDistance = 1800000;
+    controls.maxDistance = 3500000; // Augmenté pour LOD 6
     
     // --- CONFIGURATION GOOGLE EARTH STYLE (v4.5.40) ---
     controls.screenSpacePanning = false; 
     controls.enableRotate = true;
-    
-    // Support complet des gestes Google Earth :
-    // 1 doigt = PAN
-    // 2 doigts = ZOOM (Dolly) + ROTATION (Rotate) + TILT (via OrbitControls interne)
-    controls.touches = { 
-        ONE: THREE.TOUCH.PAN, 
-        TWO: THREE.TOUCH.DOLLY_ROTATE 
-    };
-
-    (controls as any)._isMoving = false;
-    controls.addEventListener('start', () => { (controls as any)._isMoving = true; });
-    controls.addEventListener('end', () => { (controls as any)._isMoving = false; });
-
+    controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
     controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
-
-    const updateUIZoom = (zoom: number) => {
-        state.ZOOM = zoom;
-        updateWeatherUIIndicator();
-    };
 
     let lastRecenterTime = 0;
     const throttledUpdate = throttle(() => {
@@ -145,15 +128,7 @@ export async function initScene(): Promise<void> {
         const dx = state.controls.target.x, dz = state.controls.target.z;
         const dist = state.camera.position.distanceTo(state.controls.target);
         
-        // --- SÉCURITÉ ANTI-CRASH (NaN) ---
-        if (!isFinite(dx) || !isFinite(dz) || !isFinite(dist)) {
-            console.error("OrbitControls Singularity detected. Emergency Reset.");
-            state.camera.position.set(0, 35000, 40000);
-            state.controls.target.set(0, 0, 0);
-            state.controls.update();
-            return;
-        }
-
+        // --- MOTEUR DE ZOOM LOD ÉTENDU (6 -> 18) ---
         let newZoom = state.ZOOM;
         const boost = (state.MAP_SOURCE === 'satellite') ? 2.0 : 1.2;
         if (state.ZOOM === 13) { if (dist < 22000) newZoom = 14; else if (dist > 65000) newZoom = 12; }
@@ -163,13 +138,14 @@ export async function initScene(): Promise<void> {
         else if (state.ZOOM === 17) { if (dist > 2500 * boost) newZoom = 16; else if (dist < 800 * boost) newZoom = 18; }
         else if (state.ZOOM === 18) { if (dist > 1200 * boost) newZoom = 17; }
         else if (state.ZOOM === 12) { if (dist < 45000) newZoom = 13; else if (dist > 120000) newZoom = 11; }
-        else if (state.ZOOM === 11) { if (dist < 90000) newZoom = 12; else if (dist > 220000) newZoom = 10; }
-        else if (state.ZOOM === 10) { if (dist < 180000) newZoom = 11; else if (dist > 450000) newZoom = 9; }
-        else if (state.ZOOM === 9)  { if (dist < 380000) newZoom = 10; else if (dist > 850000) newZoom = 8; }
-        else if (state.ZOOM === 8)  { if (dist < 750000) newZoom = 9;  else if (dist > 1400000) newZoom = 7; }
-        else if (state.ZOOM <= 7)  { if (dist < 1200000) newZoom = 8; }
+        else if (state.ZOOM === 11) { if (dist < 90000) newZoom = 12; else if (dist > 250000) newZoom = 10; }
+        else if (state.ZOOM === 10) { if (dist < 180000) newZoom = 11; else if (dist > 500000) newZoom = 9; }
+        else if (state.ZOOM === 9)  { if (dist < 350000) newZoom = 10; else if (dist > 900000) newZoom = 8; }
+        else if (state.ZOOM === 8)  { if (dist < 700000) newZoom = 9;  else if (dist > 1600000) newZoom = 7; }
+        else if (state.ZOOM === 7)  { if (dist < 1200000) newZoom = 8; else if (dist > 2500000) newZoom = 6; }
+        else if (state.ZOOM <= 6)  { if (dist < 2000000) newZoom = 7; }
 
-        if (newZoom !== state.ZOOM) { state.ZOOM = newZoom; updateUIZoom(newZoom); }
+        if (newZoom !== state.ZOOM) { state.ZOOM = newZoom; updateWeatherUIIndicator(); }
 
         const gpsCenter = worldToLngLat(dx, dz, state.originTile);
         autoSelectMapSource(gpsCenter.lat, gpsCenter.lon);
@@ -237,7 +213,7 @@ export async function initScene(): Promise<void> {
     state.lastWeatherLon = state.TARGET_LON;
     fetchWeather(state.TARGET_LAT, state.TARGET_LON);
     
-    updateSunPosition(720); updateUIZoom(state.ZOOM);
+    updateSunPosition(720); updateWeatherUIIndicator();
 
     const clock = new THREE.Clock();
     let lastRenderTime = 0;

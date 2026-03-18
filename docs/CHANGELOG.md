@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.0.1] - 2026-03-18
+### 🚀 Performance V5 & Vol Orbital
+- **WebWorkers Engine** : Migration du fetch et décodage des tuiles vers un pool de 8 Workers asynchrones pour une fluidité absolue.
+- **LOD 6 Support** : Extension du zoom arrière jusqu'au niveau 6, permettant des vues continentales spectaculaires.
+- **Ciel Orbital** : Atmosphère étendue à 10 000 km pour supporter les vols de très haute altitude.
+- **Architecture Hybride** : Rétablissement du moteur visuel stable v4.9.1 (WebGL) combiné à la puissance brute de la V5.
+
 ## [4.9.1] - 2026-03-17
 ### 🌲 Végétation Bio-Fidèle & Correction UI
 - **Multi-Essences** : Diversification des forêts avec 3 modèles d'arbres (Feuillus, Sapins, Mélèzes) et matériaux distincts.

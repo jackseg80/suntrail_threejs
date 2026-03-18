@@ -1,31 +1,19 @@
-# 🚀 SunTrail 3D - Roadmap Stratégique (v4.7.3+)
+# SunTrail 3D - Roadmap & TODO
 
-Ce document définit la trajectoire technologique de SunTrail pour devenir un moteur géospatial de référence, alliant accessibilité web et performances natives.
+## 🎯 Prochaines Étapes (v5.1+)
+- [ ] **Bâtiments 3D V5** : Réactivation et optimisation du moteur de bâtiments (MapTiler Planet API).
+- [ ] **POIs Interactifs V5** : Restauration de la signalétique de randonnée avec le nouveau système de chargement asynchrone.
+- [ ] **Mode Nuit Amélioré** : Intégration de lumières urbaines sur la texture satellite.
+- [ ] **Partage de Vue** : Génération d'une URL courte contenant la position, le zoom et l'heure pour partager une vue précise.
 
-## ✅ Terminé (v4.9.0)
-- [x] **Suivi GPS Sphérique** : Interpolation ultra-lisse et protection Gimbal Lock.
-- [x] **Tests Robustes** : Création de `location.test.ts` et 100% de succès Vitest.
-- [x] **Gestion Offline** : Scraper de zone (6km) et badge de statut.
-- [x] **Sécurité & Outils Alpins** : Inclinomètre Shader, GPX Pro et SOS SMS.
+## ✅ Terminés (v5.0.1)
+- [x] **Moteur WebWorkers** : Migration du fetch et décodage des tuiles (Elevation/Color).
+- [x] **Vol Orbital (LOD 6)** : Extension du zoom arrière pour une vue continentale.
+- [x] **Ciel Étendu** : Support des très hautes altitudes (10 000 km).
+- [x] **Restauration Stabilité v4.9.1** : Retour aux shaders GLSL et au moteur WebGL éprouvé.
+- [x] **Optimisation Range** : Chargement intelligent des tuiles à haute altitude.
 
----
-
-## 🌍 Étape 2 : Expansion & Immersion (v4.9) - EN COURS
-*Objectif : Sortir des Alpes et enrichir le rendu visuel.*
-- [x] **Données Mondiales (SRTM/Copernicus)** : Intégration de sources d'élévation globales et flux IGN France (Plan/Satellite).
-- [x] **Hydrologie Dynamique** : Rendu des lacs et rivières avec shaders de réflexion basés sur la détection de couleur (v5.4.1).
-- [x] **Végétation Bio-Fidèle** : Diversification des essences d'arbres (Feuillus, Sapins, Mélèzes) et adaptation automatique selon l'altitude (v4.9.1).
-
-## ⚡ Étape 3 : La Révolution Hybride WebGL/WebGPU (v5.0)
-*Objectif : Atteindre la fluidité de Google Earth via une architecture de pointe.*
-- [ ] **Sélecteur de Moteur Intelligent** : Détection automatique `navigator.gpu` pour basculer entre WebGL (compatibilité) et WebGPU (performance).
-- [ ] **Architecture WebWorkers** : Déportation totale du décodage des tuiles et du calcul de relief sur les cœurs CPU secondaires (Zéro freeze UI).
-- [ ] **Compute Shaders (WebGPU)** : Utilisation du GPU pour générer instantanément les maillages de terrain et la végétation.
-- [ ] **Textures Compressées (KTX2)** : Streaming de tuiles 5x plus rapide grâce au support natif GPU (Basis Universal).
-
----
-
-## 📱 Vision Produit & Écosystème
-- [ ] **Companion App (Watch)** : Extension pour montres connectées (données critiques : Altitude, Cap).
-- [ ] **Modularisation** : Séparation technique des branches "Explorer" (Rando) et "Architect" (Solaire).
-- [ ] **Monétisation** : Modèle Freemium pour les fonctions de sécurité avalanche.
+## 📈 Améliorations Futures
+- [ ] Support du format géométrique MVT pour les sentiers et bâtiments.
+- [ ] Ombre portée des nuages sur le terrain selon la météo réelle.
+- [ ] Export de vidéo de vol cinématique.

@@ -9,6 +9,7 @@ import { createForestForTile } from './vegetation';
 import { loadHydrologyForTile } from './hydrology';
 import { EARTH_CIRCUMFERENCE, lngLatToWorld, worldToLngLat, lngLatToTile } from './geo';
 import { flyTo } from './scene';
+import { tileWorkerManager } from './workerManager';
 
 interface CachedData {
     elev: THREE.Texture;
@@ -348,90 +349,63 @@ export class Tile {
         }
         if (this.status as any === 'disposed') return;
         this.status = 'loading';
+        
         try {
             this.updateHybridSettings();
             
-            // --- OPTIMISATION 2D MOBILE (v4.3.58 / v4.5.49) ---
-            // On saute le relief si zoom faible OU mode 2D forcé
-            if (this.zoom <= 10 || state.RESOLUTION <= 2) {
-                const dummy = document.createElement('canvas'); dummy.width = 2; dummy.height = 2;
-                const dCtx = dummy.getContext('2d'); if (dCtx) { dCtx.fillStyle = '#000000'; dCtx.fillRect(0,0,2,2); }
-                this.elevationTex = new THREE.CanvasTexture(dummy);
-                this.pixelData = new Uint8ClampedArray(16); // Vide
-            } else {
+            let elevUrl = null;
+            if (!(this.zoom <= 10 || state.RESOLUTION <= 2)) {
                 let elevZoom = Math.min(this.zoom, 14);
                 let elevTx = this.tx; let elevTy = this.ty;
                 if (this.zoom > 14) {
                     const ratio = Math.pow(2, this.zoom - 14);
                     elevTx = Math.floor(this.tx / ratio); elevTy = Math.floor(this.ty / ratio);
                 }
-
-                const elevBlob = await fetchWithCache(`https://api.maptiler.com/tiles/terrain-rgb-v2/${elevZoom}/${elevTx}/${elevTy}.png?key=${state.MK}`, true);
-                if (this.status as any === 'disposed') return;
-                if (!elevBlob) throw new Error("Elevation failed");
-                const imgElev = await createImageBitmap(elevBlob, { colorSpaceConversion: 'none' });
-                if (this.status as any === 'disposed') return;
-                this.elevationTex = new THREE.Texture(imgElev);
-                this.elevationTex.flipY = false; this.elevationTex.needsUpdate = true;
-                
-                const offCanvas = document.createElement('canvas'); offCanvas.width = imgElev.width; offCanvas.height = imgElev.height;
-                const offCtx = offCanvas.getContext('2d');
-                if (offCtx) { offCtx.drawImage(imgElev, 0, 0); this.pixelData = offCtx.getImageData(0, 0, imgElev.width, imgElev.height).data; }
+                elevUrl = `https://api.maptiler.com/tiles/terrain-rgb-v2/${elevZoom}/${elevTx}/${elevTy}.png?key=${state.MK}`;
             }
 
             const nativeMax = this.getNativeColorZoom();
             let colorZoom = Math.min(this.zoom, nativeMax);
             let colorTx = this.tx;
             let colorTy = this.ty;
-
             if (this.zoom > colorZoom) {
                 const ratio = Math.pow(2, this.zoom - colorZoom);
-                colorTx = Math.floor(this.tx / ratio);
-                colorTy = Math.floor(this.ty / ratio);
+                colorTx = Math.floor(this.tx / ratio); colorTy = Math.floor(this.ty / ratio);
             }
-
             let colorUrl = this.getColorUrl(colorZoom, colorTx, colorTy);
             if (colorUrl.includes('maptiler')) colorUrl = colorUrl.replace('/256/', '/512/'); 
 
-            let colorBlob = await fetchWithCache(colorUrl, true);
-            
-            // --- FALLBACK SWISSTOPO (v4.3.35) ---
-            // Si Swisstopo échoue (400/404), on tente MapTiler Satellite en secours
-            if (!colorBlob && state.MAP_SOURCE === 'swisstopo') {
-                const fallbackUrl = `https://api.maptiler.com/maps/satellite/256/${colorZoom}/${colorTx}/${colorTy}@2x.webp?key=${state.MK}`;
-                colorBlob = await fetchWithCache(fallbackUrl, true);
-            }
+            const wantTrails = state.SHOW_TRAILS && isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON) && this.zoom >= 10;
+            let overlayUrl = wantTrails ? this.getOverlayUrl(Math.min(this.zoom, 18), this.tx, this.ty) : null;
 
-            if (this.status as any === 'disposed') return;
+            // --- APPEL AU WORKER (v5.0.1) ---
+            const data = await tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl);
             
-            if (colorBlob) {
-                const img = await createImageBitmap(colorBlob);
-                if (this.status as any === 'disposed') return;
-                this.colorTex = new THREE.Texture(img); this.colorTex.flipY = false; this.colorTex.needsUpdate = true; this.colorTex.colorSpace = THREE.SRGBColorSpace;
+            if (this.status as any === 'disposed' || !data) return;
+
+            if (data.elevBitmap) {
+                this.elevationTex = new THREE.Texture(data.elevBitmap);
+                this.elevationTex.flipY = false; this.elevationTex.needsUpdate = true;
+                if (data.pixelData) this.pixelData = new Uint8ClampedArray(data.pixelData);
             } else {
                 const dummy = document.createElement('canvas'); dummy.width = 2; dummy.height = 2;
-                const dCtx = dummy.getContext('2d'); if (dCtx) { dCtx.fillStyle = '#333'; dCtx.fillRect(0,0,2,2); }
+                this.elevationTex = new THREE.CanvasTexture(dummy); this.pixelData = new Uint8ClampedArray(16);
+            }
+
+            if (data.colorBitmap) {
+                this.colorTex = new THREE.Texture(data.colorBitmap);
+                this.colorTex.flipY = false; this.colorTex.needsUpdate = true; this.colorTex.colorSpace = THREE.SRGBColorSpace;
+            } else {
+                const dummy = document.createElement('canvas'); dummy.width = 2; dummy.height = 2;
                 this.colorTex = new THREE.CanvasTexture(dummy);
             }
 
-            // --- SÉCURITÉ GÉOGRAPHIQUE (v4.3.38) ---
-            const inCH = isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON);
-            const isHighAlt = (this.zoom < 10);
-            
-            let layerZoom = Math.min(this.zoom, 18);
-            let layerTx = this.tx; let layerTy = this.ty;
+            if (data.overlayBitmap) {
+                this.overlayTex = new THREE.Texture(data.overlayBitmap);
+                this.overlayTex.flipY = false; this.overlayTex.needsUpdate = true; this.overlayTex.colorSpace = THREE.SRGBColorSpace;
+            }
 
-            // On ne demande les calques suisses que si on est en Suisse ET à basse/moyenne altitude
-            const wantTrails = state.SHOW_TRAILS && inCH && !isHighAlt;
-
-            const [tBlob] = await Promise.all([
-                wantTrails ? fetchWithCache(this.getOverlayUrl(layerZoom, layerTx, layerTy), true) : Promise.resolve(null)
-            ]);
-            if (this.status as any === 'disposed') return;
-            if (tBlob) { const i = await createImageBitmap(tBlob); this.overlayTex = new THREE.Texture(i); this.overlayTex.flipY = false; this.overlayTex.needsUpdate = true; this.overlayTex.colorSpace = THREE.SRGBColorSpace; }
-
-            if (this.status as any === 'disposed') return;
-            addToCache(cacheKey, this.elevationTex, this.pixelData, this.colorTex, this.overlayTex);
+            addToCache(cacheKey, this.elevationTex!, this.pixelData, this.colorTex!, this.overlayTex);
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
         } catch (e) { this.status = 'failed'; }
     }
@@ -801,20 +775,19 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
     // --- BRIDAGE DYNAMIQUE DU RAYON (v4.3.45) ---
     // On adapte la limite de sécurité selon la puissance de la machine
     let range = state.RANGE;
-    let maxSafetyRange = 4; // Par défaut (Balanced)
-
-    if (state.PERFORMANCE_PRESET === 'ultra' || state.RESOLUTION >= 256) maxSafetyRange = 8;
-    else if (state.PERFORMANCE_PRESET === 'performance') maxSafetyRange = 5;
-    else if (state.PERFORMANCE_PRESET === 'eco') maxSafetyRange = 3;
-
-    if (zoom >= 15) {
-        range = Math.min(range, maxSafetyRange);
-    }
     
-    if (zoom >= 17) {
-        // Très haute résolution : limite plus stricte
-        const extremeRange = Math.max(2, Math.floor(maxSafetyRange / 2));
-        range = Math.min(range, extremeRange);
+    // Pour les zooms très élevés (LOD <= 10), on force un range minimum de 3 
+    // pour que la carte remplisse bien l'écran malgré la taille géante des tuiles.
+    if (zoom <= 10) {
+        range = Math.max(state.RANGE, 3);
+    } else {
+        let maxSafetyRange = 4; // Par défaut (Balanced)
+        if (state.PERFORMANCE_PRESET === 'ultra' || state.RESOLUTION >= 256) maxSafetyRange = 8;
+        else if (state.PERFORMANCE_PRESET === 'performance') maxSafetyRange = 5;
+        else if (state.PERFORMANCE_PRESET === 'eco') maxSafetyRange = 3;
+
+        if (zoom >= 15) range = Math.min(range, maxSafetyRange);
+        if (zoom >= 17) range = Math.min(range, Math.max(2, Math.floor(maxSafetyRange / 2)));
     }
 
     let buildsThisCycle = 0;

@@ -17,7 +17,7 @@ vi.stubGlobal('localStorage', localStorageMock);
 const originalRemove = window.removeEventListener;
 window.removeEventListener = function(type: string, listener: any, options?: any) {
   try {
-    originalRemove.call(this, type, listener, options);
+    originalRemove.call(this as any, type as any, listener, options);
   } catch (e) {
     // On ignore silencieusement les erreurs de suppression durant le Teardown
   }

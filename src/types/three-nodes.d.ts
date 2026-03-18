@@ -1,0 +1,36 @@
+declare module 'three/examples/jsm/nodes/Nodes.js' {
+    export const pointsMaterial: any;
+    export const meshStandardMaterial: any;
+    export const positionLocal: any;
+    export const timerLocal: any;
+    export const uniform: any;
+    export const attribute: any;
+    export const vec3: any;
+    export const mix: any;
+    export const fract: any;
+    export const float: any;
+    export const sin: any;
+    export const cos: any;
+    export const abs: any;
+    export const smoothstep: any;
+    export const length: any;
+    export const viewMatrix: any;
+    export const projectionMatrix: any;
+    export const modelViewMatrix: any;
+    export const texture: any;
+    export const uv: any;
+    export const normalLocal: any;
+    export const normalWorld: any;
+    export const color: any;
+    export const sub: any;
+    export const add: any;
+    export const mul: any;
+    export const div: any;
+    export const lessThan: any;
+    export const greaterThan: any;
+    export const dot: any;
+    export const acos: any;
+    export const clamp: any;
+    export const degrees: any;
+    export const normalize: any;
+}
