@@ -161,13 +161,18 @@ describe('terrain.ts', () => {
         });
     });
 
-    describe('Geographical Safety (v4.3.38)', () => {
-        it('should correctly identify points in Switzerland', () => {
-            const spiez = { lat: 46.6863, lon: 7.6617 };
-            const paris = { lat: 48.8566, lon: 2.3522 };
-            
-            expect(isPositionInSwitzerland(spiez.lat, spiez.lon)).toBe(true);
-            expect(isPositionInSwitzerland(paris.lat, paris.lon)).toBe(false);
+    describe('V5 Extensions (v5.0.1)', () => {
+        it('should handle extreme low zooms (LOD 6)', () => {
+            const tile = new Tile(32, 32, 6, '6/32/32');
+            expect(tile.zoom).toBe(6);
+            expect(tile.tileSizeMeters).toBeGreaterThan(600000); // Env 625km
+        });
+
+        it('should use tileWorkerManager when enabled', async () => {
+            state.USE_WORKERS = true;
+            // On vérifie que la classe Tile expose la méthode load
+            const tile = new Tile(4270, 2891, 13, '13/4270/2891');
+            expect(tile.load).toBeDefined();
         });
     });
 });

@@ -56,4 +56,8 @@ describe('state.ts', () => {
             expect(PRESETS.performance.RANGE).toBe(4);
         });
     });
+
+    it('should have USE_WORKERS enabled by default (v5.0.1)', () => {
+        expect(state.USE_WORKERS).toBe(true);
+    });
 });
