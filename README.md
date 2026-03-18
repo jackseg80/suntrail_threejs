@@ -1,28 +1,27 @@
-# ⛰️ SunTrail 3D (v4.9.1)
+# ⛰️ SunTrail 3D (v5.4.7)
 
-Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données MapTiler / OpenStreetMap / IGN France.
+Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données MapTiler / OpenStreetMap / IGN France. Optimisé pour les configurations haute performance (RTX 4080 / i9).
+
+## ✨ Nouveautés v5.4.x (RTX Stability & Hybrid Data)
+- **Optimisation RTX & i9 :** Fusion massive des géométries de bâtiments et désactivation des mises à jour matricielles automatiques pour garantir 144 FPS constants même avec des milliers d'objets.
+- **Moteur Overpass LIFO :** File d'attente intelligente traitant les requêtes OSM en priorité selon le champ de vision actuel pour un affichage instantané des détails urbains.
+- **Secours de Recherche (Fallback) :** Basculement automatique sur OpenStreetMap Nominatim en cas de saturation ou de blocage de l'API MapTiler (Erreur 403).
+- **Hydrologie de Précision :** Shader d'eau avancé avec filtres de pente et de chromaticité, éliminant les faux positifs sur les zones claires (champs, neige).
+- **Correctif Géo-Spatial :** Résolution définitive du bug de miroir Z sur les bâtiments ; alignement parfait des volumes avec les données topographiques.
+
+## ✨ Nouveautés v5.0.x (WebWorkers Engine)
+- **Moteur Asynchrone :** Déportation complète du téléchargement et du décodage des tuiles vers un pool de 8 WebWorkers, libérant le thread principal pour une fluidité absolue.
+- **Vol Orbital :** Support étendu jusqu'au LOD 6 et atmosphère jusqu'à 10 000 km pour des transitions fluides de la rue jusqu'à l'espace.
 
 ## ✨ Nouveautés v4.9.x (Expansion & Immersion)
 - **Végétation Bio-Fidèle :** Diversification des forêts avec 3 essences (Feuillus, Sapins, Mélèzes) sélectionnées dynamiquement selon l'altitude réelle.
-- **Support IGN France :** Basculement automatique sur les serveurs de la Géoplateforme (`data.geopf.fr`) pour une précision officielle lors du survol de l'Hexagone (Plan & Satellite).
-- **Hydrologie par Shader (Pure Alpin) :** Moteur de rendu d'eau 100% GPU avec détection dynamique, ondulations fluides et reflets cristallins sans impact réseau.
-- **Système SOS SMS :** Générateur de message de secours optimisé (Coordonnées, Altitude, Batterie) pour les zones à faible couverture (Sécurité Alpine).
-- **Optimisation Overpass :** File d'attente et quarantaine intelligente pour les services OSM, garantissant une fluidité de 60 FPS constante.
+- **Support IGN France :** Basculement automatique sur les serveurs de la Géoplateforme pour une précision officielle lors du survol de l'Hexagone.
 
 ## ✨ Nouveautés v4.8.x (Safety & Precision)
-- **Inclinomètre Mathématique :** Calcul de la pente réelle au pixel près (100% GPU) avec coloration de sécurité (Jaune > 30°, Orange > 35°, Rouge > 40°).
-- **Gestion GPX Pro :** Importation de traces avec profil altimétrique interactif (survol 3D) et calcul automatique des pentes le long du parcours.
-
-## ✨ Nouveautés v4.7.x (Spherical Navigation & Offline)
-- **Suivi GPS Sphérique :** Moteur de caméra ultra-lisse protégé contre le "Gimbal Lock" pour un suivi utilisateur cinématique.
-- **Gestion Offline :** Système de mise en cache locale (Scraper) permettant de précharger des zones de 6km pour un usage sans réseau.
-
-## ✨ Nouveautés v4.5.x (Battery & Intelligence)
-- **Ultra-Battery Save :** Mode "Deep Sleep" mettant en pause le moteur 3D (0 FPS) en arrière-plan et toggle global 30 FPS pour maximiser l'autonomie.
-- **Anti-Collision Sol Pro :** Système de sécurité garantissant que la caméra ne traverse jamais le relief maillé.
+- **Inclinomètre Mathématique :** Calcul de la pente réelle au pixel près (100% GPU) avec coloration de sécurité avalanche (Jaune/Orange/Rouge).
 
 ## 📱 Application Mobile (Android)
-SunTrail 3D est optimisé pour les processeurs mobiles de dernière génération avec des profils de performance adaptatifs (Eco, Standard, High, Ultra) et une gestion rigoureuse de la VRAM.
+SunTrail 3D est optimisé pour les processeurs mobiles de dernière génération avec des profils de performance adaptatifs (Eco, Balanced, Performance, Ultra) et une gestion intelligente de la VRAM.
 
 ## 📄 Documentation
 - [Liste des Fonctionnalités](./docs/FEATURES.md)
