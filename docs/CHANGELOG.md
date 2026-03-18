@@ -4,6 +4,21 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.5.0] - 2026-03-18
+### 🛡️ Audit de Sécurité & Fiabilité
+- **Fiabilité Worker (v5.0.2)** : Élimination définitive de la race condition sur les tuiles via un mécanisme de flag `settled` et une initialisation prioritaire des handlers.
+- **Robustesse Environnement** : Accès à `window.devicePixelRatio` rendu paresseux (lazy getter), permettant l'exécution hors navigateur (tests, workers).
+- **Conformité API Three.js** : Suppression de l'accès aux propriétés privées (`_isMoving`). Pilotage de l'état d'interaction via les événements officiels `start` et `end` d'OrbitControls.
+- **Sécurité XSS** : Refonte totale du module de recherche de lieux. Injection des résultats via l'API DOM (`textContent`) au lieu de `innerHTML`, bloquant toute tentative d'injection scriptée.
+- **Gestion Mémoire** : Nettoyage automatique du cache d'analyse spatiale lors de la destruction de la scène pour éviter les références mortes vers la VRAM libérée.
+
+### 🚀 Optimisation Performance
+- **Performance O(1)** : Migration de la file de chargement (`loadQueue`) d'un Array vers un `Set`, rendant la suppression de tuiles instantanée lors des changements de LOD.
+- **Ordonnanceur Prioritaire** : Tri dynamique de la file d'attente pour charger en priorité les tuiles visibles dans le frustum de la caméra.
+- **Découpage Architectural** : Introduction d'un `eventBus` minimal pour casser les dépendances circulaires entre les modules Terrain et Scène.
+
+---
+
 ## [5.4.7] - 2026-03-18
 ### 🚀 Stabilisation & Performance RTX (i9/RTX 4080)
 - **Moteur de Bâtiments 3D (v5.4.7)** : 

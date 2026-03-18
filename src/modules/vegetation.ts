@@ -105,35 +105,37 @@ export function createForestForTile(tile: any): THREE.Group | null {
                 const brightness = (r + g + b) / 3;
                 const saturation = (Math.max(r, g, b) - Math.min(r, g, b)) / 255;
                 
-                // --- FILTRE ANTI-PELOUSE (v5.4.2) ---
-                // Les forêts sont sombres (brightness < 100) et peu saturées.
-                // Les terrains de foot sont clairs (brightness > 120) et très verts.
-                const isTooBright = brightness > 130;
-                const isTooSaturated = saturation > 0.4 && g > r * 1.2;
+                // --- FILTRE ÉQUILIBRÉ (v5.5.0) ---
+                // Compromis entre densité de forêt et exclusion des zones sportives
+                const isTooBright = brightness > 150; 
+                const isTooSaturated = saturation > 0.45 && g > r * 1.28;
                 
-                const isNeutral = (Math.abs(r - g) < 15 && Math.abs(g - b) < 15 && r > 160);
-                isForest = (g > r * 1.05 && g > b * 1.05 && !isNeutral && !isTooBright && !isTooSaturated);
+                const isNeutral = (Math.abs(r - g) < 15 && Math.abs(g - b) < 15 && r > 170);
+                isForest = (g > r * 1.04 && g > b * 1.04 && !isNeutral && !isTooBright && !isTooSaturated);
             }
 
             if (isForest) {
+                // On ajoute un petit aléatoire pour la densité (v5.5.0)
+                if (Math.random() > 0.97 && step > 1) continue; 
+
                 const lx = ((px / scanRes) - 0.5) * size + (Math.random() - 0.5) * (size / scanRes) * step;
                 const lz = ((py / scanRes) - 0.5) * size + (Math.random() - 0.5) * (size / scanRes) * step;
 
                 const h = getSimpleAltitude(tile, lx, lz, exaggeration);
                 const realAlt = h / exaggeration;
 
-                if (realAlt > 2400 || realAlt < 2) continue;
+                if (realAlt > 2450 || realAlt < 1) continue;
 
                 let type = 'sapin';
-                if (realAlt < 900) {
-                    type = Math.random() > 0.3 ? 'feuillu' : 'sapin';
-                } else if (realAlt > 1700) {
-                    type = Math.random() > 0.4 ? 'meleze' : 'sapin';
+                if (realAlt < 950) {
+                    type = Math.random() > 0.28 ? 'feuillu' : 'sapin';
+                } else if (realAlt > 1750) {
+                    type = Math.random() > 0.38 ? 'meleze' : 'sapin';
                 }
 
                 dummy.position.set(lx, h, lz);
-                const scale = (0.3 + Math.random() * 0.7) * densityBoost; 
-                dummy.scale.set(scale, scale * (0.8 + Math.random() * 0.5), scale);
+                const scale = (0.35 + Math.random() * 0.75) * densityBoost; 
+                dummy.scale.set(scale, scale * (0.82 + Math.random() * 0.55), scale);
                 dummy.rotation.y = Math.random() * Math.PI;
                 dummy.updateMatrix();
                 

@@ -14,11 +14,10 @@ export async function loadBuildingsForTile(tile: any) {
     if (!state.SHOW_BUILDINGS || tile.zoom < state.BUILDING_ZOOM_THRESHOLD || tile.status === 'disposed') return;
     if (tile.buildingMesh) return;
 
-    if (state.controls && (state.controls as any)._isMoving) {
+    if (state.isUserInteracting) {
         setTimeout(() => loadBuildingsForTile(tile), 1000);
-        return; 
+        return;
     }
-
     const zoneZ = 12;
     const ratio = Math.pow(2, tile.zoom - zoneZ);
     const zx = Math.floor(tile.tx / ratio);
@@ -112,7 +111,8 @@ function renderBuildingsMerged(tile: any, elements: any[]) {
 
             try {
                 const shape = new THREE.Shape(points);
-                const height = (el.tags?.['building:levels'] ? el.tags['building:levels'] * 3.5 : 6) * state.RELIEF_EXAGGERATION;
+                // --- HAUTEUR BOOSTÉE POUR LES OMBRES (v5.5.1) ---
+                const height = (el.tags?.['building:levels'] ? el.tags['building:levels'] * 4.5 : 12) * state.RELIEF_EXAGGERATION;
                 const bGeo = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false });
 
                 const center = tile.lngLatToLocal(el.geometry[0].lon, el.geometry[0].lat);
@@ -129,6 +129,11 @@ function renderBuildingsMerged(tile: any, elements: any[]) {
         try {
             const merged = BufferGeometryUtils.mergeGeometries(geometries);
             const mesh = new THREE.Mesh(merged, material);
+            
+            // --- ACTIVATION DES OMBRES RTX ---
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            
             mesh.matrixAutoUpdate = false;
             mesh.updateMatrix();
             

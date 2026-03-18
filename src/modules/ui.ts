@@ -404,6 +404,37 @@ function onWindowResize() {
     state.renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+function createGeoItem(lat: number, lon: number, label: string, isPeak = false, name = '', ele = 0): HTMLElement {
+    const div = document.createElement('div');
+    div.className = `geo-item ${isPeak ? 'peak-item' : 'remote-item'}`;
+    div.style.cssText = 'padding:12px; cursor:pointer; color:white; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center;';
+    div.dataset.lat = lat.toString();
+    div.dataset.lon = lon.toString();
+    if (isPeak) { 
+        div.dataset.name = name; 
+        div.dataset.ele = ele.toString();
+        div.style.color = 'var(--gold)';
+    }
+    
+    const leftSide = document.createElement('div');
+    const icon = document.createElement('span');
+    icon.textContent = isPeak ? '🏔️ ' : '📍 ';
+    leftSide.appendChild(icon);
+    
+    const text = document.createElement('span');
+    text.textContent = label;
+    leftSide.appendChild(text);
+    div.appendChild(leftSide);
+    
+    if (isPeak) {
+        const altSpan = document.createElement('span');
+        altSpan.style.cssText = 'color:var(--t2); font-size:11px;';
+        altSpan.textContent = `${Math.round(ele)}m`;
+        div.appendChild(altSpan);
+    }
+    return div;
+}
+
 function initGeocoding() {
     const geoInput = document.getElementById('geo-input') as HTMLInputElement;
     const geoResults = document.getElementById('geo-results');
@@ -444,35 +475,33 @@ function initGeocoding() {
         const q = geoInput.value.trim().toLowerCase();
         if (q.length < 2) { geoResults.style.display = 'none'; return; }
         
-        const localMatches = state.localPeaks.filter(p => p.name.toLowerCase().includes(q)).slice(0, 5);
-        let html = localMatches.map(p => `<div class="geo-item peak-item" data-lat="${p.lat}" data-lon="${p.lon}" data-name="${p.name}" data-ele="${p.ele}" style="padding:12px; cursor:pointer; color:var(--gold); border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between;"><span>🏔️ ${p.name}</span><span style="color:var(--t2); font-size:11px;">${Math.round(p.ele)}m</span></div>`).join('');
-        
-        if (html) { geoResults.innerHTML = html; geoResults.style.display = 'block'; attachListeners(); }
-        
         timer = setTimeout(async () => {
             const data = await fetchGeocoding({ query: q });
             if (!data) return;
 
-            let resultsHtml = '';
-            // --- GESTION FORMATS HYBRIDES MapTiler / OSM ---
+            geoResults.innerHTML = '';
+            
+            // 1. Pics locaux
+            const localMatches = state.localPeaks.filter(p => p.name.toLowerCase().includes(q)).slice(0, 5);
+            localMatches.forEach(p => {
+                geoResults.appendChild(createGeoItem(p.lat, p.lon, p.name, true, p.name, p.ele));
+            });
+            
+            // 2. Résultats distants (Format Hybride MapTiler / OSM)
             if (Array.isArray(data)) {
-                // Format Nominatim (OSM)
-                resultsHtml = data.map((f: any) => {
-                    const lat = parseFloat(f.lat);
-                    const lon = parseFloat(f.lon);
-                    return `<div class="geo-item remote-item" data-lat="${lat}" data-lon="${lon}" style="padding:12px; cursor:pointer; color:white; border-bottom:1px solid rgba(255,255,255,0.05);">📍 ${f.display_name}</div>`;
-                }).join('');
+                data.forEach((f: any) => {
+                    geoResults.appendChild(createGeoItem(parseFloat(f.lat), parseFloat(f.lon), f.display_name));
+                });
             } else if (data.features) {
-                // Format MapTiler
-                resultsHtml = data.features.map((f: any) => {
+                data.features.forEach((f: any) => {
                     const lon = f.geometry.coordinates[0];
                     const lat = f.geometry.coordinates[1];
-                    return `<div class="geo-item remote-item" data-lat="${lat}" data-lon="${lon}" style="padding:12px; cursor:pointer; color:white; border-bottom:1px solid rgba(255,255,255,0.05);">📍 ${f.place_name_fr || f.place_name}</div>`;
-                }).join('');
+                    const label = f.place_name_fr || f.place_name || 'Lieu inconnu';
+                    geoResults.appendChild(createGeoItem(lat, lon, label));
+                });
             }
 
-            if (resultsHtml || html) {
-                geoResults.innerHTML = html + resultsHtml;
+            if (geoResults.children.length > 0) {
                 geoResults.style.display = 'block';
                 attachListeners();
             }
@@ -487,7 +516,7 @@ function initGeocoding() {
                 const lon = parseFloat((item as HTMLElement).dataset.lon!);
                 if (isNaN(lat) || isNaN(lon)) return;
                 const isPeak = item.classList.contains('peak-item');
-                const name = (item as HTMLElement).dataset.name || (item as HTMLElement).textContent || '';
+                const name = (item as HTMLElement).dataset.name || (item as HTMLElement).querySelector('span:nth-child(2)')?.textContent || '';
                 const ele = parseFloat((item as HTMLElement).dataset.ele!) || 0;
                 handleResultClick(lat, lon, isPeak, name, ele);
             };

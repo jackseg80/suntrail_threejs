@@ -7,6 +7,10 @@ import { showToast } from './utils';
 
 let lastUsedTile: any = null;
 
+export function resetAnalysisCache(): void {
+    lastUsedTile = null;
+}
+
 export function getAltitudeAt(worldX: number, worldZ: number, hintTile: any = null): number {
     const testPoint = new THREE.Vector3(worldX, 0, worldZ);
     let tile = hintTile;

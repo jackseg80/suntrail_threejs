@@ -10,7 +10,7 @@ export interface PerformanceSettings {
     RANGE: number;
     SHADOWS: boolean;
     SHADOW_RES: number;
-    PIXEL_RATIO_LIMIT: number;
+    readonly PIXEL_RATIO_LIMIT: number;
     SHOW_VEGETATION: boolean;
     SHOW_SIGNPOSTS: boolean;
     SHOW_BUILDINGS: boolean;
@@ -18,9 +18,9 @@ export interface PerformanceSettings {
     BUILDINGS_SHADOWS: boolean; 
     MAX_ALLOWED_ZOOM: number;    
     VEGETATION_DENSITY: number;  
-    BUILDING_LIMIT: number;      // Max bâtiments par tuile
-    POI_ZOOM_THRESHOLD: number;  // Seuil d'apparition des POI
-    BUILDING_ZOOM_THRESHOLD: number; // Seuil d'apparition des bâtiments
+    BUILDING_LIMIT: number;      
+    POI_ZOOM_THRESHOLD: number;  
+    BUILDING_ZOOM_THRESHOLD: number; 
     MAX_BUILDS_PER_CYCLE: number; 
     LOAD_DELAY_FACTOR: number;   
     SHOW_WEATHER: boolean;       
@@ -52,12 +52,13 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         FOG_FAR: 60000
     },
     ultra: {
-        RESOLUTION: 256, RANGE: 12, SHADOWS: true, SHADOW_RES: 4096, PIXEL_RATIO_LIMIT: window.devicePixelRatio,
+        get PIXEL_RATIO_LIMIT() { return typeof window !== 'undefined' ? window.devicePixelRatio : 1; },
+        RESOLUTION: 256, RANGE: 12, SHADOWS: true, SHADOW_RES: 4096,
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: true, BUILDINGS_SHADOWS: true,
         MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 12000, BUILDING_LIMIT: 150, POI_ZOOM_THRESHOLD: 14, BUILDING_ZOOM_THRESHOLD: 15,
         MAX_BUILDS_PER_CYCLE: 8, LOAD_DELAY_FACTOR: 0.2, SHOW_WEATHER: true, WEATHER_DENSITY: 15000, WEATHER_SPEED: 1.5,
         FOG_FAR: 100000
-    }
+    } as PerformanceSettings
 };
 
 export interface Peak {
@@ -161,6 +162,7 @@ export interface State {
     cacheHits: number;
     uiVisible: boolean;
     isInteractingWithUI: boolean;
+    isUserInteracting: boolean;
     isProcessingTiles: boolean;
     lastUIInteraction: number;
 }
@@ -200,5 +202,6 @@ export const state: State = {
     lastTrackingUpdate: 0,
 
     IS_OFFLINE: false,
-    networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isProcessingTiles: false, lastUIInteraction: Date.now()
+    networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isUserInteracting: false, isProcessingTiles: false, lastUIInteraction: Date.now()
 };
+

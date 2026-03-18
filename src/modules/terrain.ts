@@ -8,8 +8,8 @@ import { loadPOIsForTile } from './poi';
 import { loadBuildingsForTile } from './buildings';
 import { loadHydrologyForTile } from './hydrology';
 import { EARTH_CIRCUMFERENCE, lngLatToWorld, worldToLngLat, lngLatToTile } from './geo';
-import { flyTo } from './scene';
 import { tileWorkerManager } from './workerManager';
+import { eventBus } from './eventBus';
 
 interface CachedData {
     elev: THREE.Texture;
@@ -21,16 +21,14 @@ interface CachedData {
 export const activeTiles = new Map<string, Tile>(); 
 export const activeLabels = new Map<string, any>(); 
 
-// --- OPTIMISATION CACHE ADAPTATIVE (Phase 4) ---
 function getMaxCacheSize(): number {
     if (state.PERFORMANCE_PRESET === 'ultra') return 800;
     if (state.PERFORMANCE_PRESET === 'performance') return 400;
     if (state.PERFORMANCE_PRESET === 'balanced') return isMobileDevice() ? 100 : 250;
-    return 60; // Mode Eco
+    return 60;
 }
 
 const dataCache = new Map<string, CachedData>();
-
 const geometryCache = new Map<string, THREE.PlaneGeometry>();
 
 function getPlaneGeometry(res: number, size: number): THREE.PlaneGeometry {
@@ -45,46 +43,39 @@ function getPlaneGeometry(res: number, size: number): THREE.PlaneGeometry {
     return geometryCache.get(key)!;
 }
 
-let loadQueue: Tile[] = [];
+let loadQueue: Set<Tile> = new Set<Tile>();
 let isProcessingQueue = false;
 
 async function processLoadQueue() {
-    if (isProcessingQueue || loadQueue.length === 0) {
+    if (isProcessingQueue || loadQueue.size === 0) {
         state.isProcessingTiles = false;
         return;
     }
     isProcessingQueue = true;
     state.isProcessingTiles = true;
     try {
-        if (state.camera) {
+        const sorted = Array.from(loadQueue).sort((a, b) => {
+            if (!state.camera) return 0;
             const camPos = state.camera.position;
-            loadQueue.sort((a, b) => {
-                // --- TRI PRIORITAIRE (v5.1.0) ---
-                // On privilégie les tuiles visibles devant la caméra
-                const aVis = a.isVisible() ? 1 : 0;
-                const bVis = b.isVisible() ? 1 : 0;
-                if (aVis !== bVis) return bVis - aVis;
+            const aVis = a.isVisible() ? 1 : 0;
+            const bVis = b.isVisible() ? 1 : 0;
+            if (aVis !== bVis) return bVis - aVis;
+            const da = (a.worldX - camPos.x) ** 2 + (a.worldZ - camPos.z) ** 2;
+            const db = (b.worldX - camPos.x) ** 2 + (b.worldZ - camPos.z) ** 2;
+            return da - db;
+        });
 
-                const da = Math.pow(a.worldX - camPos.x, 2) + Math.pow(a.worldZ - camPos.z, 2);
-                const db = Math.pow(b.worldX - camPos.x, 2) + Math.pow(b.worldZ - camPos.z, 2);
-                return da - db;
-            });
-        }
-        
-        // --- OPTIMISATION FLUIDITÉ (v4.5.44) ---
-        // On réduit le nombre de tuiles traitées simultanément (12 -> 4)
-        // pour ne pas saturer le thread principal lors des déplacements.
-        const batch = loadQueue.splice(0, 4);
+        const batch = sorted.slice(0, 4);
+        batch.forEach(t => loadQueue.delete(t));
+
         await Promise.all(batch.map(async (tile) => {
-            try { 
-                if (tile.status === 'idle') await tile.load(); 
-            }
+            try { if (tile.status === 'idle') await tile.load(); }
             catch (e) { tile.status = 'failed'; }
         }));
     } finally {
         isProcessingQueue = false;
-        // On augmente le délai entre deux lots (16ms -> 32ms) pour laisser le temps au moteur de rendu de souffler
-        if (loadQueue.length > 0) setTimeout(processLoadQueue, 32); 
+        if (loadQueue.size > 0) setTimeout(processLoadQueue, 32);
+        else state.isProcessingTiles = false;
     }
 }
 
@@ -93,10 +84,7 @@ function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8Clamped
         const oldestKey = dataCache.keys().next().value;
         if (oldestKey) {
             const entry = dataCache.get(oldestKey);
-            if (entry) {
-                entry.elev.dispose(); entry.color.dispose();
-                if (entry.overlay) entry.overlay.dispose();
-            }
+            if (entry) { entry.elev.dispose(); entry.color.dispose(); if (entry.overlay) entry.overlay.dispose(); }
             dataCache.delete(oldestKey);
         }
     }
@@ -112,8 +100,7 @@ function getFromCache(key: string): CachedData | null {
 
 export function clearCache(): void {
     for (const entry of dataCache.values()) {
-        entry.elev.dispose(); entry.color.dispose();
-        if (entry.overlay) entry.overlay.dispose();
+        entry.elev.dispose(); entry.color.dispose(); if (entry.overlay) entry.overlay.dispose();
     }
     dataCache.clear();
 }
@@ -131,45 +118,25 @@ export const terrainUniforms = {
 const CACHE_NAME = 'suntrail-tiles-v1';
 
 async function fetchWithCache(url: string, usePersistentCache: boolean = false): Promise<Blob | null> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); 
-
+    if (state.IS_OFFLINE && !usePersistentCache) return null;
     try {
         if (usePersistentCache) {
             const cache = await caches.open(CACHE_NAME);
             const cached = await cache.match(url);
-            if (cached) { 
-                state.cacheHits++; updateStorageUI(); 
-                clearTimeout(timeoutId);
-                return await cached.blob(); 
-            }
+            if (cached) { state.cacheHits++; updateStorageUI(); return await cached.blob(); }
         }
-
-        // --- MODE OFFLINE STRICT (v4.7.1) ---
-        if (state.IS_OFFLINE) {
-            clearTimeout(timeoutId);
-            return null;
-        }
-
-        const r = await fetch(url, { mode: 'cors', signal: controller.signal });
-        clearTimeout(timeoutId);
+        if (state.IS_OFFLINE) return null;
+        const r = await fetch(url, { mode: 'cors' });
         if (r.ok) {
             const blob = await r.blob();
             state.networkRequests++; updateStorageUI();
-            if (usePersistentCache) {
-                const cache = await caches.open(CACHE_NAME);
-                cache.put(url, new Response(blob));
-            }
+            if (usePersistentCache) { const cache = await caches.open(CACHE_NAME); cache.put(url, new Response(blob)); }
             return blob;
         }
         return null;
-    } catch (e) { 
-        clearTimeout(timeoutId);
-        return null; 
-    }
+    } catch (e) { return null; }
 }
 
-// --- TÉLÉCHARGEMENT DE ZONE OFFLINE (v4.7.2) ---
 export async function downloadOfflineZone(lat: number, lon: number, onProgress: (done: number, total: number) => void): Promise<void> {
     const radiusKm = 6;
     const zooms = [12, 13, 14, 15];
@@ -185,36 +152,18 @@ export async function downloadOfflineZone(lat: number, lon: number, onProgress: 
         for (let x = t1.x; x <= t2.x; x++) {
             for (let y = t1.y; y <= t2.y; y++) {
                 let colorUrl = '';
-                switch(state.MAP_SOURCE) {
-                    case 'satellite': 
-                        colorUrl = inCH ? `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${z}/${x}/${y}.jpeg`
-                                        : `https://api.maptiler.com/maps/satellite/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
-                        break;
-                    case 'swisstopo': 
-                        colorUrl = inCH ? `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${z}/${x}/${y}.jpeg`
-                                        : `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
-                        break;
-                    default:
-                        colorUrl = `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
-                }
+                if (state.MAP_SOURCE === 'satellite') colorUrl = inCH ? `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${z}/${x}/${y}.jpeg` : `https://api.maptiler.com/maps/satellite/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
+                else colorUrl = inCH ? `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${z}/${x}/${y}.jpeg` : `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
                 urls.push(colorUrl);
-                if (state.PERFORMANCE_PRESET !== 'eco') {
-                    urls.push(`https://api.maptiler.com/tiles/terrain-rgb-v2/${z}/${x}/${y}.png?key=${state.MK}`);
-                }
+                urls.push(`https://api.maptiler.com/tiles/terrain-rgb-v2/${z}/${x}/${y}.png?key=${state.MK}`);
             }
         }
-        await new Promise(r => setTimeout(r, 10));
     }
-
     const total = urls.length;
     let done = 0;
     for (const url of urls) {
         try { await fetchWithCache(url, true); } catch (e) {}
-        done++;
-        if (done % 5 === 0) { 
-            onProgress(done, total);
-            await new Promise(r => setTimeout(r, 20)); 
-        }
+        done++; if (done % 5 === 0) onProgress(done, total);
     }
     onProgress(total, total);
 }
@@ -243,12 +192,8 @@ export class Tile {
     isFadingIn: boolean = false;
     worldX: number = 0; worldZ: number = 0;
     bounds: THREE.Box3 = new THREE.Box3();
-    
-    // Paramètres Hybrides
-    elevOffset: THREE.Vector2 = new THREE.Vector2(0, 0);
-    elevScale: number = 1.0;
-    colorOffset: THREE.Vector2 = new THREE.Vector2(0, 0);
-    colorScale: number = 1.0;
+    elevOffset = new THREE.Vector2(); elevScale = 1.0;
+    colorOffset = new THREE.Vector2(); colorScale = 1.0;
 
     constructor(tx: number, ty: number, zoom: number, key: string) {
         this.tx = tx; this.ty = ty; this.zoom = zoom; this.key = key;
@@ -280,30 +225,6 @@ export class Tile {
         return frustum.intersectsBox(this.bounds.clone().expandByScalar(this.tileSizeMeters * 0.2));
     }
 
-    getNativeColorZoom(): number {
-        switch(state.MAP_SOURCE) {
-            case 'satellite': return 18;
-            case 'swisstopo': return 18;
-            case 'opentopomap': return 15;
-            default: return 18;
-        }
-    }
-
-    lngLatToLocal(lon: number, lat: number): THREE.Vector3 {
-        const n = Math.pow(2, this.zoom);
-        const xNorm = (lon + 180) / 360;
-        const yNorm = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2;
-        
-        const txNorm = (this.tx + 0.5) / n;
-        const tyNorm = (this.ty + 0.5) / n;
-        
-        return new THREE.Vector3(
-            (xNorm - txNorm) * EARTH_CIRCUMFERENCE,
-            0,
-            (yNorm - tyNorm) * EARTH_CIRCUMFERENCE
-        );
-    }
-
     getBounds() {
         const n = Math.pow(2, this.zoom);
         const lonWest = this.tx / n * 360 - 180;
@@ -315,95 +236,75 @@ export class Tile {
         return { north: latNorth, south: latSouth, west: lonWest, east: lonEast };
     }
 
+    lngLatToLocal(lon: number, lat: number): THREE.Vector3 {
+        const n = Math.pow(2, this.zoom);
+        const xNorm = (lon + 180) / 360;
+        const yNorm = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2;
+        const txNorm = (this.tx + 0.5) / n;
+        const tyNorm = (this.ty + 0.5) / n;
+        return new THREE.Vector3((xNorm - txNorm) * EARTH_CIRCUMFERENCE, 0, (yNorm - tyNorm) * EARTH_CIRCUMFERENCE);
+    }
+
+    getNativeColorZoom(): number {
+        if (state.MAP_SOURCE === 'opentopomap') return 15;
+        return 18;
+    }
+
     updateHybridSettings(): void {
         const MAX_RGB_ZOOM = 14;
-        const colorSourceMaxZoom = this.getNativeColorZoom();
-
+        const nativeMax = this.getNativeColorZoom();
         if (this.zoom > MAX_RGB_ZOOM) {
             const ratio = Math.pow(2, this.zoom - MAX_RGB_ZOOM);
             this.elevScale = 1.0 / ratio;
             this.elevOffset.set((this.tx % ratio) * this.elevScale, (this.ty % ratio) * this.elevScale);
-        } else {
-            this.elevScale = 1.0;
-            this.elevOffset.set(0, 0);
-        }
-
-        if (this.zoom > colorSourceMaxZoom) {
-            const ratio = Math.pow(2, this.zoom - colorSourceMaxZoom);
+        } else { this.elevScale = 1.0; this.elevOffset.set(0, 0); }
+        if (this.zoom > nativeMax) {
+            const ratio = Math.pow(2, this.zoom - nativeMax);
             this.colorScale = 1.0 / ratio;
             this.colorOffset.set((this.tx % ratio) * this.colorScale, (this.ty % ratio) * this.colorScale);
-        } else {
-            this.colorScale = 1.0;
-            this.colorOffset.set(0, 0);
-        }
+        } else { this.colorScale = 1.0; this.colorOffset.set(0, 0); }
     }
 
     async load(): Promise<void> {
         if (this.status !== 'idle' && this.status !== 'failed') return;
-        
         const is2D = (state.RESOLUTION <= 2);
         const cacheKey = `${state.MAP_SOURCE}_${state.SHOW_TRAILS}_${is2D ? '2D' : '3D'}_${this.key}`;
-        
         const cached = getFromCache(cacheKey);
         if (cached) {
             this.elevationTex = cached.elev; this.pixelData = cached.pixelData;
             this.colorTex = cached.color; this.overlayTex = cached.overlay;
-            this.updateHybridSettings();
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
             return;
         }
         if (this.status as any === 'disposed') return;
         this.status = 'loading';
-        
         try {
-            this.updateHybridSettings();
-            
             let elevUrl = null;
-            if (!(this.zoom <= 10 || state.RESOLUTION <= 2)) {
-                let elevZoom = Math.min(this.zoom, 14);
-                let elevTx = this.tx; let elevTy = this.ty;
-                if (this.zoom > 14) {
-                    const ratio = Math.pow(2, this.zoom - 14);
-                    elevTx = Math.floor(this.tx / ratio); elevTy = Math.floor(this.ty / ratio);
-                }
-                elevUrl = `https://api.maptiler.com/tiles/terrain-rgb-v2/${elevZoom}/${elevTx}/${elevTy}.png?key=${state.MK}`;
+            if (!(this.zoom <= 10 || is2D)) {
+                let ez = Math.min(this.zoom, 14);
+                let r = Math.pow(2, Math.max(0, this.zoom - 14));
+                elevUrl = `https://api.maptiler.com/tiles/terrain-rgb-v2/${ez}/${Math.floor(this.tx/r)}/${Math.floor(this.ty/r)}.png?key=${state.MK}`;
             }
+            let nativeMax = this.getNativeColorZoom();
+            let cz = Math.min(this.zoom, nativeMax);
+            let cr = Math.pow(2, Math.max(0, this.zoom - nativeMax));
+            let colorUrl = this.getColorUrl(cz, Math.floor(this.tx/cr), Math.floor(this.ty/cr));
+            if (colorUrl.includes('maptiler')) colorUrl = colorUrl.replace('/256/', '/512/');
+            let overlayUrl = (state.SHOW_TRAILS && this.zoom >= 10) ? this.getOverlayUrl(Math.min(this.zoom, 18), this.tx, this.ty) : null;
 
-            const nativeMax = this.getNativeColorZoom();
-            let colorZoom = Math.min(this.zoom, nativeMax);
-            let colorTx = this.tx;
-            let colorTy = this.ty;
-            if (this.zoom > colorZoom) {
-                const ratio = Math.pow(2, this.zoom - colorZoom);
-                colorTx = Math.floor(this.tx / ratio); colorTy = Math.floor(this.ty / ratio);
-            }
-            let colorUrl = this.getColorUrl(colorZoom, colorTx, colorTy);
-            if (colorUrl.includes('maptiler')) colorUrl = colorUrl.replace('/256/', '/512/'); 
-
-            const wantTrails = state.SHOW_TRAILS && isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON) && this.zoom >= 10;
-            let overlayUrl = wantTrails ? this.getOverlayUrl(Math.min(this.zoom, 18), this.tx, this.ty) : null;
-
-            // --- APPEL AU WORKER (v5.0.1) ---
             const data = await tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl);
-            
             if (this.status as any === 'disposed' || !data) return;
 
             if (data.elevBitmap) {
                 this.elevationTex = new THREE.Texture(data.elevBitmap);
                 this.elevationTex.flipY = false; this.elevationTex.needsUpdate = true;
                 if (data.pixelData) this.pixelData = new Uint8ClampedArray(data.pixelData);
-            } else {
-                const dummy = document.createElement('canvas'); dummy.width = 2; dummy.height = 2;
-                this.elevationTex = new THREE.CanvasTexture(dummy); this.pixelData = new Uint8ClampedArray(16);
-            }
+            } else { this.elevationTex = new THREE.CanvasTexture(document.createElement('canvas')); }
 
             if (data.colorBitmap) {
                 this.colorTex = new THREE.Texture(data.colorBitmap);
                 this.colorTex.flipY = false; this.colorTex.needsUpdate = true; this.colorTex.colorSpace = THREE.SRGBColorSpace;
-            } else {
-                const dummy = document.createElement('canvas'); dummy.width = 2; dummy.height = 2;
-                this.colorTex = new THREE.CanvasTexture(dummy);
-            }
+            } else { this.colorTex = new THREE.CanvasTexture(document.createElement('canvas')); }
 
             if (data.overlayBitmap) {
                 this.overlayTex = new THREE.Texture(data.overlayBitmap);
@@ -418,76 +319,58 @@ export class Tile {
     getColorUrl(z: number, x: number, y: number): string {
         const inCH = isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON);
         const inFR = isPositionInFrance(state.TARGET_LAT, state.TARGET_LON);
-
-        switch(state.MAP_SOURCE) {
-            case 'satellite': 
-                if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${z}/${x}/${y}.jpeg`;
-                if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
-                return `https://api.maptiler.com/maps/satellite/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
-            case 'swisstopo': 
-                if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${z}/${x}/${y}.jpeg`;
-                if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
-                return `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
-            case 'opentopomap': return `https://a.tile.opentopomap.org/${z}/${x}/${y}.png`;
-            default: return `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
+        if (state.MAP_SOURCE === 'satellite') {
+            if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${z}/${x}/${y}.jpeg`;
+            if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
+            return `https://api.maptiler.com/maps/satellite/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
         }
+        if (state.MAP_SOURCE === 'swisstopo') {
+            if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${z}/${x}/${y}.jpeg`;
+            if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
+        }
+        return `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
     }
+
     getOverlayUrl(z: number, x: number, y: number): string { 
-        const inCH = isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON);
-        if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${z}/${x}/${y}.png`; 
-        
-        const inFR = isPositionInFrance(state.TARGET_LAT, state.TARGET_LON);
-        if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=TRANSPORT.WANDERWEGE&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
-        
+        if (isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON)) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${z}/${x}/${y}.png`; 
+        if (isPositionInFrance(state.TARGET_LAT, state.TARGET_LON)) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=TRANSPORT.WANDERWEGE&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
         return '';
     }
 
     buildMesh(resolution: number): void {
         if (!this.elevationTex || !this.colorTex || this.status as any === 'disposed') return;
-        
-        // --- SÉCURITÉ ANTI-FANTÔME (v4.3.32) ---
         if (activeTiles.get(this.key) !== this) return;
 
-        // --- OPTIMISATION 2D MOBILE (v4.3.65 / v4.5.47) ---
-        // On force 2D si zoom faible ou résolution ECO (<= 2)
         const is2D = (this.zoom <= 10 || resolution <= 2);
-        
+        const isLight = (state.PERFORMANCE_PRESET === 'eco' || state.PERFORMANCE_PRESET === 'balanced');
         const oldMesh = this.mesh;
-        const geometry = getPlaneGeometry(resolution, this.tileSizeMeters);
         
         const material = is2D 
             ? new THREE.MeshBasicMaterial({ map: this.colorTex, transparent: true, opacity: 0 })
             : new THREE.MeshStandardMaterial({ map: this.colorTex, roughness: 1.0, metalness: 0.0, transparent: true, opacity: 0 });
 
-        const sharedShaderChunk = `
-            uniform sampler2D uElevationMap;
-            uniform float uExaggeration;
-            uniform float uTileSize;
-            uniform vec2 uElevOffset;
-            uniform float uElevScale;
-
-            float decodeHeight(vec4 rgba) {
-                return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1);
-            }
-            float getTerrainHeight(vec2 uv) {
-                vec2 elevUv = uElevOffset + (uv * uElevScale);
-                vec4 col = texture2D(uElevationMap, elevUv);
-                float h = decodeHeight(col);
-                if (h < -1000.0 || h > 9000.0) return 0.0;
-                return h * uExaggeration;
-            }
-            float getTrueTerrainHeight(vec2 uv) {
-                vec2 elevUv = uElevOffset + (uv * uElevScale);
-                vec4 col = texture2D(uElevationMap, elevUv);
-                float h = decodeHeight(col);
-                if (h < -1000.0 || h > 9000.0) return 0.0;
-                return h; // Sans exagération pour la vraie pente
-            }
-        `;
-
         if (!is2D) {
-            const isLight = (state.PERFORMANCE_PRESET === 'eco' || state.PERFORMANCE_PRESET === 'balanced');
-            material.onBeforeCompile = (shader) => {
+            const sharedShaderChunk = `
+                uniform sampler2D uElevationMap; uniform float uExaggeration; uniform float uTileSize;
+                uniform vec2 uElevOffset; uniform float uElevScale;
+                float decodeHeight(vec4 rgba) { return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1); }
+                float getTerrainHeight(vec2 uv) {
+                    vec2 elevUv = uElevOffset + (uv * uElevScale);
+                    vec4 col = texture2D(uElevationMap, elevUv);
+                    float h = decodeHeight(col);
+                    if (h < -1000.0 || h > 9000.0) return 0.0;
+                    return h * uExaggeration;
+                }
+                float getTrueTerrainHeight(vec2 uv) {
+                    vec2 elevUv = uElevOffset + (uv * uElevScale);
+                    vec4 col = texture2D(uElevationMap, elevUv);
+                    float h = decodeHeight(col);
+                    if (h < -1000.0 || h > 9000.0) return 0.0;
+                    return h;
+                }
+            `;
+
+            (material as THREE.MeshStandardMaterial).onBeforeCompile = (shader) => {
                 shader.uniforms.uElevationMap = { value: this.elevationTex };
                 shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
                 shader.uniforms.uShowSlopes = terrainUniforms.uShowSlopes;
@@ -498,27 +381,17 @@ export class Tile {
                 shader.uniforms.uElevScale = { value: this.elevScale };
                 shader.uniforms.uColorOffset = { value: this.colorOffset };
                 shader.uniforms.uColorScale = { value: this.colorScale };
-                shader.uniforms.uOverlayMap = { value: this.overlayTex || null };
+                shader.uniforms.uOverlayMap = { value: this.overlayTex };
                 shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
 
                 shader.vertexShader = `
                     #define IS_LIGHT ${isLight ? '1' : '0'}
                     ${shader.vertexShader}
-                `;
+                `.replace('#include <common>', `#include <common>\nvarying vec3 vTrueNormal; uniform vec2 uColorOffset; uniform float uColorScale; ${sharedShaderChunk}`)
+                 .replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);`);
 
-                shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n
-                    varying vec3 vTrueNormal;
-                    uniform vec2 uColorOffset;
-                    uniform float uColorScale;
-                    ${sharedShaderChunk}
-                `);
-                shader.vertexShader = shader.vertexShader.replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);`);
-                
                 if (isLight) {
-                    shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n
-                        objectNormal = vec3(0.0, 1.0, 0.0);
-                        vTrueNormal = vec3(0.0, 1.0, 0.0);
-                    `);
+                    shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\nobjectNormal = vec3(0.0,1.0,0.0); vTrueNormal = vec3(0.0,1.0,0.0);`);
                 } else {
                     shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n
                         float delta = uTileSize / 256.0;
@@ -527,7 +400,6 @@ export class Tile {
                         float hD = getTerrainHeight(uv + vec2(0.0, -1.0/256.0));
                         float hU = getTerrainHeight(uv + vec2(0.0, 1.0/256.0));
                         objectNormal = normalize(vec3(hL - hR, delta * 2.0, hD - hU));
-
                         float thL = getTrueTerrainHeight(uv + vec2(-1.0/256.0, 0.0));
                         float thR = getTrueTerrainHeight(uv + vec2(1.0/256.0, 0.0));
                         float thD = getTrueTerrainHeight(uv + vec2(0.0, -1.0/256.0));
@@ -535,136 +407,83 @@ export class Tile {
                         vTrueNormal = normalize(vec3(thL - thR, delta * 2.0, thD - thU));
                     `);
                 }
-                
                 shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv);`);
-shader.fragmentShader = `
-    uniform sampler2D uOverlayMap;
-    uniform bool uHasOverlay;
-    uniform float uShowSlopes;
-    uniform float uShowHydrology;
-    uniform float uTime;
-    uniform vec3 uSunPos;
-    varying vec3 vTrueNormal;
-    ${shader.fragmentShader}
-`.replace('#include <map_fragment>', `
-    #include <map_fragment>
-
-    // --- SHADER EAU AMÉLIORÉ (v5.4.5) ---
-    if (uShowHydrology > 0.5) {
-        vec3 colorIn = diffuseColor.rgb;
-        // Détection stricte : Bleu doit être dominant ET la zone doit être quasi-horizontale (Y normal > 0.998)
-        // On exclut les zones trop lumineuses (neige/blanc) pour éviter les faux positifs
-        float brightness = (colorIn.r + colorIn.g + colorIn.b) / 3.0;
-        float isWater = smoothstep(0.05, 0.15, colorIn.b - max(colorIn.r, colorIn.g)) * smoothstep(0.998, 1.0, vTrueNormal.y) * (1.0 - smoothstep(0.7, 0.9, brightness));
-        
-        if (isWater > 0.1) {
-            vec3 waterBlue = vec3(0.02, 0.15, 0.45);
-            float wave = sin(vMapUv.x * 40.0 + uTime * 0.8) * cos(vMapUv.y * 40.0 + uTime * 0.5) * 0.5 + 0.5;
-            diffuseColor.rgb = mix(colorIn, waterBlue, 0.7 * isWater);
-            diffuseColor.rgb += vec3(0.1, 0.3, 0.5) * wave * isWater * 0.2;
-        }
-    }
-
-    if (uHasOverlay) {
-        vec4 oCol = texture2D(uOverlayMap, vMapUv);
-        diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a);
-    }
-
-    if (uShowSlopes > 0.5) {
-        float slopeRad = acos(clamp(dot(normalize(vTrueNormal), vec3(0.0, 1.0, 0.0)), 0.0, 1.0));
-        float slopeDeg = degrees(slopeRad);
-        
-        float yellowMix = smoothstep(28.0, 32.0, slopeDeg);
-        float orangeMix = smoothstep(33.0, 37.0, slopeDeg);
-        float redMix = smoothstep(38.0, 42.0, slopeDeg);
-        
-        vec3 slopeColor = vec3(1.0, 1.0, 0.0); // Jaune
-        slopeColor = mix(slopeColor, vec3(1.0, 0.5, 0.0), orangeMix); // Orange
-        slopeColor = mix(slopeColor, vec3(1.0, 0.0, 0.0), redMix); // Rouge
-        
-        diffuseColor.rgb = mix(diffuseColor.rgb, slopeColor, yellowMix * 0.55);
-    }
-`);
+                shader.fragmentShader = `
+                    uniform sampler2D uOverlayMap; uniform bool uHasOverlay; uniform float uShowSlopes; uniform float uShowHydrology; uniform float uTime; varying vec3 vTrueNormal;
+                    ${shader.fragmentShader}
+                `.replace('#include <map_fragment>', `
+                    #include <map_fragment>
+                    if (uShowHydrology > 0.5) {
+                        vec3 colorIn = diffuseColor.rgb;
+                        float brightness = (colorIn.r + colorIn.g + colorIn.b) / 3.0;
+                        float isWater = smoothstep(0.05, 0.15, colorIn.b - max(colorIn.r, colorIn.g)) * smoothstep(0.998, 1.0, vTrueNormal.y) * (1.0 - smoothstep(0.7, 0.9, brightness));
+                        if (isWater > 0.1) {
+                            vec3 waterBlue = vec3(0.02, 0.15, 0.45);
+                            float wave = sin(vMapUv.x * 40.0 + uTime * 0.8) * cos(vMapUv.y * 40.0 + uTime * 0.5) * 0.5 + 0.5;
+                            diffuseColor.rgb = mix(colorIn, waterBlue, 0.7 * isWater);
+                            diffuseColor.rgb += vec3(0.1, 0.3, 0.5) * wave * isWater * 0.2;
+                        }
+                    }
+                    if (uHasOverlay) { vec4 oCol = texture2D(uOverlayMap, vMapUv); diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a); }
+                    if (uShowSlopes > 0.5) {
+                        float slopeDeg = degrees(acos(clamp(dot(normalize(vTrueNormal), vec3(0.0, 1.0, 0.0)), 0.0, 1.0)));
+                        float yellowMix = smoothstep(28.0, 32.0, slopeDeg);
+                        float orangeMix = smoothstep(33.0, 37.0, slopeDeg);
+                        float redMix = smoothstep(38.0, 42.0, slopeDeg);
+                        vec3 slopeColor = mix(vec3(1.0, 1.0, 0.0), vec3(1.0, 0.5, 0.0), orangeMix);
+                        slopeColor = mix(slopeColor, vec3(1.0, 0.0, 0.0), redMix);
+                        diffuseColor.rgb = mix(diffuseColor.rgb, slopeColor, yellowMix * 0.55);
+                    }
+                `);
             };
-        }
 
-        this.mesh = new THREE.Mesh(geometry, material);
-        this.mesh.position.set(this.worldX, 0, this.worldZ);
-        this.mesh.renderOrder = this.zoom; 
-        this.mesh.castShadow = !is2D;
-        this.mesh.receiveShadow = !is2D;
-
-        // --- OMBRES PORTÉES RÉELLES (v4.3.25) ---
-        if (!is2D) {
-            const customDepthMaterial = new THREE.MeshDepthMaterial({
-                depthPacking: THREE.RGBADepthPacking,
-                alphaTest: 0.5
-            });
-
-            customDepthMaterial.onBeforeCompile = (shader) => {
+            const depth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, alphaTest: 0.5 });
+            depth.onBeforeCompile = (shader) => {
                 shader.uniforms.uElevationMap = { value: this.elevationTex };
                 shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
                 shader.uniforms.uElevOffset = { value: this.elevOffset };
                 shader.uniforms.uElevScale = { value: this.elevScale };
-
-                shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${sharedShaderChunk}`);
-                shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv);`);
+                shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n
+                    uniform sampler2D uElevationMap; uniform float uExaggeration; uniform vec2 uElevOffset; uniform float uElevScale;
+                    float decodeHeight(vec4 rgba) { return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1); }
+                    float getTerrainHeight(vec2 uv) {
+                        vec2 elevUv = uElevOffset + (uv * uElevScale);
+                        vec4 col = texture2D(uElevationMap, elevUv);
+                        return decodeHeight(col) * uExaggeration;
+                    }
+                `).replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv);`);
             };
-            this.mesh.customDepthMaterial = customDepthMaterial;
+            this.mesh = new THREE.Mesh(getPlaneGeometry(resolution, this.tileSizeMeters), material);
+            this.mesh.customDepthMaterial = depth;
+        } else {
+            this.mesh = new THREE.Mesh(getPlaneGeometry(resolution, this.tileSizeMeters), material);
         }
+
+        this.mesh.position.set(this.worldX, 0, this.worldZ);
+        this.mesh.renderOrder = this.zoom; 
+        this.mesh.castShadow = !is2D; this.mesh.receiveShadow = !is2D;
 
         if (state.scene) state.scene.add(this.mesh);
         this.currentResolution = resolution;
-        this.opacity = 0; 
-        this.isFadingIn = true;
+        this.opacity = 0; this.isFadingIn = true;
 
-        // --- CHARGEMENT SÉQUENCÉ DES DÉTAILS (v4.5.41) ---
         const delay = (ms: number) => ms * state.LOAD_DELAY_FACTOR;
-        
-        // 1. POIs (Signalisation 3D)
-        if (state.SHOW_SIGNPOSTS && this.zoom >= 15) {
-            setTimeout(() => {
-                if (this.status === 'disposed') return;
-                loadPOIsForTile(this);
-            }, delay(600)); 
-        }
-
-        // 2. Bâtiments 3D
-        if (state.SHOW_BUILDINGS && this.zoom >= 16) {
-            setTimeout(() => {
-                if (this.status === 'disposed') return;
-                loadBuildingsForTile(this);
-            }, delay(150));
-        }
-
-        // 2b. Hydrologie (Nouveau système MapTiler Stable)
-        if (state.SHOW_HYDROLOGY && this.zoom >= 13) {
-            setTimeout(() => {
-                if (this.status === 'disposed') return;
-                loadHydrologyForTile(this);
-            }, delay(100));
-        }
-
-        // 3. Végétation (Très Lourd)
-        if (state.SHOW_VEGETATION && this.zoom >= 14) {
-            setTimeout(() => {
-                if ((this.status as string) === 'disposed') return;
-                const forest = createForestForTile(this);
-                if (forest && state.scene && (this.status as string) !== 'disposed') {
-                    if (this.forestMesh) state.scene.remove(this.forestMesh);
-                    this.forestMesh = forest;
-                    this.forestMesh.position.set(this.worldX, 0, this.worldZ);
-                    state.scene.add(this.forestMesh);
-                }
-            }, delay(300));
-        }
+        if (state.SHOW_SIGNPOSTS && this.zoom >= 15) setTimeout(() => { if (this.status !== 'disposed') loadPOIsForTile(this); }, delay(600));
+        if (state.SHOW_BUILDINGS && this.zoom >= 16) setTimeout(() => { if (this.status !== 'disposed') loadBuildingsForTile(this); }, delay(150));
+        if (state.SHOW_HYDROLOGY && this.zoom >= 13) setTimeout(() => { if (this.status !== 'disposed') loadHydrologyForTile(this); }, delay(100));
+        if (state.SHOW_VEGETATION && this.zoom >= 14) setTimeout(() => {
+            if (this.status as any === 'disposed') return;
+            const forest = createForestForTile(this);
+            if (forest && state.scene && this.status as any !== 'disposed') {
+                if (this.forestMesh) state.scene.remove(this.forestMesh);
+                this.forestMesh = forest; this.forestMesh.position.set(this.worldX, 0, this.worldZ);
+                state.scene.add(this.forestMesh);
+            }
+        }, delay(300));
 
         if (oldMesh) {
             oldMesh.position.y -= 0.1;
-            setTimeout(() => {
-                if (state.scene) state.scene.remove(oldMesh);
-                if (oldMesh.material instanceof THREE.Material) oldMesh.material.dispose();
-            }, 500);
+            setTimeout(() => { if (state.scene) state.scene.remove(oldMesh); if (oldMesh.material instanceof THREE.Material) oldMesh.material.dispose(); }, 500);
         }
     }
 
@@ -676,12 +495,8 @@ shader.fragmentShader = `
     }
 
     dispose(): void {
-        this.status = 'disposed'; loadQueue = loadQueue.filter(t => t !== this);
-        if (this.mesh) { 
-            if (state.scene) state.scene.remove(this.mesh); 
-            disposeObject(this.mesh);
-            this.mesh = null; 
-        }
+        this.status = 'disposed'; loadQueue.delete(this);
+        if (this.mesh) { if (state.scene) state.scene.remove(this.mesh); disposeObject(this.mesh); this.mesh = null; }
         if (this.forestMesh) { if (state.scene) state.scene.remove(this.forestMesh); disposeObject(this.forestMesh); this.forestMesh = null; }
         if (this.poiGroup) { if (state.scene) state.scene.remove(this.poiGroup); disposeObject(this.poiGroup); this.poiGroup = null; }
         if (this.buildingMesh) { if (state.scene) state.scene.remove(this.buildingMesh); disposeObject(this.buildingMesh); this.buildingMesh = null; }
@@ -689,7 +504,7 @@ shader.fragmentShader = `
 }
 
 export function resetTerrain(): void {
-    loadQueue = []; clearLabels();
+    loadQueue.clear(); clearLabels();
     for (const tile of activeTiles.values()) tile.dispose();
     activeTiles.clear();
 }
@@ -697,38 +512,16 @@ export function resetTerrain(): void {
 export function repositionAllTiles(): void { for (const tile of activeTiles.values()) tile.updateWorldPosition(); }
 export function animateTiles(delta: number): boolean { 
     let stillFading = false;
-    for (const tile of activeTiles.values()) { 
-        if (tile.isFadingIn) {
-            tile.updateFade(delta); 
-            stillFading = true;
-        }
-    }
+    for (const tile of activeTiles.values()) { if (tile.isFadingIn) { tile.updateFade(delta); stillFading = true; } }
     return stillFading;
 }
 
-let lastSourceCheck = 0;
 export function autoSelectMapSource(lat: number, lon: number): void {
     if (state.hasManualSource || isNaN(lat) || lat === 0) return;
-    const now = Date.now();
-    if (now - lastSourceCheck < 2000) return;
-    lastSourceCheck = now;
-
-    // --- LOGIQUE DE SOURCE AUTO (v4.5.30) ---
-    let newSource = 'opentopomap';
-    
-    // Si on est à haute altitude (Europe), on force la topo locale pour la lisibilité
-    if (state.ZOOM > 9) {
-        const isSwiss = isPositionInSwitzerland(lat, lon);
-        const isFrance = isPositionInFrance(lat, lon);
-        newSource = (isSwiss || isFrance) ? 'swisstopo' : 'opentopomap';
-    }
-
+    let newSource = (state.ZOOM > 9 && (isPositionInSwitzerland(lat, lon) || isPositionInFrance(lat, lon))) ? 'swisstopo' : 'opentopomap';
     if (state.MAP_SOURCE !== newSource) {
         state.MAP_SOURCE = newSource;
-        document.querySelectorAll('.layer-item').forEach(i => {
-            i.classList.remove('active');
-            if ((i as HTMLElement).dataset.source === newSource) i.classList.add('active');
-        });
+        document.querySelectorAll('.layer-item').forEach(i => { i.classList.remove('active'); if ((i as HTMLElement).dataset.source === newSource) i.classList.add('active'); });
         updateVisibleTiles();
     }
 }
@@ -739,256 +532,109 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
     terrainUniforms.uExaggeration.value = state.RELIEF_EXAGGERATION;
     terrainUniforms.uShowSlopes.value = state.SHOW_SLOPES ? 1.0 : 0.0;
     terrainUniforms.uShowHydrology.value = state.SHOW_HYDROLOGY ? 1.0 : 0.0;
-    
-    // --- MISE À JOUR INDICATEUR SOURCE & MÉTÉO (v5.4.3) ---
     updateWeatherUIIndicator();
 
     if (!state.camera || Math.abs(state.camera.position.y) < 1) return Promise.resolve();
-
     const currentGPS = worldToLngLat(worldX, worldZ, state.originTile);
-    const zoom = state.ZOOM; 
-    const maxTile = Math.pow(2, zoom);
+    const zoom = state.ZOOM; const maxTile = Math.pow(2, zoom);
     const centerTile = lngLatToTile(currentGPS.lon, currentGPS.lat, zoom);
-    
-    // --- SÉCURITÉ ANTI-COLLISION SOL (v4.5.42) ---
-    // On s'assure de toujours charger la tuile sous la caméra pour avoir une altitude sol précise
     const camGPS = worldToLngLat(state.camera.position.x, state.camera.position.z, state.originTile);
     const camTile = lngLatToTile(camGPS.lon, camGPS.lat, zoom);
     const currentActiveKeys = new Set<string>();
     
-    // Ajout de la tuile sous caméra (prioritaire)
     const camKey = `${camTile.x}_${camTile.y}_${zoom}`;
     if (camTile.x >= 0 && camTile.x < maxTile && camTile.y >= 0 && camTile.y < maxTile) {
         currentActiveKeys.add(camKey);
-        if (!activeTiles.has(camKey)) {
-            const t = new Tile(camTile.x, camTile.y, zoom, camKey);
-            activeTiles.set(camKey, t); loadQueue.push(t);
-        }
+        if (!activeTiles.has(camKey)) { const t = new Tile(camTile.x, camTile.y, zoom, camKey); activeTiles.set(camKey, t); loadQueue.add(t); }
     }
 
-    // --- BRIDAGE DYNAMIQUE DU RAYON (v4.3.45) ---
-    // On adapte la limite de sécurité selon la puissance de la machine
-    let range = state.RANGE;
-    
-    // Pour les zooms très élevés (LOD <= 10), on force un range minimum de 3 
-    // pour que la carte remplisse bien l'écran malgré la taille géante des tuiles.
-    if (zoom <= 10) {
-        range = Math.max(state.RANGE, 3);
-    } else {
-        range = state.RANGE;
-        // On réduit un peu le rayon au zoom maximum pour garder les 144 FPS
-        if (zoom >= 17) range = Math.max(3, Math.floor(state.RANGE / 1.5));
-    }
-
+    let range = (zoom <= 10) ? Math.max(state.RANGE, 3) : (zoom >= 17) ? Math.max(3, Math.floor(state.RANGE/1.5)) : state.RANGE;
     let buildsThisCycle = 0;
-    const isUserInteracting = (state.controls as any)._isMoving;
-    const MAX_BUILDS_PER_CYCLE = isUserInteracting ? state.MAX_BUILDS_PER_CYCLE : state.MAX_BUILDS_PER_CYCLE * 2; 
+    const MAX_BUILDS_PER_CYCLE = state.isUserInteracting ? state.MAX_BUILDS_PER_CYCLE : state.MAX_BUILDS_PER_CYCLE * 2; 
 
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
-            const tx = centerTile.x + dx;
-            const ty = centerTile.y + dy;
+            const tx = centerTile.x + dx; const ty = centerTile.y + dy;
             if (tx < 0 || tx >= maxTile || ty < 0 || ty >= maxTile) continue;
-            const key = `${tx}_${ty}_${zoom}`;
-            currentActiveKeys.add(key);
+            const key = `${tx}_${ty}_${zoom}`; currentActiveKeys.add(key);
             let tile = activeTiles.get(key);
             if (!tile) {
                 tile = new Tile(tx, ty, zoom, key);
-                // On charge si c'est dans le champ de vision
-                if (tile.isVisible() || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) {
-                    activeTiles.set(key, tile);
-                    loadQueue.push(tile);
-                }
+                if (tile.isVisible() || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) { activeTiles.set(key, tile); loadQueue.add(tile); }
             } else if (tile.status === 'loaded' && tile.zoom === zoom && buildsThisCycle < MAX_BUILDS_PER_CYCLE) {
-                const dX = tile.worldX - state.camera.position.x;
-                const dZ = tile.worldZ - state.camera.position.z;
-                const dist = Math.sqrt(dX * dX + dZ * dZ);
-
-                let targetRes = Math.max(1, Math.floor(state.RESOLUTION / 4));
-                if (dist < tile.tileSizeMeters * 4.0) targetRes = state.RESOLUTION;
-                else if (dist < tile.tileSizeMeters * 8.0) targetRes = Math.max(1, Math.floor(state.RESOLUTION / 2));
-
-                if (targetRes !== tile.currentResolution) {
-                    tile.buildMesh(targetRes);
-                    buildsThisCycle++;
-                }
+                const dist = Math.sqrt((tile.worldX - state.camera.position.x)**2 + (tile.worldZ - state.camera.position.z)**2);
+                let targetRes = (dist < tile.tileSizeMeters * 4.0) ? state.RESOLUTION : (dist < tile.tileSizeMeters * 8.0) ? Math.max(1, Math.floor(state.RESOLUTION/2)) : Math.max(1, Math.floor(state.RESOLUTION/4));
+                if (targetRes !== tile.currentResolution) { tile.buildMesh(targetRes); buildsThisCycle++; }
             }
         }
     }
-    for (const [key, tile] of activeTiles.entries()) {
-        if (!currentActiveKeys.has(key)) { tile.dispose(); activeTiles.delete(key); }
-    }
+    for (const [key, tile] of activeTiles.entries()) { if (!currentActiveKeys.has(key)) { tile.dispose(); activeTiles.delete(key); } }
     processLoadQueue();
 
-    // --- PRE-CHARGEMENT PRÉDICTIF (v4.3.31) ---
-    // On anticipe le prochain mouvement de l'utilisateur si la file principale est vide
-    if (loadQueue.length === 0) {
+    if (loadQueue.size === 0) {
         const nextZoom = zoom + 1;
-        const prevZoom = zoom - 1;
-        
-        // 1. Anticiper le Zoom Avant (LOD +1) - Centre uniquement
         if (nextZoom <= 18) {
-            const maxNext = Math.pow(2, nextZoom);
             const ct = lngLatToTile(currentGPS.lon, currentGPS.lat, nextZoom);
             for (let dy = -1; dy <= 1; dy++) {
                 for (let dx = -1; dx <= 1; dx++) {
-                    const tx = ct.x + dx;
-                    const ty = ct.y + dy;
-                    if (tx < 0 || tx >= maxNext || ty < 0 || ty >= maxNext) continue; // Sécurité bornes (v4.3.37)
-
+                    const tx = ct.x + dx; const ty = ct.y + dy;
+                    if (tx < 0 || tx >= Math.pow(2, nextZoom) || ty < 0 || ty >= Math.pow(2, nextZoom)) continue;
                     const pKey = `${tx}_${ty}_${nextZoom}`;
-                    const cacheKey = `${state.MAP_SOURCE}_${state.SHOW_TRAILS}_${pKey}`;
-                    if (!dataCache.has(cacheKey)) {
-                        const pTile = new Tile(tx, ty, nextZoom, pKey);
-                        loadQueue.push(pTile);
-                    }
+                    if (!dataCache.has(`${state.MAP_SOURCE}_${state.SHOW_TRAILS}_3D_${pKey}`)) loadQueue.add(new Tile(tx, ty, nextZoom, pKey));
                 }
             }
         }
-
-        // 2. Anticiper le Zoom Arrière (LOD -1)
-        if (prevZoom >= 4) {
-            const maxPrev = Math.pow(2, prevZoom);
-            const ct = lngLatToTile(currentGPS.lon, currentGPS.lat, prevZoom);
-            if (ct.x >= 0 && ct.x < maxPrev && ct.y >= 0 && ct.y < maxPrev) {
-                const pKey = `${ct.x}_${ct.y}_${prevZoom}`;
-                const cacheKey = `${state.MAP_SOURCE}_${state.SHOW_TRAILS}_${state.SHOW_SLOPES}_${pKey}`;
-                if (!dataCache.has(cacheKey)) {
-                    const pTile = new Tile(ct.x, ct.y, prevZoom, pKey);
-                    loadQueue.push(pTile);
-                }
-            }
-        }
-        
-        if (loadQueue.length > 0) processLoadQueue();
+        if (loadQueue.size > 0) processLoadQueue();
     }
     return Promise.resolve();
 }
 
-export function updateHydrologyVisibility(visible: boolean): void {
-    state.SHOW_HYDROLOGY = visible;
-    resetTerrain();
-    updateVisibleTiles();
-}
-
-export function updateSlopeVisibility(visible: boolean): void {
-    state.SHOW_SLOPES = visible;
-    resetTerrain();
-    updateVisibleTiles();
-}
-
+export function updateHydrologyVisibility(visible: boolean): void { state.SHOW_HYDROLOGY = visible; resetTerrain(); updateVisibleTiles(); }
+export function updateSlopeVisibility(visible: boolean): void { state.SHOW_SLOPES = visible; resetTerrain(); updateVisibleTiles(); }
 export async function loadTerrain(): Promise<void> { await updateVisibleTiles(); }
-
-export async function deleteTerrainCache(): Promise<void> {
-    try {
-        const success = await caches.delete(CACHE_NAME);
-        if (success) showToast('Cache vidé avec succès');
-        else showToast('Le cache était déjà vide');
-    } catch (e) { showToast('Erreur lors de la purge du cache'); }
-}
-
-let lastGpxThickness = 0;
+export async function deleteTerrainCache(): Promise<void> { try { const success = await caches.delete(CACHE_NAME); showToast(success ? 'Cache vidé' : 'Cache déjà vide'); } catch (e) { showToast('Erreur cache'); } }
 
 export function updateGPXMesh(): void {
     if (!state.rawGpxData || !state.camera) return;
-    
     const camAlt = state.camera.position.y;
-    // --- TRACE ÉLÉGANTE (v4.8.1) ---
-    // Épaisseur beaucoup plus fine : on divise par 1000 au lieu de 400
     const thickness = Math.max(1.5, camAlt / 1200); 
-
-    if (state.gpxMesh && Math.abs(thickness - lastGpxThickness) < lastGpxThickness * 0.1) return;
-
-    if (state.gpxMesh) {
-        if (state.scene) state.scene.remove(state.gpxMesh);
-        disposeObject(state.gpxMesh);
-    }
-
+    if (state.gpxMesh) { if (state.scene) state.scene.remove(state.gpxMesh); disposeObject(state.gpxMesh); }
     const track = state.rawGpxData.tracks[0];
     const points = track.points;
     const box = new THREE.Box3();
-
     const threePoints = points.map((p: any) => {
         const pos = lngLatToWorld(p.lon, p.lat, state.originTile);
         const v = new THREE.Vector3(pos.x, (p.ele || 0) * state.RELIEF_EXAGGERATION + 5, pos.z);
-        box.expandByPoint(v);
-        return v;
+        box.expandByPoint(v); return v;
     });
-    
     state.gpxPoints = threePoints;
-    const segments = Math.min(threePoints.length, 1500);
     const curve = new THREE.CatmullRomCurve3(threePoints);
-    const geometry = new THREE.TubeGeometry(curve, segments, thickness, 4, false); // 4 faces seulement (plus léger)
-    
-    const colors = [];
-    const color = new THREE.Color();
-    for (let i = 0; i <= segments; i++) {
-        const t = i / segments;
-        const gpxIdx = Math.floor(t * (points.length - 1));
-        const p1 = points[Math.max(0, gpxIdx - 1)];
-        const p2 = points[gpxIdx];
-        let slope = 0;
-        if (gpxIdx > 0) {
-            const d = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
-            const diff = (p2.ele || 0) - (p1.ele || 0);
-            if (d > 0.001) slope = Math.abs((diff / (d * 1000)) * 100);
-        }
-        if (slope < 5) color.set(0x22c55e);
-        else if (slope < 12) color.set(0xeab308);
-        else if (slope < 20) color.set(0xf97316);
-        else color.set(0xef4444);
+    const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length, 1500), thickness, 4, false);
+    const colors = []; const color = new THREE.Color();
+    for (let i = 0; i <= 1500; i++) {
+        const t = i / 1500; const gIdx = Math.floor(t * (points.length - 1));
+        const p1 = points[Math.max(0, gIdx - 1)]; const p2 = points[gIdx];
+        let slope = 0; if (gIdx > 0) { const d = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon); if (d > 0.001) slope = Math.abs(((p2.ele || 0) - (p1.ele || 0)) / (d * 1000) * 100); }
+        if (slope < 5) color.set(0x22c55e); else if (slope < 12) color.set(0xeab308); else if (slope < 20) color.set(0xf97316); else color.set(0xef4444);
         for (let j = 0; j <= 4; j++) colors.push(color.r, color.g, color.b);
     }
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-
-    const material = new THREE.MeshStandardMaterial({ 
-        vertexColors: true,
-        emissive: 0xffffff, 
-        emissiveIntensity: 0.2, 
-        transparent: true, 
-        opacity: 0.9 
-    });
-    
-    state.gpxMesh = new THREE.Mesh(geometry, material);
-    state.gpxMesh.name = 'gpx-trace'; // Pour l'identification au clic
-    state.gpxMesh.renderOrder = 1000;
+    state.gpxMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ vertexColors: true, emissive: 0xffffff, emissiveIntensity: 0.2, transparent: true, opacity: 0.9 }));
     if (state.scene) state.scene.add(state.gpxMesh);
-    
-    // --- ZOOM AUTOMATIQUE SUR LA TRACE (Fit View) ---
-    if (lastGpxThickness === 0) { // Uniquement au premier chargement
-        const center = new THREE.Vector3();
-        box.getCenter(center);
-        const size = new THREE.Vector3();
-        box.getSize(size);
-        const maxDim = Math.max(size.x, size.z);
-        
-        // Appel direct du vol cinématique
-        flyTo(center.x, center.z, maxDim * 1.5);
-    }
-
-    lastGpxThickness = thickness;
+    const center = new THREE.Vector3(); box.getCenter(center);
+    const size = new THREE.Vector3(); box.getSize(size);
+    eventBus.emit('flyTo', { worldX: center.x, worldZ: center.z, targetElevation: Math.max(size.x, size.z) * 1.5 });
     updateElevationProfile();
 }
 
 export function clearGPX(): void {
-    if (state.gpxMesh) {
-        if (state.scene) state.scene.remove(state.gpxMesh);
-        disposeObject(state.gpxMesh);
-        state.gpxMesh = null;
-    }
-    state.rawGpxData = null;
-    state.gpxPoints = [];
-    const prof = document.getElementById('elevation-profile');
-    if (prof) prof.style.display = 'none';
-    const tc = document.getElementById('trail-controls');
-    if (tc) tc.style.display = 'none';
+    if (state.gpxMesh) { if (state.scene) state.scene.remove(state.gpxMesh); disposeObject(state.gpxMesh); state.gpxMesh = null; }
+    state.rawGpxData = null; state.gpxPoints = [];
+    const prof = document.getElementById('elevation-profile'); if (prof) prof.style.display = 'none';
+    const tc = document.getElementById('trail-controls'); if (tc) tc.style.display = 'none';
 }
 
 export function clearLabels(): void {
-    for (const obj of activeLabels.values()) {
-        if (state.scene) { state.scene.remove(obj.sprite); state.scene.remove(obj.line); }
-        disposeObject(obj.sprite);
-        disposeObject(obj.line);
-    }
+    for (const obj of activeLabels.values()) { if (state.scene) { state.scene.remove(obj.sprite); state.scene.remove(obj.line); } disposeObject(obj.sprite); disposeObject(obj.line); }
     activeLabels.clear();
 }

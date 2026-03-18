@@ -28,11 +28,10 @@ export async function loadPOIsForTile(tile: any) {
     if (!state.SHOW_SIGNPOSTS || tile.zoom < state.POI_ZOOM_THRESHOLD || tile.status === 'disposed') return;
     if (tile.poiGroup) return;
 
-    if (state.controls && (state.controls as any)._isMoving) {
+    if (state.isUserInteracting) {
         setTimeout(() => loadPOIsForTile(tile), 1000);
-        return; 
+        return;
     }
-
     const zoneZ = 12;
     const ratio = Math.pow(2, tile.zoom - zoneZ);
     const zx = Math.floor(tile.tx / ratio);

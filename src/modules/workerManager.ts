@@ -1,8 +1,7 @@
 
 /**
- * SunTrail Tile Worker Manager (v5.0.1)
- * Gère le pool de workers pour le chargement asynchrone des tuiles.
- * Support des statistiques de cache/réseau.
+ * SunTrail Tile Worker Manager (v5.0.2)
+ * Fix: Race condition sur les timeouts et handlers (Audit v5.5)
  */
 
 import { state } from './state';
@@ -33,7 +32,6 @@ class TileWorkerManager {
     private handleMessage(e: MessageEvent) {
         const { id, error, cacheHits, networkRequests, ...data } = e.data;
         
-        // --- MISE À JOUR STATS (v5.0.1) ---
         if (cacheHits) state.cacheHits += cacheHits;
         if (networkRequests) state.networkRequests += networkRequests;
         if (cacheHits || networkRequests) updateStorageUI();
@@ -50,33 +48,39 @@ class TileWorkerManager {
     }
 
     async loadTile(elevUrl: string | null, colorUrl: string | null, overlayUrl: string | null): Promise<any> {
-        if (this.workers.length === 0 || !state.USE_WORKERS) {
-            console.warn("[WorkerManager] Workers disabled or unavailable.");
-            return null; 
-        }
+        if (this.workers.length === 0 || !state.USE_WORKERS) return null;
 
         const id = this.nextTaskId++;
         const worker = this.workers[this.nextWorkerIndex];
         this.nextWorkerIndex = (this.nextWorkerIndex + 1) % this.workers.length;
 
         return new Promise((resolve, reject) => {
-            this.tasks.set(id, { resolve, reject });
+            let settled = false;
+
             const timeout = setTimeout(() => {
-                if (this.tasks.has(id)) {
-                    this.tasks.delete(id);
-                    console.error(`[WorkerManager] Task ${id} timed out!`);
-                    reject(new Error("Worker timeout"));
-                }
+                if (settled) return;
+                settled = true;
+                this.tasks.delete(id);
+                console.error(`[WorkerManager] Task ${id} timed out!`);
+                reject(new Error(`Worker timeout for task ${id}`));
             }, 15000);
 
+            this.tasks.set(id, {
+                resolve: (data: any) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timeout);
+                    resolve(data);
+                },
+                reject: (err: any) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timeout);
+                    reject(err);
+                }
+            });
+
             worker.postMessage({ id, elevUrl, colorUrl, overlayUrl, isOffline: state.IS_OFFLINE });
-            
-            // On enveloppe le resolve pour clear le timeout
-            const originalResolve = resolve;
-            this.tasks.get(id)!.resolve = (data) => {
-                clearTimeout(timeout);
-                originalResolve(data);
-            };
         });
     }
 }
