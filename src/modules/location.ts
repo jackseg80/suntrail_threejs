@@ -6,15 +6,33 @@ import { getAltitudeAt } from './analysis';
 
 let watchId: string | null = null;
 
-// --- DÉTECTION ORIENTATION MOBILE (v4.5.60) ---
+/**
+ * DÉTECTION ORIENTATION MOBILE (v5.5.14)
+ * Implémentation d'un filtre passe-bas pour la stabilité Swisstopo.
+ */
 function initOrientationTracking() {
     const handleOrientation = (event: DeviceOrientationEvent) => {
         // @ts-ignore
-        let heading = event.webkitCompassHeading || event.alpha;
-        if (event.absolute && event.alpha !== null) heading = 360 - event.alpha;
+        let rawHeading = event.webkitCompassHeading || event.alpha;
+        if (event.absolute && event.alpha !== null) rawHeading = 360 - event.alpha;
         
-        if (heading !== undefined && heading !== null) {
-            state.userHeading = heading;
+        if (rawHeading !== undefined && rawHeading !== null) {
+            // --- FILTRAGE PASSE-BAS (Lissage Swisstopo) ---
+            if (state.userHeading === null) {
+                state.userHeading = rawHeading;
+            } else {
+                let diff = rawHeading - state.userHeading;
+                // Correction du passage 0/360°
+                if (diff > 180) diff -= 360;
+                if (diff < -180) diff += 360;
+                
+                // On applique un lissage de 10% (très stable)
+                state.userHeading += diff * 0.1;
+                
+                // Normalisation 0-360
+                if (state.userHeading < 0) state.userHeading += 360;
+                if (state.userHeading >= 360) state.userHeading -= 360;
+            }
             updateUserMarker();
         }
     };
@@ -25,7 +43,6 @@ function initOrientationTracking() {
         });
     } else {
         window.addEventListener('deviceorientationabsolute', handleOrientation as any);
-        window.addEventListener('deviceorientation', handleOrientation as any);
     }
 }
 
@@ -43,21 +60,14 @@ export async function startLocationTracking() {
         }, (position, err) => {
             if (err || !position) return;
             
-            const { latitude, longitude, altitude, heading } = position.coords;
+            const { latitude, longitude, altitude } = position.coords;
             
-            // --- MISE À JOUR ÉTAT GPS (v4.5.60) ---
+            // On ignore les variations GPS insignifiantes (bruit statique)
             const distMove = Math.sqrt(Math.pow(latitude - lastLat, 2) + Math.pow(longitude - lastLon, 2));
-            if (distMove > 0.00001) { 
-                // Si c'est la toute première position depuis l'activation du suivi, on marque le temps
+            if (distMove > 0.000005) { // Env. 50cm
                 if (state.userLocation === null) state.lastTrackingUpdate = Date.now();
-                
                 state.userLocation = { lat: latitude, lon: longitude, alt: altitude || 0 };
                 lastLat = latitude; lastLon = longitude;
-                updateUserMarker();
-            }
-            
-            if (heading !== null && heading !== undefined) {
-                state.userHeading = heading;
                 updateUserMarker();
             }
         });
@@ -71,10 +81,6 @@ export function stopLocationTracking() {
     }
 }
 
-/**
- * Met à jour visuellement le marqueur sur la carte.
- * Les calculs de position monde sont faits ici, mais le lissage caméra est dans scene.ts
- */
 export function updateUserMarker() {
     if (!state.userLocation || !state.scene || !state.originTile) return;
 
@@ -85,122 +91,90 @@ export function updateUserMarker() {
     if (!state.userMarker) {
         state.userMarker = new THREE.Group();
         
-        // --- CERCLE DE POSITION (Bleu Glow) ---
+        // Cercle Glow
         const ringGeo = new THREE.RingGeometry(8, 10, 32);
         const ringMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.6 });
         const ring = new THREE.Mesh(ringGeo, ringMat);
         ring.rotation.x = -Math.PI / 2;
         state.userMarker.add(ring);
 
-        // --- CÔNE DE VUE (SECTEUR) ---
+        // Cône de vue (Secteur 60°)
         const coneGeo = new THREE.CircleGeometry(45, 32, -Math.PI/6, Math.PI/3);
-        const coneMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.15 });
+        const coneMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.3 });
         const viewCone = new THREE.Mesh(coneGeo, coneMat);
         viewCone.rotation.x = -Math.PI / 2;
-        viewCone.rotation.z = Math.PI / 2; // Aligner sur le Nord (-Z) par défaut
+        viewCone.rotation.z = Math.PI / 2; // Aligne l'axe du secteur sur le Nord (-Z)
         state.userMarker.add(viewCone);
 
-        // --- POINT BLANC ---
+        // Point central (Sprite HD)
         const canvas = document.createElement('canvas');
         canvas.width = 64; canvas.height = 64;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-            ctx.beginPath(); ctx.arc(32, 32, 22, 0, Math.PI * 2);
-            ctx.fillStyle = 'white'; ctx.fill();
-            ctx.beginPath(); ctx.arc(32, 32, 16, 0, Math.PI * 2);
-            ctx.fillStyle = '#3b82f6'; ctx.fill();
-        }
+        const ctx = canvas.getContext('2d')!;
+        ctx.beginPath(); ctx.arc(32, 32, 22, 0, Math.PI * 2);
+        ctx.fillStyle = 'white'; ctx.fill();
+        ctx.beginPath(); ctx.arc(32, 32, 16, 0, Math.PI * 2);
+        ctx.fillStyle = '#3b82f6'; ctx.fill();
+        
         const tex = new THREE.CanvasTexture(canvas);
         const spriteMat = new THREE.SpriteMaterial({ map: tex, sizeAttenuation: false });
         const dot = new THREE.Sprite(spriteMat);
         dot.scale.set(0.018, 0.018, 1);
         dot.position.y = 2;
         state.userMarker.add(dot);
-        state.userMarker.renderOrder = 9999;
+        
         state.scene.add(state.userMarker);
     }
 
-    const is2D = state.RESOLUTION <= 2;
-    state.userMarker.position.set(pos.x, is2D ? 100 : finalY, pos.z);
+    state.userMarker.position.set(pos.x, finalY, pos.z);
     
     if (state.userHeading !== null) {
+        // On oriente le groupe vers le cap (Three.js rotation horaire = -Y)
         state.userMarker.rotation.y = -THREE.MathUtils.degToRad(state.userHeading);
     }
 }
 
-/**
- * Cette fonction est maintenant un ORCHESTRATEUR DE LISSAGE (v4.7.6)
- */
 export function centerOnUser(delta: number) {
-    if (!state.userLocation || !state.controls || !state.originTile || !state.camera) return;
+    if (!state.userLocation || !state.controls || !state.camera || !state.originTile) return;
     
-    // 1. CALCUL DE LA RELATION CAMÉRA/CIBLE ACTUELLE (AVANT DÉPLACEMENT)
-    // On extrait l'orbite actuelle pour la manipuler sans sauts
-    const offset = state.camera.position.clone().sub(state.controls.target);
-    const spherical = new THREE.Spherical().setFromVector3(offset);
-
-    // 2. CALCUL DE LA DESTINATION AU SOL (v4.8.2 - Look Ahead Offset)
     const targetWorldPos = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
-    const finalTarget = new THREE.Vector3(targetWorldPos.x, 0, targetWorldPos.z);
+    const groundH = getAltitudeAt(targetWorldPos.x, targetWorldPos.z);
     
-    // --- OPTIMISATION NAVIGATION (Look Ahead) ---
-    // Si on a un cap, on décale la cible "derrière" l'utilisateur
-    // pour qu'il soit affiché en bas de l'écran et voit devant lui.
-    if (state.userHeading !== null) {
-        const headingRad = THREE.MathUtils.degToRad(state.userHeading);
-        const lookAheadDist = 450; // Distance de décalage vers le bas de l'écran (ajustable)
-        const offsetX = Math.sin(headingRad) * lookAheadDist;
-        const offsetZ = Math.cos(headingRad) * lookAheadDist;
-        
-        // On recule la cible (le centre de la caméra) par rapport à la direction de marche
-        finalTarget.x -= offsetX;
-        finalTarget.z -= offsetZ;
-    }
+    // On vise l'altitude réelle pour éviter l'effet de décalage (v5.5.15)
+    const finalTarget = new THREE.Vector3(targetWorldPos.x, groundH, targetWorldPos.z);
 
     const isInitial = (Date.now() - state.lastTrackingUpdate < 3000);
     
-    // Vitesse de déplacement au sol
-    const moveFactor = 1 - Math.exp(-(isInitial ? 8 : 4) * delta); // Un peu plus rapide (3 -> 4)
-    state.controls.target.lerp(finalTarget, moveFactor);
+    // Lissage de la cible
+    const lerpFactor = 1 - Math.exp(-(isInitial ? 10 : 3) * delta);
+    state.controls.target.lerp(finalTarget, lerpFactor);
 
-    // 3. MISE À JOUR DE L'ORBITE (LISSAGE)
-    
-    // --- A. ZOOM (Distance) ---
-    const preferredDist = 1500;
+    // Lissage de l'orbite
+    const offset = state.camera.position.clone().sub(state.controls.target);
+    const spherical = new THREE.Spherical().setFromVector3(offset);
+
+    // Zoom & Tilt
     if (isInitial || spherical.radius > 5000) {
-        const zoomFactor = 1 - Math.exp(-2 * delta);
-        spherical.radius = THREE.MathUtils.lerp(spherical.radius, preferredDist, zoomFactor);
+        spherical.radius = THREE.MathUtils.lerp(spherical.radius, 1500, 1 - Math.exp(-1.5 * delta));
     }
-
-    // --- B. TILT (Inclinaison) ---
     if (isInitial) {
-        const tiltFactor = 1 - Math.exp(-2 * delta);
-        // On tend vers la vue de dessus (phi = 0)
-        spherical.phi = THREE.MathUtils.lerp(spherical.phi, 0.01, tiltFactor);
+        spherical.phi = THREE.MathUtils.lerp(spherical.phi, 0.8, 1 - Math.exp(-1.5 * delta));
     }
 
-    // --- C. ROTATION (Azimuth) ---
+    // Rotation (Suivi du cap utilisateur)
     if (state.userHeading !== null && !isInitial) {
-        // FORMULE FIXÉE (v4.7.6) : Nord = PI, Est = -PI/2, Sud = 0, Ouest = PI/2
         const targetTheta = Math.PI + THREE.MathUtils.degToRad(state.userHeading);
-        
         let diff = targetTheta - spherical.theta;
         while (diff < -Math.PI) diff += Math.PI * 2;
         while (diff > Math.PI) diff -= Math.PI * 2;
         
-        const deadzone = THREE.MathUtils.degToRad(1.5);
+        const deadzone = THREE.MathUtils.degToRad(2.0);
         if (Math.abs(diff) > deadzone) {
-            const rotFactor = 1 - Math.exp(-1.5 * delta);
-            spherical.theta += diff * rotFactor;
+            spherical.theta += diff * (1 - Math.exp(-1.2 * delta));
         }
     }
 
-    // 4. RECONSTRUCTION ATOMIQUE DE LA CAMÉRA
-    // On replace la caméra en orbite parfaite autour de la NOUVELLE cible
-    spherical.makeSafe(); // Sécurité Three.js pour éviter le Gimbal Lock (phi=0 ou PI)
+    spherical.makeSafe();
     const newPos = new THREE.Vector3().setFromSpherical(spherical).add(state.controls.target);
     state.camera.position.copy(newPos);
-    
-    // On force la mise à jour des contrôles pour synchroniser leur état interne
     state.controls.update();
 }

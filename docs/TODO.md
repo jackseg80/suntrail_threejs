@@ -31,10 +31,12 @@
 - [ ] **Cloud Shadows** : Projection d'ombres de nuages basée sur les données réelles d'Open-Meteo.
 - [ ] **Advanced Night Mode** : Pollution lumineuse urbaine (NASA VIIRS).
 
-## ✅ Terminés (v5.5.0)
-- [x] **Audit de Sécurité & Fiabilité** : Correction race condition workers et accès window lazy.
-- [x] **Gestion Stale References** : Nettoyage de `lastUsedTile` via `resetAnalysisCache()` dans `disposeScene`.
-- [x] **Sécurité XSS Recherche** : Migration vers création d'éléments DOM sécurisés (`textContent`).
+## ✅ Terminés (v5.5.15)
+- [x] **Suivi GPS Haute Précision** : Centrage "pixel-perfect" sur l'altitude réelle du relief (Swisstopo style).
+- [x] **Lissage Boussole Swisstopo** : Filtre passe-bas (10%) sur le cap et mouvement pour une fluidité totale.
+- [x] **Transition Solaire Parfaite** : Refonte des courbes pour une transition monotone Heure Dorée -> Nuit.
+- [x] **Recherche Instantanée Peaks** : Affichage prioritaire des sommets locaux dès la saisie.
+- [x] **Audit de Sécurité & Fiabilité** : Correction race condition workers, accès window lazy, et XSS recherche.
 - [x] **Performance loadQueue** : Migration vers un `Set` pour des suppressions en O(1).
 - [x] **Découplage Architectural** : Mise en place de l'Event Bus pour casser les cycles terrain <-> scene.
 - [x] **Stabilisation Bâtiments RTX** : Fusion de géométrie et correction du bug de miroir Z.

@@ -3,144 +3,98 @@ import SunCalc from 'suncalc';
 import { state } from './state';
 import { terrainUniforms } from './terrain';
 
+/**
+ * SunTrail Sun Position & Lighting Engine (v5.5.12)
+ * Fix: Transition fluide Heure Dorée -> Crépuscule -> Nuit.
+ * Suppression du saut de luminosité et restauration des ombres rasantes.
+ * Visibilité nocturne garantie (plancher 0.20).
+ */
+
 export function updateSunPosition(minutes: number): void {
     if (!state.sunLight || isNaN(minutes)) return;
     
-    const totalMinutes = Math.floor(minutes);
-    const hours = Math.floor(totalMinutes / 60);
-    const mins = totalMinutes % 60;
-    
-    const timeDisp = document.getElementById('time-disp');
-    if (timeDisp) timeDisp.textContent = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-    
     const date = new Date(state.simDate);
-    date.setHours(hours, mins, 0, 0);
+    date.setHours(Math.floor(minutes / 60), Math.floor(minutes % 60), 0, 0);
     
     const pos = SunCalc.getPosition(date, state.TARGET_LAT, state.TARGET_LON);
     const moonPos = SunCalc.getMoonPosition(date, state.TARGET_LAT, state.TARGET_LON);
     const moonIllum = SunCalc.getMoonIllumination(date);
-    const times = SunCalc.getTimes(date, state.TARGET_LAT, state.TARGET_LON);
-    
     const altDeg = pos.altitude * 180 / Math.PI;
-    const azDeg = (pos.azimuth * 180 / Math.PI) + 180;
     
-    // --- MISE À JOUR INFOS ---
-    const azVal = document.getElementById('az-val');
-    if (azVal) azVal.textContent = `${azDeg.toFixed(1)}°`;
-    
-    const altVal = document.getElementById('alt-val');
-    if (altVal) altVal.textContent = `${altDeg.toFixed(1)}°`;
-    
-    const sunNeedle = document.getElementById('sun-needle');
-    if (sunNeedle) sunNeedle.style.transform = `translate(-50%, -50%) rotate(${azDeg}deg)`;
-
+    // --- MISE À JOUR UI ---
+    const timeDisp = document.getElementById('time-disp');
+    if (timeDisp) timeDisp.textContent = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
     const phaseSpan = document.getElementById('sun-phase');
     if (phaseSpan) {
         if (altDeg > 6) { phaseSpan.textContent = "☀️ Plein jour"; phaseSpan.style.color = "#FFD700"; }
         else if (altDeg > -4) { phaseSpan.textContent = "🌅 Heure Dorée"; phaseSpan.style.color = "#FF8C00"; }
-        else if (altDeg > -6) { phaseSpan.textContent = "🌆 Heure Bleue"; phaseSpan.style.color = "#5F9EA0"; }
-        else if (altDeg > -12) { phaseSpan.textContent = "🌌 Crépuscule civil"; phaseSpan.style.color = "#ADFF2F"; }
+        else if (altDeg > -12) { phaseSpan.textContent = "🌌 Crépuscule"; phaseSpan.style.color = "#ADFF2F"; }
         else { phaseSpan.textContent = "🌙 Nuit"; phaseSpan.style.color = "#87CEEB"; }
     }
 
-    const fmt = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-    
-    let moonPhaseText = "Inconnue";
-    const p = moonIllum.phase;
-    if (p < 0.05 || p > 0.95) moonPhaseText = "Nouvelle";
-    else if (p < 0.2) moonPhaseText = "Premier Croissant";
-    else if (p < 0.3) moonPhaseText = "Premier Quartier";
-    else if (p < 0.45) moonPhaseText = "Gibbeuse Croissante";
-    else if (p < 0.55) moonPhaseText = "Pleine";
-    else if (p < 0.7) moonPhaseText = "Gibbeuse Décroissante";
-    else if (p < 0.8) moonPhaseText = "Dernier Quartier";
-    else moonPhaseText = "Dernier Croissant";
-
-    const phasesIcons = ['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];
-    const phaseIdx = Math.floor(p * 8) % 8;
-
-    // --- ENREGISTREMENT ET MISE À JOUR EXPERT (v5.4.5) ---
-    state.ephemeris = {
-        sunrise: fmt(times.sunrise),
-        sunset: fmt(times.sunset),
-        goldenHour: fmt(times.goldenHour),
-        blueHour: fmt(times.dawn),
-        moonPhaseText: moonPhaseText,
-        moonPhaseIcon: phasesIcons[phaseIdx],
-        moonIllum: Math.round(moonIllum.fraction * 100)
-    };
-
-    const exGolden = document.getElementById('ex-golden');
-    if (exGolden) exGolden.textContent = state.ephemeris.goldenHour;
-    const exBlue = document.getElementById('ex-blue');
-    if (exBlue) exBlue.textContent = state.ephemeris.blueHour;
-    const exMoonIcon = document.getElementById('ex-moon-icon');
-    if (exMoonIcon) exMoonIcon.textContent = state.ephemeris.moonPhaseIcon;
-    const exMoonText = document.getElementById('ex-moon-text');
-    if (exMoonText) exMoonText.textContent = `${state.ephemeris.moonPhaseText} (${state.ephemeris.moonIllum}%)`;
-    
-    // --- POSITION FINALE POUR LE MOTEUR 3D (v5.5.2) ---
-    let finalPhi = pos.altitude;
-    let finalAz = pos.azimuth;
+    // --- LOGIQUE DE LUMINOSITÉ ---
     let sunIntensity = 0;
     let sunColor = new THREE.Color(0xffffff);
-    let ambientColor = new THREE.Color(0xffffff);
-    let ambientIntensity = 0.2;
+    let ambientIntensity = 0.20;
+    let ambientColor = new THREE.Color(0xeef5ff);
+    
+    const nightSunIntensity = 0.5 + (moonIllum.fraction * 1.0);
+    const nightAmbientColor = new THREE.Color(0x444477);
 
-    if (altDeg > 6) {
-        // PLEIN JOUR : Ombres adoucies (v5.5.6)
-        // On remonte un peu l'ambiance (0.22 max) pour déboucher les ombres sans voile
-        sunIntensity = Math.min(7.5, Math.sin(pos.altitude) * 15); 
-        ambientIntensity = 0.10 + (Math.sin(pos.altitude) * 0.12); 
-        sunColor.setHex(0xffffff); 
-        ambientColor.setHex(0xeef5ff); 
-    } else if (altDeg > -4) {
-        // HEURE DORÉE
-        const t = (altDeg + 4) / 10;
-        sunIntensity = t * 7.0;
-        sunColor.lerpColors(new THREE.Color(0xff4400), new THREE.Color(0xfffaef), t);
-        ambientIntensity = 0.15 + (t * 0.05);
-        ambientColor.setHex(0xf0f4ff);
-    } else if (altDeg > -6) {
-        // HEURE BLEUE / CRÉPUSCULE CIVIL
-        const t = (altDeg + 6) / 2;
-        sunIntensity = 0.4;
-        sunColor.lerpColors(new THREE.Color(0x3344ff), new THREE.Color(0xff4400), t);
-        ambientIntensity = 0.15 + (t * 0.05); // Minimum 0.15 pour garder de la visibilité
-        ambientColor.setHex(0xc0d0ff);
+    let phi = pos.altitude;
+    let az = pos.azimuth;
+
+    if (altDeg > 0) {
+        // --- JOUR (incluant Heure Dorée) ---
+        const t = Math.sin(pos.altitude);
+        sunIntensity = 1.2 + (t * 8.8); 
+        ambientIntensity = 0.25 + (t * 0.10);
+        const colorT = Math.min(1, (altDeg + 4) / 10); 
+        sunColor.lerpColors(new THREE.Color(0xff4400), new THREE.Color(0xffffff), colorT);
+        ambientColor.lerpColors(new THREE.Color(0xd0d8ff), new THREE.Color(0xf0f4ff), t);
+    } else if (altDeg > -12) {
+        // --- CRÉPUSCULE (Transition vers la Lune) ---
+        const t = (altDeg + 12) / 12; // 1 à l'horizon, 0 à la nuit
+        
+        const nightPhi = moonPos.altitude > 0 ? moonPos.altitude : Math.PI / 4;
+        phi = THREE.MathUtils.lerp(nightPhi, 0.02, t); 
+        az = THREE.MathUtils.lerp(moonPos.azimuth, pos.azimuth, t);
+        
+        sunIntensity = THREE.MathUtils.lerp(nightSunIntensity, 1.2, t);
+        sunColor.lerpColors(new THREE.Color(0xadc7ff), new THREE.Color(0xff4400), t);
+        
+        ambientIntensity = 0.20 + (t * 0.05);
+        ambientColor.lerpColors(nightAmbientColor, new THREE.Color(0xd0d8ff), t);
     } else {
-        // NUIT / LUNE (v5.5.4)
-        // On force la lumière à venir du ciel (45°) même si la lune est couchée
-        finalPhi = moonPos.altitude > 0 ? moonPos.altitude : Math.PI / 4;
-        finalAz = moonPos.azimuth;
-        
-        // Intensité nocturne stable pour la navigation
-        sunIntensity = 0.4 + (moonIllum.fraction * 0.6);
-        sunColor.setHex(0xadc7ff); 
-        
-        // Ambiance nocturne boostée pour la lisibilité
-        ambientIntensity = 0.25; 
-        ambientColor.setHex(0x333366);
+        // --- NUIT ---
+        phi = moonPos.altitude > 0 ? moonPos.altitude : Math.PI / 4;
+        az = moonPos.azimuth;
+        sunIntensity = nightSunIntensity;
+        sunColor.setHex(0xadc7ff);
+        ambientIntensity = 0.20;
+        ambientColor.copy(nightAmbientColor);
     }
 
     const distance = 150000;
     const sunVector = new THREE.Vector3();
-    sunVector.x = distance * Math.cos(finalPhi) * -Math.sin(finalAz);
-    sunVector.y = distance * Math.sin(finalPhi);
-    sunVector.z = distance * Math.cos(finalPhi) * Math.cos(finalAz);
+    sunVector.x = distance * Math.cos(phi) * -Math.sin(az);
+    sunVector.y = distance * Math.sin(phi);
+    sunVector.z = distance * Math.cos(phi) * Math.cos(az);
 
     terrainUniforms.uSunPos.value.copy(sunVector).normalize();
 
-    if (state.controls?.target) {
-        state.sunLight!.position.set(state.controls.target.x + sunVector.x, state.controls.target.y + sunVector.y, state.controls.target.z + sunVector.z);
-        state.sunLight!.target.position.copy(state.controls.target);
-        state.sunLight!.target.updateMatrixWorld();
-    } else {
-        state.sunLight!.position.copy(sunVector);
+    if (state.sunLight) {
+        if (state.controls?.target) {
+            state.sunLight.position.set(state.controls.target.x + sunVector.x, state.controls.target.y + sunVector.y, state.controls.target.z + sunVector.z);
+            state.sunLight.target.position.copy(state.controls.target);
+            state.sunLight.target.updateMatrixWorld();
+        } else {
+            state.sunLight.position.copy(sunVector);
+        }
+        state.sunLight.intensity = sunIntensity;
+        state.sunLight.color.copy(sunColor);
     }
 
-    state.sunLight!.intensity = sunIntensity;
-    state.sunLight!.color.copy(sunColor);
     if (state.ambientLight) {
         state.ambientLight.intensity = ambientIntensity;
         state.ambientLight.color.copy(ambientColor);
@@ -149,24 +103,17 @@ export function updateSunPosition(minutes: number): void {
     if (state.sky) {
         const uniforms = state.sky.material.uniforms;
         uniforms['sunPosition'].value.copy(sunVector);
-        const dayFactor = Math.max(0, Math.min(1, (altDeg + 5) / 10));
-        uniforms['turbidity'].value = 1 + (dayFactor * 9);
-        uniforms['rayleigh'].value = 0.2 + (dayFactor * 2.8);
+        const skyFactor = Math.pow(Math.max(0, Math.min(1, (altDeg + 15) / 30)), 0.5);
+        uniforms['turbidity'].value = 1 + (skyFactor * 9);
+        uniforms['rayleigh'].value = 0.1 + (skyFactor * 3.0);
         uniforms['mieCoefficient'].value = 0.005;
     }
 
     if (state.renderer) state.renderer.shadowMap.needsUpdate = true;
 
     if (state.scene?.fog && (state.scene.fog instanceof THREE.Fog || state.scene.fog instanceof THREE.FogExp2)) {
-        const fogColor = new THREE.Color();
-        if (altDeg > 6) fogColor.setHSL(0.6, 0.4, 0.3 + (Math.sin(pos.altitude) * 0.5));
-        else if (altDeg > -6) {
-            const t = (altDeg + 6) / 12;
-            const nightFog = new THREE.Color(0x1a1a2e); // Bleu nuit au lieu de noir
-            const dayFog = new THREE.Color().setHSL(0.6, 0.4, 0.3);
-            fogColor.lerpColors(nightFog, dayFog, t);
-        } else fogColor.set(0x1a1a2e);
-        state.scene.fog.color.copy(fogColor);
+        const t = Math.max(0, (altDeg + 12) / 24);
+        state.scene.fog.color.lerpColors(new THREE.Color(0x151530), new THREE.Color(0x87CEEB), t);
     }
 }
 

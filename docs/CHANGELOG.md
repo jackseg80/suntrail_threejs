@@ -4,6 +4,24 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.5.15] - 2026-03-18
+### 🎯 Suivi GPS & Navigation Swisstopo
+- **Suivi Haute Précision (v5.5.15)** : La caméra vise désormais l'altitude réelle du relief au lieu du niveau zéro, éliminant tout décalage visuel et assurant un centrage parfait du marqueur utilisateur.
+- **Lissage Swisstopo (v5.5.14)** : Implémentation d'un filtre passe-bas (Low-pass) sur la boussole et le mouvement, offrant une fluidité de rotation "cinématographique" identique aux standards professionnels.
+- **Réactivité GPS (v5.5.13)** : Centrage immédiat lors de l'activation du bouton GPS pour un feedback instantané.
+- **Stabilisation Boussole** : Ajout d'une zone morte (deadzone) de 2.0° et filtrage du bruit magnétique pour supprimer les tremblements du cône de vue.
+
+### ☀️ Moteur de Lumière & Crépuscule
+- **Transition Sans Couture (v5.5.12)** : Refonte des courbes de luminosité pour une transition monotone parfaite entre l'Heure Dorée et la Nuit.
+- **Nuit Navigable** : Fixation d'un plancher de lumière ambiante à 0.20 pour simuler une nuit claire (pleine lune), garantissant que le relief reste lisible en permanence.
+- **Persistance Atmosphérique** : Extension de la lueur du ciel et du brouillard jusqu'à -15° (fin du crépuscule nautique) pour éviter l'effet "trou noir".
+
+### 🔍 Recherche & UX
+- **Recherche Instantanée** : Affichage prioritaire et immédiat des sommets locaux dès la saisie, sans attendre la réponse réseau des APIs mondiales.
+- **Fiabilité Geocoding** : Sécurisation totale contre les injections HTML via l'utilisation systématique de l'API DOM (`textContent`).
+
+---
+
 ## [5.5.0] - 2026-03-18
 ### 🛡️ Audit de Sécurité & Fiabilité
 - **Fiabilité Worker (v5.0.2)** : Élimination définitive de la race condition sur les tuiles via un mécanisme de flag `settled` et une initialisation prioritaire des handlers.

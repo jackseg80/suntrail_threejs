@@ -11,7 +11,7 @@ import { showToast, fetchGeocoding } from './utils';
 import { applyPreset, detectBestPreset, getGpuInfo } from './performance';
 import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';
 import { updateElevationProfile } from './profile';
-import { startLocationTracking } from './location';
+import { startLocationTracking, stopLocationTracking } from './location';
 import { fetchWeather, updateWeatherUIIndicator } from './weather';
 
 let lastClickedCoords = { x: 0, z: 0, alt: 0 };
@@ -214,10 +214,24 @@ export function initUI(): void {
         } catch (e) { showToast("Erreur GPS"); }
     });
 
-    document.getElementById('gps-follow-btn')?.addEventListener('click', () => {
+    document.getElementById('gps-follow-btn')?.addEventListener('click', async () => {
         state.isFollowingUser = !state.isFollowingUser;
-        document.getElementById('gps-follow-btn')!.classList.toggle('active', state.isFollowingUser);
-        if (state.isFollowingUser) startLocationTracking();
+        const btn = document.getElementById('gps-follow-btn')!;
+        btn.classList.toggle('active', state.isFollowingUser);
+        
+        if (state.isFollowingUser) {
+            showToast("Suivi activé");
+            await startLocationTracking();
+            // --- CENTRAGE IMMÉDIAT (Feedback Swisstopo) ---
+            if (state.userLocation) {
+                const wp = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
+                const groundH = getAltitudeAt(wp.x, wp.z);
+                flyTo(wp.x, wp.z, (groundH / state.RELIEF_EXAGGERATION) + 500); 
+            }
+        } else {
+            showToast("Suivi désactivé");
+            stopLocationTracking();
+        }
     });
 
     // Temps & Soleil
@@ -473,38 +487,49 @@ function initGeocoding() {
     geoInput.addEventListener('input', () => {
         if (timer) clearTimeout(timer);
         const q = geoInput.value.trim().toLowerCase();
-        if (q.length < 2) { geoResults.style.display = 'none'; return; }
         
-        timer = setTimeout(async () => {
-            const data = await fetchGeocoding({ query: q });
-            if (!data) return;
-
+        if (q.length < 2) { 
+            geoResults.style.display = 'none'; 
             geoResults.innerHTML = '';
-            
-            // 1. Pics locaux
-            const localMatches = state.localPeaks.filter(p => p.name.toLowerCase().includes(q)).slice(0, 5);
+            return; 
+        }
+        
+        // 1. AFFICHER LES PICS LOCAUX IMMÉDIATEMENT (v5.5.15)
+        geoResults.innerHTML = '';
+        const localMatches = state.localPeaks.filter(p => p.name.toLowerCase().includes(q)).slice(0, 5);
+        if (localMatches.length > 0) {
             localMatches.forEach(p => {
                 geoResults.appendChild(createGeoItem(p.lat, p.lon, p.name, true, p.name, p.ele));
             });
-            
-            // 2. Résultats distants (Format Hybride MapTiler / OSM)
-            if (Array.isArray(data)) {
-                data.forEach((f: any) => {
-                    geoResults.appendChild(createGeoItem(parseFloat(f.lat), parseFloat(f.lon), f.display_name));
-                });
-            } else if (data.features) {
-                data.features.forEach((f: any) => {
-                    const lon = f.geometry.coordinates[0];
-                    const lat = f.geometry.coordinates[1];
-                    const label = f.place_name_fr || f.place_name || 'Lieu inconnu';
-                    geoResults.appendChild(createGeoItem(lat, lon, label));
-                });
-            }
+            geoResults.style.display = 'block';
+            attachListeners();
+        }
 
-            if (geoResults.children.length > 0) {
-                geoResults.style.display = 'block';
-                attachListeners();
-            }
+        // 2. RECHERCHE DISTANTE (MAPTILER / OSM)
+        timer = setTimeout(async () => {
+            try {
+                const data = await fetchGeocoding({ query: q });
+                if (!data) return;
+
+                // On ne vide pas, on ajoute à la suite des pics locaux
+                if (Array.isArray(data)) {
+                    data.forEach((f: any) => {
+                        geoResults.appendChild(createGeoItem(parseFloat(f.lat), parseFloat(f.lon), f.display_name));
+                    });
+                } else if (data.features) {
+                    data.features.forEach((f: any) => {
+                        const lon = f.geometry.coordinates[0];
+                        const lat = f.geometry.coordinates[1];
+                        const label = f.place_name_fr || f.place_name || 'Lieu inconnu';
+                        geoResults.appendChild(createGeoItem(lat, lon, label));
+                    });
+                }
+
+                if (geoResults.children.length > 0) {
+                    geoResults.style.display = 'block';
+                    attachListeners();
+                }
+            } catch (e) { console.warn("Geocoding error:", e); }
         }, 400);
     });
 
