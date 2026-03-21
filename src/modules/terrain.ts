@@ -426,8 +426,9 @@ export function autoSelectMapSource(lat: number, lon: number): void {
 import { updateWeatherUIIndicator } from './weather';
 
 export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number = 0, worldZ: number = 0): Promise<void> {
+    const is2DGlobal = state.PERFORMANCE_PRESET === 'eco' || state.ZOOM <= 10;
     terrainUniforms.uExaggeration.value = state.RELIEF_EXAGGERATION;
-    terrainUniforms.uShowSlopes.value = state.SHOW_SLOPES ? 1.0 : 0.0;
+    terrainUniforms.uShowSlopes.value = (state.SHOW_SLOPES && !is2DGlobal) ? 1.0 : 0.0;
     terrainUniforms.uShowHydrology.value = state.SHOW_HYDROLOGY ? 1.0 : 0.0;
     updateWeatherUIIndicator();
 

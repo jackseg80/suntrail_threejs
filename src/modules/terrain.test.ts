@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
-import { Tile, updateGPXMesh } from './terrain';
+import { Tile, updateGPXMesh, updateVisibleTiles, terrainUniforms } from './terrain';
 import { lngLatToTile, worldToLngLat, EARTH_CIRCUMFERENCE } from './geo';
 import { state } from './state';
 
@@ -167,6 +167,38 @@ describe('terrain.ts', () => {
             const tile = new Tile(32, 32, 6, '6/32/32');
             expect(tile.zoom).toBe(6);
             expect(tile.tileSizeMeters).toBeGreaterThan(600000); 
+        });
+
+        it('should disable slopes in Eco mode', async () => {
+            state.PERFORMANCE_PRESET = 'eco';
+            state.SHOW_SLOPES = true;
+            state.camera = new THREE.PerspectiveCamera();
+            state.camera.position.set(0, 10000, 0);
+            
+            await updateVisibleTiles();
+            expect(terrainUniforms.uShowSlopes.value).toBe(0.0);
+        });
+
+        it('should disable slopes at low zoom (<= 10)', async () => {
+            state.PERFORMANCE_PRESET = 'balanced';
+            state.ZOOM = 8;
+            state.SHOW_SLOPES = true;
+            state.camera = new THREE.PerspectiveCamera();
+            state.camera.position.set(0, 10000, 0);
+            
+            await updateVisibleTiles();
+            expect(terrainUniforms.uShowSlopes.value).toBe(0.0);
+        });
+
+        it('should enable slopes in 3D mode (Balanced, Zoom 14)', async () => {
+            state.PERFORMANCE_PRESET = 'balanced';
+            state.ZOOM = 14;
+            state.SHOW_SLOPES = true;
+            state.camera = new THREE.PerspectiveCamera();
+            state.camera.position.set(0, 1000, 0);
+            
+            await updateVisibleTiles();
+            expect(terrainUniforms.uShowSlopes.value).toBe(1.0);
         });
 
         it('should use tileWorkerManager when enabled', async () => {

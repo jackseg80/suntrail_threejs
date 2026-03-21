@@ -7,7 +7,8 @@
 - [x] **Extraction de `TileLoader` (Phase 2)** : Isolation de la logique réseau.
 - [x] **Normal Map Pre-computation (Worker) (Phase 3)** : Déportation du relief vers les WebWorkers.
 - [x] **Material Pooling (Shader Reuse) (Phase 4)** : Suppression des micro-freezes de compilation.
-- [x] **Objectif Tests v5.6** : 90 tests unitaires validés au vert.
+- [x] **Objectif Tests v5.6** : 93 tests unitaires validés au vert.
+- [x] **Fix Voile Rouge Éco** : Désactivation forcée des pentes en mode 2D (Eco / Zoom <= 10).
 
 ## 🎯 Priorité 2 : Usage Terrain & Partage (v5.7)
 *Impact : Rendre l'application indispensable pour la randonnée réelle.*

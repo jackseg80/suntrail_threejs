@@ -4,6 +4,11 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.6.7] - 2026-03-21
+### 🛠️ Correctif Rendu 2D & Mode Éco
+- **Désactivation des Pentes en 2D** : Suppression automatique du calque des pentes en mode "Éco" ou à bas niveau de zoom (LOD <= 10). Résout le bug du voile rouge persistant sur les surfaces plates.
+- **Fiabilité Tests** : Suite de tests étendue à **93 tests au vert** (+3 tests sur la logique 2D/3D).
+
 ## [5.6.6] - 2026-03-21
 ### ✅ Priorité 1 Terminée : Optimisations & Netteté
 - **Validation Finale** : Atteinte de l'objectif de **90 tests unitaires** (100% au vert) couvrant le bus d'événements et la stabilité du terrain.
