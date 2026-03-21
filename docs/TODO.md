@@ -7,8 +7,8 @@
 - [x] **Extraction de `TileLoader` (Phase 2)** : Isoler la logique réseau, le cache persistant et la génération d'URLs MapTiler/IGN.
 - [x] **Normal Map Pre-computation (Worker) (Phase 3)** : Déplacer le calcul des normales du GPU vers les WebWorkers (-87% texture reads).
 - [x] **Material Pooling (Shader Reuse) (Phase 4)** : Implémenter un pool de matériaux réutilisables pour supprimer les micro-freezes de compilation GLSL.
-- [ ] **Vector Trails (MVT) Pro** : Migration complète des sentiers raster vers le format vectoriel natif (實時 netteté infinie).
-- [x] **Correctif Rendu Bas Niveau (Zoom < 10)** : Résolution de l'écran noir au dézoom massif via détection par tuile.
+- [x] **Vector Trails (MVT) Pro (Phase 5)** : Migration complète des sentiers raster vers le format vectoriel natif (netteté infinie).
+- [ ] **Objectif Final v5.6** : Atteindre 90 tests unitaires et stabiliser le mode "Ultra" sur mobile.- [x] **Correctif Rendu Bas Niveau (Zoom < 10)** : Résolution de l'écran noir au dézoom massif via détection par tuile.
 - [x] **Optimisation Végétation** : Affichage des forêts repoussé au LOD 14 pour de meilleures performances en vol.
 
 

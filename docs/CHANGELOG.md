@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.6.5] - 2026-03-21
+### ✨ Sentiers Vectoriels MVT Pro
+- **Netteté Infinie** : Migration des calques de sentiers raster vers des données vectorielles natives (MVT/PBF). Rendu en 2048px pour une précision "Pixel-Perfect".
+- **Design Professionnel** : Ajout de halos blancs pour la lisibilité sur tous supports et codage couleur dynamique (Jaune/Rouge/Bleu) selon la difficulté du sentier.
+- **Performance WebWorker** : Décodage et dessin des vecteurs intégralement déportés dans les WebWorkers, préservant la fluidité du thread principal.
+- **Qualité** : Suite de tests étendue à **85 tests au vert**.
+
 ## [5.6.4] - 2026-03-21
 ### 🚀 Material Pooling & Zero-Stutter Rendering
 - **Shader Reuse** : Implémentation d'un pool de matériaux (`materialPool.ts`) permettant de réutiliser les shaders compilés. Suppression des micro-saccades lors du chargement de nouvelles tuiles.

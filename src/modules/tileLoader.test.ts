@@ -69,10 +69,17 @@ describe('tileLoader.ts URLs', () => {
         expect(url).toContain('topo-v2/256/13/2413/3080');
     });
 
-    it('should generate correct Overlay URL for Switzerland', () => {
+    it('should generate correct Overlay URL for Switzerland (PBF)', () => {
         // Tuile en Suisse
         const url = getOverlayUrl(4270, 2891, 13);
-        expect(url).toContain('ch.swisstopo.swisstlm3d-wanderwege');
+        expect(url).toContain('ch.swisstopo.swisstlm3d-wanderwege.vector');
+        expect(url).toContain('.pbf');
+    });
+
+    it('should generate correct Overlay URL for Global/France (MapTiler Hiking PBF)', () => {
+        // Tuile à New York
+        const url = getOverlayUrl(2413, 3080, 13);
+        expect(url).toContain('tiles/hiking/13/2413/3080.pbf');
     });
 
     it('should return null Overlay URL when trails are hidden', () => {
