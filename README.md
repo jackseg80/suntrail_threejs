@@ -1,4 +1,4 @@
-# ⛰️ SunTrail 3D (v5.6.5)
+# ⛰️ SunTrail 3D (v5.6.6)
 
 Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données MapTiler / OpenStreetMap / IGN France. Optimisé pour les configurations haute performance (RTX 4080 / i9) et les appareils mobiles modernes.
 

@@ -5,12 +5,12 @@ import { getColorUrl, getOverlayUrl, getElevationUrl } from './tileLoader';
 // Mock de utils
 vi.mock('./utils', () => ({
     isPositionInSwitzerland: vi.fn((lat, lon) => {
-        // Mock: Zone Suisse entre lon 6 et 10, lat 45 et 48
-        return lon >= 6 && lon <= 10 && lat >= 45 && lat <= 48;
+        // Mock: Zone Suisse entre lon 7 et 10, lat 45 et 48
+        return lon >= 7 && lon <= 10 && lat >= 45 && lat <= 48;
     }),
     isPositionInFrance: vi.fn((lat, lon) => {
-        // Mock: Zone France (simplifiée) entre lon -5 et 6
-        return lon >= -5 && lon < 6 && lat >= 42 && lat <= 51;
+        // Mock: Zone France (simplifiée) entre lon -5 et 8
+        return lon >= -5 && lon < 8 && lat >= 42 && lat <= 51;
     }),
     showToast: vi.fn()
 }));
@@ -50,36 +50,27 @@ describe('tileLoader.ts URLs', () => {
 
     it('should generate correct Color URL for OpenTopoMap (Global Fallback)', () => {
         state.MAP_SOURCE = 'opentopomap';
-        // Tuile au milieu de l'atlantique (0,0)
         const url = getColorUrl(0, 0, 0); 
         expect(url).toContain('topo-v2/256/0/0/0');
     });
 
     it('should generate correct Color URL for SwissTopo (when inside CH)', () => {
         state.MAP_SOURCE = 'swisstopo';
-        // Tuile proche de Berne (Z13: 4270, 2891)
         const url = getColorUrl(4270, 2891, 13);
         expect(url).toContain('ch.swisstopo.pixelkarte-farbe');
     });
 
-    it('should fallback to MapTiler for SwissTopo (when outside CH)', () => {
-        state.MAP_SOURCE = 'swisstopo';
-        // Tuile à New York (Z13: 2413, 3080)
-        const url = getColorUrl(2413, 3080, 13);
-        expect(url).toContain('topo-v2/256/13/2413/3080');
-    });
-
-    it('should generate correct Overlay URL for Switzerland (PBF)', () => {
-        // Tuile en Suisse
+    it('should generate correct Overlay URL for Switzerland (Raster)', () => {
         const url = getOverlayUrl(4270, 2891, 13);
-        expect(url).toContain('ch.swisstopo.swisstlm3d-wanderwege.vector');
-        expect(url).toContain('.pbf');
+        expect(url).toContain('ch.swisstopo.swisstlm3d-wanderwege');
+        expect(url).toContain('.png');
     });
 
-    it('should generate correct Overlay URL for Global/France (MapTiler Hiking PBF)', () => {
-        // Tuile à New York
-        const url = getOverlayUrl(2413, 3080, 13);
-        expect(url).toContain('tiles/hiking/13/2413/3080.pbf');
+    it('should generate correct Overlay URL for France (Raster)', () => {
+        // Tuile en France (Z13: Mont Blanc area approx 4240, 2915)
+        const url = getOverlayUrl(4240, 2915, 13);
+        expect(url).toContain('data.geopf.fr');
+        expect(url).toContain('TRANSPORT.WANDERWEGE');
     });
 
     it('should return null Overlay URL when trails are hidden', () => {

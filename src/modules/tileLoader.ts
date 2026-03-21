@@ -100,20 +100,24 @@ export function getColorUrl(tx: number, ty: number, zoom: number): string {
 }
 
 /**
- * Génère l'URL pour les données vectorielles des sentiers (MVT/PBF).
+ * Génère l'URL pour la texture des sentiers/POI (Raster fallback pour stabilité).
  */
 export function getOverlayUrl(tx: number, ty: number, zoom: number): string | null {
     if (!state.SHOW_TRAILS || zoom < 10) return null;
     
     const center = getTileCenter(tx, ty, zoom);
     
-    // Suisse (SwissTopo Vector)
+    // Suisse (SwissTopo Raster)
     if (isPositionInSwitzerland(center.lat, center.lon)) {
-        return `https://vectortiles.geo.admin.ch/tiles/ch.swisstopo.swisstlm3d-wanderwege.vector/v1/${zoom}/${tx}/${ty}.pbf`;
+        return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${zoom}/${tx}/${ty}.png`;
     }
     
-    // Global & France (MapTiler Hiking Vector)
-    return `https://api.maptiler.com/tiles/hiking/${zoom}/${tx}/${ty}.pbf?key=${state.MK}`;
+    // France (IGN Raster)
+    if (isPositionInFrance(center.lat, center.lon)) {
+        return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=TRANSPORT.WANDERWEGE&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${zoom}&TILEROW=${ty}&TILECOL=${tx}`;
+    }
+    
+    return null;
 }
 
 /**

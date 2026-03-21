@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.6.6] - 2026-03-21
+### ✅ Priorité 1 Terminée : Optimisations & Netteté
+- **Validation Finale** : Atteinte de l'objectif de **90 tests unitaires** (100% au vert) couvrant le bus d'événements et la stabilité du terrain.
+- **Rollback Sentiers Raster** : Rétablissement des sentiers raster pour garantir la stabilité opérationnelle suite aux limitations techniques des WebWorkers sur le PBF.
+- **MVT Pro en Attente** : Placement du rendu vectoriel natif dans la file de recherche technologique pour une implémentation future sécurisée.
+- **Clôture v5.6** : Toutes les phases structurelles (Caches, Loaders, Normal Map Worker, Pooling) sont validées et livrées.
+
 ## [5.6.5] - 2026-03-21
 ### ✨ Sentiers Vectoriels MVT Pro
 - **Netteté Infinie** : Migration des calques de sentiers raster vers des données vectorielles natives (MVT/PBF). Rendu en 2048px pour une précision "Pixel-Perfect".

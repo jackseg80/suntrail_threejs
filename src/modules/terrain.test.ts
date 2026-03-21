@@ -118,23 +118,14 @@ describe('terrain.ts', () => {
 
         it('should calculate correct altitude from RGB (MapTiler formula)', () => {
             // Formula: h = -10000 + ((R * 65536 + G * 256 + B) * 0.1)
-            // For Mont Blanc (~4808m):
-            // (4808 + 10000) * 10 = 148080
-            // 148080 / 65536 = 2.25 -> R = 2
-            // Remainder: 148080 - (2 * 65536) = 17008
-            // 17008 / 256 = 66.43 -> G = 66
-            // Remainder: 17008 - (66 * 256) = 112 -> B = 112
-            
             const r = 2, g = 66, b = 112;
             const decodeHeight = (r: number, g: number, b: number) => -10000 + ((r * 65536 + g * 256 + b) * 0.1);
-            
             expect(decodeHeight(r, g, b)).toBeCloseTo(4808, 0);
         });
 
         it('should initialize with correct status and world position', () => {
             const tile = new Tile(10, 10, 5, '5/10/10');
             expect(tile.status).toBe('idle');
-            // At origin, world position should be 0,0
             expect(tile.worldX).toBe(0);
             expect(tile.worldZ).toBe(0);
         });
@@ -143,20 +134,31 @@ describe('terrain.ts', () => {
             const zoom = 5;
             const tileX = 11;
             const tile = new Tile(tileX, 10, zoom, '5/11/10');
-            
             const expectedDistance = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
             expect(tile.worldX).toBeCloseTo(expectedDistance, 1);
         });
 
         it('should calculate correct offsets for hybrid zoom beyond source limits (v4.3.8)', () => {
             state.MAP_SOURCE = 'opentopomap'; // Max Zoom 15
-            // Tuile Z16 (34114, 22952) - Quart d'une tuile Z15
             const tile = new Tile(34114, 22952, 16, '16/34114/22952');
-            
-            // Couleur hybride car Zoom 16 > Max 15
             expect(tile.colorScale).toBe(0.5);
-            // 34114 % 2 = 0. Ty 22952 % 2 = 0. (Offset 0,0)
             expect(tile.colorOffset.x).toBe(0.0);
+        });
+
+        it('should correctly handle bounding box calculations', () => {
+            const tile = new Tile(4270, 2891, 13, '13/4270/2891');
+            const bounds = tile.getBounds();
+            expect(bounds.north).toBeGreaterThan(46.0);
+            expect(bounds.south).toBeLessThan(47.0);
+            expect(bounds.west).toBeCloseTo(7.6, 0);
+        });
+
+        it('should not build mesh if tile is not in activeTiles anymore', () => {
+            const tile = new Tile(10, 10, 5, '5/10/10');
+            tile.elevationTex = new THREE.Texture();
+            tile.colorTex = new THREE.Texture();
+            tile.buildMesh(128);
+            expect(tile.mesh).toBeNull();
         });
     });
 
@@ -164,12 +166,11 @@ describe('terrain.ts', () => {
         it('should handle extreme low zooms (LOD 6)', () => {
             const tile = new Tile(32, 32, 6, '6/32/32');
             expect(tile.zoom).toBe(6);
-            expect(tile.tileSizeMeters).toBeGreaterThan(600000); // Env 625km
+            expect(tile.tileSizeMeters).toBeGreaterThan(600000); 
         });
 
         it('should use tileWorkerManager when enabled', async () => {
             state.USE_WORKERS = true;
-            // On vérifie que la classe Tile expose la méthode load
             const tile = new Tile(4270, 2891, 13, '13/4270/2891');
             expect(tile.load).toBeDefined();
         });
