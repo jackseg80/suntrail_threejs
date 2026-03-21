@@ -126,12 +126,16 @@ export function initUI(): void {
         }
     });
 
-    document.getElementById('trails-toggle')?.addEventListener('change', (e) => {
+    const trailsToggle = document.getElementById('trails-toggle') as HTMLInputElement;
+    if (trailsToggle) trailsToggle.checked = state.SHOW_TRAILS;
+    trailsToggle?.addEventListener('change', (e) => {
         state.SHOW_TRAILS = (e.target as HTMLInputElement).checked;
         refreshTerrain();
     });
 
-    document.getElementById('slopes-toggle')?.addEventListener('change', (e) => {
+    const slopesToggle = document.getElementById('slopes-toggle') as HTMLInputElement;
+    if (slopesToggle) slopesToggle.checked = state.SHOW_SLOPES;
+    slopesToggle?.addEventListener('change', (e) => {
         updateSlopeVisibility((e.target as HTMLInputElement).checked);
     });
 

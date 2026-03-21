@@ -27,6 +27,7 @@ export interface PerformanceSettings {
     WEATHER_DENSITY: number;     
     WEATHER_SPEED: number;       
     FOG_FAR: number;             
+    SHOW_SLOPES: boolean;
 }
 
 export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings> = {
@@ -35,21 +36,21 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHOW_VEGETATION: false, SHOW_SIGNPOSTS: false, SHOW_BUILDINGS: false, SHOW_HYDROLOGY: false, BUILDINGS_SHADOWS: false,
         MAX_ALLOWED_ZOOM: 15, VEGETATION_DENSITY: 0, BUILDING_LIMIT: 0, POI_ZOOM_THRESHOLD: 16, BUILDING_ZOOM_THRESHOLD: 17,
         MAX_BUILDS_PER_CYCLE: 1, LOAD_DELAY_FACTOR: 2.0, SHOW_WEATHER: false, WEATHER_DENSITY: 0, WEATHER_SPEED: 1.0,
-        FOG_FAR: 25000
+        FOG_FAR: 25000, SHOW_SLOPES: false
     },
     balanced: {
         RESOLUTION: 64, RANGE: 4, SHADOWS: true, SHADOW_RES: 256, PIXEL_RATIO_LIMIT: 1.0,
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: false, BUILDINGS_SHADOWS: false,
         MAX_ALLOWED_ZOOM: 16, VEGETATION_DENSITY: 2000, BUILDING_LIMIT: 40, POI_ZOOM_THRESHOLD: 15, BUILDING_ZOOM_THRESHOLD: 16,
         MAX_BUILDS_PER_CYCLE: 2, LOAD_DELAY_FACTOR: 1.2, SHOW_WEATHER: true, WEATHER_DENSITY: 2000, WEATHER_SPEED: 1.0,
-        FOG_FAR: 40000
+        FOG_FAR: 40000, SHOW_SLOPES: false
     },
     performance: {
         RESOLUTION: 160, RANGE: 8, SHADOWS: true, SHADOW_RES: 2048, PIXEL_RATIO_LIMIT: 1.5,
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: true, BUILDINGS_SHADOWS: true,
         MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 8000, BUILDING_LIMIT: 80, POI_ZOOM_THRESHOLD: 14, BUILDING_ZOOM_THRESHOLD: 15,
         MAX_BUILDS_PER_CYCLE: 4, LOAD_DELAY_FACTOR: 0.5, SHOW_WEATHER: true, WEATHER_DENSITY: 5000, WEATHER_SPEED: 1.2,
-        FOG_FAR: 60000
+        FOG_FAR: 60000, SHOW_SLOPES: false
     },
     ultra: {
         get PIXEL_RATIO_LIMIT() { return typeof window !== 'undefined' ? window.devicePixelRatio : 1; },
@@ -57,7 +58,7 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: true, BUILDINGS_SHADOWS: true,
         MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 12000, BUILDING_LIMIT: 150, POI_ZOOM_THRESHOLD: 14, BUILDING_ZOOM_THRESHOLD: 15,
         MAX_BUILDS_PER_CYCLE: 8, LOAD_DELAY_FACTOR: 0.2, SHOW_WEATHER: true, WEATHER_DENSITY: 15000, WEATHER_SPEED: 1.5,
-        FOG_FAR: 100000
+        FOG_FAR: 100000, SHOW_SLOPES: false
     } as PerformanceSettings
 };
 

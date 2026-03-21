@@ -1,4 +1,4 @@
-# Mandats SunTrail (v5.6.7)
+# Mandats SunTrail (v5.6.8)
 
 Ce fichier définit les mandats prioritaires pour Gemini CLI dans ce projet.
 

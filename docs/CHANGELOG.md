@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.6.8] - 2026-03-21
+### 🛠️ Configuration par défaut & Détection Mobile
+- **Sécurité au Lancement** : Désactivation par défaut des couches "Sentiers" et "Pentes" sur tous les profils pour éviter les surcharges et artefacts visuels (voile rouge) au démarrage.
+- **Optimisation Détection** : Amélioration de la détection matérielle pour les mobiles mid-range (ex: Samsung Galaxy A53). Ces appareils sont désormais affectés au profil **STD (Balanced)** au lieu du profil Éco.
+- **UI Refresh** : Renommage du calque "Sentiers & Noms" en "📍 Sentiers" et synchronisation parfaite des états UI/Moteur.
+- **Qualité** : Suite de tests étendue à **94 tests au vert**.
+
 ## [5.6.7] - 2026-03-21
 ### 🛠️ Correctif Rendu 2D & Mode Éco
 - **Désactivation des Pentes en 2D** : Suppression automatique du calque des pentes en mode "Éco" ou à bas niveau de zoom (LOD <= 10). Résout le bug du voile rouge persistant sur les surfaces plates.

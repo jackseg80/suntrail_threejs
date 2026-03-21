@@ -49,7 +49,11 @@ export function detectBestPreset(): PresetType {
     }
     
     if (gpu.includes('adreno')) return 'balanced';
-    if (gpu.includes('mali')) return 'eco';
+    if (gpu.includes('mali')) {
+        // Le Galaxy A53 a un GPU Mali-G68. Si on a assez de coeurs CPU, on passe en STD (Balanced)
+        if ((navigator.hardwareConcurrency || 0) >= 8) return 'balanced';
+        return 'eco';
+    }
     
     return 'eco';
 }
@@ -75,6 +79,7 @@ export function applyPreset(preset: PresetType): void {
     state.SHOW_SIGNPOSTS = settings.SHOW_SIGNPOSTS;
     state.SHOW_BUILDINGS = settings.SHOW_BUILDINGS;
     state.SHOW_HYDROLOGY = settings.SHOW_HYDROLOGY;
+    state.SHOW_SLOPES = settings.SHOW_SLOPES;
     
     state.VEGETATION_DENSITY = settings.VEGETATION_DENSITY;
     state.BUILDING_LIMIT = settings.BUILDING_LIMIT;
@@ -137,6 +142,9 @@ export function updatePerformanceUI(preset: PresetType): void {
     if (poiToggle) poiToggle.checked = state.SHOW_SIGNPOSTS;
     if (buildingsToggle) buildingsToggle.checked = state.SHOW_BUILDINGS;
     if (hydroToggle) hydroToggle.checked = state.SHOW_HYDROLOGY;
+    
+    const slopesToggle = document.getElementById('slopes-toggle') as HTMLInputElement;
+    if (slopesToggle) slopesToggle.checked = state.SHOW_SLOPES;
     
     if (vegDensitySlider) vegDensitySlider.value = state.VEGETATION_DENSITY.toString();
     if (vegDensityDisp) vegDensityDisp.textContent = state.VEGETATION_DENSITY.toString();

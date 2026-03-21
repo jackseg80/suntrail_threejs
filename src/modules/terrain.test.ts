@@ -190,15 +190,26 @@ describe('terrain.ts', () => {
             expect(terrainUniforms.uShowSlopes.value).toBe(0.0);
         });
 
-        it('should enable slopes in 3D mode (Balanced, Zoom 14)', async () => {
+        it('should enable slopes in 3D mode ONLY IF SHOW_SLOPES is manually set to true', async () => {
             state.PERFORMANCE_PRESET = 'balanced';
             state.ZOOM = 14;
-            state.SHOW_SLOPES = true;
+            state.SHOW_SLOPES = true; // On l'active manuellement
             state.camera = new THREE.PerspectiveCamera();
             state.camera.position.set(0, 1000, 0);
             
             await updateVisibleTiles();
             expect(terrainUniforms.uShowSlopes.value).toBe(1.0);
+        });
+
+        it('should have slopes disabled by default even in Balanced Zoom 14', async () => {
+            state.PERFORMANCE_PRESET = 'balanced';
+            state.ZOOM = 14;
+            state.SHOW_SLOPES = false; // Valeur par défaut
+            state.camera = new THREE.PerspectiveCamera();
+            state.camera.position.set(0, 1000, 0);
+            
+            await updateVisibleTiles();
+            expect(terrainUniforms.uShowSlopes.value).toBe(0.0);
         });
 
         it('should use tileWorkerManager when enabled', async () => {
