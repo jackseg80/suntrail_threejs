@@ -10,38 +10,11 @@ import { loadHydrologyForTile } from './hydrology';
 import { EARTH_CIRCUMFERENCE, lngLatToWorld, worldToLngLat, lngLatToTile } from './geo';
 import { tileWorkerManager } from './workerManager';
 import { eventBus } from './eventBus';
-
-interface CachedData {
-    elev: THREE.Texture;
-    pixelData: Uint8ClampedArray | null;
-    color: THREE.Texture;
-    overlay: THREE.Texture | null;
-}
+import { addToCache, getFromCache, disposeAllCachedTiles, hasInCache, getTileCacheKey } from './tileCache';
+import { getPlaneGeometry } from './geometryCache';
 
 export const activeTiles = new Map<string, Tile>(); 
 export const activeLabels = new Map<string, any>(); 
-
-function getMaxCacheSize(): number {
-    if (state.PERFORMANCE_PRESET === 'ultra') return 800;
-    if (state.PERFORMANCE_PRESET === 'performance') return 400;
-    if (state.PERFORMANCE_PRESET === 'balanced') return isMobileDevice() ? 100 : 250;
-    return 60;
-}
-
-const dataCache = new Map<string, CachedData>();
-const geometryCache = new Map<string, THREE.PlaneGeometry>();
-
-function getPlaneGeometry(res: number, size: number): THREE.PlaneGeometry {
-    const key = `${res}_${size}`;
-    if (!geometryCache.has(key)) {
-        const geometry = new THREE.PlaneGeometry(size, size, res, res);
-        geometry.rotateX(-Math.PI / 2);
-        const uvs = geometry.attributes.uv.array as Float32Array;
-        for (let i = 1; i < uvs.length; i += 2) uvs[i] = 1.0 - uvs[i];
-        geometryCache.set(key, geometry);
-    }
-    return geometryCache.get(key)!;
-}
 
 let loadQueue: Set<Tile> = new Set<Tile>();
 let isProcessingQueue = false;
@@ -69,7 +42,12 @@ async function processLoadQueue() {
         batch.forEach(t => loadQueue.delete(t));
 
         await Promise.all(batch.map(async (tile) => {
-            try { if (tile.status === 'idle') await tile.load(); }
+            try { 
+                if (tile.status === 'idle') {
+                    state.isProcessingTiles = true; // Forcer le réveil de la render loop
+                    await tile.load(); 
+                }
+            }
             catch (e) { tile.status = 'failed'; }
         }));
     } finally {
@@ -77,32 +55,6 @@ async function processLoadQueue() {
         if (loadQueue.size > 0) setTimeout(processLoadQueue, 32);
         else state.isProcessingTiles = false;
     }
-}
-
-function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8ClampedArray | null, colorTex: THREE.Texture, overlayTex: THREE.Texture | null): void {
-    if (dataCache.size >= getMaxCacheSize()) {
-        const oldestKey = dataCache.keys().next().value;
-        if (oldestKey) {
-            const entry = dataCache.get(oldestKey);
-            if (entry) { entry.elev.dispose(); entry.color.dispose(); if (entry.overlay) entry.overlay.dispose(); }
-            dataCache.delete(oldestKey);
-        }
-    }
-    dataCache.set(key, { elev: elevTex, pixelData, color: colorTex, overlay: overlayTex });
-}
-
-function getFromCache(key: string): CachedData | null {
-    const data = dataCache.get(key);
-    if (!data) return null;
-    dataCache.delete(key); dataCache.set(key, data);
-    return data;
-}
-
-export function clearCache(): void {
-    for (const entry of dataCache.values()) {
-        entry.elev.dispose(); entry.color.dispose(); if (entry.overlay) entry.overlay.dispose();
-    }
-    dataCache.clear();
 }
 
 const frustum = new THREE.Frustum();
@@ -267,8 +219,7 @@ export class Tile {
 
     async load(): Promise<void> {
         if (this.status !== 'idle' && this.status !== 'failed') return;
-        const is2D = (state.RESOLUTION <= 2);
-        const cacheKey = `${state.MAP_SOURCE}_${state.SHOW_TRAILS}_${is2D ? '2D' : '3D'}_${this.key}`;
+        const cacheKey = getTileCacheKey(this.key, this.zoom);
         const cached = getFromCache(cacheKey);
         if (cached) {
             this.elevationTex = cached.elev; this.pixelData = cached.pixelData;
@@ -278,9 +229,10 @@ export class Tile {
         }
         if (this.status as any === 'disposed') return;
         this.status = 'loading';
+        const is2D = (this.zoom <= 10 || state.RESOLUTION <= 2);
         try {
             let elevUrl = null;
-            if (!(this.zoom <= 10 || is2D)) {
+            if (!is2D) {
                 let ez = Math.min(this.zoom, 14);
                 let r = Math.pow(2, Math.max(0, this.zoom - 14));
                 elevUrl = `https://api.maptiler.com/tiles/terrain-rgb-v2/${ez}/${Math.floor(this.tx/r)}/${Math.floor(this.ty/r)}.png?key=${state.MK}`;
@@ -289,7 +241,7 @@ export class Tile {
             let cz = Math.min(this.zoom, nativeMax);
             let cr = Math.pow(2, Math.max(0, this.zoom - nativeMax));
             let colorUrl = this.getColorUrl(cz, Math.floor(this.tx/cr), Math.floor(this.ty/cr));
-            if (colorUrl.includes('maptiler')) colorUrl = colorUrl.replace('/256/', '/512/');
+            if (colorUrl.includes('maptiler') && this.zoom > 10) colorUrl = colorUrl.replace('/256/', '/512/');
             let overlayUrl = (state.SHOW_TRAILS && this.zoom >= 10) ? this.getOverlayUrl(Math.min(this.zoom, 18), this.tx, this.ty) : null;
 
             const data = await tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl);
@@ -580,7 +532,7 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
                     const tx = ct.x + dx; const ty = ct.y + dy;
                     if (tx < 0 || tx >= Math.pow(2, nextZoom) || ty < 0 || ty >= Math.pow(2, nextZoom)) continue;
                     const pKey = `${tx}_${ty}_${nextZoom}`;
-                    if (!dataCache.has(`${state.MAP_SOURCE}_${state.SHOW_TRAILS}_3D_${pKey}`)) loadQueue.add(new Tile(tx, ty, nextZoom, pKey));
+                    if (!hasInCache(getTileCacheKey(pKey, nextZoom))) loadQueue.add(new Tile(tx, ty, nextZoom, pKey));
                 }
             }
         }
@@ -592,7 +544,10 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
 export function updateHydrologyVisibility(visible: boolean): void { state.SHOW_HYDROLOGY = visible; resetTerrain(); updateVisibleTiles(); }
 export function updateSlopeVisibility(visible: boolean): void { state.SHOW_SLOPES = visible; resetTerrain(); updateVisibleTiles(); }
 export async function loadTerrain(): Promise<void> { await updateVisibleTiles(); }
-export async function deleteTerrainCache(): Promise<void> { try { const success = await caches.delete(CACHE_NAME); showToast(success ? 'Cache vidé' : 'Cache déjà vide'); } catch (e) { showToast('Erreur cache'); } }
+export async function deleteTerrainCache(): Promise<void> { 
+    disposeAllCachedTiles();
+    try { const success = await caches.delete(CACHE_NAME); showToast(success ? 'Cache vidé' : 'Cache déjà vide'); } catch (e) { showToast('Erreur cache'); } 
+}
 
 export function updateGPXMesh(): void {
     if (!state.rawGpxData || !state.camera) return;

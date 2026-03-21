@@ -1,37 +1,35 @@
-# 📋 Fonctionnalités de SunTrail 3D (v4.9.1)
+# 📋 Fonctionnalités de SunTrail 3D (v5.5.15)
 
 Ce document dresse la liste exhaustive des capacités techniques et fonctionnelles du moteur SunTrail.
 
 ---
 
 ### 🌍 Moteur 3D & Terrain
-*   **Rendu de Relief Dynamique (LOD)** : Affichage du terrain 3D haute performance via MapTiler et OpenStreetMap avec un système de niveau de détail progressif (Level of Detail).
-*   **Support IGN France** : Basculement automatique vers les services officiels de la Géoplateforme (`data.geopf.fr`) pour une précision maximale en France (Plan & Orthophoto).
-*   **Hybride 2D/3D Adaptatif (Turbo Engine)** : Bascule automatique entre un rendu 2D optimisé à haute altitude (LOD <= 10) et une 3D détaillée au sol pour garantir 120 FPS.
-*   **Carte des Pentes (Inclinomètre)** : Shader personnalisé calculant et affichant les pentes en temps réel (Jaune 30° / Orange 35° / Rouge 40°+) pour l'aide à la décision en zone avalancheuse.
-*   **Hydrologie par Shader (Pure Alpin)** : Moteur 100% GPU détectant les surfaces d'eau pour appliquer des ondulations douces et des reflets de ciel dynamiques sans impact réseau.
-*   **Exagération du Relief** : Multiplicateur dynamique permettant d'accentuer la perception visuelle des versants.
-*   **Anti-Collision Sol Pro** : Algorithme de sécurité garantissant que la caméra ne traverse jamais le maillage du relief.
-*   **Brouillard Atmosphérique Dynamique** : Système de voile volumétrique intégré aux presets de performance pour masquer le chargement des tuiles lointaines.
+*   **Moteur Asynchrone (WebWorkers)** : Déportation du téléchargement et du décodage des tuiles vers un pool de 8 WebWorkers pour une fluidité totale sans blocage du thread principal.
+*   **Architecture Découplée (Event Bus)** : Utilisation d'un bus d'événements centralisé pour la communication entre les modules Terrain et Scène.
+*   **Rendu de Relief Dynamique (LOD)** : Affichage du terrain 3D haute performance via MapTiler et OpenStreetMap avec un système de niveau de détail progressif (LOD 6 à 18).
+*   **Support IGN France** : Basculement automatique vers les services officiels de la Géoplateforme pour une précision maximale en France.
+*   **Hybride 2D/3D Adaptatif (Turbo Engine)** : Bascule automatique entre un rendu 2D optimisé à haute altitude (LOD <= 10) et une 3D détaillée au sol.
+*   **Carte des Pentes (Inclinomètre)** : Shader personnalisé calculant et affichant les pentes en temps réel (Jaune 30° / Orange 35° / Rouge 40°+).
+*   **Hydrologie par Shader (Pure Alpin)** : Moteur 100% GPU détectant les surfaces d'eau avec ondulations et reflets dynamiques.
 
 ### ☀️ Analyse Solaire & Astronomique
-*   **Éphémérides Précises** : Calcul en temps réel des positions du Soleil et de la Lune (via SunCalc) basées sur la date, l'heure et les coordonnées GPS.
-*   **Phases Lumineuses & Couleurs** : Identification automatique de l'"Heure Dorée", l'"Heure Bleue", des crépuscules et de la phase lunaire actuelle.
-*   **Sonde Solaire (Analyse d'Horizon)** : Outil avancé calculant la durée d'ensoleillement cumulée sur 24h à un point précis, en tenant compte du "masque d'horizon" généré par le relief environnant.
-*   **Timeline Interactive** : Contrôle manuel fluide de l'heure du jour pour simuler les ombres portées et l'éclairage de la scène.
+*   **Éphémérides Précises** : Calcul en temps réel des positions du Soleil et de la Lune basées sur la date, l'heure et les coordonnées GPS.
+*   **Transitions Solaire Ultra-Lisses** : Refonte des courbes de luminosité pour une transition monotone parfaite entre l'Heure Dorée et la Nuit.
+*   **Phases Lumineuses & Couleurs** : Identification de l'"Heure Dorée", l'"Heure Bleue", des crépuscules et de la phase lunaire.
 
 ### 🧭 Navigation & Exploration Alpiniste
-*   **Suivi GPS Ultra-Lisse** : Interpolation haute fréquence (60 FPS) des données de position pour un déplacement fluide sans saccades sur la carte.
-*   **Boussole Professionnelle** : Stabilisation de l'orientation avec gestion de zone morte (1.5°) pour une navigation précise sans tremblements.
-*   **Vol Cinématique (`flyTo`)** : Trajectoires de caméra paraboliques avec interpolation `easeInOutCubic`, altitude automatique et protection anti-collision.
-*   **Moteur de Sommets (Peaks Engine)** : Indexation locale des sommets > 1000m (via Overpass API) avec cache intelligent de 7 jours et système d'auto-complétion hybride.
-*   **Profil Altimétrique Dynamique** : Calcul et affichage en temps réel du profil d'altitude pour les tracés et points d'intérêt sélectionnés.
+*   **Suivi GPS Haute Précision** : Centrage "pixel-perfect" sur l'altitude réelle du relief et interpolation haute fréquence (60 FPS).
+*   **Boussole Professionnelle Swisstopo** : Filtre passe-bas et amortissement lourd pour une rotation "cinématographique" sans tremblements.
+*   **Vol Cinématique (`flyTo`)** : Trajectoires de caméra paraboliques avec protection anti-collision dynamique.
+*   **Moteur de Sommets (Peaks Engine)** : Indexation locale des sommets > 1000m avec cache intelligent et auto-complétion hybride.
 
 ### 🌲 Environnement & Urbanisme
-*   **Végétation Procédurale** : Système de génération de forêts et d'arbres avec densité "bio-fidèle" adaptée à la zone géographique réelle.
-*   **Bâtiments 3D (OSM)** : Chargement et extrusion progressive des bâtiments issus d'OpenStreetMap avec support des ombres portées (selon preset).
-*   **Points d'Intérêt (POI)** : Affichage hiérarchisé des panneaux indicateurs, refuges, cols et repères topographiques selon le niveau de zoom.
-*   **Météo Dynamique** : Moteur de particules simulant les nuages, la pluie ou la neige, avec ajustement de la densité et de la vitesse selon les conditions simulées.
+*   **Végétation Bio-Fidèle** : Diversification des forêts avec 3 essences (Feuillus, Sapins, Mélèzes) selon l'altitude réelle.
+*   **Bâtiments 3D RTX (OSM)** : Fusion de géométries pour des performances maximales et correction du bug de miroir Z.
+*   **Points d'Intérêt (POI)** : Affichage hiérarchisé des panneaux, refuges et cols.
+*   **Météo Dynamique** : Moteur de particules GPU pour les nuages, la pluie et la neige avec physique du vent réel.
+
 
 ### ⚡ Performance & Optimisation Mobile
 *   **Presets de Performance** : 4 modes prédéfinis (Eco, Balanced, Performance, Ultra) ajustant la résolution, la portée de vue, les ombres et la densité d'objets.

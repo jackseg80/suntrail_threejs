@@ -7,7 +7,9 @@ import { state } from './state';
 import { eventBus } from './eventBus';
 import { updateSunPosition } from './sun';
 import { getAltitudeAt, resetAnalysisCache } from './analysis';
-import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, resetTerrain, clearCache, autoSelectMapSource, updateGPXMesh, terrainUniforms } from './terrain';
+import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, resetTerrain, autoSelectMapSource, updateGPXMesh, terrainUniforms } from './terrain';
+import { disposeAllCachedTiles } from './tileCache';
+import { disposeAllGeometries } from './geometryCache';
 import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat } from './geo';
 import { throttle } from './utils';
 import { initVegetationResources } from './vegetation';
@@ -16,7 +18,10 @@ import { initCompass, disposeCompass, renderCompass, updateCompassAnimation, isC
 import { centerOnUser } from './location';
 
 export async function disposeScene(): Promise<void> {
-    resetTerrain(); clearCache(); resetAnalysisCache();
+    resetTerrain();
+    disposeAllCachedTiles();
+    disposeAllGeometries();
+    resetAnalysisCache();
     if (state.renderer) { state.renderer.setAnimationLoop(null); state.renderer.dispose(); }
     disposeCompass();
     if (state.scene) state.scene.clear();

@@ -3,6 +3,20 @@ import * as THREE from 'three';
 import { state } from './state';
 import { centerOnUser, updateUserMarker } from './location';
 
+// Mock du contexte 2D pour JSDOM
+HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+    beginPath: vi.fn(),
+    arc: vi.fn(),
+    fill: vi.fn(),
+    fillStyle: '',
+    fillRect: vi.fn(),
+    clearRect: vi.fn(),
+    drawImage: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+})) as any;
+
 // Mock de geo.ts car on ne veut pas tester les calculs de projection ici
 vi.mock('./geo', () => ({
     lngLatToWorld: vi.fn((lon, lat) => ({ x: lon * 100, z: lat * 100 })),

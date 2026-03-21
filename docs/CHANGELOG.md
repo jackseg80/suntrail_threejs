@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.6.0] - 2026-03-21
+### 🏗️ Refactoring Architectural & Stabilité Zoom
+- **Architecture de Cache** : Extraction de `TileCache` et `GeometryCache` dans des modules isolés pour une gestion granulaire de la VRAM.
+- **Correctif Zoom < 10** : Harmonisation de la logique 2D/3D résolvant l'écran noir lors du dézoom sur les grandes échelles.
+*   **Performance** : Mutualisation des géométries de plans Three.js pour réduire la pression sur le garbage collector.
+*   **Qualité** : Suite de tests étendue à **72 tests au vert** (+9 nouveaux tests sur les caches).
+
 ## [5.5.15] - 2026-03-18
 ### 🎯 Suivi GPS & Navigation Swisstopo
 - **Suivi Haute Précision (v5.5.15)** : La caméra vise désormais l'altitude réelle du relief au lieu du niveau zéro, éliminant tout décalage visuel et assurant un centrage parfait du marqueur utilisateur.

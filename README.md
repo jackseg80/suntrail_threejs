@@ -1,13 +1,21 @@
-# ⛰️ SunTrail 3D (v5.4.7)
+# ⛰️ SunTrail 3D (v5.6.0)
 
-Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données MapTiler / OpenStreetMap / IGN France. Optimisé pour les configurations haute performance (RTX 4080 / i9).
+Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données MapTiler / OpenStreetMap / IGN France. Optimisé pour les configurations haute performance (RTX 4080 / i9) et les appareils mobiles modernes.
+
+## ✨ Nouveautés v5.6.x (Architecture & Stabilité)
+- **Refactoring Terrain :** Extraction des systèmes de cache (`TileCache` & `GeometryCache`) pour une gestion optimale de la VRAM.
+- **Correctif Rendu Global :** Résolution définitive du bug d'écran noir lors du dézoom massif (LOD < 10).
+- **Mutualisation Géométrique :** Réutilisation des plans Three.js pour réduire la charge CPU et le Garbage Collection.
+
+## ✨ Nouveautés v5.5.x (GPS & Transitions Swisstopo)
+- **Suivi GPS Haute Précision :** Centrage "pixel-perfect" sur l'altitude réelle du relief, éliminant tout décalage visuel.
+- **Lissage Swisstopo :** Filtre passe-bas sur la boussole et les mouvements pour une fluidité de rotation "cinématographique".
+- **Transition Solaire Parfaite :** Refonte des courbes de luminosité pour une transition monotone Heure Dorée -> Nuit.
+- **Audit de Sécurité :** Correction des race conditions sur les workers et sécurisation totale contre les injections XSS.
 
 ## ✨ Nouveautés v5.4.x (RTX Stability & Hybrid Data)
-- **Optimisation RTX & i9 :** Fusion massive des géométries de bâtiments et désactivation des mises à jour matricielles automatiques pour garantir 144 FPS constants même avec des milliers d'objets.
-- **Moteur Overpass LIFO :** File d'attente intelligente traitant les requêtes OSM en priorité selon le champ de vision actuel pour un affichage instantané des détails urbains.
-- **Secours de Recherche (Fallback) :** Basculement automatique sur OpenStreetMap Nominatim en cas de saturation ou de blocage de l'API MapTiler (Erreur 403).
-- **Hydrologie de Précision :** Shader d'eau avancé avec filtres de pente et de chromaticité, éliminant les faux positifs sur les zones claires (champs, neige).
-- **Correctif Géo-Spatial :** Résolution définitive du bug de miroir Z sur les bâtiments ; alignement parfait des volumes avec les données topographiques.
+- **Optimisation RTX & i9 :** Fusion massive des géométries de bâtiments pour garantir 144 FPS constants.
+- **Hydrologie de Précision :** Shader d'eau avancé avec filtres de pente et de chromaticité.
 
 ## ✨ Nouveautés v5.0.x (WebWorkers Engine)
 - **Moteur Asynchrone :** Déportation complète du téléchargement et du décodage des tuiles vers un pool de 8 WebWorkers, libérant le thread principal pour une fluidité absolue.

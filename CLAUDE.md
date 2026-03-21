@@ -1,4 +1,4 @@
-# SunTrail - Guide Développeur (v4.9.1)
+# SunTrail - Guide Développeur (v5.6.0)
 
 ## Environnement & Langue
 - **Langue :** Toutes les interactions et réponses doivent être en **Français**.
@@ -6,15 +6,18 @@
 
 ## Méthodologie de Développement "Partner Engineer"
 Toute intervention majeure (feature ou refactor) DOIT suivre ce cycle itératif :
-1.  **Analyse & Intelligence** : Analyse approfondie du besoin avec l'intelligence maximale du modèle pour identifier les impacts collatéraux et les opportunités de nettoyage.
-2.  **Planification** : Création d'un plan d'action structuré (étape par étape) avant toute modification de code.
-3.  **Implémentation Chirurgicale** : Une seule modification à la fois. Code propre, typé et idiomatic.
-4.  **Tests & Qualité** : Création ou mise à jour systématique des tests unitaires (`vitest`). **100% de succès exigé.**
-5.  **Documentation** : Mise à jour immédiate de `CHANGELOG.md`, `TODO.md` et `README.md`.
-6.  **Livraison** : `npm run check` suivi d'un commit normé et d'un push après chaque étape validée.
+1.  **Analyse & Intelligence** : Analyse approfondie du besoin pour identifier les impacts et opportunités.
+2.  **Planification** : Création d'un plan d'action structuré (étape par étape) avant tout code.
+3.  **Implémentation Chirurgicale** : Une seule modification à la fois. Code propre et typé.
+4.  **Tests & Qualité** : Mise à jour des tests unitaires (`vitest`). **100% de succès exigé.**
+5.  **Validation Visuelle & Utilisateur** : L'IA décrit les changements, propose un scénario de test manuel (ex: "Allez à tel endroit") et attend une validation explicite de l'utilisateur.
+6.  **Documentation** : Mise à jour de `CHANGELOG.md`, `TODO.md` et `README.md`.
+7.  **Livraison** : `npm run check` suivi d'un commit normé et d'un push.
 
-## Architecture Technique (v4.6+)
+## Architecture Technique (v5.5+)
 - **State Management :** État global centralisé et strictement typé dans `state.ts`.
+- **Moteur WebWorkers :** Pool de 8 workers pour le fetch/décodage des tuiles (performance asynchrone).
+- **Event Bus :** Utilisation de `eventBus.ts` pour découpler les modules (Terrain <-> Scène).
 - **Suivi GPS Ultra-Lisse :** Utilisation de l'interpolation haute fréquence (60 FPS) dans la render loop (`centerOnUser`). Les capteurs ne font que mettre à jour les données dans le `state`.
 - **Moteur de Sommets (`peaks.ts`) :** Extraction Overpass API avec système de cache local (7 jours). Les sommets sont triés par altitude.
 - **Vol Cinématique (`flyTo`) :** Trajectoire parabolique avec interpolation `easeInOutCubic` et anti-collision terrain dynamique.

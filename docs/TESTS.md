@@ -14,27 +14,35 @@ Pour lancer les tests en mode "watch" (pendant le développement) :
 npx vitest
 ```
 
-## 📊 Couverture des tests (28 tests)
+## 📊 Couverture des tests (63 tests validés)
 
-### 🌍 Terrain & Géographie (`terrain.test.ts`)
+### 🌍 Terrain & Géographie (`terrain.test.ts`, `geo.test.ts`)
 - **Conversion Mercator** : Validation des calculs Lng/Lat vers tuiles (zoom 0 à 13).
 - **Décodage d'Altitude** : Vérification de la formule RGB -> Mètres (MapTiler).
-- **Import GPX** : Transformation des traces GPS en courbes 3D (`Vector3`) avec gestion de l'exagération du relief.
-- **Gestion du Monde** : Calcul des positions relatives par rapport à la tuile d'origine.
+- **Import GPX** : Transformation des traces GPS en courbes 3D avec gestion de l'exagération.
+- **Projections Spatiales** : Calcul des positions monde relatives.
 
-### ☀️ Système Solaire (`sun.test.ts`)
-- **Cycles Jour/Nuit** : Validation des phases (Aube, Zénith, Heure Bleue, Heure Dorée, Nuit).
-- **Éclairage Dynamique** : Mise à jour de l'intensité et de la couleur de `sunLight` selon l'heure simulée.
-- **Interface Temporelle** : Mise à jour du DOM (horloge, aiguille solaire, indicateurs de phase).
+### 🧭 Navigation & Suivi (`location.test.ts`, `compass.test.ts`)
+- **Suivi GPS** : Interpolation 60 FPS et centrage haute précision.
+- **Boussole Swisstopo** : Filtre passe-bas et amortissement de rotation.
+- **Anti-Collision** : Sécurité de la caméra par rapport au relief.
 
-### 🛠️ Utilitaires & Logique Métier (`utils.test.ts`)
-- **Géofencing** : Détection précise des frontières suisses.
-- **Performance** : Test du système de `throttle` pour limiter la charge CPU.
-- **UI Feedback** : Validation du système de notifications (Toasts) avec limite de messages.
+### ☀️ Système Solaire & Analyse (`sun.test.ts`, `analysis.test.ts`)
+- **Cycles Jour/Nuit** : Phases (Heure Dorée, Heure Bleue, etc.) et éclairage dynamique.
+- **Sonde Solaire** : Analyse d'horizon et cumul d'ensoleillement sur 24h.
 
-### ⚙️ État & UI (`state.test.ts` & `ui.test.ts`)
-- **Persistence** : Chargement de la clé API depuis le `localStorage`.
-- **Interactions** : Ouverture/Fermeture des panneaux de réglages et menus de calques.
+### 🚀 Performance & Workers (`workerManager.test.ts`, `memory.test.ts`)
+- **Pool de Workers** : Initialisation et gestion asynchrone des tâches.
+- **Gestion Mémoire** : Nettoyage VRAM récursif via `disposeObject`.
+
+### 🌲 Environnement & Urbanisme (`vegetation.test.ts`, `buildings.test.ts`, `weather.test.ts`)
+- **Végétation** : Sélection des essences par altitude.
+- **Bâtiments** : Fusion de géométries et extrusion OSM.
+- **Météo** : Moteur de particules et physique du vent.
+
+### ⚙️ État & UI (`state.test.ts`, `ui.test.ts`)
+- **State Management** : Intégrité de l'état global centralisé.
+- **UI** : Gestion des panneaux, menus et modales SOS.
 
 ## 🤖 Intégration Continue (CI)
 
