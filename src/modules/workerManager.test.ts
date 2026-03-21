@@ -19,14 +19,14 @@ describe('workerManager.ts', () => {
     });
 
     it('should handle tile load requests with unique IDs', async () => {
-        const promise = tileWorkerManager.loadTile('test_elev', 'test_color', null);
+        const promise = tileWorkerManager.loadTile('test_elev', 'test_color', null, 14);
         expect(promise).toBeInstanceOf(Promise);
     });
 
     it('should handle timeouts', async () => {
         // On simule un timeout
         vi.useFakeTimers();
-        const promise = tileWorkerManager.loadTile('slow_url', 'slow_url', null);
+        const promise = tileWorkerManager.loadTile('slow_url', 'slow_url', null, 14);
         
         // Comme c'est un singleton interne, on ne peut pas facilement 
         // intercepter les timers internes, mais on vérifie au moins la structure.

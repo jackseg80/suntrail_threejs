@@ -1,18 +1,17 @@
 import * as THREE from 'three';
 import { disposeObject } from './memory';
 import { state } from './state';
-import { showToast, isMobileDevice, isPositionInSwitzerland, isPositionInFrance } from './utils';
+import { isPositionInSwitzerland, isPositionInFrance } from './utils';
 import { updateElevationProfile, haversineDistance } from './profile';
 import { createForestForTile } from './vegetation';
 import { loadPOIsForTile } from './poi';
 import { loadBuildingsForTile } from './buildings';
 import { loadHydrologyForTile } from './hydrology';
 import { EARTH_CIRCUMFERENCE, lngLatToWorld, worldToLngLat, lngLatToTile } from './geo';
-import { tileWorkerManager } from './workerManager';
 import { eventBus } from './eventBus';
-import { addToCache, getFromCache, disposeAllCachedTiles, hasInCache, getTileCacheKey } from './tileCache';
+import { addToCache, getFromCache, hasInCache, getTileCacheKey } from './tileCache';
 import { getPlaneGeometry } from './geometryCache';
-import { loadTileData, downloadOfflineZone, updateStorageUI, CACHE_NAME } from './tileLoader';
+import { loadTileData } from './tileLoader';
 import { materialPool } from './materialPool';
 
 export const activeTiles = new Map<string, Tile>(); 
@@ -207,7 +206,7 @@ export class Tile {
         const isLight = (state.PERFORMANCE_PRESET === 'eco' || state.PERFORMANCE_PRESET === 'balanced');
         const oldMesh = this.mesh;
         
-        const onCompile = (shader: THREE.Shader) => {
+        const onCompile = (shader: any) => {
             (material as any).userData.shader = shader;
             shader.uniforms.uElevationMap = { value: this.elevationTex };
             shader.uniforms.uNormalMap = { value: this.normalTex };
@@ -303,7 +302,7 @@ export class Tile {
         }
 
         if (!is2D) {
-            const onDepthCompile = (shader: THREE.Shader) => {
+            const onDepthCompile = (shader: any) => {
                 (depth as any).userData.shader = shader;
                 shader.uniforms.uElevationMap = { value: this.elevationTex };
                 shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;

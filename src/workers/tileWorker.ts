@@ -80,7 +80,7 @@ self.onmessage = async (e) => {
             transferables.push(overlayRes.bitmap);
         }
 
-        self.postMessage(results, transferables);
+        (self as any).postMessage(results, transferables);
 
     } catch (err: any) {
         self.postMessage({ id, error: err.message });

@@ -31,7 +31,7 @@ class MaterialPool {
     /**
      * Acquiert un matériau depuis le pool ou en crée un nouveau.
      */
-    acquire(is2D: boolean, onCompile: (shader: THREE.Shader) => void): THREE.Material {
+    acquire(is2D: boolean, onCompile: (shader: any) => void): THREE.Material {
         if (is2D) {
             const mat = this.basicPool.pop() || new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 });
             mat.onBeforeCompile = onCompile;
@@ -46,7 +46,7 @@ class MaterialPool {
     /**
      * Acquiert un matériau de profondeur depuis le pool.
      */
-    acquireDepth(onCompile: (shader: THREE.Shader) => void): THREE.MeshDepthMaterial {
+    acquireDepth(onCompile: (shader: any) => void): THREE.MeshDepthMaterial {
         const mat = this.depthPool.pop() || new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, alphaTest: 0.5 });
         mat.onBeforeCompile = onCompile;
         return mat;
