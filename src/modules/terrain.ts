@@ -13,6 +13,7 @@ import { eventBus } from './eventBus';
 import { addToCache, getFromCache, disposeAllCachedTiles, hasInCache, getTileCacheKey } from './tileCache';
 import { getPlaneGeometry } from './geometryCache';
 import { loadTileData, downloadOfflineZone, updateStorageUI, CACHE_NAME } from './tileLoader';
+import { materialPool } from './materialPool';
 
 export const activeTiles = new Map<string, Tile>(); 
 export const activeLabels = new Map<string, any>(); 
@@ -206,45 +207,35 @@ export class Tile {
         const isLight = (state.PERFORMANCE_PRESET === 'eco' || state.PERFORMANCE_PRESET === 'balanced');
         const oldMesh = this.mesh;
         
-        const material = is2D 
-            ? new THREE.MeshBasicMaterial({ map: this.colorTex, transparent: true, opacity: 0 })
-            : new THREE.MeshStandardMaterial({ map: this.colorTex, roughness: 1.0, metalness: 0.0, transparent: true, opacity: 0 });
+        const onCompile = (shader: THREE.Shader) => {
+            (material as any).userData.shader = shader;
+            shader.uniforms.uElevationMap = { value: this.elevationTex };
+            shader.uniforms.uNormalMap = { value: this.normalTex };
+            shader.uniforms.uOverlayMap = { value: this.overlayTex };
+            shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
+            shader.uniforms.uShowSlopes = terrainUniforms.uShowSlopes;
+            shader.uniforms.uShowHydrology = terrainUniforms.uShowHydrology;
+            shader.uniforms.uTime = terrainUniforms.uTime;
+            shader.uniforms.uTileSize = { value: this.tileSizeMeters };
+            shader.uniforms.uElevOffset = { value: this.elevOffset };
+            shader.uniforms.uElevScale = { value: this.elevScale };
+            shader.uniforms.uColorOffset = { value: this.colorOffset };
+            shader.uniforms.uColorScale = { value: this.colorScale };
+            shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
 
-        if (!is2D) {
-            const sharedShaderChunk = `
-                uniform sampler2D uElevationMap; uniform float uExaggeration; uniform float uTileSize;
-                uniform vec2 uElevOffset; uniform float uElevScale;
-                float decodeHeight(vec4 rgba) { return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1); }
-                float getTerrainHeight(vec2 uv) {
-                    vec2 elevUv = uElevOffset + (uv * uElevScale);
-                    vec4 col = texture2D(uElevationMap, elevUv);
-                    float h = decodeHeight(col);
-                    if (h < -1000.0 || h > 9000.0) return 0.0;
-                    return h * uExaggeration;
-                }
-                float getTrueTerrainHeight(vec2 uv) {
-                    vec2 elevUv = uElevOffset + (uv * uElevScale);
-                    vec4 col = texture2D(uElevationMap, elevUv);
-                    float h = decodeHeight(col);
-                    if (h < -1000.0 || h > 9000.0) return 0.0;
-                    return h;
-                }
-            `;
-
-            (material as THREE.MeshStandardMaterial).onBeforeCompile = (shader) => {
-                shader.uniforms.uElevationMap = { value: this.elevationTex };
-                shader.uniforms.uNormalMap = { value: this.normalTex };
-                shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
-                shader.uniforms.uShowSlopes = terrainUniforms.uShowSlopes;
-                shader.uniforms.uShowHydrology = terrainUniforms.uShowHydrology;
-                shader.uniforms.uTime = terrainUniforms.uTime;
-                shader.uniforms.uTileSize = { value: this.tileSizeMeters };
-                shader.uniforms.uElevOffset = { value: this.elevOffset };
-                shader.uniforms.uElevScale = { value: this.elevScale };
-                shader.uniforms.uColorOffset = { value: this.colorOffset };
-                shader.uniforms.uColorScale = { value: this.colorScale };
-                shader.uniforms.uOverlayMap = { value: this.overlayTex };
-                shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
+            if (!shader.vertexShader.includes('vTrueNormal')) {
+                const sharedShaderChunk = `
+                    uniform sampler2D uElevationMap; uniform float uExaggeration; uniform float uTileSize;
+                    uniform vec2 uElevOffset; uniform float uElevScale;
+                    float decodeHeight(vec4 rgba) { return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1); }
+                    float getTerrainHeight(vec2 uv) {
+                        vec2 elevUv = uElevOffset + (uv * uElevScale);
+                        vec4 col = texture2D(uElevationMap, elevUv);
+                        float h = decodeHeight(col);
+                        if (h < -1000.0 || h > 9000.0) return 0.0;
+                        return h * uExaggeration;
+                    }
+                `;
 
                 shader.vertexShader = `
                     #define IS_LIGHT ${isLight ? '1' : '0'}
@@ -290,24 +281,56 @@ export class Tile {
                         diffuseColor.rgb = mix(diffuseColor.rgb, slopeColor, yellowMix * 0.55);
                     }
                 `);
-            };
+            }
+        };
 
-            const depth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, alphaTest: 0.5 });
-            depth.onBeforeCompile = (shader) => {
+        const material = materialPool.acquire(is2D, onCompile);
+        if (is2D) (material as THREE.MeshBasicMaterial).map = this.colorTex;
+        else (material as THREE.MeshStandardMaterial).map = this.colorTex;
+
+        // Mise à jour directe des uniforms si le shader est déjà compilé (réutilisation)
+        const shader = (material as any).userData.shader;
+        if (shader) {
+            shader.uniforms.uElevationMap.value = this.elevationTex;
+            shader.uniforms.uNormalMap.value = this.normalTex;
+            shader.uniforms.uOverlayMap.value = this.overlayTex;
+            shader.uniforms.uTileSize.value = this.tileSizeMeters;
+            shader.uniforms.uElevOffset.value = this.elevOffset;
+            shader.uniforms.uElevScale.value = this.elevScale;
+            shader.uniforms.uColorOffset.value = this.colorOffset;
+            shader.uniforms.uColorScale.value = this.colorScale;
+            shader.uniforms.uHasOverlay.value = !!this.overlayTex;
+        }
+
+        if (!is2D) {
+            const onDepthCompile = (shader: THREE.Shader) => {
+                (depth as any).userData.shader = shader;
                 shader.uniforms.uElevationMap = { value: this.elevationTex };
                 shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
                 shader.uniforms.uElevOffset = { value: this.elevOffset };
                 shader.uniforms.uElevScale = { value: this.elevScale };
-                shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n
-                    uniform sampler2D uElevationMap; uniform float uExaggeration; uniform vec2 uElevOffset; uniform float uElevScale;
-                    float decodeHeight(vec4 rgba) { return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1); }
-                    float getTerrainHeight(vec2 uv) {
-                        vec2 elevUv = uElevOffset + (uv * uElevScale);
-                        vec4 col = texture2D(uElevationMap, elevUv);
-                        return decodeHeight(col) * uExaggeration;
-                    }
-                `).replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv);`);
+                
+                if (!shader.vertexShader.includes('decodeHeight')) {
+                    shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n
+                        uniform sampler2D uElevationMap; uniform float uExaggeration; uniform vec2 uElevOffset; uniform float uElevScale;
+                        float decodeHeight(vec4 rgba) { return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1); }
+                        float getTerrainHeight(vec2 uv) {
+                            vec2 elevUv = uElevOffset + (uv * uElevScale);
+                            vec4 col = texture2D(uElevationMap, elevUv);
+                            return decodeHeight(col) * uExaggeration;
+                        }
+                    `).replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv);`);
+                }
             };
+
+            const depth = materialPool.acquireDepth(onDepthCompile);
+            const depthShader = (depth as any).userData.shader;
+            if (depthShader) {
+                depthShader.uniforms.uElevationMap.value = this.elevationTex;
+                depthShader.uniforms.uElevOffset.value = this.elevOffset;
+                depthShader.uniforms.uElevScale.value = this.elevScale;
+            }
+
             this.mesh = new THREE.Mesh(getPlaneGeometry(resolution, this.tileSizeMeters), material);
             this.mesh.customDepthMaterial = depth;
         } else {
@@ -338,7 +361,11 @@ export class Tile {
 
         if (oldMesh) {
             oldMesh.position.y -= 0.1;
-            setTimeout(() => { if (state.scene) state.scene.remove(oldMesh); if (oldMesh.material instanceof THREE.Material) oldMesh.material.dispose(); }, 500);
+            setTimeout(() => { 
+                if (state.scene) state.scene.remove(oldMesh); 
+                if (oldMesh.material instanceof THREE.Material) materialPool.release(oldMesh.material);
+                if (oldMesh.customDepthMaterial instanceof THREE.Material) materialPool.release(oldMesh.customDepthMaterial);
+            }, 500);
         }
     }
 

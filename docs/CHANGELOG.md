@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.6.4] - 2026-03-21
+### 🚀 Material Pooling & Zero-Stutter Rendering
+- **Shader Reuse** : Implémentation d'un pool de matériaux (`materialPool.ts`) permettant de réutiliser les shaders compilés. Suppression des micro-saccades lors du chargement de nouvelles tuiles.
+- **Optimisation Mémoire** : Nettoyage automatique des références de textures lors du recyclage des matériaux pour prévenir la saturation VRAM.
+- **Stabilité 2D/3D** : Unification des matériaux de profondeur personnalisés via le pool pour des ombres fluides et constantes.
+- **Qualité** : Suite de tests étendue à **84 tests au vert** (+5 tests sur le pooling).
+
 ## [5.6.3] - 2026-03-21
 ### 🚀 Normal Map Offloading & Memory Safety
 - **Performance GPU** : Déportation du calcul des normales vers les WebWorkers via une Normal Map pré-calculée. Réduction de 87% des lectures de textures dans le vertex shader.
