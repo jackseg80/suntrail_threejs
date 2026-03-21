@@ -76,6 +76,7 @@ export class Tile {
     pixelData: Uint8ClampedArray | null = null;
     colorTex: THREE.Texture | null = null;
     overlayTex: THREE.Texture | null = null;
+    normalTex: THREE.Texture | null = null;
     forestMesh: THREE.Object3D | null = null;
     poiGroup: THREE.Group | null = null;
     buildingMesh: THREE.Mesh | null = null;
@@ -160,6 +161,7 @@ export class Tile {
         if (cached) {
             this.elevationTex = cached.elev; this.pixelData = cached.pixelData;
             this.colorTex = cached.color; this.overlayTex = cached.overlay;
+            this.normalTex = cached.normal;
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
             return;
         }
@@ -186,7 +188,12 @@ export class Tile {
                 this.overlayTex.flipY = false; this.overlayTex.needsUpdate = true; this.overlayTex.colorSpace = THREE.SRGBColorSpace;
             }
 
-            addToCache(cacheKey, this.elevationTex!, this.pixelData, this.colorTex!, this.overlayTex);
+            if (data.normalBitmap) {
+                this.normalTex = new THREE.Texture(data.normalBitmap);
+                this.normalTex.flipY = false; this.normalTex.needsUpdate = true;
+            }
+
+            addToCache(cacheKey, this.elevationTex!, this.pixelData, this.colorTex!, this.overlayTex, this.normalTex);
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
         } catch (e) { this.status = 'failed'; }
     }
@@ -226,6 +233,7 @@ export class Tile {
 
             (material as THREE.MeshStandardMaterial).onBeforeCompile = (shader) => {
                 shader.uniforms.uElevationMap = { value: this.elevationTex };
+                shader.uniforms.uNormalMap = { value: this.normalTex };
                 shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
                 shader.uniforms.uShowSlopes = terrainUniforms.uShowSlopes;
                 shader.uniforms.uShowHydrology = terrainUniforms.uShowHydrology;
@@ -241,24 +249,17 @@ export class Tile {
                 shader.vertexShader = `
                     #define IS_LIGHT ${isLight ? '1' : '0'}
                     ${shader.vertexShader}
-                `.replace('#include <common>', `#include <common>\nvarying vec3 vTrueNormal; uniform vec2 uColorOffset; uniform float uColorScale; ${sharedShaderChunk}`)
+                `.replace('#include <common>', `#include <common>\nvarying vec3 vTrueNormal; uniform vec2 uColorOffset; uniform float uColorScale; uniform sampler2D uNormalMap; ${sharedShaderChunk}`)
                  .replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);`);
 
                 if (isLight) {
                     shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\nobjectNormal = vec3(0.0,1.0,0.0); vTrueNormal = vec3(0.0,1.0,0.0);`);
                 } else {
                     shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n
-                        float delta = uTileSize / 256.0;
-                        float hL = getTerrainHeight(uv + vec2(-1.0/256.0, 0.0));
-                        float hR = getTerrainHeight(uv + vec2(1.0/256.0, 0.0));
-                        float hD = getTerrainHeight(uv + vec2(0.0, -1.0/256.0));
-                        float hU = getTerrainHeight(uv + vec2(0.0, 1.0/256.0));
-                        objectNormal = normalize(vec3(hL - hR, delta * 2.0, hD - hU));
-                        float thL = getTrueTerrainHeight(uv + vec2(-1.0/256.0, 0.0));
-                        float thR = getTrueTerrainHeight(uv + vec2(1.0/256.0, 0.0));
-                        float thD = getTrueTerrainHeight(uv + vec2(0.0, -1.0/256.0));
-                        float thU = getTrueTerrainHeight(uv + vec2(0.0, 1.0/256.0));
-                        vTrueNormal = normalize(vec3(thL - thR, delta * 2.0, thD - thU));
+                        vec2 elevUv = uElevOffset + (uv * uElevScale);
+                        vec3 normalSample = texture2D(uNormalMap, elevUv).rgb * 2.0 - 1.0;
+                        vTrueNormal = normalize(normalSample);
+                        objectNormal = normalize(vec3(normalSample.x * uExaggeration, normalSample.y, normalSample.z * uExaggeration));
                     `);
                 }
                 shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv);`);
@@ -350,10 +351,26 @@ export class Tile {
 
     dispose(): void {
         this.status = 'disposed'; loadQueue.delete(this);
-        if (this.mesh) { if (state.scene) state.scene.remove(this.mesh); disposeObject(this.mesh); this.mesh = null; }
+        if (this.mesh) {
+            if (state.scene) state.scene.remove(this.mesh);
+            // Empêcher disposeObject de tuer les textures partagées (gérées par le cache)
+            if (this.mesh.material instanceof THREE.Material) {
+                (this.mesh.material as any).map = null;
+                const shader = (this.mesh.material as any).userData.shader;
+                if (shader && shader.uniforms) {
+                    if (shader.uniforms.uElevationMap) shader.uniforms.uElevationMap.value = null;
+                    if (shader.uniforms.uNormalMap) shader.uniforms.uNormalMap.value = null;
+                    if (shader.uniforms.uOverlayMap) shader.uniforms.uOverlayMap.value = null;
+                }
+            }
+            disposeObject(this.mesh); this.mesh = null;
+        }
         if (this.forestMesh) { if (state.scene) state.scene.remove(this.forestMesh); disposeObject(this.forestMesh); this.forestMesh = null; }
         if (this.poiGroup) { if (state.scene) state.scene.remove(this.poiGroup); disposeObject(this.poiGroup); this.poiGroup = null; }
         if (this.buildingMesh) { if (state.scene) state.scene.remove(this.buildingMesh); disposeObject(this.buildingMesh); this.buildingMesh = null; }
+        // Ne PAS disposer elevationTex, colorTex, overlayTex et normalTex ici car ils sont partagés via le cache.
+        // Ils seront disposés par tileCache.ts lors de l'éviction.
+        this.elevationTex = null; this.colorTex = null; this.overlayTex = null; this.normalTex = null;
     }
 }
 

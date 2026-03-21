@@ -21,16 +21,9 @@ export function disposeObject(obj: any): void {
         const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
         for (const mat of materials) {
             if (typeof mat.dispose === 'function') {
-                // Optionnel : on peut aussi dispose les textures liées au matériau
-                // (attention : ne pas dispose une texture partagée par plusieurs objets)
-                // Ici, dans SunTrail, la plupart des tuiles ont leurs propres textures de map.
-                if (mat.map && typeof mat.map.dispose === 'function') mat.map.dispose();
-                if (mat.lightMap && typeof mat.lightMap.dispose === 'function') mat.lightMap.dispose();
-                if (mat.bumpMap && typeof mat.bumpMap.dispose === 'function') mat.bumpMap.dispose();
-                if (mat.normalMap && typeof mat.normalMap.dispose === 'function') mat.normalMap.dispose();
-                if (mat.specularMap && typeof mat.specularMap.dispose === 'function') mat.specularMap.dispose();
-                if (mat.envMap && typeof mat.envMap.dispose === 'function') mat.envMap.dispose();
-                
+                // Ne PAS disposer les textures ici car elles sont désormais partagées via tileCache.ts.
+                // Seul le cache est responsable de la destruction physique des textures lors de l'éviction
+                // pour éviter de "tuer" une texture encore utilisée par une autre tuile.
                 mat.dispose();
             }
         }

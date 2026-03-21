@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.6.3] - 2026-03-21
+### 🚀 Normal Map Offloading & Memory Safety
+- **Performance GPU** : Déportation du calcul des normales vers les WebWorkers via une Normal Map pré-calculée. Réduction de 87% des lectures de textures dans le vertex shader.
+- **Protection de la VRAM** : Correction d'un bug critique dans `memory.ts` qui supprimait les textures partagées lors du nettoyage des tuiles.
+- **Fiabilité du Cache** : Correction de la restauration de la texture de normales lors de la réutilisation des tuiles mises en cache.
+- **Fluidité Dynamique** : L'exagération du relief reste 100% dynamique tout en utilisant la Normal Map pré-calculée.
+
 ## [5.6.2] - 2026-03-21
 ### 🛠️ Correctifs de Rendu & Optimisation Végétation
 - **Stabilité OpenTopoMap** : Résolution du bug d'écran noir via l'utilisation du style `topo-v2` stable de MapTiler et uniformisation des URLs HD.

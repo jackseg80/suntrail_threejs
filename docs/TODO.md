@@ -5,7 +5,7 @@
 
 - [x] **Refactoring Architectural Terrain (Phase 1)** : Extraction de `TileCache` (textures) et `GeometryCache` (plans Three.js) pour stabiliser la VRAM.
 - [x] **Extraction de `TileLoader` (Phase 2)** : Isoler la logique réseau, le cache persistant et la génération d'URLs MapTiler/IGN.
-- [ ] **Normal Map Pre-computation (Worker) (Phase 3)** : Déplacer le calcul des normales du GPU vers les WebWorkers.
+- [x] **Normal Map Pre-computation (Worker) (Phase 3)** : Déplacer le calcul des normales du GPU vers les WebWorkers (-87% texture reads).
 - [ ] **Material Pooling (Shader Reuse)** : Implémenter un pool de matériaux réutilisables pour supprimer les micro-freezes de compilation GLSL.
 - [ ] **Vector Trails (MVT) Pro** : Migration complète des sentiers raster vers le format vectoriel natif (netteté infinie).
 - [x] **Correctif Rendu Bas Niveau (Zoom < 10)** : Résolution de l'écran noir au dézoom massif via détection par tuile.

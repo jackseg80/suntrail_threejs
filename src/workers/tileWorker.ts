@@ -9,7 +9,7 @@
 const CACHE_NAME = 'suntrail-tiles-v1';
 
 self.onmessage = async (e) => {
-    const { id, elevUrl, colorUrl, overlayUrl, isOffline } = e.data;
+    const { id, elevUrl, colorUrl, overlayUrl, isOffline, zoom } = e.data;
 
     try {
         const results: any = { id, cacheHits: 0, networkRequests: 0 };
@@ -30,19 +30,66 @@ self.onmessage = async (e) => {
             }
         });
 
-        // --- TRAITEMENT ÉLÉVATION (RGBA -> pixelData) ---
+        // --- TRAITEMENT ÉLÉVATION (RGBA -> pixelData + NormalMap) ---
         if (elevRes) {
             results.elevBitmap = elevRes.bitmap;
             transferables.push(elevRes.bitmap);
 
             const { width, height } = elevRes.bitmap;
             const canvas = new OffscreenCanvas(width, height);
-            const ctx = canvas.getContext('2d');
+            const ctx = canvas.getContext('2d', { alpha: false });
             if (ctx) {
                 ctx.drawImage(elevRes.bitmap, 0, 0);
                 const imageData = ctx.getImageData(0, 0, width, height);
-                results.pixelData = imageData.data.buffer;
+                const data = imageData.data;
+                results.pixelData = data.buffer;
                 transferables.push(results.pixelData);
+
+                // --- GÉNÉRATION NORMAL MAP (v5.6.3) ---
+                const normalData = new Uint8ClampedArray(width * height * 4);
+                const tileSizeMeters = 40075016.686 / Math.pow(2, zoom || 14);
+                const pixelSize = tileSizeMeters / width;
+
+                for (let py = 0; py < height; py++) {
+                    for (let px = 0; px < width; px++) {
+                        const idx = (py * width + px) * 4;
+                        
+                        // Calcul des indices voisins (clampés aux bords)
+                        const getH = (x: number, y: number) => {
+                            const ix = Math.max(0, Math.min(width - 1, x));
+                            const iy = Math.max(0, Math.min(height - 1, y));
+                            const i = (iy * width + ix) * 4;
+                            return -10000.0 + ((data[i] * 65536.0 + data[i+1] * 256.0 + data[i+2]) * 0.1);
+                        };
+
+                        const hL = getH(px - 1, py);
+                        const hR = getH(px + 1, py);
+                        const hD = getH(px, py - 1);
+                        const hU = getH(px, py + 1);
+
+                        // Vecteur normal (vTrueNormal)
+                        // n = normalize(hL - hR, pixelSize * 2.0, hD - hU)
+                        const vx = hL - hR;
+                        const vy = pixelSize * 2.0;
+                        const vz = hD - hU;
+                        const len = Math.sqrt(vx * vx + vy * vy + vz * vz);
+
+                        // Encodage [0, 255]
+                        normalData[idx] = ((vx / len) * 0.5 + 0.5) * 255;
+                        normalData[idx+1] = ((vy / len) * 0.5 + 0.5) * 255;
+                        normalData[idx+2] = ((vz / len) * 0.5 + 0.5) * 255;
+                        normalData[idx+3] = 255;
+                    }
+                }
+
+                const normalCanvas = new OffscreenCanvas(width, height);
+                const nCtx = normalCanvas.getContext('2d');
+                if (nCtx) {
+                    nCtx.putImageData(new ImageData(normalData, width, height), 0, 0);
+                    const normalBitmap = normalCanvas.transferToImageBitmap();
+                    results.normalBitmap = normalBitmap;
+                    transferables.push(normalBitmap);
+                }
             }
         }
 

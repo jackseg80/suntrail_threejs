@@ -10,6 +10,7 @@ export interface CachedTileData {
     pixelData: Uint8ClampedArray | null;
     color: THREE.Texture;
     overlay: THREE.Texture | null;
+    normal: THREE.Texture | null;
 }
 
 /**
@@ -39,7 +40,7 @@ export function getTileCacheKey(key: string, zoom: number): string {
  * Ajoute des données de tuiles au cache. 
  * Si la taille maximale est atteinte, l'entrée la plus ancienne est supprimée (FIFO).
  */
-export function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8ClampedArray | null, colorTex: THREE.Texture, overlayTex: THREE.Texture | null): void {
+export function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8ClampedArray | null, colorTex: THREE.Texture, overlayTex: THREE.Texture | null, normalTex: THREE.Texture | null): void {
     if (dataCache.size >= getMaxCacheSize()) {
         const oldestKey = dataCache.keys().next().value;
         if (oldestKey) {
@@ -48,11 +49,12 @@ export function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8
                 entry.elev.dispose();
                 entry.color.dispose();
                 if (entry.overlay) entry.overlay.dispose();
+                if (entry.normal) entry.normal.dispose();
             }
             dataCache.delete(oldestKey);
         }
     }
-    dataCache.set(key, { elev: elevTex, pixelData, color: colorTex, overlay: overlayTex });
+    dataCache.set(key, { elev: elevTex, pixelData, color: colorTex, overlay: overlayTex, normal: normalTex });
 }
 
 /**
@@ -75,6 +77,7 @@ export function disposeAllCachedTiles(): void {
         entry.elev.dispose();
         entry.color.dispose();
         if (entry.overlay) entry.overlay.dispose();
+        if (entry.normal) entry.normal.dispose();
     }
     dataCache.clear();
 }

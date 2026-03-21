@@ -142,7 +142,7 @@ export async function loadTileData(tx: number, ty: number, zoom: number, is2D: b
     let colorUrl = getColorUrl(Math.floor(tx/cr), Math.floor(ty/cr), cz);
     const overlayUrl = getOverlayUrl(tx, ty, zoom);
 
-    return await tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl);
+    return await tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl, zoom);
 }
 
 

@@ -15,6 +15,21 @@ vi.mock('./utils', () => ({
     showToast: vi.fn()
 }));
 
+// Mock de tileWorkerManager
+vi.mock('./workerManager', () => ({
+    tileWorkerManager: {
+        loadTile: vi.fn(() => Promise.resolve({
+            elevBitmap: {},
+            colorBitmap: {},
+            overlayBitmap: {},
+            normalBitmap: {},
+            pixelData: new Uint8ClampedArray(100).buffer,
+            cacheHits: 0,
+            networkRequests: 1
+        }))
+    }
+}));
+
 describe('tileLoader.ts URLs', () => {
     beforeEach(() => {
         state.MK = 'test_key';
