@@ -4,6 +4,12 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.6.9] - 2026-03-21
+### 🛠️ Restauration Ombres & Finalisation Defaults
+- **Restauration 3D en STD** : Le profil "Balanced" (STD) bénéficie à nouveau de l'éclairage 3D complet et des ombres portées. Le mode de rendu simplifié est désormais strictement limité au profil "Éco" (2D).
+- **Configuration Neutre** : Désactivation initiale des couches "Sentiers" et "Pentes" sur tous les profils au lancement pour une meilleure clarté visuelle.
+- **Optimisation Mobile** : Affinement de la détection matérielle pour les mobiles mid-range.
+
 ## [5.6.8] - 2026-03-21
 ### 🛠️ Configuration par défaut & Détection Mobile
 - **Sécurité au Lancement** : Désactivation par défaut des couches "Sentiers" et "Pentes" sur tous les profils pour éviter les surcharges et artefacts visuels (voile rouge) au démarrage.

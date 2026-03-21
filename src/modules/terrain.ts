@@ -203,7 +203,7 @@ export class Tile {
         if (activeTiles.get(this.key) !== this) return;
 
         const is2D = (this.zoom <= 10 || resolution <= 2);
-        const isLight = (state.PERFORMANCE_PRESET === 'eco' || state.PERFORMANCE_PRESET === 'balanced');
+        const isLight = (state.PERFORMANCE_PRESET === 'eco');
         const oldMesh = this.mesh;
         
         const onCompile = (shader: any) => {

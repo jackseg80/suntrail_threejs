@@ -1,4 +1,4 @@
-# SunTrail - Guide Développeur (v5.6.8)
+# SunTrail - Guide Développeur (v5.6.9)
 
 ## Environnement & Langue
 - **Langue :** Toutes les interactions et réponses doivent être en **Français**.
