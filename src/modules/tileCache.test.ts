@@ -30,19 +30,16 @@ describe('tileCache.ts', () => {
     });
 
     it('should respect maximum cache size (FIFO)', () => {
-        // En mode balanced (non-mobile), la taille est 250.
-        // On va forcer un mode avec une taille plus petite pour le test si possible, 
-        // ou simplement tester la logique de débordement.
+        // En mode eco, la taille est 80.
+        state.PERFORMANCE_PRESET = 'eco';
         
-        state.PERFORMANCE_PRESET = 'eco'; // Taille 60
-        
-        for (let i = 0; i < 70; i++) {
+        for (let i = 0; i < 90; i++) {
             addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null);
         }
 
-        expect(getCacheSize()).toBe(60);
+        expect(getCacheSize()).toBe(80);
         expect(hasInCache('key_0')).toBe(false); // Le premier a dû être supprimé
-        expect(hasInCache('key_69')).toBe(true); // Le dernier doit être là
+        expect(hasInCache('key_89')).toBe(true); // Le dernier doit être là
     });
 
     it('should dispose textures when cleared', () => {
@@ -57,17 +54,17 @@ describe('tileCache.ts', () => {
     });
 
     it('should move accessed item to the end of FIFO queue', () => {
-        state.PERFORMANCE_PRESET = 'eco'; // Taille 60
+        state.PERFORMANCE_PRESET = 'eco'; // Taille 80
         
-        // Remplir 60 items
-        for (let i = 0; i < 60; i++) {
+        // Remplir 80 items
+        for (let i = 0; i < 80; i++) {
             addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null);
         }
         
         // Accéder au premier item (key_0) pour le "rafraîchir"
         getFromCache('key_0');
         
-        // Ajouter un 61ème item
+        // Ajouter un 81ème item
         addToCache('key_new', new THREE.Texture(), null, new THREE.Texture(), null);
         
         // key_1 devrait être supprimé au lieu de key_0

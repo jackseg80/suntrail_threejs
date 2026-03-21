@@ -12,6 +12,7 @@ import { tileWorkerManager } from './workerManager';
 import { eventBus } from './eventBus';
 import { addToCache, getFromCache, disposeAllCachedTiles, hasInCache, getTileCacheKey } from './tileCache';
 import { getPlaneGeometry } from './geometryCache';
+import { loadTileData, downloadOfflineZone, updateStorageUI, CACHE_NAME } from './tileLoader';
 
 export const activeTiles = new Map<string, Tile>(); 
 export const activeLabels = new Map<string, any>(); 
@@ -66,66 +67,6 @@ export const terrainUniforms = {
     uTime: { value: 0.0 },
     uSunPos: { value: new THREE.Vector3(0, 1, 0) }
 };
-
-const CACHE_NAME = 'suntrail-tiles-v1';
-
-async function fetchWithCache(url: string, usePersistentCache: boolean = false): Promise<Blob | null> {
-    if (state.IS_OFFLINE && !usePersistentCache) return null;
-    try {
-        if (usePersistentCache) {
-            const cache = await caches.open(CACHE_NAME);
-            const cached = await cache.match(url);
-            if (cached) { state.cacheHits++; updateStorageUI(); return await cached.blob(); }
-        }
-        if (state.IS_OFFLINE) return null;
-        const r = await fetch(url, { mode: 'cors' });
-        if (r.ok) {
-            const blob = await r.blob();
-            state.networkRequests++; updateStorageUI();
-            if (usePersistentCache) { const cache = await caches.open(CACHE_NAME); cache.put(url, new Response(blob)); }
-            return blob;
-        }
-        return null;
-    } catch (e) { return null; }
-}
-
-export async function downloadOfflineZone(lat: number, lon: number, onProgress: (done: number, total: number) => void): Promise<void> {
-    const radiusKm = 6;
-    const zooms = [12, 13, 14, 15];
-    const latOffset = radiusKm / 111.0;
-    const lonOffset = radiusKm / (111.0 * Math.cos(lat * Math.PI / 180));
-    const bbox = { n: lat + latOffset, s: lat - latOffset, e: lon + lonOffset, w: lon - lonOffset };
-    const urls: string[] = [];
-    const inCH = isPositionInSwitzerland(lat, lon);
-
-    for (const z of zooms) {
-        const t1 = lngLatToTile(bbox.w, bbox.n, z);
-        const t2 = lngLatToTile(bbox.e, bbox.s, z);
-        for (let x = t1.x; x <= t2.x; x++) {
-            for (let y = t1.y; y <= t2.y; y++) {
-                let colorUrl = '';
-                if (state.MAP_SOURCE === 'satellite') colorUrl = inCH ? `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${z}/${x}/${y}.jpeg` : `https://api.maptiler.com/maps/satellite/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
-                else colorUrl = inCH ? `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${z}/${x}/${y}.jpeg` : `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
-                urls.push(colorUrl);
-                urls.push(`https://api.maptiler.com/tiles/terrain-rgb-v2/${z}/${x}/${y}.png?key=${state.MK}`);
-            }
-        }
-    }
-    const total = urls.length;
-    let done = 0;
-    for (const url of urls) {
-        try { await fetchWithCache(url, true); } catch (e) {}
-        done++; if (done % 5 === 0) onProgress(done, total);
-    }
-    onProgress(total, total);
-}
-
-export function updateStorageUI() {
-    const netCount = document.getElementById('net-count');
-    const cacheCount = document.getElementById('cache-count');
-    if (netCount) netCount.textContent = state.networkRequests.toString();
-    if (cacheCount) cacheCount.textContent = state.cacheHits.toString();
-}
 
 export class Tile {
     tx: number; ty: number; zoom: number; key: string;
@@ -197,14 +138,9 @@ export class Tile {
         return new THREE.Vector3((xNorm - txNorm) * EARTH_CIRCUMFERENCE, 0, (yNorm - tyNorm) * EARTH_CIRCUMFERENCE);
     }
 
-    getNativeColorZoom(): number {
-        if (state.MAP_SOURCE === 'opentopomap') return 15;
-        return 18;
-    }
-
     updateHybridSettings(): void {
         const MAX_RGB_ZOOM = 14;
-        const nativeMax = this.getNativeColorZoom();
+        const nativeMax = (state.MAP_SOURCE === 'opentopomap') ? 15 : 18;
         if (this.zoom > MAX_RGB_ZOOM) {
             const ratio = Math.pow(2, this.zoom - MAX_RGB_ZOOM);
             this.elevScale = 1.0 / ratio;
@@ -231,20 +167,7 @@ export class Tile {
         this.status = 'loading';
         const is2D = (this.zoom <= 10 || state.RESOLUTION <= 2);
         try {
-            let elevUrl = null;
-            if (!is2D) {
-                let ez = Math.min(this.zoom, 14);
-                let r = Math.pow(2, Math.max(0, this.zoom - 14));
-                elevUrl = `https://api.maptiler.com/tiles/terrain-rgb-v2/${ez}/${Math.floor(this.tx/r)}/${Math.floor(this.ty/r)}.png?key=${state.MK}`;
-            }
-            let nativeMax = this.getNativeColorZoom();
-            let cz = Math.min(this.zoom, nativeMax);
-            let cr = Math.pow(2, Math.max(0, this.zoom - nativeMax));
-            let colorUrl = this.getColorUrl(cz, Math.floor(this.tx/cr), Math.floor(this.ty/cr));
-            if (colorUrl.includes('maptiler') && this.zoom > 10) colorUrl = colorUrl.replace('/256/', '/512/');
-            let overlayUrl = (state.SHOW_TRAILS && this.zoom >= 10) ? this.getOverlayUrl(Math.min(this.zoom, 18), this.tx, this.ty) : null;
-
-            const data = await tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl);
+            const data = await loadTileData(this.tx, this.ty, this.zoom, is2D);
             if (this.status as any === 'disposed' || !data) return;
 
             if (data.elevBitmap) {
@@ -266,27 +189,6 @@ export class Tile {
             addToCache(cacheKey, this.elevationTex!, this.pixelData, this.colorTex!, this.overlayTex);
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
         } catch (e) { this.status = 'failed'; }
-    }
-
-    getColorUrl(z: number, x: number, y: number): string {
-        const inCH = isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON);
-        const inFR = isPositionInFrance(state.TARGET_LAT, state.TARGET_LON);
-        if (state.MAP_SOURCE === 'satellite') {
-            if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${z}/${x}/${y}.jpeg`;
-            if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
-            return `https://api.maptiler.com/maps/satellite/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
-        }
-        if (state.MAP_SOURCE === 'swisstopo') {
-            if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${z}/${x}/${y}.jpeg`;
-            if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
-        }
-        return `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
-    }
-
-    getOverlayUrl(z: number, x: number, y: number): string { 
-        if (isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON)) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${z}/${x}/${y}.png`; 
-        if (isPositionInFrance(state.TARGET_LAT, state.TARGET_LON)) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=TRANSPORT.WANDERWEGE&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
-        return '';
     }
 
     buildMesh(resolution: number): void {
@@ -544,10 +446,6 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
 export function updateHydrologyVisibility(visible: boolean): void { state.SHOW_HYDROLOGY = visible; resetTerrain(); updateVisibleTiles(); }
 export function updateSlopeVisibility(visible: boolean): void { state.SHOW_SLOPES = visible; resetTerrain(); updateVisibleTiles(); }
 export async function loadTerrain(): Promise<void> { await updateVisibleTiles(); }
-export async function deleteTerrainCache(): Promise<void> { 
-    disposeAllCachedTiles();
-    try { const success = await caches.delete(CACHE_NAME); showToast(success ? 'Cache vidé' : 'Cache déjà vide'); } catch (e) { showToast('Erreur cache'); } 
-}
 
 export function updateGPXMesh(): void {
     if (!state.rawGpxData || !state.camera) return;

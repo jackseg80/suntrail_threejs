@@ -5,7 +5,7 @@
  */
 
 import { state } from './state';
-import { updateStorageUI } from './terrain';
+import { updateStorageUI } from './tileLoader';
 
 interface WorkerTask {
     resolve: (value: any) => void;

@@ -1,0 +1,176 @@
+import { state } from './state';
+import { isPositionInSwitzerland, isPositionInFrance, showToast } from './utils';
+import { lngLatToTile } from './geo';
+import { tileWorkerManager } from './workerManager';
+import { disposeAllCachedTiles } from './tileCache';
+
+export const CACHE_NAME = 'suntrail-tiles-v1';
+
+/**
+ * Vide le cache persistant et le cache mémoire.
+ */
+export async function deleteTerrainCache(): Promise<void> {
+    disposeAllCachedTiles();
+    try {
+        const success = await caches.delete(CACHE_NAME);
+        showToast(success ? 'Cache vidé' : 'Cache déjà vide');
+    } catch (e) {
+        showToast('Erreur cache');
+    }
+}
+
+/**
+ * Met à jour les statistiques de stockage dans l'UI.
+ */
+export function updateStorageUI() {
+    const netCount = document.getElementById('net-count');
+    const cacheCount = document.getElementById('cache-count');
+    if (netCount) netCount.textContent = state.networkRequests.toString();
+    if (cacheCount) cacheCount.textContent = state.cacheHits.toString();
+}
+
+/**
+ * Récupère une ressource via le cache persistant ou le réseau.
+ */
+export async function fetchWithCache(url: string, usePersistentCache: boolean = false): Promise<Blob | null> {
+    if (state.IS_OFFLINE && !usePersistentCache) return null;
+    try {
+        if (usePersistentCache) {
+            const cache = await caches.open(CACHE_NAME);
+            const cached = await cache.match(url);
+            if (cached) {
+                state.cacheHits++;
+                updateStorageUI();
+                return await cached.blob();
+            }
+        }
+        if (state.IS_OFFLINE) return null;
+        const r = await fetch(url, { mode: 'cors' });
+        if (r.ok) {
+            const blob = await r.blob();
+            state.networkRequests++;
+            updateStorageUI();
+            if (usePersistentCache) {
+                const cache = await caches.open(CACHE_NAME);
+                cache.put(url, new Response(blob));
+            }
+            return blob;
+        }
+        return null;
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
+ * Génère l'URL pour la texture de couleur/carte d'une tuile.
+ */
+export function getColorUrl(tx: number, ty: number, zoom: number): string {
+    const inCH = isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON);
+    const inFR = isPositionInFrance(state.TARGET_LAT, state.TARGET_LON);
+    
+    if (state.MAP_SOURCE === 'satellite') {
+        if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${zoom}/${tx}/${ty}.jpeg`;
+        if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX=${zoom}&TILEROW=${ty}&TILECOL=${tx}`;
+        return `https://api.maptiler.com/maps/satellite/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
+    }
+    
+    if (state.MAP_SOURCE === 'swisstopo') {
+        if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${zoom}/${tx}/${ty}.jpeg`;
+        if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${zoom}&TILEROW=${ty}&TILECOL=${tx}`;
+    }
+    
+    return `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
+}
+
+/**
+ * Génère l'URL pour la texture des sentiers/POI.
+ */
+export function getOverlayUrl(tx: number, ty: number, zoom: number): string | null {
+    if (!state.SHOW_TRAILS || zoom < 10) return null;
+    
+    if (isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON)) {
+        return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${zoom}/${tx}/${ty}.png`;
+    }
+    
+    if (isPositionInFrance(state.TARGET_LAT, state.TARGET_LON)) {
+        return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=TRANSPORT.WANDERWEGE&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${zoom}&TILEROW=${ty}&TILECOL=${tx}`;
+    }
+    
+    return null;
+}
+
+/**
+ * Génère l'URL pour les données d'élévation (Terrain-RGB).
+ */
+export function getElevationUrl(tx: number, ty: number, zoom: number, is2D: boolean): string | null {
+    if (is2D) return null;
+    
+    let ez = Math.min(zoom, 14);
+    let r = Math.pow(2, Math.max(0, zoom - 14));
+    return `https://api.maptiler.com/tiles/terrain-rgb-v2/${ez}/${Math.floor(tx/r)}/${Math.floor(ty/r)}.png?key=${state.MK}`;
+}
+
+/**
+ * Charge les données complètes d'une tuile via les Workers.
+ */
+export async function loadTileData(tx: number, ty: number, zoom: number, is2D: boolean) {
+    const elevUrl = getElevationUrl(tx, ty, zoom, is2D);
+    
+    // Logique native color zoom
+    const nativeMax = (state.MAP_SOURCE === 'opentopomap') ? 15 : 18;
+    const cz = Math.min(zoom, nativeMax);
+    const cr = Math.pow(2, Math.max(0, zoom - nativeMax));
+    
+    let colorUrl = getColorUrl(Math.floor(tx/cr), Math.floor(ty/cr), cz);
+    if (colorUrl.includes('maptiler') && zoom > 10) {
+        colorUrl = colorUrl.replace('/256/', '/512/');
+    }
+    
+    const overlayUrl = getOverlayUrl(tx, ty, zoom);
+
+    return await tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl);
+}
+
+/**
+ * Télécharge récursivement une zone pour l'usage hors-ligne.
+ */
+export async function downloadOfflineZone(lat: number, lon: number, onProgress: (done: number, total: number) => void): Promise<void> {
+    const radiusKm = 6;
+    const zooms = [12, 13, 14, 15];
+    const latOffset = radiusKm / 111.0;
+    const lonOffset = radiusKm / (111.0 * Math.cos(lat * Math.PI / 180));
+    const bbox = { n: lat + latOffset, s: lat - latOffset, e: lon + lonOffset, w: lon - lonOffset };
+    const urls: string[] = [];
+    const inCH = isPositionInSwitzerland(lat, lon);
+
+    for (const z of zooms) {
+        const t1 = lngLatToTile(bbox.w, bbox.n, z);
+        const t2 = lngLatToTile(bbox.e, bbox.s, z);
+        for (let x = t1.x; x <= t2.x; x++) {
+            for (let y = t1.y; y <= t2.y; y++) {
+                let colorUrl = '';
+                if (state.MAP_SOURCE === 'satellite') {
+                    colorUrl = inCH ? `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${z}/${x}/${y}.jpeg` : `https://api.maptiler.com/maps/satellite/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
+                } else {
+                    colorUrl = inCH ? `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${z}/${x}/${y}.jpeg` : `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
+                }
+                urls.push(colorUrl);
+                urls.push(`https://api.maptiler.com/tiles/terrain-rgb-v2/${z}/${x}/${y}.png?key=${state.MK}`);
+            }
+        }
+    }
+    
+    const total = urls.length;
+    let done = 0;
+    for (const url of urls) {
+        try {
+            await fetchWithCache(url, true);
+        } catch (e) {
+            // Silence silent errors
+        }
+        done++;
+        if (done % 5 === 0) onProgress(done, total);
+    }
+    onProgress(total, total);
+}

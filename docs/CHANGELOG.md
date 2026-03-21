@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.6.1] - 2026-03-21
+### 🚀 Extraction TileLoader & Fix WebWorkers
+- **Découplage Réseau** : Logique de téléchargement et génération d'URLs MapTiler/IGN isolée dans `tileLoader.ts`.
+- **Correction WebWorkers** : Résolution de l'erreur d'import `updateStorageUI` dans le gestionnaire de workers.
+- **Persistence** : Centralisation de la gestion du cache persistant (Cache API) pour une navigation fluide hors-ligne.
+- **Stabilité** : Suite de tests étendue à **80 tests au vert**.
+
 ## [5.6.0] - 2026-03-21
 ### 🏗️ Refactoring Architectural & Stabilité Zoom
 - **Architecture de Cache** : Extraction de `TileCache` et `GeometryCache` dans des modules isolés pour une gestion granulaire de la VRAM.
