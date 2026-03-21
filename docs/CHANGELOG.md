@@ -4,6 +4,14 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.6.2] - 2026-03-21
+### 🛠️ Correctifs de Rendu & Optimisation Végétation
+- **Stabilité OpenTopoMap** : Résolution du bug d'écran noir via l'utilisation du style `topo-v2` stable de MapTiler et uniformisation des URLs HD.
+- **Précision Géo-Tuile** : Migration vers une détection géographique par tuile (`getTileCenter`), assurant un rendu mondial cohérent même lors des dézooms massifs.
+- **Fiabilité Téléchargement** : Les téléchargements hors-ligne utilisent désormais les générateurs d'URLs dynamiques, éliminant les erreurs 400 sur les niveaux de zoom élevés.
+- **Optimisation Forêts** : Ajustement du seuil d'affichage de la végétation à LOD 14 (au lieu de 13) pour alléger la charge processeur lors des survols régionaux.
+- **Correction Fuite de Scène** : Empêche l'ajout d'objets (arbres, POI) dans la scène 3D pour les tuiles pré-chargées en arrière-plan, garantissant une transition de zoom parfaitement propre.
+
 ## [5.6.1] - 2026-03-21
 ### 🚀 Extraction TileLoader & Fix WebWorkers
 - **Découplage Réseau** : Logique de téléchargement et génération d'URLs MapTiler/IGN isolée dans `tileLoader.ts`.

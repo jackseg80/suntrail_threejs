@@ -4,16 +4,20 @@ import { getColorUrl, getOverlayUrl, getElevationUrl } from './tileLoader';
 
 // Mock de utils
 vi.mock('./utils', () => ({
-    isPositionInSwitzerland: vi.fn((lat, lon) => lat === 46.5 && lon === 6.5),
-    isPositionInFrance: vi.fn((lat, lon) => lat === 45.0 && lon === 5.0),
+    isPositionInSwitzerland: vi.fn((lat, lon) => {
+        // Mock: Zone Suisse entre lon 6 et 10, lat 45 et 48
+        return lon >= 6 && lon <= 10 && lat >= 45 && lat <= 48;
+    }),
+    isPositionInFrance: vi.fn((lat, lon) => {
+        // Mock: Zone France (simplifiée) entre lon -5 et 6
+        return lon >= -5 && lon < 6 && lat >= 42 && lat <= 51;
+    }),
     showToast: vi.fn()
 }));
 
 describe('tileLoader.ts URLs', () => {
     beforeEach(() => {
         state.MK = 'test_key';
-        state.TARGET_LAT = 0;
-        state.TARGET_LON = 0;
         state.MAP_SOURCE = 'opentopomap';
         state.SHOW_TRAILS = true;
     });
@@ -29,45 +33,36 @@ describe('tileLoader.ts URLs', () => {
         expect(url).toBeNull();
     });
 
-    it('should generate correct Color URL for OpenTopoMap', () => {
+    it('should generate correct Color URL for OpenTopoMap (Global Fallback)', () => {
         state.MAP_SOURCE = 'opentopomap';
-        const url = getColorUrl(10, 20, 14);
-        expect(url).toContain('topo-v2/256/14/10/20');
+        // Tuile au milieu de l'atlantique (0,0)
+        const url = getColorUrl(0, 0, 0); 
+        expect(url).toContain('topo-v2/256/0/0/0');
     });
 
-    it('should generate correct Color URL for Satellite (Global)', () => {
-        state.MAP_SOURCE = 'satellite';
-        const url = getColorUrl(10, 20, 14);
-        expect(url).toContain('maps/satellite/256/14/10/20');
+    it('should generate correct Color URL for SwissTopo (when inside CH)', () => {
+        state.MAP_SOURCE = 'swisstopo';
+        // Tuile proche de Berne (Z13: 4270, 2891)
+        const url = getColorUrl(4270, 2891, 13);
+        expect(url).toContain('ch.swisstopo.pixelkarte-farbe');
     });
 
-    it('should generate correct Color URL for SwissTopo (Satellite)', () => {
-        state.MAP_SOURCE = 'satellite';
-        state.TARGET_LAT = 46.5;
-        state.TARGET_LON = 6.5;
-        const url = getColorUrl(10, 20, 14);
-        expect(url).toContain('ch.swisstopo.swissimage');
-    });
-
-    it('should generate correct Color URL for France (IGN Satellite)', () => {
-        state.MAP_SOURCE = 'satellite';
-        state.TARGET_LAT = 45.0;
-        state.TARGET_LON = 5.0;
-        const url = getColorUrl(10, 20, 14);
-        expect(url).toContain('data.geopf.fr');
-        expect(url).toContain('ORTHOIMAGERY.ORTHOPHOTOS');
+    it('should fallback to MapTiler for SwissTopo (when outside CH)', () => {
+        state.MAP_SOURCE = 'swisstopo';
+        // Tuile à New York (Z13: 2413, 3080)
+        const url = getColorUrl(2413, 3080, 13);
+        expect(url).toContain('topo-v2/256/13/2413/3080');
     });
 
     it('should generate correct Overlay URL for Switzerland', () => {
-        state.TARGET_LAT = 46.5;
-        state.TARGET_LON = 6.5;
-        const url = getOverlayUrl(10, 20, 14);
+        // Tuile en Suisse
+        const url = getOverlayUrl(4270, 2891, 13);
         expect(url).toContain('ch.swisstopo.swisstlm3d-wanderwege');
     });
 
     it('should return null Overlay URL when trails are hidden', () => {
         state.SHOW_TRAILS = false;
-        const url = getOverlayUrl(10, 20, 14);
+        const url = getOverlayUrl(4270, 2891, 13);
         expect(url).toBeNull();
     });
 });

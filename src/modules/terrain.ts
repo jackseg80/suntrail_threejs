@@ -317,18 +317,18 @@ export class Tile {
         this.mesh.renderOrder = this.zoom; 
         this.mesh.castShadow = !is2D; this.mesh.receiveShadow = !is2D;
 
-        if (state.scene) state.scene.add(this.mesh);
+        if (state.scene && activeTiles.get(this.key) === this) state.scene.add(this.mesh);
         this.currentResolution = resolution;
         this.opacity = 0; this.isFadingIn = true;
 
         const delay = (ms: number) => ms * state.LOAD_DELAY_FACTOR;
-        if (state.SHOW_SIGNPOSTS && this.zoom >= 15) setTimeout(() => { if (this.status !== 'disposed') loadPOIsForTile(this); }, delay(600));
-        if (state.SHOW_BUILDINGS && this.zoom >= 16) setTimeout(() => { if (this.status !== 'disposed') loadBuildingsForTile(this); }, delay(150));
-        if (state.SHOW_HYDROLOGY && this.zoom >= 13) setTimeout(() => { if (this.status !== 'disposed') loadHydrologyForTile(this); }, delay(100));
+        if (state.SHOW_SIGNPOSTS && this.zoom >= 15) setTimeout(() => { if (this.status !== 'disposed' && activeTiles.get(this.key) === this) loadPOIsForTile(this); }, delay(600));
+        if (state.SHOW_BUILDINGS && this.zoom >= 16) setTimeout(() => { if (this.status !== 'disposed' && activeTiles.get(this.key) === this) loadBuildingsForTile(this); }, delay(150));
+        if (state.SHOW_HYDROLOGY && this.zoom >= 13) setTimeout(() => { if (this.status !== 'disposed' && activeTiles.get(this.key) === this) loadHydrologyForTile(this); }, delay(100));
         if (state.SHOW_VEGETATION && this.zoom >= 14) setTimeout(() => {
-            if (this.status as any === 'disposed') return;
+            if (this.status as any === 'disposed' || activeTiles.get(this.key) !== this) return;
             const forest = createForestForTile(this);
-            if (forest && state.scene && this.status as any !== 'disposed') {
+            if (forest && state.scene && this.status as any !== 'disposed' && activeTiles.get(this.key) === this) {
                 if (this.forestMesh) state.scene.remove(this.forestMesh);
                 this.forestMesh = forest; this.forestMesh.position.set(this.worldX, 0, this.worldZ);
                 state.scene.add(this.forestMesh);

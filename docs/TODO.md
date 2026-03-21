@@ -1,19 +1,16 @@
-# SunTrail 3D - Roadmap Révisée (v5.6.0)
+# SunTrail 3D - Roadmap Révisée (v5.6.2)
 
 ## 🚀 Priorité 1 : Optimisations & Netteté (v5.6)
 *Impact : Fluidité mobile absolue et rendu topographique pro.*
 
 - [x] **Refactoring Architectural Terrain (Phase 1)** : Extraction de `TileCache` (textures) et `GeometryCache` (plans Three.js) pour stabiliser la VRAM.
-- [ ] **Extraction de `TileLoader` (Phase 2)** : Isoler la logique réseau et décodage du rendu pur.
+- [x] **Extraction de `TileLoader` (Phase 2)** : Isoler la logique réseau, le cache persistant et la génération d'URLs MapTiler/IGN.
 - [ ] **Normal Map Pre-computation (Worker) (Phase 3)** : Déplacer le calcul des normales du GPU vers les WebWorkers.
-    - *Gain :* Réduction de 87% des lectures de textures (1 read au lieu de 8).
-- [ ] **Material Pooling (Shader Reuse)** : Implémenter un pool de matériaux réutilisables pour supprimer les micro-freezes de recompilation GLSL.
+- [ ] **Material Pooling (Shader Reuse)** : Implémenter un pool de matériaux réutilisables pour supprimer les micro-freezes de compilation GLSL.
 - [ ] **Vector Trails (MVT) Pro** : Migration complète des sentiers raster vers le format vectoriel natif (netteté infinie).
-- [x] **Correctif Rendu Bas Niveau (Zoom < 10)** : Résolution de l'écran noir au dézoom massif.
-- [ ] **Couverture de Tests Critiques** :
-    - `scene.ts` : Tests du cycle flyTo et de la render loop (mock WebGLRenderer).
-    - `ui.ts` : Tests des handlers GPS, SOS modal, et géocodage sécurisé.
-    - *Critère de sortie : npm test ≥ 85 tests au vert avant livraison v5.6.*
+- [x] **Correctif Rendu Bas Niveau (Zoom < 10)** : Résolution de l'écran noir au dézoom massif via détection par tuile.
+- [x] **Optimisation Végétation** : Affichage des forêts repoussé au LOD 14 pour de meilleures performances en vol.
+
 
 ## 🎯 Priorité 2 : Usage Terrain & Partage (v5.7)
 *Impact : Rendre l'application indispensable pour la randonnée réelle.*

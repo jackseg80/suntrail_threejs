@@ -63,23 +63,39 @@ export async function fetchWithCache(url: string, usePersistentCache: boolean = 
 }
 
 /**
+ * Calcule les coordonnées Lng/Lat du centre d'une tuile.
+ */
+function getTileCenter(tx: number, ty: number, zoom: number): { lat: number, lon: number } {
+    const n = Math.pow(2, zoom);
+    const lon = (tx + 0.5) / n * 360 - 180;
+    const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (ty + 0.5) / n)));
+    const lat = latRad * 180 / Math.PI;
+    return { lat, lon };
+}
+
+/**
  * Génère l'URL pour la texture de couleur/carte d'une tuile.
  */
 export function getColorUrl(tx: number, ty: number, zoom: number): string {
-    const inCH = isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON);
-    const inFR = isPositionInFrance(state.TARGET_LAT, state.TARGET_LON);
+    const center = getTileCenter(tx, ty, zoom);
+    const inCH = isPositionInSwitzerland(center.lat, center.lon);
+    const inFR = isPositionInFrance(center.lat, center.lon);
     
+    // 1. SATELLITE (Hybride Swisstopo/IGN/MapTiler)
     if (state.MAP_SOURCE === 'satellite') {
         if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${zoom}/${tx}/${ty}.jpeg`;
         if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX=${zoom}&TILEROW=${ty}&TILECOL=${tx}`;
         return `https://api.maptiler.com/maps/satellite/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
     }
     
+    // 2. TOPO CH (Priorité Swisstopo/IGN, fallback Topo MapTiler)
     if (state.MAP_SOURCE === 'swisstopo') {
         if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${zoom}/${tx}/${ty}.jpeg`;
         if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${zoom}&TILEROW=${ty}&TILECOL=${tx}`;
+        return `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
     }
     
+    // 3. OPENTOPOMAP (MapTiler Topo v2 - Stable)
     return `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
 }
 
@@ -89,11 +105,12 @@ export function getColorUrl(tx: number, ty: number, zoom: number): string {
 export function getOverlayUrl(tx: number, ty: number, zoom: number): string | null {
     if (!state.SHOW_TRAILS || zoom < 10) return null;
     
-    if (isPositionInSwitzerland(state.TARGET_LAT, state.TARGET_LON)) {
+    const center = getTileCenter(tx, ty, zoom);
+    if (isPositionInSwitzerland(center.lat, center.lon)) {
         return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${zoom}/${tx}/${ty}.png`;
     }
     
-    if (isPositionInFrance(state.TARGET_LAT, state.TARGET_LON)) {
+    if (isPositionInFrance(center.lat, center.lon)) {
         return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=TRANSPORT.WANDERWEGE&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${zoom}&TILEROW=${ty}&TILECOL=${tx}`;
     }
     
@@ -123,14 +140,12 @@ export async function loadTileData(tx: number, ty: number, zoom: number, is2D: b
     const cr = Math.pow(2, Math.max(0, zoom - nativeMax));
     
     let colorUrl = getColorUrl(Math.floor(tx/cr), Math.floor(ty/cr), cz);
-    if (colorUrl.includes('maptiler') && zoom > 10) {
-        colorUrl = colorUrl.replace('/256/', '/512/');
-    }
-    
     const overlayUrl = getOverlayUrl(tx, ty, zoom);
 
     return await tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl);
 }
+
+
 
 /**
  * Télécharge récursivement une zone pour l'usage hors-ligne.
@@ -142,24 +157,24 @@ export async function downloadOfflineZone(lat: number, lon: number, onProgress: 
     const lonOffset = radiusKm / (111.0 * Math.cos(lat * Math.PI / 180));
     const bbox = { n: lat + latOffset, s: lat - latOffset, e: lon + lonOffset, w: lon - lonOffset };
     const urls: string[] = [];
-    const inCH = isPositionInSwitzerland(lat, lon);
 
     for (const z of zooms) {
         const t1 = lngLatToTile(bbox.w, bbox.n, z);
         const t2 = lngLatToTile(bbox.e, bbox.s, z);
         for (let x = t1.x; x <= t2.x; x++) {
             for (let y = t1.y; y <= t2.y; y++) {
-                let colorUrl = '';
-                if (state.MAP_SOURCE === 'satellite') {
-                    colorUrl = inCH ? `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${z}/${x}/${y}.jpeg` : `https://api.maptiler.com/maps/satellite/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
-                } else {
-                    colorUrl = inCH ? `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${z}/${x}/${y}.jpeg` : `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.webp?key=${state.MK}`;
-                }
+                // Utilisation des générateurs d'URL officiels pour éviter les 404
+                const colorUrl = getColorUrl(x, y, z);
+                const elevUrl = getElevationUrl(x, y, z, false);
+                const overlayUrl = getOverlayUrl(x, y, z);
+                
                 urls.push(colorUrl);
-                urls.push(`https://api.maptiler.com/tiles/terrain-rgb-v2/${z}/${x}/${y}.png?key=${state.MK}`);
+                if (elevUrl) urls.push(elevUrl);
+                if (overlayUrl) urls.push(overlayUrl);
             }
         }
     }
+
     
     const total = urls.length;
     let done = 0;
