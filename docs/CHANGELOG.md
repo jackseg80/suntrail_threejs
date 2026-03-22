@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.7.1] - 2026-03-22
+### 🔋 Energy & Data Optimization (Mobile)
+- **Auto-Eco Mode (Battery API)** : Intégration de la `Battery API` pour détecter le niveau de charge. L'application bascule automatiquement et de force en profil "Éco" (2D / 30 FPS / Sans Ombre) si la batterie descend sous les 20%, garantissant de terminer la randonnée en sécurité.
+- **Smart Energy Default** : Le bridage à 30 FPS (`ENERGY_SAVER`) est désormais activé par défaut sur tous les périphériques identifiés comme mobiles (via la détection des GPU Adreno/Mali), doublant l'autonomie standard.
+- **Dynamic Antialiasing** : L'antialiasing matériel (MSAA) est désormais désactivé de manière stricte sur les appareils mobiles et sur le profil "Éco", soulageant drastiquement la charge GPU (Fillrate).
+- **Data Cleanup** : Suppression d'un fichier lourd (`layers.json` de 4.1 Mo) inutile au moteur de production, accélérant drastiquement le téléchargement initial (TTV) sur les réseaux 3G/4G.
+
 ## [5.7.0] - 2026-03-22
 ### 💾 Persistance & Enregistrement (Usage Terrain)
 - **Système Offline-First (PWA)** : Intégration d'un Service Worker complet transformant l'application en Progressive Web App. Les assets (JS/CSS/WASM) sont mis en cache pour un démarrage instantané, même sans réseau.

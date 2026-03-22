@@ -48,13 +48,19 @@ export function detectBestPreset(): PresetType {
         return 'performance';
     }
     
-    if (gpu.includes('adreno')) return 'balanced';
+    if (gpu.includes('adreno')) {
+        state.ENERGY_SAVER = true;
+        return 'balanced';
+    }
     if (gpu.includes('mali')) {
+        state.ENERGY_SAVER = true;
         // Le Galaxy A53 a un GPU Mali-G68. Si on a assez de coeurs CPU, on passe en STD (Balanced)
         if ((navigator.hardwareConcurrency || 0) >= 8) return 'balanced';
         return 'eco';
     }
     
+    // Par défaut, profil mobile standard = éco + battery saver
+    state.ENERGY_SAVER = true;
     return 'eco';
 }
 
@@ -105,11 +111,36 @@ export function applyPreset(preset: PresetType): void {
         state.sunLight.castShadow = state.SHADOWS;
         updateShadowMapResolution();
     }
+    
+    if (state.renderer) {
+        state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
+    }
 
     updatePerformanceUI(preset);
     refreshTerrain();
     saveSettings();
     showToast(`Profil appliqué : ${preset.toUpperCase()}`);
+}
+
+/**
+ * Initialise la surveillance de la batterie pour forcer le mode Éco
+ */
+export function initBatteryManager(): void {
+    if ('getBattery' in navigator) {
+        // @ts-ignore
+        navigator.getBattery().then(battery => {
+            const checkBattery = () => {
+                if (battery.level < 0.20 && state.PERFORMANCE_PRESET !== 'eco') {
+                    showToast("🔋 Batterie faible : Mode Éco activé");
+                    applyPreset('eco');
+                }
+            };
+            battery.addEventListener('levelchange', checkBattery);
+            checkBattery(); // Vérification initiale
+        }).catch(() => {
+            // Ignorer silencieusement si l'API n'est pas autorisée
+        });
+    }
 }
 
 /**

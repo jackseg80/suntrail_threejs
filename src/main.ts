@@ -1,5 +1,6 @@
 import './style.css';
 import { initUI } from './modules/ui';
+import { initBatteryManager } from './modules/performance';
 // @ts-ignore
 import { registerSW } from 'virtual:pwa-register';
 
@@ -16,3 +17,4 @@ const updateSW = registerSW({
 
 // Lancement de l'initialisation globale de l'interface
 initUI();
+initBatteryManager();
