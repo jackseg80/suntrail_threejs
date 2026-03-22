@@ -4,6 +4,11 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.7.3] - 2026-03-22
+### 🛠️ Bug Fixes & Précision GPS
+- **Origin Shift GPS (Fix Courroux)** : Implémentation d'un recentrage dynamique de l'origine du monde 3D lors de l'utilisation de la géolocalisation. Élimine les décalages de précision (30km+) constatés lors des déplacements importants.
+- **Auto-Sync Terrain** : Le moteur de tuiles se synchronise désormais instantanément sur les coordonnées GPS réelles de l'utilisateur.
+
 ## [5.7.2] - 2026-03-22
 ### 🛠️ Bug Fixes & UX
 - **Fix Position GPS** : Correction d'un décalage de perspective vers le Nord lors de l'utilisation du bouton "Ma Position". Le moteur cible désormais correctement l'altitude réelle du relief pour un centrage parfait.

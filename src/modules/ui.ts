@@ -232,13 +232,27 @@ export function initUI(): void {
             const pos = await Geolocation.getCurrentPosition();
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
-            const worldPos = lngLatToWorld(lon, lat, state.originTile);
             
-            // On utilise l'altitude exagérée pour la cible du vol pour éviter le décalage de perspective (v5.7.2)
+            // --- CORRECTION POSITIONNEMENT GPS (v5.7.3) ---
+            // 1. On met à jour les coordonnées cibles globales
+            state.TARGET_LAT = lat;
+            state.TARGET_LON = lon;
+            
+            // 2. On réinitialise l'origine du monde 3D sur cette nouvelle position 
+            // pour éviter les erreurs de flottants et les décalages de perspective.
+            state.originTile = lngLatToTile(lon, lat, state.ZOOM);
+            
+            // 3. On force le rechargement du terrain sur la nouvelle zone
+            refreshTerrain();
+            
+            // 4. On vole vers la position (maintenant centrée sur 0,0 en coordonnées monde car on a shift l'origine)
+            const worldPos = lngLatToWorld(lon, lat, state.originTile);
             const altWorld = getAltitudeAt(worldPos.x, worldPos.z);
             
             flyTo(worldPos.x, worldPos.z, altWorld);
             fetchWeather(lat, lon);
+            
+            showToast("📍 Position synchronisée");
         } catch (e) { showToast("Erreur GPS"); }
     });
 
