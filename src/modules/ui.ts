@@ -422,20 +422,21 @@ export function initUI(): void {
     initGeocoding();
 }
 
+let sheetTimer: any = null;
+
 function closeAllSheets() {
-    console.log("[UI] Closing all sheets");
+    if (sheetTimer) clearTimeout(sheetTimer);
     document.querySelectorAll('.bottom-sheet').forEach(sheet => {
         (sheet as HTMLElement).style.bottom = '-100%';
     });
     const backdrop = document.getElementById('ui-backdrop');
-    if (backdrop) {
-        backdrop.classList.remove('visible');
-    }
-    // Délai pour laisser l'animation se terminer avant de cacher
-    setTimeout(() => {
+    if (backdrop) backdrop.classList.remove('visible');
+    
+    sheetTimer = setTimeout(() => {
         document.querySelectorAll('.bottom-sheet').forEach(sheet => {
             (sheet as HTMLElement).style.display = 'none';
         });
+        if (backdrop) backdrop.style.display = 'none';
     }, 400);
 
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
@@ -443,11 +444,11 @@ function closeAllSheets() {
 }
 
 function openSheet(targetId: string) {
-    console.log("[UI] Opening sheet:", targetId);
+    if (sheetTimer) clearTimeout(sheetTimer);
     const sheet = document.getElementById(`sheet-${targetId}`);
     const backdrop = document.getElementById('ui-backdrop');
     
-    // Fermer les autres d'abord sans délai
+    // On cache les autres immédiatement sans timer
     document.querySelectorAll('.bottom-sheet').forEach(s => {
         if (s.id !== `sheet-${targetId}`) {
             (s as HTMLElement).style.display = 'none';
@@ -457,10 +458,8 @@ function openSheet(targetId: string) {
 
     if (sheet) {
         sheet.style.display = 'block';
-        // Force reflow pour l'animation
         void sheet.offsetWidth;
         sheet.style.bottom = '0';
-        
         if (backdrop) {
             backdrop.style.display = 'block';
             void backdrop.offsetWidth;
