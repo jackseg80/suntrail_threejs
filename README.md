@@ -1,12 +1,14 @@
-# ⛰️ SunTrail 3D (v5.7.0)
+# ⛰️ SunTrail 3D (v5.7.1)
 
 Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données MapTiler / OpenStreetMap / IGN France. Optimisé pour les configurations haute performance (RTX 4080 / i9) et les appareils mobiles modernes.
 
-## ✨ Nouveautés v5.7.x (Offline & Robustesse)
+## ✨ Nouveautés v5.7.x (Offline & Énergie)
+- **Auto-Eco Mode (Battery API) :** Bascule automatique en mode économie d'énergie sous les 20% de batterie.
+- **Smart Energy Default :** Bridage intelligent à 30 FPS par défaut sur les périphériques mobiles.
 - **Système Offline-First :** Transformation en Progressive Web App (PWA) avec Service Worker pour un usage sans réseau.
-- **Support PMTiles :** Chargement de cartes locales massives (Go) via fichiers `.pmtiles` pour une navigation 100% hors-ligne.
-- **Live Tracking & REC :** Enregistrement de parcours GPS en temps réel avec export au format GPX standard.
-- **Persistance des Réglages :** Sauvegarde automatique du profil de performance et des préférences utilisateur dans le `localStorage`.
+- **Support PMTiles :** Chargement de cartes locales massives (Go) via fichiers `.pmtiles`.
+- **Live Tracking & REC :** Enregistrement de parcours GPS en temps réel avec export GPX.
+- **Persistance des Réglages :** Sauvegarde automatique des préférences dans le `localStorage`.
 
 ## ✨ Nouveautés v5.6.x (Architecture & Performance)
 - **Vector Trails Pro :** Sentiers de randonnée vectoriels haute définition (2048px) avec codage couleur dynamique pour une netteté absolue.

@@ -1,4 +1,4 @@
-# 📋 Fonctionnalités de SunTrail 3D (v5.7.0)
+# 📋 Fonctionnalités de SunTrail 3D (v5.7.1)
 
 Ce document dresse la liste exhaustive des capacités techniques et fonctionnelles du moteur SunTrail.
 
@@ -34,6 +34,7 @@ Ce document dresse la liste exhaustive des capacités techniques et fonctionnell
 
 ### ⚡ Performance & Optimisation Mobile
 *   **Presets de Performance** : 4 modes prédéfinis (Eco, Balanced, Performance, Ultra) ajustant la résolution, la portée de vue, les ombres et la densité d'objets.
+*   **Auto-Eco Mode (Battery API)** : Surveillance du niveau de charge et bascule automatique en profil Éco sous les 20% de batterie.
 *   **Persistance des Réglages** : Sauvegarde et restauration automatique des préférences via `localStorage`.
 *   **Mode Ultra-Battery (Deep Sleep)** : Mise en pause complète du moteur 3D (0 FPS) via Visibility API lorsque l'application est en arrière-plan.
 *   **Limiteur de FPS Global** : Option de bridage à 30 FPS pour maximiser l'autonomie sur les appareils mobiles en randonnée.
