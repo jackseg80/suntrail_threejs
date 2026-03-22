@@ -4,6 +4,12 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.7.2] - 2026-03-22
+### 🛠️ Bug Fixes & UX
+- **Fix Position GPS** : Correction d'un décalage de perspective vers le Nord lors de l'utilisation du bouton "Ma Position". Le moteur cible désormais correctement l'altitude réelle du relief pour un centrage parfait.
+- **UX Altitude Panel** : Ajout d'une croix de fermeture sur le panneau des coordonnées pour libérer de la visibilité sur la carte quand l'analyse est terminée.
+- **Robustesse flyTo** : Harmonisation des unités d'altitude entre les coordonnées géographiques et le monde 3D.
+
 ## [5.7.1] - 2026-03-22
 ### 🔋 Energy & Data Optimization (Mobile)
 - **Auto-Eco Mode (Battery API)** : Intégration de la `Battery API` pour détecter le niveau de charge. L'application bascule automatiquement et de force en profil "Éco" (2D / 30 FPS / Sans Ombre) si la batterie descend sous les 20%, garantissant de terminer la randonnée en sécurité.

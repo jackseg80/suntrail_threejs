@@ -123,6 +123,38 @@ export function applyPreset(preset: PresetType): void {
 }
 
 /**
+ * Applique des réglages personnalisés chargés (v5.7.1)
+ */
+export function applyCustomSettings(settings: any): void {
+    state.PERFORMANCE_PRESET = 'custom';
+    
+    // Assignation des valeurs au state
+    if (settings.RESOLUTION) state.RESOLUTION = settings.RESOLUTION;
+    if (settings.RANGE) state.RANGE = settings.RANGE;
+    if (settings.SHADOWS !== undefined) state.SHADOWS = settings.SHADOWS;
+    if (settings.SHOW_VEGETATION !== undefined) state.SHOW_VEGETATION = settings.SHOW_VEGETATION;
+    if (settings.VEGETATION_DENSITY !== undefined) state.VEGETATION_DENSITY = settings.VEGETATION_DENSITY;
+    if (settings.SHOW_WEATHER !== undefined) state.SHOW_WEATHER = settings.SHOW_WEATHER;
+    if (settings.WEATHER_DENSITY !== undefined) state.WEATHER_DENSITY = settings.WEATHER_DENSITY;
+    if (settings.WEATHER_SPEED !== undefined) state.WEATHER_SPEED = settings.WEATHER_SPEED;
+    if (settings.FOG_FAR !== undefined) state.FOG_FAR = settings.FOG_FAR;
+
+    // Mise à jour visuelle
+    updatePerformanceUI('custom');
+    
+    if (state.sunLight) {
+        state.sunLight.castShadow = state.SHADOWS;
+        updateShadowMapResolution();
+    }
+    
+    if (state.renderer) {
+        state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
+    }
+
+    refreshTerrain();
+}
+
+/**
  * Initialise la surveillance de la batterie pour forcer le mode Éco
  */
 export function initBatteryManager(): void {

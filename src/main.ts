@@ -5,7 +5,7 @@ import { initBatteryManager } from './modules/performance';
 import { registerSW } from 'virtual:pwa-register';
 
 // Enregistrement du Service Worker pour le mode Hors-ligne (PWA)
-const updateSW = registerSW({
+registerSW({
   onNeedRefresh() {
     // Proposer de rafraîchir l'application s'il y a une mise à jour
     console.log("Nouvelle version de SunTrail disponible !");

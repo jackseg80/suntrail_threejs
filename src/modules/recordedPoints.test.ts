@@ -5,14 +5,17 @@ import { Geolocation } from '@capacitor/geolocation';
 
 // Mock Geolocation
 const mockGeolocation = {
-    watchPosition: vi.fn((opts, cb) => {
+    watchPosition: vi.fn((_opts, cb) => {
         // Simulate a position update
         cb({
             coords: {
                 latitude: 46.5,
                 longitude: 7.5,
                 altitude: 1000,
-                accuracy: 10
+                accuracy: 10,
+                altitudeAccuracy: 10,
+                heading: 0,
+                speed: 0
             },
             timestamp: Date.now()
         });
@@ -29,12 +32,16 @@ vi.stubGlobal('navigator', {
 // We need to mock capacitor geolocation too
 vi.mock('@capacitor/geolocation', () => ({
     Geolocation: {
-        watchPosition: vi.fn((opts, cb) => {
+        watchPosition: vi.fn((_opts, cb) => {
             cb({
                 coords: {
                     latitude: 46.5,
                     longitude: 7.5,
                     altitude: 1000,
+                    accuracy: 10,
+                    altitudeAccuracy: 10,
+                    heading: 0,
+                    speed: 0
                 },
                 timestamp: Date.now()
             }, null);
@@ -64,12 +71,16 @@ describe('Live Tracking Recording (v5.7)', () => {
     it('should record points when isRecording is true', async () => {
         state.isRecording = true;
         // Use slightly different coords to bypass distMove filter
-        vi.mocked(Geolocation.watchPosition).mockImplementationOnce((opts, cb) => {
+        vi.mocked(Geolocation.watchPosition).mockImplementationOnce((_opts, cb) => {
             cb({
                 coords: {
                     latitude: 46.6,
                     longitude: 7.6,
                     altitude: 1100,
+                    accuracy: 10,
+                    altitudeAccuracy: 10,
+                    heading: 0,
+                    speed: 0
                 },
                 timestamp: Date.now()
             }, null);

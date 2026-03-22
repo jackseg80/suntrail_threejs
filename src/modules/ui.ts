@@ -24,7 +24,11 @@ export function initUI(): void {
     const savedSettings = loadSettings();
     if (savedSettings) {
         state.hasManualSource = true;
-        applyPreset(savedSettings.PERFORMANCE_PRESET);
+        if (savedSettings.PERFORMANCE_PRESET === 'custom') {
+            applyCustomSettings(savedSettings);
+        } else {
+            applyPreset(savedSettings.PERFORMANCE_PRESET);
+        }
     } else {
         const bestPreset = detectBestPreset();
         applyPreset(bestPreset);
@@ -229,10 +233,20 @@ export function initUI(): void {
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
             const worldPos = lngLatToWorld(lon, lat, state.originTile);
-            const alt = getAltitudeAt(worldPos.x, worldPos.z) / state.RELIEF_EXAGGERATION;
-            flyTo(worldPos.x, worldPos.z, alt);
+            
+            // On utilise l'altitude exagérée pour la cible du vol pour éviter le décalage de perspective (v5.7.2)
+            const altWorld = getAltitudeAt(worldPos.x, worldPos.z);
+            
+            flyTo(worldPos.x, worldPos.z, altWorld);
             fetchWeather(lat, lon);
         } catch (e) { showToast("Erreur GPS"); }
+    });
+
+    document.getElementById('close-coords')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const cp = document.getElementById('coords-panel');
+        if (cp) cp.style.display = 'none';
+        hasLastClicked = false;
     });
 
     document.getElementById('gps-follow-btn')?.addEventListener('click', async () => {
@@ -564,7 +578,8 @@ function initGeocoding() {
             refreshTerrain();
             setTimeout(() => { 
                 const wp = lngLatToWorld(lon, lat, state.originTile);
-                flyTo(wp.x, wp.z, peakEle); 
+                // Utilisation de l'altitude exagérée pour la cible world
+                flyTo(wp.x, wp.z, peakEle * state.RELIEF_EXAGGERATION); 
             }, 100);
             const cp = document.getElementById('coords-panel')!; cp.style.display = 'block';
             document.getElementById('click-latlon')!.textContent = `🏔️ ${peakName}`;

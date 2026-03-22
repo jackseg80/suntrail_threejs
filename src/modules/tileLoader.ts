@@ -19,7 +19,6 @@ export async function setPMTilesSource(urlOrFile: string | File) {
         let archive;
         if (urlOrFile instanceof File) {
             // Lecture locale via File API (zéro réseau)
-            const blob = new Blob([urlOrFile]);
             // @ts-ignore - L'interface pmtiles peut exiger un type spécifique, mais File/Blob fonctionnent généralement ou on peut faire un FileSource
             archive = new pmtiles.PMTiles(new pmtiles.FileSource(urlOrFile));
         } else {
