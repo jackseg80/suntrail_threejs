@@ -6,6 +6,8 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ## [5.7.0] - 2026-03-22
 ### 💾 Persistance & Enregistrement (Usage Terrain)
+- **Système Offline-First (PWA)** : Intégration d'un Service Worker complet transformant l'application en Progressive Web App. Les assets (JS/CSS/WASM) sont mis en cache pour un démarrage instantané, même sans réseau.
+- **Support PMTiles Local** : Possibilité de charger un fichier `.pmtiles` contenant des gigaoctets de cartes topographiques régionales. Le moteur intercepte automatiquement les requêtes de tuiles (Z/X/Y) pour les lire depuis le fichier local sans aucune latence réseau.
 - **Enregistrement de Tracé (Live Tracking)** : Nouveau bouton **REC** pour capturer votre parcours GPS en temps réel. Filtrage intelligent du bruit statique (mouvements > 50cm).
 - **Export GPX Standard** : Bouton d'exportation instantané générant un fichier `.gpx` universel (compatible Strava, Garmin, Komoot).
 - **Sauvegarde Automatique** : Le profil de performance, la source de carte (IGN, Swisstopo, etc.), et l'ensemble des réglages graphiques personnalisés sont désormais sauvegardés instantanément dans le cache du navigateur (`localStorage`).

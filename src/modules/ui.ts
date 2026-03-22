@@ -361,6 +361,17 @@ export function initUI(): void {
         if (span) span.textContent = `⬇️ Zone Téléchargée`;
     });
 
+    document.getElementById('pmtiles-btn')?.addEventListener('click', () => { document.getElementById('pmtiles-upload')?.click(); });
+    document.getElementById('pmtiles-upload')?.addEventListener('change', async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (file) {
+            // @ts-ignore
+            const { setPMTilesSource } = await import('./tileLoader');
+            await setPMTilesSource(file);
+            refreshTerrain();
+        }
+    });
+
     document.getElementById('gpx-btn')?.addEventListener('click', () => { document.getElementById('gpx-upload')?.click(); });
     document.getElementById('gpx-upload')?.addEventListener('change', (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];

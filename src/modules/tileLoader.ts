@@ -3,8 +3,63 @@ import { isPositionInSwitzerland, isPositionInFrance, showToast } from './utils'
 import { lngLatToTile } from './geo';
 import { tileWorkerManager } from './workerManager';
 import { disposeAllCachedTiles } from './tileCache';
+import * as pmtiles from 'pmtiles';
 
 export const CACHE_NAME = 'suntrail-tiles-v1';
+
+// --- PMTILES SUPPORT (v5.7.0) ---
+let localPMTiles: pmtiles.PMTiles | null = null;
+let pmtilesController: AbortController | null = null;
+
+/**
+ * Configure une source PMTiles locale (fichier ou URL HTTP Range).
+ */
+export async function setPMTilesSource(urlOrFile: string | File) {
+    try {
+        let archive;
+        if (urlOrFile instanceof File) {
+            // Lecture locale via File API (zéro réseau)
+            const blob = new Blob([urlOrFile]);
+            // @ts-ignore - L'interface pmtiles peut exiger un type spécifique, mais File/Blob fonctionnent généralement ou on peut faire un FileSource
+            archive = new pmtiles.PMTiles(new pmtiles.FileSource(urlOrFile));
+        } else {
+            // Lecture distante via HTTP Range requests
+            archive = new pmtiles.PMTiles(urlOrFile);
+        }
+        
+        const header = await archive.getHeader();
+        console.log(`[PMTiles] Source chargée. Bounds: ${header.minLon},${header.minLat} to ${header.maxLon},${header.maxLat}`);
+        localPMTiles = archive;
+        showToast("Carte locale PMTiles activée");
+    } catch (e) {
+        console.error("[PMTiles] Erreur de chargement", e);
+        showToast("Erreur PMTiles");
+        localPMTiles = null;
+    }
+}
+
+/**
+ * Tente d'extraire une tuile depuis l'archive PMTiles locale.
+ */
+async function getTileFromPMTiles(z: number, x: number, y: number): Promise<Blob | null> {
+    if (!localPMTiles) return null;
+    try {
+        if (pmtilesController) pmtilesController.abort();
+        pmtilesController = new AbortController();
+        
+        // PMTiles utilise le schéma XYZ standard
+        const tileData = await localPMTiles.getZxy(z, x, y, pmtilesController.signal);
+        if (tileData && tileData.data) {
+            // On présume que c'est du WebP ou JPEG par défaut dans notre cas d'usage, on renvoie un Blob
+            return new Blob([tileData.data], { type: 'image/webp' });
+        }
+    } catch (e) {
+        if ((e as Error).name !== 'AbortError') {
+            console.warn(`[PMTiles] Tuile manquante: ${z}/${x}/${y}`);
+        }
+    }
+    return null;
+}
 
 /**
  * Vide le cache persistant et le cache mémoire.
@@ -34,6 +89,24 @@ export function updateStorageUI() {
  */
 export async function fetchWithCache(url: string, usePersistentCache: boolean = false): Promise<Blob | null> {
     if (state.IS_OFFLINE && !usePersistentCache) return null;
+    
+    // --- PMTILES INTERCEPTION (v5.7.0) ---
+    // Si une archive locale est montée, on essaie d'abord d'y trouver la tuile
+    if (localPMTiles) {
+        // Extraction basique du Z/X/Y depuis l'URL (très simplifié, à adapter selon format URL)
+        const match = url.match(/\/(\d+)\/(\d+)\/(\d+)(?:@2x)?\.(jpeg|jpg|png|webp)/i);
+        if (match) {
+            const z = parseInt(match[1]);
+            const x = parseInt(match[2]);
+            const y = parseInt(match[3]);
+            const pmBlob = await getTileFromPMTiles(z, x, y);
+            if (pmBlob) {
+                console.log(`[PMTiles] HIT pour ${z}/${x}/${y}`);
+                return pmBlob;
+            }
+        }
+    }
+
     try {
         if (usePersistentCache) {
             const cache = await caches.open(CACHE_NAME);

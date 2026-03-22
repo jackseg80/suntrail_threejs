@@ -12,7 +12,7 @@
 ## 🎯 Priorité 2 : Usage Terrain & Persistance (v5.7)
 *Impact : Rendre l'application indispensable et robuste pour la randonnée réelle.*
 
-- [ ] **Système Offline-First Complet** :
+- [x] **Système Offline-First Complet** :
     - Service Worker pour l'interception réseau et le cache persistant.
     - Support du format **PMTiles** (stockage de cartes régionales massives).
 - [x] **Enregistrement de Tracé (Live Tracking)** :
