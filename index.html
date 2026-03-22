@@ -11,19 +11,14 @@
 
 <div id="setup-screen">
     <div class="setup-card">
-        <div style="margin-bottom:8px; font-size:10px; color:var(--gold); font-weight:700; letter-spacing:3px; text-transform:uppercase;">Version 5.8.4</div>
+        <div style="margin-bottom:8px; font-size:10px; color:var(--gold); font-weight:700; letter-spacing:3px; text-transform:uppercase;">Version 5.8.5</div>
         <h1>⛰️ SunTrail 3D</h1>
-        <p style="color:var(--t2);">Visualisation topographique haute précision, simulation solaire & météo.</p>
+        <p style="color:var(--t2);">Analyse topographique & simulation solaire.</p>
         <div style="text-align:left;">
             <label style="font-size:11px; color:var(--gold); text-transform:uppercase; font-weight:700;">Clé API MapTiler</label>
             <input type="text" id="k1" placeholder="Clé API..." style="width:100%; padding:16px; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:14px; color:white; margin-top:10px; font-family:monospace; outline:none;">
         </div>
-        <div id="tech-info" style="margin-top:20px; padding:15px; background:rgba(255,255,255,0.03); border-radius:12px; text-align:left; display:none;">
-            <div id="diag-gpu" style="font-size:11px; color:white; font-family:monospace;">GPU: --</div>
-            <div id="diag-preset" style="font-size:11px; color:var(--gold); font-weight:700; font-family:monospace;">PROFIL: --</div>
-        </div>
-        <p id="serr" style="color:#ef4444; font-size:13px; margin-top:15px;"></p>
-        <button class="btn-go" id="bgo">Lancer l'expérience</button>
+        <button class="btn-go" id="bgo">Lancer</button>
     </div>
 </div>
 
@@ -47,91 +42,58 @@
 
 <!-- BOTTOM BAR -->
 <div id="bottom-nav-bar" style="display:none; position:fixed; bottom:0; left:0; width:100%; height:75px; background:var(--panel); backdrop-filter:var(--glass); border-top:1px solid var(--border); z-index:2000; justify-content:space-around; align-items:center; padding-bottom:env(safe-area-inset-bottom);">
-    <div class="nav-item active" data-target="map">
-        <span class="nav-icon">🗺️</span>
-        <span class="nav-label">Carte</span>
-    </div>
-    <div class="nav-item" data-target="explore">
-        <span class="nav-icon">🏔️</span>
-        <span class="nav-label">Explorer</span>
-    </div>
-    <div class="nav-item" data-target="activity">
-        <span class="nav-icon">🏃</span>
-        <span class="nav-label">Rando</span>
-    </div>
-    <div class="nav-item" data-target="settings">
-        <span class="nav-icon">⚙️</span>
-        <span class="nav-label">Réglages</span>
-    </div>
+    <div class="nav-item active" data-target="map"><span class="nav-icon">🗺️</span><span class="nav-label">Carte</span></div>
+    <div class="nav-item" data-target="explore"><span class="nav-icon">🏔️</span><span class="nav-label">Explorer</span></div>
+    <div class="nav-item" data-target="activity"><span class="nav-icon">🏃</span><span class="nav-label">Rando</span></div>
+    <div class="nav-item" data-target="settings"><span class="nav-icon">⚙️</span><span class="nav-label">Réglages</span></div>
 </div>
 
 <!-- FABs -->
 <div id="fab-container" style="display:none; position:fixed; bottom:calc(95px + env(safe-area-inset-bottom)); right:20px; z-index:2000; display:flex; flex-direction:column; gap:12px;">
-    <button id="fab-follow">🚶</button>
-    <button id="fab-gps">🎯</button>
+    <button id="fab-follow" style="width:45px; height:45px; border-radius:50%; background:var(--panel); backdrop-filter:var(--glass); border:1px solid var(--border); color:white; font-size:20px; cursor:pointer;">🚶</button>
+    <button id="fab-gps" style="width:55px; height:55px; border-radius:50%; background:var(--accent); color:white; border:none; font-size:24px; cursor:pointer; box-shadow:0 4px 15px rgba(59, 130, 246, 0.4);">🎯</button>
 </div>
 
-<!-- SHEETS -->
-<div id="sheet-explore" class="bottom-sheet" style="display:none;">
-    <div class="sheet-handle"></div>
-    <h3 style="margin-top:0; color:var(--gold);">Explorer</h3>
-    <input type="text" id="geo-input" placeholder="🔍 Rechercher un lieu ou sommet..." style="width:100%; padding:15px; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:14px; color:white; font-size:16px; outline:none;">
-    <div id="geo-results" style="display:none; max-height:300px; overflow-y:auto; margin-top:10px; border-radius:12px; background:rgba(0,0,0,0.3);"></div>
-</div>
+<!-- BOTTOM SHEETS -->
+<div id="sheet-explore" class="bottom-sheet" style="display:none;"><div class="sheet-handle"></div><h3 style="margin-top:0; color:var(--gold);">Explorer</h3><input type="text" id="geo-input" placeholder="🔍 Rechercher un lieu ou sommet..." style="width:100%; padding:15px; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:14px; color:white; font-size:16px; outline:none;"><div id="geo-results" style="display:none; max-height:300px; overflow-y:auto; margin-top:10px; border-radius:12px; background:rgba(0,0,0,0.3);"></div></div>
 
 <div id="sheet-activity" class="bottom-sheet" style="display:none;">
     <div class="sheet-handle"></div>
     <h3 style="margin-top:0; color:var(--gold);">Course Solaire & Rando</h3>
-    
-    <!-- TIMELINE SOLAIRE -->
     <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:16px; border:1px solid var(--border); margin-bottom:20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <span id="time-disp" style="font-weight:700; font-size:20px; color:var(--gold);">12:00</span>
             <div style="display:flex; gap:10px;">
-                <input type="date" id="date-input" style="background:transparent; border:none; color:white; font-size:12px;">
+                <input type="date" id="date-input" style="background:rgba(255,255,255,0.1); border:none; color:white; font-size:12px; padding:5px; border-radius:5px;">
                 <button id="play-btn" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;">▶</button>
             </div>
         </div>
         <input type="range" id="time-slider" min="0" max="1439" value="720" style="width:100%;">
     </div>
-
     <button id="gpx-btn" style="width:100%; padding:15px; border-radius:14px; border:1px solid var(--accent); background:rgba(59, 130, 246, 0.1); color:var(--accent); cursor:pointer; font-weight:700; margin-bottom:15px;">📥 Importer GPX</button>
-    <div style="display:flex; gap:12px;">
-        <button id="rec-btn-new" style="flex:1; padding:15px; border-radius:14px; border:1px solid #ef4444; background:rgba(239, 68, 68, 0.1); color:#ef4444; cursor:pointer; font-weight:700;">🔴 REC</button>
-        <button id="export-gpx-btn-new" style="flex:1; padding:15px; border-radius:14px; border:1px solid var(--gold); background:rgba(245, 158, 11, 0.1); color:var(--gold); cursor:pointer; font-weight:700;">💾 EXPORT</button>
-    </div>
-    <div id="trail-controls" style="display:none; margin-top:15px; padding:15px; background:rgba(255,255,255,0.03); border-radius:12px;">
-        <div id="gpx-dist" style="font-size:18px; font-weight:700; color:white;">0.0 km</div>
-    </div>
+    <div style="display:flex; gap:12px;"><button id="rec-btn-new" style="flex:1; padding:15px; border-radius:14px; border:1px solid #ef4444; background:rgba(239, 68, 68, 0.1); color:#ef4444; cursor:pointer; font-weight:700;">🔴 REC</button><button id="export-gpx-btn-new" style="flex:1; padding:15px; border-radius:14px; border:1px solid var(--gold); background:rgba(245, 158, 11, 0.1); color:var(--gold); cursor:pointer; font-weight:700;">💾 EXPORT</button></div>
 </div>
 
 <div id="sheet-settings" class="bottom-sheet" style="display:none;">
-    <div class="sheet-handle"></div>
-    <h3 style="margin-top:0; color:var(--gold);">Configuration</h3>
+    <div class="sheet-handle"></div><h3 style="margin-top:0; color:var(--gold);">Configuration</h3>
     <div id="layer-menu" class="layer-grid">
         <div class="layer-item active" data-source="swisstopo"><div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/outdoor-v2.png')"></div>Topo CH</div>
         <div class="layer-item" data-source="satellite"><div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/satellite.png')"></div>Sat</div>
         <div class="layer-item" data-source="opentopomap"><div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/topo.png')"></div>OpenTopo</div>
     </div>
-    <div style="margin-top:20px; border-top:1px solid var(--border); padding-top:20px;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span>📍 Sentiers</span><input type="checkbox" id="trails-toggle" checked></div>
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span>⚠️ Pentes > 30°</span><input type="checkbox" id="slopes-toggle"></div>
-        <div class="preset-grid" style="margin:20px 0;">
-            <button class="preset-btn" data-preset="eco">ÉCO</button>
-            <button class="preset-btn" data-preset="balanced">STD</button>
-            <button class="preset-btn" data-preset="performance">HIGH</button>
-            <button class="preset-btn" data-preset="ultra">ULTRA</button>
-        </div>
+    <div style="margin-top:20px; border-top:1px solid var(--border); padding-top:20px; display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; justify-content:space-between;"><span>📍 Sentiers</span><input type="checkbox" id="trails-toggle" checked></div>
+        <div style="display:flex; justify-content:space-between;"><span>⚠️ Pentes > 30°</span><input type="checkbox" id="slopes-toggle"></div>
+        <div class="preset-grid" style="margin:10px 0;"><button class="preset-btn" data-preset="eco">ÉCO</button><button class="preset-btn" data-preset="balanced">STD</button><button class="preset-btn" data-preset="performance">HIGH</button><button class="preset-btn" data-preset="ultra">ULTRA</button></div>
     </div>
-    <details>
-        <summary style="font-size:11px; color:var(--gold); cursor:pointer;">🛠️ RÉGLAGES EXPERTS</summary>
-        <div style="padding-top:15px; display:flex; flex-direction:column; gap:10px;">
+    <details><summary style="font-size:11px; color:var(--gold); cursor:pointer; margin-top:10px;">🛠️ RÉGLAGES EXPERTS</summary>
+        <div style="padding-top:15px; display:flex; flex-direction:column; gap:12px;">
             <div style="display:flex; justify-content:space-between;"><span>🏢 Bâtiments</span><input type="checkbox" id="buildings-toggle" checked></div>
             <div style="display:flex; justify-content:space-between;"><span>💧 Hydrologie</span><input type="checkbox" id="hydro-toggle"></div>
             <div style="display:flex; justify-content:space-between;"><span>🌲 Forêts</span><input type="checkbox" id="veg-toggle" checked></div>
             <div style="display:flex; justify-content:space-between;"><span>🌑 Ombres</span><input type="checkbox" id="shadow-toggle" checked></div>
             <div style="display:flex; justify-content:space-between;"><span>📊 Stats FPS</span><input type="checkbox" id="stats-toggle"></div>
-            <button id="clear-cache-btn" style="width:100%; padding:10px; background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid #ef4444; border-radius:10px; font-weight:bold;">VIDER LE CACHE</button>
+            <button id="clear-cache-btn" style="width:100%; padding:10px; background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid #ef4444; border-radius:10px; font-weight:bold; font-size:11px;">VIDER LE CACHE</button>
         </div>
     </details>
 </div>
@@ -140,18 +102,19 @@
 <div id="coords-panel" style="display:none; position:fixed; bottom:100px; left:20px; background:var(--panel-solid); padding:15px; border-radius:20px; border:1px solid var(--border); z-index:1000; box-shadow:0 10px 30px rgba(0,0,0,0.3); backdrop-filter:var(--glass);">
     <div id="close-coords" style="position:absolute; top:8px; right:12px; cursor:pointer; color:var(--t2);">×</div>
     <div id="click-latlon" style="color:var(--t2); font-size:11px;">--</div>
-    <div id="click-alt" style="color:white; font-size:18px; font-weight:800;">-- m</div>
-    <button id="probe-btn" style="width:100%; padding:10px; border-radius:10px; background:var(--accent); color:white; border:none; font-weight:700; margin-top:10px;">☀️ ANALYSE SOLAIRE</button>
+    <div id="click-alt" style="color:white; font-size:18px; font-weight:800; margin-bottom:10px;">-- m</div>
+    <button id="probe-btn" style="width:100%; padding:10px; border-radius:10px; background:var(--accent); color:white; border:none; font-weight:700; cursor:pointer; font-size:11px;">☀️ ANALYSE SOLAIRE</button>
 </div>
 
-<div id="probe-result" style="display:none; position:fixed; bottom:160px; left:20px; width:calc(100% - 40px); max-width:420px; background:var(--panel-solid); border:1px solid var(--border); border-radius:24px; padding:25px; z-index:1200;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <h3 style="margin:0; color:var(--gold);">📊 Solar Insight</h3>
-        <button id="close-probe" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">&times;</button>
+<div id="probe-result" style="display:none; position:fixed; bottom:160px; left:20px; width:calc(100% - 40px); max-width:420px; background:var(--panel-solid); border:1px solid var(--border); border-radius:24px; padding:25px; z-index:1200; box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h3 style="margin:0; color:var(--gold); font-size:16px;">📊 Solar Insight</h3>
+        <button id="close-probe" style="background:none; border:none; color:var(--t2); font-size:24px; cursor:pointer;">&times;</button>
     </div>
-    <div id="probe-total" style="font-size:24px; font-weight:700; color:var(--gold); margin-bottom:10px;">--h--</div>
-    <div id="probe-timeline" style="height:35px; background:#1a1c23; border-radius:10px; margin-bottom:20px;"></div>
-    <button id="copy-report-btn" style="background:none; border:none; color:var(--accent); font-size:11px; font-weight:700; cursor:pointer;">📋 COPIER LE RAPPORT</button>
+    <div id="probe-total" style="font-size:28px; font-weight:800; color:white; margin-bottom:5px;">--h--</div>
+    <div style="font-size:10px; color:var(--t2); text-transform:uppercase; margin-bottom:15px;">Exposition directe cumulée</div>
+    <div id="probe-timeline" style="height:40px; background:#000; border-radius:10px; margin-bottom:20px; display:flex; overflow:hidden; border:1px solid var(--border);"></div>
+    <button id="copy-report-btn" style="width:100%; padding:12px; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:12px; color:var(--accent); font-size:11px; font-weight:700; cursor:pointer;">📋 COPIER LE RAPPORT COMPLET</button>
 </div>
 
 <!-- MODALE SOS -->
@@ -159,7 +122,7 @@
     <div style="font-size:48px; margin-bottom:15px;">🆘</div>
     <h2>Secours</h2>
     <div id="sos-text-container" style="background:rgba(0,0,0,0.3); padding:15px; font-family:monospace; color:#ef4444; border-radius:12px; margin-bottom:20px; text-align:left;"></div>
-    <button id="sos-copy-btn" style="width:100%; padding:15px; border-radius:14px; background:var(--accent); color:white; border:none; font-weight:700;">📋 Copier</button>
+    <button id="sos-copy-btn" style="width:100%; padding:15px; border-radius:14px; background:var(--accent); color:white; border:none; font-weight:700;">📋 Copier Message</button>
     <button id="sos-close-btn" style="width:100%; margin-top:10px; background:none; border:none; color:var(--t2);">Annuler</button>
 </div>
 

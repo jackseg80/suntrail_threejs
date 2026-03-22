@@ -32,25 +32,44 @@ export function initUI(): void {
     const gpuInfo = getGpuInfo();
     const diagGpu = document.getElementById('diag-gpu'); if (diagGpu) diagGpu.textContent = `GPU: ${gpuInfo.renderer}`;
     const diagPreset = document.getElementById('diag-preset'); if (diagPreset) diagPreset.textContent = `PROFIL: ${state.PERFORMANCE_PRESET.toUpperCase()}`;
-    const techInfo = document.getElementById('tech-info'); if (techInfo) techInfo.style.display = 'block';
 
     window.addEventListener('resize', onWindowResize);
     document.addEventListener('click', handleGlobalClick);
     document.getElementById('canvas-container')?.addEventListener('click', handleMapClick);
 
-    // Initialisation valeurs Temporelles
+    // --- TIMELINE & CALENDRIER ---
     const timeSlider = document.getElementById('time-slider') as HTMLInputElement;
     const timeDisp = document.getElementById('time-disp');
+    const dateInput = document.getElementById('date-input') as HTMLInputElement;
+
+    const refreshSun = () => {
+        const v = parseInt(timeSlider.value);
+        state.simDate.setHours(Math.floor(v / 60), v % 60);
+        if (timeDisp) timeDisp.textContent = `${Math.floor(v / 60)}:${(v % 60).toString().padStart(2, '0')}`;
+        updateSunPosition(v);
+    };
+
     if (timeSlider) {
-        const mins = state.simDate.getHours() * 60 + state.simDate.getMinutes();
-        timeSlider.value = mins.toString();
-        timeSlider.addEventListener('input', () => {
-            const v = parseInt(timeSlider.value);
-            state.simDate.setHours(Math.floor(v / 60), v % 60);
-            if (timeDisp) timeDisp.textContent = `${Math.floor(v / 60)}:${(v % 60).toString().padStart(2, '0')}`;
-            updateSunPosition(v);
+        timeSlider.value = (state.simDate.getHours() * 60 + state.simDate.getMinutes()).toString();
+        timeSlider.addEventListener('input', refreshSun);
+    }
+
+    if (dateInput) {
+        const d = state.simDate;
+        dateInput.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        dateInput.addEventListener('change', () => {
+            const newDate = new Date(dateInput.value);
+            if (!isNaN(newDate.getTime())) {
+                state.simDate.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate());
+                refreshSun(); // Recalculer position soleil pour cette date
+            }
         });
     }
+
+    document.getElementById('play-btn')?.addEventListener('click', (e) => {
+        state.isSunAnimating = !state.isSunAnimating;
+        (e.target as HTMLElement).textContent = state.isSunAnimating ? '⏸' : '▶';
+    });
 
     // Setup Screen
     document.getElementById('bgo')?.addEventListener('click', () => {
@@ -61,25 +80,16 @@ export function initUI(): void {
         startApp();
     });
 
-    // NAVIGATION BOTTOM BAR
+    // NAVIGATION
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', (e) => {
             const target = (e.currentTarget as HTMLElement).dataset.target;
-            if (target === 'map') {
-                closeAllSheets();
-                // Recentrage si déjà sur carte
-                if (state.userLocation) {
-                    const wp = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
-                    flyTo(wp.x, wp.z, getAltitudeAt(wp.x, wp.z) + 1000);
-                }
-                showToast("Vue Carte");
-            } else if (target) {
-                openSheet(target);
-            }
+            if (target === 'map') { closeAllSheets(); showToast("Vue Carte"); }
+            else if (target) openSheet(target);
         });
     });
 
-    // REGLAGES & CALQUES
+    // REGLAGES
     const bindT = (id: string, key: string, cb?: Function) => {
         const el = document.getElementById(id) as HTMLInputElement;
         if (el) {
@@ -94,6 +104,7 @@ export function initUI(): void {
     bindT('veg-toggle', 'SHOW_VEGETATION', refreshTerrain);
     bindT('shadow-toggle', 'SHADOWS', (v: boolean) => { if (state.sunLight) state.sunLight.castShadow = v; });
     bindT('stats-toggle', 'SHOW_STATS', (v: boolean) => { if (state.stats) state.stats.dom.style.display = v ? 'block' : 'none'; });
+    bindT('poi-toggle', 'SHOW_SIGNPOSTS', refreshTerrain);
     bindT('energy-saver-toggle', 'ENERGY_SAVER');
 
     document.getElementById('layer-menu')?.addEventListener('click', (e) => {
@@ -104,6 +115,21 @@ export function initUI(): void {
             item.classList.add('active');
             saveSettings(); refreshTerrain();
         }
+    });
+
+    const bindS = (id: string, key: string, disp: string, cb?: Function) => {
+        const el = document.getElementById(id) as HTMLInputElement;
+        const d = document.getElementById(disp);
+        if (el) {
+            el.addEventListener('input', () => { (state as any)[key] = parseFloat(el.value); if (d) d.textContent = el.value; });
+            el.addEventListener('change', () => { saveSettings(); if (cb) cb(); });
+        }
+    };
+    bindS('res-slider', 'RESOLUTION', 'res-disp', refreshTerrain);
+    bindS('range-slider', 'RANGE', 'range-disp', refreshTerrain);
+
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => applyPreset((btn as HTMLElement).dataset.preset as any));
     });
 
     // FABs
@@ -125,7 +151,21 @@ export function initUI(): void {
         if (state.isFollowingUser) await startLocationTracking(); else stopLocationTracking();
     });
 
-    // ANALYSE SOLAIRE
+    // RANDO
+    document.getElementById('rec-btn-new')?.addEventListener('click', async () => {
+        state.isRecording = !state.isRecording;
+        document.getElementById('rec-btn-new')?.classList.toggle('active', state.isRecording);
+        if (state.isRecording) { showToast("🔴 Enregistrement..."); if (!state.isFollowingUser) await startLocationTracking(); }
+        else showToast("⏹️ Arrêté");
+    });
+    document.getElementById('export-gpx-btn-new')?.addEventListener('click', () => { if (state.recordedPoints.length > 1) exportRecordedGPX(); else showToast("Tracé vide"); });
+    document.getElementById('gpx-btn')?.addEventListener('click', () => document.getElementById('gpx-upload')?.click());
+    document.getElementById('gpx-upload')?.addEventListener('change', (e) => {
+        const f = (e.target as HTMLInputElement).files?.[0];
+        if (f) { const r = new FileReader(); r.onload = (ev) => handleGPX(ev.target!.result as string); r.readAsText(f); }
+    });
+
+    // ANALYSE & SOS
     document.getElementById('probe-btn')?.addEventListener('click', () => {
         if (hasLastClicked) {
             runSolarProbe(lastClickedCoords.x, lastClickedCoords.z, lastClickedCoords.alt);
@@ -134,10 +174,9 @@ export function initUI(): void {
     });
     document.getElementById('close-probe')?.addEventListener('click', () => { document.getElementById('probe-result')!.style.display = 'none'; });
     document.getElementById('close-coords')?.addEventListener('click', () => { document.getElementById('coords-panel')!.style.display = 'none'; });
-
-    // SOS
     document.getElementById('sos-fab')?.addEventListener('click', openSOSModal);
     document.getElementById('sos-close-btn')?.addEventListener('click', () => { document.getElementById('sos-modal')!.style.display = 'none'; });
+    document.getElementById('clear-cache-btn')?.addEventListener('click', deleteTerrainCache);
 
     setInterval(updateTopBar, 1000);
     initGeocoding();
@@ -193,9 +232,10 @@ function handleMapClick(e: MouseEvent) {
 function updateTopBar() {
     const altEl = document.getElementById('top-altitude');
     const tempEl = document.getElementById('top-w-temp');
+    const lodEl = document.getElementById('top-lod');
     if (altEl && state.controls) altEl.textContent = `${Math.round(getAltitudeAt(state.controls.target.x, state.controls.target.z) / state.RELIEF_EXAGGERATION)} m`;
     if (tempEl && state.weather) tempEl.textContent = `${Math.round(state.weather.current.temp)}°`;
-    const lodEl = document.getElementById('top-lod'); if (lodEl) lodEl.textContent = `LOD ${state.ZOOM}`;
+    if (lodEl) lodEl.textContent = `LOD ${state.ZOOM}`;
 }
 
 function initGeocoding() {
@@ -251,6 +291,26 @@ function onWindowResize() {
         state.camera.updateProjectionMatrix();
         state.renderer.setSize(window.innerWidth, window.innerHeight);
     }
+}
+
+async function handleGPX(xml: string) {
+    const gpx = new gpxParser(); gpx.parse(xml);
+    if (!gpx.tracks?.length) return;
+    state.rawGpxData = gpx;
+    const startPt = gpx.tracks[0].points[0];
+    state.TARGET_LAT = startPt.lat; state.TARGET_LON = startPt.lon;
+    state.originTile = lngLatToTile(startPt.lon, startPt.lat, 13);
+    updateGPXMesh(); updateElevationProfile(); await updateVisibleTiles();
+    const tc = document.getElementById('trail-controls'); if (tc) tc.style.display = 'block';
+}
+
+function exportRecordedGPX() {
+    let g = `<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="SunTrail"><trk><trkseg>`;
+    state.recordedPoints.forEach(p => { g += `<trkpt lat="${p.lat}" lon="${p.lon}"><ele>${p.alt.toFixed(1)}</ele><time>${new Date(p.timestamp).toISOString()}</time></trkpt>`; });
+    g += `</trkseg></trk></gpx>`;
+    const blob = new Blob([g], { type: 'application/gpx+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a'); link.href = url; link.download = `track-${Date.now()}.gpx`; link.click();
 }
 
 async function openSOSModal() {
