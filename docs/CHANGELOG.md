@@ -4,6 +4,19 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.8.1] - 2026-03-22
+### 🛠️ UI Fixes & Stability
+- **Fix Logic Bindings** : Rétablissement des connexions JavaScript pour la sélection des calques et des presets de performance dans le nouveau système de tiroirs.
+- **Search Reliability** : Correction de l'affichage des résultats de recherche et fiabilisation de la sélection des sommets.
+- **Crash Fix** : Suppression des références obsolètes dans `startApp()` qui bloquaient le thread principal au chargement.
+
+## [5.8.0] - 2026-03-22
+### 🎨 Modern Mobile UI (v5.8)
+- **Bottom Navigation Bar** : Suppression des boutons flottants épars au profit d'une barre de navigation fixe avec 4 onglets : *Carte, Explorer, Rando, Réglages*.
+- **Système de Bottom Sheets** : Toutes les interfaces coulissent désormais depuis le bas avec une animation fluide, optimisée pour l'usage à une main.
+- **Top Bar Moderne** : Intégration d'un dashboard central affichant l'altitude temps réel, le niveau de détail (LOD) et un widget météo interactif.
+- **Backdrop Intelligent** : Ajout d'un overlay permettant la fermeture intuitive des panneaux au clic extérieur.
+
 ## [5.7.3] - 2026-03-22
 ### 🛠️ Bug Fixes & Précision GPS
 - **Origin Shift GPS (Fix Courroux)** : Implémentation d'un recentrage dynamique de l'origine du monde 3D lors de l'utilisation de la géolocalisation. Élimine les décalages de précision (30km+) constatés lors des déplacements importants.

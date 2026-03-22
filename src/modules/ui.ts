@@ -102,38 +102,21 @@ export function initUI(): void {
         startApp();
     });
 
-    // --- RE-WIRING CALQUES (FIX v5.4.7) ---
-    const layerBtn = document.getElementById('layer-btn');
-    const layerMenu = document.getElementById('layer-menu');
-    
-    layerBtn?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isCurrentlyOpen = layerMenu!.style.display === 'block';
-        if (isCurrentlyOpen) {
-            layerMenu!.style.display = 'none';
-            layerMenu!.classList.remove('open');
-        } else {
-            layerMenu!.style.display = 'block';
-            layerMenu!.classList.add('open');
-        }
-    });
-
-    // Delegation sur les items
-    layerMenu?.addEventListener('click', (e) => {
+    // --- GESTION DES CALQUES (v5.8) ---
+    const layerGrid = document.getElementById('layer-menu');
+    layerGrid?.addEventListener('click', (e) => {
         const target = e.target as HTMLElement;
         const item = target.closest('.layer-item') as HTMLElement;
         if (item) {
-            e.stopPropagation();
             const source = item.dataset.source;
             if (source) {
                 document.querySelectorAll('.layer-item').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
                 state.MAP_SOURCE = source;
                 state.hasManualSource = true;
-                layerMenu!.style.display = 'none';
-                layerMenu!.classList.remove('open');
                 saveSettings();
                 refreshTerrain();
+                showToast(`Carte : ${source.toUpperCase()}`);
             }
         }
     });
@@ -226,52 +209,32 @@ export function initUI(): void {
     bindToggle('poi-toggle', 'SHOW_SIGNPOSTS', refreshTerrain);
     bindToggle('shadow-toggle', 'SHADOWS', (val: boolean) => { if (state.sunLight) state.sunLight.castShadow = val; });
 
-    // GPS
-    document.getElementById('gps-btn')?.addEventListener('click', async () => {
+    // --- NOUVELLE UI v5.8 : FABs ---
+    document.getElementById('fab-gps')?.addEventListener('click', async () => {
         try {
             const pos = await Geolocation.getCurrentPosition();
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
-            
-            // --- CORRECTION POSITIONNEMENT GPS (v5.7.3) ---
-            // 1. On met à jour les coordonnées cibles globales
             state.TARGET_LAT = lat;
             state.TARGET_LON = lon;
-            
-            // 2. On réinitialise l'origine du monde 3D sur cette nouvelle position 
-            // pour éviter les erreurs de flottants et les décalages de perspective.
             state.originTile = lngLatToTile(lon, lat, state.ZOOM);
-            
-            // 3. On force le rechargement du terrain sur la nouvelle zone
             refreshTerrain();
-            
-            // 4. On vole vers la position (maintenant centrée sur 0,0 en coordonnées monde car on a shift l'origine)
             const worldPos = lngLatToWorld(lon, lat, state.originTile);
             const altWorld = getAltitudeAt(worldPos.x, worldPos.z);
-            
             flyTo(worldPos.x, worldPos.z, altWorld);
             fetchWeather(lat, lon);
-            
             showToast("📍 Position synchronisée");
         } catch (e) { showToast("Erreur GPS"); }
     });
 
-    document.getElementById('close-coords')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const cp = document.getElementById('coords-panel');
-        if (cp) cp.style.display = 'none';
-        hasLastClicked = false;
-    });
-
-    document.getElementById('gps-follow-btn')?.addEventListener('click', async () => {
+    document.getElementById('fab-follow')?.addEventListener('click', async () => {
         state.isFollowingUser = !state.isFollowingUser;
-        const btn = document.getElementById('gps-follow-btn')!;
+        const btn = document.getElementById('fab-follow')!;
         btn.classList.toggle('active', state.isFollowingUser);
         
         if (state.isFollowingUser) {
             showToast("Suivi activé");
             await startLocationTracking();
-            // --- CENTRAGE IMMÉDIAT (Feedback Swisstopo) ---
             if (state.userLocation) {
                 const wp = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
                 const groundH = getAltitudeAt(wp.x, wp.z);
@@ -284,10 +247,16 @@ export function initUI(): void {
     });
 
     // --- ENREGISTREMENT TRACÉ (v5.7) ---
-    document.getElementById('rec-btn')?.addEventListener('click', async () => {
+    const handleRecToggle = async () => {
         state.isRecording = !state.isRecording;
-        const btn = document.getElementById('rec-btn')!;
-        btn.classList.toggle('active', state.isRecording);
+        const btnOld = document.getElementById('rec-btn');
+        const btnNew = document.getElementById('rec-btn-new');
+        
+        if (btnOld) btnOld.classList.toggle('active', state.isRecording);
+        if (btnNew) {
+            btnNew.classList.toggle('active', state.isRecording);
+            btnNew.style.animation = state.isRecording ? 'pulse-red 1.5s infinite' : 'none';
+        }
         
         if (state.isRecording) {
             showToast("🔴 Enregistrement démarré");
@@ -307,15 +276,21 @@ export function initUI(): void {
         } else {
             showToast("⏹️ Enregistrement stoppé");
         }
-    });
+    };
 
-    document.getElementById('export-gpx-btn')?.addEventListener('click', () => {
+    document.getElementById('rec-btn')?.addEventListener('click', handleRecToggle);
+    document.getElementById('rec-btn-new')?.addEventListener('click', handleRecToggle);
+
+    const handleExportGpx = () => {
         if (state.recordedPoints.length < 2) {
             showToast("Tracé trop court pour export");
             return;
         }
         exportRecordedGPX();
-    });
+    };
+
+    document.getElementById('export-gpx-btn')?.addEventListener('click', handleExportGpx);
+    document.getElementById('export-gpx-btn-new')?.addEventListener('click', handleExportGpx);
 
     // Temps & Soleil
     if (timeSlider) {
@@ -354,11 +329,15 @@ export function initUI(): void {
     });
 
     document.getElementById('sos-btn')?.addEventListener('click', openSOSModal);
+    document.getElementById('sos-fab')?.addEventListener('click', openSOSModal);
     document.getElementById('sos-copy-btn')?.addEventListener('click', () => {
         const txt = document.getElementById('sos-text-container')?.textContent;
         if (txt) { navigator.clipboard.writeText(txt); showToast("🆘 Message copié"); }
     });
     document.getElementById('sos-close-btn')?.addEventListener('click', () => { document.getElementById('sos-modal')!.style.display = 'none'; });
+
+    // Mise à jour périodique de la Top Bar (Altitude, LOD, Météo)
+    setInterval(updateTopBar, 1000);
 
     // Modales & Panels
     document.getElementById('close-weather')?.addEventListener('click', () => { document.getElementById('weather-panel')!.style.display = 'none'; });
@@ -425,13 +404,83 @@ export function initUI(): void {
         }
     });
 
+    // --- NOUVELLE UI v5.8 : Navigation Bottom Bar ---
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            const target = (e.currentTarget as HTMLElement).dataset.target;
+            if (target === 'map') {
+                closeAllSheets();
+            } else if (target) {
+                openSheet(target);
+                // Mettre à jour l'état actif de la nav bar
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                (e.currentTarget as HTMLElement).classList.add('active');
+            }
+        });
+    });
+
     initGeocoding();
 }
 
+function closeAllSheets() {
+    console.log("[UI] Closing all sheets");
+    document.querySelectorAll('.bottom-sheet').forEach(sheet => {
+        (sheet as HTMLElement).style.bottom = '-100%';
+    });
+    const backdrop = document.getElementById('ui-backdrop');
+    if (backdrop) {
+        backdrop.classList.remove('visible');
+    }
+    // Délai pour laisser l'animation se terminer avant de cacher
+    setTimeout(() => {
+        document.querySelectorAll('.bottom-sheet').forEach(sheet => {
+            (sheet as HTMLElement).style.display = 'none';
+        });
+    }, 400);
+
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    document.querySelector('.nav-item[data-target="map"]')?.classList.add('active');
+}
+
+function openSheet(targetId: string) {
+    console.log("[UI] Opening sheet:", targetId);
+    const sheet = document.getElementById(`sheet-${targetId}`);
+    const backdrop = document.getElementById('ui-backdrop');
+    
+    // Fermer les autres d'abord sans délai
+    document.querySelectorAll('.bottom-sheet').forEach(s => {
+        if (s.id !== `sheet-${targetId}`) {
+            (s as HTMLElement).style.display = 'none';
+            (s as HTMLElement).style.bottom = '-100%';
+        }
+    });
+
+    if (sheet) {
+        sheet.style.display = 'block';
+        // Force reflow pour l'animation
+        void sheet.offsetWidth;
+        sheet.style.bottom = '0';
+        
+        if (backdrop) {
+            backdrop.style.display = 'block';
+            void backdrop.offsetWidth;
+            backdrop.classList.add('visible');
+        }
+    }
+}
+
 function handleGlobalClick(e: MouseEvent) {
+    const target = e.target as HTMLElement;
+
+    // --- NOUVELLE UI: Fermeture via Backdrop ---
+    if (target.id === 'ui-backdrop') {
+        closeAllSheets();
+        return;
+    }
+    // -------------------------------------------
+
     const layerMenu = document.getElementById('layer-menu');
     const layerBtn = document.getElementById('layer-btn');
-    const target = e.target as HTMLElement;
 
     if (layerMenu?.classList.contains('open') && !layerMenu.contains(target) && target !== layerBtn && !layerBtn?.contains(target)) {
         layerMenu.classList.remove('open');
@@ -439,13 +488,29 @@ function handleGlobalClick(e: MouseEvent) {
     }
     
     if (target.id === 'weather-clickable' || target.closest('#weather-clickable')) {
-        const wp = document.getElementById('weather-panel');
-        if (wp) wp.style.display = wp.style.display === 'none' ? 'block' : 'none';
+        openSheet('explore');
     }
+}
+
+function updateTopBar() {
+    const topAlt = document.getElementById('top-altitude');
+    const topLod = document.getElementById('top-lod');
+    const topWTemp = document.getElementById('top-w-temp');
+    
+    if (topAlt) {
+        const alt = getAltitudeAt(state.controls?.target.x || 0, state.controls?.target.z || 0) / state.RELIEF_EXAGGERATION;
+        topAlt.textContent = `${Math.round(alt)} m`;
+    }
+    if (topLod) topLod.textContent = `LOD ${state.ZOOM}`;
+    if (topWTemp && state.weather) topWTemp.textContent = `${Math.round(state.weather.current.temp)}°`;
 }
 
 function handleMapClick(e: MouseEvent) {
     if (!state.renderer || !state.camera || !state.scene) return;
+    
+    // NOUVELLE UI: Clic sur la carte = fermeture des panneaux
+    closeAllSheets();
+
     const panel = document.getElementById('panel');
     if (panel?.classList.contains('open')) panel.classList.remove('open');
 
@@ -496,15 +561,15 @@ function startApp() {
     loadTerrain();
     fetchWeather(state.TARGET_LAT, state.TARGET_LON);
     
-    document.getElementById('layer-btn')!.style.display = 'flex';
-    document.getElementById('settings-toggle')!.style.display = 'flex';
-    document.getElementById('gps-btn')!.style.display = 'flex';
-    document.getElementById('gps-follow-btn')!.style.display = 'flex';
-    document.getElementById('rec-btn')!.style.display = 'flex';
-    document.getElementById('export-gpx-btn')!.style.display = 'flex';
-    document.getElementById('screenshot-btn')!.style.display = 'flex';
-    document.getElementById('bottom-bar')!.style.display = 'block';
-    document.getElementById('top-search-container')!.style.display = 'block';
+    // --- NOUVELLE UI v5.8 ---
+    const bottomNav = document.getElementById('bottom-nav-bar');
+    if (bottomNav) bottomNav.style.display = 'flex';
+    
+    const fabContainer = document.getElementById('fab-container');
+    if (fabContainer) fabContainer.style.display = 'flex';
+    
+    const screenshotBtn = document.getElementById('screenshot-btn');
+    if (screenshotBtn) screenshotBtn.style.display = 'flex';
 }
 
 function onWindowResize() {
@@ -582,8 +647,11 @@ function initGeocoding() {
 
     let timer: any;
     const handleResultClick = (lat: number, lon: number, isPeak: boolean, peakName: string = '', peakEle: number = 0) => {
+        console.log("[UI] Result clicked:", peakName || "Lieu", lat, lon);
         geoResults.style.display = 'none';
         geoInput.value = '';
+        closeAllSheets(); // Fermer après sélection
+
         if (isPeak) {
             state.TARGET_LAT = lat; state.TARGET_LON = lon;
             autoSelectMapSource(lat, lon);
@@ -592,7 +660,6 @@ function initGeocoding() {
             refreshTerrain();
             setTimeout(() => { 
                 const wp = lngLatToWorld(lon, lat, state.originTile);
-                // Utilisation de l'altitude exagérée pour la cible world
                 flyTo(wp.x, wp.z, peakEle * state.RELIEF_EXAGGERATION); 
             }, 100);
             const cp = document.getElementById('coords-panel')!; cp.style.display = 'block';
@@ -621,59 +688,51 @@ function initGeocoding() {
             return; 
         }
         
-        // 1. AFFICHER LES PICS LOCAUX IMMÉDIATEMENT (v5.5.15)
+        // AFFICHER LES PICS LOCAUX IMMÉDIATEMENT
         geoResults.innerHTML = '';
-        const localMatches = state.localPeaks.filter(p => p.name.toLowerCase().includes(q)).slice(0, 5);
+        const localMatches = state.localPeaks.filter(p => p.name.toLowerCase().includes(q)).slice(0, 8);
         if (localMatches.length > 0) {
             localMatches.forEach(p => {
-                geoResults.appendChild(createGeoItem(p.lat, p.lon, p.name, true, p.name, p.ele));
+                const item = createGeoItem(p.lat, p.lon, p.name, true, p.name, p.ele);
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    handleResultClick(p.lat, p.lon, true, p.name, p.ele);
+                });
+                geoResults.appendChild(item);
             });
             geoResults.style.display = 'block';
-            attachListeners();
         }
 
-        // 2. RECHERCHE DISTANTE (MAPTILER / OSM)
+        // RECHERCHE DISTANTE (MAPTILER / OSM)
         timer = setTimeout(async () => {
             try {
                 const data = await fetchGeocoding({ query: q });
                 if (!data) return;
 
-                // On ne vide pas, on ajoute à la suite des pics locaux
+                const resultsToAdd: any[] = [];
                 if (Array.isArray(data)) {
-                    data.forEach((f: any) => {
-                        geoResults.appendChild(createGeoItem(parseFloat(f.lat), parseFloat(f.lon), f.display_name));
-                    });
+                    data.forEach((f: any) => resultsToAdd.push({ lat: parseFloat(f.lat), lon: parseFloat(f.lon), label: f.display_name }));
                 } else if (data.features) {
                     data.features.forEach((f: any) => {
-                        const lon = f.geometry.coordinates[0];
-                        const lat = f.geometry.coordinates[1];
-                        const label = f.place_name_fr || f.place_name || 'Lieu inconnu';
-                        geoResults.appendChild(createGeoItem(lat, lon, label));
+                        resultsToAdd.push({ lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], label: f.place_name_fr || f.place_name });
                     });
                 }
 
+                resultsToAdd.forEach(r => {
+                    const item = createGeoItem(r.lat, r.lon, r.label);
+                    item.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        handleResultClick(r.lat, r.lon, false, r.label);
+                    });
+                    geoResults.appendChild(item);
+                });
+
                 if (geoResults.children.length > 0) {
                     geoResults.style.display = 'block';
-                    attachListeners();
                 }
             } catch (e) { console.warn("Geocoding error:", e); }
         }, 400);
     });
-
-    function attachListeners() {
-        geoResults?.querySelectorAll('.geo-item').forEach(item => {
-            (item as HTMLElement).onclick = (e) => {
-                e.stopPropagation();
-                const lat = parseFloat((item as HTMLElement).dataset.lat!);
-                const lon = parseFloat((item as HTMLElement).dataset.lon!);
-                if (isNaN(lat) || isNaN(lon)) return;
-                const isPeak = item.classList.contains('peak-item');
-                const name = (item as HTMLElement).dataset.name || (item as HTMLElement).querySelector('span:nth-child(2)')?.textContent || '';
-                const ele = parseFloat((item as HTMLElement).dataset.ele!) || 0;
-                handleResultClick(lat, lon, isPeak, name, ele);
-            };
-        });
-    }
 }
 
 async function handleGPX(xml: string) {
