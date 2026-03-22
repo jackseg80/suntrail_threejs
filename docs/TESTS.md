@@ -14,7 +14,7 @@ Pour lancer les tests en mode "watch" (pendant le développement) :
 npx vitest
 ```
 
-## 📊 Couverture des tests (63 tests validés)
+## 📊 Couverture des tests (101 tests validés)
 
 ### 🌍 Terrain & Géographie (`terrain.test.ts`, `geo.test.ts`)
 - **Conversion Mercator** : Validation des calculs Lng/Lat vers tuiles (zoom 0 à 13).

@@ -1,4 +1,4 @@
-# 📋 Fonctionnalités de SunTrail 3D (v5.5.15)
+# 📋 Fonctionnalités de SunTrail 3D (v5.7.0)
 
 Ce document dresse la liste exhaustive des capacités techniques et fonctionnelles du moteur SunTrail.
 
@@ -23,6 +23,7 @@ Ce document dresse la liste exhaustive des capacités techniques et fonctionnell
 *   **Boussole Professionnelle Swisstopo** : Filtre passe-bas et amortissement lourd pour une rotation "cinématographique" sans tremblements.
 *   **Vol Cinématique (`flyTo`)** : Trajectoires de caméra paraboliques avec protection anti-collision dynamique.
 *   **Moteur de Sommets (Peaks Engine)** : Indexation locale des sommets > 1000m avec cache intelligent et auto-complétion hybride.
+*   **Enregistrement de Tracé (Live Tracking)** : Capture de points GPS en temps réel (> 50cm de mouvement) avec export au format GPX.
 
 ### 🌲 Environnement & Urbanisme
 *   **Végétation Bio-Fidèle** : Diversification des forêts avec 3 essences (Feuillus, Sapins, Mélèzes) selon l'altitude réelle.
@@ -33,11 +34,13 @@ Ce document dresse la liste exhaustive des capacités techniques et fonctionnell
 
 ### ⚡ Performance & Optimisation Mobile
 *   **Presets de Performance** : 4 modes prédéfinis (Eco, Balanced, Performance, Ultra) ajustant la résolution, la portée de vue, les ombres et la densité d'objets.
+*   **Persistance des Réglages** : Sauvegarde et restauration automatique des préférences via `localStorage`.
 *   **Mode Ultra-Battery (Deep Sleep)** : Mise en pause complète du moteur 3D (0 FPS) via Visibility API lorsque l'application est en arrière-plan.
 *   **Limiteur de FPS Global** : Option de bridage à 30 FPS pour maximiser l'autonomie sur les appareils mobiles en randonnée.
 *   **Gestion Rigoureuse de la VRAM** : Système `disposeObject()` pour prévenir les fuites de mémoire vidéo lors de l'exploration de zones vastes.
 
 ### 🛠️ Outils Spécialisés & Sécurité
-*   **Gestion Offline (Scraper)** : Possibilité de précharger une zone locale (rayon de 6km) pour une utilisation sans connexion internet.
+*   **Architecture Offline-First (PWA)** : Mise en cache complète des assets et des tuiles cartographiques pour un fonctionnement sans réseau.
+*   **Lecteur PMTiles Natif** : Support des archives de cartes locales pour charger des régions entières hors-ligne.
 *   **Générateur SOS SMS** : Outil de secours générant un message texte optimisé contenant les coordonnées GPS, l'altitude et l'état de la batterie.
-*   **Support GPX Pro** : Importation de traces avec calcul automatique de la pente moyenne et maximale le long de l'itinéraire.
+*   **Support GPX Pro** : Importation et exportation de traces avec calcul de pente.
