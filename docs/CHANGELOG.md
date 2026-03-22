@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.7.0] - 2026-03-22
+### 💾 Persistance des Réglages (Usage Terrain)
+- **Sauvegarde Automatique** : Le profil de performance, la source de carte (IGN, Swisstopo, etc.), et l'ensemble des réglages graphiques personnalisés sont désormais sauvegardés instantanément dans le cache du navigateur (`localStorage`).
+- **Restauration Fluide** : L'application recharge exactement votre configuration au démarrage, évitant de devoir tout re-paramétrer à chaque lancement.
+- **Robustesse** : En cas de données corrompues, le système redétecte automatiquement le meilleur profil basé sur votre matériel.
+- **Qualité** : Suite de tests étendue à **98 tests au vert** (+4 sur la persistance).
+
 ## [5.6.9] - 2026-03-21
 ### 🛠️ Restauration Ombres & Finalisation Defaults
 - **Restauration 3D en STD** : Le profil "Balanced" (STD) bénéficie à nouveau de l'éclairage 3D complet et des ombres portées. Le mode de rendu simplifié est désormais strictement limité au profil "Éco" (2D).

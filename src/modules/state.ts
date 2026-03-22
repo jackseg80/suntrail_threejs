@@ -206,3 +206,94 @@ export const state: State = {
     networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isUserInteracting: false, isProcessingTiles: false, lastUIInteraction: Date.now()
 };
 
+export interface SavedSettings {
+    PERFORMANCE_PRESET: PresetType;
+    MAP_SOURCE: string;
+    ENERGY_SAVER: boolean;
+    SHOW_TRAILS: boolean;
+    SHOW_SLOPES: boolean;
+    SHOW_SIGNPOSTS: boolean;
+    SHOW_BUILDINGS: boolean;
+    SHOW_HYDROLOGY: boolean;
+    SHOW_VEGETATION: boolean;
+    SHOW_WEATHER: boolean;
+    SHADOWS: boolean;
+    RESOLUTION: number;
+    RANGE: number;
+    FOG_FAR: number;
+    VEGETATION_DENSITY: number;
+    WEATHER_DENSITY: number;
+    WEATHER_SPEED: number;
+}
+
+const SETTINGS_KEY = 'suntrail_settings';
+
+export function saveSettings(): void {
+    const settingsToSave: SavedSettings = {
+        PERFORMANCE_PRESET: state.PERFORMANCE_PRESET,
+        MAP_SOURCE: state.MAP_SOURCE,
+        ENERGY_SAVER: state.ENERGY_SAVER,
+        SHOW_TRAILS: state.SHOW_TRAILS,
+        SHOW_SLOPES: state.SHOW_SLOPES,
+        SHOW_SIGNPOSTS: state.SHOW_SIGNPOSTS,
+        SHOW_BUILDINGS: state.SHOW_BUILDINGS,
+        SHOW_HYDROLOGY: state.SHOW_HYDROLOGY,
+        SHOW_VEGETATION: state.SHOW_VEGETATION,
+        SHOW_WEATHER: state.SHOW_WEATHER,
+        SHADOWS: state.SHADOWS,
+        RESOLUTION: state.RESOLUTION,
+        RANGE: state.RANGE,
+        FOG_FAR: state.FOG_FAR,
+        VEGETATION_DENSITY: state.VEGETATION_DENSITY,
+        WEATHER_DENSITY: state.WEATHER_DENSITY,
+        WEATHER_SPEED: state.WEATHER_SPEED
+    };
+    try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsToSave));
+    } catch (e) {
+        console.warn("Could not save settings to localStorage:", e);
+    }
+}
+
+export function loadSettings(): SavedSettings | null {
+    try {
+        const saved = localStorage.getItem(SETTINGS_KEY);
+        if (!saved) return null;
+        const parsed = JSON.parse(saved) as SavedSettings;
+        
+        // Basic validation
+        if (!parsed.PERFORMANCE_PRESET || !parsed.MAP_SOURCE) {
+            return null;
+        }
+
+        // Apply loaded boolean toggles and map source directly
+        state.MAP_SOURCE = parsed.MAP_SOURCE;
+        state.ENERGY_SAVER = !!parsed.ENERGY_SAVER;
+        state.SHOW_TRAILS = !!parsed.SHOW_TRAILS;
+        state.SHOW_SLOPES = !!parsed.SHOW_SLOPES;
+        
+        // Restore custom values
+        if (parsed.PERFORMANCE_PRESET === 'custom') {
+            state.SHOW_SIGNPOSTS = !!parsed.SHOW_SIGNPOSTS;
+            state.SHOW_BUILDINGS = !!parsed.SHOW_BUILDINGS;
+            state.SHOW_HYDROLOGY = !!parsed.SHOW_HYDROLOGY;
+            state.SHOW_VEGETATION = !!parsed.SHOW_VEGETATION;
+            state.SHOW_WEATHER = !!parsed.SHOW_WEATHER;
+            state.SHADOWS = !!parsed.SHADOWS;
+            
+            if (parsed.RESOLUTION) state.RESOLUTION = parsed.RESOLUTION;
+            if (parsed.RANGE) state.RANGE = parsed.RANGE;
+            if (parsed.FOG_FAR) state.FOG_FAR = parsed.FOG_FAR;
+            if (parsed.VEGETATION_DENSITY !== undefined) state.VEGETATION_DENSITY = parsed.VEGETATION_DENSITY;
+            if (parsed.WEATHER_DENSITY !== undefined) state.WEATHER_DENSITY = parsed.WEATHER_DENSITY;
+            if (parsed.WEATHER_SPEED !== undefined) state.WEATHER_SPEED = parsed.WEATHER_SPEED;
+        }
+        
+        return parsed;
+    } catch (e) {
+        console.warn("Failed to parse settings from localStorage, resetting...", e);
+        localStorage.removeItem(SETTINGS_KEY);
+        return null;
+    }
+}
+

@@ -1,4 +1,4 @@
-import { state, PRESETS, PresetType } from './state';
+import { state, PRESETS, PresetType, saveSettings } from './state';
 import { showToast } from './utils';
 import { updateShadowMapResolution } from './sun';
 import { resetTerrain, updateVisibleTiles } from './terrain';
@@ -65,6 +65,7 @@ export function applyPreset(preset: PresetType): void {
     if (preset === 'custom') {
         state.PERFORMANCE_PRESET = 'custom';
         updatePerformanceUI('custom');
+        saveSettings();
         return;
     }
 
@@ -107,6 +108,7 @@ export function applyPreset(preset: PresetType): void {
 
     updatePerformanceUI(preset);
     refreshTerrain();
+    saveSettings();
     showToast(`Profil appliqué : ${preset.toUpperCase()}`);
 }
 

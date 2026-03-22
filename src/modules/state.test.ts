@@ -55,3 +55,73 @@ describe('state.ts', () => {
         expect(state.USE_WORKERS).toBe(true);
     });
 });
+
+import { saveSettings, loadSettings } from './state';
+
+describe('state persistance (v5.7)', () => {
+    beforeEach(() => {
+        localStorage.clear();
+        state.MAP_SOURCE = 'swisstopo';
+        state.PERFORMANCE_PRESET = 'balanced';
+        state.SHOW_TRAILS = false;
+    });
+
+    it('should save and load basic settings', () => {
+        state.MAP_SOURCE = 'satellite';
+        state.SHOW_TRAILS = true;
+        
+        saveSettings();
+        
+        state.MAP_SOURCE = 'opentopomap'; // change to something else
+        state.SHOW_TRAILS = false;
+        
+        const loaded = loadSettings();
+        expect(loaded).not.toBeNull();
+        expect(loaded?.MAP_SOURCE).toBe('satellite');
+        
+        // Ensure state was modified
+        expect(state.MAP_SOURCE).toBe('satellite');
+        expect(state.SHOW_TRAILS).toBe(true);
+    });
+
+    it('should return null and clear if data is corrupted', () => {
+        localStorage.setItem('suntrail_settings', '{ invalid_json: ');
+        
+        const loaded = loadSettings();
+        expect(loaded).toBeNull();
+        expect(localStorage.getItem('suntrail_settings')).toBeNull();
+    });
+
+    it('should restore custom performance settings if preset is custom', () => {
+        state.PERFORMANCE_PRESET = 'custom';
+        state.RESOLUTION = 999;
+        state.RANGE = 10;
+        
+        saveSettings();
+        
+        state.RESOLUTION = 64; // Reset to default
+        state.RANGE = 4;
+        
+        const loaded = loadSettings();
+        expect(loaded?.PERFORMANCE_PRESET).toBe('custom');
+        
+        // Ensure state was properly modified
+        expect(state.RESOLUTION).toBe(999);
+        expect(state.RANGE).toBe(10);
+    });
+
+    it('should not override custom performance settings if preset is not custom', () => {
+        state.PERFORMANCE_PRESET = 'balanced';
+        state.RESOLUTION = 999; // even if set manually, balanced shouldn't use it on load
+        
+        saveSettings();
+        
+        state.RESOLUTION = 64; // Reset
+        
+        const loaded = loadSettings();
+        expect(loaded?.PERFORMANCE_PRESET).toBe('balanced');
+        
+        // loadSettings only restores these on 'custom', so it shouldn't modify state.RESOLUTION here
+        expect(state.RESOLUTION).toBe(64);
+    });
+});

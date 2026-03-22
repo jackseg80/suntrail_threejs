@@ -2,14 +2,14 @@ import * as THREE from 'three';
 // @ts-ignore
 import gpxParser from 'gpxparser';
 import { Geolocation } from '@capacitor/geolocation';
-import { state } from './state';
+import { state, saveSettings, loadSettings } from './state';
 import { updateSunPosition } from './sun';
 import { initScene, flyTo } from './scene';
 import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain, autoSelectMapSource, updateSlopeVisibility, updateHydrologyVisibility } from './terrain';
 import { deleteTerrainCache, downloadOfflineZone, updateStorageUI } from './tileLoader';
 import { lngLatToTile, worldToLngLat, lngLatToWorld } from './geo';
 import { showToast, fetchGeocoding } from './utils';
-import { applyPreset, detectBestPreset, getGpuInfo } from './performance';
+import { applyPreset, detectBestPreset, getGpuInfo, applyCustomSettings } from './performance';
 import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';
 import { updateElevationProfile } from './profile';
 import { startLocationTracking, stopLocationTracking } from './location';
@@ -20,8 +20,15 @@ let hasLastClicked = false;
 
 export function initUI(): void {
     console.log("[UI] Starting Init...");
-    const bestPreset = detectBestPreset();
-    applyPreset(bestPreset);
+    
+    const savedSettings = loadSettings();
+    if (savedSettings) {
+        state.hasManualSource = true;
+        applyPreset(savedSettings.PERFORMANCE_PRESET);
+    } else {
+        const bestPreset = detectBestPreset();
+        applyPreset(bestPreset);
+    }
 
     // Diagnostic matériel
     const gpuInfo = getGpuInfo();
@@ -30,7 +37,7 @@ export function initUI(): void {
     const diagCpu = document.getElementById('diag-cpu');
     if (diagCpu) diagCpu.textContent = `CPU: ${navigator.hardwareConcurrency || '--'} cores`;
     const diagPreset = document.getElementById('diag-preset');
-    if (diagPreset) diagPreset.textContent = `PROFIL: ${bestPreset.toUpperCase()}`;
+    if (diagPreset) diagPreset.textContent = `PROFIL: ${state.PERFORMANCE_PRESET.toUpperCase()}`;
     const techInfo = document.getElementById('tech-info');
     if (techInfo) techInfo.style.display = 'block';
 
@@ -121,6 +128,7 @@ export function initUI(): void {
                 state.hasManualSource = true;
                 layerMenu!.style.display = 'none';
                 layerMenu!.classList.remove('open');
+                saveSettings();
                 refreshTerrain();
             }
         }
@@ -130,6 +138,7 @@ export function initUI(): void {
     if (trailsToggle) trailsToggle.checked = state.SHOW_TRAILS;
     trailsToggle?.addEventListener('change', (e) => {
         state.SHOW_TRAILS = (e.target as HTMLInputElement).checked;
+        saveSettings();
         refreshTerrain();
     });
 
@@ -137,6 +146,7 @@ export function initUI(): void {
     if (slopesToggle) slopesToggle.checked = state.SHOW_SLOPES;
     slopesToggle?.addEventListener('change', (e) => {
         updateSlopeVisibility((e.target as HTMLInputElement).checked);
+        saveSettings();
     });
 
     // Panneau Réglages
@@ -160,7 +170,10 @@ export function initUI(): void {
                 (state as any)[stateKey] = parseFloat(slider.value);
                 if (disp) disp.textContent = slider.value;
             });
-            if (onChange) slider.addEventListener('change', () => onChange());
+            slider.addEventListener('change', () => {
+                saveSettings();
+                if (onChange) onChange();
+            });
         }
     };
 
@@ -173,6 +186,7 @@ export function initUI(): void {
 
     document.getElementById('energy-saver-toggle')?.addEventListener('change', (e) => {
         state.ENERGY_SAVER = (e.target as HTMLInputElement).checked;
+        saveSettings();
     });
 
     document.getElementById('load-speed-select')?.addEventListener('change', (e) => {
@@ -183,6 +197,7 @@ export function initUI(): void {
         state.FOG_FAR = parseFloat((e.target as HTMLInputElement).value) * 1000;
         if (state.scene?.fog && state.scene.fog instanceof THREE.Fog) state.scene.fog.far = state.FOG_FAR;
     });
+    document.getElementById('fog-slider')?.addEventListener('change', () => saveSettings());
 
     // Toggles 3D
     const bindToggle = (id: string, stateKey: string, onChange?: Function) => {
@@ -190,6 +205,7 @@ export function initUI(): void {
         if (toggle) {
             toggle.addEventListener('change', () => {
                 (state as any)[stateKey] = toggle.checked;
+                saveSettings();
                 if (onChange) onChange(toggle.checked);
             });
         }

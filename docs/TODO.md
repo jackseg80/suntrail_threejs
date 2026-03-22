@@ -18,7 +18,7 @@
 - [ ] **Enregistrement de Tracé (Live Tracking)** :
     - Bouton "REC" pour enregistrer sa propre position en temps réel.
     - Export au format GPX standard.
-- [ ] **Persistance des Réglages (localStorage)** :
+- [x] **Persistance des Réglages (localStorage)** :
     - Sauvegarde automatique du profil de performance, de la source de carte et des unités.
 - [ ] **Waypoints & Partage** :
     - Marquage de points d'intérêt personnalisés.
