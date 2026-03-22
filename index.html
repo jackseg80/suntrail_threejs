@@ -11,9 +11,9 @@
 
 <div id="setup-screen">
     <div class="setup-card">
-        <div style="margin-bottom:8px; font-size:10px; color:var(--gold); font-weight:700; letter-spacing:3px; text-transform:uppercase;">Version 5.8.0</div>
+        <div style="margin-bottom:8px; font-size:10px; color:var(--gold); font-weight:700; letter-spacing:3px; text-transform:uppercase;">Version 5.8.3</div>
         <h1>⛰️ SunTrail 3D</h1>
-        <p style="color:var(--t2);">Visualisation topographique haute précision, simulation solaire en temps réel & météo experte.</p>
+        <p style="color:var(--t2);">Visualisation topographique haute précision, simulation solaire & météo experte.</p>
         
         <div style="text-align:left;">
             <label style="font-size:11px; color:var(--gold); text-transform:uppercase; font-weight:700; letter-spacing:1px;">Clé API MapTiler Cloud</label>
@@ -22,14 +22,12 @@
         </div>
 
         <div id="tech-info" style="margin-top:20px; padding:15px; background:rgba(255,255,255,0.03); border-radius:12px; text-align:left; border:1px solid rgba(255,255,255,0.05); display:none;">
-            <div style="font-size:9px; color:var(--t2); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Diagnostic Matériel</div>
-            <div id="diag-gpu" style="font-size:11px; color:white; margin-bottom:4px; font-family:monospace;">GPU: Détection...</div>
+            <div id="diag-gpu" style="font-size:11px; color:white; margin-bottom:4px; font-family:monospace;">GPU: --</div>
             <div id="diag-cpu" style="font-size:11px; color:white; margin-bottom:4px; font-family:monospace;">CPU: -- cores</div>
             <div id="diag-preset" style="font-size:11px; color:var(--gold); font-weight:700; font-family:monospace;">PROFIL: --</div>
         </div>
 
         <p id="serr" style="color:#ef4444; font-size:13px; margin-top:15px; min-height:20px;"></p>
-        
         <button class="btn-go" id="bgo">Lancer l'expérience</button>
     </div>
 </div>
@@ -48,14 +46,10 @@
         <div id="top-lod" style="font-size:9px; color:var(--t2); text-transform:uppercase; letter-spacing:1px;">LOD --</div>
     </div>
 
-    <div style="display:flex; gap:10px;">
-        <div id="sos-fab" style="width:40px; height:40px; border-radius:10px; background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.3); color:#ef4444; display:flex; align-items:center; justify-content:center; cursor:pointer; font-weight:bold;">🆘</div>
-    </div>
+    <div id="sos-fab" style="width:40px; height:40px; border-radius:10px; background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.3); color:#ef4444; display:flex; align-items:center; justify-content:center; cursor:pointer; font-weight:bold;">🆘</div>
 </div>
 
-<div id="offline-indicator" class="ui-element" style="display:none; position:fixed; top:calc(20px + env(safe-area-inset-top, 0px)); right:calc(20px + env(safe-area-inset-right, 0px)); background:rgba(239, 68, 68, 0.8); border:1px solid rgba(255, 255, 255, 0.2); padding:6px 10px; border-radius:12px; font-size:10px; font-weight:700; color:white; z-index:2000; box-shadow:0 5px 15px rgba(0,0,0,0.3); backdrop-filter:var(--glass);">
-    📡 HORS-LIGNE
-</div>
+<div id="offline-indicator" style="display:none; position:fixed; top:70px; right:20px; background:rgba(239, 68, 68, 0.8); padding:6px 10px; border-radius:10px; font-size:10px; font-weight:700; color:white; z-index:2000;">📡 HORS-LIGNE</div>
 
 <!-- BACKDROP -->
 <div id="ui-backdrop" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1999; opacity:0; transition:opacity 0.3s; pointer-events:none;"></div>
@@ -82,196 +76,111 @@
 
 <!-- FABs -->
 <div id="fab-container" style="display:none; position:fixed; bottom:calc(95px + env(safe-area-inset-bottom)); right:20px; z-index:2000; display:flex; flex-direction:column; gap:12px;">
-    <button id="fab-follow" title="Suivi GPS">🚶</button>
-    <button id="fab-gps" title="Ma Position">🎯</button>
+    <button id="fab-follow" style="width:45px; height:45px; border-radius:50%; background:var(--panel); backdrop-filter:var(--glass); border:1px solid var(--border); color:white; font-size:20px; cursor:pointer;">🚶</button>
+    <button id="fab-gps" style="width:55px; height:55px; border-radius:50%; background:var(--accent); color:white; border:none; font-size:24px; cursor:pointer; box-shadow:0 4px 15px rgba(59, 130, 246, 0.4);">🎯</button>
 </div>
 
-<!-- BOTTOM SHEETS -->
+<!-- SHEETS -->
 <div id="sheet-explore" class="bottom-sheet" style="display:none;">
     <div class="sheet-handle"></div>
-    <h3 style="margin-top:0; color:var(--gold);">Explorer</h3>
-    <div id="sheet-explore-content">
-        <div style="background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:6px; margin-bottom:15px;">
-            <input type="text" id="geo-input" placeholder="🔍 Rechercher un lieu ou sommet..." style="width:100%; border:none; background:transparent; color:white; padding:12px 15px; font-size:16px; outline:none;">
-        </div>
-        <div id="geo-results" style="display:none; max-height:350px; overflow-y:auto; border-radius:16px; background:rgba(0,0,0,0.3); border:1px solid var(--border);"></div>
+    <h3 style="margin-top:0; color:var(--gold);">Explorer les Alpes</h3>
+    <div style="background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:16px; padding:4px; margin-bottom:15px;">
+        <input type="text" id="geo-input" placeholder="🔍 Rechercher un lieu ou sommet..." style="width:100%; border:none; background:transparent; color:white; padding:12px 15px; font-size:16px; outline:none;">
     </div>
+    <div id="geo-results" style="display:none; max-height:350px; overflow-y:auto; border-radius:16px; background:rgba(0,0,0,0.4); border:1px solid var(--border);"></div>
 </div>
 
 <div id="sheet-activity" class="bottom-sheet" style="display:none;">
     <div class="sheet-handle"></div>
-    <h3 style="margin-top:0; color:var(--gold);">Mon Parcours</h3>
-    <div id="sheet-activity-content">
-        <div class="control-group">
-            <input type="file" id="gpx-upload" accept=".gpx" style="display:none;">
-            <button id="gpx-btn" style="width:100%; padding:15px; border-radius:14px; border:1px solid var(--accent); background:rgba(59, 130, 246, 0.1); color:var(--accent); cursor:pointer; font-weight:700; margin-bottom:15px;">📥 Importer un tracé GPX</button>
-            <div style="display:flex; gap:12px; margin-bottom:20px;">
-                <button id="rec-btn-new" style="flex:1; padding:15px; border-radius:14px; border:1px solid #ef4444; background:rgba(239, 68, 68, 0.1); color:#ef4444; cursor:pointer; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px;">🔴 ENREGISTRER</button>
-                <button id="export-gpx-btn-new" style="flex:1; padding:15px; border-radius:14px; border:1px solid var(--gold); background:rgba(245, 158, 11, 0.1); color:var(--gold); cursor:pointer; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px;">💾 EXPORTER</button>
-            </div>
-            
-            <div id="trail-controls" style="display:none;">
-                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding:0 5px;">
-                    <span style="font-size:14px; font-weight:500;">🎥 Suivi automatique caméra</span>
-                    <input type="checkbox" id="trail-follow-toggle" style="width:22px; height:22px;">
-                </div>
-                <div style="background:rgba(255,255,255,0.03); padding:20px; border-radius:18px; border:1px solid var(--border); font-size:12px; display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                    <div style="grid-column: span 2; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:5px;">
-                        <span style="font-size:10px; color:var(--t2); text-transform:uppercase; letter-spacing:1px;">Distance totale parcourue</span>
-                        <div id="gpx-dist" style="font-size:24px; font-weight:700; color:white;">0.0 km</div>
-                    </div>
-                    <div>
-                        <span style="font-size:10px; color:var(--t2); text-transform:uppercase; letter-spacing:1px;">Dénivelé +</span>
-                        <div id="gpx-dplus" style="font-size:18px; font-weight:700; color:#10b981;">0 m</div>
-                    </div>
-                    <div>
-                        <span style="font-size:10px; color:var(--t2); text-transform:uppercase; letter-spacing:1px;">Dénivelé -</span>
-                        <div id="gpx-dminus" style="font-size:18px; font-weight:700; color:#ef4444;">0 m</div>
-                    </div>
-                </div>
-            </div>
+    <h3 style="margin-top:0; color:var(--gold);">Ma Randonnée</h3>
+    <input type="file" id="gpx-upload" accept=".gpx" style="display:none;">
+    <button id="gpx-btn" style="width:100%; padding:15px; border-radius:14px; border:1px solid var(--accent); background:rgba(59, 130, 246, 0.1); color:var(--accent); cursor:pointer; font-weight:700; margin-bottom:15px;">📥 Importer GPX</button>
+    <div style="display:flex; gap:12px; margin-bottom:20px;">
+        <button id="rec-btn-new" style="flex:1; padding:15px; border-radius:14px; border:1px solid #ef4444; background:rgba(239, 68, 68, 0.1); color:#ef4444; cursor:pointer; font-weight:700;">🔴 REC</button>
+        <button id="export-gpx-btn-new" style="flex:1; padding:15px; border-radius:14px; border:1px solid var(--gold); background:rgba(245, 158, 11, 0.1); color:var(--gold); cursor:pointer; font-weight:700;">💾 EXPORT</button>
+    </div>
+    <div id="trail-controls" style="display:none; background:rgba(255,255,255,0.03); padding:15px; border-radius:16px; border:1px solid var(--border);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:13px;">🎥 Suivi caméra</span>
+            <input type="checkbox" id="trail-follow-toggle">
         </div>
+        <div id="gpx-dist" style="font-size:20px; font-weight:700; color:white;">0.0 km</div>
     </div>
 </div>
 
 <div id="sheet-settings" class="bottom-sheet" style="display:none;">
     <div class="sheet-handle"></div>
-    <h3 style="margin-top:0; color:var(--gold);">Réglages</h3>
-    <div id="sheet-settings-content">
-        <div class="control-group">
-            <label style="font-size:11px; color:var(--t2); text-transform:uppercase; letter-spacing:1px; margin-bottom:15px; display:block;">Source de la carte</label>
-            <div class="layer-grid" id="layer-menu">
-                <div class="layer-item active" data-source="swisstopo">
-                    <div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/outdoor-v2.png')"></div>
-                    Topo CH
-                </div>
-                <div class="layer-item" data-source="satellite">
-                    <div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/satellite.png')"></div>
-                    Satellite
-                </div>
-                <div class="layer-item" data-source="opentopomap">
-                    <div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/topo.png')"></div>
-                    OpenTopo
-                </div>
-            </div>
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-top:1px solid var(--border);">
-                <label style="font-size:14px;">📍 Afficher les sentiers</label>
-                <input type="checkbox" id="trails-toggle" checked style="width:22px; height:22px;">
-            </div>
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 0;">
-                <label style="font-size:14px;">⚠️ Carte des pentes (>30°)</label>
-                <input type="checkbox" id="slopes-toggle" style="width:22px; height:22px;">
-            </div>
+    <h3 style="margin-top:0; color:var(--gold);">Configuration</h3>
+    
+    <div class="control-group">
+        <label style="font-size:11px; color:var(--t2); text-transform:uppercase; margin-bottom:15px; display:block;">Source de carte</label>
+        <div class="layer-grid" id="layer-menu">
+            <div class="layer-item active" data-source="swisstopo"><div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/outdoor-v2.png')"></div>Topo CH</div>
+            <div class="layer-item" data-source="satellite"><div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/satellite.png')"></div>Sat</div>
+            <div class="layer-item" data-source="opentopomap"><div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/topo.png')"></div>OpenTopo</div>
         </div>
-
-        <div class="control-group" style="margin-top:20px; border-top:1px solid var(--border); padding-top:20px;">
-            <label style="font-size:11px; color:var(--t2); text-transform:uppercase; letter-spacing:1px; margin-bottom:15px; display:block;">Profil de Performance</label>
-            <div class="preset-grid" style="margin-bottom:20px;">
-                <button class="preset-btn" data-preset="eco">ÉCO</button>
-                <button class="preset-btn" data-preset="balanced">STD</button>
-                <button class="preset-btn" data-preset="performance">HIGH</button>
-                <button class="preset-btn" data-preset="ultra">ULTRA</button>
-            </div>
-
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:15px; background:rgba(255,255,255,0.03); border-radius:14px; border:1px solid rgba(255,255,255,0.05);">
-                <span style="font-size:14px; color:white; font-weight:500;">🔋 Économie d'énergie (30 FPS)</span>
-                <input type="checkbox" id="energy-saver-toggle" style="width:22px; height:22px; cursor:pointer;">
-            </div>
-
-            <div style="margin-bottom:20px;">
-                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:8px; color:var(--t2);">
-                    <span>Détail Maillage : <span id="res-disp" style="color:white; font-weight:700;">128</span></span>
-                    <span>Distance Vue : <span id="range-disp" style="color:white; font-weight:700;">4</span></span>
-                </div>
-                <input type="range" id="res-slider" min="32" max="256" step="32" value="128">
-                <input type="range" id="range-slider" min="1" max="10" step="1" value="4" style="margin-top:15px;">
-            </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-top:1px solid var(--border);">
+            <label>📍 Sentiers</label><input type="checkbox" id="trails-toggle" checked style="width:20px; height:20px;">
         </div>
-
-        <details style="margin-top:10px; border-top:1px solid var(--border); padding-top:15px;">
-            <summary style="font-size:11px; color:var(--gold); text-transform:uppercase; cursor:pointer; list-style:none; outline:none; display:flex; justify-content:space-between; align-items:center;">
-                <span>🛠️ Paramètres Experts</span>
-                <span style="font-size:10px; opacity:0.5;">▼</span>
-            </summary>
-            <div style="padding-top:20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <span style="font-size:14px;">🌑 Ombres 3D dynamique</span>
-                    <input type="checkbox" id="shadow-toggle" checked style="width:20px; height:20px;">
-                </div>
-                <div style="margin-bottom:15px;">
-                    <label style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:8px;">
-                        Exagération Relief : <span id="exag-disp">1.4</span>x
-                    </label>
-                    <input type="range" id="exag-slider" min="1.0" max="2.0" step="0.1" value="1.4">
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <span style="font-size:14px;">🌲 Densité Forêt <span id="veg-density-disp">4000</span></span>
-                    <input type="checkbox" id="veg-toggle" checked style="width:20px; height:20px;">
-                </div>
-                <input type="range" id="veg-density-slider" min="0" max="15000" step="500" value="4000" style="margin-bottom:20px;">
-                
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
-                    <button id="clear-cache-btn" style="padding:12px; border-radius:12px; border:1px solid #ef4444; background:rgba(239, 68, 68, 0.1); color:#ef4444; cursor:pointer; font-weight:700; font-size:11px;">🗑️ VIDER LE CACHE</button>
-                    <button id="download-zone-btn" style="padding:12px; border-radius:12px; border:1px solid var(--accent); background:rgba(59, 130, 246, 0.1); color:white; cursor:pointer; font-weight:700; font-size:11px;">⬇️ ZONE 10KM</button>
-                </div>
-                <div style="margin-top:15px;">
-                    <input type="file" id="pmtiles-upload" accept=".pmtiles" style="display:none;">
-                    <button id="pmtiles-btn" style="width:100%; padding:12px; border-radius:12px; border:1px solid var(--gold); background:rgba(245, 158, 11, 0.1); color:var(--gold); cursor:pointer; font-weight:700; font-size:11px;">📁 CHARGER .PMTILES</button>
-                </div>
-            </div>
-        </details>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 0;">
+            <label>⚠️ Pentes > 30°</label><input type="checkbox" id="slopes-toggle" style="width:20px; height:20px;">
+        </div>
     </div>
+
+    <div class="control-group" style="margin-top:20px; border-top:1px solid var(--border); padding-top:20px;">
+        <label style="font-size:11px; color:var(--t2); text-transform:uppercase; margin-bottom:15px; display:block;">Performance</label>
+        <div class="preset-grid" style="margin-bottom:15px;">
+            <button class="preset-btn" data-preset="eco">ÉCO</button>
+            <button class="preset-btn" data-preset="balanced">STD</button>
+            <button class="preset-btn" data-preset="performance">HIGH</button>
+            <button class="preset-btn" data-preset="ultra">ULTRA</button>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding:12px; background:rgba(255,255,255,0.03); border-radius:12px;">
+            <span style="font-size:13px;">🔋 Cap 30 FPS</span>
+            <input type="checkbox" id="energy-saver-toggle">
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;">
+            <span>Maillage: <span id="res-disp">128</span></span>
+            <span>Vue: <span id="range-disp">4</span></span>
+        </div>
+        <input type="range" id="res-slider" min="32" max="256" step="32" value="128">
+        <input type="range" id="range-slider" min="1" max="10" step="1" value="4" style="margin-top:10px;">
+    </div>
+
+    <details style="margin-top:15px; border-top:1px solid var(--border); padding-top:15px;">
+        <summary style="font-size:11px; color:var(--gold); cursor:pointer; list-style:none;">🛠️ RÉGLAGES EXPERTS ▼</summary>
+        <div style="padding-top:15px; display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; justify-content:space-between;"><span>🏢 Bâtiments 3D</span><input type="checkbox" id="buildings-toggle" checked></div>
+            <div style="display:flex; justify-content:space-between;"><span>💧 Hydrologie</span><input type="checkbox" id="hydro-toggle"></div>
+            <div style="display:flex; justify-content:space-between;"><span>🌲 Forêts</span><input type="checkbox" id="veg-toggle" checked></div>
+            <div style="display:flex; justify-content:space-between;"><span>🌑 Ombres</span><input type="checkbox" id="shadow-toggle" checked></div>
+            <div style="display:flex; justify-content:space-between;"><span>🪧 Panneaux POI</span><input type="checkbox" id="poi-toggle" checked></div>
+            <div style="display:flex; justify-content:space-between;"><span>📊 Stats FPS</span><input type="checkbox" id="stats-toggle"></div>
+            <div style="display:flex; justify-content:space-between;"><span>🛠️ Debug LOD</span><input type="checkbox" id="debug-toggle"></div>
+            <button id="clear-cache-btn" style="width:100%; padding:10px; background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid #ef4444; border-radius:10px; font-weight:bold; font-size:11px;">VIDER LE CACHE</button>
+        </div>
+    </details>
 </div>
 
-<!-- PANNEAU COORDONNÉES (FLOTTANT LÉGER) -->
+<!-- COORDONNÉES ET ANALYSE -->
 <div id="coords-panel" style="display:none; position:fixed; bottom:100px; left:20px; background:var(--panel-solid); padding:15px; border-radius:20px; border:1px solid var(--border); z-index:1000; box-shadow:0 10px 30px rgba(0,0,0,0.3); backdrop-filter:var(--glass);">
-    <div id="close-coords" style="position:absolute; top:8px; right:12px; cursor:pointer; color:var(--t2); font-size:16px; font-weight:bold;">×</div>
+    <div id="close-coords" style="position:absolute; top:8px; right:12px; cursor:pointer; color:var(--t2); font-size:16px;">×</div>
     <div id="click-latlon" style="color:var(--t2); font-size:11px;">—</div>
     <div id="click-alt" style="color:white; font-size:18px; font-weight:800; margin-top:2px;">—</div>
-    <div style="display:flex; gap:8px; margin-top:10px;">
-        <button id="probe-btn" style="flex:2; padding:10px; border-radius:10px; background:var(--accent); color:white; border:none; font-weight:700; cursor:pointer; font-size:11px;">☀️ ANALYSE SOLAIRE</button>
-        <button id="sos-btn" style="flex:1; padding:10px; border-radius:10px; background:#ef4444; color:white; border:none; font-weight:700; cursor:pointer; font-size:11px;">🆘 SOS</button>
-    </div>
+    <button id="probe-btn" style="width:100%; padding:10px; border-radius:10px; background:var(--accent); color:white; border:none; font-weight:700; cursor:pointer; font-size:11px; margin-top:10px;">☀️ ANALYSE SOLAIRE</button>
 </div>
 
-<!-- TEMPS BAS (OPTIONNEL DANS RANDO) -->
-<div id="bottom-bar" style="display:none; position:fixed; bottom:160px; left:50%; transform:translateX(-50%); width:90%; max-width:500px; background:var(--panel); backdrop-filter:var(--glass); border:1px solid var(--border); border-radius:20px; padding:15px; z-index:1000;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <div style="display:flex; align-items:center; gap:10px;">
-            <span id="time-disp" style="font-weight:700; font-size:18px;">12:00</span>
-            <input type="date" id="date-input" style="background:transparent; border:none; color:white; font-size:12px;">
-        </div>
-        <button id="play-btn" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;">▶</button>
-    </div>
-    <input type="range" id="time-slider" min="0" max="1439" value="720">
-</div>
-
-<!-- MODALES SPÉCIFIQUES -->
+<!-- MODALE SOS -->
 <div id="sos-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:90%; max-width:400px; background:var(--panel-solid); border:2px solid #ef4444; border-radius:28px; padding:30px; z-index:4000; box-shadow:0 30px 100px rgba(239, 68, 68, 0.4); text-align:center;">
     <div style="font-size:48px; margin-bottom:15px;">🆘</div>
-    <h2>Message de Secours</h2>
-    <div id="sos-text-container" style="background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:16px; padding:15px; font-family:monospace; color:#ef4444; text-align:left; margin-bottom:25px;"></div>
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-        <button id="sos-copy-btn" style="padding:15px; border-radius:14px; background:var(--accent); color:white; border:none; font-weight:700;">📋 Copier</button>
-        <button id="sos-close-btn" style="padding:15px; border-radius:14px; background:rgba(255,255,255,0.05); color:white; border:1px solid var(--border); font-weight:700;">Annuler</button>
-    </div>
+    <h2>Secours</h2>
+    <div id="sos-text-container" style="background:rgba(0,0,0,0.3); padding:15px; font-family:monospace; color:#ef4444; text-align:left; margin-bottom:25px; border-radius:12px;"></div>
+    <button id="sos-copy-btn" style="width:100%; padding:15px; border-radius:14px; background:var(--accent); color:white; border:none; font-weight:700; margin-bottom:10px;">📋 Copier Message</button>
+    <button id="sos-close-btn" style="width:100%; background:none; border:none; color:var(--t2); cursor:pointer;">Annuler</button>
 </div>
 
-<div id="probe-result" style="display:none; position:fixed; bottom:160px; left:20px; width:calc(100% - 40px); max-width:420px; background:var(--panel-solid); border:1px solid var(--border); border-radius:24px; padding:25px; z-index:1200;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <h3 style="margin:0; color:var(--gold);">📊 Solar Insight</h3>
-        <button id="close-probe" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">&times;</button>
-    </div>
-    <div id="probe-total" style="font-size:24px; font-weight:700; color:var(--gold); margin-bottom:10px;">--h--</div>
-    <div id="probe-timeline" style="height:35px; background:#1a1c23; border-radius:10px; margin-bottom:20px;"></div>
-    <button id="copy-report-btn" style="background:none; border:none; color:var(--accent); font-size:11px; font-weight:700; cursor:pointer;">📋 COPIER LE RAPPORT</button>
-</div>
-
-<!-- INDICATEURS FIXES -->
-<div id="zoom-indicator" style="position:fixed; top:70px; left:20px; background:rgba(0,0,0,0.5); color:white; padding:4px 8px; border-radius:6px; font-size:10px; font-family:monospace; z-index:100;">LOD --</div>
-<canvas id="compass-canvas" style="position:fixed; top:100px; left:20px; width:50px; height:50px; z-index:100; cursor:pointer;"></canvas>
+<canvas id="compass-canvas" style="position:fixed; top:80px; left:20px; width:50px; height:50px; z-index:100; cursor:pointer;"></canvas>
 <div id="toast-container" style="position:fixed; top:80px; left:50%; transform:translateX(-50%); z-index:5000; pointer-events:none;"></div>
-
 <button id="screenshot-btn" style="display:none;">📸</button>
 
 <script type="module" src="/src/main.ts"></script>
