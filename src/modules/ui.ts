@@ -9,7 +9,7 @@ import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain, autoSelec
 import { deleteTerrainCache, downloadOfflineZone, updateStorageUI } from './tileLoader';
 import { lngLatToTile, worldToLngLat, lngLatToWorld } from './geo';
 import { showToast, fetchGeocoding } from './utils';
-import { applyPreset, detectBestPreset, getGpuInfo, applyCustomSettings } from './performance';
+import { applyPreset, detectBestPreset, getGpuInfo, applyCustomSettings, initBatteryManager } from './performance';
 import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';
 import { updateElevationProfile } from './profile';
 import { startLocationTracking, stopLocationTracking } from './location';
@@ -34,16 +34,11 @@ export function initUI(): void {
     const dg = document.getElementById('diag-gpu'); if (dg) dg.textContent = `GPU: ${gpuInfo.renderer}`;
     const dp = document.getElementById('diag-preset'); if (dp) dp.textContent = `PROFIL: ${state.PERFORMANCE_PRESET.toUpperCase()}`;
 
-    window.addEventListener('resize', onWindowResize);
-    document.addEventListener('click', handleGlobalClick);
-    document.getElementById('canvas-container')?.addEventListener('click', handleMapClick);
-
-    // --- AUTO-HIDE LOGIC ---
+    // --- AUTO-HIDE SYSTEM ---
     const resetUITimer = () => {
         document.body.classList.remove('ui-hidden');
         if (uiTimeout) clearTimeout(uiTimeout);
         uiTimeout = setTimeout(() => {
-            // On ne cache pas si un menu est ouvert
             const anySheetVisible = Array.from(document.querySelectorAll('.bottom-sheet')).some(s => (s as HTMLElement).style.display === 'block');
             const expertVisible = document.getElementById('expert-weather-panel')?.style.display === 'block';
             if (!anySheetVisible && !expertVisible) {
@@ -53,6 +48,10 @@ export function initUI(): void {
     };
     ['mousedown', 'mousemove', 'touchstart', 'scroll'].forEach(evt => document.addEventListener(evt, resetUITimer));
     resetUITimer();
+
+    window.addEventListener('resize', onWindowResize);
+    document.addEventListener('click', handleGlobalClick);
+    document.getElementById('canvas-container')?.addEventListener('click', handleMapClick);
 
     // --- TIMELINE & CALENDRIER ---
     const timeSlider = document.getElementById('time-slider') as HTMLInputElement;
@@ -88,12 +87,21 @@ export function initUI(): void {
         (e.target as HTMLElement).textContent = state.isSunAnimating ? '⏸' : '▶';
     });
 
-    // Setup Screen
+    // --- SETUP SCREEN ---
+    const setupK1 = document.getElementById('k1') as HTMLInputElement;
+    const savedKey = localStorage.getItem('maptiler_key');
+    if (savedKey && setupK1) setupK1.value = savedKey;
+
     document.getElementById('bgo')?.addEventListener('click', () => {
-        const k = (document.getElementById('k1') as HTMLInputElement).value.trim();
-        if (k.length < 10) return;
+        const k = setupK1.value.trim();
+        if (k.length < 10) {
+            const serr = document.getElementById('serr');
+            if (serr) serr.textContent = "Clé MapTiler invalide.";
+            return;
+        }
         state.MK = k; localStorage.setItem('maptiler_key', k);
-        document.getElementById('setup-screen')!.style.display = 'none';
+        const ss = document.getElementById('setup-screen');
+        if (ss) ss.style.display = 'none';
         startApp();
     });
 
@@ -101,7 +109,7 @@ export function initUI(): void {
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', (e) => {
             const target = (e.currentTarget as HTMLElement).dataset.target;
-            if (target === 'map') { closeAllSheets(); showToast("Vue Carte"); }
+            if (target === 'map') { closeAllSheets(); }
             else if (target) openSheet(target);
         });
     });
@@ -203,6 +211,7 @@ export function initUI(): void {
     document.getElementById('sos-close-btn')?.addEventListener('click', () => { document.getElementById('sos-modal')!.style.display = 'none'; });
     document.getElementById('clear-cache-btn')?.addEventListener('click', deleteTerrainCache);
 
+    initBatteryManager();
     setInterval(updateTopBar, 1000);
     initGeocoding();
 }
@@ -248,8 +257,8 @@ function handleMapClick(e: MouseEvent) {
         const gps = worldToLngLat(hit.x, hit.z, state.originTile);
         const alt = getAltitudeAt(hit.x, hit.z);
         document.getElementById('coords-panel')!.style.display = 'block';
-        document.getElementById('click-latlon')!.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
-        document.getElementById('click-alt')!.textContent = `${Math.round(alt / state.RELIEF_EXAGGERATION)} m`;
+        const cll = document.getElementById('click-latlon'); if (cll) cll.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
+        const cal = document.getElementById('click-alt'); if (cal) cal.textContent = `${Math.round(alt / state.RELIEF_EXAGGERATION)} m`;
         lastClickedCoords = { x: hit.x, z: hit.z, alt: hit.y }; hasLastClicked = true;
     }
 }
