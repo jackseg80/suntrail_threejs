@@ -18,6 +18,7 @@ import { fetchWeather, updateWeatherUIIndicator } from './weather';
 let lastClickedCoords = { x: 0, z: 0, alt: 0 };
 let hasLastClicked = false;
 let sheetTimer: any = null;
+let uiTimeout: any = null;
 
 export function initUI(): void {
     const savedSettings = loadSettings();
@@ -30,12 +31,28 @@ export function initUI(): void {
     }
 
     const gpuInfo = getGpuInfo();
-    const diagGpu = document.getElementById('diag-gpu'); if (diagGpu) diagGpu.textContent = `GPU: ${gpuInfo.renderer}`;
-    const diagPreset = document.getElementById('diag-preset'); if (diagPreset) diagPreset.textContent = `PROFIL: ${state.PERFORMANCE_PRESET.toUpperCase()}`;
+    const dg = document.getElementById('diag-gpu'); if (dg) dg.textContent = `GPU: ${gpuInfo.renderer}`;
+    const dp = document.getElementById('diag-preset'); if (dp) dp.textContent = `PROFIL: ${state.PERFORMANCE_PRESET.toUpperCase()}`;
 
     window.addEventListener('resize', onWindowResize);
     document.addEventListener('click', handleGlobalClick);
     document.getElementById('canvas-container')?.addEventListener('click', handleMapClick);
+
+    // --- AUTO-HIDE LOGIC ---
+    const resetUITimer = () => {
+        document.body.classList.remove('ui-hidden');
+        if (uiTimeout) clearTimeout(uiTimeout);
+        uiTimeout = setTimeout(() => {
+            // On ne cache pas si un menu est ouvert
+            const anySheetVisible = Array.from(document.querySelectorAll('.bottom-sheet')).some(s => (s as HTMLElement).style.display === 'block');
+            const expertVisible = document.getElementById('expert-weather-panel')?.style.display === 'block';
+            if (!anySheetVisible && !expertVisible) {
+                document.body.classList.add('ui-hidden');
+            }
+        }, 5000);
+    };
+    ['mousedown', 'mousemove', 'touchstart', 'scroll'].forEach(evt => document.addEventListener(evt, resetUITimer));
+    resetUITimer();
 
     // --- TIMELINE & CALENDRIER ---
     const timeSlider = document.getElementById('time-slider') as HTMLInputElement;
@@ -58,9 +75,9 @@ export function initUI(): void {
         const d = state.simDate;
         dateInput.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         dateInput.addEventListener('change', () => {
-            const newDate = new Date(dateInput.value);
-            if (!isNaN(newDate.getTime())) {
-                state.simDate.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate());
+            const nd = new Date(dateInput.value);
+            if (!isNaN(nd.getTime())) {
+                state.simDate.setFullYear(nd.getFullYear(), nd.getMonth(), nd.getDate());
                 refreshSun();
             }
         });
@@ -76,7 +93,7 @@ export function initUI(): void {
         const k = (document.getElementById('k1') as HTMLInputElement).value.trim();
         if (k.length < 10) return;
         state.MK = k; localStorage.setItem('maptiler_key', k);
-        const ss = document.getElementById('setup-screen'); if (ss) ss.style.display = 'none';
+        document.getElementById('setup-screen')!.style.display = 'none';
         startApp();
     });
 
@@ -104,8 +121,7 @@ export function initUI(): void {
     bindT('veg-toggle', 'SHOW_VEGETATION', refreshTerrain);
     bindT('shadow-toggle', 'SHADOWS', (v: boolean) => { if (state.sunLight) state.sunLight.castShadow = v; });
     bindT('stats-toggle', 'SHOW_STATS', (v: boolean) => { if (state.stats) state.stats.dom.style.display = v ? 'block' : 'none'; });
-    bindT('poi-toggle', 'SHOW_SIGNPOSTS', refreshTerrain);
-    bindT('energy-saver-toggle', 'ENERGY_SAVER');
+    bindT('debug-toggle', 'SHOW_DEBUG', (v: boolean) => { const zi = document.getElementById('zoom-indicator'); if (zi) zi.style.display = v ? 'block' : 'none'; });
 
     document.getElementById('layer-menu')?.addEventListener('click', (e) => {
         const item = (e.target as HTMLElement).closest('.layer-item') as HTMLElement;
@@ -175,7 +191,6 @@ export function initUI(): void {
     document.getElementById('close-probe')?.addEventListener('click', () => { document.getElementById('probe-result')!.style.display = 'none'; });
     document.getElementById('close-coords')?.addEventListener('click', () => { document.getElementById('coords-panel')!.style.display = 'none'; });
     
-    // STATION METEO EXPERTE
     document.getElementById('open-expert-weather')?.addEventListener('click', () => { 
         document.getElementById('expert-weather-panel')!.style.display = 'block';
         closeAllSheets(); 
@@ -233,8 +248,8 @@ function handleMapClick(e: MouseEvent) {
         const gps = worldToLngLat(hit.x, hit.z, state.originTile);
         const alt = getAltitudeAt(hit.x, hit.z);
         document.getElementById('coords-panel')!.style.display = 'block';
-        document.getElementById('click-latlon').textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
-        document.getElementById('click-alt').textContent = `${Math.round(alt / state.RELIEF_EXAGGERATION)} m`;
+        document.getElementById('click-latlon')!.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
+        document.getElementById('click-alt')!.textContent = `${Math.round(alt / state.RELIEF_EXAGGERATION)} m`;
         lastClickedCoords = { x: hit.x, z: hit.z, alt: hit.y }; hasLastClicked = true;
     }
 }
@@ -244,9 +259,7 @@ function updateTopBar() {
     const tempEl = document.getElementById('top-w-temp');
     const iconEl = document.getElementById('top-w-icon');
     const lodEl = document.getElementById('top-lod');
-    
     if (altEl && state.controls) altEl.textContent = `${Math.round(getAltitudeAt(state.controls.target.x, state.controls.target.z) / state.RELIEF_EXAGGERATION)} m`;
-    
     if (state.weatherData) {
         if (tempEl) tempEl.textContent = `${Math.round(state.weatherData.temp)}°`;
         if (iconEl) {
@@ -305,6 +318,7 @@ function startApp() {
     initScene(); loadTerrain(); fetchWeather(state.TARGET_LAT, state.TARGET_LON);
     const bn = document.getElementById('bottom-nav-bar'); if (bn) bn.style.display = 'flex';
     const fc = document.getElementById('fab-container'); if (fc) fc.style.display = 'flex';
+    const ts = document.getElementById('bottom-timeline-stack'); if (ts) ts.style.display = 'block';
 }
 
 function onWindowResize() {
