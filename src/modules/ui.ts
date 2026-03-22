@@ -61,7 +61,7 @@ export function initUI(): void {
             const newDate = new Date(dateInput.value);
             if (!isNaN(newDate.getTime())) {
                 state.simDate.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate());
-                refreshSun(); // Recalculer position soleil pour cette date
+                refreshSun();
             }
         });
     }
@@ -174,6 +174,16 @@ export function initUI(): void {
     });
     document.getElementById('close-probe')?.addEventListener('click', () => { document.getElementById('probe-result')!.style.display = 'none'; });
     document.getElementById('close-coords')?.addEventListener('click', () => { document.getElementById('coords-panel')!.style.display = 'none'; });
+    
+    // STATION METEO EXPERTE
+    document.getElementById('open-expert-weather')?.addEventListener('click', () => { 
+        document.getElementById('expert-weather-panel')!.style.display = 'block';
+        closeAllSheets(); 
+    });
+    document.getElementById('close-expert-weather')?.addEventListener('click', () => { 
+        document.getElementById('expert-weather-panel')!.style.display = 'none'; 
+    });
+
     document.getElementById('sos-fab')?.addEventListener('click', openSOSModal);
     document.getElementById('sos-close-btn')?.addEventListener('click', () => { document.getElementById('sos-modal')!.style.display = 'none'; });
     document.getElementById('clear-cache-btn')?.addEventListener('click', deleteTerrainCache);
@@ -223,18 +233,30 @@ function handleMapClick(e: MouseEvent) {
         const gps = worldToLngLat(hit.x, hit.z, state.originTile);
         const alt = getAltitudeAt(hit.x, hit.z);
         document.getElementById('coords-panel')!.style.display = 'block';
-        document.getElementById('click-latlon')!.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
-        document.getElementById('click-alt')!.textContent = `${Math.round(alt / state.RELIEF_EXAGGERATION)} m`;
-        lastClickedCoords = { x: hit.x, z: hit.z, alt: alt }; hasLastClicked = true;
+        document.getElementById('click-latlon').textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
+        document.getElementById('click-alt').textContent = `${Math.round(alt / state.RELIEF_EXAGGERATION)} m`;
+        lastClickedCoords = { x: hit.x, z: hit.z, alt: hit.y }; hasLastClicked = true;
     }
 }
 
 function updateTopBar() {
     const altEl = document.getElementById('top-altitude');
     const tempEl = document.getElementById('top-w-temp');
+    const iconEl = document.getElementById('top-w-icon');
     const lodEl = document.getElementById('top-lod');
+    
     if (altEl && state.controls) altEl.textContent = `${Math.round(getAltitudeAt(state.controls.target.x, state.controls.target.z) / state.RELIEF_EXAGGERATION)} m`;
-    if (tempEl && state.weather) tempEl.textContent = `${Math.round(state.weather.current.temp)}°`;
+    
+    if (state.weatherData) {
+        if (tempEl) tempEl.textContent = `${Math.round(state.weatherData.temp)}°`;
+        if (iconEl) {
+            let icon = '☀️';
+            if (state.currentWeather === 'rain') icon = '🌧️';
+            else if (state.currentWeather === 'snow') icon = '❄️';
+            else if (state.weatherData.cloudCover > 20) icon = '⛅';
+            iconEl.textContent = icon;
+        }
+    }
     if (lodEl) lodEl.textContent = `LOD ${state.ZOOM}`;
 }
 
@@ -274,7 +296,7 @@ function initGeocoding() {
 
 function createGeoItem(lat: number, lon: number, label: string): HTMLElement {
     const d = document.createElement('div');
-    d.style.cssText = 'padding:15px; border-bottom:1px solid rgba(255,255,255,0.1); color:white; cursor:pointer;';
+    d.style.cssText = 'padding:15px; border-bottom:1px solid rgba(255,255,255,0.1); color:white; cursor:pointer; font-size:14px;';
     d.innerHTML = `📍 ${label}`;
     return d;
 }
