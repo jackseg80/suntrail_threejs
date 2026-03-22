@@ -70,6 +70,13 @@ export interface Peak {
     ele: number;
 }
 
+export interface LocationPoint {
+    lat: number;
+    lon: number;
+    alt: number;
+    timestamp: number;
+}
+
 export interface State {
     ENERGY_SAVER: boolean;
     MK: string;
@@ -149,6 +156,10 @@ export interface State {
     profileMarker: THREE.Mesh | null;
     trailProgress: number;
     isFollowingTrail: boolean;
+    
+    isRecording: boolean;
+    recordedPoints: LocationPoint[];
+    
     userLocation: { lat: number; lon: number; alt: number } | null;
     userHeading: number | null;
     isFollowingUser: boolean;
@@ -196,6 +207,10 @@ export const state: State = {
     localPeaks: [],
 
     rawGpxData: null, gpxPoints: [], gpxMesh: null, profileMarker: null, trailProgress: 0, isFollowingTrail: false,
+    
+    isRecording: false,
+    recordedPoints: [],
+    
     userLocation: null, userHeading: null, isFollowingUser: false, userMarker: null,
     
     smoothUserPos: new THREE.Vector3(),

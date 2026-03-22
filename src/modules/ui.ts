@@ -255,6 +255,40 @@ export function initUI(): void {
         }
     });
 
+    // --- ENREGISTREMENT TRACÉ (v5.7) ---
+    document.getElementById('rec-btn')?.addEventListener('click', async () => {
+        state.isRecording = !state.isRecording;
+        const btn = document.getElementById('rec-btn')!;
+        btn.classList.toggle('active', state.isRecording);
+        
+        if (state.isRecording) {
+            showToast("🔴 Enregistrement démarré");
+            if (!state.isFollowingUser) {
+                // On force le tracking GPS si pas déjà actif
+                await startLocationTracking();
+            }
+            // Point de départ
+            if (state.userLocation) {
+                state.recordedPoints = [{
+                    ...state.userLocation,
+                    timestamp: Date.now()
+                }];
+            } else {
+                state.recordedPoints = [];
+            }
+        } else {
+            showToast("⏹️ Enregistrement stoppé");
+        }
+    });
+
+    document.getElementById('export-gpx-btn')?.addEventListener('click', () => {
+        if (state.recordedPoints.length < 2) {
+            showToast("Tracé trop court pour export");
+            return;
+        }
+        exportRecordedGPX();
+    });
+
     // Temps & Soleil
     if (timeSlider) {
         timeSlider.addEventListener('input', () => {
@@ -427,6 +461,8 @@ function startApp() {
     document.getElementById('settings-toggle')!.style.display = 'flex';
     document.getElementById('gps-btn')!.style.display = 'flex';
     document.getElementById('gps-follow-btn')!.style.display = 'flex';
+    document.getElementById('rec-btn')!.style.display = 'flex';
+    document.getElementById('export-gpx-btn')!.style.display = 'flex';
     document.getElementById('screenshot-btn')!.style.display = 'flex';
     document.getElementById('bottom-bar')!.style.display = 'block';
     document.getElementById('top-search-container')!.style.display = 'block';
@@ -437,6 +473,36 @@ function onWindowResize() {
     state.camera.aspect = window.innerWidth / window.innerHeight;
     state.camera.updateProjectionMatrix();
     state.renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function exportRecordedGPX() {
+    let gpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="SunTrail 3D" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>SunTrail Recorded Track - ${new Date().toLocaleDateString()}</name>
+    <trkseg>`;
+
+    state.recordedPoints.forEach(p => {
+        gpx += `
+      <trkpt lat="${p.lat}" lon="${p.lon}">
+        <ele>${p.alt.toFixed(1)}</ele>
+        <time>${new Date(p.timestamp).toISOString()}</time>
+      </trkpt>`;
+    });
+
+    gpx += `
+    </trkseg>
+  </trk>
+</gpx>`;
+
+    const blob = new Blob([gpx], { type: 'application/gpx+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `suntrail-track-${Date.now()}.gpx`;
+    link.click();
+    URL.revokeObjectURL(url);
+    showToast("GPX téléchargé");
 }
 
 function createGeoItem(lat: number, lon: number, label: string, isPeak = false, name = '', ele = 0): HTMLElement {

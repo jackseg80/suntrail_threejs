@@ -68,6 +68,17 @@ export async function startLocationTracking() {
                 if (state.userLocation === null) state.lastTrackingUpdate = Date.now();
                 state.userLocation = { lat: latitude, lon: longitude, alt: altitude || 0 };
                 lastLat = latitude; lastLon = longitude;
+                
+                // --- ENREGISTREMENT DU TRACÉ (v5.7) ---
+                if (state.isRecording) {
+                    state.recordedPoints.push({
+                        lat: latitude,
+                        lon: longitude,
+                        alt: altitude || 0,
+                        timestamp: Date.now()
+                    });
+                }
+
                 updateUserMarker();
             }
         });

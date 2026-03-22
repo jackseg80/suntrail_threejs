@@ -15,7 +15,7 @@
 - [ ] **Système Offline-First Complet** :
     - Service Worker pour l'interception réseau et le cache persistant.
     - Support du format **PMTiles** (stockage de cartes régionales massives).
-- [ ] **Enregistrement de Tracé (Live Tracking)** :
+- [x] **Enregistrement de Tracé (Live Tracking)** :
     - Bouton "REC" pour enregistrer sa propre position en temps réel.
     - Export au format GPX standard.
 - [x] **Persistance des Réglages (localStorage)** :
