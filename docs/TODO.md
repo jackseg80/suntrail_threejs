@@ -20,6 +20,8 @@
     - Export au format GPX standard.
 - [x] **Persistance des Réglages (localStorage)** :
     - Sauvegarde automatique du profil de performance, de la source de carte et des unités.
+
+## ⏳ Backlog & Recherche (Indéfini)
 - [ ] **Waypoints & Partage** :
     - Marquage de points d'intérêt personnalisés.
     - **Deep Linking** : Partage d'URL synchronisée pour une vue 3D exacte.
