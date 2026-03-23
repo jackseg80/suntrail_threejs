@@ -37,6 +37,7 @@
 <div id="canvas-container"></div>
 
 <!-- SHELL CONTAINERS -->
+<div id="top-status-bar"></div>
 <nav id="nav-bar"></nav>
 <div id="sheet-overlay"></div>
 <div id="sheet-container"></div>
@@ -494,6 +495,22 @@
 <div id="zoom-indicator" class="ui-element">LVL --</div>
 <canvas id="compass-canvas" class="ui-element"></canvas>
 <div id="toast-container"></div>
+</template>
+
+<!-- TOP STATUS BAR -->
+<template id="template-top-status-bar">
+    <div class="top-status-bar-content">
+        <div class="status-widget lod-widget">
+            <span class="lod-badge">LVL --</span>
+        </div>
+        <div class="status-widget weather-widget">
+            <span class="weather-icon">☀️</span>
+            <span class="weather-temp">--°C</span>
+        </div>
+        <div class="status-widget network-widget">
+            <span class="network-status">📡</span>
+        </div>
+    </div>
 </template>
 
 <!-- NAV BAR -->

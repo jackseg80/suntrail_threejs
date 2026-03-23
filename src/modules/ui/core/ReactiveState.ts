@@ -20,7 +20,7 @@ function isPlainObject(value: any): boolean {
  * @param initialState The initial state object.
  * @returns A proxied state object with a .subscribe(path, callback) method.
  */
-export function createReactiveState<T extends object>(initialState: T): T & { subscribe: (path: string, cb: Listener) => void } {
+export function createReactiveState<T extends object>(initialState: T): T & { subscribe: (path: string, cb: Listener) => () => void } {
     const listeners = new Map<string, Set<Listener>>();
     const changedPaths = new Set<string>();
     let isQueued = false;
@@ -72,6 +72,15 @@ export function createReactiveState<T extends object>(initialState: T): T & { su
                             listeners.set(subscribePath, new Set());
                         }
                         listeners.get(subscribePath)!.add(cb);
+                        return () => {
+                            const pathListeners = listeners.get(subscribePath);
+                            if (pathListeners) {
+                                pathListeners.delete(cb);
+                                if (pathListeners.size === 0) {
+                                    listeners.delete(subscribePath);
+                                }
+                            }
+                        };
                     };
                 }
 

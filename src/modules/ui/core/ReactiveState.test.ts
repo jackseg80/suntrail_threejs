@@ -98,4 +98,22 @@ describe('ReactiveState', () => {
         expect(cbZoom).toHaveBeenCalledWith(13);
         expect(cbTemp).toHaveBeenCalledWith(25);
     });
+
+    it('should return an unsubscribe function that removes the listener', async () => {
+        const state = createReactiveState({ zoom: 12 });
+        const callback = vi.fn();
+        
+        const unsubscribe = state.subscribe('zoom', callback);
+        state.zoom = 13;
+        
+        await new Promise(resolve => queueMicrotask(() => resolve(null)));
+        expect(callback).toHaveBeenCalledTimes(1);
+        expect(callback).toHaveBeenCalledWith(13);
+        
+        unsubscribe();
+        state.zoom = 14;
+        
+        await new Promise(resolve => queueMicrotask(() => resolve(null)));
+        expect(callback).toHaveBeenCalledTimes(1); // Still 1, not called for zoom = 14
+    });
 });
