@@ -223,7 +223,10 @@ export const state: State = {
     networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isUserInteracting: false, isProcessingTiles: false, lastUIInteraction: Date.now()
 };
 
+const CURRENT_SETTINGS_VERSION = '5.7';
+
 export interface SavedSettings {
+    version?: string;
     PERFORMANCE_PRESET: PresetType;
     MAP_SOURCE: string;
     ENERGY_SAVER: boolean;
@@ -247,6 +250,7 @@ const SETTINGS_KEY = 'suntrail_settings';
 
 export function saveSettings(): void {
     const settingsToSave: SavedSettings = {
+        version: CURRENT_SETTINGS_VERSION,
         PERFORMANCE_PRESET: state.PERFORMANCE_PRESET,
         MAP_SOURCE: state.MAP_SOURCE,
         ENERGY_SAVER: state.ENERGY_SAVER,
@@ -278,8 +282,14 @@ export function loadSettings(): SavedSettings | null {
         if (!saved) return null;
         const parsed = JSON.parse(saved) as SavedSettings;
         
-        // Basic validation
+        // Basic validation & Version Check
         if (!parsed.PERFORMANCE_PRESET || !parsed.MAP_SOURCE) {
+            return null;
+        }
+
+        if (parsed.version !== CURRENT_SETTINGS_VERSION) {
+            console.log(`[State] Obsolete version detected (${parsed.version} vs ${CURRENT_SETTINGS_VERSION}). Resetting settings.`);
+            localStorage.removeItem(SETTINGS_KEY);
             return null;
         }
 

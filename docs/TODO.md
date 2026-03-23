@@ -1,4 +1,4 @@
-# SunTrail 3D - Roadmap Révisée (v5.7.2)
+# SunTrail 3D - Roadmap Révisée (v5.7.4)
 
 ## 🚀 Priorité 1 : Optimisations & Netteté (v5.6) - ✅ TERMINÉ
 *Impact : Fluidité mobile absolue et rendu topographique pro.*
@@ -9,7 +9,7 @@
 - [x] **Objectif Tests v5.6** : 94 tests unitaires validés au vert.
 - [x] **Fix Voile Rouge Éco** : Désactivation forcée des pentes en mode 2D.
 
-## 🎯 Priorité 2 : Usage Terrain & Persistance (v5.7)
+## 🎯 Priorité 2 : Usage Terrain & Persistance (v5.7) - ✅ TERMINÉ
 *Impact : Rendre l'application indispensable et robuste pour la randonnée réelle.*
 
 - [x] **Système Offline-First Complet** :
