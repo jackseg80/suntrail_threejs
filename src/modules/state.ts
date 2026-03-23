@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
+import { createReactiveState } from './ui/core/ReactiveState';
 
 export type PresetType = 'eco' | 'balanced' | 'performance' | 'ultra' | 'custom';
 
@@ -180,7 +181,7 @@ export interface State {
     lastUIInteraction: number;
 }
 
-export const state: State = {
+const initialState: State = {
     ENERGY_SAVER: false,
     MK: '', MAP_SOURCE: 'swisstopo', hasManualSource: false,
     PERFORMANCE_PRESET: 'balanced', RESOLUTION: PRESETS.balanced.RESOLUTION, RANGE: PRESETS.balanced.RANGE,
@@ -223,6 +224,8 @@ export const state: State = {
     networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isUserInteracting: false, isProcessingTiles: false, lastUIInteraction: Date.now()
 };
 
+export const state = createReactiveState(initialState);
+
 const CURRENT_SETTINGS_VERSION = '5.7';
 
 export interface SavedSettings {
@@ -247,33 +250,38 @@ export interface SavedSettings {
 }
 
 const SETTINGS_KEY = 'suntrail_settings';
+let saveTimeout: any = null;
 
 export function saveSettings(): void {
-    const settingsToSave: SavedSettings = {
-        version: CURRENT_SETTINGS_VERSION,
-        PERFORMANCE_PRESET: state.PERFORMANCE_PRESET,
-        MAP_SOURCE: state.MAP_SOURCE,
-        ENERGY_SAVER: state.ENERGY_SAVER,
-        SHOW_TRAILS: state.SHOW_TRAILS,
-        SHOW_SLOPES: state.SHOW_SLOPES,
-        SHOW_SIGNPOSTS: state.SHOW_SIGNPOSTS,
-        SHOW_BUILDINGS: state.SHOW_BUILDINGS,
-        SHOW_HYDROLOGY: state.SHOW_HYDROLOGY,
-        SHOW_VEGETATION: state.SHOW_VEGETATION,
-        SHOW_WEATHER: state.SHOW_WEATHER,
-        SHADOWS: state.SHADOWS,
-        RESOLUTION: state.RESOLUTION,
-        RANGE: state.RANGE,
-        FOG_FAR: state.FOG_FAR,
-        VEGETATION_DENSITY: state.VEGETATION_DENSITY,
-        WEATHER_DENSITY: state.WEATHER_DENSITY,
-        WEATHER_SPEED: state.WEATHER_SPEED
-    };
-    try {
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsToSave));
-    } catch (e) {
-        console.warn("Could not save settings to localStorage:", e);
-    }
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+        const settingsToSave: SavedSettings = {
+            version: CURRENT_SETTINGS_VERSION,
+            PERFORMANCE_PRESET: state.PERFORMANCE_PRESET,
+            MAP_SOURCE: state.MAP_SOURCE,
+            ENERGY_SAVER: state.ENERGY_SAVER,
+            SHOW_TRAILS: state.SHOW_TRAILS,
+            SHOW_SLOPES: state.SHOW_SLOPES,
+            SHOW_SIGNPOSTS: state.SHOW_SIGNPOSTS,
+            SHOW_BUILDINGS: state.SHOW_BUILDINGS,
+            SHOW_HYDROLOGY: state.SHOW_HYDROLOGY,
+            SHOW_VEGETATION: state.SHOW_VEGETATION,
+            SHOW_WEATHER: state.SHOW_WEATHER,
+            SHADOWS: state.SHADOWS,
+            RESOLUTION: state.RESOLUTION,
+            RANGE: state.RANGE,
+            FOG_FAR: state.FOG_FAR,
+            VEGETATION_DENSITY: state.VEGETATION_DENSITY,
+            WEATHER_DENSITY: state.WEATHER_DENSITY,
+            WEATHER_SPEED: state.WEATHER_SPEED
+        };
+        try {
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsToSave));
+        } catch (e) {
+            console.warn("Could not save settings to localStorage:", e);
+        }
+        saveTimeout = null;
+    }, 300);
 }
 
 export function loadSettings(): SavedSettings | null {
