@@ -217,5 +217,28 @@ describe('terrain.ts', () => {
             const tile = new Tile(4270, 2891, 13, '13/4270/2891');
             expect(tile.load).toBeDefined();
         });
+
+        it('should use camera position as default center in updateVisibleTiles (Fix Grid Jump)', async () => {
+            state.ZOOM = 13;
+            state.originTile = { x: 4270, y: 2891, z: 13 }; // Spiez
+            state.camera = new THREE.PerspectiveCamera();
+            
+            // On place la caméra à 10km à l'Est de l'origine
+            const dist = EARTH_CIRCUMFERENCE / Math.pow(2, 13); // Largeur d'une tuile
+            state.camera.position.set(dist * 5, 1000, 0); 
+            
+            // Mock de worldToLngLat pour vérifier qu'il reçoit bien la position caméra
+            // @ts-ignore
+            const spy = vi.spyOn(await import('./geo'), 'worldToLngLat');
+            
+            await updateVisibleTiles();
+            
+            // Vérifie que le premier appel à worldToLngLat (pour currentGPS) a utilisé la position X de la caméra
+            // car worldX était null par défaut
+            expect(spy).toHaveBeenCalled();
+            const firstCallX = spy.mock.calls[0][0];
+            expect(firstCallX).toBe(state.camera.position.x);
+            expect(firstCallX).not.toBe(0);
+        });
     });
 });
