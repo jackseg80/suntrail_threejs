@@ -170,6 +170,7 @@ export interface State {
     lastTrackingUpdate: number;
 
     IS_OFFLINE: boolean;
+    isMapTilerDisabled: boolean; // Nouveau flag pour gérer les clés invalides (403)
     networkRequests: number;
     cacheHits: number;
     uiVisible: boolean;
@@ -218,6 +219,7 @@ export const state: State = {
     lastTrackingUpdate: 0,
 
     IS_OFFLINE: false,
+    isMapTilerDisabled: false,
     networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isUserInteracting: false, isProcessingTiles: false, lastUIInteraction: Date.now()
 };
 

@@ -32,7 +32,8 @@ vi.mock('./workerManager', () => ({
 
 describe('tileLoader.ts URLs', () => {
     beforeEach(() => {
-        state.MK = 'test_key';
+        state.MK = 'test_key_valid_12345';
+        state.isMapTilerDisabled = false;
         state.MAP_SOURCE = 'opentopomap';
         state.SHOW_TRAILS = true;
     });
@@ -40,7 +41,7 @@ describe('tileLoader.ts URLs', () => {
     it('should generate correct Elevation URL', () => {
         const url = getElevationUrl(10, 20, 14, false);
         expect(url).toContain('terrain-rgb-v2/14/10/20');
-        expect(url).toContain('key=test_key');
+        expect(url).toContain('key=test_key_valid_12345');
     });
 
     it('should return null Elevation URL for 2D', () => {
@@ -50,8 +51,10 @@ describe('tileLoader.ts URLs', () => {
 
     it('should generate correct Color URL for OpenTopoMap (Global Fallback)', () => {
         state.MAP_SOURCE = 'opentopomap';
-        const url = getColorUrl(0, 0, 0); 
-        expect(url).toContain('topo-v2/256/0/0/0');
+        // On teste au dessus du zoom 10 pour s'assurer que le fallback global fonctionne 
+        // (à zoom <= 10, c'est forcé de toute façon)
+        const url = getColorUrl(0, 0, 11); 
+        expect(url).toContain('topo-v2/256/11/0/0');
     });
 
     it('should generate correct Color URL for SwissTopo (when inside CH)', () => {

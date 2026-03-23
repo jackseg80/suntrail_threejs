@@ -30,8 +30,15 @@ class TileWorkerManager {
     }
 
     private handleMessage(e: MessageEvent) {
-        const { id, error, cacheHits, networkRequests, ...data } = e.data;
+        const { id, error, cacheHits, networkRequests, forbidden, ...data } = e.data;
         
+        if (forbidden) {
+            if (!state.isMapTilerDisabled) {
+                console.warn("[WorkerManager] 403 Forbidden reçu d'un worker. Désactivation de MapTiler et basculement OSM.");
+                state.isMapTilerDisabled = true;
+            }
+        }
+
         if (cacheHits) state.cacheHits += cacheHits;
         if (networkRequests) state.networkRequests += networkRequests;
         if (cacheHits || networkRequests) updateStorageUI();

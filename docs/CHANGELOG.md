@@ -4,6 +4,14 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.7.4] - 2026-03-23
+### 🗺️ Unification Mondiale & Sécurité API
+- **Unification Bas-Zoom (LOD <= 10)** : Harmonisation de l'affichage à grande échelle. L'application utilise désormais une source unique pour le monde entier à bas niveau de zoom, restaurant l'aspect "relief brun" uniforme et éliminant l'effet patchwork entre les pays.
+- **Fail-safe MapTiler (Auto-OSM)** : Implémentation d'une détection dynamique des erreurs 403 (clés invalides/expirées). L'application bascule désormais instantanément et globalement sur OpenStreetMap Standard dès qu'un blocage MapTiler est détecté.
+- **Fix Saut de Grille** : Correction du bug de recentrage qui renvoyait la carte vers l'origine du monde lors des changements de source automatiques.
+- **Reporting Workers** : Les WebWorkers participent désormais à la détection de validité des clés, assurant une cohérence parfaite entre le thread principal et les threads de chargement.
+- **Stabilité Tests** : Mise à jour de la suite de tests (101 tests au vert) pour valider les nouveaux comportements de sécurité et d'unification.
+
 ## [5.7.3] - 2026-03-22
 ### 🛠️ Bug Fixes & Précision GPS
 - **Origin Shift GPS (Fix Courroux)** : Implémentation d'un recentrage dynamique de l'origine du monde 3D lors de l'utilisation de la géolocalisation. Élimine les décalages de précision (30km+) constatés lors des déplacements importants.

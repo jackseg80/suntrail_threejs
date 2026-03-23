@@ -133,6 +133,11 @@ async function processNextOverpass() {
 
 // --- GÉOCODAGE AVEC SECOURS (v5.4.7) ---
 export async function fetchGeocoding(params: { lat?: number, lon?: number, query?: string }): Promise<any> {
+    if (state.isMapTilerDisabled && !params.lat) {
+        // Si MapTiler est mort et qu'on fait une recherche par texte, Nominatim est risqué (CORS/429)
+        // On tente quand même mais avec prudence
+    }
+
     const key = state.MK;
     let maptilerUrl = "";
     let osmUrl = "";
@@ -145,20 +150,30 @@ export async function fetchGeocoding(params: { lat?: number, lon?: number, query
         osmUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(params.query)}&limit=10`;
     }
 
-    // 1. Tenter MapTiler
-    try {
-        const r = await fetch(maptilerUrl);
-        if (r.ok) {
-            const d = await r.json();
-            return d.features || d;
+    // 1. Tenter MapTiler (si pas déjà banni)
+    if (!state.isMapTilerDisabled && key) {
+        try {
+            const r = await fetch(maptilerUrl);
+            if (r.status === 403) {
+                console.warn("[MapTiler] Clé invalide détectée (403). Passage en mode Fallback OSM.");
+                state.isMapTilerDisabled = true;
+            } else if (r.ok) {
+                const d = await r.json();
+                return d.features || d;
+            }
+        } catch (e) {
+            console.error("[MapTiler] Erreur réseau geocoding");
         }
-    } catch (e) {}
+    }
 
     // 2. Secours OSM (Gratuit et libre)
     try {
         const r = await fetch(osmUrl, { headers: { 'User-Agent': 'SunTrail-3D-App' }});
         if (r.ok) return await r.json();
-    } catch (e) {}
+        if (r.status === 429) console.warn("[OSM] Rate limit Nominatim atteint (429).");
+    } catch (e) {
+        console.warn("[OSM] Erreur CORS/Réseau Nominatim. La recherche peut être indisponible.");
+    }
 
     return null;
 }
