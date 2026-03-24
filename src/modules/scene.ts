@@ -260,11 +260,10 @@ export async function initScene(): Promise<void> {
             if (state.isFollowingUser && !interacting) centerOnUser(delta);
 
             if (state.isSunAnimating) {
-                const slider = document.getElementById('time-slider') as HTMLInputElement;
-                if (slider) {
-                    let mins = (parseInt(slider.value) + state.animationSpeed) % 1440;
-                    slider.value = Math.floor(mins).toString(); updateSunPosition(mins);
-                }
+                const mins = (state.simDate.getHours() * 60 + state.simDate.getMinutes() + state.animationSpeed) % 1440;
+                const newDate = new Date(state.simDate);
+                newDate.setHours(Math.floor(mins / 60), Math.floor(mins % 60), 0, 0);
+                state.simDate = newDate;
             }
 
             const groundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);

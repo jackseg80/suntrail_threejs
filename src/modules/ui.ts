@@ -2,7 +2,6 @@ import * as THREE from 'three';
 // @ts-ignore
 import gpxParser from 'gpxparser';
 import { state, loadSettings } from './state';
-import { updateSunPosition } from './sun';
 import { initScene, flyTo } from './scene';
 import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain } from './terrain';
 import { updateStorageUI } from './tileLoader';
@@ -23,6 +22,7 @@ import { LayersSheet } from './ui/components/LayersSheet';
 import { WeatherSheet, SolarProbeSheet, SOSSheet } from './ui/components/ExpertSheets';
 import { TrackSheet } from './ui/components/TrackSheet';
 import { WidgetsComponent } from './ui/components/WidgetsComponent';
+import { TimelineComponent } from './ui/components/TimelineComponent';
 import { initAutoHide } from './ui/autoHide';
 import { initMobileUI } from './ui/mobile';
 
@@ -68,19 +68,6 @@ export function initUI(): void {
     if (canvasContainer) canvasContainer.addEventListener('click', handleMapClick);
 
     setInterval(updateStorageUI, 2000);
-
-    // --- INITIALISATION VALEURS TEMPORELLES ---
-    const dateInput = document.getElementById('date-input') as HTMLInputElement;
-    const timeSlider = document.getElementById('time-slider') as HTMLInputElement;
-    if (dateInput) {
-        const year = state.simDate.getFullYear();
-        const month = String(state.simDate.getMonth() + 1).padStart(2, '0');
-        const day = String(state.simDate.getDate()).padStart(2, '0');
-        dateInput.value = `${year}-${month}-${day}`;
-    }
-    if (timeSlider) {
-        timeSlider.value = (state.simDate.getHours() * 60 + state.simDate.getMinutes()).toString();
-    }
 
     // Setup Screen
     const setupK1 = document.getElementById('k1') as HTMLInputElement;
@@ -138,6 +125,9 @@ export function initUI(): void {
 
     const widgets = new WidgetsComponent();
     widgets.hydrate();
+
+    const timeline = new TimelineComponent();
+    timeline.hydrate();
 
     initAutoHide();
     initMobileUI();
@@ -202,33 +192,6 @@ export function initUI(): void {
             showToast("Suivi désactivé");
             stopLocationTracking();
         }
-    });
-
-    // Temps & Soleil
-    if (timeSlider) {
-        timeSlider.addEventListener('input', () => {
-            const mins = parseInt(timeSlider.value);
-            state.simDate.setHours(Math.floor(mins / 60), mins % 60);
-            updateSunPosition(mins);
-        });
-    }
-
-    document.getElementById('date-input')?.addEventListener('change', (e) => {
-        const d = new Date((e.target as HTMLInputElement).value);
-        if (!isNaN(d.getTime())) {
-            state.simDate.setFullYear(d.getFullYear(), d.getMonth(), d.getDate());
-            const mins = state.simDate.getHours() * 60 + state.simDate.getMinutes();
-            updateSunPosition(mins);
-        }
-    });
-
-    document.getElementById('play-btn')?.addEventListener('click', (e) => {
-        state.isSunAnimating = !state.isSunAnimating;
-        (e.target as HTMLElement).textContent = state.isSunAnimating ? '⏸' : '▶';
-    });
-
-    document.getElementById('speed-select')?.addEventListener('change', (e) => {
-        state.animationSpeed = parseFloat((e.target as HTMLSelectElement).value);
     });
 
     document.getElementById('screenshot-btn')?.addEventListener('click', takeScreenshot);
@@ -299,6 +262,9 @@ function startApp() {
     if (navBar) navBar.style.display = 'flex';
     if (topBar) topBar.style.display = 'flex';
     if (widgets) widgets.style.display = 'block';
+    
+    const bottomBar = document.getElementById('bottom-bar');
+    if (bottomBar) bottomBar.style.display = 'block';
 }
 
 function onWindowResize() {

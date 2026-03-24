@@ -80,6 +80,11 @@
 <!-- BARRE DE RECHERCHE FLOTTANTE -->
 <template id="template-search">
 <div id="search" class="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+        <span class="sheet-title">Recherche</span>
+        <div class="sheet-close" id="close-search">×</div>
+    </div>
     <input type="text" id="geo-input" placeholder="🔍 Rechercher un lieu ou sommet...">
     <div id="geo-results"></div>
 </div>
@@ -578,8 +583,8 @@
             <span class="nav-label">Carte</span>
         </div>
         <div class="nav-tab" data-tab="search">
-            <div class="nav-icon">🏔️</div>
-            <span class="nav-label">Sommets</span>
+            <div class="nav-icon">🔍</div>
+            <span class="nav-label">Recherche</span>
         </div>
         <div class="nav-tab" data-tab="track">
             <div class="nav-icon">📈</div>

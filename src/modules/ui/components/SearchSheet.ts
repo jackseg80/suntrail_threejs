@@ -20,6 +20,9 @@ export class SearchSheet extends BaseComponent {
     public render(): void {
         if (!this.element) return;
 
+        const closeBtn = this.element.querySelector('#close-search');
+        closeBtn?.addEventListener('click', () => sheetManager.close());
+
         this.geoInput = this.element.querySelector('#geo-input') as HTMLInputElement;
         this.geoResults = this.element.querySelector('#geo-results') as HTMLElement;
 
@@ -58,30 +61,42 @@ export class SearchSheet extends BaseComponent {
                 if (!data) return;
 
                 // On ne vide pas, on ajoute à la suite des pics locaux
-                if (Array.isArray(data)) {
-                    data.forEach((f: any) => {
+                const features = Array.isArray(data) ? data : (data.features || []);
+                
+                features.forEach((f: any) => {
+                    // Format OSM (Nominatim)
+                    if (f.lat && f.lon) {
                         const lat = parseFloat(f.lat);
                         const lon = parseFloat(f.lon);
                         if (!isNaN(lat) && !isNaN(lon)) {
-                            this.geoResults!.appendChild(this.createGeoItem(lat, lon, f.display_name));
+                            this.geoResults!.appendChild(this.createGeoItem(lat, lon, f.display_name || f.name));
                         }
-                    });
-                } else if (data.features) {
-                    data.features.forEach((f: any) => {
+                    } 
+                    // Format MapTiler (GeoJSON Feature)
+                    else if (f.geometry && f.geometry.coordinates) {
                         const lon = parseFloat(f.geometry.coordinates[0]);
                         const lat = parseFloat(f.geometry.coordinates[1]);
                         if (!isNaN(lat) && !isNaN(lon)) {
                             const label = f.place_name_fr || f.place_name || 'Lieu inconnu';
                             this.geoResults!.appendChild(this.createGeoItem(lat, lon, label));
                         }
-                    });
-                }
+                    }
+                });
 
                 if (this.geoResults!.children.length > 0) {
                     this.geoResults!.style.display = 'block';
                     this.attachListeners();
+                } else if (localMatches.length === 0) {
+                    const noResult = document.createElement('div');
+                    noResult.style.cssText = 'padding:20px; color:var(--text-2); font-size:14px; text-align:center;';
+                    noResult.textContent = 'Aucun résultat trouvé';
+                    this.geoResults!.appendChild(noResult);
+                    this.geoResults!.style.display = 'block';
                 }
-            } catch (e) { console.warn("Geocoding error:", e); }
+            } catch (e) { 
+                console.warn("Geocoding error:", e);
+                if (localMatches.length === 0) this.geoResults!.style.display = 'none';
+            }
         }, 400);
     }
 
@@ -103,6 +118,7 @@ export class SearchSheet extends BaseComponent {
         leftSide.appendChild(icon);
         
         const text = document.createElement('span');
+        text.className = 'geo-label';
         text.textContent = label;
         leftSide.appendChild(text);
         div.appendChild(leftSide);
@@ -131,7 +147,7 @@ export class SearchSheet extends BaseComponent {
                 }
                 
                 const isPeak = item.classList.contains('peak-item');
-                const name = (item as HTMLElement).dataset.name || (item as HTMLElement).querySelector('span:nth-child(2)')?.textContent || '';
+                const name = (item as HTMLElement).dataset.name || (item as HTMLElement).querySelector('.geo-label')?.textContent || '';
                 const ele = parseFloat((item as HTMLElement).dataset.ele!) || 0;
                 
                 this.handleResultClick(lat, lon, isPeak, name, isNaN(ele) ? 0 : ele);
@@ -145,10 +161,11 @@ export class SearchSheet extends BaseComponent {
         sheetManager.close();
         this.geoInput.value = '';
         
+        state.TARGET_LAT = lat; 
+        state.TARGET_LON = lon;
+        autoSelectMapSource(lat, lon);
+        
         if (isPeak) {
-            state.TARGET_LAT = lat; 
-            state.TARGET_LON = lon;
-            autoSelectMapSource(lat, lon);
             state.ZOOM = 14; 
             state.originTile = lngLatToTile(lon, lat, 14);
             
@@ -162,7 +179,6 @@ export class SearchSheet extends BaseComponent {
             
             setTimeout(() => { 
                 const wp = lngLatToWorld(lon, lat, state.originTile);
-                // Utilisation de l'altitude exagérée pour la cible world
                 flyTo(wp.x, wp.z, peakEle * state.RELIEF_EXAGGERATION); 
             }, 100);
             
@@ -174,17 +190,7 @@ export class SearchSheet extends BaseComponent {
                 const clickAlt = document.getElementById('click-alt');
                 if (clickAlt) clickAlt.textContent = `${Math.round(peakEle)} m`;
             }
-            
-            // Dispatch event for lastClickedCoords update if needed by other modules
-            const wp = lngLatToWorld(lon, lat, state.originTile);
-            document.dispatchEvent(new CustomEvent('search-result-click', {
-                detail: { x: wp.x, z: wp.z, alt: peakEle * state.RELIEF_EXAGGERATION }
-            }));
-            
         } else {
-            state.TARGET_LAT = lat; 
-            state.TARGET_LON = lon;
-            autoSelectMapSource(lat, lon);
             state.ZOOM = 13; 
             state.originTile = lngLatToTile(lon, lat, 13);
             
@@ -195,7 +201,13 @@ export class SearchSheet extends BaseComponent {
             }
             
             this.refreshTerrain(); 
+
+            setTimeout(() => { 
+                const wp = lngLatToWorld(lon, lat, state.originTile);
+                flyTo(wp.x, wp.z, 2000); // Teleport to city at 2km altitude
+            }, 100);
         }
+        
         fetchWeather(lat, lon);
     }
 
