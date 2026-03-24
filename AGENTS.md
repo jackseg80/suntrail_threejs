@@ -1,4 +1,4 @@
-# SunTrail - Base de Connaissance (v5.8.2)
+# SunTrail - Base de Connaissance (v5.8.4)
 
 Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTrail. Il consigne les décisions architecturales critiques et les solutions aux problèmes complexes.
 
@@ -24,6 +24,7 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 - **Offline-First & PMTiles** : Support PWA (Service Worker) et lecture de fichiers `.pmtiles` locaux pour un usage sans réseau (v5.7.0).
 
 ### Données & APIs
+- **Hydrologie 3D (v5.8.4)** : Restauration d'un moteur d'eau réaliste. Détection chromatique optimisée pour SwissTopo et vagues en **"Rouleaux Géants"** sans couture entre les tuiles grâce à l'utilisation des coordonnées mondiales absolues.
 - **Bâtiments 3D** : Migration de Overpass (OSM) vers **MapTiler Buildings API** (v4.5.37) pour la stabilité et la rapidité. Fusion des géométries par tuile pour minimiser les Draw Calls.
 - **Sentiers (MVT)** : Utilisation de tuiles vectorielles (**MVT/PBF**) au lieu de raster pour une netteté infinie et un rendu stylisé (v5.6.5).
 - **Végétation Bio-Fidèle** : Sélection des essences d'arbres (feuillus, sapins, mélèzes) basée sur l'altitude réelle de la tuile (v4.9.1).
