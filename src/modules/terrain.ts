@@ -236,7 +236,7 @@ export class Tile {
                 shader.vertexShader = `
                     #define IS_LIGHT ${isLight ? '1' : '0'}
                     ${shader.vertexShader}
-                `.replace('#include <common>', `#include <common>\nvarying vec3 vTrueNormal; uniform vec2 uColorOffset; uniform float uColorScale; uniform sampler2D uNormalMap; ${sharedShaderChunk}`)
+                `.replace('#include <common>', `#include <common>\nvarying vec3 vTrueNormal; varying vec2 vWorldXZ; uniform vec2 uColorOffset; uniform float uColorScale; uniform sampler2D uNormalMap; ${sharedShaderChunk}`)
                  .replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);`);
 
                 if (isLight) {
@@ -249,9 +249,9 @@ export class Tile {
                         objectNormal = normalize(vec3(normalSample.x * uExaggeration, normalSample.y, normalSample.z * uExaggeration));
                     `);
                 }
-                shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv);`);
+                shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv); vWorldXZ = (modelMatrix * vec4(transformed, 1.0)).xz;`);
                 shader.fragmentShader = `
-                    uniform sampler2D uOverlayMap; uniform bool uHasOverlay; uniform float uShowSlopes; uniform float uShowHydrology; uniform float uTime; varying vec3 vTrueNormal;
+                    uniform sampler2D uOverlayMap; uniform bool uHasOverlay; uniform float uShowSlopes; uniform float uShowHydrology; uniform float uTime; varying vec3 vTrueNormal; varying vec2 vWorldXZ;
                     ${shader.fragmentShader}
                 `.replace('#include <map_fragment>', `
                     #include <map_fragment>
@@ -266,21 +266,18 @@ export class Tile {
                         if (isWater > 0.05) {
                             vec3 waterBlue = vec3(0.02, 0.18, 0.52);
                             
-                            // --- VAGUES EN ROULEAUX (Directionnelles) ---
-                            // On utilise des produits scalaires pour créer des lignes mouvantes
-                            float t = uTime * 0.8;
-                            vec2 uv = vMapUv * 45.0; 
+                            // --- VAGUES EN ROULEAUX GÉANTS (Directionnelles & Sans raccord) ---
+                            // On utilise vWorldXZ pour une continuité parfaite entre les tuiles
+                            float t = uTime * 0.5;
+                            // Fréquence très basse : 0.002 = une vague tous les ~3km
+                            float w1 = sin(vWorldXZ.x * 0.002 + vWorldXZ.y * 0.0015 + t) * 0.5 + 0.5;
+                            float w2 = sin(vWorldXZ.x * 0.001 - vWorldXZ.y * 0.0025 + t * 0.6) * 0.5 + 0.5;
                             
-                            // Rouleau principal (direction ~45°)
-                            float w1 = sin(uv.x * 0.8 + uv.y * 0.6 + t) * 0.5 + 0.5;
-                            // Rouleau secondaire croisé pour casser la régularité sans faire de grille
-                            float w2 = sin(uv.x * 0.4 - uv.y * 0.9 + t * 0.6) * 0.5 + 0.5;
-                            
-                            float wave = mix(w1, w2, 0.3);
+                            float wave = mix(w1, w2, 0.4);
                             
                             diffuseColor.rgb = mix(colorIn, waterBlue, 0.65 * isWater);
-                            // Scintillement directionnel
-                            diffuseColor.rgb += vec3(0.2, 0.4, 0.7) * (wave - 0.5) * isWater * 0.5;
+                            // Reflet large et lent
+                            diffuseColor.rgb += vec3(0.2, 0.4, 0.7) * (wave - 0.5) * isWater * 0.4;
                         }
                     }
                     if (uHasOverlay) { vec4 oCol = texture2D(uOverlayMap, vMapUv); diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a); }

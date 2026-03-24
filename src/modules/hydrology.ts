@@ -30,10 +30,11 @@ waterMaterial.onBeforeCompile = (shader) => {
         ${shader.vertexShader}
     `.replace('#include <begin_vertex>', `
         #include <begin_vertex>
-        // Rouleaux de surface directionnels
-        float t = uTime * 1.0;
-        float w1 = sin(position.x * 0.03 + position.y * 0.02 + t) * 2.5;
-        float w2 = sin(position.x * 0.015 - position.y * 0.04 + t * 0.7) * 1.2;
+        // Rouleaux GÉANTS coordonnés entre les tuiles
+        vec4 worldPos = modelMatrix * vec4(position, 1.0);
+        float t = uTime * 0.8;
+        float w1 = sin(worldPos.x * 0.002 + worldPos.z * 0.0015 + t) * 2.5;
+        float w2 = sin(worldPos.x * 0.001 - worldPos.z * 0.0025 + t * 0.7) * 1.2;
         transformed.z += (w1 + w2); 
     `);
     
@@ -42,10 +43,11 @@ waterMaterial.onBeforeCompile = (shader) => {
         ${shader.fragmentShader}
     `.replace('#include <normal_fragment_maps>', `
         #include <normal_fragment_maps>
-        // Scintillement des normales en lignes (Rouleaux)
+        // Scintillement des normales en lignes coordonné sur la vue
         float t = uTime * 1.5;
-        float ripple = sin(vViewPosition.x * 0.05 + vViewPosition.y * 0.03 + t);
-        ripple += sin(vViewPosition.x * 0.02 - vViewPosition.y * 0.06 + t * 0.8) * 0.5;
+        // Basse fréquence (0.005) pour éviter le moiré
+        float ripple = sin(vViewPosition.x * 0.005 + vViewPosition.y * 0.003 + t);
+        ripple += sin(vViewPosition.x * 0.002 - vViewPosition.y * 0.006 + t * 0.8) * 0.5;
         
         vec3 rippleNormal = vec3(
             ripple * 0.1,
