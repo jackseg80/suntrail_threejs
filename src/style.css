@@ -327,49 +327,60 @@ input[type="range"]::-webkit-slider-thumb {
     margin-top: 15px;
 }
 
-/* GPS MAIN BTN */
+/* GPS MAIN BTN - TOP RIGHT */
 #gps-main-btn {
     position: fixed;
-    bottom: calc(var(--bar-h) + 40px);
+    top: 120px;
     right: 20px;
-    width: 56px; height: 56px;
+    width: 44px; height: 44px;
     background: var(--surface);
     backdrop-filter: var(--glass);
     border: 1px solid var(--border);
-    border-radius: 18px;
+    border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 24px;
+    font-size: 20px;
     cursor: pointer;
     z-index: 2100;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 
 #gps-main-btn.active {
     background: var(--accent);
     color: white;
     border-color: rgba(255,255,255,0.2);
-    box-shadow: 0 8px 25px var(--accent-glow);
+    box-shadow: 0 4px 15px var(--accent-glow);
 }
 
 #gps-main-btn.following {
     background: var(--success);
     border-color: rgba(255,255,255,0.2);
-    box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4);
+    box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
 }
 
-/* Adjust other floating buttons */
-#settings-toggle { bottom: calc(var(--bar-h) + 110px); right: 20px; z-index: 2100; position: fixed; width: 44px; height: 44px; background: var(--surface); backdrop-filter: var(--glass); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-#rec-btn { bottom: calc(var(--bar-h) + 165px); right: 20px; z-index: 2100; position: fixed; width: 44px; height: 44px; background: var(--surface); backdrop-filter: var(--glass); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-#export-gpx-btn { bottom: calc(var(--bar-h) + 220px); right: 20px; z-index: 2100; position: fixed; width: 44px; height: 44px; background: var(--surface); backdrop-filter: var(--glass); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-#screenshot-btn { bottom: calc(var(--bar-h) + 275px); right: 20px; z-index: 2100; position: fixed; width: 44px; height: 44px; background: var(--surface); backdrop-filter: var(--glass); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+/* PROFIL ALTIMÉTRIQUE (v4.8) - ABOVE NAV BAR */
+#elevation-profile {
+    position: fixed; 
+    bottom: calc(var(--bar-h) + 40px); 
+    left: 50%; 
+    transform: translateX(-50%); 
+    width: calc(100% - 40px); 
+    max-width: 800px; 
+    background: var(--surface-solid); 
+    border: 1px solid var(--border); 
+    border-radius: 24px; 
+    padding: 20px; 
+    z-index: 1500; 
+    backdrop-filter: var(--glass); 
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
 
 /* COORDS PANEL ADJUSTMENT */
 #coords-panel {
     position: fixed; 
-    bottom: calc(var(--bar-h) + 40px); 
+    bottom: calc(var(--bar-h) + 100px); 
     left: 20px;
-    width: calc(100% - 100px); /* Leave space for GPS button */
+    width: calc(100% - 120px); /* Leave space for radar */
     max-width: 300px;
     background: var(--surface); 
     backdrop-filter: var(--glass);
@@ -413,16 +424,9 @@ body.ui-hidden #screenshot-btn { transform: translateX(100px); opacity: 0; }
 
 #compass-canvas { 
     position: fixed; 
-    bottom: calc(var(--bar-h) + 40px); 
+    bottom: calc(var(--bar-h) + 100px); 
     right: 20px; 
     width: 80px; height: 80px; 
     z-index: 500; 
-}
-
-/* COORDS PANEL */
-#coords-panel {
-    position: fixed; bottom: calc(var(--bar-h) + 40px); left: 20px;
-    background: var(--surface); backdrop-filter: var(--glass);
-    padding: 20px; border-radius: 24px; border: 1px solid var(--border);
-    z-index: 1000; pointer-events: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    transition: transform 0.3s ease;
 }

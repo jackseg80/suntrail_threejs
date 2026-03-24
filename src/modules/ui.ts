@@ -13,7 +13,6 @@ import { updateElevationProfile } from './profile';
 import { startLocationTracking } from './location';
 import { fetchWeather } from './weather';
 
-import { sheetManager } from './ui/core/SheetManager';
 import { NavigationBar } from './ui/components/NavigationBar';
 import { TopStatusBar } from './ui/components/TopStatusBar';
 import { SettingsSheet } from './ui/components/SettingsSheet';
@@ -25,6 +24,7 @@ import { WidgetsComponent } from './ui/components/WidgetsComponent';
 import { TimelineComponent } from './ui/components/TimelineComponent';
 import { initAutoHide } from './ui/autoHide';
 import { initMobileUI } from './ui/mobile';
+import { sheetManager } from './ui/core/SheetManager';
 
 export function initUI(): void {
     console.log("[UI] Starting Init...");
@@ -130,11 +130,7 @@ export function initUI(): void {
     initAutoHide();
     initMobileUI();
 
-    const settingsToggle = document.getElementById('settings-toggle');
-    settingsToggle?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        sheetManager.toggle('settings');
-    });
+    (window as any).sheetManager = sheetManager;
 
     window.addEventListener('gpx-uploaded', (e: any) => {
         handleGPX(e.detail);
@@ -145,16 +141,28 @@ export function initUI(): void {
     });
 
     // GPS MAIN BUTTON (SwissMobile Style)
+
     const gpsMainBtn = document.getElementById('gps-main-btn');
     gpsMainBtn?.addEventListener('click', async () => {
         try {
-            // 1. Get current position
+            // 1. Get current position with timeout
             const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject);
+                const timeoutId = setTimeout(() => reject(new Error("Geolocation timeout")), 5000);
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        clearTimeout(timeoutId);
+                        resolve(pos);
+                    },
+                    (err) => {
+                        clearTimeout(timeoutId);
+                        reject(err);
+                    }
+                );
             });
             
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
+
             
             // 2. Check if we are already centered on user
             const isAlreadyCentered = state.isFollowingUser;
@@ -188,9 +196,13 @@ export function initUI(): void {
                     await startLocationTracking();
                 }
             }
-        } catch (e) { 
-            showToast("Erreur GPS"); 
-            console.error("Geolocation error:", e);
+        } catch (e: any) { 
+            if (e.code === 1) {
+                showToast("Permission GPS refusée. Vérifiez les réglages de votre navigateur.");
+            } else {
+                showToast("Erreur GPS ou délai dépassé"); 
+            }
+            console.error("Geolocation error:", e.message);
         }
     });
 
@@ -208,12 +220,15 @@ export function initUI(): void {
         }
     });
 
-    document.getElementById('screenshot-btn')?.addEventListener('click', takeScreenshot);
-
     document.getElementById('close-coords')?.addEventListener('click', () => {
         const cp = document.getElementById('coords-panel');
         if (cp) cp.style.display = 'none';
         state.hasLastClicked = false;
+    });
+
+    document.getElementById('close-profile')?.addEventListener('click', () => {
+        const ep = document.getElementById('elevation-profile');
+        if (ep) ep.style.display = 'none';
     });
 }
 
@@ -272,16 +287,12 @@ function startApp() {
     const navBar = document.getElementById('nav-bar');
     const topBar = document.getElementById('top-status-bar');
     const widgets = document.getElementById('widgets-container');
+    const gpsBtn = document.getElementById('gps-main-btn');
     
     if (navBar) navBar.style.display = 'flex';
     if (topBar) topBar.style.display = 'flex';
-    if (widgets) {
-        widgets.style.display = 'block';
-        // Ensure all children are visible if they were hidden
-        Array.from(widgets.children).forEach(child => {
-            (child as HTMLElement).style.display = 'flex';
-        });
-    }
+    if (widgets) widgets.style.display = 'block';
+    if (gpsBtn) gpsBtn.style.display = 'flex';
     
     const bottomBar = document.getElementById('bottom-bar');
     if (bottomBar) bottomBar.style.display = 'block';
@@ -335,40 +346,3 @@ async function handleGPX(xml: string) {
 }
 
 function refreshTerrain() { resetTerrain(); updateVisibleTiles(); }
-
-async function takeScreenshot() {
-    if (!state.renderer || !state.scene || !state.camera) {
-        console.error("Missing scene, renderer, or camera for screenshot.");
-        return;
-    }
-
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-
-    const originalSize = { width: state.renderer.getSize(new THREE.Vector2()).width, height: state.renderer.getSize(new THREE.Vector2()).height };
-    state.renderer.setSize(width, height);
-    state.camera.aspect = width / height;
-    state.camera.updateProjectionMatrix();
-
-    state.renderer.render(state.scene, state.camera);
-
-    const imageBlob = await new Promise<Blob | null>((resolve) => {
-        state.renderer!.domElement.toBlob(resolve, 'image/png', 1.0);
-    });
-
-    state.renderer.setSize(originalSize.width, originalSize.height);
-    state.camera.aspect = originalSize.width / originalSize.height;
-    state.camera.updateProjectionMatrix();
-
-    if (imageBlob) {
-        const url = URL.createObjectURL(imageBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `suntrail-screenshot-${Date.now()}.png`;
-        link.click();
-        URL.revokeObjectURL(url);
-        showToast("Screenshot saved!");
-    } else {
-        showToast("Failed to create screenshot.");
-    }
-}

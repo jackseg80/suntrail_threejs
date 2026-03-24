@@ -29,3 +29,10 @@
 - Migrated settings logic to SettingsSheet.ts, extending BaseComponent.
 - Used state.subscribe to bind UI elements directly to the reactive state.
 - Handled GPX upload via a custom event 'gpx-uploaded' to keep handleGPX in ui.ts for now.
+- Restored sheetManager import in ui.ts and exposed it to window to fix unused import error and make it available globally.
+- Updated GPS error handler to show a specific message for Permission Denied (code 1).
+- Adjusted CSS positioning for #gps-main-btn, #compass-canvas, and #coords-panel to avoid overlaps.
+- Moving <template> tags to the very end of the <body> ensures they are parsed correctly before the script runs, avoiding 'Template not found' errors.
+- Fixed 'Template not found' errors by ensuring index.html is strictly UTF-8 and moving all <template> tags to the end of the <body>, just before the <script> tag.
+- Moved shell containers (#top-status-bar, #nav-bar, #sheet-overlay, #sheet-container, #toast-container, #gps-main-btn) to the end of the body, after #canvas-container.
+- Adjusted GPS and Radar positioning in src/style.css to prevent overlap on small screens.

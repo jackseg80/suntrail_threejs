@@ -41,8 +41,10 @@
 <nav id="nav-bar"></nav>
 <div id="sheet-overlay"></div>
 <div id="sheet-container"></div>
+<div id="toast-container"></div>
+<div id="gps-main-btn" style="display:none;" title="Ma position">🎯</div>
 
-<!-- CALQUES DE CARTE -->
+<!-- TEMPLATES UI -->
 <template id="template-layers">
 <div id="layers" class="bottom-sheet">
     <div class="sheet-handle"></div>
@@ -77,7 +79,6 @@
 </div>
 </template>
 
-<!-- BARRE DE RECHERCHE FLOTTANTE -->
 <template id="template-search">
 <div id="search" class="bottom-sheet">
     <div class="sheet-handle"></div>
@@ -90,70 +91,32 @@
 </div>
 </template>
 
-<!-- PANNEAU RÉGLAGES -->
 <template id="template-settings">
 <div id="settings" class="bottom-sheet">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
         <h2 style="margin:0; color:var(--gold); font-size:18px;">RÉGLAGES</h2>
         <button id="close-panel" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">&times;</button>
     </div>
+    
+    <div class="control-group">
+        <label style="display:block; font-size:11px; color:var(--gold); font-weight:700; margin-bottom:10px; text-transform:uppercase;">Profil de performance</label>
+        <div class="preset-grid">
+            <button class="preset-btn" data-preset="eco">Éco</button>
+            <button class="preset-btn" data-preset="balanced">Std</button>
+            <button class="preset-btn" data-preset="performance">High</button>
+            <button class="preset-btn" data-preset="ultra">Ultra</button>
+        </div>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:12px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
+        <span style="font-size:13px; color:white; font-weight:500;">🔋 Économie d'énergie (30 FPS)</span>
+        <input type="checkbox" id="energy-saver-toggle">
+    </div>
 
     <div class="control-group">
-        <label style="font-size:12px; color:var(--gold); text-transform:uppercase; letter-spacing:1px; margin-bottom:15px; display:block;">Profil de Performance</label>
-        <div class="preset-grid" style="margin-bottom:15px;">
-            <button class="preset-btn" data-preset="eco">2D</button>
-            <button class="preset-btn" data-preset="balanced">STD</button>
-            <button class="preset-btn" data-preset="performance">HIGH</button>
-            <button class="preset-btn" data-preset="ultra">ULTRA</button>
-        </div>
-
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:12px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
-            <span style="font-size:13px; color:white; font-weight:500;">🔋 Économie d'énergie (30 FPS)</span>
-            <input type="checkbox" id="energy-saver-toggle">
-        </div>
-
-        <div class="control-group-3d">
-            <label style="font-size:12px; color:var(--t2); text-transform:uppercase; margin-bottom:10px; display:block;">Maillage & Distance</label>
-            <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;">
-                <span>Détail Maillage : <span id="res-disp">128</span></span>
-                <span>Distance Vue : <span id="range-disp">4</span></span>
-            </div>
-            <input type="range" id="res-slider" min="32" max="256" step="32" value="128">
-            <input type="range" id="range-slider" min="1" max="10" step="1" value="4">
-        </div>
-
-        <div style="margin-top:20px; display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-size:14px;">⚡ Vitesse Chargement</span>
-            <select id="load-speed-select" style="background:#1a1a1a; border:1px solid var(--border); color:white; border-radius:8px; padding:4px 8px; font-size:12px; cursor:pointer;">
-                <option value="2.0">Stable</option>
-                <option value="1.0">Normal</option>
-                <option value="0.5">Turbo</option>
-                <option value="0.2">Ultra (RTX)</option>
-            </select>
-        </div>
-    </div>
-
-    <div class="control-group-3d" style="margin-top:25px;">
-        <label style="font-size:12px; color:var(--t2); text-transform:uppercase;">Visuel Environnement</label>
-        <div style="margin:15px 0;">
-            <label style="display:flex; justify-content:space-between; font-size:14px;">
-                Exagération Relief : <span id="exag-disp">1.4</span>x
-            </label>
-            <input type="range" id="exag-slider" min="1.0" max="2.0" step="0.1" value="1.4">
-        </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <span style="font-size:14px;">🌑 Ombres 3D</span>
-            <input type="checkbox" id="shadow-toggle" checked>
-        </div>
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-size:14px;">🌫️ Voile Atmosphérique</span>
-            <input type="range" id="fog-slider" min="20" max="100" step="5" value="40" style="width:120px;">
-        </div>
-    </div>
-
-    <div class="control-group-3d" style="margin-top:25px; border-top:1px solid var(--border); padding-top:20px;">
-        <label style="font-size:12px; color:var(--gold); text-transform:uppercase;">Éléments 3D & Debug</label>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; margin-bottom:10px;">
+        <label style="display:block; font-size:11px; color:var(--gold); font-weight:700; margin-bottom:15px; text-transform:uppercase;">Rendu 3D & Détails</label>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <span style="font-size:14px;">📊 Stats de performance</span>
             <input type="checkbox" id="stats-toggle" checked>
         </div>
@@ -178,297 +141,53 @@
             <span style="font-size:14px;">🪧 Signalisation 3D</span>
             <input type="checkbox" id="poi-toggle" checked>
         </div>
-
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <span style="font-size:14px;">🛠️ Infos de navigation</span>
-            <input type="checkbox" id="debug-toggle" checked>
-        </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <span style="font-size:14px;">🌲 Forêts 3D (Suisse) <span id="veg-density-disp">4000</span></span>
-            <input type="checkbox" id="veg-toggle" checked>
-        </div>
-        <input type="range" id="veg-density-slider" min="0" max="15000" step="500" value="4000" style="margin-bottom:15px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <span style="font-size:14px;">🏢 Bâtiments OSM</span>
-            <input type="checkbox" id="buildings-toggle" checked>
-        </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <span style="font-size:14px;">💧 Hydrologie (Lacs & Rivières)</span>
-            <input type="checkbox" id="hydro-toggle" checked>
-        </div>
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-size:14px;">🪧 Signalisation 3D</span>
-            <input type="checkbox" id="poi-toggle" checked>
-        </div>
-    </div>
-
-    <div class="control-group" style="margin-top:25px; border-top:1px solid var(--border); padding-top:20px;">
-        <label style="font-size:12px; color:var(--gold); text-transform:uppercase;">Stockage & API</label>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
-            <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:10px; text-align:center;">
-                <div style="font-size:10px; color:var(--t2); text-transform:uppercase;">🌐 Réseau</div>
-                <div id="net-count" style="font-size:18px; font-weight:700; color:white;">0</div>
-            </div>
-            <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:10px; text-align:center;">
-                <div style="font-size:10px; color:var(--t2); text-transform:uppercase;">📦 Cache</div>
-                <div id="cache-count" style="font-size:18px; font-weight:700; color:#10b981;">0</div>
-            </div>
-        </div>
-        <div style="margin-top:15px;">
-            <label style="font-size:11px; color:var(--t2); text-transform:uppercase;">Clé MapTiler Cloud</label>
-            <form id="api-key-form" style="display:flex; gap:8px; margin-top:5px;">
-                <input type="text" name="username" autocomplete="username" style="display:none;" value="maptiler-user">
-                <input type="password" id="maptiler-key-input" autocomplete="current-password" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; color:white; padding:8px; font-family:monospace; font-size:12px;">
-                <button type="submit" id="update-key-btn" style="background:var(--accent); border:none; color:white; border-radius:8px; padding:0 12px; cursor:pointer; font-size:12px;">OK</button>
-            </form>
-        </div>
-        <button id="download-zone-btn" style="width:100%; padding:10px; border-radius:10px; border:1px solid var(--accent); background:rgba(59, 130, 246, 0.1); color:white; cursor:pointer; font-weight:700; font-size:12px; margin-top:15px; display:flex; justify-content:center; align-items:center; gap:8px;">
-            <span>⬇️ Télécharger Zone (10km)</span>
-        </button>
-        <button id="clear-cache-btn" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ef4444; background:rgba(239, 68, 68, 0.1); color:#ef4444; cursor:pointer; font-weight:700; font-size:12px; margin-top:10px;">🗑️ Vider le cache local</button>
-        
-        <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.05); padding-top:15px;">
-            <label style="font-size:11px; color:var(--gold); text-transform:uppercase;">Carte Locale (PMTiles)</label>
-            <input type="file" id="pmtiles-upload" accept=".pmtiles" style="display:none;">
-            <button id="pmtiles-btn" style="width:100%; padding:10px; border-radius:10px; border:1px solid var(--gold); background:rgba(245, 158, 11, 0.1); color:var(--gold); cursor:pointer; font-weight:700; font-size:12px; margin-top:5px;">📁 Charger un fichier .pmtiles</button>
-        </div>
-    </div>
-
-    <div class="control-group" style="margin-top:25px; border-top:1px solid var(--border); padding-top:20px;">
-        <label style="font-size:12px; color:var(--gold); text-transform:uppercase;">Parcours GPX</label>
-        <input type="file" id="gpx-upload" accept=".gpx" style="display:none;">
-        <button id="gpx-btn" style="width:100%; padding:12px; border-radius:12px; border:1px solid var(--accent); background:rgba(59, 130, 246, 0.1); color:var(--accent); cursor:pointer; font-weight:700; margin:15px 0;">📥 Importer GPX</button>
-        <div id="trail-controls" style="display:none;">
-             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <span style="font-size:13px; font-weight:500;">🎥 Suivi caméra</span>
-                <input type="checkbox" id="trail-follow-toggle">
-            </div>
-            <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:14px; border:1px solid var(--border); font-size:12px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div style="grid-column: span 2; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:8px; margin-bottom:5px;">
-                    <span style="font-size:10px; color:var(--t2); text-transform:uppercase; letter-spacing:1px;">Distance totale</span>
-                    <div id="gpx-dist" style="font-size:20px; font-weight:700; color:white;">0.0 km</div>
-                </div>
-                <div>
-                    <span style="font-size:10px; color:var(--t2); text-transform:uppercase; letter-spacing:1px;">Dénivelé +</span>
-                    <div id="gpx-dplus" style="font-size:16px; font-weight:700; color:#10b981;">0 m</div>
-                </div>
-                <div>
-                    <span style="font-size:10px; color:var(--t2); text-transform:uppercase; letter-spacing:1px;">Dénivelé -</span>
-                    <div id="gpx-dminus" style="font-size:16px; font-weight:700; color:#ef4444;">0 m</div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 </template>
 
-<!-- DASHBOARD MÉTÉO -->
 <template id="template-weather">
 <div id="weather" class="bottom-sheet">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
         <h3 style="margin:0; font-size:14px; color:var(--gold); text-transform:uppercase; letter-spacing:1px;">☁️ Bulletin Météo</h3>
         <button id="close-weather" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">&times;</button>
     </div>
-    
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
-        <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:14px; border:1px solid var(--border);">
-            <div style="font-size:9px; color:var(--t2); text-transform:uppercase;">Température</div>
-            <div id="w-temp" style="font-size:18px; font-weight:700; color:white;">--°C</div>
-            <div id="w-apparent" style="font-size:9px; color:var(--t2);">Ressenti --°C</div>
-        </div>
-        <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:14px; border:1px solid var(--border);">
-            <div style="font-size:9px; color:var(--t2); text-transform:uppercase;">Vent</div>
-            <div style="display:flex; align-items:baseline; gap:8px;">
-                <div id="w-wind" style="font-size:18px; font-weight:700; color:white;">-- km/h</div>
-                <div id="w-wind-arrow" style="font-size:14px; color:var(--gold); transition: transform 0.5s ease-out; display:inline-block;">↑</div>
-            </div>
-            <div id="w-wind-dir" style="font-size:9px; color:var(--t2);">—</div>
-        </div>
-        <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:14px; border:1px solid var(--border);">
-            <div style="font-size:9px; color:var(--t2); text-transform:uppercase;">Isotherme 0°</div>
-            <div id="w-freezing" style="font-size:18px; font-weight:700; color:white;">-- m</div>
-        </div>
-        <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:14px; border:1px solid var(--border);">
-            <div style="font-size:9px; color:var(--t2); text-transform:uppercase;">Indice UV</div>
-            <div id="w-uv" style="font-size:18px; font-weight:700; color:white;">--</div>
-        </div>
-        <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:14px; border:1px solid var(--border);">
-            <div style="font-size:9px; color:var(--t2); text-transform:uppercase;">Humidité</div>
-            <div id="w-hum" style="font-size:18px; font-weight:700; color:white;">--%</div>
-        </div>
-        <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:14px; border:1px solid var(--border);">
-            <div style="font-size:9px; color:var(--t2); text-transform:uppercase;">Nuages</div>
-            <div id="w-clouds" style="font-size:18px; font-weight:700; color:white;">--%</div>
-        </div>
-    </div>
-
-    <!-- Prévisions Horaires -->
-    <div style="margin-bottom:15px; position:relative;">
-        <label style="font-size:11px; color:var(--t2); text-transform:uppercase; margin-bottom:10px; display:block;">Prochaines 24h</label>
-        <div id="w-hourly" style="display:flex; gap:12px; overflow-x:auto; padding-bottom:15px; scrollbar-width: none; -ms-overflow-style: none; cursor: grab;">
-            <!-- Scrollable Content -->
-        </div>
-        <style>#w-hourly::-webkit-scrollbar { display: none; }</style>
-    </div>
-
-    <button id="open-expert-weather" style="width:100%; padding:12px; border-radius:14px; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--gold); font-weight:700; cursor:pointer; font-size:11px; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">📊 Ouvrir Station Expert</button>
-
-    <!-- Contrôles d'effets visuels repliables -->
-    <details style="border-top: 1px solid var(--border); padding-top:10px; margin-top:10px;">
-        <summary style="font-size:10px; color:var(--gold); text-transform:uppercase; cursor:pointer; list-style:none; outline:none; display:flex; justify-content:space-between; align-items:center;">
-            <span>⚙️ Simuler Effets</span>
-            <span style="font-size:8px; opacity:0.5;">▼</span>
-        </summary>
-        <div style="padding-top:15px;">
-            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:15px;">
-                <button class="weather-btn" data-weather="clear">☀️</button>
-                <button class="weather-btn" data-weather="rain">🌧️</button>
-                <button class="weather-btn" data-weather="snow">❄️</button>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;">
-                <span>Intensité : <span id="weather-density-disp">2500</span></span>
-            </div>
-            <input type="range" id="weather-density-slider" min="0" max="15000" step="500" value="2500">
-            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px; margin-top:10px;">
-                <span>Vitesse : <span id="weather-speed-disp">1.0</span>x</span>
-            </div>
-            <input type="range" id="weather-speed-slider" min="0.5" max="3.0" step="0.1" value="1.0">
-        </div>
-    </details>
-</div>
-
-<!-- STATION MÉTÉO EXPERT (CENTRALE) -->
-<div id="expert-weather-panel" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:90%; max-width:850px; height:85%; max-height:650px; background:rgba(15, 17, 23, 0.9); border:1px solid rgba(255,255,255,0.1); border-radius:32px; padding:40px; z-index:3000; box-shadow:0 40px 120px rgba(0,0,0,0.9); backdrop-filter: blur(40px); overflow-y:auto;">
-    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:30px;">
-        <div>
-            <h2 id="ex-location" style="margin:0; font-size:28px; color:white;">Station Expert</h2>
-            <div id="ex-coords" style="font-size:12px; color:var(--gold); margin-top:5px; font-family:monospace; letter-spacing:1px;">-- , --</div>
-        </div>
-        <button id="close-expert-weather" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; width:40px; height:40px; border-radius:50%; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
-    </div>
-
-    <!-- Grille Principale Responsive -->
-    <div class="expert-grid">
-        
-        <!-- Bloc SÉCURITÉ & CONDITIONS -->
-        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:24px; padding:25px;">
-            <h3 style="margin:0 0 20px 0; font-size:12px; color:var(--gold); text-transform:uppercase; letter-spacing:2px;">⚠️ Sécurité Montagne</h3>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-                <div>
-                    <div style="font-size:10px; color:var(--t2);">RAFALES MAX</div>
-                    <div id="ex-gusts" style="font-size:20px; font-weight:700; color:#ef4444;">-- km/h</div>
-                </div>
-                <div>
-                    <div style="font-size:10px; color:var(--t2);">VISIBILITÉ</div>
-                    <div id="ex-vis" style="font-size:20px; font-weight:700;">-- km</div>
-                </div>
-                <div>
-                    <div style="font-size:10px; color:var(--t2);">PROBA. PLUIE</div>
-                    <div id="ex-precip" style="font-size:20px; font-weight:700; color:var(--accent);">-- %</div>
-                </div>
-                <div>
-                    <div style="font-size:10px; color:var(--t2);">POINT DE ROSÉE</div>
-                    <div id="ex-dew" style="font-size:20px; font-weight:700;">--°C</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bloc ÉPHÉMÉRIDE PHOTO -->
-        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:24px; padding:25px;">
-            <h3 style="margin:0 0 20px 0; font-size:12px; color:var(--gold); text-transform:uppercase; letter-spacing:2px;">📷 Éphéméride Lumière</h3>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-                <div>
-                    <div style="font-size:10px; color:var(--t2);">GOLDEN HOUR</div>
-                    <div id="ex-golden" style="font-size:20px; font-weight:700; color:#f59e0b;">--:--</div>
-                </div>
-                <div>
-                    <div style="font-size:10px; color:var(--t2);">BLUE HOUR</div>
-                    <div id="ex-blue" style="font-size:20px; font-weight:700; color:#3b82f6;">--:--</div>
-                </div>
-                <div>
-                    <div style="font-size:10px; color:var(--t2);">PHASE LUNAIRE</div>
-                    <div id="ex-moon-icon" style="font-size:24px; margin-top:2px;">🌑</div>
-                    <div id="ex-moon-text" style="font-size:10px; color:var(--t2); margin-top:2px;">--% illuminée</div>
-                </div>
-                <div>
-                    <div style="font-size:10px; color:var(--t2);">ZÉRO ISOTHERME</div>
-                    <div id="ex-freezing" style="font-size:20px; font-weight:700;">-- m</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bloc GRAPHIQUE TEMPÉRATURE / CIEL (Full Width) -->
-        <div class="expert-full-width" style="grid-column: span 2; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:24px; padding:25px; min-height:220px; position:relative;">
-            <h3 style="margin:0 0 15px 0; font-size:11px; color:var(--t2); text-transform:uppercase;">Tendance sur 24 Heures</h3>
-            <div id="ex-chart-container" style="width:100%; height:140px; display:flex; align-items:flex-end; gap:4px; overflow-x: auto; scrollbar-width: none;">
-                <!-- Barres de température générées par JS -->
-            </div>
-            <style>#ex-chart-container::-webkit-scrollbar { display: none; }</style>
-            <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:9px; color:var(--t2); font-family:monospace;">
-                <span>MAINTENANT</span>
-                <span>+12H</span>
-                <span>DEMAIN</span>
-            </div>
-        </div>
-    </div>
+    <div id="weather-content"></div>
+    <button id="open-expert-weather" class="btn-go" style="margin-top:15px; padding:12px;">📊 Station Météo Expert</button>
 </div>
 </template>
 
-<!-- RÉSULTAT ANALYSE SOLAIRE -->
 <template id="template-solar-probe">
 <div id="solar-probe" class="bottom-sheet">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <h3 style="margin:0; font-size:14px; color:var(--gold); text-transform:uppercase; letter-spacing:1px;">📊 Solar Insight</h3>
-        <button id="close-probe" style="background:none; border:none; color:var(--t2); font-size:24px; cursor:pointer;">&times;</button>
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+        <h3 style="margin:0; font-size:14px; color:var(--gold); text-transform:uppercase;">☀️ Analyse Solaire</h3>
+        <button id="close-probe" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">&times;</button>
     </div>
-    <div id="probe-status" style="font-size:11px; color:var(--accent); font-weight:700; margin-bottom:10px;">Prêt</div>
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:25px;">
-        <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:16px; border:1px solid var(--border);">
-            <div style="font-size:10px; color:var(--t2); text-transform:uppercase; margin-bottom:5px;">Total Sunlight</div>
-            <div id="probe-total" style="font-size:24px; font-weight:700; color:var(--gold);">--h--</div>
-        </div>
-        <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:16px; border:1px solid var(--border);">
-            <div style="font-size:10px; color:var(--t2); text-transform:uppercase; margin-bottom:5px;">Actual Sunrise</div>
-            <div id="probe-sunrise" style="font-size:24px; font-weight:700; color:var(--t1);">--:--</div>
-        </div>
-    </div>
-    <div id="probe-timeline" style="display:flex; height:35px; border-radius:10px; overflow:hidden; background:#1a1c23; margin-bottom:20px; cursor:pointer; border:1px solid var(--border);"></div>
-    <div style="display:flex; gap:15px; font-size:11px; color:var(--t2); margin-bottom:20px;">
-        <div style="display:flex; align-items:center; gap:6px;"><div style="width:10px; height:10px; background:#ffd700; border-radius:2px;"></div> Sun</div>
-        <div style="display:flex; align-items:center; gap:6px;"><div style="width:10px; height:10px; background:#444; border-radius:2px;"></div> Shadow</div>
-        <div style="display:flex; align-items:center; gap:6px;"><div style="width:10px; height:10px; background:#000; border-radius:2px;"></div> Night</div>
-    </div>
-    <button id="copy-report-btn" style="width:100%; background:none; border:none; color:var(--accent); font-size:11px; font-weight:700; cursor:pointer; text-align:left; padding:0; text-transform:uppercase;">📋 Copier le rapport complet</button>
+    <div id="probe-content"></div>
 </div>
 </template>
 
-<!-- MODALE SOS -->
 <template id="template-sos">
 <div id="sos" class="bottom-sheet">
-    <div style="font-size:48px; margin-bottom:15px;">🆘</div>
-    <h2 style="margin:0 0 10px 0; color:white; font-size:22px;">Message de Secours</h2>
-    <p style="color:var(--t2); font-size:13px; margin-bottom:20px;">Ce message est optimisé pour les zones à faible couverture (SMS).</p>
-    
-    <div id="sos-text-container" style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:15px; font-family:monospace; font-size:14px; color:#ef4444; text-align:left; word-break:break-all; margin-bottom:25px; line-height:1.5;">
-        Génération...
-    </div>
-
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-        <button id="sos-copy-btn" style="padding:15px; border-radius:14px; background:var(--accent); color:white; border:none; font-weight:700; cursor:pointer;">📋 Copier</button>
-        <button id="sos-close-btn" style="padding:15px; border-radius:14px; background:rgba(255,255,255,0.05); color:white; border:1px solid var(--border); font-weight:700; cursor:pointer;">Annuler</button>
+    <div class="sheet-handle"></div>
+    <div style="text-align:center; padding:20px;">
+        <div style="font-size:48px; margin-bottom:15px;">🆘</div>
+        <h2 style="color:#ef4444; margin:0 0 10px 0;">URGENCE SOS</h2>
+        <p style="font-size:13px; color:var(--t2); margin-bottom:20px;">Voici vos coordonnées exactes à transmettre aux secours.</p>
+        <div id="sos-text-container" style="background:rgba(239,68,68,0.1); border:1px solid #ef4444; border-radius:16px; padding:20px; font-family:monospace; font-size:16px; color:white; margin-bottom:20px; word-break:break-all;">
+            ⌛ Localisation en cours...
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button id="sos-copy-btn" class="btn-go" style="flex:1; margin:0; background:#444;">Copier le message</button>
+            <button id="sos-close-btn" class="btn-go" style="flex:1; margin:0; background:#ef4444;">Fermer</button>
+        </div>
     </div>
 </div>
 </template>
 
-<!-- WIDGETS -->
 <template id="template-widgets">
 <div id="widgets-container" style="display:none;">
-    <!-- INDICATEUR OFFLINE (v4.7) -->
-    <div id="offline-indicator" style="display:none; position:fixed; top:calc(20px + env(safe-area-inset-top, 0px)); right:calc(20px + env(safe-area-inset-right, 0px)); background:rgba(239, 68, 68, 0.8); border:1px solid rgba(255, 255, 255, 0.2); padding:6px 10px; border-radius:12px; font-size:10px; font-weight:700; color:white; z-index:2000; box-shadow:0 5px 15px rgba(0,0,0,0.3); backdrop-filter:var(--glass);">
-        📡 HORS-LIGNE
-    </div>
-
-    <!-- BOUTON CALQUES -->
     <div id="layer-btn" style="display:none;" title="Changer de carte">🗺️</div>
     <div id="layer-menu">
         <h3 style="margin:0 0 15px 0; font-size:14px; color:var(--gold); text-transform:uppercase;">Type de carte</h3>
@@ -486,7 +205,6 @@
                 OpenTopo
             </div>
         </div>
-
         <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid var(--border);">
             <label style="font-size:13px;">📍 Sentiers</label>
             <input type="checkbox" id="trails-toggle" checked>
@@ -496,17 +214,7 @@
             <input type="checkbox" id="slopes-toggle">
         </div>
     </div>
-
-    <!-- BOUTONS FLOTTANTS -->
-    <div id="settings-toggle" title="Réglages techniques">⚙️</div>
-    <div id="gps-main-btn" title="Ma position">🎯</div>
-    <div id="rec-btn" title="Enregistrer le tracé">🔴</div>
-    <div id="export-gpx-btn" title="Exporter mon tracé (GPX)">💾</div>
-    <div id="screenshot-btn" title="Capturer la vue">📸</div>
-
-    <!-- ZONE BASSE (STACK) -->
     <div id="bottom-stack">
-        <!-- PANNEAU COORDONNÉES -->
         <div id="coords-panel" style="display:none;">
             <div id="close-coords" style="position:absolute; top:8px; right:12px; cursor:pointer; color:var(--text-2); font-size:16px; font-weight:bold;">×</div>
             <div id="click-latlon" style="color:var(--text-2); font-size:11px;">—</div>
@@ -516,8 +224,6 @@
                 <button id="sos-btn" style="flex:1; padding:10px; border-radius:10px; background:#ef4444; color:white; border:none; font-weight:700; cursor:pointer; font-size:11px; box-shadow:0 4px 12px rgba(239, 68, 68, 0.3); pointer-events:auto;">🆘 SOS</button>
             </div>
         </div>
-
-        <!-- BARRE DE TEMPS BASSE -->
         <div id="bottom-bar" style="display:none;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div style="display:flex; align-items:center; gap:12px;">
@@ -537,9 +243,7 @@
             <input type="range" id="time-slider" min="0" max="1439" value="720">
         </div>
     </div>
-
-    <!-- PROFIL ALTIMÉTRIQUE (v4.8) -->
-    <div id="elevation-profile" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); width:calc(100% - 40px); max-width:800px; background:var(--surface-solid); border:1px solid var(--border); border-radius:24px; padding:20px; z-index:1500; backdrop-filter:var(--glass); box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+    <div id="elevation-profile" style="display:none;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
             <h3 style="margin:0; font-size:12px; color:var(--gold); text-transform:uppercase; letter-spacing:2px;">📈 Profil d'élévation & Pentes</h3>
             <div style="display:flex; align-items:center; gap:15px;">
@@ -552,13 +256,9 @@
             <div id="profile-cursor" style="display:none; position:absolute; top:0; height:100%; width:2px; background:cyan; pointer-events:none; box-shadow:0 0 10px cyan;"></div>
         </div>
     </div>
-
-    <!-- INDICATEUR FIXE -->
-    <div id="toast-container"></div>
 </div>
 </template>
 
-<!-- TOP STATUS BAR -->
 <template id="template-top-status-bar">
     <div class="top-status-bar-content">
         <div class="status-widget lod-widget">
@@ -577,7 +277,6 @@
     </div>
 </template>
 
-<!-- NAV BAR -->
 <template id="template-nav-bar">
     <div class="nav-bar-content">
         <div class="nav-tab active" data-tab="map">
@@ -599,7 +298,6 @@
     </div>
 </template>
 
-<!-- PARCOURS GPX -->
 <template id="template-track">
 <div id="track" class="bottom-sheet">
     <div class="sheet-handle"></div>
