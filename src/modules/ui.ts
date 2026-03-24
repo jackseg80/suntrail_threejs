@@ -19,6 +19,8 @@ import { TopStatusBar } from './ui/components/TopStatusBar';
 import { SettingsSheet } from './ui/components/SettingsSheet';
 import { SearchSheet } from './ui/components/SearchSheet';
 import { WeatherSheet, SolarProbeSheet, SOSSheet } from './ui/components/ExpertSheets';
+import { initAutoHide } from './ui/autoHide';
+import { initMobileUI } from './ui/mobile';
 
 export function initUI(): void {
     console.log("[UI] Starting Init...");
@@ -123,6 +125,9 @@ export function initUI(): void {
 
     const sosSheet = new SOSSheet();
     sosSheet.hydrate();
+
+    initAutoHide();
+    initMobileUI();
 
     const settingsToggle = document.getElementById('settings-toggle');
     settingsToggle?.addEventListener('click', (e) => {
