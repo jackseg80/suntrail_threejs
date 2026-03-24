@@ -297,12 +297,14 @@ input[type="range"]::-webkit-slider-thumb {
     margin-top: 32px; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
 }
 
-/* BARRE DE TEMPS BASSE (TIMELINE) - DRAWER STYLE */
+/* BARRE DE TEMPS BASSE (TIMELINE) - CENTERED STYLE */
 #bottom-bar {
     position: fixed;
     bottom: calc(var(--bar-h) + 40px); 
-    right: 20px;
-    width: 320px;
+    left: 50%;
+    transform: translate(-50%, 200px); /* Hidden below by default */
+    width: calc(100% - 40px);
+    max-width: 450px;
     background: var(--surface);
     backdrop-filter: var(--glass);
     border: 1px solid var(--border);
@@ -311,11 +313,14 @@ input[type="range"]::-webkit-slider-thumb {
     z-index: 1000;
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s;
-    transform: translateX(calc(100% + 40px)); /* Hidden by default */
+    opacity: 0;
+    pointer-events: none;
 }
 
 #bottom-bar.is-open {
-    transform: translateX(0);
+    transform: translate(-50%, 0);
+    opacity: 1;
+    pointer-events: auto;
 }
 
 #bottom-bar input[type="range"] {
@@ -327,36 +332,37 @@ input[type="range"]::-webkit-slider-thumb {
     position: fixed;
     bottom: calc(var(--bar-h) + 40px);
     right: 20px;
-    width: 52px; height: 52px;
+    width: 56px; height: 56px;
     background: var(--surface);
     backdrop-filter: var(--glass);
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: 18px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
+    font-size: 24px;
     cursor: pointer;
-    z-index: 1000;
-    transition: all 0.2s;
+    z-index: 2100;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
 }
 
 #gps-main-btn.active {
     background: var(--accent);
     color: white;
-    border-color: var(--accent);
-    box-shadow: 0 0 20px var(--accent-glow);
+    border-color: rgba(255,255,255,0.2);
+    box-shadow: 0 8px 25px var(--accent-glow);
 }
 
 #gps-main-btn.following {
     background: var(--success);
-    border-color: var(--success);
-    box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
+    border-color: rgba(255,255,255,0.2);
+    box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4);
 }
 
-/* Adjust other floating buttons to not overlap */
-#settings-toggle { bottom: calc(var(--bar-h) + 105px); right: 20px; }
-#rec-btn { bottom: calc(var(--bar-h) + 165px); right: 20px; }
-#export-gpx-btn { bottom: calc(var(--bar-h) + 225px); right: 20px; }
-#screenshot-btn { bottom: calc(var(--bar-h) + 285px); right: 20px; }
+/* Adjust other floating buttons */
+#settings-toggle { bottom: calc(var(--bar-h) + 110px); right: 20px; z-index: 2100; position: fixed; width: 44px; height: 44px; background: var(--surface); backdrop-filter: var(--glass); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+#rec-btn { bottom: calc(var(--bar-h) + 165px); right: 20px; z-index: 2100; position: fixed; width: 44px; height: 44px; background: var(--surface); backdrop-filter: var(--glass); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+#export-gpx-btn { bottom: calc(var(--bar-h) + 220px); right: 20px; z-index: 2100; position: fixed; width: 44px; height: 44px; background: var(--surface); backdrop-filter: var(--glass); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+#screenshot-btn { bottom: calc(var(--bar-h) + 275px); right: 20px; z-index: 2100; position: fixed; width: 44px; height: 44px; background: var(--surface); backdrop-filter: var(--glass); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
 /* COORDS PANEL ADJUSTMENT */
 #coords-panel {
@@ -368,13 +374,13 @@ input[type="range"]::-webkit-slider-thumb {
     background: var(--surface); 
     backdrop-filter: var(--glass);
     padding: 20px; border-radius: 24px; border: 1px solid var(--border);
-    z-index: 1000; pointer-events: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    z-index: 2100; pointer-events: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
 /* AUTO HIDE */
 body.ui-hidden #top-status-bar { transform: translateY(-100px); opacity: 0; }
 body.ui-hidden #nav-bar { transform: translate(-50%, 150px); opacity: 0; }
-body.ui-hidden #bottom-bar { transform: translateX(400px); opacity: 0; }
+body.ui-hidden #bottom-bar { transform: translate(-50%, 200px); opacity: 0; }
 body.ui-hidden #gps-main-btn, 
 body.ui-hidden #settings-toggle,
 body.ui-hidden #rec-btn,

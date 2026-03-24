@@ -275,7 +275,13 @@ function startApp() {
     
     if (navBar) navBar.style.display = 'flex';
     if (topBar) topBar.style.display = 'flex';
-    if (widgets) widgets.style.display = 'block';
+    if (widgets) {
+        widgets.style.display = 'block';
+        // Ensure all children are visible if they were hidden
+        Array.from(widgets.children).forEach(child => {
+            (child as HTMLElement).style.display = 'flex';
+        });
+    }
     
     const bottomBar = document.getElementById('bottom-bar');
     if (bottomBar) bottomBar.style.display = 'block';
