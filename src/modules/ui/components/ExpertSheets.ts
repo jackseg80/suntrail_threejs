@@ -55,15 +55,23 @@ export class SolarProbeSheet extends BaseComponent {
             sheetManager.close();
         });
 
-        // Attach to the probe button which might be elsewhere in the DOM
-        const probeBtn = document.getElementById('probe-btn');
-        probeBtn?.addEventListener('click', () => {
-            if (state.hasLastClicked) {
-                runSolarProbe(state.lastClickedCoords.x, state.lastClickedCoords.z, state.lastClickedCoords.alt);
+        // Attach to the probe button which is in the WidgetsComponent (coords-panel)
+        const attachProbeBtn = () => {
+            const probeBtn = document.getElementById('probe-btn');
+            if (probeBtn) {
+                probeBtn.onclick = () => {
+                    if (state.hasLastClicked) {
+                        runSolarProbe(state.lastClickedCoords.x, state.lastClickedCoords.z, state.lastClickedCoords.alt);
+                    } else {
+                        showToast("Cliquez sur le terrain d'abord");
+                    }
+                };
             } else {
-                showToast("Cliquez sur le terrain d'abord");
+                // If not yet in DOM, retry shortly
+                setTimeout(attachProbeBtn, 500);
             }
-        });
+        };
+        attachProbeBtn();
     }
 }
 
@@ -89,9 +97,17 @@ export class SOSSheet extends BaseComponent {
             sheetManager.close();
         });
 
-        // Attach to the SOS button which might be elsewhere in the DOM
-        const sosBtn = document.getElementById('sos-btn');
-        sosBtn?.addEventListener('click', this.openSOSModal.bind(this));
+        // Attach to the SOS button which is in the WidgetsComponent (coords-panel)
+        const attachSosBtn = () => {
+            const sosBtn = document.getElementById('sos-btn');
+            if (sosBtn) {
+                sosBtn.onclick = this.openSOSModal.bind(this);
+            } else {
+                // If not yet in DOM, retry shortly
+                setTimeout(attachSosBtn, 500);
+            }
+        };
+        attachSosBtn();
     }
 
     private async openSOSModal() {
