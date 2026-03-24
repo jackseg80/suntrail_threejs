@@ -47,7 +47,7 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 - **Google Earth Style** : Rotation mobile "Twist" à deux doigts avec verrouillage du Tilt pendant l'interaction pour éviter les mouvements brusques (v4.5.37).
 
 ### GPS & Orientation
-- **Origin Shift (Précision GPS)** : Recentrage dynamique du monde 3D sur l'utilisateur ou la cible pour éviter le "jitter" (tremblement) des flottants loin de l'origine (v5.7.3).
+- **Origin Shift (Précision GPS)** : Recentrage dynamique complet du monde 3D (Seuil 35km) incluant la translation atomique de tous les objets : Caméra, Soleil, Marqueur, GPX, Forêts et Étiquettes pour une précision absolue longue distance (v5.8.3).
 - **Lissage Boussole** : Filtre passe-bas (10%) sur les données de l'API `DeviceOrientation` pour supprimer les tremblements du cône de vue.
 
 ## 🗺️ Stratégies Cartographiques Spécifiques

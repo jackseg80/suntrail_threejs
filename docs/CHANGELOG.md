@@ -4,6 +4,12 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.8.3] - 2026-03-24
+### 🛠️ Precision & Long-Distance Navigation
+- **Origin Shift Implementation**: Implementation of a dynamic world recentering system (35km threshold). This eliminates floating-point jitter during long-distance crossings.
+- **Atomic Translation**: All global scene objects (Camera, Sun, GPS Marker, GPX Tracks, Forests, and Labels) are now seamlessly offset during recentering.
+- **UI Logic cleanup**: Removal of debug logs and refinement of the shift trigger conditions.
+
 ## [5.8.2] - 2026-03-24
 ### 🛠️ Restoration & Expert Features
 - **Solar & Weather Restoration**: Réintégration de la logique dynamique pour l'Analyse Solaire et le Dashboard Météo. Les données sont de nouveau extraites et affichées en temps réel.

@@ -143,6 +143,7 @@ export async function initScene(): Promise<void> {
         else if (state.ZOOM === 7)  { if (dist < 1200000) newZoom = 8; else if (dist > 2500000) newZoom = 6; }
         else if (state.ZOOM <= 6)  { if (dist < 2000000) newZoom = 7; }
 
+        const currentZoom = state.ZOOM;
         if (newZoom !== state.ZOOM) { state.ZOOM = newZoom; }
 
         const gpsCenter = worldToLngLat(dx, dz, state.originTile);
@@ -151,41 +152,52 @@ export async function initScene(): Promise<void> {
         const distToLastWeather = Math.sqrt(Math.pow(gpsCenter.lat - state.lastWeatherLat, 2) + Math.pow(gpsCenter.lon - state.lastWeatherLon, 2));
         if (distToLastWeather > 0.05) fetchWeather(gpsCenter.lat, gpsCenter.lon);
 
-        if (state.ZOOM >= 12 && !state.isUserInteracting && (newZoom === state.ZOOM) && (Math.sqrt(dx*dx + dz*dz) > 35000) && (Date.now() - lastRecenterTime > 5000)) {
-            const newTile = lngLatToTile(gpsCenter.lon, gpsCenter.lat, state.originTile.z);
-            if (!isNaN(newTile.x) && !isNaN(newTile.y)) {
-                const oldXN = (state.originTile.x + 0.5) / Math.pow(2, state.originTile.z);
-                const oldYN = (state.originTile.y + 0.5) / Math.pow(2, state.originTile.z);
-                const newXN = (newTile.x + 0.5) / Math.pow(2, state.originTile.z);
-                const newYN = (newTile.y + 0.5) / Math.pow(2, state.originTile.z);
-                const offsetX = (oldXN - newXN) * EARTH_CIRCUMFERENCE;
-                const offsetZ = (oldYN - newYN) * EARTH_CIRCUMFERENCE;
-                if (Math.abs(offsetX) < 250000 && Math.abs(offsetZ) < 250000) {
-                    state.originTile = newTile; lastRecenterTime = Date.now();
-                    state.camera!.position.x += offsetX; state.camera!.position.z += offsetZ;
-                    state.controls!.target.x += offsetX; state.controls!.target.z += offsetZ;
+        const distFromOrigin = Math.sqrt(dx*dx + dz*dz);
+
+        if (distFromOrigin > 35000) {
+            const timeSinceLast = Date.now() - lastRecenterTime;
+            if (state.ZOOM >= 12 && !state.isUserInteracting && (newZoom === currentZoom) && (timeSinceLast > 5000)) {
+                const newTile = lngLatToTile(gpsCenter.lon, gpsCenter.lat, state.originTile.z);
+                if (!isNaN(newTile.x) && !isNaN(newTile.y)) {
+                    const oldXN = (state.originTile.x + 0.5) / Math.pow(2, state.originTile.z);
+                    const oldYN = (state.originTile.y + 0.5) / Math.pow(2, state.originTile.z);
+                    const newXN = (newTile.x + 0.5) / Math.pow(2, state.originTile.z);
+                    const newYN = (newTile.y + 0.5) / Math.pow(2, state.originTile.z);
+                    const offsetX = (oldXN - newXN) * EARTH_CIRCUMFERENCE;
+                    const offsetZ = (oldYN - newYN) * EARTH_CIRCUMFERENCE;
                     
-                    // Reposition all relative objects
-                    if (state.sunLight) {
-                        state.sunLight.position.x += offsetX;
-                        state.sunLight.position.z += offsetZ;
-                        state.sunLight.target.position.x += offsetX;
-                        state.sunLight.target.position.z += offsetZ;
-                        state.sunLight.target.updateMatrixWorld();
+                    if (Math.abs(offsetX) < 250000 && Math.abs(offsetZ) < 250000) {
+                        state.originTile = newTile; lastRecenterTime = Date.now();
+                        state.camera!.position.x += offsetX; state.camera!.position.z += offsetZ;
+                        state.controls!.target.x += offsetX; state.controls!.target.z += offsetZ;
+                        
+                        // Reposition all relative objects
+                        if (state.sunLight) {
+                            state.sunLight.position.x += offsetX;
+                            state.sunLight.position.z += offsetZ;
+                            state.sunLight.target.position.x += offsetX;
+                            state.sunLight.target.position.z += offsetZ;
+                            state.sunLight.target.updateMatrixWorld();
+                        }
+                        
+                        if (state.userMarker) {
+                            state.userMarker.position.x += offsetX;
+                            state.userMarker.position.z += offsetZ;
+                        }
+                        
+                        if (state.gpxMesh) {
+                            state.gpxMesh.geometry.translate(offsetX, 0, offsetZ);
+                        }
+                        
+                        if (state.hasLastClicked) {
+                            state.lastClickedCoords.x += offsetX;
+                            state.lastClickedCoords.z += offsetZ;
+                        }
+                        
+                        state.controls!.update(); repositionAllTiles(); 
+                        state.lastWeatherLat = gpsCenter.lat; state.lastWeatherLon = gpsCenter.lon;
+                        fetchWeather(gpsCenter.lat, gpsCenter.lon);
                     }
-                    
-                    if (state.userMarker) {
-                        state.userMarker.position.x += offsetX;
-                        state.userMarker.position.z += offsetZ;
-                    }
-                    
-                    if (state.gpxMesh) {
-                        state.gpxMesh.geometry.translate(offsetX, 0, offsetZ);
-                    }
-                    
-                    state.controls!.update(); repositionAllTiles(); 
-                    state.lastWeatherLat = gpsCenter.lat; state.lastWeatherLon = gpsCenter.lon;
-                    fetchWeather(gpsCenter.lat, gpsCenter.lon);
                 }
             }
         }
