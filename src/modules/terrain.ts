@@ -258,22 +258,30 @@ export class Tile {
                     if (uShowHydrology > 0.5) {
                         vec3 colorIn = diffuseColor.rgb;
                         float brightness = (colorIn.r + colorIn.g + colorIn.b) / 3.0;
-                        // Détection élargie pour SwissTopo (plus clair) et Satellite (plus sombre)
-                        float blueIntensity = colorIn.b - max(colorIn.r, colorIn.g);
-                        float isWater = smoothstep(0.02, 0.12, blueIntensity) * smoothstep(0.995, 1.0, vTrueNormal.y);
                         
-                        // Atténuation si trop blanc (neige) mais on laisse passer le bleu clair des lacs topo
-                        isWater *= (1.0 - smoothstep(0.85, 0.98, brightness) * (1.0 - smoothstep(0.05, 0.2, blueIntensity)));
+                        // Détection optimisée : l'eau est plate (vTrueNormal.y ~ 1) et le bleu est dominant
+                        // On baisse le seuil pour SwissTopo et on gère les lacs sombres satellite
+                        float blueDominance = colorIn.b - (colorIn.r + colorIn.g) * 0.5;
+                        float isWater = smoothstep(0.01, 0.08, blueDominance) * smoothstep(0.99, 1.0, vTrueNormal.y);
+                        
+                        // Protection Neige : si c'est très blanc, ce n'est de l'eau que si le bleu est très fort
+                        isWater *= (1.0 - smoothstep(0.8, 0.95, brightness) * (1.0 - smoothstep(0.1, 0.2, blueDominance)));
 
                         if (isWater > 0.05) {
-                            vec3 waterBlue = vec3(0.05, 0.22, 0.55);
-                            // Ondulations très fines et rapides pour supprimer l'effet de moiré
-                            float t = uTime * 0.5;
-                            float wave = sin(vMapUv.x * 250.0 + t) * cos(vMapUv.y * 250.0 + t * 0.7) * 0.25;
-                            wave += sin(vMapUv.x * 450.0 - t * 0.5) * cos(vMapUv.y * 450.0 + t * 0.3) * 0.15;
+                            vec3 waterBlue = vec3(0.02, 0.18, 0.52);
                             
-                            diffuseColor.rgb = mix(colorIn, waterBlue, 0.5 * isWater);
-                            diffuseColor.rgb += vec3(0.1, 0.2, 0.4) * wave * isWater;
+                            // Vagues de surface : basses fréquences pour éviter le moiré (grid)
+                            // On utilise vMapUv à petite échelle (20.0 - 40.0)
+                            float t = uTime * 0.6;
+                            vec2 wUv = vMapUv * 35.0;
+                            float wave = sin(wUv.x + t) * cos(wUv.y + t * 0.8) * 0.5 + 0.5;
+                            wave += sin(wUv.x * 1.8 - t * 0.5) * cos(wUv.y * 1.5 + t * 0.4) * 0.3;
+                            
+                            // Appliquer la couleur de l'eau SunTrail
+                            diffuseColor.rgb = mix(colorIn, waterBlue, 0.65 * isWater);
+                            
+                            // Ajouter les reflets des vagues (scintillement)
+                            diffuseColor.rgb += vec3(0.15, 0.35, 0.65) * (wave - 0.5) * isWater * 0.4;
                         }
                     }
                     if (uHasOverlay) { vec4 oCol = texture2D(uOverlayMap, vMapUv); diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a); }

@@ -30,8 +30,10 @@ waterMaterial.onBeforeCompile = (shader) => {
         ${shader.vertexShader}
     `.replace('#include <begin_vertex>', `
         #include <begin_vertex>
-        // Micro-ondulations verticales
-        float ripple = sin(position.x * 0.1 + uTime * 1.5) * cos(position.y * 0.1 + uTime * 1.2) * 0.5;
+        // Ondulations de surface plus amples et lentes
+        float t = uTime * 0.8;
+        float ripple = sin(position.x * 0.02 + t) * cos(position.y * 0.02 + t * 0.7) * 3.0;
+        ripple += sin(position.x * 0.05 - t * 0.5) * cos(position.y * 0.04 + t * 0.4) * 1.5;
         transformed.z += ripple; 
     `);
     
@@ -40,11 +42,12 @@ waterMaterial.onBeforeCompile = (shader) => {
         ${shader.fragmentShader}
     `.replace('#include <normal_fragment_maps>', `
         #include <normal_fragment_maps>
-        // Scintillement de la normale pour les reflets solaires
+        // Scintillement des normales pour un effet miroir agité
+        float t = uTime * 1.2;
         vec3 rippleNormal = vec3(
-            sin(vViewPosition.x * 0.5 + uTime * 2.0) * 0.05,
+            sin(vViewPosition.x * 0.1 + t) * 0.15,
             1.0,
-            cos(vViewPosition.y * 0.5 + uTime * 1.8) * 0.05
+            cos(vViewPosition.y * 0.1 + t * 0.8) * 0.15
         );
         normal = normalize(rippleNormal);
     `);
