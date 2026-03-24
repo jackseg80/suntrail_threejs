@@ -106,19 +106,27 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
                 isForest = (g > b * 1.1 && (g + r * 0.3) > b * 1.3 && g > 30);
             } else {
                 const brightness = (r + g + b) / 3;
-                const saturation = (Math.max(r, g, b) - Math.min(r, g, b)) / 255;
                 
-                // --- FILTRE ANTI-PELOUSE (v5.8.8) ---
-                // Les terrains de foot sont très verts (G dominant), saturés et assez clairs.
-                // Les forêts sont plus sombres et moins saturées.
-                const isTooBright = brightness > 140; 
-                const isTooSaturated = saturation > 0.35 && g > r * 1.25;
+                // --- FILTRE ANTI-PELOUSE AVANCÉ (v5.8.9) ---
+                // Sur SwissTopo :
+                // - Forêt : G est dominant mais R et B sont présents (couleur terreuse/désaturée).
+                // - Prairie : Très lumineuse (> 200).
+                // - Terrain de Sport : Vert "pur" et très saturé, pauvre en Rouge.
                 
-                // Si le vert est beaucoup plus fort que le rouge (ex: pelouse synthétique ou tondue)
-                const isVividGreen = (g > r * 1.35); 
-
-                const isNeutral = (Math.abs(r - g) < 15 && Math.abs(g - b) < 15 && r > 170);
-                isForest = (g > r * 1.05 && g > b * 1.05 && !isNeutral && !isTooBright && !isTooSaturated && !isVividGreen);
+                const isVeryBright = brightness > 195; 
+                const isSportField = (g > r * 1.45 && g > b * 1.35); // Signature du vert électrique
+                const isPureGreen = (g > 100 && r < 80 && b < 80); // Gazon synthétique ou urbain
+                
+                const isNeutral = (Math.abs(r - g) < 12 && Math.abs(g - b) < 12 && r > 160);
+                
+                // La forêt sur SwissTopo est dans les tons moyens (100-190) et peu saturée
+                isForest = (g > r * 1.05 && g > b * 1.05 && !isNeutral && !isVeryBright && !isSportField && !isPureGreen);
+                
+                // Correction spécifique pour SwissTopo : la forêt a souvent du rouge (brunatre)
+                if (isForest && state.MAP_SOURCE === 'swisstopo') {
+                    // Si c'est trop "vert fluo" par rapport au rouge, c'est probablement de la pelouse
+                    if (g > r * 1.30) isForest = false;
+                }
             }
 
             if (isForest) {
