@@ -155,7 +155,7 @@ export class SettingsSheet extends BaseComponent {
             'WEATHER_DENSITY', 'WEATHER_SPEED', 'FOG_FAR', 'ENERGY_SAVER',
             'SHOW_STATS', 'SHOW_DEBUG', 'SHOW_VEGETATION', 'SHOW_BUILDINGS',
             'SHOW_HYDROLOGY', 'SHOW_SIGNPOSTS', 'SHADOWS', 'LOAD_DELAY_FACTOR',
-            'isFollowingTrail', 'SHOW_TRAILS', 'SHOW_SLOPES'
+            'isFollowingTrail', 'SHOW_TRAILS', 'SHOW_SLOPES', 'PERFORMANCE_PRESET'
         ];
 
         keysToSubscribe.forEach(key => {
@@ -316,6 +316,15 @@ export class SettingsSheet extends BaseComponent {
             case 'SHOW_SLOPES':
                 const slopesToggle = document.getElementById('slopes-toggle') as HTMLInputElement;
                 if (slopesToggle) slopesToggle.checked = value;
+                break;
+            case 'PERFORMANCE_PRESET':
+                this.element.querySelectorAll('.preset-btn').forEach(btn => {
+                    if ((btn as HTMLElement).dataset.preset === value) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
                 break;
         }
     }

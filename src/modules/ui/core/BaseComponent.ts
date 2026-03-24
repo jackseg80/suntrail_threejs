@@ -11,7 +11,7 @@ export abstract class BaseComponent {
 
     public hydrate(): void {
         const template = document.getElementById(this.templateId) as HTMLTemplateElement;
-        const container = document.getElementById(this.containerId);
+        const container = this.containerId === 'body' ? document.body : document.getElementById(this.containerId);
 
         if (!template) {
             console.error(`Template with id "${this.templateId}" not found.`);

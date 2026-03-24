@@ -42,6 +42,41 @@
 <div id="sheet-overlay"></div>
 <div id="sheet-container"></div>
 
+<!-- CALQUES DE CARTE -->
+<template id="template-layers">
+<div id="layers" class="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+        <span class="sheet-title">Type de carte</span>
+        <div class="sheet-close" id="close-layers">×</div>
+    </div>
+    <div class="layer-grid">
+        <div class="layer-item active" data-source="swisstopo">
+            <div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/outdoor-v2.png')"></div>
+            Topo CH
+        </div>
+        <div class="layer-item" data-source="satellite">
+            <div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/satellite.png')"></div>
+            Satellite
+        </div>
+        <div class="layer-item" data-source="opentopomap">
+            <div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/topo.png')"></div>
+            OpenTopo
+        </div>
+    </div>
+    <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
+            <label style="font-size:14px;">📍 Sentiers de randonnée</label>
+            <input type="checkbox" id="layers-trails-toggle">
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+            <label style="font-size:14px;">⚠️ Pentes > 30° (Avalanche)</label>
+            <input type="checkbox" id="layers-slopes-toggle">
+        </div>
+    </div>
+</div>
+</template>
+
 <!-- BARRE DE RECHERCHE FLOTTANTE -->
 <template id="template-search">
 <div id="search" class="bottom-sheet">
@@ -69,7 +104,7 @@
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:12px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
             <span style="font-size:13px; color:white; font-weight:500;">🔋 Économie d'énergie (30 FPS)</span>
-            <input type="checkbox" id="energy-saver-toggle" style="width:20px; height:20px; cursor:pointer;">
+            <input type="checkbox" id="energy-saver-toggle">
         </div>
 
         <div class="control-group-3d">
@@ -79,7 +114,7 @@
                 <span>Distance Vue : <span id="range-disp">4</span></span>
             </div>
             <input type="range" id="res-slider" min="32" max="256" step="32" value="128">
-            <input type="range" id="range-slider" min="1" max="10" step="1" value="4" style="margin-top:10px;">
+            <input type="range" id="range-slider" min="1" max="10" step="1" value="4">
         </div>
 
         <div style="margin-top:20px; display:flex; justify-content:space-between; align-items:center;">
@@ -117,6 +152,28 @@
             <span style="font-size:14px;">📊 Stats de performance</span>
             <input type="checkbox" id="stats-toggle" checked>
         </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:14px;">🛠️ Infos de navigation</span>
+            <input type="checkbox" id="debug-toggle" checked>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:14px;">🌲 Forêts 3D (Suisse) <span id="veg-density-disp">4000</span></span>
+            <input type="checkbox" id="veg-toggle" checked>
+        </div>
+        <input type="range" id="veg-density-slider" min="0" max="15000" step="500" value="4000" style="margin-bottom:15px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:14px;">🏢 Bâtiments OSM</span>
+            <input type="checkbox" id="buildings-toggle" checked>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:14px;">💧 Hydrologie (Lacs & Rivières)</span>
+            <input type="checkbox" id="hydro-toggle" checked>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:14px;">🪧 Signalisation 3D</span>
+            <input type="checkbox" id="poi-toggle" checked>
+        </div>
+
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <span style="font-size:14px;">🛠️ Infos de navigation</span>
             <input type="checkbox" id="debug-toggle" checked>
@@ -427,11 +484,11 @@
 
         <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid var(--border);">
             <label style="font-size:13px;">📍 Sentiers</label>
-            <input type="checkbox" id="trails-toggle" checked style="width:20px; height:20px;">
+            <input type="checkbox" id="trails-toggle" checked>
         </div>
         <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px;">
             <label style="font-size:13px;">⚠️ Pentes > 30°</label>
-            <input type="checkbox" id="slopes-toggle" style="width:20px; height:20px;">
+            <input type="checkbox" id="slopes-toggle">
         </div>
     </div>
 
@@ -446,7 +503,7 @@
     <!-- ZONE BASSE (STACK) -->
     <div id="bottom-stack">
         <!-- PANNEAU COORDONNÉES -->
-        <div id="coords-panel" style="display:none; position:fixed; bottom:100px; left:20px; background:var(--surface-solid); padding:15px; border-radius:20px; border:1px solid var(--border); z-index:1000; pointer-events:auto; box-shadow:0 10px 30px rgba(0,0,0,0.3); backdrop-filter:var(--glass);">
+        <div id="coords-panel" style="display:none;">
             <div id="close-coords" style="position:absolute; top:8px; right:12px; cursor:pointer; color:var(--text-2); font-size:16px; font-weight:bold;">×</div>
             <div id="click-latlon" style="color:var(--text-2); font-size:11px;">—</div>
             <div id="click-alt" style="color:white; font-size:18px; font-weight:800; margin-top:2px;">—</div>

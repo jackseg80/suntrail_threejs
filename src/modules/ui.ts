@@ -19,6 +19,7 @@ import { NavigationBar } from './ui/components/NavigationBar';
 import { TopStatusBar } from './ui/components/TopStatusBar';
 import { SettingsSheet } from './ui/components/SettingsSheet';
 import { SearchSheet } from './ui/components/SearchSheet';
+import { LayersSheet } from './ui/components/LayersSheet';
 import { WeatherSheet, SolarProbeSheet, SOSSheet } from './ui/components/ExpertSheets';
 import { TrackSheet } from './ui/components/TrackSheet';
 import { WidgetsComponent } from './ui/components/WidgetsComponent';
@@ -116,6 +117,9 @@ export function initUI(): void {
 
     const settingsSheet = new SettingsSheet();
     settingsSheet.hydrate();
+
+    const layersSheet = new LayersSheet();
+    layersSheet.hydrate();
 
     const searchSheet = new SearchSheet();
     searchSheet.hydrate();

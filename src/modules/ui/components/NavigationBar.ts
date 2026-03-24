@@ -19,7 +19,7 @@ export class NavigationBar extends BaseComponent {
                 this.setActiveTab(tabId);
 
                 if (tabId === 'map') {
-                    sheetManager.close();
+                    sheetManager.open('layers');
                 } else {
                     sheetManager.open(tabId);
                 }

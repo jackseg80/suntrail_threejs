@@ -1,0 +1,77 @@
+import { BaseComponent } from '../core/BaseComponent';
+import { state, saveSettings } from '../../state';
+import { resetTerrain, updateVisibleTiles, updateSlopeVisibility } from '../../terrain';
+import { sheetManager } from '../core/SheetManager';
+
+export class LayersSheet extends BaseComponent {
+    constructor() {
+        super('template-layers', 'sheet-container');
+    }
+
+    public render(): void {
+        if (!this.element) return;
+
+        const closeBtn = this.element.querySelector('#close-layers');
+        closeBtn?.addEventListener('click', () => sheetManager.close());
+
+        const layerItems = this.element.querySelectorAll('.layer-item');
+        layerItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const source = (item as HTMLElement).dataset.source;
+                if (source) {
+                    state.MAP_SOURCE = source;
+                    state.hasManualSource = true;
+                    saveSettings();
+                    this.refreshTerrain();
+                    this.updateActiveLayer();
+                }
+            });
+        });
+
+        const trailsToggle = this.element.querySelector('#layers-trails-toggle') as HTMLInputElement;
+        if (trailsToggle) {
+            trailsToggle.checked = state.SHOW_TRAILS;
+            trailsToggle.addEventListener('change', (e) => {
+                state.SHOW_TRAILS = (e.target as HTMLInputElement).checked;
+                saveSettings();
+                this.refreshTerrain();
+            });
+        }
+
+        const slopesToggle = this.element.querySelector('#layers-slopes-toggle') as HTMLInputElement;
+        if (slopesToggle) {
+            slopesToggle.checked = state.SHOW_SLOPES;
+            slopesToggle.addEventListener('change', (e) => {
+                state.SHOW_SLOPES = (e.target as HTMLInputElement).checked;
+                updateSlopeVisibility(state.SHOW_SLOPES);
+                saveSettings();
+            });
+        }
+
+        this.addSubscription(state.subscribe('MAP_SOURCE', () => this.updateActiveLayer()));
+        this.addSubscription(state.subscribe('SHOW_TRAILS', (val: boolean) => {
+            if (trailsToggle) trailsToggle.checked = val;
+        }));
+        this.addSubscription(state.subscribe('SHOW_SLOPES', (val: boolean) => {
+            if (slopesToggle) slopesToggle.checked = val;
+        }));
+
+        this.updateActiveLayer();
+    }
+
+    private updateActiveLayer() {
+        if (!this.element) return;
+        this.element.querySelectorAll('.layer-item').forEach(item => {
+            if ((item as HTMLElement).dataset.source === state.MAP_SOURCE) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+
+    private refreshTerrain() {
+        resetTerrain();
+        updateVisibleTiles();
+    }
+}
