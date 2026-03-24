@@ -1,0 +1,44 @@
+## ReactiveState Implementation
+- Used a recursive Proxy to handle nested objects.
+- Implemented microtask-based debouncing using  to avoid redundant notifications.
+- Used  to avoid proxying Three.js instances and arrays.
+- Implemented parent path notification (e.g., changing  notifies  subscribers).
+## ReactiveState Implementation
+- Used a recursive Proxy to handle nested objects.
+- Implemented microtask-based debouncing using `queueMicrotask` to avoid redundant notifications.
+- Used `isPlainObject` to avoid proxying Three.js instances and arrays.
+- Implemented parent path notification (e.g., changing `weather.temp` notifies `weather` subscribers).
+## Reactive State Implementation
+- Wrapping the global state with  Proxy allows for fine-grained reactivity and subscription to state changes.
+- Debouncing  (300ms) is crucial to prevent excessive disk I/O when multiple UI controls are adjusted rapidly.
+- When testing debounced functions with Vitest,  and  are necessary to ensure the debounced logic executes within the test context.
+## Reactive State Implementation
+- Wrapping the global state with `createReactiveState` Proxy allows for fine-grained reactivity and subscription to state changes.
+- Debouncing `saveSettings` (300ms) is crucial to prevent excessive disk I/O when multiple UI controls are adjusted rapidly.
+- When testing debounced functions with Vitest, `vi.useFakeTimers()` and `vi.advanceTimersByTime()` are necessary to ensure the debounced logic executes within the test context.
+- Created BaseComponent abstract class to handle template hydration, rendering, and subscription cleanup.
+- Moved UI panels (Search, Settings, Weather, SOS, Solar Probe) into <template> tags in index.html to prepare for BaseComponent hydration.
+- Added shell containers (<nav id="nav-bar">, <div id="sheet-overlay">, <div id="sheet-container">) to index.html.
+- Cleaned up index.html to strictly follow the template structure. Removed duplicate #expert-weather-panel and moved #elevation-profile inside template-widgets to maintain a clean DOM.
+- Created SheetManager singleton to handle exclusive bottom sheet visibility and overlay toggling via CSS classes.
+- NavigationBar component created, extending BaseComponent and integrating with SheetManager. Overlay clicks are observed to reset the active tab to 'map'.
+- Created TopStatusBar component extending BaseComponent. It subscribes to state changes (ZOOM, weatherData, IS_OFFLINE) and updates the DOM directly using textContent to avoid innerHTML.
+- Note: `state.subscribe` currently returns `void`, so we cannot pass its return value to `BaseComponent.addSubscription()`. We just call it directly.- Modified `ReactiveState.ts` to return an `unsubscribe` function from `subscribe()`. This is essential for preventing memory leaks in components that subscribe to state.
+- Updated TopStatusBar.ts to wrap state.subscribe calls with this.addSubscription() to ensure proper cleanup on component disposal. NavigationBar.ts did not have any state.subscribe calls.
+- Created SearchSheet.ts extending BaseComponent, migrating search logic from ui.ts. Added strict isNaN validation for coordinates and replaced innerHTML with textContent/createElement.
+- Migrated settings logic to SettingsSheet.ts, extending BaseComponent.
+- Used state.subscribe to bind UI elements directly to the reactive state.
+- Handled GPX upload via a custom event 'gpx-uploaded' to keep handleGPX in ui.ts for now.
+- Restored sheetManager import in ui.ts and exposed it to window to fix unused import error and make it available globally.
+- Updated GPS error handler to show a specific message for Permission Denied (code 1).
+- Adjusted CSS positioning for #gps-main-btn, #compass-canvas, and #coords-panel to avoid overlaps.
+- Moving <template> tags to the very end of the <body> ensures they are parsed correctly before the script runs, avoiding 'Template not found' errors.
+- Fixed 'Template not found' errors by ensuring index.html is strictly UTF-8 and moving all <template> tags to the end of the <body>, just before the <script> tag.
+- Moved shell containers (#top-status-bar, #nav-bar, #sheet-overlay, #sheet-container, #toast-container, #gps-main-btn) to the end of the body, after #canvas-container.
+- Adjusted GPS and Radar positioning in src/style.css to prevent overlap on small screens.
+- Restored Solar Analysis and Weather display logic in ExpertSheets.ts by dynamically creating UI elements instead of relying on missing DOM nodes.
+- Restored missing advanced settings in index.html and bound them correctly in SettingsSheet.ts. Moved GPX upload input to template-track and updated TrackSheet.ts to handle the file upload event.
+- Replaced navigator.geolocation with Capacitor Geolocation for cross-platform consistency.
+- Removed legacy updateWeatherUIIndicator DOM manipulation in favor of TopStatusBar component.
+- Successfully moved weather slider bindings from SettingsSheet to ExpertSheets (WeatherSheet) to match the new HTML template structure.
+- When using BaseComponent, elements inside the template are appended to the DOM before render() is called. Therefore, using document.getElementById() is safe and often more reliable than this.element.querySelector() when dealing with complex DOM structures or elements that might be moved around.

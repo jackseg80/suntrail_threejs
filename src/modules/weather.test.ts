@@ -45,6 +45,14 @@ describe('Weather Module', () => {
                     })
                 });
             }
+            if (url.includes('nominatim.openstreetmap.org')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        display_name: 'Delémont'
+                    })
+                });
+            }
             return Promise.reject(new Error('Unknown URL'));
         });
 

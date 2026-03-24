@@ -2,340 +2,329 @@ import * as THREE from 'three';
 // @ts-ignore
 import gpxParser from 'gpxparser';
 import { Geolocation } from '@capacitor/geolocation';
-import { state, saveSettings, loadSettings } from './state';
-import { updateSunPosition } from './sun';
+import { state, loadSettings } from './state';
 import { initScene, flyTo } from './scene';
-import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain, autoSelectMapSource, updateSlopeVisibility, updateHydrologyVisibility } from './terrain';
-import { deleteTerrainCache, downloadOfflineZone, updateStorageUI } from './tileLoader';
-import { lngLatToTile, worldToLngLat, lngLatToWorld } from './geo';
-import { showToast, fetchGeocoding } from './utils';
-import { applyPreset, detectBestPreset, getGpuInfo, applyCustomSettings, initBatteryManager } from './performance';
-import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';
+import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain } from './terrain';
+import { updateStorageUI } from './tileLoader';
+import { lngLatToTile, lngLatToWorld, worldToLngLat } from './geo';
+import { showToast } from './utils';
+import { applyPreset, detectBestPreset, getGpuInfo, applyCustomSettings } from './performance';
+import { findTerrainIntersection, getAltitudeAt } from './analysis';
 import { updateElevationProfile } from './profile';
-import { startLocationTracking, stopLocationTracking } from './location';
-import { fetchWeather, updateWeatherUIIndicator } from './weather';
+import { startLocationTracking } from './location';
+import { fetchWeather } from './weather';
 
-let lastClickedCoords = { x: 0, z: 0, alt: 0 };
-let hasLastClicked = false;
-let sheetTimer: any = null;
-let uiTimeout: any = null;
+import { NavigationBar } from './ui/components/NavigationBar';
+import { TopStatusBar } from './ui/components/TopStatusBar';
+import { SettingsSheet } from './ui/components/SettingsSheet';
+import { SearchSheet } from './ui/components/SearchSheet';
+import { LayersSheet } from './ui/components/LayersSheet';
+import { WeatherSheet, SolarProbeSheet, SOSSheet } from './ui/components/ExpertSheets';
+import { TrackSheet } from './ui/components/TrackSheet';
+import { WidgetsComponent } from './ui/components/WidgetsComponent';
+import { TimelineComponent } from './ui/components/TimelineComponent';
+import { initAutoHide } from './ui/autoHide';
+import { initMobileUI } from './ui/mobile';
+import { sheetManager } from './ui/core/SheetManager';
 
 export function initUI(): void {
+    console.log("[UI] Starting Init...");
+    
     const savedSettings = loadSettings();
     if (savedSettings) {
         state.hasManualSource = true;
-        if (savedSettings.PERFORMANCE_PRESET === 'custom') applyCustomSettings(savedSettings);
-        else applyPreset(savedSettings.PERFORMANCE_PRESET);
+        if (savedSettings.PERFORMANCE_PRESET === 'custom') {
+            applyCustomSettings(savedSettings);
+        } else {
+            applyPreset(savedSettings.PERFORMANCE_PRESET);
+        }
     } else {
-        applyPreset(detectBestPreset());
+        const bestPreset = detectBestPreset();
+        applyPreset(bestPreset);
     }
 
+    // Diagnostic matériel
     const gpuInfo = getGpuInfo();
-    const dg = document.getElementById('diag-gpu'); if (dg) dg.textContent = `GPU: ${gpuInfo.renderer}`;
-    const dp = document.getElementById('diag-preset'); if (dp) dp.textContent = `PROFIL: ${state.PERFORMANCE_PRESET.toUpperCase()}`;
+    const diagGpu = document.getElementById('diag-gpu');
+    if (diagGpu) diagGpu.textContent = `GPU: ${gpuInfo.renderer}`;
+    const diagCpu = document.getElementById('diag-cpu');
+    if (diagCpu) diagCpu.textContent = `CPU: ${navigator.hardwareConcurrency || '--'} cores`;
+    const diagPreset = document.getElementById('diag-preset');
+    if (diagPreset) diagPreset.textContent = `PROFIL: ${state.PERFORMANCE_PRESET.toUpperCase()}`;
+    const techInfo = document.getElementById('tech-info');
+    if (techInfo) techInfo.style.display = 'block';
 
-    // --- AUTO-HIDE SYSTEM ---
-    const resetUITimer = () => {
-        document.body.classList.remove('ui-hidden');
-        if (uiTimeout) clearTimeout(uiTimeout);
-        uiTimeout = setTimeout(() => {
-            const anySheetVisible = Array.from(document.querySelectorAll('.bottom-sheet')).some(s => (s as HTMLElement).style.display === 'block');
-            const expertVisible = document.getElementById('expert-weather-panel')?.style.display === 'block';
-            if (!anySheetVisible && !expertVisible) {
-                document.body.classList.add('ui-hidden');
-            }
-        }, 5000);
+    // --- GESTION RÉSEAU ---
+    const updateNetworkStatus = () => {
+        state.IS_OFFLINE = !navigator.onLine;
     };
-    ['mousedown', 'mousemove', 'touchstart', 'scroll'].forEach(evt => document.addEventListener(evt, resetUITimer));
-    resetUITimer();
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+    updateNetworkStatus();
 
     window.addEventListener('resize', onWindowResize);
     document.addEventListener('click', handleGlobalClick);
-    document.getElementById('canvas-container')?.addEventListener('click', handleMapClick);
+    
+    const canvasContainer = document.getElementById('canvas-container');
+    if (canvasContainer) canvasContainer.addEventListener('click', handleMapClick);
 
-    // --- TIMELINE & CALENDRIER ---
-    const timeSlider = document.getElementById('time-slider') as HTMLInputElement;
-    const timeDisp = document.getElementById('time-disp');
-    const dateInput = document.getElementById('date-input') as HTMLInputElement;
+    setInterval(updateStorageUI, 2000);
 
-    const refreshSun = () => {
-        const v = parseInt(timeSlider.value);
-        state.simDate.setHours(Math.floor(v / 60), v % 60);
-        if (timeDisp) timeDisp.textContent = `${Math.floor(v / 60)}:${(v % 60).toString().padStart(2, '0')}`;
-        updateSunPosition(v);
-    };
-
-    if (timeSlider) {
-        timeSlider.value = (state.simDate.getHours() * 60 + state.simDate.getMinutes()).toString();
-        timeSlider.addEventListener('input', refreshSun);
-    }
-
-    if (dateInput) {
-        const d = state.simDate;
-        dateInput.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        dateInput.addEventListener('change', () => {
-            const nd = new Date(dateInput.value);
-            if (!isNaN(nd.getTime())) {
-                state.simDate.setFullYear(nd.getFullYear(), nd.getMonth(), nd.getDate());
-                refreshSun();
-            }
-        });
-    }
-
-    document.getElementById('play-btn')?.addEventListener('click', (e) => {
-        state.isSunAnimating = !state.isSunAnimating;
-        (e.target as HTMLElement).textContent = state.isSunAnimating ? '⏸' : '▶';
-    });
-
-    // --- SETUP SCREEN ---
+    // Setup Screen
     const setupK1 = document.getElementById('k1') as HTMLInputElement;
-    const savedKey = localStorage.getItem('maptiler_key');
-    if (savedKey && setupK1) setupK1.value = savedKey;
+    const setupBgo = document.getElementById('bgo');
+    const setupScreen = document.getElementById('setup-screen');
+    const maptilerKeyInput = document.getElementById('maptiler-key-input') as HTMLInputElement;
 
-    document.getElementById('bgo')?.addEventListener('click', () => {
-        const k = setupK1.value.trim();
-        if (k.length < 10) {
+    const savedKey = localStorage.getItem('maptiler_key');
+    if (savedKey) {
+        setupK1.value = savedKey;
+        if (maptilerKeyInput) maptilerKeyInput.value = savedKey;
+    }
+
+    setupBgo?.addEventListener('click', () => {
+        const key = setupK1.value.trim();
+        if (key.length < 10) {
             const serr = document.getElementById('serr');
             if (serr) serr.textContent = "Clé MapTiler invalide.";
             return;
         }
-        state.MK = k; localStorage.setItem('maptiler_key', k);
-        const ss = document.getElementById('setup-screen');
-        if (ss) ss.style.display = 'none';
+        state.MK = key;
+        localStorage.setItem('maptiler_key', key);
+        if (maptilerKeyInput) maptilerKeyInput.value = key;
+        setupScreen!.style.display = 'none';
         startApp();
     });
 
-    // NAVIGATION
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-            const target = (e.currentTarget as HTMLElement).dataset.target;
-            if (target === 'map') { closeAllSheets(); }
-            else if (target) openSheet(target);
-        });
+    // --- INITIALISATION COMPOSANTS ---
+    const navBar = new NavigationBar();
+    navBar.hydrate();
+
+    const topStatusBar = new TopStatusBar();
+    topStatusBar.hydrate();
+
+    const settingsSheet = new SettingsSheet();
+    settingsSheet.hydrate();
+
+    const layersSheet = new LayersSheet();
+    layersSheet.hydrate();
+
+    const searchSheet = new SearchSheet();
+    searchSheet.hydrate();
+
+    const trackSheet = new TrackSheet();
+    trackSheet.hydrate();
+
+    const weatherSheet = new WeatherSheet();
+    weatherSheet.hydrate();
+
+    const solarProbeSheet = new SolarProbeSheet();
+    solarProbeSheet.hydrate();
+
+    const sosSheet = new SOSSheet();
+    sosSheet.hydrate();
+
+    const widgets = new WidgetsComponent();
+    widgets.hydrate();
+
+    new TimelineComponent();
+    initAutoHide();
+    initMobileUI();
+
+    (window as any).sheetManager = sheetManager;
+
+    window.addEventListener('gpx-uploaded', (e: any) => {
+        handleGPX(e.detail);
     });
 
-    // REGLAGES
-    const bindT = (id: string, key: string, cb?: Function) => {
-        const el = document.getElementById(id) as HTMLInputElement;
-        if (el) {
-            el.checked = (state as any)[key];
-            el.onchange = () => { (state as any)[key] = el.checked; if (cb) cb(el.checked); saveSettings(); };
-        }
-    };
-    bindT('trails-toggle', 'SHOW_TRAILS', refreshTerrain);
-    bindT('slopes-toggle', 'SHOW_SLOPES', updateSlopeVisibility);
-    bindT('buildings-toggle', 'SHOW_BUILDINGS', refreshTerrain);
-    bindT('hydro-toggle', 'SHOW_HYDROLOGY', updateHydrologyVisibility);
-    bindT('veg-toggle', 'SHOW_VEGETATION', refreshTerrain);
-    bindT('shadow-toggle', 'SHADOWS', (v: boolean) => { if (state.sunLight) state.sunLight.castShadow = v; });
-    bindT('stats-toggle', 'SHOW_STATS', (v: boolean) => { if (state.stats) state.stats.dom.style.display = v ? 'block' : 'none'; });
-    bindT('debug-toggle', 'SHOW_DEBUG', (v: boolean) => { const zi = document.getElementById('zoom-indicator'); if (zi) zi.style.display = v ? 'block' : 'none'; });
-
-    document.getElementById('layer-menu')?.addEventListener('click', (e) => {
-        const item = (e.target as HTMLElement).closest('.layer-item') as HTMLElement;
-        if (item?.dataset.source) {
-            state.MAP_SOURCE = item.dataset.source;
-            document.querySelectorAll('.layer-item').forEach(i => i.classList.remove('active'));
-            item.classList.add('active');
-            saveSettings(); refreshTerrain();
-        }
+    window.addEventListener('export-recorded-gpx', () => {
+        exportRecordedGPX();
     });
 
-    const bindS = (id: string, key: string, disp: string, cb?: Function) => {
-        const el = document.getElementById(id) as HTMLInputElement;
-        const d = document.getElementById(disp);
-        if (el) {
-            el.addEventListener('input', () => { (state as any)[key] = parseFloat(el.value); if (d) d.textContent = el.value; });
-            el.addEventListener('change', () => { saveSettings(); if (cb) cb(); });
-        }
-    };
-    bindS('res-slider', 'RESOLUTION', 'res-disp', refreshTerrain);
-    bindS('range-slider', 'RANGE', 'range-disp', refreshTerrain);
+    // GPS MAIN BUTTON (SwissMobile Style)
 
-    document.querySelectorAll('.preset-btn').forEach(btn => {
-        btn.addEventListener('click', () => applyPreset((btn as HTMLElement).dataset.preset as any));
-    });
-
-    // FABs
-    document.getElementById('fab-gps')?.addEventListener('click', async () => {
+    const gpsMainBtn = document.getElementById('gps-main-btn');
+    gpsMainBtn?.addEventListener('click', async () => {
         try {
-            const p = await Geolocation.getCurrentPosition();
-            state.TARGET_LAT = p.coords.latitude; state.TARGET_LON = p.coords.longitude;
-            state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, state.ZOOM);
-            refreshTerrain();
-            const wp = lngLatToWorld(state.TARGET_LON, state.TARGET_LAT, state.originTile);
-            flyTo(wp.x, wp.z, getAltitudeAt(wp.x, wp.z) + 500);
-            fetchWeather(state.TARGET_LAT, state.TARGET_LON);
-        } catch(e) { showToast("Erreur GPS"); }
+            // 1. Get current position with timeout
+            const position = await Geolocation.getCurrentPosition({
+                timeout: 5000,
+                enableHighAccuracy: true
+            });
+            
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+
+            
+            // 2. Check if we are already centered on user
+            const isAlreadyCentered = state.isFollowingUser;
+
+            if (!isAlreadyCentered) {
+                // First click: Center and Zoom
+                state.TARGET_LAT = lat;
+                state.TARGET_LON = lon;
+                state.ZOOM = 14;
+                state.originTile = lngLatToTile(lon, lat, 14);
+                
+                refreshTerrain();
+                
+                const worldPos = lngLatToWorld(lon, lat, state.originTile);
+                const altWorld = getAltitudeAt(worldPos.x, worldPos.z);
+                
+                flyTo(worldPos.x, worldPos.z, (altWorld / state.RELIEF_EXAGGERATION) + 500);
+                fetchWeather(lat, lon);
+                
+                state.isFollowingUser = true;
+                gpsMainBtn.classList.add('active');
+                showToast("📍 Position centrée");
+            } else {
+                // Second click while centered: Toggle continuous follow
+                // (In this app, isFollowingUser already handles continuous centering in scene.ts)
+                gpsMainBtn.classList.toggle('following');
+                const isFollowing = gpsMainBtn.classList.contains('following');
+                showToast(isFollowing ? "🚶 Suivi continu activé" : "📍 Suivi continu désactivé");
+                
+                if (isFollowing) {
+                    await startLocationTracking();
+                }
+            }
+        } catch (e: any) { 
+            if (e.code === 1) {
+                showToast("Permission GPS refusée. Vérifiez les réglages de votre navigateur.");
+            } else {
+                showToast("Erreur GPS ou délai dépassé"); 
+            }
+            console.error("Geolocation error:", e.message);
+        }
     });
 
-    document.getElementById('fab-follow')?.addEventListener('click', async () => {
-        state.isFollowingUser = !state.isFollowingUser;
-        document.getElementById('fab-follow')?.classList.toggle('active', state.isFollowingUser);
-        if (state.isFollowingUser) await startLocationTracking(); else stopLocationTracking();
+    // Stop following if user interacts with map
+    state.subscribe('isUserInteracting', (interacting) => {
+        if (interacting && state.isFollowingUser) {
+            const btn = document.getElementById('gps-main-btn');
+            if (btn?.classList.contains('following')) {
+                // If in "hard" follow mode, we might want to keep it or break it.
+                // SwissMobile breaks it if you move.
+                state.isFollowingUser = false;
+                btn.classList.remove('active', 'following');
+                showToast("Suivi interrompu");
+            }
+        }
     });
 
-    // RANDO
-    document.getElementById('rec-btn-new')?.addEventListener('click', async () => {
-        state.isRecording = !state.isRecording;
-        document.getElementById('rec-btn-new')?.classList.toggle('active', state.isRecording);
-        if (state.isRecording) { showToast("🔴 Enregistrement..."); if (!state.isFollowingUser) await startLocationTracking(); }
-        else showToast("⏹️ Arrêté");
-    });
-    document.getElementById('export-gpx-btn-new')?.addEventListener('click', () => { if (state.recordedPoints.length > 1) exportRecordedGPX(); else showToast("Tracé vide"); });
-    document.getElementById('gpx-btn')?.addEventListener('click', () => document.getElementById('gpx-upload')?.click());
-    document.getElementById('gpx-upload')?.addEventListener('change', (e) => {
-        const f = (e.target as HTMLInputElement).files?.[0];
-        if (f) { const r = new FileReader(); r.onload = (ev) => handleGPX(ev.target!.result as string); r.readAsText(f); }
+    document.getElementById('close-coords')?.addEventListener('click', () => {
+        const cp = document.getElementById('coords-panel');
+        if (cp) cp.style.display = 'none';
+        state.hasLastClicked = false;
     });
 
-    // ANALYSE & SOS
-    document.getElementById('probe-btn')?.addEventListener('click', () => {
-        if (hasLastClicked) {
-            runSolarProbe(lastClickedCoords.x, lastClickedCoords.z, lastClickedCoords.alt);
-            document.getElementById('probe-result')!.style.display = 'block';
-        } else showToast("Cliquez sur la carte");
+    document.getElementById('close-profile')?.addEventListener('click', () => {
+        const ep = document.getElementById('elevation-profile');
+        if (ep) ep.style.display = 'none';
     });
-    document.getElementById('close-probe')?.addEventListener('click', () => { document.getElementById('probe-result')!.style.display = 'none'; });
-    document.getElementById('close-coords')?.addEventListener('click', () => { document.getElementById('coords-panel')!.style.display = 'none'; });
-    
-    document.getElementById('open-expert-weather')?.addEventListener('click', () => { 
-        document.getElementById('expert-weather-panel')!.style.display = 'block';
-        closeAllSheets(); 
-    });
-    document.getElementById('close-expert-weather')?.addEventListener('click', () => { 
-        document.getElementById('expert-weather-panel')!.style.display = 'none'; 
-    });
-
-    document.getElementById('sos-fab')?.addEventListener('click', openSOSModal);
-    document.getElementById('sos-close-btn')?.addEventListener('click', () => { document.getElementById('sos-modal')!.style.display = 'none'; });
-    document.getElementById('clear-cache-btn')?.addEventListener('click', deleteTerrainCache);
-
-    initBatteryManager();
-    setInterval(updateTopBar, 1000);
-    initGeocoding();
 }
 
-function openSheet(id: string) {
-    if (sheetTimer) clearTimeout(sheetTimer);
-    const s = document.getElementById(`sheet-${id}`);
-    const b = document.getElementById('ui-backdrop');
-    document.querySelectorAll('.bottom-sheet').forEach(el => { (el as HTMLElement).style.display='none'; (el as HTMLElement).style.bottom='-100%'; });
-    if (s) {
-        s.style.display = 'block'; void s.offsetWidth; s.style.bottom = '0';
-        if (b) { b.style.display = 'block'; void b.offsetWidth; b.classList.add('visible'); }
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        document.querySelector(`.nav-item[data-target="${id}"]`)?.classList.add('active');
-    }
-}
-
-function closeAllSheets() {
-    if (sheetTimer) clearTimeout(sheetTimer);
-    document.querySelectorAll('.bottom-sheet').forEach(s => (s as HTMLElement).style.bottom = '-100%');
-    const b = document.getElementById('ui-backdrop'); if (b) b.classList.remove('visible');
-    sheetTimer = setTimeout(() => {
-        document.querySelectorAll('.bottom-sheet').forEach(s => (s as HTMLElement).style.display = 'none');
-        if (b) b.style.display = 'none';
-    }, 400);
-    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-    document.querySelector('.nav-item[data-target="map"]')?.classList.add('active');
-}
-
-function handleGlobalClick(e: MouseEvent) {
-    if ((e.target as HTMLElement).id === 'ui-backdrop') closeAllSheets();
-    if ((e.target as HTMLElement).closest('#weather-clickable')) openSheet('activity');
+function handleGlobalClick(_e: MouseEvent) {
+    // Global click handling if needed
 }
 
 function handleMapClick(e: MouseEvent) {
-    if (!state.camera) return;
-    closeAllSheets();
+    if (!state.renderer || !state.camera || !state.scene) return;
+
     const mouse = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
     const raycaster = new THREE.Raycaster();
+    raycaster.params.Sprite = { threshold: 35 };
     raycaster.setFromCamera(mouse, state.camera);
-    const hit = findTerrainIntersection(raycaster.ray);
-    if (hit && state.originTile) {
-        const gps = worldToLngLat(hit.x, hit.z, state.originTile);
-        const alt = getAltitudeAt(hit.x, hit.z);
-        document.getElementById('coords-panel')!.style.display = 'block';
-        const cll = document.getElementById('click-latlon'); if (cll) cll.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
-        const cal = document.getElementById('click-alt'); if (cal) cal.textContent = `${Math.round(alt / state.RELIEF_EXAGGERATION)} m`;
-        lastClickedCoords = { x: hit.x, z: hit.z, alt: hit.y }; hasLastClicked = true;
-    }
-}
 
-function updateTopBar() {
-    const altEl = document.getElementById('top-altitude');
-    const tempEl = document.getElementById('top-w-temp');
-    const iconEl = document.getElementById('top-w-icon');
-    const lodEl = document.getElementById('top-lod');
-    if (altEl && state.controls) altEl.textContent = `${Math.round(getAltitudeAt(state.controls.target.x, state.controls.target.z) / state.RELIEF_EXAGGERATION)} m`;
-    if (state.weatherData) {
-        if (tempEl) tempEl.textContent = `${Math.round(state.weatherData.temp)}°`;
-        if (iconEl) {
-            let icon = '☀️';
-            if (state.currentWeather === 'rain') icon = '🌧️';
-            else if (state.currentWeather === 'snow') icon = '❄️';
-            else if (state.weatherData.cloudCover > 20) icon = '⛅';
-            iconEl.textContent = icon;
+    const intersects = raycaster.intersectObjects(state.scene.children, true);
+    const spriteHit = intersects.find(hit => hit.object.type === 'Sprite');
+    
+    if (spriteHit) {
+        const poiData = spriteHit.object.userData;
+        if (poiData && poiData.name) {
+            state.hasLastClicked = true;
+            state.lastClickedCoords = { 
+                x: spriteHit.object.position.x + (spriteHit.object.parent?.position.x || 0), 
+                z: spriteHit.object.position.z + (spriteHit.object.parent?.position.z || 0), 
+                alt: getAltitudeAt(spriteHit.object.position.x, spriteHit.object.position.z) 
+            };
+            return;
         }
     }
-    if (lodEl) lodEl.textContent = `LOD ${state.ZOOM}`;
-}
 
-function initGeocoding() {
-    const input = document.getElementById('geo-input') as HTMLInputElement;
-    const res = document.getElementById('geo-results');
-    let t: any;
-    input?.addEventListener('input', () => {
-        clearTimeout(t);
-        const q = input.value.trim();
-        if (q.length < 2) { if (res) res.style.display = 'none'; return; }
-        t = setTimeout(async () => {
-            const data = await fetchGeocoding({ query: q });
-            if (!res) return; res.innerHTML = '';
-            const items = Array.isArray(data) ? data : (data?.features || []);
-            items.forEach((f: any) => {
-                let lat, lon, label;
-                if (f.geometry) { lon = f.geometry.coordinates[0]; lat = f.geometry.coordinates[1]; label = f.place_name_fr || f.place_name; }
-                else { lat = parseFloat(f.lat); lon = parseFloat(f.lon); label = f.display_name; }
-                if (!isNaN(lat)) {
-                    const el = createGeoItem(lat, lon, label);
-                    el.onclick = () => {
-                        state.TARGET_LAT = lat; state.TARGET_LON = lon;
-                        state.originTile = lngLatToTile(lon, lat, 13);
-                        refreshTerrain(); closeAllSheets();
-                        const wp = lngLatToWorld(lon, lat, state.originTile);
-                        flyTo(wp.x, wp.z, 10000);
-                        fetchWeather(lat, lon);
-                    };
-                    res.appendChild(el);
-                }
-            });
-            if (res.children.length > 0) res.style.display = 'block';
-        }, 500);
-    });
-}
-
-function createGeoItem(lat: number, lon: number, label: string): HTMLElement {
-    const d = document.createElement('div');
-    d.style.cssText = 'padding:15px; border-bottom:1px solid rgba(255,255,255,0.1); color:white; cursor:pointer; font-size:14px;';
-    d.innerHTML = `📍 ${label}`;
-    return d;
+    const hit = findTerrainIntersection(raycaster.ray);
+    if (hit && state.originTile) {
+        state.hasLastClicked = true;
+        state.lastClickedCoords = { x: hit.x, z: hit.z, alt: getAltitudeAt(hit.x, hit.z) };
+        
+        const cp = document.getElementById('coords-panel');
+        if (cp) {
+            cp.style.display = 'block';
+            const gps = worldToLngLat(hit.x, hit.z, state.originTile);
+            const clickLatLon = document.getElementById('click-latlon');
+            if (clickLatLon) clickLatLon.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
+            const clickAlt = document.getElementById('click-alt');
+            if (clickAlt) clickAlt.textContent = `${Math.round(state.lastClickedCoords.alt)} m`;
+        }
+    } else {
+        state.hasLastClicked = false;
+    }
 }
 
 function startApp() {
-    initScene(); loadTerrain(); fetchWeather(state.TARGET_LAT, state.TARGET_LON);
-    const bn = document.getElementById('bottom-nav-bar'); if (bn) bn.style.display = 'flex';
-    const fc = document.getElementById('fab-container'); if (fc) fc.style.display = 'flex';
-    const ts = document.getElementById('bottom-timeline-stack'); if (ts) ts.style.display = 'block';
+    initScene();
+    loadTerrain();
+    fetchWeather(state.TARGET_LAT, state.TARGET_LON);
+    
+    const navBar = document.getElementById('nav-bar');
+    const topBar = document.getElementById('top-status-bar');
+    const widgets = document.getElementById('widgets-container');
+    const gpsBtn = document.getElementById('gps-main-btn');
+    
+    if (navBar) navBar.style.display = 'flex';
+    if (topBar) topBar.style.display = 'flex';
+    if (widgets) widgets.style.display = 'block';
+    if (gpsBtn) gpsBtn.style.display = 'flex';
+    
+    const bottomBar = document.getElementById('bottom-bar');
+    if (bottomBar) bottomBar.style.display = 'block';
 }
 
 function onWindowResize() {
-    if (state.camera && state.renderer) {
-        state.camera.aspect = window.innerWidth / window.innerHeight;
-        state.camera.updateProjectionMatrix();
-        state.renderer.setSize(window.innerWidth, window.innerHeight);
-    }
+    if (!state.camera || !state.renderer) return;
+    state.camera.aspect = window.innerWidth / window.innerHeight;
+    state.camera.updateProjectionMatrix();
+    state.renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function exportRecordedGPX() {
+    let gpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="SunTrail 3D" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>SunTrail Recorded Track - ${new Date().toLocaleDateString()}</name>
+    <trkseg>`;
+
+    state.recordedPoints.forEach(p => {
+        gpx += `
+      <trkpt lat="${p.lat}" lon="${p.lon}">
+        <ele>${p.alt.toFixed(1)}</ele>
+        <time>${new Date(p.timestamp).toISOString()}</time>
+      </trkpt>`;
+    });
+
+    gpx += `
+    </trkseg>
+  </trk>
+</gpx>`;
+
+    const blob = new Blob([gpx], { type: 'application/gpx+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `suntrail-track-${Date.now()}.gpx`;
+    link.click();
+    URL.revokeObjectURL(url);
+    showToast("GPX téléchargé");
 }
 
 async function handleGPX(xml: string) {
@@ -344,26 +333,8 @@ async function handleGPX(xml: string) {
     state.rawGpxData = gpx;
     const startPt = gpx.tracks[0].points[0];
     state.TARGET_LAT = startPt.lat; state.TARGET_LON = startPt.lon;
-    state.originTile = lngLatToTile(startPt.lon, startPt.lat, 13);
+    state.ZOOM = 13; state.originTile = lngLatToTile(startPt.lon, startPt.lat, 13);
     updateGPXMesh(); updateElevationProfile(); await updateVisibleTiles();
-    const tc = document.getElementById('trail-controls'); if (tc) tc.style.display = 'block';
-}
-
-function exportRecordedGPX() {
-    let g = `<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="SunTrail"><trk><trkseg>`;
-    state.recordedPoints.forEach(p => { g += `<trkpt lat="${p.lat}" lon="${p.lon}"><ele>${p.alt.toFixed(1)}</ele><time>${new Date(p.timestamp).toISOString()}</time></trkpt>`; });
-    g += `</trkseg></trk></gpx>`;
-    const blob = new Blob([g], { type: 'application/gpx+xml' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a'); link.href = url; link.download = `track-${Date.now()}.gpx`; link.click();
-}
-
-async function openSOSModal() {
-    const m = document.getElementById('sos-modal'); if (m) m.style.display = 'block';
-    const tc = document.getElementById('sos-text-container'); if (tc) tc.textContent = "⌛ Localisation...";
-    const gps = worldToLngLat(state.controls?.target.x || 0, state.controls?.target.z || 0, state.originTile);
-    const alt = getAltitudeAt(state.controls?.target.x || 0, state.controls?.target.z || 0) / state.RELIEF_EXAGGERATION;
-    if (tc) tc.textContent = `🆘 SOS SUNTRAIL: ${gps.lat.toFixed(5)},${gps.lon.toFixed(5)} | ALT:${Math.round(alt)}m`;
 }
 
 function refreshTerrain() { resetTerrain(); updateVisibleTiles(); }

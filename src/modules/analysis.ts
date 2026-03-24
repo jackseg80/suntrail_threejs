@@ -3,7 +3,6 @@ import SunCalc from 'suncalc';
 import { state } from './state';
 import { activeTiles } from './terrain';
 import { worldToLngLat } from './geo';
-import { showToast } from './utils';
 
 let lastUsedTile: any = null;
 
@@ -64,22 +63,25 @@ export function getAltitudeAt(worldX: number, worldZ: number, hintTile: any = nu
     return (h00 * (1 - dx) * (1 - dz) + h10 * dx * (1 - dz) + h01 * (1 - dx) * dz + h11 * dx * dz);
 }
 
+export interface SolarAnalysisResult {
+    totalSunlightMinutes: number;
+    firstSunTime: Date | null;
+    timeline: { isNight: boolean; inShadow: boolean }[];
+    gps: { lat: number; lon: number };
+}
+
 /**
  * Analyse solaire avancée (v5.4.2)
- * Correction des IDs d'interface pour correspondre à index.html
+ * Retourne les données pour affichage dans l'UI
  */
-export function runSolarProbe(worldX: number, worldZ: number, altitude: number) {
-    if (!state.simDate) return;
+export function runSolarProbe(worldX: number, worldZ: number, altitude: number): SolarAnalysisResult | null {
+    if (!state.simDate) return null;
     const gps = worldToLngLat(worldX, worldZ, state.originTile);
     const steps = 48; 
-    const timeline = document.getElementById('probe-timeline');
-    if (timeline) timeline.innerHTML = '';
-
-    const statusEl = document.getElementById('probe-status');
-    if (statusEl) statusEl.textContent = "⌛ Analyse en cours...";
 
     let totalSunlightMinutes = 0;
-    let firstSunTime = null;
+    let firstSunTime: Date | null = null;
+    const timeline: { isNight: boolean; inShadow: boolean }[] = [];
 
     // Simulation sur 24h
     for (let i = 0; i < steps; i++) {
@@ -96,45 +98,18 @@ export function runSolarProbe(worldX: number, worldZ: number, altitude: number) 
             if (firstSunTime === null) firstSunTime = date;
         }
 
-        const bar = document.createElement('div');
-        bar.style.flex = "1";
-        bar.style.height = "100%";
-        
-        // Couleur selon l'état : Or (Soleil), Gris (Ombre), Noir (Nuit)
-        if (sunPos.altitude <= 0) {
-            bar.style.background = "#000";
-        } else if (inShadow) {
-            bar.style.background = "#444";
-        } else {
-            bar.style.background = "#ffd700";
-        }
-        
-        if (timeline) timeline.appendChild(bar);
+        timeline.push({
+            isNight: sunPos.altitude <= 0,
+            inShadow: inShadow
+        });
     }
 
-    const resPanel = document.getElementById('probe-result');
-    if (resPanel) {
-        resPanel.style.display = 'block';
-        if (statusEl) statusEl.textContent = "Analyse terminée";
-
-        const totalStr = `${Math.floor(totalSunlightMinutes / 60)}h ${totalSunlightMinutes % 60}m`;
-        const sunriseStr = firstSunTime ? firstSunTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—:—";
-        
-        // Mise à jour des éléments index.html
-        const totalEl = document.getElementById('probe-total');
-        const sunriseEl = document.getElementById('probe-sunrise');
-        if (totalEl) totalEl.textContent = totalStr;
-        if (sunriseEl) sunriseEl.textContent = sunriseStr;
-
-        const copyBtn = document.getElementById('copy-report-btn');
-        if (copyBtn) {
-            copyBtn.onclick = () => {
-                const report = `SunTrail Solar Report\nLocation: ${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}\nSunlight: ${totalStr}\nSunrise: ${sunriseStr}`;
-                navigator.clipboard.writeText(report);
-                showToast("📋 Rapport copié");
-            };
-        }
-    }
+    return {
+        totalSunlightMinutes,
+        firstSunTime,
+        timeline,
+        gps
+    };
 }
 
 export function isAtShadow(worldX: number, worldZ: number, altitude: number, sunPos: THREE.Vector3): boolean {

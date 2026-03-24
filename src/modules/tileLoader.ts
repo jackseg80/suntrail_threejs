@@ -152,23 +152,37 @@ export function getColorUrl(tx: number, ty: number, zoom: number): string {
     const center = getTileCenter(tx, ty, zoom);
     const inCH = isPositionInSwitzerland(center.lat, center.lon);
     const inFR = isPositionInFrance(center.lat, center.lon);
+    const hasKey = state.MK && state.MK.length > 10 && !state.isMapTilerDisabled;
     
+    // --- UNIFICATION GLOBALE (v5.7.4) ---
+    // Si le zoom est faible (LOD <= 10), on force une source globale unique pour éviter l'effet "patchwork".
+    // On ignore les sources locales Swisstopo/IGN à ces échelles.
+    if (zoom <= 10) {
+        if (hasKey) return `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
+        return `https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`;
+    }
+
     // 1. SATELLITE (Hybride Swisstopo/IGN/MapTiler)
     if (state.MAP_SOURCE === 'satellite') {
         if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${zoom}/${tx}/${ty}.jpeg`;
         if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX=${zoom}&TILEROW=${ty}&TILECOL=${tx}`;
-        return `https://api.maptiler.com/maps/satellite/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
+        if (hasKey) return `https://api.maptiler.com/maps/satellite/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
+        return `https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`; // Fallback OSM Standard sans clé
     }
     
     // 2. TOPO CH (Priorité Swisstopo/IGN, fallback Topo MapTiler)
     if (state.MAP_SOURCE === 'swisstopo') {
         if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${zoom}/${tx}/${ty}.jpeg`;
         if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${zoom}&TILEROW=${ty}&TILECOL=${tx}`;
-        return `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
+        if (hasKey) return `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
+        return `https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`; // Fallback OSM Standard sans clé
     }
     
-    // 3. OPENTOPOMAP (MapTiler Topo v2 - Stable)
-    return `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
+    // 3. OPENTOPOMAP (MapTiler Topo v2 si clé présente, sinon OSM Standard)
+    if (hasKey) {
+        return `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
+    }
+    return `https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`;
 }
 
 /**

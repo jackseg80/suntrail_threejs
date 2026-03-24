@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { state, PRESETS } from './state';
 
 describe('state.ts', () => {
@@ -60,10 +60,15 @@ import { saveSettings, loadSettings } from './state';
 
 describe('state persistance (v5.7)', () => {
     beforeEach(() => {
+        vi.useFakeTimers();
         localStorage.clear();
         state.MAP_SOURCE = 'swisstopo';
         state.PERFORMANCE_PRESET = 'balanced';
         state.SHOW_TRAILS = false;
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
     });
 
     it('should save and load basic settings', () => {
@@ -71,6 +76,7 @@ describe('state persistance (v5.7)', () => {
         state.SHOW_TRAILS = true;
         
         saveSettings();
+        vi.advanceTimersByTime(300);
         
         state.MAP_SOURCE = 'opentopomap'; // change to something else
         state.SHOW_TRAILS = false;
@@ -98,6 +104,7 @@ describe('state persistance (v5.7)', () => {
         state.RANGE = 10;
         
         saveSettings();
+        vi.advanceTimersByTime(300);
         
         state.RESOLUTION = 64; // Reset to default
         state.RANGE = 4;
@@ -115,6 +122,7 @@ describe('state persistance (v5.7)', () => {
         state.RESOLUTION = 999; // even if set manually, balanced shouldn't use it on load
         
         saveSettings();
+        vi.advanceTimersByTime(300);
         
         state.RESOLUTION = 64; // Reset
         
