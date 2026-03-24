@@ -1,4 +1,4 @@
-# SunTrail - Base de Connaissance (v5.8.0)
+# SunTrail - Base de Connaissance (v5.8.1)
 
 Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTrail. Il consigne les décisions architecturales critiques et les solutions aux problèmes complexes.
 

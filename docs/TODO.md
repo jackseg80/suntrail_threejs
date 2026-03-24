@@ -1,4 +1,4 @@
-# SunTrail 3D - Roadmap Révisée (v5.7.4)
+# SunTrail 3D - Roadmap Révisée (v5.8.1)
 
 ## 🚀 Priorité 1 : Optimisations & Netteté (v5.6) - ✅ TERMINÉ
 *Impact : Fluidité mobile absolue et rendu topographique pro.*
