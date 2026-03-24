@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { VectorTile } from '@mapbox/vector-tile';
+import Pbf from 'pbf';
 import { state } from './state';
 import { getAltitudeAt } from './analysis';
 import { fetchOverpassData } from './utils';
@@ -8,10 +10,9 @@ import type { Tile } from './terrain';
 const buildingMemoryCache = new Map<string, any[]>();
 const buildingFetchPromises = new Map<string, Promise<any[] | null>>();
 const zoneFailureCooldown = new Map<string, number>();
-const CACHE_NAME = 'suntrail-buildings-v4';
+const CACHE_NAME = 'suntrail-buildings-v5';
 
 export async function loadBuildingsForTile(tile: Tile) {
-    // Utilisation du seuil dynamique du preset
     if (!state.SHOW_BUILDINGS || tile.zoom < state.BUILDING_ZOOM_THRESHOLD || (tile.status as string) === 'disposed') return;
     if (tile.buildingMesh) return;
 
@@ -19,6 +20,21 @@ export async function loadBuildingsForTile(tile: Tile) {
         setTimeout(() => loadBuildingsForTile(tile), 1000);
         return;
     }
+
+    // 1. TENTATIVE VIA MAPTILER VECTOR TILES (Plus rapide, optimisé tuile)
+    if (!state.isMapTilerDisabled && state.MK) {
+        try {
+            const maptilerBuildings = await fetchBuildingsMapTiler(tile);
+            if (maptilerBuildings && maptilerBuildings.length > 0) {
+                renderBuildingsMapTiler(tile, maptilerBuildings);
+                return;
+            }
+        } catch (e) {
+            console.warn("[MapTiler] Erreur bâtiments, bascule sur OSM");
+        }
+    }
+
+    // 2. REPLI SUR OSM OVERPASS (Logic existante)
     const zoneZ = 12;
     const ratio = Math.pow(2, tile.zoom - zoneZ);
     const zx = Math.floor(tile.tx / ratio);
@@ -40,7 +56,7 @@ export async function loadBuildingsForTile(tile: Tile) {
         if (buildings) {
             buildingMemoryCache.set(zoneKey, buildings);
         } else {
-            zoneFailureCooldown.set(zoneKey, Date.now() + 10000); 
+            zoneFailureCooldown.set(zoneKey, Date.now() + 60000); 
         }
         buildingFetchPromises.delete(zoneKey);
     }
@@ -60,6 +76,111 @@ export async function loadBuildingsForTile(tile: Tile) {
     }
 }
 
+async function fetchBuildingsMapTiler(tile: Tile): Promise<any[] | null> {
+    const url = `https://api.maptiler.com/tiles/v3/${tile.zoom}/${tile.tx}/${tile.ty}.pbf?key=${state.MK}`;
+    
+    try {
+        const response = await fetch(url);
+        if (response.status === 403 || response.status === 429) {
+            state.isMapTilerDisabled = true;
+            return null;
+        }
+        if (!response.ok) return null;
+
+        const buffer = await response.arrayBuffer();
+        const vt = new VectorTile(new Pbf(buffer));
+        const layer = vt.layers.building;
+        if (!layer) return null;
+
+        const features = [];
+        for (let i = 0; i < layer.length; i++) {
+            const f = layer.feature(i);
+            // MapTiler fournit des coordonnées normalisées (0-4095) dans la tuile
+            features.push({
+                geometry: f.loadGeometry(),
+                properties: f.properties,
+                type: f.type
+            });
+        }
+        return features;
+    } catch (e) {
+        return null;
+    }
+}
+
+function renderBuildingsMapTiler(tile: Tile, features: any[]) {
+    if ((tile.status as string) === 'disposed' || !tile.mesh) return;
+
+    const geometries: THREE.BufferGeometry[] = [];
+    const material = new THREE.MeshStandardMaterial({ 
+        color: 0x999999, 
+        roughness: 0.7,
+        polygonOffset: true,
+        polygonOffsetFactor: 1,
+        polygonOffsetUnits: 1
+    });
+
+    const limit = state.BUILDING_LIMIT || 150; // MapTiler est plus léger, on peut en mettre plus
+    const extent = 4096; // MapTiler default extent
+
+    features.slice(0, limit).forEach(f => {
+        // MapTiler geometry est un tableau de chemins (anneaux)
+        if (f.geometry && f.geometry.length > 0) {
+            const points: THREE.Vector2[] = [];
+            f.geometry[0].forEach((p: any) => {
+                // Conversion coordonnées locales tuile (-tileSize/2 à +tileSize/2)
+                const lx = (p.x / extent - 0.5) * tile.tileSizeMeters;
+                const lz = (p.y / extent - 0.5) * tile.tileSizeMeters;
+                points.push(new THREE.Vector2(lx, -lz));
+            });
+
+            try {
+                const shape = new THREE.Shape(points);
+                // Utilisation des propriétés MapTiler
+                const height = (f.properties.render_height || 12) * state.RELIEF_EXAGGERATION;
+                const minHeight = (f.properties.render_min_height || 0) * state.RELIEF_EXAGGERATION;
+                
+                const bGeo = new THREE.ExtrudeGeometry(shape, { 
+                    depth: height - minHeight, 
+                    bevelEnabled: false 
+                });
+
+                // Altitude de base au centre approximatif
+                const firstP = f.geometry[0][0];
+                const flx = (firstP.x / extent - 0.5) * tile.tileSizeMeters;
+                const flz = (firstP.y / extent - 0.5) * tile.tileSizeMeters;
+                const baseAlt = getAltitudeAt(tile.worldX + flx, tile.worldZ + flz, tile);
+
+                bGeo.rotateX(-Math.PI / 2);
+                bGeo.translate(0, baseAlt + minHeight, 0);
+                geometries.push(bGeo);
+            } catch (e) {}
+        }
+    });
+
+    finalizeMergedMesh(tile, geometries, material);
+}
+
+function finalizeMergedMesh(tile: Tile, geometries: THREE.BufferGeometry[], material: THREE.Material) {
+    if (geometries.length > 0) {
+        try {
+            const merged = BufferGeometryUtils.mergeGeometries(geometries);
+            const mesh = new THREE.Mesh(merged, material);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.matrixAutoUpdate = false;
+            mesh.updateMatrix();
+            
+            if (tile.buildingMesh) tile.mesh!.remove(tile.buildingMesh);
+            tile.buildingMesh = mesh;
+            tile.mesh!.add(mesh);
+        } catch (e) {
+        } finally {
+            geometries.forEach(g => g.dispose());
+        }
+    }
+}
+
 async function fetchBuildingsWithCache(z: number, x: number, y: number, key: string): Promise<any[] | null> {
     try {
         const cache = await caches.open(CACHE_NAME);
@@ -73,7 +194,7 @@ async function fetchBuildingsWithCache(z: number, x: number, y: number, key: str
     const latNorth = Math.atan(Math.sinh(Math.PI * (1 - 2 * y / n))) * 180 / Math.PI;
     const latSouth = Math.atan(Math.sinh(Math.PI * (1 - 2 * (y + 1) / n))) * 180 / Math.PI;
 
-    const query = `[out:json][timeout:25];(way["building"](${latSouth.toFixed(4)},${w.toFixed(4)},${latNorth.toFixed(4)},${e.toFixed(4)});way["tourism"="alpine_hut"](${latSouth.toFixed(4)},${w.toFixed(4)},${latNorth.toFixed(4)},${e.toFixed(4)}););out body geom;`;
+    const query = `[out:json][timeout:25];(way["building"](${latSouth.toFixed(4)},${w.toFixed(4)},${latNorth.toFixed(4)},${e.toFixed(4)});way["tourism"~"alpine_hut|hotel"](${latSouth.toFixed(4)},${w.toFixed(4)},${latNorth.toFixed(4)},${e.toFixed(4)}););out body geom;`;
     
     const data = await fetchOverpassData(query);
     if (data && data.elements) {
@@ -87,7 +208,7 @@ async function fetchBuildingsWithCache(z: number, x: number, y: number, key: str
 }
 
 function renderBuildingsMerged(tile: Tile, elements: any[]) {
-    if (tile.status === 'disposed' || !tile.mesh) return;
+    if ((tile.status as string) === 'disposed' || !tile.mesh) return;
 
     const geometries: THREE.BufferGeometry[] = [];
     const material = new THREE.MeshStandardMaterial({ 
@@ -98,7 +219,6 @@ function renderBuildingsMerged(tile: Tile, elements: any[]) {
         polygonOffsetUnits: 1
     });
     
-    // Utilisation de la limite dynamique du preset
     const limit = state.BUILDING_LIMIT || 60;
 
     elements.slice(0, limit).forEach(el => {
@@ -112,7 +232,6 @@ function renderBuildingsMerged(tile: Tile, elements: any[]) {
 
             try {
                 const shape = new THREE.Shape(points);
-                // --- HAUTEUR BOOSTÉE POUR LES OMBRES (v5.5.1) ---
                 const height = (el.tags?.['building:levels'] ? el.tags['building:levels'] * 4.5 : 12) * state.RELIEF_EXAGGERATION;
                 const bGeo = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false });
 
@@ -126,24 +245,6 @@ function renderBuildingsMerged(tile: Tile, elements: any[]) {
         }
     });
 
-    if (geometries.length > 0) {
-        try {
-            const merged = BufferGeometryUtils.mergeGeometries(geometries);
-            const mesh = new THREE.Mesh(merged, material);
-            
-            // --- ACTIVATION DES OMBRES RTX ---
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-            
-            mesh.matrixAutoUpdate = false;
-            mesh.updateMatrix();
-            
-            if (tile.buildingMesh) tile.mesh.remove(tile.buildingMesh);
-            tile.buildingMesh = mesh;
-            tile.mesh.add(mesh);
-        } catch (e) {
-        } finally {
-            geometries.forEach(g => g.dispose());
-        }
-    }
+    finalizeMergedMesh(tile, geometries, material);
 }
+

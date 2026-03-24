@@ -4,6 +4,13 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.8.5] - 2026-03-24
+### 🛠️ 3D Buildings & Infrastructure
+- **MapTiler Buildings Integration**: Switched to MapTiler Vector Tiles (v3) for building data. This provides significantly faster loading and better stability compared to Overpass.
+- **Intelligent Fallback**: Implemented an automatic fallback to OSM Overpass API if MapTiler keys are invalid or quotas are exceeded.
+- **Height-Aware Placement**: Improved building base altitude detection using relief sampling, ensuring structures are correctly grounded.
+- **RTX Shadows**: Maintained geometry merging while enabling high-performance shadow casting for all building meshes.
+
 ## [5.8.4] - 2026-03-24
 ### 🛠️ Hydrology & Water Rendering
 - **3D Hydrology Restoration**: Full restoration of dynamic 3D lakes and rivers meshes extracted from OSM Overpass API.
