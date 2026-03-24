@@ -1,4 +1,4 @@
-# SunTrail - Base de Connaissance (v5.7.4)
+# SunTrail - Base de Connaissance (v5.8.0)
 
 Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTrail. Il consigne les décisions architecturales critiques et les solutions aux problèmes complexes.
 
@@ -6,9 +6,16 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 
 ### État Global & Persistance (`state.ts`)
 - **Pivot Central** : Toute la configuration (LOD, sources, presets) réside dans l'objet `state`.
+- **Réactivité (v5.8.0)** : L'objet `state` est désormais enveloppé dans un **Proxy JS récursif** (`ReactiveState.ts`). Les composants s'abonnent aux changements via `state.subscribe('path', callback)`.
 - **Persistance** : Sauvegarde automatique dans `localStorage`. 
-- **Versioning (v5.7.4)** : Le système inclut désormais un contrôle de version (`CURRENT_SETTINGS_VERSION`). Si une version obsolète est détectée lors du chargement, les réglages sont réinitialisés pour éviter les corruptions.
+- **Versioning (v5.8.0)** : Le système inclut désormais un contrôle de version (`CURRENT_SETTINGS_VERSION`). Si une version obsolète est détectée lors du chargement, les réglages sont réinitialisés pour éviter les corruptions.
 - **Event Bus (`eventBus.ts`)** : Utilisé pour briser les dépendances circulaires entre `terrain.ts` et `scene.ts`. Permet de déclencher des événements transversaux (ex: `terrainReady`, `flyTo`).
+
+### Interface & Composants (v5.8.0)
+- **Architecture Découplée** : La logique UI est extraite de `ui.ts` vers des classes spécialisées (`src/modules/ui/components/`).
+- **BaseComponent** : Classe abstraite gérant le cycle de vie (hydratation via `<template>`, rendu, nettoyage des abonnements).
+- **SheetManager** : Singleton gérant l'exclusivité des tiroirs coulissants (Bottom Sheets). Un seul tiroir peut être ouvert à la fois.
+- **Glassmorphism** : Style visuel unifié basé sur des variables CSS (`--glass-*`) avec flou de profondeur (20px) et saturation optimisée.
 
 ### Moteur de Tuiles & Performance (`terrain.ts` / `tileLoader.ts`)
 - **WebWorkers Pool** : 8 workers asynchrones (`tileWorker.ts`) pour le fetch et le calcul des Normal Maps (relief).

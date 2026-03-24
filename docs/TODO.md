@@ -26,13 +26,15 @@
     - Marquage de points d'intérêt personnalisés.
     - **Deep Linking** : Partage d'URL synchronisée pour une vue 3D exacte.
 
-## ✨ Priorité 3 : Modern UX & Excellence Visuelle (v5.8)
+## ✨ Priorité 3 : Modern UX & Excellence Visuelle (v5.8) - ✅ TERMINÉ
 *Impact : Interface professionnelle, ergonomie mobile "One-Hand" et relief ultra-net.*
 
-- [ ] **Refonte UI "Minimalist Alpin"** :
+- [x] **Refonte UI "Minimalist Alpin"** :
     - Remplacement des boutons flottants par un **système de Navigation Bar basse**.
     - Utilisation de **Bottom Sheets** (tiroirs coulissants) pour les réglages et calques.
     - Uniformisation du design (Glassmorphism, Blur, Espacements).
+- [x] **Réactivité via Proxy (v5.8.0)** : État global réactif avec synchronisation automatique UI/State.
+- [x] **Timeline Island** : Barre de temps flottante et réactive pour la simulation solaire.
 - [ ] **Normal Map Pro (Phase 5)** : Résoudre le bundling PBF/MVT pour une netteté vectorielle infinie du relief.
 - [ ] **Cloud Shadows & Météo Pro** : Projection d'ombres de nuages dynamiques.
 

@@ -143,10 +143,10 @@ export async function fetchGeocoding(params: { lat?: number, lon?: number, query
     let osmUrl = "";
 
     if (params.lat && params.lon) {
-        maptilerUrl = `https://api.maptiler.com/geocoding/v1/reverse/${params.lon},${params.lat}.json?key=${key}`;
+        maptilerUrl = `https://api.maptiler.com/geocoding/${params.lon},${params.lat}.json?key=${key}`;
         osmUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${params.lat}&lon=${params.lon}`;
     } else if (params.query) {
-        maptilerUrl = `https://api.maptiler.com/geocoding/v1/search/${encodeURIComponent(params.query)}.json?key=${key}`;
+        maptilerUrl = `https://api.maptiler.com/geocoding/${encodeURIComponent(params.query)}.json?key=${key}`;
         osmUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(params.query)}&limit=10`;
     }
 
