@@ -77,11 +77,19 @@ export async function loadBuildingsForTile(tile: Tile) {
 }
 
 async function fetchBuildingsMapTiler(tile: Tile): Promise<any[] | null> {
-    const url = `https://api.maptiler.com/tiles/v3/${tile.zoom}/${tile.tx}/${tile.ty}.pbf?key=${state.MK}`;
+    // Les Vector Tiles 'buildings' de MapTiler sont natifs jusqu'au Z14
+    const requestZoom = Math.min(tile.zoom, 14);
+    const ratio = Math.pow(2, tile.zoom - requestZoom);
+    const rtx = Math.floor(tile.tx / ratio);
+    const rty = Math.floor(tile.ty / ratio);
+
+    const url = `https://api.maptiler.com/tiles/buildings/${requestZoom}/${rtx}/${rty}.pbf?key=${state.MK}`;
     
     try {
         const response = await fetch(url);
-        if (response.status === 403 || response.status === 429) {
+        // Si 400 ou 403, on désactive MapTiler pour cette session
+        if (response.status === 400 || response.status === 401 || response.status === 403 || response.status === 429) {
+            console.warn(`[MapTiler] API Error ${response.status}. Fallback to OSM.`);
             state.isMapTilerDisabled = true;
             return null;
         }
@@ -89,13 +97,14 @@ async function fetchBuildingsMapTiler(tile: Tile): Promise<any[] | null> {
 
         const buffer = await response.arrayBuffer();
         const vt = new VectorTile(new Pbf(buffer));
+        // La couche s'appelle 'building' dans le tileset 'buildings'
         const layer = vt.layers.building;
         if (!layer) return null;
 
         const features = [];
+        
         for (let i = 0; i < layer.length; i++) {
             const f = layer.feature(i);
-            // MapTiler fournit des coordonnées normalisées (0-4095) dans la tuile
             features.push({
                 geometry: f.loadGeometry(),
                 properties: f.properties,
@@ -120,36 +129,43 @@ function renderBuildingsMapTiler(tile: Tile, features: any[]) {
         polygonOffsetUnits: 1
     });
 
-    const limit = state.BUILDING_LIMIT || 150; // MapTiler est plus léger, on peut en mettre plus
-    const extent = 4096; // MapTiler default extent
+    const limit = state.BUILDING_LIMIT || 150; 
+    const EXTENT = 4096; // MapTiler default extent
+    
+    const requestZoom = Math.min(tile.zoom, 14);
+    const ratio = Math.pow(2, tile.zoom - requestZoom);
+    const offsetX = (tile.tx % ratio) * EXTENT / ratio;
+    const offsetY = (tile.ty % ratio) * EXTENT / ratio;
+    const subExtent = EXTENT / ratio;
 
-    features.slice(0, limit).forEach(f => {
-        // MapTiler geometry est un tableau de chemins (anneaux)
+    features.slice(0, limit * 2).forEach(f => {
         if (f.geometry && f.geometry.length > 0) {
+            // Filtrage : est-ce que le bâtiment est dans notre sous-tuile ?
+            const firstP = f.geometry[0][0];
+            if (firstP.x < offsetX || firstP.x >= offsetX + subExtent || firstP.y < offsetY || firstP.y >= offsetY + subExtent) {
+                return;
+            }
+
             const points: THREE.Vector2[] = [];
             f.geometry[0].forEach((p: any) => {
-                // Conversion coordonnées locales tuile (-tileSize/2 à +tileSize/2)
-                const lx = (p.x / extent - 0.5) * tile.tileSizeMeters;
-                const lz = (p.y / extent - 0.5) * tile.tileSizeMeters;
+                const lx = ((p.x - offsetX) / subExtent - 0.5) * tile.tileSizeMeters;
+                const lz = ((p.y - offsetY) / subExtent - 0.5) * tile.tileSizeMeters;
                 points.push(new THREE.Vector2(lx, -lz));
             });
 
             try {
                 const shape = new THREE.Shape(points);
-                // Utilisation des propriétés MapTiler
                 const height = (f.properties.render_height || 12) * state.RELIEF_EXAGGERATION;
                 const minHeight = (f.properties.render_min_height || 0) * state.RELIEF_EXAGGERATION;
                 
                 const bGeo = new THREE.ExtrudeGeometry(shape, { 
-                    depth: height - minHeight, 
+                    depth: Math.max(1, height - minHeight), 
                     bevelEnabled: false 
                 });
 
-                // Altitude de base au centre approximatif
-                const firstP = f.geometry[0][0];
-                const flx = (firstP.x / extent - 0.5) * tile.tileSizeMeters;
-                const flz = (firstP.y / extent - 0.5) * tile.tileSizeMeters;
-                const baseAlt = getAltitudeAt(tile.worldX + flx, tile.worldZ + flz, tile);
+                const centerLX = ((f.geometry[0][0].x - offsetX) / subExtent - 0.5) * tile.tileSizeMeters;
+                const centerLZ = ((f.geometry[0][0].y - offsetY) / subExtent - 0.5) * tile.tileSizeMeters;
+                const baseAlt = getAltitudeAt(tile.worldX + centerLX, tile.worldZ + centerLZ, tile);
 
                 bGeo.rotateX(-Math.PI / 2);
                 bGeo.translate(0, baseAlt + minHeight, 0);
