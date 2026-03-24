@@ -4,6 +4,17 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.8.10] - 2026-03-24
+### 🌲 Vegetation & Performance
+- **Reverted Forest Density**: Default tree counts restored to stable values (Balanced: 2000, Performance: 8000, Ultra: 12000) to maintain visual balance and performance.
+- **Stable Scan Resolution**: Reverted vegetation scanner to 64x64 resolution for improved frame stability.
+- **Advanced SwissTopo Forest Filter**: Implemented a "symbol-based" detection logic for SwissTopo. The engine now specifically targets the darker forest symbols (< 195 luminance) while strictly excluding the brighter backgrounds and uniform green sport fields.
+- **Ultra-Strict Lawn Exclusion**: Added radical checks for "pure green" and vivid saturation to ensure sports fields, golf courses, and gardens remain tree-free.
+
+## [5.8.9] - 2026-03-24
+### 🌲 Vegetation Precision
+- **Anti-Lawn Filter Refinement**: Improved chromatic discrimination between alpine forests and manicured urban lawns using greenness purity ratios.
+
 ## [5.8.8] - 2026-03-24
 ### 🌲 Vegetation Precision
 - **Anti-Lawn Filter**: Implemented a strict chromatic filter to distinguish between natural forests and manicured grass (football fields, golf courses, gardens).

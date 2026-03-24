@@ -62,9 +62,8 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
 
     initVegetationResources();
 
-    // --- ADAPTIVE SCAN RESOLUTION (v5.8.7) ---
-    // On augmente la résolution de scan pour permettre plus de densité
-    const scanRes = (state.PERFORMANCE_PRESET === 'ultra') ? 128 : 80;
+    // --- SCAN RESOLUTION STABLE (v5.8.10) ---
+    const scanRes = 64;
     const canvas = document.createElement('canvas');
     canvas.width = scanRes; canvas.height = scanRes; 
     const ctx = canvas.getContext('2d', { willReadFrequently: true, alpha: false });
@@ -89,8 +88,8 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
         feuillu: { count: 0, matrices: [] }
     };
 
-    const step = (state.PERFORMANCE_PRESET === 'ultra') ? 1 : ((state.PERFORMANCE_PRESET === 'performance') ? 1 : 2);
-    const densityBoost = (state.PERFORMANCE_PRESET === 'ultra') ? 1.2 : 1.0;
+    const step = (state.PERFORMANCE_PRESET === 'ultra') ? 1 : ((state.PERFORMANCE_PRESET === 'performance') ? 2 : 4);
+    const densityBoost = (step === 4) ? 1.5 : 1.0;
 
     let totalActive = 0;
 
@@ -107,26 +106,17 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
             } else {
                 const brightness = (r + g + b) / 3;
                 
-                // --- FILTRE ANTI-PELOUSE AVANCÉ (v5.8.9) ---
-                // Sur SwissTopo :
-                // - Forêt : G est dominant mais R et B sont présents (couleur terreuse/désaturée).
-                // - Prairie : Très lumineuse (> 200).
-                // - Terrain de Sport : Vert "pur" et très saturé, pauvre en Rouge.
+                // --- FILTRE ANTI-PELOUSE AVANCÉ (v5.8.10) ---
+                // Sur SwissTopo : Les symboles de forêt sont plus sombres (< 195)
+                // alors que le fond de forêt (> 220) et les terrains de sport (~210) sont clairs.
+                const isForestColor = (g > r * 1.06 && g > b * 1.06 && brightness < 195 && g > 40);
                 
-                const isVeryBright = brightness > 195; 
-                const isSportField = (g > r * 1.45 && g > b * 1.35); // Signature du vert électrique
-                const isPureGreen = (g > 100 && r < 80 && b < 80); // Gazon synthétique ou urbain
-                
+                // Exclusion des verts trop saturés (Terrains de sport / Gazon urbain)
+                const isTooVivid = (g > r * 1.35); 
+                const isPureGreen = (g > 100 && r < 90 && b < 90);
+
                 const isNeutral = (Math.abs(r - g) < 12 && Math.abs(g - b) < 12 && r > 160);
-                
-                // La forêt sur SwissTopo est dans les tons moyens (100-190) et peu saturée
-                isForest = (g > r * 1.05 && g > b * 1.05 && !isNeutral && !isVeryBright && !isSportField && !isPureGreen);
-                
-                // Correction spécifique pour SwissTopo : la forêt a souvent du rouge (brunatre)
-                if (isForest && state.MAP_SOURCE === 'swisstopo') {
-                    // Si c'est trop "vert fluo" par rapport au rouge, c'est probablement de la pelouse
-                    if (g > r * 1.30) isForest = false;
-                }
+                isForest = isForestColor && !isTooVivid && !isPureGreen && !isNeutral;
             }
 
             if (isForest) {
@@ -149,8 +139,8 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
                 }
 
                 dummy.position.set(lx, h, lz);
-                const scale = (0.45 + Math.random() * 0.85) * densityBoost; 
-                dummy.scale.set(scale, scale * (0.85 + Math.random() * 0.50), scale);
+                const scale = (0.35 + Math.random() * 0.75) * densityBoost; 
+                dummy.scale.set(scale, scale * (0.82 + Math.random() * 0.55), scale);
                 dummy.rotation.y = Math.random() * Math.PI;
                 dummy.updateMatrix();
                 

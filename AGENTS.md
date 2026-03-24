@@ -1,4 +1,4 @@
-# SunTrail - Base de Connaissance (v5.8.7)
+# SunTrail - Base de Connaissance (v5.8.10)
 
 Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTrail. Il consigne les décisions architecturales critiques et les solutions aux problèmes complexes.
 
@@ -8,7 +8,7 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 - **Pivot Central** : Toute la configuration (LOD, sources, presets) réside dans l'objet `state`.
 - **Réactivité (v5.8.0)** : L'objet `state` est désormais enveloppé dans un **Proxy JS récursif** (`ReactiveState.ts`). Les composants s'abonnent aux changements via `state.subscribe('path', callback)`.
 - **Persistance** : Sauvegarde automatique dans `localStorage`. 
-- **Versioning (v5.8.7)** : Le système inclut désormais un contrôle de version (`CURRENT_SETTINGS_VERSION`). Si une version obsolète est détectée lors du chargement, les réglages sont réinitialisés pour éviter les corruptions.
+- **Versioning (v5.8.10)** : Le système inclut désormais un contrôle de version (`CURRENT_SETTINGS_VERSION`). Si une version obsolète est détectée lors du chargement, les réglages sont réinitialisés pour éviter les corruptions.
 - **Event Bus (`eventBus.ts`)** : Utilisé pour briser les dépendances circulaires entre `terrain.ts` et `scene.ts`. Permet de déclencher des événements transversaux (ex: `terrainReady`, `flyTo`).
 
 ### Interface & Composants (v5.8.0)
@@ -27,7 +27,7 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 - **Hydrologie 3D (v5.8.4)** : Restauration d'un moteur d'eau réaliste. Détection chromatique optimisée pour SwissTopo et vagues en **"Rouleaux Géants"** sans couture entre les tuiles grâce à l'utilisation des coordonnées mondiales absolues.
 - **Bâtiments 3D (v5.8.5)** : Utilisation prioritaire de l'**API MapTiler Buildings (Vector Tiles)** pour la rapidité et la stabilité. Les données étant limitées nativement au Zoom 14, un système d'**Overzooming** recalcule les coordonnées pour les niveaux supérieurs. Basculement automatique (Fallback) vers l'API Overpass (OSM) en cas d'erreur ou de quota atteint.
 - **Sentiers (MVT)** : Utilisation de tuiles vectorielles (**MVT/PBF**) au lieu de raster pour une netteté infinie et un rendu stylisé (v5.6.5).
-- **Végétation Bio-Fidèle (v5.8.8)** : Sélection des essences d'arbres basée sur l'altitude réelle. Utilisation d'un **Adaptive Scan** (résolution augmentée à 128 pour l'Ultra) pour une densité de forêt massive. Inclusion d'un **Filtre Anti-Pelouse** (analyse de saturation et de luminance) pour exclure les terrains de sport et jardins des zones boisées.
+- **Végétation Bio-Fidèle (v5.8.10)** : Sélection des essences d'arbres basée sur l'altitude réelle. Utilisation d'un **Adaptive Scan** (résolution optimisée à 64 pour la stabilité). Inclusion d'un **Filtre Anti-Pelouse Avancé** utilisant des ratios chromatiques et des seuils de luminance (L < 195) pour exclure les terrains de sport et les prairies lumineuses des zones boisées sur SwissTopo.
 
 ## 🔋 Performance & Mobile
 
