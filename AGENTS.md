@@ -27,7 +27,7 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 - **Hydrologie 3D (v5.8.4)** : Restauration d'un moteur d'eau réaliste. Détection chromatique optimisée pour SwissTopo et vagues en **"Rouleaux Géants"** sans couture entre les tuiles grâce à l'utilisation des coordonnées mondiales absolues.
 - **Bâtiments 3D (v5.8.5)** : Utilisation prioritaire de l'**API MapTiler Buildings (Vector Tiles)** pour la rapidité et la stabilité. Les données étant limitées nativement au Zoom 14, un système d'**Overzooming** recalcule les coordonnées pour les niveaux supérieurs. Basculement automatique (Fallback) vers l'API Overpass (OSM) en cas d'erreur ou de quota atteint.
 - **Sentiers (MVT)** : Utilisation de tuiles vectorielles (**MVT/PBF**) au lieu de raster pour une netteté infinie et un rendu stylisé (v5.6.5).
-- **Végétation Bio-Fidèle (v5.8.10)** : Sélection des essences d'arbres basée sur l'altitude réelle. Utilisation d'un **Adaptive Scan** (résolution optimisée à 64 pour la stabilité). Inclusion d'un **Filtre Anti-Pelouse Avancé** utilisant des ratios chromatiques et des seuils de luminance (L < 195) pour exclure les terrains de sport et les prairies lumineuses des zones boisées sur SwissTopo.
+- **Végétation Bio-Fidèle (v5.8.11)** : Sélection des essences d'arbres basée sur l'altitude réelle. Utilisation d'un **Adaptive Scan** (résolution 64). Inclusion d'un **Filtre Anti-Pelouse Avancé**. Nouveauté (v5.8.11) : **Normalisation de Densité** ; le nombre d'arbres par tuile est désormais mis à l'échelle selon l'aire réelle de la tuile pour garantir une densité constante du LOD 15 au LOD 18.
 
 ## 🔋 Performance & Mobile
 

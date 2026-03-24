@@ -76,7 +76,13 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
     }
     
     const colorData = ctx.getImageData(0, 0, scanRes, scanRes).data;
-    const maxTrees = state.VEGETATION_DENSITY;
+    
+    // --- NORMALISATION DE LA DENSITÉ (v5.8.11) ---
+    // Si LOD 15 est la référence, on réduit le nombre d'arbres max pour les zooms supérieurs
+    // car la surface de la tuile est divisée par 4 à chaque niveau de zoom.
+    const areaRatio = Math.pow(4, 15 - tile.zoom);
+    const maxTrees = Math.max(100, Math.floor(state.VEGETATION_DENSITY * areaRatio));
+    
     const dummy = new THREE.Object3D();
     const size = tile.tileSizeMeters;
     const exaggeration = state.RELIEF_EXAGGERATION;

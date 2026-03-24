@@ -4,6 +4,11 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.8.11] - 2026-03-24
+### 🌲 Vegetation & Realism
+- **Density Normalization**: Implemented a zoom-aware scaling for forest density. Trees are now normalized based on the physical area of the tile, ensuring that forests look consistent from LOD 15 up to LOD 18 without overcrowding.
+- **Micro-adjustment**: Set minimum tree count per tile to 100 to maintain some vegetation presence even at extreme zooms.
+
 ## [5.8.10] - 2026-03-24
 ### 🌲 Vegetation & Performance
 - **Reverted Forest Density**: Default tree counts restored to stable values (Balanced: 2000, Performance: 8000, Ultra: 12000) to maintain visual balance and performance.
