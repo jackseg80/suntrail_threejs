@@ -30,11 +30,11 @@ waterMaterial.onBeforeCompile = (shader) => {
         ${shader.vertexShader}
     `.replace('#include <begin_vertex>', `
         #include <begin_vertex>
-        // Ondulations de surface plus amples et lentes
-        float t = uTime * 0.8;
-        float ripple = sin(position.x * 0.02 + t) * cos(position.y * 0.02 + t * 0.7) * 3.0;
-        ripple += sin(position.x * 0.05 - t * 0.5) * cos(position.y * 0.04 + t * 0.4) * 1.5;
-        transformed.z += ripple; 
+        // Rouleaux de surface directionnels
+        float t = uTime * 1.0;
+        float w1 = sin(position.x * 0.03 + position.y * 0.02 + t) * 2.5;
+        float w2 = sin(position.x * 0.015 - position.y * 0.04 + t * 0.7) * 1.2;
+        transformed.z += (w1 + w2); 
     `);
     
     shader.fragmentShader = `
@@ -42,12 +42,15 @@ waterMaterial.onBeforeCompile = (shader) => {
         ${shader.fragmentShader}
     `.replace('#include <normal_fragment_maps>', `
         #include <normal_fragment_maps>
-        // Scintillement des normales pour un effet miroir agité
-        float t = uTime * 1.2;
+        // Scintillement des normales en lignes (Rouleaux)
+        float t = uTime * 1.5;
+        float ripple = sin(vViewPosition.x * 0.05 + vViewPosition.y * 0.03 + t);
+        ripple += sin(vViewPosition.x * 0.02 - vViewPosition.y * 0.06 + t * 0.8) * 0.5;
+        
         vec3 rippleNormal = vec3(
-            sin(vViewPosition.x * 0.1 + t) * 0.15,
+            ripple * 0.1,
             1.0,
-            cos(vViewPosition.y * 0.1 + t * 0.8) * 0.15
+            ripple * 0.08
         );
         normal = normalize(rippleNormal);
     `);
