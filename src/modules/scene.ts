@@ -29,7 +29,7 @@ export async function disposeScene(): Promise<void> {
 }
 
 // --- VOL CINÉMATIQUE (v4.6.5) ---
-export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevation: number = 0) {
+export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevation: number = 0, targetDistance: number = 12000) {
     if (!state.camera || !state.controls) return;
     
     if (state.isFollowingUser) {
@@ -41,8 +41,10 @@ export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevatio
     const startPos = state.camera.position.clone();
     const startTarget = state.controls.target.clone();
     const endTarget = new THREE.Vector3(targetWorldX, targetElevation, targetWorldZ);
-    const offsetZ = 12000;
-    const finalAlt = targetElevation + 12000; 
+    
+    // On calcule la position finale en gardant l'inclinaison si possible ou en utilisant un défaut
+    const offsetZ = targetDistance * 0.8;
+    const finalAlt = targetElevation + targetDistance; 
     const endPos = new THREE.Vector3(targetWorldX, finalAlt, targetWorldZ + offsetZ);
 
     const duration = 2500; 
@@ -66,6 +68,23 @@ export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevatio
         if (progress < 1.0) requestAnimationFrame(animateFlight);
     };
     requestAnimationFrame(animateFlight);
+}
+
+function getIdealZoom(dist: number): number {
+    const boost = (state.MAP_SOURCE === 'satellite') ? 2.0 : 1.2;
+    if (dist < 800 * boost) return 18;
+    if (dist < 1800 * boost) return 17;
+    if (dist < 4000 * boost) return 16;
+    if (dist < 9000 * boost) return 15;
+    if (dist < 22000) return 14;
+    if (dist < 45000) return 13;
+    if (dist < 90000) return 12;
+    if (dist < 180000) return 11;
+    if (dist < 350000) return 10;
+    if (dist < 700000) return 9;
+    if (dist < 1200000) return 8;
+    if (dist < 2000000) return 7;
+    return 6;
 }
 
 export async function initScene(): Promise<void> {
@@ -128,20 +147,35 @@ export async function initScene(): Promise<void> {
         const dist = state.camera.position.distanceTo(state.controls.target);
         
         let newZoom = state.ZOOM;
-        const boost = (state.MAP_SOURCE === 'satellite') ? 2.0 : 1.2;
-        if (state.ZOOM === 13) { if (dist < 22000) newZoom = 14; else if (dist > 65000) newZoom = 12; }
-        else if (state.ZOOM === 14) { if (dist > 35000) newZoom = 13; else if (dist < 9000 * boost) newZoom = 15; }
-        else if (state.ZOOM === 15) { if (dist > 14000 * boost) newZoom = 14; else if (dist < 4000 * boost) newZoom = 16; }
-        else if (state.ZOOM === 16) { if (dist > 6000 * boost) newZoom = 15; else if (dist < 1800 * boost) newZoom = 17; }
-        else if (state.ZOOM === 17) { if (dist > 2500 * boost) newZoom = 16; else if (dist < 800 * boost) newZoom = 18; }
-        else if (state.ZOOM === 18) { if (dist > 1200 * boost) newZoom = 17; }
-        else if (state.ZOOM === 12) { if (dist < 45000) newZoom = 13; else if (dist > 120000) newZoom = 11; }
-        else if (state.ZOOM === 11) { if (dist < 90000) newZoom = 12; else if (dist > 250000) newZoom = 10; }
-        else if (state.ZOOM === 10) { if (dist < 180000) newZoom = 11; else if (dist > 500000) newZoom = 9; }
-        else if (state.ZOOM === 9)  { if (dist < 350000) newZoom = 10; else if (dist > 900000) newZoom = 8; }
-        else if (state.ZOOM === 8)  { if (dist < 700000) newZoom = 9;  else if (dist > 1600000) newZoom = 7; }
-        else if (state.ZOOM === 7)  { if (dist < 1200000) newZoom = 8; else if (dist > 2500000) newZoom = 6; }
-        else if (state.ZOOM <= 6)  { if (dist < 2000000) newZoom = 7; }
+        const idealZoom = getIdealZoom(dist);
+        
+        // --- LOGIQUE DE ZOOM ADAPTATIVE (v5.8.6) ---
+        // On évite de dépasser le zoom max autorisé par le preset
+        const targetZoom = Math.min(idealZoom, state.MAX_ALLOWED_ZOOM || 18);
+
+        // Si l'écart est important (téléportation ou mouvement rapide), on saute directement
+        if (Math.abs(targetZoom - state.ZOOM) > 1) {
+            newZoom = targetZoom;
+        } else {
+            // Sinon on garde l'hystérésis pour la fluidité (évite le clignotement aux seuils)
+            const boost = (state.MAP_SOURCE === 'satellite') ? 2.0 : 1.2;
+            if (state.ZOOM === 13) { if (dist < 22000) newZoom = 14; else if (dist > 65000) newZoom = 12; }
+            else if (state.ZOOM === 14) { if (dist > 35000) newZoom = 13; else if (dist < 9000 * boost) newZoom = 15; }
+            else if (state.ZOOM === 15) { if (dist > 14000 * boost) newZoom = 14; else if (dist < 4000 * boost) newZoom = 16; }
+            else if (state.ZOOM === 16) { if (dist > 6000 * boost) newZoom = 15; else if (dist < 1800 * boost) newZoom = 17; }
+            else if (state.ZOOM === 17) { if (dist > 2500 * boost) newZoom = 16; else if (dist < 800 * boost) newZoom = 18; }
+            else if (state.ZOOM === 18) { if (dist > 1200 * boost) newZoom = 17; }
+            else if (state.ZOOM === 12) { if (dist < 45000) newZoom = 13; else if (dist > 120000) newZoom = 11; }
+            else if (state.ZOOM === 11) { if (dist < 90000) newZoom = 12; else if (dist > 250000) newZoom = 10; }
+            else if (state.ZOOM === 10) { if (dist < 180000) newZoom = 11; else if (dist > 500000) newZoom = 9; }
+            else if (state.ZOOM === 9)  { if (dist < 350000) newZoom = 10; else if (dist > 900000) newZoom = 8; }
+            else if (state.ZOOM === 8)  { if (dist < 700000) newZoom = 9;  else if (dist > 1600000) newZoom = 7; }
+            else if (state.ZOOM === 7)  { if (dist < 1200000) newZoom = 8; else if (dist > 2500000) newZoom = 6; }
+            else if (state.ZOOM <= 6)  { if (dist < 2000000) newZoom = 7; }
+            
+            // Respecter la limite même en incrémental
+            if (newZoom > state.MAX_ALLOWED_ZOOM) newZoom = state.MAX_ALLOWED_ZOOM;
+        }
 
         const currentZoom = state.ZOOM;
         if (newZoom !== state.ZOOM) { state.ZOOM = newZoom; }

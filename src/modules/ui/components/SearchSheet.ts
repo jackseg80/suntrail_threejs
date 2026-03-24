@@ -179,7 +179,7 @@ export class SearchSheet extends BaseComponent {
             
             setTimeout(() => { 
                 const wp = lngLatToWorld(lon, lat, state.originTile);
-                flyTo(wp.x, wp.z, peakEle * state.RELIEF_EXAGGERATION); 
+                flyTo(wp.x, wp.z, peakEle * state.RELIEF_EXAGGERATION, 3500); 
             }, 100);
             
             const cp = document.getElementById('coords-panel'); 
@@ -204,7 +204,7 @@ export class SearchSheet extends BaseComponent {
 
             setTimeout(() => { 
                 const wp = lngLatToWorld(lon, lat, state.originTile);
-                flyTo(wp.x, wp.z, 2000); // Teleport to city at 2km altitude
+                flyTo(wp.x, wp.z, 0, 8000); // Téléportation ville à 8km pour une vue d'ensemble
             }, 100);
         }
         

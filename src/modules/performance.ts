@@ -94,6 +94,7 @@ export function applyPreset(preset: PresetType): void {
     state.BUILDING_ZOOM_THRESHOLD = settings.BUILDING_ZOOM_THRESHOLD;
     state.MAX_BUILDS_PER_CYCLE = settings.MAX_BUILDS_PER_CYCLE;
     state.LOAD_DELAY_FACTOR = settings.LOAD_DELAY_FACTOR;
+    state.MAX_ALLOWED_ZOOM = settings.MAX_ALLOWED_ZOOM;
     state.SHADOW_RES = settings.SHADOW_RES;
 
     state.SHOW_WEATHER = settings.SHOW_WEATHER;
