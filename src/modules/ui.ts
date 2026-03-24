@@ -1,24 +1,24 @@
 import * as THREE from 'three';
 // @ts-ignore
 import gpxParser from 'gpxparser';
-import { Geolocation } from '@capacitor/geolocation';
 import { state, loadSettings } from './state';
 import { updateSunPosition } from './sun';
 import { initScene, flyTo } from './scene';
-import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain, autoSelectMapSource } from './terrain';
+import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain } from './terrain';
 import { updateStorageUI } from './tileLoader';
-import { lngLatToTile, worldToLngLat, lngLatToWorld } from './geo';
-import { showToast, fetchGeocoding } from './utils';
+import { lngLatToTile, lngLatToWorld } from './geo';
+import { showToast } from './utils';
 import { applyPreset, detectBestPreset, getGpuInfo, applyCustomSettings } from './performance';
-import { runSolarProbe, findTerrainIntersection, getAltitudeAt } from './analysis';
+import { findTerrainIntersection, getAltitudeAt } from './analysis';
 import { updateElevationProfile } from './profile';
 import { startLocationTracking, stopLocationTracking } from './location';
-import { fetchWeather, updateWeatherUIIndicator } from './weather';
+import { fetchWeather } from './weather';
 
+import { NavigationBar } from './ui/components/NavigationBar';
+import { TopStatusBar } from './ui/components/TopStatusBar';
 import { SettingsSheet } from './ui/components/SettingsSheet';
-
-let lastClickedCoords = { x: 0, z: 0, alt: 0 };
-let hasLastClicked = false;
+import { SearchSheet } from './ui/components/SearchSheet';
+import { WeatherSheet, SolarProbeSheet, SOSSheet } from './ui/components/ExpertSheets';
 
 export function initUI(): void {
     console.log("[UI] Starting Init...");
@@ -48,10 +48,8 @@ export function initUI(): void {
     if (techInfo) techInfo.style.display = 'block';
 
     // --- GESTION RÉSEAU ---
-    const offlineIndicator = document.getElementById('offline-indicator');
     const updateNetworkStatus = () => {
         state.IS_OFFLINE = !navigator.onLine;
-        if (offlineIndicator) offlineIndicator.style.display = state.IS_OFFLINE ? 'block' : 'none';
     };
     window.addEventListener('online', updateNetworkStatus);
     window.addEventListener('offline', updateNetworkStatus);
@@ -65,7 +63,7 @@ export function initUI(): void {
 
     setInterval(updateStorageUI, 2000);
 
-    // --- INITIALISATION VALEURS TEMPORELLES (v5.4.8) ---
+    // --- INITIALISATION VALEURS TEMPORELLES ---
     const dateInput = document.getElementById('date-input') as HTMLInputElement;
     const timeSlider = document.getElementById('time-slider') as HTMLInputElement;
     if (dateInput) {
@@ -104,9 +102,27 @@ export function initUI(): void {
         startApp();
     });
 
-    // --- RE-WIRING CALQUES (FIX v5.4.7) ---
+    // --- INITIALISATION COMPOSANTS ---
+    const navBar = new NavigationBar();
+    navBar.hydrate();
+
+    const topStatusBar = new TopStatusBar();
+    topStatusBar.hydrate();
+
     const settingsSheet = new SettingsSheet();
     settingsSheet.hydrate();
+
+    const searchSheet = new SearchSheet();
+    searchSheet.hydrate();
+
+    const weatherSheet = new WeatherSheet();
+    weatherSheet.hydrate();
+
+    const solarProbeSheet = new SolarProbeSheet();
+    solarProbeSheet.hydrate();
+
+    const sosSheet = new SOSSheet();
+    sosSheet.hydrate();
 
     const settingsToggle = document.getElementById('settings-toggle');
     settingsToggle?.addEventListener('click', (e) => {
@@ -121,23 +137,19 @@ export function initUI(): void {
     // GPS
     document.getElementById('gps-btn')?.addEventListener('click', async () => {
         try {
-            const pos = await Geolocation.getCurrentPosition();
-            const lat = pos.coords.latitude;
-            const lon = pos.coords.longitude;
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject);
+            });
             
-            // --- CORRECTION POSITIONNEMENT GPS (v5.7.3) ---
-            // 1. On met à jour les coordonnées cibles globales
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            
             state.TARGET_LAT = lat;
             state.TARGET_LON = lon;
-            
-            // 2. On réinitialise l'origine du monde 3D sur cette nouvelle position 
-            // pour éviter les erreurs de flottants et les décalages de perspective.
             state.originTile = lngLatToTile(lon, lat, state.ZOOM);
             
-            // 3. On force le rechargement du terrain sur la nouvelle zone
             refreshTerrain();
             
-            // 4. On vole vers la position (maintenant centrée sur 0,0 en coordonnées monde car on a shift l'origine)
             const worldPos = lngLatToWorld(lon, lat, state.originTile);
             const altWorld = getAltitudeAt(worldPos.x, worldPos.z);
             
@@ -145,14 +157,10 @@ export function initUI(): void {
             fetchWeather(lat, lon);
             
             showToast("📍 Position synchronisée");
-        } catch (e) { showToast("Erreur GPS"); }
-    });
-
-    document.getElementById('close-coords')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const cp = document.getElementById('coords-panel');
-        if (cp) cp.style.display = 'none';
-        hasLastClicked = false;
+        } catch (e) { 
+            showToast("Erreur GPS"); 
+            console.error("Geolocation error:", e);
+        }
     });
 
     document.getElementById('gps-follow-btn')?.addEventListener('click', async () => {
@@ -163,7 +171,6 @@ export function initUI(): void {
         if (state.isFollowingUser) {
             showToast("Suivi activé");
             await startLocationTracking();
-            // --- CENTRAGE IMMÉDIAT (Feedback Swisstopo) ---
             if (state.userLocation) {
                 const wp = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
                 const groundH = getAltitudeAt(wp.x, wp.z);
@@ -175,7 +182,7 @@ export function initUI(): void {
         }
     });
 
-    // --- ENREGISTREMENT TRACÉ (v5.7) ---
+    // REC
     document.getElementById('rec-btn')?.addEventListener('click', async () => {
         state.isRecording = !state.isRecording;
         const btn = document.getElementById('rec-btn')!;
@@ -183,16 +190,9 @@ export function initUI(): void {
         
         if (state.isRecording) {
             showToast("🔴 Enregistrement démarré");
-            if (!state.isFollowingUser) {
-                // On force le tracking GPS si pas déjà actif
-                await startLocationTracking();
-            }
-            // Point de départ
+            if (!state.isFollowingUser) await startLocationTracking();
             if (state.userLocation) {
-                state.recordedPoints = [{
-                    ...state.userLocation,
-                    timestamp: Date.now()
-                }];
+                state.recordedPoints = [{ ...state.userLocation, timestamp: Date.now() }];
             } else {
                 state.recordedPoints = [];
             }
@@ -236,53 +236,11 @@ export function initUI(): void {
         state.animationSpeed = parseFloat((e.target as HTMLSelectElement).value);
     });
 
-    // Analyse Solaire & SOS
-    document.getElementById('probe-btn')?.addEventListener('click', () => {
-        if (hasLastClicked) {
-            runSolarProbe(lastClickedCoords.x, lastClickedCoords.z, lastClickedCoords.alt);
-        } else {
-            showToast("Cliquez sur le terrain d'abord");
-        }
-    });
-
-    document.getElementById('sos-btn')?.addEventListener('click', openSOSModal);
-    document.getElementById('sos-copy-btn')?.addEventListener('click', () => {
-        const txt = document.getElementById('sos-text-container')?.textContent;
-        if (txt) { navigator.clipboard.writeText(txt); showToast("🆘 Message copié"); }
-    });
-    document.getElementById('sos-close-btn')?.addEventListener('click', () => { document.getElementById('sos-modal')!.style.display = 'none'; });
-
-    // Modales & Panels
-    document.getElementById('close-weather')?.addEventListener('click', () => { document.getElementById('weather-panel')!.style.display = 'none'; });
-    document.getElementById('open-expert-weather')?.addEventListener('click', () => { document.getElementById('expert-weather-panel')!.style.display = 'block'; });
-    document.getElementById('close-expert-weather')?.addEventListener('click', () => { document.getElementById('expert-weather-panel')!.style.display = 'none'; });
-    document.getElementById('close-probe')?.addEventListener('click', () => { document.getElementById('probe-result')!.style.display = 'none'; });
-
-    // Simulation Météo Manuelle
-    document.querySelectorAll('.weather-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            state.currentWeather = (btn as HTMLElement).dataset.weather as any;
-            state.WEATHER_DENSITY = (state.currentWeather === 'clear') ? 0 : 5000;
-            updateWeatherUIIndicator();
-        });
-    });
-
-    document.getElementById('close-profile')?.addEventListener('click', () => { document.getElementById('elevation-profile')!.style.display = 'none'; });
     document.getElementById('screenshot-btn')?.addEventListener('click', takeScreenshot);
-
-    initGeocoding();
 }
 
 function handleGlobalClick(e: MouseEvent) {
-    const layerMenu = document.getElementById('layer-menu');
-    const layerBtn = document.getElementById('layer-btn');
     const target = e.target as HTMLElement;
-
-    if (layerMenu?.classList.contains('open') && !layerMenu.contains(target) && target !== layerBtn && !layerBtn?.contains(target)) {
-        layerMenu.classList.remove('open');
-        layerMenu.style.display = 'none';
-    }
-    
     if (target.id === 'weather-clickable' || target.closest('#weather-clickable')) {
         const wp = document.getElementById('weather-panel');
         if (wp) wp.style.display = wp.style.display === 'none' ? 'block' : 'none';
@@ -291,8 +249,6 @@ function handleGlobalClick(e: MouseEvent) {
 
 function handleMapClick(e: MouseEvent) {
     if (!state.renderer || !state.camera || !state.scene) return;
-    const panel = document.getElementById('panel');
-    if (panel?.classList.contains('open')) panel.classList.remove('open');
 
     const mouse = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
     const raycaster = new THREE.Raycaster();
@@ -305,34 +261,22 @@ function handleMapClick(e: MouseEvent) {
     if (spriteHit) {
         const poiData = spriteHit.object.userData;
         if (poiData && poiData.name) {
-            const cp = document.getElementById('coords-panel')!;
-            cp.style.display = 'block';
-            document.getElementById('click-latlon')!.innerHTML = `<span style="color:var(--gold)">📍 ${poiData.name}</span>`;
-            document.getElementById('click-alt')!.textContent = `Signalétique`;
-            lastClickedCoords = { 
+            state.hasLastClicked = true;
+            state.lastClickedCoords = { 
                 x: spriteHit.object.position.x + (spriteHit.object.parent?.position.x || 0), 
                 z: spriteHit.object.position.z + (spriteHit.object.parent?.position.z || 0), 
                 alt: getAltitudeAt(spriteHit.object.position.x, spriteHit.object.position.z) 
             };
-            hasLastClicked = true;
             return;
         }
     }
 
-    const hitPoint = findTerrainIntersection(raycaster.ray);
-    if (hitPoint && state.originTile) {
-        const gps = worldToLngLat(hitPoint.x, hitPoint.z, state.originTile);
-        const rawAlt = getAltitudeAt(hitPoint.x, hitPoint.z);
-        const realAlt = rawAlt / state.RELIEF_EXAGGERATION;
-        const cp = document.getElementById('coords-panel')!;
-        cp.style.display = 'block';
-        document.getElementById('click-latlon')!.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
-        document.getElementById('click-alt')!.textContent = `${Math.round(realAlt)} m`;
-        lastClickedCoords = { x: hitPoint.x, z: hitPoint.z, alt: rawAlt };
-        hasLastClicked = true;
+    const hit = findTerrainIntersection(raycaster.ray);
+    if (hit && state.originTile) {
+        state.hasLastClicked = true;
+        state.lastClickedCoords = { x: hit.x, z: hit.z, alt: getAltitudeAt(hit.x, hit.z) };
     } else {
-        const cp = document.getElementById('coords-panel'); 
-        if (cp) cp.style.display = 'none';
+        state.hasLastClicked = false;
     }
 }
 
@@ -341,15 +285,9 @@ function startApp() {
     loadTerrain();
     fetchWeather(state.TARGET_LAT, state.TARGET_LON);
     
-    document.getElementById('layer-btn')!.style.display = 'flex';
-    document.getElementById('settings-toggle')!.style.display = 'flex';
-    document.getElementById('gps-btn')!.style.display = 'flex';
-    document.getElementById('gps-follow-btn')!.style.display = 'flex';
-    document.getElementById('rec-btn')!.style.display = 'flex';
-    document.getElementById('export-gpx-btn')!.style.display = 'flex';
-    document.getElementById('screenshot-btn')!.style.display = 'flex';
-    document.getElementById('bottom-bar')!.style.display = 'block';
-    document.getElementById('top-search-container')!.style.display = 'block';
+    document.querySelectorAll('.ui-element').forEach(el => {
+        (el as HTMLElement).style.display = 'flex';
+    });
 }
 
 function onWindowResize() {
@@ -389,138 +327,6 @@ function exportRecordedGPX() {
     showToast("GPX téléchargé");
 }
 
-function createGeoItem(lat: number, lon: number, label: string, isPeak = false, name = '', ele = 0): HTMLElement {
-    const div = document.createElement('div');
-    div.className = `geo-item ${isPeak ? 'peak-item' : 'remote-item'}`;
-    div.style.cssText = 'padding:12px; cursor:pointer; color:white; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center;';
-    div.dataset.lat = lat.toString();
-    div.dataset.lon = lon.toString();
-    if (isPeak) { 
-        div.dataset.name = name; 
-        div.dataset.ele = ele.toString();
-        div.style.color = 'var(--gold)';
-    }
-    
-    const leftSide = document.createElement('div');
-    const icon = document.createElement('span');
-    icon.textContent = isPeak ? '🏔️ ' : '📍 ';
-    leftSide.appendChild(icon);
-    
-    const text = document.createElement('span');
-    text.textContent = label;
-    leftSide.appendChild(text);
-    div.appendChild(leftSide);
-    
-    if (isPeak) {
-        const altSpan = document.createElement('span');
-        altSpan.style.cssText = 'color:var(--t2); font-size:11px;';
-        altSpan.textContent = `${Math.round(ele)}m`;
-        div.appendChild(altSpan);
-    }
-    return div;
-}
-
-function initGeocoding() {
-    const geoInput = document.getElementById('geo-input') as HTMLInputElement;
-    const geoResults = document.getElementById('geo-results');
-    if (!geoInput || !geoResults) return;
-
-    let timer: any;
-    const handleResultClick = (lat: number, lon: number, isPeak: boolean, peakName: string = '', peakEle: number = 0) => {
-        geoResults.style.display = 'none';
-        geoInput.value = '';
-        if (isPeak) {
-            state.TARGET_LAT = lat; state.TARGET_LON = lon;
-            autoSelectMapSource(lat, lon);
-            state.ZOOM = 14; state.originTile = lngLatToTile(lon, lat, 14);
-            if (state.controls && state.camera) { state.controls.target.set(0, 0, 0); state.camera.position.set(0, 15000, 20000); state.controls.update(); }
-            refreshTerrain();
-            setTimeout(() => { 
-                const wp = lngLatToWorld(lon, lat, state.originTile);
-                // Utilisation de l'altitude exagérée pour la cible world
-                flyTo(wp.x, wp.z, peakEle * state.RELIEF_EXAGGERATION); 
-            }, 100);
-            const cp = document.getElementById('coords-panel')!; cp.style.display = 'block';
-            document.getElementById('click-latlon')!.textContent = `🏔️ ${peakName}`;
-            document.getElementById('click-alt')!.textContent = `${Math.round(peakEle)} m`;
-            const wp = lngLatToWorld(lon, lat, state.originTile);
-            lastClickedCoords = { x: wp.x, z: wp.z, alt: peakEle * state.RELIEF_EXAGGERATION };
-            hasLastClicked = true;
-        } else {
-            state.TARGET_LAT = lat; state.TARGET_LON = lon;
-            autoSelectMapSource(lat, lon);
-            state.ZOOM = 13; state.originTile = lngLatToTile(lon, lat, 13);
-            if (state.controls && state.camera) { state.controls.target.set(0, 0, 0); state.camera.position.set(0, 35000, 40000); state.controls.update(); }
-            refreshTerrain(); 
-        }
-        fetchWeather(lat, lon);
-    };
-
-    geoInput.addEventListener('input', () => {
-        if (timer) clearTimeout(timer);
-        const q = geoInput.value.trim().toLowerCase();
-        
-        if (q.length < 2) { 
-            geoResults.style.display = 'none'; 
-            geoResults.innerHTML = '';
-            return; 
-        }
-        
-        // 1. AFFICHER LES PICS LOCAUX IMMÉDIATEMENT (v5.5.15)
-        geoResults.innerHTML = '';
-        const localMatches = state.localPeaks.filter(p => p.name.toLowerCase().includes(q)).slice(0, 5);
-        if (localMatches.length > 0) {
-            localMatches.forEach(p => {
-                geoResults.appendChild(createGeoItem(p.lat, p.lon, p.name, true, p.name, p.ele));
-            });
-            geoResults.style.display = 'block';
-            attachListeners();
-        }
-
-        // 2. RECHERCHE DISTANTE (MAPTILER / OSM)
-        timer = setTimeout(async () => {
-            try {
-                const data = await fetchGeocoding({ query: q });
-                if (!data) return;
-
-                // On ne vide pas, on ajoute à la suite des pics locaux
-                if (Array.isArray(data)) {
-                    data.forEach((f: any) => {
-                        geoResults.appendChild(createGeoItem(parseFloat(f.lat), parseFloat(f.lon), f.display_name));
-                    });
-                } else if (data.features) {
-                    data.features.forEach((f: any) => {
-                        const lon = f.geometry.coordinates[0];
-                        const lat = f.geometry.coordinates[1];
-                        const label = f.place_name_fr || f.place_name || 'Lieu inconnu';
-                        geoResults.appendChild(createGeoItem(lat, lon, label));
-                    });
-                }
-
-                if (geoResults.children.length > 0) {
-                    geoResults.style.display = 'block';
-                    attachListeners();
-                }
-            } catch (e) { console.warn("Geocoding error:", e); }
-        }, 400);
-    });
-
-    function attachListeners() {
-        geoResults?.querySelectorAll('.geo-item').forEach(item => {
-            (item as HTMLElement).onclick = (e) => {
-                e.stopPropagation();
-                const lat = parseFloat((item as HTMLElement).dataset.lat!);
-                const lon = parseFloat((item as HTMLElement).dataset.lon!);
-                if (isNaN(lat) || isNaN(lon)) return;
-                const isPeak = item.classList.contains('peak-item');
-                const name = (item as HTMLElement).dataset.name || (item as HTMLElement).querySelector('span:nth-child(2)')?.textContent || '';
-                const ele = parseFloat((item as HTMLElement).dataset.ele!) || 0;
-                handleResultClick(lat, lon, isPeak, name, ele);
-            };
-        });
-    }
-}
-
 async function handleGPX(xml: string) {
     const gpx = new gpxParser(); gpx.parse(xml);
     if (!gpx.tracks?.length) return;
@@ -529,28 +335,43 @@ async function handleGPX(xml: string) {
     state.TARGET_LAT = startPt.lat; state.TARGET_LON = startPt.lon;
     state.ZOOM = 13; state.originTile = lngLatToTile(startPt.lon, startPt.lat, 13);
     updateGPXMesh(); updateElevationProfile(); await updateVisibleTiles();
-    document.getElementById('trail-controls')!.style.display = 'block';
-}
-
-async function openSOSModal() {
-    const modal = document.getElementById('sos-modal')!;
-    const textContainer = document.getElementById('sos-text-container')!;
-    modal.style.display = 'block';
-    textContainer.textContent = "⌛ Localisation en cours...";
-    let lat: number, lon: number, alt: number;
-    if (state.userLocation) { lat = state.userLocation.lat; lon = state.userLocation.lon; alt = state.userLocation.alt; }
-    else { const gps = worldToLngLat(state.controls?.target.x || 0, state.controls?.target.z || 0, state.originTile); lat = gps.lat; lon = gps.lon; alt = getAltitudeAt(state.controls?.target.x || 0, state.controls?.target.z || 0) / state.RELIEF_EXAGGERATION; }
-    let bat = "??"; try { const battery = await (navigator as any).getBattery(); bat = Math.round(battery.level * 100).toString(); } catch(e) {}
-    const now = new Date(); const time = `${now.getHours()}h${now.getMinutes().toString().padStart(2, '0')}`;
-    textContainer.textContent = `🆘 SOS SUNTRAIL: ${lat.toFixed(5)},${lon.toFixed(5)} | ALT:${Math.round(alt)}m | BAT:${bat}% | ${time}`;
-}
-
-function takeScreenshot() {
-    if (!state.renderer) return;
-    state.renderer.render(state.scene!, state.camera!);
-    const data = state.renderer.domElement.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.download = `suntrail-${Date.now()}.png`; link.href = data; link.click();
 }
 
 function refreshTerrain() { resetTerrain(); updateVisibleTiles(); }
+
+async function takeScreenshot() {
+    if (!state.renderer || !state.scene || !state.camera) {
+        console.error("Missing scene, renderer, or camera for screenshot.");
+        return;
+    }
+
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    const originalSize = { width: state.renderer.getSize(new THREE.Vector2()).width, height: state.renderer.getSize(new THREE.Vector2()).height };
+    state.renderer.setSize(width, height);
+    state.camera.aspect = width / height;
+    state.camera.updateProjectionMatrix();
+
+    state.renderer.render(state.scene, state.camera);
+
+    const imageBlob = await new Promise<Blob | null>((resolve) => {
+        state.renderer!.domElement.toBlob(resolve, 'image/png', 1.0);
+    });
+
+    state.renderer.setSize(originalSize.width, originalSize.height);
+    state.camera.aspect = originalSize.width / originalSize.height;
+    state.camera.updateProjectionMatrix();
+
+    if (imageBlob) {
+        const url = URL.createObjectURL(imageBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `suntrail-screenshot-${Date.now()}.png`;
+        link.click();
+        URL.revokeObjectURL(url);
+        showToast("Screenshot saved!");
+    } else {
+        showToast("Failed to create screenshot.");
+    }
+}
