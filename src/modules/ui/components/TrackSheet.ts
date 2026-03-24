@@ -12,12 +12,12 @@ export class TrackSheet extends BaseComponent {
     public render(): void {
         if (!this.element) return;
 
-        const closeBtn = this.element.querySelector('#close-track');
+        const closeBtn = document.getElementById('close-track');
         closeBtn?.addEventListener('click', () => {
             sheetManager.close();
         });
 
-        const recBtn = this.element.querySelector('#rec-btn-sheet') as HTMLButtonElement;
+        const recBtn = document.getElementById('rec-btn-sheet') as HTMLButtonElement;
         recBtn?.addEventListener('click', async () => {
             state.isRecording = !state.isRecording;
             this.updateRecUI();
@@ -35,12 +35,26 @@ export class TrackSheet extends BaseComponent {
             }
         });
 
-        const importBtn = this.element.querySelector('#import-gpx-sheet');
+        const importBtn = document.getElementById('import-gpx-sheet');
+        const gpxUpload = document.getElementById('gpx-upload') as HTMLInputElement;
+        
         importBtn?.addEventListener('click', () => {
-            document.getElementById('gpx-upload')?.click();
+            gpxUpload?.click();
         });
 
-        const exportBtn = this.element.querySelector('#export-gpx-sheet');
+        gpxUpload?.addEventListener('change', (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const event = new CustomEvent('gpx-uploaded', { detail: ev.target!.result });
+                    window.dispatchEvent(event);
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        const exportBtn = document.getElementById('export-gpx-sheet');
         exportBtn?.addEventListener('click', () => {
             if (state.recordedPoints.length < 2) {
                 showToast("Tracé trop court pour export");
@@ -58,7 +72,7 @@ export class TrackSheet extends BaseComponent {
     }
 
     private updateRecUI() {
-        const recBtn = this.element?.querySelector('#rec-btn-sheet') as HTMLButtonElement;
+        const recBtn = document.getElementById('rec-btn-sheet') as HTMLButtonElement;
         if (!recBtn) return;
         
         if (state.isRecording) {
@@ -73,10 +87,10 @@ export class TrackSheet extends BaseComponent {
     private updateStats() {
         if (!this.element) return;
         
-        const distEl = this.element.querySelector('#track-dist');
-        const pointsEl = this.element.querySelector('#track-points');
-        const dplusEl = this.element.querySelector('#track-dplus');
-        const dminusEl = this.element.querySelector('#track-dminus');
+        const distEl = document.getElementById('track-dist');
+        const pointsEl = document.getElementById('track-points');
+        const dplusEl = document.getElementById('track-dplus');
+        const dminusEl = document.getElementById('track-dminus');
 
         if (pointsEl) pointsEl.textContent = state.recordedPoints.length.toString();
         

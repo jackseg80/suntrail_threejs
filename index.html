@@ -142,6 +142,68 @@
             <input type="checkbox" id="poi-toggle" checked>
         </div>
     </div>
+
+    <details class="control-group" style="margin-top: 15px;">
+        <summary style="font-size:11px; color:var(--gold); font-weight:700; text-transform:uppercase; cursor:pointer; outline:none;">Paramètres Avancés</summary>
+        <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 15px;">
+            <div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
+                    <span>Résolution (LOD)</span>
+                    <span id="res-disp">14</span>
+                </div>
+                <input type="range" id="res-slider" min="10" max="16" step="1" value="14">
+            </div>
+            <div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
+                    <span>Rayon de rendu</span>
+                    <span id="range-disp">3</span>
+                </div>
+                <input type="range" id="range-slider" min="1" max="8" step="1" value="3">
+            </div>
+            <div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
+                    <span>Exagération du relief</span>
+                    <span id="exag-disp">1</span>
+                </div>
+                <input type="range" id="exag-slider" min="1" max="3" step="0.1" value="1">
+            </div>
+            <div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
+                    <span>Brouillard (km)</span>
+                </div>
+                <input type="range" id="fog-slider" min="5" max="100" step="1" value="30">
+            </div>
+            <div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
+                    <span>Vitesse de chargement</span>
+                </div>
+                <select id="load-speed-select" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; padding:8px; border-radius:8px;">
+                    <option value="0.5">Rapide (0.5x)</option>
+                    <option value="1" selected>Normal (1x)</option>
+                    <option value="2">Lent (2x)</option>
+                </select>
+            </div>
+            <div>
+                <div style="font-size:13px; margin-bottom:5px;">Clé API MapTiler</div>
+                <form id="api-key-form" style="display:flex; gap:8px;">
+                    <input type="text" id="maptiler-key-input" placeholder="Clé API..." style="flex:1; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; padding:8px; border-radius:8px;">
+                    <button type="submit" class="btn-go" style="margin:0; padding:8px 12px;">OK</button>
+                </form>
+            </div>
+            <div>
+                <div style="font-size:13px; margin-bottom:5px;">Stockage & Hors-ligne</div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button id="clear-cache-btn" class="btn-go" style="margin:0; padding:8px 12px; background:#ef4444; flex:1;">Vider Cache</button>
+                    <button id="download-zone-btn" class="btn-go" style="margin:0; padding:8px 12px; flex:1;"><span>Télécharger Zone</span></button>
+                </div>
+            </div>
+            <div>
+                <div style="font-size:13px; margin-bottom:5px;">Cartes Locales (PMTiles)</div>
+                <button id="pmtiles-btn" class="btn-go" style="margin:0; padding:8px 12px; width:100%;">Charger .pmtiles</button>
+                <input type="file" id="pmtiles-upload" accept=".pmtiles" style="display:none;">
+            </div>
+        </div>
+    </details>
 </div>
 </template>
 
@@ -153,7 +215,29 @@
         <button id="close-weather" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">&times;</button>
     </div>
     <div id="weather-content"></div>
-    <button id="open-expert-weather" class="btn-go" style="margin-top:15px; padding:12px;">📊 Station Météo Expert</button>
+    
+    <div style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border);">
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:15px;">
+            <button class="weather-btn" data-weather="clear" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; padding:8px; cursor:pointer;">☀️</button>
+            <button class="weather-btn" data-weather="rain" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; padding:8px; cursor:pointer;">🌧️</button>
+            <button class="weather-btn" data-weather="snow" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; padding:8px; cursor:pointer;">❄️</button>
+        </div>
+        
+        <div style="margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;">
+                <span>Intensité : <span id="weather-density-disp">2500</span></span>
+            </div>
+            <input type="range" id="weather-density-slider" min="0" max="15000" step="500" value="2500">
+        </div>
+        <div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;">
+                <span>Vitesse : <span id="weather-speed-disp">1.0</span>x</span>
+            </div>
+            <input type="range" id="weather-speed-slider" min="0.5" max="3.0" step="0.1" value="1.0">
+        </div>
+    </div>
+
+    <button id="open-expert-weather" class="btn-go" style="margin-top:5px; padding:12px;">📊 Station Météo Expert</button>
 </div>
 </template>
 
@@ -333,6 +417,7 @@
         <button class="track-btn secondary" id="export-gpx-sheet">
             📤 Exporter
         </button>
+        <input type="file" id="gpx-upload" accept=".gpx" style="display:none;">
     </div>
 </div>
 </template>

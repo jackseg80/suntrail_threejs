@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 // @ts-ignore
 import gpxParser from 'gpxparser';
+import { Geolocation } from '@capacitor/geolocation';
 import { state, loadSettings } from './state';
 import { initScene, flyTo } from './scene';
 import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain } from './terrain';
@@ -146,18 +147,9 @@ export function initUI(): void {
     gpsMainBtn?.addEventListener('click', async () => {
         try {
             // 1. Get current position with timeout
-            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-                const timeoutId = setTimeout(() => reject(new Error("Geolocation timeout")), 5000);
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        clearTimeout(timeoutId);
-                        resolve(pos);
-                    },
-                    (err) => {
-                        clearTimeout(timeoutId);
-                        reject(err);
-                    }
-                );
+            const position = await Geolocation.getCurrentPosition({
+                timeout: 5000,
+                enableHighAccuracy: true
             });
             
             const lat = position.coords.latitude;

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { BaseComponent } from '../core/BaseComponent';
 import { state, saveSettings } from '../../state';
 import { applyPreset } from '../../performance';
-import { resetTerrain, updateVisibleTiles, updateHydrologyVisibility, updateSlopeVisibility } from '../../terrain';
+import { resetTerrain, updateVisibleTiles, updateHydrologyVisibility } from '../../terrain';
 import { deleteTerrainCache, downloadOfflineZone } from '../../tileLoader';
 import { showToast } from '../../utils';
 
@@ -32,8 +32,6 @@ export class SettingsSheet extends BaseComponent {
         this.bindSlider('range-slider', 'RANGE', 'range-disp', this.refreshTerrain);
         this.bindSlider('exag-slider', 'RELIEF_EXAGGERATION', 'exag-disp', this.refreshTerrain);
         this.bindSlider('veg-density-slider', 'VEGETATION_DENSITY', 'veg-density-disp', this.refreshTerrain);
-        this.bindSlider('weather-density-slider', 'WEATHER_DENSITY', 'weather-density-disp');
-        this.bindSlider('weather-speed-slider', 'WEATHER_SPEED', 'weather-speed-disp');
 
         // Toggles
         this.bindToggle('energy-saver-toggle', 'ENERGY_SAVER');
@@ -122,22 +120,6 @@ export class SettingsSheet extends BaseComponent {
             }
         });
 
-        // GPX
-        const gpxBtn = this.element.querySelector('#gpx-btn');
-        const gpxUpload = this.element.querySelector('#gpx-upload') as HTMLInputElement;
-        gpxBtn?.addEventListener('click', () => gpxUpload?.click());
-        gpxUpload?.addEventListener('change', (e) => {
-            const file = (e.target as HTMLInputElement).files?.[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const event = new CustomEvent('gpx-uploaded', { detail: ev.target!.result });
-                    window.dispatchEvent(event);
-                };
-                reader.readAsText(file);
-            }
-        });
-
         // Trail follow
         const trailFollowToggle = this.element.querySelector('#trail-follow-toggle') as HTMLInputElement;
         if (trailFollowToggle) {
@@ -146,13 +128,10 @@ export class SettingsSheet extends BaseComponent {
             });
         }
 
-        // Layer Selection (from template-widgets, if present in DOM)
-        this.initLayerSelection();
-
         // Subscribe to state changes to update UI
         const keysToSubscribe = [
             'RESOLUTION', 'RANGE', 'RELIEF_EXAGGERATION', 'VEGETATION_DENSITY',
-            'WEATHER_DENSITY', 'WEATHER_SPEED', 'FOG_FAR', 'ENERGY_SAVER',
+            'FOG_FAR', 'ENERGY_SAVER',
             'SHOW_STATS', 'SHOW_DEBUG', 'SHOW_VEGETATION', 'SHOW_BUILDINGS',
             'SHOW_HYDROLOGY', 'SHOW_SIGNPOSTS', 'SHADOWS', 'LOAD_DELAY_FACTOR',
             'isFollowingTrail', 'SHOW_TRAILS', 'SHOW_SLOPES', 'PERFORMANCE_PRESET'
@@ -166,62 +145,6 @@ export class SettingsSheet extends BaseComponent {
 
         // Initial UI update
         this.updateAllUI();
-    }
-
-    private initLayerSelection() {
-        const layerBtn = document.getElementById('layer-btn');
-        const layerMenu = document.getElementById('layer-menu');
-        
-        layerBtn?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (!layerMenu) return;
-            const isCurrentlyOpen = layerMenu.style.display === 'block';
-            if (isCurrentlyOpen) {
-                layerMenu.style.display = 'none';
-                layerMenu.classList.remove('open');
-            } else {
-                layerMenu.style.display = 'block';
-                layerMenu.classList.add('open');
-            }
-        });
-
-        layerMenu?.addEventListener('click', (e) => {
-            const target = e.target as HTMLElement;
-            const item = target.closest('.layer-item') as HTMLElement;
-            if (item) {
-                e.stopPropagation();
-                const source = item.dataset.source;
-                if (source) {
-                    document.querySelectorAll('.layer-item').forEach(i => i.classList.remove('active'));
-                    item.classList.add('active');
-                    state.MAP_SOURCE = source;
-                    state.hasManualSource = true;
-                    layerMenu.style.display = 'none';
-                    layerMenu.classList.remove('open');
-                    saveSettings();
-                    this.refreshTerrain();
-                }
-            }
-        });
-
-        const trailsToggle = document.getElementById('trails-toggle') as HTMLInputElement;
-        if (trailsToggle) {
-            trailsToggle.checked = state.SHOW_TRAILS;
-            trailsToggle.addEventListener('change', (e) => {
-                state.SHOW_TRAILS = (e.target as HTMLInputElement).checked;
-                saveSettings();
-                this.refreshTerrain();
-            });
-        }
-
-        const slopesToggle = document.getElementById('slopes-toggle') as HTMLInputElement;
-        if (slopesToggle) {
-            slopesToggle.checked = state.SHOW_SLOPES;
-            slopesToggle.addEventListener('change', (e) => {
-                updateSlopeVisibility((e.target as HTMLInputElement).checked);
-                saveSettings();
-            });
-        }
     }
 
     private bindSlider(id: string, stateKey: keyof typeof state, dispId: string, onChange?: () => void) {
@@ -267,12 +190,6 @@ export class SettingsSheet extends BaseComponent {
                 break;
             case 'VEGETATION_DENSITY':
                 this.updateSlider('veg-density-slider', 'veg-density-disp', value);
-                break;
-            case 'WEATHER_DENSITY':
-                this.updateSlider('weather-density-slider', 'weather-density-disp', value);
-                break;
-            case 'WEATHER_SPEED':
-                this.updateSlider('weather-speed-slider', 'weather-speed-disp', value);
                 break;
             case 'FOG_FAR':
                 const fogSlider = this.element.querySelector('#fog-slider') as HTMLInputElement;
@@ -348,8 +265,6 @@ export class SettingsSheet extends BaseComponent {
         this.updateUIFromState('RANGE', state.RANGE);
         this.updateUIFromState('RELIEF_EXAGGERATION', state.RELIEF_EXAGGERATION);
         this.updateUIFromState('VEGETATION_DENSITY', state.VEGETATION_DENSITY);
-        this.updateUIFromState('WEATHER_DENSITY', state.WEATHER_DENSITY);
-        this.updateUIFromState('WEATHER_SPEED', state.WEATHER_SPEED);
         this.updateUIFromState('FOG_FAR', state.FOG_FAR);
         this.updateUIFromState('ENERGY_SAVER', state.ENERGY_SAVER);
         this.updateUIFromState('SHOW_STATS', state.SHOW_STATS);

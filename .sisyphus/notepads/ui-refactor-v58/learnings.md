@@ -36,3 +36,9 @@
 - Fixed 'Template not found' errors by ensuring index.html is strictly UTF-8 and moving all <template> tags to the end of the <body>, just before the <script> tag.
 - Moved shell containers (#top-status-bar, #nav-bar, #sheet-overlay, #sheet-container, #toast-container, #gps-main-btn) to the end of the body, after #canvas-container.
 - Adjusted GPS and Radar positioning in src/style.css to prevent overlap on small screens.
+- Restored Solar Analysis and Weather display logic in ExpertSheets.ts by dynamically creating UI elements instead of relying on missing DOM nodes.
+- Restored missing advanced settings in index.html and bound them correctly in SettingsSheet.ts. Moved GPX upload input to template-track and updated TrackSheet.ts to handle the file upload event.
+- Replaced navigator.geolocation with Capacitor Geolocation for cross-platform consistency.
+- Removed legacy updateWeatherUIIndicator DOM manipulation in favor of TopStatusBar component.
+- Successfully moved weather slider bindings from SettingsSheet to ExpertSheets (WeatherSheet) to match the new HTML template structure.
+- When using BaseComponent, elements inside the template are appended to the DOM before render() is called. Therefore, using document.getElementById() is safe and often more reliable than this.element.querySelector() when dealing with complex DOM structures or elements that might be moved around.

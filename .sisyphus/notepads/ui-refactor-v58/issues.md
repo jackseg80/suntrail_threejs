@@ -1,0 +1,1 @@
+- Regressions in Solar Analysis, Weather display, and GPX Import were caused by this.element.querySelector() failing to find elements correctly in some contexts, or being used inconsistently. Switching to document.getElementById() resolved these issues.

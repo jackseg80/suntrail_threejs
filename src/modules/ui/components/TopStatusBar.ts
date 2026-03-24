@@ -60,7 +60,7 @@ export class TopStatusBar extends BaseComponent {
 
     private updateNetwork(isOffline: boolean): void {
         if (this.networkStatus) {
-            this.networkStatus.textContent = isOffline ? '📡 HORS-LIGNE' : '📡';
+            this.networkStatus.textContent = isOffline ? '📶 HORS-LIGNE' : '📶 NET';
             if (isOffline) {
                 this.networkStatus.classList.add('offline');
             } else {

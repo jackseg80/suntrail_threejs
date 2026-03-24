@@ -13,7 +13,7 @@ import { disposeAllGeometries } from './geometryCache';
 import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat } from './geo';
 import { throttle } from './utils';
 import { initVegetationResources } from './vegetation';
-import { initWeatherSystem, updateWeatherSystem, fetchWeather, updateWeatherUIIndicator } from './weather';
+import { initWeatherSystem, updateWeatherSystem, fetchWeather } from './weather';
 import { initCompass, disposeCompass, renderCompass, updateCompassAnimation, isCompassAnimating } from './compass';
 import { centerOnUser } from './location';
 
@@ -143,7 +143,7 @@ export async function initScene(): Promise<void> {
         else if (state.ZOOM === 7)  { if (dist < 1200000) newZoom = 8; else if (dist > 2500000) newZoom = 6; }
         else if (state.ZOOM <= 6)  { if (dist < 2000000) newZoom = 7; }
 
-        if (newZoom !== state.ZOOM) { state.ZOOM = newZoom; updateWeatherUIIndicator(); }
+        if (newZoom !== state.ZOOM) { state.ZOOM = newZoom; }
 
         const gpsCenter = worldToLngLat(dx, dz, state.originTile);
         autoSelectMapSource(gpsCenter.lat, gpsCenter.lon);
@@ -199,7 +199,7 @@ export async function initScene(): Promise<void> {
     fetchWeather(state.TARGET_LAT, state.TARGET_LON);
     
     const initialMins = state.simDate.getHours() * 60 + state.simDate.getMinutes();
-    updateSunPosition(initialMins); updateWeatherUIIndicator();
+    updateSunPosition(initialMins);
 
     const clock = new THREE.Clock();
     let lastRenderTime = 0;
