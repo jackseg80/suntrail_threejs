@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { state } from './state';
+import type { Tile } from './terrain';
 
 const hydroCache = new Map<string, any>();
 
 /**
  * Charge l'eau via un Masque Raster (Le système le plus robuste v4.9.6)
  */
-export async function loadHydrologyForTile(tile: any) {
+export async function loadHydrologyForTile(tile: Tile) {
     if (tile.zoom < 13 || !state.MK || !state.SHOW_HYDROLOGY) return;
 
     const cacheKey = `hydro_raster_${tile.zoom}_${tile.tx}_${tile.ty}`;
@@ -28,7 +29,7 @@ export async function loadHydrologyForTile(tile: any) {
 /**
  * Crée une surface d'eau basique pour le test
  */
-function renderBasicWater(tile: any) {
+function renderBasicWater(tile: Tile) {
     if (!tile.mesh) return;
 
     const group = new THREE.Group();

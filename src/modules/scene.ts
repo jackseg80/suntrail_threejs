@@ -7,7 +7,7 @@ import { state } from './state';
 import { eventBus } from './eventBus';
 import { updateSunPosition } from './sun';
 import { getAltitudeAt, resetAnalysisCache } from './analysis';
-import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, resetTerrain, autoSelectMapSource, updateGPXMesh, terrainUniforms } from './terrain';
+import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, resetTerrain, autoSelectMapSource, terrainUniforms } from './terrain';
 import { disposeAllCachedTiles } from './tileCache';
 import { disposeAllGeometries } from './geometryCache';
 import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat } from './geo';
@@ -164,7 +164,26 @@ export async function initScene(): Promise<void> {
                     state.originTile = newTile; lastRecenterTime = Date.now();
                     state.camera!.position.x += offsetX; state.camera!.position.z += offsetZ;
                     state.controls!.target.x += offsetX; state.controls!.target.z += offsetZ;
-                    state.controls!.update(); repositionAllTiles(); if (state.rawGpxData) updateGPXMesh();
+                    
+                    // Reposition all relative objects
+                    if (state.sunLight) {
+                        state.sunLight.position.x += offsetX;
+                        state.sunLight.position.z += offsetZ;
+                        state.sunLight.target.position.x += offsetX;
+                        state.sunLight.target.position.z += offsetZ;
+                        state.sunLight.target.updateMatrixWorld();
+                    }
+                    
+                    if (state.userMarker) {
+                        state.userMarker.position.x += offsetX;
+                        state.userMarker.position.z += offsetZ;
+                    }
+                    
+                    if (state.gpxMesh) {
+                        state.gpxMesh.geometry.translate(offsetX, 0, offsetZ);
+                    }
+                    
+                    state.controls!.update(); repositionAllTiles(); 
                     state.lastWeatherLat = gpsCenter.lat; state.lastWeatherLon = gpsCenter.lon;
                     fetchWeather(gpsCenter.lat, gpsCenter.lon);
                 }

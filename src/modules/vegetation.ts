@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { state } from './state';
+import type { Tile } from './terrain';
 
 // --- RESSOURCES DES ESSENCES (v4.9.1) ---
 interface TreeEssence {
@@ -49,15 +50,15 @@ export function initVegetationResources() {
  * Génère une forêt bio-fidèle sur une tuile (v5.4.2)
  * Filtre amélioré pour exclure les terrains de sport (trop clairs/saturés)
  */
-export function createForestForTile(tile: any): THREE.Group | null {
+export function createForestForTile(tile: Tile): THREE.Group | null {
     // --- SÉCURITÉ SATELLITE (v5.4.8) ---
     // L'analyse de texture sur photo satellite produit trop de faux positifs (arbres partout).
     // De plus, les arbres sont déjà visibles sur la photo elle-même.
     const isSatellite = state.MAP_SOURCE === 'satellite' || state.MAP_SOURCE === 'ign-ortho';
     if (!state.SHOW_VEGETATION || isSatellite || !tile.colorTex || !tile.pixelData || tile.zoom < 14) return null;
 
-    const img = tile.colorTex.image;
-    if (!img || img.width === 0) return null;
+    const img = tile.colorTex.image as any;
+    if (!img || !img.width) return null;
 
     initVegetationResources();
 
@@ -162,7 +163,8 @@ export function createForestForTile(tile: any): THREE.Group | null {
     return totalActive > 0 ? forestGroup : null;
 }
 
-function getSimpleAltitude(tile: any, localX: number, localZ: number, exaggeration: number): number {
+function getSimpleAltitude(tile: Tile, localX: number, localZ: number, exaggeration: number): number {
+    if (!tile.pixelData) return 0;
     const res = Math.sqrt(tile.pixelData.length / 4);
     
     let relX = (localX / tile.tileSizeMeters) + 0.5;

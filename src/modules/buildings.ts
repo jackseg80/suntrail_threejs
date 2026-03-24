@@ -3,13 +3,15 @@ import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUti
 import { state } from './state';
 import { getAltitudeAt } from './analysis';
 import { fetchOverpassData } from './utils';
+import { getTileBounds } from './geo';
+import type { Tile } from './terrain';
 
 const buildingMemoryCache = new Map<string, any[]>();
 const buildingFetchPromises = new Map<string, Promise<any[] | null>>();
 const zoneFailureCooldown = new Map<string, number>();
 const CACHE_NAME = 'suntrail-buildings-v4';
 
-export async function loadBuildingsForTile(tile: any) {
+export async function loadBuildingsForTile(tile: Tile) {
     // Utilisation du seuil dynamique du preset
     if (!state.SHOW_BUILDINGS || tile.zoom < state.BUILDING_ZOOM_THRESHOLD || tile.status === 'disposed') return;
     if (tile.buildingMesh) return;
@@ -44,9 +46,9 @@ export async function loadBuildingsForTile(tile: any) {
         buildingFetchPromises.delete(zoneKey);
     }
 
-    if (!buildings || buildings.length === 0 || tile.status === 'disposed') return;
+    if (!buildings || buildings.length === 0) return;
 
-    const bounds = tile.getBounds();
+    const bounds = getTileBounds({ zoom: tile.zoom, tx: tile.tx, ty: tile.ty });
     const tileBuildings = buildings.filter(el => {
         if (!el.geometry || el.geometry.length === 0) return false;
         const lat = el.geometry[0].lat;
@@ -85,7 +87,7 @@ async function fetchBuildingsWithCache(z: number, x: number, y: number, key: str
     return null;
 }
 
-function renderBuildingsMerged(tile: any, elements: any[]) {
+function renderBuildingsMerged(tile: Tile, elements: any[]) {
     if (tile.status === 'disposed' || !tile.mesh) return;
 
     const geometries: THREE.BufferGeometry[] = [];

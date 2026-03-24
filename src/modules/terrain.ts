@@ -107,6 +107,9 @@ export class Tile {
         this.worldX = (txNorm - oxNorm) * EARTH_CIRCUMFERENCE;
         this.worldZ = (tyNorm - oyNorm) * EARTH_CIRCUMFERENCE;
         if (this.mesh) this.mesh.position.set(this.worldX, 0, this.worldZ);
+        if (this.forestMesh) this.forestMesh.position.set(this.worldX, 0, this.worldZ);
+        if (this.poiGroup && !this.poiGroup.parent) this.poiGroup.position.set(this.worldX, 0, this.worldZ);
+        
         this.bounds.set(
             new THREE.Vector3(this.worldX - this.tileSizeMeters/2, -1000, this.worldZ - this.tileSizeMeters/2),
             new THREE.Vector3(this.worldX + this.tileSizeMeters/2, 9000, this.worldZ + this.tileSizeMeters/2)
@@ -155,12 +158,11 @@ export class Tile {
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
             return;
         }
-        if (this.status as any === 'disposed') return;
         this.status = 'loading';
         const is2D = (this.zoom <= 10 || state.RESOLUTION <= 2);
         try {
             const data = await loadTileData(this.tx, this.ty, this.zoom, is2D);
-            if (this.status as any === 'disposed' || !data) return;
+            if ((this.status as string) === 'disposed' || !data) return;
 
             if (data.elevBitmap) {
                 this.elevationTex = new THREE.Texture(data.elevBitmap);
@@ -197,7 +199,7 @@ export class Tile {
         const oldMesh = this.mesh;
         
         const onCompile = (shader: any) => {
-            (material as any).userData.shader = shader;
+            material.userData.shader = shader;
             shader.uniforms.uElevationMap = { value: this.elevationTex };
             shader.uniforms.uNormalMap = { value: this.normalTex };
             shader.uniforms.uOverlayMap = { value: this.overlayTex };
@@ -396,7 +398,37 @@ export function resetTerrain(): void {
     activeTiles.clear();
 }
 
-export function repositionAllTiles(): void { for (const tile of activeTiles.values()) tile.updateWorldPosition(); }
+export function repositionAllTiles(): void { 
+    const originUnit = 1.0 / Math.pow(2, state.originTile.z);
+    const oxNorm = (state.originTile.x + 0.5) * originUnit;
+    const oyNorm = (state.originTile.y + 0.5) * originUnit;
+
+    for (const tile of activeTiles.values()) {
+        tile.updateWorldPosition();
+    } 
+
+    // Offset labels
+    const lastOrigin = (repositionAllTiles as any).lastOrigin || { x: state.originTile.x, y: state.originTile.y, z: state.originTile.z };
+    if (lastOrigin.x !== state.originTile.x || lastOrigin.y !== state.originTile.y || lastOrigin.z !== state.originTile.z) {
+        const oldOriginUnit = 1.0 / Math.pow(2, lastOrigin.z);
+        const ooxNorm = (lastOrigin.x + 0.5) * oldOriginUnit;
+        const ooyNorm = (lastOrigin.y + 0.5) * oldOriginUnit;
+        const offsetX = (ooxNorm - oxNorm) * EARTH_CIRCUMFERENCE;
+        const offsetZ = (ooyNorm - oyNorm) * EARTH_CIRCUMFERENCE;
+
+        for (const obj of activeLabels.values()) {
+            if (obj.sprite) {
+                obj.sprite.position.x += offsetX;
+                obj.sprite.position.z += offsetZ;
+            }
+            if (obj.line) {
+                obj.line.position.x += offsetX;
+                obj.line.position.z += offsetZ;
+            }
+        }
+    }
+    (repositionAllTiles as any).lastOrigin = { ...state.originTile };
+}
 export function animateTiles(delta: number): boolean { 
     let stillFading = false;
     for (const tile of activeTiles.values()) { if (tile.isFadingIn) { tile.updateFade(delta); stillFading = true; } }
