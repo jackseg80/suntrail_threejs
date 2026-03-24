@@ -1,4 +1,4 @@
-# SunTrail - Base de Connaissance (v5.8.6)
+# SunTrail - Base de Connaissance (v5.8.7)
 
 Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTrail. Il consigne les décisions architecturales critiques et les solutions aux problèmes complexes.
 
@@ -8,7 +8,7 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 - **Pivot Central** : Toute la configuration (LOD, sources, presets) réside dans l'objet `state`.
 - **Réactivité (v5.8.0)** : L'objet `state` est désormais enveloppé dans un **Proxy JS récursif** (`ReactiveState.ts`). Les composants s'abonnent aux changements via `state.subscribe('path', callback)`.
 - **Persistance** : Sauvegarde automatique dans `localStorage`. 
-- **Versioning (v5.8.0)** : Le système inclut désormais un contrôle de version (`CURRENT_SETTINGS_VERSION`). Si une version obsolète est détectée lors du chargement, les réglages sont réinitialisés pour éviter les corruptions.
+- **Versioning (v5.8.7)** : Le système inclut désormais un contrôle de version (`CURRENT_SETTINGS_VERSION`). Si une version obsolète est détectée lors du chargement, les réglages sont réinitialisés pour éviter les corruptions.
 - **Event Bus (`eventBus.ts`)** : Utilisé pour briser les dépendances circulaires entre `terrain.ts` et `scene.ts`. Permet de déclencher des événements transversaux (ex: `terrainReady`, `flyTo`).
 
 ### Interface & Composants (v5.8.0)
@@ -27,7 +27,7 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 - **Hydrologie 3D (v5.8.4)** : Restauration d'un moteur d'eau réaliste. Détection chromatique optimisée pour SwissTopo et vagues en **"Rouleaux Géants"** sans couture entre les tuiles grâce à l'utilisation des coordonnées mondiales absolues.
 - **Bâtiments 3D (v5.8.5)** : Utilisation prioritaire de l'**API MapTiler Buildings (Vector Tiles)** pour la rapidité et la stabilité. Les données étant limitées nativement au Zoom 14, un système d'**Overzooming** recalcule les coordonnées pour les niveaux supérieurs. Basculement automatique (Fallback) vers l'API Overpass (OSM) en cas d'erreur ou de quota atteint.
 - **Sentiers (MVT)** : Utilisation de tuiles vectorielles (**MVT/PBF**) au lieu de raster pour une netteté infinie et un rendu stylisé (v5.6.5).
-- **Végétation Bio-Fidèle** : Sélection des essences d'arbres (feuillus, sapins, mélèzes) basée sur l'altitude réelle de la tuile (v4.9.1).
+- **Végétation Bio-Fidèle (v5.8.7)** : Sélection des essences d'arbres basée sur l'altitude réelle. Utilisation d'un **Adaptive Scan** (résolution augmentée à 128 pour l'Ultra) pour une densité de forêt massive et réaliste.
 
 ## 🔋 Performance & Mobile
 
@@ -43,7 +43,7 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 ## 🕹️ Navigation & UX
 
 ### Mouvements de Caméra
-- **Cinematic flyTo** : Trajectoire en "cloche" (parabolique) avec interpolation `easeInOutCubic` et vérification anti-collision en temps réel (v4.6.0).
+- **Cinematic flyTo** : Trajectoire en "cloche" (parabolique) avec interpolation `easeInOutCubic` et vérification anti-collision en temps realtime (v4.6.0).
 - **Adaptive Zoom (v5.8.6)** : Logique de saut intelligent de LOD lors des téléportations ou des déplacements rapides. Élimine le délai de chargement des paliers intermédiaires pour une netteté immédiate à l'arrivée.
 - **Tilt Parabola** : L'inclinaison maximale de la caméra est dynamique ; elle atteint son pic au LOD 14 et se redresse automatiquement vers le sol à haute altitude pour masquer l'horizon vide (v4.5.56).
 - **Google Earth Style** : Rotation mobile "Twist" à deux doigts avec verrouillage du Tilt pendant l'interaction pour éviter les mouvements brusques (v4.5.37).

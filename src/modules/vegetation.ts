@@ -62,7 +62,9 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
 
     initVegetationResources();
 
-    const scanRes = 48;
+    // --- ADAPTIVE SCAN RESOLUTION (v5.8.7) ---
+    // On augmente la résolution de scan pour permettre plus de densité
+    const scanRes = (state.PERFORMANCE_PRESET === 'ultra') ? 128 : 80;
     const canvas = document.createElement('canvas');
     canvas.width = scanRes; canvas.height = scanRes; 
     const ctx = canvas.getContext('2d', { willReadFrequently: true, alpha: false });
@@ -87,8 +89,8 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
         feuillu: { count: 0, matrices: [] }
     };
 
-    const step = (state.PERFORMANCE_PRESET === 'ultra') ? 1 : ((state.PERFORMANCE_PRESET === 'performance') ? 2 : 4);
-    const densityBoost = (step === 4) ? 1.5 : 1.0;
+    const step = (state.PERFORMANCE_PRESET === 'ultra') ? 1 : ((state.PERFORMANCE_PRESET === 'performance') ? 1 : 2);
+    const densityBoost = (state.PERFORMANCE_PRESET === 'ultra') ? 1.2 : 1.0;
 
     let totalActive = 0;
 
@@ -117,7 +119,7 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
 
             if (isForest) {
                 // On ajoute un petit aléatoire pour la densité (v5.5.0)
-                if (Math.random() > 0.97 && step > 1) continue; 
+                if (Math.random() > 0.98 && step > 1) continue; 
 
                 const lx = ((px / scanRes) - 0.5) * size + (Math.random() - 0.5) * (size / scanRes) * step;
                 const lz = ((py / scanRes) - 0.5) * size + (Math.random() - 0.5) * (size / scanRes) * step;
@@ -135,8 +137,8 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
                 }
 
                 dummy.position.set(lx, h, lz);
-                const scale = (0.35 + Math.random() * 0.75) * densityBoost; 
-                dummy.scale.set(scale, scale * (0.82 + Math.random() * 0.55), scale);
+                const scale = (0.45 + Math.random() * 0.85) * densityBoost; 
+                dummy.scale.set(scale, scale * (0.85 + Math.random() * 0.50), scale);
                 dummy.rotation.y = Math.random() * Math.PI;
                 dummy.updateMatrix();
                 
