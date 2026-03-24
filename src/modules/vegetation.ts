@@ -108,13 +108,17 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
                 const brightness = (r + g + b) / 3;
                 const saturation = (Math.max(r, g, b) - Math.min(r, g, b)) / 255;
                 
-                // --- FILTRE ÉQUILIBRÉ (v5.5.0) ---
-                // Compromis entre densité de forêt et exclusion des zones sportives
-                const isTooBright = brightness > 150; 
-                const isTooSaturated = saturation > 0.45 && g > r * 1.28;
+                // --- FILTRE ANTI-PELOUSE (v5.8.8) ---
+                // Les terrains de foot sont très verts (G dominant), saturés et assez clairs.
+                // Les forêts sont plus sombres et moins saturées.
+                const isTooBright = brightness > 140; 
+                const isTooSaturated = saturation > 0.35 && g > r * 1.25;
                 
+                // Si le vert est beaucoup plus fort que le rouge (ex: pelouse synthétique ou tondue)
+                const isVividGreen = (g > r * 1.35); 
+
                 const isNeutral = (Math.abs(r - g) < 15 && Math.abs(g - b) < 15 && r > 170);
-                isForest = (g > r * 1.04 && g > b * 1.04 && !isNeutral && !isTooBright && !isTooSaturated);
+                isForest = (g > r * 1.05 && g > b * 1.05 && !isNeutral && !isTooBright && !isTooSaturated && !isVividGreen);
             }
 
             if (isForest) {

@@ -4,6 +4,11 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.8.8] - 2026-03-24
+### 🌲 Vegetation Precision
+- **Anti-Lawn Filter**: Implemented a strict chromatic filter to distinguish between natural forests and manicured grass (football fields, golf courses, gardens).
+- **Luminance & Saturation Tuning**: Reduced brightness threshold and added vivid green detection to prevent false-positive tree placement on bright sports surfaces.
+
 ## [5.8.7] - 2026-03-24
 ### 🌲 Vegetation & Environment
 - **Massive Forest Density**: Increased default tree density across all presets (Balanced: 4000, Performance: 10000, Ultra: 18000).
