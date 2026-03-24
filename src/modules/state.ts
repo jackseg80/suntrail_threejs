@@ -234,7 +234,7 @@ const initialState: State = {
 
 export const state = createReactiveState(initialState);
 
-const CURRENT_SETTINGS_VERSION = '5.8.10';
+const CURRENT_SETTINGS_VERSION = '5.8.12';
 
 export interface SavedSettings {
     version?: string;
