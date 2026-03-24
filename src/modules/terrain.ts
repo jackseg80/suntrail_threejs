@@ -259,9 +259,20 @@ export class Tile {
                         vec3 colorIn = diffuseColor.rgb;
                         float brightness = (colorIn.r + colorIn.g + colorIn.b) / 3.0;
                         
-                        float blueDominance = colorIn.b - (colorIn.r + colorIn.g) * 0.5;
-                        float isWater = smoothstep(0.01, 0.08, blueDominance) * smoothstep(0.99, 1.0, vTrueNormal.y);
-                        isWater *= (1.0 - smoothstep(0.8, 0.95, brightness) * (1.0 - smoothstep(0.1, 0.2, blueDominance)));
+                        // Détection stricte : le bleu doit être le canal dominant
+                        // On compare le bleu au rouge et au vert individuellement
+                        float blueVsRed = colorIn.b - colorIn.r;
+                        float blueVsGreen = colorIn.b - colorIn.g;
+                        
+                        // L'eau est bleue (B > R et B >= G) et la zone est parfaitement plate
+                        float isWater = smoothstep(0.02, 0.10, blueVsRed) * smoothstep(0.0, 0.06, blueVsGreen) * smoothstep(0.998, 1.0, vTrueNormal.y);
+                        
+                        // Protection supplémentaire : si le vert est trop présent (prairie), on annule
+                        float greenDominance = colorIn.g - max(colorIn.r, colorIn.b);
+                        isWater *= (1.0 - smoothstep(0.0, 0.1, greenDominance));
+
+                        // Protection Neige/Glacier : si c'est très blanc, le bleu doit être extrêmement marqué
+                        isWater *= (1.0 - smoothstep(0.8, 0.98, brightness) * (1.0 - smoothstep(0.1, 0.3, blueVsRed)));
 
                         if (isWater > 0.05) {
                             vec3 waterBlue = vec3(0.02, 0.18, 0.52);
