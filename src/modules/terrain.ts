@@ -7,7 +7,7 @@ import { createForestForTile } from './vegetation';
 import { loadPOIsForTile } from './poi';
 import { loadBuildingsForTile } from './buildings';
 import { loadHydrologyForTile } from './hydrology';
-import { EARTH_CIRCUMFERENCE, lngLatToWorld, worldToLngLat, lngLatToTile } from './geo';
+import { EARTH_CIRCUMFERENCE, lngLatToWorld, worldToLngLat, lngLatToTile, getTileBounds } from './geo';
 import { eventBus } from './eventBus';
 import { addToCache, getFromCache, hasInCache, getTileCacheKey } from './tileCache';
 import { getPlaneGeometry } from './geometryCache';
@@ -81,6 +81,7 @@ export class Tile {
     forestMesh: THREE.Object3D | null = null;
     poiGroup: THREE.Group | null = null;
     buildingMesh: THREE.Mesh | null = null;
+    hydroGroup: THREE.Group | null = null;
     currentResolution: number = -1;
     tileSizeMeters: number;
     opacity: number = 0;
@@ -95,6 +96,10 @@ export class Tile {
         this.tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
         this.updateWorldPosition();
         this.updateHybridSettings();
+    }
+
+    public getBounds() {
+        return getTileBounds({ zoom: this.zoom, tx: this.tx, ty: this.ty });
     }
 
     updateWorldPosition(): void {
@@ -386,6 +391,7 @@ export class Tile {
         if (this.forestMesh) { if (state.scene) state.scene.remove(this.forestMesh); disposeObject(this.forestMesh); this.forestMesh = null; }
         if (this.poiGroup) { if (state.scene) state.scene.remove(this.poiGroup); disposeObject(this.poiGroup); this.poiGroup = null; }
         if (this.buildingMesh) { if (state.scene) state.scene.remove(this.buildingMesh); disposeObject(this.buildingMesh); this.buildingMesh = null; }
+        if (this.hydroGroup) { if (state.scene) state.scene.remove(this.hydroGroup); disposeObject(this.hydroGroup); this.hydroGroup = null; }
         // Ne PAS disposer elevationTex, colorTex, overlayTex et normalTex ici car ils sont partagés via le cache.
         // Ils seront disposés par tileCache.ts lors de l'éviction.
         this.elevationTex = null; this.colorTex = null; this.overlayTex = null; this.normalTex = null;

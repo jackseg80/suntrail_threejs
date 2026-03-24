@@ -3,7 +3,6 @@ import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUti
 import { state } from './state';
 import { getAltitudeAt } from './analysis';
 import { fetchOverpassData } from './utils';
-import { getTileBounds } from './geo';
 import type { Tile } from './terrain';
 
 const buildingMemoryCache = new Map<string, any[]>();
@@ -13,7 +12,7 @@ const CACHE_NAME = 'suntrail-buildings-v4';
 
 export async function loadBuildingsForTile(tile: Tile) {
     // Utilisation du seuil dynamique du preset
-    if (!state.SHOW_BUILDINGS || tile.zoom < state.BUILDING_ZOOM_THRESHOLD || tile.status === 'disposed') return;
+    if (!state.SHOW_BUILDINGS || tile.zoom < state.BUILDING_ZOOM_THRESHOLD || (tile.status as string) === 'disposed') return;
     if (tile.buildingMesh) return;
 
     if (state.isUserInteracting) {
@@ -46,9 +45,9 @@ export async function loadBuildingsForTile(tile: Tile) {
         buildingFetchPromises.delete(zoneKey);
     }
 
-    if (!buildings || buildings.length === 0) return;
+    if (!buildings || buildings.length === 0 || (tile.status as string) === 'disposed') return;
 
-    const bounds = getTileBounds({ zoom: tile.zoom, tx: tile.tx, ty: tile.ty });
+    const bounds = tile.getBounds();
     const tileBuildings = buildings.filter(el => {
         if (!el.geometry || el.geometry.length === 0) return false;
         const lat = el.geometry[0].lat;

@@ -22,21 +22,11 @@
     - Sauvegarde automatique du profil de performance, de la source de carte et des unités.
 
 ## ⏳ Backlog & Recherche (Indéfini)
-- [ ] **Waypoints & Partage** :
-    - Marquage de points d'intérêt personnalisés.
-    - **Deep Linking** : Partage d'URL synchronisée pour une vue 3D exacte.
-
-## ✨ Priorité 3 : Modern UX & Excellence Visuelle (v5.8) - ✅ TERMINÉ
-*Impact : Interface professionnelle, ergonomie mobile "One-Hand" et relief ultra-net.*
-
-- [x] **Refonte UI "Minimalist Alpin"** :
-    - Remplacement des boutons flottants par un **système de Navigation Bar basse**.
-    - Utilisation de **Bottom Sheets** (tiroirs coulissants) pour les réglages et calques.
-    - Uniformisation du design (Glassmorphism, Blur, Espacements).
-- [x] **Réactivité via Proxy (v5.8.0)** : État global réactif avec synchronisation automatique UI/State.
-- [x] **Timeline Island** : Barre de temps flottante et réactive pour la simulation solaire.
 - [ ] **Normal Map Pro (Phase 5)** : Résoudre le bundling PBF/MVT pour une netteté vectorielle infinie du relief.
+- [ ] **Sentiers (MVT/PBF)** : Migration expérimentale vers les tuiles vectorielles pour une netteté infinie (Tentatives précédentes infructueuses, à isoler).
 - [ ] **Cloud Shadows & Météo Pro** : Projection d'ombres de nuages dynamiques.
+- [ ] **Waypoints & Partage** : Marquage personnel et Deep Linking (URL synchronisée).
+- [ ] **Mode Nuit Avancé** : Pollution lumineuse urbaine (NASA).
 
 ## 🌐 Priorité 4 : Expansion & Multi-GPX (v5.9)
 *Impact : Ouverture européenne et gestion de groupes.*

@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { state } from './state';
 import { getAltitudeAt } from './analysis';
 import { fetchOverpassData } from './utils';
-import { getTileBounds } from './geo';
 import type { Tile } from './terrain';
 
 const poiMemoryCache = new Map<string, any[]>();
@@ -27,7 +26,7 @@ function createSignpostTexture(): THREE.Texture {
 
 export async function loadPOIsForTile(tile: Tile) {
     // Utilisation du seuil dynamique du preset
-    if (!state.SHOW_SIGNPOSTS || tile.zoom < state.POI_ZOOM_THRESHOLD || tile.status === 'disposed') return;
+    if (!state.SHOW_SIGNPOSTS || tile.zoom < state.POI_ZOOM_THRESHOLD || (tile.status as string) === 'disposed') return;
     if (tile.poiGroup) return;
 
     if (state.isUserInteracting) {
@@ -60,9 +59,9 @@ export async function loadPOIsForTile(tile: Tile) {
         poiFetchPromises.delete(zoneKey);
     }
 
-    if (!pois || pois.length === 0) return;
+    if (!pois || pois.length === 0 || (tile.status as string) === 'disposed') return;
 
-    const bounds = getTileBounds({ zoom: tile.zoom, tx: tile.tx, ty: tile.ty });
+    const bounds = tile.getBounds();
     const tilePOIs = pois.filter(el => {
         return el.lat <= bounds.north && el.lat >= bounds.south && el.lon <= bounds.east && el.lon >= bounds.west;
     });
