@@ -4,6 +4,12 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.8.6] - 2026-03-24
+### 🛠️ Navigation & Performance
+- **Adaptive Zoom Engine**: Implementation of a "smart jump" logic for LOD transitions. When teleporting or moving fast, the engine now skips intermediate zoom levels to instantly match the camera altitude.
+- **Cinematic flyTo Refinement**: Improved target altitudes for teleportation. Peaks now aim for 3.5km (LOD 16/17) and cities for 8km (LOD 15/16) for immediate immersion.
+- **State Stability**: Fixed `MAX_ALLOWED_ZOOM` handling in the reactive state to prevent zoom blocking during manual interactions.
+
 ## [5.8.5] - 2026-03-24
 ### 🛠️ 3D Buildings & Infrastructure
 - **MapTiler Buildings Integration**: Fixed API URL to use dedicated `buildings` tileset and implemented native handling for overzoomed tiles (native data capped at Z14).

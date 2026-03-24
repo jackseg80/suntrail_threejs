@@ -1,4 +1,4 @@
-# SunTrail - Base de Connaissance (v5.8.5)
+# SunTrail - Base de Connaissance (v5.8.6)
 
 Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTrail. Il consigne les décisions architecturales critiques et les solutions aux problèmes complexes.
 
@@ -44,6 +44,7 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 
 ### Mouvements de Caméra
 - **Cinematic flyTo** : Trajectoire en "cloche" (parabolique) avec interpolation `easeInOutCubic` et vérification anti-collision en temps réel (v4.6.0).
+- **Adaptive Zoom (v5.8.6)** : Logique de saut intelligent de LOD lors des téléportations ou des déplacements rapides. Élimine le délai de chargement des paliers intermédiaires pour une netteté immédiate à l'arrivée.
 - **Tilt Parabola** : L'inclinaison maximale de la caméra est dynamique ; elle atteint son pic au LOD 14 et se redresse automatiquement vers le sol à haute altitude pour masquer l'horizon vide (v4.5.56).
 - **Google Earth Style** : Rotation mobile "Twist" à deux doigts avec verrouillage du Tilt pendant l'interaction pour éviter les mouvements brusques (v4.5.37).
 
