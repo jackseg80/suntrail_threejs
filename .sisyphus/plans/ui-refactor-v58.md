@@ -229,5 +229,7 @@ graph TD
 - [x] **Z-Index**: Verify `TopStatusBar` is always above `BottomSheet` overlays.
 - [x] **Memory**: Verify `component.dispose()` is called when switching views to prevent listener leaks.
 - [x] **NaN Safety**: Verify searching for "NaN, NaN" does not crash the camera.
+- [x] **Build**: `npm run build` passes.
+- [x] **Types**: `npm run check` passes.
 
 Plan corrected by Prometheus. Run `/start-work` to begin.

@@ -9,6 +9,7 @@ const hideUI = () => {
 };
 
 const resetTimer = () => {
+    document.body.classList.remove('ui-hidden');
     if (hideTimer) {
         clearTimeout(hideTimer);
     }
