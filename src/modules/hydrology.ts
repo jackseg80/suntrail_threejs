@@ -13,12 +13,12 @@ const CACHE_NAME = 'suntrail-hydro-v1';
 const waterMaterial = new THREE.MeshStandardMaterial({
     color: 0x0055bb,
     transparent: true,
-    opacity: 0.6,
-    roughness: 0.05,
-    metalness: 0.4,
+    opacity: 0.5,
+    roughness: 0.02,
+    metalness: 0.6,
     polygonOffset: true,
-    polygonOffsetFactor: -1, // Un peu au-dessus du sol pour éviter le Z-fighting
-    polygonOffsetUnits: -1
+    polygonOffsetFactor: -2, // Légèrement plus haut pour dominer les variations de relief
+    polygonOffsetUnits: -2
 });
 
 /**
