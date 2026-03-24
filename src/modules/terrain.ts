@@ -14,6 +14,7 @@ import { getPlaneGeometry } from './geometryCache';
 import { loadTileData } from './tileLoader';
 import { materialPool } from './materialPool';
 
+
 export const activeTiles = new Map<string, Tile>(); 
 export const activeLabels = new Map<string, any>(); 
 
@@ -112,25 +113,14 @@ export class Tile {
         );
     }
 
-    isVisible(): boolean {
+    public isVisible(): boolean {
         if (!state.camera) return true;
         projScreenMatrix.multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
         frustum.setFromProjectionMatrix(projScreenMatrix);
         return frustum.intersectsBox(this.bounds.clone().expandByScalar(this.tileSizeMeters * 0.2));
     }
 
-    getBounds() {
-        const n = Math.pow(2, this.zoom);
-        const lonWest = this.tx / n * 360 - 180;
-        const lonEast = (this.tx + 1) / n * 360 - 180;
-        const latRadNorth = Math.atan(Math.sinh(Math.PI * (1 - 2 * this.ty / n)));
-        const latNorth = latRadNorth * 180 / Math.PI;
-        const latRadSouth = Math.atan(Math.sinh(Math.PI * (1 - 2 * (this.ty + 1) / n)));
-        const latSouth = latRadSouth * 180 / Math.PI;
-        return { north: latNorth, south: latSouth, west: lonWest, east: lonEast };
-    }
-
-    lngLatToLocal(lon: number, lat: number): THREE.Vector3 {
+    public lngLatToLocal(lon: number, lat: number): THREE.Vector3 {
         const n = Math.pow(2, this.zoom);
         const xNorm = (lon + 180) / 360;
         const yNorm = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2;

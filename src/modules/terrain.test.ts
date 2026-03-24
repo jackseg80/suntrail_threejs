@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { Tile, updateGPXMesh, updateVisibleTiles, terrainUniforms } from './terrain';
-import { lngLatToTile, worldToLngLat, EARTH_CIRCUMFERENCE } from './geo';
+import { lngLatToTile, worldToLngLat, EARTH_CIRCUMFERENCE, getTileBounds } from './geo';
 import { state } from './state';
 
 describe('terrain.ts', () => {
@@ -147,7 +147,7 @@ describe('terrain.ts', () => {
 
         it('should correctly handle bounding box calculations', () => {
             const tile = new Tile(4270, 2891, 13, '13/4270/2891');
-            const bounds = tile.getBounds();
+            const bounds = getTileBounds({ zoom: tile.zoom, tx: tile.tx, ty: tile.ty });
             expect(bounds.north).toBeGreaterThan(46.0);
             expect(bounds.south).toBeLessThan(47.0);
             expect(bounds.west).toBeCloseTo(7.6, 0);

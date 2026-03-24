@@ -181,6 +181,7 @@ export interface State {
     lastUIInteraction: number;
     lastClickedCoords: { x: number; z: number; alt: number };
     hasLastClicked: boolean;
+    isFlying: boolean;
 }
 
 const initialState: State = {
@@ -225,7 +226,8 @@ const initialState: State = {
     isMapTilerDisabled: false,
     networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isUserInteracting: false, isProcessingTiles: false, lastUIInteraction: Date.now(),
     lastClickedCoords: { x: 0, z: 0, alt: 0 },
-    hasLastClicked: false
+    hasLastClicked: false,
+    isFlying: false
 };
 
 export const state = createReactiveState(initialState);

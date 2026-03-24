@@ -3,6 +3,11 @@ import { state } from '../../state';
 import { showToast } from '../../utils';
 import { startLocationTracking } from '../../location';
 import { sheetManager } from '../core/SheetManager';
+// @ts-ignore
+import gpxParser from 'gpxparser';
+import { updateVisibleTiles, updateGPXMesh } from '../../terrain';
+import { lngLatToTile } from '../../geo';
+import { updateElevationProfile } from '../../profile';
 
 export class TrackSheet extends BaseComponent {
     constructor() {
@@ -47,8 +52,7 @@ export class TrackSheet extends BaseComponent {
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
-                    const event = new CustomEvent('gpx-uploaded', { detail: ev.target!.result });
-                    window.dispatchEvent(event);
+                    this.handleGPX(ev.target!.result as string);
                 };
                 reader.readAsText(file);
             }
@@ -60,8 +64,7 @@ export class TrackSheet extends BaseComponent {
                 showToast("Tracé trop court pour export");
                 return;
             }
-            // Trigger the global export function (still in ui.ts for now or moved)
-            window.dispatchEvent(new CustomEvent('export-recorded-gpx'));
+            this.exportRecordedGPX();
         });
 
         this.addSubscription(state.subscribe('isRecording', () => this.updateRecUI()));
@@ -122,5 +125,50 @@ export class TrackSheet extends BaseComponent {
         if (distEl) distEl.innerHTML = `${(dist / 1000).toFixed(2)} <span style="font-size:13px;color:var(--t2)">km</span>`;
         if (dplusEl) dplusEl.innerHTML = `+${Math.round(dplus)} <span style="font-size:12px">m</span>`;
         if (dminusEl) dminusEl.innerHTML = `−${Math.round(dminus)} <span style="font-size:12px">m</span>`;
+    }
+
+    private exportRecordedGPX() {
+        let gpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="SunTrail 3D" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>SunTrail Recorded Track - ${new Date().toLocaleDateString()}</name>
+    <trkseg>`;
+
+        state.recordedPoints.forEach(p => {
+            gpx += `
+      <trkpt lat="${p.lat}" lon="${p.lon}">
+        <ele>${p.alt.toFixed(1)}</ele>
+        <time>${new Date(p.timestamp).toISOString()}</time>
+      </trkpt>`;
+        });
+
+        gpx += `
+    </trkseg>
+  </trk>
+</gpx>`;
+
+        const blob = new Blob([gpx], { type: 'application/gpx+xml' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `suntrail-track-${Date.now()}.gpx`;
+        link.click();
+        URL.revokeObjectURL(url);
+        showToast("GPX téléchargé");
+    }
+
+    private async handleGPX(xml: string) {
+        const gpx = new gpxParser(); 
+        gpx.parse(xml);
+        if (!gpx.tracks?.length) return;
+        state.rawGpxData = gpx;
+        const startPt = gpx.tracks[0].points[0];
+        state.TARGET_LAT = startPt.lat; 
+        state.TARGET_LON = startPt.lon;
+        state.ZOOM = 13; 
+        state.originTile = lngLatToTile(startPt.lon, startPt.lat, 13);
+        updateGPXMesh(); 
+        updateElevationProfile(); 
+        await updateVisibleTiles();
     }
 }
