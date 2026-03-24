@@ -6,6 +6,8 @@ import { resetTerrain, updateVisibleTiles, updateHydrologyVisibility, updateSlop
 import { deleteTerrainCache, downloadOfflineZone } from '../../tileLoader';
 import { showToast } from '../../utils';
 
+import { sheetManager } from '../core/SheetManager';
+
 export class SettingsSheet extends BaseComponent {
     constructor() {
         super('template-settings', 'sheet-container');
@@ -16,7 +18,7 @@ export class SettingsSheet extends BaseComponent {
 
         // Close panel
         const closePanel = this.element.querySelector('#close-panel');
-        closePanel?.addEventListener('click', () => this.element!.classList.remove('open'));
+        closePanel?.addEventListener('click', () => sheetManager.close());
 
         // Presets
         this.element.querySelectorAll('.preset-btn').forEach(btn => {
@@ -219,12 +221,6 @@ export class SettingsSheet extends BaseComponent {
                 updateSlopeVisibility((e.target as HTMLInputElement).checked);
                 saveSettings();
             });
-        }
-    }
-
-    public toggle(): void {
-        if (this.element) {
-            this.element.classList.toggle('open');
         }
     }
 

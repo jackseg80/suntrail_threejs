@@ -100,7 +100,7 @@ export class SOSSheet extends BaseComponent {
         const textContainer = this.element.querySelector('#sos-text-container');
         if (!textContainer) return;
 
-        sheetManager.open('sos-modal');
+        sheetManager.open('sos');
         textContainer.textContent = "⌛ Localisation en cours...";
         
         let lat: number, lon: number, alt: number;

@@ -6,6 +6,8 @@ import { lngLatToTile, lngLatToWorld } from '../../geo';
 import { flyTo } from '../../scene';
 import { fetchWeather } from '../../weather';
 
+import { sheetManager } from '../core/SheetManager';
+
 export class SearchSheet extends BaseComponent {
     private geoInput: HTMLInputElement | null = null;
     private geoResults: HTMLElement | null = null;
@@ -140,7 +142,7 @@ export class SearchSheet extends BaseComponent {
     private handleResultClick(lat: number, lon: number, isPeak: boolean, peakName: string = '', peakEle: number = 0) {
         if (!this.geoResults || !this.geoInput) return;
         
-        this.geoResults.style.display = 'none';
+        sheetManager.close();
         this.geoInput.value = '';
         
         if (isPeak) {

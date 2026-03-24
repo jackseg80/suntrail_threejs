@@ -1,6 +1,8 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { state } from '../../state';
 
+import { sheetManager } from '../core/SheetManager';
+
 export class TopStatusBar extends BaseComponent {
     private lodBadge: HTMLElement | null = null;
     private weatherIcon: HTMLElement | null = null;
@@ -18,6 +20,11 @@ export class TopStatusBar extends BaseComponent {
         this.weatherIcon = this.element.querySelector('.weather-icon');
         this.weatherTemp = this.element.querySelector('.weather-temp');
         this.networkStatus = this.element.querySelector('.network-status');
+
+        const weatherWidget = this.element.querySelector('.weather-widget');
+        weatherWidget?.addEventListener('click', () => {
+            sheetManager.toggle('weather');
+        });
 
         this.updateLOD(state.ZOOM);
         this.updateWeather(state.weatherData);

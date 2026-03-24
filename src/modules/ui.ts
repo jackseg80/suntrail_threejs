@@ -6,7 +6,7 @@ import { updateSunPosition } from './sun';
 import { initScene, flyTo } from './scene';
 import { updateVisibleTiles, resetTerrain, updateGPXMesh, loadTerrain } from './terrain';
 import { updateStorageUI } from './tileLoader';
-import { lngLatToTile, lngLatToWorld } from './geo';
+import { lngLatToTile, lngLatToWorld, worldToLngLat } from './geo';
 import { showToast } from './utils';
 import { applyPreset, detectBestPreset, getGpuInfo, applyCustomSettings } from './performance';
 import { findTerrainIntersection, getAltitudeAt } from './analysis';
@@ -14,12 +14,14 @@ import { updateElevationProfile } from './profile';
 import { startLocationTracking, stopLocationTracking } from './location';
 import { fetchWeather } from './weather';
 
+import { sheetManager } from './ui/core/SheetManager';
 import { NavigationBar } from './ui/components/NavigationBar';
 import { TopStatusBar } from './ui/components/TopStatusBar';
 import { SettingsSheet } from './ui/components/SettingsSheet';
 import { SearchSheet } from './ui/components/SearchSheet';
 import { WeatherSheet, SolarProbeSheet, SOSSheet } from './ui/components/ExpertSheets';
 import { TrackSheet } from './ui/components/TrackSheet';
+import { WidgetsComponent } from './ui/components/WidgetsComponent';
 import { initAutoHide } from './ui/autoHide';
 import { initMobileUI } from './ui/mobile';
 
@@ -130,13 +132,16 @@ export function initUI(): void {
     const sosSheet = new SOSSheet();
     sosSheet.hydrate();
 
+    const widgets = new WidgetsComponent();
+    widgets.hydrate();
+
     initAutoHide();
     initMobileUI();
 
     const settingsToggle = document.getElementById('settings-toggle');
     settingsToggle?.addEventListener('click', (e) => {
         e.stopPropagation();
-        settingsSheet.toggle();
+        sheetManager.toggle('settings');
     });
 
     window.addEventListener('gpx-uploaded', (e: any) => {
@@ -223,14 +228,16 @@ export function initUI(): void {
     });
 
     document.getElementById('screenshot-btn')?.addEventListener('click', takeScreenshot);
+
+    document.getElementById('close-coords')?.addEventListener('click', () => {
+        const cp = document.getElementById('coords-panel');
+        if (cp) cp.style.display = 'none';
+        state.hasLastClicked = false;
+    });
 }
 
-function handleGlobalClick(e: MouseEvent) {
-    const target = e.target as HTMLElement;
-    if (target.id === 'weather-clickable' || target.closest('#weather-clickable')) {
-        const wp = document.getElementById('weather-panel');
-        if (wp) wp.style.display = wp.style.display === 'none' ? 'block' : 'none';
-    }
+function handleGlobalClick(_e: MouseEvent) {
+    // Global click handling if needed
 }
 
 function handleMapClick(e: MouseEvent) {
@@ -261,6 +268,16 @@ function handleMapClick(e: MouseEvent) {
     if (hit && state.originTile) {
         state.hasLastClicked = true;
         state.lastClickedCoords = { x: hit.x, z: hit.z, alt: getAltitudeAt(hit.x, hit.z) };
+        
+        const cp = document.getElementById('coords-panel');
+        if (cp) {
+            cp.style.display = 'block';
+            const gps = worldToLngLat(hit.x, hit.z, state.originTile);
+            const clickLatLon = document.getElementById('click-latlon');
+            if (clickLatLon) clickLatLon.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
+            const clickAlt = document.getElementById('click-alt');
+            if (clickAlt) clickAlt.textContent = `${Math.round(state.lastClickedCoords.alt)} m`;
+        }
     } else {
         state.hasLastClicked = false;
     }
@@ -271,9 +288,13 @@ function startApp() {
     loadTerrain();
     fetchWeather(state.TARGET_LAT, state.TARGET_LON);
     
-    document.querySelectorAll('.ui-element').forEach(el => {
-        (el as HTMLElement).style.display = 'flex';
-    });
+    const navBar = document.getElementById('nav-bar');
+    const topBar = document.getElementById('top-status-bar');
+    const widgets = document.getElementById('widgets-container');
+    
+    if (navBar) navBar.style.display = 'flex';
+    if (topBar) topBar.style.display = 'flex';
+    if (widgets) widgets.style.display = 'block';
 }
 
 function onWindowResize() {

@@ -9,13 +9,17 @@ class SheetManager {
     private overlay: HTMLElement | null = null;
 
     private constructor() {
-        // Initialize overlay reference
-        this.overlay = document.getElementById('sheet-overlay');
-        
-        // Close sheet when clicking on overlay
-        if (this.overlay) {
-            this.overlay.addEventListener('click', () => this.close());
+        // Overlay will be initialized on first use if not already present
+    }
+
+    private getOverlay(): HTMLElement | null {
+        if (!this.overlay) {
+            this.overlay = document.getElementById('sheet-overlay');
+            if (this.overlay) {
+                this.overlay.addEventListener('click', () => this.close());
+            }
         }
+        return this.overlay;
     }
 
     public static getInstance(): SheetManager {
@@ -45,8 +49,9 @@ class SheetManager {
         this.activeSheetId = id;
 
         // Show overlay
-        if (this.overlay) {
-            this.overlay.classList.add('is-open');
+        const overlay = this.getOverlay();
+        if (overlay) {
+            overlay.classList.add('is-open');
         }
     }
 
@@ -58,8 +63,9 @@ class SheetManager {
             this.closeActiveSheet();
             
             // Hide overlay
-            if (this.overlay) {
-                this.overlay.classList.remove('is-open');
+            const overlay = this.getOverlay();
+            if (overlay) {
+                overlay.classList.remove('is-open');
             }
         }
     }

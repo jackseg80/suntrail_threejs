@@ -112,9 +112,13 @@ export function runSolarProbe(worldX: number, worldZ: number, altitude: number) 
         if (timeline) timeline.appendChild(bar);
     }
 
-    const resPanel = document.getElementById('probe-result');
+    const resPanel = document.getElementById('solar-probe');
     if (resPanel) {
-        resPanel.style.display = 'block';
+        // SheetManager handles visibility, but we ensure it's open
+        import('./ui/core/SheetManager').then(({ sheetManager }) => {
+            sheetManager.open('solar-probe');
+        });
+        
         if (statusEl) statusEl.textContent = "Analyse terminée";
 
         const totalStr = `${Math.floor(totalSunlightMinutes / 60)}h ${totalSunlightMinutes % 60}m`;
