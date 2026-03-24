@@ -19,6 +19,7 @@ import { TopStatusBar } from './ui/components/TopStatusBar';
 import { SettingsSheet } from './ui/components/SettingsSheet';
 import { SearchSheet } from './ui/components/SearchSheet';
 import { WeatherSheet, SolarProbeSheet, SOSSheet } from './ui/components/ExpertSheets';
+import { TrackSheet } from './ui/components/TrackSheet';
 import { initAutoHide } from './ui/autoHide';
 import { initMobileUI } from './ui/mobile';
 
@@ -117,6 +118,9 @@ export function initUI(): void {
     const searchSheet = new SearchSheet();
     searchSheet.hydrate();
 
+    const trackSheet = new TrackSheet();
+    trackSheet.hydrate();
+
     const weatherSheet = new WeatherSheet();
     weatherSheet.hydrate();
 
@@ -137,6 +141,10 @@ export function initUI(): void {
 
     window.addEventListener('gpx-uploaded', (e: any) => {
         handleGPX(e.detail);
+    });
+
+    window.addEventListener('export-recorded-gpx', () => {
+        exportRecordedGPX();
     });
 
     // GPS
@@ -185,33 +193,6 @@ export function initUI(): void {
             showToast("Suivi désactivé");
             stopLocationTracking();
         }
-    });
-
-    // REC
-    document.getElementById('rec-btn')?.addEventListener('click', async () => {
-        state.isRecording = !state.isRecording;
-        const btn = document.getElementById('rec-btn')!;
-        btn.classList.toggle('active', state.isRecording);
-        
-        if (state.isRecording) {
-            showToast("🔴 Enregistrement démarré");
-            if (!state.isFollowingUser) await startLocationTracking();
-            if (state.userLocation) {
-                state.recordedPoints = [{ ...state.userLocation, timestamp: Date.now() }];
-            } else {
-                state.recordedPoints = [];
-            }
-        } else {
-            showToast("⏹️ Enregistrement stoppé");
-        }
-    });
-
-    document.getElementById('export-gpx-btn')?.addEventListener('click', () => {
-        if (state.recordedPoints.length < 2) {
-            showToast("Tracé trop court pour export");
-            return;
-        }
-        exportRecordedGPX();
     });
 
     // Temps & Soleil

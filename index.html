@@ -535,6 +535,46 @@
     </div>
 </template>
 
+<!-- PARCOURS GPX -->
+<template id="template-track">
+<div id="sheet-track" class="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+        <span class="sheet-title">Parcours</span>
+        <div class="sheet-close" id="close-track">×</div>
+    </div>
+    <div class="track-stats">
+        <div class="stat-card">
+            <div class="stat-card-label">Distance</div>
+            <div class="stat-card-value" id="track-dist">0.0 <span style="font-size:13px;color:var(--t2)">km</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-label">Points</div>
+            <div class="stat-card-value" id="track-points">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-label">Dénivelé +</div>
+            <div class="stat-card-value green" id="track-dplus">+0 <span style="font-size:12px">m</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-label">Dénivelé −</div>
+            <div class="stat-card-value red" id="track-dminus">−0 <span style="font-size:12px">m</span></div>
+        </div>
+    </div>
+    <div class="track-actions">
+        <button class="track-btn rec" id="rec-btn-sheet">
+            <span class="rec-icon">🔴</span> REC
+        </button>
+        <button class="track-btn secondary" id="import-gpx-sheet">
+            📥 Import GPX
+        </button>
+        <button class="track-btn secondary" id="export-gpx-sheet">
+            📤 Exporter
+        </button>
+    </div>
+</div>
+</template>
+
 <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
