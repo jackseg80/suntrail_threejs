@@ -10,7 +10,7 @@ import { showToast } from './utils';
 import { applyPreset, detectBestPreset, getGpuInfo, applyCustomSettings } from './performance';
 import { findTerrainIntersection, getAltitudeAt } from './analysis';
 import { updateElevationProfile } from './profile';
-import { startLocationTracking, stopLocationTracking } from './location';
+import { startLocationTracking } from './location';
 import { fetchWeather } from './weather';
 
 import { sheetManager } from './ui/core/SheetManager';
@@ -126,9 +126,7 @@ export function initUI(): void {
     const widgets = new WidgetsComponent();
     widgets.hydrate();
 
-    const timeline = new TimelineComponent();
-    timeline.hydrate();
-
+    new TimelineComponent();
     initAutoHide();
     initMobileUI();
 
@@ -146,9 +144,11 @@ export function initUI(): void {
         exportRecordedGPX();
     });
 
-    // GPS
-    document.getElementById('gps-btn')?.addEventListener('click', async () => {
+    // GPS MAIN BUTTON (SwissMobile Style)
+    const gpsMainBtn = document.getElementById('gps-main-btn');
+    gpsMainBtn?.addEventListener('click', async () => {
         try {
+            // 1. Get current position
             const position = await new Promise<GeolocationPosition>((resolve, reject) => {
                 navigator.geolocation.getCurrentPosition(resolve, reject);
             });
@@ -156,41 +156,55 @@ export function initUI(): void {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
             
-            state.TARGET_LAT = lat;
-            state.TARGET_LON = lon;
-            state.originTile = lngLatToTile(lon, lat, state.ZOOM);
-            
-            refreshTerrain();
-            
-            const worldPos = lngLatToWorld(lon, lat, state.originTile);
-            const altWorld = getAltitudeAt(worldPos.x, worldPos.z);
-            
-            flyTo(worldPos.x, worldPos.z, altWorld);
-            fetchWeather(lat, lon);
-            
-            showToast("📍 Position synchronisée");
+            // 2. Check if we are already centered on user
+            const isAlreadyCentered = state.isFollowingUser;
+
+            if (!isAlreadyCentered) {
+                // First click: Center and Zoom
+                state.TARGET_LAT = lat;
+                state.TARGET_LON = lon;
+                state.ZOOM = 14;
+                state.originTile = lngLatToTile(lon, lat, 14);
+                
+                refreshTerrain();
+                
+                const worldPos = lngLatToWorld(lon, lat, state.originTile);
+                const altWorld = getAltitudeAt(worldPos.x, worldPos.z);
+                
+                flyTo(worldPos.x, worldPos.z, (altWorld / state.RELIEF_EXAGGERATION) + 500);
+                fetchWeather(lat, lon);
+                
+                state.isFollowingUser = true;
+                gpsMainBtn.classList.add('active');
+                showToast("📍 Position centrée");
+            } else {
+                // Second click while centered: Toggle continuous follow
+                // (In this app, isFollowingUser already handles continuous centering in scene.ts)
+                gpsMainBtn.classList.toggle('following');
+                const isFollowing = gpsMainBtn.classList.contains('following');
+                showToast(isFollowing ? "🚶 Suivi continu activé" : "📍 Suivi continu désactivé");
+                
+                if (isFollowing) {
+                    await startLocationTracking();
+                }
+            }
         } catch (e) { 
             showToast("Erreur GPS"); 
             console.error("Geolocation error:", e);
         }
     });
 
-    document.getElementById('gps-follow-btn')?.addEventListener('click', async () => {
-        state.isFollowingUser = !state.isFollowingUser;
-        const btn = document.getElementById('gps-follow-btn')!;
-        btn.classList.toggle('active', state.isFollowingUser);
-        
-        if (state.isFollowingUser) {
-            showToast("Suivi activé");
-            await startLocationTracking();
-            if (state.userLocation) {
-                const wp = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
-                const groundH = getAltitudeAt(wp.x, wp.z);
-                flyTo(wp.x, wp.z, (groundH / state.RELIEF_EXAGGERATION) + 500); 
+    // Stop following if user interacts with map
+    state.subscribe('isUserInteracting', (interacting) => {
+        if (interacting && state.isFollowingUser) {
+            const btn = document.getElementById('gps-main-btn');
+            if (btn?.classList.contains('following')) {
+                // If in "hard" follow mode, we might want to keep it or break it.
+                // SwissMobile breaks it if you move.
+                state.isFollowingUser = false;
+                btn.classList.remove('active', 'following');
+                showToast("Suivi interrompu");
             }
-        } else {
-            showToast("Suivi désactivé");
-            stopLocationTracking();
         }
     });
 

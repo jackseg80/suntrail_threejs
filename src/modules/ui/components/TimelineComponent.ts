@@ -1,13 +1,14 @@
-import { BaseComponent } from '../core/BaseComponent';
 import { state } from '../../state';
 import { updateSunPosition } from '../../sun';
 
-export class TimelineComponent extends BaseComponent {
+export class TimelineComponent {
     private timeSlider: HTMLInputElement | null = null;
     private dateInput: HTMLInputElement | null = null;
+    private subscriptions: Array<() => void> = [];
 
     constructor() {
-        super('template-widgets', 'body'); // It's part of widgets
+        // No hydration, just attach to existing DOM
+        this.render();
     }
 
     public render(): void {
@@ -49,17 +50,28 @@ export class TimelineComponent extends BaseComponent {
             });
         }
 
+        // Toggle Drawer
+        const toggleBtn = document.getElementById('timeline-toggle-btn');
+        const bottomBar = document.getElementById('bottom-bar');
+        if (toggleBtn && bottomBar) {
+            toggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                bottomBar.classList.toggle('is-open');
+                toggleBtn.classList.toggle('active');
+            });
+        }
+
         // Initial sync
         this.syncUI();
 
         // Subscribe to state changes
-        this.addSubscription(state.subscribe('simDate', () => {
+        this.subscriptions.push(state.subscribe('simDate', () => {
             this.syncUI();
             const mins = state.simDate.getHours() * 60 + state.simDate.getMinutes();
             updateSunPosition(mins);
         }));
 
-        this.addSubscription(state.subscribe('isSunAnimating', (val: boolean) => {
+        this.subscriptions.push(state.subscribe('isSunAnimating', (val: boolean) => {
             if (playBtn) playBtn.textContent = val ? '⏸' : '▶';
         }));
     }
@@ -74,5 +86,10 @@ export class TimelineComponent extends BaseComponent {
         if (this.timeSlider && !state.isSunAnimating) {
             this.timeSlider.value = (state.simDate.getHours() * 60 + state.simDate.getMinutes()).toString();
         }
+    }
+
+    public dispose(): void {
+        this.subscriptions.forEach(unsubscribe => unsubscribe());
+        this.subscriptions = [];
     }
 }
