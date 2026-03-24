@@ -258,16 +258,22 @@ export class Tile {
                     if (uShowHydrology > 0.5) {
                         vec3 colorIn = diffuseColor.rgb;
                         float brightness = (colorIn.r + colorIn.g + colorIn.b) / 3.0;
-                        // On détecte l'eau sur la texture raster (bleu dominant, sombre, plat)
-                        float isWater = smoothstep(0.05, 0.15, colorIn.b - max(colorIn.r, colorIn.g)) * smoothstep(0.998, 1.0, vTrueNormal.y) * (1.0 - smoothstep(0.7, 0.9, brightness));
-                        if (isWater > 0.1) {
-                            vec3 waterBlue = vec3(0.05, 0.20, 0.50);
-                            // Micro-vagues subtiles (animation temporelle + UV)
-                            float wave1 = sin(vMapUv.x * 120.0 + uTime * 1.2) * cos(vMapUv.y * 120.0 + uTime * 0.8) * 0.5 + 0.5;
-                            float wave2 = sin(vMapUv.x * 250.0 - uTime * 0.5) * cos(vMapUv.y * 250.0 + uTime * 0.3) * 0.5 + 0.5;
-                            float finalWave = (wave1 * 0.6 + wave2 * 0.4);
-                            diffuseColor.rgb = mix(colorIn, waterBlue, 0.6 * isWater);
-                            diffuseColor.rgb += vec3(0.05, 0.15, 0.25) * finalWave * isWater * 0.15;
+                        // Détection élargie pour SwissTopo (plus clair) et Satellite (plus sombre)
+                        float blueIntensity = colorIn.b - max(colorIn.r, colorIn.g);
+                        float isWater = smoothstep(0.02, 0.12, blueIntensity) * smoothstep(0.995, 1.0, vTrueNormal.y);
+                        
+                        // Atténuation si trop blanc (neige) mais on laisse passer le bleu clair des lacs topo
+                        isWater *= (1.0 - smoothstep(0.85, 0.98, brightness) * (1.0 - smoothstep(0.05, 0.2, blueIntensity)));
+
+                        if (isWater > 0.05) {
+                            vec3 waterBlue = vec3(0.05, 0.22, 0.55);
+                            // Ondulations très fines et rapides pour supprimer l'effet de moiré
+                            float t = uTime * 0.5;
+                            float wave = sin(vMapUv.x * 250.0 + t) * cos(vMapUv.y * 250.0 + t * 0.7) * 0.25;
+                            wave += sin(vMapUv.x * 450.0 - t * 0.5) * cos(vMapUv.y * 450.0 + t * 0.3) * 0.15;
+                            
+                            diffuseColor.rgb = mix(colorIn, waterBlue, 0.5 * isWater);
+                            diffuseColor.rgb += vec3(0.1, 0.2, 0.4) * wave * isWater;
                         }
                     }
                     if (uHasOverlay) { vec4 oCol = texture2D(uOverlayMap, vMapUv); diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a); }

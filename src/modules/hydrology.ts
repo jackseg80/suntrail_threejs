@@ -3,6 +3,7 @@ import { state } from './state';
 import type { Tile } from './terrain';
 import { fetchOverpassData } from './utils';
 import { getAltitudeAt } from './analysis';
+import { terrainUniforms } from './terrain';
 
 const hydroMemoryCache = new Map<string, any[]>();
 const hydroFetchPromises = new Map<string, Promise<any[] | null>>();
@@ -14,12 +15,40 @@ const waterMaterial = new THREE.MeshStandardMaterial({
     color: 0x0055bb,
     transparent: true,
     opacity: 0.5,
-    roughness: 0.02,
+    roughness: 0.05,
     metalness: 0.6,
     polygonOffset: true,
-    polygonOffsetFactor: -2, // Légèrement plus haut pour dominer les variations de relief
+    polygonOffsetFactor: -2,
     polygonOffsetUnits: -2
 });
+
+// --- AJOUT DES ONDULATIONS DYNAMIQUES (v5.8.4) ---
+waterMaterial.onBeforeCompile = (shader) => {
+    shader.uniforms.uTime = terrainUniforms.uTime;
+    shader.vertexShader = `
+        uniform float uTime;
+        ${shader.vertexShader}
+    `.replace('#include <begin_vertex>', `
+        #include <begin_vertex>
+        // Micro-ondulations verticales
+        float ripple = sin(position.x * 0.1 + uTime * 1.5) * cos(position.y * 0.1 + uTime * 1.2) * 0.5;
+        transformed.z += ripple; 
+    `);
+    
+    shader.fragmentShader = `
+        uniform float uTime;
+        ${shader.fragmentShader}
+    `.replace('#include <normal_fragment_maps>', `
+        #include <normal_fragment_maps>
+        // Scintillement de la normale pour les reflets solaires
+        vec3 rippleNormal = vec3(
+            sin(vViewPosition.x * 0.5 + uTime * 2.0) * 0.05,
+            1.0,
+            cos(vViewPosition.y * 0.5 + uTime * 1.8) * 0.05
+        );
+        normal = normalize(rippleNormal);
+    `);
+};
 
 /**
  * Charge l'hydrologie 3D (Lacs et Rivières larges)
