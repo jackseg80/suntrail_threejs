@@ -2,6 +2,14 @@ import * as THREE from 'three';
 import { state } from './state';
 import type { Tile } from './terrain';
 
+/**
+ * Seeded pseudo-random function for deterministic placement (v5.8.15)
+ */
+function pseudoRandom(x: number, y: number, seed: number = 0): number {
+    const val = Math.sin(x * 12.9898 + y * 78.233 + seed * 37.11) * 43758.5453123;
+    return val - Math.floor(val);
+}
+
 // --- RESSOURCES DES ESSENCES (v4.9.1) ---
 interface TreeEssence {
     geometry: THREE.BufferGeometry;
@@ -85,8 +93,8 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
     const targetTrees = Math.max(20, Math.floor(state.VEGETATION_DENSITY * areaRatio));
     
     // Probabilité qu'un slot éligible (forêt) reçoive effectivement un arbre
-    // On utilise un multiplicateur de 1.5 pour compenser les zones non forestières
-    const placementProbability = Math.min(1.0, (targetTrees / totalSlots) * 1.5);
+    // On utilise un multiplicateur de 1.0 pour une distribution uniforme (v5.8.15)
+    const placementProbability = Math.min(1.0, targetTrees / totalSlots);
     
     const dummy = new THREE.Object3D();
     const size = tile.tileSizeMeters;
@@ -104,14 +112,15 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
 
     for (let py = 0; py < scanRes; py += step) {
         for (let px = 0; px < scanRes; px += step) {
-            // --- DITHERED SCAN (v5.8.14) ---
+            const globalX = tile.tx * scanRes + px;
+            const globalY = tile.ty * scanRes + py;
+
+            // --- DITHERED SCAN (v5.8.15) ---
             // On ajoute un petit décalage au point de scan pour éviter les bandes de moiré
-            const spx = Math.floor(px + Math.random() * step);
-            const spy = Math.floor(py + Math.random() * step);
+            const spx = Math.floor(px + pseudoRandom(globalX, globalY, 1) * step);
+            const spy = Math.floor(py + pseudoRandom(globalX, globalY, 2) * step);
             const i = (Math.min(scanRes - 1, spy) * scanRes + Math.min(scanRes - 1, spx)) * 4;
             
-            if (totalActive >= targetTrees) break; 
-
             const r = colorData[i], g = colorData[i+1], b = colorData[i+2];
             
             let isForest = false;
@@ -134,11 +143,13 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
 
             if (isForest) {
                 // --- PLACEMENT PROBABILISTE ---
-                if (Math.random() > placementProbability) continue;
+                if (pseudoRandom(globalX, globalY, 3) > placementProbability) continue;
 
                 // Jitter spatial accru pour casser totalement la grille
-                const lx = ((px / scanRes) - 0.5) * size + (Math.random() - 0.5) * (size / scanRes) * step * 2.0;
-                const lz = ((py / scanRes) - 0.5) * size + (Math.random() - 0.5) * (size / scanRes) * step * 2.0;
+                const jx = (pseudoRandom(globalX, globalY, 4) - 0.5) * (size / scanRes) * step;
+                const jz = (pseudoRandom(globalX, globalY, 5) - 0.5) * (size / scanRes) * step;
+                const lx = ((px / scanRes) - 0.5) * size + jx;
+                const lz = ((py / scanRes) - 0.5) * size + jz;
 
                 const h = getSimpleAltitude(tile, lx, lz, exaggeration);
                 const realAlt = h / exaggeration;
@@ -146,17 +157,18 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
                 if (realAlt > 2450 || realAlt < 1) continue;
 
                 let type = 'sapin';
+                const typeRand = pseudoRandom(globalX, globalY, 6);
                 if (realAlt < 950) {
-                    type = Math.random() > 0.28 ? 'feuillu' : 'sapin';
+                    type = typeRand > 0.28 ? 'feuillu' : 'sapin';
                 } else if (realAlt > 1750) {
-                    type = Math.random() > 0.38 ? 'meleze' : 'sapin';
+                    type = typeRand > 0.38 ? 'meleze' : 'sapin';
                 }
 
                 dummy.position.set(lx, h, lz);
                 // Ajustement de l'échelle pour plus de densité visuelle sans étouffer
-                const scale = (0.35 + Math.random() * 0.65) * densityBoost; 
-                dummy.scale.set(scale, scale * (0.85 + Math.random() * 0.45), scale);
-                dummy.rotation.y = Math.random() * Math.PI;
+                const scale = (0.35 + pseudoRandom(globalX, globalY, 7) * 0.65) * densityBoost; 
+                dummy.scale.set(scale, scale * (0.85 + pseudoRandom(globalX, globalY, 8) * 0.45), scale);
+                dummy.rotation.y = pseudoRandom(globalX, globalY, 9) * Math.PI;
                 dummy.updateMatrix();
                 
                 instances[type].matrices.push(dummy.matrix.clone());

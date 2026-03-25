@@ -32,7 +32,7 @@ describe('state.ts', () => {
         it('should have an ultra preset with high range and resolution', () => {
             expect(PRESETS.ultra.RANGE).toBe(12);
             expect(PRESETS.ultra.RESOLUTION).toBe(256);
-            expect(PRESETS.ultra.VEGETATION_DENSITY).toBe(12000);
+            expect(PRESETS.ultra.VEGETATION_DENSITY).toBe(8000);
         });
 
         it('should have an eco preset with disabled details', () => {
