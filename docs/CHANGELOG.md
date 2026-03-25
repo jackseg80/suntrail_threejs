@@ -4,12 +4,14 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
-## [5.8.13] - 2026-03-24
-### 🌲 Vegetation & LOD Consistency
-- **Tree Density Fix (LOD 16-18)**: Fixed a critical bug where the LOD 15 tree limit was being applied to high-zoom tiles, causing a massive over-density. Density is now strictly normalized by the physical tile area.
-- **Probabilistic Placement Refinement**: Replaced hard counters with a purely probabilistic approach to ensure a smooth, natural distribution across the entire tile surface without "banding" effects.
+## [5.8.14] - 2026-03-24
+### 🌲 Vegetation Quality & Anti-Banding
+- **Dithered Scan Engine**: Implemented randomized pixel sampling within the scan grid to permanently eliminate Moiré patterns and "horizontal banding" at high zoom levels.
+- **Continuous Forest Filter**: Expanded SwissTopo detection to include both dark symbols and the light-green forest background. This ensures a consistent tree carpet even at LOD 17/18 where symbols are sparse.
+- **Ultra Preset Balance**: Reduced Ultra vegetation density to 8000 to maintain high performance while ensuring visual quality through better distribution.
+- **Enhanced Jitter**: Doubled the spatial randomization range to break all visible grid alignments.
 
-## [5.8.12] - 2026-03-24
+## [5.8.13] - 2026-03-24
 ### 🌲 Vegetation & Distribution
 - **Probabilistic Placement**: Implemented a probability-based distribution to eliminate horizontal banding and gaps at high zoom levels.
 - **Improved Jitter**: Increased spatial randomization to break up grid-like patterns appearing at extreme LODs.

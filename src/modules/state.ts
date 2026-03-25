@@ -57,7 +57,7 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         get PIXEL_RATIO_LIMIT() { return typeof window !== 'undefined' ? window.devicePixelRatio : 1; },
         RESOLUTION: 256, RANGE: 12, SHADOWS: true, SHADOW_RES: 4096,
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: true, BUILDINGS_SHADOWS: true,
-        MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 12000, BUILDING_LIMIT: 150, POI_ZOOM_THRESHOLD: 14, BUILDING_ZOOM_THRESHOLD: 15,
+        MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 8000, BUILDING_LIMIT: 150, POI_ZOOM_THRESHOLD: 14, BUILDING_ZOOM_THRESHOLD: 15,
         MAX_BUILDS_PER_CYCLE: 8, LOAD_DELAY_FACTOR: 0.2, SHOW_WEATHER: true, WEATHER_DENSITY: 15000, WEATHER_SPEED: 1.5,
         FOG_FAR: 100000, SHOW_SLOPES: false
     } as PerformanceSettings
@@ -234,7 +234,7 @@ const initialState: State = {
 
 export const state = createReactiveState(initialState);
 
-const CURRENT_SETTINGS_VERSION = '5.8.13';
+const CURRENT_SETTINGS_VERSION = '5.8.14';
 
 export interface SavedSettings {
     version?: string;

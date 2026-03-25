@@ -51,9 +51,6 @@ export function initVegetationResources() {
  * Filtre amélioré pour exclure les terrains de sport (trop clairs/saturés)
  */
 export function createForestForTile(tile: Tile): THREE.Group | null {
-    // --- SÉCURITÉ SATELLITE (v5.4.8) ---
-    // L'analyse de texture sur photo satellite produit trop de faux positifs (arbres partout).
-    // De plus, les arbres sont déjà visibles sur la photo elle-même.
     const isSatellite = state.MAP_SOURCE === 'satellite' || state.MAP_SOURCE === 'ign-ortho';
     if (!state.SHOW_VEGETATION || isSatellite || !tile.colorTex || !tile.pixelData || tile.zoom < 14) return null;
 
@@ -77,7 +74,7 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
     
     const colorData = ctx.getImageData(0, 0, scanRes, scanRes).data;
     
-    // --- DENSITÉ HARMONISÉE (v5.8.12) ---
+    // --- DENSITÉ HARMONISÉE (v5.8.14) ---
     // On calcule la probabilité de placement pour éviter le "Hard Cut-off" ligne par ligne
     const step = (state.PERFORMANCE_PRESET === 'ultra') ? 1 : ((state.PERFORMANCE_PRESET === 'performance') ? 2 : 4);
     const totalSlots = (scanRes / step) * (scanRes / step);
@@ -107,11 +104,14 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
 
     for (let py = 0; py < scanRes; py += step) {
         for (let px = 0; px < scanRes; px += step) {
-            // --- FIX CRITIQUE (v5.8.13) ---
-            // On limite au quota NORMALIZE de la tuile et non à la densité globale LOD 15
+            // --- DITHERED SCAN (v5.8.14) ---
+            // On ajoute un petit décalage au point de scan pour éviter les bandes de moiré
+            const spx = Math.floor(px + Math.random() * step);
+            const spy = Math.floor(py + Math.random() * step);
+            const i = (Math.min(scanRes - 1, spy) * scanRes + Math.min(scanRes - 1, spx)) * 4;
+            
             if (totalActive >= targetTrees) break; 
 
-            const i = (py * scanRes + px) * 4;
             const r = colorData[i], g = colorData[i+1], b = colorData[i+2];
             
             let isForest = false;
@@ -119,21 +119,26 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
                 isForest = (g > b * 1.1 && (g + r * 0.3) > b * 1.3 && g > 30);
             } else {
                 const brightness = (r + g + b) / 3;
-                const isForestColor = (g > r * 1.06 && g > b * 1.06 && brightness < 195 && g > 40);
-                const isTooVivid = (g > r * 1.35); 
-                const isPureGreen = (g > 100 && r < 90 && b < 90);
-                const isNeutral = (Math.abs(r - g) < 12 && Math.abs(g - b) < 12 && r > 160);
-                isForest = isForestColor && !isTooVivid && !isPureGreen && !isNeutral;
+                
+                // --- FILTRE DENSITÉ CONTINUE (v5.8.14) ---
+                // On détecte toute la zone forestière (fond light green + symboles dark green)
+                // Forêt fond SwissTopo : G dominant (~220), R présent (~210), B (~180)
+                // Prairie : Très claire (> 235) et plus saturée en jaune
+                const isForestColor = (g > r * 1.02 && g > b * 1.05 && brightness < 228 && g > 40);
+                
+                const isTooVivid = (g > r * 1.38); // Rejet des terrains de sport électriques
+                const isNeutral = (Math.abs(r - g) < 10 && Math.abs(g - b) < 10 && r > 160);
+                
+                isForest = isForestColor && !isTooVivid && !isNeutral;
             }
 
             if (isForest) {
                 // --- PLACEMENT PROBABILISTE ---
                 if (Math.random() > placementProbability) continue;
 
-                // Jitter spatial accru pour casser la grille à haut zoom
-                const jitter = (Math.random() - 0.5) * (size / scanRes) * step * 1.5;
-                const lx = ((px / scanRes) - 0.5) * size + jitter;
-                const lz = ((py / scanRes) - 0.5) * size + ((Math.random() - 0.5) * (size / scanRes) * step * 1.5);
+                // Jitter spatial accru pour casser totalement la grille
+                const lx = ((px / scanRes) - 0.5) * size + (Math.random() - 0.5) * (size / scanRes) * step * 2.0;
+                const lz = ((py / scanRes) - 0.5) * size + (Math.random() - 0.5) * (size / scanRes) * step * 2.0;
 
                 const h = getSimpleAltitude(tile, lx, lz, exaggeration);
                 const realAlt = h / exaggeration;
@@ -148,8 +153,9 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
                 }
 
                 dummy.position.set(lx, h, lz);
-                const scale = (0.40 + Math.random() * 0.80) * densityBoost; 
-                dummy.scale.set(scale, scale * (0.85 + Math.random() * 0.50), scale);
+                // Ajustement de l'échelle pour plus de densité visuelle sans étouffer
+                const scale = (0.35 + Math.random() * 0.65) * densityBoost; 
+                dummy.scale.set(scale, scale * (0.85 + Math.random() * 0.45), scale);
                 dummy.rotation.y = Math.random() * Math.PI;
                 dummy.updateMatrix();
                 
