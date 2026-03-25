@@ -3,6 +3,7 @@ import { Geolocation } from '@capacitor/geolocation';
 import { state } from './state';
 import { lngLatToWorld } from './geo';
 import { getAltitudeAt } from './analysis';
+import { updateRecordedTrackMesh } from './terrain';
 
 let watchId: string | null = null;
 
@@ -69,14 +70,15 @@ export async function startLocationTracking() {
                 state.userLocation = { lat: latitude, lon: longitude, alt: altitude || 0 };
                 lastLat = latitude; lastLon = longitude;
                 
-                // --- ENREGISTREMENT DU TRACÉ (v5.7) ---
+                // --- ENREGISTREMENT DU TRACÉ (v5.8.16) ---
                 if (state.isRecording) {
-                    state.recordedPoints.push({
+                    state.recordedPoints = [...state.recordedPoints, {
                         lat: latitude,
                         lon: longitude,
                         alt: altitude || 0,
                         timestamp: Date.now()
-                    });
+                    }];
+                    updateRecordedTrackMesh();
                 }
 
                 updateUserMarker();

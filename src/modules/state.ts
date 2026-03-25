@@ -155,6 +155,7 @@ export interface State {
     rawGpxData: Record<string, any> | null;
     gpxPoints: THREE.Vector3[];
     gpxMesh: THREE.Mesh | null;
+    recordedMesh: THREE.Mesh | null;
     profileMarker: THREE.Mesh | null;
     trailProgress: number;
     isFollowingTrail: boolean;
@@ -213,7 +214,11 @@ const initialState: State = {
     
     localPeaks: [],
 
-    rawGpxData: null, gpxPoints: [], gpxMesh: null, profileMarker: null, trailProgress: 0, isFollowingTrail: false,
+        rawGpxData: null,
+    gpxPoints: [],
+    gpxMesh: null,
+    recordedMesh: null,
+    profileMarker: null, trailProgress: 0, isFollowingTrail: false,
     
     isRecording: false,
     recordedPoints: [],

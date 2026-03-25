@@ -586,8 +586,44 @@ export function updateGPXMesh(): void {
     updateElevationProfile();
 }
 
+/**
+ * Met à jour le maillage du tracé en cours d'enregistrement (v5.8.16)
+ */
+export function updateRecordedTrackMesh(): void {
+    if (state.recordedPoints.length < 2 || !state.camera || !state.scene || !state.originTile) return;
+    
+    const camAlt = state.camera.position.y;
+    const thickness = Math.max(2.0, camAlt / 800); 
+    
+    if (state.recordedMesh) {
+        state.scene.remove(state.recordedMesh);
+        disposeObject(state.recordedMesh);
+    }
+
+    const threePoints = state.recordedPoints.map(p => {
+        const pos = lngLatToWorld(p.lon, p.lat, state.originTile);
+        return new THREE.Vector3(pos.x, p.alt * state.RELIEF_EXAGGERATION + 8, pos.z);
+    });
+
+    const curve = new THREE.CatmullRomCurve3(threePoints);
+    const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length * 2, 800), thickness, 4, false);
+    
+    // Couleur rouge pulsante pour l'enregistrement
+    const material = new THREE.MeshStandardMaterial({ 
+        color: 0xef4444, 
+        emissive: 0xef4444, 
+        emissiveIntensity: 0.5, 
+        transparent: true, 
+        opacity: 0.8 
+    });
+
+    state.recordedMesh = new THREE.Mesh(geometry, material);
+    state.scene.add(state.recordedMesh);
+}
+
 export function clearGPX(): void {
     if (state.gpxMesh) { if (state.scene) state.scene.remove(state.gpxMesh); disposeObject(state.gpxMesh); state.gpxMesh = null; }
+    if (state.recordedMesh) { if (state.scene) state.scene.remove(state.recordedMesh); disposeObject(state.recordedMesh); state.recordedMesh = null; }
     state.rawGpxData = null; state.gpxPoints = [];
     const prof = document.getElementById('elevation-profile'); if (prof) prof.style.display = 'none';
     const tc = document.getElementById('trail-controls'); if (tc) tc.style.display = 'none';

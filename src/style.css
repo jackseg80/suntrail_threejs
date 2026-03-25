@@ -63,6 +63,23 @@ body, html {
 
 .status-widget:hover { border-color: var(--border-active); }
 
+/* REC INDICATOR PULSE */
+.rec-indicator {
+    padding-left: 8px;
+    padding-right: 12px;
+}
+
+.rec-dot {
+    font-size: 10px;
+    animation: pulse-red 1.5s infinite;
+}
+
+@keyframes pulse-red {
+    0% { transform: scale(0.9); opacity: 0.7; }
+    50% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(0.9); opacity: 0.7; }
+}
+
 .lod-badge {
     font-family: monospace;
     font-size: 10px;

@@ -5,7 +5,7 @@ import { startLocationTracking } from '../../location';
 import { sheetManager } from '../core/SheetManager';
 // @ts-ignore
 import gpxParser from 'gpxparser';
-import { updateVisibleTiles, updateGPXMesh } from '../../terrain';
+import { updateVisibleTiles, updateGPXMesh, updateRecordedTrackMesh } from '../../terrain';
 import { lngLatToTile } from '../../geo';
 import { updateElevationProfile } from '../../profile';
 
@@ -32,6 +32,7 @@ export class TrackSheet extends BaseComponent {
                 if (!state.isFollowingUser) await startLocationTracking();
                 if (state.userLocation) {
                     state.recordedPoints = [{ ...state.userLocation, timestamp: Date.now() }];
+                    updateRecordedTrackMesh();
                 } else {
                     state.recordedPoints = [];
                 }
