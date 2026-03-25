@@ -1,4 +1,4 @@
-# SunTrail - Base de Connaissance (v5.8.10)
+# SunTrail - Base de Connaissance (v5.8.16)
 
 Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTrail. Il consigne les décisions architecturales critiques et les solutions aux problèmes complexes.
 
@@ -7,8 +7,9 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 ### État Global & Persistance (`state.ts`)
 - **Pivot Central** : Toute la configuration (LOD, sources, presets) réside dans l'objet `state`.
 - **Réactivité (v5.8.0)** : L'objet `state` est désormais enveloppé dans un **Proxy JS récursif** (`ReactiveState.ts`). Les composants s'abonnent aux changements via `state.subscribe('path', callback)`.
+- **Note sur les Tableaux (v5.8.16)** : Les méthodes modifiant les tableaux in-place (comme `.push()`) ne déclenchent pas le Proxy. Il faut utiliser la réaffectation (`state.arr = [...state.arr, item]`) pour notifier les abonnés.
 - **Persistance** : Sauvegarde automatique dans `localStorage`. 
-- **Versioning (v5.8.10)** : Le système inclut désormais un contrôle de version (`CURRENT_SETTINGS_VERSION`). Si une version obsolète est détectée lors du chargement, les réglages sont réinitialisés pour éviter les corruptions.
+- **Versioning (v5.8.16)** : Le système inclut désormais un contrôle de version (`CURRENT_SETTINGS_VERSION`). Si une version obsolète est détectée lors du chargement, les réglages sont réinitialisés pour éviter les corruptions.
 - **Event Bus (`eventBus.ts`)** : Utilisé pour briser les dépendances circulaires entre `terrain.ts` et `scene.ts`. Permet de déclencher des événements transversaux (ex: `terrainReady`, `flyTo`).
 
 ### Interface & Composants (v5.8.0)

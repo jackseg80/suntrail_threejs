@@ -4,6 +4,14 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.8.16] - 2026-03-25
+### 🛠️ GPS Recording & Live Tracking
+- **Reactive Recording Fix**: Resolved a critical issue where GPS recording only captured the first point. Switched from `.push()` to array re-assignment (`[...]`) to ensure the reactive state notifies UI listeners of new points.
+- **Live 3D Track Mesh**: Implemented `updateRecordedTrackMesh()`. The engine now renders a dynamic, pulsing red 3D tube in the scene as the user moves, providing immediate visual feedback of the recorded path.
+- **Pulsing REC Indicator**: Added a persistent, pulsing red "REC" indicator in the Top Status Bar during recording. 
+- **Recording Timer**: Integrated a live chronometer in the status bar to track recording duration at a glance.
+- **UI Interactivity**: The REC indicator is now clickable, providing a shortcut back to the "Parcours" sheet.
+
 ## [5.8.15] - 2026-03-25
 ### 🌲 Vegetation & Tile Continuity
 - **Deterministic Placement Engine**: Replaced all `Math.random()` calls with a custom `pseudoRandom` function seeded by global tile coordinates. This permanently eliminates "net cuts" (seams) between adjacent tiles.
