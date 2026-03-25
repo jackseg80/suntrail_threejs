@@ -83,12 +83,13 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
     const totalSlots = (scanRes / step) * (scanRes / step);
     
     // Nombre cible d'arbres pour CETTE tuile (normalisé par l'aire physique)
+    // Référence LOD 15. À LOD 16 on a 4x plus de tuiles, donc 4x moins d'arbres par tuile.
     const areaRatio = Math.pow(4, 15 - tile.zoom);
-    const targetTrees = Math.floor(state.VEGETATION_DENSITY * areaRatio);
+    const targetTrees = Math.max(20, Math.floor(state.VEGETATION_DENSITY * areaRatio));
     
     // Probabilité qu'un slot éligible (forêt) reçoive effectivement un arbre
-    // On multiplie par 2 pour compenser les zones non forestières de la tuile
-    const placementProbability = Math.min(1.0, (targetTrees / totalSlots) * 2.5);
+    // On utilise un multiplicateur de 1.5 pour compenser les zones non forestières
+    const placementProbability = Math.min(1.0, (targetTrees / totalSlots) * 1.5);
     
     const dummy = new THREE.Object3D();
     const size = tile.tileSizeMeters;
@@ -106,8 +107,9 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
 
     for (let py = 0; py < scanRes; py += step) {
         for (let px = 0; px < scanRes; px += step) {
-            // Sécurité globale mais on ne break plus à l'intérieur pour éviter les bandes
-            if (totalActive >= state.VEGETATION_DENSITY) break; 
+            // --- FIX CRITIQUE (v5.8.13) ---
+            // On limite au quota NORMALIZE de la tuile et non à la densité globale LOD 15
+            if (totalActive >= targetTrees) break; 
 
             const i = (py * scanRes + px) * 4;
             const r = colorData[i], g = colorData[i+1], b = colorData[i+2];

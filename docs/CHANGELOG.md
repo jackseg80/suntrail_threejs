@@ -4,6 +4,16 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.8.13] - 2026-03-24
+### 🌲 Vegetation & LOD Consistency
+- **Tree Density Fix (LOD 16-18)**: Fixed a critical bug where the LOD 15 tree limit was being applied to high-zoom tiles, causing a massive over-density. Density is now strictly normalized by the physical tile area.
+- **Probabilistic Placement Refinement**: Replaced hard counters with a purely probabilistic approach to ensure a smooth, natural distribution across the entire tile surface without "banding" effects.
+
+## [5.8.12] - 2026-03-24
+### 🌲 Vegetation & Distribution
+- **Probabilistic Placement**: Implemented a probability-based distribution to eliminate horizontal banding and gaps at high zoom levels.
+- **Improved Jitter**: Increased spatial randomization to break up grid-like patterns appearing at extreme LODs.
+
 ## [5.8.11] - 2026-03-24
 ### 🌲 Vegetation & Realism
 - **Density Normalization**: Implemented a zoom-aware scaling for forest density. Trees are now normalized based on the physical area of the tile, ensuring that forests look consistent from LOD 15 up to LOD 18 without overcrowding.
