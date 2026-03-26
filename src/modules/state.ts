@@ -164,6 +164,7 @@ export interface State {
     recordedPoints: LocationPoint[];
     
     userLocation: { lat: number; lon: number; alt: number } | null;
+    userLocationAccuracy: number | null;
     userHeading: number | null;
     isFollowingUser: boolean;
     userMarker: THREE.Group | null;
@@ -223,7 +224,7 @@ const initialState: State = {
     isRecording: false,
     recordedPoints: [],
     
-    userLocation: null, userHeading: null, isFollowingUser: false, userMarker: null,
+    userLocation: null, userLocationAccuracy: null, userHeading: null, isFollowingUser: false, userMarker: null,
     
     smoothUserPos: new THREE.Vector3(),
     smoothUserHeading: 0,

@@ -61,7 +61,10 @@ export async function startLocationTracking() {
         }, (position, err) => {
             if (err || !position) return;
             
-            const { latitude, longitude, altitude } = position.coords;
+            const { latitude, longitude, altitude, accuracy } = position.coords;
+            
+            // Met à jour la précision GPS pour l'affichage dans le panneau Système
+            state.userLocationAccuracy = accuracy || null;
             
             // On ignore les variations GPS insignifiantes (bruit statique)
             const distMove = Math.sqrt(Math.pow(latitude - lastLat, 2) + Math.pow(longitude - lastLon, 2));

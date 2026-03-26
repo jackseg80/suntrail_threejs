@@ -12,6 +12,12 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
   - Normal maps are now correctly computed regardless of display zoom level
 - **UI Simplification**: Removed the redundant GPU stats button from the top status bar. Performance statistics are still accessible via Settings > Advanced Parameters > "Stats de performance (FPS)".
 
+### 📱 Mobile Fixes
+- **GPS Accuracy Display**: Added `userLocationAccuracy` to the reactive state. The Connectivity panel now displays the real GPS accuracy (in meters) instead of always showing "--".
+- **Compass Button**: Fixed the North alignment button. It now smoothly animates the camera to face North (0°) with a 500ms ease-out animation, instead of just showing a toast message.
+- **Timeline FAB Hiding**: The floating action buttons (GPS, Layers, Compass) now automatically hide when the timeline panel is open, preventing UI overlap.
+- **Recording Permissions**: The app now properly requests and handles GPS permissions on mobile devices before starting track recording.
+
 ## [5.8.16] - 2026-03-25
 ### 🛠️ GPS Recording & Live Tracking
 - **Reactive Recording Fix**: Resolved a critical issue where GPS recording only captured the first point. Switched from `.push()` to array re-assignment (`[...]`) to ensure the reactive state notifies UI listeners of new points.

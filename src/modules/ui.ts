@@ -210,12 +210,47 @@ export function initUI(): void {
 
     const compassFab = document.getElementById('compass-fab');
     compassFab?.addEventListener('click', () => {
-        if (state.controls) {
-            // Smoothly reset rotation to North
-            state.controls.minAzimuthAngle = -Infinity;
-            state.controls.maxAzimuthAngle = Infinity;
-            // logic to animate camera to North could be here
-            showToast("🧭 Nord réaligné");
+        if (state.controls && state.camera) {
+            // Animer la caméra vers le Nord (azimuth = 0)
+            const controls = state.controls;
+            const startAngle = controls.getAzimuthalAngle();
+            let targetAngle = 0;
+            
+            // Choisir la direction la plus courte (gérer le wrap autour de -PI/PI)
+            let diff = targetAngle - startAngle;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            targetAngle = startAngle + diff;
+            
+            // Animation sur 500ms
+            const startTime = Date.now();
+            const duration = 500;
+            const initialAngle = startAngle;
+            
+            function animateNorth() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                // Easing ease-out-cubic
+                const eased = 1 - Math.pow(1 - progress, 3);
+                
+                const currentAngle = initialAngle + (targetAngle - initialAngle) * eased;
+                
+                // Met à jour la position de la caméra pour maintenir la même distance
+                const offset = state.camera!.position.clone().sub(controls.target);
+                const spherical = new THREE.Spherical().setFromVector3(offset);
+                spherical.theta = currentAngle;
+                const newPos = new THREE.Vector3().setFromSpherical(spherical).add(controls.target);
+                state.camera!.position.copy(newPos);
+                controls.update();
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animateNorth);
+                } else {
+                    showToast("🧭 Nord réaligné");
+                }
+            }
+            
+            animateNorth();
         }
     });
 

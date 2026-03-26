@@ -86,6 +86,7 @@ export class ConnectivitySheet extends BaseComponent {
         }));
 
         this.addSubscription(state.subscribe('userLocation', () => this.updateGPSInfo()));
+        this.addSubscription(state.subscribe('userLocationAccuracy', () => this.updateGPSInfo()));
 
         // Initial update
         this.updateNetworkStatus();
@@ -103,8 +104,8 @@ export class ConnectivitySheet extends BaseComponent {
     private updateGPSInfo() {
         const accuracyEl = this.element?.querySelector('#gps-accuracy');
         if (accuracyEl) {
-            // Simulated or real accuracy if available in Capacitor
-            const acc = (state as any).userLocationAccuracy || (state.userLocation ? 5 : '--');
+            // Affiche la précision GPS réelle ou '--' si pas de signal
+            const acc = state.userLocationAccuracy ?? (state.userLocation ? '5' : '--');
             accuracyEl.innerHTML = `${acc} <span style="font-size:12px; color:var(--text-3)">m</span>`;
         }
     }

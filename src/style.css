@@ -492,6 +492,13 @@ body.sheet-open .fab-stack {
     pointer-events: none;
 }
 
+/* Cacher les FAB quand la timeline est ouverte */
+#bottom-bar.is-open ~ .fab-stack {
+    transform: translateY(20px) scale(0.9);
+    opacity: 0;
+    pointer-events: none;
+}
+
 /* MINI SHEETS (e.g. Layers) */
 #layers-sheet {
     max-height: 38vh;
