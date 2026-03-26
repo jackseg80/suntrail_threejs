@@ -64,12 +64,10 @@ export function initUI(): void {
     const setupK1 = document.getElementById('k1') as HTMLInputElement;
     const setupBgo = document.getElementById('bgo');
     const setupScreen = document.getElementById('setup-screen');
-    const maptilerKeyInput = document.getElementById('maptiler-key-input') as HTMLInputElement;
 
     const savedKey = localStorage.getItem('maptiler_key');
     if (savedKey) {
         setupK1.value = savedKey;
-        if (maptilerKeyInput) maptilerKeyInput.value = savedKey;
     }
 
     setupBgo?.addEventListener('click', () => {
@@ -81,7 +79,6 @@ export function initUI(): void {
         }
         state.MK = key;
         localStorage.setItem('maptiler_key', key);
-        if (maptilerKeyInput) maptilerKeyInput.value = key;
         setupScreen!.style.display = 'none';
         startApp();
     });
