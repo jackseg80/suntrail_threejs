@@ -1,5 +1,6 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { sheetManager } from '../core/SheetManager';
+import { eventBus } from '../../eventBus';
 
 export class NavigationBar extends BaseComponent {
     constructor() {
@@ -37,15 +38,24 @@ export class NavigationBar extends BaseComponent {
             this.addSubscription(() => overlay.removeEventListener('click', onOverlayClick));
         }
 
-        // Global sync for "X" buttons or map clicks closing the sheet
-        const syncInterval = setInterval(() => {
-            const activeId = sheetManager.getActiveSheetId();
-            const currentActiveTab = this.element?.querySelector('.nav-tab.active')?.getAttribute('data-tab');
-            if (activeId !== currentActiveTab) {
-                this.setActiveTab(activeId);
-            }
-        }, 300);
-        this.addSubscription(() => clearInterval(syncInterval));
+        // Subscribe to sheet events for syncing active tab
+        const onSheetOpened = ({ id }: { id: string }) => this.syncActiveTab(id);
+        const onSheetClosed = ({ id }: { id: string | null }) => this.syncActiveTab(id);
+        
+        eventBus.on('sheetOpened', onSheetOpened);
+        eventBus.on('sheetClosed', onSheetClosed);
+        
+        this.addSubscription(() => {
+            eventBus.off('sheetOpened', onSheetOpened);
+            eventBus.off('sheetClosed', onSheetClosed);
+        });
+
+        // Set initial state
+        this.syncActiveTab(sheetManager.getActiveSheetId());
+    }
+
+    private syncActiveTab(activeId: string | null): void {
+        this.setActiveTab(activeId);
     }
 
     private setActiveTab(tabId: string | null): void {
