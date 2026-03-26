@@ -18,6 +18,7 @@ import { SearchSheet } from './ui/components/SearchSheet';
 import { LayersSheet } from './ui/components/LayersSheet';
 import { WeatherSheet, SolarProbeSheet, SOSSheet } from './ui/components/ExpertSheets';
 import { TrackSheet } from './ui/components/TrackSheet';
+import { ConnectivitySheet } from './ui/components/ConnectivitySheet';
 import { WidgetsComponent } from './ui/components/WidgetsComponent';
 import { TimelineComponent } from './ui/components/TimelineComponent';
 import { initAutoHide } from './ui/autoHide';
@@ -50,14 +51,6 @@ export function initUI(): void {
     if (diagPreset) diagPreset.textContent = `PROFIL: ${state.PERFORMANCE_PRESET.toUpperCase()}`;
     const techInfo = document.getElementById('tech-info');
     if (techInfo) techInfo.style.display = 'block';
-
-    // --- GESTION RÉSEAU ---
-    const updateNetworkStatus = () => {
-        state.IS_OFFLINE = !navigator.onLine;
-    };
-    window.addEventListener('online', updateNetworkStatus);
-    window.addEventListener('offline', updateNetworkStatus);
-    updateNetworkStatus();
 
     window.addEventListener('resize', onWindowResize);
     document.addEventListener('click', handleGlobalClick);
@@ -120,6 +113,9 @@ export function initUI(): void {
 
     const sosSheet = new SOSSheet();
     sosSheet.hydrate();
+
+    const connectivitySheet = new ConnectivitySheet();
+    connectivitySheet.hydrate();
 
     const widgets = new WidgetsComponent();
     widgets.hydrate();
@@ -202,9 +198,35 @@ export function initUI(): void {
     });
 
     document.getElementById('close-coords')?.addEventListener('click', () => {
-        const cp = document.getElementById('coords-panel');
-        if (cp) cp.style.display = 'none';
+        const cp = document.getElementById('coords-pill');
+        if (cp) cp.classList.add('hidden');
         state.hasLastClicked = false;
+    });
+
+    const layersFab = document.getElementById('layers-fab');
+    layersFab?.addEventListener('click', () => {
+        sheetManager.toggle('layers-sheet');
+    });
+
+    const compassFab = document.getElementById('compass-fab');
+    compassFab?.addEventListener('click', () => {
+        if (state.controls) {
+            // Smoothly reset rotation to North
+            state.controls.minAzimuthAngle = -Infinity;
+            state.controls.maxAzimuthAngle = Infinity;
+            // logic to animate camera to North could be here
+            showToast("🧭 Nord réaligné");
+        }
+    });
+
+    // Update compass rotation in the loop (usually handled in scene.ts but we can add a listener)
+    state.subscribe('isUserInteracting', () => {
+        const compassSvg = document.getElementById('compass-svg');
+        if (compassSvg && state.camera) {
+            // Simplified angle extraction
+            const angle = state.controls?.getAzimuthalAngle() || 0;
+            compassSvg.style.transform = `rotate(${-angle}rad)`;
+        }
     });
 
     document.getElementById('close-profile')?.addEventListener('click', () => {
@@ -219,6 +241,11 @@ function handleGlobalClick(_e: MouseEvent) {
 
 function handleMapClick(e: MouseEvent) {
     if (!state.renderer || !state.camera || !state.scene) return;
+
+    // Close layers sheet if open when clicking map (no overlay active for this sheet)
+    if (sheetManager.getActiveSheetId() === 'layers-sheet') {
+        sheetManager.close();
+    }
 
     const mouse = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
     const raycaster = new THREE.Raycaster();
@@ -246,9 +273,9 @@ function handleMapClick(e: MouseEvent) {
         state.hasLastClicked = true;
         state.lastClickedCoords = { x: hit.x, z: hit.z, alt: getAltitudeAt(hit.x, hit.z) };
         
-        const cp = document.getElementById('coords-panel');
+        const cp = document.getElementById('coords-pill');
         if (cp) {
-            cp.style.display = 'block';
+            cp.classList.remove('hidden');
             const gps = worldToLngLat(hit.x, hit.z, state.originTile);
             const clickLatLon = document.getElementById('click-latlon');
             if (clickLatLon) clickLatLon.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
@@ -257,6 +284,8 @@ function handleMapClick(e: MouseEvent) {
         }
     } else {
         state.hasLastClicked = false;
+        const cp = document.getElementById('coords-pill');
+        if (cp) cp.classList.add('hidden');
     }
 }
 
@@ -268,12 +297,12 @@ function startApp() {
     const navBar = document.getElementById('nav-bar');
     const topBar = document.getElementById('top-status-bar');
     const widgets = document.getElementById('widgets-container');
-    const gpsBtn = document.getElementById('gps-main-btn');
+    const fabStack = document.querySelector('.fab-stack') as HTMLElement;
     
     if (navBar) navBar.style.display = 'flex';
     if (topBar) topBar.style.display = 'flex';
     if (widgets) widgets.style.display = 'block';
-    if (gpsBtn) gpsBtn.style.display = 'flex';
+    if (fabStack) fabStack.style.display = 'flex';
     
     const bottomBar = document.getElementById('bottom-bar');
     if (bottomBar) bottomBar.style.display = 'block';

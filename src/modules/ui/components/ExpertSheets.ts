@@ -392,9 +392,9 @@ export class SOSSheet extends BaseComponent {
             sheetManager.close();
         });
 
-        // Attach to the SOS button which is in the WidgetsComponent (coords-panel)
+        // Attach to the SOS button which is in the WidgetsComponent (coords-pill)
         const attachSosBtn = () => {
-            const sosBtn = document.getElementById('sos-btn');
+            const sosBtn = document.getElementById('sos-btn-pill');
             if (sosBtn) {
                 sosBtn.onclick = this.openSOSModal.bind(this);
             } else {

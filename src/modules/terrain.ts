@@ -486,7 +486,8 @@ export function autoSelectMapSource(lat: number, lon: number): void {
 export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number | null = null, worldZ: number | null = null): Promise<void> {
     const is2DGlobal = state.PERFORMANCE_PRESET === 'eco' || state.ZOOM <= 10;
     terrainUniforms.uExaggeration.value = state.RELIEF_EXAGGERATION;
-    terrainUniforms.uShowSlopes.value = (state.SHOW_SLOPES && !is2DGlobal) ? 1.0 : 0.0;
+    const MIN_SLOPE_LOD = 11;
+    terrainUniforms.uShowSlopes.value = (state.SHOW_SLOPES && !is2DGlobal && state.ZOOM >= MIN_SLOPE_LOD) ? 1.0 : 0.0;
     terrainUniforms.uShowHydrology.value = state.SHOW_HYDROLOGY ? 1.0 : 0.0;
 
     if (!state.camera || Math.abs(state.camera.position.y) < 1) return Promise.resolve();

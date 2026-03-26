@@ -7,7 +7,7 @@ export class TopStatusBar extends BaseComponent {
     private lodBadge: HTMLElement | null = null;
     private weatherIcon: HTMLElement | null = null;
     private weatherTemp: HTMLElement | null = null;
-    private networkStatus: HTMLElement | null = null;
+    private netStatusIcon: HTMLElement | null = null;
     private recWidget: HTMLElement | null = null;
     private recTimer: HTMLElement | null = null;
     private recInterval: any = null;
@@ -22,18 +22,37 @@ export class TopStatusBar extends BaseComponent {
         this.lodBadge = this.element.querySelector('.lod-badge');
         this.weatherIcon = this.element.querySelector('.weather-icon');
         this.weatherTemp = this.element.querySelector('.weather-temp');
-        this.networkStatus = this.element.querySelector('.network-status');
+        this.netStatusIcon = this.element.querySelector('#net-status-icon') as HTMLElement;
         this.recWidget = this.element.querySelector('.rec-indicator');
         this.recTimer = this.element.querySelector('.rec-timer');
 
-        const weatherWidget = this.element.querySelector('.weather-widget');
-        weatherWidget?.addEventListener('click', () => {
+        const mainPill = this.element.querySelector('#top-pill-main');
+        mainPill?.addEventListener('click', () => {
             sheetManager.toggle('weather');
+        });
+
+        this.netStatusIcon?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sheetManager.toggle('connectivity');
         });
 
         const recWidget = this.element.querySelector('.rec-indicator');
         recWidget?.addEventListener('click', () => {
             sheetManager.toggle('track');
+        });
+
+        const sosBtn = this.element.querySelector('#sos-main-btn');
+        sosBtn?.addEventListener('click', () => {
+            sheetManager.toggle('sos');
+        });
+
+        const gpuBtn = this.element.querySelector('#gpu-stats-btn');
+        gpuBtn?.addEventListener('click', () => {
+            // Stats performance are usually handled globally but we can toggle visibility
+            const stats = document.querySelector('.dg.main'); // Dat.gui or Stats.js
+            if (stats) {
+                (stats as HTMLElement).style.display = (stats as HTMLElement).style.display === 'none' ? 'block' : 'none';
+            }
         });
 
         this.updateLOD(state.ZOOM);
@@ -90,7 +109,8 @@ export class TopStatusBar extends BaseComponent {
 
     private updateLOD(zoom: number): void {
         if (this.lodBadge) {
-            this.lodBadge.textContent = `LVL ${Math.floor(zoom)}`;
+            const country = state.ZOOM > 10 ? 'SWISS' : 'WORLD';
+            this.lodBadge.textContent = `${country} · LVL ${Math.floor(zoom)}`;
         }
     }
 
@@ -117,13 +137,10 @@ export class TopStatusBar extends BaseComponent {
     }
 
     private updateNetwork(isOffline: boolean): void {
-        if (this.networkStatus) {
-            this.networkStatus.textContent = isOffline ? '📶 HORS-LIGNE' : '📶 NET';
-            if (isOffline) {
-                this.networkStatus.classList.add('offline');
-            } else {
-                this.networkStatus.classList.remove('offline');
-            }
+        if (this.netStatusIcon) {
+            this.netStatusIcon.innerHTML = isOffline 
+                ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.7 12.3a2.5 2.5 0 0 1 3.6 3.6m-2.2-12.7a5 5 0 0 1 7.1 7.1m-1.8 4.2A5 5 0 0 1 3 10.5a5 5 0 0 1 4.5-4.9M1 1l22 22"/></svg>`
+                : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>`;
         }
     }
 }

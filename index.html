@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SunTrail - Moteur Three.js</title>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
@@ -13,7 +13,7 @@
     <div class="setup-card">
         <div style="margin-bottom:8px; font-size:10px; color:var(--gold); font-weight:700; letter-spacing:3px; text-transform:uppercase;">Version 5.8.2</div>
         <h1>⛰️ SunTrail 3D</h1>
-        <p style="color:var(--t2);">Visualisation topographique haute précision, simulation solaire en temps réel & météo experte.</p>
+        <p style="color:var(--text-2);">Visualisation topographique haute précision, simulation solaire en temps réel & météo experte.</p>
         
         <div style="text-align:left;">
             <label style="font-size:11px; color:var(--gold); text-transform:uppercase; font-weight:700; letter-spacing:1px;">Clé API MapTiler Cloud</label>
@@ -22,7 +22,7 @@
         </div>
 
         <div id="tech-info" style="margin-top:20px; padding:15px; background:rgba(255,255,255,0.03); border-radius:12px; text-align:left; border:1px solid rgba(255,255,255,0.05); display:none;">
-            <div style="font-size:9px; color:var(--t2); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Diagnostic Matériel</div>
+            <div style="font-size:9px; color:var(--text-2); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Diagnostic Matériel</div>
             <div id="diag-gpu" style="font-size:11px; color:white; margin-bottom:4px; font-family:monospace;">GPU: Détection...</div>
             <div id="diag-cpu" style="font-size:11px; color:white; margin-bottom:4px; font-family:monospace;">CPU: -- cores</div>
             <div id="diag-preset" style="font-size:11px; color:var(--gold); font-weight:700; font-family:monospace;">PROFIL: --</div>
@@ -38,44 +38,106 @@
 
 <!-- SHELL CONTAINERS -->
 <div id="top-status-bar"></div>
+
+<!-- COORDS PILL -->
+<div id="coords-pill" class="hidden">
+  <div class="coords-lat" id="click-latlon">—</div>
+  <div class="coords-alt" id="click-alt">—</div>
+  <div class="coords-actions">
+    <button class="coords-btn solar" id="probe-btn">☀ Solaire</button>
+    <button class="coords-btn solar" id="save-wpt-btn">📍 Ajouter</button>
+  </div>
+</div>
+
 <nav id="nav-bar"></nav>
 <div id="sheet-overlay"></div>
 <div id="sheet-container"></div>
 <div id="toast-container"></div>
 
-<!-- BOUTON GPS PRINCIPAL -->
-<div id="gps-main-btn" style="display:none;" title="Ma position">🎯</div>
+<!-- PILE DE BOUTONS FLOTTANTS (STYLE GOOGLE MAPS / SWISSMOBILE) -->
+<div class="fab-stack">
+  <!-- BOUSSOLE -->
+  <div id="compass-fab" class="fab-btn" title="Réinitialiser le Nord">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" id="compass-svg">
+      <path d="M12 2L15 12L12 22L9 12L12 2Z" fill="#ef4444" stroke="#ef4444" stroke-width="1"/>
+      <path d="M12 2L15 12H9L12 2Z" fill="#ef4444"/>
+      <circle cx="12" cy="12" r="1" fill="white"/>
+    </svg>
+  </div>
+
+  <!-- COUCHES -->
+  <div id="layers-fab" class="fab-btn" title="Type de carte">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+      <polyline points="2 17 12 22 22 17"/>
+      <polyline points="2 12 12 17 22 12"/>
+    </svg>
+  </div>
+
+  <!-- GPS -->
+  <div id="gps-main-btn" class="fab-btn primary" title="Ma position">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <circle cx="11" cy="11" r="3.5" stroke="white" stroke-width="1.8"/>
+      <path d="M11 2v3M11 17v3M2 11h3M17 11h3" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="11" cy="11" r="7" stroke="white" stroke-width="1.2" stroke-dasharray="2 2" opacity="0.5"/>
+    </svg>
+  </div>
+</div>
 
 <!-- TEMPLATES UI -->
 <template id="template-layers">
-<div id="layers" class="bottom-sheet">
+<div id="layers-sheet" class="bottom-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-header">
-        <span class="sheet-title">Type de carte</span>
+        <span class="sheet-title">Fonds de carte</span>
         <div class="sheet-close" id="close-layers">×</div>
     </div>
+    
     <div class="layer-grid">
         <div class="layer-item active" data-source="swisstopo">
             <div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/outdoor-v2.png')"></div>
-            Topo CH
+            <div class="layer-name">Topo CH</div>
         </div>
         <div class="layer-item" data-source="satellite">
             <div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/satellite.png')"></div>
-            Satellite
+            <div class="layer-name">Satellite</div>
         </div>
         <div class="layer-item" data-source="opentopomap">
             <div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/topo.png')"></div>
-            OpenTopo
+            <div class="layer-name">OpenTopo</div>
         </div>
     </div>
-    <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
-            <label style="font-size:14px;">📍 Sentiers de randonnée</label>
-            <input type="checkbox" id="layers-trails-toggle">
+
+    <div class="settings-section" style="padding-top: 15px; margin-top: 15px; border-top: 1px solid var(--border);">
+        <div class="setting-row" id="row-trails" style="padding: 10px 0;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="icon-btn-sm" style="width:30px; height:30px; background: rgba(59,126,248,0.1); color: var(--accent); border: none;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                </div>
+                <div>
+                    <div class="setting-label">Sentiers</div>
+                    <div class="lod-warning" style="display:none; font-size:9px; color:var(--text-3); margin-top:1px;">Indisponible à ce zoom</div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="info-icon" title="Zoomer d'avantage (LVL 11+) pour voir les sentiers">ⓘ</div>
+                <input type="checkbox" id="layers-trails-toggle" checked>
+            </div>
         </div>
-        <div style="display:flex; align-items:center; justify-content:space-between;">
-            <label style="font-size:14px;">⚠️ Pentes > 30° (Avalanche)</label>
-            <input type="checkbox" id="layers-slopes-toggle">
+        <div class="setting-row" id="row-slopes" style="padding: 10px 0;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="icon-btn-sm" style="width:30px; height:30px; background: rgba(239,68,68,0.1); color: var(--danger); border: none;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+                </div>
+                <div>
+                    <div class="setting-label">Pentes > 30°</div>
+                    <div class="lod-warning" style="display:none; font-size:9px; color:var(--text-3); margin-top:1px;">Indisponible à ce zoom</div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="info-icon" title="Zoomer d'avantage (LVL 11+) pour voir les pentes">ⓘ</div>
+                <input type="checkbox" id="layers-slopes-toggle">
+            </div>
         </div>
     </div>
 </div>
@@ -85,10 +147,20 @@
 <div id="search" class="bottom-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-header">
-        <span class="sheet-title">Recherche</span>
+        <span class="sheet-title">Exploration</span>
         <div class="sheet-close" id="close-search">×</div>
     </div>
-    <input type="text" id="geo-input" placeholder="🔍 Rechercher un lieu ou sommet...">
+    <div style="padding: 0 0 10px;">
+        <div class="search-input-wrap">
+          <span class="search-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="7" cy="7" r="4.5" stroke="rgba(139,143,168,0.6)" stroke-width="1.3"/>
+              <path d="M10.5 10.5l3 3" stroke="rgba(139,143,168,0.6)" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <input type="text" id="geo-input" placeholder="Chercher un sommet ou un lieu...">
+        </div>
+    </div>
     <div id="geo-results"></div>
 </div>
 </template>
@@ -97,115 +169,180 @@
 <div id="settings" class="bottom-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-header">
-        <h2 style="margin:0; color:var(--gold); font-size:18px;">RÉGLAGES</h2>
-        <button id="close-panel" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">&times;</button>
+        <span class="sheet-title">Réglages</span>
+        <div class="sheet-close" id="close-panel">×</div>
     </div>
     
-    <div class="control-group">
-        <label style="display:block; font-size:11px; color:var(--gold); font-weight:700; margin-bottom:10px; text-transform:uppercase;">Profil de performance</label>
-        <div class="preset-grid">
-            <button class="preset-btn" data-preset="eco">Éco</button>
-            <button class="preset-btn" data-preset="balanced">Std</button>
-            <button class="preset-btn" data-preset="performance">High</button>
-            <button class="preset-btn" data-preset="ultra">Ultra</button>
-        </div>
+    <div class="section-label">Profil de performance</div>
+    <div class="preset-grid">
+        <button class="preset-btn" data-preset="eco">Éco</button>
+        <button class="preset-btn" data-preset="balanced">Std</button>
+        <button class="preset-btn" data-preset="performance">High</button>
+        <button class="preset-btn" data-preset="ultra">Ultra</button>
     </div>
 
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:12px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
-        <span style="font-size:13px; color:white; font-weight:500;">🔋 Économie d'énergie (30 FPS)</span>
+    <div class="setting-row" style="margin-top:15px; padding:12px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:16px;">🔋</span>
+            <div class="setting-label" style="font-size:13px;">Économie d'énergie</div>
+        </div>
         <input type="checkbox" id="energy-saver-toggle">
     </div>
 
-    <div class="control-group">
-        <label style="display:block; font-size:11px; color:var(--gold); font-weight:700; margin-bottom:15px; text-transform:uppercase;">Rendu 3D & Détails</label>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <span style="font-size:14px;">📊 Stats de performance</span>
-            <input type="checkbox" id="stats-toggle" checked>
-        </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <span style="font-size:14px;">🛠️ Infos de navigation</span>
-            <input type="checkbox" id="debug-toggle" checked>
-        </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <span style="font-size:14px;">🌲 Forêts 3D (Suisse) <span id="veg-density-disp">4000</span></span>
+    <div class="control-group" style="margin-top: 20px;">
+        <div class="section-label">Rendu 3D & Détails</div>
+        
+        <div class="setting-row">
+            <div class="setting-label">Forêts & Végétation</div>
             <input type="checkbox" id="veg-toggle" checked>
         </div>
-        <input type="range" id="veg-density-slider" min="0" max="15000" step="500" value="4000" style="margin-bottom:15px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <span style="font-size:14px;">🏢 Bâtiments OSM</span>
+        <div style="margin-bottom: 15px; padding-left: 4px;">
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-3); margin-bottom: 4px;">
+                <span>DENSITÉ DÉTAILS</span>
+                <span id="veg-density-disp">4000</span>
+            </div>
+            <input type="range" id="veg-density-slider" min="0" max="15000" step="500" value="4000">
+        </div>
+        
+        <div class="setting-row">
+            <div class="setting-label">Bâtiments OSM</div>
             <input type="checkbox" id="buildings-toggle" checked>
         </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <span style="font-size:14px;">💧 Hydrologie (Lacs & Rivières)</span>
+        <div class="setting-row">
+            <div class="setting-label">Lacs & Rivières</div>
             <input type="checkbox" id="hydro-toggle" checked>
         </div>
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-size:14px;">🪧 Signalisation 3D</span>
+        <div class="setting-row">
+            <div class="setting-label">Signalisation 3D</div>
             <input type="checkbox" id="poi-toggle" checked>
         </div>
     </div>
 
     <details class="control-group" style="margin-top: 15px;">
-        <summary style="font-size:11px; color:var(--gold); font-weight:700; text-transform:uppercase; cursor:pointer; outline:none;">Paramètres Avancés</summary>
-        <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 15px;">
-            <div>
-                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
-                    <span>Résolution (LOD)</span>
-                    <span id="res-disp">14</span>
+        <summary style="font-size:11px; color:var(--gold); font-weight:700; text-transform:uppercase; cursor:pointer; outline:none; letter-spacing:1px; padding:10px 0;">⚙️ Paramètres Avancés</summary>
+        
+        <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 4px;">
+            <div class="setting-row">
+                <div class="setting-label">Vitesse de chargement</div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span id="load-speed-disp" style="font-size:10px; color:var(--text-3); font-family:var(--font-mono);">1.0</span>
+                    <input type="range" id="load-speed-slider" min="0.1" max="3.0" step="0.1" style="width:80px;">
                 </div>
-                <input type="range" id="res-slider" min="10" max="16" step="1" value="14">
             </div>
-            <div>
-                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
-                    <span>Rayon de rendu</span>
-                    <span id="range-disp">3</span>
+
+            <div class="setting-row">
+                <div class="setting-label">Résolution (LOD)</div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span id="res-disp" style="font-size:10px; color:var(--text-3); font-family:var(--font-mono);">14</span>
+                    <input type="range" id="res-slider" min="10" max="16" step="1" value="14" style="width:80px;">
                 </div>
-                <input type="range" id="range-slider" min="1" max="8" step="1" value="3">
             </div>
-            <div>
-                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
-                    <span>Exagération du relief</span>
-                    <span id="exag-disp">1</span>
+
+            <div class="setting-row">
+                <div class="setting-label">Rayon de rendu</div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span id="range-disp" style="font-size:10px; color:var(--text-3); font-family:var(--font-mono);">3</span>
+                    <input type="range" id="range-slider" min="1" max="8" step="1" value="3" style="width:80px;">
                 </div>
-                <input type="range" id="exag-slider" min="1" max="3" step="0.1" value="1">
             </div>
-            <div>
-                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
-                    <span>Brouillard (km)</span>
+
+            <div class="setting-row">
+                <div class="setting-label">Exagération relief</div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span id="exag-disp" style="font-size:10px; color:var(--text-3); font-family:var(--font-mono);">1.4</span>
+                    <input type="range" id="exag-slider" min="1.0" max="3.0" step="0.1" value="1.4" style="width:80px;">
                 </div>
-                <input type="range" id="fog-slider" min="5" max="100" step="1" value="30">
             </div>
-            <div>
-                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
-                    <span>Vitesse de chargement</span>
-                </div>
-                <select id="load-speed-select" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; padding:8px; border-radius:8px;">
-                    <option value="0.5">Rapide (0.5x)</option>
-                    <option value="1" selected>Normal (1x)</option>
-                    <option value="2">Lent (2x)</option>
-                </select>
+
+            <div class="setting-row">
+                <div class="setting-label">Stats de performance (FPS)</div>
+                <input type="checkbox" id="stats-toggle" checked>
             </div>
-            <div>
-                <div style="font-size:13px; margin-bottom:5px;">Clé API MapTiler</div>
+            
+            <div class="setting-row">
+                <div class="setting-label">Ombres portées</div>
+                <input type="checkbox" id="shadow-toggle">
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-label">Infos de debug</div>
+                <input type="checkbox" id="debug-toggle">
+            </div>
+
+            <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 12px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.05);">
+                <div style="font-size:11px; color:var(--gold); font-weight:700; text-transform:uppercase;">Clé API MapTiler</div>
                 <form id="api-key-form" style="display:flex; gap:8px;">
-                    <input type="text" id="maptiler-key-input" placeholder="Clé API..." style="flex:1; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; padding:8px; border-radius:8px;">
-                    <button type="submit" class="btn-go" style="margin:0; padding:8px 12px;">OK</button>
+                    <input type="text" id="maptiler-key-input" placeholder="Clé API..." style="flex:1; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; padding:8px; border-radius:8px; font-size:12px;">
+                    <button type="submit" class="btn-go" style="margin:0; padding:8px 12px; font-size:12px;">OK</button>
                 </form>
-            </div>
-            <div>
-                <div style="font-size:13px; margin-bottom:5px;">Stockage & Hors-ligne</div>
-                <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <button id="clear-cache-btn" class="btn-go" style="margin:0; padding:8px 12px; background:#ef4444; flex:1;">Vider Cache</button>
-                    <button id="download-zone-btn" class="btn-go" style="margin:0; padding:8px 12px; flex:1;"><span>Télécharger Zone</span></button>
+                
+                <div style="font-size:11px; color:var(--gold); font-weight:700; text-transform:uppercase; margin-top:5px;">Gestion des données</div>
+                <div style="display:flex; gap:8px;">
+                    <button id="clear-cache-btn" class="btn-go" style="margin:0; padding:10px; background:#ef4444; flex:1; font-size:12px;">Vider Cache</button>
+                    <button id="download-zone-btn" class="btn-go" style="margin:0; padding:10px; flex:1; font-size:12px;"><span>Télécharger Zone</span></button>
                 </div>
-            </div>
-            <div>
-                <div style="font-size:13px; margin-bottom:5px;">Cartes Locales (PMTiles)</div>
-                <button id="pmtiles-btn" class="btn-go" style="margin:0; padding:8px 12px; width:100%;">Charger .pmtiles</button>
+                <button id="pmtiles-btn" class="btn-go" style="margin:0; padding:10px; width:100%; font-size:12px; background:rgba(255,255,255,0.05);">Charger .pmtiles local</button>
                 <input type="file" id="pmtiles-upload" accept=".pmtiles" style="display:none;">
-            </div>
-        </div>
-    </details>
+                </div>
+                </div>
+                </div>
+                </template>
+
+                <template id="template-connectivity">
+                <div id="connectivity" class="bottom-sheet">
+                <div class="sheet-handle"></div>
+                <div class="sheet-header">
+                <span class="sheet-title">Système & Données</span>
+                <div class="sheet-close" id="close-connectivity">×</div>
+                </div>
+
+                <div class="section-label">État du Signal</div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;">
+                <div class="stat-card">
+                <div class="stat-card-label">Signal GPS</div>
+                <div class="stat-card-value" id="gps-accuracy">-- <span style="font-size:12px; color:var(--text-3)">m</span></div>
+                </div>
+                <div class="stat-card">
+                <div class="stat-card-label">Réseau</div>
+                <div class="stat-card-value" id="net-status">ONLINE</div>
+                </div>
+                </div>
+
+                <div class="setting-row" style="margin-bottom:20px; padding:12px; background:rgba(59,126,248,0.05); border-radius:12px; border:1px solid rgba(59,126,248,0.1);">
+                <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:18px;">✈️</span>
+                <div>
+                    <div class="setting-label" style="font-size:14px;">Mode Hors-ligne</div>
+                    <div style="font-size:10px; color:var(--text-3);">Forcer l'usage du cache uniquement</div>
+                </div>
+                </div>
+                <input type="checkbox" id="offline-toggle">
+                </div>
+
+                <div class="control-group">
+                <div class="section-label">Gestion du Cache</div>
+                <div style="display:flex; gap:8px; margin-bottom:15px;">
+                <button id="conn-clear-cache" class="btn-go" style="margin:0; padding:12px; background:#ef4444; flex:1; font-size:12px;">Vider le Cache</button>
+                <button id="conn-download-zone" class="btn-go" style="margin:0; padding:12px; flex:1; font-size:12px;"><span>Télécharger Zone</span></button>
+                </div>
+
+                <div class="setting-row">
+                <div class="setting-label">Stockage local (.pmtiles)</div>
+                <button id="conn-pmtiles-btn" class="icon-btn-sm" style="border:none; background:rgba(255,255,255,0.05);">📂</button>
+                <input type="file" id="conn-pmtiles-upload" accept=".pmtiles" style="display:none;">
+                </div>
+                </div>
+
+                <div class="control-group" style="margin-top:10px;">
+                <div class="section-label">Services Externes</div>
+                <div style="font-size:11px; color:var(--text-3); margin-bottom:8px;">Clé API MapTiler Cloud</div>
+                <form id="conn-api-key-form" style="display:flex; gap:8px;">
+                <input type="text" id="conn-maptiler-input" placeholder="Clé API..." style="flex:1; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; padding:10px; border-radius:10px; font-size:12px;">
+                <button type="submit" class="btn-go" style="margin:0; padding:10px 15px;">OK</button>
+                </form>
+                </div>
+                </div>
+                </template>
 </div>
 </template>
 
@@ -213,33 +350,35 @@
 <div id="weather" class="bottom-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-header">
-        <h3 style="margin:0; font-size:14px; color:var(--gold); text-transform:uppercase; letter-spacing:1px;">☁️ Bulletin Météo</h3>
-        <button id="close-weather" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">&times;</button>
+        <span class="sheet-title">Bulletin Météo</span>
+        <div class="sheet-close" id="close-weather">×</div>
     </div>
     <div id="weather-content"></div>
     
     <div style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border);">
         <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:15px;">
-            <button class="weather-btn" data-weather="clear" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; padding:8px; cursor:pointer;">☀️</button>
-            <button class="weather-btn" data-weather="rain" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; padding:8px; cursor:pointer;">🌧️</button>
-            <button class="weather-btn" data-weather="snow" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; padding:8px; cursor:pointer;">❄️</button>
+            <button class="weather-btn" data-weather="clear" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; padding:12px; cursor:pointer; font-size: 20px;">☀️</button>
+            <button class="weather-btn" data-weather="rain" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; padding:12px; cursor:pointer; font-size: 20px;">🌧️</button>
+            <button class="weather-btn" data-weather="snow" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; padding:12px; cursor:pointer; font-size: 20px;">❄️</button>
         </div>
         
-        <div style="margin-bottom:10px;">
-            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;">
-                <span>Intensité : <span id="weather-density-disp">2500</span></span>
+        <div style="margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; font-size:11px; color: var(--text-3); margin-bottom:4px;">
+                <span>INTENSITÉ</span>
+                <span id="weather-density-disp">2500</span>
             </div>
             <input type="range" id="weather-density-slider" min="0" max="15000" step="500" value="2500">
         </div>
         <div>
-            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;">
-                <span>Vitesse : <span id="weather-speed-disp">1.0</span>x</span>
+            <div style="display:flex; justify-content:space-between; font-size:11px; color: var(--text-3); margin-bottom:4px;">
+                <span>VITESSE</span>
+                <span id="weather-speed-disp">1.0</span>
             </div>
             <input type="range" id="weather-speed-slider" min="0.5" max="3.0" step="0.1" value="1.0">
         </div>
     </div>
 
-    <button id="open-expert-weather" class="btn-go" style="margin-top:5px; padding:12px;">📊 Station Météo Expert</button>
+    <button id="open-expert-weather" class="btn-go" style="margin-top:20px; padding:12px;">📊 Station Météo Expert</button>
 </div>
 </template>
 
@@ -247,8 +386,8 @@
 <div id="solar-probe" class="bottom-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-header">
-        <h3 style="margin:0; font-size:14px; color:var(--gold); text-transform:uppercase;">☀️ Analyse Solaire</h3>
-        <button id="close-probe" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">&times;</button>
+        <span class="sheet-title">Analyse Solaire</span>
+        <div class="sheet-close" id="close-probe">×</div>
     </div>
     <div id="probe-content"></div>
 </div>
@@ -260,13 +399,13 @@
     <div style="text-align:center; padding:20px;">
         <div style="font-size:48px; margin-bottom:15px;">🆘</div>
         <h2 style="color:#ef4444; margin:0 0 10px 0;">URGENCE SOS</h2>
-        <p style="font-size:13px; color:var(--t2); margin-bottom:20px;">Voici vos coordonnées exactes à transmettre aux secours.</p>
+        <p style="font-size:13px; color:var(--text-2); margin-bottom:20px;">Voici vos coordonnées exactes à transmettre aux secours.</p>
         <div id="sos-text-container" style="background:rgba(239,68,68,0.1); border:1px solid #ef4444; border-radius:16px; padding:20px; font-family:monospace; font-size:16px; color:white; margin-bottom:20px; word-break:break-all;">
             ⌛ Localisation en cours...
         </div>
         <div style="display:flex; gap:10px;">
-            <button id="sos-copy-btn" class="btn-go" style="flex:1; margin:0; background:#444;">Copier le message</button>
-            <button id="sos-close-btn" class="btn-go" style="flex:1; margin:0; background:#ef4444;">Fermer</button>
+            <button id="sos-copy-btn" class="track-btn primary" style="flex:1;">Copier le message</button>
+            <button id="sos-close-btn" class="track-btn" style="flex:1; background:rgba(255,255,255,0.05);">Fermer</button>
         </div>
     </div>
 </div>
@@ -274,43 +413,8 @@
 
 <template id="template-widgets">
 <div id="widgets-container" style="display:none;">
-    <div id="layer-btn" style="display:none;" title="Changer de carte">🗺️</div>
-    <div id="layer-menu">
-        <h3 style="margin:0 0 15px 0; font-size:14px; color:var(--gold); text-transform:uppercase;">Type de carte</h3>
-        <div class="layer-grid">
-            <div class="layer-item active" data-source="swisstopo">
-                <div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/outdoor-v2.png')"></div>
-                Topo CH
-            </div>
-            <div class="layer-item" data-source="satellite">
-                <div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/satellite.png')"></div>
-                Satellite
-            </div>
-            <div class="layer-item" data-source="opentopomap">
-                <div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/topo.png')"></div>
-                OpenTopo
-            </div>
-        </div>
-        <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid var(--border);">
-            <label style="font-size:13px;">📍 Sentiers</label>
-            <input type="checkbox" id="trails-toggle" checked>
-        </div>
-        <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px;">
-            <label style="font-size:13px;">⚠️ Pentes > 30°</label>
-            <input type="checkbox" id="slopes-toggle">
-        </div>
-    </div>
     <div id="bottom-stack">
-        <div id="coords-panel" style="display:none;">
-            <div id="close-coords" style="position:absolute; top:8px; right:12px; cursor:pointer; color:var(--text-2); font-size:16px; font-weight:bold;">×</div>
-            <div id="click-latlon" style="color:var(--text-2); font-size:11px;">—</div>
-            <div id="click-alt" style="color:white; font-size:18px; font-weight:800; margin-top:2px;">—</div>
-            <div style="display:flex; gap:8px; margin-top:10px; pointer-events:auto;">
-                <button id="probe-btn" style="flex:2; padding:10px; border-radius:10px; background:var(--accent); color:white; border:none; font-weight:700; cursor:pointer; font-size:11px; pointer-events:auto;">☀️ ANALYSE SOLAIRE</button>
-                <button id="sos-btn" style="flex:1; padding:10px; border-radius:10px; background:#ef4444; color:white; border:none; font-weight:700; cursor:pointer; font-size:11px; box-shadow:0 4px 12px rgba(239, 68, 68, 0.3); pointer-events:auto;">🆘 SOS</button>
-            </div>
-        </div>
-        <div id="bottom-bar" style="display:none;">
+        <div id="bottom-bar">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div style="display:flex; align-items:center; gap:12px;">
                     <div style="font-weight:700; font-size:18px;"><span id="time-disp">12:00</span></div>
@@ -347,42 +451,73 @@
 
 <template id="template-top-status-bar">
     <div class="top-status-bar-content">
-        <div class="status-widget rec-indicator" id="rec-status-widget" style="display:none; border-color:var(--danger); color:var(--danger);">
-            <span class="rec-dot">🔴</span>
-            <span class="rec-timer">REC</span>
+        <div class="top-left-widgets">
+            <div class="top-widget" id="top-pill-main">
+                <span class="lod-badge">SWISS · LVL --</span>
+                <span class="weather-icon">☀️</span>
+                <span class="weather-temp">--°C</span>
+            </div>
         </div>
-        <div class="status-widget lod-widget">
-            <span class="lod-badge">LVL --</span>
-        </div>
-        <div class="status-widget weather-widget">
-            <span class="weather-icon">☀️</span>
-            <span class="weather-temp">--°C</span>
-        </div>
-        <div class="status-widget timeline-toggle-widget" id="timeline-toggle-btn">
-            <span class="timeline-icon">🕒</span>
-        </div>
-        <div class="status-widget network-widget">
-            <span class="network-status">📡</span>
+        <div class="top-right-widgets">
+            <div class="status-widget rec-indicator" id="rec-status-widget" style="display:none;">
+                <span class="rec-dot">🔴</span>
+                <span class="rec-timer">REC</span>
+            </div>
+            <div class="icon-btn-sm" id="gpu-stats-btn" title="Stats GPU">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="8" width="2" height="6" rx="1" fill="rgba(139,143,168,0.7)"/>
+                <rect x="5" y="5" width="2" height="9" rx="1" fill="rgba(139,143,168,0.7)"/>
+                <rect x="8" y="3" width="2" height="11" rx="1" fill="var(--accent)"/>
+                <rect x="11" y="6" width="2" height="8" rx="1" fill="rgba(139,143,168,0.7)"/>
+              </svg>
+            </div>
+            <div class="icon-btn-sm" id="net-status-icon" title="Système & Données" style="cursor:pointer;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+            </div>
+            <div class="icon-btn-sm danger" id="sos-main-btn" title="SOS">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M7 4v3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <circle cx="7" cy="10" r="0.8" fill="currentColor"/>
+              </svg>
+            </div>
+            <div class="status-widget timeline-toggle-widget" id="timeline-toggle-btn">
+                <span class="timeline-icon">🕒</span>
+            </div>
         </div>
     </div>
 </template>
 
 <template id="template-nav-bar">
     <div class="nav-bar-content">
-        <div class="nav-tab active" data-tab="map">
-            <div class="nav-icon">🗺️</div>
-            <span class="nav-label">Carte</span>
-        </div>
-        <div class="nav-tab" data-tab="search">
-            <div class="nav-icon">🔍</div>
-            <span class="nav-label">Recherche</span>
+        <div class="nav-tab active" data-tab="search">
+            <div class="nav-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M10 2L6 8l4 2 4-2-4-6z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                <path d="M10 10v8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                <circle cx="10" cy="14" r="2" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+              </svg>
+            </div>
+            <span class="nav-label">Sommets</span>
         </div>
         <div class="nav-tab" data-tab="track">
-            <div class="nav-icon">📈</div>
+            <div class="nav-dot"></div>
+            <div class="nav-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M3 15 Q6 8 10 10 Q14 12 17 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+                <circle cx="3" cy="15" r="1.8" fill="currentColor" opacity="0.6"/>
+                <circle cx="17" cy="5" r="1.8" fill="currentColor" opacity="0.6"/>
+              </svg>
+            </div>
             <span class="nav-label">Parcours</span>
         </div>
         <div class="nav-tab" data-tab="settings">
-            <div class="nav-icon">⚙️</div>
+            <div class="nav-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.1 4.1l1.4 1.4M14.5 14.5l1.4 1.4M4.1 15.9l1.4-1.4M14.5 5.5l1.4-1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </div>
             <span class="nav-label">Réglages</span>
         </div>
     </div>
@@ -398,7 +533,7 @@
     <div class="track-stats">
         <div class="stat-card">
             <div class="stat-card-label">Distance</div>
-            <div class="stat-card-value" id="track-dist">0.0 <span style="font-size:13px;color:var(--t2)">km</span></div>
+            <div class="stat-card-value" id="track-dist">0.0 <span style="font-size:13px;color:var(--text-2)">km</span></div>
         </div>
         <div class="stat-card">
             <div class="stat-card-label">Points</div>
@@ -415,7 +550,11 @@
     </div>
     <div class="track-actions">
         <button class="track-btn rec" id="rec-btn-sheet">
-            <span class="rec-icon">🔴</span> REC
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.3"/>
+              <circle cx="6" cy="6" r="3" fill="currentColor"/>
+            </svg>
+            REC
         </button>
         <button class="track-btn secondary" id="import-gpx-sheet">
             📥 Import GPX

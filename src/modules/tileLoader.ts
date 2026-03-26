@@ -192,7 +192,8 @@ export function getColorUrl(tx: number, ty: number, zoom: number): string {
  * Génère l'URL pour la texture des sentiers/POI (Raster fallback pour stabilité).
  */
 export function getOverlayUrl(tx: number, ty: number, zoom: number): string | null {
-    if (!state.SHOW_TRAILS || zoom < 10) return null;
+    const MIN_TRAIL_LOD = 11;
+    if (!state.SHOW_TRAILS || zoom < MIN_TRAIL_LOD) return null;
     
     const center = getTileCenter(tx, ty, zoom);
     

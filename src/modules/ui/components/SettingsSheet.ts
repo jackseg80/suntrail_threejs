@@ -32,6 +32,7 @@ export class SettingsSheet extends BaseComponent {
         this.bindSlider('range-slider', 'RANGE', 'range-disp', this.refreshTerrain);
         this.bindSlider('exag-slider', 'RELIEF_EXAGGERATION', 'exag-disp', this.refreshTerrain);
         this.bindSlider('veg-density-slider', 'VEGETATION_DENSITY', 'veg-density-disp', this.refreshTerrain);
+        this.bindSlider('load-speed-slider', 'LOAD_DELAY_FACTOR', 'load-speed-disp');
 
         // Toggles
         this.bindToggle('energy-saver-toggle', 'ENERGY_SAVER');
@@ -51,15 +52,6 @@ export class SettingsSheet extends BaseComponent {
         this.bindToggle('shadow-toggle', 'SHADOWS', (val: boolean) => {
             if (state.sunLight) state.sunLight.castShadow = val;
         });
-
-        // Selects
-        const loadSpeedSelect = this.element.querySelector('#load-speed-select') as HTMLSelectElement;
-        if (loadSpeedSelect) {
-            loadSpeedSelect.addEventListener('change', (e) => {
-                state.LOAD_DELAY_FACTOR = parseFloat((e.target as HTMLSelectElement).value);
-                saveSettings();
-            });
-        }
 
         // Fog
         const fogSlider = this.element.querySelector('#fog-slider') as HTMLInputElement;
@@ -220,8 +212,7 @@ export class SettingsSheet extends BaseComponent {
                 this.updateToggle('shadow-toggle', value);
                 break;
             case 'LOAD_DELAY_FACTOR':
-                const loadSpeedSelect = this.element.querySelector('#load-speed-select') as HTMLSelectElement;
-                if (loadSpeedSelect) loadSpeedSelect.value = value.toString();
+                this.updateSlider('load-speed-slider', 'load-speed-disp', value);
                 break;
             case 'isFollowingTrail':
                 this.updateToggle('trail-follow-toggle', value);

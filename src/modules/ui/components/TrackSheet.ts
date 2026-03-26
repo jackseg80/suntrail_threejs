@@ -77,14 +77,24 @@ export class TrackSheet extends BaseComponent {
 
     private updateRecUI() {
         const recBtn = document.getElementById('rec-btn-sheet') as HTMLButtonElement;
+        const navTab = document.querySelector('.nav-tab[data-tab="track"]');
         if (!recBtn) return;
         
         if (state.isRecording) {
             recBtn.classList.add('active');
-            recBtn.innerHTML = '<span class="rec-icon">⏹️</span> STOP';
+            recBtn.innerHTML = `
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="margin-right:6px">
+                    <rect x="2" y="2" width="6" height="6" rx="1" fill="white"/>
+                </svg> STOP`;
+            navTab?.classList.add('has-notif');
         } else {
             recBtn.classList.remove('active');
-            recBtn.innerHTML = '<span class="rec-icon">🔴</span> REC';
+            recBtn.innerHTML = `
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="margin-right:6px">
+                    <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.3"/>
+                    <circle cx="6" cy="6" r="3" fill="currentColor"/>
+                </svg> REC`;
+            navTab?.classList.remove('has-notif');
         }
     }
 

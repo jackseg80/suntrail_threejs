@@ -46,6 +46,8 @@ class SheetManager {
 
         // Open the new sheet
         sheet.classList.add('is-open');
+        document.body.classList.add('sheet-open');
+        document.body.classList.add(`sheet-${id}-open`);
         this.activeSheetId = id;
 
         // Show overlay
@@ -60,7 +62,9 @@ class SheetManager {
      */
     public close(): void {
         if (this.activeSheetId) {
+            document.body.classList.remove(`sheet-${this.activeSheetId}-open`);
             this.closeActiveSheet();
+            document.body.classList.remove('sheet-open');
             
             // Hide overlay
             const overlay = this.getOverlay();

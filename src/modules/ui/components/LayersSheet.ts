@@ -56,7 +56,39 @@ export class LayersSheet extends BaseComponent {
             if (slopesToggle) slopesToggle.checked = val;
         }));
 
+        this.addSubscription(state.subscribe('ZOOM', () => this.updateLODAvailability()));
+
         this.updateActiveLayer();
+        this.updateLODAvailability();
+    }
+
+    private updateLODAvailability() {
+        if (!this.element) return;
+        const MIN_DATA_LOD = 11;
+        const isAvailable = state.ZOOM >= MIN_DATA_LOD;
+
+        const rows = ['trails', 'slopes'];
+        rows.forEach(type => {
+            const row = this.element?.querySelector(`#row-${type}`) as HTMLElement;
+            const toggle = this.element?.querySelector(`#layers-${type}-toggle`) as HTMLInputElement;
+            const warning = this.element?.querySelector(`#row-${type} .lod-warning`) as HTMLElement;
+            const infoIcon = this.element?.querySelector(`#row-${type} .info-icon`) as HTMLElement;
+
+            if (row && toggle && warning && infoIcon) {
+                if (isAvailable) {
+                    row.style.opacity = '1';
+                    row.style.pointerEvents = 'auto';
+                    toggle.disabled = false;
+                    warning.style.display = 'none';
+                    infoIcon.style.display = 'none';
+                } else {
+                    row.style.opacity = '0.5';
+                    toggle.disabled = true;
+                    warning.style.display = 'block';
+                    infoIcon.style.display = 'block';
+                }
+            }
+        });
     }
 
     private updateActiveLayer() {

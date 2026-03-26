@@ -16,12 +16,12 @@ export class NavigationBar extends BaseComponent {
                 const tabId = tab.getAttribute('data-tab');
                 if (!tabId) return;
 
-                this.setActiveTab(tabId);
-
-                if (tabId === 'map') {
-                    sheetManager.open('layers');
+                if (sheetManager.getActiveSheetId() === tabId) {
+                    sheetManager.close();
+                    this.setActiveTab(null);
                 } else {
                     sheetManager.open(tabId);
+                    this.setActiveTab(tabId);
                 }
             };
             
@@ -29,23 +29,31 @@ export class NavigationBar extends BaseComponent {
             this.addSubscription(() => tab.removeEventListener('click', onClick));
         });
 
-        // Listen for overlay clicks to sync the active tab when a sheet is closed via overlay
+        // Listen for overlay clicks to sync the active tab
         const overlay = document.getElementById('sheet-overlay');
         if (overlay) {
-            const onOverlayClick = () => {
-                this.setActiveTab('map');
-            };
+            const onOverlayClick = () => this.setActiveTab(null);
             overlay.addEventListener('click', onOverlayClick);
             this.addSubscription(() => overlay.removeEventListener('click', onOverlayClick));
         }
+
+        // Global sync for "X" buttons or map clicks closing the sheet
+        const syncInterval = setInterval(() => {
+            const activeId = sheetManager.getActiveSheetId();
+            const currentActiveTab = this.element?.querySelector('.nav-tab.active')?.getAttribute('data-tab');
+            if (activeId !== currentActiveTab) {
+                this.setActiveTab(activeId);
+            }
+        }, 300);
+        this.addSubscription(() => clearInterval(syncInterval));
     }
 
-    private setActiveTab(tabId: string): void {
+    private setActiveTab(tabId: string | null): void {
         if (!this.element) return;
         
         const tabs = this.element.querySelectorAll('.nav-tab');
         tabs.forEach(tab => {
-            if (tab.getAttribute('data-tab') === tabId) {
+            if (tabId && tab.getAttribute('data-tab') === tabId) {
                 tab.classList.add('active');
             } else {
                 tab.classList.remove('active');

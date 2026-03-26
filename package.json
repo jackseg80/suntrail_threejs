@@ -20,6 +20,7 @@
     "@capacitor/geolocation": "^8.1.0",
     "@mapbox/vector-tile": "^2.0.4",
     "gpxparser": "^3.0.8",
+    "oh-my-opencode-windows-x64": "^3.13.1",
     "pbf": "^4.0.1",
     "pmtiles": "^4.4.0",
     "suncalc": "^1.9.0",
