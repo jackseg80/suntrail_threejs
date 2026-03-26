@@ -21,12 +21,21 @@ export class SearchSheet extends BaseComponent {
         if (!this.element) return;
 
         const closeBtn = this.element.querySelector('#close-search');
+        closeBtn?.setAttribute('aria-label', 'Fermer la recherche');
         closeBtn?.addEventListener('click', () => sheetManager.close());
 
         this.geoInput = this.element.querySelector('#geo-input') as HTMLInputElement;
         this.geoResults = this.element.querySelector('#geo-results') as HTMLElement;
 
         if (this.geoInput && this.geoResults) {
+            // ARIA: search input label and results container
+            this.geoInput.setAttribute('aria-label', 'Rechercher un lieu');
+            this.geoResults.setAttribute('role', 'listbox');
+            this.geoResults.setAttribute('aria-live', 'polite');
+
+            // --- Empty states ---
+            this.createEmptyStates();
+
             this.geoInput.addEventListener('input', this.handleInput.bind(this));
             
             // Auto-focus when sheet is opened
@@ -48,9 +57,13 @@ export class SearchSheet extends BaseComponent {
         
         if (q.length < 2) { 
             this.geoResults.style.display = 'none'; 
-            this.geoResults.textContent = ''; 
+            this.geoResults.textContent = '';
+            this.showSearchEmptyState('initial');
             return; 
         }
+
+        // Hide empty states during search
+        this.showSearchEmptyState('none');
         
         // 1. AFFICHER LES PICS LOCAUX IMMÉDIATEMENT
         this.geoResults.textContent = ''; 
@@ -65,8 +78,18 @@ export class SearchSheet extends BaseComponent {
 
         // 2. RECHERCHE DISTANTE (MAPTILER / OSM)
         this.timer = setTimeout(async () => {
+            // Loading spinner (append after local results if any)
+            const loadingEl = document.createElement('div');
+            loadingEl.className = 'loading-inline';
+            loadingEl.setAttribute('role', 'status');
+            loadingEl.setAttribute('aria-live', 'polite');
+            loadingEl.innerHTML = '<span class="spinner"></span><span>Recherche...</span>';
+            this.geoResults!.appendChild(loadingEl);
+            this.geoResults!.style.display = 'block';
+
             try {
                 const data = await fetchGeocoding({ query: q });
+                loadingEl.remove();
                 if (!data) return;
 
                 // On ne vide pas, on ajoute à la suite des pics locaux
@@ -94,19 +117,59 @@ export class SearchSheet extends BaseComponent {
 
                 if (this.geoResults!.children.length > 0) {
                     this.geoResults!.style.display = 'block';
+                    this.showSearchEmptyState('none');
                     this.attachListeners();
                 } else if (localMatches.length === 0) {
-                    const noResult = document.createElement('div');
-                    noResult.classList.add('srch-no-result');
-                    noResult.textContent = 'Aucun résultat trouvé';
-                    this.geoResults!.appendChild(noResult);
-                    this.geoResults!.style.display = 'block';
+                    this.geoResults!.style.display = 'none';
+                    this.showSearchEmptyState('no-results');
                 }
             } catch (e) { 
                 console.warn("Geocoding error:", e);
-                if (localMatches.length === 0) this.geoResults!.style.display = 'none';
+                loadingEl.remove();
+                if (localMatches.length === 0) {
+                    this.geoResults!.innerHTML = '<div class="loading-inline">Erreur de recherche</div>';
+                    this.geoResults!.style.display = 'block';
+                }
             }
         }, 400);
+    }
+
+    private createEmptyStates(): void {
+        if (!this.element) return;
+        const searchEl = this.element.querySelector('#search');
+        if (!searchEl) return;
+
+        // Initial state (visible by default)
+        const initialDiv = document.createElement('div');
+        initialDiv.className = 'empty-state';
+        initialDiv.id = 'search-initial-state';
+        initialDiv.innerHTML = `
+            <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <p class="empty-state-subtitle">Recherchez un lieu, sommet ou commune</p>`;
+        searchEl.appendChild(initialDiv);
+
+        // No results state (hidden by default)
+        const noResultsDiv = document.createElement('div');
+        noResultsDiv.className = 'empty-state';
+        noResultsDiv.id = 'search-no-results';
+        noResultsDiv.style.display = 'none';
+        noResultsDiv.innerHTML = `
+            <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2L8 8H4l8 14 8-14h-4L12 2z"/>
+            </svg>
+            <p class="empty-state-title">Aucun résultat</p>
+            <p class="empty-state-subtitle">Essayez un autre nom de lieu ou sommet</p>`;
+        searchEl.appendChild(noResultsDiv);
+    }
+
+    private showSearchEmptyState(which: 'initial' | 'no-results' | 'none'): void {
+        const initialEl = document.getElementById('search-initial-state');
+        const noResultsEl = document.getElementById('search-no-results');
+        if (initialEl) initialEl.style.display = which === 'initial' ? 'flex' : 'none';
+        if (noResultsEl) noResultsEl.style.display = which === 'no-results' ? 'flex' : 'none';
     }
 
     private createGeoItem(lat: number, lon: number, label: string, isPeak = false, name = '', ele = 0): HTMLElement {

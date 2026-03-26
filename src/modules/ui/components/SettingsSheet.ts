@@ -4,7 +4,8 @@ import { state, saveSettings } from '../../state';
 import { applyPreset } from '../../performance';
 import { resetTerrain, updateVisibleTiles, updateHydrologyVisibility } from '../../terrain';
 import { deleteTerrainCache, downloadOfflineZone } from '../../tileLoader';
-import { showToast } from '../../utils';
+import { SharedAPIKeyComponent } from './SharedAPIKeyComponent';
+import { haptic } from '../../haptics';
 
 import { sheetManager } from '../core/SheetManager';
 
@@ -18,6 +19,7 @@ export class SettingsSheet extends BaseComponent {
 
         // Close panel
         const closePanel = this.element.querySelector('#close-panel');
+        closePanel?.setAttribute('aria-label', 'Fermer les réglages');
         closePanel?.addEventListener('click', () => sheetManager.close());
 
         // Presets
@@ -56,8 +58,16 @@ export class SettingsSheet extends BaseComponent {
         // Fog
         const fogSlider = this.element.querySelector('#fog-slider') as HTMLInputElement;
         if (fogSlider) {
+            // ARIA: fog slider attributes
+            fogSlider.setAttribute('aria-label', 'FOG_FAR');
+            fogSlider.setAttribute('aria-valuemin', fogSlider.min);
+            fogSlider.setAttribute('aria-valuemax', fogSlider.max);
+            fogSlider.setAttribute('aria-valuenow', fogSlider.value);
+
             fogSlider.addEventListener('input', (e) => {
                 state.FOG_FAR = parseFloat((e.target as HTMLInputElement).value) * 1000;
+                // ARIA: sync valuenow
+                fogSlider.setAttribute('aria-valuenow', (e.target as HTMLInputElement).value);
                 if (state.scene?.fog && state.scene.fog instanceof THREE.Fog) {
                     state.scene.fog.far = state.FOG_FAR;
                 }
@@ -65,21 +75,8 @@ export class SettingsSheet extends BaseComponent {
             fogSlider.addEventListener('change', () => saveSettings());
         }
 
-        // API Key
-        const apiKeyForm = this.element.querySelector('#api-key-form') as HTMLFormElement;
-        const maptilerKeyInput = this.element.querySelector('#maptiler-key-input') as HTMLInputElement;
-        if (apiKeyForm && maptilerKeyInput) {
-            apiKeyForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const key = maptilerKeyInput.value.trim();
-                if (key.length > 10) {
-                    state.MK = key;
-                    localStorage.setItem('maptiler_key', key);
-                    showToast("Clé API mise à jour");
-                    this.refreshTerrain();
-                }
-            });
-        }
+        // API Key (shared component)
+        new SharedAPIKeyComponent('settings-api-key-slot', this.refreshTerrain).hydrate();
 
         // Storage
         const clearCacheBtn = this.element.querySelector('#clear-cache-btn');
@@ -115,8 +112,14 @@ export class SettingsSheet extends BaseComponent {
         // Trail follow
         const trailFollowToggle = this.element.querySelector('#trail-follow-toggle') as HTMLInputElement;
         if (trailFollowToggle) {
+            // ARIA: toggle as switch
+            trailFollowToggle.setAttribute('role', 'switch');
+            trailFollowToggle.setAttribute('aria-checked', String(trailFollowToggle.checked));
+
             trailFollowToggle.addEventListener('change', (e) => {
                 state.isFollowingTrail = (e.target as HTMLInputElement).checked;
+                // ARIA: sync aria-checked
+                trailFollowToggle.setAttribute('aria-checked', String((e.target as HTMLInputElement).checked));
             });
         }
 
@@ -144,9 +147,17 @@ export class SettingsSheet extends BaseComponent {
         const slider = this.element.querySelector(`#${id}`) as HTMLInputElement;
         const disp = this.element.querySelector(`#${dispId}`);
         if (slider) {
+            // ARIA: slider attributes
+            slider.setAttribute('aria-label', stateKey);
+            slider.setAttribute('aria-valuemin', slider.min);
+            slider.setAttribute('aria-valuemax', slider.max);
+            slider.setAttribute('aria-valuenow', slider.value);
+
             slider.addEventListener('input', () => {
                 (state as any)[stateKey] = parseFloat(slider.value);
                 if (disp) disp.textContent = slider.value;
+                // ARIA: sync valuenow
+                slider.setAttribute('aria-valuenow', slider.value);
             });
             slider.addEventListener('change', () => {
                 saveSettings();
@@ -159,8 +170,15 @@ export class SettingsSheet extends BaseComponent {
         if (!this.element) return;
         const toggle = this.element.querySelector(`#${id}`) as HTMLInputElement;
         if (toggle) {
+            // ARIA: toggle as switch
+            toggle.setAttribute('role', 'switch');
+            toggle.setAttribute('aria-checked', String(toggle.checked));
+
             toggle.addEventListener('change', () => {
+                void haptic('light');
                 (state as any)[stateKey] = toggle.checked;
+                // ARIA: sync aria-checked
+                toggle.setAttribute('aria-checked', String(toggle.checked));
                 saveSettings();
                 if (onChange) onChange(toggle.checked);
             });
@@ -241,14 +259,22 @@ export class SettingsSheet extends BaseComponent {
         if (!this.element) return;
         const slider = this.element.querySelector(`#${id}`) as HTMLInputElement;
         const disp = this.element.querySelector(`#${dispId}`);
-        if (slider) slider.value = value.toString();
+        if (slider) {
+            slider.value = value.toString();
+            // ARIA: sync valuenow
+            slider.setAttribute('aria-valuenow', value.toString());
+        }
         if (disp) disp.textContent = value.toString();
     }
 
     private updateToggle(id: string, value: boolean) {
         if (!this.element) return;
         const toggle = this.element.querySelector(`#${id}`) as HTMLInputElement;
-        if (toggle) toggle.checked = value;
+        if (toggle) {
+            toggle.checked = value;
+            // ARIA: sync aria-checked
+            toggle.setAttribute('aria-checked', String(value));
+        }
     }
 
     private updateAllUI() {

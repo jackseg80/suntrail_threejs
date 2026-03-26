@@ -17,11 +17,19 @@ export class TimelineComponent {
         this.dateInput = document.getElementById('date-input') as HTMLInputElement;
 
         if (this.timeSlider) {
+            // ARIA: time slider attributes
+            this.timeSlider.setAttribute('aria-label', 'Heure de simulation');
+            this.timeSlider.setAttribute('aria-valuemin', this.timeSlider.min);
+            this.timeSlider.setAttribute('aria-valuemax', this.timeSlider.max);
+            this.timeSlider.setAttribute('aria-valuenow', this.timeSlider.value);
+
             this.timeSlider.addEventListener('input', () => {
                 const mins = parseInt(this.timeSlider!.value);
                 const newDate = new Date(state.simDate);
                 newDate.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
                 state.simDate = newDate;
+                // ARIA: sync valuenow
+                this.timeSlider!.setAttribute('aria-valuenow', this.timeSlider!.value);
             });
         }
 
@@ -38,6 +46,7 @@ export class TimelineComponent {
 
         const playBtn = document.getElementById('play-btn');
         if (playBtn) {
+            playBtn.setAttribute('aria-label', 'Lecture/Pause simulation solaire');
             playBtn.addEventListener('click', () => {
                 state.isSunAnimating = !state.isSunAnimating;
             });
@@ -84,7 +93,10 @@ export class TimelineComponent {
             this.dateInput.value = `${year}-${month}-${day}`;
         }
         if (this.timeSlider && !state.isSunAnimating) {
-            this.timeSlider.value = (state.simDate.getHours() * 60 + state.simDate.getMinutes()).toString();
+            const val = (state.simDate.getHours() * 60 + state.simDate.getMinutes()).toString();
+            this.timeSlider.value = val;
+            // ARIA: sync valuenow
+            this.timeSlider.setAttribute('aria-valuenow', val);
         }
     }
 

@@ -18,6 +18,8 @@ export class WeatherSheet extends BaseComponent {
         if (!this.element) return;
 
         this.contentEl = document.getElementById('weather-content');
+        // ARIA: weather content is a live region
+        this.contentEl?.setAttribute('aria-live', 'polite');
         
         // Create expert panel dynamically
         this.expertPanel = document.createElement('div');
@@ -27,11 +29,13 @@ export class WeatherSheet extends BaseComponent {
         this.element.appendChild(this.expertPanel);
 
         const closeWeather = document.getElementById('close-weather');
+        closeWeather?.setAttribute('aria-label', 'Fermer météo');
         closeWeather?.addEventListener('click', () => {
             sheetManager.close();
         });
 
         const openExpert = document.getElementById('open-expert-weather');
+        openExpert?.setAttribute('aria-label', 'Données météo avancées');
         openExpert?.addEventListener('click', () => {
             if (this.expertPanel) {
                 this.expertPanel.style.display = this.expertPanel.style.display === 'none' ? 'block' : 'none';
@@ -66,9 +70,17 @@ export class WeatherSheet extends BaseComponent {
         const slider = document.getElementById(id) as HTMLInputElement;
         const disp = document.getElementById(dispId);
         if (slider) {
+            // ARIA: slider attributes
+            slider.setAttribute('aria-label', stateKey);
+            slider.setAttribute('aria-valuemin', slider.min);
+            slider.setAttribute('aria-valuemax', slider.max);
+            slider.setAttribute('aria-valuenow', slider.value);
+
             slider.addEventListener('input', () => {
                 (state as any)[stateKey] = parseFloat(slider.value);
                 if (disp) disp.textContent = slider.value;
+                // ARIA: sync valuenow
+                slider.setAttribute('aria-valuenow', slider.value);
             });
             slider.addEventListener('change', () => {
                 saveSettings();
@@ -81,7 +93,11 @@ export class WeatherSheet extends BaseComponent {
         if (!this.element) return;
         const slider = document.getElementById(id) as HTMLInputElement;
         const disp = document.getElementById(dispId);
-        if (slider) slider.value = value.toString();
+        if (slider) {
+            slider.value = value.toString();
+            // ARIA: sync valuenow
+            slider.setAttribute('aria-valuenow', value.toString());
+        }
         if (disp) disp.textContent = value.toString();
     }
 
@@ -209,8 +225,11 @@ export class SolarProbeSheet extends BaseComponent {
         if (!this.element) return;
 
         this.contentEl = document.getElementById('probe-content');
+        // ARIA: solar results are a live region
+        this.contentEl?.setAttribute('aria-live', 'polite');
 
         const closeProbe = document.getElementById('close-probe');
+        closeProbe?.setAttribute('aria-label', 'Fermer analyse solaire');
         closeProbe?.addEventListener('click', () => {
             sheetManager.close();
         });
@@ -305,6 +324,7 @@ export class SolarProbeSheet extends BaseComponent {
         // Copy Button
         const copyBtn = document.createElement('button');
         copyBtn.className = 'btn-go';
+        copyBtn.setAttribute('aria-label', 'Copier le rapport solaire');
         copyBtn.textContent = '📋 Copier le rapport';
         copyBtn.onclick = () => {
             const report = `SunTrail Solar Report\nLocation: ${result.gps.lat.toFixed(5)}, ${result.gps.lon.toFixed(5)}\nSunlight: ${totalStr}\nSunrise: ${sunriseStr}`;
@@ -324,6 +344,7 @@ export class SOSSheet extends BaseComponent {
         if (!this.element) return;
 
         const sosCopyBtn = document.getElementById('sos-copy-btn');
+        sosCopyBtn?.setAttribute('aria-label', 'Copier le message SOS');
         sosCopyBtn?.addEventListener('click', () => {
             const txt = document.getElementById('sos-text-container')?.textContent;
             if (txt) { 
@@ -333,14 +354,20 @@ export class SOSSheet extends BaseComponent {
         });
 
         const sosCloseBtn = document.getElementById('sos-close-btn');
+        sosCloseBtn?.setAttribute('aria-label', 'Fermer SOS');
         sosCloseBtn?.addEventListener('click', () => { 
             sheetManager.close();
         });
+
+        // ARIA: SOS text container is a live region
+        const sosTextContainer = document.getElementById('sos-text-container');
+        sosTextContainer?.setAttribute('aria-live', 'polite');
 
         // Attach to the SOS button which is in the WidgetsComponent (coords-pill)
         const attachSosBtn = () => {
             const sosBtn = document.getElementById('sos-btn-pill');
             if (sosBtn) {
+                sosBtn.setAttribute('aria-label', 'Appel SOS urgence');
                 sosBtn.onclick = this.openSOSModal.bind(this);
             } else {
                 // If not yet in DOM, retry shortly

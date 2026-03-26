@@ -1,6 +1,7 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { sheetManager } from '../core/SheetManager';
 import { eventBus } from '../../eventBus';
+import { haptic } from '../../haptics';
 
 export class NavigationBar extends BaseComponent {
     constructor() {
@@ -10,12 +11,20 @@ export class NavigationBar extends BaseComponent {
     public render(): void {
         if (!this.element) return;
 
+        // ARIA: nav container is a tablist
+        this.element.setAttribute('role', 'tablist');
+
         const tabs = this.element.querySelectorAll('.nav-tab');
         
         tabs.forEach(tab => {
+            // ARIA: each tab has role=tab and initial aria-selected
+            tab.setAttribute('role', 'tab');
+            tab.setAttribute('aria-selected', 'false');
             const onClick = () => {
                 const tabId = tab.getAttribute('data-tab');
                 if (!tabId) return;
+
+                void haptic('light');
 
                 if (sheetManager.getActiveSheetId() === tabId) {
                     sheetManager.close();
@@ -63,11 +72,14 @@ export class NavigationBar extends BaseComponent {
         
         const tabs = this.element.querySelectorAll('.nav-tab');
         tabs.forEach(tab => {
-            if (tabId && tab.getAttribute('data-tab') === tabId) {
+            const isActive = !!(tabId && tab.getAttribute('data-tab') === tabId);
+            if (isActive) {
                 tab.classList.add('active');
             } else {
                 tab.classList.remove('active');
             }
+            // ARIA: sync aria-selected with active state
+            tab.setAttribute('aria-selected', String(isActive));
         });
     }
 }

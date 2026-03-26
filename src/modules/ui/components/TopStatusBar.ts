@@ -26,22 +26,31 @@ export class TopStatusBar extends BaseComponent {
         this.recWidget = this.element.querySelector('.rec-indicator');
         this.recTimer = this.element.querySelector('.rec-timer');
 
+        // ARIA: LOD badge is a live region (updates dynamically)
+        this.lodBadge?.setAttribute('aria-live', 'polite');
+
         const mainPill = this.element.querySelector('#top-pill-main');
+        mainPill?.setAttribute('aria-label', 'Météo');
         mainPill?.addEventListener('click', () => {
             sheetManager.toggle('weather');
         });
 
+        // ARIA: icon buttons need aria-label
+        this.netStatusIcon?.setAttribute('aria-label', 'État réseau');
         this.netStatusIcon?.addEventListener('click', (e) => {
             e.stopPropagation();
             sheetManager.toggle('connectivity');
         });
 
         const recWidget = this.element.querySelector('.rec-indicator');
+        recWidget?.setAttribute('aria-label', 'Enregistrement en cours');
+        recWidget?.setAttribute('aria-live', 'polite');
         recWidget?.addEventListener('click', () => {
             sheetManager.toggle('track');
         });
 
         const sosBtn = this.element.querySelector('#sos-main-btn');
+        sosBtn?.setAttribute('aria-label', 'SOS urgence');
         sosBtn?.addEventListener('click', () => {
             sheetManager.toggle('sos');
         });

@@ -3,6 +3,7 @@ import { state } from '../../state';
 import { showToast } from '../../utils';
 import { startLocationTracking } from '../../location';
 import { sheetManager } from '../core/SheetManager';
+import { haptic } from '../../haptics';
 // @ts-ignore
 import gpxParser from 'gpxparser';
 import { updateVisibleTiles, updateGPXMesh, updateRecordedTrackMesh } from '../../terrain';
@@ -17,12 +18,18 @@ export class TrackSheet extends BaseComponent {
     public render(): void {
         if (!this.element) return;
 
+        // --- Empty state ---
+        this.createEmptyState();
+        this.updateEmptyState();
+
         const closeBtn = document.getElementById('close-track');
+        closeBtn?.setAttribute('aria-label', 'Fermer parcours');
         closeBtn?.addEventListener('click', () => {
             sheetManager.close();
         });
 
         const recBtn = document.getElementById('rec-btn-sheet') as HTMLButtonElement;
+        recBtn?.setAttribute('aria-label', 'Enregistrer un parcours');
         recBtn?.addEventListener('click', async () => {
             state.isRecording = !state.isRecording;
             this.updateRecUI();
@@ -42,6 +49,7 @@ export class TrackSheet extends BaseComponent {
         });
 
         const importBtn = document.getElementById('import-gpx-sheet');
+        importBtn?.setAttribute('aria-label', 'Importer un fichier GPX');
         const gpxUpload = document.getElementById('gpx-upload') as HTMLInputElement;
         
         importBtn?.addEventListener('click', () => {
@@ -51,15 +59,27 @@ export class TrackSheet extends BaseComponent {
         gpxUpload?.addEventListener('change', (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
+                importBtn?.classList.add('btn-loading');
+                importBtn?.setAttribute('aria-busy', 'true');
                 const reader = new FileReader();
-                reader.onload = (ev) => {
-                    this.handleGPX(ev.target!.result as string);
+                reader.onload = async (ev) => {
+                    try {
+                        await this.handleGPX(ev.target!.result as string);
+                    } finally {
+                        importBtn?.classList.remove('btn-loading');
+                        importBtn?.removeAttribute('aria-busy');
+                    }
+                };
+                reader.onerror = () => {
+                    importBtn?.classList.remove('btn-loading');
+                    importBtn?.removeAttribute('aria-busy');
                 };
                 reader.readAsText(file);
             }
         });
 
         const exportBtn = document.getElementById('export-gpx-sheet');
+        exportBtn?.setAttribute('aria-label', 'Exporter en GPX');
         exportBtn?.addEventListener('click', () => {
             if (state.recordedPoints.length < 2) {
                 showToast("Tracé trop court pour export");
@@ -69,10 +89,42 @@ export class TrackSheet extends BaseComponent {
         });
 
         this.addSubscription(state.subscribe('isRecording', () => this.updateRecUI()));
-        this.addSubscription(state.subscribe('recordedPoints', () => this.updateStats()));
+        this.addSubscription(state.subscribe('recordedPoints', () => {
+            this.updateStats();
+            this.updateEmptyState();
+        }));
+        this.addSubscription(state.subscribe('rawGpxData', () => this.updateEmptyState()));
         
         this.updateRecUI();
         this.updateStats();
+    }
+
+    private createEmptyState(): void {
+        if (!this.element) return;
+        const trackEl = this.element.querySelector('#track');
+        if (!trackEl) return;
+
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'empty-state';
+        emptyDiv.id = 'track-empty-state';
+        emptyDiv.innerHTML = `
+            <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 17l4-8 4 5 3-3 4 6"/>
+                <circle cx="19" cy="5" r="2"/>
+            </svg>
+            <p class="empty-state-title">Aucun parcours</p>
+            <p class="empty-state-subtitle">Importez un fichier GPX ou démarrez l'enregistrement GPS</p>`;
+        trackEl.appendChild(emptyDiv);
+    }
+
+    private updateEmptyState(): void {
+        const emptyEl = document.getElementById('track-empty-state');
+        const statsEl = this.element?.querySelector('.track-stats') as HTMLElement | null;
+        if (!emptyEl) return;
+
+        const hasData = state.rawGpxData !== null || state.recordedPoints.length > 0;
+        emptyEl.style.display = hasData ? 'none' : 'flex';
+        if (statsEl) statsEl.style.display = hasData ? '' : 'none';
     }
 
     private updateRecUI() {
@@ -105,6 +157,12 @@ export class TrackSheet extends BaseComponent {
         const pointsEl = document.getElementById('track-points');
         const dplusEl = document.getElementById('track-dplus');
         const dminusEl = document.getElementById('track-dminus');
+
+        // ARIA: stats are live regions
+        distEl?.setAttribute('aria-live', 'polite');
+        pointsEl?.setAttribute('aria-live', 'polite');
+        dplusEl?.setAttribute('aria-live', 'polite');
+        dminusEl?.setAttribute('aria-live', 'polite');
 
         if (pointsEl) pointsEl.textContent = state.recordedPoints.length.toString();
         
@@ -169,17 +227,26 @@ export class TrackSheet extends BaseComponent {
     }
 
     private async handleGPX(xml: string) {
-        const gpx = new gpxParser(); 
-        gpx.parse(xml);
-        if (!gpx.tracks?.length) return;
-        state.rawGpxData = gpx;
-        const startPt = gpx.tracks[0].points[0];
-        state.TARGET_LAT = startPt.lat; 
-        state.TARGET_LON = startPt.lon;
-        state.ZOOM = 13; 
-        state.originTile = lngLatToTile(startPt.lon, startPt.lat, 13);
-        updateGPXMesh(); 
-        updateElevationProfile(); 
-        await updateVisibleTiles();
+        try {
+            const gpx = new gpxParser(); 
+            gpx.parse(xml);
+            if (!gpx.tracks?.length) {
+                void haptic('warning');
+                return;
+            }
+            state.rawGpxData = gpx;
+            const startPt = gpx.tracks[0].points[0];
+            state.TARGET_LAT = startPt.lat; 
+            state.TARGET_LON = startPt.lon;
+            state.ZOOM = 13; 
+            state.originTile = lngLatToTile(startPt.lon, startPt.lat, 13);
+            updateGPXMesh(); 
+            updateElevationProfile(); 
+            await updateVisibleTiles();
+            void haptic('success');
+        } catch (e) {
+            void haptic('warning');
+            throw e;
+        }
     }
 }

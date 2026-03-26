@@ -87,7 +87,7 @@
 <!-- TEMPLATES UI -->
 <template id="template-layers">
 <div id="layers-sheet" class="bottom-sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
     <div class="sheet-header">
         <span class="sheet-title">Fonds de carte</span>
         <div class="sheet-close" id="close-layers">×</div>
@@ -145,7 +145,7 @@
 
 <template id="template-search">
 <div id="search" class="bottom-sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
     <div class="sheet-header">
         <span class="sheet-title">Exploration</span>
         <div class="sheet-close" id="close-search">×</div>
@@ -167,7 +167,7 @@
 
 <template id="template-settings">
 <div id="settings" class="bottom-sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
     <div class="sheet-header">
         <span class="sheet-title">Réglages</span>
         <div class="sheet-close" id="close-panel">×</div>
@@ -270,11 +270,7 @@
             </div>
 
             <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 12px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.05);">
-                <div style="font-size:11px; color:var(--gold); font-weight:700; text-transform:uppercase;">Clé API MapTiler</div>
-                <form id="api-key-form" style="display:flex; gap:8px;">
-                    <input type="text" id="maptiler-key-input" placeholder="Clé API..." style="flex:1; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; padding:8px; border-radius:8px; font-size:12px;">
-                    <button type="submit" class="btn-go" style="margin:0; padding:8px 12px; font-size:12px;">OK</button>
-                </form>
+                <div id="settings-api-key-slot"></div>
                 
                 <div style="font-size:11px; color:var(--gold); font-weight:700; text-transform:uppercase; margin-top:5px;">Gestion des données</div>
                 <div style="display:flex; gap:8px;">
@@ -290,7 +286,7 @@
 
                 <template id="template-connectivity">
                 <div id="connectivity" class="bottom-sheet">
-                <div class="sheet-handle"></div>
+                <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
                 <div class="sheet-header">
                 <span class="sheet-title">Système & Données</span>
                 <div class="sheet-close" id="close-connectivity">×</div>
@@ -335,18 +331,14 @@
 
                 <div class="control-group" style="margin-top:10px;">
                 <div class="section-label">Services Externes</div>
-                <div style="font-size:11px; color:var(--text-3); margin-bottom:8px;">Clé API MapTiler Cloud</div>
-                <form id="conn-api-key-form" style="display:flex; gap:8px;">
-                <input type="text" id="conn-maptiler-input" placeholder="Clé API..." style="flex:1; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; padding:10px; border-radius:10px; font-size:12px;">
-                <button type="submit" class="btn-go" style="margin:0; padding:10px 15px;">OK</button>
-                </form>
+                <div id="conn-api-key-slot"></div>
                 </div>
                 </div>
                 </template>
 
 <template id="template-weather">
 <div id="weather" class="bottom-sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
     <div class="sheet-header">
         <span class="sheet-title">Bulletin Météo</span>
         <div class="sheet-close" id="close-weather">×</div>
@@ -382,7 +374,7 @@
 
 <template id="template-solar-probe">
 <div id="solar-probe" class="bottom-sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
     <div class="sheet-header">
         <span class="sheet-title">Analyse Solaire</span>
         <div class="sheet-close" id="close-probe">×</div>
@@ -393,7 +385,7 @@
 
 <template id="template-sos">
 <div id="sos" class="bottom-sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
     <div style="text-align:center; padding:20px;">
         <div style="font-size:48px; margin-bottom:15px;">🆘</div>
         <h2 style="color:#ef4444; margin:0 0 10px 0;">URGENCE SOS</h2>
@@ -515,7 +507,7 @@
 
 <template id="template-track">
 <div id="track" class="bottom-sheet">
-    <div class="sheet-handle"></div>
+    <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
     <div class="sheet-header">
         <span class="sheet-title">Parcours</span>
         <div class="sheet-close" id="close-track">×</div>
@@ -555,6 +547,21 @@
         <input type="file" id="gpx-upload" accept=".gpx" style="display:none;">
     </div>
 </div>
+</template>
+
+<template id="template-api-key-form">
+  <div class="api-key-section">
+    <p class="section-label">Clé MapTiler</p>
+    <form class="api-key-form">
+      <div class="api-key-input-row">
+        <input type="text" class="api-key-input" placeholder="Coller votre clé ici..." autocomplete="off" spellcheck="false">
+        <button type="submit" class="api-key-submit-btn">✓</button>
+      </div>
+    </form>
+    <p class="api-key-hint">
+      <a href="https://cloud.maptiler.com/account/keys/" target="_blank" rel="noopener noreferrer">Obtenir une clé gratuite ↗</a>
+    </p>
+  </div>
 </template>
 
 <script type="module" src="/src/main.ts"></script>
