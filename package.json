@@ -18,6 +18,7 @@
     "@capacitor/cli": "^8.2.0",
     "@capacitor/core": "^8.2.0",
     "@capacitor/geolocation": "^8.1.0",
+    "@capacitor/haptics": "^8.0.1",
     "@mapbox/vector-tile": "^2.0.4",
     "gpxparser": "^3.0.8",
     "oh-my-opencode-windows-x64": "^3.13.1",
