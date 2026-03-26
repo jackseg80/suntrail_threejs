@@ -1,3 +1,5 @@
+import { eventBus } from '../../eventBus';
+
 /**
  * SheetManager
  * Singleton controller for managing bottom sheets.
@@ -55,6 +57,9 @@ class SheetManager {
         if (overlay) {
             overlay.classList.add('is-open');
         }
+
+        // Emit event
+        eventBus.emit('sheetOpened', { id });
     }
 
     /**
@@ -62,6 +67,7 @@ class SheetManager {
      */
     public close(): void {
         if (this.activeSheetId) {
+            const previousId = this.activeSheetId;
             document.body.classList.remove(`sheet-${this.activeSheetId}-open`);
             this.closeActiveSheet();
             document.body.classList.remove('sheet-open');
@@ -71,6 +77,9 @@ class SheetManager {
             if (overlay) {
                 overlay.classList.remove('is-open');
             }
+
+            // Emit event
+            eventBus.emit('sheetClosed', { id: previousId });
         }
     }
 

@@ -7,6 +7,8 @@
 type EventMap = {
     'flyTo': { worldX: number; worldZ: number; targetElevation: number };
     'terrainReady': void;
+    'sheetOpened': { id: string };
+    'sheetClosed': { id: string | null };
 };
 
 type Listener<T> = (payload: T) => void;
