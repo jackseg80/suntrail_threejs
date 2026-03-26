@@ -489,13 +489,31 @@ input[type="range"]::-webkit-slider-thumb {
     backdrop-filter: var(--glass);
     border: 1px solid var(--border);
     border-radius: 24px;
-    padding: 20px;
+    padding: 0 var(--space-5) var(--space-5);
     z-index: 1000;
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s;
     opacity: 0;
     pointer-events: none;
+    overflow: hidden;
 }
+
+/* Timeline drag handle */
+.timeline-drag-handle {
+    width: 100%;
+    padding: var(--space-2) 0 var(--space-1);
+    display: flex;
+    justify-content: center;
+    touch-action: none;
+    cursor: grab;
+    margin: 0 calc(-1 * var(--space-5));
+    width: calc(100% + 2 * var(--space-5));
+}
+.timeline-drag-handle:active { cursor: grabbing; }
+.timeline-drag-handle .sheet-drag-indicator {
+    transition: background var(--transition-fast);
+}
+.timeline-drag-handle:hover .sheet-drag-indicator { background: var(--text-3); }
 
 #bottom-bar.is-open {
     transform: translate(-50%, 0);

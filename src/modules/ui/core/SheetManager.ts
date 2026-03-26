@@ -92,9 +92,6 @@ class SheetManager {
         // Swipe-to-dismiss on drag handle
         this.attachSwipeGesture(sheet);
 
-        // Haptic feedback
-        void haptic('medium');
-
         // Emit event
         eventBus.emit('sheetOpened', { id });
     }
@@ -119,9 +116,6 @@ class SheetManager {
             if (overlay) {
                 overlay.classList.remove('is-open');
             }
-
-            // Haptic feedback
-            void haptic('medium');
 
             // Emit event
             eventBus.emit('sheetClosed', { id: previousId });

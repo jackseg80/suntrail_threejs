@@ -1,5 +1,6 @@
 import { state } from '../../state';
 import { updateSunPosition } from '../../sun';
+import { haptic } from '../../haptics';
 
 export class TimelineComponent {
     private timeSlider: HTMLInputElement | null = null;
@@ -69,6 +70,9 @@ export class TimelineComponent {
                 toggleBtn.classList.toggle('active');
                 document.body.classList.toggle('timeline-open', isOpen);
             });
+
+            // Drag handle — swipe down to close
+            this.attachSwipeGesture(bottomBar);
         }
 
         // Initial sync
@@ -99,6 +103,65 @@ export class TimelineComponent {
             // ARIA: sync valuenow
             this.timeSlider.setAttribute('aria-valuenow', val);
         }
+    }
+
+    private attachSwipeGesture(bottomBar: HTMLElement): void {
+        // Inject drag handle if not already present
+        if (!bottomBar.querySelector('.timeline-drag-handle')) {
+            const handle = document.createElement('div');
+            handle.className = 'timeline-drag-handle';
+            handle.setAttribute('aria-hidden', 'true');
+            handle.innerHTML = '<div class="sheet-drag-indicator"></div>';
+            bottomBar.insertBefore(handle, bottomBar.firstChild);
+        }
+
+        const handle = bottomBar.querySelector<HTMLElement>('.timeline-drag-handle')!;
+        let startY = 0;
+        let startTime = 0;
+        let isDragging = false;
+
+        const onStart = (e: PointerEvent): void => {
+            startY = e.clientY;
+            startTime = Date.now();
+            isDragging = true;
+            handle.setPointerCapture(e.pointerId);
+            bottomBar.style.transition = 'none';
+        };
+
+        const onMove = (e: PointerEvent): void => {
+            if (!isDragging) return;
+            const delta = e.clientY - startY;
+            if (delta > 0) {
+                // Translate relative to open position (translate(-50%, 0))
+                bottomBar.style.transform = `translate(-50%, ${delta * 0.6}px)`;
+            }
+        };
+
+        const onEnd = (e: PointerEvent): void => {
+            if (!isDragging) return;
+            isDragging = false;
+            const delta = e.clientY - startY;
+            const duration = Date.now() - startTime;
+            const velocity = duration > 0 ? delta / duration : 0;
+
+            // Restore transition
+            bottomBar.style.transition = '';
+            bottomBar.style.transform = '';
+
+            if (delta > 60 || velocity > 0.3) {
+                void haptic('medium');
+                // Close: remove is-open + sync body class + toggle button
+                bottomBar.classList.remove('is-open');
+                document.body.classList.remove('timeline-open');
+                const toggleBtn = document.getElementById('timeline-toggle-btn');
+                if (toggleBtn) toggleBtn.classList.remove('active');
+            }
+        };
+
+        handle.addEventListener('pointerdown', onStart);
+        handle.addEventListener('pointermove', onMove);
+        handle.addEventListener('pointerup', onEnd);
+        handle.addEventListener('pointercancel', onEnd);
     }
 
     public dispose(): void {

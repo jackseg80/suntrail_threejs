@@ -5,7 +5,6 @@ import { applyPreset } from '../../performance';
 import { resetTerrain, updateVisibleTiles, updateHydrologyVisibility } from '../../terrain';
 import { deleteTerrainCache, downloadOfflineZone } from '../../tileLoader';
 import { SharedAPIKeyComponent } from './SharedAPIKeyComponent';
-import { haptic } from '../../haptics';
 
 import { sheetManager } from '../core/SheetManager';
 
@@ -175,7 +174,6 @@ export class SettingsSheet extends BaseComponent {
             toggle.setAttribute('aria-checked', String(toggle.checked));
 
             toggle.addEventListener('change', () => {
-                void haptic('light');
                 (state as any)[stateKey] = toggle.checked;
                 // ARIA: sync aria-checked
                 toggle.setAttribute('aria-checked', String(toggle.checked));

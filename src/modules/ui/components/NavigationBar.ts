@@ -1,7 +1,6 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { sheetManager } from '../core/SheetManager';
 import { eventBus } from '../../eventBus';
-import { haptic } from '../../haptics';
 
 export class NavigationBar extends BaseComponent {
     constructor() {
@@ -23,8 +22,6 @@ export class NavigationBar extends BaseComponent {
             const onClick = () => {
                 const tabId = tab.getAttribute('data-tab');
                 if (!tabId) return;
-
-                void haptic('light');
 
                 if (sheetManager.getActiveSheetId() === tabId) {
                     sheetManager.close();
