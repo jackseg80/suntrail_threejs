@@ -1,4 +1,4 @@
-# SunTrail - Base de Connaissance (v5.8.16)
+# SunTrail - Base de Connaissance (v5.8.17)
 
 Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTrail. Il consigne les décisions architecturales critiques et les solutions aux problèmes complexes.
 
@@ -23,6 +23,7 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 - **Material Pooling (`materialPool.ts`)** : Réutilisation des shaders pour éviter les micro-saccades de compilation Three.js (v5.6.4).
 - **Gestion Mémoire (`memory.ts`)** : Utilisation stricte de `disposeObject()` pour libérer la VRAM lors du déchargement des tuiles.
 - **Offline-First & PMTiles** : Support PWA (Service Worker) et lecture de fichiers `.pmtiles` locaux pour un usage sans réseau (v5.7.0).
+- **Données d'Élévation (v5.8.17)** : Les tuiles d'élévation Terrain-RGB sont capées au zoom 14 max. Pour éviter les erreurs de calcul de pentes à LOD > 14, le worker utilise `elevSourceZoom` (zoom réel des données) pour calculer la taille des pixels des normal maps, pas le zoom d'affichage demandé.
 
 ### Données & APIs
 - **Hydrologie 3D (v5.8.4)** : Restauration d'un moteur d'eau réaliste. Détection chromatique optimisée pour SwissTopo et vagues en **"Rouleaux Géants"** sans couture entre les tuiles grâce à l'utilisation des coordonnées mondiales absolues.
@@ -71,6 +72,12 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 | Saut de carte au dézoom | `updateVisibleTiles` sans args | S'assurer de passer la position caméra ou laisser le fallback par défaut (v5.7.4). |
 | Voile rouge en 2D | Pentes activées par erreur | Vérifier le flag `is2DGlobal` dans `updateVisibleTiles`. |
 | Bâtiments dans les lacs | Erreur Z-Mirror | Vérifier la correction d'altitude relative au relief dans `buildings.ts`. |
+| Pentes tout rouge (LOD 15+) | Mauvais calcul normal map | Les données d'élévation sont capées au zoom 14. Le worker doit utiliser `elevSourceZoom` pour calculer la taille des pixels, pas le zoom demandé (v5.8.17). |
+
+## 🚀 Commandes de Maintenance
+- `npm test` : Lancer la suite de 102 tests unitaires (Vitest).
+- `npm run check` : Vérifier le typage TypeScript (strict).
+- `npm run deploy` : Suite complète avant livraison mobile.
 
 ## 🚀 Commandes de Maintenance
 - `npm test` : Lancer la suite de 102 tests unitaires (Vitest).

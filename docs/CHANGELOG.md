@@ -4,6 +4,14 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.8.17] - 2026-03-26
+### 🛠️ Slope Visualization Fix & UI Cleanup
+- **Slope Calculation Correction**: Fixed a critical bug where slopes appeared completely red (exaggerated) at zoom levels above 14 (LOD 15+). The issue was caused by normal map calculations using the requested zoom level instead of the actual elevation data zoom (capped at 14).
+  - `getElevationUrl()` now returns `{url, sourceZoom}` to track the real data resolution
+  - Worker receives `elevSourceZoom` parameter for accurate pixel size calculation
+  - Normal maps are now correctly computed regardless of display zoom level
+- **UI Simplification**: Removed the redundant GPU stats button from the top status bar. Performance statistics are still accessible via Settings > Advanced Parameters > "Stats de performance (FPS)".
+
 ## [5.8.16] - 2026-03-25
 ### 🛠️ GPS Recording & Live Tracking
 - **Reactive Recording Fix**: Resolved a critical issue where GPS recording only captured the first point. Switched from `.push()` to array re-assignment (`[...]`) to ensure the reactive state notifies UI listeners of new points.
