@@ -83,14 +83,14 @@ export class TrackSheet extends BaseComponent {
         if (state.isRecording) {
             recBtn.classList.add('active');
             recBtn.innerHTML = `
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="margin-right:6px">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" class="trk-rec-icon">
                     <rect x="2" y="2" width="6" height="6" rx="1" fill="white"/>
                 </svg> STOP`;
             navTab?.classList.add('has-notif');
         } else {
             recBtn.classList.remove('active');
             recBtn.innerHTML = `
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="margin-right:6px">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" class="trk-rec-icon">
                     <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.3"/>
                     <circle cx="6" cy="6" r="3" fill="currentColor"/>
                 </svg> REC`;
@@ -109,9 +109,9 @@ export class TrackSheet extends BaseComponent {
         if (pointsEl) pointsEl.textContent = state.recordedPoints.length.toString();
         
         if (state.recordedPoints.length < 2) {
-            if (distEl) distEl.innerHTML = `0.0 <span style="font-size:13px;color:var(--t2)">km</span>`;
-            if (dplusEl) dplusEl.innerHTML = `+0 <span style="font-size:12px">m</span>`;
-            if (dminusEl) dminusEl.innerHTML = `−0 <span style="font-size:12px">m</span>`;
+            if (distEl) distEl.innerHTML = `0.0 <span class="trk-stat-unit">km</span>`;
+            if (dplusEl) dplusEl.innerHTML = `+0 <span class="trk-stat-unit-plain">m</span>`;
+            if (dminusEl) dminusEl.innerHTML = `−0 <span class="trk-stat-unit-plain">m</span>`;
             return;
         }
 
@@ -133,9 +133,9 @@ export class TrackSheet extends BaseComponent {
             else dminus += Math.abs(diff);
         }
 
-        if (distEl) distEl.innerHTML = `${(dist / 1000).toFixed(2)} <span style="font-size:13px;color:var(--t2)">km</span>`;
-        if (dplusEl) dplusEl.innerHTML = `+${Math.round(dplus)} <span style="font-size:12px">m</span>`;
-        if (dminusEl) dminusEl.innerHTML = `−${Math.round(dminus)} <span style="font-size:12px">m</span>`;
+        if (distEl) distEl.innerHTML = `${(dist / 1000).toFixed(2)} <span class="trk-stat-unit">km</span>`;
+        if (dplusEl) dplusEl.innerHTML = `+${Math.round(dplus)} <span class="trk-stat-unit-plain">m</span>`;
+        if (dminusEl) dminusEl.innerHTML = `−${Math.round(dminus)} <span class="trk-stat-unit-plain">m</span>`;
     }
 
     private exportRecordedGPX() {

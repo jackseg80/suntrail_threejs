@@ -76,13 +76,12 @@ export class LayersSheet extends BaseComponent {
 
             if (row && toggle && warning && infoIcon) {
                 if (isAvailable) {
-                    row.style.opacity = '1';
-                    row.style.pointerEvents = 'auto';
+                    row.classList.remove('lyr-row-unavailable');
                     toggle.disabled = false;
                     warning.style.display = 'none';
                     infoIcon.style.display = 'none';
                 } else {
-                    row.style.opacity = '0.5';
+                    row.classList.add('lyr-row-unavailable');
                     toggle.disabled = true;
                     warning.style.display = 'block';
                     infoIcon.style.display = 'block';

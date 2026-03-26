@@ -97,7 +97,8 @@ export class ConnectivitySheet extends BaseComponent {
         const statusEl = this.element?.querySelector('#net-status') as HTMLElement;
         if (statusEl) {
             statusEl.textContent = state.IS_OFFLINE ? 'OFFLINE' : 'ONLINE';
-            statusEl.style.color = state.IS_OFFLINE ? 'var(--danger)' : 'var(--success)';
+            statusEl.classList.toggle('conn-status-offline', state.IS_OFFLINE);
+            statusEl.classList.toggle('conn-status-online', !state.IS_OFFLINE);
         }
     }
 
@@ -106,7 +107,7 @@ export class ConnectivitySheet extends BaseComponent {
         if (accuracyEl) {
             // Affiche la précision GPS réelle ou '--' si pas de signal
             const acc = state.userLocationAccuracy ?? (state.userLocation ? '5' : '--');
-            accuracyEl.innerHTML = `${acc} <span style="font-size:12px; color:var(--text-3)">m</span>`;
+            accuracyEl.innerHTML = `${acc} <span class="conn-unit">m</span>`;
         }
     }
 }

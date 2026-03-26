@@ -97,7 +97,7 @@ export class SearchSheet extends BaseComponent {
                     this.attachListeners();
                 } else if (localMatches.length === 0) {
                     const noResult = document.createElement('div');
-                    noResult.style.cssText = 'padding:20px; color:var(--text-2); font-size:14px; text-align:center;';
+                    noResult.classList.add('srch-no-result');
                     noResult.textContent = 'Aucun résultat trouvé';
                     this.geoResults!.appendChild(noResult);
                     this.geoResults!.style.display = 'block';
@@ -111,8 +111,7 @@ export class SearchSheet extends BaseComponent {
 
     private createGeoItem(lat: number, lon: number, label: string, isPeak = false, name = '', ele = 0): HTMLElement {
         const div = document.createElement('div');
-        div.className = `geo-item ${isPeak ? 'peak-item' : 'remote-item'}`;
-        div.style.cssText = 'padding:12px; cursor:pointer; color:white; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center;';
+        div.className = `geo-item ${isPeak ? 'peak-item' : 'remote-item'} srch-geo-item`;
         div.dataset.lat = lat.toString();
         div.dataset.lon = lon.toString();
         if (isPeak) { 
@@ -121,14 +120,10 @@ export class SearchSheet extends BaseComponent {
         }
         
         const leftSide = document.createElement('div');
-        leftSide.style.display = 'flex';
-        leftSide.style.alignItems = 'center';
-        leftSide.style.gap = '10px';
+        leftSide.classList.add('srch-left-side');
 
         const icon = document.createElement('div');
-        icon.style.width = '16px';
-        icon.style.height = '16px';
-        icon.style.opacity = '0.6';
+        icon.classList.add('srch-icon');
         icon.innerHTML = isPeak 
             ? `<svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 2L6 8l4 2 4-2-4-6z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 10v8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10" cy="14" r="2" stroke="currentColor" stroke-width="1" opacity="0.5"/></svg>`
             : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
@@ -137,17 +132,14 @@ export class SearchSheet extends BaseComponent {
         
         const contentDiv = document.createElement('div');
         const text = document.createElement('div');
-        text.className = 'geo-label';
-        text.style.fontSize = '14px';
-        text.style.fontWeight = isPeak ? '500' : '400';
+        text.className = 'geo-label srch-geo-label';
+        if (isPeak) text.classList.add('srch-geo-label-peak');
         text.textContent = label;
         contentDiv.appendChild(text);
 
         if (isPeak) {
             const sub = document.createElement('div');
-            sub.style.fontSize = '11px';
-            sub.style.color = 'var(--text-2)';
-            sub.style.marginTop = '1px';
+            sub.classList.add('srch-peak-sub');
             sub.textContent = 'Sommet';
             contentDiv.appendChild(sub);
         }
@@ -157,7 +149,7 @@ export class SearchSheet extends BaseComponent {
         
         if (isPeak) {
             const altSpan = document.createElement('span');
-            altSpan.style.cssText = 'color:var(--gold); font-family:var(--font-mono, monospace); font-size:12px; font-weight:500;';
+            altSpan.classList.add('srch-alt-badge');
             altSpan.textContent = `${Math.round(ele)} m`;
             div.appendChild(altSpan);
         }

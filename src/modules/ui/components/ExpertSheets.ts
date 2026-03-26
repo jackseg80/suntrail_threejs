@@ -23,10 +23,7 @@ export class WeatherSheet extends BaseComponent {
         this.expertPanel = document.createElement('div');
         this.expertPanel.id = 'expert-weather-panel';
         this.expertPanel.style.display = 'none';
-        this.expertPanel.style.marginTop = '15px';
-        this.expertPanel.style.padding = '15px';
-        this.expertPanel.style.background = 'rgba(255,255,255,0.05)';
-        this.expertPanel.style.borderRadius = '12px';
+        this.expertPanel.classList.add('exp-expert-panel');
         this.element.appendChild(this.expertPanel);
 
         const closeWeather = document.getElementById('close-weather');
@@ -98,26 +95,18 @@ export class WeatherSheet extends BaseComponent {
 
         // Basic Info
         const basicGrid = document.createElement('div');
-        basicGrid.style.display = 'grid';
-        basicGrid.style.gridTemplateColumns = '1fr 1fr';
-        basicGrid.style.gap = '10px';
-        basicGrid.style.marginBottom = '15px';
+        basicGrid.classList.add('exp-stat-grid', 'exp-stat-grid-mb');
 
         const addStat = (parent: HTMLElement, label: string, value: string) => {
             const div = document.createElement('div');
-            div.style.background = 'rgba(255,255,255,0.03)';
-            div.style.padding = '10px';
-            div.style.borderRadius = '8px';
+            div.classList.add('exp-stat-card');
             
             const lbl = document.createElement('div');
-            lbl.style.fontSize = '11px';
-            lbl.style.color = 'var(--t2)';
+            lbl.classList.add('exp-stat-label');
             lbl.textContent = label;
             
             const val = document.createElement('div');
-            val.style.fontSize = '16px';
-            val.style.fontWeight = 'bold';
-            val.style.marginTop = '4px';
+            val.classList.add('exp-stat-value');
             val.textContent = value;
             
             div.appendChild(lbl);
@@ -135,29 +124,22 @@ export class WeatherSheet extends BaseComponent {
         // Hourly
         if (wd.hourly) {
             const hourlyContainer = document.createElement('div');
-            hourlyContainer.style.display = 'flex';
-            hourlyContainer.style.overflowX = 'auto';
-            hourlyContainer.style.gap = '10px';
-            hourlyContainer.style.paddingBottom = '10px';
+            hourlyContainer.classList.add('exp-hourly-scroll');
 
             wd.hourly.forEach(h => {
                 const hDiv = document.createElement('div');
-                hDiv.style.minWidth = '50px';
-                hDiv.style.textAlign = 'center';
+                hDiv.classList.add('exp-hourly-item');
 
                 const timeDiv = document.createElement('div');
-                timeDiv.style.fontSize = '9px';
-                timeDiv.style.color = 'var(--t2)';
+                timeDiv.classList.add('exp-hourly-time');
                 timeDiv.textContent = h.time;
 
                 const iconDiv = document.createElement('div');
-                iconDiv.style.fontSize = '14px';
-                iconDiv.style.margin = '5px 0';
+                iconDiv.classList.add('exp-hourly-icon');
                 iconDiv.textContent = getWeatherIcon(h.code);
 
                 const tempDiv = document.createElement('div');
-                tempDiv.style.fontSize = '11px';
-                tempDiv.style.fontWeight = '700';
+                tempDiv.classList.add('exp-hourly-temp');
                 tempDiv.textContent = `${Math.round(h.temp)}°`;
 
                 hDiv.appendChild(timeDiv);
@@ -170,15 +152,12 @@ export class WeatherSheet extends BaseComponent {
 
         // Expert Panel
         const expertTitle = document.createElement('h4');
-        expertTitle.style.margin = '0 0 10px 0';
-        expertTitle.style.color = 'var(--gold)';
+        expertTitle.classList.add('exp-expert-title');
         expertTitle.textContent = 'Données Avancées';
         this.expertPanel.appendChild(expertTitle);
 
         const expertGrid = document.createElement('div');
-        expertGrid.style.display = 'grid';
-        expertGrid.style.gridTemplateColumns = '1fr 1fr';
-        expertGrid.style.gap = '10px';
+        expertGrid.classList.add('exp-stat-grid');
 
         addStat(expertGrid, 'Lieu', wd.locationName || 'Inconnu');
         addStat(expertGrid, 'Rafales', `${Math.round(wd.windGusts || 0)} km/h`);
@@ -192,11 +171,7 @@ export class WeatherSheet extends BaseComponent {
         // Chart
         if (wd.hourly) {
             const chartContainer = document.createElement('div');
-            chartContainer.style.display = 'flex';
-            chartContainer.style.alignItems = 'flex-end';
-            chartContainer.style.height = '60px';
-            chartContainer.style.marginTop = '20px';
-            chartContainer.style.gap = '2px';
+            chartContainer.classList.add('exp-chart');
 
             const temps = wd.hourly.map(h => h.temp);
             const min = Math.min(...temps);
@@ -206,20 +181,13 @@ export class WeatherSheet extends BaseComponent {
             wd.hourly.forEach((h, i) => {
                 const hPerc = ((h.temp - min) / range) * 70 + 10;
                 const bar = document.createElement('div');
-                bar.style.flex = '1';
+                bar.classList.add('exp-chart-bar');
                 bar.style.height = `${hPerc}%`;
-                bar.style.background = 'var(--accent)';
                 bar.style.opacity = `${0.3 + (i/24)*0.7}`;
-                bar.style.borderRadius = '4px 4px 0 0';
-                bar.style.position = 'relative';
                 bar.title = `${h.time}: ${h.temp}°C`;
 
                 const lbl = document.createElement('div');
-                lbl.style.position = 'absolute';
-                lbl.style.top = '-15px';
-                lbl.style.width = '100%';
-                lbl.style.textAlign = 'center';
-                lbl.style.fontSize = '8px';
+                lbl.classList.add('exp-chart-label');
                 lbl.textContent = `${Math.round(h.temp)}°`;
 
                 bar.appendChild(lbl);
@@ -280,37 +248,24 @@ export class SolarProbeSheet extends BaseComponent {
 
         // Status
         const statusEl = document.createElement('div');
-        statusEl.style.marginBottom = '15px';
-        statusEl.style.color = 'var(--t2)';
-        statusEl.style.fontSize = '13px';
+        statusEl.classList.add('exp-probe-status');
         statusEl.textContent = 'Analyse terminée';
         this.contentEl.appendChild(statusEl);
 
         // Stats Grid
         const statsGrid = document.createElement('div');
-        statsGrid.style.display = 'grid';
-        statsGrid.style.gridTemplateColumns = '1fr 1fr';
-        statsGrid.style.gap = '10px';
-        statsGrid.style.marginBottom = '20px';
+        statsGrid.classList.add('exp-stat-grid', 'exp-probe-grid-mb');
 
         const addStat = (label: string, value: string) => {
             const div = document.createElement('div');
-            div.style.background = 'rgba(255,255,255,0.03)';
-            div.style.padding = '15px';
-            div.style.borderRadius = '12px';
+            div.classList.add('exp-probe-card');
             
             const lbl = document.createElement('div');
-            lbl.style.fontSize = '11px';
-            lbl.style.color = 'var(--t2)';
-            lbl.style.textTransform = 'uppercase';
-            lbl.style.letterSpacing = '1px';
+            lbl.classList.add('exp-probe-label');
             lbl.textContent = label;
             
             const val = document.createElement('div');
-            val.style.fontSize = '20px';
-            val.style.fontWeight = 'bold';
-            val.style.marginTop = '5px';
-            val.style.color = 'var(--gold)';
+            val.classList.add('exp-probe-value');
             val.textContent = value;
             
             div.appendChild(lbl);
@@ -324,25 +279,16 @@ export class SolarProbeSheet extends BaseComponent {
 
         // Timeline
         const timelineTitle = document.createElement('div');
-        timelineTitle.style.fontSize = '11px';
-        timelineTitle.style.color = 'var(--t2)';
-        timelineTitle.style.textTransform = 'uppercase';
-        timelineTitle.style.letterSpacing = '1px';
-        timelineTitle.style.marginBottom = '10px';
+        timelineTitle.classList.add('exp-timeline-title');
         timelineTitle.textContent = 'Évolution sur 24h';
         this.contentEl.appendChild(timelineTitle);
 
         const timelineContainer = document.createElement('div');
-        timelineContainer.style.display = 'flex';
-        timelineContainer.style.height = '30px';
-        timelineContainer.style.borderRadius = '6px';
-        timelineContainer.style.overflow = 'hidden';
-        timelineContainer.style.marginBottom = '20px';
+        timelineContainer.classList.add('exp-timeline');
 
         result.timeline.forEach((t: any) => {
             const bar = document.createElement('div');
-            bar.style.flex = '1';
-            bar.style.height = '100%';
+            bar.classList.add('exp-timeline-bar');
             
             if (t.isNight) {
                 bar.style.background = '#000';
@@ -359,7 +305,6 @@ export class SolarProbeSheet extends BaseComponent {
         // Copy Button
         const copyBtn = document.createElement('button');
         copyBtn.className = 'btn-go';
-        copyBtn.style.width = '100%';
         copyBtn.textContent = '📋 Copier le rapport';
         copyBtn.onclick = () => {
             const report = `SunTrail Solar Report\nLocation: ${result.gps.lat.toFixed(5)}, ${result.gps.lon.toFixed(5)}\nSunlight: ${totalStr}\nSunrise: ${sunriseStr}`;
