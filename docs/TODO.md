@@ -1,4 +1,4 @@
-# SunTrail 3D - Roadmap Révisée (v5.8.2)
+# SunTrail 3D - Roadmap Révisée (v5.9.0)
 
 ## 🚀 Priorité 1 : Optimisations & Netteté (v5.6) - ✅ TERMINÉ
 *Impact : Fluidité mobile absolue et rendu topographique pro.*
@@ -28,7 +28,20 @@
 - [ ] **Waypoints & Partage** : Marquage personnel et Deep Linking (URL synchronisée).
 - [ ] **Mode Nuit Avancé** : Pollution lumineuse urbaine (NASA).
 
-## 🌐 Priorité 4 : Expansion & Multi-GPX (v5.9)
+## ✅ Priorité 3 : Qualité UI/UX (v5.9) - TERMINÉ
+
+- [x] **Design Tokens CSS** : Variables systématiques (espacement, typographie, radius, transitions).
+- [x] **Migration Styles Inline** : ~50 blocs cssText migrés vers classes CSS namespaced.
+- [x] **EventBus Sheet Events** : `sheetOpened`/`sheetClosed` — suppression du polling `setInterval`.
+- [x] **ARIA Accessibilité** : role, aria-label, aria-live, aria-checked, aria-value sur tous les composants.
+- [x] **Focus Trap + Escape** : Navigation clavier complète dans les sheets.
+- [x] **Swipe-to-dismiss** : Sheets + Timeline avec drag handle et animation translateY.
+- [x] **SharedAPIKeyComponent** : Formulaire clé MapTiler unifié (3 → 1 composant).
+- [x] **Loading States** : Spinners sur géocodage, import GPX, download zone.
+- [x] **Empty States** : États vides illustrés (TrackSheet + SearchSheet).
+- [x] **Haptic Feedback** : `@capacitor/haptics` — swipes (medium) + confirmations (success).
+
+## 🌐 Priorité 4 : Expansion & Multi-GPX (v5.10)
 *Impact : Ouverture européenne et gestion de groupes.*
 
 - [ ] **Multi-GPX** : Affichage et comparaison de plusieurs tracés simultanés.

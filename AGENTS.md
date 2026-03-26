@@ -1,4 +1,4 @@
-# SunTrail - Base de Connaissance (v5.8.17)
+# SunTrail - Base de Connaissance (v5.9.0)
 
 Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTrail. Il consigne les décisions architecturales critiques et les solutions aux problèmes complexes.
 
@@ -12,11 +12,16 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 - **Versioning (v5.8.16)** : Le système inclut désormais un contrôle de version (`CURRENT_SETTINGS_VERSION`). Si une version obsolète est détectée lors du chargement, les réglages sont réinitialisés pour éviter les corruptions.
 - **Event Bus (`eventBus.ts`)** : Utilisé pour briser les dépendances circulaires entre `terrain.ts` et `scene.ts`. Permet de déclencher des événements transversaux (ex: `terrainReady`, `flyTo`).
 
-### Interface & Composants (v5.8.0)
+### Interface & Composants (v5.9.0)
 - **Architecture Découplée** : La logique UI est extraite de `ui.ts` vers des classes spécialisées (`src/modules/ui/components/`).
 - **BaseComponent** : Classe abstraite gérant le cycle de vie (hydratation via `<template>`, rendu, nettoyage des abonnements).
-- **SheetManager** : Singleton gérant l'exclusivité des tiroirs coulissants (Bottom Sheets). Un seul tiroir peut être ouvert à la fois.
+- **SheetManager** : Singleton gérant l'exclusivité des Bottom Sheets. Gère également : focus trap (Tab/Shift+Tab), touche Escape, attributs ARIA (`role="dialog"`, `aria-modal`), swipe-to-dismiss via `.sheet-drag-handle`.
+- **EventBus Sheet Events (v5.9.0)** : `sheetOpened`/`sheetClosed` émis par SheetManager. `NavigationBar` s'abonne à ces événements — le `setInterval(300ms)` de polling a été supprimé.
+- **Design Tokens (v5.9.0)** : Variables CSS systématiques dans `:root` — `--space-1..6`, `--text-xs..xl`, `--radius-sm..xl`, `--transition-fast/normal/slow`. Utiliser ces tokens dans tout nouveau CSS, jamais de valeurs hardcodées.
+- **SharedAPIKeyComponent (v5.9.0)** : Formulaire clé MapTiler réutilisable (`src/modules/ui/components/SharedAPIKeyComponent.ts`). Instancier avec un `containerId` slot. Synchronisation automatique via `state.subscribe('MK')`.
+- **Haptics (v5.9.0)** : Helper `src/modules/haptics.ts` avec `haptic(type)`. Appel via `void haptic('medium')` (jamais await). Utilisé uniquement sur les swipes et les confirmations de succès — PAS sur les clics courants.
 - **Glassmorphism** : Style visuel unifié basé sur des variables CSS (`--glass-*`) avec flou de profondeur (20px) et saturation optimisée.
+- **Timeline FAB (v5.9.0)** : La classe `body.timeline-open` masque `.fab-stack` quand la timeline est ouverte. Togglée dans `TimelineComponent`. Ne pas utiliser le sélecteur CSS `~` (ordre DOM non garanti).
 
 ### Moteur de Tuiles & Performance (`terrain.ts` / `tileLoader.ts`)
 - **WebWorkers Pool** : 8 workers asynchrones (`tileWorker.ts`) pour le fetch et le calcul des Normal Maps (relief).
@@ -73,11 +78,9 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 | Voile rouge en 2D | Pentes activées par erreur | Vérifier le flag `is2DGlobal` dans `updateVisibleTiles`. |
 | Bâtiments dans les lacs | Erreur Z-Mirror | Vérifier la correction d'altitude relative au relief dans `buildings.ts`. |
 | Pentes tout rouge (LOD 15+) | Mauvais calcul normal map | Les données d'élévation sont capées au zoom 14. Le worker doit utiliser `elevSourceZoom` pour calculer la taille des pixels, pas le zoom demandé (v5.8.17). |
-
-## 🚀 Commandes de Maintenance
-- `npm test` : Lancer la suite de 102 tests unitaires (Vitest).
-- `npm run check` : Vérifier le typage TypeScript (strict).
-- `npm run deploy` : Suite complète avant livraison mobile.
+| Haptics silencieux Android | Permission VIBRATE manquante | Vérifier `<uses-permission android:name="android.permission.VIBRATE"/>` dans `AndroidManifest.xml` + `npx cap sync`. |
+| FABs visibles par-dessus la timeline | Sélecteur CSS `~` cassé | Utiliser `body.timeline-open .fab-stack` (classe togglée dans `TimelineComponent`). Ne jamais utiliser `#bottom-bar.is-open ~ .fab-stack`. |
+| Styles inline dans un nouveau composant | Mauvaise pratique | Utiliser les classes CSS namespaced et les design tokens. Jamais de `style.cssText` ou `element.style.property = 'valeur'` hardcodée. |
 
 ## 🚀 Commandes de Maintenance
 - `npm test` : Lancer la suite de 102 tests unitaires (Vitest).

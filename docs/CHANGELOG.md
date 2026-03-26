@@ -4,6 +4,38 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.9.0] - 2026-03-27
+### 🎨 UI Refonte Qualité — Design Tokens, Accessibilité, Gestures & Haptics
+
+#### Design System
+- **Design Tokens CSS** : Ajout de variables CSS systématiques dans `:root` — `--space-1` à `--space-6` (grille 4px), `--text-xs` à `--text-xl` (échelle normalisée 10→24px), `--radius-sm` à `--radius-xl`, `--transition-fast/normal/slow`. Les valeurs hardcodées dans `style.css` ont été remplacées par les tokens.
+- **Migration Styles Inline** : ~50 blocs `style.cssText` répartis sur 6 composants (`ConnectivitySheet`, `ExpertSheets`, `LayersSheet`, `SearchSheet`, `TrackSheet`, `TopStatusBar`) migrés vers des classes CSS namespaced (`.conn-*`, `.exp-*`, `.lyr-*`, `.srch-*`, `.trk-*`). Correction au passage du bug `var(--t2)` → `var(--text-2)` dans ExpertSheets.
+
+#### EventBus & Performance
+- **Sheet Lifecycle Events** : Ajout de `sheetOpened`/`sheetClosed` dans l'`EventMap` typé. `SheetManager` émet ces événements à chaque ouverture/fermeture.
+- **Suppression du Polling** : Le `setInterval(300ms)` de `NavigationBar` (sync des tabs actifs) remplacé par des subscriptions `eventBus`. Réduction de la charge CPU et batterie.
+
+#### Accessibilité (ARIA)
+- **ARIA complet sur 10 composants** : `role="tablist"/"tab"` + `aria-selected` sur la nav bar, `role="switch"` + `aria-checked` sur tous les toggles, `aria-value*` sur les sliders, `aria-label` sur tous les boutons icônes, `aria-live="polite"` sur les zones de mise à jour dynamique (GPS, REC, météo).
+- **Focus Trap** : Quand une sheet s'ouvre, le focus Tab est piégé à l'intérieur (cycle Tab/Shift+Tab). À la fermeture, le focus retourne à l'élément déclencheur.
+- **Touche Escape** : Ferme la sheet active depuis le clavier.
+- **Sheets dialogues** : `role="dialog"`, `aria-modal="true"`, `aria-labelledby` ajoutés dynamiquement par `SheetManager`.
+
+#### Gestures
+- **Swipe-to-dismiss Sheets** : Chaque sheet dispose d'un drag handle (barre grise). Swipe vers le bas ≥60px ou vélocité ≥0.3px/ms → fermeture animée avec feedback haptique.
+- **Swipe-to-dismiss Timeline** : La timeline (`#bottom-bar`) dispose du même drag handle injectable en JS. Swipe down → fermeture et réapparition des boutons FAB.
+- **Fix FAB/Timeline overlap** : Remplacement du sélecteur CSS `~` (cassé selon l'ordre DOM) par `body.timeline-open .fab-stack` pour masquer les FABs quand la timeline est ouverte.
+
+#### Composants
+- **SharedAPIKeyComponent** : Extraction du formulaire de clé MapTiler dupliqué en 3 endroits (SettingsSheet, ConnectivitySheet, setup screen) vers un `BaseComponent` réutilisable. Synchronisation automatique via `state.subscribe('MK')`.
+- **Loading States** : Spinners et états désactivés sur les 3 opérations async — géocodage (SearchSheet), import GPX (TrackSheet), download zone (ConnectivitySheet). Pattern `btn-loading` + `aria-busy` avec `finally` garanti.
+- **Empty States** : États vides illustrés (icônes SVG monoline) dans TrackSheet (aucun parcours) et SearchSheet (état initial + aucun résultat).
+
+#### Haptic Feedback (Android)
+- **`@capacitor/haptics` v8.0.1** installé. Nouveau helper `src/modules/haptics.ts` avec graceful fallback web.
+- **Permission VIBRATE** ajoutée à `AndroidManifest.xml` (était manquante — bloquait tout le feedback).
+- **Mapping ciblé** : `medium` sur les swipes (sheets + timeline), `success` sur import GPX réussi / download terminé / sauvegarde clé API. Les haptics trop fréquents (open/close au clic, tabs, toggles) ont été supprimés.
+
 ## [5.8.17] - 2026-03-26
 ### 🛠️ Slope Visualization Fix & UI Cleanup
 - **Slope Calculation Correction**: Fixed a critical bug where slopes appeared completely red (exaggerated) at zoom levels above 14 (LOD 15+). The issue was caused by normal map calculations using the requested zoom level instead of the actual elevation data zoom (capped at 14).
