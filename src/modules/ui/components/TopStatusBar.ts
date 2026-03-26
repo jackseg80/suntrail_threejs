@@ -46,15 +46,6 @@ export class TopStatusBar extends BaseComponent {
             sheetManager.toggle('sos');
         });
 
-        const gpuBtn = this.element.querySelector('#gpu-stats-btn');
-        gpuBtn?.addEventListener('click', () => {
-            // Stats performance are usually handled globally but we can toggle visibility
-            const stats = document.querySelector('.dg.main'); // Dat.gui or Stats.js
-            if (stats) {
-                (stats as HTMLElement).style.display = (stats as HTMLElement).style.display === 'none' ? 'block' : 'none';
-            }
-        });
-
         this.updateLOD(state.ZOOM);
         this.updateWeather(state.weatherData);
         this.updateNetwork(state.IS_OFFLINE);
