@@ -65,8 +65,9 @@ export class TimelineComponent {
         if (toggleBtn && bottomBar) {
             toggleBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                bottomBar.classList.toggle('is-open');
+                const isOpen = bottomBar.classList.toggle('is-open');
                 toggleBtn.classList.toggle('active');
+                document.body.classList.toggle('timeline-open', isOpen);
             });
         }
 

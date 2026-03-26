@@ -522,7 +522,7 @@ body.sheet-open .fab-stack {
 }
 
 /* Cacher les FAB quand la timeline est ouverte */
-#bottom-bar.is-open ~ .fab-stack {
+body.timeline-open .fab-stack {
     transform: translateY(20px) scale(0.9);
     opacity: 0;
     pointer-events: none;
