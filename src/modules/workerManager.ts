@@ -54,7 +54,7 @@ class TileWorkerManager {
         }
     }
 
-    async loadTile(elevUrl: string | null, colorUrl: string | null, overlayUrl: string | null, zoom: number): Promise<any> {
+    async loadTile(elevUrl: string | null, colorUrl: string | null, overlayUrl: string | null, zoom: number, elevSourceZoom: number = zoom): Promise<any> {
         if (this.workers.length === 0 || !state.USE_WORKERS) return null;
 
         const id = this.nextTaskId++;
@@ -87,7 +87,7 @@ class TileWorkerManager {
                 }
             });
 
-            worker.postMessage({ id, elevUrl, colorUrl, overlayUrl, isOffline: state.IS_OFFLINE, zoom });
+            worker.postMessage({ id, elevUrl, colorUrl, overlayUrl, isOffline: state.IS_OFFLINE, zoom, elevSourceZoom });
         });
     }
 }

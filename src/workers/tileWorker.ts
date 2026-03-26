@@ -6,7 +6,7 @@
 const CACHE_NAME = 'suntrail-tiles-v1';
 
 self.onmessage = async (e) => {
-    const { id, elevUrl, colorUrl, overlayUrl, isOffline, zoom } = e.data;
+    const { id, elevUrl, colorUrl, overlayUrl, isOffline, zoom, elevSourceZoom } = e.data;
 
     try {
         const results: any = { id, cacheHits: 0, networkRequests: 0 };
@@ -37,8 +37,11 @@ self.onmessage = async (e) => {
                     transferables.push(results.pixelData);
 
                     // --- GÉNÉRATION NORMAL MAP ---
+                    // Utilise elevSourceZoom (zoom réel des données) pour calculer la taille des pixels
+                    // Cela corrige le bug où les pentes devenaient fausses à LOD > 14
                     const normalData = new Uint8ClampedArray(width * height * 4);
-                    const tileSizeMeters = 40075016.686 / Math.pow(2, zoom || 14);
+                    const sourceZ = elevSourceZoom || zoom || 14;
+                    const tileSizeMeters = 40075016.686 / Math.pow(2, sourceZ);
                     const pixelSize = tileSizeMeters / width;
 
                     for (let py = 0; py < height; py++) {

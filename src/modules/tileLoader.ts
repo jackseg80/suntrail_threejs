@@ -213,19 +213,20 @@ export function getOverlayUrl(tx: number, ty: number, zoom: number): string | nu
 /**
  * Génère l'URL pour les données d'élévation (Terrain-RGB).
  */
-export function getElevationUrl(tx: number, ty: number, zoom: number, is2D: boolean): string | null {
-    if (is2D) return null;
+export function getElevationUrl(tx: number, ty: number, zoom: number, is2D: boolean): { url: string | null, sourceZoom: number } {
+    if (is2D) return { url: null, sourceZoom: zoom };
     
-    let ez = Math.min(zoom, 14);
+    const sourceZoom = Math.min(zoom, 14);
     let r = Math.pow(2, Math.max(0, zoom - 14));
-    return `https://api.maptiler.com/tiles/terrain-rgb-v2/${ez}/${Math.floor(tx/r)}/${Math.floor(ty/r)}.png?key=${state.MK}`;
+    const url = `https://api.maptiler.com/tiles/terrain-rgb-v2/${sourceZoom}/${Math.floor(tx/r)}/${Math.floor(ty/r)}.png?key=${state.MK}`;
+    return { url, sourceZoom };
 }
 
 /**
  * Charge les données complètes d'une tuile via les Workers.
  */
 export async function loadTileData(tx: number, ty: number, zoom: number, is2D: boolean) {
-    const elevUrl = getElevationUrl(tx, ty, zoom, is2D);
+    const { url: elevUrl, sourceZoom } = getElevationUrl(tx, ty, zoom, is2D);
     
     // Logique native color zoom
     const nativeMax = (state.MAP_SOURCE === 'opentopomap') ? 15 : 18;
@@ -235,7 +236,7 @@ export async function loadTileData(tx: number, ty: number, zoom: number, is2D: b
     let colorUrl = getColorUrl(Math.floor(tx/cr), Math.floor(ty/cr), cz);
     const overlayUrl = getOverlayUrl(tx, ty, zoom);
 
-    return await tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl, zoom);
+    return await tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl, zoom, sourceZoom);
 }
 
 
@@ -258,7 +259,7 @@ export async function downloadOfflineZone(lat: number, lon: number, onProgress: 
             for (let y = t1.y; y <= t2.y; y++) {
                 // Utilisation des générateurs d'URL officiels pour éviter les 404
                 const colorUrl = getColorUrl(x, y, z);
-                const elevUrl = getElevationUrl(x, y, z, false);
+                const { url: elevUrl } = getElevationUrl(x, y, z, false);
                 const overlayUrl = getOverlayUrl(x, y, z);
                 
                 urls.push(colorUrl);
