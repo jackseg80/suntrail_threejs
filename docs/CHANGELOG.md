@@ -4,6 +4,29 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.10.0-wip] - 2026-03-27
+### 🌐 Multi-GPX, i18n FR/DE/IT/EN — Sprint 1 & 2
+
+#### Internationalisation (Sprint 1 + 1-bis)
+- **I18nService** : Singleton léger (`src/i18n/I18nService.ts`) avec `t(key)`, `setLocale()`, interpolation `{{var}}`, fallback FR → clé brute.
+- **4 langues** : `fr.json` (source of truth, ~200 clés), `de.json`, `it.json`, `en.json` — termes de randonnée/cartographie soignés.
+- **Couverture complète** : Strings JS dynamiques (toasts, aria-labels, empty states) + templates HTML statiques via `data-i18n`.
+- **Mécanisme HTML** : `I18nService.applyToDOM(root)` appliqué automatiquement dans `BaseComponent.hydrate()` — tous les composants traduits sans code supplémentaire.
+- **Live reload** : Abonnement `localeChanged` dans `BaseComponent` — l'UI se traduit instantanément au changement de langue.
+- **Sélecteur de langue** : Combobox FR/DE/IT/EN dans SettingsSheet, persistance via `state.lang` (localStorage).
+- **`<html lang>`** : Mis à jour dynamiquement via EventBus `localeChanged`.
+- **14 tests i18n** ajoutés.
+
+#### Multi-GPX (Sprint 2)
+- **Refonte State** : `rawGpxData`/`gpxMesh`/`gpxPoints` (mono) → `gpxLayers: GPXLayer[]` + `activeGPXLayerId`. Palette `GPX_COLORS` (8 couleurs cycliques).
+- **terrain.ts** : `addGPXLayer()`, `removeGPXLayer()`, `toggleGPXLayer()`, `updateAllGPXMeshes()`, `clearAllGPXLayers()`.
+- **TrackSheet** : Liste réactive des tracés (nom, couleur, stats, toggle 👁, suppression ×). Import multi-fichiers (attribut `multiple`). Clic → flyTo + profil.
+- **profile.ts** : `updateElevationProfile(layerId?)` avec résolution du layer actif.
+- **scene.ts** : Origin shift itère sur tous les layers + sync `layer.points` après shift. Flag `state.isFlyingTo` bloque l'origin shift pendant l'animation flyTo — élimine les coordonnées stales entre imports successifs.
+- **FlyTo robuste** : Coords calculées depuis lat/lon brut à chaque appel (immunisé contre les changements d'`originTile`).
+- **Terrain Draping** : `gpxDrapePoints()` — densification ×4 entre waypoints GPS + clamping `Y = max(terrainAlt, elevGPX) + 30m`. Re-draping automatique à +3s/+6s après import. Le tracé suit le dénivelé réel du terrain rendu.
+- **9 tests Multi-GPX** ajoutés (133/135 total, 2 pré-existants tileLoader).
+
 ## [5.9.0] - 2026-03-27
 ### 🎨 UI Refonte Qualité — Design Tokens, Accessibilité, Gestures & Haptics
 

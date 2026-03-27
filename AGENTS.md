@@ -1,4 +1,4 @@
-# SunTrail - Base de Connaissance (v5.9.0)
+# SunTrail - Base de Connaissance (v5.10.0-wip)
 
 Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTrail. Il consigne les décisions architecturales critiques et les solutions aux problèmes complexes.
 
@@ -11,6 +11,8 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 - **Persistance** : Sauvegarde automatique dans `localStorage`. 
 - **Versioning (v5.8.16)** : Le système inclut désormais un contrôle de version (`CURRENT_SETTINGS_VERSION`). Si une version obsolète est détectée lors du chargement, les réglages sont réinitialisés pour éviter les corruptions.
 - **Event Bus (`eventBus.ts`)** : Utilisé pour briser les dépendances circulaires entre `terrain.ts` et `scene.ts`. Permet de déclencher des événements transversaux (ex: `terrainReady`, `flyTo`).
+- **Multi-GPX (v5.10.0)** : `state.gpxLayers: GPXLayer[]` remplace `rawGpxData/gpxMesh/gpxPoints`. Chaque layer a son propre mesh, couleur, stats et points 3D. La réaffectation `state.gpxLayers = [...state.gpxLayers, layer]` est obligatoire pour notifier le Proxy.
+- **isFlyingTo (v5.10.0)** : Flag `state.isFlyingTo` mis à `true` pendant l'animation flyTo. **Bloque l'origin shift** pour éviter que les coordonnées capturées dans la closure de l'animation deviennent stales. Remis à `false` à la fin de l'animation (`progress >= 1`).
 
 ### Interface & Composants (v5.9.0)
 - **Architecture Découplée** : La logique UI est extraite de `ui.ts` vers des classes spécialisées (`src/modules/ui/components/`).
@@ -81,6 +83,9 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 | Haptics silencieux Android | Permission VIBRATE manquante | Vérifier `<uses-permission android:name="android.permission.VIBRATE"/>` dans `AndroidManifest.xml` + `npx cap sync`. |
 | FABs visibles par-dessus la timeline | Sélecteur CSS `~` cassé | Utiliser `body.timeline-open .fab-stack` (classe togglée dans `TimelineComponent`). Ne jamais utiliser `#bottom-bar.is-open ~ .fab-stack`. |
 | Styles inline dans un nouveau composant | Mauvaise pratique | Utiliser les classes CSS namespaced et les design tokens. Jamais de `style.cssText` ou `element.style.property = 'valeur'` hardcodée. |
+| FlyTo envoie au mauvais endroit (2e tracé+) | Origin shift pendant animation | `state.isFlyingTo` bloque l'origin shift. Coords flyTo toujours recalculées depuis lat/lon brut avec `state.originTile` courant (v5.10.0). |
+| Tracé GPX passe sous le terrain | Waypoints GPS espacés → courbe lisse coupe la montagne | `gpxDrapePoints()` densifie (×4) + clamp `max(terrainAlt, elevGPX) + 30m`. Re-draping à +3s/+6s post-import (v5.10.0). |
+| Tracé GPX visible mais au mauvais endroit | `layer.points` stale après origin shift | `scene.ts` itère sur `state.gpxLayers` et applique le même offset à `layer.points` (v5.10.0). |
 
 ## 🚀 Commandes de Maintenance
 - `npm test` : Lancer la suite de 102 tests unitaires (Vitest).

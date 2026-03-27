@@ -66,13 +66,15 @@
 - [x] **Fusion JSON** : Blocs dupliqués (`track`, `settings`, `layers`, `weather`, `connectivity`) fusionnés dans les 4 locales.
 - [x] **Couverture complète** : Settings, Track, Layers, SOS, Weather, Solar, Connectivity — tous traduits en FR/DE/IT/EN.
 
-### Sprint 2 — Multi-GPX
-- [ ] **Refonte State** : Remplacer `rawGpxData` (mono) par `gpxLayers: GPXLayer[]` — chaque layer avec `{id, name, color, visible, mesh, points, profile}`.
-- [ ] **Refonte `terrain.ts`** : Pool de meshes GPX (`Map<string, THREE.Mesh>`), `addGPXLayer()`, `removeGPXLayer()`, `toggleGPXLayer()`.
-- [ ] **Refonte `TrackSheet.ts`** : Liste des tracés chargés (nom, couleur, toggle visibilité, supprimer), import multi-fichiers, couleurs auto-attribuées par index.
-- [ ] **Profil d'élévation multi-tracés** : Superposition des profils ou sélection d'un tracé actif pour le profil.
-- [ ] **Origin Shift** : Adapter `scene.ts` pour translater tous les `gpxLayers` meshes (actuellement 1 mesh hardcodé ligne 222-224).
-- [ ] **Comparaison** : Statistiques côte à côte (distance, D+, D-, durée si metadata GPX disponible).
+### Sprint 2 — Multi-GPX ✅ TERMINÉ
+- [x] **Refonte State** : `rawGpxData` remplacé par `gpxLayers: GPXLayer[]` + `activeGPXLayerId`. `GPX_COLORS` palette 8 couleurs. Version bump `5.10.0`.
+- [x] **Refonte `terrain.ts`** : `addGPXLayer()`, `removeGPXLayer()`, `toggleGPXLayer()`, `updateAllGPXMeshes()`, `clearAllGPXLayers()`.
+- [x] **Refonte `TrackSheet.ts`** : Liste réactive, import multi-fichiers, couleurs auto, toggle/remove par layer.
+- [x] **Profil d'élévation multi-tracés** : `updateElevationProfile(layerId?)` — résout le layer actif.
+- [x] **Origin Shift** : `scene.ts` itère sur tous les layers + sync `layer.points` après chaque shift.
+- [x] **FlyTo robuste** : `state.isFlyingTo` bloque l'origin shift pendant l'animation. Coords depuis lat/lon brut.
+- [x] **Terrain draping** : `gpxDrapePoints()` — densification (×4) + clamping `max(terrainAlt, elevGPX) + 30m`. Re-draping à +3s/+6s.
+- [x] **9 tests Multi-GPX** ajoutés (133/135 total).
 
 ### Sprint 3 — Dashboard VRAM Pro
 - [ ] **Collecte métriques** : Lire `renderer.info` à chaque frame — `memory.geometries`, `memory.textures`, `render.calls`, `render.triangles`.
@@ -83,10 +85,11 @@
 - [ ] **Tests** : Couverture `vramDashboard.test.ts` — seuils, alerts, métriques normalisées.
 
 ### Sprint 4 — Tests & Qualité v5.10
-- [ ] **Objectif : 120+ tests** (actuellement 102) — couvrir i18n service, multi-GPX layers, VRAM dashboard.
-- [ ] **Tests i18n** : Clés manquantes, fallback FR, changement de locale dynamique.
-- [ ] **Tests Multi-GPX** : `addGPXLayer`, `removeGPXLayer`, origin shift multi-layers, export individuel.
-- [ ] **`npm run check`** : TypeScript strict — 0 erreurs (supprimer le `@ts-ignore` gpxParser ligne 7 TrackSheet.ts).
+- [ ] **Objectif : 140+ tests** (actuellement 133) — couvrir VRAM dashboard + tests d'intégration.
+- [x] **Tests i18n** : 14 tests — clés manquantes, fallback FR, changement de locale dynamique ✅
+- [x] **Tests Multi-GPX** : 9 tests — `addGPXLayer`, `removeGPXLayer`, couleurs, origin shift ✅
+- [ ] **`npm run check`** : TypeScript strict — résoudre les 2 échecs `tileLoader.test.ts` pré-existants (signature `getElevationUrl` v5.8.17).
+- [ ] **Tests VRAM Dashboard** : Couverture seuils, alerts, métriques normalisées.
 
 ---
 
