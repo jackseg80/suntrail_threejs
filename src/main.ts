@@ -1,7 +1,6 @@
 import './style.css';
 import { initUI } from './modules/ui';
 import { initBatteryManager } from './modules/performance';
-// @ts-ignore
 import { registerSW } from 'virtual:pwa-register';
 
 // Enregistrement du Service Worker pour le mode Hors-ligne (PWA)

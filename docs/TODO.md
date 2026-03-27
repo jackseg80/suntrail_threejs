@@ -1,4 +1,4 @@
-# SunTrail 3D - Roadmap Révisée (v5.10.0)
+# SunTrail 3D - Roadmap Révisée (v5.11.0)
 
 ## 🚀 Priorité 1 : Optimisations & Netteté (v5.6) - ✅ TERMINÉ
 *Impact : Fluidité mobile absolue et rendu topographique pro.*
@@ -99,53 +99,69 @@
 
 ---
 
-## 🏁 Priorité 4-bis : Audit Production & Google Play Store (v5.10-RC)
-*Objectif : Version déployable sur Google Play Store. À faire APRÈS les 4 sprints de v5.10.*
+## 🚀 Priorité 5 : Publication Google Play Store (v5.11) — EN COURS
 
-### A. Android / Build Release
-- [ ] **targetSdk 35** : Mettre à jour `build.gradle` (actuellement 36, vérifier compatibilité Capacitor 8.2 ✅).
-- [ ] **Support 16 KB page size** : Activer `android.zipAlign.16KB=true` dans `gradle.properties` (obligatoire depuis Nov 2025 pour Android 15+).
-- [ ] **Keystore Release** : Générer `suntrail.keystore`, sécuriser hors Git, configurer `signingConfigs.release` dans `build.gradle`.
-- [ ] **R8/ProGuard** : Activer `minifyEnabled true` + `shrinkResources true` en release, écrire `proguard-rules.pro` pour Capacitor.
-- [ ] **AAB Build** : Valider `./gradlew bundleRelease` — Play Store n'accepte pas d'APK.
-- [ ] **versionCode/versionName** : Bumper à `versionCode: 510`, `versionName: "5.10.0"`.
-- [ ] **Edge-to-Edge** : targetSdk 35 force le mode edge-to-edge Android — vérifier l'UI (bottom nav, status bar).
+> 🔁 **Workflow** : Chaque sprint se termine par `npm test` (145/145) + `npm run check` (0 erreurs) avant commit.
 
-### B. Légal & Play Console
-- [ ] **Privacy Policy** : Créer page (GitHub Pages ou domaine) détaillant collecte GPS, export GPX, APIs tierces (MapTiler, SwissTopo, IGN, OSM), pas de serveur SunTrail.
-- [ ] **Section Data Safety** : Remplir dans Play Console — localisation précise (foreground), pas de partage tiers, données sur appareil uniquement.
-- [ ] **Content Rating (IARC)** : Questionnaire Play Console — cible "Tout public".
-- [ ] **Vérification identité développeur** : Biométrique (particulier) ou D-U-N-S (entreprise) — délai jusqu'à 30 jours, à lancer en avance.
-- [ ] **Prominent Disclosure Localisation** : Modale explicative AVANT la demande de permission GPS (obligatoire Play Store).
+### Sprint 0 — Prérequis ✅ TERMINÉ
+- [x] **Version bump** : `package.json` → `5.11.0`, `versionCode: 511`, `versionName: "5.11.0"`.
+- [x] **Play Console** : Compte développeur créé, vérification identité complétée.
 
-### C. Audit Performances
-- [ ] **Lighthouse** : Score ≥ 90 Performance, ≥ 90 Accessibility, ≥ 90 Best Practices — sur build de production.
-- [ ] **Core Web Vitals** : LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1.
-- [ ] **Memory Leak Audit** : Profiler Android Studio sur 1h de navigation — vérifier `disposeObject()` exhaustivité.
-- [ ] **Battery Test** : 1h d'utilisation continue preset Balanced — mesurer drain batterie.
-- [ ] **Content Security Policy** : Ajouter header CSP dans `index.html` (actuellement absent).
+### Sprint 1 — Android Release Build ✅ TERMINÉ
+- [x] **Keystore** : `signingConfigs.release` via `keystore.properties` (hors Git). Template fourni.
+- [x] **R8/ProGuard** : `minifyEnabled true` + `shrinkResources true` + règles Capacitor/WebView.
+- [x] **16 KB page size** : `android.zipAlign.16KB=true` dans `gradle.properties`.
+- [x] **Edge-to-Edge** : `enableOnBackInvokedCallback`, barres système transparentes, `windowLayoutInDisplayCutoutMode=shortEdges`.
+- [x] **Fix Vitest 4** : `poolOptions` supprimé → `singleFork: true` au niveau `test`.
 
-### D. Audit Accessibilité
-- [ ] **TalkBack** : Navigation complète de l'app avec TalkBack activé — tous les éléments interactifs annoncés.
+### Sprint 2 — Sécurité & Code ✅ TERMINÉ
+- [x] **npm audit** : 2 critiques → 0, 13 high prod → 0. Overrides jsdom/qs/tough-cookie. Upgrade vitest 4.1.2.
+- [x] **@ts-ignore** : 7 suppressions remplacées par déclarations de types propres (`vite-env.d.ts`, `global.d.ts`, `gpxparser.d.ts`).
+- [x] **CSP header** : `<meta http-equiv="Content-Security-Policy">` dans `index.html` — tous les domaines cartographiques whitelistés.
+- [x] **Service Worker** : `skipWaiting`, `clientsClaim`, `cleanupOutdatedCaches`, caches versionnés `v5.11`.
+- [x] **state.MK** : Suppression du `console.log` qui loggait l'URL avec la clé API MapTiler (`utils.ts`).
+
+### Sprint 2.5 — Navigation Tactile Google Earth ✅ TERMINÉ
+- [x] **`touchControls.ts`** : Module autonome PointerEvents. Désactive `controls.enabled` pendant le touch.
+- [x] **1 doigt** : Pan horizontal avec inertie (`INERTIA = 0.88`).
+- [x] **2 doigts centre-X** : Pan horizontal.
+- [x] **2 doigts centre-Y** : Tilt (inclinaison phi via `THREE.Spherical`).
+- [x] **2 doigts spread** : Zoom (pinch).
+- [x] **2 doigts angle** : Rotation azimut (tire-bouchon).
+- [x] **Paramètres** : `PAN_SPEED = 1.8`, `TILT_SPEED = 1.2`, `INERTIA = 0.88`, `ROT_DEADZONE = 0.003`.
+
+### Sprint 3 — Accessibilité & UX Légale
+- [ ] **Prominent Disclosure GPS** : Modale explicative AVANT la demande de permission GPS (obligatoire Play Store).
+- [ ] **TalkBack** : Navigation complète avec TalkBack activé — tous les éléments interactifs annoncés.
 - [ ] **Touch Targets** : Vérifier que tous les boutons font ≥ 48×48dp (Accessibility Scanner Google).
 - [ ] **Contrastes** : Ratio ≥ 4.5:1 sur tous les textes — vérifier glassmorphism + texte blanc.
 - [ ] **axe-core** : Intégrer dans les tests Vitest pour audit a11y automatisé.
 
-### E. Audit Code & Sécurité
-- [ ] **`npm run check`** : 0 erreur TypeScript strict — résoudre tous les `@ts-ignore` résiduels.
-- [ ] **Dépendances obsolètes** : `npm audit` — résoudre vulnerabilités critiques/hautes.
-- [ ] **gpxParser** : Vérifier maintenance active (actuellement `@ts-ignore` sur l'import) — évaluer remplacement si abandonné.
-- [ ] **API Keys** : Confirmer que `state.MK` n'est jamais loggué/exporté dans les builds release.
-- [ ] **Service Worker** : Audit de la stratégie de cache Workbox — invalider le cache proprement lors de mise à jour de version.
+### Sprint 4 — Audit Performance
+- [ ] **Lighthouse** : Score ≥ 90 Performance, ≥ 90 Accessibility, ≥ 90 Best Practices — build production.
+- [ ] **Core Web Vitals** : LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1.
+- [ ] **Memory Leak Audit** : Android Studio Profiler sur 1h de navigation.
+- [ ] **Battery Test** : 1h utilisation continue preset Balanced.
 
-### F. Play Store Listing
-- [ ] **Closed Testing (14 jours)** : Créer track Closed Testing avec ≥ 20 testeurs — obligatoire pour nouveaux développeurs.
-- [ ] **Screenshots** : Préparer captures pour tous les form factors (phone portrait, tablet).
+### Sprint 5 — Légal & Play Store Listing
+- [ ] **Privacy Policy** : `public/privacy.html` → `https://jackseg80.github.io/suntrail_threejs/privacy.html`.
+- [ ] **Data Safety** : Remplir dans Play Console.
+- [ ] **Content Rating (IARC)** : Questionnaire Play Console — cible "Tout public".
+- [ ] **Screenshots** : Phone portrait + tablet pour tous les form factors.
 - [ ] **Feature Graphic** : Visuel 1024×500px.
-- [ ] **Descriptions** : Courte (80 cars max) + longue optimisée SEO, en FR + EN minimum.
-- [ ] **CI/CD** : Configurer GitHub Actions pour build AAB automatique sur chaque tag de release.
+- [ ] **Descriptions** : Courte (80 cars max) + longue SEO, FR + EN.
 
-## 🔗 Priorité 5 : Intégrations Plateformes Sport (v5.11)
+### Sprint 6 — Build AAB + CI/CD + Closed Testing
+- [ ] **Keystore** : Générer `suntrail.keystore` + remplir `android/keystore.properties`.
+- [ ] **AAB Build** : `./gradlew bundleRelease` → exit code 0.
+- [ ] **Test device** : Edge-to-edge, navigation tactile, performance sur appareil physique.
+- [ ] **GitHub Actions** : `.github/workflows/release.yml` — build AAB automatique sur tag.
+- [ ] **Closed Testing** : Track ≥ 20 testeurs, 14 jours (obligatoire nouveaux développeurs).
+- [ ] **Production** : Passage en Open Testing puis Production.
+
+---
+
+## 🔗 Priorité 6 : Intégrations Plateformes Sport (v6.0)
 *Impact : Import naturel des tracés depuis les outils que les randonneurs utilisent déjà.*
 
 - [ ] **Strava** : Import des activités via OAuth + API Strava. Synchronisation automatique des nouveaux tracés.
@@ -154,7 +170,7 @@
 - [ ] **Suunto / Polar / Apple Health** : Évaluer la faisabilité et la priorité selon l'audience cible.
 - [ ] **Format FIT natif** : Lecture directe des fichiers `.fit` (Garmin) en plus du GPX.
 
-## 📊 Priorité 6 : Analyse Données Sport Avancée (v6.x — à définir ensemble)
+## 📊 Priorité 7 : Analyse Données Sport Avancée (v6.x — à définir ensemble)
 *Impact : Transformer SunTrail en outil d'analyse de performance, pas seulement de visualisation.*
 
 > ⚠️ **À co-concevoir** : Le périmètre exact est à affiner ensemble avant implémentation.
@@ -165,7 +181,7 @@
 - [ ] **Analyse Post-Effort** : Dashboard récapitulatif par segment (VAM, dénivelé/bpm, zones d'effort).
 - [ ] **À définir ensemble** : Format des données entrantes, profondeur de l'analyse, UX de visualisation.
 
-## 🚀 Priorité 7 : La Révolution AR (v6.0)
+## 🚀 Priorité 8 : La Révolution AR (v6.0)
 *Impact : Immersion totale et aide à l'orientation futuriste.*
 
 - [ ] **Moteur AR Natif** : Superposition du moteur 3D sur le flux caméra via Capacitor.

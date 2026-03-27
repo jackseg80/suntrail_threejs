@@ -5,7 +5,7 @@ import { tileWorkerManager } from './workerManager';
 import { disposeAllCachedTiles } from './tileCache';
 import * as pmtiles from 'pmtiles';
 
-export const CACHE_NAME = 'suntrail-tiles-v1';
+export const CACHE_NAME = 'suntrail-tiles-v5.11';
 
 // --- PMTILES SUPPORT (v5.7.0) ---
 let localPMTiles: pmtiles.PMTiles | null = null;
@@ -19,7 +19,6 @@ export async function setPMTilesSource(urlOrFile: string | File) {
         let archive;
         if (urlOrFile instanceof File) {
             // Lecture locale via File API (zéro réseau)
-            // @ts-ignore - L'interface pmtiles peut exiger un type spécifique, mais File/Blob fonctionnent généralement ou on peut faire un FileSource
             archive = new pmtiles.PMTiles(new pmtiles.FileSource(urlOrFile));
         } else {
             // Lecture distante via HTTP Range requests

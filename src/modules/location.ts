@@ -13,7 +13,6 @@ let watchId: string | null = null;
  */
 function initOrientationTracking() {
     const handleOrientation = (event: DeviceOrientationEvent) => {
-        // @ts-ignore
         let rawHeading = event.webkitCompassHeading || event.alpha;
         if (event.absolute && event.alpha !== null) rawHeading = 360 - event.alpha;
         

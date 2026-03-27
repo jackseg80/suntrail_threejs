@@ -104,7 +104,6 @@ export class SettingsSheet extends BaseComponent {
         pmtilesUpload?.addEventListener('change', async (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
-                // @ts-ignore
                 const { setPMTilesSource } = await import('../../tileLoader');
                 await setPMTilesSource(file);
                 this.refreshTerrain();

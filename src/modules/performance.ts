@@ -161,7 +161,6 @@ export function applyCustomSettings(settings: any): void {
  */
 export function initBatteryManager(): void {
     if ('getBattery' in navigator) {
-        // @ts-ignore
         navigator.getBattery().then(battery => {
             const checkBattery = () => {
                 if (battery.level < 0.20 && state.PERFORMANCE_PRESET !== 'eco') {

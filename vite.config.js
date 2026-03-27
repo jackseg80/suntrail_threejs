@@ -12,12 +12,17 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,bin}'],
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB limit pour le WebAssembly ou gros assets
+        // Invalidation automatique du cache précache au déploiement
+        cleanupOutdatedCaches: true,
+        // Prise de contrôle immédiate des clients après mise à jour
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/api\.maptiler\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'maptiler-cache',
+              cacheName: 'maptiler-cache-v5.11',
               expiration: {
                 maxEntries: 1000,
                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 jours
@@ -31,7 +36,7 @@ export default defineConfig({
             urlPattern: /^https:\/\/wmts\.geo\.admin\.ch\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'swisstopo-cache',
+              cacheName: 'swisstopo-cache-v5.11',
               expiration: {
                 maxEntries: 1000,
                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 jours
@@ -69,10 +74,6 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     // On désactive les threads pour éviter les corruptions de mémoire en CI
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: true
-      }
-    }
+    singleFork: true
   }
 });

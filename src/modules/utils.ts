@@ -150,8 +150,6 @@ export async function fetchGeocoding(params: { lat?: number, lon?: number, query
         osmUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(params.query)}&limit=10`;
     }
 
-    console.log("[Geocoding] URLs:", { maptilerUrl, osmUrl });
-
     // 1. Tenter MapTiler (si pas déjà banni)
     if (!state.isMapTilerDisabled && key) {
         try {

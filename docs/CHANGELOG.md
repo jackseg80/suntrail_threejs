@@ -4,6 +4,38 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.11.0-wip] - 2026-03-27
+### 🚀 Audit Production Play Store + Navigation Tactile Google Earth
+
+#### Sprint 0 — Prérequis
+- **Version bump** : `package.json` → `5.11.0`, `versionCode: 511 / "5.11.0"` dans `android/app/build.gradle`.
+- **Play Console** : Compte développeur créé, vérification identité complétée.
+
+#### Sprint 1 — Android Release Build
+- **signingConfigs.release** : Chargement via `keystore.properties` (hors Git). Template `android/keystore.properties.template` fourni.
+- **R8/ProGuard** : `minifyEnabled true` + `shrinkResources true`. `proguard-rules.pro` complété avec règles Capacitor, WebView JS Interface, AndroidX, stack traces.
+- **16 KB page size** : `android.zipAlign.16KB=true` dans `gradle.properties` (Android 15+).
+- **Edge-to-Edge** : `android:enableOnBackInvokedCallback="true"`, barres système transparentes, `windowLayoutInDisplayCutoutMode=shortEdges` dans `styles.xml`.
+- **Fix Vitest 4** : `poolOptions.forks.singleFork` → `singleFork: true` (warning de dépréciation supprimé).
+
+#### Sprint 2 — Sécurité & Code
+- **npm audit** : 2 critiques → 0, 13 high production → 0. Overrides `jsdom ^25`, `qs ^6.14.1`, `tough-cookie ^4.1.3`. Upgrade vitest → 4.1.2 (fix `flatted` HIGH).
+- **7 `@ts-ignore` supprimés** : Remplacés par `src/vite-env.d.ts` (virtual:pwa-register), `src/types/global.d.ts` (Battery API, webkitCompassHeading), `src/types/gpxparser.d.ts` (types complets gpxparser). Suppressions spurieuses retirées (Stats, pmtiles.FileSource, import dynamique).
+- **CSP header** : `<meta http-equiv="Content-Security-Policy">` complet dans `index.html`. Whitelist : MapTiler, SwissTopo, IGN/geopf.fr, OpenStreetMap, Overpass (domaine racine + sous-domaines), overpass.kumi.systems, open-meteo.com, cloud.maptiler.com (img-src).
+- **Service Worker** : `skipWaiting`, `clientsClaim`, `cleanupOutdatedCaches`. Noms de caches versionnés `maptiler-cache-v5.11`, `swisstopo-cache-v5.11`, `CACHE_NAME = suntrail-tiles-v5.11`.
+- **Fuite clé API** : Suppression du `console.log("[Geocoding] URLs:", ...)` dans `utils.ts` qui loggait l'URL complète incluant `state.MK`.
+
+#### Sprint 2.5 — Navigation Tactile Google Earth
+- **`src/modules/touchControls.ts`** : Module autonome 190 lignes. Intercepte `pointerdown` en phase CAPTURE (avant OrbitControls), désactive `controls.enabled = false`, réactive à la fin.
+- **Diagnostic racine** : Three.js r160 OrbitControls utilise PointerEvents exclusivement. Les tentatives précédentes (TouchEvents) étaient inopérantes.
+- **1 doigt** : Pan horizontal avec inertie (`INERTIA = 0.88`) — glissement après lâcher.
+- **2 doigts** : Pinch = zoom · twist = rotation azimut · centre-X = pan · centre-Y = tilt (inclinaison via `THREE.Spherical.phi`).
+- **Vitesse** : `PAN_SPEED = 1.8` (+ rapide qu'OrbitControls par défaut pour compenser l'absence d'inertie initiale).
+- **Paramètres** : `PAN_SPEED`, `TILT_SPEED`, `INERTIA`, `ROT_DEADZONE` ajustables en tête de fichier.
+- **`scene.ts`** : `initTouchControls()` branché après OrbitControls init. `disposeTouchControls()` dans `disposeScene()`.
+
+---
+
 ## [5.10.0] - 2026-03-27
 ### 🌐 Multi-GPX, i18n FR/DE/IT/EN, Dashboard VRAM — Validé utilisateur
 

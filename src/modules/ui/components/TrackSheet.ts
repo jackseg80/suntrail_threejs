@@ -5,7 +5,6 @@ import { startLocationTracking } from '../../location';
 import { sheetManager } from '../core/SheetManager';
 import { haptic } from '../../haptics';
 import { i18n } from '../../../i18n/I18nService';
-// @ts-ignore
 import gpxParser from 'gpxparser';
 import { updateVisibleTiles, addGPXLayer, removeGPXLayer, toggleGPXLayer, updateRecordedTrackMesh } from '../../terrain';
 import { lngLatToTile, lngLatToWorld } from '../../geo';

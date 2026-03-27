@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
-// @ts-ignore
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { state } from './state';
 import { eventBus } from './eventBus';
@@ -16,13 +15,18 @@ import { initVegetationResources } from './vegetation';
 import { initWeatherSystem, updateWeatherSystem, fetchWeather } from './weather';
 import { initCompass, disposeCompass, renderCompass, updateCompassAnimation, isCompassAnimating } from './compass';
 import { centerOnUser } from './location';
+import { initTouchControls, disposeTouchControls } from './touchControls';
 
 export async function disposeScene(): Promise<void> {
     resetTerrain();
     disposeAllCachedTiles();
     disposeAllGeometries();
     resetAnalysisCache();
-    if (state.renderer) { state.renderer.setAnimationLoop(null); state.renderer.dispose(); }
+    if (state.renderer) {
+        disposeTouchControls(state.renderer.domElement);
+        state.renderer.setAnimationLoop(null);
+        state.renderer.dispose();
+    }
     disposeCompass();
     if (state.scene) state.scene.clear();
     window.removeEventListener('resize', onWindowResize);
@@ -148,8 +152,17 @@ export async function initScene(): Promise<void> {
     
     controls.screenSpacePanning = false; 
     controls.enableRotate = true;
-    controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
+    // Touch entièrement géré par touchControls.ts (capture phase) — pas de config ici
     controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+
+    // Gestes tactiles Google Earth : 1 doigt = pan, 2 doigts = pinch/twist/pan
+    initTouchControls(
+        state.camera,
+        controls,
+        state.renderer.domElement,
+        () => { state.isUserInteracting = true; },
+        () => { state.isUserInteracting = false; }
+    );
 
     let lastRecenterTime = 0;
     const throttledUpdate = throttle(() => {

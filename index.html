@@ -3,6 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval';
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src 'self' https://fonts.gstatic.com;
+        img-src 'self' data: blob:
+            https://cloud.maptiler.com;
+        connect-src 'self'
+            https://*.maptiler.com
+            https://*.geo.admin.ch
+            https://*.geopf.fr
+            https://*.openstreetmap.org
+            https://overpass-api.de
+            https://*.overpass-api.de
+            https://overpass.kumi.systems
+            https://api.open-meteo.com
+            https://*.tile.opentopomap.org;
+        worker-src 'self' blob:;
+        media-src 'none';
+        object-src 'none';
+    ">
     <title>SunTrail - Moteur Three.js</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/style.css">
@@ -11,7 +32,7 @@
 
 <div id="setup-screen">
     <div class="setup-card">
-        <div style="margin-bottom:8px; font-size:10px; color:var(--gold); font-weight:700; letter-spacing:3px; text-transform:uppercase;">Version 5.8.2</div>
+        <div style="margin-bottom:8px; font-size:10px; color:var(--gold); font-weight:700; letter-spacing:3px; text-transform:uppercase;">Version 5.11.0</div>
         <h1>⛰️ SunTrail 3D</h1>
         <p style="color:var(--text-2);">Visualisation topographique haute précision, simulation solaire en temps réel & météo experte.</p>
         
