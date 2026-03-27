@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SunTrail 3D — Politique de confidentialité / Privacy Policy</title>
+  <style>
+    :root {
+      --bg: #06070b;
+      --surface: #0f111a;
+      --border: rgba(255,255,255,0.08);
+      --text-1: #f0f4ff;
+      --text-2: rgba(255,255,255,0.65);
+      --accent: #4a8ef8;
+      --gold: #f59e0b;
+      --green: #22c55e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text-1);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 24px 20px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .header .subtitle {
+      color: var(--text-2);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .lang-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .lang-btn {
+      padding: 7px 22px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-2);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .lang-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+    .content {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 36px 24px 64px;
+    }
+    .lang-section { display: none; }
+    .lang-section.active { display: block; }
+
+    h2 {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--gold);
+      margin: 36px 0 12px;
+    }
+    h2:first-child { margin-top: 0; }
+    p { color: var(--text-2); margin-bottom: 12px; }
+    p:last-child { margin-bottom: 0; }
+    ul {
+      color: var(--text-2);
+      padding-left: 20px;
+      margin-bottom: 12px;
+    }
+    li { margin-bottom: 6px; }
+    strong { color: var(--text-1); }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin: 16px 0;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-green { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+    .badge-blue  { background: rgba(74,142,248,0.15); color: var(--accent); border: 1px solid rgba(74,142,248,0.3); }
+    .data-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+    .data-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-2);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table td {
+      padding: 10px 12px;
+      color: var(--text-2);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 14px;
+      vertical-align: top;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .date {
+      text-align: center;
+      color: var(--text-2);
+      font-size: 12px;
+      margin-top: 48px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⛰️ SunTrail 3D</h1>
+  <div class="subtitle">Politique de confidentialité · Privacy Policy</div>
+  <div class="lang-tabs">
+    <button class="lang-btn active" onclick="setLang('fr')">Français</button>
+    <button class="lang-btn" onclick="setLang('en')">English</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ FRANÇAIS -->
+<div class="content">
+<div id="section-fr" class="lang-section active">
+
+  <h2>Résumé</h2>
+  <div class="card">
+    <p><span class="badge badge-green">En bref</span></p>
+    <p style="margin-top:10px;">SunTrail 3D ne collecte, ne stocke et ne transmet <strong>aucune donnée personnelle</strong> sur ses propres serveurs. L'application fonctionne entièrement sur votre appareil. Votre vie privée est intégralement respectée.</p>
+  </div>
+
+  <h2>1. Données traitées localement sur votre appareil</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Donnée</th>
+        <th>Usage</th>
+        <th>Stockage</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Position GPS</strong></td>
+        <td>Centrage de la carte et enregistrement de tracés (uniquement quand l'app est ouverte)</td>
+        <td>Sur l'appareil uniquement (localStorage / Service Android)</td>
+      </tr>
+      <tr>
+        <td><strong>Tracés GPX</strong></td>
+        <td>Affichage 3D et profil d'élévation de vos randonnées</td>
+        <td>Sur l'appareil — exportés uniquement si vous le demandez</td>
+      </tr>
+      <tr>
+        <td><strong>Clé API MapTiler</strong></td>
+        <td>Chargement des fonds de carte depuis MapTiler Cloud</td>
+        <td>Dans le localStorage de l'appareil — jamais transmise à SunTrail</td>
+      </tr>
+      <tr>
+        <td><strong>Préférences</strong></td>
+        <td>Langue, profil de performance, source de carte</td>
+        <td>Dans le localStorage de l'appareil</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2. Données non collectées</h2>
+  <p>SunTrail 3D ne collecte <strong>pas</strong> :</p>
+  <ul>
+    <li>Nom, prénom, adresse e-mail ou toute identité personnelle</li>
+    <li>Historique de navigation ou de localisation transmis à des tiers</li>
+    <li>Données de santé, biométriques ou sensibles</li>
+    <li>Identifiants publicitaires</li>
+    <li>Statistiques d'utilisation ou analytics</li>
+  </ul>
+  <p>Il n'existe <strong>aucun compte utilisateur</strong>, aucune inscription, aucune connexion.</p>
+
+  <h2>3. Services tiers</h2>
+  <p>L'application effectue des requêtes réseau vers les services cartographiques suivants pour charger les tuiles de cartes. Ces serveurs reçoivent votre <strong>adresse IP</strong> (comportement standard de tout navigateur web) :</p>
+  <table class="data-table">
+    <thead>
+      <tr><th>Service</th><th>Usage</th><th>Politique de confidentialité</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>MapTiler Cloud</strong></td>
+        <td>Fonds de carte raster et vectoriels</td>
+        <td><a href="https://www.maptiler.com/privacy-policy/" target="_blank" rel="noopener">maptiler.com/privacy-policy</a></td>
+      </tr>
+      <tr>
+        <td><strong>SwissTopo / geo.admin.ch</strong></td>
+        <td>Données topographiques suisses officielles</td>
+        <td><a href="https://www.geo.admin.ch/fr/geo-services/geo-services/termes-et-conditions.html" target="_blank" rel="noopener">geo.admin.ch</a></td>
+      </tr>
+      <tr>
+        <td><strong>Géoplateforme IGN France</strong></td>
+        <td>Données topographiques françaises officielles</td>
+        <td><a href="https://geoservices.ign.fr/cgu-geoservices" target="_blank" rel="noopener">geoservices.ign.fr</a></td>
+      </tr>
+      <tr>
+        <td><strong>OpenStreetMap</strong></td>
+        <td>Fond de carte alternatif</td>
+        <td><a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">osmfoundation.org</a></td>
+      </tr>
+      <tr>
+        <td><strong>Open-Meteo</strong></td>
+        <td>Données météorologiques en temps réel</td>
+        <td><a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">open-meteo.com/en/terms</a></td>
+      </tr>
+      <tr>
+        <td><strong>Overpass API (OSM)</strong></td>
+        <td>Données de bâtiments 3D</td>
+        <td><a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">osmfoundation.org</a></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>SunTrail ne partage aucune donnée personnelle avec ces services. Vos tracés GPX et votre position GPS ne leur sont jamais transmis.</p>
+
+  <h2>4. Données de localisation — déclaration explicite</h2>
+  <div class="card">
+    <p>SunTrail 3D utilise votre position GPS <strong>uniquement au premier plan</strong> (foreground), pendant que l'application est visible à l'écran.</p>
+    <ul style="margin-top:10px;">
+      <li>La localisation sert exclusivement à centrer la carte sur votre position et à enregistrer vos tracés de randonnée.</li>
+      <li>Votre position n'est <strong>jamais transmise</strong> à un serveur SunTrail ni à des tiers.</li>
+      <li>L'enregistrement GPS s'arrête dès que vous arrêtez l'enregistrement ou fermez l'application.</li>
+      <li>Le service Android de premier plan (Foreground Service) vous notifie visiblement lors de l'enregistrement actif.</li>
+    </ul>
+  </div>
+
+  <h2>5. Stockage et sécurité</h2>
+  <p>Toutes les données (préférences, tracés GPX, clé API) sont stockées dans le <strong>localStorage</strong> de votre appareil ou dans la mémoire interne de l'application Android. Elles ne quittent jamais votre appareil sauf action explicite de votre part (export GPX).</p>
+  <p>Les communications réseau vers les services tiers utilisent exclusivement le protocole <strong>HTTPS</strong>.</p>
+
+  <h2>6. Vos droits (RGPD / LPD)</h2>
+  <p>Conformément au Règlement Général sur la Protection des Données (RGPD) et à la Loi fédérale suisse sur la Protection des Données (LPD), vous disposez des droits suivants :</p>
+  <ul>
+    <li><strong>Droit d'accès et de suppression</strong> : toutes vos données étant stockées localement sur votre appareil, vous pouvez les supprimer à tout moment via les paramètres de l'application ou en désinstallant l'app.</li>
+    <li><strong>Droit d'opposition</strong> : vous pouvez désactiver le GPS à tout moment via les paramètres Android.</li>
+  </ul>
+  <p>Étant donné qu'aucune donnée personnelle n'est transmise à SunTrail, il n'est pas possible de soumettre une demande d'accès ou de suppression auprès du développeur — il n'y a tout simplement rien à supprimer de notre côté.</p>
+
+  <h2>7. Enfants</h2>
+  <p>SunTrail 3D ne collecte pas sciemment de données provenant d'enfants de moins de 13 ans. L'application ne requiert aucune inscription ni saisie de données personnelles.</p>
+
+  <h2>8. Modifications de cette politique</h2>
+  <p>Cette politique peut être mise à jour pour refléter des changements dans l'application ou les obligations légales. La date de dernière modification est indiquée en bas de page. En cas de changement significatif, une notification sera affichée dans l'application.</p>
+
+  <h2>9. Contact</h2>
+  <p>Pour toute question relative à cette politique de confidentialité :</p>
+  <p><strong>Développeur</strong> : Jacques Segalla<br>
+  <strong>GitHub</strong> : <a href="https://github.com/jackseg80/suntrail_threejs" target="_blank" rel="noopener">github.com/jackseg80/suntrail_threejs</a></p>
+
+  <div class="date">Dernière mise à jour : mars 2026</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ ENGLISH -->
+<div id="section-en" class="lang-section">
+
+  <h2>Summary</h2>
+  <div class="card">
+    <p><span class="badge badge-green">In short</span></p>
+    <p style="margin-top:10px;">SunTrail 3D does <strong>not collect, store, or transmit any personal data</strong> to its own servers. The application runs entirely on your device. Your privacy is fully respected.</p>
+  </div>
+
+  <h2>1. Data processed locally on your device</h2>
+  <table class="data-table">
+    <thead>
+      <tr><th>Data</th><th>Purpose</th><th>Storage</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>GPS location</strong></td>
+        <td>Centering the map and recording tracks (only while the app is open)</td>
+        <td>On device only (localStorage / Android Service)</td>
+      </tr>
+      <tr>
+        <td><strong>GPX tracks</strong></td>
+        <td>3D display and elevation profile of your hikes</td>
+        <td>On device — exported only upon your explicit request</td>
+      </tr>
+      <tr>
+        <td><strong>MapTiler API key</strong></td>
+        <td>Loading map tiles from MapTiler Cloud</td>
+        <td>In device localStorage — never transmitted to SunTrail</td>
+      </tr>
+      <tr>
+        <td><strong>Preferences</strong></td>
+        <td>Language, performance profile, map source</td>
+        <td>In device localStorage</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2. Data not collected</h2>
+  <p>SunTrail 3D does <strong>not</strong> collect:</p>
+  <ul>
+    <li>Name, email address, or any personal identity</li>
+    <li>Location or browsing history transmitted to third parties</li>
+    <li>Health, biometric, or sensitive data</li>
+    <li>Advertising identifiers</li>
+    <li>Usage statistics or analytics</li>
+  </ul>
+  <p>There are <strong>no user accounts</strong>, no registration, and no login.</p>
+
+  <h2>3. Third-party services</h2>
+  <p>The application makes network requests to the following mapping services to load map tiles. These servers receive your <strong>IP address</strong> (standard behavior of any web browser):</p>
+  <table class="data-table">
+    <thead>
+      <tr><th>Service</th><th>Purpose</th><th>Privacy Policy</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>MapTiler Cloud</strong></td>
+        <td>Raster and vector map tiles</td>
+        <td><a href="https://www.maptiler.com/privacy-policy/" target="_blank" rel="noopener">maptiler.com/privacy-policy</a></td>
+      </tr>
+      <tr>
+        <td><strong>SwissTopo / geo.admin.ch</strong></td>
+        <td>Official Swiss topographic data</td>
+        <td><a href="https://www.geo.admin.ch/en/geo-services/geo-services/terms-and-conditions.html" target="_blank" rel="noopener">geo.admin.ch</a></td>
+      </tr>
+      <tr>
+        <td><strong>IGN France / Géoplateforme</strong></td>
+        <td>Official French topographic data</td>
+        <td><a href="https://geoservices.ign.fr/cgu-geoservices" target="_blank" rel="noopener">geoservices.ign.fr</a></td>
+      </tr>
+      <tr>
+        <td><strong>OpenStreetMap</strong></td>
+        <td>Alternative map background</td>
+        <td><a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">osmfoundation.org</a></td>
+      </tr>
+      <tr>
+        <td><strong>Open-Meteo</strong></td>
+        <td>Real-time weather data</td>
+        <td><a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">open-meteo.com/en/terms</a></td>
+      </tr>
+      <tr>
+        <td><strong>Overpass API (OSM)</strong></td>
+        <td>3D building data</td>
+        <td><a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">osmfoundation.org</a></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>SunTrail shares no personal data with these services. Your GPX tracks and GPS location are never transmitted to them.</p>
+
+  <h2>4. Location data — explicit disclosure</h2>
+  <div class="card">
+    <p>SunTrail 3D uses your GPS location <strong>in the foreground only</strong>, while the application is visible on screen.</p>
+    <ul style="margin-top:10px;">
+      <li>Location is used exclusively to center the map on your position and to record hiking tracks.</li>
+      <li>Your location is <strong>never transmitted</strong> to any SunTrail server or third party.</li>
+      <li>GPS recording stops as soon as you stop recording or close the application.</li>
+      <li>The Android foreground service visibly notifies you during active recording.</li>
+    </ul>
+  </div>
+
+  <h2>5. Storage and security</h2>
+  <p>All data (preferences, GPX tracks, API key) is stored in your device's <strong>localStorage</strong> or internal app storage. It never leaves your device except upon your explicit action (GPX export).</p>
+  <p>All network communications with third-party services use <strong>HTTPS</strong> exclusively.</p>
+
+  <h2>6. Your rights (GDPR / Swiss DPA)</h2>
+  <p>In accordance with the General Data Protection Regulation (GDPR) and the Swiss Federal Act on Data Protection (FADP), you have the following rights:</p>
+  <ul>
+    <li><strong>Right of access and deletion</strong>: since all your data is stored locally on your device, you can delete it at any time through the app settings or by uninstalling the app.</li>
+    <li><strong>Right to object</strong>: you can disable GPS at any time through Android settings.</li>
+  </ul>
+  <p>Since no personal data is transmitted to SunTrail, it is not possible to submit an access or deletion request to the developer — there is simply nothing to delete on our end.</p>
+
+  <h2>7. Children</h2>
+  <p>SunTrail 3D does not knowingly collect data from children under the age of 13. The application requires no registration or input of personal data.</p>
+
+  <h2>8. Changes to this policy</h2>
+  <p>This policy may be updated to reflect changes in the application or legal requirements. The last modification date is shown at the bottom of this page. In case of significant changes, a notification will be displayed in the application.</p>
+
+  <h2>9. Contact</h2>
+  <p>For any questions regarding this privacy policy:</p>
+  <p><strong>Developer</strong>: Jacques Segalla<br>
+  <strong>GitHub</strong>: <a href="https://github.com/jackseg80/suntrail_threejs" target="_blank" rel="noopener">github.com/jackseg80/suntrail_threejs</a></p>
+
+  <div class="date">Last updated: March 2026</div>
+</div>
+</div><!-- /content -->
+
+<script>
+  function setLang(lang) {
+    document.querySelectorAll('.lang-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('section-' + lang).classList.add('active');
+    document.querySelector('[onclick="setLang(\'' + lang + '\')"]').classList.add('active');
+    document.documentElement.lang = lang;
+  }
+</script>
+</body>
+</html>

@@ -151,8 +151,8 @@
   - Fixes : `role="listbox"` sur layer-grid (sélecteur JS cassé), `aria-label` sur geo-results, contraste btn-go #1555e0 (5.6:1), `.vram-label` 75% opacité (12:1), H3→H2 dans SettingsSheet.
   - Thumbnails MapTiler téléchargées localement (`public/img/maps/`) → cookie tiers supprimé.
 - [x] **Core Web Vitals** : LCP **84ms** ✅ (≤2.5s), CLS **0.03** ✅ (≤0.1), INP N/A (pas d'interaction).
-- [ ] **Memory Leak Audit** : 📱 **À FAIRE — côté utilisateur** — voir instructions ci-dessous.
-- [ ] **Battery Test** : 📱 **À FAIRE — côté utilisateur** — voir instructions ci-dessous.
+- [ ] **Memory Leak Audit** : 📱 À faire demain — ADB Wi-Fi + Android Studio Profiler OU Paramètres→Apps→Mémoire avant/après 30min.
+- [ ] **Battery Test** : 📱 À faire demain — sans câble, 1h marche preset Balanced GPS actif, noter % avant/après. Cible ≤ 15%/h.
 
 > ### 📱 Instructions Memory Leak Audit (toi)
 > 1. Connecte ton téléphone Android en USB, active le débogage USB.
@@ -169,7 +169,7 @@
 > 4. Ou simplement noter le % de batterie avant/après. **Objectif** : ≤ 15% de drain/heure.
 
 ### Sprint 5 — Légal & Play Store Listing
-- [ ] **Privacy Policy** : `public/privacy.html` → `https://jackseg80.github.io/suntrail_threejs/privacy.html`.
+- [x] **Privacy Policy** : `public/privacy.html` → `https://jackseg80.github.io/suntrail_threejs/privacy.html` — bilingue FR/EN, RGPD + LPD suisse, Play Store compliant.
 - [ ] **Data Safety** : Remplir dans Play Console.
 - [ ] **Content Rating (IARC)** : Questionnaire Play Console — cible "Tout public".
 - [ ] **Screenshots** : Phone portrait + tablet pour tous les form factors.
