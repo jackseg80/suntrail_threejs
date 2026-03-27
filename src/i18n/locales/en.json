@@ -16,8 +16,8 @@
     "btn": {
       "rec": "REC",
       "stop": "STOP",
-      "import": "Import GPX",
-      "export": "Export GPX"
+      "import": "📥 Import GPX",
+      "export": "📤 Export"
     },
     "toast": {
       "recStarted": "🔴 Recording started",
@@ -35,7 +35,7 @@
       "distance": "Distance",
       "points": "Points",
       "dplus": "Elev+",
-      "dminus": "Elev-"
+      "dminus": "Elev−"
     }
   },
   "settings": {
@@ -44,42 +44,42 @@
       "close": "Close settings"
     },
     "section": {
-      "presets": "Performance Profiles",
-      "rendering": "Rendering",
-      "layers": "Layers",
-      "storage": "Storage & Offline",
-      "advanced": "Advanced",
+      "presets": "Performance profile",
+      "rendering": "3D Rendering & Details",
+      "density": "Detail Density",
+      "advanced": "⚙️ Advanced Settings",
+      "dataManagement": "Data management",
       "language": "Language"
     },
     "preset": {
       "eco": "Eco",
-      "balanced": "Balanced",
-      "performance": "Performance",
+      "balanced": "Std",
+      "performance": "High",
       "ultra": "Ultra",
       "custom": "Custom"
     },
     "label": {
-      "resolution": "Resolution",
-      "range": "Range",
+      "resolution": "Resolution (LOD)",
+      "range": "Render range",
       "exaggeration": "Relief exaggeration",
       "vegDensity": "Vegetation density",
       "loadSpeed": "Load speed",
       "fogDistance": "Fog distance",
       "energySaver": "Energy saver",
-      "stats": "Statistics",
-      "debug": "Debug",
-      "vegetation": "Vegetation",
-      "buildings": "Buildings",
-      "hydrology": "Hydrology",
-      "signposts": "Signposts",
-      "shadows": "Shadows",
+      "stats": "Performance stats (FPS)",
+      "debug": "Debug info",
+      "vegetation": "Forests & Vegetation",
+      "buildings": "OSM Buildings",
+      "hydrology": "Lakes & Rivers",
+      "signposts": "3D Signage",
+      "shadows": "Cast shadows",
       "weather": "Weather",
       "trailFollow": "Trail follow"
     },
     "storage": {
-      "clearCache": "Clear cache",
-      "downloadZone": "Download zone",
-      "pmtiles": "Load PMTiles"
+      "clearCache": "Clear Cache",
+      "downloadZone": "Download Zone",
+      "pmtiles": "Load .pmtiles file"
     },
     "lang": {
       "label": "Language",
@@ -109,20 +109,22 @@
     "peak": "Summit"
   },
   "layers": {
-    "title": "Layers",
+    "title": "Map layers",
     "aria": {
       "close": "Close layers"
     },
     "source": {
-      "swisstopo": "SwissTopo",
+      "swisstopo": "Topo CH",
       "satellite": "Satellite",
-      "topo": "OpenTopoMap",
+      "topo": "OpenTopo",
       "osm": "OpenStreetMap",
       "ign": "IGN France"
     },
     "overlay": {
       "trails": "Trails",
-      "slopes": "Slopes"
+      "trailsUnavailable": "Unavailable at this zoom",
+      "slopes": "Slopes > 30°",
+      "slopesUnavailable": "Unavailable at this zoom"
     },
     "warning": {
       "zoomRequired": "Zoom {{minZoom}}+ required"
@@ -142,7 +144,7 @@
     }
   },
   "connectivity": {
-    "title": "Connectivity",
+    "title": "System & Data",
     "aria": {
       "close": "Close connectivity"
     },
@@ -150,15 +152,24 @@
       "online": "ONLINE",
       "offline": "OFFLINE"
     },
-    "label": {
-      "offlineMode": "Offline mode",
-      "gpsAccuracy": "GPS accuracy"
-    },
     "section": {
+      "signal": "Signal Status",
+      "cache": "Cache Management",
+      "external": "External Services",
       "network": "Network",
-      "cache": "Cache",
       "gps": "GPS",
       "api": "API Key"
+    },
+    "label": {
+      "offlineMode": "Offline Mode",
+      "offlineHint": "Force cache-only usage",
+      "gpsAccuracy": "GPS Signal",
+      "network": "Network",
+      "pmtiles": "Local storage (.pmtiles)"
+    },
+    "btn": {
+      "clearCache": "Clear Cache",
+      "downloadZone": "Download Zone"
     },
     "toast": {
       "cacheCleared": "Cache cleared"
@@ -189,6 +200,39 @@
       "northAligned": "🧭 North aligned"
     }
   },
+  "weather": {
+    "title": "Weather Bulletin",
+    "noData": "No weather data",
+    "temp": "Temperature",
+    "feelsLike": "Feels like",
+    "humidity": "Humidity",
+    "wind": "Wind",
+    "gusts": "Gusts",
+    "clouds": "Cloud cover",
+    "dewPoint": "Dew point",
+    "freezingLevel": "Freezing level",
+    "uvIndex": "UV index",
+    "visibility": "Visibility",
+    "precipitation": "Precipitation probability",
+    "forecast": "Forecast",
+    "label": {
+      "intensity": "INTENSITY",
+      "speed": "SPEED"
+    },
+    "btn": {
+      "expert": "📊 Expert Weather Station"
+    }
+  },
+  "solar": {
+    "title": "Solar Analysis"
+  },
+  "sos": {
+    "title": "SOS EMERGENCY",
+    "subtitle": "Here are your exact coordinates to pass on to the rescue services.",
+    "locating": "⌛ Locating...",
+    "copy": "Copy message",
+    "close": "Close"
+  },
   "setup": {
     "title": "Initial setup",
     "subtitle": "Enter your MapTiler API key to get started",
@@ -206,21 +250,21 @@
     "applied": "Profile applied: {{preset}}",
     "lowBattery": "🔋 Low battery: Eco mode enabled"
   },
-  "weather": {
-    "title": "Weather",
-    "noData": "No weather data",
-    "temp": "Temperature",
-    "feelsLike": "Feels like",
-    "humidity": "Humidity",
-    "wind": "Wind",
-    "gusts": "Gusts",
-    "clouds": "Cloud cover",
-    "dewPoint": "Dew point",
-    "freezingLevel": "Freezing level",
-    "uvIndex": "UV index",
-    "visibility": "Visibility",
-    "precipitation": "Precipitation probability",
-    "forecast": "Forecast"
+  "coords": {
+    "solar": "☀ Solar",
+    "addWaypoint": "📍 Add"
+  },
+  "apiKey": {
+    "label": "MapTiler Key",
+    "placeholder": "Paste your key here...",
+    "link": "Get a free key ↗"
+  },
+  "profile": {
+    "title": "📈 Elevation Profile & Slopes",
+    "info": "Distance: 0km | Alt: 0m | Slope: 0%"
+  },
+  "timeline": {
+    "sunPhase": "☀️ Full daylight"
   },
   "common": {
     "close": "Close",

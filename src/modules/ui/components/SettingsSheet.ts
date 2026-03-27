@@ -309,7 +309,7 @@ export class SettingsSheet extends BaseComponent {
         section.innerHTML = `
             <h3 class="settings-section-title">${i18n.t('settings.section.language')}</h3>
             <div class="setting-row">
-                <label for="lang-select" class="setting-label">${i18n.t('settings.lang.label')}</label>
+                <label for="lang-select" class="setting-label">${i18n.t('settings.section.language')}</label>
                 <select id="lang-select" class="lang-select">
                     <option value="fr">Français</option>
                     <option value="de">Deutsch</option>

@@ -16,8 +16,10 @@ class I18nService {
     private translations: TranslationData;
 
     constructor() {
-        this.currentLocale = (state.lang as Locale) || 'fr';
-        this.translations = allTranslations[this.currentLocale] || allTranslations.fr;
+        // Default to 'fr' at construction time — setLocale() will be called
+        // by initUI() once state.lang is properly restored from localStorage.
+        this.currentLocale = 'fr';
+        this.translations = allTranslations.fr;
     }
 
     /**
@@ -57,6 +59,25 @@ class I18nService {
     /** Returns the current active locale. */
     getLocale(): Locale {
         return this.currentLocale;
+    }
+
+    /**
+     * Apply translations to all [data-i18n] and [data-i18n-placeholder] elements
+     * within the given root element. Called after every DOM clone or locale change.
+     */
+    applyToDOM(root: Element | DocumentFragment): void {
+        // textContent translations
+        const els = root.querySelectorAll('[data-i18n]');
+        els.forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (key) el.textContent = this.t(key);
+        });
+        // placeholder translations
+        const placeholders = root.querySelectorAll('[data-i18n-placeholder]');
+        placeholders.forEach(el => {
+            const key = el.getAttribute('data-i18n-placeholder');
+            if (key) (el as HTMLInputElement).placeholder = this.t(key);
+        });
     }
 
     /** Resolve a dot-separated key path in a nested object. */

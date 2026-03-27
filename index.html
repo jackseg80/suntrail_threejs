@@ -44,8 +44,8 @@
   <div class="coords-lat" id="click-latlon">—</div>
   <div class="coords-alt" id="click-alt">—</div>
   <div class="coords-actions">
-    <button class="coords-btn solar" id="probe-btn">☀ Solaire</button>
-    <button class="coords-btn solar" id="save-wpt-btn">📍 Ajouter</button>
+        <button class="coords-btn solar" id="probe-btn" data-i18n="coords.solar">☀ Solaire</button>
+        <button class="coords-btn solar" id="save-wpt-btn" data-i18n="coords.addWaypoint">📍 Ajouter</button>
   </div>
 </div>
 
@@ -89,22 +89,22 @@
 <div id="layers-sheet" class="bottom-sheet">
     <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
     <div class="sheet-header">
-        <span class="sheet-title">Fonds de carte</span>
+        <span class="sheet-title" data-i18n="layers.title">Fonds de carte</span>
         <div class="sheet-close" id="close-layers">×</div>
     </div>
     
     <div class="layer-grid">
         <div class="layer-item active" data-source="swisstopo">
             <div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/outdoor-v2.png')"></div>
-            <div class="layer-name">Topo CH</div>
+            <div class="layer-name" data-i18n="layers.source.swisstopo">Topo CH</div>
         </div>
         <div class="layer-item" data-source="satellite">
             <div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/satellite.png')"></div>
-            <div class="layer-name">Satellite</div>
+            <div class="layer-name" data-i18n="layers.source.satellite">Satellite</div>
         </div>
         <div class="layer-item" data-source="opentopomap">
             <div class="layer-thumb" style="background-image:url('https://cloud.maptiler.com/static/img/maps/topo.png')"></div>
-            <div class="layer-name">OpenTopo</div>
+            <div class="layer-name" data-i18n="layers.source.topo">OpenTopo</div>
         </div>
     </div>
 
@@ -115,8 +115,8 @@
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
                 </div>
                 <div>
-                    <div class="setting-label">Sentiers</div>
-                    <div class="lod-warning" style="display:none; font-size:9px; color:var(--text-3); margin-top:1px;">Indisponible à ce zoom</div>
+                    <div class="setting-label" data-i18n="layers.overlay.trails">Sentiers</div>
+                    <div class="lod-warning" style="display:none; font-size:9px; color:var(--text-3); margin-top:1px;" data-i18n="layers.overlay.trailsUnavailable">Indisponible à ce zoom</div>
                 </div>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
@@ -130,8 +130,8 @@
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
                 </div>
                 <div>
-                    <div class="setting-label">Pentes > 30°</div>
-                    <div class="lod-warning" style="display:none; font-size:9px; color:var(--text-3); margin-top:1px;">Indisponible à ce zoom</div>
+                    <div class="setting-label" data-i18n="layers.overlay.slopes">Pentes > 30°</div>
+                    <div class="lod-warning" style="display:none; font-size:9px; color:var(--text-3); margin-top:1px;" data-i18n="layers.overlay.slopesUnavailable">Indisponible à ce zoom</div>
                 </div>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
@@ -147,7 +147,7 @@
 <div id="search" class="bottom-sheet">
     <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
     <div class="sheet-header">
-        <span class="sheet-title">Exploration</span>
+        <span class="sheet-title" data-i18n="search.title">Exploration</span>
         <div class="sheet-close" id="close-search">×</div>
     </div>
     <div style="padding: 0 0 10px;">
@@ -169,61 +169,61 @@
 <div id="settings" class="bottom-sheet">
     <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
     <div class="sheet-header">
-        <span class="sheet-title">Réglages</span>
+        <span class="sheet-title" data-i18n="settings.title">Réglages</span>
         <div class="sheet-close" id="close-panel">×</div>
     </div>
     
-    <div class="section-label">Profil de performance</div>
+    <div class="section-label" data-i18n="settings.section.presets">Profil de performance</div>
     <div class="preset-grid">
-        <button class="preset-btn" data-preset="eco">Éco</button>
-        <button class="preset-btn" data-preset="balanced">Std</button>
-        <button class="preset-btn" data-preset="performance">High</button>
-        <button class="preset-btn" data-preset="ultra">Ultra</button>
+        <button class="preset-btn" data-preset="eco" data-i18n="settings.preset.eco">Éco</button>
+        <button class="preset-btn" data-preset="balanced" data-i18n="settings.preset.balanced">Std</button>
+        <button class="preset-btn" data-preset="performance" data-i18n="settings.preset.performance">High</button>
+        <button class="preset-btn" data-preset="ultra" data-i18n="settings.preset.ultra">Ultra</button>
     </div>
 
     <div class="setting-row" style="margin-top:15px; padding:12px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
         <div style="display:flex; align-items:center; gap:8px;">
             <span style="font-size:16px;">🔋</span>
-            <div class="setting-label" style="font-size:13px;">Économie d'énergie</div>
+            <div class="setting-label" style="font-size:13px;" data-i18n="settings.label.energySaver">Économie d'énergie</div>
         </div>
         <input type="checkbox" id="energy-saver-toggle">
     </div>
 
     <div class="control-group" style="margin-top: 20px;">
-        <div class="section-label">Rendu 3D & Détails</div>
+        <div class="section-label" data-i18n="settings.section.rendering">Rendu 3D & Détails</div>
         
         <div class="setting-row">
-            <div class="setting-label">Forêts & Végétation</div>
+            <div class="setting-label" data-i18n="settings.label.vegetation">Forêts & Végétation</div>
             <input type="checkbox" id="veg-toggle" checked>
         </div>
         <div style="margin-bottom: 15px; padding-left: 4px;">
             <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-3); margin-bottom: 4px;">
-                <span>DENSITÉ DÉTAILS</span>
+                <span data-i18n="settings.section.density">DENSITÉ DÉTAILS</span>
                 <span id="veg-density-disp">4000</span>
             </div>
             <input type="range" id="veg-density-slider" min="0" max="15000" step="500" value="4000">
         </div>
         
         <div class="setting-row">
-            <div class="setting-label">Bâtiments OSM</div>
+            <div class="setting-label" data-i18n="settings.label.buildings">Bâtiments OSM</div>
             <input type="checkbox" id="buildings-toggle" checked>
         </div>
         <div class="setting-row">
-            <div class="setting-label">Lacs & Rivières</div>
+            <div class="setting-label" data-i18n="settings.label.hydrology">Lacs & Rivières</div>
             <input type="checkbox" id="hydro-toggle" checked>
         </div>
         <div class="setting-row">
-            <div class="setting-label">Signalisation 3D</div>
+            <div class="setting-label" data-i18n="settings.label.signposts">Signalisation 3D</div>
             <input type="checkbox" id="poi-toggle" checked>
         </div>
     </div>
 
     <details class="control-group" style="margin-top: 15px;">
-        <summary style="font-size:11px; color:var(--gold); font-weight:700; text-transform:uppercase; cursor:pointer; outline:none; letter-spacing:1px; padding:10px 0;">⚙️ Paramètres Avancés</summary>
+        <summary style="font-size:11px; color:var(--gold); font-weight:700; text-transform:uppercase; cursor:pointer; outline:none; letter-spacing:1px; padding:10px 0;" data-i18n="settings.section.advanced">⚙️ Paramètres Avancés</summary>
         
         <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 4px;">
             <div class="setting-row">
-                <div class="setting-label">Vitesse de chargement</div>
+                <div class="setting-label" data-i18n="settings.label.loadSpeed">Vitesse de chargement</div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span id="load-speed-disp" style="font-size:10px; color:var(--text-3); font-family:var(--font-mono);">1.0</span>
                     <input type="range" id="load-speed-slider" min="0.1" max="3.0" step="0.1" style="width:80px;">
@@ -231,7 +231,7 @@
             </div>
 
             <div class="setting-row">
-                <div class="setting-label">Résolution (LOD)</div>
+                <div class="setting-label" data-i18n="settings.label.resolution">Résolution (LOD)</div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span id="res-disp" style="font-size:10px; color:var(--text-3); font-family:var(--font-mono);">14</span>
                     <input type="range" id="res-slider" min="10" max="16" step="1" value="14" style="width:80px;">
@@ -239,7 +239,7 @@
             </div>
 
             <div class="setting-row">
-                <div class="setting-label">Rayon de rendu</div>
+                <div class="setting-label" data-i18n="settings.label.range">Rayon de rendu</div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span id="range-disp" style="font-size:10px; color:var(--text-3); font-family:var(--font-mono);">3</span>
                     <input type="range" id="range-slider" min="1" max="8" step="1" value="3" style="width:80px;">
@@ -247,7 +247,7 @@
             </div>
 
             <div class="setting-row">
-                <div class="setting-label">Exagération relief</div>
+                <div class="setting-label" data-i18n="settings.label.exaggeration">Exagération relief</div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span id="exag-disp" style="font-size:10px; color:var(--text-3); font-family:var(--font-mono);">1.4</span>
                     <input type="range" id="exag-slider" min="1.0" max="3.0" step="0.1" value="1.4" style="width:80px;">
@@ -255,29 +255,29 @@
             </div>
 
             <div class="setting-row">
-                <div class="setting-label">Stats de performance (FPS)</div>
+                <div class="setting-label" data-i18n="settings.label.stats">Stats de performance (FPS)</div>
                 <input type="checkbox" id="stats-toggle" checked>
             </div>
             
             <div class="setting-row">
-                <div class="setting-label">Ombres portées</div>
+                <div class="setting-label" data-i18n="settings.label.shadows">Ombres portées</div>
                 <input type="checkbox" id="shadow-toggle">
             </div>
 
             <div class="setting-row">
-                <div class="setting-label">Infos de debug</div>
+                <div class="setting-label" data-i18n="settings.label.debug">Infos de debug</div>
                 <input type="checkbox" id="debug-toggle">
             </div>
 
             <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 12px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.05);">
                 <div id="settings-api-key-slot"></div>
                 
-                <div style="font-size:11px; color:var(--gold); font-weight:700; text-transform:uppercase; margin-top:5px;">Gestion des données</div>
+                <div style="font-size:11px; color:var(--gold); font-weight:700; text-transform:uppercase; margin-top:5px;" data-i18n="settings.section.dataManagement">Gestion des données</div>
                 <div style="display:flex; gap:8px;">
-                    <button id="clear-cache-btn" class="btn-go" style="margin:0; padding:10px; background:#ef4444; flex:1; font-size:12px;">Vider Cache</button>
-                    <button id="download-zone-btn" class="btn-go" style="margin:0; padding:10px; flex:1; font-size:12px;"><span>Télécharger Zone</span></button>
+                    <button id="clear-cache-btn" class="btn-go" style="margin:0; padding:10px; background:#ef4444; flex:1; font-size:12px;" data-i18n="settings.storage.clearCache">Vider Cache</button>
+                    <button id="download-zone-btn" class="btn-go" style="margin:0; padding:10px; flex:1; font-size:12px;"><span data-i18n="settings.storage.downloadZone">Télécharger Zone</span></button>
                 </div>
-                <button id="pmtiles-btn" class="btn-go" style="margin:0; padding:10px; width:100%; font-size:12px; background:rgba(255,255,255,0.05);">Charger .pmtiles local</button>
+                <button id="pmtiles-btn" class="btn-go" style="margin:0; padding:10px; width:100%; font-size:12px; background:rgba(255,255,255,0.05);" data-i18n="settings.storage.pmtiles">Charger .pmtiles local</button>
                 <input type="file" id="pmtiles-upload" accept=".pmtiles" style="display:none;">
                 </div>
                 </div>
@@ -288,18 +288,18 @@
                 <div id="connectivity" class="bottom-sheet">
                 <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
                 <div class="sheet-header">
-                <span class="sheet-title">Système & Données</span>
+                <span class="sheet-title" data-i18n="connectivity.title">Système & Données</span>
                 <div class="sheet-close" id="close-connectivity">×</div>
                 </div>
 
-                <div class="section-label">État du Signal</div>
+                <div class="section-label" data-i18n="connectivity.section.signal">État du Signal</div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;">
                 <div class="stat-card">
-                <div class="stat-card-label">Signal GPS</div>
+                <div class="stat-card-label" data-i18n="connectivity.label.gpsAccuracy">Signal GPS</div>
                 <div class="stat-card-value" id="gps-accuracy">-- <span style="font-size:12px; color:var(--text-3)">m</span></div>
                 </div>
                 <div class="stat-card">
-                <div class="stat-card-label">Réseau</div>
+                <div class="stat-card-label" data-i18n="connectivity.label.network">Réseau</div>
                 <div class="stat-card-value" id="net-status">ONLINE</div>
                 </div>
                 </div>
@@ -308,29 +308,29 @@
                 <div style="display:flex; align-items:center; gap:10px;">
                 <span style="font-size:18px;">✈️</span>
                 <div>
-                    <div class="setting-label" style="font-size:14px;">Mode Hors-ligne</div>
-                    <div style="font-size:10px; color:var(--text-3);">Forcer l'usage du cache uniquement</div>
+                    <div class="setting-label" style="font-size:14px;" data-i18n="connectivity.label.offlineMode">Mode Hors-ligne</div>
+                    <div style="font-size:10px; color:var(--text-3);" data-i18n="connectivity.label.offlineHint">Forcer l'usage du cache uniquement</div>
                 </div>
                 </div>
                 <input type="checkbox" id="offline-toggle">
                 </div>
 
                 <div class="control-group">
-                <div class="section-label">Gestion du Cache</div>
+                <div class="section-label" data-i18n="connectivity.section.cache">Gestion du Cache</div>
                 <div style="display:flex; gap:8px; margin-bottom:15px;">
-                <button id="conn-clear-cache" class="btn-go" style="margin:0; padding:12px; background:#ef4444; flex:1; font-size:12px;">Vider le Cache</button>
-                <button id="conn-download-zone" class="btn-go" style="margin:0; padding:12px; flex:1; font-size:12px;"><span>Télécharger Zone</span></button>
+                <button id="conn-clear-cache" class="btn-go" style="margin:0; padding:12px; background:#ef4444; flex:1; font-size:12px;" data-i18n="connectivity.btn.clearCache">Vider le Cache</button>
+                <button id="conn-download-zone" class="btn-go" style="margin:0; padding:12px; flex:1; font-size:12px;"><span data-i18n="connectivity.btn.downloadZone">Télécharger Zone</span></button>
                 </div>
 
                 <div class="setting-row">
-                <div class="setting-label">Stockage local (.pmtiles)</div>
+                <div class="setting-label" data-i18n="connectivity.label.pmtiles">Stockage local (.pmtiles)</div>
                 <button id="conn-pmtiles-btn" class="icon-btn-sm" style="border:none; background:rgba(255,255,255,0.05);">📂</button>
                 <input type="file" id="conn-pmtiles-upload" accept=".pmtiles" style="display:none;">
                 </div>
                 </div>
 
                 <div class="control-group" style="margin-top:10px;">
-                <div class="section-label">Services Externes</div>
+                <div class="section-label" data-i18n="connectivity.section.external">Services Externes</div>
                 <div id="conn-api-key-slot"></div>
                 </div>
                 </div>
@@ -340,7 +340,7 @@
 <div id="weather" class="bottom-sheet">
     <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
     <div class="sheet-header">
-        <span class="sheet-title">Bulletin Météo</span>
+        <span class="sheet-title" data-i18n="weather.title">Bulletin Météo</span>
         <div class="sheet-close" id="close-weather">×</div>
     </div>
     <div id="weather-content"></div>
@@ -354,21 +354,21 @@
         
         <div style="margin-bottom:12px;">
             <div style="display:flex; justify-content:space-between; font-size:11px; color: var(--text-3); margin-bottom:4px;">
-                <span>INTENSITÉ</span>
+                <span data-i18n="weather.label.intensity">INTENSITÉ</span>
                 <span id="weather-density-disp">2500</span>
             </div>
             <input type="range" id="weather-density-slider" min="0" max="15000" step="500" value="2500">
         </div>
         <div>
             <div style="display:flex; justify-content:space-between; font-size:11px; color: var(--text-3); margin-bottom:4px;">
-                <span>VITESSE</span>
+                <span data-i18n="weather.label.speed">VITESSE</span>
                 <span id="weather-speed-disp">1.0</span>
             </div>
             <input type="range" id="weather-speed-slider" min="0.5" max="3.0" step="0.1" value="1.0">
         </div>
     </div>
 
-    <button id="open-expert-weather" class="btn-go" style="margin-top:20px; padding:12px;">📊 Station Météo Expert</button>
+    <button id="open-expert-weather" class="btn-go" style="margin-top:20px; padding:12px;" data-i18n="weather.btn.expert">📊 Station Météo Expert</button>
 </div>
 </template>
 
@@ -376,7 +376,7 @@
 <div id="solar-probe" class="bottom-sheet">
     <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
     <div class="sheet-header">
-        <span class="sheet-title">Analyse Solaire</span>
+        <span class="sheet-title" data-i18n="solar.title">Analyse Solaire</span>
         <div class="sheet-close" id="close-probe">×</div>
     </div>
     <div id="probe-content"></div>
@@ -388,14 +388,14 @@
     <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
     <div style="text-align:center; padding:20px;">
         <div style="font-size:48px; margin-bottom:15px;">🆘</div>
-        <h2 style="color:#ef4444; margin:0 0 10px 0;">URGENCE SOS</h2>
-        <p style="font-size:13px; color:var(--text-2); margin-bottom:20px;">Voici vos coordonnées exactes à transmettre aux secours.</p>
+        <h2 style="color:#ef4444; margin:0 0 10px 0;" data-i18n="sos.title">URGENCE SOS</h2>
+        <p style="font-size:13px; color:var(--text-2); margin-bottom:20px;" data-i18n="sos.subtitle">Voici vos coordonnées exactes à transmettre aux secours.</p>
         <div id="sos-text-container" style="background:rgba(239,68,68,0.1); border:1px solid #ef4444; border-radius:16px; padding:20px; font-family:monospace; font-size:16px; color:white; margin-bottom:20px; word-break:break-all;">
-            ⌛ Localisation en cours...
+            <span data-i18n="sos.locating">⌛ Localisation en cours...</span>
         </div>
         <div style="display:flex; gap:10px;">
-            <button id="sos-copy-btn" class="track-btn primary" style="flex:1;">Copier le message</button>
-            <button id="sos-close-btn" class="track-btn" style="flex:1; background:rgba(255,255,255,0.05);">Fermer</button>
+            <button id="sos-copy-btn" class="track-btn primary" style="flex:1;" data-i18n="sos.copy">Copier le message</button>
+            <button id="sos-close-btn" class="track-btn" style="flex:1; background:rgba(255,255,255,0.05);" data-i18n="sos.close">Fermer</button>
         </div>
     </div>
 </div>
@@ -509,24 +509,24 @@
 <div id="track" class="bottom-sheet">
     <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
     <div class="sheet-header">
-        <span class="sheet-title">Parcours</span>
+        <span class="sheet-title" data-i18n="track.title">Parcours</span>
         <div class="sheet-close" id="close-track">×</div>
     </div>
     <div class="track-stats">
         <div class="stat-card">
-            <div class="stat-card-label">Distance</div>
+            <div class="stat-card-label" data-i18n="track.stats.distance">Distance</div>
             <div class="stat-card-value" id="track-dist">0.0 <span style="font-size:13px;color:var(--text-2)">km</span></div>
         </div>
         <div class="stat-card">
-            <div class="stat-card-label">Points</div>
+            <div class="stat-card-label" data-i18n="track.stats.points">Points</div>
             <div class="stat-card-value" id="track-points">0</div>
         </div>
         <div class="stat-card">
-            <div class="stat-card-label">Dénivelé +</div>
+            <div class="stat-card-label" data-i18n="track.stats.dplus">Dénivelé +</div>
             <div class="stat-card-value green" id="track-dplus">+0 <span style="font-size:12px">m</span></div>
         </div>
         <div class="stat-card">
-            <div class="stat-card-label">Dénivelé −</div>
+            <div class="stat-card-label" data-i18n="track.stats.dminus">Dénivelé −</div>
             <div class="stat-card-value red" id="track-dminus">−0 <span style="font-size:12px">m</span></div>
         </div>
     </div>
@@ -539,10 +539,10 @@
             REC
         </button>
         <button class="track-btn secondary" id="import-gpx-sheet">
-            📥 Import GPX
+            <span data-i18n="track.btn.import">📥 Import GPX</span>
         </button>
         <button class="track-btn secondary" id="export-gpx-sheet">
-            📤 Exporter
+            <span data-i18n="track.btn.export">📤 Exporter</span>
         </button>
         <input type="file" id="gpx-upload" accept=".gpx" style="display:none;">
     </div>
@@ -551,15 +551,15 @@
 
 <template id="template-api-key-form">
   <div class="api-key-section">
-    <p class="section-label">Clé MapTiler</p>
+    <p class="section-label" data-i18n="apiKey.label">Clé MapTiler</p>
     <form class="api-key-form">
       <div class="api-key-input-row">
-        <input type="text" class="api-key-input" placeholder="Coller votre clé ici..." autocomplete="off" spellcheck="false">
+        <input type="text" class="api-key-input" placeholder="Coller votre clé ici..." data-i18n-placeholder="apiKey.placeholder" autocomplete="off" spellcheck="false">
         <button type="submit" class="api-key-submit-btn">✓</button>
       </div>
     </form>
     <p class="api-key-hint">
-      <a href="https://cloud.maptiler.com/account/keys/" target="_blank" rel="noopener noreferrer">Obtenir une clé gratuite ↗</a>
+      <a href="https://cloud.maptiler.com/account/keys/" target="_blank" rel="noopener noreferrer" data-i18n="apiKey.link">Obtenir une clé gratuite ↗</a>
     </p>
   </div>
 </template>

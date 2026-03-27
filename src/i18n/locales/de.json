@@ -16,8 +16,8 @@
     "btn": {
       "rec": "REC",
       "stop": "STOP",
-      "import": "GPX importieren",
-      "export": "GPX exportieren"
+      "import": "📥 GPX importieren",
+      "export": "📤 Exportieren"
     },
     "toast": {
       "recStarted": "🔴 Aufnahme gestartet",
@@ -35,7 +35,7 @@
       "distance": "Distanz",
       "points": "Punkte",
       "dplus": "Hm+",
-      "dminus": "Hm-"
+      "dminus": "Hm−"
     }
   },
   "settings": {
@@ -44,34 +44,34 @@
       "close": "Einstellungen schliessen"
     },
     "section": {
-      "presets": "Leistungsprofile",
-      "rendering": "Darstellung",
-      "layers": "Ebenen",
-      "storage": "Speicher & Offline",
-      "advanced": "Erweitert",
+      "presets": "Leistungsprofil",
+      "rendering": "3D-Darstellung & Details",
+      "density": "Detaildichte",
+      "advanced": "⚙️ Erweiterte Einstellungen",
+      "dataManagement": "Datenverwaltung",
       "language": "Sprache"
     },
     "preset": {
       "eco": "Eco",
-      "balanced": "Ausgewogen",
-      "performance": "Leistung",
+      "balanced": "Std",
+      "performance": "High",
       "ultra": "Ultra",
       "custom": "Benutzerdefiniert"
     },
     "label": {
-      "resolution": "Auflösung",
-      "range": "Reichweite",
+      "resolution": "Auflösung (LOD)",
+      "range": "Darstellungsbereich",
       "exaggeration": "Reliefüberhöhung",
       "vegDensity": "Vegetationsdichte",
       "loadSpeed": "Ladegeschwindigkeit",
       "fogDistance": "Nebeldistanz",
       "energySaver": "Energiesparmodus",
-      "stats": "Statistiken",
-      "debug": "Debug",
-      "vegetation": "Vegetation",
-      "buildings": "Gebäude",
-      "hydrology": "Hydrologie",
-      "signposts": "Wegweiser",
+      "stats": "Leistungsstatistiken (FPS)",
+      "debug": "Debug-Infos",
+      "vegetation": "Wälder & Vegetation",
+      "buildings": "OSM-Gebäude",
+      "hydrology": "Seen & Flüsse",
+      "signposts": "3D-Wegweiser",
       "shadows": "Schatten",
       "weather": "Wetter",
       "trailFollow": "Routenverfolgung"
@@ -79,7 +79,7 @@
     "storage": {
       "clearCache": "Cache leeren",
       "downloadZone": "Zone herunterladen",
-      "pmtiles": "PMTiles laden"
+      "pmtiles": ".pmtiles-Datei laden"
     },
     "lang": {
       "label": "Sprache",
@@ -109,20 +109,22 @@
     "peak": "Gipfel"
   },
   "layers": {
-    "title": "Ebenen",
+    "title": "Kartenebenen",
     "aria": {
       "close": "Ebenen schliessen"
     },
     "source": {
-      "swisstopo": "SwissTopo",
+      "swisstopo": "Topo CH",
       "satellite": "Satellit",
-      "topo": "OpenTopoMap",
+      "topo": "OpenTopo",
       "osm": "OpenStreetMap",
       "ign": "IGN Frankreich"
     },
     "overlay": {
       "trails": "Wanderwege",
-      "slopes": "Hangneigung"
+      "trailsUnavailable": "Bei diesem Zoom nicht verfügbar",
+      "slopes": "Hangneigung > 30°",
+      "slopesUnavailable": "Bei diesem Zoom nicht verfügbar"
     },
     "warning": {
       "zoomRequired": "Zoom {{minZoom}}+ erforderlich"
@@ -142,7 +144,7 @@
     }
   },
   "connectivity": {
-    "title": "Konnektivität",
+    "title": "System & Daten",
     "aria": {
       "close": "Konnektivität schliessen"
     },
@@ -150,15 +152,24 @@
       "online": "ONLINE",
       "offline": "OFFLINE"
     },
-    "label": {
-      "offlineMode": "Offline-Modus",
-      "gpsAccuracy": "GPS-Genauigkeit"
-    },
     "section": {
+      "signal": "Signalstatus",
+      "cache": "Cache-Verwaltung",
+      "external": "Externe Dienste",
       "network": "Netzwerk",
-      "cache": "Cache",
       "gps": "GPS",
       "api": "API-Schlüssel"
+    },
+    "label": {
+      "offlineMode": "Offline-Modus",
+      "offlineHint": "Nur Cache verwenden",
+      "gpsAccuracy": "GPS-Signal",
+      "network": "Netzwerk",
+      "pmtiles": "Lokaler Speicher (.pmtiles)"
+    },
+    "btn": {
+      "clearCache": "Cache leeren",
+      "downloadZone": "Zone herunterladen"
     },
     "toast": {
       "cacheCleared": "Cache geleert"
@@ -189,6 +200,39 @@
       "northAligned": "🧭 Norden ausgerichtet"
     }
   },
+  "weather": {
+    "title": "Wetterbericht",
+    "noData": "Keine Wetterdaten",
+    "temp": "Temperatur",
+    "feelsLike": "Gefühlt",
+    "humidity": "Luftfeuchtigkeit",
+    "wind": "Wind",
+    "gusts": "Böen",
+    "clouds": "Bewölkung",
+    "dewPoint": "Taupunkt",
+    "freezingLevel": "Nullgradgrenze",
+    "uvIndex": "UV-Index",
+    "visibility": "Sichtweite",
+    "precipitation": "Niederschlagswahrscheinlichkeit",
+    "forecast": "Vorhersage",
+    "label": {
+      "intensity": "INTENSITÄT",
+      "speed": "GESCHWINDIGKEIT"
+    },
+    "btn": {
+      "expert": "📊 Experten-Wetterstation"
+    }
+  },
+  "solar": {
+    "title": "Sonnenanalyse"
+  },
+  "sos": {
+    "title": "SOS NOTFALL",
+    "subtitle": "Hier sind Ihre genauen Koordinaten für die Rettungsdienste.",
+    "locating": "⌛ Standortbestimmung...",
+    "copy": "Nachricht kopieren",
+    "close": "Schliessen"
+  },
   "setup": {
     "title": "Ersteinrichtung",
     "subtitle": "Geben Sie Ihren MapTiler-API-Schlüssel ein",
@@ -206,21 +250,21 @@
     "applied": "Profil angewendet: {{preset}}",
     "lowBattery": "🔋 Akku schwach: Eco-Modus aktiviert"
   },
-  "weather": {
-    "title": "Wetter",
-    "noData": "Keine Wetterdaten",
-    "temp": "Temperatur",
-    "feelsLike": "Gefühlt",
-    "humidity": "Luftfeuchtigkeit",
-    "wind": "Wind",
-    "gusts": "Böen",
-    "clouds": "Bewölkung",
-    "dewPoint": "Taupunkt",
-    "freezingLevel": "Nullgradgrenze",
-    "uvIndex": "UV-Index",
-    "visibility": "Sichtweite",
-    "precipitation": "Niederschlagswahrscheinlichkeit",
-    "forecast": "Vorhersage"
+  "coords": {
+    "solar": "☀ Solar",
+    "addWaypoint": "📍 Hinzufügen"
+  },
+  "apiKey": {
+    "label": "MapTiler-Schlüssel",
+    "placeholder": "Schlüssel einfügen...",
+    "link": "Kostenlosen Schlüssel holen ↗"
+  },
+  "profile": {
+    "title": "📈 Höhenprofil & Hangneigung",
+    "info": "Distanz: 0km | Höhe: 0m | Neigung: 0%"
+  },
+  "timeline": {
+    "sunPhase": "☀️ Voller Tag"
   },
   "common": {
     "close": "Schliessen",

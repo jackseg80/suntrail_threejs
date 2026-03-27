@@ -1,3 +1,6 @@
+import { i18n } from '../../../i18n/I18nService';
+import { eventBus } from '../../eventBus';
+
 export abstract class BaseComponent {
     protected templateId: string;
     protected containerId: string;
@@ -27,8 +30,17 @@ export abstract class BaseComponent {
         this.element = clone.firstElementChild as HTMLElement;
         
         if (this.element) {
+            // Apply i18n translations to all [data-i18n] elements in this template
+            i18n.applyToDOM(clone);
             container.appendChild(clone);
             this.render();
+
+            // Re-apply i18n on every locale change
+            const onLocaleChanged = () => {
+                if (this.element) i18n.applyToDOM(this.element);
+            };
+            eventBus.on('localeChanged', onLocaleChanged);
+            this.subscriptions.push(() => eventBus.off('localeChanged', onLocaleChanged));
         } else {
             console.error(`Template "${this.templateId}" does not contain a root element.`);
         }

@@ -5,6 +5,7 @@ import { worldToLngLat } from '../../geo';
 import { showToast } from '../../utils';
 import { getWeatherIcon } from '../../weather';
 import { sheetManager } from '../core/SheetManager';
+import { i18n } from '../../../i18n/I18nService';
 
 export class WeatherSheet extends BaseComponent {
     private contentEl: HTMLElement | null = null;
@@ -29,13 +30,13 @@ export class WeatherSheet extends BaseComponent {
         this.element.appendChild(this.expertPanel);
 
         const closeWeather = document.getElementById('close-weather');
-        closeWeather?.setAttribute('aria-label', 'Fermer météo');
+        closeWeather?.setAttribute('aria-label', i18n.t('weather.aria.close') || 'Fermer météo');
         closeWeather?.addEventListener('click', () => {
             sheetManager.close();
         });
 
         const openExpert = document.getElementById('open-expert-weather');
-        openExpert?.setAttribute('aria-label', 'Données météo avancées');
+        openExpert?.setAttribute('aria-label', i18n.t('weather.btn.expert'));
         openExpert?.addEventListener('click', () => {
             if (this.expertPanel) {
                 this.expertPanel.style.display = this.expertPanel.style.display === 'none' ? 'block' : 'none';
@@ -344,7 +345,7 @@ export class SOSSheet extends BaseComponent {
         if (!this.element) return;
 
         const sosCopyBtn = document.getElementById('sos-copy-btn');
-        sosCopyBtn?.setAttribute('aria-label', 'Copier le message SOS');
+        sosCopyBtn?.setAttribute('aria-label', i18n.t('sos.copy'));
         sosCopyBtn?.addEventListener('click', () => {
             const txt = document.getElementById('sos-text-container')?.textContent;
             if (txt) { 
@@ -354,7 +355,7 @@ export class SOSSheet extends BaseComponent {
         });
 
         const sosCloseBtn = document.getElementById('sos-close-btn');
-        sosCloseBtn?.setAttribute('aria-label', 'Fermer SOS');
+        sosCloseBtn?.setAttribute('aria-label', i18n.t('sos.close'));
         sosCloseBtn?.addEventListener('click', () => { 
             sheetManager.close();
         });
