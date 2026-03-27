@@ -174,7 +174,7 @@
 - [ ] **Content Rating (IARC)** : Questionnaire Play Console — cible "Tout public".
 - [ ] **Screenshots** : Phone portrait + tablet pour tous les form factors.
 - [ ] **Feature Graphic** : Visuel 1024×500px.
-- [ ] **Descriptions** : Courte (80 cars max) + longue SEO, FR + EN.
+- [x] **Descriptions** : Rédigées FR + EN — voir `docs/STORE_LISTING.md`.
 
 ### Sprint 6 — Build AAB + CI/CD + Closed Testing
 - [ ] **Keystore** : Générer `suntrail.keystore` + remplir `android/keystore.properties`.
