@@ -156,7 +156,7 @@ export class SearchSheet extends BaseComponent {
                 <circle cx="11" cy="11" r="8"/>
                 <path d="M21 21l-4.35-4.35"/>
             </svg>
-            <p class="empty-state-subtitle">${i18n.t('search.empty.subtitle')}</p>`;
+            <p class="empty-state-subtitle" data-i18n="search.empty.subtitle">${i18n.t('search.empty.subtitle')}</p>`;
         searchEl.appendChild(initialDiv);
 
         // No results state (hidden by default)
@@ -168,8 +168,8 @@ export class SearchSheet extends BaseComponent {
             <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 2L8 8H4l8 14 8-14h-4L12 2z"/>
             </svg>
-            <p class="empty-state-title">${i18n.t('search.noResults.title')}</p>
-            <p class="empty-state-subtitle">${i18n.t('search.noResults.subtitle')}</p>`;
+            <p class="empty-state-title" data-i18n="search.noResults.title">${i18n.t('search.noResults.title')}</p>
+            <p class="empty-state-subtitle" data-i18n="search.noResults.subtitle">${i18n.t('search.noResults.subtitle')}</p>`;
         searchEl.appendChild(noResultsDiv);
     }
 

@@ -130,8 +130,8 @@ export class TrackSheet extends BaseComponent {
                 <path d="M3 17l4-8 4 5 3-3 4 6"/>
                 <circle cx="19" cy="5" r="2"/>
             </svg>
-            <p class="empty-state-title">${i18n.t('track.empty.title')}</p>
-            <p class="empty-state-subtitle">${i18n.t('track.empty.subtitle')}</p>`;
+            <p class="empty-state-title" data-i18n="track.empty.title">${i18n.t('track.empty.title')}</p>
+            <p class="empty-state-subtitle" data-i18n="track.empty.subtitle">${i18n.t('track.empty.subtitle')}</p>`;
         this.element.appendChild(emptyDiv);
     }
 
@@ -164,7 +164,7 @@ export class TrackSheet extends BaseComponent {
 
         container.style.display = 'block';
         container.innerHTML = `
-            <div class="gpx-layers-header">${i18n.t('track.imported.title')}</div>
+            <div class="gpx-layers-header" data-i18n="track.imported.title">${i18n.t('track.imported.title')}</div>
             ${layers.map(layer => {
                 const truncName = layer.name.length > 20 ? layer.name.slice(0, 20) + '...' : layer.name;
                 const isActive = state.activeGPXLayerId === layer.id;

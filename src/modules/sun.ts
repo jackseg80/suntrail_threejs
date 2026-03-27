@@ -3,6 +3,7 @@ import SunCalc from 'suncalc';
 import { state } from './state';
 import { terrainUniforms } from './terrain';
 import { i18n } from '../i18n/I18nService';
+import { eventBus } from './eventBus';
 
 /**
  * SunTrail Sun Position & Lighting Engine (v5.5.12)
@@ -10,6 +11,22 @@ import { i18n } from '../i18n/I18nService';
  * Suppression du saut de luminosité et restauration des ombres rasantes.
  * Visibilité nocturne garantie (plancher 0.20).
  */
+
+/** Last computed altitude in degrees — used to re-translate the phase label on locale change. */
+let _lastAltDeg = 0;
+
+/** Apply the translated solar phase label to #sun-phase based on altitude. */
+function applySolarPhaseLabel(altDeg: number): void {
+    const phaseSpan = document.getElementById('sun-phase');
+    if (!phaseSpan) return;
+    if (altDeg > 6) { phaseSpan.textContent = i18n.t('solar.phase.day'); phaseSpan.style.color = "#FFD700"; }
+    else if (altDeg > -4) { phaseSpan.textContent = i18n.t('solar.phase.golden'); phaseSpan.style.color = "#FF8C00"; }
+    else if (altDeg > -12) { phaseSpan.textContent = i18n.t('solar.phase.twilight'); phaseSpan.style.color = "#ADFF2F"; }
+    else { phaseSpan.textContent = i18n.t('solar.phase.night'); phaseSpan.style.color = "#87CEEB"; }
+}
+
+// Re-translate the solar phase label whenever the locale changes
+eventBus.on('localeChanged', () => applySolarPhaseLabel(_lastAltDeg));
 
 export function updateSunPosition(minutes: number): void {
     if (!state.sunLight || isNaN(minutes)) return;
@@ -21,17 +38,12 @@ export function updateSunPosition(minutes: number): void {
     const moonPos = SunCalc.getMoonPosition(date, state.TARGET_LAT, state.TARGET_LON);
     const moonIllum = SunCalc.getMoonIllumination(date);
     const altDeg = pos.altitude * 180 / Math.PI;
+    _lastAltDeg = altDeg;
     
     // --- MISE À JOUR UI ---
     const timeDisp = document.getElementById('time-disp');
     if (timeDisp) timeDisp.textContent = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-    const phaseSpan = document.getElementById('sun-phase');
-    if (phaseSpan) {
-        if (altDeg > 6) { phaseSpan.textContent = i18n.t('solar.phase.day'); phaseSpan.style.color = "#FFD700"; }
-        else if (altDeg > -4) { phaseSpan.textContent = i18n.t('solar.phase.golden'); phaseSpan.style.color = "#FF8C00"; }
-        else if (altDeg > -12) { phaseSpan.textContent = i18n.t('solar.phase.twilight'); phaseSpan.style.color = "#ADFF2F"; }
-        else { phaseSpan.textContent = i18n.t('solar.phase.night'); phaseSpan.style.color = "#87CEEB"; }
-    }
+    applySolarPhaseLabel(altDeg);
 
     // --- LOGIQUE DE LUMINOSITÉ ---
     let sunIntensity = 0;
