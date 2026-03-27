@@ -78,7 +78,7 @@
 <!-- PILE DE BOUTONS FLOTTANTS (STYLE GOOGLE MAPS / SWISSMOBILE) -->
 <div class="fab-stack">
   <!-- BOUSSOLE -->
-  <div id="compass-fab" class="fab-btn" title="Réinitialiser le Nord">
+  <div id="compass-fab" class="fab-btn" role="button" tabindex="0" aria-label="Réinitialiser le Nord">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" id="compass-svg">
       <path d="M12 2L15 12L12 22L9 12L12 2Z" fill="#ef4444" stroke="#ef4444" stroke-width="1"/>
       <path d="M12 2L15 12H9L12 2Z" fill="#ef4444"/>
@@ -87,7 +87,7 @@
   </div>
 
   <!-- COUCHES -->
-  <div id="layers-fab" class="fab-btn" title="Type de carte">
+  <div id="layers-fab" class="fab-btn" role="button" tabindex="0" aria-label="Changer le type de carte">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
       <polygon points="12 2 2 7 12 12 22 7 12 2"/>
       <polyline points="2 17 12 22 22 17"/>
@@ -96,7 +96,7 @@
   </div>
 
   <!-- GPS -->
-  <div id="gps-main-btn" class="fab-btn primary" title="Ma position">
+  <div id="gps-main-btn" class="fab-btn primary" role="button" tabindex="0" aria-label="Localiser ma position">
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
       <circle cx="11" cy="11" r="3.5" stroke="white" stroke-width="1.8"/>
       <path d="M11 2v3M11 17v3M2 11h3M17 11h3" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
@@ -290,11 +290,6 @@
                 <input type="checkbox" id="debug-toggle">
             </div>
 
-            <div class="setting-row">
-                <div class="setting-label" data-i18n="vram.label">Stats GPU (VRAM)</div>
-                <input type="checkbox" id="vram-toggle">
-            </div>
-
             <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 12px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.05);">
                 <div id="settings-api-key-slot"></div>
                 
@@ -468,7 +463,7 @@
 <template id="template-top-status-bar">
     <div class="top-status-bar-content">
         <div class="top-left-widgets">
-            <div class="top-widget" id="top-pill-main">
+            <div class="top-widget" id="top-pill-main" role="button" tabindex="0" aria-label="Statut carte et météo">
                 <span class="lod-badge">SWISS · LVL --</span>
                 <span class="weather-icon">☀️</span>
                 <span class="weather-temp">--°C</span>
@@ -479,17 +474,17 @@
                 <span class="rec-dot">🔴</span>
                 <span class="rec-timer">REC</span>
             </div>
-            <div class="icon-btn-sm" id="net-status-icon" title="Système & Données" style="cursor:pointer;">
+            <div class="icon-btn-sm" id="net-status-icon" role="button" tabindex="0" aria-label="Statut réseau et données">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
             </div>
-            <div class="icon-btn-sm danger" id="sos-main-btn" title="SOS">
+            <div class="icon-btn-sm danger" id="sos-main-btn" role="button" tabindex="0" aria-label="Appel de secours SOS">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/>
                 <path d="M7 4v3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                 <circle cx="7" cy="10" r="0.8" fill="currentColor"/>
               </svg>
             </div>
-            <div class="status-widget timeline-toggle-widget" id="timeline-toggle-btn">
+            <div class="status-widget timeline-toggle-widget" id="timeline-toggle-btn" role="button" tabindex="0" aria-label="Ouvrir la timeline de simulation">
                 <span class="timeline-icon">🕒</span>
             </div>
         </div>

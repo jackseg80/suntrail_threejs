@@ -4,6 +4,7 @@ import { state } from './state';
 import { lngLatToWorld } from './geo';
 import { getAltitudeAt } from './analysis';
 import { updateRecordedTrackMesh } from './terrain';
+import { updateRecordingSnapshot } from './foregroundService';
 
 let watchId: string | null = null;
 
@@ -81,6 +82,8 @@ export async function startLocationTracking() {
                         timestamp: Date.now()
                     }];
                     updateRecordedTrackMesh();
+                    // Mettre à jour le snapshot localStorage (fallback si app tuée)
+                    updateRecordingSnapshot(state.recordedPoints.length);
                 }
 
                 updateUserMarker();

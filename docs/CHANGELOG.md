@@ -5,7 +5,7 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 ---
 
 ## [5.11.0-wip] - 2026-03-27
-### 🚀 Audit Production Play Store + Navigation Tactile Google Earth
+### 🚀 Audit Production Play Store + Navigation Tactile + Accessibilité + Android
 
 #### Sprint 0 — Prérequis
 - **Version bump** : `package.json` → `5.11.0`, `versionCode: 511 / "5.11.0"` dans `android/app/build.gradle`.
@@ -33,6 +33,28 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Vitesse** : `PAN_SPEED = 1.8` (+ rapide qu'OrbitControls par défaut pour compenser l'absence d'inertie initiale).
 - **Paramètres** : `PAN_SPEED`, `TILT_SPEED`, `INERTIA`, `ROT_DEADZONE` ajustables en tête de fichier.
 - **`scene.ts`** : `initTouchControls()` branché après OrbitControls init. `disposeTouchControls()` dans `disposeScene()`.
+
+---
+
+#### Sprint 3 — Accessibilité & UX Légale
+- **Prominent Disclosure GPS** : `gpsDisclosure.ts` — modale WCAG avec focus trap, traduite 4 langues, stockée `localStorage`. Appelée avant `Geolocation.getCurrentPosition()`. Obligatoire Play Store.
+- **axe-core** : 7 tests WCAG 2.1 AA — GPS Disclosure, Navigation Bar, Bottom Sheet, FAB GPS (`src/test/a11y.test.ts`).
+- **Touch targets** : `icon-btn-sm` 34→48px · `#compass-fab` 44→48px · `.status-widget/.top-widget` min-height 48px · `.coords-btn` min-height 48px.
+- **Contraste accent** : `--accent: #3b7ef8` → `#4a8ef8` (ratio 4.44 → ~5.0, WCAG AA).
+- **Aria-labels** : `compass-fab`, `layers-fab`, `gps-main-btn`, `top-pill-main`, `net-status-icon`, `sos-main-btn`, `timeline-toggle-btn` — `role="button"` + `tabindex="0"`.
+- **Auto-hide** : 5s → 10s (TalkBack a plus de temps pour naviguer).
+
+#### Sprint 3.5 — Android Immersive + Foreground Service REC
+- **Immersive mode** : `MainActivity.java` — `WindowInsetsController.hide(statusBars())` dans `onWindowFocusChanged()`. La barre système (heure, batterie) est masquée.
+- **RecordingService.java** : Foreground Service `foregroundServiceType="location"`, `START_STICKY`, notification persistante — empêche Android de tuer l'app pendant l'enregistrement.
+- **RecordingPlugin.java** : Plugin Capacitor `startForeground()` / `stopForeground()` — contrôlé depuis JS.
+- **AndroidManifest.xml** : `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`, `POST_NOTIFICATIONS` + `<service>` déclaré.
+- **`foregroundService.ts`** : Wrapper JS + persistence `localStorage` — snapshot du REC à chaque point GPS. Toast d'alerte si l'app a été tuée pendant l'enregistrement.
+
+#### Fixes UX Sprint 3-4
+- **Mode 2D (Eco)** : Timeline et bouton 🕒 masqués (`display:none`). Altitude supprimée du panneau coordonnées (toujours 0 en 2D). Fermeture propre de la timeline au switch vers Eco.
+- **Timeline slider temps réel** : `state.isInteractingWithUI = true` pendant le drag → render loop reste actif → ombres se déplacent en temps réel sans mouvement de caméra.
+- **Stats de performance** : Suppression du doublon `vram-toggle`. `VRAMDashboard.setVisible(val)` remplace `toggle()` — synchronisation exacte avec `state.SHOW_STATS` dès l'init. Plus de désynchronisation toggle ON / panel caché.
 
 ---
 

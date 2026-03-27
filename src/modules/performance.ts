@@ -105,6 +105,12 @@ export function applyPreset(preset: PresetType): void {
 
     if (preset === 'eco') {
         document.body.classList.add('mode-2d');
+        // Fermer la timeline si elle est ouverte (inutile en 2D)
+        const bottomBar = document.getElementById('bottom-bar');
+        if (bottomBar && document.body.classList.contains('timeline-open')) {
+            document.body.classList.remove('timeline-open');
+            bottomBar.classList.remove('is-open');
+        }
     } else {
         document.body.classList.remove('mode-2d');
     }

@@ -200,6 +200,12 @@
       "permissionDenied": "GPS permission denied. Check your browser settings.",
       "error": "GPS error or timeout",
       "interrupted": "Tracking interrupted"
+    },
+    "disclosure": {
+      "title": "Access to your location",
+      "body": "SunTrail uses your GPS position to center the map on your location and record your hiking routes.\n\nYour coordinates stay on your device and are never sent to SunTrail servers. They may be transmitted to mapping services (MapTiler, OpenStreetMap) solely to load the tiles corresponding to your position.",
+      "allow": "Allow location access",
+      "decline": "Continue without GPS"
     }
   },
   "compass": {

@@ -63,6 +63,8 @@ describe('VRAMDashboard', () => {
             }
         };
         (state as any).PERFORMANCE_PRESET = 'balanced';
+        // Tests de toggle : partir d'un état caché (SHOW_STATS=false)
+        (state as any).SHOW_STATS = false;
 
         dashboard = new VRAMDashboard();
         dashboard.init();

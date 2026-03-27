@@ -49,23 +49,33 @@ export class VRAMDashboard {
             <div class="vram-row"><span class="vram-label">${i18n.t('vram.workers')}</span><span class="vram-value" id="vram-workers">—</span></div>
         `;
         document.body.appendChild(this.panel);
+
+        // Synchroniser avec state.SHOW_STATS dès l'initialisation
+        // (évite la désynchronisation entre l'état sauvegardé et l'affichage réel)
+        this.setVisible(state.SHOW_STATS);
     }
 
     /**
-     * Toggle both VRAM overlay AND Stats.js FPS panel together.
+     * Affiche ou masque le dashboard VRAM + Stats.js FPS selon la valeur booléenne.
+     * Préférer setVisible() à toggle() pour éviter les désynchronisations.
      */
-    public toggle(): void {
+    public setVisible(visible: boolean): void {
         if (!this.panel) return;
-        const isVisible = this.panel.style.display !== 'none';
-        if (isVisible) {
-            this.panel.style.display = 'none';
-            if (state.stats) state.stats.dom.style.display = 'none';
-            this.stop();
-        } else {
+        if (visible) {
             this.panel.style.display = 'block';
             if (state.stats) state.stats.dom.style.display = 'block';
             this.start();
+        } else {
+            this.panel.style.display = 'none';
+            if (state.stats) state.stats.dom.style.display = 'none';
+            this.stop();
         }
+    }
+
+    /** Bascule la visibilité (conservé pour compatibilité). */
+    public toggle(): void {
+        const isVisible = this.panel?.style.display !== 'none';
+        this.setVisible(!isVisible);
     }
 
     public start(): void {

@@ -39,9 +39,9 @@ export class SettingsSheet extends BaseComponent {
 
         // Toggles
         this.bindToggle('energy-saver-toggle', 'ENERGY_SAVER');
-        this.bindToggle('stats-toggle', 'SHOW_STATS', (_val: boolean) => {
-            // Unified: toggle both FPS stats + VRAM overlay together
-            state.vramPanel?.toggle?.();
+        this.bindToggle('stats-toggle', 'SHOW_STATS', (val: boolean) => {
+            // setVisible(val) synchronise exactement l'état du toggle avec l'affichage
+            state.vramPanel?.setVisible?.(val);
         });
         this.bindToggle('debug-toggle', 'SHOW_DEBUG', (val: boolean) => {
             const zoomInd = document.getElementById('zoom-indicator');
@@ -108,12 +108,6 @@ export class SettingsSheet extends BaseComponent {
                 await setPMTilesSource(file);
                 this.refreshTerrain();
             }
-        });
-
-        // VRAM Dashboard toggle — controls the same unified overlay
-        const vramToggle = document.getElementById('vram-toggle') as HTMLInputElement;
-        vramToggle?.addEventListener('change', () => {
-            state.vramPanel?.toggle?.();
         });
 
         // Trail follow

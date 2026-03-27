@@ -4,8 +4,8 @@
     --surface-solid: #12141f;
     --border: rgba(255,255,255,0.07);
     --border-active: rgba(255,255,255,0.15);
-    --accent: #3b7ef8;
-    --accent-glow: rgba(59,126,248,0.25);
+    --accent: #4a8ef8;          /* v5.11: légèrement éclairci — ratio contraste 4.44→5.0 */
+    --accent-glow: rgba(74,142,248,0.25);
     --gold: #f5a623;
     --text: #f0f0f2;
     --text-2: #8b8fa8;
@@ -95,6 +95,7 @@ body, html {
     border: 1px solid var(--border);
     border-radius: 20px;
     padding: 6px var(--space-3);
+    min-height: 48px;  /* ≥ 48dp touch target */
     display: flex; align-items: center; gap: 6px;
     font-size: var(--text-base); font-weight: 500;
     cursor: pointer;
@@ -113,7 +114,7 @@ body, html {
 }
 
 .icon-btn-sm {
-    width: 34px; height: 34px;
+    width: 48px; height: 48px;  /* ≥ 48dp touch target (Play Store requirement) */
     background: var(--surface);
     backdrop-filter: var(--glass);
     border: 1px solid var(--border);
@@ -585,7 +586,7 @@ body.sheet-layers-sheet-open #sheet-overlay {
 .fab-btn.success { background: var(--success); color: white; }
 
 #compass-fab {
-    width: 44px; height: 44px;
+    width: 48px; height: 48px;  /* ≥ 48dp touch target */
     margin-bottom: 4px;
     padding: 6px;
 }
@@ -649,7 +650,8 @@ body.sheet-layers-sheet-open #sheet-overlay {
 .coords-alt { font-size: var(--text-lg); font-weight: 700; color: var(--gold); letter-spacing: -0.5px; }
 .coords-actions { display: flex; gap: 6px; margin-top: var(--space-2); }
 .coords-btn {
-    flex: 1; padding: 7px 0; border-radius: var(--radius-sm); border: none;
+    flex: 1; padding: 7px 0; min-height: 48px;  /* ≥ 48dp touch target */
+    border-radius: var(--radius-sm); border: none;
     font-family: inherit; font-size: var(--text-xs); font-weight: 700;
     cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
 }
@@ -663,6 +665,13 @@ body.ui-hidden #bottom-bar { transform: translate(-50%, 200px); opacity: 0; }
 body.ui-hidden #gps-main-btn, 
 body.ui-hidden #coords-pill,
 body.ui-hidden .fab-stack { transform: translateX(100px); opacity: 0; }
+
+/* ── MODE 2D (preset Eco) ───────────────────────────────────────────────────── */
+/* Masquer le bouton timeline et la timeline elle-même (altitude = 0, simulation inutile) */
+body.mode-2d #timeline-toggle-btn { display: none !important; }
+body.mode-2d #bottom-bar         { display: none !important; }
+/* Masquer l'altitude dans le panneau de coordonnées (toujours 0 en 2D) */
+body.mode-2d #click-alt          { display: none; }
 
 #toast-container {
     position: fixed; bottom: calc(var(--bar-h) + var(--safe-bottom) + 20px); left: 50%; transform: translateX(-50%);
@@ -1009,3 +1018,52 @@ body.ui-hidden .fab-stack { transform: translateX(100px); opacity: 0; }
 .vram-row:last-child { border-bottom: none; }
 .vram-label { color: var(--text-3, rgba(255,255,255,0.4)); }
 .vram-value { color: var(--gold, #f59e0b); font-weight: 700; }
+
+/* ── GPS Prominent Disclosure Modal (v5.11) ────────────────────────────────── */
+.gps-disc-card {
+    background: var(--surface-solid);
+    border: 1px solid var(--border-active);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    max-width: 360px;
+    width: 100%;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+}
+.gps-disc-icon { font-size: 40px; text-align: center; margin-bottom: var(--space-3); }
+.gps-disc-title {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    text-align: center;
+    margin: 0 0 var(--space-4);
+    color: var(--text);
+}
+.gps-disc-body p {
+    font-size: var(--text-sm);
+    color: var(--text-2);
+    line-height: 1.6;
+    margin: 0 0 var(--space-3);
+}
+.gps-disc-body p:last-child { margin-bottom: 0; }
+.gps-disc-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: var(--space-5);
+}
+.gps-disc-btn {
+    padding: 14px var(--space-4);
+    border-radius: var(--radius-lg);
+    border: none;
+    font-size: var(--text-base);
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity var(--transition-fast);
+    min-height: 48px;
+}
+.gps-disc-btn:active { opacity: 0.8; }
+.gps-disc-allow  { background: var(--accent); color: #fff; }
+.gps-disc-decline {
+    background: transparent;
+    border: 1px solid var(--border-active);
+    color: var(--text-2);
+}

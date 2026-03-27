@@ -200,6 +200,12 @@
       "permissionDenied": "GPS-Berechtigung verweigert. Überprüfen Sie Ihre Browsereinstellungen.",
       "error": "GPS-Fehler oder Zeitüberschreitung",
       "interrupted": "Verfolgung unterbrochen"
+    },
+    "disclosure": {
+      "title": "Zugriff auf Ihren Standort",
+      "body": "SunTrail verwendet Ihre GPS-Position, um die Karte auf Ihren Standort zu zentrieren und Ihre Wanderrouten aufzuzeichnen.\n\nIhre Koordinaten verbleiben auf Ihrem Gerät und werden nie an SunTrail-Server übertragen. Sie können an Kartendienste (MapTiler, OpenStreetMap) weitergeleitet werden, um die entsprechenden Kacheln zu laden.",
+      "allow": "Standort erlauben",
+      "decline": "Ohne GPS fortfahren"
     }
   },
   "compass": {

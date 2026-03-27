@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Geolocation } from '@capacitor/geolocation';
 import { state, loadSettings } from './state';
+import { requestGPSDisclosure } from './gpsDisclosure';
 import { i18n } from '../i18n/I18nService';
 import { initScene, flyTo } from './scene';
 import { updateVisibleTiles, resetTerrain, loadTerrain } from './terrain';
@@ -137,6 +138,10 @@ export function initUI(): void {
     const gpsMainBtn = document.getElementById('gps-main-btn');
     gpsMainBtn?.addEventListener('click', async () => {
         try {
+            // Prominent Disclosure GPS obligatoire Play Store (une seule fois)
+            const allowed = await requestGPSDisclosure();
+            if (!allowed) return;
+
             // 1. Get current position with timeout
             const position = await Geolocation.getCurrentPosition({
                 timeout: 5000,
@@ -347,6 +352,9 @@ function startApp() {
     
     const bottomBar = document.getElementById('bottom-bar');
     if (bottomBar) bottomBar.style.display = 'block';
+
+    // Notifier les modules qui attendent que l'UI soit prête (ex: toast d'enregistrement interrompu)
+    window.dispatchEvent(new Event('suntrail:uiReady'));
 }
 
 function onWindowResize() {

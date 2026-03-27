@@ -13,7 +13,7 @@ const resetTimer = () => {
     if (hideTimer) {
         clearTimeout(hideTimer);
     }
-    hideTimer = setTimeout(hideUI, 5000); // 5 seconds
+    hideTimer = setTimeout(hideUI, 10000); // 10 secondes (délai étendu pour TalkBack)
 };
 
 export const initAutoHide = () => {

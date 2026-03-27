@@ -24,7 +24,18 @@ export class TimelineComponent {
             this.timeSlider.setAttribute('aria-valuemax', this.timeSlider.max);
             this.timeSlider.setAttribute('aria-valuenow', this.timeSlider.value);
 
+            // Timer pour désactiver le flag après la fin du drag
+            let _renderTimer: ReturnType<typeof setTimeout> | null = null;
+
             this.timeSlider.addEventListener('input', () => {
+                // Forcer le render loop à rester actif pendant le drag
+                // (sans ça, la scène ne se met pas à jour car needsUpdate = false)
+                state.isInteractingWithUI = true;
+                if (_renderTimer) clearTimeout(_renderTimer);
+                _renderTimer = setTimeout(() => {
+                    state.isInteractingWithUI = false;
+                }, 150);
+
                 const mins = parseInt(this.timeSlider!.value);
                 const newDate = new Date(state.simDate);
                 newDate.setHours(Math.floor(mins / 60), mins % 60, 0, 0);

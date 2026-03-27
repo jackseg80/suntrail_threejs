@@ -130,12 +130,20 @@
 - [x] **2 doigts angle** : Rotation azimut (tire-bouchon).
 - [x] **Paramètres** : `PAN_SPEED = 1.8`, `TILT_SPEED = 1.2`, `INERTIA = 0.88`, `ROT_DEADZONE = 0.003`.
 
-### Sprint 3 — Accessibilité & UX Légale
-- [ ] **Prominent Disclosure GPS** : Modale explicative AVANT la demande de permission GPS (obligatoire Play Store).
-- [ ] **TalkBack** : Navigation complète avec TalkBack activé — tous les éléments interactifs annoncés.
-- [ ] **Touch Targets** : Vérifier que tous les boutons font ≥ 48×48dp (Accessibility Scanner Google).
-- [ ] **Contrastes** : Ratio ≥ 4.5:1 sur tous les textes — vérifier glassmorphism + texte blanc.
-- [ ] **axe-core** : Intégrer dans les tests Vitest pour audit a11y automatisé.
+### Sprint 3 — Accessibilité & UX Légale ✅ TERMINÉ
+- [x] **Prominent Disclosure GPS** : `gpsDisclosure.ts`, modale WCAG, 4 langues, localStorage.
+- [x] **TalkBack** : Aria-labels ajoutés sur tous les boutons droits. Auto-hide 5s → 10s.
+- [x] **Touch Targets** : 7 éléments corrigés ≥ 48dp (icon-btn-sm, compass-fab, status-widget, coords-btn).
+- [x] **Contrastes** : `--accent` #3b7ef8 → #4a8ef8 (ratio 4.44 → 5.0 WCAG AA).
+- [x] **axe-core** : 7 tests WCAG 2.1 AA dans `src/test/a11y.test.ts`.
+
+### Sprint 3.5 — Android Immersive + Foreground Service ✅ TERMINÉ
+- [x] **Immersive mode** : Barre de statut masquée via `WindowInsetsController` dans `onWindowFocusChanged()`.
+- [x] **Foreground Service** : `RecordingService.java` + `RecordingPlugin.java` + permissions AndroidManifest.
+- [x] **Persistence REC** : `foregroundService.ts` — snapshot localStorage + toast si app interrompue.
+- [x] **Mode 2D/Eco** : Timeline + bouton masqués, altitude cachée en mode plat.
+- [x] **Timeline slider** : `isInteractingWithUI = true` pendant drag → render temps réel.
+- [x] **Stats toggle** : `setVisible(val)` — synchronisation exacte état↔affichage.
 
 ### Sprint 4 — Audit Performance
 - [ ] **Lighthouse** : Score ≥ 90 Performance, ≥ 90 Accessibility, ≥ 90 Best Practices — build production.

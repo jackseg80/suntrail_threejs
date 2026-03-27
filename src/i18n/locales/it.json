@@ -200,6 +200,12 @@
       "permissionDenied": "Permesso GPS negato. Controlla le impostazioni del browser.",
       "error": "Errore GPS o timeout",
       "interrupted": "Tracciamento interrotto"
+    },
+    "disclosure": {
+      "title": "Accesso alla tua posizione",
+      "body": "SunTrail utilizza la tua posizione GPS per centrare la mappa sulla tua posizione e registrare i tuoi percorsi escursionistici.\n\nLe tue coordinate rimangono sul tuo dispositivo e non vengono mai inviate ai server SunTrail. Possono essere trasmesse ai servizi cartografici (MapTiler, OpenStreetMap) unicamente per caricare le tessere corrispondenti alla tua posizione.",
+      "allow": "Consenti la localizzazione",
+      "decline": "Continua senza GPS"
     }
   },
   "compass": {
