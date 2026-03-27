@@ -3,6 +3,7 @@ import { initUI } from './modules/ui';
 import { initBatteryManager } from './modules/performance';
 import { registerSW } from 'virtual:pwa-register';
 import { getInterruptedRecording, clearInterruptedRecording, stopRecordingService } from './modules/foregroundService';
+import { showToast } from './modules/utils';
 
 // Enregistrement du Service Worker pour le mode Hors-ligne (PWA)
 registerSW({
@@ -23,10 +24,7 @@ if (interrupted) {
     void stopRecordingService();
     // On affiche un toast après que l'UI soit chargée
     window.addEventListener('suntrail:uiReady', () => {
-        // Import dynamique pour éviter la circularité
-        import('./modules/utils').then(({ showToast }) => {
-            showToast(`⚠️ Enregistrement interrompu après ${mins} min — ${interrupted.pointCount} pts sauvegardés`);
-        });
+        showToast(`⚠️ Enregistrement interrompu après ${mins} min — ${interrupted.pointCount} pts sauvegardés`);
     }, { once: true });
 }
 

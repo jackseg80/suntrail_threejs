@@ -103,7 +103,8 @@
     "title": "Exploration",
     "aria": {
       "close": "Fermer la recherche",
-      "input": "Rechercher un lieu"
+      "input": "Rechercher un lieu",
+      "results": "Résultats de recherche"
     },
     "placeholder": "Rechercher un lieu...",
     "empty": {

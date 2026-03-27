@@ -103,7 +103,8 @@
     "title": "Search",
     "aria": {
       "close": "Close search",
-      "input": "Search for a place"
+      "input": "Search for a place",
+      "results": "Search results"
     },
     "placeholder": "Search for a place...",
     "empty": {

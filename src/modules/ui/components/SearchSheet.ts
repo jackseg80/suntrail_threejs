@@ -40,6 +40,7 @@ export class SearchSheet extends BaseComponent {
 
             this.geoResults.setAttribute('role', 'listbox');
             this.geoResults.setAttribute('aria-live', 'polite');
+            this.geoResults.setAttribute('aria-label', i18n.t('search.aria.results'));
 
             // --- Empty states ---
             this.createEmptyStates();

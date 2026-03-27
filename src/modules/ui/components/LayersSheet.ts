@@ -17,12 +17,9 @@ export class LayersSheet extends BaseComponent {
         closeBtn?.addEventListener('click', () => sheetManager.close());
 
         const layerItems = this.element.querySelectorAll('.layer-item');
-        // ARIA: layer grid acts as a listbox
-        const layerGrid = this.element.querySelector('.layers-grid, .lyr-grid');
-        layerGrid?.setAttribute('role', 'listbox');
+        // ARIA: role="listbox" et role="option" déjà présents dans le HTML statique
 
         layerItems.forEach(item => {
-            item.setAttribute('role', 'option');
             item.addEventListener('click', () => {
                 const source = (item as HTMLElement).dataset.source;
                 if (source) {

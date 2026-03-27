@@ -103,7 +103,8 @@
     "title": "Suche",
     "aria": {
       "close": "Suche schliessen",
-      "input": "Ort suchen"
+      "input": "Ort suchen",
+      "results": "Suchergebnisse"
     },
     "placeholder": "Ort suchen...",
     "empty": {

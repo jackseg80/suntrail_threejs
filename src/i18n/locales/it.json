@@ -103,7 +103,8 @@
     "title": "Ricerca",
     "aria": {
       "close": "Chiudi ricerca",
-      "input": "Cerca un luogo"
+      "input": "Cerca un luogo",
+      "results": "Risultati di ricerca"
     },
     "placeholder": "Cerca un luogo...",
     "empty": {

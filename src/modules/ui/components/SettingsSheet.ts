@@ -307,7 +307,7 @@ export class SettingsSheet extends BaseComponent {
         const section = document.createElement('div');
         section.className = 'settings-section';
         section.innerHTML = `
-            <h3 class="settings-section-title">${i18n.t('settings.section.language')}</h3>
+            <h2 class="settings-section-title">${i18n.t('settings.section.language')}</h2>
             <div class="setting-row">
                 <label for="lang-select" class="setting-label">${i18n.t('settings.section.language')}</label>
                 <select id="lang-select" class="lang-select">

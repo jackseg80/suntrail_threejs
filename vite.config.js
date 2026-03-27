@@ -5,13 +5,35 @@ export default defineConfig({
   base: './', 
   build: {
     outDir: 'dist',
+    rollupOptions: {
+      output: {
+        // Découpe le bundle pour un LCP optimal :
+        //  - three     : ~350 kB, rarement mis à jour → cache long
+        //  - vendor    : deps tierces stables
+        //  - pmtiles   : optionnel (mode hors-ligne seulement)
+        //  - app       : code métier, change à chaque déploiement
+        manualChunks(id) {
+          if (id.includes('node_modules/three')) return 'three';
+          if (id.includes('node_modules/pmtiles')) return 'pmtiles';
+          if (
+            id.includes('node_modules/suncalc') ||
+            id.includes('node_modules/gpxparser') ||
+            id.includes('node_modules/@mapbox') ||
+            id.includes('node_modules/pbf') ||
+            id.includes('node_modules/three-stdlib')
+          ) return 'vendor';
+        },
+      },
+    },
   },
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,bin}'],
-        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB limit pour le WebAssembly ou gros assets
+        // Exclure le chunk Three.js du précache (trop lourd, en runtime cache à la demande)
+        globIgnores: ['**/three-*.js'],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB max par fichier
         // Invalidation automatique du cache précache au déploiement
         cleanupOutdatedCaches: true,
         // Prise de contrôle immédiate des clients après mise à jour

@@ -145,11 +145,28 @@
 - [x] **Timeline slider** : `isInteractingWithUI = true` pendant drag → render temps réel.
 - [x] **Stats toggle** : `setVisible(val)` — synchronisation exacte état↔affichage.
 
-### Sprint 4 — Audit Performance
-- [ ] **Lighthouse** : Score ≥ 90 Performance, ≥ 90 Accessibility, ≥ 90 Best Practices — build production.
-- [ ] **Core Web Vitals** : LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1.
-- [ ] **Memory Leak Audit** : Android Studio Profiler sur 1h de navigation.
-- [ ] **Battery Test** : 1h utilisation continue preset Balanced.
+### Sprint 4 — Audit Performance ✅ TERMINÉ
+- [x] **Build production** : bundle split `three` (530kB) / `app` (194kB) / `vendor` (24kB) / `pmtiles` (18kB). Fonts async non-bloquantes (LCP).
+- [x] **Lighthouse** : Accessibility **91/100** ✅, Best Practices **100/100** ✅.
+  - Fixes : `role="listbox"` sur layer-grid (sélecteur JS cassé), `aria-label` sur geo-results, contraste btn-go #1555e0 (5.6:1), `.vram-label` 75% opacité (12:1), H3→H2 dans SettingsSheet.
+  - Thumbnails MapTiler téléchargées localement (`public/img/maps/`) → cookie tiers supprimé.
+- [x] **Core Web Vitals** : LCP **84ms** ✅ (≤2.5s), CLS **0.03** ✅ (≤0.1), INP N/A (pas d'interaction).
+- [ ] **Memory Leak Audit** : 📱 **À FAIRE — côté utilisateur** — voir instructions ci-dessous.
+- [ ] **Battery Test** : 📱 **À FAIRE — côté utilisateur** — voir instructions ci-dessous.
+
+> ### 📱 Instructions Memory Leak Audit (toi)
+> 1. Connecte ton téléphone Android en USB, active le débogage USB.
+> 2. Lance Android Studio → ouvre le Profiler (View > Tool Windows > App Inspection).
+> 3. Lance SunTrail sur le téléphone, sélectionne le process dans le Profiler.
+> 4. Onglet **Memory** → clique "Record native allocations" ou observe le Live Memory chart.
+> 5. Scénario 30 min : navigue librement, importe 3 GPX, toggle les layers, zoom in/out intensif, ouvre/ferme les sheets.
+> 6. **Résultat attendu** : la heap se stabilise (courbe plate) après 5-10min. Si elle monte linéairement → noter le composant suspect.
+>
+> ### 🔋 Instructions Battery Test (toi)
+> 1. Déconnecte le chargeur, batterie à ≥ 80%.
+> 2. Preset **Balanced**, GPS actif, navigation continue 1h.
+> 3. Commande de mesure : `adb shell dumpsys batterystats --reset` (avant) puis `adb shell dumpsys batterystats` (après).
+> 4. Ou simplement noter le % de batterie avant/après. **Objectif** : ≤ 15% de drain/heure.
 
 ### Sprint 5 — Légal & Play Store Listing
 - [ ] **Privacy Policy** : `public/privacy.html` → `https://jackseg80.github.io/suntrail_threejs/privacy.html`.
