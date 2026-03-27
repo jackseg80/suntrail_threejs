@@ -5,6 +5,7 @@ import { autoSelectMapSource, resetTerrain, updateVisibleTiles } from '../../ter
 import { lngLatToTile, lngLatToWorld } from '../../geo';
 import { flyTo } from '../../scene';
 import { fetchWeather } from '../../weather';
+import { i18n } from '../../../i18n/I18nService';
 
 import { sheetManager } from '../core/SheetManager';
 
@@ -21,7 +22,7 @@ export class SearchSheet extends BaseComponent {
         if (!this.element) return;
 
         const closeBtn = this.element.querySelector('#close-search');
-        closeBtn?.setAttribute('aria-label', 'Fermer la recherche');
+        closeBtn?.setAttribute('aria-label', i18n.t('search.aria.close'));
         closeBtn?.addEventListener('click', () => sheetManager.close());
 
         this.geoInput = this.element.querySelector('#geo-input') as HTMLInputElement;
@@ -29,7 +30,7 @@ export class SearchSheet extends BaseComponent {
 
         if (this.geoInput && this.geoResults) {
             // ARIA: search input label and results container
-            this.geoInput.setAttribute('aria-label', 'Rechercher un lieu');
+            this.geoInput.setAttribute('aria-label', i18n.t('search.aria.input'));
             this.geoResults.setAttribute('role', 'listbox');
             this.geoResults.setAttribute('aria-live', 'polite');
 
@@ -83,7 +84,7 @@ export class SearchSheet extends BaseComponent {
             loadingEl.className = 'loading-inline';
             loadingEl.setAttribute('role', 'status');
             loadingEl.setAttribute('aria-live', 'polite');
-            loadingEl.innerHTML = '<span class="spinner"></span><span>Recherche...</span>';
+            loadingEl.innerHTML = `<span class="spinner"></span><span>${i18n.t('search.loading')}</span>`;
             this.geoResults!.appendChild(loadingEl);
             this.geoResults!.style.display = 'block';
 
@@ -109,7 +110,7 @@ export class SearchSheet extends BaseComponent {
                         const lon = parseFloat(f.geometry.coordinates[0]);
                         const lat = parseFloat(f.geometry.coordinates[1]);
                         if (!isNaN(lat) && !isNaN(lon)) {
-                            const label = f.place_name_fr || f.place_name || 'Lieu inconnu';
+                            const label = f.place_name_fr || f.place_name || i18n.t('search.unknownPlace');
                             this.geoResults!.appendChild(this.createGeoItem(lat, lon, label));
                         }
                     }
@@ -127,7 +128,7 @@ export class SearchSheet extends BaseComponent {
                 console.warn("Geocoding error:", e);
                 loadingEl.remove();
                 if (localMatches.length === 0) {
-                    this.geoResults!.innerHTML = '<div class="loading-inline">Erreur de recherche</div>';
+                    this.geoResults!.innerHTML = `<div class="loading-inline">${i18n.t('search.error')}</div>`;
                     this.geoResults!.style.display = 'block';
                 }
             }
@@ -148,7 +149,7 @@ export class SearchSheet extends BaseComponent {
                 <circle cx="11" cy="11" r="8"/>
                 <path d="M21 21l-4.35-4.35"/>
             </svg>
-            <p class="empty-state-subtitle">Recherchez un lieu, sommet ou commune</p>`;
+            <p class="empty-state-subtitle">${i18n.t('search.empty.subtitle')}</p>`;
         searchEl.appendChild(initialDiv);
 
         // No results state (hidden by default)
@@ -160,8 +161,8 @@ export class SearchSheet extends BaseComponent {
             <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 2L8 8H4l8 14 8-14h-4L12 2z"/>
             </svg>
-            <p class="empty-state-title">Aucun résultat</p>
-            <p class="empty-state-subtitle">Essayez un autre nom de lieu ou sommet</p>`;
+            <p class="empty-state-title">${i18n.t('search.noResults.title')}</p>
+            <p class="empty-state-subtitle">${i18n.t('search.noResults.subtitle')}</p>`;
         searchEl.appendChild(noResultsDiv);
     }
 
@@ -203,7 +204,7 @@ export class SearchSheet extends BaseComponent {
         if (isPeak) {
             const sub = document.createElement('div');
             sub.classList.add('srch-peak-sub');
-            sub.textContent = 'Sommet';
+            sub.textContent = i18n.t('search.peak');
             contentDiv.appendChild(sub);
         }
 

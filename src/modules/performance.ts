@@ -2,6 +2,7 @@ import { state, PRESETS, PresetType, saveSettings } from './state';
 import { showToast } from './utils';
 import { updateShadowMapResolution } from './sun';
 import { resetTerrain, updateVisibleTiles } from './terrain';
+import { i18n } from '../i18n/I18nService';
 
 /**
  * Force le rechargement complet du terrain
@@ -120,7 +121,7 @@ export function applyPreset(preset: PresetType): void {
     updatePerformanceUI(preset);
     refreshTerrain();
     saveSettings();
-    showToast(`Profil appliqué : ${preset.toUpperCase()}`);
+    showToast(i18n.t('preset.applied', { preset: preset.toUpperCase() }));
 }
 
 /**
@@ -164,7 +165,7 @@ export function initBatteryManager(): void {
         navigator.getBattery().then(battery => {
             const checkBattery = () => {
                 if (battery.level < 0.20 && state.PERFORMANCE_PRESET !== 'eco') {
-                    showToast("🔋 Batterie faible : Mode Éco activé");
+                    showToast(i18n.t('preset.lowBattery'));
                     applyPreset('eco');
                 }
             };

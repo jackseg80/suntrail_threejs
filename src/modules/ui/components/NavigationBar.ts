@@ -1,6 +1,7 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { sheetManager } from '../core/SheetManager';
 import { eventBus } from '../../eventBus';
+import { i18n } from '../../../i18n/I18nService';
 
 export class NavigationBar extends BaseComponent {
     constructor() {
@@ -56,8 +57,28 @@ export class NavigationBar extends BaseComponent {
             eventBus.off('sheetClosed', onSheetClosed);
         });
 
-        // Set initial state
+        // Update tab labels on locale change
+        const onLocaleChanged = () => this.updateTabLabels();
+        eventBus.on('localeChanged', onLocaleChanged);
+        this.addSubscription(() => eventBus.off('localeChanged', onLocaleChanged));
+
+        // Set initial labels and state
+        this.updateTabLabels();
         this.syncActiveTab(sheetManager.getActiveSheetId());
+    }
+
+    private updateTabLabels(): void {
+        if (!this.element) return;
+        const tabs = this.element.querySelectorAll('.nav-tab');
+        tabs.forEach(tab => {
+            const tabId = tab.getAttribute('data-tab');
+            if (!tabId) return;
+            const labelEl = tab.querySelector('.nav-label');
+            if (labelEl) {
+                labelEl.textContent = i18n.t(`nav.tab.${tabId}`);
+            }
+            tab.setAttribute('aria-label', i18n.t(`nav.tab.${tabId}`));
+        });
     }
 
     private syncActiveTab(activeId: string | null): void {

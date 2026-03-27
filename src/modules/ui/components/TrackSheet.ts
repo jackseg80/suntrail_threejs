@@ -4,6 +4,7 @@ import { showToast } from '../../utils';
 import { startLocationTracking } from '../../location';
 import { sheetManager } from '../core/SheetManager';
 import { haptic } from '../../haptics';
+import { i18n } from '../../../i18n/I18nService';
 // @ts-ignore
 import gpxParser from 'gpxparser';
 import { updateVisibleTiles, updateGPXMesh, updateRecordedTrackMesh } from '../../terrain';
@@ -23,19 +24,19 @@ export class TrackSheet extends BaseComponent {
         this.updateEmptyState();
 
         const closeBtn = document.getElementById('close-track');
-        closeBtn?.setAttribute('aria-label', 'Fermer parcours');
+        closeBtn?.setAttribute('aria-label', i18n.t('track.aria.close'));
         closeBtn?.addEventListener('click', () => {
             sheetManager.close();
         });
 
         const recBtn = document.getElementById('rec-btn-sheet') as HTMLButtonElement;
-        recBtn?.setAttribute('aria-label', 'Enregistrer un parcours');
+        recBtn?.setAttribute('aria-label', i18n.t('track.aria.rec'));
         recBtn?.addEventListener('click', async () => {
             state.isRecording = !state.isRecording;
             this.updateRecUI();
             
             if (state.isRecording) {
-                showToast("🔴 Enregistrement démarré");
+                showToast(i18n.t('track.toast.recStarted'));
                 if (!state.isFollowingUser) await startLocationTracking();
                 if (state.userLocation) {
                     state.recordedPoints = [{ ...state.userLocation, timestamp: Date.now() }];
@@ -44,12 +45,12 @@ export class TrackSheet extends BaseComponent {
                     state.recordedPoints = [];
                 }
             } else {
-                showToast("⏹️ Enregistrement stoppé");
+                showToast(i18n.t('track.toast.recStopped'));
             }
         });
 
         const importBtn = document.getElementById('import-gpx-sheet');
-        importBtn?.setAttribute('aria-label', 'Importer un fichier GPX');
+        importBtn?.setAttribute('aria-label', i18n.t('track.aria.import'));
         const gpxUpload = document.getElementById('gpx-upload') as HTMLInputElement;
         
         importBtn?.addEventListener('click', () => {
@@ -79,10 +80,10 @@ export class TrackSheet extends BaseComponent {
         });
 
         const exportBtn = document.getElementById('export-gpx-sheet');
-        exportBtn?.setAttribute('aria-label', 'Exporter en GPX');
+        exportBtn?.setAttribute('aria-label', i18n.t('track.aria.export'));
         exportBtn?.addEventListener('click', () => {
             if (state.recordedPoints.length < 2) {
-                showToast("Tracé trop court pour export");
+                showToast(i18n.t('track.toast.tooShort'));
                 return;
             }
             this.exportRecordedGPX();
@@ -112,8 +113,8 @@ export class TrackSheet extends BaseComponent {
                 <path d="M3 17l4-8 4 5 3-3 4 6"/>
                 <circle cx="19" cy="5" r="2"/>
             </svg>
-            <p class="empty-state-title">Aucun parcours</p>
-            <p class="empty-state-subtitle">Importez un fichier GPX ou démarrez l'enregistrement GPS</p>`;
+            <p class="empty-state-title">${i18n.t('track.empty.title')}</p>
+            <p class="empty-state-subtitle">${i18n.t('track.empty.subtitle')}</p>`;
         trackEl.appendChild(emptyDiv);
     }
 
@@ -137,7 +138,7 @@ export class TrackSheet extends BaseComponent {
             recBtn.innerHTML = `
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" class="trk-rec-icon">
                     <rect x="2" y="2" width="6" height="6" rx="1" fill="white"/>
-                </svg> STOP`;
+                </svg> ${i18n.t('track.btn.stop')}`;
             navTab?.classList.add('has-notif');
         } else {
             recBtn.classList.remove('active');
@@ -145,7 +146,7 @@ export class TrackSheet extends BaseComponent {
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" class="trk-rec-icon">
                     <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.3"/>
                     <circle cx="6" cy="6" r="3" fill="currentColor"/>
-                </svg> REC`;
+                </svg> ${i18n.t('track.btn.rec')}`;
             navTab?.classList.remove('has-notif');
         }
     }
@@ -223,7 +224,7 @@ export class TrackSheet extends BaseComponent {
         link.download = `suntrail-track-${Date.now()}.gpx`;
         link.click();
         URL.revokeObjectURL(url);
-        showToast("GPX téléchargé");
+        showToast(i18n.t('track.toast.exported'));
     }
 
     private async handleGPX(xml: string) {

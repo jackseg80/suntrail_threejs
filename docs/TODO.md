@@ -1,4 +1,4 @@
-# SunTrail 3D - Roadmap Révisée (v5.9.0)
+# SunTrail 3D - Roadmap Révisée (v5.10.0)
 
 ## 🚀 Priorité 1 : Optimisations & Netteté (v5.6) - ✅ TERMINÉ
 *Impact : Fluidité mobile absolue et rendu topographique pro.*
@@ -41,14 +41,111 @@
 - [x] **Empty States** : États vides illustrés (TrackSheet + SearchSheet).
 - [x] **Haptic Feedback** : `@capacitor/haptics` — swipes (medium) + confirmations (success).
 
-## 🌐 Priorité 4 : Expansion & Multi-GPX (v5.10)
-*Impact : Ouverture européenne et gestion de groupes.*
+## 🌐 Priorité 4 : Expansion & Multi-GPX (v5.10) — EN COURS 🚧
+*Impact : Ouverture européenne, gestion multi-tracés, monitoring avancé. Version cible pour Google Play Store.*
 
-- [ ] **Multi-GPX** : Affichage et comparaison de plusieurs tracés simultanés.
-- [ ] **Multilingue (i18n)** : Support complet FR / DE / IT / EN.
-- [ ] **Dashboard VRAM Pro** : Monitoring précis pour la stabilité sur anciens mobiles.
+> 🔁 **Workflow** : Chaque sprint se termine par une session de test utilisateur avant commit.
 
-## 🚀 Priorité 5 : La Révolution AR (v6.0)
+### Sprint 1 — Foundation i18n ✅ EN COURS (à faire EN PREMIER — toutes les nouvelles strings passeront par là)
+- [ ] **Service I18n** : Créer `src/i18n/` — `I18nService.ts` avec `t(key)`, `setLocale()`, persistance via `state.lang`.
+- [ ] **Fichiers de traduction** : 4 JSON (`fr.json`, `de.json`, `it.json`, `en.json`).
+- [ ] **Extraction strings existantes** : ~130 strings FR hardcodées extraites depuis `index.html` (60 labels templates), 9 composants TS (50 strings), `showToast()` (20 messages).
+- [ ] **Intégration composants** : Remplacement des strings inline dans tous les `BaseComponent`, `ui.ts`, `utils.ts`.
+- [ ] **Sélecteur de langue** : UI dans `SettingsSheet` (drapeaux + nom de langue), persistance `state.lang`.
+- [ ] **`<html lang>` dynamique** : Mise à jour du `lang` attribute et des `aria-label` à la volée.
+- [ ] **`Intl` API** : Dates, distances et altitudes formatées selon la locale (km/mi si on anticipe EN).
+
+### Sprint 2 — Multi-GPX
+- [ ] **Refonte State** : Remplacer `rawGpxData` (mono) par `gpxLayers: GPXLayer[]` — chaque layer avec `{id, name, color, visible, mesh, points, profile}`.
+- [ ] **Refonte `terrain.ts`** : Pool de meshes GPX (`Map<string, THREE.Mesh>`), `addGPXLayer()`, `removeGPXLayer()`, `toggleGPXLayer()`.
+- [ ] **Refonte `TrackSheet.ts`** : Liste des tracés chargés (nom, couleur, toggle visibilité, supprimer), import multi-fichiers, couleurs auto-attribuées par index.
+- [ ] **Profil d'élévation multi-tracés** : Superposition des profils ou sélection d'un tracé actif pour le profil.
+- [ ] **Origin Shift** : Adapter `scene.ts` pour translater tous les `gpxLayers` meshes (actuellement 1 mesh hardcodé ligne 222-224).
+- [ ] **Comparaison** : Statistiques côte à côte (distance, D+, D-, durée si metadata GPX disponible).
+
+### Sprint 3 — Dashboard VRAM Pro
+- [ ] **Collecte métriques** : Lire `renderer.info` à chaque frame — `memory.geometries`, `memory.textures`, `render.calls`, `render.triangles`.
+- [ ] **Réanimer `vramPanel`** : Le stub-mort dans `state.ts` (déclaré mais jamais instancié depuis v5.7) devient un vrai composant.
+- [ ] **Nouveau composant `VRAMDashboard`** : Panel flottant avec métriques temps réel (tuiles chargées, textures GPU, draw calls, triangles, workers actifs).
+- [ ] **Seuils d'alerte** : Warning toast si textures > seuil critique selon profil (Eco/Balanced/Performance/Ultra).
+- [ ] **Intégration ExpertSheets** : Accessible depuis Paramètres > Avancé, avec toggle affichage permanent.
+- [ ] **Tests** : Couverture `vramDashboard.test.ts` — seuils, alerts, métriques normalisées.
+
+### Sprint 4 — Tests & Qualité v5.10
+- [ ] **Objectif : 120+ tests** (actuellement 102) — couvrir i18n service, multi-GPX layers, VRAM dashboard.
+- [ ] **Tests i18n** : Clés manquantes, fallback FR, changement de locale dynamique.
+- [ ] **Tests Multi-GPX** : `addGPXLayer`, `removeGPXLayer`, origin shift multi-layers, export individuel.
+- [ ] **`npm run check`** : TypeScript strict — 0 erreurs (supprimer le `@ts-ignore` gpxParser ligne 7 TrackSheet.ts).
+
+---
+
+## 🏁 Priorité 4-bis : Audit Production & Google Play Store (v5.10-RC)
+*Objectif : Version déployable sur Google Play Store. À faire APRÈS les 4 sprints de v5.10.*
+
+### A. Android / Build Release
+- [ ] **targetSdk 35** : Mettre à jour `build.gradle` (actuellement 36, vérifier compatibilité Capacitor 8.2 ✅).
+- [ ] **Support 16 KB page size** : Activer `android.zipAlign.16KB=true` dans `gradle.properties` (obligatoire depuis Nov 2025 pour Android 15+).
+- [ ] **Keystore Release** : Générer `suntrail.keystore`, sécuriser hors Git, configurer `signingConfigs.release` dans `build.gradle`.
+- [ ] **R8/ProGuard** : Activer `minifyEnabled true` + `shrinkResources true` en release, écrire `proguard-rules.pro` pour Capacitor.
+- [ ] **AAB Build** : Valider `./gradlew bundleRelease` — Play Store n'accepte pas d'APK.
+- [ ] **versionCode/versionName** : Bumper à `versionCode: 510`, `versionName: "5.10.0"`.
+- [ ] **Edge-to-Edge** : targetSdk 35 force le mode edge-to-edge Android — vérifier l'UI (bottom nav, status bar).
+
+### B. Légal & Play Console
+- [ ] **Privacy Policy** : Créer page (GitHub Pages ou domaine) détaillant collecte GPS, export GPX, APIs tierces (MapTiler, SwissTopo, IGN, OSM), pas de serveur SunTrail.
+- [ ] **Section Data Safety** : Remplir dans Play Console — localisation précise (foreground), pas de partage tiers, données sur appareil uniquement.
+- [ ] **Content Rating (IARC)** : Questionnaire Play Console — cible "Tout public".
+- [ ] **Vérification identité développeur** : Biométrique (particulier) ou D-U-N-S (entreprise) — délai jusqu'à 30 jours, à lancer en avance.
+- [ ] **Prominent Disclosure Localisation** : Modale explicative AVANT la demande de permission GPS (obligatoire Play Store).
+
+### C. Audit Performances
+- [ ] **Lighthouse** : Score ≥ 90 Performance, ≥ 90 Accessibility, ≥ 90 Best Practices — sur build de production.
+- [ ] **Core Web Vitals** : LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1.
+- [ ] **Memory Leak Audit** : Profiler Android Studio sur 1h de navigation — vérifier `disposeObject()` exhaustivité.
+- [ ] **Battery Test** : 1h d'utilisation continue preset Balanced — mesurer drain batterie.
+- [ ] **Content Security Policy** : Ajouter header CSP dans `index.html` (actuellement absent).
+
+### D. Audit Accessibilité
+- [ ] **TalkBack** : Navigation complète de l'app avec TalkBack activé — tous les éléments interactifs annoncés.
+- [ ] **Touch Targets** : Vérifier que tous les boutons font ≥ 48×48dp (Accessibility Scanner Google).
+- [ ] **Contrastes** : Ratio ≥ 4.5:1 sur tous les textes — vérifier glassmorphism + texte blanc.
+- [ ] **axe-core** : Intégrer dans les tests Vitest pour audit a11y automatisé.
+
+### E. Audit Code & Sécurité
+- [ ] **`npm run check`** : 0 erreur TypeScript strict — résoudre tous les `@ts-ignore` résiduels.
+- [ ] **Dépendances obsolètes** : `npm audit` — résoudre vulnerabilités critiques/hautes.
+- [ ] **gpxParser** : Vérifier maintenance active (actuellement `@ts-ignore` sur l'import) — évaluer remplacement si abandonné.
+- [ ] **API Keys** : Confirmer que `state.MK` n'est jamais loggué/exporté dans les builds release.
+- [ ] **Service Worker** : Audit de la stratégie de cache Workbox — invalider le cache proprement lors de mise à jour de version.
+
+### F. Play Store Listing
+- [ ] **Closed Testing (14 jours)** : Créer track Closed Testing avec ≥ 20 testeurs — obligatoire pour nouveaux développeurs.
+- [ ] **Screenshots** : Préparer captures pour tous les form factors (phone portrait, tablet).
+- [ ] **Feature Graphic** : Visuel 1024×500px.
+- [ ] **Descriptions** : Courte (80 cars max) + longue optimisée SEO, en FR + EN minimum.
+- [ ] **CI/CD** : Configurer GitHub Actions pour build AAB automatique sur chaque tag de release.
+
+## 🔗 Priorité 5 : Intégrations Plateformes Sport (v5.11)
+*Impact : Import naturel des tracés depuis les outils que les randonneurs utilisent déjà.*
+
+- [ ] **Strava** : Import des activités via OAuth + API Strava. Synchronisation automatique des nouveaux tracés.
+- [ ] **Komoot** : Import des tours planifiés et réalisés via API Komoot.
+- [ ] **Garmin Connect** : Sync des activités et waypoints via API Garmin Health.
+- [ ] **Suunto / Polar / Apple Health** : Évaluer la faisabilité et la priorité selon l'audience cible.
+- [ ] **Format FIT natif** : Lecture directe des fichiers `.fit` (Garmin) en plus du GPX.
+
+## 📊 Priorité 6 : Analyse Données Sport Avancée (v6.x — à définir ensemble)
+*Impact : Transformer SunTrail en outil d'analyse de performance, pas seulement de visualisation.*
+
+> ⚠️ **À co-concevoir** : Le périmètre exact est à affiner ensemble avant implémentation.
+
+- [ ] **Overlay Fréquence Cardiaque** : Colorisation du tracé selon les zones cardiaques (Z1–Z5).
+- [ ] **Corrélation Terrain / Effort** : Croisement pente, altitude, vitesse et données physiologiques.
+- [ ] **Données Montre** : Import HR, SpO2, cadence, puissance depuis montres (Garmin, Apple Watch, Polar…).
+- [ ] **Analyse Post-Effort** : Dashboard récapitulatif par segment (VAM, dénivelé/bpm, zones d'effort).
+- [ ] **À définir ensemble** : Format des données entrantes, profondeur de l'analyse, UX de visualisation.
+
+## 🚀 Priorité 7 : La Révolution AR (v6.0)
 *Impact : Immersion totale et aide à l'orientation futuriste.*
 
 - [ ] **Moteur AR Natif** : Superposition du moteur 3D sur le flux caméra via Capacitor.

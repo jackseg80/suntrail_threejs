@@ -1,0 +1,240 @@
+{
+  "nav": {
+    "tab": {
+      "search": "Ricerca",
+      "layers": "Livelli",
+      "track": "Percorso",
+      "settings": "Impostazioni"
+    }
+  },
+  "track": {
+    "title": "Percorso",
+    "empty": {
+      "title": "Nessun percorso",
+      "subtitle": "Importa un file GPX o avvia la registrazione GPS"
+    },
+    "btn": {
+      "rec": "REC",
+      "stop": "STOP",
+      "import": "Importa GPX",
+      "export": "Esporta GPX"
+    },
+    "toast": {
+      "recStarted": "🔴 Registrazione avviata",
+      "recStopped": "⏹️ Registrazione fermata",
+      "tooShort": "Traccia troppo corta per l'esportazione",
+      "exported": "GPX scaricato"
+    },
+    "aria": {
+      "close": "Chiudi percorso",
+      "rec": "Registra un percorso",
+      "import": "Importa un file GPX",
+      "export": "Esporta in GPX"
+    },
+    "stats": {
+      "distance": "Distanza",
+      "points": "Punti",
+      "dplus": "D+",
+      "dminus": "D-"
+    }
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "aria": {
+      "close": "Chiudi impostazioni"
+    },
+    "section": {
+      "presets": "Profili di prestazione",
+      "rendering": "Rendering",
+      "layers": "Livelli",
+      "storage": "Archiviazione & Offline",
+      "advanced": "Avanzato",
+      "language": "Lingua"
+    },
+    "preset": {
+      "eco": "Eco",
+      "balanced": "Bilanciato",
+      "performance": "Prestazioni",
+      "ultra": "Ultra",
+      "custom": "Personalizzato"
+    },
+    "label": {
+      "resolution": "Risoluzione",
+      "range": "Portata",
+      "exaggeration": "Esagerazione del rilievo",
+      "vegDensity": "Densità vegetazione",
+      "loadSpeed": "Velocità di caricamento",
+      "fogDistance": "Distanza nebbia",
+      "energySaver": "Risparmio energetico",
+      "stats": "Statistiche",
+      "debug": "Debug",
+      "vegetation": "Vegetazione",
+      "buildings": "Edifici",
+      "hydrology": "Idrologia",
+      "signposts": "Segnaletica",
+      "shadows": "Ombre",
+      "weather": "Meteo",
+      "trailFollow": "Segui sentiero"
+    },
+    "storage": {
+      "clearCache": "Svuota cache",
+      "downloadZone": "Scarica zona",
+      "pmtiles": "Carica PMTiles"
+    },
+    "lang": {
+      "label": "Lingua",
+      "fr": "Français",
+      "de": "Deutsch",
+      "it": "Italiano",
+      "en": "English"
+    }
+  },
+  "search": {
+    "title": "Ricerca",
+    "aria": {
+      "close": "Chiudi ricerca",
+      "input": "Cerca un luogo"
+    },
+    "placeholder": "Cerca un luogo...",
+    "empty": {
+      "subtitle": "Cerca un luogo, una cima o un comune"
+    },
+    "noResults": {
+      "title": "Nessun risultato",
+      "subtitle": "Prova con un altro nome di luogo o cima"
+    },
+    "loading": "Ricerca...",
+    "error": "Errore di ricerca",
+    "unknownPlace": "Luogo sconosciuto",
+    "peak": "Cima"
+  },
+  "layers": {
+    "title": "Livelli",
+    "aria": {
+      "close": "Chiudi livelli"
+    },
+    "source": {
+      "swisstopo": "SwissTopo",
+      "satellite": "Satellite",
+      "topo": "OpenTopoMap",
+      "osm": "OpenStreetMap",
+      "ign": "IGN Francia"
+    },
+    "overlay": {
+      "trails": "Sentieri",
+      "slopes": "Pendenze"
+    },
+    "warning": {
+      "zoomRequired": "Zoom {{minZoom}}+ richiesto"
+    }
+  },
+  "topbar": {
+    "aria": {
+      "weather": "Meteo",
+      "network": "Stato rete",
+      "recording": "Registrazione in corso",
+      "sos": "SOS emergenza"
+    },
+    "lod": {
+      "swiss": "SWISS",
+      "world": "MONDO",
+      "format": "{{country}} · LVL {{level}}"
+    }
+  },
+  "connectivity": {
+    "title": "Connettività",
+    "aria": {
+      "close": "Chiudi connettività"
+    },
+    "status": {
+      "online": "ONLINE",
+      "offline": "OFFLINE"
+    },
+    "label": {
+      "offlineMode": "Modalità offline",
+      "gpsAccuracy": "Precisione GPS"
+    },
+    "section": {
+      "network": "Rete",
+      "cache": "Cache",
+      "gps": "GPS",
+      "api": "Chiave API"
+    },
+    "toast": {
+      "cacheCleared": "Cache svuotata"
+    },
+    "download": {
+      "progress": "Caricamento {{percent}}%",
+      "done": "⬇️ Zona scaricata"
+    }
+  },
+  "gps": {
+    "aria": {
+      "locate": "Localizza"
+    },
+    "toast": {
+      "centered": "📍 Posizione centrata",
+      "followOn": "🚶 Inseguimento continuo attivato",
+      "followOff": "📍 Inseguimento continuo disattivato",
+      "permissionDenied": "Permesso GPS negato. Controlla le impostazioni del browser.",
+      "error": "Errore GPS o timeout",
+      "interrupted": "Inseguimento interrotto"
+    }
+  },
+  "compass": {
+    "aria": {
+      "reset": "Riallinea al Nord"
+    },
+    "toast": {
+      "northAligned": "🧭 Nord riallineato"
+    }
+  },
+  "setup": {
+    "title": "Configurazione iniziale",
+    "subtitle": "Inserisci la tua chiave API MapTiler per iniziare",
+    "btn": {
+      "start": "Avvia"
+    },
+    "error": {
+      "invalidKey": "Chiave MapTiler non valida."
+    },
+    "label": {
+      "apiKey": "Chiave API MapTiler"
+    }
+  },
+  "preset": {
+    "applied": "Profilo applicato: {{preset}}",
+    "lowBattery": "🔋 Batteria scarica: Modalità Eco attivata"
+  },
+  "weather": {
+    "title": "Meteo",
+    "noData": "Nessun dato meteo",
+    "temp": "Temperatura",
+    "feelsLike": "Percepita",
+    "humidity": "Umidità",
+    "wind": "Vento",
+    "gusts": "Raffiche",
+    "clouds": "Copertura nuvolosa",
+    "dewPoint": "Punto di rugiada",
+    "freezingLevel": "Limite dello zero",
+    "uvIndex": "Indice UV",
+    "visibility": "Visibilità",
+    "precipitation": "Probabilità di precipitazioni",
+    "forecast": "Previsioni"
+  },
+  "common": {
+    "close": "Chiudi",
+    "cancel": "Annulla",
+    "confirm": "Conferma",
+    "loading": "Caricamento...",
+    "error": "Errore",
+    "unit": {
+      "km": "km",
+      "m": "m",
+      "ms": "m/s",
+      "kmh": "km/h",
+      "celsius": "°C",
+      "percent": "%"
+    }
+  }
+}

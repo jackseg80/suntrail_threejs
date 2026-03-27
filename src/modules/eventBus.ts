@@ -9,6 +9,7 @@ type EventMap = {
     'terrainReady': void;
     'sheetOpened': { id: string };
     'sheetClosed': { id: string | null };
+    'localeChanged': { locale: string };
 };
 
 type Listener<T> = (payload: T) => void;

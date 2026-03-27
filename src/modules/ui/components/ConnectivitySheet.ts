@@ -6,6 +6,7 @@ import { sheetManager } from '../core/SheetManager';
 import { resetTerrain, updateVisibleTiles } from '../../terrain';
 import { SharedAPIKeyComponent } from './SharedAPIKeyComponent';
 import { haptic } from '../../haptics';
+import { i18n } from '../../../i18n/I18nService';
 
 export class ConnectivitySheet extends BaseComponent {
     constructor() {
@@ -16,7 +17,7 @@ export class ConnectivitySheet extends BaseComponent {
         if (!this.element) return;
 
         const closeBtn = this.element.querySelector('#close-connectivity');
-        closeBtn?.setAttribute('aria-label', 'Fermer connectivité');
+        closeBtn?.setAttribute('aria-label', i18n.t('connectivity.aria.close'));
         closeBtn?.addEventListener('click', () => sheetManager.close());
 
         // Offline toggle
@@ -39,7 +40,7 @@ export class ConnectivitySheet extends BaseComponent {
         const clearCacheBtn = this.element.querySelector('#conn-clear-cache');
         clearCacheBtn?.addEventListener('click', async () => {
             await deleteTerrainCache();
-            showToast("Cache vidé");
+            showToast(i18n.t('connectivity.toast.cacheCleared'));
         });
 
         const downloadZoneBtn = this.element.querySelector('#conn-download-zone') as HTMLElement | null;
@@ -53,9 +54,9 @@ export class ConnectivitySheet extends BaseComponent {
 
             try {
                 await downloadOfflineZone(state.TARGET_LAT, state.TARGET_LON, (done, total) => {
-                    if (span) span.textContent = `Chargement ${Math.round(done/total*100)}%`;
+                    if (span) span.textContent = i18n.t('connectivity.download.progress', { percent: Math.round(done/total*100).toString() });
                 });
-                if (span) span.textContent = `⬇️ Zone Téléchargée`;
+                if (span) span.textContent = i18n.t('connectivity.download.done');
                 void haptic('success');
             } catch (e) {
                 console.warn('Download zone error:', e);

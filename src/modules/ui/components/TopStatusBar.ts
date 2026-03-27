@@ -1,6 +1,7 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { state } from '../../state';
-
+import { i18n } from '../../../i18n/I18nService';
+import { eventBus } from '../../eventBus';
 import { sheetManager } from '../core/SheetManager';
 
 export class TopStatusBar extends BaseComponent {
@@ -30,27 +31,27 @@ export class TopStatusBar extends BaseComponent {
         this.lodBadge?.setAttribute('aria-live', 'polite');
 
         const mainPill = this.element.querySelector('#top-pill-main');
-        mainPill?.setAttribute('aria-label', 'Météo');
+        mainPill?.setAttribute('aria-label', i18n.t('topbar.aria.weather'));
         mainPill?.addEventListener('click', () => {
             sheetManager.toggle('weather');
         });
 
         // ARIA: icon buttons need aria-label
-        this.netStatusIcon?.setAttribute('aria-label', 'État réseau');
+        this.netStatusIcon?.setAttribute('aria-label', i18n.t('topbar.aria.network'));
         this.netStatusIcon?.addEventListener('click', (e) => {
             e.stopPropagation();
             sheetManager.toggle('connectivity');
         });
 
         const recWidget = this.element.querySelector('.rec-indicator');
-        recWidget?.setAttribute('aria-label', 'Enregistrement en cours');
+        recWidget?.setAttribute('aria-label', i18n.t('topbar.aria.recording'));
         recWidget?.setAttribute('aria-live', 'polite');
         recWidget?.addEventListener('click', () => {
             sheetManager.toggle('track');
         });
 
         const sosBtn = this.element.querySelector('#sos-main-btn');
-        sosBtn?.setAttribute('aria-label', 'SOS urgence');
+        sosBtn?.setAttribute('aria-label', i18n.t('topbar.aria.sos'));
         sosBtn?.addEventListener('click', () => {
             sheetManager.toggle('sos');
         });
@@ -64,6 +65,24 @@ export class TopStatusBar extends BaseComponent {
         this.addSubscription(state.subscribe('weatherData', (val: any) => this.updateWeather(val)));
         this.addSubscription(state.subscribe('IS_OFFLINE', (val: boolean) => this.updateNetwork(val)));
         this.addSubscription(state.subscribe('isRecording', (val: boolean) => this.updateRecStatus(val)));
+
+        // Update aria-labels on locale change
+        const onLocaleChanged = () => this.updateAriaLabels();
+        eventBus.on('localeChanged', onLocaleChanged);
+        this.addSubscription(() => eventBus.off('localeChanged', onLocaleChanged));
+    }
+
+    private updateAriaLabels(): void {
+        if (!this.element) return;
+        const mainPill = this.element.querySelector('#top-pill-main');
+        mainPill?.setAttribute('aria-label', i18n.t('topbar.aria.weather'));
+        this.netStatusIcon?.setAttribute('aria-label', i18n.t('topbar.aria.network'));
+        const recWidget = this.element.querySelector('.rec-indicator');
+        recWidget?.setAttribute('aria-label', i18n.t('topbar.aria.recording'));
+        const sosBtn = this.element.querySelector('#sos-main-btn');
+        sosBtn?.setAttribute('aria-label', i18n.t('topbar.aria.sos'));
+        // Also refresh LOD badge with new locale strings
+        this.updateLOD(state.ZOOM);
     }
 
     private updateRecStatus(isRecording: boolean): void {
@@ -109,8 +128,8 @@ export class TopStatusBar extends BaseComponent {
 
     private updateLOD(zoom: number): void {
         if (this.lodBadge) {
-            const country = state.ZOOM > 10 ? 'SWISS' : 'WORLD';
-            this.lodBadge.textContent = `${country} · LVL ${Math.floor(zoom)}`;
+            const country = state.ZOOM > 10 ? i18n.t('topbar.lod.swiss') : i18n.t('topbar.lod.world');
+            this.lodBadge.textContent = i18n.t('topbar.lod.format', { country, level: Math.floor(zoom).toString() });
         }
     }
 

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Geolocation } from '@capacitor/geolocation';
 import { state, loadSettings } from './state';
+import { i18n } from '../i18n/I18nService';
 import { initScene, flyTo } from './scene';
 import { updateVisibleTiles, resetTerrain, loadTerrain } from './terrain';
 import { updateStorageUI } from './tileLoader';
@@ -41,6 +42,9 @@ export function initUI(): void {
         applyPreset(bestPreset);
     }
 
+    // Sync i18n with persisted language
+    i18n.setLocale(state.lang);
+
     // Diagnostic matériel
     const gpuInfo = getGpuInfo();
     const diagGpu = document.getElementById('diag-gpu');
@@ -74,7 +78,7 @@ export function initUI(): void {
         const key = setupK1.value.trim();
         if (key.length < 10) {
             const serr = document.getElementById('serr');
-            if (serr) serr.textContent = "Clé MapTiler invalide.";
+            if (serr) serr.textContent = i18n.t('setup.error.invalidKey');
             return;
         }
         state.MK = key;
@@ -158,13 +162,13 @@ export function initUI(): void {
                 
                 state.isFollowingUser = true;
                 gpsMainBtn.classList.add('active');
-                showToast("📍 Position centrée");
+                showToast(i18n.t('gps.toast.centered'));
             } else {
                 // Second click while centered: Toggle continuous follow
                 // (In this app, isFollowingUser already handles continuous centering in scene.ts)
                 gpsMainBtn.classList.toggle('following');
                 const isFollowing = gpsMainBtn.classList.contains('following');
-                showToast(isFollowing ? "🚶 Suivi continu activé" : "📍 Suivi continu désactivé");
+                showToast(isFollowing ? i18n.t('gps.toast.followOn') : i18n.t('gps.toast.followOff'));
                 
                 if (isFollowing) {
                     await startLocationTracking();
@@ -172,9 +176,9 @@ export function initUI(): void {
             }
         } catch (e: any) { 
             if (e.code === 1) {
-                showToast("Permission GPS refusée. Vérifiez les réglages de votre navigateur.");
+                showToast(i18n.t('gps.toast.permissionDenied'));
             } else {
-                showToast("Erreur GPS ou délai dépassé"); 
+                showToast(i18n.t('gps.toast.error')); 
             }
             console.error("Geolocation error:", e.message);
         }
@@ -189,7 +193,7 @@ export function initUI(): void {
                 // SwissMobile breaks it if you move.
                 state.isFollowingUser = false;
                 btn.classList.remove('active', 'following');
-                showToast("Suivi interrompu");
+                showToast(i18n.t('gps.toast.interrupted'));
             }
         }
     });
@@ -243,7 +247,7 @@ export function initUI(): void {
                 if (progress < 1) {
                     requestAnimationFrame(animateNorth);
                 } else {
-                    showToast("🧭 Nord réaligné");
+                    showToast(i18n.t('compass.toast.northAligned'));
                 }
             }
             

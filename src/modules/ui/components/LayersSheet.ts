@@ -2,6 +2,7 @@ import { BaseComponent } from '../core/BaseComponent';
 import { state, saveSettings } from '../../state';
 import { resetTerrain, updateVisibleTiles, updateSlopeVisibility } from '../../terrain';
 import { sheetManager } from '../core/SheetManager';
+import { i18n } from '../../../i18n/I18nService';
 
 export class LayersSheet extends BaseComponent {
     constructor() {
@@ -12,7 +13,7 @@ export class LayersSheet extends BaseComponent {
         if (!this.element) return;
 
         const closeBtn = this.element.querySelector('#close-layers');
-        closeBtn?.setAttribute('aria-label', 'Fermer les calques');
+        closeBtn?.setAttribute('aria-label', i18n.t('layers.aria.close'));
         closeBtn?.addEventListener('click', () => sheetManager.close());
 
         const layerItems = this.element.querySelectorAll('.layer-item');

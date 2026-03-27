@@ -5,6 +5,8 @@ import { applyPreset } from '../../performance';
 import { resetTerrain, updateVisibleTiles, updateHydrologyVisibility } from '../../terrain';
 import { deleteTerrainCache, downloadOfflineZone } from '../../tileLoader';
 import { SharedAPIKeyComponent } from './SharedAPIKeyComponent';
+import { i18n } from '../../../i18n/I18nService';
+import type { Locale } from '../../../i18n/I18nService';
 
 import { sheetManager } from '../core/SheetManager';
 
@@ -18,7 +20,7 @@ export class SettingsSheet extends BaseComponent {
 
         // Close panel
         const closePanel = this.element.querySelector('#close-panel');
-        closePanel?.setAttribute('aria-label', 'Fermer les réglages');
+        closePanel?.setAttribute('aria-label', i18n.t('settings.aria.close'));
         closePanel?.addEventListener('click', () => sheetManager.close());
 
         // Presets
@@ -87,11 +89,11 @@ export class SettingsSheet extends BaseComponent {
             downloadZoneBtn.setAttribute('disabled', 'true');
             await downloadOfflineZone(state.TARGET_LAT, state.TARGET_LON, (done, total) => {
                 const span = downloadZoneBtn.querySelector('span');
-                if (span) span.textContent = `Chargement ${Math.round(done/total*100)}%`;
+                if (span) span.textContent = i18n.t('connectivity.download.progress', { percent: Math.round(done/total*100).toString() });
             });
             downloadZoneBtn.removeAttribute('disabled');
             const span = downloadZoneBtn.querySelector('span');
-            if (span) span.textContent = `⬇️ Zone Téléchargée`;
+            if (span) span.textContent = i18n.t('connectivity.download.done');
         });
 
         // PMTiles
@@ -136,6 +138,9 @@ export class SettingsSheet extends BaseComponent {
                 this.updateUIFromState(key, value);
             }));
         });
+
+        // Language selector
+        this.createLanguageSelector();
 
         // Initial UI update
         this.updateAllUI();
@@ -293,6 +298,36 @@ export class SettingsSheet extends BaseComponent {
         this.updateUIFromState('isFollowingTrail', state.isFollowingTrail);
         this.updateUIFromState('SHOW_TRAILS', state.SHOW_TRAILS);
         this.updateUIFromState('SHOW_SLOPES', state.SHOW_SLOPES);
+    }
+
+    private createLanguageSelector(): void {
+        if (!this.element) return;
+        const panel = this.element.querySelector('#panel') || this.element;
+
+        const section = document.createElement('div');
+        section.className = 'settings-section';
+        section.innerHTML = `
+            <h3 class="settings-section-title">${i18n.t('settings.section.language')}</h3>
+            <div class="setting-row">
+                <label for="lang-select" class="setting-label">${i18n.t('settings.lang.label')}</label>
+                <select id="lang-select" class="lang-select">
+                    <option value="fr">Français</option>
+                    <option value="de">Deutsch</option>
+                    <option value="it">Italiano</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+        `;
+        panel.appendChild(section);
+
+        const langSelect = section.querySelector('#lang-select') as HTMLSelectElement;
+        if (langSelect) {
+            langSelect.value = i18n.getLocale();
+            langSelect.addEventListener('change', () => {
+                i18n.setLocale(langSelect.value as Locale);
+                saveSettings();
+            });
+        }
     }
 
     private refreshTerrain = () => {

@@ -78,7 +78,10 @@ export interface LocationPoint {
     timestamp: number;
 }
 
+export type AppLocale = 'fr' | 'de' | 'it' | 'en';
+
 export interface State {
+    lang: AppLocale;
     ENERGY_SAVER: boolean;
     MK: string;
     MAP_SOURCE: string;
@@ -188,6 +191,7 @@ export interface State {
 }
 
 const initialState: State = {
+    lang: 'fr',
     ENERGY_SAVER: false,
     MK: '', MAP_SOURCE: 'swisstopo', hasManualSource: false,
     PERFORMANCE_PRESET: 'balanced', RESOLUTION: PRESETS.balanced.RESOLUTION, RANGE: PRESETS.balanced.RANGE,
@@ -244,6 +248,7 @@ const CURRENT_SETTINGS_VERSION = '5.8.14';
 
 export interface SavedSettings {
     version?: string;
+    lang?: AppLocale;
     PERFORMANCE_PRESET: PresetType;
     MAP_SOURCE: string;
     ENERGY_SAVER: boolean;
@@ -271,6 +276,7 @@ export function saveSettings(): void {
     saveTimeout = setTimeout(() => {
         const settingsToSave: SavedSettings = {
             version: CURRENT_SETTINGS_VERSION,
+            lang: state.lang,
             PERFORMANCE_PRESET: state.PERFORMANCE_PRESET,
             MAP_SOURCE: state.MAP_SOURCE,
             ENERGY_SAVER: state.ENERGY_SAVER,
@@ -316,6 +322,7 @@ export function loadSettings(): SavedSettings | null {
         }
 
         // Apply loaded boolean toggles and map source directly
+        if (parsed.lang) state.lang = parsed.lang;
         state.MAP_SOURCE = parsed.MAP_SOURCE;
         state.ENERGY_SAVER = !!parsed.ENERGY_SAVER;
         state.SHOW_TRAILS = !!parsed.SHOW_TRAILS;
