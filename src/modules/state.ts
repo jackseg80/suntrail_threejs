@@ -6,6 +6,24 @@ import { createReactiveState } from './ui/core/ReactiveState';
 
 export type PresetType = 'eco' | 'balanced' | 'performance' | 'ultra' | 'custom';
 
+export interface GPXLayer {
+    id: string;
+    name: string;
+    color: string;
+    visible: boolean;
+    rawData: Record<string, any>;
+    points: THREE.Vector3[];
+    mesh: THREE.Mesh | null;
+    stats: {
+        distance: number;
+        dPlus: number;
+        dMinus: number;
+        pointCount: number;
+    };
+}
+
+export const GPX_COLORS = ['#3b7ef8','#22c55e','#f97316','#a855f7','#ec4899','#06b6d4','#eab308','#ef4444'];
+
 export interface PerformanceSettings {
     RESOLUTION: number;
     RANGE: number;
@@ -155,9 +173,8 @@ export interface State {
     
     localPeaks: Peak[];
 
-    rawGpxData: Record<string, any> | null;
-    gpxPoints: THREE.Vector3[];
-    gpxMesh: THREE.Mesh | null;
+    gpxLayers: GPXLayer[];
+    activeGPXLayerId: string | null;
     recordedMesh: THREE.Mesh | null;
     profileMarker: THREE.Mesh | null;
     trailProgress: number;
@@ -219,9 +236,8 @@ const initialState: State = {
     
     localPeaks: [],
 
-        rawGpxData: null,
-    gpxPoints: [],
-    gpxMesh: null,
+    gpxLayers: [],
+    activeGPXLayerId: null,
     recordedMesh: null,
     profileMarker: null, trailProgress: 0, isFollowingTrail: false,
     
@@ -244,7 +260,7 @@ const initialState: State = {
 
 export const state = createReactiveState(initialState);
 
-const CURRENT_SETTINGS_VERSION = '5.8.14';
+const CURRENT_SETTINGS_VERSION = '5.10.0';
 
 export interface SavedSettings {
     version?: string;

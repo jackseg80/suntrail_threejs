@@ -36,6 +36,16 @@
       "points": "Points",
       "dplus": "Elev+",
       "dminus": "Elev−"
+    },
+    "imported": {
+      "title": "Imported tracks",
+      "empty": "No imported tracks",
+      "toggleVisible": "Show/hide track",
+      "remove": "Remove track",
+      "setActive": "Show elevation profile for this track"
+    },
+    "recording": {
+      "title": "GPS Recording"
     }
   },
   "settings": {

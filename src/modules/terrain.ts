@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { disposeObject } from './memory';
-import { state } from './state';
+import { state, GPX_COLORS } from './state';
+import type { GPXLayer } from './state';
 import { isPositionInSwitzerland, isPositionInFrance } from './utils';
 import { updateElevationProfile, haversineDistance } from './profile';
 import { createForestForTile } from './vegetation';
@@ -554,37 +555,150 @@ export function updateHydrologyVisibility(visible: boolean): void { state.SHOW_H
 export function updateSlopeVisibility(visible: boolean): void { state.SHOW_SLOPES = visible; resetTerrain(); updateVisibleTiles(); }
 export async function loadTerrain(): Promise<void> { await updateVisibleTiles(); }
 
-export function updateGPXMesh(): void {
-    if (!state.rawGpxData || !state.camera) return;
-    const camAlt = state.camera.position.y;
-    const thickness = Math.max(1.5, camAlt / 1200); 
-    if (state.gpxMesh) { if (state.scene) state.scene.remove(state.gpxMesh); disposeObject(state.gpxMesh); }
-    const track = state.rawGpxData.tracks[0];
+export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLayer {
+    const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `gpx-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const colorIndex = state.gpxLayers.length % GPX_COLORS.length;
+    const color = GPX_COLORS[colorIndex];
+
+    const track = rawData.tracks[0];
     const points = track.points;
+
+    // Calculate stats
+    let distance = 0;
+    let dPlus = 0;
+    let dMinus = 0;
+    for (let i = 1; i < points.length; i++) {
+        const p1 = points[i - 1];
+        const p2 = points[i];
+        distance += haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
+        const diff = (p2.ele || 0) - (p1.ele || 0);
+        if (diff > 0) dPlus += diff;
+        else dMinus += Math.abs(diff);
+    }
+
+    // Build 3D points and mesh
     const box = new THREE.Box3();
+    const camAlt = state.camera ? state.camera.position.y : 10000;
+    const thickness = Math.max(1.5, camAlt / 1200);
     const threePoints = points.map((p: any) => {
         const pos = lngLatToWorld(p.lon, p.lat, state.originTile);
         const v = new THREE.Vector3(pos.x, (p.ele || 0) * state.RELIEF_EXAGGERATION + 5, pos.z);
-        box.expandByPoint(v); return v;
+        box.expandByPoint(v);
+        return v;
     });
-    state.gpxPoints = threePoints;
+
     const curve = new THREE.CatmullRomCurve3(threePoints);
     const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length, 1500), thickness, 4, false);
-    const colors = []; const color = new THREE.Color();
-    for (let i = 0; i <= 1500; i++) {
-        const t = i / 1500; const gIdx = Math.floor(t * (points.length - 1));
-        const p1 = points[Math.max(0, gIdx - 1)]; const p2 = points[gIdx];
-        let slope = 0; if (gIdx > 0) { const d = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon); if (d > 0.001) slope = Math.abs(((p2.ele || 0) - (p1.ele || 0)) / (d * 1000) * 100); }
-        if (slope < 5) color.set(0x22c55e); else if (slope < 12) color.set(0xeab308); else if (slope < 20) color.set(0xf97316); else color.set(0xef4444);
-        for (let j = 0; j <= 4; j++) colors.push(color.r, color.g, color.b);
+    const material = new THREE.MeshStandardMaterial({
+        color: color,
+        emissive: color,
+        emissiveIntensity: 0.15,
+        transparent: true,
+        opacity: 0.9
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    if (state.scene) state.scene.add(mesh);
+
+    const layer: GPXLayer = {
+        id,
+        name,
+        color,
+        visible: true,
+        rawData,
+        points: threePoints,
+        mesh,
+        stats: {
+            distance,
+            dPlus,
+            dMinus,
+            pointCount: points.length
+        }
+    };
+
+    state.gpxLayers = [...state.gpxLayers, layer];
+    if (!state.activeGPXLayerId) {
+        state.activeGPXLayerId = id;
     }
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    state.gpxMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ vertexColors: true, emissive: 0xffffff, emissiveIntensity: 0.2, transparent: true, opacity: 0.9 }));
-    if (state.scene) state.scene.add(state.gpxMesh);
-    const center = new THREE.Vector3(); box.getCenter(center);
-    const size = new THREE.Vector3(); box.getSize(size);
+
+    // FlyTo center of track
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    const size = new THREE.Vector3();
+    box.getSize(size);
     eventBus.emit('flyTo', { worldX: center.x, worldZ: center.z, targetElevation: Math.max(size.x, size.z) * 1.5 });
+
     updateElevationProfile();
+    return layer;
+}
+
+export function removeGPXLayer(id: string): void {
+    const layer = state.gpxLayers.find(l => l.id === id);
+    if (!layer) return;
+    if (layer.mesh) {
+        if (state.scene) state.scene.remove(layer.mesh);
+        disposeObject(layer.mesh);
+    }
+    state.gpxLayers = state.gpxLayers.filter(l => l.id !== id);
+    if (state.activeGPXLayerId === id) {
+        state.activeGPXLayerId = state.gpxLayers.length > 0 ? state.gpxLayers[0].id : null;
+    }
+    if (state.gpxLayers.length === 0) {
+        const prof = document.getElementById('elevation-profile');
+        if (prof) prof.style.display = 'none';
+    } else {
+        updateElevationProfile();
+    }
+}
+
+export function toggleGPXLayer(id: string): void {
+    const layers = state.gpxLayers;
+    const idx = layers.findIndex(l => l.id === id);
+    if (idx === -1) return;
+    const layer = layers[idx];
+    const newVisible = !layer.visible;
+    if (layer.mesh) layer.mesh.visible = newVisible;
+    // Trigger reactive update by reassigning
+    const updated = [...layers];
+    updated[idx] = { ...layer, visible: newVisible };
+    state.gpxLayers = updated;
+}
+
+export function updateAllGPXMeshes(): void {
+    if (!state.camera) return;
+    const camAlt = state.camera.position.y;
+    const thickness = Math.max(1.5, camAlt / 1200);
+
+    const updatedLayers: GPXLayer[] = state.gpxLayers.map(layer => {
+        // Dispose old mesh
+        if (layer.mesh) {
+            if (state.scene) state.scene.remove(layer.mesh);
+            disposeObject(layer.mesh);
+        }
+
+        const track = layer.rawData.tracks[0];
+        const points = track.points;
+        const threePoints = points.map((p: any) => {
+            const pos = lngLatToWorld(p.lon, p.lat, state.originTile);
+            return new THREE.Vector3(pos.x, (p.ele || 0) * state.RELIEF_EXAGGERATION + 5, pos.z);
+        });
+
+        const curve = new THREE.CatmullRomCurve3(threePoints);
+        const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length, 1500), thickness, 4, false);
+        const material = new THREE.MeshStandardMaterial({
+            color: layer.color,
+            emissive: layer.color,
+            emissiveIntensity: 0.15,
+            transparent: true,
+            opacity: 0.9
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.visible = layer.visible;
+        if (state.scene) state.scene.add(mesh);
+
+        return { ...layer, points: threePoints, mesh };
+    });
+
+    state.gpxLayers = updatedLayers;
 }
 
 /**
@@ -622,10 +736,16 @@ export function updateRecordedTrackMesh(): void {
     state.scene.add(state.recordedMesh);
 }
 
-export function clearGPX(): void {
-    if (state.gpxMesh) { if (state.scene) state.scene.remove(state.gpxMesh); disposeObject(state.gpxMesh); state.gpxMesh = null; }
+export function clearAllGPXLayers(): void {
+    for (const layer of state.gpxLayers) {
+        if (layer.mesh) {
+            if (state.scene) state.scene.remove(layer.mesh);
+            disposeObject(layer.mesh);
+        }
+    }
+    state.gpxLayers = [];
+    state.activeGPXLayerId = null;
     if (state.recordedMesh) { if (state.scene) state.scene.remove(state.recordedMesh); disposeObject(state.recordedMesh); state.recordedMesh = null; }
-    state.rawGpxData = null; state.gpxPoints = [];
     const prof = document.getElementById('elevation-profile'); if (prof) prof.style.display = 'none';
     const tc = document.getElementById('trail-controls'); if (tc) tc.style.display = 'none';
 }

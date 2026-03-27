@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { state } from './state';
+import type { GPXLayer } from './state';
 
 interface ProfilePoint {
     dist: number; // Distance cumulée en km
@@ -11,14 +12,32 @@ interface ProfilePoint {
 let profileData: ProfilePoint[] = [];
 
 /**
+ * Résout le layer GPX actif à utiliser pour le profil
+ */
+function resolveActiveLayer(layerId?: string): GPXLayer | null {
+    if (layerId) {
+        return state.gpxLayers.find(l => l.id === layerId) || null;
+    }
+    if (state.activeGPXLayerId) {
+        return state.gpxLayers.find(l => l.id === state.activeGPXLayerId) || null;
+    }
+    return state.gpxLayers.length > 0 ? state.gpxLayers[0] : null;
+}
+
+/**
  * Initialise et dessine le profil d'altitude à partir des données GPX
  */
-export function updateElevationProfile(): void {
-    if (!state.rawGpxData || !state.gpxPoints.length) return;
+export function updateElevationProfile(layerId?: string): void {
+    const layer = resolveActiveLayer(layerId);
+    if (!layer || !layer.points.length) {
+        const profileEl = document.getElementById('elevation-profile');
+        if (profileEl) profileEl.style.display = 'none';
+        return;
+    }
 
-    const track = state.rawGpxData.tracks[0];
+    const track = layer.rawData.tracks[0];
     const points = track.points;
-    const gpxPoints3D = state.gpxPoints;
+    const gpxPoints3D = layer.points;
     
     profileData = [];
     let cumulativeDist = 0;
@@ -62,9 +81,9 @@ export function updateElevationProfile(): void {
 }
 
 function updateStatsUI(dist: number, dPlus: number, dMinus: number): void {
-    const dEl = document.getElementById('gpx-dist');
-    const pEl = document.getElementById('gpx-dplus');
-    const mEl = document.getElementById('gpx-dminus');
+    const dEl = document.getElementById('gpx-dist') || document.getElementById('track-dist');
+    const pEl = document.getElementById('gpx-dplus') || document.getElementById('track-dplus');
+    const mEl = document.getElementById('gpx-dminus') || document.getElementById('track-dminus');
     if (dEl) dEl.textContent = `${dist.toFixed(1)} km`;
     if (pEl) pEl.textContent = `${Math.round(dPlus)} m D+`;
     if (mEl) mEl.textContent = `${Math.round(dMinus)} m D-`;

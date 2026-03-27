@@ -36,6 +36,16 @@
       "points": "Punkte",
       "dplus": "Hm+",
       "dminus": "Hm−"
+    },
+    "imported": {
+      "title": "Importierte Touren",
+      "empty": "Keine importierten Touren",
+      "toggleVisible": "Tour ein-/ausblenden",
+      "remove": "Tour entfernen",
+      "setActive": "Höhenprofil dieser Tour anzeigen"
+    },
+    "recording": {
+      "title": "GPS-Aufzeichnung"
     }
   },
   "settings": {

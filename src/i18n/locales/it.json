@@ -36,6 +36,16 @@
       "points": "Punti",
       "dplus": "Dislivello+",
       "dminus": "Dislivello−"
+    },
+    "imported": {
+      "title": "Tracce importate",
+      "empty": "Nessuna traccia importata",
+      "toggleVisible": "Mostra/nascondi traccia",
+      "remove": "Rimuovi traccia",
+      "setActive": "Mostra il profilo altimetrico di questa traccia"
+    },
+    "recording": {
+      "title": "Registrazione GPS"
     }
   },
   "settings": {

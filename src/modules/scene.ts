@@ -219,9 +219,9 @@ export async function initScene(): Promise<void> {
                             state.userMarker.position.z += offsetZ;
                         }
                         
-                        if (state.gpxMesh) {
-                            state.gpxMesh.geometry.translate(offsetX, 0, offsetZ);
-                        }
+                        state.gpxLayers.forEach(layer => {
+                            if (layer.mesh) layer.mesh.geometry.translate(offsetX, 0, offsetZ);
+                        });
                         
                         if (state.hasLastClicked) {
                             state.lastClickedCoords.x += offsetX;

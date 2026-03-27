@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
-import { Tile, updateGPXMesh, updateVisibleTiles, terrainUniforms } from './terrain';
+import { Tile, addGPXLayer, removeGPXLayer, updateVisibleTiles, terrainUniforms } from './terrain';
 import { lngLatToTile, worldToLngLat, EARTH_CIRCUMFERENCE, getTileBounds } from './geo';
 import { state } from './state';
 
@@ -15,20 +15,19 @@ describe('terrain.ts', () => {
         vi.useRealTimers();
     });
     
-    describe('GPX transformation', () => {
+    describe('GPX Layer (Multi-GPX v5.10)', () => {
         beforeEach(() => {
             state.scene = new THREE.Scene();
             state.RELIEF_EXAGGERATION = 1.4;
             state.originTile = { x: 4270, y: 2891, z: 13 }; // Spiez
-            // Mock camera pour passer les vérifications de performance (v4.3.26)
             state.camera = new THREE.PerspectiveCamera();
             state.camera.position.set(0, 10000, 0);
-            state.gpxMesh = null;
-            state.gpxPoints = [];
+            state.gpxLayers = [];
+            state.activeGPXLayerId = null;
         });
 
-        it('should transform GPX points to correct world Vector3', () => {
-            state.rawGpxData = {
+        it('should create a GPXLayer with correct 3D points', () => {
+            const rawData = {
                 tracks: [{
                     points: [
                         { lat: 46.6863, lon: 7.6617, ele: 1000 },
@@ -37,33 +36,27 @@ describe('terrain.ts', () => {
                 }]
             };
 
-            updateGPXMesh();
+            const layer = addGPXLayer(rawData, 'test-track');
 
-            expect(state.gpxPoints).toHaveLength(2);
-            const p1 = state.gpxPoints[0];
-            const p2 = state.gpxPoints[1];
-            
-            expect(p1.y).toBeCloseTo(1000 * 1.4 + 5, 1);
-            expect(p2.y).toBeCloseTo(1100 * 1.4 + 5, 1);
+            expect(layer.points).toHaveLength(2);
+            expect(layer.points[0].y).toBeCloseTo(1000 * 1.4 + 5, 1);
+            expect(layer.points[1].y).toBeCloseTo(1100 * 1.4 + 5, 1);
+            expect(state.gpxLayers).toHaveLength(1);
+            expect(state.activeGPXLayerId).toBe(layer.id);
         });
 
-        it('should cleanup old GPX mesh and update when thickness changes', () => {
-            const mockDispose = vi.fn();
-            const geometry = new THREE.BufferGeometry();
-            geometry.dispose = mockDispose;
-            state.gpxMesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial());
-            
-            state.rawGpxData = { tracks: [{ points: [
+        it('should remove a GPXLayer and update activeGPXLayerId', () => {
+            const rawData = { tracks: [{ points: [
                 { lat: 0, lon: 0, ele: 0 },
                 { lat: 1, lon: 1, ele: 1 }
             ] }] };
 
-            // On change radicalement l'altitude pour forcer le recalcul malgré l'optimisation
-            state.camera!.position.y = 50000; 
-            
-            updateGPXMesh();
-            
-            expect(mockDispose).toHaveBeenCalled();
+            const layer = addGPXLayer(rawData, 'to-remove');
+            expect(state.gpxLayers).toHaveLength(1);
+
+            removeGPXLayer(layer.id);
+            expect(state.gpxLayers).toHaveLength(0);
+            expect(state.activeGPXLayerId).toBeNull();
         });
     });
 

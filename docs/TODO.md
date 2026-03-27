@@ -46,14 +46,25 @@
 
 > 🔁 **Workflow** : Chaque sprint se termine par une session de test utilisateur avant commit.
 
-### Sprint 1 — Foundation i18n ✅ EN COURS (à faire EN PREMIER — toutes les nouvelles strings passeront par là)
-- [ ] **Service I18n** : Créer `src/i18n/` — `I18nService.ts` avec `t(key)`, `setLocale()`, persistance via `state.lang`.
-- [ ] **Fichiers de traduction** : 4 JSON (`fr.json`, `de.json`, `it.json`, `en.json`).
-- [ ] **Extraction strings existantes** : ~130 strings FR hardcodées extraites depuis `index.html` (60 labels templates), 9 composants TS (50 strings), `showToast()` (20 messages).
-- [ ] **Intégration composants** : Remplacement des strings inline dans tous les `BaseComponent`, `ui.ts`, `utils.ts`.
-- [ ] **Sélecteur de langue** : UI dans `SettingsSheet` (drapeaux + nom de langue), persistance `state.lang`.
-- [ ] **`<html lang>` dynamique** : Mise à jour du `lang` attribute et des `aria-label` à la volée.
-- [ ] **`Intl` API** : Dates, distances et altitudes formatées selon la locale (km/mi si on anticipe EN).
+### Sprint 1 — Foundation i18n ✅ TERMINÉ (committé `bdf0fe0`)
+- [x] **Service I18n** : `src/i18n/I18nService.ts` — singleton avec `t(key)`, `setLocale()`, fallback FR → clé.
+- [x] **Fichiers de traduction** : 4 JSON (`fr.json` 142 clés, `de.json`, `it.json`, `en.json`).
+- [x] **Extraction strings JS** : Strings créées dynamiquement en JS extraites (aria-labels, toasts, empty states, boutons créés dynamiquement).
+- [x] **Intégration composants** : 9 composants + `ui.ts` + `performance.ts` branchés sur `i18n.t()`.
+- [x] **Sélecteur de langue** : Combobox FR/DE/IT/EN dans `SettingsSheet`, persistance `state.lang`.
+- [x] **`<html lang>` dynamique** : Mis à jour via `localeChanged` EventBus.
+- [x] **Labels dynamiques** : `NavigationBar` et `TopStatusBar` re-rendent leurs labels sur `localeChanged`.
+- [x] **14 tests i18n** ajoutés (124/126 total).
+
+> ⚠️ **Dette connue** : Les ~60 strings statiques dans `index.html` (templates HTML) ne sont pas encore traduites. Voir Sprint 1-bis.
+
+### Sprint 1-bis — i18n Templates HTML ✅ TERMINÉ (committé `05d3e76`)
+- [x] **Stratégie `data-i18n`** : ~60 labels statiques annotés dans `index.html`.
+- [x] **`I18nService.applyToDOM(root)`** : Parcourt `[data-i18n]` et `[data-i18n-placeholder]`, remplace `textContent` / `placeholder`.
+- [x] **`BaseComponent.hydrate()`** : Appel `applyToDOM` après clonage automatique pour tous les composants.
+- [x] **Abonnement `localeChanged`** dans `BaseComponent` : Re-traduit `this.element` à chaque changement de locale.
+- [x] **Fusion JSON** : Blocs dupliqués (`track`, `settings`, `layers`, `weather`, `connectivity`) fusionnés dans les 4 locales.
+- [x] **Couverture complète** : Settings, Track, Layers, SOS, Weather, Solar, Connectivity — tous traduits en FR/DE/IT/EN.
 
 ### Sprint 2 — Multi-GPX
 - [ ] **Refonte State** : Remplacer `rawGpxData` (mono) par `gpxLayers: GPXLayer[]` — chaque layer avec `{id, name, color, visible, mesh, points, profile}`.

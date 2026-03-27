@@ -36,6 +36,16 @@
       "points": "Points",
       "dplus": "Dénivelé +",
       "dminus": "Dénivelé −"
+    },
+    "imported": {
+      "title": "Tracés importés",
+      "empty": "Aucun tracé importé",
+      "toggleVisible": "Masquer/afficher le tracé",
+      "remove": "Supprimer le tracé",
+      "setActive": "Afficher le profil de ce tracé"
+    },
+    "recording": {
+      "title": "Enregistrement GPS"
     }
   },
   "settings": {

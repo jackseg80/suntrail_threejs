@@ -7,9 +7,10 @@ import { haptic } from '../../haptics';
 import { i18n } from '../../../i18n/I18nService';
 // @ts-ignore
 import gpxParser from 'gpxparser';
-import { updateVisibleTiles, updateGPXMesh, updateRecordedTrackMesh } from '../../terrain';
+import { updateVisibleTiles, addGPXLayer, removeGPXLayer, toggleGPXLayer, updateRecordedTrackMesh } from '../../terrain';
 import { lngLatToTile } from '../../geo';
 import { updateElevationProfile } from '../../profile';
+import { eventBus } from '../../eventBus';
 
 export class TrackSheet extends BaseComponent {
     constructor() {
@@ -22,6 +23,10 @@ export class TrackSheet extends BaseComponent {
         // --- Empty state ---
         this.createEmptyState();
         this.updateEmptyState();
+
+        // --- Layers list container ---
+        this.createLayersListContainer();
+        this.renderLayersList();
 
         const closeBtn = document.getElementById('close-track');
         closeBtn?.setAttribute('aria-label', i18n.t('track.aria.close'));
@@ -53,30 +58,41 @@ export class TrackSheet extends BaseComponent {
         importBtn?.setAttribute('aria-label', i18n.t('track.aria.import'));
         const gpxUpload = document.getElementById('gpx-upload') as HTMLInputElement;
         
+        // Enable multi-file selection
+        if (gpxUpload) gpxUpload.setAttribute('multiple', '');
+
         importBtn?.addEventListener('click', () => {
             gpxUpload?.click();
         });
 
         gpxUpload?.addEventListener('change', (e) => {
-            const file = (e.target as HTMLInputElement).files?.[0];
-            if (file) {
-                importBtn?.classList.add('btn-loading');
-                importBtn?.setAttribute('aria-busy', 'true');
-                const reader = new FileReader();
-                reader.onload = async (ev) => {
-                    try {
-                        await this.handleGPX(ev.target!.result as string);
-                    } finally {
-                        importBtn?.classList.remove('btn-loading');
-                        importBtn?.removeAttribute('aria-busy');
-                    }
-                };
-                reader.onerror = () => {
-                    importBtn?.classList.remove('btn-loading');
-                    importBtn?.removeAttribute('aria-busy');
-                };
-                reader.readAsText(file);
+            const files = (e.target as HTMLInputElement).files;
+            if (!files || files.length === 0) return;
+            importBtn?.classList.add('btn-loading');
+            importBtn?.setAttribute('aria-busy', 'true');
+            
+            const promises: Promise<void>[] = [];
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                promises.push(new Promise<void>((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = async (ev) => {
+                        try {
+                            await this.handleGPX(ev.target!.result as string, file.name);
+                        } catch (_e) { /* handled inside */ }
+                        resolve();
+                    };
+                    reader.onerror = () => resolve();
+                    reader.readAsText(file);
+                }));
             }
+            
+            Promise.all(promises).then(() => {
+                importBtn?.classList.remove('btn-loading');
+                importBtn?.removeAttribute('aria-busy');
+                // Reset the input so re-importing the same file works
+                if (gpxUpload) gpxUpload.value = '';
+            });
         });
 
         const exportBtn = document.getElementById('export-gpx-sheet');
@@ -94,7 +110,10 @@ export class TrackSheet extends BaseComponent {
             this.updateStats();
             this.updateEmptyState();
         }));
-        this.addSubscription(state.subscribe('rawGpxData', () => this.updateEmptyState()));
+        this.addSubscription(state.subscribe('gpxLayers', () => {
+            this.renderLayersList();
+            this.updateEmptyState();
+        }));
         
         this.updateRecUI();
         this.updateStats();
@@ -102,9 +121,7 @@ export class TrackSheet extends BaseComponent {
 
     private createEmptyState(): void {
         if (!this.element) return;
-        const trackEl = this.element.querySelector('#track');
-        if (!trackEl) return;
-
+        // this.element IS the #track div (first child of template-track)
         const emptyDiv = document.createElement('div');
         emptyDiv.className = 'empty-state';
         emptyDiv.id = 'track-empty-state';
@@ -115,7 +132,105 @@ export class TrackSheet extends BaseComponent {
             </svg>
             <p class="empty-state-title">${i18n.t('track.empty.title')}</p>
             <p class="empty-state-subtitle">${i18n.t('track.empty.subtitle')}</p>`;
-        trackEl.appendChild(emptyDiv);
+        this.element.appendChild(emptyDiv);
+    }
+
+    private createLayersListContainer(): void {
+        if (!this.element) return;
+        // Insert layers list container right after the track-stats section
+        const container = document.createElement('div');
+        container.id = 'gpx-layers-list';
+        container.className = 'gpx-layers-list';
+        container.style.display = 'none';
+        // Insert after track-actions (which contains the buttons)
+        const trackActions = this.element.querySelector('.track-actions');
+        if (trackActions && trackActions.nextSibling) {
+            this.element.insertBefore(container, trackActions.nextSibling);
+        } else {
+            this.element.appendChild(container);
+        }
+    }
+
+    public renderLayersList(): void {
+        const container = document.getElementById('gpx-layers-list');
+        if (!container) return;
+
+        const layers = state.gpxLayers;
+        if (layers.length === 0) {
+            container.innerHTML = '';
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'block';
+        container.innerHTML = `
+            <div class="gpx-layers-header">${i18n.t('track.imported.title')}</div>
+            ${layers.map(layer => {
+                const truncName = layer.name.length > 20 ? layer.name.slice(0, 20) + '...' : layer.name;
+                const isActive = state.activeGPXLayerId === layer.id;
+                return `
+                <div class="gpx-layer-item${isActive ? ' active' : ''}" data-layer-id="${layer.id}">
+                    <span class="gpx-layer-dot" style="background:${layer.color}"></span>
+                    <div class="gpx-layer-info">
+                        <span class="gpx-layer-name">${truncName}</span>
+                        <span class="gpx-layer-stats">${layer.stats.distance.toFixed(1)} km · D+ ${Math.round(layer.stats.dPlus)} m · D- ${Math.round(layer.stats.dMinus)} m</span>
+                    </div>
+                    <button class="gpx-layer-toggle" data-action="toggle" data-id="${layer.id}" 
+                            aria-label="${i18n.t('track.imported.toggleVisible')}"
+                            title="${i18n.t('track.imported.toggleVisible')}">
+                        ${layer.visible ? '👁' : '🚫'}
+                    </button>
+                    <button class="gpx-layer-remove" data-action="remove" data-id="${layer.id}"
+                            aria-label="${i18n.t('track.imported.remove')}"
+                            title="${i18n.t('track.imported.remove')}">×</button>
+                </div>`;
+            }).join('')}`;
+
+        // Bind events
+        container.querySelectorAll('.gpx-layer-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                const target = e.target as HTMLElement;
+                // Don't activate if clicking a button
+                if (target.closest('[data-action]')) return;
+                const layerId = (item as HTMLElement).dataset.layerId;
+                if (!layerId) return;
+                state.activeGPXLayerId = layerId;
+                updateElevationProfile(layerId);
+                // FlyTo
+                const layer = state.gpxLayers.find(l => l.id === layerId);
+                if (layer && layer.points.length > 0) {
+                    const avgX = layer.points.reduce((s, p) => s + p.x, 0) / layer.points.length;
+                    const avgZ = layer.points.reduce((s, p) => s + p.z, 0) / layer.points.length;
+                    const maxSpread = Math.max(
+                        Math.max(...layer.points.map(p => p.x)) - Math.min(...layer.points.map(p => p.x)),
+                        Math.max(...layer.points.map(p => p.z)) - Math.min(...layer.points.map(p => p.z))
+                    );
+                    eventBus.emit('flyTo', { worldX: avgX, worldZ: avgZ, targetElevation: maxSpread * 1.5 });
+                }
+                this.renderLayersList();
+            });
+        });
+
+        container.querySelectorAll('[data-action="toggle"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = (btn as HTMLElement).dataset.id;
+                if (id) {
+                    toggleGPXLayer(id);
+                    this.renderLayersList();
+                }
+            });
+        });
+
+        container.querySelectorAll('[data-action="remove"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = (btn as HTMLElement).dataset.id;
+                if (id) {
+                    removeGPXLayer(id);
+                }
+            });
+        });
     }
 
     private updateEmptyState(): void {
@@ -123,7 +238,7 @@ export class TrackSheet extends BaseComponent {
         const statsEl = this.element?.querySelector('.track-stats') as HTMLElement | null;
         if (!emptyEl) return;
 
-        const hasData = state.rawGpxData !== null || state.recordedPoints.length > 0;
+        const hasData = state.gpxLayers.length > 0 || state.recordedPoints.length > 0;
         emptyEl.style.display = hasData ? 'none' : 'flex';
         if (statsEl) statsEl.style.display = hasData ? '' : 'none';
     }
@@ -182,7 +297,6 @@ export class TrackSheet extends BaseComponent {
             const p1 = state.recordedPoints[i-1];
             const p2 = state.recordedPoints[i];
             
-            // Simple distance calculation (Haversine would be better but this is a placeholder)
             const dx = (p2.lon - p1.lon) * 111320 * Math.cos(p1.lat * Math.PI / 180);
             const dy = (p2.lat - p1.lat) * 111320;
             dist += Math.sqrt(dx*dx + dy*dy);
@@ -227,7 +341,7 @@ export class TrackSheet extends BaseComponent {
         showToast(i18n.t('track.toast.exported'));
     }
 
-    private async handleGPX(xml: string) {
+    private async handleGPX(xml: string, fileName: string = 'track.gpx') {
         try {
             const gpx = new gpxParser(); 
             gpx.parse(xml);
@@ -235,15 +349,20 @@ export class TrackSheet extends BaseComponent {
                 void haptic('warning');
                 return;
             }
-            state.rawGpxData = gpx;
+            
             const startPt = gpx.tracks[0].points[0];
-            state.TARGET_LAT = startPt.lat; 
-            state.TARGET_LON = startPt.lon;
-            state.ZOOM = 13; 
-            state.originTile = lngLatToTile(startPt.lon, startPt.lat, 13);
-            updateGPXMesh(); 
-            updateElevationProfile(); 
-            await updateVisibleTiles();
+            
+            // Only recenter map on first import
+            if (state.gpxLayers.length === 0) {
+                state.TARGET_LAT = startPt.lat; 
+                state.TARGET_LON = startPt.lon;
+                state.ZOOM = 13; 
+                state.originTile = lngLatToTile(startPt.lon, startPt.lat, 13);
+                await updateVisibleTiles();
+            }
+            
+            const name = fileName.replace(/\.gpx$/i, '');
+            addGPXLayer(gpx, name);
             void haptic('success');
         } catch (e) {
             void haptic('warning');
