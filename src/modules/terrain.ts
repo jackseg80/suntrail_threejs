@@ -582,7 +582,9 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     const thickness = Math.max(1.5, camAlt / 1200);
     const threePoints = points.map((p: any) => {
         const pos = lngLatToWorld(p.lon, p.lat, state.originTile);
-        const v = new THREE.Vector3(pos.x, (p.ele || 0) * state.RELIEF_EXAGGERATION + 5, pos.z);
+        // +25 world units (~25m) ensures the tube stays above the terrain surface
+        // even on steep mountain slopes with RELIEF_EXAGGERATION applied
+        const v = new THREE.Vector3(pos.x, (p.ele || 0) * state.RELIEF_EXAGGERATION + 25, pos.z);
         box.expandByPoint(v);
         return v;
     });
@@ -592,11 +594,16 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     const material = new THREE.MeshStandardMaterial({
         color: color,
         emissive: color,
-        emissiveIntensity: 0.15,
+        emissiveIntensity: 0.3,
         transparent: true,
-        opacity: 0.9
+        opacity: 0.95,
+        depthWrite: false,        // don't occlude other objects
+        polygonOffset: true,
+        polygonOffsetFactor: -4,  // pull the tube visually in front of terrain
+        polygonOffsetUnits: -4
     });
     const mesh = new THREE.Mesh(geometry, material);
+    mesh.renderOrder = 10;        // render after terrain tiles (renderOrder 0)
     if (state.scene) state.scene.add(mesh);
 
     const layer: GPXLayer = {
@@ -621,11 +628,16 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     }
 
     // FlyTo center of track
+    // center.y = mean elevation of the track (for camera target height)
+    // targetDistance = spread of the track XZ extent so the whole track fits in view
     const center = new THREE.Vector3();
     box.getCenter(center);
     const size = new THREE.Vector3();
     box.getSize(size);
-    eventBus.emit('flyTo', { worldX: center.x, worldZ: center.z, targetElevation: Math.max(size.x, size.z) * 1.5 });
+    const trackSpread = Math.max(size.x, size.z);
+    const avgElevation = center.y; // already in world units
+    const viewDistance = Math.max(trackSpread * 0.8, 2000); // min 2km so we don't land inside the ground
+    eventBus.emit('flyTo', { worldX: center.x, worldZ: center.z, targetElevation: avgElevation, targetDistance: viewDistance });
 
     updateElevationProfile();
     return layer;
@@ -679,7 +691,7 @@ export function updateAllGPXMeshes(): void {
         const points = track.points;
         const threePoints = points.map((p: any) => {
             const pos = lngLatToWorld(p.lon, p.lat, state.originTile);
-            return new THREE.Vector3(pos.x, (p.ele || 0) * state.RELIEF_EXAGGERATION + 5, pos.z);
+            return new THREE.Vector3(pos.x, (p.ele || 0) * state.RELIEF_EXAGGERATION + 25, pos.z);
         });
 
         const curve = new THREE.CatmullRomCurve3(threePoints);
@@ -687,11 +699,16 @@ export function updateAllGPXMeshes(): void {
         const material = new THREE.MeshStandardMaterial({
             color: layer.color,
             emissive: layer.color,
-            emissiveIntensity: 0.15,
+            emissiveIntensity: 0.3,
             transparent: true,
-            opacity: 0.9
+            opacity: 0.95,
+            depthWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: -4,
+            polygonOffsetUnits: -4
         });
         const mesh = new THREE.Mesh(geometry, material);
+        mesh.renderOrder = 10;
         mesh.visible = layer.visible;
         if (state.scene) state.scene.add(mesh);
 

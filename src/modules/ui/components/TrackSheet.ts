@@ -199,13 +199,15 @@ export class TrackSheet extends BaseComponent {
                 // FlyTo
                 const layer = state.gpxLayers.find(l => l.id === layerId);
                 if (layer && layer.points.length > 0) {
-                    const avgX = layer.points.reduce((s, p) => s + p.x, 0) / layer.points.length;
-                    const avgZ = layer.points.reduce((s, p) => s + p.z, 0) / layer.points.length;
-                    const maxSpread = Math.max(
-                        Math.max(...layer.points.map(p => p.x)) - Math.min(...layer.points.map(p => p.x)),
-                        Math.max(...layer.points.map(p => p.z)) - Math.min(...layer.points.map(p => p.z))
-                    );
-                    eventBus.emit('flyTo', { worldX: avgX, worldZ: avgZ, targetElevation: maxSpread * 1.5 });
+                    const xs = layer.points.map(p => p.x);
+                    const zs = layer.points.map(p => p.z);
+                    const ys = layer.points.map(p => p.y);
+                    const centerX = (Math.max(...xs) + Math.min(...xs)) / 2;
+                    const centerZ = (Math.max(...zs) + Math.min(...zs)) / 2;
+                    const avgElevation = ys.reduce((s, v) => s + v, 0) / ys.length;
+                    const spread = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs));
+                    const viewDistance = Math.max(spread * 0.8, 2000);
+                    eventBus.emit('flyTo', { worldX: centerX, worldZ: centerZ, targetElevation: avgElevation, targetDistance: viewDistance });
                 }
                 this.renderLayersList();
             });

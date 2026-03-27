@@ -221,6 +221,8 @@ export async function initScene(): Promise<void> {
                         
                         state.gpxLayers.forEach(layer => {
                             if (layer.mesh) layer.mesh.geometry.translate(offsetX, 0, offsetZ);
+                            // Sync layer.points so TrackSheet flyTo stays accurate after origin shift
+                            layer.points.forEach(p => { p.x += offsetX; p.z += offsetZ; });
                         });
                         
                         if (state.hasLastClicked) {
@@ -255,8 +257,8 @@ export async function initScene(): Promise<void> {
     initWeatherSystem(state.scene);
     
     // --- BRANCHEMENT EVENT BUS (v5.5.0) ---
-    eventBus.on('flyTo', ({ worldX, worldZ, targetElevation }) => {
-        flyTo(worldX, worldZ, targetElevation);
+    eventBus.on('flyTo', ({ worldX, worldZ, targetElevation, targetDistance }) => {
+        flyTo(worldX, worldZ, targetElevation, targetDistance);
     });
     
     state.lastWeatherLat = state.TARGET_LAT;
