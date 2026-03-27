@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1024px; height: 500px; overflow: hidden; background: #06070b; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1024" height="500"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = 1024, H = 500;
+
+// ── SKY GRADIENT ─────────────────────────────────────────────
+const sky = ctx.createLinearGradient(0, 0, 0, H * 0.72);
+sky.addColorStop(0,    '#040509');
+sky.addColorStop(0.35, '#08101f');
+sky.addColorStop(0.65, '#0e1c2e');
+sky.addColorStop(1,    '#1a2d1a');
+ctx.fillStyle = sky;
+ctx.fillRect(0, 0, W, H);
+
+// ── STARS ─────────────────────────────────────────────────────
+const stars = [
+  [80,30,1.2],[150,55,0.8],[220,20,1],[310,45,1.4],[420,15,0.9],
+  [500,38,1.1],[580,22,0.7],[650,50,1.3],[740,18,1],[820,40,0.8],
+  [900,25,1.2],[960,55,0.9],[40,70,0.7],[190,80,1],[370,65,1.1],
+  [470,90,0.8],[600,75,1.2],[710,85,0.7],[850,70,1],[130,110,0.9],
+  [280,95,1.1],[530,105,0.8],[780,100,1.3],[920,88,0.7]
+];
+stars.forEach(([x, y, r]) => {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(255,255,255,${0.4 + Math.random() * 0.5})`;
+  ctx.fill();
+});
+
+// ── SUN GLOW (golden hour) ────────────────────────────────────
+const sunX = 680, sunY = 198;
+// outer halo
+const halo = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 280);
+halo.addColorStop(0,   'rgba(251,191,36,0.18)');
+halo.addColorStop(0.3, 'rgba(245,158,11,0.10)');
+halo.addColorStop(0.6, 'rgba(239,68,68,0.05)');
+halo.addColorStop(1,   'rgba(0,0,0,0)');
+ctx.fillStyle = halo;
+ctx.fillRect(0, 0, W, H);
+
+// sun disk
+const sunGlow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 28);
+sunGlow.addColorStop(0,   'rgba(255,255,220,0.95)');
+sunGlow.addColorStop(0.4, 'rgba(251,191,36,0.9)');
+sunGlow.addColorStop(0.8, 'rgba(245,158,11,0.6)');
+sunGlow.addColorStop(1,   'rgba(245,158,11,0)');
+ctx.fillStyle = sunGlow;
+ctx.beginPath();
+ctx.arc(sunX, sunY, 28, 0, Math.PI * 2);
+ctx.fill();
+
+// sun rays
+ctx.save();
+ctx.translate(sunX, sunY);
+for (let i = 0; i < 12; i++) {
+  ctx.rotate(Math.PI / 6);
+  ctx.beginPath();
+  ctx.moveTo(32, 0);
+  ctx.lineTo(65 + (i % 3) * 12, 0);
+  ctx.strokeStyle = `rgba(251,191,36,${0.08 + (i % 2) * 0.04})`;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+ctx.restore();
+
+// horizon glow strip
+const horiz = ctx.createLinearGradient(0, 160, 0, 280);
+horiz.addColorStop(0,   'rgba(245,158,11,0)');
+horiz.addColorStop(0.3, 'rgba(245,158,11,0.07)');
+horiz.addColorStop(0.6, 'rgba(239,68,68,0.05)');
+horiz.addColorStop(1,   'rgba(0,0,0,0)');
+ctx.fillStyle = horiz;
+ctx.fillRect(0, 160, W, 120);
+
+// ── BACKGROUND MOUNTAINS (far, blue-grey) ────────────────────
+function drawMountain(pts, fillStyle) {
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.closePath();
+  ctx.fillStyle = fillStyle;
+  ctx.fill();
+}
+
+// Far range
+drawMountain([
+  [0,320],[60,240],[130,195],[210,225],[290,175],[370,210],
+  [450,160],[520,190],[600,155],[670,185],[740,145],[810,175],
+  [880,160],[950,200],[1024,220],[1024,500],[0,500]
+], 'rgba(15,25,50,0.85)');
+
+// Mid range
+drawMountain([
+  [0,370],[50,310],[120,265],[200,295],[270,248],[340,275],
+  [410,230],[480,260],[550,220],[620,252],[690,215],[760,240],
+  [830,205],[900,235],[970,218],[1024,240],[1024,500],[0,500]
+], 'rgba(10,20,38,0.9)');
+
+// ── FOREGROUND MOUNTAINS (near, dark with snow) ───────────────
+// Main peak — left
+const mainL = [
+  [0,440],[-10,500],
+  [90,390],[170,340],[220,290],[270,255],[310,230],[350,260],
+  [390,300],[440,350],[500,400],[560,440],[600,500],
+  [0,500]
+];
+drawMountain(mainL, 'rgba(8,14,28,0.98)');
+
+// Snow cap left peak
+ctx.beginPath();
+ctx.moveTo(310, 230);
+ctx.lineTo(270, 258);
+ctx.lineTo(285, 262);
+ctx.lineTo(305, 250);
+ctx.lineTo(325, 258);
+ctx.lineTo(350, 262);
+ctx.lineTo(350, 260);
+ctx.closePath();
+ctx.fillStyle = 'rgba(255,255,255,0.82)';
+ctx.fill();
+
+// Main peak — right
+const mainR = [
+  [480,420],[520,375],[580,320],[640,268],[700,235],[750,210],
+  [800,238],[850,268],[900,305],[950,350],[1000,400],[1024,440],
+  [1024,500],[480,500]
+];
+drawMountain(mainR, 'rgba(9,16,30,0.97)');
+
+// Snow cap right peak
+ctx.beginPath();
+ctx.moveTo(750, 210);
+ctx.lineTo(700, 238);
+ctx.lineTo(715, 242);
+ctx.lineTo(738, 228);
+ctx.lineTo(762, 240);
+ctx.lineTo(800, 240);
+ctx.lineTo(800, 238);
+ctx.closePath();
+ctx.fillStyle = 'rgba(255,255,255,0.78)';
+ctx.fill();
+
+// Valley fill (bottom dark)
+const valley = ctx.createLinearGradient(0, 380, 0, 500);
+valley.addColorStop(0, 'rgba(4,6,10,0)');
+valley.addColorStop(1, 'rgba(4,6,10,1)');
+ctx.fillStyle = valley;
+ctx.fillRect(0, 350, W, 150);
+
+// ── GPS TRACK LINE ────────────────────────────────────────────
+ctx.save();
+ctx.shadowColor = '#4a8ef8';
+ctx.shadowBlur = 12;
+ctx.strokeStyle = '#4a8ef8';
+ctx.lineWidth = 2.5;
+ctx.setLineDash([]);
+ctx.beginPath();
+// winding track over the terrain
+ctx.moveTo(95, 425);
+ctx.bezierCurveTo(130, 400, 160, 370, 200, 345);
+ctx.bezierCurveTo(240, 320, 265, 290, 300, 268);
+ctx.bezierCurveTo(320, 256, 335, 248, 345, 248);
+ctx.bezierCurveTo(358, 248, 370, 258, 380, 270);
+ctx.bezierCurveTo(400, 295, 430, 340, 460, 380);
+ctx.stroke();
+ctx.restore();
+
+// GPS dots along track
+const trackPts = [[200,345],[265,295],[310,245],[345,249],[380,271],[430,340]];
+trackPts.forEach(([x, y], i) => {
+  if (i === 2) {
+    // summit marker
+    ctx.save();
+    ctx.shadowColor = '#f59e0b';
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.arc(x, y, 6, 0, Math.PI * 2);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fill();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  } else {
+    ctx.save();
+    ctx.shadowColor = '#4a8ef8';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#7ab8ff';
+    ctx.fill();
+    ctx.restore();
+  }
+});
+
+// ── GRID OVERLAY (terrain mesh feel) ─────────────────────────
+ctx.save();
+ctx.globalAlpha = 0.04;
+ctx.strokeStyle = '#4a8ef8';
+ctx.lineWidth = 0.8;
+for (let x = 0; x <= W; x += 48) {
+  ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+}
+for (let y = 0; y <= H; y += 48) {
+  ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+}
+ctx.restore();
+
+// ── VIGNETTE ──────────────────────────────────────────────────
+const vig = ctx.createRadialGradient(W/2, H/2, H*0.2, W/2, H/2, H*0.85);
+vig.addColorStop(0, 'rgba(0,0,0,0)');
+vig.addColorStop(1, 'rgba(0,0,0,0.55)');
+ctx.fillStyle = vig;
+ctx.fillRect(0, 0, W, H);
+
+// ── TEXT ──────────────────────────────────────────────────────
+// Title shadow
+ctx.save();
+ctx.shadowColor = 'rgba(0,0,0,0.9)';
+ctx.shadowBlur = 30;
+
+// Icon emoji
+ctx.font = 'bold 58px sans-serif';
+ctx.fillStyle = 'white';
+ctx.textAlign = 'center';
+ctx.fillText('⛰️', W/2, 195);
+
+// App name
+ctx.font = 'bold 72px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+const grad = ctx.createLinearGradient(W/2 - 250, 0, W/2 + 250, 0);
+grad.addColorStop(0,   '#ffffff');
+grad.addColorStop(0.45, '#f0f4ff');
+grad.addColorStop(0.7,  '#f59e0b');
+grad.addColorStop(1,    '#fbbf24');
+ctx.fillStyle = grad;
+ctx.fillText('SunTrail 3D', W/2, 278);
+
+// Tagline
+ctx.font = '500 22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+ctx.fillStyle = 'rgba(255,255,255,0.75)';
+ctx.letterSpacing = '2px';
+ctx.fillText('Carte topographique 3D · GPS · Simulation solaire', W/2, 322);
+
+// Badge row
+ctx.restore();
+const badges = ['SwissTopo', 'IGN France', 'GPX', 'Offline'];
+const bw = 105, bh = 30, gap = 14;
+const totalW = badges.length * bw + (badges.length - 1) * gap;
+let bx = W/2 - totalW/2;
+badges.forEach(label => {
+  // badge bg
+  ctx.save();
+  ctx.shadowColor = 'rgba(74,142,248,0.4)';
+  ctx.shadowBlur = 10;
+  ctx.beginPath();
+  ctx.roundRect(bx, 345, bw, bh, 15);
+  ctx.fillStyle = 'rgba(74,142,248,0.18)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(74,142,248,0.55)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+  // badge text
+  ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  ctx.fillStyle = '#93c5fd';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, bx + bw/2, 345 + 20);
+  bx += bw + gap;
+});
+</script>
+</body>
+</html>
