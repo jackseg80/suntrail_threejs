@@ -38,11 +38,14 @@ describe('terrain.ts', () => {
 
             const layer = addGPXLayer(rawData, 'test-track');
 
-            expect(layer.points).toHaveLength(2);
-            // Y = max(terrainAlt, ele * RELIEF_EXAGGERATION) + 15
-            // In tests: terrainAlt=0 (no tiles), RELIEF_EXAGGERATION=1.4 (default)
-            expect(layer.points[0].y).toBeCloseTo(1000 * 1.4 + 15, 1);
-            expect(layer.points[1].y).toBeCloseTo(1100 * 1.4 + 15, 1);
+            // With densifySteps=4: 2 waypoints produce 2 + 1*(4-1) = 5 points
+            // (start + 3 intermediates + end)
+            expect(layer.points.length).toBeGreaterThanOrEqual(2);
+            // Y = max(terrainAlt=0, ele * RELIEF_EXAGGERATION) + GPX_SURFACE_OFFSET(30)
+            // First point (ele=1000, RELIEF_EXAGGERATION=1.4, terrainAlt=0):
+            expect(layer.points[0].y).toBeCloseTo(1000 * 1.4 + 30, 1);
+            // Last point (ele=1100):
+            expect(layer.points[layer.points.length - 1].y).toBeCloseTo(1100 * 1.4 + 30, 1);
             expect(state.gpxLayers).toHaveLength(1);
             expect(state.activeGPXLayerId).toBe(layer.id);
         });

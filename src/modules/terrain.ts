@@ -10,7 +10,7 @@ import { loadBuildingsForTile } from './buildings';
 import { loadHydrologyForTile } from './hydrology';
 import { EARTH_CIRCUMFERENCE, lngLatToWorld, worldToLngLat, lngLatToTile, getTileBounds } from './geo';
 import { eventBus } from './eventBus';
-import { getAltitudeAt } from './analysis';
+import { getAltitudeAt } from './analysis'; // used for terrain-clamping in gpxDrapePoints
 import { addToCache, getFromCache, hasInCache, getTileCacheKey } from './tileCache';
 import { getPlaneGeometry } from './geometryCache';
 import { loadTileData } from './tileLoader';
@@ -556,22 +556,55 @@ export function updateHydrologyVisibility(visible: boolean): void { state.SHOW_H
 export function updateSlopeVisibility(visible: boolean): void { state.SHOW_SLOPES = visible; resetTerrain(); updateVisibleTiles(); }
 export async function loadTerrain(): Promise<void> { await updateVisibleTiles(); }
 
+/** Safety margin above terrain surface, in world units (≈ meters). */
+const GPX_SURFACE_OFFSET = 30;
+
 /**
- * Compute the 3D world position of a GPX point.
- * Uses getAltitudeAt() to sample the actual rendered terrain height at (x,z),
- * then adds a fixed overhead offset so the tube always floats above the surface.
- * Falls back to ele * RELIEF_EXAGGERATION when terrain data is not yet loaded.
+ * Densify and drape GPX waypoints onto the terrain.
+ *
+ * Two-step process:
+ * 1. Densify: add intermediate points between each pair of GPS waypoints so the
+ *    curve follows local terrain variations between sparse GPS samples.
+ * 2. Drape: for each point, use the HIGHER of (terrain sample, GPS altitude) + offset.
+ *    Falls back gracefully to GPS altitude if terrain tiles aren't loaded yet.
+ *
+ * @param rawPts  Array of {lon, lat, ele} from the GPX parser
+ * @param originTile  Current world-space origin tile
+ * @param densifySteps  Intermediate points inserted between each pair of waypoints
  */
-function gpxPointToWorld(lon: number, lat: number, ele: number, originTile: {x:number;y:number;z:number}): THREE.Vector3 {
-    const pos = lngLatToWorld(lon, lat, originTile);
-    // Try to read actual terrain height at this world position
-    const terrainY = getAltitudeAt(pos.x, pos.z);
-    // elevGPX: altitude from GPS data scaled by exaggeration
-    const elevGPX = (ele || 0) * state.RELIEF_EXAGGERATION;
-    // Use whichever is higher + a 15m safety margin above the terrain surface
-    // This ensures the tube never clips through the rendered terrain mesh
-    const safeY = Math.max(terrainY, elevGPX) + 15;
-    return new THREE.Vector3(pos.x, safeY, pos.z);
+function gpxDrapePoints(
+    rawPts: Array<{lon: number; lat: number; ele: number}>,
+    originTile: {x: number; y: number; z: number},
+    densifySteps = 4
+): THREE.Vector3[] {
+    const result: THREE.Vector3[] = [];
+
+    for (let i = 0; i < rawPts.length; i++) {
+        const p = rawPts[i];
+        const pos = lngLatToWorld(p.lon, p.lat, originTile);
+        const elevGPX = (p.ele || 0) * state.RELIEF_EXAGGERATION;
+        const terrainY = getAltitudeAt(pos.x, pos.z);
+        const y = Math.max(terrainY, elevGPX) + GPX_SURFACE_OFFSET;
+        result.push(new THREE.Vector3(pos.x, y, pos.z));
+
+        // Insert intermediate points between this waypoint and the next
+        if (i < rawPts.length - 1 && densifySteps > 0) {
+            const pNext = rawPts[i + 1];
+            for (let s = 1; s < densifySteps; s++) {
+                const t = s / densifySteps;
+                const iLon = p.lon + (pNext.lon - p.lon) * t;
+                const iLat = p.lat + (pNext.lat - p.lat) * t;
+                const iEle = (p.ele || 0) + ((pNext.ele || 0) - (p.ele || 0)) * t;
+                const iPos = lngLatToWorld(iLon, iLat, originTile);
+                const iElevGPX = iEle * state.RELIEF_EXAGGERATION;
+                const iTerrainY = getAltitudeAt(iPos.x, iPos.z);
+                const iY = Math.max(iTerrainY, iElevGPX) + GPX_SURFACE_OFFSET;
+                result.push(new THREE.Vector3(iPos.x, iY, iPos.z));
+            }
+        }
+    }
+
+    return result;
 }
 
 export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLayer {
@@ -595,15 +628,12 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
         else dMinus += Math.abs(diff);
     }
 
-    // Build 3D points and mesh
+    // Build 3D points: densify + drape onto terrain
     const box = new THREE.Box3();
     const camAlt = state.camera ? state.camera.position.y : 10000;
     const thickness = Math.max(1.5, camAlt / 1200);
-    const threePoints = points.map((p: any) => {
-        const v = gpxPointToWorld(p.lon, p.lat, p.ele, state.originTile);
-        box.expandByPoint(v);
-        return v;
-    });
+    const threePoints = gpxDrapePoints(points, state.originTile);
+    threePoints.forEach(v => box.expandByPoint(v));
 
     const curve = new THREE.CatmullRomCurve3(threePoints);
     const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length, 1500), thickness, 4, false);
@@ -663,11 +693,14 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     const targetElevation = avgEle * state.RELIEF_EXAGGERATION;
     eventBus.emit('flyTo', { worldX: flyCenter.x, worldZ: flyCenter.z, targetElevation, targetDistance: viewDistance });
 
-    // Rebuild all GPX meshes from raw lat/lon with current originTile.
-    // This guarantees every mesh is in the correct world-space position
-    // regardless of any origin shifts that occurred before this import.
-    // We schedule it after the current call stack to let state stabilize.
+    // Schedule two mesh rebuilds:
+    // 1. Immediately (next tick) — picks up any origin shift that happened before import
+    // 2. After ~3s — by then the terrain tiles for the GPX area should be loaded,
+    //    so gpxDrapePoints can sample real terrain heights and drape accurately.
+    //    A second rebuild at ~6s handles slow connections.
     setTimeout(() => updateAllGPXMeshes(), 0);
+    setTimeout(() => { if (state.gpxLayers.length > 0) updateAllGPXMeshes(); }, 3000);
+    setTimeout(() => { if (state.gpxLayers.length > 0) updateAllGPXMeshes(); }, 6000);
 
     updateElevationProfile();
     return layer;
@@ -719,7 +752,7 @@ export function updateAllGPXMeshes(): void {
 
         const track = layer.rawData.tracks[0];
         const points = track.points;
-        const threePoints = points.map((p: any) => gpxPointToWorld(p.lon, p.lat, p.ele, state.originTile));
+        const threePoints = gpxDrapePoints(points, state.originTile);
 
         const curve = new THREE.CatmullRomCurve3(threePoints);
         const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length, 1500), thickness, 4, false);

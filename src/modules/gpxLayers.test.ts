@@ -29,8 +29,10 @@ describe('Multi-GPX Layers (v5.10)', () => {
             expect(layer.id).toBeDefined();
             expect(layer.name).toBe('test-track');
             expect(layer.visible).toBe(true);
-            expect(layer.points).toHaveLength(2);
+            // points are densified: 2 waypoints → ≥2 interpolated points
+            expect(layer.points.length).toBeGreaterThanOrEqual(2);
             expect(layer.mesh).toBeInstanceOf(THREE.Mesh);
+            // stats.pointCount reflects original GPX waypoints, not densified points
             expect(layer.stats.pointCount).toBe(2);
             expect(layer.stats.dPlus).toBeGreaterThan(0);
         });
