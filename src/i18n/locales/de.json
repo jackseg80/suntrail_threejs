@@ -217,6 +217,9 @@
     "feelsLike": "Gefühlt",
     "humidity": "Luftfeuchtigkeit",
     "wind": "Wind",
+    "location": "Ort",
+    "unknown": "Unbekannt",
+    "expert": { "title": "Erweiterte Daten" },
     "gusts": "Böen",
     "clouds": "Bewölkung",
     "dewPoint": "Taupunkt",
@@ -234,7 +237,22 @@
     }
   },
   "solar": {
-    "title": "Sonnenanalyse"
+    "title": "Sonnenanalyse",
+    "phase": {
+      "day": "☀️ Voller Tag",
+      "golden": "🌅 Goldene Stunde",
+      "twilight": "🌌 Dämmerung",
+      "night": "🌙 Nacht"
+    },
+    "status": { "done": "Analyse abgeschlossen" },
+    "stat": {
+      "sunlight": "Sonnenschein",
+      "firstRay": "Erster Strahl",
+      "evolution": "24h-Verlauf"
+    },
+    "btn": { "copy": "📋 Bericht kopieren" },
+    "toast": { "copied": "📋 Bericht kopiert", "clickFirst": "Klicken Sie zuerst auf das Gelände" },
+    "aria": { "close": "Sonnenanalyse schliessen" }
   },
   "sos": {
     "title": "SOS NOTFALL",

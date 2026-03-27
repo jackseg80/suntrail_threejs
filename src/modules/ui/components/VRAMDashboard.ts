@@ -1,4 +1,3 @@
-import { BaseComponent } from '../core/BaseComponent';
 import { state } from '../../state';
 import { activeTiles } from '../../terrain';
 import { tileWorkerManager } from '../../workerManager';
@@ -21,17 +20,52 @@ export function formatTriangles(n: number): string {
     return String(n);
 }
 
-export class VRAMDashboard extends BaseComponent {
+/**
+ * VRAMDashboard — standalone overlay on the map (not a BaseComponent).
+ * Displays GPU metrics (VRAM) alongside the Stats.js FPS panel.
+ * Controlled by a single toggle in Settings.
+ */
+export class VRAMDashboard {
+    private panel: HTMLElement | null = null;
     private intervalId: ReturnType<typeof setInterval> | null = null;
     private lastAlertTime = 0;
     private static readonly ALERT_COOLDOWN = 30_000; // 30s
 
-    constructor() {
-        super('template-vram-dashboard', 'vram-slot');
+    /**
+     * Creates the overlay panel and appends it to document.body.
+     * Replaces the old hydrate() / BaseComponent pattern.
+     */
+    public init(): void {
+        this.panel = document.createElement('div');
+        this.panel.id = 'vram-dashboard';
+        this.panel.className = 'vram-panel';
+        this.panel.style.cssText = 'display:none; position:fixed; top:130px; left:0; z-index:9999;';
+        this.panel.innerHTML = `
+            <div class="vram-row"><span class="vram-label">${i18n.t('vram.geometries')}</span><span class="vram-value" id="vram-geo">—</span></div>
+            <div class="vram-row"><span class="vram-label">${i18n.t('vram.textures')}</span><span class="vram-value" id="vram-tex">—</span></div>
+            <div class="vram-row"><span class="vram-label">${i18n.t('vram.drawCalls')}</span><span class="vram-value" id="vram-draw">—</span></div>
+            <div class="vram-row"><span class="vram-label">${i18n.t('vram.triangles')}</span><span class="vram-value" id="vram-tri">—</span></div>
+            <div class="vram-row"><span class="vram-label">${i18n.t('vram.tiles')}</span><span class="vram-value" id="vram-tiles">—</span></div>
+            <div class="vram-row"><span class="vram-label">${i18n.t('vram.workers')}</span><span class="vram-value" id="vram-workers">—</span></div>
+        `;
+        document.body.appendChild(this.panel);
     }
 
-    public render(): void {
-        // Panel starts hidden — no initial metrics fetch needed
+    /**
+     * Toggle both VRAM overlay AND Stats.js FPS panel together.
+     */
+    public toggle(): void {
+        if (!this.panel) return;
+        const isVisible = this.panel.style.display !== 'none';
+        if (isVisible) {
+            this.panel.style.display = 'none';
+            if (state.stats) state.stats.dom.style.display = 'none';
+            this.stop();
+        } else {
+            this.panel.style.display = 'block';
+            if (state.stats) state.stats.dom.style.display = 'block';
+            this.start();
+        }
     }
 
     public start(): void {
@@ -43,19 +77,6 @@ export class VRAMDashboard extends BaseComponent {
         if (this.intervalId !== null) {
             clearInterval(this.intervalId);
             this.intervalId = null;
-        }
-    }
-
-    public toggle(): void {
-        if (!this.element) return;
-        const panel = this.element;
-        const isVisible = panel.style.display !== 'none';
-        if (isVisible) {
-            panel.style.display = 'none';
-            this.stop();
-        } else {
-            panel.style.display = '';
-            this.start();
         }
     }
 
@@ -100,8 +121,11 @@ export class VRAMDashboard extends BaseComponent {
         }
     }
 
-    public override dispose(): void {
+    public dispose(): void {
         this.stop();
-        super.dispose();
+        if (this.panel && this.panel.parentNode) {
+            this.panel.parentNode.removeChild(this.panel);
+        }
+        this.panel = null;
     }
 }

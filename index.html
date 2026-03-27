@@ -273,7 +273,6 @@
                 <div class="setting-label" data-i18n="vram.label">Stats GPU (VRAM)</div>
                 <input type="checkbox" id="vram-toggle">
             </div>
-            <div id="vram-slot"></div>
 
             <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 12px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.05);">
                 <div id="settings-api-key-slot"></div>
@@ -568,17 +567,6 @@
       <a href="https://cloud.maptiler.com/account/keys/" target="_blank" rel="noopener noreferrer" data-i18n="apiKey.link">Obtenir une clé gratuite ↗</a>
     </p>
   </div>
-</template>
-
-<template id="template-vram-dashboard">
-<div id="vram-dashboard" class="vram-panel" style="display:none;">
-  <div class="vram-row"><span class="vram-label" data-i18n="vram.geometries">Géométries</span><span class="vram-value" id="vram-geo">—</span></div>
-  <div class="vram-row"><span class="vram-label" data-i18n="vram.textures">Textures GPU</span><span class="vram-value" id="vram-tex">—</span></div>
-  <div class="vram-row"><span class="vram-label" data-i18n="vram.drawCalls">Draw Calls</span><span class="vram-value" id="vram-draw">—</span></div>
-  <div class="vram-row"><span class="vram-label" data-i18n="vram.triangles">Triangles</span><span class="vram-value" id="vram-tri">—</span></div>
-  <div class="vram-row"><span class="vram-label" data-i18n="vram.tiles">Tuiles actives</span><span class="vram-value" id="vram-tiles">—</span></div>
-  <div class="vram-row"><span class="vram-label" data-i18n="vram.workers">Workers</span><span class="vram-value" id="vram-workers">—</span></div>
-</div>
 </template>
 
 <script type="module" src="/src/main.ts"></script>

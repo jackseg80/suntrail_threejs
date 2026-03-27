@@ -217,6 +217,9 @@
     "feelsLike": "Ressenti",
     "humidity": "Humidité",
     "wind": "Vent",
+    "location": "Lieu",
+    "unknown": "Inconnu",
+    "expert": { "title": "Données Avancées" },
     "gusts": "Rafales",
     "clouds": "Couverture nuageuse",
     "dewPoint": "Point de rosée",
@@ -234,7 +237,22 @@
     }
   },
   "solar": {
-    "title": "Analyse Solaire"
+    "title": "Analyse Solaire",
+    "phase": {
+      "day": "☀️ Plein jour",
+      "golden": "🌅 Heure Dorée",
+      "twilight": "🌌 Crépuscule",
+      "night": "🌙 Nuit"
+    },
+    "status": { "done": "Analyse terminée" },
+    "stat": {
+      "sunlight": "Ensoleillement",
+      "firstRay": "Premier rayon",
+      "evolution": "Évolution sur 24h"
+    },
+    "btn": { "copy": "📋 Copier le rapport" },
+    "toast": { "copied": "📋 Rapport copié", "clickFirst": "Cliquez sur le terrain d'abord" },
+    "aria": { "close": "Fermer analyse solaire" }
   },
   "sos": {
     "title": "URGENCE SOS",

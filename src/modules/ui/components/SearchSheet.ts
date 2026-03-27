@@ -6,6 +6,7 @@ import { lngLatToTile, lngLatToWorld } from '../../geo';
 import { flyTo } from '../../scene';
 import { fetchWeather } from '../../weather';
 import { i18n } from '../../../i18n/I18nService';
+import { eventBus } from '../../eventBus';
 
 import { sheetManager } from '../core/SheetManager';
 
@@ -31,6 +32,12 @@ export class SearchSheet extends BaseComponent {
         if (this.geoInput && this.geoResults) {
             // ARIA: search input label and results container
             this.geoInput.setAttribute('aria-label', i18n.t('search.aria.input'));
+            this.geoInput.placeholder = i18n.t('search.placeholder');
+            // Re-apply placeholder on locale change
+            const onLocale = () => { if (this.geoInput) this.geoInput.placeholder = i18n.t('search.placeholder'); };
+            eventBus.on('localeChanged', onLocale);
+            this.addSubscription(() => eventBus.off('localeChanged', onLocale));
+
             this.geoResults.setAttribute('role', 'listbox');
             this.geoResults.setAttribute('aria-live', 'polite');
 

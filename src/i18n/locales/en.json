@@ -217,6 +217,9 @@
     "feelsLike": "Feels like",
     "humidity": "Humidity",
     "wind": "Wind",
+    "location": "Location",
+    "unknown": "Unknown",
+    "expert": { "title": "Advanced Data" },
     "gusts": "Gusts",
     "clouds": "Cloud cover",
     "dewPoint": "Dew point",
@@ -234,7 +237,22 @@
     }
   },
   "solar": {
-    "title": "Solar Analysis"
+    "title": "Solar Analysis",
+    "phase": {
+      "day": "☀️ Full daylight",
+      "golden": "🌅 Golden Hour",
+      "twilight": "🌌 Twilight",
+      "night": "🌙 Night"
+    },
+    "status": { "done": "Analysis complete" },
+    "stat": {
+      "sunlight": "Sunlight",
+      "firstRay": "First ray",
+      "evolution": "24h Evolution"
+    },
+    "btn": { "copy": "📋 Copy report" },
+    "toast": { "copied": "📋 Report copied", "clickFirst": "Click on terrain first" },
+    "aria": { "close": "Close solar analysis" }
   },
   "sos": {
     "title": "SOS EMERGENCY",

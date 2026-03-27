@@ -52,20 +52,8 @@ describe('VRAMDashboard', () => {
         vi.useFakeTimers();
         mockedShowToast.mockClear();
 
-        // Setup DOM with template and container
-        document.body.innerHTML = `
-            <template id="template-vram-dashboard">
-                <div id="vram-dashboard" class="vram-panel" style="display:none;">
-                    <div class="vram-row"><span class="vram-label">Géométries</span><span class="vram-value" id="vram-geo">—</span></div>
-                    <div class="vram-row"><span class="vram-label">Textures GPU</span><span class="vram-value" id="vram-tex">—</span></div>
-                    <div class="vram-row"><span class="vram-label">Draw Calls</span><span class="vram-value" id="vram-draw">—</span></div>
-                    <div class="vram-row"><span class="vram-label">Triangles</span><span class="vram-value" id="vram-tri">—</span></div>
-                    <div class="vram-row"><span class="vram-label">Tuiles actives</span><span class="vram-value" id="vram-tiles">—</span></div>
-                    <div class="vram-row"><span class="vram-label">Workers</span><span class="vram-value" id="vram-workers">—</span></div>
-                </div>
-            </template>
-            <div id="vram-slot"></div>
-        `;
+        // Clean body
+        document.body.innerHTML = '';
 
         // Mock renderer on state
         (state as any).renderer = {
@@ -77,7 +65,7 @@ describe('VRAMDashboard', () => {
         (state as any).PERFORMANCE_PRESET = 'balanced';
 
         dashboard = new VRAMDashboard();
-        dashboard.hydrate();
+        dashboard.init();
     });
 
     afterEach(() => {
@@ -146,7 +134,7 @@ describe('VRAMDashboard', () => {
         expect(panel!.style.display).toBe('none');
 
         dashboard.toggle(); // show
-        expect(panel!.style.display).toBe('');
+        expect(panel!.style.display).toBe('block');
         expect(dashboard.isRunning()).toBe(true);
 
         dashboard.toggle(); // hide

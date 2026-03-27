@@ -123,7 +123,7 @@ export function initUI(): void {
     widgets.hydrate();
 
     const vramDashboard = new VRAMDashboard();
-    vramDashboard.hydrate();
+    vramDashboard.init();
     state.vramPanel = vramDashboard;
 
     new TimelineComponent();

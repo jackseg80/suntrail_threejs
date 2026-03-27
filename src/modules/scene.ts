@@ -119,7 +119,8 @@ export async function initScene(): Promise<void> {
     state.stats = new Stats();
     container.appendChild(state.stats.dom);
     state.stats.dom.style.top = '80px';
-    state.stats.dom.style.display = state.SHOW_STATS ? 'block' : 'none';
+    // Start hidden — VRAMDashboard.toggle() manages FPS+VRAM visibility together
+    state.stats.dom.style.display = 'none';
 
     initCompass();
 

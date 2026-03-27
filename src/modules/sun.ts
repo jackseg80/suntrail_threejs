@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import SunCalc from 'suncalc';
 import { state } from './state';
 import { terrainUniforms } from './terrain';
+import { i18n } from '../i18n/I18nService';
 
 /**
  * SunTrail Sun Position & Lighting Engine (v5.5.12)
@@ -26,10 +27,10 @@ export function updateSunPosition(minutes: number): void {
     if (timeDisp) timeDisp.textContent = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
     const phaseSpan = document.getElementById('sun-phase');
     if (phaseSpan) {
-        if (altDeg > 6) { phaseSpan.textContent = "☀️ Plein jour"; phaseSpan.style.color = "#FFD700"; }
-        else if (altDeg > -4) { phaseSpan.textContent = "🌅 Heure Dorée"; phaseSpan.style.color = "#FF8C00"; }
-        else if (altDeg > -12) { phaseSpan.textContent = "🌌 Crépuscule"; phaseSpan.style.color = "#ADFF2F"; }
-        else { phaseSpan.textContent = "🌙 Nuit"; phaseSpan.style.color = "#87CEEB"; }
+        if (altDeg > 6) { phaseSpan.textContent = i18n.t('solar.phase.day'); phaseSpan.style.color = "#FFD700"; }
+        else if (altDeg > -4) { phaseSpan.textContent = i18n.t('solar.phase.golden'); phaseSpan.style.color = "#FF8C00"; }
+        else if (altDeg > -12) { phaseSpan.textContent = i18n.t('solar.phase.twilight'); phaseSpan.style.color = "#ADFF2F"; }
+        else { phaseSpan.textContent = i18n.t('solar.phase.night'); phaseSpan.style.color = "#87CEEB"; }
     }
 
     // --- LOGIQUE DE LUMINOSITÉ ---

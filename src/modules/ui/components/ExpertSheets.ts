@@ -131,10 +131,10 @@ export class WeatherSheet extends BaseComponent {
             parent.appendChild(div);
         };
 
-        addStat(basicGrid, 'Température', `${Math.round(wd.temp)}°C`);
-        addStat(basicGrid, 'Ressenti', `${Math.round(wd.apparentTemp)}°C`);
-        addStat(basicGrid, 'Vent', `${Math.round(wd.windSpeed)} km/h`);
-        addStat(basicGrid, 'Humidité', `${wd.humidity}%`);
+        addStat(basicGrid, i18n.t('weather.temp'), `${Math.round(wd.temp)}°C`);
+        addStat(basicGrid, i18n.t('weather.feelsLike'), `${Math.round(wd.apparentTemp)}°C`);
+        addStat(basicGrid, i18n.t('weather.wind'), `${Math.round(wd.windSpeed)} km/h`);
+        addStat(basicGrid, i18n.t('weather.humidity'), `${wd.humidity}%`);
 
         this.contentEl.appendChild(basicGrid);
 
@@ -170,18 +170,18 @@ export class WeatherSheet extends BaseComponent {
         // Expert Panel
         const expertTitle = document.createElement('h4');
         expertTitle.classList.add('exp-expert-title');
-        expertTitle.textContent = 'Données Avancées';
+        expertTitle.textContent = i18n.t('weather.expert.title');
         this.expertPanel.appendChild(expertTitle);
 
         const expertGrid = document.createElement('div');
         expertGrid.classList.add('exp-stat-grid');
 
-        addStat(expertGrid, 'Lieu', wd.locationName || 'Inconnu');
-        addStat(expertGrid, 'Rafales', `${Math.round(wd.windGusts || 0)} km/h`);
-        addStat(expertGrid, 'Visibilité', `${Math.round(wd.visibility || 0)} km`);
-        addStat(expertGrid, 'Précipitations', `${Math.round(wd.precProb || 0)}%`);
-        addStat(expertGrid, 'Point de rosée', `${Math.round(wd.dewPoint || 0)}°C`);
-        addStat(expertGrid, 'Isotherme 0°', `${Math.round(wd.freezingLevel || 0)} m`);
+        addStat(expertGrid, i18n.t('weather.location'), wd.locationName || i18n.t('weather.unknown'));
+        addStat(expertGrid, i18n.t('weather.gusts'), `${Math.round(wd.windGusts || 0)} km/h`);
+        addStat(expertGrid, i18n.t('weather.visibility'), `${Math.round(wd.visibility || 0)} km`);
+        addStat(expertGrid, i18n.t('weather.precipitation'), `${Math.round(wd.precProb || 0)}%`);
+        addStat(expertGrid, i18n.t('weather.dewPoint'), `${Math.round(wd.dewPoint || 0)}°C`);
+        addStat(expertGrid, i18n.t('weather.freezingLevel'), `${Math.round(wd.freezingLevel || 0)} m`);
 
         this.expertPanel.appendChild(expertGrid);
 
@@ -230,7 +230,7 @@ export class SolarProbeSheet extends BaseComponent {
         this.contentEl?.setAttribute('aria-live', 'polite');
 
         const closeProbe = document.getElementById('close-probe');
-        closeProbe?.setAttribute('aria-label', 'Fermer analyse solaire');
+        closeProbe?.setAttribute('aria-label', i18n.t('solar.aria.close'));
         closeProbe?.addEventListener('click', () => {
             sheetManager.close();
         });
@@ -247,7 +247,7 @@ export class SolarProbeSheet extends BaseComponent {
                             sheetManager.open('solar-probe');
                         }
                     } else {
-                        showToast("Cliquez sur le terrain d'abord");
+                        showToast(i18n.t('solar.toast.clickFirst'));
                     }
                 };
             } else {
@@ -269,7 +269,7 @@ export class SolarProbeSheet extends BaseComponent {
         // Status
         const statusEl = document.createElement('div');
         statusEl.classList.add('exp-probe-status');
-        statusEl.textContent = 'Analyse terminée';
+        statusEl.textContent = i18n.t('solar.status.done');
         this.contentEl.appendChild(statusEl);
 
         // Stats Grid
@@ -293,14 +293,14 @@ export class SolarProbeSheet extends BaseComponent {
             statsGrid.appendChild(div);
         };
 
-        addStat('Ensoleillement', totalStr);
-        addStat('Premier rayon', sunriseStr);
+        addStat(i18n.t('solar.stat.sunlight'), totalStr);
+        addStat(i18n.t('solar.stat.firstRay'), sunriseStr);
         this.contentEl.appendChild(statsGrid);
 
         // Timeline
         const timelineTitle = document.createElement('div');
         timelineTitle.classList.add('exp-timeline-title');
-        timelineTitle.textContent = 'Évolution sur 24h';
+        timelineTitle.textContent = i18n.t('solar.stat.evolution');
         this.contentEl.appendChild(timelineTitle);
 
         const timelineContainer = document.createElement('div');
@@ -325,12 +325,12 @@ export class SolarProbeSheet extends BaseComponent {
         // Copy Button
         const copyBtn = document.createElement('button');
         copyBtn.className = 'btn-go';
-        copyBtn.setAttribute('aria-label', 'Copier le rapport solaire');
-        copyBtn.textContent = '📋 Copier le rapport';
+        copyBtn.setAttribute('aria-label', i18n.t('solar.aria.close'));
+        copyBtn.textContent = i18n.t('solar.btn.copy');
         copyBtn.onclick = () => {
-            const report = `SunTrail Solar Report\nLocation: ${result.gps.lat.toFixed(5)}, ${result.gps.lon.toFixed(5)}\nSunlight: ${totalStr}\nSunrise: ${sunriseStr}`;
+            const report = `SunTrail Solar Report\nLocation: ${result.gps.lat.toFixed(5)}, ${result.gps.lon.toFixed(5)}\n${i18n.t('solar.stat.sunlight')}: ${totalStr}\n${i18n.t('solar.stat.firstRay')}: ${sunriseStr}`;
             navigator.clipboard.writeText(report);
-            showToast("📋 Rapport copié");
+            showToast(i18n.t('solar.toast.copied'));
         };
         this.contentEl.appendChild(copyBtn);
     }
