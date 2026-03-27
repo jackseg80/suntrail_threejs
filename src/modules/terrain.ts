@@ -647,6 +647,12 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     const targetElevation = avgEle * state.RELIEF_EXAGGERATION;
     eventBus.emit('flyTo', { worldX: flyCenter.x, worldZ: flyCenter.z, targetElevation, targetDistance: viewDistance });
 
+    // Rebuild all GPX meshes from raw lat/lon with current originTile.
+    // This guarantees every mesh is in the correct world-space position
+    // regardless of any origin shifts that occurred before this import.
+    // We schedule it after the current call stack to let state stabilize.
+    setTimeout(() => updateAllGPXMeshes(), 0);
+
     updateElevationProfile();
     return layer;
 }
