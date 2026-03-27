@@ -4,8 +4,8 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
-## [5.10.0-wip] - 2026-03-27
-### 🌐 Multi-GPX, i18n FR/DE/IT/EN — Sprint 1 & 2
+## [5.10.0] - 2026-03-27
+### 🌐 Multi-GPX, i18n FR/DE/IT/EN, Dashboard VRAM — Validé utilisateur
 
 #### Internationalisation (Sprint 1 + 1-bis)
 - **I18nService** : Singleton léger (`src/i18n/I18nService.ts`) avec `t(key)`, `setLocale()`, interpolation `{{var}}`, fallback FR → clé brute.
@@ -26,6 +26,19 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **FlyTo robuste** : Coords calculées depuis lat/lon brut à chaque appel (immunisé contre les changements d'`originTile`).
 - **Terrain Draping** : `gpxDrapePoints()` — densification ×4 entre waypoints GPS + clamping `Y = max(terrainAlt, elevGPX) + 30m`. Re-draping automatique à +3s/+6s après import. Le tracé suit le dénivelé réel du terrain rendu.
 - **9 tests Multi-GPX** ajoutés (133/135 total, 2 pré-existants tileLoader).
+
+#### Dashboard VRAM Pro (Sprint 3)
+- **VRAMDashboard** : composant standalone, overlay `position:fixed` sur la carte (top:130px). Métriques temps réel à 500ms : géométries, textures GPU, draw calls, triangles, tuiles actives, workers.
+- **Overlay unifié FPS+VRAM** : un seul toggle "Stats de performance" dans Réglages → contrôle simultanément FPS (Stats.js Three.js) et métriques GPU.
+- **Seuils d'alerte** : toast ⚠️ si textures > limite profil (eco=50 / balanced=150 / performance=300 / ultra=500). Cooldown 30s anti-spam.
+- **`state.vramPanel: VRAMDashboard | null`** : stub mort depuis v5.7 remplacé par implémentation réelle.
+- **10 tests** `vramDashboard.test.ts`.
+
+#### Qualité & Fixes Post-validation (Sprint 4 + 3-bis)
+- **145/145 tests** — objectif 140+ dépassé. Fix `tileLoader.test.ts` (signature `getElevationUrl → {url,sourceZoom}`).
+- **i18n live-reload complet** : toutes les strings dynamiques créées en JS (`innerHTML`, `textContent`) équipées de `data-i18n` → `applyToDOM()` les met à jour au changement de locale. `sun.ts` : `applySolarPhaseLabel()` + listener `localeChanged` pour les phases solaires (Plein jour / Heure Dorée / Crépuscule / Nuit).
+- **Couverture i18n étendue** : Solar (phases, statuts, stats), Search placeholder, WeatherExpert, TrackSheet empty state.
+- **0 erreurs TypeScript** strict.
 
 ## [5.9.0] - 2026-03-27
 ### 🎨 UI Refonte Qualité — Design Tokens, Accessibilité, Gestures & Haptics

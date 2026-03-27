@@ -13,6 +13,7 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 - **Event Bus (`eventBus.ts`)** : Utilisé pour briser les dépendances circulaires entre `terrain.ts` et `scene.ts`. Permet de déclencher des événements transversaux (ex: `terrainReady`, `flyTo`).
 - **Multi-GPX (v5.10.0)** : `state.gpxLayers: GPXLayer[]` remplace `rawGpxData/gpxMesh/gpxPoints`. Chaque layer a son propre mesh, couleur, stats et points 3D. La réaffectation `state.gpxLayers = [...state.gpxLayers, layer]` est obligatoire pour notifier le Proxy.
 - **isFlyingTo (v5.10.0)** : Flag `state.isFlyingTo` mis à `true` pendant l'animation flyTo. **Bloque l'origin shift** pour éviter que les coordonnées capturées dans la closure de l'animation deviennent stales. Remis à `false` à la fin de l'animation (`progress >= 1`).
+- **i18n live-reload (v5.10.0)** : `BaseComponent.hydrate()` souscrit à `localeChanged` et appelle `applyToDOM(this.element)`. Cela ne met à jour **que** les éléments avec `data-i18n`. Les strings créées par `innerHTML`/`textContent` en JS doivent **aussi avoir `data-i18n`** pour être re-traduites. Exemple : `el.innerHTML = \`<p data-i18n="key">\${i18n.t('key')}</p>\``. Pour les éléments hors composants (ex: `sun.ts`), utiliser un listener `eventBus.on('localeChanged', () => ...)` dédié.
 
 ### Interface & Composants (v5.9.0)
 - **Architecture Découplée** : La logique UI est extraite de `ui.ts` vers des classes spécialisées (`src/modules/ui/components/`).

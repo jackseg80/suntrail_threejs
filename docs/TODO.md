@@ -41,7 +41,7 @@
 - [x] **Empty States** : États vides illustrés (TrackSheet + SearchSheet).
 - [x] **Haptic Feedback** : `@capacitor/haptics` — swipes (medium) + confirmations (success).
 
-## 🌐 Priorité 4 : Expansion & Multi-GPX (v5.10) — EN COURS 🚧
+## 🌐 Priorité 4 : Expansion & Multi-GPX (v5.10) ✅ TERMINÉ — validé utilisateur
 *Impact : Ouverture européenne, gestion multi-tracés, monitoring avancé. Version cible pour Google Play Store.*
 
 > 🔁 **Workflow** : Chaque sprint se termine par une session de test utilisateur avant commit.
@@ -83,6 +83,11 @@
 - [x] **Seuils d'alerte** : Toast ⚠️ si textures > limite profil (eco=50, balanced=150, perf=300, ultra=500) — cooldown 30s.
 - [x] **Toggle** : Checkbox dans `<details>` Paramètres Avancés → `state.vramPanel.toggle()`.
 - [x] **10 tests** `vramDashboard.test.ts` — seuils, cooldown, toggle, formatTriangles.
+
+### Sprint 3-bis — Fixes Post-validation ✅ TERMINÉ
+- [x] **Overlay FPS+VRAM unifié** : `VRAMDashboard` refactorisé hors sheet → `position:fixed` sur la carte (top:130px). Un seul toggle "Stats de performance" contrôle FPS (Stats.js) + VRAM simultanément.
+- [x] **i18n strings dynamiques manquantes** : Solar (phases timeline, panneau analyse, WeatherExpert), Search placeholder, TrackSheet empty state.
+- [x] **Live-reload i18n** : `data-i18n` ajouté sur les éléments créés dynamiquement en JS. `sun.ts` : `applySolarPhaseLabel()` + listener `localeChanged`. Changement de locale → toute l'UI bascule instantanément, y compris les éléments JS.
 
 ### Sprint 4 — Tests & Qualité v5.10 ✅ TERMINÉ
 - [x] **145/145 tests** — objectif 140+ atteint ✅
