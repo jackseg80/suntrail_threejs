@@ -8,7 +8,7 @@ import { i18n } from '../../../i18n/I18nService';
 // @ts-ignore
 import gpxParser from 'gpxparser';
 import { updateVisibleTiles, addGPXLayer, removeGPXLayer, toggleGPXLayer, updateRecordedTrackMesh } from '../../terrain';
-import { lngLatToTile } from '../../geo';
+import { lngLatToTile, lngLatToWorld } from '../../geo';
 import { updateElevationProfile } from '../../profile';
 import { eventBus } from '../../eventBus';
 
@@ -198,16 +198,24 @@ export class TrackSheet extends BaseComponent {
                 updateElevationProfile(layerId);
                 // FlyTo
                 const layer = state.gpxLayers.find(l => l.id === layerId);
-                if (layer && layer.points.length > 0) {
+                if (layer && layer.rawData?.tracks?.[0]?.points?.length > 0) {
+                    // Always derive from raw lat/lon using CURRENT originTile
+                    // so coords are correct regardless of any origin shifts that happened
+                    const rawPts = layer.rawData.tracks[0].points as any[];
+                    const lats = rawPts.map(p => p.lat as number);
+                    const lons = rawPts.map(p => p.lon as number);
+                    const eles = rawPts.map(p => (p.ele as number) || 0);
+                    const centerLat = (Math.max(...lats) + Math.min(...lats)) / 2;
+                    const centerLon = (Math.max(...lons) + Math.min(...lons)) / 2;
+                    const avgEle = eles.reduce((s, v) => s + v, 0) / eles.length;
+                    const worldPos = lngLatToWorld(centerLon, centerLat, state.originTile);
+                    const targetElevation = avgEle * state.RELIEF_EXAGGERATION;
+                    // Use spread from stored points for distance (they're correct after origin-shift updates)
                     const xs = layer.points.map(p => p.x);
                     const zs = layer.points.map(p => p.z);
-                    const ys = layer.points.map(p => p.y);
-                    const centerX = (Math.max(...xs) + Math.min(...xs)) / 2;
-                    const centerZ = (Math.max(...zs) + Math.min(...zs)) / 2;
-                    const avgElevation = ys.reduce((s, v) => s + v, 0) / ys.length;
                     const spread = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs));
-                    const viewDistance = Math.max(spread * 0.8, 2000);
-                    eventBus.emit('flyTo', { worldX: centerX, worldZ: centerZ, targetElevation: avgElevation, targetDistance: viewDistance });
+                    const viewDistance = Math.max(spread * 1.5, 3000);
+                    eventBus.emit('flyTo', { worldX: worldPos.x, worldZ: worldPos.z, targetElevation, targetDistance: viewDistance });
                 }
                 this.renderLayersList();
             });

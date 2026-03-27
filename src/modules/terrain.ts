@@ -627,17 +627,25 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
         state.activeGPXLayerId = id;
     }
 
-    // FlyTo center of track
-    // center.y = mean elevation of the track (for camera target height)
-    // targetDistance = spread of the track XZ extent so the whole track fits in view
-    const center = new THREE.Vector3();
-    box.getCenter(center);
+    // FlyTo: compute center from raw lat/lon to stay authoritative regardless of originTile.
+    // This is important: world coords depend on state.originTile at call time, but originTile
+    // might have changed between import calls. Always re-derive from geographic source.
+    const lats = points.map((p: any) => p.lat as number);
+    const lons = points.map((p: any) => p.lon as number);
+    const eles = points.map((p: any) => (p.ele as number) || 0);
+    const centerLat = (Math.max(...lats) + Math.min(...lats)) / 2;
+    const centerLon = (Math.max(...lons) + Math.min(...lons)) / 2;
+    const avgEle = eles.reduce((s: number, v: number) => s + v, 0) / eles.length;
+
+    // Compute spread in world units for camera distance
     const size = new THREE.Vector3();
     box.getSize(size);
     const trackSpread = Math.max(size.x, size.z);
-    const avgElevation = center.y; // already in world units
-    const viewDistance = Math.max(trackSpread * 0.8, 2000); // min 2km so we don't land inside the ground
-    eventBus.emit('flyTo', { worldX: center.x, worldZ: center.z, targetElevation: avgElevation, targetDistance: viewDistance });
+    const viewDistance = Math.max(trackSpread * 1.5, 3000); // min 3km
+
+    const flyCenter = lngLatToWorld(centerLon, centerLat, state.originTile);
+    const targetElevation = avgEle * state.RELIEF_EXAGGERATION;
+    eventBus.emit('flyTo', { worldX: flyCenter.x, worldZ: flyCenter.z, targetElevation, targetDistance: viewDistance });
 
     updateElevationProfile();
     return layer;

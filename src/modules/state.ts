@@ -180,6 +180,7 @@ export interface State {
     trailProgress: number;
     isFollowingTrail: boolean;
     
+    isFlyingTo: boolean; // true during flyTo animation — blocks origin shift
     isRecording: boolean;
     recordedPoints: LocationPoint[];
     
@@ -241,6 +242,7 @@ const initialState: State = {
     recordedMesh: null,
     profileMarker: null, trailProgress: 0, isFollowingTrail: false,
     
+    isFlyingTo: false,
     isRecording: false,
     recordedPoints: [],
     

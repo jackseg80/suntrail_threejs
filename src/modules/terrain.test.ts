@@ -39,8 +39,8 @@ describe('terrain.ts', () => {
             const layer = addGPXLayer(rawData, 'test-track');
 
             expect(layer.points).toHaveLength(2);
-            expect(layer.points[0].y).toBeCloseTo(1000 * 1.4 + 5, 1);
-            expect(layer.points[1].y).toBeCloseTo(1100 * 1.4 + 5, 1);
+            expect(layer.points[0].y).toBeCloseTo(1000 * 1.4 + 25, 1);
+            expect(layer.points[1].y).toBeCloseTo(1100 * 1.4 + 25, 1);
             expect(state.gpxLayers).toHaveLength(1);
             expect(state.activeGPXLayerId).toBe(layer.id);
         });

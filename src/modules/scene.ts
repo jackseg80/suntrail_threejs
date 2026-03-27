@@ -47,6 +47,11 @@ export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevatio
     const finalAlt = targetElevation + targetDistance; 
     const endPos = new THREE.Vector3(targetWorldX, finalAlt, targetWorldZ + offsetZ);
 
+    // Block origin shift for the duration of the animation to prevent the closure
+    // coordinates from becoming stale (origin shift would shift camera but not the
+    // captured startPos/endPos/startTarget/endTarget in this closure).
+    state.isFlyingTo = true;
+
     const duration = 2500; 
     const startTime = performance.now();
 
@@ -65,7 +70,12 @@ export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevatio
 
         state.camera!.position.copy(currentPos);
         state.controls!.update();
-        if (progress < 1.0) requestAnimationFrame(animateFlight);
+        if (progress < 1.0) {
+            requestAnimationFrame(animateFlight);
+        } else {
+            // Allow origin shift again after landing
+            state.isFlyingTo = false;
+        }
     };
     requestAnimationFrame(animateFlight);
 }
@@ -190,7 +200,7 @@ export async function initScene(): Promise<void> {
 
         if (distFromOrigin > 35000) {
             const timeSinceLast = Date.now() - lastRecenterTime;
-            if (state.ZOOM >= 12 && !state.isUserInteracting && (newZoom === currentZoom) && (timeSinceLast > 5000)) {
+            if (state.ZOOM >= 12 && !state.isUserInteracting && !state.isFlyingTo && (newZoom === currentZoom) && (timeSinceLast > 5000)) {
                 const newTile = lngLatToTile(gpsCenter.lon, gpsCenter.lat, state.originTile.z);
                 if (!isNaN(newTile.x) && !isNaN(newTile.y)) {
                     const oldXN = (state.originTile.x + 0.5) / Math.pow(2, state.originTile.z);
