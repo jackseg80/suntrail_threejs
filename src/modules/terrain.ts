@@ -10,6 +10,7 @@ import { loadBuildingsForTile } from './buildings';
 import { loadHydrologyForTile } from './hydrology';
 import { EARTH_CIRCUMFERENCE, lngLatToWorld, worldToLngLat, lngLatToTile, getTileBounds } from './geo';
 import { eventBus } from './eventBus';
+import { getAltitudeAt } from './analysis';
 import { addToCache, getFromCache, hasInCache, getTileCacheKey } from './tileCache';
 import { getPlaneGeometry } from './geometryCache';
 import { loadTileData } from './tileLoader';
@@ -555,6 +556,24 @@ export function updateHydrologyVisibility(visible: boolean): void { state.SHOW_H
 export function updateSlopeVisibility(visible: boolean): void { state.SHOW_SLOPES = visible; resetTerrain(); updateVisibleTiles(); }
 export async function loadTerrain(): Promise<void> { await updateVisibleTiles(); }
 
+/**
+ * Compute the 3D world position of a GPX point.
+ * Uses getAltitudeAt() to sample the actual rendered terrain height at (x,z),
+ * then adds a fixed overhead offset so the tube always floats above the surface.
+ * Falls back to ele * RELIEF_EXAGGERATION when terrain data is not yet loaded.
+ */
+function gpxPointToWorld(lon: number, lat: number, ele: number, originTile: {x:number;y:number;z:number}): THREE.Vector3 {
+    const pos = lngLatToWorld(lon, lat, originTile);
+    // Try to read actual terrain height at this world position
+    const terrainY = getAltitudeAt(pos.x, pos.z);
+    // elevGPX: altitude from GPS data scaled by exaggeration
+    const elevGPX = (ele || 0) * state.RELIEF_EXAGGERATION;
+    // Use whichever is higher + a 15m safety margin above the terrain surface
+    // This ensures the tube never clips through the rendered terrain mesh
+    const safeY = Math.max(terrainY, elevGPX) + 15;
+    return new THREE.Vector3(pos.x, safeY, pos.z);
+}
+
 export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLayer {
     const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `gpx-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     const colorIndex = state.gpxLayers.length % GPX_COLORS.length;
@@ -581,10 +600,7 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     const camAlt = state.camera ? state.camera.position.y : 10000;
     const thickness = Math.max(1.5, camAlt / 1200);
     const threePoints = points.map((p: any) => {
-        const pos = lngLatToWorld(p.lon, p.lat, state.originTile);
-        // +25 world units (~25m) ensures the tube stays above the terrain surface
-        // even on steep mountain slopes with RELIEF_EXAGGERATION applied
-        const v = new THREE.Vector3(pos.x, (p.ele || 0) * state.RELIEF_EXAGGERATION + 25, pos.z);
+        const v = gpxPointToWorld(p.lon, p.lat, p.ele, state.originTile);
         box.expandByPoint(v);
         return v;
     });
@@ -703,10 +719,7 @@ export function updateAllGPXMeshes(): void {
 
         const track = layer.rawData.tracks[0];
         const points = track.points;
-        const threePoints = points.map((p: any) => {
-            const pos = lngLatToWorld(p.lon, p.lat, state.originTile);
-            return new THREE.Vector3(pos.x, (p.ele || 0) * state.RELIEF_EXAGGERATION + 25, pos.z);
-        });
+        const threePoints = points.map((p: any) => gpxPointToWorld(p.lon, p.lat, p.ele, state.originTile));
 
         const curve = new THREE.CatmullRomCurve3(threePoints);
         const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length, 1500), thickness, 4, false);
