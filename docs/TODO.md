@@ -56,7 +56,7 @@
 - [x] **Labels dynamiques** : `NavigationBar` et `TopStatusBar` re-rendent leurs labels sur `localeChanged`.
 - [x] **14 tests i18n** ajoutés (124/126 total).
 
-> ⚠️ **Dette connue** : Les ~60 strings statiques dans `index.html` (templates HTML) ne sont pas encore traduites. Voir Sprint 1-bis.
+> ✅ **Dette résolue par Sprint 1-bis** : les ~60 strings statiques de `index.html` sont annotées `data-i18n` et traduites.
 
 ### Sprint 1-bis — i18n Templates HTML ✅ TERMINÉ (committé `05d3e76`)
 - [x] **Stratégie `data-i18n`** : ~60 labels statiques annotés dans `index.html`.
@@ -79,9 +79,9 @@
 ### Sprint 3 — Dashboard VRAM Pro ✅ TERMINÉ
 - [x] **Collecte métriques** : `renderer.info.memory` (geometries, textures) + `renderer.info.render` (calls, triangles) polling 500ms.
 - [x] **Réanimation `vramPanel`** : `state.vramPanel: VRAMDashboard | null` — stub mort remplacé par vrai composant.
-- [x] **`VRAMDashboard`** : Panel monospace (géométries, textures, draw calls, triangles, tuiles actives, workers) dans Paramètres Avancés.
+- [x] **`VRAMDashboard`** : Panel monospace overlay `position:fixed` sur la carte (top:130px). Métriques : géométries, textures GPU, draw calls, triangles, tuiles actives, workers.
 - [x] **Seuils d'alerte** : Toast ⚠️ si textures > limite profil (eco=50, balanced=150, perf=300, ultra=500) — cooldown 30s.
-- [x] **Toggle** : Checkbox dans `<details>` Paramètres Avancés → `state.vramPanel.toggle()`.
+- [x] **Overlay unifié** : Toggle "Stats de performance" contrôle FPS (Stats.js) + VRAM simultanément. Accessible depuis Réglages Avancés.
 - [x] **10 tests** `vramDashboard.test.ts` — seuils, cooldown, toggle, formatTriangles.
 
 ### Sprint 3-bis — Fixes Post-validation ✅ TERMINÉ
