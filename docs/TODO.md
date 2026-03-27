@@ -76,20 +76,21 @@
 - [x] **Terrain draping** : `gpxDrapePoints()` — densification (×4) + clamping `max(terrainAlt, elevGPX) + 30m`. Re-draping à +3s/+6s.
 - [x] **9 tests Multi-GPX** ajoutés (133/135 total).
 
-### Sprint 3 — Dashboard VRAM Pro
-- [ ] **Collecte métriques** : Lire `renderer.info` à chaque frame — `memory.geometries`, `memory.textures`, `render.calls`, `render.triangles`.
-- [ ] **Réanimer `vramPanel`** : Le stub-mort dans `state.ts` (déclaré mais jamais instancié depuis v5.7) devient un vrai composant.
-- [ ] **Nouveau composant `VRAMDashboard`** : Panel flottant avec métriques temps réel (tuiles chargées, textures GPU, draw calls, triangles, workers actifs).
-- [ ] **Seuils d'alerte** : Warning toast si textures > seuil critique selon profil (Eco/Balanced/Performance/Ultra).
-- [ ] **Intégration ExpertSheets** : Accessible depuis Paramètres > Avancé, avec toggle affichage permanent.
-- [ ] **Tests** : Couverture `vramDashboard.test.ts` — seuils, alerts, métriques normalisées.
+### Sprint 3 — Dashboard VRAM Pro ✅ TERMINÉ
+- [x] **Collecte métriques** : `renderer.info.memory` (geometries, textures) + `renderer.info.render` (calls, triangles) polling 500ms.
+- [x] **Réanimation `vramPanel`** : `state.vramPanel: VRAMDashboard | null` — stub mort remplacé par vrai composant.
+- [x] **`VRAMDashboard`** : Panel monospace (géométries, textures, draw calls, triangles, tuiles actives, workers) dans Paramètres Avancés.
+- [x] **Seuils d'alerte** : Toast ⚠️ si textures > limite profil (eco=50, balanced=150, perf=300, ultra=500) — cooldown 30s.
+- [x] **Toggle** : Checkbox dans `<details>` Paramètres Avancés → `state.vramPanel.toggle()`.
+- [x] **10 tests** `vramDashboard.test.ts` — seuils, cooldown, toggle, formatTriangles.
 
-### Sprint 4 — Tests & Qualité v5.10
-- [ ] **Objectif : 140+ tests** (actuellement 133) — couvrir VRAM dashboard + tests d'intégration.
-- [x] **Tests i18n** : 14 tests — clés manquantes, fallback FR, changement de locale dynamique ✅
-- [x] **Tests Multi-GPX** : 9 tests — `addGPXLayer`, `removeGPXLayer`, couleurs, origin shift ✅
-- [ ] **`npm run check`** : TypeScript strict — résoudre les 2 échecs `tileLoader.test.ts` pré-existants (signature `getElevationUrl` v5.8.17).
-- [ ] **Tests VRAM Dashboard** : Couverture seuils, alerts, métriques normalisées.
+### Sprint 4 — Tests & Qualité v5.10 ✅ TERMINÉ
+- [x] **145/145 tests** — objectif 140+ atteint ✅
+- [x] **Tests i18n** : 14 tests ✅
+- [x] **Tests Multi-GPX** : 9 tests ✅
+- [x] **Tests VRAM Dashboard** : 10 tests ✅
+- [x] **Fix tileLoader.test.ts** : Signature `getElevationUrl` → `{url, sourceZoom}` (v5.8.17) ✅
+- [x] **`npm run check`** : 0 erreurs TypeScript ✅
 
 ---
 

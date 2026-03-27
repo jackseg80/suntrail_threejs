@@ -110,6 +110,12 @@ export class SettingsSheet extends BaseComponent {
             }
         });
 
+        // VRAM Dashboard toggle
+        const vramToggle = document.getElementById('vram-toggle') as HTMLInputElement;
+        vramToggle?.addEventListener('change', () => {
+            state.vramPanel?.toggle?.();
+        });
+
         // Trail follow
         const trailFollowToggle = this.element.querySelector('#trail-follow-toggle') as HTMLInputElement;
         if (trailFollowToggle) {

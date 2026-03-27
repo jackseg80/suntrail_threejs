@@ -276,6 +276,16 @@
   "timeline": {
     "sunPhase": "☀️ Pieno giorno"
   },
+  "vram": {
+    "label": "Statistiche GPU (VRAM)",
+    "geometries": "Geometrie",
+    "textures": "Texture GPU",
+    "drawCalls": "Draw Calls",
+    "triangles": "Triangoli",
+    "tiles": "Tile attive",
+    "workers": "Workers",
+    "alert": { "textures": "Numero elevato di texture GPU" }
+  },
   "common": {
     "close": "Chiudi",
     "cancel": "Annulla",

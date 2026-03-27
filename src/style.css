@@ -989,3 +989,23 @@ body.ui-hidden .fab-stack { transform: translateX(100px); opacity: 0; }
 .empty-state-subtitle {
     font-size: var(--text-sm); color: var(--text-3); line-height: 1.5;
 }
+
+/* VRAM Dashboard */
+.vram-panel {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius-md, 10px);
+    padding: 10px 14px;
+    margin-top: 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+}
+.vram-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.vram-row:last-child { border-bottom: none; }
+.vram-label { color: var(--text-3, rgba(255,255,255,0.4)); }
+.vram-value { color: var(--gold, #f59e0b); font-weight: 700; }

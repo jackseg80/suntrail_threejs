@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { createReactiveState } from './ui/core/ReactiveState';
+import type { VRAMDashboard } from './ui/components/VRAMDashboard';
 
 export type PresetType = 'eco' | 'balanced' | 'performance' | 'ultra' | 'custom';
 
@@ -148,7 +149,7 @@ export interface State {
     ambientLight: THREE.AmbientLight | null;
     sky: Sky | null;
     stats: any | null; 
-    vramPanel: any | null;
+    vramPanel: VRAMDashboard | null;
 
     simDate: Date;
     isSunAnimating: boolean;

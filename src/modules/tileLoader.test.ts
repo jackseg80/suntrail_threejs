@@ -39,14 +39,16 @@ describe('tileLoader.ts URLs', () => {
     });
 
     it('should generate correct Elevation URL', () => {
-        const url = getElevationUrl(10, 20, 14, false);
-        expect(url).toContain('terrain-rgb-v2/14/10/20');
-        expect(url).toContain('key=test_key_valid_12345');
+        // getElevationUrl returns {url, sourceZoom} since v5.8.17
+        const result = getElevationUrl(10, 20, 14, false);
+        expect(result.url).toContain('terrain-rgb-v2/14/10/20');
+        expect(result.url).toContain('key=test_key_valid_12345');
+        expect(result.sourceZoom).toBe(14);
     });
 
     it('should return null Elevation URL for 2D', () => {
-        const url = getElevationUrl(10, 20, 14, true);
-        expect(url).toBeNull();
+        const result = getElevationUrl(10, 20, 14, true);
+        expect(result.url).toBeNull();
     });
 
     it('should generate correct Color URL for OpenTopoMap (Global Fallback)', () => {

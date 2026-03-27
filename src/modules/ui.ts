@@ -22,6 +22,7 @@ import { TrackSheet } from './ui/components/TrackSheet';
 import { ConnectivitySheet } from './ui/components/ConnectivitySheet';
 import { WidgetsComponent } from './ui/components/WidgetsComponent';
 import { TimelineComponent } from './ui/components/TimelineComponent';
+import { VRAMDashboard } from './ui/components/VRAMDashboard';
 import { initAutoHide } from './ui/autoHide';
 import { initMobileUI } from './ui/mobile';
 import { sheetManager } from './ui/core/SheetManager';
@@ -120,6 +121,10 @@ export function initUI(): void {
 
     const widgets = new WidgetsComponent();
     widgets.hydrate();
+
+    const vramDashboard = new VRAMDashboard();
+    vramDashboard.hydrate();
+    state.vramPanel = vramDashboard;
 
     new TimelineComponent();
     initAutoHide();
