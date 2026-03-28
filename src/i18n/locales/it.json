@@ -4,7 +4,9 @@
       "search": "Ricerca",
       "layers": "Livelli",
       "track": "Percorso",
-      "settings": "Impostazioni"
+      "settings": "Impostazioni",
+      "toggle2d": "2D",
+      "toggle3d": "3D"
     }
   },
   "track": {

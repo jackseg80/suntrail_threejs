@@ -168,9 +168,14 @@ export class Tile {
             return;
         }
         this.status = 'loading';
-        const is2D = (this.zoom <= 10 || state.RESOLUTION <= 2);
+        // Fix 2D/3D toggle : ne jamais skipper l'élévation pour LOD > 10.
+        // Le mode IS_2D_MODE contrôle l'affichage (buildMesh), pas les données fetchées.
+        // Raison : si on skippait l'élévation en 2D, les tuiles rechargées auraient un canvas vide,
+        // et le switch 2D→3D produirait un terrain à moitié plat, à moitié à la bonne altitude.
+        // LOD <= 10 : pas d'élévation nécessaire (vue globale, pas de terrain détaillé).
+        const fetchAs2D = (this.zoom <= 10);
         try {
-            const data = await loadTileData(this.tx, this.ty, this.zoom, is2D);
+            const data = await loadTileData(this.tx, this.ty, this.zoom, fetchAs2D);
             if ((this.status as string) === 'disposed' || !data) return;
 
             if (data.elevBitmap) {
@@ -203,7 +208,7 @@ export class Tile {
         if (!this.elevationTex || !this.colorTex || this.status as any === 'disposed') return;
         if (activeTiles.get(this.key) !== this) return;
 
-        const is2D = (this.zoom <= 10 || resolution <= 2);
+        const is2D = (this.zoom <= 10 || state.IS_2D_MODE);
         const isLight = (state.PERFORMANCE_PRESET === 'eco');
         const oldMesh = this.mesh;
         
@@ -433,6 +438,48 @@ export function resetTerrain(): void {
     activeTiles.clear();
 }
 
+/**
+ * Reconstruit les meshes des tuiles actives en place (sans vider la scène).
+ * Utilisé par le toggle 2D/3D pour éviter l'écran blanc et la corruption du materialPool.
+ *
+ * Pourquoi ne pas appeler resetTerrain() ?
+ * - dispose() passe par disposeObject(mesh) qui DÉTRUIT les matériaux GPU au lieu de les
+ *   rendre au materialPool → pool vide → nouvelles tuiles recompilent depuis zéro → damier sombre.
+ * - La scène est vide pendant la recharge (écran blanc).
+ *
+ * Ici : les textures restent en mémoire, buildMesh() remplace le mesh via le pattern oldMesh
+ * (fondu 500ms) → scène jamais vide, matériaux rendus correctement au pool.
+ */
+export function rebuildActiveTiles(): void {
+    const toReload: string[] = [];
+
+    for (const tile of activeTiles.values()) {
+        if (!tile.elevationTex || !tile.colorTex) continue;
+
+        // Switch 2D→3D : détecter les tuiles chargées SANS élévation (pendant le mode 2D).
+        // Symptôme : pixelData null + zoom > 10 → canvas d'élévation vide → terrain plat/volant.
+        // Fix : invalider leur entrée cache (pour forcer un re-fetch réseau avec élévation)
+        // et les disposer. updateVisibleTiles() les recréera avec les vraies données.
+        if (!state.IS_2D_MODE && !tile.pixelData && tile.zoom > 10) {
+            toReload.push(tile.key);
+        } else {
+            tile.buildMesh(state.RESOLUTION);
+        }
+    }
+
+    // Invalider et recharger les tuiles sans élévation valide
+    for (const key of toReload) {
+        const tile = activeTiles.get(key);
+        if (!tile) continue;
+        // Consommer l'entrée cache vide pour forcer un re-fetch réseau avec élévation réelle
+        const cacheKey = getTileCacheKey(key, tile.zoom);
+        getFromCache(cacheKey);
+        tile.dispose();
+        activeTiles.delete(key);
+    }
+    // updateVisibleTiles() recréera les tuiles invalidées et fetcha leur élévation
+}
+
 export function repositionAllTiles(): void { 
     const originUnit = 1.0 / Math.pow(2, state.originTile.z);
     const oxNorm = (state.originTile.x + 0.5) * originUnit;
@@ -488,7 +535,7 @@ export function autoSelectMapSource(lat: number, lon: number): void {
 }
 
 export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number | null = null, worldZ: number | null = null): Promise<void> {
-    const is2DGlobal = state.PERFORMANCE_PRESET === 'eco' || state.ZOOM <= 10;
+    const is2DGlobal = state.IS_2D_MODE || state.PERFORMANCE_PRESET === 'eco' || state.ZOOM <= 10;
     terrainUniforms.uExaggeration.value = state.RELIEF_EXAGGERATION;
     const MIN_SLOPE_LOD = 11;
     terrainUniforms.uShowSlopes.value = (state.SHOW_SLOPES && !is2DGlobal && state.ZOOM >= MIN_SLOPE_LOD) ? 1.0 : 0.0;

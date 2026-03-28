@@ -4,7 +4,9 @@
       "search": "Search",
       "layers": "Layers",
       "track": "Track",
-      "settings": "Settings"
+      "settings": "Settings",
+      "toggle2d": "2D",
+      "toggle3d": "3D"
     }
   },
   "track": {

@@ -378,7 +378,7 @@ export async function initScene(): Promise<void> {
         const currentTilt = state.controls.getPolarAngle();
         const distToTarget = state.camera.position.distanceTo(state.controls.target);
         
-        if (state.RESOLUTION <= 2 || state.ZOOM <= 10) {
+        if (state.IS_2D_MODE || state.ZOOM <= 10) {
             state.controls.minPolarAngle = 0; state.controls.maxPolarAngle = 0;
         } else if (interacting) {
             state.controls.minPolarAngle = 0.05; state.controls.maxPolarAngle = tiltCap; 

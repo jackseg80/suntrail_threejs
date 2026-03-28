@@ -232,6 +232,7 @@ export interface State {
     isInteractingWithUI: boolean;
     isUserInteracting: boolean;
     isProcessingTiles: boolean;
+    IS_2D_MODE: boolean;
     currentFPS: number;
     lastUIInteraction: number;
     lastClickedCoords: { x: number; z: number; alt: number };
@@ -286,7 +287,7 @@ const initialState: State = {
 
     IS_OFFLINE: false,
     isMapTilerDisabled: false,
-    networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isUserInteracting: false, isProcessingTiles: false, currentFPS: 0, lastUIInteraction: Date.now(),
+    networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isUserInteracting: false,     isProcessingTiles: false, IS_2D_MODE: false, currentFPS: 0, lastUIInteraction: Date.now(),
     lastClickedCoords: { x: 0, z: 0, alt: 0 },
     hasLastClicked: false,
     isFlying: false
@@ -316,6 +317,7 @@ export interface SavedSettings {
     VEGETATION_DENSITY: number;
     WEATHER_DENSITY: number;
     WEATHER_SPEED: number;
+    IS_2D_MODE?: boolean;
 }
 
 const SETTINGS_KEY = 'suntrail_settings';
@@ -343,7 +345,8 @@ export function saveSettings(): void {
             FOG_FAR: state.FOG_FAR,
             VEGETATION_DENSITY: state.VEGETATION_DENSITY,
             WEATHER_DENSITY: state.WEATHER_DENSITY,
-            WEATHER_SPEED: state.WEATHER_SPEED
+            WEATHER_SPEED: state.WEATHER_SPEED,
+            IS_2D_MODE: state.IS_2D_MODE
         };
         try {
             localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsToSave));
@@ -377,6 +380,7 @@ export function loadSettings(): SavedSettings | null {
         state.ENERGY_SAVER = !!parsed.ENERGY_SAVER;
         state.SHOW_TRAILS = !!parsed.SHOW_TRAILS;
         state.SHOW_SLOPES = !!parsed.SHOW_SLOPES;
+        if (parsed.IS_2D_MODE !== undefined) state.IS_2D_MODE = !!parsed.IS_2D_MODE;
         
         // Restore custom values
         if (parsed.PERFORMANCE_PRESET === 'custom') {

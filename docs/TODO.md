@@ -151,22 +151,73 @@
   - Fixes : `role="listbox"` sur layer-grid (sélecteur JS cassé), `aria-label` sur geo-results, contraste btn-go #1555e0 (5.6:1), `.vram-label` 75% opacité (12:1), H3→H2 dans SettingsSheet.
   - Thumbnails MapTiler téléchargées localement (`public/img/maps/`) → cookie tiers supprimé.
 - [x] **Core Web Vitals** : LCP **84ms** ✅ (≤2.5s), CLS **0.03** ✅ (≤0.1), INP N/A (pas d'interaction).
-- [ ] **Memory Leak Audit** : 📱 À faire demain — ADB Wi-Fi + Android Studio Profiler OU Paramètres→Apps→Mémoire avant/après 30min.
-- [ ] **Battery Test** : 📱 À faire demain — sans câble, 1h marche preset Balanced GPS actif, noter % avant/après. Cible ≤ 15%/h.
+- [ ] **Memory Leak Audit** : 📱 Protocole ci-dessous — Phase A (Android Studio) + Phase C (PerfRecorder).
+- [ ] **Battery Test** : 📱 Protocole ci-dessous — Phase A (adb batterystats). **Objectif : ≤ 15%/h** → décide si Phase 3 render-on-demand nécessaire.
 
-> ### 📱 Instructions Memory Leak Audit (toi)
-> 1. Connecte ton téléphone Android en USB, active le débogage USB.
-> 2. Lance Android Studio → ouvre le Profiler (View > Tool Windows > App Inspection).
-> 3. Lance SunTrail sur le téléphone, sélectionne le process dans le Profiler.
-> 4. Onglet **Memory** → clique "Record native allocations" ou observe le Live Memory chart.
-> 5. Scénario 30 min : navigue librement, importe 3 GPX, toggle les layers, zoom in/out intensif, ouvre/ferme les sheets.
-> 6. **Résultat attendu** : la heap se stabilise (courbe plate) après 5-10min. Si elle monte linéairement → noter le composant suspect.
+> ### 📱 Protocole Profiling SunTrail — 3 phases simultanées
 >
-> ### 🔋 Instructions Battery Test (toi)
-> 1. Déconnecte le chargeur, batterie à ≥ 80%.
-> 2. Preset **Balanced**, GPS actif, navigation continue 1h.
-> 3. Commande de mesure : `adb shell dumpsys batterystats --reset` (avant) puis `adb shell dumpsys batterystats` (après).
-> 4. Ou simplement noter le % de batterie avant/après. **Objectif** : ≤ 15% de drain/heure.
+> **Pourquoi 3 phases ?** Three.js tourne dans la WebView. Android Studio s'arrête à la frontière WebView pour la logique JS/WebGL. Il faut combiner les outils.
+>
+> ---
+>
+> #### Phase A — Android Studio Live Telemetry (batterie + RAM native)
+>
+> > ⚠️ Android Studio NE voit PAS les objets Three.js (VRAM textures/géométries) — ils sont en mémoire native GPU. Utiliser Phase C pour ça.
+>
+> 1. `adb shell dumpsys batterystats --reset` **avant** de lancer l'app.
+> 2. Lance SunTrail → preset **Balanced** (auto-détecté).
+> 3. Ouvre **Live Telemetry** (🟠 icône tableau de bord) — laisse tourner en continu.
+> 4. Surveiller :
+>    - **Energy** : doit être basse au repos, pics brefs sur interaction. Constant élevé = bug.
+>    - **Memory → Native** : doit se stabiliser < 2 min après chargement. Montée linéaire = memory leak.
+>    - **Network** : rafales lors des LOD changes (normal), silence entre.
+> 5. Après 10 min de navigation : **verrouille l'écran 2 min** → Energy doit tomber à zéro (Deep Sleep v5.11).
+> 6. `adb shell dumpsys batterystats` → chercher `Estimated power use` dans la sortie.
+> 7. **Objectif batterie** : ≤ 15%/heure en preset Balanced GPS actif.
+>
+> **System Trace** (🔴) si tu vois des micro-saccades : montre exactement si c'est le GPU qui sature ou Android qui préempte. Utile pour diagnostiquer le jank lors du chargement des tuiles.
+>
+> ---
+>
+> #### Phase B — Chrome DevTools Performance (JS frame budget)
+>
+> > Chrome DevTools franchit la frontière WebView — le seul outil qui voit le code Three.js.
+>
+> 1. Sur PC, ouvre `chrome://inspect` → sélectionne le process SunTrail → **Inspect**.
+> 2. Onglet **Performance** → ⏺ Record → pan/zoom 10 sec → ⏹ Stop.
+> 3. Ce qu'on cherche dans la flame chart :
+>    - `renderLoopFn` : doit prendre < 16ms (60fps) ou < 33ms (30fps ENERGY_SAVER)
+>    - `updateWeatherSystem` : doit n'apparaître que toutes les ~50ms (throttle Phase 2)
+>    - Frames **rouges** → jank → noter la fonction responsable
+>    - `updateVisibleTiles` : pics normaux lors des changements de LOD
+> 4. Onglet **Memory** → Heap snapshot avant/après 10 min pour détecter les JS leaks.
+>
+> ---
+>
+> #### Phase C — PerfRecorder intégré (corrélation fps ↔ VRAM ↔ tiles) ← **COMMENCER ICI**
+>
+> > C'est le plus précis pour SunTrail car il voit les données internes du moteur (drawCalls, textures, isProcessingTiles).
+>
+> 1. Dans SunTrail → **Réglages avancés** → toggle **"Stats de performance"** → le panel VRAM apparaît.
+> 2. Clique **⏺** dans le panel VRAM → l'enregistrement démarre (buffer 600 samples × 500ms = 5 min max).
+> 3. Scénario de test (~5 min) :
+>    - 1 min : navigation libre (pan/zoom, change de LOD)
+>    - 1 min : immobile (pas d'interaction) → les fps doivent baisser (throttle eau/météo)
+>    - 1 min : importe un GPX → observe isProcessingTiles + textures
+>    - 1 min : active l'hydrologie → observe waterFrameDue en action (fps ne monte pas à 60)
+>    - 1 min : verrouille l'écran → fps doit tomber à 0 (Deep Sleep)
+> 4. Clique **⏹** → JSON dans le presse-papier.
+> 5. **Colle le JSON dans le chat** → analyse automatique (corrélation fps/textures/isProcessingTiles).
+>
+> ---
+>
+> #### Décision post-test
+>
+> | Résultat Phase A | Action |
+> |-----------------|--------|
+> | ≤ 15%/h + heap stable | → Sprint 7 (AAB + Play Store) en **v5.11** ✅ |
+> | > 15%/h malgré Phase 1+2 | → Phase 3 render-on-demand avant publication (**v5.12**) |
+> | Heap native monte linéairement | → Memory leak — investiguer avant tout |
 
 ### Sprint 5 — Légal & Play Store Listing
 - [x] **Privacy Policy** : `public/privacy.html` → `https://jackseg80.github.io/suntrail_threejs/privacy.html` — bilingue FR/EN, RGPD + LPD suisse, Play Store compliant.
@@ -266,13 +317,71 @@
 
 ---
 
-### Correctifs Post-Sprint 6-bis (hors roadmap, livrés en v5.11)
+### Correctifs & features Post-Sprint 6-bis (hors roadmap, livrés en v5.11)
 
 - [x] **W4 — Catch vides** : `console.warn` ajouté dans les 9 catch silencieux de `buildings.ts`, `hydrology.ts`, `poi.ts`, `weather.ts` (strippés en prod par terser).
 - [x] **W5 — setInterval** : `storageUIIntervalId` module-level + `disposeUI()` exportée dans `ui.ts`.
 - [x] **W6 — Icônes dupliquées** : `icon.png` supprimé (-2.5 MB), `vite.config.js` unifié sur `icon_1024.png`.
 - [x] **Démarrage mobile** : Délai 10-20s supprimé — render loop démarre AVANT `await loadTerrain()`. Spinner immédiat sur le bouton. `loadTerrain()` double-call supprimé. Workers : 4 max sur mobile (au lieu de 8).
 - [x] **Build warnings** : Chemins `./img/maps/` → `/img/maps/` (absolus). Dynamic imports `tileLoader` → statiques. `chunkSizeWarningLimit: 600` (Three.js ~520kB). Build propre, zéro warning.
+- [x] **mobile-web-app-capable** : Ajout du meta tag `mobile-web-app-capable` (Android Chrome) aux côtés du meta Apple (toujours requis iOS Safari). Supprime le warning de console Chrome.
+
+#### Toggle 2D/3D (v5.11 UX majeur)
+
+- [x] **Bouton 2D/3D** : Premier bouton de la nav bar bas. Toggle instantané (`rebuildActiveTiles()` + `updateVisibleTiles()`). Label dynamique "2D"/"3D". Haptique light. Persisté en localStorage.
+- [x] **`state.IS_2D_MODE`** : Flag indépendant du preset. Découple le mode d'affichage de la qualité de rendu.
+- [x] **ENERGY_SAVER par tier** (décision design) : eco/balanced → 30fps par défaut (mid-range). **performance/ultra → 60fps par défaut** (flagship — l'utilisateur mérite ses perfs). Toggle manuel toujours disponible dans Réglages Avancés.
+- [x] **`fetchAs2D = zoom <= 10` uniquement** : Le mode IS_2D_MODE ne skipppe plus le fetch d'élévation pour LOD > 10. Le mode 2D contrôle l'*affichage* (mesh plat), pas les *données*. Switch 2D→3D instantané sans re-fetch.
+- [x] **Bug écran blanc** : `rebuildActiveTiles()` remplace `resetTerrain()` pour le toggle — meshes reconstruits en place (fondu 500ms), scène jamais vide.
+- [x] **Bug damier sombre/clair** : Même fix — matériaux rendus au pool via `oldMesh` au lieu d'être détruits par `disposeObject`. Pool jamais vide, pas de recompilation shader.
+- [x] **Bug tuiles plates/volantes LOD 14+** : Tuiles chargées en 2D sans élévation détectées (`!pixelData && zoom > 10`), cache invalidé, force re-fetch avec vraies données. 190/190 tests ✅.
+
+---
+
+### 📊 Protocole Profiling v5.11 — À REPRENDRE (context pour nouvelle discussion)
+
+> **État** : App v5.11 feature-complete. Sprint 6 Phase 1+2 déployés. Résultat du test batterie détermine si Phase 3 (render-on-demand) est nécessaire avant Play Store.
+>
+> **Décision Play Store** :
+> - ≤ 15%/h en preset Balanced GPS actif → Sprint 7 directement (**v5.11**)
+> - > 15%/h → Phase 3 render-on-demand avant publication (**v5.12**)
+
+#### Contexte à donner à l'agent dans la nouvelle discussion :
+
+```
+Je veux faire le protocole de profiling perf de SunTrail v5.11.
+J'ai Android Studio Profiler ouvert + Chrome DevTools disponible.
+Voir docs/TODO.md section "Protocole Profiling v5.11" pour le détail.
+App sur appareil physique Android connecté en USB (débogage activé).
+```
+
+#### Rappel du protocole (3 phases simultanées) :
+
+**Phase A — Android Studio Live Telemetry** (batterie + RAM native)
+- Ouvrir Live Telemetry (🟠)
+- `adb shell dumpsys batterystats --reset` avant le test
+- Preset **Balanced** (auto-détecté), GPS actif, navigation 10-15 min
+- Verrouiller l'écran 2 min → Energy doit tomber à 0 (Deep Sleep)
+- `adb shell dumpsys batterystats` → chercher `Estimated power use`
+- **Objectif : ≤ 15%/heure**
+
+**Phase B — Chrome DevTools Performance** (`chrome://inspect`)
+- Record → pan/zoom 10s → Stop → analyser flame chart
+- `renderLoopFn` < 16ms (60fps) ou < 33ms (30fps ENERGY_SAVER)
+- `updateWeatherSystem` toutes les ~50ms (throttle Phase 2 actif)
+- Frames rouges → jank → noter la fonction responsable
+
+**Phase C — PerfRecorder intégré** ← **COMMENCER ICI**
+1. Réglages avancés → **Stats de performance** → panel VRAM s'affiche
+2. Cliquer **⏺** → enregistrement démarre (buffer 600 samples, 5 min)
+3. Scénario : 1 min navigation | 1 min immobile | 1 min import GPX | 1 min hydrologie | 1 min écran verrouillé
+4. Cliquer **⏹** → JSON dans presse-papier
+5. **Coller le JSON dans le chat** → l'agent analyse (corrélation fps/textures/isProcessingTiles)
+
+- [ ] **Phase C** : Lancer le PerfRecorder, coller le JSON pour analyse
+- [ ] **Phase A** : Mesurer le drain batterie (≤ 15%/h ?)
+- [ ] **Phase B** : Chrome DevTools flame chart — valider throttle eau/météo
+- [ ] **Décision** : Passer au Sprint 7 ou implémenter Phase 3
 
 ---
 

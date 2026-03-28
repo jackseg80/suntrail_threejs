@@ -40,33 +40,41 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
     // -------------------------------------------------------------------------
     // detectBestPreset() — ENERGY_SAVER universel mobile
     // -------------------------------------------------------------------------
-    describe('applyPreset() — ENERGY_SAVER forcé même si loadSettings() a restauré false', () => {
-        it('force ENERGY_SAVER=true via applyPreset() sur Android même si localStorage avait false', () => {
-            // Simule le cas "utilisateur de retour" : loadSettings() a restauré ENERGY_SAVER:false
+    describe('applyPreset() — ENERGY_SAVER par tier mobile (v5.11 design intent)', () => {
+        it('force ENERGY_SAVER=true pour balanced sur Android (mid-range → autonomie)', () => {
             state.ENERGY_SAVER = false;
             setUA(ANDROID_UA);
-
-            // applyPreset() est appelé par ui.ts APRÈS loadSettings(), sans passer par detectBestPreset()
-            applyPreset('performance');
-
+            applyPreset('balanced');
             expect(state.ENERGY_SAVER).toBe(true);
         });
 
-        it('force ENERGY_SAVER=true sur iOS même avec preset balanced restauré', () => {
+        it('force ENERGY_SAVER=true pour eco sur Android (vieux mobile → batterie)', () => {
+            state.ENERGY_SAVER = false;
+            setUA(ANDROID_UA);
+            applyPreset('eco');
+            expect(state.ENERGY_SAVER).toBe(true);
+        });
+
+        it('laisse ENERGY_SAVER=false pour performance sur Android (flagship → 60fps)', () => {
+            // Nouveau comportement v5.11 : performance mobile = 60fps par défaut
+            // L'utilisateur a un flagship et mérite les perfs
+            state.ENERGY_SAVER = false;
+            setUA(ANDROID_UA);
+            applyPreset('performance');
+            expect(state.ENERGY_SAVER).toBe(false);
+        });
+
+        it('laisse ENERGY_SAVER=false pour performance sur iOS (flagship → 60fps)', () => {
             state.ENERGY_SAVER = false;
             setUA(IOS_UA);
-
-            applyPreset('balanced');
-
-            expect(state.ENERGY_SAVER).toBe(true);
+            applyPreset('performance');
+            expect(state.ENERGY_SAVER).toBe(false);
         });
 
-        it('ne touche PAS ENERGY_SAVER sur desktop (reste false si l\'utilisateur l\'a désactivé)', () => {
+        it('ne touche PAS ENERGY_SAVER sur desktop (reste false si désactivé par l\'utilisateur)', () => {
             state.ENERGY_SAVER = false;
             // UA desktop + grand écran → isMobilePreset = false
-
             applyPreset('performance');
-
             expect(state.ENERGY_SAVER).toBe(false);
         });
     });

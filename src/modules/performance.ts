@@ -163,10 +163,12 @@ export function applyPreset(preset: PresetType): void {
     // Seul Ultra conserve des caps car ses valeurs sont dimensionnées pour PC bureau.
     const isMobilePreset = /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
     if (isMobilePreset) {
-        // ENERGY_SAVER : cap à 30fps sur mobile (appliqué ici, pas seulement dans detectBestPreset,
-        // car loadSettings() peut restaurer false depuis localStorage pour les utilisateurs existants).
-        // Exception : Ultra mobile (Snapdragon Elite) → capable de tenir 60fps.
-        if (preset !== 'ultra') state.ENERGY_SAVER = true;
+        // ENERGY_SAVER par tier (v5.11 Phase 2 design intent) :
+        // - eco/balanced  : 30fps par défaut — mid-range, autonomie prioritaire
+        // - performance   : 60fps par défaut — flagship, l'utilisateur a payé pour les perfs
+        // - ultra         : 60fps — PC/Snapdragon Elite (inchangé)
+        // L'utilisateur peut toujours basculer manuellement via le toggle Réglages Avancés.
+        if (preset === 'eco' || preset === 'balanced') state.ENERGY_SAVER = true;
 
         // Ultra mobile (Snapdragon Elite) : réduire légèrement par rapport au PC bureau
         if (preset === 'ultra') {
@@ -183,6 +185,7 @@ export function applyPreset(preset: PresetType): void {
 
     if (preset === 'eco') {
         document.body.classList.add('mode-2d');
+        state.IS_2D_MODE = true;
         // Fermer la timeline si elle est ouverte (inutile en 2D)
         const bottomBar = document.getElementById('bottom-bar');
         if (bottomBar && document.body.classList.contains('timeline-open')) {
@@ -191,6 +194,8 @@ export function applyPreset(preset: PresetType): void {
         }
     } else {
         document.body.classList.remove('mode-2d');
+        // Ne pas réinitialiser IS_2D_MODE ici — l'utilisateur peut vouloir garder le 2D
+        // (le bouton 2D/3D dans la nav bar est la seule source de vérité)
     }
 
     if (state.sunLight) {
