@@ -47,16 +47,22 @@ let _lastAngle  = 0;
 let _velX = 0, _velY = 0;
 let _inertiaId = 0;
 
-// ── Architecture 2 doigts (v6.2) ────────────────────────────────────────────
+// ── Architecture 2 doigts (v6.3) ────────────────────────────────────────────
 // ROTATION et ZOOM : per-frame avec guards mutuels (pas de zone morte).
-// TILT             : verrouillage dédié style Google Earth.
+// TILT             : détection par PLACEMENT des doigts (style Google Earth).
 //
-//   Tilt lock : 2 doigts posés côte à côte descendent/montent ensemble.
-//   Détection : |dy| > 2px ET |dy| > |dx|×2 ET spread stable ET pas de rotation.
-//   Une fois verrouillé → SEUL le tilt s'applique jusqu'au lever des doigts.
+//   Google Earth détecte le tilt à partir de la POSITION INITIALE des doigts :
+//   si les 2 doigts sont posés côte à côte (angle horizontal), la session est
+//   pré-armée pour le tilt (_tiltPreArmed). Dès le premier mouvement vertical
+//   (|dy| > |dx| et spread stable), le lock s'active immédiatement — AVANT
+//   que la rotation ait eu le temps de tirer sur les premières frames.
 //
-// _tiltLocked = true tant qu'un tilt est en cours.
-let _tiltLocked = false;
+//   Sans _tiltPreArmed (doigts verticaux ou diagonaux) : seuls rotation/zoom/pan.
+//
+// _tiltPreArmed : doigts posés à moins de 45° de l'horizontale
+// _tiltLocked   : tilt confirmé, toutes autres directions bloquées
+let _tiltPreArmed = false;
+let _tiltLocked   = false;
 
 // ── Utilitaires ─────────────────────────────────────────────────────────────────
 function twoFingerMetrics() {
@@ -240,7 +246,10 @@ function onPointerDown(e: PointerEvent): void {
         _lastCx = s.cx; _lastCy = s.cy;
         _lastSpread = s.spread;
         _lastAngle  = s.angle;
-        _tiltLocked = false; // reset à chaque nouvelle session 2 doigts
+        _tiltLocked = false;
+        // Pré-armement : doigts posés à moins de 45° de l'horizontale
+        // |sin(angle)| < sin(45°) = 0.707 → les doigts sont plus côte à côte que l'un au-dessus de l'autre
+        _tiltPreArmed = Math.abs(Math.sin(s.angle)) < 0.707;
     }
 }
 
@@ -270,25 +279,19 @@ function onPointerMove(e: PointerEvent): void {
         const absDy     = Math.abs(dy);
         const absDx     = Math.abs(dx);
 
-        // ── TILT LOCK (style Google Earth) ────────────────────────────────────────
-        // Détection : les 2 doigts bougent ensemble verticalement (centre Y),
-        // sans que le spread ni l'angle ne changent → geste tilt confirmé.
-        // Conditions :
-        //   • |dy| > 2px             : mouvement vertical minimum
-        //   • |dy| > |dx| × 2        : clairement plus vertical qu'horizontal
-        //   • spreadDelta < 0.008    : doigts ne s'écartent pas (pas un pinch)
-        //   • |dAngle| < 0.010 rad   : doigts ne tournent pas (pas une rotation)
-        // Une fois verrouillé : SEUL le tilt s'applique jusqu'au lever des doigts.
-        if (!_tiltLocked
-                && absDy > 2
-                && absDy > absDx * 2
-                && spreadDelta < 0.008
-                && absDAngle < 0.010) {
+        // ── TILT (par placement initial des doigts) ───────────────────────────────
+        // _tiltPreArmed = true si les doigts ont été posés côte à côte (< 45° horiz).
+        // Dès le premier mouvement vertical clair (|dy| > |dx|, spread stable) →
+        // verrouillage immédiat. Pas de "zone morte" : tire avant que isRotating puisse s'activer.
+        if (_tiltPreArmed && !_tiltLocked
+                && absDy > absDx          // mouvement vertical dominant
+                && absDy > 0.5            // seuil minimal
+                && spreadDelta < 0.010) { // les doigts ne pincent pas
             _tiltLocked = true;
         }
 
         if (_tiltLocked) {
-            // Tilt verrouillé : tout sauf tilt est ignoré
+            // Tilt verrouillé : SEUL le tilt s'applique, tout le reste ignoré
             if (absDy > 0.3)
                 is2D ? doPan(0, -dy) : doTilt(dy);
         } else {
@@ -302,7 +305,7 @@ function onPointerMove(e: PointerEvent): void {
             const isZooming = !isRotating && spreadDelta > 0.004;
             if (isZooming) doZoomToPoint(spreadRatio, s.cx, s.cy);
 
-            // ── Pan horizontal (fallback, ni rotation ni zoom) ────────────────────
+            // ── Pan horizontal (fallback) ─────────────────────────────────────────
             if (!isRotating && !isZooming && absDx > absDy && absDx > 0.5) {
                 doPan(dx, 0);
             }
@@ -320,7 +323,8 @@ function onPointerUp(e: PointerEvent): void {
     if (_pointers.size === 1) {
         const [p] = Array.from(_pointers.values());
         _lastCx = p.x; _lastCy = p.y;
-        _tiltLocked = false; // un doigt levé = fin du tilt lock
+        _tiltLocked = false;
+        _tiltPreArmed = false;
     }
 
     if (_pointers.size === 0) {
