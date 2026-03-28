@@ -158,6 +158,7 @@
 - [x] **Fix idle throttle global 20fps** : ✅ Guard `isIdleMode` dans `renderLoopFn` — si pas d'interaction depuis 800ms, render limité à 20fps. Couvre tiltAnimating + isProcessingTiles + tilesFading. Résout 45-48fps GPU en idle sur Android.
 - [x] **Loading indicator 1er démarrage** : ✅ `#map-loading-overlay` dans `index.html` — affiché après setup-screen, caché quand `isProcessingTiles → false` (1ères tuiles). Fallback 2s (cache chaud) + timeout 15s (réseau lent).
 - [x] **Fix météo 20fps réels** : ✅ Cause identifiée — accumulateurs `weatherTimeAccum` placés après le guard idle → ne s'incrémentaient que sur les frames rendues → météo à ~5fps visuels au lieu de 20fps. Fix : accumulateurs déplacés avant tous les guards. Météo fluide à 20fps sans plein régime. `tickWeatherTime` supprimé (non nécessaire).
+- [x] **Fix export GPX Android** : ✅ `link.click()` + Blob URL ignoré silencieusement par WebView Android. Fix : `@capacitor/filesystem` → `Filesystem.writeFile(Directory.Documents)`. Auto-export au STOP (si ≥ 2 points). Bouton "Exporter" supprimé (redondant). Fichier dans *Files > Android > data > com.suntrail.threejs > files > Documents*.
 - [ ] **Test Galaxy A54** : 📱 Appareil mid-range disponible (Exynos 1380) → preset Balanced (STD) auto-détecté. **Valider** : FPS idle (~20fps en idle, plein régime en interaction), drain batterie Balanced, Memory Native en Live Telemetry. C'est l'appareil cible de la majorité des utilisateurs.
 
 > ### 📱 Protocole Profiling SunTrail — 3 phases simultanées
