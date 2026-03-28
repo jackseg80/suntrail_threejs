@@ -47,6 +47,23 @@ let _lastAngle  = 0;
 let _velX = 0, _velY = 0;
 let _inertiaId = 0;
 
+// ── Gesture locking (style Google Earth) ─────────────────────────────────────
+// Chaque session 2 doigts accumule les signaux initiaux pour identifier le geste
+// dominant, puis le verrouille exclusivement jusqu'au lever des doigts.
+// Empêche le mélange involontaire zoom/tilt/pan lors d'un geste imprécis.
+type GestureType = 'undecided' | 'zoom' | 'rotate' | 'tilt' | 'pan';
+let _gesture: GestureType = 'undecided';
+let _gAcX = 0;  // cumul |dx| en px
+let _gAcY = 0;  // cumul |dy| en px
+let _gAcS = 0;  // cumul |spreadRatio-1| × 150 (normalisé px)
+let _gAcA = 0;  // cumul |dAngle| × 60 (normalisé px)
+const GESTURE_COMMIT = 10; // px cumulés avant verrouillage
+
+function resetGesture(): void {
+    _gesture = 'undecided';
+    _gAcX = _gAcY = _gAcS = _gAcA = 0;
+}
+
 // ── Utilitaires ─────────────────────────────────────────────────────────────────
 function twoFingerMetrics() {
     const [p1, p2] = Array.from(_pointers.values());
@@ -117,22 +134,49 @@ function doZoom(ratio: number): void {
 
 /**
  * Zoom vers le point sous les doigts (cx, cy en pixels canvas).
- * Applique un pan de compensation AVANT le zoom pour que le point pincé
- * reste fixe à l'écran — comportement Google Earth / Google Maps. (v5.11.1)
+ *
+ * Méthode : raycasting vers le plan horizontal au niveau du target.
+ * 1. Intersection du rayon caméra → point pincé avec le plan cible
+ * 2. Zoom (change la distance caméra-target)
+ * 3. Re-projection du point 3D → calcul de l'erreur en pixels
+ * 4. Compensation par doPan pour ramener le point à (cx, cy)
+ *
+ * Correct quelle que soit l'inclinaison de la caméra. (v5.11.1)
  */
 function doZoomToPoint(ratio: number, cx: number, cy: number): void {
     if (!_camera || !_controls || !_canvas) return;
-    const canvas  = _canvas as HTMLCanvasElement;
-    const offsetX = cx - canvas.clientWidth  / 2; // + = droite du centre
-    const offsetY = cy - canvas.clientHeight / 2; // + = bas du centre
+    const canvas = _canvas as HTMLCanvasElement;
 
-    // Pan de compensation : déplacer le target vers le point pincé
-    // proportionnellement à (ratio - 1). Division par PAN_SPEED pour annuler
-    // le multiplicateur interne de doPan (compensation exacte, pas "rapide").
-    const f = (ratio - 1) / PAN_SPEED;
-    doPan(f * offsetX, f * offsetY);
+    // Rayon caméra → point pincé
+    const ndcX = (cx / canvas.clientWidth)  *  2 - 1;
+    const ndcY = -(cy / canvas.clientHeight) * 2 + 1;
+    const near = new THREE.Vector3(ndcX, ndcY, -1).unproject(_camera);
+    const far  = new THREE.Vector3(ndcX, ndcY,  1).unproject(_camera);
+    const dir  = far.sub(near).normalize();
 
+    // Intersection avec le plan horizontal au niveau du target
+    let P: THREE.Vector3 | null = null;
+    if (Math.abs(dir.y) > 0.001) {
+        const t = (_controls.target.y - near.y) / dir.y;
+        if (t > 0 && t < 5e6) P = near.clone().addScaledVector(dir, t);
+    }
+
+    // Zoom
     doZoom(ratio);
+
+    if (!P) return; // pas d'intersection valide, zoom simple
+
+    // Re-projection du point 3D après zoom → erreur en pixels
+    const Pscr = P.clone().project(_camera);
+    const px   = (Pscr.x + 1) * 0.5 * canvas.clientWidth;
+    const py   = (1 - Pscr.y) * 0.5 * canvas.clientHeight;
+    const ex   = px - cx; // + = P trop à droite  → compenser vers gauche
+    const ey   = py - cy; // + = P trop bas        → compenser vers haut
+
+    // Compensation (signes vérifiés analytiquement) :
+    // doPan(-ex/PAN_SPEED, 0)  : target → droite → P ← gauche
+    // doPan(0, -ey/PAN_SPEED)  : target → sud    → P ↑ haut
+    doPan(-ex / PAN_SPEED, -ey / PAN_SPEED);
 }
 
 /** Rotation azimut (tire-bouchon) — tourne autour de l'axe Y du target */
@@ -202,6 +246,7 @@ function onPointerDown(e: PointerEvent): void {
         _lastCx = s.cx; _lastCy = s.cy;
         _lastSpread = s.spread;
         _lastAngle  = s.angle;
+        resetGesture();
     }
 }
 
@@ -219,49 +264,61 @@ function onPointerMove(e: PointerEvent): void {
         _lastCy = e.clientY;
 
     } else if (_pointers.size >= 2) {
-        // ── 2 doigts : zoom + rotation + tilt + pan (v5.11.1 — gestes exclusifs) ─
+        // ── 2 doigts — Gesture Locking style Google Earth (v5.11.1) ─────────────
+        // Les signaux sont accumulés sur les premiers px pour identifier le geste
+        // dominant, puis il est verrouillé exclusivement jusqu'au lever des doigts.
         const s = twoFingerMetrics();
-        const dx     = s.cx - _lastCx;
-        const dy     = s.cy - _lastCy;
-        const dAngle = wrapAngleDelta(s.angle - _lastAngle);
+        const dx          = s.cx - _lastCx;
+        const dy          = s.cy - _lastCy;
+        const dAngle      = wrapAngleDelta(s.angle - _lastAngle);
         const spreadRatio = _lastSpread > 1 ? s.spread / _lastSpread : 1;
+        const spreadDelta = Math.abs(spreadRatio - 1);
 
-        // ── Bug 3 fix : zoom ET rotation s'excluent mutuellement ─────────────────
-        // La rotation modifie géométriquement le spread (longueur de corde) →
-        // spread change ≠ intention de zoom. Si rotation détectée → ignore le zoom.
-        const isRotating = Math.abs(dAngle) > ROT_DEADZONE;
-        const isZooming  = !isRotating && Math.abs(spreadRatio - 1) > 0.008;
+        // Accumulation des signaux (normalisés en "px équivalents")
+        _gAcX += Math.abs(dx);
+        _gAcY += Math.abs(dy);
+        _gAcS += spreadDelta * 150;
+        _gAcA += Math.abs(dAngle) * 60;
 
-        // ── Bug 1 fix : zoom vers le centre des doigts, pas vers le centre écran ──
-        if (isZooming) doZoomToPoint(spreadRatio, s.cx, s.cy);
+        // Verrouillage dès que le signal cumulé dépasse le seuil
+        if (_gesture === 'undecided' && (_gAcX + _gAcY + _gAcS + _gAcA) > GESTURE_COMMIT) {
+            const maxSig = Math.max(_gAcA, _gAcS, _gAcY, _gAcX);
+            if (_gAcA === maxSig && _gAcA > 3)      _gesture = 'rotate';
+            else if (_gAcS === maxSig && _gAcS > 3) _gesture = 'zoom';
+            else if (_gAcY > _gAcX * 1.2)           _gesture = 'tilt';
+            else                                     _gesture = 'pan';
+        }
 
-        // ── Rotation azimut (tire-bouchon) ────────────────────────────────────────
-        if (isRotating) doRotate(dAngle);
+        const is2D = !!_controls && _controls.minPolarAngle === _controls.maxPolarAngle;
 
-        // ── Bug 2 fix : tilt et pan horizontal s'excluent selon la direction ──────
-        // Si le mouvement vertical est ≥2× le mouvement horizontal → tilt UNIQUEMENT.
-        // Évite le pan horizontal parasite quand l'utilisateur incline délibérément.
-        // Si horizontal dominant ou mixte → pan ± tilt selon les composantes.
-        const absDx = Math.abs(dx);
-        const absDy = Math.abs(dy);
-        const is2DLocked = !!_controls && _controls.minPolarAngle === _controls.maxPolarAngle;
+        switch (_gesture) {
+            case 'rotate':
+                // Rotation azimut — exclusif (plus de zoom parasite)
+                if (Math.abs(dAngle) > ROT_DEADZONE) doRotate(dAngle);
+                break;
 
-        if (absDy > 0.5 || absDx > 0.5) {
-            if (is2DLocked) {
-                // Mode 2D verrouillé : 2 doigts = pan dans les 2 axes
-                if (absDx > 0.5) doPan(dx, 0);
-                if (absDy > 0.5) doPan(0, -dy);
-            } else if (absDy > absDx * 2) {
-                // Vertical dominant → tilt UNIQUEMENT (pas de pan horizontal)
-                doTilt(dy);
-            } else if (absDx > absDy * 2) {
-                // Horizontal dominant → pan UNIQUEMENT (pas de tilt)
-                doPan(dx, 0);
-            } else {
-                // Mixte diagonal → pan + tilt proportionnels
-                if (absDx > 0.5) doPan(dx, 0);
-                if (absDy > 0.5) doTilt(dy);
-            }
+            case 'zoom':
+                // Zoom vers le centre des doigts — exclusif (plus de pan parasite)
+                if (spreadDelta > 0.001) doZoomToPoint(spreadRatio, s.cx, s.cy);
+                break;
+
+            case 'tilt':
+                // Inclinaison verticale — exclusif (plus de pan horizontal parasite)
+                if (Math.abs(dy) > 0.5)
+                    is2D ? doPan(0, -dy) : doTilt(dy);
+                break;
+
+            case 'pan':
+                // Pan horizontal — exclusif (pas de tilt involontaire)
+                if (Math.abs(dx) > 0.5) doPan(dx, 0);
+                break;
+
+            case 'undecided':
+                // Phase de détection : répondre prudemment aux signaux clairs seulement
+                if (spreadDelta > 0.02)                    doZoomToPoint(spreadRatio, s.cx, s.cy);
+                else if (Math.abs(dAngle) > ROT_DEADZONE * 3) doRotate(dAngle);
+                // Pan/tilt reportés à après le verrouillage — évite les mouvements parasites
+                break;
         }
 
         _lastCx = s.cx; _lastCy = s.cy;
@@ -276,6 +333,7 @@ function onPointerUp(e: PointerEvent): void {
     if (_pointers.size === 1) {
         const [p] = Array.from(_pointers.values());
         _lastCx = p.x; _lastCy = p.y;
+        resetGesture(); // le prochain 2e doigt repart de zéro
     }
 
     if (_pointers.size === 0) {
