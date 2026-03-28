@@ -463,7 +463,7 @@ App sur appareil physique Android connecté en USB (débogage activé).
 - [ ] **Idle GPU suspension** : Arrêt total du contexte WebGL après 30s d'inactivité complète + reprise sur interaction.
 - [ ] **Profiling mobile avancé** : Session Android Studio Profiler 30min — CPU, GPU, mémoire. Identifier les régressions éventuelles post-v5.11.
 - [ ] **Budget-temps mesh par frame** : Remplacer `MAX_BUILDS_PER_CYCLE` (compteur fixe) par un budget-temps (~8ms/frame) dans `processLoadQueue()`. Élimine les Long Tasks lors des transitions LOD sur Exynos 1280. Détecté en Session 6 Phase B.
-- [ ] **materialPool — recycling shader complet** : +98 programmes shader sur 5 min de navigation (Session 6 memory heap). Investiguer quels chemins créent des shaders hors pool. Taille marginale (486 kB) mais potentiel d'optimisation propre.
+- [ ] **materialPool — recycling shader complet (Balanced-spécifique)** : +98 programmes shader sur A53 Balanced (Session 6), absent sur S23 Performance (Session 7, +8 seulement). Cause probable : variantes shader des matériaux légers Balanced. Investiguer quels chemins créent des shaders hors pool sur le preset Balanced. Taille marginale (486 kB) mais optimisation propre.
 
 ---
 

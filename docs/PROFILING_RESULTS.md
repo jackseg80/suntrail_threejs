@@ -473,9 +473,39 @@ Chute isolée, aucune tile en cours. Signature GC Android ou throttling thermiqu
 | Workers | 4 | **4** | Cap mobile identique |
 | Fix 20fps flyTo/follow | — | **✅ Confirmé v5.11.1** | — |
 
+### Memory Comparison (2 snapshots : démarrage vs après 5 min navigation LOD 16)
+
+| Type JS | Δ objets | Δ taille | Interprétation |
+|---------|----------|----------|---------------|
+| `WebGLBuffer` | +93 | +6.7 kB | Buffers GPU nouveaux meshes — normal ✅ |
+| `{buffer, type, bytesPerElement…}` | +94 | +3.0 kB | Attributs BufferGeometry — normal ✅ |
+| `WebGLVertexArrayObject` | +35 | +3.9 kB | VAOs nouveaux meshes — normal ✅ |
+| `Generator` (multiples) | +58/+52/+6... | +22 kB | Iterateurs async pipeline tiles, GCés ✅ |
+| `WebGLProgram` | **+8** | +768 B | Programmes shader — très faible ✅ |
+| `WebGLShader` | +16 | +1.2 kB | Shaders — très faible ✅ |
+| `{aoMap, flipSided…}` shader uniforms | **absent** | — | ✅ (était +98 sur A53 Balanced) |
+| `system/JSArrayBufferData` | **absent** | — | ✅ (était +122 MB sur A53) |
+| `WebGLTexture` | **absent** | — | ✅ (était +238 sur A53) |
+| `LayoutShift` | **absent** | — | ✅ (était +257 sur A53) |
+| **Croissance totale JS heap** | — | **~200 kB** | vs ~150 MB sur A53 — quasi-plat |
+
+**Verdict Memory S23** : **✅ Profil mémoire quasi-plat. Aucune fuite.**
+
+**Insight clé** : les +98 objets shader (`{aoMap, flipSided…}`) observés sur A53 Balanced sont **absents du S23 Performance** (hors top et WebGLProgram = +8 seulement). Cause probable : le preset Balanced génère plus de variantes shader (matériaux simplifiés, configs légères non standards) que le preset Performance dont les chemins sont plus cohérents et déjà compilés. Le fix v5.12 `materialPool recycling complet` est donc **A53/Balanced-spécifique**, pas un problème global.
+
+### Comparatif Memory A53 vs S23
+
+| Métrique | A53 Balanced | S23 Performance |
+|----------|-------------|----------------|
+| Shader programs créés (`{aoMap}`) | **+98** | **+8** (WebGLProgram) |
+| WebGLTexture delta | **+238** | absent du top |
+| JSArrayBufferData delta | **+122 MB** | absent du top |
+| Croissance totale JS heap | **~150 MB** | **~200 kB** |
+| Fuite mémoire | Aucune ✅ | Aucune ✅ |
+
 ### Décision Phase B S23
 
-**✅ Non bloquant Play Store.** 60fps stables, throttle déterministe, Long Task one-time identifié et acceptable.
+**✅ Non bloquant Play Store.** 60fps stables, throttle déterministe, Long Task one-time identifié et acceptable. Profil mémoire quasi-plat — materialPool backlog confirmé Balanced-spécifique (pas Performance).
 
 ---
 
