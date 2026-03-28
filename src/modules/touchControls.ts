@@ -274,19 +274,27 @@ function onPointerMove(e: PointerEvent): void {
         const spreadRatio = _lastSpread > 1 ? s.spread / _lastSpread : 1;
         const spreadDelta = Math.abs(spreadRatio - 1);
 
-        // Accumulation des signaux (normalisés en "px équivalents")
+        // Accumulation des signaux (normalisés en "px équivalents").
+        // Facteurs calibrés sur les amplitudes typiques de gestes réels :
+        //   spread : pinch 3%/frame → ×300 = 9 ; nette victoire sur _gAcY (2-6px)
+        //   angle  : rotation 0.03 rad/frame → ×100 = 3 ; rotation souple sans sur-sensibilité
         _gAcX += Math.abs(dx);
         _gAcY += Math.abs(dy);
-        _gAcS += spreadDelta * 150;
-        _gAcA += Math.abs(dAngle) * 60;
+        _gAcS += spreadDelta * 300;
+        _gAcA += Math.abs(dAngle) * 100;
 
-        // Verrouillage dès que le signal cumulé dépasse le seuil
+        // Verrouillage dès que le signal cumulé dépasse le seuil.
+        // Comparaisons directes (pas `=== maxSig`) pour éviter les égalités flottantes.
         if (_gesture === 'undecided' && (_gAcX + _gAcY + _gAcS + _gAcA) > GESTURE_COMMIT) {
-            const maxSig = Math.max(_gAcA, _gAcS, _gAcY, _gAcX);
-            if (_gAcA === maxSig && _gAcA > 3)      _gesture = 'rotate';
-            else if (_gAcS === maxSig && _gAcS > 3) _gesture = 'zoom';
-            else if (_gAcY > _gAcX * 1.2)           _gesture = 'tilt';
-            else                                     _gesture = 'pan';
+            if (_gAcA >= _gAcS && _gAcA > _gAcY && _gAcA > _gAcX) {
+                _gesture = 'rotate';  // angle domine tout
+            } else if (_gAcS > _gAcY && _gAcS > _gAcX) {
+                _gesture = 'zoom';    // spread domine les mouvements du centre
+            } else if (_gAcY > _gAcX * 1.2) {
+                _gesture = 'tilt';    // vertical domine horizontal
+            } else {
+                _gesture = 'pan';     // horizontal dominant
+            }
         }
 
         const is2D = !!_controls && _controls.minPolarAngle === _controls.maxPolarAngle;
