@@ -290,11 +290,15 @@ function onPointerMove(e: PointerEvent): void {
         if (!isRotating && spreadDelta > 0.004) doZoomToPoint(spreadRatio, s.cx, s.cy);
 
         // 3. TILT / PAN — axe dominant, exclusif avec rotation.
+        //    Tilt = 2 doigts glissent ensemble HORIZONTALEMENT (dx dominant).
+        //    Pan  = 2 doigts glissent ensemble VERTICALEMENT   (dy dominant).
         if (!isRotating) {
-            if (absDy >= absDx && absDy > 0.5) {
-                is2D ? doPan(0, -dy) : doTilt(dy);
-            } else if (absDx > absDy && absDx > 0.5) {
-                doPan(dx, 0);
+            if (absDx >= absDy && absDx > 0.5) {
+                // Horizontal dominant → tilt (ou pan horizontal en mode 2D verrouillé)
+                is2D ? doPan(dx, 0) : doTilt(dx);
+            } else if (absDy > absDx && absDy > 0.5) {
+                // Vertical dominant → pan avant/arrière
+                doPan(0, dy);
             }
         }
 
