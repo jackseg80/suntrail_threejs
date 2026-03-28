@@ -47,21 +47,29 @@ let _lastAngle  = 0;
 let _velX = 0, _velY = 0;
 let _inertiaId = 0;
 
-// ── Gesture locking (style Google Earth) ─────────────────────────────────────
-// Chaque session 2 doigts accumule les signaux initiaux pour identifier le geste
-// dominant, puis le verrouille exclusivement jusqu'au lever des doigts.
-// Empêche le mélange involontaire zoom/tilt/pan lors d'un geste imprécis.
+// ── Gesture locking (style Google Earth / Mapbox GL JS) ──────────────────────
+// Architecture inspirée de MapboxGL TouchPitchHandler + TouchRotateHandler :
+//   - Tilt détecté via deltas INDIVIDUELS de chaque doigt (pas le centre)
+//   - Rotation détectée via angle du vecteur doigt1→doigt2
+//   - Séparation robuste : pendant une rotation, les doigts vont en sens opposé
+//     → le signal tilt reste nul. Pendant un tilt, l'angle ne change pas.
 type GestureType = 'undecided' | 'zoom' | 'rotate' | 'tilt' | 'pan';
 let _gesture: GestureType = 'undecided';
-let _gAcX = 0;  // cumul |dx| en px
-let _gAcY = 0;  // cumul |dy| en px
-let _gAcS = 0;  // cumul |spreadRatio-1| × 150 (normalisé px)
-let _gAcA = 0;  // cumul |dAngle| × 60 (normalisé px)
-const GESTURE_COMMIT = 10; // px cumulés avant verrouillage
+
+// Tracking individuel des deux premiers doigts pour le tilt Mapbox-style
+let _p1Id = -1, _p2Id = -1;
+let _prevP1 = { x: 0, y: 0 }, _prevP2 = { x: 0, y: 0 };
+
+// Signaux d'accumulation (normalisés en "px équivalents")
+let _gAcA = 0;  // angle change × 100         (signal rotation)
+let _gAcS = 0;  // spreadDelta × 300           (signal zoom)
+let _gAcT = 0;  // avg |dy| quand les 2 doigts bougent dans le même sens Y  (signal tilt)
+let _gAcP = 0;  // avg |dx| quand les 2 doigts bougent dans le même sens X  (signal pan)
+const GESTURE_COMMIT = 8; // px cumulés avant verrouillage
 
 function resetGesture(): void {
     _gesture = 'undecided';
-    _gAcX = _gAcY = _gAcS = _gAcA = 0;
+    _gAcA = _gAcS = _gAcT = _gAcP = 0;
 }
 
 // ── Utilitaires ─────────────────────────────────────────────────────────────────
@@ -242,6 +250,13 @@ function onPointerDown(e: PointerEvent): void {
         window.addEventListener('pointercancel', onPointerUp);
 
     } else if (_pointers.size === 2) {
+        // Mémoriser les IDs des deux premiers doigts et leur position initiale.
+        // Ces IDs sont stables pendant toute la session (Mapbox pattern).
+        const ids = Array.from(_pointers.keys());
+        _p1Id = ids[0]; _p2Id = ids[1];
+        const p1 = _pointers.get(_p1Id)!, p2 = _pointers.get(_p2Id)!;
+        _prevP1 = { x: p1.x, y: p1.y };
+        _prevP2 = { x: p2.x, y: p2.y };
         const s = twoFingerMetrics();
         _lastCx = s.cx; _lastCy = s.cy;
         _lastSpread = s.spread;
@@ -264,71 +279,84 @@ function onPointerMove(e: PointerEvent): void {
         _lastCy = e.clientY;
 
     } else if (_pointers.size >= 2) {
-        // ── 2 doigts — Gesture Locking style Google Earth (v5.11.1) ─────────────
-        // Les signaux sont accumulés sur les premiers px pour identifier le geste
-        // dominant, puis il est verrouillé exclusivement jusqu'au lever des doigts.
+        // ── 2 doigts — Gesture Locking (v4, Mapbox-style) ───────────────────────
+        // Clé de la v4 : tilt détecté par deltas INDIVIDUELS de chaque doigt.
+        // Pendant une rotation, les doigts vont en sens opposé → centre stable,
+        // pas de signal tilt. Pendant un tilt, l'angle reste constant → pas de
+        // signal rotation. Séparation robuste basée sur Mapbox GL TouchPitchHandler.
         const s = twoFingerMetrics();
-        const dx          = s.cx - _lastCx;
-        const dy          = s.cy - _lastCy;
         const dAngle      = wrapAngleDelta(s.angle - _lastAngle);
         const spreadRatio = _lastSpread > 1 ? s.spread / _lastSpread : 1;
         const spreadDelta = Math.abs(spreadRatio - 1);
 
-        // Accumulation des signaux (normalisés en "px équivalents").
-        // Facteurs calibrés sur les amplitudes typiques de gestes réels :
-        //   spread : pinch 3%/frame → ×300 = 9 ; nette victoire sur _gAcY (2-6px)
-        //   angle  : rotation 0.03 rad/frame → ×100 = 3 ; rotation souple sans sur-sensibilité
-        _gAcX += Math.abs(dx);
-        _gAcY += Math.abs(dy);
-        _gAcS += spreadDelta * 300;
-        _gAcA += Math.abs(dAngle) * 100;
+        // ── Deltas individuels de chaque doigt ────────────────────────────────────
+        const p1 = _pointers.get(_p1Id);
+        const p2 = _pointers.get(_p2Id);
+        let d1x = 0, d1y = 0, d2x = 0, d2y = 0;
+        if (p1 && p2) {
+            d1x = p1.x - _prevP1.x; d1y = p1.y - _prevP1.y;
+            d2x = p2.x - _prevP2.x; d2y = p2.y - _prevP2.y;
+        }
 
-        // Verrouillage dès que le signal cumulé dépasse le seuil.
-        // Comparaisons directes (pas `=== maxSig`) pour éviter les égalités flottantes.
-        if (_gesture === 'undecided' && (_gAcX + _gAcY + _gAcS + _gAcA) > GESTURE_COMMIT) {
-            if (_gAcA >= _gAcS && _gAcA > _gAcY && _gAcA > _gAcX) {
-                _gesture = 'rotate';  // angle domine tout
-            } else if (_gAcS > _gAcY && _gAcS > _gAcX) {
-                _gesture = 'zoom';    // spread domine les mouvements du centre
-            } else if (_gAcY > _gAcX * 1.2) {
-                _gesture = 'tilt';    // vertical domine horizontal
-            } else {
-                _gesture = 'pan';     // horizontal dominant
-            }
+        // Signal TILT (Mapbox TouchPitchHandler) :
+        //   les deux doigts bougent verticalement dans le MÊME sens Y.
+        //   Pendant une rotation ils vont en sens opposé → sameYDir = false.
+        const hasYMove  = Math.abs(d1y) > 0.3 || Math.abs(d2y) > 0.3;
+        const sameYDir  = hasYMove && (d1y > 0 === d2y > 0);
+        const bothVert  = Math.abs(d1y) >= Math.abs(d1x) && Math.abs(d2y) >= Math.abs(d2x);
+        const tiltDy    = (d1y + d2y) / 2; // moyenne Y des deux doigts
+
+        // Signal PAN horizontal :
+        //   les deux doigts bougent dans le même sens X.
+        const hasXMove  = Math.abs(d1x) > 0.3 || Math.abs(d2x) > 0.3;
+        const sameXDir  = hasXMove && (d1x > 0 === d2x > 0);
+        const panDx     = (d1x + d2x) / 2; // moyenne X des deux doigts
+
+        // ── Accumulation ──────────────────────────────────────────────────────────
+        _gAcA += Math.abs(dAngle) * 100;
+        _gAcS += spreadDelta * 300;
+        _gAcT += (sameYDir && bothVert) ? Math.abs(tiltDy) : 0;
+        _gAcP += sameXDir               ? Math.abs(panDx)  : 0;
+
+        // ── Verrouillage ──────────────────────────────────────────────────────────
+        if (_gesture === 'undecided' && (_gAcA + _gAcS + _gAcT + _gAcP) > GESTURE_COMMIT) {
+            if      (_gAcA > _gAcS && _gAcA > _gAcT && _gAcA > _gAcP) _gesture = 'rotate';
+            else if (_gAcS > _gAcT && _gAcS > _gAcP)                   _gesture = 'zoom';
+            else if (_gAcT >= _gAcP)                                    _gesture = 'tilt';
+            else                                                         _gesture = 'pan';
         }
 
         const is2D = !!_controls && _controls.minPolarAngle === _controls.maxPolarAngle;
 
         switch (_gesture) {
             case 'rotate':
-                // Rotation azimut — exclusif (plus de zoom parasite)
                 if (Math.abs(dAngle) > ROT_DEADZONE) doRotate(dAngle);
                 break;
 
             case 'zoom':
-                // Zoom vers le centre des doigts — exclusif (plus de pan parasite)
                 if (spreadDelta > 0.001) doZoomToPoint(spreadRatio, s.cx, s.cy);
                 break;
 
             case 'tilt':
-                // Inclinaison verticale — exclusif (plus de pan horizontal parasite)
-                if (Math.abs(dy) > 0.5)
-                    is2D ? doPan(0, -dy) : doTilt(dy);
+                // Utilise la moyenne des deltas individuels (plus stable que le centre)
+                if (Math.abs(tiltDy) > 0.5)
+                    is2D ? doPan(0, -tiltDy) : doTilt(tiltDy);
                 break;
 
             case 'pan':
-                // Pan horizontal — exclusif (pas de tilt involontaire)
-                if (Math.abs(dx) > 0.5) doPan(dx, 0);
+                if (Math.abs(panDx) > 0.5) doPan(panDx, 0);
                 break;
 
             case 'undecided':
-                // Phase de détection : répondre prudemment aux signaux clairs seulement
-                if (spreadDelta > 0.02)                    doZoomToPoint(spreadRatio, s.cx, s.cy);
+                // Réponses prudemment tentatives sur les signaux les plus clairs
+                if (spreadDelta > 0.02)                        doZoomToPoint(spreadRatio, s.cx, s.cy);
                 else if (Math.abs(dAngle) > ROT_DEADZONE * 3) doRotate(dAngle);
-                // Pan/tilt reportés à après le verrouillage — évite les mouvements parasites
                 break;
         }
 
+        // ── Mise à jour de l'état ─────────────────────────────────────────────────
+        if (p1) _prevP1 = { x: p1.x, y: p1.y };
+        if (p2) _prevP2 = { x: p2.x, y: p2.y };
         _lastCx = s.cx; _lastCy = s.cy;
         _lastSpread = s.spread;
         _lastAngle  = s.angle;
