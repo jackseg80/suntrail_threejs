@@ -85,6 +85,13 @@ function doPan(dx: number, dy: number): void {
 
     const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(_camera.quaternion);
     fwd.y = 0;
+    if (fwd.lengthSq() < 1e-6) {
+        // Caméra top-down (mode 2D) : le vecteur forward est nul après projection XZ.
+        // Fallback : utiliser le vecteur "up" de la caméra projeté sur XZ.
+        // Cela correspond à la direction "haut écran" en vue de dessus.
+        const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(_camera.quaternion);
+        fwd.set(camUp.x, 0, camUp.z);
+    }
     if (fwd.lengthSq() > 1e-6) fwd.normalize();
 
     const offset = new THREE.Vector3()
@@ -208,8 +215,15 @@ function onPointerMove(e: PointerEvent): void {
         // Pan horizontal (centre X)
         if (Math.abs(dx) > 0.5) doPan(dx, 0);
 
-        // Tilt (centre Y) — remplace le pan vertical avec 2 doigts
-        if (Math.abs(dy) > 0.5) doTilt(dy);
+        // Tilt (centre Y) — ou pan vertical si la caméra est verrouillée top-down (mode 2D)
+        // Quand minPolarAngle === maxPolarAngle, doTilt() ne peut rien faire → pan vertical à la place
+        if (Math.abs(dy) > 0.5) {
+            if (_controls && _controls.minPolarAngle === _controls.maxPolarAngle) {
+                doPan(0, -dy);
+            } else {
+                doTilt(dy);
+            }
+        }
 
         _lastCx = s.cx; _lastCy = s.cy;
         _lastSpread = s.spread;
