@@ -190,7 +190,7 @@ export function tickWeatherTime(delta: number): void {
     weatherMaterial.uniformsNeedUpdate = true;
 }
 
-export function updateWeatherSystem(cameraPos: THREE.Vector3): void {
+export function updateWeatherSystem(delta: number, cameraPos: THREE.Vector3): void {
     if (!weatherPoints || !weatherMaterial || !geometry) return;
     const altitude = cameraPos.y;
     const is2D = state.RESOLUTION <= 2;
@@ -199,7 +199,7 @@ export function updateWeatherSystem(cameraPos: THREE.Vector3): void {
         weatherPoints.visible = false; return;
     }
     weatherPoints.visible = true;
-    // uTime avancé par tickWeatherTime() à chaque frame — pas ici
+    weatherMaterial.uniforms.uTime.value += delta;
     weatherMaterial.uniforms.uCameraPos.value.copy(cameraPos);
     weatherMaterial.uniformsNeedUpdate = true;
     geometry.setDrawRange(0, Math.min(state.WEATHER_DENSITY, MAX_PARTICLES));

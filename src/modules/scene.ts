@@ -12,7 +12,7 @@ import { disposeAllGeometries } from './geometryCache';
 import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat } from './geo';
 import { throttle } from './utils';
 import { initVegetationResources } from './vegetation';
-import { initWeatherSystem, updateWeatherSystem, tickWeatherTime, fetchWeather } from './weather';
+import { initWeatherSystem, updateWeatherSystem, fetchWeather } from './weather';
 import { initCompass, disposeCompass, renderCompass, updateCompassAnimation, isCompassAnimating } from './compass';
 import { centerOnUser } from './location';
 import { initTouchControls, disposeTouchControls } from './touchControls';
@@ -351,28 +351,30 @@ export async function initScene(): Promise<void> {
 
         const now = performance.now();
         const delta = clock.getDelta();
-        if (state.ENERGY_SAVER && (now - lastRenderTime < 33)) return;
-        // Idle throttle global — 20fps max quand aucune interaction active depuis 800ms.
-        // Couvre tiltAnimating, isProcessingTiles, tilesFading sans throttle individuel.
-        // En 2D ces conditions se stabilisent d'elles-mêmes ; en 3D elles peuvent tourner
-        // indéfiniment (tilt lerp, loader de tuiles continu) → GPU actif inutilement.
-        const isWeatherActive = state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0;
-        const isIdleMode = !state.isUserInteracting && !state.isFlyingTo
-            && !isWeatherActive
-            && (now - lastInteractionTime >= 800);
-        if (isIdleMode && (now - lastRenderTime < WATER_THROTTLE_MS)) return;
-        lastRenderTime = now;
 
-        // Phase 2.1 — Accumulateur eau : uTime incrémenté à 20 FPS max
+        // Accumulateurs incrémentés sur le temps RÉEL, AVANT tout guard de throttle.
+        // Si placés après les guards, les frames skippées ne les incrémentent pas →
+        // il faut N renders pour atteindre 50ms au lieu de 1 → météo/eau à ~5fps au lieu de 20fps.
         waterTimeAccum += delta * 1000;
         const waterFrameDue = waterTimeAccum >= WATER_THROTTLE_MS;
         if (waterFrameDue) waterTimeAccum = Math.max(0, waterTimeAccum - WATER_THROTTLE_MS);
 
-        // Phase 2.2 — Accumulateur météo : updateWeatherSystem appelé à 20 FPS max
         weatherTimeAccum += delta * 1000;
         weatherAccumDelta += delta;
         const weatherFrameDue = weatherTimeAccum >= WEATHER_THROTTLE_MS;
         if (weatherFrameDue) weatherTimeAccum = Math.max(0, weatherTimeAccum - WEATHER_THROTTLE_MS);
+
+        if (state.ENERGY_SAVER && (now - lastRenderTime < 33)) return;
+
+        // Idle throttle global — 20fps max en absence d'interaction.
+        // Météo : on laisse passer les frames dues (weatherFrameDue) pour que
+        // les particules s'animent à 20fps réels, sans plein régime continu.
+        const isWeatherActive = state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0;
+        const isIdleMode = !state.isUserInteracting && !state.isFlyingTo
+            && !(isWeatherActive && weatherFrameDue)
+            && (now - lastInteractionTime >= 800);
+        if (isIdleMode && (now - lastRenderTime < WATER_THROTTLE_MS)) return;
+        lastRenderTime = now;
 
         updateCompassAnimation();
 
@@ -426,7 +428,7 @@ export async function initScene(): Promise<void> {
             || state.isSunAnimating
             || state.isInteractingWithUI
             || state.isProcessingTiles
-            || isWeatherActive  // déclenche un render à chaque frame (uTime avance dans tickWeatherTime)
+            || (isWeatherActive && weatherFrameDue)  // render seulement quand la frame météo est due (20fps)
             || isCompassAnimating()
             || tilesFading
             || needsInitialRender > 0
@@ -438,11 +440,9 @@ export async function initScene(): Promise<void> {
             if (waterFrameDue) terrainUniforms.uTime.value += WATER_THROTTLE_MS / 1000;
             tilesFading = animateTiles(delta);
             if (needsInitialRender > 0) needsInitialRender--;
-            // Météo — uTime avance à chaque frame (particules fluides)
-            // uniforms cosmétiques (couleur, vent, densité) mis à jour à 20fps max
-            if (isWeatherActive) tickWeatherTime(delta);
+            // Météo à 20fps — uTime + uniforms mis à jour ensemble quand la frame est due
             if (weatherFrameDue && isWeatherActive) {
-                updateWeatherSystem(state.camera.position);
+                updateWeatherSystem(weatherAccumDelta, state.camera.position);
                 weatherAccumDelta = 0;
             }
             if (state.isFollowingUser && !interacting) centerOnUser(delta);
