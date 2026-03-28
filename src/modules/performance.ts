@@ -144,6 +144,7 @@ export function applyPreset(preset: PresetType): void {
     state.SHOW_SLOPES = settings.SHOW_SLOPES;
     
     state.VEGETATION_DENSITY = settings.VEGETATION_DENSITY;
+    state.VEGETATION_CAST_SHADOW = settings.VEGETATION_CAST_SHADOW;
     state.BUILDING_LIMIT = settings.BUILDING_LIMIT;
     state.POI_ZOOM_THRESHOLD = settings.POI_ZOOM_THRESHOLD;
     state.BUILDING_ZOOM_THRESHOLD = settings.BUILDING_ZOOM_THRESHOLD;

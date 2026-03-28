@@ -76,7 +76,7 @@ async function fetchPOIsWithCache(z: number, x: number, y: number, key: string):
         const cache = await caches.open(CACHE_NAME);
         const cached = await cache.match(key);
         if (cached) return await cached.json();
-    } catch (e) {}
+    } catch (e) { console.warn('[POI] Cache read failed, proceeding without cache:', e); }
 
     const n = Math.pow(2, z);
     const w = x / n * 360 - 180;
@@ -91,7 +91,7 @@ async function fetchPOIsWithCache(z: number, x: number, y: number, key: string):
         try {
             const cache = await caches.open(CACHE_NAME);
             await cache.put(key, new Response(JSON.stringify(data.elements)));
-        } catch(e) {}
+        } catch(e) { console.warn('[POI] Cache write failed silently:', e); }
         return data.elements;
     }
     return null;

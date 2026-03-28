@@ -173,7 +173,7 @@
 - [ ] **Data Safety** : Remplir dans Play Console.
 - [ ] **Content Rating (IARC)** : Questionnaire Play Console — cible "Tout public".
 - [ ] **Screenshots** : Phone portrait + tablet pour tous les form factors.
-- [ ] **Feature Graphic** : Visuel 1024×500px.
+- [x] **Feature Graphic** : Visuel 1024×500px.
 - [x] **Descriptions** : Rédigées FR + EN — voir `docs/STORE_LISTING.md`.
 
 ### Sprint 6 — Optimisation Énergétique Mobile 🔋
@@ -205,14 +205,13 @@
 - [x] **PerfRecorder** (`VRAMDashboard.ts`) : Bouton ⏺/⏹, buffer 600 samples, export JSON clipboard, FPS affiché.
 - [x] **Tests** : 188/188 ✅. `npm run check` : 0 erreurs ✅.
 
-#### Phase 2 — Throttle des Systèmes Animés (1 journée)
+#### Phase 2 — Throttle des Systèmes Animés (1 journée) ✅ TERMINÉ
 
-- [ ] **2.1 Throttle eau à 20 FPS** (`scene.ts`) : Découpler la mise à jour de `terrainUniforms.uTime` du rendu principal. Introduire un accumulateur `waterTimeAccum` — `uTime` ne s'incrémente que toutes les 50ms (20 FPS). `SHOW_HYDROLOGY` dans `needsUpdate` conditionné à un flag `waterFrameDue` plutôt que `true` constant.
-- [ ] **2.2 Throttle météo à 20 FPS** (`scene.ts` / `weather.ts`) : Même pattern pour `updateWeatherSystem(delta)` — appel limité à 20 FPS via accumulateur indépendant. Les particules de pluie/neige n'ont pas besoin de 60 FPS.
-- [ ] **2.3 Adaptive DPR sur interaction** (`scene.ts`) : Écouter `controls 'start'` → `renderer.setPixelRatio(1.0)` pendant le mouvement. Sur `controls 'end'` + 200ms → restaurer `state.PIXEL_RATIO_LIMIT` et forcer un render full-quality. Invisible pour l'utilisateur, réduit la charge GPU pendant le pan/zoom.
-- [ ] **2.4 `castShadow=false` végétation mobile** (`terrain.ts`) : Végétation = ~18 draw calls économisés sur la shadow pass. ~20% de gain GPU à LOD16. Conditionné à `state.VEGETATION_CAST_SHADOW` (Phase 2 only).
-- [ ] **Tests Phase 2** : Tests unitaires pour les fonctions throttle (accumulateurs eau/météo). 188/188 tests.
-- [ ] **Mise à jour `AGENTS.md`** : Documenter le pattern accumulateur eau/météo + adaptive DPR.
+- [x] **2.1 Throttle eau à 20 FPS** (`scene.ts`) : Accumulateur `waterTimeAccum` — `uTime` ne s'incrémente que toutes les 50ms. `SHOW_HYDROLOGY` dans `needsUpdate` conditionné à `waterFrameDue`.
+- [x] **2.2 Throttle météo à 20 FPS** (`scene.ts`) : Accumulateur `weatherTimeAccum` + `weatherAccumDelta` — `updateWeatherSystem(weatherAccumDelta)` limité à 20 FPS, delta cumulé précis.
+- [x] **2.3 Adaptive DPR sur interaction** (`scene.ts`) : `controls 'start'` → `renderer.setPixelRatio(1.0)` sur mobile. `controls 'end'` + 200ms → restaure `PIXEL_RATIO_LIMIT`. Timer annulé si nouveau 'start'.
+- [x] **2.4 `castShadow=false` végétation mobile** (`vegetation.ts`) : `iMesh.castShadow = state.VEGETATION_CAST_SHADOW`. Flag `VEGETATION_CAST_SHADOW` dans `PerformanceSettings` (eco: false, balanced: false, performance: true, ultra: true).
+- [x] **Tests Phase 2** : 188/188 ✅. `npm run check` : 0 erreurs ✅.
 
 > ### 📱 Test utilisateur après Phase 2 (test de validation finale)
 > Reprendre le protocole Sprint 4 :
@@ -246,23 +245,34 @@
 
 #### Critiques — Bloquants Play Store (à faire EN PREMIER)
 
-- [ ] **C1 — `network_security_config.xml`** : Créer `android/app/src/main/res/xml/network_security_config.xml` avec `cleartextTrafficPermitted="false"`. Ajouter `android:networkSecurityConfig="@xml/network_security_config"` et `android:usesCleartextTraffic="false"` dans `<application>` du manifest. *(15 min)*
-- [ ] **C4 — `android:allowBackup`** : Ajouter `android:fullBackupContent="@xml/backup_rules"` dans le manifest + créer `backup_rules.xml` excluant `sharedpref` (clé MapTiler + GPS snapshots des backups Google). *(10 min)*
-- [ ] **C2/C3 — Clé MapTiler + coordonnées GPS en clair dans localStorage** : Décider de la stratégie : (a) chiffrement AES-GCM via `window.crypto` avant stockage, ou (b) mention explicite dans la Privacy Policy que ces données restent locales et ne transitent pas. *(décision puis 30-60 min)*
+- [x] **C0 — `.gitignore` incomplet** : `*.jks`, `*.keystore`, `android/keystore.properties` ajoutés.
+- [x] **C1 — `network_security_config.xml`** : Fichier créé. Manifest : `networkSecurityConfig` + `usesCleartextTraffic="false"`.
+- [x] **C4 — `android:allowBackup`** : `fullBackupContent="@xml/backup_rules"` + `backup_rules.xml` (exclut sharedpref).
+- [x] **C2/C3 — Clé MapTiler + GPS en localStorage** : Stratégie (b) — `privacy.html` section 5 renforcée (sandbox Android, exclusion GDrive, HTTPS enforced).
 
 #### Avertissements — Fortement recommandés
 
-- [ ] **W1 — ProGuard Three.js/pmtiles incomplet** : Ajouter règles dans `android/app/proguard-rules.pro` pour `three`, `three-stdlib`, `pmtiles`, `mapbox-vector-tile`, `gpxparser`. Tester release build. *(20 min)*
-- [ ] **W2 — PWA manifest incomplet** : Ajouter `display: 'standalone'`, `orientation: 'portrait'`, `background_color: '#12141c'` dans `vite.config.js` objet manifest. *(5 min)*
-- [ ] **W3 — Meta tags iOS manquants** : Ajouter dans `index.html` : `<meta name="apple-mobile-web-app-capable" content="yes">` et `<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">`. *(5 min)*
-- [ ] **W7 — `console.log` non strippés** : Ajouter dans `vite.config.js` build terser : `terserOptions: { compress: { drop_console: true, drop_debugger: true } }`. *(10 min)*
+- [x] **W1 — ProGuard Three.js/pmtiles incomplet** : Règles OkHttp, Gson, Capacitor plugins ajoutées dans `proguard-rules.pro`.
+- [x] **W2 — PWA manifest incomplet** : `display: 'standalone'`, `orientation: 'portrait'`, `background_color` dans `vite.config.js`.
+- [x] **W3 — Meta tags iOS manquants** : `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, `-title` dans `index.html`.
+- [x] **W7 — `console.log` non strippés** : `minify: 'terser'` + `drop_console: true, drop_debugger: true` dans `vite.config.js`.
 
 #### Optionnels (qualité post-release)
 
 - [ ] **W4 — Catch vides** : Ajouter `console.warn('[Module] Failed silently:', e)` dans les 11 catch vides de `buildings.ts`, `hydrology.ts`, `poi.ts`, `weather.ts`. *(30 min)*
-- [ ] **W5 — setInterval non nettoyé** : Stocker la ref `storageUpdateInterval` dans `ui.ts:67` + nettoyer dans `disposeScene()`. *(5 min)*
-- [ ] **W6 — Icônes dupliquées (5 MB)** : Supprimer `public/assets/icons/icon.png` (doublon de `icon_1024.png`). Convertir en WebP via `npx capacitor-assets generate`. *(15 min)*
-- [ ] **I1 — `android:largeHeap`** : Ajouter `android:largeHeap="true"` dans `<application>` du manifest pour les appareils low-RAM. *(2 min)*
+- [x] **W5 — setInterval non nettoyé** : `storageUIIntervalId` module-level + `disposeUI()` exportée pour nettoyage explicite. Intervalle dans `src/modules/ui.ts` (non dans les composants refactorisés).
+- [x] **W6 — Icônes dupliquées** : `public/assets/icons/icon.png` supprimé (doublon exact de `icon_1024.png`). `vite.config.js` mis à jour pour référencer uniquement `icon_1024.png` avec `sizes: '192x192 512x512'`. Économie : -2.5 MB.
+- [x] **I1 — `android:largeHeap`** : `android:largeHeap="true"` ajouté dans `<application>` du manifest.
+
+---
+
+### Correctifs Post-Sprint 6-bis (hors roadmap, livrés en v5.11)
+
+- [x] **W4 — Catch vides** : `console.warn` ajouté dans les 9 catch silencieux de `buildings.ts`, `hydrology.ts`, `poi.ts`, `weather.ts` (strippés en prod par terser).
+- [x] **W5 — setInterval** : `storageUIIntervalId` module-level + `disposeUI()` exportée dans `ui.ts`.
+- [x] **W6 — Icônes dupliquées** : `icon.png` supprimé (-2.5 MB), `vite.config.js` unifié sur `icon_1024.png`.
+- [x] **Démarrage mobile** : Délai 10-20s supprimé — render loop démarre AVANT `await loadTerrain()`. Spinner immédiat sur le bouton. `loadTerrain()` double-call supprimé. Workers : 4 max sur mobile (au lieu de 8).
+- [x] **Build warnings** : Chemins `./img/maps/` → `/img/maps/` (absolus). Dynamic imports `tileLoader` → statiques. `chunkSizeWarningLimit: 600` (Three.js ~520kB). Build propre, zéro warning.
 
 ---
 

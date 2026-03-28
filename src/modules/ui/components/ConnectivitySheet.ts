@@ -1,6 +1,6 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { state } from '../../state';
-import { deleteTerrainCache, downloadOfflineZone } from '../../tileLoader';
+import { deleteTerrainCache, downloadOfflineZone, setPMTilesSource } from '../../tileLoader';
 import { showToast } from '../../utils';
 import { sheetManager } from '../core/SheetManager';
 import { resetTerrain, updateVisibleTiles } from '../../terrain';
@@ -75,7 +75,6 @@ export class ConnectivitySheet extends BaseComponent {
         pmtilesUpload?.addEventListener('change', async (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
-                const { setPMTilesSource } = await import('../../tileLoader');
                 await setPMTilesSource(file);
                 resetTerrain();
                 updateVisibleTiles();

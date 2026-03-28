@@ -18,10 +18,15 @@ class TileWorkerManager {
     private tasks = new Map<number, WorkerTask>();
     private nextTaskId = 0;
 
-    constructor(poolSize: number = Math.min(navigator.hardwareConcurrency || 4, 8)) {
+    constructor(poolSize?: number) {
         if (typeof Worker === 'undefined') return;
+        // Mobile : 4 workers max (moins de parsing JS au démarrage, ~2-4s économisées)
+        // PC    : 8 workers max (cores abondants, parsing instantané)
+        const isMobile = typeof navigator !== 'undefined' && (/Mobi|Android/i.test(navigator.userAgent) || window.innerWidth <= 768);
+        const maxWorkers = isMobile ? 4 : 8;
+        const count = poolSize ?? Math.min(navigator.hardwareConcurrency || 4, maxWorkers);
 
-        for (let i = 0; i < poolSize; i++) {
+        for (let i = 0; i < count; i++) {
             const worker = new Worker(new URL('../workers/tileWorker.ts', import.meta.url), { type: 'module' });
             worker.onmessage = (e) => this.handleMessage(e);
             this.workers.push(worker);

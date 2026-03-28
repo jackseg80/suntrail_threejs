@@ -38,6 +38,7 @@ export interface PerformanceSettings {
     BUILDINGS_SHADOWS: boolean; 
     MAX_ALLOWED_ZOOM: number;    
     VEGETATION_DENSITY: number;  
+    VEGETATION_CAST_SHADOW: boolean; // false sur mobile mid-range (Phase 2 — économie shadow pass)
     BUILDING_LIMIT: number;      
     POI_ZOOM_THRESHOLD: number;  
     BUILDING_ZOOM_THRESHOLD: number; 
@@ -66,7 +67,7 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHOW_VEGETATION: false, SHOW_SIGNPOSTS: false, SHOW_BUILDINGS: false, SHOW_HYDROLOGY: false, BUILDINGS_SHADOWS: false,
         MAX_ALLOWED_ZOOM: 14, VEGETATION_DENSITY: 0, BUILDING_LIMIT: 0, POI_ZOOM_THRESHOLD: 16, BUILDING_ZOOM_THRESHOLD: 17,
         MAX_BUILDS_PER_CYCLE: 1, LOAD_DELAY_FACTOR: 2.0, SHOW_WEATHER: false, WEATHER_DENSITY: 0, WEATHER_SPEED: 1.0,
-        FOG_FAR: 25000, SHOW_SLOPES: false
+        FOG_FAR: 25000, SHOW_SLOPES: false, VEGETATION_CAST_SHADOW: false
     },
     // ── STD / Balanced — Mid-range 2021-2022 (Galaxy A53, Intel HD 620) ──────
     balanced: {
@@ -76,6 +77,7 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: false, BUILDINGS_SHADOWS: false,
         MAX_ALLOWED_ZOOM: 16,
         VEGETATION_DENSITY: 500, // ← 2000 → 500 : végétation légère, castShadow désactivé Phase 2
+        VEGETATION_CAST_SHADOW: false, // économie ~18 draw calls shadow pass sur mid-range
         BUILDING_LIMIT: 40, POI_ZOOM_THRESHOLD: 15, BUILDING_ZOOM_THRESHOLD: 16,
         MAX_BUILDS_PER_CYCLE: 2, LOAD_DELAY_FACTOR: 1.2,
         SHOW_WEATHER: true, WEATHER_DENSITY: 1000, // ← 2000 → 1000
@@ -90,7 +92,8 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         PIXEL_RATIO_LIMIT: 1.5,
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: true, BUILDINGS_SHADOWS: true,
         MAX_ALLOWED_ZOOM: 18,
-        VEGETATION_DENSITY: 8000, BUILDING_LIMIT: 80, POI_ZOOM_THRESHOLD: 14, BUILDING_ZOOM_THRESHOLD: 15,
+        VEGETATION_DENSITY: 8000, VEGETATION_CAST_SHADOW: true,
+        BUILDING_LIMIT: 80, POI_ZOOM_THRESHOLD: 14, BUILDING_ZOOM_THRESHOLD: 15,
         MAX_BUILDS_PER_CYCLE: 2, // ← 4 → 2 : baked-in (étalement uploads GPU)
         LOAD_DELAY_FACTOR: 0.5,
         SHOW_WEATHER: true, WEATHER_DENSITY: 5000, WEATHER_SPEED: 1.2, FOG_FAR: 60000, SHOW_SLOPES: false
@@ -100,7 +103,8 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         get PIXEL_RATIO_LIMIT() { return typeof window !== 'undefined' ? window.devicePixelRatio : 1; },
         RESOLUTION: 256, RANGE: 12, SHADOWS: true, SHADOW_RES: 4096,
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: true, BUILDINGS_SHADOWS: true,
-        MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 8000, BUILDING_LIMIT: 150, POI_ZOOM_THRESHOLD: 14, BUILDING_ZOOM_THRESHOLD: 15,
+        MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 8000, VEGETATION_CAST_SHADOW: true,
+        BUILDING_LIMIT: 150, POI_ZOOM_THRESHOLD: 14, BUILDING_ZOOM_THRESHOLD: 15,
         MAX_BUILDS_PER_CYCLE: 8, LOAD_DELAY_FACTOR: 0.2,
         SHOW_WEATHER: true, WEATHER_DENSITY: 15000, WEATHER_SPEED: 1.5, FOG_FAR: 100000, SHOW_SLOPES: false
     } as PerformanceSettings
@@ -149,6 +153,7 @@ export interface State {
     SHADOWS: boolean;
     SHADOW_RES: number;
     VEGETATION_DENSITY: number;
+    VEGETATION_CAST_SHADOW: boolean;
     BUILDING_LIMIT: number;
     POI_ZOOM_THRESHOLD: number;
     BUILDING_ZOOM_THRESHOLD: number;
@@ -243,7 +248,8 @@ const initialState: State = {
     SHOW_TRAILS: false, SHOW_SLOPES: false, SHOW_SIGNPOSTS: PRESETS.balanced.SHOW_SIGNPOSTS,
     SHOW_BUILDINGS: PRESETS.balanced.SHOW_BUILDINGS, SHOW_HYDROLOGY: PRESETS.balanced.SHOW_HYDROLOGY, SHOW_VEGETATION: true, SHOW_WEATHER: PRESETS.balanced.SHOW_WEATHER,
     SHOW_DEBUG: true, SHOW_STATS: true, USE_WORKERS: true, SHADOWS: PRESETS.balanced.SHADOWS, SHADOW_RES: PRESETS.balanced.SHADOW_RES,
-    VEGETATION_DENSITY: PRESETS.balanced.VEGETATION_DENSITY, 
+    VEGETATION_DENSITY: PRESETS.balanced.VEGETATION_DENSITY,
+    VEGETATION_CAST_SHADOW: PRESETS.balanced.VEGETATION_CAST_SHADOW,
     BUILDING_LIMIT: PRESETS.balanced.BUILDING_LIMIT,
     POI_ZOOM_THRESHOLD: PRESETS.balanced.POI_ZOOM_THRESHOLD,
     BUILDING_ZOOM_THRESHOLD: PRESETS.balanced.BUILDING_ZOOM_THRESHOLD,

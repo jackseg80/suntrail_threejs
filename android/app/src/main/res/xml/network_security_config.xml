@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Configuration de sécurité réseau SunTrail
+    - Interdit tout trafic HTTP en clair (cleartext)
+    - Toutes les communications doivent passer par HTTPS
+    Référence : https://developer.android.com/training/articles/security-config
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <!-- Certificats système uniquement (pas de CA utilisateur) -->
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Règles de sauvegarde Android (Full Backup / Cloud Backup)
+    - Exclut les SharedPreferences de la sauvegarde Google Drive
+      car elles contiennent la clé API MapTiler et les snapshots GPS
+    - Ces données sont sensibles et/ou spécifiques à l'appareil
+    Référence : https://developer.android.com/guide/topics/data/autobackup
+-->
+<full-backup-content>
+    <!-- Exclure toutes les SharedPreferences (clé MapTiler + snapshots GPS REC) -->
+    <exclude domain="sharedpref" path="." />
+</full-backup-content>

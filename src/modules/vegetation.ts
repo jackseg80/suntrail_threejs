@@ -185,7 +185,8 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
             for (let j = 0; j < data.count; j++) {
                 iMesh.setMatrixAt(j, data.matrices[j]);
             }
-            iMesh.castShadow = true;
+            // Phase 2 : castShadow désactivé sur mobile mid-range (économise ~18 draw calls shadow pass)
+            iMesh.castShadow = state.VEGETATION_CAST_SHADOW;
             iMesh.receiveShadow = true;
             forestGroup.add(iMesh);
         }

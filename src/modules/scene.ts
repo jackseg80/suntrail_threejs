@@ -149,8 +149,24 @@ export async function initScene(): Promise<void> {
     const controls = new OrbitControls(state.camera, state.renderer.domElement);
     state.controls = controls;
     
-    controls.addEventListener('start', () => { state.isUserInteracting = true; });
-    controls.addEventListener('end', () => { state.isUserInteracting = false; });
+    controls.addEventListener('start', () => {
+        state.isUserInteracting = true;
+        // Phase 2.3 — Adaptive DPR : baisser à 1.0 pendant l'interaction (invisible, économise GPU)
+        if (isMobileDevice && state.renderer) {
+            if (dprRestoreTimer) { clearTimeout(dprRestoreTimer); dprRestoreTimer = null; }
+            state.renderer.setPixelRatio(1.0);
+        }
+    });
+    controls.addEventListener('end', () => {
+        state.isUserInteracting = false;
+        // Phase 2.3 — Restaurer le DPR complet 200ms après la fin du geste (full quality sur frame fixe)
+        if (isMobileDevice && state.renderer) {
+            dprRestoreTimer = setTimeout(() => {
+                if (state.renderer) state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
+                dprRestoreTimer = null;
+            }, 200);
+        }
+    });
 
     controls.enableDamping = true;
     controls.dampingFactor = 0.1; 
@@ -286,7 +302,7 @@ export async function initScene(): Promise<void> {
     state.sunLight.shadow.bias = -0.0005; state.sunLight.shadow.normalBias = 0.05;
     state.scene.add(state.sunLight); state.scene.add(state.sunLight.target);
 
-    await loadTerrain();
+    // Initialisation des sous-systèmes indépendants (n'ont pas besoin des tuiles terrain)
     initVegetationResources();
     initWeatherSystem(state.scene);
     
@@ -313,6 +329,19 @@ export async function initScene(): Promise<void> {
     let fpsFrameCount = 0;
     let fpsLastTime = performance.now();
 
+    // Phase 2.1 — Throttle eau à 20 FPS (accumulateur waterTimeAccum)
+    const WATER_THROTTLE_MS = 50;   // 20 FPS
+    let waterTimeAccum = 0;
+
+    // Phase 2.2 — Throttle météo à 20 FPS (accumulateur indépendant)
+    const WEATHER_THROTTLE_MS = 50; // 20 FPS
+    let weatherTimeAccum = 0;
+    let weatherAccumDelta = 0;      // delta cumulé entre deux updates météo
+
+    // Phase 2.3 — Adaptive DPR
+    let dprRestoreTimer: ReturnType<typeof setTimeout> | null = null;
+    const isMobileDevice = /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
+
     const renderLoopFn = () => {
         if (!state.renderer || !state.camera || !state.scene || !state.controls) return;
 
@@ -320,6 +349,17 @@ export async function initScene(): Promise<void> {
         const delta = clock.getDelta();
         if (state.ENERGY_SAVER && (now - lastRenderTime < 33)) return;
         lastRenderTime = now;
+
+        // Phase 2.1 — Accumulateur eau : uTime incrémenté à 20 FPS max
+        waterTimeAccum += delta * 1000;
+        const waterFrameDue = waterTimeAccum >= WATER_THROTTLE_MS;
+        if (waterFrameDue) waterTimeAccum = Math.max(0, waterTimeAccum - WATER_THROTTLE_MS);
+
+        // Phase 2.2 — Accumulateur météo : updateWeatherSystem appelé à 20 FPS max
+        weatherTimeAccum += delta * 1000;
+        weatherAccumDelta += delta;
+        const weatherFrameDue = weatherTimeAccum >= WEATHER_THROTTLE_MS;
+        if (weatherFrameDue) weatherTimeAccum = Math.max(0, weatherTimeAccum - WEATHER_THROTTLE_MS);
 
         updateCompassAnimation();
 
@@ -353,14 +393,32 @@ export async function initScene(): Promise<void> {
             }
         }
 
-        const needsUpdate = state.controls.update() || state.SHOW_HYDROLOGY || state.isSunAnimating || state.isInteractingWithUI || state.isProcessingTiles || (state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0) || isCompassAnimating() || tilesFading || needsInitialRender > 0 || state.isFollowingUser;
+        // Phase 2.1/2.2 — needsUpdate utilise les flags throttlés pour eau et météo :
+        // - eau   : force un rendu SEULEMENT quand il est temps de mettre à jour uTime (20 FPS max)
+        // - météo : idem — les particules n'ont pas besoin de 60 FPS
+        // Les autres sources (interaction, soleil, tuiles) conservent leur comportement actuel.
+        const needsUpdate = state.controls.update()
+            || (state.SHOW_HYDROLOGY && waterFrameDue)
+            || state.isSunAnimating
+            || state.isInteractingWithUI
+            || state.isProcessingTiles
+            || ((state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0) && weatherFrameDue)
+            || isCompassAnimating()
+            || tilesFading
+            || needsInitialRender > 0
+            || state.isFollowingUser;
 
         if (needsUpdate) {
             state.stats?.begin();
-            terrainUniforms.uTime.value += delta;
+            // Phase 2.1 — uTime incrémenté seulement quand waterFrameDue (20 FPS max)
+            if (waterFrameDue) terrainUniforms.uTime.value += WATER_THROTTLE_MS / 1000;
             tilesFading = animateTiles(delta);
             if (needsInitialRender > 0) needsInitialRender--;
-            updateWeatherSystem(delta, state.camera.position);
+            // Phase 2.2 — updateWeatherSystem appelé seulement quand weatherFrameDue (20 FPS max)
+            if (weatherFrameDue) {
+                updateWeatherSystem(weatherAccumDelta, state.camera.position);
+                weatherAccumDelta = 0;
+            }
             if (state.isFollowingUser && !interacting) centerOnUser(delta);
 
             if (state.isSunAnimating) {
@@ -397,7 +455,12 @@ export async function initScene(): Promise<void> {
             }
         }
     };
+    // Fix démarrage mobile (v5.11) : render loop démarre AVANT loadTerrain.
+    // Le canvas affiche le ciel/brouillard immédiatement — les tuiles apparaissent au fur et à mesure.
     state.renderer.setAnimationLoop(renderLoopFn);
+
+    // Signaler que le moteur 3D est opérationnel → ui.ts cache l'écran de chargement
+    window.dispatchEvent(new Event('suntrail:sceneReady'));
 
     // Deep Sleep réel (v5.11) : arrêt total du GPU quand l'app passe en arrière-plan
     // (téléphone verrouillé, app minimisée). Relance propre au retour au premier plan.
@@ -411,6 +474,9 @@ export async function initScene(): Promise<void> {
         }
     };
     document.addEventListener('visibilitychange', visibilityChangeHandler);
+
+    // Terrain chargé EN DERNIER : le GPU tourne déjà, les tuiles s'affichent progressivement
+    await loadTerrain();
 }
 
 function onWindowResize(): void {

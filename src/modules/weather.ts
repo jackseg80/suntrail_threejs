@@ -33,7 +33,7 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
                     locationName = locationName.split(',')[0];
                 }
             }
-        } catch (geoErr) {}
+        } catch (geoErr) { console.warn('[Weather] Geolocation reverse-geocoding failed silently:', geoErr); }
         
         const current = data.current || data.current_weather;
         const code = current?.weather_code ?? current?.weathercode ?? 0;

@@ -170,7 +170,7 @@ build: {
 | Permissions Android | ✅ | 7 permissions, toutes justifiées. Aucune permission inutile. |
 | Clés hardcodées | ✅ | Aucune clé/token hardcodé dans le source. La clé MapTiler est user-supplied. |
 | Trafic HTTP dans le source | ✅ | Aucune requête HTTP cleartext (seul `http://www.topografix.com/GPX/...` = namespace XML, pas réseau) |
-| Keystore exclu de git | ✅ | `*.jks`, `*.keystore`, `keystore.properties` tous dans `.gitignore` |
+| Keystore exclu de git | ❌ | `.gitignore` contient seulement 4 lignes (`node_modules`, `dist`, `.vscode`, `.DS_Store`). `*.jks`, `*.keystore`, `keystore.properties` **ne sont pas exclus** — risque de commit accidentel. À corriger avant de générer le keystore. |
 | SDK Android | ✅ | `minSdk=24`, `compileSdk=36`, `targetSdk=36` — à jour |
 | versionCode/versionName | ✅ | `511` / `"5.11.0"` — alignés |
 | R8/ProGuard activé | ✅ | `minifyEnabled=true`, `shrinkResources=true` en release |

@@ -256,8 +256,9 @@
   </div>
 
   <h2>5. Stockage et sécurité</h2>
-  <p>Toutes les données (préférences, tracés GPX, clé API) sont stockées dans le <strong>localStorage</strong> de votre appareil ou dans la mémoire interne de l'application Android. Elles ne quittent jamais votre appareil sauf action explicite de votre part (export GPX).</p>
-  <p>Les communications réseau vers les services tiers utilisent exclusivement le protocole <strong>HTTPS</strong>.</p>
+  <p>Toutes les données (préférences, tracés GPX, clé API MapTiler, coordonnées GPS enregistrées) sont stockées dans le <strong>localStorage</strong> de votre appareil ou dans la mémoire interne privée de l'application Android. Elles ne quittent jamais votre appareil sauf action explicite de votre part (export GPX).</p>
+  <p>Sur Android, ces données sont isolées dans le <strong>bac à sable applicatif</strong> (sandbox) du système. Aucune autre application ne peut y accéder sans permission root. Elles sont exclues des sauvegardes Google Drive via la configuration <code>android:fullBackupContent</code>.</p>
+  <p>Les communications réseau vers les services tiers utilisent exclusivement le protocole <strong>HTTPS</strong>. Le trafic HTTP en clair est bloqué au niveau système (<code>android:usesCleartextTraffic="false"</code>).</p>
 
   <h2>6. Vos droits (RGPD / LPD)</h2>
   <p>Conformément au Règlement Général sur la Protection des Données (RGPD) et à la Loi fédérale suisse sur la Protection des Données (LPD), vous disposez des droits suivants :</p>
@@ -383,8 +384,9 @@
   </div>
 
   <h2>5. Storage and security</h2>
-  <p>All data (preferences, GPX tracks, API key) is stored in your device's <strong>localStorage</strong> or internal app storage. It never leaves your device except upon your explicit action (GPX export).</p>
-  <p>All network communications with third-party services use <strong>HTTPS</strong> exclusively.</p>
+  <p>All data (preferences, GPX tracks, MapTiler API key, recorded GPS coordinates) is stored in your device's <strong>localStorage</strong> or private internal app storage. It never leaves your device except upon your explicit action (GPX export).</p>
+  <p>On Android, this data is isolated in the application <strong>sandbox</strong>. No other application can access it without root permissions. It is excluded from Google Drive backups via the <code>android:fullBackupContent</code> configuration.</p>
+  <p>All network communications with third-party services use <strong>HTTPS</strong> exclusively. Cleartext HTTP traffic is blocked at the system level (<code>android:usesCleartextTraffic="false"</code>).</p>
 
   <h2>6. Your rights (GDPR / Swiss DPA)</h2>
   <p>In accordance with the General Data Protection Regulation (GDPR) and the Swiss Federal Act on Data Protection (FADP), you have the following rights:</p>

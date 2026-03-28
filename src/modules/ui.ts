@@ -4,7 +4,7 @@ import { state, loadSettings } from './state';
 import { requestGPSDisclosure } from './gpsDisclosure';
 import { i18n } from '../i18n/I18nService';
 import { initScene, flyTo } from './scene';
-import { updateVisibleTiles, resetTerrain, loadTerrain } from './terrain';
+import { updateVisibleTiles, resetTerrain } from './terrain';
 import { updateStorageUI } from './tileLoader';
 import { lngLatToTile, lngLatToWorld, worldToLngLat } from './geo';
 import { showToast } from './utils';
@@ -27,6 +27,9 @@ import { VRAMDashboard } from './ui/components/VRAMDashboard';
 import { initAutoHide } from './ui/autoHide';
 import { initMobileUI } from './ui/mobile';
 import { sheetManager } from './ui/core/SheetManager';
+
+// Référence de l'intervalle updateStorageUI (W5) — stockée pour permettre clearInterval si besoin
+let storageUIIntervalId: ReturnType<typeof setInterval> | null = null;
 
 export function initUI(): void {
     console.log("[UI] Starting Init...");
@@ -64,7 +67,7 @@ export function initUI(): void {
     const canvasContainer = document.getElementById('canvas-container');
     if (canvasContainer) canvasContainer.addEventListener('click', handleMapClick);
 
-    setInterval(updateStorageUI, 2000);
+    storageUIIntervalId = setInterval(updateStorageUI, 2000);
 
     // Setup Screen
     const setupK1 = document.getElementById('k1') as HTMLInputElement;
@@ -85,7 +88,23 @@ export function initUI(): void {
         }
         state.MK = key;
         localStorage.setItem('maptiler_key', key);
-        setupScreen!.style.display = 'none';
+
+        // Afficher l'état de chargement immédiatement (Fix v5.11 — feedback mobile)
+        if (setupBgo) {
+            (setupBgo as HTMLButtonElement).disabled = true;
+            setupBgo.innerHTML = `<span class="spinner" style="margin-right:8px;"></span>${i18n.t('setup.loading') || 'Chargement...'}`;
+        }
+
+        // Cacher l'écran de setup une fois que le moteur 3D est prêt (render loop actif)
+        // 'suntrail:sceneReady' est dispatché par initScene() avant await loadTerrain()
+        window.addEventListener('suntrail:sceneReady', () => {
+            if (setupScreen) {
+                setupScreen.style.transition = 'opacity 0.4s ease';
+                setupScreen.style.opacity = '0';
+                setTimeout(() => { setupScreen.style.display = 'none'; }, 420);
+            }
+        }, { once: true });
+
         startApp();
     });
 
@@ -336,8 +355,8 @@ function handleMapClick(e: MouseEvent) {
 }
 
 function startApp() {
-    initScene();
-    loadTerrain();
+    initScene(); // initScene() appelle await loadTerrain() en interne — pas de double appel
+    // loadTerrain() supprimé ici (fix v5.11 — double appel inutile)
     fetchWeather(state.TARGET_LAT, state.TARGET_LON);
     
     const navBar = document.getElementById('nav-bar');
@@ -355,6 +374,14 @@ function startApp() {
 
     // Notifier les modules qui attendent que l'UI soit prête (ex: toast d'enregistrement interrompu)
     window.dispatchEvent(new Event('suntrail:uiReady'));
+}
+
+// Nettoyage des ressources UI (intervalle updateStorageUI) — W5
+export function disposeUI(): void {
+    if (storageUIIntervalId !== null) {
+        clearInterval(storageUIIntervalId);
+        storageUIIntervalId = null;
+    }
 }
 
 function onWindowResize() {

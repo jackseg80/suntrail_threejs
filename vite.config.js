@@ -5,6 +5,17 @@ export default defineConfig({
   base: './', 
   build: {
     outDir: 'dist',
+    // Three.js fait ~520kB minifié (dans son propre chunk — correct)
+    // On relève le seuil pour éviter le warning sur un chunk qu'on ne peut pas réduire
+    chunkSizeWarningLimit: 600,
+    // Strip tous les console.log/debug en production (W7 — sécurité + perf)
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
     rollupOptions: {
       output: {
         // Découpe le bundle pour un LCP optimal :
@@ -75,15 +86,14 @@ export default defineConfig({
         short_name: 'SunTrail',
         description: 'Visualisation topographique 3D',
         theme_color: '#12141c',
+        background_color: '#12141c',
+        display: 'standalone',
+        orientation: 'portrait',
         icons: [
           {
-            src: '/assets/icons/icon.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
+            // icon.png était un doublon exact de icon_1024.png (W6) — supprimé, référence unifiée
             src: '/assets/icons/icon_1024.png',
-            sizes: '512x512',
+            sizes: '192x192 512x512',
             type: 'image/png'
           }
         ]

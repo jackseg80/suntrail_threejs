@@ -3,7 +3,7 @@ import { BaseComponent } from '../core/BaseComponent';
 import { state, saveSettings } from '../../state';
 import { applyPreset } from '../../performance';
 import { resetTerrain, updateVisibleTiles, updateHydrologyVisibility } from '../../terrain';
-import { deleteTerrainCache, downloadOfflineZone } from '../../tileLoader';
+import { deleteTerrainCache, downloadOfflineZone, setPMTilesSource } from '../../tileLoader';
 import { SharedAPIKeyComponent } from './SharedAPIKeyComponent';
 import { i18n } from '../../../i18n/I18nService';
 import type { Locale } from '../../../i18n/I18nService';
@@ -104,7 +104,6 @@ export class SettingsSheet extends BaseComponent {
         pmtilesUpload?.addEventListener('change', async (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
-                const { setPMTilesSource } = await import('../../tileLoader');
                 await setPMTilesSource(file);
                 this.refreshTerrain();
             }

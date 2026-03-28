@@ -2,3 +2,8 @@ node_modules
 dist
 .vscode
 .DS_Store
+
+# Android Keystore — NE JAMAIS COMMITTER
+*.jks
+*.keystore
+android/keystore.properties

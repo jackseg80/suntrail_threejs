@@ -170,7 +170,7 @@ function renderBuildingsMapTiler(tile: Tile, features: any[]) {
                 bGeo.rotateX(-Math.PI / 2);
                 bGeo.translate(0, baseAlt + minHeight, 0);
                 geometries.push(bGeo);
-            } catch (e) {}
+            } catch (e) { console.warn('[Buildings] Geometry processing (MapTiler) failed silently:', e); }
         }
     });
 
@@ -202,7 +202,7 @@ async function fetchBuildingsWithCache(z: number, x: number, y: number, key: str
         const cache = await caches.open(CACHE_NAME);
         const cached = await cache.match(key);
         if (cached) return await cached.json();
-    } catch (e) {}
+    } catch (e) { console.warn('[Buildings] Cache read failed, proceeding without cache:', e); }
 
     const n = Math.pow(2, z);
     const w = x / n * 360 - 180;
@@ -217,7 +217,7 @@ async function fetchBuildingsWithCache(z: number, x: number, y: number, key: str
         try {
             const cache = await caches.open(CACHE_NAME);
             await cache.put(key, new Response(JSON.stringify(data.elements)));
-        } catch(e) {}
+        } catch(e) { console.warn('[Buildings] Cache write failed silently:', e); }
         return data.elements;
     }
     return null;
@@ -257,7 +257,7 @@ function renderBuildingsMerged(tile: Tile, elements: any[]) {
                 bGeo.rotateX(-Math.PI / 2);
                 bGeo.translate(0, baseAlt, 0);
                 geometries.push(bGeo);
-            } catch (e) {}
+            } catch (e) { console.warn('[Buildings] Geometry processing (Overpass) failed silently:', e); }
         }
     });
 
