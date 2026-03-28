@@ -356,7 +356,10 @@ export async function initScene(): Promise<void> {
         // Couvre tiltAnimating, isProcessingTiles, tilesFading sans throttle individuel.
         // En 2D ces conditions se stabilisent d'elles-mêmes ; en 3D elles peuvent tourner
         // indéfiniment (tilt lerp, loader de tuiles continu) → GPU actif inutilement.
-        const isIdleMode = !state.isUserInteracting && !state.isFlyingTo && (now - lastInteractionTime >= 800);
+        const isWeatherActive = state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0;
+        const isIdleMode = !state.isUserInteracting && !state.isFlyingTo
+            && !isWeatherActive
+            && (now - lastInteractionTime >= 800);
         if (isIdleMode && (now - lastRenderTime < WATER_THROTTLE_MS)) return;
         lastRenderTime = now;
 
