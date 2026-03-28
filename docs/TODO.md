@@ -151,16 +151,29 @@
   - Fixes : `role="listbox"` sur layer-grid (sélecteur JS cassé), `aria-label` sur geo-results, contraste btn-go #1555e0 (5.6:1), `.vram-label` 75% opacité (12:1), H3→H2 dans SettingsSheet.
   - Thumbnails MapTiler téléchargées localement (`public/img/maps/`) → cookie tiers supprimé.
 - [x] **Core Web Vitals** : LCP **84ms** ✅ (≤2.5s), CLS **0.03** ✅ (≤0.1), INP N/A (pas d'interaction).
-- [ ] **Memory Leak Audit** : 📱 Protocole ci-dessous — Phase A (Android Studio) + Phase C (PerfRecorder).
-- [ ] **Battery Test** : 📱 Protocole ci-dessous — Phase A (adb batterystats). **Objectif : ≤ 15%/h** → décide si Phase 3 render-on-demand nécessaire.
+- [x] **Memory Leak Audit** : ✅ Validé S23 — pas de fuite idle (courbe plate Live Telemetry), GC actif (675→506 textures), RAM stable après 3 min. Voir `docs/PROFILING_RESULTS.md`.
+- [x] **Battery Test S23 (Performance)** : ✅ Deep Sleep fps=0 validé. CPU idle 0%. Drain pire cas ~18%/h (écran allumé en continu, preset High) → usage rando réel estimé 3-5%/h (écran éteint 80% du temps). Non-bloquant Play Store.
+- [x] **Fix controls.update() stuck** : ✅ Guard temporel 800ms dans `needsUpdate` + `tiltAnimating` extrait du bloc tilt. `controls.update()` toujours appelé (damping physique), résultat ignoré après 800ms.
+- [x] **Fix idle throttle global 20fps** : ✅ Guard `isIdleMode` dans `renderLoopFn` — si pas d'interaction depuis 800ms, render limité à 20fps. Couvre tiltAnimating + isProcessingTiles + tilesFading. Résout 45-48fps GPU en idle sur Android.
+- [x] **Loading indicator 1er démarrage** : ✅ `#map-loading-overlay` dans `index.html` — affiché après setup-screen, caché quand `isProcessingTiles → false` (1ères tuiles). Fallback 2s (cache chaud) + timeout 15s (réseau lent).
+- [ ] **⚠️ Throttle météo adaptatif** : Régression — le throttle idle 20fps s'applique aussi quand la pluie/neige est active → particules saccadées (effet "diapositive"). La météo nécessite 30-60fps pour être fluide. **Solution envisagée** : exclure `isWeatherActive` du throttle idle (ou throttle adaptatif : 20fps idle pur, 30fps météo, 60fps interaction). À implémenter avant publication.
+- [ ] **Test Galaxy A54** : 📱 Appareil mid-range disponible (Exynos 1380) → preset Balanced (STD) auto-détecté. **Valider** : FPS idle (~20fps en idle, plein régime en interaction), drain batterie Balanced, Memory Native en Live Telemetry. C'est l'appareil cible de la majorité des utilisateurs.
 
 > ### 📱 Protocole Profiling SunTrail — 3 phases simultanées
 >
 > **Pourquoi 3 phases ?** Three.js tourne dans la WebView. Android Studio s'arrête à la frontière WebView pour la logique JS/WebGL. Il faut combiner les outils.
 >
+> | Phase | Faisable sur PC ? | Faisable sur Android ? | Décisive pour Play Store |
+> |-------|:-----------------:|:---------------------:|:------------------------:|
+> | **A** — Batterie + RAM native | ❌ Non | ✅ Oui | ✅ Oui (bloquante) |
+> | **B** — Flame chart JS | ⚠️ Smoke test (localhost) | ✅ Oui (`chrome://inspect`) | ⚠️ Partielle |
+> | **C** — PerfRecorder | ✅ Smoke test (vérifie l'outil) | ✅ Données réelles | ⚠️ Partielle |
+>
+> > **Sur PC** : Phase C permet de vérifier que le PerfRecorder fonctionne et que le throttle eau/météo est observable. Phase B sur localhost confirme les *fréquences* (toutes les 50ms) mais pas les *timings absolus* (GPU PC ≫ GPU mobile). **La Phase A est irremplaçable sur Android — c'est elle qui décide.**
+>
 > ---
 >
-> #### Phase A — Android Studio Live Telemetry (batterie + RAM native)
+> #### Phase A — Android Studio Live Telemetry (batterie + RAM native) 📱 ANDROID UNIQUEMENT
 >
 > > ⚠️ Android Studio NE voit PAS les objets Three.js (VRAM textures/géométries) — ils sont en mémoire native GPU. Utiliser Phase C pour ça.
 >
@@ -179,9 +192,12 @@
 >
 > ---
 >
-> #### Phase B — Chrome DevTools Performance (JS frame budget)
+> #### Phase B — Chrome DevTools Performance (JS frame budget) ⚠️ ANDROID PRÉFÉRABLE
 >
-> > Chrome DevTools franchit la frontière WebView — le seul outil qui voit le code Three.js.
+> > Chrome DevTools franchit la frontière WebView — le seul outil qui voit le code Three.js en contexte mobile réel.
+> >
+> > Sur **Android** : `chrome://inspect` → sélectionne le process SunTrail → Inspect (timings réels GPU mobile).
+> > Sur **PC** (smoke test) : ouvrir directement `localhost:5173` dans Chrome → Performance Record. Les *fréquences* de throttle (50ms) sont vérifiables, mais les timings absolus (ms/frame) ne sont pas représentatifs.
 >
 > 1. Sur PC, ouvre `chrome://inspect` → sélectionne le process SunTrail → **Inspect**.
 > 2. Onglet **Performance** → ⏺ Record → pan/zoom 10 sec → ⏹ Stop.
@@ -197,6 +213,8 @@
 > #### Phase C — PerfRecorder intégré (corrélation fps ↔ VRAM ↔ tiles) ← **COMMENCER ICI**
 >
 > > C'est le plus précis pour SunTrail car il voit les données internes du moteur (drawCalls, textures, isProcessingTiles).
+> >
+> > ✅ **Peut se faire sur PC** comme smoke test préliminaire : vérifie que le PerfRecorder fonctionne, que le throttle eau/météo est observable et que les métriques sont cohérentes. Reprendre sur Android pour les données décisives (VRAM réelle GPU mobile).
 >
 > 1. Dans SunTrail → **Réglages avancés** → toggle **"Stats de performance"** → le panel VRAM apparaît.
 > 2. Clique **⏺** dans le panel VRAM → l'enregistrement démarre (buffer 600 samples × 500ms = 5 min max).
@@ -355,9 +373,33 @@ Voir docs/TODO.md section "Protocole Profiling v5.11" pour le détail.
 App sur appareil physique Android connecté en USB (débogage activé).
 ```
 
+#### Que peut-on faire sur PC vs Android ?
+
+| Phase | PC (localhost) | Android (physique) | Valeur |
+|-------|:--------------:|:------------------:|--------|
+| **C** PerfRecorder | ✅ Smoke test | ✅ Données réelles | Sur PC : vérifie que le throttle eau/météo est observable (fréquences). Sur Android : VRAM réelle GPU mobile. |
+| **B** Flame chart | ⚠️ Fréquences OK, timings non représentatifs | ✅ Timings réels | Sur PC : confirme que `updateWeatherSystem` apparaît bien toutes les 50ms. |
+| **A** Batterie + RAM native | ❌ Impossible | ✅ Seul appareil valide | **Irremplaçable — décide du Sprint 7 vs v5.12.** |
+
 #### Rappel du protocole (3 phases simultanées) :
 
-**Phase A — Android Studio Live Telemetry** (batterie + RAM native)
+**Phase C — PerfRecorder intégré** ← **COMMENCER ICI (possible sur PC)**
+1. Réglages avancés → **Stats de performance** → panel VRAM s'affiche
+2. Cliquer **⏺** → enregistrement démarre (buffer 600 samples, 5 min)
+3. Scénario : 1 min navigation | 1 min immobile | 1 min import GPX | 1 min hydrologie | 1 min écran verrouillé
+4. Cliquer **⏹** → JSON dans presse-papier
+5. **Coller le JSON dans le chat** → l'agent analyse (corrélation fps/textures/isProcessingTiles)
+> Sur PC : vérifier que `fps` baisse en immobile (throttle), que `isProcessingTiles` pulse lors du GPX, que `fps` → 0 sur verrouillage.
+> Sur Android : mêmes vérifications + valeurs VRAM/drawCalls représentatives du hardware cible.
+
+**Phase B — Chrome DevTools Performance** (`chrome://inspect` sur Android, ou `localhost:5173` sur PC)
+- Record → pan/zoom 10s → Stop → analyser flame chart
+- `renderLoopFn` < 16ms (60fps) ou < 33ms (30fps ENERGY_SAVER)
+- `updateWeatherSystem` toutes les ~50ms (throttle Phase 2 actif)
+- Frames rouges → jank → noter la fonction responsable
+> Sur PC : les timings absolus ne sont pas représentatifs (RTX 4080 ≫ GPU mobile) mais les *fréquences* du throttle sont vérifiables.
+
+**Phase A — Android Studio Live Telemetry** (batterie + RAM native) 📱 ANDROID UNIQUEMENT
 - Ouvrir Live Telemetry (🟠)
 - `adb shell dumpsys batterystats --reset` avant le test
 - Preset **Balanced** (auto-détecté), GPS actif, navigation 10-15 min
@@ -365,22 +407,9 @@ App sur appareil physique Android connecté en USB (débogage activé).
 - `adb shell dumpsys batterystats` → chercher `Estimated power use`
 - **Objectif : ≤ 15%/heure**
 
-**Phase B — Chrome DevTools Performance** (`chrome://inspect`)
-- Record → pan/zoom 10s → Stop → analyser flame chart
-- `renderLoopFn` < 16ms (60fps) ou < 33ms (30fps ENERGY_SAVER)
-- `updateWeatherSystem` toutes les ~50ms (throttle Phase 2 actif)
-- Frames rouges → jank → noter la fonction responsable
-
-**Phase C — PerfRecorder intégré** ← **COMMENCER ICI**
-1. Réglages avancés → **Stats de performance** → panel VRAM s'affiche
-2. Cliquer **⏺** → enregistrement démarre (buffer 600 samples, 5 min)
-3. Scénario : 1 min navigation | 1 min immobile | 1 min import GPX | 1 min hydrologie | 1 min écran verrouillé
-4. Cliquer **⏹** → JSON dans presse-papier
-5. **Coller le JSON dans le chat** → l'agent analyse (corrélation fps/textures/isProcessingTiles)
-
-- [ ] **Phase C** : Lancer le PerfRecorder, coller le JSON pour analyse
-- [ ] **Phase A** : Mesurer le drain batterie (≤ 15%/h ?)
+- [ ] **Phase C** : Lancer le PerfRecorder (PC ou Android), coller le JSON pour analyse
 - [ ] **Phase B** : Chrome DevTools flame chart — valider throttle eau/météo
+- [ ] **Phase A** : Mesurer le drain batterie sur Android (≤ 15%/h ?)
 - [ ] **Décision** : Passer au Sprint 7 ou implémenter Phase 3
 
 ---

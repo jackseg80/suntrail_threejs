@@ -950,6 +950,25 @@ body.mode-2d #click-alt          { display: none; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* Overlay chargement carte — visible après setup-screen, caché à la 1ère tuile */
+#map-loading-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: var(--bg);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    opacity: 1;
+    transition: opacity var(--transition-normal);
+}
+#map-loading-overlay.visible { display: flex; }
+#map-loading-overlay.fade-out { opacity: 0; pointer-events: none; }
+.map-loading-spinner { width: 28px; height: 28px; border-width: 3px; }
+.map-loading-text { font-size: var(--text-sm); color: var(--text-2); letter-spacing: 0.5px; }
+
 .loading-inline {
     display: flex; align-items: center; gap: var(--space-2);
     padding: var(--space-3) var(--space-4);

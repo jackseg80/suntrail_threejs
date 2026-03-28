@@ -159,6 +159,7 @@ export async function initScene(): Promise<void> {
     });
     controls.addEventListener('end', () => {
         state.isUserInteracting = false;
+        lastInteractionTime = performance.now();
         // Phase 2.3 — Restaurer le DPR complet 200ms après la fin du geste (full quality sur frame fixe)
         if (isMobileDevice && state.renderer) {
             dprRestoreTimer = setTimeout(() => {
@@ -187,7 +188,7 @@ export async function initScene(): Promise<void> {
         controls,
         state.renderer.domElement,
         () => { state.isUserInteracting = true; },
-        () => { state.isUserInteracting = false; }
+        () => { state.isUserInteracting = false; lastInteractionTime = performance.now(); }
     );
 
     let lastRecenterTime = 0;
@@ -324,6 +325,9 @@ export async function initScene(): Promise<void> {
 
     let needsInitialRender = 60; 
     let tilesFading = true;
+    // Fix controls.update() stuck sur WebView Android : timestamp de fin du dernier geste
+    // controls.update() retourne true indéfiniment sur WebView → guard 800ms après relâchement
+    let lastInteractionTime = 0;
 
     // Compteur FPS rolling (fenêtre 1s) — exposé dans state.currentFPS pour le PerfRecorder
     let fpsFrameCount = 0;
@@ -348,6 +352,12 @@ export async function initScene(): Promise<void> {
         const now = performance.now();
         const delta = clock.getDelta();
         if (state.ENERGY_SAVER && (now - lastRenderTime < 33)) return;
+        // Idle throttle global — 20fps max quand aucune interaction active depuis 800ms.
+        // Couvre tiltAnimating, isProcessingTiles, tilesFading sans throttle individuel.
+        // En 2D ces conditions se stabilisent d'elles-mêmes ; en 3D elles peuvent tourner
+        // indéfiniment (tilt lerp, loader de tuiles continu) → GPU actif inutilement.
+        const isIdleMode = !state.isUserInteracting && !state.isFlyingTo && (now - lastInteractionTime >= 800);
+        if (isIdleMode && (now - lastRenderTime < WATER_THROTTLE_MS)) return;
         lastRenderTime = now;
 
         // Phase 2.1 — Accumulateur eau : uTime incrémenté à 20 FPS max
@@ -378,6 +388,9 @@ export async function initScene(): Promise<void> {
         const currentTilt = state.controls.getPolarAngle();
         const distToTarget = state.camera.position.distanceTo(state.controls.target);
         
+        // Tilt automatique parabolique — extrait en variable pour alimenter needsUpdate
+        // sans passer par controls.update() (évite le stuck sur WebView Android)
+        let tiltAnimating = false;
         if (state.IS_2D_MODE || state.ZOOM <= 10) {
             state.controls.minPolarAngle = 0; state.controls.maxPolarAngle = 0;
         } else if (interacting) {
@@ -386,7 +399,8 @@ export async function initScene(): Promise<void> {
             const hFactor = THREE.MathUtils.clamp((distToTarget - 2000) / 100000, 0, 1);
             let desiredTilt = THREE.MathUtils.lerp(tiltCap * 0.95, 0.05, Math.pow(hFactor, 0.4));
             if (state.ZOOM <= 11) desiredTilt = Math.min(desiredTilt, tiltCap * 0.9);
-            if (Math.abs(currentTilt - desiredTilt) > 0.01) {
+            if (Math.abs(currentTilt - desiredTilt) > 0.005) {
+                tiltAnimating = true;
                 const newTilt = THREE.MathUtils.lerp(currentTilt, desiredTilt, 0.02);
                 state.controls.minPolarAngle = Math.max(0.05, newTilt - 0.2); 
                 state.controls.maxPolarAngle = Math.min(tiltCap, newTilt + 0.2);
@@ -396,8 +410,15 @@ export async function initScene(): Promise<void> {
         // Phase 2.1/2.2 — needsUpdate utilise les flags throttlés pour eau et météo :
         // - eau   : force un rendu SEULEMENT quand il est temps de mettre à jour uTime (20 FPS max)
         // - météo : idem — les particules n'ont pas besoin de 60 FPS
-        // Les autres sources (interaction, soleil, tuiles) conservent leur comportement actuel.
-        const needsUpdate = state.controls.update()
+        // Fix controls.update() stuck (WebView Android) :
+        // - controls.update() est toujours appelé (damping physique), mais son résultat
+        //   n'est pris en compte que pendant 800ms après la fin du geste (couvre le damping
+        //   factor=0.1 à 60fps = ~330ms) + pendant flyTo.
+        // - tiltAnimating est une source propre, indépendante de controls.update().
+        const controlsDirty = state.controls.update();
+        const needsUpdate =
+            (controlsDirty && (state.isUserInteracting || state.isFlyingTo || (now - lastInteractionTime < 800)))
+            || tiltAnimating
             || (state.SHOW_HYDROLOGY && waterFrameDue)
             || state.isSunAnimating
             || state.isInteractingWithUI

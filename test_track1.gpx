@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="SunTrail Test">
+  <trk>
+    <name>Test Trail 1 - Lausanne</name>
+    <trkseg>
+      <trkpt lat="46.5197" lon="6.6323"><ele>500</ele></trkpt>
+      <trkpt lat="46.5210" lon="6.6340"><ele>520</ele></trkpt>
+      <trkpt lat="46.5225" lon="6.6360"><ele>545</ele></trkpt>
+      <trkpt lat="46.5240" lon="6.6380"><ele>560</ele></trkpt>
+      <trkpt lat="46.5255" lon="6.6400"><ele>540</ele></trkpt>
+      <trkpt lat="46.5270" lon="6.6420"><ele>525</ele></trkpt>
+      <trkpt lat="46.5285" lon="6.6440"><ele>510</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

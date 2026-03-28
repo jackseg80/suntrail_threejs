@@ -103,6 +103,29 @@ export function initUI(): void {
                 setupScreen.style.opacity = '0';
                 setTimeout(() => { setupScreen.style.display = 'none'; }, 420);
             }
+
+            // Afficher l'overlay de chargement carte jusqu'aux 1ères tuiles
+            // — résout le canvas vide au 1er démarrage Android sans cache
+            const mapOverlay = document.getElementById('map-loading-overlay');
+            if (mapOverlay) {
+                mapOverlay.classList.add('visible');
+                let tilesStarted = false;
+
+                const hideOverlay = () => {
+                    mapOverlay.classList.add('fade-out');
+                    setTimeout(() => { mapOverlay.style.display = 'none'; }, 300);
+                };
+
+                const unsub = state.subscribe('isProcessingTiles', (processing: boolean) => {
+                    if (processing) tilesStarted = true;
+                    if (!processing && tilesStarted) { hideOverlay(); unsub(); }
+                });
+
+                // Fallback 1 : si les tuiles ne démarrent jamais (cache chaud → 0 tiles à charger)
+                setTimeout(() => { if (!tilesStarted) { hideOverlay(); unsub(); } }, 2000);
+                // Fallback 2 : timeout max réseau lent ou hors-ligne
+                setTimeout(() => { if (mapOverlay.classList.contains('visible')) hideOverlay(); }, 15000);
+            }
         }, { once: true });
 
         startApp();
