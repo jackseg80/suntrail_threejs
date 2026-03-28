@@ -42,7 +42,9 @@ async function processLoadQueue() {
             return da - db;
         });
 
-        const batch = sorted.slice(0, 4);
+        // Utilise state.MAX_BUILDS_PER_CYCLE (réglé par preset + caps mobiles v5.11)
+        // Valeur hardcodée supprimée — le preset contrôle maintenant le débit réel
+        const batch = sorted.slice(0, Math.max(1, state.MAX_BUILDS_PER_CYCLE));
         batch.forEach(t => loadQueue.delete(t));
 
         await Promise.all(batch.map(async (tile) => {

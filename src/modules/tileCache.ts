@@ -19,13 +19,20 @@ export interface CachedTileData {
 const dataCache = new Map<string, CachedTileData>();
 
 /**
- * Calcule la taille maximale du cache en fonction du preset de performance.
+ * Taille max du cache alignée sur le RANGE effectif de chaque tier (v5.11).
+ *
+ * Calcul : RANGE N → tuiles actives max = (2N+1)² ≈ couvrir 1.5× pour smooth scrolling
+ *   performance (RANGE=5) → 121 tuiles → cache ~180
+ *   balanced    (RANGE=4) → 81 tuiles  → cache ~120
+ *   ultra mobile (RANGE=8) → 289 tuiles → cache ~350
+ *   ultra desktop (RANGE=12) → 625 tuiles → cache 800
  */
 function getMaxCacheSize(): number {
-    if (state.PERFORMANCE_PRESET === 'ultra') return 800;
-    if (state.PERFORMANCE_PRESET === 'performance') return 400;
-    if (state.PERFORMANCE_PRESET === 'balanced') return isMobileDevice() ? 150 : 300;
-    return 80; // Minimum augmenté pour éviter les purges trop agressives
+    const mobile = isMobileDevice();
+    if (state.PERFORMANCE_PRESET === 'ultra')       return mobile ? 350 : 800;
+    if (state.PERFORMANCE_PRESET === 'performance') return mobile ? 180 : 400;
+    if (state.PERFORMANCE_PRESET === 'balanced')    return mobile ? 120 : 300;
+    return 60; // eco
 }
 
 /**
@@ -67,6 +74,27 @@ export function getFromCache(key: string): CachedTileData | null {
     dataCache.delete(key);
     dataCache.set(key, data);
     return data;
+}
+
+/**
+ * Élague le cache jusqu'à sa taille maximale actuelle (éviction FIFO des plus anciens).
+ * À appeler après un changement de preset ou après l'application des caps mobiles,
+ * pour libérer immédiatement la VRAM excédentaire sans attendre les prochains addToCache().
+ */
+export function trimCache(): void {
+    const maxSize = getMaxCacheSize();
+    while (dataCache.size > maxSize) {
+        const oldestKey = dataCache.keys().next().value;
+        if (!oldestKey) break;
+        const entry = dataCache.get(oldestKey);
+        if (entry) {
+            entry.elev.dispose();
+            entry.color.dispose();
+            if (entry.overlay) entry.overlay.dispose();
+            if (entry.normal) entry.normal.dispose();
+        }
+        dataCache.delete(oldestKey);
+    }
 }
 
 /**

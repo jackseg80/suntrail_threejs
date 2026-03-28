@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { state } from './state';
-import { addToCache, getFromCache, disposeAllCachedTiles, getCacheSize, hasInCache } from './tileCache';
+import { addToCache, getFromCache, disposeAllCachedTiles, getCacheSize, hasInCache, trimCache } from './tileCache';
 
 // Mock de utils pour isMobileDevice
 vi.mock('./utils', () => ({
@@ -32,16 +32,16 @@ describe('tileCache.ts', () => {
     });
 
     it('should respect maximum cache size (FIFO)', () => {
-        // En mode eco, la taille est 80.
+        // En mode eco, la taille est 60 (v5.11 : réduit de 80 → 60).
         state.PERFORMANCE_PRESET = 'eco';
         
-        for (let i = 0; i < 90; i++) {
+        for (let i = 0; i < 70; i++) {
             addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, new THREE.Texture());
         }
 
-        expect(getCacheSize()).toBe(80);
+        expect(getCacheSize()).toBe(60);
         expect(hasInCache('key_0')).toBe(false); // Le premier a dû être supprimé
-        expect(hasInCache('key_89')).toBe(true); // Le dernier doit être là
+        expect(hasInCache('key_69')).toBe(true); // Le dernier doit être là
     });
 
     it('should dispose textures when cleared', () => {
@@ -58,18 +58,44 @@ describe('tileCache.ts', () => {
         expect(getCacheSize()).toBe(0);
     });
 
+    it('trimCache() réduit le cache à la taille max du preset actuel', () => {
+        state.PERFORMANCE_PRESET = 'eco'; // max = 60
+        // Remplir au-delà via état précédent (simuler changement de preset)
+        state.PERFORMANCE_PRESET = 'performance'; // max = 400 (desktop)
+        for (let i = 0; i < 100; i++) {
+            addToCache(`perf_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
+        }
+        expect(getCacheSize()).toBe(100);
+
+        // Changer vers eco : max devient 60, trim doit purger les 40 plus anciens
+        state.PERFORMANCE_PRESET = 'eco';
+        trimCache();
+        expect(getCacheSize()).toBe(60);
+        expect(hasInCache('perf_0')).toBe(false);  // évincés
+        expect(hasInCache('perf_99')).toBe(true);  // conservés
+    });
+
+    it('trimCache() ne fait rien si cache déjà dans la limite', () => {
+        state.PERFORMANCE_PRESET = 'eco'; // max = 60
+        for (let i = 0; i < 30; i++) {
+            addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
+        }
+        trimCache();
+        expect(getCacheSize()).toBe(30); // pas de changement
+    });
+
     it('should move accessed item to the end of FIFO queue', () => {
-        state.PERFORMANCE_PRESET = 'eco'; // Taille 80
+        state.PERFORMANCE_PRESET = 'eco'; // Taille 60 (v5.11)
         
-        // Remplir 80 items
-        for (let i = 0; i < 80; i++) {
+        // Remplir 60 items
+        for (let i = 0; i < 60; i++) {
             addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, new THREE.Texture());
         }
         
         // Accéder au premier item (key_0) pour le "rafraîchir"
         getFromCache('key_0');
         
-        // Ajouter un 81ème item
+        // Ajouter un 61ème item
         addToCache('key_new', new THREE.Texture(), null, new THREE.Texture(), null, new THREE.Texture());
         
         // key_1 devrait être supprimé au lieu de key_0
