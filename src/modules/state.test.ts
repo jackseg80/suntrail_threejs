@@ -29,25 +29,32 @@ describe('state.ts', () => {
     });
 
     describe('PRESETS', () => {
-        it('should have an ultra preset with high range and resolution', () => {
+        it('ultra — PC bureau / Snapdragon Elite : pleine qualité', () => {
             expect(PRESETS.ultra.RANGE).toBe(12);
             expect(PRESETS.ultra.RESOLUTION).toBe(256);
+            expect(PRESETS.ultra.SHADOW_RES).toBe(4096);
             expect(PRESETS.ultra.VEGETATION_DENSITY).toBe(8000);
         });
 
-        it('should have an eco preset with disabled details', () => {
+        it('eco — vieux mobile : désactiver tous les détails', () => {
             expect(PRESETS.eco.SHOW_VEGETATION).toBe(false);
             expect(PRESETS.eco.SHOW_BUILDINGS).toBe(false);
             expect(PRESETS.eco.RANGE).toBe(3);
+            expect(PRESETS.eco.MAX_ALLOWED_ZOOM).toBe(14);
         });
 
-        it('should have a balanced preset with 64 resolution', () => {
-            expect(PRESETS.balanced.RESOLUTION).toBe(64);
+        it('balanced (STD) — Galaxy A53 : valeurs recalibrées v5.11', () => {
+            expect(PRESETS.balanced.RESOLUTION).toBe(32);          // ← 64 → 32
+            expect(PRESETS.balanced.VEGETATION_DENSITY).toBe(500); // ← 2000 → 500
+            expect(PRESETS.balanced.WEATHER_DENSITY).toBe(1000);   // ← 2000 → 1000
         });
 
-        it('should have a performance preset with 160 resolution', () => {
+        it('performance (High) — Galaxy S23 : valeurs baked-in sans caps', () => {
             expect(PRESETS.performance.RESOLUTION).toBe(160);
-            expect(PRESETS.performance.RANGE).toBe(8);
+            expect(PRESETS.performance.RANGE).toBe(5);             // ← 8 → 5 baked-in
+            expect(PRESETS.performance.SHADOW_RES).toBe(1024);     // ← 2048 → 1024 baked-in
+            expect(PRESETS.performance.MAX_BUILDS_PER_CYCLE).toBe(2); // ← 4 → 2 baked-in
+            expect(PRESETS.performance.MAX_ALLOWED_ZOOM).toBe(18);
         });
     });
 

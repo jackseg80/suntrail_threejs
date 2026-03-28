@@ -50,35 +50,59 @@ export interface PerformanceSettings {
     SHOW_SLOPES: boolean;
 }
 
+// Presets calibrés pour les tiers du marché mobile (v5.11) :
+// eco         = vieux mobile (Mali-G52, Adreno 5xx, Intel HD 4xx)
+// balanced    = mid-range 2021-2022 (Galaxy A53 / Mali-G68, Intel HD 6xx)
+// performance = flagship mobile (Galaxy S23 / Adreno 740) + mid PC (GTX 1050, RX 470)
+// ultra       = PC bureau / Snapdragon Elite (Adreno 830+) / Apple M
+//
+// Principe : les valeurs de chaque tier sont directes, sans surcharge ("caps").
+// Seul Ultra conserve des ajustements mobiles dans applyPreset() car ses valeurs
+// sont calibrées pour PC et doivent être légèrement réduites sur Snapdragon Elite.
 export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings> = {
+    // ── ECO — Appareils anciens ou très limités ───────────────────────────────
     eco: {
         RESOLUTION: 2, RANGE: 3, SHADOWS: false, SHADOW_RES: 128, PIXEL_RATIO_LIMIT: 1.0,
         SHOW_VEGETATION: false, SHOW_SIGNPOSTS: false, SHOW_BUILDINGS: false, SHOW_HYDROLOGY: false, BUILDINGS_SHADOWS: false,
-        MAX_ALLOWED_ZOOM: 15, VEGETATION_DENSITY: 0, BUILDING_LIMIT: 0, POI_ZOOM_THRESHOLD: 16, BUILDING_ZOOM_THRESHOLD: 17,
+        MAX_ALLOWED_ZOOM: 14, VEGETATION_DENSITY: 0, BUILDING_LIMIT: 0, POI_ZOOM_THRESHOLD: 16, BUILDING_ZOOM_THRESHOLD: 17,
         MAX_BUILDS_PER_CYCLE: 1, LOAD_DELAY_FACTOR: 2.0, SHOW_WEATHER: false, WEATHER_DENSITY: 0, WEATHER_SPEED: 1.0,
         FOG_FAR: 25000, SHOW_SLOPES: false
     },
+    // ── STD / Balanced — Mid-range 2021-2022 (Galaxy A53, Intel HD 620) ──────
     balanced: {
-        RESOLUTION: 64, RANGE: 4, SHADOWS: true, SHADOW_RES: 256, PIXEL_RATIO_LIMIT: 1.0,
+        RESOLUTION: 32,          // ← 64 → 32 : A53 confortable à LOD14 à 30fps
+        RANGE: 4,
+        SHADOWS: true, SHADOW_RES: 256, PIXEL_RATIO_LIMIT: 1.0,
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: false, BUILDINGS_SHADOWS: false,
-        MAX_ALLOWED_ZOOM: 16, VEGETATION_DENSITY: 2000, BUILDING_LIMIT: 40, POI_ZOOM_THRESHOLD: 15, BUILDING_ZOOM_THRESHOLD: 16,
-        MAX_BUILDS_PER_CYCLE: 2, LOAD_DELAY_FACTOR: 1.2, SHOW_WEATHER: true, WEATHER_DENSITY: 2000, WEATHER_SPEED: 1.0,
-        FOG_FAR: 40000, SHOW_SLOPES: false
+        MAX_ALLOWED_ZOOM: 16,
+        VEGETATION_DENSITY: 500, // ← 2000 → 500 : végétation légère, castShadow désactivé Phase 2
+        BUILDING_LIMIT: 40, POI_ZOOM_THRESHOLD: 15, BUILDING_ZOOM_THRESHOLD: 16,
+        MAX_BUILDS_PER_CYCLE: 2, LOAD_DELAY_FACTOR: 1.2,
+        SHOW_WEATHER: true, WEATHER_DENSITY: 1000, // ← 2000 → 1000
+        WEATHER_SPEED: 1.0, FOG_FAR: 40000, SHOW_SLOPES: false
     },
+    // ── High / Performance — Galaxy S23 (Adreno 740) + GTX 1050 / RX 470 ────
     performance: {
-        RESOLUTION: 160, RANGE: 8, SHADOWS: true, SHADOW_RES: 2048, PIXEL_RATIO_LIMIT: 1.5,
+        RESOLUTION: 160,
+        RANGE: 5,                // ← 8 → 5 : baked-in (supprime le besoin du cap mobile)
+        SHADOWS: true,
+        SHADOW_RES: 1024,        // ← 2048 → 1024 : baked-in (S23 + PC mid-range)
+        PIXEL_RATIO_LIMIT: 1.5,
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: true, BUILDINGS_SHADOWS: true,
-        MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 8000, BUILDING_LIMIT: 80, POI_ZOOM_THRESHOLD: 14, BUILDING_ZOOM_THRESHOLD: 15,
-        MAX_BUILDS_PER_CYCLE: 4, LOAD_DELAY_FACTOR: 0.5, SHOW_WEATHER: true, WEATHER_DENSITY: 5000, WEATHER_SPEED: 1.2,
-        FOG_FAR: 60000, SHOW_SLOPES: false
+        MAX_ALLOWED_ZOOM: 18,
+        VEGETATION_DENSITY: 8000, BUILDING_LIMIT: 80, POI_ZOOM_THRESHOLD: 14, BUILDING_ZOOM_THRESHOLD: 15,
+        MAX_BUILDS_PER_CYCLE: 2, // ← 4 → 2 : baked-in (étalement uploads GPU)
+        LOAD_DELAY_FACTOR: 0.5,
+        SHOW_WEATHER: true, WEATHER_DENSITY: 5000, WEATHER_SPEED: 1.2, FOG_FAR: 60000, SHOW_SLOPES: false
     },
+    // ── Ultra — PC bureau / RTX / Apple M / Snapdragon Elite ─────────────────
     ultra: {
         get PIXEL_RATIO_LIMIT() { return typeof window !== 'undefined' ? window.devicePixelRatio : 1; },
         RESOLUTION: 256, RANGE: 12, SHADOWS: true, SHADOW_RES: 4096,
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: true, BUILDINGS_SHADOWS: true,
         MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 8000, BUILDING_LIMIT: 150, POI_ZOOM_THRESHOLD: 14, BUILDING_ZOOM_THRESHOLD: 15,
-        MAX_BUILDS_PER_CYCLE: 8, LOAD_DELAY_FACTOR: 0.2, SHOW_WEATHER: true, WEATHER_DENSITY: 15000, WEATHER_SPEED: 1.5,
-        FOG_FAR: 100000, SHOW_SLOPES: false
+        MAX_BUILDS_PER_CYCLE: 8, LOAD_DELAY_FACTOR: 0.2,
+        SHOW_WEATHER: true, WEATHER_DENSITY: 15000, WEATHER_SPEED: 1.5, FOG_FAR: 100000, SHOW_SLOPES: false
     } as PerformanceSettings
 };
 
@@ -203,6 +227,7 @@ export interface State {
     isInteractingWithUI: boolean;
     isUserInteracting: boolean;
     isProcessingTiles: boolean;
+    currentFPS: number;
     lastUIInteraction: number;
     lastClickedCoords: { x: number; z: number; alt: number };
     hasLastClicked: boolean;
@@ -255,7 +280,7 @@ const initialState: State = {
 
     IS_OFFLINE: false,
     isMapTilerDisabled: false,
-    networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isUserInteracting: false, isProcessingTiles: false, lastUIInteraction: Date.now(),
+    networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isUserInteracting: false, isProcessingTiles: false, currentFPS: 0, lastUIInteraction: Date.now(),
     lastClickedCoords: { x: 0, z: 0, alt: 0 },
     hasLastClicked: false,
     isFlying: false

@@ -2,6 +2,7 @@ import { state, PRESETS, PresetType, saveSettings } from './state';
 import { showToast } from './utils';
 import { updateShadowMapResolution } from './sun';
 import { resetTerrain, updateVisibleTiles } from './terrain';
+import { trimCache } from './tileCache';
 import { i18n } from '../i18n/I18nService';
 
 /**
@@ -35,33 +36,86 @@ export function getGpuInfo(): { renderer: string, vendor: string } {
 }
 
 /**
- * Détecte le meilleur preset en fonction du matériel
+ * Détecte le meilleur preset selon le GPU et la plateforme (v5.11).
+ *
+ * Tiers GPU → Preset :
+ *   ultra       : PC haut de gamme (RTX, RX 6000+, GTX 1060+), Apple M, Snapdragon Elite (Adreno 830)
+ *   performance : Flagship mobile (Adreno 740/750), mid-range PC (GTX 1050, RX 480), Apple A-series, Mali-G78
+ *   balanced    : Mid-range 2020-2022 (Adreno 6xx, Mali-G68/G76, Intel HD 6xx, Iris, AMD Vega iGPU)
+ *   eco         : Tout le reste (vieux mobile, Intel HD 4xx/5xx, GPU inconnu)
+ *
+ * Fallback inconnu : CPU ≥8 cores → balanced, sinon eco.
  */
 export function detectBestPreset(): PresetType {
     const gpu = getGpuInfo().renderer.toLowerCase();
-    
-    if (gpu.includes('rtx') || gpu.includes('apple m')) return 'ultra';
-    if (gpu.includes('adreno') && (gpu.includes('750') || gpu.includes('800') || gpu.includes('elite'))) {
-        return 'ultra';
-    }
-    
-    if (gpu.includes('gtx') || gpu.includes('radeon') || (gpu.includes('adreno') && (gpu.includes('730') || gpu.includes('740')))) {
-        return 'performance';
-    }
-    
-    if (gpu.includes('adreno')) {
-        state.ENERGY_SAVER = true;
-        return 'balanced';
-    }
-    if (gpu.includes('mali')) {
-        state.ENERGY_SAVER = true;
-        // Le Galaxy A53 a un GPU Mali-G68. Si on a assez de coeurs CPU, on passe en STD (Balanced)
-        if ((navigator.hardwareConcurrency || 0) >= 8) return 'balanced';
-        return 'eco';
-    }
-    
-    // Par défaut, profil mobile standard = éco + battery saver
-    state.ENERGY_SAVER = true;
+
+    // ── Tier ULTRA ─────────────────────────────────────────────────────────────
+    // PC haut de gamme, Apple M, Snapdragon Elite
+
+    // Snapdragon 8 Elite → Adreno 830+
+    if (gpu.includes('adreno') && /83[0-9]/.test(gpu)) return 'ultra';
+    // Apple M1/M2/M3/M4 (MacBook, iPad Pro M)
+    if (gpu.includes('apple m'))                        return 'ultra';
+    // NVIDIA RTX (toutes générations)
+    if (gpu.includes('rtx'))                            return 'ultra';
+    // Intel Arc (A-series discret)
+    if (gpu.includes('arc a'))                          return 'ultra';
+    // AMD RX RDNA (RX 5000 / 6000 / 7000)
+    if (/radeon rx [5-9]\d{3}/.test(gpu))              return 'ultra';
+    // AMD RX Polaris haute (RX 480, 580, 590 → 4[7-9]x / 5[7-9]x)
+    if (/radeon rx [45][7-9]\d/.test(gpu))             return 'ultra';
+    // NVIDIA GTX 10 Series (1060 et +) + GTX 16 Series (1650, 1660)
+    if (/gtx\s*1[0-9][6-9]\d/.test(gpu))              return 'ultra';
+    if (/gtx\s*10[6-9]\d/.test(gpu))                  return 'ultra';
+
+    // ── Tier HIGH / Performance ────────────────────────────────────────────────
+    // Flagship mobile (S23 / Adreno 740), mid-range PC (GTX 1050, RX 470)
+
+    // Snapdragon 8 Gen 2/3 → Adreno 740/750/800
+    if (gpu.includes('adreno') && /7[4-9]\d|80\d/.test(gpu)) return 'performance';
+    // Apple iPhone A-series (A15/A16/A17) — "apple gpu" générique sur iOS
+    if (gpu.includes('apple'))                          return 'performance';
+    // Mali-G78/G710/G715 (Dimensity 9000, Exynos 2200)
+    if (gpu.includes('mali') && /g7[89]|g710|g715/.test(gpu)) return 'performance';
+    // NVIDIA GTX 1050 / 1050 Ti
+    if (/gtx\s*105\d/.test(gpu))                      return 'performance';
+    // NVIDIA GTX 970/980
+    if (/gtx\s*9[78]\d/.test(gpu))                    return 'performance';
+    // AMD RX Polaris basse (RX 460/470)
+    if (/radeon rx [45][4-6]\d/.test(gpu))             return 'performance';
+    // AMD Radeon R9 (R9 280X, 290, 390…)
+    if (gpu.includes('radeon') && gpu.includes('r9'))  return 'performance';
+    // Intel Iris Xe (Tiger Lake 11th gen+)
+    if (gpu.includes('iris') && gpu.includes('xe'))    return 'performance';
+
+    // ── Tier STD / Balanced ────────────────────────────────────────────────────
+    // Mid-range 2020-2022 (A53, Intel HD 620, AMD Vega iGPU)
+
+    // Adreno 660/642/619/618/720/730 (Snapdragon 7 Gen, SD 780G, mid-range 2021-2023)
+    if (gpu.includes('adreno') && /6[0-9]\d|72\d|73\d/.test(gpu)) return 'balanced';
+    // Mali-G68/G76/G57/G72 (A53, Dimensity 1xxx, Exynos 12xx)
+    if (gpu.includes('mali') && /g68|g76|g57|g72/.test(gpu)) return 'balanced';
+    // Mali générique avec ≥8 cores CPU (mid-range probable)
+    if (gpu.includes('mali') && (navigator.hardwareConcurrency || 0) >= 8) return 'balanced';
+    // NVIDIA GTX 950/960
+    if (/gtx\s*9[56]\d/.test(gpu))                    return 'balanced';
+    // AMD Radeon Vega iGPU (Vega 3/8/11 des APU Ryzen)
+    if (gpu.includes('radeon') && gpu.includes('vega')) return 'balanced';
+    // AMD Radeon R7 (iGPU ou discret bas de gamme)
+    if (gpu.includes('radeon') && gpu.includes('r7'))  return 'balanced';
+    // AMD Radeon générique sans série identifiée (fallback)
+    if (gpu.includes('radeon') && !gpu.includes('rx')) return 'balanced';
+    // Intel HD/UHD 6xx (6th–8th gen Core : HD 620/630, UHD 620/630)
+    if (gpu.includes('intel') && /(?:hd|uhd)[\s()]*(?:graphics[\s()]*)?6\d\d/.test(gpu)) return 'balanced';
+    // Intel HD 520/530/540 (5th–6th gen)
+    if (gpu.includes('intel') && /(?:hd|uhd)[\s()]*(?:graphics[\s()]*)?5[2-9]\d/.test(gpu)) return 'balanced';
+    // Intel Iris (hors Xe : Iris Plus 5th-10th gen)
+    if (gpu.includes('iris'))                          return 'balanced';
+    // GPU inconnu mais CPU puissant → probablement un PC ou mobile récent masqué (Firefox)
+    if ((navigator.hardwareConcurrency || 0) >= 8)    return 'balanced';
+
+    // ── Tier ECO ───────────────────────────────────────────────────────────────
+    // Tout le reste : vieux Adreno 5xx, Mali-G52-, Intel HD 4xx/3xx, inconnu CPU faible
     return 'eco';
 }
 
@@ -102,6 +156,29 @@ export function applyPreset(preset: PresetType): void {
     state.WEATHER_DENSITY = settings.WEATHER_DENSITY;
     state.WEATHER_SPEED = settings.WEATHER_SPEED;
     state.FOG_FAR = settings.FOG_FAR;
+
+    // Ajustements mobiles (v5.11) — uniquement les réglages qui diffèrent entre mobile et PC.
+    // Les tiers eco/balanced/performance ont déjà des valeurs calibrées pour mobile dans PRESETS.
+    // Seul Ultra conserve des caps car ses valeurs sont dimensionnées pour PC bureau.
+    const isMobilePreset = /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
+    if (isMobilePreset) {
+        // ENERGY_SAVER : cap à 30fps sur mobile (appliqué ici, pas seulement dans detectBestPreset,
+        // car loadSettings() peut restaurer false depuis localStorage pour les utilisateurs existants).
+        // Exception : Ultra mobile (Snapdragon Elite) → capable de tenir 60fps.
+        if (preset !== 'ultra') state.ENERGY_SAVER = true;
+
+        // Ultra mobile (Snapdragon Elite) : réduire légèrement par rapport au PC bureau
+        if (preset === 'ultra') {
+            if (state.SHADOW_RES > 2048) state.SHADOW_RES = 2048; // 4096 → 2048
+            if (state.RANGE > 8)         state.RANGE = 8;          // 12 → 8
+        }
+
+        // DPR : 3× OLED n'apporte rien pour la carto, coût GPU ×2.25 inutile
+        if (state.PIXEL_RATIO_LIMIT > 2.0) state.PIXEL_RATIO_LIMIT = 2.0;
+
+        // Purge des textures GPU excédentaires (limite du cache réduite pour mobile)
+        trimCache();
+    }
 
     if (preset === 'eco') {
         document.body.classList.add('mode-2d');
