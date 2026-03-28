@@ -47,52 +47,15 @@ let _lastAngle  = 0;
 let _velX = 0, _velY = 0;
 let _inertiaId = 0;
 
-// ── Gesture locking (v5 — centre-based, physique correcte) ───────────────────
+// ── Pas de gesture locking — décisions per-frame directes (v6) ───────────────
+// Toutes les tentatives d'accumulation/verrouillage (v2→v5) ont échoué car le
+// seuil de commit crée une "zone morte" où aucun geste ne répond. Sans locking,
+// chaque frame applique immédiatement le ou les signaux détectés.
 //
-// POURQUOI le tracking per-pointeur (v4) était cassé :
-//   PointerEvents se déclenchent un pointeur à la fois.
-//   Quand le doigt 1 bouge, d2y = 0 toujours.
-//   sameYDir = (d1y < 0) === (0 < 0) = true → faux positif tilt systématique.
-//
-// Physique réelle des 4 gestes :
-//   ROTATION : les deux doigts vont en sens OPPOSÉ (haut/bas alterné)
-//              → centre reste quasi immobile | angle du vecteur change
-//   TILT     : les deux doigts vont dans le MÊME sens (tous les deux vers le bas)
-//              → centre se déplace verticalement | angle reste constant
-//   ZOOM     : les doigts s'écartent ou se rapprochent symétriquement
-//              → spread change | centre quasi immobile
-//   PAN      : les deux doigts bougent ensemble latéralement
-//              → centre X se déplace | angle et spread stables
-//
-// Signaux utilisés (tous centre-based, fiables avec PointerEvents) :
-//   _gAcA = cumul |dAngle| × 100  (signal rotation — angle vecteur doigt1→doigt2)
-//   _gAcS = cumul spreadDelta × 300  (signal zoom)
-//   _gAcY = cumul |dCenterY|         (signal tilt — centre bouge verticalement)
-//   _gAcX = cumul |dCenterX|         (signal pan  — centre bouge horizontalement)
-//
-// Classification :
-//   ROTATION : _gAcA doit DOMINER _gAcY (angle > drift vertical).
-//              Seuil séparé (ROTATE_COMMIT=4) pour être responsive.
-//              Guard : _gAcA > _gAcY × 0.5 (empêche tilt bruyant = rotation)
-//   ZOOM     : _gAcS > _gAcY && _gAcS > _gAcX
-//   TILT     : _gAcY > _gAcX × 1.5 (mouvement vertical dominant)
-//   PAN      : fallback horizontal
-//
-type GestureType = 'undecided' | 'zoom' | 'rotate' | 'tilt' | 'pan';
-let _gesture: GestureType = 'undecided';
-
-let _gAcA = 0;  // cumul |dAngle| × 100     — signal rotation
-let _gAcS = 0;  // cumul spreadDelta × 300  — signal zoom
-let _gAcY = 0;  // cumul |dCenterY|         — signal tilt
-let _gAcX = 0;  // cumul |dCenterX|         — signal pan
-
-const GESTURE_COMMIT  = 10; // px totaux avant verrouillage (tilt/pan/zoom)
-const ROTATE_COMMIT   =  4; // seuil rapide dédié rotation (angle s'accumule lentement)
-
-function resetGesture(): void {
-    _gesture = 'undecided';
-    _gAcA = _gAcS = _gAcY = _gAcX = 0;
-}
+// Priorité des 4 gestes (ordre de traitement per-frame) :
+//   1. ROTATION (angle vecteur doigt1→doigt2 change) — exclut zoom parasite
+//   2. ZOOM (spread change) — exclut tilt/pan pour éviter drift
+//   3. TILT / PAN — axe dominant : |dy| > |dx| → tilt, sinon → pan
 
 // ── Utilitaires ─────────────────────────────────────────────────────────────────
 function twoFingerMetrics() {
@@ -276,7 +239,6 @@ function onPointerDown(e: PointerEvent): void {
         _lastCx = s.cx; _lastCy = s.cy;
         _lastSpread = s.spread;
         _lastAngle  = s.angle;
-        resetGesture();
     }
 }
 
@@ -294,63 +256,39 @@ function onPointerMove(e: PointerEvent): void {
         _lastCy = e.clientY;
 
     } else if (_pointers.size >= 2) {
-        // ── 2 doigts — Gesture Locking v5 (signaux centre, physique correcte) ────
-        // Signaux centre : fiables avec PointerEvents (un pointeur/event).
-        // Pendant une rotation : angle change, centre quasi stable → _gAcA >> _gAcY.
-        // Pendant un tilt     : centre descend, angle stable    → _gAcY >> _gAcA.
-        // Pendant un zoom     : spread change, centre stable    → _gAcS domine.
+        // ── 2 doigts — per-frame, sans locking (v6) ──────────────────────────────
+        // Pas d'accumulation ni de phase "undecided". Chaque frame applique
+        // immédiatement les signaux détectés selon l'ordre de priorité :
+        //   1. Rotation (exclusif avec zoom — spread change géométriquement)
+        //   2. Zoom     (exclusif avec rotation)
+        //   3. Tilt / Pan selon l'axe dominant du déplacement du centre
         const s = twoFingerMetrics();
         const dAngle      = wrapAngleDelta(s.angle - _lastAngle);
         const spreadRatio = _lastSpread > 1 ? s.spread / _lastSpread : 1;
         const spreadDelta = Math.abs(spreadRatio - 1);
         const dx = s.cx - _lastCx;
         const dy = s.cy - _lastCy;
-
-        // ── Accumulation ──────────────────────────────────────────────────────────
-        _gAcA += Math.abs(dAngle) * 100;  // 0.01 rad/frame → 1/frame
-        _gAcS += spreadDelta * 300;        // 0.03 spread/frame → 9/frame
-        _gAcY += Math.abs(dy);             // 3px/frame → 3/frame
-        _gAcX += Math.abs(dx);             // 2px/frame → 2/frame
-
-        // ── Verrouillage ──────────────────────────────────────────────────────────
-        // Rotation : seuil ROTATE_COMMIT dédié (plus bas) car l'angle s'accumule
-        // lentement. Guard _gAcA > _gAcY × 0.4 : si le centre dérive plus vite que
-        // l'angle ne change, c'est un tilt (pas une rotation).
-        if (_gesture === 'undecided') {
-            if (_gAcA >= ROTATE_COMMIT && _gAcA > _gAcS * 2 && _gAcA > _gAcY * 0.4) {
-                _gesture = 'rotate';
-            } else if ((_gAcA + _gAcS + _gAcY + _gAcX) > GESTURE_COMMIT) {
-                if      (_gAcS > _gAcY && _gAcS > _gAcX) _gesture = 'zoom';
-                else if (_gAcY > _gAcX * 1.5)             _gesture = 'tilt';
-                else                                       _gesture = 'pan';
-            }
-        }
-
         const is2D = !!_controls && _controls.minPolarAngle === _controls.maxPolarAngle;
 
-        switch (_gesture) {
-            case 'rotate':
-                if (Math.abs(dAngle) > ROT_DEADZONE) doRotate(dAngle);
-                break;
+        // 1. ROTATION — déclenche si l'angle change au-dessus du deadzone.
+        //    Exclut zoom car une rotation modifie géométriquement le spread.
+        const isRotating = Math.abs(dAngle) > ROT_DEADZONE;
+        if (isRotating) doRotate(dAngle);
 
-            case 'zoom':
-                if (spreadDelta > 0.001) doZoomToPoint(spreadRatio, s.cx, s.cy);
-                break;
+        // 2. ZOOM — déclenche si spread change et qu'on ne tourne pas.
+        if (!isRotating && spreadDelta > 0.004) doZoomToPoint(spreadRatio, s.cx, s.cy);
 
-            case 'tilt':
-                if (Math.abs(dy) > 0.5)
-                    is2D ? doPan(0, -dy) : doTilt(dy);
-                break;
-
-            case 'pan':
-                if (Math.abs(dx) > 0.5) doPan(dx, 0);
-                break;
-
-            case 'undecided':
-                // Phase de détection : réponses tentatives sur signaux non ambigus uniquement
-                if (spreadDelta > 0.02)                        doZoomToPoint(spreadRatio, s.cx, s.cy);
-                else if (Math.abs(dAngle) > ROT_DEADZONE * 3) doRotate(dAngle);
-                break;
+        // 3. TILT / PAN — axe dominant du déplacement du centre.
+        //    Exclu pendant une rotation (centre dérive légèrement).
+        if (!isRotating) {
+            const absDy = Math.abs(dy), absDx = Math.abs(dx);
+            if (absDy >= absDx && absDy > 0.5) {
+                // Vertical dominant → tilt (ou pan vertical en mode 2D verrouillé)
+                is2D ? doPan(0, -dy) : doTilt(dy);
+            } else if (absDx > absDy && absDx > 0.5) {
+                // Horizontal dominant → pan
+                doPan(dx, 0);
+            }
         }
 
         _lastCx = s.cx; _lastCy = s.cy;
@@ -365,7 +303,7 @@ function onPointerUp(e: PointerEvent): void {
     if (_pointers.size === 1) {
         const [p] = Array.from(_pointers.values());
         _lastCx = p.x; _lastCy = p.y;
-        resetGesture(); // le prochain 2e doigt repart de zéro
+        // rien à réinitialiser — pas de gesture locking en v6
     }
 
     if (_pointers.size === 0) {
