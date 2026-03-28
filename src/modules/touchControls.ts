@@ -270,23 +270,30 @@ function onPointerMove(e: PointerEvent): void {
         const dy = s.cy - _lastCy;
         const is2D = !!_controls && _controls.minPolarAngle === _controls.maxPolarAngle;
 
-        // 1. ROTATION — déclenche si l'angle change au-dessus du deadzone.
-        //    Exclut zoom car une rotation modifie géométriquement le spread.
-        const isRotating = Math.abs(dAngle) > ROT_DEADZONE;
+        const absDAngle = Math.abs(dAngle);
+        const absDy     = Math.abs(dy);
+        const absDx     = Math.abs(dx);
+
+        // 1. ROTATION — l'angle doit dominer LES DEUX autres signaux :
+        //    • > spreadDelta × 0.5 : évite que le bruit d'angle lors d'un pinch
+        //      déclenche une rotation (pendant un zoom, spread >> angle noise)
+        //    • × 150 > |dy|        : évite que le bruit d'angle lors d'un tilt
+        //      déclenche une rotation (pendant un tilt, centre bouge >> angle)
+        //    Physique : pendant une vraie rotation, les doigts vont en sens opposé
+        //    → centre reste immobile (|dy| petit) → les deux guards passent.
+        const isRotating = absDAngle > ROT_DEADZONE
+                        && absDAngle > spreadDelta * 0.5
+                        && absDAngle * 150 > absDy;
         if (isRotating) doRotate(dAngle);
 
-        // 2. ZOOM — déclenche si spread change et qu'on ne tourne pas.
+        // 2. ZOOM — spread change, exclusif avec rotation.
         if (!isRotating && spreadDelta > 0.004) doZoomToPoint(spreadRatio, s.cx, s.cy);
 
-        // 3. TILT / PAN — axe dominant du déplacement du centre.
-        //    Exclu pendant une rotation (centre dérive légèrement).
+        // 3. TILT / PAN — axe dominant, exclusif avec rotation.
         if (!isRotating) {
-            const absDy = Math.abs(dy), absDx = Math.abs(dx);
             if (absDy >= absDx && absDy > 0.5) {
-                // Vertical dominant → tilt (ou pan vertical en mode 2D verrouillé)
                 is2D ? doPan(0, -dy) : doTilt(dy);
             } else if (absDx > absDy && absDx > 0.5) {
-                // Horizontal dominant → pan
                 doPan(dx, 0);
             }
         }
