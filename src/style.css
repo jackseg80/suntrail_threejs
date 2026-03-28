@@ -195,6 +195,7 @@ body, html {
 
 .nav-tab.active .nav-icon svg path,
 .nav-tab.active .nav-icon svg circle,
+.nav-tab.active .nav-icon svg line,
 .nav-tab.active .nav-icon svg rect { stroke: var(--accent); }
 
 .nav-label {
@@ -213,6 +214,32 @@ body, html {
     display: none;
 }
 .nav-tab.has-notif .nav-dot { display: block; }
+
+/* 2D/3D MODE TOGGLE — perspective grid icon */
+.nav-mode-icon {
+    perspective: 60px;
+}
+
+.nav-mode-icon .grid-icon {
+    transition: transform var(--transition-slow);
+    transform-origin: center center;
+    /* 3D state (default): tilted grid → perspective terrain */
+    transform: rotateX(45deg);
+}
+
+.nav-mode-icon .grid-peak {
+    transition: opacity var(--transition-normal), transform var(--transition-normal);
+    opacity: 1;
+}
+
+/* 2D active state: flat top-down grid, peak hidden */
+.nav-mode-toggle.active .nav-mode-icon .grid-icon {
+    transform: rotateX(0deg);
+}
+
+.nav-mode-toggle.active .nav-mode-icon .grid-peak {
+    opacity: 0;
+}
 
 /* BOTTOM SHEETS */
 #sheet-overlay {

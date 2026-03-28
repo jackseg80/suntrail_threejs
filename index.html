@@ -515,11 +515,18 @@
 <template id="template-nav-bar">
     <div class="nav-bar-content">
         <button class="nav-tab nav-mode-toggle" id="nav-2d-toggle" aria-label="Basculer 2D/3D" aria-pressed="false">
-            <div class="nav-icon">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <rect x="3" y="6" width="14" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
-                <path d="M3 9h14" stroke="currentColor" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/>
-                <path d="M7 6L10 3l3 3" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>
+            <div class="nav-icon nav-mode-icon">
+              <svg class="grid-icon" width="22" height="22" viewBox="0 0 22 22" fill="none">
+                <!-- Horizontal grid lines -->
+                <line x1="2" y1="6"  x2="20" y2="6"  stroke="currentColor" stroke-width="1.0" opacity="0.35"/>
+                <line x1="2" y1="11" x2="20" y2="11" stroke="currentColor" stroke-width="1.2"/>
+                <line x1="2" y1="16" x2="20" y2="16" stroke="currentColor" stroke-width="1.0" opacity="0.35"/>
+                <!-- Vertical grid lines -->
+                <line x1="5"  y1="3" x2="5"  y2="19" stroke="currentColor" stroke-width="1.0" opacity="0.35"/>
+                <line x1="11" y1="3" x2="11" y2="19" stroke="currentColor" stroke-width="1.2"/>
+                <line x1="17" y1="3" x2="17" y2="19" stroke="currentColor" stroke-width="1.0" opacity="0.35"/>
+                <!-- Terrain peak (visible in 3D state) -->
+                <path class="grid-peak" d="M7 11 L11 5 L15 11" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
               </svg>
             </div>
             <span class="nav-label nav-mode-label">3D</span>
