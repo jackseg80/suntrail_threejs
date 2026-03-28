@@ -384,19 +384,21 @@ Chute isolée, aucune tile en cours. Signature GC Android ou throttling thermiqu
 
 ## Comparatif des sessions
 
-| Métrique | PC ULTRA (S1) | S23 Perf (S2) | S23 Marche (S3) | A53 Marche (S4) | A53 Profiling (S5) | Cible Balanced |
-|----------|--------------|--------------|----------------|----------------|-------------------|----------------|
-| FPS repos | 20 (throttle) | 45-48 (bug) | N/A | N/A | **20 fps ✅** | 20 fps |
-| FPS actif | 144 | 44–120 | N/A | N/A | **20–29 fps ✅** | 28–30 fps |
-| Textures max | 1277 | 675→506 (trim) | N/A | N/A | **309→245 (trim)** | < 150 (alerte) |
-| Draw calls max | 302 | 539 | N/A | N/A | **75 ✅** | < 200 |
-| Triangles max | 17.3M | 2.5M | N/A | N/A | **160K ✅** | < 2M |
-| Graphics memory | N/A | 812 MB | N/A | N/A | **469 MB ✅** | < 600 MB |
-| Native memory | N/A | stable | N/A | N/A | **41.5 MB stable ✅** | stable |
-| Deep Sleep | ❌ (PC) | **0 fps ✅** | ~90% temps ✅ | 100% temps ✅ | **0 fps ✅** | 0 fps |
-| Drain batterie | N/A | ~18.75%/h | **20%/h** (REC) | **12%/h** (passif) | N/A | ≤ 15%/h |
-| Objectif ≤ 15%/h | N/A | N/A | ✅ usage réel | **✅ ATTEINT** | — | — |
-| Décision | Smoke test | ✅ Sprint 7 | ✅ Confirmé | ✅ Sprint 7 | **✅ VALIDÉ** | — |
+| Métrique | PC ULTRA (S1) | S23 Perf (S2) | S23 Marche (S3) | A53 Marche (S4) | A53 Profiling (S5) | A53 Phase B (S6) | S23 Phase B (S7) | Cible Balanced |
+|----------|--------------|--------------|----------------|----------------|-------------------|-----------------|-----------------|----------------|
+| FPS repos | 20 (throttle) | 45-48 (bug) | N/A | N/A | **20 fps ✅** | — | — | 20 fps |
+| FPS actif | 144 | 44–120 | N/A | N/A | **20–29 fps ✅** | — | **60 fps ✅** | 28–30 fps |
+| renderLoopFn | N/A | N/A | N/A | N/A | — | **< 33ms ✅** | **< 16ms ✅** | < 33ms |
+| Scripting % | N/A | N/A | N/A | N/A | — | **26%** | **19%** | — |
+| Long Tasks | N/A | N/A | N/A | N/A | — | ⚠️ LOD changes | ✅ Quasi nuls | — |
+| Throttle météo | N/A | N/A | N/A | N/A | — | **✅ ~50ms** | **✅ ~50ms** | ~50ms |
+| Textures max | 1277 | 675→506 | N/A | N/A | **309→245 ✅** | — | — | < 150 (alerte) |
+| Fuite mémoire | N/A | N/A | N/A | N/A | ✅ Aucune | **✅ Aucune** | N/A | Aucune |
+| Deep Sleep | ❌ (PC) | **0 fps ✅** | ~90% ✅ | 100% ✅ | **0 fps ✅** | — | — | 0 fps |
+| Drain batterie | N/A | ~18.75%/h | **20%/h** (REC) | **12%/h** (passif) | N/A | — | — | ≤ 15%/h |
+| Objectif ≤ 15%/h | N/A | N/A | ✅ | **✅ ATTEINT** | — | — | — | — |
+| Fix 20fps flyTo | — | — | — | — | — | — | **✅ v5.11.1** | — |
+| Décision | Smoke test | ✅ Sprint 7 | ✅ | ✅ Sprint 7 | **✅ VALIDÉ** | ✅ | **✅ VALIDÉ** | — |
 
 ---
 
@@ -439,25 +441,41 @@ Chute isolée, aucune tile en cours. Signature GC Android ou throttling thermiqu
 
 ---
 
-## Session 7 — Galaxy S23 (Performance/High) — Phase B Chrome DevTools — À FAIRE
+## Session 7 — Galaxy S23 (Performance/High) — Phase B Chrome DevTools — 2026-03-28 ✅
 
-### Valeurs cibles S23
+### Flame Chart (Performance tab)
 
-| Signal | Cible | Différence vs A53 |
-|--------|-------|------------------|
-| `renderLoopFn` | **< 16ms** (ENERGY_SAVER=false, 60fps) | Plus strict (2×) |
-| Throttle météo | ~50ms (identique) | — |
-| Long Tasks | Moins fréquents (Adreno 740 ≫ Exynos 1280) | Meilleur |
-| Workers | 4 (cap mobile identique) | — |
+| Signal | Résultat | Verdict |
+|--------|----------|---------|
+| `renderLoopFn` < 16ms (60fps, ENERGY_SAVER=false) | ✅ Nappe stable, quasi systématiquement < 16ms | ✅ |
+| Fluidité générale | ✅ "Buttery smooth" — Adreno 740 absorbe les pics Three.js | ✅ |
+| Throttle météo (`updateWeatherSystem` ~50ms) | ✅ Espacement identique A53 — déterministe, hardware-agnostique | ✅ |
+| Workers actifs | ✅ 3–4 workers (idem A53) | ✅ |
+| Long Tasks (triangles rouges) | ✅ Quasi inexistants en navigation normale | ✅ |
+| Long Task 61–63s | ⚠️ Même signature GPS button → `refreshTerrain()`, durée plus courte qu'A53 | Acceptable |
+| Scripting total | **~19%** (vs 26% A53) — Snapdragon 8 Gen 2 significativement plus rapide | ✅ |
+| FlyTo / GPS follow à 20fps | ✅ **Résolu** — fix v5.11.1 confirmé sur S23 (commit `401bf22`) | ✅ |
 
-### Checklist
+**Goulot d'étranglement S23** : CPU synchrone (logique UI, `refreshTerrain()`), non GPU. Contrairement à l'A53 où le GPU fill rate était limitant, le S23 traite les meshes Three.js transparemment. Les rares pics restants sont CPU-bound — confirme que le prochain levier d'optimisation est `processLoadQueue()` avec budget-temps (backlog v5.12).
 
-- [ ] Connecter S23 USB + débogage USB activé
-- [ ] SunTrail lancé (preset Performance/High auto-détecté)
-- [ ] `chrome://inspect` → WebView com.suntrail.threejs → Inspect
-- [ ] Performance → ⏺ → pan/zoom 10-15s, changement LOD → ⏹
-- [ ] Analyser : `renderLoopFn` < 16ms, Long Tasks, throttle météo
-- [ ] Memory → 2 snapshots (démarrage + après 5 min) → Comparison
+**Long Task 61–63s** : identique au bloc A53 (41s), même cause — GPS button → `refreshTerrain()` → `resetTerrain()` synchrone. Plus court sur S23 (Snapdragon vs Exynos). One-time, non reproductible en navigation normale. Acceptable.
+
+### Comparatif A53 vs S23 (Phase B)
+
+| Métrique | A53 Balanced | S23 Performance | Delta |
+|----------|-------------|----------------|-------|
+| FPS cible | 30 fps (ENERGY_SAVER) | **60 fps** | 2× |
+| `renderLoopFn` budget | < 33ms | **< 16ms** | 2× plus strict |
+| Scripting % | ~26% | **~19%** | −7 pts |
+| Long Tasks | Fréquents (LOD changes) | **Quasi nuls** | Adreno 740 ≫ Exynos 1280 |
+| Goulot | GPU fill rate / vertex | **CPU synchrone** | Shift fill → logic |
+| Throttle météo | ~50ms | **~50ms** ✅ | Identique |
+| Workers | 4 | **4** | Cap mobile identique |
+| Fix 20fps flyTo/follow | — | **✅ Confirmé v5.11.1** | — |
+
+### Décision Phase B S23
+
+**✅ Non bloquant Play Store.** 60fps stables, throttle déterministe, Long Task one-time identifié et acceptable.
 
 ---
 

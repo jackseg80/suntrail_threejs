@@ -415,7 +415,7 @@ App sur appareil physique Android connecté en USB (débogage activé).
 - [x] **Décision** : ✅ **Sprint 7 en v5.11.** Phase 3 render-on-demand reportée en v5.12.
 - [x] **Phase C — PerfRecorder JSON** : ✅ Session 5 A53 — 377 samples, Deep Sleep validé, energySaver=true. Voir PROFILING_RESULTS.md.
 - [x] **Phase B — Flame chart A53** : ✅ Session 6 — throttle météo OK, workers OK, Long Tasks attendus Exynos 1280, aucune fuite mémoire.
-- [ ] **Phase B — Flame chart S23** : flame chart + memory heap S23 (Performance, ENERGY_SAVER=false). Cible `renderLoopFn < 16ms`. Voir Session 7 dans PROFILING_RESULTS.md.
+- [x] **Phase B — Flame chart S23** : ✅ Session 7 — 60fps stables < 16ms, scripting 19%, Long Tasks quasi nuls (Adreno 740), throttle météo 50ms déterministe, fix v5.11.1 confirmé (flyTo/follow plus à 20fps). Goulot = CPU synchrone (refreshTerrain). Non bloquant.
 
 ---
 
