@@ -27,6 +27,7 @@
 - [ ] **Cloud Shadows & Météo Pro** : Projection d'ombres de nuages dynamiques.
 - [ ] **Waypoints & Partage** : Marquage personnel et Deep Linking (URL synchronisée).
 - [ ] **Mode Nuit Avancé** : Pollution lumineuse urbaine (NASA).
+- [ ] **GPX Export — Share Sheet Android (Option 2)** : Remplacer/compléter `Filesystem.writeFile()` par `@capacitor/share` → Share Sheet Android native (Komoot, WhatsApp, Files, Google Drive…). L'utilisateur choisit la destination. Nécessite `npm install @capacitor/share` + `npx cap sync`. Implémenter dans `exportRecordedGPX()` de `TrackSheet.ts` : écrire d'abord dans un fichier temp (`Directory.Cache`), puis appeler `Share.share({ files: [uri] })`.
 
 ## ✅ Priorité 3 : Qualité UI/UX (v5.9) - TERMINÉ
 

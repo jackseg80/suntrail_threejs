@@ -11,6 +11,8 @@ import { updateVisibleTiles, addGPXLayer, removeGPXLayer, toggleGPXLayer, update
 import { lngLatToTile, lngLatToWorld } from '../../geo';
 import { updateElevationProfile } from '../../profile';
 import { eventBus } from '../../eventBus';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 
 export class TrackSheet extends BaseComponent {
     constructor() {
@@ -51,8 +53,12 @@ export class TrackSheet extends BaseComponent {
                     state.recordedPoints = [];
                 }
             } else {
-                showToast(i18n.t('track.toast.recStopped'));
                 await stopRecordingService();    // Arrête le Foreground Service Android
+                showToast(i18n.t('track.toast.recStopped'));
+                // Auto-export au STOP si le tracé a au moins 2 points
+                if (state.recordedPoints.length >= 2) {
+                    await this.exportRecordedGPX();
+                }
             }
         });
 
@@ -323,13 +329,13 @@ export class TrackSheet extends BaseComponent {
         if (dminusEl) dminusEl.innerHTML = `−${Math.round(dminus)} <span class="trk-stat-unit-plain">m</span>`;
     }
 
-    private exportRecordedGPX() {
+    private buildGPXString(): string {
+        const date = new Date().toLocaleDateString();
         let gpx = `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="SunTrail 3D" xmlns="http://www.topografix.com/GPX/1/1">
   <trk>
-    <name>SunTrail Recorded Track - ${new Date().toLocaleDateString()}</name>
+    <name>SunTrail Recorded Track - ${date}</name>
     <trkseg>`;
-
         state.recordedPoints.forEach(p => {
             gpx += `
       <trkpt lat="${p.lat}" lon="${p.lon}">
@@ -337,20 +343,47 @@ export class TrackSheet extends BaseComponent {
         <time>${new Date(p.timestamp).toISOString()}</time>
       </trkpt>`;
         });
-
         gpx += `
     </trkseg>
   </trk>
 </gpx>`;
+        return gpx;
+    }
 
-        const blob = new Blob([gpx], { type: 'application/gpx+xml' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `suntrail-track-${Date.now()}.gpx`;
-        link.click();
-        URL.revokeObjectURL(url);
-        showToast(i18n.t('track.toast.exported'));
+    async exportRecordedGPX() {
+        if (state.recordedPoints.length < 2) {
+            showToast(i18n.t('track.toast.tooShort'));
+            return;
+        }
+        const gpx = this.buildGPXString();
+        const filename = `suntrail-${new Date().toISOString().slice(0, 10)}-${Date.now()}.gpx`;
+
+        if (Capacitor.isNativePlatform()) {
+            // Android/iOS — écriture native via Filesystem (blob URL non supporté en WebView)
+            try {
+                const result = await Filesystem.writeFile({
+                    path: filename,
+                    data: gpx,
+                    directory: Directory.Documents,
+                    encoding: Encoding.UTF8,
+                });
+                void haptic('success');
+                showToast(`GPX enregistré : ${result.uri.split('/').pop()}`);
+            } catch (e) {
+                console.error('[TrackSheet] Filesystem.writeFile failed:', e);
+                showToast(i18n.t('track.toast.exportError') || 'Erreur export GPX');
+            }
+        } else {
+            // Web / dev — téléchargement via blob URL
+            const blob = new Blob([gpx], { type: 'application/gpx+xml' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(url);
+            showToast(i18n.t('track.toast.exported'));
+        }
     }
 
     private async handleGPX(xml: string, fileName: string = 'track.gpx') {
