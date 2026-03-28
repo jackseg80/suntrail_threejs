@@ -1,4 +1,4 @@
-# SunTrail 3D - Roadmap Révisée (v5.11.0)
+# SunTrail 3D - Roadmap Révisée (v5.11.1)
 
 ## 🚀 Priorité 1 : Optimisations & Netteté (v5.6) - ✅ TERMINÉ
 *Impact : Fluidité mobile absolue et rendu topographique pro.*
@@ -156,7 +156,7 @@
 - [x] **Fix controls.update() stuck** : ✅ Guard temporel 800ms dans `needsUpdate` + `tiltAnimating` extrait du bloc tilt. `controls.update()` toujours appelé (damping physique), résultat ignoré après 800ms.
 - [x] **Fix idle throttle global 20fps** : ✅ Guard `isIdleMode` dans `renderLoopFn` — si pas d'interaction depuis 800ms, render limité à 20fps. Couvre tiltAnimating + isProcessingTiles + tilesFading. Résout 45-48fps GPU en idle sur Android.
 - [x] **Loading indicator 1er démarrage** : ✅ `#map-loading-overlay` dans `index.html` — affiché après setup-screen, caché quand `isProcessingTiles → false` (1ères tuiles). Fallback 2s (cache chaud) + timeout 15s (réseau lent).
-- [ ] **⚠️ Throttle météo adaptatif** : Régression — le throttle idle 20fps s'applique aussi quand la pluie/neige est active → particules saccadées (effet "diapositive"). La météo nécessite 30-60fps pour être fluide. **Solution envisagée** : exclure `isWeatherActive` du throttle idle (ou throttle adaptatif : 20fps idle pur, 30fps météo, 60fps interaction). À implémenter avant publication.
+- [x] **Fix météo 20fps réels** : ✅ Cause identifiée — accumulateurs `weatherTimeAccum` placés après le guard idle → ne s'incrémentaient que sur les frames rendues → météo à ~5fps visuels au lieu de 20fps. Fix : accumulateurs déplacés avant tous les guards. Météo fluide à 20fps sans plein régime. `tickWeatherTime` supprimé (non nécessaire).
 - [ ] **Test Galaxy A54** : 📱 Appareil mid-range disponible (Exynos 1380) → preset Balanced (STD) auto-détecté. **Valider** : FPS idle (~20fps en idle, plein régime en interaction), drain batterie Balanced, Memory Native en Live Telemetry. C'est l'appareil cible de la majorité des utilisateurs.
 
 > ### 📱 Protocole Profiling SunTrail — 3 phases simultanées

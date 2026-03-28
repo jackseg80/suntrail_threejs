@@ -232,8 +232,11 @@ Sur PC Chrome : convergence propre → 20fps en idle. Sur Android WebView : pas 
 | Drain batterie | N/A | ~18.75%/h pire cas | ~3-5%/h rando réelle |
 | Décision | Smoke test | **✅ Sprint 7 autorisé** | — |
 
-## Backlog Performance (v5.12)
+## Corrections appliquées suite au profiling (v5.11.1)
 
-| Bug | Impact | Effort fix |
-|-----|--------|------------|
-| `controls.update()` stuck sur WebView Android | GPU à 45-48fps en idle au lieu de 20fps | ~10 lignes dans `scene.ts` |
+| Fix | Commit | Résultat |
+|-----|--------|----------|
+| `controls.update()` stuck WebView Android | `710860e` | Guard 800ms + `tiltAnimating` séparé |
+| Idle throttle global 20fps | `710860e` | Guard `isIdleMode` dans `renderLoopFn` |
+| Loading overlay 1er démarrage | `710860e` | `#map-loading-overlay` → `isProcessingTiles` |
+| Accumulateurs eau/météo avant guards | `4d09d6c` | Météo fluide à 20fps réels (vs ~5fps avant) |
