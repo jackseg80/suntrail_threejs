@@ -197,6 +197,86 @@ describe('VRAMDashboard', () => {
         expect(dashboard.isRunning()).toBe(false);
     });
 
+    // --- PerfRecorder ---
+
+    describe('PerfRecorder', () => {
+        beforeEach(() => {
+            (state as any).currentFPS = 60;
+            (state as any).ZOOM = 14;
+            (state as any).isProcessingTiles = false;
+            (state as any).isUserInteracting = false;
+            (state as any).ENERGY_SAVER = true;
+            dashboard.start();
+        });
+
+        it('démarre inactif — buffer vide, isRecording=false', () => {
+            expect(dashboard.getIsRecording()).toBe(false);
+            expect(dashboard.getSamples()).toHaveLength(0);
+        });
+
+        it('startRecording() remplit le buffer à chaque tick (500ms)', () => {
+            dashboard.startRecording();
+            expect(dashboard.getIsRecording()).toBe(true);
+
+            vi.advanceTimersByTime(500);
+            expect(dashboard.getSamples()).toHaveLength(1);
+
+            vi.advanceTimersByTime(1000);
+            expect(dashboard.getSamples()).toHaveLength(3);
+        });
+
+        it('les échantillons contiennent les bonnes métriques', () => {
+            dashboard.startRecording();
+            vi.advanceTimersByTime(500);
+
+            const s = dashboard.getSamples()[0];
+            expect(s.fps).toBe(60);
+            expect(s.textures).toBe(100);
+            expect(s.geometries).toBe(42);
+            expect(s.drawCalls).toBe(55);
+            expect(s.zoom).toBe(14);
+            expect(s.energySaver).toBe(true);
+            expect(s.t).toBeGreaterThanOrEqual(0);
+        });
+
+        it('stopRecording() arrête l\'enregistrement et vide le flag', () => {
+            dashboard.startRecording();
+            vi.advanceTimersByTime(500);
+            dashboard.stopRecording(false); // sans export
+
+            expect(dashboard.getIsRecording()).toBe(false);
+            // Buffer conservé pour export ultérieur
+            expect(dashboard.getSamples()).toHaveLength(1);
+        });
+
+        it('startRecording() réinitialise le buffer à chaque nouvelle session', () => {
+            dashboard.startRecording();
+            vi.advanceTimersByTime(1000);
+            expect(dashboard.getSamples()).toHaveLength(2);
+
+            dashboard.stopRecording(false);
+            dashboard.startRecording();
+            expect(dashboard.getSamples()).toHaveLength(0);
+        });
+
+        it('buffer circulaire : MAX_SAMPLES=600 — le 601e échantillon évince le 1er', () => {
+            dashboard.startRecording();
+            // 600 ticks × 500ms = 300s
+            vi.advanceTimersByTime(500 * 601);
+            // Buffer plafonné à 600
+            expect(dashboard.getSamples().length).toBeLessThanOrEqual(600);
+        });
+
+        it('fermer le panel (setVisible false) arrête automatiquement l\'enregistrement', () => {
+            dashboard.startRecording();
+            vi.advanceTimersByTime(500);
+            expect(dashboard.getIsRecording()).toBe(true);
+
+            dashboard.setVisible(false);
+            expect(dashboard.getIsRecording()).toBe(false);
+        });
+    });
+
     // Test 10: Alert uses correct limit per preset
     it('should use correct texture limit for eco preset', () => {
         (state as any).PERFORMANCE_PRESET = 'eco';
