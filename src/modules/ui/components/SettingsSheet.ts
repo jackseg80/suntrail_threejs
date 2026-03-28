@@ -3,6 +3,7 @@ import { BaseComponent } from '../core/BaseComponent';
 import { state, saveSettings } from '../../state';
 import { applyPreset } from '../../performance';
 import { resetTerrain, updateVisibleTiles, updateHydrologyVisibility } from '../../terrain';
+import { updateWeatherVisibility } from '../../weather';
 import { deleteTerrainCache, downloadOfflineZone, setPMTilesSource } from '../../tileLoader';
 import { SharedAPIKeyComponent } from './SharedAPIKeyComponent';
 import { i18n } from '../../../i18n/I18nService';
@@ -52,6 +53,7 @@ export class SettingsSheet extends BaseComponent {
         this.bindToggle('veg-toggle', 'SHOW_VEGETATION', this.refreshTerrain);
         this.bindToggle('buildings-toggle', 'SHOW_BUILDINGS', this.refreshTerrain);
         this.bindToggle('hydro-toggle', 'SHOW_HYDROLOGY', (val: boolean) => updateHydrologyVisibility(val));
+        this.bindToggle('weather-toggle', 'SHOW_WEATHER', (val: boolean) => updateWeatherVisibility(val));
         this.bindToggle('poi-toggle', 'SHOW_SIGNPOSTS', this.refreshTerrain);
         this.bindToggle('shadow-toggle', 'SHADOWS', (val: boolean) => {
             if (state.sunLight) state.sunLight.castShadow = val;

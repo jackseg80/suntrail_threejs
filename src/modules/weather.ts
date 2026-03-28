@@ -195,7 +195,7 @@ export function updateWeatherSystem(delta: number, cameraPos: THREE.Vector3): vo
     const altitude = cameraPos.y;
     const is2D = state.RESOLUTION <= 2;
 
-    if (state.currentWeather === 'clear' || state.WEATHER_DENSITY <= 0 || altitude > 100000 || is2D) {
+    if (!state.SHOW_WEATHER || state.currentWeather === 'clear' || state.WEATHER_DENSITY <= 0 || altitude > 100000 || is2D) {
         weatherPoints.visible = false; return;
     }
     weatherPoints.visible = true;
@@ -224,4 +224,15 @@ export function updateWeatherSystem(delta: number, cameraPos: THREE.Vector3): vo
         weatherMaterial.uniforms.uSize.value = 45.0; weatherMaterial.uniforms.uColor.value.setHex(0xffffff);
         weatherMaterial.uniforms.uOpacity.value = 0.8;
     }
+}
+
+/**
+ * Cache/affiche les particules météo sans toucher à state.SHOW_WEATHER.
+ * Appelé par le toggle Réglages — si désactivé, le prochain updateWeatherSystem
+ * respectera le flag et gardera les points cachés.
+ */
+export function updateWeatherVisibility(visible: boolean): void {
+    if (!weatherPoints) return;
+    if (!visible) weatherPoints.visible = false;
+    // Si visible=true, le prochain updateWeatherSystem() applique la visibilité correcte
 }

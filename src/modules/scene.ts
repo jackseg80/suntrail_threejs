@@ -370,7 +370,7 @@ export async function initScene(): Promise<void> {
         // Idle throttle global — 20fps max en absence d'interaction.
         // Météo : on laisse passer les frames dues (weatherFrameDue) pour que
         // les particules s'animent à 20fps réels, sans plein régime continu.
-        const isWeatherActive = state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0;
+        const isWeatherActive = state.SHOW_WEATHER && state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0;
         const isIdleMode = !state.isUserInteracting && !state.isFlyingTo && !state.isFollowingUser
             && !(isWeatherActive && weatherFrameDue)
             && (now - lastInteractionTime >= 800);
