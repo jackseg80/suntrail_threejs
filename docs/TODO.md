@@ -176,7 +176,70 @@
 - [ ] **Feature Graphic** : Visuel 1024×500px.
 - [x] **Descriptions** : Rédigées FR + EN — voir `docs/STORE_LISTING.md`.
 
-### Sprint 6 — Build AAB + CI/CD + Closed Testing
+### Sprint 6 — Optimisation Énergétique Mobile 🔋
+
+> 🔁 **Workflow** : Chaque phase se termine par `npm test` (145/145) + `npm run check` (0 erreurs) + **test physique sur appareil** avant commit.
+>
+> 📋 **Contexte** : Audit complet effectué (voir CHANGELOG). 4 problèmes structurels identifiés causant un drain batterie excessif. Phase 3 (render-on-demand architectural) reportée en v5.12.
+
+#### Phase 1 — Quick Wins (½ journée) — ✅ TERMINÉ
+
+- [x] **1.1 Fix Deep Sleep réel** (`scene.ts`) : `renderer.setAnimationLoop(null)` sur `visibilitychange hidden` + relance sur `visible`. GPU s'arrête totalement quand l'écran est verrouillé.
+- [x] **1.2 ENERGY_SAVER universel mobile** (`performance.ts`) : `ENERGY_SAVER=true` forcé dans `applyPreset()` (couvre les utilisateurs existants dont `loadSettings()` restaurait `false`). Exception : preset Ultra.
+- [x] **1.3 Cap `PIXEL_RATIO_LIMIT` à 2.0 sur mobile** (`performance.ts`) : Ultra mobile seul ajustement résiduel (baked-in pour les autres tiers).
+- [x] **1.4 Fix `processLoadQueue` hardcodé** (`terrain.ts`) : `slice(0, 4)` → `slice(0, state.MAX_BUILDS_PER_CYCLE)`. Bug découvert en test : le preset ne contrôlait pas le débit réel.
+- [x] **tileCache limites mobiles** (`tileCache.ts`) : Cache réduit par tier mobile + `trimCache()` pour purge immédiate.
+- [x] **Tests Phase 1** : 188/188 ✅. `npm run check` : 0 erreurs ✅.
+
+> ### 📱 Test utilisateur après Phase 1
+> 1. Décharge à ~80% batterie, déconnecte le chargeur.
+> 2. Lance SunTrail (preset auto-détecté), navigue 15 min GPS actif, sans toucher l'écran parfois.
+> 3. Vérifie en particulier : **verrouille l'écran 2 min** → la batterie ne doit plus chuter pendant ce temps.
+> 4. Note le % avant/après — objectif intermédiaire : drain divisé par 2 vs baseline.
+
+#### Phase 1-bis — Recalibration Presets + Détection GPU (½ journée) ✅ TERMINÉ
+
+- [x] **Suppression double-couche** : Plus de "preset + caps mobile". Valeurs directes et universelles par tier.
+- [x] **Presets recalibrés** : eco (MAX_ZOOM 14), balanced RESOLUTION 32 / VEGETATION_DENSITY 500, performance RANGE 5 / SHADOW_RES 1024 / MAX_BUILDS 2 (baked-in).
+- [x] **`detectBestPreset()` enrichi** : 52 patterns GPU (Intel HD/UHD, Arc, Iris Xe, AMD Vega iGPU, RX par série, GTX par génération, Adreno 830+, Mali explicites). Fallback ≥8 cores CPU → balanced.
+- [x] **PerfRecorder** (`VRAMDashboard.ts`) : Bouton ⏺/⏹, buffer 600 samples, export JSON clipboard, FPS affiché.
+- [x] **Tests** : 188/188 ✅. `npm run check` : 0 erreurs ✅.
+
+#### Phase 2 — Throttle des Systèmes Animés (1 journée)
+
+- [ ] **2.1 Throttle eau à 20 FPS** (`scene.ts`) : Découpler la mise à jour de `terrainUniforms.uTime` du rendu principal. Introduire un accumulateur `waterTimeAccum` — `uTime` ne s'incrémente que toutes les 50ms (20 FPS). `SHOW_HYDROLOGY` dans `needsUpdate` conditionné à un flag `waterFrameDue` plutôt que `true` constant.
+- [ ] **2.2 Throttle météo à 20 FPS** (`scene.ts` / `weather.ts`) : Même pattern pour `updateWeatherSystem(delta)` — appel limité à 20 FPS via accumulateur indépendant. Les particules de pluie/neige n'ont pas besoin de 60 FPS.
+- [ ] **2.3 Adaptive DPR sur interaction** (`scene.ts`) : Écouter `controls 'start'` → `renderer.setPixelRatio(1.0)` pendant le mouvement. Sur `controls 'end'` + 200ms → restaurer `state.PIXEL_RATIO_LIMIT` et forcer un render full-quality. Invisible pour l'utilisateur, réduit la charge GPU pendant le pan/zoom.
+- [ ] **2.4 `castShadow=false` végétation mobile** (`terrain.ts`) : Végétation = ~18 draw calls économisés sur la shadow pass. ~20% de gain GPU à LOD16. Conditionné à `state.VEGETATION_CAST_SHADOW` (Phase 2 only).
+- [ ] **Tests Phase 2** : Tests unitaires pour les fonctions throttle (accumulateurs eau/météo). 188/188 tests.
+- [ ] **Mise à jour `AGENTS.md`** : Documenter le pattern accumulateur eau/météo + adaptive DPR.
+
+> ### 📱 Test utilisateur après Phase 2 (test de validation finale)
+> Reprendre le protocole Sprint 4 :
+> 1. Batterie ≥ 80%, déconnectée. Preset **Balanced** (défaut), GPS actif.
+> 2. Navigation continue 1h — navigue, importe un GPX, laisse l'app ouverte en mouvement.
+> 3. `adb shell dumpsys batterystats` avant/après, ou noter % simple.
+> 4. **Objectif cible : ≤ 15%/heure** en Balanced GPS actif.
+> 5. Test bonus : preset Performance avec hydrologie active → ≤ 25%/heure.
+>
+> ### 🔀 Décision de version après ce test
+> - **≤ 15%/h atteint** → Phase 3 reportée en v5.12, on passe au Sprint 7 (AAB + Play Store) en **v5.11**.
+> - **> 15%/h malgré Phase 1+2** → Implémenter Phase 3 avant publication. Version Play Store devient **v5.12**.
+
+#### Phase 3 — Render-on-Demand (Conditionnelle, ~2 jours) 🔀
+
+> ⚠️ **Conditionnel** : N'implémenter que si Phase 1+2 ne suffisent pas à atteindre ≤ 15%/h. Sinon reporté en v5.12.
+
+- [ ] **3.1 Remplacement `setAnimationLoop` → RAF demand-based** (`scene.ts`) : Supprimer `renderer.setAnimationLoop(renderLoopFn)`. Introduire `requestRender()` (flag anti-duplication) + `renderFrame()` auto-schedulé. Le GPU ne tourne **que** quand quelque chose change.
+- [ ] **3.2 Déclencheurs de rendu** (`scene.ts`) : Brancher `requestRender()` sur : `controls 'change'`, `eventBus terrainReady`, tous les `state.subscribe()` à impact visuel, GPS fix, `visibilitychange → visible`.
+- [ ] **3.3 Boucles indépendantes pour systèmes animés** : Eau, météo, GPS follow et sun animation ont chacun leur propre mini-loop `setInterval(requestRender, 50)` qui tourne **uniquement** quand le système est actif — remplace la détection dans `needsUpdate`.
+- [ ] **3.4 Détection fin du damping** (`scene.ts`) : Compteur `idleFrames` — après N frames consécutives sans `controls 'change'`, arrêt complet du RAF.
+- [ ] **3.5 Tests Phase 3** : Vérifier que le rendu redémarre correctement sur chaque déclencheur. Vérifier absence de frames fantômes. 145/145 tests.
+- [ ] **Mise à jour `AGENTS.md`** : Documenter l'architecture render-on-demand, les déclencheurs, et l'anti-pattern `setAnimationLoop` dans la section "Moteur de Rendu".
+
+---
+
+### Sprint 7 — Build AAB + CI/CD + Closed Testing
 - [ ] **Keystore** : Générer `suntrail.keystore` + remplir `android/keystore.properties`.
 - [ ] **AAB Build** : `./gradlew bundleRelease` → exit code 0.
 - [ ] **Test device** : Edge-to-edge, navigation tactile, performance sur appareil physique.
@@ -211,6 +274,16 @@
 
 - [ ] **Moteur AR Natif** : Superposition du moteur 3D sur le flux caméra via Capacitor.
 - [ ] **Occlusion Topographique** : Masquage des étiquettes derrière le relief réel.
+
+## 🔋 v5.12 — Render-on-Demand & Perf (si non fait en v5.11)
+
+> ⚠️ Ce sprint n'existe que si la Phase 3 de Sprint 6 n'a pas été implémentée en v5.11 (résultats batterie suffisants sans elle).
+
+- [ ] **Render-on-Demand complet** : Items 3.1 → 3.5 du Sprint 6 Phase 3 (voir ci-dessus).
+- [ ] **Idle GPU suspension** : Arrêt total du contexte WebGL après 30s d'inactivité complète + reprise sur interaction.
+- [ ] **Profiling mobile avancé** : Session Android Studio Profiler 30min — CPU, GPU, mémoire. Identifier les régressions éventuelles post-v5.11.
+
+---
 
 ## ⏳ Backlog & Recherche (Indéfini)
 - [ ] **Waypoints & Partage** : Marquage personnel et Deep Linking (URL synchronisée).

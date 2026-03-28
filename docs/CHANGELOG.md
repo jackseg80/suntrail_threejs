@@ -4,6 +4,36 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.11.0-wip] - 2026-03-28
+### 🔋 Sprint 6 — Optimisation Énergétique Mobile + PerfRecorder + Recalibration Presets
+
+#### Sprint 6 — Phase 1 : Quick Wins Batterie
+- **Deep Sleep réel** (`scene.ts`) : Remplacement du `return` inline insuffisant par `renderer.setAnimationLoop(null)` sur `visibilitychange hidden` + relance sur `visible`. Le GPU s'arrête totalement quand l'écran est verrouillé.
+- **ENERGY_SAVER universel mobile** (`performance.ts`) : `state.ENERGY_SAVER = true` forcé dans `applyPreset()` (pas seulement dans `detectBestPreset()`) pour couvrir les utilisateurs de retour dont `loadSettings()` restaurait l'ancienne valeur `false`. Exception : preset Ultra mobile (Snapdragon Elite).
+- **Fix `processLoadQueue` hardcodé** (`terrain.ts`) : `slice(0, 4)` → `slice(0, Math.max(1, state.MAX_BUILDS_PER_CYCLE))`. Le preset ne contrôlait pas le débit réel — corrigé.
+- **Limites tileCache mobiles** (`tileCache.ts`) : Cache réduit pour mobile par tier (ultra: 350, performance: 180, balanced: 120 vs 800/400/300 desktop). `trimCache()` exporté pour purge immédiate sur changement de preset.
+- **Cap PIXEL_RATIO_LIMIT 2.0** (`performance.ts`) : Écrans OLED 3× ne nécessitent pas plus de 2× pour la cartographie.
+- **Fix Stats.js init timing** (`scene.ts` + `VRAMDashboard.ts`) : `VRAMDashboard.init()` s'exécutait avant `initScene()` créant `state.stats` → FPS counter non affiché. `state.vramPanel?.setVisible(state.SHOW_STATS)` appelé après création Stats.js. 188 tests ✅.
+
+#### Sprint 6 — PerfRecorder : Module d'analyse de performance
+- **`VRAMDashboard.ts`** : Intégration `PerfRecorder` — buffer circulaire 600 échantillons (5 min à 500ms). Interface `PerfSample` + `PerfSession` exportées.
+- **Bouton ⏺/⏹** dans le panel VRAM : démarre/arrête l'enregistrement. `Stop + Copier` exporte le JSON dans le presse-papier pour analyse IA.
+- **FPS rolling** (`scene.ts` + `state.ts`) : `state.currentFPS` alimenté par un compteur de frames (fenêtre 1s) dans le render loop. Affiché dans le panel VRAM.
+- **Données capturées** : fps, textures, geometries, drawCalls, triangles, tiles, zoom, isProcessingTiles, isUserInteracting, energySaver, timestamp relatif.
+- **CSS** (`style.css`) : `.vram-record-btn`, `.vram-record-btn--active`, `.vram-record-status` avec design tokens.
+
+#### Sprint 6 — Recalibration Presets + Détection GPU enrichie
+- **Architecture simplifiée** : Suppression de la double-couche "preset + caps mobile". Les valeurs de chaque tier sont maintenant directes et universelles. Seul Ultra conserve des ajustements mobiles légers (shadow 2048, RANGE 8 sur Snapdragon Elite).
+- **Presets recalibrés pour le marché mobile** :
+  - `eco` — vieux mobile (MAX_ALLOWED_ZOOM: 14)
+  - `balanced` (STD — Galaxy A53) : RESOLUTION 64→32, VEGETATION_DENSITY 2000→500, WEATHER_DENSITY 2000→1000
+  - `performance` (High — Galaxy S23) : RANGE 8→5, SHADOW_RES 2048→1024, MAX_BUILDS_PER_CYCLE 4→2 (baked-in)
+  - `ultra` — PC bureau / RTX / Apple M / Snapdragon Elite (inchangé)
+- **`detectBestPreset()` enrichi** (`performance.ts`) : 52 patterns GPU couverts (vs 8). Intel HD/UHD par génération (HD 520/620+), Intel Arc, Intel Iris Xe, AMD Vega iGPU, AMD RX par série (RDNA/Polaris), NVIDIA GTX par série numérique, Snapdragon Elite (Adreno 830+), Mali-G68/G78 explicites. Fallback : ≥8 cores CPU → `balanced` (pas `eco`).
+- **`tileCache.getMaxCacheSize()` aligné** : Tailles basées sur RANGE effectif (performance RANGE=5 → 121 tuiles → cache 180).
+
+---
+
 ## [5.11.0-wip] - 2026-03-27
 ### 🚀 Audit Production Play Store + Navigation Tactile + Accessibilité + Android
 

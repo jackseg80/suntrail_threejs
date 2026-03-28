@@ -42,10 +42,27 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 
 ## 🔋 Performance & Mobile
 
-### Optimisations Énergétiques
+### Optimisations Énergétiques (v5.11)
 - **Battery API** : Basculement automatique en mode "Eco" si la batterie descend sous les 20% (v5.7.1).
-- **Deep Sleep** : Arrêt total du rendu (0 FPS) via la `Visibility API` quand l'onglet est masqué ou le téléphone verrouillé.
+- **Deep Sleep réel (v5.11)** : `renderer.setAnimationLoop(null)` sur `visibilitychange hidden` — arrêt total du GPU quand l'écran est verrouillé ou l'app minimisée. Le handler est stocké en variable module-level et supprimé dans `disposeScene()`. IMPORTANT : le `return` inline dans renderLoopFn était insuffisant — setAnimationLoop continuait de tourner.
+- **ENERGY_SAVER universel mobile (v5.11)** : `state.ENERGY_SAVER = true` est forcé dans `applyPreset()` (pas seulement dans `detectBestPreset()`). Raison : `ui.ts` appelle `applyPreset(savedSettings.PERFORMANCE_PRESET)` APRÈS `loadSettings()` qui peut restaurer `ENERGY_SAVER:false` depuis localStorage. `detectBestPreset()` n'est exécuté que pour les nouveaux utilisateurs. Exception : preset Ultra (Snapdragon Elite).
 - **2D Turbo** : Mode spécifique avec élévation zéro et maillage plat (2 triangles/tuile), bridé à 30 FPS.
+- **FPS Rolling (v5.11)** : `state.currentFPS` alimenté dans le render loop (compteur de frames, fenêtre 1s). Utilisé par le PerfRecorder et affiché dans le panel VRAM.
+- **processLoadQueue hardcodé corrigé (v5.11)** : `slice(0, 4)` → `slice(0, Math.max(1, state.MAX_BUILDS_PER_CYCLE))`. Le preset ne contrôlait pas le débit réel des fetchs de tuiles — seulement les rebuilds de mesh.
+
+### Presets — Tiers du Marché Mobile (v5.11)
+Les presets reflètent désormais le marché mobile réel, sans double-couche "preset + caps". Les valeurs sont directes et universelles :
+- **eco** : Vieux mobile (Mali-G52, Adreno 5xx, Intel HD 4xx) — RANGE 3, shadow off, MAX_ZOOM 14
+- **balanced** (STD — Galaxy A53) : RESOLUTION 32, RANGE 4, shadow 256, végétation légère (density 500)
+- **performance** (High — Galaxy S23 / Adreno 740 / GTX 1050) : RANGE 5, shadow 1024, MAX_BUILDS 2 — valeurs baked-in sans caps
+- **ultra** (PC / Snapdragon Elite) : Pleine qualité PC. Sur mobile Elite : shadow≤2048, RANGE≤8 (ajustements minimaux dans `applyPreset()`).
+- **Seuls ajustements mobiles résiduels** dans `applyPreset()` : ENERGY_SAVER (batterie), Ultra shadow/range, PIXEL_RATIO≤2.0.
+
+### Détection GPU (v5.11)
+`detectBestPreset()` couvre 52 patterns GPU : Intel HD/UHD par génération, Intel Arc, Intel Iris Xe, AMD Vega iGPU, AMD RX par série (RDNA/Polaris), NVIDIA GTX par série numérique, Snapdragon Elite (Adreno 830+), Mali par modèle exact. Fallback : ≥8 cores CPU → `balanced`, sinon `eco`. **`detectBestPreset()` ne modifie plus `state.ENERGY_SAVER` directement** — c'est fait dans `applyPreset()` pour gérer les utilisateurs de retour (localStorage).
+
+### PerfRecorder (v5.11)
+`VRAMDashboard` intègre un enregistreur de sessions de performance. Bouton ⏺/⏹ dans le panel VRAM. Buffer circulaire 600 échantillons (5 min à 500ms). Export JSON dans le presse-papier. Données : fps, textures, geometries, drawCalls, triangles, tiles, zoom, isProcessingTiles, isUserInteracting, energySaver. Utiliser pour analyser les chutes de FPS : coller le JSON dans le chat IA pour corrélation fps↔textures↔isProcessingTiles.
 
 ### Adaptabilité Matérielle
 - **Light Shader** : Shader simplifié pour GPU Mali/Adreno mid-range, divisant par 4 la charge GPU (v4.5.46).
@@ -93,11 +110,13 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 | Violation CSP `frame-ancestors` via `<meta>` | Directive valide uniquement en HTTP header | Supprimer `frame-ancestors` du `<meta>` CSP — ne fonctionne que côté serveur. |
 | Violations CSP domaines cartographiques | `connect-src` incomplet | Ajouter : `https://*.overpass-api.de` ET `https://overpass-api.de` (wildcard ≠ domaine racine), `https://overpass.kumi.systems`, `https://api.open-meteo.com`, `https://cloud.maptiler.com` (img-src). |
 | Stats de performance : toggle ON mais rien ne s'affiche | `toggle()` = flip, désync état↔panel au démarrage | Utiliser `setVisible(val)` (setter exact). `VRAMDashboard.init()` appelle `setVisible(state.SHOW_STATS)`. Le callback de `bindToggle` utilise `setVisible` (v5.11.0). |
+| FPS counter absent au démarrage (VRAM table visible) | `VRAMDashboard.init()` s'exécute avant `initScene()` → `state.stats` est null → `stats.dom` skippé | `initScene()` appelle `state.vramPanel?.setVisible(state.SHOW_STATS)` après création Stats.js (v5.11). |
+| `ENERGY_SAVER=false` malgré Phase 1 déployée | `loadSettings()` restaure l'ancienne valeur depuis localStorage avant `applyPreset()`. `detectBestPreset()` n'est exécuté que pour les nouveaux utilisateurs. | `applyPreset()` force `ENERGY_SAVER=true` sur mobile (sauf Ultra) indépendamment du localStorage (v5.11). |
 | Timeline slider ne met pas à jour les ombres en temps réel | `needsUpdate = false` quand ni animation ni mouvement caméra | Setter `state.isInteractingWithUI = true` dans le handler `input` du slider + debounce 150ms → render loop reste actif (v5.11.0). |
 | App Android tuée en background pendant REC | Pas de Foreground Service → Android recycle l'activité | `RecordingService.java` (foregroundServiceType=location) + `RecordingPlugin.java` Capacitor. `startRecordingService()` au début du REC, `stopRecordingService()` à la fin (v5.11.0). |
 | Barre de statut Android visible en plein écran | `onResume()` trop tôt — Android reset les insets au focus | Utiliser `onWindowFocusChanged(hasFocus=true)` pour `WindowInsetsController.hide(statusBars())` (v5.11.0). |
 
 ## 🚀 Commandes de Maintenance
-- `npm test` : Lancer la suite de 145 tests unitaires (Vitest).
+- `npm test` : Lancer la suite de 188 tests unitaires (Vitest).
 - `npm run check` : Vérifier le typage TypeScript (strict).
 - `npm run deploy` : Suite complète avant livraison mobile.
