@@ -47,15 +47,16 @@ let _lastAngle  = 0;
 let _velX = 0, _velY = 0;
 let _inertiaId = 0;
 
-// ── Pas de gesture locking — décisions per-frame directes (v6) ───────────────
-// Toutes les tentatives d'accumulation/verrouillage (v2→v5) ont échoué car le
-// seuil de commit crée une "zone morte" où aucun geste ne répond. Sans locking,
-// chaque frame applique immédiatement le ou les signaux détectés.
+// ── Architecture 2 doigts (v6.2) ────────────────────────────────────────────
+// ROTATION et ZOOM : per-frame avec guards mutuels (pas de zone morte).
+// TILT             : verrouillage dédié style Google Earth.
 //
-// Priorité des 4 gestes (ordre de traitement per-frame) :
-//   1. ROTATION (angle vecteur doigt1→doigt2 change) — exclut zoom parasite
-//   2. ZOOM (spread change) — exclut tilt/pan pour éviter drift
-//   3. TILT / PAN — axe dominant : |dy| > |dx| → tilt, sinon → pan
+//   Tilt lock : 2 doigts posés côte à côte descendent/montent ensemble.
+//   Détection : |dy| > 2px ET |dy| > |dx|×2 ET spread stable ET pas de rotation.
+//   Une fois verrouillé → SEUL le tilt s'applique jusqu'au lever des doigts.
+//
+// _tiltLocked = true tant qu'un tilt est en cours.
+let _tiltLocked = false;
 
 // ── Utilitaires ─────────────────────────────────────────────────────────────────
 function twoFingerMetrics() {
@@ -239,6 +240,7 @@ function onPointerDown(e: PointerEvent): void {
         _lastCx = s.cx; _lastCy = s.cy;
         _lastSpread = s.spread;
         _lastAngle  = s.angle;
+        _tiltLocked = false; // reset à chaque nouvelle session 2 doigts
     }
 }
 
@@ -256,12 +258,7 @@ function onPointerMove(e: PointerEvent): void {
         _lastCy = e.clientY;
 
     } else if (_pointers.size >= 2) {
-        // ── 2 doigts — per-frame, sans locking (v6) ──────────────────────────────
-        // Pas d'accumulation ni de phase "undecided". Chaque frame applique
-        // immédiatement les signaux détectés selon l'ordre de priorité :
-        //   1. Rotation (exclusif avec zoom — spread change géométriquement)
-        //   2. Zoom     (exclusif avec rotation)
-        //   3. Tilt / Pan selon l'axe dominant du déplacement du centre
+        // ── 2 doigts (v6.2) ───────────────────────────────────────────────────────
         const s = twoFingerMetrics();
         const dAngle      = wrapAngleDelta(s.angle - _lastAngle);
         const spreadRatio = _lastSpread > 1 ? s.spread / _lastSpread : 1;
@@ -269,36 +266,45 @@ function onPointerMove(e: PointerEvent): void {
         const dx = s.cx - _lastCx;
         const dy = s.cy - _lastCy;
         const is2D = !!_controls && _controls.minPolarAngle === _controls.maxPolarAngle;
-
         const absDAngle = Math.abs(dAngle);
         const absDy     = Math.abs(dy);
         const absDx     = Math.abs(dx);
 
-        // 1. ROTATION — l'angle doit dominer LES DEUX autres signaux :
-        //    • > spreadDelta × 0.5 : évite que le bruit d'angle lors d'un pinch
-        //      déclenche une rotation (pendant un zoom, spread >> angle noise)
-        //    • × 150 > |dy|        : évite que le bruit d'angle lors d'un tilt
-        //      déclenche une rotation (pendant un tilt, centre bouge >> angle)
-        //    Physique : pendant une vraie rotation, les doigts vont en sens opposé
-        //    → centre reste immobile (|dy| petit) → les deux guards passent.
-        const isRotating = absDAngle > ROT_DEADZONE
-                        && absDAngle > spreadDelta * 0.5
-                        && absDAngle * 150 > absDy;
-        if (isRotating) doRotate(dAngle);
+        // ── TILT LOCK (style Google Earth) ────────────────────────────────────────
+        // Détection : les 2 doigts bougent ensemble verticalement (centre Y),
+        // sans que le spread ni l'angle ne changent → geste tilt confirmé.
+        // Conditions :
+        //   • |dy| > 2px             : mouvement vertical minimum
+        //   • |dy| > |dx| × 2        : clairement plus vertical qu'horizontal
+        //   • spreadDelta < 0.008    : doigts ne s'écartent pas (pas un pinch)
+        //   • |dAngle| < 0.010 rad   : doigts ne tournent pas (pas une rotation)
+        // Une fois verrouillé : SEUL le tilt s'applique jusqu'au lever des doigts.
+        if (!_tiltLocked
+                && absDy > 2
+                && absDy > absDx * 2
+                && spreadDelta < 0.008
+                && absDAngle < 0.010) {
+            _tiltLocked = true;
+        }
 
-        // 2. ZOOM — spread change, exclusif avec rotation.
-        if (!isRotating && spreadDelta > 0.004) doZoomToPoint(spreadRatio, s.cx, s.cy);
+        if (_tiltLocked) {
+            // Tilt verrouillé : tout sauf tilt est ignoré
+            if (absDy > 0.3)
+                is2D ? doPan(0, -dy) : doTilt(dy);
+        } else {
+            // ── Rotation (per-frame, 3 guards) ────────────────────────────────────
+            const isRotating = absDAngle > ROT_DEADZONE
+                            && absDAngle > spreadDelta * 0.5
+                            && absDAngle * 150 > absDy;
+            if (isRotating) doRotate(dAngle);
 
-        // 3. TILT / PAN — axe dominant, exclusif avec rotation.
-        //    Tilt = 2 doigts glissent ensemble HORIZONTALEMENT (dx dominant).
-        //    Pan  = 2 doigts glissent ensemble VERTICALEMENT   (dy dominant).
-        if (!isRotating) {
-            if (absDx >= absDy && absDx > 0.5) {
-                // Horizontal dominant → tilt (ou pan horizontal en mode 2D verrouillé)
-                is2D ? doPan(dx, 0) : doTilt(dx);
-            } else if (absDy > absDx && absDy > 0.5) {
-                // Vertical dominant → pan avant/arrière
-                doPan(0, dy);
+            // ── Zoom (exclusif avec rotation) ─────────────────────────────────────
+            const isZooming = !isRotating && spreadDelta > 0.004;
+            if (isZooming) doZoomToPoint(spreadRatio, s.cx, s.cy);
+
+            // ── Pan horizontal (fallback, ni rotation ni zoom) ────────────────────
+            if (!isRotating && !isZooming && absDx > absDy && absDx > 0.5) {
+                doPan(dx, 0);
             }
         }
 
@@ -314,7 +320,7 @@ function onPointerUp(e: PointerEvent): void {
     if (_pointers.size === 1) {
         const [p] = Array.from(_pointers.values());
         _lastCx = p.x; _lastCy = p.y;
-        // rien à réinitialiser — pas de gesture locking en v6
+        _tiltLocked = false; // un doigt levé = fin du tilt lock
     }
 
     if (_pointers.size === 0) {
