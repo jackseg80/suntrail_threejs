@@ -4,6 +4,46 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.11.1-touch] - 2026-03-29
+### 🕹️ Navigation Tactile — Refonte complète 2 doigts (v6.3)
+
+#### Contexte
+La navigation 2 doigts avait 3 bugs confirmés sur device Android :
+1. Zoom zoomait vers le centre écran au lieu des doigts
+2. Rotation déclenchait aussi du zoom parasite
+3. Tilt impossible — rotation se déclenchait à la place
+
+#### Fixes
+
+- **Zoom vers les doigts** (`touchControls.ts`) : `doZoomToPoint()` — raycasting depuis la caméra à travers le centre du pinch, intersection avec le plan horizontal au niveau du target, re-projection après zoom, compensation `doPan(-ex, -ey)/PAN_SPEED`. Correct quelle que soit l'inclinaison de la caméra.
+
+- **Rotation sans zoom parasite** (`touchControls.ts`) : `isRotating` requiert désormais 3 conditions cumulatives : `|dAngle| > ROT_DEADZONE` + `|dAngle| > spreadDelta × 0.5` (angle doit dominer spread → évite bruit pendant pinch) + `|dAngle| × 150 > |dy|` (angle doit dominer dérive verticale → évite bruit pendant tilt).
+
+- **Tilt par placement des doigts** (`touchControls.ts`) : Abandon des approches par accumulation de signal (v2→v5) — fondamentalement cassées car PointerEvents se déclenchent un pointeur à la fois (d2y=0 systématique → faux positifs). Solution : détection par **placement initial** (style Google Earth réel).
+  - Au 2e contact : si `|sin(angle initial)| < TILT_ANGLE (0.707)` → `_tiltPreArmed = true`
+  - Premier mouvement vertical (`|dy| > |dx|`, spread stable) → `_tiltLocked = true` immédiatement
+  - Pendant le lock : **seul** `doTilt(dy)` s'applique — zoom et rotation bloqués
+  - Reset à chaque lever de doigt
+
+#### Architecture finale `touchControls.ts` (v6.3)
+
+```
+Placement 2 doigts à l'horizontal  →  _tiltPreArmed = true
++ premier mv vertical              →  _tiltLocked = true  →  doTilt(dy) exclusif
+Placement autre / tilt non armé    →  isRotating (3 guards) / doZoomToPoint / doPan
+```
+
+#### Paramètres ajustables (tête de fichier)
+| Constante | Valeur | Rôle |
+|-----------|--------|------|
+| `ROT_DEADZONE` | 0.003 rad | Seuil minimal de détection rotation |
+| `TILT_ANGLE` | 0.707 | `|sin(angle)| <` ce seuil → pré-armement tilt (0.707 = 45°) |
+| `PAN_SPEED` | 1.8 | Vitesse pan |
+| `TILT_SPEED` | 1.2 | Sensibilité tilt |
+| `INERTIA` | 0.88 | Décélération inertie pan |
+
+---
+
 ## [5.11.1] - 2026-03-28
 ### 🐛 Bugfixes Post-Marche Réelle + Profiling Phase B
 

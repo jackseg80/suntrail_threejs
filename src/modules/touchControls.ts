@@ -1,32 +1,45 @@
 /**
- * touchControls.ts — Navigation tactile style Google Earth / Google Maps (v5.11 rev3)
+ * touchControls.ts — Navigation tactile style Google Earth (v6.3)
  *
  * ── Stratégie PointerEvents ───────────────────────────────────────────────────
  * Three.js r160 OrbitControls utilise PointerEvents (pas TouchEvents).
  * On intercepte pointerdown en phase CAPTURE, on désactive OrbitControls,
  * on gère les gestes, on réactive à la fin.
  *
- * ── Gestes ────────────────────────────────────────────────────────────────────
- *   1 doigt      → pan horizontal (avec inertie)
- *   2 doigts X   → pan horizontal
- *   2 doigts Y   → inclinaison (tilt / phi)
- *   2 doigts spread → zoom (pinch)
- *   2 doigts angle → rotation azimut (tire-bouchon)
+ * ── Gestes 2 doigts ───────────────────────────────────────────────────────────
  *
- * ── Vitesse ───────────────────────────────────────────────────────────────────
- * PAN_SPEED  : multiplicateur de vitesse du pan  (1.8 = légèrement plus rapide)
- * TILT_SPEED : sensibilité de l'inclinaison
- * INERTIA    : facteur de décélération après lâcher (0 = pas d'inertie, 1 = infini)
+ *   ZOOM      : pinch (écartement/rapprochement) — zoome vers le centre des doigts
+ *               via raycasting sur le plan terrain (doZoomToPoint).
+ *
+ *   ROTATION  : tire-bouchon (twist) — azimut de la caméra.
+ *               Détection per-frame avec 3 guards : angle > deadzone,
+ *               angle > spread×0.5 (évite bruit zoom), angle×150 > |dy| (évite bruit tilt).
+ *
+ *   TILT      : 2 doigts posés CÔTE À CÔTE (horizontal, < 45°) puis
+ *               monter/descendre ensemble → inclinaison de la caméra (phi).
+ *               Détecté par le PLACEMENT initial (pas le mouvement).
+ *               Verrouillage immédiat (_tiltLocked) : bloque zoom/rotation.
+ *
+ *   PAN       : 2 doigts déplacement horizontal — pan de la carte.
+ *               1 doigt → pan dans toutes directions (avec inertie).
+ *
+ * ── Paramètres ajustables ─────────────────────────────────────────────────────
+ * PAN_SPEED    : vitesse du pan (1.8 = légèrement plus rapide que défaut)
+ * TILT_SPEED   : sensibilité de l'inclinaison 2-doigts
+ * INERTIA      : décélération après lâcher 1 doigt (0 = off, 1 = infini)
+ * ROT_DEADZONE : seuil minimal en rad pour détecter une rotation (0.003)
+ * TILT_ANGLE   : |sin(angle)| < TILT_ANGLE pour le pré-armement tilt (0.707 = 45°)
  */
 
 import * as THREE from 'three';
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // ── Paramètres ajustables ───────────────────────────────────────────────────────
-const PAN_SPEED   = 1.8;   // >1 = plus rapide qu'OrbitControls par défaut
-const TILT_SPEED  = 1.2;   // sensibilité de l'inclinaison 2-doigts
-const INERTIA     = 0.88;  // coefficient de friction inertie pan (0 = off)
+const PAN_SPEED    = 1.8;   // >1 = plus rapide qu'OrbitControls par défaut
+const TILT_SPEED   = 1.2;   // sensibilité de l'inclinaison 2-doigts
+const INERTIA      = 0.88;  // coefficient de friction inertie pan (0 = off)
 const ROT_DEADZONE = 0.003; // rad — ignore les micro-rotations parasites
+const TILT_ANGLE   = 0.707; // |sin(angle initial)| < TILT_ANGLE → pré-armement tilt (0.707 = 45°)
 
 // ── Types ───────────────────────────────────────────────────────────────────────
 interface TrackedPointer { x: number; y: number; }
@@ -249,7 +262,7 @@ function onPointerDown(e: PointerEvent): void {
         _tiltLocked = false;
         // Pré-armement : doigts posés à moins de 45° de l'horizontale
         // |sin(angle)| < sin(45°) = 0.707 → les doigts sont plus côte à côte que l'un au-dessus de l'autre
-        _tiltPreArmed = Math.abs(Math.sin(s.angle)) < 0.707;
+        _tiltPreArmed = Math.abs(Math.sin(s.angle)) < TILT_ANGLE;
     }
 }
 
