@@ -160,7 +160,8 @@
 - [x] **Fix météo 20fps réels** : ✅ Cause identifiée — accumulateurs `weatherTimeAccum` placés après le guard idle → ne s'incrémentaient que sur les frames rendues → météo à ~5fps visuels au lieu de 20fps. Fix : accumulateurs déplacés avant tous les guards. Météo fluide à 20fps sans plein régime. `tickWeatherTime` supprimé (non nécessaire).
 - [x] **Fix export GPX Android** : ✅ `link.click()` + Blob URL ignoré silencieusement par WebView Android. Fix : `@capacitor/filesystem` → `Filesystem.writeFile(Directory.Documents)`. Auto-export au STOP (si ≥ 2 points). Bouton "Exporter" supprimé (redondant). Fichier dans *Files > Android > data > com.suntrail.threejs > files > Documents*.
 - [x] **Test Galaxy A53 (Balanced/STD) — Batterie marche réelle** : ✅ −6%/30min = ~12%/h (poche, Deep Sleep, GPS passif). Objectif ≤ 15%/h atteint. C'est l'appareil cible mid-range (Mali-G68 / Exynos 1280). Décision : **Sprint 7 en v5.11** autorisé.
-- [ ] **Test Galaxy A53 — Profiling technique complet** : PerfRecorder JSON + Android Studio Live Telemetry (Phase A/B/C). Voir `docs/PROFILING_RESULTS.md` Session 5. À faire avant Sprint 7 pour valider les métriques VRAM/FPS/mémoire sur preset Balanced.
+- [x] **Test Galaxy A53 — Profiling technique complet** : ✅ Session 5 (PerfRecorder + Live Telemetry) + Session 6 (Phase B flame chart + memory heap). Aucune fuite. Long Tasks attendus sur Exynos 1280. Voir `docs/PROFILING_RESULTS.md`.
+- [ ] **Test Galaxy S23 — Phase B Chrome DevTools** : flame chart + memory heap. Cible `renderLoopFn < 16ms` (ENERGY_SAVER=false). Voir Session 7 dans `docs/PROFILING_RESULTS.md`.
 
 > ### 📱 Protocole Profiling SunTrail — 3 phases simultanées
 >
@@ -412,8 +413,9 @@ App sur appareil physique Android connecté en USB (débogage activé).
 
 - [x] **Phase A — Batterie** : ✅ S23 −10%/30min (GPS+REC, Deep Sleep 90%). A53 −6%/30min (GPS passif, Deep Sleep 100%). Objectif ≤ 15%/h atteint sur les deux appareils.
 - [x] **Décision** : ✅ **Sprint 7 en v5.11.** Phase 3 render-on-demand reportée en v5.12.
-- [ ] **Phase C — PerfRecorder JSON** : Encore à faire sur A53 (Balanced) — voir Session 5 dans PROFILING_RESULTS.md
-- [ ] **Phase B — Flame chart** : Encore à faire sur A53 via `chrome://inspect`
+- [x] **Phase C — PerfRecorder JSON** : ✅ Session 5 A53 — 377 samples, Deep Sleep validé, energySaver=true. Voir PROFILING_RESULTS.md.
+- [x] **Phase B — Flame chart A53** : ✅ Session 6 — throttle météo OK, workers OK, Long Tasks attendus Exynos 1280, aucune fuite mémoire.
+- [ ] **Phase B — Flame chart S23** : flame chart + memory heap S23 (Performance, ENERGY_SAVER=false). Cible `renderLoopFn < 16ms`. Voir Session 7 dans PROFILING_RESULTS.md.
 
 ---
 
@@ -460,6 +462,8 @@ App sur appareil physique Android connecté en USB (débogage activé).
 - [ ] **Render-on-Demand complet** : Items 3.1 → 3.5 du Sprint 6 Phase 3 (voir ci-dessus).
 - [ ] **Idle GPU suspension** : Arrêt total du contexte WebGL après 30s d'inactivité complète + reprise sur interaction.
 - [ ] **Profiling mobile avancé** : Session Android Studio Profiler 30min — CPU, GPU, mémoire. Identifier les régressions éventuelles post-v5.11.
+- [ ] **Budget-temps mesh par frame** : Remplacer `MAX_BUILDS_PER_CYCLE` (compteur fixe) par un budget-temps (~8ms/frame) dans `processLoadQueue()`. Élimine les Long Tasks lors des transitions LOD sur Exynos 1280. Détecté en Session 6 Phase B.
+- [ ] **materialPool — recycling shader complet** : +98 programmes shader sur 5 min de navigation (Session 6 memory heap). Investiguer quels chemins créent des shaders hors pool. Taille marginale (486 kB) mais potentiel d'optimisation propre.
 
 ---
 

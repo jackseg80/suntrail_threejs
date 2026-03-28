@@ -398,7 +398,70 @@ Chute isolée, aucune tile en cours. Signature GC Android ou throttling thermiqu
 | Objectif ≤ 15%/h | N/A | N/A | ✅ usage réel | **✅ ATTEINT** | — | — |
 | Décision | Smoke test | ✅ Sprint 7 | ✅ Confirmé | ✅ Sprint 7 | **✅ VALIDÉ** | — |
 
-## Corrections appliquées suite au profiling (v5.11.1)
+---
+
+## Session 6 — Galaxy A53 (Balanced/STD) — Phase B Chrome DevTools — 2026-03-28 ✅
+
+### Flame Chart (Performance tab)
+
+| Signal | Résultat | Verdict |
+|--------|----------|---------|
+| `renderLoopFn` < 33ms (ENERGY_SAVER) | ✅ Majoritairement dans le budget | ✅ |
+| Throttle météo (`updateWeatherSystem` ~50ms) | ✅ Visible — pas de nappe continue | ✅ |
+| Workers actifs | ✅ 3–4 workers (cap mobile 4 respecté) | ✅ |
+| Long Tasks (triangles rouges) | ⚠️ Présents lors des transitions LOD | Non bloquant |
+| Bloc 41–43s (~1s) | ✅ Identifié : GPS button → `refreshTerrain()` one-time | Acceptable |
+| Scripting total | **26%** (12s/46s) — correct pour Exynos 1280 | ✅ |
+
+**Long Tasks** : dus à `buildMesh()` synchrone dans `processLoadQueue()` (`MAX_BUILDS_PER_CYCLE=2` Balanced). Visible lors des transitions LOD — chaque build peut dépasser 33ms sur Exynos 1280. Non bloquant, backlog v5.12.
+
+**Bloc 41–43s** : pression bouton GPS → `refreshTerrain()` → `resetTerrain()` + `updateVisibleTiles()` synchrone sur tout le cache. Comportement one-time attendu à la téléportation GPS. Non reproductible en navigation normale.
+
+### Memory Comparison (2 snapshots : démarrage vs après 5 min navigation LOD 16)
+
+| Type JS | Δ objets | Δ taille | Interprétation |
+|---------|----------|----------|---------------|
+| `system/JSArrayBufferData` | +226 | **+122 MB** | Pixels tuiles en RAM JS (cache normal, S1 pris à vide) ✅ |
+| `WebGLTexture` | +238 | +15 kB | Navigation LOD 16 — cohérent Session 5 (309 textures peak) ✅ |
+| `PerformanceResourceTiming` | +232 | +31 kB | Entrées network browser, GCées automatiquement ✅ |
+| `LayoutShift` / `LayoutShiftAttribution` | +257/+220 | +32 kB | Entrées Layout Instability API browser ✅ |
+| `{hiking, information, tourism}` | +158 | +4.5 kB | Cache POI MVT voulu (évite re-fetch) ✅ |
+| `{aoMap, flipSided…}` (shader uniforms) | +98 | +486 kB | Programmes shader — materialPool partiel ⚠️ |
+| `{shader}` | +98 | +4.4 kB | Idem ⚠️ |
+
+**Verdict Memory** : **Aucune fuite détectée.** Le +122 MB ArrayBuffer est le cache de textures qui se remplit lors de la navigation (S1 pris à startup = quasi vide). Android Studio Live Telemetry (Session 5) confirme GC actif et heap stable.
+
+**Point mineur** : +98 programmes shader sur 5 min — le `materialPool` ne recycle pas 100% des shaders. Taille marginale (486 kB), non bloquant. Backlog v5.12.
+
+### Décision Phase B A53
+
+**✅ Non bloquant Play Store.** Aucune fuite mémoire. Long Tasks attendus sur Exynos 1280 lors des transitions LOD.
+
+---
+
+## Session 7 — Galaxy S23 (Performance/High) — Phase B Chrome DevTools — À FAIRE
+
+### Valeurs cibles S23
+
+| Signal | Cible | Différence vs A53 |
+|--------|-------|------------------|
+| `renderLoopFn` | **< 16ms** (ENERGY_SAVER=false, 60fps) | Plus strict (2×) |
+| Throttle météo | ~50ms (identique) | — |
+| Long Tasks | Moins fréquents (Adreno 740 ≫ Exynos 1280) | Meilleur |
+| Workers | 4 (cap mobile identique) | — |
+
+### Checklist
+
+- [ ] Connecter S23 USB + débogage USB activé
+- [ ] SunTrail lancé (preset Performance/High auto-détecté)
+- [ ] `chrome://inspect` → WebView com.suntrail.threejs → Inspect
+- [ ] Performance → ⏺ → pan/zoom 10-15s, changement LOD → ⏹
+- [ ] Analyser : `renderLoopFn` < 16ms, Long Tasks, throttle météo
+- [ ] Memory → 2 snapshots (démarrage + après 5 min) → Comparison
+
+---
+
+## Comparatif des sessions
 
 | Fix | Commit | Résultat |
 |-----|--------|----------|
