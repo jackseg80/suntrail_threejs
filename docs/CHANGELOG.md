@@ -5,7 +5,7 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 ---
 
 ## [5.11.1] - 2026-03-28
-### 🐛 Bugfixes Post-Marche Réelle
+### 🐛 Bugfixes Post-Marche Réelle + Profiling Phase B
 
 #### Bugs identifiés lors des tests de randonnée physique (S23 + A53)
 
@@ -15,9 +15,22 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Fix artefact eau LOD 17-18** (`hydrology.ts`) : Amplitude des vagues ±3.7m (w1=2.5, w2=1.2) — la vague descendait 2.7m sous la surface du terrain → shadow map artifacts (ombre qui pulse). Fix : amplitude réduite à ±0.9m (w1=0.6, w2=0.3) + base du mesh rehaussée à `baseAlt + 2.0m` (vs +1.0m) → marge minimum 1.1m au-dessus du terrain en tout état de cause.
 - **Fix rotation caméra brusque pendant suivi GPS** (`location.ts`) : Grand `delta` après réveil de Deep Sleep pouvait causer une rotation theta brutale lors de la reprise du suivi heading. Fix : `clampedDelta = Math.min(delta, 0.05)` dans le lerp de `spherical.theta` (`centerOnUser()`).
 
+#### Bugs identifiés lors du profiling Phase B (Chrome DevTools)
+
+- **Fix tuiles blanches intermittentes** (`tileCache.ts` + `terrain.ts`) : `addToCache()` et `trimCache()` évincaient aveuglément l'entrée FIFO la plus ancienne sans vérifier si elle était encore rendue en scène. `texture.dispose()` supprimait le handle WebGL → tuile blanche jusqu'à la re-upload au frame suivant (66-400ms sous throttling thermique). Fix : `activeCacheKeys` (Set<string>) — `terrain.ts` marque/démarque les clés via `markCacheKeyActive/Inactive()` au cycle `load/dispose`. L'éviction cherche la première entrée non-active avant de fallback FIFO.
+- **Fix idle throttle 20fps cassé après bouton GPS** (`ui.ts`) : `state.isFollowingUser = true` était posé sur le 1er clic GPS (centrage unique, `userLocation=null`). `centerOnUser()` retournait immédiatement mais `isIdleMode` restait `false` indéfiniment → throttle 20fps désactivé. Fix : `isAlreadyCentered` utilise `gpsMainBtn.classList.contains('active')` au lieu de `state.isFollowingUser`. `isFollowingUser=true` uniquement sur 2e clic (suivi continu réel).
+- **Fix GPS follow à 120fps** (`scene.ts`) : Sans plafond propre, le suivi GPS tournait à la fréquence maximale du display (120fps sur S23) avec `ENERGY_SAVER=false`. GPS = 1Hz, lerp fluide à 30fps — rendu à 120fps inutile. Fix : guard `33ms` conditionnel à `state.isFollowingUser && !state.ENERGY_SAVER`.
+- **feat(settings) : toggle désactivation météo** (`weather.ts`, `scene.ts`, `SettingsSheet.ts`, `index.html`) : `SHOW_WEATHER` existait dans `PerformanceSettings` mais n'était jamais vérifié. Branché dans `updateWeatherSystem()`, `isWeatherActive`, et `bindToggle('weather-toggle')`. Clés i18n déjà présentes dans les 4 langues.
+
 #### Profiling marche réelle (Sessions 3 & 4)
 - **Galaxy S23 (Performance)** : −10% / 30min = 20%/h. Drain dominé par GPS+REC Foreground Service. GPU en Deep Sleep ~90% du temps. Objectif ≤ 15%/h atteint en usage réel.
 - **Galaxy A53 (Balanced)** : −6% / 30min = 12%/h. Poche, screen off, GPS passif, Deep Sleep 100%. Objectif ≤ 15%/h **atteint**. ✅ Sprint 7 Play Store en v5.11 autorisé.
+
+#### Profiling Phase B — Chrome DevTools (Sessions 6 & 7)
+- **A53 flame chart** : throttle météo 50ms OK, workers 4 actifs OK, Long Tasks lors LOD changes (buildMesh CPU-bound), Long Task 41s = GPS button → `refreshTerrain()` one-time. Scripting 26%.
+- **A53 memory heap** : aucune fuite. +122MB ArrayBuffer = cache normal (S1 pris à vide). +98 shader programs = materialPool Balanced-spécifique, backlog v5.12.
+- **S23 flame chart** : 60fps < 16ms stable, scripting 19%, Long Tasks quasi nuls (Adreno 740), throttle météo 50ms déterministe. Fix v5.11.1 confirmé : plus de 20fps sur flyTo/follow.
+- **S23 memory heap** : quasi-plat (~200kB croissance vs ~150MB A53). +8 WebGLPrograms (vs +98 A53) → materialPool backlog = Balanced-spécifique uniquement.
 
 ---
 
