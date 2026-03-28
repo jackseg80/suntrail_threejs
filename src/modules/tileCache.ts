@@ -19,6 +19,20 @@ export interface CachedTileData {
 const dataCache = new Map<string, CachedTileData>();
 
 /**
+ * Clés de cache des tuiles actuellement en scène (à ne pas évincer).
+ * Terrain.ts marque/démarque via markCacheKeyActive/Inactive.
+ * Évite le flash blanc causé par la suppression de textures GPU encore rendues (v5.11.1).
+ */
+const activeCacheKeys = new Set<string>();
+
+export function markCacheKeyActive(key: string): void {
+    activeCacheKeys.add(key);
+}
+export function markCacheKeyInactive(key: string): void {
+    activeCacheKeys.delete(key);
+}
+
+/**
  * Taille max du cache alignée sur le RANGE effectif de chaque tier (v5.11).
  *
  * Calcul : RANGE N → tuiles actives max = (2N+1)² ≈ couvrir 1.5× pour smooth scrolling
@@ -49,16 +63,23 @@ export function getTileCacheKey(key: string, zoom: number): string {
  */
 export function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8ClampedArray | null, colorTex: THREE.Texture, overlayTex: THREE.Texture | null, normalTex: THREE.Texture | null): void {
     if (dataCache.size >= getMaxCacheSize()) {
-        const oldestKey = dataCache.keys().next().value;
-        if (oldestKey) {
-            const entry = dataCache.get(oldestKey);
+        // Chercher la première entrée non-active (non rendue en scène) pour éviction.
+        // Évite le flash blanc causé par la suppression d'une texture encore rendue (v5.11.1).
+        let evictKey: string | undefined;
+        for (const k of dataCache.keys()) {
+            if (!activeCacheKeys.has(k)) { evictKey = k; break; }
+        }
+        // Fallback : toutes les entrées sont actives (rare) → éviction FIFO classique
+        if (!evictKey) evictKey = dataCache.keys().next().value;
+        if (evictKey) {
+            const entry = dataCache.get(evictKey);
             if (entry) {
                 entry.elev.dispose();
                 entry.color.dispose();
                 if (entry.overlay) entry.overlay.dispose();
                 if (entry.normal) entry.normal.dispose();
             }
-            dataCache.delete(oldestKey);
+            dataCache.delete(evictKey);
         }
     }
     dataCache.set(key, { elev: elevTex, pixelData, color: colorTex, overlay: overlayTex, normal: normalTex });
@@ -84,16 +105,21 @@ export function getFromCache(key: string): CachedTileData | null {
 export function trimCache(): void {
     const maxSize = getMaxCacheSize();
     while (dataCache.size > maxSize) {
-        const oldestKey = dataCache.keys().next().value;
-        if (!oldestKey) break;
-        const entry = dataCache.get(oldestKey);
+        // Même logique d'éviction : préférer les tuiles inactives (v5.11.1)
+        let evictKey: string | undefined;
+        for (const k of dataCache.keys()) {
+            if (!activeCacheKeys.has(k)) { evictKey = k; break; }
+        }
+        if (!evictKey) evictKey = dataCache.keys().next().value;
+        if (!evictKey) break;
+        const entry = dataCache.get(evictKey);
         if (entry) {
             entry.elev.dispose();
             entry.color.dispose();
             if (entry.overlay) entry.overlay.dispose();
             if (entry.normal) entry.normal.dispose();
         }
-        dataCache.delete(oldestKey);
+        dataCache.delete(evictKey);
     }
 }
 

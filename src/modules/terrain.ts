@@ -11,7 +11,7 @@ import { loadHydrologyForTile } from './hydrology';
 import { EARTH_CIRCUMFERENCE, lngLatToWorld, worldToLngLat, lngLatToTile, getTileBounds } from './geo';
 import { eventBus } from './eventBus';
 import { getAltitudeAt } from './analysis'; // used for terrain-clamping in gpxDrapePoints
-import { addToCache, getFromCache, hasInCache, getTileCacheKey } from './tileCache';
+import { addToCache, getFromCache, hasInCache, getTileCacheKey, markCacheKeyActive, markCacheKeyInactive } from './tileCache';
 import { getPlaneGeometry } from './geometryCache';
 import { loadTileData } from './tileLoader';
 import { materialPool } from './materialPool';
@@ -164,6 +164,7 @@ export class Tile {
             this.elevationTex = cached.elev; this.pixelData = cached.pixelData;
             this.colorTex = cached.color; this.overlayTex = cached.overlay;
             this.normalTex = cached.normal;
+            markCacheKeyActive(cacheKey);
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
             return;
         }
@@ -200,6 +201,7 @@ export class Tile {
             }
 
             addToCache(cacheKey, this.elevationTex!, this.pixelData, this.colorTex!, this.overlayTex, this.normalTex);
+            markCacheKeyActive(cacheKey);
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
         } catch (e) { this.status = 'failed'; }
     }
@@ -408,6 +410,7 @@ export class Tile {
 
     dispose(): void {
         this.status = 'disposed'; loadQueue.delete(this);
+        markCacheKeyInactive(getTileCacheKey(this.key, this.zoom));
         if (this.mesh) {
             if (state.scene) state.scene.remove(this.mesh);
             // Empêcher disposeObject de tuer les textures partagées (gérées par le cache)
