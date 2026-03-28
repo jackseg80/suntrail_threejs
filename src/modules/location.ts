@@ -187,7 +187,10 @@ export function centerOnUser(delta: number) {
         
         const deadzone = THREE.MathUtils.degToRad(2.0);
         if (Math.abs(diff) > deadzone) {
-            spherical.theta += diff * (1 - Math.exp(-1.2 * delta));
+            // Clamper le delta à 50ms max pour éviter un grand saut de rotation
+            // si le render loop a été en pause (Deep Sleep → réveil) (v5.11.1)
+            const clampedDelta = Math.min(delta, 0.05);
+            spherical.theta += diff * (1 - Math.exp(-1.2 * clampedDelta));
         }
     }
 

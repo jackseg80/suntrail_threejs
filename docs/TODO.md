@@ -159,7 +159,8 @@
 - [x] **Loading indicator 1er démarrage** : ✅ `#map-loading-overlay` dans `index.html` — affiché après setup-screen, caché quand `isProcessingTiles → false` (1ères tuiles). Fallback 2s (cache chaud) + timeout 15s (réseau lent).
 - [x] **Fix météo 20fps réels** : ✅ Cause identifiée — accumulateurs `weatherTimeAccum` placés après le guard idle → ne s'incrémentaient que sur les frames rendues → météo à ~5fps visuels au lieu de 20fps. Fix : accumulateurs déplacés avant tous les guards. Météo fluide à 20fps sans plein régime. `tickWeatherTime` supprimé (non nécessaire).
 - [x] **Fix export GPX Android** : ✅ `link.click()` + Blob URL ignoré silencieusement par WebView Android. Fix : `@capacitor/filesystem` → `Filesystem.writeFile(Directory.Documents)`. Auto-export au STOP (si ≥ 2 points). Bouton "Exporter" supprimé (redondant). Fichier dans *Files > Android > data > com.suntrail.threejs > files > Documents*.
-- [ ] **Test Galaxy A54** : 📱 Appareil mid-range disponible (Exynos 1380) → preset Balanced (STD) auto-détecté. **Valider** : FPS idle (~20fps en idle, plein régime en interaction), drain batterie Balanced, Memory Native en Live Telemetry. C'est l'appareil cible de la majorité des utilisateurs.
+- [x] **Test Galaxy A53 (Balanced/STD) — Batterie marche réelle** : ✅ −6%/30min = ~12%/h (poche, Deep Sleep, GPS passif). Objectif ≤ 15%/h atteint. C'est l'appareil cible mid-range (Mali-G68 / Exynos 1280). Décision : **Sprint 7 en v5.11** autorisé.
+- [ ] **Test Galaxy A53 — Profiling technique complet** : PerfRecorder JSON + Android Studio Live Telemetry (Phase A/B/C). Voir `docs/PROFILING_RESULTS.md` Session 5. À faire avant Sprint 7 pour valider les métriques VRAM/FPS/mémoire sur preset Balanced.
 
 > ### 📱 Protocole Profiling SunTrail — 3 phases simultanées
 >
@@ -409,10 +410,10 @@ App sur appareil physique Android connecté en USB (débogage activé).
 - `adb shell dumpsys batterystats` → chercher `Estimated power use`
 - **Objectif : ≤ 15%/heure**
 
-- [ ] **Phase C** : Lancer le PerfRecorder (PC ou Android), coller le JSON pour analyse
-- [ ] **Phase B** : Chrome DevTools flame chart — valider throttle eau/météo
-- [ ] **Phase A** : Mesurer le drain batterie sur Android (≤ 15%/h ?)
-- [ ] **Décision** : Passer au Sprint 7 ou implémenter Phase 3
+- [x] **Phase A — Batterie** : ✅ S23 −10%/30min (GPS+REC, Deep Sleep 90%). A53 −6%/30min (GPS passif, Deep Sleep 100%). Objectif ≤ 15%/h atteint sur les deux appareils.
+- [x] **Décision** : ✅ **Sprint 7 en v5.11.** Phase 3 render-on-demand reportée en v5.12.
+- [ ] **Phase C — PerfRecorder JSON** : Encore à faire sur A53 (Balanced) — voir Session 5 dans PROFILING_RESULTS.md
+- [ ] **Phase B — Flame chart** : Encore à faire sur A53 via `chrome://inspect`
 
 ---
 

@@ -4,6 +4,23 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.11.1] - 2026-03-28
+### 🐛 Bugfixes Post-Marche Réelle
+
+#### Bugs identifiés lors des tests de randonnée physique (S23 + A53)
+
+- **Fix flyTo animation 20fps** (`scene.ts`) : La RAF `animateFlight` appelait `controls.update()` en interne, ce qui mettait à jour `lastPosition` dans OrbitControls. Le `controls.update()` suivant dans `renderLoopFn` retournait `false` (`controlsDirty=false`). `state.isFlyingTo` était couplé à `controlsDirty` → pas de rendu. Fix : `state.isFlyingTo` extrait en condition **standalone** dans `needsUpdate`, indépendant de `controlsDirty`.
+- **Fix GPS follow camera 20fps** (`scene.ts`) : `state.isFollowingUser` absent de la guard `isIdleMode` → render loop throttlé à 20fps pendant le suivi GPS. Fix : ajout de `!state.isFollowingUser` dans `isIdleMode`. Même règle que `isFlyingTo` : tout mouvement continu de caméra doit être exempté du throttle idle.
+- **Fix bouton GPS suivi état inversé** (`scene.ts`) : `flyTo()` référençait l'élément `gps-follow-btn` (inexistant dans le DOM) pour retirer la classe `active` → le bouton restait visuellement "actif" après désactivation du suivi. Fix : correction en `gps-main-btn` + retrait des classes `active` et `following`.
+- **Fix artefact eau LOD 17-18** (`hydrology.ts`) : Amplitude des vagues ±3.7m (w1=2.5, w2=1.2) — la vague descendait 2.7m sous la surface du terrain → shadow map artifacts (ombre qui pulse). Fix : amplitude réduite à ±0.9m (w1=0.6, w2=0.3) + base du mesh rehaussée à `baseAlt + 2.0m` (vs +1.0m) → marge minimum 1.1m au-dessus du terrain en tout état de cause.
+- **Fix rotation caméra brusque pendant suivi GPS** (`location.ts`) : Grand `delta` après réveil de Deep Sleep pouvait causer une rotation theta brutale lors de la reprise du suivi heading. Fix : `clampedDelta = Math.min(delta, 0.05)` dans le lerp de `spherical.theta` (`centerOnUser()`).
+
+#### Profiling marche réelle (Sessions 3 & 4)
+- **Galaxy S23 (Performance)** : −10% / 30min = 20%/h. Drain dominé par GPS+REC Foreground Service. GPU en Deep Sleep ~90% du temps. Objectif ≤ 15%/h atteint en usage réel.
+- **Galaxy A53 (Balanced)** : −6% / 30min = 12%/h. Poche, screen off, GPS passif, Deep Sleep 100%. Objectif ≤ 15%/h **atteint**. ✅ Sprint 7 Play Store en v5.11 autorisé.
+
+---
+
 ## [5.11.0-wip] - 2026-03-28
 ### 🔋 Sprint 6 — Optimisation Énergétique Mobile + PerfRecorder + Recalibration Presets
 

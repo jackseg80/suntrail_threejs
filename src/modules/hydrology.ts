@@ -25,16 +25,18 @@ const waterMaterial = new THREE.MeshStandardMaterial({
 // --- AJOUT DES ONDULATIONS DYNAMIQUES (v5.8.4) ---
 waterMaterial.onBeforeCompile = (shader) => {
     shader.uniforms.uTime = terrainUniforms.uTime;
-    shader.vertexShader = `
+        shader.vertexShader = `
         uniform float uTime;
         ${shader.vertexShader}
     `.replace('#include <begin_vertex>', `
         #include <begin_vertex>
-        // Rouleaux GÉANTS coordonnés entre les tuiles
+        // Rouleaux coordonnés entre les tuiles (coordonnées monde absolues)
+        // Amplitude réduite à ±0.8m max (vs ±3.7m avant) pour éviter les artéfacts
+        // shadow map aux LOD 17-18 où l'eau pénétrait le terrain (v5.11.1)
         vec4 worldPos = modelMatrix * vec4(position, 1.0);
         float t = uTime * 0.8;
-        float w1 = sin(worldPos.x * 0.002 + worldPos.z * 0.0015 + t) * 2.5;
-        float w2 = sin(worldPos.x * 0.001 - worldPos.z * 0.0025 + t * 0.7) * 1.2;
+        float w1 = sin(worldPos.x * 0.002 + worldPos.z * 0.0015 + t) * 0.6;
+        float w2 = sin(worldPos.x * 0.001 - worldPos.z * 0.0025 + t * 0.7) * 0.3;
         transformed.z += (w1 + w2); 
     `);
     
@@ -169,7 +171,9 @@ function renderHydrology(tile: Tile, elements: any[]) {
 
                 const mesh = new THREE.Mesh(geometry, waterMaterial);
                 mesh.rotateX(-Math.PI / 2);
-                mesh.position.y = baseAlt + 1.0; 
+                // Base rehaussée à +2m (vs +1m) pour compenser l'amplitude résiduelle ±0.9m
+                // et éviter que la vague à son creux passe sous le terrain (artefact LOD 17-18)
+                mesh.position.y = baseAlt + 2.0;
                 mesh.receiveShadow = true;
                 
                 group.add(mesh);

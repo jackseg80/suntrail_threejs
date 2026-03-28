@@ -45,8 +45,9 @@ export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevatio
     
     if (state.isFollowingUser) {
         state.isFollowingUser = false;
-        const btn = document.getElementById('gps-follow-btn');
-        if (btn) btn.classList.remove('active');
+        // Correction : l'élément s'appelle gps-main-btn (et non gps-follow-btn qui n'existe pas)
+        const btn = document.getElementById('gps-main-btn');
+        if (btn) btn.classList.remove('active', 'following');
     }
 
     const startPos = state.camera.position.clone();
@@ -370,7 +371,7 @@ export async function initScene(): Promise<void> {
         // Météo : on laisse passer les frames dues (weatherFrameDue) pour que
         // les particules s'animent à 20fps réels, sans plein régime continu.
         const isWeatherActive = state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0;
-        const isIdleMode = !state.isUserInteracting && !state.isFlyingTo
+        const isIdleMode = !state.isUserInteracting && !state.isFlyingTo && !state.isFollowingUser
             && !(isWeatherActive && weatherFrameDue)
             && (now - lastInteractionTime >= 800);
         if (isIdleMode && (now - lastRenderTime < WATER_THROTTLE_MS)) return;
@@ -422,7 +423,11 @@ export async function initScene(): Promise<void> {
         // - tiltAnimating est une source propre, indépendante de controls.update().
         const controlsDirty = state.controls.update();
         const needsUpdate =
-            (controlsDirty && (state.isUserInteracting || state.isFlyingTo || (now - lastInteractionTime < 800)))
+            // controls.update() est aussi appelé dans la RAF de flyTo/animateNorth, ce qui met à jour
+            // lastPosition avant que renderLoopFn passe → controlsDirty=false. isFlyingTo est donc
+            // standalone pour garantir un rendu à chaque frame pendant le vol (v5.11.1).
+            (controlsDirty && (state.isUserInteracting || (now - lastInteractionTime < 800)))
+            || state.isFlyingTo
             || tiltAnimating
             || (state.SHOW_HYDROLOGY && waterFrameDue)
             || state.isSunAnimating

@@ -209,9 +209,10 @@ export function initUI(): void {
                 const worldPos = lngLatToWorld(lon, lat, state.originTile);
                 const altWorld = getAltitudeAt(worldPos.x, worldPos.z);
                 
+                // flyTo() désactive isFollowingUser si true au moment de l'appel.
+                // On positionne l'activation APRÈS pour éviter ce reset immédiat.
                 flyTo(worldPos.x, worldPos.z, (altWorld / state.RELIEF_EXAGGERATION) + 500);
                 fetchWeather(lat, lon);
-                
                 state.isFollowingUser = true;
                 gpsMainBtn.classList.add('active');
                 showToast(i18n.t('gps.toast.centered'));
