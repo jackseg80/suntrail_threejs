@@ -239,6 +239,33 @@
 
 ---
 
+### Sprint 6-bis — Corrections Audit Pré-Play Store 🔒
+
+> 📋 **Contexte** : Audit complet effectué le 2026-03-28 — rapport détaillé dans `docs/AUDIT_PRESTORE.md`.  
+> 🔁 **Workflow** : Chaque correctif se termine par `npm run check` (0 erreurs) + build release de vérification.
+
+#### Critiques — Bloquants Play Store (à faire EN PREMIER)
+
+- [ ] **C1 — `network_security_config.xml`** : Créer `android/app/src/main/res/xml/network_security_config.xml` avec `cleartextTrafficPermitted="false"`. Ajouter `android:networkSecurityConfig="@xml/network_security_config"` et `android:usesCleartextTraffic="false"` dans `<application>` du manifest. *(15 min)*
+- [ ] **C4 — `android:allowBackup`** : Ajouter `android:fullBackupContent="@xml/backup_rules"` dans le manifest + créer `backup_rules.xml` excluant `sharedpref` (clé MapTiler + GPS snapshots des backups Google). *(10 min)*
+- [ ] **C2/C3 — Clé MapTiler + coordonnées GPS en clair dans localStorage** : Décider de la stratégie : (a) chiffrement AES-GCM via `window.crypto` avant stockage, ou (b) mention explicite dans la Privacy Policy que ces données restent locales et ne transitent pas. *(décision puis 30-60 min)*
+
+#### Avertissements — Fortement recommandés
+
+- [ ] **W1 — ProGuard Three.js/pmtiles incomplet** : Ajouter règles dans `android/app/proguard-rules.pro` pour `three`, `three-stdlib`, `pmtiles`, `mapbox-vector-tile`, `gpxparser`. Tester release build. *(20 min)*
+- [ ] **W2 — PWA manifest incomplet** : Ajouter `display: 'standalone'`, `orientation: 'portrait'`, `background_color: '#12141c'` dans `vite.config.js` objet manifest. *(5 min)*
+- [ ] **W3 — Meta tags iOS manquants** : Ajouter dans `index.html` : `<meta name="apple-mobile-web-app-capable" content="yes">` et `<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">`. *(5 min)*
+- [ ] **W7 — `console.log` non strippés** : Ajouter dans `vite.config.js` build terser : `terserOptions: { compress: { drop_console: true, drop_debugger: true } }`. *(10 min)*
+
+#### Optionnels (qualité post-release)
+
+- [ ] **W4 — Catch vides** : Ajouter `console.warn('[Module] Failed silently:', e)` dans les 11 catch vides de `buildings.ts`, `hydrology.ts`, `poi.ts`, `weather.ts`. *(30 min)*
+- [ ] **W5 — setInterval non nettoyé** : Stocker la ref `storageUpdateInterval` dans `ui.ts:67` + nettoyer dans `disposeScene()`. *(5 min)*
+- [ ] **W6 — Icônes dupliquées (5 MB)** : Supprimer `public/assets/icons/icon.png` (doublon de `icon_1024.png`). Convertir en WebP via `npx capacitor-assets generate`. *(15 min)*
+- [ ] **I1 — `android:largeHeap`** : Ajouter `android:largeHeap="true"` dans `<application>` du manifest pour les appareils low-RAM. *(2 min)*
+
+---
+
 ### Sprint 7 — Build AAB + CI/CD + Closed Testing
 - [ ] **Keystore** : Générer `suntrail.keystore` + remplir `android/keystore.properties`.
 - [ ] **AAB Build** : `./gradlew bundleRelease` → exit code 0.
