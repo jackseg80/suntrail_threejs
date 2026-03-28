@@ -17,6 +17,9 @@ import { initCompass, disposeCompass, renderCompass, updateCompassAnimation, isC
 import { centerOnUser } from './location';
 import { initTouchControls, disposeTouchControls } from './touchControls';
 
+// Handler de visibilité : suspend le GPU quand l'app passe en arrière-plan (v5.11)
+let visibilityChangeHandler: (() => void) | null = null;
+
 export async function disposeScene(): Promise<void> {
     resetTerrain();
     disposeAllCachedTiles();
@@ -29,6 +32,10 @@ export async function disposeScene(): Promise<void> {
     }
     disposeCompass();
     if (state.scene) state.scene.clear();
+    if (visibilityChangeHandler) {
+        document.removeEventListener('visibilitychange', visibilityChangeHandler);
+        visibilityChangeHandler = null;
+    }
     window.removeEventListener('resize', onWindowResize);
 }
 
@@ -125,6 +132,9 @@ export async function initScene(): Promise<void> {
     state.stats.dom.style.top = '80px';
     // Start hidden — VRAMDashboard.toggle() manages FPS+VRAM visibility together
     state.stats.dom.style.display = 'none';
+    // Re-sync après création de Stats.js : VRAMDashboard.init() peut avoir été appelé
+    // avant initScene(), donc state.stats était null → le FPS counter était skippé.
+    state.vramPanel?.setVisible(state.SHOW_STATS);
 
     initCompass();
 
@@ -299,9 +309,12 @@ export async function initScene(): Promise<void> {
     let needsInitialRender = 60; 
     let tilesFading = true;
 
+    // Compteur FPS rolling (fenêtre 1s) — exposé dans state.currentFPS pour le PerfRecorder
+    let fpsFrameCount = 0;
+    let fpsLastTime = performance.now();
+
     const renderLoopFn = () => {
         if (!state.renderer || !state.camera || !state.scene || !state.controls) return;
-        if (document.visibilityState === 'hidden') return;
 
         const now = performance.now();
         const delta = clock.getDelta();
@@ -373,9 +386,31 @@ export async function initScene(): Promise<void> {
             state.renderer.render(state.scene, state.camera);
             renderCompass();
             state.stats?.end();
+
+            // Mise à jour FPS rolling (fenêtre 1s)
+            fpsFrameCount++;
+            const fpsTick = performance.now();
+            if (fpsTick - fpsLastTime >= 1000) {
+                state.currentFPS = Math.round(fpsFrameCount * 1000 / (fpsTick - fpsLastTime));
+                fpsFrameCount = 0;
+                fpsLastTime = fpsTick;
+            }
         }
     };
     state.renderer.setAnimationLoop(renderLoopFn);
+
+    // Deep Sleep réel (v5.11) : arrêt total du GPU quand l'app passe en arrière-plan
+    // (téléphone verrouillé, app minimisée). Relance propre au retour au premier plan.
+    // Le early-return inline était insuffisant : setAnimationLoop continuait de tourner.
+    visibilityChangeHandler = () => {
+        if (!state.renderer) return;
+        if (document.hidden) {
+            state.renderer.setAnimationLoop(null);
+        } else {
+            state.renderer.setAnimationLoop(renderLoopFn);
+        }
+    };
+    document.addEventListener('visibilitychange', visibilityChangeHandler);
 }
 
 function onWindowResize(): void {
