@@ -195,10 +195,13 @@ export function initUI(): void {
 
             
             // 2. Check if we are already centered on user
-            const isAlreadyCentered = state.isFollowingUser;
+            // Utiliser la classe 'active' du bouton (état visuel) plutôt que state.isFollowingUser.
+            // state.isFollowingUser = true uniquement quand le suivi continu est actif (2e clic).
+            // Sur le 1er clic, isFollowingUser=true bloquait isIdleMode → throttle 20fps cassé. (v5.11.1)
+            const isAlreadyCentered = gpsMainBtn.classList.contains('active');
 
             if (!isAlreadyCentered) {
-                // First click: Center and Zoom
+                // First click: Center and Zoom (centrage unique, pas de suivi continu)
                 state.TARGET_LAT = lat;
                 state.TARGET_LON = lon;
                 state.ZOOM = 14;
@@ -209,22 +212,24 @@ export function initUI(): void {
                 const worldPos = lngLatToWorld(lon, lat, state.originTile);
                 const altWorld = getAltitudeAt(worldPos.x, worldPos.z);
                 
-                // flyTo() désactive isFollowingUser si true au moment de l'appel.
-                // On positionne l'activation APRÈS pour éviter ce reset immédiat.
                 flyTo(worldPos.x, worldPos.z, (altWorld / state.RELIEF_EXAGGERATION) + 500);
                 fetchWeather(lat, lon);
-                state.isFollowingUser = true;
+                // Ne PAS mettre isFollowingUser=true ici — le centrage est unique.
+                // isFollowingUser=true sur 1er clic empêche isIdleMode de s'activer
+                // indéfiniment (userLocation=null → centerOnUser() ne fait rien mais throttle cassé).
                 gpsMainBtn.classList.add('active');
                 showToast(i18n.t('gps.toast.centered'));
             } else {
-                // Second click while centered: Toggle continuous follow
-                // (In this app, isFollowingUser already handles continuous centering in scene.ts)
+                // Second click: Toggle continuous follow + start GPS tracking
                 gpsMainBtn.classList.toggle('following');
                 const isFollowing = gpsMainBtn.classList.contains('following');
                 showToast(isFollowing ? i18n.t('gps.toast.followOn') : i18n.t('gps.toast.followOff'));
                 
                 if (isFollowing) {
+                    state.isFollowingUser = true;
                     await startLocationTracking();
+                } else {
+                    state.isFollowingUser = false;
                 }
             }
         } catch (e: any) { 
