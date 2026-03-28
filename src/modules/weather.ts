@@ -180,7 +180,17 @@ export function initWeatherSystem(scene: THREE.Scene): void {
     weatherPoints.visible = false; scene.add(weatherPoints);
 }
 
-export function updateWeatherSystem(delta: number, cameraPos: THREE.Vector3): void {
+/**
+ * Avance uniquement uTime — appelé à chaque frame rendue pour des particules fluides.
+ * Découplé de updateWeatherSystem (uniforms cosmétiques, throttlé à 20fps).
+ */
+export function tickWeatherTime(delta: number): void {
+    if (!weatherMaterial || !weatherPoints?.visible) return;
+    weatherMaterial.uniforms.uTime.value += delta;
+    weatherMaterial.uniformsNeedUpdate = true;
+}
+
+export function updateWeatherSystem(cameraPos: THREE.Vector3): void {
     if (!weatherPoints || !weatherMaterial || !geometry) return;
     const altitude = cameraPos.y;
     const is2D = state.RESOLUTION <= 2;
@@ -189,7 +199,7 @@ export function updateWeatherSystem(delta: number, cameraPos: THREE.Vector3): vo
         weatherPoints.visible = false; return;
     }
     weatherPoints.visible = true;
-    weatherMaterial.uniforms.uTime.value += delta;
+    // uTime avancé par tickWeatherTime() à chaque frame — pas ici
     weatherMaterial.uniforms.uCameraPos.value.copy(cameraPos);
     weatherMaterial.uniformsNeedUpdate = true;
     geometry.setDrawRange(0, Math.min(state.WEATHER_DENSITY, MAX_PARTICLES));

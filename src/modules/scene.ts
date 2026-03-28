@@ -12,7 +12,7 @@ import { disposeAllGeometries } from './geometryCache';
 import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat } from './geo';
 import { throttle } from './utils';
 import { initVegetationResources } from './vegetation';
-import { initWeatherSystem, updateWeatherSystem, fetchWeather } from './weather';
+import { initWeatherSystem, updateWeatherSystem, tickWeatherTime, fetchWeather } from './weather';
 import { initCompass, disposeCompass, renderCompass, updateCompassAnimation, isCompassAnimating } from './compass';
 import { centerOnUser } from './location';
 import { initTouchControls, disposeTouchControls } from './touchControls';
@@ -426,7 +426,7 @@ export async function initScene(): Promise<void> {
             || state.isSunAnimating
             || state.isInteractingWithUI
             || state.isProcessingTiles
-            || ((state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0) && weatherFrameDue)
+            || isWeatherActive  // déclenche un render à chaque frame (uTime avance dans tickWeatherTime)
             || isCompassAnimating()
             || tilesFading
             || needsInitialRender > 0
@@ -438,9 +438,11 @@ export async function initScene(): Promise<void> {
             if (waterFrameDue) terrainUniforms.uTime.value += WATER_THROTTLE_MS / 1000;
             tilesFading = animateTiles(delta);
             if (needsInitialRender > 0) needsInitialRender--;
-            // Phase 2.2 — updateWeatherSystem appelé seulement quand weatherFrameDue (20 FPS max)
-            if (weatherFrameDue) {
-                updateWeatherSystem(weatherAccumDelta, state.camera.position);
+            // Météo — uTime avance à chaque frame (particules fluides)
+            // uniforms cosmétiques (couleur, vent, densité) mis à jour à 20fps max
+            if (isWeatherActive) tickWeatherTime(delta);
+            if (weatherFrameDue && isWeatherActive) {
+                updateWeatherSystem(state.camera.position);
                 weatherAccumDelta = 0;
             }
             if (state.isFollowingUser && !interacting) centerOnUser(delta);
