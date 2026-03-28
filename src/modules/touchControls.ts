@@ -102,7 +102,7 @@ function doPan(dx: number, dy: number): void {
     _camera.position.add(offset);
 }
 
-/** Zoom — ratio > 1 = zoom in, < 1 = zoom out */
+/** Zoom pur — ratio > 1 = zoom in, < 1 = zoom out (zoom vers le target actuel) */
 function doZoom(ratio: number): void {
     if (!_camera || !_controls) return;
     const dir  = new THREE.Vector3().subVectors(_camera.position, _controls.target);
@@ -113,6 +113,26 @@ function doZoom(ratio: number): void {
         _controls.maxDistance
     );
     _camera.position.copy(_controls.target).addScaledVector(dir.normalize(), newDist);
+}
+
+/**
+ * Zoom vers le point sous les doigts (cx, cy en pixels canvas).
+ * Applique un pan de compensation AVANT le zoom pour que le point pincé
+ * reste fixe à l'écran — comportement Google Earth / Google Maps. (v5.11.1)
+ */
+function doZoomToPoint(ratio: number, cx: number, cy: number): void {
+    if (!_camera || !_controls || !_canvas) return;
+    const canvas  = _canvas as HTMLCanvasElement;
+    const offsetX = cx - canvas.clientWidth  / 2; // + = droite du centre
+    const offsetY = cy - canvas.clientHeight / 2; // + = bas du centre
+
+    // Pan de compensation : déplacer le target vers le point pincé
+    // proportionnellement à (ratio - 1). Division par PAN_SPEED pour annuler
+    // le multiplicateur interne de doPan (compensation exacte, pas "rapide").
+    const f = (ratio - 1) / PAN_SPEED;
+    doPan(f * offsetX, f * offsetY);
+
+    doZoom(ratio);
 }
 
 /** Rotation azimut (tire-bouchon) — tourne autour de l'axe Y du target */
@@ -199,29 +219,48 @@ function onPointerMove(e: PointerEvent): void {
         _lastCy = e.clientY;
 
     } else if (_pointers.size >= 2) {
-        // ── 2 doigts : zoom + rotation + tilt + pan horizontal ───────────────────
+        // ── 2 doigts : zoom + rotation + tilt + pan (v5.11.1 — gestes exclusifs) ─
         const s = twoFingerMetrics();
-
-        // Zoom (pinch)
-        if (_lastSpread > 1) doZoom(s.spread / _lastSpread);
-
-        // Rotation azimut (tire-bouchon)
+        const dx     = s.cx - _lastCx;
+        const dy     = s.cy - _lastCy;
         const dAngle = wrapAngleDelta(s.angle - _lastAngle);
-        if (Math.abs(dAngle) > ROT_DEADZONE) doRotate(dAngle);
+        const spreadRatio = _lastSpread > 1 ? s.spread / _lastSpread : 1;
 
-        const dx = s.cx - _lastCx;
-        const dy = s.cy - _lastCy;
+        // ── Bug 3 fix : zoom ET rotation s'excluent mutuellement ─────────────────
+        // La rotation modifie géométriquement le spread (longueur de corde) →
+        // spread change ≠ intention de zoom. Si rotation détectée → ignore le zoom.
+        const isRotating = Math.abs(dAngle) > ROT_DEADZONE;
+        const isZooming  = !isRotating && Math.abs(spreadRatio - 1) > 0.008;
 
-        // Pan horizontal (centre X)
-        if (Math.abs(dx) > 0.5) doPan(dx, 0);
+        // ── Bug 1 fix : zoom vers le centre des doigts, pas vers le centre écran ──
+        if (isZooming) doZoomToPoint(spreadRatio, s.cx, s.cy);
 
-        // Tilt (centre Y) — ou pan vertical si la caméra est verrouillée top-down (mode 2D)
-        // Quand minPolarAngle === maxPolarAngle, doTilt() ne peut rien faire → pan vertical à la place
-        if (Math.abs(dy) > 0.5) {
-            if (_controls && _controls.minPolarAngle === _controls.maxPolarAngle) {
-                doPan(0, -dy);
-            } else {
+        // ── Rotation azimut (tire-bouchon) ────────────────────────────────────────
+        if (isRotating) doRotate(dAngle);
+
+        // ── Bug 2 fix : tilt et pan horizontal s'excluent selon la direction ──────
+        // Si le mouvement vertical est ≥2× le mouvement horizontal → tilt UNIQUEMENT.
+        // Évite le pan horizontal parasite quand l'utilisateur incline délibérément.
+        // Si horizontal dominant ou mixte → pan ± tilt selon les composantes.
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+        const is2DLocked = !!_controls && _controls.minPolarAngle === _controls.maxPolarAngle;
+
+        if (absDy > 0.5 || absDx > 0.5) {
+            if (is2DLocked) {
+                // Mode 2D verrouillé : 2 doigts = pan dans les 2 axes
+                if (absDx > 0.5) doPan(dx, 0);
+                if (absDy > 0.5) doPan(0, -dy);
+            } else if (absDy > absDx * 2) {
+                // Vertical dominant → tilt UNIQUEMENT (pas de pan horizontal)
                 doTilt(dy);
+            } else if (absDx > absDy * 2) {
+                // Horizontal dominant → pan UNIQUEMENT (pas de tilt)
+                doPan(dx, 0);
+            } else {
+                // Mixte diagonal → pan + tilt proportionnels
+                if (absDx > 0.5) doPan(dx, 0);
+                if (absDy > 0.5) doTilt(dy);
             }
         }
 
