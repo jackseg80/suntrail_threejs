@@ -103,16 +103,6 @@ export class TrackSheet extends BaseComponent {
             });
         });
 
-        const exportBtn = document.getElementById('export-gpx-sheet');
-        exportBtn?.setAttribute('aria-label', i18n.t('track.aria.export'));
-        exportBtn?.addEventListener('click', () => {
-            if (state.recordedPoints.length < 2) {
-                showToast(i18n.t('track.toast.tooShort'));
-                return;
-            }
-            this.exportRecordedGPX();
-        });
-
         this.addSubscription(state.subscribe('isRecording', () => this.updateRecUI()));
         this.addSubscription(state.subscribe('recordedPoints', () => {
             this.updateStats();
