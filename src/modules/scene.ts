@@ -367,6 +367,10 @@ export async function initScene(): Promise<void> {
 
         if (state.ENERGY_SAVER && (now - lastRenderTime < 33)) return;
 
+        // GPS follow : 30fps max suffit (GPS = 1Hz, lerp fluide à 30fps même à pieds).
+        // Évite de rendre à 120fps pour une caméra qui suit une vitesse de marche. (v5.11.1)
+        if (state.isFollowingUser && !state.ENERGY_SAVER && (now - lastRenderTime < 33)) return;
+
         // Idle throttle global — 20fps max en absence d'interaction.
         // Météo : on laisse passer les frames dues (weatherFrameDue) pour que
         // les particules s'animent à 20fps réels, sans plein régime continu.
