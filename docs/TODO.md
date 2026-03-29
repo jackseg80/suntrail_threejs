@@ -501,6 +501,23 @@ App sur appareil physique Android connecté en USB (débogage activé).
 
 ---
 
+## 🎓 Priorité 5-bis : Onboarding & Aide au Premier Démarrage (v5.13) *(après Closed Testing)*
+*Impact : Réduction du taux d'abandon — un utilisateur qui comprend l'app en 60 secondes est un utilisateur qui reste.*
+
+- [ ] **Tooltip "Premier tracé"** : À l'import du 1er GPX, afficher une bulle pointant vers le bouton profil d'élévation et la simulation solaire — les 2 features différenciantes à découvrir.
+- [ ] **Overlay tutorial interactif** : 4-5 étapes séquentielles au 1er lancement (après Acceptance Wall) :
+  - Étape 1 : "Naviguez avec vos doigts — pincez pour zoomer, glissez pour tourner"
+  - Étape 2 : "Importez un tracé GPX depuis vos randonnées"
+  - Étape 3 : "Simulez le soleil à n'importe quelle heure"
+  - Étape 4 : "Activez Pro pour débloquer le détail maximum"
+  - Bouton "Passer" disponible dès la 1ère étape
+- [ ] **Indicateur "Nouveauté"** : Badge rouge sur le bouton Timeline après 1er lancement, disparaît à l'ouverture.
+- [ ] **Empty state GPX** : Dans TrackSheet, si aucun tracé → message d'invitation + bouton import GPX mis en avant (au lieu d'une liste vide).
+- [ ] **Aide contextuelle** : Icône ⓘ sur les features Pro bloquées → tooltip expliquant pourquoi c'est Pro (pas juste le lock icon).
+- [ ] **Stockage** : Flag `suntrail_onboarding_v1` en localStorage — ne s'affiche qu'une fois.
+
+---
+
 ## 🔗 Priorité 6 : Intégrations Plateformes Sport (v6.0) *(après lancement Play Store)*
 *Impact : Import naturel des tracés depuis les outils que les randonneurs utilisent déjà.*
 
