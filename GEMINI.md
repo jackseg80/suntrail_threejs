@@ -1,15 +1,6 @@
-# Mandats SunTrail (v5.6.9)
+# SunTrail - Guide Développeur (Gemini CLI)
 
-Ce fichier définit les mandats prioritaires pour Gemini CLI dans ce projet.
+> La base de connaissance technique complète est maintenue dans **`AGENTS.md`**.
+> Ce fichier est le point d'entrée pour Gemini CLI — lire `AGENTS.md` pour toute l'architecture, les décisions techniques et le guide de débogage.
 
-## 🔴 Règle d'Or : Partner Engineer Workflow
-Toute intervention DOIT suivre scrupuleusement la méthodologie définie dans [CLAUDE.md](./CLAUDE.md) :
-1. **Analyse & Intelligence**
-2. **Planification** (Étape par étape)
-3. **Implémentation Chirurgicale** (Une à la fois)
-4. **Tests & Qualité** (100% vert sur Vitest)
-5. **Documentation** (Changelog/TODO)
-6. **Livraison** (Commit atomique & Push)
-
-## 🏗️ Architecture & Intégrité
-Respecter l'architecture technique décrite dans `CLAUDE.md`, notamment la gestion de la mémoire (`memory.ts`) et le positionnement géographique (`geo.ts`).
+Avant toute intervention, consulter : [AGENTS.md](./AGENTS.md)
