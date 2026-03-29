@@ -3,6 +3,7 @@ import { state, saveSettings } from '../../state';
 import { resetTerrain, updateVisibleTiles, updateSlopeVisibility } from '../../terrain';
 import { sheetManager } from '../core/SheetManager';
 import { i18n } from '../../../i18n/I18nService';
+import { showUpgradePrompt } from '../../iap';
 
 export class LayersSheet extends BaseComponent {
     constructor() {
@@ -23,6 +24,11 @@ export class LayersSheet extends BaseComponent {
             item.addEventListener('click', () => {
                 const source = (item as HTMLElement).dataset.source;
                 if (source) {
+                    // Gate Freemium : couche satellite réservée Pro
+                    if (source === 'satellite' && !state.isPro) {
+                        showUpgradePrompt('satellite');
+                        return;
+                    }
                     state.MAP_SOURCE = source;
                     state.hasManualSource = true;
                     saveSettings();

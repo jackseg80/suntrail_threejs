@@ -1,0 +1,90 @@
+name: Build Android AAB
+
+# Déclenché sur un tag vX.Y.Z (ex: git tag v5.12.0 && git push --tags)
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:  # Déclenchement manuel depuis GitHub Actions
+
+jobs:
+  build:
+    name: Build & Sign AAB
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Node.js + cache ───────────────────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # ── 3. Java 17 (requis pour Gradle + Android) ────────────────────────────
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # ── 4. Install deps + build web ──────────────────────────────────────────
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build web (Vite)
+        env:
+          VITE_MAPTILER_KEY: ${{ secrets.VITE_MAPTILER_KEY }}
+          VITE_REVENUECAT_KEY: ${{ secrets.VITE_REVENUECAT_KEY }}
+        run: npm run build
+
+      # ── 5. Capacitor sync ────────────────────────────────────────────────────
+      - name: Capacitor sync Android
+        run: npx cap sync android
+
+      # ── 6. Restaurer le keystore depuis GitHub Secrets ───────────────────────
+      # Avant d'utiliser ce workflow, ajouter ces secrets dans :
+      # GitHub → Settings → Secrets and variables → Actions → New repository secret
+      #   KEYSTORE_BASE64    : base64 du fichier suntrail.keystore
+      #                        (commande : base64 -w 0 suntrail.keystore)
+      #   STORE_PASSWORD     : mot de passe du keystore
+      #   KEY_PASSWORD       : mot de passe de la clé
+      #   KEY_ALIAS          : suntrail
+      #   VITE_MAPTILER_KEY  : clé API MapTiler
+      #   VITE_REVENUECAT_KEY: clé API RevenueCat
+      - name: Restore keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/suntrail.keystore
+
+      - name: Create keystore.properties
+        run: |
+          cat > android/keystore.properties << EOF
+          storeFile=../suntrail.keystore
+          storePassword=${{ secrets.STORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          EOF
+
+      # ── 7. Build AAB release ─────────────────────────────────────────────────
+      - name: Build AAB
+        working-directory: android
+        run: ./gradlew bundleRelease --no-daemon
+
+      # ── 8. Upload AAB comme artifact ─────────────────────────────────────────
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: suntrail-${{ github.ref_name }}.aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
+
+      # ── 9. Créer une GitHub Release avec l'AAB ───────────────────────────────
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: android/app/build/outputs/bundle/release/app-release.aab
+          generate_release_notes: true

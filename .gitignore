@@ -39,3 +39,6 @@ nul
 # Android Studio — fichiers de session IDE (changent à chaque déploiement)
 android/.idea/deploymentTargetSelector.xml
 android/.idea/workspace.xml
+
+# Plans internes Sisyphus IA (orchestration — non pertinent pour le repo)
+.sisyphus/

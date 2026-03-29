@@ -238,6 +238,9 @@ export interface State {
     lastClickedCoords: { x: number; z: number; alt: number };
     hasLastClicked: boolean;
     isFlying: boolean;
+
+    // ── Freemium ──────────────────────────────────────────────────────────────
+    isPro: boolean; // true si l'utilisateur a acheté le tier Pro (IAP Play Store)
 }
 
 const initialState: State = {
@@ -290,7 +293,9 @@ const initialState: State = {
     networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isUserInteracting: false,     isProcessingTiles: false, IS_2D_MODE: false, currentFPS: 0, lastUIInteraction: Date.now(),
     lastClickedCoords: { x: 0, z: 0, alt: 0 },
     hasLastClicked: false,
-    isFlying: false
+    isFlying: false,
+
+    isPro: false,
 };
 
 export const state = createReactiveState(initialState);
@@ -355,6 +360,28 @@ export function saveSettings(): void {
         }
         saveTimeout = null;
     }, 300);
+}
+
+// ── Persistance Pro (clé séparée — immunisée contre les resets de version) ──
+const PRO_KEY = 'suntrail_pro';
+
+export function saveProStatus(): void {
+    try {
+        localStorage.setItem(PRO_KEY, JSON.stringify({ isPro: state.isPro }));
+    } catch (e) {
+        console.warn('[State] Could not save pro status:', e);
+    }
+}
+
+export function loadProStatus(): void {
+    try {
+        const saved = localStorage.getItem(PRO_KEY);
+        if (!saved) return;
+        const parsed = JSON.parse(saved);
+        state.isPro = !!parsed.isPro;
+    } catch (e) {
+        console.warn('[State] Could not load pro status:', e);
+    }
 }
 
 export function loadSettings(): SavedSettings | null {

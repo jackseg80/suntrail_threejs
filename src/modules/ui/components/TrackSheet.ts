@@ -3,6 +3,7 @@ import { state } from '../../state';
 import { showToast } from '../../utils';
 import { startLocationTracking } from '../../location';
 import { sheetManager } from '../core/SheetManager';
+import { showUpgradePrompt } from '../../iap';
 import { haptic } from '../../haptics';
 import { i18n } from '../../../i18n/I18nService';
 import gpxParser from 'gpxparser';
@@ -14,7 +15,11 @@ import { eventBus } from '../../eventBus';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 
+const REC_FREE_LIMIT_MS = 30 * 60 * 1000; // 30 minutes pour le tier gratuit
+
 export class TrackSheet extends BaseComponent {
+    private recLimitTimer: ReturnType<typeof setTimeout> | null = null;
+
     constructor() {
         super('template-track', 'sheet-container');
     }
@@ -52,7 +57,20 @@ export class TrackSheet extends BaseComponent {
                 } else {
                     state.recordedPoints = [];
                 }
+                // Gate Freemium : arrêt automatique après 30 min pour les utilisateurs gratuits
+                if (!state.isPro) {
+                    this.recLimitTimer = setTimeout(async () => {
+                        if (state.isRecording) {
+                            state.isRecording = false;
+                            this.updateRecUI();
+                            await stopRecordingService();
+                            showToast('⏱ Limite 30 min atteinte — passez à Pro pour un enregistrement illimité.');
+                            if (state.recordedPoints.length >= 2) await this.exportRecordedGPX();
+                        }
+                    }, REC_FREE_LIMIT_MS);
+                }
             } else {
+                if (this.recLimitTimer) { clearTimeout(this.recLimitTimer); this.recLimitTimer = null; }
                 await stopRecordingService();    // Arrête le Foreground Service Android
                 showToast(i18n.t('track.toast.recStopped'));
                 // Auto-export au STOP si le tracé a au moins 2 points
@@ -345,6 +363,11 @@ export class TrackSheet extends BaseComponent {
             showToast(i18n.t('track.toast.tooShort'));
             return;
         }
+        // Gate Freemium : export GPX réservé Pro
+        if (!state.isPro) {
+            showUpgradePrompt('export_gpx');
+            return;
+        }
         const gpx = this.buildGPXString();
         const filename = `suntrail-${new Date().toISOString().slice(0, 10)}-${Date.now()}.gpx`;
 
@@ -381,6 +404,13 @@ export class TrackSheet extends BaseComponent {
             const gpx = new gpxParser(); 
             gpx.parse(xml);
             if (!gpx.tracks?.length) {
+                void haptic('warning');
+                return;
+            }
+
+            // Gate Freemium : 1 tracé max pour les utilisateurs gratuits
+            if (!state.isPro && state.gpxLayers.length >= 1) {
+                showUpgradePrompt('multi_gpx');
                 void haptic('warning');
                 return;
             }

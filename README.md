@@ -1,55 +1,84 @@
-# ⛰️ SunTrail 3D (v5.8.2)
+# ⛰️ SunTrail 3D
 
-Moteur de visualisation topographique 3D ultra-performant basé sur Three.js et les données MapTiler / OpenStreetMap / IGN France. Optimisé pour les configurations haute performance (RTX 4080 / i9) et les appareils mobiles modernes.
+**v5.11.2** · **MIT + Commons Clause**
 
-## ✨ Nouveautés v5.8.x (Modern UX & Réactivité)
-- **Interface Minimalist Alpin :** Refonte totale avec barre de navigation basse et Bottom Sheets pour une utilisation à une main.
-- **État Réactif (Proxy) :** Synchronisation automatique entre l'état global et l'interface utilisateur.
-- **Outils Experts Restaurés :** Analyse solaire interactive et Dashboard météo complet intégrés au nouveau design.
-- **Unification GPS :** Géolocalisation haute précision unifiée via Capacitor pour mobile et PC.
-- **Timeline Island :** Barre de simulation temporelle flottante et adaptative.
+Outil de visualisation topographique 3D pour la randonnée alpine.
 
-## ✨ Nouveautés v5.7.x (Offline & Énergie)
-- **Auto-Eco Mode (Battery API) :** Bascule automatique en mode économie d'énergie sous les 20% de batterie.
-- **Smart Energy Default :** Bridage intelligent à 30 FPS par défaut sur les périphériques mobiles.
-- **Système Offline-First :** Transformation en Progressive Web App (PWA) avec Service Worker pour un usage sans réseau.
-- **Support PMTiles :** Chargement de cartes locales massives (Go) via fichiers `.pmtiles`.
-- **Live Tracking & REC :** Enregistrement de parcours GPS en temps réel avec export GPX.
-- **Persistance des Réglages :** Sauvegarde automatique des préférences dans le `localStorage`.
+## Aperçu
 
-## ✨ Nouveautés v5.6.x (Architecture & Performance)
-- **Vector Trails Pro :** Sentiers de randonnée vectoriels haute définition (2048px) avec codage couleur dynamique pour une netteté absolue.
-- **Material Pooling :** Réutilisation des matériaux et shaders pour une navigation "Zero-Stutter", éliminant les saccades de compilation.
-- **Normal Map Offloading :** Déportation du calcul du relief vers les WebWorkers, réduisant de 87% la charge mémoire GPU.
+SunTrail est un moteur de terrain 3D WebGL conçu pour les randonneurs et alpinistes exigeants.
 
-## ✨ Nouveautés v5.5.x (GPS & Transitions Swisstopo)
-- **Suivi GPS Haute Précision :** Centrage "pixel-perfect" sur l'altitude réelle du relief, éliminant tout décalage visuel.
-- **Lissage Swisstopo :** Filtre passe-bas sur la boussole et les mouvements pour une fluidité de rotation "cinématographique".
-- **Transition Solaire Parfaite :** Refonte des courbes de luminosité pour une transition monotone Heure Dorée -> Nuit.
-- **Audit de Sécurité :** Correction des race conditions sur les workers et sécurisation totale contre les injections XSS.
+**Ce que c'est :**
+- Terrain 3D véritable avec données d'élévation précises
+- Simulation solaire interactive (position du soleil, ombres, heure dorée)
+- Multi-tracés GPX avec analyse de profil
+- Mode offline complet (PWA + PMTiles)
+- Application Android native via Capacitor
 
-## ✨ Nouveautés v5.4.x (RTX Stability & Hybrid Data)
-- **Optimisation RTX & i9 :** Fusion massive des géométries de bâtiments pour garantir 144 FPS constants.
-- **Hydrologie de Précision :** Shader d'eau avancé avec filtres de pente et de chromaticité.
+**Différenciateurs :**
+- 3D réelle (pas de simple ombrage 2D)
+- Simulation solaire unique sur le marché
+- Données officielles : SwissTopo + Plan IGN v2
+- Offline-first : fonctionne sans réseau une fois chargé
 
-## ✨ Nouveautés v5.0.x (WebWorkers Engine)
-- **Moteur Asynchrone :** Déportation complète du téléchargement et du décodage des tuiles vers un pool de 8 WebWorkers, libérant le thread principal pour une fluidité absolue.
-- **Vol Orbital :** Support étendu jusqu'au LOD 6 et atmosphère jusqu'à 10 000 km pour des transitions fluides de la rue jusqu'à l'espace.
+**Marchés :** 🇨🇭 Suisse · 🇫🇷 France · v5.12 : 🇦🇹 Autriche
 
-## ✨ Nouveautés v4.9.x (Expansion & Immersion)
-- **Végétation Bio-Fidèle :** Diversification des forêts avec 3 essences (Feuillus, Sapins, Mélèzes) sélectionnées dynamiquement selon l'altitude réelle.
-- **Support IGN France :** Basculement automatique sur les serveurs de la Géoplateforme pour une précision officielle lors du survol de l'Hexagone.
+## Modèle Freemium
 
-## ✨ Nouveautés v4.8.x (Safety & Precision)
-- **Inclinomètre Mathématique :** Calcul de la pente réelle au pixel près (100% GPU) avec coloration de sécurité avalanche (Jaune/Orange/Rouge).
+| Tier Gratuit | Tier Pro (€19.99/an) |
+|---|---|
+| Carte topo CH+FR (LOD ≤ 14) | LOD 18 + Satellite |
+| GPS live + météo | Simulation solaire 24h |
+| 1 tracé GPX | Multi-tracés + export GPX |
+| REC 30 min | REC illimité |
+| Offline 1 zone | Offline illimité + PMTiles |
 
-## 📱 Application Mobile (Android)
-SunTrail 3D est optimisé pour les processeurs mobiles de dernière génération avec des profils de performance adaptatifs (Eco, Balanced, Performance, Ultra) et une gestion intelligente de la VRAM.
+## Features techniques
 
-## 📄 Documentation
-- [Liste des Fonctionnalités](./docs/FEATURES.md)
-- [Guide des Tests](./docs/TESTS.md)
-- [Historique des versions (Changelog)](./docs/CHANGELOG.md)
-- [Feuille de route (TODO)](./docs/TODO.md)
-- [Guide Développeur (Claude/Gemini)](./CLAUDE.md)
-- [Guide Android](./docs/ANDROID.md)
+- Moteur Three.js WebGL avec LOD adaptatif (zoom 6→18)
+- WebWorkers pool (4-8 workers) pour fetch et calcul des normal maps
+- Touch controls Google Earth (pinch/zoom/rotation/tilt via PointerEvents)
+- Presets GPU auto-détectés : eco / balanced / performance / ultra
+- Deep Sleep réel (`setAnimationLoop(null)` sur visibilitychange)
+- Idle throttle 20fps + accumulateurs eau/météo (20fps max)
+- Adaptive DPR sur interaction mobile
+- i18n : FR / DE / IT / EN
+- PWA (Service Worker, précache Suisse LOD 6-9)
+- Android natif via Capacitor (Foreground Service pour REC GPS)
+
+## Stack technique
+
+Three.js · TypeScript · Vite · Capacitor · RevenueCat · Vitest (190 tests)
+
+## Installation & Dev
+
+```bash
+npm install
+npm run dev        # Dev server
+npm test           # 190 tests unitaires
+npm run check      # TypeScript strict
+npm run deploy     # Build + Android
+```
+
+Note : Copier `.env.example` en `.env` et renseigner `VITE_MAPTILER_KEY` et `VITE_REVENUECAT_KEY`
+
+## Sources de données
+
+| Source | Couverture | Licence |
+|---|---|---|
+| SwissTopo | 🇨🇭 CH | OGD — gratuit |
+| Plan IGN v2 | 🇫🇷 FR | Etalab 2.0 — gratuit |
+| OpenStreetMap | Mondial | ODbL — gratuit |
+| MapTiler Cloud | Satellite + topo mondial | Commercial |
+
+## Documentation
+
+- [CHANGELOG.md](./docs/CHANGELOG.md) — Historique des versions
+- [TODO.md](./docs/TODO.md) — Feuille de route
+- [FEATURES.md](./docs/FEATURES.md) — Liste des fonctionnalités
+- [ANDROID.md](./docs/ANDROID.md) — Guide Android
+- [MONETIZATION.md](./docs/MONETIZATION.md) — Stratégie business
+
+## Licence
+
+MIT + Commons Clause — code source disponible pour étude et usage personnel. Commercialisation interdite. Voir [LICENSE](./LICENSE).

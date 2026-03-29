@@ -207,6 +207,11 @@ export function applyPreset(preset: PresetType): void {
         state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
     }
 
+    // Gate Freemium : LOD plafonné à 14 pour les utilisateurs gratuits (v5.12)
+    if (!state.isPro && state.MAX_ALLOWED_ZOOM > 14) {
+        state.MAX_ALLOWED_ZOOM = 14;
+    }
+
     updatePerformanceUI(preset);
     refreshTerrain();
     saveSettings();

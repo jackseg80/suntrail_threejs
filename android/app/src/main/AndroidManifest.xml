@@ -53,4 +53,6 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <!-- Notifications (Android 13+ / API 33+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Google Play Billing — requis pour les achats In-App (RevenueCat) -->
+    <uses-permission android:name="com.android.vending.BILLING" />
 </manifest>

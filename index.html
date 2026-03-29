@@ -620,6 +620,130 @@
   </div>
 </template>
 
+<template id="template-upgrade">
+<div id="upgrade-sheet" class="bottom-sheet">
+    <style>
+        .upgrade-content {
+            padding: 0 var(--space-4) var(--space-4);
+        }
+        .upgrade-features {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
+        }
+        .upgrade-feature-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+        .upgrade-feature-icon {
+            font-size: var(--text-xl);
+            flex-shrink: 0;
+            width: 2em;
+            text-align: center;
+        }
+        .upgrade-feature-label {
+            font-size: var(--text-sm);
+            color: var(--text-1);
+            font-weight: 500;
+        }
+        .upgrade-price-block {
+            text-align: center;
+            margin-bottom: var(--space-4);
+        }
+        .upgrade-price-main {
+            font-size: var(--text-xl);
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: var(--space-1);
+        }
+        .upgrade-price-alt {
+            font-size: var(--text-xs);
+            color: var(--text-3);
+        }
+        .upgrade-cta {
+            display: block;
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-lg);
+            font-size: var(--text-sm);
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity var(--transition-fast);
+            margin-bottom: var(--space-3);
+        }
+        .upgrade-cta:active {
+            opacity: 0.85;
+        }
+        .upgrade-restore {
+            display: block;
+            width: 100%;
+            padding: var(--space-2) 0;
+            background: none;
+            border: none;
+            color: var(--text-3);
+            font-size: var(--text-xs);
+            cursor: pointer;
+            text-align: center;
+            margin-bottom: var(--space-2);
+        }
+        .upgrade-restore:active {
+            color: var(--text-2);
+        }
+        .upgrade-legal {
+            font-size: var(--text-xs);
+            color: var(--text-3);
+            text-align: center;
+            line-height: 1.4;
+        }
+    </style>
+    <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
+    <div class="sheet-header">
+        <span class="sheet-title">Passer à Pro ✨</span><!-- TODO i18n -->
+        <div class="sheet-close" id="close-upgrade">×</div>
+    </div>
+    <div class="upgrade-content">
+        <div class="upgrade-features">
+            <div class="upgrade-feature-row">
+                <span class="upgrade-feature-icon">🗺️</span>
+                <span class="upgrade-feature-label">Carte détail maximum (LOD 18)</span><!-- TODO i18n -->
+            </div>
+            <div class="upgrade-feature-row">
+                <span class="upgrade-feature-icon">🛰️</span>
+                <span class="upgrade-feature-label">Vue Satellite</span><!-- TODO i18n -->
+            </div>
+            <div class="upgrade-feature-row">
+                <span class="upgrade-feature-icon">☀️</span>
+                <span class="upgrade-feature-label">Simulation solaire 24h complète</span><!-- TODO i18n -->
+            </div>
+            <div class="upgrade-feature-row">
+                <span class="upgrade-feature-icon">📍</span>
+                <span class="upgrade-feature-label">Multi-tracés GPX illimités + export</span><!-- TODO i18n -->
+            </div>
+            <div class="upgrade-feature-row">
+                <span class="upgrade-feature-icon">⏺</span>
+                <span class="upgrade-feature-label">Enregistrement GPS illimité</span><!-- TODO i18n -->
+            </div>
+            <div class="upgrade-feature-row">
+                <span class="upgrade-feature-icon">📶</span>
+                <span class="upgrade-feature-label">Zones offline illimitées</span><!-- TODO i18n -->
+            </div>
+        </div>
+        <div class="upgrade-price-block">
+            <div class="upgrade-price-main">€19.99 / an</div><!-- TODO i18n -->
+            <div class="upgrade-price-alt">ou €2.99 / mois</div><!-- TODO i18n -->
+        </div>
+        <button class="upgrade-cta" id="upgrade-cta-btn">Activer Pro — €19.99/an</button><!-- TODO i18n -->
+        <button class="upgrade-restore" id="upgrade-restore-btn">Restaurer un achat</button><!-- TODO i18n -->
+        <p class="upgrade-legal">Abonnement auto-renouvelable. Gérable dans les paramètres Play Store.</p><!-- TODO i18n -->
+    </div>
+</div>
+</template>
+
 <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

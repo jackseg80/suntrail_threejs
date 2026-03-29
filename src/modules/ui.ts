@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { Geolocation } from '@capacitor/geolocation';
-import { state, loadSettings } from './state';
+import { state, loadSettings, loadProStatus } from './state';
+import { iapService } from './iapService';
 import { requestGPSDisclosure } from './gpsDisclosure';
+import { requestAcceptance } from './acceptanceWall';
 import { i18n } from '../i18n/I18nService';
 import { initScene, flyTo } from './scene';
 import { updateVisibleTiles, resetTerrain } from './terrain';
@@ -21,6 +23,7 @@ import { LayersSheet } from './ui/components/LayersSheet';
 import { WeatherSheet, SolarProbeSheet, SOSSheet } from './ui/components/ExpertSheets';
 import { TrackSheet } from './ui/components/TrackSheet';
 import { ConnectivitySheet } from './ui/components/ConnectivitySheet';
+import { UpgradeSheet } from './ui/components/UpgradeSheet';
 import { WidgetsComponent } from './ui/components/WidgetsComponent';
 import { TimelineComponent } from './ui/components/TimelineComponent';
 import { VRAMDashboard } from './ui/components/VRAMDashboard';
@@ -34,6 +37,19 @@ let storageUIIntervalId: ReturnType<typeof setInterval> | null = null;
 export function initUI(): void {
     console.log("[UI] Starting Init...");
     
+    // Charger le statut Pro en premier (clé séparée, immune aux resets de version)
+    loadProStatus();
+
+    // Initialiser RevenueCat en fire-and-forget (natif seulement — no-op sur web)
+    void iapService.initialize();
+
+    // Clé MapTiler bundlée — injectée au build depuis .env
+    // Ne remplace la clé que si l'utilisateur n'en a pas défini une manuellement
+    const bundledKey = import.meta.env.VITE_MAPTILER_KEY as string | undefined;
+    if (bundledKey && bundledKey.length > 10 && !state.MK) {
+        state.MK = bundledKey;
+    }
+
     const savedSettings = loadSettings();
     if (savedSettings) {
         state.hasManualSource = true;
@@ -101,7 +117,12 @@ export function initUI(): void {
             if (setupScreen) {
                 setupScreen.style.transition = 'opacity 0.4s ease';
                 setupScreen.style.opacity = '0';
-                setTimeout(() => { setupScreen.style.display = 'none'; }, 420);
+                setTimeout(() => {
+                    setupScreen.style.display = 'none';
+                    // Acceptance Wall : affiché une fois la scène visible, après la disparition
+                    // du setup screen. Premier lancement ou nouvelle version des CGU.
+                    void requestAcceptance();
+                }, 420);
             }
 
             // Afficher l'overlay de chargement carte jusqu'aux 1ères tuiles
@@ -161,6 +182,9 @@ export function initUI(): void {
 
     const connectivitySheet = new ConnectivitySheet();
     connectivitySheet.hydrate();
+
+    const upgradeSheet = new UpgradeSheet();
+    upgradeSheet.hydrate();
 
     const widgets = new WidgetsComponent();
     widgets.hydrate();

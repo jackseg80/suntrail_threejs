@@ -251,30 +251,36 @@
 
 ---
 
-### Sprint 5-bis — Stratégie Business & Monétisation ⚠️ BLOQUANT avant Sprint 7
+### Sprint 5-bis — Stratégie Business & Monétisation ✅ DÉCISIONS ACTÉES
 
-> 📋 **Réflexion complète** : voir `docs/MONETIZATION.md`
-> Ces décisions impactent l'architecture (IAP, clé API bundlée, paywall). À finaliser **avant** de soumettre sur le Play Store.
+> 📋 **Stratégie complète finalisée** : voir `docs/MONETIZATION.md` (29 mars 2026)
+> Toutes les décisions sont tranchées. Reste l'implémentation technique.
 
-#### Décisions à prendre (5 questions bloquantes)
+#### Décisions actées (D1–D6)
 
-- [ ] **D1 — Modèle de base** : Gratuit / Payant one-shot / Freemium
-- [ ] **D2 — Clé MapTiler** : Bundlée dans l'app / Fournie par l'utilisateur / Proxy serveur
-- [ ] **D3 — Publicité** : Aucune / Native sponsorisée uniquement
-- [ ] **D4 — Marché initial** : CH uniquement / FR+CH / Europe alpine (FR+CH+DE+AT)
-- [ ] **D5 — iOS** : Ignoré pour l'instant / Prévu v6.x / Simultané Android
+- [x] **D1 — Freemium** : tier gratuit (LOD ≤ 14, solaire ±2h, 1 GPX, REC 30min, offline 1 zone) + Pro €19.99/an
+- [x] **D2 — Clé MapTiler bundlée + Flex** : clé unique dans `.env`, plan Flex pay-as-you-go (0$ jusqu'à 100k tiles/mois)
+- [x] **D3 — Zéro publicité**
+- [x] **D4 — Marché FR + CH** dès Sprint 7 (Plan IGN v2 = 0€, même modèle que SwissTopo)
+- [x] **D5 — iOS v6.x** (build Capacitor séparé, pas de blocage Sprint 7)
+- [x] **D6 — Plan IGN v2 (0€)** — SCAN 25 écarté (coût + complexité)
 
-#### Actions selon décision D1
+#### Implémentation Freemium (à faire avant Sprint 7)
 
-- [ ] **Si Freemium** : implémenter Google Play Billing + `@capgo/capacitor-purchases` + `state.isPro` + clé bundlée `.env`
-- [ ] **Si Payant one-shot** : aucune modification technique — fixer le prix sur Play Console
-- [ ] **Si Gratuit** : aucune modification technique
+- [ ] **Google Play Billing** : `com.android.billingclient:billing:7.x` dans `build.gradle`
+- [ ] **Plugin IAP Capacitor** : `npm install @capacitor-community/in-app-purchases` + `npx cap sync`
+- [ ] **`state.isPro: boolean`** : ajout dans `state.ts` + persistance localStorage
+- [ ] **Vérification receipt** : validation côté client via Play Store API au démarrage
+- [ ] **Gate features** : `if (!state.isPro) showUpgradeSheet()` sur offline/LOD 18/solaire 24h/export GPX/REC illimité
+- [ ] **Upgrade Sheet** : composant Bottom Sheet avec présentation des avantages Pro + bouton IAP
+- [ ] **Clé MapTiler bundlée** : `VITE_MAPTILER_KEY` dans `.env` (hors Git) — injectée au build Vite
+- [ ] **Acceptance Wall** : modale bloquante premier lancement (sécurité alpine + disclaimer)
+- [ ] **Bridage LOD gratuit** : `state.MAX_ZOOM = isPro ? 18 : 14` dans les presets
 
-#### Partenariats à initier (avant ou après lancement)
+#### Partenariats (post-lancement, après 10k téléchargements)
 
-- [ ] **MapTiler** : contact partnerships@maptiler.com — accord revendeur / tarif développeur
-- [ ] **SAC/CAS** : contact info@sac-cas.ch — licence bulk membres (150k membres)
-- [ ] **IGN / Swisstopo** : accord distribution officiel → crédibilité + badge officiel
+- [ ] **MapTiler** : partnerships@maptiler.com — accord revendeur / tarif startup
+- [ ] **SAC/CAS** : info@sac-cas.ch — licence bulk membres (150k membres)
 - [ ] **CAF/FFCAM** : contact@ffcam.fr — 380k membres France
 
 ---
@@ -450,12 +456,43 @@ App sur appareil physique Android connecté en USB (débogage activé).
 ---
 
 ### Sprint 7 — Build AAB + CI/CD + Closed Testing *(débloqué par Sprint 5-bis)*
-- [ ] **Keystore** : Générer `suntrail.keystore` + remplir `android/keystore.properties`.
-- [ ] **AAB Build** : `./gradlew bundleRelease` → exit code 0.
-- [ ] **Test device** : Edge-to-edge, navigation tactile, performance sur appareil physique.
-- [ ] **GitHub Actions** : `.github/workflows/release.yml` — build AAB automatique sur tag.
-- [ ] **Closed Testing** : Track ≥ 20 testeurs, 14 jours (obligatoire nouveaux développeurs).
-- [ ] **Production** : Passage en Open Testing puis Production.
+
+> ⏱ **Séquençage** : Closed Testing dure 14 jours (obligatoire 1ère fois uniquement). Profiter de ce délai pour développer v5.12 en parallèle. Les updates suivantes passent en production en quelques heures sans closed testing.
+
+#### Actions manuelles (à faire une seule fois, dans l'ordre)
+
+**A — Keystore (LOCAL, 5 min)**
+- [ ] Lancer depuis `android/` : `keytool -genkey -v -keystore suntrail.keystore -alias suntrail -keyalg RSA -keysize 2048 -validity 10000`
+- [ ] Remplir `android/keystore.properties` (remplacer MOT_DE_PASSE_* par les vrais mots de passe)
+- [ ] Sauvegarder `suntrail.keystore` hors du repo (cloud chiffré ou clé USB)
+- [ ] Test build : `JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease --no-daemon`
+
+**B — GitHub Secrets (github.com, 10 min)**
+Aller dans : GitHub repo → Settings → Secrets and variables → Actions → New repository secret
+- [ ] `KEYSTORE_BASE64` : `base64 -w 0 android/suntrail.keystore` (ou `certutil -encodehex` sur Windows)
+- [ ] `STORE_PASSWORD` : mot de passe keystore
+- [ ] `KEY_PASSWORD` : mot de passe clé
+- [ ] `KEY_ALIAS` : `suntrail`
+- [ ] `VITE_MAPTILER_KEY` : clé MapTiler (depuis cloud.maptiler.com)
+- [ ] `VITE_REVENUECAT_KEY` : `test_PMaHKKNvCEmUkwEhpUNaeRZvvrN` (remplacer par clé prod après connexion Play Console)
+
+**C — Play Console (play.google.com/console, ~2h)**
+- [ ] Créer l'app : Toutes les apps → Créer une application → Android, Gratuite, FR
+- [ ] Fiche store : Nom "SunTrail 3D", description FR+EN (utiliser README.md), icône 512px, feature graphic 1024×500
+- [ ] Data Safety : déclarer GPS (collectée, partagée avec RevenueCat), achats (via Play Billing)
+- [ ] Content Rating (IARC) : questionnaire → cible "Tout public"
+- [ ] Merchant Account : Configuration → Profil paiements (IBAN requis)
+- [ ] Produits IAP : Monétisation → Produits intégrés → Créer abonnement `suntrail_pro_annual` (€19.99/an), `suntrail_pro_monthly` (€2.99/mois), achat unique `suntrail_pro_lifetime` (€49.99)
+- [ ] Lier RevenueCat à Play Console via Service Account (guide : docs.revenuecat.com/docs/service-credentials)
+
+**D — Premier upload + Closed Testing**
+- [ ] Build AAB release (étape A) → upload dans Play Console → Internal Testing → créer release
+- [ ] Passer en Closed Testing → ajouter 20 testeurs (emails) → publier
+- [ ] Diffuser le lien opt-in aux testeurs
+
+#### Automatisé après setup
+- [x] **GitHub Actions** : `.github/workflows/release.yml` → `git tag v5.11.2 && git push --tags` = AAB buildé + release GitHub créée
+- [ ] **Production** : Après 14 jours closed testing → Mise en production
 
 ---
 

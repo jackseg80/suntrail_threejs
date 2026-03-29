@@ -160,7 +160,38 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 | Bouton 2D non grisé au démarrage (LOD 6) | `syncLowZoomState()` absent ou non appelé en init dans `NavigationBar.render()` | Vérifier que `syncLowZoomState()` est appelé après `syncToggleVisual()` dans le bloc `modeToggle` de NavigationBar.ts. (v5.11.2) |
 | Mode 3D restauré mais meshes encore plats après zoom-in LOD 10→11 | `rebuildActiveTiles()` non appelé lors de la restauration du mode | `syncLowZoomState()` doit appeler `rebuildActiveTiles() + updateVisibleTiles()` quand `previousMode !== state.IS_2D_MODE`. (v5.11.2) |
 
+## 💰 Freemium & IAP (v5.12)
+
+### Architecture Freemium
+- **`state.isPro: boolean`** : Flag central. `false` par défaut. Persisté dans `localStorage` via clé séparée `suntrail_pro` (immunisée contre les resets de version `CURRENT_SETTINGS_VERSION`).
+- **`saveProStatus()` / `loadProStatus()`** dans `state.ts`. `loadProStatus()` appelé en **premier** dans `initUI()`, avant `loadSettings()`.
+- **`src/modules/iap.ts`** : Point central — `showUpgradePrompt(feature)` ouvre l'UpgradeSheet, `grantProAccess()` / `revokeProAccess()` modifient `state.isPro` + persistent.
+- **`src/modules/iapService.ts`** : Service RevenueCat (`@revenuecat/purchases-capacitor` v12.3.0). `iapService.initialize()` appelé en fire-and-forget dans `initUI()`. Entitlement : `'SunTrail 3D Pro'` (avec espaces — identifiant exact du dashboard RevenueCat). No-op sur Web/PWA.
+- **Clé bundlée** : `VITE_REVENUECAT_KEY` dans `.env` (hors Git). `VITE_MAPTILER_KEY` idem.
+
+### Feature Gates (où vérifier `state.isPro`)
+| Feature | Fichier | Guard |
+|---|---|---|
+| LOD > 14 | `performance.ts` → `applyPreset()` | `if (!state.isPro && state.MAX_ALLOWED_ZOOM > 14)` |
+| Couche Satellite | `LayersSheet.ts` → click handler | `if (source === 'satellite' && !state.isPro)` |
+| Multi-tracés GPX (> 1) | `TrackSheet.ts` → `handleGPX()` | `if (!state.isPro && state.gpxLayers.length >= 1)` |
+| Export GPX | `TrackSheet.ts` → `exportRecordedGPX()` | `if (!state.isPro)` |
+| REC > 30 min | `TrackSheet.ts` → recBtn click | `setTimeout(REC_FREE_LIMIT_MS)` si `!state.isPro` |
+
+### Acceptance Wall (`src/modules/acceptanceWall.ts`)
+- Overlay bloquant, même pattern que `gpsDisclosure.ts`.
+- Stocké : `suntrail_acceptance_v1` (incrémenter la version pour forcer un re-affichage).
+- Affiché 420ms après disparition du setup screen (dans le handler `suntrail:sceneReady`).
+- Pas de bouton "Refuser" — l'utilisateur doit accepter pour continuer.
+
+### Build Android (Sprint 7)
+- **JAVA_HOME** : `C:/Program Files/Android/Android Studio/jbr` (Android Studio bundled JDK).
+- **Keystore** : `android/suntrail.keystore` (hors Git). `android/keystore.properties` (hors Git, rempli avec mot de passe réel).
+- **Build release** : `JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease --no-daemon` depuis `android/`.
+- **CI/CD** : `.github/workflows/release.yml` — déclenché sur `git tag v*.*.*`. Nécessite 6 GitHub Secrets : `KEYSTORE_BASE64`, `STORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS`, `VITE_MAPTILER_KEY`, `VITE_REVENUECAT_KEY`.
+
 ## 🚀 Commandes de Maintenance
 - `npm test` : Lancer la suite de 190 tests unitaires (Vitest).
 - `npm run check` : Vérifier le typage TypeScript (strict).
 - `npm run deploy` : Suite complète avant livraison mobile.
+- Build AAB release : `JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease --no-daemon` (depuis `android/`).
