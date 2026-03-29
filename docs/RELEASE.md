@@ -51,11 +51,13 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 
 | versionCode | versionName | Tag git | Track Play Store | Date |
 |-------------|-------------|---------|-----------------|------|
-| 512 | 5.11.1 | v5.12.0 | Tests internes (rejeté — mauvaise clé RC) | 2026-03-29 |
-| 512 | 5.11.1 | v5.12.1 | Tests internes (rejeté — même code) | 2026-03-29 |
-| 512 | 5.11.1 | v5.12.2 | Tests internes (rejeté — même code) | 2026-03-29 |
-| 512 | 5.11.1 | v5.12.3 | Tests internes (rejeté — même code) | 2026-03-29 |
-| **513** | **5.12.3** | **v5.12.4** | **Tests internes** | **2026-03-29** |
+| 512 | 5.11.1 | v5.12.0 | CI test — clé RevenueCat `test_` (crash) | 2026-03-29 |
+| 512 | 5.11.1 | v5.12.1 | CI test — fix CRLF gradlew | 2026-03-29 |
+| 512 | 5.11.1 | v5.12.2 | CI test — fix permissions GitHub Release | 2026-03-29 |
+| 512 | 5.11.1 | v5.12.3 | CI test — clé RevenueCat `goog_` | 2026-03-29 |
+| 513 | 5.12.3 | v5.12.4 | Tests internes — 1er upload Play Console | 2026-03-29 |
+| 513 | 5.12.3 | v5.12.5 | Setup screen auto-skip (clé bundlée) | 2026-03-29 |
+| **514** | **5.12.5** | **v5.12.5-fix** | **Tests internes actuel — app fonctionnelle Galaxy Tab S8** | **2026-03-29** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 

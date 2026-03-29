@@ -184,11 +184,18 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 - Affiché 420ms après disparition du setup screen (dans le handler `suntrail:sceneReady`).
 - Pas de bouton "Refuser" — l'utilisateur doit accepter pour continuer.
 
+### Setup Screen & Clé MapTiler (v5.12)
+- **Auto-skip** : Si `VITE_MAPTILER_KEY` est défini dans `.env`, `state.MK` est peuplé dans `initUI()` et le setup screen est masqué — l'app démarre directement.
+- **Fallback** : Si `state.MK` est vide (dev sans `.env`, PWA), le setup screen s'affiche pour saisie manuelle.
+- **Clé utilisateur** : Une clé saisie manuellement (via ConnectivitySheet) prend priorité sur la clé bundlée.
+
 ### Build Android (Sprint 7)
 - **JAVA_HOME** : `C:/Program Files/Android/Android Studio/jbr` (Android Studio bundled JDK).
 - **Keystore** : `android/suntrail.keystore` (hors Git). `android/keystore.properties` (hors Git, rempli avec mot de passe réel).
 - **Build release** : `JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease --no-daemon` depuis `android/`.
 - **CI/CD** : `.github/workflows/release.yml` — déclenché sur `git tag v*.*.*`. Nécessite 6 GitHub Secrets : `KEYSTORE_BASE64`, `STORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS`, `VITE_MAPTILER_KEY`, `VITE_REVENUECAT_KEY`.
+- **versionCode** : Incrémenter à chaque upload Play Console. Voir `docs/RELEASE.md` pour l'historique. Dernière valeur : **514**.
+- **Play Store** : App `com.suntrail.threejs` — Internal Testing actif (versionCode 514). Voir `docs/RELEASE.md` pour le workflow complet.
 
 ## 🚀 Commandes de Maintenance
 - `npm test` : Lancer la suite de 190 tests unitaires (Vitest).

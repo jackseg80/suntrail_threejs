@@ -265,17 +265,27 @@
 - [x] **D5 — iOS v6.x** (build Capacitor séparé, pas de blocage Sprint 7)
 - [x] **D6 — Plan IGN v2 (0€)** — SCAN 25 écarté (coût + complexité)
 
-#### Implémentation Freemium (à faire avant Sprint 7)
+#### Implémentation Freemium ✅ TERMINÉ (v5.12)
 
-- [ ] **Google Play Billing** : `com.android.billingclient:billing:7.x` dans `build.gradle`
-- [ ] **Plugin IAP Capacitor** : `npm install @capacitor-community/in-app-purchases` + `npx cap sync`
-- [ ] **`state.isPro: boolean`** : ajout dans `state.ts` + persistance localStorage
-- [ ] **Vérification receipt** : validation côté client via Play Store API au démarrage
-- [ ] **Gate features** : `if (!state.isPro) showUpgradeSheet()` sur offline/LOD 18/solaire 24h/export GPX/REC illimité
-- [ ] **Upgrade Sheet** : composant Bottom Sheet avec présentation des avantages Pro + bouton IAP
-- [ ] **Clé MapTiler bundlée** : `VITE_MAPTILER_KEY` dans `.env` (hors Git) — injectée au build Vite
-- [ ] **Acceptance Wall** : modale bloquante premier lancement (sécurité alpine + disclaimer)
-- [ ] **Bridage LOD gratuit** : `state.MAX_ZOOM = isPro ? 18 : 14` dans les presets
+- [x] **Plugin RevenueCat** : `@revenuecat/purchases-capacitor` v12.3.0 + `npx cap sync`
+- [x] **`state.isPro: boolean`** : `state.ts` + `saveProStatus()` / `loadProStatus()` (clé séparée `suntrail_pro`)
+- [x] **`iapService.ts`** : RevenueCat — initialize / syncProStatus / purchase / restore / getPrices
+- [x] **`iap.ts`** : `showUpgradePrompt()` → UpgradeSheet, `grantProAccess()` / `revokeProAccess()`
+- [x] **Gate LOD** : `performance.ts` — `MAX_ALLOWED_ZOOM` cappé à 14 si `!isPro`
+- [x] **Gate Satellite** : `LayersSheet.ts` — bloqué si `!isPro`
+- [x] **Gate GPX multi-tracés** : `TrackSheet.ts` — bloqué si `!isPro && layers >= 1`
+- [x] **Gate export GPX** : `TrackSheet.ts` — bloqué si `!isPro`
+- [x] **Gate REC 30min** : `TrackSheet.ts` — auto-stop + toast si `!isPro`
+- [x] **Upgrade Sheet** : `UpgradeSheet.ts` — paywall UI avec prix réels RevenueCat
+- [x] **Clé MapTiler bundlée** : `VITE_MAPTILER_KEY` dans `.env` + auto-skip setup screen
+- [x] **Clé RevenueCat** : `VITE_REVENUECAT_KEY=goog_...` dans `.env` (clé Android réelle)
+- [x] **Acceptance Wall** : `acceptanceWall.ts` — disclaimer sécurité alpine, versionnée `v1`
+- [x] **BILLING permission** : `AndroidManifest.xml` — `com.android.vending.BILLING`
+
+#### Gates Freemium manquants (v5.13)
+
+- [ ] **Gate solaire** : `TimelineComponent.ts` — limiter le curseur à ±2h si `!isPro`
+- [ ] **Gate offline** : `ConnectivitySheet.ts` — limiter à 1 zone si `!isPro`
 
 #### Partenariats (post-lancement, après 10k téléchargements)
 
@@ -459,40 +469,35 @@ App sur appareil physique Android connecté en USB (débogage activé).
 
 > ⏱ **Séquençage** : Closed Testing dure 14 jours (obligatoire 1ère fois uniquement). Profiter de ce délai pour développer v5.12 en parallèle. Les updates suivantes passent en production en quelques heures sans closed testing.
 
-#### Actions manuelles (à faire une seule fois, dans l'ordre)
+#### Actions manuelles ✅ TERMINÉES
 
-**A — Keystore (LOCAL, 5 min)**
-- [ ] Lancer depuis `android/` : `keytool -genkey -v -keystore suntrail.keystore -alias suntrail -keyalg RSA -keysize 2048 -validity 10000`
-- [ ] Remplir `android/keystore.properties` (remplacer MOT_DE_PASSE_* par les vrais mots de passe)
-- [ ] Sauvegarder `suntrail.keystore` hors du repo (cloud chiffré ou clé USB)
-- [ ] Test build : `JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease --no-daemon`
+- [x] **Keystore** : `suntrail.keystore` généré (CN=Jacques Segalla, O=SunTrail, C=CH) + `keystore.properties` rempli
+- [x] **GitHub Secrets** : 6 secrets configurés (KEYSTORE_BASE64, STORE_PASSWORD, KEY_PASSWORD, KEY_ALIAS, VITE_MAPTILER_KEY, VITE_REVENUECAT_KEY)
+- [x] **CI/CD** : `.github/workflows/release.yml` opérationnel — `git tag vX.Y.Z` → AAB signé + GitHub Release automatique
+- [x] **Play Console** : App créée, package `com.suntrail.threejs`
+- [x] **Internal Testing** : AAB v5.12.5 (versionCode 514) uploadé et fonctionnel sur Galaxy Tab S8
+- [x] **RevenueCat** : App Android ajoutée avec clé `goog_`, entitlement `SunTrail 3D Pro`
 
-**B — GitHub Secrets (github.com, 10 min)**
-Aller dans : GitHub repo → Settings → Secrets and variables → Actions → New repository secret
-- [ ] `KEYSTORE_BASE64` : `base64 -w 0 android/suntrail.keystore` (ou `certutil -encodehex` sur Windows)
-- [ ] `STORE_PASSWORD` : mot de passe keystore
-- [ ] `KEY_PASSWORD` : mot de passe clé
-- [ ] `KEY_ALIAS` : `suntrail`
-- [ ] `VITE_MAPTILER_KEY` : clé MapTiler (depuis cloud.maptiler.com)
-- [ ] `VITE_REVENUECAT_KEY` : `test_PMaHKKNvCEmUkwEhpUNaeRZvvrN` (remplacer par clé prod après connexion Play Console)
+#### Reste à faire avant Production
 
-**C — Play Console (play.google.com/console, ~2h)**
-- [ ] Créer l'app : Toutes les apps → Créer une application → Android, Gratuite, FR
-- [ ] Fiche store : Nom "SunTrail 3D", description FR+EN (utiliser README.md), icône 512px, feature graphic 1024×500
-- [ ] Data Safety : déclarer GPS (collectée, partagée avec RevenueCat), achats (via Play Billing)
-- [ ] Content Rating (IARC) : questionnaire → cible "Tout public"
-- [ ] Merchant Account : Configuration → Profil paiements (IBAN requis)
-- [ ] Produits IAP : Monétisation → Produits intégrés → Créer abonnement `suntrail_pro_annual` (€19.99/an), `suntrail_pro_monthly` (€2.99/mois), achat unique `suntrail_pro_lifetime` (€49.99)
-- [ ] Lier RevenueCat à Play Console via Service Account (guide : docs.revenuecat.com/docs/service-credentials)
+**Play Console — configuration**
+- [ ] **Fiche Play Store** : screenshots (min 2, portrait 1080×1920) + feature graphic (1024×500)
+- [x] Icône 512×512 : `public/assets/icons/icon_512.png` ✅
+- [x] Textes FR + EN : `docs/STORE_LISTING.md` ✅
+- [ ] **Classification contenu (IARC)** : questionnaire → Tout public
+- [ ] **Data Safety** : GPS + achats via Play Billing
+- [ ] **Compte marchand** : IBAN + identité (pour recevoir les paiements)
+- [ ] **Produits IAP** : `suntrail_pro_annual` (€19.99/an), `suntrail_pro_monthly` (€2.99/mois), `suntrail_pro_lifetime` (€49.99)
+- [ ] **Lier RevenueCat ↔ Play Console** : Service Account JSON (docs.revenuecat.com/docs/service-credentials)
+- [ ] **Mettre l'app en GRATUIT** (actuellement "Payant" — le revenu vient des IAP, pas du téléchargement)
 
-**D — Premier upload + Closed Testing**
-- [ ] Build AAB release (étape A) → upload dans Play Console → Internal Testing → créer release
-- [ ] Passer en Closed Testing → ajouter 20 testeurs (emails) → publier
-- [ ] Diffuser le lien opt-in aux testeurs
+**Closed Testing (14 jours obligatoires)**
+- [ ] Passer de Internal Testing → Closed Testing
+- [ ] Ajouter 20 testeurs (famille/amis Android, Reddit r/Randonnée, groupes Facebook rando)
+- [ ] Diffuser le lien opt-in
 
-#### Automatisé après setup
-- [x] **GitHub Actions** : `.github/workflows/release.yml` → `git tag v5.11.2 && git push --tags` = AAB buildé + release GitHub créée
-- [ ] **Production** : Après 14 jours closed testing → Mise en production
+**Production**
+- [ ] Après 14 jours closed testing → Mise en production
 
 ---
 
