@@ -301,7 +301,8 @@
     "info": "Distance: 0km | Alt: 0m | Slope: 0%"
   },
   "timeline": {
-    "sunPhase": "☀️ Full daylight"
+    "sunPhase": "☀️ Full daylight",
+    "requires3D": "Solar simulation available in 3D mode"
   },
   "vram": {
     "label": "GPU Stats (VRAM)",

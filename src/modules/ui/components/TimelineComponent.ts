@@ -1,6 +1,8 @@
 import { state } from '../../state';
 import { updateSunPosition } from '../../sun';
 import { haptic } from '../../haptics';
+import { showToast } from '../../utils';
+import { i18n } from '../../../i18n/I18nService';
 
 export class TimelineComponent {
     private timeSlider: HTMLInputElement | null = null;
@@ -77,6 +79,11 @@ export class TimelineComponent {
         if (toggleBtn && bottomBar) {
             toggleBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                // En mode 2D, la simulation solaire n'est pas disponible (relief plat = ombres fausses)
+                if (document.body.classList.contains('mode-2d')) {
+                    showToast(i18n.t('timeline.requires3D'));
+                    return;
+                }
                 const isOpen = bottomBar.classList.toggle('is-open');
                 toggleBtn.classList.toggle('active');
                 document.body.classList.toggle('timeline-open', isOpen);
@@ -98,6 +105,15 @@ export class TimelineComponent {
 
         this.subscriptions.push(state.subscribe('isSunAnimating', (val: boolean) => {
             if (playBtn) playBtn.textContent = val ? '⏸' : '▶';
+        }));
+
+        // Fermer la timeline automatiquement quand on bascule en mode 2D
+        this.subscriptions.push(state.subscribe('IS_2D_MODE', (is2D: boolean) => {
+            if (is2D && bottomBar && bottomBar.classList.contains('is-open')) {
+                bottomBar.classList.remove('is-open');
+                document.body.classList.remove('timeline-open');
+                if (toggleBtn) toggleBtn.classList.remove('active');
+            }
         }));
     }
 

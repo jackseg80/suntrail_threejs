@@ -301,7 +301,8 @@
     "info": "Distanz: 0km | Höhe: 0m | Neigung: 0%"
   },
   "timeline": {
-    "sunPhase": "☀️ Voller Tag"
+    "sunPhase": "☀️ Voller Tag",
+    "requires3D": "Sonnensimulation im 3D-Modus verfügbar"
   },
   "vram": {
     "label": "GPU-Statistiken (VRAM)",

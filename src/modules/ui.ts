@@ -138,13 +138,8 @@ export function initUI(): void {
         startApp();
     };
 
-    // Si clé bundlée (.env) ou clé manuelle déjà enregistrée → démarrage automatique
-    // Le setup screen (saisie clé MapTiler) n'est affiché que si aucune clé n'est disponible
-    if (state.MK) {
-        if (setupScreen) setupScreen.style.display = 'none';
-        launchScene();
-    } else {
-        // Pas de clé bundlée → afficher le setup screen (fallback pour dev / PWA sans .env)
+    // Si pas de clé bundlée → afficher le setup screen, lancer via bouton
+    if (!state.MK) {
         setupBgo?.addEventListener('click', () => {
             const key = setupK1.value.trim();
             if (key.length < 10) {
@@ -208,6 +203,15 @@ export function initUI(): void {
     new TimelineComponent();
     initAutoHide();
     initMobileUI();
+
+    // Si clé bundlée (.env) ou clé manuelle sauvegardée → démarrage automatique
+    // IMPORTANT : appelé APRÈS hydrate() de tous les composants pour que
+    // #widgets-container et #bottom-bar soient dans le DOM quand startApp() s'exécute.
+    // (v5.12.5 regression : launchScene() était appelé avant les hydrations → display:none non effacé)
+    if (state.MK) {
+        if (setupScreen) setupScreen.style.display = 'none';
+        launchScene();
+    }
 
     (window as any).sheetManager = sheetManager;
 

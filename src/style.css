@@ -701,9 +701,14 @@ body.ui-hidden #gps-main-btn,
 body.ui-hidden #coords-pill,
 body.ui-hidden .fab-stack { transform: translateX(100px); opacity: 0; }
 
-/* ── MODE 2D (preset Eco) ───────────────────────────────────────────────────── */
-/* Masquer le bouton timeline et la timeline elle-même (altitude = 0, simulation inutile) */
-body.mode-2d #timeline-toggle-btn { display: none !important; }
+/* ── MODE 2D ─────────────────────────────────────────────────────────────────── */
+/* Timeline : bouton visible mais désactivé visuellement — clic → toast "disponible en 3D" */
+body.mode-2d #timeline-toggle-btn {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: auto; /* JS gère le clic pour afficher le toast */
+}
+/* Barre du bas (bottom-bar) : toujours masquée en 2D — la simulation solaire requiert la 3D */
 body.mode-2d #bottom-bar         { display: none !important; }
 /* Masquer l'altitude dans le panneau de coordonnées (toujours 0 en 2D) */
 body.mode-2d #click-alt          { display: none; }

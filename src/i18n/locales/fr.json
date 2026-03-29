@@ -301,7 +301,8 @@
     "info": "Distance : 0km | Alt : 0m | Pente : 0%"
   },
   "timeline": {
-    "sunPhase": "☀️ Plein jour"
+    "sunPhase": "☀️ Plein jour",
+    "requires3D": "Simulation solaire disponible en mode 3D"
   },
   "vram": {
     "label": "Stats GPU (VRAM)",
