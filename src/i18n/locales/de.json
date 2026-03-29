@@ -156,6 +156,9 @@
       "format": "{{country}} · LVL {{level}}"
     }
   },
+  "upsell": {
+    "lod": "🔍 Maximale Detailstufe erreicht — mit Pro bis LOD 18 zoomen"
+  },
   "connectivity": {
     "title": "System & Daten",
     "aria": {

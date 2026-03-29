@@ -156,6 +156,9 @@
       "format": "{{country}} · LVL {{level}}"
     }
   },
+  "upsell": {
+    "lod": "🔍 Dettaglio massimo raggiunto — passa a Pro per il LOD 18"
+  },
   "connectivity": {
     "title": "Sistema & Dati",
     "aria": {

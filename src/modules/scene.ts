@@ -10,7 +10,8 @@ import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, rese
 import { disposeAllCachedTiles } from './tileCache';
 import { disposeAllGeometries } from './geometryCache';
 import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat } from './geo';
-import { throttle } from './utils';
+import { throttle, showToast } from './utils';
+import { i18n } from '../i18n/I18nService';
 import { initVegetationResources } from './vegetation';
 import { initWeatherSystem, updateWeatherSystem, fetchWeather } from './weather';
 import { initCompass, disposeCompass, renderCompass, updateCompassAnimation, isCompassAnimating } from './compass';
@@ -19,6 +20,9 @@ import { initTouchControls, disposeTouchControls } from './touchControls';
 
 // Handler de visibilité : suspend le GPU quand l'app passe en arrière-plan (v5.11)
 let visibilityChangeHandler: (() => void) | null = null;
+
+// Upsell LOD — debounce pour ne pas spammer le toast (1 fois par 30s max)
+let _lastLodUpsellTime = 0;
 
 export async function disposeScene(): Promise<void> {
     resetTerrain();
@@ -205,6 +209,17 @@ export async function initScene(): Promise<void> {
         // --- LOGIQUE DE ZOOM ADAPTATIVE (v5.8.6) ---
         // On évite de dépasser le zoom max autorisé par le preset
         const targetZoom = Math.min(idealZoom, state.MAX_ALLOWED_ZOOM || 18);
+
+        // Upsell contextuel LOD — informer l'utilisateur gratuit qu'il est à la limite
+        // Condition : l'utilisateur veut zoomer plus loin (idealZoom dépasse la limite)
+        // mais est bloqué car !isPro. Debounce 30s pour ne pas spammer.
+        if (!state.isPro && idealZoom > (state.MAX_ALLOWED_ZOOM || 18) && state.ZOOM >= (state.MAX_ALLOWED_ZOOM || 18)) {
+            const now = Date.now();
+            if (now - _lastLodUpsellTime > 30_000) {
+                _lastLodUpsellTime = now;
+                showToast(i18n.t('upsell.lod'));
+            }
+        }
 
         // Si l'écart est important (téléportation ou mouvement rapide), on saute directement
         if (Math.abs(targetZoom - state.ZOOM) > 1) {
