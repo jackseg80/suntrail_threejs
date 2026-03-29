@@ -1,9 +1,41 @@
+# Dépendances
 node_modules
+
+# Build
 dist
+
+# IDE & OS
 .vscode
 .DS_Store
+Thumbs.db
 
 # Android Keystore — NE JAMAIS COMMITTER
 *.jks
 *.keystore
 android/keystore.properties
+
+# Variables d'environnement — NE JAMAIS COMMITTER (clés API, secrets)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Vite
+*.local
+
+# Screenshots de debug (générés par les outils IA/devtools)
+debug_*.png
+startup_screenshot.png
+
+# Artefacts Windows
+nul
+%TEMP%*/
+
+# Android Studio — fichiers de session IDE (changent à chaque déploiement)
+android/.idea/deploymentTargetSelector.xml
+android/.idea/workspace.xml
