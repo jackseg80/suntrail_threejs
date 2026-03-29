@@ -21,6 +21,7 @@ const REC_FREE_LIMIT_MS = 30 * 60 * 1000; // 30 minutes pour le tier gratuit
 
 export class TrackSheet extends BaseComponent {
     private recLimitTimer: ReturnType<typeof setTimeout> | null = null;
+    private recWarningTimer: ReturnType<typeof setTimeout> | null = null;
 
     constructor() {
         super('template-track', 'sheet-container');
@@ -81,6 +82,14 @@ export class TrackSheet extends BaseComponent {
                 }
                 // Gate Freemium : arrêt automatique après 30 min pour les utilisateurs gratuits
                 if (!state.isPro) {
+                    // Alerte T-5min avant la limite
+                    this.recWarningTimer = setTimeout(() => {
+                        if (state.isRecording) {
+                            showToast(i18n.t('track.toast.recWarning5min'));
+                            void haptic('medium');
+                        }
+                    }, REC_FREE_LIMIT_MS - 5 * 60 * 1000);
+
                     this.recLimitTimer = setTimeout(async () => {
                         if (state.isRecording) {
                             state.isRecording = false;
@@ -96,6 +105,7 @@ export class TrackSheet extends BaseComponent {
                 }
             } else {
                 if (this.recLimitTimer) { clearTimeout(this.recLimitTimer); this.recLimitTimer = null; }
+                if (this.recWarningTimer) { clearTimeout(this.recWarningTimer); this.recWarningTimer = null; }
                 await stopRecordingService();    // Arrête le Foreground Service Android
                 showToast(i18n.t('track.toast.recStopped'));
                 // Sauvegarde interne systématique au STOP (sans gate Pro)

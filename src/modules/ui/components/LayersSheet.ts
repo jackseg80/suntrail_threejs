@@ -68,6 +68,14 @@ export class LayersSheet extends BaseComponent {
             });
         }
 
+        // Badge Pro sur la tuile satellite — masquer si isPro
+        const satelliteBadge = this.element.querySelector('[data-source="satellite"] .layer-pro-badge') as HTMLElement | null;
+        const syncSatelliteBadge = () => {
+            if (satelliteBadge) satelliteBadge.classList.toggle('hidden', state.isPro);
+        };
+        syncSatelliteBadge();
+        this.addSubscription(state.subscribe('isPro', syncSatelliteBadge));
+
         this.addSubscription(state.subscribe('MAP_SOURCE', () => this.updateActiveLayer()));
         this.addSubscription(state.subscribe('SHOW_TRAILS', (val: boolean) => {
             if (trailsToggle) {

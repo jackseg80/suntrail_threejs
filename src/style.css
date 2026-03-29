@@ -388,7 +388,26 @@ input[type="range"]::-webkit-slider-thumb {
     border: 2px solid transparent;
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     transition: all var(--transition-normal);
+    position: relative;
 }
+
+/* Badge Pro sur les layers réservés (ex: satellite) */
+.layer-pro-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: var(--gold, #f5a623);
+    color: #000;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    padding: 2px 5px;
+    border-radius: var(--radius-sm);
+    line-height: 1.4;
+    pointer-events: none;
+}
+/* Masquer le badge quand l'utilisateur est Pro */
+.layer-pro-badge.hidden { display: none; }
 
 .layer-item.active .layer-thumb { 
     border-color: var(--accent); 

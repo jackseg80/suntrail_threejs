@@ -95,6 +95,18 @@ export class TimelineComponent {
             this.attachSwipeGesture(bottomBar);
         }
 
+        // Hint upsell sous le slider — visible uniquement pour les users gratuits
+        if (this.timeSlider) {
+            const hint = document.createElement('div');
+            hint.id = 'timeline-upsell-hint';
+            hint.style.cssText = 'font-size:10px; color:var(--text-3); text-align:center; margin-top:4px; opacity:0.7; letter-spacing:0.3px;';
+            hint.textContent = i18n.t('upsell.timeline');
+            this.timeSlider.parentNode?.appendChild(hint);
+            const syncHint = () => { hint.style.display = state.isPro ? 'none' : 'block'; };
+            syncHint();
+            this.subscriptions.push(state.subscribe('isPro', syncHint));
+        }
+
         // Initial sync
         this.syncUI();
 

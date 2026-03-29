@@ -24,6 +24,7 @@
     "toast": {
       "recStarted": "🔴 Enregistrement démarré",
       "recStopped": "⏹️ Enregistrement stoppé",
+      "recWarning5min": "⏱ Limite 30 min — encore 5 minutes d'enregistrement",
       "tooShort": "Tracé trop court pour export",
       "exported": "GPX téléchargé"
     },
@@ -157,7 +158,8 @@
     }
   },
   "upsell": {
-    "lod": "🔍 Détail maximum atteint — passez à Pro pour voir jusqu'au LOD 18"
+    "lod": "🔍 Détail maximum atteint — passez à Pro pour voir jusqu'au LOD 18",
+    "timeline": "⭐ Simulation solaire complète 24h disponible avec Pro"
   },
   "connectivity": {
     "title": "Système & Données",

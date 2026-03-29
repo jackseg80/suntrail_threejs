@@ -14,7 +14,7 @@ import { sheetManager } from './ui/core/SheetManager';
 const FEATURE_LABELS: Record<string, string> = {
     lod_18:      'LOD 18 (détail max)',
     satellite:   'Couche Satellite',
-    multi_gpx:   'Multi-tracés GPX',
+    multi_gpx:   'Tracés GPX illimités — comparez vos sorties côte à côte',
     export_gpx:  'Export GPX',
     rec_unlimited: 'Enregistrement illimité',
     offline_multi: 'Zones offline illimitées',
