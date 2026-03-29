@@ -11,6 +11,8 @@ jobs:
   build:
     name: Build & Sign AAB
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Requis pour créer des GitHub Releases et uploader des assets
 
     steps:
       # ── 1. Checkout ──────────────────────────────────────────────────────────
