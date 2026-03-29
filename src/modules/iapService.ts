@@ -146,7 +146,7 @@ class IAPService {
 
     /** Retourne les prix formatés pour affichage dans l'UpgradeSheet */
     async getPrices(): Promise<{ monthly: string; yearly: string; lifetime: string }> {
-        const defaults = { monthly: '€2.99/mois', yearly: '€19.99/an', lifetime: '€49.99' };
+        const defaults = { monthly: '€2.99/mois', yearly: '€19.99/an', lifetime: '€99.99' };
         if (!this.initialized) return defaults;
         try {
             const offering = await this.getCurrentOffering();
