@@ -15,6 +15,20 @@
 
 ## 🐛 Bugs Critiques Découverts en Conditions Réelles (v5.13 — priorité haute)
 
+### Bug #0 — Timeline bar invisible après clic (régression v5.12)
+
+**Symptôme** : Cliquer sur le bouton timeline → les FABs disparaissent bien (body.timeline-open toggleé ✅) mais `#bottom-bar` ne remonte pas visuellement.
+
+**Piste principale** : `#bottom-bar` a `z-index: 1000` mais `.bottom-sheet` a `z-index: 1600`. Depuis l'ajout de l'UpgradeSheet (toujours dans le DOM après `hydrate()`), il peut y avoir un conflit de stacking context. À vérifier via `chrome://inspect` → Elements → clic bouton → est-ce que `is-open` est ajouté sur `#bottom-bar` ?
+
+**Hypothèses à tester** :
+- [ ] Via DevTools : vérifier si `#bottom-bar.is-open` a `transform: translate(-50%, 0)` et `opacity: 1` dans les styles calculés
+- [ ] Vérifier si un `.bottom-sheet` (UpgradeSheet, etc.) couvre `#bottom-bar` malgré `translateY(100%)`
+- [ ] Fix potentiel : ajouter `z-index: 1700` sur `#bottom-bar.is-open` pour passer au-dessus de tout
+- [ ] Fix potentiel : ajouter `pointer-events: none` sur `.bottom-sheet` quand pas `.is-open`
+
+---
+
 ### Bug #1 — Crash REC sans permission GPS préalable
 
 **Symptôme** : Ouvrir TrackSheet → cliquer REC sans avoir activé le GPS via le bouton position → l'app plante.
