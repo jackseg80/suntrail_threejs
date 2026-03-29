@@ -1,4 +1,4 @@
-# SunTrail 3D - Roadmap Révisée (v5.11.1)
+# SunTrail 3D - Roadmap Révisée (v5.11.2)
 
 ## 🚀 Priorité 1 : Optimisations & Netteté (v5.6) - ✅ TERMINÉ
 *Impact : Fluidité mobile absolue et rendu topographique pro.*
@@ -249,6 +249,36 @@
 - [x] **Feature Graphic** : Visuel 1024×500px.
 - [x] **Descriptions** : Rédigées FR + EN — voir `docs/STORE_LISTING.md`.
 
+---
+
+### Sprint 5-bis — Stratégie Business & Monétisation ⚠️ BLOQUANT avant Sprint 7
+
+> 📋 **Réflexion complète** : voir `docs/MONETIZATION.md`
+> Ces décisions impactent l'architecture (IAP, clé API bundlée, paywall). À finaliser **avant** de soumettre sur le Play Store.
+
+#### Décisions à prendre (5 questions bloquantes)
+
+- [ ] **D1 — Modèle de base** : Gratuit / Payant one-shot / Freemium
+- [ ] **D2 — Clé MapTiler** : Bundlée dans l'app / Fournie par l'utilisateur / Proxy serveur
+- [ ] **D3 — Publicité** : Aucune / Native sponsorisée uniquement
+- [ ] **D4 — Marché initial** : CH uniquement / FR+CH / Europe alpine (FR+CH+DE+AT)
+- [ ] **D5 — iOS** : Ignoré pour l'instant / Prévu v6.x / Simultané Android
+
+#### Actions selon décision D1
+
+- [ ] **Si Freemium** : implémenter Google Play Billing + `@capgo/capacitor-purchases` + `state.isPro` + clé bundlée `.env`
+- [ ] **Si Payant one-shot** : aucune modification technique — fixer le prix sur Play Console
+- [ ] **Si Gratuit** : aucune modification technique
+
+#### Partenariats à initier (avant ou après lancement)
+
+- [ ] **MapTiler** : contact partnerships@maptiler.com — accord revendeur / tarif développeur
+- [ ] **SAC/CAS** : contact info@sac-cas.ch — licence bulk membres (150k membres)
+- [ ] **IGN / Swisstopo** : accord distribution officiel → crédibilité + badge officiel
+- [ ] **CAF/FFCAM** : contact@ffcam.fr — 380k membres France
+
+---
+
 ### Sprint 6 — Optimisation Énergétique Mobile 🔋
 
 > 🔁 **Workflow** : Chaque phase se termine par `npm test` (145/145) + `npm run check` (0 erreurs) + **test physique sur appareil** avant commit.
@@ -419,7 +449,7 @@ App sur appareil physique Android connecté en USB (débogage activé).
 
 ---
 
-### Sprint 7 — Build AAB + CI/CD + Closed Testing
+### Sprint 7 — Build AAB + CI/CD + Closed Testing *(débloqué par Sprint 5-bis)*
 - [ ] **Keystore** : Générer `suntrail.keystore` + remplir `android/keystore.properties`.
 - [ ] **AAB Build** : `./gradlew bundleRelease` → exit code 0.
 - [ ] **Test device** : Edge-to-edge, navigation tactile, performance sur appareil physique.
@@ -429,7 +459,7 @@ App sur appareil physique Android connecté en USB (débogage activé).
 
 ---
 
-## 🔗 Priorité 6 : Intégrations Plateformes Sport (v6.0)
+## 🔗 Priorité 6 : Intégrations Plateformes Sport (v6.0) *(après lancement Play Store)*
 *Impact : Import naturel des tracés depuis les outils que les randonneurs utilisent déjà.*
 
 - [ ] **Strava** : Import des activités via OAuth + API Strava. Synchronisation automatique des nouveaux tracés.
@@ -438,7 +468,7 @@ App sur appareil physique Android connecté en USB (débogage activé).
 - [ ] **Suunto / Polar / Apple Health** : Évaluer la faisabilité et la priorité selon l'audience cible.
 - [ ] **Format FIT natif** : Lecture directe des fichiers `.fit` (Garmin) en plus du GPX.
 
-## 📊 Priorité 7 : Analyse Données Sport Avancée (v6.x — à définir ensemble)
+## 📊 Priorité 7 : Analyse Données Sport Avancée (v6.x — à définir ensemble) *(après lancement)*
 *Impact : Transformer SunTrail en outil d'analyse de performance, pas seulement de visualisation.*
 
 > ⚠️ **À co-concevoir** : Le périmètre exact est à affiner ensemble avant implémentation.
@@ -449,7 +479,7 @@ App sur appareil physique Android connecté en USB (débogage activé).
 - [ ] **Analyse Post-Effort** : Dashboard récapitulatif par segment (VAM, dénivelé/bpm, zones d'effort).
 - [ ] **À définir ensemble** : Format des données entrantes, profondeur de l'analyse, UX de visualisation.
 
-## 🚀 Priorité 8 : La Révolution AR (v6.0)
+## 🚀 Priorité 8 : La Révolution AR (v6.0) *(vision long terme)*
 *Impact : Immersion totale et aide à l'orientation futuriste.*
 
 - [ ] **Moteur AR Natif** : Superposition du moteur 3D sur le flux caméra via Capacitor.
