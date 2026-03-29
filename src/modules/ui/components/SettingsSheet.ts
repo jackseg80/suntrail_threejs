@@ -10,6 +10,8 @@ import { i18n } from '../../../i18n/I18nService';
 import type { Locale } from '../../../i18n/I18nService';
 
 import { sheetManager } from '../core/SheetManager';
+import { haptic } from '../../haptics';
+import { showToast } from '../../utils';
 
 export class SettingsSheet extends BaseComponent {
     constructor() {
@@ -143,8 +145,53 @@ export class SettingsSheet extends BaseComponent {
         // Language selector
         this.createLanguageSelector();
 
+        // Mode testeur (7 taps sur la version → isPro en RAM, non persisté)
+        this.initTesterMode();
+
         // Initial UI update
         this.updateAllUI();
+    }
+
+    /**
+     * Mode testeur — 7 taps rapides sur le numéro de version.
+     * Active/désactive isPro en RAM uniquement (jamais persisté en localStorage).
+     * Pattern Android "Options développeur". Non documenté dans l'UI.
+     */
+    private initTesterMode(): void {
+        const versionEl = this.element?.querySelector('#settings-version');
+        if (!versionEl) return;
+
+        let taps = 0;
+        let lastTap = 0;
+
+        versionEl.addEventListener('click', () => {
+            const now = Date.now();
+            if (now - lastTap > 1500) taps = 0; // reset si trop lent entre les taps
+            taps++;
+            lastTap = now;
+
+            if (taps >= 4 && taps < 7) {
+                void haptic('light');
+                // Feedback subtil : clignotement opacité
+                (versionEl as HTMLElement).style.opacity = '1';
+                setTimeout(() => { (versionEl as HTMLElement).style.opacity = '0.5'; }, 150);
+            }
+
+            if (taps === 7) {
+                // Toggle isPro en RAM — pas de saveProStatus() → non persisté
+                state.isPro = !state.isPro;
+                taps = 0;
+                void haptic('success');
+                showToast(state.isPro
+                    ? '🚀 Mode testeur ON — isPro activé (session uniquement)'
+                    : '🔒 Mode testeur OFF — retour tier gratuit'
+                );
+                // Mettre à jour le label pour confirmer l'état
+                (versionEl as HTMLElement).style.color = state.isPro
+                    ? 'var(--accent)'
+                    : 'var(--text-3)';
+            }
+        });
     }
 
     private bindSlider(id: string, stateKey: keyof typeof state, dispId: string, onChange?: () => void) {
