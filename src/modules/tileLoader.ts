@@ -282,3 +282,51 @@ export async function downloadOfflineZone(lat: number, lon: number, onProgress: 
     }
     onProgress(total, total);
 }
+
+/**
+ * Pré-charge les tuiles de vue Suisse (zoom 6-9) dans le cache persistant.
+ * Exécuté UNE SEULE FOIS en arrière-plan au premier démarrage.
+ * Garantit un affichage rapide même hors ligne dès la 2ème visite.
+ */
+export async function preloadChOverviewTiles(): Promise<void> {
+    const PRELOAD_KEY = 'suntrail-ch-preloaded-v1';
+    if (localStorage.getItem(PRELOAD_KEY)) return;
+
+    // Bounding box Suisse + buffer
+    const bounds = { minLon: 5.4, minLat: 45.2, maxLon: 11.3, maxLat: 48.2 };
+
+    const latToY = (lat: number, n: number): number => {
+        const latRad = lat * Math.PI / 180;
+        return Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
+    };
+
+    const tiles: Array<{ z: number; x: number; y: number }> = [];
+
+    for (let z = 6; z <= 9; z++) {
+        const n = Math.pow(2, z);
+        const xMin = Math.floor((bounds.minLon + 180) / 360 * n);
+        const xMax = Math.floor((bounds.maxLon + 180) / 360 * n);
+        const yMin = latToY(bounds.maxLat, n); // lat élevée = y petit
+        const yMax = latToY(bounds.minLat, n);
+
+        for (let x = xMin; x <= xMax; x++) {
+            for (let y = yMin; y <= yMax; y++) {
+                tiles.push({ z, x, y });
+            }
+        }
+    }
+
+    console.log(`[Preload CH] Démarrage pré-chargement de ${tiles.length} tuiles (zoom 6-9)…`);
+
+    // Fetch par lots de 8 en parallèle pour ne pas saturer le réseau
+    const BATCH_SIZE = 8;
+    for (let i = 0; i < tiles.length; i += BATCH_SIZE) {
+        const batch = tiles.slice(i, i + BATCH_SIZE);
+        await Promise.allSettled(
+            batch.map(({ z, x, y }) => fetchWithCache(getColorUrl(x, y, z), true))
+        );
+    }
+
+    localStorage.setItem(PRELOAD_KEY, '1');
+    console.log(`[Preload CH] ${tiles.length} tuiles en cache.`);
+}

@@ -145,7 +145,8 @@ export async function initScene(): Promise<void> {
     state.sky = sky;
 
     state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 4000000);
-    state.camera.position.set(0, 35000, 40000);
+    // Démarrage au LOD 6 (dezoom max) — dist >= 2 000 000 déclenche LOD 6 dans adaptiveLOD()
+    state.camera.position.set(0, 2000000, 2000000);
 
     const controls = new OrbitControls(state.camera, state.renderer.domElement);
     state.controls = controls;

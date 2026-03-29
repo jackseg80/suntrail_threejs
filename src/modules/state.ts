@@ -257,9 +257,9 @@ const initialState: State = {
     MAX_BUILDS_PER_CYCLE: PRESETS.balanced.MAX_BUILDS_PER_CYCLE,
     MAX_ALLOWED_ZOOM: PRESETS.balanced.MAX_ALLOWED_ZOOM,
 
-    TARGET_LAT: 46.6863, TARGET_LON: 7.6617, initialLat: 46.6863, initialLon: 7.6617,
-    ZOOM: 12, RELIEF_EXAGGERATION: 1.4, FOG_NEAR: 5000, FOG_FAR: 40000,
-    originTile: { x: 0, y: 0, z: 12 },
+    TARGET_LAT: 46.8182, TARGET_LON: 8.2275, initialLat: 46.8182, initialLon: 8.2275,
+    ZOOM: 6, RELIEF_EXAGGERATION: 1.4, FOG_NEAR: 5000, FOG_FAR: 40000,
+    originTile: { x: 0, y: 0, z: 6 },
     scene: null, camera: null, renderer: null, controls: null, sunLight: null, ambientLight: null, sky: null,
     stats: null, vramPanel: null,
 
