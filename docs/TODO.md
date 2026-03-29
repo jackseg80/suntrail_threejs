@@ -243,7 +243,7 @@
 
 ### Sprint 5 — Légal & Play Store Listing
 - [x] **Privacy Policy** : `public/privacy.html` → `https://jackseg80.github.io/suntrail_threejs/privacy.html` — bilingue FR/EN, RGPD + LPD suisse, Play Store compliant.
-- [ ] **Data Safety** : Remplir dans Play Console.
+- [x] **Data Safety** : Remplir dans Play Console.
 - [ ] **Content Rating (IARC)** : Questionnaire Play Console — cible "Tout public".
 - [ ] **Screenshots** : Phone portrait + tablet pour tous les form factors.
 - [x] **Feature Graphic** : Visuel 1024×500px.
@@ -484,8 +484,8 @@ App sur appareil physique Android connecté en USB (débogage activé).
 - [ ] **Fiche Play Store** : screenshots (min 2, portrait 1080×1920) + feature graphic (1024×500)
 - [x] Icône 512×512 : `public/assets/icons/icon_512.png` ✅
 - [x] Textes FR + EN : `docs/STORE_LISTING.md` ✅
-- [ ] **Classification contenu (IARC)** : questionnaire → Tout public
-- [ ] **Data Safety** : GPS + achats via Play Billing
+- [x] **Classification contenu (IARC)** : questionnaire → Tout public
+- [x] **Data Safety** : GPS + achats via Play Billing
 - [ ] **Compte marchand** : IBAN + identité (pour recevoir les paiements)
 - [ ] **Produits IAP** : `suntrail_pro_annual` (€19.99/an), `suntrail_pro_monthly` (€2.99/mois), `suntrail_pro_lifetime` (€49.99)
 - [ ] **Lier RevenueCat ↔ Play Console** : Service Account JSON (docs.revenuecat.com/docs/service-credentials)
