@@ -532,29 +532,33 @@ App sur appareil physique Android connecté en USB (débogage activé).
 - [x] **GitHub Secrets** : 6 secrets configurés (KEYSTORE_BASE64, STORE_PASSWORD, KEY_PASSWORD, KEY_ALIAS, VITE_MAPTILER_KEY, VITE_REVENUECAT_KEY)
 - [x] **CI/CD** : `.github/workflows/release.yml` opérationnel — `git tag vX.Y.Z` → AAB signé + GitHub Release automatique
 - [x] **Play Console** : App créée, package `com.suntrail.threejs`
-- [x] **Internal Testing** : AAB v5.12.5 (versionCode 514) uploadé et fonctionnel sur Galaxy Tab S8
+- [x] **Internal Testing** : AAB v5.12.9 (versionCode 519) uploadé et fonctionnel sur Galaxy Tab S8
 - [x] **RevenueCat** : App Android ajoutée avec clé `goog_`, entitlement `SunTrail 3D Pro`
+- [x] **Compte marchand** : IBAN + identité validés
+- [x] **Programme 15%** : inscrit (30% → 15% sur tous les IAP)
+- [x] **App en Gratuit** : téléchargement gratuit, revenu via IAP
+- [x] **Produits IAP** : `suntrail_pro_annual` (€19.99/an), `suntrail_pro_monthly` (€2.99/mois), `suntrail_pro_lifetime` (€99.99)
+- [x] **Fiche Play Store** : 2 screenshots + feature graphic + descriptions FR/EN
+- [x] **Classification contenu (IARC)** : questionnaire → Tout public
+- [x] **Data Safety** : GPS + achats via Play Billing
+- [x] **Foreground Service déclaré** : FOREGROUND_SERVICE_LOCATION → partage de position à l'initiative de l'utilisateur
+- [x] **Identifiant publicitaire** : déclaré "Non utilisé"
 
 #### Reste à faire avant Production
 
-**Play Console — configuration**
-- [ ] **Fiche Play Store** : screenshots (min 2, portrait 1080×1920) + feature graphic (1024×500)
-- [x] Icône 512×512 : `public/assets/icons/icon_512.png` ✅
-- [x] Textes FR + EN : `docs/STORE_LISTING.md` ✅
-- [x] **Classification contenu (IARC)** : questionnaire → Tout public
-- [x] **Data Safety** : GPS + achats via Play Billing
-- [ ] **Compte marchand** : IBAN + identité (pour recevoir les paiements)
-- [ ] **Produits IAP** : `suntrail_pro_annual` (€19.99/an), `suntrail_pro_monthly` (€2.99/mois), `suntrail_pro_lifetime` (€49.99)
-- [ ] **Lier RevenueCat ↔ Play Console** : Service Account JSON (docs.revenuecat.com/docs/service-credentials)
-- [ ] **Mettre l'app en GRATUIT** (actuellement "Payant" — le revenu vient des IAP, pas du téléchargement)
-
 **Closed Testing (14 jours obligatoires)**
-- [ ] Passer de Internal Testing → Closed Testing
-- [ ] Ajouter 20 testeurs (famille/amis Android, Reddit r/Randonnée, groupes Facebook rando)
-- [ ] Diffuser le lien opt-in
+- [ ] **Envoyer pour examen** → Google valide (quelques heures)
+- [ ] **Ajouter 20 testeurs** (famille/amis Android, Reddit r/Randonnée, groupes Facebook rando CH/FR)
+- [ ] **Diffuser le lien opt-in** aux testeurs
+- [ ] **Attendre 14 jours** → feedback → corriger si nécessaire
+
+**Pendant les 14 jours — à faire en parallèle**
+- [ ] **Lier RevenueCat ↔ Play Console** : Service Account JSON (docs.revenuecat.com/docs/service-credentials)
+- [ ] **Screenshots définitifs** : refaire des captures soignées (actuellement 2 screenshots rapides)
+- [ ] Implémenter v5.13 (upsell contextuel, gates manquants, mode testeur improvements)
 
 **Production**
-- [ ] Après 14 jours closed testing → Mise en production
+- [ ] Après 14 jours closed testing + RevenueCat lié → Mise en production
 
 ---
 
