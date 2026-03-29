@@ -71,7 +71,9 @@ jobs:
       # ── 7. Build AAB release ─────────────────────────────────────────────────
       - name: Build AAB
         working-directory: android
-        run: ./gradlew bundleRelease --no-daemon
+        run: |
+          chmod +x gradlew
+          ./gradlew bundleRelease --no-daemon
 
       # ── 8. Upload AAB comme artifact ─────────────────────────────────────────
       - name: Upload AAB artifact
