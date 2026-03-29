@@ -4,6 +4,23 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.11.2] - 2026-03-29
+### 🗺️ Vue de démarrage Suisse + Verrouillage 2D bas zoom
+
+#### Vue de démarrage neutralisée sur la Suisse entière
+
+- **Position initiale** (`state.ts`) : `TARGET_LAT/LON` modifiés de Spiez (46.6863/7.6617) vers le centroïde géographique de la Suisse (46.8182/8.2275). `ZOOM` passé de 12 à 6.
+- **Caméra** (`scene.ts`) : position initiale déplacée de `(0, 35000, 40000)` à `(0, 2000000, 2000000)` — dist ≈ 2 828 000 → `adaptiveLOD()` retourne LOD 6 (dezoom maximum). Ces valeurs ne sont pas persistées en localStorage, le changement s'applique à tous les utilisateurs.
+- **Pré-cache tuiles Suisse** (`tileLoader.ts` + `main.ts`) : `preloadChOverviewTiles()` — exécuté une seule fois en background au premier démarrage. Télécharge ~300-400 tuiles couvrant la CH (zooms 6-9, bbox 5.4–11.3°lon/45.2–48.2°lat) dans le CacheStorage persistant 30j. À partir de la 2e visite, la vue LOD 6 est instantanée même hors-ligne. Flag `suntrail-ch-preloaded-v1` en localStorage.
+
+#### Verrouillage automatique du bouton 2D en LOD ≤ 10
+
+- **Logique** (`NavigationBar.ts`) : `state.subscribe('ZOOM', syncLowZoomState)` — quand `ZOOM ≤ 10`, le bouton 2D/3D est désactivé (`btn.disabled = true`) et `IS_2D_MODE` forcé à `true`. L'état précédent est mémorisé dans `_modeBeforeLowZoom` et restauré automatiquement quand `ZOOM > 10` avec `rebuildActiveTiles()` si nécessaire.
+- **Style** (`style.css`) : `#nav-2d-toggle:disabled { opacity: 0.35; cursor: not-allowed; }` — feedback visuel clair.
+- **Raison** : `fetchAs2D = zoom <= 10` dans `terrain.ts` — les tuiles LOD 6-10 sont toujours chargées sans données d'élévation. Le mode 3D est sans effet à ces niveaux.
+
+---
+
 ## [5.11.1-touch] - 2026-03-29
 ### 🕹️ Navigation Tactile — Refonte complète 2 doigts (v6.3)
 
