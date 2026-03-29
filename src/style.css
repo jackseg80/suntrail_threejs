@@ -1050,6 +1050,8 @@ body.mode-2d #click-alt          { display: none; }
 
 .solar-upsell-btn {
     flex-shrink: 0;
+    width: auto;       /* override btn-go width:100% */
+    margin-top: 0;     /* override btn-go margin-top:32px */
     padding: var(--space-2) var(--space-3);
     font-size: var(--text-sm);
 }

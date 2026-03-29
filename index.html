@@ -718,21 +718,26 @@
         .upgrade-plans {
             display: flex;
             gap: 8px;
-            margin: var(--space-4) 0;
+            margin: calc(var(--space-4) + 10px) 0 var(--space-4); /* +10px pour le badge */
+            width: 100%;
+            box-sizing: border-box;
+            align-items: stretch;
         }
         .upgrade-plan {
-            flex: 1;
+            flex: 1 1 0;            /* equal width */
+            min-width: 0;           /* allow shrink below content */
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 2px;
-            padding: 12px 8px;
+            padding: 12px 4px;      /* réduit pour accommoder €99.99 */
             background: rgba(255,255,255,0.04);
             border: 1.5px solid var(--border);
             border-radius: var(--radius-lg);
             cursor: pointer;
             transition: all var(--transition-fast);
             position: relative;
+            box-sizing: border-box;
         }
         .upgrade-plan:active { transform: scale(0.97); }
         .upgrade-plan-best {
