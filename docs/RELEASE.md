@@ -8,15 +8,20 @@
 
 ### Étape 1 — Incrémenter le versionCode (OBLIGATOIRE)
 
+> ⚠️ **Toujours consulter le tableau historique ci-dessous** pour connaître le dernier versionCode utilisé et incrémenter de 1.
+
 Dans `android/app/build.gradle` :
 
 ```groovy
-versionCode 513        // ← incrémenter de 1 à chaque release
-versionName "5.12.3"   // ← mettre à jour selon le tag git
+versionCode 521        // ← TOUJOURS last_value + 1 (voir tableau historique)
+versionName "5.13.1"   // ← version sémantique visible par l'utilisateur (ex: 5.13.1)
 ```
 
-> ⚠️ Play Store refuse tout AAB avec un versionCode déjà utilisé.
-> Ne jamais réutiliser un versionCode même si la release a échoué.
+> ⚠️ **Règles strictes :**
+> - Play Store refuse tout AAB avec un versionCode déjà utilisé — **même si l'upload a échoué**
+> - versionCode = entier **strictement croissant**, jamais de gap, jamais de réutilisation
+> - versionName = version lisible (ex: `5.13.0`) — ne doit **pas** inclure de suffixe (-ct, -fix)
+> - Le tag git **peut** avoir un suffixe (ex: `v5.13.0-ct`) mais versionName reste propre
 
 ### Étape 2 — Commit + Tag
 
@@ -24,9 +29,13 @@ versionName "5.12.3"   // ← mettre à jour selon le tag git
 git add android/app/build.gradle
 git commit -m "chore: bump versionCode XXX→YYY, versionName X.Y.Z"
 git push origin main
-git tag vX.Y.Z
-git push origin vX.Y.Z
+git tag vX.Y.Z          # Format obligatoire : v{majeur}.{mineur}.{patch} ou v{x}.{y}.{z}-{suffix}
+git push origin vX.Y.Z  # Ce push déclenche le CI
 ```
+
+> ⚠️ **Pattern CI** : `.github/workflows/release.yml` se déclenche sur `git tag v*.*.*`
+> Les suffixes sont autorisés : `v5.13.0-ct`, `v5.12.9-fix`, etc.
+> Un tag sans `v` au début (**ex: `5.13.0`**) ne déclenche **PAS** le CI.
 
 Le tag déclenche automatiquement `.github/workflows/release.yml`.
 
@@ -62,9 +71,34 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | 516 | 5.12.7 | v5.12.7 | Fix bouton timeline accessible en 2D au démarrage | 2026-03-29 |
 | 517 | 5.12.8 | v5.12.8 | Fix REC crash GPS + perte données auto-stop + persistence filesystem | 2026-03-29 |
 | 518 | 5.12.9 | v5.12.9 | Mode testeur 7 taps (isPro RAM non persisté) | 2026-03-29 |
-| **519** | **5.12.9** | **v5.12.9-ct** | **Tests fermés — Closed Testing soumis à Google** | **2026-03-29** |
+| 519 | 5.12.9 | v5.12.9-ct | Tests fermés — Closed Testing soumis à Google | 2026-03-29 |
+| **520** | **5.13.0** | **v5.13.0** | **Upsell LOD 14 contextuel (toast debounce 30s)** | **2026-03-29** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
+
+---
+
+## 📐 Conventions de nommage
+
+| Concept | Format | Exemple | Règle |
+|---|---|---|---|
+| `versionCode` | Entier séquentiel | `520` | +1 à chaque upload Play Console, jamais réutilisé |
+| `versionName` | `X.Y.Z` | `5.13.0` | Version lisible, sans suffixe, visible dans l'app |
+| Tag git | `vX.Y.Z` ou `vX.Y.Z-suffix` | `v5.13.0`, `v5.12.9-ct` | Doit commencer par `v` pour déclencher le CI |
+| Branch | `main` | — | Toujours pusher sur main avant de tagger |
+
+**Relation entre tag et versionCode :**
+- Un même versionName peut avoir plusieurs tags si besoin (ex: bugfix mid-release)
+- Mais chaque upload Play Console = nouveau versionCode, même si versionName reste identique
+- Ex: `v5.12.9` (versionCode 518) et `v5.12.9-ct` (versionCode 519) ont le même versionName
+
+**Tracks Play Console (noms français) :**
+| Nom FR Play Console | Alias anglais | Usage |
+|---|---|---|
+| Tests internes | Internal Testing | Dev + proches ≤100, instantané |
+| Tests fermés | Closed Testing / Alpha | 20+ testeurs, 14j obligatoires 1ère fois |
+| Tests ouverts | Open Testing / Beta | Public avec lien |
+| Production | Production | Tout le monde |
 
 ---
 
