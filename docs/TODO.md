@@ -501,6 +501,33 @@ App sur appareil physique Android connecté en USB (débogage activé).
 
 ---
 
+## 🔧 Priorité 5-ter : Corrections Techniques Post-Lancement (v5.13)
+
+### Amélioration Détection GPU / Presets
+
+**Constat** : Galaxy Tab S8 (Snapdragon 898 / Adreno 730) a pris le preset `balanced` (STD) au lieu de `performance` (High). Sous-classement = expérience dégradée pour un appareil qui peut faire mieux.
+
+- [ ] **Audit `detectBestPreset()`** : Vérifier la couverture Adreno 730 (Snapdragon 898) dans `performance.ts`. Le pattern actuel couvre Adreno 830+ pour Ultra — Adreno 730 doit mapper sur `performance`.
+- [ ] **Données de référence manquantes** : Tester sur Tab S8 et noter le renderer string exact retourné par WebGL (`getGpuInfo()` → `renderer`). L'ajouter dans `detectBestPreset()`.
+- [ ] **Fallback CPU amélioré** : Le fallback `≥8 cores → balanced` est trop conservateur pour les tablettes haut de gamme. Envisager un fallback basé sur `deviceMemory` (API Web) + cores combinés.
+- [ ] **PerfRecorder data** : Utiliser le VRAMDashboard en session de 5 min sur Tab S8 pour exporter un JSON et corréler FPS/preset/appareil.
+
+> 📋 **Note pour l'agent IA** : Demander à l'utilisateur de lancer `console.log(getGpuInfo())` sur la Tab S8 depuis les DevTools Android (chrome://inspect) pour obtenir le renderer string exact avant d'éditer `detectBestPreset()`.
+
+### Stratégie MapTiler — Audit Consommation Clé API
+
+**Constat** : Toutes les sessions (gratuit + Pro) partagent une seule clé bundlée. À mesure que l'audience grandit, le quota risque d'être dépassé ou le coût de s'envoler.
+
+- [ ] **Mesurer la consommation réelle** : Activer les statistiques dans le dashboard MapTiler Cloud → noter tiles/jour après 1 semaine de Closed Testing.
+- [ ] **Identifier les sources gratuites** : SwissTopo (`geo.admin.ch`) et Plan IGN v2 (`data.geopf.fr`) ne consomment **pas** de quota MapTiler. Si 80%+ des sessions sont CH+FR, le problème est moindre que prévu.
+- [ ] **Décider du modèle à l'échelle** :
+  - Option A — Clé unique + plan Flex (0$ tant que < 100k tiles/mois) : viable jusqu'à ~200 DAU FR/CH
+  - Option B — Clé Pro séparée (plan Starter $25/mois) débloquée par l'achat Pro : les Pro paient indirectement les tiles haute résolution (LOD 18, satellite)
+  - Option C — Proxy serveur (filtre les requêtes, masque la clé) : infrastructure à maintenir
+- [ ] **Contacter MapTiler** : partnerships@maptiler.com — tarif startup, accord revendeur. SunTrail est une vitrine de leur stack (SwissTopo + IGN + satellite). Levier de négociation réel.
+
+---
+
 ## 🎓 Priorité 5-bis : Onboarding & Aide au Premier Démarrage (v5.13) *(après Closed Testing)*
 *Impact : Réduction du taux d'abandon — un utilisateur qui comprend l'app en 60 secondes est un utilisateur qui reste.*
 
