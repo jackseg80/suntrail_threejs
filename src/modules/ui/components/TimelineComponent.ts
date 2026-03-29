@@ -80,7 +80,9 @@ export class TimelineComponent {
             toggleBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 // En mode 2D, la simulation solaire n'est pas disponible (relief plat = ombres fausses)
-                if (document.body.classList.contains('mode-2d')) {
+                // Utilise state.IS_2D_MODE (source de vérité) plutôt que la classe CSS
+                // qui peut être absente au démarrage si IS_2D_MODE=true persisté depuis localStorage
+                if (state.IS_2D_MODE) {
                     showToast(i18n.t('timeline.requires3D'));
                     return;
                 }

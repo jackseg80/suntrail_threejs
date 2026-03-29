@@ -91,10 +91,12 @@ export class NavigationBar extends BaseComponent {
                     btn.disabled = true;
                     if (!state.IS_2D_MODE) {
                         state.IS_2D_MODE = true;
-                        document.body.classList.add('mode-2d');
                         rebuildActiveTiles();
                         updateVisibleTiles();
                     }
+                    // Toujours synchroniser la classe CSS mode-2d même si IS_2D_MODE
+                    // était déjà true depuis localStorage (classe absente au démarrage sinon)
+                    document.body.classList.add('mode-2d');
                     syncToggleVisual();
                 } else if (!isLowZoom && btn.disabled) {
                     // → Sortie zone LOD ≤ 10 : restaurer le mode précédent
