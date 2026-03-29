@@ -241,6 +241,13 @@ body, html {
     opacity: 0;
 }
 
+/* Bouton 2D verrouillé (LOD ≤ 10 — tuiles déjà en 2D, toggle sans effet) */
+#nav-2d-toggle:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+#nav-2d-toggle:disabled:active { opacity: 0.35; }
+
 /* BOTTOM SHEETS */
 #sheet-overlay {
     position: fixed; inset: 0;

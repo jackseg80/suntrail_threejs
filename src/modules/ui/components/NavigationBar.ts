@@ -75,7 +75,47 @@ export class NavigationBar extends BaseComponent {
             const unsubIS2D = state.subscribe('IS_2D_MODE', syncToggleVisual);
             this.addSubscription(unsubIS2D);
 
+            // --- FORÇAGE 2D en LOD ≤ 10 ---
+            // Au LOD 6-10 les tuiles sont déjà fetchées sans élévation (fetchAs2D=true dans terrain.ts).
+            // La 3D n'a donc aucun sens : on verrouille le bouton et on force IS_2D_MODE=true.
+            // Quand l'utilisateur zoome au-delà de LOD 10, on restaure son mode précédent.
+            let _modeBeforeLowZoom: boolean | null = null;
+
+            const syncLowZoomState = () => {
+                const btn = modeToggle as HTMLButtonElement;
+                const isLowZoom = state.ZOOM <= 10;
+
+                if (isLowZoom && !btn.disabled) {
+                    // → Entrée zone LOD ≤ 10 : mémoriser + forcer 2D
+                    _modeBeforeLowZoom = state.IS_2D_MODE;
+                    btn.disabled = true;
+                    if (!state.IS_2D_MODE) {
+                        state.IS_2D_MODE = true;
+                        document.body.classList.add('mode-2d');
+                        rebuildActiveTiles();
+                        updateVisibleTiles();
+                    }
+                    syncToggleVisual();
+                } else if (!isLowZoom && btn.disabled) {
+                    // → Sortie zone LOD ≤ 10 : restaurer le mode précédent
+                    btn.disabled = false;
+                    const previousMode = _modeBeforeLowZoom ?? false;
+                    _modeBeforeLowZoom = null;
+                    if (previousMode !== state.IS_2D_MODE) {
+                        state.IS_2D_MODE = previousMode;
+                        document.body.classList.toggle('mode-2d', previousMode);
+                        rebuildActiveTiles();
+                        updateVisibleTiles();
+                    }
+                    syncToggleVisual();
+                }
+            };
+
+            const unsubZoom = state.subscribe('ZOOM', syncLowZoomState);
+            this.addSubscription(unsubZoom);
+
             syncToggleVisual();
+            syncLowZoomState(); // état initial (ex: démarrage en LOD 6)
         }
 
         // Listen for overlay clicks to sync the active tab
