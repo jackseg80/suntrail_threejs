@@ -248,6 +248,38 @@
     },
     "btn": {
       "expert": "📊 Experten-Wetterstation"
+    },
+    "upsell": { "pro": "🌡️ 3-Tage-Vorhersage + Bergwarnungen mit Pro verfügbar" },
+    "section": {
+      "current": "Aktuelle Bedingungen",
+      "forecast24h": "24h-Vorhersage",
+      "forecast3d": "3-Tage-Vorhersage",
+      "mountain": "Bergwarnung"
+    },
+    "stat": {
+      "windDir": "Windrichtung",
+      "cloudCover": "Bewölkung",
+      "uvIndex": "UV-Index",
+      "precipProb": "Niederschlag",
+      "comfortIndex": "Wanderkomfort"
+    },
+    "uv": {
+      "low": "Niedrig",
+      "moderate": "Mäßig",
+      "high": "Hoch",
+      "veryHigh": "Sehr hoch",
+      "extreme": "Extrem"
+    },
+    "mountain": {
+      "aboveFreezing": "Sie befinden sich oberhalb der Nullgradgrenze",
+      "nearFreezing": "Schnee möglich in Ihrer Nähe (Nullgradgrenze bei",
+      "belowFreezing": "Nullgradgrenze",
+      "comfort": "Wanderkomfort"
+    },
+    "daily": {
+      "precip": "Nied.",
+      "uvMax": "UV max",
+      "windMax": "Wind max"
     }
   },
   "solar": {

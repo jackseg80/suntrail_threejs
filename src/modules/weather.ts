@@ -17,7 +17,7 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
         state.lastWeatherLat = lat;
         state.lastWeatherLon = lon;
 
-        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,weather_code,freezing_level_height,uv_index,visibility,precipitation_probability&forecast_days=3`);
+        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,weather_code,freezing_level_height,uv_index,visibility,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,uv_index_max,weather_code&timezone=auto&forecast_days=3`);
         if (!weatherRes.ok) throw new Error('Weather API error');
         const data = await weatherRes.json();
 
@@ -49,7 +49,27 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
                 hourlyForecast.push({
                     time: data.hourly.time[i].split('T')[1],
                     temp: data.hourly.temperature_2m[i],
-                    code: data.hourly.weather_code[i]
+                    code: data.hourly.weather_code[i],
+                    precip: data.hourly.precipitation_probability[i] ?? 0
+                });
+            }
+        }
+
+        // Parse daily forecast
+        const dailyForecast: { date: string; tempMax: number; tempMin: number; precipSum: number; precipProbMax: number; windSpeedMax: number; windGustsMax: number; windDirDominant: number; uvIndexMax: number; code: number; }[] = [];
+        if (data.daily && data.daily.time) {
+            for (let i = 0; i < data.daily.time.length; i++) {
+                dailyForecast.push({
+                    date: data.daily.time[i],
+                    tempMax: data.daily.temperature_2m_max[i],
+                    tempMin: data.daily.temperature_2m_min[i],
+                    precipSum: data.daily.precipitation_sum[i] ?? 0,
+                    precipProbMax: data.daily.precipitation_probability_max[i] ?? 0,
+                    windSpeedMax: data.daily.wind_speed_10m_max[i] ?? 0,
+                    windGustsMax: data.daily.wind_gusts_10m_max[i] ?? 0,
+                    windDirDominant: data.daily.wind_direction_10m_dominant[i] ?? 0,
+                    uvIndexMax: data.daily.uv_index_max[i] ?? 0,
+                    code: data.daily.weather_code[i] ?? 0
                 });
             }
         }
@@ -74,6 +94,7 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
                 dewPoint: data.current.dew_point_2m,
                 windSpeed: data.current.wind_speed_10m,
                 windDir: data.current.wind_direction_10m,
+                windDirDeg: data.current.wind_direction_10m,
                 windGusts: data.current.wind_gusts_10m,
                 humidity: data.current.relative_humidity_2m,
                 cloudCover: data.current.cloud_cover,
@@ -82,7 +103,8 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
                 freezingLevel: data.hourly?.freezing_level_height[startIndex] || 0,
                 visibility: (data.hourly?.visibility[startIndex] || 0) / 1000,
                 precProb: data.hourly?.precipitation_probability[startIndex] || 0,
-                hourly: hourlyForecast
+                hourly: hourlyForecast,
+                daily: dailyForecast
             };
         }
 

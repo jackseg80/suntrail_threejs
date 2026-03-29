@@ -248,6 +248,38 @@
     },
     "btn": {
       "expert": "📊 Expert Weather Station"
+    },
+    "upsell": { "pro": "🌡️ 3-day forecast + mountain alerts available with Pro" },
+    "section": {
+      "current": "Current conditions",
+      "forecast24h": "24h forecast",
+      "forecast3d": "3-day forecast",
+      "mountain": "Mountain alert"
+    },
+    "stat": {
+      "windDir": "Wind direction",
+      "cloudCover": "Cloud cover",
+      "uvIndex": "UV Index",
+      "precipProb": "Precipitation",
+      "comfortIndex": "Hiking comfort"
+    },
+    "uv": {
+      "low": "Low",
+      "moderate": "Moderate",
+      "high": "High",
+      "veryHigh": "Very high",
+      "extreme": "Extreme"
+    },
+    "mountain": {
+      "aboveFreezing": "You are above the 0°C isotherm",
+      "nearFreezing": "Snow possible near your position (isotherm at",
+      "belowFreezing": "0°C isotherm",
+      "comfort": "Hiking comfort"
+    },
+    "daily": {
+      "precip": "Precip.",
+      "uvMax": "UV max",
+      "windMax": "Max wind"
     }
   },
   "solar": {

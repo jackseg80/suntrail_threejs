@@ -191,10 +191,23 @@ export interface State {
     WEATHER_SPEED: number;
     weatherData: {
         temp: number; apparentTemp: number; windSpeed: number; windDir: number;
+        windDirDeg?: number;
         windGusts?: number; dewPoint?: number;
         humidity: number; cloudCover: number; locationName?: string;
         freezingLevel?: number; uvIndex?: number; visibility?: number; precProb?: number;
-        hourly?: { time: string; temp: number; code: number }[];
+        hourly?: { time: string; temp: number; code: number; precip?: number }[];
+        daily?: {
+            date: string;
+            tempMax: number;
+            tempMin: number;
+            precipSum: number;
+            precipProbMax: number;
+            windSpeedMax: number;
+            windGustsMax: number;
+            windDirDominant: number;
+            uvIndexMax: number;
+            code: number;
+        }[];
     } | null;
     ephemeris: {
         sunrise: string; sunset: string; goldenHour: string; blueHour: string;

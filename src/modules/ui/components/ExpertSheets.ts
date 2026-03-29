@@ -4,6 +4,7 @@ import { runSolarProbe, getAltitudeAt, type SolarAnalysisResult } from '../../an
 import { worldToLngLat } from '../../geo';
 import { showToast } from '../../utils';
 import { getWeatherIcon } from '../../weather';
+import { getUVCategory, getComfortIndex, getFreezingAlert, fmtWindDir } from '../../weatherUtils';
 import { sheetManager } from '../core/SheetManager';
 import { i18n } from '../../../i18n/I18nService';
 import { showUpgradePrompt } from '../../iap';
@@ -21,7 +22,6 @@ export class WeatherSheet extends BaseComponent {
         if (!this.element) return;
 
         this.contentEl = document.getElementById('weather-content');
-        // ARIA: weather content is a live region
         this.contentEl?.setAttribute('aria-live', 'polite');
         
         // Create expert panel dynamically
@@ -45,7 +45,7 @@ export class WeatherSheet extends BaseComponent {
             }
         });
 
-        // Simulation Météo Manuelle
+        // Simulation Météo Manuelle (conservé intact)
         this.element.querySelectorAll('.weather-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 state.currentWeather = (btn as HTMLElement).dataset.weather as any;
@@ -53,16 +53,16 @@ export class WeatherSheet extends BaseComponent {
             });
         });
 
-        // Sliders
+        // Sliders (conservés intacts)
         this.bindSlider('weather-density-slider', 'WEATHER_DENSITY', 'weather-density-disp');
         this.bindSlider('weather-speed-slider', 'WEATHER_SPEED', 'weather-speed-disp');
 
-        // Subscribe to weather data
+        // Subscriptions
         this.addSubscription(state.subscribe('weatherData', () => this.updateUI()));
+        this.addSubscription(state.subscribe('isPro', () => this.updateUI()));
         this.addSubscription(state.subscribe('WEATHER_DENSITY', (val: number) => this.updateSlider('weather-density-slider', 'weather-density-disp', val)));
         this.addSubscription(state.subscribe('WEATHER_SPEED', (val: number) => this.updateSlider('weather-speed-slider', 'weather-speed-disp', val)));
         
-        // Initial update
         this.updateUI();
         this.updateSlider('weather-density-slider', 'weather-density-disp', state.WEATHER_DENSITY);
         this.updateSlider('weather-speed-slider', 'weather-speed-disp', state.WEATHER_SPEED);
@@ -73,16 +73,13 @@ export class WeatherSheet extends BaseComponent {
         const slider = document.getElementById(id) as HTMLInputElement;
         const disp = document.getElementById(dispId);
         if (slider) {
-            // ARIA: slider attributes
             slider.setAttribute('aria-label', stateKey);
             slider.setAttribute('aria-valuemin', slider.min);
             slider.setAttribute('aria-valuemax', slider.max);
             slider.setAttribute('aria-valuenow', slider.value);
-
             slider.addEventListener('input', () => {
                 (state as any)[stateKey] = parseFloat(slider.value);
                 if (disp) disp.textContent = slider.value;
-                // ARIA: sync valuenow
                 slider.setAttribute('aria-valuenow', slider.value);
             });
             slider.addEventListener('change', () => {
@@ -98,78 +95,362 @@ export class WeatherSheet extends BaseComponent {
         const disp = document.getElementById(dispId);
         if (slider) {
             slider.value = value.toString();
-            // ARIA: sync valuenow
             slider.setAttribute('aria-valuenow', value.toString());
         }
         if (disp) disp.textContent = value.toString();
     }
 
-    private updateUI() {
-        const wd = state.weatherData;
-        if (!wd || !this.contentEl || !this.expertPanel) return;
+    private makeStat(parent: HTMLElement, label: string, value: string, cssClass = 'exp-stat-card') {
+        const div = document.createElement('div');
+        div.classList.add(cssClass);
+        const lbl = document.createElement('div');
+        lbl.classList.add('exp-stat-label');
+        lbl.textContent = label;
+        const val = document.createElement('div');
+        val.classList.add('exp-stat-value');
+        val.textContent = value;
+        div.appendChild(lbl);
+        div.appendChild(val);
+        parent.appendChild(div);
+        return val;
+    }
 
-        // Clear existing content
-        this.contentEl.textContent = '';
-        this.expertPanel.textContent = '';
+    private buildWindArrowSVG(deg: number): SVGSVGElement {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('viewBox', '0 0 20 20');
+        svg.setAttribute('width', '20');
+        svg.setAttribute('height', '20');
+        svg.style.verticalAlign = 'middle';
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('fill', '#60a5fa');
+        path.setAttribute('d', 'M10 2 L12 16 L10 13 L8 16 Z');
+        path.setAttribute('transform', `rotate(${deg}, 10, 10)`);
+        svg.appendChild(path);
+        return svg;
+    }
 
-        // Basic Info
-        const basicGrid = document.createElement('div');
-        basicGrid.classList.add('exp-stat-grid', 'exp-stat-grid-mb');
+    private buildHourlyScroll(wd: NonNullable<typeof state.weatherData>, maxItems: number): HTMLElement {
+        const container = document.createElement('div');
+        container.classList.add('exp-hourly-scroll');
+        const items = wd.hourly ? wd.hourly.slice(0, maxItems) : [];
+        items.forEach(h => {
+            const hDiv = document.createElement('div');
+            hDiv.classList.add('exp-hourly-item');
 
-        const addStat = (parent: HTMLElement, label: string, value: string) => {
-            const div = document.createElement('div');
-            div.classList.add('exp-stat-card');
-            
-            const lbl = document.createElement('div');
-            lbl.classList.add('exp-stat-label');
-            lbl.textContent = label;
-            
-            const val = document.createElement('div');
-            val.classList.add('exp-stat-value');
-            val.textContent = value;
-            
-            div.appendChild(lbl);
-            div.appendChild(val);
-            parent.appendChild(div);
-        };
+            const timeDiv = document.createElement('div');
+            timeDiv.classList.add('exp-hourly-time');
+            timeDiv.textContent = h.time;
 
-        addStat(basicGrid, i18n.t('weather.temp'), `${Math.round(wd.temp)}°C`);
-        addStat(basicGrid, i18n.t('weather.feelsLike'), `${Math.round(wd.apparentTemp)}°C`);
-        addStat(basicGrid, i18n.t('weather.wind'), `${Math.round(wd.windSpeed)} km/h`);
-        addStat(basicGrid, i18n.t('weather.humidity'), `${wd.humidity}%`);
+            const iconDiv = document.createElement('div');
+            iconDiv.classList.add('exp-hourly-icon');
+            iconDiv.textContent = getWeatherIcon(h.code);
 
-        this.contentEl.appendChild(basicGrid);
+            const tempDiv = document.createElement('div');
+            tempDiv.classList.add('exp-hourly-temp');
+            tempDiv.textContent = `${Math.round(h.temp)}°`;
 
-        // Hourly
-        if (wd.hourly) {
-            const hourlyContainer = document.createElement('div');
-            hourlyContainer.classList.add('exp-hourly-scroll');
-
-            wd.hourly.forEach(h => {
-                const hDiv = document.createElement('div');
-                hDiv.classList.add('exp-hourly-item');
-
-                const timeDiv = document.createElement('div');
-                timeDiv.classList.add('exp-hourly-time');
-                timeDiv.textContent = h.time;
-
-                const iconDiv = document.createElement('div');
-                iconDiv.classList.add('exp-hourly-icon');
-                iconDiv.textContent = getWeatherIcon(h.code);
-
-                const tempDiv = document.createElement('div');
-                tempDiv.classList.add('exp-hourly-temp');
-                tempDiv.textContent = `${Math.round(h.temp)}°`;
-
+            if (h.precip !== undefined && h.precip > 0) {
+                const precipDiv = document.createElement('div');
+                precipDiv.style.fontSize = '9px';
+                precipDiv.style.color = '#60a5fa';
+                precipDiv.textContent = `${h.precip}%`;
                 hDiv.appendChild(timeDiv);
                 hDiv.appendChild(iconDiv);
                 hDiv.appendChild(tempDiv);
-                hourlyContainer.appendChild(hDiv);
-            });
-            this.contentEl.appendChild(hourlyContainer);
+                hDiv.appendChild(precipDiv);
+            } else {
+                hDiv.appendChild(timeDiv);
+                hDiv.appendChild(iconDiv);
+                hDiv.appendChild(tempDiv);
+            }
+            container.appendChild(hDiv);
+        });
+        return container;
+    }
+
+    private buildTempChart(wd: NonNullable<typeof state.weatherData>): SVGSVGElement {
+        const W = 300;
+        const H = 80;
+        const hourly = wd.hourly ? wd.hourly.slice(0, 24) : [];
+        const temps = hourly.map(h => h.temp);
+        const minT = Math.min(...temps);
+        const maxT = Math.max(...temps);
+        const rangeT = maxT - minT || 1;
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+        svg.setAttribute('preserveAspectRatio', 'none');
+        svg.classList.add('weather-svg-chart');
+
+        // Background
+        const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        bg.setAttribute('x', '0'); bg.setAttribute('y', '0');
+        bg.setAttribute('width', String(W)); bg.setAttribute('height', String(H));
+        bg.setAttribute('fill', 'rgba(0,0,0,0.2)');
+        svg.appendChild(bg);
+
+        const xStep = W / Math.max(hourly.length - 1, 1);
+        const yFor = (t: number) => H - 8 - ((t - minT) / rangeT) * (H - 16);
+
+        // Precipitation bars (blue rects)
+        hourly.forEach((h, i) => {
+            if ((h.precip ?? 0) > 30) {
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                const bh = ((h.precip ?? 0) / 100) * (H - 16);
+                rect.setAttribute('x', String(i * xStep));
+                rect.setAttribute('y', String(H - 8 - bh));
+                rect.setAttribute('width', String(xStep));
+                rect.setAttribute('height', String(bh));
+                rect.setAttribute('fill', 'rgba(96,165,250,0.25)');
+                svg.appendChild(rect);
+            }
+        });
+
+        // Isotherme 0°C line
+        if (minT < 0 && maxT > 0) {
+            const y0 = yFor(0);
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', '0'); line.setAttribute('x2', String(W));
+            line.setAttribute('y1', String(y0)); line.setAttribute('y2', String(y0));
+            line.setAttribute('stroke', '#ef4444');
+            line.setAttribute('stroke-width', '1');
+            line.setAttribute('stroke-dasharray', '3,2');
+            svg.appendChild(line);
         }
 
-        // Expert Panel
+        // Temperature polyline
+        if (hourly.length > 1) {
+            const pts = hourly.map((h, i) => `${i * xStep},${yFor(h.temp)}`).join(' ');
+            const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+            poly.setAttribute('points', pts);
+            poly.setAttribute('stroke', '#ffd700');
+            poly.setAttribute('stroke-width', '2');
+            poly.setAttribute('fill', 'none');
+            svg.appendChild(poly);
+        }
+
+        // Min/Max labels
+        const lblMin = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        lblMin.setAttribute('x', '2'); lblMin.setAttribute('y', String(H - 2));
+        lblMin.setAttribute('fill', 'rgba(255,255,255,0.6)'); lblMin.setAttribute('font-size', '8');
+        lblMin.textContent = `${Math.round(minT)}°`;
+        svg.appendChild(lblMin);
+
+        const lblMax = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        lblMax.setAttribute('x', '2'); lblMax.setAttribute('y', '10');
+        lblMax.setAttribute('fill', 'rgba(255,255,255,0.6)'); lblMax.setAttribute('font-size', '8');
+        lblMax.textContent = `${Math.round(maxT)}°`;
+        svg.appendChild(lblMax);
+
+        return svg;
+    }
+
+    private buildDailyForecast(wd: NonNullable<typeof state.weatherData>): HTMLElement {
+        const container = document.createElement('div');
+        const days = (wd.daily ?? []).slice(0, 3);
+        days.forEach(d => {
+            const row = document.createElement('div');
+            row.classList.add('weather-daily-row');
+
+            const icon = document.createElement('span');
+            icon.classList.add('weather-daily-icon');
+            icon.textContent = getWeatherIcon(d.code);
+
+            const dateEl = document.createElement('span');
+            dateEl.classList.add('weather-daily-date');
+            const dt = new Date(d.date);
+            dateEl.textContent = dt.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+
+            const temps = document.createElement('span');
+            temps.classList.add('weather-daily-temps');
+            temps.textContent = `${Math.round(d.tempMax)}°/${Math.round(d.tempMin)}°`;
+
+            const sub = document.createElement('span');
+            sub.classList.add('weather-daily-sub');
+            const uvCat = getUVCategory(d.uvIndexMax);
+            const uvColor = { low: '#22c55e', moderate: '#eab308', high: '#f97316', veryHigh: '#ef4444', extreme: '#a855f7' }[uvCat];
+            sub.innerHTML = `💧${d.precipSum.toFixed(1)}mm · <span style="color:${uvColor}">UV${Math.round(d.uvIndexMax)}</span> · 💨${Math.round(d.windSpeedMax)}km/h`;
+
+            row.appendChild(icon);
+            row.appendChild(dateEl);
+            row.appendChild(temps);
+            row.appendChild(sub);
+            container.appendChild(row);
+        });
+        return container;
+    }
+
+    private buildMountainAlert(wd: NonNullable<typeof state.weatherData>): HTMLElement {
+        const container = document.createElement('div');
+        container.classList.add('weather-mountain-alert');
+
+        const freezingLevel = wd.freezingLevel ?? 0;
+        const alt = state.hasLastClicked ? state.lastClickedCoords.alt : 0;
+
+        // Freezing level alert
+        if (freezingLevel > 0) {
+            const alertKey = getFreezingAlert(alt, freezingLevel);
+            const alertTexts: Record<string, string> = {
+                aboveFreezing: `❄️ ${i18n.t('weather.mountain.aboveFreezing')} (${Math.round(freezingLevel)}m)`,
+                nearFreezing: `⚠️ ${i18n.t('weather.mountain.nearFreezing')} (${Math.round(freezingLevel)}m)`,
+                belowFreezing: `✅ ${i18n.t('weather.mountain.belowFreezing')} — ${Math.round(freezingLevel)}m`
+            };
+            const alertDiv = document.createElement('div');
+            alertDiv.style.marginBottom = 'var(--space-2)';
+            alertDiv.textContent = alertTexts[alertKey];
+            container.appendChild(alertDiv);
+        }
+
+        // Comfort index
+        const score = getComfortIndex(wd.temp, wd.windSpeed, wd.uvIndex ?? 0);
+        const scoreRounded = Math.round(score * 10) / 10;
+        const comfortDiv = document.createElement('div');
+        comfortDiv.style.marginTop = 'var(--space-2)';
+        const comfortLabel = document.createElement('span');
+        comfortLabel.classList.add('exp-stat-label');
+        comfortLabel.textContent = `${i18n.t('weather.mountain.comfort')}: `;
+        const comfortScore = document.createElement('span');
+        comfortScore.classList.add('weather-comfort-score');
+        const comfortText = score >= 8 ? '😊 Excellent' : score >= 6 ? '👍 Bon' : score >= 4 ? '😐 Moyen' : '😟 Difficile';
+        comfortScore.textContent = `${comfortText} (${scoreRounded}/10)`;
+        comfortDiv.appendChild(comfortLabel);
+        comfortDiv.appendChild(comfortScore);
+        container.appendChild(comfortDiv);
+
+        return container;
+    }
+
+    private updateUI() {
+        const wd = state.weatherData;
+        if (!this.contentEl || !this.expertPanel) return;
+
+        this.contentEl.textContent = '';
+        this.expertPanel.textContent = '';
+
+        if (!wd) return;
+
+        if (!state.isPro) {
+            // ── FREE version ──────────────────────────────────────────────────
+            const basicGrid = document.createElement('div');
+            basicGrid.classList.add('exp-stat-grid', 'exp-stat-grid-mb');
+            this.makeStat(basicGrid, i18n.t('weather.temp'), `${Math.round(wd.temp)}°C`);
+            this.makeStat(basicGrid, i18n.t('weather.feelsLike'), `${Math.round(wd.apparentTemp)}°C`);
+            this.makeStat(basicGrid, i18n.t('weather.wind'), `${Math.round(wd.windSpeed)} km/h`);
+            this.makeStat(basicGrid, i18n.t('weather.humidity'), `${wd.humidity}%`);
+            this.contentEl.appendChild(basicGrid);
+
+            // Scroll 12h seulement
+            this.contentEl.appendChild(this.buildHourlyScroll(wd, 12));
+
+            // Upsell banner
+            const upsell = document.createElement('div');
+            upsell.classList.add('weather-upsell-banner');
+            const upsellSpan = document.createElement('span');
+            upsellSpan.textContent = i18n.t('weather.upsell.pro');
+            const upsellBtn = document.createElement('button');
+            upsellBtn.className = 'btn-go weather-upsell-btn';
+            upsellBtn.textContent = 'Pro ↗';
+            upsellBtn.onclick = () => showUpgradePrompt('weather_pro');
+            upsell.appendChild(upsellSpan);
+            upsell.appendChild(upsellBtn);
+            this.contentEl.appendChild(upsell);
+
+        } else {
+            // ── PRO version — 5 blocs ─────────────────────────────────────────
+
+            // Bloc 1 — Conditions actuelles complètes
+            const sec1 = document.createElement('div');
+            sec1.classList.add('exp-probe-section-title');
+            sec1.textContent = i18n.t('weather.section.current');
+            this.contentEl.appendChild(sec1);
+
+            const grid1 = document.createElement('div');
+            grid1.classList.add('exp-stat-grid', 'exp-stat-grid-3', 'exp-stat-grid-mb');
+
+            // Row 1: Temp | Ressenti | Humidité
+            this.makeStat(grid1, i18n.t('weather.temp'), `${Math.round(wd.temp)}°C`);
+            this.makeStat(grid1, i18n.t('weather.feelsLike'), `${Math.round(wd.apparentTemp)}°C`);
+            this.makeStat(grid1, i18n.t('weather.humidity'), `${wd.humidity}%`);
+
+            // Row 2: Point de rosée | UV Index | Couverture nuageuse
+            this.makeStat(grid1, i18n.t('weather.dewPoint'), `${Math.round(wd.dewPoint ?? 0)}°C`);
+
+            // UV Index with color
+            const uvCat = getUVCategory(wd.uvIndex ?? 0);
+            const uvColor = { low: '#22c55e', moderate: '#eab308', high: '#f97316', veryHigh: '#ef4444', extreme: '#a855f7' }[uvCat];
+            const uvCard = document.createElement('div');
+            uvCard.classList.add('exp-stat-card');
+            const uvLbl = document.createElement('div'); uvLbl.classList.add('exp-stat-label');
+            uvLbl.textContent = i18n.t('weather.stat.uvIndex');
+            const uvVal = document.createElement('div'); uvVal.classList.add('exp-stat-value');
+            uvVal.style.color = uvColor;
+            uvVal.textContent = `${Math.round(wd.uvIndex ?? 0)} — ${i18n.t('weather.uv.' + uvCat)}`;
+            uvCard.appendChild(uvLbl); uvCard.appendChild(uvVal);
+            grid1.appendChild(uvCard);
+
+            this.makeStat(grid1, i18n.t('weather.stat.cloudCover'), `${Math.round(wd.cloudCover)}%`);
+
+            // Row 3: Vent + flèche | Rafales | Visibilité
+            const windCard = document.createElement('div');
+            windCard.classList.add('exp-stat-card');
+            const windLbl = document.createElement('div'); windLbl.classList.add('exp-stat-label');
+            windLbl.textContent = i18n.t('weather.stat.windDir');
+            const windVal = document.createElement('div'); windVal.classList.add('exp-stat-value');
+            windVal.style.display = 'flex'; windVal.style.alignItems = 'center'; windVal.style.gap = '4px';
+            const windText = document.createTextNode(`${Math.round(wd.windSpeed)} km/h ${fmtWindDir(wd.windDirDeg ?? wd.windDir)} `);
+            windVal.appendChild(windText);
+            windVal.appendChild(this.buildWindArrowSVG(wd.windDirDeg ?? wd.windDir));
+            windCard.appendChild(windLbl); windCard.appendChild(windVal);
+            grid1.appendChild(windCard);
+
+            this.makeStat(grid1, i18n.t('weather.gusts'), `${Math.round(wd.windGusts ?? 0)} km/h`);
+            this.makeStat(grid1, i18n.t('weather.visibility'), `${Math.round(wd.visibility ?? 0)} km`);
+
+            // Row 4: Isotherme 0°C | Précip % | vide
+            this.makeStat(grid1, i18n.t('weather.freezingLevel'), `${Math.round(wd.freezingLevel ?? 0)} m`);
+            this.makeStat(grid1, i18n.t('weather.stat.precipProb'), `${Math.round(wd.precProb ?? 0)}%`);
+            // vide (3ème colonne)
+            const empty = document.createElement('div');
+            grid1.appendChild(empty);
+
+            this.contentEl.appendChild(grid1);
+
+            // Bloc 2 — Scroll 24h enrichi
+            const sec2 = document.createElement('div');
+            sec2.classList.add('exp-probe-section-title');
+            sec2.textContent = i18n.t('weather.section.forecast24h');
+            this.contentEl.appendChild(sec2);
+            this.contentEl.appendChild(this.buildHourlyScroll(wd, 24));
+
+            // Bloc 3 — Graphique SVG température 24h
+            this.contentEl.appendChild(this.buildTempChart(wd));
+
+            // Bloc 4 — Prévisions 3 jours
+            if (wd.daily && wd.daily.length > 0) {
+                const sec4 = document.createElement('div');
+                sec4.classList.add('exp-probe-section-title');
+                sec4.textContent = i18n.t('weather.section.forecast3d');
+                this.contentEl.appendChild(sec4);
+                this.contentEl.appendChild(this.buildDailyForecast(wd));
+            }
+
+            // Bloc 5 — Alerte Montagne
+            const sec5 = document.createElement('div');
+            sec5.classList.add('exp-probe-section-title');
+            sec5.textContent = i18n.t('weather.section.mountain');
+            this.contentEl.appendChild(sec5);
+            this.contentEl.appendChild(this.buildMountainAlert(wd));
+
+            // Bouton copier rapport
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'btn-go';
+            copyBtn.textContent = i18n.t('solar.btn.copy');
+            copyBtn.style.marginTop = 'var(--space-4)';
+            copyBtn.onclick = () => this.copyWeatherReport(wd);
+            this.contentEl.appendChild(copyBtn);
+        }
+
+        // Expert Panel (conservé pour compatibilité — affiché via open-expert-weather btn)
         const expertTitle = document.createElement('h4');
         expertTitle.classList.add('exp-expert-title');
         expertTitle.textContent = i18n.t('weather.expert.title');
@@ -177,43 +458,38 @@ export class WeatherSheet extends BaseComponent {
 
         const expertGrid = document.createElement('div');
         expertGrid.classList.add('exp-stat-grid');
-
-        addStat(expertGrid, i18n.t('weather.location'), wd.locationName || i18n.t('weather.unknown'));
-        addStat(expertGrid, i18n.t('weather.gusts'), `${Math.round(wd.windGusts || 0)} km/h`);
-        addStat(expertGrid, i18n.t('weather.visibility'), `${Math.round(wd.visibility || 0)} km`);
-        addStat(expertGrid, i18n.t('weather.precipitation'), `${Math.round(wd.precProb || 0)}%`);
-        addStat(expertGrid, i18n.t('weather.dewPoint'), `${Math.round(wd.dewPoint || 0)}°C`);
-        addStat(expertGrid, i18n.t('weather.freezingLevel'), `${Math.round(wd.freezingLevel || 0)} m`);
-
+        this.makeStat(expertGrid, i18n.t('weather.location'), wd.locationName || i18n.t('weather.unknown'));
+        this.makeStat(expertGrid, i18n.t('weather.gusts'), `${Math.round(wd.windGusts || 0)} km/h`);
+        this.makeStat(expertGrid, i18n.t('weather.visibility'), `${Math.round(wd.visibility || 0)} km`);
+        this.makeStat(expertGrid, i18n.t('weather.precipitation'), `${Math.round(wd.precProb || 0)}%`);
+        this.makeStat(expertGrid, i18n.t('weather.dewPoint'), `${Math.round(wd.dewPoint || 0)}°C`);
+        this.makeStat(expertGrid, i18n.t('weather.freezingLevel'), `${Math.round(wd.freezingLevel || 0)} m`);
         this.expertPanel.appendChild(expertGrid);
+    }
 
-        // Chart
-        if (wd.hourly) {
-            const chartContainer = document.createElement('div');
-            chartContainer.classList.add('exp-chart');
-
-            const temps = wd.hourly.map(h => h.temp);
-            const min = Math.min(...temps);
-            const max = Math.max(...temps);
-            const range = max - min || 1;
-
-            wd.hourly.forEach((h, i) => {
-                const hPerc = ((h.temp - min) / range) * 70 + 10;
-                const bar = document.createElement('div');
-                bar.classList.add('exp-chart-bar');
-                bar.style.height = `${hPerc}%`;
-                bar.style.opacity = `${0.3 + (i/24)*0.7}`;
-                bar.title = `${h.time}: ${h.temp}°C`;
-
-                const lbl = document.createElement('div');
-                lbl.classList.add('exp-chart-label');
-                lbl.textContent = `${Math.round(h.temp)}°`;
-
-                bar.appendChild(lbl);
-                chartContainer.appendChild(bar);
+    private copyWeatherReport(wd: NonNullable<typeof state.weatherData>): void {
+        const lines = [
+            'SunTrail Weather Report',
+            `${i18n.t('weather.location')}: ${wd.locationName ?? '—'}`,
+            `${i18n.t('weather.temp')}: ${Math.round(wd.temp)}°C`,
+            `${i18n.t('weather.feelsLike')}: ${Math.round(wd.apparentTemp)}°C`,
+            `${i18n.t('weather.humidity')}: ${wd.humidity}%`,
+            `${i18n.t('weather.wind')}: ${Math.round(wd.windSpeed)} km/h ${fmtWindDir(wd.windDirDeg ?? wd.windDir)}`,
+            `${i18n.t('weather.gusts')}: ${Math.round(wd.windGusts ?? 0)} km/h`,
+            `${i18n.t('weather.stat.uvIndex')}: ${Math.round(wd.uvIndex ?? 0)}`,
+            `${i18n.t('weather.freezingLevel')}: ${Math.round(wd.freezingLevel ?? 0)} m`,
+            `${i18n.t('weather.visibility')}: ${Math.round(wd.visibility ?? 0)} km`,
+            `${i18n.t('weather.stat.comfortIndex')}: ${Math.round(getComfortIndex(wd.temp, wd.windSpeed, wd.uvIndex ?? 0) * 10) / 10}/10`,
+        ];
+        if (wd.daily) {
+            lines.push('');
+            lines.push(i18n.t('weather.section.forecast3d') + ':');
+            wd.daily.slice(0, 3).forEach(d => {
+                lines.push(`  ${d.date}: ${Math.round(d.tempMax)}°/${Math.round(d.tempMin)}° · 💧${d.precipSum.toFixed(1)}mm · UV${Math.round(d.uvIndexMax)} · 💨${Math.round(d.windSpeedMax)}km/h`);
             });
-            this.expertPanel.appendChild(chartContainer);
         }
+        navigator.clipboard.writeText(lines.join('\n'));
+        showToast(i18n.t('solar.toast.copied'));
     }
 }
 
