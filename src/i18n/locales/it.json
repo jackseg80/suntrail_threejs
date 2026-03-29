@@ -259,10 +259,27 @@
       "night": "🌙 Notte"
     },
     "status": { "done": "Analisi completata" },
+    "section": {
+      "dayData": "Dati del giorno",
+      "realtime": "Tempo reale"
+    },
     "stat": {
       "sunlight": "Soleggiamento",
       "firstRay": "Primo raggio",
-      "evolution": "Evoluzione 24h"
+      "evolution": "Evoluzione 24h",
+      "sunrise": "Alba",
+      "sunset": "Tramonto",
+      "noon": "Mezzogiorno solare",
+      "goldenMorning": "Ora d'oro mattina",
+      "goldenEvening": "Ora d'oro sera",
+      "dayDuration": "Durata del giorno",
+      "azimuth": "Azimut",
+      "elevation": "Elevazione",
+      "moonPhase": "Fase lunare",
+      "elevationChart": "Curva di elevazione 24h"
+    },
+    "upsell": {
+      "solar": "☀️ Dati solari completi disponibili con Pro"
     },
     "btn": { "copy": "📋 Copia rapporto" },
     "toast": { "copied": "📋 Rapporto copiato", "clickFirst": "Clicca prima sul terreno" },

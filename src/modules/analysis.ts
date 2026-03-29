@@ -64,14 +64,47 @@ export function getAltitudeAt(worldX: number, worldZ: number, hintTile: any = nu
 }
 
 export interface SolarAnalysisResult {
+    // Existing
     totalSunlightMinutes: number;
     firstSunTime: Date | null;
     timeline: { isNight: boolean; inShadow: boolean }[];
     gps: { lat: number; lon: number };
+    // New — sun times
+    sunrise: Date | null;
+    sunset: Date | null;
+    solarNoon: Date | null;
+    goldenHourMorningStart: Date | null;
+    goldenHourMorningEnd: Date | null;
+    goldenHourEveningStart: Date | null;
+    goldenHourEveningEnd: Date | null;
+    dayDurationMinutes: number;
+    // New — real-time position (at state.simDate)
+    currentAzimuthDeg: number;
+    currentElevationDeg: number;
+    // New — moon
+    moonPhase: number;
+    moonPhaseName: string;
+    // New — 24h elevation curve (144 pts, one per 10 min)
+    elevationCurve: number[];
 }
 
 /**
- * Analyse solaire avancée (v5.4.2)
+ * Returns the moon phase name from a 0-1 phase value (SunCalc convention).
+ * 0 = new moon, 0.25 = first quarter, 0.5 = full moon, 0.75 = last quarter.
+ */
+export function getMoonPhaseName(phase: number): string {
+    if (phase < 0.03 || phase >= 0.97) return 'new';
+    if (phase < 0.22) return 'waxing_crescent';
+    if (phase < 0.28) return 'first_quarter';
+    if (phase < 0.47) return 'waxing_gibbous';
+    if (phase < 0.53) return 'full';
+    if (phase < 0.72) return 'waning_gibbous';
+    if (phase < 0.78) return 'last_quarter';
+    return 'waning_crescent';
+}
+
+/**
+ * Analyse solaire avancée (v5.4.2 → enrichie v5.12)
  * Retourne les données pour affichage dans l'UI
  */
 export function runSolarProbe(worldX: number, worldZ: number, altitude: number): SolarAnalysisResult | null {
@@ -104,11 +137,67 @@ export function runSolarProbe(worldX: number, worldZ: number, altitude: number):
         });
     }
 
+    // ── Sun times ──────────────────────────────────────────────────────────────
+    const baseDate = new Date(state.simDate);
+    baseDate.setHours(12, 0, 0, 0); // Use noon as reference date for getTimes
+    const times = SunCalc.getTimes(baseDate, gps.lat, gps.lon);
+
+    const toValidDate = (d: Date): Date | null => (d && !isNaN(d.getTime()) ? d : null);
+
+    const sunrise   = toValidDate(times.sunrise);
+    const sunset    = toValidDate(times.sunset);
+    const solarNoon = toValidDate(times.solarNoon);
+
+    // Morning golden hour: sunrise → goldenHourEnd
+    const goldenHourMorningStart = toValidDate(times.sunrise);
+    const goldenHourMorningEnd   = toValidDate(times.goldenHourEnd);
+    // Evening golden hour: goldenHour → sunset
+    const goldenHourEveningStart = toValidDate(times.goldenHour);
+    const goldenHourEveningEnd   = toValidDate(times.sunset);
+
+    const dayDurationMinutes =
+        sunrise && sunset
+            ? Math.round((sunset.getTime() - sunrise.getTime()) / 60000)
+            : 0;
+
+    // ── Real-time sun position at state.simDate ────────────────────────────────
+    const nowPos = SunCalc.getPosition(state.simDate, gps.lat, gps.lon);
+    const currentElevationDeg = nowPos.altitude * (180 / Math.PI);
+    // SunCalc azimuth is measured from south, clockwise → normalize to 0-360° from north
+    const currentAzimuthDeg   = ((nowPos.azimuth * (180 / Math.PI)) + 180 + 360) % 360;
+
+    // ── Moon ──────────────────────────────────────────────────────────────────
+    const moonIllum  = SunCalc.getMoonIllumination(baseDate);
+    const moonPhase  = moonIllum.phase;
+    const moonPhaseName = getMoonPhaseName(moonPhase);
+
+    // ── 24h elevation curve (144 pts × 10 min) ────────────────────────────────
+    const elevationCurve: number[] = [];
+    for (let i = 0; i < 144; i++) {
+        const d = new Date(state.simDate);
+        d.setHours(0, i * 10, 0, 0);
+        const pos = SunCalc.getPosition(d, gps.lat, gps.lon);
+        elevationCurve.push(pos.altitude * (180 / Math.PI));
+    }
+
     return {
         totalSunlightMinutes,
         firstSunTime,
         timeline,
-        gps
+        gps,
+        sunrise,
+        sunset,
+        solarNoon,
+        goldenHourMorningStart,
+        goldenHourMorningEnd,
+        goldenHourEveningStart,
+        goldenHourEveningEnd,
+        dayDurationMinutes,
+        currentAzimuthDeg,
+        currentElevationDeg,
+        moonPhase,
+        moonPhaseName,
+        elevationCurve,
     };
 }
 

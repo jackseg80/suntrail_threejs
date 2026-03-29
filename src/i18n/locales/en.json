@@ -259,10 +259,27 @@
       "night": "🌙 Night"
     },
     "status": { "done": "Analysis complete" },
+    "section": {
+      "dayData": "Day data",
+      "realtime": "Real-time"
+    },
     "stat": {
       "sunlight": "Sunlight",
       "firstRay": "First ray",
-      "evolution": "24h Evolution"
+      "evolution": "24h Evolution",
+      "sunrise": "Sunrise",
+      "sunset": "Sunset",
+      "noon": "Solar noon",
+      "goldenMorning": "Golden hour morning",
+      "goldenEvening": "Golden hour evening",
+      "dayDuration": "Day duration",
+      "azimuth": "Azimuth",
+      "elevation": "Elevation",
+      "moonPhase": "Moon phase",
+      "elevationChart": "24h elevation curve"
+    },
+    "upsell": {
+      "solar": "☀️ Full solar data available with Pro"
     },
     "btn": { "copy": "📋 Copy report" },
     "toast": { "copied": "📋 Report copied", "clickFirst": "Click on terrain first" },

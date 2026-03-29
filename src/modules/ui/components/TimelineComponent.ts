@@ -3,11 +3,15 @@ import { updateSunPosition } from '../../sun';
 import { haptic } from '../../haptics';
 import { showToast } from '../../utils';
 import { i18n } from '../../../i18n/I18nService';
+import { worldToLngLat } from '../../geo';
+import SunCalc from 'suncalc';
 
 export class TimelineComponent {
     private timeSlider: HTMLInputElement | null = null;
     private dateInput: HTMLInputElement | null = null;
     private subscriptions: Array<() => void> = [];
+    private tlAzimuthEl: HTMLElement | null = null;
+    private tlElevationEl: HTMLElement | null = null;
 
     constructor() {
         // No hydration, just attach to existing DOM
@@ -107,6 +111,27 @@ export class TimelineComponent {
             this.subscriptions.push(state.subscribe('isPro', syncHint));
         }
 
+        // Solar info (azimuth + elevation) — Pro only, below slider
+        if (this.timeSlider) {
+            const solarInfo = document.createElement('div');
+            solarInfo.id = 'timeline-solar-info';
+            solarInfo.style.cssText = 'display:flex; justify-content:center; gap:20px; font-size:11px; color:var(--text-2); margin-top:4px;';
+            const azSpan = document.createElement('span');
+            azSpan.id = 'tl-azimuth';
+            const elevSpan = document.createElement('span');
+            elevSpan.id = 'tl-elevation';
+            solarInfo.appendChild(azSpan);
+            solarInfo.appendChild(elevSpan);
+            this.timeSlider.parentNode?.appendChild(solarInfo);
+            this.tlAzimuthEl = azSpan;
+            this.tlElevationEl = elevSpan;
+            const syncSolarVis = () => {
+                solarInfo.style.display = state.isPro ? 'flex' : 'none';
+            };
+            syncSolarVis();
+            this.subscriptions.push(state.subscribe('isPro', syncSolarVis));
+        }
+
         // Initial sync
         this.syncUI();
 
@@ -115,6 +140,7 @@ export class TimelineComponent {
             this.syncUI();
             const mins = state.simDate.getHours() * 60 + state.simDate.getMinutes();
             updateSunPosition(mins);
+            if (state.isPro) this.updateSolarInfo();
         }));
 
         this.subscriptions.push(state.subscribe('isSunAnimating', (val: boolean) => {
@@ -203,6 +229,30 @@ export class TimelineComponent {
         handle.addEventListener('pointermove', onMove);
         handle.addEventListener('pointerup', onEnd);
         handle.addEventListener('pointercancel', onEnd);
+    }
+
+    private updateSolarInfo(): void {
+        if (!this.tlAzimuthEl || !this.tlElevationEl) return;
+
+        let lat = 46.8182;
+        let lon = 8.2275;
+
+        if (state.hasLastClicked) {
+            const gps = worldToLngLat(state.lastClickedCoords.x, state.lastClickedCoords.z, state.originTile);
+            lat = gps.lat;
+            lon = gps.lon;
+        } else if (state.controls) {
+            const gps = worldToLngLat(state.controls.target.x, state.controls.target.z, state.originTile);
+            lat = gps.lat;
+            lon = gps.lon;
+        }
+
+        const pos = SunCalc.getPosition(state.simDate, lat, lon);
+        const elevDeg = Math.round(pos.altitude * (180 / Math.PI));
+        const azDeg   = Math.round(((pos.azimuth * (180 / Math.PI)) + 180 + 360) % 360);
+
+        this.tlAzimuthEl.textContent  = `↗ ${azDeg}°`;
+        this.tlElevationEl.textContent = `▲ ${elevDeg}°`;
     }
 
     public dispose(): void {
