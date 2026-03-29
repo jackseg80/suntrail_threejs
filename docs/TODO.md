@@ -557,6 +557,13 @@ App sur appareil physique Android connecté en USB (débogage activé).
 **Production**
 - [ ] Après 14 jours closed testing + RevenueCat lié → Mise en production
 
+#### ⚠️ Checklist obligatoire avant passage en Production
+
+- [ ] **Supprimer le toggle testeur Pro** dans `index.html` (bloc `<!-- ⚠️ SUPPRIMER AVANT PRODUCTION -->`) et `SettingsSheet.ts` (`initTesterProToggle()` + son appel)
+- [ ] Screenshots définitifs (actuellement 2 captures rapides)
+- [ ] Lier RevenueCat ↔ Play Console (Service Account JSON)
+- [ ] Vérifier que `npm run check` → 0 erreur et `npm test` → suite verte
+
 ---
 
 ## 🔧 Priorité 5-ter : Corrections Techniques Post-Lancement (v5.13)

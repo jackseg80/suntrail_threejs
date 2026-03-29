@@ -148,8 +148,35 @@ export class SettingsSheet extends BaseComponent {
         // Mode testeur (7 taps sur la version → isPro en RAM, non persisté)
         this.initTesterMode();
 
+        // ⚠️ SUPPRIMER AVANT PRODUCTION — toggle Pro visible pour les testeurs fermés
+        this.initTesterProToggle();
+
         // Initial UI update
         this.updateAllUI();
+    }
+
+    /**
+     * ⚠️ SUPPRIMER AVANT PRODUCTION
+     * Toggle Pro visible pour les testeurs fermés (Closed Testing).
+     * Non persisté — state.isPro en RAM uniquement, reset au redémarrage.
+     */
+    private initTesterProToggle(): void {
+        const toggle = this.element?.querySelector('#tester-pro-toggle') as HTMLInputElement | null;
+        if (!toggle) return;
+
+        // Sync état visuel avec state.isPro courant
+        const sync = () => { toggle.checked = state.isPro; };
+        sync();
+        this.addSubscription(state.subscribe('isPro', sync));
+
+        toggle.addEventListener('change', () => {
+            state.isPro = toggle.checked; // Jamais saveProStatus() — RAM uniquement
+            void haptic(toggle.checked ? 'success' : 'light');
+            showToast(toggle.checked
+                ? '🚀 Mode Pro activé — session uniquement'
+                : '🔒 Mode Pro désactivé'
+            );
+        });
     }
 
     /**
