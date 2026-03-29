@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write  # Requis pour créer des GitHub Releases et uploader des assets
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       # ── 1. Checkout ──────────────────────────────────────────────────────────
