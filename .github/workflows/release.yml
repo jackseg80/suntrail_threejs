@@ -69,11 +69,15 @@ jobs:
           EOF
 
       # ── 7. Build AAB release ─────────────────────────────────────────────────
+      # Fix CRLF → LF (gradlew créé sur Windows) + permissions
+      - name: Fix gradlew
+        run: |
+          sed -i 's/\r$//' android/gradlew
+          chmod +x android/gradlew
+
       - name: Build AAB
         working-directory: android
-        run: |
-          chmod +x gradlew
-          ./gradlew bundleRelease --no-daemon
+        run: ./gradlew bundleRelease --no-daemon
 
       # ── 8. Upload AAB comme artifact ─────────────────────────────────────────
       - name: Upload AAB artifact

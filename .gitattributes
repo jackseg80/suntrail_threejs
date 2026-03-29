@@ -1,0 +1,27 @@
+# Forcer LF pour les scripts shell et fichiers Gradle sur tous les OS
+# Évite les erreurs "bad interpreter" ou "Permission denied" sur Linux/macOS
+
+*.sh        text eol=lf
+*.bash      text eol=lf
+gradlew     text eol=lf
+gradlew.bat text eol=crlf
+
+# Fichiers texte standards — auto-détection
+*.ts        text
+*.js        text
+*.json      text
+*.yml       text
+*.yaml      text
+*.md        text
+*.html      text
+*.css       text
+*.xml       text
+
+# Binaires — ne jamais modifier les line endings
+*.png       binary
+*.jpg       binary
+*.webp      binary
+*.aab       binary
+*.apk       binary
+*.keystore  binary
+*.jks       binary
