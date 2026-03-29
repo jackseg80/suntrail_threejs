@@ -35,20 +35,34 @@ export class UpgradeSheet extends BaseComponent {
             }
         });
 
-        // Bouton mensuel (si présent dans le template)
+        // Bouton mensuel
         const monthlyBtn = this.element.querySelector<HTMLButtonElement>('#upgrade-monthly-btn');
         monthlyBtn?.addEventListener('click', async () => {
+            if (!monthlyBtn) return;
+            monthlyBtn.classList.add('btn-loading');
             void haptic('medium');
             const success = await iapService.purchase('monthly');
-            if (success) { void haptic('success'); sheetManager.close(); }
+            monthlyBtn.classList.remove('btn-loading');
+            if (success) {
+                void haptic('success');
+                showToast('✅ Accès Pro activé !'); // TODO i18n
+                sheetManager.close();
+            }
         });
 
-        // Bouton lifetime (si présent dans le template)
+        // Bouton lifetime
         const lifetimeBtn = this.element.querySelector<HTMLButtonElement>('#upgrade-lifetime-btn');
         lifetimeBtn?.addEventListener('click', async () => {
+            if (!lifetimeBtn) return;
+            lifetimeBtn.classList.add('btn-loading');
             void haptic('medium');
             const success = await iapService.purchase('lifetime');
-            if (success) { void haptic('success'); sheetManager.close(); }
+            lifetimeBtn.classList.remove('btn-loading');
+            if (success) {
+                void haptic('success');
+                showToast('✅ Accès Pro activé !'); // TODO i18n
+                sheetManager.close();
+            }
         });
 
         // Restaurer les achats
@@ -76,8 +90,6 @@ export class UpgradeSheet extends BaseComponent {
         if (monthlyPriceEl) monthlyPriceEl.textContent = prices.monthly;
         if (lifetimePriceEl) lifetimePriceEl.textContent = prices.lifetime;
 
-        // Mettre à jour le label du CTA
-        const ctaBtn = this.element?.querySelector('#upgrade-cta-btn');
-        if (ctaBtn) ctaBtn.textContent = `Activer Pro — ${prices.yearly}`; // TODO i18n
+        // Les prix sont mis à jour via les spans dédiés — ne pas écraser le HTML du bouton
     }
 }

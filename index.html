@@ -714,6 +714,63 @@
             text-align: center;
             line-height: 1.4;
         }
+        /* Plans tarifaires */
+        .upgrade-plans {
+            display: flex;
+            gap: 8px;
+            margin: var(--space-4) 0;
+        }
+        .upgrade-plan {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 12px 8px;
+            background: rgba(255,255,255,0.04);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            position: relative;
+        }
+        .upgrade-plan:active { transform: scale(0.97); }
+        .upgrade-plan-best {
+            border-color: var(--accent);
+            background: rgba(59,126,248,0.08);
+        }
+        .upgrade-plan-badge {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent);
+            color: white;
+            font-size: 9px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+        .upgrade-plan-period {
+            font-size: 11px;
+            color: var(--text-2);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+        .upgrade-plan-price {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text);
+        }
+        .upgrade-plan-best .upgrade-plan-price { color: var(--accent); }
+        .upgrade-plan-sub {
+            font-size: 9px;
+            color: var(--text-3);
+            text-align: center;
+        }
     </style>
     <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
     <div class="sheet-header">
@@ -747,13 +804,27 @@
                 <span class="upgrade-feature-label">Zones offline illimitées</span><!-- TODO i18n -->
             </div>
         </div>
-        <div class="upgrade-price-block">
-            <div class="upgrade-price-main">€19.99 / an</div><!-- TODO i18n -->
-            <div class="upgrade-price-alt">ou €2.99 / mois</div><!-- TODO i18n -->
+        <!-- Sélecteur de plan — 3 options -->
+        <div class="upgrade-plans">
+            <button class="upgrade-plan" id="upgrade-monthly-btn">
+                <div class="upgrade-plan-period">Mensuel</div>
+                <div class="upgrade-plan-price" id="upgrade-monthly-price">€2.99</div>
+                <div class="upgrade-plan-sub">par mois</div>
+            </button>
+            <button class="upgrade-plan upgrade-plan-best" id="upgrade-cta-btn">
+                <div class="upgrade-plan-badge">⭐ Meilleur prix</div>
+                <div class="upgrade-plan-period">Annuel</div>
+                <div class="upgrade-plan-price" id="upgrade-yearly-price">€19.99</div>
+                <div class="upgrade-plan-sub">par an · €1.67/mois</div>
+            </button>
+            <button class="upgrade-plan" id="upgrade-lifetime-btn">
+                <div class="upgrade-plan-period">À vie</div>
+                <div class="upgrade-plan-price" id="upgrade-lifetime-price">€99.99</div>
+                <div class="upgrade-plan-sub">paiement unique</div>
+            </button>
         </div>
-        <button class="upgrade-cta" id="upgrade-cta-btn">Activer Pro — €19.99/an</button><!-- TODO i18n -->
         <button class="upgrade-restore" id="upgrade-restore-btn">Restaurer un achat</button><!-- TODO i18n -->
-        <p class="upgrade-legal">Abonnement auto-renouvelable. Gérable dans les paramètres Play Store.</p><!-- TODO i18n -->
+        <p class="upgrade-legal">Abonnement auto-renouvelable · Résiliable à tout moment dans le Play Store.</p><!-- TODO i18n -->
     </div>
 </div>
 </template>
