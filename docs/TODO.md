@@ -1,4 +1,4 @@
-# SunTrail 3D - Roadmap Révisée (v5.11.2)
+# SunTrail 3D - Roadmap Révisée (v5.12.8)
 
 ## 🧪 Mode Testeur / Debug (v5.13)
 
@@ -13,53 +13,32 @@
 
 ---
 
-## 🐛 Bugs Critiques Découverts en Conditions Réelles (v5.13 — priorité haute)
+## 🐛 Bugs Critiques — ✅ TOUS CORRIGÉS (v5.12.6 → v5.12.8)
 
-### Bug #0 — Timeline bar invisible après clic (régression v5.12)
+### Bug #0 — Timeline bar invisible (régression v5.12) ✅ CORRIGÉ v5.12.6
 
-**Symptôme** : Cliquer sur le bouton timeline → les FABs disparaissent bien (body.timeline-open toggleé ✅) mais `#bottom-bar` ne remonte pas visuellement.
+**Cause** : `launchScene()` appelé avant `WidgetsComponent.hydrate()` → `#widgets-container` n'existait pas encore → `style.display = 'block'` no-op → widget permanent en `display:none`.
+**Fix** : `launchScene()` déplacé après toute l'hydratation des composants dans `ui.ts`.
 
-**Piste principale** : `#bottom-bar` a `z-index: 1000` mais `.bottom-sheet` a `z-index: 1600`. Depuis l'ajout de l'UpgradeSheet (toujours dans le DOM après `hydrate()`), il peut y avoir un conflit de stacking context. À vérifier via `chrome://inspect` → Elements → clic bouton → est-ce que `is-open` est ajouté sur `#bottom-bar` ?
+### Bug #1 — Crash REC sans permission GPS ✅ CORRIGÉ v5.12.8
 
-**Hypothèses à tester** :
-- [ ] Via DevTools : vérifier si `#bottom-bar.is-open` a `transform: translate(-50%, 0)` et `opacity: 1` dans les styles calculés
-- [ ] Vérifier si un `.bottom-sheet` (UpgradeSheet, etc.) couvre `#bottom-bar` malgré `translateY(100%)`
-- [ ] Fix potentiel : ajouter `z-index: 1700` sur `#bottom-bar.is-open` pour passer au-dessus de tout
-- [ ] Fix potentiel : ajouter `pointer-events: none` sur `.bottom-sheet` quand pas `.is-open`
+**Fix** : `TrackSheet.ts` — guard avant démarrage REC : `requestGPSDisclosure()` → `Geolocation.checkPermissions()` → `requestPermissions()` si absent → early return propre si refusé.
 
----
+### Bug #2 — Perte de données REC (auto-stop 30min) ✅ CORRIGÉ v5.12.8
 
-### Bug #1 — Crash REC sans permission GPS préalable
+**Fix** : Séparation en 3 méthodes dans `TrackSheet.ts` :
+- `saveRecordedGPXInternal()` — sans gate Pro, parse GPX → `addGPXLayer()` → layer visible sur la carte
+- `downloadRecordedGPX()` — I/O fichier uniquement, pas de gate (appelant vérifie `isPro`)
+- `exportRecordedGPX()` — wrapper Pro-only pour le bouton manuel
+Auto-stop et STOP manuel appellent `saveRecordedGPXInternal()` puis `downloadRecordedGPX()` si Pro.
 
-**Symptôme** : Ouvrir TrackSheet → cliquer REC sans avoir activé le GPS via le bouton position → l'app plante.
-**Workaround actuel** : Appuyer d'abord sur le bouton GPS (position) qui demande la permission, puis utiliser REC.
+### C1 — Perte données si Android tue l'app ✅ CORRIGÉ v5.12.8
 
-**Cause probable** : `startLocationTracking()` dans TrackSheet appelle `Geolocation.getCurrentPosition()` ou `Geolocation.watchPosition()` sans vérifier si la permission est accordée. Sur Android, appeler l'API Geolocation sans permission = exception non catchée = crash.
+**Fix** : `foregroundService.ts` — `updateRecordingSnapshot()` accepte maintenant le tableau `points[]`. Écrit les coordonnées complètes en JSON dans `Directory.Cache` toutes les 30 points ou 60s (fire-and-forget). `getPersistedRecordingPoints()` permet la restauration au redémarrage. `stopRecordingService()` nettoie le fichier.
 
-**Fix recommandé** :
-- [ ] **Demander la permission GPS au démarrage** (après Acceptance Wall, avant que l'utilisateur puisse toucher REC). Modèle : même pattern que `requestGPSDisclosure()` mais avec demande réelle de permission (`Geolocation.requestPermissions()`).
-- [ ] **Ou** : dans le handler REC de `TrackSheet.ts`, vérifier `Geolocation.checkPermissions()` avant de démarrer. Si `denied` ou `prompt` → déclencher `requestGPSDisclosure()` + `Geolocation.requestPermissions()` en séquence.
-- [ ] **Guard dans `startLocationTracking()`** : wrapper tout le bloc dans un try/catch avec message utilisateur clair si permission refusée.
+### Bug #3 — Bouton timeline accessible en 2D au démarrage ✅ CORRIGÉ v5.12.7
 
----
-
-### Bug #2 — Perte de données REC : enregistrement tronqué + GPX non sauvegardé ⚠️ CRITIQUE
-
-**Symptôme** : Randonné 43 min / 3.8 km, téléphone en poche en REC. À l'ouverture : REC arrêté à ~3.4 km, GPX absent.
-
-**Cause identifiée — double problème** :
-
-**Problème A — Limite 30 min Freemium** : Le timer `REC_FREE_LIMIT_MS` (30 min) a stoppé automatiquement l'enregistrement. L'utilisateur n'a pas vu le toast (téléphone en poche). C'est le comportement attendu MAIS :
-
-**Problème B — Gate export bloque la sauvegarde automatique** : Dans `TrackSheet.ts`, le timer auto-stop appelle `exportRecordedGPX()` qui contient le gate `if (!state.isPro) { showUpgradePrompt('export_gpx'); return; }`. Résultat : le GPX n'est **jamais sauvegardé**, les données sont perdues. **C'est un bug sévère — l'utilisateur perd ses données.**
-
-**Fix obligatoire** :
-- [ ] **Séparer "sauvegarde automatique" et "export manuel Pro"** : La sauvegarde au STOP (auto ou limite) doit toujours fonctionner, même pour les utilisateurs gratuits. Seul l'export manuel via le bouton "Exporter" est Pro.
-- [ ] Dans `TrackSheet.ts` : créer `saveRecordedGPXInternal()` (sans gate Pro) appelé par l'auto-stop et le STOP manuel. Le bouton "Exporter GPX" dans l'UI reste Pro-only.
-- [ ] **Notification visible** quand la limite 30 min approche : avertissement à T-5 min (toast persistant ou vibration) pour que l'utilisateur sache que l'enregistrement va s'arrêter.
-- [ ] **Revoir l'UX de la limite** : Au lieu de supprimer les données, les sauvegarder toujours localement. Afficher "Passer à Pro pour continuer l'enregistrement" sans perdre ce qui a été enregistré.
-
-> ⚠️ **Note pour l'agent IA** : Le fichier à corriger est `src/modules/ui/components/TrackSheet.ts`. La méthode `exportRecordedGPX()` a un gate `isPro` ligne ~346. L'auto-stop timer est dans le handler `recBtn` click. Corriger en priorité avant toute publication en production.
+**Fix** : `NavigationBar.ts` — `syncLowZoomState()` ajoute toujours `body.mode-2d` quand ZOOM ≤ 10, même si `IS_2D_MODE` était déjà `true` depuis localStorage. Guard timeline utilise `state.IS_2D_MODE` au lieu de `classList.contains`.
 
 ---
 
@@ -347,8 +326,9 @@
 
 #### Gates Freemium manquants (v5.13)
 
-- [ ] **Gate solaire** : `TimelineComponent.ts` — limiter le curseur à ±2h si `!isPro`
+- [ ] **Gate solaire** : `TimelineComponent.ts` — limiter le curseur à ±2h si `!isPro`. **Note** : une implémentation précoce a été retirée (limitait tous les users). À redésigner proprement.
 - [ ] **Gate offline** : `ConnectivitySheet.ts` — limiter à 1 zone si `!isPro`
+- [ ] **Mode testeur** : 7 taps sur version dans Réglages → `isPro = true` en RAM (non persisté)
 
 #### Partenariats (post-lancement, après 10k téléchargements)
 

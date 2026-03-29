@@ -57,7 +57,10 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | 512 | 5.11.1 | v5.12.3 | CI test — clé RevenueCat `goog_` | 2026-03-29 |
 | 513 | 5.12.3 | v5.12.4 | Tests internes — 1er upload Play Console | 2026-03-29 |
 | 513 | 5.12.3 | v5.12.5 | Setup screen auto-skip (clé bundlée) | 2026-03-29 |
-| **514** | **5.12.5** | **v5.12.5-fix** | **Tests internes actuel — app fonctionnelle Galaxy Tab S8** | **2026-03-29** |
+| 514 | 5.12.5 | v5.12.5-fix | Tests internes — app fonctionnelle Galaxy Tab S8 | 2026-03-29 |
+| 515 | 5.12.6 | v5.12.6 | Fix timeline 2D + regression widget display order | 2026-03-29 |
+| 516 | 5.12.7 | v5.12.7 | Fix bouton timeline accessible en 2D au démarrage | 2026-03-29 |
+| **517** | **5.12.8** | **v5.12.8** | **Fix REC crash GPS + perte données auto-stop + persistence filesystem** | **2026-03-29** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 

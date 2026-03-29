@@ -188,14 +188,28 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 - **Auto-skip** : Si `VITE_MAPTILER_KEY` est défini dans `.env`, `state.MK` est peuplé dans `initUI()` et le setup screen est masqué — l'app démarre directement.
 - **Fallback** : Si `state.MK` est vide (dev sans `.env`, PWA), le setup screen s'affiche pour saisie manuelle.
 - **Clé utilisateur** : Une clé saisie manuellement (via ConnectivitySheet) prend priorité sur la clé bundlée.
+- **⚠️ Ordre d'init (v5.12.6)** : `launchScene()` doit être appelé **après** toute l'hydratation des composants dans `initUI()`. Si appelé avant, `startApp()` ne trouve pas `#widgets-container` dans le DOM → `display:none` jamais effacé → widgets invisibles.
+
+### REC GPS — Architecture (v5.12.8)
+- **Séparation save/export** : `TrackSheet.ts` possède 3 méthodes distinctes :
+  - `saveRecordedGPXInternal()` — **sans gate Pro** — parse GPX → `addGPXLayer()`. Toujours appelé au STOP et à l'auto-stop.
+  - `downloadRecordedGPX()` — I/O filesystem uniquement, pas de gate (l'appelant vérifie `isPro`).
+  - `exportRecordedGPX()` — wrapper Pro-only pour les appels externes (bouton manuel).
+- **⚠️ RÈGLE CRITIQUE** : Ne jamais mettre un gate `isPro` dans la sauvegarde automatique — l'utilisateur perdrait ses données.
+- **Permission GPS** : Le handler REC vérifie `requestGPSDisclosure()` → `Geolocation.checkPermissions()` → `requestPermissions()` avant tout démarrage.
+- **Persistance filesystem (C1)** : `foregroundService.ts` — `updateRecordingSnapshot(count, points[])` écrit les coordonnées complètes dans `Directory.Cache` toutes les 30 pts ou 60s. `getPersistedRecordingPoints()` restaure après kill Android.
+
+### Timeline 2D Guard (v5.12.7)
+- **Guard** : `TimelineComponent.ts` utilise `state.IS_2D_MODE` (pas `body.classList.contains('mode-2d')`) pour vérifier le mode 2D au clic.
+- **NavigationBar** : `syncLowZoomState()` ajoute toujours `body.mode-2d` quand ZOOM ≤ 10, même si `IS_2D_MODE` était déjà `true` depuis localStorage. L'ancien code ne l'ajoutait qu'en cas de changement `false→true`, ce qui laissait la classe absente au démarrage.
 
 ### Build Android (Sprint 7)
 - **JAVA_HOME** : `C:/Program Files/Android/Android Studio/jbr` (Android Studio bundled JDK).
 - **Keystore** : `android/suntrail.keystore` (hors Git). `android/keystore.properties` (hors Git, rempli avec mot de passe réel).
 - **Build release** : `JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease --no-daemon` depuis `android/`.
 - **CI/CD** : `.github/workflows/release.yml` — déclenché sur `git tag v*.*.*`. Nécessite 6 GitHub Secrets : `KEYSTORE_BASE64`, `STORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS`, `VITE_MAPTILER_KEY`, `VITE_REVENUECAT_KEY`.
-- **versionCode** : Incrémenter à chaque upload Play Console. Voir `docs/RELEASE.md` pour l'historique. Dernière valeur : **514**.
-- **Play Store** : App `com.suntrail.threejs` — Internal Testing actif (versionCode 514). Voir `docs/RELEASE.md` pour le workflow complet.
+- **versionCode** : Incrémenter à chaque upload Play Console. Voir `docs/RELEASE.md` pour l'historique. Dernière valeur : **517**.
+- **Play Store** : App `com.suntrail.threejs` — Internal Testing actif (versionCode 517). Voir `docs/RELEASE.md` pour le workflow complet.
 
 ## 🚀 Commandes de Maintenance
 - `npm test` : Lancer la suite de 190 tests unitaires (Vitest).
