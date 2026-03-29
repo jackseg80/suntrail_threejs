@@ -95,22 +95,8 @@ export function initUI(): void {
         setupK1.value = savedKey;
     }
 
-    setupBgo?.addEventListener('click', () => {
-        const key = setupK1.value.trim();
-        if (key.length < 10) {
-            const serr = document.getElementById('serr');
-            if (serr) serr.textContent = i18n.t('setup.error.invalidKey');
-            return;
-        }
-        state.MK = key;
-        localStorage.setItem('maptiler_key', key);
-
-        // Afficher l'état de chargement immédiatement (Fix v5.11 — feedback mobile)
-        if (setupBgo) {
-            (setupBgo as HTMLButtonElement).disabled = true;
-            setupBgo.innerHTML = `<span class="spinner" style="margin-right:8px;"></span>${i18n.t('setup.loading') || 'Chargement...'}`;
-        }
-
+    // Helper : enregistre le listener sceneReady + démarre la scène
+    const launchScene = () => {
         // Cacher l'écran de setup une fois que le moteur 3D est prêt (render loop actif)
         // 'suntrail:sceneReady' est dispatché par initScene() avant await loadTerrain()
         window.addEventListener('suntrail:sceneReady', () => {
@@ -150,7 +136,33 @@ export function initUI(): void {
         }, { once: true });
 
         startApp();
-    });
+    };
+
+    // Si clé bundlée (.env) ou clé manuelle déjà enregistrée → démarrage automatique
+    // Le setup screen (saisie clé MapTiler) n'est affiché que si aucune clé n'est disponible
+    if (state.MK) {
+        if (setupScreen) setupScreen.style.display = 'none';
+        launchScene();
+    } else {
+        // Pas de clé bundlée → afficher le setup screen (fallback pour dev / PWA sans .env)
+        setupBgo?.addEventListener('click', () => {
+            const key = setupK1.value.trim();
+            if (key.length < 10) {
+                const serr = document.getElementById('serr');
+                if (serr) serr.textContent = i18n.t('setup.error.invalidKey');
+                return;
+            }
+            state.MK = key;
+            localStorage.setItem('maptiler_key', key);
+
+            if (setupBgo) {
+                (setupBgo as HTMLButtonElement).disabled = true;
+                setupBgo.innerHTML = `<span class="spinner" style="margin-right:8px;"></span>${i18n.t('setup.loading') || 'Chargement...'}`;
+            }
+
+            launchScene();
+        });
+    }
 
     // --- INITIALISATION COMPOSANTS ---
     const navBar = new NavigationBar();
