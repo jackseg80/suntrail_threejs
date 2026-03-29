@@ -12,7 +12,6 @@ import SunCalc from 'suncalc';
 
 export class WeatherSheet extends BaseComponent {
     private contentEl: HTMLElement | null = null;
-    private expertPanel: HTMLElement | null = null;
 
     constructor() {
         super('template-weather', 'sheet-container');
@@ -23,26 +22,11 @@ export class WeatherSheet extends BaseComponent {
 
         this.contentEl = document.getElementById('weather-content');
         this.contentEl?.setAttribute('aria-live', 'polite');
-        
-        // Create expert panel dynamically
-        this.expertPanel = document.createElement('div');
-        this.expertPanel.id = 'expert-weather-panel';
-        this.expertPanel.style.display = 'none';
-        this.expertPanel.classList.add('exp-expert-panel');
-        this.element.appendChild(this.expertPanel);
 
         const closeWeather = document.getElementById('close-weather');
         closeWeather?.setAttribute('aria-label', i18n.t('weather.aria.close') || 'Fermer météo');
         closeWeather?.addEventListener('click', () => {
             sheetManager.close();
-        });
-
-        const openExpert = document.getElementById('open-expert-weather');
-        openExpert?.setAttribute('aria-label', i18n.t('weather.btn.expert'));
-        openExpert?.addEventListener('click', () => {
-            if (this.expertPanel) {
-                this.expertPanel.style.display = this.expertPanel.style.display === 'none' ? 'block' : 'none';
-            }
         });
 
         // Simulation Météo Manuelle (conservé intact)
@@ -322,10 +306,9 @@ export class WeatherSheet extends BaseComponent {
 
     private updateUI() {
         const wd = state.weatherData;
-        if (!this.contentEl || !this.expertPanel) return;
+        if (!this.contentEl) return;
 
         this.contentEl.textContent = '';
-        this.expertPanel.textContent = '';
 
         if (!wd) return;
 
@@ -450,21 +433,6 @@ export class WeatherSheet extends BaseComponent {
             this.contentEl.appendChild(copyBtn);
         }
 
-        // Expert Panel (conservé pour compatibilité — affiché via open-expert-weather btn)
-        const expertTitle = document.createElement('h4');
-        expertTitle.classList.add('exp-expert-title');
-        expertTitle.textContent = i18n.t('weather.expert.title');
-        this.expertPanel.appendChild(expertTitle);
-
-        const expertGrid = document.createElement('div');
-        expertGrid.classList.add('exp-stat-grid');
-        this.makeStat(expertGrid, i18n.t('weather.location'), wd.locationName || i18n.t('weather.unknown'));
-        this.makeStat(expertGrid, i18n.t('weather.gusts'), `${Math.round(wd.windGusts || 0)} km/h`);
-        this.makeStat(expertGrid, i18n.t('weather.visibility'), `${Math.round(wd.visibility || 0)} km`);
-        this.makeStat(expertGrid, i18n.t('weather.precipitation'), `${Math.round(wd.precProb || 0)}%`);
-        this.makeStat(expertGrid, i18n.t('weather.dewPoint'), `${Math.round(wd.dewPoint || 0)}°C`);
-        this.makeStat(expertGrid, i18n.t('weather.freezingLevel'), `${Math.round(wd.freezingLevel || 0)} m`);
-        this.expertPanel.appendChild(expertGrid);
     }
 
     private copyWeatherReport(wd: NonNullable<typeof state.weatherData>): void {

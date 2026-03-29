@@ -831,12 +831,6 @@ body.mode-2d #click-alt          { display: none; }
 
 /* -- WeatherSheet -- */
 
-.exp-expert-panel {
-    margin-top: var(--space-4);
-    padding: var(--space-4);
-    background: rgba(255,255,255,0.05);
-    border-radius: var(--radius-md);
-}
 
 .exp-stat-grid {
     display: grid;
@@ -892,10 +886,6 @@ body.mode-2d #click-alt          { display: none; }
     font-weight: 700;
 }
 
-.exp-expert-title {
-    margin: 0 0 var(--space-3) 0;
-    color: var(--gold);
-}
 
 .exp-chart {
     display: flex;
