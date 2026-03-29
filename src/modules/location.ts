@@ -82,8 +82,8 @@ export async function startLocationTracking() {
                         timestamp: Date.now()
                     }];
                     updateRecordedTrackMesh();
-                    // Mettre à jour le snapshot localStorage (fallback si app tuée)
-                    updateRecordingSnapshot(state.recordedPoints.length);
+                    // Mettre à jour le snapshot (localStorage count + filesystem points)
+                    updateRecordingSnapshot(state.recordedPoints.length, state.recordedPoints);
                 }
 
                 updateUserMarker();

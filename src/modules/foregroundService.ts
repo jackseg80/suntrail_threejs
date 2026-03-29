@@ -11,6 +11,7 @@
  */
 
 import { registerPlugin, Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface RecordingPlugin {
@@ -29,7 +30,13 @@ const RecordingNative = Capacitor.isNativePlatform()
     ? registerPlugin<RecordingPlugin>('Recording')
     : null;
 
-const SNAPSHOT_KEY = 'suntrail_rec_snapshot_v1';
+const SNAPSHOT_KEY  = 'suntrail_rec_snapshot_v1';
+const POINTS_FILE   = 'suntrail_rec_points_v1.json';
+const PERSIST_EVERY_N       = 30;         // Écrire sur disque tous les 30 nouveaux points…
+const PERSIST_INTERVAL_MS   = 60_000;     // …ou toutes les 60 secondes (selon le premier)
+
+let _lastPersistedCount = 0;
+let _lastPersistTime    = 0;
 
 // ── API publique ───────────────────────────────────────────────────────────────
 
@@ -45,6 +52,10 @@ export async function startRecordingService(): Promise<void> {
         pointCount:  0,
     };
     localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshot));
+
+    // Réinitialiser les compteurs de persistance pour cette nouvelle session
+    _lastPersistedCount = 0;
+    _lastPersistTime    = Date.now();
 
     // Démarrer le service natif
     if (RecordingNative) {
@@ -63,6 +74,14 @@ export async function startRecordingService(): Promise<void> {
 export async function stopRecordingService(): Promise<void> {
     localStorage.removeItem(SNAPSHOT_KEY);
 
+    // Réinitialiser et supprimer le fichier de points temporaire
+    _lastPersistedCount = 0;
+    _lastPersistTime    = 0;
+    if (Capacitor.isNativePlatform()) {
+        Filesystem.deleteFile({ path: POINTS_FILE, directory: Directory.Cache })
+            .catch(() => { /* fichier absent = normal si aucun point persité */ });
+    }
+
     if (RecordingNative) {
         try {
             await RecordingNative.stopForeground();
@@ -76,7 +95,11 @@ export async function stopRecordingService(): Promise<void> {
  * Met à jour le nombre de points dans le snapshot (appelé à chaque nouveau point GPS).
  * Permet de savoir où on en était si l'app est quand même tuée.
  */
-export function updateRecordingSnapshot(pointCount: number): void {
+export function updateRecordingSnapshot(
+    pointCount: number,
+    points?: Array<{ lat: number; lon: number; alt: number; timestamp: number }>
+): void {
+    // 1. Toujours mettre à jour le compte dans localStorage (rapide, synchrone)
     const raw = localStorage.getItem(SNAPSHOT_KEY);
     if (!raw) return;
     try {
@@ -84,6 +107,42 @@ export function updateRecordingSnapshot(pointCount: number): void {
         snapshot.pointCount = pointCount;
         localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshot));
     } catch { /* ignore */ }
+
+    // 2. Persister les points complets sur le filesystem selon les seuils (natif uniquement)
+    if (!points || !Capacitor.isNativePlatform()) return;
+    const now = Date.now();
+    const newPoints = pointCount - _lastPersistedCount;
+    if (newPoints >= PERSIST_EVERY_N || now - _lastPersistTime >= PERSIST_INTERVAL_MS) {
+        _lastPersistedCount = pointCount;
+        _lastPersistTime    = now;
+        // Fire-and-forget — non-bloquant, perte d'un write = acceptable
+        Filesystem.writeFile({
+            path:      POINTS_FILE,
+            data:      JSON.stringify(points),
+            directory: Directory.Cache,
+            encoding:  Encoding.UTF8,
+        }).catch(e => console.warn('[RecordingService] points persist failed:', e));
+    }
+}
+
+/**
+ * Lit les points d'enregistrement persistés sur le filesystem (après un kill Android).
+ * Retourne null si aucun fichier ou si on est sur web.
+ */
+export async function getPersistedRecordingPoints(): Promise<
+    Array<{ lat: number; lon: number; alt: number; timestamp: number }> | null
+> {
+    if (!Capacitor.isNativePlatform()) return null;
+    try {
+        const result = await Filesystem.readFile({
+            path:      POINTS_FILE,
+            directory: Directory.Cache,
+            encoding:  Encoding.UTF8,
+        });
+        return JSON.parse(result.data as string);
+    } catch {
+        return null; // Fichier absent = normal au premier REC
+    }
 }
 
 /**

@@ -14,6 +14,8 @@ import { updateElevationProfile } from '../../profile';
 import { eventBus } from '../../eventBus';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Geolocation } from '@capacitor/geolocation';
+import { requestGPSDisclosure } from '../../gpsDisclosure';
 
 const REC_FREE_LIMIT_MS = 30 * 60 * 1000; // 30 minutes pour le tier gratuit
 
@@ -48,6 +50,26 @@ export class TrackSheet extends BaseComponent {
             this.updateRecUI();
             
             if (state.isRecording) {
+                // Prominent Disclosure GPS (Play Store requirement)
+                const allowed = await requestGPSDisclosure();
+                if (!allowed) {
+                    state.isRecording = false;
+                    this.updateRecUI();
+                    return;
+                }
+                // Vérifier / demander la permission GPS au niveau OS (Android/iOS uniquement)
+                if (Capacitor.isNativePlatform()) {
+                    let perms = await Geolocation.checkPermissions();
+                    if (perms.location !== 'granted') {
+                        perms = await Geolocation.requestPermissions({ permissions: ['location'] });
+                    }
+                    if (perms.location !== 'granted') {
+                        state.isRecording = false;
+                        this.updateRecUI();
+                        showToast(i18n.t('gps.toast.permissionDenied'));
+                        return;
+                    }
+                }
                 showToast(i18n.t('track.toast.recStarted'));
                 await startRecordingService();   // Démarre le Foreground Service Android
                 if (!state.isFollowingUser) await startLocationTracking();
@@ -65,7 +87,10 @@ export class TrackSheet extends BaseComponent {
                             this.updateRecUI();
                             await stopRecordingService();
                             showToast('⏱ Limite 30 min atteinte — passez à Pro pour un enregistrement illimité.');
-                            if (state.recordedPoints.length >= 2) await this.exportRecordedGPX();
+                            if (state.recordedPoints.length >= 2) {
+                                await this.saveRecordedGPXInternal();          // Toujours — pas de gate
+                                if (state.isPro) await this.downloadRecordedGPX(); // Fichier si Pro
+                            }
                         }
                     }, REC_FREE_LIMIT_MS);
                 }
@@ -73,9 +98,10 @@ export class TrackSheet extends BaseComponent {
                 if (this.recLimitTimer) { clearTimeout(this.recLimitTimer); this.recLimitTimer = null; }
                 await stopRecordingService();    // Arrête le Foreground Service Android
                 showToast(i18n.t('track.toast.recStopped'));
-                // Auto-export au STOP si le tracé a au moins 2 points
+                // Sauvegarde interne systématique au STOP (sans gate Pro)
                 if (state.recordedPoints.length >= 2) {
-                    await this.exportRecordedGPX();
+                    await this.saveRecordedGPXInternal();          // Toujours — pas de gate
+                    if (state.isPro) await this.downloadRecordedGPX(); // Fichier si Pro
                 }
             }
         });
@@ -358,21 +384,40 @@ export class TrackSheet extends BaseComponent {
         return gpx;
     }
 
-    async exportRecordedGPX() {
+    /**
+     * Sauvegarde le tracé enregistré comme layer visible dans l'app (sans gate Pro).
+     * Appelé systématiquement au STOP et à l'auto-stop — garantit zéro perte de données.
+     */
+    async saveRecordedGPXInternal(): Promise<boolean> {
         if (state.recordedPoints.length < 2) {
             showToast(i18n.t('track.toast.tooShort'));
-            return;
+            return false;
         }
-        // Gate Freemium : export GPX réservé Pro
-        if (!state.isPro) {
-            showUpgradePrompt('export_gpx');
-            return;
+        try {
+            const gpxString = this.buildGPXString();
+            const parser = new gpxParser();
+            parser.parse(gpxString);
+            if (!parser.tracks?.length) return false;
+            const date = new Date().toLocaleDateString();
+            addGPXLayer(parser, `SunTrail REC ${date}`);
+            void haptic('success');
+            return true;
+        } catch (e) {
+            console.error('[TrackSheet] saveRecordedGPXInternal failed:', e);
+            return false;
         }
+    }
+
+    /**
+     * Écrit le GPX dans un fichier sur le système de fichiers.
+     * Pas de gate Pro ici — c'est l'appelant qui vérifie state.isPro.
+     */
+    async downloadRecordedGPX(): Promise<void> {
+        if (state.recordedPoints.length < 2) return;
         const gpx = this.buildGPXString();
         const filename = `suntrail-${new Date().toISOString().slice(0, 10)}-${Date.now()}.gpx`;
 
         if (Capacitor.isNativePlatform()) {
-            // Android/iOS — écriture native via Filesystem (blob URL non supporté en WebView)
             try {
                 const result = await Filesystem.writeFile({
                     path: filename,
@@ -380,14 +425,12 @@ export class TrackSheet extends BaseComponent {
                     directory: Directory.Documents,
                     encoding: Encoding.UTF8,
                 });
-                void haptic('success');
                 showToast(`GPX enregistré : ${result.uri.split('/').pop()}`);
             } catch (e) {
                 console.error('[TrackSheet] Filesystem.writeFile failed:', e);
                 showToast(i18n.t('track.toast.exportError') || 'Erreur export GPX');
             }
         } else {
-            // Web / dev — téléchargement via blob URL
             const blob = new Blob([gpx], { type: 'application/gpx+xml' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -397,6 +440,22 @@ export class TrackSheet extends BaseComponent {
             URL.revokeObjectURL(url);
             showToast(i18n.t('track.toast.exported'));
         }
+    }
+
+    /**
+     * Export GPX manuel — bouton "Exporter" (Pro-only file download).
+     * Conservé pour tout appelant externe futur.
+     */
+    async exportRecordedGPX() {
+        if (state.recordedPoints.length < 2) {
+            showToast(i18n.t('track.toast.tooShort'));
+            return;
+        }
+        if (!state.isPro) {
+            showUpgradePrompt('export_gpx');
+            return;
+        }
+        await this.downloadRecordedGPX();
     }
 
     private async handleGPX(xml: string, fileName: string = 'track.gpx') {
