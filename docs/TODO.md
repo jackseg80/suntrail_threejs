@@ -328,7 +328,21 @@ Auto-stop et STOP manuel appellent `saveRecordedGPXInternal()` puis `downloadRec
 
 - [ ] **Gate solaire** : `TimelineComponent.ts` — limiter le curseur à ±2h si `!isPro`. **Note** : une implémentation précoce a été retirée (limitait tous les users). À redésigner proprement.
 - [ ] **Gate offline** : `ConnectivitySheet.ts` — limiter à 1 zone si `!isPro`
-- [ ] **Mode testeur** : 7 taps sur version dans Réglages → `isPro = true` en RAM (non persisté)
+- [x] **Mode testeur** : 7 taps sur version dans Réglages → `isPro = true` en RAM (non persisté) ✅ v5.12.9
+
+#### Upsell contextuel — Messages d'upgrade au bon moment (v5.13)
+
+> **Problème** : L'utilisateur gratuit ne sait pas ce qu'il rate. Il zoome au max, reste en LOD 14, et ne sait pas qu'il existe des niveaux de détail supérieurs. Résultat : zéro conversion.
+>
+> **Principe** : Montrer l'upgrade prompt **au moment exact où l'utilisateur se heurte à la limite**, pas avant.
+
+- [ ] **LOD 14 → toast upsell** : `terrain.ts` ou `NavigationBar.ts` — quand l'utilisateur essaie de zoomer au-delà de LOD 14 (pinch ou scroll), afficher un toast discret : *"Activez Pro pour voir le détail LOD 18"* + bouton "Découvrir Pro". Fichier : `performance.ts` → `applyPreset()` bloque `MAX_ALLOWED_ZOOM` à 14. Déclencher dans `updateVisibleTiles()` quand `requestedZoom > MAX_ALLOWED_ZOOM && !isPro`.
+- [ ] **Satellite bloqué → explication visuelle** : `LayersSheet.ts` — au lieu de juste bloquer le clic, griser la tuile satellite avec un badge 🔒 et un tooltip "Pro". Actuellement le lock icon est absent.
+- [ ] **GPX 2e tracé → message clair** : `TrackSheet.ts` — le gate existe mais le message est générique. Personnaliser : *"Importez des tracés illimités avec Pro — comparez vos sorties côte à côte"*.
+- [ ] **REC à 25min → alerte approche limite** : `TrackSheet.ts` — timer à `REC_FREE_LIMIT_MS - 5min` → toast persistant + vibration : *"⏱ Enregistrement limité à 30 min — 5 min restantes"*. Évite la surprise de l'arrêt automatique (cause du Bug #2 en conditions réelles).
+- [ ] **Timeline ouverte en 3D → hint upsell solaire** : si `!isPro`, afficher en dessous du slider une ligne : *"Simulez à n'importe quelle heure avec Pro"* + lien upgrade. Non-bloquant, juste informatif.
+
+> 📋 **Note implémentation** : Utiliser `showUpgradePrompt(feature)` existant dans `iap.ts`. Ajouter les clés i18n correspondantes dans les 4 locales. Ne jamais bloquer l'UI — les messages doivent être des invitations, pas des murs.
 
 #### Partenariats (post-lancement, après 10k téléchargements)
 
