@@ -199,6 +199,12 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 - **Permission GPS** : Le handler REC vérifie `requestGPSDisclosure()` → `Geolocation.checkPermissions()` → `requestPermissions()` avant tout démarrage.
 - **Persistance filesystem (C1)** : `foregroundService.ts` — `updateRecordingSnapshot(count, points[])` écrit les coordonnées complètes dans `Directory.Cache` toutes les 30 pts ou 60s. `getPersistedRecordingPoints()` restaure après kill Android.
 
+### Mode Testeur (v5.12.9)
+- **7 taps sur `#settings-version`** dans Réglages Avancés → toggle `state.isPro` en RAM (non persisté).
+- **Jamais `saveProStatus()`** dans ce flow — non persisté en localStorage par design.
+- Taps 4-6 : haptic light + clignotement. Tap 7 : haptic success + toast + couleur accent sur le label version.
+- Reset au redémarrage (RAM uniquement).
+
 ### Timeline 2D Guard (v5.12.7)
 - **Guard** : `TimelineComponent.ts` utilise `state.IS_2D_MODE` (pas `body.classList.contains('mode-2d')`) pour vérifier le mode 2D au clic.
 - **NavigationBar** : `syncLowZoomState()` ajoute toujours `body.mode-2d` quand ZOOM ≤ 10, même si `IS_2D_MODE` était déjà `true` depuis localStorage. L'ancien code ne l'ajoutait qu'en cas de changement `false→true`, ce qui laissait la classe absente au démarrage.
@@ -208,8 +214,8 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 - **Keystore** : `android/suntrail.keystore` (hors Git). `android/keystore.properties` (hors Git, rempli avec mot de passe réel).
 - **Build release** : `JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease --no-daemon` depuis `android/`.
 - **CI/CD** : `.github/workflows/release.yml` — déclenché sur `git tag v*.*.*`. Nécessite 6 GitHub Secrets : `KEYSTORE_BASE64`, `STORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS`, `VITE_MAPTILER_KEY`, `VITE_REVENUECAT_KEY`.
-- **versionCode** : Incrémenter à chaque upload Play Console. Voir `docs/RELEASE.md` pour l'historique. Dernière valeur : **517**.
-- **Play Store** : App `com.suntrail.threejs` — Internal Testing actif (versionCode 517). Voir `docs/RELEASE.md` pour le workflow complet.
+- **versionCode** : Incrémenter à chaque upload Play Console. Voir `docs/RELEASE.md` pour l'historique. Dernière valeur : **519**.
+- **Play Store** : App `com.suntrail.threejs` — **Closed Testing soumis** (versionCode 519). Voir `docs/RELEASE.md` pour le workflow complet.
 
 ## 🚀 Commandes de Maintenance
 - `npm test` : Lancer la suite de 190 tests unitaires (Vitest).

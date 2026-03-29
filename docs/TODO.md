@@ -1,15 +1,12 @@
-# SunTrail 3D - Roadmap Révisée (v5.12.8)
+# SunTrail 3D - Roadmap Révisée (v5.12.9)
 
-## 🧪 Mode Testeur / Debug (v5.13)
+## 🧪 Mode Testeur / Debug ✅ TERMINÉ (v5.12.9)
 
-**Problème** : Les testeurs internes (Play Console Internal Testing) ne peuvent pas accéder aux features Pro tant que les produits IAP ne sont pas configurés dans Play Console. Ils testent uniquement le tier gratuit, ce qui empêche de vérifier le paywall et les features Pro.
+- [x] **Activation secrète** : 7 taps sur `v5.12.9` dans Réglages → `isPro = true` en RAM, non persisté. Tap 4-6 : haptic + flash. Tap 7 : toggle + toast + couleur accent.
+- [x] **Désactivation** : Retapper 7 fois ou redémarrer → revient au tier gratuit.
+- [x] **Sécurité** : `state.isPro = !state.isPro` direct, jamais `saveProStatus()` → non persisté.
 
-- [ ] **Activation secrète** : Taper 7 fois sur le numéro de version dans Réglages Avancés → active `isPro = true` temporairement (session uniquement, non persisté). Même pattern que les options développeur Android.
-- [ ] **Indicateur visuel** : Badge "DEV" discret dans le coin de l'écran quand le mode testeur est actif.
-- [ ] **Désactivation** : Retapper 7 fois ou redémarrer l'app → revient au tier gratuit.
-- [ ] **Sécurité** : Non persisté en localStorage → impossible d'activer "accidentellement" en production. Juste un `state.isPro = true` en RAM pour la session.
-
-> 💡 **Alternative immédiate** : Via RevenueCat Dashboard → Customers → trouver l'appareil → Grant entitlement `SunTrail 3D Pro` → Lifetime. Ou via `chrome://inspect` → console JS → `localStorage.setItem('suntrail_pro', JSON.stringify({isPro: true}))`.
+> 💡 **Alternative** : Via RevenueCat Dashboard → Customers → Grant entitlement `SunTrail 3D Pro`. Ou `chrome://inspect` → `localStorage.setItem('suntrail_pro', JSON.stringify({isPro: true}))`.
 
 ---
 

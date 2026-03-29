@@ -60,7 +60,9 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | 514 | 5.12.5 | v5.12.5-fix | Tests internes — app fonctionnelle Galaxy Tab S8 | 2026-03-29 |
 | 515 | 5.12.6 | v5.12.6 | Fix timeline 2D + regression widget display order | 2026-03-29 |
 | 516 | 5.12.7 | v5.12.7 | Fix bouton timeline accessible en 2D au démarrage | 2026-03-29 |
-| **517** | **5.12.8** | **v5.12.8** | **Fix REC crash GPS + perte données auto-stop + persistence filesystem** | **2026-03-29** |
+| 517 | 5.12.8 | v5.12.8 | Fix REC crash GPS + perte données auto-stop + persistence filesystem | 2026-03-29 |
+| 518 | 5.12.9 | v5.12.9 | Mode testeur 7 taps (isPro RAM non persisté) | 2026-03-29 |
+| **519** | **5.12.9** | **v5.12.9-ct** | **Tests fermés — Closed Testing soumis à Google** | **2026-03-29** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 
