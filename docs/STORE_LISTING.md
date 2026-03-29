@@ -71,7 +71,7 @@ SunTrail 3D transforme les données cartographiques officielles en terrain 3D in
 ━━━━━━━━━━━━━━━━━━━━━━━
 🔒 CONFIDENTIALITÉ TOTALE
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Aucun compte, aucune inscription
+• Aucun compte requis — achats gérés via Google Play
 • Aucune donnée transmise à nos serveurs
 • GPS utilisé uniquement au premier plan, jamais partagé
 • Vos tracés restent sur votre appareil
