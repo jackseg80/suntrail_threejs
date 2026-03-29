@@ -1,5 +1,18 @@
 # SunTrail 3D - Roadmap Révisée (v5.11.2)
 
+## 🧪 Mode Testeur / Debug (v5.13)
+
+**Problème** : Les testeurs internes (Play Console Internal Testing) ne peuvent pas accéder aux features Pro tant que les produits IAP ne sont pas configurés dans Play Console. Ils testent uniquement le tier gratuit, ce qui empêche de vérifier le paywall et les features Pro.
+
+- [ ] **Activation secrète** : Taper 7 fois sur le numéro de version dans Réglages Avancés → active `isPro = true` temporairement (session uniquement, non persisté). Même pattern que les options développeur Android.
+- [ ] **Indicateur visuel** : Badge "DEV" discret dans le coin de l'écran quand le mode testeur est actif.
+- [ ] **Désactivation** : Retapper 7 fois ou redémarrer l'app → revient au tier gratuit.
+- [ ] **Sécurité** : Non persisté en localStorage → impossible d'activer "accidentellement" en production. Juste un `state.isPro = true` en RAM pour la session.
+
+> 💡 **Alternative immédiate** : Via RevenueCat Dashboard → Customers → trouver l'appareil → Grant entitlement `SunTrail 3D Pro` → Lifetime. Ou via `chrome://inspect` → console JS → `localStorage.setItem('suntrail_pro', JSON.stringify({isPro: true}))`.
+
+---
+
 ## 🐛 Bugs Critiques Découverts en Conditions Réelles (v5.13 — priorité haute)
 
 ### Bug #1 — Crash REC sans permission GPS préalable
