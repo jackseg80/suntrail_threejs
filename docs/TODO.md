@@ -552,7 +552,7 @@ App sur appareil physique Android connecté en USB (débogage activé).
 **Pendant les 14 jours — à faire en parallèle**
 - [ ] **Lier RevenueCat ↔ Play Console** : Service Account JSON (docs.revenuecat.com/docs/service-credentials)
 - [ ] **Screenshots définitifs** : refaire des captures soignées (actuellement 2 screenshots rapides)
-- [ ] Implémenter v5.13 (upsell contextuel, gates manquants, mode testeur improvements)
+- [x] Implémenter v5.13 (upsell contextuel, gates manquants, mode testeur improvements) — **DONE v5.13.1→5.13.6**
 
 **Production**
 - [ ] Après 14 jours closed testing + RevenueCat lié → Mise en production

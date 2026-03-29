@@ -1,4 +1,4 @@
-# 📋 Fonctionnalités de SunTrail 3D (v5.7.1)
+# 📋 Fonctionnalités de SunTrail 3D (v5.13.6)
 
 Ce document dresse la liste exhaustive des capacités techniques et fonctionnelles du moteur SunTrail.
 
@@ -13,10 +13,12 @@ Ce document dresse la liste exhaustive des capacités techniques et fonctionnell
 *   **Carte des Pentes (Inclinomètre)** : Shader personnalisé calculant et affichant les pentes en temps réel (Jaune 30° / Orange 35° / Rouge 40°+).
 *   **Hydrologie par Shader (Pure Alpin)** : Moteur 100% GPU détectant les surfaces d'eau avec ondulations et reflets dynamiques.
 
-### ☀️ Analyse Solaire & Astronomique
-*   **Éphémérides Précises** : Calcul en temps réel des positions du Soleil et de la Lune basées sur la date, l'heure et les coordonnées GPS.
-*   **Transitions Solaire Ultra-Lisses** : Refonte des courbes de luminosité pour une transition monotone parfaite entre l'Heure Dorée et la Nuit.
-*   **Phases Lumineuses & Couleurs** : Identification de l'"Heure Dorée", l'"Heure Bleue", des crépuscules et de la phase lunaire.
+### ☀️ Simulation & Analyse Solaire
+*   **Éphémérides Précises** : Calcul en temps réel des positions du Soleil et de la Lune (SunCalc) basé sur la date, l'heure et les coordonnées GPS.
+*   **Transitions Solaire Ultra-Lisses** : Courbes de luminosité monotones parfaites entre Heure Dorée, Crépuscule et Nuit, avec transition Lune.
+*   **Phases Lumineuses & Couleurs** : Identification de l'Heure Dorée, du Crépuscule civil/nautical/astronomique, de la phase lunaire.
+*   **Analyse Solaire — Tier Gratuit** : Durée d'ensoleillement total + heure du premier rayon + timeline 48 barres (nuit/ombre/soleil).
+*   **Analyse Solaire Pro** : Lever/midi solaire/coucher à la minute, fenêtres Heure Dorée matin+soir, durée du jour, azimut + boussole SVG en temps réel, élévation + barre de progression, phase lunaire + emoji, graphique SVG 24h (courbe altitude, zones colorées, ombres terrain, marqueur courant), rapport copiable complet. Mise à jour temps réel pendant le drag du slider.
 
 ### 🧭 Navigation & Exploration Alpiniste
 *   **Suivi GPS Haute Précision** : Centrage "pixel-perfect" sur l'altitude réelle du relief et interpolation haute fréquence (60 FPS).
@@ -29,7 +31,9 @@ Ce document dresse la liste exhaustive des capacités techniques et fonctionnell
 *   **Végétation Bio-Fidèle** : Diversification des forêts avec 3 essences (Feuillus, Sapins, Mélèzes) selon l'altitude réelle.
 *   **Bâtiments 3D RTX (OSM)** : Fusion de géométries pour des performances maximales et correction du bug de miroir Z.
 *   **Points d'Intérêt (POI)** : Affichage hiérarchisé des panneaux, refuges et cols.
-*   **Météo Dynamique** : Moteur de particules GPU pour les nuages, la pluie et la neige avec physique du vent réel.
+*   **Météo Dynamique** : Moteur de particules GPU pour la pluie et la neige avec physique du vent réel (direction + vitesse depuis Open-Meteo).
+*   **Bulletin Météo — Tier Gratuit** : 4 stats (temp, ressenti, vent, humidité) + scroll 12h.
+*   **Station Météo Pro** : Conditions actuelles complètes (grille 3 colonnes : dew point, UV Index coloré ANSES, couverture nuageuse, vent + flèche SVG direction, rafales, visibilité, isotherme 0°C, probabilité précipitations), scroll 24h enrichi (précip % horaire), graphique SVG température 24h (courbe + barres précip + ligne isotherme), prévisions 3 jours (max/min/précip/UV/vent), Alerte Montagne (isotherme vs altitude + Indice Confort Rando composite). Simulation manuelle pluie/neige/clair conservée.
 
 
 ### ⚡ Performance & Optimisation Mobile
@@ -45,3 +49,10 @@ Ce document dresse la liste exhaustive des capacités techniques et fonctionnell
 *   **Lecteur PMTiles Natif** : Support des archives de cartes locales pour charger des régions entières hors-ligne.
 *   **Générateur SOS SMS** : Outil de secours générant un message texte optimisé contenant les coordonnées GPS, l'altitude et l'état de la batterie.
 *   **Support GPX Pro** : Importation et exportation de traces avec calcul de pente.
+*   **Simulation Manuelle Météo** : Boutons pluie/neige/clair + curseurs densité et vitesse pour visualiser des conditions dans n'importe quelle scène.
+
+### 💰 Modèle Freemium (v5.12+)
+*   **Gate features** : `state.isPro` vérifié côté client via receipt RevenueCat — LOD > 14, satellite, analyse solaire Pro, météo Pro, multi-GPX, REC illimité.
+*   **UpgradeSheet 3 plans** : Mensuel (€2.99), Annuel ⭐ mis en avant (€19.99/an), Lifetime (€99.99) — prix dynamiques via RevenueCat, loading state sur chaque bouton, restauration d'achat.
+*   **Upsell contextuel** : Toast LOD 14 (10s), badge Pro tuile satellite, hint timeline, alerte REC T-5min, banner upsell dans Analyse Solaire et Météo.
+*   **Mode testeur** : Toggle dans Réglages Avancés (non persisté, RAM uniquement) pour les testeurs Closed Testing. Mécanisme 7-taps sur le numéro de version aussi disponible.

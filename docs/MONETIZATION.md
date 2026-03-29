@@ -73,8 +73,9 @@ Pas de backend utilisateur pour Sprint 7 — les achats sont gérés par les sto
 | **Cartographie** | Plan IGN v2 (FR) + SwissTopo (CH) + OSM — LOD ≤ 14 |
 | **Vue 3D** | ✅ Accessible (hook d'acquisition) |
 | **GPS live** | ✅ Position en temps réel |
-| **Météo** | ✅ Basique |
-| **Simulation solaire** | ⏱ Fenêtre ±2h autour de l'heure réelle |
+| **Météo** | ✅ Basique (4 stats + scroll 12h) |
+| **Simulation solaire** | ✅ Timeline complète 24h (curseur libre) |
+| **Analyse solaire** | Durée ensoleillement + premier rayon + timeline barres |
 | **GPX** | 1 tracé actif, import uniquement (pas d'export) |
 | **Enregistrement REC** | Limité à 30 min |
 | **Offline** | 1 zone de 10km × 10km max |
@@ -87,7 +88,8 @@ Pas de backend utilisateur pour Sprint 7 — les achats sont gérés par les sto
 | Feature | Détail |
 |---------|--------|
 | **Cartographie** | LOD 18 (détail maximum) + couche Satellite MapTiler |
-| **Simulation solaire** | 24h/24, curseur temporel libre, export image |
+| **Analyse Solaire Avancée** | Lever/coucher/midi exact, heure dorée, azimut + boussole SVG, graphique élévation 24h, phase lunaire |
+| **Station Météo Avancée** | Prévisions 3 jours, direction vent, UV Index ANSES, isotherme 0°C, Alerte Montagne, Indice Confort Rando |
 | **GPX** | Multi-tracés illimités, enregistrement illimité, export GPX |
 | **Offline / PMTiles** | Zones illimitées, support fichiers .pmtiles locaux |
 | **Analyse de pentes** | Coloration avancée + inclinomètre |

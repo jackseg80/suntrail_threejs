@@ -72,7 +72,13 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | 517 | 5.12.8 | v5.12.8 | Fix REC crash GPS + perte données auto-stop + persistence filesystem | 2026-03-29 |
 | 518 | 5.12.9 | v5.12.9 | Mode testeur 7 taps (isPro RAM non persisté) | 2026-03-29 |
 | 519 | 5.12.9 | v5.12.9-ct | Tests fermés — Closed Testing soumis à Google | 2026-03-29 |
-| **520** | **5.13.0** | **v5.13.0** | **Upsell LOD 14 contextuel (toast debounce 30s)** | **2026-03-29** |
+| **520** | **5.13.0** | **v5.13.0** | Upsell LOD 14 contextuel (toast debounce 30s) | 2026-03-29 |
+| 521 | 5.13.1 | v5.13.1 | Upsell contextuel complet (badge satellite, hint timeline, REC T-5min) | 2026-03-30 |
+| 522 | 5.13.2 | v5.13.2 | Toggle Pro testeur dans Réglages Avancés (Closed Testing) | 2026-03-30 |
+| 523 | 5.13.3 | v5.13.3 | Analyse Solaire Pro — 12 champs, 4 blocs UI, graphique SVG, 16 tests | 2026-03-30 |
+| 524 | 5.13.4 | v5.13.4 | UpgradeSheet 3 plans + toast durée corrigée (CSS animation supprimée) | 2026-03-30 |
+| 525 | 5.13.5 | v5.13.5 | Fix layout overflow bouton Pro solaire + plans UpgradeSheet égaux | 2026-03-30 |
+| **526** | **5.13.6** | **v5.13.6** | **Station Météo Pro — 5 blocs, 3 jours, alertes montagne, 33 tests** | **2026-03-30** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 

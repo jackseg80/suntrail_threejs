@@ -4,6 +4,117 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.13.6] - 2026-03-30
+### 🌡️ Station Météo Pro + nettoyage Expert Panel
+
+#### Station Météo Avancée (version Pro)
+
+- **`weather.ts`** : Fetch Open-Meteo enrichi avec `daily=temperature_2m_max/min,precipitation_sum,precipitation_probability_max,wind_speed/gusts_10m_max,wind_direction_10m_dominant,uv_index_max,weather_code&timezone=auto`. `windDirDeg` (direction vent courant) et `precip` (probabilité horaire) ajoutés à `weatherData`. `daily[]` complet parsé.
+- **`state.ts`** : Interface `weatherData` étendue — `windDirDeg?`, `precip?` dans `hourly`, `daily[]` (7 jours).
+- **`weatherUtils.ts`** (nouveau) : Module de helpers exportés — `getUVCategory`, `getUVColor`, `getComfortIndex`, `getComfortLabel`, `getFreezingAlert`, `fmtWindDir`.
+- **`ExpertSheets.ts` — WeatherSheet** entièrement reprise :
+  - **Gratuit** : 4 stats + scroll 12h + banner upsell *"🌡️ Prévisions 3 jours + alertes montagne avec Pro"*
+  - **Pro — 5 blocs** :
+    1. Conditions actuelles complètes (grille 3 colonnes) — temp/ressenti/humidité, point de rosée/UV coloré ANSES/couverture nuageuse, vent+flèche SVG direction/rafales/visibilité, isotherme 0°C/précip%
+    2. Scroll 24h enrichi avec probabilité de précipitations % par heure
+    3. Graphique SVG température 24h — courbe polyline jaune, barres précipitations en fond, ligne isotherme 0°C, labels min/max
+    4. Prévisions 3 jours — cartes date/icône/max-min/précip mm/UV coloré/vent max
+    5. Alerte Montagne — isotherme 0°C vs altitude clic (message dynamique) + Indice Confort Rando (composite temp+vent+UV)
+  - Rapport copiable enrichi avec toutes les données Pro
+  - `state.subscribe('isPro')` → re-render automatique
+- **`index.html`** : Ajout ligne *"🌡️ Station météo avancée — 3 jours, alertes montagne"* dans UpgradeSheet.
+- **CSS** : 9 nouvelles classes — `.weather-upsell-banner/btn`, `.weather-daily-*`, `.weather-mountain-alert`, `.weather-comfort-score`, `.weather-svg-chart`.
+- **i18n** : Nouvelles clés `weather.upsell`, `weather.section.*`, `weather.stat.*`, `weather.uv.*`, `weather.mountain.*`, `weather.daily.*` en FR/EN/DE/IT.
+- **Tests** : `src/test/weatherPro.test.ts` — 33 tests verts (getWeatherIcon, getUVCategory, getComfortIndex, getFreezingAlert, parseDaily, hourly enrichi, fmtWindDir, graceful null).
+
+#### Nettoyage panneau Expert (remplacé par version Pro)
+
+- **`ExpertSheets.ts`** : Suppression de `expertPanel` (propriété, création dynamique, listener `openExpert`, bloc de remplissage avec location/gusts/visibility/etc.).
+- **`index.html`** : Bouton `#open-expert-weather` supprimé du template-weather.
+- **`style.css`** : `.exp-expert-panel` et `.exp-expert-title` supprimés (dead CSS).
+
+---
+
+## [5.13.5] - 2026-03-30
+### 🐛 Fixes layout mobile + release Closed Testing
+
+- **`style.css`** : `.solar-upsell-btn` — `width: auto; margin-top: 0` pour override `.btn-go` (`width:100%; margin-top:32px` causaient débordement hors écran sur mobile).
+- **`index.html` — UpgradeSheet plans** : `.upgrade-plans` avec `align-items:stretch` + marge compensant le badge (+10px). `.upgrade-plan` : `flex:1 1 0; min-width:0; box-sizing:border-box; padding:12px 4px` — 3 boutons égaux même avec `€99.99`.
+- **`build.gradle`** : versionCode 524→525, versionName 5.13.5.
+
+---
+
+## [5.13.4] - 2026-03-30
+### 💳 UpgradeSheet 3 plans + fixes toast
+
+#### UpgradeSheet — 3 plans tarifaires
+- **`index.html`** : Remplacement du bloc prix unique par un sélecteur 3 plans inline — mensuel (€2.99/mois), annuel ⭐ mis en avant avec badge (€19.99/an · €1.67/mois), lifetime (€99.99 paiement unique). CSS inline dans le template : `.upgrade-plans`, `.upgrade-plan`, `.upgrade-plan-best`, `.upgrade-plan-badge`, `.upgrade-plan-price`, `.upgrade-plan-sub`.
+- **`UpgradeSheet.ts`** : Loading state (`btn-loading`) + toast de confirmation ajoutés sur les boutons monthly et lifetime. `loadPrices()` ne vide plus le HTML du bouton annuel — les prix sont mis à jour via les spans dédiés `#upgrade-yearly/monthly/lifetime-price`.
+- **`iapService.ts`** : Prix fallback lifetime corrigé : €49.99 → €99.99.
+
+#### Fix toast durée ignorée
+- **`style.css`** : L'animation CSS `.toast` (`toast-out delay:1.2s + duration:0.3s`) forçait la disparition à 1.5s peu importe la durée passée à `showToast()`. Fix : suppression de l'animation CSS. Le JS gère entièrement le timing via `opacity + transition + setTimeout(duration)`. Tous les toasts respectent maintenant leur durée (`showToast(msg, 10000)` → 10s).
+- **`scene.ts`** : Toast LOD upsell passé à 10 secondes (anciennement 6s, lui-même corrigé de 3s en v5.13.1).
+- **`build.gradle`** : versionCode 522→524, versionName 5.13.2→5.13.4.
+
+---
+
+## [5.13.3] - 2026-03-30
+### ☀️ Analyse Solaire Pro complète
+
+#### Backend — `analysis.ts`
+Interface `SolarAnalysisResult` enrichie avec 12 nouveaux champs via `SunCalc.getTimes()` et `SunCalc.getMoonIllumination()` :
+- `sunrise`, `sunset`, `solarNoon`
+- `goldenHourMorningStart/End`, `goldenHourEveningStart/End`
+- `dayDurationMinutes`, `currentAzimuthDeg`, `currentElevationDeg`
+- `moonPhase`, `moonPhaseName` (8 phases : new → waning_crescent)
+- `elevationCurve[144]` — altitude solaire toutes les 10 min sur 24h
+- Fonction `getMoonPhaseName()` exportée.
+
+#### UI — `ExpertSheets.ts` — SolarProbeSheet
+- **Gratuit** : 1 stat (ensoleillement total) + timeline 48 barres + bannière upsell.
+- **Pro — 4 blocs** :
+  1. Données du jour — lever/midi solaire/coucher, heure dorée matin+soir, durée du jour, ensoleillement total
+  2. Temps réel — azimut + boussole SVG, élévation + barre de progression, phase lunaire + emoji
+  3. Graphique SVG 24h — fond coloré nuit/crépuscule/jour, courbe altitude #FFD700, zones d'ombre terrain en rouge, ligne courante mobile
+  4. Rapport copiable enrichi
+- Subscription `state.subscribe('simDate')` → mise à jour temps réel du Bloc 2 et de la ligne SVG.
+
+#### TimelineComponent
+- Div `#timeline-solar-info` avec azimut + élévation injecté sous le slider (Pro uniquement), mis à jour à chaque changement de `simDate`.
+
+#### i18n
+- `solar.section.{dayData, realtime}`, `solar.stat.{sunrise, sunset, noon, goldenMorning, goldenEvening, dayDuration, azimuth, elevation, moonPhase, elevationChart}`, `solar.upsell.solar` en FR/EN/DE/IT.
+
+#### Tests
+- `src/test/solarAnalysis.test.ts` — 16 tests verts (sunrise/sunset/noon, golden hour, azimuth, elevation curve, moon phase, graceful null).
+- **`build.gradle`** : versionCode 521→523, versionName 5.13.1→5.13.3.
+
+---
+
+## [5.13.2] - 2026-03-29
+### 🧪 Toggle Pro visible pour Closed Testing
+
+- **`index.html`** : Toggle *"🧪 Mode Pro (test) — Session uniquement — non persisté"* ajouté dans Réglages Avancés, marqué `<!-- ⚠️ SUPPRIMER AVANT PRODUCTION -->`.
+- **`SettingsSheet.ts`** : `initTesterProToggle()` — checkbox synchronisée avec `state.isPro`, jamais `saveProStatus()` (RAM uniquement). Toast de confirmation + haptic à chaque toggle.
+- **`docs/TODO.md`** : Checklist obligatoire avant Production ajoutée (suppression toggle, screenshots, RevenueCat).
+- **`build.gradle`** : versionCode 521→522, versionName 5.13.2.
+
+---
+
+## [5.13.1] - 2026-03-29
+### ✨ Upsell contextuel complet
+
+- **`scene.ts`** : Toast LOD 14 durée 3s→6s (porté à 10s en v5.13.4 après fix CSS).
+- **`TrackSheet.ts`** : Alerte REC T-5min — vibration + toast *"⏱ Limite 30 min — encore 5 minutes"* à T-25min (setTimeout). 4 langues.
+- **`LayersSheet.ts`** : Badge *"Pro"* sur la tuile satellite — masqué automatiquement si `state.isPro`. Subscription `state.subscribe('isPro', syncSatelliteBadge)`.
+- **`TimelineComponent.ts`** : Hint discret *"⭐ Simulation solaire complète 24h disponible avec Pro"* sous le slider, caché si `isPro`.
+- **`iap.ts`** : Label `multi_gpx` → *"Tracés GPX illimités — comparez vos sorties côte à côte"*.
+- **i18n** : `upsell.timeline`, `track.recWarning5min` en FR/EN/DE/IT.
+- **`build.gradle`** : versionCode 520→521, versionName 5.13.1.
+
+---
+
 ## [5.11.2] - 2026-03-29
 ### 🗺️ Vue de démarrage Suisse + Verrouillage 2D bas zoom
 
