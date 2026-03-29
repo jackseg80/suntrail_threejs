@@ -217,7 +217,7 @@ export async function initScene(): Promise<void> {
             const now = Date.now();
             if (now - _lastLodUpsellTime > 30_000) {
                 _lastLodUpsellTime = now;
-                showToast(i18n.t('upsell.lod'), 6000);
+                showToast(i18n.t('upsell.lod'), 10000);
             }
         }
 
