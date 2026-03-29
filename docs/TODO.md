@@ -1,5 +1,41 @@
 # SunTrail 3D - Roadmap Révisée (v5.11.2)
 
+## 🐛 Bugs Critiques Découverts en Conditions Réelles (v5.13 — priorité haute)
+
+### Bug #1 — Crash REC sans permission GPS préalable
+
+**Symptôme** : Ouvrir TrackSheet → cliquer REC sans avoir activé le GPS via le bouton position → l'app plante.
+**Workaround actuel** : Appuyer d'abord sur le bouton GPS (position) qui demande la permission, puis utiliser REC.
+
+**Cause probable** : `startLocationTracking()` dans TrackSheet appelle `Geolocation.getCurrentPosition()` ou `Geolocation.watchPosition()` sans vérifier si la permission est accordée. Sur Android, appeler l'API Geolocation sans permission = exception non catchée = crash.
+
+**Fix recommandé** :
+- [ ] **Demander la permission GPS au démarrage** (après Acceptance Wall, avant que l'utilisateur puisse toucher REC). Modèle : même pattern que `requestGPSDisclosure()` mais avec demande réelle de permission (`Geolocation.requestPermissions()`).
+- [ ] **Ou** : dans le handler REC de `TrackSheet.ts`, vérifier `Geolocation.checkPermissions()` avant de démarrer. Si `denied` ou `prompt` → déclencher `requestGPSDisclosure()` + `Geolocation.requestPermissions()` en séquence.
+- [ ] **Guard dans `startLocationTracking()`** : wrapper tout le bloc dans un try/catch avec message utilisateur clair si permission refusée.
+
+---
+
+### Bug #2 — Perte de données REC : enregistrement tronqué + GPX non sauvegardé ⚠️ CRITIQUE
+
+**Symptôme** : Randonné 43 min / 3.8 km, téléphone en poche en REC. À l'ouverture : REC arrêté à ~3.4 km, GPX absent.
+
+**Cause identifiée — double problème** :
+
+**Problème A — Limite 30 min Freemium** : Le timer `REC_FREE_LIMIT_MS` (30 min) a stoppé automatiquement l'enregistrement. L'utilisateur n'a pas vu le toast (téléphone en poche). C'est le comportement attendu MAIS :
+
+**Problème B — Gate export bloque la sauvegarde automatique** : Dans `TrackSheet.ts`, le timer auto-stop appelle `exportRecordedGPX()` qui contient le gate `if (!state.isPro) { showUpgradePrompt('export_gpx'); return; }`. Résultat : le GPX n'est **jamais sauvegardé**, les données sont perdues. **C'est un bug sévère — l'utilisateur perd ses données.**
+
+**Fix obligatoire** :
+- [ ] **Séparer "sauvegarde automatique" et "export manuel Pro"** : La sauvegarde au STOP (auto ou limite) doit toujours fonctionner, même pour les utilisateurs gratuits. Seul l'export manuel via le bouton "Exporter" est Pro.
+- [ ] Dans `TrackSheet.ts` : créer `saveRecordedGPXInternal()` (sans gate Pro) appelé par l'auto-stop et le STOP manuel. Le bouton "Exporter GPX" dans l'UI reste Pro-only.
+- [ ] **Notification visible** quand la limite 30 min approche : avertissement à T-5 min (toast persistant ou vibration) pour que l'utilisateur sache que l'enregistrement va s'arrêter.
+- [ ] **Revoir l'UX de la limite** : Au lieu de supprimer les données, les sauvegarder toujours localement. Afficher "Passer à Pro pour continuer l'enregistrement" sans perdre ce qui a été enregistré.
+
+> ⚠️ **Note pour l'agent IA** : Le fichier à corriger est `src/modules/ui/components/TrackSheet.ts`. La méthode `exportRecordedGPX()` a un gate `isPro` ligne ~346. L'auto-stop timer est dans le handler `recBtn` click. Corriger en priorité avant toute publication en production.
+
+---
+
 ## 🚀 Priorité 1 : Optimisations & Netteté (v5.6) - ✅ TERMINÉ
 *Impact : Fluidité mobile absolue et rendu topographique pro.*
 
