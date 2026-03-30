@@ -10,8 +10,6 @@ import { i18n } from '../../../i18n/I18nService';
 import type { Locale } from '../../../i18n/I18nService';
 
 import { sheetManager } from '../core/SheetManager';
-import { haptic } from '../../haptics';
-import { showToast } from '../../utils';
 
 export class SettingsSheet extends BaseComponent {
     constructor() {
@@ -145,81 +143,11 @@ export class SettingsSheet extends BaseComponent {
         // Language selector
         this.createLanguageSelector();
 
-        // Mode testeur (7 taps sur la version → isPro en RAM, non persisté)
-        this.initTesterMode();
-
-        // ⚠️ SUPPRIMER AVANT PRODUCTION — toggle Pro visible pour les testeurs fermés
-        this.initTesterProToggle();
-
         // Initial UI update
         this.updateAllUI();
     }
 
-    /**
-     * ⚠️ SUPPRIMER AVANT PRODUCTION
-     * Toggle Pro visible pour les testeurs fermés (Closed Testing).
-     * Non persisté — state.isPro en RAM uniquement, reset au redémarrage.
-     */
-    private initTesterProToggle(): void {
-        const toggle = this.element?.querySelector('#tester-pro-toggle') as HTMLInputElement | null;
-        if (!toggle) return;
 
-        // Sync état visuel avec state.isPro courant
-        const sync = () => { toggle.checked = state.isPro; };
-        sync();
-        this.addSubscription(state.subscribe('isPro', sync));
-
-        toggle.addEventListener('change', () => {
-            state.isPro = toggle.checked; // Jamais saveProStatus() — RAM uniquement
-            void haptic(toggle.checked ? 'success' : 'light');
-            showToast(toggle.checked
-                ? '🚀 Mode Pro activé — session uniquement'
-                : '🔒 Mode Pro désactivé'
-            );
-        });
-    }
-
-    /**
-     * Mode testeur — 7 taps rapides sur le numéro de version.
-     * Active/désactive isPro en RAM uniquement (jamais persisté en localStorage).
-     * Pattern Android "Options développeur". Non documenté dans l'UI.
-     */
-    private initTesterMode(): void {
-        const versionEl = this.element?.querySelector('#settings-version');
-        if (!versionEl) return;
-
-        let taps = 0;
-        let lastTap = 0;
-
-        versionEl.addEventListener('click', () => {
-            const now = Date.now();
-            if (now - lastTap > 1500) taps = 0; // reset si trop lent entre les taps
-            taps++;
-            lastTap = now;
-
-            if (taps >= 4 && taps < 7) {
-                void haptic('light');
-                // Feedback subtil : clignotement opacité
-                (versionEl as HTMLElement).style.opacity = '1';
-                setTimeout(() => { (versionEl as HTMLElement).style.opacity = '0.5'; }, 150);
-            }
-
-            if (taps === 7) {
-                // Toggle isPro en RAM — pas de saveProStatus() → non persisté
-                state.isPro = !state.isPro;
-                taps = 0;
-                void haptic('success');
-                showToast(state.isPro
-                    ? '🚀 Mode testeur ON — isPro activé (session uniquement)'
-                    : '🔒 Mode testeur OFF — retour tier gratuit'
-                );
-                // Mettre à jour le label pour confirmer l'état
-                (versionEl as HTMLElement).style.color = state.isPro
-                    ? 'var(--accent)'
-                    : 'var(--text-3)';
-            }
-        });
-    }
 
     private bindSlider(id: string, stateKey: keyof typeof state, dispId: string, onChange?: () => void) {
         if (!this.element) return;
@@ -382,9 +310,8 @@ export class SettingsSheet extends BaseComponent {
         const section = document.createElement('div');
         section.className = 'settings-section';
         section.innerHTML = `
-            <h2 class="settings-section-title">${i18n.t('settings.section.language')}</h2>
-            <div class="setting-row">
-                <label for="lang-select" class="setting-label">${i18n.t('settings.section.language')}</label>
+            <div class="setting-row" style="margin-top:8px;">
+                <div class="setting-label" data-i18n="settings.section.language">${i18n.t('settings.section.language')}</div>
                 <select id="lang-select" class="lang-select">
                     <option value="fr">Français</option>
                     <option value="de">Deutsch</option>
