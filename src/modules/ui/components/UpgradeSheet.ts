@@ -5,6 +5,9 @@ import { haptic } from '../../haptics';
 import { iapService } from '../../iapService';
 
 export class UpgradeSheet extends BaseComponent {
+    /** Guard : loadPrices() ne s'exécute qu'une seule fois (évite le burst getOfferings) */
+    private _pricesLoaded = false;
+
     constructor() {
         super('template-upgrade', 'sheet-container');
     }
@@ -15,55 +18,44 @@ export class UpgradeSheet extends BaseComponent {
         const closeBtn = this.element.querySelector('#close-upgrade');
         closeBtn?.addEventListener('click', () => sheetManager.close());
 
-        // Afficher les prix réels depuis RevenueCat dès l'ouverture
-        this.loadPrices();
+        // Afficher les prix réels depuis RevenueCat — une seule fois
+        if (!this._pricesLoaded) {
+            this._pricesLoaded = true;
+            this.loadPrices();
+        }
+
+        // Helper commun pour les 3 boutons d'achat
+        const handlePurchase = async (
+            btn: HTMLButtonElement,
+            type: 'yearly' | 'monthly' | 'lifetime'
+        ) => {
+            btn.classList.add('btn-loading');
+            btn.setAttribute('aria-busy', 'true');
+            void haptic('medium');
+            const success = await iapService.purchase(type);
+            btn.classList.remove('btn-loading');
+            btn.removeAttribute('aria-busy');
+            if (success) {
+                void haptic('success');
+                showToast('✅ Accès Pro activé !'); // TODO i18n
+                sheetManager.close();
+            } else {
+                // Achat annulé, non disponible ou offres non configurées
+                showToast('Achat impossible — vérifiez votre connexion ou réessayez.'); // TODO i18n
+            }
+        };
 
         // CTA — achat annuel (offre mise en avant)
         const ctaBtn = this.element.querySelector<HTMLButtonElement>('#upgrade-cta-btn');
-        ctaBtn?.addEventListener('click', async () => {
-            if (!ctaBtn) return;
-            ctaBtn.classList.add('btn-loading');
-            ctaBtn.setAttribute('aria-busy', 'true');
-            void haptic('medium');
-            const success = await iapService.purchase('yearly');
-            ctaBtn.classList.remove('btn-loading');
-            ctaBtn.removeAttribute('aria-busy');
-            if (success) {
-                void haptic('success');
-                showToast('✅ Accès Pro activé !'); // TODO i18n
-                sheetManager.close();
-            }
-        });
+        ctaBtn?.addEventListener('click', () => { void handlePurchase(ctaBtn, 'yearly'); });
 
         // Bouton mensuel
         const monthlyBtn = this.element.querySelector<HTMLButtonElement>('#upgrade-monthly-btn');
-        monthlyBtn?.addEventListener('click', async () => {
-            if (!monthlyBtn) return;
-            monthlyBtn.classList.add('btn-loading');
-            void haptic('medium');
-            const success = await iapService.purchase('monthly');
-            monthlyBtn.classList.remove('btn-loading');
-            if (success) {
-                void haptic('success');
-                showToast('✅ Accès Pro activé !'); // TODO i18n
-                sheetManager.close();
-            }
-        });
+        monthlyBtn?.addEventListener('click', () => { void handlePurchase(monthlyBtn, 'monthly'); });
 
         // Bouton lifetime
         const lifetimeBtn = this.element.querySelector<HTMLButtonElement>('#upgrade-lifetime-btn');
-        lifetimeBtn?.addEventListener('click', async () => {
-            if (!lifetimeBtn) return;
-            lifetimeBtn.classList.add('btn-loading');
-            void haptic('medium');
-            const success = await iapService.purchase('lifetime');
-            lifetimeBtn.classList.remove('btn-loading');
-            if (success) {
-                void haptic('success');
-                showToast('✅ Accès Pro activé !'); // TODO i18n
-                sheetManager.close();
-            }
-        });
+        lifetimeBtn?.addEventListener('click', () => { void handlePurchase(lifetimeBtn, 'lifetime'); });
 
         // Restaurer les achats
         const restoreBtn = this.element.querySelector('#upgrade-restore-btn');

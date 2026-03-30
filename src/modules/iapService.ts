@@ -106,7 +106,15 @@ class IAPService {
             }
 
             const { customerInfo } = await Purchases.purchasePackage({ aPackage: pkg });
-            return this.updateStateFromCustomerInfo(customerInfo);
+            const granted = this.updateStateFromCustomerInfo(customerInfo);
+            // Si Play Store valide mais RevenueCat n'a pas encore accordé l'entitlement
+            // (validation serveur en attente — typique sans Service Account), re-vérifier après 2s
+            if (!granted) {
+                await new Promise(r => setTimeout(r, 2000));
+                const { customerInfo: ci2 } = await Purchases.getCustomerInfo();
+                return this.updateStateFromCustomerInfo(ci2);
+            }
+            return granted;
 
         } catch (e: any) {
             if (e?.userCancelled) {
@@ -146,7 +154,7 @@ class IAPService {
 
     /** Retourne les prix formatés pour affichage dans l'UpgradeSheet */
     async getPrices(): Promise<{ monthly: string; yearly: string; lifetime: string }> {
-        const defaults = { monthly: '€2.99/mois', yearly: '€19.99/an', lifetime: '€99.99' };
+        const defaults = { monthly: '€3.99/mois', yearly: '€29.99/an', lifetime: '€99.99' };
         if (!this.initialized) return defaults;
         try {
             const offering = await this.getCurrentOffering();

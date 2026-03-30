@@ -12,12 +12,17 @@ import { sheetManager } from './ui/core/SheetManager';
 
 // Messages par feature (sera remplacé par i18n quand les clés seront ajoutées)
 const FEATURE_LABELS: Record<string, string> = {
-    lod_18:      'LOD 18 (détail max)',
-    satellite:   'Couche Satellite',
-    multi_gpx:   'Tracés GPX illimités — comparez vos sorties côte à côte',
-    export_gpx:  'Export GPX',
-    rec_unlimited: 'Enregistrement illimité',
-    offline_multi: 'Zones offline illimitées',
+    lod_18:           'LOD 18 (détail max)',
+    satellite:        'Couche Satellite',
+    multi_gpx:        'Tracés GPX illimités — comparez vos sorties côte à côte',
+    export_gpx:       'Export GPX',
+    rec_unlimited:    'Enregistrement illimité',
+    offline_multi:    'Zones offline illimitées',
+    solar_calendar:   'Calendrier solaire — simulez n\'importe quelle date',
+    rec_stats:        'Stats avancées REC (VAM, Naismith) + Export GPX',
+    weather_extended: 'Prévisions 3-5 jours + alertes montagne',
+    weather_pro:      'Station Météo Pro complète',
+    inclinometer:     'Inclinomètre numérique PRO',
 };
 
 /**
@@ -33,6 +38,9 @@ export function showUpgradePrompt(feature: string): void {
 /**
  * Accorde le statut Pro (appelé après validation IAP par RevenueCat).
  * Point unique de changement d'état Pro → persistance automatique.
+ *
+ * Le gate LOD est géré dynamiquement dans scene.ts via `effectiveMaxZoom`
+ * (lit `state.isPro` au moment du rendu) — pas besoin de toucher MAX_ALLOWED_ZOOM ici.
  */
 export function grantProAccess(): void {
     state.isPro = true;
