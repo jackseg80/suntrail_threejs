@@ -230,6 +230,58 @@ export class WeatherSheet extends BaseComponent {
         return svg;
     }
 
+    /**
+     * Version gratuite : jour 1 visible, jours 2-3 grisés avec badge PRO.
+     * Tap sur un jour verrouillé → showUpgradePrompt.
+     */
+    private buildDailyForecastPreview(wd: NonNullable<typeof state.weatherData>): HTMLElement {
+        const container = document.createElement('div');
+        const days = (wd.daily ?? []).slice(0, 3);
+        days.forEach((d, index) => {
+            const isLocked = index > 0;
+            const row = document.createElement('div');
+            row.classList.add('weather-daily-row');
+            if (isLocked) {
+                row.style.opacity = '0.38';
+                row.style.cursor = 'pointer';
+                row.addEventListener('click', () => showUpgradePrompt('weather_extended'));
+            }
+
+            const icon = document.createElement('span');
+            icon.classList.add('weather-daily-icon');
+            icon.textContent = isLocked ? '🔒' : getWeatherIcon(d.code);
+
+            const dateEl = document.createElement('span');
+            dateEl.classList.add('weather-daily-date');
+            const dt = new Date(d.date);
+            dateEl.textContent = dt.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+
+            const temps = document.createElement('span');
+            temps.classList.add('weather-daily-temps');
+            temps.textContent = isLocked ? '— / —' : `${Math.round(d.tempMax)}°/${Math.round(d.tempMin)}°`;
+
+            if (isLocked) {
+                const badge = document.createElement('span');
+                badge.style.cssText = 'font-size:10px; color:var(--accent,#4a8ef8); font-weight:700; margin-left:auto; padding-left:8px;';
+                badge.textContent = 'PRO ↗';
+                row.appendChild(icon);
+                row.appendChild(dateEl);
+                row.appendChild(temps);
+                row.appendChild(badge);
+            } else {
+                const sub = document.createElement('span');
+                sub.classList.add('weather-daily-sub');
+                sub.innerHTML = `💧${d.precipSum.toFixed(1)}mm · 💨${Math.round(d.windSpeedMax)}km/h`;
+                row.appendChild(icon);
+                row.appendChild(dateEl);
+                row.appendChild(temps);
+                row.appendChild(sub);
+            }
+            container.appendChild(row);
+        });
+        return container;
+    }
+
     private buildDailyForecast(wd: NonNullable<typeof state.weatherData>): HTMLElement {
         const container = document.createElement('div');
         const days = (wd.daily ?? []).slice(0, 3);
@@ -326,7 +378,16 @@ export class WeatherSheet extends BaseComponent {
             // Scroll 12h seulement
             this.contentEl.appendChild(this.buildHourlyScroll(wd, 12));
 
-            // Upsell banner
+            // Prévisions 3 jours : jour 1 normal, jours 2-3 grisés/verrouillés
+            if (wd.daily && wd.daily.length > 0) {
+                const forecastTitle = document.createElement('div');
+                forecastTitle.classList.add('exp-probe-section-title');
+                forecastTitle.textContent = i18n.t('weather.section.forecast3d');
+                this.contentEl.appendChild(forecastTitle);
+                this.contentEl.appendChild(this.buildDailyForecastPreview(wd));
+            }
+
+            // Upsell banner (compact, sous les lignes verrouillées)
             const upsell = document.createElement('div');
             upsell.classList.add('weather-upsell-banner');
             const upsellSpan = document.createElement('span');
@@ -334,7 +395,7 @@ export class WeatherSheet extends BaseComponent {
             const upsellBtn = document.createElement('button');
             upsellBtn.className = 'btn-go weather-upsell-btn';
             upsellBtn.textContent = 'Pro ↗';
-            upsellBtn.onclick = () => showUpgradePrompt('weather_pro');
+            upsellBtn.onclick = () => showUpgradePrompt('weather_extended');
             upsell.appendChild(upsellSpan);
             upsell.appendChild(upsellBtn);
             this.contentEl.appendChild(upsell);
