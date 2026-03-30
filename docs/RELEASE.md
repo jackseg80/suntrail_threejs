@@ -84,6 +84,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | 529 | 5.13.9 | v5.13.9 | Ghost tiles LOD (fin flash blanc) + prefetch LOD±1 idle + adaptive batch | 2026-03-30 |
 | **530** | **5.14.0** | **v5.14.0** | **AbortController fetches tuiles + indicateur de chargement** | **2026-03-30** |
 | 531 | 5.15.0 | v5.15.0 | Bugfixes altitude/IAP/LOD + OpenTopoMap LOD 6-10 + 2D/3D FAB + SOS + inclinomètre responsive | 2026-03-30 |
+| 532 | 5.16.0 | v5.16.0 | Tutoriel onboarding 6 slides + bouton Aide dans Réglages | 2026-03-31 |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 
