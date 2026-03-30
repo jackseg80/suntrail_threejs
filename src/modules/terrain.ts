@@ -55,12 +55,13 @@ async function processLoadQueue() {
             return da - db;
         });
 
-        // Adaptive batch : doublement temporaire si beaucoup de tuiles visibles chargent encore
-        // (transition LOD en cours). Absorbe le backlog plus vite sans perturber les autres cas.
+        // Adaptive batch : +2 tuiles supplémentaires si beaucoup de tuiles visibles chargent encore.
+        // Conservateur (+2 au lieu de ×2) pour éviter de saturer la queue Overpass/hydrology
+        // avec trop de tiles simultanées qui déclenchent chacune un fetch Overpass.
         const visiblePending = sorted.filter(t => t.isVisible()).length;
         const isTransitioning = visiblePending >= 4;
         const effectiveBatch = isTransitioning
-            ? Math.max(1, state.MAX_BUILDS_PER_CYCLE * 2)
+            ? Math.max(1, state.MAX_BUILDS_PER_CYCLE + 2)
             : Math.max(1, state.MAX_BUILDS_PER_CYCLE);
         const batch = sorted.slice(0, effectiveBatch);
         batch.forEach(t => loadQueue.delete(t));

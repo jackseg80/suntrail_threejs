@@ -80,7 +80,7 @@ export function isPositionInFrance(lat: number, lon: number): boolean {
 // --- GESTIONNAIRE OVERPASS LIFO ---
 let overpassQueue: { query: string, resolve: Function }[] = [];
 let isOverpassProcessing = false;
-const OVERPASS_DELAY = 800;
+const OVERPASS_DELAY = 1000; // 1s entre requêtes (était 800ms — un peu plus de marge)
 
 export async function fetchOverpassData(query: string): Promise<any> {
     return new Promise((resolve) => {
@@ -111,10 +111,14 @@ async function processNextOverpass() {
         const response = await fetch(`${server}?data=${encodeURIComponent(query)}`);
         
         if (response.status === 429) {
+            // CORRECTION RACE CONDITION : libérer le verrou avant de partir en timeout.
+            // Appeler processNextOverpass() directement sans guard créait des instances
+            // concurrentes → bombardement exponentiel de l'API.
+            isOverpassProcessing = false;
             setTimeout(() => {
                 overpassQueue.push({ query, resolve });
-                processNextOverpass();
-            }, 4000);
+                if (!isOverpassProcessing) processNextOverpass(); // Guard normal
+            }, 5000); // 5s de recul après un 429 (serveur en surcharge)
             return;
         }
         
