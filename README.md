@@ -25,13 +25,15 @@ SunTrail est un moteur de terrain 3D WebGL conçu pour les randonneurs et alpini
 
 ## Modèle Freemium
 
-| Tier Gratuit | Tier Pro (€19.99/an) |
+| Tier Gratuit | Tier Pro (€29.99/an · €3.99/mois · €79.99 lifetime) |
 |---|---|
-| Carte topo CH+FR (LOD ≤ 14) | LOD 18 + Satellite |
-| GPS live + météo | Simulation solaire 24h |
-| 1 tracé GPX | Multi-tracés + export GPX |
-| REC 30 min | REC illimité |
+| Carte topo CH+FR (LOD ≤ 14) | LOD 18 + Satellite HD |
+| GPS live + météo 12h | Météo 3-5 jours + données avancées |
+| Simulation solaire (jour actuel) | Calendrier illimité (dates passées/futures) |
+| 1 tracé GPX + **REC illimité** | Multi-tracés + export GPX + stats VAM/Naismith |
+| Pentes visuelles 30°/35°/40° | Inclinomètre numérique + gradient 2° |
 | Offline 1 zone | Offline illimité + PMTiles |
+| Top 10 sommets visibles | Index complet + moteur de recherche |
 
 ## Features techniques
 

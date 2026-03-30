@@ -1,4 +1,4 @@
-# SunTrail - Base de Connaissance (v5.11.2)
+# SunTrail - Base de Connaissance (v5.14.0)
 
 Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTrail. Il consigne les décisions architecturales critiques et les solutions aux problèmes complexes.
 
@@ -218,10 +218,33 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 - **Keystore** : `android/suntrail.keystore` (hors Git). `android/keystore.properties` (hors Git, rempli avec mot de passe réel).
 - **Build release** : `JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease --no-daemon` depuis `android/`.
 - **CI/CD** : `.github/workflows/release.yml` — déclenché sur `git tag v*.*.*`. Nécessite 6 GitHub Secrets : `KEYSTORE_BASE64`, `STORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS`, `VITE_MAPTILER_KEY`, `VITE_REVENUECAT_KEY`.
-- **versionCode** : Incrémenter à chaque upload Play Console. **Toujours consulter le tableau dans `docs/RELEASE.md`** pour la dernière valeur. Dernière valeur : **520**.
-- **versionName** : Version sémantique lisible (ex: `5.13.0`), jamais de suffixe dans build.gradle. Le tag git peut avoir un suffixe (`v5.12.9-ct`) mais pas le versionName.
+- **versionCode** : Incrémenter à chaque upload Play Console. **Toujours consulter le tableau dans `docs/RELEASE.md`** pour la dernière valeur. Dernière valeur : **521**.
+- **versionName** : Version sémantique lisible (ex: `5.14.0`), jamais de suffixe dans build.gradle. Le tag git peut avoir un suffixe (`v5.12.9-ct`) mais pas le versionName.
 - **CI trigger** : Tag format `v*.*.*` obligatoire (avec `v` au début). Suffixes autorisés. Sans `v` = pas de CI.
 - **Play Store** : App `com.suntrail.threejs` — **Closed Testing soumis** (versionCode 519). Dernière version en prod : v5.13.0 (versionCode 520). Voir `docs/RELEASE.md` pour le workflow complet.
+
+## 💰 Monétisation Sprint 8 (v5.14.0)
+
+### Architecture IAP RevenueCat
+- **SDK key** : `goog_` prefix = clé Google Play production (dans `.env` → `VITE_REVENUECAT_KEY`). Côté code dans `iapService.ts` → `Purchases.configure({ apiKey: SDK_KEY })`.
+- **Service Account JSON** : Lié dans RevenueCat → App Settings → Google Play. Permet la validation serveur des achats. Sans lui, `getOfferings()` échoue avec `ConfigurationError` mais le customer est quand même créé.
+- **Customer anonyme** : RevenueCat crée un customer dès le premier démarrage natif. ID visible dans logcat : `$RCAnonymousID:xxxxx`. Retrouvable via recherche dans RevenueCat → Customers.
+- **Grant manuel** : RevenueCat → Customers → recherche par anonymous ID → Grant Entitlement → `SunTrail 3D Pro`.
+- **Customers vide** : La liste ne montre que les users avec achats actifs. Rechercher l'ID explicitement pour un user gratuit.
+
+### Gate LOD Pro (v5.14.0) — Architecture
+- **⚠️ RÈGLE CRITIQUE** : `MAX_ALLOWED_ZOOM` reflète toujours la valeur native du preset (14 eco / 16 balanced / 18 perf+ultra). **Ne jamais l'écraser à 14 pour les gratuits.**
+- Le gate LOD gratuit est appliqué dynamiquement dans `scene.ts` et `terrain.ts` : `effectiveMaxZoom = state.isPro ? MAX_ALLOWED_ZOOM : Math.min(MAX_ALLOWED_ZOOM, 14)`.
+- Cela garantit que tout changement de `state.isPro` (tester, toggle, IAP, localStorage) est immédiatement effectif sans re-appliquer le preset.
+- **Ancien bug (pré-v5.14)** : `applyPreset()` écrasait `MAX_ALLOWED_ZOOM = 14` pour les gratuits → le mode testeur ne débloquait pas le LOD.
+
+### Features Pro Sprint 8
+| Feature | Fichier | Gate |
+|---|---|---|
+| Calendrier solaire (dates passées/futures) | `TimelineComponent.ts` | `if (!state.isPro && !isToday)` → reset + `showUpgradePrompt('solar_calendar')` |
+| Inclinomètre numérique | `InclinometerWidget.ts` | Visible si `state.isPro && state.ZOOM >= 13` |
+| REC illimité (stats avancées Pro) | `TrackSheet.ts` | Limite 30min supprimée ; upsell post-session si `!state.isPro` |
+| Météo jours 2-3 | `ExpertSheets.ts` | `opacity:0.38` + badge PRO + `showUpgradePrompt('weather_extended')` |
 
 ## 🚀 Commandes de Maintenance
 - `npm test` : Lancer la suite de 190 tests unitaires (Vitest).

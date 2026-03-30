@@ -581,6 +581,130 @@ App sur appareil physique Android connecté en USB (débogage activé).
 
 ---
 
+## 🚀 Sprint 8 — Monétisation v2 & Features Pro (v5.14+)
+
+> 📋 **Contexte** : Révision complète de la stratégie freemium suite à l'analyse concurrentielle (30 mars 2026).
+> Voir `docs/MONETIZATION.md` pour la philosophie complète et les décisions D7–D10.
+> 🔁 **Workflow** : Chaque item se termine par `npm run check` (0 erreurs) + `npm test` (suite verte) avant commit.
+
+### 🔴 P0 — Pricing (impact immédiat, effort minimal)
+
+> À faire **avant** toute autre implémentation Sprint 8. Changer les prix dans RevenueCat ne touche pas au code.
+
+- [ ] **Mise à jour prix RevenueCat** : Modifier dans le dashboard RevenueCat les produits IAP :
+  - `suntrail_pro_annual` : €19.99 → **€29.99/an**
+  - `suntrail_pro_monthly` : €2.99 → **€3.99/mois**
+  - `suntrail_pro_lifetime` : conserver à **€99.99** (existant — ratio 3.3× annuel, ne pas toucher)
+- [ ] **Trial 7 jours sur plan annuel** : Activer dans RevenueCat Dashboard → Offerings → plan annuel → "Free Trial: 7 days". Mettre à jour les strings i18n `upgrade_trial_cta` dans les 4 locales (`fr.json`, `de.json`, `it.json`, `en.json`).
+- [ ] **Mise à jour `UpgradeSheet.ts`** : Afficher la mention "7 jours gratuits" dans le CTA annuel. Mettre à jour le texte "€19.99/an" → "€29.99/an" (hardcodé en fallback si RevenueCat ne retourne rien).
+- [ ] **Mise à jour `README.md`** : Tableau freemium → €29.99/an.
+
+---
+
+### 🔴 P1 — Verrou Calendrier Solaire (gate le plus désirable)
+
+> **Fichier** : `src/modules/ui/components/TimelineComponent.ts`
+> **Principe** : La timeline 24h du jour actuel reste gratuite. L'accès au calendrier (dates passées/futures) passe en Pro.
+> **UX** : L'icône calendrier affiche un 🔒 si `!state.isPro`. Tap → `showUpgradePrompt('solar_calendar')`.
+
+- [ ] **Gate icône calendrier** : Dans `TimelineComponent.ts`, trouver le handler de clic sur l'icône calendrier/sélecteur de date. Wrapper avec `if (!state.isPro) { showUpgradePrompt('solar_calendar'); return; }`.
+- [ ] **Visual lock** : Ajouter un badge 🔒 ou une classe CSS `locked` sur l'icône calendrier si `!state.isPro`. Se synchronise avec `state.subscribe('isPro', ...)`.
+- [ ] **Hint gratuit non bloquant** : Sous le slider de la timeline, si `!state.isPro`, afficher une ligne discrète : *"Simulez à n'importe quelle date avec Pro"* + lien upgrade. Dismissable. Ne jamais bloquer le slider 24h.
+- [ ] **Gate raccourcis saisons** : Boutons solstices/équinoxes (feature à implémenter) → Pro uniquement.
+- [ ] **i18n** : Ajouter clés `solar_calendar_locked`, `solar_calendar_upsell_hint` dans les 4 locales.
+- [ ] **Test** : `npm test` → vérifier que les tests TimelineComponent existants passent. Ajouter 2 tests : gate actif si `!isPro`, absent si `isPro`.
+
+---
+
+### 🔴 P2 — Inclinomètre Numérique PRO
+
+> **Principe** : Widget flottant qui affiche la pente (° et %) du point du terrain situé sous le réticule central de la caméra. Raycasting Three.js → intersection terrain → calcul normal map locale.
+> **Fichiers concernés** : nouveau widget UI + `src/modules/terrain.ts` (export fonction raycasting) + `src/modules/scene.ts` (update loop).
+
+- [ ] **Raycasting terrain** : Exporter depuis `terrain.ts` une fonction `getTerrainSlopeAtCenter(camera, scene): { degrees: number, percent: number } | null`. Utilise `THREE.Raycaster` depuis le centre écran. Retourne `null` si aucune intersection.
+- [ ] **Widget UI** : Créer `src/modules/ui/components/InclinometerWidget.ts`. Petit badge fixe `position: absolute`, bas-centre de l'écran, au-dessus de la nav bar. Affiche `▲ 32° (62%)`. Visible uniquement si `state.isPro && state.SHOW_INCLINOMETER`.
+- [ ] **Gate Pro** : Toggle dans `LayersSheet` ou `SettingsSheet` → `state.SHOW_INCLINOMETER`. Si `!state.isPro` → `showUpgradePrompt('inclinometer')`.
+- [ ] **Performance** : Le raycasting ne doit s'exécuter que toutes les 200ms (pas à chaque frame). Accumulateur dans `scene.ts`, même pattern que `waterTimeAccum`.
+- [ ] **i18n** : Clés `inclinometer_label`, `inclinometer_locked` dans les 4 locales.
+- [ ] **Test** : Ajouter tests unitaires pour `getTerrainSlopeAtCenter` (mock raycaster, vérifier calcul angle depuis normal).
+
+---
+
+### 🟡 P3 — Suppression Limite REC 30min + Upsell Post-Session
+
+> **Fichier** : `src/modules/ui/components/TrackSheet.ts`
+> **Principe** : Supprimer le timer de coupure. Remplacer par une bannière d'upsell non bloquante à la fin de la session.
+> **⚠️ RÈGLE** : Ne jamais gater `saveRecordedGPXInternal()` — l'utilisateur ne doit jamais perdre ses données.
+
+- [ ] **Supprimer `setTimeout(REC_FREE_LIMIT_MS)`** : Retirer le bloc `if (!state.isPro)` qui déclenche l'auto-stop à 30min dans `TrackSheet.ts`. Confirmer que `saveRecordedGPXInternal()` est toujours appelé sur STOP manuel.
+- [ ] **Upsell post-REC** : Au moment du STOP (manuel), si `!state.isPro`, afficher une bannière persistante (non modale) dans le `TrackSheet` : *"Votre tracé est sauvegardé. Débloquez l'export GPX, VAM et les stats Naismith avec Pro."* + bouton "Voir Pro". Dismissable.
+- [ ] **Gate stats avancées** : Les stats VAM, pente moyenne, estimation Naismith sont calculées mais affichées grisées avec un badge 🔒 si `!state.isPro`. Tap → `showUpgradePrompt('rec_stats')`.
+- [ ] **Retirer `REC_FREE_LIMIT_MS`** de `state.ts` (ou marquer deprecated si utilisé ailleurs).
+- [ ] **i18n** : Clés `rec_upsell_banner`, `rec_stats_locked` dans les 4 locales.
+- [ ] **Test** : Vérifier que le test "auto-stop 30min" existant est mis à jour ou supprimé. Ajouter test "STOP déclenche sauvegarde interne sans gate".
+
+---
+
+### 🟡 P4 — Upsell Météo (jours 2-3 grisés)
+
+> **Fichier** : Widget météo dans `src/modules/ui/components/` (identifier le composant exact)
+> **Principe** : Les jours 2-3 de la prévision sont visibles mais grisés avec un badge 🔒 si `!state.isPro`. Tap sur un jour grisé → `showUpgradePrompt('weather_forecast')`.
+
+- [ ] **Identifier le composant météo** : Chercher le rendu du widget météo multi-jours dans les composants UI.
+- [ ] **Griser jours 2-3** : Si `!state.isPro`, appliquer une classe CSS `weather-day--locked` sur les jours 2 et 3. Style : `opacity: 0.4`, icône 🔒 en overlay, `pointer-events: none` sauf pour le tap de gate.
+- [ ] **Handler tap** : Ajouter event listener sur `.weather-day--locked` → `showUpgradePrompt('weather_extended')`.
+- [ ] **Badge PRO visible** : Badge "PRO" discret affiché sur les jours grisés, même sans interaction.
+- [ ] **i18n** : Clé `weather_extended_locked` dans les 4 locales.
+
+---
+
+### 🟡 P5 — Onboarding Paywall (après "wow moment" 3D)
+
+> **Principe** : Afficher une page d'upgrade non bloquante **une seule fois**, après la première interaction 3D (zoom ou rotation). Pas à l'installation.
+> **Fichier** : `src/modules/ui.ts` ou nouveau `src/modules/onboardingPaywall.ts`
+
+- [ ] **Déclencheur** : Dans `scene.ts`, dans le handler `controls 'end'` (fin d'interaction), vérifier un flag `suntrail_onboarding_paywall_shown` en localStorage. Si absent ET `!state.isPro` → dispatcher event `eventBus.emit('showOnboardingPaywall')`.
+- [ ] **Composant** : Page overlay (non-bloquante, dismissable via ✕ ou swipe) listant les 5 features Pro les plus désirables avec icônes. CTA : "Essayer 7 jours gratuits" + lien secondaire "Plus tard".
+- [ ] **Flag localStorage** : `suntrail_onboarding_paywall_v1` — ne s'affiche qu'une fois. Reset sur désinstallation uniquement.
+- [ ] **Délai** : Attendre ≥ 30s d'usage avant le premier affichage (éviter l'immédiateté intrusive).
+- [ ] **i18n** : Clés `onboarding_paywall_title`, `onboarding_paywall_cta`, `onboarding_paywall_dismiss`.
+
+---
+
+### 🟢 P6 — Gate Offline (1 zone pour les gratuits)
+
+> **Fichier** : `src/modules/ui/components/ConnectivitySheet.ts`
+> **Note** : Gate mentionné dans la checklist v5.13 mais non implémenté. Fort différenciateur — AllTrails, Gaia GPS et Iphigénie en font leur argument Pro n°1.
+
+- [ ] **Compter les zones offline** : Dans `ConnectivitySheet.ts`, lors du téléchargement d'une zone, vérifier `if (!state.isPro && offlineZonesCount >= 1) { showUpgradePrompt('offline_zones'); return; }`.
+- [ ] **`offlineZonesCount`** : Exposer depuis le Service Worker ou depuis l'état du cache le nombre de zones téléchargées. Peut se baser sur les entrées `suntrail-offline-zone-*` dans localStorage.
+- [ ] **Visual** : Dans la liste des zones téléchargées, si `!state.isPro` et `count >= 1`, afficher le bouton "Télécharger" grisé avec badge 🔒.
+- [ ] **i18n** : Clés `offline_limit_locked`, `offline_limit_upsell`.
+
+---
+
+### 🟢 P7 — Mode Photo PRO (watermark uniquement)
+
+> **Décision D10-bis** : Le screenshot sans UI est gratuit. Seul le watermark personnalisé (coordonnées GPS, altitude, logo SunTrail) est Pro.
+> **Raison** : Gater le screenshot de base frustre les utilisateurs gratuits sans bénéfice réel.
+
+- [ ] **Screenshot sans UI (gratuit)** : Bouton "Mode Photo" dans la nav bar ou FAB → masque temporairement toute l'UI (`visibility: hidden` sur les overlays) → `html2canvas` ou screenshot natif → restore l'UI.
+- [ ] **Watermark Pro** : Si `state.isPro`, ajouter en bas à droite : `{ coordonnées GPS } | { altitude }m | SunTrail 3D`. Configurable dans les réglages.
+- [ ] **Gate** : Le bouton "Mode Photo" est accessible à tous. L'option "Watermark personnalisé" dans les réglages affiche le badge PRO si `!state.isPro`.
+
+---
+
+### ✅ Checklist finale Sprint 8
+
+- [ ] `npm run check` → 0 erreurs TypeScript
+- [ ] `npm test` → suite verte (ajouter tests pour chaque gate)
+- [ ] Tester mode testeur (7 taps version) → tous les gates se lèvent
+- [ ] Vérifier sur appareil Android : prix affichés correctement par RevenueCat
+- [ ] Vérifier trial 7 jours : CTA "7 jours gratuits" visible dans `UpgradeSheet`
+- [ ] Bump version `package.json` → `5.14.0`, `versionCode: 521`
+
+---
+
 ## 🔧 Priorité 5-ter : Corrections Techniques Post-Lancement (v5.13)
 
 ### Amélioration Détection GPU / Presets
