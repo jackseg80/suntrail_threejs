@@ -36,6 +36,14 @@ startup_screenshot.png
 nul
 %TEMP%*/
 
+# Dépôts de référence clonés localement par les agents IA (lecture seule, non committer)
+cesium/
+deck.gl/
+maplibre-gl-js/
+%TEMP%cesium/
+%TEMP%mapboxgl/
+%TEMP%threejs/
+
 # Android Studio — fichiers de session IDE (changent à chaque déploiement)
 android/.idea/deploymentTargetSelector.xml
 android/.idea/workspace.xml
