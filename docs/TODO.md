@@ -1,6 +1,6 @@
-# SunTrail 3D - Roadmap Révisée (v5.13.8)
+# SunTrail 3D - Roadmap Révisée (v5.14.0)
 
-## ✅ Corrections & Features (v5.13.7 → v5.13.8) — 2026-03-30
+## ✅ Corrections & Features (v5.13.7 → v5.14.0) — 2026-03-30
 
 - [x] **Conformité Play Store (v5.13.7)** : Disclaimer entité gouvernementale + URLs swisstopo.admin.ch / geoportail.gouv.fr dans descriptions FR/EN et dans l'app (Réglages → Sources de données & Légal).
 - [x] **Fix GPS autoSelectMapSource (v5.13.8)** : `hasManualSource = true` inconditionnellement dans `loadSettings()` bloquait l'auto-switch source pour tous les utilisateurs avec settings sauvegardés. Fix : inférer depuis MAP_SOURCE (manual = satellite/ign/osm uniquement).
@@ -8,7 +8,10 @@
 - [x] **SMS SOS (v5.13.8)** : Bouton "📱 Envoyer par SMS" dans le panel SOS. URI scheme `sms:?body=` — ouvre l'app SMS native, zéro permission. Traduit FR/EN/DE/IT.
 - [x] **Ghost tiles LOD (v5.13.9)** : Flash blanc supprimé lors des transitions de zoom. Ancien LOD reste visible (fondu 1.2s) pendant que le nouveau charge. `fadingOutTiles` Set + `startFadeOut()` / `updateFadeOut()` dans `Tile`.
 - [x] **Prefetch LOD±1 idle (v5.13.9)** : `prefetchAdjacentLODs()` déclenché depuis scene.ts (isIdleMode, toutes les 5s). LOD+1 (RANGE/2 autour centre) + LOD-1 (5×5). Max 20 tuiles/appel.
-- [x] **Adaptive batch LOD (v5.13.9)** : `processLoadQueue()` double le batch (`MAX_BUILDS_PER_CYCLE×2`) si ≥ 4 tuiles visibles encore en attente (transition détectée).
+- [x] **Adaptive batch LOD conservateur (v5.13.9→hotfix)** : `processLoadQueue()` +2 tuiles si ≥ 4 visibles en attente (était ×2 — trop agressif, saturait la queue Overpass).
+- [x] **Fix race condition Overpass 429 (hotfix)** : `processNextOverpass()` appelait une 2ème instance concurrente dans le handler 429 → bombardement exponentiel. Fix : libérer `isOverpassProcessing=false` + guard `if (!isOverpassProcessing)` dans le callback. OVERPASS_DELAY 800→1000ms, délai 429 4→5s.
+- [x] **AbortController fetches tuiles (v5.14.0)** : Annulation HTTP réelle au dispose de tuile. Chaîne : `Tile.dispose()` → `cancelTileLoad(taskId)` → `tileWorkerManager.cancelTile()` → message `{type:'cancel'}` au worker → `AbortController.abort()` → fetch HTTP annulé. `tileWorkerManager.loadTile()` retourne désormais `{promise, taskId}`. Impact : changement LOD → 15-25 fetches anciens annulés, bande passante libérée immédiatement.
+- [x] **Indicateur de chargement réseau (v5.14.0)** : Barre 3px shimmer (`--accent`) en haut de l'écran. Apparaît après 600ms de `isProcessingTiles=true` (ignore les hits cache). `<div id="tile-loading-bar">` + CSS animation + abonnement permanent dans ui.ts.
 
 ---
 
