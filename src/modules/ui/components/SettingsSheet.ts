@@ -7,6 +7,7 @@ import { updateWeatherVisibility } from '../../weather';
 import { deleteTerrainCache, downloadOfflineZone, setPMTilesSource } from '../../tileLoader';
 import { SharedAPIKeyComponent } from './SharedAPIKeyComponent';
 import { i18n } from '../../../i18n/I18nService';
+import { showOnboarding } from '../../onboardingTutorial';
 import type { Locale } from '../../../i18n/I18nService';
 
 import { sheetManager } from '../core/SheetManager';
@@ -145,6 +146,9 @@ export class SettingsSheet extends BaseComponent {
 
         // Language selector
         this.createLanguageSelector();
+
+        // Tutorial button
+        this.createTutorialButton();
 
         // Initial UI update
         this.updateAllUI();
@@ -341,6 +345,40 @@ export class SettingsSheet extends BaseComponent {
                 saveSettings();
             });
         }
+    }
+
+    private createTutorialButton(): void {
+        if (!this.element) return;
+        const panel = this.element.querySelector('#panel') || this.element;
+
+        const section = document.createElement('div');
+        section.className = 'settings-section';
+        section.innerHTML = `
+            <style>
+                .tutorial-help-btn {
+                    width: 100%;
+                    padding: 12px 16px;
+                    background: transparent;
+                    border: 1px solid var(--border, rgba(255,255,255,0.1));
+                    border-radius: var(--radius-md, 10px);
+                    color: var(--text-2, rgba(255,255,255,0.75));
+                    font-size: var(--text-sm, 0.85rem);
+                    cursor: pointer;
+                    text-align: center;
+                    transition: opacity 0.15s;
+                }
+                .tutorial-help-btn:hover { opacity: 0.8; }
+                .tutorial-help-btn:active { opacity: 0.7; }
+            </style>
+            <button id="tutorial-btn" class="tutorial-help-btn" data-i18n="settings.tutorial.btn">
+                ${i18n.t('settings.tutorial.btn')}
+            </button>
+        `;
+        panel.appendChild(section);
+
+        section.querySelector('#tutorial-btn')?.addEventListener('click', () => {
+            void showOnboarding();
+        });
     }
 
     private refreshTerrain = () => {

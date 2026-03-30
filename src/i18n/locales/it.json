@@ -112,6 +112,9 @@
       "ignLabel": "IGN Géoplateforme — geoportail.gouv.fr",
       "osmLabel": "OpenStreetMap — openstreetmap.org",
       "openmeteoLabel": "Open-Meteo — open-meteo.com"
+    },
+    "tutorial": {
+      "btn": "\u2753 Aiuto & Tutorial"
     }
   },
   "search": {
@@ -380,6 +383,43 @@
     "tiles": "Tile attive",
     "workers": "Workers",
     "alert": { "textures": "Numero elevato di texture GPU" }
+  },
+  "onboarding": {
+    "skip": "Salta",
+    "next": "Avanti",
+    "start": "Inizia",
+    "slide1": {
+      "title": "Naviga sulla mappa",
+      "desc": "1 dito per spostarsi \u00b7 Pizzica per zoomare \u00b7 2 dita per ruotare la vista"
+    },
+    "slide2": {
+      "title": "Inclina la vista",
+      "desc": "Posiziona 2 dita affiancate (orizzontalmente) e scorri verso l\u2019alto o il basso per inclinare"
+    },
+    "slide3": {
+      "title": "I pulsanti di controllo",
+      "desc": "Sul lato destro dello schermo:",
+      "compass": "Bussola",
+      "compassDesc": "riorienta verso il Nord",
+      "layers": "Livelli",
+      "layersDesc": "cambia il tipo di mappa",
+      "mode": "2D / 3D",
+      "modeDesc": "alterna il rilievo 3D",
+      "gps": "Posizione",
+      "gpsDesc": "centra sul tuo GPS"
+    },
+    "slide4": {
+      "title": "Importa i tuoi percorsi",
+      "desc": "Carica un file GPX dalle tue escursioni. Il percorso appare in 3D sul terreno reale."
+    },
+    "slide5": {
+      "title": "Simula il sole",
+      "desc": "La timeline in basso mostra l\u2019insolazione a qualsiasi ora del giorno."
+    },
+    "slide6": {
+      "title": "Rimani al sicuro",
+      "desc": "In caso di emergenza, il pulsante SOS in alto a destra mostra la tua posizione esatta ai soccorritori."
+    }
   },
   "common": {
     "close": "Chiudi",

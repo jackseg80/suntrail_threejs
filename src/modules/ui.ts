@@ -4,6 +4,7 @@ import { state, loadSettings, loadProStatus } from './state';
 import { iapService } from './iapService';
 import { requestGPSDisclosure } from './gpsDisclosure';
 import { requestAcceptance } from './acceptanceWall';
+import { requestOnboarding } from './onboardingTutorial';
 import { i18n } from '../i18n/I18nService';
 import { initScene, flyTo } from './scene';
 import { updateVisibleTiles, resetTerrain } from './terrain';
@@ -112,7 +113,7 @@ export function initUI(): void {
                     setupScreen.style.display = 'none';
                     // Acceptance Wall : affiché une fois la scène visible, après la disparition
                     // du setup screen. Premier lancement ou nouvelle version des CGU.
-                    void requestAcceptance();
+                    void requestAcceptance().then(() => requestOnboarding());
                 }, 420);
             }
 

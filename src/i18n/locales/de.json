@@ -112,6 +112,9 @@
       "ignLabel": "IGN Géoplateforme — geoportail.gouv.fr",
       "osmLabel": "OpenStreetMap — openstreetmap.org",
       "openmeteoLabel": "Open-Meteo — open-meteo.com"
+    },
+    "tutorial": {
+      "btn": "\u2753 Hilfe & Tutorial"
     }
   },
   "search": {
@@ -380,6 +383,43 @@
     "tiles": "Aktive Kacheln",
     "workers": "Workers",
     "alert": { "textures": "Hohe GPU-Texturanzahl" }
+  },
+  "onboarding": {
+    "skip": "\u00dcberspringen",
+    "next": "Weiter",
+    "start": "Loslegen",
+    "slide1": {
+      "title": "Karte navigieren",
+      "desc": "1 Finger zum Verschieben \u00b7 Zusammendr\u00fccken zum Zoomen \u00b7 2 Finger zum Drehen"
+    },
+    "slide2": {
+      "title": "Ansicht neigen",
+      "desc": "Legen Sie 2 Finger nebeneinander (horizontal) und wischen Sie nach oben oder unten"
+    },
+    "slide3": {
+      "title": "Die Bedienknöpfe",
+      "desc": "Auf der rechten Seite:",
+      "compass": "Kompass",
+      "compassDesc": "richtet zum Norden aus",
+      "layers": "Ebenen",
+      "layersDesc": "wechselt den Kartentyp",
+      "mode": "2D / 3D",
+      "modeDesc": "schaltet 3D-Relief um",
+      "gps": "Position",
+      "gpsDesc": "zentriert auf Ihr GPS"
+    },
+    "slide4": {
+      "title": "Touren importieren",
+      "desc": "Laden Sie eine GPX-Datei von Ihren Wanderungen. Die Route erscheint 3D auf dem echten Gel\u00e4nde."
+    },
+    "slide5": {
+      "title": "Sonne simulieren",
+      "desc": "Die Timeline unten zeigt die Sonneneinstrahlung zu jeder Tageszeit."
+    },
+    "slide6": {
+      "title": "Sicher bleiben",
+      "desc": "Im Notfall zeigt der SOS-Knopf oben rechts Ihren genauen Standort f\u00fcr die Rettungskr\u00e4fte."
+    }
   },
   "common": {
     "close": "Schliessen",

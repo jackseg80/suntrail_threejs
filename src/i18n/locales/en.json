@@ -112,6 +112,9 @@
       "ignLabel": "IGN Géoplateforme — geoportail.gouv.fr",
       "osmLabel": "OpenStreetMap — openstreetmap.org",
       "openmeteoLabel": "Open-Meteo — open-meteo.com"
+    },
+    "tutorial": {
+      "btn": "\u2753 Help & Tutorial"
     }
   },
   "search": {
@@ -380,6 +383,43 @@
     "tiles": "Active Tiles",
     "workers": "Workers",
     "alert": { "textures": "High GPU texture count" }
+  },
+  "onboarding": {
+    "skip": "Skip",
+    "next": "Next",
+    "start": "Start",
+    "slide1": {
+      "title": "Navigate the map",
+      "desc": "1 finger to pan \u00b7 Pinch to zoom \u00b7 2 fingers to rotate the view"
+    },
+    "slide2": {
+      "title": "Tilt the view",
+      "desc": "Place 2 fingers side by side (horizontally) and swipe up or down to tilt the camera"
+    },
+    "slide3": {
+      "title": "Control buttons",
+      "desc": "On the right side of the screen:",
+      "compass": "Compass",
+      "compassDesc": "reorients to North",
+      "layers": "Layers",
+      "layersDesc": "changes the map type",
+      "mode": "2D / 3D",
+      "modeDesc": "toggles 3D relief",
+      "gps": "Position",
+      "gpsDesc": "centers on your GPS"
+    },
+    "slide4": {
+      "title": "Import your tracks",
+      "desc": "Load a GPX file from your hikes. The route appears in 3D on the real terrain."
+    },
+    "slide5": {
+      "title": "Simulate the sun",
+      "desc": "The timeline at the bottom shows sunlight at any time of day."
+    },
+    "slide6": {
+      "title": "Stay safe",
+      "desc": "In an emergency, the SOS button at the top right shows your exact position for rescue services."
+    }
   },
   "common": {
     "close": "Close",

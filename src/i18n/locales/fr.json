@@ -112,6 +112,9 @@
       "ignLabel": "IGN Géoplateforme — geoportail.gouv.fr",
       "osmLabel": "OpenStreetMap — openstreetmap.org",
       "openmeteoLabel": "Open-Meteo — open-meteo.com"
+    },
+    "tutorial": {
+      "btn": "\u2753 Aide & Tutoriel"
     }
   },
   "search": {
@@ -380,6 +383,43 @@
     "tiles": "Tuiles actives",
     "workers": "Workers",
     "alert": { "textures": "Textures GPU élevées" }
+  },
+  "onboarding": {
+    "skip": "Passer",
+    "next": "Suivant",
+    "start": "Commencer",
+    "slide1": {
+      "title": "Naviguez sur la carte",
+      "desc": "1 doigt pour d\u00e9placer \u00b7 Pincez pour zoomer \u00b7 2 doigts pour faire pivoter la vue"
+    },
+    "slide2": {
+      "title": "Inclinez la vue",
+      "desc": "Posez 2 doigts c\u00f4te \u00e0 c\u00f4te (horizontalement) et glissez vers le haut ou le bas pour incliner la cam\u00e9ra"
+    },
+    "slide3": {
+      "title": "Les boutons de contr\u00f4le",
+      "desc": "Sur la droite de l\u2019\u00e9cran :",
+      "compass": "Boussole",
+      "compassDesc": "r\u00e9oriente vers le Nord",
+      "layers": "Couches",
+      "layersDesc": "change le type de carte",
+      "mode": "2D / 3D",
+      "modeDesc": "bascule le relief 3D",
+      "gps": "Position",
+      "gpsDesc": "centre sur votre GPS"
+    },
+    "slide4": {
+      "title": "Importez vos trac\u00e9s",
+      "desc": "Chargez un fichier GPX depuis vos randonn\u00e9es. Le trac\u00e9 s\u2019affiche en 3D sur le terrain r\u00e9el."
+    },
+    "slide5": {
+      "title": "Simulez le soleil",
+      "desc": "La timeline en bas permet de visualiser l\u2019ensoleillement \u00e0 n\u2019importe quelle heure de la journ\u00e9e."
+    },
+    "slide6": {
+      "title": "Restez en s\u00e9curit\u00e9",
+      "desc": "En cas d\u2019urgence, le bouton SOS en haut \u00e0 droite affiche votre position exacte pour les secours."
+    }
   },
   "common": {
     "close": "Fermer",
