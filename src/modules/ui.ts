@@ -441,7 +441,7 @@ function handleMapClick(e: MouseEvent) {
             const clickLatLon = document.getElementById('click-latlon');
             if (clickLatLon) clickLatLon.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
             const clickAlt = document.getElementById('click-alt');
-            if (clickAlt) clickAlt.textContent = `${Math.round(state.lastClickedCoords.alt)} m`;
+            if (clickAlt) clickAlt.textContent = `${Math.round(state.lastClickedCoords.alt / state.RELIEF_EXAGGERATION)} m`;
         }
     } else {
         state.hasLastClicked = false;
