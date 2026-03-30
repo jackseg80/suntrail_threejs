@@ -31,7 +31,8 @@ export class InclinometerWidget {
         this.el.setAttribute('aria-live', 'polite');
         this.el.style.cssText = [
             'position:fixed',
-            'bottom:80px',
+            // Respecte la nav bar quelle que soit sa hauteur (safe-area-inset-bottom variable selon l'appareil)
+            'bottom:calc(var(--bar-h) + var(--safe-bottom) + 16px)',
             'left:50%',
             'transform:translateX(-50%)',
             'background:rgba(0,0,0,0.55)',

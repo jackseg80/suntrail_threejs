@@ -659,7 +659,11 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
         if (!activeTiles.has(camKey)) { const t = new Tile(camTile.x, camTile.y, zoom, camKey); activeTiles.set(camKey, t); loadQueue.add(t); }
     }
 
-    let range = (zoom <= 10) ? Math.max(state.RANGE, 3) : (zoom >= 17) ? Math.max(3, Math.floor(state.RANGE/1.5)) : state.RANGE;
+    // LOD ≤ 10 : vue globale, on garantit au moins RANGE=3 tiles de contexte.
+    // LOD ≥ 17 : zoom max — diviseur 1.2 (au lieu de 1.5) + plancher 4 pour High/Ultra.
+    //   performance (RANGE=5) : floor(5/1.2)=4  → 4 (était 3 avec /1.5)
+    //   ultra      (RANGE=12) : floor(12/1.2)=10 → 10 (était 8 avec /1.5)
+    let range = (zoom <= 10) ? Math.max(state.RANGE, 3) : (zoom >= 17) ? Math.max(4, Math.floor(state.RANGE/1.2)) : state.RANGE;
     let buildsThisCycle = 0;
     const MAX_BUILDS_PER_CYCLE = state.isUserInteracting ? state.MAX_BUILDS_PER_CYCLE : state.MAX_BUILDS_PER_CYCLE * 2; 
 
