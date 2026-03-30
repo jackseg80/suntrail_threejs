@@ -259,6 +259,20 @@
             <div class="setting-label" data-i18n="settings.label.weather">Météo</div>
             <input type="checkbox" id="weather-toggle" checked>
         </div>
+        <div style="margin-bottom: 15px; padding-left: 4px;">
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-3); margin-bottom: 4px;">
+                <span data-i18n="weather.label.intensity">INTENSITÉ</span>
+                <span id="weather-density-disp" style="font-family:var(--font-mono);">2500</span>
+            </div>
+            <input type="range" id="weather-density-slider" min="0" max="15000" step="500" value="2500">
+        </div>
+        <div style="margin-bottom: 15px; padding-left: 4px;">
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-3); margin-bottom: 4px;">
+                <span data-i18n="weather.label.speed">VITESSE</span>
+                <span id="weather-speed-disp" style="font-family:var(--font-mono);">1.0</span>
+            </div>
+            <input type="range" id="weather-speed-slider" min="0.5" max="3.0" step="0.1" value="1.0">
+        </div>
         <div class="setting-row">
             <div class="setting-label" data-i18n="settings.label.signposts">Signalisation 3D</div>
             <input type="checkbox" id="poi-toggle" checked>
@@ -420,28 +434,7 @@
     </div>
     <div id="weather-content"></div>
     
-    <div style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border);">
-        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:15px;">
-            <button class="weather-btn" data-weather="clear" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; padding:12px; cursor:pointer; font-size: 20px;">☀️</button>
-            <button class="weather-btn" data-weather="rain" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; padding:12px; cursor:pointer; font-size: 20px;">🌧️</button>
-            <button class="weather-btn" data-weather="snow" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; padding:12px; cursor:pointer; font-size: 20px;">❄️</button>
-        </div>
-        
-        <div style="margin-bottom:12px;">
-            <div style="display:flex; justify-content:space-between; font-size:11px; color: var(--text-3); margin-bottom:4px;">
-                <span data-i18n="weather.label.intensity">INTENSITÉ</span>
-                <span id="weather-density-disp">2500</span>
-            </div>
-            <input type="range" id="weather-density-slider" min="0" max="15000" step="500" value="2500">
-        </div>
-        <div>
-            <div style="display:flex; justify-content:space-between; font-size:11px; color: var(--text-3); margin-bottom:4px;">
-                <span data-i18n="weather.label.speed">VITESSE</span>
-                <span id="weather-speed-disp">1.0</span>
-            </div>
-            <input type="range" id="weather-speed-slider" min="0.5" max="3.0" step="0.1" value="1.0">
-        </div>
-    </div>
+
 
 </div>
 </template>

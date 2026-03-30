@@ -96,12 +96,18 @@ class IAPService {
             const offering = await this.getCurrentOffering();
             if (!offering) return false;
 
+            // RevenueCat utilise 'ANNUAL' (pas 'YEARLY') comme packageType pour les abonnements annuels.
+            // L'identifier 'suntrail_pro_annual' ne contient pas 'yearly'.
+            // On normalise 'yearly' → 'annual' pour correspondre à la convention RevenueCat.
+            const normalized = packageType === 'yearly' ? 'annual' : packageType;
             const pkg = offering.availablePackages.find(
-                p => p.packageType.toLowerCase() === packageType ||
+                p => p.packageType.toLowerCase() === normalized ||
+                     p.packageType.toLowerCase() === packageType ||
+                     p.identifier.toLowerCase().includes(normalized) ||
                      p.identifier.toLowerCase().includes(packageType)
             );
             if (!pkg) {
-                console.warn(`[IAP] Package '${packageType}' introuvable dans l'offering.`);
+                console.warn(`[IAP] Package '${packageType}' (normalized: '${normalized}') introuvable dans l'offering.`, offering.availablePackages.map(p => ({ id: p.identifier, type: p.packageType })));
                 return false;
             }
 

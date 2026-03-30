@@ -54,6 +54,8 @@ export class SettingsSheet extends BaseComponent {
         this.bindToggle('buildings-toggle', 'SHOW_BUILDINGS', this.refreshTerrain);
         this.bindToggle('hydro-toggle', 'SHOW_HYDROLOGY', (val: boolean) => updateHydrologyVisibility(val));
         this.bindToggle('weather-toggle', 'SHOW_WEATHER', (val: boolean) => updateWeatherVisibility(val));
+        this.bindSlider('weather-density-slider', 'WEATHER_DENSITY', 'weather-density-disp');
+        this.bindSlider('weather-speed-slider', 'WEATHER_SPEED', 'weather-speed-disp');
         this.bindToggle('poi-toggle', 'SHOW_SIGNPOSTS', this.refreshTerrain);
         this.bindToggle('shadow-toggle', 'SHADOWS', (val: boolean) => {
             if (state.sunLight) state.sunLight.castShadow = val;
@@ -131,7 +133,8 @@ export class SettingsSheet extends BaseComponent {
             'FOG_FAR', 'ENERGY_SAVER',
             'SHOW_STATS', 'SHOW_DEBUG', 'SHOW_VEGETATION', 'SHOW_BUILDINGS',
             'SHOW_HYDROLOGY', 'SHOW_SIGNPOSTS', 'SHADOWS', 'LOAD_DELAY_FACTOR',
-            'isFollowingTrail', 'SHOW_TRAILS', 'SHOW_SLOPES', 'PERFORMANCE_PRESET'
+            'isFollowingTrail', 'SHOW_TRAILS', 'SHOW_SLOPES', 'PERFORMANCE_PRESET',
+            'WEATHER_DENSITY', 'WEATHER_SPEED'
         ];
 
         keysToSubscribe.forEach(key => {
@@ -258,6 +261,12 @@ export class SettingsSheet extends BaseComponent {
                     }
                 });
                 break;
+            case 'WEATHER_DENSITY':
+                this.updateSlider('weather-density-slider', 'weather-density-disp', value);
+                break;
+            case 'WEATHER_SPEED':
+                this.updateSlider('weather-speed-slider', 'weather-speed-disp', value);
+                break;
         }
     }
 
@@ -301,6 +310,8 @@ export class SettingsSheet extends BaseComponent {
         this.updateUIFromState('isFollowingTrail', state.isFollowingTrail);
         this.updateUIFromState('SHOW_TRAILS', state.SHOW_TRAILS);
         this.updateUIFromState('SHOW_SLOPES', state.SHOW_SLOPES);
+        this.updateUIFromState('WEATHER_DENSITY', state.WEATHER_DENSITY);
+        this.updateUIFromState('WEATHER_SPEED', state.WEATHER_SPEED);
     }
 
     private createLanguageSelector(): void {

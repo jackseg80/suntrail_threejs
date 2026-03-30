@@ -4,6 +4,23 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.14.1] - 2026-03-30
+### 🔧 Corrections UI, IAP et cartographie frontière
+
+#### Sliders météo déplacés vers Réglages Avancés
+- **`index.html`** : sliders Intensité et Vitesse des effets météo retirés du panneau `#template-weather` et ajoutés dans `#template-settings` (sous le toggle "Météo"), avec le même style que les autres sliders avancés.
+- **`SettingsSheet.ts`** : `bindSlider` pour `WEATHER_DENSITY` et `WEATHER_SPEED` migrés ici. Abonnements state et `updateAllUI` complétés.
+- **`ExpertSheets.ts`** : `WeatherSheet` nettoyée — méthodes `bindSlider`/`updateSlider` et import `saveSettings` supprimés. Boutons ☀️🌧️❄️ de simulation manuelle supprimés (artefacts de test, incohérents avec le bulletin météo réel).
+
+#### Fix bouton achat annuel non fonctionnel
+- **`iapService.ts`** : `purchase('yearly')` échouait silencieusement car RevenueCat retourne `packageType = "ANNUAL"` (pas `"YEARLY"`) et l'identifier `suntrail_pro_annual` ne contient pas `"yearly"`. Fix : normalisation `yearly → annual` avant le `find()`. Log de diagnostic ajouté en cas d'échec (liste les packages disponibles).
+
+#### Fix tuiles noires à la frontière Suisse/Allemagne (LOD 11+)
+- **`tileLoader.ts`** : `getColorUrl()` et `getOverlayUrl()` utilisaient le centre de la tuile pour décider de la source (SwissTopo/IGN). À LOD 11, une tuile centrée en Suisse peut s'étendre en Allemagne → SwissTopo retournait ses tuiles avec zone noire hors couverture + watermark légal visible.
+- **Fix** : nouvelle fonction `isTileFullyInRegion()` qui vérifie les **4 coins** de la tuile. SwissTopo et IGN ne sont utilisés que si la tuile est entièrement dans le pays. Sinon fallback MapTiler topo-v2 ou OSM. Appliqué à `getColorUrl` ET `getOverlayUrl`. `getTileCenter()` supprimée (devenue inutile).
+
+---
+
 ## [5.14.0] - 2026-03-30
 ### ⚡ AbortController tuiles + indicateur de chargement
 

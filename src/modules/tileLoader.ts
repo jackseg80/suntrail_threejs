@@ -134,23 +134,30 @@ export async function fetchWithCache(url: string, usePersistentCache: boolean = 
 }
 
 /**
- * Calcule les coordonnées Lng/Lat du centre d'une tuile.
+ * Vérifie si une tuile est ENTIÈREMENT dans un pays donné (check 4 coins).
+ * Évite les tuiles-frontière partiellement hors couverture (ex: SwissTopo noir hors CH).
  */
-function getTileCenter(tx: number, ty: number, zoom: number): { lat: number, lon: number } {
+function isTileFullyInRegion(
+    tx: number, ty: number, zoom: number,
+    check: (lat: number, lon: number) => boolean
+): boolean {
     const n = Math.pow(2, zoom);
-    const lon = (tx + 0.5) / n * 360 - 180;
-    const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (ty + 0.5) / n)));
-    const lat = latRad * 180 / Math.PI;
-    return { lat, lon };
+    const latN = Math.atan(Math.sinh(Math.PI * (1 - 2 * ty / n))) * 180 / Math.PI;
+    const latS = Math.atan(Math.sinh(Math.PI * (1 - 2 * (ty + 1) / n))) * 180 / Math.PI;
+    const lonW = tx / n * 360 - 180;
+    const lonE = (tx + 1) / n * 360 - 180;
+    return check(latN, lonW) && check(latN, lonE) && check(latS, lonW) && check(latS, lonE);
 }
 
 /**
  * Génère l'URL pour la texture de couleur/carte d'une tuile.
  */
 export function getColorUrl(tx: number, ty: number, zoom: number): string {
-    const center = getTileCenter(tx, ty, zoom);
-    const inCH = isPositionInSwitzerland(center.lat, center.lon);
-    const inFR = isPositionInFrance(center.lat, center.lon);
+    // Pour les sources nationales (SwissTopo, IGN), on vérifie que la tuile entière
+    // est dans le pays — évite les zones noires hors-couverture sur les tuiles-frontière.
+    const inCH = isTileFullyInRegion(tx, ty, zoom, isPositionInSwitzerland);
+    const inFR = isTileFullyInRegion(tx, ty, zoom, isPositionInFrance);
+
     const hasKey = state.MK && state.MK.length > 10 && !state.isMapTilerDisabled;
     
     // --- UNIFICATION GLOBALE (v5.7.4) ---
@@ -194,15 +201,11 @@ export function getOverlayUrl(tx: number, ty: number, zoom: number): string | nu
     const MIN_TRAIL_LOD = 11;
     if (!state.SHOW_TRAILS || zoom < MIN_TRAIL_LOD) return null;
     
-    const center = getTileCenter(tx, ty, zoom);
-    
-    // Suisse (SwissTopo Raster)
-    if (isPositionInSwitzerland(center.lat, center.lon)) {
+    // Même logique 4 coins que getColorUrl : sentiers nationaux uniquement si tuile entièrement dans le pays
+    if (isTileFullyInRegion(tx, ty, zoom, isPositionInSwitzerland)) {
         return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${zoom}/${tx}/${ty}.png`;
     }
-    
-    // France (IGN Raster)
-    if (isPositionInFrance(center.lat, center.lon)) {
+    if (isTileFullyInRegion(tx, ty, zoom, isPositionInFrance)) {
         return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=TRANSPORT.WANDERWEGE&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${zoom}&TILEROW=${ty}&TILECOL=${tx}`;
     }
     

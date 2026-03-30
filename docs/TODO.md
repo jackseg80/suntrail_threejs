@@ -788,6 +788,12 @@ App sur appareil physique Android connecté en USB (débogage activé).
 ---
 
 ## ⏳ Backlog & Recherche (Indéfini)
+- [ ] **Investigation WebGPU** : Three.js `WebGPURenderer` + Compute Shaders pour le calcul des Normal Maps (actuellement CPU/WebWorkers → gain GPU potentiel).
+  **Conditions d'activation** (toutes requises) :
+  - WebGPU disponible dans Android System WebView pour ≥ 70% des devices cibles (surveiller : https://chromestatus.com/feature/6213121689518080)
+  - Support iOS WKWebView (bloquant pour D5 — non disponible en 2026)
+  - Three.js WebGPU shadows stables (surveiller releases r170+)
+  **Risque documenté** : tentative r160 — shadow maps cassées (incompatibilité TSL vs `ShaderMaterial` GLSL custom eau/végétation/terrain). Ne pas réessayer avant résolution officielle du portage shadows dans Three.js. Gain attendu : Normal Maps via Compute Shader (actuellement WebWorkers CPU), culling végétation GPU. Pas de gain sur le rendu terrain (WebGL déjà optimal).
 - [ ] **Waypoints & Partage** : Marquage personnel et Deep Linking (URL synchronisée).
 - [ ] **Mode Nuit Avancé** : Pollution lumineuse urbaine (NASA).
 - [x] **v5.6.8** : Détection Galaxy A53 (Mali GPU) et réglages par défaut sécurisés.

@@ -1,5 +1,5 @@
 import { BaseComponent } from '../core/BaseComponent';
-import { state, saveSettings } from '../../state';
+import { state } from '../../state';
 import { runSolarProbe, getAltitudeAt, type SolarAnalysisResult } from '../../analysis';
 import { worldToLngLat } from '../../geo';
 import { showToast } from '../../utils';
@@ -30,59 +30,11 @@ export class WeatherSheet extends BaseComponent {
             sheetManager.close();
         });
 
-        // Simulation Météo Manuelle (conservé intact)
-        this.element.querySelectorAll('.weather-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                state.currentWeather = (btn as HTMLElement).dataset.weather as any;
-                state.WEATHER_DENSITY = (state.currentWeather === 'clear') ? 0 : 5000;
-            });
-        });
-
-        // Sliders (conservés intacts)
-        this.bindSlider('weather-density-slider', 'WEATHER_DENSITY', 'weather-density-disp');
-        this.bindSlider('weather-speed-slider', 'WEATHER_SPEED', 'weather-speed-disp');
-
         // Subscriptions
         this.addSubscription(state.subscribe('weatherData', () => this.updateUI()));
         this.addSubscription(state.subscribe('isPro', () => this.updateUI()));
-        this.addSubscription(state.subscribe('WEATHER_DENSITY', (val: number) => this.updateSlider('weather-density-slider', 'weather-density-disp', val)));
-        this.addSubscription(state.subscribe('WEATHER_SPEED', (val: number) => this.updateSlider('weather-speed-slider', 'weather-speed-disp', val)));
-        
+
         this.updateUI();
-        this.updateSlider('weather-density-slider', 'weather-density-disp', state.WEATHER_DENSITY);
-        this.updateSlider('weather-speed-slider', 'weather-speed-disp', state.WEATHER_SPEED);
-    }
-
-    private bindSlider(id: string, stateKey: keyof typeof state, dispId: string, onChange?: () => void) {
-        if (!this.element) return;
-        const slider = document.getElementById(id) as HTMLInputElement;
-        const disp = document.getElementById(dispId);
-        if (slider) {
-            slider.setAttribute('aria-label', stateKey);
-            slider.setAttribute('aria-valuemin', slider.min);
-            slider.setAttribute('aria-valuemax', slider.max);
-            slider.setAttribute('aria-valuenow', slider.value);
-            slider.addEventListener('input', () => {
-                (state as any)[stateKey] = parseFloat(slider.value);
-                if (disp) disp.textContent = slider.value;
-                slider.setAttribute('aria-valuenow', slider.value);
-            });
-            slider.addEventListener('change', () => {
-                saveSettings();
-                if (onChange) onChange();
-            });
-        }
-    }
-
-    private updateSlider(id: string, dispId: string, value: number) {
-        if (!this.element) return;
-        const slider = document.getElementById(id) as HTMLInputElement;
-        const disp = document.getElementById(dispId);
-        if (slider) {
-            slider.value = value.toString();
-            slider.setAttribute('aria-valuenow', value.toString());
-        }
-        if (disp) disp.textContent = value.toString();
     }
 
     private makeStat(parent: HTMLElement, label: string, value: string, cssClass = 'exp-stat-card') {

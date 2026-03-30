@@ -1,4 +1,4 @@
-# SunTrail - Base de Connaissance (v5.14.0)
+# SunTrail - Base de Connaissance (v5.14.1)
 
 Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTrail. Il consigne les décisions architecturales critiques et les solutions aux problèmes complexes.
 
@@ -28,6 +28,7 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 - **Timeline FAB (v5.9.0)** : La classe `body.timeline-open` masque `.fab-stack` quand la timeline est ouverte. Togglée dans `TimelineComponent`. Ne pas utiliser le sélecteur CSS `~` (ordre DOM non garanti).
 
 ### Moteur de Tuiles & Performance (`terrain.ts` / `tileLoader.ts`)
+- **Sélection source par coins de tuile (v5.14.1)** : `getColorUrl()` et `getOverlayUrl()` utilisent `isTileFullyInRegion()` (4 coins) au lieu du centre pour décider si une tuile utilise SwissTopo ou IGN. Une tuile-frontière dont le centre est en Suisse mais dont la moitié nord est en Allemagne ne doit PAS utiliser SwissTopo (retourne zone noire hors couverture). SwissTopo/IGN uniquement si **tous les 4 coins** sont dans le pays. Sinon fallback MapTiler/OSM. **Ne jamais revenir à un check centre-seul pour les sources nationales.**
 - **WebWorkers Pool** : 8 workers asynchrones (`tileWorker.ts`) pour le fetch et le calcul des Normal Maps (relief).
 - **Material Pooling (`materialPool.ts`)** : Réutilisation des shaders pour éviter les micro-saccades de compilation Three.js (v5.6.4).
 - **Gestion Mémoire (`memory.ts`)** : Utilisation stricte de `disposeObject()` pour libérer la VRAM lors du déchargement des tuiles.
