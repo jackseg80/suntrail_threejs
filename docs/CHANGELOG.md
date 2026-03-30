@@ -4,6 +4,40 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.15.0] - 2026-03-30
+### 🐛 Bugfixes majeurs · Refonte sources cartographiques · UX
+
+#### Fix altitude affichée en double (lié à l'exagération du relief)
+- **`ui.ts`** : `getAltitudeAt()` retourne l'altitude **multipliée** par `RELIEF_EXAGGERATION` (usage correct pour positionner les objets 3D sur le terrain). Mais l'affichage texte du `#coords-pill` utilisait cette valeur brute → altitude × 2 par défaut (exagération 2.0x). Fix : division par `state.RELIEF_EXAGGERATION` au moment du rendu texte uniquement (`${Math.round(alt / state.RELIEF_EXAGGERATION)} m`). L'`InclinometerWidget` et `profile.ts` étaient déjà corrects.
+
+#### Fix toast "Accès Pro activé" affiché 3 fois
+- **`UpgradeSheet.ts` ligne 40** : suppression du `showToast('✅ Accès Pro activé !')` doublon — `grantProAccess()` dans `iap.ts` est la seule source de vérité pour ce toast.
+- **`iapService.ts` ligne 50** : guard `if (!state.isPro)` dans `addCustomerInfoUpdateListener` — le listener ne re-déclenche pas `grantProAccess()` si le statut Pro a déjà été accordé par `purchase()`.
+
+#### Fix prix test Google Play "3.99€ for 5 minutes"
+- **`iapService.ts`** : `getPrices()` sanitise le `priceString` retourné par RevenueCat avec un regex (`/\s*(for|per|pour|...)\s*\d+\s*(minutes?|min\.?)/gi`) qui supprime le suffixe de période de test Google Play. En production, le prix s'affiche normalement. En Closed Testing, les abonnements ont des périodes raccourcies (1 mois → 5 min) — comportement **intentionnel** de Google Play, pas un bug.
+
+#### Refonte sources cartographiques LOD 6-10 : OpenTopoMap remplace MapTiler
+- **`tileLoader.ts` — `getColorUrl()`** : à `zoom <= 10`, on utilisait `api.maptiler.com/maps/topo-v2/` (coût quota, risque de 429 global). Remplacé par `{a|b|c}.tile.opentopomap.org` (CC-BY-SA, 3 sous-domaines en rotation via `(tx+ty) % 3`). Qualité visuelle identique à cette échelle, zéro coût MapTiler.
+- **`preloadChOverviewTiles()`** : **désactivée** — le bulk pre-seeding de ~300-400 tuiles Suisse LOD 6-9 viole la politique OSM/OpenTopoMap ("Pre-seeding large areas in advance is prohibited"). Fonction conservée en no-op documenté avec `@deprecated`. Le cache PWA Service Worker couvre les besoins offline.
+- **`loadTileData()` — `nativeMax`** : le cap artificiel à zoom 15 pour `MAP_SOURCE === 'opentopomap'` est supprimé. OpenTopoMap n'est plus utilisé à LOD > 10 (swisstopo/IGN/MapTiler sont exclusifs à ces zooms) → `nativeMax = 18` universel.
+
+#### Fix range tuiles LOD 17-18 trop restrictif pour High/Ultra
+- **`terrain.ts` ligne 662** : formule de réduction du range à LOD ≥ 17 : diviseur `1.5 → 1.2`, plancher `3 → 4`. Résultat : preset performance LOD 17-18 passe de 3 à **4 tuiles** de portée, ultra de 8 à **10 tuiles**.
+
+#### UX : bouton 2D/3D déplacé vers la FAB stack
+- **`index.html`** : le bouton `#nav-2d-toggle` (anciennement 1er onglet de la nav-bar) est maintenant dans la `.fab-stack` (côté droit, entre Couches et GPS). Logique : action de vue plutôt que de navigation entre sections.
+- **`NavigationBar.ts`** : `this.element.querySelector('#nav-2d-toggle')` → `document.querySelector('#nav-2d-toggle')` (bouton hors template nav-bar).
+- **`style.css`** : règle `#nav-2d-toggle.active` pour l'état 2D actif (fond accent, glow) dans la FAB stack. Règle `#nav-2d-toggle:disabled` conservée (LOD ≤ 10 lock).
+
+#### UX : icône SOS clarifiée
+- **`index.html`** : l'icône `⚠️` (cercle + point d'exclamation) remplacée par `🆘` — cohérent avec l'emoji déjà utilisé dans le template `#template-sos`.
+
+#### Fix : inclinomètre masqué par la nav bar sur certains appareils
+- **`InclinometerWidget.ts`** : `bottom: 80px` (inline style hardcodé) → `bottom: calc(var(--bar-h) + var(--safe-bottom) + 16px)`. Sur les appareils avec navigation gestuelle (`--safe-bottom` > 8px), la nav bar totale dépasse 80px et écrasait le widget. Les variables CSS custom fonctionnent dans les inline styles (résolution au rendu).
+
+---
+
 ## [5.14.1] - 2026-03-30
 ### 🔧 Corrections UI, IAP et cartographie frontière
 

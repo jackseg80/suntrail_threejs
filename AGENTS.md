@@ -1,4 +1,4 @@
-# SunTrail - Base de Connaissance (v5.14.1)
+# SunTrail - Base de Connaissance (v5.15.0)
 
 Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTrail. Il consigne les décisions architecturales critiques et les solutions aux problèmes complexes.
 
@@ -26,6 +26,11 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 - **Haptics (v5.9.0)** : Helper `src/modules/haptics.ts` avec `haptic(type)`. Appel via `void haptic('medium')` (jamais await). Utilisé uniquement sur les swipes et les confirmations de succès — PAS sur les clics courants.
 - **Glassmorphism** : Style visuel unifié basé sur des variables CSS (`--glass-*`) avec flou de profondeur (20px) et saturation optimisée.
 - **Timeline FAB (v5.9.0)** : La classe `body.timeline-open` masque `.fab-stack` quand la timeline est ouverte. Togglée dans `TimelineComponent`. Ne pas utiliser le sélecteur CSS `~` (ordre DOM non garanti).
+
+### Sources Cartographiques LOD 6-10 (v5.15.0)
+- **OpenTopoMap à LOD ≤ 10 (v5.15.0)** : `getColorUrl()` utilise `{a|b|c}.tile.opentopomap.org` quand `zoom <= 10`. MapTiler n'est **pas** appelé à ces zooms — coût quota trop élevé pour une qualité identique, risque de 429 global. Rotation des 3 sous-domaines via `(tx+ty) % 3`. Licence CC-BY-SA.
+- **`preloadChOverviewTiles()` désactivée (v5.15.0)** : le bulk pre-seeding des ~300-400 tuiles Suisse LOD 6-9 viole la politique d'utilisation OSM/OpenTopoMap. Fonction conservée en no-op `@deprecated`. **Ne jamais réactiver** sans accord explicite du fournisseur ou serveur de tuiles auto-hébergé (PMTiles).
+- **`nativeMax = 18` universel (v5.15.0)** : le cap `nativeMax = 15` pour `MAP_SOURCE === 'opentopomap'` a été supprimé. OpenTopoMap n'est utilisé qu'à LOD ≤ 10 (zoom < 15), donc le cap était sans effet — mais trompeur pour les agents. À LOD > 10, swisstopo/IGN/MapTiler supportent tous zoom 18 nativement.
 
 ### Moteur de Tuiles & Performance (`terrain.ts` / `tileLoader.ts`)
 - **Sélection source par coins de tuile (v5.14.1)** : `getColorUrl()` et `getOverlayUrl()` utilisent `isTileFullyInRegion()` (4 coins) au lieu du centre pour décider si une tuile utilise SwissTopo ou IGN. Une tuile-frontière dont le centre est en Suisse mais dont la moitié nord est en Allemagne ne doit PAS utiliser SwissTopo (retourne zone noire hors couverture). SwissTopo/IGN uniquement si **tous les 4 coins** sont dans le pays. Sinon fallback MapTiler/OSM. **Ne jamais revenir à un check centre-seul pour les sources nationales.**
@@ -115,6 +120,12 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 
 | Symptôme | Cause Probable | Solution |
 |----------|----------------|----------|
+| Altitude affichée en double au clic | `getAltitudeAt()` retourne altitude × `RELIEF_EXAGGERATION` (correct pour 3D). L'affichage texte ne doit pas utiliser cette valeur brute. | Diviser par `state.RELIEF_EXAGGERATION` au moment du `textContent` uniquement. Voir `ui.ts` `#click-alt`. (v5.15.0) |
+| Toast "Accès Pro activé" × 3 | Deux `showToast()` explicites (un dans `grantProAccess()`, un dans `UpgradeSheet.ts`) + listener `addCustomerInfoUpdateListener` sans guard. | Supprimer le toast dans `UpgradeSheet.ts`. Ajouter `if (!state.isPro)` dans le listener. `grantProAccess()` = seule source de vérité. (v5.15.0) |
+| Prix test Google Play "3.99€ for 5 minutes" | Google Play ajoute le suffixe de période de test au `priceString` RevenueCat. | Regex de sanitisation dans `iapService.ts` `getPrices()`. En production, le prix est normal. (v5.15.0) |
+| Spam MapTiler à LOD 6-10, arrêt de chargement | Toutes les tuiles couleur LOD ≤ 10 appelaient MapTiler — 300+ requêtes au démarrage. Une 429 désactivait MapTiler globalement. | `getColorUrl()` utilise OpenTopoMap (`{a|b|c}.tile.opentopomap.org`) à `zoom <= 10`. `preloadChOverviewTiles()` désactivée (violation politique OSM). (v5.15.0) |
+| Inclinomètre caché par la nav bar | `InclinometerWidget` avait `bottom: 80px` hardcodé. Sur appareils avec grande `safe-area-inset-bottom` (> 8px), la nav bar dépasse 80px. | `bottom: calc(var(--bar-h) + var(--safe-bottom) + 16px)` — les CSS custom properties fonctionnent dans les inline styles. (v5.15.0) |
+| Bouton 2D/3D introuvable dans NavigationBar après déplacement vers FAB | Si le bouton est déplacé hors du template nav-bar, `this.element.querySelector()` retourne null. | Utiliser `document.querySelector('#nav-2d-toggle')` dans `NavigationBar.ts` — le bouton est dans la FAB stack statique, pas dans le template. (v5.15.0) |
 | Tuiles Noires (Est) | Clé MapTiler invalide/403 | Vérifier `state.MK` ou laisser le fallback OSM agir. |
 | Saut de carte au dézoom | `updateVisibleTiles` sans args | S'assurer de passer la position caméra ou laisser le fallback par défaut (v5.7.4). |
 | Voile rouge en 2D | Pentes activées par erreur | Vérifier le flag `is2DGlobal` dans `updateVisibleTiles`. |
