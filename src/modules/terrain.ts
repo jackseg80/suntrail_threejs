@@ -13,7 +13,7 @@ import { eventBus } from './eventBus';
 import { getAltitudeAt } from './analysis'; // used for terrain-clamping in gpxDrapePoints
 import { addToCache, getFromCache, hasInCache, getTileCacheKey, markCacheKeyActive, markCacheKeyInactive } from './tileCache';
 import { getPlaneGeometry } from './geometryCache';
-import { loadTileData } from './tileLoader';
+import { loadTileData, cancelTileLoad } from './tileLoader';
 import { materialPool } from './materialPool';
 
 
@@ -95,6 +95,8 @@ export const terrainUniforms = {
 export class Tile {
     tx: number; ty: number; zoom: number; key: string;
     status: 'idle' | 'loading' | 'loaded' | 'failed' | 'disposed' = 'idle';
+    /** ID de la task worker en cours. -1 = aucune. Utilisé pour annuler le fetch si dispose() est appelé. */
+    activeTaskId: number = -1;
     mesh: THREE.Mesh | null = null;
     elevationTex: THREE.Texture | null = null;
     pixelData: Uint8ClampedArray | null = null;
@@ -198,7 +200,12 @@ export class Tile {
         // LOD <= 10 : pas d'élévation nécessaire (vue globale, pas de terrain détaillé).
         const fetchAs2D = (this.zoom <= 10);
         try {
-            const data = await loadTileData(this.tx, this.ty, this.zoom, fetchAs2D);
+            // Stocker le taskId pour pouvoir annuler le fetch si dispose() est appelé
+            // pendant que la tuile charge (LOD change, scroll rapide, etc.)
+            const { promise, taskId } = loadTileData(this.tx, this.ty, this.zoom, fetchAs2D);
+            this.activeTaskId = taskId;
+            const data = await promise;
+            this.activeTaskId = -1;
             if ((this.status as string) === 'disposed' || !data) return;
 
             if (data.elevBitmap) {
@@ -468,6 +475,11 @@ export class Tile {
 
     dispose(): void {
         this.status = 'disposed'; loadQueue.delete(this);
+        // Annuler le fetch HTTP en cours si la tuile charge encore (économise la bande passante)
+        if (this.activeTaskId >= 0) {
+            cancelTileLoad(this.activeTaskId);
+            this.activeTaskId = -1;
+        }
         markCacheKeyInactive(getTileCacheKey(this.key, this.zoom));
         if (this.mesh) {
             if (state.scene) state.scene.remove(this.mesh);

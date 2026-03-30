@@ -81,7 +81,8 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | 526 | 5.13.6 | v5.13.6 | Station Météo Pro — 5 blocs, 3 jours, alertes montagne, 33 tests | 2026-03-30 |
 | 527 | 5.13.7 | v5.13.7 | Conformité Play Store — disclaimer entité gouvernementale + liens sources officielles | 2026-03-30 |
 | 528 | 5.13.8 | v5.13.8 | Fix GPS autoSelectMapSource + Fix SOS bloqué + SMS SOS | 2026-03-30 |
-| **529** | **5.13.9** | **v5.13.9** | **Ghost tiles LOD (fin flash blanc) + prefetch LOD±1 idle + adaptive batch** | **2026-03-30** |
+| 529 | 5.13.9 | v5.13.9 | Ghost tiles LOD (fin flash blanc) + prefetch LOD±1 idle + adaptive batch | 2026-03-30 |
+| **530** | **5.14.0** | **v5.14.0** | **AbortController fetches tuiles + indicateur de chargement** | **2026-03-30** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 

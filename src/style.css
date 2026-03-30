@@ -57,6 +57,34 @@ body, html {
 
 #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
+/* --- INDICATEUR DE CHARGEMENT DES TUILES --- */
+/* Barre fine en haut de l'écran, visible uniquement quand les tuiles chargent depuis le réseau.
+   Débounce 600ms dans ui.ts : ignorée pour les hits cache (<0.3s). */
+#tile-loading-bar {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 3px;
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--accent, #4a8ef8) 30%,
+        #7eb5ff 50%,
+        var(--accent, #4a8ef8) 70%,
+        transparent 100%
+    );
+    background-size: 250% 100%;
+    animation: tile-loading-shimmer 1.4s ease-in-out infinite;
+}
+#tile-loading-bar.visible { opacity: 1; }
+@keyframes tile-loading-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
 /* --- NEW UI v5.8 --- */
 
 /* TOP STATUS BAR */

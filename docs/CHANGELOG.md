@@ -4,6 +4,23 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.14.0] - 2026-03-30
+### ⚡ AbortController tuiles + indicateur de chargement
+
+#### AbortController — annulation des fetches HTTP au dispose de tuile
+- **`tileWorker.ts`** : `activeControllers: Map<number, AbortController>` — chaque task a son propre controller. Message `{ type:'cancel', id }` → `controller.abort()` → fetch HTTP annulé immédiatement dans le worker. `fetchTile()` accepte un `AbortSignal` optionnel passé à `fetch()`. `AbortError` propagé proprement et ignoré dans le handler.
+- **`workerManager.ts`** : `taskWorkerMap: Map<number, Worker>` — trace quel worker gère quelle task. `loadTile()` retourne `{ promise, taskId }` au lieu de `Promise<any>`. Nouvelle méthode `cancelTile(id)` : résout la Promise avec `null` ET envoie le message cancel au bon worker.
+- **`tileLoader.ts`** : `loadTileData()` retourne `{ promise, taskId }`. Nouvelle export `cancelTileLoad(taskId)` (délègue à `tileWorkerManager.cancelTile()`).
+- **`terrain.ts`** — `Tile.activeTaskId` : stocké au début du `load()`, effacé à la fin. `dispose()` appelle `cancelTileLoad(activeTaskId)` si la tuile est encore en chargement.
+- **Impact** : au changement de LOD, les 15-25 fetches de l'ancien LOD sont annulés instantanément → bande passante libérée pour les nouvelles tuiles → chargement 2-3× plus rapide sur connexion mobile.
+
+#### Indicateur de chargement tuiles réseau
+- **`index.html`** : `<div id="tile-loading-bar" aria-hidden="true">` — barre fine 3px en haut de l'écran.
+- **`style.css`** : animation shimmer (dégradé coulissant `--accent`) — `opacity:0` par défaut, `opacity:1` quand `.visible`. Transition douce 0.25s.
+- **`ui.ts`** : abonnement permanent à `state.isProcessingTiles` avec debounce 600ms (ignore les hits cache < 0.3s). Apparaît seulement lors des vrais chargements réseau. Se masque immédiatement quand le chargement se termine.
+
+---
+
 ## [5.13.9] - 2026-03-30
 ### ⚡ Transitions LOD fluides : ghost tiles, prefetch idle, adaptive batch
 

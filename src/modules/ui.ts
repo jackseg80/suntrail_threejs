@@ -142,6 +142,25 @@ export function initUI(): void {
         startApp();
     };
 
+    // --- INDICATEUR DE CHARGEMENT DES TUILES (permanent) ---
+    // Barre fine en haut de l'écran, visible après 600ms de chargement réseau.
+    // Débounce : ignore les hits cache (<0.3s) pour éviter le clignotement.
+    {
+        const bar = document.getElementById('tile-loading-bar');
+        let debounce: ReturnType<typeof setTimeout> | null = null;
+        state.subscribe('isProcessingTiles', (processing: boolean) => {
+            if (!bar) return;
+            if (processing) {
+                if (!debounce) {
+                    debounce = setTimeout(() => { bar.classList.add('visible'); }, 600);
+                }
+            } else {
+                if (debounce) { clearTimeout(debounce); debounce = null; }
+                bar.classList.remove('visible');
+            }
+        });
+    }
+
     // Si pas de clé bundlée → afficher le setup screen, lancer via bouton
     if (!state.MK) {
         setupBgo?.addEventListener('click', () => {

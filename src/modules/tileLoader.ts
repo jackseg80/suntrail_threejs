@@ -222,20 +222,29 @@ export function getElevationUrl(tx: number, ty: number, zoom: number, is2D: bool
 }
 
 /**
- * Charge les données complètes d'une tuile via les Workers.
+ * Lance le chargement d'une tuile via les Workers.
+ * Retourne { promise, taskId } — le taskId permet d'annuler via cancelTileLoad()
+ * si la tuile est disposée avant la fin du fetch (économise la bande passante).
  */
-export async function loadTileData(tx: number, ty: number, zoom: number, is2D: boolean) {
+export function loadTileData(tx: number, ty: number, zoom: number, is2D: boolean): { promise: Promise<any>, taskId: number } {
     const { url: elevUrl, sourceZoom } = getElevationUrl(tx, ty, zoom, is2D);
     
-    // Logique native color zoom
     const nativeMax = (state.MAP_SOURCE === 'opentopomap') ? 15 : 18;
     const cz = Math.min(zoom, nativeMax);
     const cr = Math.pow(2, Math.max(0, zoom - nativeMax));
     
-    let colorUrl = getColorUrl(Math.floor(tx/cr), Math.floor(ty/cr), cz);
+    const colorUrl = getColorUrl(Math.floor(tx/cr), Math.floor(ty/cr), cz);
     const overlayUrl = getOverlayUrl(tx, ty, zoom);
 
-    return await tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl, zoom, sourceZoom);
+    return tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl, zoom, sourceZoom);
+}
+
+/**
+ * Annule un fetch de tuile en cours.
+ * Résout la Promise avec null ET envoie un signal abort au worker concerné.
+ */
+export function cancelTileLoad(taskId: number): void {
+    tileWorkerManager.cancelTile(taskId);
 }
 
 

@@ -1,12 +1,32 @@
 /**
- * SunTrail Tile Worker (v5.6.6)
+ * SunTrail Tile Worker (v5.6.7)
  * Déportation du fetch et du décodage d'images avec support CacheStorage.
+ * v5.6.7 : AbortController par task — fetch annulé dès que la tuile est disposée côté main.
  */
 
 const CACHE_NAME = 'suntrail-tiles-v1';
 
+/**
+ * AbortControllers actifs par task ID.
+ * Permet d'annuler les fetches HTTP en cours quand le main thread envoie { type:'cancel', id }.
+ */
+const activeControllers = new Map<number, AbortController>();
+
 self.onmessage = async (e) => {
-    const { id, elevUrl, colorUrl, overlayUrl, isOffline, zoom, elevSourceZoom } = e.data;
+    const { id, type, elevUrl, colorUrl, overlayUrl, isOffline, zoom, elevSourceZoom } = e.data;
+
+    // --- ANNULATION ---
+    if (type === 'cancel') {
+        const ctrl = activeControllers.get(id);
+        if (ctrl) ctrl.abort();
+        activeControllers.delete(id);
+        return;
+    }
+
+    // Créer un AbortController pour cette task — annulable via message 'cancel'
+    const controller = new AbortController();
+    activeControllers.set(id, controller);
+    const { signal } = controller;
 
     try {
         const results: any = { id, cacheHits: 0, networkRequests: 0 };
@@ -14,10 +34,13 @@ self.onmessage = async (e) => {
 
         // --- EXÉCUTION PARALLÈLE ---
         const [elevRes, colorRes, overlayRes] = await Promise.all([
-            elevUrl ? fetchTile(elevUrl, isOffline) : Promise.resolve(null),
-            colorUrl ? fetchTile(colorUrl, isOffline) : Promise.resolve(null),
-            overlayUrl ? fetchTile(overlayUrl, isOffline) : Promise.resolve(null)
+            elevUrl ? fetchTile(elevUrl, isOffline, signal) : Promise.resolve(null),
+            colorUrl ? fetchTile(colorUrl, isOffline, signal) : Promise.resolve(null),
+            overlayUrl ? fetchTile(overlayUrl, isOffline, signal) : Promise.resolve(null)
         ]);
+
+        // Si la task a été annulée pendant les fetches, ne pas répondre
+        if (!activeControllers.has(id)) return;
 
         if (elevRes) {
             if (elevRes.forbidden) results.forbidden = true;
@@ -95,11 +118,14 @@ self.onmessage = async (e) => {
         (self as any).postMessage(results, transferables);
 
     } catch (err: any) {
-        self.postMessage({ id, error: err.message });
+        // AbortError = annulation normale, ne pas signaler comme erreur
+        if (err.name !== 'AbortError') self.postMessage({ id, error: err.message });
+    } finally {
+        activeControllers.delete(id);
     }
 };
 
-async function fetchTile(url: string, isOffline: boolean): Promise<{ bitmap: ImageBitmap, fromCache: boolean, forbidden?: boolean } | null> {
+async function fetchTile(url: string, isOffline: boolean, signal?: AbortSignal): Promise<{ bitmap: ImageBitmap, fromCache: boolean, forbidden?: boolean } | null> {
     try {
         const cache = await caches.open(CACHE_NAME);
         const cached = await cache.match(url);
@@ -109,12 +135,15 @@ async function fetchTile(url: string, isOffline: boolean): Promise<{ bitmap: Ima
             return { bitmap, fromCache: true };
         }
         if (isOffline) return null;
-        const response = await fetch(url, { mode: 'cors' });
+        const response = await fetch(url, { mode: 'cors', signal });
         if (response.status === 403) return { bitmap: null as any, fromCache: false, forbidden: true };
         if (!response.ok) return null;
         const blob = await response.blob();
         cache.put(url, new Response(blob.slice()));
         const bitmap = await createImageBitmap(blob, { colorSpaceConversion: 'none' });
         return { bitmap, fromCache: false };
-    } catch (e) { return null; }
+    } catch (e: any) {
+        if (e.name === 'AbortError') throw e; // Propager pour que le handler principal sorte proprement
+        return null;
+    }
 }
