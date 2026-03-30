@@ -11,6 +11,7 @@ import { showOnboarding } from '../../onboardingTutorial';
 import type { Locale } from '../../../i18n/I18nService';
 
 import { sheetManager } from '../core/SheetManager';
+import { iapService } from '../../iapService';
 
 export class SettingsSheet extends BaseComponent {
     constructor() {
@@ -146,6 +147,9 @@ export class SettingsSheet extends BaseComponent {
 
         // Language selector
         this.createLanguageSelector();
+
+        // ID Testeur (pour récupération récompense Closed Testing → Production)
+        this.createTesterIDSection();
 
         // Tutorial button
         this.createTutorialButton();
@@ -345,6 +349,51 @@ export class SettingsSheet extends BaseComponent {
                 saveSettings();
             });
         }
+    }
+
+    private createTesterIDSection(): void {
+        if (!this.element) return;
+        const panel = this.element.querySelector('#panel') || this.element;
+
+        const section = document.createElement('div');
+        section.className = 'settings-section';
+        section.id = 'tester-id-section';
+        section.innerHTML = `
+            <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:6px">
+                <div class="setting-label" style="font-size:var(--text-xs);color:var(--text-3)">
+                    ID Testeur
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;width:100%">
+                    <code id="tester-id-value" style="
+                        flex:1;font-size:10px;color:var(--text-2);
+                        background:rgba(255,255,255,0.05);border-radius:var(--radius-sm);
+                        padding:6px 10px;overflow:hidden;text-overflow:ellipsis;
+                        white-space:nowrap;border:1px solid var(--border)
+                    ">Chargement…</code>
+                    <button id="tester-id-copy" style="
+                        background:transparent;border:1px solid var(--border);
+                        border-radius:var(--radius-sm);padding:6px 10px;
+                        color:var(--text-2);font-size:var(--text-xs);cursor:pointer;
+                        flex-shrink:0;white-space:nowrap
+                    ">Copier</button>
+                </div>
+            </div>
+        `;
+        panel.appendChild(section);
+
+        // Charger l'ID depuis RevenueCat (async)
+        void iapService.getAppUserID().then(id => {
+            const el = section.querySelector('#tester-id-value') as HTMLElement;
+            if (el) el.textContent = id || 'Non disponible (web)';
+
+            section.querySelector('#tester-id-copy')?.addEventListener('click', () => {
+                if (!id) return;
+                void navigator.clipboard.writeText(id).then(() => {
+                    const btn = section.querySelector('#tester-id-copy') as HTMLButtonElement;
+                    if (btn) { btn.textContent = '✓ Copié'; setTimeout(() => { btn.textContent = 'Copier'; }, 1500); }
+                });
+            });
+        });
     }
 
     private createTutorialButton(): void {

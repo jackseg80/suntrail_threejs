@@ -161,6 +161,17 @@ class IAPService {
         }
     }
 
+    /** Retourne l'anonymous ID RevenueCat — utilisé pour l'identification des testeurs */
+    async getAppUserID(): Promise<string> {
+        if (!this.initialized || !Capacitor.isNativePlatform()) return '';
+        try {
+            const result = await Purchases.getAppUserID();
+            return result.appUserID ?? '';
+        } catch {
+            return '';
+        }
+    }
+
     /** Retourne les prix formatés pour affichage dans l'UpgradeSheet */
     async getPrices(): Promise<{ monthly: string; yearly: string; lifetime: string }> {
         const defaults = { monthly: '€3.99/mois', yearly: '€29.99/an', lifetime: '€99.99' };
