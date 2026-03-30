@@ -17,12 +17,7 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Geolocation } from '@capacitor/geolocation';
 import { requestGPSDisclosure } from '../../gpsDisclosure';
 
-const REC_FREE_LIMIT_MS = 30 * 60 * 1000; // 30 minutes pour le tier gratuit
-
 export class TrackSheet extends BaseComponent {
-    private recLimitTimer: ReturnType<typeof setTimeout> | null = null;
-    private recWarningTimer: ReturnType<typeof setTimeout> | null = null;
-
     constructor() {
         super('template-track', 'sheet-container');
     }
@@ -80,38 +75,15 @@ export class TrackSheet extends BaseComponent {
                 } else {
                     state.recordedPoints = [];
                 }
-                // Gate Freemium : arrêt automatique après 30 min pour les utilisateurs gratuits
-                if (!state.isPro) {
-                    // Alerte T-5min avant la limite
-                    this.recWarningTimer = setTimeout(() => {
-                        if (state.isRecording) {
-                            showToast(i18n.t('track.toast.recWarning5min'));
-                            void haptic('medium');
-                        }
-                    }, REC_FREE_LIMIT_MS - 5 * 60 * 1000);
-
-                    this.recLimitTimer = setTimeout(async () => {
-                        if (state.isRecording) {
-                            state.isRecording = false;
-                            this.updateRecUI();
-                            await stopRecordingService();
-                            showToast('⏱ Limite 30 min atteinte — passez à Pro pour un enregistrement illimité.');
-                            if (state.recordedPoints.length >= 2) {
-                                await this.saveRecordedGPXInternal();          // Toujours — pas de gate
-                                if (state.isPro) await this.downloadRecordedGPX(); // Fichier si Pro
-                            }
-                        }
-                    }, REC_FREE_LIMIT_MS);
-                }
             } else {
-                if (this.recLimitTimer) { clearTimeout(this.recLimitTimer); this.recLimitTimer = null; }
-                if (this.recWarningTimer) { clearTimeout(this.recWarningTimer); this.recWarningTimer = null; }
                 await stopRecordingService();    // Arrête le Foreground Service Android
                 showToast(i18n.t('track.toast.recStopped'));
                 // Sauvegarde interne systématique au STOP (sans gate Pro)
                 if (state.recordedPoints.length >= 2) {
                     await this.saveRecordedGPXInternal();          // Toujours — pas de gate
                     if (state.isPro) await this.downloadRecordedGPX(); // Fichier si Pro
+                    // Upsell post-REC pour les utilisateurs gratuits
+                    if (!state.isPro) this.showPostRecUpsell();
                 }
             }
         });
@@ -371,6 +343,32 @@ export class TrackSheet extends BaseComponent {
         if (distEl) distEl.innerHTML = `${(dist / 1000).toFixed(2)} <span class="trk-stat-unit">km</span>`;
         if (dplusEl) dplusEl.innerHTML = `+${Math.round(dplus)} <span class="trk-stat-unit-plain">m</span>`;
         if (dminusEl) dminusEl.innerHTML = `−${Math.round(dminus)} <span class="trk-stat-unit-plain">m</span>`;
+    }
+
+    private showPostRecUpsell(): void {
+        // Supprimer la bannière existante si déjà affichée
+        document.getElementById('rec-upsell-banner')?.remove();
+        const banner = document.createElement('div');
+        banner.id = 'rec-upsell-banner';
+        banner.className = 'rec-upsell-banner';
+        banner.style.cssText = 'display:flex; align-items:center; gap:var(--space-2); padding:var(--space-3); margin-top:var(--space-3); background:rgba(var(--accent-rgb,59,126,248),0.12); border:1px solid rgba(var(--accent-rgb,59,126,248),0.3); border-radius:var(--radius-md); font-size:12px; color:var(--text-2);';
+        const text = document.createElement('span');
+        text.style.flex = '1';
+        text.textContent = i18n.t('track.upsell.postRec');
+        const proBtn = document.createElement('button');
+        proBtn.className = 'btn-go';
+        proBtn.style.cssText = 'flex-shrink:0; font-size:11px; padding:4px 10px;';
+        proBtn.textContent = i18n.t('track.upsell.proBtn');
+        proBtn.onclick = () => showUpgradePrompt('rec_stats');
+        const closeBtn = document.createElement('button');
+        closeBtn.setAttribute('aria-label', i18n.t('common.close'));
+        closeBtn.style.cssText = 'flex-shrink:0; background:none; border:none; color:var(--text-3); cursor:pointer; font-size:16px; line-height:1; padding:0 4px;';
+        closeBtn.textContent = '×';
+        closeBtn.onclick = () => banner.remove();
+        banner.appendChild(text);
+        banner.appendChild(proBtn);
+        banner.appendChild(closeBtn);
+        this.element?.appendChild(banner);
     }
 
     private buildGPXString(): string {
