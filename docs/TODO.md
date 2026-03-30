@@ -6,6 +6,9 @@
 - [x] **Fix GPS autoSelectMapSource (v5.13.8)** : `hasManualSource = true` inconditionnellement dans `loadSettings()` bloquait l'auto-switch source pour tous les utilisateurs avec settings sauvegardés. Fix : inférer depuis MAP_SOURCE (manual = satellite/ign/osm uniquement).
 - [x] **Fix SOS bloqué "Localisation en cours" (v5.13.8)** : `openSOSModal()` n'était attaché qu'au `#sos-btn-pill`. Bouton TopStatusBar (`sheetManager.toggle`) ouvrait le sheet sans résoudre les coords. Fix : pattern EventBus `sheetOpened { id: 'sos' }` → `resolveAndDisplay()`.
 - [x] **SMS SOS (v5.13.8)** : Bouton "📱 Envoyer par SMS" dans le panel SOS. URI scheme `sms:?body=` — ouvre l'app SMS native, zéro permission. Traduit FR/EN/DE/IT.
+- [x] **Ghost tiles LOD (v5.13.9)** : Flash blanc supprimé lors des transitions de zoom. Ancien LOD reste visible (fondu 1.2s) pendant que le nouveau charge. `fadingOutTiles` Set + `startFadeOut()` / `updateFadeOut()` dans `Tile`.
+- [x] **Prefetch LOD±1 idle (v5.13.9)** : `prefetchAdjacentLODs()` déclenché depuis scene.ts (isIdleMode, toutes les 5s). LOD+1 (RANGE/2 autour centre) + LOD-1 (5×5). Max 20 tuiles/appel.
+- [x] **Adaptive batch LOD (v5.13.9)** : `processLoadQueue()` double le batch (`MAX_BUILDS_PER_CYCLE×2`) si ≥ 4 tuiles visibles encore en attente (transition détectée).
 
 ---
 

@@ -23,6 +23,19 @@ export const activeLabels = new Map<string, any>();
 let loadQueue: Set<Tile> = new Set<Tile>();
 let isProcessingQueue = false;
 
+/**
+ * Tuiles en cours de fondu sortant lors d'une transition LOD.
+ * Restent visibles dans la scène le temps que les nouvelles tuiles apparaissent.
+ * Évite le flash blanc : l'ancien LOD s'efface progressivement plutôt que disparaître d'un coup.
+ */
+const fadingOutTiles = new Set<Tile>();
+
+/** Dernier LOD rendu — détecte les changements de niveau pour activer les ghost tiles. */
+let lastRenderedZoom: number = -1;
+
+/** Durée du fondu sortant des ghost tiles en millisecondes (couvre le chargement réseau moyen). */
+const GHOST_FADE_MS = 1200;
+
 async function processLoadQueue() {
     if (isProcessingQueue || loadQueue.size === 0) {
         state.isProcessingTiles = false;
@@ -42,9 +55,14 @@ async function processLoadQueue() {
             return da - db;
         });
 
-        // Utilise state.MAX_BUILDS_PER_CYCLE (réglé par preset + caps mobiles v5.11)
-        // Valeur hardcodée supprimée — le preset contrôle maintenant le débit réel
-        const batch = sorted.slice(0, Math.max(1, state.MAX_BUILDS_PER_CYCLE));
+        // Adaptive batch : doublement temporaire si beaucoup de tuiles visibles chargent encore
+        // (transition LOD en cours). Absorbe le backlog plus vite sans perturber les autres cas.
+        const visiblePending = sorted.filter(t => t.isVisible()).length;
+        const isTransitioning = visiblePending >= 4;
+        const effectiveBatch = isTransitioning
+            ? Math.max(1, state.MAX_BUILDS_PER_CYCLE * 2)
+            : Math.max(1, state.MAX_BUILDS_PER_CYCLE);
+        const batch = sorted.slice(0, effectiveBatch);
         batch.forEach(t => loadQueue.delete(t));
 
         await Promise.all(batch.map(async (tile) => {
@@ -90,6 +108,8 @@ export class Tile {
     tileSizeMeters: number;
     opacity: number = 0;
     isFadingIn: boolean = false;
+    isFadingOut: boolean = false;
+    ghostFadeRemaining: number = 0; // ms restantes avant dispose complet
     worldX: number = 0; worldZ: number = 0;
     bounds: THREE.Box3 = new THREE.Box3();
     elevOffset = new THREE.Vector2(); elevScale = 1.0;
@@ -115,7 +135,8 @@ export class Tile {
         const oyNorm = (state.originTile.y + 0.5) * originUnit;
         this.worldX = (txNorm - oxNorm) * EARTH_CIRCUMFERENCE;
         this.worldZ = (tyNorm - oyNorm) * EARTH_CIRCUMFERENCE;
-        if (this.mesh) this.mesh.position.set(this.worldX, 0, this.worldZ);
+        // Ghost tiles gardent un offset Y négatif (anti-z-fighting avec les nouvelles tuiles)
+        if (this.mesh) this.mesh.position.set(this.worldX, this.isFadingOut ? -0.5 : 0, this.worldZ);
         if (this.forestMesh) this.forestMesh.position.set(this.worldX, 0, this.worldZ);
         if (this.poiGroup && !this.poiGroup.parent) this.poiGroup.position.set(this.worldX, 0, this.worldZ);
         
@@ -408,6 +429,42 @@ export class Tile {
         if (this.mesh.material instanceof THREE.Material) this.mesh.material.opacity = this.opacity;
     }
 
+    /**
+     * Démarre le fondu sortant de cette tuile (ghost tile lors d'une transition LOD).
+     * La tuile reste dans la scène Three.js mais son opacité décroît vers 0.
+     * Gardé dans fadingOutTiles — jamais dans activeTiles pendant ce fondu.
+     */
+    startFadeOut(): void {
+        if (this.isFadingOut || !this.mesh) return;
+        this.isFadingOut = true;
+        this.ghostFadeRemaining = GHOST_FADE_MS;
+        // Déplacer légèrement sous les nouvelles tuiles pour éviter le z-fighting
+        this.mesh.position.y = -0.5;
+        if (this.mesh.material instanceof THREE.Material) {
+            this.mesh.material.transparent = true;
+            this.mesh.material.opacity = 1.0;
+        }
+        // Maintenir la clé de cache active : la texture GPU ne doit pas être évincée
+        // pendant que le mesh est encore visible dans la scène.
+        markCacheKeyActive(getTileCacheKey(this.key, this.zoom));
+    }
+
+    /**
+     * Mise à jour du fondu sortant. Appelé depuis animateTiles().
+     * @param deltaMs delta en millisecondes
+     */
+    updateFadeOut(deltaMs: number): void {
+        if (!this.isFadingOut || !this.mesh) return;
+        this.ghostFadeRemaining -= deltaMs;
+        const t = Math.max(0, this.ghostFadeRemaining / GHOST_FADE_MS);
+        if (this.mesh.material instanceof THREE.Material) {
+            this.mesh.material.opacity = t;
+        }
+        if (this.ghostFadeRemaining <= 0) {
+            this.isFadingOut = false; // signal pour animateTiles() → dispose
+        }
+    }
+
     dispose(): void {
         this.status = 'disposed'; loadQueue.delete(this);
         markCacheKeyInactive(getTileCacheKey(this.key, this.zoom));
@@ -437,6 +494,13 @@ export class Tile {
 
 export function resetTerrain(): void {
     loadQueue.clear(); clearLabels();
+    // Nettoyer les ghost tiles en fondu avant de tout réinitialiser
+    for (const tile of fadingOutTiles) {
+        markCacheKeyInactive(getTileCacheKey(tile.key, tile.zoom));
+        tile.dispose();
+    }
+    fadingOutTiles.clear();
+    lastRenderedZoom = -1;
     for (const tile of activeTiles.values()) tile.dispose();
     activeTiles.clear();
 }
@@ -490,7 +554,11 @@ export function repositionAllTiles(): void {
 
     for (const tile of activeTiles.values()) {
         tile.updateWorldPosition();
-    } 
+    }
+    // Repositionner aussi les ghost tiles (origin shift peut survenir pendant un fondu)
+    for (const tile of fadingOutTiles) {
+        tile.updateWorldPosition();
+    }
 
     // Offset labels
     const lastOrigin = (repositionAllTiles as any).lastOrigin || { x: state.originTile.x, y: state.originTile.y, z: state.originTile.z };
@@ -517,6 +585,21 @@ export function repositionAllTiles(): void {
 export function animateTiles(delta: number): boolean { 
     let stillFading = false;
     for (const tile of activeTiles.values()) { if (tile.isFadingIn) { tile.updateFade(delta); stillFading = true; } }
+    // Ghost tiles : fondu sortant lors des transitions LOD
+    if (fadingOutTiles.size > 0) {
+        const deltaMs = delta * 1000;
+        for (const tile of fadingOutTiles) {
+            tile.updateFadeOut(deltaMs);
+            if (!tile.isFadingOut) {
+                // Fondu terminé — libérer la clé de cache puis disposer le mesh
+                markCacheKeyInactive(getTileCacheKey(tile.key, tile.zoom));
+                fadingOutTiles.delete(tile);
+                tile.dispose();
+            } else {
+                stillFading = true;
+            }
+        }
+    }
     return stillFading;
 }
 
@@ -583,7 +666,23 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
             }
         }
     }
-    for (const [key, tile] of activeTiles.entries()) { if (!currentActiveKeys.has(key)) { tile.dispose(); activeTiles.delete(key); } }
+    // Changement de LOD détecté → ghost tiles au lieu de dispose immédiat.
+    // Les anciennes tuiles restent visibles (fondu sortant 1.2s) pendant que les nouvelles chargent.
+    // Même LOD mais hors-champ → dispose immédiat classique (scroll normal, pas de flash).
+    const lodChanging = lastRenderedZoom !== -1 && zoom !== lastRenderedZoom;
+    for (const [key, tile] of activeTiles.entries()) {
+        if (!currentActiveKeys.has(key)) {
+            if (lodChanging && tile.mesh && tile.status !== 'disposed') {
+                activeTiles.delete(key);
+                fadingOutTiles.add(tile);
+                tile.startFadeOut();
+            } else {
+                tile.dispose();
+                activeTiles.delete(key);
+            }
+        }
+    }
+    lastRenderedZoom = zoom;
     processLoadQueue();
 
     if (loadQueue.size === 0) {
@@ -607,6 +706,65 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
 export function updateHydrologyVisibility(visible: boolean): void { state.SHOW_HYDROLOGY = visible; resetTerrain(); updateVisibleTiles(); }
 export function updateSlopeVisibility(visible: boolean): void { state.SHOW_SLOPES = visible; resetTerrain(); updateVisibleTiles(); }
 export async function loadTerrain(): Promise<void> { await updateVisibleTiles(); }
+
+/**
+ * Précharge les tuiles des LODs adjacents (zoom±1) en arrière-plan lors des périodes d'inactivité.
+ * Appelé depuis scene.ts quand isIdleMode && !isProcessingTiles (toutes les ~5s).
+ *
+ * Principe : les tuiles non présentes en cache sont ajoutées au loadQueue avec priorité basse
+ * (isVisible()=false → traitées en dernier). La prochaine transition LOD trouvera les textures
+ * déjà en VRAM → affichage quasi-instantané, plus de chargement depuis le réseau.
+ *
+ * Limites : MAX_PREFETCH entrées max pour ne pas saturer la queue.
+ */
+export function prefetchAdjacentLODs(): void {
+    if (!state.camera || !state.controls) return;
+    const wx = state.controls.target.x;
+    const wz = state.controls.target.z;
+    const center = worldToLngLat(wx, wz, state.originTile);
+    const zoom = state.ZOOM;
+    const MAX_PREFETCH = 20;
+    let added = 0;
+
+    // LOD+1 — tuiles que l'utilisateur verra en zoomant dans la zone courante
+    const nextZoom = Math.min(zoom + 1, state.MAX_ALLOWED_ZOOM || 18);
+    if (nextZoom !== zoom) {
+        const ct = lngLatToTile(center.lon, center.lat, nextZoom);
+        const r = Math.max(1, Math.ceil(state.RANGE / 2));
+        const maxT = Math.pow(2, nextZoom);
+        for (let dy = -r; dy <= r && added < MAX_PREFETCH; dy++) {
+            for (let dx = -r; dx <= r && added < MAX_PREFETCH; dx++) {
+                const tx = ct.x + dx; const ty = ct.y + dy;
+                if (tx < 0 || tx >= maxT || ty < 0 || ty >= maxT) continue;
+                const pKey = `${tx}_${ty}_${nextZoom}`;
+                if (!hasInCache(getTileCacheKey(pKey, nextZoom))) {
+                    loadQueue.add(new Tile(tx, ty, nextZoom, pKey));
+                    added++;
+                }
+            }
+        }
+    }
+
+    // LOD-1 — tuiles que l'utilisateur verra en dézoomant (zone plus large, moins de tuiles)
+    const prevZoom = Math.max(zoom - 1, 6);
+    if (prevZoom !== zoom) {
+        const ct = lngLatToTile(center.lon, center.lat, prevZoom);
+        const maxT = Math.pow(2, prevZoom);
+        for (let dy = -2; dy <= 2 && added < MAX_PREFETCH; dy++) {
+            for (let dx = -2; dx <= 2 && added < MAX_PREFETCH; dx++) {
+                const tx = ct.x + dx; const ty = ct.y + dy;
+                if (tx < 0 || tx >= maxT || ty < 0 || ty >= maxT) continue;
+                const pKey = `${tx}_${ty}_${prevZoom}`;
+                if (!hasInCache(getTileCacheKey(pKey, prevZoom))) {
+                    loadQueue.add(new Tile(tx, ty, prevZoom, pKey));
+                    added++;
+                }
+            }
+        }
+    }
+
+    if (added > 0) processLoadQueue();
+}
 
 /** Safety margin above terrain surface, in world units (≈ meters). */
 const GPX_SURFACE_OFFSET = 30;

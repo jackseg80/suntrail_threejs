@@ -6,7 +6,7 @@ import { state } from './state';
 import { eventBus } from './eventBus';
 import { updateSunPosition } from './sun';
 import { getAltitudeAt, resetAnalysisCache } from './analysis';
-import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, resetTerrain, autoSelectMapSource, terrainUniforms } from './terrain';
+import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, resetTerrain, autoSelectMapSource, terrainUniforms, prefetchAdjacentLODs } from './terrain';
 import { disposeAllCachedTiles } from './tileCache';
 import { disposeAllGeometries } from './geometryCache';
 import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat } from './geo';
@@ -363,6 +363,9 @@ export async function initScene(): Promise<void> {
     let dprRestoreTimer: ReturnType<typeof setTimeout> | null = null;
     const isMobileDevice = /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
 
+    // Prefetch LOD±1 — timestamp du dernier prefetch idle pour throttler à 1x/5s
+    let lastPrefetchTime = 0;
+
     const renderLoopFn = () => {
         if (!state.renderer || !state.camera || !state.scene || !state.controls) return;
 
@@ -495,6 +498,14 @@ export async function initScene(): Promise<void> {
             state.renderer.render(state.scene, state.camera);
             renderCompass();
             state.stats?.end();
+
+            // Prefetch LOD±1 en idle — précharge les tuiles du niveau suivant/précédent
+            // en arrière-plan (priorité basse : isVisible()=false → traitées en dernier par processLoadQueue).
+            // Déclenché seulement en mode idle + tuiles courantes toutes chargées + toutes les 5s.
+            if (isIdleMode && !state.isProcessingTiles && (now - lastPrefetchTime > 5000)) {
+                lastPrefetchTime = now;
+                prefetchAdjacentLODs();
+            }
 
             // Mise à jour FPS rolling (fenêtre 1s)
             fpsFrameCount++;

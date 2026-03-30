@@ -4,6 +4,27 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.13.9] - 2026-03-30
+### ⚡ Transitions LOD fluides : ghost tiles, prefetch idle, adaptive batch
+
+#### Ghost tiles — fin du flash blanc lors des changements de zoom
+- **`terrain.ts` — `Tile.startFadeOut()`** : nouvelle méthode. Au changement de LOD, les anciennes tuiles ne sont plus disposées immédiatement mais passent dans `fadingOutTiles` (Set séparé). Elles restent visibles dans la scène avec un fondu sortant sur 1.2s (`GHOST_FADE_MS`).
+- **`Tile.updateFadeOut(deltaMs)`** : décrémente `ghostFadeRemaining`, met à jour l'opacité. Quand `ghostFadeRemaining ≤ 0`, signal pour `animateTiles()` de disposer.
+- **`animateTiles()`** : itère `fadingOutTiles`, appelle `updateFadeOut()`, et dispose les tiles finies en libérant la clé de cache GPU.
+- **`updateWorldPosition()`** : préserve l'offset Y (-0.5m) des ghost tiles pendant leur reposition (anti-z-fighting). Réappliqué dans `repositionAllTiles()`.
+- **`resetTerrain()`** : vide `fadingOutTiles` proprement avant reset complet.
+- **Résultat** : aucun flash blanc sur zoom in/out — l'ancien LOD s'efface progressivement pendant que le nouveau apparaît.
+
+#### Prefetch LOD±1 en idle — tuiles déjà en cache à la prochaine transition
+- **`terrain.ts` — `prefetchAdjacentLODs()`** (nouvelle export) : précharge LOD+1 (`RANGE/2` autour du centre) et LOD-1 (5×5 central) si absents du cache. Max 20 tuiles par appel. Ajoutées au `loadQueue` avec priorité basse (non-visibles → traitées en dernier).
+- **`scene.ts`** : déclenché depuis le render loop quand `isIdleMode && !isProcessingTiles`, toutes les 5 secondes. `lastPrefetchTime` évite le spam.
+- **Résultat** : lors de la prochaine transition, les tuiles sont servies depuis le cache GPU (quasi-instantané) au lieu du réseau.
+
+#### Adaptive batch size — plus de parallélisme en transition
+- **`processLoadQueue()`** : si ≥ 4 tuiles visibles sont encore en attente (`isTransitioning`), le batch est doublé (`MAX_BUILDS_PER_CYCLE × 2`). Absorbe le backlog d'une transition LOD 2× plus vite.
+
+---
+
 ## [5.13.8] - 2026-03-30
 ### 🐛 Deux corrections critiques + SMS SOS + conformité Play Store
 
