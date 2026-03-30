@@ -159,7 +159,7 @@ JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease 
 | Entitlement | `SunTrail 3D Pro` |
 | Offerings | monthly / yearly / lifetime |
 | SDK key (Android) | `goog_uNvY...` (dans `.env`) |
-| Service Account JSON | ⬜ À configurer (validation serveur — post-lancement) |
+| Service Account JSON | ✅ Configuré — lié dans RevenueCat → App Settings → Google Play |
 
 ---
 
