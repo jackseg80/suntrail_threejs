@@ -41,7 +41,8 @@ export class NavigationBar extends BaseComponent {
         });
 
         // Bouton 2D/3D — toggle direct (ne passe pas par SheetManager)
-        const modeToggle = this.element.querySelector('#nav-2d-toggle');
+        // Le bouton est dans la FAB stack (hors template nav-bar, v5.14.1)
+        const modeToggle = document.querySelector('#nav-2d-toggle');
         if (modeToggle) {
             const syncToggleVisual = () => {
                 const is2D = state.IS_2D_MODE;

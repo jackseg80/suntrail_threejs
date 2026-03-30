@@ -243,7 +243,7 @@ body, html {
 }
 .nav-tab.has-notif .nav-dot { display: block; }
 
-/* 2D/3D MODE TOGGLE — perspective grid icon */
+/* 2D/3D MODE TOGGLE — perspective grid icon (dans FAB stack, v5.14.1) */
 .nav-mode-icon {
     perspective: 60px;
 }
@@ -267,6 +267,14 @@ body, html {
 
 .nav-mode-toggle.active .nav-mode-icon .grid-peak {
     opacity: 0;
+}
+
+/* Dans FAB stack : état actif (2D) utilise la couleur accent */
+#nav-2d-toggle.active {
+    background: var(--accent);
+    color: white;
+    border-color: rgba(255,255,255,0.1);
+    box-shadow: 0 4px 20px var(--accent-glow);
 }
 
 /* Bouton 2D verrouillé (LOD ≤ 10 — tuiles déjà en 2D, toggle sans effet) */
