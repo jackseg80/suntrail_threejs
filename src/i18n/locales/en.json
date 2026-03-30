@@ -49,6 +49,10 @@
     },
     "recording": {
       "title": "GPS Recording"
+    },
+    "upsell": {
+      "postRec": "Track saved. Unlock GPX export and advanced stats with Pro.",
+      "proBtn": "See Pro ↗"
     }
   },
   "settings": {
@@ -167,7 +171,7 @@
   },
   "upsell": {
     "lod": "🔍 Maximum detail reached — upgrade to Pro for LOD 18",
-    "timeline": "⭐ Full 24h solar simulation available with Pro"
+    "timeline": "📅 Access any date with Pro"
   },
   "connectivity": {
     "title": "System & Data",

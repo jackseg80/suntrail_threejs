@@ -49,6 +49,10 @@
     },
     "recording": {
       "title": "Registrazione GPS"
+    },
+    "upsell": {
+      "postRec": "Percorso salvato. Sblocca l'esportazione GPX e le statistiche avanzate con Pro.",
+      "proBtn": "Scopri Pro ↗"
     }
   },
   "settings": {
@@ -167,7 +171,7 @@
   },
   "upsell": {
     "lod": "🔍 Dettaglio massimo raggiunto — passa a Pro per il LOD 18",
-    "timeline": "⭐ Simulazione solare 24h completa disponibile con Pro"
+    "timeline": "📅 Accedi a qualsiasi data con Pro"
   },
   "connectivity": {
     "title": "Sistema & Dati",

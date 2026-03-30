@@ -49,6 +49,10 @@
     },
     "recording": {
       "title": "GPS-Aufzeichnung"
+    },
+    "upsell": {
+      "postRec": "Tour gespeichert. GPX-Export und erweiterte Statistiken mit Pro freischalten.",
+      "proBtn": "Pro ansehen ↗"
     }
   },
   "settings": {
@@ -167,7 +171,7 @@
   },
   "upsell": {
     "lod": "🔍 Maximale Detailstufe erreicht — mit Pro bis LOD 18 zoomen",
-    "timeline": "⭐ Vollständige 24h-Sonnensimulation mit Pro verfügbar"
+    "timeline": "📅 Beliebiges Datum mit Pro zugänglich"
   },
   "connectivity": {
     "title": "System & Daten",
