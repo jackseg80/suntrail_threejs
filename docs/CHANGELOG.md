@@ -4,6 +4,36 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.16.0] - 2026-03-31
+### 🎓 Tutoriel d'onboarding 1er démarrage
+
+#### Tutoriel interactif 6 slides
+- **`src/modules/onboardingTutorial.ts`** : nouveau module standalone calqué sur le pattern `acceptanceWall.ts`. Deux exports : `requestOnboarding()` (vérifie le flag `suntrail_onboarding_v1`, affiche une seule fois) et `showOnboarding()` (toujours afficher, pour le bouton Réglages).
+- **6 slides passives** avec navigation Suivant / Passer / Commencer :
+  1. 🏔️ **Naviguer** — 1 doigt pour déplacer, pinch zoom, 2 doigts rotation
+  2. ✋ **Incliner** — 2 doigts côte à côte (horizontal) + glisser haut/bas pour la caméra
+  3. 🎛️ **Boutons de contrôle** — grille 2×2 : Boussole (Nord), Couches (carte), 2D/3D (relief), GPS (position)
+  4. 🗂️ **Importer un tracé GPX** — fichier depuis vos randonnées, affiché en 3D sur le terrain
+  5. ☀️ **Simuler le soleil** — timeline 24h pour l'ensoleillement
+  6. 🆘 **Rester en sécurité** — bouton SOS haut-droite, position exacte pour les secours
+- **Navigation** : swipe horizontal (> 50px), flèches clavier, Escape pour fermer.
+- **Animation** : transition `translateX ±40px` + `opacity` en 220ms ease-in-out entre les slides. Fade-out overlay 300ms à la fermeture.
+- **Dots de progression** : 6 indicateurs, dot actif `var(--accent)`, transition couleur 220ms.
+- **Design** : glassmorphism identique à l'acceptance wall, `z-index: 9000`, centré plein écran.
+- **Accessibilité** : `role="dialog"`, `aria-modal`, focus sur "Suivant" à l'ouverture, trap Tab, Escape pour fermer.
+
+#### Intégration
+- **`ui.ts`** : `void requestAcceptance().then(() => requestOnboarding())` — le tuto s'affiche automatiquement après l'acceptance wall au 1er lancement.
+- **`SettingsSheet.ts`** : méthode `createTutorialButton()` — bouton "❓ Aide & Tutoriel" ajouté en bas de la page Réglages → appelle `showOnboarding()` (sans vérification du flag).
+
+#### i18n — 4 locales
+- Nouvelles clés `onboarding.*` (6 slides × title+desc, skip/next/start, grille FAB) dans `fr.json`, `de.json`, `it.json`, `en.json`.
+- Nouvelle clé `settings.tutorial.btn` dans les 4 locales.
+
+> **Pour tester** : `localStorage.removeItem('suntrail_onboarding_v1')` dans la console puis recharger.
+
+---
+
 ## [5.15.0] - 2026-03-30
 ### 🐛 Bugfixes majeurs · Refonte sources cartographiques · UX
 

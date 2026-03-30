@@ -76,6 +76,7 @@ Auto-stop et STOP manuel appellent `saveRecordedGPXInternal()` puis `downloadRec
     - Sauvegarde automatique du profil de performance, de la source de carte et des unités.
 
 ## ⏳ Backlog & Recherche (Indéfini)
+- [ ] **Onboarding v2 — Spotlights interactifs** : mise en surbrillance des vrais éléments UI (boussole, GPS, Timeline) avec overlay perforé et tooltip positionné dynamiquement via `getBoundingClientRect` + `clip-path`. L'utilisateur touche le vrai bouton pour avancer. Effort ~3-4× supérieur à la v1 (6 slides passives). À planifier post-lancement production.
 - [ ] **Normal Map Pro (Phase 5)** : Résoudre le bundling PBF/MVT pour une netteté vectorielle infinie du relief.
 - [ ] **Sentiers (MVT/PBF)** : Migration expérimentale vers les tuiles vectorielles pour une netteté infinie (Tentatives précédentes infructueuses, à isoler).
 - [ ] **Cloud Shadows & Météo Pro** : Projection d'ombres de nuages dynamiques.
@@ -736,12 +737,7 @@ App sur appareil physique Android connecté en USB (débogage activé).
 *Impact : Réduction du taux d'abandon — un utilisateur qui comprend l'app en 60 secondes est un utilisateur qui reste.*
 
 - [ ] **Tooltip "Premier tracé"** : À l'import du 1er GPX, afficher une bulle pointant vers le bouton profil d'élévation et la simulation solaire — les 2 features différenciantes à découvrir.
-- [ ] **Overlay tutorial interactif** : 4-5 étapes séquentielles au 1er lancement (après Acceptance Wall) :
-  - Étape 1 : "Naviguez avec vos doigts — pincez pour zoomer, glissez pour tourner"
-  - Étape 2 : "Importez un tracé GPX depuis vos randonnées"
-  - Étape 3 : "Simulez le soleil à n'importe quelle heure"
-  - Étape 4 : "Activez Pro pour débloquer le détail maximum"
-  - Bouton "Passer" disponible dès la 1ère étape
+- [x] **Overlay tutorial interactif (v5.16.0)** : 6 slides passives au 1er lancement (après Acceptance Wall). Navigation 1 doigt, inclinaison 2 doigts, boutons FAB, GPX, soleil, SOS. Swipe horizontal, dots de progression, animations. `requestOnboarding()` + `showOnboarding()` (Réglages). 4 locales FR/DE/IT/EN.
 - [ ] **Indicateur "Nouveauté"** : Badge rouge sur le bouton Timeline après 1er lancement, disparaît à l'ouverture.
 - [ ] **Empty state GPX** : Dans TrackSheet, si aucun tracé → message d'invitation + bouton import GPX mis en avant (au lieu d'une liste vide).
 - [ ] **Aide contextuelle** : Icône ⓘ sur les features Pro bloquées → tooltip expliquant pourquoi c'est Pro (pas juste le lock icon).
