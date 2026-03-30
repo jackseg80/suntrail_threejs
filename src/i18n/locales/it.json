@@ -330,6 +330,7 @@
     "subtitle": "Ecco le tue coordinate esatte da trasmettere ai soccorsi.",
     "locating": "⌛ Localizzazione in corso...",
     "copy": "Copia messaggio",
+    "sms": "📱 Invia SMS",
     "close": "Chiudi"
   },
   "setup": {

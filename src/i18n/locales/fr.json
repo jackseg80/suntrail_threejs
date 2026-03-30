@@ -330,6 +330,7 @@
     "subtitle": "Voici vos coordonnées exactes à transmettre aux secours.",
     "locating": "⌛ Localisation en cours...",
     "copy": "Copier le message",
+    "sms": "📱 Envoyer par SMS",
     "close": "Fermer"
   },
   "setup": {

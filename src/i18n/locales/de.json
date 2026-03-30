@@ -330,6 +330,7 @@
     "subtitle": "Hier sind Ihre genauen Koordinaten für die Rettungsdienste.",
     "locating": "⌛ Standortbestimmung...",
     "copy": "Nachricht kopieren",
+    "sms": "📱 Per SMS senden",
     "close": "Schliessen"
   },
   "setup": {

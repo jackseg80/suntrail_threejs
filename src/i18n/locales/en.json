@@ -330,6 +330,7 @@
     "subtitle": "Here are your exact coordinates to pass on to the rescue services.",
     "locating": "⌛ Locating...",
     "copy": "Copy message",
+    "sms": "📱 Send SMS",
     "close": "Close"
   },
   "setup": {

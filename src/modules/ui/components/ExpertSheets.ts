@@ -901,6 +901,9 @@ export class SOSSheet extends BaseComponent {
             }
         });
 
+        const sosSmsBtn = document.getElementById('sos-sms-btn');
+        sosSmsBtn?.setAttribute('aria-label', i18n.t('sos.sms'));
+
         const sosCloseBtn = document.getElementById('sos-close-btn');
         sosCloseBtn?.setAttribute('aria-label', i18n.t('sos.close'));
         sosCloseBtn?.addEventListener('click', () => { 
@@ -963,6 +966,18 @@ export class SOSSheet extends BaseComponent {
         const now = new Date();
         const time = `${now.getHours()}h${now.getMinutes().toString().padStart(2, '0')}`;
 
-        textContainer.textContent = `🆘 SOS SUNTRAIL: ${lat.toFixed(5)},${lon.toFixed(5)} | ALT:${Math.round(alt)}m | BAT:${bat}% | ${time}`;
+        const message = `🆘 SOS SUNTRAIL: ${lat.toFixed(5)},${lon.toFixed(5)} | ALT:${Math.round(alt)}m | BAT:${bat}% | ${time}`;
+        textContainer.textContent = message;
+
+        // Activer le bouton SMS avec le message résolu.
+        // URI scheme sms:?body= : ouvre l'app SMS native (Android & iOS) avec le message
+        // pré-rempli. L'utilisateur tape simplement "Envoyer". Zéro permission requise.
+        const smsBtn = document.getElementById('sos-sms-btn') as HTMLButtonElement | null;
+        if (smsBtn) {
+            smsBtn.disabled = false;
+            smsBtn.onclick = () => {
+                window.open(`sms:?body=${encodeURIComponent(message)}`);
+            };
+        }
     }
 }
