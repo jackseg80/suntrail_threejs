@@ -160,12 +160,14 @@ export function getColorUrl(tx: number, ty: number, zoom: number): string {
 
     const hasKey = state.MK && state.MK.length > 10 && !state.isMapTilerDisabled;
     
-    // --- UNIFICATION GLOBALE (v5.7.4) ---
-    // Si le zoom est faible (LOD <= 10), on force une source globale unique pour éviter l'effet "patchwork".
-    // On ignore les sources locales Swisstopo/IGN à ces échelles.
+    // --- UNIFICATION GLOBALE (v5.7.4, révisé v5.14.1) ---
+    // Si le zoom est faible (LOD <= 10), on force OpenTopoMap pour éviter l'effet "patchwork".
+    // MapTiler n'est PAS utilisé à ces échelles : coût quota élevé pour une qualité visuelle
+    // identique, risque de rate-limiting (429) global qui bloquerait tous les LODs.
+    // OpenTopoMap : CC-BY-SA, 3 sous-domaines (a/b/c), idéal pour vue d'ensemble alpine.
     if (zoom <= 10) {
-        if (hasKey) return `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
-        return `https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`;
+        const sub = ['a', 'b', 'c'][(tx + ty) % 3]; // rotation des sous-domaines
+        return `https://${sub}.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`;
     }
 
     // 1. SATELLITE (Hybride Swisstopo/IGN/MapTiler)
@@ -232,7 +234,9 @@ export function getElevationUrl(tx: number, ty: number, zoom: number, is2D: bool
 export function loadTileData(tx: number, ty: number, zoom: number, is2D: boolean): { promise: Promise<any>, taskId: number } {
     const { url: elevUrl, sourceZoom } = getElevationUrl(tx, ty, zoom, is2D);
     
-    const nativeMax = (state.MAP_SOURCE === 'opentopomap') ? 15 : 18;
+    // OpenTopoMap est utilisé uniquement à LOD ≤ 10 (zoom <= 10 branch dans getColorUrl).
+    // À LOD > 10 : swisstopo/IGN/MapTiler — tous supportent zoom 18 nativement.
+    const nativeMax = 18;
     const cz = Math.min(zoom, nativeMax);
     const cr = Math.pow(2, Math.max(0, zoom - nativeMax));
     
@@ -297,48 +301,19 @@ export async function downloadOfflineZone(lat: number, lon: number, onProgress: 
 
 /**
  * Pré-charge les tuiles de vue Suisse (zoom 6-9) dans le cache persistant.
- * Exécuté UNE SEULE FOIS en arrière-plan au premier démarrage.
- * Garantit un affichage rapide même hors ligne dès la 2ème visite.
+ *
+ * ⚠️ DÉSACTIVÉ (v5.14.1) : le bulk pre-seeding viole la politique d'utilisation
+ * d'OpenTopoMap et d'OSM (https://operations.osmfoundation.org/policies/tiles/).
+ * "Pre-seeding large areas or multiple zoom levels in advance is prohibited."
+ *
+ * Alternative : les tuiles LOD 6-10 sont légères (~30KB/tuile PNG) et se cachent
+ * naturellement après la 1ère navigation. Le PWA Service Worker gère le cache offline
+ * pour les zones visitées sans bulk-fetch préventif.
+ *
+ * @deprecated Ne pas réactiver sans un accord explicite du fournisseur de tuiles
+ * ou l'utilisation d'un serveur de tuiles auto-hébergé (PMTiles).
  */
 export async function preloadChOverviewTiles(): Promise<void> {
-    const PRELOAD_KEY = 'suntrail-ch-preloaded-v1';
-    if (localStorage.getItem(PRELOAD_KEY)) return;
-
-    // Bounding box Suisse + buffer
-    const bounds = { minLon: 5.4, minLat: 45.2, maxLon: 11.3, maxLat: 48.2 };
-
-    const latToY = (lat: number, n: number): number => {
-        const latRad = lat * Math.PI / 180;
-        return Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
-    };
-
-    const tiles: Array<{ z: number; x: number; y: number }> = [];
-
-    for (let z = 6; z <= 9; z++) {
-        const n = Math.pow(2, z);
-        const xMin = Math.floor((bounds.minLon + 180) / 360 * n);
-        const xMax = Math.floor((bounds.maxLon + 180) / 360 * n);
-        const yMin = latToY(bounds.maxLat, n); // lat élevée = y petit
-        const yMax = latToY(bounds.minLat, n);
-
-        for (let x = xMin; x <= xMax; x++) {
-            for (let y = yMin; y <= yMax; y++) {
-                tiles.push({ z, x, y });
-            }
-        }
-    }
-
-    console.log(`[Preload CH] Démarrage pré-chargement de ${tiles.length} tuiles (zoom 6-9)…`);
-
-    // Fetch par lots de 8 en parallèle pour ne pas saturer le réseau
-    const BATCH_SIZE = 8;
-    for (let i = 0; i < tiles.length; i += BATCH_SIZE) {
-        const batch = tiles.slice(i, i + BATCH_SIZE);
-        await Promise.allSettled(
-            batch.map(({ z, x, y }) => fetchWithCache(getColorUrl(x, y, z), true))
-        );
-    }
-
-    localStorage.setItem(PRELOAD_KEY, '1');
-    console.log(`[Preload CH] ${tiles.length} tuiles en cache.`);
+    // No-op — voir commentaire ci-dessus
+    console.log('[Preload CH] Désactivé — bulk pre-seeding interdit par la politique OpenTopoMap/OSM.');
 }
