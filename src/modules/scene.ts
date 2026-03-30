@@ -9,7 +9,7 @@ import { getAltitudeAt, resetAnalysisCache } from './analysis';
 import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, resetTerrain, autoSelectMapSource, terrainUniforms, prefetchAdjacentLODs } from './terrain';
 import { disposeAllCachedTiles } from './tileCache';
 import { disposeAllGeometries } from './geometryCache';
-import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat } from './geo';
+import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat, clampTargetToBounds } from './geo';
 import { throttle, showToast } from './utils';
 import { i18n } from '../i18n/I18nService';
 import { initVegetationResources } from './vegetation';
@@ -200,6 +200,20 @@ export async function initScene(): Promise<void> {
     let lastRecenterTime = 0;
     const throttledUpdate = throttle(() => {
         if (!state.controls || !state.camera) return;
+
+        // Clamp caméra aux bords du monde — couvre le pan souris (OrbitControls direct)
+        const clamped = clampTargetToBounds(
+            state.controls.target.x, state.controls.target.z, state.originTile
+        );
+        if (clamped.x !== state.controls.target.x || clamped.z !== state.controls.target.z) {
+            const cdx = clamped.x - state.controls.target.x;
+            const cdz = clamped.z - state.controls.target.z;
+            state.controls.target.x = clamped.x;
+            state.controls.target.z = clamped.z;
+            state.camera.position.x += cdx;
+            state.camera.position.z += cdz;
+        }
+
         const dx = state.controls.target.x, dz = state.controls.target.z;
         const dist = state.camera.position.distanceTo(state.controls.target);
         

@@ -38,6 +38,30 @@ export function lngLatToTile(lon: number, lat: number, zoom: number): { x: numbe
     return { x, y, z: zoom };
 }
 
+/** Limites géographiques valides du système de tuiles Web Mercator */
+export const WORLD_BOUNDS = {
+    minLat: -85.051,
+    maxLat:  85.051,
+    minLon: -180,
+    maxLon:  180,
+};
+
+/**
+ * Clampe une position world (x, z) aux limites géographiques valides.
+ * Empêche la caméra de sortir des bords du monde de tuiles.
+ * Retourne { x, z } inchangés si déjà dans les limites.
+ */
+export function clampTargetToBounds(
+    worldX: number, worldZ: number,
+    originTile: { x: number; y: number; z: number }
+): { x: number; z: number } {
+    const { lat, lon } = worldToLngLat(worldX, worldZ, originTile);
+    const clampedLat = Math.max(WORLD_BOUNDS.minLat, Math.min(WORLD_BOUNDS.maxLat, lat));
+    const clampedLon = Math.max(WORLD_BOUNDS.minLon, Math.min(WORLD_BOUNDS.maxLon, lon));
+    if (clampedLat === lat && clampedLon === lon) return { x: worldX, z: worldZ };
+    return lngLatToWorld(clampedLon, clampedLat, originTile);
+}
+
 export function getTileBounds(tile: {zoom: number, tx: number, ty: number}) {
     const n = Math.pow(2, tile.zoom);
     const lonWest = tile.tx / n * 360 - 180;

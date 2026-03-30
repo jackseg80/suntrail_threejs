@@ -33,6 +33,8 @@
 
 import * as THREE from 'three';
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { state } from './state';
+import { clampTargetToBounds } from './geo';
 
 // ── Paramètres ajustables ───────────────────────────────────────────────────────
 const PAN_SPEED    = 1.8;   // >1 = plus rapide qu'OrbitControls par défaut
@@ -130,6 +132,19 @@ function doPan(dx: number, dy: number): void {
 
     _controls.target.add(offset);
     _camera.position.add(offset);
+
+    // Clamp aux bords du monde (évite de pan au-delà des tuiles valides)
+    const clamped = clampTargetToBounds(
+        _controls.target.x, _controls.target.z, state.originTile
+    );
+    const ddx = clamped.x - _controls.target.x;
+    const ddz = clamped.z - _controls.target.z;
+    if (ddx !== 0 || ddz !== 0) {
+        _controls.target.x = clamped.x;
+        _controls.target.z = clamped.z;
+        _camera.position.x += ddx;
+        _camera.position.z += ddz;
+    }
 }
 
 /** Zoom pur — ratio > 1 = zoom in, < 1 = zoom out (zoom vers le target actuel) */
