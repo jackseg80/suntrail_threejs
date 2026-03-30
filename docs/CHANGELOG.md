@@ -4,6 +4,21 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.16.2] - 2026-03-31
+### 🐛 Bords du monde + bande vide LOD 11+ (Schaffhausen/Tessin)
+
+#### Fix bords du monde vides — clamping géographique caméra
+- **`geo.ts`** : constantes `WORLD_BOUNDS` (lat ±85.051°, lon ±180°) + fonction `clampTargetToBounds(worldX, worldZ, originTile)` — convertit en lat/lon, clampe, reconvertit en world.
+- **`touchControls.ts`** : appel de `clampTargetToBounds()` à la fin de `doPan()` — couvre tout le pan tactile (1 doigt + 2 doigts).
+- **`scene.ts`** : appel dans `throttledUpdate` — couvre le pan souris via OrbitControls. Les deux points d'entrée (touch + mouse) sont couverts. Résultat : impossible de panner au-delà des tuiles valides du système Web Mercator.
+
+#### Fix bande vide LOD 11+ hors-Suisse/France (Schaffhausen, Tessin)
+- **Cause** : les tuiles hors-CH et hors-FR (Allemagne, Italie, Autriche...) n'étant pas couvertes par SwissTopo/IGN, elles utilisaient OSM Standard comme fallback. OSM Standard a un style radicalement différent (fond blanc, routes grises) — perçu comme une bande "vide" visuellement incohérente.
+- **`tileLoader.ts` — `getColorUrl()`** : pour `MAP_SOURCE=swisstopo` et la branche par défaut, le fallback OSM Standard est remplacé par **OpenTopoMap** (zoom ≤ 17) — style topo cohérent avec SwissTopo. Zoom 18 (Pro uniquement) : OSM Standard conservé car OpenTopoMap ne monte pas à zoom 18.
+- **Note** : si MapTiler est disponible (`hasKey=true`), il prend la priorité (topo-v2 → style optimal). OpenTopoMap n'intervient qu'en l'absence de clé MapTiler valide.
+
+---
+
 ## [5.16.1] - 2026-03-31
 ### 🧪 ID Testeur + Protocoles de test
 
