@@ -207,10 +207,11 @@ export function applyPreset(preset: PresetType): void {
         state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
     }
 
-    // Gate Freemium : LOD plafonné à 14 pour les utilisateurs gratuits (v5.12)
-    if (!state.isPro && state.MAX_ALLOWED_ZOOM > 14) {
-        state.MAX_ALLOWED_ZOOM = 14;
-    }
+    // NOTE : Le gate LOD gratuit (plafond à 14) est désormais appliqué dynamiquement
+    // dans scene.ts via `effectiveMaxZoom`, qui lit `state.isPro` au moment du rendu.
+    // Cela garantit que le passage en Pro (tester, IAP, toggle) est immédiatement effectif
+    // sans avoir à re-appliquer le preset. MAX_ALLOWED_ZOOM reflète toujours la valeur
+    // native du preset (14/16/18), jamais tronquée.
 
     updatePerformanceUI(preset);
     refreshTerrain();

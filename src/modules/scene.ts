@@ -208,12 +208,20 @@ export async function initScene(): Promise<void> {
         
         // --- LOGIQUE DE ZOOM ADAPTATIVE (v5.8.6) ---
         // On évite de dépasser le zoom max autorisé par le preset
-        const targetZoom = Math.min(idealZoom, state.MAX_ALLOWED_ZOOM || 18);
+        // Limite effective : isPro = source de vérité — MAX_ALLOWED_ZOOM reflète la valeur
+        // native du preset (16 pour balanced, 18 pour perf/ultra, 14 pour eco).
+        // Les users gratuits sont plafonnés à 14 ICI, pas dans MAX_ALLOWED_ZOOM, pour que
+        // le passage en Pro soit immédiatement effectif quel que soit le chemin d'activation.
+        const effectiveMaxZoom = state.isPro
+            ? (state.MAX_ALLOWED_ZOOM || 18)
+            : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
+
+        const targetZoom = Math.min(idealZoom, effectiveMaxZoom);
 
         // Upsell contextuel LOD — informer l'utilisateur gratuit qu'il est à la limite
         // Condition : l'utilisateur veut zoomer plus loin (idealZoom dépasse la limite)
         // mais est bloqué car !isPro. Debounce 30s pour ne pas spammer.
-        if (!state.isPro && idealZoom > (state.MAX_ALLOWED_ZOOM || 18) && state.ZOOM >= (state.MAX_ALLOWED_ZOOM || 18)) {
+        if (!state.isPro && idealZoom > effectiveMaxZoom && state.ZOOM >= effectiveMaxZoom) {
             const now = Date.now();
             if (now - _lastLodUpsellTime > 30_000) {
                 _lastLodUpsellTime = now;
@@ -242,7 +250,7 @@ export async function initScene(): Promise<void> {
             else if (state.ZOOM <= 6)  { if (dist < 2000000) newZoom = 7; }
             
             // Respecter la limite même en incrémental
-            if (newZoom > state.MAX_ALLOWED_ZOOM) newZoom = state.MAX_ALLOWED_ZOOM;
+            if (newZoom > effectiveMaxZoom) newZoom = effectiveMaxZoom;
         }
 
         const currentZoom = state.ZOOM;

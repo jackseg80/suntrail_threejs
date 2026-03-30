@@ -739,8 +739,9 @@ export function prefetchAdjacentLODs(): void {
     const MAX_PREFETCH = 20;
     let added = 0;
 
-    // LOD+1 — tuiles que l'utilisateur verra en zoomant dans la zone courante
-    const nextZoom = Math.min(zoom + 1, state.MAX_ALLOWED_ZOOM || 18);
+    // LOD+1 — tuiles que l'utilisateur verra en zoomant (même gate Pro que scene.ts)
+    const _prefetchMaxZoom = state.isPro ? (state.MAX_ALLOWED_ZOOM || 18) : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
+    const nextZoom = Math.min(zoom + 1, _prefetchMaxZoom);
     if (nextZoom !== zoom) {
         const ct = lngLatToTile(center.lon, center.lat, nextZoom);
         const r = Math.max(1, Math.ceil(state.RANGE / 2));
