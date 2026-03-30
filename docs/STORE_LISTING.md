@@ -76,6 +76,17 @@ SunTrail 3D transforme les données cartographiques officielles en terrain 3D in
 • GPS utilisé uniquement au premier plan, jamais partagé
 • Vos tracés restent sur votre appareil
 
+━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ APPLICATION INDÉPENDANTE
+━━━━━━━━━━━━━━━━━━━━━━━
+SunTrail 3D est une application indépendante et n'est affiliée à aucune entité gouvernementale, ni à swisstopo, ni à l'IGN. Les données officielles sont utilisées conformément à leurs licences open-data respectives.
+
+Sources officielles des données cartographiques :
+• swisstopo (Confédération suisse) : https://www.swisstopo.admin.ch
+• IGN Géoplateforme (République française) : https://www.geoportail.gouv.fr
+• OpenStreetMap : https://www.openstreetmap.org
+• Open-Meteo : https://open-meteo.com
+
 Disponible en français, deutsch, italiano et English.
 ```
 
@@ -156,6 +167,17 @@ SunTrail 3D turns official topographic data into an interactive 3D terrain you c
 • No data transmitted to our servers
 • GPS used in foreground only, never shared
 • Your tracks stay on your device
+
+━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ INDEPENDENT APPLICATION
+━━━━━━━━━━━━━━━━━━━━━━━
+SunTrail 3D is an independent application and is not affiliated with any government entity, including swisstopo or IGN. Official map data is used under their respective open-data licences.
+
+Official data sources:
+• swisstopo (Swiss Confederation): https://www.swisstopo.admin.ch
+• IGN Géoplateforme (French Republic): https://www.geoportail.gouv.fr
+• OpenStreetMap: https://www.openstreetmap.org
+• Open-Meteo: https://open-meteo.com
 
 Available in Français, Deutsch, Italiano and English.
 ```

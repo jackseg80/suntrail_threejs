@@ -62,7 +62,8 @@
       "density": "Densità dettagli",
       "advanced": "⚙️ Impostazioni avanzate",
       "dataManagement": "Gestione dati",
-      "language": "Lingua"
+      "language": "Lingua",
+      "sources": "Fonti dati & Legale"
     },
     "preset": {
       "eco": "Eco",
@@ -100,6 +101,13 @@
       "de": "Deutsch",
       "it": "Italiano",
       "en": "English"
+    },
+    "legal": {
+      "disclaimer": "SunTrail 3D è un'applicazione indipendente, non affiliata ad alcun ente governativo (né swisstopo né IGN). I dati cartografici ufficiali sono utilizzati in conformità alle rispettive licenze open-data.",
+      "swisstopoLabel": "SwissTopo — swisstopo.admin.ch",
+      "ignLabel": "IGN Géoplateforme — geoportail.gouv.fr",
+      "osmLabel": "OpenStreetMap — openstreetmap.org",
+      "openmeteoLabel": "Open-Meteo — open-meteo.com"
     }
   },
   "search": {
