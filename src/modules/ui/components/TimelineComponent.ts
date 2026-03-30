@@ -4,6 +4,7 @@ import { haptic } from '../../haptics';
 import { showToast } from '../../utils';
 import { i18n } from '../../../i18n/I18nService';
 import { worldToLngLat } from '../../geo';
+import { showUpgradePrompt } from '../../iap';
 import SunCalc from 'suncalc';
 
 export class TimelineComponent {
@@ -52,9 +53,27 @@ export class TimelineComponent {
         }
 
         if (this.dateInput) {
+            // Initialiser l'aspect visuel du sélecteur de date selon isPro
+            this.syncDateInputLock();
+            this.subscriptions.push(state.subscribe('isPro', () => this.syncDateInputLock()));
+
             this.dateInput.addEventListener('change', (e) => {
                 const d = new Date((e.target as HTMLInputElement).value);
                 if (!isNaN(d.getTime())) {
+                    // Gate Pro : seule la date du jour est accessible sans Pro
+                    if (!state.isPro) {
+                        const today = new Date();
+                        const isToday = d.getFullYear() === today.getFullYear() &&
+                                        d.getMonth()    === today.getMonth()    &&
+                                        d.getDate()     === today.getDate();
+                        if (!isToday) {
+                            // Réinitialiser l'input à aujourd'hui
+                            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                            (e.target as HTMLInputElement).value = todayStr;
+                            showUpgradePrompt('solar_calendar');
+                            return;
+                        }
+                    }
                     const newDate = new Date(state.simDate);
                     newDate.setFullYear(d.getFullYear(), d.getMonth(), d.getDate());
                     state.simDate = newDate;
@@ -99,13 +118,14 @@ export class TimelineComponent {
             this.attachSwipeGesture(bottomBar);
         }
 
-        // Hint upsell sous le slider — visible uniquement pour les users gratuits
-        if (this.timeSlider) {
+        // Hint upsell sous le sélecteur de date — visible uniquement pour les users gratuits
+        if (this.dateInput) {
             const hint = document.createElement('div');
             hint.id = 'timeline-upsell-hint';
-            hint.style.cssText = 'font-size:10px; color:var(--text-3); text-align:center; margin-top:4px; opacity:0.7; letter-spacing:0.3px;';
+            hint.style.cssText = 'font-size:10px; color:var(--text-3); text-align:center; margin-top:4px; opacity:0.7; letter-spacing:0.3px; cursor:pointer;';
             hint.textContent = i18n.t('upsell.timeline');
-            this.timeSlider.parentNode?.appendChild(hint);
+            hint.addEventListener('click', () => showUpgradePrompt('solar_calendar'));
+            this.dateInput.parentNode?.appendChild(hint);
             const syncHint = () => { hint.style.display = state.isPro ? 'none' : 'block'; };
             syncHint();
             this.subscriptions.push(state.subscribe('isPro', syncHint));
@@ -229,6 +249,18 @@ export class TimelineComponent {
         handle.addEventListener('pointermove', onMove);
         handle.addEventListener('pointerup', onEnd);
         handle.addEventListener('pointercancel', onEnd);
+    }
+
+    private syncDateInputLock(): void {
+        if (!this.dateInput) return;
+        if (state.isPro) {
+            this.dateInput.removeAttribute('title');
+            this.dateInput.style.opacity = '';
+        } else {
+            this.dateInput.title = i18n.t('upsell.timeline');
+            // Légère opacité pour signaler visuellement la limitation
+            this.dateInput.style.opacity = '0.7';
+        }
     }
 
     private updateSolarInfo(): void {
