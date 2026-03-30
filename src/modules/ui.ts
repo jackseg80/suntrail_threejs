@@ -27,6 +27,7 @@ import { UpgradeSheet } from './ui/components/UpgradeSheet';
 import { WidgetsComponent } from './ui/components/WidgetsComponent';
 import { TimelineComponent } from './ui/components/TimelineComponent';
 import { VRAMDashboard } from './ui/components/VRAMDashboard';
+import { InclinometerWidget } from './ui/components/InclinometerWidget';
 import { initAutoHide } from './ui/autoHide';
 import { initMobileUI } from './ui/mobile';
 import { sheetManager } from './ui/core/SheetManager';
@@ -222,6 +223,9 @@ export function initUI(): void {
     const vramDashboard = new VRAMDashboard();
     vramDashboard.init();
     state.vramPanel = vramDashboard;
+
+    const inclinometer = new InclinometerWidget();
+    inclinometer.init();
 
     new TimelineComponent();
     initAutoHide();
