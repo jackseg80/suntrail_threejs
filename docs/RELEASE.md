@@ -79,7 +79,8 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | 524 | 5.13.4 | v5.13.4 | UpgradeSheet 3 plans + toast durée corrigée (CSS animation supprimée) | 2026-03-30 |
 | 525 | 5.13.5 | v5.13.5 | Fix layout overflow bouton Pro solaire + plans UpgradeSheet égaux | 2026-03-30 |
 | 526 | 5.13.6 | v5.13.6 | Station Météo Pro — 5 blocs, 3 jours, alertes montagne, 33 tests | 2026-03-30 |
-| **527** | **5.13.7** | **v5.13.7** | **Conformité Play Store — disclaimer entité gouvernementale + liens sources officielles** | **2026-03-30** |
+| 527 | 5.13.7 | v5.13.7 | Conformité Play Store — disclaimer entité gouvernementale + liens sources officielles | 2026-03-30 |
+| **528** | **5.13.8** | **v5.13.8** | **Fix GPS autoSelectMapSource + Fix SOS bloqué + SMS SOS** | **2026-03-30** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 

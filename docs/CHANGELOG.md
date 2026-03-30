@@ -4,6 +4,29 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.13.8] - 2026-03-30
+### 🐛 Deux corrections critiques + SMS SOS + conformité Play Store
+
+#### Fix : GPS ne sélectionnait plus automatiquement SwissTopo
+- **`ui.ts`** : `state.hasManualSource = true` était posé inconditionnellement lors du chargement des settings sauvegardés (localStorage). Résultat : `autoSelectMapSource()` était bloquée en permanence pour tout utilisateur ayant déjà ouvert l'app — la source ne s'adaptait plus jamais à la position.
+- **Fix** : `hasManualSource` inféré depuis le MAP_SOURCE sauvegardé — `true` seulement pour les sources manuelles (`satellite`, `ign`, `osm`). Pour `swisstopo` et `opentopomap` (auto-sélectionnables), `hasManualSource = false`. L'auto-switch GPS → SwissTopo fonctionne de nouveau.
+
+#### Fix : Panel SOS bloqué sur "Localisation en cours..."
+- **`ExpertSheets.ts`** : `openSOSModal()` n'était câblé qu'au `#sos-btn-pill` (widget coordonnées). Le bouton principal `TopStatusBar` (`#sos-main-btn`) appelait `sheetManager.toggle('sos')` → template affiché, résolution GPS jamais déclenchée → texte statique à jamais.
+- **Fix** : Pattern EventBus — `SOSSheet` écoute `sheetOpened { id: 'sos' }` et appelle `resolveAndDisplay()` quel que soit le point d'entrée. Méthode `openSOSModal()` remplacée par `resolveAndDisplay()` (sans `sheetManager.open()`).
+
+#### Feat : Bouton SMS dans le panel SOS
+- **`index.html`** : Layout SOS restructuré — bouton "📱 Envoyer par SMS" (vert, `#sos-sms-btn`) + "Copier" sur la même ligne, "Fermer" pleine largeur en dessous. Bouton SMS initialement `disabled`.
+- **`ExpertSheets.ts`** : `resolveAndDisplay()` active le bouton SMS après résolution des coords avec `onclick = window.open('sms:?body=...')`. URI scheme `sms:?body=` — ouvre l'app SMS native Android/iOS avec le message pré-rempli. Zéro permission, zéro plugin.
+- **i18n** : Clé `sos.sms` ajoutée en FR/EN/DE/IT.
+
+#### Conformité Play Store (v5.13.7)
+- **`docs/STORE_LISTING.md`** : Descriptions FR/EN enrichies avec section `⚠️ APPLICATION INDÉPENDANTE` — disclaimer entité gouvernementale + URLs officielles `swisstopo.admin.ch` et `geoportail.gouv.fr`.
+- **`index.html`** : Section "Sources de données & Légal" dans Réglages — liens cliquables vers les 4 sources officielles avec disclaimer visible.
+- **i18n** : Clés `settings.section.sources` + `settings.legal.*` en FR/EN/DE/IT.
+
+---
+
 ## [5.13.6] - 2026-03-30
 ### 🌡️ Station Météo Pro + nettoyage Expert Panel
 

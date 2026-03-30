@@ -1,4 +1,13 @@
-# SunTrail 3D - Roadmap Révisée (v5.12.9)
+# SunTrail 3D - Roadmap Révisée (v5.13.8)
+
+## ✅ Corrections & Features (v5.13.7 → v5.13.8) — 2026-03-30
+
+- [x] **Conformité Play Store (v5.13.7)** : Disclaimer entité gouvernementale + URLs swisstopo.admin.ch / geoportail.gouv.fr dans descriptions FR/EN et dans l'app (Réglages → Sources de données & Légal).
+- [x] **Fix GPS autoSelectMapSource (v5.13.8)** : `hasManualSource = true` inconditionnellement dans `loadSettings()` bloquait l'auto-switch source pour tous les utilisateurs avec settings sauvegardés. Fix : inférer depuis MAP_SOURCE (manual = satellite/ign/osm uniquement).
+- [x] **Fix SOS bloqué "Localisation en cours" (v5.13.8)** : `openSOSModal()` n'était attaché qu'au `#sos-btn-pill`. Bouton TopStatusBar (`sheetManager.toggle`) ouvrait le sheet sans résoudre les coords. Fix : pattern EventBus `sheetOpened { id: 'sos' }` → `resolveAndDisplay()`.
+- [x] **SMS SOS (v5.13.8)** : Bouton "📱 Envoyer par SMS" dans le panel SOS. URI scheme `sms:?body=` — ouvre l'app SMS native, zéro permission. Traduit FR/EN/DE/IT.
+
+---
 
 ## 🧪 Mode Testeur / Debug ✅ TERMINÉ (v5.12.9)
 
