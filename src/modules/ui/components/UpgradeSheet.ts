@@ -37,7 +37,7 @@ export class UpgradeSheet extends BaseComponent {
             btn.removeAttribute('aria-busy');
             if (success) {
                 void haptic('success');
-                showToast('✅ Accès Pro activé !'); // TODO i18n
+                // Toast géré par grantProAccess() dans iap.ts — pas de doublon ici
                 sheetManager.close();
             } else {
                 // Achat annulé, non disponible ou offres non configurées

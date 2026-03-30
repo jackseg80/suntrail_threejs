@@ -47,8 +47,11 @@ class IAPService {
 
             // Écouter les changements d'abonnement en temps réel
             // (renouvellements, annulations, remboursements)
+            // Guard isPro : évite un 2e toast si purchase() a déjà accordé l'accès
             Purchases.addCustomerInfoUpdateListener((customerInfo) => {
-                this.updateStateFromCustomerInfo(customerInfo);
+                if (!state.isPro) {
+                    this.updateStateFromCustomerInfo(customerInfo);
+                }
             });
 
             console.log('[IAP] RevenueCat initialisé.');
@@ -168,7 +171,9 @@ class IAPService {
             const prices = { ...defaults };
             for (const pkg of offering.availablePackages) {
                 const id = pkg.identifier.toLowerCase();
-                const price = pkg.product.priceString ?? '';
+                const raw = pkg.product.priceString ?? '';
+                // Google Play test subscriptions appendent la période raccourcie (ex: "for 5 minutes")
+                const price = raw.replace(/\s*(for|per|pour|durch|para|in)\s*\d+\s*(minutes?|min\.?)/gi, '').trim();
                 if (id.includes('monthly')) prices.monthly = price;
                 else if (id.includes('yearly') || id.includes('annual')) prices.yearly = price;
                 else if (id.includes('lifetime')) prices.lifetime = price;
