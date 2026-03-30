@@ -4,6 +4,20 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.16.1] - 2026-03-31
+### 🧪 ID Testeur + Protocoles de test
+
+#### ID Testeur dans les Réglages
+- **`iapService.ts`** : nouvelle méthode `getAppUserID()` — retourne l'anonymous ID RevenueCat (`$RCAnonymousID:...`) via `Purchases.getAppUserID()`. Retourne `''` sur web/non-natif.
+- **`SettingsSheet.ts`** : section "ID Testeur" ajoutée dans Réglages → Avancés (avant le bouton Aide). Affiche l'ID tronqué avec bouton "Copier" → presse-papier. Permet aux testeurs de transmettre leur ID pour recevoir leur récompense Pro après le passage en Production.
+
+#### Protocoles de test testeurs
+- **`docs/PROTOCOL_TEST_RAPIDE.md`** : protocole 20-30 min couvrant l'essentiel (navigation, FAB, timeline, SOS, achat). Récompense : 3 mois Pro.
+- **`docs/PROTOCOL_TEST_COMPLET.md`** : protocole 1h30-2h couvrant toutes les fonctionnalités (presets, GPX, mode testeur Pro, performance, langues, rapport structuré). Récompense : 1 an Pro.
+- Les deux protocoles incluent la procédure de récupération de récompense via l'ID Testeur.
+
+---
+
 ## [5.16.0] - 2026-03-31
 ### 🎓 Tutoriel d'onboarding 1er démarrage
 
