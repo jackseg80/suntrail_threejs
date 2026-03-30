@@ -52,7 +52,11 @@ export function initUI(): void {
 
     const savedSettings = loadSettings();
     if (savedSettings) {
-        state.hasManualSource = true;
+        // hasManualSource = true uniquement pour les sources non auto-sélectionnables.
+        // 'swisstopo' et 'opentopomap' sont choisies par autoSelectMapSource() → ne pas bloquer l'auto-switch.
+        // 'satellite', 'ign', 'osm' sont des choix explicites → respecter au rechargement.
+        const AUTO_SOURCES = ['swisstopo', 'opentopomap'];
+        state.hasManualSource = !AUTO_SOURCES.includes(savedSettings.MAP_SOURCE);
         if (savedSettings.PERFORMANCE_PRESET === 'custom') {
             applyCustomSettings(savedSettings);
         } else {

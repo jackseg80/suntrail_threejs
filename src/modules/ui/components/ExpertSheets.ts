@@ -7,6 +7,7 @@ import { getWeatherIcon } from '../../weather';
 import { getUVCategory, getComfortIndex, getFreezingAlert, fmtWindDir } from '../../weatherUtils';
 import { sheetManager } from '../core/SheetManager';
 import { i18n } from '../../../i18n/I18nService';
+import { eventBus } from '../../eventBus';
 import { showUpgradePrompt } from '../../iap';
 import SunCalc from 'suncalc';
 
@@ -910,51 +911,58 @@ export class SOSSheet extends BaseComponent {
         const sosTextContainer = document.getElementById('sos-text-container');
         sosTextContainer?.setAttribute('aria-live', 'polite');
 
-        // Attach to the SOS button which is in the WidgetsComponent (coords-pill)
+        // Résolution GPS déclenchée sur l'événement sheetOpened — fonctionne quel que soit
+        // le point d'entrée : bouton TopStatusBar (sheetManager.toggle) ou pill coords-panel.
+        // Précédemment openSOSModal() n'était attaché qu'au #sos-btn-pill, ce qui laissait
+        // le sheet ouvert via TopStatusBar bloqué sur "Localisation en cours..." à jamais.
+        const onSheetOpened = ({ id }: { id: string }) => {
+            if (id === 'sos') void this.resolveAndDisplay();
+        };
+        eventBus.on('sheetOpened', onSheetOpened);
+        this.addSubscription(() => eventBus.off('sheetOpened', onSheetOpened));
+
+        // Bouton pill (widget coords) — ouvre simplement le sheet ; la résolution est
+        // gérée par le listener sheetOpened ci-dessus.
         const attachSosBtn = () => {
             const sosBtn = document.getElementById('sos-btn-pill');
             if (sosBtn) {
                 sosBtn.setAttribute('aria-label', 'Appel SOS urgence');
-                sosBtn.onclick = this.openSOSModal.bind(this);
+                sosBtn.onclick = () => sheetManager.open('sos');
             } else {
-                // If not yet in DOM, retry shortly
                 setTimeout(attachSosBtn, 500);
             }
         };
         attachSosBtn();
     }
 
-    private async openSOSModal() {
-        if (!this.element) return;
-        
+    private async resolveAndDisplay(): Promise<void> {
         const textContainer = document.getElementById('sos-text-container');
         if (!textContainer) return;
 
-        sheetManager.open('sos');
         textContainer.textContent = "⌛ Localisation en cours...";
-        
+
         let lat: number, lon: number, alt: number;
-        
-        if (state.userLocation) { 
-            lat = state.userLocation.lat; 
-            lon = state.userLocation.lon; 
-            alt = state.userLocation.alt; 
-        } else { 
-            const gps = worldToLngLat(state.controls?.target.x || 0, state.controls?.target.z || 0, state.originTile); 
-            lat = gps.lat; 
-            lon = gps.lon; 
-            alt = getAltitudeAt(state.controls?.target.x || 0, state.controls?.target.z || 0) / state.RELIEF_EXAGGERATION; 
+
+        if (state.userLocation) {
+            lat = state.userLocation.lat;
+            lon = state.userLocation.lon;
+            alt = state.userLocation.alt;
+        } else {
+            const gps = worldToLngLat(state.controls?.target.x || 0, state.controls?.target.z || 0, state.originTile);
+            lat = gps.lat;
+            lon = gps.lon;
+            alt = getAltitudeAt(state.controls?.target.x || 0, state.controls?.target.z || 0) / state.RELIEF_EXAGGERATION;
         }
-        
-        let bat = "??"; 
-        try { 
-            const battery = await (navigator as any).getBattery(); 
-            bat = Math.round(battery.level * 100).toString(); 
+
+        let bat = "??";
+        try {
+            const battery = await (navigator as any).getBattery();
+            bat = Math.round(battery.level * 100).toString();
         } catch(e) {}
-        
-        const now = new Date(); 
+
+        const now = new Date();
         const time = `${now.getHours()}h${now.getMinutes().toString().padStart(2, '0')}`;
-        
+
         textContainer.textContent = `🆘 SOS SUNTRAIL: ${lat.toFixed(5)},${lon.toFixed(5)} | ALT:${Math.round(alt)}m | BAT:${bat}% | ${time}`;
     }
 }
