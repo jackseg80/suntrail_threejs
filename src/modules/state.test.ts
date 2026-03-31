@@ -6,9 +6,9 @@ describe('state.ts', () => {
         vi.resetModules();
     });
 
-    it('should have a default TARGET_LAT and TARGET_LON (Spiez)', () => {
-        expect(state.TARGET_LAT).toBe(46.6863);
-        expect(state.TARGET_LON).toBe(7.6617);
+    it('should have a default TARGET_LAT and TARGET_LON (Suisse centroïde)', () => {
+        expect(state.TARGET_LAT).toBe(46.8182);
+        expect(state.TARGET_LON).toBe(8.2275);
     });
 
     it('should have initial three.js instances as null', () => {
