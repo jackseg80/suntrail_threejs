@@ -733,6 +733,64 @@ body.sheet-layers-sheet-open #sheet-overlay {
     box-shadow: none;
 }
 
+/* TOGGLE 2D/3D — bouton avec icon + label */
+.nav-mode-toggle {
+    width: 52px;
+    height: 52px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    padding: 2px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-mode-toggle:active {
+    transform: scale(0.92);
+}
+
+.nav-mode-toggle .grid-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.nav-mode-toggle .grid-peak {
+    transition: opacity 0.3s ease;
+}
+
+/* État 2D — pic caché (vue plate) */
+body.mode-2d .nav-mode-toggle .grid-peak {
+    opacity: 0;
+}
+
+/* Label du mode */
+.nav-mode-label {
+    font-size: 9px;
+    font-weight: 600;
+    line-height: 1;
+    margin-top: 1px;
+    color: var(--text);
+    transition: color 0.3s ease;
+}
+
+/* État actif — accent */
+.nav-mode-toggle.active {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 4px 20px var(--accent-glow);
+}
+
+.nav-mode-toggle.active .nav-mode-label {
+    color: white;
+}
+
 /* PROFIL ALTIMÉTRIQUE (v4.8) - ABOVE NAV BAR */
 #elevation-profile {
     position: fixed; 
