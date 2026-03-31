@@ -806,21 +806,37 @@ body.mode-2d .nav-mode-toggle .grid-peak {
     opacity: 0.6;
 }
 
-/* PROFIL ALTIMÉTRIQUE (v4.8) - ABOVE NAV BAR */
+/* PROFIL ALTIMÉTRIQUE — tiroir swipe-to-dismiss juste au-dessus du menu */
 #elevation-profile {
-    position: fixed; 
-    bottom: calc(var(--bar-h) + var(--safe-bottom) + 80px); 
-    left: 50%; 
-    transform: translateX(-50%); 
-    width: calc(100% - 40px); 
-    max-width: 800px; 
-    background: var(--surface-solid); 
-    border: 1px solid var(--border); 
-    border-radius: 24px; 
-    padding: 20px; 
-    z-index: 1500; 
-    backdrop-filter: var(--glass); 
+    position: fixed;
+    bottom: calc(var(--bar-h) + var(--safe-bottom) + 8px);
+    left: 50%;
+    transform: translate(-50%, calc(100% + 40px));
+    width: calc(100% - 40px);
+    max-width: 800px;
+    background: var(--surface-solid);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 0 20px 20px;
+    z-index: 1500;
+    backdrop-filter: var(--glass);
     box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s;
+    opacity: 0;
+    pointer-events: none;
+}
+#elevation-profile.is-open {
+    transform: translate(-50%, 0);
+    opacity: 1;
+    pointer-events: auto;
+}
+.profile-drag-handle {
+    width: 100%;
+    padding: var(--space-2) 0 var(--space-1);
+    display: flex;
+    justify-content: center;
+    touch-action: none;
+    cursor: grab;
 }
 
 /* COORDS PILL */
@@ -871,6 +887,9 @@ body.mode-2d #timeline-toggle-btn {
 body.mode-2d #bottom-bar         { display: none !important; }
 /* Masquer l'altitude dans le panneau de coordonnées (toujours 0 en 2D) */
 body.mode-2d #click-alt          { display: none; }
+/* Eco : masquer les contrôles inutiles (toujours 2D, pas de timeline) */
+body.preset-eco #nav-2d-toggle       { display: none !important; }
+body.preset-eco #timeline-toggle-btn { display: none !important; }
 
 #toast-container {
     position: fixed; bottom: calc(var(--bar-h) + var(--safe-bottom) + 20px); left: 50%; transform: translateX(-50%);

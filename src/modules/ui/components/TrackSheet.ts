@@ -353,7 +353,7 @@ export class TrackSheet extends BaseComponent {
         banner.className = 'rec-upsell-banner';
         banner.style.cssText = 'display:flex; align-items:center; gap:var(--space-2); padding:var(--space-3); margin-top:var(--space-3); background:rgba(var(--accent-rgb,59,126,248),0.12); border:1px solid rgba(var(--accent-rgb,59,126,248),0.3); border-radius:var(--radius-md); font-size:12px; color:var(--text-2);';
         const text = document.createElement('span');
-        text.style.flex = '1';
+        text.style.cssText = 'flex:1; min-width:0; overflow-wrap:break-word; word-break:break-word;';
         text.textContent = i18n.t('track.upsell.postRec');
         const proBtn = document.createElement('button');
         proBtn.className = 'btn-go';

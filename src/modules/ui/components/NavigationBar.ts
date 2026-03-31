@@ -60,13 +60,14 @@ export class NavigationBar extends BaseComponent {
                 void haptic('light');
                 const newMode = !state.IS_2D_MODE;
                 state.IS_2D_MODE = newMode;
+                state.isTiltTransitioning = true; // animation douce du tilt
                 document.body.classList.toggle('mode-2d', newMode);
                 syncToggleVisual();
-                // rebuildActiveTiles() au lieu de resetTerrain() :
-                // - évite l'écran blanc (scène jamais vide)
-                // - évite le damier sombre (matériaux rendus via oldMesh→pool, pas détruits)
-                rebuildActiveTiles();
-                updateVisibleTiles(); // charge les éventuelles nouvelles tuiles
+                // Décaler le rebuild pour ne pas bloquer l'animation de tilt
+                setTimeout(() => {
+                    rebuildActiveTiles();
+                    updateVisibleTiles();
+                }, 150);
             };
 
             modeToggle.addEventListener('click', onModeToggleClick);

@@ -13,6 +13,7 @@ import { lngLatToTile, lngLatToWorld, worldToLngLat } from './geo';
 import { showToast } from './utils';
 import { applyPreset, detectBestPreset, getGpuInfo, applyCustomSettings } from './performance';
 import { findTerrainIntersection, getAltitudeAt } from './analysis';
+import { closeElevationProfile } from './profile';
 import { startLocationTracking } from './location';
 import { fetchWeather } from './weather';
 
@@ -84,6 +85,16 @@ export function initUI(): void {
     if (techInfo) techInfo.style.display = 'block';
 
     window.addEventListener('resize', onWindowResize);
+    // Fix UI minuscule après rotation paysage→portrait sur Android WebView :
+    // le browser peut garder un zoom scale incorrect après orientationchange.
+    window.addEventListener('orientationchange', () => {
+        setTimeout(() => {
+            const vp = document.querySelector('meta[name="viewport"]');
+            if (vp) vp.setAttribute('content',
+                'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
+            onWindowResize();
+        }, 300);
+    });
     document.addEventListener('click', handleGlobalClick);
     
     const canvasContainer = document.getElementById('canvas-container');
@@ -392,8 +403,7 @@ export function initUI(): void {
     });
 
     document.getElementById('close-profile')?.addEventListener('click', () => {
-        const ep = document.getElementById('elevation-profile');
-        if (ep) ep.style.display = 'none';
+        closeElevationProfile();
     });
 }
 

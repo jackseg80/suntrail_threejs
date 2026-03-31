@@ -30,8 +30,7 @@ function resolveActiveLayer(layerId?: string): GPXLayer | null {
 export function updateElevationProfile(layerId?: string): void {
     const layer = resolveActiveLayer(layerId);
     if (!layer || !layer.points.length) {
-        const profileEl = document.getElementById('elevation-profile');
-        if (profileEl) profileEl.style.display = 'none';
+        closeElevationProfile();
         return;
     }
 
@@ -77,7 +76,10 @@ export function updateElevationProfile(layerId?: string): void {
     setupProfileInteractions();
     
     const profileEl = document.getElementById('elevation-profile');
-    if (profileEl) profileEl.style.display = 'block';
+    if (profileEl) {
+        profileEl.classList.add('is-open');
+        setupSwipeGesture(profileEl);
+    }
 }
 
 function updateStatsUI(dist: number, dPlus: number, dMinus: number): void {
@@ -230,4 +232,60 @@ function setupProfileInteractions(): void {
         container.dispatchEvent(moveEvent);
         e.preventDefault();
     };
+}
+
+/** Ferme le tiroir du profil d'élévation */
+export function closeElevationProfile(): void {
+    const profileEl = document.getElementById('elevation-profile');
+    if (profileEl) profileEl.classList.remove('is-open');
+    if (state.profileMarker) state.profileMarker.visible = false;
+}
+
+let swipeAttached = false;
+
+/** Attache le geste swipe-to-dismiss sur le drag handle du profil */
+function setupSwipeGesture(profileEl: HTMLElement): void {
+    if (swipeAttached) return;
+    swipeAttached = true;
+
+    const handle = profileEl.querySelector<HTMLElement>('.profile-drag-handle');
+    if (!handle) return;
+
+    let startY = 0;
+    let startTime = 0;
+    let isDragging = false;
+
+    handle.addEventListener('pointerdown', (e: PointerEvent) => {
+        startY = e.clientY;
+        startTime = Date.now();
+        isDragging = true;
+        handle.setPointerCapture(e.pointerId);
+        profileEl.style.transition = 'none';
+    });
+
+    handle.addEventListener('pointermove', (e: PointerEvent) => {
+        if (!isDragging) return;
+        const delta = e.clientY - startY;
+        if (delta > 0) {
+            profileEl.style.transform = `translate(-50%, ${delta * 0.6}px)`;
+        }
+    });
+
+    const onEnd = (e: PointerEvent) => {
+        if (!isDragging) return;
+        isDragging = false;
+        const delta = e.clientY - startY;
+        const duration = Date.now() - startTime;
+        const velocity = duration > 0 ? delta / duration : 0;
+
+        profileEl.style.transition = '';
+        profileEl.style.transform = '';
+
+        if (delta > 60 || velocity > 0.3) {
+            closeElevationProfile();
+        }
+    };
+
+    handle.addEventListener('pointerup', onEnd);
+    handle.addEventListener('pointercancel', onEnd);
 }

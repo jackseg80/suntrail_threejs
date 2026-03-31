@@ -521,3 +521,32 @@ Chute isolée, aucune tile en cours. Signature GC Android ou throttling thermiqu
 | Bouton GPS état inversé | `401bf22` | ID `gps-follow-btn` → `gps-main-btn` |
 | Artefact ombre eau LOD 17-18 | `401bf22` | Amplitude onde ÷5 (±0.9m), base mesh +2m |
 | Rotation caméra brusque GPS follow | `401bf22` | `clampedDelta = min(delta, 50ms)` dans `centerOnUser()` |
+
+---
+
+## Session — Galaxy S23 Batterie (Test poche) — 2026-03-31
+
+### Environnement
+
+| Paramètre | Valeur |
+|-----------|--------|
+| **Appareil** | Samsung Galaxy S23 (Snapdragon 8 Gen 2, Adreno 740) |
+| **Preset détecté** | performance |
+| **ENERGY_SAVER** | false (flagship) |
+| **Scénario** | App en poche, écran éteint, très peu d'interaction |
+| **Durée** | ~45 minutes |
+
+### Résultat
+
+| Métrique | Valeur |
+|----------|--------|
+| **Drain batterie** | 8-9% en 45 min |
+| **Extrapolation 1h** | ~11-12% / heure |
+
+### Analyse
+
+- Le drain est élevé pour un scénario poche/écran éteint.
+- `visibilitychange → hidden` devrait appeler `renderer.setAnimationLoop(null)` et arrêter le GPU.
+- **À investiguer** : le foreground service GPS (`foregroundService.ts`) pourrait maintenir l'app active même écran off si REC est en cours.
+- **À investiguer** : vérifier que le handler `visibilitychange` se déclenche bien dans le WebView Android Capacitor (vs navigateur natif).
+- Baseline attendue pour un flagship en idle : 2-4% / heure max.

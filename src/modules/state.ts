@@ -224,6 +224,7 @@ export interface State {
     isFollowingTrail: boolean;
     
     isFlyingTo: boolean; // true during flyTo animation — blocks origin shift
+    isTiltTransitioning: boolean; // true during 2D↔3D smooth tilt animation
     isRecording: boolean;
     recordedPoints: LocationPoint[];
     
@@ -292,6 +293,7 @@ const initialState: State = {
     profileMarker: null, trailProgress: 0, isFollowingTrail: false,
     
     isFlyingTo: false,
+    isTiltTransitioning: false,
     isRecording: false,
     recordedPoints: [],
     

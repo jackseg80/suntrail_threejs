@@ -4,6 +4,35 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.16.8] - 2026-03-31
+### 🐛 Corrections & Améliorations UX
+
+**Détection GPU :**
+- Adreno 730 (Snapdragon 8 Gen 1) reclassé de `balanced` → `performance` — flagship, pas mid-range
+- Info GPU/CPU/preset détecté affichée dans Réglages > Avancés pour diagnostic
+
+**Monétisation :**
+- Prix Upgrade : suppression duplication `/mois` dans `getPrices()` + overflow CSS sur `.upgrade-plan-price`
+- REC stop upsell : fix overflow texte sur petits écrans (`min-width:0; overflow-wrap:break-word`)
+
+**Mode Eco :**
+- Bouton 2D/3D et toggle timeline masqués en preset eco (`body.preset-eco`) — inutiles en 2D permanent
+
+**Orientation mobile :**
+- Handler `orientationchange` + reset viewport meta après rotation paysage→portrait (fix UI minuscule)
+
+**Animation tilt 2D↔3D :**
+- Nouvelle animation douce lors du toggle 2D/3D : lerp vers 85% du tiltCap avec bande étroite OrbitControls
+- Flag `state.isTiltTransitioning` — exempté du idle throttle, standalone dans `needsUpdate`
+- `rebuildActiveTiles()` décalé de 150ms pour éviter le blocage de l'animation
+
+**Profil d'élévation :**
+- Tiroir swipe-to-dismiss (même pattern que Timeline) — drag handle, velocity-based dismiss
+- Repositionné juste au-dessus du menu nav (`bottom: var(--bar-h) + 8px`)
+- Transition CSS `transform` au lieu de `display:none/block`
+
+---
+
 ## [5.16.7] - 2026-03-31
 ### ♿ Audit Lighthouse 100/100/100 — Accessibilité, SEO & UI
 

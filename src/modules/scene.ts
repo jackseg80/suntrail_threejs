@@ -417,6 +417,7 @@ export async function initScene(): Promise<void> {
         // les particules s'animent à 20fps réels, sans plein régime continu.
         const isWeatherActive = state.SHOW_WEATHER && state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0;
         const isIdleMode = !state.isUserInteracting && !state.isFlyingTo && !state.isFollowingUser
+            && !state.isTiltTransitioning
             && !(isWeatherActive && weatherFrameDue)
             && (now - lastInteractionTime >= 800);
         if (isIdleMode && (now - lastRenderTime < WATER_THROTTLE_MS)) return;
@@ -443,9 +444,32 @@ export async function initScene(): Promise<void> {
         // sans passer par controls.update() (évite le stuck sur WebView Android)
         let tiltAnimating = false;
         if (state.IS_2D_MODE || state.ZOOM <= 10) {
-            state.controls.minPolarAngle = 0; state.controls.maxPolarAngle = 0;
+            if (state.isTiltTransitioning && currentTilt > 0.005) {
+                // Animation douce vers top-down (2D)
+                tiltAnimating = true;
+                const newTilt = THREE.MathUtils.lerp(currentTilt, 0, 0.06);
+                state.controls.minPolarAngle = 0;
+                state.controls.maxPolarAngle = Math.max(0, newTilt);
+            } else {
+                state.controls.minPolarAngle = 0; state.controls.maxPolarAngle = 0;
+                if (state.isTiltTransitioning) state.isTiltTransitioning = false;
+            }
+        } else if (state.isTiltTransitioning) {
+            // Animation douce vers tilt 3D — angle prononcé (85% du cap) pour montrer le relief.
+            // On resserre min/max autour de newTilt pour FORCER OrbitControls à pousser la caméra.
+            const desiredTilt = Math.max(tiltCap * 0.85, 0.5);
+            if (Math.abs(currentTilt - desiredTilt) > 0.01) {
+                tiltAnimating = true;
+                const newTilt = THREE.MathUtils.lerp(currentTilt, desiredTilt, 0.07);
+                // Bande étroite autour de newTilt — force la caméra à suivre
+                state.controls.minPolarAngle = Math.max(0.05, newTilt - 0.01);
+                state.controls.maxPolarAngle = Math.min(tiltCap, newTilt + 0.01);
+            } else {
+                state.isTiltTransitioning = false;
+                state.controls.minPolarAngle = 0.05; state.controls.maxPolarAngle = tiltCap;
+            }
         } else if (interacting) {
-            state.controls.minPolarAngle = 0.05; state.controls.maxPolarAngle = tiltCap; 
+            state.controls.minPolarAngle = 0.05; state.controls.maxPolarAngle = tiltCap;
         } else {
             const hFactor = THREE.MathUtils.clamp((distToTarget - 2000) / 100000, 0, 1);
             let desiredTilt = THREE.MathUtils.lerp(tiltCap * 0.95, 0.05, Math.pow(hFactor, 0.4));
@@ -453,7 +477,7 @@ export async function initScene(): Promise<void> {
             if (Math.abs(currentTilt - desiredTilt) > 0.005) {
                 tiltAnimating = true;
                 const newTilt = THREE.MathUtils.lerp(currentTilt, desiredTilt, 0.02);
-                state.controls.minPolarAngle = Math.max(0.05, newTilt - 0.2); 
+                state.controls.minPolarAngle = Math.max(0.05, newTilt - 0.2);
                 state.controls.maxPolarAngle = Math.min(tiltCap, newTilt + 0.2);
             }
         }
@@ -473,6 +497,7 @@ export async function initScene(): Promise<void> {
             // standalone pour garantir un rendu à chaque frame pendant le vol (v5.11.1).
             (controlsDirty && (state.isUserInteracting || (now - lastInteractionTime < 800)))
             || state.isFlyingTo
+            || state.isTiltTransitioning
             || tiltAnimating
             || (state.SHOW_HYDROLOGY && waterFrameDue)
             || state.isSunAnimating

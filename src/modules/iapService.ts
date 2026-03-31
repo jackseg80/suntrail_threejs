@@ -174,7 +174,7 @@ class IAPService {
 
     /** Retourne les prix formatés pour affichage dans l'UpgradeSheet */
     async getPrices(): Promise<{ monthly: string; yearly: string; lifetime: string }> {
-        const defaults = { monthly: '€3.99/mois', yearly: '€29.99/an', lifetime: '€99.99' };
+        const defaults = { monthly: '€3.99', yearly: '€29.99', lifetime: '€99.99' };
         if (!this.initialized) return defaults;
         try {
             const offering = await this.getCurrentOffering();
@@ -184,7 +184,11 @@ class IAPService {
                 const id = pkg.identifier.toLowerCase();
                 const raw = pkg.product.priceString ?? '';
                 // Google Play test subscriptions appendent la période raccourcie (ex: "for 5 minutes")
-                const price = raw.replace(/\s*(for|per|pour|durch|para|in)\s*\d+\s*(minutes?|min\.?)/gi, '').trim();
+                // Aussi supprimer les suffixes de période (/mois, /an, /month, /year, etc.)
+                const price = raw
+                    .replace(/\s*(for|per|pour|durch|para|in)\s*\d+\s*(minutes?|min\.?)/gi, '')
+                    .replace(/\s*\/\s*(mois|an|month|year|mes|monat|jahr|anno)/gi, '')
+                    .trim();
                 if (id.includes('monthly')) prices.monthly = price;
                 else if (id.includes('yearly') || id.includes('annual')) prices.yearly = price;
                 else if (id.includes('lifetime')) prices.lifetime = price;

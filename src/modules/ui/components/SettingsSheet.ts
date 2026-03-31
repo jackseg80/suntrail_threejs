@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { BaseComponent } from '../core/BaseComponent';
 import { state, saveSettings } from '../../state';
-import { applyPreset } from '../../performance';
+import { applyPreset, getGpuInfo, detectBestPreset } from '../../performance';
 import { resetTerrain, updateVisibleTiles, updateHydrologyVisibility } from '../../terrain';
 import { updateWeatherVisibility } from '../../weather';
 import { i18n } from '../../../i18n/I18nService';
@@ -155,6 +155,9 @@ export class SettingsSheet extends BaseComponent {
 
         // Tutorial button
         this.createTutorialButton();
+
+        // Hardware info (GPU/CPU/preset)
+        this.createHardwareInfoSection();
 
         // 7-tap easter egg → toggle Pro tester mode (RAM uniquement, non persisté)
         this.setupVersionTapEgg();
@@ -433,6 +436,26 @@ export class SettingsSheet extends BaseComponent {
         section.querySelector('#tutorial-btn')?.addEventListener('click', () => {
             void showOnboarding();
         });
+    }
+
+    private createHardwareInfoSection(): void {
+        if (!this.element) return;
+        const panel = this.element.querySelector('#panel') || this.element;
+
+        const gpuInfo = getGpuInfo();
+        const cores = navigator.hardwareConcurrency || '?';
+        const detectedPreset = detectBestPreset();
+
+        const section = document.createElement('div');
+        section.className = 'settings-section';
+        section.innerHTML = `
+            <div style="font-size:10px;color:var(--text-3);opacity:0.6;line-height:1.6;padding:4px 0">
+                <div><b>GPU</b> : ${gpuInfo.renderer}</div>
+                <div><b>CPU</b> : ${cores} cores</div>
+                <div><b>Preset détecté</b> : ${detectedPreset}</div>
+            </div>
+        `;
+        panel.appendChild(section);
     }
 
     /**

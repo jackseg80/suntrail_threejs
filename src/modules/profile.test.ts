@@ -27,10 +27,10 @@ describe('Profil d\'altitude (Module Profile)', () => {
 
     it('updateElevationProfile ne devrait rien faire sans données GPX', () => {
         const profileEl = document.getElementById('elevation-profile');
-        if (profileEl) profileEl.style.display = 'none';
-        
+        if (profileEl) profileEl.classList.remove('is-open');
+
         updateElevationProfile();
-        expect(profileEl?.style.display).toBe('none');
+        expect(profileEl?.classList.contains('is-open')).toBe(false);
     });
 
     it('updateElevationProfile devrait traiter les points GPX et afficher le panneau', () => {
@@ -57,7 +57,7 @@ describe('Profil d\'altitude (Module Profile)', () => {
         updateElevationProfile();
 
         const profileEl = document.getElementById('elevation-profile');
-        expect(profileEl?.style.display).toBe('block');
+        expect(profileEl?.classList.contains('is-open')).toBe(true);
         
         // Vérification du contenu du SVG (un path devrait être créé)
         const svg = document.getElementById('profile-svg');

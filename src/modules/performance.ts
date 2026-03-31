@@ -40,8 +40,8 @@ export function getGpuInfo(): { renderer: string, vendor: string } {
  *
  * Tiers GPU → Preset :
  *   ultra       : PC haut de gamme (RTX, RX 6000+, GTX 1060+), Apple M, Snapdragon Elite (Adreno 830)
- *   performance : Flagship mobile (Adreno 740/750), mid-range PC (GTX 1050, RX 480), Apple A-series, Mali-G78
- *   balanced    : Mid-range 2020-2022 (Adreno 6xx, Mali-G68/G76, Intel HD 6xx, Iris, AMD Vega iGPU)
+ *   performance : Flagship mobile (Adreno 730/740/750), mid-range PC (GTX 1050, RX 480), Apple A-series, Mali-G78
+ *   balanced    : Mid-range 2020-2022 (Adreno 6xx/720, Mali-G68/G76, Intel HD 6xx, Iris, AMD Vega iGPU)
  *   eco         : Tout le reste (vieux mobile, Intel HD 4xx/5xx, GPU inconnu)
  *
  * Fallback inconnu : CPU ≥8 cores → balanced, sinon eco.
@@ -71,8 +71,8 @@ export function detectBestPreset(): PresetType {
     // ── Tier HIGH / Performance ────────────────────────────────────────────────
     // Flagship mobile (S23 / Adreno 740), mid-range PC (GTX 1050, RX 470)
 
-    // Snapdragon 8 Gen 2/3 → Adreno 740/750/800
-    if (gpu.includes('adreno') && /7[4-9]\d|80\d/.test(gpu)) return 'performance';
+    // Snapdragon 8 Gen 1/2/3 → Adreno 730/740/750/800
+    if (gpu.includes('adreno') && /7[3-9]\d|80\d/.test(gpu)) return 'performance';
     // Apple iPhone A-series (A15/A16/A17) — "apple gpu" générique sur iOS
     if (gpu.includes('apple'))                          return 'performance';
     // Mali-G78/G710/G715 (Dimensity 9000, Exynos 2200)
@@ -91,8 +91,8 @@ export function detectBestPreset(): PresetType {
     // ── Tier STD / Balanced ────────────────────────────────────────────────────
     // Mid-range 2020-2022 (A53, Intel HD 620, AMD Vega iGPU)
 
-    // Adreno 660/642/619/618/720/730 (Snapdragon 7 Gen, SD 780G, mid-range 2021-2023)
-    if (gpu.includes('adreno') && /6[0-9]\d|72\d|73\d/.test(gpu)) return 'balanced';
+    // Adreno 660/642/619/618/720 (Snapdragon 7 Gen, SD 780G, mid-range 2021-2023)
+    if (gpu.includes('adreno') && /6[0-9]\d|72\d/.test(gpu)) return 'balanced';
     // Mali-G68/G76/G57/G72 (A53, Dimensity 1xxx, Exynos 12xx)
     if (gpu.includes('mali') && /g68|g76|g57|g72/.test(gpu)) return 'balanced';
     // Mali générique avec ≥8 cores CPU (mid-range probable)
@@ -182,6 +182,9 @@ export function applyPreset(preset: PresetType): void {
         // Purge des textures GPU excédentaires (limite du cache réduite pour mobile)
         trimCache();
     }
+
+    // Classe preset-eco pour masquer les contrôles inutiles (bouton 3D, timeline)
+    document.body.classList.toggle('preset-eco', preset === 'eco');
 
     if (preset === 'eco') {
         document.body.classList.add('mode-2d');

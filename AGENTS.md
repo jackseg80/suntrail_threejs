@@ -1,4 +1,4 @@
-# SunTrail - Base de Connaissance (v5.16.7)
+# SunTrail - Base de Connaissance (v5.16.8)
 
 Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTrail. Il consigne les décisions architecturales critiques et les solutions aux problèmes complexes.
 
@@ -74,14 +74,14 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 
 ### Presets — Tiers du Marché Mobile (v5.11)
 Les presets reflètent désormais le marché mobile réel, sans double-couche "preset + caps". Les valeurs sont directes et universelles :
-- **eco** : Vieux mobile (Mali-G52, Adreno 5xx, Intel HD 4xx) — RANGE 3, shadow off, MAX_ZOOM 14
+- **eco** : Vieux mobile (Mali-G52, Adreno 5xx, Intel HD 4xx) — RANGE 3, shadow off, MAX_ZOOM 14. `body.preset-eco` masque le bouton 2D/3D et le toggle timeline (v5.16.8)
 - **balanced** (STD — Galaxy A53) : RESOLUTION 32, RANGE 4, shadow 256, végétation légère (density 500)
-- **performance** (High — Galaxy S23 / Adreno 740 / GTX 1050) : RANGE 5, shadow 1024, MAX_BUILDS 2 — valeurs baked-in sans caps
+- **performance** (High — Galaxy S23 / Adreno 730-740 / GTX 1050) : RANGE 5, shadow 1024, MAX_BUILDS 2 — valeurs baked-in sans caps
 - **ultra** (PC / Snapdragon Elite) : Pleine qualité PC. Sur mobile Elite : shadow≤2048, RANGE≤8 (ajustements minimaux dans `applyPreset()`).
 - **Seuls ajustements mobiles résiduels** dans `applyPreset()` : ENERGY_SAVER (batterie), Ultra shadow/range, PIXEL_RATIO≤2.0.
 
 ### Détection GPU (v5.11)
-`detectBestPreset()` couvre 52 patterns GPU : Intel HD/UHD par génération, Intel Arc, Intel Iris Xe, AMD Vega iGPU, AMD RX par série (RDNA/Polaris), NVIDIA GTX par série numérique, Snapdragon Elite (Adreno 830+), Mali par modèle exact. Fallback : ≥8 cores CPU → `balanced`, sinon `eco`. **`detectBestPreset()` ne modifie plus `state.ENERGY_SAVER` directement** — c'est fait dans `applyPreset()` pour gérer les utilisateurs de retour (localStorage).
+`detectBestPreset()` couvre 52 patterns GPU : Intel HD/UHD par génération, Intel Arc, Intel Iris Xe, AMD Vega iGPU, AMD RX par série (RDNA/Polaris), NVIDIA GTX par série numérique, Snapdragon Elite (Adreno 830+), Mali par modèle exact. Adreno 730+ = `performance` (v5.16.8, était `balanced`). Fallback : ≥8 cores CPU → `balanced`, sinon `eco`. **`detectBestPreset()` ne modifie plus `state.ENERGY_SAVER` directement** — c'est fait dans `applyPreset()` pour gérer les utilisateurs de retour (localStorage). Info GPU/CPU/preset affichée dans Réglages Avancés (`SettingsSheet.createHardwareInfoSection()`).
 
 ### PerfRecorder (v5.11)
 `VRAMDashboard` intègre un enregistreur de sessions de performance. Bouton ⏺/⏹ dans le panel VRAM. Buffer circulaire 600 échantillons (5 min à 500ms). Export JSON dans le presse-papier. Données : fps, textures, geometries, drawCalls, triangles, tiles, zoom, isProcessingTiles, isUserInteracting, energySaver. Utiliser pour analyser les chutes de FPS : coller le JSON dans le chat IA pour corrélation fps↔textures↔isProcessingTiles.
@@ -97,6 +97,7 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 - **Cinematic flyTo** : Trajectoire en "cloche" (parabolique) avec interpolation `easeInOutCubic` et vérification anti-collision en temps realtime (v4.6.0).
 - **Adaptive Zoom (v5.8.6)** : Logique de saut intelligent de LOD lors des téléportations ou des déplacements rapides. Élimine le délai de chargement des paliers intermédiaires pour une netteté immédiate à l'arrivée.
 - **Tilt Parabola** : L'inclinaison maximale de la caméra est dynamique ; elle atteint son pic au LOD 14 et se redresse automatiquement vers le sol à haute altitude pour masquer l'horizon vide (v4.5.56).
+- **Tilt Transition 2D↔3D (v5.16.8)** : `state.isTiltTransitioning` déclenché au toggle 2D/3D. Lerp du polar angle vers 85% du `tiltCap` (bande ±0.01 rad force OrbitControls). Exempté du idle throttle. `rebuildActiveTiles()` décalé de 150ms pour ne pas bloquer l'animation.
  - **Navigation Tactile Google Earth (v5.11)** : `src/modules/touchControls.ts` — module autonome interceptant les **PointerEvents** (pas TouchEvents) en phase capture avant OrbitControls. Stratégie : désactive `controls.enabled = false` au premier contact, réactive à la fin. **Architecture 2 doigts (v5.11)** :
    - **Zoom** : pinch-spread → `doZoomToPoint()` raycasting (zoome vers le centre des doigts, pas le centre écran).
    - **Rotation** : twist tire-bouchon → `doRotate()`, per-frame avec 3 guards : `|dAngle| > ROT_DEADZONE` + `|dAngle| > spreadDelta × 0.5` (pas de bruit zoom) + `|dAngle| × 150 > |dy|` (pas de bruit tilt).
@@ -121,7 +122,8 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 - **Rendu SVG** : Courbe d'altitude avec gradient, redimensionnement responsive.
 - **Interaction** : Survol souris/tactile affiche distance, altitude, pente %. Marqueur 3D cyan (sphère + ligne) synchronisé avec la position du curseur sur le profil.
 - **Calculs** : D+/D- cumulés, pente par segment, distance haversine.
-- **Exports** : `updateElevationProfile()`, `haversineDistance()`.
+- **Tiroir swipe-to-dismiss (v5.16.8)** : Panel repositionné juste au-dessus du menu nav (`bottom: var(--bar-h) + 8px`). Ouverture/fermeture par `classList.add/remove('is-open')` avec transition CSS `transform`. Drag handle (`.profile-drag-handle`) + swipe gesture (même pattern que `TimelineComponent.attachSwipeGesture()`). Bouton × conservé comme méthode secondaire.
+- **Exports** : `updateElevationProfile()`, `closeElevationProfile()`, `haversineDistance()`.
 
 ### Boussole 3D (`compass.ts`)
 
@@ -255,6 +257,11 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 | Chargement lent après changement de LOD (scroll ou zoom rapide) | Les fetches HTTP de l'ancien LOD continuent en background après `tile.dispose()` — saturent la bande passante, retardent les nouvelles tuiles | `Tile.activeTaskId` stocké au début de `load()`. `dispose()` appelle `cancelTileLoad(activeTaskId)` → `tileWorkerManager.cancelTile()` → message `{ type:'cancel' }` au worker → `AbortController.abort()` → fetch HTTP annulé. (v5.14.0) |
 | GPS ne switche pas vers SwissTopo même en Suisse | `ui.ts` posait `state.hasManualSource = true` inconditionnellement dans le bloc `loadSettings()` → `autoSelectMapSource()` retournait via `if (state.hasManualSource) return` pour tout utilisateur avec settings sauvegardés | **Ne jamais mettre `hasManualSource = true` lors du chargement des settings.** Seules les sources non-auto-sélectionnables méritent ce flag : `satellite`, `ign`, `osm`. Inférer avec `const AUTO_SOURCES = ['swisstopo', 'opentopomap']; state.hasManualSource = !AUTO_SOURCES.includes(savedSettings.MAP_SOURCE)`. (v5.13.8) |
 | Panel SOS bloqué sur "Localisation en cours..." (ouvert via TopStatusBar) | `resolveAndDisplay()` n'était attaché qu'au `#sos-btn-pill`. Le bouton `TopStatusBar` appelait `sheetManager.toggle('sos')` → template affiché, GPS jamais résolu | **Pattern EventBus pour toute logique déclenchée à l'ouverture d'un sheet** : `eventBus.on('sheetOpened', ({ id }) => { if (id === 'sos') void this.resolveAndDisplay(); })`. Tous les points d'entrée (`sheetManager.open/toggle`) déclenchent automatiquement la résolution. Ne jamais coupler la logique d'un sheet à un bouton spécifique. (v5.13.8) |
+| Galaxy Tab S8 (Adreno 730) détecté Balanced au lieu de Performance | Regex `/6[0-9]\d\|72\d\|73\d/` groupait Adreno 730 (flagship SD8 Gen 1) avec les mid-range 6xx | Regex performance élargi `/7[3-9]\d\|80\d/`, balanced réduit à `/6[0-9]\d\|72\d/`. (v5.16.8) |
+| Prix Upgrade dupliqué "€3.99/mois" + "par mois" | `getPrices()` defaults incluaient `/mois`, `/an` — affiché dans `.upgrade-plan-price` au-dessus du label statique `par mois` | Defaults nettoyés (`€3.99`), regex strip `/mois\|/an\|/month\|/year` sur prix RevenueCat. (v5.16.8) |
+| Toggle 2D→3D sans animation visible | `IS_2D_MODE` toggle instantané, pas d'animation caméra | `state.isTiltTransitioning` — lerp polar angle vers 85% tiltCap, bande ±0.01 rad force OrbitControls. `rebuildActiveTiles()` décalé 150ms pour éviter le blocage. (v5.16.8) |
+| UI minuscule après rotation paysage→portrait | Aucun listener `orientationchange`, viewport zoom stuck | Handler `orientationchange` + reset viewport meta après 300ms dans `ui.ts`. (v5.16.8) |
+| Profil d'élévation non fermable / sous la boussole | Panel `position:fixed` avec petit × seulement, trop haut (80px au-dessus nav) | Tiroir swipe-to-dismiss (`closeElevationProfile()`, `setupSwipeGesture()`), repositionné juste au-dessus du menu nav (8px). (v5.16.8) |
 
 ## 💰 Freemium & IAP (v5.12)
 
