@@ -1,86 +1,118 @@
 # ⛰️ SunTrail 3D
 
-**v5.11.2** · **MIT + Commons Clause**
+**v5.16.7** · **MIT + Commons Clause**
 
-Outil de visualisation topographique 3D pour la randonnée alpine.
+Carte topographique 3D interactive pour la randonnée. Terrain réaliste, GPS, météo, analyse solaire et tracés GPX.
 
 ## Aperçu
 
-SunTrail est un moteur de terrain 3D WebGL conçu pour les randonneurs et alpinistes exigeants.
+SunTrail est un moteur de terrain 3D WebGL conçu pour les randonneurs et alpinistes exigeants. Disponible en PWA et application Android native.
 
 **Ce que c'est :**
-- Terrain 3D véritable avec données d'élévation précises
-- Simulation solaire interactive (position du soleil, ombres, heure dorée)
-- Multi-tracés GPX avec analyse de profil
-- Mode offline complet (PWA + PMTiles)
-- Application Android native via Capacitor
+- Terrain 3D véritable avec données d'élévation (résolution 5-25m)
+- Simulation solaire complète (lever/coucher, ombres, heure dorée, phase lunaire)
+- Multi-tracés GPX avec profil d'élévation interactif (D+/D-, pente, VAM)
+- Station météo (Open-Meteo) avec particules pluie/neige shader
+- Enregistrement GPS avec Foreground Service Android
+- Mode offline complet (PWA + zones téléchargeables + PMTiles)
+- Tutoriel onboarding intégré (6 slides)
 
 **Différenciateurs :**
-- 3D réelle (pas de simple ombrage 2D)
-- Simulation solaire unique sur le marché
-- Données officielles : SwissTopo + Plan IGN v2
-- Offline-first : fonctionne sans réseau une fois chargé
+- 3D réelle avec LOD adaptatif (zoom 6→18)
+- Simulation solaire unique sur le marché (courbe 24h, 144 points)
+- Données officielles : SwissTopo + Plan IGN v2 + OpenTopoMap
+- Offline-first : fonctionne sans réseau une fois les tuiles en cache
+- Accessibilité : Lighthouse 100/100/100 (a11y, best practices, SEO)
 
-**Marchés :** 🇨🇭 Suisse · 🇫🇷 France · v5.12 : 🇦🇹 Autriche
+**Marchés :** 🇨🇭 Suisse · 🇫🇷 France · 🌍 Monde (OpenTopoMap + MapTiler)
 
 ## Modèle Freemium
 
-| Tier Gratuit | Tier Pro (€29.99/an · €3.99/mois · €79.99 lifetime) |
+| Tier Gratuit | Tier Pro (€29.99/an · €3.99/mois · €99.99 lifetime) |
 |---|---|
 | Carte topo CH+FR (LOD ≤ 14) | LOD 18 + Satellite HD |
-| GPS live + météo 12h | Météo 3-5 jours + données avancées |
+| GPS live + météo 12h | Météo 3-5 jours + alertes montagne |
 | Simulation solaire (jour actuel) | Calendrier illimité (dates passées/futures) |
-| 1 tracé GPX + **REC illimité** | Multi-tracés + export GPX + stats VAM/Naismith |
-| Pentes visuelles 30°/35°/40° | Inclinomètre numérique + gradient 2° |
-| Vue 2D | Bâtiments 3D réalistes |
+| 1 tracé GPX + REC illimité | Multi-tracés + export GPX + stats VAM/Naismith |
+| Pentes visuelles 30°/35°/40° | Inclinomètre numérique Pro |
+| Vue 2D/3D | Bâtiments 3D réalistes |
 | Offline 1 zone | Offline illimité + PMTiles |
-| Top 10 sommets visibles | Index complet + moteur de recherche |
+| Sommets visibles | Index complet + moteur de recherche |
 
 ## Features techniques
 
 - Moteur Three.js WebGL avec LOD adaptatif (zoom 6→18)
-- WebWorkers pool (4-8 workers) pour fetch et calcul des normal maps
+- WebWorkers pool (4 mobile / 8 desktop) pour fetch tuiles et calcul normal maps
 - Touch controls Google Earth (pinch/zoom/rotation/tilt via PointerEvents)
-- Presets GPU auto-détectés : eco / balanced / performance / ultra
+- Presets GPU auto-détectés (52 patterns) : eco / balanced / performance / ultra
 - Deep Sleep réel (`setAnimationLoop(null)` sur visibilitychange)
 - Idle throttle 20fps + accumulateurs eau/météo (20fps max)
-- Adaptive DPR sur interaction mobile
-- i18n : FR / DE / IT / EN
-- PWA (Service Worker, précache Suisse LOD 6-9)
-- Android natif via Capacitor (Foreground Service pour REC GPS)
+- Adaptive DPR sur interaction mobile (1.0 pendant pan/zoom)
+- Boussole 3D Three.js synchronisée avec la caméra
+- Profil d'élévation SVG interactif avec marqueur 3D
+- Analyse solaire par ray-casting terrain (SunCalc)
+- Particules météo GPU-driven (ShaderMaterial, 15k particules)
+- Végétation bio-fidèle par altitude (InstancedMesh, déterministe)
+- Ghost tiles pour transitions LOD fluides (fondu 1.2s)
+- AbortController sur tous les fetches de tuiles
+- i18n : FR / DE / IT / EN (fallback automatique)
+- PWA (Service Worker, Workbox, cache 30 jours)
+- Android natif via Capacitor (Foreground Service GPS, RevenueCat IAP)
+- WCAG 2.1 AA : aria-labels, focus-visible, contraste, touch targets 48px+
 
 ## Stack technique
 
-Three.js · TypeScript · Vite · Capacitor · RevenueCat · Vitest (190 tests)
+Three.js r160 · TypeScript (strict) · Vite 5 · Capacitor 8 · RevenueCat · Vitest (412+ tests) · axe-core
 
 ## Installation & Dev
 
 ```bash
 npm install
-npm run dev        # Dev server
-npm test           # 190 tests unitaires
+npm run dev        # Serveur dev Vite (HMR)
+npm test           # 412+ tests unitaires
 npm run check      # TypeScript strict
-npm run deploy     # Build + Android
+npm run build      # Build production
+npm run deploy     # check + build + cap sync
 ```
 
-Note : Copier `.env.example` en `.env` et renseigner `VITE_MAPTILER_KEY` et `VITE_REVENUECAT_KEY`
+Copier `.env.example` en `.env` et renseigner `VITE_MAPTILER_KEY` et `VITE_REVENUECAT_KEY`.
+
+## Release
+
+```bash
+# 1. Incrémenter versionCode dans android/app/build.gradle (voir docs/RELEASE.md)
+# 2. Commit + push
+git push origin main
+# 3. Tag (déclenche le CI → build AAB signé)
+git tag v5.16.7
+git push origin v5.16.7
+```
+
+Le CI (`.github/workflows/release.yml`) build l'AAB signé et crée une GitHub Release automatiquement. 6 secrets GitHub requis. Voir [RELEASE.md](./docs/RELEASE.md) pour le workflow complet.
 
 ## Sources de données
 
 | Source | Couverture | Licence |
 |---|---|---|
-| SwissTopo | 🇨🇭 CH | OGD — gratuit |
-| Plan IGN v2 | 🇫🇷 FR | Etalab 2.0 — gratuit |
-| OpenStreetMap | Mondial | ODbL — gratuit |
-| MapTiler Cloud | Satellite + topo mondial | Commercial |
+| SwissTopo WMTS | 🇨🇭 Suisse | OGD — gratuit |
+| Plan IGN v2 | 🇫🇷 France | Etalab 2.0 — gratuit |
+| OpenTopoMap | 🌍 Mondial (LOD ≤ 10) | CC-BY-SA |
+| OpenStreetMap | 🌍 Mondial | ODbL — gratuit |
+| MapTiler Cloud | Satellite + topo mondial | Commercial (clé requise) |
+| Open-Meteo | 🌍 Météo mondiale | CC-BY 4.0 — sans clé |
+| Overpass API (OSM) | 🌍 Bâtiments, POI, sommets | ODbL |
 
 ## Documentation
 
-- [CHANGELOG.md](./docs/CHANGELOG.md) — Historique des versions
-- [TODO.md](./docs/TODO.md) — Feuille de route
-- [FEATURES.md](./docs/FEATURES.md) — Liste des fonctionnalités
-- [ANDROID.md](./docs/ANDROID.md) — Guide Android
-- [MONETIZATION.md](./docs/MONETIZATION.md) — Stratégie business
+| Document | Contenu |
+|---|---|
+| [AGENTS.md](./AGENTS.md) | Base de connaissance technique complète (pour agents IA) |
+| [RELEASE.md](./docs/RELEASE.md) | Workflow de publication + historique versionCode |
+| [CHANGELOG.md](./docs/CHANGELOG.md) | Historique détaillé des versions |
+| [FEATURES.md](./docs/FEATURES.md) | Liste des fonctionnalités |
+| [AUDIT_PRESTORE.md](./docs/AUDIT_PRESTORE.md) | Audit pré-Play Store (sécurité, a11y, compliance) |
+| [ANDROID.md](./docs/ANDROID.md) | Guide build Android |
+| [MONETIZATION.md](./docs/MONETIZATION.md) | Stratégie business |
 
 ## Licence
 
