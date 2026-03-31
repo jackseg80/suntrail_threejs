@@ -235,7 +235,7 @@ Va dans **Réglages → Profils de performance** et teste chaque profil :
 - [ ] Change en **English** → idem
 - [ ] Reviens en **Français**
 - [ ] Teste le slider **Exagération du relief** : monte-le à 3.0 → le relief est-il bien plus prononcé ?
-- [ ] Remets-le à 1.4 (valeur par défaut)
+- [ ] Remets-le à 2.0 (valeur par défaut)
 
 ---
 
