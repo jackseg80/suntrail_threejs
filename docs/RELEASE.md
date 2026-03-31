@@ -92,6 +92,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | 537 | 5.16.5 | v5.16.5 | SHOW_STATS désactivé par défaut + section perf optionnelle (power user) dans protocoles + Google Form script corrigé (addScaleItem, addTextItem) | 2026-03-31 |
 | 538 | 5.16.6 | v5.16.6 | fix: prix lifetime fallback 49.99→99.99 dans iapService.ts | 2026-03-31 |
 | **539** | **5.16.7** | **v5.16.7** | **Audit Lighthouse 100/100/100 — a11y (aria-labels, focus-visible, contraste WCAG AA), SEO (meta-description, robots.txt, viewport), UI (touch targets 48px+, z-index, toggles/sliders agrandis)** | **2026-03-31** |
+| **540** | **5.16.8** | **v5.16.8** | **GPU Adreno 730→performance, prix upgrade fix, eco masque 3D/timeline, tilt animation 2D↔3D, profil élévation tiroir swipe, fix orientation mobile** | **2026-03-31** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 
