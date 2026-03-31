@@ -89,6 +89,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | 534 | 5.16.2 | v5.16.2 | Fix bords du monde vides + bande vide LOD 11+ Schaffhausen/Tessin | 2026-03-31 |
 | 535 | 5.16.3 | v5.16.3 | Fix root cause bande vide : bbox France lon < 9.6 → 8.3 + Corse séparée | 2026-03-31 |
 | 536 | 5.16.4 | v5.16.4 | Fix scroll haut panneaux météo/solaire (race trapFocus 50ms) + scrollbars fines glassmorphism + fix HTML template settings (</div> orphelin → Sources & version invisibles) + 7-tap Pro tester implémenté + protocoles testeurs complets (15 parties) | 2026-03-31 |
+| 537 | 5.16.5 | v5.16.5 | SHOW_STATS désactivé par défaut + section perf optionnelle (power user) dans protocoles + Google Form script corrigé (addScaleItem, addTextItem) | 2026-03-31 |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 

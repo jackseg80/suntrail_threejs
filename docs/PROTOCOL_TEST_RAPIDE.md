@@ -100,6 +100,8 @@ Navigue librement pendant 5 minutes — zoom, dézoom, change de région.
 
 > ℹ️ **Conso batterie attendue :** Le mode 3D avec ombres sollicite davantage le GPU. Sur un smartphone récent, attends-toi à ~10-15%/heure en navigation active écran allumé. En mode 2D, la consommation est bien réduite.
 
+> 🔬 **Optionnel — power user :** Si tu veux fournir des données FPS/GPU, active **Stats de performance** dans Réglages → ⚙️ Paramètres Avancés (désactivé par défaut). Lance l'enregistrement ⏺, navigue 5 min, arrête ⏹ → JSON dans le presse-papier à coller dans tes remarques.
+
 ---
 
 ## 8. Rapport final

@@ -264,6 +264,21 @@ Navigue librement pendant 15 minutes : change de zones, importe un GPX, active l
 
 > ℹ️ **Valeurs de référence attendues :** Navigation 3D active ~10-15%/heure · Navigation 2D ~5-8%/heure · REC GPS écran éteint ~2-4%/heure. Des valeurs bien supérieures indiquent un problème de throttling ou de Deep Sleep.
 
+**🔬 Optionnel — Stats de performance (power user)**
+
+> Cette section est **facultative** et réservée aux utilisateurs à l'aise avec les outils techniques. Elle n'est pas nécessaire pour valider ta récompense.
+
+Si tu veux fournir des données GPU/FPS détaillées pour aider à l'optimisation :
+
+- [ ] Va dans **Réglages → ⚙️ Paramètres Avancés** → active le toggle **"Stats de performance (FPS)"**
+  → Un panneau de monitoring apparaît en haut de l'écran avec FPS, VRAM, draw calls, triangles
+- [ ] Clique sur le bouton **⏺** (enregistrer) dans le panneau
+- [ ] Navigue pendant 5 minutes : 1 min navigation libre, 1 min immobile, 1 min import GPX, 1 min hydrologie active, 1 min écran verrouillé
+- [ ] Clique sur **⏹** → les données sont copiées dans ton presse-papier
+- [ ] Colle le JSON dans ta réponse ou envoie-le par message séparé
+
+> ⚠️ Les stats de performance sont **désactivées par défaut** pour ne pas perturber l'expérience normale. Active-les uniquement pour ce test optionnel, puis désactive-les.
+
 ---
 
 ## Partie 14 — Téléchargement offline & test hors réseau (10 min)
