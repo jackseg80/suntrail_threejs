@@ -4,7 +4,12 @@ import { state, saveSettings } from '../../state';
 import { applyPreset } from '../../performance';
 import { resetTerrain, updateVisibleTiles, updateHydrologyVisibility } from '../../terrain';
 import { updateWeatherVisibility } from '../../weather';
-import { deleteTerrainCache, downloadOfflineZone, setPMTilesSource } from '../../tileLoader';
+import {
+    deleteTerrainCache, setPMTilesSource,
+    downloadVisibleZone, getOfflineZoneCount, incrementOfflineZoneCount, estimateZoneSizeMB,
+} from '../../tileLoader';
+import { activeTiles } from '../../terrain';
+import { showUpgradePrompt } from '../../iap';
 import { SharedAPIKeyComponent } from './SharedAPIKeyComponent';
 import { i18n } from '../../../i18n/I18nService';
 import { showOnboarding } from '../../onboardingTutorial';
@@ -92,17 +97,45 @@ export class SettingsSheet extends BaseComponent {
         const clearCacheBtn = this.element.querySelector('#clear-cache-btn');
         clearCacheBtn?.addEventListener('click', deleteTerrainCache);
 
-        const downloadZoneBtn = this.element.querySelector('#download-zone-btn');
+        const downloadZoneBtn = this.element.querySelector('#download-zone-btn') as HTMLButtonElement | null;
+
+        const syncDownloadZoneLabel = () => {
+            const span = downloadZoneBtn?.querySelector('span');
+            if (!span) return;
+            const count = activeTiles.size;
+            if (count === 0) { span.textContent = 'Télécharger Zone'; return; }
+            const size = estimateZoneSizeMB(count);
+            const zonesUsed = getOfflineZoneCount();
+            const limitStr = state.isPro ? '' : ` · ${zonesUsed}/1`;
+            span.textContent = `📥 ${count} tuiles · ${size}${limitStr}`;
+        };
+        this.addSubscription(state.subscribe('ZOOM', syncDownloadZoneLabel));
+        this.addSubscription(state.subscribe('isPro', syncDownloadZoneLabel));
+        syncDownloadZoneLabel();
+
         downloadZoneBtn?.addEventListener('click', async () => {
             if (!downloadZoneBtn) return;
-            downloadZoneBtn.setAttribute('disabled', 'true');
-            await downloadOfflineZone(state.TARGET_LAT, state.TARGET_LON, (done, total) => {
-                const span = downloadZoneBtn.querySelector('span');
-                if (span) span.textContent = i18n.t('connectivity.download.progress', { percent: Math.round(done/total*100).toString() });
-            });
-            downloadZoneBtn.removeAttribute('disabled');
+            if (!state.isPro && getOfflineZoneCount() >= 1) {
+                showUpgradePrompt('offline_zones');
+                return;
+            }
+            const tiles = Array.from(activeTiles.values()).map(t => ({ tx: t.tx, ty: t.ty, zoom: t.zoom }));
+            if (tiles.length === 0) { showToast('Aucune tuile visible.'); return; }
+            downloadZoneBtn.disabled = true;
             const span = downloadZoneBtn.querySelector('span');
-            if (span) span.textContent = i18n.t('connectivity.download.done');
+            try {
+                await downloadVisibleZone(tiles, (done, total) => {
+                    if (span) span.textContent = `⏬ ${Math.round(done / total * 100)}%…`;
+                });
+                incrementOfflineZoneCount();
+                showToast('✅ Zone téléchargée !');
+                syncDownloadZoneLabel();
+            } catch (e) {
+                console.warn('[OfflineZone]', e);
+                syncDownloadZoneLabel();
+            } finally {
+                downloadZoneBtn.disabled = false;
+            }
         });
 
         // PMTiles

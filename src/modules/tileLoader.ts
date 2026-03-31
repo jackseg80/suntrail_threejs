@@ -260,8 +260,63 @@ export function cancelTileLoad(taskId: number): void {
 
 
 
+// ── Offline zone helpers ─────────────────────────────────────────────────────
+
+const OFFLINE_ZONES_KEY = 'suntrail-offline-zones-count';
+
+/** Nombre de zones hors-ligne téléchargées (toutes sessions confondues). */
+export function getOfflineZoneCount(): number {
+    return parseInt(localStorage.getItem(OFFLINE_ZONES_KEY) ?? '0', 10);
+}
+
+/** Incrémente le compteur de zones téléchargées. */
+export function incrementOfflineZoneCount(): void {
+    localStorage.setItem(OFFLINE_ZONES_KEY, String(getOfflineZoneCount() + 1));
+}
+
+/**
+ * Estime la taille du téléchargement à partir du nombre de tuiles.
+ * ~80 Ko par tuile (couleur + élévation + overlay).
+ */
+export function estimateZoneSizeMB(tileCount: number): string {
+    const kb = tileCount * 80;
+    return kb < 1024 ? `~${kb} Ko` : `~${(kb / 1024).toFixed(1)} Mo`;
+}
+
+export interface VisibleTileRef { tx: number; ty: number; zoom: number; }
+
+/**
+ * Télécharge exactement les tuiles visibles à l'écran pour l'usage hors-ligne.
+ * "Ce que tu vois = ce que tu télécharges."
+ * Max 300 tuiles pour éviter les téléchargements accidentels à LOD 18 sur une grande zone.
+ */
+export async function downloadVisibleZone(
+    tiles: VisibleTileRef[],
+    onProgress: (done: number, total: number) => void
+): Promise<void> {
+    const capped = tiles.slice(0, 300);
+    const urls: string[] = [];
+    for (const { tx, ty, zoom } of capped) {
+        const colorUrl = getColorUrl(tx, ty, zoom);
+        const { url: elevUrl } = getElevationUrl(tx, ty, zoom, false);
+        const overlayUrl = getOverlayUrl(tx, ty, zoom);
+        urls.push(colorUrl);
+        if (elevUrl) urls.push(elevUrl);
+        if (overlayUrl) urls.push(overlayUrl);
+    }
+    const total = urls.length;
+    let done = 0;
+    for (const url of urls) {
+        try { await fetchWithCache(url, true); } catch (_) { /* silence */ }
+        done++;
+        if (done % 5 === 0) onProgress(done, total);
+    }
+    onProgress(total, total);
+}
+
 /**
  * Télécharge récursivement une zone pour l'usage hors-ligne.
+ * @deprecated Utiliser downloadVisibleZone() à la place — ce que tu vois = ce que tu télécharges.
  */
 export async function downloadOfflineZone(lat: number, lon: number, onProgress: (done: number, total: number) => void): Promise<void> {
     const radiusKm = 6;

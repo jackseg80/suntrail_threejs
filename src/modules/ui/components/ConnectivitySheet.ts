@@ -1,6 +1,11 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { state } from '../../state';
-import { deleteTerrainCache, downloadOfflineZone, setPMTilesSource } from '../../tileLoader';
+import {
+    deleteTerrainCache, setPMTilesSource,
+    downloadVisibleZone, getOfflineZoneCount, incrementOfflineZoneCount, estimateZoneSizeMB,
+} from '../../tileLoader';
+import { activeTiles } from '../../terrain';
+import { showUpgradePrompt } from '../../iap';
 import { showToast } from '../../utils';
 import { sheetManager } from '../core/SheetManager';
 import { resetTerrain, updateVisibleTiles } from '../../terrain';
@@ -43,28 +48,63 @@ export class ConnectivitySheet extends BaseComponent {
             showToast(i18n.t('connectivity.toast.cacheCleared'));
         });
 
-        const downloadZoneBtn = this.element.querySelector('#conn-download-zone') as HTMLElement | null;
+        const downloadZoneBtn = this.element.querySelector('#conn-download-zone') as HTMLButtonElement | null;
+
+        /** Met à jour le libellé du bouton avec le nombre de tuiles visibles et la taille estimée. */
+        const syncDownloadBtnLabel = () => {
+            const span = downloadZoneBtn?.querySelector('span');
+            if (!span) return;
+            const count = activeTiles.size;
+            if (count === 0) {
+                span.textContent = i18n.t('connectivity.download.label') || 'Télécharger la zone visible';
+                return;
+            }
+            const size = estimateZoneSizeMB(count);
+            const zonesUsed = getOfflineZoneCount();
+            const limitStr = state.isPro ? '' : ` · ${zonesUsed}/1 zone utilisée`;
+            span.textContent = `📥 Zone visible · ${count} tuiles · ${size}${limitStr}`;
+        };
+
+        // Met à jour le label quand le zoom change (= nouvelles tuiles à l'écran)
+        this.addSubscription(state.subscribe('ZOOM', syncDownloadBtnLabel));
+        this.addSubscription(state.subscribe('isPro', syncDownloadBtnLabel));
+        syncDownloadBtnLabel();
+
         downloadZoneBtn?.addEventListener('click', async () => {
             if (!downloadZoneBtn) return;
+
+            // Gate Pro : 1 zone gratuite, illimité pour les Pro
+            if (!state.isPro && getOfflineZoneCount() >= 1) {
+                showUpgradePrompt('offline_zones');
+                return;
+            }
+
+            const tiles = Array.from(activeTiles.values()).map(t => ({ tx: t.tx, ty: t.ty, zoom: t.zoom }));
+            if (tiles.length === 0) {
+                showToast('Aucune tuile visible à télécharger.');
+                return;
+            }
+
             downloadZoneBtn.classList.add('btn-loading');
             downloadZoneBtn.setAttribute('aria-busy', 'true');
-            downloadZoneBtn.setAttribute('disabled', 'true');
+            downloadZoneBtn.disabled = true;
             const span = downloadZoneBtn.querySelector('span');
-            const originalText = span?.textContent ?? '';
 
             try {
-                await downloadOfflineZone(state.TARGET_LAT, state.TARGET_LON, (done, total) => {
-                    if (span) span.textContent = i18n.t('connectivity.download.progress', { percent: Math.round(done/total*100).toString() });
+                await downloadVisibleZone(tiles, (done, total) => {
+                    if (span) span.textContent = `⏬ ${Math.round(done / total * 100)}%…`;
                 });
-                if (span) span.textContent = i18n.t('connectivity.download.done');
+                incrementOfflineZoneCount();
                 void haptic('success');
+                showToast('✅ Zone téléchargée !');
+                syncDownloadBtnLabel();
             } catch (e) {
-                console.warn('Download zone error:', e);
-                if (span) span.textContent = originalText;
+                console.warn('[OfflineZone] Download error:', e);
+                syncDownloadBtnLabel();
             } finally {
                 downloadZoneBtn.classList.remove('btn-loading');
                 downloadZoneBtn.removeAttribute('aria-busy');
-                downloadZoneBtn.removeAttribute('disabled');
+                downloadZoneBtn.disabled = false;
             }
         });
 

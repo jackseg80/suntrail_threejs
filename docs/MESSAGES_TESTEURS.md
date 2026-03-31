@@ -65,6 +65,7 @@ La version Pro débloque :
 • Vue Satellite
 • Multi-tracés GPX — importez autant de randonnées que vous voulez (gratuit = 1 seul tracé à la fois)
 • Export GPX + statistiques avancées (VAM, pente moyenne, estimation Naismith)
+• Zones hors-ligne illimitées — téléchargez la zone visible avant de partir (gratuit = 1 zone, Pro = illimité)
 
 Note : l'enregistrement GPS est gratuit et illimité pour tout le monde.
 
