@@ -56,13 +56,13 @@ export class ConnectivitySheet extends BaseComponent {
             if (!span) return;
             const count = activeTiles.size;
             if (count === 0) {
-                span.textContent = i18n.t('connectivity.download.label') || 'Télécharger la zone visible';
+                span.textContent = i18n.t('connectivity.btn.downloadZone');
                 return;
             }
             const size = estimateZoneSizeMB(count);
             const zonesUsed = getOfflineZoneCount();
-            const limitStr = state.isPro ? '' : ` · ${zonesUsed}/1 zone utilisée`;
-            span.textContent = `📥 Zone visible · ${count} tuiles · ${size}${limitStr}`;
+            const limitStr = state.isPro ? '' : ` · ${zonesUsed}/1 ${i18n.t('connectivity.label.zonesUsed') || 'zone utilisée'}`;
+            span.textContent = `📥 ${count} ${i18n.t('connectivity.label.tiles') || 'tuiles'} · ${size}${limitStr}`;
         };
 
         // Met à jour le label quand le zoom change (= nouvelles tuiles à l'écran)

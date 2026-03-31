@@ -198,7 +198,9 @@
       "offlineHint": "Forza uso solo cache",
       "gpsAccuracy": "Segnale GPS",
       "network": "Rete",
-      "pmtiles": "Archiviazione locale (.pmtiles)"
+      "pmtiles": "Archiviazione locale (.pmtiles)",
+      "zonesUsed": "zona utilizzata",
+      "tiles": "tessere"
     },
     "btn": {
       "clearCache": "Svuota Cache",

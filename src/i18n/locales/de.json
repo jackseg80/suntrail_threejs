@@ -198,7 +198,9 @@
       "offlineHint": "Nur Cache verwenden",
       "gpsAccuracy": "GPS-Signal",
       "network": "Netzwerk",
-      "pmtiles": "Lokaler Speicher (.pmtiles)"
+      "pmtiles": "Lokaler Speicher (.pmtiles)",
+      "zonesUsed": "Zone verwendet",
+      "tiles": "Kacheln"
     },
     "btn": {
       "clearCache": "Cache leeren",
