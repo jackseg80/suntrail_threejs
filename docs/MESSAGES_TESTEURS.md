@@ -25,7 +25,7 @@ Je développe une app de rando 3D sur Android — SunTrail — et je cherche des
 
 Ça consiste à installer l'app, l'essayer 20-30 min (ou plus si tu veux), et remplir un formulaire de retour. En échange : un abonnement Pro offert (3 mois ou 1 an selon le niveau de test).
 
-L'app visualise le relief en 3D, simule les ombres du soleil heure par heure, GPS en temps réel, météo montagne…
+L'app visualise le relief en 3D, simule les ombres du soleil heure par heure (et pour n'importe quel jour de l'année en Pro), GPS en temps réel, météo montagne…
 
 Tu serais partant(e) ? Si oui, envoie-moi l'adresse email liée à ton Google Play Store — je t'ajoute au programme de test directement 👍
 ```
@@ -56,7 +56,16 @@ SunTrail est une application Android de navigation en montagne avec :
 • Protocole Rapide (20-30 min) → 3 mois d'abonnement Pro offerts
 • Protocole Complet (1h-2h) → 1 AN d'abonnement Pro offerts
 
-La version Pro donne accès au zoom maximum (LOD 18), aux données météo avancées (graphique 24h, prévision 3 jours, alertes montagne), à la couche satellite, à l'inclinomètre numérique et à l'import illimité de tracés GPX.
+La version Pro débloque :
+• Zoom maximum LOD 18 (détail extrême des sentiers, bâtiments, végétation)
+• Calendrier solaire — simule les ombres pour n'importe quel jour de l'année, pas seulement aujourd'hui
+• Analyse solaire complète — azimut, élévation, graphique 24h, phase lunaire
+• Station météo avancée — graphique 24h, prévision 3 jours, alertes montagne (limite pluie/neige, UV, indice de confort)
+• Inclinomètre numérique — affiche la pente du terrain sous la caméra en degrés et %, avec alerte couleur > 30°
+• Vue Satellite
+• Multi-tracés GPX illimités + export + stats avancées (VAM, estimation Naismith)
+• Enregistrement GPS sans limite de durée
+• Zones hors-ligne illimitées
 
 ─────────────────────────────────────
 ✅  CE QUE JE TE DEMANDE
@@ -94,7 +103,7 @@ Salut à tous ! 👋
 
 Je cherche des testeurs Android pour une app de rando que je développe : SunTrail 3D.
 
-L'idée : cartes topo en relief 3D, simulation des ombres solaires heure par heure, GPS, météo montagne. Données SwissTopo pour la Suisse, IGN pour la France.
+L'idée : cartes topo en relief 3D, simulation des ombres solaires heure par heure + pour n'importe quel jour de l'année, GPS, inclinomètre de pente, météo montagne. Données SwissTopo pour la Suisse, IGN pour la France.
 
 🎁 En échange de quelques retours :
 → 20-30 min de test = 3 mois Pro offerts
