@@ -4,6 +4,22 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.16.3] - 2026-03-31
+### 🐛 Bande vide LOD 11+ — root cause : bbox France trop large
+
+#### Root cause identifiée et corrigée
+La bande de tuiles transparentes (fond HTML visible) était causée par `isPositionInFrance()` dans `utils.ts` qui utilisait `lon < 9.6°E` comme limite est. Or la vraie frontière de la France continentale est à **~8.23°E** (Lauterbourg, Alsace, frontière du Rhin). Les tuiles dans le Baden-Württemberg, la Forêt Noire et la zone Schaffhausen-Nord (lon 8.23–9.6°E) passaient donc `isTileFullyInRegion(France) = TRUE` → **IGN était appelé pour des tuiles en Allemagne** → IGN retourne `404 "No data found"` → `fetchTile` retourne null → canvas transparent → le HTML de la page était visible à travers les tuiles.
+
+**`utils.ts` — `isPositionInFrance()`** :
+- Limite est : `lon < 9.6` → `lon < 8.3` (France continentale)
+- Ajout d'un cas séparé pour la **Corse** : `lat > 41.0 && lat < 43.1 && lon > 8.4 && lon < 9.7` — la Corse s'étend jusqu'à ~9.56°E, l'ancienne limite couvrait aussi la Sardaigne/nord Italie par erreur
+
+**`tileWorker.ts`** : cache vidé `v1 → v2` — force le rechargement des tuiles dont les 404 IGN étaient mis en cache navigateur (`cache-control: max-age=1814400` = 21 jours) pour les URL désormais inutilisées.
+
+**`terrain.ts` (v5.16.2)** : fallback opaque pour `colorBitmap` null — empêche les trous transparents si une source retourne une erreur inattendue à l'avenir.
+
+---
+
 ## [5.16.2] - 2026-03-31
 ### 🐛 Bords du monde + bande vide LOD 11+ (Schaffhausen/Tessin)
 

@@ -87,6 +87,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | 532 | 5.16.0 | v5.16.0 | Tutoriel onboarding 6 slides + bouton Aide dans Réglages | 2026-03-31 |
 | 533 | 5.16.1 | v5.16.1 | ID Testeur dans Réglages + protocoles de test rapide & complet | 2026-03-31 |
 | 534 | 5.16.2 | v5.16.2 | Fix bords du monde vides + bande vide LOD 11+ Schaffhausen/Tessin | 2026-03-31 |
+| 535 | 5.16.3 | v5.16.3 | Fix root cause bande vide : bbox France lon < 9.6 → 8.3 + Corse séparée | 2026-03-31 |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 
