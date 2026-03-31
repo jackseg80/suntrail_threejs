@@ -135,8 +135,7 @@ Une fois l'application disponible publiquement sur le Play Store :
 
 SunTrail est en développement actif. En tant que testeur de la première heure, voici ce que tu verras arriver :
 
-### Bientôt (v5.17 – v5.18)
-- 🔍 **Recherche de sommets** — trouver n'importe quel point par nom, zoom automatique
+### Bientôt (v5.18+)
 - 🏔️ **Visibilité 360°** — quels sommets peut-on voir depuis ta position exacte ?
 - 🌍 **Autriche + nord de l'Italie** — mêmes données haute qualité qu'en CH/FR
 - 📸 **Mode Photo Pro** — capture sans UI + watermark GPS/altitude

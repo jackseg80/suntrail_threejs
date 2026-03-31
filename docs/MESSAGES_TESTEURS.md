@@ -19,9 +19,9 @@ C'est tout. Pas besoin de numéro, pas de compte Play Console à créer de leur 
 ## 💬 Message WhatsApp / SMS (court, casual)
 
 ```
-Salut [Prénom] !
+Hello !
 
-Je développe une app de rando 3D sur Android — SunTrail — et je cherche des testeurs avant le lancement officiel.
+Je développe une app de rando 3D sur Android — SunTrail 3D — et je cherche des testeurs avant le lancement officiel.
 
 Ça consiste à installer l'app, l'essayer 20-30 min (ou plus si tu veux), et remplir un formulaire de retour. En échange : un abonnement Pro offert (3 mois ou 1 an selon le niveau de test).
 
@@ -37,7 +37,7 @@ Tu serais partant(e) ? Si oui, envoie-moi l'adresse email liée à ton Google Pl
 **Objet :** Invitation à tester SunTrail 3D avant son lancement — abonnement Pro offert
 
 ```
-Bonjour [Prénom],
+Bonjour,
 
 Je te contacte car je pense que SunTrail pourrait t'intéresser, et j'ai besoin de retours terrain avant le lancement officiel.
 
@@ -49,6 +49,7 @@ SunTrail est une application Android de navigation en montagne avec :
 • Simulation solaire en temps réel — vois exactement quand le soleil éclaire ou ombre une vallée, heure par heure
 • GPS, enregistrement de tracés GPX, bulletin météo montagne
 • Données haute précision : SwissTopo pour la Suisse, IGN pour la France
+• ... et bien plus encore !
 
 ─────────────────────────────────────
 🎁  CE QUE TU REÇOIS EN ÉCHANGE
@@ -69,7 +70,6 @@ La version Pro débloque :
 • Zones hors-ligne illimitées — téléchargez la zone visible avant de partir (gratuit = 1 zone, Pro = illimité)
 
 Note : l'enregistrement GPS est gratuit et illimité pour tout le monde.
-
 ─────────────────────────────────────
 ✅  CE QUE JE TE DEMANDE
 ─────────────────────────────────────
@@ -84,7 +84,7 @@ Les achats en phase de test sont gratuits et fictifs — Google Play simule les 
 ─────────────────────────────────────
 📱  PRÉREQUIS
 ─────────────────────────────────────
-• Téléphone Android (Android 8+)
+• Téléphone Android (Android 7+)
 • Connexion WiFi ou 4G pour le premier chargement
 • ~500 Mo d'espace libre
 
@@ -110,7 +110,7 @@ L'idée : cartes topo en relief 3D, simulation des ombres solaires heure par heu
 
 🎁 En échange de quelques retours :
 → 20-30 min de test = 3 mois Pro offerts
-→ 1h-2h de test = 1 AN Pro offert
+→ 1h-2h de test = 1 an Pro offert
 
 Pour participer, il suffit de m'envoyer en MP l'adresse email liée à votre Google Play Store. Je vous ajoute au programme de test fermé et vous envoyez le lien d'installation.
 

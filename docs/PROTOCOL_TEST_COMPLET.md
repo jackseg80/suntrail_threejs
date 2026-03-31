@@ -203,7 +203,7 @@ Va dans **Réglages → Profils de performance** et teste chaque profil :
 - [ ] Fais défiler vers le bas jusqu'à voir la ligne dorée **"⚙️ PARAMÈTRES AVANCÉS"**
 - [ ] **Appuie dessus** pour déplier la section (c'est un accordéon — fermé par défaut, rien n'est visible avant de tapper dessus)
 - [ ] La section se déplie avec tous les réglages avancés : sliders, boutons cache, et en bas un bloc **"Sources de données & Légal"**
-- [ ] Tout en bas de ce bloc, tu verras un texte grisé centré avec le numéro de version : **`v5.16.0`**
+- [ ] Tout en bas de ce bloc, tu verras un texte grisé centré avec le numéro de version (ex: **`v5.16.7`**)
 - [ ] Tape **7 fois rapidement** sur ce numéro de version (vibration discrète dès le 4e tap)
   → Au 7e tap : message "🔓 Mode testeur Pro activé (RAM — non persisté)" + le texte bleuit
 - [ ] Vérifie que les fonctionnalités Pro se débloquent :
@@ -235,7 +235,7 @@ Va dans **Réglages → Profils de performance** et teste chaque profil :
 - [ ] Change en **English** → idem
 - [ ] Reviens en **Français**
 - [ ] Teste le slider **Exagération du relief** : monte-le à 3.0 → le relief est-il bien plus prononcé ?
-- [ ] Remets-le à 2.0 (valeur par défaut)
+- [ ] Remets-le à 1.4 (valeur par défaut)
 
 ---
 
@@ -304,7 +304,7 @@ Si tu veux fournir des données GPU/FPS détaillées pour aider à l'optimisatio
 - [ ] Navigue vers une zone que tu connais (vallée, massif) et zoome à un niveau détaillé (LOD 12-13)
 
 **Téléchargement de la zone :**
-- [ ] Va dans **Réglages** → ouvre **⚙️ Paramètres Avancés** → cherche le bouton **"Télécharger Zone"**
+- [ ] Appuie sur le bouton **réseau** (icône WiFi en haut à droite) → dans le panneau "Système & Données", cherche le bouton **"Télécharger Zone"**
 - [ ] Appuie dessus → une barre de progression apparaît-elle ?
 - [ ] Attends la fin du téléchargement (quelques secondes à quelques minutes selon la taille de la zone)
 - [ ] Note combien de temps ça a pris : ____s
@@ -370,14 +370,12 @@ Une fois l'application disponible publiquement sur le Play Store :
 
 SunTrail est en développement actif. En tant que testeur de la première heure, tu verras ces fonctionnalités arriver dans les prochaines semaines et mois :
 
-### Bientôt (v5.17 – v5.18)
+### Bientôt (v5.18+)
 | Fonctionnalité | Description |
 |---|---|
-| 🔍 Recherche de sommets | Trouver n'importe quel sommet par nom, zoom automatique |
 | 🏔️ Visibilité 360° | Quels sommets peut-on voir exactement depuis ta position ? |
 | 🌍 Autriche + nord Italie | Mêmes données haute qualité qu'en CH/FR |
 | 📸 Mode Photo Pro | Capture sans UI avec watermark GPS/altitude optionnel |
-| 🎯 Tutoriel interactif v2 | Vrais boutons mis en surbrillance — tu touches pour avancer |
 
 ### Version 6.0 — Connexion aux outils que tu utilises déjà
 | Fonctionnalité | Description |
