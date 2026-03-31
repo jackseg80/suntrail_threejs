@@ -67,7 +67,7 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 - **IS_2D_MODE (v5.11)** : `state.IS_2D_MODE: boolean` — flag indépendant du preset. Contrôle l'affichage (mesh plat vs élévation) sans affecter ENERGY_SAVER ni la qualité 3D. Persisté en localStorage. Le preset `eco` met `IS_2D_MODE=true` dans `applyPreset()`. Les tuiles sont TOUJOURS fetchées avec élévation pour LOD > 10 (`fetchAs2D = zoom <= 10`), même en mode 2D — garantit un switch 2D→3D instantané sans re-fetch.
 - **Toggle 2D/3D (v5.11)** : Bouton en première position de la nav bar bas. `rebuildActiveTiles()` (terrain.ts) reconstruit les meshes EN PLACE sans vider la scène. **Ne jamais appeler `resetTerrain()` pour un toggle 2D/3D** — `dispose()` détruit les matériaux GPU au lieu de les rendre au `materialPool` → pool vide → recompilation shader → damier noir/clair. Le switch 2D→3D détecte les tuiles sans élévation valide (`!pixelData && zoom > 10`), invalide leur cache et les recharge.
 - **IS_2D_MODE verrouillé en LOD ≤ 10 (v5.11.2)** : `NavigationBar.ts` souscrit à `state.ZOOM`. Quand `ZOOM ≤ 10` : `btn.disabled = true`, `IS_2D_MODE` forcé à `true`, `_modeBeforeLowZoom` mémorise l'état précédent. Quand `ZOOM > 10` : bouton réactivé, mode restauré depuis `_modeBeforeLowZoom`, `rebuildActiveTiles()` appelé si le mode change réellement. Raison : `fetchAs2D = zoom <= 10` dans `terrain.ts` — les tuiles basses résolutions sont toujours plates, la 3D n'a aucun effet.
-- **Pré-cache Suisse LOD 6-9 (v5.11.2)** : `preloadChOverviewTiles()` dans `tileLoader.ts`, appelé en fire-and-forget depuis `main.ts`. Calcule toutes les tuiles couvrant la CH (bbox 5.4–11.3°lon, 45.2–48.2°lat) aux zooms 6 à 9 (~300-400 tuiles), les télécharge via `fetchWithCache(url, true)` par lots de 8. Flag `suntrail-ch-preloaded-v1` en localStorage — ne s'exécute qu'une seule fois. À partir de la 2e visite, la vue de démarrage LOD 6 est instantanée même hors-ligne.
+- **Pré-cache Suisse LOD 6-9 — DÉSACTIVÉ (v5.15.0)** : `preloadChOverviewTiles()` dans `tileLoader.ts` est un **no-op `@deprecated`**. Le bulk pre-seeding violait la politique d'utilisation OSM/OpenTopoMap. **Ne jamais réactiver** sans serveur de tuiles auto-hébergé. Le cache se remplit naturellement par navigation.
 - **2D Turbo** : Mode spécifique avec élévation zéro et maillage plat (2 triangles/tuile), bridé à 30 FPS.
 - **FPS Rolling (v5.11)** : `state.currentFPS` alimenté dans le render loop (compteur de frames, fenêtre 1s). Utilisé par le PerfRecorder et affiché dans le panel VRAM.
 - **processLoadQueue hardcodé corrigé (v5.11)** : `slice(0, 4)` → `slice(0, Math.max(1, state.MAX_BUILDS_PER_CYCLE))`. Le preset ne contrôlait pas le débit réel des fetchs de tuiles — seulement les rebuilds de mesh.
@@ -311,9 +311,9 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 - **Build release** : `JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease --no-daemon` depuis `android/`.
 - **CI/CD** : `.github/workflows/release.yml` — déclenché sur `git tag v*.*.*`. Nécessite 6 GitHub Secrets : `KEYSTORE_BASE64`, `STORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS`, `VITE_MAPTILER_KEY`, `VITE_REVENUECAT_KEY`.
 - **versionCode** : Incrémenter à chaque upload Play Console. **Toujours consulter le tableau dans `docs/RELEASE.md`** pour la dernière valeur. Dernière valeur : **539**.
-- **versionName** : Version sémantique lisible (ex: `5.14.0`), jamais de suffixe dans build.gradle. Le tag git peut avoir un suffixe (`v5.12.9-ct`) mais pas le versionName.
+- **versionName** : Version sémantique lisible (ex: `5.16.7`), jamais de suffixe dans build.gradle. Le tag git peut avoir un suffixe (`v5.12.9-ct`) mais pas le versionName.
 - **CI trigger** : Tag format `v*.*.*` obligatoire (avec `v` au début). Suffixes autorisés. Sans `v` = pas de CI.
-- **Play Store** : App `com.suntrail.threejs` — **Closed Testing soumis** (versionCode 519). Dernière version en prod : v5.13.0 (versionCode 520). Voir `docs/RELEASE.md` pour le workflow complet.
+- **Play Store** : App `com.suntrail.threejs`. Voir `docs/RELEASE.md` pour le workflow complet et le tableau de versions.
 
 ## 💰 Monétisation Sprint 8 (v5.14.0)
 
@@ -338,8 +338,130 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 | REC illimité (stats avancées Pro) | `TrackSheet.ts` | Limite 30min supprimée ; upsell post-session si `!state.isPro` |
 | Météo jours 2-3 | `ExpertSheets.ts` | `opacity:0.38` + badge PRO + `showUpgradePrompt('weather_extended')` |
 
-## 🚀 Commandes de Maintenance
-- `npm test` : Lancer la suite de 190 tests unitaires (Vitest).
-- `npm run check` : Vérifier le typage TypeScript (strict).
-- `npm run deploy` : Suite complète avant livraison mobile.
-- Build AAB release : `JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease --no-daemon` (depuis `android/`).
+## 📁 Structure du Projet
+
+```
+src/
+├── main.ts                     # Point d'entrée — PWA SW, recovery REC, initUI()
+├── style.css                   # Feuille de styles globale (design tokens, glassmorphism)
+├── i18n/
+│   ├── I18nService.ts          # Service i18n (voir section dédiée)
+│   └── locales/                # fr.json, de.json, it.json, en.json
+├── modules/
+│   ├── state.ts                # État global réactif (Proxy)
+│   ├── eventBus.ts             # Pub/sub transversal
+│   ├── scene.ts                # Scène Three.js, render loop, needsUpdate
+│   ├── terrain.ts              # Génération terrain, tuiles, LOD
+│   ├── tileLoader.ts           # Fetch tuiles, sources carto, AbortController
+│   ├── tileCache.ts            # Cache LRU avec protection tuiles actives
+│   ├── workerManager.ts        # Pool de workers (4 mobile / 8 desktop)
+│   ├── geo.ts                  # Web Mercator, lngLat↔world↔tile
+│   ├── buildings.ts            # Bâtiments 3D (MapTiler MVT + fallback Overpass)
+│   ├── vegetation.ts           # Forêts bio-fidèles (InstancedMesh)
+│   ├── hydrology.ts            # Eau 3D (shader vagues)
+│   ├── weather.ts              # Météo Open-Meteo + particules shader pluie/neige
+│   ├── sun.ts                  # Position solaire, ombres directionnelles
+│   ├── analysis.ts             # Analyse solaire complète (runSolarProbe)
+│   ├── compass.ts              # Boussole 3D (Three.js, canvas 120px)
+│   ├── location.ts             # GPS Capacitor, marqueur utilisateur, REC
+│   ├── profile.ts              # Profil d'élévation SVG interactif
+│   ├── peaks.ts                # Sommets Overpass (cache localStorage 7j)
+│   ├── poi.ts                  # Points d'intérêt (panneaux, guides)
+│   ├── touchControls.ts        # Gestes tactiles Google Earth
+│   ├── performance.ts          # Presets, détection GPU, applyPreset()
+│   ├── materialPool.ts         # Réutilisation shaders Three.js
+│   ├── geometryCache.ts        # Cache géométries
+│   ├── memory.ts               # disposeObject() — libération VRAM
+│   ├── iap.ts                  # Interface IAP (showUpgradePrompt, grant/revoke)
+│   ├── iapService.ts           # RevenueCat SDK
+│   ├── foregroundService.ts    # Service Android (REC GPS background)
+│   ├── haptics.ts              # Feedback vibration
+│   ├── acceptanceWall.ts       # Wall d'acceptation 1er lancement
+│   ├── gpsDisclosure.ts        # Disclosure GPS (Play Store)
+│   ├── onboardingTutorial.ts   # Tutoriel 6 slides
+│   ├── ui.ts                   # Orchestrateur UI principal
+│   └── ui/
+│       ├── core/
+│       │   ├── BaseComponent.ts    # Cycle de vie composant (hydrate/render/dispose)
+│       │   ├── ReactiveState.ts    # Proxy récursif
+│       │   └── SheetManager.ts     # Bottom sheets exclusives + focus trap
+│       └── components/
+│           ├── NavigationBar.ts    # Barre de navigation (tabs + 2D/3D)
+│           ├── TopStatusBar.ts     # Barre haut (LOD, météo, REC, SOS)
+│           ├── SearchSheet.ts      # Recherche géocodage + sommets locaux
+│           ├── SettingsSheet.ts    # Paramètres (presets, toggles, avancés)
+│           ├── TrackSheet.ts       # GPX import/export/REC
+│           ├── LayersSheet.ts      # Fonds de carte + overlays
+│           ├── ExpertSheets.ts     # Météo Pro, Solaire, SOS
+│           ├── ConnectivitySheet.ts # Réseau, cache, offline, clé MapTiler
+│           ├── UpgradeSheet.ts     # Paywall Pro (3 plans)
+│           ├── TimelineComponent.ts # Simulation solaire (slider heure)
+│           ├── InclinometerWidget.ts # Inclinomètre numérique Pro
+│           └── VRAMDashboard.ts    # Debug VRAM + PerfRecorder
+├── workers/
+│   └── tileWorker.ts           # Fetch + Normal Maps async
+└── test/
+    ├── setup.ts                # Config Vitest (happy-dom, mocks)
+    ├── a11y.test.ts            # 13 tests accessibilité axe-core
+    ├── solarAnalysis.test.ts   # Tests analyse solaire
+    └── weatherPro.test.ts      # Tests météo Pro
+```
+
+## 🌐 Internationalisation (i18n)
+
+- **4 locales** : `fr` (défaut), `de`, `it`, `en`. Fichiers JSON dans `src/i18n/locales/`.
+- **API** : `i18n.t('key')` avec interpolation `{{var}}` → `i18n.t('greeting', { name: 'Alice' })`.
+- **Clés imbriquées** : notation pointée (`track.empty.title`).
+- **Fallback** : locale courante → `fr` → clé brute retournée.
+- **DOM** : Attribut `data-i18n="key"` — `BaseComponent.hydrate()` re-traduit automatiquement au changement de locale via `eventBus.on('localeChanged')`.
+- **Ajout de traduction** : Ajouter la clé dans les 4 fichiers JSON. Si urgence, ajouter au moins `fr.json` — le fallback couvrira les autres.
+
+## 🚀 Commandes & Workflow Release
+
+### Commandes de développement
+
+- `npm run dev` : Serveur Vite local (HMR).
+- `npm run build` : Build production (Terser, `drop_console`, code splitting Three.js/vendor/pmtiles).
+- `npm run check` : TypeScript strict (`tsc --noEmit`).
+- `npm test` : Suite Vitest (412+ tests).
+- `npm run deploy` : `check` + `build` + `cap sync` (avant livraison mobile).
+
+### Workflow de release (step-by-step)
+
+1. **Vérifier** : `npm run check && npm test` (0 erreur)
+2. **Incrémenter le versionCode** dans `android/app/build.gradle` — consulter `docs/RELEASE.md` pour la dernière valeur (actuellement **539**)
+3. **Mettre à jour versionName** dans `build.gradle` et `version` dans `package.json`
+4. **Mettre à jour** `docs/RELEASE.md` (ajouter ligne au tableau) et `docs/CHANGELOG.md`
+5. **Commit** :
+   ```bash
+   git add android/app/build.gradle package.json package-lock.json docs/
+   git commit -m "chore(release): bump versionCode XXX→YYY, versionName X.Y.Z"
+   git push origin main
+   ```
+6. **Créer le tag** (déclenche le CI) :
+   ```bash
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   ```
+7. **CI automatique** (`.github/workflows/release.yml`) :
+   - Build web (Vite) → `npx cap sync android` → Build AAB signé (Gradle)
+   - Upload AAB en artifact GitHub + création GitHub Release
+   - **Secrets requis** : `KEYSTORE_BASE64`, `STORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS`, `VITE_MAPTILER_KEY`, `VITE_REVENUECAT_KEY`
+8. **Télécharger** l'AAB depuis la GitHub Release → upload sur Play Console
+
+### Build local (sans CI)
+
+```bash
+npm run build
+npx cap sync android
+cd android
+JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease --no-daemon
+# AAB → android/app/build/outputs/bundle/release/app-release.aab
+```
+
+### Ajouter une feature Pro (pattern)
+
+1. Implémenter la feature normalement
+2. Ajouter le guard : `if (!state.isPro) { showUpgradePrompt('feature_key'); return; }`
+3. Ajouter `feature_key` dans le tableau Feature Gates (section Freemium)
+4. Tester avec le mode testeur (7 taps sur `#settings-version`)
