@@ -196,6 +196,23 @@ function createSunTrailForm() {
 
   // ── SECTIONS PROTOCOLE COMPLET ───────────────────────────────────────────
 
+  // ── INTRO PROTOCOLE COMPLET : minimum requis ────────────────────────────
+  const sCIntro = form.addPageBreakItem()
+    .setTitle('📋 Avant de commencer — Protocole Complet')
+    .setHelpText(
+      'Ce protocole couvre toutes les fonctionnalités de l\'application (15 parties).\n' +
+      'Tu n\'es pas obligé de tout tester — fais ce que tu peux, en plusieurs sessions si besoin.\n\n' +
+      '✅ MINIMUM REQUIS POUR RECEVOIR TON AN PRO :\n' +
+      '   • Partie 1  — Installation & Onboarding        (~10 min)\n' +
+      '   • Partie 2  — Navigation & Gestes              (~10 min)\n' +
+      '   • Partie 5  — Import d\'un tracé GPX            (~10 min)\n' +
+      '   • Partie 6  — Timeline solaire                 (~5 min)\n' +
+      '   • Partie 9  — Mode testeur Pro                 (~10 min)\n' +
+      '   • Partie 12 — Test d\'achat simulé              (~5 min)\n\n' +
+      'Total minimum : ~50 minutes.\n\n' +
+      '💡 Si tu manques de temps, le Protocole Rapide (20-30 min) donne droit à 3 mois Pro.'
+    );
+
   const sC1 = form.addPageBreakItem()
     .setTitle('📱 Complet — Partie 1 : Installation & Onboarding')
     .setHelpText(
@@ -557,7 +574,7 @@ function createSunTrailForm() {
   // Configure les choix avec le bon branchement de section
   choixItem.setChoices([
     choixItem.createChoice('⚡ Protocole Rapide (20-30 min) — 3 mois Pro', sR1),
-    choixItem.createChoice('🏆 Protocole Complet (1h30-2h) — 1 an Pro', sC1),
+    choixItem.createChoice('🏆 Protocole Complet (1h30-2h) — 1 an Pro', sCIntro),
   ]);
 
   // Navigations de fin de section Rapide → section finale
