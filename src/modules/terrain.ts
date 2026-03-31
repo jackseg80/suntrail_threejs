@@ -217,7 +217,16 @@ export class Tile {
             if (data.colorBitmap) {
                 this.colorTex = new THREE.Texture(data.colorBitmap);
                 this.colorTex.flipY = false; this.colorTex.needsUpdate = true; this.colorTex.colorSpace = THREE.SRGBColorSpace;
-            } else { this.colorTex = new THREE.CanvasTexture(document.createElement('canvas')); }
+            } else {
+                // colorBitmap null = la source de tuile a retourné une erreur (404, réseau...).
+                // On utilise un canvas opaque avec une couleur topo neutre au lieu d'un canvas transparent —
+                // évite le "trou" qui laisse voir le HTML en dessous.
+                // La tuile sera marquée sans pixelData et pourra être rechargée via rebuildActiveTiles().
+                const fb = document.createElement('canvas'); fb.width = 256; fb.height = 256;
+                const fbCtx = fb.getContext('2d');
+                if (fbCtx) { fbCtx.fillStyle = '#c8dde3'; fbCtx.fillRect(0, 0, 256, 256); }
+                this.colorTex = new THREE.CanvasTexture(fb);
+            }
 
             if (data.overlayBitmap) {
                 this.overlayTex = new THREE.Texture(data.overlayBitmap);
