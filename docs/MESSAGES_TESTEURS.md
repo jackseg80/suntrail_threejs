@@ -57,15 +57,16 @@ SunTrail est une application Android de navigation en montagne avec :
 • Protocole Complet (1h-2h) → 1 AN d'abonnement Pro offerts
 
 La version Pro débloque :
-• Zoom maximum LOD 18 (détail extrême des sentiers, bâtiments, végétation)
+• Zoom maximum LOD 18 — détail extrême des sentiers, bâtiments, végétation
 • Calendrier solaire — simule les ombres pour n'importe quel jour de l'année, pas seulement aujourd'hui
 • Analyse solaire complète — azimut, élévation, graphique 24h, phase lunaire
-• Station météo avancée — graphique 24h, prévision 3 jours, alertes montagne (limite pluie/neige, UV, indice de confort)
-• Inclinomètre numérique — affiche la pente du terrain sous la caméra en degrés et %, avec alerte couleur > 30°
+• Station météo avancée — graphique 24h, prévision 3 jours, alertes montagne (limite neige/pluie, UV, confort)
+• Inclinomètre numérique — pente du terrain sous la caméra en ° et %, alerte couleur au-delà de 30°
 • Vue Satellite
-• Multi-tracés GPX illimités + export + stats avancées (VAM, estimation Naismith)
-• Enregistrement GPS sans limite de durée
-• Zones hors-ligne illimitées
+• Multi-tracés GPX — importez autant de randonnées que vous voulez (gratuit = 1 seul tracé à la fois)
+• Export GPX + statistiques avancées (VAM, pente moyenne, estimation Naismith)
+
+Note : l'enregistrement GPS est gratuit et illimité pour tout le monde.
 
 ─────────────────────────────────────
 ✅  CE QUE JE TE DEMANDE
