@@ -13,7 +13,7 @@ const zoneFailureCooldown = new Map<string, number>();
 const CACHE_NAME = 'suntrail-buildings-v5';
 
 export async function loadBuildingsForTile(tile: Tile) {
-    if (!state.SHOW_BUILDINGS || tile.zoom < state.BUILDING_ZOOM_THRESHOLD || (tile.status as string) === 'disposed') return;
+    if (!state.isPro || !state.SHOW_BUILDINGS || tile.zoom < state.BUILDING_ZOOM_THRESHOLD || (tile.status as string) === 'disposed') return;
     if (tile.buildingMesh) return;
 
     if (state.isUserInteracting) {

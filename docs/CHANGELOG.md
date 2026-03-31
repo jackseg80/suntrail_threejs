@@ -4,6 +4,35 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.16.4] - 2026-03-31
+### 🏢 Bâtiments 3D — Feature Pro + Rationalisation UI
+
+#### Bâtiments 3D réservés aux utilisateurs Pro
+- **`buildings.ts`** : gate Pro ajouté — `if (!state.isPro || !state.SHOW_BUILDINGS...)` — les bâtiments ne se chargent que pour les utilisateurs Pro
+- **`SettingsSheet.ts`** : 
+  - Toggle "Bâtiments OSM" désactivé (`disabled`) et décoché pour les utilisateurs gratuits
+  - Badge "PRO" doré ajouté à côté du label
+  - Clic sur le toggle en mode gratuit → `showUpgradePrompt('buildings_3d')`
+  - Restauration automatique de l'état sauvegardé quand on passe Pro
+- **`style.css`** : styles pour toggles désactivés (opacité 0.4, curseur not-allowed)
+
+#### Marketing Pro mis à jour
+- **`index.html` (UpgradeSheet)** : nouvelle ligne "🏢 Bâtiments 3D — architecture réaliste sur le terrain (gratuit = 2D seul)"
+- **`docs/MESSAGES_TESTEURS.md`** : bâtiments 3D ajouté à la liste des features Pro dans l'email de recrutement
+- **`README.md`** : tableau comparatif mis à jour — Gratuit: "Vue 2D" / Pro: "Bâtiments 3D réalistes"
+
+#### Rationalisation UI — Suppression des doublons
+- **`SettingsSheet`** : suppression des boutons dupliqués (Télécharger Zone, Vider Cache, PMTiles, clé API)
+- **`ConnectivitySheet`** : conservation unique des fonctionnalités de gestion de données
+- **`index.html`** : nettoyage du template settings
+
+#### Bouton 2D/3D amélioré
+- Déplacé en bas de la stack FAB (à droite)
+- Label dynamique "2D" / "3D" sous l'icône (9px)
+- Styles CSS pour état actif/inactif
+
+---
+
 ## [5.16.3] - 2026-03-31
 ### 🐛 Bande vide LOD 11+ — root cause : bbox France trop large
 

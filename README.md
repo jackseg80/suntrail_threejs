@@ -32,6 +32,7 @@ SunTrail est un moteur de terrain 3D WebGL conçu pour les randonneurs et alpini
 | Simulation solaire (jour actuel) | Calendrier illimité (dates passées/futures) |
 | 1 tracé GPX + **REC illimité** | Multi-tracés + export GPX + stats VAM/Naismith |
 | Pentes visuelles 30°/35°/40° | Inclinomètre numérique + gradient 2° |
+| Vue 2D | Bâtiments 3D réalistes |
 | Offline 1 zone | Offline illimité + PMTiles |
 | Top 10 sommets visibles | Index complet + moteur de recherche |
 

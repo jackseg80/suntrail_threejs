@@ -791,6 +791,17 @@ body.mode-2d .nav-mode-toggle .grid-peak {
     color: white;
 }
 
+/* TOGGLES DISABLED (features Pro) */
+.setting-row input[type="checkbox"]:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.setting-row input[type="checkbox"]:disabled + .setting-label,
+.setting-row:has(input[type="checkbox"]:disabled) .setting-label {
+    opacity: 0.6;
+}
+
 /* PROFIL ALTIMÉTRIQUE (v4.8) - ABOVE NAV BAR */
 #elevation-profile {
     position: fixed; 

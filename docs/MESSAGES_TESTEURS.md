@@ -58,6 +58,7 @@ SunTrail est une application Android de navigation en montagne avec :
 
 La version Pro débloque :
 • Zoom maximum LOD 18 — détail extrême des sentiers, bâtiments, végétation
+• Bâtiments 3D — architecture réaliste sur le terrain (gratuit = vue 2D seule)
 • Calendrier solaire — simule les ombres pour n'importe quel jour de l'année, pas seulement aujourd'hui
 • Analyse solaire complète — azimut, élévation, graphique 24h, phase lunaire
 • Station météo avancée — graphique 24h, prévision 3 jours, alertes montagne (limite neige/pluie, UV, confort)

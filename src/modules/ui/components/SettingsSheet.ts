@@ -12,6 +12,7 @@ import { sheetManager } from '../core/SheetManager';
 import { iapService } from '../../iapService';
 import { showToast } from '../../utils';
 import { haptic } from '../../haptics';
+import { showUpgradePrompt } from '../../iap';
 
 export class SettingsSheet extends BaseComponent {
     constructor() {
@@ -53,7 +54,40 @@ export class SettingsSheet extends BaseComponent {
             if (compass) compass.style.display = val ? 'block' : 'none';
         });
         this.bindToggle('veg-toggle', 'SHOW_VEGETATION', this.refreshTerrain);
-        this.bindToggle('buildings-toggle', 'SHOW_BUILDINGS', this.refreshTerrain);
+        
+        // Bâtiments 3D — feature Pro
+        const buildingsToggle = this.element.querySelector('#buildings-toggle') as HTMLInputElement;
+        if (buildingsToggle) {
+            // Initialiser : désactivé et décoché pour les utilisateurs gratuits
+            buildingsToggle.disabled = !state.isPro;
+            buildingsToggle.checked = state.isPro && state.SHOW_BUILDINGS;
+            
+            buildingsToggle.addEventListener('change', () => {
+                if (!state.isPro) {
+                    buildingsToggle.checked = false;
+                    showUpgradePrompt('buildings_3d');
+                    return;
+                }
+                state.SHOW_BUILDINGS = buildingsToggle.checked;
+                saveSettings();
+                this.refreshTerrain();
+            });
+            
+            // Mettre à jour si isPro change
+            this.addSubscription(state.subscribe('isPro', () => {
+                buildingsToggle.disabled = !state.isPro;
+                if (!state.isPro) {
+                    buildingsToggle.checked = false;
+                    state.SHOW_BUILDINGS = false;
+                    saveSettings();
+                    this.refreshTerrain();
+                } else {
+                    // Restaurer l'état sauvegardé quand on passe Pro
+                    buildingsToggle.checked = state.SHOW_BUILDINGS;
+                }
+            }));
+        }
+        
         this.bindToggle('hydro-toggle', 'SHOW_HYDROLOGY', (val: boolean) => updateHydrologyVisibility(val));
         this.bindToggle('weather-toggle', 'SHOW_WEATHER', (val: boolean) => updateWeatherVisibility(val));
         this.bindSlider('weather-density-slider', 'WEATHER_DENSITY', 'weather-density-disp');
