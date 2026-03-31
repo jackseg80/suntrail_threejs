@@ -4,6 +4,44 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.16.7] - 2026-03-31
+### ♿ Audit Lighthouse 100/100/100 — Accessibilité, SEO & UI
+
+**Accessibilité (80→100) :**
+- `aria-labelledby` sur le dialog onboarding + `id="ob-title"` sur le heading
+- `aria-label` sur tous les toggles (6), sliders (8) et le select langue
+- Aria-label dynamique sur `#top-pill-main` (reflète contenu visible : LOD + météo)
+- `:focus-visible` CSS sur nav tabs, FABs, toggles, sliders
+- Contraste WCAG AA : `--text-2` éclairci `#8b8fa8` → `#a0a4bc` (ratio > 4.5:1)
+- Disabled state opacity `0.3` → `0.5` (plus visible)
+- Contraste bouton onboarding : fond `#4a8ef8` → `#3b7de0`
+
+**SEO (82→100) :**
+- `<meta name="description">` ajoutée
+- `public/robots.txt` créé
+- Viewport : `user-scalable=yes, maximum-scale=5.0` (zoom WCAG)
+
+**UI Touch Targets :**
+- Toggles `44×26` → `48×28px`, thumb `20` → `22px`
+- Sliders thumb `18` → `22px`, track `4` → `6px`
+- Compass FAB `48` → `52px` (uniformisé avec les autres FABs)
+- Nav tabs padding augmenté (`8/4` → `10/6px`) pour touch target 48px+
+- Sheet drag handle `4` → `6px`
+- Z-index FAB stack `2100` → `1900` (sous le top bar)
+- FAB `:active` transition 80ms (feedback tactile)
+
+**Tests :** +6 tests a11y (onboarding dialog, settings form controls) → 13 total
+
+## [5.16.6] - 2026-03-31
+### 💰 Fix prix lifetime
+- Fallback prix lifetime `49.99` → `99.99` dans `iapService.ts`
+
+## [5.16.5] - 2026-03-31
+### ⚙️ Stats de performance — power user
+- `SHOW_STATS` désactivé par défaut (activé manuellement dans Paramètres Avancés)
+- Section performance optionnelle dans les protocoles de test
+- Google Form script corrigé (`addScaleItem`, `addTextItem`)
+
 ## [5.16.4] - 2026-03-31
 ### 🏢 Bâtiments 3D — Feature Pro + Rationalisation UI
 

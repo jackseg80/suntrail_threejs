@@ -1,4 +1,4 @@
-# SunTrail - Base de Connaissance (v5.16.0)
+# SunTrail - Base de Connaissance (v5.16.7)
 
 Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTrail. Il consigne les décisions architecturales critiques et les solutions aux problèmes complexes.
 
@@ -97,7 +97,7 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 - **Cinematic flyTo** : Trajectoire en "cloche" (parabolique) avec interpolation `easeInOutCubic` et vérification anti-collision en temps realtime (v4.6.0).
 - **Adaptive Zoom (v5.8.6)** : Logique de saut intelligent de LOD lors des téléportations ou des déplacements rapides. Élimine le délai de chargement des paliers intermédiaires pour une netteté immédiate à l'arrivée.
 - **Tilt Parabola** : L'inclinaison maximale de la caméra est dynamique ; elle atteint son pic au LOD 14 et se redresse automatiquement vers le sol à haute altitude pour masquer l'horizon vide (v4.5.56).
- - **Navigation Tactile Google Earth (v6.3)** : `src/modules/touchControls.ts` — module autonome interceptant les **PointerEvents** (pas TouchEvents) en phase capture avant OrbitControls. Stratégie : désactive `controls.enabled = false` au premier contact, réactive à la fin. **Architecture 2 doigts (v6.3)** :
+ - **Navigation Tactile Google Earth (v5.11)** : `src/modules/touchControls.ts` — module autonome interceptant les **PointerEvents** (pas TouchEvents) en phase capture avant OrbitControls. Stratégie : désactive `controls.enabled = false` au premier contact, réactive à la fin. **Architecture 2 doigts (v5.11)** :
    - **Zoom** : pinch-spread → `doZoomToPoint()` raycasting (zoome vers le centre des doigts, pas le centre écran).
    - **Rotation** : twist tire-bouchon → `doRotate()`, per-frame avec 3 guards : `|dAngle| > ROT_DEADZONE` + `|dAngle| > spreadDelta × 0.5` (pas de bruit zoom) + `|dAngle| × 150 > |dy|` (pas de bruit tilt).
    - **Tilt** : détecté par le **placement initial des doigts** (style Google Earth). Si les 2 doigts sont posés côte à côte (angle < `TILT_ANGLE = 45°` de l'horizontal), `_tiltPreArmed = true`. Dès le premier mouvement vertical (`|dy| > |dx|` + spread stable) → `_tiltLocked = true` → **seul** `doTilt(dy)` s'applique, zoom/rotation bloqués. Reset au lever d'un doigt. **⚠️ Erreur fatale** : détecter le tilt par accumulation de signal (v2→v5) → PointerEvents se déclenchent un pointeur à la fois → d2y=0 systématiquement → faux positifs constants. Seule la détection par placement fonctionne.
@@ -107,6 +107,81 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 ### GPS & Orientation
 - **Origin Shift (Précision GPS)** : Recentrage dynamique complet du monde 3D (Seuil 35km) incluant la translation atomique de tous les objets : Caméra, Soleil, Marqueur, GPX, Forêts et Étiquettes pour une précision absolue longue distance (v5.8.3).
 - **Lissage Boussole** : Filtre passe-bas (10%) sur les données de l'API `DeviceOrientation` pour supprimer les tremblements du cône de vue.
+
+## 🔍 Modules Fonctionnels
+
+### Recherche & Géocodage (`SearchSheet.ts`)
+
+- **BaseComponent** avec recherche hybride : filtrage local des `state.localPeaks` (résultats instantanés) + géocodage distant MapTiler/OSM Nominatim (debounce 400ms).
+- Sélection d'un résultat → `autoSelectMapSource()` + `flyTo()` vers les coordonnées.
+- ARIA complet : `aria-label`, `role="listbox"`, live regions.
+
+### Profil d'Élévation (`profile.ts`)
+
+- **Rendu SVG** : Courbe d'altitude avec gradient, redimensionnement responsive.
+- **Interaction** : Survol souris/tactile affiche distance, altitude, pente %. Marqueur 3D cyan (sphère + ligne) synchronisé avec la position du curseur sur le profil.
+- **Calculs** : D+/D- cumulés, pente par segment, distance haversine.
+- **Exports** : `updateElevationProfile()`, `haversineDistance()`.
+
+### Boussole 3D (`compass.ts`)
+
+- **Rendu Three.js** : Scène 3D dédiée (canvas 120×120px). Cône rouge (Nord) + cône blanc (Sud), lettres N/S/E/O en sprites canvas-texture.
+- **Synchronisation** : Inverse le quaternion de la caméra principale à chaque frame. Animation reset-to-North en 800ms.
+- **Exports** : `initCompass()`, `renderCompass()`, `resetToNorth()`, `updateCompassAnimation()`, `isCompassAnimating()`.
+
+### POI & Signalisation (`poi.ts`)
+
+- **Source** : Overpass API (`information~"guidepost|map|board"`).
+- **Rendu** : Sprites Three.js (cercle doré) positionnés à l'altitude terrain + 25m.
+- **Cache** : Mémoire + Cache API navigateur (zone-based, zoom 12). Cooldown 60s par zone en cas d'erreur.
+
+### Sommets (`peaks.ts`)
+
+- **Source** : Overpass API (`natural=peak`, `ele > 1000m`), trié par altitude décroissante.
+- **Cache** : localStorage 7 jours, invalidé si l'utilisateur se déplace > 25km du centre du cache.
+- **Export** : `fetchLocalPeaks()` → alimentation de `state.localPeaks`.
+
+### GPS & Localisation (`location.ts`)
+
+- **API** : Capacitor Geolocation (high accuracy, timeout 5s, maxAge 3s).
+- **Filtres** : Bruit statique GPS (seuil ~50cm) + low-pass 10% sur l'orientation boussole.
+- **Marqueur** : Group Three.js (anneau bleu + cône de vue 60° + dot canvas-texture HD). Rotation par `state.userHeading`.
+- **REC** : Enregistrement des points (lat/lon/alt/timestamp) dans `state.recordedPoints` quand `state.isRecording=true`.
+- **Exports** : `startLocationTracking()`, `stopLocationTracking()`, `updateUserMarker()`, `centerOnUser()`.
+
+### Analyse Solaire (`analysis.ts`)
+
+- **`runSolarProbe()`** : Retourne `SolarAnalysisResult` — lever/coucher, midi solaire, golden hours, phase lunaire (nom + pourcentage), courbe d'élévation 24h (144 points), azimut/élévation courants, minutes totales d'ensoleillement.
+- **Détection d'ombre** : Ray-cast du point vers le soleil, pas adaptatif (500m base, 1km+ au-delà de 10km d'altitude).
+- **Échantillonnage terrain** : Interpolation bilinéaire sur les height maps des tuiles (encodage Terrain-RGB).
+- **Dépendances** : Bibliothèque SunCalc.
+
+### Météo (`weather.ts`)
+
+- **Source** : Open-Meteo API (sans clé) — courant, horaire 24h, prévisions 3 jours.
+- **Rendu** : ShaderMaterial custom sur Points (15 000 particules max). Pluie = traits verticaux (4000 u/s). Neige = flocons 6 branches avec dérive sinusoïdale (700 u/s). Vecteur vent issu de l'API.
+- **Exports** : `fetchWeather()`, `initWeatherSystem()`, `updateWeatherSystem()`, `getWeatherIcon()`.
+
+### Géo-utilitaires (`geo.ts`)
+
+- Transformations Web Mercator : `lngLatToWorld()`, `worldToLngLat()`, `lngLatToTile()`, `getTileBounds()`.
+- Clamping caméra aux bornes du monde (`clampTargetToBounds()`).
+
+### Worker Pool (`workerManager.ts`)
+
+- **Singleton `tileWorkerManager`** : 4 workers (mobile) / 8 workers (desktop), auto-détecté via `navigator.hardwareConcurrency`.
+- Gestion de tâches par ID avec Promises, déduplication, timeout 15s. Annulation via `cancelTile()` (abort HTTP mid-flight).
+- Reporting des erreurs 403 pour désactiver MapTiler globalement.
+
+## ♿ Accessibilité & SEO (v5.16.7)
+
+### Lighthouse 100/100/100
+
+- **Accessibilité** : `aria-labelledby` sur tous les dialogs (onboarding, GPS disclosure, sheets). `aria-label` sur tous les toggles, sliders, selects. `:focus-visible` sur nav tabs, FABs, toggles, sliders. Contraste WCAG AA : `--text-2` éclairci à `#a0a4bc` (ratio > 4.5:1).
+- **SEO** : `<meta name="description">` ajoutée. `robots.txt` créé. Viewport `user-scalable=yes, maximum-scale=5.0`.
+- **Touch targets** : Toggles 48×28px, slider thumbs 22px, compass FAB 52×52px (uniformisé), nav tabs padding augmenté. Sheet handle 6px.
+- **Z-index** : FAB stack 1900 (sous le top bar 2000).
+- **Tests** : 13 tests a11y via axe-core (GPS disclosure, nav bar, bottom sheet, onboarding dialog, settings controls, FAB GPS).
 
 ## 🗺️ Stratégies Cartographiques Spécifiques
 
@@ -144,8 +219,8 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 | Tracé GPX visible mais au mauvais endroit | `layer.points` stale après origin shift | `scene.ts` itère sur `state.gpxLayers` et applique le même offset à `layer.points` (v5.10.0). |
 | Touch 1 doigt tourne au lieu de panner | TouchEvents interceptés au lieu de PointerEvents | Three.js r160 OrbitControls utilise PointerEvents. Intercepter `pointerdown` en capture + `controls.enabled = false` (v5.11.0). |
 | Touch 1 doigt gauche/droite = rotation | `camera.matrix` stale lors du calcul des axes | Utiliser `camera.quaternion` (toujours à jour) et non `setFromMatrixColumn` pour obtenir right/fwd (v5.11.0). |
-| Tilt 2 doigts impossible — rotation à la place | PointerEvents se déclenchent un pointeur à la fois → d2y=0 → toute accumulation per-pointeur (v2→v5) donne de faux positifs. isRotating tirée sur les 1ères frames avant que le lock s'active. | Détecter le tilt par le **placement initial des doigts** : si `|sin(angle)| < TILT_ANGLE` → `_tiltPreArmed=true`. Dès `|dy| > |dx| && spreadDelta < 1%` → `_tiltLocked=true`. Le lock s'active avant la 1ère frame de rotation possible (v6.3). |
-| Zoom 2 doigts déclenche de la rotation | `ROT_DEADZONE` trop bas (0.003 rad) : le bruit d'angle pendant un pinch (~0.01 rad) dépasse le seuil | 3 guards sur `isRotating` : `absDAngle > ROT_DEADZONE` + `absDAngle > spreadDelta × 0.5` (angle doit dominer spread) + `absDAngle × 150 > |dy|` (angle doit dominer drift vertical) (v6.1). |
+| Tilt 2 doigts impossible — rotation à la place | PointerEvents se déclenchent un pointeur à la fois → d2y=0 → toute accumulation per-pointeur (v2→v5) donne de faux positifs. isRotating tirée sur les 1ères frames avant que le lock s'active. | Détecter le tilt par le **placement initial des doigts** : si `|sin(angle)| < TILT_ANGLE` → `_tiltPreArmed=true`. Dès `|dy| > |dx| && spreadDelta < 1%` → `_tiltLocked=true`. Le lock s'active avant la 1ère frame de rotation possible (v5.11). |
+| Zoom 2 doigts déclenche de la rotation | `ROT_DEADZONE` trop bas (0.003 rad) : le bruit d'angle pendant un pinch (~0.01 rad) dépasse le seuil | 3 guards sur `isRotating` : `absDAngle > ROT_DEADZONE` + `absDAngle > spreadDelta × 0.5` (angle doit dominer spread) + `absDAngle × 150 > |dy|` (angle doit dominer drift vertical) (v5.11). |
 | Violation CSP `frame-ancestors` via `<meta>` | Directive valide uniquement en HTTP header | Supprimer `frame-ancestors` du `<meta>` CSP — ne fonctionne que côté serveur. |
 | Violations CSP domaines cartographiques | `connect-src` incomplet | Ajouter : `https://*.overpass-api.de` ET `https://overpass-api.de` (wildcard ≠ domaine racine), `https://overpass.kumi.systems`, `https://api.open-meteo.com`, `https://cloud.maptiler.com` (img-src). |
 | Stats de performance : toggle ON mais rien ne s'affiche | `toggle()` = flip, désync état↔panel au démarrage | Utiliser `setVisible(val)` (setter exact). `VRAMDashboard.init()` appelle `setVisible(state.SHOW_STATS)`. Le callback de `bindToggle` utilise `setVisible` (v5.11.0). |
@@ -235,7 +310,7 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 - **Keystore** : `android/suntrail.keystore` (hors Git). `android/keystore.properties` (hors Git, rempli avec mot de passe réel).
 - **Build release** : `JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease --no-daemon` depuis `android/`.
 - **CI/CD** : `.github/workflows/release.yml` — déclenché sur `git tag v*.*.*`. Nécessite 6 GitHub Secrets : `KEYSTORE_BASE64`, `STORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS`, `VITE_MAPTILER_KEY`, `VITE_REVENUECAT_KEY`.
-- **versionCode** : Incrémenter à chaque upload Play Console. **Toujours consulter le tableau dans `docs/RELEASE.md`** pour la dernière valeur. Dernière valeur : **521**.
+- **versionCode** : Incrémenter à chaque upload Play Console. **Toujours consulter le tableau dans `docs/RELEASE.md`** pour la dernière valeur. Dernière valeur : **539**.
 - **versionName** : Version sémantique lisible (ex: `5.14.0`), jamais de suffixe dans build.gradle. Le tag git peut avoir un suffixe (`v5.12.9-ct`) mais pas le versionName.
 - **CI trigger** : Tag format `v*.*.*` obligatoire (avec `v` au début). Suffixes autorisés. Sans `v` = pas de CI.
 - **Play Store** : App `com.suntrail.threejs` — **Closed Testing soumis** (versionCode 519). Dernière version en prod : v5.13.0 (versionCode 520). Voir `docs/RELEASE.md` pour le workflow complet.
