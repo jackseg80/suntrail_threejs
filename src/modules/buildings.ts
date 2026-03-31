@@ -6,6 +6,7 @@ import { state } from './state';
 import { getAltitudeAt } from './analysis';
 import { fetchOverpassData } from './utils';
 import type { Tile } from './terrain';
+import { boundedCacheSet } from './boundedCache';
 
 const buildingMemoryCache = new Map<string, any[]>();
 const buildingFetchPromises = new Map<string, Promise<any[] | null>>();
@@ -54,7 +55,7 @@ export async function loadBuildingsForTile(tile: Tile) {
         }
         buildings = await promise;
         if (buildings) {
-            buildingMemoryCache.set(zoneKey, buildings);
+            boundedCacheSet(buildingMemoryCache, zoneKey, buildings);
         } else {
             zoneFailureCooldown.set(zoneKey, Date.now() + 60000); 
         }

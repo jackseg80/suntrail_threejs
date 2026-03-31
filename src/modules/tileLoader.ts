@@ -1,6 +1,6 @@
 import { state } from './state';
 import { isPositionInSwitzerland, isPositionInFrance, showToast } from './utils';
-import { lngLatToTile } from './geo';
+
 import { tileWorkerManager } from './workerManager';
 import { disposeAllCachedTiles } from './tileCache';
 import * as pmtiles from 'pmtiles';
@@ -314,65 +314,3 @@ export async function downloadVisibleZone(
     onProgress(total, total);
 }
 
-/**
- * Télécharge récursivement une zone pour l'usage hors-ligne.
- * @deprecated Utiliser downloadVisibleZone() à la place — ce que tu vois = ce que tu télécharges.
- */
-export async function downloadOfflineZone(lat: number, lon: number, onProgress: (done: number, total: number) => void): Promise<void> {
-    const radiusKm = 6;
-    const zooms = [12, 13, 14, 15];
-    const latOffset = radiusKm / 111.0;
-    const lonOffset = radiusKm / (111.0 * Math.cos(lat * Math.PI / 180));
-    const bbox = { n: lat + latOffset, s: lat - latOffset, e: lon + lonOffset, w: lon - lonOffset };
-    const urls: string[] = [];
-
-    for (const z of zooms) {
-        const t1 = lngLatToTile(bbox.w, bbox.n, z);
-        const t2 = lngLatToTile(bbox.e, bbox.s, z);
-        for (let x = t1.x; x <= t2.x; x++) {
-            for (let y = t1.y; y <= t2.y; y++) {
-                // Utilisation des générateurs d'URL officiels pour éviter les 404
-                const colorUrl = getColorUrl(x, y, z);
-                const { url: elevUrl } = getElevationUrl(x, y, z, false);
-                const overlayUrl = getOverlayUrl(x, y, z);
-                
-                urls.push(colorUrl);
-                if (elevUrl) urls.push(elevUrl);
-                if (overlayUrl) urls.push(overlayUrl);
-            }
-        }
-    }
-
-    
-    const total = urls.length;
-    let done = 0;
-    for (const url of urls) {
-        try {
-            await fetchWithCache(url, true);
-        } catch (e) {
-            // Silence silent errors
-        }
-        done++;
-        if (done % 5 === 0) onProgress(done, total);
-    }
-    onProgress(total, total);
-}
-
-/**
- * Pré-charge les tuiles de vue Suisse (zoom 6-9) dans le cache persistant.
- *
- * ⚠️ DÉSACTIVÉ (v5.14.1) : le bulk pre-seeding viole la politique d'utilisation
- * d'OpenTopoMap et d'OSM (https://operations.osmfoundation.org/policies/tiles/).
- * "Pre-seeding large areas or multiple zoom levels in advance is prohibited."
- *
- * Alternative : les tuiles LOD 6-10 sont légères (~30KB/tuile PNG) et se cachent
- * naturellement après la 1ère navigation. Le PWA Service Worker gère le cache offline
- * pour les zones visitées sans bulk-fetch préventif.
- *
- * @deprecated Ne pas réactiver sans un accord explicite du fournisseur de tuiles
- * ou l'utilisation d'un serveur de tuiles auto-hébergé (PMTiles).
- */
-export async function preloadChOverviewTiles(): Promise<void> {
-    // No-op — voir commentaire ci-dessus
-    console.log('[Preload CH] Désactivé — bulk pre-seeding interdit par la politique OpenTopoMap/OSM.');
-}

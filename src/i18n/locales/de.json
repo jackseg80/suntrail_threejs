@@ -423,6 +423,38 @@
       "desc": "Im Notfall zeigt der SOS-Knopf oben rechts Ihren genauen Standort f\u00fcr die Rettungskr\u00e4fte."
     }
   },
+  "upgrade": {
+    "title": "Pro werden ✨",
+    "feature": {
+      "maxDetail": "Maximale Kartendetails (Zoom LOD 18)",
+      "satellite": "Satellitenansicht",
+      "buildings": "3D-Gebäude — realistische Architektur auf dem Gelände (kostenlos = nur 2D)",
+      "solarCalendar": "Sonnenkalender — Schatten für jeden Tag des Jahres simulieren",
+      "solarAnalysis": "Komplette Sonnenanalyse — Azimut, Höhe, 24h-Diagramm, Mondphase",
+      "weatherStation": "Erweiterte Wetterstation — 24h-Diagramm, 3-Tage-Vorhersage, Bergwarnungen",
+      "inclinometer": "Digitaler Neigungsmesser — Geländeneigung in Echtzeit (°, %)",
+      "multiGpx": "Multi-GPX-Tracks — so viele Wanderungen importieren wie Sie möchten",
+      "exportStats": "GPX-Export + erweiterte Statistiken (VAM, Durchschnittsneigung, Naismith)",
+      "offlineZones": "Unbegrenzte Offline-Zonen — so viele Regionen herunterladen wie Sie möchten (kostenlos = 1 Zone)"
+    },
+    "plan": {
+      "monthly": "Monatlich",
+      "yearly": "Jährlich",
+      "lifetime": "Lebenslang",
+      "perMonth": "pro Monat",
+      "perYear": "pro Jahr · €2.50/Monat",
+      "oneTime": "Einmalzahlung",
+      "badge": "⭐ 7 Tage kostenlos"
+    },
+    "restore": "Kauf wiederherstellen",
+    "legal": "Automatisch verlängerbares Abonnement · Jederzeit im Play Store kündbar.",
+    "toast": {
+      "purchaseFailed": "Kauf fehlgeschlagen — prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+      "restoring": "Käufe werden wiederhergestellt…",
+      "restored": "✅ Käufe wiederhergestellt!",
+      "noRestore": "Keine Käufe zum Wiederherstellen."
+    }
+  },
   "common": {
     "close": "Schliessen",
     "cancel": "Abbrechen",

@@ -9,12 +9,6 @@ import { describe, it, expect, vi, beforeAll } from 'vitest';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
-// Mock Three.js (not needed for functional logic but imported by analysis.ts)
-vi.mock('three', async () => {
-    const actual = await vi.importActual<typeof import('three')>('three');
-    return actual;
-});
-
 // Mock terrain (activeTiles) — empty map, no elevation data
 vi.mock('../modules/terrain', () => ({
     activeTiles: new Map(),

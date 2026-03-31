@@ -30,8 +30,7 @@ export default defineConfig({
             id.includes('node_modules/suncalc') ||
             id.includes('node_modules/gpxparser') ||
             id.includes('node_modules/@mapbox') ||
-            id.includes('node_modules/pbf') ||
-            id.includes('node_modules/three-stdlib')
+            id.includes('node_modules/pbf')
           ) return 'vendor';
         },
       },

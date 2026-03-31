@@ -9,20 +9,10 @@ import { describe, it, expect, vi } from 'vitest';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
-// weather.ts importe Three.js — on le mock entièrement ici
+// weather.ts importe Three.js — on mock le module mais on garde la vraie getWeatherIcon
 vi.mock('../modules/weather', async () => {
-    // On réimplémente uniquement getWeatherIcon pour les tests
-    function getWeatherIcon(code: number): string {
-        if (code === 0) return '☀️';
-        if (code <= 3) return '🌤️';
-        if (code <= 48) return '☁️';
-        if (code <= 67) return '🌧️';
-        if (code <= 77) return '❄️';
-        if (code <= 82) return '🌦️';
-        if (code <= 86) return '🌨️';
-        return '⛈️';
-    }
-    return { getWeatherIcon };
+    const actual = await vi.importActual<typeof import('../modules/weather')>('../modules/weather');
+    return { getWeatherIcon: actual.getWeatherIcon };
 });
 
 // ── Imports ───────────────────────────────────────────────────────────────────

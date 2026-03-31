@@ -4,7 +4,7 @@ import { initBatteryManager } from './modules/performance';
 import { registerSW } from 'virtual:pwa-register';
 import { getInterruptedRecording, clearInterruptedRecording, stopRecordingService } from './modules/foregroundService';
 import { showToast } from './modules/utils';
-import { preloadChOverviewTiles } from './modules/tileLoader';
+
 
 // Enregistrement du Service Worker pour le mode Hors-ligne (PWA)
 registerSW({
@@ -33,5 +33,3 @@ if (interrupted) {
 initUI();
 initBatteryManager();
 
-// Pré-charge les tuiles Suisse (zoom 6-9) en arrière-plan au premier démarrage
-void preloadChOverviewTiles();

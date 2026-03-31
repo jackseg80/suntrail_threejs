@@ -13,7 +13,7 @@ import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat, clampTargetToBounds }
 import { throttle, showToast } from './utils';
 import { i18n } from '../i18n/I18nService';
 import { initVegetationResources } from './vegetation';
-import { initWeatherSystem, updateWeatherSystem, fetchWeather } from './weather';
+import { initWeatherSystem, updateWeatherSystem, fetchWeather, disposeWeatherSystem } from './weather';
 import { initCompass, disposeCompass, renderCompass, updateCompassAnimation, isCompassAnimating } from './compass';
 import { centerOnUser } from './location';
 import { initTouchControls, disposeTouchControls } from './touchControls';
@@ -35,6 +35,7 @@ export async function disposeScene(): Promise<void> {
         state.renderer.dispose();
     }
     disposeCompass();
+    disposeWeatherSystem();
     if (state.scene) state.scene.clear();
     if (visibilityChangeHandler) {
         document.removeEventListener('visibilitychange', visibilityChangeHandler);

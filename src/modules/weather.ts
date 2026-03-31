@@ -258,3 +258,16 @@ export function updateWeatherVisibility(visible: boolean): void {
     if (!visible) weatherPoints.visible = false;
     // Si visible=true, le prochain updateWeatherSystem() applique la visibilité correcte
 }
+
+/**
+ * Libère toutes les ressources GPU du système météo.
+ * Appelé par disposeScene() pour éviter les memory leaks.
+ */
+export function disposeWeatherSystem(): void {
+    if (weatherPoints) {
+        weatherPoints.parent?.remove(weatherPoints);
+        weatherPoints = null;
+    }
+    if (geometry) { geometry.dispose(); geometry = null; }
+    if (weatherMaterial) { weatherMaterial.dispose(); weatherMaterial = null; }
+}

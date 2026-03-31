@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import SunCalc from 'suncalc';
 import { state } from './state';
 import { activeTiles } from './terrain';
+import { queryTiles } from './tileSpatialIndex';
 import { worldToLngLat } from './geo';
 
 let lastUsedTile: any = null;
@@ -18,9 +19,19 @@ export function getAltitudeAt(worldX: number, worldZ: number, hintTile: any = nu
         if (lastUsedTile && lastUsedTile.status === 'loaded' && lastUsedTile.bounds && lastUsedTile.bounds.containsPoint(testPoint)) {
             tile = lastUsedTile;
         } else {
-            for (const t of activeTiles.values()) {
+            // O(1) spatial index lookup instead of O(n) activeTiles iteration
+            const candidates = queryTiles(worldX, worldZ);
+            for (const t of candidates) {
                 if (t.status === 'loaded' && t.bounds && t.bounds.containsPoint(testPoint)) {
                     if (!tile || t.zoom > tile.zoom) tile = t;
+                }
+            }
+            // Fallback to full scan if spatial index is empty (e.g. during init)
+            if (!tile) {
+                for (const t of activeTiles.values()) {
+                    if (t.status === 'loaded' && t.bounds && t.bounds.containsPoint(testPoint)) {
+                        if (!tile || t.zoom > tile.zoom) tile = t;
+                    }
                 }
             }
             if (tile) lastUsedTile = tile;
@@ -208,18 +219,21 @@ export function isAtShadow(worldX: number, worldZ: number, altitude: number, sun
 }
 
 export function findTerrainIntersection(ray: THREE.Ray): THREE.Vector3 | null {
-    const stepSize = 100; 
-    const maxDist = 500000; // Augmenté à 500km pour détecter le terrain depuis l'espace (LOD 12)
+    const maxDist = 500000;
     const p = new THREE.Vector3();
-    for (let dist = 100; dist < maxDist; dist += stepSize) {
+    let hintTile: any = null;
+    let dist = 100;
+    while (dist < maxDist) {
         ray.at(dist, p);
-        const groundH = getAltitudeAt(p.x, p.z);
+        const groundH = getAltitudeAt(p.x, p.z, hintTile);
         if (p.y < groundH) {
-            // Raffinement de précision
-            return ray.at(dist - stepSize * 0.5, new THREE.Vector3());
+            return ray.at(dist - (dist > 1000 ? 50 : 25), new THREE.Vector3());
         }
-        // Accélération adaptative : si on est très haut, on avance plus vite
-        if (p.y > 10000 && dist > 5000) dist += 500;
+        // Step adaptatif : grand pas en altitude, petit pas proche du terrain
+        const gap = p.y - groundH;
+        if (gap > 5000) dist += 500;
+        else if (gap > 1000) dist += 200;
+        else dist += 100;
     }
     return null;
 }

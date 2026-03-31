@@ -780,73 +780,73 @@
     </style>
     <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
     <div class="sheet-header">
-        <span class="sheet-title">Passer à Pro ✨</span><!-- TODO i18n -->
+        <span class="sheet-title" data-i18n="upgrade.title">Passer à Pro ✨</span>
         <div class="sheet-close" id="close-upgrade">×</div>
     </div>
     <div class="upgrade-content">
          <div class="upgrade-features">
              <div class="upgrade-feature-row">
                  <span class="upgrade-feature-icon">🗺️</span>
-                 <span class="upgrade-feature-label">Carte détail maximum (zoom LOD 18)</span><!-- TODO i18n -->
+                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.maxDetail">Carte détail maximum (zoom LOD 18)</span>
              </div>
              <div class="upgrade-feature-row">
                  <span class="upgrade-feature-icon">🛰️</span>
-                 <span class="upgrade-feature-label">Vue Satellite</span><!-- TODO i18n -->
+                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.satellite">Vue Satellite</span>
              </div>
              <div class="upgrade-feature-row">
                  <span class="upgrade-feature-icon">🏢</span>
-                 <span class="upgrade-feature-label">Bâtiments 3D — architecture réaliste sur le terrain (gratuit = 2D seul)</span><!-- TODO i18n -->
+                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.buildings">Bâtiments 3D — architecture réaliste sur le terrain (gratuit = 2D seul)</span>
              </div>
              <div class="upgrade-feature-row">
                  <span class="upgrade-feature-icon">🗓️</span>
-                 <span class="upgrade-feature-label">Calendrier solaire — simulez les ombres pour n'importe quel jour de l'année</span><!-- TODO i18n -->
+                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.solarCalendar">Calendrier solaire — simulez les ombres pour n'importe quel jour de l'année</span>
              </div>
              <div class="upgrade-feature-row">
                  <span class="upgrade-feature-icon">☀️</span>
-                 <span class="upgrade-feature-label">Analyse solaire complète — azimut, élévation, graphique 24h, phase lunaire</span><!-- TODO i18n -->
+                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.solarAnalysis">Analyse solaire complète — azimut, élévation, graphique 24h, phase lunaire</span>
              </div>
              <div class="upgrade-feature-row">
                  <span class="upgrade-feature-icon">🌡️</span>
-                 <span class="upgrade-feature-label">Station météo avancée — graphique 24h, prévision 3 jours, alertes montagne</span><!-- TODO i18n -->
+                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.weatherStation">Station météo avancée — graphique 24h, prévision 3 jours, alertes montagne</span>
              </div>
              <div class="upgrade-feature-row">
                  <span class="upgrade-feature-icon">📐</span>
-                 <span class="upgrade-feature-label">Inclinomètre numérique — pente du terrain en temps réel (°, %)</span><!-- TODO i18n -->
+                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.inclinometer">Inclinomètre numérique — pente du terrain en temps réel (°, %)</span>
              </div>
              <div class="upgrade-feature-row">
                  <span class="upgrade-feature-icon">📍</span>
-                 <span class="upgrade-feature-label">Multi-tracés GPX — importez autant de randonnées que vous voulez</span><!-- TODO i18n -->
+                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.multiGpx">Multi-tracés GPX — importez autant de randonnées que vous voulez</span>
              </div>
              <div class="upgrade-feature-row">
                  <span class="upgrade-feature-icon">💾</span>
-                 <span class="upgrade-feature-label">Export GPX + statistiques avancées (VAM, pente moyenne, Naismith)</span><!-- TODO i18n -->
+                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.exportStats">Export GPX + statistiques avancées (VAM, pente moyenne, Naismith)</span>
              </div>
              <div class="upgrade-feature-row">
                  <span class="upgrade-feature-icon">📶</span>
-                 <span class="upgrade-feature-label">Zones offline illimitées — téléchargez autant de régions que vous voulez (gratuit = 1 zone)</span><!-- TODO i18n -->
+                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.offlineZones">Zones offline illimitées — téléchargez autant de régions que vous voulez (gratuit = 1 zone)</span>
              </div>
          </div>
         <!-- Sélecteur de plan — 3 options -->
         <div class="upgrade-plans">
             <button class="upgrade-plan" id="upgrade-monthly-btn">
-                <div class="upgrade-plan-period">Mensuel</div>
+                <div class="upgrade-plan-period" data-i18n="upgrade.plan.monthly">Mensuel</div>
                 <div class="upgrade-plan-price" id="upgrade-monthly-price">€3.99</div>
-                <div class="upgrade-plan-sub">par mois</div>
+                <div class="upgrade-plan-sub" data-i18n="upgrade.plan.perMonth">par mois</div>
             </button>
             <button class="upgrade-plan upgrade-plan-best" id="upgrade-cta-btn">
-                <div class="upgrade-plan-badge">⭐ 7 jours gratuits</div>
-                <div class="upgrade-plan-period">Annuel</div>
+                <div class="upgrade-plan-badge" data-i18n="upgrade.plan.badge">⭐ 7 jours gratuits</div>
+                <div class="upgrade-plan-period" data-i18n="upgrade.plan.yearly">Annuel</div>
                 <div class="upgrade-plan-price" id="upgrade-yearly-price">€29.99</div>
-                <div class="upgrade-plan-sub">par an · €2.50/mois</div>
+                <div class="upgrade-plan-sub" data-i18n="upgrade.plan.perYear">par an · €2.50/mois</div>
             </button>
             <button class="upgrade-plan" id="upgrade-lifetime-btn">
-                <div class="upgrade-plan-period">À vie</div>
+                <div class="upgrade-plan-period" data-i18n="upgrade.plan.lifetime">À vie</div>
                 <div class="upgrade-plan-price" id="upgrade-lifetime-price">€99.99</div>
-                <div class="upgrade-plan-sub">paiement unique</div>
+                <div class="upgrade-plan-sub" data-i18n="upgrade.plan.oneTime">paiement unique</div>
             </button>
         </div>
-        <button class="upgrade-restore" id="upgrade-restore-btn">Restaurer un achat</button><!-- TODO i18n -->
-        <p class="upgrade-legal">Abonnement auto-renouvelable · Résiliable à tout moment dans le Play Store.</p><!-- TODO i18n -->
+        <button class="upgrade-restore" id="upgrade-restore-btn" data-i18n="upgrade.restore">Restaurer un achat</button>
+        <p class="upgrade-legal" data-i18n="upgrade.legal">Abonnement auto-renouvelable · Résiliable à tout moment dans le Play Store.</p>
     </div>
 </div>
 </template>

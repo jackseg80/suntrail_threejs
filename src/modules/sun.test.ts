@@ -63,6 +63,57 @@ describe('sun.ts', () => {
         expect(noonIntensity).toBeGreaterThan(midnightIntensity);
     });
 
+    it('should adapt shadow camera frustum to RANGE and ZOOM', () => {
+        // Setup shadow camera with initial oversized bounds
+        state.sunLight!.castShadow = true;
+        state.sunLight!.shadow.camera.left = -50000;
+        state.sunLight!.shadow.camera.right = 50000;
+        state.sunLight!.shadow.camera.top = 50000;
+        state.sunLight!.shadow.camera.bottom = -50000;
+        state.SHADOWS = true;
+        state.RANGE = 4;
+        state.ZOOM = 14;
+        state.controls = { target: new THREE.Vector3(0, 0, 0) } as any;
+
+        updateSunPosition(720); // Midi
+
+        const cam = state.sunLight!.shadow.camera;
+        // tileSizeMeters at zoom 14 ≈ 40075000 / 2^14 ≈ 2446m
+        // extent = max(2000, min(4 * 2446 * 0.8, 30000)) ≈ 7827
+        expect(cam.right).toBeLessThan(50000);
+        expect(cam.right).toBeGreaterThan(2000);
+        expect(cam.right).toBeCloseTo(4 * (40075000 / Math.pow(2, 14)) * 0.8, -2);
+        expect(cam.left).toBe(-cam.right);
+        expect(cam.top).toBe(cam.right);
+        expect(cam.bottom).toBe(-cam.right);
+    });
+
+    it('should clamp shadow camera extent to 30000 max', () => {
+        state.sunLight!.castShadow = true;
+        state.sunLight!.shadow.camera.right = 50000;
+        state.SHADOWS = true;
+        state.RANGE = 12; // ultra
+        state.ZOOM = 6;   // vue très large — tileSize énorme
+        state.controls = { target: new THREE.Vector3(0, 0, 0) } as any;
+
+        updateSunPosition(720);
+
+        expect(state.sunLight!.shadow.camera.right).toBeLessThanOrEqual(30000);
+    });
+
+    it('should not update shadow camera when SHADOWS is false', () => {
+        state.sunLight!.castShadow = true;
+        state.sunLight!.shadow.camera.right = 50000;
+        state.SHADOWS = false;
+        state.RANGE = 4;
+        state.ZOOM = 14;
+        state.controls = { target: new THREE.Vector3(0, 0, 0) } as any;
+
+        updateSunPosition(720);
+
+        expect(state.sunLight!.shadow.camera.right).toBe(50000); // unchanged
+    });
+
     it('should handle NaN minutes gracefully', () => {
         const timeDisp = document.getElementById('time-disp');
         if (timeDisp) timeDisp.textContent = "Old Value";

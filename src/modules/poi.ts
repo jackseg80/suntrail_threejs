@@ -3,6 +3,7 @@ import { state } from './state';
 import { getAltitudeAt } from './analysis';
 import { fetchOverpassData } from './utils';
 import type { Tile } from './terrain';
+import { boundedCacheSet } from './boundedCache';
 
 const poiMemoryCache = new Map<string, any[]>();
 const poiFetchPromises = new Map<string, Promise<any[] | null>>();
@@ -52,7 +53,7 @@ export async function loadPOIsForTile(tile: Tile) {
         }
         pois = await promise;
         if (pois) {
-            poiMemoryCache.set(zoneKey, pois);
+            boundedCacheSet(poiMemoryCache, zoneKey, pois);
         } else {
             zoneFailureCooldown.set(zoneKey, Date.now() + 60000);
         }

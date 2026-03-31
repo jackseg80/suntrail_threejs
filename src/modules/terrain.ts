@@ -13,6 +13,7 @@ import { eventBus } from './eventBus';
 import { getAltitudeAt } from './analysis'; // used for terrain-clamping in gpxDrapePoints
 import { addToCache, getFromCache, hasInCache, getTileCacheKey, markCacheKeyActive, markCacheKeyInactive } from './tileCache';
 import { getPlaneGeometry } from './geometryCache';
+import { insertTile, removeTile, clearIndex as clearSpatialIndex } from './tileSpatialIndex';
 import { loadTileData, cancelTileLoad } from './tileLoader';
 import { materialPool } from './materialPool';
 
@@ -306,38 +307,32 @@ export class Tile {
                     #include <map_fragment>
                     if (uShowHydrology > 0.5) {
                         vec3 colorIn = diffuseColor.rgb;
-                        float brightness = (colorIn.r + colorIn.g + colorIn.b) / 3.0;
-                        
-                        // Détection stricte : le bleu doit être le canal dominant
-                        // On compare le bleu au rouge et au vert individuellement
                         float blueVsRed = colorIn.b - colorIn.r;
-                        float blueVsGreen = colorIn.b - colorIn.g;
-                        
-                        // L'eau est bleue (B > R et B >= G) et la zone est parfaitement plate
-                        float isWater = smoothstep(0.02, 0.10, blueVsRed) * smoothstep(0.0, 0.06, blueVsGreen) * smoothstep(0.998, 1.0, vTrueNormal.y);
-                        
-                        // Protection supplémentaire : si le vert est trop présent (prairie), on annule
-                        float greenDominance = colorIn.g - max(colorIn.r, colorIn.b);
-                        isWater *= (1.0 - smoothstep(0.0, 0.1, greenDominance));
 
-                        // Protection Neige/Glacier : si c'est très blanc, le bleu doit être extrêmement marqué
-                        isWater *= (1.0 - smoothstep(0.8, 0.98, brightness) * (1.0 - smoothstep(0.1, 0.3, blueVsRed)));
+                        // Early exit : 2 tests bon marché éliminent 99%+ des fragments non-eau
+                        if (blueVsRed > 0.02 && vTrueNormal.y > 0.998) {
+                            float blueVsGreen = colorIn.b - colorIn.g;
 
-                        if (isWater > 0.05) {
-                            vec3 waterBlue = vec3(0.02, 0.18, 0.52);
-                            
-                            // --- VAGUES EN ROULEAUX GÉANTS (Directionnelles & Sans raccord) ---
-                            // On utilise vWorldXZ pour une continuité parfaite entre les tuiles
-                            float t = uTime * 0.5;
-                            // Fréquence très basse : 0.002 = une vague tous les ~3km
-                            float w1 = sin(vWorldXZ.x * 0.002 + vWorldXZ.y * 0.0015 + t) * 0.5 + 0.5;
-                            float w2 = sin(vWorldXZ.x * 0.001 - vWorldXZ.y * 0.0025 + t * 0.6) * 0.5 + 0.5;
-                            
-                            float wave = mix(w1, w2, 0.4);
-                            
-                            diffuseColor.rgb = mix(colorIn, waterBlue, 0.65 * isWater);
-                            // Reflet large et lent
-                            diffuseColor.rgb += vec3(0.2, 0.4, 0.7) * (wave - 0.5) * isWater * 0.4;
+                            // isWater inclut le smoothstep sur la normale pour un dégradé doux aux bords
+                            float isWater = smoothstep(0.02, 0.10, blueVsRed) * smoothstep(0.0, 0.06, blueVsGreen) * smoothstep(0.998, 1.0, vTrueNormal.y);
+
+                            // Protection prairie (vert dominant)
+                            float greenDominance = colorIn.g - max(colorIn.r, colorIn.b);
+                            isWater *= (1.0 - smoothstep(0.0, 0.1, greenDominance));
+
+                            // Protection Neige/Glacier
+                            float brightness = (colorIn.r + colorIn.g + colorIn.b) / 3.0;
+                            isWater *= (1.0 - smoothstep(0.8, 0.98, brightness) * (1.0 - smoothstep(0.1, 0.3, blueVsRed)));
+
+                            if (isWater > 0.05) {
+                                vec3 waterBlue = vec3(0.02, 0.18, 0.52);
+                                float t = uTime * 0.5;
+                                float w1 = sin(vWorldXZ.x * 0.002 + vWorldXZ.y * 0.0015 + t) * 0.5 + 0.5;
+                                float w2 = sin(vWorldXZ.x * 0.001 - vWorldXZ.y * 0.0025 + t * 0.6) * 0.5 + 0.5;
+                                float wave = mix(w1, w2, 0.4);
+                                diffuseColor.rgb = mix(colorIn, waterBlue, 0.65 * isWater);
+                                diffuseColor.rgb += vec3(0.2, 0.4, 0.7) * (wave - 0.5) * isWater * 0.4;
+                            }
                         }
                     }
                     if (uHasOverlay) { vec4 oCol = texture2D(uOverlayMap, vMapUv); diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a); }
@@ -525,6 +520,7 @@ export function resetTerrain(): void {
     lastRenderedZoom = -1;
     for (const tile of activeTiles.values()) tile.dispose();
     activeTiles.clear();
+    clearSpatialIndex();
 }
 
 /**
@@ -563,6 +559,7 @@ export function rebuildActiveTiles(): void {
         // Consommer l'entrée cache vide pour forcer un re-fetch réseau avec élévation réelle
         const cacheKey = getTileCacheKey(key, tile.zoom);
         getFromCache(cacheKey);
+        removeTile(tile);
         tile.dispose();
         activeTiles.delete(key);
     }
@@ -665,7 +662,7 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
     const camKey = `${camTile.x}_${camTile.y}_${zoom}`;
     if (camTile.x >= 0 && camTile.x < maxTile && camTile.y >= 0 && camTile.y < maxTile) {
         currentActiveKeys.add(camKey);
-        if (!activeTiles.has(camKey)) { const t = new Tile(camTile.x, camTile.y, zoom, camKey); activeTiles.set(camKey, t); loadQueue.add(t); }
+        if (!activeTiles.has(camKey)) { const t = new Tile(camTile.x, camTile.y, zoom, camKey); activeTiles.set(camKey, t); insertTile(t); loadQueue.add(t); }
     }
 
     // LOD ≤ 10 : vue globale, on garantit au moins RANGE=3 tiles de contexte.
@@ -684,7 +681,7 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
             let tile = activeTiles.get(key);
             if (!tile) {
                 tile = new Tile(tx, ty, zoom, key);
-                if (tile.isVisible() || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) { activeTiles.set(key, tile); loadQueue.add(tile); }
+                if (tile.isVisible() || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) { activeTiles.set(key, tile); insertTile(tile); loadQueue.add(tile); }
             } else if (tile.status === 'loaded' && tile.zoom === zoom && buildsThisCycle < MAX_BUILDS_PER_CYCLE) {
                 const dist = Math.sqrt((tile.worldX - state.camera.position.x)**2 + (tile.worldZ - state.camera.position.z)**2);
                 let targetRes = (dist < tile.tileSizeMeters * 4.0) ? state.RESOLUTION : (dist < tile.tileSizeMeters * 8.0) ? Math.max(1, Math.floor(state.RESOLUTION/2)) : Math.max(1, Math.floor(state.RESOLUTION/4));
@@ -699,10 +696,12 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
     for (const [key, tile] of activeTiles.entries()) {
         if (!currentActiveKeys.has(key)) {
             if (lodChanging && tile.mesh && tile.status !== 'disposed') {
+                removeTile(tile);
                 activeTiles.delete(key);
                 fadingOutTiles.add(tile);
                 tile.startFadeOut();
             } else {
+                removeTile(tile);
                 tile.dispose();
                 activeTiles.delete(key);
             }

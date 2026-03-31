@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
-import { Tile, addGPXLayer, removeGPXLayer, updateVisibleTiles, terrainUniforms } from './terrain';
+import { Tile, updateVisibleTiles, terrainUniforms } from './terrain';
 import { lngLatToTile, worldToLngLat, EARTH_CIRCUMFERENCE, getTileBounds } from './geo';
 import { state } from './state';
 
@@ -15,55 +15,7 @@ describe('terrain.ts', () => {
         vi.useRealTimers();
     });
     
-    describe('GPX Layer (Multi-GPX v5.10)', () => {
-        beforeEach(() => {
-            state.scene = new THREE.Scene();
-            state.RELIEF_EXAGGERATION = 1.4;
-            state.originTile = { x: 4270, y: 2891, z: 13 }; // Spiez
-            state.camera = new THREE.PerspectiveCamera();
-            state.camera.position.set(0, 10000, 0);
-            state.gpxLayers = [];
-            state.activeGPXLayerId = null;
-        });
-
-        it('should create a GPXLayer with correct 3D points', () => {
-            const rawData = {
-                tracks: [{
-                    points: [
-                        { lat: 46.6863, lon: 7.6617, ele: 1000 },
-                        { lat: 46.6864, lon: 7.6618, ele: 1100 }
-                    ]
-                }]
-            };
-
-            const layer = addGPXLayer(rawData, 'test-track');
-
-            // With densifySteps=4: 2 waypoints produce 2 + 1*(4-1) = 5 points
-            // (start + 3 intermediates + end)
-            expect(layer.points.length).toBeGreaterThanOrEqual(2);
-            // Y = max(terrainAlt=0, ele * RELIEF_EXAGGERATION) + GPX_SURFACE_OFFSET(30)
-            // First point (ele=1000, RELIEF_EXAGGERATION=1.4, terrainAlt=0):
-            expect(layer.points[0].y).toBeCloseTo(1000 * 1.4 + 30, 1);
-            // Last point (ele=1100):
-            expect(layer.points[layer.points.length - 1].y).toBeCloseTo(1100 * 1.4 + 30, 1);
-            expect(state.gpxLayers).toHaveLength(1);
-            expect(state.activeGPXLayerId).toBe(layer.id);
-        });
-
-        it('should remove a GPXLayer and update activeGPXLayerId', () => {
-            const rawData = { tracks: [{ points: [
-                { lat: 0, lon: 0, ele: 0 },
-                { lat: 1, lon: 1, ele: 1 }
-            ] }] };
-
-            const layer = addGPXLayer(rawData, 'to-remove');
-            expect(state.gpxLayers).toHaveLength(1);
-
-            removeGPXLayer(layer.id);
-            expect(state.gpxLayers).toHaveLength(0);
-            expect(state.activeGPXLayerId).toBeNull();
-        });
-    });
+    // GPX Layer tests moved to gpxLayers.test.ts (more comprehensive coverage)
 
     describe('lngLatToTile', () => {
         it('should correctly calculate tile for Spiez at zoom 13', () => {

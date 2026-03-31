@@ -4,6 +4,7 @@ import type { Tile } from './terrain';
 import { fetchOverpassData } from './utils';
 import { getAltitudeAt } from './analysis';
 import { terrainUniforms } from './terrain';
+import { boundedCacheSet } from './boundedCache';
 
 const hydroMemoryCache = new Map<string, any[]>();
 const hydroFetchPromises = new Map<string, Promise<any[] | null>>();
@@ -91,7 +92,7 @@ export async function loadHydrologyForTile(tile: Tile) {
         }
         elements = await promise;
         if (elements) {
-            hydroMemoryCache.set(zoneKey, elements);
+            boundedCacheSet(hydroMemoryCache, zoneKey, elements);
         } else {
             zoneFailureCooldown.set(zoneKey, Date.now() + 60000);
         }
@@ -163,7 +164,7 @@ function renderHydrology(tile: Tile, elements: any[]) {
             try {
                 const shape = new THREE.Shape(points);
                 const geometry = new THREE.ShapeGeometry(shape);
-                
+
                 // Détection de l'altitude : On échantillonne le terrain au centre de l'objet d'eau
                 const worldX = tile.worldX + avgX;
                 const worldZ = tile.worldZ + avgZ;
@@ -175,7 +176,7 @@ function renderHydrology(tile: Tile, elements: any[]) {
                 // et éviter que la vague à son creux passe sous le terrain (artefact LOD 17-18)
                 mesh.position.y = baseAlt + 2.0;
                 mesh.receiveShadow = true;
-                
+
                 group.add(mesh);
             } catch (e) { console.warn('[Hydrology] Water mesh creation failed silently:', e); }
         }

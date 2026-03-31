@@ -106,6 +106,18 @@ export function updateSunPosition(minutes: number): void {
         }
         state.sunLight.intensity = sunIntensity;
         state.sunLight.color.copy(sunColor);
+
+        // Shadow camera dynamique par RANGE — adapte le frustum au terrain visible (v5.16.9)
+        if (state.SHADOWS && state.sunLight.shadow) {
+            const tileSizeMeters = 40075000 / Math.pow(2, state.ZOOM);
+            const extent = Math.max(2000, Math.min(state.RANGE * tileSizeMeters * 0.8, 30000));
+            const cam = state.sunLight.shadow.camera;
+            if (Math.abs(cam.right - extent) > 500) {
+                cam.left = -extent; cam.right = extent;
+                cam.top = extent; cam.bottom = -extent;
+                cam.updateProjectionMatrix();
+            }
+        }
     }
 
     if (state.ambientLight) {

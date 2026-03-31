@@ -4,6 +4,48 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.17.0] - 2026-04-01
+### 🔧 Audit Dette Technique + Optimisations Performance
+
+**Dette technique — Nettoyage (Phase 1) :**
+- Supprimé `three-stdlib` (jamais importé, +500ko inutile)
+- Déplacé `@capacitor/cli` en devDependencies
+- Supprimé `@types/mapbox__vector-tile` et `@types/pbf` (types inclus dans les packages)
+- Supprimé tests GPX dupliqués dans `terrain.test.ts` (couverture conservée dans `gpxLayers.test.ts`)
+- Corrigé mock réimplémenté dans `weatherPro.test.ts` (utilise la vraie `getWeatherIcon`)
+- Supprimé mock inutile de Three.js dans `solarAnalysis.test.ts`
+- Supprimé code mort : `preloadChOverviewTiles()` (no-op), `downloadOfflineZone()` (jamais appelée), `getUVColor()`/`getComfortLabel()` (jamais importées)
+
+**i18n UpgradeSheet (Phase 2) :**
+- 24 clés i18n ajoutées dans les 4 locales (fr/en/de/it) pour le paywall Pro
+- 19 éléments du template `index.html` annotés avec `data-i18n`
+- 4 `showToast()` hardcodés français remplacés par `i18n.t()`
+- Nouveau test : `upgradeSheet.i18n.test.ts` (96 assertions, 4 locales × 24 clés)
+
+**Performance — Shadow camera dynamique (Phase 3, +15-25 fps) :**
+- Shadow frustum adapté au `RANGE × tileSizeMeters` du preset actuel
+- Balanced LOD 14 : 7.7km (vs 100km avant = 13× meilleure résolution shadow)
+- Clampé 2000m–30000m, guard 500m évite les recalculs par frame
+
+**Performance — Index spatial O(1) (Phase 4, +10-20 fps) :**
+- Nouveau module `tileSpatialIndex.ts` : grid hash pour lookup tuiles O(1)
+- Guard pour tuiles basses résolutions (LOD 6-10) : bucket `largeTiles` séparé évitant l'explosion de grid
+- `getAltitudeAt()` utilise l'index spatial + fallback scan complet
+
+**Performance — Shader eau early-exit (Phase 5A, +5-10 fps) :**
+- 2 tests bon marché (`blueVsRed > 0.02 && vTrueNormal.y > 0.998`) éliminent 99%+ des fragments
+- smoothstep complet préservé dans `isWater` pour un dégradé doux aux bords
+
+**Performance — Memory leaks (Phase 5C+D) :**
+- `disposeWeatherSystem()` : libère geometry, material, points GPU
+- `boundedCacheSet()` : caches buildings/hydrology/poi limités à 200 entrées (FIFO)
+
+**Performance — Ray marching adaptatif (Phase 5E) :**
+- `findTerrainIntersection()` : step adaptatif (500m en altitude, 100m proche du terrain)
+- Réduit le nombre d'itérations de ~5000 à ~500 en moyenne
+
+---
+
 ## [5.16.8] - 2026-03-31
 ### 🐛 Corrections & Améliorations UX
 

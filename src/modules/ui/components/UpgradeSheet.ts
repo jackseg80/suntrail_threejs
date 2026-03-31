@@ -3,6 +3,7 @@ import { sheetManager } from '../core/SheetManager';
 import { showToast } from '../../utils';
 import { haptic } from '../../haptics';
 import { iapService } from '../../iapService';
+import { i18n } from '../../../i18n/I18nService';
 
 export class UpgradeSheet extends BaseComponent {
     /** Guard : loadPrices() ne s'exécute qu'une seule fois (évite le burst getOfferings) */
@@ -41,7 +42,7 @@ export class UpgradeSheet extends BaseComponent {
                 sheetManager.close();
             } else {
                 // Achat annulé, non disponible ou offres non configurées
-                showToast('Achat impossible — vérifiez votre connexion ou réessayez.'); // TODO i18n
+                showToast(i18n.t('upgrade.toast.purchaseFailed'));
             }
         };
 
@@ -60,14 +61,14 @@ export class UpgradeSheet extends BaseComponent {
         // Restaurer les achats
         const restoreBtn = this.element.querySelector('#upgrade-restore-btn');
         restoreBtn?.addEventListener('click', async () => {
-            showToast('Restauration en cours…'); // TODO i18n
+            showToast(i18n.t('upgrade.toast.restoring'));
             const restored = await iapService.restorePurchases();
             if (restored) {
                 void haptic('success');
-                showToast('✅ Achats restaurés !'); // TODO i18n
+                showToast(i18n.t('upgrade.toast.restored'));
                 sheetManager.close();
             } else {
-                showToast('Aucun achat à restaurer.'); // TODO i18n
+                showToast(i18n.t('upgrade.toast.noRestore'));
             }
         });
     }

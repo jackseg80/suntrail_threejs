@@ -12,17 +12,6 @@ export function getUVCategory(uv: number): 'low' | 'moderate' | 'high' | 'veryHi
     return 'extreme';
 }
 
-/** UV category color (ANSES standard) */
-export function getUVColor(category: ReturnType<typeof getUVCategory>): string {
-    switch (category) {
-        case 'low':      return '#22c55e'; // green
-        case 'moderate': return '#eab308'; // yellow
-        case 'high':     return '#f97316'; // orange
-        case 'veryHigh': return '#ef4444'; // red
-        case 'extreme':  return '#a855f7'; // violet
-    }
-}
-
 /**
  * Hiking comfort index (0–10).
  * Higher = more comfortable.
@@ -33,14 +22,6 @@ export function getUVColor(category: ReturnType<typeof getUVCategory>): string {
 export function getComfortIndex(temp: number, wind: number, uv: number): number {
     const score = 10 - (Math.abs(temp - 18) / 2) - (wind / 15) - (uv > 6 ? 2 : 0);
     return Math.min(10, Math.max(0, score));
-}
-
-/** Label for comfort index */
-export function getComfortLabel(score: number): string {
-    if (score >= 8) return '😊 Excellent';
-    if (score >= 6) return '👍 Bon';
-    if (score >= 4) return '😐 Moyen';
-    return '😟 Difficile';
 }
 
 /**

@@ -423,6 +423,38 @@
       "desc": "In an emergency, the SOS button at the top right shows your exact position for rescue services."
     }
   },
+  "upgrade": {
+    "title": "Go Pro ✨",
+    "feature": {
+      "maxDetail": "Maximum detail map (LOD 18 zoom)",
+      "satellite": "Satellite View",
+      "buildings": "3D Buildings — realistic architecture on terrain (free = 2D only)",
+      "solarCalendar": "Solar calendar — simulate shadows for any day of the year",
+      "solarAnalysis": "Full solar analysis — azimuth, elevation, 24h chart, moon phase",
+      "weatherStation": "Advanced weather station — 24h chart, 3-day forecast, mountain alerts",
+      "inclinometer": "Digital inclinometer — terrain slope in real time (°, %)",
+      "multiGpx": "Multi-GPX tracks — import as many hikes as you want",
+      "exportStats": "GPX export + advanced stats (VAM, avg slope, Naismith)",
+      "offlineZones": "Unlimited offline zones — download as many regions as you want (free = 1 zone)"
+    },
+    "plan": {
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "lifetime": "Lifetime",
+      "perMonth": "per month",
+      "perYear": "per year · €2.50/mo",
+      "oneTime": "one-time payment",
+      "badge": "⭐ 7 days free"
+    },
+    "restore": "Restore purchase",
+    "legal": "Auto-renewable subscription · Cancel anytime in the Play Store.",
+    "toast": {
+      "purchaseFailed": "Purchase failed — check your connection and try again.",
+      "restoring": "Restoring purchases…",
+      "restored": "✅ Purchases restored!",
+      "noRestore": "No purchases to restore."
+    }
+  },
   "common": {
     "close": "Close",
     "cancel": "Cancel",
