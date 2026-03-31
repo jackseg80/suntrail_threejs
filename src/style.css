@@ -317,6 +317,37 @@ body, html {
     transform: translateY(0);
 }
 
+/* ── Scrollbars personnalisées — style glassmorphism fin ─────────────────── */
+.bottom-sheet::-webkit-scrollbar,
+.exp-hourly-scroll::-webkit-scrollbar,
+#geo-results::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+}
+.bottom-sheet::-webkit-scrollbar-track,
+.exp-hourly-scroll::-webkit-scrollbar-track,
+#geo-results::-webkit-scrollbar-track {
+    background: transparent;
+}
+.bottom-sheet::-webkit-scrollbar-thumb,
+.exp-hourly-scroll::-webkit-scrollbar-thumb,
+#geo-results::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 2px;
+}
+.bottom-sheet::-webkit-scrollbar-thumb:hover,
+.exp-hourly-scroll::-webkit-scrollbar-thumb:hover,
+#geo-results::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.32);
+}
+/* Firefox */
+.bottom-sheet,
+.exp-hourly-scroll,
+#geo-results {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
 .sheet-handle {
     width: 36px; height: 4px;
     background: var(--border-active);

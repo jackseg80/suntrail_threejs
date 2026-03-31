@@ -12,6 +12,8 @@ import type { Locale } from '../../../i18n/I18nService';
 
 import { sheetManager } from '../core/SheetManager';
 import { iapService } from '../../iapService';
+import { showToast } from '../../utils';
+import { haptic } from '../../haptics';
 
 export class SettingsSheet extends BaseComponent {
     constructor() {
@@ -153,6 +155,9 @@ export class SettingsSheet extends BaseComponent {
 
         // Tutorial button
         this.createTutorialButton();
+
+        // 7-tap easter egg → toggle Pro tester mode (RAM uniquement, non persisté)
+        this.setupVersionTapEgg();
 
         // Initial UI update
         this.updateAllUI();
@@ -427,6 +432,45 @@ export class SettingsSheet extends BaseComponent {
 
         section.querySelector('#tutorial-btn')?.addEventListener('click', () => {
             void showOnboarding();
+        });
+    }
+
+    /**
+     * Easter egg : 7 taps sur le numéro de version → bascule mode Pro testeur (RAM uniquement, non persisté).
+     * Taps 4-6 : haptic light + clignotement. Tap 7 : haptic success + toast + couleur accent.
+     */
+    private setupVersionTapEgg(): void {
+        const versionEl = this.element?.querySelector('#settings-version') as HTMLElement | null;
+        if (!versionEl) return;
+
+        let tapCount = 0;
+        let tapTimer: ReturnType<typeof setTimeout> | null = null;
+
+        versionEl.addEventListener('click', () => {
+            tapCount++;
+
+            // Réinitialise le compteur après 3s d'inactivité
+            if (tapTimer) clearTimeout(tapTimer);
+            tapTimer = setTimeout(() => { tapCount = 0; }, 3000);
+
+            if (tapCount >= 4 && tapCount < 7) {
+                // Feedback discret sur les taps 4-6
+                void haptic('light');
+                versionEl.style.opacity = tapCount % 2 === 0 ? '1' : '0.2';
+                setTimeout(() => { versionEl.style.opacity = '0.5'; }, 200);
+            } else if (tapCount === 7) {
+                // Toggle Pro au 7e tap
+                tapCount = 0;
+                if (tapTimer) clearTimeout(tapTimer);
+                state.isPro = !state.isPro;
+                void haptic('success');
+                const msg = state.isPro
+                    ? '🔓 Mode testeur Pro activé (RAM — non persisté)'
+                    : '🔒 Mode testeur Pro désactivé';
+                showToast(msg, 3000);
+                versionEl.style.color = state.isPro ? 'var(--accent)' : '';
+                versionEl.style.opacity = state.isPro ? '0.9' : '0.5';
+            }
         });
     }
 

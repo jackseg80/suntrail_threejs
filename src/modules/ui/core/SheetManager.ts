@@ -94,6 +94,12 @@ class SheetManager {
 
         // Emit event
         eventBus.emit('sheetOpened', { id });
+
+        // Toujours afficher depuis le haut.
+        // trapFocus() focus le premier élément focusable à +50ms → le navigateur
+        // scroll automatiquement vers cet élément, annulant tout reset antérieur.
+        // On contre-carre à +55ms pour garantir scroll=0 après le focus.
+        setTimeout(() => { sheet.scrollTop = 0; }, 55);
     }
 
     /**

@@ -447,6 +447,8 @@ export class WeatherSheet extends BaseComponent {
             this.contentEl.appendChild(copyBtn);
         }
 
+        // Toujours afficher depuis le haut après reconstruction du contenu
+        requestAnimationFrame(() => { if (this.element) this.element.scrollTop = 0; });
     }
 
     private copyWeatherReport(wd: NonNullable<typeof state.weatherData>): void {
@@ -720,6 +722,9 @@ export class SolarProbeSheet extends BaseComponent {
             // Init real-time display
             this.updateRealtimeElements();
         }
+
+        // Toujours afficher depuis le haut après reconstruction du contenu
+        requestAnimationFrame(() => { if (this.element) this.element.scrollTop = 0; });
     }
 
     private buildTimeline(parent: HTMLElement, result: SolarAnalysisResult): void {
