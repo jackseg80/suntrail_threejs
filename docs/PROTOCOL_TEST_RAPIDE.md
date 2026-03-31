@@ -38,7 +38,7 @@ Essaie chacun de ces gestes sur la carte :
 ## 3. Boutons de contrôle (côté droit)
 
 - [ ] **Boussole** (en haut) — appuie dessus pour réorienter vers le Nord
-- [ ] **Couches** — appuie pour changer le type de carte, essaie au moins 2 styles différents
+- [ ] **Couches** — appuie pour changer le type de carte, essaie au moins 2 styles différents ; dans le même panneau, active les toggles **Sentiers** et **Pentes** (zoome d'abord à LOD 11+)
 - [ ] **2D / 3D** — bascule entre la vue plate et le relief 3D *(voir note ci-dessous)*
 - [ ] **GPS** — appuie pour centrer la carte sur ta position
 
@@ -55,6 +55,7 @@ Essaie chacun de ces gestes sur la carte :
 
 - [ ] Appuie sur le bouton **☀️ Timeline** en bas de l'écran
 - [ ] Glisse le curseur d'heure pour voir évoluer les ombres sur le terrain
+- [ ] Essaie de changer la date pour un autre jour → un message "Passer à Pro" doit apparaître (comportement normal — le calendrier est Pro)
 - [ ] Ferme la timeline
 
 **À noter :** la simulation était-elle réaliste et fluide ?

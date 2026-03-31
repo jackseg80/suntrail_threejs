@@ -44,12 +44,12 @@ function createSunTrailForm() {
   const sR1 = form.addPageBreakItem()
     .setTitle('📱 Rapide — 1. Installation & Premier lancement')
     .setHelpText('Durée estimée : ~5 min\n\n' +
-      'ℹ️ Temps de chargement normal : au premier lancement (cache vide), la carte peut mettre 10 à 60 secondes à s'afficher selon ta connexion. Les ouvertures suivantes sont quasi-instantanées.');
+      "ℹ️ Temps de chargement normal : au premier lancement (cache vide), la carte peut mettre 10 à 60 secondes à s'afficher selon ta connexion. Les ouvertures suivantes sont quasi-instantanées.");
 
   addCheckboxes(form, 'Cases à cocher — Installation', [
     'Application installée depuis le lien fourni',
     'Première ouverture réussie',
-    'Conditions d'utilisation lues et acceptées',
+    "Conditions d'utilisation lues et acceptées",
     'Tutoriel de démarrage parcouru (ou "Passer" appuyé)',
   ]);
   form.addParagraphTextItem()
@@ -83,6 +83,8 @@ function createSunTrailForm() {
   addCheckboxes(form, 'Boutons testés', [
     'Boussole (haut) : réoriente la carte vers le Nord',
     'Couches 🗺️ : au moins 2 styles différents testés',
+    'Couches → toggle Sentiers activé (LOD ≥ 11) → sentiers balisés visibles',
+    'Couches → toggle Pentes activé → zones colorées selon la déclivité (> 30° = orange/rouge)',
     '2D/3D : bascule entre vue plate et relief 3D',
     'GPS 📍 : centre la carte sur ta position',
   ]);
@@ -97,6 +99,7 @@ function createSunTrailForm() {
     'Bouton Timeline ouvert (bas de l\'écran)',
     'Curseur glissé vers une heure matinale (7h) — ombres visibles',
     'Curseur glissé vers le soir (19h) — ombres longues',
+    'Tentative de changement de date → message "Passer à Pro" apparaît (normal — calendrier est Pro)',
     'Timeline fermée',
   ]);
   form.addMultipleChoiceItem()
@@ -268,6 +271,10 @@ function createSunTrailForm() {
   addCheckboxes(form, '[P3] FABs testés', [
     'Couches : tous les styles disponibles testés',
     'Couches : aucun style ne refuse de charger',
+    'Couches → toggle Sentiers activé (zoom LOD ≥ 11) → sentiers balisés visibles sur la carte',
+    'Couches → toggle Sentiers : tracés nets et bien positionnés par rapport au terrain',
+    'Couches → toggle Pentes activé → zones colorées selon la déclivité (orange/rouge sur pentes raides)',
+    'Couches → toggle Pentes : couleurs cohérentes avec le terrain (zones dangereuses > 30° bien identifiées)',
     'Toggle 2D/3D : bascule plusieurs fois — relief apparaît correctement',
     'Toggle 2D/3D : switch instantané (pas de latence)',
     'Toggle 2D/3D : bouton grisé à faible zoom (comportement attendu)',
@@ -319,6 +326,9 @@ function createSunTrailForm() {
     'Curseur → midi → ciel au-dessus des crêtes',
     'Curseur → 19h → ombres longues',
     'Observation dans une vallée selon l\'heure',
+    'Champ de date légèrement grisé en version gratuite (comportement attendu)',
+    'Tentative de changement de date → message "Passer à Pro" apparaît et date revient à aujourd\'hui',
+    '(Pro) Changement de date (ex: 21 juin) → ombres changent radicalement',
   ]);
   form.addMultipleChoiceItem()
     .setTitle('[P6] La simulation solaire te semblait-elle réaliste ?')

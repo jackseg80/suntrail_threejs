@@ -77,6 +77,14 @@ Explore une zone montagneuse (Alpes suisses chargées par défaut).
 - [ ] **Couches (🗺️)** : teste chaque style de carte disponible (Topo, Satellite si Pro, etc.)
   - Laquelle tu préfères pour la randonnée ?
   - Y a-t-il des styles qui ne chargent pas ?
+- [ ] **Sentiers de randonnée** : dans le menu Couches, active le toggle **"Sentiers"**
+  - Zoome à LOD 11+ (vue vallée) → les sentiers balisés apparaissent-ils sur la carte ?
+  - Les tracés sont-ils nets et bien positionnés par rapport au terrain ?
+  - Désactive le toggle → sentiers disparaissent
+- [ ] **Pentes dangereuses >30°** : active le toggle **"Pentes"**
+  - Zoome sur une zone montagneuse → les zones en pente apparaissent-elles colorées ?
+  - Les couleurs correspondent-elles à la réalité du terrain (zones raides = rouge/orange) ?
+  - Désactive le toggle → overlay de pente disparaît
 - [ ] **Toggle 2D/3D** : bascule plusieurs fois entre les deux modes
   - Le relief 3D apparaît-il correctement ?
   - Le switch est-il instantané ou lent ?
@@ -121,11 +129,18 @@ Va dans **Réglages → Profils de performance** et teste chaque profil :
 ## Partie 6 — Timeline solaire (10 min)
 
 - [ ] Ouvre la **Timeline** (bouton bas de l'écran)
-- [ ] Glisse vers une heure matinale (ex: 7h) → les ombres changent-elles ?
-- [ ] Glisse vers midi → ciel au-dessus des crêtes
+- [ ] Glisse le curseur vers une heure matinale (ex: 7h) → les ombres changent-elles ?
+- [ ] Glisse vers midi → soleil au-dessus des crêtes
 - [ ] Glisse vers le soir (ex: 19h) → ombres longues
 - [ ] Zoome sur une vallée et observe comment le soleil l'éclaire selon l'heure
 - [ ] La simulation te semble-t-elle réaliste par rapport à ce que tu connais du terrain ?
+
+**Sélecteur de date (calendrier solaire) :**
+- [ ] Le champ de date est-il légèrement grisé (opacity réduite) en version gratuite ?
+- [ ] Essaie de changer la date pour un autre jour → un message "Passer à Pro" apparaît-il et la date revient-elle à aujourd'hui ?
+- [ ] *(Pro — après Partie 9)* : change la date (ex: solstice d'été 21 juin) → les ombres changent-elles radicalement ?
+
+> ℹ️ **Gate Pro — Calendrier solaire :** En version gratuite, la simulation est limitée à la **journée actuelle**. Le sélecteur de date est visuellement grisé et toute tentative de changer la date ouvre la feuille d'upgrade. La version Pro débloque l'accès à toutes les dates passées et futures — utile pour planifier une sortie à une date précise ou analyser l'ensoleillement saisonnier.
 
 ---
 
