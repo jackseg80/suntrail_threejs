@@ -4,13 +4,6 @@ import { state, saveSettings } from '../../state';
 import { applyPreset } from '../../performance';
 import { resetTerrain, updateVisibleTiles, updateHydrologyVisibility } from '../../terrain';
 import { updateWeatherVisibility } from '../../weather';
-import {
-    deleteTerrainCache, setPMTilesSource,
-    downloadVisibleZone, getOfflineZoneCount, incrementOfflineZoneCount, estimateZoneSizeMB,
-} from '../../tileLoader';
-import { activeTiles } from '../../terrain';
-import { showUpgradePrompt } from '../../iap';
-import { SharedAPIKeyComponent } from './SharedAPIKeyComponent';
 import { i18n } from '../../../i18n/I18nService';
 import { showOnboarding } from '../../onboardingTutorial';
 import type { Locale } from '../../../i18n/I18nService';
@@ -89,66 +82,6 @@ export class SettingsSheet extends BaseComponent {
             });
             fogSlider.addEventListener('change', () => saveSettings());
         }
-
-        // API Key (shared component)
-        new SharedAPIKeyComponent('settings-api-key-slot', this.refreshTerrain).hydrate();
-
-        // Storage
-        const clearCacheBtn = this.element.querySelector('#clear-cache-btn');
-        clearCacheBtn?.addEventListener('click', deleteTerrainCache);
-
-        const downloadZoneBtn = this.element.querySelector('#download-zone-btn') as HTMLButtonElement | null;
-
-        const syncDownloadZoneLabel = () => {
-            const span = downloadZoneBtn?.querySelector('span');
-            if (!span) return;
-            const count = activeTiles.size;
-            if (count === 0) { span.textContent = 'Télécharger Zone'; return; }
-            const size = estimateZoneSizeMB(count);
-            const zonesUsed = getOfflineZoneCount();
-            const limitStr = state.isPro ? '' : ` · ${zonesUsed}/1`;
-            span.textContent = `📥 ${count} tuiles · ${size}${limitStr}`;
-        };
-        this.addSubscription(state.subscribe('ZOOM', syncDownloadZoneLabel));
-        this.addSubscription(state.subscribe('isPro', syncDownloadZoneLabel));
-        syncDownloadZoneLabel();
-
-        downloadZoneBtn?.addEventListener('click', async () => {
-            if (!downloadZoneBtn) return;
-            if (!state.isPro && getOfflineZoneCount() >= 1) {
-                showUpgradePrompt('offline_zones');
-                return;
-            }
-            const tiles = Array.from(activeTiles.values()).map(t => ({ tx: t.tx, ty: t.ty, zoom: t.zoom }));
-            if (tiles.length === 0) { showToast('Aucune tuile visible.'); return; }
-            downloadZoneBtn.disabled = true;
-            const span = downloadZoneBtn.querySelector('span');
-            try {
-                await downloadVisibleZone(tiles, (done, total) => {
-                    if (span) span.textContent = `⏬ ${Math.round(done / total * 100)}%…`;
-                });
-                incrementOfflineZoneCount();
-                showToast('✅ Zone téléchargée !');
-                syncDownloadZoneLabel();
-            } catch (e) {
-                console.warn('[OfflineZone]', e);
-                syncDownloadZoneLabel();
-            } finally {
-                downloadZoneBtn.disabled = false;
-            }
-        });
-
-        // PMTiles
-        const pmtilesBtn = this.element.querySelector('#pmtiles-btn');
-        const pmtilesUpload = this.element.querySelector('#pmtiles-upload') as HTMLInputElement;
-        pmtilesBtn?.addEventListener('click', () => pmtilesUpload?.click());
-        pmtilesUpload?.addEventListener('change', async (e) => {
-            const file = (e.target as HTMLInputElement).files?.[0];
-            if (file) {
-                await setPMTilesSource(file);
-                this.refreshTerrain();
-            }
-        });
 
         // Trail follow
         const trailFollowToggle = this.element.querySelector('#trail-follow-toggle') as HTMLInputElement;
