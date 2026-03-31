@@ -74,7 +74,13 @@ export function isPositionInSwitzerland(lat: number, lon: number): boolean {
 }
 
 export function isPositionInFrance(lat: number, lon: number): boolean {
-    return lat > 41.3 && lat < 51.1 && lon > -5.1 && lon < 9.6;
+    // Corse (41.0–43.1°N, 8.4–9.7°E) — territoire français jusqu'à ~9.56°E
+    if (lat > 41.0 && lat < 43.1 && lon > 8.4 && lon < 9.7) return true;
+    // France métropolitaine continentale.
+    // ⚠️ Limite est : ~8.23°E (Lauterbourg, Alsace — frontière du Rhin).
+    // L'ancienne valeur 9.6°E incluait l'Allemagne (Baden-Württemberg, Forêt Noire)
+    // → ces tuiles passaient isTileFullyInRegion(FR) = TRUE → IGN appelé → 404.
+    return lat > 41.3 && lat < 51.1 && lon > -5.1 && lon < 8.3;
 }
 
 // --- GESTIONNAIRE OVERPASS LIFO ---

@@ -4,7 +4,8 @@
  * v5.6.7 : AbortController par task — fetch annulé dès que la tuile est disposée côté main.
  */
 
-const CACHE_NAME = 'suntrail-tiles-v1';
+// v2 : force un vidage du cache suite au fix de la bbox France (IGN 404 en cache navigateur)
+const CACHE_NAME = 'suntrail-tiles-v2';
 
 /**
  * AbortControllers actifs par task ID.
