@@ -1,8 +1,10 @@
-# SunTrail v5.11.0 — Rapport d'audit pré-Play Store
+# SunTrail v5.16.7 — Rapport d'audit pré-Play Store
 
-**Date :** 2026-03-28  
-**Scope :** Sécurité · Qualité code · UX/PWA · Android/Capacitor · Dépendances  
-**Tests :** 188/188 ✅ · TypeScript 0 erreurs ✅ · Lighthouse Accessibility 91/100 · Best Practices 100/100
+**Date :** 2026-03-31 (mis à jour)
+**Scope :** Sécurité · Qualité code · UX/PWA · Android/Capacitor · Dépendances · Accessibilité
+**Tests :** 412+ ✅ · TypeScript 0 erreurs ✅ · **Lighthouse Accessibility 100/100 · Best Practices 100/100 · SEO 100/100**
+
+> **v5.16.7** : Audit complet Lighthouse + UI corrigé. Tous les scores à 100.
 
 ---
 

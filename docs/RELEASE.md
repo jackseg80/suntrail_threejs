@@ -90,6 +90,8 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | 535 | 5.16.3 | v5.16.3 | Fix root cause bande vide : bbox France lon < 9.6 → 8.3 + Corse séparée | 2026-03-31 |
 | 536 | 5.16.4 | v5.16.4 | Fix scroll haut panneaux météo/solaire (race trapFocus 50ms) + scrollbars fines glassmorphism + fix HTML template settings (</div> orphelin → Sources & version invisibles) + 7-tap Pro tester implémenté + protocoles testeurs complets (15 parties) | 2026-03-31 |
 | 537 | 5.16.5 | v5.16.5 | SHOW_STATS désactivé par défaut + section perf optionnelle (power user) dans protocoles + Google Form script corrigé (addScaleItem, addTextItem) | 2026-03-31 |
+| 538 | 5.16.6 | v5.16.6 | fix: prix lifetime fallback 49.99→99.99 dans iapService.ts | 2026-03-31 |
+| **539** | **5.16.7** | **v5.16.7** | **Audit Lighthouse 100/100/100 — a11y (aria-labels, focus-visible, contraste WCAG AA), SEO (meta-description, robots.txt, viewport), UI (touch targets 48px+, z-index, toggles/sliders agrandis)** | **2026-03-31** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 

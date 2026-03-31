@@ -2,7 +2,8 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="description" content="SunTrail 3D — Carte topographique 3D interactive pour la randonnée. Terrain réaliste, GPS, météo, analyse solaire et tracés GPX.">
     <!-- PWA installable (Android Chrome) — remplace apple-mobile-web-app-capable déprécié sur Chrome -->
     <meta name="mobile-web-app-capable" content="yes">
     <!-- iOS PWA (W3) — toujours requis pour iOS Safari (status bar + titre) -->
@@ -178,7 +179,7 @@
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
                 <div class="info-icon" title="Zoomer d'avantage (LVL 11+) pour voir les sentiers">ⓘ</div>
-                <input type="checkbox" id="layers-trails-toggle" checked>
+                <input type="checkbox" id="layers-trails-toggle" checked aria-label="Sentiers">
             </div>
         </div>
         <div class="setting-row" id="row-slopes" style="padding: 10px 0;">
@@ -193,7 +194,7 @@
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
                 <div class="info-icon" title="Zoomer d'avantage (LVL 11+) pour voir les pentes">ⓘ</div>
-                <input type="checkbox" id="layers-slopes-toggle">
+                <input type="checkbox" id="layers-slopes-toggle" aria-label="Pentes > 30°">
             </div>
         </div>
     </div>
@@ -243,7 +244,7 @@
             <span style="font-size:16px;">🔋</span>
             <div class="setting-label" style="font-size:13px;" data-i18n="settings.label.energySaver">Économie d'énergie</div>
         </div>
-        <input type="checkbox" id="energy-saver-toggle">
+        <input type="checkbox" id="energy-saver-toggle" aria-label="Économie d'énergie">
     </div>
 
     <div class="control-group" style="margin-top: 20px;">
@@ -251,46 +252,46 @@
         
         <div class="setting-row">
             <div class="setting-label" data-i18n="settings.label.vegetation">Forêts & Végétation</div>
-            <input type="checkbox" id="veg-toggle" checked>
+            <input type="checkbox" id="veg-toggle" checked aria-label="Forêts & Végétation">
         </div>
         <div style="margin-bottom: 15px; padding-left: 4px;">
             <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-3); margin-bottom: 4px;">
                 <span data-i18n="settings.section.density">DENSITÉ DÉTAILS</span>
                 <span id="veg-density-disp">4000</span>
             </div>
-            <input type="range" id="veg-density-slider" min="0" max="15000" step="500" value="4000">
+            <input type="range" id="veg-density-slider" min="0" max="15000" step="500" value="4000" aria-label="Densité végétation">
         </div>
         
         <div class="setting-row">
             <div class="setting-label" data-i18n="settings.label.buildings">Bâtiments OSM</div>
             <span class="pro-badge" style="font-size:9px; background:var(--gold); color:#000; padding:2px 6px; border-radius:4px; font-weight:700; margin-right:8px;">PRO</span>
-            <input type="checkbox" id="buildings-toggle" checked>
+            <input type="checkbox" id="buildings-toggle" checked aria-label="Bâtiments OSM">
         </div>
         <div class="setting-row">
             <div class="setting-label" data-i18n="settings.label.hydrology">Lacs & Rivières</div>
-            <input type="checkbox" id="hydro-toggle" checked>
+            <input type="checkbox" id="hydro-toggle" checked aria-label="Lacs & Rivières">
         </div>
         <div class="setting-row">
             <div class="setting-label" data-i18n="settings.label.weather">Météo</div>
-            <input type="checkbox" id="weather-toggle" checked>
+            <input type="checkbox" id="weather-toggle" checked aria-label="Météo">
         </div>
         <div style="margin-bottom: 15px; padding-left: 4px;">
             <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-3); margin-bottom: 4px;">
                 <span data-i18n="weather.label.intensity">INTENSITÉ</span>
                 <span id="weather-density-disp" style="font-family:var(--font-mono);">2500</span>
             </div>
-            <input type="range" id="weather-density-slider" min="0" max="15000" step="500" value="2500">
+            <input type="range" id="weather-density-slider" min="0" max="15000" step="500" value="2500" aria-label="Intensité météo">
         </div>
         <div style="margin-bottom: 15px; padding-left: 4px;">
             <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-3); margin-bottom: 4px;">
                 <span data-i18n="weather.label.speed">VITESSE</span>
                 <span id="weather-speed-disp" style="font-family:var(--font-mono);">1.0</span>
             </div>
-            <input type="range" id="weather-speed-slider" min="0.5" max="3.0" step="0.1" value="1.0">
+            <input type="range" id="weather-speed-slider" min="0.5" max="3.0" step="0.1" value="1.0" aria-label="Vitesse météo">
         </div>
         <div class="setting-row">
             <div class="setting-label" data-i18n="settings.label.signposts">Signalisation 3D</div>
-            <input type="checkbox" id="poi-toggle" checked>
+            <input type="checkbox" id="poi-toggle" checked aria-label="Signalisation 3D">
         </div>
     </div>
 
@@ -302,7 +303,7 @@
                 <div class="setting-label" data-i18n="settings.label.loadSpeed">Vitesse de chargement</div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span id="load-speed-disp" style="font-size:10px; color:var(--text-3); font-family:var(--font-mono);">1.0</span>
-                    <input type="range" id="load-speed-slider" min="0.1" max="3.0" step="0.1" style="width:80px;">
+                    <input type="range" id="load-speed-slider" min="0.1" max="3.0" step="0.1" style="width:80px;" aria-label="Vitesse de chargement">
                 </div>
             </div>
 
@@ -310,7 +311,7 @@
                 <div class="setting-label" data-i18n="settings.label.resolution">Résolution (LOD)</div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span id="res-disp" style="font-size:10px; color:var(--text-3); font-family:var(--font-mono);">14</span>
-                    <input type="range" id="res-slider" min="10" max="16" step="1" value="14" style="width:80px;">
+                    <input type="range" id="res-slider" min="10" max="16" step="1" value="14" style="width:80px;" aria-label="Résolution LOD">
                 </div>
             </div>
 
@@ -318,7 +319,7 @@
                 <div class="setting-label" data-i18n="settings.label.range">Rayon de rendu</div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span id="range-disp" style="font-size:10px; color:var(--text-3); font-family:var(--font-mono);">3</span>
-                    <input type="range" id="range-slider" min="1" max="8" step="1" value="3" style="width:80px;">
+                    <input type="range" id="range-slider" min="1" max="8" step="1" value="3" style="width:80px;" aria-label="Rayon de rendu">
                 </div>
             </div>
 
@@ -326,7 +327,7 @@
                 <div class="setting-label" data-i18n="settings.label.exaggeration">Exagération relief</div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span id="exag-disp" style="font-size:10px; color:var(--text-3); font-family:var(--font-mono);">1.4</span>
-                    <input type="range" id="exag-slider" min="1.0" max="3.0" step="0.1" value="1.4" style="width:80px;">
+                    <input type="range" id="exag-slider" min="1.0" max="3.0" step="0.1" value="1.4" style="width:80px;" aria-label="Exagération relief">
                 </div>
             </div>
 
@@ -406,7 +407,7 @@
                     <div style="font-size:10px; color:var(--text-3);" data-i18n="connectivity.label.offlineHint">Forcer l'usage du cache uniquement</div>
                 </div>
                 </div>
-                <input type="checkbox" id="offline-toggle">
+                <input type="checkbox" id="offline-toggle" aria-label="Mode Hors-ligne">
                 </div>
 
                 <div class="control-group">
@@ -493,7 +494,7 @@
                     </select>
                 </div>
             </div>
-            <input type="range" id="time-slider" min="0" max="1439" value="720">
+            <input type="range" id="time-slider" min="0" max="1439" value="720" aria-label="Heure de simulation">
         </div>
     </div>
     <div id="elevation-profile" style="display:none;">
@@ -515,7 +516,7 @@
 <template id="template-top-status-bar">
     <div class="top-status-bar-content">
         <div class="top-left-widgets">
-            <div class="top-widget" id="top-pill-main" role="button" tabindex="0" aria-label="Statut carte et météo">
+            <div class="top-widget" id="top-pill-main" role="button" tabindex="0">
                 <span class="lod-badge">SWISS · LVL --</span>
                 <span class="weather-icon">☀️</span>
                 <span class="weather-temp">--°C</span>

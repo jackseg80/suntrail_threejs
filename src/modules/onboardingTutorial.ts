@@ -75,6 +75,7 @@ function _show(resolve: () => void): void {
     overlay.id = 'onboarding-overlay';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'ob-title');
 
     overlay.innerHTML = `
         <style>
@@ -188,7 +189,7 @@ function _show(resolve: () => void): void {
             }
             .ob-skip:hover { opacity: 0.8; }
             .ob-next {
-                background: var(--accent, #4a8ef8);
+                background: var(--accent, #3b7de0);
                 color: #fff;
                 border: none;
                 border-radius: var(--radius-md, 10px);
@@ -238,7 +239,7 @@ function _show(resolve: () => void): void {
             }
             return `
                 <div class="ob-icon">${slide.icon}</div>
-                <h2 class="ob-title">${i18n.t(slide.titleKey)}</h2>
+                <h2 class="ob-title" id="ob-title">${i18n.t(slide.titleKey)}</h2>
                 ${descHtml}
             `;
         };

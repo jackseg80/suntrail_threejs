@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://suntrail.app/sitemap.xml

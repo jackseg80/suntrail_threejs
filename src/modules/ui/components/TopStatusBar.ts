@@ -31,7 +31,6 @@ export class TopStatusBar extends BaseComponent {
         this.lodBadge?.setAttribute('aria-live', 'polite');
 
         const mainPill = this.element.querySelector('#top-pill-main');
-        mainPill?.setAttribute('aria-label', i18n.t('topbar.aria.weather'));
         mainPill?.addEventListener('click', () => {
             sheetManager.toggle('weather');
         });
@@ -74,8 +73,7 @@ export class TopStatusBar extends BaseComponent {
 
     private updateAriaLabels(): void {
         if (!this.element) return;
-        const mainPill = this.element.querySelector('#top-pill-main');
-        mainPill?.setAttribute('aria-label', i18n.t('topbar.aria.weather'));
+        this.updatePillAriaLabel();
         this.netStatusIcon?.setAttribute('aria-label', i18n.t('topbar.aria.network'));
         const recWidget = this.element.querySelector('.rec-indicator');
         recWidget?.setAttribute('aria-label', i18n.t('topbar.aria.recording'));
@@ -130,7 +128,16 @@ export class TopStatusBar extends BaseComponent {
         if (this.lodBadge) {
             const country = state.ZOOM > 10 ? i18n.t('topbar.lod.swiss') : i18n.t('topbar.lod.world');
             this.lodBadge.textContent = i18n.t('topbar.lod.format', { country, level: Math.floor(zoom).toString() });
+            this.updatePillAriaLabel();
         }
+    }
+
+    private updatePillAriaLabel(): void {
+        const mainPill = this.element?.querySelector('#top-pill-main');
+        if (!mainPill) return;
+        const lod = this.lodBadge?.textContent ?? '';
+        const temp = this.weatherTemp?.textContent ?? '';
+        mainPill.setAttribute('aria-label', `${lod} ${temp}`.trim());
     }
 
     public override dispose(): void {
@@ -152,6 +159,7 @@ export class TopStatusBar extends BaseComponent {
                 this.weatherIcon.textContent = '☀️';
                 this.weatherTemp.textContent = '--°C';
             }
+            this.updatePillAriaLabel();
         }
     }
 
