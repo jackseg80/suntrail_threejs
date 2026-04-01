@@ -4,6 +4,33 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.19.0] - 2026-04-01
+### 🏔️ Caméra Terrain-Aware + Résilience API
+
+**LOD terrain-aware :**
+- LOD basé sur la hauteur au-dessus du sol (pas la distance 3D brute) — LOD 17-18 accessible sur les montagnes
+- Target tracking per-frame : `controls.target.y` suit la surface du terrain (lerp adaptatif 0.08/0.03)
+- Tilt caps resserrés LOD 15-18 + réduction dynamique jusqu'à 50% en haute altitude
+- Range +1 tuile quand caméra inclinée pour couvrir le frustum étendu
+
+**Fix flyTo montagne :**
+- Séparation distance/durée (SearchSheet passait la durée comme distance → caméra trop basse)
+- Parabole adaptative proportionnelle à l'élévation survolée
+- Guard collision relevé à +200m
+
+**Protection anti-spam API :**
+- Backoff global 30-60s après 429 ou erreur CORS sur geocoding (MapTiler + OSM)
+- Détection 429 sur les tuiles séparée du 403 (rate limit temporaire ≠ clé invalide)
+- fetchWeather bloqué pendant l'interaction utilisateur
+
+**Rotation de clés MapTiler :**
+- Fetch d'un JSON distant (GitHub Gist) au démarrage avec tableau de clés
+- Sélection aléatoire par session — répartition naturelle de la charge
+- Fallback silencieux sur la clé bundlée si le Gist est inaccessible
+- CSP mise à jour pour gist.githubusercontent.com
+
+---
+
 ## [5.18.0] - 2026-04-01
 ### 🚀 UX Majeure — Recherche, Prix, Météo, Inclinomètre
 

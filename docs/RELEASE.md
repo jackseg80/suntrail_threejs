@@ -94,7 +94,8 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **539** | **5.16.7** | **v5.16.7** | **Audit Lighthouse 100/100/100 — a11y (aria-labels, focus-visible, contraste WCAG AA), SEO (meta-description, robots.txt, viewport), UI (touch targets 48px+, z-index, toggles/sliders agrandis)** | **2026-03-31** |
 | **540** | **5.16.8** | **v5.16.8** | **GPU Adreno 730→performance, prix upgrade fix, eco masque 3D/timeline, tilt animation 2D↔3D, profil élévation tiroir swipe, fix orientation mobile** | **2026-03-31** |
 | **541** | **5.17.0** | **v5.17.0** | **Audit dette technique + optimisations performance : i18n UpgradeSheet, shadow camera dynamique, spatial index O(1), shader eau early-exit, memory leaks fix, code mort supprimé** | **2026-04-01** |
-| **542** | **5.18.0** | **v5.18.0** | **UX majeure : prix dynamiques localisés, recherche refonte (classification + montagnes Overpass + filtres), ground plane anti-blanc montagne, météo avec nom de lieu, inclinomètre toggle, boussole temps réel, redirect Play Store web, sheets fermeture au clic carte** | **2026-04-01** |
+| 542 | 5.18.0 | v5.18.0 | UX majeure : prix dynamiques localisés, recherche refonte (classification + montagnes Overpass + filtres), ground plane anti-blanc montagne, météo avec nom de lieu, inclinomètre toggle, boussole temps réel, redirect Play Store web, sheets fermeture au clic carte | 2026-04-01 |
+| **543** | **5.19.0** | **v5.19.0** | **Caméra terrain-aware (LOD par hauteur au-dessus du sol, tilt caps dynamiques, flyTo adaptatif), protection anti-spam 429 MapTiler/OSM avec backoff, rotation de clés MapTiler distante via GitHub Gist** | **2026-04-01** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 
