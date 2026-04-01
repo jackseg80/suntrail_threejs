@@ -237,20 +237,7 @@ export async function initScene(): Promise<void> {
         }
 
         const dx = state.controls.target.x, dz = state.controls.target.z;
-
-        // Distance effective terrain-aware (v5.19) — exclure l'altitude "morte" du terrain
-        const rawDist = state.camera.position.distanceTo(state.controls.target);
-        const cameraGroundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
-        const heightAboveGround = Math.max(45, state.camera.position.y - cameraGroundH);
-        // 2D : seule la hauteur au-dessus du sol compte (camera directement au-dessus)
-        // 3D : max(hauteur, distance horizontale) pour eviter LOD trop haut quand tilt
-        const horizontalDist = Math.sqrt(
-            (state.camera.position.x - state.controls.target.x) ** 2 +
-            (state.camera.position.z - state.controls.target.z) ** 2
-        );
-        const dist = state.IS_2D_MODE
-            ? heightAboveGround
-            : Math.max(heightAboveGround, horizontalDist, rawDist * 0.3);
+        const dist = state.camera.position.distanceTo(state.controls.target);
         
         let newZoom = state.ZOOM;
         const idealZoom = getIdealZoom(dist);
@@ -484,15 +471,6 @@ export async function initScene(): Promise<void> {
         else if (state.ZOOM === 17) tiltCap = 0.65;
         else if (state.ZOOM >= 18)  tiltCap = 0.50;
 
-        // Tilt cap dynamique par elevation (v5.19) — reduire le tilt autorise
-        // quand le terrain est eleve a LOD haut pour eviter que le frustum
-        // traverse les montagnes voisines. Reduction jusqu'a 35% sur l'Everest.
-        if (state.ZOOM >= 14 && !state.IS_2D_MODE) {
-            const targetH = getAltitudeAt(state.controls.target.x, state.controls.target.z);
-            const elevFactor = THREE.MathUtils.clamp(targetH / 10000, 0, 0.35);
-            tiltCap *= (1.0 - elevFactor);
-        }
-
         const interacting = state.isUserInteracting;
         const currentTilt = state.controls.getPolarAngle();
         const distToTarget = state.camera.position.distanceTo(state.controls.target);
@@ -586,54 +564,17 @@ export async function initScene(): Promise<void> {
                 state.simDate = newDate;
             }
 
-            // Target elevation tracking (v5.19) — target.y suit la surface du terrain
-            // per-frame (render loop) pour un mouvement fluide, pas dans throttledUpdate.
-            // Lerp 0.04 = convergence douce sur ~25 frames (~400ms a 60fps).
-            if (!state.isFlyingTo && !state.isFollowingUser) {
-                const targetGroundH = getAltitudeAt(state.controls.target.x, state.controls.target.z);
-                if (targetGroundH > 0) {
-                    const diff = targetGroundH - state.controls.target.y;
-                    if (Math.abs(diff) > 1) { // seuil 1m pour eviter les micro-ajustements
-                        const yDelta = diff * 0.04;
-                        state.controls.target.y += yDelta;
-                        state.camera.position.y += yDelta;
-                    }
-                }
-            }
-
             const groundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
             if (state.camera.position.y < groundH + 45) {
                 state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, groundH + 45, 0.2);
                 state.controls.update();
             }
-            state.controls.minDistance = Math.max(100, groundH * 0.1);
-
-            // Far plane dynamique (v5.19) — reduire a LOD 15+ en 3D pour masquer
-            // les tuiles manquantes au loin. Valeurs proportionnelles au FOG_FAR du preset.
-            if (state.ZOOM >= 15 && !state.IS_2D_MODE) {
-                const lodFarRatio: Record<number, number> = { 15: 1.3, 16: 0.7, 17: 0.35, 18: 0.2 };
-                const targetFar = state.FOG_FAR * (lodFarRatio[Math.min(state.ZOOM, 18)] || 1.3);
-                if (Math.abs(state.camera.far - targetFar) > 500) {
-                    state.camera.far = THREE.MathUtils.lerp(state.camera.far, targetFar, 0.1);
-                    state.camera.updateProjectionMatrix();
-                }
-            } else if (state.camera.far < 3_900_000) {
-                state.camera.far = THREE.MathUtils.lerp(state.camera.far, 4_000_000, 0.1);
-                state.camera.updateProjectionMatrix();
-            }
+            state.controls.minDistance = Math.max(100, groundH * 0.1); 
 
             if (state.scene.fog instanceof THREE.Fog) {
                 const alt = state.camera.position.y;
-                let fogNear = (state.FOG_NEAR * 0.5) + (alt * 1.5);
-                let fogFar = (state.FOG_FAR * 0.5) + (alt * 8.0);
-                // Resserrer le fog a LOD 15+ pour masquer les gaps de tuiles (v5.19)
-                if (state.ZOOM >= 15 && !state.IS_2D_MODE) {
-                    const tightFactor = 1.0 - (state.ZOOM - 14) * 0.15;
-                    fogNear *= tightFactor;
-                    fogFar *= tightFactor;
-                }
-                state.scene.fog.near = fogNear;
-                state.scene.fog.far = fogFar;
+                state.scene.fog.near = (state.FOG_NEAR * 0.5) + (alt * 1.5); 
+                state.scene.fog.far = (state.FOG_FAR * 0.5) + (alt * 8.0);
             }
 
             state.renderer.render(state.scene, state.camera);
