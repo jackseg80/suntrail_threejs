@@ -146,6 +146,7 @@ export interface State {
     SHOW_HYDROLOGY: boolean;
     SHOW_VEGETATION: boolean;
     SHOW_WEATHER: boolean;
+    SHOW_WEATHER_PRO: boolean; // Météo avancée (graphique 24h + prévisions 3 jours) - Pro only
     SHOW_DEBUG: boolean;
     SHOW_STATS: boolean;
     SHOW_INCLINOMETER: boolean;
@@ -265,7 +266,7 @@ const initialState: State = {
     PERFORMANCE_PRESET: 'balanced', RESOLUTION: PRESETS.balanced.RESOLUTION, RANGE: PRESETS.balanced.RANGE,
     PIXEL_RATIO_LIMIT: PRESETS.balanced.PIXEL_RATIO_LIMIT, LOAD_DELAY_FACTOR: PRESETS.balanced.LOAD_DELAY_FACTOR,
     SHOW_TRAILS: false, SHOW_SLOPES: false, SHOW_SIGNPOSTS: PRESETS.balanced.SHOW_SIGNPOSTS,
-    SHOW_BUILDINGS: PRESETS.balanced.SHOW_BUILDINGS, SHOW_HYDROLOGY: PRESETS.balanced.SHOW_HYDROLOGY, SHOW_VEGETATION: true, SHOW_WEATHER: PRESETS.balanced.SHOW_WEATHER,
+    SHOW_BUILDINGS: PRESETS.balanced.SHOW_BUILDINGS, SHOW_HYDROLOGY: PRESETS.balanced.SHOW_HYDROLOGY, SHOW_VEGETATION: true, SHOW_WEATHER: PRESETS.balanced.SHOW_WEATHER, SHOW_WEATHER_PRO: true,
     SHOW_DEBUG: true, SHOW_STATS: false, SHOW_INCLINOMETER: true, USE_WORKERS: true, SHADOWS: PRESETS.balanced.SHADOWS, SHADOW_RES: PRESETS.balanced.SHADOW_RES,
     VEGETATION_DENSITY: PRESETS.balanced.VEGETATION_DENSITY,
     VEGETATION_CAST_SHADOW: PRESETS.balanced.VEGETATION_CAST_SHADOW,
@@ -331,6 +332,7 @@ export interface SavedSettings {
     SHOW_HYDROLOGY: boolean;
     SHOW_VEGETATION: boolean;
     SHOW_WEATHER: boolean;
+    SHOW_WEATHER_PRO: boolean;
     SHOW_INCLINOMETER: boolean;
     SHADOWS: boolean;
     RESOLUTION: number;
@@ -361,6 +363,7 @@ export function saveSettings(): void {
             SHOW_HYDROLOGY: state.SHOW_HYDROLOGY,
             SHOW_VEGETATION: state.SHOW_VEGETATION,
             SHOW_WEATHER: state.SHOW_WEATHER,
+            SHOW_WEATHER_PRO: state.SHOW_WEATHER_PRO,
             SHOW_INCLINOMETER: state.SHOW_INCLINOMETER,
             SHADOWS: state.SHADOWS,
             RESOLUTION: state.RESOLUTION,
@@ -434,6 +437,7 @@ export function loadSettings(): SavedSettings | null {
             state.SHOW_HYDROLOGY = !!parsed.SHOW_HYDROLOGY;
             state.SHOW_VEGETATION = !!parsed.SHOW_VEGETATION;
             state.SHOW_WEATHER = !!parsed.SHOW_WEATHER;
+            if (parsed.SHOW_WEATHER_PRO !== undefined) state.SHOW_WEATHER_PRO = !!parsed.SHOW_WEATHER_PRO;
             if (parsed.SHOW_INCLINOMETER !== undefined) state.SHOW_INCLINOMETER = !!parsed.SHOW_INCLINOMETER;
             state.SHADOWS = !!parsed.SHADOWS;
             

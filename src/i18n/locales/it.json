@@ -67,7 +67,16 @@
       "advanced": "⚙️ Impostazioni avanzate",
       "dataManagement": "Gestione dati",
       "language": "Lingua",
-      "sources": "Fonti dati & Legale"
+      "sources": "Fonti dati & Legale",
+      "pro": "Funzionalità PRO"
+    },
+    "pro": {
+      "description": "Sblocca tutte le funzionalità premium con SunTrail Pro",
+      "buildingsDesc": "Architettura realistica sul terreno",
+      "inclinometerDesc": "Pendenza del terreno in tempo reale (°, %)",
+      "weatherDesc": "Grafico 24h + Previsioni 3 giorni",
+      "cta": "Passa a Pro",
+      "active": "Pro Attivo"
     },
     "preset": {
       "eco": "Eco",
@@ -90,9 +99,10 @@
       "buildings": "Edifici OSM",
       "hydrology": "Laghi & Fiumi",
       "signposts": "Segnaletica 3D",
-      "inclinometer": "Inclinometro (pendenza al centro)",
+      "inclinometer": "Inclinometro",
       "shadows": "Ombre",
       "weather": "Meteo",
+      "weatherPro": "Meteo Avanzato",
       "trailFollow": "Segui sentiero"
     },
     "storage": {

@@ -67,7 +67,16 @@
       "advanced": "⚙️ Advanced Settings",
       "dataManagement": "Data management",
       "language": "Language",
-      "sources": "Data Sources & Legal"
+      "sources": "Data Sources & Legal",
+      "pro": "PRO Features"
+    },
+    "pro": {
+      "description": "Unlock all premium features with SunTrail Pro",
+      "buildingsDesc": "Realistic architecture on terrain",
+      "inclinometerDesc": "Terrain slope in real-time (°, %)",
+      "weatherDesc": "24h chart + 3-day forecast",
+      "cta": "Upgrade to Pro",
+      "active": "Pro Active"
     },
     "preset": {
       "eco": "Eco",
@@ -90,9 +99,10 @@
       "buildings": "OSM Buildings",
       "hydrology": "Lakes & Rivers",
       "signposts": "3D Signage",
-      "inclinometer": "Inclinometer (slope at center)",
+      "inclinometer": "Inclinometer",
       "shadows": "Cast shadows",
       "weather": "Weather",
+      "weatherPro": "Advanced Weather",
       "trailFollow": "Trail follow"
     },
     "storage": {

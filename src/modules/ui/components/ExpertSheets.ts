@@ -33,6 +33,7 @@ export class WeatherSheet extends BaseComponent {
         // Subscriptions
         this.addSubscription(state.subscribe('weatherData', () => this.updateUI()));
         this.addSubscription(state.subscribe('isPro', () => this.updateUI()));
+        this.addSubscription(state.subscribe('SHOW_WEATHER_PRO', () => this.updateUI()));
 
         this.updateUI();
     }
@@ -325,8 +326,11 @@ export class WeatherSheet extends BaseComponent {
             this.contentEl.appendChild(locHeader);
         }
 
-        if (!state.isPro) {
-            // ── FREE version ──────────────────────────────────────────────────
+        // Météo avancée uniquement si Pro ET toggle activé
+        const showAdvancedWeather = state.isPro && (state as any).SHOW_WEATHER_PRO;
+
+        if (!showAdvancedWeather) {
+            // ── FREE version ou PRO simple ────────────────────────────────────
             const basicGrid = document.createElement('div');
             basicGrid.classList.add('exp-stat-grid', 'exp-stat-grid-mb');
             this.makeStat(basicGrid, i18n.t('weather.temp'), `${Math.round(wd.temp)}°C`);
@@ -338,27 +342,28 @@ export class WeatherSheet extends BaseComponent {
             // Scroll 12h seulement
             this.contentEl.appendChild(this.buildHourlyScroll(wd, 12));
 
-            // Prévisions 3 jours : jour 1 normal, jours 2-3 grisés/verrouillés
-            if (wd.daily && wd.daily.length > 0) {
+            // Prévisions 3 jours UNIQUEMENT pour les utilisateurs gratuits (teaser)
+            // Les utilisateurs Pro en mode simple ne voient PAS les prévisions 3 jours
+            if (!state.isPro && wd.daily && wd.daily.length > 0) {
                 const forecastTitle = document.createElement('div');
                 forecastTitle.classList.add('exp-probe-section-title');
                 forecastTitle.textContent = i18n.t('weather.section.forecast3d');
                 this.contentEl.appendChild(forecastTitle);
                 this.contentEl.appendChild(this.buildDailyForecastPreview(wd));
-            }
 
-            // Upsell banner (compact, sous les lignes verrouillées)
-            const upsell = document.createElement('div');
-            upsell.classList.add('weather-upsell-banner');
-            const upsellSpan = document.createElement('span');
-            upsellSpan.textContent = i18n.t('weather.upsell.pro');
-            const upsellBtn = document.createElement('button');
-            upsellBtn.className = 'btn-go weather-upsell-btn';
-            upsellBtn.textContent = 'Pro ↗';
-            upsellBtn.onclick = () => showUpgradePrompt('weather_extended');
-            upsell.appendChild(upsellSpan);
-            upsell.appendChild(upsellBtn);
-            this.contentEl.appendChild(upsell);
+                // Upsell banner (uniquement pour les gratuits)
+                const upsell = document.createElement('div');
+                upsell.classList.add('weather-upsell-banner');
+                const upsellSpan = document.createElement('span');
+                upsellSpan.textContent = i18n.t('weather.upsell.pro');
+                const upsellBtn = document.createElement('button');
+                upsellBtn.className = 'btn-go weather-upsell-btn';
+                upsellBtn.textContent = 'Pro ↗';
+                upsellBtn.onclick = () => showUpgradePrompt('weather_extended');
+                upsell.appendChild(upsellSpan);
+                upsell.appendChild(upsellBtn);
+                this.contentEl.appendChild(upsell);
+            }
 
         } else {
             // ── PRO version — 5 blocs ─────────────────────────────────────────

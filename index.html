@@ -263,11 +263,6 @@
         </div>
         
         <div class="setting-row">
-            <div class="setting-label" data-i18n="settings.label.buildings">Bâtiments OSM</div>
-            <span class="pro-badge" style="font-size:9px; background:var(--gold); color:#000; padding:2px 6px; border-radius:4px; font-weight:700; margin-right:8px;">PRO</span>
-            <input type="checkbox" id="buildings-toggle" checked aria-label="Bâtiments OSM">
-        </div>
-        <div class="setting-row">
             <div class="setting-label" data-i18n="settings.label.hydrology">Lacs & Rivières</div>
             <input type="checkbox" id="hydro-toggle" checked aria-label="Lacs & Rivières">
         </div>
@@ -293,10 +288,57 @@
             <div class="setting-label" data-i18n="settings.label.signposts">Signalisation 3D</div>
             <input type="checkbox" id="poi-toggle" checked aria-label="Signalisation 3D">
         </div>
-        <div class="setting-row">
-            <div class="setting-label" data-i18n="settings.label.inclinometer">Inclinomètre (pente au centre)</div>
-            <input type="checkbox" id="inclinometer-toggle" checked aria-label="Inclinomètre">
+    </div>
+
+    <!-- Section PRO regroupée -->
+    <div class="control-group settings-pro-section" style="margin-top: 20px; border: 1.5px solid var(--gold); border-radius: 12px; padding: 16px; background: rgba(255,215,0,0.03);">
+        <div class="section-label" style="display: flex; align-items: center; gap: 8px; color: var(--gold);">
+            <span style="font-size: 16px;">✨</span>
+            <span data-i18n="settings.section.pro">Fonctionnalités PRO</span>
+            <span class="pro-badge" style="font-size: 9px; background: var(--gold); color: #000; padding: 2px 8px; border-radius: 4px; font-weight: 700; margin-left: auto;">PRO</span>
         </div>
+        <p style="font-size: 11px; color: var(--text-3); margin: 8px 0 12px 0; line-height: 1.5;" data-i18n="settings.pro.description">Débloquez toutes les fonctionnalités premium avec SunTrail Pro</p>
+        
+        <div class="setting-row pro-feature-row" id="row-buildings" style="cursor: pointer;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                <span style="font-size: 18px;">🏢</span>
+                <div>
+                    <div class="setting-label" data-i18n="settings.label.buildings">Bâtiments 3D</div>
+                    <div style="font-size: 10px; color: var(--text-3);" data-i18n="settings.pro.buildingsDesc">Architecture réaliste sur le terrain</div>
+                </div>
+            </div>
+            <span class="pro-badge" style="font-size: 9px; background: var(--gold); color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 700;">PRO</span>
+            <input type="checkbox" id="buildings-toggle" checked aria-label="Bâtiments OSM" style="margin-left: 8px;">
+        </div>
+
+        <div class="setting-row pro-feature-row" id="row-inclinometer" style="cursor: pointer;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                <span style="font-size: 18px;">📐</span>
+                <div>
+                    <div class="setting-label" data-i18n="settings.label.inclinometer">Inclinomètre</div>
+                    <div style="font-size: 10px; color: var(--text-3);" data-i18n="settings.pro.inclinometerDesc">Pente du terrain en temps réel (°, %)</div>
+                </div>
+            </div>
+            <span class="pro-badge" style="font-size: 9px; background: var(--gold); color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 700;">PRO</span>
+            <input type="checkbox" id="inclinometer-toggle" checked aria-label="Inclinomètre" style="margin-left: 8px;">
+        </div>
+
+        <div class="setting-row pro-feature-row" id="row-weather-pro" style="cursor: pointer;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                <span style="font-size: 18px;">🌡️</span>
+                <div>
+                    <div class="setting-label" data-i18n="settings.label.weatherPro">Météo Avancée</div>
+                    <div style="font-size: 10px; color: var(--text-3);" data-i18n="settings.pro.weatherDesc">Graphique 24h + Prévisions 3 jours</div>
+                </div>
+            </div>
+            <span class="pro-badge" style="font-size: 9px; background: var(--gold); color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 700;">PRO</span>
+            <input type="checkbox" id="weather-pro-toggle" aria-label="Météo Avancée" style="margin-left: 8px;">
+        </div>
+
+        <button id="btn-upgrade-pro" class="btn-go" style="width: 100%; margin-top: 16px; padding: 14px; font-size: 14px; font-weight: 700; background: linear-gradient(135deg, var(--gold) 0%, #ffb700 100%); color: #000; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>🔓</span>
+            <span data-i18n="settings.pro.cta">Passer à Pro</span>
+        </button>
     </div>
 
     <details class="control-group" style="margin-top: 15px;">

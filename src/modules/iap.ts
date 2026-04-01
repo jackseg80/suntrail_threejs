@@ -41,9 +41,17 @@ export function showUpgradePrompt(feature: string): void {
  *
  * Le gate LOD est géré dynamiquement dans scene.ts via `effectiveMaxZoom`
  * (lit `state.isPro` au moment du rendu) — pas besoin de toucher MAX_ALLOWED_ZOOM ici.
+ *
+ * Active automatiquement toutes les fonctionnalités Pro par défaut.
  */
 export function grantProAccess(): void {
     state.isPro = true;
+    
+    // Activer toutes les fonctionnalités Pro par défaut
+    state.SHOW_BUILDINGS = true;
+    state.SHOW_INCLINOMETER = true;
+    state.SHOW_WEATHER_PRO = true;
+    
     saveProStatus();
     showToast('✅ Accès Pro activé !');
 }

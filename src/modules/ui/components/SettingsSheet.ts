@@ -54,49 +54,42 @@ export class SettingsSheet extends BaseComponent {
             if (compass) compass.style.display = val ? 'block' : 'none';
         });
         this.bindToggle('veg-toggle', 'SHOW_VEGETATION', this.refreshTerrain);
-        
-        // Bâtiments 3D — feature Pro
-        const buildingsToggle = this.element.querySelector('#buildings-toggle') as HTMLInputElement;
-        if (buildingsToggle) {
-            // Initialiser : désactivé et décoché pour les utilisateurs gratuits
-            buildingsToggle.disabled = !state.isPro;
-            buildingsToggle.checked = state.isPro && state.SHOW_BUILDINGS;
-            
-            buildingsToggle.addEventListener('change', () => {
-                if (!state.isPro) {
-                    buildingsToggle.checked = false;
-                    showUpgradePrompt('buildings_3d');
-                    return;
-                }
-                state.SHOW_BUILDINGS = buildingsToggle.checked;
-                saveSettings();
-                this.refreshTerrain();
-            });
-            
-            // Mettre à jour si isPro change
-            this.addSubscription(state.subscribe('isPro', () => {
-                buildingsToggle.disabled = !state.isPro;
-                if (!state.isPro) {
-                    buildingsToggle.checked = false;
-                    state.SHOW_BUILDINGS = false;
-                    saveSettings();
-                    this.refreshTerrain();
-                } else {
-                    // Restaurer l'état sauvegardé quand on passe Pro
-                    buildingsToggle.checked = state.SHOW_BUILDINGS;
-                }
-            }));
-        }
-        
         this.bindToggle('hydro-toggle', 'SHOW_HYDROLOGY', (val: boolean) => updateHydrologyVisibility(val));
         this.bindToggle('weather-toggle', 'SHOW_WEATHER', (val: boolean) => updateWeatherVisibility(val));
         this.bindSlider('weather-density-slider', 'WEATHER_DENSITY', 'weather-density-disp');
         this.bindSlider('weather-speed-slider', 'WEATHER_SPEED', 'weather-speed-disp');
         this.bindToggle('poi-toggle', 'SHOW_SIGNPOSTS', this.refreshTerrain);
-        this.bindToggle('inclinometer-toggle', 'SHOW_INCLINOMETER');
+        
+        // Inclinomètre — feature Pro
+        this.setupProFeatureToggle('inclinometer-toggle', 'SHOW_INCLINOMETER', 'inclinometer', 'row-inclinometer');
+        
+        // Météo Avancée — feature Pro
+        this.setupProFeatureToggle('weather-pro-toggle', 'SHOW_WEATHER_PRO', 'weather_pro', 'row-weather-pro');
+        
+        // Bâtiments 3D — feature Pro (déjà existant, déplacé dans section PRO)
+        this.setupProFeatureToggle('buildings-toggle', 'SHOW_BUILDINGS', 'buildings_3d', 'row-buildings', () => {
+            this.refreshTerrain();
+        });
+        
         this.bindToggle('shadow-toggle', 'SHADOWS', (val: boolean) => {
             if (state.sunLight) state.sunLight.castShadow = val;
         });
+        
+        // Bouton "Passer à Pro"
+        const upgradeBtn = this.element.querySelector('#btn-upgrade-pro') as HTMLButtonElement;
+        if (upgradeBtn) {
+            upgradeBtn.addEventListener('click', () => {
+                if (!state.isPro) {
+                    showUpgradePrompt('settings_pro_section');
+                }
+            });
+            
+            // Mettre à jour le texte du bouton selon le statut Pro
+            this.addSubscription(state.subscribe('isPro', () => {
+                this.updateProButtonState(upgradeBtn);
+            }));
+            this.updateProButtonState(upgradeBtn);
+        }
 
         // Fog
         const fogSlider = this.element.querySelector('#fog-slider') as HTMLInputElement;
@@ -139,7 +132,7 @@ export class SettingsSheet extends BaseComponent {
             'SHOW_STATS', 'SHOW_DEBUG', 'SHOW_VEGETATION', 'SHOW_BUILDINGS',
             'SHOW_HYDROLOGY', 'SHOW_SIGNPOSTS', 'SHADOWS', 'LOAD_DELAY_FACTOR',
             'isFollowingTrail', 'SHOW_TRAILS', 'SHOW_SLOPES', 'PERFORMANCE_PRESET',
-            'WEATHER_DENSITY', 'WEATHER_SPEED'
+            'WEATHER_DENSITY', 'WEATHER_SPEED', 'SHOW_INCLINOMETER', 'SHOW_WEATHER_PRO'
         ];
 
         keysToSubscribe.forEach(key => {
@@ -284,6 +277,12 @@ export class SettingsSheet extends BaseComponent {
             case 'WEATHER_SPEED':
                 this.updateSlider('weather-speed-slider', 'weather-speed-disp', value);
                 break;
+            case 'SHOW_INCLINOMETER':
+                this.updateToggle('inclinometer-toggle', value);
+                break;
+            case 'SHOW_WEATHER_PRO':
+                this.updateToggle('weather-pro-toggle', value);
+                break;
         }
     }
 
@@ -329,6 +328,8 @@ export class SettingsSheet extends BaseComponent {
         this.updateUIFromState('SHOW_SLOPES', state.SHOW_SLOPES);
         this.updateUIFromState('WEATHER_DENSITY', state.WEATHER_DENSITY);
         this.updateUIFromState('WEATHER_SPEED', state.WEATHER_SPEED);
+        this.updateUIFromState('SHOW_INCLINOMETER', state.SHOW_INCLINOMETER);
+        this.updateUIFromState('SHOW_WEATHER_PRO', state.SHOW_WEATHER_PRO);
     }
 
     private createLanguageSelector(): void {
@@ -501,5 +502,94 @@ export class SettingsSheet extends BaseComponent {
     private refreshTerrain = () => {
         resetTerrain();
         updateVisibleTiles();
+    }
+
+    /**
+     * Configure un toggle de feature PRO avec protection
+     * @param toggleId ID du toggle input
+     * @param stateKey Clé dans l'objet state
+     * @param upgradeFeatureKey Clé pour showUpgradePrompt
+     * @param rowId ID optionnel de la ligne parente pour gérer les clics
+     * @param onChange Callback optionnel quand la valeur change (et que Pro)
+     */
+    private setupProFeatureToggle(
+        toggleId: string, 
+        stateKey: keyof typeof state, 
+        upgradeFeatureKey: string,
+        rowId?: string,
+        onChange?: (val: boolean) => void
+    ): void {
+        if (!this.element) return;
+        
+        const toggle = this.element.querySelector(`#${toggleId}`) as HTMLInputElement;
+        if (!toggle) return;
+        
+        // Initialiser : désactivé et décoché pour les utilisateurs gratuits
+        toggle.disabled = !state.isPro;
+        toggle.checked = state.isPro && !!(state as any)[stateKey];
+        
+        // Gérer le changement
+        toggle.addEventListener('change', () => {
+            if (!state.isPro) {
+                toggle.checked = false;
+                showUpgradePrompt(upgradeFeatureKey);
+                return;
+            }
+            (state as any)[stateKey] = toggle.checked;
+            saveSettings();
+            if (onChange) onChange(toggle.checked);
+        });
+        
+        // Gérer les clics sur la ligne entière (si rowId fourni)
+        if (rowId) {
+            const row = this.element.querySelector(`#${rowId}`);
+            row?.addEventListener('click', (e) => {
+                // Ne pas déclencher si on a cliqué directement sur le toggle
+                if (e.target === toggle || (e.target as HTMLElement).tagName === 'INPUT') return;
+                
+                if (!state.isPro) {
+                    showUpgradePrompt(upgradeFeatureKey);
+                    return;
+                }
+                // Toggle la valeur si on est Pro
+                toggle.checked = !toggle.checked;
+                (state as any)[stateKey] = toggle.checked;
+                saveSettings();
+                if (onChange) onChange(toggle.checked);
+            });
+        }
+        
+        // Mettre à jour si isPro change
+        this.addSubscription(state.subscribe('isPro', () => {
+            toggle.disabled = !state.isPro;
+            if (!state.isPro) {
+                toggle.checked = false;
+                (state as any)[stateKey] = false;
+                saveSettings();
+                if (onChange) onChange(false);
+            } else {
+                // Restaurer l'état sauvegardé quand on passe Pro
+                toggle.checked = !!(state as any)[stateKey];
+            }
+        }));
+    }
+    
+    /**
+     * Met à jour l'état du bouton "Passer à Pro"
+     */
+    private updateProButtonState(btn: HTMLButtonElement): void {
+        if (!btn) return;
+        
+        if (state.isPro) {
+            btn.innerHTML = '<span>✓</span><span data-i18n="settings.pro.active">Pro Actif</span>';
+            btn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+            btn.style.cursor = 'default';
+            btn.disabled = true;
+        } else {
+            btn.innerHTML = '<span>🔓</span><span data-i18n="settings.pro.cta">Passer à Pro</span>';
+            btn.style.background = 'linear-gradient(135deg, var(--gold) 0%, #ffb700 100%)';
+            btn.style.cursor = 'pointer';
+            btn.disabled = false;
+        }
     }
 }
