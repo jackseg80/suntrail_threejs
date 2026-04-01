@@ -86,7 +86,7 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
     // ── High / Performance — Galaxy S23 (Adreno 740) + GTX 1050 / RX 470 ────
     performance: {
         RESOLUTION: 160,
-        RANGE: 5,                // ← 8 → 5 : baked-in (supprime le besoin du cap mobile)
+        RANGE: 6,                // ← 5 → 6 : plus de couverture visuelle en 3D incliné
         SHADOWS: true,
         SHADOW_RES: 1024,        // ← 2048 → 1024 : baked-in (S23 + PC mid-range)
         PIXEL_RATIO_LIMIT: 1.5,

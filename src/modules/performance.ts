@@ -169,6 +169,7 @@ export function applyPreset(preset: PresetType): void {
         // - ultra         : 60fps — PC/Snapdragon Elite (inchangé)
         // L'utilisateur peut toujours basculer manuellement via le toggle Réglages Avancés.
         if (preset === 'eco' || preset === 'balanced') state.ENERGY_SAVER = true;
+        if (preset === 'performance' || preset === 'ultra') state.ENERGY_SAVER = false;
 
         // Ultra mobile (Snapdragon Elite) : réduire légèrement par rapport au PC bureau
         if (preset === 'ultra') {
