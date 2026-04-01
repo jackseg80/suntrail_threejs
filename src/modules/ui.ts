@@ -53,6 +53,24 @@ export function initUI(): void {
         state.MK = bundledKey;
     }
 
+    // Clés MapTiler distantes (GitHub Gist) — rotation aléatoire sans re-deploy.
+    // Le Gist contient un tableau de clés. L'app en choisit une au hasard par session.
+    // Fire-and-forget : si le fetch échoue, la clé bundlée reste active.
+    // La clé distante écrase la bundlée SAUF si l'utilisateur a défini sa propre clé.
+    const userDefinedKey = localStorage.getItem('maptiler_key');
+    if (!userDefinedKey) {
+        fetch('https://gist.githubusercontent.com/jackseg80/c4f2e5e99c1efb9d736736cb65fce862/raw/suntrail_config.json', { cache: 'no-cache' })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                const keys: string[] = data?.maptiler_keys;
+                if (keys && keys.length > 0) {
+                    state.MK = keys[Math.floor(Math.random() * keys.length)];
+                    console.log(`[Config] Clé MapTiler distante chargée (1/${keys.length})`);
+                }
+            })
+            .catch(() => { /* silencieux — la clé bundlée suffit */ });
+    }
+
     const savedSettings = loadSettings();
     if (savedSettings) {
         // hasManualSource = true uniquement pour les sources non auto-sélectionnables.
