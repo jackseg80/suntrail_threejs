@@ -277,6 +277,11 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 | Météo affiche un numéro de rue au lieu de la ville | `locationName.split(',')[0]` ne garde que le 1er segment (la rue) de la réponse géocodage | Fonction `extractLocationName()` dans `weather.ts` — parse le contexte structuré MapTiler (`place`/`municipality`/`country`) ou les champs Nominatim (`address.city`/`country`). Fallback : 2e segment + dernier segment. (v5.19.1) |
 | Soleil/ombres fixes sur la Suisse (pas mondial) | `sun.ts:37` utilisait `state.TARGET_LAT/LON` (Brig, 46.8°N) — jamais mis à jour au pan caméra | `updateSunPosition()` dérive lat/lon depuis `worldToLngLat(controls.target)`. `scene.ts` ajoute `throttledSunUpdate` (1s) sur `controls 'change'`. (v5.19.1) |
 | UI minuscule après rotation paysage→portrait | Délai unique 300ms insuffisant sur certains Android WebView — viewport scale stuck | Triple retry (100/500/1000ms) avec double-set viewport meta + dispatch `resize` synthétique. Listener `visualViewport.resize` ajouté en filet de sécurité. (v5.19.1) |
+| Spam 429 MapTiler épuise le quota en quelques heures de dev | `fetchGeocoding` sans backoff + `fetchWeather` appelé pendant le pan → centaines de requêtes/min | Backoff global 30-60s dans `utils.ts`, `fetchWeather` bloqué pendant interaction, détection 429 séparée du 403 dans `tileWorker.ts`. (v5.19.0) |
+| Pas de relief (tuiles à altitude 0 + tuiles normales) | Rate limit 429 MapTiler sur `terrain-rgb-v2` → élévation vide → certaines tuiles plates, d'autres élevées | Rotation de clés via GitHub Gist + backoff. **Ne pas recharger la page en boucle** — chaque reload relance ~200 requêtes et maintient le 429. (v5.19.0) |
+| LOD bloqué à 14-15 sur les montagnes en 2D | `getIdealZoom(dist)` utilise la distance 3D brute incluant l'altitude du terrain | Distance effective terrain-aware : `heightAboveGround` en 2D, `max(hauteur, distH, rawDist*0.3)` en 3D. Target.y suit la surface (lerp adaptatif). (v5.19.0) |
+| Caméra traverse les montagnes en 3D LOD 17-18 | Tilt caps fixes ne tiennent pas compte de l'élévation du terrain | Tilt caps resserrés (0.85→0.40) + réduction dynamique jusqu'à 50% par élévation. Range +1 tuile quand tilt > 0.4 rad. (v5.19.0) |
+| flyTo s'écrase dans la montagne | SearchSheet passait `flyDuration` (2000-3500ms) comme `targetDistance` → caméra finale trop basse | 5ème paramètre `flyDuration` séparé. Parabole adaptative `max(5000, maxElev*0.8)`. Guard collision +200m. (v5.19.0) |
 | REC GPS : app crash perd toutes les données | `main.ts` détectait l'interruption mais appelait `clearInterruptedRecording()` sans restaurer les points via `getPersistedRecordingPoints()` | Recovery async : `main.ts` attend `uiReady`, appelle `getPersistedRecordingPoints()`, émet `recordingRecovered`. `TrackSheet` affiche un prompt glassmorphism "Restaurer/Supprimer". Seuils persistance réduits (30→10 pts, 60s→20s). **Ne jamais mettre de gate Pro dans la restauration.** (v5.19.1) |
 | Inclinomètre invisible sous la nav bar / bouge au tap | z-index 30 sous la nav bar (2000). Drag activé par simple mouvement 8px (trop sensible pour mobile) | z-index 2100. Drag uniquement après hold 300ms (pas sur mouvement). Seuil annulation hold = 20px. (v5.19.1) |
 | Panel draggable bouge tout seul au survol souris | `pointermove` sans `pointerdown` actif utilisait `startY` d'une interaction précédente → déclenchait dismiss/repositionnement parasites | Guard `isActive` dans `draggablePanel.ts` : `pointermove` et `pointerup` ignorés si `!isActive`. Flag posé dans `pointerdown`, effacé dans `pointerup`. Double-tap met `isActive=false` immédiatement. (v5.19.1) |
@@ -288,7 +293,22 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 - **`saveProStatus()` / `loadProStatus()`** dans `state.ts`. `loadProStatus()` appelé en **premier** dans `initUI()`, avant `loadSettings()`.
 - **`src/modules/iap.ts`** : Point central — `showUpgradePrompt(feature)` ouvre l'UpgradeSheet, `grantProAccess()` / `revokeProAccess()` modifient `state.isPro` + persistent.
 - **`src/modules/iapService.ts`** : Service RevenueCat (`@revenuecat/purchases-capacitor` v12.3.0). `iapService.initialize()` appelé en fire-and-forget dans `initUI()`. Entitlement : `'SunTrail 3D Pro'` (avec espaces — identifiant exact du dashboard RevenueCat). No-op sur Web/PWA.
-- **Clé bundlée** : `VITE_REVENUECAT_KEY` dans `.env` (hors Git). `VITE_MAPTILER_KEY` idem.
+- **Clé bundlée** : `VITE_REVENUECAT_KEY` dans `.env` (hors Git). `VITE_MAPTILER_KEY` idem (fallback si Gist inaccessible).
+
+### Rotation de Clés MapTiler (v5.19.0)
+- **Problème** : une seule clé free MapTiler (100k req/mois) → rate limit 429 avec plusieurs users actifs.
+- **Solution** : GitHub Gist (`suntrail_config.json`) contenant un tableau de clés. L'app en choisit une au hasard par session.
+- **URL Gist** : `https://gist.githubusercontent.com/jackseg80/c4f2e5e99c1efb9d736736cb65fce862/raw/suntrail_config.json`
+- **Format** : objets `{ key, enabled }`. Les clés `enabled: false` sont exclues. Ancien format (strings) rétrocompatible.
+- **Priorité** : clé utilisateur manuelle > clé Gist > clé bundlée (`.env`).
+- **Timing** : la clé bundlée sert les tuiles LOD ≤ 10 (OpenTopoMap, pas MapTiler). Le Gist répond avant le premier appel MapTiler (LOD 11+).
+- **CSP** : `gist.githubusercontent.com` ajouté dans `connect-src` de `index.html`.
+- **Pour rotater** : éditer le Gist, mettre `enabled: false` sur la clé épuisée → effet immédiat sur tous les users.
+
+### Protection Anti-Spam API (v5.19.0)
+- **Geocoding** : backoff global 30-60s après 429 ou erreur CORS (`_geocodingBackoffUntil` dans `utils.ts`). `fetchWeather` bloqué pendant interaction utilisateur.
+- **Tuiles** : détection 429 séparée du 403 dans `tileWorker.ts` (`rateLimited` vs `forbidden`). Le 429 ne désactive PAS MapTiler globalement (vs 403 qui bascule en mode OSM).
+- **Overpass** : backoff exponentiel 15s→5min après 429/504 (`_overpassBackoffUntil`). Queue LIFO vidée pendant le backoff.
 
 ### Feature Gates (où vérifier `state.isPro`)
 | Feature | Fichier | Guard |
@@ -335,7 +355,7 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 - **Keystore** : `android/suntrail.keystore` (hors Git). `android/keystore.properties` (hors Git, rempli avec mot de passe réel).
 - **Build release** : `JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease --no-daemon` depuis `android/`.
 - **CI/CD** : `.github/workflows/release.yml` — déclenché sur `git tag v*.*.*`. Nécessite 6 GitHub Secrets : `KEYSTORE_BASE64`, `STORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS`, `VITE_MAPTILER_KEY`, `VITE_REVENUECAT_KEY`.
-- **versionCode** : Incrémenter à chaque upload Play Console. **Toujours consulter le tableau dans `docs/RELEASE.md`** pour la dernière valeur. Dernière valeur : **544**.
+- **versionCode** : Incrémenter à chaque upload Play Console. **Toujours consulter le tableau dans `docs/RELEASE.md`** pour la dernière valeur. Dernière valeur : **544** (v5.19.1).
 - **versionName** : Version sémantique lisible (ex: `5.16.7`), jamais de suffixe dans build.gradle. Le tag git peut avoir un suffixe (`v5.12.9-ct`) mais pas le versionName.
 - **CI trigger** : Tag format `v*.*.*` obligatoire (avec `v` au début). Suffixes autorisés. Sans `v` = pas de CI.
 - **Play Store** : App `com.suntrail.threejs`. Voir `docs/RELEASE.md` pour le workflow complet et le tableau de versions.
