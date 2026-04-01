@@ -90,6 +90,7 @@
       "buildings": "Edifici OSM",
       "hydrology": "Laghi & Fiumi",
       "signposts": "Segnaletica 3D",
+      "inclinometer": "Inclinometro (pendenza al centro)",
       "shadows": "Ombre",
       "weather": "Meteo",
       "trailFollow": "Segui sentiero"
@@ -135,7 +136,21 @@
     "loading": "Ricerca...",
     "error": "Errore di ricerca",
     "unknownPlace": "Luogo sconosciuto",
-    "peak": "Vetta"
+    "peak": "Vetta",
+    "type": {
+      "country": "Paese",
+      "region": "Regione",
+      "city": "Città",
+      "village": "Villaggio",
+      "peak": "Vetta",
+      "poi": "Luogo"
+    },
+    "filter": {
+      "all": "Tutto",
+      "cities": "Città",
+      "mountains": "Montagne",
+      "countries": "Paesi"
+    }
   },
   "layers": {
     "title": "Livelli mappa",
@@ -442,12 +457,17 @@
       "yearly": "Annuale",
       "lifetime": "A vita",
       "perMonth": "al mese",
-      "perYear": "all'anno · €2.50/mese",
+      "perYear": "all'anno",
       "oneTime": "pagamento unico",
-      "badge": "⭐ 7 giorni gratis"
+      "badge": "⭐ 7 giorni gratis",
+      "monthShort": "mese"
     },
     "restore": "Ripristina un acquisto",
     "legal": "Abbonamento con rinnovo automatico · Annullabile in qualsiasi momento nel Play Store.",
+    "web": {
+      "playStore": "Disponibile su Google Play",
+      "note": "L'upgrade Pro è disponibile tramite l'app Android su Google Play."
+    },
     "toast": {
       "purchaseFailed": "Acquisto non riuscito — controlla la connessione e riprova.",
       "restoring": "Ripristino acquisti in corso…",

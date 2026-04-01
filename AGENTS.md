@@ -1,4 +1,4 @@
-# SunTrail - Base de Connaissance (v5.16.8)
+# SunTrail - Base de Connaissance (v5.18.0)
 
 Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTrail. Il consigne les décisions architecturales critiques et les solutions aux problèmes complexes.
 
@@ -114,6 +114,8 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 ### Recherche & Géocodage (`SearchSheet.ts`)
 
 - **BaseComponent** avec recherche hybride : filtrage local des `state.localPeaks` (résultats instantanés) + géocodage distant MapTiler/OSM Nominatim (debounce 400ms).
+- **Classification résultats (v5.18.0)** : `classifyFeature()` lit `place_type` (MapTiler) ou `type` (Nominatim) pour déterminer pays/région/ville/village/sommet/POI. Zoom adaptatif : pays → LOD 6 (camDist 2M), région → LOD 8 (700k), ville → LOD 11 (90k), village → LOD 13 (45k), sommet → LOD 14 (12k).
+- **Filtres chips (v5.18.0)** : `activeFilter: 'all' | 'cities' | 'mountains' | 'countries'`. Le filtre "Montagnes" déclenche en plus `searchPeaksByName()` (Overpass `natural=peak` par nom, timeout 5s). **Ne jamais lancer Overpass sur le filtre "Tout"** — trop lent, bloque `Promise.all`.
 - Sélection d'un résultat → `autoSelectMapSource()` + `flyTo()` vers les coordonnées.
 - ARIA complet : `aria-label`, `role="listbox"`, live regions.
 
@@ -262,6 +264,13 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 | Toggle 2D→3D sans animation visible | `IS_2D_MODE` toggle instantané, pas d'animation caméra | `state.isTiltTransitioning` — lerp polar angle vers 85% tiltCap, bande ±0.01 rad force OrbitControls. `rebuildActiveTiles()` décalé 150ms pour éviter le blocage. (v5.16.8) |
 | UI minuscule après rotation paysage→portrait | Aucun listener `orientationchange`, viewport zoom stuck | Handler `orientationchange` + reset viewport meta après 300ms dans `ui.ts`. (v5.16.8) |
 | Profil d'élévation non fermable / sous la boussole | Panel `position:fixed` avec petit × seulement, trop haut (80px au-dessus nav) | Tiroir swipe-to-dismiss (`closeElevationProfile()`, `setupSwipeGesture()`), repositionné juste au-dessus du menu nav (8px). (v5.16.8) |
+| Prix EUR affichés en Suisse dans panneau PRO | HTML template hardcode `€3.99/€29.99/€99.99` + defaults JS en EUR + sous-titre `€2.50/mois` jamais mis à jour | Placeholder `—` dans HTML, defaults `—` dans JS, sous-titre dynamique avec devise RevenueCat, cache TTL 5min. (v5.18.0) |
+| Blanc intérieur montagne au tilt max LOD 14+ | Terrain = PlaneGeometry simple face, pas de ground plane → vide blanc sous le mesh | Ground plane 500k×500k à y=-200, `MeshBasicMaterial` fog=true, depthWrite=false, suivi origin shift. **Ne pas utiliser DoubleSide** (double les triangles). (v5.18.0) |
+| Boussole ne se met pas à jour pendant/après interaction | `renderCompass()` était dans le bloc `if (needsUpdate)` → throttlé à 20fps en idle. Animation reset-to-North sans flag `needsUpdate`. | `renderCompass()` avant les return guards avec throttle propre 30fps. `animateNorth()` dans ui.ts set `state.isInteractingWithUI=true` pendant l'animation. (v5.18.0) |
+| Recherche "Sommets" retourne villes/pays sans zoom adapté | Tab nommé "Sommets" mais recherche tout. 2 niveaux de zoom hardcodés (13/14). `place_type` MapTiler jamais lu. | Renommé "Recherche", classification par `place_type`/`type`, zoom adaptatif (LOD 6→14), filtres chips, module Overpass peaks par nom. (v5.18.0) |
+| Recherche très lente (Overpass bloque Promise.all) | `searchPeaksByName()` lancé en parallèle sur filtre "Tout" → timeout 8s bloque tous les résultats | Overpass lancé **uniquement** sur filtre "Montagnes". Timeout réduit à 5s. (v5.18.0) |
+| Sheets ne se ferment pas au clic sur la carte | `handleMapClick()` ne fermait que `layers-sheet` | Condition élargie : ferme tout sheet actif via `sheetManager.getActiveSheetId()`. (v5.18.0) |
+| Panneau PRO invisible sur PC/web (bouton Play Store absent) | `renderWebFallback()` injecte dans `.sheet-content` mais le template utilise `.upgrade-content` | Sélecteur corrigé → `.upgrade-content`. (v5.18.0) |
 
 ## 💰 Freemium & IAP (v5.12)
 
@@ -317,7 +326,7 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 - **Keystore** : `android/suntrail.keystore` (hors Git). `android/keystore.properties` (hors Git, rempli avec mot de passe réel).
 - **Build release** : `JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease --no-daemon` depuis `android/`.
 - **CI/CD** : `.github/workflows/release.yml` — déclenché sur `git tag v*.*.*`. Nécessite 6 GitHub Secrets : `KEYSTORE_BASE64`, `STORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS`, `VITE_MAPTILER_KEY`, `VITE_REVENUECAT_KEY`.
-- **versionCode** : Incrémenter à chaque upload Play Console. **Toujours consulter le tableau dans `docs/RELEASE.md`** pour la dernière valeur. Dernière valeur : **539**.
+- **versionCode** : Incrémenter à chaque upload Play Console. **Toujours consulter le tableau dans `docs/RELEASE.md`** pour la dernière valeur. Dernière valeur : **542**.
 - **versionName** : Version sémantique lisible (ex: `5.16.7`), jamais de suffixe dans build.gradle. Le tag git peut avoir un suffixe (`v5.12.9-ct`) mais pas le versionName.
 - **CI trigger** : Tag format `v*.*.*` obligatoire (avec `v` au début). Suffixes autorisés. Sans `v` = pas de CI.
 - **Play Store** : App `com.suntrail.threejs`. Voir `docs/RELEASE.md` pour le workflow complet et le tableau de versions.
@@ -436,7 +445,7 @@ src/
 ### Workflow de release (step-by-step)
 
 1. **Vérifier** : `npm run check && npm test` (0 erreur)
-2. **Incrémenter le versionCode** dans `android/app/build.gradle` — consulter `docs/RELEASE.md` pour la dernière valeur (actuellement **539**)
+2. **Incrémenter le versionCode** dans `android/app/build.gradle` — consulter `docs/RELEASE.md` pour la dernière valeur (actuellement **542**)
 3. **Mettre à jour versionName** dans `build.gradle` et `version` dans `package.json`
 4. **Mettre à jour** `docs/RELEASE.md` (ajouter ligne au tableau) et `docs/CHANGELOG.md`
 5. **Commit** :

@@ -1,7 +1,7 @@
 {
   "nav": {
     "tab": {
-      "search": "Sommets",
+      "search": "Recherche",
       "layers": "Calques",
       "track": "Parcours",
       "settings": "Réglages",
@@ -90,6 +90,7 @@
       "buildings": "Bâtiments OSM",
       "hydrology": "Lacs & Rivières",
       "signposts": "Signalisation 3D",
+      "inclinometer": "Inclinomètre (pente au centre)",
       "shadows": "Ombres portées",
       "weather": "Météo",
       "trailFollow": "Suivi du sentier"
@@ -135,7 +136,21 @@
     "loading": "Recherche...",
     "error": "Erreur de recherche",
     "unknownPlace": "Lieu inconnu",
-    "peak": "Sommet"
+    "peak": "Sommet",
+    "type": {
+      "country": "Pays",
+      "region": "Région",
+      "city": "Ville",
+      "village": "Village",
+      "peak": "Sommet",
+      "poi": "Lieu"
+    },
+    "filter": {
+      "all": "Tout",
+      "cities": "Villes",
+      "mountains": "Montagnes",
+      "countries": "Pays"
+    }
   },
   "layers": {
     "title": "Fonds de carte",
@@ -442,12 +457,17 @@
       "yearly": "Annuel",
       "lifetime": "À vie",
       "perMonth": "par mois",
-      "perYear": "par an · €2.50/mois",
+      "perYear": "par an",
       "oneTime": "paiement unique",
-      "badge": "⭐ 7 jours gratuits"
+      "badge": "⭐ 7 jours gratuits",
+      "monthShort": "mois"
     },
     "restore": "Restaurer un achat",
     "legal": "Abonnement auto-renouvelable · Résiliable à tout moment dans le Play Store.",
+    "web": {
+      "playStore": "Disponible sur Google Play",
+      "note": "L'achat Pro est disponible via l'application Android sur Google Play."
+    },
     "toast": {
       "purchaseFailed": "Achat impossible — vérifiez votre connexion ou réessayez.",
       "restoring": "Restauration en cours…",

@@ -4,6 +4,52 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.18.0] - 2026-04-01
+### 🚀 UX Majeure — Recherche, Prix, Météo, Inclinomètre
+
+**Prix dynamiques localisés (Issue 1) :**
+- Supprimé les prix EUR hardcodés (`€3.99/€29.99/€99.99`) dans le HTML et les 4 locales
+- Placeholder `—` affiché pendant le chargement RevenueCat → prix localisés (CHF, EUR, etc.)
+- Sous-titre annuel dynamique avec prix mensuel équivalent dans la devise locale
+- Cache prix avec TTL 5min (retry si 1er appel échoué, pas de spam réseau)
+
+**Recherche refonte complète (Issue 3) :**
+- Tab renommé "Sommets" → "Recherche" avec icône loupe (4 locales)
+- Classification automatique des résultats par type (pays/région/ville/village/sommet/POI)
+- Zoom adaptatif : pays → LOD 6, région → LOD 8, ville → LOD 11, sommet → LOD 14
+- Filtres chips (Tout / Villes / Montagnes / Pays)
+- Module montagnes dédié : recherche Overpass `natural=peak` par nom (filtre Montagnes)
+- Sous-titre type localisé sur chaque résultat, icônes adaptées par catégorie
+
+**Ground plane anti-blanc montagne (Issue 10) :**
+- Plan sombre (500k×500k) à y=-200 sous le terrain, `MeshBasicMaterial` avec fog
+- Masque le vide blanc visible au tilt max en LOD 14+ sur les montagnes
+- Optimisé : `depthWrite:false`, pas de shadow, frustum culled, suivi origin shift
+
+**Météo avec nom de lieu (Issue 5) :**
+- Affichage du `locationName` (reverse geocoding) en header du panneau météo
+- Visible en version free et pro
+
+**Inclinomètre toggle + clarté (Issue 9) :**
+- Nouveau toggle `SHOW_INCLINOMETER` dans Réglages (persisté en localStorage)
+- Label explicatif "pente au centre" dans le widget
+- 4 locales mises à jour
+
+**Boussole temps réel (Issue 8) :**
+- `renderCompass()` déplacé avant les return guards du render loop (throttle propre 30fps)
+- Animation reset-to-North : `state.isInteractingWithUI` force le rendu pendant l'animation
+
+**Redirect Play Store sur web (Issue 6) :**
+- Sur `!Capacitor.isNativePlatform()` : boutons d'achat remplacés par lien Play Store
+- Liste des features Pro conservée, 4 locales
+
+**UX diverse :**
+- Tous les sheets se ferment au clic sur la carte (pas seulement layers)
+- MESSAGES_TESTEURS.md : ajout note "monde entier disponible"
+- Soleil/ombres : confirmé fonctionnel dans le monde entier (SunCalc + coords réelles)
+
+---
+
 ## [5.17.0] - 2026-04-01
 ### 🔧 Audit Dette Technique + Optimisations Performance
 

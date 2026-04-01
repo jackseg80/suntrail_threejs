@@ -360,19 +360,20 @@ export function initUI(): void {
             while (diff > Math.PI) diff -= Math.PI * 2;
             targetAngle = startAngle + diff;
             
-            // Animation sur 500ms
+            // Animation sur 500ms — isInteractingWithUI force le render loop à rendre
             const startTime = Date.now();
             const duration = 500;
             const initialAngle = startAngle;
-            
+            state.isInteractingWithUI = true;
+
             function animateNorth() {
                 const elapsed = Date.now() - startTime;
                 const progress = Math.min(elapsed / duration, 1);
                 // Easing ease-out-cubic
                 const eased = 1 - Math.pow(1 - progress, 3);
-                
+
                 const currentAngle = initialAngle + (targetAngle - initialAngle) * eased;
-                
+
                 // Met à jour la position de la caméra pour maintenir la même distance
                 const offset = state.camera!.position.clone().sub(controls.target);
                 const spherical = new THREE.Spherical().setFromVector3(offset);
@@ -380,14 +381,15 @@ export function initUI(): void {
                 const newPos = new THREE.Vector3().setFromSpherical(spherical).add(controls.target);
                 state.camera!.position.copy(newPos);
                 controls.update();
-                
+
                 if (progress < 1) {
                     requestAnimationFrame(animateNorth);
                 } else {
+                    state.isInteractingWithUI = false;
                     showToast(i18n.t('compass.toast.northAligned'));
                 }
             }
-            
+
             animateNorth();
         }
     });
@@ -414,8 +416,8 @@ function handleGlobalClick(_e: MouseEvent) {
 function handleMapClick(e: MouseEvent) {
     if (!state.renderer || !state.camera || !state.scene) return;
 
-    // Close layers sheet if open when clicking map (no overlay active for this sheet)
-    if (sheetManager.getActiveSheetId() === 'layers-sheet') {
+    // Fermer tout sheet ouvert quand on clique sur la carte
+    if (sheetManager.getActiveSheetId()) {
         sheetManager.close();
     }
 

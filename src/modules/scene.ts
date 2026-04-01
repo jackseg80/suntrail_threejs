@@ -24,6 +24,9 @@ let visibilityChangeHandler: (() => void) | null = null;
 // Upsell LOD — debounce pour ne pas spammer le toast (1 fois par 30s max)
 let _lastLodUpsellTime = 0;
 
+// Ground plane — empêche le vide blanc quand la caméra voit sous le terrain au tilt max
+let groundPlane: THREE.Mesh | null = null;
+
 export async function disposeScene(): Promise<void> {
     resetTerrain();
     disposeAllCachedTiles();
@@ -36,6 +39,11 @@ export async function disposeScene(): Promise<void> {
     }
     disposeCompass();
     disposeWeatherSystem();
+    if (groundPlane) {
+        groundPlane.geometry.dispose();
+        (groundPlane.material as THREE.MeshBasicMaterial).dispose();
+        groundPlane = null;
+    }
     if (state.scene) state.scene.clear();
     if (visibilityChangeHandler) {
         document.removeEventListener('visibilitychange', visibilityChangeHandler);
@@ -148,6 +156,19 @@ export async function initScene(): Promise<void> {
     sky.scale.setScalar(10000000); 
     state.scene.add(sky);
     state.sky = sky;
+
+    // Ground plane — plan sombre sous le terrain pour masquer le vide blanc au tilt max
+    // Taille réduite (500k) suffit largement pour couvrir la vue à tilt max en LOD 14+
+    const groundGeo = new THREE.PlaneGeometry(500_000, 500_000);
+    groundGeo.rotateX(-Math.PI / 2);
+    const groundMat = new THREE.MeshBasicMaterial({ color: 0x1a1a2e, fog: true, depthWrite: false });
+    groundPlane = new THREE.Mesh(groundGeo, groundMat);
+    groundPlane.position.y = -200;
+    groundPlane.renderOrder = -1;
+    groundPlane.castShadow = false;
+    groundPlane.receiveShadow = false;
+    groundPlane.frustumCulled = true;
+    state.scene.add(groundPlane);
 
     state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 4000000);
     // Démarrage au LOD 6 (dezoom max) — dist >= 2 000 000 déclenche LOD 6 dans adaptiveLOD()
@@ -305,6 +326,11 @@ export async function initScene(): Promise<void> {
                             state.sunLight.target.updateMatrixWorld();
                         }
                         
+                        if (groundPlane) {
+                            groundPlane.position.x += offsetX;
+                            groundPlane.position.z += offsetZ;
+                        }
+
                         if (state.userMarker) {
                             state.userMarker.position.x += offsetX;
                             state.userMarker.position.z += offsetZ;
@@ -388,6 +414,8 @@ export async function initScene(): Promise<void> {
 
     // Prefetch LOD±1 — timestamp du dernier prefetch idle pour throttler à 1x/5s
     let lastPrefetchTime = 0;
+    // Boussole — throttle propre 30fps (indépendant du render principal)
+    let lastCompassTime = 0;
 
     const renderLoopFn = () => {
         if (!state.renderer || !state.camera || !state.scene || !state.controls) return;
@@ -406,6 +434,12 @@ export async function initScene(): Promise<void> {
         weatherAccumDelta += delta;
         const weatherFrameDue = weatherTimeAccum >= WEATHER_THROTTLE_MS;
         if (weatherFrameDue) weatherTimeAccum = Math.max(0, weatherTimeAccum - WEATHER_THROTTLE_MS);
+
+        // Boussole — canvas séparé 120×120, throttle propre 30fps (pas besoin de 60fps)
+        if (now - lastCompassTime >= 33) {
+            lastCompassTime = now;
+            renderCompass();
+        }
 
         if (state.ENERGY_SAVER && (now - lastRenderTime < 33)) return;
 
@@ -544,7 +578,6 @@ export async function initScene(): Promise<void> {
             }
 
             state.renderer.render(state.scene, state.camera);
-            renderCompass();
             state.stats?.end();
 
             // Prefetch LOD±1 en idle — précharge les tuiles du niveau suivant/précédent
@@ -564,6 +597,7 @@ export async function initScene(): Promise<void> {
                 fpsLastTime = fpsTick;
             }
         }
+
     };
     // Fix démarrage mobile (v5.11) : render loop démarre AVANT loadTerrain.
     // Le canvas affiche le ciel/brouillard immédiatement — les tuiles apparaissent au fur et à mesure.

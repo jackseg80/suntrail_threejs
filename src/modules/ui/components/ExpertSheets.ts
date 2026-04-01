@@ -317,6 +317,14 @@ export class WeatherSheet extends BaseComponent {
 
         if (!wd) return;
 
+        // Nom de lieu en en-tête (issu du reverse geocoding dans weather.ts)
+        if (wd.locationName) {
+            const locHeader = document.createElement('div');
+            locHeader.className = 'weather-location-name';
+            locHeader.textContent = wd.locationName;
+            this.contentEl.appendChild(locHeader);
+        }
+
         if (!state.isPro) {
             // ── FREE version ──────────────────────────────────────────────────
             const basicGrid = document.createElement('div');

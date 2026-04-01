@@ -59,11 +59,12 @@ export class InclinometerWidget {
         // Abonnements réactifs
         this.unsubscribers.push(state.subscribe('isPro', () => this.syncVisibility()));
         this.unsubscribers.push(state.subscribe('ZOOM', () => this.syncVisibility()));
+        this.unsubscribers.push(state.subscribe('SHOW_INCLINOMETER', () => this.syncVisibility()));
         this.syncVisibility();
     }
 
     private syncVisibility(): void {
-        const shouldShow = state.isPro && state.ZOOM >= MIN_ZOOM_DISPLAY;
+        const shouldShow = state.isPro && state.ZOOM >= MIN_ZOOM_DISPLAY && state.SHOW_INCLINOMETER;
         if (shouldShow) {
             if (this.el) this.el.style.display = 'block';
             this.startPolling();
@@ -106,7 +107,7 @@ export class InclinometerWidget {
         const slopeDeg = Math.round(slopeRad * (180 / Math.PI));
         const slopePct = Math.round(Math.tan(slopeRad) * 100);
 
-        this.el.textContent = `▲ ${slopeDeg}° (${slopePct}%)`;
+        this.el.textContent = `⛰ ${slopeDeg}° (${slopePct}%) — pente au centre`;
 
         // Couleur de la bordure selon seuils avalanche
         let borderColor = 'rgba(255,255,255,0.15)'; // neutre

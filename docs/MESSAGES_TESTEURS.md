@@ -3,6 +3,8 @@
 > Ce fichier contient les templates de messages à envoyer aux testeurs potentiels.
 > Personnalise le prénom et le lien avant d'envoyer.
 
+> ℹ️ L'application est actuellement optimisée pour la Suisse (SwissTopo) et la France (IGN), mais le monde entier est disponible via OpenStreetMap/OpenTopoMap.
+
 ---
 
 ## 📌 Ce qu'il faut demander à chaque testeur
@@ -45,7 +47,7 @@ Je te contacte car je pense que SunTrail pourrait t'intéresser, et j'ai besoin 
 🏔️  QU'EST-CE QUE SUNTRAIL 3D ?
 ─────────────────────────────────────
 SunTrail est une application Android de navigation en montagne avec :
-• Cartes topographiques en relief 3D (Suisse, France, bientôt Autriche/Italie)
+• Cartes topographiques en relief 3D — optimisée pour la Suisse (SwissTopo) et la France (IGN), disponible dans le monde entier
 • Simulation solaire en temps réel — vois exactement quand le soleil éclaire ou ombre une vallée, heure par heure
 • GPS, enregistrement de tracés GPX, bulletin météo montagne
 • Données haute précision : SwissTopo pour la Suisse, IGN pour la France
@@ -106,7 +108,7 @@ Salut à tous ! 👋
 
 Je cherche des testeurs Android pour une app de rando que je développe : SunTrail 3D.
 
-L'idée : cartes topo en relief 3D, simulation des ombres solaires heure par heure + pour n'importe quel jour de l'année, GPS, inclinomètre de pente, météo montagne. Données SwissTopo pour la Suisse, IGN pour la France.
+L'idée : cartes topo en relief 3D, simulation des ombres solaires heure par heure + pour n'importe quel jour de l'année, GPS, inclinomètre de pente, météo montagne. Données SwissTopo pour la Suisse, IGN pour la France — le monde entier est disponible via OpenStreetMap.
 
 🎁 En échange de quelques retours :
 → 20-30 min de test = 3 mois Pro offerts

@@ -148,6 +148,7 @@ export interface State {
     SHOW_WEATHER: boolean;
     SHOW_DEBUG: boolean;
     SHOW_STATS: boolean;
+    SHOW_INCLINOMETER: boolean;
     USE_WORKERS: boolean;
 
     SHADOWS: boolean;
@@ -265,7 +266,7 @@ const initialState: State = {
     PIXEL_RATIO_LIMIT: PRESETS.balanced.PIXEL_RATIO_LIMIT, LOAD_DELAY_FACTOR: PRESETS.balanced.LOAD_DELAY_FACTOR,
     SHOW_TRAILS: false, SHOW_SLOPES: false, SHOW_SIGNPOSTS: PRESETS.balanced.SHOW_SIGNPOSTS,
     SHOW_BUILDINGS: PRESETS.balanced.SHOW_BUILDINGS, SHOW_HYDROLOGY: PRESETS.balanced.SHOW_HYDROLOGY, SHOW_VEGETATION: true, SHOW_WEATHER: PRESETS.balanced.SHOW_WEATHER,
-    SHOW_DEBUG: true, SHOW_STATS: false, USE_WORKERS: true, SHADOWS: PRESETS.balanced.SHADOWS, SHADOW_RES: PRESETS.balanced.SHADOW_RES,
+    SHOW_DEBUG: true, SHOW_STATS: false, SHOW_INCLINOMETER: true, USE_WORKERS: true, SHADOWS: PRESETS.balanced.SHADOWS, SHADOW_RES: PRESETS.balanced.SHADOW_RES,
     VEGETATION_DENSITY: PRESETS.balanced.VEGETATION_DENSITY,
     VEGETATION_CAST_SHADOW: PRESETS.balanced.VEGETATION_CAST_SHADOW,
     BUILDING_LIMIT: PRESETS.balanced.BUILDING_LIMIT,
@@ -330,6 +331,7 @@ export interface SavedSettings {
     SHOW_HYDROLOGY: boolean;
     SHOW_VEGETATION: boolean;
     SHOW_WEATHER: boolean;
+    SHOW_INCLINOMETER: boolean;
     SHADOWS: boolean;
     RESOLUTION: number;
     RANGE: number;
@@ -359,6 +361,7 @@ export function saveSettings(): void {
             SHOW_HYDROLOGY: state.SHOW_HYDROLOGY,
             SHOW_VEGETATION: state.SHOW_VEGETATION,
             SHOW_WEATHER: state.SHOW_WEATHER,
+            SHOW_INCLINOMETER: state.SHOW_INCLINOMETER,
             SHADOWS: state.SHADOWS,
             RESOLUTION: state.RESOLUTION,
             RANGE: state.RANGE,
@@ -431,6 +434,7 @@ export function loadSettings(): SavedSettings | null {
             state.SHOW_HYDROLOGY = !!parsed.SHOW_HYDROLOGY;
             state.SHOW_VEGETATION = !!parsed.SHOW_VEGETATION;
             state.SHOW_WEATHER = !!parsed.SHOW_WEATHER;
+            if (parsed.SHOW_INCLINOMETER !== undefined) state.SHOW_INCLINOMETER = !!parsed.SHOW_INCLINOMETER;
             state.SHADOWS = !!parsed.SHADOWS;
             
             if (parsed.RESOLUTION) state.RESOLUTION = parsed.RESOLUTION;

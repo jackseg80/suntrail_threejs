@@ -90,6 +90,7 @@
       "buildings": "OSM Buildings",
       "hydrology": "Lakes & Rivers",
       "signposts": "3D Signage",
+      "inclinometer": "Inclinometer (slope at center)",
       "shadows": "Cast shadows",
       "weather": "Weather",
       "trailFollow": "Trail follow"
@@ -135,7 +136,21 @@
     "loading": "Searching...",
     "error": "Search error",
     "unknownPlace": "Unknown place",
-    "peak": "Summit"
+    "peak": "Summit",
+    "type": {
+      "country": "Country",
+      "region": "Region",
+      "city": "City",
+      "village": "Village",
+      "peak": "Summit",
+      "poi": "Place"
+    },
+    "filter": {
+      "all": "All",
+      "cities": "Cities",
+      "mountains": "Mountains",
+      "countries": "Countries"
+    }
   },
   "layers": {
     "title": "Map layers",
@@ -442,12 +457,17 @@
       "yearly": "Yearly",
       "lifetime": "Lifetime",
       "perMonth": "per month",
-      "perYear": "per year · €2.50/mo",
+      "perYear": "per year",
       "oneTime": "one-time payment",
-      "badge": "⭐ 7 days free"
+      "badge": "⭐ 7 days free",
+      "monthShort": "mo"
     },
     "restore": "Restore purchase",
     "legal": "Auto-renewable subscription · Cancel anytime in the Play Store.",
+    "web": {
+      "playStore": "Get it on Google Play",
+      "note": "Pro upgrade is available via the Android app on Google Play."
+    },
     "toast": {
       "purchaseFailed": "Purchase failed — check your connection and try again.",
       "restoring": "Restoring purchases…",

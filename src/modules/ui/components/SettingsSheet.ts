@@ -93,6 +93,7 @@ export class SettingsSheet extends BaseComponent {
         this.bindSlider('weather-density-slider', 'WEATHER_DENSITY', 'weather-density-disp');
         this.bindSlider('weather-speed-slider', 'WEATHER_SPEED', 'weather-speed-disp');
         this.bindToggle('poi-toggle', 'SHOW_SIGNPOSTS', this.refreshTerrain);
+        this.bindToggle('inclinometer-toggle', 'SHOW_INCLINOMETER');
         this.bindToggle('shadow-toggle', 'SHADOWS', (val: boolean) => {
             if (state.sunLight) state.sunLight.castShadow = val;
         });

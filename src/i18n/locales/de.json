@@ -90,6 +90,7 @@
       "buildings": "OSM-Gebäude",
       "hydrology": "Seen & Flüsse",
       "signposts": "3D-Wegweiser",
+      "inclinometer": "Neigungsmesser (Hangneigung Mitte)",
       "shadows": "Schatten",
       "weather": "Wetter",
       "trailFollow": "Routenverfolgung"
@@ -135,7 +136,21 @@
     "loading": "Suche...",
     "error": "Suchfehler",
     "unknownPlace": "Unbekannter Ort",
-    "peak": "Gipfel"
+    "peak": "Gipfel",
+    "type": {
+      "country": "Land",
+      "region": "Region",
+      "city": "Stadt",
+      "village": "Dorf",
+      "peak": "Gipfel",
+      "poi": "Ort"
+    },
+    "filter": {
+      "all": "Alle",
+      "cities": "Städte",
+      "mountains": "Berge",
+      "countries": "Länder"
+    }
   },
   "layers": {
     "title": "Kartenebenen",
@@ -442,12 +457,17 @@
       "yearly": "Jährlich",
       "lifetime": "Lebenslang",
       "perMonth": "pro Monat",
-      "perYear": "pro Jahr · €2.50/Monat",
+      "perYear": "pro Jahr",
       "oneTime": "Einmalzahlung",
-      "badge": "⭐ 7 Tage kostenlos"
+      "badge": "⭐ 7 Tage kostenlos",
+      "monthShort": "Monat"
     },
     "restore": "Kauf wiederherstellen",
     "legal": "Automatisch verlängerbares Abonnement · Jederzeit im Play Store kündbar.",
+    "web": {
+      "playStore": "Bei Google Play erhältlich",
+      "note": "Das Pro-Upgrade ist über die Android-App bei Google Play verfügbar."
+    },
     "toast": {
       "purchaseFailed": "Kauf fehlgeschlagen — prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
       "restoring": "Käufe werden wiederhergestellt…",

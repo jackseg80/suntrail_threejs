@@ -293,6 +293,10 @@
             <div class="setting-label" data-i18n="settings.label.signposts">Signalisation 3D</div>
             <input type="checkbox" id="poi-toggle" checked aria-label="Signalisation 3D">
         </div>
+        <div class="setting-row">
+            <div class="setting-label" data-i18n="settings.label.inclinometer">Inclinomètre (pente au centre)</div>
+            <input type="checkbox" id="inclinometer-toggle" checked aria-label="Inclinomètre">
+        </div>
     </div>
 
     <details class="control-group" style="margin-top: 15px;">
@@ -545,13 +549,12 @@
     <div class="nav-bar-content">
         <div class="nav-tab active" data-tab="search">
             <div class="nav-icon">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M10 2L6 8l4 2 4-2-4-6z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-                <path d="M10 10v8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                <circle cx="10" cy="14" r="2" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7"/>
+                <path d="M21 21l-4.35-4.35"/>
               </svg>
             </div>
-            <span class="nav-label">Sommets</span>
+            <span class="nav-label" data-i18n="nav.tab.search">Recherche</span>
         </div>
         <div class="nav-tab" data-tab="track">
             <div class="nav-dot"></div>
@@ -830,18 +833,18 @@
         <div class="upgrade-plans">
             <button class="upgrade-plan" id="upgrade-monthly-btn">
                 <div class="upgrade-plan-period" data-i18n="upgrade.plan.monthly">Mensuel</div>
-                <div class="upgrade-plan-price" id="upgrade-monthly-price">€3.99</div>
+                <div class="upgrade-plan-price" id="upgrade-monthly-price">—</div>
                 <div class="upgrade-plan-sub" data-i18n="upgrade.plan.perMonth">par mois</div>
             </button>
             <button class="upgrade-plan upgrade-plan-best" id="upgrade-cta-btn">
                 <div class="upgrade-plan-badge" data-i18n="upgrade.plan.badge">⭐ 7 jours gratuits</div>
                 <div class="upgrade-plan-period" data-i18n="upgrade.plan.yearly">Annuel</div>
-                <div class="upgrade-plan-price" id="upgrade-yearly-price">€29.99</div>
-                <div class="upgrade-plan-sub" data-i18n="upgrade.plan.perYear">par an · €2.50/mois</div>
+                <div class="upgrade-plan-price" id="upgrade-yearly-price">—</div>
+                <div class="upgrade-plan-sub" id="upgrade-yearly-sub" data-i18n="upgrade.plan.perYear">par an</div>
             </button>
             <button class="upgrade-plan" id="upgrade-lifetime-btn">
                 <div class="upgrade-plan-period" data-i18n="upgrade.plan.lifetime">À vie</div>
-                <div class="upgrade-plan-price" id="upgrade-lifetime-price">€99.99</div>
+                <div class="upgrade-plan-price" id="upgrade-lifetime-price">—</div>
                 <div class="upgrade-plan-sub" data-i18n="upgrade.plan.oneTime">paiement unique</div>
             </button>
         </div>
