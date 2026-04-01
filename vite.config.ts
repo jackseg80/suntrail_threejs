@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
@@ -104,7 +104,6 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     // On désactive les threads pour éviter les corruptions de mémoire en CI
-    pool: 'forks',
-    singleFork: true
+    pool: 'forks'
   }
 });
