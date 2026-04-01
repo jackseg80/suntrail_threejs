@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { state } from './state';
 import type { Tile } from './terrain';
-import { fetchOverpassData } from './utils';
+import { fetchOverpassData, isOverpassInBackoff } from './utils';
 import { getAltitudeAt } from './analysis';
 import { terrainUniforms } from './terrain';
 import { boundedCacheSet } from './boundedCache';
@@ -81,6 +81,9 @@ export async function loadHydrologyForTile(tile: Tile) {
 
     const failTime = zoneFailureCooldown.get(zoneKey);
     if (failTime && Date.now() < failTime) return;
+
+    // Pas la peine de lancer un fetch si Overpass est en backoff global
+    if (isOverpassInBackoff()) return;
 
     let elements: any[] | null | undefined = hydroMemoryCache.get(zoneKey);
 

@@ -93,6 +93,11 @@ const OVERPASS_BASE_BACKOFF = 15000;  // 15s de base après un échec
 const OVERPASS_MAX_BACKOFF = 300000;  // 5 min max (après échecs répétés)
 const OVERPASS_MAX_QUEUE = 8;      // Queue courte
 
+/** Vérifie si Overpass est en backoff global (429/504 récent) */
+export function isOverpassInBackoff(): boolean {
+    return Date.now() < _overpassBackoffUntil;
+}
+
 export async function fetchOverpassData(query: string): Promise<any> {
     // Pendant le backoff, refuser immédiatement les nouvelles requêtes (pas d'empilement)
     if (Date.now() < _overpassBackoffUntil) return null;
