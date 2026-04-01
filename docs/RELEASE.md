@@ -98,7 +98,8 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **543** | **5.19.0** | **v5.19.0** | **Caméra terrain-aware (LOD par hauteur au-dessus du sol, tilt caps dynamiques, flyTo adaptatif), protection anti-spam 429 MapTiler/OSM avec backoff, rotation de clés MapTiler distante via GitHub Gist** | **2026-04-01** |
 | **544** | **5.19.1** | **v5.19.1** | **5 bugfixes UX (météo ville, soleil mondial, rotation viewport, REC GPS recovery, inclinomètre interactif), panels déplaçables (timeline/profil/coords-pill), backoff exponentiel Overpass** | **2026-04-01** |
 | 545 | 5.19.2 | v5.19.2 | Panneau Pro refondu, fix prix RevenueCat, rotation clés MapTiler (GitHub Gist + enabled/disabled), protection anti-spam 429 (backoff geocoding/Overpass/tuiles), purge cache corrompues, terrain-aware LOD + tilt dynamique + flyTo adaptatif | 2026-04-01 |
-| **546** | **5.19.3** | **v5.19.3** | **Fix timeline bloquée sous nav bar, ENERGY_SAVER forcé OFF pour performance/ultra, RANGE 5→6 preset high** | **2026-04-01** |
+| 546 | 5.19.3 | v5.19.3 | Fix timeline bloquée sous nav bar, ENERGY_SAVER forcé OFF pour performance/ultra, RANGE 5→6 preset high | 2026-04-01 |
+| **547** | **5.19.4** | **v5.19.4** | **Stabilisation LOD (lerp pondéré + cooldown 800ms), résolution adaptative idle-only (plus de bandes blanches), geocoding 403 ne désactive plus MapTiler** | **2026-04-01** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 
