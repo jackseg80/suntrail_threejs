@@ -45,8 +45,12 @@ export function attachDraggablePanel(opts: DraggablePanelOptions): () => void {
     }
 
     // ── Pointer Down ────────────────────────────────────────────────────
+    let _activePointerId = -1;
+
     const onStart = (e: PointerEvent): void => {
-        handle.setPointerCapture(e.pointerId);
+        // NE PAS capturer le pointer ici — ça bloquerait les clics sur les boutons enfants.
+        // La capture se fait uniquement quand un drag/dismiss commence réellement.
+        _activePointerId = e.pointerId;
         isActive = true;
         isDismissing = false;
         isRepositioning = false;
@@ -58,7 +62,7 @@ export function attachDraggablePanel(opts: DraggablePanelOptions): () => void {
         const now = Date.now();
         if (now - lastTapTime < 300 && isCustomPos) {
             lastTapTime = 0;
-            isActive = false;   // Bloquer tout traitement ultérieur de cette séquence pointer
+            isActive = false;
             resetPosition();
             return;
         }
@@ -72,7 +76,9 @@ export function attachDraggablePanel(opts: DraggablePanelOptions): () => void {
         // Hold timer pour passer en mode repositionnement
         holdTimer = setTimeout(() => {
             holdTimer = null;
-            if (!isActive) return;  // Séquence déjà terminée
+            if (!isActive) return;
+            // Capturer le pointer MAINTENANT (drag confirmé)
+            try { handle.setPointerCapture(_activePointerId); } catch { /* déjà relâché */ }
             isRepositioning = true;
             panel.style.transition = 'none';
             handle.style.cursor = 'grabbing';
@@ -109,6 +115,8 @@ export function attachDraggablePanel(opts: DraggablePanelOptions): () => void {
         // Pas encore en repositionnement — vérifier si c'est un swipe vers le bas (dismiss)
         if (!isDismissing && dy > 10 && Math.abs(dy) > Math.abs(dx) * 2) {
             clearHold();
+            // Capturer le pointer MAINTENANT (dismiss confirmé)
+            try { handle.setPointerCapture(_activePointerId); } catch { /* déjà relâché */ }
             isDismissing = true;
             panel.style.transition = 'none';
         }

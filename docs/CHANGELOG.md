@@ -4,6 +4,30 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.19.1] - 2026-04-01
+### 🛠️ Bugfixes UX + Panels Déplaçables + Anti-Spam Overpass
+
+**5 bugfixes utilisateur :**
+- Météo : affiche "Ville, Pays" au lieu d'un numéro de rue (`extractLocationName`)
+- Soleil/ombres mondial : utilise la position caméra réelle, pas TARGET_LAT/LON fixe Suisse
+- UI minuscule après rotation : triple retry viewport reset (100/500/1000ms) + `visualViewport.resize`
+- REC GPS : récupération des points après crash app (prompt restaurer/supprimer, seuils 10pts/20s)
+- Inclinomètre interactif : tap pour détails (direction, danger), drag pour repositionner, double-tap reset
+
+**Panels déplaçables :**
+- Nouveau helper `draggablePanel.ts` — maintenir 300ms + glisser = repositionner librement
+- Timeline, profil d'élévation et coords-pill tous repositionnables
+- Guard `isActive` contre les pointermove parasites au survol
+- Double-tap sur handle = reset position d'origine
+
+**Anti-spam Overpass :**
+- Backoff exponentiel global : 15s → 30s → 60s → 2min → 5min max
+- `fetchOverpassData()` retourne null immédiatement pendant le backoff
+- Queue vidée sur erreur, pas de retry infini
+- `isOverpassInBackoff()` exporté — hydrologie skip le fetch si backoff actif
+
+---
+
 ## [5.19.0] - 2026-04-01
 ### 🏔️ Caméra Terrain-Aware + Résilience API
 

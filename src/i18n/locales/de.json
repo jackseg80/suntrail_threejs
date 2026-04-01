@@ -393,8 +393,7 @@
     "lowBattery": "🔋 Akku schwach: Eco-Modus aktiviert"
   },
   "coords": {
-    "solar": "☀ Solar",
-    "addWaypoint": "📍 Hinzufügen"
+    "solar": "☀ Solar"
   },
   "apiKey": {
     "label": "MapTiler-Schlüssel",

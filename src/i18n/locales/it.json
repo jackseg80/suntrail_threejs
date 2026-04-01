@@ -393,8 +393,7 @@
     "lowBattery": "🔋 Batteria scarica: Modalità Eco attivata"
   },
   "coords": {
-    "solar": "☀ Solare",
-    "addWaypoint": "📍 Aggiungi"
+    "solar": "☀ Solare"
   },
   "apiKey": {
     "label": "Chiave MapTiler",
