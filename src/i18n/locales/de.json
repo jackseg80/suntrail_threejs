@@ -84,7 +84,18 @@
       "inclinometerDesc": "Geländeneigung in Echtzeit (°, %)",
       "weatherDesc": "24h-Diagramm + 3-Tage-Vorhersage",
       "cta": "Zu Pro wechseln",
-      "active": "Pro Aktiv"
+      "active": "Pro Aktiv",
+      "includedLabel": "In Pro enthalten",
+      "solarCalLabel": "Sonnenkalender",
+      "solarCalDesc": "Schatten für jeden Tag des Jahres",
+      "solarAnalLabel": "Pro-Sonnenanalyse",
+      "solarAnalDesc": "Azimut, Höhe, 24h-Diagramm, Mondphase",
+      "lodLabel": "Zoom LOD 18 + Satellit",
+      "lodDesc": "Maximale Details — Wege, Gebäude, Vegetation",
+      "gpxLabel": "Multi-Tracks + GPX-Export",
+      "gpxDesc": "Importieren und exportieren Sie so viele Wanderungen wie Sie möchten",
+      "offlineLabel": "Unbegrenzte Offline-Zonen",
+      "offlineDesc": "Laden Sie so viele Regionen herunter wie Sie möchten"
     },
     "preset": {
       "eco": "Eco",
@@ -457,17 +468,21 @@
   },
   "upgrade": {
     "title": "Pro werden ✨",
+    "hero": {
+      "title": "Weltweit einzigartige Sonnensimulation",
+      "subtitle": "Sehen Sie genau, wann die Sonne Ihren Weg beleuchtet. Echte Schatten auf 3D-Gelände — für jeden Tag des Jahres."
+    },
     "feature": {
-      "maxDetail": "Maximale Kartendetails (Zoom LOD 18)",
-      "satellite": "Satellitenansicht",
-      "buildings": "3D-Gebäude — realistische Architektur auf dem Gelände (kostenlos = nur 2D)",
-      "solarCalendar": "Sonnenkalender — Schatten für jeden Tag des Jahres simulieren",
-      "solarAnalysis": "Komplette Sonnenanalyse — Azimut, Höhe, 24h-Diagramm, Mondphase",
-      "weatherStation": "Erweiterte Wetterstation — 24h-Diagramm, 3-Tage-Vorhersage, Bergwarnungen",
-      "inclinometer": "Digitaler Neigungsmesser — Geländeneigung in Echtzeit (°, %)",
-      "multiGpx": "Multi-GPX-Tracks — so viele Wanderungen importieren wie Sie möchten",
-      "exportStats": "GPX-Export + erweiterte Statistiken (VAM, Durchschnittsneigung, Naismith)",
-      "offlineZones": "Unbegrenzte Offline-Zonen — so viele Regionen herunterladen wie Sie möchten (kostenlos = 1 Zone)"
+      "maxDetail": "Maximaler LOD 18 Zoom",
+      "satellite": "HD-Satellitenansicht",
+      "buildings": "Realistische 3D-Gebäude",
+      "solarCalendar": "Unbegrenzter Sonnenkalender",
+      "solarAnalysis": "Komplette Sonnenanalyse",
+      "weatherStation": "3-Tage-Wetter + Warnungen",
+      "inclinometer": "Neigungsmesser",
+      "multiGpx": "Multi-GPX-Tracks",
+      "exportStats": "GPX-Export + Statistiken",
+      "offlineZones": "Unbegrenzt offline"
     },
     "plan": {
       "monthly": "Monatlich",

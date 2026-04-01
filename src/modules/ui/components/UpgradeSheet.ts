@@ -30,12 +30,10 @@ export class UpgradeSheet extends BaseComponent {
             return;
         }
 
-        // Charger les prix depuis RevenueCat — cache 5min, retry si 1er appel échoué
+        // Charger les prix depuis RevenueCat — cache 5min, retry si échoué
         const now = Date.now();
         if (!this._pricesLoaded || (now - this._pricesCacheTime > UpgradeSheet.PRICES_TTL)) {
-            this._pricesLoaded = true;
-            this._pricesCacheTime = now;
-            this.loadPrices();
+            void this.loadPrices();
         }
 
         // Helper commun pour les 3 boutons d'achat
@@ -117,6 +115,17 @@ export class UpgradeSheet extends BaseComponent {
 
     private async loadPrices(): Promise<void> {
         const prices = await iapService.getPrices();
+        const hasRealPrices = prices.yearly !== '—' || prices.monthly !== '—';
+
+        if (hasRealPrices) {
+            // Prix chargés — cache valide pendant 5 min
+            this._pricesLoaded = true;
+            this._pricesCacheTime = Date.now();
+        } else {
+            // Échec (init pas prête, réseau, offerings absentes) — retry à la prochaine ouverture
+            this._pricesLoaded = false;
+        }
+
         // Mettre à jour les prix affichés si les éléments existent
         const yearlyPriceEl = this.element?.querySelector('#upgrade-yearly-price');
         const monthlyPriceEl = this.element?.querySelector('#upgrade-monthly-price');

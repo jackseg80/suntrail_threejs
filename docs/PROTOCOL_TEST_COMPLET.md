@@ -148,7 +148,7 @@ Va dans **Réglages → Profils de performance** et teste chaque profil :
 
 > ℹ️ La météo se charge automatiquement lorsque tu navigues vers une zone. Si rien ne s'affiche, déplace la carte sur une ville ou un sommet puis attends quelques secondes.
 
-**Accès :** appuie sur la **pastille météo** en haut de l'écran (température + icône), ou ouvre l'onglet météo depuis la TopBar.
+**Accès :** appuie sur la **pastille météo** en haut de l'écran (nom du lieu + température + icône), ou ouvre l'onglet météo depuis la TopBar.
 
 **Version gratuite :**
 - [ ] Le panneau météo s'ouvre-t-il depuis le haut (pas depuis le bas) ?
@@ -203,7 +203,7 @@ Va dans **Réglages → Profils de performance** et teste chaque profil :
 - [ ] Fais défiler vers le bas jusqu'à voir la ligne dorée **"⚙️ PARAMÈTRES AVANCÉS"**
 - [ ] **Appuie dessus** pour déplier la section (c'est un accordéon — fermé par défaut, rien n'est visible avant de tapper dessus)
 - [ ] La section se déplie avec tous les réglages avancés : sliders, boutons cache, et en bas un bloc **"Sources de données & Légal"**
-- [ ] Tout en bas de ce bloc, tu verras un texte grisé centré avec le numéro de version (ex: **`v5.16.7`**)
+- [ ] Tout en bas de ce bloc, tu verras un texte grisé centré avec le numéro de version (ex: **`v5.19.1`**)
 - [ ] Tape **7 fois rapidement** sur ce numéro de version (vibration discrète dès le 4e tap)
   → Au 7e tap : message "🔓 Mode testeur Pro activé (RAM — non persisté)" + le texte bleuit
 - [ ] Vérifie que les fonctionnalités Pro se débloquent :
@@ -212,8 +212,9 @@ Va dans **Réglages → Profils de performance** et teste chaque profil :
   - [ ] **Inclinomètre** : zoom jusqu'au LOD 13 minimum → un widget `▲ XX° (XX%)` apparaît-il en bas à gauche de la carte ?
     - La couleur change-t-elle selon la pente (blanc < 30°, jaune ≥ 30°, orange ≥ 35°, rouge ≥ 40°) ?
     - Se met-il à jour quand tu déplaces la carte ?
+  - [ ] **Calendrier solaire** : dans la Timeline, change la date (ex: solstice d'été 21 juin) → les ombres changent-elles ? (bloqué en gratuit, débloqué en Pro)
   - [ ] **Analyse solaire Pro** : le bouton "☀ Solaire" ouvre-t-il les 5 blocs décrits en Partie 8 ?
-  - [ ] **Météo Pro** : le panneau météo montre-t-il les données avancées (graphique, 3 jours, alertes) ?
+  - [ ] **Météo Pro** : le panneau météo montre-t-il les données avancées (graphique, 3 jours, alertes) ? Les jours 2 et 3 ne sont plus grisés ?
   - [ ] **Importer un 2e tracé GPX** : possible sans message de blocage ?
 - [ ] Retape 7 fois sur le numéro de version → "🔒 Mode testeur Pro désactivé"
 
@@ -236,6 +237,20 @@ Va dans **Réglages → Profils de performance** et teste chaque profil :
 - [ ] Reviens en **Français**
 - [ ] Teste le slider **Exagération du relief** : monte-le à 3.0 → le relief est-il bien plus prononcé ?
 - [ ] Remets-le à 2.0 (valeur par défaut)
+
+---
+
+## Partie 11b — Recherche de lieu (5 min)
+
+- [ ] Appuie sur l'onglet **Recherche** (icône loupe dans la barre de navigation)
+- [ ] Tape le nom d'une ville (ex: "Zermatt") → des résultats apparaissent-ils rapidement ?
+- [ ] Sélectionne un résultat → la carte vole-t-elle vers cette position avec un zoom adapté ?
+- [ ] Tape le nom d'un sommet connu (ex: "Matterhorn" ou "Mont Blanc") → le résultat apparaît-il ?
+- [ ] Teste les **filtres chips** en haut : "Tout", "Villes", "Montagnes", "Pays"
+  - Le filtre "Montagnes" affiche-t-il des sommets avec leur altitude ?
+- [ ] Les résultats sont-ils classés de manière cohérente (pays, villes, sommets) ?
+
+**À noter :** la recherche était-elle réactive ? Les résultats correspondaient-ils à ce que tu attendais ?
 
 ---
 
@@ -370,7 +385,7 @@ Une fois l'application disponible publiquement sur le Play Store :
 
 SunTrail est en développement actif. En tant que testeur de la première heure, tu verras ces fonctionnalités arriver dans les prochaines semaines et mois :
 
-### Bientôt (v5.18+)
+### Bientôt (v5.20+)
 | Fonctionnalité | Description |
 |---|---|
 | 🏔️ Visibilité 360° | Quels sommets peut-on voir exactement depuis ta position ? |

@@ -62,10 +62,10 @@ SunTrail est une application Android de navigation en montagne avec :
 La version Pro débloque :
 • Zoom maximum LOD 18 — détail extrême des sentiers, bâtiments, végétation
 • Bâtiments 3D — architecture réaliste sur le terrain (gratuit = vue 2D seule)
-• Calendrier solaire — simule les ombres pour n'importe quel jour de l'année, pas seulement aujourd'hui
-• Analyse solaire complète — azimut, élévation, graphique 24h, phase lunaire
+• Calendrier solaire — simule les ombres pour n'importe quel jour de l'année (passé et futur), pas seulement aujourd'hui
+• Analyse solaire complète — azimut, élévation, graphique 24h, phase lunaire, rapport copiable
 • Station météo avancée — graphique 24h, prévision 3 jours, alertes montagne (limite neige/pluie, UV, confort)
-• Inclinomètre numérique — pente du terrain sous la caméra en ° et %, alerte couleur au-delà de 30°
+• Inclinomètre numérique — pente du terrain sous la caméra en ° et %, alerte couleur au-delà de 30°, panel détail interactif
 • Vue Satellite
 • Multi-tracés GPX — importez autant de randonnées que vous voulez (gratuit = 1 seul tracé à la fois)
 • Export GPX + statistiques avancées (VAM, pente moyenne, estimation Naismith)
@@ -79,7 +79,7 @@ Note : l'enregistrement GPS est gratuit et illimité pour tout le monde.
    (celle que tu utilises sur ton téléphone Android — souvent une adresse Gmail)
 2. J'ajoute ton adresse au programme de test fermé
 3. Tu reçois un lien pour installer l'app directement
-4. Tu testes, tu remplis le formulaire, tu récupères ta récompense
+4. Tu testes, tu remplis le formulaire, tu récupères ta récompense quand l'appliation est sorti de la phase de test
 
 Les achats en phase de test sont gratuits et fictifs — Google Play simule les transactions sans débiter aucune carte.
 
@@ -92,6 +92,8 @@ Les achats en phase de test sont gratuits et fictifs — Google Play simule les 
 
 ─────────────────────────────────────
 Il suffit de répondre à ce message avec ton adresse email Google Play — je m'occupe du reste.
+
+Si tu connais des personnes fans de randonnées ou d'alpinisme, n'hésite pas à leur envoyer ce mail. Les retours d'utilisateurs qui utilisent l'application sont les plus utiles.
 
 Merci d'avance pour ton aide, chaque retour compte vraiment.
 
@@ -106,9 +108,9 @@ Jacques
 ```
 Salut à tous ! 👋
 
-Je cherche des testeurs Android pour une app de rando que je développe : SunTrail 3D.
+Je cherche ~20 testeurs Android pour une app de rando que je développe: SunTrail 3D.
 
-L'idée : cartes topo en relief 3D, simulation des ombres solaires heure par heure + pour n'importe quel jour de l'année, GPS, inclinomètre de pente, météo montagne. Données SwissTopo pour la Suisse, IGN pour la France — le monde entier est disponible via OpenStreetMap.
+L'idée: cartes topo en relief 3D, simulation des ombres solaires heure par heure + pour n'importe quel jour de l'année, GPS, inclinomètre de pente, météo montagne. Données SwissTopo pour la Suisse, IGN pour la France — le monde entier est disponible via OpenStreetMap.
 
 🎁 En échange de quelques retours :
 → 20-30 min de test = 3 mois Pro offerts
@@ -119,6 +121,7 @@ Pour participer, il suffit de m'envoyer en MP l'adresse email liée à votre Goo
 Les achats pendant le test sont 100% gratuits — Google Play simule la transaction, aucune carte bancaire débitée.
 
 Qui est partant ? 🙋
+Si tu connais des personnes fans de randonnées ou d'alpinisme, n'hésite pas à me le dire. Les retours d'utilisateurs qui utilisent pratiquement l'application sont les plus utiles.
 ```
 
 ---

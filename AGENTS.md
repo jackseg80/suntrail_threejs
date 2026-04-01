@@ -1,4 +1,4 @@
-# SunTrail - Base de Connaissance (v5.19.1)
+# SunTrail - Base de Connaissance (v5.19.2)
 
 Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTrail. Il consigne les décisions architecturales critiques et les solutions aux problèmes complexes.
 
@@ -268,6 +268,7 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 | UI minuscule après rotation paysage→portrait | Aucun listener `orientationchange`, viewport zoom stuck | Handler `orientationchange` + reset viewport meta après 300ms dans `ui.ts`. (v5.16.8) |
 | Profil d'élévation non fermable / sous la boussole | Panel `position:fixed` avec petit × seulement, trop haut (80px au-dessus nav) | Tiroir swipe-to-dismiss (`closeElevationProfile()`, `setupSwipeGesture()`), repositionné juste au-dessus du menu nav (8px). (v5.16.8) |
 | Prix EUR affichés en Suisse dans panneau PRO | HTML template hardcode `€3.99/€29.99/€99.99` + defaults JS en EUR + sous-titre `€2.50/mois` jamais mis à jour | Placeholder `—` dans HTML, defaults `—` dans JS, sous-titre dynamique avec devise RevenueCat, cache TTL 5min. (v5.18.0) |
+| Prix `—` dans le panneau d'achat sur mobile | `iapService.initialize()` est fire-and-forget (`void`) dans `ui.ts`. `getPrices()` appelé avant la fin de l'init → `initialized === false` → retourne les defaults. `_pricesLoaded = true` posé avant l'await → pas de retry. | `iapService.waitForInit(5s)` attend la promesse d'init. `getPrices()` l'appelle si `!initialized`. `_pricesLoaded` posé uniquement si prix réels reçus (`!== '—'`). (v5.19.2) |
 | Blanc intérieur montagne au tilt max LOD 14+ | Terrain = PlaneGeometry simple face, pas de ground plane → vide blanc sous le mesh | Ground plane 500k×500k à y=-200, `MeshBasicMaterial` fog=true, depthWrite=false, suivi origin shift. **Ne pas utiliser DoubleSide** (double les triangles). (v5.18.0) |
 | Boussole ne se met pas à jour pendant/après interaction | `renderCompass()` était dans le bloc `if (needsUpdate)` → throttlé à 20fps en idle. Animation reset-to-North sans flag `needsUpdate`. | `renderCompass()` avant les return guards avec throttle propre 30fps. `animateNorth()` dans ui.ts set `state.isInteractingWithUI=true` pendant l'animation. (v5.18.0) |
 | Recherche "Sommets" retourne villes/pays sans zoom adapté | Tab nommé "Sommets" mais recherche tout. 2 niveaux de zoom hardcodés (13/14). `place_type` MapTiler jamais lu. | Renommé "Recherche", classification par `place_type`/`type`, zoom adaptatif (LOD 6→14), filtres chips, module Overpass peaks par nom. (v5.18.0) |
@@ -355,7 +356,7 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 - **Keystore** : `android/suntrail.keystore` (hors Git). `android/keystore.properties` (hors Git, rempli avec mot de passe réel).
 - **Build release** : `JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease --no-daemon` depuis `android/`.
 - **CI/CD** : `.github/workflows/release.yml` — déclenché sur `git tag v*.*.*`. Nécessite 6 GitHub Secrets : `KEYSTORE_BASE64`, `STORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS`, `VITE_MAPTILER_KEY`, `VITE_REVENUECAT_KEY`.
-- **versionCode** : Incrémenter à chaque upload Play Console. **Toujours consulter le tableau dans `docs/RELEASE.md`** pour la dernière valeur. Dernière valeur : **544** (v5.19.1).
+- **versionCode** : Incrémenter à chaque upload Play Console. **Toujours consulter le tableau dans `docs/RELEASE.md`** pour la dernière valeur. Dernière valeur : **545** (v5.19.2).
 - **versionName** : Version sémantique lisible (ex: `5.16.7`), jamais de suffixe dans build.gradle. Le tag git peut avoir un suffixe (`v5.12.9-ct`) mais pas le versionName.
 - **CI trigger** : Tag format `v*.*.*` obligatoire (avec `v` au début). Suffixes autorisés. Sans `v` = pas de CI.
 - **Play Store** : App `com.suntrail.threejs`. Voir `docs/RELEASE.md` pour le workflow complet et le tableau de versions.

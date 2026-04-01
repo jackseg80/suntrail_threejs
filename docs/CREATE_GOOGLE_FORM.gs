@@ -107,7 +107,21 @@ function createSunTrailForm() {
     .setChoiceValues(['Oui, très réaliste', 'Plutôt oui', 'Difficile à dire', 'Non, pas convaincant']);
 
   const sR5 = form.addPageBreakItem()
-    .setTitle('🆘 Rapide — 5. Bouton SOS')
+    .setTitle('🔍 Rapide — 5. Recherche de lieu')
+    .setHelpText('Durée estimée : ~2 min');
+
+  addCheckboxes(form, 'Recherche testée', [
+    'Onglet Recherche (icône loupe en bas) ouvert',
+    'Nom d\'un lieu tapé (ex: "Zermatt") → résultats affichés',
+    'Résultat sélectionné → carte vole vers la position',
+    'Filtre "Montagnes" testé → sommets avec altitude affichés',
+  ]);
+  form.addMultipleChoiceItem()
+    .setTitle('La recherche était-elle réactive et les résultats pertinents ?')
+    .setChoiceValues(['Oui, rapide et pertinent', 'Plutôt oui', 'Résultats lents ou incomplets', 'Ne fonctionne pas']);
+
+  const sR6 = form.addPageBreakItem()
+    .setTitle('🆘 Rapide — 6. Bouton SOS')
     .setHelpText('Durée estimée : ~2 min — Ne pas appuyer sur le bouton d\'appel réel !');
 
   addCheckboxes(form, 'SOS testé', [
@@ -119,8 +133,8 @@ function createSunTrailForm() {
     .setTitle('Le panneau SOS s\'est-il ouvert rapidement ?')
     .setChoiceValues(['Oui, instantané', 'Quelques secondes', 'Lent (> 5s)', 'Erreur ou non ouvert']);
 
-  const sR6 = form.addPageBreakItem()
-    .setTitle('💳 Rapide — 6. Test d\'achat (simulé)')
+  const sR7 = form.addPageBreakItem()
+    .setTitle('💳 Rapide — 7. Test d\'achat (simulé)')
     .setHelpText(
       'ℹ️ En phase de test fermé, les achats sont GRATUITS et FICTIFS. ' +
       'Google Play simule la transaction, aucune carte bancaire n\'est débitée.\n\n' +
@@ -139,8 +153,8 @@ function createSunTrailForm() {
     .setTitle('Le processus d\'achat était-il clair ?')
     .setChoiceValues(['Oui, très clair', 'Plutôt clair', 'Confus', 'Erreur rencontrée']);
 
-  const sR7 = form.addPageBreakItem()
-    .setTitle('🔋 Rapide — 7. Performance & Batterie')
+  const sR8 = form.addPageBreakItem()
+    .setTitle('🔋 Rapide — 8. Performance & Batterie')
     .setHelpText(
       'Navigue librement pendant 5 minutes — zoom, dézoom, change de région.\n\n' +
       'ℹ️ Conso attendue en mode 3D actif : ~10-15%/heure. En mode 2D, bien moins.\n\n' +
@@ -164,8 +178,8 @@ function createSunTrailForm() {
     .setTitle('Saccades ou plantages rencontrés ?')
     .setHelpText('Décris brièvement ce qui s\'est passé, ou laisse vide si tout va bien');
 
-  const sR8 = form.addPageBreakItem()
-    .setTitle('📋 Rapide — 8. Rapport final')
+  const sR9 = form.addPageBreakItem()
+    .setTitle('📋 Rapide — 9. Rapport final')
     .setHelpText('Dernière étape — merci pour ton temps !');
 
   form.addScaleItem()
@@ -184,7 +198,7 @@ function createSunTrailForm() {
   form.addParagraphTextItem()
     .setTitle('Remarques libres');
 
-  const sR9 = form.addPageBreakItem()
+  const sR10 = form.addPageBreakItem()
     .setTitle('🎁 Récupération de ta récompense (3 mois Pro)')
     .setHelpText(
       '⚠️ À faire APRÈS le déploiement en production (tu recevras un message).\n\n' +
@@ -203,7 +217,7 @@ function createSunTrailForm() {
   const sCIntro = form.addPageBreakItem()
     .setTitle('📋 Avant de commencer — Protocole Complet')
     .setHelpText(
-      'Ce protocole couvre toutes les fonctionnalités de l\'application (15 parties).\n' +
+      'Ce protocole couvre toutes les fonctionnalités de l\'application (16 parties).\n' +
       'Tu n\'es pas obligé de tout tester — fais ce que tu peux, en plusieurs sessions si besoin.\n\n' +
       '✅ MINIMUM REQUIS POUR RECEVOIR TON AN PRO :\n' +
       '   • Partie 1  — Installation & Onboarding        (~10 min)\n' +
@@ -338,7 +352,7 @@ function createSunTrailForm() {
     .setTitle('🌤️ Complet — Partie 7 : Bulletin météo')
     .setHelpText(
       'La météo se charge automatiquement lors de la navigation. ' +
-      'Accès : pastille météo en haut de l\'écran (température + icône).'
+      'Accès : pastille météo en haut de l\'écran (nom du lieu + température + icône).'
     );
 
   addCheckboxes(form, '[P7] Météo version gratuite', [
@@ -394,7 +408,7 @@ function createSunTrailForm() {
   addCheckboxes(form, '[P9] Activation mode testeur', [
     'Réglages → défilement bas → ligne dorée "⚙️ PARAMÈTRES AVANCÉS" appuyée (accordéon déplié)',
     'Bloc "Sources de données & Légal" visible en bas de la section',
-    'Texte grisé "v5.16.x" visible tout en bas',
+    'Texte grisé avec le numéro de version (ex: "v5.19.1") visible tout en bas',
     '7 taps rapides sur le numéro de version → message "🔓 Mode testeur Pro activé"',
   ]);
   addCheckboxes(form, '[P9] Vérification features Pro débloquées', [
@@ -402,8 +416,9 @@ function createSunTrailForm() {
     'Couches → tuile "Satellite" disponible (plus de badge PRO bloquant)',
     'Inclinomètre : widget ▲ XX° (XX%) visible en bas-gauche au LOD ≥ 13',
     'Inclinomètre : couleur change selon la pente (blanc → jaune → orange → rouge)',
+    'Calendrier solaire : dans la Timeline, changement de date débloqué (ex: 21 juin → ombres changent)',
     'Analyse solaire Pro : 5 blocs visibles',
-    'Météo Pro : données avancées + graphique visibles',
+    'Météo Pro : données avancées + graphique + prévision 3 jours visibles (jours 2-3 plus grisés)',
     '2e tracé GPX importé sans message de blocage',
     'Retap 7× → "🔒 Mode testeur Pro désactivé"',
   ]);
@@ -432,6 +447,22 @@ function createSunTrailForm() {
   ]);
   form.addParagraphTextItem()
     .setTitle('[P11] Problèmes de traduction ou de réglages ?');
+
+  const sC11b = form.addPageBreakItem()
+    .setTitle('🔍 Complet — Partie 11b : Recherche de lieu')
+    .setHelpText('Durée estimée : ~5 min — Teste la barre de recherche pour trouver des lieux.');
+
+  addCheckboxes(form, '[P11b] Recherche testée', [
+    'Onglet Recherche (icône loupe dans la barre de navigation) ouvert',
+    'Nom d\'une ville tapé (ex: "Zermatt") → résultats affichés rapidement',
+    'Résultat sélectionné → carte vole vers la position avec zoom adapté',
+    'Nom d\'un sommet connu tapé (ex: "Matterhorn" ou "Mont Blanc") → résultat affiché',
+    'Filtres chips testés : "Tout", "Villes", "Montagnes", "Pays"',
+    'Filtre "Montagnes" → sommets affichés avec altitude',
+    'Résultats classés de manière cohérente (pays, villes, sommets)',
+  ]);
+  form.addParagraphTextItem()
+    .setTitle('[P11b] La recherche était-elle réactive ? Résultats pertinents ?');
 
   const sC12 = form.addPageBreakItem()
     .setTitle('💳 Complet — Partie 12 : Test d\'achat (simulé)')
@@ -543,6 +574,9 @@ function createSunTrailForm() {
     .setTitle('[P15] Import GPX')
     .setBounds(1, 5).setLabels('Mauvais', 'Excellent');
   form.addScaleItem()
+    .setTitle('[P15] Recherche de lieu')
+    .setBounds(1, 5).setLabels('Mauvais', 'Excellent');
+  form.addScaleItem()
     .setTitle('[P15] Tutoriel d\'onboarding')
     .setBounds(1, 5).setLabels('Mauvais', 'Excellent');
   form.addScaleItem()
@@ -588,7 +622,7 @@ function createSunTrailForm() {
   ]);
 
   // Navigations de fin de section Rapide → section finale
-  sR9.setGoToPage(sFin);
+  sR10.setGoToPage(sFin);
 
   // Log du lien
   const url = form.getPublishedUrl();

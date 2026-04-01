@@ -579,7 +579,7 @@ export class SettingsSheet extends BaseComponent {
      */
     private updateProButtonState(btn: HTMLButtonElement): void {
         if (!btn) return;
-        
+
         if (state.isPro) {
             btn.innerHTML = '<span>✓</span><span data-i18n="settings.pro.active">Pro Actif</span>';
             btn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
@@ -591,5 +591,13 @@ export class SettingsSheet extends BaseComponent {
             btn.style.cursor = 'pointer';
             btn.disabled = false;
         }
+
+        // Met à jour les lignes informatives Pro (opacité + couleur check)
+        const infoRows = this.element?.querySelectorAll('.pro-info-row');
+        infoRows?.forEach(row => {
+            (row as HTMLElement).style.opacity = state.isPro ? '1' : '0.7';
+            const check = row.querySelector('.pro-check') as HTMLElement;
+            if (check) check.style.color = state.isPro ? '#22c55e' : 'var(--gold)';
+        });
     }
 }

@@ -84,7 +84,18 @@
       "inclinometerDesc": "Pendenza del terreno in tempo reale (°, %)",
       "weatherDesc": "Grafico 24h + Previsioni 3 giorni",
       "cta": "Passa a Pro",
-      "active": "Pro Attivo"
+      "active": "Pro Attivo",
+      "includedLabel": "Incluso con Pro",
+      "solarCalLabel": "Calendario solare",
+      "solarCalDesc": "Ombre per qualsiasi giorno dell'anno",
+      "solarAnalLabel": "Analisi solare Pro",
+      "solarAnalDesc": "Azimut, elevazione, grafico 24h, fase lunare",
+      "lodLabel": "Zoom LOD 18 + Satellite",
+      "lodDesc": "Dettaglio massimo — sentieri, edifici, vegetazione",
+      "gpxLabel": "Multi-tracce + Export GPX",
+      "gpxDesc": "Importa ed esporta tutte le escursioni che vuoi",
+      "offlineLabel": "Zone offline illimitate",
+      "offlineDesc": "Scarica tutte le regioni che vuoi"
     },
     "preset": {
       "eco": "Eco",
@@ -457,17 +468,21 @@
   },
   "upgrade": {
     "title": "Passa a Pro ✨",
+    "hero": {
+      "title": "Simulazione solare unica al mondo",
+      "subtitle": "Scopri esattamente quando il sole illumina il tuo sentiero. Ombre reali sul terreno 3D — per qualsiasi giorno dell'anno."
+    },
     "feature": {
-      "maxDetail": "Mappa dettaglio massimo (zoom LOD 18)",
-      "satellite": "Vista Satellite",
-      "buildings": "Edifici 3D — architettura realistica sul terreno (gratuito = solo 2D)",
-      "solarCalendar": "Calendario solare — simula le ombre per qualsiasi giorno dell'anno",
-      "solarAnalysis": "Analisi solare completa — azimut, elevazione, grafico 24h, fase lunare",
-      "weatherStation": "Stazione meteo avanzata — grafico 24h, previsioni 3 giorni, allerte montagna",
-      "inclinometer": "Inclinometro digitale — pendenza del terreno in tempo reale (°, %)",
-      "multiGpx": "Multi-tracce GPX — importa tutte le escursioni che vuoi",
-      "exportStats": "Export GPX + statistiche avanzate (VAM, pendenza media, Naismith)",
-      "offlineZones": "Zone offline illimitate — scarica tutte le regioni che vuoi (gratuito = 1 zona)"
+      "maxDetail": "Zoom LOD 18 massimo",
+      "satellite": "Vista Satellite HD",
+      "buildings": "Edifici 3D realistici",
+      "solarCalendar": "Calendario solare illimitato",
+      "solarAnalysis": "Analisi solare completa",
+      "weatherStation": "Meteo 3 giorni + allerte",
+      "inclinometer": "Inclinometro pendenza",
+      "multiGpx": "Multi-tracce GPX",
+      "exportStats": "Export GPX + statistiche",
+      "offlineZones": "Offline illimitato"
     },
     "plan": {
       "monthly": "Mensile",

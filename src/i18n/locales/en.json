@@ -84,7 +84,18 @@
       "inclinometerDesc": "Terrain slope in real-time (°, %)",
       "weatherDesc": "24h chart + 3-day forecast",
       "cta": "Upgrade to Pro",
-      "active": "Pro Active"
+      "active": "Pro Active",
+      "includedLabel": "Included with Pro",
+      "solarCalLabel": "Solar calendar",
+      "solarCalDesc": "Shadows for any day of the year",
+      "solarAnalLabel": "Pro solar analysis",
+      "solarAnalDesc": "Azimuth, elevation, 24h chart, moon phase",
+      "lodLabel": "LOD 18 zoom + Satellite",
+      "lodDesc": "Maximum detail — trails, buildings, vegetation",
+      "gpxLabel": "Multi-tracks + GPX export",
+      "gpxDesc": "Import and export as many hikes as you want",
+      "offlineLabel": "Unlimited offline zones",
+      "offlineDesc": "Download as many regions as you want"
     },
     "preset": {
       "eco": "Eco",
@@ -457,17 +468,21 @@
   },
   "upgrade": {
     "title": "Go Pro ✨",
+    "hero": {
+      "title": "World's only solar terrain simulation",
+      "subtitle": "See exactly when the sun hits your trail. Real shadows cast on 3D terrain — for any day of the year."
+    },
     "feature": {
-      "maxDetail": "Maximum detail map (LOD 18 zoom)",
-      "satellite": "Satellite View",
-      "buildings": "3D Buildings — realistic architecture on terrain (free = 2D only)",
-      "solarCalendar": "Solar calendar — simulate shadows for any day of the year",
-      "solarAnalysis": "Full solar analysis — azimuth, elevation, 24h chart, moon phase",
-      "weatherStation": "Advanced weather station — 24h chart, 3-day forecast, mountain alerts",
-      "inclinometer": "Digital inclinometer — terrain slope in real time (°, %)",
-      "multiGpx": "Multi-GPX tracks — import as many hikes as you want",
-      "exportStats": "GPX export + advanced stats (VAM, avg slope, Naismith)",
-      "offlineZones": "Unlimited offline zones — download as many regions as you want (free = 1 zone)"
+      "maxDetail": "LOD 18 maximum zoom",
+      "satellite": "HD Satellite view",
+      "buildings": "Realistic 3D buildings",
+      "solarCalendar": "Unlimited solar calendar",
+      "solarAnalysis": "Full solar analysis",
+      "weatherStation": "3-day weather + alerts",
+      "inclinometer": "Slope inclinometer",
+      "multiGpx": "Multi-GPX tracks",
+      "exportStats": "GPX export + stats",
+      "offlineZones": "Unlimited offline"
     },
     "plan": {
       "monthly": "Monthly",

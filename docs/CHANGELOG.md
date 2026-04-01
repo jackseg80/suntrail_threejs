@@ -4,6 +4,32 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.19.2] - 2026-04-01
+### 🎨 Panneau d'achat Pro refondu + Fix prix RevenueCat + Docs beta-test
+
+**Panneau d'achat (UpgradeSheet) :**
+- Hero block solaire en tête : "Simulation solaire unique au monde" avec fond gradient
+- Features en grille 2 colonnes compacte (labels raccourcis)
+- Fix : prix affichés `—` au lieu des vrais prix → `getPrices()` attend désormais l'init RevenueCat (max 5s)
+- Fix : retry automatique si le chargement des prix échoue (flag `_pricesLoaded` corrigé)
+
+**Section Pro des Réglages (SettingsSheet) :**
+- 5 lignes informatives ajoutées sous les 3 toggles existants : calendrier solaire, analyse solaire Pro, LOD 18 + Satellite, multi-tracés + export GPX, zones offline illimitées
+- Coches dorées (free) → vertes (Pro actif) avec transition d'opacité
+
+**Documentation beta-test :**
+- Protocoles testeurs mis à jour v5.19.1 (recherche, météo, roadmap, features Pro)
+- Section Recherche ajoutée dans les deux protocoles
+- Google Form (CREATE_GOOGLE_FORM.gs) aligné sur les nouveaux protocoles
+- Store listing restructuré : simulation solaire en section #1
+- README.md et FEATURES.md mis à jour v5.19.2
+- Messages testeurs : features Pro complétées
+
+**i18n (4 langues) :**
+- Nouvelles clés : `upgrade.hero.*`, features raccourcies, `settings.pro.*` (5 lignes informatives)
+
+---
+
 ## [5.19.1] - 2026-04-01
 ### 🛠️ Bugfixes UX + Panels Déplaçables + Anti-Spam Overpass
 

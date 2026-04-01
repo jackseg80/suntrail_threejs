@@ -62,7 +62,18 @@ Essaie chacun de ces gestes sur la carte :
 
 ---
 
-## 5. Bouton SOS
+## 5. Recherche de lieu
+
+- [ ] Appuie sur l'onglet **Recherche** (icône loupe dans la barre de navigation en bas)
+- [ ] Tape le nom d'un lieu (ex: "Zermatt") → des résultats apparaissent-ils ?
+- [ ] Sélectionne un résultat → la carte vole-t-elle vers cette position ?
+- [ ] Teste le filtre **"Montagnes"** → les sommets s'affichent-ils avec leur altitude ?
+
+**À noter :** la recherche était-elle réactive et les résultats pertinents ?
+
+---
+
+## 6. Bouton SOS
 
 - [ ] Repère le bouton **🆘** en haut à droite
 - [ ] Appuie dessus
@@ -73,7 +84,7 @@ Essaie chacun de ces gestes sur la carte :
 
 ---
 
-## 6. Test d'achat (simulé)
+## 7. Test d'achat (simulé)
 
 > ℹ️ En phase de test fermé, les achats sont **gratuits et fictifs** — Google Play simule la transaction en quelques secondes, aucune carte bancaire n'est débitée.
 
@@ -90,7 +101,7 @@ L'écran d'achat ("Passer à Pro ✨") s'ouvre automatiquement quand tu touches 
 
 ---
 
-## 7. Performance & Batterie
+## 8. Performance & Batterie
 
 Navigue librement pendant 5 minutes — zoom, dézoom, change de région.
 
@@ -105,7 +116,7 @@ Navigue librement pendant 5 minutes — zoom, dézoom, change de région.
 
 ---
 
-## 8. Rapport final
+## 9. Rapport final
 
 Réponds aux questions suivantes dans le formulaire de retour (lien fourni séparément) :
 
@@ -117,7 +128,7 @@ Réponds aux questions suivantes dans le formulaire de retour (lien fourni sépa
 
 ---
 
-## 9. Récupération de ta récompense
+## 10. Récupération de ta récompense
 
 > ⚠️ **À faire APRÈS le déploiement en production** (tu recevras un message)
 
@@ -135,7 +146,7 @@ Une fois l'application disponible publiquement sur le Play Store :
 
 SunTrail est en développement actif. En tant que testeur de la première heure, voici ce que tu verras arriver :
 
-### Bientôt (v5.18+)
+### Bientôt (v5.20+)
 - 🏔️ **Visibilité 360°** — quels sommets peut-on voir depuis ta position exacte ?
 - 🌍 **Autriche + nord de l'Italie** — mêmes données haute qualité qu'en CH/FR
 - 📸 **Mode Photo Pro** — capture sans UI + watermark GPS/altitude

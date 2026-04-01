@@ -22,10 +22,31 @@ const SDK_KEY = import.meta.env.VITE_REVENUECAT_KEY as string | undefined;
 
 class IAPService {
     private initialized = false;
+    private _initPromise: Promise<void> | null = null;
+
+    /** Attend que l'init soit terminée (max 5s) — utile si getPrices() est appelé avant que initialize() ait fini */
+    async waitForInit(timeoutMs = 5000): Promise<boolean> {
+        if (this.initialized) return true;
+        if (!this._initPromise) return false;
+        try {
+            await Promise.race([
+                this._initPromise,
+                new Promise<void>((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs)),
+            ]);
+            return this.initialized;
+        } catch {
+            return false;
+        }
+    }
 
     // ── Initialisation ────────────────────────────────────────────────────────
 
     async initialize(): Promise<void> {
+        this._initPromise = this._doInitialize();
+        return this._initPromise;
+    }
+
+    private async _doInitialize(): Promise<void> {
         // RevenueCat ne fonctionne que sur Android/iOS natif
         if (!Capacitor.isNativePlatform()) {
             console.log('[IAP] Web platform — RevenueCat skipped.');
@@ -175,6 +196,8 @@ class IAPService {
     /** Retourne les prix formatés pour affichage dans l'UpgradeSheet */
     async getPrices(): Promise<{ monthly: string; yearly: string; lifetime: string }> {
         const defaults = { monthly: '—', yearly: '—', lifetime: '—' };
+        // Attendre l'init si elle est en cours (max 5s)
+        if (!this.initialized) await this.waitForInit();
         if (!this.initialized) return defaults;
         try {
             const offering = await this.getCurrentOffering();
