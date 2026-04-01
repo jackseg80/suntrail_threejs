@@ -84,18 +84,21 @@ export function isPositionInFrance(lat: number, lon: number): boolean {
 }
 
 // --- GESTIONNAIRE OVERPASS LIFO ---
-let overpassQueue: { query: string, resolve: Function, retries: number }[] = [];
+let overpassQueue: { query: string, resolve: Function }[] = [];
 let isOverpassProcessing = false;
 let _overpassBackoffUntil = 0;     // Backoff GLOBAL : aucune requête avant ce timestamp
-const OVERPASS_DELAY = 1200;       // 1.2s entre requêtes (marge confortable)
-const OVERPASS_429_BACKOFF = 15000; // 15s de pause globale après un 429
-const OVERPASS_MAX_RETRIES = 1;    // Max 1 retry par requête après 429
-const OVERPASS_MAX_QUEUE = 12;     // Queue courte — dropper les plus anciennes agressivement
+let _overpassConsecutiveFails = 0;  // Compteur d'échecs consécutifs
+const OVERPASS_DELAY = 1200;       // 1.2s entre requêtes
+const OVERPASS_BASE_BACKOFF = 15000;  // 15s de base après un échec
+const OVERPASS_MAX_BACKOFF = 300000;  // 5 min max (après échecs répétés)
+const OVERPASS_MAX_QUEUE = 8;      // Queue courte
 
 export async function fetchOverpassData(query: string): Promise<any> {
+    // Pendant le backoff, refuser immédiatement les nouvelles requêtes (pas d'empilement)
+    if (Date.now() < _overpassBackoffUntil) return null;
+
     return new Promise((resolve) => {
-        overpassQueue.push({ query, resolve, retries: 0 });
-        // Dropper les plus anciennes si la queue déborde
+        overpassQueue.push({ query, resolve });
         while (overpassQueue.length > OVERPASS_MAX_QUEUE) {
             const dropped = overpassQueue.shift()!;
             dropped.resolve(null);
@@ -110,11 +113,11 @@ async function processNextOverpass() {
         return;
     }
 
-    // Backoff global : si on est en pause, attendre
     const now = Date.now();
     if (now < _overpassBackoffUntil) {
-        const wait = _overpassBackoffUntil - now;
-        setTimeout(processNextOverpass, wait);
+        // Vider toute la queue pendant le backoff — les appelants retenteront naturellement
+        while (overpassQueue.length > 0) overpassQueue.pop()!.resolve(null);
+        isOverpassProcessing = false;
         return;
     }
 
@@ -132,31 +135,34 @@ async function processNextOverpass() {
         const response = await fetch(`${server}?data=${encodeURIComponent(item.query)}`);
 
         if (response.status === 429 || response.status === 504) {
-            // Backoff GLOBAL : pause toute la queue, pas juste cette requête
-            _overpassBackoffUntil = Date.now() + OVERPASS_429_BACKOFF;
-            console.warn(`[Overpass] ${response.status} — backoff global ${OVERPASS_429_BACKOFF / 1000}s`);
+            _overpassConsecutiveFails++;
+            // Backoff exponentiel : 15s, 30s, 60s, 120s, 300s max
+            const backoff = Math.min(OVERPASS_BASE_BACKOFF * Math.pow(2, _overpassConsecutiveFails - 1), OVERPASS_MAX_BACKOFF);
+            _overpassBackoffUntil = Date.now() + backoff;
+            console.warn(`[Overpass] ${response.status} — backoff ${Math.round(backoff / 1000)}s (${_overpassConsecutiveFails} échecs consécutifs)`);
 
-            // Re-enqueue uniquement si pas déjà retried
-            if (item.retries < OVERPASS_MAX_RETRIES) {
-                item.retries++;
-                overpassQueue.push(item);
-            } else {
-                item.resolve(null); // Abandon après max retries
-            }
-
+            item.resolve(null); // Pas de retry — le cooldown de hydrology.ts protège la zone
+            // Vider la queue restante
+            while (overpassQueue.length > 0) overpassQueue.pop()!.resolve(null);
             isOverpassProcessing = false;
-            setTimeout(processNextOverpass, OVERPASS_429_BACKOFF);
             return;
         }
 
         if (!response.ok) {
             item.resolve(null);
         } else {
+            _overpassConsecutiveFails = 0; // Reset sur succès
             const data = await response.json();
             item.resolve(data);
         }
     } catch (e) {
+        _overpassConsecutiveFails++;
+        const backoff = Math.min(OVERPASS_BASE_BACKOFF * Math.pow(2, _overpassConsecutiveFails - 1), OVERPASS_MAX_BACKOFF);
+        _overpassBackoffUntil = Date.now() + backoff;
         item.resolve(null);
+        while (overpassQueue.length > 0) overpassQueue.pop()!.resolve(null);
+        isOverpassProcessing = false;
+        return;
     }
 
     setTimeout(processNextOverpass, OVERPASS_DELAY);
