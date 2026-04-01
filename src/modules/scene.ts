@@ -221,6 +221,8 @@ export async function initScene(): Promise<void> {
     );
 
     let lastRecenterTime = 0;
+    let lastLodChangeTime = 0;
+
     const throttledUpdate = throttle(() => {
         if (!state.controls || !state.camera) return;
 
@@ -242,16 +244,20 @@ export async function initScene(): Promise<void> {
 
         // Distance effective terrain-aware (v5.19) — exclure l'altitude "morte" du terrain
         // pour que getIdealZoom retourne un LOD adapte a la hauteur au-dessus du sol.
+        // En 3D, on pondère entre heightAboveGround et rawDist selon l'inclinaison
+        // pour éviter l'oscillation LOD quand la caméra est très inclinée.
         const cameraGroundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
         const heightAboveGround = Math.max(45, state.camera.position.y - cameraGroundH);
-        const horizontalDist = Math.sqrt(
-            (state.camera.position.x - state.controls.target.x) ** 2 +
-            (state.camera.position.z - state.controls.target.z) ** 2
-        );
-        const dist = state.IS_2D_MODE
-            ? heightAboveGround
-            : Math.max(heightAboveGround, horizontalDist, rawDist * 0.3);
-        
+        let dist: number;
+        if (state.IS_2D_MODE) {
+            dist = heightAboveGround;
+        } else {
+            // Blend : vue top-down → heightAboveGround pur, incliné → mix avec rawDist
+            const polar = state.controls.getPolarAngle();
+            const tiltBlend = THREE.MathUtils.clamp(polar / 1.2, 0, 1); // 0=top, 1=très incliné
+            dist = THREE.MathUtils.lerp(heightAboveGround, rawDist, tiltBlend * 0.5);
+        }
+
         let newZoom = state.ZOOM;
         const idealZoom = getIdealZoom(dist);
         
@@ -303,7 +309,16 @@ export async function initScene(): Promise<void> {
         }
 
         const currentZoom = state.ZOOM;
-        if (newZoom !== state.ZOOM) { state.ZOOM = newZoom; }
+        // Cooldown LOD : empêcher les changements trop fréquents (oscillation → bandes blanches)
+        const now = performance.now();
+        if (newZoom !== state.ZOOM) {
+            if (now - lastLodChangeTime > 800) {
+                state.ZOOM = newZoom;
+                lastLodChangeTime = now;
+            } else {
+                newZoom = state.ZOOM; // annuler le changement
+            }
+        }
 
         const gpsCenter = worldToLngLat(dx, dz, state.originTile);
         autoSelectMapSource(gpsCenter.lat, gpsCenter.lon);

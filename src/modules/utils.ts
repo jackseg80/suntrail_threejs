@@ -202,8 +202,9 @@ export async function fetchGeocoding(params: { lat?: number, lon?: number, query
         try {
             const r = await fetch(maptilerUrl);
             if (r.status === 403) {
-                console.warn("[MapTiler] Clé invalide détectée (403). Passage en mode Fallback OSM.");
-                state.isMapTilerDisabled = true;
+                console.warn("[MapTiler] Clé invalide détectée (403) sur geocoding. Backoff 5min.");
+                _geocodingBackoffUntil = Date.now() + 300_000;
+                return null;
             } else if (r.status === 429) {
                 console.warn("[MapTiler] Rate limit geocoding (429). Backoff 60s.");
                 _geocodingBackoffUntil = Date.now() + 60_000;

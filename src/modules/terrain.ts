@@ -691,10 +691,12 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
             if (!tile) {
                 tile = new Tile(tx, ty, zoom, key);
                 if (tile.isVisible() || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) { activeTiles.set(key, tile); insertTile(tile); loadQueue.add(tile); }
-            } else if (tile.status === 'loaded' && tile.zoom === zoom && buildsThisCycle < MAX_BUILDS_PER_CYCLE) {
+            } else if (tile.status === 'loaded' && tile.zoom === zoom && buildsThisCycle < MAX_BUILDS_PER_CYCLE && !state.isUserInteracting) {
+                // Résolution adaptative par distance — uniquement en idle pour éviter
+                // les bandes blanches pendant la rotation (buildMesh détruit l'ancien mesh).
                 const dist = Math.sqrt((tile.worldX - state.camera.position.x)**2 + (tile.worldZ - state.camera.position.z)**2);
-                let targetRes = (dist < tile.tileSizeMeters * 4.0) ? state.RESOLUTION : (dist < tile.tileSizeMeters * 8.0) ? Math.max(1, Math.floor(state.RESOLUTION/2)) : Math.max(1, Math.floor(state.RESOLUTION/4));
-                if (targetRes !== tile.currentResolution) { tile.buildMesh(targetRes); buildsThisCycle++; }
+                const targetRes = (dist < tile.tileSizeMeters * 4.0) ? state.RESOLUTION : (dist < tile.tileSizeMeters * 8.0) ? Math.max(1, Math.floor(state.RESOLUTION/2)) : Math.max(1, Math.floor(state.RESOLUTION/4));
+                if (targetRes !== tile.currentResolution && targetRes > tile.currentResolution) { tile.buildMesh(targetRes); buildsThisCycle++; }
             }
         }
     }
