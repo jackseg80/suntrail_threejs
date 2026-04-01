@@ -65,8 +65,9 @@ export function initUI(): void {
             .then(data => {
                 const keys: string[] = data?.maptiler_keys;
                 if (keys && keys.length > 0) {
-                    state.MK = keys[Math.floor(Math.random() * keys.length)];
-                    console.log(`[Config] Clé MapTiler distante chargée (1/${keys.length})`);
+                    const idx = Math.floor(Math.random() * keys.length);
+                    state.MK = keys[idx];
+                    console.log(`[Config] Clé MapTiler distante chargée (${idx + 1}/${keys.length})`);
                 }
             })
             .catch(() => { /* silencieux — la clé bundlée suffit */ });
