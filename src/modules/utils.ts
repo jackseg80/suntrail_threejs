@@ -84,14 +84,22 @@ export function isPositionInFrance(lat: number, lon: number): boolean {
 }
 
 // --- GESTIONNAIRE OVERPASS LIFO ---
-let overpassQueue: { query: string, resolve: Function }[] = [];
+let overpassQueue: { query: string, resolve: Function, retries: number }[] = [];
 let isOverpassProcessing = false;
-const OVERPASS_DELAY = 1000; // 1s entre requêtes (était 800ms — un peu plus de marge)
+let _overpassBackoffUntil = 0;     // Backoff GLOBAL : aucune requête avant ce timestamp
+const OVERPASS_DELAY = 1200;       // 1.2s entre requêtes (marge confortable)
+const OVERPASS_429_BACKOFF = 15000; // 15s de pause globale après un 429
+const OVERPASS_MAX_RETRIES = 1;    // Max 1 retry par requête après 429
+const OVERPASS_MAX_QUEUE = 12;     // Queue courte — dropper les plus anciennes agressivement
 
 export async function fetchOverpassData(query: string): Promise<any> {
     return new Promise((resolve) => {
-        overpassQueue.push({ query, resolve });
-        if (overpassQueue.length > 20) overpassQueue.shift();
+        overpassQueue.push({ query, resolve, retries: 0 });
+        // Dropper les plus anciennes si la queue déborde
+        while (overpassQueue.length > OVERPASS_MAX_QUEUE) {
+            const dropped = overpassQueue.shift()!;
+            dropped.resolve(null);
+        }
         if (!isOverpassProcessing) processNextOverpass();
     });
 }
@@ -102,40 +110,53 @@ async function processNextOverpass() {
         return;
     }
 
+    // Backoff global : si on est en pause, attendre
+    const now = Date.now();
+    if (now < _overpassBackoffUntil) {
+        const wait = _overpassBackoffUntil - now;
+        setTimeout(processNextOverpass, wait);
+        return;
+    }
+
     isOverpassProcessing = true;
-    const { query, resolve } = overpassQueue.pop()!;
+    const item = overpassQueue.pop()!;
 
     const servers = [
         'https://overpass-api.de/api/interpreter',
         'https://lz4.overpass-api.de/api/interpreter',
         'https://z.overpass-api.de/api/interpreter',
-        'https://overpass.kumi.systems/api/interpreter'
     ];
     const server = servers[Math.floor(Math.random() * servers.length)];
 
     try {
-        const response = await fetch(`${server}?data=${encodeURIComponent(query)}`);
-        
-        if (response.status === 429) {
-            // CORRECTION RACE CONDITION : libérer le verrou avant de partir en timeout.
-            // Appeler processNextOverpass() directement sans guard créait des instances
-            // concurrentes → bombardement exponentiel de l'API.
+        const response = await fetch(`${server}?data=${encodeURIComponent(item.query)}`);
+
+        if (response.status === 429 || response.status === 504) {
+            // Backoff GLOBAL : pause toute la queue, pas juste cette requête
+            _overpassBackoffUntil = Date.now() + OVERPASS_429_BACKOFF;
+            console.warn(`[Overpass] ${response.status} — backoff global ${OVERPASS_429_BACKOFF / 1000}s`);
+
+            // Re-enqueue uniquement si pas déjà retried
+            if (item.retries < OVERPASS_MAX_RETRIES) {
+                item.retries++;
+                overpassQueue.push(item);
+            } else {
+                item.resolve(null); // Abandon après max retries
+            }
+
             isOverpassProcessing = false;
-            setTimeout(() => {
-                overpassQueue.push({ query, resolve });
-                if (!isOverpassProcessing) processNextOverpass(); // Guard normal
-            }, 5000); // 5s de recul après un 429 (serveur en surcharge)
+            setTimeout(processNextOverpass, OVERPASS_429_BACKOFF);
             return;
         }
-        
+
         if (!response.ok) {
-            resolve(null);
+            item.resolve(null);
         } else {
             const data = await response.json();
-            resolve(data);
+            item.resolve(data);
         }
     } catch (e) {
-        resolve(null);
+        item.resolve(null);
     }
 
     setTimeout(processNextOverpass, OVERPASS_DELAY);
