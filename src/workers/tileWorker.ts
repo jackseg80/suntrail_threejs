@@ -135,8 +135,14 @@ async function fetchTile(url: string, isOffline: boolean, signal?: AbortSignal):
         const cached = await cache.match(url);
         if (cached) {
             const blob = await cached.blob();
-            const bitmap = await createImageBitmap(blob, { colorSpaceConversion: 'none' });
-            return { bitmap, fromCache: true };
+            // Rejeter les entrées cache corrompues (réponses 429 vides, < 100 bytes)
+            if (blob.size < 100) {
+                cache.delete(url);
+                // Fall through au fetch réseau
+            } else {
+                const bitmap = await createImageBitmap(blob, { colorSpaceConversion: 'none' });
+                return { bitmap, fromCache: true };
+            }
         }
         if (isOffline) return null;
         const response = await fetch(url, { mode: 'cors', signal });
