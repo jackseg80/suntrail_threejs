@@ -670,6 +670,15 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
     //   performance (RANGE=5) : floor(5/1.2)=4  → 4 (était 3 avec /1.5)
     //   ultra      (RANGE=12) : floor(12/1.2)=10 → 10 (était 8 avec /1.5)
     let range = (zoom <= 10) ? Math.max(state.RANGE, 3) : (zoom >= 17) ? Math.max(4, Math.floor(state.RANGE/1.2)) : state.RANGE;
+
+    // +1 tuile de rayon quand camera inclinee a LOD 14+ (couvre le frustum etendu)
+    if (!state.IS_2D_MODE && state.ZOOM >= 14 && state.controls) {
+        const polar = state.controls.getPolarAngle();
+        if (polar > 0.4) {
+            range = Math.min(range + 1, state.RANGE + 2);
+        }
+    }
+
     let buildsThisCycle = 0;
     const MAX_BUILDS_PER_CYCLE = state.isUserInteracting ? state.MAX_BUILDS_PER_CYCLE : state.MAX_BUILDS_PER_CYCLE * 2; 
 

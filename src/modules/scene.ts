@@ -53,7 +53,7 @@ export async function disposeScene(): Promise<void> {
 }
 
 // --- VOL CINÉMATIQUE (v4.6.5) ---
-export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevation: number = 0, targetDistance: number = 12000) {
+export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevation: number = 0, targetDistance: number = 12000, flyDuration: number = 2500) {
     if (!state.camera || !state.controls) return;
     
     if (state.isFollowingUser) {
@@ -77,7 +77,7 @@ export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevatio
     // captured startPos/endPos/startTarget/endTarget in this closure).
     state.isFlyingTo = true;
 
-    const duration = 2500; 
+    const duration = flyDuration;
     const startTime = performance.now();
 
     const animateFlight = (time: number) => {
@@ -87,11 +87,12 @@ export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevatio
 
         state.controls!.target.lerpVectors(startTarget, endTarget, ease);
         const currentPos = new THREE.Vector3().lerpVectors(startPos, endPos, ease);
-        const parabolaHeight = Math.sin(progress * Math.PI) * 5000; 
+        const maxElev = Math.max(startPos.y, endPos.y, targetElevation);
+        const parabolaHeight = Math.sin(progress * Math.PI) * Math.max(5000, maxElev * 0.8);
         currentPos.y += parabolaHeight;
-        
+
         const groundH = getAltitudeAt(currentPos.x, currentPos.z);
-        if (currentPos.y < groundH + 100) currentPos.y = groundH + 100;
+        if (currentPos.y < groundH + 200) currentPos.y = groundH + 200;
 
         state.camera!.position.copy(currentPos);
         state.controls!.update();
@@ -237,7 +238,19 @@ export async function initScene(): Promise<void> {
         }
 
         const dx = state.controls.target.x, dz = state.controls.target.z;
-        const dist = state.camera.position.distanceTo(state.controls.target);
+        const rawDist = state.camera.position.distanceTo(state.controls.target);
+
+        // Distance effective terrain-aware (v5.19) — exclure l'altitude "morte" du terrain
+        // pour que getIdealZoom retourne un LOD adapte a la hauteur au-dessus du sol.
+        const cameraGroundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
+        const heightAboveGround = Math.max(45, state.camera.position.y - cameraGroundH);
+        const horizontalDist = Math.sqrt(
+            (state.camera.position.x - state.controls.target.x) ** 2 +
+            (state.camera.position.z - state.controls.target.z) ** 2
+        );
+        const dist = state.IS_2D_MODE
+            ? heightAboveGround
+            : Math.max(heightAboveGround, horizontalDist, rawDist * 0.3);
         
         let newZoom = state.ZOOM;
         const idealZoom = getIdealZoom(dist);
@@ -466,10 +479,19 @@ export async function initScene(): Promise<void> {
         else if (state.ZOOM === 12) tiltCap = 0.70;
         else if (state.ZOOM === 13) tiltCap = 0.90;
         else if (state.ZOOM === 14) tiltCap = 1.10; 
-        else if (state.ZOOM === 15) tiltCap = 0.95; 
-        else if (state.ZOOM === 16) tiltCap = 0.80;
-        else if (state.ZOOM === 17) tiltCap = 0.65;
-        else if (state.ZOOM >= 18)  tiltCap = 0.50;
+        else if (state.ZOOM === 15) tiltCap = 0.85;
+        else if (state.ZOOM === 16) tiltCap = 0.65;
+        else if (state.ZOOM === 17) tiltCap = 0.50;
+        else if (state.ZOOM >= 18)  tiltCap = 0.40;
+
+        // Tilt cap dynamique par elevation (v5.19) — reduire le tilt autorise
+        // quand le terrain est eleve a LOD haut pour eviter que le frustum
+        // traverse les montagnes voisines. Reduction jusqu'a 50% sur l'Everest.
+        if (state.ZOOM >= 14 && !state.IS_2D_MODE) {
+            const targetH = getAltitudeAt(state.controls.target.x, state.controls.target.z);
+            const elevFactor = THREE.MathUtils.clamp(targetH / 8000, 0, 0.50);
+            tiltCap *= (1.0 - elevFactor);
+        }
 
         const interacting = state.isUserInteracting;
         const currentTilt = state.controls.getPolarAngle();
@@ -564,12 +586,28 @@ export async function initScene(): Promise<void> {
                 state.simDate = newDate;
             }
 
+            // Target elevation tracking (v5.19) — target.y suit la surface du terrain
+            // per-frame (render loop) pour un mouvement fluide.
+            // Lerp adaptatif : 0.08 pendant interaction (suit le pan), 0.03 en idle.
+            if (!state.isFlyingTo && !state.isFollowingUser) {
+                const targetGroundH = getAltitudeAt(state.controls.target.x, state.controls.target.z);
+                if (targetGroundH > 0) {
+                    const diff = targetGroundH - state.controls.target.y;
+                    if (Math.abs(diff) > 1) {
+                        const trackLerp = interacting ? 0.08 : 0.03;
+                        const yDelta = diff * trackLerp;
+                        state.controls.target.y += yDelta;
+                        state.camera.position.y += yDelta;
+                    }
+                }
+            }
+
             const groundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
             if (state.camera.position.y < groundH + 45) {
                 state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, groundH + 45, 0.2);
                 state.controls.update();
             }
-            state.controls.minDistance = Math.max(100, groundH * 0.1); 
+            state.controls.minDistance = Math.max(100, groundH * 0.1);
 
             if (state.scene.fog instanceof THREE.Fog) {
                 const alt = state.camera.position.y;
