@@ -461,7 +461,7 @@ export class SearchSheet extends BaseComponent {
         setTimeout(() => {
             const wp = lngLatToWorld(lon, lat, state.originTile);
             const flyAlt = isPeak ? ele * state.RELIEF_EXAGGERATION : 0;
-            flyTo(wp.x, wp.z, flyAlt, camDist, flyDuration);
+            flyTo(wp.x, wp.z, flyAlt, flyDuration);
         }, 100);
 
         // Coords panel for peaks
