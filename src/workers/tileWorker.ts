@@ -6,6 +6,11 @@
 
 // v2 : force un vidage du cache suite au fix de la bbox France (IGN 404 en cache navigateur)
 const CACHE_NAME = 'suntrail-tiles-v2';
+let _cacheStorage: Cache | null = null;
+async function getCache(): Promise<Cache> {
+    if (!_cacheStorage) _cacheStorage = await caches.open(CACHE_NAME);
+    return _cacheStorage;
+}
 
 /**
  * AbortControllers actifs par task ID.
@@ -62,8 +67,6 @@ self.onmessage = async (e) => {
                     transferables.push(results.pixelData);
 
                     // --- GÉNÉRATION NORMAL MAP ---
-                    // Utilise elevSourceZoom (zoom réel des données) pour calculer la taille des pixels
-                    // Cela corrige le bug où les pentes devenaient fausses à LOD > 14
                     const normalData = new Uint8ClampedArray(width * height * 4);
                     const sourceZ = elevSourceZoom || zoom || 14;
                     const tileSizeMeters = 40075016.686 / Math.pow(2, sourceZ);
@@ -131,7 +134,7 @@ self.onmessage = async (e) => {
 
 async function fetchTile(url: string, isOffline: boolean, signal?: AbortSignal): Promise<{ bitmap: ImageBitmap, fromCache: boolean, forbidden?: boolean, rateLimited?: boolean } | null> {
     try {
-        const cache = await caches.open(CACHE_NAME);
+        const cache = await getCache();
         const cached = await cache.match(url);
         if (cached) {
             const blob = await cached.blob();

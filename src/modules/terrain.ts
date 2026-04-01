@@ -45,21 +45,22 @@ async function processLoadQueue() {
     isProcessingQueue = true;
     state.isProcessingTiles = true;
     try {
+        // Cache isVisible() une fois par tuile pour éviter les frustum checks dupliqués
+        const visCache = new Map<Tile, boolean>();
+        const isVis = (t: Tile) => { let v = visCache.get(t); if (v === undefined) { v = t.isVisible(); visCache.set(t, v); } return v; };
+
         const sorted = Array.from(loadQueue).sort((a, b) => {
             if (!state.camera) return 0;
             const camPos = state.camera.position;
-            const aVis = a.isVisible() ? 1 : 0;
-            const bVis = b.isVisible() ? 1 : 0;
+            const aVis = isVis(a) ? 1 : 0;
+            const bVis = isVis(b) ? 1 : 0;
             if (aVis !== bVis) return bVis - aVis;
             const da = (a.worldX - camPos.x) ** 2 + (a.worldZ - camPos.z) ** 2;
             const db = (b.worldX - camPos.x) ** 2 + (b.worldZ - camPos.z) ** 2;
             return da - db;
         });
 
-        // Adaptive batch : +2 tuiles supplémentaires si beaucoup de tuiles visibles chargent encore.
-        // Conservateur (+2 au lieu de ×2) pour éviter de saturer la queue Overpass/hydrology
-        // avec trop de tiles simultanées qui déclenchent chacune un fetch Overpass.
-        const visiblePending = sorted.filter(t => t.isVisible()).length;
+        const visiblePending = sorted.filter(t => isVis(t)).length;
         const isTransitioning = visiblePending >= 4;
         const effectiveBatch = isTransitioning
             ? Math.max(1, state.MAX_BUILDS_PER_CYCLE + 2)
@@ -679,8 +680,6 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
         }
     }
 
-    let buildsThisCycle = 0;
-    const MAX_BUILDS_PER_CYCLE = state.isUserInteracting ? state.MAX_BUILDS_PER_CYCLE : state.MAX_BUILDS_PER_CYCLE * 2; 
 
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
@@ -691,12 +690,6 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
             if (!tile) {
                 tile = new Tile(tx, ty, zoom, key);
                 if (tile.isVisible() || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) { activeTiles.set(key, tile); insertTile(tile); loadQueue.add(tile); }
-            } else if (tile.status === 'loaded' && tile.zoom === zoom && buildsThisCycle < MAX_BUILDS_PER_CYCLE && !state.isUserInteracting) {
-                // Résolution adaptative par distance — uniquement en idle pour éviter
-                // les bandes blanches pendant la rotation (buildMesh détruit l'ancien mesh).
-                const dist = Math.sqrt((tile.worldX - state.camera.position.x)**2 + (tile.worldZ - state.camera.position.z)**2);
-                const targetRes = (dist < tile.tileSizeMeters * 4.0) ? state.RESOLUTION : (dist < tile.tileSizeMeters * 8.0) ? Math.max(1, Math.floor(state.RESOLUTION/2)) : Math.max(1, Math.floor(state.RESOLUTION/4));
-                if (targetRes !== tile.currentResolution && targetRes > tile.currentResolution) { tile.buildMesh(targetRes); buildsThisCycle++; }
             }
         }
     }

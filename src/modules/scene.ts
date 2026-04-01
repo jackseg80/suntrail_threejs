@@ -608,11 +608,16 @@ export async function initScene(): Promise<void> {
                 state.simDate = newDate;
             }
 
+            // Cache getAltitudeAt par frame — évite les appels dupliqués (target + camera)
+            const groundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
+
             // Target elevation tracking (v5.19) — target.y suit la surface du terrain
-            // per-frame (render loop) pour un mouvement fluide.
-            // Lerp adaptatif : 0.08 pendant interaction (suit le pan), 0.03 en idle.
             if (!state.isFlyingTo && !state.isFollowingUser) {
-                const targetGroundH = getAltitudeAt(state.controls.target.x, state.controls.target.z);
+                // Réutilise groundH si target ≈ camera, sinon calcul dédié
+                const targetGroundH = (Math.abs(state.controls.target.x - state.camera.position.x) < 100
+                    && Math.abs(state.controls.target.z - state.camera.position.z) < 100)
+                    ? groundH
+                    : getAltitudeAt(state.controls.target.x, state.controls.target.z);
                 if (targetGroundH > 0) {
                     const diff = targetGroundH - state.controls.target.y;
                     if (Math.abs(diff) > 1) {
@@ -623,8 +628,6 @@ export async function initScene(): Promise<void> {
                     }
                 }
             }
-
-            const groundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
             if (state.camera.position.y < groundH + 45) {
                 state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, groundH + 45, 0.2);
                 state.controls.update();
