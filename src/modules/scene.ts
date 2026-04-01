@@ -53,7 +53,7 @@ export async function disposeScene(): Promise<void> {
 }
 
 // --- VOL CINÉMATIQUE (v4.6.5) ---
-export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevation: number = 0, targetDistance: number = 12000) {
+export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevation: number = 0, targetDistance: number = 12000, flyDuration: number = 2500) {
     if (!state.camera || !state.controls) return;
     
     if (state.isFollowingUser) {
@@ -77,7 +77,7 @@ export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevatio
     // captured startPos/endPos/startTarget/endTarget in this closure).
     state.isFlyingTo = true;
 
-    const duration = 2500; 
+    const duration = flyDuration;
     const startTime = performance.now();
 
     const animateFlight = (time: number) => {
@@ -87,11 +87,13 @@ export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevatio
 
         state.controls!.target.lerpVectors(startTarget, endTarget, ease);
         const currentPos = new THREE.Vector3().lerpVectors(startPos, endPos, ease);
-        const parabolaHeight = Math.sin(progress * Math.PI) * 5000; 
+        // Parabole adaptee a l'elevation — plus haute quand on survole des montagnes
+        const maxElev = Math.max(startPos.y, endPos.y, targetElevation);
+        const parabolaHeight = Math.sin(progress * Math.PI) * Math.max(5000, maxElev * 0.8);
         currentPos.y += parabolaHeight;
-        
+
         const groundH = getAltitudeAt(currentPos.x, currentPos.z);
-        if (currentPos.y < groundH + 100) currentPos.y = groundH + 100;
+        if (currentPos.y < groundH + 200) currentPos.y = groundH + 200;
 
         state.camera!.position.copy(currentPos);
         state.controls!.update();
@@ -479,17 +481,17 @@ export async function initScene(): Promise<void> {
         else if (state.ZOOM === 12) tiltCap = 0.70;
         else if (state.ZOOM === 13) tiltCap = 0.90;
         else if (state.ZOOM === 14) tiltCap = 1.10; 
-        else if (state.ZOOM === 15) tiltCap = 0.95; 
-        else if (state.ZOOM === 16) tiltCap = 0.80;
-        else if (state.ZOOM === 17) tiltCap = 0.65;
-        else if (state.ZOOM >= 18)  tiltCap = 0.50;
+        else if (state.ZOOM === 15) tiltCap = 0.85;
+        else if (state.ZOOM === 16) tiltCap = 0.65;
+        else if (state.ZOOM === 17) tiltCap = 0.50;
+        else if (state.ZOOM >= 18)  tiltCap = 0.40;
 
         // Tilt cap dynamique par elevation (v5.19) — reduire le tilt autorise
         // quand le terrain est eleve a LOD haut pour eviter que le frustum
-        // traverse les montagnes voisines. Reduction jusqu'a 35% sur l'Everest.
+        // traverse les montagnes voisines. Reduction jusqu'a 50% sur l'Everest.
         if (state.ZOOM >= 14 && !state.IS_2D_MODE) {
             const targetH = getAltitudeAt(state.controls.target.x, state.controls.target.z);
-            const elevFactor = THREE.MathUtils.clamp(targetH / 10000, 0, 0.35);
+            const elevFactor = THREE.MathUtils.clamp(targetH / 8000, 0, 0.50);
             tiltCap *= (1.0 - elevFactor);
         }
 
@@ -588,13 +590,14 @@ export async function initScene(): Promise<void> {
 
             // Target elevation tracking (v5.19) — target.y suit la surface du terrain
             // per-frame (render loop) pour un mouvement fluide, pas dans throttledUpdate.
-            // Lerp 0.04 = convergence douce sur ~25 frames (~400ms a 60fps).
+            // Lerp adaptatif : 0.08 pendant interaction (suit le pan), 0.03 en idle.
             if (!state.isFlyingTo && !state.isFollowingUser) {
                 const targetGroundH = getAltitudeAt(state.controls.target.x, state.controls.target.z);
                 if (targetGroundH > 0) {
                     const diff = targetGroundH - state.controls.target.y;
                     if (Math.abs(diff) > 1) { // seuil 1m pour eviter les micro-ajustements
-                        const yDelta = diff * 0.04;
+                        const trackLerp = interacting ? 0.08 : 0.03;
+                        const yDelta = diff * trackLerp;
                         state.controls.target.y += yDelta;
                         state.camera.position.y += yDelta;
                     }
@@ -608,32 +611,10 @@ export async function initScene(): Promise<void> {
             }
             state.controls.minDistance = Math.max(100, groundH * 0.1);
 
-            // Far plane dynamique (v5.19) — reduire a LOD 15+ en 3D pour masquer
-            // les tuiles manquantes au loin. Valeurs proportionnelles au FOG_FAR du preset.
-            if (state.ZOOM >= 15 && !state.IS_2D_MODE) {
-                const lodFarRatio: Record<number, number> = { 15: 1.3, 16: 0.7, 17: 0.35, 18: 0.2 };
-                const targetFar = state.FOG_FAR * (lodFarRatio[Math.min(state.ZOOM, 18)] || 1.3);
-                if (Math.abs(state.camera.far - targetFar) > 500) {
-                    state.camera.far = THREE.MathUtils.lerp(state.camera.far, targetFar, 0.1);
-                    state.camera.updateProjectionMatrix();
-                }
-            } else if (state.camera.far < 3_900_000) {
-                state.camera.far = THREE.MathUtils.lerp(state.camera.far, 4_000_000, 0.1);
-                state.camera.updateProjectionMatrix();
-            }
-
             if (state.scene.fog instanceof THREE.Fog) {
                 const alt = state.camera.position.y;
-                let fogNear = (state.FOG_NEAR * 0.5) + (alt * 1.5);
-                let fogFar = (state.FOG_FAR * 0.5) + (alt * 8.0);
-                // Resserrer le fog a LOD 15+ pour masquer les gaps de tuiles (v5.19)
-                if (state.ZOOM >= 15 && !state.IS_2D_MODE) {
-                    const tightFactor = 1.0 - (state.ZOOM - 14) * 0.15;
-                    fogNear *= tightFactor;
-                    fogFar *= tightFactor;
-                }
-                state.scene.fog.near = fogNear;
-                state.scene.fog.far = fogFar;
+                state.scene.fog.near = (state.FOG_NEAR * 0.5) + (alt * 1.5);
+                state.scene.fog.far = (state.FOG_FAR * 0.5) + (alt * 8.0);
             }
 
             state.renderer.render(state.scene, state.camera);
