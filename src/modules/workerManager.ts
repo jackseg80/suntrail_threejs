@@ -37,13 +37,16 @@ class TileWorkerManager {
     }
 
     private handleMessage(e: MessageEvent) {
-        const { id, error, cacheHits, networkRequests, forbidden, ...data } = e.data;
-        
+        const { id, error, cacheHits, networkRequests, forbidden, rateLimited, ...data } = e.data;
+
         if (forbidden) {
             if (!state.isMapTilerDisabled) {
                 console.warn("[WorkerManager] 403 Forbidden reçu d'un worker. Désactivation de MapTiler et basculement OSM.");
                 state.isMapTilerDisabled = true;
             }
+        }
+        if (rateLimited) {
+            console.warn("[WorkerManager] 429 Rate limit MapTiler — les tuiles seront retentées automatiquement.");
         }
 
         if (cacheHits) state.cacheHits += cacheHits;

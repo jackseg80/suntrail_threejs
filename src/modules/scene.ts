@@ -296,7 +296,7 @@ export async function initScene(): Promise<void> {
         autoSelectMapSource(gpsCenter.lat, gpsCenter.lon);
 
         const distToLastWeather = Math.sqrt(Math.pow(gpsCenter.lat - state.lastWeatherLat, 2) + Math.pow(gpsCenter.lon - state.lastWeatherLon, 2));
-        if (distToLastWeather > 0.05) fetchWeather(gpsCenter.lat, gpsCenter.lon);
+        if (distToLastWeather > 0.05 && !state.isUserInteracting) fetchWeather(gpsCenter.lat, gpsCenter.lon);
 
         const distFromOrigin = Math.sqrt(dx*dx + dz*dz);
 

@@ -45,6 +45,7 @@ self.onmessage = async (e) => {
 
         if (elevRes) {
             if (elevRes.forbidden) results.forbidden = true;
+            if ((elevRes as any).rateLimited) results.rateLimited = true;
             if (elevRes.fromCache) results.cacheHits++; else results.networkRequests++;
             if (elevRes.bitmap) {
                 results.elevBitmap = elevRes.bitmap;
@@ -100,6 +101,7 @@ self.onmessage = async (e) => {
 
         if (colorRes) {
             if (colorRes.forbidden) results.forbidden = true;
+            if ((colorRes as any).rateLimited) results.rateLimited = true;
             if (colorRes.fromCache) results.cacheHits++; else results.networkRequests++;
             if (colorRes.bitmap) {
                 results.colorBitmap = colorRes.bitmap;
@@ -109,6 +111,7 @@ self.onmessage = async (e) => {
 
         if (overlayRes) {
             if (overlayRes.forbidden) results.forbidden = true;
+            if ((overlayRes as any).rateLimited) results.rateLimited = true;
             if (overlayRes.fromCache) results.cacheHits++; else results.networkRequests++;
             if (overlayRes.bitmap) {
                 results.overlayBitmap = overlayRes.bitmap;
@@ -126,7 +129,7 @@ self.onmessage = async (e) => {
     }
 };
 
-async function fetchTile(url: string, isOffline: boolean, signal?: AbortSignal): Promise<{ bitmap: ImageBitmap, fromCache: boolean, forbidden?: boolean } | null> {
+async function fetchTile(url: string, isOffline: boolean, signal?: AbortSignal): Promise<{ bitmap: ImageBitmap, fromCache: boolean, forbidden?: boolean, rateLimited?: boolean } | null> {
     try {
         const cache = await caches.open(CACHE_NAME);
         const cached = await cache.match(url);
@@ -138,6 +141,7 @@ async function fetchTile(url: string, isOffline: boolean, signal?: AbortSignal):
         if (isOffline) return null;
         const response = await fetch(url, { mode: 'cors', signal });
         if (response.status === 403) return { bitmap: null as any, fromCache: false, forbidden: true };
+        if (response.status === 429) return { bitmap: null as any, fromCache: false, rateLimited: true };
         if (!response.ok) return null;
         const blob = await response.blob();
         cache.put(url, new Response(blob.slice()));

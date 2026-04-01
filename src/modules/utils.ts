@@ -142,7 +142,12 @@ async function processNextOverpass() {
 }
 
 // --- GÉOCODAGE AVEC SECOURS (v5.4.7) ---
+let _geocodingBackoffUntil = 0; // timestamp until which geocoding is paused (429 backoff)
+
 export async function fetchGeocoding(params: { lat?: number, lon?: number, query?: string }): Promise<any> {
+    // Backoff global après un 429 — ne pas retenter avant l'expiration
+    if (Date.now() < _geocodingBackoffUntil) return null;
+
     if (state.isMapTilerDisabled && !params.lat) {
         // Si MapTiler est mort et qu'on fait une recherche par texte, Nominatim est risqué (CORS/429)
         // On tente quand même mais avec prudence
@@ -167,12 +172,18 @@ export async function fetchGeocoding(params: { lat?: number, lon?: number, query
             if (r.status === 403) {
                 console.warn("[MapTiler] Clé invalide détectée (403). Passage en mode Fallback OSM.");
                 state.isMapTilerDisabled = true;
+            } else if (r.status === 429) {
+                console.warn("[MapTiler] Rate limit geocoding (429). Backoff 60s.");
+                _geocodingBackoffUntil = Date.now() + 60_000;
+                return null;
             } else if (r.ok) {
                 const d = await r.json();
                 return d.features || d;
             }
         } catch (e) {
-            console.error("[MapTiler] Erreur réseau geocoding");
+            // Erreur réseau (CORS block sur 429, etc.) — backoff 30s
+            console.error("[MapTiler] Erreur réseau geocoding — backoff 30s");
+            _geocodingBackoffUntil = Date.now() + 30_000;
         }
     }
 
@@ -180,9 +191,14 @@ export async function fetchGeocoding(params: { lat?: number, lon?: number, query
     try {
         const r = await fetch(osmUrl, { headers: { 'User-Agent': 'SunTrail-3D-App' }});
         if (r.ok) return await r.json();
-        if (r.status === 429) console.warn("[OSM] Rate limit Nominatim atteint (429).");
+        if (r.status === 429) {
+            console.warn("[OSM] Rate limit Nominatim (429). Backoff 60s.");
+            _geocodingBackoffUntil = Date.now() + 60_000;
+            return null;
+        }
     } catch (e) {
-        console.warn("[OSM] Erreur CORS/Réseau Nominatim. La recherche peut être indisponible.");
+        // CORS block = probablement un 429 masqué — backoff 30s
+        _geocodingBackoffUntil = Date.now() + 30_000;
     }
 
     return null;
