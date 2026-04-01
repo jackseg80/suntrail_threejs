@@ -5,6 +5,7 @@ import { showToast } from '../../utils';
 import { i18n } from '../../../i18n/I18nService';
 import { worldToLngLat } from '../../geo';
 import { showUpgradePrompt } from '../../iap';
+import { attachDraggablePanel } from '../draggablePanel';
 import SunCalc from 'suncalc';
 
 export class TimelineComponent {
@@ -203,52 +204,21 @@ export class TimelineComponent {
         }
 
         const handle = bottomBar.querySelector<HTMLElement>('.timeline-drag-handle')!;
-        let startY = 0;
-        let startTime = 0;
-        let isDragging = false;
 
-        const onStart = (e: PointerEvent): void => {
-            startY = e.clientY;
-            startTime = Date.now();
-            isDragging = true;
-            handle.setPointerCapture(e.pointerId);
-            bottomBar.style.transition = 'none';
-        };
-
-        const onMove = (e: PointerEvent): void => {
-            if (!isDragging) return;
-            const delta = e.clientY - startY;
-            if (delta > 0) {
-                // Translate relative to open position (translate(-50%, 0))
-                bottomBar.style.transform = `translate(-50%, ${delta * 0.6}px)`;
-            }
-        };
-
-        const onEnd = (e: PointerEvent): void => {
-            if (!isDragging) return;
-            isDragging = false;
-            const delta = e.clientY - startY;
-            const duration = Date.now() - startTime;
-            const velocity = duration > 0 ? delta / duration : 0;
-
-            // Restore transition
-            bottomBar.style.transition = '';
-            bottomBar.style.transform = '';
-
-            if (delta > 60 || velocity > 0.3) {
+        // v5.19.1 : drag repositionnable + swipe dismiss via helper unifié
+        const cleanup = attachDraggablePanel({
+            panel: bottomBar,
+            handle,
+            customPosClass: 'panel-custom-pos',
+            onDismiss: () => {
                 void haptic('medium');
-                // Close: remove is-open + sync body class + toggle button
                 bottomBar.classList.remove('is-open');
                 document.body.classList.remove('timeline-open');
                 const toggleBtn = document.getElementById('timeline-toggle-btn');
                 if (toggleBtn) toggleBtn.classList.remove('active');
-            }
-        };
-
-        handle.addEventListener('pointerdown', onStart);
-        handle.addEventListener('pointermove', onMove);
-        handle.addEventListener('pointerup', onEnd);
-        handle.addEventListener('pointercancel', onEnd);
+            },
+        });
+        this.subscriptions.push(cleanup);
     }
 
     private syncDateInputLock(): void {

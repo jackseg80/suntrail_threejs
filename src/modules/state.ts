@@ -229,6 +229,7 @@ export interface State {
     isTiltTransitioning: boolean; // true during 2D↔3D smooth tilt animation
     isRecording: boolean;
     recordedPoints: LocationPoint[];
+    recoveredPoints: Array<{ lat: number; lon: number; alt: number; timestamp: number }> | null;
     
     userLocation: { lat: number; lon: number; alt: number } | null;
     userLocationAccuracy: number | null;
@@ -298,6 +299,7 @@ const initialState: State = {
     isTiltTransitioning: false,
     isRecording: false,
     recordedPoints: [],
+    recoveredPoints: null,
     
     userLocation: null, userLocationAccuracy: null, userHeading: null, isFollowingUser: false, userMarker: null,
     

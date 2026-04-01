@@ -28,6 +28,14 @@
       "tooShort": "Track too short for export",
       "exported": "GPX downloaded"
     },
+    "recovery": {
+      "title": "Recording recovered",
+      "body": "{{count}} points ({{mins}} min) from an interrupted recording were recovered.",
+      "restore": "Restore",
+      "discard": "Discard",
+      "restored": "✅ {{count}} points restored as track",
+      "discarded": "Recording discarded"
+    },
     "aria": {
       "close": "Close track",
       "rec": "Record a track",
@@ -483,6 +491,21 @@
       "restoring": "Restoring purchases…",
       "restored": "✅ Purchases restored!",
       "noRestore": "No purchases to restore."
+    }
+  },
+  "inclinometer": {
+    "label": "slope at center",
+    "aspect": "Direction",
+    "danger": {
+      "low": "Moderate terrain",
+      "moderate": "Steep terrain",
+      "high": "Very steep — avalanche zone",
+      "extreme": "Extreme slope"
+    },
+    "hint": "Critical avalanche zone: 30-45°",
+    "directions": {
+      "N": "N", "NE": "NE", "E": "E", "SE": "SE",
+      "S": "S", "SW": "SW", "W": "W", "NW": "NW"
     }
   },
   "common": {

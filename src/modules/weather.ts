@@ -11,6 +11,44 @@ const BOX_SIZE = 15000.0;
 
 let lastRequestId = 0;
 
+/** Extrait "Ville, Pays" depuis une réponse de géocodage inversé (MapTiler ou Nominatim). */
+function extractLocationName(feature: any, fallback: string): string {
+    // MapTiler : contexte structuré avec place/municipality/country
+    if (feature.context && Array.isArray(feature.context)) {
+        const place = feature.context.find((c: any) =>
+            c.id?.startsWith('place') || c.id?.startsWith('municipality'));
+        const country = feature.context.find((c: any) => c.id?.startsWith('country'));
+        if (place) {
+            const name = place.text_fr || place.text;
+            return country ? `${name}, ${country.text_fr || country.text}` : name;
+        }
+    }
+
+    // MapTiler/Nominatim : place_name "Rue, Ville, Région, Pays" → prendre Ville + Pays
+    const full = feature.place_name_fr || feature.place_name || '';
+    if (full) {
+        const parts = full.split(',').map((s: string) => s.trim());
+        if (parts.length >= 3) return `${parts[1]}, ${parts[parts.length - 1]}`;
+        if (parts.length === 2) return parts[1];
+        if (parts.length === 1) return parts[0];
+    }
+
+    // OSM Nominatim : champs structurés address.city / address.country
+    if (feature.address) {
+        const city = feature.address.city || feature.address.town
+            || feature.address.village || feature.address.municipality;
+        const country = feature.address.country;
+        if (city) return country ? `${city}, ${country}` : city;
+    }
+
+    // Dernier recours : display_name tronqué
+    if (feature.display_name) {
+        return feature.display_name.split(',').slice(1, 3).join(',').trim() || fallback;
+    }
+
+    return fallback;
+}
+
 export async function fetchWeather(lat: number, lon: number): Promise<void> {
     const requestId = ++lastRequestId;
     try {
@@ -29,8 +67,7 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
             if (geoData) {
                 const feature = Array.isArray(geoData) ? geoData[0] : (geoData.features ? geoData.features[0] : geoData);
                 if (feature) {
-                    locationName = feature.place_name_fr || feature.place_name || feature.display_name || feature.text_fr || feature.text || locationName;
-                    locationName = locationName.split(',')[0];
+                    locationName = extractLocationName(feature, locationName);
                 }
             }
         } catch (geoErr) { console.warn('[Weather] Geolocation reverse-geocoding failed silently:', geoErr); }

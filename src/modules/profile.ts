@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { state } from './state';
 import type { GPXLayer } from './state';
+import { attachDraggablePanel } from './ui/draggablePanel';
 
 interface ProfilePoint {
     dist: number; // Distance cumulée en km
@@ -243,7 +244,7 @@ export function closeElevationProfile(): void {
 
 let swipeAttached = false;
 
-/** Attache le geste swipe-to-dismiss sur le drag handle du profil */
+/** Attache le geste swipe-to-dismiss + drag repositionnable sur le drag handle du profil (v5.19.1) */
 function setupSwipeGesture(profileEl: HTMLElement): void {
     if (swipeAttached) return;
     swipeAttached = true;
@@ -251,41 +252,10 @@ function setupSwipeGesture(profileEl: HTMLElement): void {
     const handle = profileEl.querySelector<HTMLElement>('.profile-drag-handle');
     if (!handle) return;
 
-    let startY = 0;
-    let startTime = 0;
-    let isDragging = false;
-
-    handle.addEventListener('pointerdown', (e: PointerEvent) => {
-        startY = e.clientY;
-        startTime = Date.now();
-        isDragging = true;
-        handle.setPointerCapture(e.pointerId);
-        profileEl.style.transition = 'none';
+    attachDraggablePanel({
+        panel: profileEl,
+        handle,
+        customPosClass: 'panel-custom-pos',
+        onDismiss: () => closeElevationProfile(),
     });
-
-    handle.addEventListener('pointermove', (e: PointerEvent) => {
-        if (!isDragging) return;
-        const delta = e.clientY - startY;
-        if (delta > 0) {
-            profileEl.style.transform = `translate(-50%, ${delta * 0.6}px)`;
-        }
-    });
-
-    const onEnd = (e: PointerEvent) => {
-        if (!isDragging) return;
-        isDragging = false;
-        const delta = e.clientY - startY;
-        const duration = Date.now() - startTime;
-        const velocity = duration > 0 ? delta / duration : 0;
-
-        profileEl.style.transition = '';
-        profileEl.style.transform = '';
-
-        if (delta > 60 || velocity > 0.3) {
-            closeElevationProfile();
-        }
-    };
-
-    handle.addEventListener('pointerup', onEnd);
-    handle.addEventListener('pointercancel', onEnd);
 }

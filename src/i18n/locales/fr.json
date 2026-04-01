@@ -28,6 +28,14 @@
       "tooShort": "Tracé trop court pour export",
       "exported": "GPX téléchargé"
     },
+    "recovery": {
+      "title": "Enregistrement récupéré",
+      "body": "{{count}} points ({{mins}} min) d'un enregistrement interrompu ont été récupérés.",
+      "restore": "Restaurer",
+      "discard": "Supprimer",
+      "restored": "✅ {{count}} points restaurés comme tracé",
+      "discarded": "Enregistrement supprimé"
+    },
     "aria": {
       "close": "Fermer parcours",
       "rec": "Enregistrer un parcours",
@@ -483,6 +491,21 @@
       "restoring": "Restauration en cours…",
       "restored": "✅ Achats restaurés !",
       "noRestore": "Aucun achat à restaurer."
+    }
+  },
+  "inclinometer": {
+    "label": "pente au centre",
+    "aspect": "Direction",
+    "danger": {
+      "low": "Terrain modéré",
+      "moderate": "Terrain raide",
+      "high": "Très raide — zone avalanche",
+      "extreme": "Pente extrême"
+    },
+    "hint": "Zone critique avalanche : 30-45°",
+    "directions": {
+      "N": "N", "NE": "NE", "E": "E", "SE": "SE",
+      "S": "S", "SW": "SO", "W": "O", "NW": "NO"
     }
   },
   "common": {

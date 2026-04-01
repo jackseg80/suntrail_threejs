@@ -372,6 +372,13 @@ export async function initScene(): Promise<void> {
     
     controls.addEventListener('change', throttledUpdate);
 
+    // Mise à jour solaire throttlée quand la caméra bouge — corrige le soleil fixé sur la Suisse (v5.19.1)
+    const throttledSunUpdate = throttle(() => {
+        const mins = state.simDate.getHours() * 60 + state.simDate.getMinutes();
+        updateSunPosition(mins);
+    }, 1000);
+    controls.addEventListener('change', throttledSunUpdate);
+
     state.ambientLight = new THREE.AmbientLight(0xffffff, 0.2); state.scene.add(state.ambientLight);
     state.sunLight = new THREE.DirectionalLight(0xffffff, 6.0);
     state.sunLight.castShadow = state.SHADOWS;

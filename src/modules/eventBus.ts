@@ -10,6 +10,7 @@ type EventMap = {
     'sheetOpened': { id: string };
     'sheetClosed': { id: string | null };
     'localeChanged': { locale: string };
+    'recordingRecovered': void;
 };
 
 type Listener<T> = (payload: T) => void;

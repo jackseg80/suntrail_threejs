@@ -4,6 +4,7 @@ import { state } from './state';
 import { terrainUniforms } from './terrain';
 import { i18n } from '../i18n/I18nService';
 import { eventBus } from './eventBus';
+import { worldToLngLat } from './geo';
 
 /**
  * SunTrail Sun Position & Lighting Engine (v5.5.12)
@@ -34,8 +35,17 @@ export function updateSunPosition(minutes: number): void {
     const date = new Date(state.simDate);
     date.setHours(Math.floor(minutes / 60), Math.floor(minutes % 60), 0, 0);
     
-    const pos = SunCalc.getPosition(date, state.TARGET_LAT, state.TARGET_LON);
-    const moonPos = SunCalc.getMoonPosition(date, state.TARGET_LAT, state.TARGET_LON);
+    // Utiliser la position réelle de la caméra (pas TARGET_LAT/LON qui est fixe)
+    let lat = state.TARGET_LAT;
+    let lon = state.TARGET_LON;
+    if (state.controls?.target && state.originTile) {
+        const gps = worldToLngLat(state.controls.target.x, state.controls.target.z, state.originTile);
+        lat = gps.lat;
+        lon = gps.lon;
+    }
+
+    const pos = SunCalc.getPosition(date, lat, lon);
+    const moonPos = SunCalc.getMoonPosition(date, lat, lon);
     const moonIllum = SunCalc.getMoonIllumination(date);
     const altDeg = pos.altitude * 180 / Math.PI;
     _lastAltDeg = altDeg;

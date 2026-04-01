@@ -1,4 +1,4 @@
-# SunTrail - Base de Connaissance (v5.19.0)
+# SunTrail - Base de Connaissance (v5.19.1)
 
 Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTrail. Il consigne les décisions architecturales critiques et les solutions aux problèmes complexes.
 
@@ -28,6 +28,9 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 - **Haptics (v5.9.0)** : Helper `src/modules/haptics.ts` avec `haptic(type)`. Appel via `void haptic('medium')` (jamais await). Utilisé uniquement sur les swipes et les confirmations de succès — PAS sur les clics courants.
 - **Glassmorphism** : Style visuel unifié basé sur des variables CSS (`--glass-*`) avec flou de profondeur (20px) et saturation optimisée.
 - **Timeline FAB (v5.9.0)** : La classe `body.timeline-open` masque `.fab-stack` quand la timeline est ouverte. Togglée dans `TimelineComponent`. Ne pas utiliser le sélecteur CSS `~` (ordre DOM non garanti).
+- **DraggablePanel (v5.19.1)** : Helper `src/modules/ui/draggablePanel.ts` — rend un panel fixe repositionnable via son drag handle. Comportement : swipe bas = dismiss, maintenir 300ms = repositionnement libre (X+Y), double-tap = reset position d'origine. Guard `isActive` critique entre pointerdown/pointerup pour éviter les pointermove parasites au survol. Utilisé par TimelineComponent, profil d'élévation, et coords-pill. Classe CSS `.panel-custom-pos` override `bottom/transform` en mode repositionné.
+- **InclinometerWidget amélioré (v5.19.1)** : Tap = panel détail glassmorphism (direction pente en boussole N/NE/E/…, niveau de danger coloré, hint avalanche 30-45°). Drag = repositionner (hold 300ms + glisser). Double-tap = reset position. z-index 2100 (au-dessus de la nav bar 2000). i18n complet dans les 4 locales (`inclinometer.*`).
+- **Coords-pill déplaçable (v5.19.1)** : `#coords-pill` utilise `attachDraggablePanel()` — le pill entier sert de handle. Position reset à chaque nouveau clic sur la carte. `touch-action: none` + `cursor: grab` ajoutés au CSS.
 
 ### Sources Cartographiques LOD 6-10 (v5.15.0)
 - **OpenTopoMap à LOD ≤ 10 (v5.15.0)** : `getColorUrl()` utilise `{a|b|c}.tile.opentopomap.org` quand `zoom <= 10`. MapTiler n'est **pas** appelé à ces zooms — coût quota trop élevé pour une qualité identique, risque de 429 global. Rotation des 3 sous-domaines via `(tx+ty) % 3`. Licence CC-BY-SA.
@@ -271,6 +274,12 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 | Recherche très lente (Overpass bloque Promise.all) | `searchPeaksByName()` lancé en parallèle sur filtre "Tout" → timeout 8s bloque tous les résultats | Overpass lancé **uniquement** sur filtre "Montagnes". Timeout réduit à 5s. (v5.18.0) |
 | Sheets ne se ferment pas au clic sur la carte | `handleMapClick()` ne fermait que `layers-sheet` | Condition élargie : ferme tout sheet actif via `sheetManager.getActiveSheetId()`. (v5.18.0) |
 | Panneau PRO invisible sur PC/web (bouton Play Store absent) | `renderWebFallback()` injecte dans `.sheet-content` mais le template utilise `.upgrade-content` | Sélecteur corrigé → `.upgrade-content`. (v5.18.0) |
+| Météo affiche un numéro de rue au lieu de la ville | `locationName.split(',')[0]` ne garde que le 1er segment (la rue) de la réponse géocodage | Fonction `extractLocationName()` dans `weather.ts` — parse le contexte structuré MapTiler (`place`/`municipality`/`country`) ou les champs Nominatim (`address.city`/`country`). Fallback : 2e segment + dernier segment. (v5.19.1) |
+| Soleil/ombres fixes sur la Suisse (pas mondial) | `sun.ts:37` utilisait `state.TARGET_LAT/LON` (Brig, 46.8°N) — jamais mis à jour au pan caméra | `updateSunPosition()` dérive lat/lon depuis `worldToLngLat(controls.target)`. `scene.ts` ajoute `throttledSunUpdate` (1s) sur `controls 'change'`. (v5.19.1) |
+| UI minuscule après rotation paysage→portrait | Délai unique 300ms insuffisant sur certains Android WebView — viewport scale stuck | Triple retry (100/500/1000ms) avec double-set viewport meta + dispatch `resize` synthétique. Listener `visualViewport.resize` ajouté en filet de sécurité. (v5.19.1) |
+| REC GPS : app crash perd toutes les données | `main.ts` détectait l'interruption mais appelait `clearInterruptedRecording()` sans restaurer les points via `getPersistedRecordingPoints()` | Recovery async : `main.ts` attend `uiReady`, appelle `getPersistedRecordingPoints()`, émet `recordingRecovered`. `TrackSheet` affiche un prompt glassmorphism "Restaurer/Supprimer". Seuils persistance réduits (30→10 pts, 60s→20s). **Ne jamais mettre de gate Pro dans la restauration.** (v5.19.1) |
+| Inclinomètre invisible sous la nav bar / bouge au tap | z-index 30 sous la nav bar (2000). Drag activé par simple mouvement 8px (trop sensible pour mobile) | z-index 2100. Drag uniquement après hold 300ms (pas sur mouvement). Seuil annulation hold = 20px. (v5.19.1) |
+| Panel draggable bouge tout seul au survol souris | `pointermove` sans `pointerdown` actif utilisait `startY` d'une interaction précédente → déclenchait dismiss/repositionnement parasites | Guard `isActive` dans `draggablePanel.ts` : `pointermove` et `pointerup` ignorés si `!isActive`. Flag posé dans `pointerdown`, effacé dans `pointerup`. Double-tap met `isActive=false` immédiatement. (v5.19.1) |
 
 ## 💰 Freemium & IAP (v5.12)
 
@@ -401,6 +410,7 @@ src/
 │       │   ├── BaseComponent.ts    # Cycle de vie composant (hydrate/render/dispose)
 │       │   ├── ReactiveState.ts    # Proxy récursif
 │       │   └── SheetManager.ts     # Bottom sheets exclusives + focus trap
+│       ├── draggablePanel.ts       # Helper drag repositionnable (timeline, profil, coords-pill)
 │       └── components/
 │           ├── NavigationBar.ts    # Barre de navigation (tabs + 2D/3D)
 │           ├── TopStatusBar.ts     # Barre haut (LOD, météo, REC, SOS)

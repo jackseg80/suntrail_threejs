@@ -28,6 +28,14 @@
       "tooShort": "Traccia troppo corta per l'esportazione",
       "exported": "GPX scaricato"
     },
+    "recovery": {
+      "title": "Registrazione recuperata",
+      "body": "{{count}} punti ({{mins}} min) da una registrazione interrotta sono stati recuperati.",
+      "restore": "Ripristina",
+      "discard": "Elimina",
+      "restored": "✅ {{count}} punti ripristinati come traccia",
+      "discarded": "Registrazione eliminata"
+    },
     "aria": {
       "close": "Chiudi percorso",
       "rec": "Registra un percorso",
@@ -483,6 +491,21 @@
       "restoring": "Ripristino acquisti in corso…",
       "restored": "✅ Acquisti ripristinati!",
       "noRestore": "Nessun acquisto da ripristinare."
+    }
+  },
+  "inclinometer": {
+    "label": "pendenza al centro",
+    "aspect": "Direzione",
+    "danger": {
+      "low": "Terreno moderato",
+      "moderate": "Terreno ripido",
+      "high": "Molto ripido — zona valanghe",
+      "extreme": "Pendenza estrema"
+    },
+    "hint": "Zona critica valanghe: 30-45°",
+    "directions": {
+      "N": "N", "NE": "NE", "E": "E", "SE": "SE",
+      "S": "S", "SW": "SO", "W": "O", "NW": "NO"
     }
   },
   "common": {

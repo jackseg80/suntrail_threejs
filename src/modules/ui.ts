@@ -33,6 +33,7 @@ import { InclinometerWidget } from './ui/components/InclinometerWidget';
 import { initAutoHide } from './ui/autoHide';
 import { initMobileUI } from './ui/mobile';
 import { sheetManager } from './ui/core/SheetManager';
+import { attachDraggablePanel } from './ui/draggablePanel';
 
 // Référence de l'intervalle updateStorageUI (W5) — stockée pour permettre clearInterval si besoin
 let storageUIIntervalId: ReturnType<typeof setInterval> | null = null;
@@ -103,16 +104,30 @@ export function initUI(): void {
     if (techInfo) techInfo.style.display = 'block';
 
     window.addEventListener('resize', onWindowResize);
-    // Fix UI minuscule après rotation paysage→portrait sur Android WebView :
-    // le browser peut garder un zoom scale incorrect après orientationchange.
+    // Fix UI minuscule après rotation paysage→portrait sur Android WebView (v5.19.1) :
+    // Certains Android WebView nécessitent > 300ms pour finir la transition d'orientation.
+    // Triple retry + dispatch resize synthétique pour forcer le recalcul du layout.
     window.addEventListener('orientationchange', () => {
-        setTimeout(() => {
+        const forceViewportReset = () => {
             const vp = document.querySelector('meta[name="viewport"]');
-            if (vp) vp.setAttribute('content',
-                'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
+            if (vp) {
+                vp.setAttribute('content', 'width=device-width, initial-scale=1.0');
+                requestAnimationFrame(() => {
+                    vp.setAttribute('content',
+                        'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
+                });
+            }
             onWindowResize();
-        }, 300);
+            window.dispatchEvent(new Event('resize'));
+        };
+        setTimeout(forceViewportReset, 100);
+        setTimeout(forceViewportReset, 500);
+        setTimeout(forceViewportReset, 1000);
     });
+    // Filet de sécurité : visualViewport.resize est plus fiable que orientationchange sur Android moderne
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => onWindowResize());
+    }
     document.addEventListener('click', handleGlobalClick);
     
     const canvasContainer = document.getElementById('canvas-container');
@@ -359,6 +374,20 @@ export function initUI(): void {
         state.hasLastClicked = false;
     });
 
+    // Rendre le coords-pill déplaçable (v5.19.1)
+    const coordsPill = document.getElementById('coords-pill');
+    if (coordsPill) {
+        attachDraggablePanel({
+            panel: coordsPill,
+            handle: coordsPill, // Le pill entier sert de handle
+            customPosClass: 'panel-custom-pos',
+            onDismiss: () => {
+                coordsPill.classList.add('hidden');
+                state.hasLastClicked = false;
+            },
+        });
+    }
+
     const layersFab = document.getElementById('layers-fab');
     layersFab?.addEventListener('click', () => {
         sheetManager.toggle('layers-sheet');
@@ -467,6 +496,12 @@ function handleMapClick(e: MouseEvent) {
         
         const cp = document.getElementById('coords-pill');
         if (cp) {
+            // Reset position custom si le pill avait été déplacé
+            cp.classList.remove('panel-custom-pos');
+            cp.style.left = '';
+            cp.style.top = '';
+            cp.style.bottom = '';
+            cp.style.transform = '';
             cp.classList.remove('hidden');
             const gps = worldToLngLat(hit.x, hit.z, state.originTile);
             const clickLatLon = document.getElementById('click-latlon');

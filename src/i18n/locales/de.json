@@ -28,6 +28,14 @@
       "tooShort": "Strecke zu kurz für Export",
       "exported": "GPX heruntergeladen"
     },
+    "recovery": {
+      "title": "Aufzeichnung wiederhergestellt",
+      "body": "{{count}} Punkte ({{mins}} Min.) einer unterbrochenen Aufzeichnung wurden wiederhergestellt.",
+      "restore": "Wiederherstellen",
+      "discard": "Verwerfen",
+      "restored": "✅ {{count}} Punkte als Strecke wiederhergestellt",
+      "discarded": "Aufzeichnung verworfen"
+    },
     "aria": {
       "close": "Tour schliessen",
       "rec": "Tour aufzeichnen",
@@ -483,6 +491,21 @@
       "restoring": "Käufe werden wiederhergestellt…",
       "restored": "✅ Käufe wiederhergestellt!",
       "noRestore": "Keine Käufe zum Wiederherstellen."
+    }
+  },
+  "inclinometer": {
+    "label": "Neigung in der Mitte",
+    "aspect": "Richtung",
+    "danger": {
+      "low": "Moderates Gelände",
+      "moderate": "Steiles Gelände",
+      "high": "Sehr steil — Lawinenzone",
+      "extreme": "Extremes Gefälle"
+    },
+    "hint": "Kritische Lawinenzone: 30-45°",
+    "directions": {
+      "N": "N", "NE": "NO", "E": "O", "SE": "SO",
+      "S": "S", "SW": "SW", "W": "W", "NW": "NW"
     }
   },
   "common": {

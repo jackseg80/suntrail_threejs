@@ -7,7 +7,7 @@ import { showUpgradePrompt } from '../../iap';
 import { haptic } from '../../haptics';
 import { i18n } from '../../../i18n/I18nService';
 import gpxParser from 'gpxparser';
-import { startRecordingService, stopRecordingService } from '../../foregroundService';
+import { startRecordingService, stopRecordingService, clearInterruptedRecording } from '../../foregroundService';
 import { updateVisibleTiles, addGPXLayer, removeGPXLayer, toggleGPXLayer, updateRecordedTrackMesh } from '../../terrain';
 import { lngLatToTile, lngLatToWorld } from '../../geo';
 import { updateElevationProfile } from '../../profile';
@@ -141,6 +141,79 @@ export class TrackSheet extends BaseComponent {
         
         this.updateRecUI();
         this.updateStats();
+
+        // Écouter la récupération d'un enregistrement interrompu (v5.19.1)
+        eventBus.on('recordingRecovered', () => this.showRecoveryPrompt());
+    }
+
+    /** Affiche un prompt pour restaurer ou supprimer les points récupérés après un crash. */
+    private showRecoveryPrompt(): void {
+        const pts = state.recoveredPoints;
+        if (!pts || pts.length < 2) return;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'rec-recovery-overlay';
+        overlay.style.cssText = `
+            position: fixed; inset: 0; z-index: 9500;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.5);
+        `;
+        const panel = document.createElement('div');
+        panel.style.cssText = `
+            background: var(--glass-bg, rgba(30,30,50,0.92));
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-radius: var(--radius-xl, 16px);
+            padding: var(--space-4, 20px);
+            max-width: 320px; width: 90%;
+            color: var(--text-1, #fff);
+            text-align: center;
+        `;
+
+        const mins = pts.length > 0
+            ? Math.round((pts[pts.length - 1].timestamp - pts[0].timestamp) / 60000)
+            : 0;
+
+        panel.innerHTML = `
+            <div style="font-size:var(--text-lg,18px);font-weight:700;margin-bottom:var(--space-2,8px)">
+                ${i18n.t('track.recovery.title')}
+            </div>
+            <div style="font-size:var(--text-sm,14px);margin-bottom:var(--space-3,12px);opacity:0.85">
+                ${i18n.t('track.recovery.body', { count: String(pts.length), mins: String(mins) })}
+            </div>
+            <div style="display:flex;gap:var(--space-2,8px);justify-content:center">
+                <button id="rec-recovery-restore" style="
+                    padding:10px 20px;border:none;border-radius:var(--radius-sm,8px);
+                    background:var(--accent,#4f8cff);color:#fff;font-weight:600;cursor:pointer;
+                ">${i18n.t('track.recovery.restore')}</button>
+                <button id="rec-recovery-discard" style="
+                    padding:10px 20px;border:1px solid rgba(255,255,255,0.2);border-radius:var(--radius-sm,8px);
+                    background:transparent;color:var(--text-2,#a0a4bc);font-weight:600;cursor:pointer;
+                ">${i18n.t('track.recovery.discard')}</button>
+            </div>
+        `;
+        overlay.appendChild(panel);
+        document.body.appendChild(overlay);
+
+        document.getElementById('rec-recovery-restore')?.addEventListener('click', async () => {
+            // Injecter les points récupérés dans state et sauvegarder comme layer GPX
+            state.recordedPoints = pts.map(p => ({ lat: p.lat, lon: p.lon, alt: p.alt, timestamp: p.timestamp }));
+            await this.saveRecordedGPXInternal();
+            state.recordedPoints = [];
+            state.recoveredPoints = null;
+            clearInterruptedRecording();
+            void stopRecordingService();
+            overlay.remove();
+            void haptic('success');
+            showToast(i18n.t('track.recovery.restored', { count: String(pts.length) }));
+        });
+
+        document.getElementById('rec-recovery-discard')?.addEventListener('click', () => {
+            state.recoveredPoints = null;
+            clearInterruptedRecording();
+            void stopRecordingService();
+            overlay.remove();
+            showToast(i18n.t('track.recovery.discarded'));
+        });
     }
 
     private createEmptyState(): void {

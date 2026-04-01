@@ -32,8 +32,8 @@ const RecordingNative = Capacitor.isNativePlatform()
 
 const SNAPSHOT_KEY  = 'suntrail_rec_snapshot_v1';
 const POINTS_FILE   = 'suntrail_rec_points_v1.json';
-const PERSIST_EVERY_N       = 30;         // Écrire sur disque tous les 30 nouveaux points…
-const PERSIST_INTERVAL_MS   = 60_000;     // …ou toutes les 60 secondes (selon le premier)
+const PERSIST_EVERY_N       = 10;         // Écrire sur disque tous les 10 nouveaux points (v5.19.1 — réduit de 30)
+const PERSIST_INTERVAL_MS   = 20_000;     // …ou toutes les 20 secondes (v5.19.1 — réduit de 60s)
 
 let _lastPersistedCount = 0;
 let _lastPersistTime    = 0;
