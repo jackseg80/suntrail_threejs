@@ -163,7 +163,7 @@ SunTrail 3D is the only hiking app that projects real sun shadows onto actual 3D
 ━━━━━━━━━━━━━━━━━━━━━━━
 🔒 COMPLETE PRIVACY
 ━━━━━━━━━━━━━━━━━━━━━━━
-• No account, no registration
+• No account required — purchases managed via Google Play
 • No data transmitted to our servers
 • GPS used in foreground only, never shared
 • Your tracks stay on your device
