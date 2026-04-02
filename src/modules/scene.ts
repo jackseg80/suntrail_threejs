@@ -495,12 +495,12 @@ export async function initScene(): Promise<void> {
 
         updateCompassAnimation();
 
-        let tiltCap = 1.10; 
+        let tiltCap = 1.10;
         if (state.ZOOM <= 10) tiltCap = 0;
         else if (state.ZOOM === 11) tiltCap = 0.45;
         else if (state.ZOOM === 12) tiltCap = 0.70;
         else if (state.ZOOM === 13) tiltCap = 0.90;
-        else if (state.ZOOM === 14) tiltCap = 1.10; 
+        else if (state.ZOOM === 14) tiltCap = 0.95; // était 1.10 (63°) — spike inutile, frustum trop étendu
         else if (state.ZOOM === 15) tiltCap = 0.85;
         else if (state.ZOOM === 16) tiltCap = 0.65;
         else if (state.ZOOM === 17) tiltCap = 0.50;
