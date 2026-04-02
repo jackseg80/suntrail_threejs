@@ -2,6 +2,7 @@ import './style.css';
 import { initUI } from './modules/ui';
 import { initBatteryManager } from './modules/performance';
 import { initNetworkMonitor } from './modules/networkMonitor';
+import { initEmbeddedOverview } from './modules/tileLoader';
 import { registerSW } from 'virtual:pwa-register';
 import { getInterruptedRecording, clearInterruptedRecording, getPersistedRecordingPoints, stopRecordingService } from './modules/foregroundService';
 import { showToast } from './modules/utils';
@@ -52,6 +53,9 @@ if (interrupted) {
 // Détection réseau (event-driven, zéro polling) — avant initUI pour que state.isNetworkAvailable
 // soit disponible quand l'overlay de chargement vérifie la connectivité
 void initNetworkMonitor();
+
+// Monte l'archive de tuiles overview embarquée (LOD 5-7, Europe) — fire-and-forget
+void initEmbeddedOverview();
 
 // Lancement de l'initialisation globale de l'interface
 initUI();

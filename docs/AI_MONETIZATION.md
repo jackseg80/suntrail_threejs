@@ -63,6 +63,41 @@
 
 ---
 
+## Offline & Packs Pays (v5.20+)
+
+### Tuiles embarquées (implémenté)
+
+- Archive `europe-overview.pmtiles` (~20 MB) dans `public/tiles/` : LOD 5-7 Europe + LOD 8-11 Suisse.
+- Montée automatiquement au démarrage via `initEmbeddedOverview()`.
+- Free et Pro : aucun gate (c'est le premier affichage de base).
+- Voir `AI_ARCHITECTURE.md` § "Tuiles Embarquées" pour les détails techniques.
+
+### Zones offline (implémenté)
+
+- `downloadVisibleZone()` télécharge les tuiles visibles dans le Cache API.
+- Free : 1 zone, Pro : illimité. Gate dans `ConnectivitySheet.ts`.
+- Compteur : `localStorage` clé `suntrail-offline-zones-count`.
+
+### Packs pays optionnels (roadmap)
+
+Fichiers PMTiles par pays/région, téléchargeables in-app après achat IAP non-consumable (RevenueCat).
+
+| Pack | LOD | Taille estimée | Prix cible |
+| ---- | --- | -------------- | ---------- |
+| Suisse HD | 12-14 | ~300 MB | 4.99 CHF |
+| France Alpes | 12-14 | ~200 MB | 3.99 EUR |
+| Autriche Tyrol | 12-14 | ~150 MB | 2.99 EUR |
+| Dolomites | 12-14 | ~120 MB | 2.99 EUR |
+| Pack Alpin complet | 12-14 | ~700 MB | 9.99 EUR |
+
+**Architecture prévue** : `mountedPacks: Map<string, TilePack>` dans `tileLoader.ts`, UI dans `PacksSheet.ts`, stockage `@capacitor/filesystem` (Android) ou OPFS (PWA).
+
+**Hébergement CDN** : Cloudflare R2 (10 GB gratuit, 10M reads/mois gratuits). Les PMTiles supportent HTTP Range requests — l'app ne charge que les tuiles visibles, pas le fichier entier. Utilisable aussi en mode **streaming** (sans téléchargement complet) comme alternative rapide aux providers distants.
+
+**Gating** : Free = 1 pack LOD 6-12, Pro = illimité + LOD 13+.
+
+---
+
 ## Gate LOD Pro (v5.14.0)
 
 - **⚠️ RÈGLE CRITIQUE** : `MAX_ALLOWED_ZOOM` reflète toujours la valeur native du preset (14/16/18). **Ne jamais l'écraser à 14 pour les gratuits.**

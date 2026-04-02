@@ -12,13 +12,14 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat). 4 langues (FR/DE/IT/EN).
 
 ## Commandes
 
-| Commande          | Usage                                              |
-|-------------------|----------------------------------------------------|
-| `npm run dev`     | Serveur Vite local (HMR)                           |
-| `npm run check`   | TypeScript strict (`tsc --noEmit`)                 |
-| `npm test`        | Suite Vitest (398+ tests)                          |
-| `npm run build`   | Build production (Terser, code splitting)          |
-| `npm run deploy`  | `check` + `build` + `cap sync` (avant mobile)     |
+| Commande                 | Usage                                                     |
+| ------------------------ | --------------------------------------------------------- |
+| `npm run dev`            | Serveur Vite local (HMR)                                  |
+| `npm run check`          | TypeScript strict (`tsc --noEmit`)                        |
+| `npm test`               | Suite Vitest (398+ tests)                                 |
+| `npm run build`          | Build production (Terser, code splitting)                 |
+| `npm run deploy`         | `check` + `build` + `cap sync` (avant mobile)             |
+| `npm run build-overview` | Génère `public/tiles/europe-overview.pmtiles` (one-shot)  |
 
 ## ⚠️ Règles Critiques
 
@@ -89,7 +90,7 @@ src/
 │   ├── eventBus.ts             # Pub/sub transversal
 │   ├── scene.ts                # Scène Three.js, render loop, needsUpdate
 │   ├── terrain.ts              # Génération terrain, tuiles, LOD
-│   ├── tileLoader.ts           # Fetch tuiles, sources carto, AbortController
+│   ├── tileLoader.ts           # Fetch tuiles, sources carto, PMTiles embarqué
 │   ├── tileCache.ts            # Cache LRU avec protection tuiles actives
 │   ├── workerManager.ts        # Pool de workers (4 mobile / 8 desktop)
 │   ├── geo.ts                  # Web Mercator, conversions coordonnées
@@ -120,6 +121,10 @@ src/
 ├── workers/
 │   └── tileWorker.ts           # Fetch + Normal Maps async
 └── test/                       # 398+ tests Vitest
+scripts/
+└── build-overview-tiles.ts     # Génération europe-overview.pmtiles (one-shot)
+public/tiles/
+└── europe-overview.pmtiles     # ~20 MB, LOD 5-7 Europe + LOD 8-11 Suisse (gitignored)
 ```
 
 ## Documentation Détaillée

@@ -28,6 +28,9 @@ npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
 
+# Tuiles overview générées (build-overview-tiles.ts)
+public/tiles/*.pmtiles
+
 # Vite
 *.local
 

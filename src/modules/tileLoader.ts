@@ -11,6 +11,12 @@ export const CACHE_NAME = 'suntrail-tiles-v5.11';
 let localPMTiles: pmtiles.PMTiles | null = null;
 let pmtilesController: AbortController | null = null;
 
+// --- EMBEDDED OVERVIEW (v5.20.0) ---
+// Archive PMTiles pré-embarquée dans l'APK (LOD 5-7, Europe)
+// Séparée de localPMTiles pour ne pas interférer avec les uploads utilisateur
+let embeddedPMTiles: pmtiles.PMTiles | null = null;
+const EMBEDDED_MAX_ZOOM = 11; // LOD 5-7 Europe + LOD 8-11 Suisse
+
 /**
  * Configure une source PMTiles locale (fichier ou URL HTTP Range).
  */
@@ -55,6 +61,39 @@ async function getTileFromPMTiles(z: number, x: number, y: number): Promise<Blob
         if ((e as Error).name !== 'AbortError') {
             console.warn(`[PMTiles] Tuile manquante: ${z}/${x}/${y}`);
         }
+    }
+    return null;
+}
+
+/**
+ * Monte l'archive PMTiles overview embarquée dans l'APK/PWA (LOD 5-7 Europe).
+ * Appelée une fois au démarrage, fire-and-forget.
+ */
+export async function initEmbeddedOverview(): Promise<void> {
+    try {
+        const url = './tiles/europe-overview.pmtiles';
+        const resp = await fetch(url, { method: 'HEAD' });
+        if (!resp.ok) return;
+        embeddedPMTiles = new pmtiles.PMTiles(url);
+        const header = await embeddedPMTiles.getHeader();
+        console.log(`[Embedded] Overview chargé. LOD ${header.minZoom}-${header.maxZoom}, ${header.numTileEntries} tuiles`);
+    } catch {
+        embeddedPMTiles = null;
+    }
+}
+
+/**
+ * Tente d'extraire une tuile depuis l'archive overview embarquée (LOD ≤ 7 seulement).
+ */
+async function getTileFromEmbedded(z: number, x: number, y: number): Promise<Blob | null> {
+    if (!embeddedPMTiles || z > EMBEDDED_MAX_ZOOM) return null;
+    try {
+        const tileData = await embeddedPMTiles.getZxy(z, x, y);
+        if (tileData && tileData.data) {
+            return new Blob([tileData.data], { type: 'image/webp' });
+        }
+    } catch {
+        // Tuile hors bounds ou erreur silencieuse
     }
     return null;
 }
@@ -115,6 +154,18 @@ export async function fetchWithCache(url: string, usePersistentCache: boolean = 
                 return await cached.blob();
             }
         }
+        // Fallback embedded overview (LOD 5-7) — avant le réseau
+        if (embeddedPMTiles) {
+            const em = url.match(/\/(\d+)\/(\d+)\/(\d+)(?:@2x)?\.(jpeg|jpg|png|webp)/i);
+            if (em) {
+                const ez = parseInt(em[1]);
+                if (ez <= EMBEDDED_MAX_ZOOM) {
+                    const blob = await getTileFromEmbedded(ez, parseInt(em[2]), parseInt(em[3]));
+                    if (blob) return blob;
+                }
+            }
+        }
+
         if (state.IS_OFFLINE) return null;
         const r = await fetch(url, { mode: 'cors' });
         if (r.ok) {

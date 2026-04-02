@@ -47,13 +47,39 @@
 
 ---
 
+## Tuiles Embarquées — Overview PMTiles (v5.20)
+
+Archive PMTiles pré-embarquée dans l'APK et la PWA (`public/tiles/europe-overview.pmtiles`, ~20 MB) :
+
+- **LOD 5-7** : Europe entière (OpenTopoMap) — 914 tuiles
+- **LOD 8-10** : Suisse (OpenTopoMap) — 202 tuiles
+- **LOD 11** : Suisse (SwissTopo pixelkarte-farbe) — 532 tuiles
+
+**Architecture** :
+
+- Variable `embeddedPMTiles` séparée de `localPMTiles` (ne conflicte pas avec les uploads utilisateur)
+- `initEmbeddedOverview()` appelé au démarrage dans `main.ts` (fire-and-forget)
+- `EMBEDDED_MAX_ZOOM = 11` — l'archive n'est consultée que pour les LOD ≤ 11
+
+**Priorité de résolution dans `fetchWithCache()`** :
+
+1. `localPMTiles` (upload utilisateur) — priorité max
+2. Cache API persistant (tuiles déjà téléchargées)
+3. `embeddedPMTiles` (LOD ≤ 11) — fallback offline
+4. Réseau (providers distants)
+
+**Build** : `npm run build-overview` → `scripts/build-overview-tiles.ts` (sharp + pmtiles, one-shot).
+Le fichier est exclu du précache Workbox (`globIgnores: ['**/*.pmtiles']`) et du git (`public/tiles/*.pmtiles`).
+
+---
+
 ## Moteur de Tuiles (`terrain.ts` / `tileLoader.ts`)
 
 - **Sélection source par 4 coins (v5.14.1)** : `isTileFullyInRegion()` au lieu du centre. SwissTopo/IGN uniquement si tous les 4 coins sont dans le pays, sinon fallback MapTiler/OSM.
-- **WebWorkers Pool** : 8 workers asynchrones (`tileWorker.ts`) pour fetch et calcul Normal Maps.
+- **WebWorkers Pool** : 4 workers mobile / 8 desktop (`tileWorker.ts`) pour fetch et calcul Normal Maps.
 - **Material Pooling (`materialPool.ts`)** : Réutilisation des shaders — évite les micro-saccades de compilation Three.js.
 - **Gestion Mémoire (`memory.ts`)** : `disposeObject()` strict pour libérer la VRAM.
-- **Offline-First & PMTiles** : PWA (Service Worker) + fichiers `.pmtiles` locaux.
+- **Offline-First & PMTiles** : PWA (Service Worker) + archive `.pmtiles` embarquée + fichiers `.pmtiles` utilisateur.
 - **Données d'Élévation (v5.8.17)** : Tuiles Terrain-RGB capées au zoom 14 max. Le worker utilise `elevSourceZoom` pour calculer la taille des pixels des normal maps.
 
 ---

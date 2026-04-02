@@ -42,7 +42,7 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,bin}'],
         // Exclure le chunk Three.js du précache (trop lourd, en runtime cache à la demande)
-        globIgnores: ['**/three-*.js'],
+        globIgnores: ['**/three-*.js', '**/*.pmtiles'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB max par fichier
         // Invalidation automatique du cache précache au déploiement
         cleanupOutdatedCaches: true,
