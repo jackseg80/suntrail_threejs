@@ -682,6 +682,11 @@ export async function initScene(): Promise<void> {
     };
     document.addEventListener('visibilitychange', visibilityChangeHandler);
 
+    // Matrices caméra à jour AVANT le 1er frustum culling — sinon isVisible() utilise
+    // l'identité (render loop pas encore exécuté) → tuiles latérales manquantes sur écrans larges.
+    state.controls.update();
+    state.camera.updateMatrixWorld(true);
+
     // Terrain chargé EN DERNIER : le GPU tourne déjà, les tuiles s'affichent progressivement
     await loadTerrain();
 }
