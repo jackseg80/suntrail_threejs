@@ -269,9 +269,9 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
     });
 
     describe('applyPreset() — Performance / High : valeurs baked-in, pas de caps', () => {
-        it('performance preset : RANGE=5 quelle que soit la plateforme', () => {
+        it('performance preset : RANGE=6 quelle que soit la plateforme', () => {
             applyPreset('performance');
-            expect(state.RANGE).toBe(5);
+            expect(state.RANGE).toBe(6);
         });
 
         it('performance preset : SHADOW_RES=1024 quelle que soit la plateforme', () => {

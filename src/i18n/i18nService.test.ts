@@ -15,7 +15,7 @@ describe('I18nService', () => {
     });
 
     it('should resolve nested keys correctly', () => {
-        expect(i18n.t('nav.tab.search')).toBe('Sommets');
+        expect(i18n.t('nav.tab.search')).toBe('Recherche');
         expect(i18n.t('settings.aria.close')).toBe('Fermer les réglages');
         expect(i18n.t('common.unit.km')).toBe('km');
     });

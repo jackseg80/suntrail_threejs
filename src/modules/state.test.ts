@@ -51,7 +51,7 @@ describe('state.ts', () => {
 
         it('performance (High) — Galaxy S23 : valeurs baked-in sans caps', () => {
             expect(PRESETS.performance.RESOLUTION).toBe(160);
-            expect(PRESETS.performance.RANGE).toBe(5);             // ← 8 → 5 baked-in
+            expect(PRESETS.performance.RANGE).toBe(6);             // ← 5 → 6 : couverture visuelle 3D incliné
             expect(PRESETS.performance.SHADOW_RES).toBe(1024);     // ← 2048 → 1024 baked-in
             expect(PRESETS.performance.MAX_BUILDS_PER_CYCLE).toBe(2); // ← 4 → 2 baked-in
             expect(PRESETS.performance.MAX_ALLOWED_ZOOM).toBe(18);

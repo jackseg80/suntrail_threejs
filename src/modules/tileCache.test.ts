@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { state } from './state';
-import { addToCache, getFromCache, disposeAllCachedTiles, getCacheSize, hasInCache, trimCache } from './tileCache';
+import { addToCache, getFromCache, disposeAllCachedTiles, getCacheSize, hasInCache, trimCache, markCacheKeyActive, markCacheKeyInactive } from './tileCache';
 
 // Mock de utils pour isMobileDevice
 vi.mock('./utils', () => ({
@@ -82,6 +82,92 @@ describe('tileCache.ts', () => {
         }
         trimCache();
         expect(getCacheSize()).toBe(30); // pas de changement
+    });
+
+    describe('markCacheKeyActive / markCacheKeyInactive (v5.11.1)', () => {
+        it('tuile active protégée contre l\'éviction FIFO', () => {
+            state.PERFORMANCE_PRESET = 'eco'; // max = 60
+
+            for (let i = 0; i < 60; i++) {
+                addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
+            }
+
+            // Marquer key_0 comme active (rendue en scène)
+            markCacheKeyActive('key_0');
+
+            // Ajouter un 61ème item → devrait évincer key_1, pas key_0
+            addToCache('key_new', new THREE.Texture(), null, new THREE.Texture(), null, null);
+
+            expect(hasInCache('key_0')).toBe(true);  // protégée
+            expect(hasInCache('key_1')).toBe(false);  // évincée à la place
+            expect(hasInCache('key_new')).toBe(true);
+
+            markCacheKeyInactive('key_0'); // nettoyage
+        });
+
+        it('tuile inactive peut être évincée normalement', () => {
+            state.PERFORMANCE_PRESET = 'eco';
+
+            for (let i = 0; i < 60; i++) {
+                addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
+            }
+
+            // Marquer puis démarquer key_0
+            markCacheKeyActive('key_0');
+            markCacheKeyInactive('key_0');
+
+            // key_0 est la plus ancienne et n'est plus active → doit être évincée
+            addToCache('key_new', new THREE.Texture(), null, new THREE.Texture(), null, null);
+
+            expect(hasInCache('key_0')).toBe(false); // évincée normalement
+            expect(hasInCache('key_new')).toBe(true);
+        });
+
+        it('trimCache respecte les tuiles actives', () => {
+            state.PERFORMANCE_PRESET = 'performance'; // max = 400 desktop
+
+            for (let i = 0; i < 80; i++) {
+                addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
+            }
+
+            // Marquer les 5 premières clés comme actives
+            for (let i = 0; i < 5; i++) markCacheKeyActive(`key_${i}`);
+
+            // Réduire vers eco (max = 60) → doit évincer les inactives d'abord
+            state.PERFORMANCE_PRESET = 'eco';
+            trimCache();
+
+            expect(getCacheSize()).toBe(60);
+            // Les 5 clés actives doivent survivre
+            for (let i = 0; i < 5; i++) {
+                expect(hasInCache(`key_${i}`)).toBe(true);
+            }
+
+            // Nettoyage
+            for (let i = 0; i < 5; i++) markCacheKeyInactive(`key_${i}`);
+        });
+
+        it('dispose() des textures appelé lors de l\'éviction d\'une inactive', () => {
+            state.PERFORMANCE_PRESET = 'eco';
+
+            const victimElev = new THREE.Texture();
+            const victimColor = new THREE.Texture();
+            const spyElev = vi.spyOn(victimElev, 'dispose');
+            const spyColor = vi.spyOn(victimColor, 'dispose');
+
+            // Remplir le cache avec la texture observable en premier
+            addToCache('victim', victimElev, null, victimColor, null, null);
+            for (let i = 1; i < 60; i++) {
+                addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
+            }
+
+            // Ajouter un 61ème → 'victim' (la plus ancienne, inactive) est évincée
+            addToCache('trigger', new THREE.Texture(), null, new THREE.Texture(), null, null);
+
+            expect(hasInCache('victim')).toBe(false);
+            expect(spyElev).toHaveBeenCalled();
+            expect(spyColor).toHaveBeenCalled();
+        });
     });
 
     it('should move accessed item to the end of FIFO queue', () => {

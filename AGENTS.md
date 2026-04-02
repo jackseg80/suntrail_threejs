@@ -465,7 +465,9 @@ src/
 └── test/
     ├── setup.ts                # Config Vitest (happy-dom, mocks)
     ├── a11y.test.ts            # 13 tests accessibilité axe-core
+    ├── networkMonitor.test.ts  # Tests détection réseau event-driven
     ├── solarAnalysis.test.ts   # Tests analyse solaire
+    ├── upgradeSheet.i18n.test.ts # Validation clés i18n upgrade (4 locales)
     └── weatherPro.test.ts      # Tests météo Pro
 ```
 
@@ -485,7 +487,7 @@ src/
 - `npm run dev` : Serveur Vite local (HMR).
 - `npm run build` : Build production (Terser, `drop_console`, code splitting Three.js/vendor/pmtiles).
 - `npm run check` : TypeScript strict (`tsc --noEmit`).
-- `npm test` : Suite Vitest (412+ tests).
+- `npm test` : Suite Vitest (398+ tests).
 - `npm run deploy` : `check` + `build` + `cap sync` (avant livraison mobile).
 
 ### Workflow de release (step-by-step)

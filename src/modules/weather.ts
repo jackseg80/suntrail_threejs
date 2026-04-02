@@ -12,7 +12,7 @@ const BOX_SIZE = 15000.0;
 let lastRequestId = 0;
 
 /** Extrait "Ville, Pays" depuis une réponse de géocodage inversé (MapTiler ou Nominatim). */
-function extractLocationName(feature: any, fallback: string): string {
+export function extractLocationName(feature: any, fallback: string): string {
     // MapTiler : contexte structuré avec place/municipality/country
     if (feature.context && Array.isArray(feature.context)) {
         const place = feature.context.find((c: any) =>

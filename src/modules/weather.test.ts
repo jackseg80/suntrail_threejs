@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchWeather } from './weather';
+import { fetchWeather, extractLocationName } from './weather';
 import { state } from './state';
 
 describe('Weather Module', () => {
@@ -49,7 +49,8 @@ describe('Weather Module', () => {
                 return Promise.resolve({
                     ok: true,
                     json: () => Promise.resolve({
-                        display_name: 'Delémont'
+                        display_name: 'Rue de la Gare, Delémont, Jura, Suisse',
+                        address: { city: 'Delémont', country: 'Suisse' }
                     })
                 });
             }
@@ -58,12 +59,89 @@ describe('Weather Module', () => {
 
         await fetchWeather(47.36, 7.34);
         expect(state.currentWeather).toBe('rain');
-        expect(state.weatherData?.locationName).toBe('Delémont');
+        expect(state.weatherData?.locationName).toBe('Delémont, Suisse');
     });
 
     it('should default to clear on API error', async () => {
         global.fetch = vi.fn().mockResolvedValue({ ok: false });
         await fetchWeather(0, 0);
         expect(state.currentWeather).toBe('clear');
+    });
+});
+
+describe('extractLocationName (v5.19.1)', () => {
+    const fallback = '46.800, 8.200';
+
+    it('MapTiler context structuré → Ville, Pays', () => {
+        const feature = {
+            context: [
+                { id: 'place.123', text_fr: 'Interlaken', text: 'Interlaken' },
+                { id: 'region.456', text_fr: 'Berne', text: 'Bern' },
+                { id: 'country.789', text_fr: 'Suisse', text: 'Switzerland' },
+            ],
+        };
+        expect(extractLocationName(feature, fallback)).toBe('Interlaken, Suisse');
+    });
+
+    it('MapTiler context avec municipality → prend municipality', () => {
+        const feature = {
+            context: [
+                { id: 'municipality.1', text: 'Grindelwald' },
+                { id: 'country.2', text: 'Switzerland' },
+            ],
+        };
+        expect(extractLocationName(feature, fallback)).toBe('Grindelwald, Switzerland');
+    });
+
+    it('MapTiler place_name_fr "Rue, Ville, Région, Pays" → Ville, Pays', () => {
+        const feature = {
+            place_name_fr: 'Rue de la Gare, Delémont, Jura, Suisse',
+        };
+        expect(extractLocationName(feature, fallback)).toBe('Delémont, Suisse');
+    });
+
+    it('MapTiler place_name 2 segments → prend le 2e', () => {
+        const feature = { place_name: 'Zermatt, Switzerland' };
+        expect(extractLocationName(feature, fallback)).toBe('Switzerland');
+    });
+
+    it('MapTiler place_name 1 segment → retourne tel quel', () => {
+        const feature = { place_name_fr: 'Zurich' };
+        expect(extractLocationName(feature, fallback)).toBe('Zurich');
+    });
+
+    it('Nominatim address structuré → city, country', () => {
+        const feature = {
+            address: { city: 'Brig', country: 'Schweiz' },
+        };
+        expect(extractLocationName(feature, fallback)).toBe('Brig, Schweiz');
+    });
+
+    it('Nominatim address avec village → village, country', () => {
+        const feature = {
+            address: { village: 'Saas-Fee', country: 'Suisse' },
+        };
+        expect(extractLocationName(feature, fallback)).toBe('Saas-Fee, Suisse');
+    });
+
+    it('Nominatim display_name seul → 2e et 3e segments', () => {
+        const feature = {
+            display_name: 'Bahnhofstrasse, Spiez, Bern, Schweiz',
+        };
+        // slice(1, 3) → 'Spiez, Bern'
+        expect(extractLocationName(feature, fallback)).toBe('Spiez, Bern');
+    });
+
+    it('feature vide → retourne fallback', () => {
+        expect(extractLocationName({}, fallback)).toBe(fallback);
+    });
+
+    it('context sans place/municipality → tombe dans place_name', () => {
+        const feature = {
+            context: [{ id: 'region.1', text: 'Valais' }],
+            place_name_fr: 'Sion, Valais, Suisse',
+        };
+        // pas de place ni municipality → skip context → parse place_name_fr
+        expect(extractLocationName(feature, fallback)).toBe('Valais, Suisse');
     });
 });
