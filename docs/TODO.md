@@ -706,6 +706,64 @@ App sur appareil physique Android connecté en USB (débogage activé).
 
 ---
 
+## 🧠 Priorité 9 : Trail Intelligence — Analyse Intelligente (v5.20 → v5.23)
+
+> Module d'analyse de tracés et terrain. 100% déterministe (règles, formules, seuils — pas de LLM).
+> **Règle absolue** : les alertes sécurité sont TOUJOURS FREE. On ne gate jamais la sécurité vitale.
+> 📋 **Spécification complète** : voir `docs/ROADMAP_TRAIL_INTELLIGENCE.md`
+
+### v5.20 — Cotation & Temps estimé
+
+- [ ] **Cotation GPX** : Badge simplifié Facile/Moyen/Difficile/Expert (Free) + CAS T1-T6 (Pro)
+- [ ] **Durée Munter** : Temps total (Free) + temps par segment montée/descente/plat (Pro)
+- [ ] **Stats enrichies Pro** : Pente max, pente moyenne, % du tracé > 30°
+- [ ] **Tracé 3D coloré Pro** : Vertex colors par pente (vert → rouge) sur le mesh GPX
+- [ ] **Nouveau module** : `src/modules/trailAnalysis.ts` — moteur de cotation et formules Munter
+- [ ] **Affichage** : `TrackSheet.ts` — badge + durée + stats
+
+### v5.21 — Exposition solaire & Segments
+
+- [ ] **Segmentation du tracé** : Découpage en montées/descentes/plats (seuil ±5%, fenêtre 200m)
+- [ ] **Exposition solaire** : Icône résumé (Free) + barre ombre/soleil par km sous le profil (Pro)
+- [ ] **Segment clé Pro** : Section la plus difficile surligné sur la carte 3D + profil
+- [ ] **Point demi-effort Pro** : Marqueur 3D à 50% du temps Munter (pas 50% de la distance)
+- [ ] **Batch solar probe** : `runSolarProbe()` échantillonné tous les 500m le long du GPX
+
+### v5.22 — Alertes sécurité & Heure de départ
+
+- [ ] **Alertes FREE (toutes)** : Avalanche, windchill, nuit sur tracé, orage, coup de chaleur, visibilité, batterie
+- [ ] **UI alertes** : Bannière intrusive `z-index: 9500`, auto-dismiss 8s, affichée à chaque ouverture du tracé
+- [ ] **Toggle désactivation** : Réglages Avancés — option utilisateur pour couper les alertes
+- [ ] **Heure de départ Pro** : Tableau 5h-12h avec score par créneau + raison (soleil, orage, lumière)
+- [ ] **Conseil Free** : Phrase générique "Partez tôt le matin" (sans détail)
+- [ ] **Nouveau module** : `src/modules/trailAlerts.ts` — moteur d'alertes, règles, UI bannière
+
+### v5.23 — Score condition & Estimation physio
+
+- [ ] **Score "Condition du jour"** : Note 1-5 étoiles (Free) + détail par facteur (Pro)
+- [ ] **Fonctionne avec ou sans tracé** : Position caméra (basique) ou croisement météo × segments (complet)
+- [ ] **Poids utilisateur Pro** : Slider 40-120 kg dans Réglages Pro (défaut 70 kg, persisté localStorage)
+- [ ] **Hydratation Pro** : Estimation litres basée sur durée × altitude × température
+- [ ] **Calories Pro** : Formule Pandolf simplifiée (poids, pente, vitesse Munter)
+- [ ] **VAM cible Pro** : Dénivelé/heure recommandé par segment selon la pente
+
+### Feature Gates Trail Intelligence
+
+| Feature | Free | Pro |
+| --- | --- | --- |
+| Alertes sécurité | ✅ Toutes | ✅ Toutes |
+| Durée Munter | Temps total | + par segment |
+| Cotation | Badge simplifié | CAS T1-T6 |
+| Exposition solaire | Icône résumé | Barre détaillée/km |
+| Score condition | Étoiles | + détail par facteur |
+| Heure de départ | Phrase générique | Tableau + raisons |
+| Segments | Compteur | Tableau complet |
+| Tracé coloré pente | Monochrome | Vert → rouge |
+| Hydratation/Calories | — | ✅ (poids requis) |
+| Segment clé + demi-effort | — | ✅ |
+
+---
+
 ## 🔧 Priorité 5-ter : Corrections Techniques Post-Lancement (v5.13)
 
 ### Amélioration Détection GPU / Presets
@@ -754,16 +812,17 @@ App sur appareil physique Android connecté en USB (débogage activé).
 - [ ] **Suunto / Polar / Apple Health** : Évaluer la faisabilité et la priorité selon l'audience cible.
 - [ ] **Format FIT natif** : Lecture directe des fichiers `.fit` (Garmin) en plus du GPX.
 
-## 📊 Priorité 7 : Analyse Données Sport Avancée (v6.x — à définir ensemble) *(après lancement)*
+## 📊 Priorité 7 : Analyse Données Sport Avancée (v6.x) *(après lancement)*
+
 *Impact : Transformer SunTrail en outil d'analyse de performance, pas seulement de visualisation.*
 
-> ⚠️ **À co-concevoir** : Le périmètre exact est à affiner ensemble avant implémentation.
+> **Prérequis** : Trail Intelligence (Priorité 9, v5.20-v5.23) pose les fondations (segmentation, cotation, Munter, exposition solaire). La Priorité 7 ajoute les données physiologiques par-dessus.
 
 - [ ] **Overlay Fréquence Cardiaque** : Colorisation du tracé selon les zones cardiaques (Z1–Z5).
-- [ ] **Corrélation Terrain / Effort** : Croisement pente, altitude, vitesse et données physiologiques.
+- [ ] **Corrélation Terrain / Effort** : Croisement pente, altitude, vitesse et données physiologiques — s'appuie sur la segmentation v5.21.
 - [ ] **Données Montre** : Import HR, SpO2, cadence, puissance depuis montres (Garmin, Apple Watch, Polar…).
-- [ ] **Analyse Post-Effort** : Dashboard récapitulatif par segment (VAM, dénivelé/bpm, zones d'effort).
-- [ ] **À définir ensemble** : Format des données entrantes, profondeur de l'analyse, UX de visualisation.
+- [ ] **Analyse Post-Effort** : Dashboard récapitulatif par segment (VAM réelle vs VAM cible v5.23, dénivelé/bpm, zones d'effort).
+- [ ] **Couche LLM optionnelle (Pro)** : Résumé en langage naturel des tracés, conseil personnalisé basé sur l'historique. Nécessite un backend serveur (API Claude Haiku ~$0.01/résumé). Non prioritaire — les règles déterministes couvrent 90% du besoin.
 
 ## 🚀 Priorité 8 : La Révolution AR (v6.0) *(vision long terme)*
 *Impact : Immersion totale et aide à l'orientation futuriste.*

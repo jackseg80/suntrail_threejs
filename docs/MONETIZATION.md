@@ -98,6 +98,11 @@ Le tier Gratuit couvre tout ce dont un randonneur a besoin pour **être en sécu
 | **Enregistrement REC** | Durée | **Illimité** — statistiques de base (distance, D+, durée) |
 | **Peaks** | Identification | Top 10 des sommets visibles depuis la position |
 | **Sécurité** | SOS SMS | ✅ Pour tous — valeur éthique non négociable |
+| **Sécurité** | Alertes Trail Intelligence | ✅ Toutes les alertes (avalanche, windchill, nuit, orage, chaleur, visibilité, batterie) — **jamais gatées** |
+| **Trail Intelligence** | Cotation GPX | Badge simplifié (Facile/Moyen/Difficile/Expert) + durée totale Munter |
+| **Trail Intelligence** | Exposition solaire | Icône résumé ("Tracé ensoleillé" / "Versant sud") |
+| **Trail Intelligence** | Score condition du jour | Note 1-5 étoiles (avec ou sans tracé) |
+| **Trail Intelligence** | Heure de départ | Conseil générique ("Partez tôt le matin") |
 | **Offline** | Cache | 1 zone de 10 km × 10 km |
 | **Publicité** | — | ❌ Aucune |
 
@@ -130,6 +135,16 @@ Le tier Gratuit couvre tout ce dont un randonneur a besoin pour **être en sécu
 | **Peaks** | Index complet | Moteur de recherche — tous les sommets de la zone |
 | **Offline** | Zones illimitées | + support fichiers .pmtiles locaux |
 | **Mode Photo** | Screenshot pro | Capture sans UI + watermark (coordonnées GPS, altitude, logo SunTrail) |
+| **Trail Intelligence** | Cotation CAS T1-T6 | Grille alpine officielle + UIAA si applicable |
+| **Trail Intelligence** | Temps par segment | Décomposition montée/descente/plat |
+| **Trail Intelligence** | Tracé coloré par pente | Vertex colors vert → rouge sur le mesh GPX 3D |
+| **Trail Intelligence** | Stats enrichies | Pente max, pente moyenne, % du tracé > 30° |
+| **Trail Intelligence** | Segmentation complète | Tableau par segment + segment clé surligné + point demi-effort |
+| **Trail Intelligence** | Exposition solaire détaillée | Barre ombre/soleil par km + heures d'ensoleillement par point |
+| **Trail Intelligence** | Heure de départ optimale | Tableau 5h-12h avec score par créneau + raison |
+| **Trail Intelligence** | Score condition détaillé | Détail par facteur (météo, vent, soleil, visibilité, UV) |
+| **Trail Intelligence** | Estimation physio | Hydratation (L), calories (Pandolf), VAM cible/segment |
+| **Trail Intelligence** | Poids utilisateur | Réglage slider 40-120 kg (persisté) |
 | **Qualité rendu** | Presets Performance & Ultra | Accès aux presets haute qualité GPU |
 | **Publicité** | — | ❌ Aucune |
 
@@ -160,6 +175,8 @@ Ne jamais montrer le paywall à l'installation. Le montrer **après le premier "
 - GPX 2e tracé : *"Comparez vos sorties côte à côte avec Pro"*
 - Météo jours 2-3 : grisés avec badge 🔒 PRO visible sans tap
 - Post-REC : bannière *"Débloquez VAM, Naismith et l'export GPX avec Pro"*
+- Trail Intelligence : cotation simplifiée → *"Débloquez la cotation CAS T1-T6, les segments détaillés et l'heure de départ optimale avec Pro"*
+- Score condition (étoiles seules) → *"Voyez le détail par facteur et l'estimation hydratation/calories avec Pro"*
 
 ---
 

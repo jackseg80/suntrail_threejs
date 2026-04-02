@@ -9,6 +9,9 @@ dist
 .DS_Store
 Thumbs.db
 
+# Claude Code — config locale (chemins absolus, permissions machine-specific)
+.claude/
+
 # Android Keystore — NE JAMAIS COMMITTER
 *.jks
 *.keystore
