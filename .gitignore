@@ -12,6 +12,9 @@ Thumbs.db
 # Claude Code — config locale (chemins absolus, permissions machine-specific)
 .claude/
 
+# Gemini CLI — config locale (spécifique à la machine)
+.gemini/
+
 # Android Keystore — NE JAMAIS COMMITTER
 *.jks
 *.keystore
@@ -37,6 +40,9 @@ public/tiles/*.pmtiles
 # Screenshots de debug (générés par les outils IA/devtools)
 debug_*.png
 startup_screenshot.png
+
+# Screenshots app (Play Store / captures device)
+screenshots/
 
 # Artefacts Windows
 nul
