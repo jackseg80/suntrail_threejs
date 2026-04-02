@@ -468,6 +468,8 @@ export class SettingsSheet extends BaseComponent {
         const versionEl = this.element?.querySelector('#settings-version') as HTMLElement | null;
         if (!versionEl) return;
 
+        versionEl.textContent = `v${__APP_VERSION__}`;
+
         let tapCount = 0;
         let tapTimer: ReturnType<typeof setTimeout> | null = null;
 

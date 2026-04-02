@@ -17,6 +17,9 @@ interface Navigator {
     getBattery(): Promise<BatteryManager>;
 }
 
+// ── Version injectée par Vite au build (depuis package.json) ──────────────────
+declare const __APP_VERSION__: string;
+
 // ── WebKit Compass Heading (propriété non-standard iOS/Safari) ─────────────────
 interface DeviceOrientationEvent {
     readonly webkitCompassHeading?: number;

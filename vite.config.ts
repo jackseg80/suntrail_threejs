@@ -1,8 +1,14 @@
 import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
+import { readFileSync } from 'fs';
+
+const pkg = JSON.parse(readFileSync('./package.json', 'utf-8')) as { version: string };
 
 export default defineConfig({
-  base: './', 
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
+  base: './',
   build: {
     outDir: 'dist',
     // Three.js fait ~520kB minifié (dans son propre chunk — correct)
