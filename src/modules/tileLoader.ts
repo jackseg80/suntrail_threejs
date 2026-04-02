@@ -4,6 +4,7 @@ import { isPositionInSwitzerland, isPositionInFrance, showToast } from './utils'
 import { tileWorkerManager } from './workerManager';
 import { disposeAllCachedTiles } from './tileCache';
 import * as pmtiles from 'pmtiles';
+import { packManager } from './packManager';
 
 export const CACHE_NAME = 'suntrail-tiles-v5.11';
 
@@ -150,6 +151,18 @@ export async function fetchWithCache(url: string, usePersistentCache: boolean = 
         }
     }
 
+    // --- COUNTRY PACKS INTERCEPTION (v5.21.0) ---
+    // Si des packs pays sont montés, on essaie d'y trouver la tuile (LOD 12-14)
+    if (packManager.hasMountedPacks()) {
+        const pm = url.match(/\/(\d+)\/(\d+)\/(\d+)(?:@2x)?\.(jpeg|jpg|png|webp)/i);
+        if (pm) {
+            const packBlob = await packManager.getTileFromPacks(
+                parseInt(pm[1]), parseInt(pm[2]), parseInt(pm[3])
+            );
+            if (packBlob) return packBlob;
+        }
+    }
+
     try {
         if (usePersistentCache) {
             const cache = await caches.open(CACHE_NAME);
@@ -262,8 +275,12 @@ export function getColorUrl(tx: number, ty: number, zoom: number): string {
  */
 export function getOverlayUrl(tx: number, ty: number, zoom: number): string | null {
     const MIN_TRAIL_LOD = 11;
-    if (!state.SHOW_TRAILS || zoom < MIN_TRAIL_LOD) return null;
-    
+    // LOD 16+ : les sentiers sont déjà visibles dans les cartes topo (SwissTopo, IGN, OpenTopoMap, MapTiler).
+    // Charger l'overlay à ces LODs ajoute un 3ème fetch HTTP par tuile vers un serveur bénévole lent
+    // (waymarkedtrails.org) → bottleneck réseau sur mobile avec 100+ tuiles actives.
+    const MAX_TRAIL_LOD = 15;
+    if (!state.SHOW_TRAILS || zoom < MIN_TRAIL_LOD || zoom > MAX_TRAIL_LOD) return null;
+
     // SwissTopo pour la Suisse (officiel, haute résolution)
     if (isTileFullyInRegion(tx, ty, zoom, isPositionInSwitzerland)) {
         return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${zoom}/${tx}/${ty}.png`;
@@ -312,6 +329,25 @@ async function seedEmbeddedTile(url: string, z: number, x: number, y: number): P
 }
 
 /**
+ * Injecte une tuile d'un country pack dans le CacheStorage du worker.
+ * Même pattern que seedEmbeddedTile() mais pour les packs LOD 12-14.
+ */
+async function seedPackTile(url: string, z: number, x: number, y: number): Promise<void> {
+    if (!packManager.hasMountedPacks()) return;
+    if (_seededUrls.has(url)) return;
+    try {
+        if (!_workerCache) _workerCache = await caches.open('suntrail-tiles-v2');
+        const existing = await _workerCache.match(url);
+        if (existing) { _seededUrls.add(url); return; }
+        const blob = await packManager.getTileFromPacks(z, x, y);
+        if (blob) {
+            await _workerCache.put(url, new Response(blob));
+            _seededUrls.add(url);
+        }
+    } catch { /* silence */ }
+}
+
+/**
  * Lance le chargement d'une tuile via les Workers.
  * Retourne { promise, taskId } — le taskId permet d'annuler via cancelTileLoad()
  * si la tuile est disposée avant la fin du fetch (économise la bande passante).
@@ -334,6 +370,11 @@ export async function loadTileData(tx: number, ty: number, zoom: number, is2D: b
     // AVANT de dispatcher au worker pour garantir le cache hit
     if (embeddedPMTiles && zoom <= EMBEDDED_MAX_ZOOM) {
         await seedEmbeddedTile(colorUrl, cz, Math.floor(tx/cr), Math.floor(ty/cr));
+    }
+
+    // Pré-injection country pack (LOD 12-14)
+    if (packManager.hasMountedPacks() && zoom >= 12) {
+        await seedPackTile(colorUrl, cz, Math.floor(tx/cr), Math.floor(ty/cr));
     }
 
     return tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl, zoom, sourceZoom);

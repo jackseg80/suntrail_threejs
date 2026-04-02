@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { disposeObject } from './memory';
 import { state, GPX_COLORS } from './state';
 import type { GPXLayer } from './state';
-import { isPositionInSwitzerland, isPositionInFrance } from './utils';
+import { isPositionInSwitzerland, isPositionInFrance, isMobileDevice } from './utils';
 import { updateElevationProfile, haversineDistance } from './profile';
 import { createForestForTile } from './vegetation';
 import { loadPOIsForTile } from './poi';
@@ -249,6 +249,11 @@ export class Tile {
     buildMesh(resolution: number): void {
         if (!this.elevationTex || !this.colorTex || this.status as any === 'disposed') return;
         if (activeTiles.get(this.key) !== this) return;
+
+        // LOD ≥ 15 : l'élévation est plafonnée à LOD 14 (sourceZoom = min(zoom,14)).
+        // La géométrie au-delà de 64 segments subdivise plus finement que la source → vertices gaspillés.
+        // 64 segments sur 128 pixels source = 2 pixels/segment — qualité terrain identique, ~6× moins de vertices.
+        if (this.zoom >= 15) resolution = Math.min(resolution, 64);
 
         const is2D = (this.zoom <= 10 || state.IS_2D_MODE);
         const isLight = (state.PERFORMANCE_PRESET === 'eco');
@@ -667,10 +672,18 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
     }
 
     // LOD ≤ 10 : vue globale, on garantit au moins RANGE=3 tiles de contexte.
-    // LOD ≥ 17 : zoom max — diviseur 1.2 (au lieu de 1.5) + plancher 4 pour High/Ultra.
-    //   performance (RANGE=5) : floor(5/1.2)=4  → 4 (était 3 avec /1.5)
-    //   ultra      (RANGE=12) : floor(12/1.2)=10 → 10 (était 8 avec /1.5)
-    let range = (zoom <= 10) ? Math.max(state.RANGE, 3) : (zoom >= 17) ? Math.max(4, Math.floor(state.RANGE/1.2)) : state.RANGE;
+    // LOD ≥ 17 (PC + mobile) : diviseur 1.2 — tuiles petites (76m), le frustum est large.
+    //   performance (RANGE=6) : floor(6/1.2)=5 → 121 tuiles
+    //   ultra      (RANGE=12) : floor(12/1.2)=10 → 441 tuiles (PC uniquement)
+    // LOD 15-16 mobile uniquement : même diviseur 1.2 — tuile ~1.2km, 5 tiles = 6km rayon suffisant.
+    //   Le bonus tilt existant (+1 si polar>0.4) remonte à 6 en vue inclinée (= RANGE complet).
+    //   performance mobile (RANGE=6) : floor(6/1.2)=5 → 121 tuiles (vs 169)
+    //   ultra mobile       (RANGE=8) : floor(8/1.2)=6 → 169 tuiles (vs 289)
+    //   Sur PC LOD 15-16, pas de réduction — GPU et réseau le permettent.
+    const mobile = isMobileDevice();
+    let range = (zoom <= 10) ? Math.max(state.RANGE, 3)
+        : (zoom >= 17 || (zoom >= 15 && mobile)) ? Math.max(4, Math.floor(state.RANGE/1.2))
+        : state.RANGE;
 
     // +1 tuile de rayon quand camera inclinee a LOD 14+ (couvre le frustum etendu)
     if (!state.IS_2D_MODE && state.ZOOM >= 14 && state.controls) {

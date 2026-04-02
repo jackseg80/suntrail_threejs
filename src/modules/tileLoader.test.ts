@@ -71,11 +71,16 @@ describe('tileLoader.ts URLs', () => {
         expect(url).toContain('.png');
     });
 
-    it('should generate correct Overlay URL for France (Raster)', () => {
+    it('should generate Waymarked Trails overlay outside Switzerland (Raster)', () => {
         // Tuile en France (Z13: Mont Blanc area approx 4240, 2915)
         const url = getOverlayUrl(4240, 2915, 13);
-        expect(url).toContain('data.geopf.fr');
-        expect(url).toContain('TRANSPORT.WANDERWEGE');
+        expect(url).toContain('tile.waymarkedtrails.org');
+        expect(url).toContain('.png');
+    });
+
+    it('should return null overlay at LOD 16+ (trails visible in base topo maps)', () => {
+        const url = getOverlayUrl(4240, 2915, 16);
+        expect(url).toBeNull();
     });
 
     it('should return null Overlay URL when trails are hidden', () => {
