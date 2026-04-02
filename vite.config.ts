@@ -90,9 +90,13 @@ export default defineConfig({
         orientation: 'portrait',
         icons: [
           {
-            // icon.png était un doublon exact de icon_1024.png (W6) — supprimé, référence unifiée
-            src: '/assets/icons/icon_1024.png',
-            sizes: '192x192 512x512',
+            src: 'assets/icons/icon_512.png',
+            sizes: '512x512',
+            type: 'image/png'
+          },
+          {
+            src: 'assets/icons/icon_1024.png',
+            sizes: '1024x1024',
             type: 'image/png'
           }
         ]
