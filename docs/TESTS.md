@@ -1,76 +1,84 @@
-# Infrastructure de Tests - SunTrail Three.js
+# Infrastructure de Tests - SunTrail 3D
 
-Cette application utilise désormais **Vitest** et **JSDOM** pour garantir la stabilité du moteur 3D et des calculs géographiques.
+**Vitest** + **happy-dom** — 398 tests, 36 fichiers (v5.19.6)
 
-## 🚀 Comment lancer les tests
+## Comment lancer les tests
 
-Pour exécuter la suite de tests complète :
 ```bash
-npm test
+npm test              # Suite complète
+npx vitest            # Mode watch (développement)
+npx vitest run -t "nom du test"  # Un test spécifique
 ```
 
-Pour lancer les tests en mode "watch" (pendant le développement) :
-```bash
-npx vitest
-```
+## Couverture des tests (398 tests — 36 fichiers)
 
-## 📊 Couverture des tests (188 tests validés — v5.11.0)
+### Terrain & Géographie (`terrain.test.ts`, `geo.test.ts`, `tileCache.test.ts`, `tileLoader.test.ts`, `tileSpatialIndex.test.ts`, `boundedCache.test.ts`)
 
-### 🌍 Terrain & Géographie (`terrain.test.ts`, `geo.test.ts`, `tileCache.test.ts`, `tileLoader.test.ts`)
-- **Conversion Mercator** : Validation des calculs Lng/Lat vers tuiles (zoom 0 à 13).
-- **Décodage d'Altitude** : Vérification de la formule RGB -> Mètres (MapTiler).
-- **Cache de Tuiles** : LRU/FIFO, taille max par preset, `trimCache()` purge immédiate.
-- **URLs de tuiles** : Génération correcte pour SwissTopo, IGN, OSM, overzooming.
-- **Projections Spatiales** : Calcul des positions monde relatives.
+- Conversion Mercator (Lng/Lat → tuiles, zoom 0 à 13)
+- Décodage d'altitude RGB → mètres (MapTiler Terrain-RGB)
+- Cache de tuiles LRU/FIFO, protection tuiles actives, `trimCache()`
+- URLs de tuiles (SwissTopo, IGN, OSM, OpenTopoMap, overzooming)
+- Sélection source par 4 coins (`isTileFullyInRegion()`)
+- Index spatial des tuiles
 
-### 🧭 Navigation & Suivi (`location.test.ts`, `compass.test.ts`)
-- **Suivi GPS** : Interpolation 60 FPS et centrage haute précision.
-- **Boussole Swisstopo** : Filtre passe-bas et amortissement de rotation.
-- **Anti-Collision** : Sécurité de la caméra par rapport au relief.
+### Navigation & Suivi (`location.test.ts`, `compass.test.ts`)
 
-### ☀️ Système Solaire & Analyse (`sun.test.ts`, `analysis.test.ts`, `profile.test.ts`)
-- **Cycles Jour/Nuit** : Phases (Heure Dorée, Heure Bleue, etc.) et éclairage dynamique.
-- **Sonde Solaire** : Analyse d'horizon et cumul d'ensoleillement sur 24h.
-- **Profil d'Élévation** : Calcul du dénivelé + / - par layer GPX.
+- Suivi GPS (interpolation 60 FPS, centrage haute précision)
+- Boussole (filtre passe-bas, amortissement rotation, reset-to-North)
 
-### 🚀 Performance & Workers (`workerManager.test.ts`, `memory.test.ts`, `materialPool.test.ts`, `performance.test.ts`)
-- **Pool de Workers** : Initialisation et gestion asynchrone des tâches, timeouts.
-- **Gestion Mémoire** : Nettoyage VRAM récursif via `disposeObject`.
-- **Material Pool** : Réutilisation des shaders, reset des textures et uniforms.
-- **Presets** : Valeurs recalibrées par tier mobile (eco/balanced/performance/ultra), détection GPU, ENERGY_SAVER universel mobile, caps Ultra mobile (shadow 2048, RANGE 8).
+### Solaire & Analyse (`sun.test.ts`, `analysis.test.ts`, `solarAnalysis.test.ts`, `profile.test.ts`)
 
-### 🌲 Environnement & Urbanisme (`vegetation.test.ts`, `buildings.test.ts`, `weather.test.ts`)
-- **Végétation** : Sélection des essences par altitude.
-- **Bâtiments** : Fusion de géométries et extrusion OSM.
-- **Météo** : Moteur de particules et physique du vent.
+- Cycles jour/nuit (Heure Dorée, Heure Bleue, etc.)
+- Sonde solaire (analyse d'horizon, cumul ensoleillement 24h)
+- Profil d'élévation (D+/D-, pente, distance haversine)
 
-### ⚙️ État, UI & Composants (`state.test.ts`, `ui.test.ts`, `ReactiveState.test.ts`, `BaseComponent.test.ts`)
-- **State Management** : Intégrité de l'état global, versioning localStorage, presets.
-- **UI** : Gestion des panneaux, menus et modales SOS.
-- **Reactive State** : Proxy JS récursif, souscriptions, abonnements composants.
-- **Base Component** : Cycle de vie, hydratation templates, nettoyage abonnements.
+### Performance & Workers (`workerManager.test.ts`, `memory.test.ts`, `materialPool.test.ts`, `performance.test.ts`)
 
-### 🌐 i18n (`i18nService.test.ts`) — 14 tests
-- **Service i18n** : `t(key)`, fallback FR → clé brute, interpolation `{{var}}`.
-- **4 langues** : FR/DE/IT/EN, résolution clés imbriquées.
+- Pool de workers (init, tâches async, timeouts)
+- Gestion mémoire (`disposeObject` VRAM récursif)
+- Material pool (réutilisation shaders, reset textures/uniforms)
+- Presets GPU (eco/balanced/performance/ultra), détection GPU, ENERGY_SAVER
 
-### 🗺️ Multi-GPX & Tracés (`gpxLayers.test.ts`) — 9 tests
-- **GPXLayer** : Import multi-fichiers, couleurs auto, toggle/remove.
-- **Terrain Draping** : Densification ×4 + clamping sur altitude réelle.
+### Environnement (`vegetation.test.ts`, `buildings.test.ts`, `weather.test.ts`, `weatherPro.test.ts`)
 
-### 📊 Dashboard VRAM & PerfRecorder (`vramDashboard.test.ts`) — 17 tests
-- **VRAM Dashboard** : Seuils d'alerte par preset, cooldown 30s, toggle visibility.
-- **PerfRecorder** : Buffer circulaire 600 samples, start/stop/export, métadonnées session.
+- Végétation (essences par altitude, placement déterministe)
+- Bâtiments (fusion géométries, extrusion OSM)
+- Météo (particules, physique vent, prévisions Pro 3 jours)
 
-### ♿ Accessibilité (`a11y.test.ts`) — 7 tests
-- **axe-core** : 7 tests WCAG 2.1 AA — GPS Disclosure, NavigationBar, BottomSheet, FAB GPS.
+### État, UI & Composants (`state.test.ts`, `ui.test.ts`, `ReactiveState.test.ts`, `vramDashboard.test.ts`, `utils.test.ts`)
 
-### 📦 Divers (`eventBus.test.ts`, `recordedPoints.test.ts`, `geometryCache.test.ts`, `peaks.test.ts`, `utils.test.ts`)
-- **EventBus** : Émission, abonnement, désabonnement.
-- **Live Tracking** : Enregistrement de points GPS, reset session.
-- **Geometry Cache** : Réutilisation des PlaneGeometry par résolution.
-- **Peaks** : Fetch et cache Overpass API, filtrage par distance.
+- State management (intégrité, versioning localStorage, presets)
+- UI (panneaux, menus, modales SOS)
+- Reactive State (Proxy récursif, souscriptions)
+- VRAM Dashboard (seuils d'alerte, PerfRecorder buffer circulaire)
 
-## 🤖 Intégration Continue (CI)
+### i18n (`i18nService.test.ts`, `upgradeSheet.i18n.test.ts`)
 
-Les tests sont automatiquement exécutés via **GitHub Actions** à chaque push sur la branche `main`. Si un test échoue, le déploiement sur GitHub Pages est automatiquement bloqué pour éviter toute régression en production.
+- Service i18n (`t(key)`, fallback FR → clé brute, interpolation `{{var}}`)
+- 4 langues (FR/DE/IT/EN), clés imbriquées
+- Validation clés i18n UpgradeSheet (4 locales)
+
+### Multi-GPX & Tracés (`gpxLayers.test.ts`, `recordedPoints.test.ts`)
+
+- GPXLayer (import multi-fichiers, couleurs auto, toggle/remove)
+- Terrain draping (densification ×4, clamping altitude)
+- Enregistrement GPS (points, reset session)
+
+### Réseau (`networkMonitor.test.ts`)
+
+- Détection réseau event-driven (Capacitor + web fallback)
+- Transitions online/offline, override manuel
+
+### Accessibilité (`a11y.test.ts`)
+
+- 13 tests WCAG 2.1 AA via axe-core (GPS Disclosure, NavigationBar, BottomSheet, FAB GPS, onboarding, settings)
+
+### Divers (`eventBus.test.ts`, `geometryCache.test.ts`, `peaks.test.ts`)
+
+- EventBus (émission, abonnement, désabonnement)
+- Geometry Cache (réutilisation PlaneGeometry par résolution)
+- Peaks (fetch/cache Overpass, filtrage par distance)
+
+## Intégration Continue
+
+Tests exécutés automatiquement via **GitHub Actions** à chaque push sur `main`. Si un test échoue, le déploiement est bloqué.

@@ -42,6 +42,9 @@ SunTrail est un moteur de terrain 3D WebGL conçu pour les randonneurs et alpini
 | 1 tracé GPX + REC illimité | Multi-tracés + export GPX + stats VAM/Naismith |
 | Pentes visuelles 30°/35°/40° | Inclinomètre numérique Pro (panel danger interactif) |
 | Vue 2D/3D | Bâtiments 3D réalistes |
+| Alertes sécurité (toutes) | Alertes sécurité (toutes) |
+| Cotation simplifiée + durée Munter | Cotation CAS T1-T6 + temps/segment + tracé coloré |
+| Score condition (étoiles) | Score détaillé + heure départ optimale + physio |
 | Offline 1 zone | Offline illimité + PMTiles |
 | Recherche de lieux | Recherche de lieux |
 | SOS d'urgence | SOS d'urgence |
@@ -119,12 +122,14 @@ Le CI (`.github/workflows/release.yml`) build l'AAB signé et crée une GitHub R
 
 | Document | Contenu |
 |---|---|
-| [AGENTS.md](./AGENTS.md) | Base de connaissance technique complète (pour agents IA) |
+| [CLAUDE.md](./CLAUDE.md) | Guide IA principal — règles critiques, conventions, structure (point d'entrée pour tous les agents) |
 | [RELEASE.md](./docs/RELEASE.md) | Workflow de publication + historique versionCode |
 | [CHANGELOG.md](./docs/CHANGELOG.md) | Historique détaillé des versions |
 | [FEATURES.md](./docs/FEATURES.md) | Liste des fonctionnalités |
+| [TESTS.md](./docs/TESTS.md) | Infrastructure de tests (398 tests, 36 fichiers) |
 | [ANDROID.md](./docs/ANDROID.md) | Guide build Android |
 | [MONETIZATION.md](./docs/MONETIZATION.md) | Stratégie business |
+| [ROADMAP_TRAIL_INTELLIGENCE.md](./docs/ROADMAP_TRAIL_INTELLIGENCE.md) | Roadmap analyse intelligente (v5.20→v5.23) |
 
 ## Licence
 
