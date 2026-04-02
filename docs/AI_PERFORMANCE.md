@@ -15,7 +15,7 @@
 - **flyTo / `needsUpdate` standalone (v5.11.1)** : La RAF `animateFlight` appelle `controls.update()` en interne → `controlsDirty = false` côté renderLoopFn. `state.isFlyingTo` et `state.isFollowingUser` sont des conditions **standalone** dans `needsUpdate`. **Ne jamais recoupler à `controlsDirty`**.
 - **controls.update() stuck WebView Android (v5.11.1)** : `OrbitControls.update()` retourne `true` indéfiniment sur WebView Android. Fix : résultat inclus dans `needsUpdate` uniquement pendant 800ms après `lastInteractionTime`. `tiltAnimating` source séparée.
 - **Météo GPU-driven (v5.11.1)** : Positions calculées dans le vertex shader depuis `uTime`. Ne jamais réintroduire `tickWeatherTime`.
-- **Loading Overlay 1er démarrage (v5.11.1)** : `#map-loading-overlay` — fond noir + spinner, `z-index: 50`. Caché quand `isProcessingTiles → false`. Fallback 2s, timeout max 15s.
+- **Loading Overlay 1er démarrage (v5.11.1)** : `#map-loading-overlay` — fond noir + spinner, `z-index: 50`. Affiché dès `suntrail:sceneReady`, caché quand `isProcessingTiles → false`. Fallback 2s, timeout max 15s. Le setup screen a été supprimé en v5.20 (clé bundlée `.env` + Gist = résolution automatique).
 - **Adaptive DPR (v5.11 Phase 2)** : `controls 'start'` → `setPixelRatio(1.0)`. `controls 'end'` + 200ms → restaure `state.PIXEL_RATIO_LIMIT`. Conditionné à `isMobileDevice`.
 - **VEGETATION_CAST_SHADOW (v5.11 Phase 2)** : `false` pour eco/balanced, `true` pour performance/ultra.
 - **ENERGY_SAVER par tier (v5.11)** : eco/balanced → `true`. **performance/ultra → `false`**. Le toggle manuel dans Réglages Avancés permet l'ajustement. `applyPreset()` force `true` sur eco/balanced mobile.

@@ -211,7 +211,7 @@ Auto-stop et STOP manuel appellent `saveRecordedGPXInternal()` puis `downloadRec
 - [x] **Battery Test S23 (Performance)** : ✅ Deep Sleep fps=0 validé. CPU idle 0%. Drain pire cas ~18%/h (écran allumé en continu, preset High) → usage rando réel estimé 3-5%/h (écran éteint 80% du temps). Non-bloquant Play Store.
 - [x] **Fix controls.update() stuck** : ✅ Guard temporel 800ms dans `needsUpdate` + `tiltAnimating` extrait du bloc tilt. `controls.update()` toujours appelé (damping physique), résultat ignoré après 800ms.
 - [x] **Fix idle throttle global 20fps** : ✅ Guard `isIdleMode` dans `renderLoopFn` — si pas d'interaction depuis 800ms, render limité à 20fps. Couvre tiltAnimating + isProcessingTiles + tilesFading. Résout 45-48fps GPU en idle sur Android.
-- [x] **Loading indicator 1er démarrage** : ✅ `#map-loading-overlay` dans `index.html` — affiché après setup-screen, caché quand `isProcessingTiles → false` (1ères tuiles). Fallback 2s (cache chaud) + timeout 15s (réseau lent).
+- [x] **Loading indicator 1er démarrage** : ✅ `#map-loading-overlay` dans `index.html` — affiché dès `sceneReady`, caché quand `isProcessingTiles → false` (1ères tuiles). Fallback 2s (cache chaud) + timeout 15s (réseau lent). Setup screen supprimé en v5.20.
 - [x] **Fix météo 20fps réels** : ✅ Cause identifiée — accumulateurs `weatherTimeAccum` placés après le guard idle → ne s'incrémentaient que sur les frames rendues → météo à ~5fps visuels au lieu de 20fps. Fix : accumulateurs déplacés avant tous les guards. Météo fluide à 20fps sans plein régime. `tickWeatherTime` supprimé (non nécessaire).
 - [x] **Fix export GPX Android** : ✅ `link.click()` + Blob URL ignoré silencieusement par WebView Android. Fix : `@capacitor/filesystem` → `Filesystem.writeFile(Directory.Documents)`. Auto-export au STOP (si ≥ 2 points). Bouton "Exporter" supprimé (redondant). Fichier dans *Files > Android > data > com.suntrail.threejs > files > Documents*.
 - [x] **Test Galaxy A53 (Balanced/STD) — Batterie marche réelle** : ✅ −6%/30min = ~12%/h (poche, Deep Sleep, GPS passif). Objectif ≤ 15%/h atteint. C'est l'appareil cible mid-range (Mali-G68 / Exynos 1280). Décision : **Sprint 7 en v5.11** autorisé.
@@ -332,7 +332,7 @@ Auto-stop et STOP manuel appellent `saveRecordedGPXInternal()` puis `downloadRec
 - [x] **Gate export GPX** : `TrackSheet.ts` — bloqué si `!isPro`
 - [x] **Gate REC 30min** : `TrackSheet.ts` — auto-stop + toast si `!isPro`
 - [x] **Upgrade Sheet** : `UpgradeSheet.ts` — paywall UI avec prix réels RevenueCat
-- [x] **Clé MapTiler bundlée** : `VITE_MAPTILER_KEY` dans `.env` + auto-skip setup screen
+- [x] **Clé MapTiler bundlée** : `VITE_MAPTILER_KEY` dans `.env` + résolution auto (setup screen supprimé v5.20)
 - [x] **Clé RevenueCat** : `VITE_REVENUECAT_KEY=goog_...` dans `.env` (clé Android réelle)
 - [x] **Acceptance Wall** : `acceptanceWall.ts` — disclaimer sécurité alpine, versionnée `v1`
 - [x] **BILLING permission** : `AndroidManifest.xml` — `com.android.vending.BILLING`

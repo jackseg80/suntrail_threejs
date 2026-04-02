@@ -84,16 +84,17 @@
 
 - Overlay bloquant, même pattern que `gpsDisclosure.ts`.
 - Stocké : `suntrail_acceptance_v1` (incrémenter pour forcer re-affichage).
-- Affiché 420ms après disparition du setup screen.
+- Affiché dès que la scène 3D est prête (`suntrail:sceneReady`).
 - Pas de bouton "Refuser".
 
 ---
 
-## Setup Screen & Clé MapTiler (v5.12)
+## Clé MapTiler — Résolution automatique (v5.20)
 
-- **Auto-skip** : Si `VITE_MAPTILER_KEY` défini, `state.MK` est peuplé et le setup screen masqué.
-- **Fallback** : Si `state.MK` vide → setup screen pour saisie manuelle.
-- **⚠️ Ordre d'init (v5.12.6)** : `launchScene()` après toute l'hydratation des composants dans `initUI()`.
+- **Clé bundlée** : `VITE_MAPTILER_KEY` dans `.env` → injectée au build, disponible immédiatement sans réseau.
+- **Clé distante** : Rotation aléatoire depuis un GitHub Gist (fire-and-forget). Écrase la bundlée sauf si clé manuelle en localStorage.
+- **Clé manuelle** : Saisie possible dans ConnectivitySheet (`SharedAPIKeyComponent`), sauvée en localStorage.
+- **⚠️ Ordre d'init** : `launchScene()` appelé inconditionnellement après l'hydratation des composants dans `initUI()`.
 
 ---
 

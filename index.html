@@ -43,32 +43,7 @@
 </head>
 <body>
 
-<div id="setup-screen">
-    <div class="setup-card">
-        <div style="margin-bottom:8px; font-size:10px; color:var(--gold); font-weight:700; letter-spacing:3px; text-transform:uppercase;">Version 5.11.1</div>
-        <h1>⛰️ SunTrail 3D</h1>
-        <p style="color:var(--text-2);">Visualisation topographique haute précision, simulation solaire en temps réel & météo experte.</p>
-        
-        <div style="text-align:left;">
-            <label style="font-size:11px; color:var(--gold); text-transform:uppercase; font-weight:700; letter-spacing:1px;">Clé API MapTiler Cloud</label>
-            <input type="text" id="k1" placeholder="Collez votre clé ici..." style="width:100%; padding:16px; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:14px; color:white; margin-top:10px; font-family:monospace; outline:none;">
-            <a href="https://cloud.maptiler.com/account/keys/" target="_blank" class="key-link" style="color:var(--accent); font-size:11px; text-decoration:none; margin-top:8px; display:inline-block;">Obtenir une clé gratuite sur MapTiler.com ↗</a>
-        </div>
-
-        <div id="tech-info" style="margin-top:20px; padding:15px; background:rgba(255,255,255,0.03); border-radius:12px; text-align:left; border:1px solid rgba(255,255,255,0.05); display:none;">
-            <div style="font-size:9px; color:var(--text-2); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Diagnostic Matériel</div>
-            <div id="diag-gpu" style="font-size:11px; color:white; margin-bottom:4px; font-family:monospace;">GPU: Détection...</div>
-            <div id="diag-cpu" style="font-size:11px; color:white; margin-bottom:4px; font-family:monospace;">CPU: -- cores</div>
-            <div id="diag-preset" style="font-size:11px; color:var(--gold); font-weight:700; font-family:monospace;">PROFIL: --</div>
-        </div>
-
-        <p id="serr" style="color:#ef4444; font-size:13px; margin-top:15px; min-height:20px;"></p>
-        
-        <button class="btn-go" id="bgo">Lancer l'expérience</button>
-    </div>
-</div>
-
-<!-- Overlay de chargement de la carte — visible après le setup-screen, caché quand les 1ères tuiles arrivent -->
+<!-- Overlay de chargement de la carte — caché quand les 1ères tuiles arrivent -->
 <!-- Indicateur de chargement des tuiles réseau (barre fine, 600ms debounce) -->
 <div id="tile-loading-bar" aria-hidden="true"></div>
 
@@ -482,7 +457,7 @@
                 </div>
 
                 <div id="settings-version" style="font-size:11px; color:var(--text-3); text-align:center; margin-top:24px; padding:10px 0 12px 0; opacity:0.6; cursor:pointer; user-select:none; letter-spacing:1px; border-top:1px solid rgba(255,255,255,0.04);">
-                    v5.16.5
+                    v5.19.6
                 </div>
         </details>
     </div>

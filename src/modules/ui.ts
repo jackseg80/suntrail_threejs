@@ -143,31 +143,13 @@ export function initUI(): void {
 
     storageUIIntervalId = setInterval(updateStorageUI, 2000);
 
-    // Setup Screen
-    const setupK1 = document.getElementById('k1') as HTMLInputElement;
-    const setupBgo = document.getElementById('bgo');
-    const setupScreen = document.getElementById('setup-screen');
-
-    const savedKey = localStorage.getItem('maptiler_key');
-    if (savedKey) {
-        setupK1.value = savedKey;
-    }
-
     // Helper : enregistre le listener sceneReady + démarre la scène
     const launchScene = () => {
-        // Cacher l'écran de setup une fois que le moteur 3D est prêt (render loop actif)
         // 'suntrail:sceneReady' est dispatché par initScene() avant await loadTerrain()
         window.addEventListener('suntrail:sceneReady', () => {
-            if (setupScreen) {
-                setupScreen.style.transition = 'opacity 0.4s ease';
-                setupScreen.style.opacity = '0';
-                setTimeout(() => {
-                    setupScreen.style.display = 'none';
-                    // Acceptance Wall : affiché une fois la scène visible, après la disparition
-                    // du setup screen. Premier lancement ou nouvelle version des CGU.
-                    void requestAcceptance().then(() => requestOnboarding());
-                }, 420);
-            }
+            // Acceptance Wall : affiché une fois la scène visible.
+            // Premier lancement ou nouvelle version des CGU.
+            void requestAcceptance().then(() => requestOnboarding());
 
             // Afficher l'overlay de chargement carte jusqu'aux 1ères tuiles
             // — résout le canvas vide au 1er démarrage Android sans cache
@@ -234,26 +216,6 @@ export function initUI(): void {
         });
     }
 
-    // Si pas de clé bundlée → afficher le setup screen, lancer via bouton
-    if (!state.MK) {
-        setupBgo?.addEventListener('click', () => {
-            const key = setupK1.value.trim();
-            if (key.length < 10) {
-                const serr = document.getElementById('serr');
-                if (serr) serr.textContent = i18n.t('setup.error.invalidKey');
-                return;
-            }
-            state.MK = key;
-            localStorage.setItem('maptiler_key', key);
-
-            if (setupBgo) {
-                (setupBgo as HTMLButtonElement).disabled = true;
-                setupBgo.innerHTML = `<span class="spinner" style="margin-right:8px;"></span>${i18n.t('setup.loading') || 'Chargement...'}`;
-            }
-
-            launchScene();
-        });
-    }
 
     // --- INITIALISATION COMPOSANTS ---
     const navBar = new NavigationBar();
@@ -303,14 +265,11 @@ export function initUI(): void {
     initAutoHide();
     initMobileUI();
 
-    // Si clé bundlée (.env) ou clé manuelle sauvegardée → démarrage automatique
+    // Démarrage automatique — clé bundlée (.env) ou distante (Gist)
     // IMPORTANT : appelé APRÈS hydrate() de tous les composants pour que
     // #widgets-container et #bottom-bar soient dans le DOM quand startApp() s'exécute.
     // (v5.12.5 regression : launchScene() était appelé avant les hydrations → display:none non effacé)
-    if (state.MK) {
-        if (setupScreen) setupScreen.style.display = 'none';
-        launchScene();
-    }
+    launchScene();
 
     (window as any).sheetManager = sheetManager;
 

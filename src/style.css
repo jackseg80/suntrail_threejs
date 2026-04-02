@@ -586,19 +586,6 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
     50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
 }
 
-/* SETUP SCREEN */
-#setup-screen {
-    position: fixed; inset: 0; background: #08090d; z-index: 10000;
-    display: flex; align-items: center; justify-content: center; padding: 20px;
-}
-
-.setup-card {
-    background: rgba(20, 22, 28, 0.6); backdrop-filter: blur(30px);
-    border-radius: 32px; padding: var(--space-6); width: 100%; max-width: 480px;
-    text-align: center; box-shadow: 0 30px 100px rgba(0,0,0,0.8);
-    border: 1px solid rgba(255,255,255,0.08);
-}
-
 .btn-go {
     width: 100%; padding: 18px; border-radius: 18px; background: #1555e0;
     color: white; border: none; font-weight: 700; font-size: var(--text-md); cursor: pointer;
@@ -1285,7 +1272,7 @@ body.preset-eco #timeline-toggle-btn { display: none !important; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Overlay chargement carte — visible après setup-screen, caché à la 1ère tuile */
+/* Overlay chargement carte — caché à la 1ère tuile */
 #map-loading-overlay {
     display: none;
     position: fixed;

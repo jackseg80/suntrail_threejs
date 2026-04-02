@@ -6,9 +6,6 @@ describe('ui.ts', () => {
         vi.resetAllMocks();
         // Setup DOM minimal pour les tests
         document.body.innerHTML = `
-            <div id="setup-screen"></div>
-            <input id="k1">
-            <button id="bgo"></button>
             <button id="settings-toggle"></button>
             <div id="top-status-bar"></div>
             <nav id="nav-bar"></nav>

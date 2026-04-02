@@ -4,6 +4,17 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.20.0] - 2026-04-02
+
+### 🚀 Suppression setup screen — démarrage direct
+
+- **Setup screen supprimé** : L'écran de saisie de clé API MapTiler (`#setup-screen`) a été retiré. La clé est résolue automatiquement (bundlée `.env` + rotation Gist GitHub). La saisie manuelle reste disponible dans ConnectivitySheet.
+- **Flow de démarrage simplifié** : Splash natif Android → map-loading-overlay (spinner) → app. Plus de flash d'écran intermédiaire.
+- **`launchScene()` inconditionnel** : Plus de branchement `if (state.MK)` — la scène démarre toujours directement après l'hydratation des composants.
+- **Version corrigée** : `#settings-version` mis à jour de 5.16.5 → 5.19.6.
+
+---
+
 ## [5.19.2] - 2026-04-01
 ### 🎨 Panneau d'achat Pro refondu + Fix prix RevenueCat + Docs beta-test
 
@@ -793,7 +804,7 @@ Placement autre / tilt non armé    →  isRotating (3 guards) / doZoomToPoint /
 - **Fix FAB/Timeline overlap** : Remplacement du sélecteur CSS `~` (cassé selon l'ordre DOM) par `body.timeline-open .fab-stack` pour masquer les FABs quand la timeline est ouverte.
 
 #### Composants
-- **SharedAPIKeyComponent** : Extraction du formulaire de clé MapTiler dupliqué en 3 endroits (SettingsSheet, ConnectivitySheet, setup screen) vers un `BaseComponent` réutilisable. Synchronisation automatique via `state.subscribe('MK')`.
+- **SharedAPIKeyComponent** : Extraction du formulaire de clé MapTiler vers un `BaseComponent` réutilisable (ConnectivitySheet). Synchronisation automatique via `state.subscribe('MK')`.
 - **Loading States** : Spinners et états désactivés sur les 3 opérations async — géocodage (SearchSheet), import GPX (TrackSheet), download zone (ConnectivitySheet). Pattern `btn-loading` + `aria-busy` avec `finally` garanti.
 - **Empty States** : États vides illustrés (icônes SVG monoline) dans TrackSheet (aucun parcours) et SearchSheet (état initial + aucun résultat).
 
