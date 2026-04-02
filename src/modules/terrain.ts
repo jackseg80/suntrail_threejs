@@ -204,7 +204,7 @@ export class Tile {
         try {
             // Stocker le taskId pour pouvoir annuler le fetch si dispose() est appelé
             // pendant que la tuile charge (LOD change, scroll rapide, etc.)
-            const { promise, taskId } = loadTileData(this.tx, this.ty, this.zoom, fetchAs2D);
+            const { promise, taskId } = await loadTileData(this.tx, this.ty, this.zoom, fetchAs2D);
             this.activeTaskId = taskId;
             const data = await promise;
             this.activeTaskId = -1;

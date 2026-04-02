@@ -282,21 +282,46 @@ export function getElevationUrl(tx: number, ty: number, zoom: number, is2D: bool
 }
 
 /**
+ * Injecte une tuile de l'archive embarquée dans le CacheStorage du worker.
+ * Le worker utilise `suntrail-tiles-v2` — on y insère la tuile pour que le
+ * worker la trouve au prochain `cache.match(url)` sans aucun fetch réseau.
+ */
+async function seedEmbeddedTile(url: string, z: number, x: number, y: number): Promise<void> {
+    if (!embeddedPMTiles || z > EMBEDDED_MAX_ZOOM) return;
+    try {
+        // Vérifier si déjà en cache (éviter les écritures répétées)
+        const cache = await caches.open('suntrail-tiles-v2');
+        const existing = await cache.match(url);
+        if (existing) return;
+        const blob = await getTileFromEmbedded(z, x, y);
+        if (blob) await cache.put(url, new Response(blob));
+    } catch { /* silence */ }
+}
+
+/**
  * Lance le chargement d'une tuile via les Workers.
  * Retourne { promise, taskId } — le taskId permet d'annuler via cancelTileLoad()
  * si la tuile est disposée avant la fin du fetch (économise la bande passante).
+ *
+ * Pour les LOD ≤ EMBEDDED_MAX_ZOOM, la tuile color est pré-injectée dans le
+ * CacheStorage du worker AVANT le dispatch. Le worker la trouvera instantanément
+ * via `cache.match()` sans aucun réseau.
  */
-export function loadTileData(tx: number, ty: number, zoom: number, is2D: boolean): { promise: Promise<any>, taskId: number } {
+export async function loadTileData(tx: number, ty: number, zoom: number, is2D: boolean): Promise<{ promise: Promise<any>, taskId: number }> {
     const { url: elevUrl, sourceZoom } = getElevationUrl(tx, ty, zoom, is2D);
-    
-    // OpenTopoMap est utilisé uniquement à LOD ≤ 10 (zoom <= 10 branch dans getColorUrl).
-    // À LOD > 10 : swisstopo/IGN/MapTiler — tous supportent zoom 18 nativement.
+
     const nativeMax = 18;
     const cz = Math.min(zoom, nativeMax);
     const cr = Math.pow(2, Math.max(0, zoom - nativeMax));
-    
+
     const colorUrl = getColorUrl(Math.floor(tx/cr), Math.floor(ty/cr), cz);
     const overlayUrl = getOverlayUrl(tx, ty, zoom);
+
+    // Pré-injection embedded : injecter la tuile dans le cache partagé avec le worker
+    // AVANT de dispatcher au worker pour garantir le cache hit
+    if (embeddedPMTiles && zoom <= EMBEDDED_MAX_ZOOM) {
+        await seedEmbeddedTile(colorUrl, cz, Math.floor(tx/cr), Math.floor(ty/cr));
+    }
 
     return tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl, zoom, sourceZoom);
 }
