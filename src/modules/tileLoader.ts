@@ -264,15 +264,12 @@ export function getOverlayUrl(tx: number, ty: number, zoom: number): string | nu
     const MIN_TRAIL_LOD = 11;
     if (!state.SHOW_TRAILS || zoom < MIN_TRAIL_LOD) return null;
     
-    // Même logique 4 coins que getColorUrl : sentiers nationaux uniquement si tuile entièrement dans le pays
+    // SwissTopo pour la Suisse (officiel, haute résolution)
     if (isTileFullyInRegion(tx, ty, zoom, isPositionInSwitzerland)) {
         return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${zoom}/${tx}/${ty}.png`;
     }
-    if (isTileFullyInRegion(tx, ty, zoom, isPositionInFrance)) {
-        return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=TRANSPORT.WANDERWEGE&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${zoom}&TILEROW=${ty}&TILECOL=${tx}`;
-    }
-    
-    return null;
+    // Waymarked Trails : overlay mondial OSM (GR, GRP, sentiers balisés) — France, Italie, Allemagne, etc.
+    return `https://tile.waymarkedtrails.org/hiking/${zoom}/${tx}/${ty}.png`;
 }
 
 /**
