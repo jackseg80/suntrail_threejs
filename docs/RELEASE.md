@@ -104,6 +104,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **549** | **5.19.6** | **v5.19.6** | **Tutoriel onboarding v2 : 8 slides (recherche, météo, REC GPS, outils d'analyse, offline), grilles verticales, responsive desktop/mobile, bump storage key v1→v2** | **2026-04-02** |
 | 550 | 5.20.1 | v5.20.1 | Fix store listing confidentialité EN, bump versionCode | 2026-04-02 |
 | **551** | **5.20.2** | **v5.20.2** | **Tuiles embarquées Europe LOD 5-7 + Suisse LOD 8-11 (PMTiles 20 MB), seed cache worker, backoff MapTiler 429, elevation fallback, roadmap Trail Intelligence → v6** | **2026-04-02** |
+| **552** | **5.20.3** | **v5.20.3** | **Fix overlay sentiers mondial : couche IGN TRANSPORT.WANDERWEGE inexistante → Waymarked Trails OSM (GR, GRP, sentiers balisés), couverture mondiale** | **2026-04-02** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 

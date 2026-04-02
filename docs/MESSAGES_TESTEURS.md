@@ -144,7 +144,7 @@ Voici le lien pour installer l'application :
 👉 https://play.google.com/store/apps/details?id=com.suntrail.threejs
 
 Une fois installée, tu trouveras le formulaire de test ici :
-👉 https://docs.google.com/forms/d/e/1FAIpQLSf3a2hra5fn2Rab-ppCr8HqyEy7VlzSbcumxVHIpNNIZAQHLA/viewform
+👉 https://docs.google.com/forms/d/e/1FAIpQLSfY-0KIhmeixLD4z3CMS-V_A9bNzrhvNqCrhIxgNOpiSOgTrA/viewform
 
 Deux options selon le temps que tu as :
 • Rapide (20-30 min) → 3 mois Pro
