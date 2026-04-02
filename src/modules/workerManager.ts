@@ -47,7 +47,7 @@ class TileWorkerManager {
             }
         }
         if (rateLimited) {
-            console.warn("[WorkerManager] 429 Rate limit MapTiler — les tuiles seront retentées automatiquement.");
+            console.warn("[WorkerManager] 429 Rate limit MapTiler — backoff exponentiel actif dans les workers.");
         }
         if (networkError) {
             reportNetworkFailure();

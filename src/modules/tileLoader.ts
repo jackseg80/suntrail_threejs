@@ -280,7 +280,9 @@ export function getOverlayUrl(tx: number, ty: number, zoom: number): string | nu
  */
 export function getElevationUrl(tx: number, ty: number, zoom: number, is2D: boolean): { url: string | null, sourceZoom: number } {
     if (is2D) return { url: null, sourceZoom: zoom };
-    
+    // Pas d'élévation si MapTiler désactivé (403) ou clé absente — la tuile sera plate mais visible
+    if (state.isMapTilerDisabled || !state.MK || state.MK.length <= 10) return { url: null, sourceZoom: zoom };
+
     const sourceZoom = Math.min(zoom, 14);
     let r = Math.pow(2, Math.max(0, zoom - 14));
     const url = `https://api.maptiler.com/tiles/terrain-rgb-v2/${sourceZoom}/${Math.floor(tx/r)}/${Math.floor(ty/r)}.png?key=${state.MK}`;
