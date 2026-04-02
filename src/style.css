@@ -55,7 +55,11 @@ body, html {
     color: var(--text);
 }
 
-#canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+#canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; overflow: hidden; }
+/* Le canvas Three.js est dimensionné via CSS, pas via renderer.setSize(updateStyle).
+   Empêche le canvas de déborder du conteneur lors des rotations d'écran
+   (cause du bug "UI minuscule après retour portrait" sur Android WebView). */
+#canvas-container canvas { display: block; width: 100% !important; height: 100% !important; }
 
 /* --- INDICATEUR DE CHARGEMENT DES TUILES --- */
 /* Barre fine en haut de l'écran, visible uniquement quand les tuiles chargent depuis le réseau.

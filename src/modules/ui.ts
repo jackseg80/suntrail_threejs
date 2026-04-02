@@ -110,31 +110,32 @@ export function initUI(): void {
     const techInfo = document.getElementById('tech-info');
     if (techInfo) techInfo.style.display = 'block';
 
-    window.addEventListener('resize', onWindowResize);
-    // Fix UI minuscule après rotation paysage→portrait sur Android WebView (v5.19.1) :
-    // Certains Android WebView nécessitent > 300ms pour finir la transition d'orientation.
-    // Triple retry + dispatch resize synthétique pour forcer le recalcul du layout.
+    // Resize géré par scene.ts (unique handler, pas de doublon).
+    // Fix UI minuscule après rotation paysage→portrait sur Android WebView (v5.20) :
+    // NE PAS toucher la <meta viewport> — ça désynchronise le scale factor interne du WebView.
+    // On poll simplement jusqu'à ce que window.innerWidth/Height reflètent les nouvelles dimensions.
+    let _orientPollId: ReturnType<typeof setTimeout> | null = null;
     window.addEventListener('orientationchange', () => {
-        const forceViewportReset = () => {
-            const vp = document.querySelector('meta[name="viewport"]');
-            if (vp) {
-                vp.setAttribute('content', 'width=device-width, initial-scale=1.0');
-                requestAnimationFrame(() => {
-                    vp.setAttribute('content',
-                        'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
-                });
+        if (_orientPollId !== null) clearTimeout(_orientPollId);
+        const prevW = window.innerWidth;
+        const prevH = window.innerHeight;
+        let attempts = 0;
+        const poll = () => {
+            _orientPollId = null;
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            if ((w !== prevW || h !== prevH) && w > 0 && h > 0) {
+                window.dispatchEvent(new Event('resize'));
+                return;
             }
-            onWindowResize();
-            window.dispatchEvent(new Event('resize'));
+            if (++attempts < 30) { // 30 × 50ms = 1.5s max
+                _orientPollId = setTimeout(poll, 50);
+            } else {
+                window.dispatchEvent(new Event('resize'));
+            }
         };
-        setTimeout(forceViewportReset, 100);
-        setTimeout(forceViewportReset, 500);
-        setTimeout(forceViewportReset, 1000);
+        _orientPollId = setTimeout(poll, 50);
     });
-    // Filet de sécurité : visualViewport.resize est plus fiable que orientationchange sur Android moderne
-    if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', () => onWindowResize());
-    }
     document.addEventListener('click', handleGlobalClick);
     
     const canvasContainer = document.getElementById('canvas-container');
@@ -572,11 +573,5 @@ export function disposeUI(): void {
     }
 }
 
-function onWindowResize() {
-    if (!state.camera || !state.renderer) return;
-    state.camera.aspect = window.innerWidth / window.innerHeight;
-    state.camera.updateProjectionMatrix();
-    state.renderer.setSize(window.innerWidth, window.innerHeight);
-}
 
 function refreshTerrain() { resetTerrain(); updateVisibleTiles(); }

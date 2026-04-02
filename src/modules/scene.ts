@@ -136,7 +136,7 @@ export async function initScene(): Promise<void> {
     const useAntialias = !isMobile && state.PERFORMANCE_PRESET !== 'eco';
 
     state.renderer = new THREE.WebGLRenderer({ antialias: useAntialias, logarithmicDepthBuffer: true, alpha: true });
-    state.renderer.setSize(window.innerWidth, window.innerHeight);
+    state.renderer.setSize(window.innerWidth, window.innerHeight, false);
     state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
     state.renderer.shadowMap.enabled = true;
     state.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -690,6 +690,6 @@ function onWindowResize(): void {
     if (state.camera && state.renderer) {
         state.camera.aspect = window.innerWidth / window.innerHeight;
         state.camera.updateProjectionMatrix();
-        state.renderer.setSize(window.innerWidth, window.innerHeight);
+        state.renderer.setSize(window.innerWidth, window.innerHeight, false);
     }
 }
