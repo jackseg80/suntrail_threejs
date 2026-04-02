@@ -61,17 +61,24 @@ SunTrail est une application Android de navigation en montagne avec :
 
 La version Pro débloque :
 • Zoom maximum LOD 18 — détail extrême des sentiers, bâtiments, végétation
-• Bâtiments 3D — architecture réaliste sur le terrain (gratuit = vue 2D seule)
+• Bâtiments 3D — architecture réaliste sur le terrain (gratuit = non affichés)
 • Calendrier solaire — simule les ombres pour n'importe quel jour de l'année (passé et futur), pas seulement aujourd'hui
 • Analyse solaire complète — azimut, élévation, graphique 24h, phase lunaire, rapport copiable
 • Station météo avancée — graphique 24h, prévision 3 jours, alertes montagne (limite neige/pluie, UV, confort)
 • Inclinomètre numérique — pente du terrain sous la caméra en ° et %, alerte couleur au-delà de 30°, panel détail interactif
 • Vue Satellite
 • Multi-tracés GPX — importez autant de randonnées que vous voulez (gratuit = 1 seul tracé à la fois)
-• Export GPX + statistiques avancées (VAM, pente moyenne, estimation Naismith)
+• Export GPX + statistiques avancées (VAM, pente moyenne)
 • Zones hors-ligne illimitées — téléchargez la zone visible avant de partir (gratuit = 1 zone, Pro = illimité)
 
 Note : l'enregistrement GPS est gratuit et illimité pour tout le monde.
+
+🚀 Et bientôt en Pro (mises à jour gratuites pour les abonnés) :
+• Trail Intelligence — cotation CAS T1-T6, tracé 3D coloré par difficulté, analyse par segment
+• Heure de départ optimale — tableau horaire croisant soleil, orage, crépuscule
+• Estimation physio — hydratation, calories, VAM cible adaptés à ton profil
+• Alertes sécurité terrain — avalanche, windchill, orage, nuit (celles-ci seront gratuites pour tous)
+
 ─────────────────────────────────────
 ✅  CE QUE JE TE DEMANDE
 ─────────────────────────────────────
@@ -79,7 +86,7 @@ Note : l'enregistrement GPS est gratuit et illimité pour tout le monde.
    (celle que tu utilises sur ton téléphone Android — souvent une adresse Gmail)
 2. J'ajoute ton adresse au programme de test fermé
 3. Tu reçois un lien pour installer l'app directement
-4. Tu testes, tu remplis le formulaire, tu récupères ta récompense quand l'appliation est sorti de la phase de test
+4. Tu testes, tu remplis le formulaire, tu récupères ta récompense quand l'application est sortie de la phase de test
 
 Les achats en phase de test sont gratuits et fictifs — Google Play simule les transactions sans débiter aucune carte.
 
@@ -116,7 +123,7 @@ L'idée: cartes topo en relief 3D, simulation des ombres solaires heure par heur
 → 20-30 min de test = 3 mois Pro offerts
 → 1h-2h de test = 1 an Pro offert
 
-Pour participer, il suffit de m'envoyer en MP l'adresse email liée à votre Google Play Store. Je vous ajoute au programme de test fermé et vous envoyez le lien d'installation.
+Pour participer, il suffit de m'envoyer en MP l'adresse email liée à votre Google Play Store. Je vous ajoute au programme de test fermé et vous envoie le lien d'installation.
 
 Les achats pendant le test sont 100% gratuits — Google Play simule la transaction, aucune carte bancaire débitée.
 
@@ -134,10 +141,10 @@ Salut [Prénom] !
 C'est bon, tu es ajouté(e) au programme de test SunTrail 3D 🎉
 
 Voici le lien pour installer l'application :
-👉 [LIEN CLOSED TESTING GOOGLE PLAY]
+👉 https://play.google.com/store/apps/details?id=com.suntrail.threejs
 
 Une fois installée, tu trouveras le formulaire de test ici :
-👉 [LIEN GOOGLE FORMS]
+👉 https://docs.google.com/forms/d/e/1FAIpQLSf3a2hra5fn2Rab-ppCr8HqyEy7VlzSbcumxVHIpNNIZAQHLA/viewform
 
 Deux options selon le temps que tu as :
 • Rapide (20-30 min) → 3 mois Pro
