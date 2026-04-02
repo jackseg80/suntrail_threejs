@@ -56,28 +56,30 @@ export function initUI(): void {
 
     // Clés MapTiler distantes (GitHub Gist) — rotation aléatoire sans re-deploy.
     // Le Gist contient un tableau de clés. L'app en choisit une au hasard par session.
-    // Fire-and-forget : si le fetch échoue, la clé bundlée reste active.
     // La clé distante écrase la bundlée SAUF si l'utilisateur a défini sa propre clé.
+    // Promesse résolue quand la clé est prête (ou timeout 3s si Gist indisponible).
     const userDefinedKey = localStorage.getItem('maptiler_key');
-    if (!userDefinedKey) {
-        fetch('https://gist.githubusercontent.com/jackseg80/c4f2e5e99c1efb9d736736cb65fce862/raw/suntrail_config.json', { cache: 'no-cache' })
-            .then(r => r.ok ? r.json() : null)
-            .then(data => {
-                const raw = data?.maptiler_keys;
-                if (!raw || !Array.isArray(raw) || raw.length === 0) return;
-                // Support 2 formats : tableau de strings OU tableau d'objets {key, enabled}
-                const activeKeys: string[] = raw
-                    .filter((k: any) => typeof k === 'string' ? true : k.enabled !== false)
-                    .map((k: any) => typeof k === 'string' ? k : k.key)
-                    .filter((k: string) => k && k.length > 10);
-                if (activeKeys.length > 0) {
-                    const idx = Math.floor(Math.random() * activeKeys.length);
-                    state.MK = activeKeys[idx];
-                    console.log(`[Config] Clé MapTiler distante (${idx + 1}/${activeKeys.length} actives, ${raw.length} totales)`);
-                }
-            })
-            .catch(() => { /* silencieux — la clé bundlée suffit */ });
-    }
+    const gistKeyReady: Promise<void> = (userDefinedKey || state.MK)
+        ? Promise.resolve()
+        : Promise.race([
+            fetch('https://gist.githubusercontent.com/jackseg80/c4f2e5e99c1efb9d736736cb65fce862/raw/suntrail_config.json', { cache: 'no-cache' })
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                    const raw = data?.maptiler_keys;
+                    if (!raw || !Array.isArray(raw) || raw.length === 0) return;
+                    const activeKeys: string[] = raw
+                        .filter((k: any) => typeof k === 'string' ? true : k.enabled !== false)
+                        .map((k: any) => typeof k === 'string' ? k : k.key)
+                        .filter((k: string) => k && k.length > 10);
+                    if (activeKeys.length > 0) {
+                        const idx = Math.floor(Math.random() * activeKeys.length);
+                        state.MK = activeKeys[idx];
+                        console.log(`[Config] Clé MapTiler distante (${idx + 1}/${activeKeys.length} actives, ${raw.length} totales)`);
+                    }
+                })
+                .catch(() => { /* silencieux — démarrage sans élévation */ }),
+            new Promise<void>(resolve => setTimeout(resolve, 3000))
+        ]);
 
     const savedSettings = loadSettings();
     if (savedSettings) {
@@ -265,11 +267,12 @@ export function initUI(): void {
     initAutoHide();
     initMobileUI();
 
-    // Démarrage automatique — clé bundlée (.env) ou distante (Gist)
+    // Démarrage automatique — attend la résolution de la clé MapTiler (bundlée, Gist ou localStorage)
+    // puis lance la scène. Timeout 3s si le Gist est indisponible → démarrage dégradé.
     // IMPORTANT : appelé APRÈS hydrate() de tous les composants pour que
     // #widgets-container et #bottom-bar soient dans le DOM quand startApp() s'exécute.
     // (v5.12.5 regression : launchScene() était appelé avant les hydrations → display:none non effacé)
-    launchScene();
+    void gistKeyReady.then(() => launchScene());
 
     (window as any).sheetManager = sheetManager;
 
