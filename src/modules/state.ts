@@ -242,6 +242,8 @@ export interface State {
     lastTrackingUpdate: number;
 
     IS_OFFLINE: boolean;
+    isNetworkAvailable: boolean;
+    connectionType: 'wifi' | 'cellular' | 'none' | 'unknown';
     isMapTilerDisabled: boolean; // Nouveau flag pour gérer les clés invalides (403)
     networkRequests: number;
     cacheHits: number;
@@ -308,6 +310,8 @@ const initialState: State = {
     lastTrackingUpdate: 0,
 
     IS_OFFLINE: false,
+    isNetworkAvailable: true,
+    connectionType: 'unknown',
     isMapTilerDisabled: false,
     networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isUserInteracting: false,     isProcessingTiles: false, IS_2D_MODE: false, currentFPS: 0, lastUIInteraction: Date.now(),
     lastClickedCoords: { x: 0, z: 0, alt: 0 },

@@ -1,4 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Mock networkMonitor (imported by workerManager)
+vi.mock('./networkMonitor', () => ({
+    reportNetworkFailure: vi.fn(),
+    reportNetworkSuccess: vi.fn(),
+}));
+
 import { tileWorkerManager } from './workerManager';
 
 describe('workerManager.ts', () => {
@@ -19,18 +26,21 @@ describe('workerManager.ts', () => {
     });
 
     it('should handle tile load requests with unique IDs', async () => {
-        const promise = tileWorkerManager.loadTile('test_elev', 'test_color', null, 14);
-        expect(promise).toBeInstanceOf(Promise);
+        const result = tileWorkerManager.loadTile('test_elev', 'test_color', null, 14);
+        expect(result).toHaveProperty('promise');
+        expect(result).toHaveProperty('taskId');
+        expect(result.promise).toBeInstanceOf(Promise);
     });
 
     it('should handle timeouts', async () => {
         // On simule un timeout
         vi.useFakeTimers();
-        const promise = tileWorkerManager.loadTile('slow_url', 'slow_url', null, 14);
-        
-        // Comme c'est un singleton interne, on ne peut pas facilement 
+        const result = tileWorkerManager.loadTile('slow_url', 'slow_url', null, 14);
+
+        // Comme c'est un singleton interne, on ne peut pas facilement
         // intercepter les timers internes, mais on vérifie au moins la structure.
-        expect(promise).toBeInstanceOf(Promise);
+        expect(result.promise).toBeInstanceOf(Promise);
+        expect(typeof result.taskId).toBe('number');
         vi.useRealTimers();
     });
 });

@@ -6,6 +6,7 @@
 
 import { state } from './state';
 import { updateStorageUI } from './tileLoader';
+import { reportNetworkFailure, reportNetworkSuccess } from './networkMonitor';
 
 interface WorkerTask {
     resolve: (value: any) => void;
@@ -37,7 +38,7 @@ class TileWorkerManager {
     }
 
     private handleMessage(e: MessageEvent) {
-        const { id, error, cacheHits, networkRequests, forbidden, rateLimited, ...data } = e.data;
+        const { id, error, cacheHits, networkRequests, forbidden, rateLimited, networkError, ...data } = e.data;
 
         if (forbidden) {
             if (!state.isMapTilerDisabled) {
@@ -47,6 +48,11 @@ class TileWorkerManager {
         }
         if (rateLimited) {
             console.warn("[WorkerManager] 429 Rate limit MapTiler — les tuiles seront retentées automatiquement.");
+        }
+        if (networkError) {
+            reportNetworkFailure();
+        } else if (networkRequests) {
+            reportNetworkSuccess();
         }
 
         if (cacheHits) state.cacheHits += cacheHits;

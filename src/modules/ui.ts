@@ -175,9 +175,28 @@ export function initUI(): void {
                 mapOverlay.classList.add('visible');
                 let tilesStarted = false;
 
+                // Si pas de réseau détecté, afficher le message offline au lieu du spinner seul
+                const offlineMsg = document.getElementById('map-loading-offline-msg');
+                const spinnerText = mapOverlay.querySelector('.map-loading-text') as HTMLElement;
+                const showOfflineMsg = () => {
+                    if (offlineMsg) offlineMsg.style.display = 'flex';
+                    if (spinnerText) spinnerText.style.display = 'none';
+                };
+                const hideOfflineMsg = () => {
+                    if (offlineMsg) offlineMsg.style.display = 'none';
+                    if (spinnerText) spinnerText.style.display = '';
+                };
+
+                if (!state.isNetworkAvailable) showOfflineMsg();
+                // Réagir si le réseau change pendant le chargement
+                const unsubNet = state.subscribe('isNetworkAvailable', (available: boolean) => {
+                    if (available) hideOfflineMsg(); else showOfflineMsg();
+                });
+
                 const hideOverlay = () => {
                     mapOverlay.classList.add('fade-out');
                     setTimeout(() => { mapOverlay.style.display = 'none'; }, 300);
+                    unsubNet();
                 };
 
                 const unsub = state.subscribe('isProcessingTiles', (processing: boolean) => {

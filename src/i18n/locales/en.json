@@ -258,6 +258,25 @@
       "done": "⬇️ Zone downloaded"
     }
   },
+  "network": {
+    "toast": {
+      "online": "Back online",
+      "offline": "Connection lost"
+    },
+    "overlay": {
+      "title": "No connection",
+      "subtitle": "The map will load from cache if available"
+    },
+    "type": {
+      "wifi": "WiFi",
+      "cellular": "Mobile data",
+      "none": "No network",
+      "unknown": "Unknown"
+    },
+    "status": {
+      "manualOffline": "Offline (manual)"
+    }
+  },
   "gps": {
     "aria": {
       "locate": "Locate"

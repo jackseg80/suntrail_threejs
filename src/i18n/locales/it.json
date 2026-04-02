@@ -258,6 +258,25 @@
       "done": "⬇️ Zona scaricata"
     }
   },
+  "network": {
+    "toast": {
+      "online": "Connessione ripristinata",
+      "offline": "Connessione persa"
+    },
+    "overlay": {
+      "title": "Nessuna connessione",
+      "subtitle": "La mappa verrà caricata dalla cache se disponibile"
+    },
+    "type": {
+      "wifi": "WiFi",
+      "cellular": "Dati mobili",
+      "none": "Nessuna rete",
+      "unknown": "Sconosciuto"
+    },
+    "status": {
+      "manualOffline": "Offline (manuale)"
+    }
+  },
   "gps": {
     "aria": {
       "locate": "Localizza"

@@ -25,6 +25,7 @@ Ce fichier sert de mémoire long-terme pour les agents IA travaillant sur SunTra
 - **EventBus Sheet Events (v5.9.0)** : `sheetOpened`/`sheetClosed` émis par SheetManager. `NavigationBar` s'abonne à ces événements — le `setInterval(300ms)` de polling a été supprimé.
 - **Design Tokens (v5.9.0)** : Variables CSS systématiques dans `:root` — `--space-1..6`, `--text-xs..xl`, `--radius-sm..xl`, `--transition-fast/normal/slow`. Utiliser ces tokens dans tout nouveau CSS, jamais de valeurs hardcodées.
 - **SharedAPIKeyComponent (v5.9.0)** : Formulaire clé MapTiler réutilisable (`src/modules/ui/components/SharedAPIKeyComponent.ts`). Instancier avec un `containerId` slot. Synchronisation automatique via `state.subscribe('MK')`.
+- **Network Monitor (v5.20)** : `src/modules/networkMonitor.ts` — détection réseau event-driven. Natif : `@capacitor/network` (écoute broadcasts OS, zéro polling). Web : `navigator.onLine` + events + probe HEAD no-cors + Network Information API. `state.isNetworkAvailable` (bool) et `state.connectionType` (`'wifi'|'cellular'|'none'|'unknown'`) — runtime-only, non persistés. `IS_OFFLINE` auto-sync quand réseau tombe (sauf `_userManualOverride`). `setManualOffline(val)` pour le toggle ConnectivitySheet. Détection secondaire via échecs tuiles : `reportNetworkFailure()` appelé par `workerManager.ts` quand le worker signale `networkError: true` (fetch catch, pas 403/429/abort). Après 3 échecs consécutifs → déclare offline + toast. `reportNetworkSuccess()` reset le compteur + restaure online. Events `eventBus`: `networkOnline`/`networkOffline`. Permission Android : `ACCESS_NETWORK_STATE` dans `AndroidManifest.xml`.
 - **Haptics (v5.9.0)** : Helper `src/modules/haptics.ts` avec `haptic(type)`. Appel via `void haptic('medium')` (jamais await). Utilisé uniquement sur les swipes et les confirmations de succès — PAS sur les clics courants.
 - **Glassmorphism** : Style visuel unifié basé sur des variables CSS (`--glass-*`) avec flou de profondeur (20px) et saturation optimisée.
 - **Timeline FAB (v5.9.0)** : La classe `body.timeline-open` masque `.fab-stack` quand la timeline est ouverte. Togglée dans `TimelineComponent`. Ne pas utiliser le sélecteur CSS `~` (ordre DOM non garanti).
@@ -287,6 +288,7 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 | REC GPS : app crash perd toutes les données | `main.ts` détectait l'interruption mais appelait `clearInterruptedRecording()` sans restaurer les points via `getPersistedRecordingPoints()` | Recovery async : `main.ts` attend `uiReady`, appelle `getPersistedRecordingPoints()`, émet `recordingRecovered`. `TrackSheet` affiche un prompt glassmorphism "Restaurer/Supprimer". Seuils persistance réduits (30→10 pts, 60s→20s). **Ne jamais mettre de gate Pro dans la restauration.** (v5.19.1) |
 | Inclinomètre invisible sous la nav bar / bouge au tap | z-index 30 sous la nav bar (2000). Drag activé par simple mouvement 8px (trop sensible pour mobile) | z-index 2100. Drag uniquement après hold 300ms (pas sur mouvement). Seuil annulation hold = 20px. (v5.19.1) |
 | Panel draggable bouge tout seul au survol souris | `pointermove` sans `pointerdown` actif utilisait `startY` d'une interaction précédente → déclenchait dismiss/repositionnement parasites | Guard `isActive` dans `draggablePanel.ts` : `pointermove` et `pointerup` ignorés si `!isActive`. Flag posé dans `pointerdown`, effacé dans `pointerup`. Double-tap met `isActive=false` immédiatement. (v5.19.1) |
+| Écran blanc sans message quand mobile offline | Aucune détection réseau automatique — seulement un toggle manuel `IS_OFFLINE`. `navigator.onLine` peu fiable sur Android WebView/Windows Chrome | `@capacitor/network` (natif, event-driven) + probe HEAD no-cors (web) + détection par échecs tuiles (`networkError` flag dans worker → 3 consécutifs → offline). Permission `ACCESS_NETWORK_STATE` requise dans `AndroidManifest.xml`. (v5.20) |
 
 ## 💰 Freemium & IAP (v5.12)
 
@@ -320,6 +322,17 @@ Les presets reflètent désormais le marché mobile réel, sans double-couche "p
 | Multi-tracés GPX (> 1) | `TrackSheet.ts` → `handleGPX()` | `if (!state.isPro && state.gpxLayers.length >= 1)` |
 | Export GPX | `TrackSheet.ts` → `exportRecordedGPX()` | `if (!state.isPro)` |
 | REC > 30 min | `TrackSheet.ts` → recBtn click | `setTimeout(REC_FREE_LIMIT_MS)` si `!state.isPro` |
+| Cotation CAS T1-T6 | `trailAnalysis.ts` | `if (!state.isPro)` → badge simplifié (Facile/Moyen/Difficile/Expert) |
+| Temps par segment | `TrackSheet.ts` | `if (!state.isPro)` → temps total Munter seul |
+| Tracé coloré par pente | GPX mesh builder | `if (!state.isPro)` → monochrome |
+| Barre exposition détaillée | `profile.ts` | `if (!state.isPro)` → icône résumé |
+| Tableau heure de départ | `trailAnalysis.ts` | `if (!state.isPro)` → phrase générique |
+| Segments complets | `TrackSheet.ts` | `if (!state.isPro)` → compteur seul |
+| Hydratation / Calories | `trailAnalysis.ts` | `if (!state.isPro)` → masqué |
+| Score condition détaillé | `trailAnalysis.ts` | `if (!state.isPro)` → étoiles seul |
+| Poids utilisateur | `SettingsSheet.ts` | `if (!state.isPro)` → masqué |
+
+> **⚠️ RÈGLE Trail Intelligence** : Les alertes sécurité (avalanche, windchill, nuit, orage, chaleur, visibilité, batterie) sont **TOUJOURS FREE**. Ne jamais les gater derrière `state.isPro`. Voir `docs/ROADMAP_TRAIL_INTELLIGENCE.md`.
 
 ### Acceptance Wall (`src/modules/acceptanceWall.ts`)
 - Overlay bloquant, même pattern que `gpsDisclosure.ts`.
@@ -422,6 +435,7 @@ src/
 │   ├── iap.ts                  # Interface IAP (showUpgradePrompt, grant/revoke)
 │   ├── iapService.ts           # RevenueCat SDK
 │   ├── foregroundService.ts    # Service Android (REC GPS background)
+│   ├── networkMonitor.ts        # Détection réseau event-driven (Capacitor + web)
 │   ├── haptics.ts              # Feedback vibration
 │   ├── acceptanceWall.ts       # Wall d'acceptation 1er lancement
 │   ├── gpsDisclosure.ts        # Disclosure GPS (Play Store)

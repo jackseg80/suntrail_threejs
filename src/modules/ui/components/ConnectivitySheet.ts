@@ -12,6 +12,7 @@ import { resetTerrain, updateVisibleTiles } from '../../terrain';
 import { SharedAPIKeyComponent } from './SharedAPIKeyComponent';
 import { haptic } from '../../haptics';
 import { i18n } from '../../../i18n/I18nService';
+import { setManualOffline } from '../../networkMonitor';
 
 export class ConnectivitySheet extends BaseComponent {
     constructor() {
@@ -34,9 +35,10 @@ export class ConnectivitySheet extends BaseComponent {
             offlineToggle.setAttribute('aria-checked', String(offlineToggle.checked));
 
             offlineToggle.addEventListener('change', (e) => {
-                state.IS_OFFLINE = (e.target as HTMLInputElement).checked;
+                const checked = (e.target as HTMLInputElement).checked;
+                setManualOffline(checked);
                 // ARIA: sync aria-checked
-                offlineToggle.setAttribute('aria-checked', String((e.target as HTMLInputElement).checked));
+                offlineToggle.setAttribute('aria-checked', String(checked));
                 this.updateNetworkStatus();
             });
         }
@@ -135,6 +137,8 @@ export class ConnectivitySheet extends BaseComponent {
             }
             this.updateNetworkStatus();
         }));
+        this.addSubscription(state.subscribe('connectionType', () => this.updateNetworkStatus()));
+        this.addSubscription(state.subscribe('isNetworkAvailable', () => this.updateNetworkStatus()));
 
         this.addSubscription(state.subscribe('userLocation', () => this.updateGPSInfo()));
         this.addSubscription(state.subscribe('userLocationAccuracy', () => this.updateGPSInfo()));
@@ -146,12 +150,27 @@ export class ConnectivitySheet extends BaseComponent {
 
     private updateNetworkStatus() {
         const statusEl = this.element?.querySelector('#net-status') as HTMLElement;
+        const typeEl = this.element?.querySelector('#net-connection-type') as HTMLElement;
+        const isOffline = state.IS_OFFLINE || !state.isNetworkAvailable;
+
         if (statusEl) {
             // ARIA: live region for dynamic network status
             statusEl.setAttribute('aria-live', 'polite');
-            statusEl.textContent = state.IS_OFFLINE ? 'OFFLINE' : 'ONLINE';
-            statusEl.classList.toggle('conn-status-offline', state.IS_OFFLINE);
-            statusEl.classList.toggle('conn-status-online', !state.IS_OFFLINE);
+            statusEl.textContent = isOffline
+                ? i18n.t('connectivity.status.offline')
+                : i18n.t('connectivity.status.online');
+            statusEl.classList.toggle('conn-status-offline', isOffline);
+            statusEl.classList.toggle('conn-status-online', !isOffline);
+        }
+
+        if (typeEl) {
+            if (!state.isNetworkAvailable) {
+                typeEl.textContent = i18n.t('network.type.none');
+            } else if (state.IS_OFFLINE) {
+                typeEl.textContent = i18n.t('network.status.manualOffline');
+            } else {
+                typeEl.textContent = i18n.t(`network.type.${state.connectionType}`);
+            }
         }
     }
 

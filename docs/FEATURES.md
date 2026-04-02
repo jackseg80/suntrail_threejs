@@ -44,6 +44,21 @@ Ce document dresse la liste exhaustive des capacités techniques et fonctionnell
 *   **Station Météo Pro** : Conditions actuelles complètes (grille 3 colonnes : dew point, UV Index coloré ANSES, couverture nuageuse, vent + flèche SVG direction, rafales, visibilité, isotherme 0°C, probabilité précipitations), scroll 24h enrichi, graphique SVG température 24h, prévisions 3 jours, Alerte Montagne (isotherme vs altitude + Indice Confort Rando composite), bouton "Copier le rapport".
 
 
+### 🧠 Trail Intelligence — Analyse Intelligente (v5.20+)
+
+*   **Cotation GPX — Tier Gratuit** : Badge de difficulté simplifié (Facile/Moyen/Difficile/Expert) + durée totale estimée (formule Munter).
+*   **Cotation GPX Pro** : Cotation CAS T1-T6 + UIAA, temps par segment (montée/descente/plat), pente max, pente moyenne, % du tracé > 30°. Tracé 3D coloré par pente (vertex colors vert → rouge).
+*   **Segmentation Pro** : Découpage automatique du tracé en segments homogènes. Tableau avec distance, pente moyenne, durée et cotation par segment. Segment clé (le plus dur) surligné sur la carte 3D et dans le profil.
+*   **Point demi-effort Pro** : Marqueur 3D à 50% du temps Munter estimé (pas à 50% de la distance).
+*   **Exposition solaire — Tier Gratuit** : Icône résumé ("Tracé majoritairement ensoleillé"). Sur un point carte : "Versant sud" / "Versant nord".
+*   **Exposition solaire Pro** : Barre détaillée ombre/soleil par km sous le profil d'élévation. Sur un point carte : heures d'ensoleillement direct + graphique.
+*   **Alertes sécurité (FREE — toujours accessibles)** : Bannière intrusive (rouge/orange/jaune) auto-dismiss 8s. Risque avalanche, windchill, nuit sur le tracé, orage après-midi, coup de chaleur, visibilité réduite, batterie insuffisante. Affichées à chaque ouverture du tracé, désactivables dans les Réglages.
+*   **Heure de départ — Tier Gratuit** : Conseil générique ("Partez tôt le matin").
+*   **Heure de départ Pro** : Tableau 5h-12h avec score par créneau et raison (soleil, orage, lumière).
+*   **Score "Condition du jour" — Tier Gratuit** : Note 1-5 étoiles. Fonctionne avec ou sans tracé GPX.
+*   **Score "Condition du jour" Pro** : Détail par facteur (météo, vent, soleil, visibilité, UV) + facteur limitant identifié.
+*   **Estimation physio Pro** : Hydratation estimée (litres), calories (formule Pandolf), VAM cible par segment. Nécessite le poids utilisateur (réglages Pro).
+
 ### ⚡ Performance & Optimisation Mobile
 *   **Presets de Performance** : 4 modes prédéfinis (Eco, Balanced, Performance, Ultra) avec détection GPU automatique (52 patterns : Intel, AMD, NVIDIA, Adreno, Mali).
 *   **Auto-Eco Mode (Battery API)** : Surveillance du niveau de charge et bascule automatique en profil Éco sous les 20% de batterie.
@@ -56,6 +71,7 @@ Ce document dresse la liste exhaustive des capacités techniques et fonctionnell
 
 ### 🛠️ Outils Spécialisés & Sécurité
 *   **Architecture Offline-First (PWA)** : Mise en cache complète des assets et des tuiles cartographiques. Zones téléchargeables pour usage hors réseau. Support PMTiles natif.
+*   **Détection réseau automatique (v5.20)** : Monitoring event-driven via `@capacitor/network` (natif) + fallback `navigator.onLine` (web). Affichage type de connexion (WiFi/4G/aucun), toast changement de statut, message explicite sur l'overlay de chargement si offline, auto-sync `IS_OFFLINE`. Détection secondaire via échecs de tuiles (3 consécutifs → offline). Zéro polling, zéro impact batterie.
 *   **Générateur SOS SMS** : Outil de secours générant un message texte avec coordonnées GPS, altitude, niveau de batterie et horodatage. Gratuit et toujours accessible.
 *   **Inclinomètre numérique Pro** : Pente du terrain en ° et % avec alerte couleur (blanc/jaune/orange/rouge). Tap pour panel détail (direction de pente en boussole, niveau de danger). Repositionnable par drag (v5.19.1).
 *   **Profil d'élévation interactif** : Courbe SVG avec gradient, survol affichant distance/altitude/pente. Marqueur 3D cyan synchronisé. Panel déplaçable avec swipe-to-dismiss.

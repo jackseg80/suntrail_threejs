@@ -258,6 +258,25 @@
       "done": "⬇️ Zone heruntergeladen"
     }
   },
+  "network": {
+    "toast": {
+      "online": "Wieder verbunden",
+      "offline": "Verbindung verloren"
+    },
+    "overlay": {
+      "title": "Keine Verbindung",
+      "subtitle": "Die Karte wird aus dem Cache geladen, falls verfügbar"
+    },
+    "type": {
+      "wifi": "WLAN",
+      "cellular": "Mobilfunk",
+      "none": "Kein Netzwerk",
+      "unknown": "Unbekannt"
+    },
+    "status": {
+      "manualOffline": "Offline (manuell)"
+    }
+  },
   "gps": {
     "aria": {
       "locate": "Lokalisieren"

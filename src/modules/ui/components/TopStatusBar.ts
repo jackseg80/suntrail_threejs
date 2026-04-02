@@ -57,12 +57,13 @@ export class TopStatusBar extends BaseComponent {
 
         this.updateLOD(state.ZOOM);
         this.updateWeather(state.weatherData);
-        this.updateNetwork(state.IS_OFFLINE);
+        this.updateNetwork();
         this.updateRecStatus(state.isRecording);
 
         this.addSubscription(state.subscribe('ZOOM', (val: number) => this.updateLOD(val)));
         this.addSubscription(state.subscribe('weatherData', (val: any) => this.updateWeather(val)));
-        this.addSubscription(state.subscribe('IS_OFFLINE', (val: boolean) => this.updateNetwork(val)));
+        this.addSubscription(state.subscribe('IS_OFFLINE', () => this.updateNetwork()));
+        this.addSubscription(state.subscribe('isNetworkAvailable', () => this.updateNetwork()));
         this.addSubscription(state.subscribe('isRecording', (val: boolean) => this.updateRecStatus(val)));
 
         // Update aria-labels on locale change
@@ -163,9 +164,10 @@ export class TopStatusBar extends BaseComponent {
         }
     }
 
-    private updateNetwork(isOffline: boolean): void {
+    private updateNetwork(): void {
         if (this.netStatusIcon) {
-            this.netStatusIcon.innerHTML = isOffline 
+            const isOffline = state.IS_OFFLINE || !state.isNetworkAvailable;
+            this.netStatusIcon.innerHTML = isOffline
                 ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.7 12.3a2.5 2.5 0 0 1 3.6 3.6m-2.2-12.7a5 5 0 0 1 7.1 7.1m-1.8 4.2A5 5 0 0 1 3 10.5a5 5 0 0 1 4.5-4.9M1 1l22 22"/></svg>`
                 : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>`;
         }

@@ -75,6 +75,10 @@
 <div id="map-loading-overlay">
     <span class="spinner map-loading-spinner"></span>
     <span class="map-loading-text" data-i18n="loading.map">Chargement de la carte...</span>
+    <div id="map-loading-offline-msg" style="display:none;">
+        <span data-i18n="network.overlay.title">Pas de connexion</span>
+        <span class="map-loading-offline-sub" data-i18n="network.overlay.subtitle">La carte sera chargée depuis le cache si disponible</span>
+    </div>
 </div>
 
 <div id="canvas-container"></div>
@@ -501,6 +505,7 @@
                 <div class="stat-card">
                 <div class="stat-card-label" data-i18n="connectivity.label.network">Réseau</div>
                 <div class="stat-card-value" id="net-status">ONLINE</div>
+                <div class="stat-card-sub" id="net-connection-type"></div>
                 </div>
                 </div>
 

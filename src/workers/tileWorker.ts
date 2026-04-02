@@ -51,6 +51,7 @@ self.onmessage = async (e) => {
         if (elevRes) {
             if (elevRes.forbidden) results.forbidden = true;
             if ((elevRes as any).rateLimited) results.rateLimited = true;
+            if ((elevRes as any).networkError) results.networkError = true;
             if (elevRes.fromCache) results.cacheHits++; else results.networkRequests++;
             if (elevRes.bitmap) {
                 results.elevBitmap = elevRes.bitmap;
@@ -105,6 +106,7 @@ self.onmessage = async (e) => {
         if (colorRes) {
             if (colorRes.forbidden) results.forbidden = true;
             if ((colorRes as any).rateLimited) results.rateLimited = true;
+            if ((colorRes as any).networkError) results.networkError = true;
             if (colorRes.fromCache) results.cacheHits++; else results.networkRequests++;
             if (colorRes.bitmap) {
                 results.colorBitmap = colorRes.bitmap;
@@ -115,6 +117,7 @@ self.onmessage = async (e) => {
         if (overlayRes) {
             if (overlayRes.forbidden) results.forbidden = true;
             if ((overlayRes as any).rateLimited) results.rateLimited = true;
+            if ((overlayRes as any).networkError) results.networkError = true;
             if (overlayRes.fromCache) results.cacheHits++; else results.networkRequests++;
             if (overlayRes.bitmap) {
                 results.overlayBitmap = overlayRes.bitmap;
@@ -132,7 +135,7 @@ self.onmessage = async (e) => {
     }
 };
 
-async function fetchTile(url: string, isOffline: boolean, signal?: AbortSignal): Promise<{ bitmap: ImageBitmap, fromCache: boolean, forbidden?: boolean, rateLimited?: boolean } | null> {
+async function fetchTile(url: string, isOffline: boolean, signal?: AbortSignal): Promise<{ bitmap: ImageBitmap, fromCache: boolean, forbidden?: boolean, rateLimited?: boolean, networkError?: boolean } | null> {
     try {
         const cache = await getCache();
         const cached = await cache.match(url);
@@ -158,6 +161,6 @@ async function fetchTile(url: string, isOffline: boolean, signal?: AbortSignal):
         return { bitmap, fromCache: false };
     } catch (e: any) {
         if (e.name === 'AbortError') throw e; // Propager pour que le handler principal sorte proprement
-        return null;
+        return { bitmap: null as any, fromCache: false, networkError: true };
     }
 }

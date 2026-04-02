@@ -1,6 +1,7 @@
 import './style.css';
 import { initUI } from './modules/ui';
 import { initBatteryManager } from './modules/performance';
+import { initNetworkMonitor } from './modules/networkMonitor';
 import { registerSW } from 'virtual:pwa-register';
 import { getInterruptedRecording, clearInterruptedRecording, getPersistedRecordingPoints, stopRecordingService } from './modules/foregroundService';
 import { showToast } from './modules/utils';
@@ -44,6 +45,10 @@ if (interrupted) {
         }
     }, { once: true });
 }
+
+// Détection réseau (event-driven, zéro polling) — avant initUI pour que state.isNetworkAvailable
+// soit disponible quand l'overlay de chargement vérifie la connectivité
+void initNetworkMonitor();
 
 // Lancement de l'initialisation globale de l'interface
 initUI();

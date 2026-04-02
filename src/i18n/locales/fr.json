@@ -258,6 +258,25 @@
       "done": "⬇️ Zone Téléchargée"
     }
   },
+  "network": {
+    "toast": {
+      "online": "Connexion rétablie",
+      "offline": "Connexion perdue"
+    },
+    "overlay": {
+      "title": "Pas de connexion",
+      "subtitle": "La carte sera chargée depuis le cache si disponible"
+    },
+    "type": {
+      "wifi": "WiFi",
+      "cellular": "Données mobiles",
+      "none": "Aucun réseau",
+      "unknown": "Inconnu"
+    },
+    "status": {
+      "manualOffline": "Hors-ligne (manuel)"
+    }
+  },
   "gps": {
     "aria": {
       "locate": "Localiser"
