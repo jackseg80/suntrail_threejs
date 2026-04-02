@@ -1,8 +1,9 @@
-# Trail Intelligence — Roadmap v5.20 → v5.23
+# Trail Intelligence — Roadmap v6.0
 
-> Module d'analyse intelligente de tracés et terrain.  
-> 100% déterministe (règles, formules, seuils). Pas de LLM.  
-> Couche LLM optionnelle repoussée à v6.x (nécessite backend).
+> Module d'analyse intelligente de tracés et terrain.
+> Planifié pour **v6.0** — la v5.x reste dédiée à la stabilisation, optimisation et debug.
+> 100% déterministe (règles, formules, seuils). Pas de LLM.
+> Couche LLM optionnelle repoussée à v7.x (nécessite backend).
 
 ## Principes
 
@@ -24,7 +25,7 @@
 
 ---
 
-## v5.20 — Cotation & Temps estimé
+## v6.0 — Cotation & Temps estimé
 
 ### Sur un tracé GPX
 
@@ -75,7 +76,7 @@ Score composite basé sur :
 
 ---
 
-## v5.21 — Exposition solaire & Segments
+## v6.1 — Exposition solaire & Segments
 
 ### Sur un tracé GPX
 
@@ -118,7 +119,7 @@ Score composite basé sur :
 
 ---
 
-## v5.22 — Alertes sécurité & Heure de départ
+## v6.2 — Alertes sécurité & Heure de départ
 
 ### Alertes (toutes FREE)
 
@@ -175,7 +176,7 @@ Pour chaque heure de départ H (5h → 12h) :
 
 ---
 
-## v5.23 — Score condition & Estimation physio
+## v6.3 — Score condition & Estimation physio
 
 ### Score "Condition du jour"
 
@@ -250,7 +251,7 @@ M = 1.5×W + 2.0×(W+L)×(L/W)² + η×(W+L)×(1.5×V² + 0.35×V×G)
 
 ---
 
-## v6.x — Couche LLM optionnelle (Pro uniquement)
+## v7.x — Couche LLM optionnelle (Pro uniquement)
 
 > Dépendance : backend serveur (API Claude Haiku ~$0.01-0.03/résumé).
 

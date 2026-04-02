@@ -129,7 +129,7 @@ Le CI (`.github/workflows/release.yml`) build l'AAB signé et crée une GitHub R
 | [TESTS.md](./docs/TESTS.md) | Infrastructure de tests (398 tests, 36 fichiers) |
 | [ANDROID.md](./docs/ANDROID.md) | Guide build Android |
 | [MONETIZATION.md](./docs/MONETIZATION.md) | Stratégie business |
-| [ROADMAP_TRAIL_INTELLIGENCE.md](./docs/ROADMAP_TRAIL_INTELLIGENCE.md) | Roadmap analyse intelligente (v5.20→v5.23) |
+| [ROADMAP_TRAIL_INTELLIGENCE.md](./docs/ROADMAP_TRAIL_INTELLIGENCE.md) | Roadmap analyse intelligente (v6.0→v6.3) |
 
 ## Licence
 

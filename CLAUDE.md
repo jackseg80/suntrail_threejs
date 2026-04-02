@@ -140,4 +140,4 @@ Consulter selon le contexte de la tâche :
 | [docs/AI_MONETIZATION.md](docs/AI_MONETIZATION.md) | Freemium, IAP RevenueCat, feature gates, rotation clés MapTiler, anti-spam API |
 | [docs/RELEASE.md](docs/RELEASE.md) | Workflow de publication, historique versionCode, conventions de nommage |
 | [docs/MONETIZATION.md](docs/MONETIZATION.md) | Stratégie business, prix, concurrence, décisions actées |
-| [docs/ROADMAP_TRAIL_INTELLIGENCE.md](docs/ROADMAP_TRAIL_INTELLIGENCE.md) | Roadmap module analyse v5.20→v5.23, split Free/Pro |
+| [docs/ROADMAP_TRAIL_INTELLIGENCE.md](docs/ROADMAP_TRAIL_INTELLIGENCE.md) | Roadmap module analyse v6.0→v6.3, split Free/Pro |
