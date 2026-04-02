@@ -10,12 +10,15 @@ import { eventBus } from './modules/eventBus';
 
 
 // Enregistrement du Service Worker pour le mode Hors-ligne (PWA)
+// skipWaiting + clientsClaim = le nouveau SW prend le contrôle immédiatement.
+// onNeedRefresh recharge la page pour que le navigateur serve les nouveaux fichiers.
 registerSW({
   onNeedRefresh() {
-    console.log("Nouvelle version de SunTrail disponible !");
+    console.log("[SW] Nouvelle version détectée — rechargement…");
+    window.location.reload();
   },
   onOfflineReady() {
-    console.log("SunTrail est prêt à fonctionner hors-ligne !");
+    console.log("[SW] SunTrail est prêt à fonctionner hors-ligne.");
   },
 });
 

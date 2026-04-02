@@ -38,6 +38,16 @@ import { attachDraggablePanel } from './ui/draggablePanel';
 // Référence de l'intervalle updateStorageUI (W5) — stockée pour permettre clearInterval si besoin
 let storageUIIntervalId: ReturnType<typeof setInterval> | null = null;
 
+/** Extrait les clés actives depuis la réponse JSON du Gist. */
+function _extractGistKeys(data: any): string[] {
+    const raw = data?.maptiler_keys;
+    if (!raw || !Array.isArray(raw) || raw.length === 0) return [];
+    return raw
+        .filter((k: any) => typeof k === 'string' ? true : k.enabled !== false)
+        .map((k: any) => typeof k === 'string' ? k : k.key)
+        .filter((k: string) => k && k.length > 10);
+}
+
 export function initUI(): void {
     console.log("[UI] Starting Init...");
     
@@ -47,39 +57,52 @@ export function initUI(): void {
     // Initialiser RevenueCat en fire-and-forget (natif seulement — no-op sur web)
     void iapService.initialize();
 
-    // Clé MapTiler bundlée — injectée au build depuis .env
-    // Ne remplace la clé que si l'utilisateur n'en a pas défini une manuellement
-    const bundledKey = import.meta.env.VITE_MAPTILER_KEY as string | undefined;
-    if (bundledKey && bundledKey.length > 10 && !state.MK) {
-        state.MK = bundledKey;
-    }
-
-    // Clés MapTiler distantes (GitHub Gist) — rotation aléatoire sans re-deploy.
-    // Le Gist contient un tableau de clés. L'app en choisit une au hasard par session.
-    // La clé distante écrase la bundlée SAUF si l'utilisateur a défini sa propre clé.
-    // Promesse résolue quand la clé est prête (ou timeout 3s si Gist indisponible).
+    // Résolution de la clé MapTiler — priorité : localStorage > .env > Gist
     const userDefinedKey = localStorage.getItem('maptiler_key');
-    const gistKeyReady: Promise<void> = (userDefinedKey || state.MK)
-        ? Promise.resolve()
-        : Promise.race([
+    const bundledKey = import.meta.env.VITE_MAPTILER_KEY as string | undefined;
+
+    let gistKeyReady: Promise<void>;
+
+    if (userDefinedKey) {
+        state.MK = userDefinedKey;
+        console.log('[Config] Clé MapTiler : localStorage (manuelle)');
+        gistKeyReady = Promise.resolve();
+    } else if (bundledKey && bundledKey.length > 10) {
+        state.MK = bundledKey;
+        console.log('[Config] Clé MapTiler : .env (bundlée)');
+        // Gist en arrière-plan pour rotation — écrase la bundlée
+        gistKeyReady = Promise.resolve();
+        fetch('https://gist.githubusercontent.com/jackseg80/c4f2e5e99c1efb9d736736cb65fce862/raw/suntrail_config.json', { cache: 'no-cache' })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                const keys = _extractGistKeys(data);
+                if (keys.length > 0) {
+                    const idx = Math.floor(Math.random() * keys.length);
+                    state.MK = keys[idx];
+                    console.log(`[Config] Clé MapTiler : Gist rotation (${idx + 1}/${keys.length})`);
+                }
+            })
+            .catch(() => {});
+    } else {
+        // Pas de clé locale ni bundlée → attendre le Gist (timeout 3s)
+        console.log('[Config] Clé MapTiler : attente Gist...');
+        gistKeyReady = Promise.race([
             fetch('https://gist.githubusercontent.com/jackseg80/c4f2e5e99c1efb9d736736cb65fce862/raw/suntrail_config.json', { cache: 'no-cache' })
                 .then(r => r.ok ? r.json() : null)
                 .then(data => {
-                    const raw = data?.maptiler_keys;
-                    if (!raw || !Array.isArray(raw) || raw.length === 0) return;
-                    const activeKeys: string[] = raw
-                        .filter((k: any) => typeof k === 'string' ? true : k.enabled !== false)
-                        .map((k: any) => typeof k === 'string' ? k : k.key)
-                        .filter((k: string) => k && k.length > 10);
-                    if (activeKeys.length > 0) {
-                        const idx = Math.floor(Math.random() * activeKeys.length);
-                        state.MK = activeKeys[idx];
-                        console.log(`[Config] Clé MapTiler distante (${idx + 1}/${activeKeys.length} actives, ${raw.length} totales)`);
+                    const keys = _extractGistKeys(data);
+                    if (keys.length > 0) {
+                        const idx = Math.floor(Math.random() * keys.length);
+                        state.MK = keys[idx];
+                        console.log(`[Config] Clé MapTiler : Gist (${idx + 1}/${keys.length})`);
+                    } else {
+                        console.warn('[Config] Gist vide — démarrage sans clé MapTiler');
                     }
                 })
-                .catch(() => { /* silencieux — démarrage sans élévation */ }),
+                .catch(() => { console.warn('[Config] Gist inaccessible — démarrage sans clé MapTiler'); }),
             new Promise<void>(resolve => setTimeout(resolve, 3000))
         ]);
+    }
 
     const savedSettings = loadSettings();
     if (savedSettings) {
