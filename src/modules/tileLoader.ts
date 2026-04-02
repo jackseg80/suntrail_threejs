@@ -66,8 +66,9 @@ async function getTileFromPMTiles(z: number, x: number, y: number): Promise<Blob
 }
 
 /**
- * Monte l'archive PMTiles overview embarquée dans l'APK/PWA (LOD 5-7 Europe).
+ * Monte l'archive PMTiles overview embarquée dans l'APK/PWA (LOD 5-11).
  * Appelée une fois au démarrage, fire-and-forget.
+ * Warmup : lit le header + directory + une tuile test pour forcer le cache PMTiles interne.
  */
 export async function initEmbeddedOverview(): Promise<void> {
     try {
@@ -77,6 +78,11 @@ export async function initEmbeddedOverview(): Promise<void> {
         embeddedPMTiles = new pmtiles.PMTiles(url);
         const header = await embeddedPMTiles.getHeader();
         console.log(`[Embedded] Overview chargé. LOD ${header.minZoom}-${header.maxZoom}, ${header.numTileEntries} tuiles`);
+        // Warmup : lire une tuile LOD 6 pour forcer le chargement du directory interne
+        // (après ce call, les extractions suivantes sont ~10× plus rapides)
+        await embeddedPMTiles.getZxy(6, 33, 22);
+        // Pré-ouvrir le cache worker une seule fois
+        _workerCache = await caches.open('suntrail-tiles-v2');
     } catch {
         embeddedPMTiles = null;
     }
@@ -281,6 +287,11 @@ export function getElevationUrl(tx: number, ty: number, zoom: number, is2D: bool
     return { url, sourceZoom };
 }
 
+// Référence cachée au CacheStorage worker — évite caches.open() à chaque tuile
+let _workerCache: Cache | null = null;
+// Set de URLs déjà injectées dans cette session — évite cache.match() répétitifs
+const _seededUrls = new Set<string>();
+
 /**
  * Injecte une tuile de l'archive embarquée dans le CacheStorage du worker.
  * Le worker utilise `suntrail-tiles-v2` — on y insère la tuile pour que le
@@ -288,13 +299,16 @@ export function getElevationUrl(tx: number, ty: number, zoom: number, is2D: bool
  */
 async function seedEmbeddedTile(url: string, z: number, x: number, y: number): Promise<void> {
     if (!embeddedPMTiles || z > EMBEDDED_MAX_ZOOM) return;
+    if (_seededUrls.has(url)) return; // Déjà injecté cette session
     try {
-        // Vérifier si déjà en cache (éviter les écritures répétées)
-        const cache = await caches.open('suntrail-tiles-v2');
-        const existing = await cache.match(url);
-        if (existing) return;
+        if (!_workerCache) _workerCache = await caches.open('suntrail-tiles-v2');
+        const existing = await _workerCache.match(url);
+        if (existing) { _seededUrls.add(url); return; }
         const blob = await getTileFromEmbedded(z, x, y);
-        if (blob) await cache.put(url, new Response(blob));
+        if (blob) {
+            await _workerCache.put(url, new Response(blob));
+            _seededUrls.add(url);
+        }
     } catch { /* silence */ }
 }
 
