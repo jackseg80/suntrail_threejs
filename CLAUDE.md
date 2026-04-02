@@ -1,4 +1,4 @@
-# SunTrail — Guide IA (v5.19.6)
+# SunTrail — Guide IA (v5.20.2)
 
 > Ce fichier est le **point d'entrée unique** pour tous les agents IA (Claude, Gemini, Copilot).
 > Il contient les règles essentielles. Les détails sont dans les docs liées en bas de page.

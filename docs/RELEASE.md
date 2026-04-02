@@ -102,6 +102,8 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | 547 | 5.19.4 | v5.19.4 | Stabilisation LOD (lerp pondéré + cooldown 800ms), résolution adaptative idle-only (plus de bandes blanches), geocoding 403 ne désactive plus MapTiler | 2026-04-01 |
 | 548 | 5.19.5 | v5.19.5 | Perf: cache API worker (1x au lieu de 1x/tuile), isVisible/getAltitudeAt cachés par frame, suppression résolution adaptative (tuiles noires), revert skipNormalMap (tuiles noires 2D→3D) | 2026-04-02 |
 | **549** | **5.19.6** | **v5.19.6** | **Tutoriel onboarding v2 : 8 slides (recherche, météo, REC GPS, outils d'analyse, offline), grilles verticales, responsive desktop/mobile, bump storage key v1→v2** | **2026-04-02** |
+| 550 | 5.20.1 | v5.20.1 | Fix store listing confidentialité EN, bump versionCode | 2026-04-02 |
+| **551** | **5.20.2** | **v5.20.2** | **Tuiles embarquées Europe LOD 5-7 + Suisse LOD 8-11 (PMTiles 20 MB), seed cache worker, backoff MapTiler 429, elevation fallback, roadmap Trail Intelligence → v6** | **2026-04-02** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 
