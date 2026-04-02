@@ -1,4 +1,4 @@
-# 📋 Fonctionnalités de SunTrail 3D (v5.19.2)
+# 📋 Fonctionnalités de SunTrail 3D (v5.19.6)
 
 Ce document dresse la liste exhaustive des capacités techniques et fonctionnelles du moteur SunTrail.
 
@@ -77,6 +77,7 @@ Ce document dresse la liste exhaustive des capacités techniques et fonctionnell
 *   **Profil d'élévation interactif** : Courbe SVG avec gradient, survol affichant distance/altitude/pente. Marqueur 3D cyan synchronisé. Panel déplaçable avec swipe-to-dismiss.
 *   **Panels déplaçables (v5.19.1)** : Timeline, profil d'élévation et pastille de coordonnées repositionnables par maintien + glissement. Double-tap pour reset.
 *   **Support GPX Pro** : Importation et exportation de traces multiples avec statistiques avancées (VAM, pente moyenne, estimation Naismith).
+*   **Tutoriel onboarding v2** : 8 slides interactives couvrant navigation 3D, recherche, boutons FAB, tracés GPX/REC, simulation solaire, météo, outils d'analyse et sécurité/offline. Responsive (adapté mobile + PC). Swipe, clavier et ARIA. Réaffiché aux utilisateurs existants via bump de storage key.
 *   **i18n** : 4 langues (FR, DE, IT, EN) avec fallback automatique et rechargement live.
 
 ### 💰 Modèle Freemium (v5.14+)

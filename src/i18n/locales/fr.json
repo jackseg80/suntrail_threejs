@@ -453,12 +453,12 @@
     "next": "Suivant",
     "start": "Commencer",
     "slide1": {
-      "title": "Naviguez sur la carte",
-      "desc": "1 doigt pour d\u00e9placer \u00b7 Pincez pour zoomer \u00b7 2 doigts pour faire pivoter la vue"
+      "title": "Naviguez en 3D",
+      "desc": "D\u00e9placez la carte avec 1 doigt \u00b7 Pincez pour zoomer \u00b7 2 doigts pour pivoter ou incliner la vue"
     },
     "slide2": {
-      "title": "Inclinez la vue",
-      "desc": "Posez 2 doigts c\u00f4te \u00e0 c\u00f4te (horizontalement) et glissez vers le haut ou le bas pour incliner la cam\u00e9ra"
+      "title": "Recherchez un lieu",
+      "desc": "Tapez le nom d\u2019une ville, d\u2019un sommet ou d\u2019un pays dans la barre de recherche. Des filtres rapides affinent les r\u00e9sultats."
     },
     "slide3": {
       "title": "Les boutons de contr\u00f4le",
@@ -473,16 +473,34 @@
       "gpsDesc": "centre sur votre GPS"
     },
     "slide4": {
-      "title": "Importez vos trac\u00e9s",
-      "desc": "Chargez un fichier GPX depuis vos randonn\u00e9es. Le trac\u00e9 s\u2019affiche en 3D sur le terrain r\u00e9el."
+      "title": "Vos parcours",
+      "desc": "Importez ou enregistrez vos randonn\u00e9es :",
+      "import": "Import GPX",
+      "importDesc": "Chargez un fichier GPX \u2014 le trac\u00e9 s\u2019affiche en 3D sur le terrain",
+      "rec": "Enregistrement GPS",
+      "recDesc": "D\u00e9marrez REC pour tracer votre rando en direct"
     },
     "slide5": {
       "title": "Simulez le soleil",
       "desc": "La timeline en bas permet de visualiser l\u2019ensoleillement \u00e0 n\u2019importe quelle heure de la journ\u00e9e."
     },
     "slide6": {
-      "title": "Restez en s\u00e9curit\u00e9",
-      "desc": "En cas d\u2019urgence, le bouton SOS en haut \u00e0 droite affiche votre position exacte pour les secours."
+      "title": "M\u00e9t\u00e9o en direct",
+      "desc": "La pastille m\u00e9t\u00e9o en haut affiche la temp\u00e9rature actuelle. Tapez dessus pour les pr\u00e9visions, le vent et les alertes."
+    },
+    "slide7": {
+      "title": "Outils d\u2019analyse",
+      "desc": "Analysez le terrain en d\u00e9tail :",
+      "profile": "Profil d\u2019\u00e9l\u00e9vation",
+      "profileDesc": "Distance, altitude et pente \u00e0 chaque point du trac\u00e9",
+      "inclino": "Inclinom\u00e8tre",
+      "inclinoDesc": "Pente du terrain en temps r\u00e9el sous le r\u00e9ticule",
+      "drag": "Panneaux d\u00e9pla\u00e7ables",
+      "dragDesc": "Maintenez appuy\u00e9 pour repositionner les widgets"
+    },
+    "slide8": {
+      "title": "S\u00e9curit\u00e9 & hors-ligne",
+      "desc": "Le bouton SOS affiche votre position exacte pour les secours. L\u2019app fonctionne aussi sans r\u00e9seau gr\u00e2ce au cache de tuiles."
     }
   },
   "upgrade": {

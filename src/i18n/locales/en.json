@@ -453,12 +453,12 @@
     "next": "Next",
     "start": "Start",
     "slide1": {
-      "title": "Navigate the map",
-      "desc": "1 finger to pan \u00b7 Pinch to zoom \u00b7 2 fingers to rotate the view"
+      "title": "Navigate in 3D",
+      "desc": "Pan with 1 finger \u00b7 Pinch to zoom \u00b7 2 fingers to rotate or tilt the view"
     },
     "slide2": {
-      "title": "Tilt the view",
-      "desc": "Place 2 fingers side by side (horizontally) and swipe up or down to tilt the camera"
+      "title": "Search for a place",
+      "desc": "Type a city, peak, or country name in the search bar. Quick filter chips help narrow results."
     },
     "slide3": {
       "title": "Control buttons",
@@ -473,16 +473,34 @@
       "gpsDesc": "centers on your GPS"
     },
     "slide4": {
-      "title": "Import your tracks",
-      "desc": "Load a GPX file from your hikes. The route appears in 3D on the real terrain."
+      "title": "Your tracks",
+      "desc": "Import or record your hikes:",
+      "import": "Import GPX",
+      "importDesc": "Load a GPX file \u2014 the route appears in 3D on the terrain",
+      "rec": "GPS Recording",
+      "recDesc": "Start REC to trace your hike live"
     },
     "slide5": {
       "title": "Simulate the sun",
       "desc": "The timeline at the bottom shows sunlight at any time of day."
     },
     "slide6": {
-      "title": "Stay safe",
-      "desc": "In an emergency, the SOS button at the top right shows your exact position for rescue services."
+      "title": "Live weather",
+      "desc": "The weather pill at the top shows the current temperature. Tap it for forecasts, wind and alerts."
+    },
+    "slide7": {
+      "title": "Analysis tools",
+      "desc": "Analyze the terrain in detail:",
+      "profile": "Elevation profile",
+      "profileDesc": "Distance, altitude and slope at every point on the track",
+      "inclino": "Inclinometer",
+      "inclinoDesc": "Real-time terrain slope under the crosshair",
+      "drag": "Draggable panels",
+      "dragDesc": "Long-press to reposition widgets"
+    },
+    "slide8": {
+      "title": "Safety & offline",
+      "desc": "The SOS button shows your exact position for rescue services. The app also works offline thanks to tile caching."
     }
   },
   "upgrade": {

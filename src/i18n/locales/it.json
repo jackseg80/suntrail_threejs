@@ -453,12 +453,12 @@
     "next": "Avanti",
     "start": "Inizia",
     "slide1": {
-      "title": "Naviga sulla mappa",
-      "desc": "1 dito per spostarsi \u00b7 Pizzica per zoomare \u00b7 2 dita per ruotare la vista"
+      "title": "Naviga in 3D",
+      "desc": "1 dito per spostarsi \u00b7 Pizzica per zoomare \u00b7 2 dita per ruotare o inclinare la vista"
     },
     "slide2": {
-      "title": "Inclina la vista",
-      "desc": "Posiziona 2 dita affiancate (orizzontalmente) e scorri verso l\u2019alto o il basso per inclinare"
+      "title": "Cerca un luogo",
+      "desc": "Digita il nome di una citt\u00e0, vetta o paese nella barra di ricerca. I filtri rapidi affinano i risultati."
     },
     "slide3": {
       "title": "I pulsanti di controllo",
@@ -473,16 +473,34 @@
       "gpsDesc": "centra sul tuo GPS"
     },
     "slide4": {
-      "title": "Importa i tuoi percorsi",
-      "desc": "Carica un file GPX dalle tue escursioni. Il percorso appare in 3D sul terreno reale."
+      "title": "I tuoi percorsi",
+      "desc": "Importa o registra le tue escursioni:",
+      "import": "Import GPX",
+      "importDesc": "Carica un file GPX \u2014 il percorso appare in 3D sul terreno",
+      "rec": "Registrazione GPS",
+      "recDesc": "Avvia REC per tracciare la tua escursione in diretta"
     },
     "slide5": {
       "title": "Simula il sole",
       "desc": "La timeline in basso mostra l\u2019insolazione a qualsiasi ora del giorno."
     },
     "slide6": {
-      "title": "Rimani al sicuro",
-      "desc": "In caso di emergenza, il pulsante SOS in alto a destra mostra la tua posizione esatta ai soccorritori."
+      "title": "Meteo in diretta",
+      "desc": "La pillola meteo in alto mostra la temperatura attuale. Toccala per previsioni, vento e allerte."
+    },
+    "slide7": {
+      "title": "Strumenti di analisi",
+      "desc": "Analizza il terreno in dettaglio:",
+      "profile": "Profilo altimetrico",
+      "profileDesc": "Distanza, altitudine e pendenza in ogni punto del percorso",
+      "inclino": "Inclinometro",
+      "inclinoDesc": "Pendenza del terreno in tempo reale sotto il mirino",
+      "drag": "Pannelli trascinabili",
+      "dragDesc": "Premi a lungo per riposizionare i widget"
+    },
+    "slide8": {
+      "title": "Sicurezza & offline",
+      "desc": "Il pulsante SOS mostra la tua posizione esatta per i soccorsi. L\u2019app funziona anche offline grazie alla cache delle mappe."
     }
   },
   "upgrade": {

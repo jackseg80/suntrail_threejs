@@ -2,30 +2,32 @@
  * onboardingTutorial.ts — Tutoriel d'onboarding 1er démarrage
  *
  * Affiché au PREMIER lancement après l'acceptance wall.
- * 6 slides passives avec navigation (Suivant/Passer/Commencer).
+ * 8 slides passives avec navigation (Suivant/Passer/Commencer).
  * Accessible depuis les Réglages via showOnboarding().
  *
- * Storage key : 'suntrail_onboarding_v1'
+ * Storage key : 'suntrail_onboarding_v2'
  */
 
 import { i18n } from '../i18n/I18nService';
 
-const ONBOARDING_KEY = 'suntrail_onboarding_v1';
+const ONBOARDING_KEY = 'suntrail_onboarding_v2';
 
 interface Slide {
     icon: string;
     titleKey: string;
     descKey: string;
-    special?: 'fab-grid';
+    special?: 'fab-grid' | 'track-grid' | 'analysis-grid';
 }
 
 const SLIDES: Slide[] = [
     { icon: '\u{1F3D4}\uFE0F', titleKey: 'onboarding.slide1.title', descKey: 'onboarding.slide1.desc' },
-    { icon: '\u270B', titleKey: 'onboarding.slide2.title', descKey: 'onboarding.slide2.desc' },
+    { icon: '\u{1F50D}', titleKey: 'onboarding.slide2.title', descKey: 'onboarding.slide2.desc' },
     { icon: '\u{1F39B}\uFE0F', titleKey: 'onboarding.slide3.title', descKey: 'onboarding.slide3.desc', special: 'fab-grid' },
-    { icon: '\u{1F5C2}\uFE0F', titleKey: 'onboarding.slide4.title', descKey: 'onboarding.slide4.desc' },
+    { icon: '\u{1F97E}', titleKey: 'onboarding.slide4.title', descKey: 'onboarding.slide4.desc', special: 'track-grid' },
     { icon: '\u2600\uFE0F', titleKey: 'onboarding.slide5.title', descKey: 'onboarding.slide5.desc' },
-    { icon: '\u{1F198}', titleKey: 'onboarding.slide6.title', descKey: 'onboarding.slide6.desc' },
+    { icon: '\u{1F326}\uFE0F', titleKey: 'onboarding.slide6.title', descKey: 'onboarding.slide6.desc' },
+    { icon: '\u{1F4D0}', titleKey: 'onboarding.slide7.title', descKey: 'onboarding.slide7.desc', special: 'analysis-grid' },
+    { icon: '\u{1F198}', titleKey: 'onboarding.slide8.title', descKey: 'onboarding.slide8.desc' },
 ];
 
 /**
@@ -50,14 +52,9 @@ export function showOnboarding(): Promise<void> {
     });
 }
 
-function _buildFabGrid(): string {
-    const items = [
-        { icon: '\u{1F9ED}', labelKey: 'onboarding.slide3.compass', descKey: 'onboarding.slide3.compassDesc' },
-        { icon: '\u{1F5FA}\uFE0F', labelKey: 'onboarding.slide3.layers', descKey: 'onboarding.slide3.layersDesc' },
-        { icon: '\u229E', labelKey: 'onboarding.slide3.mode', descKey: 'onboarding.slide3.modeDesc' },
-        { icon: '\u{1F4CD}', labelKey: 'onboarding.slide3.gps', descKey: 'onboarding.slide3.gpsDesc' },
-    ];
-    return `<div class="ob-fab-grid">${items.map(item =>
+function _buildGrid(items: { icon: string; labelKey: string; descKey: string }[], vertical: boolean): string {
+    const cls = vertical ? 'ob-list-grid' : 'ob-fab-grid';
+    return `<div class="${cls}">${items.map(item =>
         `<div class="ob-fab-item">
             <span class="ob-fab-icon">${item.icon}</span>
             <div class="ob-fab-text">
@@ -66,6 +63,30 @@ function _buildFabGrid(): string {
             </div>
         </div>`
     ).join('')}</div>`;
+}
+
+function _buildFabGrid(): string {
+    return _buildGrid([
+        { icon: '\u{1F9ED}', labelKey: 'onboarding.slide3.compass', descKey: 'onboarding.slide3.compassDesc' },
+        { icon: '\u{1F5FA}\uFE0F', labelKey: 'onboarding.slide3.layers', descKey: 'onboarding.slide3.layersDesc' },
+        { icon: '\u229E', labelKey: 'onboarding.slide3.mode', descKey: 'onboarding.slide3.modeDesc' },
+        { icon: '\u{1F4CD}', labelKey: 'onboarding.slide3.gps', descKey: 'onboarding.slide3.gpsDesc' },
+    ], false);
+}
+
+function _buildTrackGrid(): string {
+    return _buildGrid([
+        { icon: '\u{1F4E5}', labelKey: 'onboarding.slide4.import', descKey: 'onboarding.slide4.importDesc' },
+        { icon: '\u{1F534}', labelKey: 'onboarding.slide4.rec', descKey: 'onboarding.slide4.recDesc' },
+    ], true);
+}
+
+function _buildAnalysisGrid(): string {
+    return _buildGrid([
+        { icon: '\u{1F4C8}', labelKey: 'onboarding.slide7.profile', descKey: 'onboarding.slide7.profileDesc' },
+        { icon: '\u{1F4D0}', labelKey: 'onboarding.slide7.inclino', descKey: 'onboarding.slide7.inclinoDesc' },
+        { icon: '\u270B', labelKey: 'onboarding.slide7.drag', descKey: 'onboarding.slide7.dragDesc' },
+    ], true);
 }
 
 function _show(resolve: () => void): void {
@@ -116,14 +137,14 @@ function _show(resolve: () => void): void {
                 margin-bottom: 16px;
             }
             .ob-title {
-                font-size: var(--text-xl, 1.25rem);
+                font-size: 1.25rem;
                 font-weight: 700;
                 color: var(--text-1, #fff);
                 margin: 0 0 12px;
                 line-height: 1.3;
             }
             .ob-desc {
-                font-size: var(--text-sm, 0.85rem);
+                font-size: 0.85rem;
                 color: var(--text-2, rgba(255,255,255,0.75));
                 line-height: 1.6;
                 margin: 0 0 24px;
@@ -133,6 +154,13 @@ function _show(resolve: () => void): void {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 10px;
+                text-align: left;
+                margin-bottom: 24px;
+            }
+            .ob-list-grid {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 12px;
                 text-align: left;
                 margin-bottom: 24px;
             }
@@ -147,7 +175,7 @@ function _show(resolve: () => void): void {
                 margin-top: 1px;
             }
             .ob-fab-text {
-                font-size: var(--text-xs, 0.75rem);
+                font-size: 0.75rem;
                 color: var(--text-2, rgba(255,255,255,0.75));
                 line-height: 1.4;
             }
@@ -172,6 +200,52 @@ function _show(resolve: () => void): void {
             }
             .ob-dot--active {
                 background: var(--accent, #4a8ef8);
+            }
+            @media (min-width: 768px) {
+                .ob-card {
+                    max-width: 520px;
+                    padding: 48px 40px 36px;
+                }
+                .ob-icon {
+                    font-size: 64px;
+                    margin-bottom: 20px;
+                }
+                .ob-title {
+                    font-size: 1.6rem;
+                    margin-bottom: 16px;
+                }
+                .ob-desc {
+                    font-size: 1.05rem;
+                    margin-bottom: 28px;
+                }
+                .ob-fab-grid {
+                    gap: 14px;
+                    margin-bottom: 28px;
+                }
+                .ob-list-grid {
+                    gap: 16px;
+                    margin-bottom: 28px;
+                }
+                .ob-fab-icon {
+                    font-size: 1.3rem;
+                }
+                .ob-fab-text {
+                    font-size: 0.9rem;
+                }
+                .ob-dot {
+                    width: 9px;
+                    height: 9px;
+                }
+                .ob-dots {
+                    gap: 8px;
+                    margin-bottom: 24px;
+                }
+                .ob-skip, .ob-next {
+                    font-size: 1rem;
+                }
+                .ob-next {
+                    padding: 12px 28px;
+                }
             }
             .ob-actions {
                 display: flex;
@@ -234,6 +308,10 @@ function _show(resolve: () => void): void {
             let descHtml: string;
             if (slide.special === 'fab-grid') {
                 descHtml = `<p class="ob-desc" style="margin-bottom:8px">${i18n.t(slide.descKey)}</p>${_buildFabGrid()}`;
+            } else if (slide.special === 'track-grid') {
+                descHtml = `<p class="ob-desc" style="margin-bottom:8px">${i18n.t(slide.descKey)}</p>${_buildTrackGrid()}`;
+            } else if (slide.special === 'analysis-grid') {
+                descHtml = `<p class="ob-desc" style="margin-bottom:8px">${i18n.t(slide.descKey)}</p>${_buildAnalysisGrid()}`;
             } else {
                 descHtml = `<p class="ob-desc">${i18n.t(slide.descKey)}</p>`;
             }

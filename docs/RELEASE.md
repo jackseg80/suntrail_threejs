@@ -100,7 +100,8 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | 545 | 5.19.2 | v5.19.2 | Panneau Pro refondu, fix prix RevenueCat, rotation clés MapTiler (GitHub Gist + enabled/disabled), protection anti-spam 429 (backoff geocoding/Overpass/tuiles), purge cache corrompues, terrain-aware LOD + tilt dynamique + flyTo adaptatif | 2026-04-01 |
 | 546 | 5.19.3 | v5.19.3 | Fix timeline bloquée sous nav bar, ENERGY_SAVER forcé OFF pour performance/ultra, RANGE 5→6 preset high | 2026-04-01 |
 | 547 | 5.19.4 | v5.19.4 | Stabilisation LOD (lerp pondéré + cooldown 800ms), résolution adaptative idle-only (plus de bandes blanches), geocoding 403 ne désactive plus MapTiler | 2026-04-01 |
-| **548** | **5.19.5** | **v5.19.5** | **Perf: cache API worker (1x au lieu de 1x/tuile), isVisible/getAltitudeAt cachés par frame, suppression résolution adaptative (tuiles noires), revert skipNormalMap (tuiles noires 2D→3D)** | **2026-04-02** |
+| 548 | 5.19.5 | v5.19.5 | Perf: cache API worker (1x au lieu de 1x/tuile), isVisible/getAltitudeAt cachés par frame, suppression résolution adaptative (tuiles noires), revert skipNormalMap (tuiles noires 2D→3D) | 2026-04-02 |
+| **549** | **5.19.6** | **v5.19.6** | **Tutoriel onboarding v2 : 8 slides (recherche, météo, REC GPS, outils d'analyse, offline), grilles verticales, responsive desktop/mobile, bump storage key v1→v2** | **2026-04-02** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 
