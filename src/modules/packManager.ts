@@ -24,6 +24,36 @@ const PACK_STATES_KEY = 'suntrail_pack_states';
 const CATALOG_CACHE_KEY = 'suntrail_pack_catalog';
 const PACKS_DIR = 'packs';
 
+// Catalog embarqué — fallback si réseau absent ET localStorage vide.
+// À mettre à jour manuellement à chaque nouveau pack publié.
+const EMBEDDED_CATALOG: PackCatalog = {
+    version: 1,
+    packs: [
+        {
+            id: 'switzerland',
+            productId: 'suntrail_pack_switzerland',
+            name: { fr: 'Suisse HD', de: 'Schweiz HD', it: 'Svizzera HD', en: 'Switzerland HD' },
+            bounds: { minLat: 45.8, maxLat: 47.8, minLon: 5.9, maxLon: 10.5 },
+            lodRange: { min: 12, max: 14 },
+            version: 1,
+            sizeMB: 710,
+            cdnUrl: `${CATALOG_URL?.replace('/catalog.json', '') ?? ''}/packs/suntrail-pack-switzerland-v1.pmtiles`,
+            regionCheck: 'switzerland',
+        },
+        {
+            id: 'france_alps',
+            productId: 'suntrail_pack_france_alps',
+            name: { fr: 'France Alpes HD', de: 'Französische Alpen HD', it: 'Alpi Francesi HD', en: 'French Alps HD' },
+            bounds: { minLat: 43.5, maxLat: 46.5, minLon: 4.5, maxLon: 7.8 },
+            lodRange: { min: 12, max: 14 },
+            version: 1,
+            sizeMB: 200,
+            cdnUrl: `${CATALOG_URL?.replace('/catalog.json', '') ?? ''}/packs/suntrail-pack-france_alps-v1.pmtiles`,
+            regionCheck: 'france_alps',
+        },
+    ],
+};
+
 class PackManager {
     private catalog: PackCatalog | null = null;
     private packStates: Map<string, PackState> = new Map();
@@ -60,26 +90,23 @@ class PackManager {
 
     // ── Catalog ──────────────────────────────────────────────────────────────
 
-    async fetchCatalog(): Promise<PackCatalog | null> {
-        if (!CATALOG_URL) {
-            // Fallback cached catalog
-            this.catalog = this.getCachedCatalog();
-            return this.catalog;
+    async fetchCatalog(): Promise<PackCatalog> {
+        if (CATALOG_URL) {
+            try {
+                const resp = await fetch(CATALOG_URL, { cache: 'no-cache' });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const data = await resp.json() as PackCatalog;
+                this.catalog = data;
+                localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(data));
+                this.checkForUpdates();
+                return data;
+            } catch {
+                console.warn('[Packs] Catalog réseau indisponible, fallback cache/embarqué.');
+            }
         }
-        try {
-            const resp = await fetch(CATALOG_URL, { cache: 'no-cache' });
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            const data = await resp.json() as PackCatalog;
-            this.catalog = data;
-            localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(data));
-            // Check for updates on installed packs
-            this.checkForUpdates();
-            return data;
-        } catch {
-            console.warn('[Packs] Catalog fetch failed, using cache.');
-            this.catalog = this.getCachedCatalog();
-            return this.catalog;
-        }
+        // Priorité : localStorage → catalog embarqué (jamais null)
+        this.catalog = this.getCachedCatalog() ?? EMBEDDED_CATALOG;
+        return this.catalog;
     }
 
     private getCachedCatalog(): PackCatalog | null {
