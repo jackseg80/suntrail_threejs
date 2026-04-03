@@ -9,6 +9,7 @@ import { showOnboarding } from '../../onboardingTutorial';
 import type { Locale } from '../../../i18n/I18nService';
 
 import { sheetManager } from '../core/SheetManager';
+import { eventBus } from '../../eventBus';
 import { iapService } from '../../iapService';
 import { showToast } from '../../utils';
 import { haptic } from '../../haptics';
@@ -352,6 +353,10 @@ export class SettingsSheet extends BaseComponent {
         });
 
         this.addSubscription(state.subscribe('themePreference', updateActive));
+        // Rafraîchir aussi à chaque ouverture de la sheet (couverture lazy-hydration)
+        const onSheetOpened = ({ id }: { id: string }) => { if (id === 'settings') updateActive(); };
+        eventBus.on('sheetOpened', onSheetOpened);
+        this.addSubscription(() => eventBus.off('sheetOpened', onSheetOpened));
         updateActive();
     }
 
