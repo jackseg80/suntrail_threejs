@@ -19,18 +19,8 @@ import { fetchWeather } from './weather';
 
 import { NavigationBar } from './ui/components/NavigationBar';
 import { TopStatusBar } from './ui/components/TopStatusBar';
-import { SettingsSheet } from './ui/components/SettingsSheet';
-import { SearchSheet } from './ui/components/SearchSheet';
-import { LayersSheet } from './ui/components/LayersSheet';
-import { WeatherSheet, SolarProbeSheet, SOSSheet } from './ui/components/ExpertSheets';
-import { TrackSheet } from './ui/components/TrackSheet';
-import { ConnectivitySheet } from './ui/components/ConnectivitySheet';
-import { PacksSheet } from './ui/components/PacksSheet';
-import { UpgradeSheet } from './ui/components/UpgradeSheet';
 import { WidgetsComponent } from './ui/components/WidgetsComponent';
 import { TimelineComponent } from './ui/components/TimelineComponent';
-import { VRAMDashboard } from './ui/components/VRAMDashboard';
-import { InclinometerWidget } from './ui/components/InclinometerWidget';
 import { initAutoHide } from './ui/autoHide';
 import { initMobileUI } from './ui/mobile';
 import { sheetManager } from './ui/core/SheetManager';
@@ -244,55 +234,23 @@ export function initUI(): void {
 
 
     // --- INITIALISATION COMPOSANTS ---
+    // Phase 1 : composants visibles au démarrage (requis par startApp)
     const navBar = new NavigationBar();
     navBar.hydrate();
 
     const topStatusBar = new TopStatusBar();
     topStatusBar.hydrate();
 
-    const settingsSheet = new SettingsSheet();
-    settingsSheet.hydrate();
-
-    const layersSheet = new LayersSheet();
-    layersSheet.hydrate();
-
-    const searchSheet = new SearchSheet();
-    searchSheet.hydrate();
-
-    const trackSheet = new TrackSheet();
-    trackSheet.hydrate();
-
-    const weatherSheet = new WeatherSheet();
-    weatherSheet.hydrate();
-
-    const solarProbeSheet = new SolarProbeSheet();
-    solarProbeSheet.hydrate();
-
-    const sosSheet = new SOSSheet();
-    sosSheet.hydrate();
-
-    const connectivitySheet = new ConnectivitySheet();
-    connectivitySheet.hydrate();
-
-    const packsSheet = new PacksSheet();
-    packsSheet.hydrate();
-
-    const upgradeSheet = new UpgradeSheet();
-    upgradeSheet.hydrate();
-
     const widgets = new WidgetsComponent();
     widgets.hydrate();
-
-    const vramDashboard = new VRAMDashboard();
-    vramDashboard.init();
-    state.vramPanel = vramDashboard;
-
-    const inclinometer = new InclinometerWidget();
-    inclinometer.init();
 
     new TimelineComponent();
     initAutoHide();
     initMobileUI();
+
+    // Phase 2 : sheets et composants secondaires — lazy-chargés après le premier frame.
+    // Les modules ne sont évalués qu'après le rendu initial → réduit le TBT au démarrage.
+    requestAnimationFrame(() => setTimeout(() => void _initSecondaryUI(), 0));
 
     // Démarrage automatique — attend la résolution de la clé MapTiler (bundlée, Gist ou localStorage)
     // puis lance la scène. Timeout 3s si le Gist est indisponible → démarrage dégradé.
@@ -567,6 +525,49 @@ function handleMapClick(e: MouseEvent) {
         const cp = document.getElementById('coords-pill');
         if (cp) cp.classList.add('hidden');
     }
+}
+
+async function _initSecondaryUI(): Promise<void> {
+    const [
+        { SettingsSheet },
+        { LayersSheet },
+        { SearchSheet },
+        { TrackSheet },
+        { WeatherSheet, SolarProbeSheet, SOSSheet },
+        { ConnectivitySheet },
+        { PacksSheet },
+        { UpgradeSheet },
+        { VRAMDashboard },
+        { InclinometerWidget },
+    ] = await Promise.all([
+        import('./ui/components/SettingsSheet'),
+        import('./ui/components/LayersSheet'),
+        import('./ui/components/SearchSheet'),
+        import('./ui/components/TrackSheet'),
+        import('./ui/components/ExpertSheets'),
+        import('./ui/components/ConnectivitySheet'),
+        import('./ui/components/PacksSheet'),
+        import('./ui/components/UpgradeSheet'),
+        import('./ui/components/VRAMDashboard'),
+        import('./ui/components/InclinometerWidget'),
+    ]);
+
+    new SettingsSheet().hydrate();
+    new LayersSheet().hydrate();
+    new SearchSheet().hydrate();
+    new TrackSheet().hydrate();
+    new WeatherSheet().hydrate();
+    new SolarProbeSheet().hydrate();
+    new SOSSheet().hydrate();
+    new ConnectivitySheet().hydrate();
+    new PacksSheet().hydrate();
+    new UpgradeSheet().hydrate();
+
+    const vramDashboard = new VRAMDashboard();
+    vramDashboard.init();
+    state.vramPanel = vramDashboard;
+
+    new InclinometerWidget().init();
 }
 
 function startApp() {
