@@ -456,6 +456,18 @@
       "title": "In 3D navigieren",
       "desc": "1 Finger zum Verschieben \u00b7 Zusammendr\u00fccken zum Zoomen \u00b7 2 Finger zum Drehen oder Neigen"
     },
+    "slideGestures": {
+      "title": "Touch-Gesten",
+      "desc": "SunTrail folgt den Google Earth-Gesten:",
+      "pan": "1 Finger — Verschieben",
+      "panDesc": "Wischen zum Verschieben der Karte. Mit Schwung loslassen für flüssige Trägheit.",
+      "pinch": "Pinch — Zoomen",
+      "pinchDesc": "2 Finger auseinander oder zusammenführen. Zoom zentriert sich zwischen den Fingern.",
+      "rotate": "2 Finger — Drehen",
+      "rotateDesc": "2 Finger drehen, um die Ansicht auszurichten.",
+      "tilt": "2 Finger nebeneinander — Neigen",
+      "tiltDesc": "2 Finger horizontal anlegen, dann nach oben oder unten gleiten."
+    },
     "slide2": {
       "title": "Ort suchen",
       "desc": "Geben Sie den Namen einer Stadt, eines Gipfels oder Landes in die Suchleiste ein. Schnellfilter verfeinern die Ergebnisse."

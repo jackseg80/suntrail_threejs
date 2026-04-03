@@ -456,6 +456,18 @@
       "title": "Navigate in 3D",
       "desc": "Pan with 1 finger \u00b7 Pinch to zoom \u00b7 2 fingers to rotate or tilt the view"
     },
+    "slideGestures": {
+      "title": "Touch gestures",
+      "desc": "SunTrail follows Google Earth gestures:",
+      "pan": "1 finger — Pan",
+      "panDesc": "Drag to move the map. Flick to keep momentum with smooth inertia.",
+      "pinch": "Pinch — Zoom",
+      "pinchDesc": "Spread or pinch 2 fingers. Zoom centres between your fingers.",
+      "rotate": "2 fingers — Rotate",
+      "rotateDesc": "Twist 2 fingers to orient the view.",
+      "tilt": "2 fingers side by side — Tilt",
+      "tiltDesc": "Place 2 fingers horizontally, then slide up or down."
+    },
     "slide2": {
       "title": "Search for a place",
       "desc": "Type a city, peak, or country name in the search bar. Quick filter chips help narrow results."

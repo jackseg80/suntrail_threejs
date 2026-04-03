@@ -2,7 +2,7 @@
  * onboardingTutorial.ts — Tutoriel d'onboarding 1er démarrage
  *
  * Affiché au PREMIER lancement après l'acceptance wall.
- * 8 slides passives avec navigation (Suivant/Passer/Commencer).
+ * 9 slides passives avec navigation (Suivant/Passer/Commencer).
  * Accessible depuis les Réglages via showOnboarding().
  *
  * Storage key : 'suntrail_onboarding_v2'
@@ -16,11 +16,12 @@ interface Slide {
     icon: string;
     titleKey: string;
     descKey: string;
-    special?: 'fab-grid' | 'track-grid' | 'analysis-grid';
+    special?: 'fab-grid' | 'track-grid' | 'analysis-grid' | 'gesture-grid';
 }
 
 const SLIDES: Slide[] = [
     { icon: '\u{1F3D4}\uFE0F', titleKey: 'onboarding.slide1.title', descKey: 'onboarding.slide1.desc' },
+    { icon: '\u{1F590}\uFE0F', titleKey: 'onboarding.slideGestures.title', descKey: 'onboarding.slideGestures.desc', special: 'gesture-grid' },
     { icon: '\u{1F50D}', titleKey: 'onboarding.slide2.title', descKey: 'onboarding.slide2.desc' },
     { icon: '\u{1F39B}\uFE0F', titleKey: 'onboarding.slide3.title', descKey: 'onboarding.slide3.desc', special: 'fab-grid' },
     { icon: '\u{1F97E}', titleKey: 'onboarding.slide4.title', descKey: 'onboarding.slide4.desc', special: 'track-grid' },
@@ -63,6 +64,15 @@ function _buildGrid(items: { icon: string; labelKey: string; descKey: string }[]
             </div>
         </div>`
     ).join('')}</div>`;
+}
+
+function _buildGestureGrid(): string {
+    return _buildGrid([
+        { icon: '\u261D\uFE0F', labelKey: 'onboarding.slideGestures.pan', descKey: 'onboarding.slideGestures.panDesc' },
+        { icon: '\u{1F90F}', labelKey: 'onboarding.slideGestures.pinch', descKey: 'onboarding.slideGestures.pinchDesc' },
+        { icon: '\u{1F504}', labelKey: 'onboarding.slideGestures.rotate', descKey: 'onboarding.slideGestures.rotateDesc' },
+        { icon: '\u2195\uFE0F', labelKey: 'onboarding.slideGestures.tilt', descKey: 'onboarding.slideGestures.tiltDesc' },
+    ], false);
 }
 
 function _buildFabGrid(): string {
@@ -306,7 +316,9 @@ function _show(resolve: () => void): void {
 
         const buildContent = (): string => {
             let descHtml: string;
-            if (slide.special === 'fab-grid') {
+            if (slide.special === 'gesture-grid') {
+                descHtml = `<p class="ob-desc" style="margin-bottom:8px">${i18n.t(slide.descKey)}</p>${_buildGestureGrid()}`;
+            } else if (slide.special === 'fab-grid') {
                 descHtml = `<p class="ob-desc" style="margin-bottom:8px">${i18n.t(slide.descKey)}</p>${_buildFabGrid()}`;
             } else if (slide.special === 'track-grid') {
                 descHtml = `<p class="ob-desc" style="margin-bottom:8px">${i18n.t(slide.descKey)}</p>${_buildTrackGrid()}`;

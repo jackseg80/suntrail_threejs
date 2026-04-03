@@ -456,6 +456,18 @@
       "title": "Naviga in 3D",
       "desc": "1 dito per spostarsi \u00b7 Pizzica per zoomare \u00b7 2 dita per ruotare o inclinare la vista"
     },
+    "slideGestures": {
+      "title": "Gesti tattili",
+      "desc": "SunTrail segue i gesti di Google Earth:",
+      "pan": "1 dito — Spostare",
+      "panDesc": "Scorri per spostare la mappa. Lascia con slancio per un'inerzia fluida.",
+      "pinch": "Pizzico — Zoom",
+      "pinchDesc": "Avvicina o allontana 2 dita. Lo zoom si centra tra le dita.",
+      "rotate": "2 dita — Ruotare",
+      "rotateDesc": "Ruota 2 dita per orientare la vista.",
+      "tilt": "2 dita affiancate — Inclinare",
+      "tiltDesc": "Appoggia 2 dita orizzontalmente poi scorri su o giù."
+    },
     "slide2": {
       "title": "Cerca un luogo",
       "desc": "Digita il nome di una citt\u00e0, vetta o paese nella barra di ricerca. I filtri rapidi affinano i risultati."
