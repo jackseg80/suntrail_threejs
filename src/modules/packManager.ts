@@ -29,13 +29,15 @@ class PackManager {
     private packStates: Map<string, PackState> = new Map();
     private mountedArchives: Map<string, pmtiles.PMTiles> = new Map();
     private downloadControllers: Map<string, AbortController> = new Map();
+    private _tileHits = 0;
+    private _tileMisses = 0;
 
     // ── Lifecycle ────────────────────────────────────────────────────────────
 
     async initialize(): Promise<void> {
         this.loadPersistedStates();
-        // Fetch catalog (non-blocking)
-        this.fetchCatalog().catch(() => { /* catalog fail = silent */ });
+        // Charger le catalog AVANT de monter (getPackMeta() a besoin du catalog)
+        await this.fetchCatalog();
         // Mount all installed packs
         await this.mountAllInstalled();
         // Sync pack purchases avec RevenueCat (restaure après clear storage)
@@ -164,7 +166,7 @@ class PackManager {
         meta: PackMeta, ps: PackState,
         onProgress?: (p: number) => void, _signal?: AbortSignal
     ): Promise<void> {
-        const filePath = `${PACKS_DIR}/${meta.id}.pmtiles`;
+        const fileName = `${meta.id}.pmtiles`;
 
         // Listener pour la progression du téléchargement
         const listener = await Filesystem.addListener('progress', (progress) => {
@@ -175,19 +177,20 @@ class PackManager {
         });
 
         try {
-            // downloadFile() stream directement sur le disque — zéro accumulation RAM
+            console.log(`[Packs] Downloading ${meta.cdnUrl} → ${fileName} (External)`);
+            // External = stockage app externe, pas de limite de taille contrairement à Data
             await Filesystem.downloadFile({
                 url: meta.cdnUrl,
-                path: filePath,
-                directory: Directory.Data,
-                recursive: true,
+                path: fileName,
+                directory: Directory.External,
                 progress: true,
             });
+            console.log(`[Packs] Download complete: ${fileName}`);
         } finally {
             await listener.remove();
         }
 
-        ps.filePath = filePath;
+        ps.filePath = fileName;
     }
 
     private async downloadWeb(
@@ -253,8 +256,8 @@ class PackManager {
         try {
             if (Capacitor.isNativePlatform()) {
                 await Filesystem.deleteFile({
-                    path: `${PACKS_DIR}/${packId}.pmtiles`,
-                    directory: Directory.Data,
+                    path: `${packId}.pmtiles`,
+                    directory: Directory.External,
                 });
             } else {
                 const root = await navigator.storage.getDirectory();
@@ -272,18 +275,18 @@ class PackManager {
         const ps = this.packStates.get(packId);
         if (!ps || (ps.status !== 'installed' && ps.status !== 'purchased' && ps.status !== 'update_available')) return;
 
+        console.log(`[Packs] mountPack(${packId}) — status=${ps.status}, isNative=${Capacitor.isNativePlatform()}`);
+
         try {
             let archive: pmtiles.PMTiles;
 
             if (Capacitor.isNativePlatform()) {
-                // Sur Android, utiliser l'URL CDN avec HTTP Range requests.
-                // R2 supporte Range nativement et l'egress est gratuit.
-                // Chaque getZxy() ne fetch que quelques KB (le header/directory d'une tuile).
-                // Le fichier local sert de preuve d'installation.
-                // En mode offline, getTileFromPacks() retournera null → fallback normal.
                 const meta = this.getPackMeta(packId);
+                console.log(`[Packs] meta trouvée: ${meta?.id ?? 'UNDEFINED'}`);
                 if (!meta) throw new Error('Pack meta not found');
+                console.log(`[Packs] Création PMTiles depuis CDN: ${meta.cdnUrl.substring(0, 60)}...`);
                 archive = new pmtiles.PMTiles(meta.cdnUrl);
+                console.log(`[Packs] PMTiles créé, appel getHeader()...`);
             } else {
                 // OPFS
                 const root = await navigator.storage.getDirectory();
@@ -294,14 +297,18 @@ class PackManager {
             }
 
             // Warmup: read header pour vérifier l'archive
+            console.log(`[Packs] getHeader() lancé...`);
             const header = await archive.getHeader();
+            console.log(`[Packs] getHeader() OK:`, JSON.stringify(header).substring(0, 100));
             console.log(`[Packs] ${packId} monté. LOD ${header.minZoom}-${header.maxZoom}, ${header.numTileEntries} tuiles`);
 
             this.mountedArchives.set(packId, archive);
             eventBus.emit('packMounted', { packId });
 
         } catch (e) {
-            console.error(`[Packs] Erreur montage ${packId}:`, e);
+            console.error(`[Packs] ERREUR MONTAGE ${packId}:`, e);
+            // Rethrow pour visibilité depuis console DevTools
+            throw e;
         }
     }
 
@@ -344,13 +351,30 @@ class PackManager {
             try {
                 const tileData = await archive.getZxy(z, x, y);
                 if (tileData?.data) {
+                    this._tileHits++;
+                    if (this._tileHits % 50 === 1) {
+                        console.log(`[Packs] ✓ ${this._tileHits} tuile(s) servie(s) depuis "${packId}" (dernière: LOD${z} ${x}/${y})`);
+                    }
                     return new Blob([tileData.data], { type: 'image/webp' });
                 }
             } catch {
                 // Tile not in archive — continue to next pack
             }
         }
+        this._tileMisses++;
         return null;
+    }
+
+    /** Stats de debug accessibles depuis la console : packManager.debugStats() */
+    debugStats(): void {
+        console.group('[Packs] Debug stats');
+        console.log('Packs montés :', [...this.mountedArchives.keys()]);
+        console.log('Tuiles servies depuis pack :', this._tileHits);
+        console.log('Tuiles non trouvées dans pack :', this._tileMisses);
+        for (const [id, ps] of this.packStates) {
+            console.log(`  ${id}: status=${ps.status} progress=${ps.downloadProgress} path=${ps.filePath}`);
+        }
+        console.groupEnd();
     }
 
     private isTileInPackRegion(tx: number, ty: number, zoom: number, meta: PackMeta): boolean {

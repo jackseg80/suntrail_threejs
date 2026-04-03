@@ -577,6 +577,7 @@
   "packs": {
     "title": "Pacchetti Paese",
     "storage": "Archiviazione",
+    "storageEmpty": "Nessun pacchetto installato",
     "free": "disponibile",
     "lodInfo": "Pro: LOD 12-14 · Gratis: LOD 12",
     "btn": {

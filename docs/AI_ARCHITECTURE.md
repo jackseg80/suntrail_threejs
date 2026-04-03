@@ -73,6 +73,36 @@ Le fichier est exclu du précache Workbox (`globIgnores: ['**/*.pmtiles']`) et d
 
 ---
 
+## Packs Pays — packManager (v5.21.0)
+
+Archives PMTiles régionales (LOD 12-14) achetées via IAP et téléchargées en entier. Module : `src/modules/packManager.ts`.
+
+**Initialisation** (`main.ts` → `packManager.initialize()`) :
+1. `loadPersistedStates()` — recharge les PackState depuis `localStorage` clé `suntrail_pack_states`
+2. `await fetchCatalog()` — GET `catalog.json` depuis R2 (**await obligatoire** : `mountAllInstalled()` dépend du catalog)
+3. `mountAllInstalled()` — ouvre chaque archive `status=installed` via `new pmtiles.PMTiles(...)`
+
+**Format PMTiles à deux niveaux** (critique) :
+La lib pmtiles ne lit que les **16 384 premiers octets** au chargement (`getHeaderAndRoot`). Le répertoire root doit donc tenir dans cette fenêtre (~16 257 octets max). Pour ~35 000 tuiles, le répertoire naïf fait ~200 KB → truncation → erreur varint.
+Solution : `buildTwoLevelDirectory(entries, leafSize=512)` dans `scripts/pmtiles-writer.ts` — le root contient uniquement des pointeurs (`runLength=0`) vers des leaf directories fetched à la demande via Range requests.
+
+**Chaîne de résolution dans `fetchWithCache()`** (ordre décroissant de priorité) :
+1. `localPMTiles` (upload utilisateur)
+2. **`packManager.getTileFromPacks(z, x, y)`** ← insertion avant CacheStorage
+3. CacheStorage (zones offline)
+4. `embeddedPMTiles` (LOD ≤ 11, archive embarquée)
+5. Réseau (providers distants)
+
+**Gating LOD** dans `getTileFromPacks()` : `maxLod = state.isPro ? 14 : 12`. Tuiles LOD 13-14 retournent `null` si Free → fallback réseau transparent.
+
+**Vérification region bounds** : chaque archive est associée à un `PackMeta.bounds`. La tuile est vérifiée par `isTileInBounds()` avant d'interroger l'archive PMTiles.
+
+**Persistence** : `localStorage` clé `suntrail_pack_states` — JSON map `id → PackState { status, installedVersion, downloadProgress, filePath, sizeMB }`.
+
+**EventBus** : `packStatusChanged` émis à chaque changement d'état (téléchargement, installation, erreur). `PacksSheet.ts` s'y abonne pour re-render.
+
+---
+
 ## Moteur de Tuiles (`terrain.ts` / `tileLoader.ts`)
 
 - **Sélection source par 4 coins (v5.14.1)** : `isTileFullyInRegion()` au lieu du centre. SwissTopo/IGN uniquement si tous les 4 coins sont dans le pays, sinon fallback MapTiler/OSM.

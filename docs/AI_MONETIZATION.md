@@ -78,23 +78,32 @@
 - Free : 1 zone, Pro : illimité. Gate dans `ConnectivitySheet.ts`.
 - Compteur : `localStorage` clé `suntrail-offline-zones-count`.
 
-### Packs pays optionnels (roadmap)
+### Packs pays HD (implémenté v5.21.0)
 
-Fichiers PMTiles par pays/région, téléchargeables in-app après achat IAP non-consumable (RevenueCat).
+Fichiers PMTiles par pays/région, achetés via IAP non-consumable (RevenueCat) et téléchargeables en entier pour usage offline.
 
-| Pack | LOD | Taille estimée | Prix cible |
-| ---- | --- | -------------- | ---------- |
-| Suisse HD | 12-14 | ~300 MB | 4.99 CHF |
-| France Alpes | 12-14 | ~200 MB | 3.99 EUR |
-| Autriche Tyrol | 12-14 | ~150 MB | 2.99 EUR |
-| Dolomites | 12-14 | ~120 MB | 2.99 EUR |
-| Pack Alpin complet | 12-14 | ~700 MB | 9.99 EUR |
+| Pack | LOD | Taille réelle | Produit RevenueCat |
+| ---- | --- | ------------- | ------------------ |
+| Suisse HD | 12-14 | 710 MB (~35 k tuiles) | `suntrail_pack_switzerland` |
+| France Alpes | 12-14 | ~200 MB | `suntrail_pack_france_alps` |
 
-**Architecture prévue** : `mountedPacks: Map<string, TilePack>` dans `tileLoader.ts`, UI dans `PacksSheet.ts`, stockage `@capacitor/filesystem` (Android) ou OPFS (PWA).
+**Gating** : Free = LOD 12 du pack, Pro = LOD 12-14 depuis le pack. Les LOD 13-14 ne sont simplement pas servis depuis le pack si `!state.isPro` → fallback réseau transparent.
 
-**Hébergement CDN** : Cloudflare R2 (10 GB gratuit, 10M reads/mois gratuits). Les PMTiles supportent HTTP Range requests — l'app ne charge que les tuiles visibles, pas le fichier entier. Utilisable aussi en mode **streaming** (sans téléchargement complet) comme alternative rapide aux providers distants.
+**Architecture** : voir `AI_ARCHITECTURE.md` § "Packs Pays — packManager".
 
-**Gating** : Free = 1 pack LOD 6-12, Pro = illimité + LOD 13+.
+**Sources** : SwissTopo `pixelkarte-farbe` (Suisse), IGN `PLANIGNV2` (France Alpes) — APIs publiques gouvernementales gratuites.
+
+**Build** : `npm run build-pack -- --pack switzerland` → `scripts/build-country-pack.ts` (sharp + pmtiles-writer, ~2h pour la Suisse). Cache résumable dans `.cache/pack-{id}/`.
+
+**Hébergement CDN** : Cloudflare R2 — `suntrail-packs` bucket. Structure :
+```
+catalog.json
+packs/suntrail-pack-switzerland-v1.pmtiles
+packs/suntrail-pack-france_alps-v1.pmtiles
+```
+R2 supporte les HTTP Range requests (nécessaire pour que la lib pmtiles charge les leaf directories à la demande). CORS : `GET`, `HEAD`, `ExposeHeaders: Content-Range, Accept-Ranges, Content-Length, ETag`.
+
+**Stockage app** : Android (`@capacitor/filesystem`) ou PWA (OPFS). Téléchargement complet (pas de streaming Range) pour usage 100% offline.
 
 ---
 

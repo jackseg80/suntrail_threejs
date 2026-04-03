@@ -21,7 +21,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 import {
     lonToTileX, latToTileY, zxyToTileId,
-    serializeDirectory, buildHeader, HEADER_SIZE,
+    serializeDirectory, buildTwoLevelDirectory, buildHeader, HEADER_SIZE,
     type TileEntry,
 } from './pmtiles-writer';
 
@@ -280,8 +280,9 @@ async function main() {
         tileDataSize += tile.data.length;
     }
 
-    // 6. Serialize directory
-    const rootDir = serializeDirectory(entries);
+    // 6. Build two-level directory (root + leaf dirs pour tenir dans les 16KB initiaux)
+    const { rootDir, leafDirs } = buildTwoLevelDirectory(entries, 512);
+    const leafDirData = Buffer.concat(leafDirs.map(d => Buffer.from(d)));
 
     // 7. Metadata
     const metadata = Buffer.from(JSON.stringify({
@@ -295,12 +296,14 @@ async function main() {
         generatedAt: new Date().toISOString(),
     }));
 
-    // 8. Offsets
+    // 8. Offsets (structure: header → rootDir → metadata → leafDirs → tileData)
     const rootDirOffset = HEADER_SIZE;
     const rootDirLength = rootDir.length;
     const metadataOffset = rootDirOffset + rootDirLength;
     const metadataLength = metadata.length;
-    const tileDataOffset = metadataOffset + metadataLength;
+    const leafDirOffset = metadataOffset + metadataLength;
+    const leafDirLength = leafDirData.length;
+    const tileDataOffset = leafDirOffset + leafDirLength;
 
     // 9. Header
     const header = buildHeader({
@@ -308,6 +311,8 @@ async function main() {
         rootDirLength,
         metadataOffset,
         metadataLength,
+        leafDirOffset,
+        leafDirLength,
         tileDataOffset,
         tileDataLength: tileDataSize,
         numTiles: entries.length,
@@ -329,6 +334,7 @@ async function main() {
     fs.writeSync(fd, new Uint8Array(header));
     fs.writeSync(fd, rootDir);
     fs.writeSync(fd, metadata);
+    fs.writeSync(fd, leafDirData);
     for (const tile of sorted) {
         fs.writeSync(fd, tile.data);
     }

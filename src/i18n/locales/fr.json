@@ -577,6 +577,7 @@
   "packs": {
     "title": "Packs Pays",
     "storage": "Stockage",
+    "storageEmpty": "Aucun pack installé",
     "free": "disponible",
     "lodInfo": "Pro : LOD 12-14 · Gratuit : LOD 12",
     "btn": {

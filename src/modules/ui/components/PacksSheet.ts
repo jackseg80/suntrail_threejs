@@ -45,16 +45,17 @@ export class PacksSheet extends BaseComponent {
         this.subscriptions.push(() => eventBus.off('packStatusChanged', onStatusChanged));
 
         // Initial render — retenter le fetch catalog si pas encore chargé
-        this.loadAndRender();
-        this.updateStorageInfo();
+        void this.loadAndRender();
     }
 
     private async loadAndRender(): Promise<void> {
         this.renderPackList();
+        this.updateStorageInfo();
         // Si le catalog est vide, retenter le fetch
         if (packManager.getAvailablePacks().length === 0) {
             await packManager.fetchCatalog();
             this.renderPackList();
+            this.updateStorageInfo();
         }
     }
 
@@ -278,10 +279,21 @@ export class PacksSheet extends BaseComponent {
             }
         }
 
-        if (installedMB > 0) {
-            valueEl.textContent = `${installedMB} MB`;
+        // Compter aussi les packs en cours de téléchargement (taille estimée)
+        let downloadingMB = 0;
+        for (const meta of packs) {
+            const ps = packManager.getPackState(meta.id);
+            if (ps?.status === 'downloading') {
+                downloadingMB += meta.sizeMB;
+            }
+        }
+
+        if (installedMB > 0 || downloadingMB > 0) {
+            const total = installedMB + downloadingMB;
+            const suffix = downloadingMB > 0 ? ` (${i18n.t('packs.status.downloading').toLowerCase()}...)` : '';
+            valueEl.textContent = `${total} MB${suffix}`;
         } else {
-            valueEl.textContent = i18n.t('packs.status.notPurchased');
+            valueEl.textContent = i18n.t('packs.storageEmpty');
         }
     }
 }

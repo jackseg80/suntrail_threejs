@@ -94,6 +94,8 @@ export interface BuildHeaderOpts {
     rootDirLength: number;
     metadataOffset: number;
     metadataLength: number;
+    leafDirOffset: number;
+    leafDirLength: number;
     tileDataOffset: number;
     tileDataLength: number;
     numTiles: number;
@@ -103,6 +105,34 @@ export interface BuildHeaderOpts {
     centerLon: number;
     centerLat: number;
     centerZoom: number;
+}
+
+/**
+ * Construit un répertoire à deux niveaux (root + leaves).
+ * Requis quand le répertoire dépasse ~16KB (limite du fetch initial de la lib PMTiles).
+ */
+export function buildTwoLevelDirectory(
+    entries: TileEntry[],
+    leafSize = 512
+): { rootDir: Uint8Array; leafDirs: Uint8Array[] } {
+    const leafDirs: Uint8Array[] = [];
+    const rootEntries: TileEntry[] = [];
+    let leafOffset = 0;
+
+    for (let i = 0; i < entries.length; i += leafSize) {
+        const chunk = entries.slice(i, i + leafSize);
+        const leafDir = serializeDirectory(chunk);
+        rootEntries.push({
+            tileId: chunk[0].tileId,
+            offset: leafOffset,
+            length: leafDir.byteLength,
+            runLength: 0, // 0 = pointeur vers leaf directory
+        });
+        leafOffset += leafDir.byteLength;
+        leafDirs.push(leafDir);
+    }
+
+    return { rootDir: serializeDirectory(rootEntries), leafDirs };
 }
 
 export function buildHeader(opts: BuildHeaderOpts): ArrayBuffer {
@@ -117,8 +147,8 @@ export function buildHeader(opts: BuildHeaderOpts): ArrayBuffer {
     setUint64(view, 16, opts.rootDirLength);
     setUint64(view, 24, opts.metadataOffset);
     setUint64(view, 32, opts.metadataLength);
-    setUint64(view, 40, 0); // leaf dir offset
-    setUint64(view, 48, 0); // leaf dir length
+    setUint64(view, 40, opts.leafDirOffset);
+    setUint64(view, 48, opts.leafDirLength);
     setUint64(view, 56, opts.tileDataOffset);
     setUint64(view, 64, opts.tileDataLength);
     setUint64(view, 72, opts.numTiles);
