@@ -132,36 +132,31 @@ export function updateStorageUI() {
  * Récupère une ressource via le cache persistant ou le réseau.
  */
 export async function fetchWithCache(url: string, usePersistentCache: boolean = false): Promise<Blob | null> {
-    if (state.IS_OFFLINE && !usePersistentCache) return null;
-    
+    // Les sources locales (PMTiles upload, country packs) sont consultées EN PREMIER,
+    // avant la garde offline — elles fonctionnent sans réseau.
+    const tileMatch = url.match(/\/(\d+)\/(\d+)\/(\d+)(?:@2x)?\.(jpeg|jpg|png|webp)/i);
+
     // --- PMTILES INTERCEPTION (v5.7.0) ---
-    // Si une archive locale est montée, on essaie d'abord d'y trouver la tuile
-    if (localPMTiles) {
-        // Extraction basique du Z/X/Y depuis l'URL (très simplifié, à adapter selon format URL)
-        const match = url.match(/\/(\d+)\/(\d+)\/(\d+)(?:@2x)?\.(jpeg|jpg|png|webp)/i);
-        if (match) {
-            const z = parseInt(match[1]);
-            const x = parseInt(match[2]);
-            const y = parseInt(match[3]);
-            const pmBlob = await getTileFromPMTiles(z, x, y);
-            if (pmBlob) {
-                console.log(`[PMTiles] HIT pour ${z}/${x}/${y}`);
-                return pmBlob;
-            }
+    if (localPMTiles && tileMatch) {
+        const pmBlob = await getTileFromPMTiles(
+            parseInt(tileMatch[1]), parseInt(tileMatch[2]), parseInt(tileMatch[3])
+        );
+        if (pmBlob) {
+            console.log(`[PMTiles] HIT pour ${tileMatch[1]}/${tileMatch[2]}/${tileMatch[3]}`);
+            return pmBlob;
         }
     }
 
-    // --- COUNTRY PACKS INTERCEPTION (v5.21.0) ---
-    // Si des packs pays sont montés, on essaie d'y trouver la tuile (LOD 12-14)
-    if (packManager.hasMountedPacks()) {
-        const pm = url.match(/\/(\d+)\/(\d+)\/(\d+)(?:@2x)?\.(jpeg|jpg|png|webp)/i);
-        if (pm) {
-            const packBlob = await packManager.getTileFromPacks(
-                parseInt(pm[1]), parseInt(pm[2]), parseInt(pm[3])
-            );
-            if (packBlob) return packBlob;
-        }
+    // --- COUNTRY PACKS INTERCEPTION (v5.21.0) — fonctionne offline ---
+    if (packManager.hasMountedPacks() && tileMatch) {
+        const packBlob = await packManager.getTileFromPacks(
+            parseInt(tileMatch[1]), parseInt(tileMatch[2]), parseInt(tileMatch[3])
+        );
+        if (packBlob) return packBlob;
     }
+
+    // Garde offline : après les sources locales, avant réseau/cache
+    if (state.IS_OFFLINE && !usePersistentCache) return null;
 
     try {
         if (usePersistentCache) {
@@ -173,15 +168,12 @@ export async function fetchWithCache(url: string, usePersistentCache: boolean = 
                 return await cached.blob();
             }
         }
-        // Fallback embedded overview (LOD 5-7) — avant le réseau
-        if (embeddedPMTiles) {
-            const em = url.match(/\/(\d+)\/(\d+)\/(\d+)(?:@2x)?\.(jpeg|jpg|png|webp)/i);
-            if (em) {
-                const ez = parseInt(em[1]);
-                if (ez <= EMBEDDED_MAX_ZOOM) {
-                    const blob = await getTileFromEmbedded(ez, parseInt(em[2]), parseInt(em[3]));
-                    if (blob) return blob;
-                }
+        // Fallback embedded overview (LOD ≤ 11) — avant le réseau
+        if (embeddedPMTiles && tileMatch) {
+            const ez = parseInt(tileMatch[1]);
+            if (ez <= EMBEDDED_MAX_ZOOM) {
+                const blob = await getTileFromEmbedded(ez, parseInt(tileMatch[2]), parseInt(tileMatch[3]));
+                if (blob) return blob;
             }
         }
 
