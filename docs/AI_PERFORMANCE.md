@@ -1,4 +1,4 @@
-# SunTrail — Performance & Mobile (v5.19.6)
+# SunTrail — Performance & Mobile (v5.21.1)
 
 > Référence détaillée pour agents IA. Point d'entrée : [CLAUDE.md](../CLAUDE.md)
 
@@ -59,3 +59,36 @@ Seuls ajustements mobiles résiduels dans `applyPreset()` : ENERGY_SAVER (batter
 
 - **Light Shader** : Shader simplifié pour GPU Mali/Adreno mid-range (÷4 charge GPU).
 - **Adaptive Scan** : Réduction du pas de scan végétation sur mobile.
+
+---
+
+## Optimisations Startup & Rendering (v5.21.1)
+
+### Lazy-loading des composants UI secondaires
+
+`initUI()` est divisée en deux phases :
+
+- **Phase 1 (synchrone)** : `NavigationBar`, `TopStatusBar`, `WidgetsComponent`, `TimelineComponent` — requis avant `launchScene()` (DOM `#nav-bar`, `#widgets-container`).
+- **Phase 2 (déférée)** : 10 sheets (`SettingsSheet`, `LayersSheet`, `SearchSheet`, `TrackSheet`, `WeatherSheet`, `SolarProbeSheet`, `SOSSheet`, `ConnectivitySheet`, `PacksSheet`, `UpgradeSheet`) + `VRAMDashboard` + `InclinometerWidget` — chargés via `import()` dynamique dans `_initSecondaryUI()`, déclenché par `requestAnimationFrame(() => setTimeout(..., 0))` après le premier frame.
+- **Impact** : ~99 kB retirés du bundle initial (`index-*.js`). Chaque sheet est un chunk séparé chargé par le SW cache après le rendu initial. `Evaluate module` et `Run microtasks` réduits de ~60% au démarrage.
+- **⚠️ RÈGLE** : Si une sheet n'est pas encore hydratée quand l'utilisateur la tente d'ouvrir (fenêtre ~50ms), `SheetManager.open()` logue un warning et retourne. C'est le comportement attendu, ne pas modifier la séquence de Phase 2.
+
+### Déduplication fetchCatalog (packManager)
+
+`packManager.fetchCatalog()` utilise un garde `catalogFetchPromise : Promise<PackCatalog> | null`. Deux appels concurrents (`initialize()` + `PacksSheet.loadAndRender()` au démarrage) partagent la même promesse → une seule requête HTTP vers R2.
+
+### Objets THREE pré-alloués — hot paths
+
+- **`touchControls.ts`** : 14 variables scratch module-level (`_right`, `_fwd`, `_camUp`, `_panOffset`, `_zoomDir`, `_zoomNear`, `_zoomFar`, `_zoomP`, `_zoomPscr`, `_rotOffset`, `_rotAxis`, `_rotQuat`, `_tiltOffset`, `_tiltSph`). Élimine ~10 allocations/pointer-event dans `doPan`, `doZoom`, `doZoomToPoint`, `doRotate`, `doTilt`.
+- **`sun.ts`** : 8 objets module-level (`_sunColor`, `_ambientColor`, `_nightAmbientColor`, `_lerpA`, `_lerpB`, `_fogNight`, `_fogDay`, `_sunVector`). Élimine 3-9 `new THREE.Color()` par frame dans `updateSun()`.
+- **⚠️ RÈGLE** : Ces variables sont partagées entre appels — ne jamais stocker une référence vers ces objets scratch au-delà de la durée de la fonction.
+
+### Animations CSS composited GPU
+
+- `tile-loading-shimmer` : `background-position` → `transform: translateX()` sur `::after`. Composited, pas de repaint.
+- `pulse-rec` : `box-shadow` → `transform: scale()` + `opacity` sur `::before`. Composited.
+- `fab-btn`, `track-btn`, `layer-item/thumb` : `transition: all` remplacé par propriétés explicites (évite les animations layout accidentelles).
+
+### Hover désactivé sur touch
+
+Toutes les règles CSS `:hover` sont enveloppées dans `@media (hover: hover)`. Sur mobile Android (touch), `hover: none` — le browser ne recalcule plus les états hover pendant les gestes, réduisant le coût `Event: pointerover` + `Recalculate style`.

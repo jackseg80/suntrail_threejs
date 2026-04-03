@@ -1,4 +1,4 @@
-# SunTrail — Architecture & Composants (v5.19.6)
+# SunTrail — Architecture & Composants (v5.21.1)
 
 > Référence détaillée pour agents IA. Point d'entrée : [CLAUDE.md](../CLAUDE.md)
 
@@ -36,6 +36,7 @@
 - **DraggablePanel (v5.19.1)** : `src/modules/ui/draggablePanel.ts` — swipe bas = dismiss, hold 300ms = repositionnement libre, double-tap = reset. Guard `isActive` critique. Classe CSS `.panel-custom-pos`.
 - **InclinometerWidget (v5.19.1)** : Tap = panel détail, drag = repositionner (hold 300ms), double-tap = reset. z-index 2100. i18n complet.
 - **Coords-pill déplaçable (v5.19.1)** : `#coords-pill` utilise `attachDraggablePanel()`. Position reset à chaque nouveau clic carte.
+- **Initialisation UI en deux phases (v5.21.1)** : `initUI()` hydrate d'abord les composants visibles au démarrage (Phase 1 synchrone), puis charge les 10 sheets via `_initSecondaryUI()` après le premier frame (Phase 2 async). Voir `AI_PERFORMANCE.md` — Lazy-loading des composants UI secondaires.
 
 ---
 
