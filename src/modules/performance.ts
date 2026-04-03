@@ -163,13 +163,7 @@ export function applyPreset(preset: PresetType): void {
     // Seul Ultra conserve des caps car ses valeurs sont dimensionnées pour PC bureau.
     const isMobilePreset = /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
     if (isMobilePreset) {
-        // ENERGY_SAVER par tier (v5.11 Phase 2 design intent) :
-        // - eco/balanced  : 30fps par défaut — mid-range, autonomie prioritaire
-        // - performance   : 60fps par défaut — flagship, l'utilisateur a payé pour les perfs
-        // - ultra         : 60fps — PC/Snapdragon Elite (inchangé)
-        // L'utilisateur peut toujours basculer manuellement via le toggle Réglages Avancés.
-        if (preset === 'eco' || preset === 'balanced') state.ENERGY_SAVER = true;
-        if (preset === 'performance' || preset === 'ultra') state.ENERGY_SAVER = false;
+        // ENERGY_SAVER : jamais forcé par le preset — choix exclusif de l'utilisateur.
 
         // Ultra mobile (Snapdragon Elite) : réduire légèrement par rapport au PC bureau
         if (preset === 'ultra') {
@@ -291,8 +285,7 @@ export function updatePerformanceUI(preset: PresetType): void {
     const resDisp = document.getElementById('res-disp');
     const rangeDisp = document.getElementById('range-disp');
     const vegDensityDisp = document.getElementById('veg-density-disp');
-    const loadSpeedSelect = document.getElementById('load-speed-select') as HTMLSelectElement;
-    
+
     const weatherDensitySlider = document.getElementById('weather-density-slider') as HTMLInputElement;
     const weatherDensityDisp = document.getElementById('weather-density-disp');
     const weatherSpeedSlider = document.getElementById('weather-speed-slider') as HTMLInputElement;
@@ -313,7 +306,6 @@ export function updatePerformanceUI(preset: PresetType): void {
     
     if (vegDensitySlider) vegDensitySlider.value = state.VEGETATION_DENSITY.toString();
     if (vegDensityDisp) vegDensityDisp.textContent = state.VEGETATION_DENSITY.toString();
-    if (loadSpeedSelect) loadSpeedSelect.value = state.LOAD_DELAY_FACTOR.toString();
 
     if (weatherDensitySlider) weatherDensitySlider.value = state.WEATHER_DENSITY.toString();
     if (weatherDensityDisp) weatherDensityDisp.textContent = state.WEATHER_DENSITY.toString();

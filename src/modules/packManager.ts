@@ -38,7 +38,22 @@ class PackManager {
         this.fetchCatalog().catch(() => { /* catalog fail = silent */ });
         // Mount all installed packs
         await this.mountAllInstalled();
+        // Sync pack purchases avec RevenueCat (restaure après clear storage)
+        this.syncPackPurchases().catch(() => {});
         console.log(`[Packs] Initialisé. ${this.mountedArchives.size} pack(s) monté(s).`);
+    }
+
+    /** Vérifie les achats de packs sur RevenueCat et met à jour les états locaux. */
+    private async syncPackPurchases(): Promise<void> {
+        if (!Capacitor.isNativePlatform()) return;
+        // Attendre que iapService soit initialisé
+        const { iapService } = await import('./iapService');
+        const ready = await iapService.waitForInit();
+        if (!ready) return;
+        const purchased = await iapService.checkAllPackPurchases();
+        for (const packId of purchased) {
+            this.markPurchased(packId);
+        }
     }
 
     // ── Catalog ──────────────────────────────────────────────────────────────
@@ -126,6 +141,7 @@ class PackManager {
                 this.emitStatus(packId, 'purchased');
                 showToast(i18n.t('packs.toast.downloadCancelled'));
             } else {
+                console.error(`[Packs] Download error for ${packId}:`, e);
                 ps.status = 'error';
                 this.persistStates();
                 this.emitStatus(packId, 'error');
@@ -133,7 +149,7 @@ class PackManager {
                 if (msg.includes('quota') || msg.includes('ENOSPC')) {
                     showToast(i18n.t('packs.error.storageFull'));
                 } else {
-                    showToast(i18n.t('packs.error.downloadFailed'));
+                    showToast(`${i18n.t('packs.error.downloadFailed')} (${msg.slice(0, 60)})`);
                 }
                 // Cleanup partial file
                 this.deletePackFile(packId).catch(() => {});
@@ -146,52 +162,30 @@ class PackManager {
 
     private async downloadNative(
         meta: PackMeta, ps: PackState,
-        onProgress?: (p: number) => void, signal?: AbortSignal
+        onProgress?: (p: number) => void, _signal?: AbortSignal
     ): Promise<void> {
         const filePath = `${PACKS_DIR}/${meta.id}.pmtiles`;
 
-        // Ensure directory exists
-        try {
-            await Filesystem.mkdir({ path: PACKS_DIR, directory: Directory.Data, recursive: true });
-        } catch { /* exists */ }
-
-        // Streaming download with fetch + chunked write
-        const resp = await fetch(meta.cdnUrl, { signal });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-
-        const reader = resp.body?.getReader();
-        if (!reader) throw new Error('No response body');
-
-        const contentLength = parseInt(resp.headers.get('content-length') ?? '0', 10);
-        const chunks: Uint8Array[] = [];
-        let received = 0;
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            chunks.push(value);
-            received += value.length;
-            if (contentLength > 0) {
-                ps.downloadProgress = received / contentLength;
+        // Listener pour la progression du téléchargement
+        const listener = await Filesystem.addListener('progress', (progress) => {
+            if (progress.contentLength && progress.contentLength > 0) {
+                ps.downloadProgress = progress.bytes / progress.contentLength;
                 onProgress?.(ps.downloadProgress);
             }
-        }
-
-        // Combine chunks and write to filesystem
-        const fullData = new Uint8Array(received);
-        let offset = 0;
-        for (const chunk of chunks) {
-            fullData.set(chunk, offset);
-            offset += chunk.length;
-        }
-
-        // Write as base64 (Capacitor Filesystem requirement for binary)
-        const base64 = btoa(String.fromCharCode(...fullData));
-        await Filesystem.writeFile({
-            path: filePath,
-            data: base64,
-            directory: Directory.Data,
         });
+
+        try {
+            // downloadFile() stream directement sur le disque — zéro accumulation RAM
+            await Filesystem.downloadFile({
+                url: meta.cdnUrl,
+                path: filePath,
+                directory: Directory.Data,
+                recursive: true,
+                progress: true,
+            });
+        } finally {
+            await listener.remove();
+        }
 
         ps.filePath = filePath;
     }
@@ -276,24 +270,20 @@ class PackManager {
         if (this.mountedArchives.has(packId)) return;
 
         const ps = this.packStates.get(packId);
-        if (!ps || ps.status !== 'installed' || !ps.filePath) return;
+        if (!ps || (ps.status !== 'installed' && ps.status !== 'purchased' && ps.status !== 'update_available')) return;
 
         try {
             let archive: pmtiles.PMTiles;
 
             if (Capacitor.isNativePlatform()) {
-                // Read file from device storage
-                const result = await Filesystem.readFile({
-                    path: ps.filePath,
-                    directory: Directory.Data,
-                });
-                // Convert base64 to ArrayBuffer
-                const binary = atob(result.data as string);
-                const bytes = new Uint8Array(binary.length);
-                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-                const blob = new Blob([bytes], { type: 'application/octet-stream' });
-                const file = new File([blob], `${packId}.pmtiles`);
-                archive = new pmtiles.PMTiles(new pmtiles.FileSource(file));
+                // Sur Android, utiliser l'URL CDN avec HTTP Range requests.
+                // R2 supporte Range nativement et l'egress est gratuit.
+                // Chaque getZxy() ne fetch que quelques KB (le header/directory d'une tuile).
+                // Le fichier local sert de preuve d'installation.
+                // En mode offline, getTileFromPacks() retournera null → fallback normal.
+                const meta = this.getPackMeta(packId);
+                if (!meta) throw new Error('Pack meta not found');
+                archive = new pmtiles.PMTiles(meta.cdnUrl);
             } else {
                 // OPFS
                 const root = await navigator.storage.getDirectory();
@@ -303,7 +293,7 @@ class PackManager {
                 archive = new pmtiles.PMTiles(new pmtiles.FileSource(file));
             }
 
-            // Warmup: read header + one tile to prime internal cache
+            // Warmup: read header pour vérifier l'archive
             const header = await archive.getHeader();
             console.log(`[Packs] ${packId} monté. LOD ${header.minZoom}-${header.maxZoom}, ${header.numTileEntries} tuiles`);
 
@@ -323,7 +313,7 @@ class PackManager {
 
     async mountAllInstalled(): Promise<void> {
         for (const [packId, ps] of this.packStates) {
-            if (ps.status === 'installed') {
+            if (ps.status === 'installed' || ps.status === 'purchased' || ps.status === 'update_available') {
                 await this.mountPack(packId);
             }
         }
@@ -379,6 +369,8 @@ class PackManager {
         ps.status = 'purchased';
         this.persistStates();
         this.emitStatus(packId, 'purchased');
+        // Auto-mount via CDN (pas besoin de download pour servir les tuiles)
+        void this.mountPack(packId);
     }
 
     markPurchased(packId: string): void {
@@ -387,6 +379,8 @@ class PackManager {
             ps.status = 'purchased';
             this.persistStates();
             this.emitStatus(packId, 'purchased');
+            // Auto-mount via CDN
+            void this.mountPack(packId);
         }
     }
 

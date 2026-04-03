@@ -39,7 +39,6 @@ export class SettingsSheet extends BaseComponent {
         this.bindSlider('range-slider', 'RANGE', 'range-disp', this.refreshTerrain);
         this.bindSlider('exag-slider', 'RELIEF_EXAGGERATION', 'exag-disp', this.refreshTerrain);
         this.bindSlider('veg-density-slider', 'VEGETATION_DENSITY', 'veg-density-disp', this.refreshTerrain);
-        this.bindSlider('load-speed-slider', 'LOAD_DELAY_FACTOR', 'load-speed-disp');
 
         // Sub-options expand/collapse
         this.bindExpandToggle('veg-expand-btn', 'veg-suboptions');
@@ -134,7 +133,7 @@ export class SettingsSheet extends BaseComponent {
             'RESOLUTION', 'RANGE', 'RELIEF_EXAGGERATION', 'VEGETATION_DENSITY',
             'FOG_FAR', 'ENERGY_SAVER',
             'SHOW_STATS', 'SHOW_DEBUG', 'SHOW_VEGETATION', 'SHOW_BUILDINGS',
-            'SHOW_HYDROLOGY', 'SHOW_SIGNPOSTS', 'SHADOWS', 'LOAD_DELAY_FACTOR',
+            'SHOW_HYDROLOGY', 'SHOW_SIGNPOSTS', 'SHADOWS',
             'isFollowingTrail', 'SHOW_TRAILS', 'SHOW_SLOPES', 'PERFORMANCE_PRESET',
             'WEATHER_DENSITY', 'WEATHER_SPEED', 'SHOW_INCLINOMETER', 'SHOW_WEATHER_PRO'
         ];
@@ -252,9 +251,6 @@ export class SettingsSheet extends BaseComponent {
             case 'SHADOWS':
                 this.updateToggle('shadow-toggle', value);
                 break;
-            case 'LOAD_DELAY_FACTOR':
-                this.updateSlider('load-speed-slider', 'load-speed-disp', value);
-                break;
             case 'isFollowingTrail':
                 this.updateToggle('trail-follow-toggle', value);
                 break;
@@ -326,7 +322,6 @@ export class SettingsSheet extends BaseComponent {
         this.updateUIFromState('SHOW_HYDROLOGY', state.SHOW_HYDROLOGY);
         this.updateUIFromState('SHOW_SIGNPOSTS', state.SHOW_SIGNPOSTS);
         this.updateUIFromState('SHADOWS', state.SHADOWS);
-        this.updateUIFromState('LOAD_DELAY_FACTOR', state.LOAD_DELAY_FACTOR);
         this.updateUIFromState('isFollowingTrail', state.isFollowingTrail);
         this.updateUIFromState('SHOW_TRAILS', state.SHOW_TRAILS);
         this.updateUIFromState('SHOW_SLOPES', state.SHOW_SLOPES);

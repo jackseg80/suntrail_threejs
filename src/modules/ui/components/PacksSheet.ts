@@ -27,13 +27,14 @@ export class PacksSheet extends BaseComponent {
         const restoreBtn = this.element.querySelector('#packs-restore-btn');
         restoreBtn?.addEventListener('click', async () => {
             void haptic('medium');
-            const restored = await iapService.restorePurchases();
-            if (restored) {
-                // Check all pack entitlements
-                const purchased = await iapService.checkAllPackPurchases();
-                for (const packId of purchased) {
-                    packManager.markPurchased(packId);
-                }
+            // Restaurer Pro + vérifier les packs (indépendamment)
+            await iapService.restorePurchases();
+            const purchased = await iapService.checkAllPackPurchases();
+            for (const packId of purchased) {
+                packManager.markPurchased(packId);
+            }
+            if (purchased.length > 0) {
+                showToast(`${purchased.length} pack(s) restauré(s)`);
             }
             this.renderPackList();
         });
@@ -43,9 +44,18 @@ export class PacksSheet extends BaseComponent {
         eventBus.on('packStatusChanged', onStatusChanged);
         this.subscriptions.push(() => eventBus.off('packStatusChanged', onStatusChanged));
 
-        // Initial render
-        this.renderPackList();
+        // Initial render — retenter le fetch catalog si pas encore chargé
+        this.loadAndRender();
         this.updateStorageInfo();
+    }
+
+    private async loadAndRender(): Promise<void> {
+        this.renderPackList();
+        // Si le catalog est vide, retenter le fetch
+        if (packManager.getAvailablePacks().length === 0) {
+            await packManager.fetchCatalog();
+            this.renderPackList();
+        }
     }
 
     private renderPackList(): void {
@@ -56,7 +66,6 @@ export class PacksSheet extends BaseComponent {
         container.innerHTML = '';
 
         if (packs.length === 0) {
-            // Fallback: show hardcoded pack info when catalog not loaded
             this.renderFallbackList(container);
             return;
         }
@@ -117,9 +126,20 @@ export class PacksSheet extends BaseComponent {
             actions.appendChild(buyBtn);
 
         } else if (status === 'purchased') {
-            const dlBtn = this.createButton('packs.btn.download', 'var(--accent, #3b7ef8)');
-            dlBtn.addEventListener('click', () => this.handleDownload(meta.id));
-            actions.appendChild(dlBtn);
+            // Pack acheté = actif via CDN
+            const badge = document.createElement('span');
+            badge.style.cssText = 'color:#22c55e; font-size:var(--text-sm); font-weight:600;';
+            badge.textContent = '\u2713 Actif';
+            actions.appendChild(badge);
+
+            // Bouton download optionnel pour mode offline
+            if (Capacitor.isNativePlatform()) {
+                const dlBtn = this.createButton('packs.btn.download', 'rgba(255,255,255,0.1)');
+                dlBtn.style.marginLeft = 'auto';
+                dlBtn.style.color = 'var(--text-2)';
+                dlBtn.addEventListener('click', () => this.handleDownload(meta.id));
+                actions.appendChild(dlBtn);
+            }
 
         } else if (status === 'downloading') {
             // Progress bar
@@ -211,7 +231,14 @@ export class PacksSheet extends BaseComponent {
             packManager.onPurchaseCompleted(packId);
             this.renderPackList();
         } else {
-            showToast(i18n.t('packs.error.purchaseFailed'));
+            // Si l'achat "échoue" car déjà possédé, vérifier l'entitlement
+            const owned = await iapService.isPackPurchased(packId);
+            if (owned) {
+                packManager.onPurchaseCompleted(packId);
+                this.renderPackList();
+            } else {
+                showToast(i18n.t('packs.error.purchaseFailed'));
+            }
         }
     }
 
@@ -237,20 +264,24 @@ export class PacksSheet extends BaseComponent {
 
     // ── Storage info ─────────────────────────────────────────────────────────
 
-    private async updateStorageInfo(): Promise<void> {
+    private updateStorageInfo(): void {
         const valueEl = this.element?.querySelector('#packs-storage-value');
         if (!valueEl) return;
 
-        try {
-            if (navigator.storage?.estimate) {
-                const est = await navigator.storage.estimate();
-                const usedMB = Math.round((est.usage ?? 0) / 1024 / 1024);
-                const quotaMB = Math.round((est.quota ?? 0) / 1024 / 1024);
-                const freeMB = quotaMB - usedMB;
-                valueEl.textContent = `${usedMB} MB / ${freeMB} MB ${i18n.t('packs.free')}`;
+        // Afficher la taille totale des packs installés
+        const packs = packManager.getAvailablePacks();
+        let installedMB = 0;
+        for (const meta of packs) {
+            const ps = packManager.getPackState(meta.id);
+            if (ps && (ps.status === 'installed' || ps.status === 'purchased' || ps.status === 'update_available')) {
+                installedMB += meta.sizeMB;
             }
-        } catch {
-            valueEl.textContent = '—';
+        }
+
+        if (installedMB > 0) {
+            valueEl.textContent = `${installedMB} MB`;
+        } else {
+            valueEl.textContent = i18n.t('packs.status.notPurchased');
         }
     }
 }

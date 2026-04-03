@@ -71,30 +71,30 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
     },
     // ── STD / Balanced — Mid-range 2021-2022 (Galaxy A53, Intel HD 620) ──────
     balanced: {
-        RESOLUTION: 32,          // ← 64 → 32 : A53 confortable à LOD14 à 30fps
+        RESOLUTION: 64,
         RANGE: 4,
-        SHADOWS: true, SHADOW_RES: 256, PIXEL_RATIO_LIMIT: 1.0,
+        SHADOWS: true, SHADOW_RES: 512, PIXEL_RATIO_LIMIT: 1.0,
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: false, BUILDINGS_SHADOWS: false,
         MAX_ALLOWED_ZOOM: 16,
-        VEGETATION_DENSITY: 500, // ← 2000 → 500 : végétation légère, castShadow désactivé Phase 2
+        VEGETATION_DENSITY: 1500,
         VEGETATION_CAST_SHADOW: false, // économie ~18 draw calls shadow pass sur mid-range
         BUILDING_LIMIT: 40, POI_ZOOM_THRESHOLD: 15, BUILDING_ZOOM_THRESHOLD: 16,
         MAX_BUILDS_PER_CYCLE: 2, LOAD_DELAY_FACTOR: 1.2,
-        SHOW_WEATHER: true, WEATHER_DENSITY: 1000, // ← 2000 → 1000
+        SHOW_WEATHER: true, WEATHER_DENSITY: 1000,
         WEATHER_SPEED: 1.0, FOG_FAR: 40000, SHOW_SLOPES: false
     },
     // ── High / Performance — Galaxy S23 (Adreno 740) + GTX 1050 / RX 470 ────
     performance: {
         RESOLUTION: 160,
-        RANGE: 6,                // ← 5 → 6 : plus de couverture visuelle en 3D incliné
+        RANGE: 6,
         SHADOWS: true,
-        SHADOW_RES: 1024,        // ← 2048 → 1024 : baked-in (S23 + PC mid-range)
+        SHADOW_RES: 1024,
         PIXEL_RATIO_LIMIT: 1.5,
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: true, BUILDINGS_SHADOWS: true,
         MAX_ALLOWED_ZOOM: 18,
-        VEGETATION_DENSITY: 8000, VEGETATION_CAST_SHADOW: true,
+        VEGETATION_DENSITY: 5000, VEGETATION_CAST_SHADOW: true,
         BUILDING_LIMIT: 80, POI_ZOOM_THRESHOLD: 14, BUILDING_ZOOM_THRESHOLD: 15,
-        MAX_BUILDS_PER_CYCLE: 2, // ← 4 → 2 : baked-in (étalement uploads GPU)
+        MAX_BUILDS_PER_CYCLE: 4,
         LOAD_DELAY_FACTOR: 0.5,
         SHOW_WEATHER: true, WEATHER_DENSITY: 5000, WEATHER_SPEED: 1.2, FOG_FAR: 60000, SHOW_SLOPES: false
     },
