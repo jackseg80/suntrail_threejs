@@ -80,7 +80,14 @@ async function processLoadQueue() {
     } finally {
         isProcessingQueue = false;
         if (loadQueue.size > 0) setTimeout(processLoadQueue, 32);
-        else state.isProcessingTiles = false;
+        else {
+            // Délai de 2 frames (~50ms) avant d'éteindre le flag : les textures viennent
+            // d'être appliquées aux meshs, mais le render loop doit avoir au moins un appel
+            // renderer.render() pour les afficher. Sans délai, isProcessingTiles=false arrive
+            // avant le RAF suivant → needsUpdate=false → tuiles chargées mais jamais rendues
+            // (visible en 2D où tiltAnimating ne prolonge pas needsUpdate comme en 3D).
+            setTimeout(() => { state.isProcessingTiles = false; }, 50);
+        }
     }
 }
 

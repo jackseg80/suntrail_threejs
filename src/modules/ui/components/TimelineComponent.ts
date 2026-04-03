@@ -32,18 +32,24 @@ export class TimelineComponent {
             this.timeSlider.setAttribute('aria-valuemax', this.timeSlider.max);
             this.timeSlider.setAttribute('aria-valuenow', this.timeSlider.value);
 
-            // Timer pour désactiver le flag après la fin du drag
             let _renderTimer: ReturnType<typeof setTimeout> | null = null;
 
-            this.timeSlider.addEventListener('input', () => {
-                // Forcer le render loop à rester actif pendant le drag
-                // (sans ça, la scène ne se met pas à jour car needsUpdate = false)
+            // pointerdown : activer pour toute la durée du contact (pas seulement pendant le mouvement)
+            // Sans ça, 150ms après l'arrêt du doigt isInteractingWithUI=false → idle mode →
+            // renderer.render() non appelé → canvas WebGL Android WebView devient blanc.
+            this.timeSlider.addEventListener('pointerdown', () => {
+                if (_renderTimer) { clearTimeout(_renderTimer); _renderTimer = null; }
                 state.isInteractingWithUI = true;
-                if (_renderTimer) clearTimeout(_renderTimer);
-                _renderTimer = setTimeout(() => {
-                    state.isInteractingWithUI = false;
-                }, 150);
+            });
 
+            const onPointerRelease = () => {
+                _renderTimer = setTimeout(() => { state.isInteractingWithUI = false; }, 150);
+            };
+            this.timeSlider.addEventListener('pointerup', onPointerRelease);
+            this.timeSlider.addEventListener('pointercancel', onPointerRelease);
+
+            this.timeSlider.addEventListener('input', () => {
+                // isInteractingWithUI déjà true via pointerdown
                 const mins = parseInt(this.timeSlider!.value);
                 const newDate = new Date(state.simDate);
                 newDate.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
