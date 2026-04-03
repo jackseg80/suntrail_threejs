@@ -273,7 +273,7 @@ function _show(resolve: () => void): void {
             }
             .ob-skip:hover { opacity: 0.8; }
             .ob-next {
-                background: var(--accent, #3b7de0);
+                background: var(--accent-btn, #2668d4);
                 color: #fff;
                 border: none;
                 border-radius: var(--radius-md, 10px);

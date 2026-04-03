@@ -195,7 +195,6 @@ export class WeatherSheet extends BaseComponent {
             const row = document.createElement('div');
             row.classList.add('weather-daily-row');
             if (isLocked) {
-                row.style.opacity = '0.38';
                 row.style.cursor = 'pointer';
                 row.addEventListener('click', () => showUpgradePrompt('weather_extended'));
             }
@@ -214,6 +213,14 @@ export class WeatherSheet extends BaseComponent {
             temps.textContent = isLocked ? '— / —' : `${Math.round(d.tempMax)}°/${Math.round(d.tempMin)}°`;
 
             if (isLocked) {
+                // a11y: opacity sur chaque élément placeholder individuellement (pas sur la row)
+                // → le badge PRO ↗ reste à opacité pleine et lisible (ratio 6.2:1)
+                icon.style.opacity = '0.38';
+                icon.setAttribute('aria-hidden', 'true');
+                dateEl.style.opacity = '0.38';
+                dateEl.setAttribute('aria-hidden', 'true');
+                temps.style.opacity = '0.38';
+                temps.setAttribute('aria-hidden', 'true');
                 const badge = document.createElement('span');
                 badge.style.cssText = 'font-size:10px; color:var(--accent,#4a8ef8); font-weight:700; margin-left:auto; padding-left:8px;';
                 badge.textContent = 'PRO ↗';

@@ -62,8 +62,8 @@ class SheetManager {
         sheet.setAttribute('aria-modal', 'true');
         sheet.setAttribute('tabindex', '-1');
 
-        // ARIA: labelledby — find a .sheet-title inside the sheet
-        const title = sheet.querySelector('.sheet-title');
+        // ARIA: labelledby — find a .sheet-title or first heading as fallback
+        const title = sheet.querySelector('.sheet-title') ?? sheet.querySelector('h1, h2, h3');
         if (title) {
             if (!title.id) {
                 title.id = `sheet-title-${id}`;

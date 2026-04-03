@@ -38,6 +38,9 @@ public/tiles/*.pmtiles
 .cache/
 output/
 
+# Cloudflare Wrangler — état local (cache, session)
+.wrangler/
+
 # Vite
 *.local
 

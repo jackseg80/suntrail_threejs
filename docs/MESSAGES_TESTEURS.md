@@ -150,6 +150,8 @@ Deux options selon le temps que tu as :
 • Rapide (20-30 min) → 3 mois Pro
 • Complet (1h-2h) → 1 an Pro
 
+Attention ! Le mode 3D est gourmand selon ton mobile. Les ombres sont calculées en temps réel, en permanence, de façon précise. La qualité de la simulation des ombres prime sur les performances pour ce projet, mais tu peux ajuster les presets disponibles pour adapter la puissance à ton appareil et n'hésite pas à repasser en 2D si il chauffe trop.
+
 Si tu bloques sur quelque chose ou tu vois un bug, n'hésite pas à me faire signe directement.
 
 Merci encore, c'est vraiment précieux !
@@ -169,3 +171,8 @@ Pour obtenir le lien à partager avec les testeurs :
 5. Une fois ajoutés, copie le **lien opt-in** affiché en bas de page
 
 > ⚠️ Le lien opt-in change si tu modifies la liste — envoie-le après avoir ajouté tous les testeurs d'un coup.
+
+
+https://docs.google.com/forms/d/e/1FAIpQLSc0yfEkb_PL_gUjTY-vSOizvZopNyxOy_7mWp2MJlTh16HUaw/viewform
+
+https://docs.google.com/forms/d/1_DattCqyD1CthBPtkElFl_kwL6RSF2FvVM9hSnnVQrk/edit
