@@ -16,6 +16,16 @@ import { worldToLngLat } from './geo';
 /** Last computed altitude in degrees — used to re-translate the phase label on locale change. */
 let _lastAltDeg = 0;
 
+// Objets pré-alloués — évite les allocations GC dans updateSun() appelé chaque frame
+const _sunColor          = new THREE.Color();
+const _ambientColor      = new THREE.Color();
+const _nightAmbientColor = new THREE.Color(0x444477);
+const _lerpA             = new THREE.Color();
+const _lerpB             = new THREE.Color();
+const _fogNight          = new THREE.Color(0x151530);
+const _fogDay            = new THREE.Color(0x87CEEB);
+const _sunVector         = new THREE.Vector3();
+
 /** Apply the translated solar phase label to #sun-phase based on altitude. */
 function applySolarPhaseLabel(altDeg: number): void {
     const phaseSpan = document.getElementById('sun-phase');
@@ -57,12 +67,11 @@ export function updateSunPosition(minutes: number): void {
 
     // --- LOGIQUE DE LUMINOSITÉ ---
     let sunIntensity = 0;
-    let sunColor = new THREE.Color(0xffffff);
+    _sunColor.setHex(0xffffff);
     let ambientIntensity = 0.20;
-    let ambientColor = new THREE.Color(0xeef5ff);
-    
+    _ambientColor.setHex(0xeef5ff);
+
     const nightSunIntensity = 0.5 + (moonIllum.fraction * 1.0);
-    const nightAmbientColor = new THREE.Color(0x444477);
 
     let phi = pos.altitude;
     let az = pos.azimuth;
@@ -70,52 +79,51 @@ export function updateSunPosition(minutes: number): void {
     if (altDeg > 0) {
         // --- JOUR (incluant Heure Dorée) ---
         const t = Math.sin(pos.altitude);
-        sunIntensity = 1.2 + (t * 8.8); 
+        sunIntensity = 1.2 + (t * 8.8);
         ambientIntensity = 0.25 + (t * 0.10);
-        const colorT = Math.min(1, (altDeg + 4) / 10); 
-        sunColor.lerpColors(new THREE.Color(0xff4400), new THREE.Color(0xffffff), colorT);
-        ambientColor.lerpColors(new THREE.Color(0xd0d8ff), new THREE.Color(0xf0f4ff), t);
+        const colorT = Math.min(1, (altDeg + 4) / 10);
+        _sunColor.lerpColors(_lerpA.setHex(0xff4400), _lerpB.setHex(0xffffff), colorT);
+        _ambientColor.lerpColors(_lerpA.setHex(0xd0d8ff), _lerpB.setHex(0xf0f4ff), t);
     } else if (altDeg > -12) {
         // --- CRÉPUSCULE (Transition vers la Lune) ---
         const t = (altDeg + 12) / 12; // 1 à l'horizon, 0 à la nuit
-        
+
         const nightPhi = moonPos.altitude > 0 ? moonPos.altitude : Math.PI / 4;
-        phi = THREE.MathUtils.lerp(nightPhi, 0.02, t); 
+        phi = THREE.MathUtils.lerp(nightPhi, 0.02, t);
         az = THREE.MathUtils.lerp(moonPos.azimuth, pos.azimuth, t);
-        
+
         sunIntensity = THREE.MathUtils.lerp(nightSunIntensity, 1.2, t);
-        sunColor.lerpColors(new THREE.Color(0xadc7ff), new THREE.Color(0xff4400), t);
-        
+        _sunColor.lerpColors(_lerpA.setHex(0xadc7ff), _lerpB.setHex(0xff4400), t);
+
         ambientIntensity = 0.20 + (t * 0.05);
-        ambientColor.lerpColors(nightAmbientColor, new THREE.Color(0xd0d8ff), t);
+        _ambientColor.lerpColors(_nightAmbientColor, _lerpA.setHex(0xd0d8ff), t);
     } else {
         // --- NUIT ---
         phi = moonPos.altitude > 0 ? moonPos.altitude : Math.PI / 4;
         az = moonPos.azimuth;
         sunIntensity = nightSunIntensity;
-        sunColor.setHex(0xadc7ff);
+        _sunColor.setHex(0xadc7ff);
         ambientIntensity = 0.20;
-        ambientColor.copy(nightAmbientColor);
+        _ambientColor.copy(_nightAmbientColor);
     }
 
     const distance = 150000;
-    const sunVector = new THREE.Vector3();
-    sunVector.x = distance * Math.cos(phi) * -Math.sin(az);
-    sunVector.y = distance * Math.sin(phi);
-    sunVector.z = distance * Math.cos(phi) * Math.cos(az);
+    _sunVector.x = distance * Math.cos(phi) * -Math.sin(az);
+    _sunVector.y = distance * Math.sin(phi);
+    _sunVector.z = distance * Math.cos(phi) * Math.cos(az);
 
-    terrainUniforms.uSunPos.value.copy(sunVector).normalize();
+    terrainUniforms.uSunPos.value.copy(_sunVector).normalize();
 
     if (state.sunLight) {
         if (state.controls?.target) {
-            state.sunLight.position.set(state.controls.target.x + sunVector.x, state.controls.target.y + sunVector.y, state.controls.target.z + sunVector.z);
+            state.sunLight.position.set(state.controls.target.x + _sunVector.x, state.controls.target.y + _sunVector.y, state.controls.target.z + _sunVector.z);
             state.sunLight.target.position.copy(state.controls.target);
             state.sunLight.target.updateMatrixWorld();
         } else {
-            state.sunLight.position.copy(sunVector);
+            state.sunLight.position.copy(_sunVector);
         }
         state.sunLight.intensity = sunIntensity;
-        state.sunLight.color.copy(sunColor);
+        state.sunLight.color.copy(_sunColor);
 
         // Shadow camera dynamique par RANGE — adapte le frustum au terrain visible (v5.16.9)
         if (state.SHADOWS && state.sunLight.shadow) {
@@ -132,12 +140,12 @@ export function updateSunPosition(minutes: number): void {
 
     if (state.ambientLight) {
         state.ambientLight.intensity = ambientIntensity;
-        state.ambientLight.color.copy(ambientColor);
+        state.ambientLight.color.copy(_ambientColor);
     }
 
     if (state.sky) {
         const uniforms = state.sky.material.uniforms;
-        uniforms['sunPosition'].value.copy(sunVector);
+        uniforms['sunPosition'].value.copy(_sunVector);
         const skyFactor = Math.pow(Math.max(0, Math.min(1, (altDeg + 15) / 30)), 0.5);
         uniforms['turbidity'].value = 1 + (skyFactor * 9);
         uniforms['rayleigh'].value = 0.1 + (skyFactor * 3.0);
@@ -148,7 +156,7 @@ export function updateSunPosition(minutes: number): void {
 
     if (state.scene?.fog && (state.scene.fog instanceof THREE.Fog || state.scene.fog instanceof THREE.FogExp2)) {
         const t = Math.max(0, (altDeg + 12) / 24);
-        state.scene.fog.color.lerpColors(new THREE.Color(0x151530), new THREE.Color(0x87CEEB), t);
+        state.scene.fog.color.lerpColors(_fogNight, _fogDay, t);
     }
 }
 

@@ -62,6 +62,22 @@ let _lastAngle  = 0;
 let _velX = 0, _velY = 0;
 let _inertiaId = 0;
 
+// ── Objets pré-alloués — évite les allocations GC dans les hot paths ────────────
+const _right      = new THREE.Vector3();
+const _fwd        = new THREE.Vector3();
+const _camUp      = new THREE.Vector3();
+const _panOffset  = new THREE.Vector3();
+const _zoomDir    = new THREE.Vector3();
+const _zoomNear   = new THREE.Vector3();
+const _zoomFar    = new THREE.Vector3();
+const _zoomP      = new THREE.Vector3();
+const _zoomPscr   = new THREE.Vector3();
+const _rotOffset  = new THREE.Vector3();
+const _rotAxis    = new THREE.Vector3(0, 1, 0);
+const _rotQuat    = new THREE.Quaternion();
+const _tiltOffset = new THREE.Vector3();
+const _tiltSph    = new THREE.Spherical();
+
 // ── Architecture 2 doigts (v6.3) ────────────────────────────────────────────
 // ROTATION et ZOOM : per-frame avec guards mutuels (pas de zone morte).
 // TILT             : détection par PLACEMENT des doigts (style Google Earth).
@@ -111,27 +127,27 @@ function doPan(dx: number, dy: number): void {
     const height = (_canvas as HTMLCanvasElement).clientHeight || window.innerHeight;
     const scale  = PAN_SPEED * (2 * dist * Math.tan((_camera.fov * Math.PI) / 360)) / height;
 
-    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(_camera.quaternion);
-    right.y = 0;
-    if (right.lengthSq() > 1e-6) right.normalize();
+    _right.set(1, 0, 0).applyQuaternion(_camera.quaternion);
+    _right.y = 0;
+    if (_right.lengthSq() > 1e-6) _right.normalize();
 
-    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(_camera.quaternion);
-    fwd.y = 0;
-    if (fwd.lengthSq() < 1e-6) {
+    _fwd.set(0, 0, -1).applyQuaternion(_camera.quaternion);
+    _fwd.y = 0;
+    if (_fwd.lengthSq() < 1e-6) {
         // Caméra top-down (mode 2D) : le vecteur forward est nul après projection XZ.
         // Fallback : utiliser le vecteur "up" de la caméra projeté sur XZ.
         // Cela correspond à la direction "haut écran" en vue de dessus.
-        const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(_camera.quaternion);
-        fwd.set(camUp.x, 0, camUp.z);
+        _camUp.set(0, 1, 0).applyQuaternion(_camera.quaternion);
+        _fwd.set(_camUp.x, 0, _camUp.z);
     }
-    if (fwd.lengthSq() > 1e-6) fwd.normalize();
+    if (_fwd.lengthSq() > 1e-6) _fwd.normalize();
 
-    const offset = new THREE.Vector3()
-        .addScaledVector(right, -dx * scale)
-        .addScaledVector(fwd,    dy * scale);
+    _panOffset.set(0, 0, 0)
+        .addScaledVector(_right, -dx * scale)
+        .addScaledVector(_fwd,    dy * scale);
 
-    _controls.target.add(offset);
-    _camera.position.add(offset);
+    _controls.target.add(_panOffset);
+    _camera.position.add(_panOffset);
 
     // Clamp aux bords du monde (évite de pan au-delà des tuiles valides)
     const clamped = clampTargetToBounds(
@@ -150,14 +166,14 @@ function doPan(dx: number, dy: number): void {
 /** Zoom pur — ratio > 1 = zoom in, < 1 = zoom out (zoom vers le target actuel) */
 function doZoom(ratio: number): void {
     if (!_camera || !_controls) return;
-    const dir  = new THREE.Vector3().subVectors(_camera.position, _controls.target);
-    const dist = dir.length();
+    _zoomDir.subVectors(_camera.position, _controls.target);
+    const dist = _zoomDir.length();
     const newDist = THREE.MathUtils.clamp(
         dist / ratio,
         _controls.minDistance,
         _controls.maxDistance
     );
-    _camera.position.copy(_controls.target).addScaledVector(dir.normalize(), newDist);
+    _camera.position.copy(_controls.target).addScaledVector(_zoomDir.normalize(), newDist);
 }
 
 /**
@@ -178,26 +194,29 @@ function doZoomToPoint(ratio: number, cx: number, cy: number): void {
     // Rayon caméra → point pincé
     const ndcX = (cx / canvas.clientWidth)  *  2 - 1;
     const ndcY = -(cy / canvas.clientHeight) * 2 + 1;
-    const near = new THREE.Vector3(ndcX, ndcY, -1).unproject(_camera);
-    const far  = new THREE.Vector3(ndcX, ndcY,  1).unproject(_camera);
-    const dir  = far.sub(near).normalize();
+    _zoomNear.set(ndcX, ndcY, -1).unproject(_camera);
+    _zoomFar.set(ndcX, ndcY,  1).unproject(_camera);
+    _zoomFar.sub(_zoomNear).normalize(); // _zoomFar devient la direction
 
     // Intersection avec le plan horizontal au niveau du target
-    let P: THREE.Vector3 | null = null;
-    if (Math.abs(dir.y) > 0.001) {
-        const t = (_controls.target.y - near.y) / dir.y;
-        if (t > 0 && t < 5e6) P = near.clone().addScaledVector(dir, t);
+    let hasP = false;
+    if (Math.abs(_zoomFar.y) > 0.001) {
+        const t = (_controls.target.y - _zoomNear.y) / _zoomFar.y;
+        if (t > 0 && t < 5e6) {
+            _zoomP.copy(_zoomNear).addScaledVector(_zoomFar, t);
+            hasP = true;
+        }
     }
 
     // Zoom
     doZoom(ratio);
 
-    if (!P) return; // pas d'intersection valide, zoom simple
+    if (!hasP) return; // pas d'intersection valide, zoom simple
 
     // Re-projection du point 3D après zoom → erreur en pixels
-    const Pscr = P.clone().project(_camera);
-    const px   = (Pscr.x + 1) * 0.5 * canvas.clientWidth;
-    const py   = (1 - Pscr.y) * 0.5 * canvas.clientHeight;
+    _zoomPscr.copy(_zoomP).project(_camera);
+    const px   = (_zoomPscr.x + 1) * 0.5 * canvas.clientWidth;
+    const py   = (1 - _zoomPscr.y) * 0.5 * canvas.clientHeight;
     const ex   = px - cx; // + = P trop à droite  → compenser vers gauche
     const ey   = py - cy; // + = P trop bas        → compenser vers haut
 
@@ -210,11 +229,10 @@ function doZoomToPoint(ratio: number, cx: number, cy: number): void {
 /** Rotation azimut (tire-bouchon) — tourne autour de l'axe Y du target */
 function doRotate(deltaAngle: number): void {
     if (!_camera || !_controls) return;
-    const offset = new THREE.Vector3().subVectors(_camera.position, _controls.target);
-    offset.applyQuaternion(
-        new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaAngle)
-    );
-    _camera.position.copy(_controls.target).add(offset);
+    _rotOffset.subVectors(_camera.position, _controls.target);
+    _rotQuat.setFromAxisAngle(_rotAxis, deltaAngle);
+    _rotOffset.applyQuaternion(_rotQuat);
+    _camera.position.copy(_controls.target).add(_rotOffset);
     _camera.lookAt(_controls.target);
 }
 
@@ -228,18 +246,18 @@ function doTilt(dy: number): void {
     const height = (_canvas as HTMLCanvasElement).clientHeight || window.innerHeight;
     const deltaPhi = TILT_SPEED * (dy * Math.PI) / height;
 
-    const offset   = new THREE.Vector3().subVectors(_camera.position, _controls.target);
-    const spherical = new THREE.Spherical().setFromVector3(offset);
+    _tiltOffset.subVectors(_camera.position, _controls.target);
+    _tiltSph.setFromVector3(_tiltOffset);
 
-    spherical.phi = THREE.MathUtils.clamp(
-        spherical.phi + deltaPhi,
+    _tiltSph.phi = THREE.MathUtils.clamp(
+        _tiltSph.phi + deltaPhi,
         _controls.minPolarAngle + 0.01,
         _controls.maxPolarAngle - 0.01
     );
-    spherical.makeSafe();
+    _tiltSph.makeSafe();
 
-    offset.setFromSpherical(spherical);
-    _camera.position.copy(_controls.target).add(offset);
+    _tiltOffset.setFromSpherical(_tiltSph);
+    _camera.position.copy(_controls.target).add(_tiltOffset);
     _camera.lookAt(_controls.target);
 }
 
