@@ -60,6 +60,7 @@ class PackManager {
     private packStates: Map<string, PackState> = new Map();
     private mountedArchives: Map<string, pmtiles.PMTiles> = new Map();
     private downloadControllers: Map<string, AbortController> = new Map();
+    private catalogFetchPromise: Promise<PackCatalog> | null = null;
 
     // ── Lifecycle ────────────────────────────────────────────────────────────
 
@@ -90,6 +91,15 @@ class PackManager {
     // ── Catalog ──────────────────────────────────────────────────────────────
 
     async fetchCatalog(): Promise<PackCatalog> {
+        // Déduplication : si un fetch est déjà en vol, on réutilise la même promesse
+        if (this.catalogFetchPromise) return this.catalogFetchPromise;
+        this.catalogFetchPromise = this._doFetchCatalog().finally(() => {
+            this.catalogFetchPromise = null; // autoriser un refresh ultérieur
+        });
+        return this.catalogFetchPromise;
+    }
+
+    private async _doFetchCatalog(): Promise<PackCatalog> {
         if (CATALOG_URL) {
             try {
                 const resp = await fetch(CATALOG_URL, { cache: 'no-cache' });
