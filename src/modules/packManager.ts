@@ -336,10 +336,6 @@ class PackManager {
     }
 
     async getTileFromPacks(z: number, x: number, y: number): Promise<Blob | null> {
-        // LOD gating : Free = max LOD 12, Pro = max LOD 14
-        const maxPackLod = state.isPro ? 14 : 12;
-        if (z > maxPackLod) return null;
-
         for (const [packId, archive] of this.mountedArchives) {
             const meta = this.getPackMeta(packId);
             if (!meta) continue;
