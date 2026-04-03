@@ -6,13 +6,16 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ## [5.21.1] - 2026-04-03
 
-### 🐛 Packs Pays — Corrections post-déploiement
+### 🐛 Packs Pays — Corrections critiques offline
 
-- **Fix montage silencieux** : `fetchCatalog()` était fire-and-forget dans `initialize()`. `mountAllInstalled()` s'exécutait avant la réponse CDN → `getPackMeta()` retournait `undefined` → aucun pack monté malgré `status=installed`. Fix : `await fetchCatalog()`.
-- **Fix PMTiles deux niveaux** : répertoire root naïf (~200 KB pour 35 k tuiles) tronqué à 16 257 octets par `getHeaderAndRoot()` → erreur varint `Expected varint not more than 10 bytes`. Fix : `buildTwoLevelDirectory(entries, 512)` dans `pmtiles-writer.ts` — root = 427 octets, leaf dirs fetchés à la demande.
-- **Fix affichage stockage** : `updateStorageInfo()` appelé avant le fetch catalog async → affichait "Non acheté" pendant le téléchargement. Fix : appel déplacé dans `loadAndRender()` après `await fetchCatalog()`. Ajout comptage des packs `status=downloading` dans la taille totale affichée.
-- **Fix clé i18n manquante** : ajout de `packs.storageEmpty` dans les 4 locales (fr/de/en/it).
-- **R2 CORS** : ajout `ExposeHeaders: Content-Range, Accept-Ranges, Content-Length, ETag` pour que la lib pmtiles reçoive les métadonnées Range.
+- **Fix montage silencieux** : `fetchCatalog()` était fire-and-forget dans `initialize()` → `mountAllInstalled()` s'exécutait avant la réponse CDN → `getPackMeta()` retournait `undefined` → aucun pack monté. Fix : `await fetchCatalog()`.
+- **Fix PMTiles deux niveaux** : répertoire root ~200 KB tronqué à 16 257 octets par `getHeaderAndRoot()` → erreur varint. Fix : `buildTwoLevelDirectory(entries, 512)` — root = 427 octets, leaf dirs fetchés à la demande.
+- **Fix affichage stockage** : `updateStorageInfo()` avant fetch catalog async → affichait "Aucun pack". Fix : déplacé dans `loadAndRender()` après `await fetchCatalog()`.
+- **Fix clé i18n** : `packs.storageEmpty` ajouté dans les 4 locales.
+- **Fix OPFS download** : `downloadNative()` (Filesystem.External) remplacé par `downloadWeb()` (OPFS) sur Android. `Filesystem.External` ne supporte pas les Range requests → `FileSource` impossible. OPFS + `pmtiles.FileSource` = lecture byte-range locale sans réseau.
+- **Fix catalog offline** : `fetchCatalog()` pouvait retourner `null` si réseau absent ET localStorage vide → `getAvailablePacks() = []`, `getPackMeta() = undefined`, aucune tuile servie. Fix : `EMBEDDED_CATALOG` hardcodé en fallback ultime (jamais null).
+- **Fix garde IS_OFFLINE** : `if (state.IS_OFFLINE) return null` en tête de `fetchWithCache()` bloquait localPMTiles et country packs avant même de les consulter. Fix : sources locales consultées avant la garde, qui ne bloque plus que le réseau.
+- **Fix gating LOD** : LOD 12-14 gatés derrière `state.isPro` dans `getTileFromPacks()` — erreur de conception. Le pack est un achat unique indépendant du Pro ; suppression du gate.
 
 ---
 
@@ -21,15 +24,15 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 ### 🗺️ Packs Pays HD — Suisse + France Alpes (IAP)
 
 - **`packTypes.ts`** : types `PackMeta`, `PackState`, `PackCatalog`, `PackStatus`
-- **`packManager.ts`** : téléchargement, montage PMTiles, service tuiles, persistence localStorage, sync IAP
+- **`packManager.ts`** : download OPFS, montage PMTiles FileSource, service tuiles, persistence localStorage, sync IAP, catalog embarqué fallback
 - **`PacksSheet.ts`** : UI achat / téléchargement / progression / suppression, accès depuis ConnectivitySheet
-- **`scripts/pmtiles-writer.ts`** : utilitaires PMTiles v3 extraits (partagés build-overview + build-country-pack)
+- **`scripts/pmtiles-writer.ts`** : utilitaires PMTiles v3 extraits (partagés build-overview + build-country-pack), `buildTwoLevelDirectory()`
 - **`scripts/build-country-pack.ts`** : génération PMTiles par pays (SwissTopo + IGN), cache résumable, WebP quality 85
-- **Intégration `tileLoader.ts`** : `packManager.getTileFromPacks()` inséré dans la chaîne `fetchWithCache()` avant CacheStorage
-- **Gating** : Free = LOD 12 depuis pack, Pro = LOD 12-14 ; alertes sécurité jamais gatées
-- **CDN R2** : bucket `suntrail-packs`, `catalog.json` + archives PMTiles versionnées
+- **Intégration `tileLoader.ts`** : `packManager.getTileFromPacks()` avant la garde IS_OFFLINE, avant CacheStorage
+- **Gating** : achat pack = LOD 12-14 complets (indépendant du Pro)
+- **CDN R2** : bucket `suntrail-packs`, `catalog.json` + archives PMTiles versionnées, CORS Range headers
 - **i18n** : clés `packs.*` dans les 4 locales
-- **`main.ts`** : `void packManager.initialize()` au démarrage (après `initEmbeddedOverview`)
+- **`main.ts`** : `void packManager.initialize()` au démarrage
 - **Suisse HD** : 35 783 tuiles LOD 12-14, 710 MB, source SwissTopo
 
 ---

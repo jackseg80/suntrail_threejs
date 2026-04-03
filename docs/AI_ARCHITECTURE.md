@@ -79,8 +79,8 @@ Archives PMTiles régionales (LOD 12-14) achetées via IAP et téléchargées en
 
 **Initialisation** (`main.ts` → `packManager.initialize()`) :
 1. `loadPersistedStates()` — recharge les PackState depuis `localStorage` clé `suntrail_pack_states`
-2. `await fetchCatalog()` — GET `catalog.json` depuis R2 (**await obligatoire** : `mountAllInstalled()` dépend du catalog)
-3. `mountAllInstalled()` — ouvre chaque archive `status=installed` via `new pmtiles.PMTiles(...)`
+2. `await fetchCatalog()` — GET `catalog.json` depuis R2 (**await obligatoire** : `mountAllInstalled()` dépend du catalog). Fallback : localStorage → `EMBEDDED_CATALOG` hardcodé (jamais null, même hors ligne)
+3. `mountAllInstalled()` — ouvre chaque archive via `FileSource` (OPFS) ou CDN (purchased)
 
 **Format PMTiles à deux niveaux** (critique) :
 La lib pmtiles ne lit que les **16 384 premiers octets** au chargement (`getHeaderAndRoot`). Le répertoire root doit donc tenir dans cette fenêtre (~16 257 octets max). Pour ~35 000 tuiles, le répertoire naïf fait ~200 KB → truncation → erreur varint.
