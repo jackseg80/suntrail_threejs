@@ -108,6 +108,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **553** | **5.21.0** | **v5.21.0** | **Packs Pays hors-ligne (PMTiles IAP) : Suisse + Alpes françaises, PacksSheet, packManager mount/unmount, iapService packs, catalog.json, skirt tuiles (fix joint blanc), sous-options settings, audit moteur 60fps mobile, tiltCap LOD 14** | **2026-04-02** |
 | **554** | **5.21.1** | **v5.21.1** | **Fix packs offline critiques : OPFS download (FileSource sans réseau), catalog embarqué fallback, IS_OFFLINE guard après sources locales, suppression LOD gating Pro, PMTiles deux niveaux, fix i18n storageEmpty** | **2026-04-03** |
 | **555** | **5.22.0** | **v5.22.0** | **Mode clair/sombre : sélecteur 3 options (Clair/Sombre/Auto), theme.ts, tokens CSS sémantiques (--canvas-*, --toast-*, --overlay-bg, --shadow-*), bloc [data-theme="light"], persistance themePreference, event themeChanged. Fix 9 tests stales (PRESETS v5.21 + ENERGY_SAVER non forcé).** | **2026-04-04** |
+| **556** | **5.22.1** | **v5.22.1** | **Fix mode clair : preset ECO/STD/HIGH/ULTRA actif visible à l'ouverture des réglages (updateAllUI manquait PERFORMANCE_PRESET), timebar date+play lisibles (tokens CSS), SOS text var(--text), sélecteur thème rafraîchi via sheetOpened.** | **2026-04-04** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 
