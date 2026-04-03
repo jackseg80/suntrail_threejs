@@ -135,7 +135,7 @@ body, html {
     pointer-events: auto;
 }
 
-.status-widget:hover, .top-widget:hover { border-color: var(--border-active); }
+@media (hover: hover) { .status-widget:hover, .top-widget:hover { border-color: var(--border-active); } }
 
 .lod-badge {
     font-family: 'DM Mono', monospace;
@@ -156,7 +156,7 @@ body, html {
     font-size: 15px;
     transition: border-color var(--transition-fast), background var(--transition-fast), transform 0.3s ease, opacity 0.3s ease;
 }
-.icon-btn-sm:hover { border-color: var(--border-active); background: rgba(255,255,255,0.08); }
+@media (hover: hover) { .icon-btn-sm:hover { border-color: var(--border-active); background: rgba(255,255,255,0.08); } }
 .icon-btn-sm.danger { border-color: rgba(239,68,68,0.3); color: var(--danger); }
 
 /* REC INDICATOR PULSE */
@@ -543,7 +543,7 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
     cursor: help;
     transition: all 0.2s;
 }
-.info-icon:hover { background: rgba(255,255,255,0.1); color: white; border-color: var(--text-3); }
+@media (hover: hover) { .info-icon:hover { background: rgba(255,255,255,0.1); color: white; border-color: var(--text-3); } }
 
 .setting-row input[type="checkbox"]:disabled {
     background: rgba(255,255,255,0.08);
@@ -652,7 +652,7 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 .timeline-drag-handle .sheet-drag-indicator {
     transition: background var(--transition-fast);
 }
-.timeline-drag-handle:hover .sheet-drag-indicator { background: var(--text-3); }
+@media (hover: hover) { .timeline-drag-handle:hover .sheet-drag-indicator { background: var(--text-3); } }
 
 #bottom-bar.is-open {
     transform: translate(-50%, 0);
@@ -1329,7 +1329,7 @@ body.preset-eco #timeline-toggle-btn { display: none !important; }
     background: var(--border-active);
     transition: background var(--transition-fast);
 }
-.sheet-drag-handle:hover .sheet-drag-indicator { background: var(--text-3); }
+@media (hover: hover) { .sheet-drag-handle:hover .sheet-drag-indicator { background: var(--text-3); } }
 
 /* LOADING STATES */
 .spinner {
@@ -1403,7 +1403,7 @@ body.preset-eco #timeline-toggle-btn { display: none !important; }
     cursor: pointer; font-size: var(--text-md); font-weight: 700;
     transition: opacity var(--transition-fast);
 }
-.api-key-submit-btn:hover { opacity: 0.85; }
+@media (hover: hover) { .api-key-submit-btn:hover { opacity: 0.85; } }
 .api-key-hint { font-size: var(--text-xs); color: var(--text-3); margin-top: var(--space-1); }
 .api-key-hint a { color: var(--accent); text-decoration: none; display: inline-block; padding: 5px 0; }
 
@@ -1467,7 +1467,7 @@ body.preset-eco #timeline-toggle-btn { display: none !important; }
     transition: background var(--transition-fast, 0.15s);
     white-space: nowrap;
 }
-.vram-record-btn:hover { background: rgba(255,255,255,0.15); }
+@media (hover: hover) { .vram-record-btn:hover { background: rgba(255,255,255,0.15); } }
 .vram-record-btn--active {
     background: rgba(239,68,68,0.25);
     border-color: rgba(239,68,68,0.5);
