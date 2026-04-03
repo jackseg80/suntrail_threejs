@@ -184,7 +184,9 @@ class IAPService {
 
     /** Retourne l'anonymous ID RevenueCat — utilisé pour l'identification des testeurs */
     async getAppUserID(): Promise<string> {
-        if (!this.initialized || !Capacitor.isNativePlatform()) return '';
+        if (!Capacitor.isNativePlatform()) return '';
+        if (!this.initialized) await this.waitForInit();
+        if (!this.initialized) return '';
         try {
             const result = await Purchases.getAppUserID();
             return result.appUserID ?? '';
