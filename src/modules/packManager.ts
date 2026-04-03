@@ -117,11 +117,10 @@ class PackManager {
         this.downloadControllers.set(packId, controller);
 
         try {
-            if (Capacitor.isNativePlatform()) {
-                await this.downloadNative(meta, ps, onProgress, controller.signal);
-            } else {
-                await this.downloadWeb(meta, ps, onProgress, controller.signal);
-            }
+            // OPFS pour les deux plateformes : FileSource permet une lecture offline
+            // sans Range requests HTTP (file.slice() direct, sans réseau).
+            // downloadNative (Filesystem.External) ne supporte pas FileSource.
+            await this.downloadWeb(meta, ps, onProgress, controller.signal);
 
             ps.status = 'installed';
             ps.downloadProgress = 1;
@@ -160,37 +159,6 @@ class PackManager {
         } finally {
             this.downloadControllers.delete(packId);
         }
-    }
-
-    private async downloadNative(
-        meta: PackMeta, ps: PackState,
-        onProgress?: (p: number) => void, _signal?: AbortSignal
-    ): Promise<void> {
-        const fileName = `${meta.id}.pmtiles`;
-
-        // Listener pour la progression du téléchargement
-        const listener = await Filesystem.addListener('progress', (progress) => {
-            if (progress.contentLength && progress.contentLength > 0) {
-                ps.downloadProgress = progress.bytes / progress.contentLength;
-                onProgress?.(ps.downloadProgress);
-            }
-        });
-
-        try {
-            console.log(`[Packs] Downloading ${meta.cdnUrl} → ${fileName} (External)`);
-            // External = stockage app externe, pas de limite de taille contrairement à Data
-            await Filesystem.downloadFile({
-                url: meta.cdnUrl,
-                path: fileName,
-                directory: Directory.External,
-                progress: true,
-            });
-            console.log(`[Packs] Download complete: ${fileName}`);
-        } finally {
-            await listener.remove();
-        }
-
-        ps.filePath = fileName;
     }
 
     private async downloadWeb(
@@ -253,18 +221,21 @@ class PackManager {
     }
 
     private async deletePackFile(packId: string): Promise<void> {
+        // OPFS (chemin principal depuis la nouvelle architecture)
         try {
-            if (Capacitor.isNativePlatform()) {
+            const root = await navigator.storage.getDirectory();
+            const packsDir = await root.getDirectoryHandle(PACKS_DIR);
+            await packsDir.removeEntry(`${packId}.pmtiles`);
+        } catch { /* may not exist */ }
+        // Ancienne installation via Filesystem.External (migration)
+        if (Capacitor.isNativePlatform()) {
+            try {
                 await Filesystem.deleteFile({
                     path: `${packId}.pmtiles`,
                     directory: Directory.External,
                 });
-            } else {
-                const root = await navigator.storage.getDirectory();
-                const packsDir = await root.getDirectoryHandle(PACKS_DIR);
-                await packsDir.removeEntry(`${packId}.pmtiles`);
-            }
-        } catch { /* file may not exist */ }
+            } catch { /* may not exist */ }
+        }
     }
 
     // ── Mount / Unmount ──────────────────────────────────────────────────────
@@ -275,40 +246,45 @@ class PackManager {
         const ps = this.packStates.get(packId);
         if (!ps || (ps.status !== 'installed' && ps.status !== 'purchased' && ps.status !== 'update_available')) return;
 
-        console.log(`[Packs] mountPack(${packId}) — status=${ps.status}, isNative=${Capacitor.isNativePlatform()}`);
-
         try {
             let archive: pmtiles.PMTiles;
 
-            if (Capacitor.isNativePlatform()) {
-                const meta = this.getPackMeta(packId);
-                console.log(`[Packs] meta trouvée: ${meta?.id ?? 'UNDEFINED'}`);
-                if (!meta) throw new Error('Pack meta not found');
-                console.log(`[Packs] Création PMTiles depuis CDN: ${meta.cdnUrl.substring(0, 60)}...`);
-                archive = new pmtiles.PMTiles(meta.cdnUrl);
-                console.log(`[Packs] PMTiles créé, appel getHeader()...`);
+            if (ps.status === 'installed') {
+                // OPFS : FileSource lit les bytes directement (file.slice), sans réseau.
+                // Fonctionne offline sur Android WebView (Chrome 105+) et PWA.
+                try {
+                    const root = await navigator.storage.getDirectory();
+                    const packsDir = await root.getDirectoryHandle(PACKS_DIR);
+                    const fileHandle = await packsDir.getFileHandle(`${packId}.pmtiles`);
+                    const file = await fileHandle.getFile();
+                    archive = new pmtiles.PMTiles(new pmtiles.FileSource(file));
+                } catch {
+                    // Fichier OPFS absent (ancienne installation sur Filesystem.External)
+                    // → reset pour re-téléchargement
+                    console.warn(`[Packs] ${packId}: fichier OPFS absent, re-téléchargement requis`);
+                    ps.status = 'purchased';
+                    this.persistStates();
+                    this.emitStatus(packId, 'purchased');
+                    const meta = this.getPackMeta(packId);
+                    if (!meta) return;
+                    archive = new pmtiles.PMTiles(meta.cdnUrl);
+                }
             } else {
-                // OPFS
-                const root = await navigator.storage.getDirectory();
-                const packsDir = await root.getDirectoryHandle(PACKS_DIR);
-                const fileHandle = await packsDir.getFileHandle(`${packId}.pmtiles`);
-                const file = await fileHandle.getFile();
-                archive = new pmtiles.PMTiles(new pmtiles.FileSource(file));
+                // purchased / update_available → CDN streaming (requiert réseau)
+                const meta = this.getPackMeta(packId);
+                if (!meta) return;
+                archive = new pmtiles.PMTiles(meta.cdnUrl);
             }
 
             // Warmup: read header pour vérifier l'archive
-            console.log(`[Packs] getHeader() lancé...`);
             const header = await archive.getHeader();
-            console.log(`[Packs] getHeader() OK:`, JSON.stringify(header).substring(0, 100));
             console.log(`[Packs] ${packId} monté. LOD ${header.minZoom}-${header.maxZoom}, ${header.numTileEntries} tuiles`);
 
             this.mountedArchives.set(packId, archive);
             eventBus.emit('packMounted', { packId });
 
         } catch (e) {
-            console.error(`[Packs] ERREUR MONTAGE ${packId}:`, e);
-            // Rethrow pour visibilité depuis console DevTools
-            throw e;
+            console.error(`[Packs] Erreur montage ${packId}:`, e);
         }
     }
 
