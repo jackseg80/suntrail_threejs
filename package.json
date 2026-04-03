@@ -11,7 +11,8 @@
     "cap:assets": "npx capacitor-assets generate --android",
     "deploy": "npm run check && npm run build && npm run cap:sync",
     "android:update": "npm run deploy",
-    "build-overview": "npx tsx scripts/build-overview-tiles.ts"
+    "build-overview": "npx tsx scripts/build-overview-tiles.ts",
+    "build-pack": "npx tsx scripts/build-country-pack.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.2.0",
@@ -30,6 +31,8 @@
     "three": "^0.160.0"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.1023.0",
+    "@aws-sdk/lib-storage": "^3.1023.0",
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.3.0",
     "@testing-library/dom": "^10.4.1",
@@ -38,6 +41,7 @@
     "@types/three": "^0.183.1",
     "@vitest/ui": "^4.1.2",
     "axe-core": "^4.11.1",
+    "dotenv": "^17.4.0",
     "happy-dom": "^20.8.3",
     "sharp": "^0.34.5",
     "typescript": "^5.9.3",

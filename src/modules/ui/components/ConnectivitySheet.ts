@@ -123,6 +123,13 @@ export class ConnectivitySheet extends BaseComponent {
             }
         });
 
+        // Country Packs button
+        const packsBtn = this.element.querySelector('#conn-packs-btn');
+        packsBtn?.addEventListener('click', () => {
+            sheetManager.close();
+            setTimeout(() => sheetManager.open('packs'), 150);
+        });
+
         // API Key (shared component)
         new SharedAPIKeyComponent('conn-api-key-slot', () => {
             resetTerrain();

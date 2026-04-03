@@ -34,6 +34,10 @@ pnpm-debug.log*
 # Tuiles overview générées (build-overview-tiles.ts)
 public/tiles/*.pmtiles
 
+# Country packs — cache de téléchargement + output
+.cache/
+output/
+
 # Vite
 *.local
 

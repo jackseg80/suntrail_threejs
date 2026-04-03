@@ -260,6 +260,10 @@ export interface State {
 
     // ── Freemium ──────────────────────────────────────────────────────────────
     isPro: boolean; // true si l'utilisateur a acheté le tier Pro (IAP Play Store)
+
+    // ── Country Packs ────────────────────────────────────────────────────────
+    purchasedPacks: string[];   // IDs des packs achetés
+    installedPacks: string[];   // IDs des packs installés localement
 }
 
 const initialState: State = {
@@ -319,6 +323,9 @@ const initialState: State = {
     isFlying: false,
 
     isPro: false,
+
+    purchasedPacks: [],
+    installedPacks: [],
 };
 
 export const state = createReactiveState(initialState);

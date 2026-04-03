@@ -13,6 +13,9 @@ type EventMap = {
     'recordingRecovered': void;
     'networkOnline': void;
     'networkOffline': void;
+    'packStatusChanged': { packId: string; status: string };
+    'packMounted': { packId: string };
+    'packUnmounted': { packId: string };
 };
 
 type Listener<T> = (payload: T) => void;

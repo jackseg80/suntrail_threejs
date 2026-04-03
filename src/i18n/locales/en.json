@@ -573,5 +573,46 @@
       "celsius": "°C",
       "percent": "%"
     }
+  },
+  "packs": {
+    "title": "Country Packs",
+    "storage": "Storage",
+    "free": "available",
+    "lodInfo": "Pro: LOD 12-14 · Free: LOD 12",
+    "btn": {
+      "buy": "Buy",
+      "download": "Download",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "update": "Update",
+      "retry": "Retry",
+      "restore": "Restore Purchases"
+    },
+    "status": {
+      "notPurchased": "Not purchased",
+      "purchased": "Ready to download",
+      "downloading": "Downloading...",
+      "installed": "Installed",
+      "updateAvailable": "Update available",
+      "error": "Error"
+    },
+    "error": {
+      "storageFull": "Not enough storage space",
+      "downloadFailed": "Download failed. Tap to retry.",
+      "purchaseFailed": "Purchase failed",
+      "catalogFailed": "Could not load pack catalog"
+    },
+    "toast": {
+      "installed": "Pack installed!",
+      "deleted": "Pack deleted",
+      "downloadCancelled": "Download cancelled"
+    },
+    "description": {
+      "switzerland": "SwissTopo high-resolution maps",
+      "france_alps": "IGN high-resolution maps"
+    },
+    "aria": {
+      "close": "Close packs"
+    }
   }
 }

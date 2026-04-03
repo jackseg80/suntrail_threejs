@@ -3,6 +3,7 @@ import { initUI } from './modules/ui';
 import { initBatteryManager } from './modules/performance';
 import { initNetworkMonitor } from './modules/networkMonitor';
 import { initEmbeddedOverview } from './modules/tileLoader';
+import { packManager } from './modules/packManager';
 import { registerSW } from 'virtual:pwa-register';
 import { getInterruptedRecording, clearInterruptedRecording, getPersistedRecordingPoints, stopRecordingService } from './modules/foregroundService';
 import { showToast } from './modules/utils';
@@ -56,6 +57,9 @@ void initNetworkMonitor();
 
 // Monte l'archive de tuiles overview embarquée (LOD 5-7, Europe) — fire-and-forget
 void initEmbeddedOverview();
+
+// Initialise le gestionnaire de packs pays (mount packs installés) — fire-and-forget
+void packManager.initialize();
 
 // Lancement de l'initialisation globale de l'interface
 initUI();

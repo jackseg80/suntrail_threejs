@@ -573,5 +573,46 @@
       "celsius": "°C",
       "percent": "%"
     }
+  },
+  "packs": {
+    "title": "Pacchetti Paese",
+    "storage": "Archiviazione",
+    "free": "disponibile",
+    "lodInfo": "Pro: LOD 12-14 · Gratis: LOD 12",
+    "btn": {
+      "buy": "Acquista",
+      "download": "Scarica",
+      "delete": "Elimina",
+      "cancel": "Annulla",
+      "update": "Aggiorna",
+      "retry": "Riprova",
+      "restore": "Ripristina acquisti"
+    },
+    "status": {
+      "notPurchased": "Non acquistato",
+      "purchased": "Pronto per il download",
+      "downloading": "Download in corso...",
+      "installed": "Installato",
+      "updateAvailable": "Aggiornamento disponibile",
+      "error": "Errore"
+    },
+    "error": {
+      "storageFull": "Spazio di archiviazione insufficiente",
+      "downloadFailed": "Download fallito. Tocca per riprovare.",
+      "purchaseFailed": "Acquisto fallito",
+      "catalogFailed": "Impossibile caricare il catalogo"
+    },
+    "toast": {
+      "installed": "Pacchetto installato!",
+      "deleted": "Pacchetto eliminato",
+      "downloadCancelled": "Download annullato"
+    },
+    "description": {
+      "switzerland": "Mappe SwissTopo ad alta risoluzione",
+      "france_alps": "Mappe IGN ad alta risoluzione"
+    },
+    "aria": {
+      "close": "Chiudi pacchetti"
+    }
   }
 }

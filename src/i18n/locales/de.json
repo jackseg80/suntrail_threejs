@@ -573,5 +573,46 @@
       "celsius": "°C",
       "percent": "%"
     }
+  },
+  "packs": {
+    "title": "Länderpakete",
+    "storage": "Speicher",
+    "free": "verfügbar",
+    "lodInfo": "Pro: LOD 12-14 · Gratis: LOD 12",
+    "btn": {
+      "buy": "Kaufen",
+      "download": "Herunterladen",
+      "delete": "Löschen",
+      "cancel": "Abbrechen",
+      "update": "Aktualisieren",
+      "retry": "Wiederholen",
+      "restore": "Käufe wiederherstellen"
+    },
+    "status": {
+      "notPurchased": "Nicht gekauft",
+      "purchased": "Bereit zum Herunterladen",
+      "downloading": "Wird heruntergeladen...",
+      "installed": "Installiert",
+      "updateAvailable": "Update verfügbar",
+      "error": "Fehler"
+    },
+    "error": {
+      "storageFull": "Nicht genügend Speicherplatz",
+      "downloadFailed": "Download fehlgeschlagen. Tippen zum Wiederholen.",
+      "purchaseFailed": "Kauf fehlgeschlagen",
+      "catalogFailed": "Katalog konnte nicht geladen werden"
+    },
+    "toast": {
+      "installed": "Paket installiert!",
+      "deleted": "Paket gelöscht",
+      "downloadCancelled": "Download abgebrochen"
+    },
+    "description": {
+      "switzerland": "SwissTopo hochauflösende Karten",
+      "france_alps": "IGN hochauflösende Karten"
+    },
+    "aria": {
+      "close": "Pakete schliessen"
+    }
   }
 }

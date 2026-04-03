@@ -221,6 +221,97 @@ class IAPService {
             return defaults;
         }
     }
+
+    // ── Country Packs (non-consumable) ───────────────────────────────────────
+
+    private static readonly PACK_ENTITLEMENTS: Record<string, string> = {
+        'switzerland': 'SunTrail Pack Switzerland',
+        'france_alps': 'SunTrail Pack France Alps',
+    };
+
+    private static readonly PACK_PRODUCT_IDS: Record<string, string> = {
+        'switzerland': 'suntrail_pack_switzerland',
+        'france_alps': 'suntrail_pack_france_alps',
+    };
+
+    async purchasePack(packId: string): Promise<boolean> {
+        if (!this.initialized) return false;
+        const productId = IAPService.PACK_PRODUCT_IDS[packId];
+        if (!productId) return false;
+
+        try {
+            const offerings = await Purchases.getOfferings();
+            // Chercher dans toutes les offerings le produit correspondant
+            let targetPkg = null;
+            for (const offering of Object.values(offerings.all ?? {})) {
+                targetPkg = offering.availablePackages.find(
+                    p => p.identifier.toLowerCase().includes(productId) ||
+                         p.product.identifier === productId
+                );
+                if (targetPkg) break;
+            }
+            if (!targetPkg) {
+                console.warn(`[IAP] Pack product '${productId}' introuvable dans les offerings.`);
+                return false;
+            }
+
+            const { customerInfo } = await Purchases.purchasePackage({ aPackage: targetPkg });
+            return this.hasPackEntitlement(customerInfo, packId);
+        } catch (e: any) {
+            if (e?.userCancelled) {
+                console.log('[IAP] Achat pack annulé.');
+            } else {
+                console.error('[IAP] Erreur achat pack:', e);
+            }
+            return false;
+        }
+    }
+
+    hasPackEntitlement(customerInfo: CustomerInfo, packId: string): boolean {
+        const entId = IAPService.PACK_ENTITLEMENTS[packId];
+        if (!entId) return false;
+        return customerInfo.entitlements.active[entId] !== undefined;
+    }
+
+    async isPackPurchased(packId: string): Promise<boolean> {
+        if (!this.initialized) return false;
+        try {
+            const { customerInfo } = await Purchases.getCustomerInfo();
+            return this.hasPackEntitlement(customerInfo, packId);
+        } catch { return false; }
+    }
+
+    async getPackPrice(packId: string): Promise<string> {
+        if (!this.initialized) await this.waitForInit();
+        if (!this.initialized) return '—';
+        const productId = IAPService.PACK_PRODUCT_IDS[packId];
+        if (!productId) return '—';
+        try {
+            const offerings = await Purchases.getOfferings();
+            for (const offering of Object.values(offerings.all ?? {})) {
+                const pkg = offering.availablePackages.find(
+                    p => p.identifier.toLowerCase().includes(productId) ||
+                         p.product.identifier === productId
+                );
+                if (pkg) return pkg.product.priceString ?? '—';
+            }
+            return '—';
+        } catch { return '—'; }
+    }
+
+    async checkAllPackPurchases(): Promise<string[]> {
+        if (!this.initialized) return [];
+        try {
+            const { customerInfo } = await Purchases.getCustomerInfo();
+            const purchased: string[] = [];
+            for (const packId of Object.keys(IAPService.PACK_ENTITLEMENTS)) {
+                if (this.hasPackEntitlement(customerInfo, packId)) {
+                    purchased.push(packId);
+                }
+            }
+            return purchased;
+        } catch { return []; }
+    }
 }
 
 export const iapService = new IAPService();

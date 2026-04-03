@@ -25,6 +25,7 @@ import { LayersSheet } from './ui/components/LayersSheet';
 import { WeatherSheet, SolarProbeSheet, SOSSheet } from './ui/components/ExpertSheets';
 import { TrackSheet } from './ui/components/TrackSheet';
 import { ConnectivitySheet } from './ui/components/ConnectivitySheet';
+import { PacksSheet } from './ui/components/PacksSheet';
 import { UpgradeSheet } from './ui/components/UpgradeSheet';
 import { WidgetsComponent } from './ui/components/WidgetsComponent';
 import { TimelineComponent } from './ui/components/TimelineComponent';
@@ -272,6 +273,9 @@ export function initUI(): void {
 
     const connectivitySheet = new ConnectivitySheet();
     connectivitySheet.hydrate();
+
+    const packsSheet = new PacksSheet();
+    packsSheet.hydrate();
 
     const upgradeSheet = new UpgradeSheet();
     upgradeSheet.hydrate();
