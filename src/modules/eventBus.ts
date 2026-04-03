@@ -16,6 +16,7 @@ type EventMap = {
     'packStatusChanged': { packId: string; status: string };
     'packMounted': { packId: string };
     'packUnmounted': { packId: string };
+    'themeChanged': { theme: 'light' | 'dark' };
 };
 
 type Listener<T> = (payload: T) => void;

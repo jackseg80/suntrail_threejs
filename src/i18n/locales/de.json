@@ -76,7 +76,8 @@
       "dataManagement": "Datenverwaltung",
       "language": "Sprache",
       "sources": "Datenquellen & Rechtliches",
-      "pro": "PRO-Funktionen"
+      "pro": "PRO-Funktionen",
+      "theme": "Thema"
     },
     "pro": {
       "description": "Schalten Sie alle Premium-Funktionen mit SunTrail Pro frei",
@@ -103,6 +104,11 @@
       "performance": "High",
       "ultra": "Ultra",
       "custom": "Benutzerdefiniert"
+    },
+    "theme": {
+      "light": "Hell",
+      "dark": "Dunkel",
+      "auto": "Auto"
     },
     "label": {
       "resolution": "Auflösung (LOD)",

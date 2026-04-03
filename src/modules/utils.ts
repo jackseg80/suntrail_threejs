@@ -40,14 +40,6 @@ export function showToast(message: string, duration: number = 3000) {
 
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.style.background = 'rgba(0,0,0,0.85)';
-    toast.style.color = 'white';
-    toast.style.padding = '12px 20px';
-    toast.style.borderRadius = '25px';
-    toast.style.fontSize = '14px';
-    toast.style.fontWeight = '500';
-    toast.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
-    toast.style.border = '1px solid rgba(255,255,255,0.1)';
     toast.style.opacity = '0';
     toast.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
     toast.style.transform = 'translateY(20px)';

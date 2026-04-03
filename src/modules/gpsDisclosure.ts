@@ -66,7 +66,7 @@ function _show(resolve: (v: boolean) => void): void {
     Object.assign(overlay.style, {
         position:        'fixed',
         inset:           '0',
-        background:      'rgba(0,0,0,0.75)',
+        background:      'var(--overlay-bg)',
         display:         'flex',
         alignItems:      'center',
         justifyContent:  'center',

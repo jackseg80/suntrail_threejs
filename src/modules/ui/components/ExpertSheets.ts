@@ -124,7 +124,7 @@ export class WeatherSheet extends BaseComponent {
         const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         bg.setAttribute('x', '0'); bg.setAttribute('y', '0');
         bg.setAttribute('width', String(W)); bg.setAttribute('height', String(H));
-        bg.setAttribute('fill', 'rgba(0,0,0,0.2)');
+        bg.setAttribute('fill', 'var(--canvas-bg)');
         svg.appendChild(bg);
 
         const xStep = W / Math.max(hourly.length - 1, 1);
@@ -170,13 +170,13 @@ export class WeatherSheet extends BaseComponent {
         // Min/Max labels
         const lblMin = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         lblMin.setAttribute('x', '2'); lblMin.setAttribute('y', String(H - 2));
-        lblMin.setAttribute('fill', 'rgba(255,255,255,0.6)'); lblMin.setAttribute('font-size', '8');
+        lblMin.setAttribute('fill', 'var(--canvas-text)'); lblMin.setAttribute('font-size', '8');
         lblMin.textContent = `${Math.round(minT)}°`;
         svg.appendChild(lblMin);
 
         const lblMax = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         lblMax.setAttribute('x', '2'); lblMax.setAttribute('y', '10');
-        lblMax.setAttribute('fill', 'rgba(255,255,255,0.6)'); lblMax.setAttribute('font-size', '8');
+        lblMax.setAttribute('fill', 'var(--canvas-text)'); lblMax.setAttribute('font-size', '8');
         lblMax.textContent = `${Math.round(maxT)}°`;
         svg.appendChild(lblMax);
 
@@ -841,7 +841,7 @@ export class SolarProbeSheet extends BaseComponent {
         const horizLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         horizLine.setAttribute('x1', '0'); horizLine.setAttribute('x2', String(W));
         horizLine.setAttribute('y1', String(horizonY)); horizLine.setAttribute('y2', String(horizonY));
-        horizLine.setAttribute('stroke', 'rgba(255,255,255,0.2)');
+        horizLine.setAttribute('stroke', 'var(--canvas-stroke)');
         horizLine.setAttribute('stroke-width', '0.5');
         svg.appendChild(horizLine);
 
@@ -851,7 +851,7 @@ export class SolarProbeSheet extends BaseComponent {
         const currentLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         currentLine.setAttribute('x1', String(currentX)); currentLine.setAttribute('x2', String(currentX));
         currentLine.setAttribute('y1', '0'); currentLine.setAttribute('y2', String(CHART_H));
-        currentLine.setAttribute('stroke', 'rgba(255,255,255,0.7)');
+        currentLine.setAttribute('stroke', 'var(--canvas-text)');
         currentLine.setAttribute('stroke-width', '1');
         currentLine.setAttribute('stroke-dasharray', '2,2');
         this.svgCurrentLineEl = currentLine as unknown as SVGLineElement;
@@ -864,7 +864,7 @@ export class SolarProbeSheet extends BaseComponent {
             label.setAttribute('x', String(x));
             label.setAttribute('y', String(H - 2));
             label.setAttribute('text-anchor', 'middle');
-            label.setAttribute('fill', 'rgba(255,255,255,0.5)');
+            label.setAttribute('fill', 'var(--canvas-text)');
             label.setAttribute('font-size', '8');
             label.textContent = `${String(h).padStart(2, '0')}:00`;
             svg.appendChild(label);

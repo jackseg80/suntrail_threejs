@@ -1,4 +1,4 @@
-# SunTrail — Guide IA (v5.20.2)
+# SunTrail — Guide IA (v5.22.0)
 
 > Ce fichier est le **point d'entrée unique** pour tous les agents IA (Claude, Gemini, Copilot).
 > Il contient les règles essentielles. Les détails sont dans les docs liées en bas de page.
@@ -8,7 +8,7 @@
 App cartographique 3D mobile-first pour la randonnée alpine.
 Android natif (Capacitor) + PWA. Freemium (RevenueCat). 4 langues (FR/DE/IT/EN).
 
-**Stack** : TypeScript strict · Three.js r160 · Vite 5 · Capacitor 6 · Vitest (398+ tests) · RevenueCat
+**Stack** : TypeScript strict · Three.js r160 · Vite 5 · Capacitor 6 · Vitest (399 tests) · RevenueCat
 
 ## Commandes
 

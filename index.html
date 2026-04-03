@@ -221,7 +221,15 @@
         <button class="preset-btn" data-preset="ultra" data-i18n="settings.preset.ultra">Ultra</button>
     </div>
 
-    <div class="setting-row" style="margin-top:15px; padding:12px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
+    <!-- Sélecteur de thème clair/sombre/auto -->
+    <div class="section-label" data-i18n="settings.section.theme">Thème</div>
+    <div class="theme-grid" id="theme-selector">
+        <button class="theme-btn" data-theme="light" data-i18n="settings.theme.light">Clair</button>
+        <button class="theme-btn" data-theme="dark" data-i18n="settings.theme.dark">Sombre</button>
+        <button class="theme-btn" data-theme="auto" data-i18n="settings.theme.auto">Auto</button>
+    </div>
+
+    <div class="setting-row" style="margin-top:15px; padding:12px; background:var(--surface-subtle); border-radius:12px; border:1px solid var(--surface-subtle);">
         <div style="display:flex; align-items:center; gap:8px;">
             <span style="font-size:16px;">🔋</span>
             <div class="setting-label" style="font-size:13px;" data-i18n="settings.label.energySaver">Économie d'énergie</div>

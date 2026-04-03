@@ -16,6 +16,7 @@ import { findTerrainIntersection, getAltitudeAt } from './analysis';
 import { closeElevationProfile } from './profile';
 import { startLocationTracking } from './location';
 import { fetchWeather } from './weather';
+import { initTheme } from './theme';
 
 import { NavigationBar } from './ui/components/NavigationBar';
 import { TopStatusBar } from './ui/components/TopStatusBar';
@@ -114,6 +115,9 @@ export function initUI(): void {
 
     // Sync i18n with persisted language
     i18n.setLocale(state.lang);
+
+    // Initialiser le thème clair/sombre après chargement des settings
+    initTheme();
 
     // Diagnostic matériel
     const gpuInfo = getGpuInfo();

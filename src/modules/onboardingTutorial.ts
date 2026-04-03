@@ -114,7 +114,7 @@ function _show(resolve: () => void): void {
                 position: fixed;
                 inset: 0;
                 z-index: 9000;
-                background: rgba(0, 0, 0, 0.88);
+                background: var(--overlay-bg);
                 backdrop-filter: blur(8px);
                 -webkit-backdrop-filter: blur(8px);
                 display: flex;
@@ -124,13 +124,13 @@ function _show(resolve: () => void): void {
                 touch-action: none;
             }
             .ob-card {
-                background: var(--glass-bg, #1a1d2e);
+                background: var(--surface-solid, #1a1d2e);
                 border: 1px solid var(--border, rgba(255,255,255,0.1));
                 border-radius: var(--radius-xl, 20px);
                 max-width: 360px;
                 width: 100%;
                 padding: 36px 24px 28px;
-                box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+                box-shadow: 0 8px 32px var(--shadow-lg);
                 display: flex;
                 flex-direction: column;
                 align-items: center;

@@ -41,7 +41,7 @@ function _show(resolve: () => void): void {
             #acceptance-wall-overlay {
                 position: fixed;
                 inset: 0;
-                background: rgba(0, 0, 0, 0.92);
+                background: var(--overlay-bg);
                 display: flex;
                 align-items: flex-end;
                 justify-content: center;
@@ -51,7 +51,7 @@ function _show(resolve: () => void): void {
                 -webkit-backdrop-filter: blur(8px);
             }
             .aw-card {
-                background: var(--glass-bg, #1a1d2e);
+                background: var(--surface-solid, #1a1d2e);
                 border: 1px solid var(--border, rgba(255,255,255,0.1));
                 border-radius: var(--radius-xl, 20px) var(--radius-xl, 20px) 0 0;
                 padding: 32px 24px 40px;
@@ -59,7 +59,7 @@ function _show(resolve: () => void): void {
                 width: 100%;
                 max-height: 90vh;
                 overflow-y: auto;
-                box-shadow: 0 -8px 32px rgba(0,0,0,0.5);
+                box-shadow: 0 -8px 32px var(--shadow-lg);
             }
             .aw-icon {
                 font-size: 2.5rem;

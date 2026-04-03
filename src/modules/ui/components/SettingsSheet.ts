@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { BaseComponent } from '../core/BaseComponent';
-import { state, saveSettings } from '../../state';
+import { state, saveSettings, type ThemePreference } from '../../state';
 import { applyPreset, getGpuInfo, detectBestPreset } from '../../performance';
 import { resetTerrain, updateVisibleTiles, updateHydrologyVisibility } from '../../terrain';
 import { updateWeatherVisibility } from '../../weather';
@@ -143,6 +143,9 @@ export class SettingsSheet extends BaseComponent {
                 this.updateUIFromState(key, value);
             }));
         });
+
+        // Theme selector
+        this.bindThemeSelector();
 
         // Language selector
         this.createLanguageSelector();
@@ -331,6 +334,27 @@ export class SettingsSheet extends BaseComponent {
         this.updateUIFromState('SHOW_WEATHER_PRO', state.SHOW_WEATHER_PRO);
     }
 
+    private bindThemeSelector(): void {
+        if (!this.element) return;
+        const selector = this.element.querySelector('#theme-selector');
+        if (!selector) return;
+
+        const updateActive = () => {
+            selector.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.toggle('active', (btn as HTMLElement).dataset.theme === state.themePreference);
+            });
+        };
+
+        selector.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.themePreference = (btn as HTMLElement).dataset.theme as ThemePreference;
+            });
+        });
+
+        this.addSubscription(state.subscribe('themePreference', updateActive));
+        updateActive();
+    }
+
     private createLanguageSelector(): void {
         if (!this.element) return;
         const panel = this.element.querySelector('#panel') || this.element;
@@ -375,7 +399,7 @@ export class SettingsSheet extends BaseComponent {
                 <div style="display:flex;align-items:center;gap:8px;width:100%">
                     <code id="tester-id-value" style="
                         flex:1;font-size:10px;color:var(--text-2);
-                        background:rgba(255,255,255,0.05);border-radius:var(--radius-sm);
+                        background:var(--surface-subtle);border-radius:var(--radius-sm);
                         padding:6px 10px;overflow:hidden;text-overflow:ellipsis;
                         white-space:nowrap;border:1px solid var(--border)
                     ">Chargement…</code>
@@ -594,12 +618,12 @@ export class SettingsSheet extends BaseComponent {
 
         if (state.isPro) {
             btn.innerHTML = '<span>✓</span><span data-i18n="settings.pro.active">Pro Actif</span>';
-            btn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+            btn.style.background = `linear-gradient(135deg, var(--success) 0%, ${document.documentElement.dataset.theme === 'light' ? '#15803d' : '#16a34a'} 100%)`;
             btn.style.cursor = 'default';
             btn.disabled = true;
         } else {
             btn.innerHTML = '<span>🔓</span><span data-i18n="settings.pro.cta">Passer à Pro</span>';
-            btn.style.background = 'linear-gradient(135deg, var(--gold) 0%, #ffb700 100%)';
+            btn.style.background = 'linear-gradient(135deg, var(--gold) 0%, var(--gold) 100%)';
             btn.style.cursor = 'pointer';
             btn.disabled = false;
         }

@@ -126,9 +126,11 @@ export interface LocationPoint {
 }
 
 export type AppLocale = 'fr' | 'de' | 'it' | 'en';
+export type ThemePreference = 'light' | 'dark' | 'auto';
 
 export interface State {
     lang: AppLocale;
+    themePreference: ThemePreference;
     ENERGY_SAVER: boolean;
     MK: string;
     MAP_SOURCE: string;
@@ -268,6 +270,7 @@ export interface State {
 
 const initialState: State = {
     lang: 'fr',
+    themePreference: 'auto',
     ENERGY_SAVER: false,
     MK: '', MAP_SOURCE: 'swisstopo', hasManualSource: false,
     PERFORMANCE_PRESET: 'balanced', RESOLUTION: PRESETS.balanced.RESOLUTION, RANGE: PRESETS.balanced.RANGE,
@@ -335,6 +338,7 @@ const CURRENT_SETTINGS_VERSION = '5.10.0';
 export interface SavedSettings {
     version?: string;
     lang?: AppLocale;
+    themePreference?: ThemePreference;
     PERFORMANCE_PRESET: PresetType;
     MAP_SOURCE: string;
     ENERGY_SAVER: boolean;
@@ -366,6 +370,7 @@ export function saveSettings(): void {
         const settingsToSave: SavedSettings = {
             version: CURRENT_SETTINGS_VERSION,
             lang: state.lang,
+            themePreference: state.themePreference,
             PERFORMANCE_PRESET: state.PERFORMANCE_PRESET,
             MAP_SOURCE: state.MAP_SOURCE,
             ENERGY_SAVER: state.ENERGY_SAVER,
@@ -437,6 +442,7 @@ export function loadSettings(): SavedSettings | null {
 
         // Apply loaded boolean toggles and map source directly
         if (parsed.lang) state.lang = parsed.lang;
+        if (parsed.themePreference) state.themePreference = parsed.themePreference;
         state.MAP_SOURCE = parsed.MAP_SOURCE;
         state.ENERGY_SAVER = !!parsed.ENERGY_SAVER;
         state.SHOW_TRAILS = !!parsed.SHOW_TRAILS;

@@ -37,6 +37,7 @@
 - **InclinometerWidget (v5.19.1)** : Tap = panel détail, drag = repositionner (hold 300ms), double-tap = reset. z-index 2100. i18n complet.
 - **Coords-pill déplaçable (v5.19.1)** : `#coords-pill` utilise `attachDraggablePanel()`. Position reset à chaque nouveau clic carte.
 - **Initialisation UI en deux phases (v5.21.1)** : `initUI()` hydrate d'abord les composants visibles au démarrage (Phase 1 synchrone), puis charge les 10 sheets via `_initSecondaryUI()` après le premier frame (Phase 2 async). Voir `AI_PERFORMANCE.md` — Lazy-loading des composants UI secondaires.
+- **Système de thème clair/sombre (v5.22.0)** : `src/modules/theme.ts` — 3 options : `'light' | 'dark' | 'auto'`. `initTheme()` appelé depuis `ui.ts` après `loadSettings()`. `applyTheme(effective)` pose `data-theme="light"` sur `<html>` (absent en mode sombre → tokens `:root` par défaut). `getEffectiveTheme()` résout `'auto'` via `matchMedia('(prefers-color-scheme: dark)')`. Émet `themeChanged` sur l'EventBus. `state.themePreference` persisté dans `localStorage`. Sélecteur 3 boutons dans `SettingsSheet.ts`. Tokens sémantiques ajoutés : `--canvas-bg/text/stroke` (charts SVG/canvas), `--toast-bg/text`, `--overlay-bg`, `--shadow-sm/md/lg`, `--on-accent`, `--on-gold`. **Non themé intentionnellement** : scène Three.js (ciel/terrain/eau/végétation = simulation réaliste), boussole (N=rouge, convention universelle), marqueur GPS (bleu standard), POI (or signalisation), couleurs de danger pente/UV (sécurité).
 
 ---
 

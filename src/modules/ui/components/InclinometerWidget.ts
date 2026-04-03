@@ -60,10 +60,10 @@ export class InclinometerWidget {
             'bottom:calc(var(--bar-h) + var(--safe-bottom) + 16px)',
             'left:50%',
             'transform:translateX(-50%)',
-            'background:rgba(0,0,0,0.55)',
-            'backdrop-filter:blur(8px)',
-            '-webkit-backdrop-filter:blur(8px)',
-            'color:#fff',
+            'background:var(--surface)',
+            'backdrop-filter:var(--glass)',
+            '-webkit-backdrop-filter:var(--glass)',
+            'color:var(--text)',
             'font-size:13px',
             'font-weight:600',
             'font-variant-numeric:tabular-nums',
@@ -74,7 +74,7 @@ export class InclinometerWidget {
             'z-index:2100',
             'display:none',
             'white-space:nowrap',
-            'border:1px solid rgba(255,255,255,0.15)',
+            'border:1px solid var(--border-active)',
             'cursor:pointer',
             'user-select:none',
             'touch-action:none',
@@ -149,7 +149,7 @@ export class InclinometerWidget {
         this.el.textContent = `⛰ ${this._lastSlopeDeg}° (${this._lastSlopePct}%) — ${i18n.t('inclinometer.label')}`;
 
         // Couleur de la bordure selon seuils avalanche
-        let borderColor = 'rgba(255,255,255,0.15)';
+        let borderColor = 'var(--border-active)';
         if      (this._lastSlopeDeg >= 40) borderColor = 'rgba(239,68,68,0.7)';
         else if (this._lastSlopeDeg >= 35) borderColor = 'rgba(249,115,22,0.7)';
         else if (this._lastSlopeDeg >= 30) borderColor = 'rgba(234,179,8,0.7)';
@@ -278,16 +278,16 @@ export class InclinometerWidget {
         this.detailEl.style.cssText = [
             'position:fixed',
             'z-index:2101',
-            'background:var(--glass-bg, rgba(30,30,50,0.92))',
-            'backdrop-filter:blur(20px)',
-            '-webkit-backdrop-filter:blur(20px)',
+            'background:var(--surface-solid)',
+            'backdrop-filter:var(--glass)',
+            '-webkit-backdrop-filter:var(--glass)',
             'border-radius:var(--radius-lg, 12px)',
             'padding:12px 16px',
-            'color:#fff',
+            'color:var(--text)',
             'font-size:13px',
             'min-width:200px',
             'max-width:260px',
-            'border:1px solid rgba(255,255,255,0.12)',
+            'border:1px solid var(--border)',
             'pointer-events:none',
             'opacity:0',
             'transition:opacity 0.15s ease',

@@ -43,17 +43,17 @@ describe('state.ts', () => {
             expect(PRESETS.eco.MAX_ALLOWED_ZOOM).toBe(14);
         });
 
-        it('balanced (STD) — Galaxy A53 : valeurs recalibrées v5.11', () => {
-            expect(PRESETS.balanced.RESOLUTION).toBe(32);          // ← 64 → 32
-            expect(PRESETS.balanced.VEGETATION_DENSITY).toBe(500); // ← 2000 → 500
-            expect(PRESETS.balanced.WEATHER_DENSITY).toBe(1000);   // ← 2000 → 1000
+        it('balanced (STD) — Galaxy A53 : valeurs calibrées actuelles', () => {
+            expect(PRESETS.balanced.RESOLUTION).toBe(64);             // v5.21: 32 → 64 (meilleur rendu mid-range)
+            expect(PRESETS.balanced.VEGETATION_DENSITY).toBe(1500);   // v5.21: 500 → 1500
+            expect(PRESETS.balanced.WEATHER_DENSITY).toBe(1000);
         });
 
         it('performance (High) — Galaxy S23 : valeurs baked-in sans caps', () => {
             expect(PRESETS.performance.RESOLUTION).toBe(160);
-            expect(PRESETS.performance.RANGE).toBe(6);             // ← 5 → 6 : couverture visuelle 3D incliné
-            expect(PRESETS.performance.SHADOW_RES).toBe(1024);     // ← 2048 → 1024 baked-in
-            expect(PRESETS.performance.MAX_BUILDS_PER_CYCLE).toBe(2); // ← 4 → 2 baked-in
+            expect(PRESETS.performance.RANGE).toBe(6);
+            expect(PRESETS.performance.SHADOW_RES).toBe(1024);
+            expect(PRESETS.performance.MAX_BUILDS_PER_CYCLE).toBe(4); // v5.21: 2 → 4
             expect(PRESETS.performance.MAX_ALLOWED_ZOOM).toBe(18);
         });
     });

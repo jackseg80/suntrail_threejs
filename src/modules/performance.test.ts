@@ -41,18 +41,18 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
     // detectBestPreset() — ENERGY_SAVER universel mobile
     // -------------------------------------------------------------------------
     describe('applyPreset() — ENERGY_SAVER par tier mobile (v5.11 design intent)', () => {
-        it('force ENERGY_SAVER=true pour balanced sur Android (mid-range → autonomie)', () => {
+        it('ne force PAS ENERGY_SAVER sur balanced Android — choix exclusif utilisateur', () => {
             state.ENERGY_SAVER = false;
             setUA(ANDROID_UA);
             applyPreset('balanced');
-            expect(state.ENERGY_SAVER).toBe(true);
+            expect(state.ENERGY_SAVER).toBe(false);
         });
 
-        it('force ENERGY_SAVER=true pour eco sur Android (vieux mobile → batterie)', () => {
+        it('ne force PAS ENERGY_SAVER sur eco Android — choix exclusif utilisateur', () => {
             state.ENERGY_SAVER = false;
             setUA(ANDROID_UA);
             applyPreset('eco');
-            expect(state.ENERGY_SAVER).toBe(true);
+            expect(state.ENERGY_SAVER).toBe(false);
         });
 
         it('laisse ENERGY_SAVER=false pour performance sur Android (flagship → 60fps)', () => {
@@ -100,32 +100,29 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
         });
     });
 
-    describe('detectBestPreset() — ENERGY_SAVER universel mobile via applyPreset()', () => {
-        // Note : depuis v5.11, ENERGY_SAVER n'est plus setté dans detectBestPreset()
-        // mais dans applyPreset(). detectBestPreset() retourne le bon tier — le test
-        // vérifie que le cycle complet detectBestPreset() + applyPreset() produit
-        // ENERGY_SAVER=true sur mobile.
+    describe('detectBestPreset() — ENERGY_SAVER non forcé par preset (v5.21+)', () => {
+        // Depuis la refonte v5.21, applyPreset() ne touche jamais ENERGY_SAVER —
+        // c'est un choix exclusif de l'utilisateur, persisté indépendamment.
 
-        it('cycle complet sur UA Android → ENERGY_SAVER=true', () => {
+        it('cycle complet UA Android → ENERGY_SAVER reste false (non forcé)', () => {
             setUA(ANDROID_UA);
             state.ENERGY_SAVER = false;
             applyPreset(detectBestPreset());
-            // L'UA Android + preset non-ultra → ENERGY_SAVER=true via applyPreset
-            expect(state.ENERGY_SAVER).toBe(true);
+            expect(state.ENERGY_SAVER).toBe(false);
         });
 
-        it('cycle complet sur UA iOS → ENERGY_SAVER=true', () => {
+        it('cycle complet UA iOS → ENERGY_SAVER reste false (non forcé)', () => {
             setUA(IOS_UA);
             state.ENERGY_SAVER = false;
             applyPreset(detectBestPreset());
-            expect(state.ENERGY_SAVER).toBe(true);
+            expect(state.ENERGY_SAVER).toBe(false);
         });
 
-        it('cycle complet sur innerWidth 375 → ENERGY_SAVER=true', () => {
+        it('cycle complet innerWidth 375 → ENERGY_SAVER reste false (non forcé)', () => {
             setInnerWidth(375);
             state.ENERGY_SAVER = false;
             applyPreset(detectBestPreset());
-            expect(state.ENERGY_SAVER).toBe(true);
+            expect(state.ENERGY_SAVER).toBe(false);
         });
 
         it('desktop UA + large écran → isMobile=false (pas de faux-positif)', () => {
@@ -207,12 +204,12 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
             expect(state.SHADOW_RES).toBe(1024);
         });
 
-        it('preset balanced sur mobile conserve SHADOW_RES=256 (déjà sous le cap de 1024)', () => {
+        it('preset balanced sur mobile conserve SHADOW_RES=512 (déjà sous le cap de 1024)', () => {
             setUA(ANDROID_UA);
 
             applyPreset('balanced');
 
-            expect(state.SHADOW_RES).toBe(256); // 256 < 1024 → pas de cap
+            expect(state.SHADOW_RES).toBe(512); // v5.21: balanced.SHADOW_RES=512 < 1024 → pas de cap
         });
 
         it('preset eco sur mobile conserve SHADOW_RES=128 (déjà sous le cap)', () => {
@@ -279,9 +276,9 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
             expect(state.SHADOW_RES).toBe(1024);
         });
 
-        it('performance preset : MAX_BUILDS_PER_CYCLE=2 quelle que soit la plateforme', () => {
+        it('performance preset : MAX_BUILDS_PER_CYCLE=4 quelle que soit la plateforme', () => {
             applyPreset('performance');
-            expect(state.MAX_BUILDS_PER_CYCLE).toBe(2);
+            expect(state.MAX_BUILDS_PER_CYCLE).toBe(4); // v5.21: 2 → 4
         });
     });
 });
