@@ -87,7 +87,7 @@ Fichiers PMTiles par pays/région, achetés via IAP non-consumable (RevenueCat) 
 | Suisse HD | 12-14 | 710 MB (~35 k tuiles) | `suntrail_pack_switzerland` |
 | France Alpes | 12-14 | ~200 MB | `suntrail_pack_france_alps` |
 
-**Gating** : Free = LOD 12 du pack, Pro = LOD 12-14 depuis le pack. Les LOD 13-14 ne sont simplement pas servis depuis le pack si `!state.isPro` → fallback réseau transparent.
+**Gating** : Tout acheteur du pack accède aux LOD 12-14 complets. Pas de restriction Pro — le pack est un achat unique indépendant de l'abonnement.
 
 **Architecture** : voir `AI_ARCHITECTURE.md` § "Packs Pays — packManager".
 
