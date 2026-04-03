@@ -60,8 +60,6 @@ void initEmbeddedOverview();
 
 // Initialise le gestionnaire de packs pays (mount packs installés) — fire-and-forget
 void packManager.initialize();
-// Debug : accessible depuis la console DevTools / logcat
-(window as unknown as Record<string, unknown>)['packManager'] = packManager;
 
 // Lancement de l'initialisation globale de l'interface
 initUI();

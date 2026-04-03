@@ -2,12 +2,13 @@
  * packManager.ts — Country Packs Manager
  *
  * Gère le cycle de vie complet des packs pays :
- *   - Catalogue CDN (fetch + cache localStorage)
- *   - Téléchargement avec progression (Filesystem Android / OPFS PWA)
- *   - Montage d'archives PMTiles pour le serving local
- *   - Gating LOD selon isPro (Free = LOD 12, Pro = LOD 12-14)
+ *   - Catalogue CDN (fetch + cache localStorage + fallback embarqué)
+ *   - Téléchargement vers OPFS (Android + PWA) avec progression
+ *   - Montage d'archives PMTiles via FileSource (offline) ou CDN (purchased)
+ *   - Serving des tuiles LOD 12-14 sans réseau
  *
  * Les packs sont des achats non-consumable indépendants de l'abonnement Pro.
+ * Tout acheteur d'un pack accède aux LOD 12-14 complets.
  */
 
 import { Capacitor } from '@capacitor/core';
@@ -59,8 +60,6 @@ class PackManager {
     private packStates: Map<string, PackState> = new Map();
     private mountedArchives: Map<string, pmtiles.PMTiles> = new Map();
     private downloadControllers: Map<string, AbortController> = new Map();
-    private _tileHits = 0;
-    private _tileMisses = 0;
 
     // ── Lifecycle ────────────────────────────────────────────────────────────
 
@@ -350,30 +349,13 @@ class PackManager {
             try {
                 const tileData = await archive.getZxy(z, x, y);
                 if (tileData?.data) {
-                    this._tileHits++;
-                    if (this._tileHits % 50 === 1) {
-                        console.log(`[Packs] ✓ ${this._tileHits} tuile(s) servie(s) depuis "${packId}" (dernière: LOD${z} ${x}/${y})`);
-                    }
                     return new Blob([tileData.data], { type: 'image/webp' });
                 }
             } catch {
                 // Tile not in archive — continue to next pack
             }
         }
-        this._tileMisses++;
         return null;
-    }
-
-    /** Stats de debug accessibles depuis la console : packManager.debugStats() */
-    debugStats(): void {
-        console.group('[Packs] Debug stats');
-        console.log('Packs montés :', [...this.mountedArchives.keys()]);
-        console.log('Tuiles servies depuis pack :', this._tileHits);
-        console.log('Tuiles non trouvées dans pack :', this._tileMisses);
-        for (const [id, ps] of this.packStates) {
-            console.log(`  ${id}: status=${ps.status} progress=${ps.downloadProgress} path=${ps.filePath}`);
-        }
-        console.groupEnd();
     }
 
     private isTileInPackRegion(tx: number, ty: number, zoom: number, meta: PackMeta): boolean {
