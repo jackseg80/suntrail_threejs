@@ -96,9 +96,9 @@ class IAPService {
 
     private updateStateFromCustomerInfo(customerInfo: CustomerInfo): boolean {
         const isPro = customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined;
-        if (isPro) {
+        if (isPro && !state.isPro) {
             grantProAccess();
-        } else if (state.isPro) {
+        } else if (!isPro && state.isPro) {
             // Révoquer uniquement si on était Pro (évite les faux négatifs au boot)
             revokeProAccess();
         }
