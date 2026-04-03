@@ -14,6 +14,7 @@ export class TimelineComponent {
     private subscriptions: Array<() => void> = [];
     private tlAzimuthEl: HTMLElement | null = null;
     private tlElevationEl: HTMLElement | null = null;
+    private _dateTrap: HTMLElement | null = null;
 
     constructor() {
         // No hydration, just attach to existing DOM
@@ -60,6 +61,19 @@ export class TimelineComponent {
         }
 
         if (this.dateInput) {
+            // Overlay trap : intercepte les clics non-Pro avant que le picker natif ne s'ouvre.
+            // pointer-events:none sur l'input bloque le picker Android WebView de façon fiable ;
+            // l'overlay (z-index supérieur) reçoit le tap et affiche le prompt IAP.
+            const dateWrapper = document.createElement('div');
+            dateWrapper.className = 'date-input-wrapper';
+            this.dateInput.parentNode!.insertBefore(dateWrapper, this.dateInput);
+            dateWrapper.appendChild(this.dateInput);
+            const dateTrap = document.createElement('div');
+            dateTrap.className = 'date-input-trap';
+            dateTrap.addEventListener('click', () => showUpgradePrompt('solar_calendar'));
+            dateWrapper.appendChild(dateTrap);
+            this._dateTrap = dateTrap;
+
             // Initialiser l'aspect visuel du sélecteur de date selon isPro
             this.syncDateInputLock();
             this.subscriptions.push(state.subscribe('isPro', () => this.syncDateInputLock()));
@@ -67,14 +81,13 @@ export class TimelineComponent {
             this.dateInput.addEventListener('change', (e) => {
                 const d = new Date((e.target as HTMLInputElement).value);
                 if (!isNaN(d.getTime())) {
-                    // Gate Pro : seule la date du jour est accessible sans Pro
+                    // Gate Pro : seule la date du jour est accessible sans Pro (filet de sécurité)
                     if (!state.isPro) {
                         const today = new Date();
                         const isToday = d.getFullYear() === today.getFullYear() &&
                                         d.getMonth()    === today.getMonth()    &&
                                         d.getDate()     === today.getDate();
                         if (!isToday) {
-                            // Réinitialiser l'input à aujourd'hui
                             const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
                             (e.target as HTMLInputElement).value = todayStr;
                             showUpgradePrompt('solar_calendar');
@@ -123,19 +136,48 @@ export class TimelineComponent {
 
             // Drag handle — swipe down to close
             this.attachSwipeGesture(bottomBar);
-        }
 
-        // Hint upsell sous le sélecteur de date — visible uniquement pour les users gratuits
-        if (this.dateInput) {
-            const hint = document.createElement('div');
-            hint.id = 'timeline-upsell-hint';
-            hint.style.cssText = 'font-size:10px; color:var(--text-3); text-align:center; margin-top:4px; opacity:0.7; letter-spacing:0.3px; cursor:pointer;';
-            hint.textContent = i18n.t('upsell.timeline');
-            hint.addEventListener('click', () => showUpgradePrompt('solar_calendar'));
-            this.dateInput.parentNode?.appendChild(hint);
-            const syncHint = () => { hint.style.display = state.isPro ? 'none' : 'block'; };
-            syncHint();
-            this.subscriptions.push(state.subscribe('isPro', syncHint));
+            // Masquage dynamique des widgets couverts quand la timebar est déplacée
+            const OVERLAP_TARGETS_TL = [
+                document.getElementById('top-pill-main'),
+                document.getElementById('rec-status-widget'),
+                document.getElementById('net-status-icon'),
+                document.getElementById('sos-main-btn'),
+                document.querySelector('.fab-stack') as HTMLElement | null,
+            ];
+            const OVERLAP_CLS_TL = 'widget-overlap-hidden';
+
+            const checkTimelineOverlap = (): void => {
+                const isOpen = bottomBar.classList.contains('is-open');
+                const isCustomPos = bottomBar.classList.contains('panel-custom-pos');
+                // body.timeline-custom-pos désactive la règle CSS statique et laisse
+                // le contrôle dynamique (widget-overlap-hidden) gérer la visibilité des FABs
+                document.body.classList.toggle('timeline-custom-pos', isOpen && isCustomPos);
+                if (!isOpen || !isCustomPos) {
+                    OVERLAP_TARGETS_TL.forEach(el => el?.classList.remove(OVERLAP_CLS_TL));
+                    return;
+                }
+                const pr = bottomBar.getBoundingClientRect();
+                OVERLAP_TARGETS_TL.forEach(el => {
+                    if (!el) return;
+                    const had = el.classList.contains(OVERLAP_CLS_TL);
+                    if (had) el.classList.remove(OVERLAP_CLS_TL);
+                    const r = el.getBoundingClientRect();
+                    if (had) el.classList.add(OVERLAP_CLS_TL);
+                    const overlaps = pr.right > r.left - 8 && pr.left < r.right + 8
+                                  && pr.bottom > r.top - 8 && pr.top < r.bottom + 8;
+                    el.classList.toggle(OVERLAP_CLS_TL, overlaps);
+                });
+            };
+
+            window.addEventListener('pointermove', checkTimelineOverlap, { passive: true });
+            new MutationObserver(checkTimelineOverlap).observe(bottomBar, {
+                attributes: true, attributeFilter: ['class', 'style'],
+            });
+            this.subscriptions.push(() => {
+                window.removeEventListener('pointermove', checkTimelineOverlap);
+                document.body.classList.remove('timeline-custom-pos');
+            });
         }
 
         // Solar info (azimuth + elevation) — Pro only, below slider
@@ -179,6 +221,7 @@ export class TimelineComponent {
             if (is2D && bottomBar && bottomBar.classList.contains('is-open')) {
                 bottomBar.classList.remove('is-open');
                 document.body.classList.remove('timeline-open');
+                document.body.classList.remove('timeline-custom-pos');
                 if (toggleBtn) toggleBtn.classList.remove('active');
             }
         }));
@@ -220,6 +263,7 @@ export class TimelineComponent {
                 void haptic('medium');
                 bottomBar.classList.remove('is-open');
                 document.body.classList.remove('timeline-open');
+                document.body.classList.remove('timeline-custom-pos');
                 const toggleBtn = document.getElementById('timeline-toggle-btn');
                 if (toggleBtn) toggleBtn.classList.remove('active');
             },
@@ -229,14 +273,9 @@ export class TimelineComponent {
 
     private syncDateInputLock(): void {
         if (!this.dateInput) return;
-        if (state.isPro) {
-            this.dateInput.removeAttribute('title');
-            this.dateInput.style.opacity = '';
-        } else {
-            this.dateInput.title = i18n.t('upsell.timeline');
-            // Légère opacité pour signaler visuellement la limitation
-            this.dateInput.style.opacity = '0.7';
-        }
+        const locked = !state.isPro;
+        this.dateInput.classList.toggle('date-input-locked', locked);
+        this._dateTrap?.classList.toggle('active', locked);
     }
 
     private updateSolarInfo(): void {

@@ -402,6 +402,43 @@ export function initUI(): void {
                 state.hasLastClicked = false;
             },
         });
+
+        // Masquer dynamiquement les widgets que le coords-pill chevauche pendant le drag
+        const OVERLAP_TARGETS = [
+            { el: document.querySelector('.fab-stack') as HTMLElement | null },
+            { el: document.getElementById('top-pill-main') },
+            { el: document.getElementById('rec-status-widget') },
+            { el: document.getElementById('net-status-icon') },
+            { el: document.getElementById('sos-main-btn') },
+            { el: document.getElementById('timeline-toggle-btn') },
+        ];
+        const OVERLAP_CLS = 'widget-overlap-hidden';
+
+        const checkPillOverlap = (): void => {
+            if (coordsPill.classList.contains('hidden')) {
+                OVERLAP_TARGETS.forEach(t => t.el?.classList.remove(OVERLAP_CLS));
+                return;
+            }
+            const pr = coordsPill.getBoundingClientRect();
+            OVERLAP_TARGETS.forEach(({ el }) => {
+                if (!el) return;
+                // Lire le rect naturel sans la classe d'overlap (pas de repaint intermédiaire)
+                const had = el.classList.contains(OVERLAP_CLS);
+                if (had) el.classList.remove(OVERLAP_CLS);
+                const r = el.getBoundingClientRect();
+                if (had) el.classList.add(OVERLAP_CLS);
+                const overlaps = pr.right > r.left - 8 && pr.left < r.right + 8
+                              && pr.bottom > r.top - 8 && pr.top < r.bottom + 8;
+                el.classList.toggle(OVERLAP_CLS, overlaps);
+            });
+        };
+
+        // pointermove global (passive) : fiable même avec setPointerCapture sur le pill
+        window.addEventListener('pointermove', checkPillOverlap, { passive: true });
+        // MutationObserver sur 'hidden' class (pill affiché/masqué)
+        new MutationObserver(checkPillOverlap).observe(coordsPill, {
+            attributes: true, attributeFilter: ['class'],
+        });
     }
 
     const layersFab = document.getElementById('layers-fab');

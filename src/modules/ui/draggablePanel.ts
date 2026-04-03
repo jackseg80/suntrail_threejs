@@ -99,10 +99,12 @@ export function attachDraggablePanel(opts: DraggablePanelOptions): () => void {
 
             const w = panel.offsetWidth;
             newLeft = Math.max(-w + 40, Math.min(window.innerWidth - 40, newLeft));
-            // Empêcher le panel de passer sous la nav bar (--bar-h + safe area)
+            // Empêcher le panel de passer sous la nav bar (bas) ou la top bar (haut)
             const navBar = document.getElementById('nav-bar');
             const navH = navBar ? navBar.offsetHeight : 72;
-            newTop = Math.max(0, Math.min(window.innerHeight - navH - 40, newTop));
+            const topBar = document.getElementById('top-status-bar');
+            const topH = topBar ? topBar.offsetHeight : 52;
+            newTop = Math.max(topH + 8, Math.min(window.innerHeight - navH - 40, newTop));
 
             panel.style.left = `${newLeft}px`;
             panel.style.top = `${newTop}px`;
