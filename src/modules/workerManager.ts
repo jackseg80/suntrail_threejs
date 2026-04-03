@@ -32,6 +32,7 @@ class TileWorkerManager {
         for (let i = 0; i < count; i++) {
             const worker = new Worker(new URL('../workers/tileWorker.ts', import.meta.url), { type: 'module' });
             worker.onmessage = (e) => this.handleMessage(e);
+            worker.onerror = (e) => console.error('[WorkerManager] Worker crash:', e.message, e.filename, e.lineno);
             this.workers.push(worker);
         }
         console.log(`[WorkerManager] Initialized with ${this.workers.length} workers.`);

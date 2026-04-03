@@ -117,6 +117,8 @@ export class Tile {
     ghostFadeRemaining: number = 0; // ms restantes avant dispose complet
     worldX: number = 0; worldZ: number = 0;
     bounds: THREE.Box3 = new THREE.Box3();
+    /** Bounds étendu de 20% — pré-calculé pour éviter clone() dans isVisible() (hot path). */
+    private extendedBounds: THREE.Box3 = new THREE.Box3();
     elevOffset = new THREE.Vector2(); elevScale = 1.0;
     colorOffset = new THREE.Vector2(); colorScale = 1.0;
 
@@ -141,21 +143,23 @@ export class Tile {
         this.worldX = (txNorm - oxNorm) * EARTH_CIRCUMFERENCE;
         this.worldZ = (tyNorm - oyNorm) * EARTH_CIRCUMFERENCE;
         // Ghost tiles gardent un offset Y négatif (anti-z-fighting avec les nouvelles tuiles)
-        if (this.mesh) this.mesh.position.set(this.worldX, this.isFadingOut ? -0.5 : 0, this.worldZ);
-        if (this.forestMesh) this.forestMesh.position.set(this.worldX, 0, this.worldZ);
-        if (this.poiGroup && !this.poiGroup.parent) this.poiGroup.position.set(this.worldX, 0, this.worldZ);
+        const yOffset = this.isFadingOut ? -0.5 : 0;
+        if (this.mesh) this.mesh.position.set(this.worldX, yOffset, this.worldZ);
+        if (this.forestMesh) this.forestMesh.position.set(this.worldX, yOffset, this.worldZ);
+        if (this.poiGroup) this.poiGroup.position.set(this.worldX, yOffset, this.worldZ);
         
         this.bounds.set(
             new THREE.Vector3(this.worldX - this.tileSizeMeters/2, -1000, this.worldZ - this.tileSizeMeters/2),
             new THREE.Vector3(this.worldX + this.tileSizeMeters/2, 9000, this.worldZ + this.tileSizeMeters/2)
         );
+        this.extendedBounds.copy(this.bounds).expandByScalar(this.tileSizeMeters * 0.2);
     }
 
     public isVisible(): boolean {
         if (!state.camera) return true;
         projScreenMatrix.multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
         frustum.setFromProjectionMatrix(projScreenMatrix);
-        return frustum.intersectsBox(this.bounds.clone().expandByScalar(this.tileSizeMeters * 0.2));
+        return frustum.intersectsBox(this.extendedBounds);
     }
 
     public lngLatToLocal(lon: number, lat: number): THREE.Vector3 {
@@ -212,7 +216,13 @@ export class Tile {
 
             if (data.elevBitmap) {
                 this.elevationTex = new THREE.Texture(data.elevBitmap);
-                this.elevationTex.flipY = false; this.elevationTex.needsUpdate = true;
+                this.elevationTex.flipY = false;
+                // Pas de mipmaps sur l'élévation : les niveaux mip générés indépendamment par tuile
+                // créent des discontinuités aux bords (seams) en vue lointaine.
+                this.elevationTex.generateMipmaps = false;
+                this.elevationTex.minFilter = THREE.LinearFilter;
+                this.elevationTex.wrapS = this.elevationTex.wrapT = THREE.ClampToEdgeWrapping;
+                this.elevationTex.needsUpdate = true;
                 if (data.pixelData) this.pixelData = new Uint8ClampedArray(data.pixelData);
             } else { this.elevationTex = new THREE.CanvasTexture(document.createElement('canvas')); }
 
@@ -237,7 +247,12 @@ export class Tile {
 
             if (data.normalBitmap) {
                 this.normalTex = new THREE.Texture(data.normalBitmap);
-                this.normalTex.flipY = false; this.normalTex.needsUpdate = true;
+                this.normalTex.flipY = false;
+                // Idem : pas de mipmaps sur les normales pour éviter les seams d'ombrage à distance.
+                this.normalTex.generateMipmaps = false;
+                this.normalTex.minFilter = THREE.LinearFilter;
+                this.normalTex.wrapS = this.normalTex.wrapT = THREE.ClampToEdgeWrapping;
+                this.normalTex.needsUpdate = true;
             }
 
             addToCache(cacheKey, this.elevationTex!, this.pixelData, this.colorTex!, this.overlayTex, this.normalTex);
@@ -281,7 +296,10 @@ export class Tile {
                     uniform vec2 uElevOffset; uniform float uElevScale;
                     float decodeHeight(vec4 rgba) { return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1); }
                     float getTerrainHeight(vec2 uv) {
-                        vec2 elevUv = uElevOffset + (uv * uElevScale);
+                        // Half-texel inset : évite que LinearFilter interpole au-delà du bord
+                        // de la texture (seams entre tuiles adjacentes au LOD proche).
+                        const float HT = 0.5 / 256.0;
+                        vec2 elevUv = clamp(uElevOffset + (uv * uElevScale), vec2(HT), vec2(1.0 - HT));
                         vec4 col = texture2D(uElevationMap, elevUv);
                         float h = decodeHeight(col);
                         if (h < -1000.0 || h > 9000.0) return 0.0;
@@ -292,20 +310,21 @@ export class Tile {
                 shader.vertexShader = `
                     #define IS_LIGHT ${isLight ? '1' : '0'}
                     ${shader.vertexShader}
-                `.replace('#include <common>', `#include <common>\nvarying vec3 vTrueNormal; varying vec2 vWorldXZ; uniform vec2 uColorOffset; uniform float uColorScale; uniform sampler2D uNormalMap; ${sharedShaderChunk}`)
+                `.replace('#include <common>', `#include <common>\nattribute float aSkirt;\nvarying vec3 vTrueNormal; varying vec2 vWorldXZ; uniform vec2 uColorOffset; uniform float uColorScale; uniform sampler2D uNormalMap; ${sharedShaderChunk}`)
                  .replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);`);
 
                 if (isLight) {
                     shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\nobjectNormal = vec3(0.0,1.0,0.0); vTrueNormal = vec3(0.0,1.0,0.0);`);
                 } else {
                     shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n
-                        vec2 elevUv = uElevOffset + (uv * uElevScale);
+                        const float HT_N = 0.5 / 256.0;
+                        vec2 elevUv = clamp(uElevOffset + (uv * uElevScale), vec2(HT_N), vec2(1.0 - HT_N));
                         vec3 normalSample = texture2D(uNormalMap, elevUv).rgb * 2.0 - 1.0;
                         vTrueNormal = normalize(normalSample);
                         objectNormal = normalize(vec3(normalSample.x * uExaggeration, normalSample.y, normalSample.z * uExaggeration));
                     `);
                 }
-                shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv); vWorldXZ = (modelMatrix * vec4(transformed, 1.0)).xz;`);
+                shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv) - aSkirt * uTileSize * 0.02; vWorldXZ = (modelMatrix * vec4(transformed, 1.0)).xz;`);
                 shader.fragmentShader = `
                     uniform sampler2D uOverlayMap; uniform bool uHasOverlay; uniform float uShowSlopes; uniform float uShowHydrology; uniform float uTime; varying vec3 vTrueNormal; varying vec2 vWorldXZ;
                     ${shader.fragmentShader}
@@ -380,17 +399,18 @@ export class Tile {
                 shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
                 shader.uniforms.uElevOffset = { value: this.elevOffset };
                 shader.uniforms.uElevScale = { value: this.elevScale };
-                
+                shader.uniforms.uTileSize = { value: this.tileSizeMeters };
+
                 if (!shader.vertexShader.includes('decodeHeight')) {
                     shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n
-                        uniform sampler2D uElevationMap; uniform float uExaggeration; uniform vec2 uElevOffset; uniform float uElevScale;
+                        attribute float aSkirt; uniform sampler2D uElevationMap; uniform float uExaggeration; uniform float uTileSize; uniform vec2 uElevOffset; uniform float uElevScale;
                         float decodeHeight(vec4 rgba) { return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1); }
                         float getTerrainHeight(vec2 uv) {
                             vec2 elevUv = uElevOffset + (uv * uElevScale);
                             vec4 col = texture2D(uElevationMap, elevUv);
                             return decodeHeight(col) * uExaggeration;
                         }
-                    `).replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv);`);
+                    `).replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv) - aSkirt * uTileSize * 0.02;`);
                 }
             };
 

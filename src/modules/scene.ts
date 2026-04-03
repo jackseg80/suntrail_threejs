@@ -81,11 +81,17 @@ export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevatio
     const startTime = performance.now();
 
     const animateFlight = (time: number) => {
+        // Guard : si la scène a été détruite pendant le vol, abort proprement
+        if (!state.camera || !state.controls) {
+            state.isFlyingTo = false;
+            return;
+        }
+
         const elapsed = time - startTime;
         const progress = Math.min(elapsed / duration, 1.0);
         const ease = progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
-        state.controls!.target.lerpVectors(startTarget, endTarget, ease);
+        state.controls.target.lerpVectors(startTarget, endTarget, ease);
         const currentPos = new THREE.Vector3().lerpVectors(startPos, endPos, ease);
         const maxElev = Math.max(startPos.y, endPos.y, targetElevation);
         const parabolaHeight = Math.sin(progress * Math.PI) * Math.max(5000, maxElev * 0.8);
@@ -94,8 +100,8 @@ export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevatio
         const groundH = getAltitudeAt(currentPos.x, currentPos.z);
         if (currentPos.y < groundH + 200) currentPos.y = groundH + 200;
 
-        state.camera!.position.copy(currentPos);
-        state.controls!.update();
+        state.camera.position.copy(currentPos);
+        state.controls.update();
         if (progress < 1.0) {
             requestAnimationFrame(animateFlight);
         } else {
@@ -477,6 +483,10 @@ export async function initScene(): Promise<void> {
         }
 
         if (state.ENERGY_SAVER && (now - lastRenderTime < 33)) return;
+
+        // Mobile 60fps cap (sauf Ultra) — les écrans mobiles sont quasi-tous 60Hz,
+        // rendre à 120fps gaspille GPU/batterie sans gain visuel.
+        if (isMobileDevice && state.PERFORMANCE_PRESET !== 'ultra' && (now - lastRenderTime < 16.0)) return;
 
         // GPS follow : 30fps max suffit (GPS = 1Hz, lerp fluide à 30fps même à pieds).
         // Évite de rendre à 120fps pour une caméra qui suit une vitesse de marche. (v5.11.1)

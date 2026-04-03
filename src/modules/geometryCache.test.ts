@@ -7,11 +7,12 @@ describe('geometryCache.ts', () => {
         disposeAllGeometries();
     });
 
-    it('should create and return a plane geometry', () => {
+    it('should create and return a geometry with skirt', () => {
         const geo = getPlaneGeometry(32, 100);
-        expect(geo).toBeInstanceOf(THREE.PlaneGeometry);
-        expect(geo.parameters.width).toBe(100);
-        expect(geo.parameters.widthSegments).toBe(32);
+        expect(geo).toBeInstanceOf(THREE.BufferGeometry);
+        // Base: (32+1)² = 1089 vertices + skirt: 4*32 = 128 → total 1217
+        expect(geo.attributes.position.count).toBe(1089 + 128);
+        expect(geo.attributes.aSkirt).toBeDefined();
     });
 
     it('should cache and reuse geometries', () => {

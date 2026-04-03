@@ -91,8 +91,8 @@ export function detectBestPreset(): PresetType {
     // ── Tier STD / Balanced ────────────────────────────────────────────────────
     // Mid-range 2020-2022 (A53, Intel HD 620, AMD Vega iGPU)
 
-    // Adreno 660/642/619/618/720 (Snapdragon 7 Gen, SD 780G, mid-range 2021-2023)
-    if (gpu.includes('adreno') && /6[0-9]\d|72\d/.test(gpu)) return 'balanced';
+    // Adreno 610-720 (Snapdragon 7 Gen / 7s Gen, SD 780G, mid-range 2021-2024)
+    if (gpu.includes('adreno') && /6[0-9]\d|7[0-2]\d/.test(gpu)) return 'balanced';
     // Mali-G68/G76/G57/G72 (A53, Dimensity 1xxx, Exynos 12xx)
     if (gpu.includes('mali') && /g68|g76|g57|g72/.test(gpu)) return 'balanced';
     // Mali générique avec ≥8 cores CPU (mid-range probable)

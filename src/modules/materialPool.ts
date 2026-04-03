@@ -23,6 +23,8 @@ export interface TerrainUniforms {
  * Pool de matériaux pour optimiser les performances (v5.6.4).
  * Réutilise les matériaux Three.js pour éviter les micro-saccades de compilation de shaders.
  */
+const MAX_POOL_SIZE = 12;
+
 class MaterialPool {
     private standardPool: THREE.MeshStandardMaterial[] = [];
     private basicPool: THREE.MeshBasicMaterial[] = [];
@@ -74,14 +76,20 @@ class MaterialPool {
                 }
             }
 
-            if (material instanceof THREE.MeshStandardMaterial) this.standardPool.push(material);
-            else this.basicPool.push(material);
+            if (material instanceof THREE.MeshStandardMaterial) {
+                if (this.standardPool.length < MAX_POOL_SIZE) this.standardPool.push(material);
+                else material.dispose();
+            } else {
+                if (this.basicPool.length < MAX_POOL_SIZE) this.basicPool.push(material);
+                else material.dispose();
+            }
         } else if (material instanceof THREE.MeshDepthMaterial) {
             if ((material as any).userData && (material as any).userData.shader) {
                 const shader = (material as any).userData.shader;
                 if (shader.uniforms && shader.uniforms.uElevationMap) shader.uniforms.uElevationMap.value = null;
             }
-            this.depthPool.push(material);
+            if (this.depthPool.length < MAX_POOL_SIZE) this.depthPool.push(material);
+            else material.dispose();
         }
     }
 

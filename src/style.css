@@ -59,7 +59,7 @@ body, html {
 /* Le canvas Three.js est dimensionné via CSS, pas via renderer.setSize(updateStyle).
    Empêche le canvas de déborder du conteneur lors des rotations d'écran
    (cause du bug "UI minuscule après retour portrait" sur Android WebView). */
-#canvas-container canvas { display: block; width: 100% !important; height: 100% !important; }
+#canvas-container > canvas { display: block; width: 100% !important; height: 100% !important; }
 
 /* --- INDICATEUR DE CHARGEMENT DES TUILES --- */
 /* Barre fine en haut de l'écran, visible uniquement quand les tuiles chargent depuis le réseau.
@@ -516,6 +516,21 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 
 .setting-label { font-size: var(--text-base); font-weight: 500; color: var(--text); }
 .setting-sub { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+.setting-label-group { display: flex; align-items: center; gap: 6px; }
+.sub-expand-btn {
+    background: none; border: none; color: var(--text-3);
+    font-size: 8px; padding: 2px 4px; cursor: pointer; line-height: 1;
+    transition: transform var(--transition-fast); flex-shrink: 0;
+}
+.sub-expand-btn[aria-expanded="true"] { transform: rotate(90deg); }
+.sub-options {
+    display: none;
+    padding: 8px 4px 12px 20px;
+    border-left: 2px solid rgba(255,255,255,0.06);
+    margin-bottom: 4px;
+}
+.sub-options.open { display: block; }
 
 /* INFO ICON & LOD WARNINGS */
 .info-icon {

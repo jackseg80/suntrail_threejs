@@ -316,16 +316,20 @@ const _seededUrls = new Set<string>();
 async function seedEmbeddedTile(url: string, z: number, x: number, y: number): Promise<void> {
     if (!embeddedPMTiles || z > EMBEDDED_MAX_ZOOM) return;
     if (_seededUrls.has(url)) return; // Déjà injecté cette session
+    // Marquer AVANT le await pour empêcher un 2e appel concurrent de double-seed
+    _seededUrls.add(url);
     try {
         if (!_workerCache) _workerCache = await caches.open('suntrail-tiles-v2');
         const existing = await _workerCache.match(url);
-        if (existing) { _seededUrls.add(url); return; }
+        if (existing) return;
         const blob = await getTileFromEmbedded(z, x, y);
         if (blob) {
             await _workerCache.put(url, new Response(blob));
-            _seededUrls.add(url);
         }
-    } catch { /* silence */ }
+    } catch {
+        // Rollback si le seed échoue pour permettre un retry
+        _seededUrls.delete(url);
+    }
 }
 
 /**
@@ -335,16 +339,18 @@ async function seedEmbeddedTile(url: string, z: number, x: number, y: number): P
 async function seedPackTile(url: string, z: number, x: number, y: number): Promise<void> {
     if (!packManager.hasMountedPacks()) return;
     if (_seededUrls.has(url)) return;
+    _seededUrls.add(url);
     try {
         if (!_workerCache) _workerCache = await caches.open('suntrail-tiles-v2');
         const existing = await _workerCache.match(url);
-        if (existing) { _seededUrls.add(url); return; }
+        if (existing) return;
         const blob = await packManager.getTileFromPacks(z, x, y);
         if (blob) {
             await _workerCache.put(url, new Response(blob));
-            _seededUrls.add(url);
         }
-    } catch { /* silence */ }
+    } catch {
+        _seededUrls.delete(url);
+    }
 }
 
 /**

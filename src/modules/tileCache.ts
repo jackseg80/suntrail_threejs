@@ -134,6 +134,7 @@ export function disposeAllCachedTiles(): void {
         if (entry.normal) entry.normal.dispose();
     }
     dataCache.clear();
+    activeCacheKeys.clear();
 }
 
 /**

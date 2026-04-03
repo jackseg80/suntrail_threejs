@@ -41,6 +41,10 @@ export class SettingsSheet extends BaseComponent {
         this.bindSlider('veg-density-slider', 'VEGETATION_DENSITY', 'veg-density-disp', this.refreshTerrain);
         this.bindSlider('load-speed-slider', 'LOAD_DELAY_FACTOR', 'load-speed-disp');
 
+        // Sub-options expand/collapse
+        this.bindExpandToggle('veg-expand-btn', 'veg-suboptions');
+        this.bindExpandToggle('weather-expand-btn', 'weather-suboptions');
+
         // Toggles
         this.bindToggle('energy-saver-toggle', 'ENERGY_SAVER');
         this.bindToggle('stats-toggle', 'SHOW_STATS', (val: boolean) => {
@@ -498,6 +502,17 @@ export class SettingsSheet extends BaseComponent {
                 versionEl.style.color = state.isPro ? 'var(--accent)' : '';
                 versionEl.style.opacity = state.isPro ? '0.9' : '0.5';
             }
+        });
+    }
+
+    private bindExpandToggle(btnId: string, contentId: string): void {
+        if (!this.element) return;
+        const btn = this.element.querySelector(`#${btnId}`) as HTMLButtonElement;
+        const content = this.element.querySelector(`#${contentId}`) as HTMLElement;
+        if (!btn || !content) return;
+        btn.addEventListener('click', () => {
+            const isOpen = content.classList.toggle('open');
+            btn.setAttribute('aria-expanded', String(isOpen));
         });
     }
 

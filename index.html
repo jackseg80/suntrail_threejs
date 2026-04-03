@@ -27,7 +27,9 @@
             https://overpass.kumi.systems
             https://api.open-meteo.com
             https://*.tile.opentopomap.org
-            https://gist.githubusercontent.com;
+            https://gist.githubusercontent.com
+            https://*.r2.dev
+            https://*.waymarkedtrails.org;
         worker-src 'self' blob:;
         media-src 'none';
         object-src 'none';
@@ -230,10 +232,13 @@
         <div class="section-label" data-i18n="settings.section.rendering">Rendu 3D & Détails</div>
         
         <div class="setting-row">
-            <div class="setting-label" data-i18n="settings.label.vegetation">Forêts & Végétation</div>
+            <div class="setting-label-group">
+                <button type="button" id="veg-expand-btn" class="sub-expand-btn" aria-expanded="false" aria-controls="veg-suboptions">▶</button>
+                <div class="setting-label" data-i18n="settings.label.vegetation">Forêts & Végétation</div>
+            </div>
             <input type="checkbox" id="veg-toggle" checked aria-label="Forêts & Végétation">
         </div>
-        <div style="margin-bottom: 15px; padding-left: 4px;">
+        <div id="veg-suboptions" class="sub-options">
             <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-3); margin-bottom: 4px;">
                 <span data-i18n="settings.section.density">DENSITÉ DÉTAILS</span>
                 <span id="veg-density-disp">4000</span>
@@ -246,18 +251,19 @@
             <input type="checkbox" id="hydro-toggle" checked aria-label="Lacs & Rivières">
         </div>
         <div class="setting-row">
-            <div class="setting-label" data-i18n="settings.label.weather">Météo</div>
+            <div class="setting-label-group">
+                <button type="button" id="weather-expand-btn" class="sub-expand-btn" aria-expanded="false" aria-controls="weather-suboptions">▶</button>
+                <div class="setting-label" data-i18n="settings.label.weather">Météo</div>
+            </div>
             <input type="checkbox" id="weather-toggle" checked aria-label="Météo">
         </div>
-        <div style="margin-bottom: 15px; padding-left: 4px;">
+        <div id="weather-suboptions" class="sub-options">
             <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-3); margin-bottom: 4px;">
                 <span data-i18n="weather.label.intensity">INTENSITÉ</span>
                 <span id="weather-density-disp" style="font-family:var(--font-mono);">2500</span>
             </div>
             <input type="range" id="weather-density-slider" min="0" max="15000" step="500" value="2500" aria-label="Intensité météo">
-        </div>
-        <div style="margin-bottom: 15px; padding-left: 4px;">
-            <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-3); margin-bottom: 4px;">
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-3); margin-bottom: 4px; margin-top: 10px;">
                 <span data-i18n="weather.label.speed">VITESSE</span>
                 <span id="weather-speed-disp" style="font-family:var(--font-mono);">1.0</span>
             </div>
@@ -507,6 +513,8 @@
                 <button id="conn-pmtiles-btn" class="icon-btn-sm" style="border:none; background:rgba(255,255,255,0.05);">📂</button>
                 <input type="file" id="conn-pmtiles-upload" accept=".pmtiles" style="display:none;">
                 </div>
+
+                <button id="conn-packs-btn" class="btn-go" style="margin:var(--space-2) 0; padding:var(--space-3); width:100%; font-size:var(--text-sm); background:rgba(59,126,248,0.1); color:var(--accent, #3b7ef8); border:1px solid rgba(59,126,248,0.2);" data-i18n="packs.title">Packs Pays</button>
                 </div>
 
                 <div class="control-group" style="margin-top:10px;">
@@ -515,6 +523,31 @@
                 </div>
                 </div>
                 </template>
+
+<template id="template-packs">
+<div id="packs" class="bottom-sheet">
+    <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
+    <div class="sheet-header">
+        <span class="sheet-title" data-i18n="packs.title">Packs Pays</span>
+        <div class="sheet-close" id="close-packs">&times;</div>
+    </div>
+
+    <div id="packs-storage-info" class="stat-card" style="margin-bottom:var(--space-4); padding:var(--space-3);">
+        <div class="stat-card-label" data-i18n="packs.storage">Stockage</div>
+        <div class="stat-card-value" id="packs-storage-value">-- MB</div>
+    </div>
+
+    <div id="packs-list"></div>
+
+    <div style="text-align:center; margin-top:var(--space-4); font-size:var(--text-xs); color:var(--text-3);" data-i18n="packs.lodInfo">
+        Pro : LOD 12-14 &middot; Gratuit : LOD 12
+    </div>
+
+    <button id="packs-restore-btn" class="btn-go" style="margin-top:var(--space-3); background:transparent; border:1px solid var(--text-3); color:var(--text-2); font-size:var(--text-xs);" data-i18n="packs.btn.restore">
+        Restaurer les achats
+    </button>
+</div>
+</template>
 
 <template id="template-weather">
 <div id="weather" class="bottom-sheet">
