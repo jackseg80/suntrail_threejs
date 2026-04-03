@@ -333,6 +333,7 @@ export class SettingsSheet extends BaseComponent {
         this.updateUIFromState('WEATHER_SPEED', state.WEATHER_SPEED);
         this.updateUIFromState('SHOW_INCLINOMETER', state.SHOW_INCLINOMETER);
         this.updateUIFromState('SHOW_WEATHER_PRO', state.SHOW_WEATHER_PRO);
+        this.updateUIFromState('PERFORMANCE_PRESET', state.PERFORMANCE_PRESET);
     }
 
     private bindThemeSelector(): void {
