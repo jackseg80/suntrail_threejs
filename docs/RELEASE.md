@@ -115,6 +115,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **560** | **5.23.1** | **v5.23.1** | **Fix UX REC : suppression REQUEST_IGNORE_BATTERY_OPTIMIZATIONS (ouvrait Settings Android au tap REC), retrait appel automatique — WakeLock seul suffisant. Compliance Play Store.** | **2026-04-04** |
 | **561** | **5.23.2** | **v5.23.2** | **Fix bannière upsell post-REC : btn-go (width:100%) écrasait flex, texte s'affichait vertical — ajout solar-upsell-btn (width:auto; margin-top:0)** | **2026-04-04** |
 | **562** | **5.23.3** | **v5.23.3** | **Roadmap brainstorming notifications (coucher soleil, batterie faible, anti-oubli REC, progression enrichie) + catalog pack Suisse v2 (lodRange 8-14, 716MB)** | **2026-04-04** |
+| **563** | **5.23.4** | **v5.23.4** | **Fix recovery REC : prompt de restauration n'apparaissait pas au relancement (timing — recordingRecovered émis avant TrackSheet.render()). Vérification immédiate de recoveredPoints au render() + ouverture auto de la TrackSheet.** | **2026-04-04** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 

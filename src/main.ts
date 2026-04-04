@@ -9,6 +9,7 @@ import { getInterruptedRecording, clearInterruptedRecording, getPersistedRecordi
 import { showToast } from './modules/utils';
 import { state } from './modules/state';
 import { eventBus } from './modules/eventBus';
+import { sheetManager } from './modules/ui/core/SheetManager';
 
 
 // Enregistrement du Service Worker pour le mode Hors-ligne (PWA)
@@ -39,6 +40,8 @@ if (interrupted) {
             if (merged.length >= 2) {
                 // Stocker les points récupérés pour que TrackSheet propose la restauration
                 state.recoveredPoints = merged;
+                // Ouvrir la TrackSheet automatiquement (render() enregistre l'écouteur + vérifie recoveredPoints)
+                setTimeout(() => sheetManager.open('track'), 300);
                 eventBus.emit('recordingRecovered');
             } else {
                 // Pas assez de points récupérables — nettoyage + info
