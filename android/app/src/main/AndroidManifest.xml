@@ -3,6 +3,7 @@
     <application
         android:allowBackup="true"
         android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -40,7 +41,7 @@
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
 
-        <profileable android:shell="true" />
+        <!-- profileable retiré des builds production (audit sécurité v5.22.1) -->
     </application>
 
     <!-- Permissions -->

@@ -11,7 +11,7 @@ describe('Weather Module', () => {
 
     it('should set currentWeather to rain for WMO code 61 and get location name', async () => {
         // Mock global fetch for Weather API and MapTiler Geocoding
-        global.fetch = vi.fn().mockImplementation((url) => {
+        globalThis.fetch = vi.fn().mockImplementation((url) => {
             if (url.includes('open-meteo')) {
                 return Promise.resolve({
                     ok: true,
@@ -63,7 +63,7 @@ describe('Weather Module', () => {
     });
 
     it('should default to clear on API error', async () => {
-        global.fetch = vi.fn().mockResolvedValue({ ok: false });
+        globalThis.fetch = vi.fn().mockResolvedValue({ ok: false });
         await fetchWeather(0, 0);
         expect(state.currentWeather).toBe('clear');
     });

@@ -6,7 +6,7 @@ describe('peaks.ts', () => {
     beforeEach(() => {
         state.localPeaks = [];
         localStorage.clear();
-        global.fetch = vi.fn();
+        globalThis.fetch = vi.fn();
     });
 
     afterEach(() => {
@@ -22,14 +22,14 @@ describe('peaks.ts', () => {
             ]
         };
 
-        (global.fetch as any).mockResolvedValue({
+        (globalThis.fetch as any).mockResolvedValue({
             ok: true,
             json: async () => mockResponse
         });
 
         await fetchLocalPeaks(46.5, 7.5, 50);
 
-        expect(global.fetch).toHaveBeenCalledTimes(1);
+        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
         expect(state.localPeaks.length).toBe(2);
         
         // Vérification du tri par altitude (descendant)
@@ -51,7 +51,7 @@ describe('peaks.ts', () => {
 
         await fetchLocalPeaks(46.5, 7.5, 50);
 
-        expect(global.fetch).not.toHaveBeenCalled();
+        expect(globalThis.fetch).not.toHaveBeenCalled();
         expect(state.localPeaks.length).toBe(1);
         expect(state.localPeaks[0].name).toBe('Cached Peak');
     });

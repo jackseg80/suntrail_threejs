@@ -10,6 +10,12 @@ describe('Module Géo (geo.ts)', () => {
         expect(coords.y).toBe(2891);
     });
 
+    it('lngLatToTile devrait retourner (0,0) pour Greenwich au zoom 0', () => {
+        const coords = lngLatToTile(0, 0, 0);
+        expect(coords.x).toBe(0);
+        expect(coords.y).toBe(0);
+    });
+
     it('worldToLngLat devrait être l\'inverse de lngLatToWorld', () => {
         const lon = 7.6617;
         const lat = 46.6863;

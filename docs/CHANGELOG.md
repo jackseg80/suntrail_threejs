@@ -4,6 +4,28 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.22.2] - 2026-04-04
+
+### 🔧 Tests — Fix bloqueur Vitest + qualité suite (Audit #1 + #6)
+
+- **Fix bloqueur Vitest** : `afterEach` retiré de `setup.ts` (incompatible pool `forks` + Vitest 4.x) → `clearMocks: true` dans config — 36 suites, 398 tests à nouveau exécutables
+- **Fix erreurs TypeScript** : `global.fetch` → `globalThis.fetch` dans `peaks.test.ts`, `weather.test.ts`, `workerManager.test.ts` — `npm run check` : 0 erreur
+- **Suppression test dupliqué** : bloc `lngLatToTile` retiré de `terrain.test.ts`, test Greenwich déplacé dans `geo.test.ts`
+- **Fix test conditionnel vegetation** : mock corrigé (MAP_SOURCE `outdoor`, couleurs SwissTopo R=210/G=220/B=180, pixelData altitude ≈1500m) — test déterministe
+- **`@types/three` aligné** : v0.183 → v0.160.0 (correspond à Three.js r160)
+
+### 📦 Bundle — Optimisation assets PWA (Audit #3)
+
+- **Icônes exclues du precache PWA** : `icon_*.png` ajouté à `globIgnores` — -3.1 MB du précache
+- **icon_1024.png redimensionné** : 1920×1280 → 1024×1024 (dimensions conformes au manifest PWA) — -1.3 MB dans l'APK
+
+### 🔒 Sécurité Android — Android 12+ + manifest (Audit #4)
+
+- **`data_extraction_rules.xml`** créé pour Android 12+ (API 31+) — `android:dataExtractionRules` ajouté au manifest
+- **`<profileable android:shell="true" />`** retiré du manifest production
+
+---
+
 ## [5.21.1] - 2026-04-03
 
 ### 🐛 Packs Pays — Corrections critiques offline

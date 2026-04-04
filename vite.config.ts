@@ -48,7 +48,7 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,bin}'],
         // Exclure le chunk Three.js du précache (trop lourd, en runtime cache à la demande)
-        globIgnores: ['**/three-*.js', '**/*.pmtiles'],
+        globIgnores: ['**/three-*.js', '**/*.pmtiles', '**/icon_*.png'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB max par fichier
         // Invalidation automatique du cache précache au déploiement
         cleanupOutdatedCaches: true,
@@ -115,6 +115,7 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.ts'],
     // On désactive les threads pour éviter les corruptions de mémoire en CI
-    pool: 'forks'
+    pool: 'forks',
+    clearMocks: true
   }
 });

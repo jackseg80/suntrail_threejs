@@ -12,14 +12,17 @@ describe('vegetation.ts', () => {
         state.VEGETATION_DENSITY = 100;
         state.RELIEF_EXAGGERATION = 1.0;
         state.PERFORMANCE_PRESET = 'balanced';
-        state.MAP_SOURCE = 'satellite';
+        // 'outdoor' : pas satellite → pas de guard isSatellite
+        state.MAP_SOURCE = 'outdoor';
 
-        // Mock très simple de Canvas pour éviter les erreurs JSDOM
+        // Couleurs SwissTopo forêt : G légèrement dominant (220>210>180), pas isTooVivid (220 < 210*1.38=290)
         const mockImageData = {
             data: new Uint8ClampedArray(48 * 48 * 4).map((_, i) => {
-                // On simule une forêt dense : G=200, R=50, B=50
-                if (i % 4 === 1) return 200; 
-                return 50;
+                const ch = i % 4;
+                if (ch === 0) return 210; // R
+                if (ch === 1) return 220; // G dominant → isForestColor
+                if (ch === 2) return 180; // B
+                return 255;              // A
             })
         };
 
@@ -39,10 +42,21 @@ describe('vegetation.ts', () => {
             return {} as any;
         });
 
+        // Élévation encodée MapTiler : h = -10000 + (R*65536 + G*256 + B) * 0.1
+        // R=1, G=193, B=56 → h ≈ 1500m (dans la plage 1-2450 du filtre végétation)
+        const mockPixelData = new Uint8ClampedArray(256 * 256 * 4).map((_, i) => {
+            const ch = i % 4;
+            if (ch === 0) return 1;
+            if (ch === 1) return 193;
+            if (ch === 2) return 56;
+            return 0;
+        });
+
         mockTile = {
             zoom: 15,
+            tx: 4270, ty: 2891,
             colorTex: { image: { width: 256, height: 256 } },
-            pixelData: new Uint8ClampedArray(256 * 256 * 4).fill(0),
+            pixelData: mockPixelData,
             colorScale: 1.0,
             colorOffset: { x: 0, y: 0 },
             elevScale: 1.0,
@@ -57,14 +71,9 @@ describe('vegetation.ts', () => {
         initVegetationResources();
         const forest = createForestForTile(mockTile);
         
-        // On s'attend à recevoir un Group si des arbres ont été détectés
-        // Si le test renvoie null, on vérifie manuellement la logique de détection
-        if (forest === null) {
-            console.log("Note: Forest is null, checking detection logic in test...");
-        } else {
-            expect(forest).toBeInstanceOf(THREE.Group);
-            expect(forest?.children.length).toBeGreaterThan(0);
-        }
+        expect(forest).not.toBeNull();
+        expect(forest).toBeInstanceOf(THREE.Group);
+        expect(forest!.children.length).toBeGreaterThan(0);
     });
 
     it('should respect the SHOW_VEGETATION flag', () => {

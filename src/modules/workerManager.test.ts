@@ -12,7 +12,7 @@ describe('workerManager.ts', () => {
     beforeEach(() => {
         // Mock global Worker if not available in test env
         if (typeof Worker === 'undefined') {
-            (global as any).Worker = class {
+            (globalThis as any).Worker = class {
                 onmessage = null;
                 postMessage = vi.fn();
                 terminate = vi.fn();

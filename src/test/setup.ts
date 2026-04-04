@@ -1,4 +1,4 @@
-import { vi, afterEach } from 'vitest';
+import { vi } from 'vitest';
 
 // --- MOCK LOCALSTORAGE ---
 const storage = new Map<string, string>();
@@ -28,8 +28,3 @@ if (typeof window.URL.createObjectURL === 'undefined') {
   window.URL.createObjectURL = vi.fn();
 }
 
-// --- CLEANUP ---
-afterEach(() => {
-  vi.clearAllMocks();
-  vi.clearAllTimers();
-});

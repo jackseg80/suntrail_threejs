@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { Tile, updateVisibleTiles, terrainUniforms } from './terrain';
-import { lngLatToTile, worldToLngLat, EARTH_CIRCUMFERENCE, getTileBounds } from './geo';
+import { worldToLngLat, EARTH_CIRCUMFERENCE, getTileBounds } from './geo';
 import { state } from './state';
 
 describe('terrain.ts', () => {
@@ -16,22 +16,7 @@ describe('terrain.ts', () => {
     });
     
     // GPX Layer tests moved to gpxLayers.test.ts (more comprehensive coverage)
-
-    describe('lngLatToTile', () => {
-        it('should correctly calculate tile for Spiez at zoom 13', () => {
-            const tile = lngLatToTile(7.6617, 46.6863, 13);
-            // Spiez is exactly x=4270, y=2891 at zoom 13
-            expect(tile.x).toBe(4270);
-            expect(tile.y).toBe(2891);
-            expect(tile.z).toBe(13);
-        });
-
-        it('should handle Greenwich (0,0) at zoom 0', () => {
-            const tile = lngLatToTile(0, 0, 0);
-            expect(tile.x).toBe(0);
-            expect(tile.y).toBe(0);
-        });
-    });
+    // lngLatToTile tests moved to geo.test.ts (canonical location)
 
     describe('worldToLngLat / Roundtrip', () => {
         beforeEach(() => {
