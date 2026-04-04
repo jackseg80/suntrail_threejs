@@ -62,6 +62,11 @@ let _lastAngle  = 0;
 let _velX = 0, _velY = 0;
 let _inertiaId = 0;
 
+// a11y: prefers-reduced-motion — désactive l'inertie de pan
+const _prefersReducedMotion = typeof window !== 'undefined'
+    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    : false;
+
 // ── Objets pré-alloués — évite les allocations GC dans les hot paths ────────────
 const _right      = new THREE.Vector3();
 const _fwd        = new THREE.Vector3();
@@ -374,8 +379,8 @@ function onPointerUp(e: PointerEvent): void {
     }
 
     if (_pointers.size === 0) {
-        // Démarrer l'inertie si vélocité suffisante
-        if (Math.abs(_velX) > 0.5 || Math.abs(_velY) > 0.5) {
+        // Démarrer l'inertie si vélocité suffisante (a11y: skip si reduced-motion)
+        if (!_prefersReducedMotion && (Math.abs(_velX) > 0.5 || Math.abs(_velY) > 0.5)) {
             _inertiaId = requestAnimationFrame(tickInertia);
         }
         if (_controls) _controls.enabled = true;

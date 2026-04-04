@@ -171,7 +171,7 @@
     <tbody>
       <tr>
         <td><strong>Position GPS</strong></td>
-        <td>Centrage de la carte et enregistrement de tracés (uniquement quand l'app est ouverte)</td>
+        <td>Centrage de la carte et enregistrement de tracés. Pendant un enregistrement (REC), le GPS reste actif via un Foreground Service, même écran éteint.</td>
         <td>Sur l'appareil uniquement (localStorage / Service Android)</td>
       </tr>
       <tr>
@@ -196,7 +196,7 @@
   <p>SunTrail 3D ne collecte <strong>pas</strong> :</p>
   <ul>
     <li>Nom, prénom, adresse e-mail ou toute identité personnelle</li>
-    <li>Historique de navigation ou de localisation transmis à des tiers</li>
+    <li>Historique de navigation ou de localisation (seules les coordonnées de la zone consultée sont transmises aux services tiers pour leur fonctionnement, voir section 3)</li>
     <li>Données de santé, biométriques ou sensibles</li>
     <li>Identifiants publicitaires</li>
     <li>Statistiques d'utilisation ou analytics</li>
@@ -204,7 +204,7 @@
   <p>Il n'existe <strong>aucun compte utilisateur</strong>, aucune inscription, aucune connexion.</p>
 
   <h2>3. Services tiers</h2>
-  <p>L'application effectue des requêtes réseau vers les services cartographiques suivants pour charger les tuiles de cartes. Ces serveurs reçoivent votre <strong>adresse IP</strong> (comportement standard de tout navigateur web) :</p>
+  <p>L'application effectue des requêtes réseau vers les services tiers suivants pour charger les cartes, la météo, les achats et d'autres données. Ces serveurs reçoivent votre <strong>adresse IP</strong> (comportement standard de tout navigateur web) :</p>
   <table class="data-table">
     <thead>
       <tr><th>Service</th><th>Usage</th><th>Politique de confidentialité</th></tr>
@@ -212,7 +212,7 @@
     <tbody>
       <tr>
         <td><strong>MapTiler Cloud</strong></td>
-        <td>Fonds de carte raster et vectoriels</td>
+        <td>Tuiles raster et vectorielles (carte), données d'élévation (Terrain-RGB), tuiles vectorielles bâtiments 3D, géocodage (recherche de lieux et nom du lieu affiché). Les coordonnées de la zone consultée sont transmises.</td>
         <td><a href="https://www.maptiler.com/privacy-policy/" target="_blank" rel="noopener">maptiler.com/privacy-policy</a></td>
       </tr>
       <tr>
@@ -231,27 +231,52 @@
         <td><a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">osmfoundation.org</a></td>
       </tr>
       <tr>
+        <td><strong>OpenTopoMap</strong></td>
+        <td>Fond de carte topographique alternatif</td>
+        <td><a href="https://opentopomap.org/about" target="_blank" rel="noopener">opentopomap.org/about</a></td>
+      </tr>
+      <tr>
         <td><strong>Open-Meteo</strong></td>
-        <td>Données météorologiques en temps réel</td>
+        <td>Données météorologiques en temps réel. Les coordonnées (latitude/longitude) de la zone consultée sont transmises pour obtenir les prévisions.</td>
         <td><a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">open-meteo.com/en/terms</a></td>
       </tr>
       <tr>
         <td><strong>Overpass API (OSM)</strong></td>
-        <td>Données de bâtiments 3D</td>
+        <td>Données de bâtiments 3D et de sommets</td>
         <td><a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">osmfoundation.org</a></td>
+      </tr>
+      <tr>
+        <td><strong>Nominatim (OpenStreetMap)</strong></td>
+        <td>Géocodage — recherche de lieux et identification de la position. Les coordonnées de la zone consultée sont transmises.</td>
+        <td><a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">osmfoundation.org</a></td>
+      </tr>
+      <tr>
+        <td><strong>Waymarked Trails</strong></td>
+        <td>Overlay des sentiers de randonnée balisés</td>
+        <td><a href="https://hiking.waymarkedtrails.org/help/about" target="_blank" rel="noopener">waymarkedtrails.org</a></td>
+      </tr>
+      <tr>
+        <td><strong>RevenueCat</strong></td>
+        <td>Gestion des achats in-app. Identifiant anonyme uniquement, aucune donnée personnelle.</td>
+        <td><a href="https://www.revenuecat.com/privacy/" target="_blank" rel="noopener">revenuecat.com/privacy</a></td>
+      </tr>
+      <tr>
+        <td><strong>Cloudflare</strong></td>
+        <td>Hébergement CDN pour les packs de cartes téléchargeables</td>
+        <td><a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">cloudflare.com/privacypolicy</a></td>
       </tr>
     </tbody>
   </table>
-  <p>SunTrail ne partage aucune donnée personnelle avec ces services. Vos tracés GPX et votre position GPS ne leur sont jamais transmis.</p>
+  <p>SunTrail ne partage aucune donnée personnelle avec ces services. Les coordonnées de la zone consultée sont transmises aux services de météo et géocodage pour leur fonctionnement. Vos traces GPX enregistrées ne sont jamais transmises à des tiers.</p>
 
   <h2>4. Données de localisation — déclaration explicite</h2>
   <div class="card">
-    <p>SunTrail 3D utilise votre position GPS <strong>uniquement au premier plan</strong> (foreground), pendant que l'application est visible à l'écran.</p>
+    <p>SunTrail 3D utilise votre position GPS pour centrer la carte sur votre position et enregistrer vos tracés de randonnée.</p>
     <ul style="margin-top:10px;">
-      <li>La localisation sert exclusivement à centrer la carte sur votre position et à enregistrer vos tracés de randonnée.</li>
-      <li>Votre position n'est <strong>jamais transmise</strong> à un serveur SunTrail ni à des tiers.</li>
-      <li>L'enregistrement GPS s'arrête dès que vous arrêtez l'enregistrement ou fermez l'application.</li>
-      <li>Le service Android de premier plan (Foreground Service) vous notifie visiblement lors de l'enregistrement actif.</li>
+      <li>Les coordonnées (latitude/longitude) de la zone consultée sont transmises aux services de météo (Open-Meteo) et de géocodage (MapTiler, Nominatim) pour leur fonctionnement. Vos traces GPX enregistrées ne sont jamais transmises à des tiers.</li>
+      <li>Votre position n'est <strong>jamais transmise</strong> à un serveur SunTrail.</li>
+      <li>Pendant un enregistrement de parcours (REC), le GPS reste actif via un <strong>Foreground Service</strong> Android, même lorsque l'écran est éteint ou l'application en arrière-plan. Une notification persistante vous en informe.</li>
+      <li>L'enregistrement GPS s'arrête dès que vous arrêtez l'enregistrement.</li>
     </ul>
   </div>
 
@@ -279,7 +304,7 @@
   <p><strong>Développeur</strong> : Jacques Segalla<br>
   <strong>GitHub</strong> : <a href="https://github.com/jackseg80/suntrail_threejs" target="_blank" rel="noopener">github.com/jackseg80/suntrail_threejs</a></p>
 
-  <div class="date">Dernière mise à jour : mars 2026</div>
+  <div class="date">Dernière mise à jour : avril 2026</div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ ENGLISH -->
@@ -299,7 +324,7 @@
     <tbody>
       <tr>
         <td><strong>GPS location</strong></td>
-        <td>Centering the map and recording tracks (only while the app is open)</td>
+        <td>Centering the map and recording tracks. During an active recording (REC), GPS remains active via a Foreground Service, even with the screen off.</td>
         <td>On device only (localStorage / Android Service)</td>
       </tr>
       <tr>
@@ -324,7 +349,7 @@
   <p>SunTrail 3D does <strong>not</strong> collect:</p>
   <ul>
     <li>Name, email address, or any personal identity</li>
-    <li>Location or browsing history transmitted to third parties</li>
+    <li>Location or browsing history (only the coordinates of the viewed area are transmitted to third-party services for their operation, see section 3)</li>
     <li>Health, biometric, or sensitive data</li>
     <li>Advertising identifiers</li>
     <li>Usage statistics or analytics</li>
@@ -332,7 +357,7 @@
   <p>There are <strong>no user accounts</strong>, no registration, and no login.</p>
 
   <h2>3. Third-party services</h2>
-  <p>The application makes network requests to the following mapping services to load map tiles. These servers receive your <strong>IP address</strong> (standard behavior of any web browser):</p>
+  <p>The application makes network requests to the following third-party services to load maps, weather, purchases, and other data. These servers receive your <strong>IP address</strong> (standard behavior of any web browser):</p>
   <table class="data-table">
     <thead>
       <tr><th>Service</th><th>Purpose</th><th>Privacy Policy</th></tr>
@@ -340,7 +365,7 @@
     <tbody>
       <tr>
         <td><strong>MapTiler Cloud</strong></td>
-        <td>Raster and vector map tiles</td>
+        <td>Raster and vector map tiles, elevation data (Terrain-RGB), 3D building vector tiles, geocoding (place search and displayed place name). Coordinates of the viewed area are transmitted.</td>
         <td><a href="https://www.maptiler.com/privacy-policy/" target="_blank" rel="noopener">maptiler.com/privacy-policy</a></td>
       </tr>
       <tr>
@@ -359,27 +384,52 @@
         <td><a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">osmfoundation.org</a></td>
       </tr>
       <tr>
+        <td><strong>OpenTopoMap</strong></td>
+        <td>Alternative topographic map background</td>
+        <td><a href="https://opentopomap.org/about" target="_blank" rel="noopener">opentopomap.org/about</a></td>
+      </tr>
+      <tr>
         <td><strong>Open-Meteo</strong></td>
-        <td>Real-time weather data</td>
+        <td>Real-time weather data. Coordinates (latitude/longitude) of the viewed area are transmitted to obtain forecasts.</td>
         <td><a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">open-meteo.com/en/terms</a></td>
       </tr>
       <tr>
         <td><strong>Overpass API (OSM)</strong></td>
-        <td>3D building data</td>
+        <td>3D building data and mountain peaks</td>
         <td><a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">osmfoundation.org</a></td>
+      </tr>
+      <tr>
+        <td><strong>Nominatim (OpenStreetMap)</strong></td>
+        <td>Geocoding — place search and position identification. Coordinates of the viewed area are transmitted.</td>
+        <td><a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">osmfoundation.org</a></td>
+      </tr>
+      <tr>
+        <td><strong>Waymarked Trails</strong></td>
+        <td>Marked hiking trail overlay</td>
+        <td><a href="https://hiking.waymarkedtrails.org/help/about" target="_blank" rel="noopener">waymarkedtrails.org</a></td>
+      </tr>
+      <tr>
+        <td><strong>RevenueCat</strong></td>
+        <td>In-app purchase management. Anonymous identifier only, no personal data.</td>
+        <td><a href="https://www.revenuecat.com/privacy/" target="_blank" rel="noopener">revenuecat.com/privacy</a></td>
+      </tr>
+      <tr>
+        <td><strong>Cloudflare</strong></td>
+        <td>CDN hosting for downloadable map packs</td>
+        <td><a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">cloudflare.com/privacypolicy</a></td>
       </tr>
     </tbody>
   </table>
-  <p>SunTrail shares no personal data with these services. Your GPX tracks and GPS location are never transmitted to them.</p>
+  <p>SunTrail shares no personal data with these services. The coordinates of the viewed area are transmitted to weather and geocoding services for their operation. Your recorded GPX tracks are never shared with third parties.</p>
 
   <h2>4. Location data — explicit disclosure</h2>
   <div class="card">
-    <p>SunTrail 3D uses your GPS location <strong>in the foreground only</strong>, while the application is visible on screen.</p>
+    <p>SunTrail 3D uses your GPS location to center the map on your position and to record hiking tracks.</p>
     <ul style="margin-top:10px;">
-      <li>Location is used exclusively to center the map on your position and to record hiking tracks.</li>
-      <li>Your location is <strong>never transmitted</strong> to any SunTrail server or third party.</li>
-      <li>GPS recording stops as soon as you stop recording or close the application.</li>
-      <li>The Android foreground service visibly notifies you during active recording.</li>
+      <li>The coordinates (latitude/longitude) of the viewed area are transmitted to weather (Open-Meteo) and geocoding services (MapTiler, Nominatim) for their operation. Your recorded GPX tracks are never shared with third parties.</li>
+      <li>Your location is <strong>never transmitted</strong> to any SunTrail server.</li>
+      <li>During an active track recording (REC), GPS remains active via an Android <strong>Foreground Service</strong>, even when the screen is off or the app is in the background. A persistent notification keeps you informed.</li>
+      <li>GPS recording stops as soon as you stop recording.</li>
     </ul>
   </div>
 
@@ -407,7 +457,7 @@
   <p><strong>Developer</strong>: Jacques Segalla<br>
   <strong>GitHub</strong>: <a href="https://github.com/jackseg80/suntrail_threejs" target="_blank" rel="noopener">github.com/jackseg80/suntrail_threejs</a></p>
 
-  <div class="date">Last updated: March 2026</div>
+  <div class="date">Last updated: April 2026</div>
 </div>
 </div><!-- /content -->
 

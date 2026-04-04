@@ -75,7 +75,7 @@
     --accent: #2563eb;
     --accent-btn: #1d4ed8;
     --accent-glow: rgba(37, 99, 235, 0.18);
-    --gold: #d97706;
+    --gold: #b45309;          /* a11y: ratio ~4.9:1 sur fond blanc (ancien #d97706 = 3.4:1) */
     --text: #1a1a1a;
     --text-2: #4b5563;
     --text-3: #6b7280;
@@ -422,7 +422,7 @@ body, html {
 .sheet-title { font-size: var(--text-md); font-weight: 700; color: var(--gold); }
 
 .sheet-close {
-    width: 28px; height: 28px;
+    min-width: 44px; min-height: 44px;
     background: var(--surface-subtle);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
@@ -1686,4 +1686,45 @@ body,
     background: var(--surface);
     border-color: var(--border-active);
     color-scheme: light;
+}
+
+/* === ACCESSIBILITY (a11y) === */
+
+/* P0: prefers-reduced-motion — supprime animations/transitions pour utilisateurs sensibles */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* P1: sr-only — contenu accessible uniquement aux lecteurs d'écran */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* P1: skip-to-content — lien d'accès rapide au contenu principal */
+.skip-link {
+    position: absolute;
+    top: -100%;
+    left: var(--space-4);
+    z-index: 10000;
+    padding: var(--space-2) var(--space-4);
+    background: var(--accent);
+    color: #fff;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 500;
+}
+.skip-link:focus {
+    top: var(--space-2);
 }

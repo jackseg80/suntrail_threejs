@@ -16,6 +16,8 @@ let endCamPos = new THREE.Vector3();
 export function initCompass() {
     const canvas = document.getElementById('compass-canvas') as HTMLCanvasElement;
     if (!canvas) return;
+    // a11y: boussole décorative — masquer pour les lecteurs d'écran
+    canvas.setAttribute('aria-hidden', 'true');
     compassScene = new THREE.Scene();
     compassCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     compassCamera.position.set(0, 0, 18);

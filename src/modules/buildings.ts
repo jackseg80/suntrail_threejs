@@ -11,6 +11,7 @@ import { boundedCacheSet } from './boundedCache';
 const buildingMemoryCache = new Map<string, any[]>();
 const buildingFetchPromises = new Map<string, Promise<any[] | null>>();
 const zoneFailureCooldown = new Map<string, number>();
+const COOLDOWN_MAX_SIZE = 200;
 const CACHE_NAME = 'suntrail-buildings-v5';
 
 // Cache MapTiler : clé = "z/tx/ty", valeur = features parsées (partagées entre toutes les sous-tuiles)
@@ -91,7 +92,14 @@ export async function loadBuildingsForTile(tile: Tile) {
         if (buildings) {
             boundedCacheSet(buildingMemoryCache, zoneKey, buildings);
         } else {
-            zoneFailureCooldown.set(zoneKey, Date.now() + 60000); 
+            // Purger les entrées expirées pour borner la taille du cache
+            if (zoneFailureCooldown.size > COOLDOWN_MAX_SIZE) {
+                const now = Date.now();
+                for (const [k, v] of zoneFailureCooldown) {
+                    if (now >= v) zoneFailureCooldown.delete(k);
+                }
+            }
+            zoneFailureCooldown.set(zoneKey, Date.now() + 60000);
         }
         buildingFetchPromises.delete(zoneKey);
     }

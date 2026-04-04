@@ -19,6 +19,10 @@ interface TreeEssence {
 
 const essences: Record<string, TreeEssence> = {};
 
+// Canvas/contexte statique réutilisé pour le scan couleur (évite de créer des centaines de canvas orphelins)
+let scanCanvas: HTMLCanvasElement | null = null;
+let scanCtx: CanvasRenderingContext2D | null = null;
+
 /**
  * Initialise les ressources partagées pour les arbres (Bio-Fidèles)
  */
@@ -69,9 +73,15 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
 
     // --- SCAN RESOLUTION STABLE (v5.8.10) ---
     const scanRes = 64;
-    const canvas = document.createElement('canvas');
-    canvas.width = scanRes; canvas.height = scanRes; 
-    const ctx = canvas.getContext('2d', { willReadFrequently: true, alpha: false });
+    if (!scanCanvas) {
+        scanCanvas = document.createElement('canvas');
+        scanCanvas.width = scanRes; scanCanvas.height = scanRes;
+        scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true, alpha: false });
+    } else if (scanCtx) {
+        // Nettoyer le canvas réutilisé (pas nécessaire au premier appel)
+        scanCtx.clearRect(0, 0, scanRes, scanRes);
+    }
+    const ctx = scanCtx;
     if (!ctx) return null;
 
     if (tile.colorScale < 1.0) {

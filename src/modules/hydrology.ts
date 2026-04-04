@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { state } from './state';
 import type { Tile } from './terrain';
 import { fetchOverpassData, isOverpassInBackoff } from './utils';
@@ -9,6 +10,7 @@ import { boundedCacheSet } from './boundedCache';
 const hydroMemoryCache = new Map<string, any[]>();
 const hydroFetchPromises = new Map<string, Promise<any[] | null>>();
 const zoneFailureCooldown = new Map<string, number>();
+const COOLDOWN_MAX_SIZE = 200;
 const CACHE_NAME = 'suntrail-hydro-v1';
 
 // Matériau partagé pour l'eau (Performance)
@@ -97,6 +99,13 @@ export async function loadHydrologyForTile(tile: Tile) {
         if (elements) {
             boundedCacheSet(hydroMemoryCache, zoneKey, elements);
         } else {
+            // Purger les entrées expirées pour borner la taille du cache
+            if (zoneFailureCooldown.size > COOLDOWN_MAX_SIZE) {
+                const now = Date.now();
+                for (const [k, v] of zoneFailureCooldown) {
+                    if (now >= v) zoneFailureCooldown.delete(k);
+                }
+            }
             zoneFailureCooldown.set(zoneKey, Date.now() + 60000);
         }
         hydroFetchPromises.delete(zoneKey);
@@ -149,6 +158,7 @@ function renderHydrology(tile: Tile, elements: any[]) {
     if ((tile.status as string) === 'disposed' || !tile.mesh) return;
 
     const group = new THREE.Group();
+    const geometries: THREE.BufferGeometry[] = [];
 
     elements.forEach(el => {
         if (el.type === 'way' && el.geometry && el.geometry.length > 2) {
@@ -166,24 +176,42 @@ function renderHydrology(tile: Tile, elements: any[]) {
 
             try {
                 const shape = new THREE.Shape(points);
-                const geometry = new THREE.ShapeGeometry(shape);
+                const shapeGeo = new THREE.ShapeGeometry(shape);
 
                 // Détection de l'altitude : On échantillonne le terrain au centre de l'objet d'eau
                 const worldX = tile.worldX + avgX;
                 const worldZ = tile.worldZ + avgZ;
                 const baseAlt = getAltitudeAt(worldX, worldZ, tile);
 
-                const mesh = new THREE.Mesh(geometry, waterMaterial);
-                mesh.rotateX(-Math.PI / 2);
-                // Base rehaussée à +2m (vs +1m) pour compenser l'amplitude résiduelle ±0.9m
-                // et éviter que la vague à son creux passe sous le terrain (artefact LOD 17-18)
-                mesh.position.y = baseAlt + 2.0;
-                mesh.receiveShadow = true;
+                // Appliquer la rotation X et la translation Y directement dans la géométrie
+                // pour pouvoir merger toutes les géométries en un seul mesh
+                const matrix = new THREE.Matrix4()
+                    .makeRotationX(-Math.PI / 2)
+                    .setPosition(0, baseAlt + 2.0, 0);
+                shapeGeo.applyMatrix4(matrix);
 
-                group.add(mesh);
+                geometries.push(shapeGeo);
             } catch (e) { console.warn('[Hydrology] Water mesh creation failed silently:', e); }
         }
     });
+
+    if (geometries.length > 0) {
+        try {
+            const merged = BufferGeometryUtils.mergeGeometries(geometries);
+            const mesh = new THREE.Mesh(merged, waterMaterial);
+            mesh.receiveShadow = true;
+            group.add(mesh);
+        } catch (e) {
+            // Fallback : si le merge échoue, ajouter les géométries individuellement
+            geometries.forEach(geo => {
+                const mesh = new THREE.Mesh(geo, waterMaterial);
+                mesh.receiveShadow = true;
+                group.add(mesh);
+            });
+        } finally {
+            geometries.forEach(g => g.dispose());
+        }
+    }
 
     if (group.children.length > 0) {
         tile.hydroGroup = group;

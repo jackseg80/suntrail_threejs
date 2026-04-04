@@ -109,6 +109,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **554** | **5.21.1** | **v5.21.1** | **Fix packs offline critiques : OPFS download (FileSource sans réseau), catalog embarqué fallback, IS_OFFLINE guard après sources locales, suppression LOD gating Pro, PMTiles deux niveaux, fix i18n storageEmpty** | **2026-04-03** |
 | **555** | **5.22.0** | **v5.22.0** | **Mode clair/sombre : sélecteur 3 options (Clair/Sombre/Auto), theme.ts, tokens CSS sémantiques (--canvas-*, --toast-*, --overlay-bg, --shadow-*), bloc [data-theme="light"], persistance themePreference, event themeChanged. Fix 9 tests stales (PRESETS v5.21 + ENERGY_SAVER non forcé).** | **2026-04-04** |
 | **556** | **5.22.1** | **v5.22.1** | **Fix mode clair : preset ECO/STD/HIGH/ULTRA actif visible à l'ouverture des réglages (updateAllUI manquait PERFORMANCE_PRESET), timebar date+play lisibles (tokens CSS), SOS text var(--text), sélecteur thème rafraîchi via sheetOpened.** | **2026-04-04** |
+| **557** | **5.22.2** | **v5.22.2** | **Audits qualité #1→#7 : fix Vitest bloqueur (afterEach pool:forks), @types/three aligné r160, icon_1024 PWA, data_extraction_rules Android 12+, merge géométries eau (1 draw call), canvas réutilisé vegetation, shadow frustum 50k→5k, buildings cache borné, prefers-reduced-motion CSS+JS, landmarks ARIA, skip-to-content, FABs i18n aria, privacy.html RGPD corrigée (GPS + tiers manquants)** | **2026-04-04** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 

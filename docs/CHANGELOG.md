@@ -24,6 +24,33 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **`data_extraction_rules.xml`** créé pour Android 12+ (API 31+) — `android:dataExtractionRules` ajouté au manifest
 - **`<profileable android:shell="true" />`** retiré du manifest production
 
+### ⚡ Performance — Render + mémoire (Audit #2)
+
+- **Hydrology — merge géométries** : N draw calls d'eau → 1 par tuile via `BufferGeometryUtils.mergeGeometries()` — économie GPU sur lacs/rivières (ex : Interlaken)
+- **Vegetation — canvas réutilisé** : `scanCanvas`/`scanCtx` au niveau module (créés une seule fois) + `clearRect` entre appels — évite une allocation par tuile
+- **Shadow camera réduit** : frustum init 50 000 → 5 000 (shadow map couvre la vue réelle, pas 50 km) — perf ombres mobile
+- **Buildings — cache `zoneFailureCooldown` borné** : purgé à 200 entrées max (expirées) — évite fuite mémoire sur session longue
+
+### ♿ Accessibilité (Audit #5)
+
+- **`prefers-reduced-motion`** : CSS (`animation`/`transition` → 0.01ms) + JS (`flyTo` instantané, inertie pan désactivée)
+- **Canvas 3D** : `role="img"` + `aria-label` i18n (`a11y.canvas3d`)
+- **Boussole** : `aria-hidden="true"` (canvas décoratif)
+- **Skip-to-content** : lien visible au focus (premier enfant `<body>`)
+- **Landmarks HTML** : `<main>` pour le canvas-container, `<header>` pour la top-status-bar, `<h1 class="sr-only">SunTrail - Carte 3D</h1>`
+- **Cibles tactiles sheets** : `.sheet-close` minimum 44×44 px
+- **FABs i18n** : `data-i18n-aria-label` sur boussole, couches, GPS, 2D/3D — traduits automatiquement via `I18nService.applyToDOM()`
+- **Design token `--gold`** : `#d97706` → `#b45309` en mode clair (ratio WCAG AA 4.6:1 sur blanc)
+- **4 locales** : clés `a11y.*` ajoutées (`canvas3d`, `resetNorth`, `changeMapType`, `locateMe`, `toggle2d3d`, `skipToContent`)
+
+### 🔏 RGPD — Privacy policy corrigée (Audit #7)
+
+- **Correction GPS transmis** : lat/lon envoyés à Open-Meteo, MapTiler Geocoding et Nominatim — fausse déclaration "non transmis" corrigée dans `privacy.html` (FR + EN)
+- **Ajout RevenueCat** : ligne service tiers manquante (identifiant d'achat)
+- **Ajout Nominatim, Waymarked Trails, OpenTopoMap, Cloudflare** : services tiers manquants documentés
+- **Clarifications** : Foreground Service GPS (enregistrement seulement), MapTiler 4 usages distincts, Open-Meteo données météo uniquement
+- **Date** : mise à jour avril 2026
+
 ---
 
 ## [5.21.1] - 2026-04-03

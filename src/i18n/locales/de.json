@@ -592,6 +592,14 @@
       "percent": "%"
     }
   },
+  "a11y": {
+    "skipToContent": "Zum Inhalt springen",
+    "canvas3d": "Interaktive topografische 3D-Karte",
+    "resetNorth": "Nach Norden ausrichten",
+    "changeMapType": "Kartentyp wechseln",
+    "locateMe": "Meine Position finden",
+    "toggle2d3d": "2D/3D umschalten"
+  },
   "packs": {
     "title": "Länderpakete",
     "storage": "Speicher",

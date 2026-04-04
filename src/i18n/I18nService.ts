@@ -78,6 +78,12 @@ class I18nService {
             const key = el.getAttribute('data-i18n-placeholder');
             if (key) (el as HTMLInputElement).placeholder = this.t(key);
         });
+        // aria-label translations (a11y)
+        const ariaLabels = root.querySelectorAll('[data-i18n-aria-label]');
+        ariaLabels.forEach(el => {
+            const key = el.getAttribute('data-i18n-aria-label');
+            if (key) el.setAttribute('aria-label', this.t(key));
+        });
     }
 
     /** Resolve a dot-separated key path in a nested object. */

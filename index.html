@@ -46,6 +46,9 @@
 </head>
 <body>
 
+<a href="#canvas-container" class="skip-link" data-i18n="a11y.skipToContent">Aller au contenu</a>
+<h1 class="sr-only">SunTrail - Carte 3D</h1>
+
 <!-- Overlay de chargement de la carte — caché quand les 1ères tuiles arrivent -->
 <!-- Indicateur de chargement des tuiles réseau (barre fine, 600ms debounce) -->
 <div id="tile-loading-bar" aria-hidden="true"></div>
@@ -59,10 +62,14 @@
     </div>
 </div>
 
+<main>
 <div id="canvas-container"></div>
+</main>
 
 <!-- SHELL CONTAINERS -->
+<header>
 <div id="top-status-bar"></div>
+</header>
 
 <!-- COORDS PILL -->
 <div id="coords-pill" class="hidden">
@@ -81,7 +88,7 @@
 <!-- PILE DE BOUTONS FLOTTANTS (STYLE GOOGLE MAPS / SWISSMOBILE) -->
 <div class="fab-stack">
   <!-- BOUSSOLE -->
-  <div id="compass-fab" class="fab-btn" role="button" tabindex="0" aria-label="Réinitialiser le Nord">
+  <div id="compass-fab" class="fab-btn" role="button" tabindex="0" aria-label="Réinitialiser le Nord" data-i18n-aria-label="a11y.resetNorth">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" id="compass-svg">
       <path d="M12 2L15 12L12 22L9 12L12 2Z" fill="#ef4444" stroke="#ef4444" stroke-width="1"/>
       <path d="M12 2L15 12H9L12 2Z" fill="#ef4444"/>
@@ -90,7 +97,7 @@
   </div>
 
   <!-- COUCHES -->
-  <div id="layers-fab" class="fab-btn" role="button" tabindex="0" aria-label="Changer le type de carte">
+  <div id="layers-fab" class="fab-btn" role="button" tabindex="0" aria-label="Changer le type de carte" data-i18n-aria-label="a11y.changeMapType">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
       <polygon points="12 2 2 7 12 12 22 7 12 2"/>
       <polyline points="2 17 12 22 22 17"/>
@@ -99,7 +106,7 @@
   </div>
 
   <!-- GPS -->
-  <div id="gps-main-btn" class="fab-btn primary" role="button" tabindex="0" aria-label="Localiser ma position">
+  <div id="gps-main-btn" class="fab-btn primary" role="button" tabindex="0" aria-label="Localiser ma position" data-i18n-aria-label="a11y.locateMe">
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
       <circle cx="11" cy="11" r="3.5" stroke="white" stroke-width="1.8"/>
       <path d="M11 2v3M11 17v3M2 11h3M17 11h3" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
@@ -108,7 +115,7 @@
   </div>
 
   <!-- TOGGLE 2D/3D — déplacé en bas de la stack avec labels texte -->
-  <button class="fab-btn nav-mode-toggle" id="nav-2d-toggle" aria-label="Basculer 2D/3D" aria-pressed="false" style="flex-direction:column; gap:1px; padding:2px;">
+  <button class="fab-btn nav-mode-toggle" id="nav-2d-toggle" aria-label="Basculer 2D/3D" data-i18n-aria-label="a11y.toggle2d3d" aria-pressed="false" style="flex-direction:column; gap:1px; padding:2px;">
     <svg class="grid-icon" width="18" height="18" viewBox="0 0 22 22" fill="none" style="flex-shrink:0;">
       <line x1="2" y1="6"  x2="20" y2="6"  stroke="currentColor" stroke-width="1.0" opacity="0.35"/>
       <line x1="2" y1="11" x2="20" y2="11" stroke="currentColor" stroke-width="1.2"/>
@@ -424,17 +431,17 @@
 
             <div class="setting-row">
                 <div class="setting-label" data-i18n="settings.label.stats">Stats de performance (FPS)</div>
-                <input type="checkbox" id="stats-toggle">
+                <input type="checkbox" id="stats-toggle" aria-label="Stats de performance (FPS)">
             </div>
             
             <div class="setting-row">
                 <div class="setting-label" data-i18n="settings.label.shadows">Ombres portées</div>
-                <input type="checkbox" id="shadow-toggle">
+                <input type="checkbox" id="shadow-toggle" aria-label="Ombres portées">
             </div>
 
             <div class="setting-row">
                 <div class="setting-label" data-i18n="settings.label.debug">Infos de debug</div>
-                <input type="checkbox" id="debug-toggle">
+                <input type="checkbox" id="debug-toggle" aria-label="Infos de debug">
             </div>
 
 
@@ -638,7 +645,7 @@
 <template id="template-top-status-bar">
     <div class="top-status-bar-content">
         <div class="top-left-widgets">
-            <div class="top-widget" id="top-pill-main" role="button" tabindex="0">
+            <div class="top-widget" id="top-pill-main" role="button" tabindex="0" aria-label="LOD et météo">
                 <span class="lod-badge">SWISS · LVL --</span>
                 <span class="weather-icon">☀️</span>
                 <span class="weather-temp">--°C</span>

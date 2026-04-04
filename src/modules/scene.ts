@@ -66,16 +66,26 @@ export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevatio
     const startPos = state.camera.position.clone();
     const startTarget = state.controls.target.clone();
     const endTarget = new THREE.Vector3(targetWorldX, targetElevation, targetWorldZ);
-    
+
     // On calcule la position finale en gardant l'inclinaison si possible ou en utilisant un défaut
     const offsetZ = targetDistance * 0.8;
-    const finalAlt = targetElevation + targetDistance; 
+    const finalAlt = targetElevation + targetDistance;
     const endPos = new THREE.Vector3(targetWorldX, finalAlt, targetWorldZ + offsetZ);
 
     // Block origin shift for the duration of the animation to prevent the closure
     // coordinates from becoming stale (origin shift would shift camera but not the
     // captured startPos/endPos/startTarget/endTarget in this closure).
     state.isFlyingTo = true;
+
+    // a11y: prefers-reduced-motion — vol instantané sans animation
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+        state.controls.target.copy(endTarget);
+        state.camera.position.copy(endPos);
+        state.controls.update();
+        state.isFlyingTo = false;
+        return;
+    }
 
     const duration = flyDuration;
     const startTime = performance.now();
@@ -155,6 +165,9 @@ export async function initScene(): Promise<void> {
     state.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     state.renderer.toneMapping = THREE.AgXToneMapping;
     container.appendChild(state.renderer.domElement);
+    // a11y: canvas 3D accessible — role="img" + aria-label traduit
+    state.renderer.domElement.setAttribute('role', 'img');
+    state.renderer.domElement.setAttribute('aria-label', i18n.t('a11y.canvas3d'));
     state.stats = new Stats();
     container.appendChild(state.stats.dom);
     state.stats.dom.style.top = '80px';
@@ -413,8 +426,8 @@ export async function initScene(): Promise<void> {
     state.sunLight = new THREE.DirectionalLight(0xffffff, 6.0);
     state.sunLight.castShadow = state.SHADOWS;
     state.sunLight.shadow.mapSize.set(2048, 2048);
-    state.sunLight.shadow.camera.left = -50000; state.sunLight.shadow.camera.right = 50000;
-    state.sunLight.shadow.camera.top = 50000; state.sunLight.shadow.camera.bottom = -50000;
+    state.sunLight.shadow.camera.left = -5000; state.sunLight.shadow.camera.right = 5000;
+    state.sunLight.shadow.camera.top = 5000; state.sunLight.shadow.camera.bottom = -5000;
     state.sunLight.shadow.camera.near = 1000; state.sunLight.shadow.camera.far = 500000;
     state.sunLight.shadow.bias = -0.0005; state.sunLight.shadow.normalBias = 0.05;
     state.scene.add(state.sunLight); state.scene.add(state.sunLight.target);

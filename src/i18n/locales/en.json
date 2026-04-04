@@ -592,6 +592,14 @@
       "percent": "%"
     }
   },
+  "a11y": {
+    "skipToContent": "Skip to content",
+    "canvas3d": "Interactive 3D topographic map",
+    "resetNorth": "Reset to North",
+    "changeMapType": "Change map type",
+    "locateMe": "Locate my position",
+    "toggle2d3d": "Toggle 2D/3D"
+  },
   "packs": {
     "title": "Country Packs",
     "storage": "Storage",
