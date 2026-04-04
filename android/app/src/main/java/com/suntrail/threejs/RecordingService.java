@@ -5,7 +5,10 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Build;
@@ -56,6 +59,7 @@ public class RecordingService extends Service {
     private static final int    NOTIFICATION_ID = 42;
     static final String         POINTS_FILE     = "suntrail_native_points.json";
     private static final String PREFS_NAME      = "suntrail_rec_config";
+    static final String         STOP_ACTION     = "com.suntrail.threejs.STOP_RECORDING";
 
     // Seuils de persistance : écrire sur disque toutes les 5 positions ou 10 secondes
     private static final int  PERSIST_EVERY_N     = 5;
@@ -75,8 +79,10 @@ public class RecordingService extends Service {
     private int  mLastPersistedCount = 0;
     private long mLastPersistTime    = 0;
 
-    // Cache du PendingIntent pour les mises à jour de notification
-    private PendingIntent mOpenPendingIntent;
+    // Cache des PendingIntents pour la notification
+    private PendingIntent    mOpenPendingIntent;
+    private PendingIntent    mStopPendingIntent;
+    private BroadcastReceiver mStopReceiver;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -100,6 +106,31 @@ public class RecordingService extends Service {
             this, 0, openIntent,
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
+
+        // PendingIntent pour le bouton "Arrêter" dans la notification
+        Intent stopBroadcast = new Intent(STOP_ACTION);
+        stopBroadcast.setPackage(getPackageName());
+        mStopPendingIntent = PendingIntent.getBroadcast(
+            this, 1, stopBroadcast,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        // BroadcastReceiver : tap "Arrêter" dans la notification → stopSelf()
+        if (mStopReceiver == null) {
+            mStopReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    Log.i(TAG, "Arrêt demandé depuis la notification");
+                    stopSelf();
+                }
+            };
+            IntentFilter filter = new IntentFilter(STOP_ACTION);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(mStopReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                registerReceiver(mStopReceiver, filter);
+            }
+        }
 
         startForeground(NOTIFICATION_ID, buildNotification(mPoints.size()));
 
@@ -178,6 +209,12 @@ public class RecordingService extends Service {
 
     @Override
     public void onDestroy() {
+        // Désenregistrer le BroadcastReceiver du bouton Arrêter
+        if (mStopReceiver != null) {
+            try { unregisterReceiver(mStopReceiver); } catch (Exception e) { /* déjà désenregistré */ }
+            mStopReceiver = null;
+        }
+
         // Arrêter les mises à jour GPS
         if (mFusedClient != null && mLocationCallback != null) {
             mFusedClient.removeLocationUpdates(mLocationCallback);
@@ -248,15 +285,20 @@ public class RecordingService extends Service {
         String text = pointCount == 0
             ? "GPS actif — en attente du premier point..."
             : "GPS actif — " + pointCount + " point" + (pointCount > 1 ? "s" : "") + " enregistré" + (pointCount > 1 ? "s" : "");
-        return new NotificationCompat.Builder(this, CHANNEL_ID)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("SunTrail 3D — Enregistrement actif")
             .setContentText(text)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(mOpenPendingIntent)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .build();
+            .setCategory(NotificationCompat.CATEGORY_SERVICE);
+
+        if (mStopPendingIntent != null) {
+            builder.addAction(android.R.drawable.ic_delete, "Arrêter REC", mStopPendingIntent);
+        }
+
+        return builder.build();
     }
 
     private void updateNotification(int pointCount) {

@@ -5,7 +5,7 @@ import { initNetworkMonitor } from './modules/networkMonitor';
 import { initEmbeddedOverview } from './modules/tileLoader';
 import { packManager } from './modules/packManager';
 import { registerSW } from 'virtual:pwa-register';
-import { getInterruptedRecording, clearInterruptedRecording, getPersistedRecordingPoints, getNativeRecordedPoints, mergeAndDeduplicatePoints, stopRecordingService } from './modules/foregroundService';
+import { getInterruptedRecording, clearInterruptedRecording, getPersistedRecordingPoints, getNativeRecordedPoints, mergeAndDeduplicatePoints, stopRecordingService, clearNativeRecordedPoints } from './modules/foregroundService';
 import { showToast } from './modules/utils';
 import { state } from './modules/state';
 import { eventBus } from './modules/eventBus';
@@ -56,6 +56,23 @@ if (interrupted) {
             void stopRecordingService();
             showToast(`⚠️ Enregistrement interrompu après ${mins} min — récupération échouée`);
         }
+    }, { once: true });
+} else {
+    // Pas de snapshot localStorage — vérifier quand même les points natifs orphelins.
+    // Cas : bouton "Arrêter" de la notification tapé AVANT de rouvrir l'app, ou localStorage effacé.
+    window.addEventListener('suntrail:uiReady', async () => {
+        try {
+            const nativePoints = await getNativeRecordedPoints();
+            if (nativePoints.length >= 2) {
+                state.recoveredPoints = nativePoints;
+                setTimeout(() => sheetManager.open('track'), 300);
+                eventBus.emit('recordingRecovered');
+            } else if (nativePoints.length > 0) {
+                // Quelques points orphelins mais pas assez — nettoyer silencieusement
+                void clearNativeRecordedPoints();
+                void stopRecordingService();
+            }
+        } catch { /* ignore — pas de points natifs = état normal */ }
     }, { once: true });
 }
 
