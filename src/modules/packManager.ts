@@ -19,6 +19,7 @@ import { eventBus } from './eventBus';
 import { showToast } from './utils';
 import { i18n } from '../i18n/I18nService';
 import type { PackMeta, PackState, PackCatalog, PackStatus } from './packTypes';
+import { iapService } from './iapService';
 
 const CATALOG_URL = import.meta.env.VITE_PACKS_CATALOG_URL as string | undefined;
 const PACK_STATES_KEY = 'suntrail_pack_states';
@@ -78,8 +79,6 @@ class PackManager {
     /** Vérifie les achats de packs sur RevenueCat et met à jour les états locaux. */
     private async syncPackPurchases(): Promise<void> {
         if (!Capacitor.isNativePlatform()) return;
-        // Attendre que iapService soit initialisé
-        const { iapService } = await import('./iapService');
         const ready = await iapService.waitForInit();
         if (!ready) return;
         const purchased = await iapService.checkAllPackPurchases();
