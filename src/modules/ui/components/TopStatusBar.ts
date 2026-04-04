@@ -3,6 +3,7 @@ import { state } from '../../state';
 import { i18n } from '../../../i18n/I18nService';
 import { eventBus } from '../../eventBus';
 import { sheetManager } from '../core/SheetManager';
+import { getWeatherIcon } from '../../weather';
 
 export class TopStatusBar extends BaseComponent {
     private lodBadge: HTMLElement | null = null;
@@ -149,12 +150,8 @@ export class TopStatusBar extends BaseComponent {
     private updateWeather(weatherData: any): void {
         if (this.weatherIcon && this.weatherTemp) {
             if (weatherData) {
-                let icon = '☀️';
-                if (state.currentWeather === 'rain') icon = '🌧️';
-                else if (state.currentWeather === 'snow') icon = '❄️';
-                else if (weatherData.cloudCover > 50) icon = '☁️';
-                
-                this.weatherIcon.textContent = icon;
+                const currentCode = weatherData.hourly?.[0]?.code ?? 0;
+                this.weatherIcon.textContent = getWeatherIcon(currentCode);
                 this.weatherTemp.textContent = `${Math.round(weatherData.temp)}°C`;
             } else {
                 this.weatherIcon.textContent = '☀️';
