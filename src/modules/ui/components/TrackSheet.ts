@@ -436,7 +436,7 @@ export class TrackSheet extends BaseComponent {
         text.style.cssText = 'flex:1; min-width:0; overflow-wrap:break-word; word-break:break-word;';
         text.textContent = i18n.t('track.upsell.postRec');
         const proBtn = document.createElement('button');
-        proBtn.className = 'btn-go';
+        proBtn.className = 'btn-go solar-upsell-btn';
         proBtn.style.cssText = 'flex-shrink:0; font-size:11px; padding:4px 10px;';
         proBtn.textContent = i18n.t('track.upsell.proBtn');
         proBtn.onclick = () => showUpgradePrompt('rec_stats');
