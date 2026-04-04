@@ -13,14 +13,30 @@ const buildingFetchPromises = new Map<string, Promise<any[] | null>>();
 const zoneFailureCooldown = new Map<string, number>();
 const CACHE_NAME = 'suntrail-buildings-v5';
 
+// Cache MapTiler : clé = "z/tx/ty", valeur = features parsées (partagées entre toutes les sous-tuiles)
+const maptilerFeaturesCache = new Map<string, any[]>();
+const maptilerFetchPromises = new Map<string, Promise<any[] | null>>();
+
+// Matériaux partagés — un seul par source, recyclés entre toutes les tuiles actives
+let sharedMaterialMapTiler: THREE.MeshStandardMaterial | null = null;
+let sharedMaterialOverpass: THREE.MeshStandardMaterial | null = null;
+
+function getSharedMaterial(source: 'maptiler' | 'overpass'): THREE.MeshStandardMaterial {
+    if (source === 'maptiler') {
+        if (!sharedMaterialMapTiler) {
+            sharedMaterialMapTiler = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.7, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+        }
+        return sharedMaterialMapTiler;
+    }
+    if (!sharedMaterialOverpass) {
+        sharedMaterialOverpass = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+    }
+    return sharedMaterialOverpass;
+}
+
 export async function loadBuildingsForTile(tile: Tile) {
     if (!state.isPro || !state.SHOW_BUILDINGS || tile.zoom < state.BUILDING_ZOOM_THRESHOLD || (tile.status as string) === 'disposed') return;
     if (tile.buildingMesh) return;
-
-    if (state.isUserInteracting) {
-        setTimeout(() => loadBuildingsForTile(tile), 1000);
-        return;
-    }
 
     // 1. TENTATIVE VIA MAPTILER VECTOR TILES (Plus rapide, optimisé tuile)
     if (!state.isMapTilerDisabled && state.MK) {
@@ -78,57 +94,59 @@ export async function loadBuildingsForTile(tile: Tile) {
 }
 
 async function fetchBuildingsMapTiler(tile: Tile): Promise<any[] | null> {
-    // Les Vector Tiles 'buildings' de MapTiler sont natifs jusqu'au Z14
+    // Les Vector Tiles 'buildings' de MapTiler sont natifs jusqu'au Z14.
+    // Plusieurs tuiles Z16+ partagent la même Z14 parente → cache + dédup indispensables.
     const requestZoom = Math.min(tile.zoom, 14);
     const ratio = Math.pow(2, tile.zoom - requestZoom);
     const rtx = Math.floor(tile.tx / ratio);
     const rty = Math.floor(tile.ty / ratio);
+    const cacheKey = `${requestZoom}/${rtx}/${rty}`;
 
-    const url = `https://api.maptiler.com/tiles/buildings/${requestZoom}/${rtx}/${rty}.pbf?key=${state.MK}`;
-    
-    try {
-        const response = await fetch(url);
-        // Si 400 ou 403, on désactive MapTiler pour cette session
-        if (response.status === 400 || response.status === 401 || response.status === 403 || response.status === 429) {
-            console.warn(`[MapTiler] API Error ${response.status}. Fallback to OSM.`);
-            state.isMapTilerDisabled = true;
-            return null;
-        }
-        if (!response.ok) return null;
+    const cached = maptilerFeaturesCache.get(cacheKey);
+    if (cached) return cached;
 
-        const buffer = await response.arrayBuffer();
-        const vt = new VectorTile(new Pbf(buffer));
-        // La couche s'appelle 'building' dans le tileset 'buildings'
-        const layer = vt.layers.building;
-        if (!layer) return null;
+    let promise = maptilerFetchPromises.get(cacheKey);
+    if (!promise) {
+        promise = (async () => {
+            const url = `https://api.maptiler.com/tiles/buildings/${requestZoom}/${rtx}/${rty}.pbf?key=${state.MK}`;
+            try {
+                const response = await fetch(url);
+                if (response.status === 400 || response.status === 401 || response.status === 403 || response.status === 429) {
+                    console.warn(`[MapTiler] API Error ${response.status}. Fallback to OSM.`);
+                    state.isMapTilerDisabled = true;
+                    return null;
+                }
+                if (!response.ok) return null;
 
-        const features = [];
-        
-        for (let i = 0; i < layer.length; i++) {
-            const f = layer.feature(i);
-            features.push({
-                geometry: f.loadGeometry(),
-                properties: f.properties,
-                type: f.type
-            });
-        }
-        return features;
-    } catch (e) {
-        return null;
+                const buffer = await response.arrayBuffer();
+                const vt = new VectorTile(new Pbf(buffer));
+                const layer = vt.layers.building;
+                if (!layer) return [];
+
+                const features = [];
+                for (let i = 0; i < layer.length; i++) {
+                    const f = layer.feature(i);
+                    features.push({ geometry: f.loadGeometry(), properties: f.properties, type: f.type });
+                }
+                return features;
+            } catch (e) {
+                return null;
+            }
+        })();
+        maptilerFetchPromises.set(cacheKey, promise);
     }
+
+    const features = await promise;
+    maptilerFetchPromises.delete(cacheKey);
+    if (features) boundedCacheSet(maptilerFeaturesCache, cacheKey, features);
+    return features;
 }
 
 function renderBuildingsMapTiler(tile: Tile, features: any[]) {
     if ((tile.status as string) === 'disposed' || !tile.mesh) return;
 
     const geometries: THREE.BufferGeometry[] = [];
-    const material = new THREE.MeshStandardMaterial({ 
-        color: 0x999999, 
-        roughness: 0.7,
-        polygonOffset: true,
-        polygonOffsetFactor: 1,
-        polygonOffsetUnits: 1
-    });
+    const material = getSharedMaterial('maptiler');
 
     const limit = state.BUILDING_LIMIT || 150; 
     const EXTENT = 4096; // MapTiler default extent
@@ -141,14 +159,19 @@ function renderBuildingsMapTiler(tile: Tile, features: any[]) {
 
     features.slice(0, limit * 2).forEach(f => {
         if (f.geometry && f.geometry.length > 0) {
-            // Filtrage : est-ce que le bâtiment est dans notre sous-tuile ?
-            const firstP = f.geometry[0][0];
-            if (firstP.x < offsetX || firstP.x >= offsetX + subExtent || firstP.y < offsetY || firstP.y >= offsetY + subExtent) {
+            const ring = f.geometry[0];
+            // Utiliser le centroïde plutôt que le premier sommet : un bâtiment dont le premier
+            // vertex tombe hors de la sous-tuile mais dont le centre est dedans doit s'afficher.
+            let sumX = 0, sumY = 0;
+            for (const p of ring) { sumX += p.x; sumY += p.y; }
+            const cx = sumX / ring.length;
+            const cy = sumY / ring.length;
+            if (cx < offsetX || cx >= offsetX + subExtent || cy < offsetY || cy >= offsetY + subExtent) {
                 return;
             }
 
             const points: THREE.Vector2[] = [];
-            f.geometry[0].forEach((p: any) => {
+            ring.forEach((p: any) => {
                 const lx = ((p.x - offsetX) / subExtent - 0.5) * tile.tileSizeMeters;
                 const lz = ((p.y - offsetY) / subExtent - 0.5) * tile.tileSizeMeters;
                 points.push(new THREE.Vector2(lx, -lz));
@@ -158,14 +181,14 @@ function renderBuildingsMapTiler(tile: Tile, features: any[]) {
                 const shape = new THREE.Shape(points);
                 const height = (f.properties.render_height || 12) * state.RELIEF_EXAGGERATION;
                 const minHeight = (f.properties.render_min_height || 0) * state.RELIEF_EXAGGERATION;
-                
-                const bGeo = new THREE.ExtrudeGeometry(shape, { 
-                    depth: Math.max(1, height - minHeight), 
-                    bevelEnabled: false 
+
+                const bGeo = new THREE.ExtrudeGeometry(shape, {
+                    depth: Math.max(1, height - minHeight),
+                    bevelEnabled: false
                 });
 
-                const centerLX = ((f.geometry[0][0].x - offsetX) / subExtent - 0.5) * tile.tileSizeMeters;
-                const centerLZ = ((f.geometry[0][0].y - offsetY) / subExtent - 0.5) * tile.tileSizeMeters;
+                const centerLX = (cx / subExtent - 0.5) * tile.tileSizeMeters;
+                const centerLZ = (cy / subExtent - 0.5) * tile.tileSizeMeters;
                 const baseAlt = getAltitudeAt(tile.worldX + centerLX, tile.worldZ + centerLZ, tile);
 
                 bGeo.rotateX(-Math.PI / 2);
@@ -183,8 +206,8 @@ function finalizeMergedMesh(tile: Tile, geometries: THREE.BufferGeometry[], mate
         try {
             const merged = BufferGeometryUtils.mergeGeometries(geometries);
             const mesh = new THREE.Mesh(merged, material);
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
+            mesh.castShadow = state.BUILDINGS_SHADOWS;
+            mesh.receiveShadow = state.BUILDINGS_SHADOWS;
             mesh.matrixAutoUpdate = false;
             mesh.updateMatrix();
             
@@ -228,13 +251,7 @@ function renderBuildingsMerged(tile: Tile, elements: any[]) {
     if ((tile.status as string) === 'disposed' || !tile.mesh) return;
 
     const geometries: THREE.BufferGeometry[] = [];
-    const material = new THREE.MeshStandardMaterial({ 
-        color: 0x888888, 
-        roughness: 0.8,
-        polygonOffset: true,
-        polygonOffsetFactor: 1,
-        polygonOffsetUnits: 1
-    });
+    const material = getSharedMaterial('overpass');
     
     const limit = state.BUILDING_LIMIT || 60;
 

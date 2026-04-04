@@ -489,6 +489,9 @@ export class Tile {
             this.mesh.material.transparent = true;
             this.mesh.material.opacity = 1.0;
         }
+        // Bâtiments : masquer immédiatement au lieu de fondre — évite le gap visuel
+        // où les bâtiments du LOD précédent flottent pendant que le nouveau LOD charge les siens.
+        if (this.buildingMesh) this.buildingMesh.visible = false;
         // Maintenir la clé de cache active : la texture GPU ne doit pas être évincée
         // pendant que le mesh est encore visible dans la scène.
         markCacheKeyActive(getTileCacheKey(this.key, this.zoom));
