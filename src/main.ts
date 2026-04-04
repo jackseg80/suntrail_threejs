@@ -5,7 +5,7 @@ import { initNetworkMonitor } from './modules/networkMonitor';
 import { initEmbeddedOverview } from './modules/tileLoader';
 import { packManager } from './modules/packManager';
 import { registerSW } from 'virtual:pwa-register';
-import { getInterruptedRecording, clearInterruptedRecording, getPersistedRecordingPoints, stopRecordingService } from './modules/foregroundService';
+import { getInterruptedRecording, clearInterruptedRecording, getPersistedRecordingPoints, getNativeRecordedPoints, mergeAndDeduplicatePoints, stopRecordingService } from './modules/foregroundService';
 import { showToast } from './modules/utils';
 import { state } from './modules/state';
 import { eventBus } from './modules/eventBus';
@@ -30,10 +30,15 @@ if (interrupted) {
     // Ne pas nettoyer immédiatement — tenter de récupérer les points persistés
     window.addEventListener('suntrail:uiReady', async () => {
         try {
-            const points = await getPersistedRecordingPoints();
-            if (points && points.length >= 2) {
+            // Lire en parallèle les points JS (Filesystem) et natifs (RecordingService.java)
+            const [jsPoints, nativePoints] = await Promise.all([
+                getPersistedRecordingPoints(),
+                getNativeRecordedPoints(),
+            ]);
+            const merged = mergeAndDeduplicatePoints(jsPoints ?? [], nativePoints);
+            if (merged.length >= 2) {
                 // Stocker les points récupérés pour que TrackSheet propose la restauration
-                state.recoveredPoints = points;
+                state.recoveredPoints = merged;
                 eventBus.emit('recordingRecovered');
             } else {
                 // Pas assez de points récupérables — nettoyage + info

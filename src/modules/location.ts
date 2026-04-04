@@ -92,6 +92,8 @@ export async function startLocationTracking() {
     } catch (e) { console.error("Tracking error:", e); }
 }
 
+export function isWatchActive(): boolean { return watchId !== null; }
+
 export function stopLocationTracking() {
     if (watchId !== null) {
         Geolocation.clearWatch({ id: watchId });

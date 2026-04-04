@@ -282,6 +282,42 @@ M = 1.5×W + 2.0×(W+L)×(L/W)² + η×(W+L)×(1.5×V² + 0.35×V×G)
 
 ---
 
+## ✅ Test réel GPS background — à valider en rando (post v5.23.0)
+
+> Ajouté après le fix v5.23.0 (GPS natif dans RecordingService).
+> Ce test ne peut pas être automatisé — il nécessite une sortie terrain réelle (30-60 min).
+
+### Scénarios à valider
+
+| # | Scénario | Attendu | Validé |
+| --- | -------- | ------- | ------ |
+| 1 | REC → ouvrir appareil photo → photos → revenir | Zéro trou dans la trace, points natifs mergés | ☐ |
+| 2 | REC → background 5 min (app en arrière-plan) | Points continus toutes les ~3s | ☐ |
+| 3 | REC → ouvrir Chrome avec onglets lourds → 2 min | Service natif survit à la pression mémoire | ☐ |
+| 4 | REC → swipe depuis les applis récentes | Service continue (`stopWithTask=false`) | ☐ |
+| 5 | REC → verrouiller écran 15 min | GPS continu (WakeLock + exemption batterie) | ☐ |
+| 6 | REC → background bref < 5s → revenir | Pas de points en double (dédup 500ms) | ☐ |
+
+### Comment vérifier via adb
+
+```bash
+adb logcat | grep -E "RecordingService|ActivityManager|LowMemory"
+```
+
+Chercher :
+
+- Messages `RecordingService: Points persistés sur disque` pendant le background → service GPS actif
+- `Killing <PID> (com.suntrail.threejs)` suivi de nouveaux logs `RecordingService` → service redémarré (START_STICKY)
+- Absence de `RecordingService: Erreur` → persistance I/O OK
+
+### Appareils cibles
+
+- Samsung Galaxy S23 (OEM agressif) ✦ priorité haute
+- Samsung A53 ✦ priorité haute
+- Pixel (Android stock) — référence
+
+---
+
 ## v7.x — Couche LLM optionnelle (Pro uniquement)
 
 > Dépendance : backend serveur (API Claude Haiku ~$0.01-0.03/résumé).
