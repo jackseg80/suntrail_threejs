@@ -1,8 +1,13 @@
 package com.suntrail.threejs;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.PowerManager;
+
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
@@ -41,6 +46,23 @@ public class RecordingPlugin extends Plugin {
      */
     @PluginMethod
     public void startForeground(PluginCall call) {
+        // Android 13+ (API 33) : POST_NOTIFICATIONS est une permission runtime.
+        // Sans elle, la notification du foreground service est invisible et Android
+        // tue le service bien plus agressivement. On la demande ici, au moment où
+        // l'utilisateur déclenche le REC (contexte clair pour lui).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                    getActivity(),
+                    new String[]{ Manifest.permission.POST_NOTIFICATIONS },
+                    0
+                );
+                // On démarre quand même le service — si l'utilisateur accepte la permission
+                // Android affichera la notification immédiatement sans redémarrage.
+            }
+        }
+
         Intent serviceIntent = new Intent(getContext(), RecordingService.class);
 
         // Passer la config GPS au service
