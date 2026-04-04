@@ -1,7 +1,7 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { state } from '../../state';
 import { showToast } from '../../utils';
-import { startLocationTracking } from '../../location';
+import { startLocationTracking, isWatchActive } from '../../location';
 import { sheetManager } from '../core/SheetManager';
 import { showUpgradePrompt } from '../../iap';
 import { haptic } from '../../haptics';
@@ -154,6 +154,15 @@ export class TrackSheet extends BaseComponent {
         // Recovery peut avoir été détectée avant que cette sheet soit rendue (timing main.ts)
         if (state.recoveredPoints && state.recoveredPoints.length >= 2) {
             this.showRecoveryPrompt();
+        }
+        // Reprise transparente (service natif toujours actif au démarrage) :
+        // main.ts a déjà mis state.isRecording=true et rempli recordedPoints.
+        // Ici on redessine le mesh 3D et on s'assure que le watch GPS JS est actif.
+        if (state.isRecording && state.recordedPoints.length > 0) {
+            updateRecordedTrackMesh();
+            if (Capacitor.isNativePlatform() && !isWatchActive()) {
+                void startLocationTracking();
+            }
         }
     }
 

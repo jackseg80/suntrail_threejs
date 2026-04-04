@@ -24,6 +24,7 @@ interface RecordingPlugin {
         highAccuracy?: boolean;
     }): Promise<void>;
     stopForeground(): Promise<void>;
+    isRunning(): Promise<{ running: boolean }>;
     getRecordedPoints(): Promise<{ points: LocationPoint[] }>;
     clearRecordedPoints(): Promise<void>;
     requestBatteryOptimizationExemption(): Promise<{ granted: boolean }>;
@@ -182,6 +183,22 @@ export async function getNativeRecordedPoints(): Promise<LocationPoint[]> {
         return result.points || [];
     } catch {
         return [];
+    }
+}
+
+/**
+ * Vérifie si le Foreground Service natif d'enregistrement tourne encore.
+ * Permet de différencier au démarrage de l'app :
+ *   - service vivant → reprise transparente (REC continue, pas de prompt)
+ *   - service mort   → prompt recovery "Restaurer / Supprimer"
+ */
+export async function isRecordingServiceRunning(): Promise<boolean> {
+    if (!RecordingNative) return false;
+    try {
+        const result = await RecordingNative.isRunning();
+        return result.running === true;
+    } catch {
+        return false;
     }
 }
 

@@ -117,6 +117,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **562** | **5.23.3** | **v5.23.3** | **Roadmap brainstorming notifications (coucher soleil, batterie faible, anti-oubli REC, progression enrichie) + catalog pack Suisse v2 (lodRange 8-14, 716MB)** | **2026-04-04** |
 | **563** | **5.23.4** | **v5.23.4** | **Fix recovery REC : prompt de restauration n'apparaissait pas au relancement (timing — recordingRecovered émis avant TrackSheet.render()). Vérification immédiate de recoveredPoints au render() + ouverture auto de la TrackSheet.** | **2026-04-04** |
 | **564** | **5.23.5** | **v5.23.5** | **Bouton "Arrêter REC" dans la notification Android (BroadcastReceiver) + détection service natif orphelin au démarrage (native points sans snapshot localStorage)** | **2026-04-04** |
+| **565** | **5.24.0** | **v5.24.0** | **Reprise transparente du REC après crash : si service natif encore actif au démarrage (isRunning()), recharge les points + réactive state.isRecording sans prompt (plus de "tracé importé" parasite). Prompt Restaurer/Supprimer réservé au cas service mort.** | **2026-04-04** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 

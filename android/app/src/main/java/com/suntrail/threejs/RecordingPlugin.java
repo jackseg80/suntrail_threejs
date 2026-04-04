@@ -97,6 +97,19 @@ public class RecordingPlugin extends Plugin {
     }
 
     /**
+     * Retourne true si le Foreground Service d'enregistrement tourne encore.
+     * Utilisé au démarrage de l'app pour différencier :
+     *   - Service vivant → reprise transparente (le REC continue)
+     *   - Service mort   → prompt recovery (Restaurer / Supprimer)
+     */
+    @PluginMethod
+    public void isRunning(PluginCall call) {
+        JSObject result = new JSObject();
+        result.put("running", RecordingService.isRunning());
+        call.resolve(result);
+    }
+
+    /**
      * Retourne les points GPS enregistrés nativement pendant que la WebView était suspendue.
      * Format : { points: [{ lat, lon, alt, timestamp }, ...] }
      */

@@ -84,11 +84,17 @@ public class RecordingService extends Service {
     private PendingIntent    mStopPendingIntent;
     private BroadcastReceiver mStopReceiver;
 
+    // Flag statique : permet au JS de savoir si le service tourne encore
+    // (utilisé pour différencier "reprise transparente" vs "prompt recovery")
+    private static volatile boolean sIsRunning = false;
+    public static boolean isRunning() { return sIsRunning; }
+
     // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
     @Override
     public void onCreate() {
         super.onCreate();
+        sIsRunning = true;
         mFusedClient = LocationServices.getFusedLocationProviderClient(this);
 
         // Charger les points existants depuis le disque (pour le redémarrage START_STICKY)
@@ -209,6 +215,7 @@ public class RecordingService extends Service {
 
     @Override
     public void onDestroy() {
+        sIsRunning = false;
         // Désenregistrer le BroadcastReceiver du bouton Arrêter
         if (mStopReceiver != null) {
             try { unregisterReceiver(mStopReceiver); } catch (Exception e) { /* déjà désenregistré */ }
