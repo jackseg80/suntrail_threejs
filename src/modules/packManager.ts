@@ -29,17 +29,17 @@ const PACKS_DIR = 'packs';
 // Catalog embarqué — fallback si réseau absent ET localStorage vide.
 // À mettre à jour manuellement à chaque nouveau pack publié.
 const EMBEDDED_CATALOG: PackCatalog = {
-    version: 1,
+    version: 2,
     packs: [
         {
             id: 'switzerland',
             productId: 'suntrail_pack_switzerland',
             name: { fr: 'Suisse HD', de: 'Schweiz HD', it: 'Svizzera HD', en: 'Switzerland HD' },
             bounds: { minLat: 45.8, maxLat: 47.8, minLon: 5.9, maxLon: 10.5 },
-            lodRange: { min: 12, max: 14 },
-            version: 1,
-            sizeMB: 710,
-            cdnUrl: `${CATALOG_URL?.replace('/catalog.json', '') ?? ''}/packs/suntrail-pack-switzerland-v1.pmtiles`,
+            lodRange: { min: 8, max: 14 },
+            version: 2,
+            sizeMB: 716,
+            cdnUrl: `${CATALOG_URL?.replace('/catalog.json', '') ?? ''}/packs/suntrail-pack-switzerland-v2.pmtiles`,
             regionCheck: 'switzerland',
         },
         {
@@ -47,10 +47,10 @@ const EMBEDDED_CATALOG: PackCatalog = {
             productId: 'suntrail_pack_france_alps',
             name: { fr: 'France Alpes HD', de: 'Französische Alpen HD', it: 'Alpi Francesi HD', en: 'French Alps HD' },
             bounds: { minLat: 43.5, maxLat: 46.5, minLon: 4.5, maxLon: 7.8 },
-            lodRange: { min: 12, max: 14 },
-            version: 1,
-            sizeMB: 509,
-            cdnUrl: `${CATALOG_URL?.replace('/catalog.json', '') ?? ''}/packs/suntrail-pack-france_alps-v1.pmtiles`,
+            lodRange: { min: 8, max: 14 },
+            version: 2,
+            sizeMB: 515,
+            cdnUrl: `${CATALOG_URL?.replace('/catalog.json', '') ?? ''}/packs/suntrail-pack-france_alps-v2.pmtiles`,
             regionCheck: 'france_alps',
         },
     ],

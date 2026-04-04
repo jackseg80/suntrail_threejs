@@ -321,6 +321,113 @@ La notification Android affiche le compteur en temps réel :
 
 ---
 
+## 💡 Brainstorming — Notifications (à prioriser)
+
+> Ajouté v5.23.2. La base est là : foreground service, POST_NOTIFICATIONS, notification live (counter GPS).
+> Ce chapitre recense toutes les idées, sans engagement de version.
+
+### Ce qui existe déjà (v5.23.0)
+
+- Notification de foreground service pendant le REC — compteur GPS en temps réel
+- Demande permission POST_NOTIFICATIONS au premier REC (Android 13+)
+
+---
+
+### Idées classées par valeur perçue
+
+#### 🔴 Haute valeur — sécurité & fiabilité REC
+
+##### Alerte coucher de soleil pendant REC
+
+- Condition : coucher du soleil dans < 45 min ET `state.isRecording`
+- Format : notification cliquable → ouvre SunTrail sur la carte
+- Gate : FREE (alerte sécurité — jamais derrière Pro, cf. règle CLAUDE.md)
+- Note : pas de background fetch météo nécessaire — la position solaire se calcule localement
+
+##### Batterie faible pendant REC
+
+- Condition : batterie < 20% ET enregistrement actif depuis > 30 min
+- Format : "SunTrail REC — batterie faible (18%), pensez à rentrer"
+- Gate : FREE
+- Technique : `BatteryManager` broadcast receiver dans RecordingService
+
+##### Notification de fin de REC automatique (anti-oubli)
+
+- Condition : aucun mouvement > 50m pendant 15 min ET `isRecording`
+- Format : "Vous semblez à l'arrêt — arrêter l'enregistrement ?"
+- Action : bouton inline "Arrêter" dans la notification
+- Gate : FREE
+- Technique : vérifier dans le LocationCallback si les derniers N points sont dans un rayon < 50m
+
+---
+
+#### 🟡 Valeur moyenne — UX & engagement
+
+##### Progression REC enrichie (v5.23 étendue)
+
+Amélioration de la notification existante :
+
+- Distance parcourue (calculée depuis les points) → "GPS actif — 4.2 km · 247 pts · 1h23"
+- Bouton inline "Arrêter REC" directement dans la notification (Android 7+ action button)
+- Technique : `addAction()` sur la notification, intent vers RecordingPlugin
+
+##### Pack téléchargé
+
+- Condition : fin de téléchargement d'un pack pays
+- Format : "Pack Suisse téléchargé — SunTrail est prêt hors-ligne"
+- Gate : FREE (l'utilisateur a acheté le pack)
+- Technique : notification one-shot depuis `packManager` JS → plugin natif
+
+##### Approche d'un sommet ou col
+
+- Condition : distance < 300m d'un sommet Overpass ET en randonnée (GPS actif)
+- Format : "⛰️ Sommet approchant — Mont Blanc de Cheilon, 3243m"
+- Gate : FREE (info terrain)
+- Technique : vérifier dans le LocationCallback si la position est proche d'un peak en cache
+
+---
+
+#### 🟢 Valeur future — engagement Pro
+
+##### Partage de position en temps réel (Pro)
+
+- L'utilisateur génère un lien → ses contacts voient sa position sur une carte web
+- Notifications côté destinataire si le randonneur est inactif > X min
+- Nécessite : backend serveur → non prioritaire avant v7.x
+
+##### Rappel de départ optimal (Pro)
+
+- "Votre randonnée est prévue demain — météo favorable entre 7h et 10h"
+- Nécessite : planification de sortie (non implémentée)
+
+##### Résumé post-rando (Pro)
+
+- Notification 1h après la fin du REC : "Bravo — 8.4 km, 620 m D+, 3h14. Voir l'analyse"
+- Tap → ouvre TrackSheet avec le dernier tracé
+- Gate : PRO (stats enrichies)
+
+---
+
+### Contraintes techniques à garder en tête
+
+| Contrainte | Impact |
+| --- | --- |
+| Android 13+ POST_NOTIFICATIONS déjà demandé | Les notifications one-shot fonctionnent sans demande supplémentaire |
+| RecordingService déjà un foreground service | Peut envoyer des notifications depuis `onLocationResult()` sans permission supplémentaire |
+| Notifications one-shot (hors service) | Nécessitent que l'app soit en foreground ou un WorkManager — complexité accrue |
+| iOS (Capacitor PWA) | Nécessite `@capacitor/local-notifications` — à tester séparément |
+| Samsung/Xiaomi notification channels | Certains OEM groupent/masquent les notifications app — channel séparé recommandé pour alertes sécurité |
+
+### Ordre de priorité suggéré
+
+1. **Bouton "Arrêter REC" inline** dans notification existante (quick win, valeur immédiate)
+2. **Batterie faible pendant REC** (sécurité, simple broadcast receiver)
+3. **Alerte coucher de soleil** (sécurité, calcul local, zéro serveur)
+4. **Distance dans la notification** (amélioration UX immédiate)
+5. Reste : à valider avec les testeurs en rando
+
+---
+
 ## v7.x — Couche LLM optionnelle (Pro uniquement)
 
 > Dépendance : backend serveur (API Claude Haiku ~$0.01-0.03/résumé).
