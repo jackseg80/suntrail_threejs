@@ -75,6 +75,9 @@ public class RecordingService extends Service {
     private int  mLastPersistedCount = 0;
     private long mLastPersistTime    = 0;
 
+    // Cache du PendingIntent pour les mises à jour de notification
+    private PendingIntent mOpenPendingIntent;
+
     // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
     @Override
@@ -93,22 +96,13 @@ public class RecordingService extends Service {
 
         Intent openIntent = new Intent(this, MainActivity.class);
         openIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
+        mOpenPendingIntent = PendingIntent.getActivity(
             this, 0, openIntent,
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("SunTrail 3D — Enregistrement actif")
-            .setContentText("Enregistrement de parcours GPS en cours...")
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentIntent(pendingIntent)
-            .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .build();
+        startForeground(NOTIFICATION_ID, buildNotification(mPoints.size()));
 
-        startForeground(NOTIFICATION_ID, notification);
 
         // Lire la config depuis les Intent extras (premier démarrage)
         // ou depuis les SharedPreferences (redémarrage START_STICKY, intent peut être null)
@@ -149,6 +143,9 @@ public class RecordingService extends Service {
                         Log.w(TAG, "Erreur création point GPS : " + e.getMessage());
                     }
                 }
+
+                // Mise à jour de la notification avec le compteur de points
+                updateNotification(mPoints.size());
 
                 // Persister selon les seuils (pas systématiquement pour préserver les I/O)
                 long now = System.currentTimeMillis();
@@ -246,6 +243,28 @@ public class RecordingService extends Service {
     }
 
     // ── Notification ──────────────────────────────────────────────────────────────
+
+    private Notification buildNotification(int pointCount) {
+        String text = pointCount == 0
+            ? "GPS actif — en attente du premier point..."
+            : "GPS actif — " + pointCount + " point" + (pointCount > 1 ? "s" : "") + " enregistré" + (pointCount > 1 ? "s" : "");
+        return new NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("SunTrail 3D — Enregistrement actif")
+            .setContentText(text)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentIntent(mOpenPendingIntent)
+            .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .build();
+    }
+
+    private void updateNotification(int pointCount) {
+        NotificationManager nm = getSystemService(NotificationManager.class);
+        if (nm != null) {
+            nm.notify(NOTIFICATION_ID, buildNotification(pointCount));
+        }
+    }
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

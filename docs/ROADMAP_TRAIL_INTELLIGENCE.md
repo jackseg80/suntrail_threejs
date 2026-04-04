@@ -298,17 +298,20 @@ M = 1.5×W + 2.0×(W+L)×(L/W)² + η×(W+L)×(1.5×V² + 0.35×V×G)
 | 5 | REC → verrouiller écran 15 min | GPS continu (WakeLock + exemption batterie) | ☐ |
 | 6 | REC → background bref < 5s → revenir | Pas de points en double (dédup 500ms) | ☐ |
 
-### Comment vérifier via adb
+### Comment vérifier sur le terrain (sans câble)
 
-```bash
-adb logcat | grep -E "RecordingService|ActivityManager|LowMemory"
-```
+La notification Android affiche le compteur en temps réel :
 
-Chercher :
+> **SunTrail 3D — Enregistrement actif**
+> GPS actif — 247 points enregistrés
 
-- Messages `RecordingService: Points persistés sur disque` pendant le background → service GPS actif
-- `Killing <PID> (com.suntrail.threejs)` suivi de nouveaux logs `RecordingService` → service redémarré (START_STICKY)
-- Absence de `RecordingService: Erreur` → persistance I/O OK
+**Protocole sur le terrain :**
+1. Démarrer le REC — noter le compteur dans la notification
+2. Verrouiller l'écran ou ouvrir l'appareil photo
+3. Attendre 2-3 minutes
+4. Tirer le rideau de notifications sans rouvrir SunTrail
+5. Vérifier que le compteur a augmenté → le service GPS natif fonctionne
+6. Rouvrir SunTrail → vérifier que le tracé est continu (pas de trou)
 
 ### Appareils cibles
 
