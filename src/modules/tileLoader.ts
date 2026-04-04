@@ -267,17 +267,15 @@ export function getColorUrl(tx: number, ty: number, zoom: number): string {
  */
 export function getOverlayUrl(tx: number, ty: number, zoom: number): string | null {
     const MIN_TRAIL_LOD = 11;
-    // LOD 16+ : les sentiers sont déjà visibles dans les cartes topo (SwissTopo, IGN, OpenTopoMap, MapTiler).
-    // Charger l'overlay à ces LODs ajoute un 3ème fetch HTTP par tuile vers un serveur bénévole lent
-    // (waymarkedtrails.org) → bottleneck réseau sur mobile avec 100+ tuiles actives.
-    const MAX_TRAIL_LOD = 15;
-    if (!state.SHOW_TRAILS || zoom < MIN_TRAIL_LOD || zoom > MAX_TRAIL_LOD) return null;
+    if (!state.SHOW_TRAILS || zoom < MIN_TRAIL_LOD) return null;
 
-    // SwissTopo pour la Suisse (officiel, haute résolution)
+    // SwissTopo wanderwege : CDN gouvernemental, supporte Z0-28, rapide et fiable
     if (isTileFullyInRegion(tx, ty, zoom, isPositionInSwitzerland)) {
+        if (zoom > 18) return null;
         return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${zoom}/${tx}/${ty}.png`;
     }
-    // Waymarked Trails : overlay mondial OSM (GR, GRP, sentiers balisés) — France, Italie, Allemagne, etc.
+    // Waymarked Trails : serveur OSM bénévole — plafonné à Z17 (tuiles Z18 souvent vides)
+    if (zoom > 17) return null;
     return `https://tile.waymarkedtrails.org/hiking/${zoom}/${tx}/${ty}.png`;
 }
 

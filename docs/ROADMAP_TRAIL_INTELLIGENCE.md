@@ -251,6 +251,37 @@ M = 1.5×W + 2.0×(W+L)×(L/W)² + η×(W+L)×(1.5×V² + 0.35×V×G)
 
 ---
 
+## v6.4 — Sentiers vectoriels (remplacement overlay raster)
+
+> Remplace l'overlay PNG (waymarkedtrails.org + SwissTopo WMTS) par des géométries
+> Three.js issues de données OSM/Overpass. Élimine la dépendance au serveur bénévole,
+> fonctionne offline avec les packs pays, et résout définitivement la limite LOD 16-18.
+
+### Principes
+
+- **Source** : Overpass API — relations `[route=hiking]` + voies `[highway=path|track]`
+- **Cache** : 7 jours (même pattern que `peaks.ts`) + intégration PMTiles packs pays
+- **Rendu** : `LineSegments` ou `TubeGeometry` Three.js — visible à tout LOD sans plafond
+- **Offline** : sentiers pré-packagés dans les PMTiles des packs pays (LOD 11-18)
+
+### Split Free / Pro
+
+| Feature | Free | Pro |
+|---|---|---|
+| Sentiers visibles | Oui (toutes couleurs balisage) | Oui |
+| Style par difficulté | Non (trait unique) | Couleur par cotation OSM (`sac_scale`) |
+| Filtre type sentier | Non | Oui (GR, GRP, local, hors-sentier) |
+
+### Fichiers impactés
+
+- Nouveau : `src/modules/trails.ts` — fetch Overpass, cache, géométries Three.js
+- Modifié : `src/modules/tileLoader.ts` — suppression `getOverlayUrl()` (remplacé)
+- Modifié : `src/modules/terrain.ts` — suppression uniforms `uOverlayMap`/`uHasOverlay`
+- Modifié : `src/modules/ui/components/` — toggle sentiers reste intact (état `SHOW_TRAILS`)
+- Modifié : packs pays — intégration sentiers dans génération PMTiles
+
+---
+
 ## v7.x — Couche LLM optionnelle (Pro uniquement)
 
 > Dépendance : backend serveur (API Claude Haiku ~$0.01-0.03/résumé).

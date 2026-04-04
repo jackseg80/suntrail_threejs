@@ -78,9 +78,21 @@ describe('tileLoader.ts URLs', () => {
         expect(url).toContain('.png');
     });
 
-    it('should return null overlay at LOD 16+ (trails visible in base topo maps)', () => {
-        const url = getOverlayUrl(4240, 2915, 16);
-        expect(url).toBeNull();
+    it('should return SwissTopo overlay at LOD 16-18 for Swiss tiles', () => {
+        // Tuile Z13 (4270,2891) scaled: Z16=×8, Z17=×16, Z18=×32
+        expect(getOverlayUrl(34160, 23128, 16)).toContain('ch.swisstopo.swisstlm3d-wanderwege');
+        expect(getOverlayUrl(68320, 46256, 17)).toContain('ch.swisstopo.swisstlm3d-wanderwege');
+        expect(getOverlayUrl(136640, 92512, 18)).toContain('ch.swisstopo.swisstlm3d-wanderwege');
+    });
+    it('should return null for Swiss overlay at LOD 19', () => {
+        expect(getOverlayUrl(273280, 185024, 19)).toBeNull();
+    });
+    it('should return Waymarked Trails overlay at LOD 16-17 outside Switzerland', () => {
+        expect(getOverlayUrl(4240, 2915, 16)).toContain('tile.waymarkedtrails.org');
+        expect(getOverlayUrl(4240, 2915, 17)).toContain('tile.waymarkedtrails.org');
+    });
+    it('should return null for Waymarked overlay at LOD 18 outside Switzerland', () => {
+        expect(getOverlayUrl(4240, 2915, 18)).toBeNull();
     });
 
     it('should return null Overlay URL when trails are hidden', () => {
