@@ -112,6 +112,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **557** | **5.22.2** | **v5.22.2** | **Audits qualité #1→#7 : fix Vitest bloqueur (afterEach pool:forks), @types/three aligné r160, icon_1024 PWA, data_extraction_rules Android 12+, merge géométries eau (1 draw call), canvas réutilisé vegetation, shadow frustum 50k→5k, buildings cache borné, prefers-reduced-motion CSS+JS, landmarks ARIA, skip-to-content, FABs i18n aria, privacy.html RGPD corrigée (GPS + tiers manquants)** | **2026-04-04** |
 | **558** | **5.22.3** | **v5.22.3** | **Fix sentiers invisibles LOD 16-18 (Pro) : MAX_TRAIL_LOD 15 supprimé, plafonds par source — SwissTopo wanderwege Z18, Waymarked Trails Z17. Roadmap v6.4 sentiers vectoriels.** | **2026-04-04** |
 | **559** | **5.23.0** | **v5.23.0** | **GPS natif background : RecordingService enregistre via FusedLocationProviderClient (indépendant WebView), WakeLock partiel, persistance getFilesDir(), appStateChange flush immédiat, merge JS+natif dédup 500ms, exemption batterie OEM, stopWithTask=false** | **2026-04-04** |
+| **560** | **5.23.1** | **v5.23.1** | **Fix UX REC : suppression REQUEST_IGNORE_BATTERY_OPTIMIZATIONS (ouvrait Settings Android au tap REC), retrait appel automatique — WakeLock seul suffisant. Compliance Play Store.** | **2026-04-04** |
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
 

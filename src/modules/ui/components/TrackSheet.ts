@@ -7,7 +7,7 @@ import { showUpgradePrompt } from '../../iap';
 import { haptic } from '../../haptics';
 import { i18n } from '../../../i18n/I18nService';
 import gpxParser from 'gpxparser';
-import { startRecordingService, stopRecordingService, clearInterruptedRecording, getNativeRecordedPoints, clearNativeRecordedPoints, mergeAndDeduplicatePoints, requestBatteryOptimizationExemption } from '../../foregroundService';
+import { startRecordingService, stopRecordingService, clearInterruptedRecording, getNativeRecordedPoints, clearNativeRecordedPoints, mergeAndDeduplicatePoints } from '../../foregroundService';
 import { updateVisibleTiles, addGPXLayer, removeGPXLayer, toggleGPXLayer, updateRecordedTrackMesh } from '../../terrain';
 import { lngLatToTile, lngLatToWorld } from '../../geo';
 import { updateElevationProfile } from '../../profile';
@@ -67,8 +67,6 @@ export class TrackSheet extends BaseComponent {
                     }
                 }
                 showToast(i18n.t('track.toast.recStarted'));
-                // Demander l'exemption batterie (OEM agressifs : Samsung, Xiaomi) — fire-and-forget
-                void requestBatteryOptimizationExemption();
                 await startRecordingService();   // Démarre le Foreground Service Android + GPS natif
                 if (!state.isFollowingUser) await startLocationTracking();
                 if (state.userLocation) {

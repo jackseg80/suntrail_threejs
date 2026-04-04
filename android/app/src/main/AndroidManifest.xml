@@ -61,6 +61,4 @@
     <uses-permission android:name="com.android.vending.BILLING" />
     <!-- Wake Lock — maintient le CPU actif pendant l'enregistrement GPS (v5.23) -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <!-- Exemption optimisations batterie — essentiel pour les OEM agressifs (Samsung, Xiaomi) (v5.23) -->
-    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 </manifest>
