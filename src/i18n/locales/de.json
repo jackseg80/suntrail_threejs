@@ -609,6 +609,7 @@
     },
     "status": {
       "notPurchased": "Nicht gekauft",
+      "online": "☁ Online",
       "purchased": "Bereit zum Herunterladen",
       "downloading": "Wird heruntergeladen...",
       "installed": "Installiert",

@@ -84,14 +84,20 @@ Fichiers PMTiles par pays/région, achetés via IAP non-consumable (RevenueCat) 
 
 | Pack | LOD | Taille réelle | Produit RevenueCat |
 | ---- | --- | ------------- | ------------------ |
-| Suisse HD | 12-14 | 710 MB (~35 k tuiles) | `suntrail_pack_switzerland` |
-| France Alpes | 12-14 | ~200 MB | `suntrail_pack_france_alps` |
+| Suisse HD | 8-14 | ~721 MB (rebuild v2 prévu) | `suntrail_pack_switzerland` |
+| France Alpes HD | 8-14 | ~520 MB (rebuild v2 prévu) | `suntrail_pack_france_alps` |
 
-**Gating** : Tout acheteur du pack accède aux LOD 12-14 complets. Pas de restriction Pro — le pack est un achat unique indépendant de l'abonnement.
+> **v5.21.1** : les packs en prod sont LOD 12-14. Le rebuild LOD 8-14 est planifié (voir ci-dessous).
+
+**Gating** : Tout acheteur du pack accède à tous les LOD complets. Pas de restriction Pro — le pack est un achat unique indépendant de l'abonnement.
 
 **Architecture** : voir `AI_ARCHITECTURE.md` § "Packs Pays — packManager".
 
-**Sources** : SwissTopo `pixelkarte-farbe` (Suisse), IGN `PLANIGNV2` (France Alpes) — APIs publiques gouvernementales gratuites.
+**Sources** :
+
+- Suisse : SwissTopo `pixelkarte-farbe` — LOD 8-14 (API publique gratuite, haute qualité)
+- France Alpes : IGN `PLANIGNV2` — LOD 8-14 (API publique gratuite `data.geopf.fr`)
+- LOD 5-7 : OpenTopoMap interdit en bulk download → embedded overview APK (one-shot interne)
 
 **Build** : `npm run build-pack -- --pack switzerland` → `scripts/build-country-pack.ts` (sharp + pmtiles-writer, ~2h pour la Suisse). Cache résumable dans `.cache/pack-{id}/`.
 
@@ -103,7 +109,48 @@ packs/suntrail-pack-france_alps-v1.pmtiles
 ```
 R2 supporte les HTTP Range requests (nécessaire pour que la lib pmtiles charge les leaf directories à la demande). CORS : `GET`, `HEAD`, `ExposeHeaders: Content-Range, Accept-Ranges, Content-Length, ETag`.
 
-**Stockage app** : Android (`@capacitor/filesystem`) ou PWA (OPFS). Téléchargement complet (pas de streaming Range) pour usage 100% offline.
+**Stockage app** : OPFS uniquement (Android + PWA). Téléchargement complet (pas de streaming Range) pour usage 100% offline. `Filesystem.External` et `file://` ne supportent pas les Range requests dans WebView.
+
+---
+
+### Optimisation taille des packs (planifié v5.22)
+
+**Problème** : LOD 14 représente ~75% du volume total. À grande échelle (France entière), un pack naïf dépasserait 1.3 GB.
+
+**Leviers retenus** :
+
+#### 1. Qualité WebP différenciée par LOD
+
+Actuellement tout à `quality=80`. Les LOD bas sont surdimensionnés.
+
+```
+LOD 5-10  : quality 55  → ~5 KB/tuile  (au lieu de ~12 KB)
+LOD 11-12 : quality 70  → ~12 KB/tuile (au lieu de ~18 KB)
+LOD 13-14 : quality 80  → ~20 KB/tuile (inchangé)
+```
+
+Gain estimé : **20-30%** sur le volume total, sans impact visuel perceptible.
+À implémenter dans `scripts/build-country-pack.ts` → fonction `convertToWebP(buf, zoom)`.
+
+#### 2. Déduplication runLength (PMTiles v3)
+
+PMTiles v3 supporte le champ `runLength` pour dédupliquer les tuiles identiques consécutives (mer, neige, zones vides). Notre `pmtiles-writer.ts` ne l'implémente pas encore.
+Gain variable : faible pour les Alpes (peu de zones vides), fort pour la Bretagne (~30% mer).
+À implémenter dans `scripts/pmtiles-writer.ts`.
+
+#### 3. Découpage par massif (stratégie produit)
+
+Pour les grands territoires, vendre des packs ciblés plutôt qu'un pack national.
+
+- France Alpes ✓ (fait) — Pyrénées, Vosges, Massif Central à venir
+- Objectif : rester sous 600 MB par pack
+- Permet à l'utilisateur d'acheter uniquement les zones qui l'intéressent
+
+**Ordre d'implémentation recommandé** :
+
+1. Qualité WebP différenciée → quick win, s'applique au rebuild v2
+2. Rebuild Suisse v2 + France Alpes v2 (LOD 8-14, nouvelle qualité)
+3. Déduplication runLength → pour les futurs packs côtiers/plats
 
 ---
 

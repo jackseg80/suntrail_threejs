@@ -48,7 +48,7 @@ const EMBEDDED_CATALOG: PackCatalog = {
             bounds: { minLat: 43.5, maxLat: 46.5, minLon: 4.5, maxLon: 7.8 },
             lodRange: { min: 12, max: 14 },
             version: 1,
-            sizeMB: 200,
+            sizeMB: 509,
             cdnUrl: `${CATALOG_URL?.replace('/catalog.json', '') ?? ''}/packs/suntrail-pack-france_alps-v1.pmtiles`,
             regionCheck: 'france_alps',
         },
@@ -102,7 +102,10 @@ class PackManager {
     private async _doFetchCatalog(): Promise<PackCatalog> {
         if (CATALOG_URL) {
             try {
-                const resp = await fetch(CATALOG_URL, { cache: 'no-cache' });
+                const ctrl = new AbortController();
+                const tid = setTimeout(() => ctrl.abort(), 3000);
+                const resp = await fetch(CATALOG_URL, { cache: 'no-cache', signal: ctrl.signal });
+                clearTimeout(tid);
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const data = await resp.json() as PackCatalog;
                 this.catalog = data;
@@ -345,24 +348,32 @@ class PackManager {
     }
 
     async getTileFromPacks(z: number, x: number, y: number): Promise<Blob | null> {
-        for (const [packId, archive] of this.mountedArchives) {
-            const meta = this.getPackMeta(packId);
-            if (!meta) continue;
+        // Deux passes : OPFS (installed) en premier, CDN (purchased) ensuite.
+        // Un pack CDN qui bloque sur un timeout DNS ne doit jamais empêcher
+        // un pack OPFS de servir ses tuiles — même si IS_OFFLINE n'est pas encore détecté.
+        for (const pass of [true, false]) {
+            for (const [packId, archive] of this.mountedArchives) {
+                const meta = this.getPackMeta(packId);
+                if (!meta) continue;
+                if (z < meta.lodRange.min || z > meta.lodRange.max) continue;
+                if (!this.isTileInPackRegion(x, y, z, meta)) continue;
 
-            // Check LOD range
-            if (z < meta.lodRange.min || z > meta.lodRange.max) continue;
+                const ps = this.packStates.get(packId);
+                const isOpfs = ps?.status === 'installed' || ps?.status === 'update_available';
 
-            // Check region bounds (simple bounding box, pas 4-corners ici car l'archive
-            // ne contient QUE des tuiles valides — le filtrage 4-corners a été fait au build)
-            if (!this.isTileInPackRegion(x, y, z, meta)) continue;
+                // Passe 1 (pass=true) : OPFS uniquement. Passe 2 : CDN uniquement.
+                if (pass !== isOpfs) continue;
+                // Packs CDN : skip si offline pour éviter le timeout DNS
+                if (!isOpfs && state.IS_OFFLINE) continue;
 
-            try {
-                const tileData = await archive.getZxy(z, x, y);
-                if (tileData?.data) {
-                    return new Blob([tileData.data], { type: 'image/webp' });
+                try {
+                    const tileData = await archive.getZxy(z, x, y);
+                    if (tileData?.data) {
+                        return new Blob([tileData.data], { type: 'image/webp' });
+                    }
+                } catch {
+                    // Tile not in archive — continue to next pack
                 }
-            } catch {
-                // Tile not in archive — continue to next pack
             }
         }
         return null;

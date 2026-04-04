@@ -113,7 +113,14 @@ export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevatio
 }
 
 function getIdealZoom(dist: number): number {
-    const boost = (state.MAP_SOURCE === 'satellite') ? 2.0 : 1.2;
+    // satellite : zoom agressif (haute résolution à grande distance).
+    // swisstopo/ign : seuils stricts — la source est haute qualité mais les tuiles
+    //   sont pixellisées au-delà de leur résolution native → pas de boost élargi.
+    // opentopomap : léger boost car la source est moins précise aux LOD élevés,
+    //   on préfère rester un cran en-dessous plutôt que de forcer un LOD trop haut.
+    const boost = state.MAP_SOURCE === 'satellite' ? 2.0
+                : state.MAP_SOURCE === 'swisstopo' ? 1.0
+                : 1.2;
     if (dist < 800 * boost) return 18;
     if (dist < 1800 * boost) return 17;
     if (dist < 4000 * boost) return 16;
@@ -295,7 +302,9 @@ export async function initScene(): Promise<void> {
             newZoom = targetZoom;
         } else {
             // Sinon on garde l'hystérésis pour la fluidité (évite le clignotement aux seuils)
-            const boost = (state.MAP_SOURCE === 'satellite') ? 2.0 : 1.2;
+            const boost = state.MAP_SOURCE === 'satellite' ? 2.0
+                        : state.MAP_SOURCE === 'swisstopo' ? 1.0
+                        : 1.2;
             if (state.ZOOM === 13) { if (dist < 22000) newZoom = 14; else if (dist > 65000) newZoom = 12; }
             else if (state.ZOOM === 14) { if (dist > 35000) newZoom = 13; else if (dist < 9000 * boost) newZoom = 15; }
             else if (state.ZOOM === 15) { if (dist > 14000 * boost) newZoom = 14; else if (dist < 4000 * boost) newZoom = 16; }

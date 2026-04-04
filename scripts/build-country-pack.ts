@@ -1,7 +1,7 @@
 /**
  * build-country-pack.ts
  *
- * Génère un fichier PMTiles v3 pour un pack pays (LOD 12-14).
+ * Génère un fichier PMTiles v3 pour un pack pays (LOD 8-14).
  * Sources : SwissTopo (Suisse), IGN (France Alpes) — APIs publiques gratuites.
  *
  * Supporte la reprise après interruption : les tuiles sont cachées dans
@@ -41,21 +41,30 @@ const PACKS: Record<string, PackDef> = {
         id: 'switzerland',
         name: 'Switzerland HD',
         bounds: { minLat: 45.8, maxLat: 47.8, minLon: 5.9, maxLon: 10.5 },
-        zooms: [12, 13, 14],
+        zooms: [8, 9, 10, 11, 12, 13, 14],
         source: 'swisstopo',
-        version: 1,
+        version: 2,
     },
     france_alps: {
         id: 'france_alps',
         name: 'France Alpes HD',
         bounds: { minLat: 43.5, maxLat: 46.5, minLon: 4.5, maxLon: 7.8 },
-        zooms: [12, 13, 14],
+        zooms: [8, 9, 10, 11, 12, 13, 14],
         source: 'ign',
-        version: 1,
+        version: 2,
     },
 };
 
-const WEBP_QUALITY = 85;
+/**
+ * Qualité WebP adaptée au LOD.
+ * Basse résolution → compression agressive sans perte visuelle perceptible.
+ * LOD 5-10 : ~5 KB/tuile | LOD 11-12 : ~12 KB | LOD 13-14 : ~20 KB
+ */
+function webpQualityForZoom(zoom: number): number {
+    if (zoom <= 10) return 55;
+    if (zoom <= 12) return 70;
+    return 80;
+}
 const RATE_LIMIT_MS = 200;
 const MAX_RETRIES = 3;
 
@@ -160,8 +169,8 @@ async function downloadTile(ref: TileRef, source: PackDef['source']): Promise<Bu
     throw new Error('unreachable');
 }
 
-async function convertToWebP(imgBuffer: Buffer): Promise<Buffer> {
-    return sharp(imgBuffer).webp({ quality: WEBP_QUALITY }).toBuffer();
+async function convertToWebP(imgBuffer: Buffer, zoom: number): Promise<Buffer> {
+    return sharp(imgBuffer).webp({ quality: webpQualityForZoom(zoom) }).toBuffer();
 }
 
 // --- Main ---
@@ -222,7 +231,7 @@ async function main() {
     for (const ref of toDownload) {
         try {
             const raw = await downloadTile(ref, pack.source);
-            const webp = await convertToWebP(raw);
+            const webp = await convertToWebP(raw, ref.z);
             saveTileToCache(cacheDir, ref, webp);
         } catch (e) {
             errors++;
@@ -287,7 +296,7 @@ async function main() {
     // 7. Metadata
     const metadata = Buffer.from(JSON.stringify({
         name: `SunTrail Pack: ${pack.name}`,
-        description: `Country pack LOD ${pack.zooms[0]}-${pack.zooms[pack.zooms.length - 1]} (${pack.source})`,
+        description: `Country pack LOD ${pack.zooms[0]}-${pack.zooms[pack.zooms.length - 1]} (${pack.source}), WebP quality adaptive per LOD`,
         format: 'webp',
         packId: pack.id,
         packVersion: pack.version,

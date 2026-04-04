@@ -127,20 +127,17 @@ export class PacksSheet extends BaseComponent {
             actions.appendChild(buyBtn);
 
         } else if (status === 'purchased') {
-            // Pack acheté = actif via CDN
+            // Pack acheté = streaming CDN (réseau requis, pas de copie locale)
             const badge = document.createElement('span');
-            badge.style.cssText = 'color:#22c55e; font-size:var(--text-sm); font-weight:600;';
-            badge.textContent = '\u2713 Actif';
+            badge.style.cssText = 'color:#f59e0b; font-size:var(--text-sm); font-weight:600;';
+            badge.textContent = i18n.t('packs.status.online');
             actions.appendChild(badge);
 
-            // Bouton download optionnel pour mode offline
-            if (Capacitor.isNativePlatform()) {
-                const dlBtn = this.createButton('packs.btn.download', 'rgba(255,255,255,0.1)');
-                dlBtn.style.marginLeft = 'auto';
-                dlBtn.style.color = 'var(--text-2)';
-                dlBtn.addEventListener('click', () => this.handleDownload(meta.id));
-                actions.appendChild(dlBtn);
-            }
+            // Bouton download pour mode offline
+            const dlBtn = this.createButton('packs.btn.download', 'var(--accent, #3b7ef8)');
+            dlBtn.style.marginLeft = 'auto';
+            dlBtn.addEventListener('click', () => this.handleDownload(meta.id));
+            actions.appendChild(dlBtn);
 
         } else if (status === 'downloading') {
             // Progress bar

@@ -38,13 +38,31 @@ export async function loadBuildingsForTile(tile: Tile) {
     if (!state.isPro || !state.SHOW_BUILDINGS || tile.zoom < state.BUILDING_ZOOM_THRESHOLD || (tile.status as string) === 'disposed') return;
     if (tile.buildingMesh) return;
 
+    // Limite effective basée sur la distance au centre caméra.
+    // Tuiles proches : BUILDING_LIMIT complet. Tuiles lointaines : limite réduite ou skip.
+    // Le rayon max = 2.5 × largeur d'une tuile, quelle que soit le LOD.
+    let effectiveLimit = state.BUILDING_LIMIT || 60;
+    if (state.controls) {
+        const dx = tile.worldX - state.controls.target.x;
+        const dz = tile.worldZ - state.controls.target.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        const maxDist = tile.tileSizeMeters * 2.5;
+        if (dist > maxDist) return;
+        // Dégradé linéaire : 100 % à dist=0 → 25 % à la limite du rayon
+        effectiveLimit = Math.max(1, Math.ceil(effectiveLimit * (1 - (dist / maxDist) * 0.75)));
+    }
+
     // 1. TENTATIVE VIA MAPTILER VECTOR TILES (Plus rapide, optimisé tuile)
     if (!state.isMapTilerDisabled && state.MK) {
         try {
             const maptilerBuildings = await fetchBuildingsMapTiler(tile);
             if (maptilerBuildings && maptilerBuildings.length > 0) {
-                renderBuildingsMapTiler(tile, maptilerBuildings);
-                return;
+                renderBuildingsMapTiler(tile, maptilerBuildings, effectiveLimit);
+                // Ne retourner que si des bâtiments ont effectivement été rendus pour
+                // cette sous-tuile. La Z14 parente peut avoir des features sans qu'aucune
+                // ne tombe dans cette sous-tuile précise — dans ce cas, on laisse Overpass
+                // compléter avec les données OSM.
+                if (tile.buildingMesh) return;
             }
         } catch (e) {
             console.warn("[MapTiler] Erreur bâtiments, bascule sur OSM");
@@ -83,13 +101,17 @@ export async function loadBuildingsForTile(tile: Tile) {
     const bounds = tile.getBounds();
     const tileBuildings = buildings.filter(el => {
         if (!el.geometry || el.geometry.length === 0) return false;
-        const lat = el.geometry[0].lat;
-        const lon = el.geometry[0].lon;
-        return lat <= bounds.north && lat >= bounds.south && lon <= bounds.east && lon >= bounds.west;
+        // Centroïde des nœuds OSM pour éviter d'ignorer les bâtiments dont le premier
+        // nœud tombe hors des bornes de la tuile alors que la majorité est dedans.
+        let sumLat = 0, sumLon = 0;
+        for (const p of el.geometry) { sumLat += p.lat; sumLon += p.lon; }
+        const clat = sumLat / el.geometry.length;
+        const clon = sumLon / el.geometry.length;
+        return clat <= bounds.north && clat >= bounds.south && clon <= bounds.east && clon >= bounds.west;
     });
 
     if (tileBuildings.length > 0) {
-        renderBuildingsMerged(tile, tileBuildings);
+        renderBuildingsMerged(tile, tileBuildings, effectiveLimit);
     }
 }
 
@@ -142,13 +164,11 @@ async function fetchBuildingsMapTiler(tile: Tile): Promise<any[] | null> {
     return features;
 }
 
-function renderBuildingsMapTiler(tile: Tile, features: any[]) {
+function renderBuildingsMapTiler(tile: Tile, features: any[], limit: number) {
     if ((tile.status as string) === 'disposed' || !tile.mesh) return;
 
     const geometries: THREE.BufferGeometry[] = [];
     const material = getSharedMaterial('maptiler');
-
-    const limit = state.BUILDING_LIMIT || 150; 
     const EXTENT = 4096; // MapTiler default extent
     
     const requestZoom = Math.min(tile.zoom, 14);
@@ -247,13 +267,11 @@ async function fetchBuildingsWithCache(z: number, x: number, y: number, key: str
     return null;
 }
 
-function renderBuildingsMerged(tile: Tile, elements: any[]) {
+function renderBuildingsMerged(tile: Tile, elements: any[], limit: number) {
     if ((tile.status as string) === 'disposed' || !tile.mesh) return;
 
     const geometries: THREE.BufferGeometry[] = [];
     const material = getSharedMaterial('overpass');
-    
-    const limit = state.BUILDING_LIMIT || 60;
 
     elements.slice(0, limit).forEach(el => {
         if (el.type === 'way' && el.geometry) {
