@@ -169,11 +169,30 @@ public class RecordingService extends Service {
             @Override
             public void onLocationResult(@NonNull LocationResult result) {
                 for (Location loc : result.getLocations()) {
+                    // FILTRAGE : ignorer points imprécis (> 50m) (v5.23.4)
+                    if (loc.getAccuracy() > 50.0f) {
+                        Log.d(TAG, "Point ignoré (précision " + loc.getAccuracy() + "m > 50m)");
+                        continue;
+                    }
+                    
+                    // FILTRAGE : ignorer sans altitude valide (v5.23.4)
+                    if (!loc.hasAltitude()) {
+                        Log.d(TAG, "Point ignoré (pas d'altitude)");
+                        continue;
+                    }
+                    
+                    // FILTRAGE : ignorer altitude aberrante (v5.23.4)
+                    double alt = loc.getAltitude();
+                    if (alt < -500 || alt > 9000) {
+                        Log.d(TAG, "Point ignoré (altitude aberrante " + alt + "m)");
+                        continue;
+                    }
+                    
                     try {
                         JSONObject point = new JSONObject();
                         point.put("lat",       loc.getLatitude());
                         point.put("lon",       loc.getLongitude());
-                        point.put("alt",       loc.hasAltitude() ? loc.getAltitude() : 0.0);
+                        point.put("alt",       alt);
                         point.put("timestamp", loc.getTime());
                         mPoints.add(point);
                     } catch (JSONException e) {
