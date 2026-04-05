@@ -4,6 +4,20 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.24.1] - 2026-04-05
+
+### 🔧 GPS Recording - Fix régression précision + "champignon rouge"
+
+- **Fix "champignon rouge"** : Validation des coordonnées GPS (NaN, altitudes aberrantes) + drapage sur terrain comme les GPX importés
+- **Filtrage précision natif** : RecordingService.java ignore les points avec précision > 50m ou sans altitude valide
+- **Cohérence coordonnées** : `recordingOriginTile` figé au début de l'enregistrement évite les décalages quand l'utilisateur bouge la carte
+- **Config GPS optimisée** : Interval 2s (au lieu de 3s), minDisplacement 3m (au lieu de 0.5m) évite la dérive GPS
+- **Validation vitesse** : Points avec vitesse > 54 km/h rejetés (impossible à pied)
+- **Limite sécurité mémoire** : MAX_RECORDED_POINTS = 5000 (≈8h de randonnée) évite les crashs sur longues traces
+- **Fix terrainY=0** : Quand terrain non chargé, utilise l'altitude GPS brute au lieu de 0 (trace sous le terrain)
+
+---
+
 ## [5.22.2] - 2026-04-04
 
 ### 🔧 Tests — Fix bloqueur Vitest + qualité suite (Audit #1 + #6)
