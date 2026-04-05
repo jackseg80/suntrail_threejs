@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { state } from './state';
-import { startLocationTracking, stopLocationTracking } from './location';
+import { startLocationTracking, stopLocationTracking, resetLocationTrackingVars } from './location';
 import { Geolocation } from '@capacitor/geolocation';
 
 // Mock Geolocation
@@ -56,6 +56,8 @@ describe('Live Tracking Recording (v5.7)', () => {
         state.isRecording = false;
         state.recordedPoints = [];
         state.userLocation = null;
+        state.recordingOriginTile = null;
+        resetLocationTrackingVars();
         vi.clearAllMocks();
     });
 
@@ -103,5 +105,34 @@ describe('Live Tracking Recording (v5.7)', () => {
         state.recordedPoints = []; // UI logic would do this
         
         expect(state.recordedPoints.length).toBe(0);
+    });
+
+    it('should set recordingOriginTile when starting recording', async () => {
+        state.isRecording = true;
+        state.originTile = { x: 100, y: 100, z: 13 };
+        
+        // Need to use a position different from (0,0) to trigger the distMove filter
+        vi.mocked(Geolocation.watchPosition).mockImplementationOnce((_opts, cb) => {
+            cb({
+                coords: {
+                    latitude: 46.6,
+                    longitude: 7.6,
+                    altitude: 1100,
+                    accuracy: 10,
+                    altitudeAccuracy: 10,
+                    heading: 0,
+                    speed: 0
+                },
+                timestamp: Date.now()
+            }, null);
+            return Promise.resolve('watch-789') as any;
+        });
+
+        await startLocationTracking();
+        
+        // Wait for the callback to be processed
+        await new Promise(resolve => setTimeout(resolve, 10));
+        
+        expect(state.recordingOriginTile).toEqual({ x: 100, y: 100, z: 13 });
     });
 });

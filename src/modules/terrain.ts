@@ -1094,7 +1094,8 @@ export function updateRecordedTrackMesh(): void {
             const terrainY = getAltitudeAt(pos.x, pos.z);
             const gpsY = p.alt * state.RELIEF_EXAGGERATION + 8;
             // Prendre le max pour éviter d'être sous le terrain
-            const finalY = Math.max(terrainY, gpsY);
+            // v5.23.4: Si terrain non chargé (terrainY === 0), utiliser uniquement GPS
+            const finalY = terrainY === 0 ? gpsY : Math.max(terrainY, gpsY);
             return new THREE.Vector3(pos.x, finalY, pos.z);
         });
 

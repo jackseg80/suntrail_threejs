@@ -47,7 +47,19 @@ function initOrientationTracking() {
     }
 }
 
-let lastLat = 0, lastLon = 0;
+let lastLat = 0, lastLon = 0, lastAlt = 0, lastTime = 0;
+
+// Constants for GPS recording safety (v5.23.4)
+const MAX_RECORDED_POINTS = 5000; // Prevent memory crashes on long hikes
+const MAX_SPEED_MPS = 15; // 54 km/h - impossible for hiking/running
+
+/** Reset module-level variables for testing */
+export function resetLocationTrackingVars(): void {
+    lastLat = 0;
+    lastLon = 0;
+    lastAlt = 0;
+    lastTime = 0;
+}
 
 export async function startLocationTracking() {
     if (watchId !== null) return;
@@ -71,23 +83,47 @@ export async function startLocationTracking() {
             if (distMove > 0.000005) { // Env. 50cm
                 if (state.userLocation === null) state.lastTrackingUpdate = Date.now();
                 state.userLocation = { lat: latitude, lon: longitude, alt: altitude || 0 };
-                lastLat = latitude; lastLon = longitude;
                 
                 // --- ENREGISTREMENT DU TRACÉ (v5.8.16) ---
                 if (state.isRecording) {
-                    // v5.23.4: Utiliser recordingOriginTile figé pour cohérence des coordonnées
-                    if (!state.recordingOriginTile) {
-                        state.recordingOriginTile = { ...state.originTile };
+                    // v5.23.4: Vérifier la vitesse (impossible > 54 km/h à pied)
+                    const now = Date.now();
+                    let speedValid = true;
+                    if (lastTime > 0) {
+                        const dt = (now - lastTime) / 1000; // seconds
+                        const dx = (longitude - lastLon) * 111320 * Math.cos(latitude * Math.PI / 180);
+                        const dy = (latitude - lastLat) * 111320;
+                        const dz = (altitude || 0) - lastAlt; // altitude difference
+                        const dist = Math.sqrt(dx*dx + dy*dy + dz*dz); // 3D distance in meters
+                        const speed = dist / dt; // m/s
+                        if (speed > MAX_SPEED_MPS) {
+                            console.warn(`[GPS] Point rejeté (vitesse ${(speed * 3.6).toFixed(1)} km/h > ${MAX_SPEED_MPS * 3.6} km/h)`);
+                            speedValid = false;
+                        }
                     }
-                    state.recordedPoints = [...state.recordedPoints, {
-                        lat: latitude,
-                        lon: longitude,
-                        alt: altitude || 0,
-                        timestamp: Date.now()
-                    }];
-                    updateRecordedTrackMesh();
-                    // Mettre à jour le snapshot (localStorage count + filesystem points)
-                    updateRecordingSnapshot(state.recordedPoints.length, state.recordedPoints);
+                    
+                    // v5.23.4: Limiter le nombre de points (sécurité mémoire)
+                    if (speedValid && state.recordedPoints.length < MAX_RECORDED_POINTS) {
+                        // v5.23.4: Utiliser recordingOriginTile figé pour cohérence des coordonnées
+                        if (!state.recordingOriginTile) {
+                            state.recordingOriginTile = { ...state.originTile };
+                        }
+                        state.recordedPoints = [...state.recordedPoints, {
+                            lat: latitude,
+                            lon: longitude,
+                            alt: altitude || 0,
+                            timestamp: now
+                        }];
+                        updateRecordedTrackMesh();
+                        // Mettre à jour le snapshot (localStorage count + filesystem points)
+                        updateRecordingSnapshot(state.recordedPoints.length, state.recordedPoints);
+                    }
+                    
+                    // Mettre à jour les coordonnées/temps pour le prochain calcul de vitesse
+                    lastLat = latitude; lastLon = longitude; lastAlt = altitude || 0; lastTime = now;
+                } else {
+                    // Reset tracking variables when not recording
+                    lastLat = latitude; lastLon = longitude; lastAlt = altitude || 0; lastTime = 0;
                 }
 
                 updateUserMarker();
