@@ -69,8 +69,8 @@ export async function startRecordingService(): Promise<void> {
     if (RecordingNative) {
         try {
             await RecordingNative.startForeground({
-                interval:        3000,
-                minDisplacement: 0.5,
+                interval:        2000,        // v5.23.4: 2s au lieu de 3s (plus fluide)
+                minDisplacement: 3.0,         // v5.23.4: 3m au lieu de 0.5m (évite dérive GPS)
                 highAccuracy:    true,
             });
         } catch (e) {

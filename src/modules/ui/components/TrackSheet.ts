@@ -67,6 +67,8 @@ export class TrackSheet extends BaseComponent {
                     }
                 }
                 showToast(i18n.t('track.toast.recStarted'));
+                // v5.23.4: Figer originTile au démarrage pour cohérence des coordonnées
+                state.recordingOriginTile = { ...state.originTile };
                 await startRecordingService();   // Démarre le Foreground Service Android + GPS natif
                 if (!state.isFollowingUser) await startLocationTracking();
                 if (state.userLocation) {
@@ -84,6 +86,8 @@ export class TrackSheet extends BaseComponent {
                 }
                 await stopRecordingService();    // Arrête le Foreground Service Android
                 void clearNativeRecordedPoints();
+                // v5.23.4: Réinitialiser recordingOriginTile
+                state.recordingOriginTile = null;
                 showToast(i18n.t('track.toast.recStopped'));
                 // Sauvegarde interne systématique au STOP (sans gate Pro)
                 if (state.recordedPoints.length >= 2) {

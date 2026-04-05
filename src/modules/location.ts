@@ -75,6 +75,10 @@ export async function startLocationTracking() {
                 
                 // --- ENREGISTREMENT DU TRACÉ (v5.8.16) ---
                 if (state.isRecording) {
+                    // v5.23.4: Utiliser recordingOriginTile figé pour cohérence des coordonnées
+                    if (!state.recordingOriginTile) {
+                        state.recordingOriginTile = { ...state.originTile };
+                    }
                     state.recordedPoints = [...state.recordedPoints, {
                         lat: latitude,
                         lon: longitude,

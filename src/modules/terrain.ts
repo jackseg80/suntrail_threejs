@@ -1075,10 +1075,31 @@ export function updateRecordedTrackMesh(): void {
         disposeObject(state.recordedMesh);
     }
 
-    const threePoints = state.recordedPoints.map(p => {
-        const pos = lngLatToWorld(p.lon, p.lat, state.originTile);
-        return new THREE.Vector3(pos.x, p.alt * state.RELIEF_EXAGGERATION + 8, pos.z);
-    });
+    // v5.23.4: Utiliser recordingOriginTile figé si disponible
+    const originTile = state.recordingOriginTile || state.originTile;
+
+    // Valider et draper les points sur le terrain (v5.23.4 - fix champignon rouge)
+    const threePoints = state.recordedPoints
+        .filter(p => {
+            // Validation des coordonnées GPS
+            if (typeof p.lat !== 'number' || typeof p.lon !== 'number' || typeof p.alt !== 'number') return false;
+            if (isNaN(p.lat) || isNaN(p.lon) || isNaN(p.alt)) return false;
+            if (Math.abs(p.lat) > 90 || Math.abs(p.lon) > 180) return false;
+            if (p.alt < -500 || p.alt > 9000) return false; // Altitudes impossibles
+            return true;
+        })
+        .map(p => {
+            const pos = lngLatToWorld(p.lon, p.lat, originTile);
+            // Draper sur le terrain comme les GPX importés (v5.23.4)
+            const terrainY = getAltitudeAt(pos.x, pos.z);
+            const gpsY = p.alt * state.RELIEF_EXAGGERATION + 8;
+            // Prendre le max pour éviter d'être sous le terrain
+            const finalY = Math.max(terrainY, gpsY);
+            return new THREE.Vector3(pos.x, finalY, pos.z);
+        });
+
+    // Vérifier qu'on a assez de points valides
+    if (threePoints.length < 2) return;
 
     const curve = new THREE.CatmullRomCurve3(threePoints);
     const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length * 2, 800), thickness, 4, false);
