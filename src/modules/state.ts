@@ -174,6 +174,7 @@ export interface State {
     FOG_NEAR: number;
     FOG_FAR: number;
     originTile: { x: number; y: number; z: number };
+    recordingOriginTile: { x: number; y: number; z: number } | null; // v5.23.4: Origin figé pendant REC
 
     scene: THREE.Scene | null;
     camera: THREE.PerspectiveCamera | null;
@@ -291,6 +292,7 @@ const initialState: State = {
     TARGET_LAT: 46.8182, TARGET_LON: 8.2275, initialLat: 46.8182, initialLon: 8.2275,
     ZOOM: 6, RELIEF_EXAGGERATION: 2.0, FOG_NEAR: 5000, FOG_FAR: 40000,
     originTile: { x: 0, y: 0, z: 6 },
+    recordingOriginTile: null, // v5.23.4: Origin figé pendant REC
     scene: null, camera: null, renderer: null, controls: null, sunLight: null, ambientLight: null, sky: null,
     stats: null, vramPanel: null,
 
