@@ -14,37 +14,61 @@
 
 ### 1. **Intervalle GPS adaptatif** (HIGH PRIORITY)
 **Problème** : Actuellement 1 point/seconde (interval: 3000ms, mais fastest: 1000ms)
-**Solution** : Mode économie d'énergie progressif
+**Solution** : Mode économie d'énergie progressif (sans sacrifier la précision)
 
 ```java
 // RecordingService.java
 // Mode dynamique selon la durée
+// IMPORTANT: On ne dépasse jamais 10s pour garder une trace utilisable
 private void adjustGpsInterval(long elapsedMinutes) {
     long interval;
     if (elapsedMinutes < 10) {
-        interval = 3000;  // 3s (début précis)
+        interval = 3000;  // 3s (début précis pour calibrage)
     } else if (elapsedMinutes < 60) {
-        interval = 5000;  // 5s (standard)
+        interval = 5000;  // 5s (standard, bon compromis)
     } else if (elapsedMinutes < 180) {
-        interval = 10000; // 10s (3h+, économie)
+        interval = 5000;  // 5s (1-3h, maintien qualité)
     } else {
-        interval = 15000; // 15s (6h+, max économie)
+        interval = 7000;  // 7s (3h+, économie modérée)
+        // Note: 10s MAXIMUM pour garder précision dans virages
+        // 15s créerait une trace trop approximative
     }
     // Mettre à jour LocationRequest sans redémarrer le service
 }
 ```
 
-**Impact** : ~30-40% d'économie de batterie sur randos 8h
+**Pourquoi pas plus de 7-10s ?**
+- À 4km/h (vitesse marche), en 7s on parcourt ~8m
+- Dans un virage serré, 10s peuvent manquer le point de changement de direction
+- 7s = bon compromis entre économie (~25%) et précision
 
-### 2. **WakeLock intelligent** (MEDIUM PRIORITY)
-**Problème** : WakeLock partiel actif en permanence
-**Solution** : Pattern "WakeLock intermittent"
+**Impact** : ~20-25% d'économie de batterie (sans perte de qualité)
+
+### 1b. **Précision GPS adaptative selon vitesse** (HIGH PRIORITY)
+**Meilleure optimisation** : Adapter la précision GPS à la vitesse de déplacement
 
 ```java
-// Au lieu de tenir le CPU en permanence
-// Utiliser AlarmManager pour réveiller périodiquement
-// ET laisser le GPS hardware faire son travail en dormant
+// Si on marche lentement (< 3km/h) = pas besoin de haute précision
+// Si on arrête de bouger > 30s = mode économie extrême
+
+private void adjustGpsAccuracy(float speedMps) {
+    if (speedMps < 0.5f) {
+        // Presque à l'arrêt - mode économie
+        locationRequest.setPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY);
+        locationRequest.setInterval(10000); // 10s quand immobile
+    } else if (speedMps < 1.5f) {
+        // Marche lente (3-5km/h)
+        locationRequest.setPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY);
+        locationRequest.setInterval(5000); // 5s
+    } else {
+        // Marche rapide ou course
+        locationRequest.setPriority(Priority.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setInterval(3000); // 3s
+    }
+}
 ```
+
+**Impact** : ~35-40% d'économie (meilleur que juste l'intervalle fixe)
 
 ### 3. **Batch inserts SQLite** (HIGH PRIORITY)
 **Problème** : 1 insert par point ( Room interdit MainThread mais exécuteur créé à chaque fois)
