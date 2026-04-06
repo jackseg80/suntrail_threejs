@@ -48,6 +48,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
     private AppDatabase    mDatabase;
     private GPSPointDao    mDao;
     private ExecutorService mDbExecutor;
+    private String          mCurrentCourseId; // Course ID actif (mis à jour via onNewPoints)
 
     // ═══════════════════════════════════════════════════════════════════════════
     // Lifecycle
@@ -83,6 +84,9 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
      */
     @Override
     public void onNewPoints(String courseId, int pointCount) {
+        // Stocker le courseId courant
+        mCurrentCourseId = courseId;
+        
         // Envoyer un événement au JS via notifyListeners()
         // Le JS peut écouter via Recording.addListener('onNewPoints', ...)
         JSObject eventData = new JSObject();
@@ -164,7 +168,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
      */
     @PluginMethod
     public void getRecordedPoints(PluginCall call) {
-        String courseId = call.getString("courseId", RecordingService.getCurrentCourseId());
+        String courseId = call.getString("courseId", mCurrentCourseId);
 
         if (courseId == null || courseId.isEmpty()) {
             // Pas de course en cours, retourner vide
