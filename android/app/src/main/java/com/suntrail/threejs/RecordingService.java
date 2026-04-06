@@ -156,6 +156,11 @@ public class RecordingService extends Service {
         mLastValidLocation = null;
         mLastValidTimestamp = 0;
         mPointCount.set(0);
+        
+        // Notifier le plugin du nouveau courseId (même sans points encore)
+        if (sCallback != null) {
+            sCallback.onNewPoints(mCurrentCourseId, 0);
+        }
 
         Intent openIntent = new Intent(this, MainActivity.class);
         openIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);

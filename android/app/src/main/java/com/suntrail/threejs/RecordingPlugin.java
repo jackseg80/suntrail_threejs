@@ -100,11 +100,46 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
     // ═══════════════════════════════════════════════════════════════════════════
 
     /**
+     * Démarre une course d'enregistrement GPS (v5.25.0).
+     * Démarre le service, génère un courseId et retourne immédiatement.
+     * Le courseId est aussi envoyé via l'événement onNewPoints.
+     */
+    @PluginMethod
+    public void startCourse(PluginCall call) {
+        // Récupérer l'originTile si fourni
+        JSObject originTileObj = call.getObject("originTile");
+        if (originTileObj != null) {
+            // Stocker dans SharedPreferences pour que RecordingService puisse y accéder
+            getContext().getSharedPreferences("RecordingPrefs", Context.MODE_PRIVATE)
+                .edit()
+                .putInt("originTileX", originTileObj.getInt("x"))
+                .putInt("originTileY", originTileObj.getInt("y"))
+                .putInt("originTileZ", originTileObj.getInt("z"))
+                .apply();
+        }
+        
+        // Démarrer le service
+        startServiceInternal(call);
+        
+        // Le courseId sera envoyé via onNewPoints callback
+        // On retourne immédiatement, le JS recevra le vrai courseId via l'événement
+        JSObject result = new JSObject();
+        result.put("courseId", mCurrentCourseId != null ? mCurrentCourseId : "");
+        result.put("started", true);
+        call.resolve(result);
+    }
+
+    /**
      * Démarre le Foreground Service d'enregistrement avec config GPS.
      * Affiche la notification persistante et démarre le GPS natif.
      */
     @PluginMethod
     public void startForeground(PluginCall call) {
+        startServiceInternal(call);
+        call.resolve();
+    }
+    
+    private void startServiceInternal(PluginCall call) {
         // Android 13+ (API 33) : POST_NOTIFICATIONS est une permission runtime.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.POST_NOTIFICATIONS)
@@ -133,9 +168,8 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
             } else {
                 getContext().startService(serviceIntent);
             }
-            call.resolve();
         } catch (Exception e) {
-            call.reject("Failed to start RecordingService: " + e.getMessage());
+            throw new RuntimeException("Failed to start RecordingService: " + e.getMessage());
         }
     }
 
@@ -144,9 +178,24 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
      */
     @PluginMethod
     public void stopForeground(PluginCall call) {
+        stopServiceInternal();
+        call.resolve();
+    }
+    
+    /**
+     * Arrête la course d'enregistrement GPS (v5.25.0).
+     * Alias de stopForeground pour compatibilité avec l'API nativeGPSService.
+     */
+    @PluginMethod
+    public void stopCourse(PluginCall call) {
+        stopServiceInternal();
+        mCurrentCourseId = null;
+        call.resolve();
+    }
+    
+    private void stopServiceInternal() {
         Intent serviceIntent = new Intent(getContext(), RecordingService.class);
         getContext().stopService(serviceIntent);
-        call.resolve();
     }
 
     /**
