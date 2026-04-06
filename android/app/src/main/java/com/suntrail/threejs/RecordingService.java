@@ -59,7 +59,7 @@ public class RecordingService extends Service {
     // CONSTANTES DE FILTRAGE GPS (Single Source of Truth)
     // ═══════════════════════════════════════════════════════════════════════════
     private static final float  MAX_SPEED_MPS       = 15.0f;       // 54 km/h — reject si plus rapide
-    private static final float  MIN_DISTANCE_M      = 1.0f;        // 1m — reject jitter
+    private static final float  MIN_DISTANCE_M      = 3.0f;        // 3m — reject jitter (augmenté pour éviter les doublons)
     private static final long   MIN_TIME_MS         = 1000L;        // 1s — reject rafales OEM
     private static final float  MAX_ACCURACY_M      = 50.0f;        // 50m — reject imprécis
     private static final double MIN_ALT_M           = -500.0;       // reject alt aberrantes

@@ -135,15 +135,21 @@ class NativeGPSService {
             try {
                 const newPoints = await this.getAllPoints(event.courseId, lastTimestamp);
                 if (newPoints.length > 0) {
-                    // Convertir NativeGPSPoint en LocationPoint
-                    const convertedPoints = newPoints.map(p => ({
-                        lat: p.lat,
-                        lon: p.lon,
-                        alt: p.alt,
-                        timestamp: p.timestamp
-                    }));
-                    state.recordedPoints = [...state.recordedPoints, ...convertedPoints];
-                    updateRecordedTrackMesh();
+                    // Filtrer les doublons (même timestamp)
+                    const existingTimestamps = new Set(state.recordedPoints.map(p => p.timestamp));
+                    const uniqueNewPoints = newPoints.filter(p => !existingTimestamps.has(p.timestamp));
+                    
+                    if (uniqueNewPoints.length > 0) {
+                        // Convertir NativeGPSPoint en LocationPoint
+                        const convertedPoints = uniqueNewPoints.map(p => ({
+                            lat: p.lat,
+                            lon: p.lon,
+                            alt: p.alt,
+                            timestamp: p.timestamp
+                        }));
+                        state.recordedPoints = [...state.recordedPoints, ...convertedPoints];
+                        updateRecordedTrackMesh();
+                    }
                 }
             } catch (e) {
                 console.warn('[NativeGPSService] Failed to fetch new points:', e);
