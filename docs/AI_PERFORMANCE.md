@@ -34,8 +34,8 @@ Valeurs directes et universelles, sans double-couche "preset + caps" :
 
 | Preset | Cible | RANGE | Shadow | MAX_ZOOM | Notes |
 |--------|-------|-------|--------|----------|-------|
-| **eco** | Mali-G52, Adreno 5xx, Intel HD 4xx | 3 | OFF | 14 | `body.preset-eco` masque 2D/3D et timeline |
-| **balanced** (STD) | Galaxy A53 | 4 | 256 | 16 | RESOLUTION 32, végétation density 500 |
+| **eco** | Mali-G52, Adreno 5xx, Intel HD 4xx | 3 | OFF | 18 | `body.preset-eco` masque 2D/3D et timeline |
+| **balanced** (STD) | Galaxy A53 | 4 | 256 | 18 | RESOLUTION 32, végétation density 500 |
 | **performance** (High) | Galaxy S23, GTX 1050 | 5 | 1024 | 18 | MAX_BUILDS 2 |
 | **ultra** (PC) | PC / Snapdragon Elite | max | max | 18 | Sur mobile Elite : shadow≤2048, RANGE≤8 |
 

@@ -4,6 +4,17 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.24.7] - 2026-04-06
+
+### 🔧 Extension LOD presets ECO et STD — Zoom 17-18
+
+- **MAX_ALLOWED_ZOOM uniformisé** : Les presets `eco` et `balanced` (STD) passent de 14/16 à **18**
+- **Accès zoom 17-18** : Tous les presets supportent maintenant les niveaux de détail maximum
+- **Performance préservée** : Les autres paramètres (résolution, végétation, bâtiments) restent conservateurs
+- **Fichiers modifiés** : `src/modules/state.ts`, `docs/AI_PERFORMANCE.md`
+
+---
+
 ## [5.24.6] - 2026-04-06
 
 ### 🔔 Notification REC améliorée - Durée + Détection immobilité
