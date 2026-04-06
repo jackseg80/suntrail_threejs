@@ -4,6 +4,18 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.24.6] - 2026-04-06
+
+### 🔔 Notification REC améliorée - Durée + Détection immobilité
+
+- **Affichage de la durée** : La notification affiche maintenant le temps écoulé (ex: "4h 12min — 2540 points enregistrés")
+- **Détection d'immobilité** : Détection si l'utilisateur ne bouge pas de plus de 30m pendant 30 minutes
+- **Alerte visuelle** : Quand immobile, le titre passe à "⚠️ Immobile (30 min) — Toujours actif ?" pour attirer l'attention
+- **Règle d'or respectée** : Le service ne s'arrête JAMAIS automatiquement, seul l'utilisateur peut arrêter via le bouton
+- **Retour à la normale** : L'alerte disparaît dès que l'utilisateur reprend sa marche (> 30m)
+
+---
+
 ## [5.24.5] - 2026-04-06
 
 ### 🔧 Persistance recordingOriginTile - Fix décalage après crash
