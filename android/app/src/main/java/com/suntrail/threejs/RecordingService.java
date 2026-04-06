@@ -303,6 +303,7 @@ public class RecordingService extends Service {
                     }
 
                     // ── Étape 5: Calcul distance 3D depuis dernier point valide ─
+                    double distance3D = 0; // Pour calcul vitesse dans updateAdaptiveGpsConfig
                     if (mLastValidLocation != null) {
                         float distance2D = mLastValidLocation.distanceTo(loc);
 
@@ -319,7 +320,7 @@ public class RecordingService extends Service {
                         double lastAltOrthometric = mLastValidLocation.getAltitude() - 
                             estimateGeoIdHeight(mLastValidLocation.getLatitude(), mLastValidLocation.getLongitude());
                         double altDiff = currentAltOrthometric - lastAltOrthometric;
-                        double distance3D = Math.sqrt(distance2D * distance2D + altDiff * altDiff);
+                        distance3D = Math.sqrt(distance2D * distance2D + altDiff * altDiff);
 
                         // ── Étape 8: Filtrage vitesse > 15 m/s (54 km/h) ───────
                         float speedMps = (float) (distance3D / (timeDiff / 1000.0));
