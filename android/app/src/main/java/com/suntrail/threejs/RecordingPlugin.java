@@ -83,12 +83,12 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
      */
     @Override
     public void onNewPoints(String courseId, int pointCount) {
-        // Optionnel : envoyer un événement au JS via sendEvent()
+        // Envoyer un événement au JS via notifyListeners()
         // Le JS peut écouter via Recording.addListener('onNewPoints', ...)
-        notifyListeners("onNewPoints", JSObject.wrap(new Object[]{
-            "courseId", courseId,
-            "pointCount", pointCount
-        }));
+        JSObject eventData = new JSObject();
+        eventData.put("courseId", courseId);
+        eventData.put("pointCount", pointCount);
+        notifyListeners("onNewPoints", eventData);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
