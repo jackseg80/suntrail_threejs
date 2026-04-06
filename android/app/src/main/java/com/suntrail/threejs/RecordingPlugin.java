@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.PowerManager;
 
+import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -16,17 +17,21 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.suntrail.threejs.data.AppDatabase;
+import com.suntrail.threejs.data.GPSPoint;
+import com.suntrail.threejs.data.GPSPointDao;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
- * RecordingPlugin — Plugin Capacitor pour contrôler le Foreground Service (v5.23)
+ * RecordingPlugin — Plugin Capacitor pour contrôler le Foreground Service (v5.25.0)
+ *
+ * Architecture Single Source of Truth (v5.25.0):
+ * - Lit les points GPS depuis Room SQLite (plus de fichier JSON)
+ * - RecordingService.insert() → RecordingPlugin.onNewPoints() callback
+ * - Le JS poll/getRecordedPoints() retourne les points de la base Room
  *
  * Exposé côté JavaScript via :
  *   import { registerPlugin } from '@capacitor/core';
@@ -35,10 +40,60 @@ import java.nio.charset.StandardCharsets;
  *   await Recording.stopForeground();
  *   const { points } = await Recording.getRecordedPoints();
  *   await Recording.clearRecordedPoints();
- *   const { granted } = await Recording.requestBatteryOptimizationExemption();
+ *   await Recording.requestBatteryOptimizationExemption();
  */
 @CapacitorPlugin(name = "Recording")
-public class RecordingPlugin extends Plugin {
+public class RecordingPlugin extends Plugin implements RecordingService.RecordingCallback {
+
+    private AppDatabase    mDatabase;
+    private GPSPointDao    mDao;
+    private ExecutorService mDbExecutor;
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Lifecycle
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    @Override
+    public void load() {
+        super.load();
+        mDatabase = AppDatabase.getInstance(getContext());
+        mDao = mDatabase.gpsPointDao();
+        mDbExecutor = Executors.newSingleThreadExecutor();
+
+        // S'enregistrer comme callback auprès du RecordingService
+        RecordingService.setCallback(this);
+    }
+
+    @Override
+    protected void handleOnDestroy() {
+        super.handleOnDestroy();
+        RecordingService.setCallback(null);
+        if (mDbExecutor != null) {
+            mDbExecutor.shutdown();
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // RecordingCallback — appelé par RecordingService quand nouveaux points
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Called by RecordingService when new points are inserted in SQLite.
+     * Can notify the JS side if needed (via sendEvent).
+     */
+    @Override
+    public void onNewPoints(String courseId, int pointCount) {
+        // Optionnel : envoyer un événement au JS via sendEvent()
+        // Le JS peut écouter via Recording.addListener('onNewPoints', ...)
+        notifyListeners("onNewPoints", JSObject.wrap(new Object[]{
+            "courseId", courseId,
+            "pointCount", pointCount
+        }));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Plugin Methods
+    // ═══════════════════════════════════════════════════════════════════════════
 
     /**
      * Démarre le Foreground Service d'enregistrement avec config GPS.
@@ -47,9 +102,6 @@ public class RecordingPlugin extends Plugin {
     @PluginMethod
     public void startForeground(PluginCall call) {
         // Android 13+ (API 33) : POST_NOTIFICATIONS est une permission runtime.
-        // Sans elle, la notification du foreground service est invisible et Android
-        // tue le service bien plus agressivement. On la demande ici, au moment où
-        // l'utilisateur déclenche le REC (contexte clair pour lui).
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
@@ -58,17 +110,14 @@ public class RecordingPlugin extends Plugin {
                     new String[]{ Manifest.permission.POST_NOTIFICATIONS },
                     0
                 );
-                // On démarre quand même le service — si l'utilisateur accepte la permission
-                // Android affichera la notification immédiatement sans redémarrage.
             }
         }
 
         Intent serviceIntent = new Intent(getContext(), RecordingService.class);
 
-        // Passer la config GPS au service
-        long interval         = call.getLong("interval", 3000L);
-        float minDisplacement = call.getFloat("minDisplacement", 0.5f);
-        boolean highAccuracy  = call.getBoolean("highAccuracy", true);
+        long   interval        = call.getLong("interval", 3000L);
+        float  minDisplacement = call.getFloat("minDisplacement", 0.5f);
+        boolean highAccuracy   = call.getBoolean("highAccuracy", true);
 
         serviceIntent.putExtra("interval",        interval);
         serviceIntent.putExtra("minDisplacement", minDisplacement);
@@ -98,9 +147,6 @@ public class RecordingPlugin extends Plugin {
 
     /**
      * Retourne true si le Foreground Service d'enregistrement tourne encore.
-     * Utilisé au démarrage de l'app pour différencier :
-     *   - Service vivant → reprise transparente (le REC continue)
-     *   - Service mort   → prompt recovery (Restaurer / Supprimer)
      */
     @PluginMethod
     public void isRunning(PluginCall call) {
@@ -110,69 +156,113 @@ public class RecordingPlugin extends Plugin {
     }
 
     /**
-     * Retourne les points GPS enregistrés nativement pendant que la WebView était suspendue.
-     * Format : { points: [{ lat, lon, alt, timestamp }, ...] }
+     * Retourne les points GPS enregistrés depuis Room SQLite.
+     * Format : { points: [{ lat, lon, alt, timestamp, accuracy }, ...], courseId: "..." }
+     *
+     * Si courseId est fourni, ne retourne que les points de cette session.
+     * Sinon, utilise la session courante (RecordingService.getCurrentCourseId()).
      */
     @PluginMethod
     public void getRecordedPoints(PluginCall call) {
-        File file = new File(getContext().getFilesDir(), RecordingService.POINTS_FILE);
+        String courseId = call.getString("courseId", RecordingService.getCurrentCourseId());
 
-        JSObject result = new JSObject();
-
-        if (!file.exists()) {
+        if (courseId == null || courseId.isEmpty()) {
+            // Pas de course en cours, retourner vide
+            JSObject result = new JSObject();
             result.put("points", new JSArray());
+            result.put("courseId", "");
+            result.put("count", 0);
             call.resolve(result);
             return;
         }
 
-        try {
-            byte[] bytes = new byte[(int) file.length()];
-            try (FileInputStream fis = new FileInputStream(file)) {
-                //noinspection ResultOfMethodCallIgnored
-                fis.read(bytes);
+        // Query Room en arrière-plan (Room interdit MainThread)
+        mDbExecutor.execute(() -> {
+            try {
+                List<GPSPoint> points = mDao.getPointsForCourse(courseId);
+
+                JSArray jsArr = new JSArray();
+                for (GPSPoint pt : points) {
+                    JSObject jsPoint = new JSObject();
+                    jsPoint.put("lat",       pt.lat);
+                    jsPoint.put("lon",       pt.lon);
+                    jsPoint.put("alt",       pt.alt);
+                    jsPoint.put("timestamp", pt.timestamp);
+                    jsPoint.put("accuracy",  pt.accuracy);
+                    jsArr.put(jsPoint);
+                }
+
+                JSObject result = new JSObject();
+                result.put("points", jsArr);
+                result.put("courseId", courseId);
+                result.put("count", points.size());
+
+                call.resolve(result);
+
+            } catch (Exception e) {
+                JSObject result = new JSObject();
+                result.put("points", new JSArray());
+                result.put("courseId", courseId);
+                result.put("count", 0);
+                result.put("error", e.getMessage());
+                call.resolve(result);
             }
-            String json = new String(bytes, StandardCharsets.UTF_8);
-            JSONArray arr = new JSONArray(json);
-
-            // Convertir en JSArray (Capacitor ne supporte pas JSONArray directement)
-            JSArray jsArr = new JSArray();
-            for (int i = 0; i < arr.length(); i++) {
-                JSONObject pt = arr.getJSONObject(i);
-                JSObject jsPoint = new JSObject();
-                jsPoint.put("lat",       pt.getDouble("lat"));
-                jsPoint.put("lon",       pt.getDouble("lon"));
-                jsPoint.put("alt",       pt.getDouble("alt"));
-                jsPoint.put("timestamp", pt.getLong("timestamp"));
-                jsArr.put(jsPoint);
-            }
-
-            result.put("points", jsArr);
-            call.resolve(result);
-
-        } catch (IOException | JSONException e) {
-            // En cas d'erreur de lecture, retourner un tableau vide (pas un reject)
-            result.put("points", new JSArray());
-            call.resolve(result);
-        }
+        });
     }
 
     /**
-     * Efface le fichier de points natifs (appelé après merge réussi côté JS).
+     * Retourne le nombre de points pour une course donnée.
+     */
+    @PluginMethod
+    public void getPointCount(PluginCall call) {
+        String courseId = call.getString("courseId", RecordingService.getCurrentCourseId());
+
+        if (courseId == null || courseId.isEmpty()) {
+            JSObject result = new JSObject();
+            result.put("count", 0);
+            call.resolve(result);
+            return;
+        }
+
+        mDbExecutor.execute(() -> {
+            try {
+                int count = mDao.getPointCount(courseId);
+                JSObject result = new JSObject();
+                result.put("count", count);
+                call.resolve(result);
+            } catch (Exception e) {
+                JSObject result = new JSObject();
+                result.put("count", 0);
+                result.put("error", e.getMessage());
+                call.resolve(result);
+            }
+        });
+    }
+
+    /**
+     * Efface les points d'une course depuis Room (appelé après merge réussi côté JS).
      */
     @PluginMethod
     public void clearRecordedPoints(PluginCall call) {
-        File file = new File(getContext().getFilesDir(), RecordingService.POINTS_FILE);
-        if (file.exists()) {
-            //noinspection ResultOfMethodCallIgnored
-            file.delete();
+        String courseId = call.getString("courseId", RecordingService.getCurrentCourseId());
+
+        if (courseId == null || courseId.isEmpty()) {
+            call.resolve();
+            return;
         }
-        call.resolve();
+
+        mDbExecutor.execute(() -> {
+            try {
+                mDao.deleteCourse(courseId);
+                call.resolve();
+            } catch (Exception e) {
+                call.reject("Failed to clear points: " + e.getMessage());
+            }
+        });
     }
 
     /**
      * Demande à Android d'exempter l'app des optimisations batterie (Doze mode).
-     * Essentiel pour les OEM agressifs (Samsung, Xiaomi, Huawei).
-     * Retourne { granted: true } si l'app est déjà exemptée ou si l'utilisateur accepte.
      */
     @PluginMethod
     public void requestBatteryOptimizationExemption(PluginCall call) {
@@ -189,17 +279,14 @@ public class RecordingPlugin extends Plugin {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (pm.isIgnoringBatteryOptimizations(packageName)) {
-                // Déjà exempté
                 result.put("granted", true);
                 call.resolve(result);
             } else {
-                // Demander l'exemption (ouvre la dialog système)
                 try {
                     Intent intent = new Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
                     intent.setData(android.net.Uri.parse("package:" + packageName));
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     getContext().startActivity(intent);
-                    // On considère que l'utilisateur va accepter (pas de callback disponible)
                     result.put("granted", true);
                 } catch (Exception e) {
                     result.put("granted", false);
@@ -207,9 +294,18 @@ public class RecordingPlugin extends Plugin {
                 call.resolve(result);
             }
         } else {
-            // Android < 6 (API 23) : Doze n'existe pas
             result.put("granted", true);
             call.resolve(result);
         }
+    }
+
+    /**
+     * Retourne le courseId courant du RecordingService.
+     */
+    @PluginMethod
+    public void getCurrentCourseId(PluginCall call) {
+        JSObject result = new JSObject();
+        result.put("courseId", RecordingService.getCurrentCourseId());
+        call.resolve(result);
     }
 }

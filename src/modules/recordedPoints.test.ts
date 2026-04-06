@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { state } from './state';
-import { startLocationTracking, stopLocationTracking, resetLocationTrackingVars } from './location';
+import { startLocationTracking, stopLocationTracking } from './location';
 import { Geolocation } from '@capacitor/geolocation';
 
 // Mock Geolocation
@@ -51,13 +51,13 @@ vi.mock('@capacitor/geolocation', () => ({
     }
 }));
 
-describe('Live Tracking Recording (v5.7)', () => {
+describe('Live Location Tracking (v5.25.0 - Single Source of Truth)', () => {
     beforeEach(() => {
         state.isRecording = false;
         state.recordedPoints = [];
         state.userLocation = null;
         state.recordingOriginTile = null;
-        resetLocationTrackingVars();
+        state.userLocationAccuracy = null;
         vi.clearAllMocks();
     });
 
@@ -65,21 +65,14 @@ describe('Live Tracking Recording (v5.7)', () => {
         stopLocationTracking();
     });
 
-    it('should not record points when isRecording is false', async () => {
-        await startLocationTracking();
-        expect(state.recordedPoints.length).toBe(0);
-    });
-
-    it('should record points when isRecording is true', async () => {
-        state.isRecording = true;
-        // Use slightly different coords to bypass distMove filter
+    it('should update userLocation when tracking is active', async () => {
         vi.mocked(Geolocation.watchPosition).mockImplementationOnce((_opts, cb) => {
             cb({
                 coords: {
                     latitude: 46.6,
                     longitude: 7.6,
                     altitude: 1100,
-                    accuracy: 10,
+                    accuracy: 15,
                     altitudeAccuracy: 10,
                     heading: 0,
                     speed: 0
@@ -91,27 +84,15 @@ describe('Live Tracking Recording (v5.7)', () => {
 
         await startLocationTracking();
         
-        expect(state.recordedPoints.length).toBeGreaterThan(0);
-        expect(state.recordedPoints[0].lat).toBe(46.6);
-        expect(state.recordedPoints[0].alt).toBe(1100);
+        expect(state.userLocation).not.toBeNull();
+        expect(state.userLocation?.lat).toBe(46.6);
+        expect(state.userLocation?.lon).toBe(7.6);
+        expect(state.userLocationAccuracy).toBe(15);
     });
 
-    it('should reset recordedPoints when starting a new recording in UI logic', () => {
-        // This is handled in ui.ts, but let's verify state behavior
-        state.recordedPoints = [{ lat: 1, lon: 1, alt: 1, timestamp: 1 }];
-        
-        // Simulating the UI logic for start recording
+    it('should not record points in state.recordedPoints (handled by native)', async () => {
         state.isRecording = true;
-        state.recordedPoints = []; // UI logic would do this
         
-        expect(state.recordedPoints.length).toBe(0);
-    });
-
-    it('should set recordingOriginTile when starting recording', async () => {
-        state.isRecording = true;
-        state.originTile = { x: 100, y: 100, z: 13 };
-        
-        // Need to use a position different from (0,0) to trigger the distMove filter
         vi.mocked(Geolocation.watchPosition).mockImplementationOnce((_opts, cb) => {
             cb({
                 coords: {
@@ -130,9 +111,36 @@ describe('Live Tracking Recording (v5.7)', () => {
 
         await startLocationTracking();
         
-        // Wait for the callback to be processed
-        await new Promise(resolve => setTimeout(resolve, 10));
+        // En v5.25.0, les points ne sont plus enregistrés par le JS
+        // L'enregistrement est géré uniquement par le natif Android
+        expect(state.recordedPoints.length).toBe(0);
+    });
+
+    it('should update userLocationAccuracy when position updates', async () => {
+        vi.mocked(Geolocation.watchPosition).mockImplementationOnce((_opts, cb) => {
+            cb({
+                coords: {
+                    latitude: 46.6,
+                    longitude: 7.6,
+                    altitude: 1100,
+                    accuracy: 25,
+                    altitudeAccuracy: 10,
+                    heading: 0,
+                    speed: 0
+                },
+                timestamp: Date.now()
+            }, null);
+            return Promise.resolve('watch-abc') as any;
+        });
+
+        await startLocationTracking();
         
-        expect(state.recordingOriginTile).toEqual({ x: 100, y: 100, z: 13 });
+        expect(state.userLocationAccuracy).toBe(25);
     });
 });
+
+// Note: Les tests d'enregistrement de points ont été supprimés en v5.25.0
+// car l'architecture "Single Source of Truth" déplace toute la logique 
+// d'enregistrement GPS vers le natif Android (RecordingService).
+// Les points sont maintenant reçus via des événements natifs (onNewPoints)
+// gérés par nativeGPSService.ts

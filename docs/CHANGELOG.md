@@ -4,6 +4,88 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.25.0] - 2026-04-06
+
+### 🏗️ Architecture "Single Source of Truth" - Correction GPS doublons
+
+**Problème résolu** : Les traces enregistrées montraient des distances doublées (8.3km au lieu de 4.28km) et des lignes droites étranges dues à un double enregistrement natif + JavaScript.
+
+#### Changements majeurs
+
+- **Native Android = unique source de vérité** : Le `RecordingService` Android est maintenant le SEUL à enregistrer les points GPS
+- **Room Database (SQLite)** : Remplacement des fichiers JSON par une base SQLite avec Room
+  - `GPSPoint.java` - Entity avec index sur course_id + timestamp
+  - `GPSPointDao.java` - DAO pour insert/query/delete
+  - `AppDatabase.java` - Singleton thread-safe
+- **Filtrage GPS 9 étapes** : Algorithmes de validation stricts
+  1. Précision > 50m → REJET
+  2. Pas d'altitude → REJET
+  3. Altitude < -500m ou > 9000m → REJET
+  4. Temps < 1000ms (rafales OEM) → REJET
+  5. Distance 2D < 1m (jitter) → REJET
+  6. Vitesse > 15 m/s (54 km/h) → REJET
+  7. ✅ Insert SQLite + notification JS
+- **Timestamps GPS atomiques** : Utilisation de `loc.getTime()` uniquement (pas `System.currentTimeMillis()`)
+- **Événements natifs push** : `onNewPoints` et `onLocationUpdate` au lieu de polling
+
+#### Fichiers modifiés
+
+**Android Natif :**
+- `android/app/build.gradle` - Ajout Room 2.6.1, version 5.25.0
+- `android/app/src/main/java/com/suntrail/threejs/data/GPSPoint.java` - Nouveau
+- `android/app/src/main/java/com/suntrail/threejs/data/GPSPointDao.java` - Nouveau
+- `android/app/src/main/java/com/suntrail/threejs/data/AppDatabase.java` - Nouveau
+- `android/app/src/main/java/com/suntrail/threejs/RecordingService.java` - Refactorisé (Room + filtrage)
+- `android/app/src/main/java/com/suntrail/threejs/RecordingPlugin.java` - Refactorisé (callbacks)
+
+**TypeScript :**
+- `src/modules/nativeGPSService.ts` - Nouveau service d'interface natif
+- `src/modules/foregroundService.ts` - Simplifié (suppression merge)
+- `src/modules/location.ts` - Simplifié (plus d'enregistrement JS)
+- `src/modules/state.ts` - Ajout `currentCourseId`
+- `src/modules/ui/components/TrackSheet.ts` - Utilise nativeGPSService
+- `src/modules/ui/mobile.ts` - Utilise nativeGPSService pour background/foreground
+- `src/main.ts` - Recovery simplifié
+
+**Tests :**
+- `src/modules/foregroundService.test.ts` - Mis à jour
+- `src/modules/recordedPoints.test.ts` - Mis à jour
+- `src/modules/location.test.ts` - Tests passent
+
+**Documentation :**
+- `docs/TEST_PROTOCOL_v5.25.0.md` - Protocole de validation terrain
+
+#### Suppressions
+
+- `mergeAndDeduplicatePoints()` - Plus besoin de fusionner JS + natif
+- `getNativeRecordedPoints()` - Plus de persistance JSON native
+- `resetLocationTrackingVars()` - Plus utilisé
+- Enregistrement GPS dans `watchPosition` - Uniquement natif maintenant
+
+#### Architecture finale
+
+```
+GPS Satellites
+      ↓
+FusedLocationProviderClient (Android)
+      ↓
+RecordingService.java (filtre 9 étapes)
+      ↓
+SQLite (Room) ← SEULE source de données
+      ↓
+Capacitor Bridge
+      ↓
+onNewPoints / onLocationUpdate events
+      ↓
+nativeGPSService.ts
+      ↓
+state.recordedPoints[] (lecture seule pour UI)
+```
+
+**Note** : Le code JSON legacy (`persistAllPointsNow`) est conservé temporairement comme fallback jusqu'à validation terrain complète.
+
+---
+
 ## [5.24.7] - 2026-04-06
 
 ### 🔧 Extension LOD presets ECO et STD — Zoom 17-18

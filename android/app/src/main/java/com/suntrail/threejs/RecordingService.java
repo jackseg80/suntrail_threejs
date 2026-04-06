@@ -27,27 +27,22 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.suntrail.threejs.data.AppDatabase;
+import com.suntrail.threejs.data.GPSPoint;
+import com.suntrail.threejs.data.GPSPointDao;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * RecordingService — Foreground Service Android avec GPS natif (v5.23)
+ * RecordingService — Foreground Service Android avec GPS natif (v5.25.0)
  *
- * Depuis v5.23, ce service enregistre lui-même les points GPS via FusedLocationProviderClient,
- * indépendamment du cycle de vie de la WebView. Même si Android tue l'Activity pour libérer
- * de la mémoire (ouverture de l'appareil photo, etc.), l'enregistrement GPS continue.
- *
- * Les points sont stockés dans getFilesDir()/suntrail_native_points.json (stockage interne,
- * toujours accessible, pas de permission requise). Quand la WebView revient, elle lit ces
- * points via RecordingPlugin.getRecordedPoints() et les merge avec ses propres données.
+ * Architecture Single Source of Truth (v5.25.0):
+ * - Ce service est la SEULE source d'enregistrement GPS
+ * - Les points sont stockés dans Room SQLite (plus de fichier JSON)
+ * - Le JS lit uniquement via RecordingPlugin qui query la base Room
+ * - Filtrage complet : précision, altitude, vitesse, distance, timestamps
  *
  * Type : FOREGROUND_SERVICE_TYPE = "location" (requis pour les apps géo en arrière-plan
  * depuis Android 10 / API 29).
@@ -57,35 +52,75 @@ public class RecordingService extends Service {
     private static final String TAG             = "RecordingService";
     private static final String CHANNEL_ID      = "suntrail_recording_v1";
     private static final int    NOTIFICATION_ID = 42;
-    static final String         POINTS_FILE     = "suntrail_native_points.json";
     private static final String PREFS_NAME      = "suntrail_rec_config";
     static final String         STOP_ACTION     = "com.suntrail.threejs.STOP_RECORDING";
 
-    // Seuils de persistance : écrire sur disque toutes les 5 positions ou 10 secondes
-    private static final int  PERSIST_EVERY_N     = 5;
-    private static final long PERSIST_INTERVAL_MS = 10_000L;
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CONSTANTES DE FILTRAGE GPS (Single Source of Truth)
+    // ═══════════════════════════════════════════════════════════════════════════
+    private static final float  MAX_SPEED_MPS       = 15.0f;       // 54 km/h — reject si plus rapide
+    private static final float  MIN_DISTANCE_M      = 1.0f;        // 1m — reject jitter
+    private static final long   MIN_TIME_MS         = 1000L;        // 1s — reject rafales OEM
+    private static final float  MAX_ACCURACY_M      = 50.0f;        // 50m — reject imprécis
+    private static final double MIN_ALT_M           = -500.0;       // reject alt aberrantes
+    private static final double MAX_ALT_M           = 9000.0;
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CALLBACK pour notifier le Plugin JS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Callback statique pour notifier RecordingPlugin quand de nouveaux points sont disponibles.
+     * Implémenté par RecordingPlugin.onNewPoints().
+     */
+    public interface RecordingCallback {
+        void onNewPoints(String courseId, int pointCount);
+    }
+
+    private static RecordingCallback sCallback;
+
+    public static void setCallback(RecordingCallback callback) {
+        sCallback = callback;
+    }
+
+    public static RecordingCallback getCallback() {
+        return sCallback;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CHAMPS DU SERVICE
+    // ═══════════════════════════════════════════════════════════════════════════
 
     // GPS
     private FusedLocationProviderClient mFusedClient;
-    private LocationCallback            mLocationCallback;
+    private LocationCallback             mLocationCallback;
 
-    // Stockage en mémoire des points GPS
-    private final List<JSONObject> mPoints = new ArrayList<>();
+    // Room Database (Single Source of Truth)
+    private AppDatabase   mDatabase;
+    private GPSPointDao  mDao;
+    private ExecutorService mDbExecutor;
+
+    // Course ID (généré au démarrage, identifie la session d'enregistrement)
+    private String mCurrentCourseId;
+    public static String getCurrentCourseId() { return mCurrentCourseId; }
+
+    // État du dernier point valide (pour calculs de vitesse/distance)
+    private Location mLastValidLocation;
+    private long     mLastValidTimestamp;
+
+    // Compteur de points pour la notification
+    private final AtomicInteger mPointCount = new AtomicInteger(0);
 
     // WakeLock partiel : maintient le CPU actif pendant l'enregistrement
     private PowerManager.WakeLock mWakeLock;
 
-    // Compteurs de persistance
-    private int  mLastPersistedCount = 0;
-    private long mLastPersistTime    = 0;
-
     // Gestion de la durée et de l'immobilité (v5.24.6)
-    private long mStartTime = 0;
-    private Location mLastSignificantLocation = null;
-    private long mLastMovementTime = 0;
-    private boolean mIsImmobile = false;
-    private static final float IMMOBILITY_DISTANCE_THRESHOLD = 30.0f; // 30 mètres
-    private static final long IMMOBILITY_TIME_THRESHOLD = 30 * 60 * 1000L; // 30 minutes
+    private long    mStartTime                 = 0;
+    private Location mLastSignificantLocation  = null;
+    private long    mLastMovementTime          = 0;
+    private boolean mIsImmobile                = false;
+    private static final float  IMMOBILITY_DISTANCE_THRESHOLD = 30.0f;
+    private static final long   IMMOBILITY_TIME_THRESHOLD     = 30 * 60 * 1000L;
 
     // Cache des PendingIntents pour la notification
     private PendingIntent    mOpenPendingIntent;
@@ -93,7 +128,6 @@ public class RecordingService extends Service {
     private BroadcastReceiver mStopReceiver;
 
     // Flag statique : permet au JS de savoir si le service tourne encore
-    // (utilisé pour différencier "reprise transparente" vs "prompt recovery")
     private static volatile boolean sIsRunning = false;
     public static boolean isRunning() { return sIsRunning; }
 
@@ -103,16 +137,25 @@ public class RecordingService extends Service {
     public void onCreate() {
         super.onCreate();
         sIsRunning = true;
-        mFusedClient = LocationServices.getFusedLocationProviderClient(this);
 
-        // Charger les points existants depuis le disque (pour le redémarrage START_STICKY)
-        loadPointsFromDisk();
+        // Initialiser Room (Single Source of Truth)
+        mDatabase = AppDatabase.getInstance(getApplicationContext());
+        mDao = mDatabase.gpsPointDao();
+        mDbExecutor = Executors.newSingleThreadExecutor();
+
+        mFusedClient = LocationServices.getFusedLocationProviderClient(this);
     }
 
     @Override
     @SuppressWarnings("deprecation") // LocationRequest.create() — API 16+ (minSdk 24)
     public int onStartCommand(Intent intent, int flags, int startId) {
         createNotificationChannel();
+
+        // Générer un nouveau courseId pour cette session d'enregistrement
+        mCurrentCourseId = java.util.UUID.randomUUID().toString();
+        mLastValidLocation = null;
+        mLastValidTimestamp = 0;
+        mPointCount.set(0);
 
         Intent openIntent = new Intent(this, MainActivity.class);
         openIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -150,16 +193,15 @@ public class RecordingService extends Service {
         mStartTime = System.currentTimeMillis();
         mLastMovementTime = mStartTime;
 
-        startForeground(NOTIFICATION_ID, buildNotification(mPoints.size()));
-
+        startForeground(NOTIFICATION_ID, buildNotification(0));
 
         // Lire la config depuis les Intent extras (premier démarrage)
         // ou depuis les SharedPreferences (redémarrage START_STICKY, intent peut être null)
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
-        long interval        = (intent != null) ? intent.getLongExtra("interval", 3000L)          : prefs.getLong("interval", 3000L);
-        float minDisplacement = (intent != null) ? intent.getFloatExtra("minDisplacement", 0.5f)  : prefs.getFloat("minDisplacement", 0.5f);
-        boolean highAccuracy  = (intent != null) ? intent.getBooleanExtra("highAccuracy", true)   : prefs.getBoolean("highAccuracy", true);
+        long   interval        = (intent != null) ? intent.getLongExtra("interval", 3000L)          : prefs.getLong("interval", 3000L);
+        float  minDisplacement = (intent != null) ? intent.getFloatExtra("minDisplacement", 0.5f)  : prefs.getFloat("minDisplacement", 0.5f);
+        boolean highAccuracy   = (intent != null) ? intent.getBooleanExtra("highAccuracy", true)   : prefs.getBoolean("highAccuracy", true);
 
         // Sauvegarder pour le redémarrage éventuel
         prefs.edit()
@@ -177,59 +219,111 @@ public class RecordingService extends Service {
                 ? Priority.PRIORITY_HIGH_ACCURACY
                 : Priority.PRIORITY_BALANCED_POWER_ACCURACY);
 
+        // ═══════════════════════════════════════════════════════════════════════
+        // LOCATION CALLBACK — LOGIQUE DE FILTRAGE COMPLETE (Single Source of Truth)
+        // ═══════════════════════════════════════════════════════════════════════
         mLocationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(@NonNull LocationResult result) {
                 for (Location loc : result.getLocations()) {
-                    // FILTRAGE : ignorer points imprécis (> 50m) (v5.23.4)
-                    if (loc.getAccuracy() > 50.0f) {
-                        Log.d(TAG, "Point ignoré (précision " + loc.getAccuracy() + "m > 50m)");
+                    // ── Étape 1: Filtrage précision ──────────────────────────────
+                    if (loc.getAccuracy() > MAX_ACCURACY_M) {
+                        Log.d(TAG, "REJECT: accuracy " + loc.getAccuracy() + "m > " + MAX_ACCURACY_M + "m");
                         continue;
                     }
-                    
-                    // FILTRAGE : ignorer sans altitude valide (v5.23.4)
-                    if (!loc.hasAltitude()) {
-                        Log.d(TAG, "Point ignoré (pas d'altitude)");
-                        continue;
-                    }
-                    
-                    // FILTRAGE : ignorer altitude aberrante (v5.23.4)
-                    double alt = loc.getAltitude();
-                    if (alt < -500 || alt > 9000) {
-                        Log.d(TAG, "Point ignoré (altitude aberrante " + alt + "m)");
-                        continue;
-                    }
-                    
-                    try {
-                        JSONObject point = new JSONObject();
-                        point.put("lat",       loc.getLatitude());
-                        point.put("lon",       loc.getLongitude());
-                        point.put("alt",       alt);
-                        point.put("timestamp", loc.getTime());
-                        mPoints.add(point);
 
-                        // Détection d'immobilité (v5.24.6)
-                        updateImmobilityStatus(loc);
-                    } catch (JSONException e) {
-                        Log.w(TAG, "Erreur création point GPS : " + e.getMessage());
+                    // ── Étape 2: Filtrage altitude présente ──────────────────────
+                    if (!loc.hasAltitude()) {
+                        Log.d(TAG, "REJECT: no altitude");
+                        continue;
                     }
+
+                    // ── Étape 3: Filtrage altitude aberrante ─────────────────────
+                    double alt = loc.getAltitude();
+                    if (alt < MIN_ALT_M || alt > MAX_ALT_M) {
+                        Log.d(TAG, "REJECT: altitude " + alt + "m out of range");
+                        continue;
+                    }
+
+                    // ── Étape 4: Filtrage timestamp (évite rafales OEM) ───────────
+                    long now = loc.getTime(); // Timestamp GPS atomique
+                    long timeDiff = now - mLastValidTimestamp;
+                    if (mLastValidTimestamp > 0 && timeDiff < MIN_TIME_MS) {
+                        Log.d(TAG, "REJECT: timeDiff " + timeDiff + "ms < " + MIN_TIME_MS + "ms");
+                        continue;
+                    }
+
+                    // ── Étape 5: Calcul distance 3D depuis dernier point valide ─
+                    if (mLastValidLocation != null) {
+                        float distance2D = mLastValidLocation.distanceTo(loc);
+
+                        // ── Étape 6: Filtrage jitter (distance 2D < 1m) ─────────
+                        if (distance2D < MIN_DISTANCE_M) {
+                            Log.d(TAG, "REJECT: distance2D " + distance2D + "m < " + MIN_DISTANCE_M + "m (jitter)");
+                            continue;
+                        }
+
+                        // ── Étape 7: Calcul vitesse 3D ───────────────────────────
+                        // Distance 3D = sqrt(distance2D² + altDiff²)
+                        double altDiff = loc.getAltitude() - mLastValidLocation.getAltitude();
+                        double distance3D = Math.sqrt(distance2D * distance2D + altDiff * altDiff);
+
+                        // ── Étape 8: Filtrage vitesse > 15 m/s (54 km/h) ───────
+                        float speedMps = (float) (distance3D / (timeDiff / 1000.0));
+                        if (speedMps > MAX_SPEED_MPS) {
+                            Log.d(TAG, "REJECT: speed " + speedMps + "m/s > " + MAX_SPEED_MPS + "m/s");
+                            continue;
+                        }
+
+                        Log.v(TAG, String.format("VALID: d2D=%.1fm d3D=%.1fm speed=%.1fm/s timeDiff=%dms",
+                                distance2D, distance3D, speedMps, timeDiff));
+                    }
+
+                    // ══════════════════════════════════════════════════════════
+                    // ── Étape 9: POINT VALIDE — Insert SQLite + notify ─────────
+                    // ══════════════════════════════════════════════════════════
+
+                    final GPSPoint point = new GPSPoint(
+                        mCurrentCourseId,
+                        loc.getLatitude(),
+                        loc.getLongitude(),
+                        alt,
+                        now,
+                        loc.getAccuracy()
+                    );
+
+                    // Insert en arrière-plan (Room interdit MainThread)
+                    mDbExecutor.execute(() -> {
+                        mDao.insert(point);
+                        int count = mPointCount.incrementAndGet();
+
+                        // Notifier le Plugin JS via callback
+                        RecordingCallback cb = getCallback();
+                        if (cb != null) {
+                            cb.onNewPoints(mCurrentCourseId, count);
+                        }
+
+                        Log.d(TAG, "INSERTED point #" + count + " for course " + mCurrentCourseId);
+                    });
+
+                    // Mettre à jour l'état pour le prochain calcul
+                    mLastValidLocation = loc;
+                    mLastValidTimestamp = now;
+
+                    // Détection d'immobilité (v5.24.6)
+                    updateImmobilityStatus(loc);
+
+                    // Mise à jour notification (post delayed pour éviter surcharge)
                 }
 
                 // Mise à jour de la notification avec le compteur de points et durée
-                updateNotification(mPoints.size());
-
-                // Persister selon les seuils (pas systématiquement pour préserver les I/O)
-                long now = System.currentTimeMillis();
-                int newPoints = mPoints.size() - mLastPersistedCount;
-                if (newPoints >= PERSIST_EVERY_N || now - mLastPersistTime >= PERSIST_INTERVAL_MS) {
-                    persistPointsToDisk();
-                }
+                updateNotification(mPointCount.get());
             }
         };
 
         try {
             mFusedClient.requestLocationUpdates(locationRequest, mLocationCallback, Looper.getMainLooper());
-            Log.i(TAG, "GPS natif démarré (interval=" + interval + "ms, minDisplacement=" + minDisplacement + "m)");
+            Log.i(TAG, "GPS natif démarré (courseId=" + mCurrentCourseId + ", interval=" + interval + "ms)");
         } catch (SecurityException e) {
             Log.e(TAG, "Permission GPS refusée : " + e.getMessage());
         }
@@ -241,8 +335,6 @@ public class RecordingService extends Service {
             mWakeLock.acquire(4 * 60 * 60 * 1000L);
         }
 
-        mLastPersistTime = System.currentTimeMillis();
-
         // START_STICKY : Android redémarre le service s'il est tué (avec Intent null)
         return START_STICKY;
     }
@@ -250,6 +342,8 @@ public class RecordingService extends Service {
     @Override
     public void onDestroy() {
         sIsRunning = false;
+        mCurrentCourseId = null;
+
         // Désenregistrer le BroadcastReceiver du bouton Arrêter
         if (mStopReceiver != null) {
             try { unregisterReceiver(mStopReceiver); } catch (Exception e) { /* déjà désenregistré */ }
@@ -261,63 +355,27 @@ public class RecordingService extends Service {
             mFusedClient.removeLocationUpdates(mLocationCallback);
         }
 
-        // Flush final : persister tous les points restants avant de mourir
-        persistPointsToDisk();
+        // Fermer l'executor
+        if (mDbExecutor != null) {
+            mDbExecutor.shutdown();
+        }
 
         // Relâcher le WakeLock
         if (mWakeLock != null && mWakeLock.isHeld()) {
             mWakeLock.release();
         }
 
+        // Clear callback
+        sCallback = null;
+
         stopForeground(true);
         super.onDestroy();
-        Log.i(TAG, "Service arrêté — " + mPoints.size() + " points persistés");
+        Log.i(TAG, "Service arrêté — " + mPointCount.get() + " points enregistrés dans SQLite");
     }
 
     @Override
     public IBinder onBind(Intent intent) {
         return null; // Service non bindable
-    }
-
-    // ── Persistance ───────────────────────────────────────────────────────────────
-
-    private void persistPointsToDisk() {
-        if (mPoints.isEmpty()) return;
-        try {
-            JSONArray arr = new JSONArray();
-            for (JSONObject point : mPoints) {
-                arr.put(point);
-            }
-            File file = new File(getFilesDir(), POINTS_FILE);
-            try (FileOutputStream fos = new FileOutputStream(file, false)) {
-                fos.write(arr.toString().getBytes(StandardCharsets.UTF_8));
-            }
-            mLastPersistedCount = mPoints.size();
-            mLastPersistTime    = System.currentTimeMillis();
-            Log.d(TAG, "Points persistés sur disque : " + mPoints.size());
-        } catch (Exception e) {
-            Log.w(TAG, "Erreur persistance points : " + e.getMessage());
-        }
-    }
-
-    private void loadPointsFromDisk() {
-        File file = new File(getFilesDir(), POINTS_FILE);
-        if (!file.exists()) return;
-        try {
-            byte[] bytes = new byte[(int) file.length()];
-            try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
-                //noinspection ResultOfMethodCallIgnored
-                fis.read(bytes);
-            }
-            JSONArray arr = new JSONArray(new String(bytes, StandardCharsets.UTF_8));
-            for (int i = 0; i < arr.length(); i++) {
-                mPoints.add(arr.getJSONObject(i));
-            }
-            mLastPersistedCount = mPoints.size();
-            Log.i(TAG, "Points rechargés depuis le disque : " + mPoints.size());
-        } catch (Exception e) {
-            Log.w(TAG, "Erreur lecture points depuis le disque : " + e.getMessage());
-        }
     }
 
     // ── Détection d'immobilité ───────────────────────────────────────────────────
@@ -330,18 +388,15 @@ public class RecordingService extends Service {
         long now = System.currentTimeMillis();
 
         if (mLastSignificantLocation == null) {
-            // Premier point valide
             mLastSignificantLocation = currentLocation;
             mLastMovementTime = now;
             mIsImmobile = false;
             return;
         }
 
-        // Calculer la distance depuis la dernière position significative
         float distance = mLastSignificantLocation.distanceTo(currentLocation);
 
         if (distance > IMMOBILITY_DISTANCE_THRESHOLD) {
-            // Mouvement significatif détecté
             mLastSignificantLocation = currentLocation;
             mLastMovementTime = now;
             if (mIsImmobile) {
@@ -349,7 +404,6 @@ public class RecordingService extends Service {
                 Log.i(TAG, "Mouvement repris après immobilité");
             }
         } else {
-            // Pas de mouvement significatif, vérifier le temps écoulé
             long timeSinceLastMovement = now - mLastMovementTime;
             if (timeSinceLastMovement > IMMOBILITY_TIME_THRESHOLD && !mIsImmobile) {
                 mIsImmobile = true;
@@ -378,10 +432,8 @@ public class RecordingService extends Service {
     // ── Notification ──────────────────────────────────────────────────────────────
 
     private Notification buildNotification(int pointCount) {
-        // Calculer la durée écoulée (v5.24.6)
         String elapsedTime = getElapsedTimeString();
 
-        // Construire le texte avec durée et nombre de points
         String text;
         if (pointCount == 0) {
             text = elapsedTime + " — En attente du premier point...";
@@ -389,13 +441,12 @@ public class RecordingService extends Service {
             text = elapsedTime + " — " + pointCount + " point" + (pointCount > 1 ? "s" : "") + " enregistré" + (pointCount > 1 ? "s" : "");
         }
 
-        // Déterminer le titre en fonction de l'état (v5.24.6)
         String title;
         int importance;
         if (mIsImmobile) {
             long immobileMinutes = (System.currentTimeMillis() - mLastMovementTime) / (60 * 1000L);
             title = "⚠️ Immobile (" + immobileMinutes + " min) — Toujours actif ?";
-            importance = NotificationCompat.PRIORITY_DEFAULT; // Plus visible
+            importance = NotificationCompat.PRIORITY_DEFAULT;
         } else {
             title = "SunTrail 3D — Enregistrement actif";
             importance = NotificationCompat.PRIORITY_LOW;

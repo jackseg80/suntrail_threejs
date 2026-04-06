@@ -232,6 +232,7 @@ export interface State {
     isFlyingTo: boolean; // true during flyTo animation — blocks origin shift
     isTiltTransitioning: boolean; // true during 2D↔3D smooth tilt animation
     isRecording: boolean;
+    currentCourseId: string | null; // v5.24: ID de la course native en cours
     recordedPoints: LocationPoint[];
     recoveredPoints: Array<{ lat: number; lon: number; alt: number; timestamp: number }> | null;
     
@@ -311,6 +312,7 @@ const initialState: State = {
     isFlyingTo: false,
     isTiltTransitioning: false,
     isRecording: false,
+    currentCourseId: null, // v5.24: ID de la course native en cours
     recordedPoints: [],
     recoveredPoints: null,
     

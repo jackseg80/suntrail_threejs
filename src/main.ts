@@ -5,7 +5,8 @@ import { initNetworkMonitor } from './modules/networkMonitor';
 import { initEmbeddedOverview } from './modules/tileLoader';
 import { packManager } from './modules/packManager';
 import { registerSW } from 'virtual:pwa-register';
-import { getInterruptedRecording, clearInterruptedRecording, getPersistedRecordingPoints, getNativeRecordedPoints, mergeAndDeduplicatePoints, stopRecordingService, clearNativeRecordedPoints, isRecordingServiceRunning } from './modules/foregroundService';
+import { getInterruptedRecording, clearInterruptedRecording, stopRecordingService } from './modules/foregroundService';
+import { nativeGPSService } from './modules/nativeGPSService';
 import { showToast } from './modules/utils';
 import { state } from './modules/state';
 import { eventBus } from './modules/eventBus';
@@ -25,60 +26,69 @@ registerSW({
   },
 });
 
-// Système unifié de recovery au démarrage. Trois cas distincts :
-//   1. Service natif TOUJOURS ACTIF (notification visible, GPS continue) →
-//      Reprise TRANSPARENTE : state.isRecording=true, recordedPoints=merged, aucun prompt.
-//      L'utilisateur voit son REC continuer comme si rien ne s'était passé.
-//   2. Service MORT mais points persistés (≥2) → prompt "Restaurer / Supprimer".
-//   3. Pas assez de points → nettoyage silencieux.
+// Système unifié de recovery au démarrage (v5.24 - Single Source of Truth).
+// Le natif Android (FusedLocationProviderClient) est la SEULE source de vérité.
+// Plus de fusion, plus de doublons - on récupère les points directement depuis le natif.
+//
+// Deux cas distincts :
+//   1. Course native TOUJOURS ACTIVE (service vivant, notification visible) → 
+//      Reprise TRANSPARENTE : state.isRecording=true, recordedPoints=viennent du natif, aucun prompt.
+//   2. Course native ARRETÉE (crash/kill) mais snapshot localStorage → 
+//      On récupère les points via nativeGPSService.getAllPoints() et on propose la restauration.
 window.addEventListener('suntrail:uiReady', async () => {
     const interrupted = getInterruptedRecording();
 
     try {
-        const serviceRunning = await isRecordingServiceRunning();
-        const [jsPoints, nativePoints] = await Promise.all([
-            getPersistedRecordingPoints(),
-            getNativeRecordedPoints(),
-        ]);
-        const merged = mergeAndDeduplicatePoints(jsPoints ?? [], nativePoints);
+        // Récupérer l'état de la course native
+        const currentCourse = await nativeGPSService.getCurrentCourse();
 
-        // Cas 1 : service actif → reprise transparente (pas de prompt, REC continue)
-        if (serviceRunning && merged.length >= 1) {
-            state.recordedPoints = merged;
+        // Cas 1 : service natif actif → reprise transparente
+        if (currentCourse && currentCourse.isRunning) {
+            // Récupérer tous les points depuis le natif (Single Source of Truth)
+            const allPoints = await nativeGPSService.getAllPoints(currentCourse.courseId);
+            
+            state.recordedPoints = allPoints;
             state.isRecording = true;
-            // v5.24.4: Restaurer recordingOriginTile depuis le snapshot pour cohérence géographique
-            if (interrupted?.originTile) {
-                state.recordingOriginTile = interrupted.originTile;
+            state.currentCourseId = currentCourse.courseId;
+            
+            // Restaurer recordingOriginTile depuis le natif si disponible
+            if (currentCourse.originTile) {
+                state.recordingOriginTile = currentCourse.originTile;
             }
+            
+            // Reprendre l'écoute des événements natifs
+            nativeGPSService.setupListeners();
+            
             setTimeout(() => sheetManager.open('track'), 300);
-            showToast(`▶ Enregistrement repris — ${merged.length} points`);
+            showToast(`▶ Enregistrement repris — ${allPoints.length} points`);
             return;
         }
 
-        // Cas 2 : service arrêté, assez de points → prompt recovery
-        if (merged.length >= 2) {
-            state.recoveredPoints = merged;
-            // v5.24.4: Restaurer recordingOriginTile depuis le snapshot pour cohérence géographique
-            if (interrupted?.originTile) {
-                state.recordingOriginTile = interrupted.originTile;
-            }
-            setTimeout(() => sheetManager.open('track'), 300);
-            eventBus.emit('recordingRecovered');
-            return;
-        }
-
-        // Cas 3 : pas assez de points → nettoyage
+        // Cas 2 : service natif arrêté mais snapshot existant → prompt recovery
         if (interrupted) {
+            // Essayer de récupérer les points depuis le natif (si le service a été restart)
+            let recoveredPoints: { lat: number; lon: number; alt: number; timestamp: number; id?: number; accuracy?: number }[] = [];
+            if (currentCourse?.courseId) {
+                recoveredPoints = await nativeGPSService.getAllPoints(currentCourse.courseId);
+            }
+            
+            if (recoveredPoints.length >= 2) {
+                state.recoveredPoints = recoveredPoints;
+                if (interrupted.originTile) {
+                    state.recordingOriginTile = interrupted.originTile;
+                }
+                setTimeout(() => sheetManager.open('track'), 300);
+                eventBus.emit('recordingRecovered');
+                return;
+            }
+            
+            // Pas assez de points ou récupération échouée → nettoyage
             const mins = Math.round((Date.now() - interrupted.startTime) / 60000);
             clearInterruptedRecording();
             void stopRecordingService();
-            if (merged.length > 0) {
+            if (recoveredPoints.length > 0) {
                 showToast(`⚠️ Enregistrement interrompu après ${mins} min — données insuffisantes`);
             }
-        } else if (merged.length > 0) {
-            // Points orphelins sans snapshot → nettoyer silencieusement
-            void clearNativeRecordedPoints();
-            void stopRecordingService();
         }
     } catch {
         if (interrupted) {

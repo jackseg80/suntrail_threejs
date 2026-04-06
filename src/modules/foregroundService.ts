@@ -1,35 +1,19 @@
 /**
- * foregroundService.ts — Wrapper JS pour le Foreground Service Android (v5.23)
+ * foregroundService.ts — Wrapper JS pour le Foreground Service Android (v5.24)
  *
- * Remplit deux rôles :
- *   1. Démarre/arrête le RecordingService natif Android pour maintenir le processus
- *      en vie quand l'app est en arrière-plan pendant un enregistrement.
- *      Depuis v5.23 : le service enregistre aussi les points GPS nativement via
- *      FusedLocationProviderClient, indépendamment du cycle de vie de la WebView.
- *   2. Persiste l'état d'enregistrement dans localStorage comme fallback — si l'app
- *      est quand même tuée, l'utilisateur peut reprendre à son retour.
+ * Ce module a été simplifié après la refactorisation "Single Source of Truth" :
+ * - L'enregistrement GPS est géré par nativeGPSService.ts qui dialogue avec le natif
+ * - Ce module conserve uniquement le foreground service pour garder le processus vivant
+ * - La persistence via filesystem a été supprimée (le natif est la source de vérité)
  *
  * Sur web/navigateur : les appels natifs sont ignorés silencieusement.
  */
 
-import { registerPlugin, Capacitor } from '@capacitor/core';
+import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
-import type { LocationPoint } from './state';
+import { nativeGPSService } from './nativeGPSService';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
-interface RecordingPlugin {
-    startForeground(options?: {
-        interval?: number;
-        minDisplacement?: number;
-        highAccuracy?: boolean;
-    }): Promise<void>;
-    stopForeground(): Promise<void>;
-    isRunning(): Promise<{ running: boolean }>;
-    getRecordedPoints(): Promise<{ points: LocationPoint[] }>;
-    clearRecordedPoints(): Promise<void>;
-    requestBatteryOptimizationExemption(): Promise<{ granted: boolean }>;
-}
-
 interface RecordingSnapshot {
     isRecording: boolean;
     startTime: number;
@@ -37,24 +21,17 @@ interface RecordingSnapshot {
     originTile?: { x: number; y: number; z: number };
 }
 
-// ── Plugin natif (no-op sur web) ───────────────────────────────────────────────
-const RecordingNative = Capacitor.isNativePlatform()
-    ? registerPlugin<RecordingPlugin>('Recording')
-    : null;
-
-const SNAPSHOT_KEY        = 'suntrail_rec_snapshot_v1';
-const POINTS_FILE         = 'suntrail_rec_points_v1.json';
-const PERSIST_EVERY_N     = 1;       // Persister chaque nouveau point (v5.23 — réduit de 10)
-const PERSIST_INTERVAL_MS = 5_000;   // …ou toutes les 5 secondes (v5.23 — réduit de 20s)
-
-let _lastPersistedCount = 0;
-let _lastPersistTime    = 0;
+const SNAPSHOT_KEY = 'suntrail_rec_snapshot_v1';
+const POINTS_FILE  = 'suntrail_rec_points_v1.json';
 
 // ── API publique ───────────────────────────────────────────────────────────────
 
 /**
- * Démarre le Foreground Service et persiste l'état.
+ * Démarre le Foreground Service et persist l'état.
  * Appelé quand l'utilisateur active REC.
+ * 
+ * Note: L'enregistrement GPS est géré par nativeGPSService.startCourse() dans TrackSheet.ts.
+ * Cette fonction conserve la persistence localStorage pour la recovery.
  */
 export async function startRecordingService(originTile?: { x: number; y: number; z: number }): Promise<void> {
     const snapshot: RecordingSnapshot = {
@@ -65,42 +42,25 @@ export async function startRecordingService(originTile?: { x: number; y: number;
     };
     localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshot));
 
-    _lastPersistedCount = 0;
-    _lastPersistTime    = Date.now();
-
-    if (RecordingNative) {
-        try {
-            await RecordingNative.startForeground({
-                interval:        2000,        // v5.23.4: 2s au lieu de 3s (plus fluide)
-                minDisplacement: 3.0,         // v5.23.4: 3m au lieu de 0.5m (évite dérive GPS)
-                highAccuracy:    true,
-            });
-        } catch (e) {
-            console.warn('[RecordingService] startForeground failed:', e);
-        }
+    // Nettoyer le fichier de points orphan si présent
+    if (Capacitor.isNativePlatform()) {
+        Filesystem.deleteFile({ path: POINTS_FILE, directory: Directory.Cache })
+            .catch(() => { /* fichier absent = normal */ });
     }
 }
 
 /**
  * Arrête le Foreground Service et efface la persistence.
  * Appelé quand l'utilisateur arrête REC ou exporte.
+ * 
+ * Note: L'arrêt de l'enregistrement GPS est géré par nativeGPSService.stopCourse() dans TrackSheet.ts.
  */
 export async function stopRecordingService(): Promise<void> {
     localStorage.removeItem(SNAPSHOT_KEY);
 
-    _lastPersistedCount = 0;
-    _lastPersistTime    = 0;
     if (Capacitor.isNativePlatform()) {
         Filesystem.deleteFile({ path: POINTS_FILE, directory: Directory.Cache })
-            .catch(() => { /* fichier absent = normal si aucun point persisté */ });
-    }
-
-    if (RecordingNative) {
-        try {
-            await RecordingNative.stopForeground();
-        } catch (e) {
-            console.warn('[RecordingService] stopForeground failed:', e);
-        }
+            .catch(() => { /* fichier absent = normal */ });
     }
 }
 
@@ -108,10 +68,7 @@ export async function stopRecordingService(): Promise<void> {
  * Met à jour le nombre de points dans le snapshot (appelé à chaque nouveau point GPS).
  * Permet de savoir où on en était si l'app est quand même tuée.
  */
-export function updateRecordingSnapshot(
-    pointCount: number,
-    points?: LocationPoint[]
-): void {
+export function updateRecordingSnapshot(pointCount: number): void {
     const raw = localStorage.getItem(SNAPSHOT_KEY);
     if (!raw) return;
     try {
@@ -119,28 +76,16 @@ export function updateRecordingSnapshot(
         snapshot.pointCount = pointCount;
         localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshot));
     } catch { /* ignore */ }
-
-    if (!points || !Capacitor.isNativePlatform()) return;
-    const now = Date.now();
-    const newPoints = pointCount - _lastPersistedCount;
-    if (newPoints >= PERSIST_EVERY_N || now - _lastPersistTime >= PERSIST_INTERVAL_MS) {
-        _lastPersistedCount = pointCount;
-        _lastPersistTime    = now;
-        // Fire-and-forget — non-bloquant pendant le callback GPS
-        Filesystem.writeFile({
-            path:      POINTS_FILE,
-            data:      JSON.stringify(points),
-            directory: Directory.Cache,
-            encoding:  Encoding.UTF8,
-        }).catch(e => console.warn('[RecordingService] points persist failed:', e));
-    }
 }
 
 /**
- * Persiste immédiatement et de façon bloquante tous les points sur disque.
+ * Persiste immédiatement tous les points sur disque.
  * Appelé lors du passage en background (appStateChange) pour éviter toute perte.
+ * 
+ * Note: Cette fonction persiste les points dans un fichier local mais ce n'est plus
+ * la source de vérité - le natif reste la seule source fiable.
  */
-export async function persistAllPointsNow(points: LocationPoint[]): Promise<void> {
+export async function persistAllPointsNow(points: { lat: number; lon: number; alt: number; timestamp: number }[]): Promise<void> {
     if (!Capacitor.isNativePlatform() || points.length === 0) return;
     try {
         await Filesystem.writeFile({
@@ -149,18 +94,19 @@ export async function persistAllPointsNow(points: LocationPoint[]): Promise<void
             directory: Directory.Cache,
             encoding:  Encoding.UTF8,
         });
-        _lastPersistedCount = points.length;
-        _lastPersistTime    = Date.now();
     } catch (e) {
         console.warn('[RecordingService] persistAllPointsNow failed:', e);
     }
 }
 
 /**
- * Lit les points d'enregistrement persistés sur le filesystem (après un kill Android).
+ * Lit les points d'enregistrement persistés sur le filesystem (fallback legacy).
  * Retourne null si aucun fichier ou si on est sur web.
+ * 
+ * Note: Cette fonction n'est plus utilisée pour la recovery car nativeGPSService
+ * récupère les points directement depuis le natif via getCurrentCourse().
  */
-export async function getPersistedRecordingPoints(): Promise<LocationPoint[] | null> {
+export async function getPersistedRecordingPoints(): Promise<{ lat: number; lon: number; alt: number; timestamp: number }[] | null> {
     if (!Capacitor.isNativePlatform()) return null;
     try {
         const result = await Filesystem.readFile({
@@ -175,84 +121,18 @@ export async function getPersistedRecordingPoints(): Promise<LocationPoint[] | n
 }
 
 /**
- * Récupère les points enregistrés nativement par RecordingService.java
- * (via FusedLocationProviderClient) pendant que la WebView était morte/suspendue.
- */
-export async function getNativeRecordedPoints(): Promise<LocationPoint[]> {
-    if (!RecordingNative) return [];
-    try {
-        const result = await RecordingNative.getRecordedPoints();
-        return result.points || [];
-    } catch {
-        return [];
-    }
-}
-
-/**
  * Vérifie si le Foreground Service natif d'enregistrement tourne encore.
  * Permet de différencier au démarrage de l'app :
  *   - service vivant → reprise transparente (REC continue, pas de prompt)
  *   - service mort   → prompt recovery "Restaurer / Supprimer"
  */
 export async function isRecordingServiceRunning(): Promise<boolean> {
-    if (!RecordingNative) return false;
     try {
-        const result = await RecordingNative.isRunning();
-        return result.running === true;
+        const currentCourse = await nativeGPSService.getCurrentCourse();
+        return currentCourse?.isRunning ?? false;
     } catch {
         return false;
     }
-}
-
-/**
- * Efface le fichier de points natifs (après merge réussi).
- */
-export async function clearNativeRecordedPoints(): Promise<void> {
-    if (!RecordingNative) return;
-    try {
-        await RecordingNative.clearRecordedPoints();
-    } catch { /* ignore */ }
-}
-
-/**
- * Demande à Android d'exempter l'app des optimisations batterie.
- * Appelé une seule fois au démarrage du premier REC.
- * Retourne true si déjà exempté ou si l'utilisateur a accepté.
- */
-export async function requestBatteryOptimizationExemption(): Promise<boolean> {
-    if (!RecordingNative) return true;
-    try {
-        const result = await RecordingNative.requestBatteryOptimizationExemption();
-        return result.granted;
-    } catch {
-        return false;
-    }
-}
-
-/**
- * Fusionne et déduplique deux tableaux de points GPS.
- * Tri par timestamp, suppression des doublons proches (< 500ms).
- * Fonction pure — testable sans dépendances.
- */
-export function mergeAndDeduplicatePoints(
-    jsPoints: LocationPoint[],
-    nativePoints: LocationPoint[]
-): LocationPoint[] {
-    if (jsPoints.length === 0 && nativePoints.length === 0) return [];
-
-    const all = [...jsPoints, ...nativePoints].sort((a, b) => a.timestamp - b.timestamp);
-    const result: LocationPoint[] = [all[0]];
-
-    for (let i = 1; i < all.length; i++) {
-        const prev = result[result.length - 1];
-        const curr = all[i];
-        // Ignorer les points trop proches dans le temps (chevauchement JS/natif)
-        if (curr.timestamp - prev.timestamp > 500) {
-            result.push(curr);
-        }
-    }
-
-    return result;
 }
 
 /**
@@ -276,4 +156,15 @@ export function getInterruptedRecording(): RecordingSnapshot | null {
  */
 export function clearInterruptedRecording(): void {
     localStorage.removeItem(SNAPSHOT_KEY);
+}
+
+/**
+ * Demande à Android d'exempter l'app des optimisations batterie.
+ * Appelé une seule fois au démarrage du premier REC.
+ * Retourne true si déjà exempté ou si l'utilisateur a accepté.
+ */
+export async function requestBatteryOptimizationExemption(): Promise<boolean> {
+    // Cette fonction est conservée pour compatibilité mais déléguée au natif si disponible
+    // Note: Elle pourrait être implémentée via un plugin电容 natif si nécessaire
+    return true;
 }

@@ -7,7 +7,8 @@ import { showUpgradePrompt } from '../../iap';
 import { haptic } from '../../haptics';
 import { i18n } from '../../../i18n/I18nService';
 import gpxParser from 'gpxparser';
-import { startRecordingService, stopRecordingService, clearInterruptedRecording, getNativeRecordedPoints, clearNativeRecordedPoints, mergeAndDeduplicatePoints } from '../../foregroundService';
+import { startRecordingService, stopRecordingService, clearInterruptedRecording } from '../../foregroundService';
+import { nativeGPSService } from '../../nativeGPSService';
 import { updateVisibleTiles, addGPXLayer, removeGPXLayer, toggleGPXLayer, updateRecordedTrackMesh } from '../../terrain';
 import { lngLatToTile, lngLatToWorld } from '../../geo';
 import { updateElevationProfile } from '../../profile';
@@ -67,28 +68,29 @@ export class TrackSheet extends BaseComponent {
                     }
                 }
                 showToast(i18n.t('track.toast.recStarted'));
-                // v5.23.4: Figer originTile au démarrage pour cohérence des coordonnées
+                // v5.24: Single Source of Truth - le natif est la seule source d'enregistrement
+                // Figer originTile au démarrage pour cohérence des coordonnées
                 const currentOrigin = { ...state.originTile };
                 state.recordingOriginTile = currentOrigin;
-                await startRecordingService(currentOrigin);   // Démarre le Foreground Service Android + GPS natif
+                
+                // Démarrer le service natif (natif Android = source de vérité pour les points GPS)
+                const courseId = await nativeGPSService.startCourse(currentOrigin);
+                state.currentCourseId = courseId;
+                
+                await startRecordingService(currentOrigin);   // Foreground Service Android
                 if (!state.isFollowingUser) await startLocationTracking();
-                if (state.userLocation) {
-                    state.recordedPoints = [{ ...state.userLocation, timestamp: Date.now() }];
-                    updateRecordedTrackMesh();
-                } else {
-                    state.recordedPoints = [];
-                }
+                
+                // Les points seront ajoutés automatiquement via les événements natifs (onNewPoints)
+                // On initialise recordedPoints vide - le mesh sera mis à jour quand les premiers points arriveront
+                state.recordedPoints = [];
             } else {
-                // Merger les points natifs (enregistrés pendant background) avant de stopper
-                const nativePoints = await getNativeRecordedPoints();
-                if (nativePoints.length > 0) {
-                    state.recordedPoints = mergeAndDeduplicatePoints(state.recordedPoints, nativePoints);
-                    updateRecordedTrackMesh();
-                }
+                // v5.24: Arrêter le service natif - les points sont déjà dans state.recordedPoints
+                // (via les événements onNewPoints de nativeGPSService)
+                await nativeGPSService.stopCourse();
                 await stopRecordingService();    // Arrête le Foreground Service Android
-                void clearNativeRecordedPoints();
-                // v5.23.4: Réinitialiser recordingOriginTile
+                // v5.24: Réinitialiser recordingOriginTile
                 state.recordingOriginTile = null;
+                state.currentCourseId = null;
                 showToast(i18n.t('track.toast.recStopped'));
                 // Sauvegarde interne systématique au STOP (sans gate Pro)
                 if (state.recordedPoints.length >= 2) {
