@@ -116,14 +116,38 @@ class NativeGPSService {
         this.isListening = true;
 
         // Nouveaux points enregistrés par le natif
-        RecordingNative.addListener('onNewPoints', (event: { points: NativeGPSPoint[] }) => {
-            if (!event.points || event.points.length === 0) return;
+        // L'événement contient courseId et pointCount, pas les points directement
+        // On fait une requête pour récupérer les nouveaux points depuis le dernier timestamp
+        RecordingNative.addListener('onNewPoints', async (event: { courseId: string; pointCount: number }) => {
+            if (!event.courseId || event.pointCount === 0) {
+                // Juste le courseId initial (pas de points encore)
+                this.currentCourseId = event.courseId;
+                state.currentCourseId = event.courseId;
+                state.isRecording = true;
+                return;
+            }
 
-            // Ajouter les points à state.recordedPoints
-            state.recordedPoints = [...state.recordedPoints, ...event.points];
+            // Récupérer les nouveaux points depuis le dernier timestamp connu
+            const lastTimestamp = state.recordedPoints.length > 0
+                ? state.recordedPoints[state.recordedPoints.length - 1].timestamp
+                : 0;
 
-            // Mettre à jour le mesh 3D du tracé
-            updateRecordedTrackMesh();
+            try {
+                const newPoints = await this.getAllPoints(event.courseId, lastTimestamp);
+                if (newPoints.length > 0) {
+                    // Convertir NativeGPSPoint en LocationPoint
+                    const convertedPoints = newPoints.map(p => ({
+                        lat: p.lat,
+                        lon: p.lon,
+                        alt: p.alt,
+                        timestamp: p.timestamp
+                    }));
+                    state.recordedPoints = [...state.recordedPoints, ...convertedPoints];
+                    updateRecordedTrackMesh();
+                }
+            } catch (e) {
+                console.warn('[NativeGPSService] Failed to fetch new points:', e);
+            }
         });
 
         // Mise à jour de position (pour le marker utilisateur)

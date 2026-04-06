@@ -270,6 +270,57 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
     }
 
     /**
+     * Retourne les points GPS depuis Room SQLite avec filtre depuis un timestamp.
+     * Format : { points: [{ lat, lon, alt, timestamp, accuracy }, ...] }
+     * 
+     * Si since > 0, ne retourne que les points avec timestamp > since (polling incrémental).
+     */
+    @PluginMethod
+    public void getPoints(PluginCall call) {
+        String courseId = call.getString("courseId", mCurrentCourseId);
+        long since = call.getLong("since", 0L);
+
+        if (courseId == null || courseId.isEmpty()) {
+            JSObject result = new JSObject();
+            result.put("points", new JSArray());
+            call.resolve(result);
+            return;
+        }
+
+        // Query Room en arrière-plan
+        mDbExecutor.execute(() -> {
+            try {
+                List<GPSPoint> points;
+                if (since > 0) {
+                    points = mDao.getPointsSince(courseId, since);
+                } else {
+                    points = mDao.getPointsForCourse(courseId);
+                }
+
+                JSArray jsArr = new JSArray();
+                for (GPSPoint pt : points) {
+                    JSObject jsPoint = new JSObject();
+                    jsPoint.put("lat",       pt.lat);
+                    jsPoint.put("lon",       pt.lon);
+                    jsPoint.put("alt",       pt.alt);
+                    jsPoint.put("timestamp", pt.timestamp);
+                    jsPoint.put("accuracy",  pt.accuracy);
+                    jsArr.put(jsPoint);
+                }
+
+                JSObject result = new JSObject();
+                result.put("points", jsArr);
+                call.resolve(result);
+            } catch (Exception e) {
+                JSObject result = new JSObject();
+                result.put("points", new JSArray());
+                result.put("error", e.getMessage());
+                call.resolve(result);
+            }
+        });
+    }
+
+    /**
      * Retourne le nombre de points pour une course donnée.
      */
     @PluginMethod
