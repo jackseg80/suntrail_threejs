@@ -46,6 +46,10 @@ window.addEventListener('suntrail:uiReady', async () => {
         if (serviceRunning && merged.length >= 1) {
             state.recordedPoints = merged;
             state.isRecording = true;
+            // v5.24.4: Restaurer recordingOriginTile depuis le snapshot pour cohérence géographique
+            if (interrupted?.originTile) {
+                state.recordingOriginTile = interrupted.originTile;
+            }
             setTimeout(() => sheetManager.open('track'), 300);
             showToast(`▶ Enregistrement repris — ${merged.length} points`);
             return;
@@ -54,6 +58,10 @@ window.addEventListener('suntrail:uiReady', async () => {
         // Cas 2 : service arrêté, assez de points → prompt recovery
         if (merged.length >= 2) {
             state.recoveredPoints = merged;
+            // v5.24.4: Restaurer recordingOriginTile depuis le snapshot pour cohérence géographique
+            if (interrupted?.originTile) {
+                state.recordingOriginTile = interrupted.originTile;
+            }
             setTimeout(() => sheetManager.open('track'), 300);
             eventBus.emit('recordingRecovered');
             return;

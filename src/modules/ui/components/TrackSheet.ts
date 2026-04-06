@@ -68,8 +68,9 @@ export class TrackSheet extends BaseComponent {
                 }
                 showToast(i18n.t('track.toast.recStarted'));
                 // v5.23.4: Figer originTile au démarrage pour cohérence des coordonnées
-                state.recordingOriginTile = { ...state.originTile };
-                await startRecordingService();   // Démarre le Foreground Service Android + GPS natif
+                const currentOrigin = { ...state.originTile };
+                state.recordingOriginTile = currentOrigin;
+                await startRecordingService(currentOrigin);   // Démarre le Foreground Service Android + GPS natif
                 if (!state.isFollowingUser) await startLocationTracking();
                 if (state.userLocation) {
                     state.recordedPoints = [{ ...state.userLocation, timestamp: Date.now() }];

@@ -34,6 +34,7 @@ interface RecordingSnapshot {
     isRecording: boolean;
     startTime: number;
     pointCount: number;
+    originTile?: { x: number; y: number; z: number };
 }
 
 // ── Plugin natif (no-op sur web) ───────────────────────────────────────────────
@@ -55,11 +56,12 @@ let _lastPersistTime    = 0;
  * Démarre le Foreground Service et persiste l'état.
  * Appelé quand l'utilisateur active REC.
  */
-export async function startRecordingService(): Promise<void> {
+export async function startRecordingService(originTile?: { x: number; y: number; z: number }): Promise<void> {
     const snapshot: RecordingSnapshot = {
         isRecording: true,
         startTime:   Date.now(),
         pointCount:  0,
+        originTile:  originTile,
     };
     localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshot));
 
