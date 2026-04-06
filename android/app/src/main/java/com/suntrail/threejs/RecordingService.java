@@ -248,18 +248,15 @@ public class RecordingService extends Service {
                     // mais on veut altitude orthométrique (au-dessus du niveau de la mer)
                     // En Suisse, le géoïde est ~50-55m sous l'ellipsoïde
                     double altEllipsoidal = loc.getAltitude();
-                    double altOrthometric = altEllipsoidal;
                     
-                    // Android 11+ (API 30) fournit directement l'altitude orthométrique
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && loc.hasVerticalAccuracy()) {
-                        // Utiliser l'API moderne si disponible
-                        altOrthometric = loc.getAltitude(); // Déjà corrigée sur certains appareils
-                    } else {
-                        // Correction approximative basée sur la position
-                        // En Suisse: ~51m, ailleurs: utiliser approximation
-                        double geoIdHeight = estimateGeoIdHeight(loc.getLatitude(), loc.getLongitude());
-                        altOrthometric = altEllipsoidal - geoIdHeight;
-                    }
+                    // TOUJOURS appliquer la correction du géoïde
+                    // loc.getAltitude() retourne toujours l'altitude ellipsoïdale
+                    // mÃªme sur Android 11+ avec hasVerticalAccuracy()
+                    double geoIdHeight = estimateGeoIdHeight(loc.getLatitude(), loc.getLongitude());
+                    double altOrthometric = altEllipsoidal - geoIdHeight;
+                    
+                    Log.d(TAG, String.format("ALTITUDE: raw=%.1fm geoId=%.1fm corrected=%.1fm", 
+                            altEllipsoidal, geoIdHeight, altOrthometric));
                     
                     if (altOrthometric < MIN_ALT_M || altOrthometric > MAX_ALT_M) {
                         Log.d(TAG, "REJECT: altitude " + altOrthometric + "m out of range");
