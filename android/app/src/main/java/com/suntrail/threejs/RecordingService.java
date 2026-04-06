@@ -111,6 +111,12 @@ public class RecordingService extends Service {
     // Compteur de points pour la notification
     private final AtomicInteger mPointCount = new AtomicInteger(0);
 
+    // Buffer pour batch inserts (v5.25.1) - réduit I/O disque
+    private final List<GPSPoint> mPointBuffer = new ArrayList<>();
+    private static final int BATCH_SIZE = 5; // Insert par batch de 5 points
+    private static final long BATCH_FLUSH_INTERVAL_MS = 10000; // Flush forcé toutes les 10s
+    private long mLastBatchFlush = 0;
+
     // WakeLock partiel : maintient le CPU actif pendant l'enregistrement
     private PowerManager.WakeLock mWakeLock;
 
@@ -337,19 +343,40 @@ public class RecordingService extends Service {
                         loc.getAccuracy()
                     );
 
-                    // Insert en arrière-plan (Room interdit MainThread)
-                    mDbExecutor.execute(() -> {
-                        mDao.insert(point);
-                        int count = mPointCount.incrementAndGet();
-
-                        // Notifier le Plugin JS via callback
-                        RecordingCallback cb = getCallback();
-                        if (cb != null) {
-                            cb.onNewPoints(mCurrentCourseId, count);
+                    // v5.25.1: Batch insert optimisation - réduit I/O disque
+                    mPointBuffer.add(point);
+                    int newCount = mPointCount.incrementAndGet();
+                    
+                    // Vérifier si on doit flush le buffer
+                    boolean shouldFlush = mPointBuffer.size() >= BATCH_SIZE || 
+                                         (now - mLastBatchFlush) > BATCH_FLUSH_INTERVAL_MS;
+                    
+                    if (shouldFlush) {
+                        final List<GPSPoint> pointsToInsert = new ArrayList<>(mPointBuffer);
+                        mPointBuffer.clear();
+                        mLastBatchFlush = now;
+                        
+                        mDbExecutor.execute(() -> {
+                            mDao.insertAll(pointsToInsert);
+                            
+                            // Notifier le Plugin JS via callback (une fois par batch)
+                            RecordingCallback cb = getCallback();
+                            if (cb != null) {
+                                cb.onNewPoints(mCurrentCourseId, newCount);
+                            }
+                            
+                            Log.d(TAG, "INSERTED batch of " + pointsToInsert.size() + " points (total: " + newCount + ")");
+                        });
+                    } else {
+                        // Mise à jour du compteur sans notification (attendre le batch)
+                        // Pour les tests, notifier quand même mais moins fréquemment
+                        if (newCount % 3 == 0) { // Notifier tous les 3 points
+                            RecordingCallback cb = getCallback();
+                            if (cb != null) {
+                                cb.onNewPoints(mCurrentCourseId, newCount);
+                            }
                         }
-
-                        Log.d(TAG, "INSERTED point #" + count + " for course " + mCurrentCourseId);
-                    });
+                    }
 
                     // Mettre à jour l'état pour le prochain calcul
                     mLastValidLocation = loc;
@@ -413,9 +440,27 @@ public class RecordingService extends Service {
             mFusedClient.removeLocationUpdates(mLocationCallback);
         }
 
+        // v5.25.1: Flush le buffer de points restants avant d'arrêter
+        if (!mPointBuffer.isEmpty() && mDbExecutor != null) {
+            final List<GPSPoint> remainingPoints = new ArrayList<>(mPointBuffer);
+            mPointBuffer.clear();
+            mDbExecutor.execute(() -> {
+                mDao.insertAll(remainingPoints);
+                Log.d(TAG, "Flushed " + remainingPoints.size() + " remaining points on stop");
+            });
+        }
+
         // Fermer l'executor
         if (mDbExecutor != null) {
             mDbExecutor.shutdown();
+            try {
+                // Attendre que les tâches en cours se terminent (max 5s)
+                if (!mDbExecutor.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS)) {
+                    Log.w(TAG, "DB executor did not terminate in time");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
 
         // Relâcher le WakeLock
