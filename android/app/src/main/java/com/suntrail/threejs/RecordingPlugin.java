@@ -418,4 +418,51 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         result.put("courseId", mCurrentCourseId != null ? mCurrentCourseId : "");
         call.resolve(result);
     }
+
+    /**
+     * Retourne l'état de la course courante (pour recovery au démarrage).
+     * Format: { courseId: string, isRunning: boolean, originTile?: {x,y,z} }
+     */
+    @PluginMethod
+    public void getCurrentCourse(PluginCall call) {
+        boolean isRunning = RecordingService.isRunning();
+        
+        // Récupérer le courseId du service natif si le plugin a été recréé (app killée et relancée)
+        String courseId = mCurrentCourseId;
+        if (courseId == null && isRunning) {
+            // Le plugin a été recréé mais le service tourne encore
+            // Essayer de récupérer depuis SharedPreferences
+            android.content.SharedPreferences prefs = getContext().getSharedPreferences("RecordingPrefs", Context.MODE_PRIVATE);
+            courseId = prefs.getString("currentCourseId", null);
+        }
+        
+        if (courseId == null || !isRunning) {
+            // Pas de course active
+            JSObject result = new JSObject();
+            result.put("courseId", courseId != null ? courseId : "");
+            result.put("isRunning", false);
+            call.resolve(result);
+            return;
+        }
+        
+        // Course active - retourner les infos
+        JSObject result = new JSObject();
+        result.put("courseId", courseId);
+        result.put("isRunning", true);
+        
+        // Récupérer originTile depuis SharedPreferences si disponible
+        android.content.SharedPreferences prefs = getContext().getSharedPreferences("RecordingPrefs", Context.MODE_PRIVATE);
+        if (prefs.contains("originTileX")) {
+            JSObject originTile = new JSObject();
+            originTile.put("x", prefs.getInt("originTileX", 0));
+            originTile.put("y", prefs.getInt("originTileY", 0));
+            originTile.put("z", prefs.getInt("originTileZ", 0));
+            result.put("originTile", originTile);
+        }
+        
+        // Mettre à jour mCurrentCourseId pour les prochaines requêtes
+        mCurrentCourseId = courseId;
+        
+        call.resolve(result);
+    }
 }

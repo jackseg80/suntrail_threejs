@@ -157,6 +157,12 @@ public class RecordingService extends Service {
         mLastValidTimestamp = 0;
         mPointCount.set(0);
         
+        // Sauvegarder le courseId dans SharedPreferences pour le recovery après kill
+        getSharedPreferences("RecordingPrefs", MODE_PRIVATE)
+            .edit()
+            .putString("currentCourseId", mCurrentCourseId)
+            .apply();
+        
         // Notifier le plugin du nouveau courseId (même sans points encore)
         if (sCallback != null) {
             sCallback.onNewPoints(mCurrentCourseId, 0);
@@ -372,6 +378,12 @@ public class RecordingService extends Service {
     public void onDestroy() {
         sIsRunning = false;
         mCurrentCourseId = null;
+
+        // Nettoyer le courseId des SharedPreferences (arrêt normal)
+        getSharedPreferences("RecordingPrefs", MODE_PRIVATE)
+            .edit()
+            .remove("currentCourseId")
+            .apply();
 
         // Désenregistrer le BroadcastReceiver du bouton Arrêter
         if (mStopReceiver != null) {
