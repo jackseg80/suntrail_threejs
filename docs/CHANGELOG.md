@@ -4,6 +4,17 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.24.5] - 2026-04-06
+
+### 🔧 Persistance recordingOriginTile - Fix décalage après crash
+
+- **Snapshot localStorage** : `recordingOriginTile` est maintenant persistée dans `suntrail_rec_snapshot_v1`
+- **Restauration au recovery** : L'origine est restaurée automatiquement lors de la reprise après crash (Cas 1: service actif, Cas 2: prompt recovery)
+- **Cohérence géographique** : Plus de décalage de la trace quand l'application est tuée puis relancée
+- **Modifications** : `foregroundService.ts`, `TrackSheet.ts`, `main.ts`
+
+---
+
 ## [5.24.4] - 2026-04-06
 
 ### ✨ Profil d'élévation - Accès depuis les tracés existants
