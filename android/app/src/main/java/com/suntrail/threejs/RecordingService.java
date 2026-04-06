@@ -102,7 +102,7 @@ public class RecordingService extends Service {
 
     // Course ID (généré au démarrage, identifie la session d'enregistrement)
     private String mCurrentCourseId;
-    public static String getCurrentCourseId() { return mCurrentCourseId; }
+    public String getCurrentCourseId() { return mCurrentCourseId; }
 
     // État du dernier point valide (pour calculs de vitesse/distance)
     private Location mLastValidLocation;
