@@ -53,7 +53,8 @@
       "empty": "Aucun tracé importé",
       "toggleVisible": "Masquer/afficher le tracé",
       "remove": "Supprimer le tracé",
-      "setActive": "Afficher le profil de ce tracé"
+      "setActive": "Afficher le profil de ce tracé",
+      "showProfile": "Voir le profil d'élévation"
     },
     "recording": {
       "title": "Enregistrement GPS"

@@ -296,6 +296,11 @@ export class TrackSheet extends BaseComponent {
                         <span class="gpx-layer-name">${truncName}</span>
                         <span class="gpx-layer-stats">${layer.stats.distance.toFixed(1)} km · D+ ${Math.round(layer.stats.dPlus)} m · D- ${Math.round(layer.stats.dMinus)} m</span>
                     </div>
+                    <button class="gpx-layer-profile" data-action="profile" data-id="${layer.id}"
+                            aria-label="${i18n.t('track.imported.showProfile')}"
+                            title="${i18n.t('track.imported.showProfile')}">
+                        📈
+                    </button>
                     <button class="gpx-layer-toggle" data-action="toggle" data-id="${layer.id}" 
                             aria-label="${i18n.t('track.imported.toggleVisible')}"
                             title="${i18n.t('track.imported.toggleVisible')}">
@@ -359,6 +364,18 @@ export class TrackSheet extends BaseComponent {
                 const id = (btn as HTMLElement).dataset.id;
                 if (id) {
                     removeGPXLayer(id);
+                }
+            });
+        });
+
+        container.querySelectorAll('[data-action="profile"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = (btn as HTMLElement).dataset.id;
+                if (id) {
+                    state.activeGPXLayerId = id;
+                    updateElevationProfile(id);
+                    this.renderLayersList();
                 }
             });
         });

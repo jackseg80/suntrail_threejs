@@ -933,6 +933,7 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     });
     const mesh = new THREE.Mesh(geometry, material);
     mesh.renderOrder = 10;        // render after terrain tiles (renderOrder 0)
+    mesh.userData = { type: 'gpx-track', layerId: id };  // Pour le raycasting clic
     if (state.scene) state.scene.add(mesh);
 
     const layer: GPXLayer = {
@@ -1053,6 +1054,7 @@ export function updateAllGPXMeshes(): void {
         const mesh = new THREE.Mesh(geometry, material);
         mesh.renderOrder = 10;
         mesh.visible = layer.visible;
+        mesh.userData = { type: 'gpx-track', layerId: layer.id };  // Pour le raycasting clic
         if (state.scene) state.scene.add(mesh);
 
         return { ...layer, points: threePoints, mesh };

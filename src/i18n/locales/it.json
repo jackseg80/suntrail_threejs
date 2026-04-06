@@ -53,7 +53,8 @@
       "empty": "Nessuna traccia importata",
       "toggleVisible": "Mostra/nascondi traccia",
       "remove": "Rimuovi traccia",
-      "setActive": "Mostra il profilo altimetrico di questa traccia"
+      "setActive": "Mostra il profilo altimetrico di questa traccia",
+      "showProfile": "Visualizza profilo altimetrico"
     },
     "recording": {
       "title": "Registrazione GPS"

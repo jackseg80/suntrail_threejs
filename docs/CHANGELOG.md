@@ -4,6 +4,18 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.24.4] - 2026-04-06
+
+### ✨ Profil d'élévation - Accès depuis les tracés existants
+
+- **Bouton "Profil" explicite** : Ajout d'un bouton 📈 dans chaque item de la liste des tracés GPX pour afficher le profil d'élévation
+- **Clic sur tracé 3D** : Possibilité de cliquer directement sur un tracé GPX dans la vue 3D pour afficher son profil
+- **Raycasting GPX** : Les meshes des tracés GPX contiennent maintenant `userData` avec `type: 'gpx-track'` et `layerId` pour l'interaction
+- **Sélection automatique** : Quand on clique sur un tracé (liste ou 3D), il devient le layer actif et son profil s'affiche
+- **Traductions** : Ajout de la clé `track.imported.showProfile` dans tous les fichiers i18n (fr, en, de, it)
+
+---
+
 ## [5.24.3] - 2026-04-05
 
 ### 🔧 Fix profil d'altitude GPX - Correspondance positions 3D

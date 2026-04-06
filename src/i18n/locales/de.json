@@ -53,7 +53,8 @@
       "empty": "Keine importierten Touren",
       "toggleVisible": "Tour ein-/ausblenden",
       "remove": "Tour entfernen",
-      "setActive": "Höhenprofil dieser Tour anzeigen"
+      "setActive": "Höhenprofil dieser Tour anzeigen",
+      "showProfile": "Höhenprofil anzeigen"
     },
     "recording": {
       "title": "GPS-Aufzeichnung"

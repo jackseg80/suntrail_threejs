@@ -13,7 +13,7 @@ import { lngLatToTile, lngLatToWorld, worldToLngLat } from './geo';
 import { showToast } from './utils';
 import { applyPreset, detectBestPreset, getGpuInfo, applyCustomSettings } from './performance';
 import { findTerrainIntersection, getAltitudeAt } from './analysis';
-import { closeElevationProfile } from './profile';
+import { closeElevationProfile, updateElevationProfile } from './profile';
 import { startLocationTracking } from './location';
 import { fetchWeather } from './weather';
 import { initTheme } from './theme';
@@ -475,7 +475,7 @@ function handleGlobalClick(_e: MouseEvent) {
     // Global click handling if needed
 }
 
-function handleMapClick(e: MouseEvent) {
+async function handleMapClick(e: MouseEvent) {
     if (!state.renderer || !state.camera || !state.scene) return;
 
     // Fermer tout sheet ouvert quand on clique sur la carte
@@ -489,8 +489,23 @@ function handleMapClick(e: MouseEvent) {
     raycaster.setFromCamera(mouse, state.camera);
 
     const intersects = raycaster.intersectObjects(state.scene.children, true);
+
+    // Vérifier si on a cliqué sur un tracé GPX
+    const gpxHit = intersects.find(hit => hit.object.userData?.type === 'gpx-track');
+    if (gpxHit) {
+        const layerId = gpxHit.object.userData.layerId;
+        if (layerId) {
+            // Sélectionner le layer et afficher son profil
+            state.activeGPXLayerId = layerId;
+            updateElevationProfile(layerId);
+            // Ouvrir le TrackSheet pour montrer la sélection
+            sheetManager.open('track');
+        }
+        return;
+    }
+
     const spriteHit = intersects.find(hit => hit.object.type === 'Sprite');
-    
+
     if (spriteHit) {
         const poiData = spriteHit.object.userData;
         if (poiData && poiData.name) {
