@@ -102,12 +102,44 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - **Autoriser** toutes les permissions GPS (précision + arrière-plan)
 - **Comparer** avec une montre GPS si possible (Garmin, Polar, etc.)
 
+## Test 4 : Vérification densité des points (NOUVEAU)
+**But :** Vérifier qu'on n'a pas trop de points (jitter quand immobile)
+
+1. Démarrer un enregistrement
+2. Marcher 5 minutes normalement
+3. **S'arrêter et rester immobile 2 minutes** (téléphone en poche)
+4. Marcher encore 5 minutes
+5. Arrêter l'enregistrement
+6. **Vérifier :**
+   - Nombre de points : ~150-250 pour 10-12min de marche (pas 2000+ !)
+   - La trace ne doit pas montrer d'allers-retours quand tu étais immobile
+   - Export GPX : vérifier le nombre de points dans le fichier
+
+## Test 5 : Précision altitude (NOUVEAU)
+**But :** Vérifier que l'altitude correspond à la réalité
+
+1. Se placer à un endroit avec altitude connue (panneau, carte IGN)
+2. Démarrer l'enregistrement
+3. Attendre 30 secondes
+4. Vérifier que l'altitude affichée correspond à l'altitude réelle ±5m
+
+## Problèmes connus (corrigés)
+
+| Problème | Symptôme | Fix appliqué |
+|----------|----------|--------------|
+| Recovery après kill | App vide quand on rouvre | `currentCourseId` sauvegardé dans SharedPreferences |
+| Trop de points | 2911 points pour 5min, lignes chaotiques | `MIN_DISTANCE_M` passé de 1m à 3m + déduplication |
+| Altitude fausse | 490m au lieu de 430m | Correction géoïde + MSL sur Android 12+ |
+| CourseId perdu | Nouveau REC à 0 après kill | `getCurrentCourse()` récupère depuis SharedPreferences |
+
 ## Success criteria finale
 
 L'architecture est validée si :
 1. ✅ Distance cohérente (erreur < 5%)
 2. ✅ Pas de doublons (tracé propre)
-3. ✅ Recovery fonctionne
-4. ✅ Pas de crash sur 3h+ d'utilisation
+3. ✅ **Recovery fonctionne après kill** (points présents quand on rouvre)
+4. ✅ **Densité correcte** (~150-250 points pour 10min, pas 2000+)
+5. ✅ **Altitude correcte** (±5m vs réalité)
+6. ✅ Pas de crash sur 3h+ d'utilisation
 
-**Une fois validé**, je nettoierai l'ancien code JSON pour finaliser la v5.25.0.
+**Une fois validé**, nettoyage de l'ancien code JSON et release v5.25.0.

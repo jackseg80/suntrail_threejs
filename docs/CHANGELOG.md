@@ -62,6 +62,26 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - `resetLocationTrackingVars()` - Plus utilisé
 - Enregistrement GPS dans `watchPosition` - Uniquement natif maintenant
 
+#### Fixes post-test terrain
+
+**Problèmes identifiés lors du test de 10-15min :**
+
+1. **Recovery après kill** - L'app ne récupérait pas la course en cours quand on killait et rouvrait l'application
+   - Fix: Sauvegarder `currentCourseId` dans SharedPreferences
+   - Fix: Ajouter `getCurrentCourse()` dans RecordingPlugin pour récupérer l'état après recréation du plugin
+
+2. **Trop de points (2911 pour 5min)** - Jitter GPS créait des micro-déplacements quand immobile
+   - Fix: Augmenter `MIN_DISTANCE_M` de 1m à 3m
+   - Fix: Ajouter déduplication par timestamp dans `nativeGPSService.ts`
+
+3. **Altitude incorrecte** - Différence de ~60m entre GPS et réalité
+   - Fix: Utiliser `getMslAltitudeMeters()` sur Android 12+ (API 31)
+   - Fix: Correction géoïde pour Android < 12
+
+4. **Communication événements** - Mismatch entre données envoyées et attendues
+   - Fix: `startCourse()` / `stopCourse()` méthodes dédiées
+   - Fix: Récupération incrémentale des points via `getPoints(since)`
+
 #### Architecture finale
 
 ```
