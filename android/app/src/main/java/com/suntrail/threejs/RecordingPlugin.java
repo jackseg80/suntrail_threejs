@@ -110,13 +110,18 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         // Récupérer l'originTile si fourni
         JSObject originTileObj = call.getObject("originTile");
         if (originTileObj != null) {
-            // Stocker dans SharedPreferences pour que RecordingService puisse y accéder
-            getContext().getSharedPreferences("RecordingPrefs", Context.MODE_PRIVATE)
-                .edit()
-                .putInt("originTileX", originTileObj.getInt("x"))
-                .putInt("originTileY", originTileObj.getInt("y"))
-                .putInt("originTileZ", originTileObj.getInt("z"))
-                .apply();
+            try {
+                // Stocker dans SharedPreferences pour que RecordingService puisse y accéder
+                getContext().getSharedPreferences("RecordingPrefs", Context.MODE_PRIVATE)
+                    .edit()
+                    .putInt("originTileX", originTileObj.getInt("x"))
+                    .putInt("originTileY", originTileObj.getInt("y"))
+                    .putInt("originTileZ", originTileObj.getInt("z"))
+                    .apply();
+            } catch (Exception e) {
+                // Ignorer si les valeurs ne sont pas présentes ou incorrectes
+                android.util.Log.w("RecordingPlugin", "Failed to parse originTile", e);
+            }
         }
         
         // Démarrer le service
