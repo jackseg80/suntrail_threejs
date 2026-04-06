@@ -27,6 +27,7 @@ function resolveActiveLayer(layerId?: string): GPXLayer | null {
 
 /**
  * Initialise et dessine le profil d'altitude à partir des données GPX
+ * v5.24.3: Fix mismatch entre points originaux et points densifiés 3D
  */
 export function updateElevationProfile(layerId?: string): void {
     const layer = resolveActiveLayer(layerId);
@@ -35,8 +36,8 @@ export function updateElevationProfile(layerId?: string): void {
         return;
     }
 
-    const track = layer.rawData.tracks[0];
-    const points = track.points;
+    // Utiliser directement les points 3D densifiés (layer.points)
+    // Car gpxDrapePoints a créé des points intermédiaires pour suivre le terrain
     const gpxPoints3D = layer.points;
     
     profileData = [];
@@ -44,28 +45,39 @@ export function updateElevationProfile(layerId?: string): void {
     let totalDPlus = 0;
     let totalDMinus = 0;
 
-    for (let i = 0; i < points.length; i++) {
+    // Reconstruire les données de profil à partir des positions 3D
+    // en calculant les distances et altitudes cumulativement
+    for (let i = 0; i < gpxPoints3D.length; i++) {
+        const pos = gpxPoints3D[i];
         let slope = 0;
+        let ele = pos.y / state.RELIEF_EXAGGERATION; // Convertir Y monde en altitude
+        
         if (i > 0) {
-            const p1 = points[i-1];
-            const p2 = points[i];
-            const d = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon); // en km
-            cumulativeDist += d;
+            const prevPos = gpxPoints3D[i-1];
+            // Distance 3D entre les points (plus précise que Haversine pour les points densifiés)
+            const dx = pos.x - prevPos.x;
+            const dy = pos.y - prevPos.y;
+            const dz = pos.z - prevPos.z;
+            const d3d = Math.sqrt(dx*dx + dy*dy + dz*dz) / 1000; // en km
+            cumulativeDist += d3d;
 
-            // Calcul D+ / D-
-            const diff = (p2.ele || 0) - (p1.ele || 0);
+            // Calcul D+ / D- (basé sur l'altitude réelle du terrain)
+            const prevEle = prevPos.y / state.RELIEF_EXAGGERATION;
+            const diff = ele - prevEle;
             if (diff > 0) totalDPlus += diff;
             else totalDMinus += Math.abs(diff);
 
-            // Calcul de la pente locale (%) : (m / m) * 100
-            if (d > 0.001) { // Éviter division par zéro (min 1m)
-                slope = (diff / (d * 1000)) * 100;
+            // Calcul de la pente locale (%)
+            const d2d = Math.sqrt(dx*dx + dz*dz); // Distance horizontale en mètres
+            if (d2d > 0.1) { // Éviter division par zéro
+                slope = (diff / d2d) * 100;
             }
         }
+        
         profileData.push({
             dist: cumulativeDist,
-            ele: points[i].ele || 0,
-            pos: gpxPoints3D[i],
+            ele: ele,
+            pos: pos,
             slope: slope
         });
     }

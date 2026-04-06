@@ -22,7 +22,7 @@ import sharp from 'sharp';
 import {
     lonToTileX, latToTileY, zxyToTileId,
     serializeDirectory, buildTwoLevelDirectory, buildHeader, HEADER_SIZE,
-    type TileEntry,
+    deduplicateTiles,
 } from './pmtiles-writer';
 
 // --- Pack definitions ---
@@ -52,6 +52,33 @@ const PACKS: Record<string, PackDef> = {
         zooms: [8, 9, 10, 11, 12, 13, 14],
         source: 'ign',
         version: 2,
+    },
+    pyrenees: {
+        id: 'pyrenees',
+        name: 'Pyrénées HD',
+        // Versant français uniquement (IGN ne couvre pas l'Espagne)
+        // Inclut le GR10, la Haute Route Pyrénéenne, Andorre
+        bounds: { minLat: 42.4, maxLat: 43.5, minLon: -2.0, maxLon: 3.2 },
+        zooms: [8, 9, 10, 11, 12, 13, 14],
+        source: 'ign',
+        version: 1,
+    },
+    vosges: {
+        id: 'vosges',
+        name: 'Vosges HD',
+        bounds: { minLat: 47.7, maxLat: 49.1, minLon: 6.7, maxLon: 7.8 },
+        zooms: [8, 9, 10, 11, 12, 13, 14],
+        source: 'ign',
+        version: 1,
+    },
+    massif_central: {
+        id: 'massif_central',
+        name: 'Massif Central HD',
+        // Auvergne + Cévennes + Aubrac
+        bounds: { minLat: 44.0, maxLat: 46.5, minLon: 2.2, maxLon: 4.5 },
+        zooms: [8, 9, 10, 11, 12, 13, 14],
+        source: 'ign',
+        version: 1,
     },
 };
 
@@ -276,18 +303,9 @@ async function main() {
         }))
         .sort((a, b) => a.tileId - b.tileId);
 
-    // 5. Build tile data
-    let tileDataSize = 0;
-    const entries: TileEntry[] = [];
-    for (const tile of sorted) {
-        entries.push({
-            tileId: tile.tileId,
-            offset: tileDataSize,
-            length: tile.data.length,
-            runLength: 1,
-        });
-        tileDataSize += tile.data.length;
-    }
+    // 5. Deduplicate par runLength (tuiles consécutives identiques → une seule entrée)
+    const { entries, dataChunks, savedTiles, savedBytes } = deduplicateTiles(sorted);
+    const tileDataSize = dataChunks.reduce((sum, c) => sum + c.length, 0);
 
     // 6. Build two-level directory (root + leaf dirs pour tenir dans les 16KB initiaux)
     const { rootDir, leafDirs } = buildTwoLevelDirectory(entries, 512);
@@ -344,15 +362,16 @@ async function main() {
     fs.writeSync(fd, rootDir);
     fs.writeSync(fd, metadata);
     fs.writeSync(fd, leafDirData);
-    for (const tile of sorted) {
-        fs.writeSync(fd, tile.data);
+    for (const chunk of dataChunks) {
+        fs.writeSync(fd, chunk);
     }
     fs.closeSync(fd);
 
     const finalSize = fs.statSync(outputPath).size;
+    const dedupPct = sorted.length > 0 ? ((savedTiles / sorted.length) * 100).toFixed(1) : '0.0';
     console.log(`\n✓ Pack généré : ${outputPath}`);
     console.log(`  Taille : ${(finalSize / 1024 / 1024).toFixed(1)} MB`);
-    console.log(`  Tuiles : ${entries.length} (${errors + loadErrors} erreurs ignorées)`);
+    console.log(`  Tuiles : ${sorted.length} → ${entries.length} entrées après dédup (${savedTiles} runs, ${dedupPct}%, ${(savedBytes / 1024).toFixed(0)} KB économisés)`);
     console.log(`  Header : ${HEADER_SIZE} bytes`);
     console.log(`  Directory : ${rootDirLength} bytes`);
     console.log(`  Metadata : ${metadataLength} bytes`);

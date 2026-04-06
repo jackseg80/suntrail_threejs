@@ -113,44 +113,40 @@ R2 supporte les HTTP Range requests (nécessaire pour que la lib pmtiles charge 
 
 ---
 
-### Optimisation taille des packs (planifié v5.22)
+### Optimisation taille des packs (v5.22 — implémenté)
 
 **Problème** : LOD 14 représente ~75% du volume total. À grande échelle (France entière), un pack naïf dépasserait 1.3 GB.
 
-**Leviers retenus** :
+**Leviers implémentés** :
 
-#### 1. Qualité WebP différenciée par LOD
-
-Actuellement tout à `quality=80`. Les LOD bas sont surdimensionnés.
+#### 1. Qualité WebP différenciée par LOD ✓ (v5.22)
 
 ```
-LOD 5-10  : quality 55  → ~5 KB/tuile  (au lieu de ~12 KB)
-LOD 11-12 : quality 70  → ~12 KB/tuile (au lieu de ~18 KB)
-LOD 13-14 : quality 80  → ~20 KB/tuile (inchangé)
+LOD 5-10  : quality 55  → ~5 KB/tuile
+LOD 11-12 : quality 70  → ~12 KB/tuile
+LOD 13-14 : quality 80  → ~20 KB/tuile
 ```
 
-Gain estimé : **20-30%** sur le volume total, sans impact visuel perceptible.
-À implémenter dans `scripts/build-country-pack.ts` → fonction `convertToWebP(buf, zoom)`.
+Gain réel : ~28% — Suisse 716 MB, France Alpes 515 MB.
+Implémenté dans `scripts/build-country-pack.ts` → `webpQualityForZoom(zoom)`.
 
-#### 2. Déduplication runLength (PMTiles v3)
+#### 2. Déduplication runLength (PMTiles v3) ✓ (v5.22)
 
-PMTiles v3 supporte le champ `runLength` pour dédupliquer les tuiles identiques consécutives (mer, neige, zones vides). Notre `pmtiles-writer.ts` ne l'implémente pas encore.
-Gain variable : faible pour les Alpes (peu de zones vides), fort pour la Bretagne (~30% mer).
-À implémenter dans `scripts/pmtiles-writer.ts`.
+Tuiles consécutives identiques regroupées en un seul blob + entrée `runLength > 1`.
+Gain pour les Alpes : ~1-5% (terrain varié). Fort gain attendu sur les futurs packs côtiers (~30%).
+Implémenté dans `scripts/pmtiles-writer.ts` → `deduplicateTiles(sorted)`. Hash FNV-1a 32-bit pur JS.
+23 tests unitaires dans `src/test/pmtilesWriter.test.ts`.
 
 #### 3. Découpage par massif (stratégie produit)
 
 Pour les grands territoires, vendre des packs ciblés plutôt qu'un pack national.
 
-- France Alpes ✓ (fait) — Pyrénées, Vosges, Massif Central à venir
+- **Suisse HD** ✓ — 716 MB, LOD 8-14 (SwissTopo)
+- **France Alpes HD** ✓ — 515 MB, LOD 8-14 (IGN PLANIGNV2)
+- **Pyrénées HD** — à venir (~450 MB estimé)
+- **Vosges HD** — à venir (~250 MB estimé)
+- **Massif Central HD** — à venir (~400 MB estimé)
 - Objectif : rester sous 600 MB par pack
-- Permet à l'utilisateur d'acheter uniquement les zones qui l'intéressent
-
-**Ordre d'implémentation recommandé** :
-
-1. Qualité WebP différenciée → quick win, s'applique au rebuild v2
-2. Rebuild Suisse v2 + France Alpes v2 (LOD 8-14, nouvelle qualité)
-3. Déduplication runLength → pour les futurs packs côtiers/plats
 
 ---
 

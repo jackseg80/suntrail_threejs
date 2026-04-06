@@ -4,6 +4,17 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.24.3] - 2026-04-05
+
+### 🔧 Fix profil d'altitude GPX - Correspondance positions 3D
+
+- **Fix mismatch index** : `updateElevationProfile` utilisait les points originaux du GPX avec les positions 3D densifiées (qui contiennent des points intermédiaires pour suivre le terrain)
+- **Recalcul complet du profil** : Les distances, altitudes et pentes sont maintenant calculées à partir des positions 3D réelles (`layer.points`) au lieu des points originaux
+- **Synchronisation marqueur 3D** : Le marqueur sur la carte suit correctement la position sur le profil (plus de traits droits ou de sauts)
+- **Distances correctes** : Le calcul utilise les distances 3D entre points consécutifs (évite le "double km")
+
+---
+
 ## [5.24.2] - 2026-04-05
 
 ### 🔧 GPS Recording - Fix régression précision + "champignon rouge" (complet)
