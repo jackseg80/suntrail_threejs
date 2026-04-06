@@ -79,6 +79,14 @@ public class RecordingService extends Service {
     private int  mLastPersistedCount = 0;
     private long mLastPersistTime    = 0;
 
+    // Gestion de la durée et de l'immobilité (v5.24.6)
+    private long mStartTime = 0;
+    private Location mLastSignificantLocation = null;
+    private long mLastMovementTime = 0;
+    private boolean mIsImmobile = false;
+    private static final float IMMOBILITY_DISTANCE_THRESHOLD = 30.0f; // 30 mètres
+    private static final long IMMOBILITY_TIME_THRESHOLD = 30 * 60 * 1000L; // 30 minutes
+
     // Cache des PendingIntents pour la notification
     private PendingIntent    mOpenPendingIntent;
     private PendingIntent    mStopPendingIntent;
@@ -138,6 +146,10 @@ public class RecordingService extends Service {
             }
         }
 
+        // Initialiser le temps de démarrage pour la durée (v5.24.6)
+        mStartTime = System.currentTimeMillis();
+        mLastMovementTime = mStartTime;
+
         startForeground(NOTIFICATION_ID, buildNotification(mPoints.size()));
 
 
@@ -195,12 +207,15 @@ public class RecordingService extends Service {
                         point.put("alt",       alt);
                         point.put("timestamp", loc.getTime());
                         mPoints.add(point);
+
+                        // Détection d'immobilité (v5.24.6)
+                        updateImmobilityStatus(loc);
                     } catch (JSONException e) {
                         Log.w(TAG, "Erreur création point GPS : " + e.getMessage());
                     }
                 }
 
-                // Mise à jour de la notification avec le compteur de points
+                // Mise à jour de la notification avec le compteur de points et durée
                 updateNotification(mPoints.size());
 
                 // Persister selon les seuils (pas systématiquement pour préserver les I/O)
@@ -305,19 +320,94 @@ public class RecordingService extends Service {
         }
     }
 
+    // ── Détection d'immobilité ───────────────────────────────────────────────────
+
+    /**
+     * Met à jour le statut d'immobilité basé sur la distance parcourue.
+     * L'utilisateur est considéré immobile s'il n'a pas bougé de plus de 30m pendant 30 minutes.
+     */
+    private void updateImmobilityStatus(Location currentLocation) {
+        long now = System.currentTimeMillis();
+
+        if (mLastSignificantLocation == null) {
+            // Premier point valide
+            mLastSignificantLocation = currentLocation;
+            mLastMovementTime = now;
+            mIsImmobile = false;
+            return;
+        }
+
+        // Calculer la distance depuis la dernière position significative
+        float distance = mLastSignificantLocation.distanceTo(currentLocation);
+
+        if (distance > IMMOBILITY_DISTANCE_THRESHOLD) {
+            // Mouvement significatif détecté
+            mLastSignificantLocation = currentLocation;
+            mLastMovementTime = now;
+            if (mIsImmobile) {
+                mIsImmobile = false;
+                Log.i(TAG, "Mouvement repris après immobilité");
+            }
+        } else {
+            // Pas de mouvement significatif, vérifier le temps écoulé
+            long timeSinceLastMovement = now - mLastMovementTime;
+            if (timeSinceLastMovement > IMMOBILITY_TIME_THRESHOLD && !mIsImmobile) {
+                mIsImmobile = true;
+                Log.i(TAG, "Immobilité détectée (> 30 min sans mouvement significatif)");
+            }
+        }
+    }
+
+    /**
+     * Calcule la durée écoulée depuis le démarrage au format "Xh Ymin"
+     */
+    private String getElapsedTimeString() {
+        long now = System.currentTimeMillis();
+        long elapsedMs = now - mStartTime;
+        long elapsedMinutes = elapsedMs / (60 * 1000L);
+        long hours = elapsedMinutes / 60;
+        long minutes = elapsedMinutes % 60;
+
+        if (hours > 0) {
+            return hours + "h " + minutes + "min";
+        } else {
+            return minutes + "min";
+        }
+    }
+
     // ── Notification ──────────────────────────────────────────────────────────────
 
     private Notification buildNotification(int pointCount) {
-        String text = pointCount == 0
-            ? "GPS actif — en attente du premier point..."
-            : "GPS actif — " + pointCount + " point" + (pointCount > 1 ? "s" : "") + " enregistré" + (pointCount > 1 ? "s" : "");
+        // Calculer la durée écoulée (v5.24.6)
+        String elapsedTime = getElapsedTimeString();
+
+        // Construire le texte avec durée et nombre de points
+        String text;
+        if (pointCount == 0) {
+            text = elapsedTime + " — En attente du premier point...";
+        } else {
+            text = elapsedTime + " — " + pointCount + " point" + (pointCount > 1 ? "s" : "") + " enregistré" + (pointCount > 1 ? "s" : "");
+        }
+
+        // Déterminer le titre en fonction de l'état (v5.24.6)
+        String title;
+        int importance;
+        if (mIsImmobile) {
+            long immobileMinutes = (System.currentTimeMillis() - mLastMovementTime) / (60 * 1000L);
+            title = "⚠️ Immobile (" + immobileMinutes + " min) — Toujours actif ?";
+            importance = NotificationCompat.PRIORITY_DEFAULT; // Plus visible
+        } else {
+            title = "SunTrail 3D — Enregistrement actif";
+            importance = NotificationCompat.PRIORITY_LOW;
+        }
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("SunTrail 3D — Enregistrement actif")
+            .setContentTitle(title)
             .setContentText(text)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(mOpenPendingIntent)
             .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(importance)
             .setCategory(NotificationCompat.CATEGORY_SERVICE);
 
         if (mStopPendingIntent != null) {
