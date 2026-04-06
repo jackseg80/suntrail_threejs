@@ -138,11 +138,23 @@ class NativeGPSService {
         // L'événement contient courseId et pointCount, pas les points directement
         // On fait une requête pour récupérer les nouveaux points depuis le dernier timestamp
         RecordingNative.addListener('onNewPoints', async (event: { courseId: string; pointCount: number }) => {
-            if (!event.courseId || event.pointCount === 0) {
-                // Juste le courseId initial (pas de points encore)
+            console.log('[NativeGPSService] onNewPoints:', event);
+            
+            if (!event.courseId) {
+                console.warn('[NativeGPSService] Received onNewPoints without courseId');
+                return;
+            }
+            
+            // Mettre à jour le courseId si nécessaire
+            if (!this.currentCourseId && event.courseId) {
                 this.currentCourseId = event.courseId;
                 state.currentCourseId = event.courseId;
                 state.isRecording = true;
+                console.log('[NativeGPSService] Course started:', event.courseId);
+            }
+            
+            if (event.pointCount === 0) {
+                // Juste le courseId initial (pas de points encore)
                 return;
             }
 
@@ -152,7 +164,10 @@ class NativeGPSService {
                 : 0;
 
             try {
+                console.log('[NativeGPSService] Fetching points since:', lastTimestamp);
                 const newPoints = await this.getAllPoints(event.courseId, lastTimestamp);
+                console.log('[NativeGPSService] Received', newPoints.length, 'new points');
+                
                 if (newPoints.length > 0) {
                     // Filtrer les doublons (même timestamp)
                     const existingTimestamps = new Set(state.recordedPoints.map(p => p.timestamp));
@@ -168,22 +183,30 @@ class NativeGPSService {
                         }));
                         state.recordedPoints = [...state.recordedPoints, ...convertedPoints];
                         
-                        // Debounce la mise à jour du mesh (max 1x par seconde)
-                        // Évite de recréer la géométrie 3D à chaque point (critique pour longues randos)
-                        this.pendingMeshUpdate = true;
-                        if (!this.meshUpdateTimeout) {
-                            this.meshUpdateTimeout = window.setTimeout(() => {
-                                if (this.pendingMeshUpdate) {
-                                    updateRecordedTrackMesh();
-                                    this.pendingMeshUpdate = false;
-                                }
-                                this.meshUpdateTimeout = null;
-                            }, 1000);
+                        // Mettre à jour le mesh 3D
+                        // Stratégie: immédiat pour les premiers points, debounce pour les suivants
+                        // Pour garder l'UI réactive au début et fluide sur longues randos
+                        const totalPoints = state.recordedPoints.length;
+                        if (totalPoints < 10) {
+                            // Moins de 10 points: mise à jour immédiate (réactif au démarrage)
+                            updateRecordedTrackMesh();
+                        } else {
+                            // 10+ points: debounce à 500ms (fluide mais pas trop de recréations)
+                            this.pendingMeshUpdate = true;
+                            if (!this.meshUpdateTimeout) {
+                                this.meshUpdateTimeout = window.setTimeout(() => {
+                                    if (this.pendingMeshUpdate) {
+                                        updateRecordedTrackMesh();
+                                        this.pendingMeshUpdate = false;
+                                    }
+                                    this.meshUpdateTimeout = null;
+                                }, 500);
+                            }
                         }
                     }
                 }
             } catch (e) {
-                console.warn('[NativeGPSService] Failed to fetch new points:', e);
+                console.error('[NativeGPSService] Failed to fetch new points:', e);
             }
         });
 
