@@ -164,7 +164,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
      * Format : { points: [{ lat, lon, alt, timestamp, accuracy }, ...], courseId: "..." }
      *
      * Si courseId est fourni, ne retourne que les points de cette session.
-     * Sinon, utilise la session courante (RecordingService.getCurrentCourseId()).
+     * Sinon, utilise la session courante (mCurrentCourseId).
      */
     @PluginMethod
     public void getRecordedPoints(PluginCall call) {
@@ -219,7 +219,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
      */
     @PluginMethod
     public void getPointCount(PluginCall call) {
-        String courseId = call.getString("courseId", RecordingService.getCurrentCourseId());
+        String courseId = call.getString("courseId", mCurrentCourseId);
 
         if (courseId == null || courseId.isEmpty()) {
             JSObject result = new JSObject();
@@ -248,7 +248,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
      */
     @PluginMethod
     public void clearRecordedPoints(PluginCall call) {
-        String courseId = call.getString("courseId", RecordingService.getCurrentCourseId());
+        String courseId = call.getString("courseId", mCurrentCourseId);
 
         if (courseId == null || courseId.isEmpty()) {
             call.resolve();
@@ -309,7 +309,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
     @PluginMethod
     public void getCurrentCourseId(PluginCall call) {
         JSObject result = new JSObject();
-        result.put("courseId", RecordingService.getCurrentCourseId());
+        result.put("courseId", mCurrentCourseId != null ? mCurrentCourseId : "");
         call.resolve(result);
     }
 }
