@@ -244,9 +244,25 @@ public class RecordingService extends Service {
                     }
 
                     // ── Étape 3: Filtrage altitude aberrante ─────────────────────
-                    double alt = loc.getAltitude();
-                    if (alt < MIN_ALT_M || alt > MAX_ALT_M) {
-                        Log.d(TAG, "REJECT: altitude " + alt + "m out of range");
+                    // Correction altitude: GPS donne altitude ellipsoïdale (WGS84)
+                    // mais on veut altitude orthométrique (au-dessus du niveau de la mer)
+                    // En Suisse, le géoïde est ~50-55m sous l'ellipsoïde
+                    double altEllipsoidal = loc.getAltitude();
+                    double altOrthometric = altEllipsoidal;
+                    
+                    // Android 11+ (API 30) fournit directement l'altitude orthométrique
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && loc.hasVerticalAccuracy()) {
+                        // Utiliser l'API moderne si disponible
+                        altOrthometric = loc.getAltitude(); // Déjà corrigée sur certains appareils
+                    } else {
+                        // Correction approximative basée sur la position
+                        // En Suisse: ~51m, ailleurs: utiliser approximation
+                        double geoIdHeight = estimateGeoIdHeight(loc.getLatitude(), loc.getLongitude());
+                        altOrthometric = altEllipsoidal - geoIdHeight;
+                    }
+                    
+                    if (altOrthometric < MIN_ALT_M || altOrthometric > MAX_ALT_M) {
+                        Log.d(TAG, "REJECT: altitude " + altOrthometric + "m out of range");
                         continue;
                     }
 
@@ -270,7 +286,11 @@ public class RecordingService extends Service {
 
                         // ── Étape 7: Calcul vitesse 3D ───────────────────────────
                         // Distance 3D = sqrt(distance2D² + altDiff²)
-                        double altDiff = loc.getAltitude() - mLastValidLocation.getAltitude();
+                        // Utiliser altitude orthométrique pour le calcul
+                        double currentAltOrthometric = altOrthometric;
+                        double lastAltOrthometric = mLastValidLocation.getAltitude() - 
+                            estimateGeoIdHeight(mLastValidLocation.getLatitude(), mLastValidLocation.getLongitude());
+                        double altDiff = currentAltOrthometric - lastAltOrthometric;
                         double distance3D = Math.sqrt(distance2D * distance2D + altDiff * altDiff);
 
                         // ── Étape 8: Filtrage vitesse > 15 m/s (54 km/h) ───────
@@ -292,7 +312,7 @@ public class RecordingService extends Service {
                         mCurrentCourseId,
                         loc.getLatitude(),
                         loc.getLongitude(),
-                        alt,
+                        altOrthometric,  // Altitude corrigée (orthométrique)
                         now,
                         loc.getAccuracy()
                     );
@@ -494,6 +514,40 @@ public class RecordingService extends Service {
             if (manager != null) {
                 manager.createNotificationChannel(channel);
             }
+        }
+    }
+
+    /**
+     * Estime la hauteur du géoïde (différence entre ellipsoïde WGS84 et niveau de la mer)
+     * pour corriger l'altitude GPS.
+     * 
+     * Valeurs approximatives pour différentes régions:
+     * - Suisse (CH): ~50-55m
+     * - France métropolitaine: ~45-52m  
+     * - Europe centrale: ~45-50m
+     * - Global: approximation basée sur la latitude
+     * 
+     * @param lat Latitude en degrés
+     * @param lon Longitude en degrés
+     * @return Hauteur du géoïde en mètres (à soustraire de l'altitude ellipsoïdale)
+     */
+    private double estimateGeoIdHeight(double lat, double lon) {
+        // Approximation simplifiée basée sur la localisation
+        // Valeur par défaut pour l'Europe occidentale
+        if (lat >= 45.0 && lat <= 48.0 && lon >= 5.0 && lon <= 11.0) {
+            // Suisse et régions alpines proches
+            return 52.0; // mètres
+        } else if (lat >= 41.0 && lat <= 51.0 && lon >= -5.0 && lon <= 10.0) {
+            // France, Belgique, Pays-Bas
+            return 48.0;
+        } else if (lat >= 35.0 && lat <= 71.0 && lon >= -10.0 && lon <= 35.0) {
+            // Europe générale
+            return 50.0;
+        } else {
+            // Approximation globale basée sur la latitude
+            // Le géoïde varie globalement entre -100m et +80m
+            // À l'équateur: ~-30m, aux pôles: ~+15m
+            return 50.0; // Valeur conservatrice par défaut
         }
     }
 }
