@@ -43,6 +43,8 @@ const RecordingNative = Capacitor.isNativePlatform()
 class NativeGPSService {
     private currentCourseId: string | null = null;
     private isListening = false;
+    private meshUpdateTimeout: number | null = null;
+    private pendingMeshUpdate = false;
 
     /**
      * Démarre une course (enregistrement GPS natif).
@@ -70,6 +72,23 @@ class NativeGPSService {
         await RecordingNative.stopCourse();
         this.removeListeners();
         this.currentCourseId = null;
+        
+        // Flush final du mesh pour afficher tous les points
+        this.flushMeshUpdate();
+    }
+    
+    /**
+     * Force la mise à jour du mesh 3D (appelé à l'arrêt ou manuellement).
+     */
+    flushMeshUpdate(): void {
+        if (this.meshUpdateTimeout) {
+            clearTimeout(this.meshUpdateTimeout);
+            this.meshUpdateTimeout = null;
+        }
+        if (this.pendingMeshUpdate) {
+            updateRecordedTrackMesh();
+            this.pendingMeshUpdate = false;
+        }
     }
 
     /**
@@ -148,7 +167,19 @@ class NativeGPSService {
                             timestamp: p.timestamp
                         }));
                         state.recordedPoints = [...state.recordedPoints, ...convertedPoints];
-                        updateRecordedTrackMesh();
+                        
+                        // Debounce la mise à jour du mesh (max 1x par seconde)
+                        // Évite de recréer la géométrie 3D à chaque point (critique pour longues randos)
+                        this.pendingMeshUpdate = true;
+                        if (!this.meshUpdateTimeout) {
+                            this.meshUpdateTimeout = window.setTimeout(() => {
+                                if (this.pendingMeshUpdate) {
+                                    updateRecordedTrackMesh();
+                                    this.pendingMeshUpdate = false;
+                                }
+                                this.meshUpdateTimeout = null;
+                            }, 1000);
+                        }
                     }
                 }
             } catch (e) {
