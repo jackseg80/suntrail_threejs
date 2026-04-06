@@ -245,18 +245,25 @@ public class RecordingService extends Service {
 
                     // ── Étape 3: Filtrage altitude aberrante ─────────────────────
                     // Correction altitude: GPS donne altitude ellipsoïdale (WGS84)
-                    // mais on veut altitude orthométrique (au-dessus du niveau de la mer)
-                    // En Suisse, le géoïde est ~50-55m sous l'ellipsoïde
+                    // mais on veut altitude orthométrique (au-dessus du niveau de la mer = MSL)
+                    double altOrthometric;
                     double altEllipsoidal = loc.getAltitude();
                     
-                    // TOUJOURS appliquer la correction du géoïde
-                    // loc.getAltitude() retourne toujours l'altitude ellipsoïdale
-                    // mÃªme sur Android 11+ avec hasVerticalAccuracy()
-                    double geoIdHeight = estimateGeoIdHeight(loc.getLatitude(), loc.getLongitude());
-                    double altOrthometric = altEllipsoidal - geoIdHeight;
-                    
-                    Log.d(TAG, String.format("ALTITUDE: raw=%.1fm geoId=%.1fm corrected=%.1fm", 
-                            altEllipsoidal, geoIdHeight, altOrthometric));
+                    // Android 12+ (API 31) fournit directement l'altitude MSL (Mean Sea Level)
+                    // C'est la vraie altitude orthométrique précise
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && loc.hasMslAltitude()) {
+                        altOrthometric = loc.getMslAltitudeMeters();
+                        Log.d(TAG, String.format("ALTITUDE MSL (API 31+): raw=%.1fm msl=%.1fm", 
+                                altEllipsoidal, altOrthometric));
+                    } else {
+                        // Android < 12: utiliser approximation du géoïde
+                        // La hauteur du géoïde varie selon la position exacte
+                        // En Suisse: entre 48m et 55m selon les coordonnées
+                        double geoIdHeight = estimateGeoIdHeight(loc.getLatitude(), loc.getLongitude());
+                        altOrthometric = altEllipsoidal - geoIdHeight;
+                        Log.d(TAG, String.format("ALTITUDE estimated: raw=%.1fm geoId=%.1fm corrected=%.1fm", 
+                                altEllipsoidal, geoIdHeight, altOrthometric));
+                    }
                     
                     if (altOrthometric < MIN_ALT_M || altOrthometric > MAX_ALT_M) {
                         Log.d(TAG, "REJECT: altitude " + altOrthometric + "m out of range");
