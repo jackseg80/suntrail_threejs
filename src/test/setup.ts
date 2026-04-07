@@ -3,10 +3,8 @@ import { vi } from 'vitest';
 // Mock Canvas API for Happy-DOM / JSDOM
 // @ts-ignore
 if (typeof HTMLCanvasElement !== 'undefined') {
-    const originalGetContext = HTMLCanvasElement.prototype.getContext;
-    
     // @ts-ignore
-    HTMLCanvasElement.prototype.getContext = vi.fn().mockImplementation(function(type) {
+    HTMLCanvasElement.prototype.getContext = vi.fn().mockImplementation(function(this: HTMLCanvasElement, type: string) {
         if (type === '2d') {
             return {
                 beginPath: vi.fn(),

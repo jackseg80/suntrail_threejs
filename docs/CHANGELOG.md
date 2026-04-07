@@ -4,6 +4,16 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.25.7] - 2026-04-07
+
+### 🔧 Fixes v5.25.7
+
+#### 🧪 Tests & Tooling
+- **Fix TS Errors in Setup** : Correction des erreurs de type dans `src/test/setup.ts` (suppression de variable inutilisée et typage explicite de `this`).
+- **Validation Déploiement** : Rétablissement du succès de `npm run check` lors du processus de déploiement.
+
+---
+
 ## [5.25.6] - 2026-04-07
 
 ### 🤖 CI/CD & Dependency Fix v5.25.6
