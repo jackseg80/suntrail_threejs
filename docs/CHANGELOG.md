@@ -4,6 +4,25 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.25.3] - 2026-04-07
+
+### 🚀 Fiabilité & Éco-conception v5.25.3
+
+#### 🛰️ GPS & Trajectoire
+- **Nouveau module `gpsDeduplication.ts`** : Algorithme de nettoyage robuste supprimant les doublons de timestamps, le bruit statique (< 2m) et les sauts aberrants (> 150km/h).
+- **Recovery intelligente** : Capacité du tracé à reprendre une trajectoire valide après un glitch GPS.
+- **Tests d'intégration** : Couverture 100% sur la logique de nettoyage.
+
+#### 🔋 Éco-conception (Batterie)
+- **Gestion intelligente de l'énergie** : Basculement automatique en mode "Eco" lorsque la batterie passe sous les 15%.
+- **Optimisation GPU** : Désactivation automatique des ombres et réduction de la résolution pour préserver l'autonomie en fin de rando.
+
+#### 🏔️ Robustesse Parsing 3D
+- **Tests d'intégration massifs** : Les modules Hydrologie, POI et Bâtiments sont désormais couverts à > 80% via des fixtures Overpass.
+- **Couverture Globale** : Atteinte de **61%** (+8% sur la session).
+
+---
+
 ## [5.25.2] - 2026-04-07
 
 ### 🚀 Audit technique & Maintenance v5.25.2
