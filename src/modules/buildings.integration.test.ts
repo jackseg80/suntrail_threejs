@@ -43,7 +43,7 @@ describe('Buildings Integration', () => {
 
     it('should fallback to Overpass when MapTiler fails', async () => {
         const tile = new Tile(0, 0, 14, '14/0/0');
-        tile.mesh = new THREE.Group();
+        tile.mesh = new THREE.Mesh();
         tile.status = 'loaded';
 
         // Mock Overpass Response

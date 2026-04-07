@@ -261,8 +261,6 @@ describe('terrain.ts', () => {
         });
 
         it('should sort tiles by visibility and distance', async () => {
-            const { activeTiles } = await import('./terrain');
-            
             const t1 = new Tile(10, 10, 10, '10/10/10'); // Visible, Close
             vi.spyOn(t1, 'isVisible').mockReturnValue(true);
             t1.worldX = 10; t1.worldZ = 10;

@@ -26,7 +26,8 @@
       "recStopped": "⏹️ Recording stopped",
       "recWarning5min": "⏱ 30 min limit — 5 minutes of recording remaining",
       "tooShort": "Track too short for export",
-      "exported": "GPX downloaded"
+      "exported": "GPX downloaded",
+      "exportError": "GPX export error"
     },
     "recovery": {
       "title": "Recording recovered",
@@ -151,7 +152,7 @@
       "openmeteoLabel": "Open-Meteo — open-meteo.com"
     },
     "tutorial": {
-      "btn": "\u2753 Help & Tutorial"
+      "btn": "❓ Help & Tutorial"
     }
   },
   "search": {
@@ -320,7 +321,9 @@
     "wind": "Wind",
     "location": "Location",
     "unknown": "Unknown",
-    "expert": { "title": "Advanced Data" },
+    "expert": {
+      "title": "Advanced Data"
+    },
     "gusts": "Gusts",
     "clouds": "Cloud cover",
     "dewPoint": "Dew point",
@@ -336,7 +339,9 @@
     "btn": {
       "expert": "📊 Expert Weather Station"
     },
-    "upsell": { "pro": "🌡️ 3-day forecast + mountain alerts available with Pro" },
+    "upsell": {
+      "pro": "🌡️ 3-day forecast + mountain alerts available with Pro"
+    },
     "section": {
       "current": "Current conditions",
       "forecast24h": "24h forecast",
@@ -367,6 +372,9 @@
       "precip": "Precip.",
       "uvMax": "UV max",
       "windMax": "Max wind"
+    },
+    "aria": {
+      "close": "Close weather"
     }
   },
   "solar": {
@@ -377,7 +385,9 @@
       "twilight": "🌌 Twilight",
       "night": "🌙 Night"
     },
-    "status": { "done": "Analysis complete" },
+    "status": {
+      "done": "Analysis complete"
+    },
     "section": {
       "dayData": "Day data",
       "realtime": "Real-time"
@@ -400,9 +410,16 @@
     "upsell": {
       "solar": "☀️ Full solar data available with Pro"
     },
-    "btn": { "copy": "📋 Copy report" },
-    "toast": { "copied": "📋 Report copied", "clickFirst": "Click on terrain first" },
-    "aria": { "close": "Close solar analysis" }
+    "btn": {
+      "copy": "📋 Copy report"
+    },
+    "toast": {
+      "copied": "📋 Report copied",
+      "clickFirst": "Click on terrain first"
+    },
+    "aria": {
+      "close": "Close solar analysis"
+    }
   },
   "sos": {
     "title": "SOS EMERGENCY",
@@ -453,7 +470,9 @@
     "triangles": "Triangles",
     "tiles": "Active Tiles",
     "workers": "Workers",
-    "alert": { "textures": "High GPU texture count" }
+    "alert": {
+      "textures": "High GPU texture count"
+    }
   },
   "onboarding": {
     "skip": "Skip",
@@ -461,7 +480,7 @@
     "start": "Start",
     "slide1": {
       "title": "Navigate in 3D",
-      "desc": "Pan with 1 finger \u00b7 Pinch to zoom \u00b7 2 fingers to rotate or tilt the view"
+      "desc": "Pan with 1 finger · Pinch to zoom · 2 fingers to rotate or tilt the view"
     },
     "slideGestures": {
       "title": "Touch gestures",
@@ -495,7 +514,7 @@
       "title": "Your tracks",
       "desc": "Import or record your hikes:",
       "import": "Import GPX",
-      "importDesc": "Load a GPX file \u2014 the route appears in 3D on the terrain",
+      "importDesc": "Load a GPX file — the route appears in 3D on the terrain",
       "rec": "GPS Recording",
       "recDesc": "Start REC to trace your hike live"
     },
@@ -574,8 +593,14 @@
     },
     "hint": "Critical avalanche zone: 30-45°",
     "directions": {
-      "N": "N", "NE": "NE", "E": "E", "SE": "SE",
-      "S": "S", "SW": "SW", "W": "W", "NW": "NW"
+      "N": "N",
+      "NE": "NE",
+      "E": "E",
+      "SE": "SE",
+      "S": "S",
+      "SW": "SW",
+      "W": "W",
+      "NW": "NW"
     }
   },
   "common": {

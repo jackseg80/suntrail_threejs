@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { state } from './state';
-import type { Tile } from './terrain';
+import { Tile } from './terrain/Tile';
 import { fetchOverpassData, isOverpassInBackoff } from './utils';
 import { getAltitudeAt } from './analysis';
 import { terrainUniforms } from './terrain';

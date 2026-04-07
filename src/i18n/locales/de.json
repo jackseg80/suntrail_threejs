@@ -26,7 +26,8 @@
       "recStopped": "⏹️ Aufnahme gestoppt",
       "recWarning5min": "⏱ 30-Min-Limit — noch 5 Minuten Aufnahme",
       "tooShort": "Strecke zu kurz für Export",
-      "exported": "GPX heruntergeladen"
+      "exported": "GPX heruntergeladen",
+      "exportError": "GPX-Exportfehler"
     },
     "recovery": {
       "title": "Aufzeichnung wiederhergestellt",
@@ -151,7 +152,7 @@
       "openmeteoLabel": "Open-Meteo — open-meteo.com"
     },
     "tutorial": {
-      "btn": "\u2753 Hilfe & Tutorial"
+      "btn": "❓ Hilfe & Tutorial"
     }
   },
   "search": {
@@ -320,7 +321,9 @@
     "wind": "Wind",
     "location": "Ort",
     "unknown": "Unbekannt",
-    "expert": { "title": "Erweiterte Daten" },
+    "expert": {
+      "title": "Erweiterte Daten"
+    },
     "gusts": "Böen",
     "clouds": "Bewölkung",
     "dewPoint": "Taupunkt",
@@ -336,7 +339,9 @@
     "btn": {
       "expert": "📊 Experten-Wetterstation"
     },
-    "upsell": { "pro": "🌡️ 3-Tage-Vorhersage + Bergwarnungen mit Pro verfügbar" },
+    "upsell": {
+      "pro": "🌡️ 3-Tage-Vorhersage + Bergwarnungen mit Pro verfügbar"
+    },
     "section": {
       "current": "Aktuelle Bedingungen",
       "forecast24h": "24h-Vorhersage",
@@ -367,6 +372,9 @@
       "precip": "Nied.",
       "uvMax": "UV max",
       "windMax": "Wind max"
+    },
+    "aria": {
+      "close": "Wetter schließen"
     }
   },
   "solar": {
@@ -377,7 +385,9 @@
       "twilight": "🌌 Dämmerung",
       "night": "🌙 Nacht"
     },
-    "status": { "done": "Analyse abgeschlossen" },
+    "status": {
+      "done": "Analyse abgeschlossen"
+    },
     "section": {
       "dayData": "Tagesdaten",
       "realtime": "Echtzeit"
@@ -400,9 +410,16 @@
     "upsell": {
       "solar": "☀️ Vollständige Sonnendaten mit Pro verfügbar"
     },
-    "btn": { "copy": "📋 Bericht kopieren" },
-    "toast": { "copied": "📋 Bericht kopiert", "clickFirst": "Klicken Sie zuerst auf das Gelände" },
-    "aria": { "close": "Sonnenanalyse schliessen" }
+    "btn": {
+      "copy": "📋 Bericht kopieren"
+    },
+    "toast": {
+      "copied": "📋 Bericht kopiert",
+      "clickFirst": "Klicken Sie zuerst auf das Gelände"
+    },
+    "aria": {
+      "close": "Sonnenanalyse schliessen"
+    }
   },
   "sos": {
     "title": "SOS NOTFALL",
@@ -453,15 +470,17 @@
     "triangles": "Dreiecke",
     "tiles": "Aktive Kacheln",
     "workers": "Workers",
-    "alert": { "textures": "Hohe GPU-Texturanzahl" }
+    "alert": {
+      "textures": "Hohe GPU-Texturanzahl"
+    }
   },
   "onboarding": {
-    "skip": "\u00dcberspringen",
+    "skip": "Überspringen",
     "next": "Weiter",
     "start": "Loslegen",
     "slide1": {
       "title": "In 3D navigieren",
-      "desc": "1 Finger zum Verschieben \u00b7 Zusammendr\u00fccken zum Zoomen \u00b7 2 Finger zum Drehen oder Neigen"
+      "desc": "1 Finger zum Verschieben · Zusammendrücken zum Zoomen · 2 Finger zum Drehen oder Neigen"
     },
     "slideGestures": {
       "title": "Touch-Gesten",
@@ -495,7 +514,7 @@
       "title": "Ihre Touren",
       "desc": "Importieren oder zeichnen Sie Ihre Wanderungen auf:",
       "import": "GPX importieren",
-      "importDesc": "Laden Sie eine GPX-Datei \u2014 die Route erscheint 3D auf dem Gel\u00e4nde",
+      "importDesc": "Laden Sie eine GPX-Datei — die Route erscheint 3D auf dem Gelände",
       "rec": "GPS-Aufnahme",
       "recDesc": "Starten Sie REC, um Ihre Tour live aufzuzeichnen"
     },
@@ -505,21 +524,21 @@
     },
     "slide6": {
       "title": "Live-Wetter",
-      "desc": "Die Wetter-Anzeige oben zeigt die aktuelle Temperatur. Tippen Sie darauf f\u00fcr Vorhersagen, Wind und Warnungen."
+      "desc": "Die Wetter-Anzeige oben zeigt die aktuelle Temperatur. Tippen Sie darauf für Vorhersagen, Wind und Warnungen."
     },
     "slide7": {
       "title": "Analyse-Werkzeuge",
-      "desc": "Gel\u00e4nde im Detail analysieren:",
-      "profile": "H\u00f6henprofil",
-      "profileDesc": "Distanz, H\u00f6he und Steigung an jedem Punkt der Route",
+      "desc": "Gelände im Detail analysieren:",
+      "profile": "Höhenprofil",
+      "profileDesc": "Distanz, Höhe und Steigung an jedem Punkt der Route",
       "inclino": "Neigungsmesser",
-      "inclinoDesc": "Echtzeit-Gel\u00e4ndeneigung unter dem Fadenkreuz",
+      "inclinoDesc": "Echtzeit-Geländeneigung unter dem Fadenkreuz",
       "drag": "Verschiebbare Panels",
-      "dragDesc": "Lange dr\u00fccken, um Widgets zu repositionieren"
+      "dragDesc": "Lange drücken, um Widgets zu repositionieren"
     },
     "slide8": {
       "title": "Sicherheit & offline",
-      "desc": "Der SOS-Knopf zeigt Ihren genauen Standort f\u00fcr die Rettung. Die App funktioniert auch offline dank Kachel-Caching."
+      "desc": "Der SOS-Knopf zeigt Ihren genauen Standort für die Rettung. Die App funktioniert auch offline dank Kachel-Caching."
     }
   },
   "upgrade": {
@@ -574,8 +593,14 @@
     },
     "hint": "Kritische Lawinenzone: 30-45°",
     "directions": {
-      "N": "N", "NE": "NO", "E": "O", "SE": "SO",
-      "S": "S", "SW": "SW", "W": "W", "NW": "NW"
+      "N": "N",
+      "NE": "NO",
+      "E": "O",
+      "SE": "SO",
+      "S": "S",
+      "SW": "SW",
+      "W": "W",
+      "NW": "NW"
     }
   },
   "common": {

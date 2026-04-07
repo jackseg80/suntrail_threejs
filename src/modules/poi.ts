@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { state } from './state';
 import { getAltitudeAt } from './analysis';
 import { fetchOverpassData } from './utils';
-import type { Tile } from './terrain';
+import { Tile } from './terrain/Tile';
 import { boundedCacheSet } from './boundedCache';
 
 const poiMemoryCache = new Map<string, any[]>();

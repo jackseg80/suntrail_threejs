@@ -36,7 +36,7 @@ describe('POI Integration', () => {
 
     it('should load POIs from Overpass and add them to tile as sprites', async () => {
         const tile = new Tile(0, 0, 14, '14/0/0');
-        tile.mesh = new THREE.Group();
+        tile.mesh = new THREE.Mesh();
         tile.status = 'loaded';
 
         // Mock Overpass Response (a signpost)
@@ -65,7 +65,9 @@ describe('POI Integration', () => {
 
         expect(fetchOverpassData).toHaveBeenCalled();
         expect(tile.poiGroup).toBeDefined();
-        expect(tile.poiGroup?.children.length).toBe(1);
-        expect(tile.poiGroup?.children[0]).toBeInstanceOf(THREE.Sprite);
+        if (tile.poiGroup) {
+            expect(tile.poiGroup.children.length).toBe(1);
+            expect(tile.poiGroup.children[0]).toBeInstanceOf(THREE.Sprite);
+        }
     });
 });

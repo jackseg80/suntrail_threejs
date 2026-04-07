@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { initBatteryManager, applyPreset } from './performance';
+import { initBatteryManager } from './performance';
 import { state } from './state';
 
 describe('Performance Integration - Battery Management', () => {
@@ -31,7 +31,7 @@ describe('Performance Integration - Battery Management', () => {
     });
 
     it('should apply eco preset when battery level drops below 20%', async () => {
-        let levelChangeListener: Function | null = null;
+        let levelChangeListener: any = null;
         const mockBattery = {
             level: 0.25,
             addEventListener: vi.fn((event, listener) => {

@@ -5,7 +5,7 @@ import Pbf from 'pbf';
 import { state } from './state';
 import { getAltitudeAt } from './analysis';
 import { fetchOverpassData } from './utils';
-import type { Tile } from './terrain';
+import { Tile } from './terrain/Tile';
 import { boundedCacheSet } from './boundedCache';
 
 const buildingMemoryCache = new Map<string, any[]>();

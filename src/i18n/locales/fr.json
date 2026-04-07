@@ -26,6 +26,7 @@
       "recStopped": "⏹️ Enregistrement stoppé",
       "recWarning5min": "⏱ Limite 30 min — encore 5 minutes d'enregistrement",
       "tooShort": "Tracé trop court pour export",
+      "exportError": "Erreur lors de l'export GPX",
       "exported": "GPX téléchargé"
     },
     "recovery": {
@@ -321,6 +322,7 @@
     "location": "Lieu",
     "unknown": "Inconnu",
     "expert": { "title": "Données Avancées" },
+    "aria": { "close": "Fermer météo" },
     "gusts": "Rafales",
     "clouds": "Couverture nuageuse",
     "dewPoint": "Point de rosée",

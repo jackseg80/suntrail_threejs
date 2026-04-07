@@ -1,30 +1,60 @@
 import { vi } from 'vitest';
 
-// --- MOCK LOCALSTORAGE ---
-const storage = new Map<string, string>();
-const localStorageMock = {
-  getItem: vi.fn((key: string) => storage.get(key) || null),
-  setItem: vi.fn((key: string, value: string) => storage.set(key, value.toString())),
-  removeItem: vi.fn((key: string) => storage.delete(key)),
-  clear: vi.fn(() => storage.clear()),
-  key: vi.fn((i: number) => Array.from(storage.keys())[i] || null),
-  get length() { return storage.size; }
-};
-
-vi.stubGlobal('localStorage', localStorageMock);
-
-// --- PATCH TEARDOWN (Fix JSDOM/HappyDOM EventTarget Error) ---
-const originalRemove = window.removeEventListener;
-window.removeEventListener = function(type: string, listener: any, options?: any) {
-  try {
-    originalRemove.call(this as any, type as any, listener, options);
-  } catch (e) {
-    // On ignore silencieusement les erreurs de suppression durant le Teardown
-  }
-};
-
-// --- POLYFILLS ---
-if (typeof window.URL.createObjectURL === 'undefined') {
-  window.URL.createObjectURL = vi.fn();
+// Mock Canvas API for Happy-DOM / JSDOM
+// @ts-ignore
+if (typeof HTMLCanvasElement !== 'undefined') {
+    const originalGetContext = HTMLCanvasElement.prototype.getContext;
+    
+    // @ts-ignore
+    HTMLCanvasElement.prototype.getContext = vi.fn().mockImplementation(function(type) {
+        if (type === '2d') {
+            return {
+                beginPath: vi.fn(),
+                arc: vi.fn(),
+                fill: vi.fn(),
+                stroke: vi.fn(),
+                fillRect: vi.fn(),
+                clearRect: vi.fn(),
+                drawImage: vi.fn(),
+                measureText: vi.fn().mockReturnValue({ width: 0 }),
+                strokeText: vi.fn(),
+                fillText: vi.fn(),
+                moveTo: vi.fn(),
+                lineTo: vi.fn(),
+                closePath: vi.fn(),
+                putImageData: vi.fn(),
+                createImageData: vi.fn().mockReturnValue({ data: new Uint8ClampedArray() }),
+                setTransform: vi.fn(),
+                translate: vi.fn(),
+                rotate: vi.fn(),
+                scale: vi.fn(),
+                canvas: this,
+            };
+        }
+        if (type === 'webgl' || type === 'webgl2') {
+            return {
+                getExtension: vi.fn().mockReturnValue({
+                    UNMASKED_RENDERER_WEBGL: 0x9246,
+                    UNMASKED_VENDOR_WEBGL: 0x9245,
+                }),
+                getParameter: vi.fn().mockImplementation((p) => {
+                    if (p === 0x9246) return 'Mock Renderer';
+                    if (p === 0x9245) return 'Mock Vendor';
+                    return null;
+                }),
+                canvas: this,
+            };
+        }
+        return null;
+    });
 }
 
+// Global mock for caches API
+if (typeof global !== 'undefined' && !(global as any).caches) {
+    (global as any).caches = {
+        open: vi.fn().mockResolvedValue({
+            match: vi.fn().mockResolvedValue(null),
+            put: vi.fn().mockResolvedValue(undefined)
+        })
+    };
+}
