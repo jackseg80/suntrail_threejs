@@ -1,4 +1,3 @@
-// TODO: intégrer fetchLocalPeaks() dans SearchSheet pour enrichir la recherche de sommets
 import { state, Peak } from './state';
 
 const CACHE_KEY = 'suntrail_peaks_cache';

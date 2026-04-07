@@ -4,6 +4,22 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.25.2] - 2026-04-07
+
+### 🚀 Audit technique & Maintenance v5.25.2
+
+#### 🏔️ Sommets locaux - Intégration
+- **`fetchLocalPeaks()` intégré** : La recherche de sommets à proximité est désormais déclenchée au démarrage de l'application dans `startApp`.
+- **`SearchSheet` enrichment** : Les sommets locaux sont maintenant disponibles immédiatement lors d'une recherche, sans attendre l'API Overpass distante.
+- **Dette résolue** : Suppression du TODO orphelin dans `peaks.ts` présent depuis v5.16.7.
+
+#### 🔧 Fixes & Optimisations
+- **Correction Preset Eco** : Fix du test `state.test.ts` où `MAX_ALLOWED_ZOOM` pour le profil Eco était incorrectement testé à 14 au lieu de 18 (conforme à la réalité du code).
+- **Mise à jour de sécurité** : `npm audit fix --force` — passage à **Vite v8.0.6** et **vite-plugin-pwa v0.19.8**. Réduction des vulnérabilités critiques de 14 à 11.
+- **Intégrité du Build** : Validation du build production et de la suite de tests (448 tests au vert).
+
+---
+
 ## [5.25.1] - 2026-04-07
 
 ### 🐛 Fixes post-release v5.25.0

@@ -40,7 +40,7 @@ describe('state.ts', () => {
             expect(PRESETS.eco.SHOW_VEGETATION).toBe(false);
             expect(PRESETS.eco.SHOW_BUILDINGS).toBe(false);
             expect(PRESETS.eco.RANGE).toBe(3);
-            expect(PRESETS.eco.MAX_ALLOWED_ZOOM).toBe(14);
+            expect(PRESETS.eco.MAX_ALLOWED_ZOOM).toBe(18);
         });
 
         it('balanced (STD) — Galaxy A53 : valeurs calibrées actuelles', () => {

@@ -16,6 +16,7 @@ import { findTerrainIntersection, getAltitudeAt } from './analysis';
 import { closeElevationProfile, updateElevationProfile } from './profile';
 import { startLocationTracking } from './location';
 import { fetchWeather } from './weather';
+import { fetchLocalPeaks } from './peaks';
 import { initTheme } from './theme';
 
 import { NavigationBar } from './ui/components/NavigationBar';
@@ -593,6 +594,7 @@ function startApp() {
     initScene(); // initScene() appelle await loadTerrain() en interne — pas de double appel
     // loadTerrain() supprimé ici (fix v5.11 — double appel inutile)
     fetchWeather(state.TARGET_LAT, state.TARGET_LON);
+    fetchLocalPeaks(state.TARGET_LAT, state.TARGET_LON);
     
     const navBar = document.getElementById('nav-bar');
     const topBar = document.getElementById('top-status-bar');
