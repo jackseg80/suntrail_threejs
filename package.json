@@ -1,6 +1,6 @@
 {
   "name": "suntrail_threejs",
-  "version": "5.25.4",
+  "version": "5.25.6",
   "scripts": {
     "dev": "vite",
     "check": "tsc --noEmit",
@@ -40,7 +40,7 @@
     "@types/suncalc": "^1.9.2",
     "@types/three": "^0.160.0",
     "@vitest/coverage-v8": "^4.1.3",
-    "@vitest/ui": "^4.1.2",
+    "@vitest/ui": "^4.1.3",
     "axe-core": "^4.11.1",
     "dotenv": "^17.4.0",
     "happy-dom": "^20.8.3",
@@ -48,9 +48,10 @@
     "typescript": "^5.9.3",
     "vite": "^8.0.6",
     "vite-plugin-pwa": "^0.19.8",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.3"
   },
   "overrides": {
+    "vite": "$vite",
     "jsdom": "^25.0.1",
     "qs": "^6.14.1",
     "tough-cookie": "^4.1.3",

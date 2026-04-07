@@ -4,6 +4,32 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.25.6] - 2026-04-07
+
+### 🤖 CI/CD & Dependency Fix v5.25.6
+
+#### 🔧 Pipeline GitHub Actions
+- **Fix Peer Dependencies** : Ajout d'un `override` pour Vite dans `package.json` afin de forcer la compatibilité de `vite-plugin-pwa` avec Vite v8.
+- **Alignment Vitest** : Synchronisation des versions de `vitest`, `@vitest/ui` et `@vitest/coverage-v8` en v4.1.3 pour supprimer les avertissements de build.
+- **Standardisation `npm install`** : Le pipeline peut désormais s'exécuter sans `--force` ou `--legacy-peer-deps`.
+
+---
+
+## [5.25.5] - 2026-04-07
+
+### 🏗️ Refactorisation & Robustesse v5.25.5
+
+#### 🧱 Architecture Terrain
+- **Découpage de `terrain.ts`** : Extraction de la classe `Tile` dans `terrain/Tile.ts` et de la gestion de file d'attente dans `terrain/tileQueue.ts`.
+- **Modularité** : Le fichier principal `terrain.ts` devient une façade propre exportant les fonctionnalités clés.
+
+#### 🛡️ Robustesse & Stress-tests
+- **Audit Robustesse GPX** : Protection contre les fichiers XML malformés, vides ou contenant des coordonnées NaN.
+- **TileLoader Stress-test** : Validation de la tenue de charge (100 requêtes simultanées) sans crash du pipeline de workers.
+- **Mock Setup global** : Mise en place de `src/test/setup.ts` avec mocks Canvas et WebGL complets pour l'environnement de test.
+
+---
+
 ## [5.25.4] - 2026-04-07
 
 ### 🛡️ Sécurité & Offline v5.25.4
