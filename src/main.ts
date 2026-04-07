@@ -47,8 +47,9 @@ window.addEventListener('suntrail:uiReady', async () => {
             // Récupérer tous les points depuis le natif (Single Source of Truth)
             const allPoints = await nativeGPSService.getAllPoints(currentCourse.courseId);
             
-            // ✅ Dédoublonnage par timestamp (sécurité)
+            // ✅ Dédoublonnage + tri par timestamp (sécurité)
             const uniquePoints = [...new Map(allPoints.map((p: any) => [p.timestamp, p])).values()];
+            uniquePoints.sort((a: any, b: any) => a.timestamp - b.timestamp);
             state.recordedPoints = uniquePoints as any[];
             state.isRecording = true;
             state.currentCourseId = currentCourse.courseId;
@@ -74,8 +75,9 @@ window.addEventListener('suntrail:uiReady', async () => {
                 recoveredPoints = await nativeGPSService.getAllPoints(currentCourse.courseId);
             }
             
-            // ✅ Dédoublonnage par timestamp (sécurité)
+            // ✅ Dédoublonnage + tri par timestamp (sécurité)
             const uniqueRecovered = [...new Map(recoveredPoints.map((p: any) => [p.timestamp, p])).values()];
+            uniqueRecovered.sort((a: any, b: any) => a.timestamp - b.timestamp);
             
             if (uniqueRecovered.length >= 2) {
                 state.recoveredPoints = uniqueRecovered as any[];

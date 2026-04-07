@@ -398,6 +398,11 @@ export async function initScene(): Promise<void> {
                             layer.points.forEach(p => { p.x += offsetX; p.z += offsetZ; });
                         });
                         
+                        // ✅ Repositionner aussi le mesh d'enregistrement (fix champignon après recovery)
+                        if (state.recordedMesh) {
+                            state.recordedMesh.geometry.translate(offsetX, 0, offsetZ);
+                        }
+                        
                         if (state.hasLastClicked) {
                             state.lastClickedCoords.x += offsetX;
                             state.lastClickedCoords.z += offsetZ;
