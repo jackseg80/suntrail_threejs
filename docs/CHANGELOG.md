@@ -4,6 +4,16 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.25.8] - 2026-04-07
+
+### 📱 Android Build Fix v5.25.8
+
+#### 🤖 Play Store Submission
+- **Bump Version Code** : Incrémentation du `versionCode` à **574** dans `build.gradle` (le code 573 étant déjà utilisé sur la console).
+- **Alignment Version Name** : Mise à jour du `versionName` Android à **5.25.7** pour cohérence avec le projet.
+
+---
+
 ## [5.25.7] - 2026-04-07
 
 ### 🔧 Fixes v5.25.7
