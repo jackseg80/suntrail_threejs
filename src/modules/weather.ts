@@ -12,10 +12,6 @@ const BOX_SIZE = 15000.0;
 let lastRequestId = 0;
 let lastFetchTime = 0;
 const MIN_FETCH_INTERVAL = 5000; // 5 secondes minimum entre requêtes
-let cachedWeather: any = null;
-let cachedLat: number | null = null;
-let cachedLon: number | null = null;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
 
 /** Extrait "Ville, Pays" depuis une réponse de géocodage inversé (MapTiler ou Nominatim). */
 export function extractLocationName(feature: any, fallback: string): string {
@@ -172,10 +168,6 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
                 daily: dailyForecast
             };
             
-            // ✅ Sauvegarder dans le cache
-            cachedWeather = data;
-            cachedLat = lat;
-            cachedLon = lon;
         }
 
     } catch (e) {
