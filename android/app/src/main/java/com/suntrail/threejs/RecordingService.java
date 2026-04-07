@@ -360,7 +360,11 @@ public class RecordingService extends Service {
                         mLastBatchFlush = now;
                         
                         mDbExecutor.execute(() -> {
+                            int beforeCount = mDao.getPointCount(mCurrentCourseId);
                             mDao.insertAll(pointsToInsert);
+                            int afterCount = mDao.getPointCount(mCurrentCourseId);
+                            int inserted = afterCount - beforeCount;
+                            int ignored = pointsToInsert.size() - inserted;
                             
                             // Notifier le Plugin JS via callback (une fois par batch)
                             RecordingCallback cb = getCallback();
@@ -368,7 +372,11 @@ public class RecordingService extends Service {
                                 cb.onNewPoints(mCurrentCourseId, newCount);
                             }
                             
-                            Log.d(TAG, "INSERTED batch of " + pointsToInsert.size() + " points (total: " + newCount + ")");
+                            if (ignored > 0) {
+                                Log.w(TAG, "INSERTED " + inserted + " points, IGNORED " + ignored + " duplicates (contrainte UNIQUE)");
+                            } else {
+                                Log.d(TAG, "INSERTED batch of " + pointsToInsert.size() + " points (total: " + newCount + ")");
+                            }
                         });
                     } else {
                         // Mise à jour du compteur sans notification (attendre le batch)

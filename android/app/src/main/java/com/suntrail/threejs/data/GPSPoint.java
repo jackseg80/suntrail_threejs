@@ -15,7 +15,7 @@ import androidx.room.PrimaryKey;
 @Entity(
     tableName = "gps_points",
     indices = {
-        @Index(value = {"course_id", "timestamp"}),
+        @Index(value = {"course_id", "timestamp"}, unique = true),  // ✅ Empêche les doublons
         @Index(value = {"timestamp"})
     }
 )

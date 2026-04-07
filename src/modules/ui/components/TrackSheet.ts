@@ -495,7 +495,9 @@ export class TrackSheet extends BaseComponent {
   <trk>
     <name>SunTrail Recorded Track - ${date}</name>
     <trkseg>`;
-        state.recordedPoints.forEach(p => {
+        // ✅ Dédoublonnage par timestamp avant export (sécurité double)
+        const uniquePoints = [...new Map(state.recordedPoints.map(p => [p.timestamp, p])).values()];
+        uniquePoints.forEach(p => {
             gpx += `
       <trkpt lat="${p.lat}" lon="${p.lon}">
         <ele>${p.alt.toFixed(1)}</ele>
