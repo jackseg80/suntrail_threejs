@@ -168,6 +168,8 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
                 daily: dailyForecast
             };
             
+            // ✅ Météo récupérée avec succès, reset le flag d'indisponibilité
+            state.weatherUnavailable = false;
         }
 
     } catch (e) {
@@ -176,9 +178,12 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
         console.warn(`[Weather] Failed to fetch weather: ${errorMsg}`);
         
         // Si c'est une erreur CORS ou réseau, on ne bloque pas l'app
-        if (errorMsg.includes('CORS') || errorMsg.includes('Failed to fetch') || errorMsg.includes('502')) {
+        if (errorMsg.includes('CORS') || errorMsg.includes('Failed to fetch') || errorMsg.includes('502') || errorMsg.includes('429')) {
             console.warn('[Weather] CORS or network error - weather unavailable');
         }
+        
+        // ✅ Indiquer que la météo est indisponible pour afficher un message dans l'UI
+        state.weatherUnavailable = true;
         
         // Fallback: météo claire pour que l'app continue de fonctionner
         state.currentWeather = 'clear';

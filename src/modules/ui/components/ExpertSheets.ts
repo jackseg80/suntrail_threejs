@@ -32,6 +32,7 @@ export class WeatherSheet extends BaseComponent {
 
         // Subscriptions
         this.addSubscription(state.subscribe('weatherData', () => this.updateUI()));
+        this.addSubscription(state.subscribe('weatherUnavailable', () => this.updateUI()));
         this.addSubscription(state.subscribe('isPro', () => this.updateUI()));
         this.addSubscription(state.subscribe('SHOW_WEATHER_PRO', () => this.updateUI()));
 
@@ -322,6 +323,20 @@ export class WeatherSheet extends BaseComponent {
         if (!this.contentEl) return;
 
         this.contentEl.textContent = '';
+
+        // ✅ Afficher message si la météo est indisponible (API en panne)
+        if (state.weatherUnavailable) {
+            const msgContainer = document.createElement('div');
+            msgContainer.className = 'weather-unavailable-message';
+            msgContainer.style.cssText = 'padding: 20px; text-align: center; color: #666; font-style: italic;';
+            msgContainer.innerHTML = `
+                <div style="font-size: 2em; margin-bottom: 10px;">🌤️</div>
+                <div>Service météo temporairement indisponible</div>
+                <div style="font-size: 0.9em; margin-top: 8px; color: #999;">Les prévisions réapparaîtront automatiquement</div>
+            `;
+            this.contentEl.appendChild(msgContainer);
+            return;
+        }
 
         if (!wd) return;
 

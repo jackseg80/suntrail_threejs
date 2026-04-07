@@ -215,6 +215,7 @@ export interface State {
             code: number;
         }[];
     } | null;
+    weatherUnavailable: boolean; // true si l'API météo est indisponible
     ephemeris: {
         sunrise: string; sunset: string; goldenHour: string; blueHour: string;
         moonPhaseText: string; moonPhaseIcon: string; moonIllum: number;
@@ -300,7 +301,7 @@ const initialState: State = {
     simDate: new Date(), isSunAnimating: false, animationSpeed: 1.0,
     lastWeatherLat: 0, lastWeatherLon: 0, currentWeather: 'clear', weatherIntensity: 0,
     WEATHER_DENSITY: PRESETS.balanced.WEATHER_DENSITY, WEATHER_SPEED: PRESETS.balanced.WEATHER_SPEED,
-    weatherData: null, ephemeris: null,
+    weatherData: null, weatherUnavailable: false, ephemeris: null,
     
     localPeaks: [],
 
