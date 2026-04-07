@@ -55,8 +55,21 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
         state.lastWeatherLat = lat;
         state.lastWeatherLon = lon;
 
-        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,weather_code,freezing_level_height,uv_index,visibility,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,uv_index_max,weather_code&timezone=auto&forecast_days=3`);
-        if (!weatherRes.ok) throw new Error('Weather API error');
+        // Ajouter un timeout pour éviter les blocages
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+        
+        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,weather_code,freezing_level_height,uv_index,visibility,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,uv_index_max,weather_code&timezone=auto&forecast_days=3`, {
+            signal: controller.signal,
+            headers: {
+                'Accept': 'application/json',
+            }
+        });
+        clearTimeout(timeoutId);
+        
+        if (!weatherRes.ok) {
+            throw new Error(`Weather API error: ${weatherRes.status} ${weatherRes.statusText}`);
+        }
         const data = await weatherRes.json();
 
         if (requestId !== lastRequestId) return;
@@ -146,6 +159,16 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
         }
 
     } catch (e) {
+        // Gestion robuste des erreurs CORS et réseau
+        const errorMsg = e instanceof Error ? e.message : 'Unknown error';
+        console.warn(`[Weather] Failed to fetch weather: ${errorMsg}`);
+        
+        // Si c'est une erreur CORS ou réseau, on ne bloque pas l'app
+        if (errorMsg.includes('CORS') || errorMsg.includes('Failed to fetch') || errorMsg.includes('502')) {
+            console.warn('[Weather] CORS or network error - weather unavailable');
+        }
+        
+        // Fallback: météo claire pour que l'app continue de fonctionner
         state.currentWeather = 'clear';
     }
 }
