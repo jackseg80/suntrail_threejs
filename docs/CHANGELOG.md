@@ -17,6 +17,7 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 - **Correction Preset Eco** : Fix du test `state.test.ts` où `MAX_ALLOWED_ZOOM` pour le profil Eco était incorrectement testé à 14 au lieu de 18 (conforme à la réalité du code).
 - **Mise à jour de sécurité** : `npm audit fix --force` — passage à **Vite v8.0.6** et **vite-plugin-pwa v0.19.8**. Réduction des vulnérabilités critiques de 14 à 11.
 - **Intégrité du Build** : Validation du build production et de la suite de tests (448 tests au vert).
+- **Audit de Couverture** : Ajout de `@vitest/coverage-v8` et génération du premier rapport détaillé (53% de couverture globale). Création de `docs/audit/AUDIT_COVERAGE_v5.25.2.md`.
 
 ---
 

@@ -13,6 +13,7 @@ L'application est techniquement très saine. La suite de tests (448 tests unitai
 | Catégorie | Statut | Commentaire |
 | :--- | :--- | :--- |
 | **Tests Unitaires** | 🟢 100% | 448 tests au vert (Vitest). |
+| **Couverture Code** | 🟡 53% | Risque sur les services natifs & bâtiments. |
 | **TypeScript (TSC)** | 🟢 0 erreur | Intégrité du typage vérifiée (`tsc --noEmit`). |
 | **Build Prod** | 🟢 Succès | Vite v8.0.6, PWA active, zero warning. |
 | **Sécurité (npm)** | 🟡 11 High | Réduit de 14 à 11 (Bloquants : Capacitor tools). |
