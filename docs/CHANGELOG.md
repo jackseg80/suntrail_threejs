@@ -4,6 +4,25 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.25.4] - 2026-04-07
+
+### 🛡️ Sécurité & Offline v5.25.4
+
+#### 🔒 Sécurité Totale
+- **0 vulnérabilités NPM** : Utilisation d' `overrides` pour forcer les versions sécurisées des dépendances critiques (@xmldom, tar, minimatch).
+- **Tooling assaini** : Migration sécurisée complétée sans rupture du build Android.
+
+#### 📴 PackManager (Offline)
+- **Validation PMTiles** : Tests d'intégration simulant le montage de packs locaux et la résolution d'URLs de tuiles sans réseau.
+- **Correction Bug Sync** : Fix du chargement initial où l'état réactif (`state.installedPacks`) ne se synchronisait pas avec le `localStorage`.
+- **Performance** : Optimisation du scan des fichiers locaux via l'API Filesystem.
+
+#### 🧠 Mémoire & Stabilité
+- **Audit de Fuites** : Validation de la suppression des objets 3D (Lacs, Bâtiments, POIs) lors du déchargement des tuiles.
+- **Intégrité État** : Renforcement des gardes-fous sur les singletons de service (Native GPS, IAP).
+
+---
+
 ## [5.25.3] - 2026-04-07
 
 ### 🚀 Fiabilité & Éco-conception v5.25.3

@@ -454,6 +454,7 @@ class PackManager {
                 }
                 this.packStates.set(id, ps);
             }
+            this.persistStates();
         } catch { /* corrupt data */ }
     }
 
