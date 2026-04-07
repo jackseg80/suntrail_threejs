@@ -4,6 +4,41 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.25.1] - 2026-04-07
+
+### 🐛 Fixes post-release v5.25.0
+
+#### GPS Recording - Fixes majeurs
+
+**Problème**: Distance doublée (2.3km au lieu de 1.11km) et "champignon" à la recovery
+
+**Solutions**:
+- **Dédoublonnage GPX**: Ajout filtrage par timestamp dans `buildGPXString()` 
+- **Tri chronologique**: Points triés par timestamp après recovery (évite le champignon)
+- **Origin shift fix**: Repositionnement du mesh enregistré lors des shifts de caméra
+- **Tests**: 12 nouveaux tests unitaires pour le dédoublonnage
+
+**Fichiers**:
+- `src/modules/ui/components/TrackSheet.ts` - Dédoublonnage export GPX
+- `src/main.ts` - Tri des points par timestamp
+- `src/modules/scene.ts` - Repositionnement recordedMesh sur origin shift
+- `src/modules/gpsDeduplication.test.ts` - Tests unitaires
+
+#### Météo - Gestion des erreurs Open-Meteo
+
+**Problème**: API Open-Meteo indisponible (CORS, 429, 502/504)
+
+**Solutions**:
+- **Rate limiting**: 5 secondes minimum entre requêtes
+- **Timeout**: 10 secondes max par requête  
+- **Fallback**: Météo "clear" si erreur pour ne pas bloquer l'app
+- **Logging**: Messages d'erreur détaillés
+
+**Fichiers**:
+- `src/modules/weather.ts` - Gestion robuste des erreurs
+
+---
+
 ## [5.25.0] - 2026-04-06
 
 ### 🏗️ Architecture "Single Source of Truth" - Correction GPS doublons
