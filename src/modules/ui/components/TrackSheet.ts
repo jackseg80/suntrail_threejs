@@ -338,9 +338,9 @@ export class TrackSheet extends BaseComponent {
                             title="${i18n.t('track.imported.toggleVisible')}">
                         ${layer.visible ? '👁' : '🚫'}
                     </button>
-                    <button class="gpx-layer-export" data-action="export" data-id="${layer.id}"
+                    ${state.isPro ? `<button class="gpx-layer-export" data-action="export" data-id="${layer.id}"
                             aria-label="${i18n.t('track.imported.export') || 'Exporter GPX'}"
-                            title="${i18n.t('track.imported.export') || 'Exporter GPX'}">💾</button>
+                            title="${i18n.t('track.imported.export') || 'Exporter GPX'}">💾</button>` : ''}
                     <button class="gpx-layer-remove" data-action="remove" data-id="${layer.id}"
                             aria-label="${i18n.t('track.imported.remove')}"
                             title="${i18n.t('track.imported.remove')}">×</button>
