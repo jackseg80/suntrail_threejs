@@ -12,7 +12,6 @@
 import { registerPlugin, Capacitor } from '@capacitor/core';
 import { state } from './state';
 import { updateRecordedTrackMesh } from './terrain';
-import { showToast } from './utils';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -140,12 +139,6 @@ class NativeGPSService {
         // L'événement contient courseId et pointCount, pas les points directement
         // On fait une requête pour récupérer les nouveaux points depuis le dernier timestamp
         RecordingNative.addListener('onNewPoints', async (event: { courseId: string; pointCount: number }) => {
-            const eventMsg = `[REC] Event: ${event.pointCount} pts, course: ${event.courseId?.slice(0, 8)}..., local: ${this.currentCourseId?.slice(0, 8)}...`;
-            console.log('[NativeGPSService]', eventMsg);
-            // Toast uniquement pour les événements avec points (pas le courseId initial)
-            if (event.pointCount > 0) {
-                showToast(eventMsg);
-            }
             
             if (!event.courseId) {
                 return;
