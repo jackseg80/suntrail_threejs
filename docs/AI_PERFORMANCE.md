@@ -1,94 +1,45 @@
-# SunTrail — Performance & Mobile (v5.21.1)
+# SunTrail — Performance & Optimisation (v5.26.6)
 
-> Référence détaillée pour agents IA. Point d'entrée : [CLAUDE.md](../CLAUDE.md)
-
----
-
-## Optimisations Énergétiques (v5.11)
-
-- **Battery API** : Basculement auto en mode "Eco" si batterie < 20%.
-- **Deep Sleep réel (v5.11)** : `renderer.setAnimationLoop(null)` sur `visibilitychange hidden` — arrêt total du GPU. Handler stocké en variable module-level, supprimé dans `disposeScene()`. IMPORTANT : le `return` inline était insuffisant.
-- **Throttle eau/météo (v5.11 Phase 2)** : `waterTimeAccum` et `weatherTimeAccum` (accumulateurs en ms) dans `scene.ts`. `uTime` de l'eau s'incrémente uniquement quand `waterFrameDue` (toutes les 50ms = 20 FPS max). `updateWeatherSystem` uniquement quand `weatherFrameDue` avec `weatherAccumDelta`.
-- **⚠️ RÈGLE CRITIQUE — Accumulateurs AVANT les guards (v5.11.1)** : `waterTimeAccum` et `weatherTimeAccum` doivent être incrémentés **avant** tout `return` guard dans `renderLoopFn`. Si placés après → eau/météo à ~5fps au lieu de 20fps.
-- **Idle Throttle Global (v5.11.1)** : Guard `isIdleMode` limite le render à 20fps quand `!isUserInteracting && !isFlyingTo && !isFollowingUser && !(isWeatherActive && weatherFrameDue) && now - lastInteractionTime >= 800ms`. `lastInteractionTime` mis à jour dans `controls 'end'` ET `onEnd` de `initTouchControls`.
-- **⚠️ RÈGLE `isIdleMode`** : Tout état produisant un mouvement continu de caméra **doit** figurer dans la condition `isIdleMode` **ET** comme condition standalone dans `needsUpdate`. Liste actuelle : `isFlyingTo`, `isFollowingUser`.
-- **flyTo / `needsUpdate` standalone (v5.11.1)** : La RAF `animateFlight` appelle `controls.update()` en interne → `controlsDirty = false` côté renderLoopFn. `state.isFlyingTo` et `state.isFollowingUser` sont des conditions **standalone** dans `needsUpdate`. **Ne jamais recoupler à `controlsDirty`**.
-- **controls.update() stuck WebView Android (v5.11.1)** : `OrbitControls.update()` retourne `true` indéfiniment sur WebView Android. Fix : résultat inclus dans `needsUpdate` uniquement pendant 800ms après `lastInteractionTime`. `tiltAnimating` source séparée.
-- **Météo GPU-driven (v5.11.1)** : Positions calculées dans le vertex shader depuis `uTime`. Ne jamais réintroduire `tickWeatherTime`.
-- **Loading Overlay 1er démarrage (v5.11.1)** : `#map-loading-overlay` — fond noir + spinner, `z-index: 50`. Affiché dès `suntrail:sceneReady`, caché quand `isProcessingTiles → false`. Fallback 2s, timeout max 15s. Le setup screen a été supprimé en v5.20 (clé bundlée `.env` + Gist = résolution automatique).
-- **Adaptive DPR (v5.11 Phase 2)** : `controls 'start'` → `setPixelRatio(1.0)`. `controls 'end'` + 200ms → restaure `state.PIXEL_RATIO_LIMIT`. Conditionné à `isMobileDevice`.
-- **VEGETATION_CAST_SHADOW (v5.11 Phase 2)** : `false` pour eco/balanced, `true` pour performance/ultra.
-- **ENERGY_SAVER par tier (v5.11)** : eco/balanced → `true`. **performance/ultra → `false`**. Le toggle manuel dans Réglages Avancés permet l'ajustement. `applyPreset()` force `true` sur eco/balanced mobile.
-- **IS_2D_MODE (v5.11)** : Flag indépendant du preset. Tuiles TOUJOURS fetchées avec élévation pour LOD > 10 (`fetchAs2D = zoom <= 10`) — switch 2D→3D instantané.
-- **Toggle 2D/3D (v5.11)** : `rebuildActiveTiles()` reconstruit les meshes EN PLACE. **Ne jamais appeler `resetTerrain()`**. Détecte les tuiles sans élévation, invalide leur cache et les recharge.
-- **IS_2D_MODE verrouillé en LOD ≤ 10 (v5.11.2)** : `NavigationBar.ts` souscrit à `state.ZOOM`. Quand `ZOOM ≤ 10` : bouton disabled, `IS_2D_MODE` forcé à `true`, `_modeBeforeLowZoom` mémorise.
-- **2D Turbo** : Élévation zéro, maillage plat (2 triangles/tuile), bridé à 30 FPS.
-- **FPS Rolling (v5.11)** : `state.currentFPS` dans le render loop (fenêtre 1s). Utilisé par PerfRecorder et panel VRAM.
-- **processLoadQueue corrigé (v5.11)** : `slice(0, Math.max(1, state.MAX_BUILDS_PER_CYCLE))` au lieu de `slice(0, 4)`.
+> Stratégies de rendu, budget énergie et presets GPU. Point d'entrée : [CLAUDE.md](../CLAUDE.md)
 
 ---
 
-## Presets — Tiers du Marché Mobile (v5.11)
+## Gestion de l'Énergie (v5.26.6)
 
-Valeurs directes et universelles, sans double-couche "preset + caps" :
-
-| Preset | Cible | RANGE | Shadow | MAX_ZOOM | Notes |
-|--------|-------|-------|--------|----------|-------|
-| **eco** | Mali-G52, Adreno 5xx, Intel HD 4xx | 3 | OFF | 18 | `body.preset-eco` masque 2D/3D et timeline |
-| **balanced** (STD) | Galaxy A53 | 4 | 256 | 18 | RESOLUTION 32, végétation density 500 |
-| **performance** (High) | Galaxy S23, GTX 1050 | 5 | 1024 | 18 | MAX_BUILDS 2 |
-| **ultra** (PC) | PC / Snapdragon Elite | max | max | 18 | Sur mobile Elite : shadow≤2048, RANGE≤8 |
-
-Seuls ajustements mobiles résiduels dans `applyPreset()` : ENERGY_SAVER (batterie), Ultra shadow/range, PIXEL_RATIO≤2.0.
+- **Deep Sleep** : Suspension totale du rendu (`renderer.setAnimationLoop(null)`) lorsque l'application passe en arrière-plan (`visibilitychange hidden`) ou que l'écran est verrouillé. Zéro consommation GPU/CPU au repos.
+- **Throttling Dynamique** :
+    - **Météo & Eau** : Shaders et particules limités à **20 FPS** (échantillonnage toutes les 50ms) pour économiser le GPU, indépendamment du framerate global.
+    - **Idle Mode** : Si aucune interaction n'est détectée pendant 800ms, le rendu tombe à **20 FPS** (sauf pendant un `flyTo` ou `followUser`).
+    - **Energy Saver** : Mode 30 FPS constant pour une économie batterie maximale (cible ≤ 15%/h en rando).
+- **DPR Cap** : Le `devicePixelRatio` est capé à **2.0** maximum sur mobile. Les écrans ultra-haute résolution (S23/S24 3×/4×) sont bridés pour éviter un surcoût de rendu invisible.
+- **Adaptive Resolution** : Pendant les manipulations (pan/zoom/rotate), la résolution tombe à 1.0 (DPR) pour garantir la fluidité, puis remonte à la cible 200ms après l'arrêt.
 
 ---
 
-## Détection GPU (v5.11)
+## Pipeline de Rendu & Workers
 
-`detectBestPreset()` couvre 52 patterns GPU : Intel HD/UHD par génération, Intel Arc/Iris Xe, AMD Vega iGPU, AMD RX (RDNA/Polaris), NVIDIA GTX par série, Snapdragon Elite (Adreno 830+), Mali par modèle. Adreno 730+ = `performance` (v5.16.8). Fallback : ≥8 cores CPU → `balanced`, sinon `eco`. `detectBestPreset()` ne modifie plus `state.ENERGY_SAVER` directement — c'est fait dans `applyPreset()`.
-
----
-
-## PerfRecorder (v5.11)
-
-`VRAMDashboard` intègre un enregistreur de sessions. Bouton ⏺/⏹ dans le panel VRAM. Buffer circulaire 600 échantillons (5 min à 500ms). Export JSON presse-papier. Données : fps, textures, geometries, drawCalls, triangles, tiles, zoom, isProcessingTiles, isUserInteracting, energySaver.
+- **Material Pooling** : Réutilisation systématique des shaders via `materialPool.ts` pour éviter les micro-saccades de compilation Three.js.
+- **WebWorkers Pool** : 4 workers (mobile) / 8 workers (desktop) pour le calcul des Normal Maps et le fetch des tuiles. Thread principal dédié exclusivement à l'UI et au rendu.
+- **Dithered Vegetation** : Utilisation de `InstancedMesh` avec shader d'apparition progressive pour supprimer le pop-in visuel des forêts.
+- **GPU-driven Weather** : Positions des particules calculées intégralement dans le vertex shader via `uTime`.
 
 ---
 
-## Adaptabilité Matérielle
+## Presets GPU (`performance.ts`)
 
-- **Light Shader** : Shader simplifié pour GPU Mali/Adreno mid-range (÷4 charge GPU).
-- **Adaptive Scan** : Réduction du pas de scan végétation sur mobile.
+L'application détecte le GPU via `UNMASKED_RENDERER_WEBGL`.
+
+| Preset | Cible Hardware | Caractéristiques |
+|---|---|---|
+| **Eco** | Vieux mobile (Mali-G52, Adreno 5xx) | 2D forcé, pas de végétation/bâtiments, range 3 |
+| **Balanced** | Mid-range 2021 (A53, Intel HD 620) | Range 4, Végétation (sans ombre), Bâtiments, 30fps |
+| **Performance** | Flagship mobile (S23, GTX 1050) | Range 6, Ombres végétation, Hydrologie, 60fps |
+| **Ultra** | PC bureau / Snapdragon Elite | Range 12, Ombres 4k, Météo dense, 60fps+ |
 
 ---
 
-## Optimisations Startup & Rendering (v5.21.1)
+## Optimisations Startup (v5.21.1)
 
-### Lazy-loading des composants UI secondaires
-
-`initUI()` est divisée en deux phases :
-
-- **Phase 1 (synchrone)** : `NavigationBar`, `TopStatusBar`, `WidgetsComponent`, `TimelineComponent` — requis avant `launchScene()` (DOM `#nav-bar`, `#widgets-container`).
-- **Phase 2 (déférée)** : 10 sheets (`SettingsSheet`, `LayersSheet`, `SearchSheet`, `TrackSheet`, `WeatherSheet`, `SolarProbeSheet`, `SOSSheet`, `ConnectivitySheet`, `PacksSheet`, `UpgradeSheet`) + `VRAMDashboard` + `InclinometerWidget` — chargés via `import()` dynamique dans `_initSecondaryUI()`, déclenché par `requestAnimationFrame(() => setTimeout(..., 0))` après le premier frame.
-- **Impact** : ~99 kB retirés du bundle initial (`index-*.js`). Chaque sheet est un chunk séparé chargé par le SW cache après le rendu initial. `Evaluate module` et `Run microtasks` réduits de ~60% au démarrage.
-- **⚠️ RÈGLE** : Si une sheet n'est pas encore hydratée quand l'utilisateur la tente d'ouvrir (fenêtre ~50ms), `SheetManager.open()` logue un warning et retourne. C'est le comportement attendu, ne pas modifier la séquence de Phase 2.
-
-### Déduplication fetchCatalog (packManager)
-
-`packManager.fetchCatalog()` utilise un garde `catalogFetchPromise : Promise<PackCatalog> | null`. Deux appels concurrents (`initialize()` + `PacksSheet.loadAndRender()` au démarrage) partagent la même promesse → une seule requête HTTP vers R2.
-
-### Objets THREE pré-alloués — hot paths
-
-- **`touchControls.ts`** : 14 variables scratch module-level (`_right`, `_fwd`, `_camUp`, `_panOffset`, `_zoomDir`, `_zoomNear`, `_zoomFar`, `_zoomP`, `_zoomPscr`, `_rotOffset`, `_rotAxis`, `_rotQuat`, `_tiltOffset`, `_tiltSph`). Élimine ~10 allocations/pointer-event dans `doPan`, `doZoom`, `doZoomToPoint`, `doRotate`, `doTilt`.
-- **`sun.ts`** : 8 objets module-level (`_sunColor`, `_ambientColor`, `_nightAmbientColor`, `_lerpA`, `_lerpB`, `_fogNight`, `_fogDay`, `_sunVector`). Élimine 3-9 `new THREE.Color()` par frame dans `updateSun()`.
-- **⚠️ RÈGLE** : Ces variables sont partagées entre appels — ne jamais stocker une référence vers ces objets scratch au-delà de la durée de la fonction.
-
-### Animations CSS composited GPU
-
-- `tile-loading-shimmer` : `background-position` → `transform: translateX()` sur `::after`. Composited, pas de repaint.
-- `pulse-rec` : `box-shadow` → `transform: scale()` + `opacity` sur `::before`. Composited.
-- `fab-btn`, `track-btn`, `layer-item/thumb` : `transition: all` remplacé par propriétés explicites (évite les animations layout accidentelles).
-
-### Hover désactivé sur touch
-
-Toutes les règles CSS `:hover` sont enveloppées dans `@media (hover: hover)`. Sur mobile Android (touch), `hover: none` — le browser ne recalcule plus les états hover pendant les gestes, réduisant le coût `Event: pointerover` + `Recalculate style`.
+- **Lazy-loading UI** : `initUI()` hydrate uniquement les éléments critiques au démarrage. Les 10 "sheets" secondaires sont chargées de manière asynchrone après le premier frame (gain de ~100kB sur le bundle initial).
+- **Objets Scratch THREE** : Utilisation de variables module-level pré-allouées (`_vec3`, `_quat`, etc.) dans les boucles critiques (TouchControls, Sun) pour éliminer le Garbage Collection lié aux `new THREE.Vector3()`.
+- **CSS Composited** : Animations (REC pulse, loading shimmer) utilisant uniquement `transform` et `opacity` pour garantir 60fps sur l'UI sans repaint.

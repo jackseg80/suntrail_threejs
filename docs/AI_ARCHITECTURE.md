@@ -1,11 +1,22 @@
-# SunTrail — Architecture & Composants (v5.21.1)
+# SunTrail — Architecture & Composants (v5.26.6)
 
 > Référence détaillée pour agents IA. Point d'entrée : [CLAUDE.md](../CLAUDE.md)
 
 ---
 
+## Calculs & Géométrie (v5.26.0)
+
+- **Formule de Distance** : **Haversine** — Précision < 0.5% sur les distances de randonnée alpine. Remplace l'ancienne approximation planaire (44% d'erreur).
+- **Cumul D+ / D-** : Algorithme d'**Hystérésis avec seuil de 2m** (Garmin/Suunto style). Les variations d'altitude GPS sont filtrées et cumulées seulement si l'écart dépasse 2m.
+- **Lissage Altitude** : Moyenne mobile sur 3 points appliquée au signal GPS brut avant calcul de pente.
+- **Dédoublonnage** : Filtrage strict par timestamp (Set) avant tout calcul de distance pour éviter le gonflement artificiel des stats.
+
+---
+
 ## État Global & Persistance (`state.ts`)
 
+- **Monétisation (v5.25.1)** : `state.isPro` est la source de vérité. Synchronisé via `iapService.ts` (RevenueCat).
+- **RevenueCat** : Entitlement `SunTrail 3D Pro`. Produits : `suntrail_pro_annual`, `suntrail_pro_monthly`, `suntrail_pro_lifetime`. Trial 7 jours sur plan annuel.
 - **Pivot Central** : Toute la configuration (LOD, sources, presets) réside dans l'objet `state`.
 - **Réactivité (v5.8.0)** : L'objet `state` est enveloppé dans un **Proxy JS récursif** (`ReactiveState.ts`). Les composants s'abonnent via `state.subscribe('path', callback)`.
 - **Note sur les Tableaux (v5.8.16)** : Les méthodes in-place (`.push()`) ne déclenchent pas le Proxy. Utiliser la réaffectation : `state.arr = [...state.arr, item]`.

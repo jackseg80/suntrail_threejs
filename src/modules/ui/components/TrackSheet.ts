@@ -690,15 +690,6 @@ export class TrackSheet extends BaseComponent {
     }
 
     /**
-     * Écrit le GPX dans un fichier sur le système de fichiers.
-     * Pas de gate Pro ici — c'est l'appelant qui vérifie state.isPro.
-     * @deprecated Utiliser saveGPXToFile() à la place
-     */
-    async downloadRecordedGPX(): Promise<void> {
-        return this.saveGPXToFile();
-    }
-
-    /**
      * Export GPX manuel — bouton "Exporter" (Pro-only file download).
      * Conservé pour tout appelant externe futur.
      */
@@ -711,7 +702,7 @@ export class TrackSheet extends BaseComponent {
             showUpgradePrompt('export_gpx');
             return;
         }
-        await this.downloadRecordedGPX();
+        await this.saveGPXToFile();
     }
 
     private async handleGPX(xml: string, fileName: string = 'track.gpx') {
