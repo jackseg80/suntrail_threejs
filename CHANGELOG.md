@@ -5,6 +5,15 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.27.1] - 2026-04-08
+
+### Added
+- **Catalog v2** : Mise à jour de l'index interne pour supporter les packs HD du LOD 8 au LOD 14 (au lieu de 12-14) pour la Suisse et les Alpes Françaises.
+
+### Fixed
+- **Bug 404 Mobile** : Correction du catalogue embarqué qui utilisait des URLs relatives. Désormais, il utilise l'URL absolue du CDN R2, ce qui permet le téléchargement fiable même si l'environnement réseau ou les variables VITE sont absentes.
+- **Robustesse Packs** : Restauration des URLs absolues dans le catalogue de secours pour un fallback offline-first fiable.
+
 ## [5.27.0] - 2026-04-08
 
 ### Added

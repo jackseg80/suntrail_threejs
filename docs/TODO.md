@@ -1,4 +1,4 @@
-# SunTrail 3D — TODO (v5.26.13)
+# SunTrail 3D — TODO (v5.27.1)
 
 > Guide IA : [CLAUDE.md](../CLAUDE.md) | Historique : [COMPLETED_HISTORY.md](archives/COMPLETED_HISTORY.md)
 
@@ -6,6 +6,7 @@
 
 ## 🎯 Priorité 1 : Finalisation Production (V5.x)
 
+- [x] **Robustesse Packs Pays (v5.27.1)** : Correction bug 404, catalogue v2, URLs absolues.
 - [ ] **Audit Performance Mobile** : Tester via `chrome://inspect` sur Galaxy S23 (High) et A53 (STD) selon [PROTOCOL_TEST_PERF_MOBILE.md](PROTOCOL_TEST_PERF_MOBILE.md).
 - [ ] **Ajustement Limites (v5.27.0)** : Adapter les limites de chargement selon les résultats de l'audit mobile.
 - [x] **Optimisation Chargement (v5.26.13)** : Progressive loading avec pulses de 50ms et limites par preset.
