@@ -348,10 +348,6 @@ class PackManager {
     }
 
     async getTileFromPacks(z: number, x: number, y: number): Promise<Blob | null> {
-        // Gating LOD : les utilisateurs Free sont bridés au LOD 12 max.
-        // Ils peuvent posséder un pack (achat unique) mais le rendu HD (13-14) reste une feature Pro.
-        if (z > 12 && !state.isPro) return null;
-
         // Deux passes : OPFS (installed) en premier, CDN (purchased) ensuite.
         // Un pack CDN qui bloque sur un timeout DNS ne doit jamais empêcher
         // un pack OPFS de servir ses tuiles — même si IS_OFFLINE n'est pas encore détecté.

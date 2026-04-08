@@ -106,7 +106,7 @@ Solution : `buildTwoLevelDirectory(entries, leafSize=512)` dans `scripts/pmtiles
 4. `embeddedPMTiles` (LOD ≤ 11, archive embarquée)
 5. Réseau (providers distants)
 
-**Gating LOD** dans `getTileFromPacks()` : `maxLod = state.isPro ? 14 : 12`. Tuiles LOD 13-14 retournent `null` si Free → fallback réseau transparent.
+**Gating LOD** : Le LOD 14 est le plafond technique pour tous les utilisateurs (Free et Pro). Les packs fournissent donc la résolution maximale sans restriction d'abonnement une fois achetés.
 
 **Vérification region bounds** : chaque archive est associée à un `PackMeta.bounds`. La tuile est vérifiée par `isTileInBounds()` avant d'interroger l'archive PMTiles.
 
