@@ -336,11 +336,11 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
         const segmentDist = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
         distance += segmentDist;
         // Utiliser altitude lissée pour D+/D- (coherent avec TrackSheet)
-        // Seuil de 2m comme Garmin (ignore le bruit GPS < 2m)
+        // Seuil de 1m pour filtrer le bruit GPS tout en capturant les vraies montées
         const diff = smoothedAlts[i] - smoothedAlts[i - 1];
-        if (diff > 2) dPlus += diff;        // Monte de plus de 2m = comptabilisé
-        else if (diff < -2) dMinus += Math.abs(diff);  // Descend de plus de 2m = comptabilisé
-        // Ignore les variations entre -2m et +2m (bruit GPS)
+        if (diff > 1) dPlus += diff;        // Monte de plus de 1m = comptabilisé
+        else if (diff < -1) dMinus += Math.abs(diff);  // Descend de plus de 1m = comptabilisé
+        // Ignore les variations entre -1m et +1m (bruit GPS)
     }
     const box = new THREE.Box3();
     const camAlt = state.camera ? state.camera.position.y : 10000;
