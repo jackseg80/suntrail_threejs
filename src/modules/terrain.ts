@@ -321,20 +321,47 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     }
     let distance = 0; let dPlus = 0; let dMinus = 0;
     
+    // Algorithme avec hystérésis (comme Garmin) : accumulation avant comptabilisation
+    let pendingDPlus = 0;   // Montée en cours d'accumulation
+    let pendingDMinus = 0;  // Descente en cours d'accumulation
+    let lastComptabilizedAlt = validPoints[0].ele !== undefined ? validPoints[0].ele : (validPoints[0].alt !== undefined ? validPoints[0].alt : 0);
+    
     for (let i = 1; i < validPoints.length; i++) {
         const p1 = validPoints[i - 1]; const p2 = validPoints[i];
         const segmentDist = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
         distance += segmentDist;
         
-        // Calcul D+/D- SANS lissage pour GPX importés (données déjà filtrées)
-        // Seuil de 0.5m pour éliminer le micro-bruit
-        const alt1 = p1.ele !== undefined ? p1.ele : (p1.alt !== undefined ? p1.alt : 0);
         const alt2 = p2.ele !== undefined ? p2.ele : (p2.alt !== undefined ? p2.alt : 0);
-        const diff = alt2 - alt1;
+        const diff = alt2 - lastComptabilizedAlt;  // Diff depuis dernière comptabilisation
         
-        if (diff > 0.5) dPlus += diff;        // Monte de plus de 0.5m
-        else if (diff < -0.5) dMinus += Math.abs(diff);  // Descend de plus de 0.5m
+        if (diff > 0) {
+            // On monte : accumuler
+            pendingDPlus += diff;
+            pendingDMinus = 0;  // Reset la descente en cours
+            
+            // Si accumulation > 3m, comptabiliser tout
+            if (pendingDPlus >= 3) {
+                dPlus += pendingDPlus;
+                lastComptabilizedAlt = alt2;
+                pendingDPlus = 0;
+            }
+        } else if (diff < 0) {
+            // On descend : accumuler
+            pendingDMinus += Math.abs(diff);
+            pendingDPlus = 0;  // Reset la montée en cours
+            
+            // Si accumulation > 3m, comptabiliser tout
+            if (pendingDMinus >= 3) {
+                dMinus += pendingDMinus;
+                lastComptabilizedAlt = alt2;
+                pendingDMinus = 0;
+            }
+        }
     }
+    
+    // Comptabiliser les restes si > 2m
+    if (pendingDPlus >= 2) dPlus += pendingDPlus;
+    if (pendingDMinus >= 2) dMinus += pendingDMinus;
     const box = new THREE.Box3();
     const camAlt = state.camera ? state.camera.position.y : 10000;
     const thickness = Math.max(1.5, camAlt / 1200);
