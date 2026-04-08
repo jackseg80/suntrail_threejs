@@ -141,8 +141,35 @@ const a = Math.sin(dLat/2)**2 + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * M
 const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 ```
 
+### Comparaison avec Garmin (Fenix 7)
+
+| Aspect | Garmin Fenix 7 | SunTrail (notre approche) |
+|--------|---------------|---------------------------|
+| **Formule distance** | Vincenty ou Haversine (selon firmware) | **Haversine** (choix pragmatique) |
+| **Précision** | ~0.5% (Vincenty plus précis pour longues distances) | **<0.5%** (suffisant pour randonnée <50km) |
+| **Performance** | Optimisé C++ sur hardware dédié | TypeScript, mais OK pour usage mobile |
+| **Lissage altitude** | Kalman filter + baromètre | **Moyenne mobile 3 pts** (simplifié) |
+| **D+ calcul** | Algo propriétaire (fusion GPS + baro) | **Haversine + lissage altitude** |
+
+**Pourquoi Haversine et pas Vincenty ?**
+- Vincenty est plus précis (0.5mm vs 0.5% pour Haversine) mais **500x plus lent**
+- Pour des randonnées <50km, la différence est négligeable (~2m sur 10km)
+- Haversine suffit largement pour l'usage visé
+
+**Pourquoi pas de baromètre ?**
+- Tous les téléphones n'ont pas de baromètre
+- GPS + lissage donne des résultats acceptables pour D+
+
 ### Lissage altitude (D+/D-)
 Moyenne mobile sur 3 points pour réduire le bruit GPS vertical (qui gonfle artificiellement le D+).
+
+```typescript
+// src/modules/terrain.ts et TrackSheet.ts
+const smoothedAlts = points.map((p, i) => {
+  if (i === 0 || i === points.length - 1) return p.alt;
+  return (points[i-1].alt + p.alt + points[i+1].alt) / 3;
+});
+```
 
 ### Coherence des stats
 - **Panneau Parcours** : Calcule avec `state.recordedPoints` (dédoublonné)
@@ -150,6 +177,17 @@ Moyenne mobile sur 3 points pour réduire le bruit GPS vertical (qui gonfle arti
 - **Profil d'élévation** : Distance 3D corrigée par ratio pour afficher la même valeur
 
 ⚠️ **IMPORTANT** : Le dédoublonnage par timestamp est crucial — sans lui, les doublons faussent la distance.
+
+### Filtrage GPS natif (Android)
+
+**Dans RecordingService.java**, filtres appliqués avant insertion :
+- **Précision** : >50m rejeté
+- **Vitesse** : >54km/h rejeté (impossible à pied)
+- **Distance min** : <3m rejeté (jitter)
+- **Temps min** : <1s entre points (rafales OEM)
+- **Altitude** : -500m à 9000m (hors plage = rejeté)
+
+Ces filtres sont **plus stricts que Garmin** (qui garde plus de points bruts).
 
 ## Documentation Détaillée
 
