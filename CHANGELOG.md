@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.26.9] - 2026-04-08
+
+### Optimized
+- **Stabilité Framerate (PC)** : Implémentation du **Progressive Tile Loading**. Limite l'instanciation à 5 nouvelles tuiles par frame pour éviter les gels du thread principal (violations requestAnimationFrame).
+- **Throttle Performance** : Refonte de la fonction `throttle` pour être plus légère et supprimer les micro-latences lors des mouvements caméra.
+
 ## [5.26.8] - 2026-04-08
 
 ### Added

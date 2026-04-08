@@ -1,4 +1,4 @@
-# SunTrail 3D — TODO (v5.26.8)
+# SunTrail 3D — TODO (v5.26.9)
 
 > Guide IA : [CLAUDE.md](../CLAUDE.md) | Historique : [COMPLETED_HISTORY.md](archives/COMPLETED_HISTORY.md)
 
@@ -6,6 +6,7 @@
 
 ## 🎯 Priorité 1 : Finalisation Production (V5.x)
 
+- [x] **Optimisation PC (v5.26.9)** : Progressive Loading & Refactor Throttle.
 - [x] **Validation Géo (v5.26.7)** : Haversine et Hystérésis testés.
 - [x] **Optimisation Batterie (v5.26.7)** : Android permission Request Ignore Battery.
 - [x] **Optimisation Démarrage (v5.26.7)** : PMTiles init parallélisée.

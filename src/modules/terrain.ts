@@ -167,6 +167,9 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
         }
     }
 
+    let newlyAddedCount = 0;
+    const MAX_NEW_TILES_PER_FRAME = 5;
+
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
             const tx = centerTile.x + dx; const ty = centerTile.y + dy;
@@ -174,8 +177,14 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
             const key = `${tx}_${ty}_${zoom}`; currentActiveKeys.add(key);
             let tile = activeTiles.get(key);
             if (!tile) {
+                if (newlyAddedCount >= MAX_NEW_TILES_PER_FRAME) continue; // Skip for this frame
                 tile = new Tile(tx, ty, zoom, key);
-                if (tile.isVisible() || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) { activeTiles.set(key, tile); insertTile(tile); loadQueue.add(tile); }
+                if (tile.isVisible() || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) { 
+                    activeTiles.set(key, tile); 
+                    insertTile(tile); 
+                    loadQueue.add(tile); 
+                    newlyAddedCount++;
+                }
             }
         }
     }

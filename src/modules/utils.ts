@@ -1,23 +1,14 @@
 import { state } from './state';
 
-export function throttle(func: Function, limit: number) {
-    let lastFunc: any;
-    let lastRan: any;
+export function throttle<T extends (...args: any[]) => any>(func: T, limit: number): T {
+    let inThrottle: boolean = false;
     return function(this: any, ...args: any[]) {
-        const context = this;
-        if (!lastRan) {
-            func.apply(context, args);
-            lastRan = Date.now();
-        } else {
-            clearTimeout(lastFunc);
-            lastFunc = setTimeout(function() {
-                if ((Date.now() - lastRan) >= limit) {
-                    func.apply(context, args);
-                    lastRan = Date.now();
-                }
-            }, limit - (Date.now() - lastRan));
+        if (!inThrottle) {
+            func.apply(this, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
         }
-    }
+    } as T;
 }
 
 export function showToast(message: string, duration: number = 3000) {
