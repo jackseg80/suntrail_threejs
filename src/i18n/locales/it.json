@@ -13,7 +13,7 @@
     "title": "Percorso",
     "empty": {
       "title": "Nessun percorso",
-      "subtitle": "Importa un file GPX o avvia la registrazione GPS"
+      "subtitle": "Importa un file GPX or avvia la registrazione GPS"
     },
     "btn": {
       "rec": "REC",
@@ -55,7 +55,8 @@
       "toggleVisible": "Mostra/nascondi traccia",
       "remove": "Rimuovi traccia",
       "setActive": "Mostra il profilo altimetrico di questa traccia",
-      "showProfile": "Visualizza profilo altimetrico"
+      "showProfile": "Visualizza profilo altimetrico",
+      "export": "Esporta GPX"
     },
     "recording": {
       "title": "Registrazione GPS"
@@ -128,7 +129,7 @@
       "signposts": "Segnaletica 3D",
       "inclinometer": "Inclinometro",
       "shadows": "Ombre",
-      "weather": "Meteo",
+      "weather": "Météo",
       "weatherPro": "Meteo Avanzato",
       "trailFollow": "Segui sentiero"
     },
@@ -213,9 +214,9 @@
   },
   "topbar": {
     "aria": {
-      "weather": "Meteo",
+      "weather": "Météo",
       "network": "Stato rete",
-      "recording": "Registrazione in corso",
+      "recording": "Registrazione in cours",
       "sos": "SOS emergenza"
     },
     "lod": {
@@ -299,7 +300,7 @@
     },
     "disclosure": {
       "title": "Accesso alla tua posizione",
-      "body": "SunTrail utilizza la tua posizione GPS per centrare la mappa sulla tua posizione e registrare i tuoi percorsi escursionistici.\n\nLe tue coordinate rimangono sul tuo dispositivo e non vengono mai inviate ai server SunTrail. Possono essere trasmesse ai servizi cartografici (MapTiler, OpenStreetMap) unicamente per caricare le tessere corrispondenti alla tua posizione.",
+      "body": "SunTrail utilizza la tua posizione GPS pour centrare la mappa sulla tua posizione e registrare i tuoi percorsi escursionistici.\n\nLe tue coordinate rimangono sul tuo dispositivo e non vengono mai inviate ai server SunTrail. Possono essere trasmesse ai servizi cartografici (MapTiler, OpenStreetMap) unicamente per caricare le tessere corrispondenti alla tua posizione.",
       "allow": "Consenti la localizzazione",
       "decline": "Continua senza GPS"
     }
@@ -329,6 +330,13 @@
     "dewPoint": "Punto di rugiada",
     "freezingLevel": "Limite dello zero",
     "uvIndex": "Indice UV",
+    "uv": {
+      "low": "Basso",
+      "moderate": "Moderato",
+      "high": "Alto",
+      "veryHigh": "Molto alto",
+      "extreme": "Estremo"
+    },
     "visibility": "Visibilità",
     "precipitation": "Probabilità di precipitazioni",
     "forecast": "Previsioni",
@@ -354,13 +362,6 @@
       "uvIndex": "Indice UV",
       "precipProb": "Precipitazioni",
       "comfortIndex": "Comfort escursione"
-    },
-    "uv": {
-      "low": "Basso",
-      "moderate": "Moderato",
-      "high": "Alto",
-      "veryHigh": "Molto alto",
-      "extreme": "Estremo"
     },
     "mountain": {
       "aboveFreezing": "Sei sopra lo zero termico",
@@ -460,7 +461,7 @@
   },
   "timeline": {
     "sunPhase": "☀️ Pieno giorno",
-    "requires3D": "Simulazione solare disponibile in modalità 3D"
+    "requires3D": "Simulazione solare disponible in modalità 3D"
   },
   "vram": {
     "label": "Statistiche GPU (VRAM)",
@@ -551,12 +552,12 @@
       "maxDetail": "Zoom LOD 18 massimo",
       "satellite": "Vista Satellite HD",
       "buildings": "Edifici 3D realistici",
-      "solarCalendar": "Calendario solare illimitato",
+      "solarCalendar": "Calendrier solare illimitato",
       "solarAnalysis": "Analisi solare completa",
       "weatherStation": "Meteo 3 giorni + allerte",
       "inclinometer": "Inclinometro pendenza",
       "multiGpx": "Multi-tracce GPX",
-      "exportStats": "Export GPX + statistiche",
+      "exportStats": "Esporta GPX + statistiche",
       "offlineZones": "Offline illimitato"
     },
     "plan": {
@@ -572,7 +573,7 @@
     "restore": "Ripristina un acquisto",
     "legal": "Abbonamento con rinnovo automatico · Annullabile in qualsiasi momento nel Play Store.",
     "web": {
-      "playStore": "Disponibile su Google Play",
+      "playStore": "Disponible su Google Play",
       "note": "L'upgrade Pro è disponibile tramite l'app Android su Google Play."
     },
     "toast": {
@@ -630,7 +631,7 @@
     "title": "Pacchetti Paese",
     "storage": "Archiviazione",
     "storageEmpty": "Nessun pacchetto installato",
-    "free": "disponibile",
+    "free": "disponible",
     "lodInfo": "Pro: LOD 12-14 · Gratis: LOD 12",
     "btn": {
       "buy": "Acquista",

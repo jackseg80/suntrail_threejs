@@ -4,6 +4,16 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.26.3] - 2026-04-07
+
+### 🛠️ Tooling & i18n Audit v5.26.3
+
+#### ⚙️ Automation
+- **Intégration Audit i18n** : Ajout de la commande `npm run audit:i18n` utilisant le script Python pour valider les traductions.
+- **Correction i18n** : Ajout des clés manquantes pour l'export GPX et les niveaux d'UV dans les 4 langues (FR, EN, DE, IT).
+
+---
+
 ## [5.26.2] - 2026-04-07
 
 ### 🏔️ Precision Stats & Centralization v5.26.2

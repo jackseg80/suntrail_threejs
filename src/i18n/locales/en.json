@@ -54,9 +54,10 @@
       "empty": "No imported tracks",
       "toggleVisible": "Show/hide track",
       "remove": "Remove track",
-      "setActive": "Show elevation profile for this track",
-      "showProfile": "View elevation profile"
-    },
+      "setActive": "Show profile for this track",
+      "showProfile": "View elevation profile",
+      "export": "Export GPX"
+      },
     "recording": {
       "title": "GPS Recording"
     },

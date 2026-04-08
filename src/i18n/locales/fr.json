@@ -328,8 +328,14 @@
     "dewPoint": "Point de rosée",
     "freezingLevel": "Isotherme 0°C",
     "uvIndex": "Index UV",
-    "visibility": "Visibilité",
-    "precipitation": "Probabilité de précipitations",
+    "uv": {
+      "low": "Faible",
+      "moderate": "Modéré",
+      "high": "Élevé",
+      "veryHigh": "Très élevé",
+      "extreme": "Extrême"
+    },
+    "visibility": "Visibilité",    "precipitation": "Probabilité de précipitations",
     "forecast": "Prévisions",
     "label": {
       "intensity": "INTENSITÉ",

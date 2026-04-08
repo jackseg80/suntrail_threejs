@@ -1,6 +1,6 @@
 {
   "name": "suntrail_threejs",
-  "version": "5.26.2",
+  "version": "5.26.3",
   "scripts": {
     "dev": "vite",
     "check": "tsc --noEmit",
@@ -12,7 +12,8 @@
     "deploy": "npm run check && npm run build && npm run cap:sync",
     "android:update": "npm run deploy",
     "build-overview": "npx tsx scripts/build-overview-tiles.ts",
-    "build-pack": "npx tsx scripts/build-country-pack.ts"
+    "build-pack": "npx tsx scripts/build-country-pack.ts",
+    "audit:i18n": "python audit_i18n.py"
   },
   "dependencies": {
     "@capacitor/android": "^8.2.0",

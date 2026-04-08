@@ -329,8 +329,14 @@
     "dewPoint": "Taupunkt",
     "freezingLevel": "Nullgradgrenze",
     "uvIndex": "UV-Index",
-    "visibility": "Sichtweite",
-    "precipitation": "Niederschlagswahrscheinlichkeit",
+    "uv": {
+      "low": "Niedrig",
+      "moderate": "Mäßig",
+      "high": "Hoch",
+      "veryHigh": "Sehr hoch",
+      "extreme": "Extrem"
+    },
+    "visibility": "Sichtweite",    "precipitation": "Niederschlagswahrscheinlichkeit",
     "forecast": "Vorhersage",
     "label": {
       "intensity": "INTENSITÄT",
