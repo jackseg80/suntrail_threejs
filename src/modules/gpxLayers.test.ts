@@ -4,7 +4,8 @@ import { addGPXLayer, removeGPXLayer, toggleGPXLayer } from './terrain';
 import { state, GPX_COLORS } from './state';
 
 const makeRawData = (pts: { lat: number; lon: number; ele: number }[]) => ({
-    tracks: [{ points: pts }]
+    // calculateTrackStats dédoublonne par timestamp, on doit en fournir des uniques
+    tracks: [{ points: pts.map((p, i) => ({ ...p, time: new Date(10000 + i * 1000).toISOString() })) }]
 });
 
 describe('Multi-GPX Layers (v5.10)', () => {

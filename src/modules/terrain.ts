@@ -9,6 +9,7 @@ import { eventBus } from './eventBus';
 import { getAltitudeAt } from './analysis';
 import { getTileCacheKey, markCacheKeyInactive, hasInCache, getFromCache } from './tileCache';
 import { insertTile, removeTile, clearIndex as clearSpatialIndex } from './tileSpatialIndex';
+import { calculateTrackStats } from './geoStats';
 
 // Re-exports de la refactorisation
 export { Tile, terrainUniforms } from './terrain/Tile';
