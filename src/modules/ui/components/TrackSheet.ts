@@ -11,7 +11,8 @@ import { startRecordingService, stopRecordingService, clearInterruptedRecording 
 import { nativeGPSService } from '../../nativeGPSService';
 import { updateVisibleTiles, addGPXLayer, removeGPXLayer, toggleGPXLayer, updateRecordedTrackMesh } from '../../terrain';
 import { lngLatToTile, lngLatToWorld } from '../../geo';
-import { updateElevationProfile, haversineDistance } from '../../profile';
+import { requestGPSDisclosure } from '../../gpsDisclosure';
+import { updateElevationProfile } from '../../profile';
 import { eventBus } from '../../eventBus';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';

@@ -3,7 +3,7 @@ import { disposeObject } from './memory';
 import { state, GPX_COLORS } from './state';
 import type { GPXLayer } from './state';
 import { isPositionInSwitzerland, isPositionInFrance, isMobileDevice } from './utils';
-import { updateElevationProfile, haversineDistance } from './profile';
+import { updateElevationProfile } from './profile';
 import { lngLatToWorld, worldToLngLat, lngLatToTile } from './geo';
 import { eventBus } from './eventBus';
 import { getAltitudeAt } from './analysis';
@@ -322,7 +322,7 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     }
     
     // ✅ Utiliser l'algorithme centralisé avec hystérésis (coherent avec TrackSheet)
-    const stats = calculateTrackStats(validPoints.map(p => ({
+    const stats = calculateTrackStats(validPoints.map((p: any) => ({
         lat: p.lat,
         lon: p.lon,
         alt: p.ele !== undefined ? p.ele : (p.alt !== undefined ? p.alt : 0),
