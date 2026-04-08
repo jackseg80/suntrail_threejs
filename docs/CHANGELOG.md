@@ -4,6 +4,21 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.26.4] - 2026-04-07
+
+### ⚡ Mobile Performance & UX v5.26.4
+
+#### 🚀 Optimisations Rendu
+- **LOD de Distance Dynamique** : Réduction automatique de la résolution des tuiles (128x128 → 64x64 → 32x32) selon la distance réelle à la caméra.
+- **Culling Agressif** : Arrêt total du chargement des tuiles au-delà de 20km (gain CPU/Réseau).
+- **Throttling Batterie** : Réduction du framerate à 15 FPS en mode idle ou économie d'énergie.
+- **GPU Throttling** : Désactivation automatique des ombres pendant les interactions fluides (rotation/zoom).
+
+#### 📱 Premium UX
+- **Feedback Haptique** : Ajout de retours tactiles légers sur les changements de calques, de source de carte et la navigation par onglets.
+
+---
+
 ## [5.26.3] - 2026-04-07
 
 ### 🛠️ Tooling & i18n Audit v5.26.3

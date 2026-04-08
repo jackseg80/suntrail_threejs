@@ -4,6 +4,7 @@ import { resetTerrain, updateVisibleTiles, updateSlopeVisibility } from '../../t
 import { sheetManager } from '../core/SheetManager';
 import { i18n } from '../../../i18n/I18nService';
 import { showUpgradePrompt } from '../../iap';
+import { haptic } from '../../haptics';
 
 export class LayersSheet extends BaseComponent {
     constructor() {
@@ -31,6 +32,7 @@ export class LayersSheet extends BaseComponent {
                     }
                     state.MAP_SOURCE = source;
                     state.hasManualSource = true;
+                    void haptic('light');
                     saveSettings();
                     this.refreshTerrain();
                     this.updateActiveLayer();
@@ -48,6 +50,7 @@ export class LayersSheet extends BaseComponent {
             trailsToggle.addEventListener('change', (e) => {
                 state.SHOW_TRAILS = (e.target as HTMLInputElement).checked;
                 trailsToggle.setAttribute('aria-checked', String((e.target as HTMLInputElement).checked));
+                void haptic('light');
                 saveSettings();
                 this.refreshTerrain();
             });
@@ -63,6 +66,7 @@ export class LayersSheet extends BaseComponent {
             slopesToggle.addEventListener('change', (e) => {
                 state.SHOW_SLOPES = (e.target as HTMLInputElement).checked;
                 slopesToggle.setAttribute('aria-checked', String((e.target as HTMLInputElement).checked));
+                void haptic('light');
                 updateSlopeVisibility(state.SHOW_SLOPES);
                 saveSettings();
             });

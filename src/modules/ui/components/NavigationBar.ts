@@ -27,6 +27,7 @@ export class NavigationBar extends BaseComponent {
                 const tabId = tab.getAttribute('data-tab');
                 if (!tabId) return;
 
+                void haptic('light');
                 if (sheetManager.getActiveSheetId() === tabId) {
                     sheetManager.close();
                     this.setActiveTab(null);

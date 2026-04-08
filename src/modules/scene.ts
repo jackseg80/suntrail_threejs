@@ -492,8 +492,6 @@ export async function initScene(): Promise<void> {
         const delta = clock.getDelta();
 
         // Accumulateurs incrémentés sur le temps RÉEL, AVANT tout guard de throttle.
-        // Si placés après les guards, les frames skippées ne les incrémentent pas →
-        // il faut N renders pour atteindre 50ms au lieu de 1 → météo/eau à ~5fps au lieu de 20fps.
         waterTimeAccum += delta * 1000;
         const waterFrameDue = waterTimeAccum >= WATER_THROTTLE_MS;
         if (waterFrameDue) waterTimeAccum = Math.max(0, waterTimeAccum - WATER_THROTTLE_MS);
@@ -509,28 +507,29 @@ export async function initScene(): Promise<void> {
             renderCompass();
         }
 
-        if (state.ENERGY_SAVER && (now - lastRenderTime < 33)) return;
+        if (state.ENERGY_SAVER && (now - lastRenderTime < 66)) return; // 15 FPS en mode économie max
 
-        // Mobile 60fps cap (sauf Ultra) — les écrans mobiles sont quasi-tous 60Hz,
-        // rendre à 120fps gaspille GPU/batterie sans gain visuel.
+        // Mobile 60fps cap (sauf Ultra)
         if (isMobileDevice && state.PERFORMANCE_PRESET !== 'ultra' && (now - lastRenderTime < 16.0)) return;
 
-        // GPS follow : 30fps max suffit (GPS = 1Hz, lerp fluide à 30fps même à pieds).
-        // Évite de rendre à 120fps pour une caméra qui suit une vitesse de marche. (v5.11.1)
+        // GPS follow : 30fps max suffit
         if (state.isFollowingUser && !state.ENERGY_SAVER && (now - lastRenderTime < 33)) return;
 
-        // Idle throttle global — 20fps max en absence d'interaction.
-        // Météo : on laisse passer les frames dues (weatherFrameDue) pour que
-        // les particules s'animent à 20fps réels, sans plein régime continu.
+        // Idle throttle global — 15fps max en absence d'interaction (économise batterie en statique)
         const isWeatherActive = state.SHOW_WEATHER && state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0;
         const isIdleMode = !state.isUserInteracting && !state.isFlyingTo && !state.isFollowingUser
             && !state.isTiltTransitioning
             && !(isWeatherActive && weatherFrameDue)
             && (now - lastInteractionTime >= 800);
-        if (isIdleMode && (now - lastRenderTime < WATER_THROTTLE_MS)) return;
+        if (isIdleMode && (now - lastRenderTime < 66)) return; 
         lastRenderTime = now;
 
         updateCompassAnimation();
+
+        // Optimisation GPU : Désactiver les ombres pendant l'interaction
+        if (state.sunLight) {
+            state.sunLight.castShadow = state.SHADOWS && !state.isUserInteracting;
+        }
 
         let tiltCap = 1.10;
         if (state.ZOOM <= 10) tiltCap = 0;
