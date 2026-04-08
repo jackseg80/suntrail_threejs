@@ -537,9 +537,11 @@ export class TrackSheet extends BaseComponent {
             dist += segmentDist;
 
             // Utiliser altitude lissée pour D+/D-
+            // Seuil de 2m comme Garmin (ignore le bruit GPS < 2m)
             const diff = smoothedAlts[i] - smoothedAlts[i - 1];
-            if (diff > 0) dplus += diff;
-            else dminus += Math.abs(diff);
+            if (diff > 2) dplus += diff;        // Monte de plus de 2m = comptabilisé
+            else if (diff < -2) dminus += Math.abs(diff);  // Descend de plus de 2m = comptabilisé
+            // Ignore les variations entre -2m et +2m (bruit GPS)
         }
 
         if (distEl) distEl.innerHTML = `${(dist / 1000).toFixed(2)} <span class="trk-stat-unit">km</span>`;
