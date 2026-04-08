@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.26.11] - 2026-04-08
+
+### Fixed
+- **Chargement Initial** : Correction du bug où la carte restait partiellement vide au démarrage. Le moteur utilise désormais un système de "pulses" (self-scheduling) pour charger toutes les tuiles de la vue sans bloquer l'interface.
+
 ## [5.26.10] - 2026-04-08
 
 ### Fixed
