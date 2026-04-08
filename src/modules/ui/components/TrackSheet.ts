@@ -396,6 +396,10 @@ export class TrackSheet extends BaseComponent {
         container.querySelectorAll('[data-action="export"]').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
+                if (!state.isPro) {
+                    showUpgradePrompt('export_gpx');
+                    return;
+                }
                 const id = (btn as HTMLElement).dataset.id;
                 if (!id) return;
                 const layer = state.gpxLayers.find(l => l.id === id);
