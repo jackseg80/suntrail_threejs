@@ -4,6 +4,16 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.26.6] - 2026-04-07
+
+### 📱 Android Build Fix v5.26.6
+
+#### 🤖 Play Store Submission
+- **Bump Version Code** : Incrémentation du `versionCode` à **575** dans `build.gradle`.
+- **Alignment Version Name** : Mise à jour du `versionName` Android à **5.26.5** pour cohérence.
+
+---
+
 ## [5.26.5] - 2026-04-07
 
 ### 🔧 Rendering & Performance Hotfix v5.26.5
