@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.26.13] - 2026-04-08
+
+### Fixed
+- **Fluidité Mobile (Audit-Ready)** : Ajustement des limites de chargement pour garantir les 60 FPS sur mobile. Le Galaxy S23 est bridé à 12 tuiles/frame et l'A53 à 8 tuiles/frame, utilisant le système de pulses (50ms) pour compléter la vue rapidement sans saccades.
+
 ## [5.26.12] - 2026-04-08
 
 ### Optimized
