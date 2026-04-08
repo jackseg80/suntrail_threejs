@@ -304,17 +304,47 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     const color = GPX_COLORS[colorIndex];
     const track = rawData.tracks[0];
     const points = track.points;
+    
+    // Vérifier que les points sont valides
+    if (!points || points.length < 2) {
+        throw new Error(`Cannot add GPX layer: not enough points (${points?.length || 0})`);
+    }
+    
+    // Vérifier que les points ont des coordonnées valides
+    const validPoints = points.filter((p: any) => 
+        typeof p.lat === 'number' && typeof p.lon === 'number' && 
+        !isNaN(p.lat) && !isNaN(p.lon)
+    );
+    
+    if (validPoints.length < 2) {
+        throw new Error(`Cannot add GPX layer: not enough valid points (${validPoints.length})`);
+    }
     let distance = 0; let dPlus = 0; let dMinus = 0;
-    for (let i = 1; i < points.length; i++) {
-        const p1 = points[i - 1]; const p2 = points[i];
-        distance += haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
-        const diff = (p2.ele || 0) - (p1.ele || 0);
+    
+    // Lissage altitude pour éviter gonflement D+ par bruit GPS (coherent avec TrackSheet.updateStats)
+    // Moyenne mobile sur 3 points (fenêtre glissante)
+    const smoothedAlts: number[] = validPoints.map((p: any, i: number) => {
+        const alt = p.ele !== undefined ? p.ele : (p.alt !== undefined ? p.alt : 0);
+        if (i === 0 || i === validPoints.length - 1) return alt;
+        const prevAlt = validPoints[i - 1].ele !== undefined ? validPoints[i - 1].ele : (validPoints[i - 1].alt !== undefined ? validPoints[i - 1].alt : 0);
+        const nextAlt = validPoints[i + 1].ele !== undefined ? validPoints[i + 1].ele : (validPoints[i + 1].alt !== undefined ? validPoints[i + 1].alt : 0);
+        return (prevAlt + alt + nextAlt) / 3;
+    });
+    
+    for (let i = 1; i < validPoints.length; i++) {
+        const p1 = validPoints[i - 1]; const p2 = validPoints[i];
+        const segmentDist = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
+        distance += segmentDist;
+        // Utiliser altitude lissée pour D+/D- (coherent avec TrackSheet)
+        const diff = smoothedAlts[i] - smoothedAlts[i - 1];
         if (diff > 0) dPlus += diff; else dMinus += Math.abs(diff);
     }
+    
+    console.log(`[Terrain] Stats layer calculées: ${distance.toFixed(3)}km, D+${Math.round(dPlus)}m, D-${Math.round(dMinus)}m`);
     const box = new THREE.Box3();
     const camAlt = state.camera ? state.camera.position.y : 10000;
     const thickness = Math.max(1.5, camAlt / 1200);
-    const threePoints = gpxDrapePoints(points, state.originTile);
+    const threePoints = gpxDrapePoints(validPoints, state.originTile);
     threePoints.forEach(v => box.expandByPoint(v));
     const curve = new THREE.CatmullRomCurve3(threePoints);
     const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length, 1500), thickness, 4, false);
@@ -326,10 +356,10 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     mesh.renderOrder = 10;
     mesh.userData = { type: 'gpx-track', layerId: id };
     if (state.scene) state.scene.add(mesh);
-    const layer: GPXLayer = { id, name, color, visible: true, rawData, points: threePoints, mesh, stats: { distance, dPlus, dMinus, pointCount: points.length } };
+    const layer: GPXLayer = { id, name, color, visible: true, rawData, points: threePoints, mesh, stats: { distance, dPlus, dMinus, pointCount: validPoints.length } };
     state.gpxLayers = [...state.gpxLayers, layer];
     if (!state.activeGPXLayerId) state.activeGPXLayerId = id;
-    const lats = points.map((p: any) => p.lat as number); const lons = points.map((p: any) => p.lon as number); const eles = points.map((p: any) => (p.ele as number) || 0);
+    const lats = validPoints.map((p: any) => p.lat as number); const lons = validPoints.map((p: any) => p.lon as number); const eles = validPoints.map((p: any) => (p.ele as number) || 0);
     const centerLat = (Math.max(...lats) + Math.min(...lats)) / 2; const centerLon = (Math.max(...lons) + Math.min(...lons)) / 2;
     const avgEle = eles.reduce((s: number, v: number) => s + v, 0) / eles.length;
     const size = new THREE.Vector3(); box.getSize(size);

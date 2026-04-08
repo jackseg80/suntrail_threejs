@@ -11,7 +11,7 @@ import { startRecordingService, stopRecordingService, clearInterruptedRecording 
 import { nativeGPSService } from '../../nativeGPSService';
 import { updateVisibleTiles, addGPXLayer, removeGPXLayer, toggleGPXLayer, updateRecordedTrackMesh } from '../../terrain';
 import { lngLatToTile, lngLatToWorld } from '../../geo';
-import { updateElevationProfile } from '../../profile';
+import { updateElevationProfile, haversineDistance } from '../../profile';
 import { eventBus } from '../../eventBus';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
@@ -74,8 +74,12 @@ export class TrackSheet extends BaseComponent {
                 state.recordingOriginTile = currentOrigin;
                 
                 // Démarrer le service natif (natif Android = source de vérité pour les points GPS)
-                const courseId = await nativeGPSService.startCourse(currentOrigin);
-                state.currentCourseId = courseId;
+                await nativeGPSService.startCourse(currentOrigin);
+                // Récupérer le vrai courseId généré par le natif (fix race condition)
+                const nativeCourse = await nativeGPSService.getCurrentCourse();
+                if (nativeCourse?.courseId) {
+                    state.currentCourseId = nativeCourse.courseId;
+                }
                 
                 await startRecordingService(currentOrigin);   // Foreground Service Android
                 if (!state.isFollowingUser) await startLocationTracking();
@@ -86,19 +90,45 @@ export class TrackSheet extends BaseComponent {
             } else {
                 // v5.24: Arrêter le service natif - les points sont déjà dans state.recordedPoints
                 // (via les événements onNewPoints de nativeGPSService)
+                
+                // CRUCIAL: Récupérer tous les points restants avant d'arrêter le service
+                // Le buffer natif peut contenir des points non encore envoyés
+                if (state.currentCourseId) {
+                    showToast('Finalisation...');
+                    const allPoints = await nativeGPSService.getAllPoints(state.currentCourseId, 0);
+                    if (allPoints.length > 0) {
+                        const existingTimestamps = new Set(state.recordedPoints.map(p => p.timestamp));
+                        const newPoints = allPoints.filter(p => !existingTimestamps.has(p.timestamp));
+                        if (newPoints.length > 0) {
+                            state.recordedPoints = [...state.recordedPoints, ...newPoints.map(p => ({
+                                lat: p.lat,
+                                lon: p.lon,
+                                alt: p.alt,
+                                timestamp: p.timestamp
+                            }))];
+                            showToast(`+${newPoints.length} pts récupérés`);
+                        }
+                    }
+                    // Attendre un peu que tout soit bien en base
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+                
                 await nativeGPSService.stopCourse();
                 await stopRecordingService();    // Arrête le Foreground Service Android
                 // v5.24: Réinitialiser recordingOriginTile
                 state.recordingOriginTile = null;
                 state.currentCourseId = null;
                 showToast(i18n.t('track.toast.recStopped'));
-                // Sauvegarde interne systématique au STOP (sans gate Pro)
+                // Sauvegarde systématique au STOP (GPX fichier pour tous)
                 if (state.recordedPoints.length >= 2) {
-                    await this.saveRecordedGPXInternal();          // Toujours — pas de gate
-                    if (state.isPro) await this.downloadRecordedGPX(); // Fichier si Pro
-                    // Upsell post-REC pour les utilisateurs gratuits
+                    await this.saveRecordedGPXInternal();  // Layer en mémoire
+                    await this.saveGPXToFile();            // Fichier GPX (Cache tous / Documents Pro)
+                    // Upsell post-REC pour les utilisateurs gratuits (benefits Pro)
                     if (!state.isPro) this.showPostRecUpsell();
                 }
+                // CRUCIAL: Réinitialiser recordedPoints APRÈS sauvegarde pour prochain REC
+                // TOUJOURS vider, même si on n'a pas sauvegardé (trop peu de points)
+                state.recordedPoints = [];
             }
         });
 
@@ -222,9 +252,10 @@ export class TrackSheet extends BaseComponent {
         document.body.appendChild(overlay);
 
         document.getElementById('rec-recovery-restore')?.addEventListener('click', async () => {
-            // Injecter les points récupérés dans state et sauvegarder comme layer GPX
+            // Injecter les points récupérés dans state et sauvegarder comme layer GPX + fichier
             state.recordedPoints = pts.map(p => ({ lat: p.lat, lon: p.lon, alt: p.alt, timestamp: p.timestamp }));
-            await this.saveRecordedGPXInternal();
+            await this.saveRecordedGPXInternal();  // Layer en mémoire
+            await this.saveGPXToFile();            // Fichier GPX
             state.recordedPoints = [];
             state.recoveredPoints = null;
             clearInterruptedRecording();
@@ -297,7 +328,7 @@ export class TrackSheet extends BaseComponent {
                     <span class="gpx-layer-dot" style="background:${layer.color}"></span>
                     <div class="gpx-layer-info">
                         <span class="gpx-layer-name">${truncName}</span>
-                        <span class="gpx-layer-stats">${layer.stats.distance.toFixed(1)} km · D+ ${Math.round(layer.stats.dPlus)} m · D- ${Math.round(layer.stats.dMinus)} m</span>
+                        <span class="gpx-layer-stats">${layer.stats.distance.toFixed(2)} km · D+ ${Math.round(layer.stats.dPlus)} m · D- ${Math.round(layer.stats.dMinus)} m</span>
                     </div>
                     <button class="gpx-layer-profile" data-action="profile" data-id="${layer.id}"
                             aria-label="${i18n.t('track.imported.showProfile')}"
@@ -309,6 +340,9 @@ export class TrackSheet extends BaseComponent {
                             title="${i18n.t('track.imported.toggleVisible')}">
                         ${layer.visible ? '👁' : '🚫'}
                     </button>
+                    <button class="gpx-layer-export" data-action="export" data-id="${layer.id}"
+                            aria-label="${i18n.t('track.imported.export') || 'Exporter GPX'}"
+                            title="${i18n.t('track.imported.export') || 'Exporter GPX'}">💾</button>
                     <button class="gpx-layer-remove" data-action="remove" data-id="${layer.id}"
                             aria-label="${i18n.t('track.imported.remove')}"
                             title="${i18n.t('track.imported.remove')}">×</button>
@@ -357,6 +391,48 @@ export class TrackSheet extends BaseComponent {
                 if (id) {
                     toggleGPXLayer(id);
                     this.renderLayersList();
+                }
+            });
+        });
+
+        container.querySelectorAll('[data-action="export"]').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const id = (btn as HTMLElement).dataset.id;
+                if (!id) return;
+                const layer = state.gpxLayers.find(l => l.id === id);
+                if (!layer || !layer.rawData) return;
+                
+                // Générer le GPX depuis les données brutes
+                const gpxString = this.buildGPXStringFromLayer(layer);
+                const filename = `suntrail-export-${new Date().toISOString().slice(0, 10)}-${Date.now()}.gpx`;
+                
+                if (Capacitor.isNativePlatform()) {
+                    try {
+                        // Sauvegarder dans Documents pour qu'il soit accessible
+                        const result = await Filesystem.writeFile({
+                            path: filename,
+                            data: gpxString,
+                            directory: Directory.Documents,
+                            encoding: Encoding.UTF8,
+                        });
+                        const shortName = result.uri.split('/').pop();
+                        showToast(`GPX exporté : ${shortName}`);
+                        void haptic('success');
+                    } catch (e) {
+                        console.error('[TrackSheet] Export GPX failed:', e);
+                        showToast('Erreur export GPX');
+                    }
+                } else {
+                    // PWA: téléchargement
+                    const blob = new Blob([gpxString], { type: 'application/gpx+xml' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = filename;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                    showToast('GPX téléchargé');
                 }
             });
         });
@@ -444,15 +520,26 @@ export class TrackSheet extends BaseComponent {
         let dplus = 0;
         let dminus = 0;
 
-        for (let i = 1; i < state.recordedPoints.length; i++) {
-            const p1 = state.recordedPoints[i-1];
-            const p2 = state.recordedPoints[i];
-            
-            const dx = (p2.lon - p1.lon) * 111320 * Math.cos(p1.lat * Math.PI / 180);
-            const dy = (p2.lat - p1.lat) * 111320;
-            dist += Math.sqrt(dx*dx + dy*dy);
+        // ✅ Dédoublonnage par timestamp (coherent avec buildGPXString)
+        const points = [...new Map(state.recordedPoints.map(p => [p.timestamp, p])).values()];
+        
+        // Lissage altitude pour éviter gonflement D+ par bruit GPS
+        // Moyenne mobile sur 3 points (fenêtre glissante)
+        const smoothedAlts: number[] = points.map((p, i) => {
+            if (i === 0 || i === points.length - 1) return p.alt;
+            return (points[i - 1].alt + p.alt + points[i + 1].alt) / 3;
+        });
 
-            const diff = p2.alt - p1.alt;
+        for (let i = 1; i < points.length; i++) {
+            const p1 = points[i - 1];
+            const p2 = points[i];
+
+            // Utiliser Haversine (précis) au lieu de l'approximation planaire (buggy)
+            const segmentDist = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon) * 1000; // en mètres
+            dist += segmentDist;
+
+            // Utiliser altitude lissée pour D+/D-
+            const diff = smoothedAlts[i] - smoothedAlts[i - 1];
             if (diff > 0) dplus += diff;
             else dminus += Math.abs(diff);
         }
@@ -512,6 +599,35 @@ export class TrackSheet extends BaseComponent {
     }
 
     /**
+     * Génère un GPX à partir d'une couche existante (pour export).
+     */
+    private buildGPXStringFromLayer(layer: any): string {
+        const date = new Date().toLocaleDateString();
+        const trackName = layer.name || `SunTrail Track - ${date}`;
+        let gpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="SunTrail 3D" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>${trackName}</name>
+    <trkseg>`;
+        
+        const points = layer.rawData?.tracks?.[0]?.points || [];
+        points.forEach((p: any) => {
+            const ele = p.ele !== undefined ? p.ele : (p.alt !== undefined ? p.alt : 0);
+            const time = p.time || new Date().toISOString();
+            gpx += `
+      <trkpt lat="${p.lat}" lon="${p.lon}">
+        <ele>${ele.toFixed(1)}</ele>
+        <time>${time}</time>
+      </trkpt>`;
+        });
+        gpx += `
+    </trkseg>
+  </trk>
+</gpx>`;
+        return gpx;
+    }
+
+    /**
      * Sauvegarde le tracé enregistré comme layer visible dans l'app (sans gate Pro).
      * Appelé systématiquement au STOP et à l'auto-stop — garantit zéro perte de données.
      */
@@ -524,7 +640,9 @@ export class TrackSheet extends BaseComponent {
             const gpxString = this.buildGPXString();
             const parser = new gpxParser();
             parser.parse(gpxString);
-            if (!parser.tracks?.length) return false;
+            if (!parser.tracks?.length) {
+                return false;
+            }
             const date = new Date().toLocaleDateString();
             addGPXLayer(parser, `SunTrail REC ${date}`);
             void haptic('success');
@@ -536,28 +654,53 @@ export class TrackSheet extends BaseComponent {
     }
 
     /**
-     * Écrit le GPX dans un fichier sur le système de fichiers.
-     * Pas de gate Pro ici — c'est l'appelant qui vérifie state.isPro.
+     * Sauvegarde automatique du GPX après REC (tous utilisateurs).
+     * - Non-Pro: sauvegarde dans Cache (pas visible facilement mais persiste)
+     * - Pro: sauvegarde dans Documents (visible par utilisateur)
      */
-    async downloadRecordedGPX(): Promise<void> {
-        if (state.recordedPoints.length < 2) return;
+    async saveGPXToFile(): Promise<void> {
+        if (state.recordedPoints.length < 2) {
+            return;
+        }
         const gpx = this.buildGPXString();
         const filename = `suntrail-${new Date().toISOString().slice(0, 10)}-${Date.now()}.gpx`;
 
         if (Capacitor.isNativePlatform()) {
             try {
+                // Non-Pro: Cache (persiste après fermeture app, accessible via "Tracés importés")
+                // Pro: Documents (visible dans gestionnaire fichiers)
+                const directory = state.isPro ? Directory.Documents : Directory.Cache;
+                
+                // Créer le répertoire s'il n'existe pas
+                try {
+                    await Filesystem.mkdir({
+                        path: '',
+                        directory: directory,
+                        recursive: true
+                    });
+                } catch (e) {
+                    // Le répertoire existe probablement déjà
+                }
+                
                 const result = await Filesystem.writeFile({
                     path: filename,
                     data: gpx,
-                    directory: Directory.Documents,
+                    directory: directory,
                     encoding: Encoding.UTF8,
                 });
-                showToast(`GPX enregistré : ${result.uri.split('/').pop()}`);
+                const shortName = result.uri.split('/').pop();
+                
+                if (state.isPro) {
+                    showToast(`GPX sauvegardé : ${shortName}`);
+                } else {
+                    showToast(`GPX sauvegardé (dans l'app) : ${shortName}`);
+                }
             } catch (e) {
-                console.error('[TrackSheet] Filesystem.writeFile failed:', e);
-                showToast(i18n.t('track.toast.exportError') || 'Erreur export GPX');
+                console.error('[TrackSheet] saveGPXToFile failed:', e);
+                showToast('Erreur GPX: ' + (e as Error).message);
             }
         } else {
+            // PWA: téléchargement automatique
             const blob = new Blob([gpx], { type: 'application/gpx+xml' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -567,6 +710,15 @@ export class TrackSheet extends BaseComponent {
             URL.revokeObjectURL(url);
             showToast(i18n.t('track.toast.exported'));
         }
+    }
+
+    /**
+     * Écrit le GPX dans un fichier sur le système de fichiers.
+     * Pas de gate Pro ici — c'est l'appelant qui vérifie state.isPro.
+     * @deprecated Utiliser saveGPXToFile() à la place
+     */
+    async downloadRecordedGPX(): Promise<void> {
+        return this.saveGPXToFile();
     }
 
     /**

@@ -12,6 +12,7 @@
 import { registerPlugin, Capacitor } from '@capacitor/core';
 import { state } from './state';
 import { updateRecordedTrackMesh } from './terrain';
+import { showToast } from './utils';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -53,7 +54,6 @@ class NativeGPSService {
      */
     async startCourse(originTile?: { x: number; y: number; z: number }): Promise<string> {
         if (!RecordingNative) {
-            console.warn('[NativeGPSService] startCourse called on non-native platform');
             return '';
         }
 
@@ -131,17 +131,23 @@ class NativeGPSService {
      * quand le service natif est encore actif, on doit pouvoir ré-attacher les listeners.
      */
     setupListeners(): void {
-        if (!RecordingNative || this.isListening) return;
+        if (!RecordingNative || this.isListening) {
+            return;
+        }
         this.isListening = true;
 
         // Nouveaux points enregistrés par le natif
         // L'événement contient courseId et pointCount, pas les points directement
         // On fait une requête pour récupérer les nouveaux points depuis le dernier timestamp
         RecordingNative.addListener('onNewPoints', async (event: { courseId: string; pointCount: number }) => {
-            console.log('[NativeGPSService] onNewPoints:', event);
+            const eventMsg = `[REC] Event: ${event.pointCount} pts, course: ${event.courseId?.slice(0, 8)}..., local: ${this.currentCourseId?.slice(0, 8)}...`;
+            console.log('[NativeGPSService]', eventMsg);
+            // Toast uniquement pour les événements avec points (pas le courseId initial)
+            if (event.pointCount > 0) {
+                showToast(eventMsg);
+            }
             
             if (!event.courseId) {
-                console.warn('[NativeGPSService] Received onNewPoints without courseId');
                 return;
             }
             
@@ -150,7 +156,6 @@ class NativeGPSService {
                 this.currentCourseId = event.courseId;
                 state.currentCourseId = event.courseId;
                 state.isRecording = true;
-                console.log('[NativeGPSService] Course started:', event.courseId);
             }
             
             if (event.pointCount === 0) {
@@ -164,9 +169,7 @@ class NativeGPSService {
                 : 0;
 
             try {
-                console.log('[NativeGPSService] Fetching points since:', lastTimestamp);
                 const newPoints = await this.getAllPoints(event.courseId, lastTimestamp);
-                console.log('[NativeGPSService] Received', newPoints.length, 'new points');
                 
                 if (newPoints.length > 0) {
                     // Filtrer les doublons (même timestamp)

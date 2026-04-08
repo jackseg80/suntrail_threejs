@@ -107,6 +107,10 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
      */
     @PluginMethod
     public void startCourse(PluginCall call) {
+        // Ré-enregistrer le callback (au cas où le service a été arrêté et redémarré)
+        // C'est crucial pour que le 2ème REC et suivants fonctionnent
+        RecordingService.setCallback(this);
+        
         // Récupérer l'originTile si fourni
         JSObject originTileObj = call.getObject("originTile");
         if (originTileObj != null) {

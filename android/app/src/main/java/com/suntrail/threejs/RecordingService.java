@@ -372,12 +372,10 @@ public class RecordingService extends Service {
                         });
                     } else {
                         // Mise à jour du compteur sans notification (attendre le batch)
-                        // Pour les tests, notifier quand même mais moins fréquemment
-                        if (newCount % 3 == 0) { // Notifier tous les 3 points
-                            RecordingCallback cb = getCallback();
-                            if (cb != null) {
-                                cb.onNewPoints(mCurrentCourseId, newCount);
-                            }
+                        // Notifier tous les points pour test
+                        RecordingCallback cb = getCallback();
+                        if (cb != null) {
+                            cb.onNewPoints(mCurrentCourseId, newCount);
                         }
                     }
 
@@ -446,9 +444,15 @@ public class RecordingService extends Service {
         // v5.25.1: Flush le buffer de points restants avant d'arrêter
         if (!mPointBuffer.isEmpty() && mDbExecutor != null) {
             final List<GPSPoint> remainingPoints = new ArrayList<>(mPointBuffer);
+            final int finalCount = mPointCount.get();
             mPointBuffer.clear();
             mDbExecutor.execute(() -> {
                 mDao.insertAll(remainingPoints);
+                // Notifier le JS des points flushés
+                RecordingCallback cb = getCallback();
+                if (cb != null) {
+                    cb.onNewPoints(mCurrentCourseId, finalCount);
+                }
                 Log.d(TAG, "Flushed " + remainingPoints.size() + " remaining points on stop");
             });
         }
@@ -471,7 +475,8 @@ public class RecordingService extends Service {
             mWakeLock.release();
         }
 
-        // Clear callback
+        // Clear callback pour éviter les fuites d'événements
+        // Le plugin ré-enregistrera le callback quand startCourse() sera appelé
         sCallback = null;
 
         stopForeground(true);

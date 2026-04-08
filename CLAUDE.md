@@ -127,6 +127,30 @@ public/tiles/
 └── europe-overview.pmtiles     # ~20 MB, LOD 5-7 Europe + LOD 8-11 Suisse (gitignored)
 ```
 
+## Calculs de Distance & GPS
+
+### Formule utilisée
+**Haversine** — précision < 0.5% pour les distances de randonnée (vs 44% d'erreur avec l'ancienne formule planaire).
+
+```typescript
+// src/modules/profile.ts
+const R = 6371; // Rayon Terre en km
+const dLat = (lat2 - lat1) * Math.PI / 180;
+const dLon = (lon2 - lon1) * Math.PI / 180;
+const a = Math.sin(dLat/2)**2 + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2)**2;
+const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+```
+
+### Lissage altitude (D+/D-)
+Moyenne mobile sur 3 points pour réduire le bruit GPS vertical (qui gonfle artificiellement le D+).
+
+### Coherence des stats
+- **Panneau Parcours** : Calcule avec `state.recordedPoints` (dédoublonné)
+- **Tracés importés** : Même calcul Haversine + lissage
+- **Profil d'élévation** : Distance 3D corrigée par ratio pour afficher la même valeur
+
+⚠️ **IMPORTANT** : Le dédoublonnage par timestamp est crucial — sans lui, les doublons faussent la distance.
+
 ## Documentation Détaillée
 
 Consulter selon le contexte de la tâche :

@@ -83,7 +83,16 @@ export function updateElevationProfile(layerId?: string): void {
     }
 
     // Mise à jour de l'UI des stats
-    updateStatsUI(cumulativeDist, totalDPlus, totalDMinus);
+    // Utiliser les stats du layer (calculées avec Haversine) pour cohérence avec l'affichage
+    const displayDist = layer.stats?.distance ?? cumulativeDist;
+    const displayDPlus = layer.stats?.dPlus ?? totalDPlus;
+    const displayDMinus = layer.stats?.dMinus ?? totalDMinus;
+    
+    // Calculer le ratio pour convertir les distances 3D en distances Haversine
+    // (pour que le profil affiche des distances cohérentes avec les stats)
+    const distRatio = cumulativeDist > 0 ? displayDist / cumulativeDist : 1;
+    
+    updateStatsUI(displayDist, displayDPlus, displayDMinus, distRatio);
 
     drawProfileSVG();
     setupProfileInteractions();
@@ -95,13 +104,38 @@ export function updateElevationProfile(layerId?: string): void {
     }
 }
 
-function updateStatsUI(dist: number, dPlus: number, dMinus: number): void {
-    const dEl = document.getElementById('gpx-dist') || document.getElementById('track-dist');
-    const pEl = document.getElementById('gpx-dplus') || document.getElementById('track-dplus');
-    const mEl = document.getElementById('gpx-dminus') || document.getElementById('track-dminus');
-    if (dEl) dEl.textContent = `${dist.toFixed(1)} km`;
+let currentDistRatio = 1; // Ratio pour convertir distance 3D en distance Haversine
+
+function updateStatsUI(dist: number, dPlus: number, dMinus: number, distRatio: number = 1): void {
+    // Mettre à jour les éléments gpx-* (GPX importés)
+    const dEl = document.getElementById('gpx-dist');
+    const pEl = document.getElementById('gpx-dplus');
+    const mEl = document.getElementById('gpx-dminus');
+    const profileInfo = document.getElementById('profile-info');
+    
+    // Stocker le ratio pour les interactions futures
+    currentDistRatio = distRatio;
+    
+    if (dEl) dEl.textContent = `${dist.toFixed(2)} km`;
     if (pEl) pEl.textContent = `${Math.round(dPlus)} m D+`;
     if (mEl) mEl.textContent = `${Math.round(dMinus)} m D-`;
+    
+    // Mettre à jour le panneau de profil d'élévation
+    if (profileInfo) {
+        profileInfo.textContent = `Distance : ${dist.toFixed(2)}km | D+ : ${Math.round(dPlus)}m | D- : ${Math.round(dMinus)}m`;
+    }
+    
+    // Mettre à jour le panneau Parcours UNIQUEMENT si pas d'enregistrement en cours
+    // (pour éviter de mélanger les stats REC avec les stats du profil)
+    if (!state.isRecording) {
+        const trackDist = document.getElementById('track-dist');
+        const trackDplus = document.getElementById('track-dplus');
+        const trackDminus = document.getElementById('track-dminus');
+        
+        if (trackDist) trackDist.innerHTML = `${dist.toFixed(2)} <span style="font-size:13px;color:var(--text-2)">km</span>`;
+        if (trackDplus) trackDplus.innerHTML = `+${Math.round(dPlus)} <span style="font-size:12px">m</span>`;
+        if (trackDminus) trackDminus.innerHTML = `−${Math.round(dMinus)} <span style="font-size:12px">m</span>`;
+    }
 }
 
 /**
@@ -219,7 +253,9 @@ function setupProfileInteractions(): void {
         cursor.style.display = 'block';
         cursor.style.left = `${(point.dist / maxDist) * 100}%`;
         
-        info.textContent = `Distance : ${point.dist.toFixed(1)}km | Alt : ${Math.round(point.ele)}m | Pente : ${Math.round(point.slope)}%`;
+        // Appliquer le ratio pour afficher la distance corrigée (Haversine)
+        const correctedDist = point.dist * currentDistRatio;
+        info.textContent = `Distance : ${correctedDist.toFixed(2)}km | Alt : ${Math.round(point.ele)}m | Pente : ${Math.round(point.slope)}%`;
 
         // Mise à jour du marqueur 3D
         if (state.profileMarker) {
@@ -232,7 +268,9 @@ function setupProfileInteractions(): void {
     container.onmouseleave = () => {
         cursor.style.display = 'none';
         if (state.profileMarker) state.profileMarker.visible = false;
-        info.textContent = `Distance : 0km | Alt : 0m`;
+        // Remettre l'affichage avec les stats complètes du tracé
+        const maxDist = profileData.length > 0 ? profileData[profileData.length - 1].dist * currentDistRatio : 0;
+        info.textContent = `Distance : ${maxDist.toFixed(2)}km | Alt : 0m`;
     };
     
     // Support mobile (touch)
