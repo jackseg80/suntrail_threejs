@@ -4,6 +4,19 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.26.5] - 2026-04-07
+
+### 🔧 Rendering & Performance Hotfix v5.26.5
+
+#### 🧱 Terrain & Horizon
+- **Restaurer l'horizon 3D** : Suppression du culling de distance trop restrictif (20km) qui laissait l'arrière-plan vide.
+- **Fluidité de chargement** : Suppression du LOD dynamique par distance qui ralentissait le traitement des tuiles. Retour à la logique stable de Frustum Culling.
+
+#### ⚡ Throttling Framerate
+- **Ajustement Idle** : Framerate remonté à **20 FPS** (au lieu de 15) en mode passif pour garantir un chargement réactif des tuiles tout en économisant la batterie.
+
+---
+
 ## [5.26.4] - 2026-04-07
 
 ### ⚡ Mobile Performance & UX v5.26.4

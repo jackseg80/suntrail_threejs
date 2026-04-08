@@ -84,12 +84,6 @@ export class Tile {
 
     public isVisible(): boolean {
         if (!state.camera) return true;
-        
-        // Culling de distance pure : au-delà de 20km, on ne charge rien de nouveau
-        const camPos = state.camera.position;
-        const distSq = (this.worldX - camPos.x) ** 2 + (this.worldZ - camPos.z) ** 2;
-        if (distSq > 20000 ** 2) return false;
-
         projScreenMatrix.multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
         frustum.setFromProjectionMatrix(projScreenMatrix);
         return frustum.intersectsBox(this.extendedBounds);
@@ -184,14 +178,6 @@ export class Tile {
         if (!this.elevationTex || !this.colorTex || (this.status as any) === 'disposed') return;
         if (!activeTiles.has(this.key)) return;
 
-        // LOD Dynamique : Réduire la résolution si la tuile est loin de la caméra
-        if (state.camera) {
-            const camPos = state.camera.position;
-            const dist = Math.sqrt((this.worldX - camPos.x) ** 2 + (this.worldZ - camPos.z) ** 2);
-            if (dist > 8000) resolution = Math.min(resolution, 32);
-            else if (dist > 4000) resolution = Math.min(resolution, 64);
-        }
-
         if (this.zoom >= 15) resolution = Math.min(resolution, 64);
 
         const is2D = (this.zoom <= 10 || state.IS_2D_MODE);
@@ -247,9 +233,11 @@ export class Tile {
                     `);
                 }
                 shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv) - aSkirt * uTileSize * 0.02; vWorldXZ = (modelMatrix * vec4(transformed, 1.0)).xz;`);
-                
-                // Optimisation Fragment Shader
-                const hydrologyCode = isLight ? '' : `
+                shader.fragmentShader = `
+                    uniform sampler2D uOverlayMap; uniform bool uHasOverlay; uniform float uShowSlopes; uniform float uShowHydrology; uniform float uTime; varying vec3 vTrueNormal; varying vec2 vWorldXZ;
+                    ${shader.fragmentShader}
+                `.replace('#include <map_fragment>', `
+                    #include <map_fragment>
                     if (uShowHydrology > 0.5) {
                         vec3 colorIn = diffuseColor.rgb;
                         float blueVsRed = colorIn.b - colorIn.r;
@@ -271,14 +259,6 @@ export class Tile {
                             }
                         }
                     }
-                `;
-
-                shader.fragmentShader = `
-                    uniform sampler2D uOverlayMap; uniform bool uHasOverlay; uniform float uShowSlopes; uniform float uShowHydrology; uniform float uTime; varying vec3 vTrueNormal; varying vec2 vWorldXZ;
-                    ${shader.fragmentShader}
-                `.replace('#include <map_fragment>', `
-                    #include <map_fragment>
-                    ${hydrologyCode}
                     if (uHasOverlay) { vec4 oCol = texture2D(uOverlayMap, vMapUv); diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a); }
                     if (uShowSlopes > 0.5) {
                         float slopeDeg = degrees(acos(clamp(dot(normalize(vTrueNormal), vec3(0.0, 1.0, 0.0)), 0.0, 1.0)));

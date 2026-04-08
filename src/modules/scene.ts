@@ -507,7 +507,7 @@ export async function initScene(): Promise<void> {
             renderCompass();
         }
 
-        if (state.ENERGY_SAVER && (now - lastRenderTime < 66)) return; // 15 FPS en mode économie max
+        if (state.ENERGY_SAVER && (now - lastRenderTime < 33)) return;
 
         // Mobile 60fps cap (sauf Ultra)
         if (isMobileDevice && state.PERFORMANCE_PRESET !== 'ultra' && (now - lastRenderTime < 16.0)) return;
@@ -515,13 +515,13 @@ export async function initScene(): Promise<void> {
         // GPS follow : 30fps max suffit
         if (state.isFollowingUser && !state.ENERGY_SAVER && (now - lastRenderTime < 33)) return;
 
-        // Idle throttle global — 15fps max en absence d'interaction (économise batterie en statique)
+        // Idle throttle global — 20fps max en absence d'interaction (économise batterie en statique)
         const isWeatherActive = state.SHOW_WEATHER && state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0;
         const isIdleMode = !state.isUserInteracting && !state.isFlyingTo && !state.isFollowingUser
             && !state.isTiltTransitioning
             && !(isWeatherActive && weatherFrameDue)
             && (now - lastInteractionTime >= 800);
-        if (isIdleMode && (now - lastRenderTime < 66)) return; 
+        if (isIdleMode && (now - lastRenderTime < 50)) return; 
         lastRenderTime = now;
 
         updateCompassAnimation();
