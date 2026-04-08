@@ -12,6 +12,7 @@ et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 #### REC (Enregistrement GPS)
 - **Algorithme D+/D- corrigé** : Implémentation de l'hystérésis avec seuil de 2m (comme Garmin/Suunto). Les petites variations se cumulent jusqu'à atteindre le seuil.
 - **Harmonisation des calculs** : Même algorithme dans `terrain.ts` et `TrackSheet.ts` pour des stats cohérentes.
+- **Logs de debug** : Suppression des messages `[REC] Event` dans la console et des toasts de debug.
 
 ## [5.26.0] - 2025-04-08
 
