@@ -10,7 +10,13 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 **Stack** : TypeScript strict · Three.js r160 · Vite 5 · Capacitor 6 · RevenueCat
 
-## ⚠️ Règles & Décisions Actées (v5.26.7)
+## ⚠️ Règles & Décisions Actées (v5.26.8)
+
+### 🚀 Protocole de Release (IMPÉRATIF)
+1. **Version Name** : Incrémenter dans `package.json` (ex: 5.26.7 → 5.26.8).
+2. **Version Code** : Incrémenter **TOUJOURS** le `versionCode` dans `android/app/build.gradle` (ex: 575 → 576). Google Play rejette tout build avec un version code déjà utilisé.
+3. **Changelog** : Mettre à jour `CHANGELOG.md` et `TODO.md`.
+4. **Git** : Taguer la version (`git tag vX.Y.Z`) et pusher les tags.
 
 ### 📚 Index de Documentation (Essentiel pour l'IA)
 

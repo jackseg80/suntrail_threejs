@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.26.8] - 2026-04-08
+
+### Added
+- **Protocole de Release** : Ajout de la règle d'incrémentation obligatoire du `versionCode` Android dans `CLAUDE.md`.
+
+### Optimized
+- **Mémoire (Memory Parking)** : Nettoyage automatique des listes de résultats et des références DOM dans `SearchSheet` lors de la fermeture pour libérer la RAM sur mobile.
+
 ## [5.26.7] - 2026-04-08
 
 ### Added

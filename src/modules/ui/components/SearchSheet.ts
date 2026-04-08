@@ -141,6 +141,21 @@ export class SearchSheet extends BaseComponent {
                 }
             }, 200);
             this.addSubscription(() => clearInterval(focusTimer));
+
+            // --- Memory Optimization (v5.26.8) ---
+            // Clear search results and input when sheet is closed to free memory
+            const onSheetClosed = ({ id }: { id: string | null }) => {
+                if (id === 'search-sheet') {
+                    if (this.geoInput) this.geoInput.value = '';
+                    if (this.geoResults) {
+                        this.geoResults.textContent = '';
+                        this.geoResults.style.display = 'none';
+                    }
+                    this.showSearchEmptyState('initial');
+                }
+            };
+            eventBus.on('sheetClosed', onSheetClosed);
+            this.addSubscription(() => eventBus.off('sheetClosed', onSheetClosed));
         }
     }
 
