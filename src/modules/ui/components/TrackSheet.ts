@@ -94,7 +94,6 @@ export class TrackSheet extends BaseComponent {
                 // CRUCIAL: Récupérer tous les points restants avant d'arrêter le service
                 // Le buffer natif peut contenir des points non encore envoyés
                 if (state.currentCourseId) {
-                    showToast('Finalisation...');
                     const allPoints = await nativeGPSService.getAllPoints(state.currentCourseId, 0);
                     if (allPoints.length > 0) {
                         const existingTimestamps = new Set(state.recordedPoints.map(p => p.timestamp));
@@ -106,7 +105,6 @@ export class TrackSheet extends BaseComponent {
                                 alt: p.alt,
                                 timestamp: p.timestamp
                             }))];
-                            showToast(`+${newPoints.length} pts récupérés`);
                         }
                     }
                     // Attendre un peu que tout soit bien en base
