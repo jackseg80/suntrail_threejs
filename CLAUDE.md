@@ -160,16 +160,32 @@ const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 - Tous les téléphones n'ont pas de baromètre
 - GPS + lissage donne des résultats acceptables pour D+
 
-### Lissage altitude (D+/D-)
-Moyenne mobile sur 3 points pour réduire le bruit GPS vertical (qui gonfle artificiellement le D+).
+### Calcul D+/D- avec hystérésis
+
+Algorithme inspiré de Garmin/Suunto : cumul des variations avec seuil de 2m.
 
 ```typescript
 // src/modules/terrain.ts et TrackSheet.ts
-const smoothedAlts = points.map((p, i) => {
-  if (i === 0 || i === points.length - 1) return p.alt;
-  return (points[i-1].alt + p.alt + points[i+1].alt) / 3;
-});
+let refAlt = altitude_initiale;
+
+for (chaque point) {
+    const diff = altitude_actuelle - refAlt;
+    if (diff >= 2) {
+        dPlus += diff;      // Comptabilise la montée
+        refAlt = altitude_actuelle;  // Nouvelle référence
+    } else if (diff <= -2) {
+        dMinus += Math.abs(diff);  // Comptabilise la descente
+        refAlt = altitude_actuelle;  // Nouvelle référence
+    }
+    // Variations < 2m sont ignorées (bruit GPS)
+}
 ```
+
+**Pourquoi cet algorithme ?**
+- Les petites variations se cumulent (ex: 10 × 0.3m = 3m → comptabilisé)
+- Évite le gonflement du D+ par le bruit GPS
+- Cohérent avec les montres de sport (Garmin utilise ~2-3m de seuil)
+- Plus robuste qu'une moyenne mobile qui peut "manger" les vraies montées
 
 ### Coherence des stats
 - **Panneau Parcours** : Calcule avec `state.recordedPoints` (dédoublonné)
