@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.26.6)
+# SunTrail — Guide IA (v5.26.7)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-08 suite à l'audit de dette technique.
+> Mis à jour le 2026-04-08 suite à l'optimisation de performance.
 
 ## Projet
 
@@ -10,7 +10,7 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 **Stack** : TypeScript strict · Three.js r160 · Vite 5 · Capacitor 6 · RevenueCat
 
-## ⚠️ Règles & Décisions Actées (v5.26.6)
+## ⚠️ Règles & Décisions Actées (v5.26.7)
 
 ### 📚 Index de Documentation (Essentiel pour l'IA)
 

@@ -69,22 +69,34 @@ async function getTileFromPMTiles(z: number, x: number, y: number): Promise<Blob
 /**
  * Monte l'archive PMTiles overview embarquée dans l'APK/PWA (LOD 5-11).
  * Appelée une fois au démarrage, fire-and-forget.
- * Warmup : lit le header + directory + une tuile test pour forcer le cache PMTiles interne.
  */
 export async function initEmbeddedOverview(): Promise<void> {
     try {
         const url = './tiles/europe-overview.pmtiles';
-        const resp = await fetch(url, { method: 'HEAD' });
-        if (!resp.ok) return;
-        embeddedPMTiles = new pmtiles.PMTiles(url);
-        const header = await embeddedPMTiles.getHeader();
-        console.log(`[Embedded] Overview chargé. LOD ${header.minZoom}-${header.maxZoom}, ${header.numTileEntries} tuiles`);
-        // Warmup : lire une tuile LOD 6 pour forcer le chargement du directory interne
+        
+        // Paralléliser l'ouverture du cache worker et l'init PMTiles
+        const [cache, archive] = await Promise.all([
+            caches.open('suntrail-tiles-v2'),
+            (async () => {
+                const p = new pmtiles.PMTiles(url);
+                await p.getHeader();
+                return p;
+            })()
+        ]);
+
+        _workerCache = cache;
+        embeddedPMTiles = archive;
+
+        console.log(`[Embedded] Overview chargé.`);
+
+        // Warmup en arrière-plan pour ne pas bloquer le thread principal au démarrage
         // (après ce call, les extractions suivantes sont ~10× plus rapides)
-        await embeddedPMTiles.getZxy(6, 33, 22);
-        // Pré-ouvrir le cache worker une seule fois
-        _workerCache = await caches.open('suntrail-tiles-v2');
-    } catch {
+        setTimeout(() => {
+            if (embeddedPMTiles) embeddedPMTiles.getZxy(6, 33, 22).catch(() => {});
+        }, 1000);
+
+    } catch (e) {
+        console.warn("[Embedded] Échec chargement overview", e);
         embeddedPMTiles = null;
     }
 }
