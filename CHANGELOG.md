@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.26.10] - 2026-04-08
+
+### Fixed
+- **Affichage des Tuiles** : Restauration de la réactivité grâce à un nouveau `throttle` (Leading + Trailing edge). Garantit que la position finale après un mouvement est toujours traitée.
+- **Vitesse de Chargement (PC)** : Augmentation de la limite de chargement progressif à 25 tuiles par frame sur PC (8 sur mobile) pour un remplissage de vue plus rapide.
+
 ## [5.26.9] - 2026-04-08
 
 ### Optimized

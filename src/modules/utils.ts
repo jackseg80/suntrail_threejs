@@ -1,12 +1,21 @@
 import { state } from './state';
 
 export function throttle<T extends (...args: any[]) => any>(func: T, limit: number): T {
-    let inThrottle: boolean = false;
+    let lastFunc: ReturnType<typeof setTimeout> | null = null;
+    let lastRan: number | null = null;
     return function(this: any, ...args: any[]) {
-        if (!inThrottle) {
-            func.apply(this, args);
-            inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
+        const context = this;
+        if (!lastRan) {
+            func.apply(context, args);
+            lastRan = Date.now();
+        } else {
+            if (lastFunc) clearTimeout(lastFunc);
+            lastFunc = setTimeout(function() {
+                if ((Date.now() - (lastRan || 0)) >= limit) {
+                    func.apply(context, args);
+                    lastRan = Date.now();
+                }
+            }, limit - (Date.now() - (lastRan || 0)));
         }
     } as T;
 }

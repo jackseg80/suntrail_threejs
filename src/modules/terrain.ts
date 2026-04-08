@@ -168,7 +168,8 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
     }
 
     let newlyAddedCount = 0;
-    const MAX_NEW_TILES_PER_FRAME = 5;
+    const isPC = !isMobileDevice();
+    const MAX_NEW_TILES_PER_FRAME = isPC ? 25 : 8;
 
     for (let dy = -range; dy <= range; dy++) {
         for (let dx = -range; dx <= range; dx++) {
