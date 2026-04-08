@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.26.12] - 2026-04-08
+
+### Optimized
+- **Chargement Adaptatif** : La limite de tuiles par frame s'adapte désormais au preset de performance. Le Galaxy S23 (Performance) charge 25 tuiles/frame, tandis que l'A53 (Balanced) en charge 12, garantissant un équilibre optimal entre vitesse et fluidité sur chaque appareil.
+
 ## [5.26.11] - 2026-04-08
 
 ### Fixed

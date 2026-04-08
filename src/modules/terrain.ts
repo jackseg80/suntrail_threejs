@@ -168,8 +168,14 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
     }
 
     let newlyAddedCount = 0;
-    const isPC = !isMobileDevice();
-    const MAX_NEW_TILES_PER_FRAME = isPC ? 25 : 8;
+    
+    // Échelle de chargement proportionnelle au preset (v5.26.12)
+    // performance/ultra (S23/PC) = 25, balanced (A53) = 12, eco = 4
+    const MAX_NEW_TILES_PER_FRAME = 
+        (state.PERFORMANCE_PRESET === 'ultra' || state.PERFORMANCE_PRESET === 'performance') ? 25 
+        : (state.PERFORMANCE_PRESET === 'balanced') ? 12 
+        : 4;
+
     let hasMoreToLoad = false;
 
     for (let dy = -range; dy <= range; dy++) {
