@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "packs": [
     {
       "id": "switzerland",
@@ -11,10 +11,10 @@
         "en": "Switzerland HD"
       },
       "bounds": { "minLat": 45.8, "maxLat": 47.8, "minLon": 5.9, "maxLon": 10.5 },
-      "lodRange": { "min": 12, "max": 14 },
-      "version": 1,
-      "sizeMB": 710,
-      "cdnUrl": "https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev/packs/suntrail-pack-switzerland-v1.pmtiles",
+      "lodRange": { "min": 8, "max": 14 },
+      "version": 2,
+      "sizeMB": 716,
+      "cdnUrl": "https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev/packs/suntrail-pack-switzerland-v2.pmtiles",
       "regionCheck": "switzerland"
     },
     {
@@ -27,10 +27,10 @@
         "en": "French Alps HD"
       },
       "bounds": { "minLat": 43.5, "maxLat": 46.5, "minLon": 4.5, "maxLon": 7.8 },
-      "lodRange": { "min": 12, "max": 14 },
-      "version": 1,
-      "sizeMB": 210,
-      "cdnUrl": "https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev/packs/suntrail-pack-france_alps-v1.pmtiles",
+      "lodRange": { "min": 8, "max": 14 },
+      "version": 2,
+      "sizeMB": 515,
+      "cdnUrl": "https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev/packs/suntrail-pack-france_alps-v2.pmtiles",
       "regionCheck": "france_alps"
     }
   ]

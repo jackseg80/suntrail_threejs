@@ -21,6 +21,7 @@ import { i18n } from '../i18n/I18nService';
 import type { PackMeta, PackState, PackCatalog, PackStatus } from './packTypes';
 import { iapService } from './iapService';
 
+const CDN_BASE_URL = 'https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev';
 const CATALOG_URL = import.meta.env.VITE_PACKS_CATALOG_URL as string | undefined;
 const PACK_STATES_KEY = 'suntrail_pack_states';
 const CATALOG_CACHE_KEY = 'suntrail_pack_catalog';
@@ -39,7 +40,7 @@ const EMBEDDED_CATALOG: PackCatalog = {
             lodRange: { min: 8, max: 14 },
             version: 2,
             sizeMB: 716,
-            cdnUrl: `${CATALOG_URL?.replace('/catalog.json', '') ?? ''}/packs/suntrail-pack-switzerland-v2.pmtiles`,
+            cdnUrl: `${CDN_BASE_URL}/packs/suntrail-pack-switzerland-v2.pmtiles`,
             regionCheck: 'switzerland',
         },
         {
@@ -50,7 +51,7 @@ const EMBEDDED_CATALOG: PackCatalog = {
             lodRange: { min: 8, max: 14 },
             version: 2,
             sizeMB: 515,
-            cdnUrl: `${CATALOG_URL?.replace('/catalog.json', '') ?? ''}/packs/suntrail-pack-france_alps-v2.pmtiles`,
+            cdnUrl: `${CDN_BASE_URL}/packs/suntrail-pack-france_alps-v2.pmtiles`,
             regionCheck: 'france_alps',
         },
     ],
@@ -347,6 +348,10 @@ class PackManager {
     }
 
     async getTileFromPacks(z: number, x: number, y: number): Promise<Blob | null> {
+        // Gating LOD : les utilisateurs Free sont bridés au LOD 12 max.
+        // Ils peuvent posséder un pack (achat unique) mais le rendu HD (13-14) reste une feature Pro.
+        if (z > 12 && !state.isPro) return null;
+
         // Deux passes : OPFS (installed) en premier, CDN (purchased) ensuite.
         // Un pack CDN qui bloque sur un timeout DNS ne doit jamais empêcher
         // un pack OPFS de servir ses tuiles — même si IS_OFFLINE n'est pas encore détecté.

@@ -88,7 +88,7 @@ Le fichier est exclu du précache Workbox (`globIgnores: ['**/*.pmtiles']`) et d
 
 ## Packs Pays — packManager (v5.21.0)
 
-Archives PMTiles régionales (LOD 12-14) achetées via IAP et téléchargées en entier. Module : `src/modules/packManager.ts`.
+Archives PMTiles régionales (LOD 8-14) achetées via IAP et téléchargées en entier. Module : `src/modules/packManager.ts`.
 
 **Initialisation** (`main.ts` → `packManager.initialize()`) :
 1. `loadPersistedStates()` — recharge les PackState depuis `localStorage` clé `suntrail_pack_states`
