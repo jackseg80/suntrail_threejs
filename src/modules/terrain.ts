@@ -321,26 +321,19 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     }
     let distance = 0; let dPlus = 0; let dMinus = 0;
     
-    // Lissage altitude pour éviter gonflement D+ par bruit GPS (coherent avec TrackSheet.updateStats)
-    // Moyenne mobile sur 3 points (fenêtre glissante)
-    const smoothedAlts: number[] = validPoints.map((p: any, i: number) => {
-        const alt = p.ele !== undefined ? p.ele : (p.alt !== undefined ? p.alt : 0);
-        if (i === 0 || i === validPoints.length - 1) return alt;
-        const prevAlt = validPoints[i - 1].ele !== undefined ? validPoints[i - 1].ele : (validPoints[i - 1].alt !== undefined ? validPoints[i - 1].alt : 0);
-        const nextAlt = validPoints[i + 1].ele !== undefined ? validPoints[i + 1].ele : (validPoints[i + 1].alt !== undefined ? validPoints[i + 1].alt : 0);
-        return (prevAlt + alt + nextAlt) / 3;
-    });
-    
     for (let i = 1; i < validPoints.length; i++) {
         const p1 = validPoints[i - 1]; const p2 = validPoints[i];
         const segmentDist = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
         distance += segmentDist;
-        // Utiliser altitude lissée pour D+/D- (coherent avec TrackSheet)
-        // Seuil de 1m pour filtrer le bruit GPS tout en capturant les vraies montées
-        const diff = smoothedAlts[i] - smoothedAlts[i - 1];
-        if (diff > 1) dPlus += diff;        // Monte de plus de 1m = comptabilisé
-        else if (diff < -1) dMinus += Math.abs(diff);  // Descend de plus de 1m = comptabilisé
-        // Ignore les variations entre -1m et +1m (bruit GPS)
+        
+        // Calcul D+/D- SANS lissage pour GPX importés (données déjà filtrées)
+        // Seuil de 0.5m pour éliminer le micro-bruit
+        const alt1 = p1.ele !== undefined ? p1.ele : (p1.alt !== undefined ? p1.alt : 0);
+        const alt2 = p2.ele !== undefined ? p2.ele : (p2.alt !== undefined ? p2.alt : 0);
+        const diff = alt2 - alt1;
+        
+        if (diff > 0.5) dPlus += diff;        // Monte de plus de 0.5m
+        else if (diff < -0.5) dMinus += Math.abs(diff);  // Descend de plus de 0.5m
     }
     const box = new THREE.Box3();
     const camAlt = state.camera ? state.camera.position.y : 10000;
