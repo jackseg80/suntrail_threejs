@@ -16,7 +16,7 @@ import { eventBus } from '../../eventBus';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Geolocation } from '@capacitor/geolocation';
-import { requestGPSDisclosure } from '../../gpsDisclosure';
+import { calculateTrackStats } from '../../geoStats';
 
 export class TrackSheet extends BaseComponent {
     constructor() {
@@ -518,42 +518,11 @@ export class TrackSheet extends BaseComponent {
             return;
         }
 
-        let dist = 0;
-        let dplus = 0;
-        let dminus = 0;
+        const stats = calculateTrackStats(state.recordedPoints);
 
-        // ✅ Dédoublonnage par timestamp (coherent avec buildGPXString)
-        const points = [...new Map(state.recordedPoints.map(p => [p.timestamp, p])).values()];
-        
-        // Algorithme D+/D- avec hystérésis (comme Garmin, Suunto) - identique à terrain.ts
-        // Seuil 2m : on comptabilise quand on a cumulé 2m depuis la dernière référence
-        let refAlt = points[0]?.alt || 0;
-        
-        for (let i = 1; i < points.length; i++) {
-            const p1 = points[i - 1];
-            const p2 = points[i];
-
-            // Utiliser Haversine (précis) au lieu de l'approximation planaire (buggy)
-            const segmentDist = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon) * 1000; // en mètres
-            dist += segmentDist;
-
-            const currentAlt = p2.alt || 0;
-            const diffFromRef = currentAlt - refAlt;
-
-            if (diffFromRef >= 2) {
-                // Cumul +2m = comptabiliser D+
-                dplus += diffFromRef;
-                refAlt = currentAlt;
-            } else if (diffFromRef <= -2) {
-                // Cumul -2m = comptabiliser D-
-                dminus += Math.abs(diffFromRef);
-                refAlt = currentAlt;
-            }
-        }
-
-        if (distEl) distEl.innerHTML = `${(dist / 1000).toFixed(2)} <span class="trk-stat-unit">km</span>`;
-        if (dplusEl) dplusEl.innerHTML = `+${Math.round(dplus)} <span class="trk-stat-unit-plain">m</span>`;
-        if (dminusEl) dminusEl.innerHTML = `−${Math.round(dminus)} <span class="trk-stat-unit-plain">m</span>`;
+        if (distEl) distEl.innerHTML = `${stats.distance.toFixed(2)} <span class="trk-stat-unit">km</span>`;
+        if (dplusEl) dplusEl.innerHTML = `+${Math.round(stats.dPlus)} <span class="trk-stat-unit-plain">m</span>`;
+        if (dminusEl) dminusEl.innerHTML = `−${Math.round(stats.dMinus)} <span class="trk-stat-unit-plain">m</span>`;
     }
 
     private showPostRecUpsell(): void {

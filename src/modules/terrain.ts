@@ -319,34 +319,19 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     if (validPoints.length < 2) {
         throw new Error(`Cannot add GPX layer: not enough valid points (${validPoints.length})`);
     }
-    let distance = 0; let dPlus = 0; let dMinus = 0;
     
-    // Algorithme D+/D- avec hystérésis (comme Garmin, Suunto)
-    // Principe : on cumule les variations, on comptabilise quand le cumul dépasse le seuil
-    // Seuil 2m : montée ou descente significative
-    let refAlt = validPoints[0].ele !== undefined ? validPoints[0].ele : (validPoints[0].alt !== undefined ? validPoints[0].alt : 0);
-    let currentAlt = refAlt;
-    
-    for (let i = 1; i < validPoints.length; i++) {
-        const p1 = validPoints[i - 1]; 
-        const p2 = validPoints[i];
-        const segmentDist = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
-        distance += segmentDist;
-        
-        currentAlt = p2.ele !== undefined ? p2.ele : (p2.alt !== undefined ? p2.alt : 0);
-        const diffFromRef = currentAlt - refAlt;
-        
-        if (diffFromRef >= 2) {
-            // On a cumulé +2m depuis la dernière référence = comptabiliser D+
-            dPlus += diffFromRef;
-            refAlt = currentAlt;  // Nouvelle référence
-        } else if (diffFromRef <= -2) {
-            // On a cumulé -2m depuis la dernière référence = comptabiliser D-
-            dMinus += Math.abs(diffFromRef);
-            refAlt = currentAlt;  // Nouvelle référence
-        }
-        // Si entre -2m et +2m, on ne comptabilise pas (bruit GPS)
-    }
+    // ✅ Utiliser l'algorithme centralisé avec hystérésis (coherent avec TrackSheet)
+    const stats = calculateTrackStats(validPoints.map(p => ({
+        lat: p.lat,
+        lon: p.lon,
+        alt: p.ele !== undefined ? p.ele : (p.alt !== undefined ? p.alt : 0),
+        timestamp: p.time ? new Date(p.time).getTime() : 0
+    })));
+
+    const distance = stats.distance;
+    const dPlus = stats.dPlus;
+    const dMinus = stats.dMinus;
+
     const box = new THREE.Box3();
     const camAlt = state.camera ? state.camera.position.y : 10000;
     const thickness = Math.max(1.5, camAlt / 1200);

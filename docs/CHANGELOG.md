@@ -4,6 +4,17 @@ L'historique complet du développement, des prototypes initiaux à la plateforme
 
 ---
 
+## [5.26.2] - 2026-04-07
+
+### 🏔️ Precision Stats & Centralization v5.26.2
+
+#### 📏 Algorithme D+/D-
+- **Centralisation** : Création du module `src/modules/geoStats.ts` regroupant la logique de calcul de distance et dénivelé.
+- **Hystérésis validée** : Mise en place de tests unitaires (`geoStats.test.ts`) garantissant que le seuil de 2m filtre correctement le bruit GPS (Garmin-style).
+- **Cohérence applicative** : Utilisation du même algorithme pour l'enregistrement en temps réel (`TrackSheet`) et pour les imports GPX (`terrain.ts`).
+
+---
+
 ## [5.25.8] - 2026-04-07
 
 ### 📱 Android Build Fix v5.25.8
