@@ -521,12 +521,11 @@ export class TrackSheet extends BaseComponent {
         // ✅ Dédoublonnage par timestamp (coherent avec buildGPXString)
         const points = [...new Map(state.recordedPoints.map(p => [p.timestamp, p])).values()];
         
-        // Lissage altitude pour éviter gonflement D+ par bruit GPS
-        // Moyenne mobile sur 3 points (fenêtre glissante)
-        const smoothedAlts: number[] = points.map((p, i) => {
-            if (i === 0 || i === points.length - 1) return p.alt;
-            return (points[i - 1].alt + p.alt + points[i + 1].alt) / 3;
-        });
+        // Algorithme D+/D- avec hystérésis (comme Garmin) - identique à terrain.ts
+        // Seuil 2m : on ne comptabilise que quand on a cumulé 2m dans UNE direction
+        let cumulativeUp = 0;
+        let cumulativeDown = 0;
+        let lastAlt = points[0]?.alt || 0;
 
         for (let i = 1; i < points.length; i++) {
             const p1 = points[i - 1];
@@ -536,12 +535,30 @@ export class TrackSheet extends BaseComponent {
             const segmentDist = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon) * 1000; // en mètres
             dist += segmentDist;
 
-            // Utiliser altitude lissée pour D+/D-
-            // Seuil de 1m pour filtrer le bruit GPS tout en capturant les vraies montées
-            const diff = smoothedAlts[i] - smoothedAlts[i - 1];
-            if (diff > 1) dplus += diff;        // Monte de plus de 1m = comptabilisé
-            else if (diff < -1) dminus += Math.abs(diff);  // Descend de plus de 1m = comptabilisé
-            // Ignore les variations entre -1m et +1m (bruit GPS)
+            const alt2 = p2.alt || 0;
+            const diff = alt2 - lastAlt;
+
+            if (diff > 0) {
+                // On monte
+                cumulativeUp += diff;
+                cumulativeDown = 0;  // Reset la descente quand on remonte
+                
+                if (cumulativeUp >= 2) {
+                    dplus += cumulativeUp;
+                    cumulativeUp = 0;
+                }
+            } else if (diff < 0) {
+                // On descend
+                cumulativeDown += Math.abs(diff);
+                cumulativeUp = 0;  // Reset la montée quand on descend
+                
+                if (cumulativeDown >= 2) {
+                    dminus += cumulativeDown;
+                    cumulativeDown = 0;
+                }
+            }
+            
+            lastAlt = alt2;
         }
 
         if (distEl) distEl.innerHTML = `${(dist / 1000).toFixed(2)} <span class="trk-stat-unit">km</span>`;

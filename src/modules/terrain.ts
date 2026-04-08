@@ -321,24 +321,44 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     }
     let distance = 0; let dPlus = 0; let dMinus = 0;
     
-    // Calcul D+/D- SANS lissage - seuil fixe de 2m
-    // (Le lissage "mange" les variations réelles)
+    // Algorithme D+/D- avec hystérésis (comme Garmin)
+    // Seuil 2m : on ne comptabilise que quand on a cumulé 2m dans UNE direction
+    // Quand on change de direction, on reset le cumul précédent
+    let cumulativeUp = 0;    // Cumul montée depuis dernière comptabilisation
+    let cumulativeDown = 0;  // Cumul descente depuis dernière comptabilisation
+    let lastAlt = validPoints[0].ele !== undefined ? validPoints[0].ele : (validPoints[0].alt !== undefined ? validPoints[0].alt : 0);
+    
     for (let i = 1; i < validPoints.length; i++) {
         const p1 = validPoints[i - 1]; 
         const p2 = validPoints[i];
         const segmentDist = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
         distance += segmentDist;
         
-        const alt1 = p1.ele !== undefined ? p1.ele : (p1.alt !== undefined ? p1.alt : 0);
         const alt2 = p2.ele !== undefined ? p2.ele : (p2.alt !== undefined ? p2.alt : 0);
-        const diff = alt2 - alt1;
+        const diff = alt2 - lastAlt;
         
-        // Seuil de 2m : ignore le bruit, garde les vraies montées
-        if (diff >= 2) {
-            dPlus += diff;
-        } else if (diff <= -2) {
-            dMinus += Math.abs(diff);
+        if (diff > 0) {
+            // On monte
+            cumulativeUp += diff;
+            cumulativeDown = 0;  // Reset la descente quand on remonte
+            
+            if (cumulativeUp >= 2) {
+                dPlus += cumulativeUp;
+                cumulativeUp = 0;  // Reset après comptabilisation
+            }
+        } else if (diff < 0) {
+            // On descend
+            cumulativeDown += Math.abs(diff);
+            cumulativeUp = 0;  // Reset la montée quand on descend
+            
+            if (cumulativeDown >= 2) {
+                dMinus += cumulativeDown;
+                cumulativeDown = 0;  // Reset après comptabilisation
+            }
         }
+        // Si diff == 0, on ne fait rien (plateau)
+        
+        lastAlt = alt2;
     }
     const box = new THREE.Box3();
     const camAlt = state.camera ? state.camera.position.y : 10000;
