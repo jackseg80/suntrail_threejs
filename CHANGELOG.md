@@ -5,6 +5,21 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.27.0] - 2026-04-08
+
+### Added
+- **Exemption Batterie** : Demande d'exemption des optimisations batterie Android au démarrage du REC pour éviter les coupures GPS en arrière-plan (Doze Mode).
+
+### Fixed
+- **Robustesse du Worker (Foreground Service)** : Ajout du type de service `location` (requis pour Android 10+). Empêche le système de tuer le worker lors de l'ouverture d'apps gourmandes en RAM (ex: Appareil Photo).
+- **Persistence de Session** : Le worker récupère désormais son `courseId` et son `startTime` après un redémarrage forcé par le système. L'enregistrement ne repart plus de zéro.
+- **Continuité du Chronomètre** : Le temps écoulé affiché dans la notification est désormais persisté et survit au redémarrage du service.
+
+### Optimized
+- **Précision Alpine** : Force le mode `PRIORITY_HIGH_ACCURACY` dès que l'utilisateur est en mouvement (> 3km/h) pour une trace parfaite en montagne.
+- **Sécurité des Données** : Réduction du buffer d'écriture à 3 points (au lieu de 5) pour minimiser les pertes en cas d'arrêt brutal de l'appareil.
+- **WakeLock Étendu** : Passage du verrouillage CPU à 24h (au lieu de 4h) pour les très longues randonnées.
+
 ## [5.26.13] - 2026-04-08
 
 ### Fixed

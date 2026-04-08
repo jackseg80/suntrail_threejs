@@ -68,6 +68,11 @@ export class TrackSheet extends BaseComponent {
                         return;
                     }
                 }
+                // v5.26.0: Demander l'exemption des optimisations batterie pour éviter le kill lors des photos
+                if (Capacitor.isNativePlatform()) {
+                    await nativeGPSService.requestBatteryOptimizationExemption();
+                }
+
                 showToast(i18n.t('track.toast.recStarted'));
                 // v5.24: Single Source of Truth - le natif est la seule source d'enregistrement
                 // Figer originTile au démarrage pour cohérence des coordonnées

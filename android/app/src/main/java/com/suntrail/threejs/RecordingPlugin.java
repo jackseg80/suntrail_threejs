@@ -128,8 +128,8 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
             }
         }
         
-        // Démarrer le service
-        startServiceInternal(call);
+        // DÃ©marrer le service avec flag NOUVELLE course
+        startServiceInternal(call, true);
         
         // Le courseId sera envoyé via onNewPoints callback
         // On retourne immédiatement, le JS recevra le vrai courseId via l'événement
@@ -145,11 +145,11 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
      */
     @PluginMethod
     public void startForeground(PluginCall call) {
-        startServiceInternal(call);
+        startServiceInternal(call, false);
         call.resolve();
     }
     
-    private void startServiceInternal(PluginCall call) {
+    private void startServiceInternal(PluginCall call, boolean isNewCourse) {
         // Android 13+ (API 33) : POST_NOTIFICATIONS est une permission runtime.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.POST_NOTIFICATIONS)
@@ -163,6 +163,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         }
 
         Intent serviceIntent = new Intent(getContext(), RecordingService.class);
+        serviceIntent.putExtra("isNewCourse", isNewCourse);
 
         long   interval        = call.getLong("interval", 3000L);
         float  minDisplacement = call.getFloat("minDisplacement", 0.5f);

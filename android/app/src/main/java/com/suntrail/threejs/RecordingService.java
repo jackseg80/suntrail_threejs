@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.ServiceInfo;
 import android.location.Location;
 import android.os.Build;
 import android.os.IBinder;
@@ -115,8 +116,8 @@ public class RecordingService extends Service {
 
     // Buffer pour batch inserts (v5.25.1) - réduit I/O disque
     private final List<GPSPoint> mPointBuffer = new ArrayList<>();
-    private static final int BATCH_SIZE = 5; // Insert par batch de 5 points
-    private static final long BATCH_FLUSH_INTERVAL_MS = 10000; // Flush forcé toutes les 10s
+    private static final int BATCH_SIZE = 3; // v5.26.1: RÃ©duit Ã  3 pour plus de sÃ©curitÃ© (zÃ©ro perte)
+    private static final long BATCH_FLUSH_INTERVAL_MS = 10000; // Flush forcÃ© toutes les 10s
     private long mLastBatchFlush = 0;
 
     // WakeLock partiel : maintient le CPU actif pendant l'enregistrement
@@ -168,21 +169,54 @@ public class RecordingService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         createNotificationChannel();
 
-        // Générer un nouveau courseId pour cette session d'enregistrement
-        mCurrentCourseId = java.util.UUID.randomUUID().toString();
+        // v5.26.0: Gestion intelligente du courseId pour le recovery aprÃ¨s kill
+        boolean isNewCourse = (intent != null) && intent.getBooleanExtra("isNewCourse", false);
+
+        if (isNewCourse) {
+            // DÃ©marrage explicite d'une NOUVELLE course (depuis le bouton REC)
+            mCurrentCourseId = java.util.UUID.randomUUID().toString();
+            mPointCount.set(0);
+            mStartTime = System.currentTimeMillis();
+            Log.i(TAG, "DÃ©marrage d'une NOUVELLE course: " + mCurrentCourseId);
+        } else {
+            // RedÃ©marrage par le systÃ¨me (START_STICKY) ou rÃ©activation
+            SharedPreferences recoveryPrefs = getSharedPreferences("RecordingPrefs", MODE_PRIVATE);
+            mCurrentCourseId = recoveryPrefs.getString("currentCourseId", null);
+            mStartTime = recoveryPrefs.getLong("startTime", System.currentTimeMillis());
+
+            if (mCurrentCourseId != null) {
+                // Course existante : on rÃ©cupÃ¨re le nombre de points pour la notification
+                mDbExecutor.execute(() -> {
+                    try {
+                        int count = mDao.getPointCount(mCurrentCourseId);
+                        mPointCount.set(count);
+                        updateNotification(count);
+                        Log.i(TAG, "Course rÃ©cupÃ©rÃ©e (" + mCurrentCourseId + ") : " + count + " points");
+                    } catch (Exception e) {
+                        Log.e(TAG, "Erreur rÃ©cupÃ©ration pointCount: " + e.getMessage());
+                    }
+                });
+            } else {
+                // Cas rare: START_STICKY sans courseId en SharedPreferences -> on en crÃ©e un
+                mCurrentCourseId = java.util.UUID.randomUUID().toString();
+                mPointCount.set(0);
+                mStartTime = System.currentTimeMillis();
+                Log.w(TAG, "Course absente des prefs, crÃ©ation d'un nouveau ID: " + mCurrentCourseId);
+            }
+        }
+
         mLastValidLocation = null;
         mLastValidTimestamp = 0;
-        mPointCount.set(0);
-        
-        // Sauvegarder le courseId dans SharedPreferences pour le recovery après kill
+
+        // Sauvegarder (ou maintenir) le courseId et startTime dans SharedPreferences
         getSharedPreferences("RecordingPrefs", MODE_PRIVATE)
             .edit()
             .putString("currentCourseId", mCurrentCourseId)
+            .putLong("startTime", mStartTime)
             .apply();
-        
-        // Notifier le plugin du nouveau courseId (même sans points encore)
+        // Notifier le plugin du courseId courant (pour que le JS sache quoi poller)
         if (sCallback != null) {
-            sCallback.onNewPoints(mCurrentCourseId, 0);
+            sCallback.onNewPoints(mCurrentCourseId, mPointCount.get());
         }
 
         Intent openIntent = new Intent(this, MainActivity.class);
@@ -221,7 +255,13 @@ public class RecordingService extends Service {
         mStartTime = System.currentTimeMillis();
         mLastMovementTime = mStartTime;
 
-        startForeground(NOTIFICATION_ID, buildNotification(0));
+        // v5.26.0: SpÃ©cification du type de service pour Android 10+ (API 29+)
+        // Requis pour Ã©viter que le service soit killÃ© lors d'opÃ©rations mÃ©moire (ex: photos)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, buildNotification(mPointCount.get()), ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+        } else {
+            startForeground(NOTIFICATION_ID, buildNotification(mPointCount.get()));
+        }
 
         // Lire la config depuis les Intent extras (premier démarrage)
         // ou depuis les SharedPreferences (redémarrage START_STICKY, intent peut être null)
@@ -408,11 +448,11 @@ public class RecordingService extends Service {
             Log.e(TAG, "Permission GPS refusée : " + e.getMessage());
         }
 
-        // WakeLock partiel : maintient le CPU actif (timeout 4h max)
+        // WakeLock partiel : maintient le CPU actif (v5.26.1: timeout 24h pour randos longues)
         PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
         if (pm != null) {
             mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "suntrail:gps");
-            mWakeLock.acquire(4 * 60 * 60 * 1000L);
+            mWakeLock.acquire(24 * 60 * 60 * 1000L);
         }
 
         // START_STICKY : Android redémarre le service s'il est tué (avec Intent null)
@@ -639,25 +679,18 @@ public class RecordingService extends Service {
             newInterval = 10000; // 10s
             newPriority = Priority.PRIORITY_BALANCED_POWER_ACCURACY;
             modeDescription = "ÉCONOMIE (immobile/lent)";
-        } else if (mCurrentSpeedMps < SPEED_WALKING_FAST) {
-            // Mode standard: marche normale
-            if (elapsedMinutes < 180) {
-                // 0-3h: 5s standard
-                newInterval = 5000;
-                newPriority = Priority.PRIORITY_BALANCED_POWER_ACCURACY;
-                modeDescription = "STANDARD (marche)";
-            } else {
-                // 3h+: 7s économie modérée
-                newInterval = 7000;
-                newPriority = Priority.PRIORITY_BALANCED_POWER_ACCURACY;
-                modeDescription = "ÉCONOMIE MODÉRÉE (3h+)";
-            }
         } else {
-            // Mode précision: marche rapide ou course
-            newInterval = 3000; // 3s
             newPriority = Priority.PRIORITY_HIGH_ACCURACY;
-            modeDescription = "PRÉCISION (rapide)";
-        }
+            if (mCurrentSpeedMps < SPEED_WALKING_FAST) {
+                // Mode standard: marche normale (5-7s)
+                newInterval = (elapsedMinutes < 180) ? 5000 : 7000;
+                modeDescription = (elapsedMinutes < 180) ? "STANDARD (walking)" : "ECONOMY (3h+)";
+            } else {
+                // Mode precision: marche rapide ou course (3s)
+                newInterval = 3000;
+                modeDescription = "PRECISION (fast)";
+            }
+            }
         
         // Vérifier si un changement est nécessaire
         if (mLocationRequest.getInterval() != newInterval || 

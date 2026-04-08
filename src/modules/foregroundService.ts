@@ -164,7 +164,6 @@ export function clearInterruptedRecording(): void {
  * Retourne true si déjà exempté ou si l'utilisateur a accepté.
  */
 export async function requestBatteryOptimizationExemption(): Promise<boolean> {
-    // Cette fonction est conservée pour compatibilité mais déléguée au natif si disponible
-    // Note: Elle pourrait être implémentée via un plugin电容 natif si nécessaire
-    return true;
+    if (!Capacitor.isNativePlatform()) return true;
+    return await nativeGPSService.requestBatteryOptimizationExemption();
 }

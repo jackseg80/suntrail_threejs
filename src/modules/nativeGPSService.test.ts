@@ -6,6 +6,7 @@ const { mockPlugin } = vi.hoisted(() => ({
         stopCourse: vi.fn().mockResolvedValue({}),
         getPoints: vi.fn().mockResolvedValue({ points: [] }),
         getCurrentCourse: vi.fn().mockResolvedValue({ courseId: 'test-course-123', isRunning: true }),
+        requestBatteryOptimizationExemption: vi.fn().mockResolvedValue({ granted: true }),
         addListener: vi.fn(),
         removeAllListeners: vi.fn()
     }
@@ -61,5 +62,24 @@ describe('NativeGPSService', () => {
         // 3. Stop course
         await nativeGPSService.stopCourse();
         expect(mockPlugin.stopCourse).toHaveBeenCalled();
+    });
+
+    it('should request battery optimization exemption', async () => {
+        const granted = await nativeGPSService.requestBatteryOptimizationExemption();
+        expect(granted).toBe(true);
+        expect(mockPlugin.requestBatteryOptimizationExemption).toHaveBeenCalled();
+    });
+
+    it('should recover current course state from native', async () => {
+        mockPlugin.getCurrentCourse.mockResolvedValue({
+            courseId: 'recovered-123',
+            isRunning: true,
+            originTile: { x: 10, y: 20, z: 13 }
+        });
+
+        const course = await nativeGPSService.getCurrentCourse();
+        expect(course?.courseId).toBe('recovered-123');
+        expect(course?.isRunning).toBe(true);
+        expect(course?.originTile).toEqual({ x: 10, y: 20, z: 13 });
     });
 });
