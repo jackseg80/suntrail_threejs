@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.27.3] - 2026-04-09
+
+### Fixed
+- **Alignement GPX (Floating Origin)** : Correction d'un bug majeur où les tracés GPX importés et le tracé en cours "suivaient" l'utilisateur lors de grands déplacements (ex: voiture après une rando). Désormais, tous les maillages de parcours sont recalculés instantanément lors d'un décalage d'origine (Origin Shift), garantissant qu'ils restent parfaitement ancrés à leurs coordonnées géographiques.
+- **Simplification Coordonnées** : Suppression de la `recordingOriginTile` qui causait des désynchronisations. L'application utilise désormais une source unique de vérité pour l'origine du monde 3D.
+
 ## [5.27.2] - 2026-04-09
 
 ### Fixed

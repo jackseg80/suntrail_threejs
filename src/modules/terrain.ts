@@ -88,9 +88,23 @@ export function repositionAllTiles(): void {
                 obj.line.position.z += offsetZ;
             }
         }
+
+        // v5.27.3: Recalculer les maillages GPX lors d'un Origin Shift
+        // Empêche les tracés de "suivre" l'utilisateur lors de grands déplacements (voiture)
+        terrainUpdates.updateAllGPXMeshes();
+        terrainUpdates.updateRecordedTrackMesh();
     }
     (repositionAllTiles as any).lastOrigin = { ...state.originTile };
 }
+
+/** 
+ * v5.27.3: Groupement des fonctions de mise à jour pour testabilité
+ * Permet à Vitest d'espionner les appels internes lors des Origin Shifts.
+ */
+export const terrainUpdates = {
+    updateAllGPXMeshes,
+    updateRecordedTrackMesh
+};
 
 // Fixed constant access
 const EARTH_CIRCUMFERENCE_VAL = 40075016.686;
@@ -441,7 +455,7 @@ export function updateRecordedTrackMesh(): void {
     if (state.recordedPoints.length < 2 || !state.camera || !state.scene || !state.originTile) return;
     const camAlt = state.camera.position.y; const thickness = Math.max(2.0, camAlt / 800); 
     if (state.recordedMesh) { state.scene.remove(state.recordedMesh); disposeObject(state.recordedMesh); }
-    const originTile = state.recordingOriginTile || state.originTile;
+    const originTile = state.originTile;
     
     let lastValidAlt: number | null = null;
     let lastWorldPos: THREE.Vector3 | null = null;

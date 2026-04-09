@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.27.2)
+# SunTrail — Guide IA (v5.27.3)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-09 suite à la correction du bug 'Mushroom' et sécurisation REC.
+> Mis à jour le 2026-04-09 suite à la correction du décalage GPX (Origin Shift).
 
 ## Projet
 
@@ -10,7 +10,7 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 **Stack** : TypeScript strict · Three.js r160 · Vite 5 · Capacitor 6 · RevenueCat
 
-## ⚠️ Règles & Décisions Actées (v5.27.2)
+## ⚠️ Règles & Décisions Actées (v5.27.3)
 
 ### 🚀 Protocole de Release (IMPÉRATIF)
 1. **Version Name** : Incrémenter dans `package.json` (ex: 5.26.7 → 5.26.8).
@@ -43,6 +43,7 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 - **D+ / D-** : Algorithme d'**Hystérésis avec seuil de 2m** (Garmin/Suunto style).
 - **Lissage** : Moyenne mobile 3 points sur l'altitude GPS.
 - **Filtrage GPS (v5.27.2)** : Rejeter tout point GPS avec saut vertical > 200m ou distance horizontale < 2m (anti-champignon).
+- **Alignement Géographique (v5.27.3)** : Recalcul obligatoire des maillages GPX lors de chaque `Origin Shift` (Floating Origin).
 
 ### Rendu & Performance
 - **`renderer.setSize(w, h, false)`** — TOUJOURS le 3ème param `false`.

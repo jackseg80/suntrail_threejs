@@ -229,7 +229,7 @@ describe('terrain.ts', () => {
             expect(() => updateRecordedTrackMesh()).not.toThrow();
         });
 
-        it('should use recordingOriginTile when available', async () => {
+        it('should use global originTile for recorded track mesh (v5.27.3)', async () => {
             const { updateRecordedTrackMesh } = await import('./terrain');
             
             state.recordedPoints = [
@@ -237,19 +237,44 @@ describe('terrain.ts', () => {
                 { lat: 46.51, lon: 7.51, alt: 1000, timestamp: 2000 }
             ];
             
-            // Set different origin tiles
-            state.originTile = { x: 100, y: 100, z: 13 };
-            state.recordingOriginTile = { x: 4270, y: 2891, z: 13 };
+            state.originTile = { x: 4270, y: 2891, z: 13 };
 
-            // Spy on lngLatToWorld to verify it's called with recordingOriginTile
+            // Spy on lngLatToWorld to verify it's called with global originTile
             const spy = vi.spyOn(await import('./geo'), 'lngLatToWorld');
             
             updateRecordedTrackMesh();
             
-            // Verify that lngLatToWorld was called with recordingOriginTile
             expect(spy).toHaveBeenCalled();
             const firstCall = spy.mock.calls[0];
-            expect(firstCall[2]).toEqual(state.recordingOriginTile);
+            expect(firstCall[2]).toEqual(state.originTile);
+        });
+    });
+
+    describe('Origin Shifting / repositionAllTiles (v5.27.3)', () => {
+        beforeEach(() => {
+            state.originTile = { x: 100, y: 100, z: 13 };
+            state.scene = new THREE.Scene();
+            state.gpxLayers = [];
+        });
+
+        it('should trigger GPX mesh updates when origin shifts', async () => {
+            const { repositionAllTiles, terrainUpdates } = await import('./terrain');
+            
+            // Mock des fonctions de mise à jour via l'objet terrainUpdates
+            const spyGPX = vi.spyOn(terrainUpdates, 'updateAllGPXMeshes');
+            const spyRec = vi.spyOn(terrainUpdates, 'updateRecordedTrackMesh');
+
+            // 1. Premier appel : fixe lastOrigin (statique)
+            repositionAllTiles();
+            expect(spyGPX).not.toHaveBeenCalled();
+
+            // 2. Changer l'origine
+            state.originTile = { x: 101, y: 101, z: 13 };
+            repositionAllTiles();
+
+            // 3. Vérifier que les mises à jour ont été déclenchées
+            expect(spyGPX).toHaveBeenCalled();
+            expect(spyRec).toHaveBeenCalled();
         });
     });
 

@@ -75,19 +75,16 @@ export class TrackSheet extends BaseComponent {
 
                 showToast(i18n.t('track.toast.recStarted'));
                 // v5.24: Single Source of Truth - le natif est la seule source d'enregistrement
-                // Figer originTile au démarrage pour cohérence des coordonnées
-                const currentOrigin = { ...state.originTile };
-                state.recordingOriginTile = currentOrigin;
                 
                 // Démarrer le service natif (natif Android = source de vérité pour les points GPS)
-                await nativeGPSService.startCourse(currentOrigin);
+                await nativeGPSService.startCourse(state.originTile);
                 // Récupérer le vrai courseId généré par le natif (fix race condition)
                 const nativeCourse = await nativeGPSService.getCurrentCourse();
                 if (nativeCourse?.courseId) {
                     state.currentCourseId = nativeCourse.courseId;
                 }
                 
-                await startRecordingService(currentOrigin);   // Foreground Service Android
+                await startRecordingService(state.originTile);   // Foreground Service Android
                 if (!state.isFollowingUser) await startLocationTracking();
                 
                 // Les points seront ajoutés automatiquement via les événements natifs (onNewPoints)
