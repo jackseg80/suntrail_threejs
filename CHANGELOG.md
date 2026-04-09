@@ -5,6 +5,16 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.27.2] - 2026-04-09
+
+### Fixed
+- **Anti-Explosion Géométrique (Champignon)** : Mise en place d'un filtrage strict des points GPS. Tout saut d'altitude > 200m ou distance horizontale < 2m est ignoré pour le rendu 3D, évitant ainsi les artefacts visuels massifs ("champignons") dus aux imprécisions GPS.
+- **Protection des Données (Sauvegarde)** : Inversion de la logique d'arrêt de l'enregistrement. Le fichier GPX est désormais écrit et le calque interne sauvegardé *avant* de libérer la mémoire ou d'arrêter les services natifs. En cas d'erreur de rendu, les points restent conservés pour une tentative ultérieure.
+- **Stabilité Spline** : Passage en mode `centripetal` pour les courbes de tracé, éliminant les "overshoots" visuels lors des changements de direction brusques.
+
+### Added
+- **Test de Filtrage GPS** : Nouveau test unitaire validant le rejet des points GPS aberrants.
+
 ## [5.27.1] - 2026-04-08
 
 ### Added

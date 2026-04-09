@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.27.0)
+# SunTrail — Guide IA (v5.27.2)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-08 suite à l'optimisation GPS Montagne.
+> Mis à jour le 2026-04-09 suite à la correction du bug 'Mushroom' et sécurisation REC.
 
 ## Projet
 
@@ -10,7 +10,7 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 **Stack** : TypeScript strict · Three.js r160 · Vite 5 · Capacitor 6 · RevenueCat
 
-## ⚠️ Règles & Décisions Actées (v5.26.9)
+## ⚠️ Règles & Décisions Actées (v5.27.2)
 
 ### 🚀 Protocole de Release (IMPÉRATIF)
 1. **Version Name** : Incrémenter dans `package.json` (ex: 5.26.7 → 5.26.8).
@@ -42,11 +42,13 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 - **Distance** : Formule **Haversine** (précision < 0.5%).
 - **D+ / D-** : Algorithme d'**Hystérésis avec seuil de 2m** (Garmin/Suunto style).
 - **Lissage** : Moyenne mobile 3 points sur l'altitude GPS.
+- **Filtrage GPS (v5.27.2)** : Rejeter tout point GPS avec saut vertical > 200m ou distance horizontale < 2m (anti-champignon).
 
 ### Rendu & Performance
 - **`renderer.setSize(w, h, false)`** — TOUJOURS le 3ème param `false`.
 - **LOD 14 Toast** : Déclenché dans `scene.ts` avec debounce de 30s.
 - **Deep Sleep** : La boucle de rendu s'arrête (`setAnimationLoop(null)`) quand l'app est en arrière-plan.
+- **TubeGeometry Stabilité** : Utiliser `centripetal` pour les splines de tracé afin d'éviter les ooovershoots.
 
 ## Structure du Projet
 - `src/modules/iapService.ts` : Liaison RevenueCat ↔ Google Play.

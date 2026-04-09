@@ -47,10 +47,20 @@ window.addEventListener('suntrail:uiReady', async () => {
             // Récupérer tous les points depuis le natif (Single Source of Truth)
             const allPoints = await nativeGPSService.getAllPoints(currentCourse.courseId);
             
-            // ✅ Dédoublonnage + tri par timestamp (sécurité)
-            const uniquePoints = [...new Map(allPoints.map((p: any) => [p.timestamp, p])).values()];
-            uniquePoints.sort((a: any, b: any) => a.timestamp - b.timestamp);
-            state.recordedPoints = uniquePoints as any[];
+            // ✅ Dédoublonnage + tri par timestamp + filtrage altitude (v5.26.7)
+            allPoints.sort((a: any, b: any) => a.timestamp - b.timestamp);
+            let lastAlt: number | null = null;
+            const filteredPoints = allPoints.filter((p: any) => {
+                // Cohérence
+                if (lastAlt !== null) {
+                    if (Math.abs(p.alt - lastAlt) > 200) return false;
+                }
+                if (p.alt < -500 || p.alt > 9000) return false;
+                lastAlt = p.alt;
+                return true;
+            });
+
+            state.recordedPoints = filteredPoints as any[];
             state.isRecording = true;
             state.currentCourseId = currentCourse.courseId;
             
@@ -63,7 +73,7 @@ window.addEventListener('suntrail:uiReady', async () => {
             nativeGPSService.setupListeners();
             
             setTimeout(() => sheetManager.open('track'), 300);
-            showToast(`▶ Enregistrement repris — ${allPoints.length} points`);
+            showToast(`▶ Enregistrement repris — ${filteredPoints.length} points`);
             return;
         }
 
@@ -75,12 +85,20 @@ window.addEventListener('suntrail:uiReady', async () => {
                 recoveredPoints = await nativeGPSService.getAllPoints(currentCourse.courseId);
             }
             
-            // ✅ Dédoublonnage + tri par timestamp (sécurité)
-            const uniqueRecovered = [...new Map(recoveredPoints.map((p: any) => [p.timestamp, p])).values()];
-            uniqueRecovered.sort((a: any, b: any) => a.timestamp - b.timestamp);
+            // ✅ Dédoublonnage + tri + filtrage altitude
+            recoveredPoints.sort((a: any, b: any) => a.timestamp - b.timestamp);
+            let lastAlt: number | null = null;
+            const filteredRecovered = recoveredPoints.filter((p: any) => {
+                if (lastAlt !== null) {
+                    if (Math.abs(p.alt - lastAlt) > 200) return false;
+                }
+                if (p.alt < -500 || p.alt > 9000) return false;
+                lastAlt = p.alt;
+                return true;
+            });
             
-            if (uniqueRecovered.length >= 2) {
-                state.recoveredPoints = uniqueRecovered as any[];
+            if (filteredRecovered.length >= 2) {
+                state.recoveredPoints = filteredRecovered as any[];
                 if (interrupted.originTile) {
                     state.recordingOriginTile = interrupted.originTile;
                 }

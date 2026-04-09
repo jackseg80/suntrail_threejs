@@ -94,45 +94,77 @@ export class TrackSheet extends BaseComponent {
                 // On initialise recordedPoints vide - le mesh sera mis à jour quand les premiers points arriveront
                 state.recordedPoints = [];
             } else {
-                // v5.24: Arrêter le service natif - les points sont déjà dans state.recordedPoints
-                // (via les événements onNewPoints de nativeGPSService)
-                
-                // CRUCIAL: Récupérer tous les points restants avant d'arrêter le service
-                // Le buffer natif peut contenir des points non encore envoyés
-                if (state.currentCourseId) {
-                    const allPoints = await nativeGPSService.getAllPoints(state.currentCourseId, 0);
-                    if (allPoints.length > 0) {
-                        const existingTimestamps = new Set(state.recordedPoints.map(p => p.timestamp));
-                        const newPoints = allPoints.filter(p => !existingTimestamps.has(p.timestamp));
-                        if (newPoints.length > 0) {
-                            state.recordedPoints = [...state.recordedPoints, ...newPoints.map(p => ({
-                                lat: p.lat,
-                                lon: p.lon,
-                                alt: p.alt,
-                                timestamp: p.timestamp
-                            }))];
+                // v5.26.7: Processus d'arrêt sécurisé pour éviter la perte de données
+                try {
+                    // 1. Récupérer tous les points restants du buffer natif avant l'arrêt
+                    if (state.currentCourseId) {
+                        const allPoints = await nativeGPSService.getAllPoints(state.currentCourseId, 0);
+                        if (allPoints.length > 0) {
+                            const existingTimestamps = new Set(state.recordedPoints.map(p => p.timestamp));
+                            let lastAlt = state.recordedPoints.length > 0 
+                                ? state.recordedPoints[state.recordedPoints.length - 1].alt 
+                                : null;
+
+                            const filteredNewPoints = allPoints.filter(p => {
+                                if (existingTimestamps.has(p.timestamp)) return false;
+                                // Filtrage cohérence (idem nativeGPSService)
+                                if (lastAlt !== null) {
+                                    const delta = Math.abs(p.alt - lastAlt);
+                                    if (delta > 200) return false;
+                                }
+                                if (p.alt < -500 || p.alt > 9000) return false;
+                                lastAlt = p.alt;
+                                return true;
+                            });
+
+                            if (filteredNewPoints.length > 0) {
+                                state.recordedPoints = [...state.recordedPoints, ...filteredNewPoints.map(p => ({
+                                    lat: p.lat,
+                                    lon: p.lon,
+                                    alt: p.alt,
+                                    timestamp: p.timestamp
+                                }))];
+                            }
                         }
+                        // Petit délai pour laisser le thread UI respirer
+                        await new Promise(resolve => setTimeout(resolve, 300));
                     }
-                    // Attendre un peu que tout soit bien en base
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    // 2. Sauvegarde SYSTÉMATIQUE (avant d'effacer quoi que ce soit)
+                    let savedInternal = false;
+                    if (state.recordedPoints.length >= 2) {
+                        savedInternal = await this.saveRecordedGPXInternal(); // Layer en mémoire
+                        await this.saveGPXToFile();           // Fichier GPX (Cache/Documents)
+                    }
+
+                    // 3. Arrêt des services seulement après tentative de sauvegarde
+                    await nativeGPSService.stopCourse();
+                    await stopRecordingService();
+                    state.recordingOriginTile = null;
+                    state.currentCourseId = null;
+                    
+                    if (state.recordedPoints.length >= 2) {
+                        showToast(i18n.t('track.toast.recStopped'));
+                        // Upsell post-REC
+                        if (!state.isPro) this.showPostRecUpsell();
+                    } else {
+                        showToast(i18n.t('track.toast.tooShort'));
+                    }
+
+                    // 4. CRUCIAL: Vider la mémoire SEULEMENT si on a au moins le layer interne
+                    // ou si c'était vraiment trop court.
+                    if (savedInternal || state.recordedPoints.length < 2) {
+                        state.recordedPoints = [];
+                    } else {
+                        console.error('[TrackSheet] Sauvegarde échouée, points conservés en mémoire.');
+                        showToast('⚠️ Erreur sauvegarde, tracé conservé dans la liste');
+                    }
+
+                } catch (e) {
+                    console.error('[TrackSheet] Erreur fatale lors du STOP:', e);
+                    showToast('⚠️ Erreur lors de l\'arrêt de l\'enregistrement');
+                    // En cas d'erreur, on n'efface PAS recordedPoints pour permettre une nouvelle tentative
                 }
-                
-                await nativeGPSService.stopCourse();
-                await stopRecordingService();    // Arrête le Foreground Service Android
-                // v5.24: Réinitialiser recordingOriginTile
-                state.recordingOriginTile = null;
-                state.currentCourseId = null;
-                showToast(i18n.t('track.toast.recStopped'));
-                // Sauvegarde systématique au STOP (GPX fichier pour tous)
-                if (state.recordedPoints.length >= 2) {
-                    await this.saveRecordedGPXInternal();  // Layer en mémoire
-                    await this.saveGPXToFile();            // Fichier GPX (Cache tous / Documents Pro)
-                    // Upsell post-REC pour les utilisateurs gratuits (benefits Pro)
-                    if (!state.isPro) this.showPostRecUpsell();
-                }
-                // CRUCIAL: Réinitialiser recordedPoints APRÈS sauvegarde pour prochain REC
-                // TOUJOURS vider, même si on n'a pas sauvegardé (trop peu de points)
-                state.recordedPoints = [];
             }
         });
 

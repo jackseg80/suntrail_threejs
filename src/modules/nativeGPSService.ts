@@ -182,7 +182,29 @@ class NativeGPSService {
                 if (newPoints.length > 0) {
                     // Filtrer les doublons (même timestamp)
                     const existingTimestamps = new Set(state.recordedPoints.map(p => p.timestamp));
-                    const uniqueNewPoints = newPoints.filter(p => !existingTimestamps.has(p.timestamp));
+                    let lastAlt = state.recordedPoints.length > 0 
+                        ? state.recordedPoints[state.recordedPoints.length - 1].alt 
+                        : null;
+
+                    const uniqueNewPoints = newPoints.filter(p => {
+                        if (existingTimestamps.has(p.timestamp)) return false;
+                        
+                        // v5.26.7: Filtrage de cohérence d'altitude
+                        // Rejeter les points aberrants (> 200m de saut vertical)
+                        if (lastAlt !== null) {
+                            const delta = Math.abs(p.alt - lastAlt);
+                            if (delta > 200) {
+                                console.warn(`[NativeGPS] Point rejeté (saut altitude: ${Math.round(delta)}m):`, p);
+                                return false;
+                            }
+                        }
+                        
+                        // Plage absolue de sécurité
+                        if (p.alt < -500 || p.alt > 9000) return false;
+
+                        lastAlt = p.alt;
+                        return true;
+                    });
                     
                     if (uniqueNewPoints.length > 0) {
                         // Convertir NativeGPSPoint en LocationPoint
@@ -196,13 +218,10 @@ class NativeGPSService {
                         
                         // Mettre à jour le mesh 3D
                         // Stratégie: immédiat pour les premiers points, debounce pour les suivants
-                        // Pour garder l'UI réactive au début et fluide sur longues randos
                         const totalPoints = state.recordedPoints.length;
                         if (totalPoints < 10) {
-                            // Moins de 10 points: mise à jour immédiate (réactif au démarrage)
                             updateRecordedTrackMesh();
                         } else {
-                            // 10+ points: debounce à 500ms (fluide mais pas trop de recréations)
                             this.pendingMeshUpdate = true;
                             if (!this.meshUpdateTimeout) {
                                 this.meshUpdateTimeout = window.setTimeout(() => {

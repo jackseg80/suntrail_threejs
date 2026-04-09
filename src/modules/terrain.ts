@@ -442,27 +442,55 @@ export function updateRecordedTrackMesh(): void {
     const camAlt = state.camera.position.y; const thickness = Math.max(2.0, camAlt / 800); 
     if (state.recordedMesh) { state.scene.remove(state.recordedMesh); disposeObject(state.recordedMesh); }
     const originTile = state.recordingOriginTile || state.originTile;
+    
+    let lastValidAlt: number | null = null;
+    let lastWorldPos: THREE.Vector3 | null = null;
+
     const threePoints = state.recordedPoints
         .filter(p => {
             if (typeof p.lat !== 'number' || typeof p.lon !== 'number' || typeof p.alt !== 'number') return false;
             if (isNaN(p.lat) || isNaN(p.lon) || isNaN(p.alt)) return false;
             if (Math.abs(p.lat) > 90 || Math.abs(p.lon) > 180) return false;
             if (p.alt < -500 || p.alt > 9000) return false;
+            
+            if (lastValidAlt !== null) {
+                const delta = Math.abs(p.alt - lastValidAlt);
+                if (delta > 200) return false;
+            }
+            lastValidAlt = p.alt;
             return true;
         })
         .map(p => {
             const pos = lngLatToWorld(p.lon, p.lat, originTile);
             const terrainY = getAltitudeAt(pos.x, pos.z);
             const gpsY = p.alt * state.RELIEF_EXAGGERATION + 8;
-            const finalY = terrainY === 0 ? gpsY : Math.max(terrainY, gpsY);
+            const finalY = (terrainY === 0 || isNaN(terrainY)) ? gpsY : Math.max(terrainY, gpsY);
             return new THREE.Vector3(pos.x, finalY, pos.z);
+        })
+        .filter(v => {
+            // v5.26.7: Filtrage anti-frétillement (jitter)
+            // Si les points sont trop proches (< 2m), le TubeGeometry explose
+            if (!lastWorldPos) {
+                lastWorldPos = v;
+                return true;
+            }
+            const dist = v.distanceTo(lastWorldPos);
+            if (dist < 2) return false; 
+            lastWorldPos = v;
+            return true;
         });
+
     if (threePoints.length < 2) return;
-    const curve = new THREE.CatmullRomCurve3(threePoints);
-    const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length * 2, 800), thickness, 4, false);
-    const material = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.5, transparent: true, opacity: 0.8 });
-    state.recordedMesh = new THREE.Mesh(geometry, material);
-    state.scene.add(state.recordedMesh);
+    
+    try {
+        const curve = new THREE.CatmullRomCurve3(threePoints, false, 'centripetal');
+        const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length * 2, 800), thickness, 4, false);
+        const material = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.5, transparent: true, opacity: 0.8 });
+        state.recordedMesh = new THREE.Mesh(geometry, material);
+        state.scene.add(state.recordedMesh);
+    } catch (e) {
+        console.error('[Terrain] Failed to create recorded track mesh:', e);
+    }
 }
 
 export function clearAllGPXLayers(): void {

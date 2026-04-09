@@ -82,4 +82,32 @@ describe('NativeGPSService', () => {
         expect(course?.isRunning).toBe(true);
         expect(course?.originTile).toEqual({ x: 10, y: 20, z: 13 });
     });
+
+    it('should filter out points with sudden altitude jumps (>200m)', async () => {
+        // Must start course to register listeners
+        await nativeGPSService.startCourse();
+
+        const onNewPointsCall = mockPlugin.addListener.mock.calls.find((call: any) => call[0] === 'onNewPoints');
+        expect(onNewPointsCall).toBeDefined();
+        const callback = onNewPointsCall[1];
+        
+        const now = Date.now();
+        const p1 = { lat: 46.5, lon: 7.5, alt: 1000, timestamp: now, accuracy: 5, id: 1 };
+        const p2 = { lat: 46.5, lon: 7.5, alt: 1300, timestamp: now + 5000, accuracy: 5, id: 2 }; // Jump +300m -> Reject
+        const p3 = { lat: 46.5, lon: 7.5, alt: 1050, timestamp: now + 10000, accuracy: 5, id: 3 }; // Jump +50m -> Accept
+
+        mockPlugin.getPoints.mockResolvedValueOnce({ points: [p1] });
+        await callback({ courseId: 'test-course-123', pointCount: 1 });
+        expect(state.recordedPoints.length).toBe(1);
+        expect(state.recordedPoints[0].alt).toBe(1000);
+
+        mockPlugin.getPoints.mockResolvedValueOnce({ points: [p1, p2] });
+        await callback({ courseId: 'test-course-123', pointCount: 2 });
+        expect(state.recordedPoints.length).toBe(1); // p2 rejected
+
+        mockPlugin.getPoints.mockResolvedValueOnce({ points: [p1, p2, p3] });
+        await callback({ courseId: 'test-course-123', pointCount: 3 });
+        expect(state.recordedPoints.length).toBe(2); // p3 accepted (delta relative to p1)
+        expect(state.recordedPoints[1].alt).toBe(1050);
+    });
 });
