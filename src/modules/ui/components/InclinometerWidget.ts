@@ -15,7 +15,6 @@ import { state } from '../../state';
 import { getAltitudeAt, findTerrainIntersection } from '../../analysis';
 import { showUpgradePrompt } from '../../iap';
 import { i18n } from '../../../i18n/I18nService';
-import { eventBus } from '../../eventBus';
 import { lngLatToWorld } from '../../geo';
 import * as THREE from 'three';
 
@@ -56,6 +55,7 @@ export class InclinometerWidget {
     // Position du widget (px)
     private _widgetStartLeft = 0;
     private _widgetStartTop = 0;
+    private _detailTimer: ReturnType<typeof setTimeout> | null = null;
 
     // Dernières valeurs calculées
     private _lastSlopeDeg = 0;
@@ -182,7 +182,8 @@ export class InclinometerWidget {
             const ndcY = -(this._reticleY / window.innerHeight) * 2 + 1;
             
             const raycaster = new THREE.Raycaster();
-            raycaster.setFromCamera({ x: ndcX, y: ndcY }, state.camera);
+            const ndc = new THREE.Vector2(ndcX, ndcY);
+            raycaster.setFromCamera(ndc, state.camera);
             
             const hit = findTerrainIntersection(raycaster.ray);
             if (hit) {
