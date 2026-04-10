@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.27.6)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-10 suite à l'ouverture gratuite du pack Suisse HD sur le Web (v5.27.6).
+> Mis à jour le 2026-04-10 suite à la correction de superposition UI et l'ajout du drag sur le widget inclinomètre.
 
 ## Projet
 
@@ -10,11 +10,11 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 **Stack** : TypeScript strict · Three.js r160 · Vite 5 · Capacitor 6 · RevenueCat
 
-## ⚠️ Règles & Décisions Actées (v5.27.5)
+## ⚠️ Règles & Décisions Actées (v5.27.6)
 
 ### 🚀 Protocole de Release (IMPÉRATIF)
-1. **Version Name** : Incrémenter dans `package.json` (ex: 5.27.4 → 5.27.5).
-2. **Version Code** : Incrémenter **TOUJOURS** le `versionCode` dans `android/app/build.gradle` (ex: 586 → 587). Google Play rejette tout build avec un version code déjà utilisé.
+1. **Version Name** : Incrémenter dans `package.json` (ex: 5.27.5 → 5.27.6).
+2. **Version Code** : Incrémenter **TOUJOURS** le `versionCode` dans `android/app/build.gradle` (ex: 587 → 588). Google Play rejette tout build avec un version code déjà utilisé.
 3. **Changelog** : Mettre à jour `CHANGELOG.md` et `TODO.md`.
 4. **Git** : Taguer la version (`git tag vX.Y.Z`) et pusher les tags.
 

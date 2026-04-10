@@ -23,6 +23,7 @@ import * as THREE from 'three';
 const SAMPLE_DELTA_M = 4;
 const UPDATE_INTERVAL_MS = 200;
 const MIN_ZOOM_DISPLAY = 13;
+const DRAG_HOLD_MS = 200;       // Délai avant activation du drag (distingue tap vs drag)
 const DETAIL_AUTO_CLOSE_MS = 5000;
 const ANTICIPATION_DISTANCE_M = 15; // Distance devant l'utilisateur en mode suivi
 
@@ -38,7 +39,11 @@ export class InclinometerWidget {
     // État interactif
     private _isExpanded = false;
     private _isDraggingReticle = false;
-    private _lastTapTime = 0;
+    private _isDraggingWidget = false;
+    private _isCustomWidgetPos = false;
+    private _dragHoldTimer: ReturnType<typeof setTimeout> | null = null;
+    private _lastTapTimeWidget = 0;
+    private _lastTapTimeReticle = 0;
     
     // Position du réticule en coordonnées écran (px)
     private _reticleX = window.innerWidth / 2;
@@ -47,6 +52,10 @@ export class InclinometerWidget {
     private _dragStartY = 0;
     private _reticleStartLeft = 0;
     private _reticleStartTop = 0;
+
+    // Position du widget (px)
+    private _widgetStartLeft = 0;
+    private _widgetStartTop = 0;
 
     // Dernières valeurs calculées
     private _lastSlopeDeg = 0;
@@ -70,7 +79,7 @@ export class InclinometerWidget {
             'font-weight:600',
             'padding:5px 14px',
             'border-radius:20px',
-            'z-index:2100',
+            'z-index:1200',
             'display:none',
             'border:1px solid var(--border-active)',
             'cursor:pointer',
@@ -89,7 +98,7 @@ export class InclinometerWidget {
             'left:50%',
             'top:50%',
             'transform:translate(-50%, -50%)',
-            'z-index:2099',
+            'z-index:1199',
             'display:none',
             'pointer-events:auto',
             'cursor:move',
@@ -105,11 +114,15 @@ export class InclinometerWidget {
         this.reticle.appendChild(centerDot);
         document.body.appendChild(this.reticle);
 
-        // Événements
-        this.el.addEventListener('click', () => this.toggleDetail());
+        // Événements Widget
+        this.el.addEventListener('pointerdown', (e) => this.onWidgetDown(e));
+        
+        // Événements Réticule
         this.reticle.addEventListener('pointerdown', (e) => this.onReticleDown(e));
-        window.addEventListener('pointermove', (e) => this.onReticleMove(e));
-        window.addEventListener('pointerup', (e) => this.onReticleUp(e));
+
+        // Événements globaux pour le drag
+        window.addEventListener('pointermove', (e) => this.onPointerMove(e));
+        window.addEventListener('pointerup', (e) => this.onPointerUp(e));
 
         // Abonnements
         this.unsubscribers.push(state.subscribe('isPro', () => this.syncVisibility()));
@@ -221,11 +234,11 @@ export class InclinometerWidget {
         
         // Double-tap reset
         const now = Date.now();
-        if (now - this._lastTapTime < 300) {
+        if (now - this._lastTapTimeReticle < 300) {
             this.resetReticle();
             return;
         }
-        this._lastTapTime = now;
+        this._lastTapTimeReticle = now;
 
         this._isDraggingReticle = true;
         this._dragStartX = e.clientX;
@@ -238,26 +251,6 @@ export class InclinometerWidget {
         this.reticle.style.opacity = '0.7';
     }
 
-    private onReticleMove(e: PointerEvent): void {
-        if (!this._isDraggingReticle || !this.reticle) return;
-
-        const dx = e.clientX - this._dragStartX;
-        const dy = e.clientY - this._dragStartY;
-        
-        this._reticleX = Math.max(20, Math.min(window.innerWidth - 20, this._reticleStartLeft + dx));
-        this._reticleY = Math.max(20, Math.min(window.innerHeight - 20, this._reticleStartTop + dy));
-
-        this.reticle.style.left = `${this._reticleX}px`;
-        this.reticle.style.top = `${this._reticleY}px`;
-    }
-
-    private onReticleUp(e: PointerEvent): void {
-        if (!this._isDraggingReticle || !this.reticle) return;
-        this._isDraggingReticle = false;
-        this.reticle.style.opacity = '1';
-        this.reticle.releasePointerCapture(e.pointerId);
-    }
-
     private resetReticle(): void {
         this._reticleX = window.innerWidth / 2;
         this._reticleY = window.innerHeight / 2;
@@ -265,6 +258,101 @@ export class InclinometerWidget {
             this.reticle.style.left = '50%';
             this.reticle.style.top = '50%';
         }
+    }
+
+    // ── Interaction Widget Texte ──────────────────────────────────────
+
+    private onWidgetDown(e: PointerEvent): void {
+        if (!this.el) return;
+
+        // Double-tap reset
+        const now = Date.now();
+        if (now - this._lastTapTimeWidget < 300 && this._isCustomWidgetPos) {
+            this.resetWidget();
+            return;
+        }
+        this._lastTapTimeWidget = now;
+
+        this._dragStartX = e.clientX;
+        this._dragStartY = e.clientY;
+        const rect = this.el.getBoundingClientRect();
+        this._widgetStartLeft = rect.left;
+        this._widgetStartTop = rect.top;
+
+        this._dragHoldTimer = setTimeout(() => {
+            this._isDraggingWidget = true;
+            if (this.el) {
+                this.el.setPointerCapture(e.pointerId);
+                this.el.style.opacity = '0.7';
+            }
+        }, DRAG_HOLD_MS);
+    }
+
+    private onPointerMove(e: PointerEvent): void {
+        const dx = e.clientX - this._dragStartX;
+        const dy = e.clientY - this._dragStartY;
+
+        if (this._isDraggingReticle && this.reticle) {
+            this._reticleX = Math.max(20, Math.min(window.innerWidth - 20, this._reticleStartLeft + dx));
+            this._reticleY = Math.max(20, Math.min(window.innerHeight - 20, this._reticleStartTop + dy));
+            this.reticle.style.left = `${this._reticleX}px`;
+            this.reticle.style.top = `${this._reticleY}px`;
+        } 
+        else if (this._isDraggingWidget && this.el) {
+            let left = this._widgetStartLeft + dx;
+            let top = this._widgetStartTop + dy;
+            
+            // Contraindre au viewport
+            const w = this.el.offsetWidth;
+            const h = this.el.offsetHeight;
+            left = Math.max(8, Math.min(window.innerWidth - w - 8, left));
+            top = Math.max(8, Math.min(window.innerHeight - h - 8, top));
+
+            this.el.style.left = `${left}px`;
+            this.el.style.top = `${top}px`;
+            this.el.style.bottom = 'auto';
+            this.el.style.transform = 'none';
+            this._isCustomWidgetPos = true;
+            if (this._isExpanded) this.positionDetail();
+        }
+        else if (this._dragHoldTimer) {
+            // Si on bouge trop avant le hold timer, on annule le drag (c'est un scroll/swipe)
+            if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                clearTimeout(this._dragHoldTimer);
+                this._dragHoldTimer = null;
+            }
+        }
+    }
+
+    private onPointerUp(e: PointerEvent): void {
+        if (this._dragHoldTimer) {
+            clearTimeout(this._dragHoldTimer);
+            this._dragHoldTimer = null;
+            // C'était un simple clic
+            this.toggleDetail();
+        }
+
+        if (this._isDraggingReticle && this.reticle) {
+            this._isDraggingReticle = false;
+            this.reticle.style.opacity = '1';
+            this.reticle.releasePointerCapture(e.pointerId);
+        }
+
+        if (this._isDraggingWidget && this.el) {
+            this._isDraggingWidget = false;
+            this.el.style.opacity = '1';
+            this.el.releasePointerCapture(e.pointerId);
+        }
+    }
+
+    private resetWidget(): void {
+        if (!this.el) return;
+        this.el.style.left = '50%';
+        this.el.style.top = '';
+        this.el.style.bottom = 'calc(var(--bar-h) + var(--safe-bottom) + 16px)';
+        this.el.style.transform = 'translateX(-50%)';
+        this._isCustomWidgetPos = false;
+        if (this._isExpanded) this.positionDetail();
     }
 
     // ── Panel de détail ────────────────────────────────────────────────
@@ -282,7 +370,7 @@ export class InclinometerWidget {
         this.detailEl.id = 'inclinometer-detail';
         this.detailEl.style.cssText = [
             'position:fixed',
-            'z-index:2101',
+            'z-index:1201',
             'background:var(--surface-solid)',
             'backdrop-filter:var(--glass)',
             '-webkit-backdrop-filter:var(--glass)',

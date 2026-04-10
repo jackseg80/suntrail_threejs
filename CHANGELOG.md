@@ -16,6 +16,12 @@ et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 - **Fluidité du Rendu (Non-blocking Tiles)** : Refonte de la logique de chargement des tuiles pour rendre l'injection des packs (seeding) asynchrone. Le thread principal n'est plus bloqué par les accès fichiers PMTiles, garantissant un scrolling à 60fps même lors de l'usage intensif de packs locaux.
 - **Priorité des Sources** : Consolidation de la logique de priorité (Packs > Cache > Réseau) validée par une nouvelle suite de tests d'intégration.
 
+## [5.27.6] - 2026-04-10
+
+### Fixed
+- **Superposition UI (z-index)** : Correction du bug où l'inclinomètre et le réticule s'affichaient au-dessus des menus (bottom sheets). Ils sont désormais correctement positionnés sous l'overlay des menus.
+- **Mobilité du Widget** : Le widget de texte de l'inclinomètre est désormais déplaçable (drag & drop) comme le réticule. Un double-tap permet de réinitialiser sa position par défaut.
+
 ## [5.27.5] - 2026-04-10
 
 ### Added
