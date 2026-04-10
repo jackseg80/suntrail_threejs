@@ -234,6 +234,7 @@ export interface State {
     isRecording: boolean;
     currentCourseId: string | null; // v5.24: ID de la course native en cours
     recordedPoints: LocationPoint[];
+    recordingOriginTile: { x: number; y: number; z: number } | null; // v5.27: Origin tile pour le tracé en cours
     recoveredPoints: Array<{ lat: number; lon: number; alt: number; timestamp: number }> | null;
     
     userLocation: { lat: number; lon: number; alt: number } | null;
@@ -313,6 +314,7 @@ const initialState: State = {
     isRecording: false,
     currentCourseId: null, // v5.24: ID de la course native en cours
     recordedPoints: [],
+    recordingOriginTile: null, // v5.27: Origin tile pour le tracé en cours
     recoveredPoints: null,
     
     userLocation: null, userLocationAccuracy: null, userHeading: null, isFollowingUser: false, userMarker: null,
