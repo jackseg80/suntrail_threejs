@@ -88,7 +88,6 @@ describe('NativeGPSService', () => {
         await nativeGPSService.startCourse();
 
         const onNewPointsCall = mockPlugin.addListener.mock.calls.find((call: any) => call[0] === 'onNewPoints');
-        expect(onNewPointsCall).toBeDefined();
         if (!onNewPointsCall) throw new Error('onNewPoints listener not registered');
         const callback = onNewPointsCall[1];
         

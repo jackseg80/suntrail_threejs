@@ -333,13 +333,13 @@ async function seedEmbeddedTile(url: string, z: number, x: number, y: number): P
 /**
  * Injecte une tuile d'un country pack dans le CacheStorage du worker.
  */
-async function seedPackTile(url: string, z: number, x: number, y: number): Promise<void> {
+async function seedPackTile(url: string, z: number, x: number, y: number, type: 'color' | 'elevation' | 'overlay' = 'color'): Promise<void> {
     if (!packManager.hasMountedPacks()) return;
     if (_seededUrls.has(url)) return;
     _seededUrls.add(url); // Marquer immédiatement
     try {
         if (!_workerCache) _workerCache = await caches.open('suntrail-tiles-v2');
-        const blob = await packManager.getTileFromPacks(z, x, y);
+        const blob = await packManager.getTileFromPacks(z, x, y, type);
         if (blob) {
             await _workerCache.put(url, new Response(blob));
         }

@@ -232,6 +232,7 @@ export interface State {
     isFlyingTo: boolean; // true during flyTo animation — blocks origin shift
     isTiltTransitioning: boolean; // true during 2D↔3D smooth tilt animation
     isRecording: boolean;
+    recordingOriginTile: { x: number; y: number; z: number } | null; // v5.24: Tuile d'origine de la session de tracking
     currentCourseId: string | null; // v5.24: ID de la course native en cours
     recordedPoints: LocationPoint[];
     recordingOriginTile: { x: number; y: number; z: number } | null; // v5.27: Origin tile pour le tracé en cours
@@ -312,6 +313,7 @@ const initialState: State = {
     isFlyingTo: false,
     isTiltTransitioning: false,
     isRecording: false,
+    recordingOriginTile: null, // v5.24: Tuile d'origine de la session de tracking
     currentCourseId: null, // v5.24: ID de la course native en cours
     recordedPoints: [],
     recordingOriginTile: null, // v5.27: Origin tile pour le tracé en cours

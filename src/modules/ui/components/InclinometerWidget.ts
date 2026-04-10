@@ -41,6 +41,7 @@ export class InclinometerWidget {
     private _isDraggingWidget = false;
     private _isCustomWidgetPos = false;
     private _dragHoldTimer: ReturnType<typeof setTimeout> | null = null;
+    private _detailTimer: ReturnType<typeof setTimeout> | null = null;
     private _lastTapTimeWidget = 0;
     private _lastTapTimeReticle = 0;
     
@@ -182,8 +183,7 @@ export class InclinometerWidget {
             const ndcY = -(this._reticleY / window.innerHeight) * 2 + 1;
             
             const raycaster = new THREE.Raycaster();
-            const ndc = new THREE.Vector2(ndcX, ndcY);
-            raycaster.setFromCamera(ndc, state.camera);
+            raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), state.camera);
             
             const hit = findTerrainIntersection(raycaster.ray);
             if (hit) {

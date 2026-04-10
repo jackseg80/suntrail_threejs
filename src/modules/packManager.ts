@@ -14,6 +14,7 @@
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import * as pmtiles from 'pmtiles';
+import { zxyToTileId } from 'pmtiles';
 import { state } from './state';
 import { eventBus } from './eventBus';
 import { showToast } from './utils';
@@ -26,6 +27,11 @@ const CATALOG_URL = import.meta.env.VITE_PACKS_CATALOG_URL as string | undefined
 const PACK_STATES_KEY = 'suntrail_pack_states';
 const CATALOG_CACHE_KEY = 'suntrail_pack_catalog';
 const PACKS_DIR = 'packs';
+
+// --- Offsets pour les packs multi-couches (v3 Full Offline) ---
+// Doivent correspondre exactement à ceux de scripts/build-country-pack.ts
+const OFFSET_ELEV = 100_000_000_000;
+const OFFSET_OVERLAY = 200_000_000_000;
 
 // Catalog embarqué — fallback si réseau absent ET localStorage vide.
 // À mettre à jour manuellement à chaque nouveau pack publié.
@@ -142,7 +148,7 @@ class PackManager {
 
     private getCachedCatalog(): PackCatalog | null {
         try {
-            const raw = localStorage.getItem(CATALOG_CACHE_KEY);
+            const raw = localStorage.getItem(PACK_STATES_KEY);
             return raw ? JSON.parse(raw) as PackCatalog : null;
         } catch { return null; }
     }
@@ -382,8 +388,14 @@ class PackManager {
                 if (!isOpfs && state.IS_OFFLINE) continue;
 
                 try {
-                    // getZxy utilise z, x, y directement
-                    const tileData = await archive.getZxy(z, x, y);
+                    // Calcul de l'ID avec offset pour les packs multi-couches v3+
+                    let tileId = zxyToTileId(z, x, y);
+                    
+                    if (type === 'elevation') tileId += OFFSET_ELEV;
+                    else if (type === 'overlay') tileId += OFFSET_OVERLAY;
+
+                    // getZxy supporte aussi l'ID numérique direct (Hilbert)
+                    const tileData = await (archive as any).getZxy(tileId);
                     if (tileData?.data) {
                         const mime = (type === 'color') ? 'image/webp' : 'image/png';
                         return new Blob([tileData.data], { type: mime });
