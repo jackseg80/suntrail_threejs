@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.27.6] - 2026-04-10
+
+### Added
+- **Accès Premium Web (Pack Suisse HD)** : Offre gratuite de la cartographie SwissTopo HD (LOD 14) pour tous les utilisateurs de la version Web (PWA/GitHub Pages) via streaming CDN.
+- **Support Packs Web** : Activation des "achats virtuels" sur le Web pour permettre le téléchargement et l'usage des packs pays en local (OPFS) sans passer par le Play Store.
+- **Paramètres Debug URL** : Ajout de `?allpacks=true` et `?dev=true` pour débloquer instantanément tous les packs pays à des fins de test et démonstration.
+
+### Optimized
+- **Fluidité du Rendu (Non-blocking Tiles)** : Refonte de la logique de chargement des tuiles pour rendre l'injection des packs (seeding) asynchrone. Le thread principal n'est plus bloqué par les accès fichiers PMTiles, garantissant un scrolling à 60fps même lors de l'usage intensif de packs locaux.
+- **Priorité des Sources** : Consolidation de la logique de priorité (Packs > Cache > Réseau) validée par une nouvelle suite de tests d'intégration.
+
 ## [5.27.5] - 2026-04-10
 
 ### Added

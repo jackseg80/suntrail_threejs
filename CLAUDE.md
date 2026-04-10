@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.27.5)
+# SunTrail — Guide IA (v5.27.6)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-10 suite à la refonte complète de l'inclinomètre (réticule mobile + anticipation GPS).
+> Mis à jour le 2026-04-10 suite à l'ouverture gratuite du pack Suisse HD sur le Web (v5.27.6).
 
 ## Projet
 
@@ -29,7 +29,9 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 | **Roadmap** | [docs/TODO.md](docs/TODO.md) | Priorités Production V5 et Roadmap V6. |
 | **Historique** | [docs/archives/COMPLETED_HISTORY.md](docs/archives/COMPLETED_HISTORY.md) | Tout ce qui a été fait avant la v5.26.6. |
 
-### Monétisation & Gates
+### Monétisation & Gates (Web vs Mobile)
+- **Pack Suisse HD** : **GRATUIT SUR LE WEB** (v5.27.6). Débloqué automatiquement pour tous les utilisateurs web pour garantir une expérience cartographique premium immédiate.
+- **Packs Pays (Android)** : Restent des achats In-App non-consumable (RevenueCat).
 - **REC GPS** : **ENTIÈREMENT GRATUIT**. Pas de limite de temps. Sécurité d'abord.
 - **Solaire** : Simulation 24h gratuite. Calendrier complet = PRO.
 - **Offline** : 1 zone gratuite. Illimité = PRO.
@@ -47,6 +49,7 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 - **Inclinomètre (v5.27.5)** : Raycasting 3D pour mesure sous le réticule. Anticipation de 15m en mode suivi basée sur `userHeading`.
 
 ### Rendu & Performance
+- **Tuiles (v5.27.6)** : L'injection des packs (seeding) vers le CacheStorage est asynchrone pour ne pas bloquer le thread principal.
 - **`renderer.setSize(w, h, false)`** — TOUJOURS le 3ème param `false`.
 - **LOD 14 Toast** : Déclenché dans `scene.ts` avec debounce de 30s.
 - **Deep Sleep** : La boucle de rendu s'arrête (`setAnimationLoop(null)`) quand l'app est en arrière-plan.

@@ -70,7 +70,26 @@ class PackManager {
         this.loadPersistedStates();
         // Charger le catalog AVANT de monter (getPackMeta() a besoin du catalog)
         await this.fetchCatalog();
-        // Mount all installed packs
+
+        // 1. Débloquer le pack Suisse par défaut pour tout le monde sur le Web (v5.26.6)
+        // Offre la cartographie HD (LOD 14) immédiatement via CDN/Streaming.
+        if (!Capacitor.isNativePlatform()) {
+            this.markPurchased('switzerland');
+        }
+
+        // 2. Auto-débloquer TOUS les packs sur localhost (Dev mode) ou via paramètre URL
+        const params = new URLSearchParams(window.location.search);
+        const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || 
+                      params.get('allpacks') === 'true' || params.get('dev') === 'true';
+
+        if (isDev) {
+            console.log('[Packs] Dev mode détecté : déblocage de tous les packs.');
+            for (const meta of this.getAvailablePacks()) {
+                this.markPurchased(meta.id);
+            }
+        }
+
+        // Mount all installed packs (purchased/installed/update_available)
         await this.mountAllInstalled();
         // Sync pack purchases avec RevenueCat (restaure après clear storage)
         this.syncPackPurchases().catch(() => {});

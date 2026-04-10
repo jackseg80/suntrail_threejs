@@ -312,40 +312,33 @@ const _seededUrls = new Set<string>();
 
 /**
  * Injecte une tuile de l'archive embarquée dans le CacheStorage du worker.
- * Le worker utilise `suntrail-tiles-v2` — on y insère la tuile pour que le
- * worker la trouve au prochain `cache.match(url)` sans aucun fetch réseau.
  */
 async function seedEmbeddedTile(url: string, z: number, x: number, y: number): Promise<void> {
     if (!embeddedPMTiles || z > EMBEDDED_MAX_ZOOM) return;
-    if (_seededUrls.has(url)) return; // Déjà injecté cette session
-    // Marquer AVANT le await pour empêcher un 2e appel concurrent de double-seed
-    _seededUrls.add(url);
+    if (_seededUrls.has(url)) return;
+    _seededUrls.add(url); // Marquer immédiatement pour éviter les appels concurrents
     try {
         if (!_workerCache) _workerCache = await caches.open('suntrail-tiles-v2');
-        const existing = await _workerCache.match(url);
-        if (existing) return;
+        // On pourrait vérifier si existing existe, mais caches.put écrasera si besoin,
+        // et le but est de garantir la présence pour le worker.
         const blob = await getTileFromEmbedded(z, x, y);
         if (blob) {
             await _workerCache.put(url, new Response(blob));
         }
     } catch {
-        // Rollback si le seed échoue pour permettre un retry
         _seededUrls.delete(url);
     }
 }
 
 /**
  * Injecte une tuile d'un country pack dans le CacheStorage du worker.
- * Même pattern que seedEmbeddedTile() mais pour les packs LOD 12-14.
  */
 async function seedPackTile(url: string, z: number, x: number, y: number): Promise<void> {
     if (!packManager.hasMountedPacks()) return;
     if (_seededUrls.has(url)) return;
-    _seededUrls.add(url);
+    _seededUrls.add(url); // Marquer immédiatement
     try {
         if (!_workerCache) _workerCache = await caches.open('suntrail-tiles-v2');
-        const existing = await _workerCache.match(url);
-        if (existing) return;
         const blob = await packManager.getTileFromPacks(z, x, y);
         if (blob) {
             await _workerCache.put(url, new Response(blob));
@@ -361,8 +354,8 @@ async function seedPackTile(url: string, z: number, x: number, y: number): Promi
  * si la tuile est disposée avant la fin du fetch (économise la bande passante).
  *
  * Pour les LOD ≤ EMBEDDED_MAX_ZOOM, la tuile color est pré-injectée dans le
- * CacheStorage du worker AVANT le dispatch. Le worker la trouvera instantanément
- * via `cache.match()` sans aucun réseau.
+ * CacheStorage du worker de façon non-bloquante. Le worker la trouvera
+ * via `cache.match()` sans aucun réseau si l'injection finit à temps.
  */
 export async function loadTileData(tx: number, ty: number, zoom: number, is2D: boolean): Promise<{ promise: Promise<any>, taskId: number }> {
     const { url: elevUrl, sourceZoom } = getElevationUrl(tx, ty, zoom, is2D);
@@ -374,15 +367,13 @@ export async function loadTileData(tx: number, ty: number, zoom: number, is2D: b
     const colorUrl = getColorUrl(Math.floor(tx/cr), Math.floor(ty/cr), cz);
     const overlayUrl = getOverlayUrl(tx, ty, zoom);
 
-    // Pré-injection embedded : injecter la tuile dans le cache partagé avec le worker
-    // AVANT de dispatcher au worker pour garantir le cache hit
+    // Pré-injection asynchrone (non-bloquante pour le thread principal)
     if (embeddedPMTiles && zoom <= EMBEDDED_MAX_ZOOM) {
-        await seedEmbeddedTile(colorUrl, cz, Math.floor(tx/cr), Math.floor(ty/cr));
+        seedEmbeddedTile(colorUrl, cz, Math.floor(tx/cr), Math.floor(ty/cr)).catch(() => {});
     }
 
-    // Pré-injection country pack (LOD 12-14)
     if (packManager.hasMountedPacks() && zoom >= 12) {
-        await seedPackTile(colorUrl, cz, Math.floor(tx/cr), Math.floor(ty/cr));
+        seedPackTile(colorUrl, cz, Math.floor(tx/cr), Math.floor(ty/cr)).catch(() => {});
     }
 
     return tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl, zoom, sourceZoom);

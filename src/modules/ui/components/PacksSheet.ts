@@ -220,10 +220,15 @@ export class PacksSheet extends BaseComponent {
 
     private async handleBuy(packId: string): Promise<void> {
         void haptic('medium');
+        
+        // Sur le Web, on autorise l'achat virtuel (déblocage immédiat)
         if (!Capacitor.isNativePlatform()) {
-            showToast('Achat disponible uniquement sur Android');
+            packManager.onPurchaseCompleted(packId);
+            showToast('Pack débloqué (Web/Dev mode)');
+            this.renderPackList();
             return;
         }
+
         const success = await iapService.purchasePack(packId);
         if (success) {
             packManager.onPurchaseCompleted(packId);
