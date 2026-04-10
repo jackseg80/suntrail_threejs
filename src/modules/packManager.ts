@@ -14,6 +14,7 @@
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import * as pmtiles from 'pmtiles';
+import { zxyToTileId } from 'pmtiles';
 import { state } from './state';
 import { eventBus } from './eventBus';
 import { showToast } from './utils';
@@ -26,6 +27,11 @@ const CATALOG_URL = import.meta.env.VITE_PACKS_CATALOG_URL as string | undefined
 const PACK_STATES_KEY = 'suntrail_pack_states';
 const CATALOG_CACHE_KEY = 'suntrail_pack_catalog';
 const PACKS_DIR = 'packs';
+
+// --- Offsets pour les packs multi-couches (v3 Full Offline) ---
+// Doivent correspondre exactement à ceux de scripts/build-country-pack.ts
+const OFFSET_ELEV = 100_000_000_000;
+const OFFSET_OVERLAY = 200_000_000_000;
 
 // Catalog embarqué — fallback si réseau absent ET localStorage vide.
 // À mettre à jour manuellement à chaque nouveau pack publié.
@@ -366,10 +372,8 @@ class PackManager {
         return this.mountedArchives.size > 0;
     }
 
-    async getTileFromPacks(z: number, x: number, y: number): Promise<Blob | null> {
+    async getTileFromPacks(z: number, x: number, y: number, type: 'color' | 'elevation' | 'overlay' = 'color'): Promise<Blob | null> {
         // Deux passes : OPFS (installed) en premier, CDN (purchased) ensuite.
-        // Un pack CDN qui bloque sur un timeout DNS ne doit jamais empêcher
-        // un pack OPFS de servir ses tuiles — même si IS_OFFLINE n'est pas encore détecté.
         for (const pass of [true, false]) {
             for (const [packId, archive] of this.mountedArchives) {
                 const meta = this.getPackMeta(packId);
@@ -380,18 +384,24 @@ class PackManager {
                 const ps = this.packStates.get(packId);
                 const isOpfs = ps?.status === 'installed' || ps?.status === 'update_available';
 
-                // Passe 1 (pass=true) : OPFS uniquement. Passe 2 : CDN uniquement.
                 if (pass !== isOpfs) continue;
-                // Packs CDN : skip si offline pour éviter le timeout DNS
                 if (!isOpfs && state.IS_OFFLINE) continue;
 
                 try {
-                    const tileData = await archive.getZxy(z, x, y);
+                    // Calcul de l'ID avec offset pour les packs multi-couches v3+
+                    let tileId = zxyToTileId(z, x, y);
+                    
+                    if (type === 'elevation') tileId += OFFSET_ELEV;
+                    else if (type === 'overlay') tileId += OFFSET_OVERLAY;
+
+                    // getZxy supporte aussi l'ID numérique direct
+                    const tileData = await archive.getZxy(tileId);
                     if (tileData?.data) {
-                        return new Blob([tileData.data], { type: 'image/webp' });
+                        const mime = (type === 'color') ? 'image/webp' : 'image/png';
+                        return new Blob([tileData.data], { type: mime });
                     }
                 } catch {
-                    // Tile not in archive — continue to next pack
+                    // Tuile manquante dans ce pack — continue
                 }
             }
         }

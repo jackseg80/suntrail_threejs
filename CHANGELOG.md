@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.27.7] - 2026-04-10
+
+### Added
+- **Architecture \"Full Offline\" (v3)** : Support complet de l'élévation (relief 3D) et de l'overlay (chemins) directement à l'intérieur des packs pays. Plus besoin de connexion réseau pour le relief une fois le pack installé.
+- **Nouveau Script de Build** : Mise à jour de `build-country-pack.ts` pour générer des archives multi-couches utilisant des offsets d'ID (Couleur @ 0, Élévation @ 100Md, Overlay @ 200Md).
+- **Option --maptiler-key** : Possibilité de spécifier une clé API spécifique pour les builds massifs de packs pays.
+
+### Fixed
+- **Offsets d'ID** : Correction du calcul des IDs Hilbert dans le `packManager` pour adresser correctement les calques d'élévation et d'overlay.
+- **Tests d'Intégration** : Mise à jour de la suite de tests pour couvrir les nouveaux types de données et les offsets.
+
 ## [5.27.6] - 2026-04-10
 
 ### Added

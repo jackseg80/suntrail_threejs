@@ -350,12 +350,6 @@ async function seedPackTile(url: string, z: number, x: number, y: number): Promi
 
 /**
  * Lance le chargement d'une tuile via les Workers.
- * Retourne { promise, taskId } — le taskId permet d'annuler via cancelTileLoad()
- * si la tuile est disposée avant la fin du fetch (économise la bande passante).
- *
- * Pour les LOD ≤ EMBEDDED_MAX_ZOOM, la tuile color est pré-injectée dans le
- * CacheStorage du worker de façon non-bloquante. Le worker la trouvera
- * via `cache.match()` sans aucun réseau si l'injection finit à temps.
  */
 export async function loadTileData(tx: number, ty: number, zoom: number, is2D: boolean): Promise<{ promise: Promise<any>, taskId: number }> {
     const { url: elevUrl, sourceZoom } = getElevationUrl(tx, ty, zoom, is2D);
@@ -372,8 +366,24 @@ export async function loadTileData(tx: number, ty: number, zoom: number, is2D: b
         seedEmbeddedTile(colorUrl, cz, Math.floor(tx/cr), Math.floor(ty/cr)).catch(() => {});
     }
 
+    // --- FULL OFFLINE SUPPORT (v5.27.7) ---
+    // Si un pack est monté, on tente d'injecter Couleur, Élévation ET Overlay dans le cache du worker.
     if (packManager.hasMountedPacks() && zoom >= 12) {
-        seedPackTile(colorUrl, cz, Math.floor(tx/cr), Math.floor(ty/cr)).catch(() => {});
+        const cx = Math.floor(tx/cr);
+        const cy = Math.floor(ty/cr);
+        
+        // Couleur
+        seedPackTile(colorUrl, cz, cx, cy, 'color').catch(() => {});
+        
+        // Élévation (disponible dans les packs v3+, LOD 12-14)
+        if (elevUrl && zoom <= 14) {
+            seedPackTile(elevUrl, zoom, tx, ty, 'elevation').catch(() => {});
+        }
+        
+        // Overlay (disponible dans les packs v3+, LOD 12-14)
+        if (overlayUrl) {
+            seedPackTile(overlayUrl, zoom, tx, ty, 'overlay').catch(() => {});
+        }
     }
 
     return tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl, zoom, sourceZoom);

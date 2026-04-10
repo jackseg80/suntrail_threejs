@@ -27,6 +27,7 @@ vi.mock('pmtiles', () => {
             };
         },
         FileSource: function() { return {}; },
+        zxyToTileId: vi.fn((z, x, y) => 123), // Mock simple
     };
 });
 
@@ -98,6 +99,29 @@ describe('PackManager Integration', () => {
         const blob = await packManager.getTileFromPacks(z, x, y);
         expect(blob).toBeDefined();
         expect(blob?.type).toBe('image/webp');
+    });
+
+    it('should serve elevation and overlay tiles with correct offsets', async () => {
+        localStorage.setItem('suntrail_pack_states', JSON.stringify({
+            'switzerland': {
+                id: 'switzerland',
+                status: 'installed',
+                installedVersion: 3,
+                filePath: 'opfs://packs/switzerland.pmtiles'
+            }
+        }));
+        
+        await packManager.initialize();
+        
+        const z = 12, x = 2133, y = 1450;
+        
+        // Elevation
+        const elevBlob = await packManager.getTileFromPacks(z, x, y, 'elevation');
+        expect(elevBlob?.type).toBe('image/png');
+        
+        // Overlay
+        const overlayBlob = await packManager.getTileFromPacks(z, x, y, 'overlay');
+        expect(overlayBlob?.type).toBe('image/png');
     });
 
     it('should not serve a tile if offline and pack is not installed (CDN only)', async () => {

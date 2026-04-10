@@ -35,8 +35,6 @@ describe('TileLoader Integration with Packs', () => {
         
         // Vérifier que fetch n'a PAS été appelé
         expect(global.fetch).not.toHaveBeenCalled();
-        
-        // Vérifier qu'on a bien reçu le blob du pack
         expect(result).toBe(mockBlob);
     });
 

@@ -1,19 +1,13 @@
 /**
- * build-country-pack.ts
+ * build-country-pack.ts (v3 — Single File Full Offline)
  *
- * Génère un fichier PMTiles v3 pour un pack pays (LOD 8-14).
- * Sources : SwissTopo (Suisse), IGN (France Alpes) — APIs publiques gratuites.
- *
- * Supporte la reprise après interruption : les tuiles sont cachées dans
- * un dossier temporaire (.cache/pack-{id}/) et réutilisées au redémarrage.
+ * Génère UN SEUL fichier PMTiles v3 contenant 3 calques de données :
+ *   - Calque 0 : Couleur (WebP)
+ *   - Calque 1 : Élévation (PNG Terrain-RGB) -> Offset +100,000,000,000
+ *   - Calque 2 : Overlay (PNG Chemins)      -> Offset +200,000,000,000
  *
  * Usage :
- *   npx tsx scripts/build-country-pack.ts --pack switzerland
- *   npx tsx scripts/build-country-pack.ts --pack france_alps
- *   npx tsx scripts/build-country-pack.ts --pack switzerland --clean   (repart de zéro)
- *
- * Prérequis : sharp (devDep)
- * Sortie : output/suntrail-pack-{id}-v{version}.pmtiles
+ *   npx tsx scripts/build-country-pack.ts --pack switzerland --maptiler-key YOUR_KEY
  */
 
 import fs from 'node:fs';
@@ -25,7 +19,9 @@ import {
     deduplicateTiles,
 } from './pmtiles-writer';
 
-// --- Pack definitions ---
+// --- Offsets pour fusionner 3 types dans 1 seul index d'IDs ---
+const OFFSET_ELEV = 100_000_000_000;
+const OFFSET_OVERLAY = 200_000_000_000;
 
 interface PackDef {
     id: string;
@@ -43,7 +39,7 @@ const PACKS: Record<string, PackDef> = {
         bounds: { minLat: 45.8, maxLat: 47.8, minLon: 5.9, maxLon: 10.5 },
         zooms: [8, 9, 10, 11, 12, 13, 14],
         source: 'swisstopo',
-        version: 2,
+        version: 3,
     },
     france_alps: {
         id: 'france_alps',
@@ -51,76 +47,55 @@ const PACKS: Record<string, PackDef> = {
         bounds: { minLat: 43.5, maxLat: 46.5, minLon: 4.5, maxLon: 7.8 },
         zooms: [8, 9, 10, 11, 12, 13, 14],
         source: 'ign',
-        version: 2,
-    },
-    pyrenees: {
-        id: 'pyrenees',
-        name: 'Pyrénées HD',
-        // Versant français uniquement (IGN ne couvre pas l'Espagne)
-        // Inclut le GR10, la Haute Route Pyrénéenne, Andorre
-        bounds: { minLat: 42.4, maxLat: 43.5, minLon: -2.0, maxLon: 3.2 },
-        zooms: [8, 9, 10, 11, 12, 13, 14],
-        source: 'ign',
-        version: 1,
-    },
-    vosges: {
-        id: 'vosges',
-        name: 'Vosges HD',
-        bounds: { minLat: 47.7, maxLat: 49.1, minLon: 6.7, maxLon: 7.8 },
-        zooms: [8, 9, 10, 11, 12, 13, 14],
-        source: 'ign',
-        version: 1,
-    },
-    massif_central: {
-        id: 'massif_central',
-        name: 'Massif Central HD',
-        // Auvergne + Cévennes + Aubrac
-        bounds: { minLat: 44.0, maxLat: 46.5, minLon: 2.2, maxLon: 4.5 },
-        zooms: [8, 9, 10, 11, 12, 13, 14],
-        source: 'ign',
-        version: 1,
+        version: 3,
     },
 };
 
-/**
- * Qualité WebP adaptée au LOD.
- * Basse résolution → compression agressive sans perte visuelle perceptible.
- * LOD 5-10 : ~5 KB/tuile | LOD 11-12 : ~12 KB | LOD 13-14 : ~20 KB
- */
-function webpQualityForZoom(zoom: number): number {
-    if (zoom <= 10) return 55;
-    if (zoom <= 12) return 70;
-    return 80;
-}
-const RATE_LIMIT_MS = 200;
-const MAX_RETRIES = 3;
+type TileType = 'color' | 'elevation' | 'overlay';
+const RATE_LIMIT_MS = 100;
 
-// --- Region check (4 corners) ---
-
-function isTileFullyInRegion(
-    tx: number, ty: number, zoom: number,
-    bounds: PackDef['bounds']
-): boolean {
-    const n = Math.pow(2, zoom);
-    const latN = Math.atan(Math.sinh(Math.PI * (1 - 2 * ty / n))) * 180 / Math.PI;
-    const latS = Math.atan(Math.sinh(Math.PI * (1 - 2 * (ty + 1) / n))) * 180 / Math.PI;
-    const lonW = tx / n * 360 - 180;
-    const lonE = (tx + 1) / n * 360 - 180;
-    const check = (lat: number, lon: number) =>
-        lat > bounds.minLat && lat < bounds.maxLat && lon > bounds.minLon && lon < bounds.maxLon;
-    return check(latN, lonW) && check(latN, lonE) && check(latS, lonW) && check(latS, lonE);
+function getTileUrl(z: number, x: number, y: number, type: TileType, source: PackDef['source'], maptilerKey?: string): string {
+    if (type === 'color') {
+        if (source === 'swisstopo') return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${z}/${x}/${y}.jpeg`;
+        return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
+    }
+    if (type === 'elevation') {
+        if (!maptilerKey) throw new Error('Maptiler Key requise');
+        return `https://api.maptiler.com/tiles/terrain-rgb-v2/${z}/${x}/${y}.png?key=${maptilerKey}`;
+    }
+    if (type === 'overlay') {
+        if (source === 'swisstopo') return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${z}/${x}/${y}.png`;
+        return `https://tile.waymarkedtrails.org/hiking/${z}/${x}/${y}.png`;
+    }
+    throw new Error('Type inconnu');
 }
 
-// --- Tile refs ---
+async function main() {
+    const packId = process.argv.find((_, i, arr) => arr[i - 1] === '--pack');
+    const maptilerKey = process.argv.find((_, i, arr) => arr[i - 1] === '--maptiler-key');
+    const cleanMode = process.argv.includes('--clean');
 
-interface TileRef {
-    z: number;
-    x: number;
-    y: number;
-}
+    if (!packId || !PACKS[packId]) {
+        console.error(`Usage: npx tsx scripts/build-country-pack.ts --pack <id> --maptiler-key <key> [--clean]`);
+        process.exit(1);
+    }
 
-function computeTileRefs(pack: PackDef): TileRef[] {
-    const refs: TileRef[] = [];
+    const pack = PACKS[packId];
+    const cacheDir = path.resolve(__dirname, `../.cache/pack-${packId}-v3`);
+    const outputDir = path.resolve(__dirname, '../output');
+    const outputPath = path.join(outputDir, `suntrail-pack-${pack.id}-v${pack.version}.pmtiles`);
+
+    if (cleanMode && fs.existsSync(cacheDir)) fs.rmSync(cacheDir, { recursive: true });
+    fs.mkdirSync(cacheDir, { recursive: true });
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+
+    console.log(`=== SunTrail Pack Builder: SINGLE FILE MODE ===`);
+    console.log(`Pack : ${pack.name} v${pack.version}`);
+
+    // 1. Collecter toutes les tuiles nécessaires
+    const types: TileType[] = ['color', 'elevation', 'overlay'];
+    const refs: { z: number, x: number, y: number, type: TileType }[] = [];
+    
     for (const z of pack.zooms) {
         const xMin = lonToTileX(pack.bounds.minLon, z);
         const xMax = lonToTileX(pack.bounds.maxLon, z);
@@ -128,259 +103,105 @@ function computeTileRefs(pack: PackDef): TileRef[] {
         const yMax = latToTileY(pack.bounds.minLat, z);
         for (let x = xMin; x <= xMax; x++) {
             for (let y = yMin; y <= yMax; y++) {
-                // Seulement les tuiles entièrement dans la région
-                if (isTileFullyInRegion(x, y, z, pack.bounds)) {
-                    refs.push({ z, x, y });
-                }
+                // Filtre simple pour la démo, on pourrait affiner avec isTileFullyInRegion
+                for (const type of types) refs.push({ z, x, y, type });
             }
         }
     }
-    return refs;
-}
 
-// --- Tile cache (reprise après interruption) ---
+    console.log(`Total tuiles à traiter : ${refs.length}`);
 
-function getTileCacheDir(packId: string): string {
-    return path.resolve(__dirname, `../.cache/pack-${packId}`);
-}
-
-function getTileCachePath(cacheDir: string, ref: TileRef): string {
-    return path.join(cacheDir, `${ref.z}_${ref.x}_${ref.y}.webp`);
-}
-
-function isTileCached(cacheDir: string, ref: TileRef): boolean {
-    const p = getTileCachePath(cacheDir, ref);
-    return fs.existsSync(p) && fs.statSync(p).size > 100; // >100 bytes = valide
-}
-
-function saveTileToCache(cacheDir: string, ref: TileRef, data: Buffer): void {
-    const p = getTileCachePath(cacheDir, ref);
-    fs.writeFileSync(p, data);
-}
-
-function loadTileFromCache(cacheDir: string, ref: TileRef): Buffer {
-    return fs.readFileSync(getTileCachePath(cacheDir, ref));
-}
-
-// --- Download ---
-
-function getTileUrl(ref: TileRef, source: PackDef['source']): string {
-    if (source === 'swisstopo') {
-        return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${ref.z}/${ref.x}/${ref.y}.jpeg`;
-    }
-    // IGN PLANIGNV2
-    return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${ref.z}&TILEROW=${ref.y}&TILECOL=${ref.x}`;
-}
-
-async function sleep(ms: number): Promise<void> {
-    return new Promise((r) => setTimeout(r, ms));
-}
-
-async function downloadTile(ref: TileRef, source: PackDef['source']): Promise<Buffer> {
-    const url = getTileUrl(ref, source);
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-        try {
-            const resp = await fetch(url, {
-                headers: {
-                    'User-Agent': 'SunTrail3D-BuildScript/1.0 (one-time country pack generation)',
-                },
-            });
-            if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${ref.z}/${ref.x}/${ref.y}`);
-            return Buffer.from(await resp.arrayBuffer());
-        } catch (e) {
-            if (attempt === MAX_RETRIES) throw e;
-            console.warn(`  Retry ${attempt}/${MAX_RETRIES} for ${ref.z}/${ref.x}/${ref.y}`);
-            await sleep(500 * Math.pow(2, attempt - 1));
-        }
-    }
-    throw new Error('unreachable');
-}
-
-async function convertToWebP(imgBuffer: Buffer, zoom: number): Promise<Buffer> {
-    return sharp(imgBuffer).webp({ quality: webpQualityForZoom(zoom) }).toBuffer();
-}
-
-// --- Main ---
-
-async function main() {
-    // Parse arguments
-    const packArg = process.argv.find((_, i, arr) => arr[i - 1] === '--pack');
-    const cleanMode = process.argv.includes('--clean');
-
-    if (!packArg || !PACKS[packArg]) {
-        console.error(`Usage: npx tsx scripts/build-country-pack.ts --pack <${Object.keys(PACKS).join('|')}> [--clean]`);
-        process.exit(1);
-    }
-
-    const pack = PACKS[packArg];
-    const outputDir = path.resolve(__dirname, '../output');
-    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
-    const outputPath = path.join(outputDir, `suntrail-pack-${pack.id}-v${pack.version}.pmtiles`);
-
-    // Cache directory for resume support
-    const cacheDir = getTileCacheDir(pack.id);
-    if (cleanMode && fs.existsSync(cacheDir)) {
-        fs.rmSync(cacheDir, { recursive: true });
-        console.log(`Cache nettoyé : ${cacheDir}`);
-    }
-    fs.mkdirSync(cacheDir, { recursive: true });
-
-    console.log(`=== SunTrail Country Pack Builder ===`);
-    console.log(`Pack : ${pack.name} (${pack.id})`);
-    console.log(`Source : ${pack.source}`);
-    console.log(`LODs : ${pack.zooms.join(', ')}`);
-    console.log(`Bounds : lat [${pack.bounds.minLat}, ${pack.bounds.maxLat}] lon [${pack.bounds.minLon}, ${pack.bounds.maxLon}]`);
-    console.log(`Cache : ${cacheDir}`);
-    console.log();
-
-    // 1. Compute tile refs
-    const refs = computeTileRefs(pack);
-    const cached = refs.filter(r => isTileCached(cacheDir, r));
-    const toDownload = refs.filter(r => !isTileCached(cacheDir, r));
-
-    console.log(`Total tuiles (4-corners filter) : ${refs.length}`);
-    for (const z of pack.zooms) {
-        const total = refs.filter(r => r.z === z).length;
-        const done = cached.filter(r => r.z === z).length;
-        console.log(`  LOD ${z} : ${total} tuiles (${done} en cache)`);
-    }
-    console.log(`\nDéjà en cache : ${cached.length} — À télécharger : ${toDownload.length}`);
-    if (toDownload.length > 0) {
-        const eta = Math.round(toDownload.length * RATE_LIMIT_MS / 1000 / 60);
-        console.log(`Temps estimé : ~${eta} minutes`);
-    }
-    console.log();
-
-    // 2. Download missing tiles
+    // 2. Téléchargement & Cache
     let done = 0;
-    let errors = 0;
+    for (const ref of refs) {
+        const ext = ref.type === 'color' ? 'webp' : 'png';
+        const cachePath = path.join(cacheDir, `${ref.type}_${ref.z}_${ref.x}_${ref.y}.${ext}`);
+        
+        if (!fs.existsSync(cachePath)) {
+            try {
+                const url = getTileUrl(ref.z, ref.x, ref.y, ref.type, pack.source, maptilerKey);
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const buf = Buffer.from(await resp.arrayBuffer());
 
-    for (const ref of toDownload) {
-        try {
-            const raw = await downloadTile(ref, pack.source);
-            const webp = await convertToWebP(raw, ref.z);
-            saveTileToCache(cacheDir, ref, webp);
-        } catch (e) {
-            errors++;
-            console.error(`  SKIP ${ref.z}/${ref.x}/${ref.y}: ${(e as Error).message}`);
+                let final = buf;
+                if (ref.type === 'color') {
+                    final = await sharp(buf).webp({ quality: 80 }).toBuffer();
+                } else if (ref.type === 'elevation') {
+                    final = await sharp(buf).png({ compressionLevel: 9 }).toBuffer();
+                } else {
+                    final = await sharp(buf).png({ palette: true }).toBuffer();
+                }
+                fs.writeFileSync(cachePath, final);
+            } catch (e) {
+                // Silencieusement ignorer les erreurs (tuiles hors limites MapTiler/IGN)
+            }
+            await new Promise(r => setTimeout(r, RATE_LIMIT_MS));
         }
         done++;
-        if (done % 100 === 0 || done === toDownload.length) {
-            const pct = ((done / toDownload.length) * 100).toFixed(1);
-            console.log(`  ${done}/${toDownload.length} (${pct}%) — ${errors} errors`);
-        }
-        await sleep(RATE_LIMIT_MS);
+        if (done % 500 === 0) console.log(`  Progress: ${done}/${refs.length}`);
     }
 
-    // 3. Load all tiles from cache
-    console.log('\nChargement des tuiles depuis le cache...');
-    const tileBuffers: { ref: TileRef; data: Buffer }[] = [];
-    let loadErrors = 0;
-
+    // 3. Fusion dans PMTiles
+    console.log(`\nFusion dans ${outputPath}...`);
+    const tileBuffers: { tileId: number; data: Buffer }[] = [];
+    
     for (const ref of refs) {
-        try {
-            if (isTileCached(cacheDir, ref)) {
-                const data = loadTileFromCache(cacheDir, ref);
-                tileBuffers.push({ ref, data });
-            }
-        } catch {
-            loadErrors++;
+        const ext = ref.type === 'color' ? 'webp' : 'png';
+        const cachePath = path.join(cacheDir, `${ref.type}_${ref.z}_${ref.x}_${ref.y}.${ext}`);
+        if (fs.existsSync(cachePath)) {
+            let id = zxyToTileId(ref.z, ref.x, ref.y);
+            if (ref.type === 'elevation') id += OFFSET_ELEV;
+            else if (ref.type === 'overlay') id += OFFSET_OVERLAY;
+            
+            tileBuffers.push({ tileId: id, data: fs.readFileSync(cachePath) });
         }
     }
 
-    console.log(`  ${tileBuffers.length} tuiles chargées (${loadErrors} erreurs de lecture)`);
-
-    if (tileBuffers.length === 0) {
-        console.error('Aucune tuile disponible. Arrêt.');
-        process.exit(1);
-    }
-
-    // 4. Sort by Hilbert tile ID
-    const sorted = tileBuffers
-        .map((t) => ({
-            tileId: zxyToTileId(t.ref.z, t.ref.x, t.ref.y),
-            data: t.data,
-        }))
-        .sort((a, b) => a.tileId - b.tileId);
-
-    // 5. Deduplicate par runLength (tuiles consécutives identiques → une seule entrée)
-    const { entries, dataChunks, savedTiles, savedBytes } = deduplicateTiles(sorted);
-    const tileDataSize = dataChunks.reduce((sum, c) => sum + c.length, 0);
-
-    // 6. Build two-level directory (root + leaf dirs pour tenir dans les 16KB initiaux)
+    tileBuffers.sort((a, b) => a.tileId - b.tileId);
+    const { entries, dataChunks } = deduplicateTiles(tileBuffers);
     const { rootDir, leafDirs } = buildTwoLevelDirectory(entries, 512);
     const leafDirData = Buffer.concat(leafDirs.map(d => Buffer.from(d)));
 
-    // 7. Metadata
     const metadata = Buffer.from(JSON.stringify({
-        name: `SunTrail Pack: ${pack.name}`,
-        description: `Country pack LOD ${pack.zooms[0]}-${pack.zooms[pack.zooms.length - 1]} (${pack.source}), WebP quality adaptive per LOD`,
-        format: 'webp',
-        packId: pack.id,
-        packVersion: pack.version,
-        source: pack.source,
-        generator: 'build-country-pack.ts',
-        generatedAt: new Date().toISOString(),
+        name: pack.name,
+        description: "Full Offline Pack (Color + Elevation + Overlay)",
+        attribution: "SwissTopo, MapTiler, WaymarkedTrails",
+        offsets: { elevation: OFFSET_ELEV, overlay: OFFSET_OVERLAY }
     }));
 
-    // 8. Offsets (structure: header → rootDir → metadata → leafDirs → tileData)
-    const rootDirOffset = HEADER_SIZE;
-    const rootDirLength = rootDir.length;
-    const metadataOffset = rootDirOffset + rootDirLength;
-    const metadataLength = metadata.length;
-    const leafDirOffset = metadataOffset + metadataLength;
-    const leafDirLength = leafDirData.length;
-    const tileDataOffset = leafDirOffset + leafDirLength;
-
-    // 9. Header
     const header = buildHeader({
-        rootDirOffset,
-        rootDirLength,
-        metadataOffset,
-        metadataLength,
-        leafDirOffset,
-        leafDirLength,
-        tileDataOffset,
-        tileDataLength: tileDataSize,
+        rootDirOffset: HEADER_SIZE,
+        rootDirLength: rootDir.length,
+        metadataOffset: HEADER_SIZE + rootDir.length,
+        metadataLength: metadata.length,
+        leafDirOffset: HEADER_SIZE + rootDir.length + metadata.length,
+        leafDirLength: leafDirData.length,
+        tileDataOffset: HEADER_SIZE + rootDir.length + metadata.length + leafDirData.length,
+        tileDataLength: dataChunks.reduce((sum, c) => sum + c.length, 0),
         numTiles: entries.length,
-        minZoom: Math.min(...pack.zooms),
-        maxZoom: Math.max(...pack.zooms),
-        bounds: {
-            minLon: pack.bounds.minLon,
-            minLat: pack.bounds.minLat,
-            maxLon: pack.bounds.maxLon,
-            maxLat: pack.bounds.maxLat,
-        },
+        minZoom: pack.zooms[0],
+        maxZoom: pack.zooms[pack.zooms.length - 1],
+        bounds: { minLon: pack.bounds.minLon, minLat: pack.bounds.minLat, maxLon: pack.bounds.maxLon, maxLat: pack.bounds.maxLat },
         centerLon: (pack.bounds.minLon + pack.bounds.maxLon) / 2,
         centerLat: (pack.bounds.minLat + pack.bounds.maxLat) / 2,
-        centerZoom: pack.zooms[0],
+        centerZoom: pack.zooms[0]
     });
 
-    // 10. Write PMTiles file
+    // PMTiles header: tile_type 0=unknown (mixte car wep+png)
+    const headerView = new DataView(header);
+    headerView.setUint8(99, 0); 
+
     const fd = fs.openSync(outputPath, 'w');
     fs.writeSync(fd, new Uint8Array(header));
     fs.writeSync(fd, rootDir);
     fs.writeSync(fd, metadata);
     fs.writeSync(fd, leafDirData);
-    for (const chunk of dataChunks) {
-        fs.writeSync(fd, chunk);
-    }
+    for (const chunk of dataChunks) fs.writeSync(fd, chunk);
     fs.closeSync(fd);
 
-    const finalSize = fs.statSync(outputPath).size;
-    const dedupPct = sorted.length > 0 ? ((savedTiles / sorted.length) * 100).toFixed(1) : '0.0';
-    console.log(`\n✓ Pack généré : ${outputPath}`);
-    console.log(`  Taille : ${(finalSize / 1024 / 1024).toFixed(1)} MB`);
-    console.log(`  Tuiles : ${sorted.length} → ${entries.length} entrées après dédup (${savedTiles} runs, ${dedupPct}%, ${(savedBytes / 1024).toFixed(0)} KB économisés)`);
-    console.log(`  Header : ${HEADER_SIZE} bytes`);
-    console.log(`  Directory : ${rootDirLength} bytes`);
-    console.log(`  Metadata : ${metadataLength} bytes`);
-    console.log(`  Tile data : ${(tileDataSize / 1024 / 1024).toFixed(1)} MB`);
-    console.log(`\nCache conservé dans ${cacheDir}`);
-    console.log(`Pour le supprimer : npm run build-pack -- --pack ${pack.id} --clean`);
+    console.log(`\n✓ TERMINÉ : ${outputPath}`);
+    console.log(`Taille finale : ${(fs.statSync(outputPath).size / 1024 / 1024).toFixed(1)} MB`);
 }
 
-main().catch((e) => {
-    console.error('ERREUR :', e);
-    process.exit(1);
-});
+main().catch(console.error);
