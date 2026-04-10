@@ -48,7 +48,7 @@ describe('NativeGPSService', () => {
         // 2. Simulate native points event
         const onNewPointsCall = mockPlugin.addListener.mock.calls.find((call: any) => call[0] === 'onNewPoints');
         expect(onNewPointsCall).toBeDefined();
-        if (!onNewPointsCall) return;
+        if (!onNewPointsCall) throw new Error('onNewPoints listener not registered');
         
         const callback = onNewPointsCall[1];
         const mockPoint = { lat: 46.5, lon: 7.5, alt: 1000, timestamp: Date.now(), accuracy: 5, id: 1 };
@@ -89,6 +89,7 @@ describe('NativeGPSService', () => {
 
         const onNewPointsCall = mockPlugin.addListener.mock.calls.find((call: any) => call[0] === 'onNewPoints');
         expect(onNewPointsCall).toBeDefined();
+        if (!onNewPointsCall) throw new Error('onNewPoints listener not registered');
         const callback = onNewPointsCall[1];
         
         const now = Date.now();
