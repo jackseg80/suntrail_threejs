@@ -45,10 +45,10 @@ export default defineConfig({
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
-      manifestFilename: 'manifest.webmanifest',
-      includeAssets: ['favicon.ico', 'assets/icons/*.png', 'manifest.webmanifest'],
+      manifestFilename: 'manifest.json',
+      includeAssets: ['favicon.ico', 'assets/icons/*.png', 'manifest.json'],
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,bin}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,bin,json,webmanifest}'],
         // Exclure le chunk Three.js du précache (trop lourd, en runtime cache à la demande)
         globIgnores: ['**/three-*.js', '**/*.pmtiles', '**/icon_*.png'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB max par fichier
@@ -96,6 +96,8 @@ export default defineConfig({
         background_color: '#12141c',
         display: 'standalone',
         orientation: 'portrait',
+        start_url: './',
+        scope: './',
         icons: [
           {
             src: 'assets/icons/icon_512.png',
