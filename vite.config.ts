@@ -45,6 +45,8 @@ export default defineConfig({
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
+      manifestFilename: 'manifest.webmanifest',
+      includeAssets: ['favicon.ico', 'assets/icons/*.png', 'manifest.webmanifest'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,bin}'],
         // Exclure le chunk Three.js du précache (trop lourd, en runtime cache à la demande)
