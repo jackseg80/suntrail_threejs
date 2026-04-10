@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.27.3)
+# SunTrail — Guide IA (v5.27.4)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-09 suite à la correction du décalage GPX (Origin Shift).
+> Mis à jour le 2026-04-10 suite à la correction des traits parasites sur le REC.
 
 ## Projet
 
@@ -10,7 +10,7 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 **Stack** : TypeScript strict · Three.js r160 · Vite 5 · Capacitor 6 · RevenueCat
 
-## ⚠️ Règles & Décisions Actées (v5.27.3)
+## ⚠️ Règles & Décisions Actées (v5.27.4)
 
 ### 🚀 Protocole de Release (IMPÉRATIF)
 1. **Version Name** : Incrémenter dans `package.json` (ex: 5.26.7 → 5.26.8).
@@ -49,7 +49,7 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 - **`renderer.setSize(w, h, false)`** — TOUJOURS le 3ème param `false`.
 - **LOD 14 Toast** : Déclenché dans `scene.ts` avec debounce de 30s.
 - **Deep Sleep** : La boucle de rendu s'arrête (`setAnimationLoop(null)`) quand l'app est en arrière-plan.
-- **TubeGeometry Stabilité** : Utiliser `centripetal` pour les splines de tracé afin d'éviter les ooovershoots.
+- **TubeGeometry Stabilité** : Utiliser `centripetal` pour les splines de tracé afin d'éviter les ooovershoots. Toujours trier par `timestamp` avant génération.
 
 ## Structure du Projet
 - `src/modules/iapService.ts` : Liaison RevenueCat ↔ Google Play.

@@ -460,10 +460,18 @@ export function updateRecordedTrackMesh(): void {
     let lastValidAlt: number | null = null;
     let lastWorldPos: THREE.Vector3 | null = null;
 
-    const threePoints = state.recordedPoints
+    // v5.27.4: Tri chronologique impératif pour éviter les traits qui traversent la carte
+    const sortedPoints = [...state.recordedPoints].sort((a, b) => a.timestamp - b.timestamp);
+
+    const threePoints = sortedPoints
         .filter(p => {
             if (typeof p.lat !== 'number' || typeof p.lon !== 'number' || typeof p.alt !== 'number') return false;
             if (isNaN(p.lat) || isNaN(p.lon) || isNaN(p.alt)) return false;
+            
+            // v5.27.4: Ignorer les points "zéro" du démarrage (fix champignon initial)
+            if (p.lat === 0 && p.lon === 0) return false;
+            if (p.alt === 0 && state.recordedPoints.length < 5) return false;
+
             if (Math.abs(p.lat) > 90 || Math.abs(p.lon) > 180) return false;
             if (p.alt < -500 || p.alt > 9000) return false;
             
@@ -482,8 +490,6 @@ export function updateRecordedTrackMesh(): void {
             return new THREE.Vector3(pos.x, finalY, pos.z);
         })
         .filter(v => {
-            // v5.26.7: Filtrage anti-frétillement (jitter)
-            // Si les points sont trop proches (< 2m), le TubeGeometry explose
             if (!lastWorldPos) {
                 lastWorldPos = v;
                 return true;
@@ -497,6 +503,7 @@ export function updateRecordedTrackMesh(): void {
     if (threePoints.length < 2) return;
     
     try {
+        // v5.27.4: Force closed=false pour éviter le trait de retour vers le départ
         const curve = new THREE.CatmullRomCurve3(threePoints, false, 'centripetal');
         const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length * 2, 800), thickness, 4, false);
         const material = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.5, transparent: true, opacity: 0.8 });

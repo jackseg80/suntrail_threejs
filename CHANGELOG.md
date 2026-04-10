@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.27.4] - 2026-04-10
+
+### Fixed
+- **Traits Parasites (REC)** : Correction des lignes rouges qui traversaient parfois le tracé. Ajout d'un tri chronologique systématique des points GPS avant le rendu du maillage 3D.
+- **Champignon au démarrage** : Filtrage des points GPS invalides (altitude à 0 ou coordonnées 0,0) durant les premières secondes de l'enregistrement, empêchant l'explosion géométrique initiale du mesh.
+- **Intégrité de Courbe** : Désactivation forcée de la fermeture de courbe (`closed: false`) sur les splines de tracé.
+
 ## [5.27.3] - 2026-04-09
 
 ### Fixed
