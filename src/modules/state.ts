@@ -78,7 +78,7 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         MAX_ALLOWED_ZOOM: 18,
         VEGETATION_DENSITY: 1500,
         VEGETATION_CAST_SHADOW: false, // économie ~18 draw calls shadow pass sur mid-range
-        BUILDING_LIMIT: 40, POI_ZOOM_THRESHOLD: 15, BUILDING_ZOOM_THRESHOLD: 16,
+        BUILDING_LIMIT: 40, POI_ZOOM_THRESHOLD: 14, BUILDING_ZOOM_THRESHOLD: 16,
         MAX_BUILDS_PER_CYCLE: 2, LOAD_DELAY_FACTOR: 1.2,
         SHOW_WEATHER: true, WEATHER_DENSITY: 1000,
         WEATHER_SPEED: 1.0, FOG_FAR: 40000, SHOW_SLOPES: false
@@ -232,7 +232,6 @@ export interface State {
     isFlyingTo: boolean; // true during flyTo animation — blocks origin shift
     isTiltTransitioning: boolean; // true during 2D↔3D smooth tilt animation
     isRecording: boolean;
-    recordingOriginTile: { x: number; y: number; z: number } | null; // v5.24: Tuile d'origine de la session de tracking
     currentCourseId: string | null; // v5.24: ID de la course native en cours
     recordedPoints: LocationPoint[];
     recordingOriginTile: { x: number; y: number; z: number } | null; // v5.27: Origin tile pour le tracé en cours
@@ -313,7 +312,6 @@ const initialState: State = {
     isFlyingTo: false,
     isTiltTransitioning: false,
     isRecording: false,
-    recordingOriginTile: null, // v5.24: Tuile d'origine de la session de tracking
     currentCourseId: null, // v5.24: ID de la course native en cours
     recordedPoints: [],
     recordingOriginTile: null, // v5.27: Origin tile pour le tracé en cours

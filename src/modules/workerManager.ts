@@ -94,7 +94,7 @@ class TileWorkerManager {
                 this.taskWorkerMap.delete(id);
                 console.error(`[WorkerManager] Task ${id} timed out!`);
                 reject(new Error(`Worker timeout for task ${id}`));
-            }, 15000);
+            }, 30000); // Augmenté à 30s (v5.27.8) pour la robustesse Full Offline
 
             this.tasks.set(id, {
                 resolve: (data: any) => {

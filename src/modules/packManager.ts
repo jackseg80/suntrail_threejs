@@ -77,29 +77,35 @@ class PackManager {
         // Charger le catalog AVANT de monter (getPackMeta() a besoin du catalog)
         await this.fetchCatalog();
 
-        // 1. Débloquer le pack Suisse par défaut pour tout le monde sur le Web (v5.26.6)
-        // Offre la cartographie HD (LOD 14) immédiatement via CDN/Streaming.
+        // 1. Désactivé : déblocage automatique du pack Suisse (v5.27.8)
+        // Cause trop de lenteur au démarrage sur le Web.
+        /*
         if (!Capacitor.isNativePlatform()) {
             this.markPurchased('switzerland');
         }
+        */
 
         // 2. Auto-débloquer TOUS les packs sur localhost (Dev mode) ou via paramètre URL
-        const params = new URLSearchParams(window.location.search);
-        const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || 
-                      params.get('allpacks') === 'true' || params.get('dev') === 'true';
+        // DEFERRED : on attend 3s après le démarrage pour ne pas bloquer l'affichage initial
+        setTimeout(() => {
+            const params = new URLSearchParams(window.location.search);
+            const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || 
+                          params.get('allpacks') === 'true' || params.get('dev') === 'true';
 
-        if (isDev) {
-            console.log('[Packs] Dev mode détecté : déblocage de tous les packs.');
-            for (const meta of this.getAvailablePacks()) {
-                this.markPurchased(meta.id);
+            if (isDev) {
+                console.log('[Packs] Dev mode détecté : déblocage différé des packs.');
+                for (const meta of this.getAvailablePacks()) {
+                    this.markPurchased(meta.id);
+                }
             }
-        }
+        }, 3000);
 
-        // Mount all installed packs (purchased/installed/update_available)
-        await this.mountAllInstalled();
+        // Mount all installed packs (DEFERRED to avoid blocking UI startup)
+        setTimeout(() => void this.mountAllInstalled(), 1000);
+        
         // Sync pack purchases avec RevenueCat (restaure après clear storage)
         this.syncPackPurchases().catch(() => {});
-        console.log(`[Packs] Initialisé. ${this.mountedArchives.size} pack(s) monté(s).`);
+        console.log(`[Packs] Initialisation lancée...`);
     }
 
     /** Vérifie les achats de packs sur RevenueCat et met à jour les états locaux. */
@@ -314,8 +320,6 @@ class PackManager {
             let archive: pmtiles.PMTiles;
 
             if (ps.status === 'installed') {
-                // OPFS : FileSource lit les bytes directement (file.slice), sans réseau.
-                // Fonctionne offline sur Android WebView (Chrome 105+) et PWA.
                 try {
                     const root = await navigator.storage.getDirectory();
                     const packsDir = await root.getDirectoryHandle(PACKS_DIR);
@@ -323,8 +327,6 @@ class PackManager {
                     const file = await fileHandle.getFile();
                     archive = new pmtiles.PMTiles(new pmtiles.FileSource(file));
                 } catch {
-                    // Fichier OPFS absent (ancienne installation sur Filesystem.External)
-                    // → reset pour re-téléchargement
                     console.warn(`[Packs] ${packId}: fichier OPFS absent, re-téléchargement requis`);
                     ps.status = 'purchased';
                     this.persistStates();
@@ -334,15 +336,15 @@ class PackManager {
                     archive = new pmtiles.PMTiles(meta.cdnUrl);
                 }
             } else {
-                // purchased / update_available → CDN streaming (requiert réseau)
                 const meta = this.getPackMeta(packId);
                 if (!meta) return;
                 archive = new pmtiles.PMTiles(meta.cdnUrl);
             }
 
-            // Warmup: read header pour vérifier l'archive
-            const header = await archive.getHeader();
-            console.log(`[Packs] ${packId} monté. LOD ${header.minZoom}-${header.maxZoom}, ${header.numTileEntries} tuiles`);
+            // Warmup NON-BLOQUANT (v5.27.8)
+            archive.getHeader().then(header => {
+                console.log(`[Packs] ${packId} monté. LOD ${header.minZoom}-${header.maxZoom}, ${header.numTileEntries} tuiles`);
+            }).catch(e => console.error(`[Packs] Erreur header ${packId}:`, e));
 
             this.mountedArchives.set(packId, archive);
             eventBus.emit('packMounted', { packId });
@@ -359,11 +361,13 @@ class PackManager {
     }
 
     async mountAllInstalled(): Promise<void> {
+        const promises = [];
         for (const [packId, ps] of this.packStates) {
             if (ps.status === 'installed' || ps.status === 'purchased' || ps.status === 'update_available') {
-                await this.mountPack(packId);
+                promises.push(this.mountPack(packId));
             }
         }
+        await Promise.all(promises);
     }
 
     // ── Tile Serving (chemin critique) ───────────────────────────────────────

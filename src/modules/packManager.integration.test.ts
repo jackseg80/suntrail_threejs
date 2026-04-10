@@ -64,6 +64,7 @@ describe('PackManager Integration', () => {
     });
 
     it('should initialize and load persisted states from localStorage', async () => {
+        vi.useFakeTimers();
         localStorage.setItem('suntrail_pack_states', JSON.stringify({
             'switzerland': {
                 id: 'switzerland',
@@ -74,11 +75,14 @@ describe('PackManager Integration', () => {
         }));
 
         await packManager.initialize();
+        vi.advanceTimersByTime(2000); // Trigger deferred mount
 
         expect(state.installedPacks).toContain('switzerland');
+        vi.useRealTimers();
     });
 
     it('should serve a tile from a mounted pack', async () => {
+        vi.useFakeTimers();
         // Setup a mounted pack
         localStorage.setItem('suntrail_pack_states', JSON.stringify({
             'switzerland': {
@@ -90,6 +94,7 @@ describe('PackManager Integration', () => {
         }));
         
         await packManager.initialize();
+        vi.advanceTimersByTime(2000); // Trigger deferred mount
         
         // coordinates for Switzerland approx
         const z = 12;
@@ -99,9 +104,11 @@ describe('PackManager Integration', () => {
         const blob = await packManager.getTileFromPacks(z, x, y);
         expect(blob).toBeDefined();
         expect(blob?.type).toBe('image/webp');
+        vi.useRealTimers();
     });
 
     it('should serve elevation and overlay tiles with correct offsets', async () => {
+        vi.useFakeTimers();
         localStorage.setItem('suntrail_pack_states', JSON.stringify({
             'switzerland': {
                 id: 'switzerland',
@@ -112,6 +119,7 @@ describe('PackManager Integration', () => {
         }));
         
         await packManager.initialize();
+        vi.advanceTimersByTime(2000); // Trigger deferred mount
         
         const z = 12, x = 2133, y = 1450;
         
@@ -122,9 +130,11 @@ describe('PackManager Integration', () => {
         // Overlay
         const overlayBlob = await packManager.getTileFromPacks(z, x, y, 'overlay');
         expect(overlayBlob?.type).toBe('image/png');
+        vi.useRealTimers();
     });
 
     it('should not serve a tile if offline and pack is not installed (CDN only)', async () => {
+        vi.useFakeTimers();
         // Pack purchased but not installed (CDN)
         localStorage.setItem('suntrail_pack_states', JSON.stringify({
             'switzerland': {
@@ -136,6 +146,7 @@ describe('PackManager Integration', () => {
         }));
 
         await packManager.initialize();
+        vi.advanceTimersByTime(2000); // Trigger deferred mount
         state.IS_OFFLINE = true;
 
         const z = 12;
@@ -144,5 +155,6 @@ describe('PackManager Integration', () => {
 
         const blob = await packManager.getTileFromPacks(z, x, y);
         expect(blob).toBeNull();
+        vi.useRealTimers();
     });
 });

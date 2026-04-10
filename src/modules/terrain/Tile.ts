@@ -36,6 +36,7 @@ export class Tile {
     normalTex: THREE.Texture | null = null;
     forestMesh: THREE.Object3D | null = null;
     poiGroup: THREE.Group | null = null;
+    poiRetryCount: number = 0;
     buildingMesh: THREE.Mesh | null = null;
     hydroGroup: THREE.Group | null = null;
     currentResolution: number = -1;
@@ -73,7 +74,6 @@ export class Tile {
         const yOffset = this.isFadingOut ? -0.5 : 0;
         if (this.mesh) this.mesh.position.set(this.worldX, yOffset, this.worldZ);
         if (this.forestMesh) this.forestMesh.position.set(this.worldX, yOffset, this.worldZ);
-        if (this.poiGroup) this.poiGroup.position.set(this.worldX, yOffset, this.worldZ);
         
         this.bounds.set(
             new THREE.Vector3(this.worldX - this.tileSizeMeters/2, -1000, this.worldZ - this.tileSizeMeters/2),
@@ -183,7 +183,18 @@ export class Tile {
         const is2D = (this.zoom <= 10 || state.IS_2D_MODE);
         const isLight = (state.PERFORMANCE_PRESET === 'eco');
         const oldMesh = this.mesh;
-        
+
+        if (oldMesh) {
+            // IMPORTANT : Détacher les groupes d'objets pour ne pas qu'ils soient détruits par disposeObject
+            if (this.poiGroup) oldMesh.remove(this.poiGroup);
+            if (this.buildingMesh) oldMesh.remove(this.buildingMesh);
+            if (this.hydroGroup) oldMesh.remove(this.hydroGroup);
+            
+            if (state.scene) state.scene.remove(oldMesh);
+            disposeObject(oldMesh);
+            this.mesh = null;
+        }
+
         const onCompile = (shader: any) => {
             material.userData.shader = shader;
             shader.uniforms.uElevationMap = { value: this.elevationTex };
@@ -329,6 +340,11 @@ export class Tile {
         this.mesh.position.set(this.worldX, 0, this.worldZ);
         this.mesh.renderOrder = this.zoom; 
         this.mesh.castShadow = !is2D; this.mesh.receiveShadow = !is2D;
+
+        // Re-attach existing detail groups to the new mesh
+        if (this.poiGroup) this.mesh.add(this.poiGroup);
+        if (this.buildingMesh) this.mesh.add(this.buildingMesh);
+        if (this.hydroGroup) this.mesh.add(this.hydroGroup);
 
         if (state.scene) state.scene.add(this.mesh);
         this.currentResolution = resolution;

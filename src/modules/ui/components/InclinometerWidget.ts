@@ -56,7 +56,6 @@ export class InclinometerWidget {
     // Position du widget (px)
     private _widgetStartLeft = 0;
     private _widgetStartTop = 0;
-    private _detailTimer: ReturnType<typeof setTimeout> | null = null;
 
     // Dernières valeurs calculées
     private _lastSlopeDeg = 0;
