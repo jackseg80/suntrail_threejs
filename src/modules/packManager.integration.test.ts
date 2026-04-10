@@ -27,7 +27,7 @@ vi.mock('pmtiles', () => {
             };
         },
         FileSource: function() { return {}; },
-        zxyToTileId: vi.fn((z, x, y) => 123), // Mock simple
+        zxyToTileId: vi.fn((_z, _x, _y) => 123), // Mock simple
     };
 });
 
