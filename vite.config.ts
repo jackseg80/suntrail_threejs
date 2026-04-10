@@ -8,7 +8,7 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
-  base: './',
+  base: '/suntrail_threejs/',
   build: {
     outDir: 'dist',
     // Three.js fait ~520kB minifié (dans son propre chunk — correct)
