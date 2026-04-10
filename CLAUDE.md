@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.27.4)
+# SunTrail — Guide IA (v5.27.5)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-10 suite à la correction des traits parasites sur le REC.
+> Mis à jour le 2026-04-10 suite à la refonte complète de l'inclinomètre (réticule mobile + anticipation GPS).
 
 ## Projet
 
@@ -10,11 +10,11 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 **Stack** : TypeScript strict · Three.js r160 · Vite 5 · Capacitor 6 · RevenueCat
 
-## ⚠️ Règles & Décisions Actées (v5.27.4)
+## ⚠️ Règles & Décisions Actées (v5.27.5)
 
 ### 🚀 Protocole de Release (IMPÉRATIF)
-1. **Version Name** : Incrémenter dans `package.json` (ex: 5.26.7 → 5.26.8).
-2. **Version Code** : Incrémenter **TOUJOURS** le `versionCode` dans `android/app/build.gradle` (ex: 575 → 576). Google Play rejette tout build avec un version code déjà utilisé.
+1. **Version Name** : Incrémenter dans `package.json` (ex: 5.27.4 → 5.27.5).
+2. **Version Code** : Incrémenter **TOUJOURS** le `versionCode` dans `android/app/build.gradle` (ex: 586 → 587). Google Play rejette tout build avec un version code déjà utilisé.
 3. **Changelog** : Mettre à jour `CHANGELOG.md` et `TODO.md`.
 4. **Git** : Taguer la version (`git tag vX.Y.Z`) et pusher les tags.
 
@@ -34,7 +34,7 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 - **Solaire** : Simulation 24h gratuite. Calendrier complet = PRO.
 - **Offline** : 1 zone gratuite. Illimité = PRO.
 - **LOD** : Plafond technique à 14 pour les gratuits (Toast d'upsell intégré).
-- **Inclinomètre** : Feature PRO active.
+- **Inclinomètre** : Feature PRO active (v5.27.5 : Réticule mobile + anticipation 15m).
 - **Satellite** : Feature PRO active.
 - **Alertes Sécurité** : Seront TOUJOURS gratuites (v6.0+).
 
@@ -44,6 +44,7 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 - **Lissage** : Moyenne mobile 3 points sur l'altitude GPS.
 - **Filtrage GPS (v5.27.2)** : Rejeter tout point GPS avec saut vertical > 200m ou distance horizontale < 2m (anti-champignon).
 - **Alignement Géographique (v5.27.3)** : Recalcul obligatoire des maillages GPX lors de chaque `Origin Shift` (Floating Origin).
+- **Inclinomètre (v5.27.5)** : Raycasting 3D pour mesure sous le réticule. Anticipation de 15m en mode suivi basée sur `userHeading`.
 
 ### Rendu & Performance
 - **`renderer.setSize(w, h, false)`** — TOUJOURS le 3ème param `false`.
@@ -53,7 +54,7 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 ## Structure du Projet
 - `src/modules/iapService.ts` : Liaison RevenueCat ↔ Google Play.
-- `src/modules/ui/components/InclinometerWidget.ts` : Inclinomètre numérique Pro.
+- `src/modules/ui/components/InclinometerWidget.ts` : Inclinomètre interactif (viseur mobile + GPS).
 - `src/modules/ui/components/TrackSheet.ts` : Gestion des tracés et REC libre.
 - `src/modules/ui/components/ConnectivitySheet.ts` : Mode hors-ligne (limite 1 zone free).
 - `src/modules/ui/components/TimelineComponent.ts` : Solaire (calendrier Pro).

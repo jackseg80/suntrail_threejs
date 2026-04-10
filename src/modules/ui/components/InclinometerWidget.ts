@@ -12,49 +12,51 @@
  */
 
 import { state } from '../../state';
-import { getAltitudeAt } from '../../analysis';
+import { getAltitudeAt, findTerrainIntersection } from '../../analysis';
 import { showUpgradePrompt } from '../../iap';
 import { i18n } from '../../../i18n/I18nService';
 import { eventBus } from '../../eventBus';
+import { lngLatToWorld } from '../../geo';
+import * as THREE from 'three';
 
-/** Décalage d'échantillonnage en mètres monde */
-const SAMPLE_DELTA_M = 5;
+/** Décalage d'échantillonnage en mètres monde pour le calcul du gradient */
+const SAMPLE_DELTA_M = 4;
 const UPDATE_INTERVAL_MS = 200;
 const MIN_ZOOM_DISPLAY = 13;
-const DRAG_HOLD_MS = 300;       // Délai avant activation du drag (distingue tap vs drag)
 const DETAIL_AUTO_CLOSE_MS = 5000;
+const ANTICIPATION_DISTANCE_M = 15; // Distance devant l'utilisateur en mode suivi
 
 const COMPASS_DIRS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
 
 export class InclinometerWidget {
     private el: HTMLElement | null = null;
+    private reticle: HTMLElement | null = null;
     private detailEl: HTMLElement | null = null;
     private intervalId: ReturnType<typeof setInterval> | null = null;
     private unsubscribers: Array<() => void> = [];
 
     // État interactif
     private _isExpanded = false;
-    private _isDragging = false;
-    private _isCustomPos = false;
-    private _dragHoldTimer: ReturnType<typeof setTimeout> | null = null;
-    private _detailTimer: ReturnType<typeof setTimeout> | null = null;
+    private _isDraggingReticle = false;
     private _lastTapTime = 0;
+    
+    // Position du réticule en coordonnées écran (px)
+    private _reticleX = window.innerWidth / 2;
+    private _reticleY = window.innerHeight / 2;
     private _dragStartX = 0;
     private _dragStartY = 0;
-    private _elStartLeft = 0;
-    private _elStartTop = 0;
+    private _reticleStartLeft = 0;
+    private _reticleStartTop = 0;
 
-    // Dernières valeurs calculées (pour le panel détail)
+    // Dernières valeurs calculées
     private _lastSlopeDeg = 0;
     private _lastSlopePct = 0;
     private _lastAspectDeg = 0;
 
     public init(): void {
+        // 1. Création du Widget (Texte en bas)
         this.el = document.createElement('div');
         this.el.id = 'inclinometer-widget';
-        this.el.setAttribute('aria-label', i18n.t('inclinometer.label'));
-        this.el.setAttribute('role', 'status');
-        this.el.setAttribute('aria-live', 'polite');
         this.el.style.cssText = [
             'position:fixed',
             'bottom:calc(var(--bar-h) + var(--safe-bottom) + 16px)',
@@ -66,48 +68,72 @@ export class InclinometerWidget {
             'color:var(--text)',
             'font-size:13px',
             'font-weight:600',
-            'font-variant-numeric:tabular-nums',
-            'letter-spacing:0.3px',
             'padding:5px 14px',
             'border-radius:20px',
-            'pointer-events:auto',
             'z-index:2100',
             'display:none',
-            'white-space:nowrap',
             'border:1px solid var(--border-active)',
             'cursor:pointer',
             'user-select:none',
             'touch-action:none',
         ].join(';');
-
         document.body.appendChild(this.el);
 
-        // Événements tactiles / souris
-        this.el.addEventListener('pointerdown', (e) => this.onPointerDown(e));
-        this.el.addEventListener('pointermove', (e) => this.onPointerMove(e));
-        this.el.addEventListener('pointerup', (e) => this.onPointerUp(e));
-        this.el.addEventListener('pointercancel', () => this.onPointerCancel());
+        // 2. Création du Réticule (Viseur indépendant)
+        this.reticle = document.createElement('div');
+        this.reticle.id = 'inclinometer-reticle';
+        this.reticle.style.cssText = [
+            'position:fixed',
+            'width:30px',
+            'height:30px',
+            'left:50%',
+            'top:50%',
+            'transform:translate(-50%, -50%)',
+            'z-index:2099',
+            'display:none',
+            'pointer-events:auto',
+            'cursor:move',
+            'touch-action:none',
+            'border:2px solid #fff',
+            'border-radius:50%',
+            'box-shadow:0 0 4px rgba(0,0,0,0.5)',
+            'background:rgba(255,255,255,0.1)',
+        ].join(';');
+        // Petit point au centre du réticule
+        const centerDot = document.createElement('div');
+        centerDot.style.cssText = 'position:absolute;left:50%;top:50%;width:4px;height:4px;background:#fff;border-radius:50%;transform:translate(-50%,-50%)';
+        this.reticle.appendChild(centerDot);
+        document.body.appendChild(this.reticle);
 
-        // Abonnements réactifs
+        // Événements
+        this.el.addEventListener('click', () => this.toggleDetail());
+        this.reticle.addEventListener('pointerdown', (e) => this.onReticleDown(e));
+        window.addEventListener('pointermove', (e) => this.onReticleMove(e));
+        window.addEventListener('pointerup', (e) => this.onReticleUp(e));
+
+        // Abonnements
         this.unsubscribers.push(state.subscribe('isPro', () => this.syncVisibility()));
         this.unsubscribers.push(state.subscribe('ZOOM', () => this.syncVisibility()));
         this.unsubscribers.push(state.subscribe('SHOW_INCLINOMETER', () => this.syncVisibility()));
-
-        // Re-traduction
-        eventBus.on('localeChanged', () => {
-            if (this.el) this.el.setAttribute('aria-label', i18n.t('inclinometer.label'));
-        });
+        this.unsubscribers.push(state.subscribe('isFollowingUser', (val) => {
+            if (val) this.resetReticle(); // Recentrer si on clique sur le bouton position
+            this.syncVisibility();
+        }));
 
         this.syncVisibility();
     }
 
     private syncVisibility(): void {
         const shouldShow = state.isPro && state.ZOOM >= MIN_ZOOM_DISPLAY && state.SHOW_INCLINOMETER;
-        if (shouldShow) {
-            if (this.el) this.el.style.display = 'block';
-            this.startPolling();
-        } else {
-            if (this.el) this.el.style.display = 'none';
+        if (this.el) this.el.style.display = shouldShow ? 'block' : 'none';
+        
+        // Réticule visible uniquement en mode libre
+        if (this.reticle) {
+            this.reticle.style.display = (shouldShow && !state.isFollowingUser) ? 'block' : 'none';
+        }
+        
+        if (shouldShow) this.startPolling();
+        else {
             this.stopPolling();
             this.closeDetail();
         }
@@ -119,21 +145,45 @@ export class InclinometerWidget {
     }
 
     private stopPolling(): void {
-        if (this.intervalId !== null) {
-            clearInterval(this.intervalId);
-            this.intervalId = null;
-        }
+        if (this.intervalId !== null) { clearInterval(this.intervalId); this.intervalId = null; }
     }
 
     private update(): void {
-        if (!this.el || !state.controls) return;
+        if (!this.el || !state.controls || !state.camera) return;
 
-        const cx = state.controls.target.x;
-        const cz = state.controls.target.z;
+        let targetX = 0;
+        let targetZ = 0;
 
-        const hCenter = getAltitudeAt(cx, cz);
-        const hX      = getAltitudeAt(cx + SAMPLE_DELTA_M, cz);
-        const hZ      = getAltitudeAt(cx, cz + SAMPLE_DELTA_M);
+        if (state.isFollowingUser && state.userLocation && state.originTile) {
+            // MODE SUIVI : Position utilisateur + anticipation
+            const pos = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
+            const heading = state.userHeading || 0;
+            const headingRad = (heading * Math.PI) / 180;
+            
+            // On projette à 15m devant (0° = Nord = -Z, 90° = Est = +X)
+            targetX = pos.x + Math.sin(headingRad) * ANTICIPATION_DISTANCE_M;
+            targetZ = pos.z - Math.cos(headingRad) * ANTICIPATION_DISTANCE_M;
+        } else {
+            // MODE LIBRE : Sous le réticule écran via Raycasting
+            const ndcX = (this._reticleX / window.innerWidth) * 2 - 1;
+            const ndcY = -(this._reticleY / window.innerHeight) * 2 + 1;
+            
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera({ x: ndcX, y: ndcY }, state.camera);
+            
+            const hit = findTerrainIntersection(raycaster.ray);
+            if (hit) {
+                targetX = hit.x;
+                targetZ = hit.z;
+            } else {
+                targetX = state.controls.target.x;
+                targetZ = state.controls.target.z;
+            }
+        }
+
+        const hCenter = getAltitudeAt(targetX, targetZ);
+        const hX      = getAltitudeAt(targetX + SAMPLE_DELTA_M, targetZ);
+        const hZ      = getAltitudeAt(targetX, targetZ + SAMPLE_DELTA_M);
 
         const exag = state.RELIEF_EXAGGERATION || 1;
         const realDHdX = (hX - hCenter) / exag / SAMPLE_DELTA_M;
@@ -142,131 +192,86 @@ export class InclinometerWidget {
         const slopeRad = Math.atan(Math.sqrt(realDHdX * realDHdX + realDHdZ * realDHdZ));
         this._lastSlopeDeg = Math.round(slopeRad * (180 / Math.PI));
         this._lastSlopePct = Math.round(Math.tan(slopeRad) * 100);
-
-        // Direction de la pente (azimut du gradient descendant) — 0° = Nord
         this._lastAspectDeg = Math.round(((Math.atan2(realDHdX, realDHdZ) * 180 / Math.PI) + 360) % 360);
 
-        this.el.textContent = `⛰ ${this._lastSlopeDeg}° (${this._lastSlopePct}%) — ${i18n.t('inclinometer.label')}`;
+        // Mise à jour UI
+        const labelKey = state.isFollowingUser ? 'inclinometer.label_following' : 'inclinometer.label';
+        const label = i18n.t(labelKey);
+        this.el.textContent = `⛰ ${this._lastSlopeDeg}° (${this._lastSlopePct}%) — ${label}`;
 
-        // Couleur de la bordure selon seuils avalanche
-        let borderColor = 'var(--border-active)';
-        if      (this._lastSlopeDeg >= 40) borderColor = 'rgba(239,68,68,0.7)';
-        else if (this._lastSlopeDeg >= 35) borderColor = 'rgba(249,115,22,0.7)';
-        else if (this._lastSlopeDeg >= 30) borderColor = 'rgba(234,179,8,0.7)';
-        this.el.style.borderColor = borderColor;
+        // Couleurs selon danger (seuil avalanche Swisstopo)
+        let color = '#a0a4bc'; // Gris par défaut
+        if      (this._lastSlopeDeg >= 40) color = '#ef4444'; // Rouge
+        else if (this._lastSlopeDeg >= 35) color = '#f97316'; // Orange
+        else if (this._lastSlopeDeg >= 30) color = '#eab308'; // Jaune
 
-        // Mettre à jour le panel détail s'il est ouvert
+        this.el.style.borderColor = color;
+        if (this.reticle) {
+            this.reticle.style.borderColor = color;
+            (this.reticle.firstChild as HTMLElement).style.background = color;
+        }
+
         if (this._isExpanded && this.detailEl) this.updateDetailContent();
     }
 
-    // ── Interaction : tap / drag / double-tap ──────────────────────────
+    // ── Interaction Réticule ──────────────────────────────────────────
 
-    private onPointerDown(e: PointerEvent): void {
-        if (!this.el) return;
-        this.el.setPointerCapture(e.pointerId);
-
-        // Double-tap → reset position
+    private onReticleDown(e: PointerEvent): void {
+        if (!this.reticle) return;
+        
+        // Double-tap reset
         const now = Date.now();
-        if (now - this._lastTapTime < 300 && this._isCustomPos) {
-            this._lastTapTime = 0;
-            this.resetPosition();
+        if (now - this._lastTapTime < 300) {
+            this.resetReticle();
             return;
         }
         this._lastTapTime = now;
 
-        // Préparer le drag (hold 150ms)
+        this._isDraggingReticle = true;
         this._dragStartX = e.clientX;
         this._dragStartY = e.clientY;
-
-        const rect = this.el.getBoundingClientRect();
-        this._elStartLeft = rect.left;
-        this._elStartTop = rect.top;
-
-        this._dragHoldTimer = setTimeout(() => {
-            this._isDragging = true;
-            if (this.el) this.el.style.opacity = '0.8';
-        }, DRAG_HOLD_MS);
+        const rect = this.reticle.getBoundingClientRect();
+        this._reticleStartLeft = rect.left + rect.width / 2;
+        this._reticleStartTop = rect.top + rect.height / 2;
+        
+        this.reticle.setPointerCapture(e.pointerId);
+        this.reticle.style.opacity = '0.7';
     }
 
-    private onPointerMove(e: PointerEvent): void {
-        if (!this.el) return;
-
-        // Le drag ne s'active QUE après le hold timer (300ms).
-        // Avant le hold timer, un mouvement > 20px annule le hold (= c'est un scroll/swipe, pas un hold).
-        if (!this._isDragging) {
-            if (this._dragHoldTimer) {
-                const mdx = e.clientX - this._dragStartX;
-                const mdy = e.clientY - this._dragStartY;
-                if (Math.abs(mdx) > 20 || Math.abs(mdy) > 20) {
-                    // Trop de mouvement → annuler le hold, c'est un geste de carte
-                    clearTimeout(this._dragHoldTimer);
-                    this._dragHoldTimer = null;
-                }
-            }
-            return;
-        }
+    private onReticleMove(e: PointerEvent): void {
+        if (!this._isDraggingReticle || !this.reticle) return;
 
         const dx = e.clientX - this._dragStartX;
         const dy = e.clientY - this._dragStartY;
-        let newLeft = this._elStartLeft + dx;
-        let newTop = this._elStartTop + dy;
+        
+        this._reticleX = Math.max(20, Math.min(window.innerWidth - 20, this._reticleStartLeft + dx));
+        this._reticleY = Math.max(20, Math.min(window.innerHeight - 20, this._reticleStartTop + dy));
 
-        // Contraindre au viewport
-        const w = this.el.offsetWidth;
-        const h = this.el.offsetHeight;
-        newLeft = Math.max(0, Math.min(window.innerWidth - w, newLeft));
-        newTop = Math.max(0, Math.min(window.innerHeight - h, newTop));
-
-        // Passer en positionnement absolu
-        this.el.style.left = `${newLeft}px`;
-        this.el.style.top = `${newTop}px`;
-        this.el.style.bottom = 'auto';
-        this.el.style.transform = 'none';
-        this._isCustomPos = true;
+        this.reticle.style.left = `${this._reticleX}px`;
+        this.reticle.style.top = `${this._reticleY}px`;
     }
 
-    private onPointerUp(e: PointerEvent): void {
-        if (!this.el) return;
-        this.el.releasePointerCapture(e.pointerId);
+    private onReticleUp(e: PointerEvent): void {
+        if (!this._isDraggingReticle || !this.reticle) return;
+        this._isDraggingReticle = false;
+        this.reticle.style.opacity = '1';
+        this.reticle.releasePointerCapture(e.pointerId);
+    }
 
-        if (this._dragHoldTimer) { clearTimeout(this._dragHoldTimer); this._dragHoldTimer = null; }
-
-        if (this._isDragging) {
-            this._isDragging = false;
-            this.el.style.opacity = '1';
-            // Repositionner le panel détail si ouvert
-            if (this._isExpanded) this.positionDetail();
-            return;
+    private resetReticle(): void {
+        this._reticleX = window.innerWidth / 2;
+        this._reticleY = window.innerHeight / 2;
+        if (this.reticle) {
+            this.reticle.style.left = '50%';
+            this.reticle.style.top = '50%';
         }
-
-        // C'est un tap (pas un drag) → toggle détail
-        this.toggleDetail();
-    }
-
-    private onPointerCancel(): void {
-        if (this._dragHoldTimer) { clearTimeout(this._dragHoldTimer); this._dragHoldTimer = null; }
-        this._isDragging = false;
-        if (this.el) this.el.style.opacity = '1';
-    }
-
-    private resetPosition(): void {
-        if (!this.el) return;
-        this.el.style.left = '50%';
-        this.el.style.top = '';
-        this.el.style.bottom = 'calc(var(--bar-h) + var(--safe-bottom) + 16px)';
-        this.el.style.transform = 'translateX(-50%)';
-        this._isCustomPos = false;
-        if (this._isExpanded) this.positionDetail();
     }
 
     // ── Panel de détail ────────────────────────────────────────────────
 
     private toggleDetail(): void {
-        if (this._isExpanded) {
-            this.closeDetail();
-        } else {
-            this.openDetail();
-        }
+        if (this._isExpanded) this.closeDetail();
+        else this.openDetail();
     }
 
     private openDetail(): void {
@@ -281,12 +286,11 @@ export class InclinometerWidget {
             'background:var(--surface-solid)',
             'backdrop-filter:var(--glass)',
             '-webkit-backdrop-filter:var(--glass)',
-            'border-radius:var(--radius-lg, 12px)',
+            'border-radius:12px',
             'padding:12px 16px',
             'color:var(--text)',
             'font-size:13px',
             'min-width:200px',
-            'max-width:260px',
             'border:1px solid var(--border)',
             'pointer-events:none',
             'opacity:0',
@@ -297,21 +301,14 @@ export class InclinometerWidget {
         document.body.appendChild(this.detailEl);
         this.positionDetail();
 
-        requestAnimationFrame(() => {
-            if (this.detailEl) this.detailEl.style.opacity = '1';
-        });
-
-        // Auto-fermeture
+        requestAnimationFrame(() => { if (this.detailEl) this.detailEl.style.opacity = '1'; });
         this._detailTimer = setTimeout(() => this.closeDetail(), DETAIL_AUTO_CLOSE_MS);
     }
 
     private closeDetail(): void {
         this._isExpanded = false;
         if (this._detailTimer) { clearTimeout(this._detailTimer); this._detailTimer = null; }
-        if (this.detailEl) {
-            this.detailEl.remove();
-            this.detailEl = null;
-        }
+        if (this.detailEl) { this.detailEl.remove(); this.detailEl = null; }
     }
 
     private positionDetail(): void {
@@ -327,7 +324,6 @@ export class InclinometerWidget {
 
     private updateDetailContent(): void {
         if (!this.detailEl) return;
-
         const compassIdx = Math.round(this._lastAspectDeg / 45) % 8;
         const dirKey = COMPASS_DIRS[compassIdx];
         const dirLabel = i18n.t(`inclinometer.directions.${dirKey}`);
@@ -356,11 +352,12 @@ export class InclinometerWidget {
         this.unsubscribers.forEach(u => u());
         this.unsubscribers = [];
         this.el?.remove();
+        this.reticle?.remove();
         this.el = null;
+        this.reticle = null;
     }
 }
 
-// Upsell helper pour les users gratuits qui touchent le widget (si jamais visible)
 export function showInclinometerUpsell(): void {
     showUpgradePrompt('inclinometer');
 }

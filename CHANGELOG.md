@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.27.5] - 2026-04-10
+
+### Added
+- **Inclinomètre Interactif (Réticule Mobile)** : Ajout d'un viseur (crosshair) indépendant du widget texte, déplaçable sur tout l'écran pour mesurer la pente n'importe où sur la carte (via Raycasting 3D).
+- **Mode Suivi GPS Contextuel** : En mode suivi, le réticule se masque et l'inclinomètre mesure automatiquement la pente à **15m devant l'utilisateur** (anticipation de l'effort) en utilisant son cap (`userHeading`).
+- **Coloration Dynamique de Danger** : Le réticule et le widget changent de couleur en temps réel (Gris/Jaune/Orange/Rouge) selon les seuils d'inclinaison (30°, 35°, 40°) pour une lecture rapide du risque d'avalanche.
+- **Gestes de Reset** : Double-clic sur le réticule pour le recentrer. Reset automatique au centre lors du clic sur le bouton de position GPS.
+
+### Fixed
+- **Pertinence des Mesures** : L'inclinomètre ne mesure plus systématiquement le centre de l'écran par défaut, mais s'adapte à l'usage (position utilisateur ou point visé).
+
 ## [5.27.4] - 2026-04-10
 
 ### Fixed

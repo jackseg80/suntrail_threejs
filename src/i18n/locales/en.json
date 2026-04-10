@@ -584,7 +584,8 @@
     }
   },
   "inclinometer": {
-    "label": "slope at center",
+    "label": "slope at reticle",
+    "label_following": "current slope",
     "aspect": "Direction",
     "danger": {
       "low": "Moderate terrain",

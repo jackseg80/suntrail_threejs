@@ -572,7 +572,8 @@
     }
   },
   "inclinometer": {
-    "label": "pente au centre",
+    "label": "pente au viseur",
+    "label_following": "pente actuelle",
     "aspect": "Direction",
     "danger": {
       "low": "Terrain modéré",
