@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.5] - 2026-04-11
+### Added
+- **Refonte des Bâtiments 3D (Anti-Gravité)** : Implémentation d'un échantillonnage multi-points de l'altitude. Les bâtiments sont désormais ancrés au sol à leur point le plus bas sur les pentes, éliminant l'effet de "bâtiments volants" en montagne.
+- **Fondations de Sécurité** : Ajout d'une "jupe" de 5m sous le niveau du sol pour garantir une jonction parfaite avec le relief, même avec une forte exagération du relief.
+- **Visibilité Étendue** : Augmentation du rayon de rendu (jusqu'à 7 tuiles en mode Ultra) et réduction de l'écrêtage agressif pour les bâtiments lointains.
+- **LOD Dynamique par Preset** : Ajustement automatique de la distance de visibilité selon le preset de performance (Balanced: 3x, Performance: 5x, Ultra: 7x).
+
 ## [5.28.4] - 2026-04-11
 ### Fixed
 - **Signalisation 3D (Restaurée)** : Correction du rendu des losanges (signpost) avec un nouveau design à gradient radial, une bordure plus épaisse et une taille accrue (24px).

@@ -39,18 +39,21 @@ export async function loadBuildingsForTile(tile: Tile) {
     if (!state.isPro || !state.SHOW_BUILDINGS || tile.zoom < state.BUILDING_ZOOM_THRESHOLD || (tile.status as string) === 'disposed') return;
     if (tile.buildingMesh) return;
 
-    // Limite effective basée sur la distance au centre caméra.
-    // Tuiles proches : BUILDING_LIMIT complet. Tuiles lointaines : limite réduite ou skip.
-    // Le rayon max = 2.5 × largeur d'une tuile, quelle que soit le LOD.
+    // v5.28.6 : Rayon de visibilité dynamique selon le preset (Optimisation batterie/perf)
     let effectiveLimit = state.BUILDING_LIMIT || 60;
     if (state.controls) {
         const dx = tile.worldX - state.controls.target.x;
         const dz = tile.worldZ - state.controls.target.z;
         const dist = Math.sqrt(dx * dx + dz * dz);
-        const maxDist = tile.tileSizeMeters * 2.5;
+        
+        // Rayon adapté : 3x tuiles en Balanced, 5x en Performance, 7x en Ultra
+        const rangeMultiplier = state.PERFORMANCE_PRESET === 'ultra' ? 7.0 : (state.PERFORMANCE_PRESET === 'performance' ? 5.0 : 3.0);
+        const maxDist = tile.tileSizeMeters * rangeMultiplier;
+        
         if (dist > maxDist) return;
-        // Dégradé linéaire : 100 % à dist=0 → 25 % à la limite du rayon
-        effectiveLimit = Math.max(1, Math.ceil(effectiveLimit * (1 - (dist / maxDist) * 0.75)));
+        
+        const reductionFactor = Math.min(0.5, (dist / maxDist) * 0.5);
+        effectiveLimit = Math.max(5, Math.ceil(effectiveLimit * (1 - reductionFactor)));
     }
 
     // 1. TENTATIVE VIA MAPTILER VECTOR TILES (Plus rapide, optimisé tuile)
@@ -172,6 +175,33 @@ async function fetchBuildingsMapTiler(tile: Tile): Promise<any[] | null> {
     return features;
 }
 
+/**
+ * v5.28.5 : Échantillonne l'altitude sur plusieurs points pour gérer les pentes.
+ * Retourne { min, max, avg } pour ajuster l'extrusion (fondations).
+ */
+function getBuildingElevationStats(points: THREE.Vector2[], tile: Tile) {
+    let min = Infinity;
+    let max = -Infinity;
+    let sum = 0;
+    
+    // Échantillonner les coins et le centre
+    const samples = [...points];
+    if (points.length > 2) {
+        let cx = 0, cy = 0;
+        for (const p of points) { cx += p.x; cy += p.y; }
+        samples.push(new THREE.Vector2(cx / points.length, cy / points.length));
+    }
+
+    for (const p of samples) {
+        const alt = getAltitudeAt(tile.worldX + p.x, tile.worldZ - p.y, tile);
+        if (alt < min) min = alt;
+        if (alt > max) max = alt;
+        sum += alt;
+    }
+
+    return { min, max, avg: sum / samples.length };
+}
+
 function renderBuildingsMapTiler(tile: Tile, features: any[], limit: number) {
     if ((tile.status as string) === 'disposed' || !tile.mesh) return;
 
@@ -207,20 +237,24 @@ function renderBuildingsMapTiler(tile: Tile, features: any[], limit: number) {
 
             try {
                 const shape = new THREE.Shape(points);
-                const height = (f.properties.render_height || 12) * state.RELIEF_EXAGGERATION;
-                const minHeight = (f.properties.render_min_height || 0) * state.RELIEF_EXAGGERATION;
+                const nominalHeight = (f.properties.render_height || 12) * state.RELIEF_EXAGGERATION;
+                const minHeightOffset = (f.properties.render_min_height || 0) * state.RELIEF_EXAGGERATION;
+
+                // v5.28.5 : Calcul adaptatif de l'extrusion pour les pentes
+                const stats = getBuildingElevationStats(points, tile);
+                const slopeDiff = stats.max - stats.min;
+                const foundationDepth = 5.0; // S'enfonce de 5m pour éviter tout jour sous le bâtiment
+                
+                const totalDepth = Math.max(1, nominalHeight - minHeightOffset + slopeDiff + foundationDepth);
 
                 const bGeo = new THREE.ExtrudeGeometry(shape, {
-                    depth: Math.max(1, height - minHeight),
+                    depth: totalDepth,
                     bevelEnabled: false
                 });
 
-                const centerLX = (cx / subExtent - 0.5) * tile.tileSizeMeters;
-                const centerLZ = (cy / subExtent - 0.5) * tile.tileSizeMeters;
-                const baseAlt = getAltitudeAt(tile.worldX + centerLX, tile.worldZ + centerLZ, tile);
-
                 bGeo.rotateX(-Math.PI / 2);
-                bGeo.translate(0, baseAlt + minHeight, 0);
+                // On positionne la base du bâtiment à (minAltitude - foundationDepth)
+                bGeo.translate(0, stats.min - foundationDepth + minHeightOffset, 0);
                 geometries.push(bGeo);
             } catch (e) { console.warn('[Buildings] Geometry processing (MapTiler) failed silently:', e); }
         }
@@ -297,14 +331,19 @@ function renderBuildingsMerged(tile: Tile, elements: any[], limit: number) {
 
             try {
                 const shape = new THREE.Shape(points);
-                const height = (el.tags?.['building:levels'] ? el.tags['building:levels'] * 4.5 : 12) * state.RELIEF_EXAGGERATION;
-                const bGeo = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false });
+                const nominalHeight = (el.tags?.['building:levels'] ? el.tags['building:levels'] * 4.5 : 12) * state.RELIEF_EXAGGERATION;
+                
+                // v5.28.5 : Calcul adaptatif pour les pentes (Overpass)
+                const stats = getBuildingElevationStats(points, tile);
+                const slopeDiff = stats.max - stats.min;
+                const foundationDepth = 5.0;
+                
+                const totalDepth = Math.max(1, nominalHeight + slopeDiff + foundationDepth);
 
-                const center = tile.lngLatToLocal(el.geometry[0].lon, el.geometry[0].lat);
-                const baseAlt = getAltitudeAt(tile.worldX + center.x, tile.worldZ + center.z, tile);
+                const bGeo = new THREE.ExtrudeGeometry(shape, { depth: totalDepth, bevelEnabled: false });
 
                 bGeo.rotateX(-Math.PI / 2);
-                bGeo.translate(0, baseAlt, 0);
+                bGeo.translate(0, stats.min - foundationDepth, 0);
                 geometries.push(bGeo);
             } catch (e) { console.warn('[Buildings] Geometry processing (Overpass) failed silently:', e); }
         }
