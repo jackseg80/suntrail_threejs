@@ -75,29 +75,38 @@ export function isPositionInFrance(lat: number, lon: number): boolean {
     return lat > 41.3 && lat < 51.1 && lon > -5.1 && lon < 8.3;
 }
 
-// --- GESTIONNAIRE OVERPASS LIFO ---
-let overpassQueue: { query: string, resolve: Function }[] = [];
+// --- GESTIONNAIRE OVERPASS FIFO AVEC PRIORITÉ ---
+let overpassQueue: { query: string, resolve: Function, priority: boolean }[] = [];
 let isOverpassProcessing = false;
-let _overpassBackoffUntil = 0;     // Backoff GLOBAL : aucune requête avant ce timestamp
-let _overpassConsecutiveFails = 0;  // Compteur d'échecs consécutifs
-const OVERPASS_DELAY = 1200;       // 1.2s entre requêtes
-const OVERPASS_BASE_BACKOFF = 15000;  // 15s de base après un échec
-const OVERPASS_MAX_BACKOFF = 300000;  // 5 min max (après échecs répétés)
-const OVERPASS_MAX_QUEUE = 8;      // Queue courte
+let _overpassBackoffUntil = 0;     
+let _overpassConsecutiveFails = 0;  
+let _lowPriorityDisabledUntil = 0; // Disjoncteur pour hydrologie/bâtiments
+const OVERPASS_DELAY = 2000;       // Augmenté à 2s pour éviter les 429 massifs
+const OVERPASS_BASE_BACKOFF = 30000;  
+const OVERPASS_MAX_QUEUE = 15;      
 
-/** Vérifie si Overpass est en backoff global (429/504 récent) */
 export function isOverpassInBackoff(): boolean {
     return Date.now() < _overpassBackoffUntil;
 }
 
-export async function fetchOverpassData(query: string): Promise<any> {
-    // Pendant le backoff, refuser immédiatement les nouvelles requêtes (pas d'empilement)
-    if (Date.now() < _overpassBackoffUntil) return null;
+export async function fetchOverpassData(query: string, highPriority: boolean = false): Promise<any> {
+    const now = Date.now();
+    // Si disjoncteur actif, on refuse immédiatement la basse priorité (soulage le CPU/Réseau)
+    if (!highPriority && now < _lowPriorityDisabledUntil) return null;
+    if (now < _overpassBackoffUntil) return null;
 
     return new Promise((resolve) => {
-        overpassQueue.push({ query, resolve });
+        const item = { query, resolve, priority: highPriority };
+        if (highPriority) {
+            overpassQueue.unshift(item); // Priorité : au début
+        } else {
+            overpassQueue.push(item);    // Normal : à la fin
+        }
+        
         while (overpassQueue.length > OVERPASS_MAX_QUEUE) {
-            const dropped = overpassQueue.shift()!;
+            // Supprimer en priorité les requêtes non-prioritaires
+            const idx = overpassQueue.findIndex(q => !q.priority);
+            const dropped = overpassQueue.splice(idx !== -1 ? idx : overpassQueue.length - 1, 1)[0];
             dropped.resolve(null);
         }
         if (!isOverpassProcessing) processNextOverpass();
@@ -112,35 +121,47 @@ async function processNextOverpass() {
 
     const now = Date.now();
     if (now < _overpassBackoffUntil) {
-        // Vider toute la queue pendant le backoff — les appelants retenteront naturellement
-        while (overpassQueue.length > 0) overpassQueue.pop()!.resolve(null);
+        while (overpassQueue.length > 0) overpassQueue.shift()!.resolve(null);
         isOverpassProcessing = false;
         return;
     }
 
     isOverpassProcessing = true;
-    const item = overpassQueue.pop()!;
+    const item = overpassQueue.shift()!;
 
     const servers = [
-        'https://overpass-api.de/api/interpreter',
         'https://lz4.overpass-api.de/api/interpreter',
         'https://z.overpass-api.de/api/interpreter',
+        'https://overpass.kumi.systems/api/interpreter',
     ];
-    const server = servers[Math.floor(Math.random() * servers.length)];
+    if ((window as any)._overpassIdx === undefined) (window as any)._overpassIdx = 0;
+    const idx = (window as any)._overpassIdx % servers.length;
+    const server = servers[idx];
+    (window as any)._overpassIdx++;
 
     try {
-        const response = await fetch(`${server}?data=${encodeURIComponent(item.query)}`);
+        const response = await fetch(`${server}?data=${encodeURIComponent(item.query)}`, {
+            signal: AbortSignal.timeout(30000)
+        });
 
         if (response.status === 429 || response.status === 504) {
             _overpassConsecutiveFails++;
-            // Backoff exponentiel : 15s, 30s, 60s, 120s, 300s max
-            const backoff = Math.min(OVERPASS_BASE_BACKOFF * Math.pow(2, _overpassConsecutiveFails - 1), OVERPASS_MAX_BACKOFF);
-            _overpassBackoffUntil = Date.now() + backoff;
-            console.warn(`[Overpass] ${response.status} — backoff ${Math.round(backoff / 1000)}s (${_overpassConsecutiveFails} échecs consécutifs)`);
+            console.warn(`[Overpass] ${response.status} sur ${server}.`);
 
-            item.resolve(null); // Pas de retry — le cooldown de hydrology.ts protège la zone
-            // Vider la queue restante
-            while (overpassQueue.length > 0) overpassQueue.pop()!.resolve(null);
+            // Disjoncteur après 6 échecs : désactivation Hydrologie/Bâtiments
+            if (_overpassConsecutiveFails > 6) {
+                console.warn("[Overpass] Trop d'échecs. Désactivation Hydrologie/Bâtiments pour 5 min.");
+                _lowPriorityDisabledUntil = Date.now() + 300000;
+            }
+
+            if (item.priority) {
+                overpassQueue.unshift(item);
+            } else {
+                item.resolve(null);
+            }
+
+            // Attendre avant de retenter sur le serveur suivant
+            setTimeout(processNextOverpass, 3000);
             isOverpassProcessing = false;
             return;
         }
@@ -148,16 +169,15 @@ async function processNextOverpass() {
         if (!response.ok) {
             item.resolve(null);
         } else {
-            _overpassConsecutiveFails = 0; // Reset sur succès
+            _overpassConsecutiveFails = 0;
             const data = await response.json();
             item.resolve(data);
         }
     } catch (e) {
         _overpassConsecutiveFails++;
-        const backoff = Math.min(OVERPASS_BASE_BACKOFF * Math.pow(2, _overpassConsecutiveFails - 1), OVERPASS_MAX_BACKOFF);
+        const backoff = Math.min(OVERPASS_BASE_BACKOFF, 30000);
         _overpassBackoffUntil = Date.now() + backoff;
         item.resolve(null);
-        while (overpassQueue.length > 0) overpassQueue.pop()!.resolve(null);
         isOverpassProcessing = false;
         return;
     }

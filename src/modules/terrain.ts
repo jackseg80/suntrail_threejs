@@ -218,11 +218,11 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
     }
     
     // Si on n'a pas pu tout charger dans ce frame, on replanifie un "pulse" de chargement
-    // dans 50ms pour remplir la vue sans bloquer l'UI.
+    // dans 100ms (v5.28.2) pour remplir la vue sans bloquer l'UI.
     if (hasMoreToLoad) {
         setTimeout(() => {
-            updateVisibleTiles(_camLat, _camLon, _camAltitude, wx, wz);
-        }, 50);
+            updateVisibleTiles(_camLat, _camLon, _camAltitude, wx, wz, force);
+        }, 100);
     }
     const lodChanging = lastRenderedZoom !== -1 && zoom !== lastRenderedZoom;
     for (const [key, tile] of activeTiles.entries()) {
