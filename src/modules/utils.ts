@@ -228,3 +228,89 @@ export async function fetchGeocoding(params: { lat?: number, lon?: number, query
 
     return null;
 }
+
+// --- OPTIMISATION GPS (v5.28.1) ---
+
+/**
+ * Algorithme de Ramer-Douglas-Peucker (RDP)
+ * Simplifie un tracé en conservant la forme globale avec un seuil d'erreur.
+ * Optimisé pour éviter la récursion profonde et les allocations excessives.
+ */
+export function simplifyRDP<T>(
+    points: T[],
+    epsilon: number,
+    getPos: (p: T) => { x: number, y: number, z: number }
+): T[] {
+    if (points.length <= 2) return points;
+
+    const usePoint = new Uint8Array(points.length);
+    usePoint[0] = 1;
+    usePoint[points.length - 1] = 1;
+
+    const stack: [number, number][] = [[0, points.length - 1]];
+    const epsilonSq = epsilon * epsilon;
+
+    while (stack.length > 0) {
+        const [start, end] = stack.pop()!;
+        if (end <= start + 1) continue;
+
+        let maxDistSq = 0;
+        let index = -1;
+        const a = getPos(points[start]);
+        const b = getPos(points[end]);
+
+        for (let i = start + 1; i < end; i++) {
+            const p = getPos(points[i]);
+            const distSq = distanceToSegmentSquared3D(p, a, b);
+            if (distSq > maxDistSq) {
+                maxDistSq = distSq;
+                index = i;
+            }
+        }
+
+        if (maxDistSq > epsilonSq) {
+            usePoint[index] = 1;
+            stack.push([start, index]);
+            stack.push([index, end]);
+        }
+    }
+
+    const result: T[] = [];
+    for (let i = 0; i < points.length; i++) {
+        if (usePoint[i]) result.push(points[i]);
+    }
+    return result;
+}
+
+/** Distance d'un point P à un segment [A, B] en 3D (au carré pour perf) */
+function distanceToSegmentSquared3D(
+    p: { x: number, y: number, z: number },
+    a: { x: number, y: number, z: number },
+    b: { x: number, y: number, z: number }
+): number {
+    const abx = b.x - a.x, aby = b.y - a.y, abz = b.z - a.z;
+    const apx = p.x - a.x, apy = p.y - a.y, apz = p.z - a.z;
+    const l2 = abx * abx + aby * aby + abz * abz;
+    if (l2 === 0) return apx * apx + apy * apy + apz * apz;
+    let t = (apx * abx + apy * aby + apz * abz) / l2;
+    t = Math.max(0, Math.min(1, t));
+    const qx = a.x + t * abx;
+    const qy = a.y + t * aby;
+    const qz = a.z + t * abz;
+    const dx = p.x - qx, dy = p.y - qy, dz = p.z - qz;
+    return dx * dx + dy * dy + dz * dz;
+}
+
+/**
+ * Calcule la distance Haversine entre deux points GPS (en km).
+ */
+export function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // Rayon de la Terre en km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}

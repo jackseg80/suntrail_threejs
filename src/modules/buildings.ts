@@ -237,12 +237,17 @@ function finalizeMergedMesh(tile: Tile, geometries: THREE.BufferGeometry[], mate
             mesh.castShadow = state.BUILDINGS_SHADOWS;
             mesh.receiveShadow = state.BUILDINGS_SHADOWS;
             mesh.matrixAutoUpdate = false;
-            mesh.updateMatrix();
             
-            if (tile.buildingMesh) tile.mesh!.remove(tile.buildingMesh);
+            // v5.28.1 : Mandat - PAS de hierarchy attachment (scene.add)
+            if (tile.buildingMesh && state.scene) state.scene.remove(tile.buildingMesh);
+            
             tile.buildingMesh = mesh;
-            tile.mesh!.add(mesh);
+            tile.buildingMesh.position.set(tile.worldX, 0, tile.worldZ);
+            tile.buildingMesh.updateMatrix();
+            
+            if (state.scene) state.scene.add(tile.buildingMesh);
         } catch (e) {
+            console.error('[Buildings] Merge geometries failed:', e);
         } finally {
             geometries.forEach(g => g.dispose());
         }

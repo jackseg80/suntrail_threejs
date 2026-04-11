@@ -91,76 +91,37 @@ export class TrackSheet extends BaseComponent {
                 // On initialise recordedPoints vide - le mesh sera mis à jour quand les premiers points arriveront
                 state.recordedPoints = [];
             } else {
-                // v5.26.7: Processus d'arrêt sécurisé pour éviter la perte de données
+                // v5.28.1: Processus d'arrêt unifié et sécurisé
                 try {
-                    // 1. Récupérer tous les points restants du buffer natif avant l'arrêt
-                    if (state.currentCourseId) {
-                        const allPoints = await nativeGPSService.getAllPoints(state.currentCourseId, 0);
-                        if (allPoints.length > 0) {
-                            const existingTimestamps = new Set(state.recordedPoints.map(p => p.timestamp));
-                            let lastAlt = state.recordedPoints.length > 0 
-                                ? state.recordedPoints[state.recordedPoints.length - 1].alt 
-                                : null;
-
-                            const filteredNewPoints = allPoints.filter(p => {
-                                if (existingTimestamps.has(p.timestamp)) return false;
-                                // Filtrage cohérence (idem nativeGPSService)
-                                if (lastAlt !== null) {
-                                    const delta = Math.abs(p.alt - lastAlt);
-                                    if (delta > 200) return false;
-                                }
-                                if (p.alt < -500 || p.alt > 9000) return false;
-                                lastAlt = p.alt;
-                                return true;
-                            });
-
-                            if (filteredNewPoints.length > 0) {
-                                state.recordedPoints = [...state.recordedPoints, ...filteredNewPoints.map(p => ({
-                                    lat: p.lat,
-                                    lon: p.lon,
-                                    alt: p.alt,
-                                    timestamp: p.timestamp
-                                }))];
-                            }
-                        }
-                        // Petit délai pour laisser le thread UI respirer
-                        await new Promise(resolve => setTimeout(resolve, 300));
-                    }
+                    // 1. Arrêt unifié (récupération finale + stop native + cleanup local)
+                    await nativeGPSService.stopCourse();
+                    await stopRecordingService();
                     
-                    // 2. Sauvegarde SYSTÉMATIQUE (avant d'effacer quoi que ce soit)
+                    // 2. Sauvegarde SYSTÉMATIQUE (si points suffisants)
                     let savedInternal = false;
                     if (state.recordedPoints.length >= 2) {
                         savedInternal = await this.saveRecordedGPXInternal(); // Layer en mémoire
                         await this.saveGPXToFile();           // Fichier GPX (Cache/Documents)
                     }
 
-                    // 3. Arrêt des services seulement après tentative de sauvegarde
-                    await nativeGPSService.stopCourse();
-                    await stopRecordingService();
-                    state.recordingOriginTile = null;
-                    state.currentCourseId = null;
-                    
                     if (state.recordedPoints.length >= 2) {
                         showToast(i18n.t('track.toast.recStopped'));
-                        // Upsell post-REC
                         if (!state.isPro) this.showPostRecUpsell();
                     } else {
                         showToast(i18n.t('track.toast.tooShort'));
                     }
 
-                    // 4. CRUCIAL: Vider la mémoire SEULEMENT si on a au moins le layer interne
-                    // ou si c'était vraiment trop court.
+                    // 3. Vider la mémoire seulement si sauvegarde réussie ou trop court
                     if (savedInternal || state.recordedPoints.length < 2) {
                         state.recordedPoints = [];
                     } else {
-                        console.error('[TrackSheet] Sauvegarde échouée, points conservés en mémoire.');
-                        showToast('⚠️ Erreur sauvegarde, tracé conservé dans la liste');
+                        console.error('[TrackSheet] Sauvegarde échouée, points conservés.');
+                        showToast('⚠️ Erreur sauvegarde, tracé conservé');
                     }
 
                 } catch (e) {
-                    console.error('[TrackSheet] Erreur fatale lors du STOP:', e);
-                    showToast('⚠️ Erreur lors de l\'arrêt de l\'enregistrement');
-                    // En cas d'erreur, on n'efface PAS recordedPoints pour permettre une nouvelle tentative
+                    console.error('[TrackSheet] Erreur lors du STOP:', e);
+                    showToast('⚠️ Erreur lors de l\'arrêt');
                 }
             }
         });

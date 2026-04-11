@@ -214,7 +214,12 @@ function renderHydrology(tile: Tile, elements: any[]) {
     }
 
     if (group.children.length > 0) {
+        // v5.28.1 : Mandat - PAS de hierarchy attachment (scene.add)
+        if (tile.hydroGroup && state.scene) state.scene.remove(tile.hydroGroup);
+        
         tile.hydroGroup = group;
-        tile.mesh.add(group);
+        tile.hydroGroup.position.set(tile.worldX, 0, tile.worldZ);
+        
+        if (state.scene) state.scene.add(tile.hydroGroup);
     }
 }

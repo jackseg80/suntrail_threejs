@@ -17,10 +17,19 @@ function createSignpostTexture(): THREE.Texture {
     canvas.width = 64; canvas.height = 64;
     const ctx = canvas.getContext('2d');
     if (ctx) {
+        // v5.28.1 : Losange jaune (standard randonnée suisse)
         ctx.beginPath();
-        ctx.arc(32, 32, 20, 0, Math.PI * 2);
-        ctx.fillStyle = '#FFD700'; ctx.fill();
-        ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.stroke();
+        ctx.moveTo(32, 10);  // Haut
+        ctx.lineTo(54, 32);  // Droite
+        ctx.lineTo(32, 54);  // Bas
+        ctx.lineTo(10, 32);  // Gauche
+        ctx.closePath();
+        
+        ctx.fillStyle = '#FFD700';
+        ctx.fill();
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 3;
+        ctx.stroke();
     }
     return new THREE.CanvasTexture(canvas);
 }
@@ -99,23 +108,32 @@ async function fetchPOIsWithCache(z: number, x: number, y: number, key: string):
 }
 
 function renderPOIs(tile: Tile, elements: any[]) {
-    if (tile.status === 'disposed' || !tile.mesh) return;
+    if (tile.status === 'disposed' || !state.scene) return;
 
     const group = new THREE.Group();
-    const material = new THREE.SpriteMaterial({ map: signpostTexture, transparent: true, depthTest: true });
+    const material = new THREE.SpriteMaterial({ 
+        map: signpostTexture, 
+        transparent: true, 
+        depthTest: true,
+        sizeAttenuation: true
+    });
 
     elements.forEach(el => {
-        const center = tile.lngLatToLocal(el.lon, el.lat);
-        const baseAlt = getAltitudeAt(tile.worldX + center.x, tile.worldZ + center.z, tile);
+        const local = tile.lngLatToLocal(el.lon, el.lat);
+        // Altitude terrain au point précis
+        const baseAlt = getAltitudeAt(tile.worldX + local.x, tile.worldZ + local.z, tile);
 
         const sprite = new THREE.Sprite(material);
-        sprite.scale.set(25, 25, 1);
-        sprite.position.set(center.x, baseAlt + 25, center.z);
+        sprite.scale.set(16, 16, 1); // Taille ajustée pour v5.28
+        sprite.position.set(local.x, baseAlt + 12, local.z);
         sprite.userData = { name: el.tags?.name || "Signalétique", lat: el.lat, lon: el.lon };
         group.add(sprite);
     });
 
-    if (tile.poiGroup) tile.mesh.remove(tile.poiGroup);
+    // v5.28.1 : Mandat - PAS de hierarchy attachment (scene.add)
+    if (tile.poiGroup) state.scene.remove(tile.poiGroup);
+    
     tile.poiGroup = group;
-    tile.mesh.add(group);
+    tile.poiGroup.position.set(tile.worldX, 0, tile.worldZ);
+    state.scene.add(tile.poiGroup);
 }

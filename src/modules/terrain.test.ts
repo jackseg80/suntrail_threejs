@@ -183,7 +183,6 @@ describe('terrain.ts', () => {
             state.camera = new THREE.PerspectiveCamera();
             state.camera.position.set(0, 5000, 0);
             state.originTile = { x: 4270, y: 2891, z: 13 };
-            state.recordingOriginTile = null;
             state.recordedPoints = [];
             state.recordedMesh = null;
             state.RELIEF_EXAGGERATION = 2.0;

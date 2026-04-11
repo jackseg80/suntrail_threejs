@@ -1,4 +1,4 @@
-import { haversineDistance } from './profile';
+import { haversineDistance } from './utils';
 
 export interface LocationPoint {
     lat: number;

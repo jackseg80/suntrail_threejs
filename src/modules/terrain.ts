@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { disposeObject } from './memory';
 import { state, GPX_COLORS } from './state';
 import type { GPXLayer } from './state';
-import { isPositionInSwitzerland, isPositionInFrance, isMobileDevice } from './utils';
+import { isPositionInSwitzerland, isPositionInFrance, isMobileDevice, simplifyRDP } from './utils';
 import { updateElevationProfile } from './profile';
 import { lngLatToWorld, worldToLngLat, lngLatToTile } from './geo';
 import { eventBus } from './eventBus';
@@ -144,7 +144,7 @@ export function autoSelectMapSource(lat: number, lon: number): void {
 
 import { terrainUniforms } from './terrain/Tile';
 
-export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number | null = null, worldZ: number | null = null): Promise<void> {
+export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number | null = null, worldZ: number | null = null, force: boolean = false): Promise<void> {
     const is2DGlobal = state.IS_2D_MODE || state.PERFORMANCE_PRESET === 'eco' || state.ZOOM <= 10;
     terrainUniforms.uExaggeration.value = state.RELIEF_EXAGGERATION;
     const MIN_SLOPE_LOD = 11;
@@ -153,8 +153,9 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
 
     if (!state.camera || Math.abs(state.camera.position.y) < 1) return Promise.resolve();
 
-    const wx = (worldX !== null) ? worldX : state.camera.position.x;
-    const wz = (worldZ !== null) ? worldZ : state.camera.position.z;
+    // v5.28.1 : Utiliser la cible des contrôles par défaut (plus précis que la position caméra en 3D)
+    const wx = (worldX !== null) ? worldX : (state.controls ? state.controls.target.x : state.camera.position.x);
+    const wz = (worldZ !== null) ? worldZ : (state.controls ? state.controls.target.z : state.camera.position.z);
 
     const currentGPS = worldToLngLat(wx, wz, state.originTile);
     const zoom = state.ZOOM; const maxTile = Math.pow(2, zoom);
@@ -185,12 +186,12 @@ export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: 
     const isPC = !isMobileDevice();
     
     // Rafales de chargement sécurisées (v5.26.13)
-    // Objectif : Rester sous les 16ms par frame pour garantir 60 FPS.
-    const MAX_NEW_TILES_PER_FRAME = isPC 
+    // v5.28.1: Augmentation de la limite si force=true (changement de mode)
+    const MAX_NEW_TILES_PER_FRAME = force ? 50 : (isPC 
         ? 25 
         : (state.PERFORMANCE_PRESET === 'performance') ? 12 
         : (state.PERFORMANCE_PRESET === 'balanced') ? 8 
-        : 4;
+        : 4);
 
     let hasMoreToLoad = false;
 
@@ -458,7 +459,6 @@ export function updateRecordedTrackMesh(): void {
     const originTile = state.originTile;
     
     let lastValidAlt: number | null = null;
-    let lastWorldPos: THREE.Vector3 | null = null;
 
     // v5.27.4: Tri chronologique impératif pour éviter les traits qui traversent la carte
     const sortedPoints = [...state.recordedPoints].sort((a, b) => a.timestamp - b.timestamp);
@@ -488,24 +488,18 @@ export function updateRecordedTrackMesh(): void {
             const gpsY = p.alt * state.RELIEF_EXAGGERATION + 8;
             const finalY = (terrainY === 0 || isNaN(terrainY)) ? gpsY : Math.max(terrainY, gpsY);
             return new THREE.Vector3(pos.x, finalY, pos.z);
-        })
-        .filter(v => {
-            if (!lastWorldPos) {
-                lastWorldPos = v;
-                return true;
-            }
-            const dist = v.distanceTo(lastWorldPos);
-            if (dist < 2) return false; 
-            lastWorldPos = v;
-            return true;
         });
 
-    if (threePoints.length < 2) return;
+    // v5.28.1: Simplification Ramer-Douglas-Peucker (RDP) pour fluidité 3D
+    // Epsilon = 2.0 (mètres) est un bon compromis pour éliminer le jitter sans déformer
+    const simplifiedPoints = simplifyRDP(threePoints, 2.0, (v) => v);
+
+    if (simplifiedPoints.length < 2) return;
     
     try {
         // v5.27.4: Force closed=false pour éviter le trait de retour vers le départ
-        const curve = new THREE.CatmullRomCurve3(threePoints, false, 'centripetal');
-        const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length * 2, 800), thickness, 4, false);
+        const curve = new THREE.CatmullRomCurve3(simplifiedPoints, false, 'centripetal');
+        const geometry = new THREE.TubeGeometry(curve, Math.min(simplifiedPoints.length * 2, 800), thickness, 4, false);
         const material = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.5, transparent: true, opacity: 0.8 });
         state.recordedMesh = new THREE.Mesh(geometry, material);
         state.scene.add(state.recordedMesh);

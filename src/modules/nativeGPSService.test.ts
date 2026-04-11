@@ -89,6 +89,7 @@ describe('NativeGPSService', () => {
 
         const onNewPointsCall = mockPlugin.addListener.mock.calls.find((call: any) => call[0] === 'onNewPoints');
         expect(onNewPointsCall).toBeDefined();
+        if (!onNewPointsCall) return;
         const callback = onNewPointsCall[1];
         
         const now = Date.now();

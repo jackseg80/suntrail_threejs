@@ -15,7 +15,6 @@ import { state } from '../../state';
 import { getAltitudeAt, findTerrainIntersection } from '../../analysis';
 import { showUpgradePrompt } from '../../iap';
 import { i18n } from '../../../i18n/I18nService';
-import { eventBus } from '../../eventBus';
 import { lngLatToWorld } from '../../geo';
 import * as THREE from 'three';
 
@@ -42,6 +41,7 @@ export class InclinometerWidget {
     private _isDraggingWidget = false;
     private _isCustomWidgetPos = false;
     private _dragHoldTimer: ReturnType<typeof setTimeout> | null = null;
+    private _detailTimer: ReturnType<typeof setTimeout> | null = null;
     private _lastTapTimeWidget = 0;
     private _lastTapTimeReticle = 0;
     
@@ -182,7 +182,7 @@ export class InclinometerWidget {
             const ndcY = -(this._reticleY / window.innerHeight) * 2 + 1;
             
             const raycaster = new THREE.Raycaster();
-            raycaster.setFromCamera({ x: ndcX, y: ndcY }, state.camera);
+            raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), state.camera);
             
             const hit = findTerrainIntersection(raycaster.ray);
             if (hit) {
@@ -289,39 +289,44 @@ export class InclinometerWidget {
     }
 
     private onPointerMove(e: PointerEvent): void {
+        if (!this._isDraggingReticle && !this._isDraggingWidget && !this._dragHoldTimer) return;
+
         const dx = e.clientX - this._dragStartX;
         const dy = e.clientY - this._dragStartY;
 
-        if (this._isDraggingReticle && this.reticle) {
-            this._reticleX = Math.max(20, Math.min(window.innerWidth - 20, this._reticleStartLeft + dx));
-            this._reticleY = Math.max(20, Math.min(window.innerHeight - 20, this._reticleStartTop + dy));
-            this.reticle.style.left = `${this._reticleX}px`;
-            this.reticle.style.top = `${this._reticleY}px`;
-        } 
-        else if (this._isDraggingWidget && this.el) {
-            let left = this._widgetStartLeft + dx;
-            let top = this._widgetStartTop + dy;
-            
-            // Contraindre au viewport
-            const w = this.el.offsetWidth;
-            const h = this.el.offsetHeight;
-            left = Math.max(8, Math.min(window.innerWidth - w - 8, left));
-            top = Math.max(8, Math.min(window.innerHeight - h - 8, top));
-
-            this.el.style.left = `${left}px`;
-            this.el.style.top = `${top}px`;
-            this.el.style.bottom = 'auto';
-            this.el.style.transform = 'none';
-            this._isCustomWidgetPos = true;
-            if (this._isExpanded) this.positionDetail();
-        }
-        else if (this._dragHoldTimer) {
-            // Si on bouge trop avant le hold timer, on annule le drag (c'est un scroll/swipe)
+        if (this._dragHoldTimer) {
+            // Seuil de mouvement pour annuler le tap au profit d'un drag potentiel/scroll
             if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
                 clearTimeout(this._dragHoldTimer);
                 this._dragHoldTimer = null;
             }
+            return;
         }
+
+        requestAnimationFrame(() => {
+            if (this._isDraggingReticle && this.reticle) {
+                this._reticleX = Math.max(20, Math.min(window.innerWidth - 20, this._reticleStartLeft + dx));
+                this._reticleY = Math.max(20, Math.min(window.innerHeight - 20, this._reticleStartTop + dy));
+                this.reticle.style.left = `${this._reticleX}px`;
+                this.reticle.style.top = `${this._reticleY}px`;
+            } 
+            else if (this._isDraggingWidget && this.el) {
+                let left = this._widgetStartLeft + dx;
+                let top = this._widgetStartTop + dy;
+                
+                const w = this.el.offsetWidth;
+                const h = this.el.offsetHeight;
+                left = Math.max(8, Math.min(window.innerWidth - w - 8, left));
+                top = Math.max(8, Math.min(window.innerHeight - h - 8, top));
+
+                this.el.style.left = `${left}px`;
+                this.el.style.top = `${top}px`;
+                this.el.style.bottom = 'auto';
+                this.el.style.transform = 'none';
+                this._isCustomWidgetPos = true;
+                if (this._isExpanded) this.positionDetail();
+            }
+        });
     }
 
     private onPointerUp(e: PointerEvent): void {

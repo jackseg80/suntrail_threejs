@@ -56,7 +56,6 @@ describe('Live Location Tracking (v5.25.0 - Single Source of Truth)', () => {
         state.isRecording = false;
         state.recordedPoints = [];
         state.userLocation = null;
-        state.recordingOriginTile = null;
         state.userLocationAccuracy = null;
         vi.clearAllMocks();
     });

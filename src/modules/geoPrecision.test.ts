@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { haversineDistance } from './profile';
+import { haversineDistance } from './utils';
 import { calculateTrackStats, LocationPoint } from './geoStats';
 
 describe('Geo Precision & Haversine Accuracy', () => {

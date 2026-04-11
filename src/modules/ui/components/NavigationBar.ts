@@ -64,10 +64,20 @@ export class NavigationBar extends BaseComponent {
                 state.isTiltTransitioning = true; // animation douce du tilt
                 document.body.classList.toggle('mode-2d', newMode);
                 syncToggleVisual();
-                // Décaler le rebuild pour ne pas bloquer l'animation de tilt
+                
+                // v5.28.1 : Forcer le remplissage du centre immédiatement après le tilt
                 setTimeout(() => {
                     rebuildActiveTiles();
-                    updateVisibleTiles();
+                    if (state.controls) {
+                        updateVisibleTiles(
+                            state.TARGET_LAT, state.TARGET_LON, 
+                            state.camera?.position.y || 5000,
+                            state.controls.target.x, state.controls.target.z,
+                            true // force=true
+                        );
+                    } else {
+                        updateVisibleTiles(undefined, undefined, undefined, null, null, true);
+                    }
                 }, 150);
             };
 

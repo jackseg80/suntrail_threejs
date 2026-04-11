@@ -332,7 +332,19 @@ export class Tile {
 
         if (state.scene) state.scene.add(this.mesh);
         this.currentResolution = resolution;
-        this.opacity = 0; this.isFadingIn = true;
+        
+        // v5.28.1 : Mandat - PAS de mesh fade en 2D (Opacité 100% immédiate)
+        if (is2D) {
+            this.opacity = 1;
+            this.isFadingIn = false;
+            if (this.mesh.material instanceof THREE.Material) {
+                this.mesh.material.opacity = 1;
+                this.mesh.material.transparent = false;
+            }
+        } else {
+            this.opacity = 0;
+            this.isFadingIn = true;
+        }
 
         const delay = (ms: number) => ms * state.LOAD_DELAY_FACTOR;
         if (state.SHOW_SIGNPOSTS && this.zoom >= 15) setTimeout(() => { if (this.status !== 'disposed') loadPOIsForTile(this); }, delay(600));
@@ -343,18 +355,18 @@ export class Tile {
             const forest = createForestForTile(this);
             if (forest && state.scene && this.status as any !== 'disposed') {
                 if (this.forestMesh) state.scene.remove(this.forestMesh);
-                this.forestMesh = forest; this.forestMesh.position.set(this.worldX, 0, this.worldZ);
+                this.forestMesh = forest; 
+                // v5.28.1 : Mandat - PAS de hierarchy attachment (scene.add)
+                this.forestMesh.position.set(this.worldX, 0, this.worldZ);
                 state.scene.add(this.forestMesh);
             }
         }, delay(300));
 
+        // v5.28.1 : Mandat - PAS de suppression différée (remplacement instantané)
         if (oldMesh) {
-            oldMesh.position.y -= 0.1;
-            setTimeout(() => { 
-                if (state.scene) state.scene.remove(oldMesh); 
-                if (oldMesh.material instanceof THREE.Material) materialPool.release(oldMesh.material);
-                if (oldMesh.customDepthMaterial instanceof THREE.Material) materialPool.release(oldMesh.customDepthMaterial);
-            }, 500);
+            if (state.scene) state.scene.remove(oldMesh); 
+            if (oldMesh.material instanceof THREE.Material) materialPool.release(oldMesh.material);
+            if (oldMesh.customDepthMaterial instanceof THREE.Material) materialPool.release(oldMesh.customDepthMaterial);
         }
     }
 

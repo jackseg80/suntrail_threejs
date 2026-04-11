@@ -14,7 +14,6 @@
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import * as pmtiles from 'pmtiles';
-import { zxyToTileId } from 'pmtiles';
 import { state } from './state';
 import { eventBus } from './eventBus';
 import { showToast } from './utils';
@@ -27,11 +26,6 @@ const CATALOG_URL = import.meta.env.VITE_PACKS_CATALOG_URL as string | undefined
 const PACK_STATES_KEY = 'suntrail_pack_states';
 const CATALOG_CACHE_KEY = 'suntrail_pack_catalog';
 const PACKS_DIR = 'packs';
-
-// --- Offsets pour les packs multi-couches (v3 Full Offline) ---
-// Doivent correspondre exactement à ceux de scripts/build-country-pack.ts
-const OFFSET_ELEV = 100_000_000_000;
-const OFFSET_OVERLAY = 200_000_000_000;
 
 // Catalog embarqué — fallback si réseau absent ET localStorage vide.
 // À mettre à jour manuellement à chaque nouveau pack publié.
@@ -359,11 +353,14 @@ class PackManager {
     }
 
     async mountAllInstalled(): Promise<void> {
+        const promises: Promise<void>[] = [];
         for (const [packId, ps] of this.packStates) {
             if (ps.status === 'installed' || ps.status === 'purchased' || ps.status === 'update_available') {
-                await this.mountPack(packId);
+                promises.push(this.mountPack(packId));
             }
         }
+        // Warmup parallèle non-bloquant pour le thread principal
+        await Promise.all(promises);
     }
 
     // ── Tile Serving (chemin critique) ───────────────────────────────────────
@@ -388,14 +385,22 @@ class PackManager {
                 if (!isOpfs && state.IS_OFFLINE) continue;
 
                 try {
-                    // Calcul de l'ID avec offset pour les packs multi-couches v3+
-                    let tileId = zxyToTileId(z, x, y);
+                    let tileData;
                     
-                    if (type === 'elevation') tileId += OFFSET_ELEV;
-                    else if (type === 'overlay') tileId += OFFSET_OVERLAY;
+                    // v5.28.1 : Support Multi-Layer (Couleur + Élévation + Overlay dans 1 seul PMTiles)
+                    if (type === 'color') {
+                        tileData = await archive.getZxy(z, x, y);
+                    } else {
+                        // On utilise les offsets Hilbert définis dans build-country-pack.ts
+                        const OFFSET_ELEV = 100_000_000_000;
+                        const OFFSET_OVERLAY = 200_000_000_000;
+                        const offset = (type === 'elevation') ? OFFSET_ELEV : OFFSET_OVERLAY;
+                        
+                        const baseId = pmtiles.zxyToTileId(z, x, y);
+                        const [fz, fx, fy] = pmtiles.tileIdToZxy(baseId + offset);
+                        tileData = await archive.getZxy(fz, fx, fy);
+                    }
 
-                    // getZxy supporte aussi l'ID numérique direct
-                    const tileData = await archive.getZxy(tileId);
                     if (tileData?.data) {
                         const mime = (type === 'color') ? 'image/webp' : 'image/png';
                         return new Blob([tileData.data], { type: mime });

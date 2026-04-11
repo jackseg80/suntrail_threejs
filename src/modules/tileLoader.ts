@@ -76,7 +76,7 @@ export async function initEmbeddedOverview(): Promise<void> {
         
         // Paralléliser l'ouverture du cache worker et l'init PMTiles
         const [cache, archive] = await Promise.all([
-            caches.open('suntrail-tiles-v2'),
+            caches.open('suntrail-tiles-v277'),
             (async () => {
                 const p = new pmtiles.PMTiles(url);
                 await p.getHeader();
@@ -318,7 +318,7 @@ async function seedEmbeddedTile(url: string, z: number, x: number, y: number): P
     if (_seededUrls.has(url)) return;
     _seededUrls.add(url); // Marquer immédiatement pour éviter les appels concurrents
     try {
-        if (!_workerCache) _workerCache = await caches.open('suntrail-tiles-v2');
+        if (!_workerCache) _workerCache = await caches.open('suntrail-tiles-v277');
         // On pourrait vérifier si existing existe, mais caches.put écrasera si besoin,
         // et le but est de garantir la présence pour le worker.
         const blob = await getTileFromEmbedded(z, x, y);
@@ -333,13 +333,13 @@ async function seedEmbeddedTile(url: string, z: number, x: number, y: number): P
 /**
  * Injecte une tuile d'un country pack dans le CacheStorage du worker.
  */
-async function seedPackTile(url: string, z: number, x: number, y: number): Promise<void> {
+async function seedPackTile(url: string, z: number, x: number, y: number, type: 'color' | 'elevation' | 'overlay'): Promise<void> {
     if (!packManager.hasMountedPacks()) return;
     if (_seededUrls.has(url)) return;
     _seededUrls.add(url); // Marquer immédiatement
     try {
-        if (!_workerCache) _workerCache = await caches.open('suntrail-tiles-v2');
-        const blob = await packManager.getTileFromPacks(z, x, y);
+        if (!_workerCache) _workerCache = await caches.open('suntrail-tiles-v277');
+        const blob = await packManager.getTileFromPacks(z, x, y, type);
         if (blob) {
             await _workerCache.put(url, new Response(blob));
         }
