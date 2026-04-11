@@ -58,14 +58,15 @@ et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 ### Fixed
 - **Pertinence des Mesures** : L'inclinomètre ne mesure plus systématiquement le centre de l'écran par défaut, mais s'adapte à l'usage (position utilisateur ou point visé).
 
+## [5.28.0] - 2026-04-11
+
+### Added
+- **Auto-Pause (v5.28.0)** : Détection intelligente d'immobilité. L'enregistrement s'arrête si le mouvement est < 3m, évitant les "pelotes" de points aux arrêts et à l'arrivée.
+- **Persistance Temps-Réel** : Sauvegarde continue du tracé en cours dans le stockage local. Permet une récupération instantanée de l'affichage après un crash ou une fermeture système (OOM).
+- **Simplification 3D (RDP)** : Intégration de l'algorithme Ramer-Douglas-Peucker pour optimiser le maillage 3D du tracé. Réduction vertices ~70% sans perte visuelle, gain majeur de performance sur Galaxy A53.
+- **Automatisation Release** : Nouveau script `npm run bump` pour synchroniser automatiquement les versions entre Web et Android.
+
 ## [5.27.13] - 2026-04-11
-
-### Fixed
-- **Anti-Glitch GPS (Champignon)** : Filtrage horizontal strict (> 1km en < 10s ignoré) pour éliminer les pics géants dus aux imprécisions GPS.
-- **Tri Chronologique (REC)** : Tri systématique par timestamp lors de la réception, de l'affichage et de la génération du fichier GPX. Empêche la corruption des tracés en cas d'arrivée désordonnée des points.
-- **Robustesse Rendu** : Filtrage anti-frétillement ajouté aux calques GPX importés pour éviter les crashs de `TubeGeometry`.
-
-## [5.27.12] - 2026-04-11
 
 ## [5.27.3] - 2026-04-09
 
