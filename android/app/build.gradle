@@ -1,6 +1,6 @@
 apply plugin: 'com.android.application'
 
-// Chargement des propriÃ©tÃ©s du keystore (fichier NON commitÃ© dans Git)
+// Chargement des propriétés du keystore (fichier NON committé dans Git)
 def keystorePropertiesFile = rootProject.file("keystore.properties")
 def keystoreProperties = new Properties()
 if (keystorePropertiesFile.exists()) {
@@ -15,7 +15,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 590
-        versionName \"5.28.2\"
+        versionName "5.28.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -55,13 +55,13 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
-    // GPS natif dans RecordingService (FusedLocationProviderClient) â€” v5.23
+    // GPS natif dans RecordingService (FusedLocationProviderClient) — v5.23
     implementation "com.google.android.gms:play-services-location:21.3.0"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
-    
+
     // Room Database (v5.25.0 - Single Source of Truth)
     def room_version = "2.6.1"
     implementation "androidx.room:room-runtime:$room_version"
