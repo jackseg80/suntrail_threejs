@@ -46,9 +46,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifestFilename: 'manifest.json',
-      includeAssets: ['favicon.ico', 'assets/icons/*.png', 'manifest.json'],
+      includeAssets: ['favicon.ico', 'assets/icons/*.png'],
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,bin,json,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,bin,json}'],
         // Exclure le chunk Three.js du précache (trop lourd, en runtime cache à la demande)
         globIgnores: ['**/three-*.js', '**/*.pmtiles', '**/icon_*.png'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB max par fichier
