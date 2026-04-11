@@ -1,8 +1,40 @@
 import { describe, it, expect } from 'vitest';
-import { lngLatToWorld, worldToLngLat, lngLatToTile, getTileBounds } from './geo';
+import { lngLatToWorld, worldToLngLat, lngLatToTile, getTileBounds, perpendicularDistance, ramerDouglasPeucker } from './geo';
 
 describe('Module Géo (geo.ts)', () => {
     const originTile = { x: 4270, y: 2891, z: 13 }; // Spiez, Suisse
+
+    it('should correctly calculate perpendicular distance', () => {
+        const start = { x: 0, z: 0 };
+        const end = { x: 10, z: 0 };
+        const pt = { x: 5, z: 5 };
+        expect(perpendicularDistance(pt, start, end)).toBe(5);
+
+        const pt2 = { x: 5, z: -3 };
+        expect(perpendicularDistance(pt2, start, end)).toBe(3);
+    });
+
+    it('should simplify points using RDP algorithm', () => {
+        const points = [
+            { x: 0, z: 0 },
+            { x: 1, z: 0.1 },
+            { x: 2, z: -0.1 },
+            { x: 3, z: 5 }, // Spike
+            { x: 4, z: 0 },
+            { x: 5, z: 0 }
+        ];
+        
+        // With small epsilon, should keep the spike
+        const simplified1 = ramerDouglasPeucker(points, 0.5);
+        expect(simplified1.length).toBeGreaterThan(2);
+        expect(simplified1.some(p => p.z === 5)).toBe(true);
+
+        // With large epsilon, should simplify to start/end
+        const simplified2 = ramerDouglasPeucker(points, 10);
+        expect(simplified2.length).toBe(2);
+        expect(simplified2[0]).toEqual({ x: 0, z: 0 });
+        expect(simplified2[1]).toEqual({ x: 5, z: 0 });
+    });
 
     it('lngLatToTile devrait retourner les bonnes coordonnées pour Spiez', () => {
         const coords = lngLatToTile(7.6617, 46.6863, 13);

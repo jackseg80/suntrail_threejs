@@ -4,7 +4,7 @@ import { state, GPX_COLORS } from './state';
 import type { GPXLayer } from './state';
 import { isPositionInSwitzerland, isPositionInFrance, isMobileDevice } from './utils';
 import { updateElevationProfile } from './profile';
-import { lngLatToWorld, worldToLngLat, lngLatToTile } from './geo';
+import { lngLatToWorld, worldToLngLat, lngLatToTile, ramerDouglasPeucker } from './geo';
 import { eventBus } from './eventBus';
 import { getAltitudeAt } from './analysis';
 import { getTileCacheKey, markCacheKeyInactive, hasInCache, getFromCache } from './tileCache';
@@ -521,10 +521,14 @@ export function updateRecordedTrackMesh(): void {
 
     if (threePoints.length < 2) return;
     
+    // v5.28.0: Simplification RDP pour performance (mobile-first)
+    const epsilon = state.ZOOM > 15 ? 2 : 5;
+    const simplifiedPoints = ramerDouglasPeucker(threePoints, epsilon);
+
     try {
         // v5.27.4: Force closed=false pour éviter le trait de retour vers le départ
-        const curve = new THREE.CatmullRomCurve3(threePoints, false, 'centripetal');
-        const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length * 2, 800), thickness, 4, false);
+        const curve = new THREE.CatmullRomCurve3(simplifiedPoints, false, 'centripetal');
+        const geometry = new THREE.TubeGeometry(curve, Math.min(simplifiedPoints.length * 2, 800), thickness, 4, false);
         const material = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.5, transparent: true, opacity: 0.8 });
         state.recordedMesh = new THREE.Mesh(geometry, material);
         state.scene.add(state.recordedMesh);

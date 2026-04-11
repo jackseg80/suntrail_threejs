@@ -72,3 +72,47 @@ export function getTileBounds(tile: {zoom: number, tx: number, ty: number}) {
     const latSouth = latRadSouth * 180 / Math.PI;
     return { north: latNorth, south: latSouth, west: lonWest, east: lonEast };
 }
+
+/**
+ * Calcule la distance perpendiculaire d'un point par rapport à un segment [start, end].
+ */
+export function perpendicularDistance(pt: {x: number; z: number}, start: {x: number; z: number}, end: {x: number; z: number}): number {
+    const dx = end.x - start.x;
+    const dz = end.z - start.z;
+    if (dx === 0 && dz === 0) {
+        return Math.sqrt(Math.pow(pt.x - start.x, 2) + Math.pow(pt.z - start.z, 2));
+    }
+    const t = ((pt.x - start.x) * dx + (pt.z - start.z) * dz) / (dx * dx + dz * dz);
+    const closestX = start.x + t * dx;
+    const closestZ = start.z + t * dz;
+    return Math.sqrt(Math.pow(pt.x - closestX, 2) + Math.pow(pt.z - closestZ, 2));
+}
+
+/**
+ * Algorithme de Ramer-Douglas-Peucker pour simplifier une liste de points 2D (x, z).
+ * @param points Liste de points à simplifier
+ * @param epsilon Seuil de distance (en mètres) pour la simplification
+ */
+export function ramerDouglasPeucker<T extends {x: number; z: number}>(points: T[], epsilon: number): T[] {
+    if (points.length <= 2) return points;
+
+    let dmax = 0;
+    let index = 0;
+    const end = points.length - 1;
+
+    for (let i = 1; i < end; i++) {
+        const d = perpendicularDistance(points[i], points[0], points[end]);
+        if (d > dmax) {
+            index = i;
+            dmax = d;
+        }
+    }
+
+    if (dmax > epsilon) {
+        const res1 = ramerDouglasPeucker(points.slice(0, index + 1), epsilon);
+        const res2 = ramerDouglasPeucker(points.slice(index), epsilon);
+        return [...res1.slice(0, res1.length - 1), ...res2];
+    } else {
+        return [points[0], points[end]];
+    }
+}
