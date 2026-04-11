@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockPlugin } = vi.hoisted(() => ({
+const { mockPlugin, mockPreferences } = vi.hoisted(() => ({
     mockPlugin: {
         startCourse: vi.fn().mockResolvedValue({ courseId: 'test-course-123' }),
         stopCourse: vi.fn().mockResolvedValue({}),
@@ -9,6 +9,11 @@ const { mockPlugin } = vi.hoisted(() => ({
         requestBatteryOptimizationExemption: vi.fn().mockResolvedValue({ granted: true }),
         addListener: vi.fn(),
         removeAllListeners: vi.fn()
+    },
+    mockPreferences: {
+        set: vi.fn().mockResolvedValue(undefined),
+        get: vi.fn().mockResolvedValue({ value: null }),
+        remove: vi.fn().mockResolvedValue(undefined)
     }
 }));
 
@@ -22,6 +27,10 @@ vi.mock('@capacitor/core', () => {
         registerPlugin: vi.fn(() => mockPlugin)
     };
 });
+
+vi.mock('@capacitor/preferences', () => ({
+    Preferences: mockPreferences
+}));
 
 // Mock terrain
 vi.mock('./terrain', () => ({
@@ -146,5 +155,26 @@ describe('NativeGPSService', () => {
         await callback({ courseId: 'test-course-123', pointCount: 2 });
         expect(state.recordedPoints.length).toBe(2); // pMoving accepted
         expect(state.isAutoPaused).toBe(false);
-    });
-});
+        });
+
+        it('should persist and load track points (v5.28.0)', async () => {
+        const mockPoints = [
+            { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 1000 },
+            { lat: 46.6, lon: 7.6, alt: 1100, timestamp: 2000 }
+        ];
+
+        state.recordedPoints = mockPoints;
+
+        // Test manual load
+        mockPreferences.get.mockResolvedValueOnce({ value: JSON.stringify(mockPoints) });
+        state.recordedPoints = [];
+        await nativeGPSService.loadPersistedPoints();
+        expect(state.recordedPoints.length).toBe(2);
+        expect(state.recordedPoints[0].lat).toBe(46.5);
+
+        // Test clear on stop
+        await nativeGPSService.stopCourse();
+        expect(mockPreferences.remove).toHaveBeenCalledWith({ key: 'suntrail_current_track_points' });
+        });
+        });
+

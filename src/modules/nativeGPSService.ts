@@ -10,6 +10,7 @@
  */
 
 import { registerPlugin, Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
 import { state } from './state';
 import { updateRecordedTrackMesh } from './terrain';
 import { haversineDistance } from './profile';
@@ -47,6 +48,56 @@ class NativeGPSService {
     private isListening = false;
     private meshUpdateTimeout: number | null = null;
     private pendingMeshUpdate = false;
+    private readonly PERSISTENCE_KEY = 'suntrail_current_track_points';
+    private saveTimeout: number | null = null;
+
+    /**
+     * Sauvegarde les points en cours dans les préférences (v5.28.0)
+     */
+    private persistPoints(): void {
+        if (this.saveTimeout) return;
+        
+        this.saveTimeout = window.setTimeout(async () => {
+            try {
+                await Preferences.set({
+                    key: this.PERSISTENCE_KEY,
+                    value: JSON.stringify(state.recordedPoints)
+                });
+            } catch (e) {
+                console.warn('[NativeGPSService] Persistence failed:', e);
+            }
+            this.saveTimeout = null;
+        }, 3000); // Sauvegarde toutes les 3s max
+    }
+
+    /**
+     * Charge les points sauvegardés (v5.28.0)
+     */
+    async loadPersistedPoints(): Promise<void> {
+        try {
+            const { value } = await Preferences.get({ key: this.PERSISTENCE_KEY });
+            if (value) {
+                const points = JSON.parse(value);
+                if (Array.isArray(points) && points.length > 0) {
+                    state.recordedPoints = points;
+                    updateRecordedTrackMesh();
+                }
+            }
+        } catch (e) {
+            console.warn('[NativeGPSService] Failed to load persisted points:', e);
+        }
+    }
+
+    /**
+     * Efface les points sauvegardés (v5.28.0)
+     */
+    private async clearPersistedPoints(): Promise<void> {
+        try {
+            await Preferences.remove({ key: this.PERSISTENCE_KEY });
+        } catch (e) {
+            // ignore
+        }
+    }
 
     /**
      * Démarre une course (enregistrement GPS natif).
@@ -74,6 +125,9 @@ class NativeGPSService {
         this.removeListeners();
         this.currentCourseId = null;
         
+        // v5.28.0: Nettoyer la persistance
+        await this.clearPersistedPoints();
+
         // Flush final du mesh pour afficher tous les points
         this.flushMeshUpdate();
     }
@@ -251,6 +305,9 @@ class NativeGPSService {
                         }));
                         state.recordedPoints = [...state.recordedPoints, ...convertedPoints];
                         
+                        // v5.28.0: Persistance temps-réel
+                        this.persistPoints();
+
                         // Mettre à jour le mesh 3D
                         // Stratégie: immédiat pour les premiers points, debounce pour les suivants
                         const totalPoints = state.recordedPoints.length;

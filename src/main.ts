@@ -36,6 +36,9 @@ registerSW({
 //   2. Course native ARRETÉE (crash/kill) mais snapshot localStorage → 
 //      On récupère les points via nativeGPSService.getAllPoints() et on propose la restauration.
 window.addEventListener('suntrail:uiReady', async () => {
+    // v5.28.0: Charger immédiatement les points persistés pour un affichage instantané
+    await nativeGPSService.loadPersistedPoints();
+
     const interrupted = getInterruptedRecording();
 
     try {
