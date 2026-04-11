@@ -67,7 +67,7 @@ window.addEventListener('suntrail:uiReady', async () => {
             nativeGPSService.setupListeners();
             
             setTimeout(() => sheetManager.open('track'), 300);
-            showToast(`▶ Enregistrement repris — ${filteredPoints.length} points`);
+            showToast(`▶ Enregistrement repris — ${allPoints.length} points`);
             return;
         }
 

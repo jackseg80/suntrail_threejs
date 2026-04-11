@@ -13,7 +13,6 @@ import { registerPlugin, Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import { state } from './state';
 import { updateRecordedTrackMesh } from './terrain';
-import { haversineDistance } from './profile';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -133,9 +132,9 @@ class NativeGPSService {
     }
     
     /**
-     * Force la mise à jour du mesh 3D (appelé à l'arrêt ou manuellement).
+     * Applique immédiatement la mise à jour du mesh si en attente
      */
-    flushMeshUpdate(): void {
+    private flushMeshUpdate(): void {
         if (this.meshUpdateTimeout) {
             clearTimeout(this.meshUpdateTimeout);
             this.meshUpdateTimeout = null;
@@ -143,6 +142,18 @@ class NativeGPSService {
         if (this.pendingMeshUpdate) {
             updateRecordedTrackMesh();
             this.pendingMeshUpdate = false;
+        }
+    }
+
+    /**
+     * Demande une mise à jour du mesh avec debounce
+     */
+    private requestMeshUpdate(): void {
+        this.pendingMeshUpdate = true;
+        if (!this.meshUpdateTimeout) {
+            this.meshUpdateTimeout = window.setTimeout(() => {
+                this.flushMeshUpdate();
+            }, 1000);
         }
     }
 

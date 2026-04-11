@@ -27,21 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * RecordingPlugin — Plugin Capacitor pour contrôler le Foreground Service (v5.25.0)
- *
- * Architecture Single Source of Truth (v5.25.0):
- * - Lit les points GPS depuis Room SQLite (plus de fichier JSON)
- * - RecordingService.insert() → RecordingPlugin.onNewPoints() callback
- * - Le JS poll/getRecordedPoints() retourne les points de la base Room
- *
- * Exposé côté JavaScript via :
- *   import { registerPlugin } from '@capacitor/core';
- *   const Recording = registerPlugin('Recording');
- *   await Recording.startForeground({ interval: 3000, minDisplacement: 0.5, highAccuracy: true });
- *   await Recording.stopForeground();
- *   const { points } = await Recording.getRecordedPoints();
- *   await Recording.clearRecordedPoints();
- *   await Recording.requestBatteryOptimizationExemption();
+ * RecordingPlugin — Plugin Capacitor pour contrôler le Foreground Service (v5.28.1)
  */
 @CapacitorPlugin(name = "Recording")
 public class RecordingPlugin extends Plugin implements RecordingService.RecordingCallback {
@@ -49,11 +35,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
     private AppDatabase    mDatabase;
     private GPSPointDao    mDao;
     private ExecutorService mDbExecutor;
-    private String          mCurrentCourseId; // Course ID actif (mis à jour via onNewPoints)
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Lifecycle
-    // ═══════════════════════════════════════════════════════════════════════════
+    private String          mCurrentCourseId;
 
     @Override
     public void load() {
@@ -61,8 +43,6 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         mDatabase = AppDatabase.getInstance(getContext());
         mDao = mDatabase.gpsPointDao();
         mDbExecutor = Executors.newSingleThreadExecutor();
-
-        // S'enregistrer comme callback auprès du RecordingService
         RecordingService.setCallback(this);
     }
 
@@ -75,47 +55,22 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // RecordingCallback — appelé par RecordingService quand nouveaux points
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    /**
-     * Called by RecordingService when new points are inserted in SQLite.
-     * Can notify the JS side if needed (via sendEvent).
-     */
     @Override
     public void onNewPoints(String courseId, int pointCount, boolean isAutoPaused) {
-        // Stocker le courseId courant
         mCurrentCourseId = courseId;
-        
-        // Envoyer un événement au JS via notifyListeners()
-        // Le JS peut écouter via Recording.addListener('onNewPoints', ...)
         JSObject eventData = new JSObject();
         eventData.put("courseId", courseId);
-        eventData.put("pointCount", pointCount);`r`n        eventData.put("isAutoPaused", isAutoPaused);
+        eventData.put("pointCount", pointCount);
+        eventData.put("isAutoPaused", isAutoPaused);
         notifyListeners("onNewPoints", eventData);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Plugin Methods
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    /**
-     * Démarre une course d'enregistrement GPS (v5.25.0).
-     * Démarre le service, génère un courseId et retourne immédiatement.
-     * Le courseId est aussi envoyé via l'événement onNewPoints.
-     */
     @PluginMethod
     public void startCourse(PluginCall call) {
-        // Ré-enregistrer le callback (au cas où le service a été arrêté et redémarré)
-        // C'est crucial pour que le 2ème REC et suivants fonctionnent
         RecordingService.setCallback(this);
-        
-        // Récupérer l'originTile si fourni
         JSObject originTileObj = call.getObject("originTile");
         if (originTileObj != null) {
             try {
-                // Stocker dans SharedPreferences pour que RecordingService puisse y accéder
                 getContext().getSharedPreferences("RecordingPrefs", Context.MODE_PRIVATE)
                     .edit()
                     .putInt("originTileX", originTileObj.getInt("x"))
@@ -123,55 +78,35 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
                     .putInt("originTileZ", originTileObj.getInt("z"))
                     .apply();
             } catch (Exception e) {
-                // Ignorer si les valeurs ne sont pas présentes ou incorrectes
                 android.util.Log.w("RecordingPlugin", "Failed to parse originTile", e);
             }
         }
-        
-        // DÃ©marrer le service avec flag NOUVELLE course
         startServiceInternal(call, true);
-        
-        // Le courseId sera envoyé via onNewPoints callback
-        // On retourne immédiatement, le JS recevra le vrai courseId via l'événement
         JSObject result = new JSObject();
         result.put("courseId", mCurrentCourseId != null ? mCurrentCourseId : "");
         result.put("started", true);
         call.resolve(result);
     }
 
-    /**
-     * Démarre le Foreground Service d'enregistrement avec config GPS.
-     * Affiche la notification persistante et démarre le GPS natif.
-     */
     @PluginMethod
     public void startForeground(PluginCall call) {
         startServiceInternal(call, false);
         call.resolve();
     }
-    
+
     private void startServiceInternal(PluginCall call, boolean isNewCourse) {
-        // Android 13+ (API 33) : POST_NOTIFICATIONS est une permission runtime.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(
-                    getActivity(),
-                    new String[]{ Manifest.permission.POST_NOTIFICATIONS },
-                    0
-                );
+                ActivityCompat.requestPermissions(getActivity(), new String[]{ Manifest.permission.POST_NOTIFICATIONS }, 0);
             }
         }
 
         Intent serviceIntent = new Intent(getContext(), RecordingService.class);
         serviceIntent.putExtra("isNewCourse", isNewCourse);
-
-        long   interval        = call.getLong("interval", 3000L);
-        float  minDisplacement = call.getFloat("minDisplacement", 0.5f);
-        boolean highAccuracy   = call.getBoolean("highAccuracy", true);
-
-        serviceIntent.putExtra("interval",        interval);
-        serviceIntent.putExtra("minDisplacement", minDisplacement);
-        serviceIntent.putExtra("highAccuracy",    highAccuracy);
+        serviceIntent.putExtra("interval", call.getLong("interval", 3000L));
+        serviceIntent.putExtra("minDisplacement", call.getFloat("minDisplacement", 0.5f));
+        serviceIntent.putExtra("highAccuracy", call.getBoolean("highAccuracy", true));
 
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -184,34 +119,24 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         }
     }
 
-    /**
-     * Arrête le Foreground Service et retire la notification.
-     */
     @PluginMethod
     public void stopForeground(PluginCall call) {
         stopServiceInternal();
         call.resolve();
     }
-    
-    /**
-     * Arrête la course d'enregistrement GPS (v5.25.0).
-     * Alias de stopForeground pour compatibilité avec l'API nativeGPSService.
-     */
+
     @PluginMethod
     public void stopCourse(PluginCall call) {
         stopServiceInternal();
         mCurrentCourseId = null;
         call.resolve();
     }
-    
+
     private void stopServiceInternal() {
         Intent serviceIntent = new Intent(getContext(), RecordingService.class);
         getContext().stopService(serviceIntent);
     }
 
-    /**
-     * Retourne true si le Foreground Service d'enregistrement tourne encore.
-     */
     @PluginMethod
     public void isRunning(PluginCall call) {
         JSObject result = new JSObject();
@@ -219,19 +144,10 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         call.resolve(result);
     }
 
-    /**
-     * Retourne les points GPS enregistrés depuis Room SQLite.
-     * Format : { points: [{ lat, lon, alt, timestamp, accuracy }, ...], courseId: "..." }
-     *
-     * Si courseId est fourni, ne retourne que les points de cette session.
-     * Sinon, utilise la session courante (mCurrentCourseId).
-     */
     @PluginMethod
     public void getRecordedPoints(PluginCall call) {
         String courseId = call.getString("courseId", mCurrentCourseId);
-
         if (courseId == null || courseId.isEmpty()) {
-            // Pas de course en cours, retourner vide
             JSObject result = new JSObject();
             result.put("points", new JSArray());
             result.put("courseId", "");
@@ -240,29 +156,24 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
             return;
         }
 
-        // Query Room en arrière-plan (Room interdit MainThread)
         mDbExecutor.execute(() -> {
             try {
                 List<GPSPoint> points = mDao.getPointsForCourse(courseId);
-
                 JSArray jsArr = new JSArray();
                 for (GPSPoint pt : points) {
                     JSObject jsPoint = new JSObject();
-                    jsPoint.put("lat",       pt.lat);
-                    jsPoint.put("lon",       pt.lon);
-                    jsPoint.put("alt",       pt.alt);
+                    jsPoint.put("lat", pt.lat);
+                    jsPoint.put("lon", pt.lon);
+                    jsPoint.put("alt", pt.alt);
                     jsPoint.put("timestamp", pt.timestamp);
-                    jsPoint.put("accuracy",  pt.accuracy);
+                    jsPoint.put("accuracy", pt.accuracy);
                     jsArr.put(jsPoint);
                 }
-
                 JSObject result = new JSObject();
                 result.put("points", jsArr);
                 result.put("courseId", courseId);
                 result.put("count", points.size());
-
                 call.resolve(result);
-
             } catch (Exception e) {
                 JSObject result = new JSObject();
                 result.put("points", new JSArray());
@@ -274,17 +185,10 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         });
     }
 
-    /**
-     * Retourne les points GPS depuis Room SQLite avec filtre depuis un timestamp.
-     * Format : { points: [{ lat, lon, alt, timestamp, accuracy }, ...] }
-     * 
-     * Si since > 0, ne retourne que les points avec timestamp > since (polling incrémental).
-     */
     @PluginMethod
     public void getPoints(PluginCall call) {
         String courseId = call.getString("courseId", mCurrentCourseId);
         long since = call.getLong("since", 0L);
-
         if (courseId == null || courseId.isEmpty()) {
             JSObject result = new JSObject();
             result.put("points", new JSArray());
@@ -292,27 +196,19 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
             return;
         }
 
-        // Query Room en arrière-plan
         mDbExecutor.execute(() -> {
             try {
-                List<GPSPoint> points;
-                if (since > 0) {
-                    points = mDao.getPointsSince(courseId, since);
-                } else {
-                    points = mDao.getPointsForCourse(courseId);
-                }
-
+                List<GPSPoint> points = (since > 0) ? mDao.getPointsSince(courseId, since) : mDao.getPointsForCourse(courseId);
                 JSArray jsArr = new JSArray();
                 for (GPSPoint pt : points) {
                     JSObject jsPoint = new JSObject();
-                    jsPoint.put("lat",       pt.lat);
-                    jsPoint.put("lon",       pt.lon);
-                    jsPoint.put("alt",       pt.alt);
+                    jsPoint.put("lat", pt.lat);
+                    jsPoint.put("lon", pt.lon);
+                    jsPoint.put("alt", pt.alt);
                     jsPoint.put("timestamp", pt.timestamp);
-                    jsPoint.put("accuracy",  pt.accuracy);
+                    jsPoint.put("accuracy", pt.accuracy);
                     jsArr.put(jsPoint);
                 }
-
                 JSObject result = new JSObject();
                 result.put("points", jsArr);
                 call.resolve(result);
@@ -325,20 +221,15 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         });
     }
 
-    /**
-     * Retourne le nombre de points pour une course donnée.
-     */
     @PluginMethod
     public void getPointCount(PluginCall call) {
         String courseId = call.getString("courseId", mCurrentCourseId);
-
         if (courseId == null || courseId.isEmpty()) {
             JSObject result = new JSObject();
             result.put("count", 0);
             call.resolve(result);
             return;
         }
-
         mDbExecutor.execute(() -> {
             try {
                 int count = mDao.getPointCount(courseId);
@@ -354,18 +245,13 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         });
     }
 
-    /**
-     * Efface les points d'une course depuis Room (appelé après merge réussi côté JS).
-     */
     @PluginMethod
     public void clearRecordedPoints(PluginCall call) {
         String courseId = call.getString("courseId", mCurrentCourseId);
-
         if (courseId == null || courseId.isEmpty()) {
             call.resolve();
             return;
         }
-
         mDbExecutor.execute(() -> {
             try {
                 mDao.deleteCourse(courseId);
@@ -376,22 +262,16 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         });
     }
 
-    /**
-     * Demande à Android d'exempter l'app des optimisations batterie (Doze mode).
-     */
     @PluginMethod
     public void requestBatteryOptimizationExemption(PluginCall call) {
-        PowerManager pm = (PowerManager) getContext().getSystemService(android.content.Context.POWER_SERVICE);
+        PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
         JSObject result = new JSObject();
-
         if (pm == null) {
             result.put("granted", false);
             call.resolve(result);
             return;
         }
-
         String packageName = getContext().getPackageName();
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (pm.isIgnoringBatteryOptimizations(packageName)) {
                 result.put("granted", true);
@@ -414,9 +294,6 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         }
     }
 
-    /**
-     * Retourne le courseId courant du RecordingService.
-     */
     @PluginMethod
     public void getCurrentCourseId(PluginCall call) {
         JSObject result = new JSObject();
@@ -424,38 +301,23 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         call.resolve(result);
     }
 
-    /**
-     * Retourne l'état de la course courante (pour recovery au démarrage).
-     * Format: { courseId: string, isRunning: boolean, originTile?: {x,y,z} }
-     */
     @PluginMethod
     public void getCurrentCourse(PluginCall call) {
         boolean isRunning = RecordingService.isRunning();
-        
-        // Récupérer le courseId du service natif si le plugin a été recréé (app killée et relancée)
         String courseId = mCurrentCourseId;
         if (courseId == null && isRunning) {
-            // Le plugin a été recréé mais le service tourne encore
-            // Essayer de récupérer depuis SharedPreferences
-            android.content.SharedPreferences prefs = getContext().getSharedPreferences("RecordingPrefs", Context.MODE_PRIVATE);
-            courseId = prefs.getString("currentCourseId", null);
+            courseId = getContext().getSharedPreferences("RecordingPrefs", Context.MODE_PRIVATE).getString("currentCourseId", null);
         }
-        
         if (courseId == null || !isRunning) {
-            // Pas de course active
             JSObject result = new JSObject();
             result.put("courseId", courseId != null ? courseId : "");
             result.put("isRunning", false);
             call.resolve(result);
             return;
         }
-        
-        // Course active - retourner les infos
         JSObject result = new JSObject();
         result.put("courseId", courseId);
         result.put("isRunning", true);
-        
-        // Récupérer originTile depuis SharedPreferences si disponible
         android.content.SharedPreferences prefs = getContext().getSharedPreferences("RecordingPrefs", Context.MODE_PRIVATE);
         if (prefs.contains("originTileX")) {
             JSObject originTile = new JSObject();
@@ -464,10 +326,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
             originTile.put("z", prefs.getInt("originTileZ", 0));
             result.put("originTile", originTile);
         }
-        
-        // Mettre à jour mCurrentCourseId pour les prochaines requêtes
         mCurrentCourseId = courseId;
-        
         call.resolve(result);
     }
 }
