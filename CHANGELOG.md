@@ -5,6 +5,20 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.27.12] - 2026-04-11
+
+### Fixed
+- **Signalisation 3D** : Restauration des indicateurs jaunes et adoption de la forme **losange** pour une meilleure visibilité.
+- **Bug de mouvement (POI)** : Correction du bug de \"double positionnement\" qui provoquait la disparition des signalisations lors du déplacement ou du zoom de la carte. Les objets 3D sont désormais correctement transférés lors des changements de relief (LOD).
+- **Fiabilité Overpass** : Mise en place d'une rotation automatique sur 3 serveurs et d'un système de priorité pour les POIs. Ajout d'un \"disjoncteur\" (circuit breaker) qui désactive temporairement les données lourdes (Hydrologie/Bâtiments) en cas de saturation des serveurs OSM pour préserver la fluidité.
+- **Altitude des POIs** : Ajout d'un mécanisme de retry automatique si le relief charge lentement, évitant que les indicateurs ne soient masqués sous le sol.
+- **Déploiement GitHub Pages** : Résolution des erreurs 404 sur le manifeste PWA et les ressources statiques via l'utilisation d'une base relative (`base: ''`) et l'inclusion forcée des tuiles Overview.
+- **Erreurs de compilation** : Nettoyage des identifiants en double (`recordingOriginTile`, `_detailTimer`) introduits lors des fusions précédentes.
+
+### Optimized
+- **Démarrage Web (PC)** : Suppression de l'écran blanc initial de 15s. Le montage des packs pays est désormais parallélisé et différé après l'affichage de la carte.
+- **Seuil de visibilité** : Abaissement du seuil d'apparition de la signalisation au **zoom 14** (au lieu de 15) pour assurer la visibilité des panneaux lors de l'usage des packs hors-ligne Suisse et France.
+
 ## [5.27.7] - 2026-04-10
 
 ### Added
