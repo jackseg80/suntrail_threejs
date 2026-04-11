@@ -58,12 +58,14 @@ et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 ### Fixed
 - **Pertinence des Mesures** : L'inclinomètre ne mesure plus systématiquement le centre de l'écran par défaut, mais s'adapte à l'usage (position utilisateur ou point visé).
 
-## [5.27.4] - 2026-04-10
+## [5.27.13] - 2026-04-11
 
 ### Fixed
-- **Traits Parasites (REC)** : Correction des lignes rouges qui traversaient parfois le tracé. Ajout d'un tri chronologique systématique des points GPS avant le rendu du maillage 3D.
-- **Champignon au démarrage** : Filtrage des points GPS invalides (altitude à 0 ou coordonnées 0,0) durant les premières secondes de l'enregistrement, empêchant l'explosion géométrique initiale du mesh.
-- **Intégrité de Courbe** : Désactivation forcée de la fermeture de courbe (`closed: false`) sur les splines de tracé.
+- **Anti-Glitch GPS (Champignon)** : Filtrage horizontal strict (> 1km en < 10s ignoré) pour éliminer les pics géants dus aux imprécisions GPS.
+- **Tri Chronologique (REC)** : Tri systématique par timestamp lors de la réception, de l'affichage et de la génération du fichier GPX. Empêche la corruption des tracés en cas d'arrivée désordonnée des points.
+- **Robustesse Rendu** : Filtrage anti-frétillement ajouté aux calques GPX importés pour éviter les crashs de `TubeGeometry`.
+
+## [5.27.12] - 2026-04-11
 
 ## [5.27.3] - 2026-04-09
 

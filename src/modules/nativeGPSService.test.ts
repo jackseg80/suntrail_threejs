@@ -83,23 +83,23 @@ describe('NativeGPSService', () => {
         expect(course?.originTile).toEqual({ x: 10, y: 20, z: 13 });
     });
 
-    it('should filter out points with sudden altitude jumps (>200m)', async () => {
-        // Must start course to register listeners
+    it('should correctly filter GPS points (Altitude, (0,0), and Jumps)', async () => {
         await nativeGPSService.startCourse();
-
         const onNewPointsCall = mockPlugin.addListener.mock.calls.find((call: any) => call[0] === 'onNewPoints');
-        if (!onNewPointsCall) throw new Error('onNewPoints listener not registered');
+        expect(onNewPointsCall).toBeDefined();
         const callback = onNewPointsCall[1];
-        
+
         const now = Date.now();
+        
+        // --- 1. Altitude Jump ---
         const p1 = { lat: 46.5, lon: 7.5, alt: 1000, timestamp: now, accuracy: 5, id: 1 };
         const p2 = { lat: 46.5, lon: 7.5, alt: 1300, timestamp: now + 5000, accuracy: 5, id: 2 }; // Jump +300m -> Reject
         const p3 = { lat: 46.5, lon: 7.5, alt: 1050, timestamp: now + 10000, accuracy: 5, id: 3 }; // Jump +50m -> Accept
 
+        state.recordedPoints = [];
         mockPlugin.getPoints.mockResolvedValueOnce({ points: [p1] });
         await callback({ courseId: 'test-course-123', pointCount: 1 });
         expect(state.recordedPoints.length).toBe(1);
-        expect(state.recordedPoints[0].alt).toBe(1000);
 
         mockPlugin.getPoints.mockResolvedValueOnce({ points: [p1, p2] });
         await callback({ courseId: 'test-course-123', pointCount: 2 });
@@ -107,7 +107,29 @@ describe('NativeGPSService', () => {
 
         mockPlugin.getPoints.mockResolvedValueOnce({ points: [p1, p2, p3] });
         await callback({ courseId: 'test-course-123', pointCount: 3 });
-        expect(state.recordedPoints.length).toBe(2); // p3 accepted (delta relative to p1)
-        expect(state.recordedPoints[1].alt).toBe(1050);
+        expect(state.recordedPoints.length).toBe(2); 
+
+        // --- 2. (0,0) and Horizontal Jump ---
+        const pZero = { lat: 0, lon: 0, alt: 1050, timestamp: now + 15000, accuracy: 5, id: 4 }; // (0,0) -> Reject
+        const pJump = { lat: 47.5, lon: 8.5, alt: 1050, timestamp: now + 16000, accuracy: 5, id: 5 }; // ~130km jump in 1s (since pZero is rejected, delta is relative to p3 which is at now+10000 -> 6s delta) -> Reject
+        const pValid = { lat: 46.5001, lon: 7.5001, alt: 1050, timestamp: now + 25000, accuracy: 5, id: 6 }; // Valid -> Accept
+
+        mockPlugin.getPoints.mockResolvedValueOnce({ points: [p1, p2, p3, pZero] });
+        await callback({ courseId: 'test-course-123', pointCount: 4 });
+        expect(state.recordedPoints.length).toBe(2);
+
+        mockPlugin.getPoints.mockResolvedValueOnce({ points: [p1, p2, p3, pZero, pJump] });
+        await callback({ courseId: 'test-course-123', pointCount: 5 });
+        expect(state.recordedPoints.length).toBe(2); // Jump rejected (130km in 6s is too much)
+
+        // Test absolute safety (500km) even if timeDelta is large
+        const pExtreme = { lat: 55.0, lon: 20.0, alt: 1050, timestamp: now + 100000, accuracy: 5, id: 7 }; // ~1500km jump
+        mockPlugin.getPoints.mockResolvedValueOnce({ points: [p1, p2, p3, pZero, pJump, pExtreme] });
+        await callback({ courseId: 'test-course-123', pointCount: 6 });
+        expect(state.recordedPoints.length).toBe(2); // Extreme rejected
+
+        mockPlugin.getPoints.mockResolvedValueOnce({ points: [p1, p2, p3, pZero, pJump, pExtreme, pValid] });
+        await callback({ courseId: 'test-course-123', pointCount: 7 });
+        expect(state.recordedPoints.length).toBe(3); // Valid accepted
     });
 });

@@ -12,6 +12,7 @@
 import { registerPlugin, Capacitor } from '@capacitor/core';
 import { state } from './state';
 import { updateRecordedTrackMesh } from './terrain';
+import { haversineDistance } from './profile';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -180,21 +181,47 @@ class NativeGPSService {
                 const newPoints = await this.getAllPoints(event.courseId, lastTimestamp);
                 
                 if (newPoints.length > 0) {
+                    // v5.27.5: Tri chronologique des nouveaux points (sécurité buffer natif)
+                    newPoints.sort((a, b) => a.timestamp - b.timestamp);
+
                     // Filtrer les doublons (même timestamp)
                     const existingTimestamps = new Set(state.recordedPoints.map(p => p.timestamp));
-                    let lastAlt = state.recordedPoints.length > 0 
-                        ? state.recordedPoints[state.recordedPoints.length - 1].alt 
-                        : null;
+                    
+                    // v5.27.5: S'assurer que le dernier point de référence est bien le plus récent chronologiquement
+                    const sortedExisting = [...state.recordedPoints].sort((a, b) => a.timestamp - b.timestamp);
+                    let lastPoint = sortedExisting.length > 0 ? sortedExisting[sortedExisting.length - 1] : null;
 
                     const uniqueNewPoints = newPoints.filter(p => {
                         if (existingTimestamps.has(p.timestamp)) return false;
+
+                        // v5.27.13: Rejet des points invalides (0,0) - Cause majeure de champignons
+                        if (p.lat === 0 && p.lon === 0) return false;
+                        if (Math.abs(p.lat) < 0.001 && Math.abs(p.lon) < 0.001) return false;
                         
                         // v5.26.7: Filtrage de cohérence d'altitude
                         // Rejeter les points aberrants (> 200m de saut vertical)
-                        if (lastAlt !== null) {
-                            const delta = Math.abs(p.alt - lastAlt);
-                            if (delta > 200) {
-                                console.warn(`[NativeGPS] Point rejeté (saut altitude: ${Math.round(delta)}m):`, p);
+                        if (lastPoint !== null) {
+                            const altDelta = Math.abs(p.alt - lastPoint.alt);
+                            if (altDelta > 200) {
+                                console.warn(`[NativeGPS] Point rejeté (saut altitude: ${Math.round(altDelta)}m):`, p);
+                                return false;
+                            }
+
+                            // v5.27.13: Filtrage horizontal radical (Anti-Champignon / Spike)
+                            // Si le point est à plus de 2km en moins de 10s (vitesse > 720km/h), c'est un glitch
+                            // Seuil augmenté à 2km pour plus de sécurité (S23 peut être très réactif)
+                            const timeDelta = (p.timestamp - lastPoint.timestamp) / 1000;
+                            if (timeDelta > 0 && timeDelta < 10) {
+                                const dist = haversineDistance(lastPoint.lat, lastPoint.lon, p.lat, p.lon);
+                                if (dist > 2.0) { // 2km
+                                    console.warn(`[NativeGPS] Point rejeté (saut horizontal: ${dist.toFixed(2)}km en ${timeDelta.toFixed(1)}s):`, p);
+                                    return false;
+                                }
+                            }
+                            
+                            // Sécurité absolue : un point ne peut pas être à plus de 500km du précédent
+                            // (Sauf si on redémarre l'app après un vol, mais ici on est en REC continu)
+                            if (haversineDistance(lastPoint.lat, lastPoint.lon, p.lat, p.lon) > 500) {
                                 return false;
                             }
                         }
@@ -202,7 +229,7 @@ class NativeGPSService {
                         // Plage absolue de sécurité
                         if (p.alt < -500 || p.alt > 9000) return false;
 
-                        lastAlt = p.alt;
+                        lastPoint = { lat: p.lat, lon: p.lon, alt: p.alt, timestamp: p.timestamp };
                         return true;
                     });
                     

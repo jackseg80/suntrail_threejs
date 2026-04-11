@@ -97,25 +97,44 @@ export class TrackSheet extends BaseComponent {
                     if (state.currentCourseId) {
                         const allPoints = await nativeGPSService.getAllPoints(state.currentCourseId, 0);
                         if (allPoints.length > 0) {
-                            const existingTimestamps = new Set(state.recordedPoints.map(p => p.timestamp));
-                            let lastAlt = state.recordedPoints.length > 0 
-                                ? state.recordedPoints[state.recordedPoints.length - 1].alt 
-                                : null;
+                            // v5.27.5: Tri chronologique du buffer complet
+                            allPoints.sort((a: any, b: any) => a.timestamp - b.timestamp);
 
-                            const filteredNewPoints = allPoints.filter(p => {
+                            const existingTimestamps = new Set(state.recordedPoints.map(p => p.timestamp));
+                            
+                            // Récupérer le dernier point de référence (le plus récent chronologiquement)
+                            const sortedExisting = [...state.recordedPoints].sort((a, b) => a.timestamp - b.timestamp);
+                            let lastPoint = sortedExisting.length > 0 ? sortedExisting[sortedExisting.length - 1] : null;
+
+                            const filteredNewPoints = allPoints.filter((p: any) => {
                                 if (existingTimestamps.has(p.timestamp)) return false;
-                                // Filtrage cohérence (idem nativeGPSService)
-                                if (lastAlt !== null) {
-                                    const delta = Math.abs(p.alt - lastAlt);
-                                    if (delta > 200) return false;
+                                
+                                // Rejet des points invalides (0,0) - v5.27.13
+                                if (p.lat === 0 && p.lon === 0) return false;
+                                if (Math.abs(p.lat) < 0.001 && Math.abs(p.lon) < 0.001) return false;
+
+                                // Filtrage cohérence altitude + horizontal (idem nativeGPSService)
+                                if (lastPoint !== null) {
+                                    const altDelta = Math.abs(p.alt - lastPoint.alt);
+                                    if (altDelta > 200) return false;
+
+                                    const timeDelta = (p.timestamp - lastPoint.timestamp) / 1000;
+                                    if (timeDelta > 0 && timeDelta < 10) {
+                                        const dist = haversineDistance(lastPoint.lat, lastPoint.lon, p.lat, p.lon);
+                                        if (dist > 2.0) return false; // 2km
+                                    }
+
+                                    // Sécurité absolue 500km
+                                    if (haversineDistance(lastPoint.lat, lastPoint.lon, p.lat, p.lon) > 500) return false;
                                 }
+                                
                                 if (p.alt < -500 || p.alt > 9000) return false;
-                                lastAlt = p.alt;
+                                lastPoint = { lat: p.lat, lon: p.lon, alt: p.alt, timestamp: p.timestamp };
                                 return true;
                             });
 
                             if (filteredNewPoints.length > 0) {
-                                state.recordedPoints = [...state.recordedPoints, ...filteredNewPoints.map(p => ({
+                                state.recordedPoints = [...state.recordedPoints, ...filteredNewPoints.map((p: any) => ({
                                     lat: p.lat,
                                     lon: p.lon,
                                     alt: p.alt,
@@ -593,8 +612,10 @@ export class TrackSheet extends BaseComponent {
   <trk>
     <name>SunTrail Recorded Track - ${date}</name>
     <trkseg>`;
-        // ✅ Dédoublonnage par timestamp avant export (sécurité double)
-        const uniquePoints = [...new Map(state.recordedPoints.map(p => [p.timestamp, p])).values()];
+        // ✅ Tri chronologique impératif (v5.27.5) + Dédoublonnage par timestamp
+        const sortedPoints = [...state.recordedPoints].sort((a, b) => a.timestamp - b.timestamp);
+        const uniquePoints = [...new Map(sortedPoints.map(p => [p.timestamp, p])).values()];
+        
         uniquePoints.forEach(p => {
             gpx += `
       <trkpt lat="${p.lat}" lon="${p.lon}">

@@ -318,13 +318,25 @@ function gpxDrapePoints(
     densifySteps = 4
 ): THREE.Vector3[] {
     const result: THREE.Vector3[] = [];
+    let lastPos: THREE.Vector3 | null = null;
+
     for (let i = 0; i < rawPts.length; i++) {
         const p = rawPts[i];
         const pos = lngLatToWorld(p.lon, p.lat, originTile);
         const elevGPX = (p.ele || 0) * state.RELIEF_EXAGGERATION;
         const terrainY = getAltitudeAt(pos.x, pos.z);
         const y = Math.max(terrainY, elevGPX) + GPX_SURFACE_OFFSET;
-        result.push(new THREE.Vector3(pos.x, y, pos.z));
+        const currentPos = new THREE.Vector3(pos.x, y, pos.z);
+
+        // v5.27.5: Filtrage anti-frétillement (jitter)
+        // Si les points sont trop proches (< 2m), le TubeGeometry explose
+        if (lastPos && currentPos.distanceTo(lastPos) < 2) {
+            continue;
+        }
+
+        result.push(currentPos);
+        lastPos = currentPos;
+
         if (i < rawPts.length - 1 && densifySteps > 0) {
             const pNext = rawPts[i + 1];
             for (let s = 1; s < densifySteps; s++) {
@@ -336,7 +348,14 @@ function gpxDrapePoints(
                 const iElevGPX = iEle * state.RELIEF_EXAGGERATION;
                 const iTerrainY = getAltitudeAt(iPos.x, iPos.z);
                 const iY = Math.max(iTerrainY, iElevGPX) + GPX_SURFACE_OFFSET;
-                result.push(new THREE.Vector3(iPos.x, iY, iPos.z));
+                const currentIPos = new THREE.Vector3(iPos.x, iY, iPos.z);
+
+                if (lastPos && currentIPos.distanceTo(lastPos) < 2) {
+                    continue;
+                }
+
+                result.push(currentIPos);
+                lastPos = currentIPos;
             }
         }
     }

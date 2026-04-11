@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.27.7)
+# SunTrail — Guide IA (v5.27.13)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-10 suite à l'introduction des packs \"Full Offline\" (v3) incluant relief et chemins.
+> Mis à jour le 2026-04-11 suite à la correction Anti-Glitch GPS (v5.27.13).
 
 ## Projet
 
@@ -10,41 +10,24 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 **Stack** : TypeScript strict · Three.js r160 · Vite 5 · Capacitor 6 · RevenueCat
 
-## ⚠️ Règles & Décisions Actées (v5.27.6)
+## ⚠️ Règles & Décisions Actées (v5.27.13)
 
 ### 🚀 Protocole de Release (IMPÉRATIF)
-1. **Version Name** : Incrémenter dans `package.json` (ex: 5.27.5 → 5.27.6).
-2. **Version Code** : Incrémenter **TOUJOURS** le `versionCode` dans `android/app/build.gradle` (ex: 587 → 588). Google Play rejette tout build avec un version code déjà utilisé.
-3. **Changelog** : Mettre à jour `CHANGELOG.md` et `TODO.md`.
+1. **Version Name** : Incrémenter dans `package.json` (ex: 5.27.12 → 5.27.13).
+2. **Version Code** : Incrémenter **TOUJOURS** le `versionCode` dans `android/app/build.gradle`.
+3. **Changelog** : Mettre à jour `CHANGELOG.md`.
 4. **Git** : Taguer la version (`git tag vX.Y.Z`) et pusher les tags.
 
-### 📚 Index de Documentation (Essentiel pour l'IA)
-
-| Domaine | Document de Référence | Contenu |
-| :--- | :--- | :--- |
-| **État & Logique** | [docs/AI_ARCHITECTURE.md](docs/AI_ARCHITECTURE.md) | Proxy State, EventBus, **Calcul Haversine**, Hystérésis 2m. |
-| **Rendu & Batterie** | [docs/AI_PERFORMANCE.md](docs/AI_PERFORMANCE.md) | Deep Sleep, Throttle 20fps, DPR Cap, Presets GPU. |
-| **Business & Gates** | [docs/MONETIZATION.md](docs/MONETIZATION.md) | RevenueCat, Grille Free/Pro, Logique des verrous (LOD, Solaire). |
-| **Interface & UX** | [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md) | TouchControls, SheetManager, DraggablePanels. |
-| **Roadmap** | [docs/TODO.md](docs/TODO.md) | Priorités Production V5 et Roadmap V6. |
-| **Historique** | [docs/archives/COMPLETED_HISTORY.md](docs/archives/COMPLETED_HISTORY.md) | Tout ce qui a été fait avant la v5.26.6. |
-
-### Monétisation & Gates (Web vs Mobile)
-- **Pack Suisse HD** : **GRATUIT SUR LE WEB** (v5.27.6). Débloqué automatiquement pour tous les utilisateurs web pour garantir une expérience cartographique premium immédiate.
-- **Packs Pays (Android)** : Restent des achats In-App non-consumable (RevenueCat).
-- **REC GPS** : **ENTIÈREMENT GRATUIT**. Pas de limite de temps. Sécurité d'abord.
-- **Solaire** : Simulation 24h gratuite. Calendrier complet = PRO.
-- **Offline** : 1 zone gratuite. Illimité = PRO.
-- **LOD** : Plafond technique à 14 pour les gratuits (Toast d'upsell intégré).
-- **Inclinomètre** : Feature PRO active (v5.27.5 : Réticule mobile + anticipation 15m).
-- **Satellite** : Feature PRO active.
-- **Alertes Sécurité** : Seront TOUJOURS gratuites (v6.0+).
-
-### Calculs & Précision
+### Architecture & GPS
+- **Single Source of Truth** : Le service natif Android (`RecordingService.java`) est l'unique source de vérité pour l'enregistrement.
+- **Buffer Natif** : Les points sont stockés en SQLite (Room) côté Android pour survivre aux kills.
 - **Distance** : Formule **Haversine** (précision < 0.5%).
 - **D+ / D-** : Algorithme d'**Hystérésis avec seuil de 2m** (Garmin/Suunto style).
 - **Lissage** : Moyenne mobile 3 points sur l'altitude GPS.
-- **Filtrage GPS (v5.27.2)** : Rejeter tout point GPS avec saut vertical > 200m ou distance horizontale < 2m (anti-champignon).
+- **Filtrage GPS (v5.27.13)** : 
+  - Rejeter tout point GPS avec saut vertical > 200m.
+  - Rejeter tout point GPS avec saut horizontal > 1km en < 10s (Anti-Champignon).
+  - Tri chronologique obligatoire avant traitement et export.
 - **Alignement Géographique (v5.27.3)** : Recalcul obligatoire des maillages GPX lors de chaque `Origin Shift` (Floating Origin).
 - **Inclinomètre (v5.27.5)** : Raycasting 3D pour mesure sous le réticule. Anticipation de 15m en mode suivi basée sur `userHeading`.
 

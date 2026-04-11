@@ -6,6 +6,8 @@
 
 ## 🎯 Priorité 1 : Finalisation Production (V5.x)
 
+- [x] **Anti-Glitch GPS (v5.27.13)** : Filtrage horizontal strict (> 1km/10s) et rejet des points (0,0) pour éliminer les champignons géants (S23/A53).
+- [x] **Tri Chronologique REC (v5.27.13)** : Tri systématique des points par timestamp lors de la réception, de l'affichage et de l'export GPX.
 - [x] **Robustesse Packs Pays (v5.27.1)** : Correction bug 404, catalogue v2, URLs absolues.
 - [ ] **Audit Performance Mobile** : Tester via `chrome://inspect` sur Galaxy S23 (High) et A53 (STD) selon [PROTOCOL_TEST_PERF_MOBILE.md](PROTOCOL_TEST_PERF_MOBILE.md).
 - [ ] **Ajustement Limites (v5.27.0)** : Adapter les limites de chargement selon les résultats de l'audit mobile.
