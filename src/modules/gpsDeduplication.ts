@@ -1,3 +1,5 @@
+import { haversineDistance } from './utils';
+
 /**
  * Interface générique pour un point GPS
  */
@@ -51,7 +53,8 @@ export function cleanGPSTrack<T extends GPSPoint>(points: T[]): T[] {
         // Dédoublonnage strict par timestamp
         if (curr.timestamp <= lastValid.timestamp) continue;
 
-        const dist = getDistance(lastValid.lat, lastValid.lon, curr.lat, curr.lon);
+        // haversineDistance retourne des km, on convertit en mètres pour le filtre
+        const dist = haversineDistance(lastValid.lat, lastValid.lon, curr.lat, curr.lon) * 1000;
         const timeDiffSeconds = (curr.timestamp - lastValid.timestamp) / 1000;
         const altDiff = Math.abs(curr.alt - lastValid.alt);
 
@@ -83,22 +86,4 @@ export function cleanGPSTrack<T extends GPSPoint>(points: T[]): T[] {
     }
 
     return cleaned;
-}
-
-/**
- * Calcule la distance en mètres entre deux points (Haversine).
- */
-export function getDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371e3; // Rayon de la Terre en mètres
-    const f1 = lat1 * Math.PI / 180;
-    const f2 = lat2 * Math.PI / 180;
-    const df = (lat2 - lat1) * Math.PI / 180;
-    const dl = (lon2 - lon1) * Math.PI / 180;
-
-    const a = Math.sin(df / 2) * Math.sin(df / 2) +
-              Math.cos(f1) * Math.cos(f2) *
-              Math.sin(dl / 2) * Math.sin(dl / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c;
 }

@@ -2,11 +2,11 @@ import * as THREE from 'three';
 import { disposeObject } from './memory';
 import { state, GPX_COLORS } from './state';
 import type { GPXLayer } from './state';
-import { isPositionInSwitzerland, isPositionInFrance, isMobileDevice, simplifyRDP } from './utils';
+import { isMobileDevice, simplifyRDP } from './utils';
 import { updateElevationProfile } from './profile';
-import { lngLatToWorld, worldToLngLat, lngLatToTile } from './geo';
+import { lngLatToWorld, worldToLngLat, lngLatToTile, isPositionInSwitzerland, isPositionInFrance } from './geo';
 import { eventBus } from './eventBus';
-import { getAltitudeAt } from './analysis';
+import { getAltitudeAt, drapeToTerrain } from './analysis';
 import { getTileCacheKey, markCacheKeyInactive, hasInCache, getFromCache } from './tileCache';
 import { insertTile, removeTile, clearIndex as clearSpatialIndex } from './tileSpatialIndex';
 import { calculateTrackStats } from './geoStats';
@@ -436,7 +436,11 @@ export function updateAllGPXMeshes(): void {
     const thickness = Math.max(1.5, camAlt / 1200);
     const updatedLayers: GPXLayer[] = state.gpxLayers.map(layer => {
         if (layer.mesh) { if (state.scene) state.scene.remove(layer.mesh); disposeObject(layer.mesh); }
-        const track = layer.rawData.tracks[0]; const points = track.points; const threePoints = gpxDrapePoints(points, state.originTile);
+        const track = layer.rawData.tracks[0]; const points = track.points; 
+        
+        // v5.28.4 : Utilisation de la fonction centralisée drapeToTerrain
+        const threePoints = drapeToTerrain(points, state.originTile, 4, 30);
+        
         const curve = new THREE.CatmullRomCurve3(threePoints);
         const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length, 1500), thickness, 4, false);
         const material = new THREE.MeshStandardMaterial({
@@ -464,15 +468,10 @@ export function updateRecordedTrackMesh(): void {
     
     const originTile = state.originTile;
     
-    // v5.28.2: On fait confiance à NativeGPSService pour le tri et le nettoyage initial.
-    // On convertit simplement en coordonnées Three.js avec plaquage au sol.
-    const threePoints = state.recordedPoints.map(p => {
-        const pos = lngLatToWorld(p.lon, p.lat, originTile);
-        const terrainY = getAltitudeAt(pos.x, pos.z);
-        const gpsY = p.alt * state.RELIEF_EXAGGERATION + 8;
-        const finalY = (terrainY === 0 || isNaN(terrainY)) ? gpsY : Math.max(terrainY, gpsY);
-        return new THREE.Vector3(pos.x, finalY, pos.z);
-    });
+    // v5.28.4: Utilisation de drapeToTerrain pour uniformiser le plaquage.
+    // densifySteps=0 pour le tracé en cours car les points arrivent déjà denses.
+    // surfaceOffset=8 pour coller plus au sol que les GPX importés.
+    const threePoints = drapeToTerrain(state.recordedPoints, originTile, 0, 8);
 
     // v5.28.1: Simplification Ramer-Douglas-Peucker (RDP) pour fluidité 3D
     // Epsilon = 2.0 (mètres) est un bon compromis pour éliminer le jitter sans déformer

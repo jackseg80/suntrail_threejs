@@ -27,6 +27,7 @@
 > Module d'analyse intelligente de tracés et terrain. **Alertes sécurité = TOUJOURS FREE.**
 
 - [ ] **v6.0 — Cotation & Temps estimé** : Badge CAS T1-T6 (Pro) et Durée Munter.
+- [ ] **Refactoring Profond** : Unification des caches (`tileCache`, `geometryCache`) avec `boundedCache` et audit strict des accès altitude via `getAltitudeAt` uniquement.
 - [ ] **v6.1 — Exposition solaire & Segments** : Barre ombre/soleil détaillée par km (Pro).
 - [ ] **v6.2 — Alertes sécurité & Heure de départ** : Avalanche, windchill, nuit sur tracé (Toutes FREE).
 - [ ] **v6.3 — Score condition & Estimation physio** : Hydratation, calories, VAM cible (Pro).

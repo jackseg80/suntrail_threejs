@@ -19,9 +19,16 @@ vi.mock('./workerManager', () => ({
 // Mock utils (showToast)
 vi.mock('./utils', () => ({
     showToast: vi.fn(),
-    throttle: vi.fn((fn: any) => fn),
+    throttle: vi.fn((fn: any) => fn)
+}));
+
+// Mock geo
+vi.mock('./geo', () => ({
     isPositionInSwitzerland: vi.fn(),
-    isPositionInFrance: vi.fn()
+    isPositionInFrance: vi.fn(),
+    lngLatToWorld: vi.fn(),
+    worldToLngLat: vi.fn(),
+    lngLatToTile: vi.fn()
 }));
 
 // Mock i18n

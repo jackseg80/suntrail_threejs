@@ -1,4 +1,5 @@
 import { state, Peak } from './state';
+import { haversineDistance } from './utils';
 
 const CACHE_KEY = 'suntrail_peaks_cache';
 const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -10,24 +11,13 @@ interface PeakCache {
     peaks: Peak[];
 }
 
-function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
-    const R = 6371; // km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-}
-
 export async function fetchLocalPeaks(lat: number, lon: number, radiusKm: number = 50): Promise<void> {
     try {
         // 1. Check Cache
         const cachedStr = localStorage.getItem(CACHE_KEY);
         if (cachedStr) {
             const cache: PeakCache = JSON.parse(cachedStr);
-            const dist = getDistance(lat, lon, cache.lat, cache.lon);
+            const dist = haversineDistance(lat, lon, cache.lat, cache.lon);
             if (Date.now() - cache.timestamp < CACHE_EXPIRY && dist < (radiusKm / 2)) {
                 state.localPeaks = cache.peaks;
                 return;

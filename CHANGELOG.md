@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.4] - 2026-04-11
+### Optimisations & Refactoring
+- **Standardisation Géo** : Déplacement des fonctions `isPositionInSwitzerland/France` vers `geo.ts` pour une meilleure cohérence modulaire.
+- **Unification du Plaquage (Draping)** : Création d'une fonction `drapeToTerrain` centralisée dans `analysis.ts`, éliminant les doublons de logique dans `terrain.ts`.
+- **Nettoyage Architecture** : Suppression des fonctions `getDistance` redondantes dans `gpsDeduplication.ts` et `peaks.ts` au profit de `haversineDistance` dans `utils.ts`.
+- **Roadmap V6** : Planification de l'unification des systèmes de cache.
+
 ## [5.28.3] - 2026-04-11
 ### Optimisations
 - **Centralisation GPS** : Unification de toute la logique de nettoyage (tri, dédoublonnage, altitude, vitesse, bruit) dans un module unique `gpsDeduplication`.

@@ -6,7 +6,11 @@ import { addToCache, getFromCache, disposeAllCachedTiles, getCacheSize, hasInCac
 // Mock de utils pour isMobileDevice
 vi.mock('./utils', () => ({
     isMobileDevice: vi.fn(() => false),
-    showToast: vi.fn(),
+    showToast: vi.fn()
+}));
+
+// Mock de geo
+vi.mock('./geo', () => ({
     isPositionInSwitzerland: vi.fn(),
     isPositionInFrance: vi.fn()
 }));

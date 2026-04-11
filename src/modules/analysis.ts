@@ -3,7 +3,7 @@ import SunCalc from 'suncalc';
 import { state } from './state';
 import { activeTiles } from './terrain';
 import { queryTiles } from './tileSpatialIndex';
-import { worldToLngLat } from './geo';
+import { worldToLngLat, lngLatToWorld } from './geo';
 
 let lastUsedTile: any = null;
 
@@ -236,4 +236,47 @@ export function findTerrainIntersection(ray: THREE.Ray): THREE.Vector3 | null {
         else dist += 100;
     }
     return null;
+}
+
+/**
+ * Plaque une série de points GPS (lat, lon, alt) sur le relief 3D.
+ * Gère la densification (interpolation) pour que le tracé suive les courbes du terrain.
+ * v5.28.4 : Centralisation de la logique autrefois dupliquée dans terrain.ts.
+ */
+export function drapeToTerrain(
+    points: Array<{lon: number; lat: number; ele?: number; alt?: number}>,
+    originTile: {x: number; y: number; z: number},
+    densifySteps = 4,
+    surfaceOffset = 30
+): THREE.Vector3[] {
+    const result: THREE.Vector3[] = [];
+    for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        const pos = lngLatToWorld(p.lon, p.lat, originTile);
+        const rawAlt = (p.ele !== undefined ? p.ele : (p.alt !== undefined ? p.alt : 0));
+        const elevGPX = rawAlt * state.RELIEF_EXAGGERATION;
+        const terrainY = getAltitudeAt(pos.x, pos.z);
+        
+        // On prend le max entre l'altitude GPS et le terrain pour éviter que le trait s'enterre
+        const y = Math.max(terrainY, elevGPX) + surfaceOffset;
+        result.push(new THREE.Vector3(pos.x, y, pos.z));
+        
+        if (i < points.length - 1 && densifySteps > 0) {
+            const pNext = points[i + 1];
+            for (let s = 1; s < densifySteps; s++) {
+                const t = s / densifySteps;
+                const iLon = p.lon + (pNext.lon - p.lon) * t;
+                const iLat = p.lat + (pNext.lat - p.lat) * t;
+                const nextRawAlt = (pNext.ele !== undefined ? pNext.ele : (pNext.alt !== undefined ? pNext.alt : 0));
+                const iEle = rawAlt + (nextRawAlt - rawAlt) * t;
+                
+                const iPos = lngLatToWorld(iLon, iLat, originTile);
+                const iElevGPX = iEle * state.RELIEF_EXAGGERATION;
+                const iTerrainY = getAltitudeAt(iPos.x, iPos.z);
+                const iY = Math.max(iTerrainY, iElevGPX) + surfaceOffset;
+                result.push(new THREE.Vector3(iPos.x, iY, iPos.z));
+            }
+        }
+    }
+    return result;
 }

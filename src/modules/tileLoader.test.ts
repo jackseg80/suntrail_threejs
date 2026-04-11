@@ -4,6 +4,11 @@ import { getColorUrl, getOverlayUrl, getElevationUrl } from './tileLoader';
 
 // Mock de utils
 vi.mock('./utils', () => ({
+    showToast: vi.fn()
+}));
+
+// Mock de geo
+vi.mock('./geo', () => ({
     isPositionInSwitzerland: vi.fn((lat, lon) => {
         // Mock: Zone Suisse entre lon 7 et 10, lat 45 et 48
         return lon >= 7 && lon <= 10 && lat >= 45 && lat <= 48;
@@ -11,8 +16,7 @@ vi.mock('./utils', () => ({
     isPositionInFrance: vi.fn((lat, lon) => {
         // Mock: Zone France (simplifiée) entre lon -5 et 8
         return lon >= -5 && lon < 8 && lat >= 42 && lat <= 51;
-    }),
-    showToast: vi.fn()
+    })
 }));
 
 // Mock de tileWorkerManager
