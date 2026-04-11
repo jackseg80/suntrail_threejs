@@ -8,7 +8,7 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
-  base: '/suntrail_threejs/',
+  base: '',
   build: {
     outDir: 'dist',
     // Three.js fait ~520kB minifié (dans son propre chunk — correct)
@@ -45,10 +45,9 @@ export default defineConfig({
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
-      manifestFilename: 'manifest.json',
-      includeAssets: ['favicon.ico', 'assets/icons/*.png'],
+      includeAssets: ['favicon.ico', 'assets/icons/icon_512.png'],
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,bin,json}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,bin}'],
         // Exclure le chunk Three.js du précache (trop lourd, en runtime cache à la demande)
         globIgnores: ['**/three-*.js', '**/*.pmtiles', '**/icon_*.png'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB max par fichier
