@@ -206,12 +206,15 @@ class NativeGPSService {
         this.isListening = true;
 
         // Nouveaux points enregistrés par le natif
-        // L'événement contient courseId et pointCount, pas les points directement
-        // On fait une requête pour récupérer les nouveaux points depuis le dernier timestamp
-        RecordingNative.addListener('onNewPoints', async (event: { courseId: string; pointCount: number }) => {
+        RecordingNative.addListener('onNewPoints', async (event: { courseId: string; pointCount: number; isAutoPaused?: boolean }) => {
             
             if (!event.courseId) {
                 return;
+            }
+
+            // v5.28.1: Le statut Auto-Pause est désormais piloté par le natif
+            if (event.isAutoPaused !== undefined) {
+                state.isAutoPaused = event.isAutoPaused;
             }
             
             // Mettre à jour le courseId si nécessaire
@@ -238,62 +241,12 @@ class NativeGPSService {
                     // v5.27.5: Tri chronologique des nouveaux points (sécurité buffer natif)
                     newPoints.sort((a, b) => a.timestamp - b.timestamp);
 
-                    // Filtrer les doublons (même timestamp)
+                    // Filtrer les doublons exacts (même timestamp)
                     const existingTimestamps = new Set(state.recordedPoints.map(p => p.timestamp));
                     
-                    // v5.27.5: S'assurer que le dernier point de référence est bien le plus récent chronologiquement
-                    const sortedExisting = [...state.recordedPoints].sort((a, b) => a.timestamp - b.timestamp);
-                    let lastPoint = sortedExisting.length > 0 ? sortedExisting[sortedExisting.length - 1] : null;
-
-                    const uniqueNewPoints = newPoints.filter(p => {
-                        if (existingTimestamps.has(p.timestamp)) return false;
-
-                        // v5.27.13: Rejet des points invalides (0,0) - Cause majeure de champignons
-                        if (p.lat === 0 && p.lon === 0) return false;
-                        if (Math.abs(p.lat) < 0.001 && Math.abs(p.lon) < 0.001) return false;
-                        
-                        // v5.26.7: Filtrage de cohérence d'altitude
-                        // Rejeter les points aberrants (> 200m de saut vertical)
-                        if (lastPoint !== null) {
-                            const altDelta = Math.abs(p.alt - lastPoint.alt);
-                            if (altDelta > 200) {
-                                console.warn(`[NativeGPS] Point rejeté (saut altitude: ${Math.round(altDelta)}m):`, p);
-                                return false;
-                            }
-
-                            // v5.27.13: Filtrage horizontal radical (Anti-Champignon / Spike)
-                            const timeDelta = (p.timestamp - lastPoint.timestamp) / 1000;
-                            if (timeDelta > 0 && timeDelta < 10) {
-                                const dist = haversineDistance(lastPoint.lat, lastPoint.lon, p.lat, p.lon);
-                                if (dist > 2.0) { // 2km
-                                    console.warn(`[NativeGPS] Point rejeté (saut horizontal: ${dist.toFixed(2)}km en ${timeDelta.toFixed(1)}s):`, p);
-                                    return false;
-                                }
-                            }
-                            
-                            // v5.28.0: Auto-Pause (Détection d'immobilité)
-                            // Si on bouge de moins de 3m sur le dernier point, on vérifie si on doit auto-pauser
-                            const moveDist = haversineDistance(lastPoint.lat, lastPoint.lon, p.lat, p.lon) * 1000; // en mètres
-                            if (moveDist < 3.0) {
-                                // On est potentiellement à l'arrêt. On n'ajoute pas le point pour éviter la "pelote"
-                                state.isAutoPaused = true;
-                                return false;
-                            } else {
-                                state.isAutoPaused = false;
-                            }
-
-                            // Sécurité absolue : un point ne peut pas être à plus de 500km du précédent
-                            if (haversineDistance(lastPoint.lat, lastPoint.lon, p.lat, p.lon) > 500) {
-                                return false;
-                            }
-                        }
-                        
-                        // Plage absolue de sécurité
-                        if (p.alt < -500 || p.alt > 9000) return false;
-
-                        lastPoint = { lat: p.lat, lon: p.lon, alt: p.alt, timestamp: p.timestamp };
-                        return true;
-                    });
+                    // v5.28.1: Le filtrage (0,0), Altitude et Jumps est désormais fait en NATIF.
+                    // On ne garde ici qu'une sécurité de tri et de dédoublonnage pour le rendu.
+                    const uniqueNewPoints = newPoints.filter(p => !existingTimestamps.has(p.timestamp));
                     
                     if (uniqueNewPoints.length > 0) {
                         // Convertir NativeGPSPoint en LocationPoint
@@ -314,16 +267,7 @@ class NativeGPSService {
                         if (totalPoints < 10) {
                             updateRecordedTrackMesh();
                         } else {
-                            this.pendingMeshUpdate = true;
-                            if (!this.meshUpdateTimeout) {
-                                this.meshUpdateTimeout = window.setTimeout(() => {
-                                    if (this.pendingMeshUpdate) {
-                                        updateRecordedTrackMesh();
-                                        this.pendingMeshUpdate = false;
-                                    }
-                                    this.meshUpdateTimeout = null;
-                                }, 500);
-                            }
+                            this.requestMeshUpdate();
                         }
                     }
                 }

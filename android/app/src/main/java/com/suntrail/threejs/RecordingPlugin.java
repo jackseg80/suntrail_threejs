@@ -84,7 +84,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
      * Can notify the JS side if needed (via sendEvent).
      */
     @Override
-    public void onNewPoints(String courseId, int pointCount) {
+    public void onNewPoints(String courseId, int pointCount, boolean isAutoPaused) {
         // Stocker le courseId courant
         mCurrentCourseId = courseId;
         
@@ -92,7 +92,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         // Le JS peut écouter via Recording.addListener('onNewPoints', ...)
         JSObject eventData = new JSObject();
         eventData.put("courseId", courseId);
-        eventData.put("pointCount", pointCount);
+        eventData.put("pointCount", pointCount);`r`n        eventData.put("isAutoPaused", isAutoPaused);
         notifyListeners("onNewPoints", eventData);
     }
 

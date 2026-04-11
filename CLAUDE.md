@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.27.13)
+# SunTrail — Guide IA (v5.28.1)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-11 suite à la correction Anti-Glitch GPS (v5.27.13).
+> Mis à jour le 2026-04-11 suite à l'unification de la logique GPS (v5.28.1).
 
 ## Projet
 
@@ -10,24 +10,27 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 **Stack** : TypeScript strict · Three.js r160 · Vite 5 · Capacitor 6 · RevenueCat
 
-## ⚠️ Règles & Décisions Actées (v5.27.13)
+## ⚠️ Règles & Décisions Actées (v5.28.1)
 
 ### 🚀 Protocole de Release (IMPÉRATIF)
-1. **Version Name** : Incrémenter dans `package.json` (ex: 5.27.12 → 5.27.13).
-2. **Version Code** : Incrémenter **TOUJOURS** le `versionCode` dans `android/app/build.gradle`.
-3. **Changelog** : Mettre à jour `CHANGELOG.md`.
-4. **Git** : Taguer la version (`git tag vX.Y.Z`) et pusher les tags.
+1. **Incrémentation** : Utiliser `npm run bump` (synchronise package.json et build.gradle).
+2. **Changelog** : Mettre à jour `CHANGELOG.md`.
+3. **Git** : Taguer la version (`git tag vX.Y.Z`) et pusher les tags.
 
 ### Architecture & GPS
-- **Single Source of Truth** : Le service natif Android (`RecordingService.java`) est l'unique source de vérité pour l'enregistrement.
+- **Single Source of Truth** : Le service natif Android (`RecordingService.java`) est l'unique source de vérité pour l'enregistrement ET le filtrage.
 - **Buffer Natif** : Les points sont stockés en SQLite (Room) côté Android pour survivre aux kills.
-- **Distance** : Formule **Haversine** (précision < 0.5%).
-- **D+ / D-** : Algorithme d'**Hystérésis avec seuil de 2m** (Garmin/Suunto style).
-- **Lissage** : Moyenne mobile 3 points sur l'altitude GPS.
-- **Filtrage GPS (v5.27.13)** : 
-  - Rejeter tout point GPS avec saut vertical > 200m.
-  - Rejeter tout point GPS avec saut horizontal > 1km en < 10s (Anti-Champignon).
-  - Tri chronologique obligatoire avant traitement et export.
+- **Filtrage GPS (v5.28.1 - NATIF)** : 
+  - Rejeter points (0,0).
+  - Rejeter sauts verticaux > 200m.
+  - Rejeter micro-mouvements < 3m (Anti-jitter).
+  - Détection auto-pause : immobilité < 3m pendant 10s.
+- **JS Responsibility** : Le code JS ne fait plus de filtrage de données brutes. Il s'occupe de l'affichage, de la persistance UI et du tri chronologique final.
+
+### Rendu & Performance
+- **Simplification RDP (v5.28.0)** : Algorithme Ramer-Douglas-Peucker appliqué sur le tracé en cours pour alléger le maillage 3D.
+- **`renderer.setSize(w, h, false)`** — TOUJOURS le 3ème param `false`.
+- **TubeGeometry Stabilité** : Utiliser `centripetal` pour les splines. Toujours trier par `timestamp` avant génération.
 - **Alignement Géographique (v5.27.3)** : Recalcul obligatoire des maillages GPX lors de chaque `Origin Shift` (Floating Origin).
 - **Inclinomètre (v5.27.5)** : Raycasting 3D pour mesure sous le réticule. Anticipation de 15m en mode suivi basée sur `userHeading`.
 

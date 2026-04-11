@@ -64,7 +64,8 @@ public class RecordingService extends Service {
     private static final float  MAX_SPEED_MPS       = 15.0f;       // 54 km/h — reject si plus rapide
     private static final float  MIN_DISTANCE_M      = 3.0f;        // 3m — reject jitter (augmenté pour éviter les doublons)
     private static final long   MIN_TIME_MS         = 1000L;        // 1s — reject rafales OEM
-    private static final float  MAX_ACCURACY_M      = 50.0f;        // 50m — reject imprécis
+    private static final float  MAX_ACCURACY_M      = 50.0f;
+    private static final float  MAX_ALT_DELTA_M       = 200.0f; // v5.28.1: Rejet sauts altitude        // 50m — reject imprécis
     private static final double MIN_ALT_M           = -500.0;       // reject alt aberrantes
     private static final double MAX_ALT_M           = 9000.0;
 
@@ -77,7 +78,7 @@ public class RecordingService extends Service {
      * Implémenté par RecordingPlugin.onNewPoints().
      */
     public interface RecordingCallback {
-        void onNewPoints(String courseId, int pointCount);
+        void onNewPoints(String courseId, int pointCount, boolean isAutoPaused);
     }
 
     private static RecordingCallback sCallback;
@@ -128,8 +129,8 @@ public class RecordingService extends Service {
     private Location mLastSignificantLocation  = null;
     private long    mLastMovementTime          = 0;
     private boolean mIsImmobile                = false;
-    private static final float  IMMOBILITY_DISTANCE_THRESHOLD = 30.0f;
-    private static final long   IMMOBILITY_TIME_THRESHOLD     = 30 * 60 * 1000L;
+    private static final float  IMMOBILITY_DISTANCE_THRESHOLD = 3.0f;
+    private static final long   IMMOBILITY_TIME_THRESHOLD     = 10 \* 1000L; // 10s
 
     // Cache des PendingIntents pour la notification
     private PendingIntent    mOpenPendingIntent;
@@ -216,7 +217,7 @@ public class RecordingService extends Service {
             .apply();
         // Notifier le plugin du courseId courant (pour que le JS sache quoi poller)
         if (sCallback != null) {
-            sCallback.onNewPoints(mCurrentCourseId, mPointCount.get());
+            sCallback.onNewPoints(mCurrentCourseId, mPointCount.get(), mIsImmobile);
         }
 
         Intent openIntent = new Intent(this, MainActivity.class);
@@ -405,7 +406,7 @@ public class RecordingService extends Service {
                             // Notifier le Plugin JS via callback (une fois par batch)
                             RecordingCallback cb = getCallback();
                             if (cb != null) {
-                                cb.onNewPoints(mCurrentCourseId, newCount);
+                                cb.onNewPoints(mCurrentCourseId, newCount, mIsImmobile);
                             }
                             
                             Log.d(TAG, "INSERTED batch of " + pointsToInsert.size() + " points (total: " + newCount + ")");
@@ -415,7 +416,7 @@ public class RecordingService extends Service {
                         // Notifier tous les points pour test
                         RecordingCallback cb = getCallback();
                         if (cb != null) {
-                            cb.onNewPoints(mCurrentCourseId, newCount);
+                            cb.onNewPoints(mCurrentCourseId, newCount, mIsImmobile);
                         }
                     }
 
@@ -491,7 +492,7 @@ public class RecordingService extends Service {
                 // Notifier le JS des points flushés
                 RecordingCallback cb = getCallback();
                 if (cb != null) {
-                    cb.onNewPoints(mCurrentCourseId, finalCount);
+                    cb.onNewPoints(mCurrentCourseId, finalCount, mIsImmobile);
                 }
                 Log.d(TAG, "Flushed " + remainingPoints.size() + " remaining points on stop");
             });
@@ -747,3 +748,5 @@ public class RecordingService extends Service {
         }
     }
 }
+
+

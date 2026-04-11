@@ -50,20 +50,11 @@ window.addEventListener('suntrail:uiReady', async () => {
             // Récupérer tous les points depuis le natif (Single Source of Truth)
             const allPoints = await nativeGPSService.getAllPoints(currentCourse.courseId);
             
-            // ✅ Dédoublonnage + tri par timestamp + filtrage altitude (v5.26.7)
+            // ✅ v5.28.1: Le natif garantit déjà des points propres ((0,0), Altitude, Jitter).
+            // On ne garde que le tri chronologique par sécurité.
             allPoints.sort((a: any, b: any) => a.timestamp - b.timestamp);
-            let lastAlt: number | null = null;
-            const filteredPoints = allPoints.filter((p: any) => {
-                // Cohérence
-                if (lastAlt !== null) {
-                    if (Math.abs(p.alt - lastAlt) > 200) return false;
-                }
-                if (p.alt < -500 || p.alt > 9000) return false;
-                lastAlt = p.alt;
-                return true;
-            });
 
-            state.recordedPoints = filteredPoints as any[];
+            state.recordedPoints = allPoints as any[];
             state.isRecording = true;
             state.currentCourseId = currentCourse.courseId;
             

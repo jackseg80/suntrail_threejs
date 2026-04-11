@@ -58,13 +58,14 @@ et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 ### Fixed
 - **Pertinence des Mesures** : L'inclinomètre ne mesure plus systématiquement le centre de l'écran par défaut, mais s'adapte à l'usage (position utilisateur ou point visé).
 
-## [5.28.0] - 2026-04-11
+## [5.28.1] - 2026-04-11
 
-### Added
-- **Auto-Pause (v5.28.0)** : Détection intelligente d'immobilité. L'enregistrement s'arrête si le mouvement est < 3m, évitant les "pelotes" de points aux arrêts et à l'arrivée.
-- **Persistance Temps-Réel** : Sauvegarde continue du tracé en cours dans le stockage local. Permet une récupération instantanée de l'affichage après un crash ou une fermeture système (OOM).
-- **Simplification 3D (RDP)** : Intégration de l'algorithme Ramer-Douglas-Peucker pour optimiser le maillage 3D du tracé. Réduction vertices ~70% sans perte visuelle, gain majeur de performance sur Galaxy A53.
-- **Automatisation Release** : Nouveau script `npm run bump` pour synchroniser automatiquement les versions entre Web et Android.
+### Fixed
+- **Unification GPS (SSOT)** : Déplacement de toute la logique de filtrage ((0,0), sauts d'altitude, jitter) dans le service natif Android. Garantit une cohérence parfaite entre l'affichage et le fichier GPX.
+- **Auto-Pause Natif** : Le statut d'immobilité est désormais piloté par le service natif (plus précis et réactif).
+- **Nettoyage Code** : Suppression des calculs redondants côté JavaScript pour alléger le thread UI.
+
+## [5.28.0] - 2026-04-11
 
 ## [5.27.13] - 2026-04-11
 
