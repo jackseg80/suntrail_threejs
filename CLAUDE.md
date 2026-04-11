@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.27.7)
+# SunTrail — Guide IA (v5.28.2)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-10 suite à l'introduction des packs \"Full Offline\" (v3) incluant relief et chemins.
+> Mis à jour le 2026-04-11 suite à la stabilisation GPS (RDP) et persistance temps réel.
 
 ## Projet
 

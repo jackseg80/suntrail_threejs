@@ -5,6 +5,20 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.2] - 2026-04-11
+
+### Added
+- **Optimisation GPS (RDP)** : Simplification Ramer-Douglas-Peucker en 3D pour des tracés fluides sans saccades (mobile-first).
+- **Auto-pause Intelligent** : Détection d'immobilité (< 0.8 km/h pendant 30s) pour suspendre proprement l'enregistrement.
+- **Persistance Temps Réel** : Utilisation de `@capacitor/preferences` pour sauvegarder chaque point GPS instantanément (protection anti-crash).
+- **Mode Hors-ligne v3** : Support complet des packs multi-couches (Couleur + Relief + Overlay) dans un seul fichier PMTiles.
+
+### Fixed
+- **Stabilité 2D/3D** : Éradication des \"écrans blancs\" via un mode de chargement prioritaire (force) sur le centre de la carte.
+- **Mandat Hiérarchie** : Migration systématique vers `scene.add` pour les objets 3D (POI, bâtiments, hydrologie), garantissant leur persistance lors des mises à jour du relief.
+- **Rendu 2D** : Suppression de l'effet de fondu pour un affichage immédiat à 100%.
+- **Inclinomètre** : Correction du raycasting et fluidification du drag-and-drop via requestAnimationFrame.
+
 ## [5.27.7] - 2026-04-10
 
 ### Added
