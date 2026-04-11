@@ -214,6 +214,9 @@ async function main() {
   });
 
   // 8. Écrire le fichier
+  const dir = path.dirname(OUTPUT);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
   const fd = fs.openSync(OUTPUT, 'w');
   fs.writeSync(fd, new Uint8Array(header));
   fs.writeSync(fd, rootDir);
