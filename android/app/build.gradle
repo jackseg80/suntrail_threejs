@@ -1,4 +1,4 @@
-﻿apply plugin: 'com.android.application'
+apply plugin: 'com.android.application'
 
 // Chargement des propriÃ©tÃ©s du keystore (fichier NON commitÃ© dans Git)
 def keystorePropertiesFile = rootProject.file("keystore.properties")
