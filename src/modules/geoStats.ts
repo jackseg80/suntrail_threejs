@@ -1,4 +1,5 @@
 import { haversineDistance } from './utils';
+import { cleanGPSTrack } from './gpsDeduplication';
 
 export interface LocationPoint {
     lat: number;
@@ -18,22 +19,16 @@ export interface TrackStats {
  * Seuil par défaut : 2 mètres (standard Garmin/Suunto)
  */
 export function calculateTrackStats(points: LocationPoint[], threshold: number = 2): TrackStats {
-    if (points.length < 2) {
+    // v5.28.2: Utilisation de la source de vérité unique pour le nettoyage
+    const uniquePoints = cleanGPSTrack(points);
+
+    if (uniquePoints.length < 2) {
         return { distance: 0, dPlus: 0, dMinus: 0 };
     }
 
     let distance = 0;
     let dPlus = 0;
     let dMinus = 0;
-
-    // Dédoublonnage par timestamp (sécurité)
-    const uniquePoints = [...new Map(points.map(p => [p.timestamp, p])).values()]
-        .sort((a, b) => a.timestamp - b.timestamp);
-
-    if (uniquePoints.length < 2) {
-        return { distance: 0, dPlus: 0, dMinus: 0 };
-    }
-
     let refAlt = uniquePoints[0].alt;
 
     for (let i = 1; i < uniquePoints.length; i++) {

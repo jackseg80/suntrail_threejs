@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.3] - 2026-04-11
+### Optimisations
+- **Centralisation GPS** : Unification de toute la logique de nettoyage (tri, dédoublonnage, altitude, vitesse, bruit) dans un module unique `gpsDeduplication`.
+- **Performance Rendu** : Suppression des calculs redondants de filtrage dans `terrain.ts` (boucle de rendu) pour une meilleure fluidité sur mobile.
+- **Fiabilité Stats** : Utilisation du nettoyage centralisé pour les calculs de distance et dénivelé dans `geoStats`.
+
 ## [5.28.2] - 2026-04-11
 
 ### Added

@@ -454,41 +454,25 @@ export function updateAllGPXMeshes(): void {
 
 export function updateRecordedTrackMesh(): void {
     if (state.recordedPoints.length < 2 || !state.camera || !state.scene || !state.originTile) return;
-    const camAlt = state.camera.position.y; const thickness = Math.max(2.0, camAlt / 800); 
-    if (state.recordedMesh) { state.scene.remove(state.recordedMesh); disposeObject(state.recordedMesh); }
+    const camAlt = state.camera.position.y; 
+    const thickness = Math.max(2.0, camAlt / 800); 
+    
+    if (state.recordedMesh) { 
+        state.scene.remove(state.recordedMesh); 
+        disposeObject(state.recordedMesh); 
+    }
+    
     const originTile = state.originTile;
     
-    let lastValidAlt: number | null = null;
-
-    // v5.27.4: Tri chronologique impératif pour éviter les traits qui traversent la carte
-    const sortedPoints = [...state.recordedPoints].sort((a, b) => a.timestamp - b.timestamp);
-
-    const threePoints = sortedPoints
-        .filter(p => {
-            if (typeof p.lat !== 'number' || typeof p.lon !== 'number' || typeof p.alt !== 'number') return false;
-            if (isNaN(p.lat) || isNaN(p.lon) || isNaN(p.alt)) return false;
-            
-            // v5.27.4: Ignorer les points "zéro" du démarrage (fix champignon initial)
-            if (p.lat === 0 && p.lon === 0) return false;
-            if (p.alt === 0 && state.recordedPoints.length < 5) return false;
-
-            if (Math.abs(p.lat) > 90 || Math.abs(p.lon) > 180) return false;
-            if (p.alt < -500 || p.alt > 9000) return false;
-            
-            if (lastValidAlt !== null) {
-                const delta = Math.abs(p.alt - lastValidAlt);
-                if (delta > 200) return false;
-            }
-            lastValidAlt = p.alt;
-            return true;
-        })
-        .map(p => {
-            const pos = lngLatToWorld(p.lon, p.lat, originTile);
-            const terrainY = getAltitudeAt(pos.x, pos.z);
-            const gpsY = p.alt * state.RELIEF_EXAGGERATION + 8;
-            const finalY = (terrainY === 0 || isNaN(terrainY)) ? gpsY : Math.max(terrainY, gpsY);
-            return new THREE.Vector3(pos.x, finalY, pos.z);
-        });
+    // v5.28.2: On fait confiance à NativeGPSService pour le tri et le nettoyage initial.
+    // On convertit simplement en coordonnées Three.js avec plaquage au sol.
+    const threePoints = state.recordedPoints.map(p => {
+        const pos = lngLatToWorld(p.lon, p.lat, originTile);
+        const terrainY = getAltitudeAt(pos.x, pos.z);
+        const gpsY = p.alt * state.RELIEF_EXAGGERATION + 8;
+        const finalY = (terrainY === 0 || isNaN(terrainY)) ? gpsY : Math.max(terrainY, gpsY);
+        return new THREE.Vector3(pos.x, finalY, pos.z);
+    });
 
     // v5.28.1: Simplification Ramer-Douglas-Peucker (RDP) pour fluidité 3D
     // Epsilon = 2.0 (mètres) est un bon compromis pour éliminer le jitter sans déformer

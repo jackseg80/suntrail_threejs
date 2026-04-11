@@ -14,6 +14,7 @@ import { Preferences } from '@capacitor/preferences';
 import { state } from './state';
 import { updateRecordedTrackMesh } from './terrain';
 import { haversineDistance } from './utils';
+import { cleanGPSTrack } from './gpsDeduplication';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -104,41 +105,15 @@ class NativeGPSService {
 
     /**
      * Filtrage lourd unifié (v5.28.1)
-     * Centralise le tri, le dédoublonnage et le filtrage d'altitude.
+     * Utilise cleanGPSTrack pour le tri, dédoublonnage et cohérence.
      */
     private filterPointsConsistency(points: NativeGPSPoint[]): any[] {
-        if (points.length === 0) return [];
-
-        // 1. Tri chronologique
-        const sorted = [...points].sort((a, b) => a.timestamp - b.timestamp);
-        
-        // 2. Dédoublonnage et filtrage cohérence
-        const result = [];
-        const seenTimestamps = new Set();
-        let lastAlt = null;
-
-        for (const p of sorted) {
-            if (seenTimestamps.has(p.timestamp)) continue;
-            
-            // Rejeter les points aberrants (> 200m de saut vertical)
-            if (lastAlt !== null && Math.abs(p.alt - lastAlt) > 200) continue;
-            
-            // Plage absolue de sécurité
-            if (p.alt < -500 || p.alt > 9000) continue;
-            
-            // Ignorer les points "zéro" du démarrage
-            if (p.lat === 0 && p.lon === 0) continue;
-
-            seenTimestamps.add(p.timestamp);
-            lastAlt = p.alt;
-            result.push({
-                lat: p.lat,
-                lon: p.lon,
-                alt: p.alt,
-                timestamp: p.timestamp
-            });
-        }
-        return result;
+        return cleanGPSTrack(points).map(p => ({
+            lat: p.lat,
+            lon: p.lon,
+            alt: p.alt,
+            timestamp: p.timestamp
+        }));
     }
 
     /**
