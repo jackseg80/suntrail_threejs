@@ -6,6 +6,11 @@ Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [5.28.4] - 2026-04-11
+### Fixed
+- **Signalisation 3D (Restaurée)** : Correction du rendu des losanges (signpost) avec un nouveau design à gradient radial, une bordure plus épaisse et une taille accrue (24px).
+- **Fiabilité POI** : Ajout d'une priorité haute pour les requêtes Overpass et validation du statut de tuile 'loaded' avant le calcul de l'altitude.
+- **Transparence** : Désactivation du `depthWrite` pour les sprites de signalétique, éliminant les artefacts visuels et les "trous" dans le relief.
+
 ### Optimisations & Refactoring
 - **Standardisation Géo** : Déplacement des fonctions `isPositionInSwitzerland/France` vers `geo.ts` pour une meilleure cohérence modulaire.
 - **Unification du Plaquage (Draping)** : Création d'une fonction `drapeToTerrain` centralisée dans `analysis.ts`, éliminant les doublons de logique dans `terrain.ts`.

@@ -22,8 +22,8 @@
 - **Warmup non-bloquant** : Charger les headers de packs en arrière-plan au démarrage.
 
 ### 4. UI & Cosmétique
-- **Signalisation 3D** : Restaurer les icônes de signalétique (losanges) sans casser la hiérarchie de rendu.
-- **Widget Inclinomètre** : Stabiliser le drag-and-drop et le rafraîchissement.
+- [x] **Signalisation 3D** : Restaurer les icônes de signalétique (losanges) sans casser la hiérarchie de rendu (v5.28.4).
+- [ ] **Widget Inclinomètre** : Stabiliser le drag-and-drop et le rafraîchissement.
 
 ## Mandats Techniques (Anti-Régression)
 - **PAS de hierarchy attachment** : `scene.add(group)` et non `mesh.add(group)`.

@@ -347,8 +347,8 @@ export class Tile {
         }
 
         const delay = (ms: number) => ms * state.LOAD_DELAY_FACTOR;
-        if (state.SHOW_SIGNPOSTS && this.zoom >= 15) setTimeout(() => { if (this.status !== 'disposed') loadPOIsForTile(this); }, delay(600));
-        if (state.SHOW_BUILDINGS && this.zoom >= 16) setTimeout(() => { if (this.status !== 'disposed') loadBuildingsForTile(this); }, delay(150));
+        if (state.SHOW_SIGNPOSTS && this.zoom >= state.POI_ZOOM_THRESHOLD) setTimeout(() => { if (this.status !== 'disposed') loadPOIsForTile(this); }, delay(600));
+        if (state.SHOW_BUILDINGS && this.zoom >= state.BUILDING_ZOOM_THRESHOLD) setTimeout(() => { if (this.status !== 'disposed') loadBuildingsForTile(this); }, delay(150));
         if (state.SHOW_HYDROLOGY && this.zoom >= 13) setTimeout(() => { if (this.status !== 'disposed') loadHydrologyForTile(this); }, delay(100));
         if (state.SHOW_VEGETATION && this.zoom >= 14) setTimeout(() => {
             if (this.status as any === 'disposed') return;
