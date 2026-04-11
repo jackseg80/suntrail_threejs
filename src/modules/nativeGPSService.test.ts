@@ -94,7 +94,7 @@ describe('NativeGPSService', () => {
         // --- 1. Altitude Jump ---
         const p1 = { lat: 46.5, lon: 7.5, alt: 1000, timestamp: now, accuracy: 5, id: 1 };
         const p2 = { lat: 46.5, lon: 7.5, alt: 1300, timestamp: now + 5000, accuracy: 5, id: 2 }; // Jump +300m -> Reject
-        const p3 = { lat: 46.5, lon: 7.5, alt: 1050, timestamp: now + 10000, accuracy: 5, id: 3 }; // Jump +50m -> Accept
+        const p3 = { lat: 46.5001, lon: 7.5001, alt: 1050, timestamp: now + 10000, accuracy: 5, id: 3 }; // Jump +50m AND move ~15m -> Accept
 
         state.recordedPoints = [];
         mockPlugin.getPoints.mockResolvedValueOnce({ points: [p1] });
@@ -112,7 +112,7 @@ describe('NativeGPSService', () => {
         // --- 2. (0,0) and Horizontal Jump ---
         const pZero = { lat: 0, lon: 0, alt: 1050, timestamp: now + 15000, accuracy: 5, id: 4 }; // (0,0) -> Reject
         const pJump = { lat: 47.5, lon: 8.5, alt: 1050, timestamp: now + 16000, accuracy: 5, id: 5 }; // ~130km jump in 1s (since pZero is rejected, delta is relative to p3 which is at now+10000 -> 6s delta) -> Reject
-        const pValid = { lat: 46.5001, lon: 7.5001, alt: 1050, timestamp: now + 25000, accuracy: 5, id: 6 }; // Valid -> Accept
+        const pValid = { lat: 46.5002, lon: 7.5002, alt: 1050, timestamp: now + 25000, accuracy: 5, id: 6 }; // Valid -> Accept
 
         mockPlugin.getPoints.mockResolvedValueOnce({ points: [p1, p2, p3, pZero] });
         await callback({ courseId: 'test-course-123', pointCount: 4 });
@@ -131,5 +131,20 @@ describe('NativeGPSService', () => {
         mockPlugin.getPoints.mockResolvedValueOnce({ points: [p1, p2, p3, pZero, pJump, pExtreme, pValid] });
         await callback({ courseId: 'test-course-123', pointCount: 7 });
         expect(state.recordedPoints.length).toBe(3); // Valid accepted
+
+        // --- 3. Auto-Pause (v5.28.0) ---
+        // Reset recorded points to avoid noise from previous steps
+        state.recordedPoints = [{ lat: 46.5002, lon: 7.5002, alt: 1050, timestamp: now + 25000 }];
+        const pStill = { lat: 46.500201, lon: 7.500201, alt: 1050, timestamp: now + 30000, accuracy: 5, id: 8 }; // Only 10cm move
+        mockPlugin.getPoints.mockResolvedValueOnce({ points: [pStill] });
+        await callback({ courseId: 'test-course-123', pointCount: 1 });
+        expect(state.recordedPoints.length).toBe(1); // pStill rejected
+        expect(state.isAutoPaused).toBe(true);
+
+        const pMoving = { lat: 46.5003, lon: 7.5003, alt: 1050, timestamp: now + 35000, accuracy: 5, id: 9 }; // > 10m move
+        mockPlugin.getPoints.mockResolvedValueOnce({ points: [pStill, pMoving] });
+        await callback({ courseId: 'test-course-123', pointCount: 2 });
+        expect(state.recordedPoints.length).toBe(2); // pMoving accepted
+        expect(state.isAutoPaused).toBe(false);
     });
 });

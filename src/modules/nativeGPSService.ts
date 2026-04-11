@@ -208,8 +208,6 @@ class NativeGPSService {
                             }
 
                             // v5.27.13: Filtrage horizontal radical (Anti-Champignon / Spike)
-                            // Si le point est à plus de 2km en moins de 10s (vitesse > 720km/h), c'est un glitch
-                            // Seuil augmenté à 2km pour plus de sécurité (S23 peut être très réactif)
                             const timeDelta = (p.timestamp - lastPoint.timestamp) / 1000;
                             if (timeDelta > 0 && timeDelta < 10) {
                                 const dist = haversineDistance(lastPoint.lat, lastPoint.lon, p.lat, p.lon);
@@ -219,8 +217,18 @@ class NativeGPSService {
                                 }
                             }
                             
+                            // v5.28.0: Auto-Pause (Détection d'immobilité)
+                            // Si on bouge de moins de 3m sur le dernier point, on vérifie si on doit auto-pauser
+                            const moveDist = haversineDistance(lastPoint.lat, lastPoint.lon, p.lat, p.lon) * 1000; // en mètres
+                            if (moveDist < 3.0) {
+                                // On est potentiellement à l'arrêt. On n'ajoute pas le point pour éviter la "pelote"
+                                state.isAutoPaused = true;
+                                return false;
+                            } else {
+                                state.isAutoPaused = false;
+                            }
+
                             // Sécurité absolue : un point ne peut pas être à plus de 500km du précédent
-                            // (Sauf si on redémarre l'app après un vol, mais ici on est en REC continu)
                             if (haversineDistance(lastPoint.lat, lastPoint.lon, p.lat, p.lon) > 500) {
                                 return false;
                             }
