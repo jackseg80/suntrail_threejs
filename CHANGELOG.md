@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.9] - 2026-04-12
+### Added
+- **Intégration CI/CD (GitHub Actions)** : Automatisation des tests unitaires et E2E sur chaque push et pull-request.
+- **Sécurisation des Pipelines** : Le déploiement Web et les builds Android sont désormais bloqués en cas d'échec des tests.
+- **Workflow de Qualité** : Nouveau workflow dédié pour un feedback rapide sur la stabilité du projet.
+
 ## [5.28.8] - 2026-04-12
 ### Fixed
 - **Fiabilité des Tests E2E** : Correction du nom de calque attendu (basé sur le nom du fichier) et renommage des données de test pour une meilleure cohérence (`E2E-Test-Track.gpx`).
