@@ -72,8 +72,8 @@ describe('terrain.ts', () => {
         });
 
         it('should calculate correct offsets for hybrid zoom beyond source limits (v4.3.8)', () => {
-            state.MAP_SOURCE = 'opentopomap'; // Max Zoom 15
-            const tile = new Tile(34114, 22952, 16, '16/34114/22952');
+            state.MAP_SOURCE = 'opentopomap';
+            const tile = new Tile(272912, 183616, 19, '19/272912/183616');
             expect(tile.colorScale).toBe(0.5);
             expect(tile.colorOffset.x).toBe(0.0);
         });

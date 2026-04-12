@@ -1,4 +1,4 @@
-export const EARTH_CIRCUMFERENCE = 40075016.68;
+export const EARTH_CIRCUMFERENCE = 40075016.686;
 
 export interface BBox {
     minLat: number;

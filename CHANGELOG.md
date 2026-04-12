@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.25] - 2026-04-12
+### Fixed
+- **Moteur Cartographique** : Correction d'un décalage d'alignement des tuiles à haute résolution (LOD 16+) hors Suisse/France en uniformisant le plafond `nativeMax` à 18 pour toutes les sources.
+- **Précision Géographique** : Standardisation de la constante `EARTH_CIRCUMFERENCE` à 40075016.686m pour une cohérence parfaite entre le thread principal et les Workers.
+
 ## [5.28.24] - 2026-04-12
 ### Fixed
 - **Android Build** : Correction du format de `versionName` dans le fichier Gradle (retrait des antislashs invalides).

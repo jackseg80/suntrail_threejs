@@ -104,7 +104,7 @@ export class Tile {
 
     updateHybridSettings(): void {
         const MAX_RGB_ZOOM = 14;
-        const nativeMax = (state.MAP_SOURCE === 'opentopomap') ? 15 : 18;
+        const nativeMax = 18;
         if (this.zoom > MAX_RGB_ZOOM) {
             const ratio = Math.pow(2, this.zoom - MAX_RGB_ZOOM);
             this.elevScale = 1.0 / ratio;
