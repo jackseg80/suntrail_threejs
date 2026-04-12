@@ -1,7 +1,7 @@
 import { state } from './state';
 
 export type FeatureId = 
-    | 'lod_high'        // Zoom > 14
+    | 'lod_high'        // Capacité à zoomer au-delà de 14
     | 'solar_calendar'  // Accès au calendrier solaire complet
     | 'weather_pro'     // Météo détaillée (graphiques, 3 jours)
     | 'satellite'       // Source satellite
@@ -16,30 +16,17 @@ export function isFeatureEnabled(featureId: FeatureId): boolean {
     // Si l'utilisateur est Pro, tout est débloqué
     if (state.isPro) return true;
 
-    // Dérogations spécifiques
+    // Dérogations spécifiques pour les utilisateurs gratuits
     switch (featureId) {
         case 'lod_high':
-            // Bloqué à 14 pour les gratuits
-            return state.ZOOM <= 14;
+            // Retourne false pour forcer le plafonnement à 14 dans scene.ts
+            return false;
             
         case 'solar_calendar':
-            // Simulation 24h gratuite, calendrier = Pro
-            return false;
-
         case 'weather_pro':
-            // Météo de base seulement
-            return false;
-
         case 'satellite':
-            // Satellite = Pro
-            return false;
-
         case 'inclinometer':
-            // Feature Pro (v5.27.5)
-            return false;
-
         case 'offline_unlimited':
-            // Une zone gratuite, géré par ConnectivitySheet
             return false;
 
         default:
