@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.22] - 2026-04-12
+### Fixed
+- **Stabilité TypeScript** : Résolution de 17 erreurs de compilation détectées par `tsc` (propriétés manquantes dans `Tile`, imports erronés, variables inutilisées et null checks).
+- **Caméra** : Ajustement de la position initiale à **4 000 km** d'altitude pour correspondre exactement à la limite de dézoom maximale.
+- **Tests** : Mise à jour des tests unitaires pour valider la nouvelle position de départ de la caméra.
+
 ## [5.28.21] - 2026-04-12
 ### Fixed
 - **Contrôles Caméra** : Rétablissement de `MapControls` (au lieu de `OrbitControls`) pour retrouver le mode de navigation standard (clic gauche pour translater, clic droit pour tourner).

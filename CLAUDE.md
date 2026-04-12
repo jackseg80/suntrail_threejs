@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.28.21)
+# SunTrail — Guide IA (v5.28.22)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-12 suite au fix des contrôles caméra et du zoom initial.
+> Mis à jour le 2026-04-12 suite au fix TypeScript global et à l'ajustement final de la caméra.
 
 ## Projet
 
