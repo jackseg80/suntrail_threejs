@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.13] - 2026-04-12
+### Summary
+- **Sprint Qualité & Unification** : Finalisation de l'infrastructure de tests et validation de l'unification de la logique GPS.
+
+### Fixed
+- **Stabilité Globale** : Validation finale des 503 tests unitaires et d'intégration.
+- **CI/CD** : Les pipelines GitHub Actions sont désormais totalement opérationnels pour garantir la non-régression sur le web et Android.
+
 ## [5.28.12] - 2026-04-12
 ### Fixed
 - **Robustesse E2E** : Correction des sélecteurs de canvas pour Playwright afin d'éviter les conflits de mode strict lorsque plusieurs canvas sont présents sur la page.
