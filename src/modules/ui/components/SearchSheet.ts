@@ -10,7 +10,6 @@ import { sheetManager } from '../core/SheetManager';
 import { 
     searchLocations, 
     searchPeaksByName, 
-    classifyFeature, 
     CLASSIFICATIONS, 
     ResultClassification 
 } from '../../geocodingService';

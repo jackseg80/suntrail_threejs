@@ -4,16 +4,12 @@
  * Ce service est le SEUL point de contact pour l'enregistrement GPS natif.
  * Le JS ne fait plus d'enregistrement autonome — il écoute uniquement les événements
  * émis par le natif via RecordingNative.
- * 
- * Single Source of Truth : le natif Android (FusedLocationProviderClient) est
- * l'unique source d'enregistrement des points GPS.
  */
 
 import { registerPlugin, Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import { state } from './state';
 import { updateRecordedTrackMesh } from './terrain';
-import { haversineDistance } from './utils';
 import { cleanGPSTrack } from './gpsDeduplication';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -52,9 +48,6 @@ class NativeGPSService {
     private isListening = false;
     private meshUpdateTimeout: number | null = null;
     private pendingMeshUpdate = false;
-    
-    // Auto-pause (v5.28.1)
-    private immobilityStartTime: number | null = null;
 
     /**
      * Initialisation et récupération au démarrage (v5.28.1)
@@ -85,7 +78,7 @@ class NativeGPSService {
                 
                 this.setupListeners();
             } else {
-                // 2. Si pas de course native, tenter une recovery via Preferences (crash app sans kill service)
+                // 2. Si pas de course native, tenter une recovery via Preferences
                 const savedCourseId = await Preferences.get({ key: STORAGE_KEY_COURSE_ID });
                 if (savedCourseId.value) {
                     const savedPoints = await Preferences.get({ key: STORAGE_KEY_POINTS });
@@ -105,7 +98,6 @@ class NativeGPSService {
 
     /**
      * Filtrage lourd unifié (v5.28.1)
-     * Utilise cleanGPSTrack pour le tri, dédoublonnage et cohérence.
      */
     private filterPointsConsistency(points: NativeGPSPoint[]): any[] {
         return cleanGPSTrack(points).map(p => ({
@@ -120,16 +112,12 @@ class NativeGPSService {
      * Démarre une course (enregistrement GPS natif).
      */
     async startCourse(originTile?: { x: number; y: number; z: number }): Promise<string> {
-        if (!RecordingNative) {
-            return '';
-        }
+        if (!RecordingNative) return '';
 
         const result = await RecordingNative.startCourse({ originTile });
         this.currentCourseId = result.courseId;
         state.isPaused = false;
-        this.immobilityStartTime = null;
         
-        // Persister l'ID de course pour recovery
         await Preferences.set({ key: STORAGE_KEY_COURSE_ID, value: result.courseId });
         await Preferences.remove({ key: STORAGE_KEY_POINTS });
 
@@ -138,12 +126,11 @@ class NativeGPSService {
     }
 
     /**
-     * Arrête la course en cours avec flush final unifié.
+     * Arrête la course en cours.
      */
     async stopCourse(): Promise<void> {
         if (!RecordingNative) return;
 
-        // Récupérer les derniers points avant de couper (Single Source of Truth)
         if (this.currentCourseId) {
             const lastTimestamp = state.recordedPoints.length > 0 
                 ? state.recordedPoints[state.recordedPoints.length - 1].timestamp 
@@ -162,55 +149,14 @@ class NativeGPSService {
         this.currentCourseId = null;
         state.isPaused = false;
         
-        // Nettoyer le stockage temporaire après un arrêt propre
         await Preferences.remove({ key: STORAGE_KEY_COURSE_ID });
         await Preferences.remove({ key: STORAGE_KEY_POINTS });
 
-        // Flush final du mesh pour afficher tous les points
         this.flushMeshUpdate();
     }
-    
-    /**
-     * Détection Auto-pause (v5.28.1)
-     * Basé sur une vitesse < 0.8 km/h pendant 30 secondes.
-     * @returns true si le point doit être ignoré (en pause)
-     */
-    private checkAutoPause(newPoint: NativeGPSPoint): boolean {
-        if (state.recordedPoints.length === 0) return false;
-        
-        const lastPoint = state.recordedPoints[state.recordedPoints.length - 1];
-        const distKm = haversineDistance(lastPoint.lat, lastPoint.lon, newPoint.lat, newPoint.lon);
-        const timeHours = (newPoint.timestamp - lastPoint.timestamp) / 3600000;
-        
-        // Si mouvement détecté (> 0.8 km/h)
-        if (timeHours > 0 && (distKm / timeHours) > 0.8) {
-            this.immobilityStartTime = null;
-            if (state.isPaused) {
-                state.isPaused = false;
-                console.log('[NativeGPS] Auto-resume détecté');
-            }
-            return false;
-        }
-
-        // Si quasi-immobile
-        if (!this.immobilityStartTime) {
-            this.immobilityStartTime = newPoint.timestamp;
-        }
-        
-        // Déclenchement de la pause après 30s d'immobilité
-        if (newPoint.timestamp - this.immobilityStartTime > 30000) {
-            if (!state.isPaused) {
-                state.isPaused = true;
-                console.log('[NativeGPS] Auto-pause activée');
-            }
-            return true;
-        }
-        
-        return state.isPaused;
-    }
 
     /**
-     * Sauvegarde locale des points pour recovery (v5.28.1)
+     * Sauvegarde locale des points pour recovery.
      */
     private async persistPoints(): Promise<void> {
         try {
@@ -224,7 +170,7 @@ class NativeGPSService {
     }
 
     /**
-     * Force la mise à jour du mesh 3D (appelé à l'arrêt ou manuellement).
+     * Force la mise à jour du mesh 3D.
      */
     flushMeshUpdate(): void {
         if (this.meshUpdateTimeout) {
@@ -238,11 +184,10 @@ class NativeGPSService {
     }
 
     /**
-     * Récupère TOUS les points d'une course (pour recovery).
+     * Récupère TOUS les points d'une course.
      */
     async getAllPoints(courseId: string, since: number = 0): Promise<NativeGPSPoint[]> {
         if (!RecordingNative) return [];
-
         try {
             const result = await RecordingNative.getPoints({ courseId, since });
             return result.points || [];
@@ -253,11 +198,10 @@ class NativeGPSService {
     }
 
     /**
-     * Récupère la course actuellement active (si existente).
+     * Récupère la course actuellement active.
      */
     async getCurrentCourse(): Promise<{ courseId: string; isRunning: boolean; originTile?: { x: number; y: number; z: number } } | null> {
         if (!RecordingNative) return null;
-
         try {
             return await RecordingNative.getCurrentCourse();
         } catch (e) {
@@ -267,7 +211,7 @@ class NativeGPSService {
     }
 
     /**
-     * Demande l'exemption des optimisations batterie (Android uniquement).
+     * Demande l'exemption des optimisations batterie.
      */
     async requestBatteryOptimizationExemption(): Promise<boolean> {
         if (!RecordingNative) return true;
@@ -281,16 +225,13 @@ class NativeGPSService {
     }
 
     /**
-     * Configure les listeners pour les événements GPS natifs.
+     * Configure les listeners.
      */
     setupListeners(): void {
-        if (!RecordingNative || this.isListening) {
-            return;
-        }
+        if (!RecordingNative || this.isListening) return;
         this.isListening = true;
 
         RecordingNative.addListener('onNewPoints', async (event: { courseId: string; pointCount: number }) => {
-            
             if (!event.courseId) return;
             
             if (!this.currentCourseId && event.courseId) {
@@ -310,22 +251,15 @@ class NativeGPSService {
                 const newPoints = await this.getAllPoints(event.courseId, lastTimestamp);
                 
                 if (newPoints.length > 0) {
-                    // v5.28.5: Utilisation systématique de la source de vérité pour le filtrage
-                    // On fusionne les anciens et nouveaux points pour un nettoyage global (notamment pour la moyenne mobile)
                     const allPoints = [...state.recordedPoints, ...newPoints];
                     const cleanedAll = cleanGPSTrack(allPoints);
-                    
-                    // On ne garde que les points qui sont réellement nouveaux (pour éviter de reboucler sur des points déjà traités)
                     const existingTimestamps = new Set(state.recordedPoints.map(p => p.timestamp));
                     const uniqueNewPoints = cleanedAll.filter(p => !existingTimestamps.has(p.timestamp));
 
                     if (uniqueNewPoints.length > 0) {
                         state.recordedPoints = [...state.recordedPoints, ...uniqueNewPoints];
-                        
-                        // Persistance (v5.28.1)
                         this.persistPoints();
 
-                        // Mettre à jour le mesh 3D
                         const totalPoints = state.recordedPoints.length;
                         if (totalPoints < 10) {
                             updateRecordedTrackMesh();
@@ -355,7 +289,7 @@ class NativeGPSService {
     }
 
     /**
-     * Supprime les listeners (lors de l'arrêt de course).
+     * Supprime les listeners.
      */
     private removeListeners(): void {
         if (!RecordingNative) return;

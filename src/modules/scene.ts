@@ -543,8 +543,8 @@ export async function initScene(): Promise<void> {
     };
     document.addEventListener('visibilitychange', visibilityChangeHandler);
 
-    state.controls.update();
-    state.camera.updateMatrixWorld(true);
+    state.controls?.update();
+    state.camera?.updateMatrixWorld(true);
 
     await loadTerrain();
 }

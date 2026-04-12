@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { cleanGPSTrack } from './gpsDeduplication';
-import { LocationPoint } from './state';
+import { LocationPoint } from './geo';
 
 describe('GPS Integration - Track Cleaning', () => {
     it('should handle a perfect track without modifications', () => {

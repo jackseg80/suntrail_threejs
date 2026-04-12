@@ -36,6 +36,7 @@ export class Tile {
     normalTex: THREE.Texture | null = null;
     forestMesh: THREE.Object3D | null = null;
     poiGroup: THREE.Group | null = null;
+    buildingGroup: THREE.Group | null = null;
     buildingMesh: THREE.Mesh | null = null;
     hydroGroup: THREE.Group | null = null;
     currentResolution: number = -1;
@@ -74,6 +75,9 @@ export class Tile {
         if (this.mesh) this.mesh.position.set(this.worldX, yOffset, this.worldZ);
         if (this.forestMesh) this.forestMesh.position.set(this.worldX, yOffset, this.worldZ);
         if (this.poiGroup) this.poiGroup.position.set(this.worldX, yOffset, this.worldZ);
+        if (this.buildingGroup) this.buildingGroup.position.set(this.worldX, yOffset, this.worldZ);
+        if (this.hydroGroup) this.hydroGroup.position.set(this.worldX, yOffset, this.worldZ);
+        if (this.buildingGroup) this.buildingGroup.position.set(this.worldX, yOffset, this.worldZ);
         
         this.bounds.set(
             new THREE.Vector3(this.worldX - this.tileSizeMeters/2, -1000, this.worldZ - this.tileSizeMeters/2),
@@ -424,6 +428,7 @@ export class Tile {
         }
         if (this.forestMesh) { if (state.scene) state.scene.remove(this.forestMesh); disposeObject(this.forestMesh); this.forestMesh = null; }
         if (this.poiGroup) { if (state.scene) state.scene.remove(this.poiGroup); disposeObject(this.poiGroup); this.poiGroup = null; }
+        if (this.buildingGroup) { if (state.scene) state.scene.remove(this.buildingGroup); disposeObject(this.buildingGroup); this.buildingGroup = null; }
         if (this.buildingMesh) { if (state.scene) state.scene.remove(this.buildingMesh); disposeObject(this.buildingMesh); this.buildingMesh = null; }
         if (this.hydroGroup) { if (state.scene) state.scene.remove(this.hydroGroup); disposeObject(this.hydroGroup); this.hydroGroup = null; }
         this.elevationTex = null; this.colorTex = null; this.overlayTex = null; this.normalTex = null;

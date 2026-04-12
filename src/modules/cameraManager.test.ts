@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as THREE from 'three';
-import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
 import { initControls, initCamera } from './cameraManager';
 import { state } from './state';
 

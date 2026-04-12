@@ -30,7 +30,7 @@ describe('config.ts', () => {
         vi.mocked(global.fetch).mockResolvedValue({
             ok: true,
             json: () => Promise.resolve({ maptiler_keys: ['gist-key-789012'] })
-        });
+        } as any);
 
         await resolveMapTilerKey();
         

@@ -15,7 +15,6 @@ const maptilerFeaturesCache = new BoundedCache<string, any[]>({ maxSize: 100 });
 const buildingFetchPromises = new Map<string, Promise<any[] | null>>();
 const maptilerFetchPromises = new Map<string, Promise<any[] | null>>();
 const zoneFailureCooldown = new Map<string, number>();
-const COOLDOWN_MAX_SIZE = 200;
 const CACHE_NAME = 'suntrail-buildings-v4';
 
 // Matériaux partagés (Performance v5.4.1)

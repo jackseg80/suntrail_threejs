@@ -50,7 +50,6 @@ describe('PackManager Integration', () => {
         state.purchasedPacks = [];
         
         // Mock OPFS - par défaut, le fichier n'existe pas
-        const mockFile = { getFile: vi.fn().mockResolvedValue(new Blob()) };
         const mockDirectoryHandle = {
             getFileHandle: vi.fn().mockRejectedValue(new Error('File not found'))
         };
