@@ -16,14 +16,14 @@ test.describe('TrackSheet Functionality', () => {
 
     // 3. Import GPX
     // Note: We use the hidden input directly for file upload
-    const filePath = path.join(__dirname, 'test-data', 'test.gpx');
+    const filePath = path.join(__dirname, 'test-data', 'E2E-Test-Track.gpx');
     await page.setInputFiles('#gpx-upload', filePath);
 
     // 4. Verify Import Success
     // The layer list should appear
     const layerItem = page.locator('.gpx-layer-item');
     await expect(layerItem).toBeVisible();
-    await expect(layerItem.locator('.gpx-layer-name')).toHaveText('E2E Test Track');
+    await expect(layerItem.locator('.gpx-layer-name')).toHaveText('E2E-Test-Track');
 
     // 5. Verify Stats in the sheet
     // Stats should be updated (not 0 anymore)
@@ -46,7 +46,7 @@ test.describe('TrackSheet Functionality', () => {
     await page.click('#ob-skip');
     await page.click('.nav-tab[data-tab="track"]');
 
-    const filePath = path.join(__dirname, 'test-data', 'test.gpx');
+    const filePath = path.join(__dirname, 'test-data', 'E2E-Test-Track.gpx');
     await page.setInputFiles('#gpx-upload', filePath);
 
     const toggleBtn = page.locator('.gpx-layer-toggle').first();

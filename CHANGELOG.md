@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.8] - 2026-04-12
+### Fixed
+- **Fiabilité des Tests E2E** : Correction du nom de calque attendu (basé sur le nom du fichier) et renommage des données de test pour une meilleure cohérence (`E2E-Test-Track.gpx`).
+
 ## [5.28.7] - 2026-04-12
 ### Added
 - **Validation Avancée UI (E2E)** : Ajout de tests Playwright pour la `TrackSheet` (Importation GPX, parsing et validation des statistiques D+/Distance).
