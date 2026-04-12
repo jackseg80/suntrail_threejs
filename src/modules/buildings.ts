@@ -43,7 +43,8 @@ export async function loadBuildingsForTile(tile: Tile) {
     if (!state.isMapTilerDisabled) {
         const maptilerBuildings = await fetchBuildingsMapTiler(tile);
         if (maptilerBuildings && maptilerBuildings.length > 0) {
-            renderBuildingsMerged(tile, maptilerBuildings, 50);
+            // v5.28.21 : Filtrage moins strict pour éviter de perdre des bâtiments sur les bords
+            renderBuildingsMerged(tile, maptilerBuildings, 150);
             return;
         }
     }
@@ -72,13 +73,6 @@ export async function loadBuildingsForTile(tile: Tile) {
         if (buildings) {
             buildingMemoryCache.set(zoneKey, buildings);
         } else {
-            // Purger les entrées expirées pour borner la taille du cache
-            if (zoneFailureCooldown.size > COOLDOWN_MAX_SIZE) {
-                const now = Date.now();
-                for (const [k, v] of zoneFailureCooldown) {
-                    if (now >= v) zoneFailureCooldown.delete(k);
-                }
-            }
             zoneFailureCooldown.set(zoneKey, Date.now() + 60000);
         }
         buildingFetchPromises.delete(zoneKey);
@@ -87,17 +81,22 @@ export async function loadBuildingsForTile(tile: Tile) {
     if (!buildings || buildings.length === 0 || (tile.status as string) === 'disposed') return;
 
     const bounds = tile.getBounds();
+    // Padding de 5% pour inclure les bâtiments qui débordent un peu
+    const latPad = (bounds.north - bounds.south) * 0.05;
+    const lonPad = (bounds.east - bounds.west) * 0.05;
+
     const tileBuildings = buildings.filter(el => {
         if (!el.geometry || el.geometry.length === 0) return false;
         let sumLat = 0, sumLon = 0;
         for (const p of el.geometry) { sumLat += p.lat; sumLon += p.lon; }
         const clat = sumLat / el.geometry.length;
         const clon = sumLon / el.geometry.length;
-        return clat <= bounds.north && clat >= bounds.south && clon <= bounds.east && clon >= bounds.west;
+        return clat <= (bounds.north + latPad) && clat >= (bounds.south - latPad) && 
+               clon <= (bounds.east + lonPad) && clon >= (bounds.west - lonPad);
     });
 
     if (tileBuildings.length > 0) {
-        renderBuildingsMerged(tile, tileBuildings, 50);
+        renderBuildingsMerged(tile, tileBuildings, 150);
     }
 }
 
@@ -114,29 +113,42 @@ async function fetchBuildingsMapTiler(tile: Tile): Promise<any[] | null> {
     let promise = maptilerFetchPromises.get(cacheKey);
     if (!promise) {
         promise = (async () => {
+            if (!state.MK) return null;
             const url = `https://api.maptiler.com/tiles/buildings/${requestZoom}/${rtx}/${rty}.pbf?key=${state.MK}`;
             try {
                 const response = await fetch(url);
-                if (response.status === 400 || response.status === 401 || response.status === 403 || response.status === 429) {
-                    console.warn(`[MapTiler] API Error ${response.status}. Fallback to OSM.`);
+                if (response.status === 403 || response.status === 401) {
+                    console.warn(`[MapTiler] Auth Error ${response.status}. Fallback to OSM.`);
                     state.isMapTilerDisabled = true;
                     return null;
                 }
+                if (!response.ok) return null;
+
                 const buffer = await response.arrayBuffer();
-                const vtile = new VectorTile(new Pbf(buffer));
+                
+                // --- FIX: IMPORT ROBUSTE PBF ---
+                // @ts-ignore
+                const PbfConstructor = (Pbf.default || Pbf);
+                const vtile = new VectorTile(new PbfConstructor(buffer));
+                
                 const layer = vtile.layers.building;
                 if (!layer) return [];
 
                 const features = [];
+                const n = Math.pow(2, requestZoom);
+
                 for (let i = 0; i < layer.length; i++) {
                     const feat = layer.feature(i);
-                    const geo = feat.loadGeometry();
-                    // Conversion MapTiler (4096 units) vers LngLat
-                    const points = geo[0].map(p => {
-                        const lon = (p.x / 4096 + rtx) / Math.pow(2, requestZoom) * 360 - 180;
-                        const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (p.y / 4096 + rty) / Math.pow(2, requestZoom))));
+                    const rings = feat.loadGeometry();
+                    if (!rings || rings.length === 0) continue;
+
+                    // On utilise l'anneau principal pour la géométrie 3D
+                    const points = rings[0].map(p => {
+                        const lon = (p.x / 4096 + rtx) / n * 360 - 180;
+                        const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (p.y / 4096 + rty) / n)));
                         return { lat: latRad * 180 / Math.PI, lon };
                     });
+
                     features.push({
                         tags: feat.properties,
                         geometry: points
@@ -183,7 +195,7 @@ async function fetchBuildingsWithCache(z: number, x: number, y: number, key: str
     return null;
 }
 
-function renderBuildingsMerged(tile: Tile, elements: any[], limit: number = 50) {
+function renderBuildingsMerged(tile: Tile, elements: any[], limit: number = 150) {
     if ((tile.status as string) === 'disposed' || !tile.mesh) return;
 
     const geometries: THREE.BufferGeometry[] = [];
@@ -192,9 +204,6 @@ function renderBuildingsMerged(tile: Tile, elements: any[], limit: number = 50) 
     processed.forEach(el => {
         if (el.geometry && el.geometry.length > 2) {
             const points: THREE.Vector2[] = [];
-            // Points pour l'échantillonnage de l'altitude (4 coins + centre)
-            const samples: {x: number, z: number}[] = [];
-            
             el.geometry.forEach((p: any) => {
                 const localPos = tile.lngLatToLocal(p.lon, p.lat);
                 points.push(new THREE.Vector2(localPos.x, -localPos.z));
@@ -202,41 +211,28 @@ function renderBuildingsMerged(tile: Tile, elements: any[], limit: number = 50) 
 
             try {
                 const shape = new THREE.Shape(points);
-                const height = (el.tags?.['building:levels'] ? parseFloat(el.tags['building:levels']) * 3.5 : 8) * state.RELIEF_EXAGGERATION;
-                const extrudeGeo = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false });
-
-                // --- CORRECTION ANTI-GRAVITÉ (v5.28.5) ---
-                // On échantillonne l'altitude à plusieurs points pour trouver le point le plus bas
-                // de l'emprise du bâtiment sur le terrain.
-                const box = new THREE.Box2().setFromPoints(points);
-                const center = new THREE.Vector2(); box.getCenter(center);
-                samples.push({x: center.x, z: -center.y});
-                samples.push({x: box.min.x, z: -box.min.y});
-                samples.push({x: box.max.x, z: -box.max.y});
-                samples.push({x: box.min.x, z: -box.max.y});
-                samples.push({x: box.max.x, z: -box.min.y});
-
+                const levels = el.tags?.['building:levels'] || el.tags?.levels;
+                const height = (levels ? parseFloat(levels) * 3.5 : 8) * state.RELIEF_EXAGGERATION;
+                
+                const skirt = 10 * state.RELIEF_EXAGGERATION; // Jupe augmentée pour v5.28.21
+                
+                // Calculer l'altitude min sur l'emprise
                 let minTerrainAlt = Infinity;
-                samples.forEach(s => {
-                    const alt = getAltitudeAt(tile.worldX + s.x, tile.worldZ + s.z, tile);
+                points.forEach(p => {
+                    const alt = getAltitudeAt(tile.worldX + p.x, tile.worldZ - p.y, tile);
                     if (alt < minTerrainAlt) minTerrainAlt = alt;
                 });
 
-                // On ancre le bâtiment au point le plus bas et on ajoute une "jupe" de 5m
-                // pour s'assurer qu'il pénètre le terrain partout, même sur pente raide.
-                const skirt = 5 * state.RELIEF_EXAGGERATION;
                 const matrix = new THREE.Matrix4()
                     .makeRotationX(-Math.PI / 2)
                     .setPosition(0, minTerrainAlt - skirt, 0);
                 
-                // Ajuster la géométrie pour inclure la jupe
                 const finalHeight = height + skirt;
-                // Note: On recrée avec la bonne profondeur car ExtrudeGeometry ne se scale pas bien en Y
                 const finalGeo = new THREE.ExtrudeGeometry(shape, { depth: finalHeight, bevelEnabled: false });
                 finalGeo.applyMatrix4(matrix);
 
                 geometries.push(finalGeo);
-            } catch (e) { console.warn('[Buildings] Mesh creation failed silently:', e); }
+            } catch (e) { /* ignore individual geometry errors */ }
         }
     });
 
@@ -244,10 +240,9 @@ function renderBuildingsMerged(tile: Tile, elements: any[], limit: number = 50) 
         try {
             const merged = BufferGeometryUtils.mergeGeometries(geometries);
             const mesh = new THREE.Mesh(merged, buildingMaterial);
-            mesh.castShadow = (state.PERFORMANCE_PRESET === 'ultra');
+            mesh.castShadow = (state.PERFORMANCE_PRESET === 'ultra' || state.PERFORMANCE_PRESET === 'performance');
             mesh.receiveShadow = true;
 
-            // v5.28.1 : Mandat - PAS de hierarchy attachment (scene.add)
             if (tile.buildingGroup && state.scene) state.scene.remove(tile.buildingGroup);
             
             tile.buildingGroup = new THREE.Group();
