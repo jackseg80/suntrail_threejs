@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import * as pbf from 'pbf';
+import Pbf from 'pbf';
 import { VectorTile } from '@mapbox/vector-tile';
 import { state } from './state';
 import { Tile } from './terrain/Tile';
@@ -123,7 +123,7 @@ async function fetchBuildingsMapTiler(tile: Tile): Promise<any[] | null> {
                     return null;
                 }
                 const buffer = await response.arrayBuffer();
-                const vtile = new VectorTile(new pbf(buffer));
+                const vtile = new VectorTile(new Pbf(buffer));
                 const layer = vtile.layers.building;
                 if (!layer) return [];
 
