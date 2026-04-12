@@ -54,5 +54,8 @@ test.describe('TrackSheet Functionality', () => {
     
     await toggleBtn.click();
     await expect(toggleBtn).toHaveText('🚫');
+
+    // Final check: app should be loaded (check for the main 3D canvas)
+    await expect(page.locator('#canvas-container canvas').first()).toBeVisible();
   });
 });

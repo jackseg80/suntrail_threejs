@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.12] - 2026-04-12
+### Fixed
+- **Robustesse E2E** : Correction des sélecteurs de canvas pour Playwright afin d'éviter les conflits de mode strict lorsque plusieurs canvas sont présents sur la page.
+
 ## [5.28.11] - 2026-04-12
 ### Improved
 - **Architecture de Test** : Refonte du chargement de la clé API dans `iapService.ts` pour permettre une injection dynamique. Garantit la fiabilité des tests unitaires en environnement CI quelle que soit l'ordre d'exécution.

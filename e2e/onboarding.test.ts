@@ -28,7 +28,7 @@ test.describe('First Launch Experience', () => {
     await expect(page.locator('#gps-disclosure-overlay')).not.toBeVisible();
 
     // Final check: app should be loaded (check for the main 3D canvas)
-    await expect(page.locator('#canvas-container canvas')).toBeVisible();
+    await expect(page.locator('#canvas-container canvas').first()).toBeVisible();
   });
 
   test('should allow skipping onboarding directly', async ({ page }) => {
@@ -49,6 +49,6 @@ test.describe('First Launch Experience', () => {
     await expect(page.locator('#gps-disclosure-overlay')).not.toBeVisible();
     
     // Final check: app should be loaded (check for the main 3D canvas)
-    await expect(page.locator('#canvas-container canvas')).toBeVisible();
+    await expect(page.locator('#canvas-container canvas').first()).toBeVisible();
   });
 });
