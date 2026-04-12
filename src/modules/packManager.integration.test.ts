@@ -49,10 +49,10 @@ describe('PackManager Integration', () => {
         state.installedPacks = [];
         state.purchasedPacks = [];
         
-        // Mock OPFS
+        // Mock OPFS - par défaut, le fichier n'existe pas
         const mockFile = { getFile: vi.fn().mockResolvedValue(new Blob()) };
         const mockDirectoryHandle = {
-            getFileHandle: vi.fn().mockResolvedValue(mockFile)
+            getFileHandle: vi.fn().mockRejectedValue(new Error('File not found'))
         };
         const mockRoot = {
             getDirectoryHandle: vi.fn().mockResolvedValue(mockDirectoryHandle),
@@ -65,6 +65,11 @@ describe('PackManager Integration', () => {
     });
 
     it('should initialize and load persisted states from localStorage', async () => {
+        // Pour ce test, on simule que le fichier EXISTE sur le disque
+        const mockRoot = await (navigator as any).storage.getDirectory();
+        const mockDir = await mockRoot.getDirectoryHandle();
+        mockDir.getFileHandle.mockResolvedValue({ getFile: vi.fn().mockResolvedValue(new Blob()) });
+
         localStorage.setItem('suntrail_pack_states', JSON.stringify({
             'switzerland': {
                 id: 'switzerland',
@@ -80,6 +85,11 @@ describe('PackManager Integration', () => {
     });
 
     it('should serve a tile from a mounted pack', async () => {
+        // Simuler fichier présent
+        const mockRoot = await (navigator as any).storage.getDirectory();
+        const mockDir = await mockRoot.getDirectoryHandle();
+        mockDir.getFileHandle.mockResolvedValue({ getFile: vi.fn().mockResolvedValue(new Blob()) });
+
         // Setup a mounted pack
         localStorage.setItem('suntrail_pack_states', JSON.stringify({
             'switzerland': {
@@ -103,6 +113,11 @@ describe('PackManager Integration', () => {
     });
 
     it('should serve elevation and overlay tiles with correct offsets', async () => {
+        // Simuler fichier présent
+        const mockRoot = await (navigator as any).storage.getDirectory();
+        const mockDir = await mockRoot.getDirectoryHandle();
+        mockDir.getFileHandle.mockResolvedValue({ getFile: vi.fn().mockResolvedValue(new Blob()) });
+
         localStorage.setItem('suntrail_pack_states', JSON.stringify({
             'switzerland': {
                 id: 'switzerland',
@@ -126,6 +141,8 @@ describe('PackManager Integration', () => {
     });
 
     it('should not serve a tile if offline and pack is not installed (CDN only)', async () => {
+        // On s'assure que le fichier n'existe PAS sur le disque (déjà le cas par défaut dans beforeEach)
+        
         // Pack purchased but not installed (CDN)
         localStorage.setItem('suntrail_pack_states', JSON.stringify({
             'switzerland': {

@@ -1,6 +1,6 @@
 {
   "name": "suntrail_threejs",
-  "version": "5.28.19",
+  "version": "5.28.20",
   "scripts": {
     "dev": "vite",
     "check": "tsc --noEmit",

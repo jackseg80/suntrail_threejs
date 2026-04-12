@@ -520,6 +520,11 @@ class PackManager {
 
     private loadPersistedStates(): void {
         try {
+            // v5.28.19 : Toujours réinitialiser les Maps pour éviter les fuites d'état 
+            // entre les tests ou lors de re-initialisations manuelles.
+            this.packStates.clear();
+            this.mountedArchives.clear();
+
             const raw = localStorage.getItem(PACK_STATES_KEY);
             if (!raw) return;
             const obj = JSON.parse(raw) as Record<string, PackState>;

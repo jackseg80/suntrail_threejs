@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.20] - 2026-04-12
+### Fixed
+- **Stabilité des Tests** : Correction d'une fuite d'état dans `PackManager` où les Maps internes n'étaient pas réinitialisées lors de l'appel à `initialize()`, causant des interférences entre les tests unitaires.
+- **Mocking OPFS** : Mise à jour des tests d'intégration pour refléter correctement le nouveau comportement de synchronisation disque (`syncDiskStates`).
+
 ## [5.28.19] - 2026-04-12
 ### Fixed
 - **Packs Pays : Affichage Stockage** : Correction du calcul de la taille totale dans le panneau Packs Pays. Désormais, seuls les packs réellement installés sur le disque (OPFS) sont comptés, excluant les packs achetés mais non téléchargés (streamés via CDN).
