@@ -1,16 +1,32 @@
 # Infrastructure de Tests - SunTrail 3D
 
-**Vitest** + **happy-dom** — 398 tests, 36 fichiers (v5.19.6)
+**Vitest** (Unitaires) + **Playwright** (E2E) — 503 tests, 55 fichiers (v5.28.5)
 
 ## Comment lancer les tests
 
+### Tests Unitaires (Vitest)
 ```bash
 npm test              # Suite complète
 npx vitest            # Mode watch (développement)
-npx vitest run -t "nom du test"  # Un test spécifique
 ```
 
-## Couverture des tests (398 tests — 36 fichiers)
+### Tests End-to-End (Playwright)
+```bash
+npm run test:e2e      # Exécution headless
+npm run test:e2e:ui   # Interface graphique (recommandé pour le debug)
+```
+
+## Couverture des tests (503 tests — 55 fichiers)
+
+### Moteur 3D & Interactions (`scene.test.ts`, `touchControls.test.ts`)
+- Boucle de rendu, gestion du LOD et `flyTo` (clamping altitude).
+- Gestes tactiles (translation, rotation, tilt, zoom).
+- Mocking exhaustif de THREE.WebGLRenderer et OrbitControls.
+
+### E2E - Parcours Utilisateurs (`e2e/onboarding.test.ts`)
+- Flux complet : Acceptance Wall → Onboarding → GPS Disclosure.
+- Validation de la présence du canvas 3D après initialisation.
+- Test de "skip" rapide du tutoriel.
 
 ### Terrain & Géographie (`terrain.test.ts`, `geo.test.ts`, `tileCache.test.ts`, `tileLoader.test.ts`, `tileSpatialIndex.test.ts`, `boundedCache.test.ts`)
 

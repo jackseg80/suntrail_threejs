@@ -63,8 +63,8 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 - `src/modules/ui/components/TimelineComponent.ts` : Solaire (calendrier Pro).
 - `src/modules/scene.ts` : Moteur de rendu et gate LOD 14.
 
-## Prochaines Étapes
-1. Closed Testing Play Store (20 testeurs).
-2. Screenshots marketing définitifs.
-3. Passage en Production (V5.x Stable).
-4. Cycle V6.0 (Trail Intelligence).
+## Tests & Qualité
+- **Unitaires (Vitest)** : `npm test` (500+ tests). Sécurise `scene.ts`, `touchControls.ts`, `ui.ts`.
+- **E2E (Playwright)** : `npx playwright test --ui` pour valider Onboarding et GPS.
+- **Mocks** : `src/test/setup.ts` pour WebGL. `ui.test.ts` utilise des timers fictifs.
+- **Audit v5.28.2** : Couverture moteur 3D et interactions tactiles désormais validée.

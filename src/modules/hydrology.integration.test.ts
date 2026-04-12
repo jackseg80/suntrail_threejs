@@ -70,8 +70,8 @@ describe('Hydrology Integration', () => {
 
         expect(fetchOverpassData).toHaveBeenCalled();
         expect(tile.hydroGroup).toBeDefined();
-        if (tile.mesh) {
-            expect(tile.mesh.children.length).toBeGreaterThan(0);
+        if (tile.hydroGroup) {
+            expect(tile.hydroGroup.children.length).toBeGreaterThan(0);
         }
     });
 });
