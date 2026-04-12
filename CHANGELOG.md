@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.10] - 2026-04-12
+### Fixed
+- **Stabilité CI/CD** : Correction de `iapService.test.ts` pour injecter une clé API factice via `vi.stubEnv`, empêchant l'échec des tests en environnement GitHub Actions où les secrets ne sont pas disponibles.
+
 ## [5.28.9] - 2026-04-12
 ### Added
 - **Intégration CI/CD (GitHub Actions)** : Automatisation des tests unitaires et E2E sur chaque push et pull-request.

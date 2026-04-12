@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// Stub environment before any imports
+vi.stubEnv('VITE_REVENUECAT_KEY', 'mock-sdk-key-1234567890');
+
 const { mockPurchases } = vi.hoisted(() => ({
     mockPurchases: {
         setLogLevel: vi.fn().mockResolvedValue({}),
