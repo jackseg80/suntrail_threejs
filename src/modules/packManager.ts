@@ -71,6 +71,10 @@ class PackManager {
         // Charger le catalog AVANT de monter (getPackMeta() a besoin du catalog)
         await this.fetchCatalog();
 
+        // v5.28.2 : Tenter de restaurer les états 'installed' depuis les fichiers OPFS
+        // si le localStorage a été vidé (très utile après une mise à jour système ou app).
+        await this.syncDiskStates();
+
         // 1. Débloquer le pack Suisse par défaut pour tout le monde sur le Web (v5.26.6)
         // Offre la cartographie HD (LOD 14) immédiatement via CDN/Streaming.
         if (!Capacitor.isNativePlatform()) {
@@ -94,6 +98,40 @@ class PackManager {
         // Sync pack purchases avec RevenueCat (restaure après clear storage)
         this.syncPackPurchases().catch(() => {});
         console.log(`[Packs] Initialisé. ${this.mountedArchives.size} pack(s) monté(s).`);
+    }
+
+    /**
+     * Tente de réconcilier les états locaux avec les fichiers réellement présents dans l'OPFS.
+     * Utile si le localStorage est perdu mais pas le stockage de fichiers (persistance Android/PWA).
+     */
+    private async syncDiskStates(): Promise<void> {
+        try {
+            const root = await navigator.storage.getDirectory();
+            let packsDir: FileSystemDirectoryHandle;
+            try {
+                packsDir = await root.getDirectoryHandle(PACKS_DIR);
+            } catch { return; } // Répertoire inexistant
+
+            for (const meta of this.getAvailablePacks()) {
+                const ps = this.getOrCreateState(meta.id);
+
+                // Si l'état dit pas installé, mais que le fichier est là : on resync
+                // On accepte 'purchased' ou 'not_purchased' (si on a un fichier on le prend)
+                if (ps.status === 'purchased' || ps.status === 'not_purchased') {
+                    try {
+                        await packsDir.getFileHandle(`${meta.id}.pmtiles`);
+                        console.log(`[Packs] ${meta.id}: fichier trouvé sur disque, restauration de l'état 'installed'.`);
+                        ps.status = 'installed';
+                        ps.installedVersion = ps.installedVersion || meta.version;
+                        ps.sizeMB = meta.sizeMB;
+                        ps.filePath = `opfs://${PACKS_DIR}/${meta.id}.pmtiles`;
+                    } catch { /* absent */ }
+                }
+            }
+            this.persistStates();
+        } catch (e) {
+            console.warn('[Packs] Erreur syncDiskStates:', e);
+        }
     }
 
     /** Vérifie les achats de packs sur RevenueCat et met à jour les états locaux. */
@@ -307,7 +345,11 @@ class PackManager {
         try {
             let archive: pmtiles.PMTiles;
 
-            if (ps.status === 'installed') {
+            // v5.28.2 : On utilise le fichier local si status === 'installed' 
+            // OU si status === 'update_available' et que le fichier est présent.
+            const hasLocalFile = ps.status === 'installed' || (ps.status === 'update_available' && ps.filePath);
+
+            if (hasLocalFile) {
                 // OPFS : FileSource lit les bytes directement (file.slice), sans réseau.
                 // Fonctionne offline sur Android WebView (Chrome 105+) et PWA.
                 try {
@@ -317,18 +359,18 @@ class PackManager {
                     const file = await fileHandle.getFile();
                     archive = new pmtiles.PMTiles(new pmtiles.FileSource(file));
                 } catch {
-                    // Fichier OPFS absent (ancienne installation sur Filesystem.External)
-                    // → reset pour re-téléchargement
-                    console.warn(`[Packs] ${packId}: fichier OPFS absent, re-téléchargement requis`);
-                    ps.status = 'purchased';
-                    this.persistStates();
-                    this.emitStatus(packId, 'purchased');
+                    // Fichier OPFS absent (ancienne installation sur Filesystem.External ou cache vidé)
+                    // → fallback CDN si possible, sinon reset
                     const meta = this.getPackMeta(packId);
-                    if (!meta) return;
-                    archive = new pmtiles.PMTiles(meta.cdnUrl);
+                    if (meta) {
+                        console.warn(`[Packs] ${packId}: fichier OPFS absent, fallback CDN streaming.`);
+                        archive = new pmtiles.PMTiles(meta.cdnUrl);
+                    } else {
+                        throw new Error('Pack metadata missing');
+                    }
                 }
             } else {
-                // purchased / update_available → CDN streaming (requiert réseau)
+                // purchased (sans fichier local) → CDN streaming (requiert réseau)
                 const meta = this.getPackMeta(packId);
                 if (!meta) return;
                 archive = new pmtiles.PMTiles(meta.cdnUrl);

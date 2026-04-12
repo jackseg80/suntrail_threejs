@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.19] - 2026-04-12
+### Fixed
+- **Packs Pays : Affichage Stockage** : Correction du calcul de la taille totale dans le panneau Packs Pays. Désormais, seuls les packs réellement installés sur le disque (OPFS) sont comptés, excluant les packs achetés mais non téléchargés (streamés via CDN).
+- **Packs Pays : Continuité Hors-ligne** : Autorise l'utilisation du fichier local (OPFS) même si une mise à jour est disponible au catalogue, garantissant l'accès à la cartographie HD sans connexion réseau obligatoire.
+- **Packs Pays : Résilience Persistence** : Ajout d'une synchronisation automatique au démarrage (`syncDiskStates`) qui scanne l'OPFS pour restaurer l'état "installé" si le cache de l'application (localStorage) a été vidé. Évite les re-téléchargements inutiles de plusieurs centaines de Mo.
+
 ## [5.28.18] - 2026-04-12
 ### Fixed
 - **Robustesse REC (Anti-Champignon)** : Unification du filtrage GPS temps-réel via `cleanGPSTrack`. Rejet strict des coordonnées (0,0) et des points trop proches (< 2.5m) pour éviter les artefacts géométriques sur Galaxy A53.

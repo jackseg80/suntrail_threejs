@@ -271,12 +271,14 @@ export class PacksSheet extends BaseComponent {
         const valueEl = this.element?.querySelector('#packs-storage-value');
         if (!valueEl) return;
 
-        // Afficher la taille totale des packs installés
+        // Afficher la taille totale des packs réellement présents sur le disque
         const packs = packManager.getAvailablePacks();
         let installedMB = 0;
         for (const meta of packs) {
             const ps = packManager.getPackState(meta.id);
-            if (ps && (ps.status === 'installed' || ps.status === 'purchased' || ps.status === 'update_available')) {
+            // v5.28.2 : Seuls 'installed' et 'update_available' occupent de l'espace disque.
+            // 'purchased' signifie que le pack est disponible en streaming (0 MB local).
+            if (ps && (ps.status === 'installed' || ps.status === 'update_available')) {
                 installedMB += meta.sizeMB;
             }
         }
