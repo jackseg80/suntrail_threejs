@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { Tile, updateVisibleTiles, terrainUniforms } from './terrain';
-import { worldToLngLat, EARTH_CIRCUMFERENCE, getTileBounds } from './geo';
+import { worldToLngLat, EARTH_CIRCUMFERENCE, getTileBounds, decodeTerrainRGB } from './geo';
 import { state } from './state';
 
 describe('terrain.ts', () => {
@@ -52,10 +52,8 @@ describe('terrain.ts', () => {
         });
 
         it('should calculate correct altitude from RGB (MapTiler formula)', () => {
-            // Formula: h = -10000 + ((R * 65536 + G * 256 + B) * 0.1)
             const r = 2, g = 66, b = 112;
-            const decodeHeight = (r: number, g: number, b: number) => -10000 + ((r * 65536 + g * 256 + b) * 0.1);
-            expect(decodeHeight(r, g, b)).toBeCloseTo(4808, 0);
+            expect(decodeTerrainRGB(r, g, b)).toBeCloseTo(4808, 0);
         });
 
         it('should initialize with correct status and world position', () => {

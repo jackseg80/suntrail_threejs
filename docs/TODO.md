@@ -13,7 +13,7 @@
 - [ ] **Ajustement Limites (v5.27.0)** : Adapter les limites de chargement selon les résultats de l'audit mobile.
 - [x] **Optimisation Chargement (v5.26.13)** : Progressive loading avec pulses de 50ms et limites par preset.
 - [x] **Optimisation PC (v5.26.9)** : Progressive Loading & Refactor Throttle.
-- [x] **Validation Géo (v5.26.7)** : Haversine et Hystérésis testés.
+- [x] **Validation Géo (v5.28.20)** : Unification Haversine, Hystérésis et Terrain-RGB. Audit dette technique Phase 1 & 2 terminé.
 - [x] **Optimisation Batterie (v5.26.7)** : Android permission Request Ignore Battery.
 - [x] **Optimisation Démarrage (v5.26.7)** : PMTiles init parallélisée.
 - [x] **Optimisation Mémoire (v5.26.8)** : Nettoyage des sheets à la fermeture.

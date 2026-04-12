@@ -18,6 +18,7 @@ import { startLocationTracking } from './location';
 import { fetchWeather } from './weather';
 import { fetchLocalPeaks } from './peaks';
 import { initTheme } from './theme';
+import { resolveMapTilerKey } from './config';
 
 import { NavigationBar } from './ui/components/NavigationBar';
 import { TopStatusBar } from './ui/components/TopStatusBar';
@@ -31,77 +32,19 @@ import { attachDraggablePanel } from './ui/draggablePanel';
 // Référence de l'intervalle updateStorageUI (W5) — stockée pour permettre clearInterval si besoin
 let storageUIIntervalId: ReturnType<typeof setInterval> | null = null;
 
-/** Extrait les clés actives depuis la réponse JSON du Gist. */
-function _extractGistKeys(data: any): string[] {
-    const raw = data?.maptiler_keys;
-    if (!raw || !Array.isArray(raw) || raw.length === 0) return [];
-    return raw
-        .filter((k: any) => typeof k === 'string' ? true : k.enabled !== false)
-        .map((k: any) => typeof k === 'string' ? k : k.key)
-        .filter((k: string) => k && k.length > 10);
-}
-
 export function initUI(): void {
-    console.log("[UI] Starting Init...");
-    
     // Charger le statut Pro en premier (clé séparée, immune aux resets de version)
     loadProStatus();
 
     // Initialiser RevenueCat en fire-and-forget (natif seulement — no-op sur web)
     void iapService.initialize();
 
-    // Résolution de la clé MapTiler — priorité : localStorage > .env > Gist
-    const userDefinedKey = localStorage.getItem('maptiler_key');
-    const bundledKey = import.meta.env.VITE_MAPTILER_KEY as string | undefined;
-
-    let gistKeyReady: Promise<void>;
-
-    if (userDefinedKey) {
-        state.MK = userDefinedKey;
-        console.log('[Config] Clé MapTiler : localStorage (manuelle)');
-        gistKeyReady = Promise.resolve();
-    } else if (bundledKey && bundledKey.length > 10) {
-        state.MK = bundledKey;
-        console.log('[Config] Clé MapTiler : .env (bundlée)');
-        // Gist en arrière-plan pour rotation — écrase la bundlée
-        gistKeyReady = Promise.resolve();
-        fetch('https://gist.githubusercontent.com/jackseg80/c4f2e5e99c1efb9d736736cb65fce862/raw/suntrail_config.json', { cache: 'no-cache' })
-            .then(r => r.ok ? r.json() : null)
-            .then(data => {
-                const keys = _extractGistKeys(data);
-                if (keys.length > 0) {
-                    const idx = Math.floor(Math.random() * keys.length);
-                    state.MK = keys[idx];
-                    console.log(`[Config] Clé MapTiler : Gist rotation (${idx + 1}/${keys.length})`);
-                }
-            })
-            .catch(() => {});
-    } else {
-        // Pas de clé locale ni bundlée → attendre le Gist (timeout 3s)
-        console.log('[Config] Clé MapTiler : attente Gist...');
-        gistKeyReady = Promise.race([
-            fetch('https://gist.githubusercontent.com/jackseg80/c4f2e5e99c1efb9d736736cb65fce862/raw/suntrail_config.json', { cache: 'no-cache' })
-                .then(r => r.ok ? r.json() : null)
-                .then(data => {
-                    const keys = _extractGistKeys(data);
-                    if (keys.length > 0) {
-                        const idx = Math.floor(Math.random() * keys.length);
-                        state.MK = keys[idx];
-                        console.log(`[Config] Clé MapTiler : Gist (${idx + 1}/${keys.length})`);
-                    } else {
-                        console.warn('[Config] Gist vide — démarrage sans clé MapTiler');
-                    }
-                })
-                .catch(() => { console.warn('[Config] Gist inaccessible — démarrage sans clé MapTiler'); }),
-            new Promise<void>(resolve => setTimeout(resolve, 3000))
-        ]);
-    }
+    // Résolution de la clé MapTiler (centralisée v5.28.20)
+    const gistKeyReady = resolveMapTilerKey();
 
     const savedSettings = loadSettings();
     if (savedSettings) {
         // hasManualSource = true uniquement pour les sources non auto-sélectionnables.
-        // 'swisstopo' et 'opentopomap' sont choisies par autoSelectMapSource() → ne pas bloquer l'auto-switch.
-        // 'satellite', 'ign', 'osm' sont des choix explicites → respecter au rechargement.
         const AUTO_SOURCES = ['swisstopo', 'opentopomap'];
         state.hasManualSource = !AUTO_SOURCES.includes(savedSettings.MAP_SOURCE);
         if (savedSettings.PERFORMANCE_PRESET === 'custom') {
@@ -132,9 +75,6 @@ export function initUI(): void {
     if (techInfo) techInfo.style.display = 'block';
 
     // Resize géré par scene.ts (unique handler, pas de doublon).
-    // Fix UI minuscule après rotation paysage→portrait sur Android WebView (v5.20) :
-    // NE PAS toucher la <meta viewport> — ça désynchronise le scale factor interne du WebView.
-    // On poll simplement jusqu'à ce que window.innerWidth/Height reflètent les nouvelles dimensions.
     let _orientPollId: ReturnType<typeof setTimeout> | null = null;
     window.addEventListener('orientationchange', () => {
         if (_orientPollId !== null) clearTimeout(_orientPollId);
@@ -166,20 +106,14 @@ export function initUI(): void {
 
     // Helper : enregistre le listener sceneReady + démarre la scène
     const launchScene = () => {
-        // 'suntrail:sceneReady' est dispatché par initScene() avant await loadTerrain()
         window.addEventListener('suntrail:sceneReady', () => {
-            // Acceptance Wall : affiché une fois la scène visible.
-            // Premier lancement ou nouvelle version des CGU.
             void requestAcceptance().then(() => requestOnboarding());
 
-            // Afficher l'overlay de chargement carte jusqu'aux 1ères tuiles
-            // — résout le canvas vide au 1er démarrage Android sans cache
             const mapOverlay = document.getElementById('map-loading-overlay');
             if (mapOverlay) {
                 mapOverlay.classList.add('visible');
                 let tilesStarted = false;
 
-                // Si pas de réseau détecté, afficher le message offline au lieu du spinner seul
                 const offlineMsg = document.getElementById('map-loading-offline-msg');
                 const spinnerText = mapOverlay.querySelector('.map-loading-text') as HTMLElement;
                 const showOfflineMsg = () => {
@@ -192,7 +126,6 @@ export function initUI(): void {
                 };
 
                 if (!state.isNetworkAvailable) showOfflineMsg();
-                // Réagir si le réseau change pendant le chargement
                 const unsubNet = state.subscribe('isNetworkAvailable', (available: boolean) => {
                     if (available) hideOfflineMsg(); else showOfflineMsg();
                 });
@@ -208,9 +141,7 @@ export function initUI(): void {
                     if (!processing && tilesStarted) { hideOverlay(); unsub(); }
                 });
 
-                // Fallback 1 : si les tuiles ne démarrent jamais (cache chaud → 0 tiles à charger)
                 setTimeout(() => { if (!tilesStarted) { hideOverlay(); unsub(); } }, 2000);
-                // Fallback 2 : timeout max réseau lent ou hors-ligne
                 setTimeout(() => { if (mapOverlay.classList.contains('visible')) hideOverlay(); }, 15000);
             }
         }, { once: true });
@@ -218,9 +149,7 @@ export function initUI(): void {
         startApp();
     };
 
-    // --- INDICATEUR DE CHARGEMENT DES TUILES (permanent) ---
-    // Barre fine en haut de l'écran, visible après 600ms de chargement réseau.
-    // Débounce : ignore les hits cache (<0.3s) pour éviter le clignotement.
+    // --- INDICATEUR DE CHARGEMENT DES TUILES ---
     {
         const bar = document.getElementById('tile-loading-bar');
         let debounce: ReturnType<typeof setTimeout> | null = null;
@@ -237,9 +166,7 @@ export function initUI(): void {
         });
     }
 
-
     // --- INITIALISATION COMPOSANTS ---
-    // Phase 1 : composants visibles au démarrage (requis par startApp)
     const navBar = new NavigationBar();
     navBar.hydrate();
 
@@ -253,29 +180,19 @@ export function initUI(): void {
     initAutoHide();
     initMobileUI();
 
-    // Phase 2 : sheets et composants secondaires — lazy-chargés après le premier frame.
-    // Les modules ne sont évalués qu'après le rendu initial → réduit le TBT au démarrage.
     requestAnimationFrame(() => setTimeout(() => void _initSecondaryUI(), 0));
 
-    // Démarrage automatique — attend la résolution de la clé MapTiler (bundlée, Gist ou localStorage)
-    // puis lance la scène. Timeout 3s si le Gist est indisponible → démarrage dégradé.
-    // IMPORTANT : appelé APRÈS hydrate() de tous les composants pour que
-    // #widgets-container et #bottom-bar soient dans le DOM quand startApp() s'exécute.
-    // (v5.12.5 regression : launchScene() était appelé avant les hydrations → display:none non effacé)
+    // Démarrage automatique — attend la résolution de la clé MapTiler
     void gistKeyReady.then(() => launchScene());
 
     (window as any).sheetManager = sheetManager;
 
-    // GPS MAIN BUTTON (SwissMobile Style)
-
     const gpsMainBtn = document.getElementById('gps-main-btn');
     gpsMainBtn?.addEventListener('click', async () => {
         try {
-            // Prominent Disclosure GPS obligatoire Play Store (une seule fois)
             const allowed = await requestGPSDisclosure();
             if (!allowed) return;
 
-            // 1. Get current position with timeout
             const position = await Geolocation.getCurrentPosition({
                 timeout: 5000,
                 enableHighAccuracy: true
@@ -283,16 +200,9 @@ export function initUI(): void {
             
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
-
-            
-            // 2. Check if we are already centered on user
-            // Utiliser la classe 'active' du bouton (état visuel) plutôt que state.isFollowingUser.
-            // state.isFollowingUser = true uniquement quand le suivi continu est actif (2e clic).
-            // Sur le 1er clic, isFollowingUser=true bloquait isIdleMode → throttle 20fps cassé. (v5.11.1)
             const isAlreadyCentered = gpsMainBtn.classList.contains('active');
 
             if (!isAlreadyCentered) {
-                // First click: Center and Zoom (centrage unique, pas de suivi continu)
                 state.TARGET_LAT = lat;
                 state.TARGET_LON = lon;
                 state.ZOOM = 14;
@@ -305,13 +215,9 @@ export function initUI(): void {
                 
                 flyTo(worldPos.x, worldPos.z, (altWorld / state.RELIEF_EXAGGERATION) + 500);
                 fetchWeather(lat, lon);
-                // Ne PAS mettre isFollowingUser=true ici — le centrage est unique.
-                // isFollowingUser=true sur 1er clic empêche isIdleMode de s'activer
-                // indéfiniment (userLocation=null → centerOnUser() ne fait rien mais throttle cassé).
                 gpsMainBtn.classList.add('active');
                 showToast(i18n.t('gps.toast.centered'));
             } else {
-                // Second click: Toggle continuous follow + start GPS tracking
                 gpsMainBtn.classList.toggle('following');
                 const isFollowing = gpsMainBtn.classList.contains('following');
                 showToast(isFollowing ? i18n.t('gps.toast.followOn') : i18n.t('gps.toast.followOff'));
@@ -333,13 +239,10 @@ export function initUI(): void {
         }
     });
 
-    // Stop following if user interacts with map
     state.subscribe('isUserInteracting', (interacting) => {
         if (interacting && state.isFollowingUser) {
             const btn = document.getElementById('gps-main-btn');
             if (btn?.classList.contains('following')) {
-                // If in "hard" follow mode, we might want to keep it or break it.
-                // SwissMobile breaks it if you move.
                 state.isFollowingUser = false;
                 btn.classList.remove('active', 'following');
                 showToast(i18n.t('gps.toast.interrupted'));
@@ -353,12 +256,11 @@ export function initUI(): void {
         state.hasLastClicked = false;
     });
 
-    // Rendre le coords-pill déplaçable (v5.19.1)
     const coordsPill = document.getElementById('coords-pill');
     if (coordsPill) {
         attachDraggablePanel({
             panel: coordsPill,
-            handle: coordsPill, // Le pill entier sert de handle
+            handle: coordsPill, 
             customPosClass: 'panel-custom-pos',
             onDismiss: () => {
                 coordsPill.classList.add('hidden');
@@ -366,7 +268,6 @@ export function initUI(): void {
             },
         });
 
-        // Masquer dynamiquement les widgets que le coords-pill chevauche pendant le drag
         const OVERLAP_TARGETS = [
             { el: document.querySelector('.fab-stack') as HTMLElement | null },
             { el: document.getElementById('top-pill-main') },
@@ -385,7 +286,6 @@ export function initUI(): void {
             const pr = coordsPill.getBoundingClientRect();
             OVERLAP_TARGETS.forEach(({ el }) => {
                 if (!el) return;
-                // Lire le rect naturel sans la classe d'overlap (pas de repaint intermédiaire)
                 const had = el.classList.contains(OVERLAP_CLS);
                 if (had) el.classList.remove(OVERLAP_CLS);
                 const r = el.getBoundingClientRect();
@@ -396,9 +296,7 @@ export function initUI(): void {
             });
         };
 
-        // pointermove global (passive) : fiable même avec setPointerCapture sur le pill
         window.addEventListener('pointermove', checkPillOverlap, { passive: true });
-        // MutationObserver sur 'hidden' class (pill affiché/masqué)
         new MutationObserver(checkPillOverlap).observe(coordsPill, {
             attributes: true, attributeFilter: ['class'],
         });
@@ -412,18 +310,15 @@ export function initUI(): void {
     const compassFab = document.getElementById('compass-fab');
     compassFab?.addEventListener('click', () => {
         if (state.controls && state.camera) {
-            // Animer la caméra vers le Nord (azimuth = 0)
             const controls = state.controls;
             const startAngle = controls.getAzimuthalAngle();
             let targetAngle = 0;
             
-            // Choisir la direction la plus courte (gérer le wrap autour de -PI/PI)
             let diff = targetAngle - startAngle;
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
             targetAngle = startAngle + diff;
             
-            // Animation sur 500ms — isInteractingWithUI force le render loop à rendre
             const startTime = Date.now();
             const duration = 500;
             const initialAngle = startAngle;
@@ -432,12 +327,9 @@ export function initUI(): void {
             function animateNorth() {
                 const elapsed = Date.now() - startTime;
                 const progress = Math.min(elapsed / duration, 1);
-                // Easing ease-out-cubic
                 const eased = 1 - Math.pow(1 - progress, 3);
-
                 const currentAngle = initialAngle + (targetAngle - initialAngle) * eased;
 
-                // Met à jour la position de la caméra pour maintenir la même distance
                 const offset = state.camera!.position.clone().sub(controls.target);
                 const spherical = new THREE.Spherical().setFromVector3(offset);
                 spherical.theta = currentAngle;
@@ -452,16 +344,13 @@ export function initUI(): void {
                     showToast(i18n.t('compass.toast.northAligned'));
                 }
             }
-
             animateNorth();
         }
     });
 
-    // Update compass rotation in the loop (usually handled in scene.ts but we can add a listener)
     state.subscribe('isUserInteracting', () => {
         const compassSvg = document.getElementById('compass-svg');
         if (compassSvg && state.camera) {
-            // Simplified angle extraction
             const angle = state.controls?.getAzimuthalAngle() || 0;
             compassSvg.style.transform = `rotate(${-angle}rad)`;
         }
@@ -472,14 +361,11 @@ export function initUI(): void {
     });
 }
 
-function handleGlobalClick(_e: MouseEvent) {
-    // Global click handling if needed
-}
+function handleGlobalClick(_e: MouseEvent) {}
 
 async function handleMapClick(e: MouseEvent) {
     if (!state.renderer || !state.camera || !state.scene) return;
 
-    // Fermer tout sheet ouvert quand on clique sur la carte
     if (sheetManager.getActiveSheetId()) {
         sheetManager.close();
     }
@@ -491,22 +377,18 @@ async function handleMapClick(e: MouseEvent) {
 
     const intersects = raycaster.intersectObjects(state.scene.children, true);
 
-    // Vérifier si on a cliqué sur un tracé GPX
     const gpxHit = intersects.find(hit => hit.object.userData?.type === 'gpx-track');
     if (gpxHit) {
         const layerId = gpxHit.object.userData.layerId;
         if (layerId) {
-            // Sélectionner le layer et afficher son profil
             state.activeGPXLayerId = layerId;
             updateElevationProfile(layerId);
-            // Ouvrir le TrackSheet pour montrer la sélection
             sheetManager.open('track');
         }
         return;
     }
 
     const spriteHit = intersects.find(hit => hit.object.type === 'Sprite');
-
     if (spriteHit) {
         const poiData = spriteHit.object.userData;
         if (poiData && poiData.name) {
@@ -527,12 +409,8 @@ async function handleMapClick(e: MouseEvent) {
         
         const cp = document.getElementById('coords-pill');
         if (cp) {
-            // Reset position custom si le pill avait été déplacé
             cp.classList.remove('panel-custom-pos');
-            cp.style.left = '';
-            cp.style.top = '';
-            cp.style.bottom = '';
-            cp.style.transform = '';
+            cp.style.left = ''; cp.style.top = ''; cp.style.bottom = ''; cp.style.transform = '';
             cp.classList.remove('hidden');
             const gps = worldToLngLat(hit.x, hit.z, state.originTile);
             const clickLatLon = document.getElementById('click-latlon');
@@ -591,8 +469,7 @@ async function _initSecondaryUI(): Promise<void> {
 }
 
 function startApp() {
-    initScene(); // initScene() appelle await loadTerrain() en interne — pas de double appel
-    // loadTerrain() supprimé ici (fix v5.11 — double appel inutile)
+    initScene();
     fetchWeather(state.TARGET_LAT, state.TARGET_LON);
     fetchLocalPeaks(state.TARGET_LAT, state.TARGET_LON);
     
@@ -609,17 +486,14 @@ function startApp() {
     const bottomBar = document.getElementById('bottom-bar');
     if (bottomBar) bottomBar.style.display = 'block';
 
-    // Notifier les modules qui attendent que l'UI soit prête (ex: toast d'enregistrement interrompu)
     window.dispatchEvent(new Event('suntrail:uiReady'));
 }
 
-// Nettoyage des ressources UI (intervalle updateStorageUI) — W5
 export function disposeUI(): void {
     if (storageUIIntervalId !== null) {
         clearInterval(storageUIIntervalId);
         storageUIIntervalId = null;
     }
 }
-
 
 function refreshTerrain() { resetTerrain(); updateVisibleTiles(); }

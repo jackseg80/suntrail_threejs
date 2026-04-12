@@ -1,17 +1,54 @@
 export const EARTH_CIRCUMFERENCE = 40075016.68;
 
+export interface BBox {
+    minLat: number;
+    maxLat: number;
+    minLon: number;
+    maxLon: number;
+}
+
+/** 
+ * Limites géographiques des régions supportées (v5.28.2) 
+ * Permet une extension facile à de nouveaux pays.
+ */
+export const REGIONS: Record<string, BBox[]> = {
+    CH: [{ minLat: 45.8, maxLat: 47.8, minLon: 5.9, maxLon: 10.5 }],
+    FR: [
+        // France métropolitaine continentale
+        { minLat: 41.3, maxLat: 51.1, minLon: -5.1, maxLon: 8.3 },
+        // Corse
+        { minLat: 41.0, maxLat: 43.1, minLon: 8.4, maxLon: 9.7 }
+    ]
+};
+
+/** Vérifie si une coordonnée est dans une région donnée (code ISO 3166-1 alpha-2) */
+export function isPositionInRegion(lat: number, lon: number, regionCode: string): boolean {
+    const bboxes = REGIONS[regionCode];
+    if (!bboxes) return false;
+    return bboxes.some(bbox => 
+        lat > bbox.minLat && lat < bbox.maxLat && 
+        lon > bbox.minLon && lon < bbox.maxLon
+    );
+}
+
+/**
+ * Décode une altitude depuis des valeurs R, G, B (Terrain-RGB MapTiler/Mapbox).
+ * Formule : h = -10000 + (R*65536 + G*256 + B) * 0.1
+ * @param r Composante Rouge (0-255)
+ * @param g Composante Verte (0-255)
+ * @param b Composante Bleue (0-255)
+ * @param exaggeration Facteur d'exagération du relief (défaut: 1.0)
+ */
+export function decodeTerrainRGB(r: number, g: number, b: number, exaggeration: number = 1.0): number {
+    return (-10000 + (r * 65536 + g * 256 + b) * 0.1) * exaggeration;
+}
+
 export function isPositionInSwitzerland(lat: number, lon: number): boolean {
-    return lat > 45.8 && lat < 47.8 && lon > 5.9 && lon < 10.5;
+    return isPositionInRegion(lat, lon, 'CH');
 }
 
 export function isPositionInFrance(lat: number, lon: number): boolean {
-    // Corse (41.0–43.1°N, 8.4–9.7°E) — territoire français jusqu'à ~9.56°E
-    if (lat > 41.0 && lat < 43.1 && lon > 8.4 && lon < 9.7) return true;
-    // France métropolitaine continentale.
-    // ⚠️ Limite est : ~8.23°E (Lauterbourg, Alsace — frontière du Rhin).
-    // L'ancienne valeur 9.6°E incluait l'Allemagne (Baden-Württemberg, Forêt Noire)
-    // → ces tuiles passaient isTileFullyInRegion(FR) = TRUE → IGN appelé → 404.
-    return lat > 41.3 && lat < 51.1 && lon > -5.1 && lon < 8.3;
+    return isPositionInRegion(lat, lon, 'FR');
 }
 
 export function lngLatToWorld(lon: number, lat: number, originTile: {x: number, y: number, z: number}): { x: number; z: number } {

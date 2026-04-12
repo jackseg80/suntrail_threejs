@@ -1,5 +1,5 @@
 import { state } from './state';
-import { isPositionInSwitzerland, isPositionInFrance } from './geo';
+import { isPositionInSwitzerland, isPositionInFrance, getTileBounds } from './geo';
 import { showToast } from './utils';
 
 import { tileWorkerManager } from './workerManager';
@@ -216,12 +216,14 @@ function isTileFullyInRegion(
     tx: number, ty: number, zoom: number,
     check: (lat: number, lon: number) => boolean
 ): boolean {
-    const n = Math.pow(2, zoom);
-    const latN = Math.atan(Math.sinh(Math.PI * (1 - 2 * ty / n))) * 180 / Math.PI;
-    const latS = Math.atan(Math.sinh(Math.PI * (1 - 2 * (ty + 1) / n))) * 180 / Math.PI;
-    const lonW = tx / n * 360 - 180;
-    const lonE = (tx + 1) / n * 360 - 180;
-    return check(latN, lonW) && check(latN, lonE) && check(latS, lonW) && check(latS, lonE);
+    const { north, south, west, east } = getTileBounds({ zoom, tx, ty });
+    // Note: getTileBounds expects {zoom, tx, ty}. 
+    // Wait, let me check geo.ts getTileBounds arguments again.
+    // getTileBounds(tile: {zoom: number, tx: number, ty: number})
+    // But wait, the original code used ty for lat and tx for lon.
+    // latN = f(ty), latS = f(ty+1), lonW = f(tx), lonE = f(tx+1)
+    // So north = latN, south = latS, west = lonW, east = lonE.
+    return check(north, west) && check(north, east) && check(south, west) && check(south, east);
 }
 
 /**

@@ -41,9 +41,8 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 - **Alertes Sécurité** : Seront TOUJOURS gratuites (v6.0+).
 
 ### Calculs & Précision
-- **Distance** : Formule **Haversine** (précision < 0.5%).
-- **D+ / D-** : Algorithme d'**Hystérésis avec seuil de 2m** (Garmin/Suunto style).
-- **D+ / D-** : Algorithme d'**Hystérésis avec seuil de 3m** (Garmin standard v5.28.5).
+- **Distance** : Formule **Haversine** (précision < 0.5%) via `haversineDistance()`.
+- **D+ / D-** : Algorithme d'**Hystérésis avec seuil de 3m** (Garmin standard) via `calculateHysteresis()`. Source de vérité unique pour les tracés et le profil (v5.28.20).
 - **Lissage** : Moyenne mobile 3 points sur l'altitude GPS (v5.28.5).
 - **Filtrage GPS (v5.28.5)** : Rejeter tout point GPS avec saut vertical > 200m (si intervalle < 10s), distance horizontale < 2.5m (anti-champignon), ou vitesse > 600km/h.
 - **TubeGeometry Stabilité (v5.28.5)** : Utiliser `centripetal` pour les splines. Rendu temps réel à 1500 segments max. Simplification RDP avec epsilon 1.0.

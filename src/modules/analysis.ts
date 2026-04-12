@@ -3,7 +3,7 @@ import SunCalc from 'suncalc';
 import { state } from './state';
 import { activeTiles } from './terrain';
 import { queryTiles } from './tileSpatialIndex';
-import { worldToLngLat, lngLatToWorld } from './geo';
+import { worldToLngLat, lngLatToWorld, decodeTerrainRGB } from './geo';
 
 let lastUsedTile: any = null;
 
@@ -63,7 +63,7 @@ export function getAltitudeAt(worldX: number, worldZ: number, hintTile: any = nu
         const r = tile.pixelData[i];
         const g = tile.pixelData[i+1];
         const b = tile.pixelData[i+2];
-        return (-10000 + ((r * 65536 + g * 256 + b) * 0.1)) * state.RELIEF_EXAGGERATION;
+        return decodeTerrainRGB(r, g, b, state.RELIEF_EXAGGERATION);
     };
 
     const h00 = getH(x0, z0);

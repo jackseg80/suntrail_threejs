@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { state } from './state';
 import type { GPXLayer } from './state';
 import { attachDraggablePanel } from './ui/draggablePanel';
+import { calculateHysteresis } from './geoStats';
 
 interface ProfilePoint {
     dist: number; // Distance cumulée en km
@@ -42,8 +43,7 @@ export function updateElevationProfile(layerId?: string): void {
     
     profileData = [];
     let cumulativeDist = 0;
-    let totalDPlus = 0;
-    let totalDMinus = 0;
+    const elevations: number[] = [];
 
     // Reconstruire les données de profil à partir des positions 3D
     // en calculant les distances et altitudes cumulativement
@@ -51,24 +51,20 @@ export function updateElevationProfile(layerId?: string): void {
         const pos = gpxPoints3D[i];
         let slope = 0;
         let ele = pos.y / state.RELIEF_EXAGGERATION; // Convertir Y monde en altitude
+        elevations.push(ele);
         
         if (i > 0) {
             const prevPos = gpxPoints3D[i-1];
-            // Distance 3D entre les points (plus précise que Haversine pour les points densifiés)
+            // v5.28.2: Utiliser la distance HORIZONTALE (2D) pour correspondre à Haversine
+            // La distance 3D (diagonale) est physiquement plus longue mais l'usage rando/GPS
+            // standard est de projeter sur le plan horizontal (Haversine).
             const dx = pos.x - prevPos.x;
-            const dy = pos.y - prevPos.y;
             const dz = pos.z - prevPos.z;
-            const d3d = Math.sqrt(dx*dx + dy*dy + dz*dz) / 1000; // en km
-            cumulativeDist += d3d;
-
-            // Calcul D+ / D- (basé sur l'altitude réelle du terrain)
-            const prevEle = prevPos.y / state.RELIEF_EXAGGERATION;
-            const diff = ele - prevEle;
-            if (diff > 0) totalDPlus += diff;
-            else totalDMinus += Math.abs(diff);
+            const d2d = Math.sqrt(dx*dx + dz*dz); // Distance horizontale en mètres
+            cumulativeDist += d2d / 1000; // en km
 
             // Calcul de la pente locale (%)
-            const d2d = Math.sqrt(dx*dx + dz*dz); // Distance horizontale en mètres
+            const diff = ele - (prevPos.y / state.RELIEF_EXAGGERATION);
             if (d2d > 0.1) { // Éviter division par zéro
                 slope = (diff / d2d) * 100;
             }
@@ -82,17 +78,17 @@ export function updateElevationProfile(layerId?: string): void {
         });
     }
 
+    // Calcul du dénivelé avec l'algorithme d'hystérésis standard (3m)
+    // Assure la cohérence entre le graphique et les stats affichées
+    const { dPlus, dMinus } = calculateHysteresis(elevations, 3);
+
     // Mise à jour de l'UI des stats
-    // Utiliser les stats du layer (calculées avec Haversine) pour cohérence avec l'affichage
+    // Priorité aux stats du layer si disponibles (calculées sur les points originaux)
     const displayDist = layer.stats?.distance ?? cumulativeDist;
-    const displayDPlus = layer.stats?.dPlus ?? totalDPlus;
-    const displayDMinus = layer.stats?.dMinus ?? totalDMinus;
+    const displayDPlus = layer.stats?.dPlus ?? dPlus;
+    const displayDMinus = layer.stats?.dMinus ?? dMinus;
     
-    // Calculer le ratio pour convertir les distances 3D en distances Haversine
-    // (pour que le profil affiche des distances cohérentes avec les stats)
-    const distRatio = cumulativeDist > 0 ? displayDist / cumulativeDist : 1;
-    
-    updateStatsUI(displayDist, displayDPlus, displayDMinus, distRatio);
+    updateStatsUI(displayDist, displayDPlus, displayDMinus);
 
     drawProfileSVG();
     setupProfileInteractions();
@@ -104,17 +100,12 @@ export function updateElevationProfile(layerId?: string): void {
     }
 }
 
-let currentDistRatio = 1; // Ratio pour convertir distance 3D en distance Haversine
-
-function updateStatsUI(dist: number, dPlus: number, dMinus: number, distRatio: number = 1): void {
+function updateStatsUI(dist: number, dPlus: number, dMinus: number): void {
     // Mettre à jour les éléments gpx-* (GPX importés)
     const dEl = document.getElementById('gpx-dist');
     const pEl = document.getElementById('gpx-dplus');
     const mEl = document.getElementById('gpx-dminus');
     const profileInfo = document.getElementById('profile-info');
-    
-    // Stocker le ratio pour les interactions futures
-    currentDistRatio = distRatio;
     
     if (dEl) dEl.textContent = `${dist.toFixed(2)} km`;
     if (pEl) pEl.textContent = `${Math.round(dPlus)} m D+`;
@@ -126,7 +117,6 @@ function updateStatsUI(dist: number, dPlus: number, dMinus: number, distRatio: n
     }
     
     // Mettre à jour le panneau Parcours UNIQUEMENT si pas d'enregistrement en cours
-    // (pour éviter de mélanger les stats REC avec les stats du profil)
     if (!state.isRecording) {
         const trackDist = document.getElementById('track-dist');
         const trackDplus = document.getElementById('track-dplus');
@@ -239,9 +229,8 @@ function setupProfileInteractions(): void {
         cursor.style.display = 'block';
         cursor.style.left = `${(point.dist / maxDist) * 100}%`;
         
-        // Appliquer le ratio pour afficher la distance corrigée (Haversine)
-        const correctedDist = point.dist * currentDistRatio;
-        info.textContent = `Distance : ${correctedDist.toFixed(2)}km | Alt : ${Math.round(point.ele)}m | Pente : ${Math.round(point.slope)}%`;
+        // Distance directe (déjà en format Haversine via calcul 2D)
+        info.textContent = `Distance : ${point.dist.toFixed(2)}km | Alt : ${Math.round(point.ele)}m | Pente : ${Math.round(point.slope)}%`;
 
         // Mise à jour du marqueur 3D
         if (state.profileMarker) {
@@ -255,7 +244,7 @@ function setupProfileInteractions(): void {
         cursor.style.display = 'none';
         if (state.profileMarker) state.profileMarker.visible = false;
         // Remettre l'affichage avec les stats complètes du tracé
-        const maxDist = profileData.length > 0 ? profileData[profileData.length - 1].dist * currentDistRatio : 0;
+        const maxDist = profileData.length > 0 ? profileData[profileData.length - 1].dist : 0;
         info.textContent = `Distance : ${maxDist.toFixed(2)}km | Alt : 0m`;
     };
     

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { state } from './state';
 import type { Tile } from './terrain';
+import { decodeTerrainRGB } from './geo';
 
 /**
  * Seeded pseudo-random function for deterministic placement (v5.8.15)
@@ -225,5 +226,5 @@ function getSimpleAltitude(tile: Tile, localX: number, localZ: number, exaggerat
     const g = tile.pixelData[idx+1];
     const b = tile.pixelData[idx+2];
     
-    return (-10000 + (r * 65536 + g * 256 + b) * 0.1) * exaggeration;
+    return decodeTerrainRGB(r, g, b, exaggeration);
 }

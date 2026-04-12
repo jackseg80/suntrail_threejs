@@ -6,6 +6,16 @@ Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [5.28.20] - 2026-04-12
+### Refactored
+- **Unification Géo & Algorithmes (Phase 2)** :
+  - Centralisation du décodage Terrain-RGB via la nouvelle fonction `decodeTerrainRGB()` dans `geo.ts`, éliminant les duplications dans `analysis.ts`, `vegetation.ts` et les tests.
+  - Modularisation de la configuration : extraction de la logique complexe de résolution des clés MapTiler (Gist, localStorage, .env) dans `src/modules/config.ts`.
+  - Nettoyage de `ui.ts` : allégement du fichier et suppression des `console.log` de debug de production.
+- **Unification Géo & Algorithmes (Phase 1)** : 
+  - Extraction de l'algorithme d'hystérésis (seuil 3m standard Garmin) dans une fonction utilitaire partagée (`calculateHysteresis`).
+  - Correction du profil d'élévation pour utiliser l'hystérésis standard, garantissant une cohérence parfaite entre le graphique et les statistiques du tracé.
+  - Suppression du "Distance Ratio Hack" dans le profil au profit d'un calcul de distance horizontale (2D) nativement aligné avec la formule Haversine (distance projetée).
+  - Unification du calcul des limites de tuiles via `getTileBounds` et centralisation de la détection de pays (`isPositionInRegion`) pour faciliter l'ajout de nouvelles régions.
 ### Fixed
 - **Stabilité des Tests** : Correction d'une fuite d'état dans `PackManager` où les Maps internes n'étaient pas réinitialisées lors de l'appel à `initialize()`, causant des interférences entre les tests unitaires.
 - **Mocking OPFS** : Mise à jour des tests d'intégration pour refléter correctement le nouveau comportement de synchronisation disque (`syncDiskStates`).
