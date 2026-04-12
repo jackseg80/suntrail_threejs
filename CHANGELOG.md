@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.16] - 2026-04-12
+### Fixed
+- **Stabilité CI (Playwright)** : Correction des workflows GitHub pour installer tous les binaires de navigateurs requis (Firefox, WebKit).
+- **Robustesse E2E** : Ajout d'attentes explicites (`waitForSelector`) pour garantir que les widgets experts et les résultats de recherche sont chargés avant les interactions.
+
 ## [5.28.15] - 2026-04-12
 ### Added
 - **Validation Totale UI (E2E)** : Ajout des tests pour les deux derniers piliers : la Recherche (avec interception API) et les Réglages (validation des presets et options de rendu).

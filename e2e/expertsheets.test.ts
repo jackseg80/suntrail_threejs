@@ -6,6 +6,9 @@ test.describe('Expert Sheets and Widgets', () => {
     // Bypass initial walls
     await page.click('#aw-accept-btn');
     await page.click('#ob-skip');
+    
+    // Wait for the app to be fully ready (widgets are shown after sceneReady)
+    await page.waitForSelector('#widgets-container', { state: 'visible', timeout: 15000 });
   });
 
   test('should open weather sheet from top pill', async ({ page }) => {

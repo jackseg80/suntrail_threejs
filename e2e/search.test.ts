@@ -31,10 +31,13 @@ test.describe('Search Functionality', () => {
     // Type query
     const input = page.locator('#geo-input');
     await input.fill('Zermatt');
+    
+    // Give it a moment for debounce and mock response processing
+    await page.waitForTimeout(1000);
 
     // Wait for result item
     const resultItem = page.locator('.geo-result').first();
-    await expect(resultItem).toBeVisible();
+    await expect(resultItem).toBeVisible({ timeout: 10000 });
     await expect(resultItem).toContainText('Zermatt');
 
     // Click result

@@ -5,6 +5,8 @@ test.describe('Settings and Performance', () => {
     await page.goto('/');
     await page.click('#aw-accept-btn');
     await page.click('#ob-skip');
+    // Wait for the app to be fully ready
+    await page.waitForSelector('#widgets-container', { state: 'visible', timeout: 15000 });
   });
 
   test('should change performance presets', async ({ page }) => {
