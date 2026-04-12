@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.26] - 2026-04-12
+### Fixed
+- **UI Réglages** : Correction des limites du curseur de Résolution (LOD) dans les paramètres avancés. Le curseur supporte désormais les valeurs jusqu'à 256 (Ultra) au lieu d'être bloqué à 16.
+- **UI Réglages** : Extension de la limite du curseur de Rayon de rendu à 12 pour correspondre au preset Ultra.
+- **Versioning** : Incrémentation du `versionCode` à **611** pour la release Google Play.
+
 ## [5.28.25] - 2026-04-12
 ### Fixed
 - **Moteur Cartographique** : Correction d'un décalage d'alignement des tuiles à haute résolution (LOD 16+) hors Suisse/France en uniformisant le plafond `nativeMax` à 18 pour toutes les sources.
