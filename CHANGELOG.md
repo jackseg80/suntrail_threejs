@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.14] - 2026-04-12
+### Added
+- **Tests ExpertSheets** : Ajout de tests E2E pour valider l'ouverture des panneaux Météo, Connectivité, SOS et Simulation Solaire.
+- **Support Multi-Navigateurs** : Activation de Firefox et Mobile Safari (WebKit) dans la configuration Playwright pour garantir la compatibilité cross-platform du moteur 3D.
+
 ## [5.28.13] - 2026-04-12
 ### Summary
 - **Sprint Qualité & Unification** : Finalisation de l'infrastructure de tests et validation de l'unification de la logique GPS.
