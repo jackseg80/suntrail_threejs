@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.11] - 2026-04-12
+### Improved
+- **Architecture de Test** : Refonte du chargement de la clé API dans `iapService.ts` pour permettre une injection dynamique. Garantit la fiabilité des tests unitaires en environnement CI quelle que soit l'ordre d'exécution.
+
 ## [5.28.10] - 2026-04-12
 ### Fixed
 - **Stabilité CI/CD** : Correction de `iapService.test.ts` pour injecter une clé API factice via `vi.stubEnv`, empêchant l'échec des tests en environnement GitHub Actions où les secrets ne sont pas disponibles.

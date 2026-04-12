@@ -18,7 +18,6 @@ import { state } from './state';
 import { grantProAccess, revokeProAccess } from './iap';
 
 const ENTITLEMENT_ID = 'SunTrail 3D Pro';
-const SDK_KEY = import.meta.env.VITE_REVENUECAT_KEY as string | undefined;
 
 class IAPService {
     private initialized = false;
@@ -47,12 +46,14 @@ class IAPService {
     }
 
     private async _doInitialize(): Promise<void> {
+        const sdkKey = import.meta.env.VITE_REVENUECAT_KEY as string | undefined;
+
         // RevenueCat ne fonctionne que sur Android/iOS natif
         if (!Capacitor.isNativePlatform()) {
             console.log('[IAP] Web platform — RevenueCat skipped.');
             return;
         }
-        if (!SDK_KEY || SDK_KEY.length < 10) {
+        if (!sdkKey || sdkKey.length < 10) {
             console.warn('[IAP] VITE_REVENUECAT_KEY manquante — achats désactivés.');
             return;
         }
@@ -60,7 +61,7 @@ class IAPService {
 
         try {
             await Purchases.setLogLevel({ level: LOG_LEVEL.INFO });
-            await Purchases.configure({ apiKey: SDK_KEY });
+            await Purchases.configure({ apiKey: sdkKey });
             this.initialized = true;
 
             // Vérifier le statut Pro au démarrage (override le cache localStorage)
