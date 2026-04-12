@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.23] - 2026-04-12
+### Fixed
+- **Android Deployment** : Incrémentation du `versionCode` à **608** pour permettre la mise à jour sur la console Google Play.
+
 ## [5.28.22] - 2026-04-12
 ### Fixed
 - **Stabilité TypeScript** : Résolution de 17 erreurs de compilation détectées par `tsc` (propriétés manquantes dans `Tile`, imports erronés, variables inutilisées et null checks).
