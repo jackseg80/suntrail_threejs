@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
 import { state } from './state';
 import { getAltitudeAt } from './analysis';
 
@@ -9,13 +9,14 @@ export function initCamera(): THREE.PerspectiveCamera {
     return camera;
 }
 
-export function initControls(camera: THREE.PerspectiveCamera, domElement: HTMLElement): OrbitControls {
-    const controls = new OrbitControls(camera, domElement);
+export function initControls(camera: THREE.PerspectiveCamera, domElement: HTMLElement): MapControls {
+    // v5.28.21 : Retour aux MapControls pour un feeling "Carte" (clic gauche = pan)
+    const controls = new MapControls(camera, domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.1;
-    controls.screenSpacePanning = false;
+    controls.screenSpacePanning = false; // Important pour garder le pan sur le plan horizontal
     controls.minDistance = 100;
-    controls.maxDistance = 800000;
+    controls.maxDistance = 4000000; // v5.28.21 : Augmenté pour permettre le dézoom LOD 6
     controls.maxPolarAngle = Math.PI / 2.1;
     
     // Position initiale
