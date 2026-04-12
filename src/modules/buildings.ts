@@ -1,80 +1,57 @@
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import * as pbf from 'pbf';
 import { VectorTile } from '@mapbox/vector-tile';
-import Pbf from 'pbf';
 import { state } from './state';
-import { getAltitudeAt } from './analysis';
-import { fetchOverpassData } from './utils';
 import { Tile } from './terrain/Tile';
-import { boundedCacheSet } from './boundedCache';
+import { fetchOverpassData, isOverpassInBackoff } from './utils';
+import { getAltitudeAt } from './analysis';
+import { BoundedCache } from './boundedCache';
 
-const buildingMemoryCache = new Map<string, any[]>();
+// Caches bornés pour éviter l'explosion mémoire (LRU v5.28.20)
+const buildingMemoryCache = new BoundedCache<string, any[]>({ maxSize: 200 });
+const maptilerFeaturesCache = new BoundedCache<string, any[]>({ maxSize: 100 });
+
 const buildingFetchPromises = new Map<string, Promise<any[] | null>>();
+const maptilerFetchPromises = new Map<string, Promise<any[] | null>>();
 const zoneFailureCooldown = new Map<string, number>();
 const COOLDOWN_MAX_SIZE = 200;
-const CACHE_NAME = 'suntrail-buildings-v5';
+const CACHE_NAME = 'suntrail-buildings-v4';
 
-// Cache MapTiler : clé = "z/tx/ty", valeur = features parsées (partagées entre toutes les sous-tuiles)
-const maptilerFeaturesCache = new Map<string, any[]>();
-const maptilerFetchPromises = new Map<string, Promise<any[] | null>>();
+// Matériaux partagés (Performance v5.4.1)
+const buildingMaterial = new THREE.MeshStandardMaterial({
+    color: 0xcccccc,
+    roughness: 0.7,
+    metalness: 0.2
+});
 
-// Matériaux partagés — un seul par source, recyclés entre toutes les tuiles actives
-let sharedMaterialMapTiler: THREE.MeshStandardMaterial | null = null;
-let sharedMaterialOverpass: THREE.MeshStandardMaterial | null = null;
-
-function getSharedMaterial(source: 'maptiler' | 'overpass'): THREE.MeshStandardMaterial {
-    if (source === 'maptiler') {
-        if (!sharedMaterialMapTiler) {
-            sharedMaterialMapTiler = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.7, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
-        }
-        return sharedMaterialMapTiler;
-    }
-    if (!sharedMaterialOverpass) {
-        sharedMaterialOverpass = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
-    }
-    return sharedMaterialOverpass;
-}
-
+/**
+ * Charge les bâtiments 3D pour une tuile (v5.28.20)
+ * Priorité : MapTiler (Vector Tiles) > OSM Overpass (Fallback)
+ */
 export async function loadBuildingsForTile(tile: Tile) {
-    if (!state.isPro || !state.SHOW_BUILDINGS || tile.zoom < state.BUILDING_ZOOM_THRESHOLD || (tile.status as string) === 'disposed') return;
-    if (tile.buildingMesh) return;
+    if (!state.SHOW_BUILDINGS || tile.zoom < 14 || (tile.status as string) === 'disposed') return;
+    if (tile.buildingGroup) return;
 
-    // v5.28.6 : Rayon de visibilité dynamique selon le preset (Optimisation batterie/perf)
-    let effectiveLimit = state.BUILDING_LIMIT || 60;
-    if (state.controls) {
-        const dx = tile.worldX - state.controls.target.x;
-        const dz = tile.worldZ - state.controls.target.z;
-        const dist = Math.sqrt(dx * dx + dz * dz);
-        
-        // Rayon adapté : 3x tuiles en Balanced, 5x en Performance, 7x en Ultra
-        const rangeMultiplier = state.PERFORMANCE_PRESET === 'ultra' ? 7.0 : (state.PERFORMANCE_PRESET === 'performance' ? 5.0 : 3.0);
-        const maxDist = tile.tileSizeMeters * rangeMultiplier;
-        
-        if (dist > maxDist) return;
-        
-        const reductionFactor = Math.min(0.5, (dist / maxDist) * 0.5);
-        effectiveLimit = Math.max(5, Math.ceil(effectiveLimit * (1 - reductionFactor)));
+    // Throttle des requêtes pendant l'interaction utilisateur
+    if (state.isUserInteracting) {
+        setTimeout(() => loadBuildingsForTile(tile), 1000);
+        return;
     }
 
-    // 1. TENTATIVE VIA MAPTILER VECTOR TILES (Plus rapide, optimisé tuile)
-    if (!state.isMapTilerDisabled && state.MK) {
-        try {
-            const maptilerBuildings = await fetchBuildingsMapTiler(tile);
-            if (maptilerBuildings && maptilerBuildings.length > 0) {
-                renderBuildingsMapTiler(tile, maptilerBuildings, effectiveLimit);
-                // Ne retourner que si des bâtiments ont effectivement été rendus pour
-                // cette sous-tuile. La Z14 parente peut avoir des features sans qu'aucune
-                // ne tombe dans cette sous-tuile précise — dans ce cas, on laisse Overpass
-                // compléter avec les données OSM.
-                if (tile.buildingMesh) return;
-            }
-        } catch (e) {
-            console.warn("[MapTiler] Erreur bâtiments, bascule sur OSM");
+    // --- PHASE 1 : MAPTILER (Vector Tiles ultra-rapides) ---
+    if (!state.isMapTilerDisabled) {
+        const maptilerBuildings = await fetchBuildingsMapTiler(tile);
+        if (maptilerBuildings && maptilerBuildings.length > 0) {
+            renderBuildingsMerged(tile, maptilerBuildings, 50);
+            return;
         }
     }
 
-    // 2. REPLI SUR OSM OVERPASS (Logic existante)
-    const zoneZ = 12;
+    // --- PHASE 2 : OVERPASS (OSM Fallback ou zones non couvertes) ---
+    if (isOverpassInBackoff()) return;
+
+    const zoneZ = 14; 
     const ratio = Math.pow(2, tile.zoom - zoneZ);
     const zx = Math.floor(tile.tx / ratio);
     const zy = Math.floor(tile.ty / ratio);
@@ -93,7 +70,7 @@ export async function loadBuildingsForTile(tile: Tile) {
         }
         buildings = await promise;
         if (buildings) {
-            boundedCacheSet(buildingMemoryCache, zoneKey, buildings);
+            buildingMemoryCache.set(zoneKey, buildings);
         } else {
             // Purger les entrées expirées pour borner la taille du cache
             if (zoneFailureCooldown.size > COOLDOWN_MAX_SIZE) {
@@ -112,8 +89,6 @@ export async function loadBuildingsForTile(tile: Tile) {
     const bounds = tile.getBounds();
     const tileBuildings = buildings.filter(el => {
         if (!el.geometry || el.geometry.length === 0) return false;
-        // Centroïde des nœuds OSM pour éviter d'ignorer les bâtiments dont le premier
-        // nœud tombe hors des bornes de la tuile alors que la majorité est dedans.
         let sumLat = 0, sumLon = 0;
         for (const p of el.geometry) { sumLat += p.lat; sumLon += p.lon; }
         const clat = sumLat / el.geometry.length;
@@ -122,13 +97,11 @@ export async function loadBuildingsForTile(tile: Tile) {
     });
 
     if (tileBuildings.length > 0) {
-        renderBuildingsMerged(tile, tileBuildings, effectiveLimit);
+        renderBuildingsMerged(tile, tileBuildings, 50);
     }
 }
 
 async function fetchBuildingsMapTiler(tile: Tile): Promise<any[] | null> {
-    // Les Vector Tiles 'buildings' de MapTiler sont natifs jusqu'au Z14.
-    // Plusieurs tuiles Z16+ partagent la même Z14 parente → cache + dédup indispensables.
     const requestZoom = Math.min(tile.zoom, 14);
     const ratio = Math.pow(2, tile.zoom - requestZoom);
     const rtx = Math.floor(tile.tx / ratio);
@@ -149,20 +122,29 @@ async function fetchBuildingsMapTiler(tile: Tile): Promise<any[] | null> {
                     state.isMapTilerDisabled = true;
                     return null;
                 }
-                if (!response.ok) return null;
-
                 const buffer = await response.arrayBuffer();
-                const vt = new VectorTile(new Pbf(buffer));
-                const layer = vt.layers.building;
+                const vtile = new VectorTile(new pbf(buffer));
+                const layer = vtile.layers.building;
                 if (!layer) return [];
 
                 const features = [];
                 for (let i = 0; i < layer.length; i++) {
-                    const f = layer.feature(i);
-                    features.push({ geometry: f.loadGeometry(), properties: f.properties, type: f.type });
+                    const feat = layer.feature(i);
+                    const geo = feat.loadGeometry();
+                    // Conversion MapTiler (4096 units) vers LngLat
+                    const points = geo[0].map(p => {
+                        const lon = (p.x / 4096 + rtx) / Math.pow(2, requestZoom) * 360 - 180;
+                        const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (p.y / 4096 + rty) / Math.pow(2, requestZoom))));
+                        return { lat: latRad * 180 / Math.PI, lon };
+                    });
+                    features.push({
+                        tags: feat.properties,
+                        geometry: points
+                    });
                 }
                 return features;
             } catch (e) {
+                console.warn('[MapTiler] Fetch failed:', e);
                 return null;
             }
         })();
@@ -170,122 +152,9 @@ async function fetchBuildingsMapTiler(tile: Tile): Promise<any[] | null> {
     }
 
     const features = await promise;
+    if (features) maptilerFeaturesCache.set(cacheKey, features);
     maptilerFetchPromises.delete(cacheKey);
-    if (features) boundedCacheSet(maptilerFeaturesCache, cacheKey, features);
     return features;
-}
-
-/**
- * v5.28.5 : Échantillonne l'altitude sur plusieurs points pour gérer les pentes.
- * Retourne { min, max, avg } pour ajuster l'extrusion (fondations).
- */
-function getBuildingElevationStats(points: THREE.Vector2[], tile: Tile) {
-    let min = Infinity;
-    let max = -Infinity;
-    let sum = 0;
-    
-    // Échantillonner les coins et le centre
-    const samples = [...points];
-    if (points.length > 2) {
-        let cx = 0, cy = 0;
-        for (const p of points) { cx += p.x; cy += p.y; }
-        samples.push(new THREE.Vector2(cx / points.length, cy / points.length));
-    }
-
-    for (const p of samples) {
-        const alt = getAltitudeAt(tile.worldX + p.x, tile.worldZ - p.y, tile);
-        if (alt < min) min = alt;
-        if (alt > max) max = alt;
-        sum += alt;
-    }
-
-    return { min, max, avg: sum / samples.length };
-}
-
-function renderBuildingsMapTiler(tile: Tile, features: any[], limit: number) {
-    if ((tile.status as string) === 'disposed' || !tile.mesh) return;
-
-    const geometries: THREE.BufferGeometry[] = [];
-    const material = getSharedMaterial('maptiler');
-    const EXTENT = 4096; // MapTiler default extent
-    
-    const requestZoom = Math.min(tile.zoom, 14);
-    const ratio = Math.pow(2, tile.zoom - requestZoom);
-    const offsetX = (tile.tx % ratio) * EXTENT / ratio;
-    const offsetY = (tile.ty % ratio) * EXTENT / ratio;
-    const subExtent = EXTENT / ratio;
-
-    features.slice(0, limit * 2).forEach(f => {
-        if (f.geometry && f.geometry.length > 0) {
-            const ring = f.geometry[0];
-            // Utiliser le centroïde plutôt que le premier sommet : un bâtiment dont le premier
-            // vertex tombe hors de la sous-tuile mais dont le centre est dedans doit s'afficher.
-            let sumX = 0, sumY = 0;
-            for (const p of ring) { sumX += p.x; sumY += p.y; }
-            const cx = sumX / ring.length;
-            const cy = sumY / ring.length;
-            if (cx < offsetX || cx >= offsetX + subExtent || cy < offsetY || cy >= offsetY + subExtent) {
-                return;
-            }
-
-            const points: THREE.Vector2[] = [];
-            ring.forEach((p: any) => {
-                const lx = ((p.x - offsetX) / subExtent - 0.5) * tile.tileSizeMeters;
-                const lz = ((p.y - offsetY) / subExtent - 0.5) * tile.tileSizeMeters;
-                points.push(new THREE.Vector2(lx, -lz));
-            });
-
-            try {
-                const shape = new THREE.Shape(points);
-                const nominalHeight = (f.properties.render_height || 12) * state.RELIEF_EXAGGERATION;
-                const minHeightOffset = (f.properties.render_min_height || 0) * state.RELIEF_EXAGGERATION;
-
-                // v5.28.5 : Calcul adaptatif de l'extrusion pour les pentes
-                const stats = getBuildingElevationStats(points, tile);
-                const slopeDiff = stats.max - stats.min;
-                const foundationDepth = 5.0; // S'enfonce de 5m pour éviter tout jour sous le bâtiment
-                
-                const totalDepth = Math.max(1, nominalHeight - minHeightOffset + slopeDiff + foundationDepth);
-
-                const bGeo = new THREE.ExtrudeGeometry(shape, {
-                    depth: totalDepth,
-                    bevelEnabled: false
-                });
-
-                bGeo.rotateX(-Math.PI / 2);
-                // On positionne la base du bâtiment à (minAltitude - foundationDepth)
-                bGeo.translate(0, stats.min - foundationDepth + minHeightOffset, 0);
-                geometries.push(bGeo);
-            } catch (e) { console.warn('[Buildings] Geometry processing (MapTiler) failed silently:', e); }
-        }
-    });
-
-    finalizeMergedMesh(tile, geometries, material);
-}
-
-function finalizeMergedMesh(tile: Tile, geometries: THREE.BufferGeometry[], material: THREE.Material) {
-    if (geometries.length > 0) {
-        try {
-            const merged = BufferGeometryUtils.mergeGeometries(geometries);
-            const mesh = new THREE.Mesh(merged, material);
-            mesh.castShadow = state.BUILDINGS_SHADOWS;
-            mesh.receiveShadow = state.BUILDINGS_SHADOWS;
-            mesh.matrixAutoUpdate = false;
-            
-            // v5.28.1 : Mandat - PAS de hierarchy attachment (scene.add)
-            if (tile.buildingMesh && state.scene) state.scene.remove(tile.buildingMesh);
-            
-            tile.buildingMesh = mesh;
-            tile.buildingMesh.position.set(tile.worldX, 0, tile.worldZ);
-            tile.buildingMesh.updateMatrix();
-            
-            if (state.scene) state.scene.add(tile.buildingMesh);
-        } catch (e) {
-            console.error('[Buildings] Merge geometries failed:', e);
-        } finally {
-            geometries.forEach(g => g.dispose());
-        }
-    }
 }
 
 async function fetchBuildingsWithCache(z: number, x: number, y: number, key: string): Promise<any[] | null> {
@@ -293,7 +162,7 @@ async function fetchBuildingsWithCache(z: number, x: number, y: number, key: str
         const cache = await caches.open(CACHE_NAME);
         const cached = await cache.match(key);
         if (cached) return await cached.json();
-    } catch (e) { console.warn('[Buildings] Cache read failed, proceeding without cache:', e); }
+    } catch (e) { console.warn('[Buildings] Cache read failed:', e); }
 
     const n = Math.pow(2, z);
     const w = x / n * 360 - 180;
@@ -301,7 +170,7 @@ async function fetchBuildingsWithCache(z: number, x: number, y: number, key: str
     const latNorth = Math.atan(Math.sinh(Math.PI * (1 - 2 * y / n))) * 180 / Math.PI;
     const latSouth = Math.atan(Math.sinh(Math.PI * (1 - 2 * (y + 1) / n))) * 180 / Math.PI;
 
-    const query = `[out:json][timeout:25];(way["building"](${latSouth.toFixed(4)},${w.toFixed(4)},${latNorth.toFixed(4)},${e.toFixed(4)});way["tourism"~"alpine_hut|hotel"](${latSouth.toFixed(4)},${w.toFixed(4)},${latNorth.toFixed(4)},${e.toFixed(4)}););out body geom;`;
+    const query = `[out:json][timeout:25];way["building"](${latSouth.toFixed(4)},${w.toFixed(4)},${latNorth.toFixed(4)},${e.toFixed(4)});out body geom;`;
     
     const data = await fetchOverpassData(query);
     if (data && data.elements) {
@@ -314,41 +183,81 @@ async function fetchBuildingsWithCache(z: number, x: number, y: number, key: str
     return null;
 }
 
-function renderBuildingsMerged(tile: Tile, elements: any[], limit: number) {
+function renderBuildingsMerged(tile: Tile, elements: any[], limit: number = 50) {
     if ((tile.status as string) === 'disposed' || !tile.mesh) return;
 
     const geometries: THREE.BufferGeometry[] = [];
-    const material = getSharedMaterial('overpass');
+    const processed = elements.slice(0, limit);
 
-    elements.slice(0, limit).forEach(el => {
-        if (el.type === 'way' && el.geometry) {
+    processed.forEach(el => {
+        if (el.geometry && el.geometry.length > 2) {
             const points: THREE.Vector2[] = [];
-            for (let j = el.geometry.length - 1; j >= 0; j--) {
-                const p = el.geometry[j];
+            // Points pour l'échantillonnage de l'altitude (4 coins + centre)
+            const samples: {x: number, z: number}[] = [];
+            
+            el.geometry.forEach((p: any) => {
                 const localPos = tile.lngLatToLocal(p.lon, p.lat);
                 points.push(new THREE.Vector2(localPos.x, -localPos.z));
-            }
+            });
 
             try {
                 const shape = new THREE.Shape(points);
-                const nominalHeight = (el.tags?.['building:levels'] ? el.tags['building:levels'] * 4.5 : 12) * state.RELIEF_EXAGGERATION;
-                
-                // v5.28.5 : Calcul adaptatif pour les pentes (Overpass)
-                const stats = getBuildingElevationStats(points, tile);
-                const slopeDiff = stats.max - stats.min;
-                const foundationDepth = 5.0;
-                
-                const totalDepth = Math.max(1, nominalHeight + slopeDiff + foundationDepth);
+                const height = (el.tags?.['building:levels'] ? parseFloat(el.tags['building:levels']) * 3.5 : 8) * state.RELIEF_EXAGGERATION;
+                const extrudeGeo = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false });
 
-                const bGeo = new THREE.ExtrudeGeometry(shape, { depth: totalDepth, bevelEnabled: false });
+                // --- CORRECTION ANTI-GRAVITÉ (v5.28.5) ---
+                // On échantillonne l'altitude à plusieurs points pour trouver le point le plus bas
+                // de l'emprise du bâtiment sur le terrain.
+                const box = new THREE.Box2().setFromPoints(points);
+                const center = new THREE.Vector2(); box.getCenter(center);
+                samples.push({x: center.x, z: -center.y});
+                samples.push({x: box.min.x, z: -box.min.y});
+                samples.push({x: box.max.x, z: -box.max.y});
+                samples.push({x: box.min.x, z: -box.max.y});
+                samples.push({x: box.max.x, z: -box.min.y});
 
-                bGeo.rotateX(-Math.PI / 2);
-                bGeo.translate(0, stats.min - foundationDepth, 0);
-                geometries.push(bGeo);
-            } catch (e) { console.warn('[Buildings] Geometry processing (Overpass) failed silently:', e); }
+                let minTerrainAlt = Infinity;
+                samples.forEach(s => {
+                    const alt = getAltitudeAt(tile.worldX + s.x, tile.worldZ + s.z, tile);
+                    if (alt < minTerrainAlt) minTerrainAlt = alt;
+                });
+
+                // On ancre le bâtiment au point le plus bas et on ajoute une "jupe" de 5m
+                // pour s'assurer qu'il pénètre le terrain partout, même sur pente raide.
+                const skirt = 5 * state.RELIEF_EXAGGERATION;
+                const matrix = new THREE.Matrix4()
+                    .makeRotationX(-Math.PI / 2)
+                    .setPosition(0, minTerrainAlt - skirt, 0);
+                
+                // Ajuster la géométrie pour inclure la jupe
+                const finalHeight = height + skirt;
+                // Note: On recrée avec la bonne profondeur car ExtrudeGeometry ne se scale pas bien en Y
+                const finalGeo = new THREE.ExtrudeGeometry(shape, { depth: finalHeight, bevelEnabled: false });
+                finalGeo.applyMatrix4(matrix);
+
+                geometries.push(finalGeo);
+            } catch (e) { console.warn('[Buildings] Mesh creation failed silently:', e); }
         }
     });
 
-    finalizeMergedMesh(tile, geometries, material);
-}
+    if (geometries.length > 0) {
+        try {
+            const merged = BufferGeometryUtils.mergeGeometries(geometries);
+            const mesh = new THREE.Mesh(merged, buildingMaterial);
+            mesh.castShadow = (state.PERFORMANCE_PRESET === 'ultra');
+            mesh.receiveShadow = true;
 
+            // v5.28.1 : Mandat - PAS de hierarchy attachment (scene.add)
+            if (tile.buildingGroup && state.scene) state.scene.remove(tile.buildingGroup);
+            
+            tile.buildingGroup = new THREE.Group();
+            tile.buildingGroup.add(mesh);
+            tile.buildingGroup.position.set(tile.worldX, 0, tile.worldZ);
+            
+            if (state.scene) state.scene.add(tile.buildingGroup);
+        } catch (e) { console.warn('[Buildings] Geometry merge failed:', e); }
+        finally {
+            geometries.forEach(g => g.dispose());
+        }
+    }
+}

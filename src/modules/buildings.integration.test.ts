@@ -18,7 +18,8 @@ vi.mock('./analysis', () => ({
 }));
 
 vi.mock('./utils', () => ({
-    fetchOverpassData: vi.fn()
+    fetchOverpassData: vi.fn(),
+    isOverpassInBackoff: vi.fn(() => false)
 }));
 
 // Import fetchOverpassData for type safety in tests

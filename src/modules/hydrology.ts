@@ -5,9 +5,9 @@ import { Tile } from './terrain/Tile';
 import { fetchOverpassData, isOverpassInBackoff } from './utils';
 import { getAltitudeAt } from './analysis';
 import { terrainUniforms } from './terrain';
-import { boundedCacheSet } from './boundedCache';
+import { BoundedCache } from './boundedCache';
 
-const hydroMemoryCache = new Map<string, any[]>();
+const hydroMemoryCache = new BoundedCache<string, any[]>({ maxSize: 200 });
 const hydroFetchPromises = new Map<string, Promise<any[] | null>>();
 const zoneFailureCooldown = new Map<string, number>();
 const COOLDOWN_MAX_SIZE = 200;
@@ -97,7 +97,7 @@ export async function loadHydrologyForTile(tile: Tile) {
         }
         elements = await promise;
         if (elements) {
-            boundedCacheSet(hydroMemoryCache, zoneKey, elements);
+            hydroMemoryCache.set(zoneKey, elements);
         } else {
             // Purger les entrées expirées pour borner la taille du cache
             if (zoneFailureCooldown.size > COOLDOWN_MAX_SIZE) {

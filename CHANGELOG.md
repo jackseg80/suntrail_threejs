@@ -7,6 +7,10 @@ et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [5.28.20] - 2026-04-12
 ### Refactored
+- **Unification des Caches & Modularisation 3D (Phase 3)** :
+  - Création d'une classe universelle `BoundedCache<K, V>` (LRU) pour centraliser la gestion de la mémoire RAM et prévenir les fuites de données OSM.
+  - Migration de `buildings.ts`, `hydrology.ts` et `poi.ts` vers `BoundedCache`, permettant un monitoring cohérent des ressources.
+  - Création du `CameraManager` : externalisation de la logique de caméra, des animations `flyTo` et du resize WebGL depuis `scene.ts`, réduisant la complexité du moteur principal.
 - **Unification Géo & Algorithmes (Phase 2)** :
   - Centralisation du décodage Terrain-RGB via la nouvelle fonction `decodeTerrainRGB()` dans `geo.ts`, éliminant les duplications dans `analysis.ts`, `vegetation.ts` et les tests.
   - Modularisation de la configuration : extraction de la logique complexe de résolution des clés MapTiler (Gist, localStorage, .env) dans `src/modules/config.ts`.

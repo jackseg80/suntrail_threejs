@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { state } from './state';
@@ -16,7 +15,10 @@ import { initVegetationResources } from './vegetation';
 import { initWeatherSystem, updateWeatherSystem, fetchWeather, disposeWeatherSystem } from './weather';
 import { initCompass, disposeCompass, renderCompass, updateCompassAnimation, isCompassAnimating } from './compass';
 import { centerOnUser } from './location';
-import { initTouchControls, disposeTouchControls } from './touchControls';
+import { initTouchControls } from './touchControls';
+import { initCamera, initControls, flyTo, onWindowResize } from './cameraManager';
+
+export { flyTo };
 
 // Handler de visibilité : suspend le GPU quand l'app passe en arrière-plan (v5.11)
 let visibilityChangeHandler: (() => void) | null = null;
@@ -33,7 +35,6 @@ export async function disposeScene(): Promise<void> {
     disposeAllGeometries();
     resetAnalysisCache();
     if (state.renderer) {
-        disposeTouchControls(state.renderer.domElement);
         state.renderer.setAnimationLoop(null);
         state.renderer.dispose();
     }
@@ -52,82 +53,7 @@ export async function disposeScene(): Promise<void> {
     window.removeEventListener('resize', onWindowResize);
 }
 
-// --- VOL CINÉMATIQUE (v4.6.5) ---
-export function flyTo(targetWorldX: number, targetWorldZ: number, targetElevation: number = 0, targetDistance: number = 12000, flyDuration: number = 2500) {
-    if (!state.camera || !state.controls) return;
-    
-    if (state.isFollowingUser) {
-        state.isFollowingUser = false;
-        // Correction : l'élément s'appelle gps-main-btn (et non gps-follow-btn qui n'existe pas)
-        const btn = document.getElementById('gps-main-btn');
-        if (btn) btn.classList.remove('active', 'following');
-    }
-
-    const startPos = state.camera.position.clone();
-    const startTarget = state.controls.target.clone();
-    const endTarget = new THREE.Vector3(targetWorldX, targetElevation, targetWorldZ);
-
-    // On calcule la position finale en gardant l'inclinaison si possible ou en utilisant un défaut
-    const offsetZ = targetDistance * 0.8;
-    const finalAlt = targetElevation + targetDistance;
-    const endPos = new THREE.Vector3(targetWorldX, finalAlt, targetWorldZ + offsetZ);
-
-    // Block origin shift for the duration of the animation to prevent the closure
-    // coordinates from becoming stale (origin shift would shift camera but not the
-    // captured startPos/endPos/startTarget/endTarget in this closure).
-    state.isFlyingTo = true;
-
-    // a11y: prefers-reduced-motion — vol instantané sans animation
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) {
-        state.controls.target.copy(endTarget);
-        state.camera.position.copy(endPos);
-        state.controls.update();
-        state.isFlyingTo = false;
-        return;
-    }
-
-    const duration = flyDuration;
-    const startTime = performance.now();
-
-    const animateFlight = (time: number) => {
-        // Guard : si la scène a été détruite pendant le vol, abort proprement
-        if (!state.camera || !state.controls) {
-            state.isFlyingTo = false;
-            return;
-        }
-
-        const elapsed = time - startTime;
-        const progress = Math.min(elapsed / duration, 1.0);
-        const ease = progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-
-        state.controls.target.lerpVectors(startTarget, endTarget, ease);
-        const currentPos = new THREE.Vector3().lerpVectors(startPos, endPos, ease);
-        const maxElev = Math.max(startPos.y, endPos.y, targetElevation);
-        const parabolaHeight = Math.sin(progress * Math.PI) * Math.max(5000, maxElev * 0.8);
-        currentPos.y += parabolaHeight;
-
-        const groundH = getAltitudeAt(currentPos.x, currentPos.z);
-        if (currentPos.y < groundH + 200) currentPos.y = groundH + 200;
-
-        state.camera.position.copy(currentPos);
-        state.controls.update();
-        if (progress < 1.0) {
-            requestAnimationFrame(animateFlight);
-        } else {
-            // Allow origin shift again after landing
-            state.isFlyingTo = false;
-        }
-    };
-    requestAnimationFrame(animateFlight);
-}
-
 function getIdealZoom(dist: number): number {
-    // satellite : zoom agressif (haute résolution à grande distance).
-    // swisstopo/ign : seuils stricts — la source est haute qualité mais les tuiles
-    //   sont pixellisées au-delà de leur résolution native → pas de boost élargi.
-    // opentopomap : léger boost car la source est moins précise aux LOD élevés,
-    //   on préfère rester un cran en-dessous plutôt que de forcer un LOD trop haut.
     const boost = state.MAP_SOURCE === 'satellite' ? 2.0
                 : state.MAP_SOURCE === 'swisstopo' ? 1.0
                 : 1.2;
@@ -165,16 +91,14 @@ export async function initScene(): Promise<void> {
     state.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     state.renderer.toneMapping = THREE.AgXToneMapping;
     container.appendChild(state.renderer.domElement);
-    // a11y: canvas 3D accessible — role="img" + aria-label traduit
+    
     state.renderer.domElement.setAttribute('role', 'img');
     state.renderer.domElement.setAttribute('aria-label', i18n.t('a11y.canvas3d'));
+    
     state.stats = new Stats();
     container.appendChild(state.stats.dom);
     state.stats.dom.style.top = '80px';
-    // Start hidden — VRAMDashboard.toggle() manages FPS+VRAM visibility together
     state.stats.dom.style.display = 'none';
-    // Re-sync après création de Stats.js : VRAMDashboard.init() peut avoir été appelé
-    // avant initScene(), donc state.stats était null → le FPS counter était skippé.
     state.vramPanel?.setVisible(state.SHOW_STATS);
 
     initCompass();
@@ -184,8 +108,6 @@ export async function initScene(): Promise<void> {
     state.scene.add(sky);
     state.sky = sky;
 
-    // Ground plane — plan sombre sous le terrain pour masquer le vide blanc au tilt max
-    // Taille réduite (500k) suffit largement pour couvrir la vue à tilt max en LOD 14+
     const groundGeo = new THREE.PlaneGeometry(500_000, 500_000);
     groundGeo.rotateX(-Math.PI / 2);
     const groundMat = new THREE.MeshBasicMaterial({ color: 0x1a1a2e, fog: true, depthWrite: false });
@@ -197,26 +119,20 @@ export async function initScene(): Promise<void> {
     groundPlane.frustumCulled = true;
     state.scene.add(groundPlane);
 
-    state.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 4000000);
-    // Démarrage au LOD 6 (dezoom max) — dist >= 2 000 000 déclenche LOD 6 dans adaptiveLOD()
-    state.camera.position.set(0, 2000000, 2000000);
+    initCamera();
+    initControls(state.camera!, state.renderer.domElement);
 
-    const controls = new OrbitControls(state.camera, state.renderer.domElement);
-    state.controls = controls;
-    
-    controls.addEventListener('start', () => {
+    state.controls!.addEventListener('start', () => {
         state.isUserInteracting = true;
-        // Phase 2.3 — Adaptive DPR : baisser à 1.0 pendant l'interaction (invisible, économise GPU)
-        if (isMobileDevice && state.renderer) {
+        if (isMobile && state.renderer) {
             if (dprRestoreTimer) { clearTimeout(dprRestoreTimer); dprRestoreTimer = null; }
             state.renderer.setPixelRatio(1.0);
         }
     });
-    controls.addEventListener('end', () => {
+    state.controls!.addEventListener('end', () => {
         state.isUserInteracting = false;
         lastInteractionTime = performance.now();
-        // Phase 2.3 — Restaurer le DPR complet 200ms après la fin du geste (full quality sur frame fixe)
-        if (isMobileDevice && state.renderer) {
+        if (isMobile && state.renderer) {
             dprRestoreTimer = setTimeout(() => {
                 if (state.renderer) state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
                 dprRestoreTimer = null;
@@ -224,23 +140,9 @@ export async function initScene(): Promise<void> {
         }
     });
 
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.1; 
-    controls.rotateSpeed = 1.2;
-    controls.zoomSpeed = 1.2;
-    controls.panSpeed = 0.8;
-    controls.minDistance = 100;
-    controls.maxDistance = 3500000; 
-    
-    controls.screenSpacePanning = false; 
-    controls.enableRotate = true;
-    // Touch entièrement géré par touchControls.ts (capture phase) — pas de config ici
-    controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
-
-    // Gestes tactiles Google Earth : 1 doigt = pan, 2 doigts = pinch/twist/pan
     initTouchControls(
-        state.camera,
-        controls,
+        state.camera!,
+        state.controls!,
         state.renderer.domElement,
         () => { state.isUserInteracting = true; },
         () => { state.isUserInteracting = false; lastInteractionTime = performance.now(); }
@@ -252,7 +154,6 @@ export async function initScene(): Promise<void> {
     const throttledUpdate = throttle(() => {
         if (!state.controls || !state.camera) return;
 
-        // Clamp caméra aux bords du monde — couvre le pan souris (OrbitControls direct)
         const clamped = clampTargetToBounds(
             state.controls.target.x, state.controls.target.z, state.originTile
         );
@@ -268,40 +169,25 @@ export async function initScene(): Promise<void> {
         const dx = state.controls.target.x, dz = state.controls.target.z;
         const rawDist = state.camera.position.distanceTo(state.controls.target);
 
-        // Distance effective terrain-aware (v5.19) — exclure l'altitude "morte" du terrain
-        // pour que getIdealZoom retourne un LOD adapte a la hauteur au-dessus du sol.
-        // En 3D, on pondère entre heightAboveGround et rawDist selon l'inclinaison
-        // pour éviter l'oscillation LOD quand la caméra est très inclinée.
         const cameraGroundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
         const heightAboveGround = Math.max(45, state.camera.position.y - cameraGroundH);
         let dist: number;
         if (state.IS_2D_MODE) {
             dist = heightAboveGround;
         } else {
-            // Blend : vue top-down → heightAboveGround pur, incliné → mix avec rawDist
             const polar = state.controls.getPolarAngle();
-            const tiltBlend = THREE.MathUtils.clamp(polar / 1.2, 0, 1); // 0=top, 1=très incliné
+            const tiltBlend = THREE.MathUtils.clamp(polar / 1.2, 0, 1);
             dist = THREE.MathUtils.lerp(heightAboveGround, rawDist, tiltBlend * 0.5);
         }
 
         let newZoom = state.ZOOM;
         const idealZoom = getIdealZoom(dist);
-        
-        // --- LOGIQUE DE ZOOM ADAPTATIVE (v5.8.6) ---
-        // On évite de dépasser le zoom max autorisé par le preset
-        // Limite effective : isPro = source de vérité — MAX_ALLOWED_ZOOM reflète la valeur
-        // native du preset (16 pour balanced, 18 pour perf/ultra, 14 pour eco).
-        // Les users gratuits sont plafonnés à 14 ICI, pas dans MAX_ALLOWED_ZOOM, pour que
-        // le passage en Pro soit immédiatement effectif quel que soit le chemin d'activation.
         const effectiveMaxZoom = state.isPro
             ? (state.MAX_ALLOWED_ZOOM || 18)
             : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
 
         const targetZoom = Math.min(idealZoom, effectiveMaxZoom);
 
-        // Upsell contextuel LOD — informer l'utilisateur gratuit qu'il est à la limite
-        // Condition : l'utilisateur veut zoomer plus loin (idealZoom dépasse la limite)
-        // mais est bloqué car !isPro. Debounce 30s pour ne pas spammer.
         if (!state.isPro && idealZoom > effectiveMaxZoom && state.ZOOM >= effectiveMaxZoom) {
             const now = Date.now();
             if (now - _lastLodUpsellTime > 30_000) {
@@ -310,11 +196,9 @@ export async function initScene(): Promise<void> {
             }
         }
 
-        // Si l'écart est important (téléportation ou mouvement rapide), on saute directement
         if (Math.abs(targetZoom - state.ZOOM) > 1) {
             newZoom = targetZoom;
         } else {
-            // Sinon on garde l'hystérésis pour la fluidité (évite le clignotement aux seuils)
             const boost = state.MAP_SOURCE === 'satellite' ? 2.0
                         : state.MAP_SOURCE === 'swisstopo' ? 1.0
                         : 1.2;
@@ -332,19 +216,17 @@ export async function initScene(): Promise<void> {
             else if (state.ZOOM === 7)  { if (dist < 1200000) newZoom = 8; else if (dist > 2500000) newZoom = 6; }
             else if (state.ZOOM <= 6)  { if (dist < 2000000) newZoom = 7; }
             
-            // Respecter la limite même en incrémental
             if (newZoom > effectiveMaxZoom) newZoom = effectiveMaxZoom;
         }
 
         const currentZoom = state.ZOOM;
-        // Cooldown LOD : empêcher les changements trop fréquents (oscillation → bandes blanches)
         const now = performance.now();
         if (newZoom !== state.ZOOM) {
             if (now - lastLodChangeTime > 800) {
                 state.ZOOM = newZoom;
                 lastLodChangeTime = now;
             } else {
-                newZoom = state.ZOOM; // annuler le changement
+                newZoom = state.ZOOM;
             }
         }
 
@@ -373,7 +255,6 @@ export async function initScene(): Promise<void> {
                         state.camera!.position.x += offsetX; state.camera!.position.z += offsetZ;
                         state.controls!.target.x += offsetX; state.controls!.target.z += offsetZ;
                         
-                        // Reposition all relative objects
                         if (state.sunLight) {
                             state.sunLight.position.x += offsetX;
                             state.sunLight.position.z += offsetZ;
@@ -394,11 +275,9 @@ export async function initScene(): Promise<void> {
                         
                         state.gpxLayers.forEach(layer => {
                             if (layer.mesh) layer.mesh.geometry.translate(offsetX, 0, offsetZ);
-                            // Sync layer.points so TrackSheet flyTo stays accurate after origin shift
                             layer.points.forEach(p => { p.x += offsetX; p.z += offsetZ; });
                         });
                         
-                        // ✅ Repositionner aussi le mesh d'enregistrement (fix champignon après recovery)
                         if (state.recordedMesh) {
                             state.recordedMesh.geometry.translate(offsetX, 0, offsetZ);
                         }
@@ -418,14 +297,13 @@ export async function initScene(): Promise<void> {
         updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, dist, state.controls!.target.x, state.controls!.target.z);
     }, 200);
     
-    controls.addEventListener('change', throttledUpdate);
+    state.controls!.addEventListener('change', throttledUpdate);
 
-    // Mise à jour solaire throttlée quand la caméra bouge — corrige le soleil fixé sur la Suisse (v5.19.1)
     const throttledSunUpdate = throttle(() => {
         const mins = state.simDate.getHours() * 60 + state.simDate.getMinutes();
         updateSunPosition(mins);
     }, 1000);
-    controls.addEventListener('change', throttledSunUpdate);
+    state.controls!.addEventListener('change', throttledSunUpdate);
 
     state.ambientLight = new THREE.AmbientLight(0xffffff, 0.2); state.scene.add(state.ambientLight);
     state.sunLight = new THREE.DirectionalLight(0xffffff, 6.0);
@@ -437,11 +315,9 @@ export async function initScene(): Promise<void> {
     state.sunLight.shadow.bias = -0.0005; state.sunLight.shadow.normalBias = 0.05;
     state.scene.add(state.sunLight); state.scene.add(state.sunLight.target);
 
-    // Initialisation des sous-systèmes indépendants (n'ont pas besoin des tuiles terrain)
     initVegetationResources();
     initWeatherSystem(state.scene);
     
-    // --- BRANCHEMENT EVENT BUS (v5.5.0) ---
     eventBus.on('flyTo', ({ worldX, worldZ, targetElevation, targetDistance }) => {
         flyTo(worldX, worldZ, targetElevation, targetDistance);
     });
@@ -459,30 +335,21 @@ export async function initScene(): Promise<void> {
 
     let needsInitialRender = 60; 
     let tilesFading = true;
-    // Fix controls.update() stuck sur WebView Android : timestamp de fin du dernier geste
-    // controls.update() retourne true indéfiniment sur WebView → guard 800ms après relâchement
     let lastInteractionTime = 0;
 
-    // Compteur FPS rolling (fenêtre 1s) — exposé dans state.currentFPS pour le PerfRecorder
     let fpsFrameCount = 0;
     let fpsLastTime = performance.now();
 
-    // Phase 2.1 — Throttle eau à 20 FPS (accumulateur waterTimeAccum)
-    const WATER_THROTTLE_MS = 50;   // 20 FPS
+    const WATER_THROTTLE_MS = 50;
     let waterTimeAccum = 0;
 
-    // Phase 2.2 — Throttle météo à 20 FPS (accumulateur indépendant)
-    const WEATHER_THROTTLE_MS = 50; // 20 FPS
+    const WEATHER_THROTTLE_MS = 50;
     let weatherTimeAccum = 0;
-    let weatherAccumDelta = 0;      // delta cumulé entre deux updates météo
+    let weatherAccumDelta = 0;
 
-    // Phase 2.3 — Adaptive DPR
     let dprRestoreTimer: ReturnType<typeof setTimeout> | null = null;
-    const isMobileDevice = /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
 
-    // Prefetch LOD±1 — timestamp du dernier prefetch idle pour throttler à 1x/5s
     let lastPrefetchTime = 0;
-    // Boussole — throttle propre 30fps (indépendant du render principal)
     let lastCompassTime = 0;
 
     const renderLoopFn = () => {
@@ -491,7 +358,6 @@ export async function initScene(): Promise<void> {
         const now = performance.now();
         const delta = clock.getDelta();
 
-        // Accumulateurs incrémentés sur le temps RÉEL, AVANT tout guard de throttle.
         waterTimeAccum += delta * 1000;
         const waterFrameDue = waterTimeAccum >= WATER_THROTTLE_MS;
         if (waterFrameDue) waterTimeAccum = Math.max(0, waterTimeAccum - WATER_THROTTLE_MS);
@@ -501,21 +367,15 @@ export async function initScene(): Promise<void> {
         const weatherFrameDue = weatherTimeAccum >= WEATHER_THROTTLE_MS;
         if (weatherFrameDue) weatherTimeAccum = Math.max(0, weatherTimeAccum - WEATHER_THROTTLE_MS);
 
-        // Boussole — canvas séparé 120×120, throttle propre 30fps (pas besoin de 60fps)
         if (now - lastCompassTime >= 33) {
             lastCompassTime = now;
             renderCompass();
         }
 
         if (state.ENERGY_SAVER && (now - lastRenderTime < 33)) return;
-
-        // Mobile 60fps cap (sauf Ultra)
-        if (isMobileDevice && state.PERFORMANCE_PRESET !== 'ultra' && (now - lastRenderTime < 16.0)) return;
-
-        // GPS follow : 30fps max suffit
+        if (isMobile && state.PERFORMANCE_PRESET !== 'ultra' && (now - lastRenderTime < 16.0)) return;
         if (state.isFollowingUser && !state.ENERGY_SAVER && (now - lastRenderTime < 33)) return;
 
-        // Idle throttle global — 20fps max en absence d'interaction (économise batterie en statique)
         const isWeatherActive = state.SHOW_WEATHER && state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0;
         const isIdleMode = !state.isUserInteracting && !state.isFlyingTo && !state.isFollowingUser
             && !state.isTiltTransitioning
@@ -526,7 +386,6 @@ export async function initScene(): Promise<void> {
 
         updateCompassAnimation();
 
-        // Optimisation GPU : Désactiver les ombres pendant l'interaction
         if (state.sunLight) {
             state.sunLight.castShadow = state.SHADOWS && !state.isUserInteracting;
         }
@@ -536,15 +395,12 @@ export async function initScene(): Promise<void> {
         else if (state.ZOOM === 11) tiltCap = 0.45;
         else if (state.ZOOM === 12) tiltCap = 0.70;
         else if (state.ZOOM === 13) tiltCap = 0.90;
-        else if (state.ZOOM === 14) tiltCap = 0.95; // était 1.10 (63°) — spike inutile, frustum trop étendu
+        else if (state.ZOOM === 14) tiltCap = 0.95; 
         else if (state.ZOOM === 15) tiltCap = 0.85;
         else if (state.ZOOM === 16) tiltCap = 0.65;
         else if (state.ZOOM === 17) tiltCap = 0.50;
         else if (state.ZOOM >= 18)  tiltCap = 0.40;
 
-        // Tilt cap dynamique par elevation (v5.19) — reduire le tilt autorise
-        // quand le terrain est eleve a LOD haut pour eviter que le frustum
-        // traverse les montagnes voisines. Reduction jusqu'a 50% sur l'Everest.
         if (state.ZOOM >= 14 && !state.IS_2D_MODE) {
             const targetH = getAltitudeAt(state.controls.target.x, state.controls.target.z);
             const elevFactor = THREE.MathUtils.clamp(targetH / 8000, 0, 0.50);
@@ -555,12 +411,9 @@ export async function initScene(): Promise<void> {
         const currentTilt = state.controls.getPolarAngle();
         const distToTarget = state.camera.position.distanceTo(state.controls.target);
         
-        // Tilt automatique parabolique — extrait en variable pour alimenter needsUpdate
-        // sans passer par controls.update() (évite le stuck sur WebView Android)
         let tiltAnimating = false;
         if (state.IS_2D_MODE || state.ZOOM <= 10) {
             if (state.isTiltTransitioning && currentTilt > 0.005) {
-                // Animation douce vers top-down (2D)
                 tiltAnimating = true;
                 const newTilt = THREE.MathUtils.lerp(currentTilt, 0, 0.06);
                 state.controls.minPolarAngle = 0;
@@ -570,13 +423,10 @@ export async function initScene(): Promise<void> {
                 if (state.isTiltTransitioning) state.isTiltTransitioning = false;
             }
         } else if (state.isTiltTransitioning) {
-            // Animation douce vers tilt 3D — angle prononcé (85% du cap) pour montrer le relief.
-            // On resserre min/max autour de newTilt pour FORCER OrbitControls à pousser la caméra.
             const desiredTilt = Math.max(tiltCap * 0.85, 0.5);
             if (Math.abs(currentTilt - desiredTilt) > 0.01) {
                 tiltAnimating = true;
                 const newTilt = THREE.MathUtils.lerp(currentTilt, desiredTilt, 0.07);
-                // Bande étroite autour de newTilt — force la caméra à suivre
                 state.controls.minPolarAngle = Math.max(0.05, newTilt - 0.01);
                 state.controls.maxPolarAngle = Math.min(tiltCap, newTilt + 0.01);
             } else {
@@ -597,19 +447,8 @@ export async function initScene(): Promise<void> {
             }
         }
 
-        // Phase 2.1/2.2 — needsUpdate utilise les flags throttlés pour eau et météo :
-        // - eau   : force un rendu SEULEMENT quand il est temps de mettre à jour uTime (20 FPS max)
-        // - météo : idem — les particules n'ont pas besoin de 60 FPS
-        // Fix controls.update() stuck (WebView Android) :
-        // - controls.update() est toujours appelé (damping physique), mais son résultat
-        //   n'est pris en compte que pendant 800ms après la fin du geste (couvre le damping
-        //   factor=0.1 à 60fps = ~330ms) + pendant flyTo.
-        // - tiltAnimating est une source propre, indépendante de controls.update().
         const controlsDirty = state.controls.update();
         const needsUpdate =
-            // controls.update() est aussi appelé dans la RAF de flyTo/animateNorth, ce qui met à jour
-            // lastPosition avant que renderLoopFn passe → controlsDirty=false. isFlyingTo est donc
-            // standalone pour garantir un rendu à chaque frame pendant le vol (v5.11.1).
             (controlsDirty && (state.isUserInteracting || (now - lastInteractionTime < 800)))
             || state.isFlyingTo
             || state.isTiltTransitioning
@@ -618,7 +457,7 @@ export async function initScene(): Promise<void> {
             || state.isSunAnimating
             || state.isInteractingWithUI
             || state.isProcessingTiles
-            || (isWeatherActive && weatherFrameDue)  // render seulement quand la frame météo est due (20fps)
+            || (isWeatherActive && weatherFrameDue)
             || isCompassAnimating()
             || tilesFading
             || needsInitialRender > 0
@@ -626,11 +465,9 @@ export async function initScene(): Promise<void> {
 
         if (needsUpdate) {
             state.stats?.begin();
-            // Phase 2.1 — uTime incrémenté seulement quand waterFrameDue (20 FPS max)
             if (waterFrameDue) terrainUniforms.uTime.value += WATER_THROTTLE_MS / 1000;
             tilesFading = animateTiles(delta);
             if (needsInitialRender > 0) needsInitialRender--;
-            // Météo à 20fps — uTime + uniforms mis à jour ensemble quand la frame est due
             if (weatherFrameDue && isWeatherActive) {
                 updateWeatherSystem(weatherAccumDelta, state.camera.position);
                 weatherAccumDelta = 0;
@@ -644,12 +481,9 @@ export async function initScene(): Promise<void> {
                 state.simDate = newDate;
             }
 
-            // Cache getAltitudeAt par frame — évite les appels dupliqués (target + camera)
             const groundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
 
-            // Target elevation tracking (v5.19) — target.y suit la surface du terrain
             if (!state.isFlyingTo && !state.isFollowingUser) {
-                // Réutilise groundH si target ≈ camera, sinon calcul dédié
                 const targetGroundH = (Math.abs(state.controls.target.x - state.camera.position.x) < 100
                     && Math.abs(state.controls.target.z - state.camera.position.z) < 100)
                     ? groundH
@@ -679,15 +513,11 @@ export async function initScene(): Promise<void> {
             state.renderer.render(state.scene, state.camera);
             state.stats?.end();
 
-            // Prefetch LOD±1 en idle — précharge les tuiles du niveau suivant/précédent
-            // en arrière-plan (priorité basse : isVisible()=false → traitées en dernier par processLoadQueue).
-            // Déclenché seulement en mode idle + tuiles courantes toutes chargées + toutes les 5s.
             if (isIdleMode && !state.isProcessingTiles && (now - lastPrefetchTime > 5000)) {
                 lastPrefetchTime = now;
                 prefetchAdjacentLODs();
             }
 
-            // Mise à jour FPS rolling (fenêtre 1s)
             fpsFrameCount++;
             const fpsTick = performance.now();
             if (fpsTick - fpsLastTime >= 1000) {
@@ -698,16 +528,10 @@ export async function initScene(): Promise<void> {
         }
 
     };
-    // Fix démarrage mobile (v5.11) : render loop démarre AVANT loadTerrain.
-    // Le canvas affiche le ciel/brouillard immédiatement — les tuiles apparaissent au fur et à mesure.
     state.renderer.setAnimationLoop(renderLoopFn);
 
-    // Signaler que le moteur 3D est opérationnel → ui.ts cache l'écran de chargement
     window.dispatchEvent(new Event('suntrail:sceneReady'));
 
-    // Deep Sleep réel (v5.11) : arrêt total du GPU quand l'app passe en arrière-plan
-    // (téléphone verrouillé, app minimisée). Relance propre au retour au premier plan.
-    // Le early-return inline était insuffisant : setAnimationLoop continuait de tourner.
     visibilityChangeHandler = () => {
         if (!state.renderer) return;
         if (document.hidden) {
@@ -718,19 +542,8 @@ export async function initScene(): Promise<void> {
     };
     document.addEventListener('visibilitychange', visibilityChangeHandler);
 
-    // Matrices caméra à jour AVANT le 1er frustum culling — sinon isVisible() utilise
-    // l'identité (render loop pas encore exécuté) → tuiles latérales manquantes sur écrans larges.
     state.controls.update();
     state.camera.updateMatrixWorld(true);
 
-    // Terrain chargé EN DERNIER : le GPU tourne déjà, les tuiles s'affichent progressivement
     await loadTerrain();
-}
-
-function onWindowResize(): void {
-    if (state.camera && state.renderer) {
-        state.camera.aspect = window.innerWidth / window.innerHeight;
-        state.camera.updateProjectionMatrix();
-        state.renderer.setSize(window.innerWidth, window.innerHeight, false);
-    }
 }

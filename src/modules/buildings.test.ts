@@ -1,9 +1,18 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { loadBuildingsForTile } from './buildings';
 import { state } from './state';
 import { Tile } from './terrain';
 
 describe('buildings.ts', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        // Mock global fetch
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: false,
+            status: 404
+        });
+    });
+
     it('should respect the SHOW_BUILDINGS state', async () => {
         state.SHOW_BUILDINGS = false;
         const tile = new Tile(0, 0, 16, '16/0/0');

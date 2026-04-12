@@ -3,9 +3,9 @@ import { state } from './state';
 import { getAltitudeAt } from './analysis';
 import { fetchOverpassData } from './utils';
 import { Tile } from './terrain/Tile';
-import { boundedCacheSet } from './boundedCache';
+import { BoundedCache } from './boundedCache';
 
-const poiMemoryCache = new Map<string, any[]>();
+const poiMemoryCache = new BoundedCache<string, any[]>({ maxSize: 200 });
 const poiFetchPromises = new Map<string, Promise<any[] | null>>();
 const zoneFailureCooldown = new Map<string, number>();
 const CACHE_NAME = 'suntrail-poi-v2';
@@ -73,7 +73,7 @@ export async function loadPOIsForTile(tile: Tile) {
         }
         pois = await promise;
         if (pois) {
-            boundedCacheSet(poiMemoryCache, zoneKey, pois);
+            poiMemoryCache.set(zoneKey, pois);
         } else {
             zoneFailureCooldown.set(zoneKey, Date.now() + 60000);
         }

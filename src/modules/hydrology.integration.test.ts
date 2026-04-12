@@ -24,6 +24,12 @@ vi.mock('./utils', () => ({
 }));
 
 vi.mock('./boundedCache', () => ({
+    BoundedCache: class {
+        get = vi.fn();
+        set = vi.fn();
+        has = vi.fn();
+        clear = vi.fn();
+    },
     boundedCacheSet: vi.fn()
 }));
 

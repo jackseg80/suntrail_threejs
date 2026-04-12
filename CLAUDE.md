@@ -49,11 +49,14 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 ## Structure du Projet
 - `src/modules/iapService.ts` : Liaison RevenueCat ↔ Google Play.
+- `src/modules/config.ts` : Résolution centralisée des clés API (Gist/Env).
+- `src/modules/boundedCache.ts` : Moteur de cache LRU pour les données RAM (OSM).
 - `src/modules/ui/components/InclinometerWidget.ts` : Inclinomètre interactif (viseur mobile + GPS).
 - `src/modules/ui/components/TrackSheet.ts` : Gestion des tracés et REC libre.
 - `src/modules/ui/components/ConnectivitySheet.ts` : Mode hors-ligne (limite 1 zone free).
 - `src/modules/ui/components/TimelineComponent.ts` : Solaire (calendrier Pro).
-- `src/modules/scene.ts` : Moteur de rendu et gate LOD 14.
+- `src/modules/scene.ts` : Moteur de rendu et boucle principale.
+- `src/modules/cameraManager.ts` : Gestion de la caméra, animations flyTo et resize.
 
 ## Tests & Qualité
 - **Unitaires (Vitest)** : `npm test` (500+ tests). Sécurise `scene.ts`, `touchControls.ts`, `ui.ts`. Exécutés en CI.
