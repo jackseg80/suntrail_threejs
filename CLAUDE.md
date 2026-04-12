@@ -64,7 +64,7 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 - `src/modules/scene.ts` : Moteur de rendu et gate LOD 14.
 
 ## Tests & Qualité
-- **Unitaires (Vitest)** : `npm test` (500+ tests). Sécurise `scene.ts`, `touchControls.ts`, `ui.ts`.
-- **E2E (Playwright)** : `npx playwright test --ui` pour valider Onboarding et GPS.
+- **Unitaires (Vitest)** : `npm test` (500+ tests). Sécurise `scene.ts`, `touchControls.ts`, `ui.ts`. Exécutés en CI.
+- **E2E (Playwright)** : `npx playwright test --ui` pour validation manuelle locale uniquement (Onboarding, GPS, Expert).
 - **Mocks** : `src/test/setup.ts` pour WebGL. `ui.test.ts` utilise des timers fictifs.
 - **Audit v5.28.2** : Couverture moteur 3D et interactions tactiles désormais validée.

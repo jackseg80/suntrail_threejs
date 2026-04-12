@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.17] - 2026-04-12
+### Optimized
+- **Pipeline CI/CD** : Retrait de Playwright des workflows GitHub Actions pour accélérer radicalement la CI et économiser les ressources. Les tests unitaires (Vitest) restent actifs en CI, tandis que les tests E2E (Playwright) sont conservés pour une validation manuelle locale.
+
 ## [5.28.16] - 2026-04-12
 ### Fixed
 - **Stabilité CI (Playwright)** : Correction des workflows GitHub pour installer tous les binaires de navigateurs requis (Firefox, WebKit).
