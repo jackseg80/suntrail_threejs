@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.15] - 2026-04-12
+### Added
+- **Validation Totale UI (E2E)** : Ajout des tests pour les deux derniers piliers : la Recherche (avec interception API) et les Réglages (validation des presets et options de rendu).
+- **Couverture exhaustive** : Tous les panneaux majeurs (`search`, `track`, `settings`, `weather`, `connectivity`, `sos`) sont désormais couverts par Playwright.
+
 ## [5.28.14] - 2026-04-12
 ### Added
 - **Tests ExpertSheets** : Ajout de tests E2E pour valider l'ouverture des panneaux Météo, Connectivité, SOS et Simulation Solaire.
