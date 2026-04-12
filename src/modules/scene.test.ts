@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
 import { flyTo, disposeScene } from './scene';
 import { state } from './state';
 
 // Mocks for Three.js examples (not available in standard THREE namespace in tests)
-const { MockOrbitControls } = vi.hoisted(() => {
-    class MockOrbitControls {
+const { MockMapControls } = vi.hoisted(() => {
+    class MockMapControls {
         target = new THREE.Vector3();
         update = vi.fn().mockReturnValue(false);
         addEventListener = vi.fn();
@@ -19,11 +19,11 @@ const { MockOrbitControls } = vi.hoisted(() => {
         minDistance = 0;
         maxDistance = Infinity;
     }
-    return { MockOrbitControls };
+    return { MockMapControls };
 });
 
-vi.mock('three/examples/jsm/controls/OrbitControls.js', () => ({
-    OrbitControls: MockOrbitControls
+vi.mock('three/examples/jsm/controls/MapControls.js', () => ({
+    MapControls: MockMapControls
 }));
 
 vi.mock('three/examples/jsm/objects/Sky.js', () => ({
@@ -94,7 +94,7 @@ describe('scene.ts', () => {
             domElement: document.createElement('canvas'),
         } as any;
 
-        state.controls = new OrbitControls(state.camera, state.renderer?.domElement);
+        state.controls = new MapControls(state.camera, state.renderer?.domElement);
         state.isFlyingTo = false;
         state.isUserInteracting = false;
     });

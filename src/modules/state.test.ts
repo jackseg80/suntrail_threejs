@@ -55,6 +55,13 @@ describe('state.ts', () => {
             expect(PRESETS.performance.SHADOW_RES).toBe(1024);
             expect(PRESETS.performance.MAX_BUILDS_PER_CYCLE).toBe(4); // v5.21: 2 → 4
             expect(PRESETS.performance.MAX_ALLOWED_ZOOM).toBe(18);
+            expect(PRESETS.performance.POI_ZOOM_THRESHOLD).toBe(15);
+        });
+
+        it('should have POI_ZOOM_THRESHOLD at 15 for all non-eco presets', () => {
+            expect(PRESETS.balanced.POI_ZOOM_THRESHOLD).toBe(15);
+            expect(PRESETS.performance.POI_ZOOM_THRESHOLD).toBe(15);
+            expect(PRESETS.ultra.POI_ZOOM_THRESHOLD).toBe(15);
         });
     });
 
