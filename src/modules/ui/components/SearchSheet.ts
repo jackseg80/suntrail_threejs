@@ -1,52 +1,19 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { state } from '../../state';
-import { fetchGeocoding } from '../../utils';
 import { autoSelectMapSource, resetTerrain, updateVisibleTiles } from '../../terrain';
 import { lngLatToTile, lngLatToWorld } from '../../geo';
 import { flyTo } from '../../scene';
 import { fetchWeather } from '../../weather';
 import { i18n } from '../../../i18n/I18nService';
 import { eventBus } from '../../eventBus';
-
 import { sheetManager } from '../core/SheetManager';
-
-// ── Result classification ─────────────────────────────────────────────
-interface ResultClassification {
-    type: 'country' | 'region' | 'city' | 'village' | 'peak' | 'poi';
-    zoom: number;
-    camDist: number;
-}
-
-const CLASSIFICATIONS: Record<string, ResultClassification> = {
-    country:  { type: 'country', zoom: 6,  camDist: 2_000_000 },
-    region:   { type: 'region',  zoom: 8,  camDist: 700_000 },
-    city:     { type: 'city',    zoom: 11, camDist: 90_000 },
-    village:  { type: 'village', zoom: 13, camDist: 45_000 },
-    peak:     { type: 'peak',    zoom: 14, camDist: 12_000 },
-    poi:      { type: 'poi',     zoom: 13, camDist: 45_000 },
-};
-
-function classifyFeature(feature: any, isPeak = false): ResultClassification {
-    if (isPeak) return CLASSIFICATIONS.peak;
-
-    // MapTiler GeoJSON: place_type array
-    const pt = feature.place_type?.[0];
-    if (pt === 'country') return CLASSIFICATIONS.country;
-    if (pt === 'region' || pt === 'state') return CLASSIFICATIONS.region;
-    if (pt === 'place' || pt === 'city') return CLASSIFICATIONS.city;
-    if (pt === 'locality' || pt === 'neighborhood') return CLASSIFICATIONS.village;
-    if (pt === 'poi') return CLASSIFICATIONS.poi;
-
-    // Nominatim: type + class
-    const t = feature.type;
-    if (t === 'country' || t === 'continent') return CLASSIFICATIONS.country;
-    if (t === 'state' || t === 'region' || t === 'county') return CLASSIFICATIONS.region;
-    if (t === 'city' || t === 'town') return CLASSIFICATIONS.city;
-    if (t === 'village' || t === 'hamlet' || t === 'suburb') return CLASSIFICATIONS.village;
-    if (t === 'peak' || t === 'mountain' || t === 'volcano') return CLASSIFICATIONS.peak;
-
-    return CLASSIFICATIONS.poi;
-}
+import { 
+    searchLocations, 
+    searchPeaksByName, 
+    classifyFeature, 
+    CLASSIFICATIONS, 
+    ResultClassification 
+} from '../../geocodingService';
 
 // ── Filter types ──────────────────────────────────────────────────────
 type FilterKey = 'all' | 'cities' | 'mountains' | 'countries';
@@ -62,34 +29,6 @@ function iconForType(type: string): string {
     if (type === 'country' || type === 'region') return ICON_GLOBE;
     if (type === 'city' || type === 'village') return ICON_CITY;
     return ICON_PIN;
-}
-
-// ── Overpass peak search by name ──────────────────────────────────────
-async function searchPeaksByName(query: string): Promise<Array<{ name: string; lat: number; lon: number; ele: number }>> {
-    const q = query.replace(/"/g, '\\"');
-    const overpassQuery = `[out:json][timeout:5];node["natural"="peak"]["name"~"${q}",i];out 10;`;
-    const urls = [
-        `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`,
-        `https://overpass.kumi.systems/api/interpreter?data=${encodeURIComponent(overpassQuery)}`,
-    ];
-    for (const url of urls) {
-        try {
-            const resp = await fetch(url, { signal: AbortSignal.timeout(5000) });
-            if (!resp.ok) continue;
-            const data = await resp.json();
-            return (data.elements || [])
-                .filter((e: any) => e.tags?.name)
-                .map((e: any) => ({
-                    name: e.tags.name,
-                    lat: e.lat,
-                    lon: e.lon,
-                    ele: parseFloat(e.tags.ele) || 0,
-                }))
-                .sort((a: any, b: any) => b.ele - a.ele)
-                .slice(0, 10);
-        } catch { continue; }
-    }
-    return [];
 }
 
 export class SearchSheet extends BaseComponent {
@@ -113,10 +52,8 @@ export class SearchSheet extends BaseComponent {
         this.geoResults = this.element.querySelector('#geo-results') as HTMLElement;
 
         if (this.geoInput && this.geoResults) {
-            // ARIA: search input label and results container
             this.geoInput.setAttribute('aria-label', i18n.t('search.aria.input'));
             this.geoInput.placeholder = i18n.t('search.placeholder');
-            // Re-apply placeholder on locale change
             const onLocale = () => { if (this.geoInput) this.geoInput.placeholder = i18n.t('search.placeholder'); };
             eventBus.on('localeChanged', onLocale);
             this.addSubscription(() => eventBus.off('localeChanged', onLocale));
@@ -125,15 +62,11 @@ export class SearchSheet extends BaseComponent {
             this.geoResults.setAttribute('aria-live', 'polite');
             this.geoResults.setAttribute('aria-label', i18n.t('search.aria.results'));
 
-            // Filter chips
             this.createFilterChips();
-
-            // --- Empty states ---
             this.createEmptyStates();
 
             this.geoInput.addEventListener('input', this.handleInput.bind(this));
 
-            // Auto-focus when sheet is opened
             const focusTimer = setInterval(() => {
                 if (this.element?.classList.contains('is-open')) {
                     this.geoInput?.focus();
@@ -142,8 +75,6 @@ export class SearchSheet extends BaseComponent {
             }, 200);
             this.addSubscription(() => clearInterval(focusTimer));
 
-            // --- Memory Optimization (v5.26.8) ---
-            // Clear search results and input when sheet is closed to free memory
             const onSheetClosed = ({ id }: { id: string | null }) => {
                 if (id === 'search-sheet') {
                     if (this.geoInput) this.geoInput.value = '';
@@ -159,7 +90,6 @@ export class SearchSheet extends BaseComponent {
         }
     }
 
-    // ── Filter chips ──────────────────────────────────────────────────
     private createFilterChips(): void {
         const searchEl = this.element?.querySelector('#search');
         if (!searchEl || !this.geoInput) return;
@@ -185,7 +115,6 @@ export class SearchSheet extends BaseComponent {
                 });
                 chip.classList.add('search-chip-active');
                 chip.setAttribute('aria-checked', 'true');
-                // Re-trigger search with new filter
                 if (this.geoInput && this.geoInput.value.trim().length >= 2) {
                     this.handleInput();
                 }
@@ -193,7 +122,6 @@ export class SearchSheet extends BaseComponent {
             chipContainer.appendChild(chip);
         });
 
-        // Insert after input, before results
         this.geoInput.parentElement?.insertAdjacentElement('afterend', chipContainer);
     }
 
@@ -210,10 +138,9 @@ export class SearchSheet extends BaseComponent {
             return;
         }
 
-        // Hide empty states during search
         this.showSearchEmptyState('none');
 
-        // 1. AFFICHER LES PICS LOCAUX IMMÉDIATEMENT (si filtre le permet)
+        // 1. AFFICHER LES PICS LOCAUX IMMÉDIATEMENT
         this.geoResults.textContent = '';
         let localMatches: typeof state.localPeaks = [];
         if (this.activeFilter === 'all' || this.activeFilter === 'mountains') {
@@ -229,9 +156,8 @@ export class SearchSheet extends BaseComponent {
             }
         }
 
-        // 2. RECHERCHE DISTANTE (MAPTILER / OSM + Overpass peaks)
+        // 2. RECHERCHE DISTANTE (Service centralisé v5.28.20)
         this.timer = setTimeout(async () => {
-            // Loading spinner (append after local results if any)
             const loadingEl = document.createElement('div');
             loadingEl.className = 'loading-inline';
             loadingEl.setAttribute('role', 'status');
@@ -241,19 +167,16 @@ export class SearchSheet extends BaseComponent {
             this.geoResults!.style.display = 'block';
 
             try {
-                // Geocoding toujours sauf filtre "mountains" pur
-                // Overpass peaks uniquement sur filtre "mountains" (trop lent pour "all")
                 const shouldSearchPeaks = this.activeFilter === 'mountains';
                 const shouldSearchGeo = this.activeFilter !== 'mountains';
 
-                const [geoData, overpassPeaks] = await Promise.all([
-                    shouldSearchGeo ? fetchGeocoding({ query: q }) : null,
-                    shouldSearchPeaks ? searchPeaksByName(q) : [],
+                const [locations, overpassPeaks] = await Promise.all([
+                    shouldSearchGeo ? searchLocations(q) : Promise.resolve([]),
+                    shouldSearchPeaks ? searchPeaksByName(q) : Promise.resolve([]),
                 ]);
 
                 loadingEl.remove();
 
-                // Add Overpass peaks (deduplicate against local matches)
                 const localNames = new Set(localMatches.map(p => p.name.toLowerCase()));
                 if (overpassPeaks && overpassPeaks.length > 0) {
                     overpassPeaks
@@ -265,35 +188,11 @@ export class SearchSheet extends BaseComponent {
                         });
                 }
 
-                // Add geocoding results (filtered by active filter)
-                if (geoData) {
-                    const features = Array.isArray(geoData) ? geoData : (geoData.features || []);
-
-                    features.forEach((f: any) => {
-                        let lat: number, lon: number, label: string;
-
-                        // Format OSM (Nominatim)
-                        if (f.lat && f.lon) {
-                            lat = parseFloat(f.lat);
-                            lon = parseFloat(f.lon);
-                            label = f.display_name || f.name;
-                        }
-                        // Format MapTiler (GeoJSON Feature)
-                        else if (f.geometry?.coordinates) {
-                            lon = parseFloat(f.geometry.coordinates[0]);
-                            lat = parseFloat(f.geometry.coordinates[1]);
-                            label = f.place_name_fr || f.place_name || i18n.t('search.unknownPlace');
-                        } else return;
-
-                        if (isNaN(lat!) || isNaN(lon!)) return;
-
-                        const classification = classifyFeature(f);
-
-                        // Apply active filter
-                        if (!this.matchesFilter(classification.type)) return;
-
+                if (locations) {
+                    locations.forEach(res => {
+                        if (!this.matchesFilter(res.classification.type)) return;
                         this.geoResults!.appendChild(
-                            this.createGeoItem(lat!, lon!, label, classification)
+                            this.createGeoItem(res.lat, res.lon, res.label, res.classification)
                         );
                     });
                 }
@@ -330,7 +229,6 @@ export class SearchSheet extends BaseComponent {
         const searchEl = this.element.querySelector('#search');
         if (!searchEl) return;
 
-        // Initial state (visible by default)
         const initialDiv = document.createElement('div');
         initialDiv.className = 'empty-state';
         initialDiv.id = 'search-initial-state';
@@ -342,7 +240,6 @@ export class SearchSheet extends BaseComponent {
             <p class="empty-state-subtitle" data-i18n="search.empty.subtitle">${i18n.t('search.empty.subtitle')}</p>`;
         searchEl.appendChild(initialDiv);
 
-        // No results state (hidden by default)
         const noResultsDiv = document.createElement('div');
         noResultsDiv.className = 'empty-state';
         noResultsDiv.id = 'search-no-results';
@@ -394,11 +291,9 @@ export class SearchSheet extends BaseComponent {
         const text = document.createElement('div');
         text.className = 'geo-label srch-geo-label';
         if (isPeak) text.classList.add('srch-geo-label-peak');
-        // Shorten label: only first part for long geocoding results
         text.textContent = label.split(',')[0];
         contentDiv.appendChild(text);
 
-        // Subtitle with type
         const sub = document.createElement('div');
         sub.classList.add('srch-peak-sub');
         sub.textContent = i18n.t(`search.type.${classification.type}`);
@@ -425,7 +320,6 @@ export class SearchSheet extends BaseComponent {
                 const lat = parseFloat(el.dataset.lat!);
                 const lon = parseFloat(el.dataset.lon!);
 
-                // CRITICAL: Strict isNaN validation
                 if (isNaN(lat) || isNaN(lon)) {
                     console.error("Invalid coordinates in search result");
                     return;
@@ -461,7 +355,6 @@ export class SearchSheet extends BaseComponent {
 
         if (state.controls && state.camera) {
             state.controls.target.set(0, 0, 0);
-            // Camera position proportional to camDist
             const camY = camDist * 0.7;
             const camZ = camDist * 0.9;
             state.camera.position.set(0, camY, camZ);
@@ -479,7 +372,6 @@ export class SearchSheet extends BaseComponent {
             flyTo(wp.x, wp.z, flyAlt, camDist, flyDuration);
         }, 100);
 
-        // Coords panel for peaks
         if (isPeak && name) {
             const cp = document.getElementById('coords-panel');
             if (cp) {

@@ -17,6 +17,7 @@ import { initCompass, disposeCompass, renderCompass, updateCompassAnimation, isC
 import { centerOnUser } from './location';
 import { initTouchControls } from './touchControls';
 import { initCamera, initControls, flyTo, onWindowResize } from './cameraManager';
+import { isFeatureEnabled } from './featureFlags';
 
 export { flyTo };
 
@@ -182,13 +183,13 @@ export async function initScene(): Promise<void> {
 
         let newZoom = state.ZOOM;
         const idealZoom = getIdealZoom(dist);
-        const effectiveMaxZoom = state.isPro
+        const effectiveMaxZoom = isFeatureEnabled('lod_high')
             ? (state.MAX_ALLOWED_ZOOM || 18)
             : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
 
         const targetZoom = Math.min(idealZoom, effectiveMaxZoom);
 
-        if (!state.isPro && idealZoom > effectiveMaxZoom && state.ZOOM >= effectiveMaxZoom) {
+        if (!isFeatureEnabled('lod_high') && idealZoom > effectiveMaxZoom && state.ZOOM >= effectiveMaxZoom) {
             const now = Date.now();
             if (now - _lastLodUpsellTime > 30_000) {
                 _lastLodUpsellTime = now;

@@ -1,12 +1,6 @@
 import { haversineDistance } from './utils';
 import { cleanGPSTrack } from './gpsDeduplication';
-
-export interface LocationPoint {
-    lat: number;
-    lon: number;
-    alt: number;
-    timestamp: number;
-}
+import { LocationPoint } from './geo';
 
 export interface TrackStats {
     distance: number; // en km

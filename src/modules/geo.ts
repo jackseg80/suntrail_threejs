@@ -7,6 +7,13 @@ export interface BBox {
     maxLon: number;
 }
 
+export interface LocationPoint {
+    lat: number;
+    lon: number;
+    alt: number;
+    timestamp: number;
+}
+
 /** 
  * Limites géographiques des régions supportées (v5.28.2) 
  * Permet une extension facile à de nouveaux pays.

@@ -118,12 +118,7 @@ export interface Peak {
     ele: number;
 }
 
-export interface LocationPoint {
-    lat: number;
-    lon: number;
-    alt: number;
-    timestamp: number;
-}
+import { LocationPoint } from './geo';
 
 export type AppLocale = 'fr' | 'de' | 'it' | 'en';
 export type ThemePreference = 'light' | 'dark' | 'auto';

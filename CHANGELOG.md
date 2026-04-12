@@ -4,10 +4,14 @@ Toutes les modifications notables de ce projet seront documentées ici.
 
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
-
 ## [5.28.20] - 2026-04-12
 ### Refactored
+- **Architecture & Services (Phase 4)** :
+  - Création du `geocodingService.ts` : extraction de la logique de recherche (MapTiler, Nominatim, Overpass) de `SearchSheet.ts` vers un service réutilisable.
+  - Implémentation du système de **Feature Flags** (`featureFlags.ts`) pour centraliser le gatekeeping des fonctionnalités Pro (LOD, Solaire, Météo, Inclinomètre).
+  - Unification des types géographiques : centralisation de l'interface `LocationPoint` dans `geo.ts` et suppression des définitions redondantes dans `state.ts` et `geoStats.ts`.
 - **Unification des Caches & Modularisation 3D (Phase 3)** :
+...
   - Création d'une classe universelle `BoundedCache<K, V>` (LRU) pour centraliser la gestion de la mémoire RAM et prévenir les fuites de données OSM.
   - Migration de `buildings.ts`, `hydrology.ts` et `poi.ts` vers `BoundedCache`, permettant un monitoring cohérent des ressources.
   - Création du `CameraManager` : externalisation de la logique de caméra, des animations `flyTo` et du resize WebGL depuis `scene.ts`, réduisant la complexité du moteur principal.
@@ -21,6 +25,7 @@ et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
   - Suppression du "Distance Ratio Hack" dans le profil au profit d'un calcul de distance horizontale (2D) nativement aligné avec la formule Haversine (distance projetée).
   - Unification du calcul des limites de tuiles via `getTileBounds` et centralisation de la détection de pays (`isPositionInRegion`) pour faciliter l'ajout de nouvelles régions.
 ### Fixed
+- **Optimisation CI/CD** : Unification des workflows `quality.yml` et `deploy.yml` dans un pipeline unique `ci-cd.yml`. Supprime la redondance d'exécution des tests unitaires et clarifie l'interface GitHub Actions.
 - **Stabilité des Tests** : Correction d'une fuite d'état dans `PackManager` où les Maps internes n'étaient pas réinitialisées lors de l'appel à `initialize()`, causant des interférences entre les tests unitaires.
 - **Mocking OPFS** : Mise à jour des tests d'intégration pour refléter correctement le nouveau comportement de synchronisation disque (`syncDiskStates`).
 
