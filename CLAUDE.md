@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.28.23)
+# SunTrail — Guide IA (v5.28.24)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-12 suite au fix final du versioning Android pour Google Play.
+> Mis à jour le 2026-04-12 suite à la correction finale du build Android (format Gradle).
 
 ## Projet
 

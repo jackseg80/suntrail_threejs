@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.24] - 2026-04-12
+### Fixed
+- **Android Build** : Correction du format de `versionName` dans le fichier Gradle (retrait des antislashs invalides).
+- **Versioning** : Passage au `versionCode` **609** pour la release Google Play.
+
 ## [5.28.23] - 2026-04-12
 ### Fixed
 - **Android Deployment** : Incrémentation du `versionCode` à **608** pour permettre la mise à jour sur la console Google Play.
