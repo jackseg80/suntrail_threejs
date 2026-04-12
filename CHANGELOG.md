@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.7] - 2026-04-12
+### Added
+- **Validation Avancée UI (E2E)** : Ajout de tests Playwright pour la `TrackSheet` (Importation GPX, parsing et validation des statistiques D+/Distance).
+- **Données de test** : Intégration d'un fichier GPX de référence pour les tests E2E.
+
 ## [5.28.6] - 2026-04-12
 ### Added
 - **Infrastructure de Tests E2E (Playwright)** : Mise en place complète de Playwright pour valider les parcours utilisateurs critiques (Acceptance Wall, Onboarding, Consentement GPS).
