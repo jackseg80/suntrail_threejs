@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.18] - 2026-04-12
+### Fixed
+- **Robustesse REC (Anti-Champignon)** : Unification du filtrage GPS temps-réel via `cleanGPSTrack`. Rejet strict des coordonnées (0,0) et des points trop proches (< 2.5m) pour éviter les artefacts géométriques sur Galaxy A53.
+- **Précision D+/D-** : Implémentation d'une moyenne mobile 3 points sur l'altitude et passage au seuil d'hystérésis de 3.0m (standard Garmin). Élimine le bruit vertical des capteurs d'entrée de gamme.
+- **Rendu Tracé (Galaxy S23)** : Augmentation de la résolution à 1500 segments et affinement de la simplification RDP (epsilon 1.0) pour un suivi fluide des virages serrés sans "traits droits".
+- **Stabilité 3D** : Ajout d'un filtre de jitter de 1.0m lors du drapage sur le relief pour stabiliser le maillage.
+
 ## [5.28.17] - 2026-04-12
 ### Optimized
 - **Pipeline CI/CD** : Retrait de Playwright des workflows GitHub Actions pour accélérer radicalement la CI et économiser les ressources. Les tests unitaires (Vitest) restent actifs en CI, tandis que les tests E2E (Playwright) sont conservés pour une validation manuelle locale.

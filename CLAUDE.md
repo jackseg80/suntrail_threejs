@@ -43,17 +43,10 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 ### Calculs & Précision
 - **Distance** : Formule **Haversine** (précision < 0.5%).
 - **D+ / D-** : Algorithme d'**Hystérésis avec seuil de 2m** (Garmin/Suunto style).
-- **Lissage** : Moyenne mobile 3 points sur l'altitude GPS.
-- **Filtrage GPS (v5.27.2)** : Rejeter tout point GPS avec saut vertical > 200m ou distance horizontale < 2m (anti-champignon).
-- **Alignement Géographique (v5.27.3)** : Recalcul obligatoire des maillages GPX lors de chaque `Origin Shift` (Floating Origin).
-- **Inclinomètre (v5.27.5)** : Raycasting 3D pour mesure sous le réticule. Anticipation de 15m en mode suivi basée sur `userHeading`.
-
-### Rendu & Performance
-- **Tuiles (v5.27.6)** : L'injection des packs (seeding) vers le CacheStorage est asynchrone pour ne pas bloquer le thread principal.
-- **`renderer.setSize(w, h, false)`** — TOUJOURS le 3ème param `false`.
-- **LOD 14 Toast** : Déclenché dans `scene.ts` avec debounce de 30s.
-- **Deep Sleep** : La boucle de rendu s'arrête (`setAnimationLoop(null)`) quand l'app est en arrière-plan.
-- **TubeGeometry Stabilité** : Utiliser `centripetal` pour les splines de tracé afin d'éviter les ooovershoots. Toujours trier par `timestamp` avant génération.
+- **D+ / D-** : Algorithme d'**Hystérésis avec seuil de 3m** (Garmin standard v5.28.5).
+- **Lissage** : Moyenne mobile 3 points sur l'altitude GPS (v5.28.5).
+- **Filtrage GPS (v5.28.5)** : Rejeter tout point GPS avec saut vertical > 200m (si intervalle < 10s), distance horizontale < 2.5m (anti-champignon), ou vitesse > 600km/h.
+- **TubeGeometry Stabilité (v5.28.5)** : Utiliser `centripetal` pour les splines. Rendu temps réel à 1500 segments max. Simplification RDP avec epsilon 1.0.
 
 ## Structure du Projet
 - `src/modules/iapService.ts` : Liaison RevenueCat ↔ Google Play.

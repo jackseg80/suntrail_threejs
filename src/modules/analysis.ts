@@ -250,6 +250,8 @@ export function drapeToTerrain(
     surfaceOffset = 30
 ): THREE.Vector3[] {
     const result: THREE.Vector3[] = [];
+    let lastPos: THREE.Vector3 | null = null;
+
     for (let i = 0; i < points.length; i++) {
         const p = points[i];
         const pos = lngLatToWorld(p.lon, p.lat, originTile);
@@ -259,22 +261,38 @@ export function drapeToTerrain(
         
         // On prend le max entre l'altitude GPS et le terrain pour éviter que le trait s'enterre
         const y = Math.max(terrainY, elevGPX) + surfaceOffset;
-        result.push(new THREE.Vector3(pos.x, y, pos.z));
+        const currentPos = new THREE.Vector3(pos.x, y, pos.z);
+
+        // v5.28.5: Filtrage anti-frétillement (jitter) au niveau du draping
+        // Si les points sont trop proches (< 1m), on évite de les ajouter
+        if (lastPos && currentPos.distanceTo(lastPos) < 1.0) {
+            continue;
+        }
+
+        result.push(currentPos);
+        lastPos = currentPos;
         
         if (i < points.length - 1 && densifySteps > 0) {
             const pNext = points[i + 1];
+            const nextRawAlt = (pNext.ele !== undefined ? pNext.ele : (pNext.alt !== undefined ? pNext.alt : 0));
+            
             for (let s = 1; s < densifySteps; s++) {
                 const t = s / densifySteps;
                 const iLon = p.lon + (pNext.lon - p.lon) * t;
                 const iLat = p.lat + (pNext.lat - p.lat) * t;
-                const nextRawAlt = (pNext.ele !== undefined ? pNext.ele : (pNext.alt !== undefined ? pNext.alt : 0));
                 const iEle = rawAlt + (nextRawAlt - rawAlt) * t;
                 
                 const iPos = lngLatToWorld(iLon, iLat, originTile);
                 const iElevGPX = iEle * state.RELIEF_EXAGGERATION;
                 const iTerrainY = getAltitudeAt(iPos.x, iPos.z);
                 const iY = Math.max(iTerrainY, iElevGPX) + surfaceOffset;
-                result.push(new THREE.Vector3(iPos.x, iY, iPos.z));
+                
+                const currentIPos = new THREE.Vector3(iPos.x, iY, iPos.z);
+                if (lastPos && currentIPos.distanceTo(lastPos) < 1.0) {
+                    continue;
+                }
+                result.push(currentIPos);
+                lastPos = currentIPos;
             }
         }
     }

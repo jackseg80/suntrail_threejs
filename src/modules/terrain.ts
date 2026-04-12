@@ -473,16 +473,17 @@ export function updateRecordedTrackMesh(): void {
     // surfaceOffset=8 pour coller plus au sol que les GPX importés.
     const threePoints = drapeToTerrain(state.recordedPoints, originTile, 0, 8);
 
-    // v5.28.1: Simplification Ramer-Douglas-Peucker (RDP) pour fluidité 3D
-    // Epsilon = 2.0 (mètres) est un bon compromis pour éliminer le jitter sans déformer
-    const simplifiedPoints = simplifyRDP(threePoints, 2.0, (v) => v);
+    // v5.28.5: Simplification RDP plus fine (epsilon 1.0 au lieu de 2.0)
+    // pour éviter les "traits droits" trop visibles sur les petits virages.
+    const simplifiedPoints = simplifyRDP(threePoints, 1.0, (v) => v);
 
     if (simplifiedPoints.length < 2) return;
     
     try {
-        // v5.27.4: Force closed=false pour éviter le trait de retour vers le départ
+        // v5.28.5: Augmentation du nombre de segments pour fluidité (1500 au lieu de 800)
+        // et utilisation de 'centripetal' pour éviter les overshoots des splines.
         const curve = new THREE.CatmullRomCurve3(simplifiedPoints, false, 'centripetal');
-        const geometry = new THREE.TubeGeometry(curve, Math.min(simplifiedPoints.length * 2, 800), thickness, 4, false);
+        const geometry = new THREE.TubeGeometry(curve, Math.min(simplifiedPoints.length * 3, 1500), thickness, 4, false);
         const material = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.5, transparent: true, opacity: 0.8 });
         state.recordedMesh = new THREE.Mesh(geometry, material);
         state.scene.add(state.recordedMesh);

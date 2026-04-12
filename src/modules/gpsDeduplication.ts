@@ -13,77 +13,90 @@ export interface GPSPoint {
 /**
  * Nettoie un tracé GPS en supprimant les doublons, les points trop proches,
  * les sauts aberrants (outliers) et les incohérences d'altitude.
+ * Applique également un lissage par moyenne mobile (v5.28.5).
  * 
  * Cette fonction est la SOURCE DE VÉRITÉ unique pour le nettoyage des tracés.
  */
 export function cleanGPSTrack<T extends GPSPoint>(points: T[]): T[] {
     if (points.length === 0) return [];
-    if (points.length === 1) {
-        // Validation basique pour un point unique
-        const p = points[0];
-        if (p.lat === 0 && p.lon === 0) return [];
-        if (p.alt < -500 || p.alt > 9000) return [];
-        return points;
-    }
-
+    
     // 1. Trier par timestamp pour garantir la chronologie
     const sorted = [...points].sort((a, b) => a.timestamp - b.timestamp);
 
-    // 2. Dédoublonnage par timestamp et filtrage de cohérence
-    const cleaned: T[] = [];
+    // 2. Dédoublonnage par timestamp et filtrage de cohérence radical
+    const preCleaned: T[] = [];
     
-    const MAX_SPEED_KMH = 600;      // Vitesse aberrante (glitch GPS), augmentée pour les tests
-    const MIN_DISTANCE_METERS = 2; // Ignorer les micro-mouvements (bruit statique)
-    const MAX_ALT_JUMP = 500;      // Saut vertical max (augmenté pour les tests GPX)
+    const MAX_SPEED_KMH = 600;      // Vitesse aberrante (glitch GPS)
+    const MIN_DISTANCE_METERS = 2.5; // Ignorer les micro-mouvements (bruit statique)
+    const MAX_ALT_JUMP = 200;       // Saut vertical max (plus strict v5.28.5)
 
     for (const curr of sorted) {
-        // Ignorer les points "zéro" du démarrage
+        // Ignorer les points "zéro" ou invalides du démarrage (Cause majeure de champignons)
         if (curr.lat === 0 && curr.lon === 0) continue;
+        if (Math.abs(curr.lat) < 0.0001 && Math.abs(curr.lon) < 0.0001) continue;
         
         // Plage absolue de sécurité d'altitude
         if (curr.alt < -500 || curr.alt > 9000) continue;
 
-        if (cleaned.length === 0) {
-            cleaned.push(curr);
+        if (preCleaned.length === 0) {
+            preCleaned.push(curr);
             continue;
         }
 
-        const lastValid = cleaned[cleaned.length - 1];
+        const lastValid = preCleaned[preCleaned.length - 1];
         
         // Dédoublonnage strict par timestamp
         if (curr.timestamp <= lastValid.timestamp) continue;
 
-        // haversineDistance retourne des km, on convertit en mètres pour le filtre
         const dist = haversineDistance(lastValid.lat, lastValid.lon, curr.lat, curr.lon) * 1000;
         const timeDiffSeconds = (curr.timestamp - lastValid.timestamp) / 1000;
         const altDiff = Math.abs(curr.alt - lastValid.alt);
 
-        // Filtre 1: Points trop proches (bruit statique)
-        // On garde le point si :
-        // - La distance horizontale est significative (> 2m)
-        // - OU si l'altitude a changé significativement (> 2m)
-        // - OU si beaucoup de temps a passé (> 30s)
+        // Filtre 1: Points trop proches (bruit statique / jitter)
         if (dist < MIN_DISTANCE_METERS && altDiff < 2 && timeDiffSeconds < 30) {
             continue;
         }
 
         // Filtre 2: Sauts aberrants de vitesse (Outliers)
-        // On ne filtre la vitesse QUE si on a un intervalle de temps suffisant (> 1s)
-        // pour éviter les divisions par zéro ou les vitesses infinies sur données de test
-        if (timeDiffSeconds > 1) {
+        if (timeDiffSeconds > 0.1) {
             const speedKmh = (dist / 1000) / (timeDiffSeconds / 3600);
-            if (speedKmh > MAX_SPEED_KMH && timeDiffSeconds < 300) {
+            if (speedKmh > MAX_SPEED_KMH) {
                 continue;
             }
+            // Sécurité absolue : un point ne peut pas être à plus de 500km du précédent (glitch radical)
+            if (dist > 500000) continue;
         }
 
-        // Filtre 3: Cohérence d'altitude (saut vertical > 200m entre deux points)
-        if (Math.abs(curr.alt - lastValid.alt) > MAX_ALT_JUMP) {
+        // Filtre 3: Cohérence d'altitude (saut vertical radical)
+        if (altDiff > MAX_ALT_JUMP && timeDiffSeconds < 10) {
             continue;
         }
 
-        cleaned.push(curr);
+        preCleaned.push(curr);
     }
 
-    return cleaned;
+    if (preCleaned.length < 3) return preCleaned;
+
+    // 3. Lissage de l'altitude (Moyenne mobile 3 points) (v5.28.5)
+    // Aide à stabiliser le D+/D- sur les capteurs GPS bruités (ex: Galaxy A53)
+    const smoothed: T[] = [];
+    smoothed.push(preCleaned[0]); // Garder le premier point intact
+
+    for (let i = 1; i < preCleaned.length - 1; i++) {
+        const prev = preCleaned[i - 1];
+        const curr = preCleaned[i];
+        const next = preCleaned[i + 1];
+        
+        // On ne lisse QUE l'altitude
+        const avgAlt = (prev.alt + curr.alt + next.alt) / 3;
+        
+        smoothed.push({
+            ...curr,
+            alt: avgAlt
+        });
+    }
+
+    smoothed.push(preCleaned[preCleaned.length - 1]); // Garder le dernier point intact
+
+    return smoothed;
 }

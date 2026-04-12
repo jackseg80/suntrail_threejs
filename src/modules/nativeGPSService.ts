@@ -310,30 +310,17 @@ class NativeGPSService {
                 const newPoints = await this.getAllPoints(event.courseId, lastTimestamp);
                 
                 if (newPoints.length > 0) {
-                    const existingTimestamps = new Set(state.recordedPoints.map(p => p.timestamp));
-                    let lastAlt = state.recordedPoints.length > 0 
-                        ? state.recordedPoints[state.recordedPoints.length - 1].alt 
-                        : null;
-
-                    const uniqueNewPoints = newPoints.filter(p => {
-                        if (existingTimestamps.has(p.timestamp)) return false;
-                        
-                        // Auto-pause (v5.28.1)
-                        if (this.checkAutoPause(p)) return false;
-
-                        // Filtrage de cohérence d'altitude (v5.26.7)
-                        if (lastAlt !== null && Math.abs(p.alt - lastAlt) > 200) return false;
-                        if (p.alt < -500 || p.alt > 9000) return false;
-
-                        lastAlt = p.alt;
-                        return true;
-                    });
+                    // v5.28.5: Utilisation systématique de la source de vérité pour le filtrage
+                    // On fusionne les anciens et nouveaux points pour un nettoyage global (notamment pour la moyenne mobile)
+                    const allPoints = [...state.recordedPoints, ...newPoints];
+                    const cleanedAll = cleanGPSTrack(allPoints);
                     
+                    // On ne garde que les points qui sont réellement nouveaux (pour éviter de reboucler sur des points déjà traités)
+                    const existingTimestamps = new Set(state.recordedPoints.map(p => p.timestamp));
+                    const uniqueNewPoints = cleanedAll.filter(p => !existingTimestamps.has(p.timestamp));
+
                     if (uniqueNewPoints.length > 0) {
-                        const convertedPoints = uniqueNewPoints.map(p => ({
-                            lat: p.lat, lon: p.lon, alt: p.alt, timestamp: p.timestamp
-                        }));
-                        state.recordedPoints = [...state.recordedPoints, ...convertedPoints];
+                        state.recordedPoints = [...state.recordedPoints, ...uniqueNewPoints];
                         
                         // Persistance (v5.28.1)
                         this.persistPoints();

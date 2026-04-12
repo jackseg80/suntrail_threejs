@@ -16,9 +16,9 @@ export interface TrackStats {
 
 /**
  * Calcule les statistiques d'un tracé GPS avec un algorithme d'hystérésis
- * Seuil par défaut : 2 mètres (standard Garmin/Suunto)
+ * Seuil par défaut : 3 mètres (v5.28.5 - standard Garmin robuste)
  */
-export function calculateTrackStats(points: LocationPoint[], threshold: number = 2): TrackStats {
+export function calculateTrackStats(points: LocationPoint[], threshold: number = 3): TrackStats {
     // v5.28.2: Utilisation de la source de vérité unique pour le nettoyage
     const uniquePoints = cleanGPSTrack(points);
 
