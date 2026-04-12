@@ -20,7 +20,7 @@ export function initControls(camera: THREE.PerspectiveCamera, domElement: HTMLEl
     controls.maxPolarAngle = Math.PI / 2.1;
     
     // Position initiale : dézoom maximum (LOD 6)
-    camera.position.set(0, 2000000, 1500000);
+    camera.position.set(0, 4000000, 3000000);
     controls.target.set(0, 0, 0);
     controls.update();
     

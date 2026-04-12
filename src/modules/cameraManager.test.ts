@@ -45,7 +45,7 @@ describe('cameraManager.ts', () => {
         expect(controls.screenSpacePanning).toBe(false); // Mode carte
         
         // Vérifier la position initiale (LOD 6 ~ 2000km)
-        expect(camera.position.y).toBe(2000000);
+        expect(camera.position.y).toBe(4000000);
         expect(state.controls).toBe(controls);
     });
 });
