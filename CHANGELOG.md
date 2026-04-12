@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.6] - 2026-04-12
+### Added
+- **Infrastructure de Tests E2E (Playwright)** : Mise en place complète de Playwright pour valider les parcours utilisateurs critiques (Acceptance Wall, Onboarding, Consentement GPS).
+- **Tests Unitaires du Cœur 3D** : Sécurisation de `scene.ts` (boucle de rendu, LOD, flyTo) et `touchControls.ts` (gestes tactiles) avec Vitest.
+- **Robustesse de l'Interface** : Amélioration de la couverture de `ui.ts` et du `SheetManager`.
+
+### Fixed
+- **Tests d'Intégration (Hydrologie)** : Correction de l'assertion pour l'affichage de l'eau suite au passage vers `hydroGroup`.
+- **Tests d'Intégration (PackManager)** : Enrichissement des mocks pour supporter les offsets Hilbert des tuiles multi-couches.
+- **Fiabilité des Tests UI** : Utilisation de timers fictifs et de mocks réseau globaux pour éviter les rejets asynchrones après fermeture de l'environnement de test.
+
 ## [5.28.5] - 2026-04-11
 ### Added
 - **Refonte des Bâtiments 3D (Anti-Gravité)** : Implémentation d'un échantillonnage multi-points de l'altitude. Les bâtiments sont désormais ancrés au sol à leur point le plus bas sur les pentes, éliminant l'effet de "bâtiments volants" en montagne.
