@@ -4,6 +4,16 @@ Toutes les modifications notables de ce projet seront documentées ici.
 
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
+
+## [5.28.21] - 2026-04-12
+### Fixed
+- **Contrôles Caméra** : Rétablissement de `MapControls` (au lieu de `OrbitControls`) pour retrouver le mode de navigation standard (clic gauche pour translater, clic droit pour tourner).
+- **Zoom Initial** : Ajustement de la position de départ de la caméra pour démarrer au dézoom maximum (**LOD 6**) sur une vue globale.
+- **Distance Caméra** : Augmentation de la distance maximale autorisée à 4 000 km pour permettre le dézoom complet.
+- **Seuils POI** : Harmonisation du seuil d'affichage des signalisations 3D à **LOD 15** pour tous les presets de performance, évitant l'encombrement visuel à haute altitude.
+- **Bâtiments MapTiler (Pro)** : Correction d'une erreur d'importation PBF (`pbf is not a constructor`) et amélioration de la densité de rendu (limite à 150 bâtiments par tuile).
+- **Filtrage Géo** : Ajout d'un padding de 5% sur les limites de tuiles lors du rendu des bâtiments pour éviter les trous sur les bords.
+
 ## [5.28.20] - 2026-04-12
 ### Refactored
 - **Architecture & Services (Phase 4)** :
