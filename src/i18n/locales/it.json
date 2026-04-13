@@ -25,7 +25,7 @@
       "recStarted": "🔴 Registrazione avviata",
       "recStopped": "⏹️ Registrazione fermata",
       "recWarning5min": "⏱ Limite 30 min — ancora 5 minuti di registrazione",
-      "tooShort": "Traccia troppo corta per l'esportazione",
+      \"freeLimit\": \"?? Registrazione temporanea: la traccia verr� eliminata alla chiusura dell'app. Passa a PRO per esportarla.\",`n      \"tooShort\": \"Traccia troppo corta per l'esportazione\",
       "exported": "GPX scaricato",
       "exportError": "Errore esportazione GPX"
     },
@@ -62,10 +62,14 @@
       "title": "Registrazione GPS"
     },
     "upsell": {
-      "postRec": "Percorso salvato. Sblocca l'esportazione GPX e le statistiche avanzate con Pro.",
+      "postRec": "Percorso conservato temporaneamente nell'app (verrà eliminato alla chiusura). Passa a Pro per salvare il file GPX.",
       "proBtn": "Scopri Pro ↗"
+    },
+    "save": {
+      "title": "Salva percorso",
+      "body": "Dai un nome alla tua escursione:"
     }
-  },
+    },
   "settings": {
     "title": "Impostazioni",
     "aria": {

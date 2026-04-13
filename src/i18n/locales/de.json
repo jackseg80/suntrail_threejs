@@ -61,10 +61,14 @@
       "title": "GPS-Aufzeichnung"
     },
     "upsell": {
-      "postRec": "Tour gespeichert. GPX-Export und erweiterte Statistiken mit Pro freischalten.",
+      "postRec": "Tour vorübergehend in der App gespeichert (wird beim Schliessen gelöscht). Upgrade auf Pro zum Speichern der GPX-Datei.",
       "proBtn": "Pro ansehen ↗"
+    },
+    "save": {
+      "title": "Tour speichern",
+      "body": "Geben Sie Ihrer Wanderung einen Namen:"
     }
-  },
+    },
   "settings": {
     "title": "Einstellungen",
     "aria": {
