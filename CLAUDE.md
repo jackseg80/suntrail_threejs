@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.28.25)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-12 suite à la correction de l'alignement LOD 16+ (OpenTopoMap).
+> Mis à jour le 2026-04-12 suite au fix de la fluidité LOD (réduction fade-out et throttle).
 
 ## Projet
 

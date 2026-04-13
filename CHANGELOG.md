@@ -5,7 +5,13 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [5.28.28] - 2026-04-13
+## [5.28.25] - 2026-04-12
+### Fixed
+- **Fluidité LOD** : Réduction drastique du temps de fondu des tuiles sortantes (**300ms** au lieu de 1200ms) pour éliminer les effets de superposition et de scintillement (Z-fighting).
+- **Réactivité Carte** : Réduction du délai de rafraîchissement (`throttle`) à **100ms** (vs 200ms) lors des déplacements caméra.
+- **Fuites de Mémoire** : Correction du nettoyage des listeners d'événements lors de la réinitialisation de la scène 3D.
+
+## [5.28.24] - 2026-04-12
 ### Added
 - **Reverse Geocoding GPX** : Les tracés enregistrés suggèrent désormais un nom basé sur le lieu (ex: `SunTrail_Zermatt_...`) grâce à l'intégration du service de localisation inverse.
 - **Gestion des Tracés** : Implémentation d'une fenêtre de dialogue interactive à la fin d'un enregistrement pour permettre à l'utilisateur de renommer son parcours.

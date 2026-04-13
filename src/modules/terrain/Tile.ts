@@ -14,7 +14,7 @@ import { activeTiles } from '../terrain';
 
 const frustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
-const GHOST_FADE_MS = 1200;
+const GHOST_FADE_MS = 300;
 
 export const terrainUniforms = { 
     uExaggeration: { value: state.RELIEF_EXAGGERATION },

@@ -30,7 +30,17 @@ let _lastLodUpsellTime = 0;
 // Ground plane — empêche le vide blanc quand la caméra voit sous le terrain au tilt max
 let groundPlane: THREE.Mesh | null = null;
 
+// Références pour le nettoyage des listeners (v5.28.25)
+let currentThrottledUpdate: (() => void) | null = null;
+let currentThrottledSunUpdate: (() => void) | null = null;
+
 export async function disposeScene(): Promise<void> {
+    // Nettoyage des listeners sur les contrôles avant de les détruire
+    if (state.controls) {
+        if (currentThrottledUpdate) state.controls.removeEventListener('change', currentThrottledUpdate);
+        if (currentThrottledSunUpdate) state.controls.removeEventListener('change', currentThrottledSunUpdate);
+    }
+    
     resetTerrain();
     disposeAllCachedTiles();
     disposeAllGeometries();
@@ -52,6 +62,9 @@ export async function disposeScene(): Promise<void> {
         visibilityChangeHandler = null;
     }
     window.removeEventListener('resize', onWindowResize);
+    
+    currentThrottledUpdate = null;
+    currentThrottledSunUpdate = null;
 }
 
 function getIdealZoom(dist: number): number {
@@ -152,6 +165,7 @@ export async function initScene(): Promise<void> {
     let lastRecenterTime = 0;
     let lastLodChangeTime = 0;
 
+    // v5.28.25 : Throttle réduit à 100ms pour éviter les chevauchements LOD
     const throttledUpdate = throttle(() => {
         if (!state.controls || !state.camera) return;
 
@@ -296,15 +310,17 @@ export async function initScene(): Promise<void> {
             }
         }
         updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, dist, state.controls!.target.x, state.controls!.target.z);
-    }, 200);
+    }, 100);
     
-    state.controls!.addEventListener('change', throttledUpdate);
+    currentThrottledUpdate = throttledUpdate;
+    state.controls!.addEventListener('change', currentThrottledUpdate);
 
     const throttledSunUpdate = throttle(() => {
         const mins = state.simDate.getHours() * 60 + state.simDate.getMinutes();
         updateSunPosition(mins);
     }, 1000);
-    state.controls!.addEventListener('change', throttledSunUpdate);
+    currentThrottledSunUpdate = throttledSunUpdate;
+    state.controls!.addEventListener('change', currentThrottledSunUpdate);
 
     state.ambientLight = new THREE.AmbientLight(0xffffff, 0.2); state.scene.add(state.ambientLight);
     state.sunLight = new THREE.DirectionalLight(0xffffff, 6.0);
