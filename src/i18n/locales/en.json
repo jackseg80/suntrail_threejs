@@ -25,6 +25,7 @@
       "recStarted": "🔴 Recording started",
       "recStopped": "⏹️ Recording stopped",
       "recWarning5min": "⏱ 30 min limit — 5 minutes of recording remaining",
+      "freeLimit": "💡 GPX file export is reserved for the PRO version",
       "tooShort": "Track too short for export",
       "exported": "GPX downloaded",
       "exportError": "GPX export error"
@@ -64,6 +65,10 @@
     "upsell": {
       "postRec": "Track saved. Unlock GPX export and advanced stats with Pro.",
       "proBtn": "See Pro ↗"
+    },
+    "save": {
+      "title": "Save Track",
+      "body": "Give your hike a name:"
     }
   },
   "settings": {

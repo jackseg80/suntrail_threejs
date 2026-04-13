@@ -18,6 +18,7 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Geolocation } from '@capacitor/geolocation';
 import { calculateTrackStats } from '../../geoStats';
+import { getPlaceName } from '../../geocodingService';
 
 export class TrackSheet extends BaseComponent {
     constructor() {
@@ -74,6 +75,10 @@ export class TrackSheet extends BaseComponent {
                 }
 
                 showToast(i18n.t('track.toast.recStarted'));
+                if (!state.isPro) {
+                    setTimeout(() => showToast(i18n.t('track.toast.freeLimit')), 1500);
+                }
+                
                 // v5.24: Single Source of Truth - le natif est la seule source d'enregistrement
                 
                 // Démarrer le service natif (natif Android = source de vérité pour les points GPS)
@@ -97,11 +102,36 @@ export class TrackSheet extends BaseComponent {
                     await nativeGPSService.stopCourse();
                     await stopRecordingService();
                     
-                    // 2. Sauvegarde SYSTÉMATIQUE (si points suffisants)
+                    // 2. Préparer le nom suggéré (Région + Date)
+                    let suggestedName = "";
+                    if (state.recordedPoints.length >= 2) {
+                        const startPt = state.recordedPoints[0];
+                        const place = await getPlaceName(startPt.lat, startPt.lon);
+                        const dateStr = new Date().toISOString().slice(0, 10);
+                        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).replace(':', 'h');
+                        
+                        if (place) {
+                            suggestedName = `SunTrail_${place}_${dateStr}_${timeStr}`;
+                        } else {
+                            suggestedName = `SunTrail_${dateStr}_${timeStr}`;
+                        }
+                    }
+
+                    // 3. Sauvegarde SYSTÉMATIQUE (si points suffisants)
                     let savedInternal = false;
                     if (state.recordedPoints.length >= 2) {
-                        savedInternal = await this.saveRecordedGPXInternal(); // Layer en mémoire
-                        await this.saveGPXToFile();           // Fichier GPX (Cache/Documents)
+                        // Demander le nom final à l'utilisateur
+                        const finalName = await this.showSaveTrackPrompt(suggestedName);
+                        
+                        if (finalName) {
+                            savedInternal = await this.saveRecordedGPXInternal(finalName); // Layer en mémoire
+                            await this.saveGPXToFile(finalName);           // Fichier GPX (Cache/Documents)
+                        } else {
+                            // Annulé ou fermé sans nom -> on garde quand même une trace interne par sécurité ?
+                            // Non, l'utilisateur a annulé, on peut soit jeter, soit garder en "SunTrail REC"
+                            savedInternal = await this.saveRecordedGPXInternal(suggestedName);
+                            await this.saveGPXToFile(suggestedName);
+                        }
                     }
 
                     if (state.recordedPoints.length >= 2) {
@@ -111,7 +141,7 @@ export class TrackSheet extends BaseComponent {
                         showToast(i18n.t('track.toast.tooShort'));
                     }
 
-                    // 3. Vider la mémoire seulement si sauvegarde réussie ou trop court
+                    // 4. Vider la mémoire seulement si sauvegarde réussie ou trop court
                     if (savedInternal || state.recordedPoints.length < 2) {
                         state.recordedPoints = [];
                     } else {
@@ -195,6 +225,80 @@ export class TrackSheet extends BaseComponent {
                 void startLocationTracking();
             }
         }
+    }
+
+    private async showSaveTrackPrompt(suggestedName: string): Promise<string | null> {
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.className = 'rec-save-overlay';
+            overlay.style.cssText = `
+                position: fixed; inset: 0; z-index: 9500;
+                display: flex; align-items: center; justify-content: center;
+                background: rgba(0,0,0,0.6);
+            `;
+            const panel = document.createElement('div');
+            panel.style.cssText = `
+                background: var(--glass-bg, rgba(30,30,50,0.95));
+                backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+                border-radius: var(--radius-xl, 20px);
+                padding: var(--space-4, 24px);
+                max-width: 340px; width: 90%;
+                color: var(--text-1, #fff);
+                text-align: center;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                border: 1px solid rgba(255,255,255,0.1);
+            `;
+
+            panel.innerHTML = `
+                <div style="font-size:var(--text-lg,18px);font-weight:700;margin-bottom:var(--space-2,12px)">
+                    ${i18n.t('track.save.title') || 'Enregistrer le tracé'}
+                </div>
+                <div style="font-size:var(--text-sm,14px);margin-bottom:var(--space-4,20px);opacity:0.85">
+                    ${i18n.t('track.save.body') || 'Donnez un nom à votre rando :'}
+                </div>
+                <input type="text" id="rec-save-name" value="${suggestedName}" style="
+                    width: 100%; padding: 12px; margin-bottom: 24px;
+                    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);
+                    border-radius: 12px; color: #fff; font-size: 15px; outline: none;
+                ">
+                <div style="display:flex;gap:var(--space-2,12px);justify-content:center">
+                    <button id="rec-save-confirm" style="
+                        flex: 1; padding:12px; border:none; border-radius:12px;
+                        background:var(--accent,#4f8cff); color:#fff; font-weight:600; cursor:pointer;
+                    ">${i18n.t('common.save') || 'Enregistrer'}</button>
+                    <button id="rec-save-cancel" style="
+                        flex: 1; padding:12px; border:1px solid rgba(255,255,255,0.2); border-radius:12px;
+                        background:transparent; color:var(--text-2,#a0a4bc); font-weight:600; cursor:pointer;
+                    ">${i18n.t('common.cancel') || 'Annuler'}</button>
+                </div>
+            `;
+            overlay.appendChild(panel);
+            document.body.appendChild(overlay);
+
+            const input = document.getElementById('rec-save-name') as HTMLInputElement;
+            input?.focus();
+            input?.select();
+
+            document.getElementById('rec-save-confirm')?.addEventListener('click', () => {
+                const name = input.value.trim() || suggestedName;
+                overlay.remove();
+                resolve(name);
+            });
+
+            document.getElementById('rec-save-cancel')?.addEventListener('click', () => {
+                overlay.remove();
+                resolve(null);
+            });
+
+            // Handle Enter key
+            input?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const name = input.value.trim() || suggestedName;
+                    overlay.remove();
+                    resolve(name);
+                }
+            });
+        });
     }
 
     /** Affiche un prompt pour restaurer ou supprimer les points récupérés après un crash. */
@@ -547,12 +651,13 @@ export class TrackSheet extends BaseComponent {
         this.element?.appendChild(banner);
     }
 
-    private buildGPXString(): string {
+    private buildGPXString(customName?: string): string {
         const date = new Date().toLocaleDateString();
+        const trackName = customName || `SunTrail Recorded Track - ${date}`;
         let gpx = `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="SunTrail 3D" xmlns="http://www.topografix.com/GPX/1/1">
   <trk>
-    <name>SunTrail Recorded Track - ${date}</name>
+    <name>${trackName}</name>
     <trkseg>`;
         // ✅ Dédoublonnage par timestamp avant export (sécurité double)
         const uniquePoints = [...new Map(state.recordedPoints.map(p => [p.timestamp, p])).values()];
@@ -603,20 +708,21 @@ export class TrackSheet extends BaseComponent {
      * Sauvegarde le tracé enregistré comme layer visible dans l'app (sans gate Pro).
      * Appelé systématiquement au STOP et à l'auto-stop — garantit zéro perte de données.
      */
-    async saveRecordedGPXInternal(): Promise<boolean> {
+    async saveRecordedGPXInternal(customName?: string): Promise<boolean> {
         if (state.recordedPoints.length < 2) {
             showToast(i18n.t('track.toast.tooShort'));
             return false;
         }
         try {
-            const gpxString = this.buildGPXString();
+            const gpxString = this.buildGPXString(customName);
             const parser = new gpxParser();
             parser.parse(gpxString);
             if (!parser.tracks?.length) {
                 return false;
             }
             const date = new Date().toLocaleDateString();
-            addGPXLayer(parser, `SunTrail REC ${date}`);
+            const name = customName || `SunTrail REC ${date}`;
+            addGPXLayer(parser, name);
             void haptic('success');
             return true;
         } catch (e) {
@@ -630,12 +736,18 @@ export class TrackSheet extends BaseComponent {
      * - Non-Pro: sauvegarde dans Cache (pas visible facilement mais persiste)
      * - Pro: sauvegarde dans Documents (visible par utilisateur)
      */
-    async saveGPXToFile(): Promise<void> {
+    async saveGPXToFile(customName?: string): Promise<void> {
         if (state.recordedPoints.length < 2) {
             return;
         }
-        const gpx = this.buildGPXString();
-        const filename = `suntrail-${new Date().toISOString().slice(0, 10)}-${Date.now()}.gpx`;
+        const gpx = this.buildGPXString(customName);
+        
+        // Nettoyer le nom pour le système de fichiers
+        const sanitizedName = (customName || `suntrail-${new Date().toISOString().slice(0, 10)}`)
+            .replace(/[/\\?%*:|"<>]/g, '-')
+            .replace(/\s+/g, '_');
+            
+        const filename = `${sanitizedName}-${Date.now()}.gpx`;
 
         if (Capacitor.isNativePlatform()) {
             try {

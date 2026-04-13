@@ -25,6 +25,7 @@
       "recStarted": "🔴 Enregistrement démarré",
       "recStopped": "⏹️ Enregistrement stoppé",
       "recWarning5min": "⏱ Limite 30 min — encore 5 minutes d'enregistrement",
+      "freeLimit": "💡 L'export du fichier GPX est réservé à la version PRO",
       "tooShort": "Tracé trop court pour export",
       "exportError": "Erreur lors de l'export GPX",
       "exported": "GPX téléchargé"
@@ -63,6 +64,10 @@
     "upsell": {
       "postRec": "Tracé sauvegardé. Débloquez l'export GPX et les stats avancées avec Pro.",
       "proBtn": "Voir Pro ↗"
+    },
+    "save": {
+      "title": "Enregistrer le tracé",
+      "body": "Donnez un nom à votre rando :"
     }
   },
   "settings": {

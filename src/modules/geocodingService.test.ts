@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { classifyFeature, searchLocations, CLASSIFICATIONS } from './geocodingService';
+import { classifyFeature, searchLocations, CLASSIFICATIONS, getPlaceName } from './geocodingService';
 import * as utils from './utils';
 
 vi.mock('./utils', () => ({
@@ -7,6 +7,39 @@ vi.mock('./utils', () => ({
 }));
 
 describe('geocodingService.ts', () => {
+    describe('getPlaceName', () => {
+        beforeEach(() => {
+            vi.clearAllMocks();
+        });
+
+        it('should return city name from MapTiler format', async () => {
+            vi.mocked(utils.fetchGeocoding).mockResolvedValue({
+                features: [
+                    { place_type: ['place'], text: 'Zermatt' },
+                    { place_type: ['region'], text: 'Valais' }
+                ]
+            });
+
+            const name = await getPlaceName(46.02, 7.74);
+            expect(name).toBe('Zermatt');
+        });
+
+        it('should return village name from Nominatim format', async () => {
+            vi.mocked(utils.fetchGeocoding).mockResolvedValue({
+                address: { village: 'Arolla', county: 'Hérens' }
+            });
+
+            const name = await getPlaceName(46.02, 7.48);
+            expect(name).toBe('Arolla');
+        });
+
+        it('should return null on failure', async () => {
+            vi.mocked(utils.fetchGeocoding).mockResolvedValue(null);
+            const name = await getPlaceName(0, 0);
+            expect(name).toBeNull();
+        });
+    });
+
     describe('classifyFeature', () => {
         it('should classify MapTiler country features', () => {
             const feature = { place_type: ['country'] };

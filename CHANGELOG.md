@@ -5,6 +5,18 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.28] - 2026-04-13
+### Added
+- **Reverse Geocoding GPX** : Les tracés enregistrés suggèrent désormais un nom basé sur le lieu (ex: `SunTrail_Zermatt_...`) grâce à l'intégration du service de localisation inverse.
+- **Gestion des Tracés** : Implémentation d'une fenêtre de dialogue interactive à la fin d'un enregistrement pour permettre à l'utilisateur de renommer son parcours.
+- **UX Freemium** : Ajout d'un message informatif explicite lors du démarrage d'un enregistrement pour les utilisateurs gratuits, clarifiant que l'exportation GPX est une fonctionnalité Pro.
+- **Sauvegarde Intelligente** : Distinction automatique du dossier de sauvegarde (Documents pour Pro, Cache pour Free) avec notification adaptée.
+
+### Technical
+- **GeocodingService** : Nouvelle méthode `getPlaceName()` pour la résolution de coordonnées en noms de localités (MapTiler/Nominatim).
+- **TrackSheet** : Refonte du processus d'arrêt d'enregistrement (`STOP`) pour intégrer l'étape de renommage et la sauvegarde contextuelle.
+- **I18n** : Ajout des clés de traduction pour les nouvelles interfaces de sauvegarde et les messages de limite Free.
+
 ## [5.28.27] - 2026-04-12
 ### Added
 - **Navigation Tactile** : Implémentation du **double-tap pour zoomer**. Le zoom est progressif, fluide et cible précisément le point du terrain touché à l'écran.

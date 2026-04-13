@@ -1,4 +1,4 @@
-# SunTrail 3D — TODO (v5.28.27)
+# SunTrail 3D — TODO (v5.28.28)
 
 > Guide IA : [CLAUDE.md](../CLAUDE.md) | Historique : [COMPLETED_HISTORY.md](archives/COMPLETED_HISTORY.md)
 
@@ -6,6 +6,7 @@
 
 ## 🎯 Priorité 1 : Finalisation Production (V5.x)
 
+- [x] **Gestion des GPX (v5.28.28)** : Reverse geocoding pour nommage automatique + renommage interactif à l'arrêt.
 - [x] **Navigation Tactile (v5.28.27)** : Implémentation du double-tap pour zoomer.
 - [x] **UI Réglages (v5.28.26)** : Correction des curseurs de Résolution (LOD) et Rayon de rendu.
 - [x] **Qualité & Tests (v5.28.6)** : Infrastructure E2E Playwright opérationnelle et sécurisation du moteur 3D (scene.ts, touchControls.ts).

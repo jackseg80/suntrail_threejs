@@ -82,6 +82,33 @@ export interface GeocodingResult {
 }
 
 /**
+ * Récupère le nom d'un lieu (ville, village ou localité) à partir de coordonnées.
+ * Utilisé pour le nommage automatique des tracés GPX.
+ */
+export async function getPlaceName(lat: number, lon: number): Promise<string | null> {
+    const data = await fetchGeocoding({ lat, lon });
+    if (!data) return null;
+
+    // MapTiler format
+    if (data.features) {
+        // Chercher dans l'ordre de précision décroissante
+        const types = ['place', 'locality', 'city', 'village', 'neighborhood'];
+        for (const type of types) {
+            const feat = data.features.find((f: any) => f.place_type?.includes(type));
+            if (feat) return feat.text_fr || feat.text || feat.place_name;
+        }
+        return data.features[0]?.text || data.features[0]?.place_name;
+    }
+
+    // Nominatim format (reverse)
+    if (data.address) {
+        return data.address.city || data.address.town || data.address.village || data.address.hamlet || data.address.suburb || data.address.municipality;
+    }
+
+    return null;
+}
+
+/**
  * Service de recherche unifié (MapTiler / Nominatim).
  */
 export async function searchLocations(query: string): Promise<GeocodingResult[]> {
