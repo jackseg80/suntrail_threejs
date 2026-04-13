@@ -63,7 +63,7 @@
       "title": "GPS Recording"
     },
     "upsell": {
-      "postRec": "Track saved. Unlock GPX export and advanced stats with Pro.",
+      "postRec": "Track temporarily kept in app (deleted on close). Upgrade to Pro to save the GPX file to your phone.",
       "proBtn": "See Pro ↗"
     },
     "save": {

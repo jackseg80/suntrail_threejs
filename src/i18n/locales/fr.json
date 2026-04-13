@@ -25,7 +25,7 @@
       "recStarted": "🔴 Enregistrement démarré",
       "recStopped": "⏹️ Enregistrement stoppé",
       "recWarning5min": "⏱ Limite 30 min — encore 5 minutes d'enregistrement",
-      "freeLimit": "💡 L'export du fichier GPX est réservé à la version PRO",
+      "freeLimit": "💡 Tracé temporaire : il sera effacé à la fermeture de l'app. Passez à PRO pour l'exporter.",
       "tooShort": "Tracé trop court pour export",
       "exportError": "Erreur lors de l'export GPX",
       "exported": "GPX téléchargé"
@@ -62,7 +62,7 @@
       "title": "Enregistrement GPS"
     },
     "upsell": {
-      "postRec": "Tracé sauvegardé. Débloquez l'export GPX et les stats avancées avec Pro.",
+      "postRec": "Tracé sauvegardé dans l'application. Passez à Pro pour exporter le fichier GPX sur votre téléphone.",
       "proBtn": "Voir Pro ↗"
     },
     "save": {
