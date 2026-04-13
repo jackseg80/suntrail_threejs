@@ -25,7 +25,8 @@
       "recStarted": "🔴 Registrazione avviata",
       "recStopped": "⏹️ Registrazione fermata",
       "recWarning5min": "⏱ Limite 30 min — ancora 5 minuti di registrazione",
-      \"freeLimit\": \"?? Registrazione temporanea: la traccia verr� eliminata alla chiusura dell'app. Passa a PRO per esportarla.\",`n      \"tooShort\": \"Traccia troppo corta per l'esportazione\",
+      "freeLimit": "💡 Registrazione temporanea: la traccia verrà eliminata alla chiusura dell'app. Passa a PRO per esportarla.",
+      "tooShort": "Traccia troppo corta per l'esportazione",
       "exported": "GPX scaricato",
       "exportError": "Errore esportazione GPX"
     },
@@ -133,7 +134,7 @@
       "signposts": "Segnaletica 3D",
       "inclinometer": "Inclinometro",
       "shadows": "Ombre",
-      "weather": "Météo",
+      "weather": "Meteo",
       "weatherPro": "Meteo Avanzato",
       "trailFollow": "Segui sentiero"
     },
@@ -218,9 +219,9 @@
   },
   "topbar": {
     "aria": {
-      "weather": "Météo",
+      "weather": "Meteo",
       "network": "Stato rete",
-      "recording": "Registrazione in cours",
+      "recording": "Registrazione in corso",
       "sos": "SOS emergenza"
     },
     "lod": {
@@ -299,12 +300,12 @@
       "followOn": "🚶 Tracciamento continuo attivato",
       "followOff": "📍 Tracciamento continuo disattivato",
       "permissionDenied": "Permesso GPS negato. Controlla le impostazioni del browser.",
-      "error": "Errore GPS o timeout",
+      "error": "Errore GPS ou timeout",
       "interrupted": "Tracciamento interrotto"
     },
     "disclosure": {
       "title": "Accesso alla tua posizione",
-      "body": "SunTrail utilizza la tua posizione GPS pour centrare la mappa sulla tua posizione e registrare i tuoi percorsi escursionistici.\n\nLe tue coordinate rimangono sul tuo dispositivo e non vengono mai inviate ai server SunTrail. Possono essere trasmesse ai servizi cartografici (MapTiler, OpenStreetMap) unicamente per caricare le tessere corrispondenti alla tua posizione.",
+      "body": "SunTrail utilizza la tua posizione GPS per centrare la mappa sulla tua posizione e registrare i tuoi percorsi escursionistici.\n\nLe tue coordinate rimangono sul tuo dispositivo e non vengono mai inviate ai server SunTrail. Possono essere trasmesse ai servizi cartografici (MapTiler, OpenStreetMap) unicamente per caricare le tessere corrispondenti alla tua posizione.",
       "allow": "Consenti la localizzazione",
       "decline": "Continua senza GPS"
     }
@@ -452,7 +453,7 @@
     "lowBattery": "🔋 Batteria scarica: Modalità Eco attivata"
   },
   "coords": {
-    "solar": "☀ Solare"
+    "solar": "☀ Solaire"
   },
   "apiKey": {
     "label": "Chiave MapTiler",
@@ -501,7 +502,7 @@
     },
     "slide2": {
       "title": "Cerca un luogo",
-      "desc": "Digita il nome di una città, vetta o paese nella barra di ricerca. I filtri rapidi affinano i risultati."
+      "desc": "Digita il nome di una città, vetta ou paese nella barra di ricerca. I filtri rapidi affinano i risultati."
     },
     "slide3": {
       "title": "I pulsanti di controllo",
