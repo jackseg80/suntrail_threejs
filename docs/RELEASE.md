@@ -119,7 +119,12 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **564** | **5.23.5** | **v5.23.5** | **Bouton "Arrêter REC" dans la notification Android (BroadcastReceiver) + détection service natif orphelin au démarrage (native points sans snapshot localStorage)** | **2026-04-04** |
 | 565 | 5.24.0 | v5.24.0 | Reprise transparente du REC après crash : si service natif encore actif au démarrage (isRunning()), recharge les points + réactive state.isRecording sans prompt (plus de "tracé importé" parasite). Prompt Restaurer/Supprimer réservé au cas service mort. | 2026-04-04 |
 | 592 | 5.28.4 | v5.28.4 | SunTrail v5.28.4 Stable - Geo refactoring and draping unification | 2026-04-11 |
-| **593** | **5.28.5** | **v5.28.5** | **Refonte complète des bâtiments 3D (échantillonnage multi-points, fondations adaptatives, visibilité étendue selon preset)** | **2026-04-11** |
+| 593 | 5.28.5 | v5.28.5 | Refonte complète des bâtiments 3D (échantillonnage multi-points, fondations adaptatives, visibilité étendue selon preset) | 2026-04-11 |
+| 610 | 5.28.23 | — | Version de base avant fix double-tap | 2026-04-12 |
+| 611 | 5.28.26 | v5.28.26 | Fix LOD/Range sliders limits in index.html | 2026-04-12 |
+| 612 | 5.28.27 | v5.28.27 | **Double-tap to zoom**, zoomToPoint function, haptic feedback | 2026-04-12 |
+| 613 | 5.28.27 | v5.28.27-rev2 | Tentative fix conflit versionCode (Échec : déjà utilisé) | 2026-04-12 |
+| **650** | **5.28.27** | **v5.28.27-final** | Jump de sécurité (613+) pour résoudre conflits persistants Play Console | 2026-04-12 |
 
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.

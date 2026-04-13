@@ -15,7 +15,7 @@ et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
 ### Technical
 - **CameraManager** : Création de la fonction `zoomToPoint()` dédiée aux animations de zoom direct.
-- **Versioning** : Incrémentation du `versionCode` à **613** pour la release Google Play.
+- **Versioning** : Incrémentation du `versionCode` à **650** pour la release Google Play (résolution conflits console).
 
 ## [5.28.26] - 2026-04-12
 ### Fixed
