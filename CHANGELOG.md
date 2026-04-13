@@ -5,6 +5,18 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.27] - 2026-04-12
+### Added
+- **Navigation Tactile** : Implémentation du **double-tap pour zoomer**. Le zoom est progressif, fluide et cible précisément le point du terrain touché à l'écran.
+- **Retour Haptique** : Ajout d'un léger retour tactile lors du déclenchement du double-tap sur mobile.
+
+### Fixed
+- **Stabilité Android** : Correction définitive de la syntaxe `versionName` dans le fichier Gradle pour éviter les erreurs de build CI.
+
+### Technical
+- **CameraManager** : Création de la fonction `zoomToPoint()` dédiée aux animations de zoom direct.
+- **Versioning** : Incrémentation du `versionCode` à **612** pour la release Google Play.
+
 ## [5.28.26] - 2026-04-12
 ### Fixed
 - **UI Réglages** : Correction des limites du curseur de Résolution (LOD) dans les paramètres avancés. Le curseur supporte désormais les valeurs jusqu'à 256 (Ultra) au lieu d'être bloqué à 16.

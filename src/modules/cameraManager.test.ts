@@ -48,4 +48,32 @@ describe('cameraManager.ts', () => {
         expect(camera.position.y).toBe(4000000);
         expect(state.controls).toBe(controls);
     });
+
+    it('zoomToPoint should move camera towards the target', async () => {
+        vi.useFakeTimers();
+        const camera = new THREE.PerspectiveCamera();
+        state.camera = camera;
+        const controls = {
+            target: new THREE.Vector3(0, 0, 0),
+            update: vi.fn(),
+            minDistance: 100,
+            maxDistance: 4000000
+        } as any;
+        state.controls = controls;
+        
+        camera.position.set(0, 10000, 10000);
+        
+        import('./cameraManager').then(m => {
+            m.zoomToPoint(100, 200);
+            
+            // On avance le temps pour voir si la position a changé
+            vi.advanceTimersByTime(200);
+            
+            expect(controls.target.x).not.toBe(0);
+            expect(controls.target.z).not.toBe(0);
+            expect(camera.position.y).toBeLessThan(10000); // On doit avoir zoomé
+            
+            vi.useRealTimers();
+        });
+    });
 });

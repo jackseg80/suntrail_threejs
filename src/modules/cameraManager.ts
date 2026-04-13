@@ -36,6 +36,45 @@ export function onWindowResize(): void {
 }
 
 /**
+ * Zoom fluide vers un point précis (v5.28.26).
+ * Utilisé principalement pour le double-tap.
+ */
+export function zoomToPoint(targetWorldX: number, targetWorldZ: number): void {
+    if (!state.camera || !state.controls) return;
+    
+    const elevation = getAltitudeAt(targetWorldX, targetWorldZ);
+    const startPos = state.camera.position.clone();
+    const startTarget = state.controls.target.clone();
+    
+    // Nouvelle distance : environ 1/4 de la distance actuelle (minimum 500m)
+    const currentDist = startPos.distanceTo(startTarget);
+    const targetDist = Math.max(500, currentDist / 4);
+    
+    // Direction actuelle de la caméra
+    const dir = new THREE.Vector3().subVectors(startPos, startTarget).normalize();
+    
+    const endTarget = new THREE.Vector3(targetWorldX, elevation, targetWorldZ);
+    const endPos = new THREE.Vector3().copy(endTarget).addScaledVector(dir, targetDist);
+
+    const startTime = performance.now();
+    const duration = 400; // Animation rapide pour le double-tap
+
+    const animateZoom = (time: number) => {
+        if (!state.camera || !state.controls) return;
+        const elapsed = time - startTime;
+        const progress = Math.min(elapsed / duration, 1.0);
+        const ease = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+
+        state.controls.target.lerpVectors(startTarget, endTarget, ease);
+        state.camera.position.lerpVectors(startPos, endPos, ease);
+        state.controls.update();
+
+        if (progress < 1.0) requestAnimationFrame(animateZoom);
+    };
+    requestAnimationFrame(animateZoom);
+}
+
+/**
  * Vol cinématographique vers une destination world (v5.28.20).
  * Gère l'interruption du suivi GPS et l'animation parabolique.
  */
