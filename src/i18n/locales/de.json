@@ -580,6 +580,9 @@
       "monthShort": "Monat"
     },
     "restore": "Kauf wiederherstellen",
+    "trial": {
+      "cta": "Pro ausprobieren (3 Tage) — Kostenlos"
+    },
     "legal": "Automatisch verlängerbares Abonnement · Jederzeit im Play Store kündbar.",
     "web": {
       "playStore": "Bei Google Play erhältlich",
@@ -615,6 +618,7 @@
   },
   "common": {
     "close": "Schliessen",
+    "save": "Speichern",
     "cancel": "Abbrechen",
     "confirm": "Bestätigen",
     "loading": "Laden...",

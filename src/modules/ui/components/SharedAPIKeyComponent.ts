@@ -1,6 +1,6 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { state } from '../../state';
-import { showToast } from '../../utils';
+import { showToast } from '../../toast';
 import { haptic } from '../../haptics';
 
 export class SharedAPIKeyComponent extends BaseComponent {

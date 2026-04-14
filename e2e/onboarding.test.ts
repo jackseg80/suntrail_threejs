@@ -3,7 +3,8 @@ import { test, expect } from '@playwright/test';
 test.describe('First Launch Experience', () => {
   test('should complete full onboarding and permissions flow', async ({ page }) => {
     // Start with a clean slate (no localStorage)
-    await page.goto('/');
+    await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => (window as any).suntrailReady === true);
 
     // 1. Acceptance Wall
     await expect(page.locator('#acceptance-wall-overlay')).toBeVisible();
@@ -32,7 +33,8 @@ test.describe('First Launch Experience', () => {
   });
 
   test('should allow skipping onboarding directly', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => (window as any).suntrailReady === true);
     
     // Accept wall
     await page.click('#aw-accept-btn');

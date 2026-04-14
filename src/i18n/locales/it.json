@@ -576,6 +576,9 @@
       "monthShort": "mese"
     },
     "restore": "Ripristina un acquisto",
+    "trial": {
+      "cta": "Prova Pro (3 giorni) — Gratis"
+    },
     "legal": "Abbonamento con rinnovo automatico · Annullabile in qualsiasi momento nel Play Store.",
     "web": {
       "playStore": "Disponible su Google Play",
@@ -611,6 +614,7 @@
   },
   "common": {
     "close": "Chiudi",
+    "save": "Salva",
     "cancel": "Annulla",
     "confirm": "Conferma",
     "loading": "Caricamento...",

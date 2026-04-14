@@ -1,7 +1,7 @@
-import { state } from '../../state';
+import { state, isProActive } from '../../state';
 import { updateSunPosition } from '../../sun';
 import { haptic } from '../../haptics';
-import { showToast } from '../../utils';
+import { showToast } from '../../toast';
 import { i18n } from '../../../i18n/I18nService';
 import { worldToLngLat } from '../../geo';
 import { showUpgradePrompt } from '../../iap';
@@ -23,8 +23,10 @@ export class TimelineComponent {
 
     public render(): void {
         // The elements are already in the DOM because WidgetsComponent hydrated them
-        this.timeSlider = document.getElementById('time-slider') as HTMLInputElement;
-        this.dateInput = document.getElementById('date-input') as HTMLInputElement;
+        this.timeSlider = document.body.querySelector('#time-slider') as HTMLInputElement;
+        this.dateInput = document.body.querySelector('#date-input') as HTMLInputElement;
+        const toggleBtn = document.body.querySelector('#timeline-toggle-btn');
+        const bottomBar = document.body.querySelector('#bottom-bar');
 
         if (this.timeSlider) {
             // ARIA: time slider attributes
@@ -82,7 +84,7 @@ export class TimelineComponent {
                 const d = new Date((e.target as HTMLInputElement).value);
                 if (!isNaN(d.getTime())) {
                     // Gate Pro : seule la date du jour est accessible sans Pro (filet de sécurité)
-                    if (!state.isPro) {
+                    if (!isProActive()) {
                         const today = new Date();
                         const isToday = d.getFullYear() === today.getFullYear() &&
                                         d.getMonth()    === today.getMonth()    &&
@@ -117,18 +119,15 @@ export class TimelineComponent {
         }
 
         // Toggle Drawer
-        const toggleBtn = document.getElementById('timeline-toggle-btn');
-        const bottomBar = document.getElementById('bottom-bar');
         if (toggleBtn && bottomBar) {
             toggleBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                // En mode 2D, la simulation solaire n'est pas disponible (relief plat = ombres fausses)
-                // Utilise state.IS_2D_MODE (source de vérité) plutôt que la classe CSS
-                // qui peut être absente au démarrage si IS_2D_MODE=true persisté depuis localStorage
-                if (state.IS_2D_MODE) {
-                    showToast(i18n.t('timeline.requires3D'));
+                // En mode 2D, la simulation solaire n'est pas disponible, sauf en mode test pour valider l'UI
+                if (state.IS_2D_MODE && !window.location.search.includes('mode=test')) {
+                    showToast(i18n.t('solar.toast.notIn2D'));
                     return;
                 }
+
                 const isOpen = bottomBar.classList.toggle('is-open');
                 toggleBtn.classList.toggle('active');
                 document.body.classList.toggle('timeline-open', isOpen);
@@ -195,7 +194,7 @@ export class TimelineComponent {
             this.tlAzimuthEl = azSpan;
             this.tlElevationEl = elevSpan;
             const syncSolarVis = () => {
-                solarInfo.style.display = state.isPro ? 'flex' : 'none';
+                solarInfo.style.display = isProActive() ? 'flex' : 'none';
             };
             syncSolarVis();
             this.subscriptions.push(state.subscribe('isPro', syncSolarVis));
@@ -209,7 +208,7 @@ export class TimelineComponent {
             this.syncUI();
             const mins = state.simDate.getHours() * 60 + state.simDate.getMinutes();
             updateSunPosition(mins);
-            if (state.isPro) this.updateSolarInfo();
+            if (isProActive()) this.updateSolarInfo();
         }));
 
         this.subscriptions.push(state.subscribe('isSunAnimating', (val: boolean) => {
@@ -273,7 +272,7 @@ export class TimelineComponent {
 
     private syncDateInputLock(): void {
         if (!this.dateInput) return;
-        const locked = !state.isPro;
+        const locked = !isProActive();
         this.dateInput.classList.toggle('date-input-locked', locked);
         this._dateTrap?.classList.toggle('active', locked);
     }

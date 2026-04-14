@@ -3,7 +3,8 @@ import path from 'path';
 
 test.describe('TrackSheet Functionality', () => {
   test('should import a GPX file and display stats', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => (window as any).suntrailReady === true);
 
     // 1. Bypass Onboarding
     await page.click('#aw-accept-btn');
@@ -12,7 +13,7 @@ test.describe('TrackSheet Functionality', () => {
     // 2. Open Track Tab
     const trackTab = page.locator('.nav-tab[data-tab="track"]');
     await trackTab.click();
-    await expect(page.locator('#track')).toBeVisible();
+    await expect(page.locator('#track')).toHaveClass(/is-open/);
 
     // 3. Import GPX
     // Note: We use the hidden input directly for file upload
@@ -41,7 +42,8 @@ test.describe('TrackSheet Functionality', () => {
   });
 
   test('should toggle GPX layer visibility', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => (window as any).suntrailReady === true);
     await page.click('#aw-accept-btn');
     await page.click('#ob-skip');
     await page.click('.nav-tab[data-tab="track"]');

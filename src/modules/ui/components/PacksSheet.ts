@@ -3,7 +3,7 @@ import { state } from '../../state';
 import { packManager } from '../../packManager';
 import { iapService } from '../../iapService';
 import { sheetManager } from '../core/SheetManager';
-import { showToast } from '../../utils';
+import { showToast } from '../../toast';
 import { haptic } from '../../haptics';
 import { eventBus } from '../../eventBus';
 import { i18n } from '../../../i18n/I18nService';

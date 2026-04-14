@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { BaseComponent } from '../core/BaseComponent';
-import { state, saveSettings, type ThemePreference } from '../../state';
+import { state, saveSettings, saveProStatus, type ThemePreference } from '../../state';
 import { applyPreset, getGpuInfo, detectBestPreset } from '../../performance';
 import { resetTerrain, updateVisibleTiles, updateHydrologyVisibility } from '../../terrain';
 import { updateWeatherVisibility } from '../../weather';
@@ -11,9 +11,9 @@ import type { Locale } from '../../../i18n/I18nService';
 import { sheetManager } from '../core/SheetManager';
 import { eventBus } from '../../eventBus';
 import { iapService } from '../../iapService';
-import { showToast } from '../../utils';
+import { showToast } from '../../toast';
 import { haptic } from '../../haptics';
-import { showUpgradePrompt } from '../../iap';
+import { showUpgradePrompt, isProActive, activateDiscoveryTrial } from '../../iap';
 
 export class SettingsSheet extends BaseComponent {
     constructor() {
@@ -83,7 +83,7 @@ export class SettingsSheet extends BaseComponent {
         const upgradeBtn = this.element.querySelector('#btn-upgrade-pro') as HTMLButtonElement;
         if (upgradeBtn) {
             upgradeBtn.addEventListener('click', () => {
-                if (!state.isPro) {
+                if (!isProActive()) {
                     showUpgradePrompt('settings_pro_section');
                 }
             });
@@ -518,14 +518,23 @@ export class SettingsSheet extends BaseComponent {
                 // Toggle Pro au 7e tap
                 tapCount = 0;
                 if (tapTimer) clearTimeout(tapTimer);
-                state.isPro = !state.isPro;
-                void haptic('success');
-                const msg = state.isPro
-                    ? '🔓 Mode testeur Pro activé (RAM — non persisté)'
-                    : '🔒 Mode testeur Pro désactivé';
-                showToast(msg, 3000);
-                versionEl.style.color = state.isPro ? 'var(--accent)' : '';
-                versionEl.style.opacity = state.isPro ? '0.9' : '0.5';
+                
+                // Si déjà Pro ou Trial actif -> on reset tout (utile pour les testeurs)
+                if (isProActive()) {
+                    state.isPro = false;
+                    state.trialEnd = null;
+                    saveProStatus();
+                    void haptic('warning');
+                    showToast('🔒 Mode Pro/Trial désactivé & réinitialisé', 3000);
+                } else {
+                    // Sinon on active un Trial de 14 jours (confort pour les testeurs Google)
+                    activateDiscoveryTrial(14);
+                    void haptic('success');
+                    showToast('🔓 Mode Testeur : Essai Pro 14j activé', 3000);
+                }
+                
+                versionEl.style.color = isProActive() ? 'var(--accent)' : '';
+                versionEl.style.opacity = isProActive() ? '0.9' : '0.5';
             }
         });
     }
@@ -567,12 +576,12 @@ export class SettingsSheet extends BaseComponent {
         if (!toggle) return;
         
         // Initialiser : désactivé et décoché pour les utilisateurs gratuits
-        toggle.disabled = !state.isPro;
-        toggle.checked = state.isPro && !!(state as any)[stateKey];
+        toggle.disabled = !isProActive();
+        toggle.checked = isProActive() && !!(state as any)[stateKey];
         
         // Gérer le changement
         toggle.addEventListener('change', () => {
-            if (!state.isPro) {
+            if (!isProActive()) {
                 toggle.checked = false;
                 showUpgradePrompt(upgradeFeatureKey);
                 return;
@@ -589,7 +598,7 @@ export class SettingsSheet extends BaseComponent {
                 // Ne pas déclencher si on a cliqué directement sur le toggle
                 if (e.target === toggle || (e.target as HTMLElement).tagName === 'INPUT') return;
                 
-                if (!state.isPro) {
+                if (!isProActive()) {
                     showUpgradePrompt(upgradeFeatureKey);
                     return;
                 }
@@ -603,8 +612,8 @@ export class SettingsSheet extends BaseComponent {
         
         // Mettre à jour si isPro change
         this.addSubscription(state.subscribe('isPro', () => {
-            toggle.disabled = !state.isPro;
-            if (!state.isPro) {
+            toggle.disabled = !isProActive();
+            if (!isProActive()) {
                 toggle.checked = false;
                 (state as any)[stateKey] = false;
                 saveSettings();
@@ -622,7 +631,7 @@ export class SettingsSheet extends BaseComponent {
     private updateProButtonState(btn: HTMLButtonElement): void {
         if (!btn) return;
 
-        if (state.isPro) {
+        if (isProActive()) {
             btn.innerHTML = '<span>✓</span><span data-i18n="settings.pro.active">Pro Actif</span>';
             btn.style.background = `linear-gradient(135deg, var(--success) 0%, ${document.documentElement.dataset.theme === 'light' ? '#15803d' : '#16a34a'} 100%)`;
             btn.style.cursor = 'default';
@@ -637,9 +646,9 @@ export class SettingsSheet extends BaseComponent {
         // Met à jour les lignes informatives Pro (opacité + couleur check)
         const infoRows = this.element?.querySelectorAll('.pro-info-row');
         infoRows?.forEach(row => {
-            (row as HTMLElement).style.opacity = state.isPro ? '1' : '0.7';
+            (row as HTMLElement).style.opacity = isProActive() ? '1' : '0.7';
             const check = row.querySelector('.pro-check') as HTMLElement;
-            if (check) check.style.color = state.isPro ? '#22c55e' : 'var(--gold)';
+            if (check) check.style.color = isProActive() ? '#22c55e' : 'var(--gold)';
         });
     }
 }

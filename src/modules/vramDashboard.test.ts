@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TEXTURE_LIMITS, formatTriangles, VRAMDashboard } from './ui/components/VRAMDashboard';
 import { state } from './state';
-import { showToast } from './utils';
+import { showToast } from './toast';
 
 // Mock terrain activeTiles
 vi.mock('./terrain', () => ({
@@ -16,10 +16,14 @@ vi.mock('./workerManager', () => ({
     tileWorkerManager: { workers: new Array(8) }
 }));
 
-// Mock utils (showToast)
+// Mock utils
 vi.mock('./utils', () => ({
-    showToast: vi.fn(),
     throttle: vi.fn((fn: any) => fn)
+}));
+
+// Mock toast
+vi.mock('./toast', () => ({
+    showToast: vi.fn()
 }));
 
 // Mock geo

@@ -1,12 +1,12 @@
 import { BaseComponent } from '../core/BaseComponent';
-import { state } from '../../state';
+import { state, isProActive } from '../../state';
 import {
     deleteTerrainCache, setPMTilesSource,
     downloadVisibleZone, getOfflineZoneCount, incrementOfflineZoneCount, estimateZoneSizeMB,
 } from '../../tileLoader';
 import { activeTiles } from '../../terrain';
 import { showUpgradePrompt } from '../../iap';
-import { showToast } from '../../utils';
+import { showToast } from '../../toast';
 import { sheetManager } from '../core/SheetManager';
 import { resetTerrain, updateVisibleTiles } from '../../terrain';
 import { SharedAPIKeyComponent } from './SharedAPIKeyComponent';
@@ -63,20 +63,21 @@ export class ConnectivitySheet extends BaseComponent {
             }
             const size = estimateZoneSizeMB(count);
             const zonesUsed = getOfflineZoneCount();
-            const limitStr = state.isPro ? '' : ` · ${zonesUsed}/1 ${i18n.t('connectivity.label.zonesUsed') || 'zone utilisée'}`;
+            const limitStr = isProActive() ? '' : ` · ${zonesUsed}/1 ${i18n.t('connectivity.label.zonesUsed') || 'zone utilisée'}`;
             span.textContent = `📥 ${count} ${i18n.t('connectivity.label.tiles') || 'tuiles'} · ${size}${limitStr}`;
         };
 
         // Met à jour le label quand le zoom change (= nouvelles tuiles à l'écran)
         this.addSubscription(state.subscribe('ZOOM', syncDownloadBtnLabel));
         this.addSubscription(state.subscribe('isPro', syncDownloadBtnLabel));
+        this.addSubscription(state.subscribe('trialEnd', syncDownloadBtnLabel));
         syncDownloadBtnLabel();
 
         downloadZoneBtn?.addEventListener('click', async () => {
             if (!downloadZoneBtn) return;
 
             // Gate Pro : 1 zone gratuite, illimité pour les Pro
-            if (!state.isPro && getOfflineZoneCount() >= 1) {
+            if (!isProActive() && getOfflineZoneCount() >= 1) {
                 showUpgradePrompt('offline_zones');
                 return;
             }

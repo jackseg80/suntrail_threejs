@@ -9,7 +9,8 @@ import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, rese
 import { disposeAllCachedTiles } from './tileCache';
 import { disposeAllGeometries } from './geometryCache';
 import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat, clampTargetToBounds } from './geo';
-import { throttle, showToast } from './utils';
+import { throttle } from './utils';
+import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
 import { initVegetationResources } from './vegetation';
 import { initWeatherSystem, updateWeatherSystem, fetchWeather, disposeWeatherSystem } from './weather';

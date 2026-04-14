@@ -1,4 +1,4 @@
-import { state } from './state';
+import { isProActive } from './iap';
 
 export type FeatureId = 
     | 'lod_high'        // Capacité à zoomer au-delà de 14
@@ -13,8 +13,8 @@ export type FeatureId =
  * Centralise la logique de monétisation et les dérogations (dev/web).
  */
 export function isFeatureEnabled(featureId: FeatureId): boolean {
-    // Si l'utilisateur est Pro, tout est débloqué
-    if (state.isPro) return true;
+    // Si l'utilisateur est Pro (achat ou essai), tout est débloqué
+    if (isProActive()) return true;
 
     // Dérogations spécifiques pour les utilisateurs gratuits
     switch (featureId) {

@@ -3,7 +3,7 @@ import { state, saveSettings } from '../../state';
 import { resetTerrain, updateVisibleTiles, updateSlopeVisibility } from '../../terrain';
 import { sheetManager } from '../core/SheetManager';
 import { i18n } from '../../../i18n/I18nService';
-import { showUpgradePrompt } from '../../iap';
+import { showUpgradePrompt, isProActive } from '../../iap';
 import { haptic } from '../../haptics';
 
 export class LayersSheet extends BaseComponent {
@@ -26,7 +26,7 @@ export class LayersSheet extends BaseComponent {
                 const source = (item as HTMLElement).dataset.source;
                 if (source) {
                     // Gate Freemium : couche satellite réservée Pro
-                    if (source === 'satellite' && !state.isPro) {
+                    if (source === 'satellite' && !isProActive()) {
                         showUpgradePrompt('satellite');
                         return;
                     }
@@ -75,7 +75,7 @@ export class LayersSheet extends BaseComponent {
         // Badge Pro sur la tuile satellite — masquer si isPro
         const satelliteBadge = this.element.querySelector('[data-source="satellite"] .layer-pro-badge') as HTMLElement | null;
         const syncSatelliteBadge = () => {
-            if (satelliteBadge) satelliteBadge.classList.toggle('hidden', state.isPro);
+            if (satelliteBadge) satelliteBadge.classList.toggle('hidden', isProActive());
         };
         syncSatelliteBadge();
         this.addSubscription(state.subscribe('isPro', syncSatelliteBadge));

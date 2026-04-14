@@ -1,5 +1,5 @@
 import { state, PRESETS, PresetType, saveSettings } from './state';
-import { showToast } from './utils';
+import { showToast } from './toast';
 import { updateShadowMapResolution } from './sun';
 import { resetTerrain, updateVisibleTiles } from './terrain';
 import { trimCache } from './tileCache';

@@ -576,7 +576,11 @@
       "monthShort": "mo"
     },
     "restore": "Restore purchase",
-    "legal": "Auto-renewable subscription · Cancel anytime in the Play Store.",
+    "trial": {
+      "cta": "Try Pro (3 days) — Free"
+    },
+    "legal": "Auto-renewable subscription · Cancel at any time in the Play Store.",
+
     "web": {
       "playStore": "Get it on Google Play",
       "note": "Pro upgrade is available via the Android app on Google Play."
@@ -612,6 +616,7 @@
   },
   "common": {
     "close": "Close",
+    "save": "Save",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "loading": "Loading...",

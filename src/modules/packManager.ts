@@ -16,7 +16,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import * as pmtiles from 'pmtiles';
 import { state } from './state';
 import { eventBus } from './eventBus';
-import { showToast } from './utils';
+import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
 import type { PackMeta, PackState, PackCatalog, PackStatus } from './packTypes';
 import { iapService } from './iapService';

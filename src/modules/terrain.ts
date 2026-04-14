@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { disposeObject } from './memory';
-import { state, GPX_COLORS } from './state';
-import type { GPXLayer } from './state';
+import { state, isProActive, type GPXLayer, GPX_COLORS } from './state';
 import { isMobileDevice, simplifyRDP } from './utils';
 import { updateElevationProfile } from './profile';
 import { lngLatToWorld, worldToLngLat, lngLatToTile, isPositionInSwitzerland, isPositionInFrance } from './geo';
@@ -273,7 +272,7 @@ export function prefetchAdjacentLODs(): void {
     const MAX_PREFETCH = 20;
     let added = 0;
 
-    const _prefetchMaxZoom = state.isPro ? (state.MAX_ALLOWED_ZOOM || 18) : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
+    const _prefetchMaxZoom = isProActive() ? (state.MAX_ALLOWED_ZOOM || 18) : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
     const nextZoom = Math.min(zoom + 1, _prefetchMaxZoom);
     if (nextZoom !== zoom) {
         const ct = lngLatToTile(center.lon, center.lat, nextZoom);

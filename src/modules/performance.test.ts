@@ -5,7 +5,8 @@ import { detectBestPreset, applyPreset } from './performance';
 // Mocks des dépendances lourdes de performance.ts
 vi.mock('./terrain', () => ({ resetTerrain: vi.fn(), updateVisibleTiles: vi.fn() }));
 vi.mock('./sun', () => ({ updateShadowMapResolution: vi.fn() }));
-vi.mock('./utils', () => ({ showToast: vi.fn(), isMobileDevice: vi.fn(() => false) }));
+vi.mock('./utils', () => ({ isMobileDevice: vi.fn(() => false) }));
+vi.mock('./toast', () => ({ showToast: vi.fn() }));
 // tileCache.ts (importé via trimCache) utilise aussi isMobileDevice depuis utils
 vi.mock('../i18n/I18nService', () => ({ i18n: { t: (_k: string) => _k } }));
 

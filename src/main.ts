@@ -6,7 +6,7 @@ import { initEmbeddedOverview } from './modules/tileLoader';
 import { packManager } from './modules/packManager';
 import { registerSW } from 'virtual:pwa-register';
 import { nativeGPSService } from './modules/nativeGPSService';
-import { showToast } from './modules/utils';
+import { showToast } from './modules/toast';
 import { state } from './modules/state';
 import { eventBus } from './modules/eventBus';
 import { sheetManager } from './modules/ui/core/SheetManager';
@@ -46,6 +46,10 @@ window.addEventListener('suntrail:uiReady', async () => {
         }
     } catch (e) {
         console.error('[Main] Recovery failure:', e);
+    } finally {
+        // Tente d'afficher l'interstitiel Pro ( Discovery Trial )
+        const { UpsellModal } = await import('./modules/ui/components/UpsellModal');
+        UpsellModal.tryShow();
     }
 }, { once: true });
 

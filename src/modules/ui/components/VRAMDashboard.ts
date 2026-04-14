@@ -1,7 +1,7 @@
 import { state } from '../../state';
 import { activeTiles } from '../../terrain';
 import { tileWorkerManager } from '../../workerManager';
-import { showToast } from '../../utils';
+import { showToast } from '../../toast';
 import { i18n } from '../../../i18n/I18nService';
 import type { PresetType } from '../../state';
 

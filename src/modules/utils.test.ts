@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { showToast, throttle } from './utils';
+import { showToast } from './toast';
+import { throttle } from './utils';
 
 describe('utils.ts', () => {
     beforeEach(() => {

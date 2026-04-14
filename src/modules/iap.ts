@@ -5,9 +5,9 @@
  * Sprint IAP : remplacer showUpgradePrompt() par l'ouverture de l'UpgradeSheet.
  */
 
-import { showToast } from './utils';
-import { saveProStatus } from './state';
-import { state } from './state';
+import { showToast } from './toast';
+import { saveProStatus, state } from './state';
+export { isProActive, activateDiscoveryTrial } from './state';
 import { sheetManager } from './ui/core/SheetManager';
 
 // Messages par feature (sera remplacé par i18n quand les clés seront ajoutées)
@@ -38,11 +38,6 @@ export function showUpgradePrompt(feature: string): void {
 /**
  * Accorde le statut Pro (appelé après validation IAP par RevenueCat).
  * Point unique de changement d'état Pro → persistance automatique.
- *
- * Le gate LOD est géré dynamiquement dans scene.ts via `effectiveMaxZoom`
- * (lit `state.isPro` au moment du rendu) — pas besoin de toucher MAX_ALLOWED_ZOOM ici.
- *
- * Active automatiquement toutes les fonctionnalités Pro par défaut.
  */
 export function grantProAccess(): void {
     state.isPro = true;

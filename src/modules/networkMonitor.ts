@@ -2,7 +2,7 @@ import { Network, type ConnectionStatus } from '@capacitor/network';
 import { Capacitor } from '@capacitor/core';
 import { state } from './state';
 import { eventBus } from './eventBus';
-import { showToast } from './utils';
+import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
 
 let _userManualOverride = false;

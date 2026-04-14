@@ -4,6 +4,8 @@ import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { createReactiveState } from './ui/core/ReactiveState';
 import type { VRAMDashboard } from './ui/components/VRAMDashboard';
+import { LocationPoint } from './geo';
+import { showToast } from './toast';
 
 export type PresetType = 'eco' | 'balanced' | 'performance' | 'ultra' | 'custom';
 
@@ -38,7 +40,7 @@ export interface PerformanceSettings {
     BUILDINGS_SHADOWS: boolean; 
     MAX_ALLOWED_ZOOM: number;    
     VEGETATION_DENSITY: number;  
-    VEGETATION_CAST_SHADOW: boolean; // false sur mobile mid-range (Phase 2 — économie shadow pass)
+    VEGETATION_CAST_SHADOW: boolean;
     BUILDING_LIMIT: number;      
     POI_ZOOM_THRESHOLD: number;  
     BUILDING_ZOOM_THRESHOLD: number; 
@@ -51,17 +53,7 @@ export interface PerformanceSettings {
     SHOW_SLOPES: boolean;
 }
 
-// Presets calibrés pour les tiers du marché mobile (v5.11) :
-// eco         = vieux mobile (Mali-G52, Adreno 5xx, Intel HD 4xx)
-// balanced    = mid-range 2021-2022 (Galaxy A53 / Mali-G68, Intel HD 6xx)
-// performance = flagship mobile (Galaxy S23 / Adreno 740) + mid PC (GTX 1050, RX 470)
-// ultra       = PC bureau / Snapdragon Elite (Adreno 830+) / Apple M
-//
-// Principe : les valeurs de chaque tier sont directes, sans surcharge ("caps").
-// Seul Ultra conserve des ajustements mobiles dans applyPreset() car ses valeurs
-// sont calibrées pour PC et doivent être légèrement réduites sur Snapdragon Elite.
 export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings> = {
-    // ── ECO — Appareils anciens ou très limités ───────────────────────────────
     eco: {
         RESOLUTION: 2, RANGE: 3, SHADOWS: false, SHADOW_RES: 128, PIXEL_RATIO_LIMIT: 1.0,
         SHOW_VEGETATION: false, SHOW_SIGNPOSTS: false, SHOW_BUILDINGS: false, SHOW_HYDROLOGY: false, BUILDINGS_SHADOWS: false,
@@ -69,44 +61,30 @@ export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings>
         MAX_BUILDS_PER_CYCLE: 1, LOAD_DELAY_FACTOR: 2.0, SHOW_WEATHER: false, WEATHER_DENSITY: 0, WEATHER_SPEED: 1.0,
         FOG_FAR: 25000, SHOW_SLOPES: false, VEGETATION_CAST_SHADOW: false
     },
-    // ── STD / Balanced — Mid-range 2021-2022 (Galaxy A53, Intel HD 620) ──────
     balanced: {
-        RESOLUTION: 64,
-        RANGE: 4,
-        SHADOWS: true, SHADOW_RES: 512, PIXEL_RATIO_LIMIT: 1.0,
+        RESOLUTION: 64, RANGE: 4, SHADOWS: true, SHADOW_RES: 512, PIXEL_RATIO_LIMIT: 1.0,
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: false, BUILDINGS_SHADOWS: false,
-        MAX_ALLOWED_ZOOM: 18,
-        VEGETATION_DENSITY: 1500,
-        VEGETATION_CAST_SHADOW: false, // économie ~18 draw calls shadow pass sur mid-range
+        MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 1500, VEGETATION_CAST_SHADOW: false,
         BUILDING_LIMIT: 40, POI_ZOOM_THRESHOLD: 15, BUILDING_ZOOM_THRESHOLD: 16,
-        MAX_BUILDS_PER_CYCLE: 2, LOAD_DELAY_FACTOR: 1.2,
-        SHOW_WEATHER: true, WEATHER_DENSITY: 1000,
+        MAX_BUILDS_PER_CYCLE: 2, LOAD_DELAY_FACTOR: 1.2, SHOW_WEATHER: true, WEATHER_DENSITY: 1000,
         WEATHER_SPEED: 1.0, FOG_FAR: 40000, SHOW_SLOPES: false
     },
-    // ── High / Performance — Galaxy S23 (Adreno 740) + GTX 1050 / RX 470 ────
     performance: {
-        RESOLUTION: 160,
-        RANGE: 6,
-        SHADOWS: true,
-        SHADOW_RES: 1024,
-        PIXEL_RATIO_LIMIT: 1.5,
+        RESOLUTION: 160, RANGE: 6, SHADOWS: true, SHADOW_RES: 1024, PIXEL_RATIO_LIMIT: 1.5,
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: true, BUILDINGS_SHADOWS: true,
-        MAX_ALLOWED_ZOOM: 18,
-        VEGETATION_DENSITY: 5000, VEGETATION_CAST_SHADOW: true,
+        MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 5000, VEGETATION_CAST_SHADOW: true,
         BUILDING_LIMIT: 80, POI_ZOOM_THRESHOLD: 15, BUILDING_ZOOM_THRESHOLD: 15,
-        MAX_BUILDS_PER_CYCLE: 4,
-        LOAD_DELAY_FACTOR: 0.5,
-        SHOW_WEATHER: true, WEATHER_DENSITY: 5000, WEATHER_SPEED: 1.2, FOG_FAR: 60000, SHOW_SLOPES: false
+        MAX_BUILDS_PER_CYCLE: 4, LOAD_DELAY_FACTOR: 0.5, SHOW_WEATHER: true, WEATHER_DENSITY: 5000, WEATHER_SPEED: 1.2,
+        FOG_FAR: 60000, SHOW_SLOPES: false
     },
-    // ── Ultra — PC bureau / RTX / Apple M / Snapdragon Elite ─────────────────
     ultra: {
         get PIXEL_RATIO_LIMIT() { return typeof window !== 'undefined' ? window.devicePixelRatio : 1; },
         RESOLUTION: 256, RANGE: 12, SHADOWS: true, SHADOW_RES: 4096,
         SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: true, BUILDINGS_SHADOWS: true,
         MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 8000, VEGETATION_CAST_SHADOW: true,
         BUILDING_LIMIT: 150, POI_ZOOM_THRESHOLD: 15, BUILDING_ZOOM_THRESHOLD: 15,
-        MAX_BUILDS_PER_CYCLE: 8, LOAD_DELAY_FACTOR: 0.2,
-        SHOW_WEATHER: true, WEATHER_DENSITY: 15000, WEATHER_SPEED: 1.5, FOG_FAR: 100000, SHOW_SLOPES: false
+        MAX_BUILDS_PER_CYCLE: 8, LOAD_DELAY_FACTOR: 0.2, SHOW_WEATHER: true, WEATHER_DENSITY: 15000, WEATHER_SPEED: 1.5,
+        FOG_FAR: 100000, SHOW_SLOPES: false
     } as PerformanceSettings
 };
 
@@ -117,8 +95,6 @@ export interface Peak {
     lon: number;
     ele: number;
 }
-
-import { LocationPoint } from './geo';
 
 export type AppLocale = 'fr' | 'de' | 'it' | 'en';
 export type ThemePreference = 'light' | 'dark' | 'auto';
@@ -135,7 +111,6 @@ export interface State {
     RANGE: number;
     PIXEL_RATIO_LIMIT: number;
     LOAD_DELAY_FACTOR: number;
-    
     SHOW_TRAILS: boolean;
     SHOW_SLOPES: boolean;
     SHOW_SIGNPOSTS: boolean;
@@ -143,12 +118,11 @@ export interface State {
     SHOW_HYDROLOGY: boolean;
     SHOW_VEGETATION: boolean;
     SHOW_WEATHER: boolean;
-    SHOW_WEATHER_PRO: boolean; // Météo avancée (graphique 24h + prévisions 3 jours) - Pro only
+    SHOW_WEATHER_PRO: boolean;
     SHOW_DEBUG: boolean;
     SHOW_STATS: boolean;
     SHOW_INCLINOMETER: boolean;
     USE_WORKERS: boolean;
-
     SHADOWS: boolean;
     SHADOW_RES: number;
     VEGETATION_DENSITY: number;
@@ -159,7 +133,6 @@ export interface State {
     BUILDING_ZOOM_THRESHOLD: number;
     MAX_BUILDS_PER_CYCLE: number;
     MAX_ALLOWED_ZOOM: number;
-
     TARGET_LAT: number;
     TARGET_LON: number;
     initialLat: number;
@@ -169,7 +142,6 @@ export interface State {
     FOG_NEAR: number;
     FOG_FAR: number;
     originTile: { x: number; y: number; z: number };
-
     scene: THREE.Scene | null;
     camera: THREE.PerspectiveCamera | null;
     renderer: THREE.WebGLRenderer | null;
@@ -179,7 +151,6 @@ export interface State {
     sky: Sky | null;
     stats: any | null; 
     vramPanel: VRAMDashboard | null;
-
     simDate: Date;
     isSunAnimating: boolean;
     animationSpeed: number;
@@ -209,43 +180,37 @@ export interface State {
             code: number;
         }[];
     } | null;
-    weatherUnavailable: boolean; // true si l'API météo est indisponible
+    weatherUnavailable: boolean;
     ephemeris: {
         sunrise: string; sunset: string; goldenHour: string; blueHour: string;
         moonPhaseText: string; moonPhaseIcon: string; moonIllum: number;
     } | null;
-    
     localPeaks: Peak[];
-
     gpxLayers: GPXLayer[];
     activeGPXLayerId: string | null;
     recordedMesh: THREE.Mesh | null;
     profileMarker: THREE.Mesh | null;
     trailProgress: number;
     isFollowingTrail: boolean;
-    
-    isFlyingTo: boolean; // true during flyTo animation — blocks origin shift
-    isTiltTransitioning: boolean; // true during 2D↔3D smooth tilt animation
+    isFlyingTo: boolean;
+    isTiltTransitioning: boolean;
     isRecording: boolean;
-    isPaused: boolean; // v5.28.1: Auto-pause
-    currentCourseId: string | null; // v5.24: ID de la course native en cours
+    isPaused: boolean;
+    currentCourseId: string | null;
     recordedPoints: LocationPoint[];
-    recoveredPoints: Array<{ lat: number; lon: number; alt: number; timestamp: number }> | null;
-    
+    recoveredPoints: any[] | null;
     userLocation: { lat: number; lon: number; alt: number } | null;
     userLocationAccuracy: number | null;
     userHeading: number | null;
     isFollowingUser: boolean;
     userMarker: THREE.Group | null;
-    
     smoothUserPos: THREE.Vector3;
     smoothUserHeading: number;
     lastTrackingUpdate: number;
-
     IS_OFFLINE: boolean;
     isNetworkAvailable: boolean;
-    connectionType: 'wifi' | 'cellular' | 'none' | 'unknown';
-    isMapTilerDisabled: boolean; // Nouveau flag pour gérer les clés invalides (403)
+    connectionType: string;
+    isMapTilerDisabled: boolean;
     networkRequests: number;
     cacheHits: number;
     uiVisible: boolean;
@@ -258,13 +223,10 @@ export interface State {
     lastClickedCoords: { x: number; z: number; alt: number };
     hasLastClicked: boolean;
     isFlying: boolean;
-
-    // ── Freemium ──────────────────────────────────────────────────────────────
-    isPro: boolean; // true si l'utilisateur a acheté le tier Pro (IAP Play Store)
-
-    // ── Country Packs ────────────────────────────────────────────────────────
-    purchasedPacks: string[];   // IDs des packs achetés
-    installedPacks: string[];   // IDs des packs installés localement
+    isPro: boolean;
+    trialEnd: number | null;
+    purchasedPacks: string[];
+    installedPacks: string[];
 }
 
 const initialState: State = {
@@ -291,44 +253,37 @@ const initialState: State = {
     originTile: { x: 0, y: 0, z: 6 },
     scene: null, camera: null, renderer: null, controls: null, sunLight: null, ambientLight: null, sky: null,
     stats: null, vramPanel: null,
-
     simDate: new Date(), isSunAnimating: false, animationSpeed: 1.0,
     lastWeatherLat: 0, lastWeatherLon: 0, currentWeather: 'clear', weatherIntensity: 0,
     WEATHER_DENSITY: PRESETS.balanced.WEATHER_DENSITY, WEATHER_SPEED: PRESETS.balanced.WEATHER_SPEED,
     weatherData: null, weatherUnavailable: false, ephemeris: null,
-    
     localPeaks: [],
-
     gpxLayers: [],
     activeGPXLayerId: null,
     recordedMesh: null,
     profileMarker: null, trailProgress: 0, isFollowingTrail: false,
-    
     isFlyingTo: false,
     isTiltTransitioning: false,
     isRecording: false,
-    isPaused: false, // v5.28.1: Auto-pause
-    currentCourseId: null, // v5.24: ID de la course native en cours
+    isPaused: false,
+    currentCourseId: null,
     recordedPoints: [],
     recoveredPoints: null,
-    
     userLocation: null, userLocationAccuracy: null, userHeading: null, isFollowingUser: false, userMarker: null,
-    
     smoothUserPos: new THREE.Vector3(),
     smoothUserHeading: 0,
     lastTrackingUpdate: 0,
-
     IS_OFFLINE: false,
     isNetworkAvailable: true,
     connectionType: 'unknown',
     isMapTilerDisabled: false,
-    networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isUserInteracting: false,     isProcessingTiles: false, IS_2D_MODE: false, currentFPS: 0, lastUIInteraction: Date.now(),
+    networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isUserInteracting: false,
+    isProcessingTiles: false, IS_2D_MODE: false, currentFPS: 0, lastUIInteraction: Date.now(),
     lastClickedCoords: { x: 0, z: 0, alt: 0 },
     hasLastClicked: false,
     isFlying: false,
-
     isPro: false,
-
+    trialEnd: null,
     purchasedPacks: [],
     installedPacks: [],
 };
@@ -403,12 +358,14 @@ export function saveSettings(): void {
     }, 300);
 }
 
-// ── Persistance Pro (clé séparée — immunisée contre les resets de version) ──
 const PRO_KEY = 'suntrail_pro';
 
 export function saveProStatus(): void {
     try {
-        localStorage.setItem(PRO_KEY, JSON.stringify({ isPro: state.isPro }));
+        localStorage.setItem(PRO_KEY, JSON.stringify({ 
+            isPro: state.isPro,
+            trialEnd: state.trialEnd
+        }));
     } catch (e) {
         console.warn('[State] Could not save pro status:', e);
     }
@@ -420,9 +377,26 @@ export function loadProStatus(): void {
         if (!saved) return;
         const parsed = JSON.parse(saved);
         state.isPro = !!parsed.isPro;
+        state.trialEnd = parsed.trialEnd || null;
     } catch (e) {
         console.warn('[State] Could not load pro status:', e);
     }
+}
+
+export function isProActive(): boolean {
+    if (state.isPro) return true;
+    if (state.trialEnd && Date.now() < state.trialEnd) return true;
+    return false;
+}
+
+export function activateDiscoveryTrial(days = 3): void {
+    const durationMs = days * 24 * 60 * 60 * 1000;
+    state.trialEnd = Date.now() + durationMs;
+    state.SHOW_BUILDINGS = true;
+    state.SHOW_INCLINOMETER = true;
+    state.SHOW_WEATHER_PRO = true;
+    saveProStatus();
+    showToast(`✨ Essai Pro activé pour ${days} jours !`);
 }
 
 export function loadSettings(): SavedSettings | null {
@@ -430,19 +404,11 @@ export function loadSettings(): SavedSettings | null {
         const saved = localStorage.getItem(SETTINGS_KEY);
         if (!saved) return null;
         const parsed = JSON.parse(saved) as SavedSettings;
-        
-        // Basic validation & Version Check
-        if (!parsed.PERFORMANCE_PRESET || !parsed.MAP_SOURCE) {
-            return null;
-        }
-
+        if (!parsed.PERFORMANCE_PRESET || !parsed.MAP_SOURCE) return null;
         if (parsed.version !== CURRENT_SETTINGS_VERSION) {
-            console.log(`[State] Obsolete version detected (${parsed.version} vs ${CURRENT_SETTINGS_VERSION}). Resetting settings.`);
             localStorage.removeItem(SETTINGS_KEY);
             return null;
         }
-
-        // Apply loaded boolean toggles and map source directly
         if (parsed.lang) state.lang = parsed.lang;
         if (parsed.themePreference) state.themePreference = parsed.themePreference;
         state.MAP_SOURCE = parsed.MAP_SOURCE;
@@ -450,8 +416,6 @@ export function loadSettings(): SavedSettings | null {
         state.SHOW_TRAILS = !!parsed.SHOW_TRAILS;
         state.SHOW_SLOPES = !!parsed.SHOW_SLOPES;
         if (parsed.IS_2D_MODE !== undefined) state.IS_2D_MODE = !!parsed.IS_2D_MODE;
-        
-        // Restore custom values
         if (parsed.PERFORMANCE_PRESET === 'custom') {
             state.SHOW_SIGNPOSTS = !!parsed.SHOW_SIGNPOSTS;
             state.SHOW_BUILDINGS = !!parsed.SHOW_BUILDINGS;
@@ -461,7 +425,6 @@ export function loadSettings(): SavedSettings | null {
             if (parsed.SHOW_WEATHER_PRO !== undefined) state.SHOW_WEATHER_PRO = !!parsed.SHOW_WEATHER_PRO;
             if (parsed.SHOW_INCLINOMETER !== undefined) state.SHOW_INCLINOMETER = !!parsed.SHOW_INCLINOMETER;
             state.SHADOWS = !!parsed.SHADOWS;
-            
             if (parsed.RESOLUTION) state.RESOLUTION = parsed.RESOLUTION;
             if (parsed.RANGE) state.RANGE = parsed.RANGE;
             if (parsed.FOG_FAR) state.FOG_FAR = parsed.FOG_FAR;
@@ -469,12 +432,9 @@ export function loadSettings(): SavedSettings | null {
             if (parsed.WEATHER_DENSITY !== undefined) state.WEATHER_DENSITY = parsed.WEATHER_DENSITY;
             if (parsed.WEATHER_SPEED !== undefined) state.WEATHER_SPEED = parsed.WEATHER_SPEED;
         }
-        
         return parsed;
     } catch (e) {
-        console.warn("Failed to parse settings from localStorage, resetting...", e);
         localStorage.removeItem(SETTINGS_KEY);
         return null;
     }
 }
-

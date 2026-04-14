@@ -11,7 +11,7 @@
  * v5.19.1 : Tap pour détails, drag pour repositionner, double-tap pour reset position.
  */
 
-import { state } from '../../state';
+import { state, isProActive } from '../../state';
 import { getAltitudeAt, findTerrainIntersection } from '../../analysis';
 import { showUpgradePrompt } from '../../iap';
 import { i18n } from '../../../i18n/I18nService';
@@ -137,7 +137,7 @@ export class InclinometerWidget {
     }
 
     private syncVisibility(): void {
-        const shouldShow = state.isPro && state.ZOOM >= MIN_ZOOM_DISPLAY && state.SHOW_INCLINOMETER;
+        const shouldShow = isProActive() && state.ZOOM >= MIN_ZOOM_DISPLAY && state.SHOW_INCLINOMETER;
         if (this.el) this.el.style.display = shouldShow ? 'block' : 'none';
         
         // Réticule visible uniquement en mode libre

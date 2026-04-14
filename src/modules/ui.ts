@@ -10,7 +10,7 @@ import { initScene, flyTo } from './scene';
 import { updateVisibleTiles, resetTerrain } from './terrain';
 import { updateStorageUI } from './tileLoader';
 import { lngLatToTile, lngLatToWorld, worldToLngLat } from './geo';
-import { showToast } from './utils';
+import { showToast } from './toast';
 import { applyPreset, detectBestPreset, getGpuInfo, applyCustomSettings } from './performance';
 import { findTerrainIntersection, getAltitudeAt } from './analysis';
 import { closeElevationProfile, updateElevationProfile } from './profile';
@@ -180,10 +180,14 @@ export function initUI(): void {
     initAutoHide();
     initMobileUI();
 
-    requestAnimationFrame(() => setTimeout(() => void _initSecondaryUI(), 0));
+    const secondaryUIReady = _initSecondaryUI();
 
-    // Démarrage automatique — attend la résolution de la clé MapTiler
-    void gistKeyReady.then(() => launchScene());
+    // Démarrage automatique — attend la résolution de la clé MapTiler (avec timeout de sécurité)
+    const safetyTimeout = new Promise<void>(resolve => setTimeout(resolve, 5000));
+    void Promise.race([gistKeyReady, safetyTimeout]).then(async () => {
+        await secondaryUIReady;
+        launchScene();
+    });
 
     (window as any).sheetManager = sheetManager;
 
@@ -426,67 +430,76 @@ async function handleMapClick(e: MouseEvent) {
 }
 
 async function _initSecondaryUI(): Promise<void> {
-    const [
-        { SettingsSheet },
-        { LayersSheet },
-        { SearchSheet },
-        { TrackSheet },
-        { WeatherSheet, SolarProbeSheet, SOSSheet },
-        { ConnectivitySheet },
-        { PacksSheet },
-        { UpgradeSheet },
-        { VRAMDashboard },
-        { InclinometerWidget },
-    ] = await Promise.all([
-        import('./ui/components/SettingsSheet'),
-        import('./ui/components/LayersSheet'),
-        import('./ui/components/SearchSheet'),
-        import('./ui/components/TrackSheet'),
-        import('./ui/components/ExpertSheets'),
-        import('./ui/components/ConnectivitySheet'),
-        import('./ui/components/PacksSheet'),
-        import('./ui/components/UpgradeSheet'),
-        import('./ui/components/VRAMDashboard'),
-        import('./ui/components/InclinometerWidget'),
-    ]);
+    try {
+        const [
+            { SettingsSheet },
+            { LayersSheet },
+            { SearchSheet },
+            { TrackSheet },
+            { WeatherSheet, SolarProbeSheet, SOSSheet },
+            { ConnectivitySheet },
+            { PacksSheet },
+            { UpgradeSheet },
+            { VRAMDashboard },
+            { InclinometerWidget },
+        ] = await Promise.all([
+            import('./ui/components/SettingsSheet'),
+            import('./ui/components/LayersSheet'),
+            import('./ui/components/SearchSheet'),
+            import('./ui/components/TrackSheet'),
+            import('./ui/components/ExpertSheets'),
+            import('./ui/components/ConnectivitySheet'),
+            import('./ui/components/PacksSheet'),
+            import('./ui/components/UpgradeSheet'),
+            import('./ui/components/VRAMDashboard'),
+            import('./ui/components/InclinometerWidget'),
+        ]);
 
-    new SettingsSheet().hydrate();
-    new LayersSheet().hydrate();
-    new SearchSheet().hydrate();
-    new TrackSheet().hydrate();
-    new WeatherSheet().hydrate();
-    new SolarProbeSheet().hydrate();
-    new SOSSheet().hydrate();
-    new ConnectivitySheet().hydrate();
-    new PacksSheet().hydrate();
-    new UpgradeSheet().hydrate();
+        new SettingsSheet().hydrate();
+        new LayersSheet().hydrate();
+        new SearchSheet().hydrate();
+        new TrackSheet().hydrate();
+        new WeatherSheet().hydrate();
+        new SolarProbeSheet().hydrate();
+        new SOSSheet().hydrate();
+        new ConnectivitySheet().hydrate();
+        new PacksSheet().hydrate();
+        new UpgradeSheet().hydrate();
 
-    const vramDashboard = new VRAMDashboard();
-    vramDashboard.init();
-    state.vramPanel = vramDashboard;
+        const vramDashboard = new VRAMDashboard();
+        vramDashboard.init();
+        state.vramPanel = vramDashboard;
 
-    new InclinometerWidget().init();
+        new InclinometerWidget().init();
+    } catch (e) {
+        console.error('[UI] Secondary hydration failed:', e);
+    }
 }
 
 function startApp() {
-    initScene();
-    fetchWeather(state.TARGET_LAT, state.TARGET_LON);
-    fetchLocalPeaks(state.TARGET_LAT, state.TARGET_LON);
-    
-    const navBar = document.getElementById('nav-bar');
-    const topBar = document.getElementById('top-status-bar');
-    const widgets = document.getElementById('widgets-container');
-    const fabStack = document.querySelector('.fab-stack') as HTMLElement;
-    
-    if (navBar) navBar.style.display = 'flex';
-    if (topBar) topBar.style.display = 'flex';
-    if (widgets) widgets.style.display = 'block';
-    if (fabStack) fabStack.style.display = 'flex';
-    
-    const bottomBar = document.getElementById('bottom-bar');
-    if (bottomBar) bottomBar.style.display = 'block';
-
-    window.dispatchEvent(new Event('suntrail:uiReady'));
+    try {
+        initScene();
+        fetchWeather(state.TARGET_LAT, state.TARGET_LON);
+        fetchLocalPeaks(state.TARGET_LAT, state.TARGET_LON);
+        
+        const navBar = document.getElementById('nav-bar');
+        const topBar = document.getElementById('top-status-bar');
+        const widgets = document.getElementById('widgets-container');
+        const fabStack = document.querySelector('.fab-stack') as HTMLElement;
+        
+        if (navBar) navBar.style.display = 'flex';
+        if (topBar) topBar.style.display = 'flex';
+        if (widgets) widgets.style.display = 'block';
+        if (fabStack) fabStack.style.display = 'flex';
+        
+        const bottomBar = document.getElementById('bottom-bar');
+        if (bottomBar) bottomBar.style.display = 'block';
+    } catch (e) {
+        console.error('[UI] Critical failure during startApp:', e);
+    } finally {
+        (window as any).suntrailReady = true;
+        window.dispatchEvent(new Event('suntrail:uiReady'));
+    }
 }
 
 export function disposeUI(): void {

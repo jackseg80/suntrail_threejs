@@ -2,17 +2,18 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Settings and Performance', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => (window as any).suntrailReady === true);
     await page.click('#aw-accept-btn');
     await page.click('#ob-skip');
     // Wait for the app to be fully ready
-    await page.waitForSelector('#widgets-container', { state: 'visible', timeout: 15000 });
+    await page.waitForSelector('#top-pill-main', { state: 'visible', timeout: 15000 });
   });
 
   test('should change performance presets', async ({ page }) => {
     // Open settings
     await page.click('.nav-tab[data-tab="settings"]');
-    await expect(page.locator('#settings')).toBeVisible();
+    await expect(page.locator('#settings')).toHaveClass(/is-open/);
 
     // Select Ultra preset
     const ultraBtn = page.locator('.preset-btn[data-preset="ultra"]');
@@ -44,6 +45,6 @@ test.describe('Settings and Performance', () => {
     await expect(energyToggle).toBeChecked();
 
     await page.click('#close-panel');
-    await expect(page.locator('#settings')).not.toBeVisible();
+    await expect(page.locator('#settings')).not.toHaveClass(/is-open/);
   });
 });

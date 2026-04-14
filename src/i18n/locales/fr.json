@@ -564,6 +564,9 @@
       "monthShort": "mois"
     },
     "restore": "Restaurer un achat",
+    "trial": {
+      "cta": "Essayer Pro (3 jours) — Gratuit"
+    },
     "legal": "Abonnement auto-renouvelable · Résiliable à tout moment dans le Play Store.",
     "web": {
       "playStore": "Disponible sur Google Play",
@@ -594,6 +597,7 @@
   },
   "common": {
     "close": "Fermer",
+    "save": "Enregistrer",
     "cancel": "Annuler",
     "confirm": "Confirmer",
     "loading": "Chargement...",

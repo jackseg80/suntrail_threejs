@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { state } from './state';
-import { showToast } from './utils';
+import { showToast } from './toast';
 
 let compassScene: THREE.Scene | null = null;
 let compassCamera: THREE.PerspectiveCamera | null = null;

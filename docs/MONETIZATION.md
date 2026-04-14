@@ -4,9 +4,14 @@
 
 ---
 
-## 1. Modèle Freemium (Segmenté par Expertise)
+## 1. Modèle Freemium (v5.29 — Hybride)
 
 SunTrail utilise un modèle **Freemium avec abonnement**. La sécurité est offerte à tous, l'expertise est réservée aux abonnés Pro.
+
+**Nouveau (v5.29) : Discovery Trial (3 jours)**
+*   **Objectif** : Permettre de tester les fonctions Pro immédiatement après installation sans saisir de carte bancaire (zéro friction).
+*   **Activation** : Locale, stockée dans `localStorage`.
+*   **Transition** : Une fois l'essai de 3 jours expiré, l'utilisateur est redirigé vers l'essai standard RevenueCat (7 jours avec CB).
 
 ### 📊 Comparaison Free / Pro (Gate Logic)
 

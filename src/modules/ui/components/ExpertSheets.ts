@@ -2,7 +2,7 @@ import { BaseComponent } from '../core/BaseComponent';
 import { state } from '../../state';
 import { runSolarProbe, getAltitudeAt, type SolarAnalysisResult } from '../../analysis';
 import { worldToLngLat } from '../../geo';
-import { showToast } from '../../utils';
+import { showToast } from '../../toast';
 import { getWeatherIcon } from '../../weather';
 import { getUVCategory, getComfortIndex, getFreezingAlert, fmtWindDir } from '../../weatherUtils';
 import { sheetManager } from '../core/SheetManager';
@@ -34,6 +34,7 @@ export class WeatherSheet extends BaseComponent {
         this.addSubscription(state.subscribe('weatherData', () => this.updateUI()));
         this.addSubscription(state.subscribe('weatherUnavailable', () => this.updateUI()));
         this.addSubscription(state.subscribe('isPro', () => this.updateUI()));
+        this.addSubscription(state.subscribe('trialEnd', () => this.updateUI()));
         this.addSubscription(state.subscribe('SHOW_WEATHER_PRO', () => this.updateUI()));
 
         this.updateUI();

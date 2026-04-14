@@ -1,6 +1,6 @@
 import { BaseComponent } from '../core/BaseComponent';
-import { state } from '../../state';
-import { showToast } from '../../utils';
+import { state, isProActive } from '../../state';
+import { showToast } from '../../toast';
 import { startLocationTracking, isWatchActive } from '../../location';
 import { sheetManager } from '../core/SheetManager';
 import { showUpgradePrompt } from '../../iap';
@@ -75,7 +75,7 @@ export class TrackSheet extends BaseComponent {
                 }
 
                 showToast(i18n.t('track.toast.recStarted'));
-                if (!state.isPro) {
+                if (!isProActive()) {
                     setTimeout(() => showToast(i18n.t('track.toast.freeLimit')), 1500);
                 }
                 
@@ -136,7 +136,7 @@ export class TrackSheet extends BaseComponent {
 
                     if (state.recordedPoints.length >= 2) {
                         showToast(i18n.t('track.toast.recStopped'));
-                        if (!state.isPro) this.showPostRecUpsell();
+                        if (!isProActive()) this.showPostRecUpsell();
                     } else {
                         showToast(i18n.t('track.toast.tooShort'));
                     }
@@ -198,6 +198,8 @@ export class TrackSheet extends BaseComponent {
         });
 
         this.addSubscription(state.subscribe('isRecording', () => this.updateRecUI()));
+        this.addSubscription(state.subscribe('isPro', () => this.updateRecUI()));
+        this.addSubscription(state.subscribe('trialEnd', () => this.updateRecUI()));
         this.addSubscription(state.subscribe('recordedPoints', () => {
             this.updateStats();
             this.updateEmptyState();
@@ -438,7 +440,7 @@ export class TrackSheet extends BaseComponent {
                             title="${i18n.t('track.imported.toggleVisible')}">
                         ${layer.visible ? '👁' : '🚫'}
                     </button>
-                    ${state.isPro ? `<button class="gpx-layer-export" data-action="export" data-id="${layer.id}"
+                    ${isProActive() ? `<button class="gpx-layer-export" data-action="export" data-id="${layer.id}"
                             aria-label="${i18n.t('track.imported.export') || 'Exporter GPX'}"
                             title="${i18n.t('track.imported.export') || 'Exporter GPX'}">💾</button>` : ''}
                     <button class="gpx-layer-remove" data-action="remove" data-id="${layer.id}"
@@ -496,7 +498,7 @@ export class TrackSheet extends BaseComponent {
         container.querySelectorAll('[data-action="export"]').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                if (!state.isPro) {
+                if (!isProActive()) {
                     showUpgradePrompt('export_gpx');
                     return;
                 }
@@ -584,6 +586,13 @@ export class TrackSheet extends BaseComponent {
                     <rect x="2" y="2" width="6" height="6" rx="1" fill="white"/>
                 </svg> ${i18n.t('track.btn.stop')}`;
             navTab?.classList.add('has-notif');
+            
+            // Upsell Pro permanent pendant l'enregistrement pour les gratuits
+            if (!isProActive()) {
+                this.showRecordingUpsell();
+            } else {
+                document.getElementById('rec-recording-upsell')?.remove();
+            }
         } else {
             recBtn.classList.remove('active');
             recBtn.innerHTML = `
@@ -592,6 +601,43 @@ export class TrackSheet extends BaseComponent {
                     <circle cx="6" cy="6" r="3" fill="currentColor"/>
                 </svg> ${i18n.t('track.btn.rec')}`;
             navTab?.classList.remove('has-notif');
+            document.getElementById('rec-recording-upsell')?.remove();
+        }
+    }
+
+    /** Bannière PRO visible en permanence pendant le REC pour les gratuits */
+    private showRecordingUpsell(): void {
+        if (document.getElementById('rec-recording-upsell')) return;
+        
+        const banner = document.createElement('div');
+        banner.id = 'rec-recording-upsell';
+        banner.className = 'rec-upsell-banner';
+        banner.style.cssText = 'display:flex; flex-direction:column; gap:var(--space-2); padding:var(--space-3); margin:var(--space-3) 0; background:rgba(255,215,0,0.08); border:1px solid var(--gold); border-radius:var(--radius-md); font-size:12px; color:var(--text-1);';
+        
+        const title = document.createElement('div');
+        title.style.cssText = 'display:flex; align-items:center; gap:8px; font-weight:700; color:var(--gold);';
+        title.innerHTML = `<span>✨</span> <span>SunTrail PRO</span>`;
+        
+        const text = document.createElement('p');
+        text.style.cssText = 'margin:0; opacity:0.9; font-size:11px; line-height:1.4;';
+        text.textContent = i18n.t('track.upsell.postRec'); // On réutilise cette clé qui parle du passage Pro
+        
+        const proBtn = document.createElement('button');
+        proBtn.className = 'btn-go';
+        proBtn.style.cssText = 'padding:6px; font-size:11px; margin-top:4px; width:100%;';
+        proBtn.textContent = i18n.t('upgrade.trial.cta') || 'Essayer Pro';
+        proBtn.onclick = () => sheetManager.open('upgrade-sheet');
+        
+        banner.appendChild(title);
+        banner.appendChild(text);
+        banner.appendChild(proBtn);
+        
+        // Insérer avant les stats
+        const stats = this.element?.querySelector('.track-stats');
+        if (stats) {
+            stats.parentNode?.insertBefore(banner, stats);
+        } else {
+            this.element?.appendChild(banner);
         }
     }
 
@@ -753,7 +799,7 @@ export class TrackSheet extends BaseComponent {
             try {
                 // Non-Pro: Cache (persiste après fermeture app, accessible via "Tracés importés")
                 // Pro: Documents (visible dans gestionnaire fichiers)
-                const directory = state.isPro ? Directory.Documents : Directory.Cache;
+                const directory = isProActive() ? Directory.Documents : Directory.Cache;
                 
                 // Créer le répertoire s'il n'existe pas
                 try {
@@ -774,7 +820,7 @@ export class TrackSheet extends BaseComponent {
                 });
                 const shortName = result.uri.split('/').pop();
                 
-                if (state.isPro) {
+                if (isProActive()) {
                     showToast(`GPX sauvegardé : ${shortName}`);
                 } else {
                     showToast(`GPX sauvegardé (dans l'app) : ${shortName}`);
@@ -805,7 +851,7 @@ export class TrackSheet extends BaseComponent {
             showToast(i18n.t('track.toast.tooShort'));
             return;
         }
-        if (!state.isPro) {
+        if (!isProActive()) {
             showUpgradePrompt('export_gpx');
             return;
         }
@@ -822,7 +868,7 @@ export class TrackSheet extends BaseComponent {
             }
 
             // Gate Freemium : 1 tracé max pour les utilisateurs gratuits
-            if (!state.isPro && state.gpxLayers.length >= 1) {
+            if (!isProActive() && state.gpxLayers.length >= 1) {
                 showUpgradePrompt('multi_gpx');
                 void haptic('warning');
                 return;

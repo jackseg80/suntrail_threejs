@@ -17,6 +17,12 @@ function extractGistKeys(data: any): string[] {
  * Priorité : localStorage (manuel) > .env (build) > Gist (runtime rotation).
  */
 export async function resolveMapTilerKey(): Promise<void> {
+    if (window.location.search.includes('mode=test')) {
+        state.MK = 'test-key-bypass';
+        console.log('[Config] MapTiler key: test mode bypass');
+        return;
+    }
+
     const userDefinedKey = localStorage.getItem('maptiler_key');
     const bundledKey = import.meta.env.VITE_MAPTILER_KEY as string | undefined;
 

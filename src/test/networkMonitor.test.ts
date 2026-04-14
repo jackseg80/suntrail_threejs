@@ -26,7 +26,7 @@ vi.mock('@capacitor/core', () => ({
 }));
 
 // Mock showToast (avoid DOM manipulation)
-vi.mock('../modules/utils', () => ({
+vi.mock('../modules/toast', () => ({
     showToast: vi.fn(),
 }));
 
@@ -43,7 +43,7 @@ vi.stubGlobal('fetch', mockFetch);
 
 import { state } from '../modules/state';
 import { eventBus } from '../modules/eventBus';
-import { showToast } from '../modules/utils';
+import { showToast } from '../modules/toast';
 
 // We need to test the module functions directly — reimport fresh for each test
 // Since initNetworkMonitor has a guard (_initialized), we test the exported helpers

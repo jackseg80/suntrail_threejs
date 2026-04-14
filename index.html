@@ -44,7 +44,7 @@
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap"></noscript>
     <link rel="stylesheet" href="/src/style.css">
 </head>
-<body>
+<body id="body">
 
 <a href="#canvas-container" class="skip-link" data-i18n="a11y.skipToContent">Aller au contenu</a>
 <h1 class="sr-only">SunTrail - Carte 3D</h1>
@@ -960,6 +960,26 @@
                  <span class="upgrade-feature-label" data-i18n="upgrade.feature.offlineZones">Offline illimité</span>
              </div>
          </div>
+        <!-- Discovery Trial Action -->
+        <button id="btn-discovery-trial" class="btn-go" style="
+            width: 100%;
+            padding: 14px;
+            margin-bottom: var(--space-6);
+            background: linear-gradient(135deg, var(--accent) 0%, #3b82f6 100%);
+            border: none;
+            border-radius: var(--radius-md);
+            color: white;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        ">
+            <span>✨</span>
+            <span data-i18n="upgrade.trial.cta">Essayer Pro (3 jours) — Gratuit</span>
+        </button>
         <!-- Sélecteur de plan — 3 options -->
         <div class="upgrade-plans">
             <button class="upgrade-plan" id="upgrade-monthly-btn">

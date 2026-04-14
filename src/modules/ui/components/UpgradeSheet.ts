@@ -1,10 +1,11 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { sheetManager } from '../core/SheetManager';
-import { showToast } from '../../utils';
+import { showToast } from '../../toast';
 import { haptic } from '../../haptics';
 import { iapService } from '../../iapService';
 import { i18n } from '../../../i18n/I18nService';
 import { Capacitor } from '@capacitor/core';
+import { activateDiscoveryTrial, isProActive } from '../../iap';
 
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.suntrail.threejs';
 
@@ -23,6 +24,20 @@ export class UpgradeSheet extends BaseComponent {
 
         const closeBtn = this.element.querySelector('#close-upgrade');
         closeBtn?.addEventListener('click', () => sheetManager.close());
+
+        const discoveryBtn = this.element.querySelector('#btn-discovery-trial') as HTMLButtonElement;
+        if (discoveryBtn) {
+            // Masquer si déjà Pro actif
+            if (isProActive()) {
+                discoveryBtn.style.display = 'none';
+            }
+
+            discoveryBtn.addEventListener('click', () => {
+                activateDiscoveryTrial(3);
+                void haptic('success');
+                sheetManager.close();
+            });
+        }
 
         // Sur web : remplacer les boutons d'achat par un lien Play Store
         if (!Capacitor.isNativePlatform()) {
