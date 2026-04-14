@@ -1,4 +1,4 @@
-# SunTrail — Guide Développeur (v5.28.30)
+# SunTrail — Guide Développeur (v5.28.31)
 
 > La base de connaissance technique est maintenue dans **`CLAUDE.md`**.
 > Ce fichier sert de point d'entrée pour Gemini CLI.

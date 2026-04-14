@@ -14,7 +14,7 @@ import { showToast } from './toast';
 import { applyPreset, detectBestPreset, getGpuInfo, applyCustomSettings } from './performance';
 import { findTerrainIntersection, getAltitudeAt } from './analysis';
 import { closeElevationProfile, updateElevationProfile } from './profile';
-import { startLocationTracking } from './location';
+import { startLocationTracking, updateUserMarker } from './location';
 import { fetchWeather } from './weather';
 import { fetchLocalPeaks } from './peaks';
 import { initTheme } from './theme';
@@ -212,6 +212,10 @@ export function initUI(): void {
                 state.ZOOM = 14;
                 state.originTile = lngLatToTile(lon, lat, 14);
                 
+                // v5.28.30 : Mettre à jour la position utilisateur pour que le point rouge soit visible dès le 1er clic
+                state.userLocation = { lat, lon, alt: position.coords.altitude || 0 };
+                updateUserMarker();
+
                 refreshTerrain();
                 
                 const worldPos = lngLatToWorld(lon, lat, state.originTile);

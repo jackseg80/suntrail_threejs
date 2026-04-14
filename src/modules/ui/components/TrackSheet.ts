@@ -240,7 +240,7 @@ export class TrackSheet extends BaseComponent {
         
         // S'abonner aux changements de statut PRO pour masquer l'encart dynamiquement
         this.addSubscription(state.subscribe('isPro', updateUpsellVisibility));
-        this.addSubscription(state.subscribe('isTrialActive', updateUpsellVisibility));
+        this.addSubscription(state.subscribe('trialEnd', updateUpsellVisibility));
     }
 
     private async showSaveTrackPrompt(suggestedName: string): Promise<string | null> {

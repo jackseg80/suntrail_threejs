@@ -83,44 +83,47 @@ export function stopLocationTracking() {
 }
 
 export function updateUserMarker() {
-    if (!state.userLocation || !state.scene || !state.originTile) return;
+    if (!state.userLocation || !state.scene || !state.originTile || !state.camera) return;
 
     const pos = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
     const groundH = getAltitudeAt(pos.x, pos.z);
-    const finalY = groundH + 5; 
+    const finalY = groundH + 10; // Un peu plus haut pour éviter l'occlusion par le relief
 
     if (!state.userMarker) {
         state.userMarker = new THREE.Group();
         
-        // Cercle Glow
-        const ringGeo = new THREE.RingGeometry(8, 10, 32);
-        const ringMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.6 });
-        const ring = new THREE.Mesh(ringGeo, ringMat);
-        ring.rotation.x = -Math.PI / 2;
-        state.userMarker.add(ring);
-
-        // Cône de vue (Secteur 60°)
-        const coneGeo = new THREE.CircleGeometry(45, 32, -Math.PI/6, Math.PI/3);
-        const coneMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.3 });
-        const viewCone = new THREE.Mesh(coneGeo, coneMat);
-        viewCone.rotation.x = -Math.PI / 2;
-        viewCone.rotation.z = Math.PI / 2; // Aligne l'axe du secteur sur le Nord (-Z)
-        state.userMarker.add(viewCone);
-
-        // Point central (Sprite HD)
+        // Point central (Sprite HD) - Rouge et Taille fixe
         const canvas = document.createElement('canvas');
-        canvas.width = 64; canvas.height = 64;
+        canvas.width = 128; canvas.height = 128;
         const ctx = canvas.getContext('2d')!;
-        ctx.beginPath(); ctx.arc(32, 32, 22, 0, Math.PI * 2);
+        
+        // Halo extérieur blanc
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.beginPath(); ctx.arc(64, 64, 54, 0, Math.PI * 2);
         ctx.fillStyle = 'white'; ctx.fill();
-        ctx.beginPath(); ctx.arc(32, 32, 16, 0, Math.PI * 2);
-        ctx.fillStyle = '#3b82f6'; ctx.fill();
+        
+        // Cercle rouge principal
+        ctx.shadowBlur = 0;
+        ctx.beginPath(); ctx.arc(64, 64, 42, 0, Math.PI * 2);
+        ctx.fillStyle = '#ff0000'; ctx.fill();
+
+        // Point central blanc
+        ctx.beginPath(); ctx.arc(64, 64, 12, 0, Math.PI * 2);
+        ctx.fillStyle = 'white'; ctx.fill();
         
         const tex = new THREE.CanvasTexture(canvas);
-        const spriteMat = new THREE.SpriteMaterial({ map: tex, sizeAttenuation: false });
+        const spriteMat = new THREE.SpriteMaterial({ 
+            map: tex, 
+            sizeAttenuation: false, // Taille constante à l'écran
+            depthTest: false,       // Toujours visible même derrière une montagne
+            transparent: true
+        });
         const dot = new THREE.Sprite(spriteMat);
-        dot.scale.set(0.018, 0.018, 1);
-        dot.position.y = 2;
+        
+        // Taille fixe en pixels relatifs au viewport (0.04 = ~4% de la hauteur de l'écran)
+        dot.scale.set(0.045, 0.045, 1);
+        dot.name = 'user-dot';
         state.userMarker.add(dot);
         
         state.scene.add(state.userMarker);
@@ -129,8 +132,8 @@ export function updateUserMarker() {
     state.userMarker.position.set(pos.x, finalY, pos.z);
     
     if (state.userHeading !== null) {
-        // On oriente le groupe vers le cap (Three.js rotation horaire = -Y)
-        state.userMarker.rotation.y = -THREE.MathUtils.degToRad(state.userHeading);
+        // Optionnel: On peut ajouter une flèche directionnelle rouge si besoin
+        // Pour l'instant on garde le point rouge constant
     }
 }
 

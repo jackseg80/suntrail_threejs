@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.31] - 2026-04-14
+### Fixed
+- **Indicateur de Position** : Nouveau point rouge haute visibilité avec taille constante à l'écran quel que soit le zoom.
+- **Visibilité X-Ray** : Le point de position est désormais toujours visible, même derrière le relief (depthTest: false).
+- **Réactivité PRO** : Correction de l'abonnement réactif dans l'onglet Parcours : l'encart "éphémère" disparaît désormais instantanément lors de l'activation du PRO ou de l'essai.
+- **Feedback Immédiat** : Le point de position s'affiche désormais dès le premier clic sur le bouton centrage (plus besoin d'activer le suivi continu).
+
 ## [5.28.30] - 2026-04-14
 ### Fixed
 - **Pixel Soup** : Force la mise à jour immédiate du LOD après un vol (`flyTo`) en brisant le verrou de 800ms.
