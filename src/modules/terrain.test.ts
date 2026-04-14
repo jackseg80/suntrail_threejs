@@ -227,6 +227,7 @@ describe('terrain.ts', () => {
         });
 
         it('should use global originTile for recorded track mesh (v5.27.3)', async () => {
+            vi.useFakeTimers();
             const { updateRecordedTrackMesh } = await import('./terrain');
             
             state.recordedPoints = [
@@ -240,18 +241,25 @@ describe('terrain.ts', () => {
             const spy = vi.spyOn(await import('./geo'), 'lngLatToWorld');
             
             updateRecordedTrackMesh();
+            vi.runAllTimers();
             
             expect(spy).toHaveBeenCalled();
             const firstCall = spy.mock.calls[0];
             expect(firstCall[2]).toEqual(state.originTile);
+            vi.useRealTimers();
         });
     });
 
     describe('Origin Shifting / repositionAllTiles (v5.27.3)', () => {
         beforeEach(() => {
+            vi.useFakeTimers();
             state.originTile = { x: 100, y: 100, z: 13 };
             state.scene = new THREE.Scene();
             state.gpxLayers = [];
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
         });
 
         it('should trigger GPX mesh updates when origin shifts', async () => {
@@ -263,11 +271,13 @@ describe('terrain.ts', () => {
 
             // 1. Premier appel : fixe lastOrigin (statique)
             repositionAllTiles();
+            vi.runAllTimers();
             expect(spyGPX).not.toHaveBeenCalled();
 
             // 2. Changer l'origine
             state.originTile = { x: 101, y: 101, z: 13 };
             repositionAllTiles();
+            vi.runAllTimers();
 
             // 3. Vérifier que les mises à jour ont été déclenchées
             expect(spyGPX).toHaveBeenCalled();

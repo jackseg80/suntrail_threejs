@@ -453,7 +453,18 @@ export function toggleGPXLayer(id: string): void {
     const updated = [...layers]; updated[idx] = { ...layer, visible: newVisible }; state.gpxLayers = updated;
 }
 
+let gpxUpdateTimeout: any = null;
+let recordedUpdateTimeout: any = null;
+
 export function updateAllGPXMeshes(): void {
+    if (gpxUpdateTimeout) clearTimeout(gpxUpdateTimeout);
+    gpxUpdateTimeout = setTimeout(() => {
+        _doUpdateAllGPXMeshes();
+        gpxUpdateTimeout = null;
+    }, 100);
+}
+
+function _doUpdateAllGPXMeshes(): void {
     if (!state.camera) return;
     const camAlt = state.camera.position.y;
     const thickness = Math.max(1.5, camAlt / 1200);
@@ -480,6 +491,14 @@ export function updateAllGPXMeshes(): void {
 }
 
 export function updateRecordedTrackMesh(): void {
+    if (recordedUpdateTimeout) clearTimeout(recordedUpdateTimeout);
+    recordedUpdateTimeout = setTimeout(() => {
+        _doUpdateRecordedTrackMesh();
+        recordedUpdateTimeout = null;
+    }, 150);
+}
+
+function _doUpdateRecordedTrackMesh(): void {
     if (state.recordedPoints.length < 2 || !state.camera || !state.scene || !state.originTile) return;
     
     // v5.28.25 : Dédoublonnage strict par timestamp pour éviter les artefacts de "traits droits"

@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.28.33)
+# SunTrail — Guide IA (v5.28.34)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-14 suite à la réparation du cache local et de la fluidité.
+> Mis à jour le 2026-04-14 suite à l'implémentation du debouncing GPX.
 
 ## Projet
 
@@ -10,7 +10,7 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 **Stack** : TypeScript strict · Three.js r160 · Vite 5 · Capacitor 6 · RevenueCat
 
-## ⚠️ Règles & Décisions Actées (v5.28.33)
+## ⚠️ Règles & Décisions Actées (v5.28.34)
 
 ### 🚀 Protocole de Release (IMPÉRATIF)
 1. **Version Name** : Incrémenter dans `package.json` (ex: 5.27.5 → 5.27.6).
@@ -45,7 +45,7 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 - **D+ / D-** : Algorithme d'**Hystérésis avec seuil de 3m** (Garmin standard) via `calculateHysteresis()`. Source de vérité unique pour les tracés et le profil (v5.28.20).
 - **Lissage** : Moyenne mobile 3 points sur l'altitude GPS (v5.28.5).
 - **Filtrage GPS (v5.28.5)** : Rejeter tout point GPS avec saut vertical > 200m (si intervalle < 10s), distance horizontale < 2.5m (anti-champignon), ou vitesse > 600km/h.
-- **TubeGeometry Stabilité (v5.28.5)** : Utiliser `centripetal` pour les splines. Rendu temps réel à 1500 segments max. Simplification RDP avec epsilon 1.0.
+- **TubeGeometry Stabilité (v5.28.34)** : Utiliser `centripetal` pour les splines. Rendu temps réel à 1500 segments max. Simplification RDP avec epsilon 1.0. **Debouncing 100-150ms** sur les mises à jour pour fluidifier la navigation.
 - **Cache Unifié (v5.28.33)** : `suntrail-tiles-v28` synchronisé entre thread principal et workers. Garantit l'affichage instantané des packs hors-ligne et PMTiles.
 
 ## Structure du Projet
