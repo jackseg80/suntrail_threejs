@@ -227,9 +227,20 @@ export class TrackSheet extends BaseComponent {
         }
         
         // v5.28.25 : Encart PRO permanent pour les gratuits (même au 1er lancement)
-        if (!isProActive()) {
-            this.showPostRecUpsell();
-        }
+        const updateUpsellVisibility = () => {
+            const banner = document.getElementById('rec-upsell-banner');
+            if (isProActive()) {
+                banner?.remove();
+            } else if (!banner) {
+                this.showPostRecUpsell();
+            }
+        };
+
+        updateUpsellVisibility();
+        
+        // S'abonner aux changements de statut PRO pour masquer l'encart dynamiquement
+        this.addSubscription(state.subscribe('isPro', updateUpsellVisibility));
+        this.addSubscription(state.subscribe('isTrialActive', updateUpsellVisibility));
     }
 
     private async showSaveTrackPrompt(suggestedName: string): Promise<string | null> {

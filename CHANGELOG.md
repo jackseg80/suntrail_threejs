@@ -10,7 +10,7 @@ et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 - **Pixel Soup** : Force la mise à jour immédiate du LOD après un vol (`flyTo`) en brisant le verrou de 800ms.
 - **LOD Artifacts** : Correction du chevauchement des tuiles lors de zooms rapides par nettoyage strict des coordonnées.
 - **Trace Rouge** : Suppression des traits droits parasites en temps réel par dédoublonnage strict des timestamps GPS.
-- **Expérience Free** : Clarification de l'enregistrement éphémère (mémoire vive) et affichage permanent de l'encart PRO dans l'onglet Parcours.
+- **Expérience Free** : Clarification de l'enregistrement éphémère (mémoire vive) et affichage permanent **réactif** de l'encart PRO (disparaît dès l'activation du PRO ou de l'essai).
 - **Compilation** : Fix d'une erreur de type dans `TimelineComponent.ts`.
 
 ## [5.28.29] - 2026-04-12
