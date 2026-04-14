@@ -77,7 +77,6 @@ export class Tile {
         if (this.poiGroup) this.poiGroup.position.set(this.worldX, yOffset, this.worldZ);
         if (this.buildingGroup) this.buildingGroup.position.set(this.worldX, yOffset, this.worldZ);
         if (this.hydroGroup) this.hydroGroup.position.set(this.worldX, yOffset, this.worldZ);
-        if (this.buildingGroup) this.buildingGroup.position.set(this.worldX, yOffset, this.worldZ);
         
         this.bounds.set(
             new THREE.Vector3(this.worldX - this.tileSizeMeters/2, -1000, this.worldZ - this.tileSizeMeters/2),
@@ -123,8 +122,7 @@ export class Tile {
         const cached = getFromCache(cacheKey);
         if (cached) {
             this.elevationTex = cached.elev; this.pixelData = cached.pixelData;
-            this.colorTex = cached.color; this.overlayTex = cached.overlay;
-            this.normalTex = cached.normal;
+            this.colorTex = cached.color; this.overlayTex = cached.overlay; this.normalTex = cached.normal;
             markCacheKeyActive(cacheKey);
             this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
             return;
@@ -136,7 +134,7 @@ export class Tile {
             this.activeTaskId = taskId;
             const data = await promise;
             this.activeTaskId = -1;
-            if ((this.status as string) === 'disposed' || !data) return;
+            if (this.status as string === 'disposed' || !data) return;
 
             if (data.elevBitmap) {
                 this.elevationTex = new THREE.Texture(data.elevBitmap);
@@ -179,7 +177,7 @@ export class Tile {
     }
 
     buildMesh(resolution: number): void {
-        if (!this.elevationTex || !this.colorTex || (this.status as any) === 'disposed') return;
+        if (!this.elevationTex || !this.colorTex || this.status as any === 'disposed') return;
         if (!activeTiles.has(this.key)) return;
 
         if (this.zoom >= 15) resolution = Math.min(resolution, 64);
@@ -337,17 +335,11 @@ export class Tile {
         if (state.scene) state.scene.add(this.mesh);
         this.currentResolution = resolution;
         
-        // v5.28.1 : Mandat - PAS de mesh fade en 2D (Opacité 100% immédiate)
         if (is2D) {
-            this.opacity = 1;
-            this.isFadingIn = false;
-            if (this.mesh.material instanceof THREE.Material) {
-                this.mesh.material.opacity = 1;
-                this.mesh.material.transparent = false;
-            }
+            this.opacity = 1; this.isFadingIn = false;
+            if (this.mesh.material instanceof THREE.Material) { this.mesh.material.opacity = 1; this.mesh.material.transparent = false; }
         } else {
-            this.opacity = 0;
-            this.isFadingIn = true;
+            this.opacity = 0; this.isFadingIn = true;
         }
 
         const delay = (ms: number) => ms * state.LOAD_DELAY_FACTOR;
@@ -360,13 +352,11 @@ export class Tile {
             if (forest && state.scene && this.status as any !== 'disposed') {
                 if (this.forestMesh) state.scene.remove(this.forestMesh);
                 this.forestMesh = forest; 
-                // v5.28.1 : Mandat - PAS de hierarchy attachment (scene.add)
                 this.forestMesh.position.set(this.worldX, 0, this.worldZ);
                 state.scene.add(this.forestMesh);
             }
         }, delay(300));
 
-        // v5.28.1 : Mandat - PAS de suppression différée (remplacement instantané)
         if (oldMesh) {
             if (state.scene) state.scene.remove(oldMesh); 
             if (oldMesh.material instanceof THREE.Material) materialPool.release(oldMesh.material);
@@ -383,13 +373,9 @@ export class Tile {
 
     startFadeOut(): void {
         if (this.isFadingOut || !this.mesh) return;
-        this.isFadingOut = true;
-        this.ghostFadeRemaining = GHOST_FADE_MS;
+        this.isFadingOut = true; this.ghostFadeRemaining = GHOST_FADE_MS;
         this.mesh.position.y = -0.5;
-        if (this.mesh.material instanceof THREE.Material) {
-            this.mesh.material.transparent = true;
-            this.mesh.material.opacity = 1.0;
-        }
+        if (this.mesh.material instanceof THREE.Material) { this.mesh.material.transparent = true; this.mesh.material.opacity = 1.0; }
         if (this.buildingMesh) this.buildingMesh.visible = false;
         markCacheKeyActive(getTileCacheKey(this.key, this.zoom));
     }
@@ -398,20 +384,13 @@ export class Tile {
         if (!this.isFadingOut || !this.mesh) return;
         this.ghostFadeRemaining -= deltaMs;
         const t = Math.max(0, this.ghostFadeRemaining / GHOST_FADE_MS);
-        if (this.mesh.material instanceof THREE.Material) {
-            this.mesh.material.opacity = t;
-        }
-        if (this.ghostFadeRemaining <= 0) {
-            this.isFadingOut = false;
-        }
+        if (this.mesh.material instanceof THREE.Material) { this.mesh.material.opacity = t; }
+        if (this.ghostFadeRemaining <= 0) this.isFadingOut = false;
     }
 
     dispose(): void {
         this.status = 'disposed'; 
-        if (this.activeTaskId >= 0) {
-            cancelTileLoad(this.activeTaskId);
-            this.activeTaskId = -1;
-        }
+        if (this.activeTaskId >= 0) { cancelTileLoad(this.activeTaskId); this.activeTaskId = -1; }
         markCacheKeyInactive(getTileCacheKey(this.key, this.zoom));
         if (this.mesh) {
             if (state.scene) state.scene.remove(this.mesh);
@@ -420,8 +399,8 @@ export class Tile {
                 const shader = (this.mesh.material as any).userData.shader;
                 if (shader && shader.uniforms) {
                     if (shader.uniforms.uElevationMap) shader.uniforms.uElevationMap.value = null;
-                    if (shader.uniforms.uNormalMap) shader.uniforms.uNormalMap.value = null;
                     if (shader.uniforms.uOverlayMap) shader.uniforms.uOverlayMap.value = null;
+                    if (shader.uniforms.uNormalMap) shader.uniforms.uNormalMap.value = null;
                 }
             }
             disposeObject(this.mesh); this.mesh = null;

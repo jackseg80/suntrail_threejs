@@ -24,15 +24,13 @@ describe('tileCache.ts', () => {
     it('should add and retrieve items from cache', () => {
         const elev = new THREE.Texture();
         const color = new THREE.Texture();
-        const normal = new THREE.Texture();
-        addToCache('test_key', elev, null, color, null, normal);
+        addToCache('test_key', elev, null, color, null);
 
         expect(hasInCache('test_key')).toBe(true);
         const cached = getFromCache('test_key');
         expect(cached).not.toBeNull();
         expect(cached?.elev).toBe(elev);
         expect(cached?.color).toBe(color);
-        expect(cached?.normal).toBe(normal);
     });
 
     it('should respect maximum cache size (FIFO)', () => {
@@ -40,7 +38,7 @@ describe('tileCache.ts', () => {
         state.PERFORMANCE_PRESET = 'eco';
         
         for (let i = 0; i < 70; i++) {
-            addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, new THREE.Texture());
+            addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null);
         }
 
         expect(getCacheSize()).toBe(60);
@@ -50,15 +48,15 @@ describe('tileCache.ts', () => {
 
     it('should dispose textures when cleared', () => {
         const elev = new THREE.Texture();
-        const normal = new THREE.Texture();
+        const color = new THREE.Texture();
         const spyElev = vi.spyOn(elev, 'dispose');
-        const spyNormal = vi.spyOn(normal, 'dispose');
-        addToCache('test', elev, null, new THREE.Texture(), null, normal);
+        const spyColor = vi.spyOn(color, 'dispose');
+        addToCache('test', elev, null, color, null);
         
         disposeAllCachedTiles();
         
         expect(spyElev).toHaveBeenCalled();
-        expect(spyNormal).toHaveBeenCalled();
+        expect(spyColor).toHaveBeenCalled();
         expect(getCacheSize()).toBe(0);
     });
 
@@ -67,7 +65,7 @@ describe('tileCache.ts', () => {
         // Remplir au-delà via état précédent (simuler changement de preset)
         state.PERFORMANCE_PRESET = 'performance'; // max = 400 (desktop)
         for (let i = 0; i < 100; i++) {
-            addToCache(`perf_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
+            addToCache(`perf_${i}`, new THREE.Texture(), null, new THREE.Texture(), null);
         }
         expect(getCacheSize()).toBe(100);
 
@@ -82,7 +80,7 @@ describe('tileCache.ts', () => {
     it('trimCache() ne fait rien si cache déjà dans la limite', () => {
         state.PERFORMANCE_PRESET = 'eco'; // max = 60
         for (let i = 0; i < 30; i++) {
-            addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
+            addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null);
         }
         trimCache();
         expect(getCacheSize()).toBe(30); // pas de changement
@@ -93,14 +91,14 @@ describe('tileCache.ts', () => {
             state.PERFORMANCE_PRESET = 'eco'; // max = 60
 
             for (let i = 0; i < 60; i++) {
-                addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
+                addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null);
             }
 
             // Marquer key_0 comme active (rendue en scène)
             markCacheKeyActive('key_0');
 
             // Ajouter un 61ème item → devrait évincer key_1, pas key_0
-            addToCache('key_new', new THREE.Texture(), null, new THREE.Texture(), null, null);
+            addToCache('key_new', new THREE.Texture(), null, new THREE.Texture(), null);
 
             expect(hasInCache('key_0')).toBe(true);  // protégée
             expect(hasInCache('key_1')).toBe(false);  // évincée à la place
@@ -113,7 +111,7 @@ describe('tileCache.ts', () => {
             state.PERFORMANCE_PRESET = 'eco';
 
             for (let i = 0; i < 60; i++) {
-                addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
+                addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null);
             }
 
             // Marquer puis démarquer key_0
@@ -121,7 +119,7 @@ describe('tileCache.ts', () => {
             markCacheKeyInactive('key_0');
 
             // key_0 est la plus ancienne et n'est plus active → doit être évincée
-            addToCache('key_new', new THREE.Texture(), null, new THREE.Texture(), null, null);
+            addToCache('key_new', new THREE.Texture(), null, new THREE.Texture(), null);
 
             expect(hasInCache('key_0')).toBe(false); // évincée normalement
             expect(hasInCache('key_new')).toBe(true);
@@ -131,7 +129,7 @@ describe('tileCache.ts', () => {
             state.PERFORMANCE_PRESET = 'performance'; // max = 400 desktop
 
             for (let i = 0; i < 80; i++) {
-                addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
+                addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null);
             }
 
             // Marquer les 5 premières clés comme actives
@@ -160,13 +158,13 @@ describe('tileCache.ts', () => {
             const spyColor = vi.spyOn(victimColor, 'dispose');
 
             // Remplir le cache avec la texture observable en premier
-            addToCache('victim', victimElev, null, victimColor, null, null);
+            addToCache('victim', victimElev, null, victimColor, null);
             for (let i = 1; i < 60; i++) {
-                addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
+                addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null);
             }
 
             // Ajouter un 61ème → 'victim' (la plus ancienne, inactive) est évincée
-            addToCache('trigger', new THREE.Texture(), null, new THREE.Texture(), null, null);
+            addToCache('trigger', new THREE.Texture(), null, new THREE.Texture(), null);
 
             expect(hasInCache('victim')).toBe(false);
             expect(spyElev).toHaveBeenCalled();
@@ -179,14 +177,14 @@ describe('tileCache.ts', () => {
         
         // Remplir 60 items
         for (let i = 0; i < 60; i++) {
-            addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, new THREE.Texture());
+            addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null);
         }
         
         // Accéder au premier item (key_0) pour le "rafraîchir"
         getFromCache('key_0');
         
         // Ajouter un 61ème item
-        addToCache('key_new', new THREE.Texture(), null, new THREE.Texture(), null, new THREE.Texture());
+        addToCache('key_new', new THREE.Texture(), null, new THREE.Texture(), null);
         
         // key_1 devrait être supprimé au lieu de key_0
         expect(hasInCache('key_1')).toBe(false);
