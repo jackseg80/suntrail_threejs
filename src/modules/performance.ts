@@ -1,18 +1,13 @@
 import { state, PRESETS, PresetType, saveSettings } from './state';
 import { showToast } from './toast';
 import { updateShadowMapResolution } from './sun';
-import { resetTerrain, updateVisibleTiles } from './terrain';
+import { refreshTerrain } from './terrain';
 import { trimCache } from './tileCache';
 import { i18n } from '../i18n/I18nService';
 
 /**
  * Force le rechargement complet du terrain
  */
-function refreshTerrain() {
-    resetTerrain();
-    updateVisibleTiles();
-}
-
 /**
  * Détecte les informations du GPU
  */

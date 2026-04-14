@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { BaseComponent } from '../core/BaseComponent';
 import { state, saveSettings, saveProStatus, type ThemePreference } from '../../state';
 import { applyPreset, getGpuInfo, detectBestPreset } from '../../performance';
-import { resetTerrain, updateVisibleTiles, updateHydrologyVisibility } from '../../terrain';
+import { updateHydrologyVisibility, refreshTerrain } from '../../terrain';
 import { updateWeatherVisibility } from '../../weather';
 import { i18n } from '../../../i18n/I18nService';
 import { showOnboarding } from '../../onboardingTutorial';
@@ -548,11 +548,6 @@ export class SettingsSheet extends BaseComponent {
             const isOpen = content.classList.toggle('open');
             btn.setAttribute('aria-expanded', String(isOpen));
         });
-    }
-
-    private refreshTerrain = () => {
-        resetTerrain();
-        updateVisibleTiles();
     }
 
     /**

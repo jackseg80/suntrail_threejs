@@ -1,6 +1,6 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { state } from '../../state';
-import { autoSelectMapSource, resetTerrain, updateVisibleTiles } from '../../terrain';
+import { autoSelectMapSource, refreshTerrain } from '../../terrain';
 import { lngLatToTile, lngLatToWorld } from '../../geo';
 import { flyTo, forceImmediateLODUpdate } from '../../scene';
 import { fetchWeather } from '../../weather';
@@ -386,10 +386,5 @@ export class SearchSheet extends BaseComponent {
         }
 
         fetchWeather(lat, lon);
-    }
-
-    private refreshTerrain() {
-        resetTerrain();
-        updateVisibleTiles();
     }
 }

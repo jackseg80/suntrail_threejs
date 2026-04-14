@@ -285,6 +285,31 @@ describe('terrain.ts', () => {
         });
     });
 
+    describe('V5.28.2 Optimizations', () => {
+        it('should remove tile from loadQueue when disposed', async () => {
+            const { addToLoadQueue, loadQueue } = await import('./terrain/tileQueue');
+            const tile = new Tile(10, 10, 5, '5/10/10');
+            
+            addToLoadQueue(tile);
+            expect(loadQueue.has(tile)).toBe(true);
+            
+            tile.dispose();
+            expect(loadQueue.has(tile)).toBe(false);
+        });
+
+        it('refreshTerrain should reset terrain and reposition all tiles', async () => {
+            const { refreshTerrain, terrainUpdates } = await import('./terrain');
+            
+            const spyReset = vi.spyOn(terrainUpdates, 'resetTerrain');
+            const spyRepo = vi.spyOn(terrainUpdates, 'repositionAllTiles');
+            
+            refreshTerrain();
+            
+            expect(spyReset).toHaveBeenCalled();
+            expect(spyRepo).toHaveBeenCalled();
+        });
+    });
+
     describe('Load Queue Logic (Priority 3)', () => {
         beforeEach(() => {
             state.camera = new THREE.PerspectiveCamera();

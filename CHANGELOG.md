@@ -5,6 +5,15 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.36] - 2026-04-14
+### Optimized
+- **Performance LOD** : Purge systématique de `loadQueue` au `dispose()` et suppression instantanée des tuiles détaillées lors d'un dézoom pour éviter les chevauchements visuels.
+- **Circuit Breaker Overpass** : Durcissement du disjoncteur (3 échecs → 10 min de blocage) pour préserver la fluidité en cas d'instabilité des serveurs OSM.
+- **Météo** : Augmentation de l'intervalle minimum (15s) et implémentation d'un debouncing (1s) lors des mouvements de caméra pour réduire la charge réseau.
+
+### Fixed
+- **Décalage GPX** : Centralisation du rafraîchissement terrain (`refreshTerrain`) garantissant le recalage automatique des maillages GPX après une téléportation (Recherche, Position).
+
 ## [5.28.35] - 2026-04-14
 ### Optimized
 - **Remplissage Carte** : Augmentation du quota de tuiles par frame (40 sur PC, 20 sur mobile Performance) et réduction du délai de rafraîchissement à 50ms pour un affichage plus réactif lors de la navigation.

@@ -7,7 +7,7 @@ import { requestAcceptance } from './acceptanceWall';
 import { requestOnboarding } from './onboardingTutorial';
 import { i18n } from '../i18n/I18nService';
 import { initScene, flyTo, forceImmediateLODUpdate } from './scene';
-import { updateVisibleTiles, resetTerrain } from './terrain';
+import { updateVisibleTiles, resetTerrain, refreshTerrain } from './terrain';
 import { updateStorageUI } from './tileLoader';
 import { lngLatToTile, lngLatToWorld, worldToLngLat } from './geo';
 import { showToast } from './toast';
@@ -549,16 +549,5 @@ export function disposeUI(): void {
     if (storageUIIntervalId !== null) {
         clearInterval(storageUIIntervalId);
         storageUIIntervalId = null;
-    }
-}
-
-function refreshTerrain() {
-    resetTerrain();
-    if (state.camera && state.originTile) {
-        const camPos = state.camera.position;
-        const coords = worldToLngLat(camPos.x, camPos.z, state.originTile);
-        updateVisibleTiles(coords.lat, coords.lon, camPos.y, camPos.x, camPos.z, true);
-    } else {
-        updateVisibleTiles();
     }
 }

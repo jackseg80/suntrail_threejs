@@ -15,20 +15,21 @@ describe('utils.ts', () => {
         expect(toast?.textContent).toContain("Hello");
     });
 
-    it('should throttle function calls', async () => {
+    it('should debounce function calls', async () => {
         vi.useFakeTimers();
         const func = vi.fn();
-        const throttled = throttle(func, 100);
+        const debounced = debounce(func, 100);
 
-        throttled();
-        throttled();
-        throttled();
+        debounced();
+        debounced();
+        debounced();
 
-        expect(func).toHaveBeenCalledTimes(1);
+        expect(func).not.toHaveBeenCalled();
         
         vi.advanceTimersByTime(150);
-        throttled();
-        expect(func).toHaveBeenCalledTimes(2);
+        expect(func).toHaveBeenCalledTimes(1);
         vi.useRealTimers();
     });
 });
+
+import { debounce } from './utils';

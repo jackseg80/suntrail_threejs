@@ -105,7 +105,9 @@ export function repositionAllTiles(): void {
  */
 export const terrainUpdates = {
     updateAllGPXMeshes,
-    updateRecordedTrackMesh
+    updateRecordedTrackMesh,
+    resetTerrain,
+    repositionAllTiles
 };
 
 // Fixed constant access
@@ -242,10 +244,13 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
                 updateVisibleTiles(_camLat, _camLon, _camAltitude, wx, wz, force);
             }, 50);
         }
+        
         const lodChanging = lastRenderedZoom !== -1 && zoom !== lastRenderedZoom;
+        const isZoomIn = zoom > lastRenderedZoom;
+
         for (const [key, tile] of activeTiles.entries()) {
             if (!currentActiveKeys.has(key)) {
-                if (lodChanging && tile.mesh && tile.status !== 'disposed') {
+                if (lodChanging && isZoomIn && tile.mesh && tile.status !== 'disposed') {
                     removeTile(tile);
                     activeTiles.delete(key);
                     fadingOutTiles.add(tile);
@@ -285,6 +290,24 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
 export function updateHydrologyVisibility(visible: boolean): void { state.SHOW_HYDROLOGY = visible; resetTerrain(); updateVisibleTiles(); }
 export function updateSlopeVisibility(visible: boolean): void { state.SHOW_SLOPES = visible; resetTerrain(); updateVisibleTiles(); }
 export async function loadTerrain(): Promise<void> { await updateVisibleTiles(); }
+
+/**
+ * v5.28.2: Centralise la réinitialisation du terrain.
+ * Assure que repositionAllTiles() est appelé pour déclencher le recalage de l'origine
+ * et la mise à jour des maillages GPX lors d'une téléportation.
+ */
+export function refreshTerrain(forceUpdate = false): void {
+    terrainUpdates.resetTerrain();
+    if (state.camera && state.originTile) {
+        terrainUpdates.repositionAllTiles();
+        const camPos = state.camera.position;
+        const coords = worldToLngLat(camPos.x, camPos.z, state.originTile);
+        updateVisibleTiles(coords.lat, coords.lon, camPos.y, camPos.x, camPos.z, forceUpdate);
+    } else {
+        terrainUpdates.repositionAllTiles();
+        updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, 5000, null, null, forceUpdate);
+    }
+}
 
 export function prefetchAdjacentLODs(): void {
     if (!state.camera || !state.controls) return;

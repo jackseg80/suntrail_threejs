@@ -20,6 +20,17 @@ export function throttle<T extends (...args: any[]) => any>(func: T, limit: numb
     } as T;
 }
 
+export function debounce<T extends (...args: any[]) => any>(func: T, wait: number): (...args: Parameters<T>) => void {
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    return function(this: any, ...args: Parameters<T>) {
+        const context = this;
+        if (timeout) clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            func.apply(context, args);
+        }, wait);
+    };
+}
+
 export function isMobileDevice(): boolean {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 }
@@ -36,6 +47,10 @@ const OVERPASS_MAX_QUEUE = 15;
 
 export function isOverpassInBackoff(): boolean {
     return Date.now() < _overpassBackoffUntil;
+}
+
+export function isLowPriorityDisabled(): boolean {
+    return Date.now() < _lowPriorityDisabledUntil;
 }
 
 export async function fetchOverpassData(query: string, highPriority: boolean = false): Promise<any> {
@@ -97,10 +112,11 @@ async function processNextOverpass() {
             _overpassConsecutiveFails++;
             console.warn(`[Overpass] ${response.status} sur ${server}.`);
 
-            // Disjoncteur après 6 échecs : désactivation Hydrologie/Bâtiments
-            if (_overpassConsecutiveFails > 6) {
-                console.warn("[Overpass] Trop d'échecs. Désactivation Hydrologie/Bâtiments pour 5 min.");
-                _lowPriorityDisabledUntil = Date.now() + 300000;
+            // Disjoncteur après 3 échecs : désactivation Hydrologie/Bâtiments
+            if (_overpassConsecutiveFails >= 3) {
+                console.warn("[Overpass] Trop d'échecs. Désactivation Hydrologie/Bâtiments pour 10 min.");
+                _lowPriorityDisabledUntil = Date.now() + 600000;
+                _overpassConsecutiveFails = 0; // Reset pour le prochain cycle
             }
 
             if (item.priority) {
@@ -110,8 +126,8 @@ async function processNextOverpass() {
             }
 
             // Attendre avant de retenter sur le serveur suivant
-            setTimeout(processNextOverpass, 3000);
             isOverpassProcessing = false;
+            setTimeout(processNextOverpass, 3000);
             return;
         }
 

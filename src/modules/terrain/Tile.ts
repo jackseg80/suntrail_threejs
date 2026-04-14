@@ -11,6 +11,7 @@ import { getPlaneGeometry } from '../geometryCache';
 import { loadTileData, cancelTileLoad } from '../tileLoader';
 import { materialPool } from '../materialPool';
 import { activeTiles } from '../terrain';
+import { removeFromLoadQueue } from './tileQueue';
 
 const frustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
@@ -390,6 +391,7 @@ export class Tile {
 
     dispose(): void {
         this.status = 'disposed'; 
+        removeFromLoadQueue(this);
         if (this.activeTaskId >= 0) { cancelTileLoad(this.activeTaskId); this.activeTaskId = -1; }
         markCacheKeyInactive(getTileCacheKey(this.key, this.zoom));
         if (this.mesh) {

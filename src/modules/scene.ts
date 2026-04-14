@@ -9,7 +9,7 @@ import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, rese
 import { disposeAllCachedTiles } from './tileCache';
 import { disposeAllGeometries } from './geometryCache';
 import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat, clampTargetToBounds } from './geo';
-import { throttle } from './utils';
+import { throttle, debounce } from './utils';
 import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
 import { initVegetationResources } from './vegetation';
@@ -204,7 +204,14 @@ export async function initScene(): Promise<void> {
 
     let lastRecenterTime = 0;
 
-    // v5.28.25 : Throttle réduit à 100ms pour éviter les chevauchements LOD
+    // Version debouncée pour éviter de spammer l'API météo lors des mouvements rapides
+const debouncedFetchWeather = debounce((lat: number, lon: number) => {
+    state.lastWeatherLat = lat;
+    state.lastWeatherLon = lon;
+    fetchWeather(lat, lon);
+}, 1000);
+
+// v5.28.25 : Throttle réduit à 100ms pour éviter les chevauchements LOD
     const throttledUpdate = throttle(() => {
         if (!state.controls || !state.camera) return;
 
@@ -288,7 +295,7 @@ export async function initScene(): Promise<void> {
         autoSelectMapSource(gpsCenter.lat, gpsCenter.lon);
 
         const distToLastWeather = Math.sqrt(Math.pow(gpsCenter.lat - state.lastWeatherLat, 2) + Math.pow(gpsCenter.lon - state.lastWeatherLon, 2));
-        if (distToLastWeather > 0.05 && !state.isUserInteracting) fetchWeather(gpsCenter.lat, gpsCenter.lon);
+        if (distToLastWeather > 0.05) debouncedFetchWeather(gpsCenter.lat, gpsCenter.lon);
 
         const distFromOrigin = Math.sqrt(dx*dx + dz*dz);
 

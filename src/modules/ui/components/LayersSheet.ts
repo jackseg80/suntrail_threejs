@@ -1,6 +1,6 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { state, saveSettings } from '../../state';
-import { resetTerrain, updateVisibleTiles, updateSlopeVisibility } from '../../terrain';
+import { updateSlopeVisibility, refreshTerrain } from '../../terrain';
 import { sheetManager } from '../core/SheetManager';
 import { i18n } from '../../../i18n/I18nService';
 import { showUpgradePrompt, isProActive } from '../../iap';
@@ -140,10 +140,5 @@ export class LayersSheet extends BaseComponent {
             // ARIA: sync aria-selected with active state
             item.setAttribute('aria-selected', String(isActive));
         });
-    }
-
-    private refreshTerrain() {
-        resetTerrain();
-        updateVisibleTiles();
     }
 }

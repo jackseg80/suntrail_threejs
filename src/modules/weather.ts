@@ -11,7 +11,7 @@ const BOX_SIZE = 15000.0;
 
 let lastRequestId = 0;
 let lastFetchTime = 0;
-const MIN_FETCH_INTERVAL = 5000; // 5 secondes minimum entre requêtes
+const MIN_FETCH_INTERVAL = 15000; // 15 secondes minimum entre requêtes
 
 /** Extrait "Ville, Pays" depuis une réponse de géocodage inversé (MapTiler ou Nominatim). */
 export function extractLocationName(feature: any, fallback: string): string {
