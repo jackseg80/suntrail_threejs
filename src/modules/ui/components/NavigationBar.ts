@@ -5,6 +5,8 @@ import { i18n } from '../../../i18n/I18nService';
 import { state } from '../../state';
 import { rebuildActiveTiles, updateVisibleTiles } from '../../terrain';
 import { haptic } from '../../haptics';
+import { forceImmediateLODUpdate } from '../../scene';
+import { updateUserMarker } from '../../location';
 
 export class NavigationBar extends BaseComponent {
     constructor() {
@@ -78,6 +80,10 @@ export class NavigationBar extends BaseComponent {
                     } else {
                         updateVisibleTiles(undefined, undefined, undefined, null, null, true);
                     }
+                    
+                    // v5.28.32 : Correction du décalage visuel du marqueur utilisateur lors du switch
+                    forceImmediateLODUpdate();
+                    updateUserMarker();
                 }, 150);
             };
 

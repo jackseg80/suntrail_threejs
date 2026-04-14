@@ -14,7 +14,7 @@ import { showToast } from './toast';
 import { applyPreset, detectBestPreset, getGpuInfo, applyCustomSettings } from './performance';
 import { findTerrainIntersection, getAltitudeAt } from './analysis';
 import { closeElevationProfile, updateElevationProfile } from './profile';
-import { startLocationTracking, updateUserMarker } from './location';
+import { startLocationTracking, updateUserMarker, stopLocationTracking, clearUserMarker } from './location';
 import { fetchWeather } from './weather';
 import { fetchLocalPeaks } from './peaks';
 import { initTheme } from './theme';
@@ -192,7 +192,42 @@ export function initUI(): void {
     (window as any).sheetManager = sheetManager;
 
     const gpsMainBtn = document.getElementById('gps-main-btn');
+    let gpsLongPressTimer: ReturnType<typeof setTimeout> | null = null;
+    let longPressTriggered = false;
+
+    gpsMainBtn?.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return;
+        longPressTriggered = false;
+        
+        gpsLongPressTimer = setTimeout(() => {
+            clearUserMarker();
+            stopLocationTracking();
+            gpsMainBtn.classList.remove('active', 'following');
+            showToast(i18n.t('gps.toast.disabled') || 'Position désactivée');
+            gpsLongPressTimer = null;
+            longPressTriggered = true;
+            void haptic('medium');
+        }, 2000);
+    });
+
+    const cancelGpsLongPress = () => {
+        if (gpsLongPressTimer) {
+            clearTimeout(gpsLongPressTimer);
+            gpsLongPressTimer = null;
+        }
+    };
+
+    gpsMainBtn?.addEventListener('pointerup', () => {
+        // On attend un tout petit peu avant de reset pour que le 'click' qui suit puisse voir le flag
+        setTimeout(() => { longPressTriggered = false; }, 10);
+        cancelGpsLongPress();
+    });
+    gpsMainBtn?.addEventListener('pointerleave', cancelGpsLongPress);
+    gpsMainBtn?.addEventListener('contextmenu', (e) => e.preventDefault());
+
     gpsMainBtn?.addEventListener('click', async () => {
+        if (longPressTriggered) return;
+        
         try {
             const allowed = await requestGPSDisclosure();
             if (!allowed) return;

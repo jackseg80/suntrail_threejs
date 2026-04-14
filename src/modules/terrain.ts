@@ -92,6 +92,9 @@ export function repositionAllTiles(): void {
         // Empêche les tracés de "suivre" l'utilisateur lors de grands déplacements (voiture)
         terrainUpdates.updateAllGPXMeshes();
         terrainUpdates.updateRecordedTrackMesh();
+
+        // v5.28.31 : Repositionner le marqueur utilisateur lors d'un Origin Shift
+        import('./location').then(m => m.updateUserMarker());
     }
     (repositionAllTiles as any).lastOrigin = { ...state.originTile };
 }

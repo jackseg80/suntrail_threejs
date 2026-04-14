@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.32] - 2026-04-14
+### Added
+- **Contrôle GPS** : Désactivation de l'indicateur de position par appui long (2 secondes) sur le bouton GPS.
+### Fixed
+- **Basculement 2D/3D** : Correction du décalage visuel du marqueur utilisateur (altitude) lors du switch de mode.
+- **Indicateur de Position** : Le point rouge ne se téléporte plus lors des recherches (automatiquement masqué si trop loin du centre).
+- **Bug UI** : Correction d'un blocage du bouton position suite à l'implémentation de l'appui long.
+
 ## [5.28.31] - 2026-04-14
 ### Fixed
 - **Indicateur de Position** : Nouveau point rouge haute visibilité avec taille constante à l'écran quel que soit le zoom.

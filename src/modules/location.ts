@@ -86,56 +86,58 @@ export function updateUserMarker() {
     if (!state.userLocation || !state.scene || !state.originTile || !state.camera) return;
 
     const pos = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
+    
+    // v5.28.31 : Si la position est trop loin (> 100km), on cache le marqueur pour éviter les artefacts (Search Teleport)
+    const distToCenter = Math.sqrt(pos.x * pos.x + pos.z * pos.z);
+    if (distToCenter > 100000) {
+        if (state.userMarker) state.userMarker.visible = false;
+        return;
+    }
+
     const groundH = getAltitudeAt(pos.x, pos.z);
     const finalY = groundH + 10; // Un peu plus haut pour éviter l'occlusion par le relief
 
     if (!state.userMarker) {
         state.userMarker = new THREE.Group();
         
-        // Point central (Sprite HD) - Rouge et Taille fixe
+        // ... (le reste du code de création du canvas et du sprite reste identique)
         const canvas = document.createElement('canvas');
         canvas.width = 128; canvas.height = 128;
         const ctx = canvas.getContext('2d')!;
-        
-        // Halo extérieur blanc
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 15; ctx.shadowColor = 'rgba(0,0,0,0.5)';
         ctx.beginPath(); ctx.arc(64, 64, 54, 0, Math.PI * 2);
         ctx.fillStyle = 'white'; ctx.fill();
-        
-        // Cercle rouge principal
-        ctx.shadowBlur = 0;
-        ctx.beginPath(); ctx.arc(64, 64, 42, 0, Math.PI * 2);
+        ctx.shadowBlur = 0; ctx.beginPath(); ctx.arc(64, 64, 42, 0, Math.PI * 2);
         ctx.fillStyle = '#ff0000'; ctx.fill();
-
-        // Point central blanc
         ctx.beginPath(); ctx.arc(64, 64, 12, 0, Math.PI * 2);
         ctx.fillStyle = 'white'; ctx.fill();
-        
         const tex = new THREE.CanvasTexture(canvas);
-        const spriteMat = new THREE.SpriteMaterial({ 
-            map: tex, 
-            sizeAttenuation: false, // Taille constante à l'écran
-            depthTest: false,       // Toujours visible même derrière une montagne
-            transparent: true
-        });
+        const spriteMat = new THREE.SpriteMaterial({ map: tex, sizeAttenuation: false, depthTest: false, transparent: true });
         const dot = new THREE.Sprite(spriteMat);
-        
-        // Taille fixe en pixels relatifs au viewport (0.04 = ~4% de la hauteur de l'écran)
         dot.scale.set(0.045, 0.045, 1);
         dot.name = 'user-dot';
         state.userMarker.add(dot);
-        
         state.scene.add(state.userMarker);
     }
 
+    state.userMarker.visible = true;
     state.userMarker.position.set(pos.x, finalY, pos.z);
-    
-    if (state.userHeading !== null) {
-        // Optionnel: On peut ajouter une flèche directionnelle rouge si besoin
-        // Pour l'instant on garde le point rouge constant
-    }
 }
+
+/**
+ * Supprime complètement l'indicateur de position de la scène (v5.28.32).
+ */
+export function clearUserMarker() {
+    if (state.userMarker) {
+        if (state.scene) state.scene.remove(state.userMarker);
+        state.userMarker = null;
+    }
+    state.userLocation = null;
+    state.isFollowingUser = false;
+}
+
+// v5.28.31 : Mise à jour automatique du marqueur lors d'un changement d'origine (Recherche, etc.)
+state.subscribe('originTile', () => updateUserMarker());
 
 export function centerOnUser(delta: number) {
     if (!state.userLocation || !state.controls || !state.camera || !state.originTile) return;
