@@ -7,7 +7,7 @@ import { disposeAllCachedTiles } from './tileCache';
 import * as pmtiles from 'pmtiles';
 import { packManager } from './packManager';
 
-export const CACHE_NAME = 'suntrail-tiles-v5.11';
+export const CACHE_NAME = 'suntrail-tiles-v28';
 
 // --- PMTILES SUPPORT (v5.7.0) ---
 let localPMTiles: pmtiles.PMTiles | null = null;
@@ -77,7 +77,7 @@ export async function initEmbeddedOverview(): Promise<void> {
         
         // Paralléliser l'ouverture du cache worker et l'init PMTiles
         const [cache, archive] = await Promise.all([
-            caches.open('suntrail-tiles-v277'),
+            caches.open(CACHE_NAME),
             (async () => {
                 const p = new pmtiles.PMTiles(url);
                 await p.getHeader();
@@ -319,14 +319,12 @@ const _seededUrls = new Set<string>();
 async function seedEmbeddedTile(url: string, z: number, x: number, y: number): Promise<void> {
     if (!embeddedPMTiles || z > EMBEDDED_MAX_ZOOM) return;
     if (_seededUrls.has(url)) return;
-    _seededUrls.add(url); // Marquer immédiatement pour éviter les appels concurrents
     try {
-        if (!_workerCache) _workerCache = await caches.open('suntrail-tiles-v277');
-        // On pourrait vérifier si existing existe, mais caches.put écrasera si besoin,
-        // et le but est de garantir la présence pour le worker.
+        if (!_workerCache) _workerCache = await caches.open(CACHE_NAME);
         const blob = await getTileFromEmbedded(z, x, y);
         if (blob) {
             await _workerCache.put(url, new Response(blob));
+            _seededUrls.add(url); // On ne marque comme seedé QUE si le put a réussi
         }
     } catch {
         _seededUrls.delete(url);
@@ -339,12 +337,12 @@ async function seedEmbeddedTile(url: string, z: number, x: number, y: number): P
 async function seedPackTile(url: string, z: number, x: number, y: number, type: 'color' | 'elevation' | 'overlay'): Promise<void> {
     if (!packManager.hasMountedPacks()) return;
     if (_seededUrls.has(url)) return;
-    _seededUrls.add(url); // Marquer immédiatement
     try {
-        if (!_workerCache) _workerCache = await caches.open('suntrail-tiles-v277');
+        if (!_workerCache) _workerCache = await caches.open(CACHE_NAME);
         const blob = await packManager.getTileFromPacks(z, x, y, type);
         if (blob) {
             await _workerCache.put(url, new Response(blob));
+            _seededUrls.add(url);
         }
     } catch {
         _seededUrls.delete(url);
@@ -364,29 +362,20 @@ export async function loadTileData(tx: number, ty: number, zoom: number, is2D: b
     const colorUrl = getColorUrl(Math.floor(tx/cr), Math.floor(ty/cr), cz);
     const overlayUrl = getOverlayUrl(tx, ty, zoom);
 
-    // Pré-injection asynchrone (non-bloquante pour le thread principal)
+    // Pré-injection : on ATTEND le seeding pour les sources locales avant de lancer le worker
+    // Cela garantit que le worker trouvera la tuile dans son cache.
     if (embeddedPMTiles && zoom <= EMBEDDED_MAX_ZOOM) {
-        seedEmbeddedTile(colorUrl, cz, Math.floor(tx/cr), Math.floor(ty/cr)).catch(() => {});
+        await seedEmbeddedTile(colorUrl, cz, Math.floor(tx/cr), Math.floor(ty/cr));
     }
 
-    // --- FULL OFFLINE SUPPORT (v5.27.7) ---
-    // Si un pack est monté, on tente d'injecter Couleur, Élévation ET Overlay dans le cache du worker.
     if (packManager.hasMountedPacks() && zoom >= 12) {
         const cx = Math.floor(tx/cr);
         const cy = Math.floor(ty/cr);
-        
-        // Couleur
-        seedPackTile(colorUrl, cz, cx, cy, 'color').catch(() => {});
-        
-        // Élévation (disponible dans les packs v3+, LOD 12-14)
-        if (elevUrl && zoom <= 14) {
-            seedPackTile(elevUrl, zoom, tx, ty, 'elevation').catch(() => {});
-        }
-        
-        // Overlay (disponible dans les packs v3+, LOD 12-14)
-        if (overlayUrl) {
-            seedPackTile(overlayUrl, zoom, tx, ty, 'overlay').catch(() => {});
-        }
+        const seeds = [];
+        seeds.push(seedPackTile(colorUrl, cz, cx, cy, 'color'));
+        if (elevUrl && zoom <= 14) seeds.push(seedPackTile(elevUrl, zoom, tx, ty, 'elevation'));
+        if (overlayUrl) seeds.push(seedPackTile(overlayUrl, zoom, tx, ty, 'overlay'));
+        await Promise.all(seeds);
     }
 
     return tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl, zoom, sourceZoom);

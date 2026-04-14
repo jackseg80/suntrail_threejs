@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.33] - 2026-04-14
+### Fixed
+- **Cache Local** : Unification du cache (`suntrail-tiles-v28`) et synchronisation de l'injection (await seeding). Résout l'absence d'affichage des Packs Pays (Suisse LOD 12-14) et PMTiles en mode hors-ligne.
+
 ## [5.28.32] - 2026-04-14
 ### Added
 - **Contrôle GPS** : Désactivation de l'indicateur de position par appui long (2 secondes) sur le bouton GPS.

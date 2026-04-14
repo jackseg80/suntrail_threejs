@@ -4,8 +4,8 @@
  * v5.6.7 : AbortController par task — fetch annulé dès que la tuile est disposée côté main.
  */
 
-// v2 : force un vidage du cache suite au fix de la bbox France (IGN 404 en cache navigateur)
-const CACHE_NAME = 'suntrail-tiles-v2';
+// v28 : aligné sur tileLoader.ts pour support seeding
+const CACHE_NAME = 'suntrail-tiles-v28';
 let _cacheStorage: Cache | null = null;
 async function getCache(): Promise<Cache> {
     if (!_cacheStorage) _cacheStorage = await caches.open(CACHE_NAME);
