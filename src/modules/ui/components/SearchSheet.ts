@@ -2,7 +2,7 @@ import { BaseComponent } from '../core/BaseComponent';
 import { state } from '../../state';
 import { autoSelectMapSource, resetTerrain, updateVisibleTiles } from '../../terrain';
 import { lngLatToTile, lngLatToWorld } from '../../geo';
-import { flyTo } from '../../scene';
+import { flyTo, forceImmediateLODUpdate } from '../../scene';
 import { fetchWeather } from '../../weather';
 import { i18n } from '../../../i18n/I18nService';
 import { eventBus } from '../../eventBus';
@@ -365,10 +365,13 @@ export class SearchSheet extends BaseComponent {
         const isPeak = resultType === 'peak';
         const flyDuration = targetZoom <= 8 ? 2000 : targetZoom <= 11 ? 3000 : 3500;
 
-        setTimeout(() => {
+        setTimeout(async () => {
             const wp = lngLatToWorld(lon, lat, state.originTile);
             const flyAlt = isPeak ? ele * state.RELIEF_EXAGGERATION : 0;
-            flyTo(wp.x, wp.z, flyAlt, camDist, flyDuration);
+            await flyTo(wp.x, wp.z, flyAlt, camDist, flyDuration);
+            
+            // v5.28.25 : Force le LOD immédiatement après l'arrivée
+            forceImmediateLODUpdate();
         }, 100);
 
         if (isPeak && name) {

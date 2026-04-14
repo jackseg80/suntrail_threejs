@@ -31,6 +31,45 @@ let _lastLodUpsellTime = 0;
 // Ground plane — empêche le vide blanc quand la caméra voit sous le terrain au tilt max
 let groundPlane: THREE.Mesh | null = null;
 
+let lastLodChangeTime = 0;
+
+/**
+ * Force une mise à jour immédiate du LOD (v5.28.25).
+ * Ignore le throttle de 800ms pour éviter la "bouillie de pixels" après un flyTo.
+ */
+export function forceImmediateLODUpdate(): void {
+    if (!state.camera || !state.controls) return;
+
+    const dx = state.controls.target.x;
+    const dz = state.controls.target.z;
+    const rawDist = state.camera.position.distanceTo(state.controls.target);
+    const cameraGroundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
+    const heightAboveGround = Math.max(45, state.camera.position.y - cameraGroundH);
+    
+    let dist: number;
+    if (state.IS_2D_MODE) {
+        dist = heightAboveGround;
+    } else {
+        const polar = state.controls.getPolarAngle();
+        const tiltBlend = THREE.MathUtils.clamp(polar / 1.2, 0, 1);
+        dist = THREE.MathUtils.lerp(heightAboveGround, rawDist, tiltBlend * 0.5);
+    }
+    
+    const idealZoom = getIdealZoom(dist);
+    const effectiveMaxZoom = isFeatureEnabled('lod_high')
+        ? (state.MAX_ALLOWED_ZOOM || 18)
+        : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
+
+    const targetZoom = Math.min(idealZoom, effectiveMaxZoom);
+    state.ZOOM = targetZoom;
+    lastLodChangeTime = performance.now(); // On marque le changement pour bloquer les micro-oscillations suivantes
+    
+    const gpsCenter = worldToLngLat(dx, dz, state.originTile);
+    autoSelectMapSource(gpsCenter.lat, gpsCenter.lon);
+    
+    void updateVisibleTiles(gpsCenter.lat, gpsCenter.lon, dist, dx, dz, true);
+}
+
 // Références pour le nettoyage des listeners (v5.28.25)
 let currentThrottledUpdate: (() => void) | null = null;
 let currentThrottledSunUpdate: (() => void) | null = null;
@@ -164,7 +203,6 @@ export async function initScene(): Promise<void> {
     );
 
     let lastRecenterTime = 0;
-    let lastLodChangeTime = 0;
 
     // v5.28.25 : Throttle réduit à 100ms pour éviter les chevauchements LOD
     const throttledUpdate = throttle(() => {

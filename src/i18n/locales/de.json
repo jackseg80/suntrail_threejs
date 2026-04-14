@@ -61,7 +61,7 @@
       "title": "GPS-Aufzeichnung"
     },
     "upsell": {
-      "postRec": "Tour vorübergehend in der App gespeichert (wird beim Schliessen gelöscht). Upgrade auf Pro zum Speichern der GPX-Datei.",
+      "postRec": "Flüchtiger Track (nur RAM). Upgrade auf Pro, um die GPX-Datei auf Ihr Handy zu exportieren.",
       "proBtn": "Pro ansehen ↗"
     },
     "save": {

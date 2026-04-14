@@ -143,118 +143,139 @@ export function autoSelectMapSource(lat: number, lon: number): void {
 
 import { terrainUniforms } from './terrain/Tile';
 
-export function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number | null = null, worldZ: number | null = null, force: boolean = false): Promise<void> {
-    const is2DGlobal = state.IS_2D_MODE || state.PERFORMANCE_PRESET === 'eco' || state.ZOOM <= 10;
-    terrainUniforms.uExaggeration.value = state.RELIEF_EXAGGERATION;
-    const MIN_SLOPE_LOD = 11;
-    terrainUniforms.uShowSlopes.value = (state.SHOW_SLOPES && !is2DGlobal && state.ZOOM >= MIN_SLOPE_LOD) ? 1.0 : 0.0;
-    terrainUniforms.uShowHydrology.value = state.SHOW_HYDROLOGY ? 1.0 : 0.0;
+let isUpdating = false;
 
-    if (!state.camera || Math.abs(state.camera.position.y) < 1) return Promise.resolve();
+export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number | null = null, worldZ: number | null = null, force: boolean = false): Promise<void> {
+    if (isUpdating && !force) return Promise.resolve();
+    isUpdating = true;
 
-    // v5.28.1 : Utiliser la cible des contrôles par défaut (plus précis que la position caméra en 3D)
-    const wx = (worldX !== null) ? worldX : (state.controls ? state.controls.target.x : state.camera.position.x);
-    const wz = (worldZ !== null) ? worldZ : (state.controls ? state.controls.target.z : state.camera.position.z);
+    try {
+        const is2DGlobal = state.IS_2D_MODE || state.PERFORMANCE_PRESET === 'eco' || state.ZOOM <= 10;
+        terrainUniforms.uExaggeration.value = state.RELIEF_EXAGGERATION;
+        const MIN_SLOPE_LOD = 11;
+        terrainUniforms.uShowSlopes.value = (state.SHOW_SLOPES && !is2DGlobal && state.ZOOM >= MIN_SLOPE_LOD) ? 1.0 : 0.0;
+        terrainUniforms.uShowHydrology.value = state.SHOW_HYDROLOGY ? 1.0 : 0.0;
 
-    const currentGPS = worldToLngLat(wx, wz, state.originTile);
-    const zoom = state.ZOOM; const maxTile = Math.pow(2, zoom);
-    const centerTile = lngLatToTile(currentGPS.lon, currentGPS.lat, zoom);
-    const camGPS = worldToLngLat(state.camera.position.x, state.camera.position.z, state.originTile);
-    const camTile = lngLatToTile(camGPS.lon, camGPS.lat, zoom);
-    const currentActiveKeys = new Set<string>();
-    
-    const camKey = `${camTile.x}_${camTile.y}_${zoom}`;
-    if (camTile.x >= 0 && camTile.x < maxTile && camTile.y >= 0 && camTile.y < maxTile) {
-        currentActiveKeys.add(camKey);
-        if (!activeTiles.has(camKey)) { const t = new Tile(camTile.x, camTile.y, zoom, camKey); activeTiles.set(camKey, t); insertTile(t); loadQueue.add(t); }
-    }
+        if (!state.camera || Math.abs(state.camera.position.y) < 1) return Promise.resolve();
 
-    const mobile = isMobileDevice();
-    let range = (zoom <= 10) ? Math.max(state.RANGE, 3)
-        : (zoom >= 17 || (zoom >= 15 && mobile)) ? Math.max(4, Math.floor(state.RANGE/1.2))
-        : state.RANGE;
+        // v5.28.1 : Utiliser la cible des contrôles par défaut (plus précis que la position caméra en 3D)
+        const wx = (worldX !== null) ? worldX : (state.controls ? state.controls.target.x : state.camera.position.x);
+        const wz = (worldZ !== null) ? worldZ : (state.controls ? state.controls.target.z : state.camera.position.z);
 
-    if (!state.IS_2D_MODE && state.ZOOM >= 14 && state.controls) {
-        const polar = state.controls.getPolarAngle();
-        if (polar > 0.4) {
-            range = Math.min(range + 1, state.RANGE + 2);
+        const currentGPS = worldToLngLat(wx, wz, state.originTile);
+        const zoom = state.ZOOM; const maxTile = Math.pow(2, zoom);
+        const centerTile = lngLatToTile(currentGPS.lon, currentGPS.lat, zoom);
+        const camGPS = worldToLngLat(state.camera.position.x, state.camera.position.z, state.originTile);
+        const camTile = lngLatToTile(camGPS.lon, camGPS.lat, zoom);
+        const currentActiveKeys = new Set<string>();
+        
+        const camKey = `${camTile.x}_${camTile.y}_${zoom}`;
+        if (camTile.x >= 0 && camTile.x < maxTile && camTile.y >= 0 && camTile.y < maxTile) {
+            currentActiveKeys.add(camKey);
+            if (!activeTiles.has(camKey)) { const t = new Tile(camTile.x, camTile.y, zoom, camKey); activeTiles.set(camKey, t); insertTile(t); loadQueue.add(t); }
         }
-    }
 
-    let newlyAddedCount = 0;
-    const isPC = !isMobileDevice();
-    
-    // Rafales de chargement sécurisées (v5.26.13)
-    // v5.28.1: Augmentation de la limite si force=true (changement de mode)
-    const MAX_NEW_TILES_PER_FRAME = force ? 50 : (isPC 
-        ? 25 
-        : (state.PERFORMANCE_PRESET === 'performance') ? 12 
-        : (state.PERFORMANCE_PRESET === 'balanced') ? 8 
-        : 4);
+        const mobile = isMobileDevice();
+        let range = (zoom <= 10) ? Math.max(state.RANGE, 3)
+            : (zoom >= 17 || (zoom >= 15 && mobile)) ? Math.max(4, Math.floor(state.RANGE/1.2))
+            : state.RANGE;
 
-    let hasMoreToLoad = false;
-
-    for (let dy = -range; dy <= range; dy++) {
-        for (let dx = -range; dx <= range; dx++) {
-            const tx = centerTile.x + dx; const ty = centerTile.y + dy;
-            if (tx < 0 || tx >= maxTile || ty < 0 || ty >= maxTile) continue;
-            const key = `${tx}_${ty}_${zoom}`; currentActiveKeys.add(key);
-            let tile = activeTiles.get(key);
-            if (!tile) {
-                if (newlyAddedCount >= MAX_NEW_TILES_PER_FRAME) {
-                    hasMoreToLoad = true;
-                    continue; 
-                }
-                tile = new Tile(tx, ty, zoom, key);
-                if (tile.isVisible() || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) { 
-                    activeTiles.set(key, tile); 
-                    insertTile(tile); 
-                    loadQueue.add(tile); 
-                    newlyAddedCount++;
-                }
+        if (!state.IS_2D_MODE && state.ZOOM >= 14 && state.controls) {
+            const polar = state.controls.getPolarAngle();
+            if (polar > 0.4) {
+                range = Math.min(range + 1, state.RANGE + 2);
             }
         }
-    }
-    
-    // Si on n'a pas pu tout charger dans ce frame, on replanifie un "pulse" de chargement
-    // dans 100ms (v5.28.2) pour remplir la vue sans bloquer l'UI.
-    if (hasMoreToLoad) {
-        setTimeout(() => {
-            updateVisibleTiles(_camLat, _camLon, _camAltitude, wx, wz, force);
-        }, 100);
-    }
-    const lodChanging = lastRenderedZoom !== -1 && zoom !== lastRenderedZoom;
-    for (const [key, tile] of activeTiles.entries()) {
-        if (!currentActiveKeys.has(key)) {
-            if (lodChanging && tile.mesh && tile.status !== 'disposed') {
-                removeTile(tile);
-                activeTiles.delete(key);
-                fadingOutTiles.add(tile);
-                tile.startFadeOut();
-            } else {
-                removeTile(tile);
-                tile.dispose();
-                activeTiles.delete(key);
-            }
-        }
-    }
-    lastRenderedZoom = zoom;
-    processLoadQueue();
+        
+        // v5.28.25 : Forcer une portée minimale garantie lors d'un saut force
+        if (force) range = Math.max(range, 3);
 
-    if (loadQueue.size === 0) {
-        const nextZoom = zoom + 1;
-        if (nextZoom <= 18) {
-            const ct = lngLatToTile(currentGPS.lon, currentGPS.lat, nextZoom);
-            for (let dy = -1; dy <= 1; dy++) {
-                for (let dx = -1; dx <= 1; dx++) {
-                    const tx = ct.x + dx; const ty = ct.y + dy;
-                    if (tx < 0 || tx >= Math.pow(2, nextZoom) || ty < 0 || ty >= Math.pow(2, nextZoom)) continue;
-                    const pKey = `${tx}_${ty}_${nextZoom}`;
-                    if (!hasInCache(getTileCacheKey(pKey, nextZoom))) loadQueue.add(new Tile(tx, ty, nextZoom, pKey));
+        let newlyAddedCount = 0;
+        const isPC = !isMobileDevice();
+        
+        // v5.28.25 : Limite de tuiles augmentée si force=true
+        const MAX_NEW_TILES_PER_FRAME = force ? 100 : (isPC 
+            ? 25 
+            : (state.PERFORMANCE_PRESET === 'performance') ? 12 
+            : (state.PERFORMANCE_PRESET === 'balanced') ? 8 
+            : 4);
+
+        let hasMoreToLoad = false;
+
+        for (let dy = -range; dy <= range; dy++) {
+            for (let dx = -range; dx <= range; dx++) {
+                const tx = centerTile.x + dx; const ty = centerTile.y + dy;
+                if (tx < 0 || tx >= maxTile || ty < 0 || ty >= maxTile) continue;
+                const key = `${tx}_${ty}_${zoom}`; currentActiveKeys.add(key);
+                let tile = activeTiles.get(key);
+                if (!tile) {
+                    if (newlyAddedCount >= MAX_NEW_TILES_PER_FRAME) {
+                        hasMoreToLoad = true;
+                        continue; 
+                    }
+                    
+                    // v5.28.25 : Éviter les doublons entre active et fadingOut (Fix chevauchement LOD)
+                    for (const oldTile of fadingOutTiles) {
+                        if (oldTile.key === key) {
+                            fadingOutTiles.delete(oldTile);
+                            oldTile.dispose();
+                        }
+                    }
+
+                    tile = new Tile(tx, ty, zoom, key);
+                    if (tile.isVisible() || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) { 
+                        activeTiles.set(key, tile); 
+                        insertTile(tile); 
+                        loadQueue.add(tile); 
+                        newlyAddedCount++;
+                    }
                 }
             }
         }
-        if (loadQueue.size > 0) processLoadQueue();
+        
+        // Si on n'a pas pu tout charger dans ce frame, on replanifie un "pulse" de chargement
+        // dans 100ms (v5.28.2) pour remplir la vue sans bloquer l'UI.
+        if (hasMoreToLoad) {
+            setTimeout(() => {
+                updateVisibleTiles(_camLat, _camLon, _camAltitude, wx, wz, force);
+            }, 100);
+        }
+        const lodChanging = lastRenderedZoom !== -1 && zoom !== lastRenderedZoom;
+        for (const [key, tile] of activeTiles.entries()) {
+            if (!currentActiveKeys.has(key)) {
+                if (lodChanging && tile.mesh && tile.status !== 'disposed') {
+                    removeTile(tile);
+                    activeTiles.delete(key);
+                    fadingOutTiles.add(tile);
+                    tile.startFadeOut();
+                } else {
+                    removeTile(tile);
+                    tile.dispose();
+                    activeTiles.delete(key);
+                }
+            }
+        }
+        lastRenderedZoom = zoom;
+        processLoadQueue();
+
+        // Prefetch LOD suivant si la file est vide
+        if (loadQueue.size === 0) {
+            const nextZoom = zoom + 1;
+            if (nextZoom <= 18) {
+                const ct = lngLatToTile(currentGPS.lon, currentGPS.lat, nextZoom);
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        const tx = ct.x + dx; const ty = ct.y + dy;
+                        if (tx < 0 || tx >= Math.pow(2, nextZoom) || ty < 0 || ty >= Math.pow(2, nextZoom)) continue;
+                        const pKey = `${tx}_${ty}_${nextZoom}`;
+                        if (!hasInCache(getTileCacheKey(pKey, nextZoom))) loadQueue.add(new Tile(tx, ty, nextZoom, pKey));
+                    }
+                }
+            }
+            if (loadQueue.size > 0) processLoadQueue();
+        }
+    } finally {
+        isUpdating = false;
     }
     return Promise.resolve();
 }
@@ -457,6 +478,16 @@ export function updateAllGPXMeshes(): void {
 
 export function updateRecordedTrackMesh(): void {
     if (state.recordedPoints.length < 2 || !state.camera || !state.scene || !state.originTile) return;
+    
+    // v5.28.25 : Dédoublonnage strict par timestamp pour éviter les artefacts de "traits droits"
+    // (Retours en arrière si des points avec le même timestamp mais positions différentes existent)
+    const uniquePointsMap = new Map<number, typeof state.recordedPoints[0]>();
+    for (const p of state.recordedPoints) {
+        uniquePointsMap.set(p.timestamp, p);
+    }
+    const uniquePoints = Array.from(uniquePointsMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+    if (uniquePoints.length < 2) return;
+
     const camAlt = state.camera.position.y; 
     const thickness = Math.max(2.0, camAlt / 800); 
     
@@ -468,12 +499,10 @@ export function updateRecordedTrackMesh(): void {
     const originTile = state.originTile;
     
     // v5.28.4: Utilisation de drapeToTerrain pour uniformiser le plaquage.
-    // densifySteps=0 pour le tracé en cours car les points arrivent déjà denses.
-    // surfaceOffset=8 pour coller plus au sol que les GPX importés.
-    const threePoints = drapeToTerrain(state.recordedPoints, originTile, 0, 8);
+    // v5.28.25 : surfaceOffset=12 (au lieu de 8) pour être légèrement au dessus du terrain et éviter le Z-fighting
+    const threePoints = drapeToTerrain(uniquePoints, originTile, 0, 12);
 
     // v5.28.5: Simplification RDP plus fine (epsilon 1.0 au lieu de 2.0)
-    // pour éviter les "traits droits" trop visibles sur les petits virages.
     const simplifiedPoints = simplifyRDP(threePoints, 1.0, (v) => v);
 
     if (simplifiedPoints.length < 2) return;

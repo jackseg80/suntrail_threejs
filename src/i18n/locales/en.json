@@ -63,8 +63,8 @@
       "title": "GPS Recording"
     },
     "upsell": {
-      "postRec": "Track temporarily kept in app (deleted on close). Upgrade to Pro to save the GPX file to your phone.",
-      "proBtn": "See Pro ↗"
+      "postRec": "Ephemeral track (RAM only). Upgrade to Pro to export the GPX file to your phone.",
+      "proBtn": "View Pro ↗"
     },
     "save": {
       "title": "Save Track",

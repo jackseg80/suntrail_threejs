@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.30] - 2026-04-14
+### Fixed
+- **Pixel Soup** : Force la mise à jour immédiate du LOD après un vol (`flyTo`) en brisant le verrou de 800ms.
+- **LOD Artifacts** : Correction du chevauchement des tuiles lors de zooms rapides par nettoyage strict des coordonnées.
+- **Trace Rouge** : Suppression des traits droits parasites en temps réel par dédoublonnage strict des timestamps GPS.
+- **Expérience Free** : Clarification de l'enregistrement éphémère (mémoire vive) et affichage permanent de l'encart PRO dans l'onglet Parcours.
+- **Compilation** : Fix d'une erreur de type dans `TimelineComponent.ts`.
+
 ## [5.28.29] - 2026-04-12
 ### Fixed
 - **Fluidité LOD** : Réduction du temps de fondu des tuiles (**300ms**) et du throttle (**100ms**) pour supprimer les scintillements.

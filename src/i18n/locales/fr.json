@@ -28,7 +28,8 @@
       "freeLimit": "💡 Tracé temporaire : il sera effacé à la fermeture de l'app. Passez à PRO pour l'exporter.",
       "tooShort": "Tracé trop court pour export",
       "exportError": "Erreur lors de l'export GPX",
-      "exported": "GPX téléchargé"
+      "exported": "GPX téléchargé",
+      "savedInternal": "Tracé éphémère (mémoire vive uniquement)"
     },
     "recovery": {
       "title": "Enregistrement récupéré",
@@ -62,7 +63,7 @@
       "title": "Enregistrement GPS"
     },
     "upsell": {
-      "postRec": "Tracé sauvegardé dans l'application. Passez à Pro pour exporter le fichier GPX sur votre téléphone.",
+      "postRec": "Tracé éphémère (mémoire vive uniquement). Passez à Pro pour exporter le fichier GPX sur votre téléphone.",
       "proBtn": "Voir Pro ↗"
     },
     "save": {

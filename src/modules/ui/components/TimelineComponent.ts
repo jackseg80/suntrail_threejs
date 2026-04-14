@@ -26,9 +26,9 @@ export class TimelineComponent {
         this.timeSlider = document.body.querySelector('#time-slider') as HTMLInputElement;
         this.dateInput = document.body.querySelector('#date-input') as HTMLInputElement;
         const toggleBtn = document.body.querySelector('#timeline-toggle-btn');
-        const bottomBar = document.body.querySelector('#bottom-bar');
+        const bottomBar = document.body.querySelector('#bottom-bar') as HTMLElement | null;
 
-        if (this.timeSlider) {
+        if (this.timeSlider && bottomBar) {
             // ARIA: time slider attributes
             this.timeSlider.setAttribute('aria-label', 'Heure de simulation');
             this.timeSlider.setAttribute('aria-valuemin', this.timeSlider.min);

@@ -6,7 +6,7 @@ import { requestGPSDisclosure } from './gpsDisclosure';
 import { requestAcceptance } from './acceptanceWall';
 import { requestOnboarding } from './onboardingTutorial';
 import { i18n } from '../i18n/I18nService';
-import { initScene, flyTo } from './scene';
+import { initScene, flyTo, forceImmediateLODUpdate } from './scene';
 import { updateVisibleTiles, resetTerrain } from './terrain';
 import { updateStorageUI } from './tileLoader';
 import { lngLatToTile, lngLatToWorld, worldToLngLat } from './geo';
@@ -217,7 +217,11 @@ export function initUI(): void {
                 const worldPos = lngLatToWorld(lon, lat, state.originTile);
                 const altWorld = getAltitudeAt(worldPos.x, worldPos.z);
                 
-                flyTo(worldPos.x, worldPos.z, (altWorld / state.RELIEF_EXAGGERATION) + 500);
+                await flyTo(worldPos.x, worldPos.z, (altWorld / state.RELIEF_EXAGGERATION) + 500);
+                
+                // v5.28.25 : Force le LOD immédiatement en brisant le verrou de 800ms
+                forceImmediateLODUpdate();
+                
                 fetchWeather(lat, lon);
                 gpsMainBtn.classList.add('active');
                 showToast(i18n.t('gps.toast.centered'));
@@ -509,4 +513,13 @@ export function disposeUI(): void {
     }
 }
 
-function refreshTerrain() { resetTerrain(); updateVisibleTiles(); }
+function refreshTerrain() {
+    resetTerrain();
+    if (state.camera && state.originTile) {
+        const camPos = state.camera.position;
+        const coords = worldToLngLat(camPos.x, camPos.z, state.originTile);
+        updateVisibleTiles(coords.lat, coords.lon, camPos.y, camPos.x, camPos.z, true);
+    } else {
+        updateVisibleTiles();
+    }
+}

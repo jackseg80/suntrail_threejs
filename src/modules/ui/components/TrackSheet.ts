@@ -120,23 +120,21 @@ export class TrackSheet extends BaseComponent {
                     // 3. Sauvegarde SYSTÉMATIQUE (si points suffisants)
                     let savedInternal = false;
                     if (state.recordedPoints.length >= 2) {
-                        // Demander le nom final à l'utilisateur
-                        const finalName = await this.showSaveTrackPrompt(suggestedName);
-                        
-                        if (finalName) {
-                            savedInternal = await this.saveRecordedGPXInternal(finalName); // Layer en mémoire
-                            await this.saveGPXToFile(finalName);           // Fichier GPX (Cache/Documents)
+                        if (isProActive()) {
+                            // Demander le nom final à l'utilisateur Pro
+                            const finalName = await this.showSaveTrackPrompt(suggestedName);
+                            const nameToUse = finalName || suggestedName;
+                            savedInternal = await this.saveRecordedGPXInternal(nameToUse); // Layer en mémoire
+                            await this.saveGPXToFile(nameToUse);           // Fichier GPX (Documents)
                         } else {
-                            // Annulé ou fermé sans nom -> on garde quand même une trace interne par sécurité ?
-                            // Non, l'utilisateur a annulé, on peut soit jeter, soit garder en "SunTrail REC"
+                            // Utilisateur Free : Pas de prompt, sauvegarde directe éphémère
                             savedInternal = await this.saveRecordedGPXInternal(suggestedName);
-                            await this.saveGPXToFile(suggestedName);
+                            await this.saveGPXToFile(suggestedName); // Sauve dans Cache mais message "éphémère"
                         }
                     }
 
                     if (state.recordedPoints.length >= 2) {
                         showToast(i18n.t('track.toast.recStopped'));
-                        if (!isProActive()) this.showPostRecUpsell();
                     } else {
                         showToast(i18n.t('track.toast.tooShort'));
                     }
@@ -227,6 +225,11 @@ export class TrackSheet extends BaseComponent {
                 void startLocationTracking();
             }
         }
+        
+        // v5.28.25 : Encart PRO permanent pour les gratuits (même au 1er lancement)
+        if (!isProActive()) {
+            this.showPostRecUpsell();
+        }
     }
 
     private async showSaveTrackPrompt(suggestedName: string): Promise<string | null> {
@@ -256,7 +259,7 @@ export class TrackSheet extends BaseComponent {
                     ${i18n.t('track.save.title') || 'Enregistrer le tracé'}
                 </div>
                 <div style="font-size:var(--text-sm,14px);margin-bottom:var(--space-4,20px);opacity:0.85">
-                    ${i18n.t('track.save.body') || 'Donnez un nom à votre rando :'}
+                    ${isProActive() ? i18n.t('track.save.body') : "<b>Tracé éphémère</b> : il sera perdu à la fermeture de l'app. Nommez-le pour l'afficher :"}
                 </div>
                 <input type="text" id="rec-save-name" value="${suggestedName}" style="
                     width: 100%; padding: 12px; margin-bottom: 24px;
@@ -686,14 +689,19 @@ export class TrackSheet extends BaseComponent {
         proBtn.style.cssText = 'flex-shrink:0; font-size:11px; padding:4px 10px;';
         proBtn.textContent = i18n.t('track.upsell.proBtn');
         proBtn.onclick = () => showUpgradePrompt('rec_stats');
-        const closeBtn = document.createElement('button');
-        closeBtn.setAttribute('aria-label', i18n.t('common.close'));
-        closeBtn.style.cssText = 'flex-shrink:0; background:none; border:none; color:var(--text-3); cursor:pointer; font-size:16px; line-height:1; padding:0 4px;';
-        closeBtn.textContent = '×';
-        closeBtn.onclick = () => banner.remove();
+        
         banner.appendChild(text);
         banner.appendChild(proBtn);
-        banner.appendChild(closeBtn);
+
+        if (isProActive()) {
+            const closeBtn = document.createElement('button');
+            closeBtn.setAttribute('aria-label', i18n.t('common.close'));
+            closeBtn.style.cssText = 'flex-shrink:0; background:none; border:none; color:var(--text-3); cursor:pointer; font-size:16px; line-height:1; padding:0 4px;';
+            closeBtn.textContent = '×';
+            closeBtn.onclick = () => banner.remove();
+            banner.appendChild(closeBtn);
+        }
+
         this.element?.appendChild(banner);
     }
 
@@ -823,7 +831,7 @@ export class TrackSheet extends BaseComponent {
                 if (isProActive()) {
                     showToast(`GPX sauvegardé : ${shortName}`);
                 } else {
-                    showToast(`GPX sauvegardé (dans l'app) : ${shortName}`);
+                    showToast(i18n.t('track.toast.savedInternal') || `GPX sauvegardé (dans l'app) : ${shortName}`);
                 }
             } catch (e) {
                 console.error('[TrackSheet] saveGPXToFile failed:', e);

@@ -63,8 +63,8 @@
       "title": "Registrazione GPS"
     },
     "upsell": {
-      "postRec": "Percorso conservato temporaneamente nell'app (verrà eliminato alla chiusura). Passa a Pro per salvare il file GPX.",
-      "proBtn": "Scopri Pro ↗"
+      "postRec": "Traccia effimera (solo RAM). Passa a Pro per esportare il file GPX sul tuo telefono.",
+      "proBtn": "Vedi Pro ↗"
     },
     "save": {
       "title": "Salva percorso",
