@@ -196,12 +196,12 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
         let newlyAddedCount = 0;
         const isPC = !isMobileDevice();
         
-        // v5.28.25 : Limite de tuiles augmentée si force=true
+        // v5.28.34 : Limite de tuiles augmentée pour un remplissage plus rapide
         const MAX_NEW_TILES_PER_FRAME = force ? 100 : (isPC 
-            ? 25 
-            : (state.PERFORMANCE_PRESET === 'performance') ? 12 
-            : (state.PERFORMANCE_PRESET === 'balanced') ? 8 
-            : 4);
+            ? 40 
+            : (state.PERFORMANCE_PRESET === 'performance') ? 20 
+            : (state.PERFORMANCE_PRESET === 'balanced') ? 12 
+            : 6);
 
         let hasMoreToLoad = false;
 
@@ -236,12 +236,11 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
             }
         }
         
-        // Si on n'a pas pu tout charger dans ce frame, on replanifie un "pulse" de chargement
-        // dans 100ms (v5.28.2) pour remplir la vue sans bloquer l'UI.
+        // v5.28.34 : Délai réduit à 50ms pour un remplissage plus nerveux
         if (hasMoreToLoad) {
             setTimeout(() => {
                 updateVisibleTiles(_camLat, _camLon, _camAltitude, wx, wz, force);
-            }, 100);
+            }, 50);
         }
         const lodChanging = lastRenderedZoom !== -1 && zoom !== lastRenderedZoom;
         for (const [key, tile] of activeTiles.entries()) {

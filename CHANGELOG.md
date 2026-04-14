@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.35] - 2026-04-14
+### Optimized
+- **Remplissage Carte** : Augmentation du quota de tuiles par frame (40 sur PC, 20 sur mobile Performance) et réduction du délai de rafraîchissement à 50ms pour un affichage plus réactif lors de la navigation.
+
 ## [5.28.34] - 2026-04-14
 ### Fixed
 - **Fluidité de Navigation** : Implémentation d'un debouncing (100-150ms) sur la génération des géométries GPX et des traces enregistrées. Supprime les micro-saccades lors des mouvements de caméra.
