@@ -7,7 +7,7 @@ import { requestAcceptance } from './acceptanceWall';
 import { requestOnboarding } from './onboardingTutorial';
 import { i18n } from '../i18n/I18nService';
 import { initScene, flyTo, forceImmediateLODUpdate } from './scene';
-import { updateVisibleTiles, resetTerrain, refreshTerrain } from './terrain';
+import { refreshTerrain } from './terrain';
 import { updateStorageUI } from './tileLoader';
 import { lngLatToTile, lngLatToWorld, worldToLngLat } from './geo';
 import { showToast } from './toast';
@@ -18,6 +18,7 @@ import { startLocationTracking, updateUserMarker, stopLocationTracking, clearUse
 import { fetchWeather } from './weather';
 import { fetchLocalPeaks } from './peaks';
 import { initTheme } from './theme';
+import { haptic } from './haptics';
 import { resolveMapTilerKey } from './config';
 
 import { NavigationBar } from './ui/components/NavigationBar';

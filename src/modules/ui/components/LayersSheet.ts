@@ -34,7 +34,7 @@ export class LayersSheet extends BaseComponent {
                     state.hasManualSource = true;
                     void haptic('light');
                     saveSettings();
-                    this.refreshTerrain();
+                    refreshTerrain();
                     this.updateActiveLayer();
                 }
             });
@@ -52,7 +52,7 @@ export class LayersSheet extends BaseComponent {
                 trailsToggle.setAttribute('aria-checked', String((e.target as HTMLInputElement).checked));
                 void haptic('light');
                 saveSettings();
-                this.refreshTerrain();
+                refreshTerrain();
             });
         }
 

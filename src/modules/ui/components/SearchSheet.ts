@@ -360,7 +360,7 @@ export class SearchSheet extends BaseComponent {
             state.controls.update();
         }
 
-        this.refreshTerrain();
+        refreshTerrain();
 
         const isPeak = resultType === 'peak';
         const flyDuration = targetZoom <= 8 ? 2000 : targetZoom <= 11 ? 3000 : 3500;

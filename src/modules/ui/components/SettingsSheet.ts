@@ -36,10 +36,10 @@ export class SettingsSheet extends BaseComponent {
         });
 
         // Sliders
-        this.bindSlider('res-slider', 'RESOLUTION', 'res-disp', this.refreshTerrain);
-        this.bindSlider('range-slider', 'RANGE', 'range-disp', this.refreshTerrain);
-        this.bindSlider('exag-slider', 'RELIEF_EXAGGERATION', 'exag-disp', this.refreshTerrain);
-        this.bindSlider('veg-density-slider', 'VEGETATION_DENSITY', 'veg-density-disp', this.refreshTerrain);
+        this.bindSlider('res-slider', 'RESOLUTION', 'res-disp', refreshTerrain);
+        this.bindSlider('range-slider', 'RANGE', 'range-disp', refreshTerrain);
+        this.bindSlider('exag-slider', 'RELIEF_EXAGGERATION', 'exag-disp', refreshTerrain);
+        this.bindSlider('veg-density-slider', 'VEGETATION_DENSITY', 'veg-density-disp', refreshTerrain);
 
         // Sub-options expand/collapse
         this.bindExpandToggle('veg-expand-btn', 'veg-suboptions');
@@ -57,12 +57,12 @@ export class SettingsSheet extends BaseComponent {
             if (zoomInd) zoomInd.style.display = val ? 'block' : 'none';
             if (compass) compass.style.display = val ? 'block' : 'none';
         });
-        this.bindToggle('veg-toggle', 'SHOW_VEGETATION', this.refreshTerrain);
+        this.bindToggle('veg-toggle', 'SHOW_VEGETATION', refreshTerrain);
         this.bindToggle('hydro-toggle', 'SHOW_HYDROLOGY', (val: boolean) => updateHydrologyVisibility(val));
         this.bindToggle('weather-toggle', 'SHOW_WEATHER', (val: boolean) => updateWeatherVisibility(val));
         this.bindSlider('weather-density-slider', 'WEATHER_DENSITY', 'weather-density-disp');
         this.bindSlider('weather-speed-slider', 'WEATHER_SPEED', 'weather-speed-disp');
-        this.bindToggle('poi-toggle', 'SHOW_SIGNPOSTS', this.refreshTerrain);
+        this.bindToggle('poi-toggle', 'SHOW_SIGNPOSTS', refreshTerrain);
         
         // Inclinomètre — feature Pro
         this.setupProFeatureToggle('inclinometer-toggle', 'SHOW_INCLINOMETER', 'inclinometer', 'row-inclinometer');
@@ -72,7 +72,7 @@ export class SettingsSheet extends BaseComponent {
         
         // Bâtiments 3D — feature Pro (déjà existant, déplacé dans section PRO)
         this.setupProFeatureToggle('buildings-toggle', 'SHOW_BUILDINGS', 'buildings_3d', 'row-buildings', () => {
-            this.refreshTerrain();
+            refreshTerrain();
         });
         
         this.bindToggle('shadow-toggle', 'SHADOWS', (val: boolean) => {

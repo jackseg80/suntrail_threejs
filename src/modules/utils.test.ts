@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { showToast } from './toast';
-import { throttle } from './utils';
+import { debounce } from './utils';
 
 describe('utils.ts', () => {
     beforeEach(() => {
@@ -31,5 +31,3 @@ describe('utils.ts', () => {
         vi.useRealTimers();
     });
 });
-
-import { debounce } from './utils';
