@@ -1,4 +1,4 @@
-# SunTrail 3D — TODO (v5.28.28)
+# SunTrail 3D — TODO (v5.28.37)
 
 > Guide IA : [CLAUDE.md](../CLAUDE.md) | Historique : [COMPLETED_HISTORY.md](archives/COMPLETED_HISTORY.md)
 
@@ -6,6 +6,7 @@
 
 ## 🎯 Priorité 1 : Finalisation Production (V5.x)
 
+- [x] **Superposition & Transitions LOD (v5.28.37)** : Correction du bug de superposition (camera.y), retour au fondu symétrique et optimisation `Tile.dispose()`.
 - [x] **Gestion des GPX (v5.28.28)** : Reverse geocoding pour nommage automatique + renommage interactif à l'arrêt.
 - [x] **Navigation Tactile (v5.28.27)** : Implémentation du double-tap pour zoomer.
 - [x] **UI Réglages (v5.28.26)** : Correction des curseurs de Résolution (LOD) et Rayon de rendu.

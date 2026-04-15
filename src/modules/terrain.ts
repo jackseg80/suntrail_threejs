@@ -161,7 +161,7 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
         terrainUniforms.uShowSlopes.value = (state.SHOW_SLOPES && !is2DGlobal && state.ZOOM >= MIN_SLOPE_LOD) ? 1.0 : 0.0;
         terrainUniforms.uShowHydrology.value = state.SHOW_HYDROLOGY ? 1.0 : 0.0;
 
-        if (!state.camera || Math.abs(state.camera.position.y) < 1) return Promise.resolve();
+        if (!state.camera) return Promise.resolve();
 
         // v5.28.1 : Utiliser la cible des contrôles par défaut (plus précis que la position caméra en 3D)
         const wx = (worldX !== null) ? worldX : (state.controls ? state.controls.target.x : state.camera.position.x);
@@ -173,7 +173,7 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
         const camGPS = worldToLngLat(state.camera.position.x, state.camera.position.z, state.originTile);
         const camTile = lngLatToTile(camGPS.lon, camGPS.lat, zoom);
         const currentActiveKeys = new Set<string>();
-        
+
         const camKey = `${camTile.x}_${camTile.y}_${zoom}`;
         if (camTile.x >= 0 && camTile.x < maxTile && camTile.y >= 0 && camTile.y < maxTile) {
             currentActiveKeys.add(camKey);
@@ -191,13 +191,13 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
                 range = Math.min(range + 1, state.RANGE + 2);
             }
         }
-        
+
         // v5.28.25 : Forcer une portée minimale garantie lors d'un saut force
         if (force) range = Math.max(range, 3);
 
         let newlyAddedCount = 0;
         const isPC = !isMobileDevice();
-        
+
         // v5.28.34 : Limite de tuiles augmentée pour un remplissage plus rapide
         const MAX_NEW_TILES_PER_FRAME = force ? 100 : (isPC 
             ? 40 
@@ -207,50 +207,54 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
 
         let hasMoreToLoad = false;
 
-        for (let dy = -range; dy <= range; dy++) {
-            for (let dx = -range; dx <= range; dx++) {
-                const tx = centerTile.x + dx; const ty = centerTile.y + dy;
-                if (tx < 0 || tx >= maxTile || ty < 0 || ty >= maxTile) continue;
-                const key = `${tx}_${ty}_${zoom}`; currentActiveKeys.add(key);
-                let tile = activeTiles.get(key);
-                if (!tile) {
-                    if (newlyAddedCount >= MAX_NEW_TILES_PER_FRAME) {
-                        hasMoreToLoad = true;
-                        continue; 
-                    }
-                    
-                    // v5.28.25 : Éviter les doublons entre active et fadingOut (Fix chevauchement LOD)
-                    for (const oldTile of fadingOutTiles) {
-                        if (oldTile.key === key) {
-                            fadingOutTiles.delete(oldTile);
-                            oldTile.dispose();
-                        }
-                    }
+        // Skip addition if camera is invalid, but STILL proceed to cleanup loop below
+        const isCameraReady = Math.abs(state.camera.position.y) >= 1;
 
-                    tile = new Tile(tx, ty, zoom, key);
-                    if (tile.isVisible() || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) { 
-                        activeTiles.set(key, tile); 
-                        insertTile(tile); 
-                        loadQueue.add(tile); 
-                        newlyAddedCount++;
+        if (isCameraReady) {
+            for (let dy = -range; dy <= range; dy++) {
+                for (let dx = -range; dx <= range; dx++) {
+                    const tx = centerTile.x + dx; const ty = centerTile.y + dy;
+                    if (tx < 0 || tx >= maxTile || ty < 0 || ty >= maxTile) continue;
+                    const key = `${tx}_${ty}_${zoom}`; currentActiveKeys.add(key);
+                    let tile = activeTiles.get(key);
+                    if (!tile) {
+                        if (newlyAddedCount >= MAX_NEW_TILES_PER_FRAME) {
+                            hasMoreToLoad = true;
+                            continue; 
+                        }
+
+                        // v5.28.25 : Éviter les doublons entre active et fadingOut (Fix chevauchement LOD)
+                        for (const oldTile of fadingOutTiles) {
+                            if (oldTile.key === key) {
+                                fadingOutTiles.delete(oldTile);
+                                oldTile.dispose();
+                            }
+                        }
+
+                        tile = new Tile(tx, ty, zoom, key);
+                        if (tile.isVisible() || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) { 
+                            activeTiles.set(key, tile); 
+                            insertTile(tile); 
+                            loadQueue.add(tile); 
+                            newlyAddedCount++;
+                        }
                     }
                 }
             }
         }
-        
+
         // v5.28.34 : Délai réduit à 50ms pour un remplissage plus nerveux
         if (hasMoreToLoad) {
             setTimeout(() => {
                 updateVisibleTiles(_camLat, _camLon, _camAltitude, wx, wz, force);
             }, 50);
         }
-        
+
         const lodChanging = lastRenderedZoom !== -1 && zoom !== lastRenderedZoom;
-        const isZoomIn = zoom > lastRenderedZoom;
 
         for (const [key, tile] of activeTiles.entries()) {
             if (!currentActiveKeys.has(key)) {
-                if (lodChanging && isZoomIn && tile.mesh && tile.status !== 'disposed') {
+                if (lodChanging && tile.mesh && tile.status !== 'disposed') {
                     removeTile(tile);
                     activeTiles.delete(key);
                     fadingOutTiles.add(tile);
@@ -261,8 +265,7 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
                     activeTiles.delete(key);
                 }
             }
-        }
-        lastRenderedZoom = zoom;
+        }        lastRenderedZoom = zoom;
         processLoadQueue();
 
         // Prefetch LOD suivant si la file est vide

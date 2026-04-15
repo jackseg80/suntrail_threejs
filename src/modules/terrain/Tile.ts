@@ -15,7 +15,7 @@ import { removeFromLoadQueue } from './tileQueue';
 
 const frustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
-const GHOST_FADE_MS = 300;
+const GHOST_FADE_MS = 800; // v5.28.37 : Augmenté pour fluidité (README mentionne 1.2s)
 
 export const terrainUniforms = { 
     uExaggeration: { value: state.RELIEF_EXAGGERATION },
@@ -396,16 +396,19 @@ export class Tile {
         markCacheKeyInactive(getTileCacheKey(this.key, this.zoom));
         if (this.mesh) {
             if (state.scene) state.scene.remove(this.mesh);
+            
+            // v5.28.37 : Relâcher les matériaux dans le pool au lieu de les détruire
             if (this.mesh.material instanceof THREE.Material) {
-                (this.mesh.material as any).map = null;
-                const shader = (this.mesh.material as any).userData.shader;
-                if (shader && shader.uniforms) {
-                    if (shader.uniforms.uElevationMap) shader.uniforms.uElevationMap.value = null;
-                    if (shader.uniforms.uOverlayMap) shader.uniforms.uOverlayMap.value = null;
-                    if (shader.uniforms.uNormalMap) shader.uniforms.uNormalMap.value = null;
-                }
+                materialPool.release(this.mesh.material);
             }
-            disposeObject(this.mesh); this.mesh = null;
+            if (this.mesh.customDepthMaterial instanceof THREE.Material) {
+                materialPool.release(this.mesh.customDepthMaterial);
+            }
+
+            // NE PAS utiliser disposeObject(this.mesh) car il détruirait la géométrie PARTAGÉE
+            this.mesh.geometry = null as any;
+            this.mesh.material = null as any;
+            this.mesh = null;
         }
         if (this.forestMesh) { if (state.scene) state.scene.remove(this.forestMesh); disposeObject(this.forestMesh); this.forestMesh = null; }
         if (this.poiGroup) { if (state.scene) state.scene.remove(this.poiGroup); disposeObject(this.poiGroup); this.poiGroup = null; }

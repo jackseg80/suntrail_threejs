@@ -1,4 +1,4 @@
-# SunTrail — Guide IA (v5.28.36)
+# SunTrail — Guide IA (v5.28.37)
 
 > Point d'entrée unique pour tous les agents IA.
 > Mis à jour le 2026-04-14 suite aux optimisations terrain et corrections GPX.

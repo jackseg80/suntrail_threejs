@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.37] - 2026-04-15
+### Fixed
+- **Superposition LOD** : Correction d'un bug majeur où les tuiles restaient affichées lors du dézoom si la caméra était proche du sol (garde-fou `camera.y < 1` déplacé pour ne plus bloquer la purge).
+- **Transitions LOD** : Retour aux transitions symétriques (fondu progressif au zoom ET dézoom) pour éliminer les trous visuels et les clignotements.
+- **Fuites VRAM** : Correction de `Tile.dispose()` pour relâcher les matériaux dans le `materialPool` et ne plus détruire les géométries partagées du cache.
+- **Fluidité Ghost Tiles** : Augmentation du fondu LOD à 800ms (contre 300ms) pour une navigation plus soyeuse.
+
 ## [5.28.36] - 2026-04-14
 ### Optimized
 - **Performance LOD** : Purge systématique de `loadQueue` au `dispose()` et suppression instantanée des tuiles détaillées lors d'un dézoom pour éviter les chevauchements visuels.
