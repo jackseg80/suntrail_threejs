@@ -32,6 +32,7 @@ export async function resolveMapTilerKey(): Promise<void> {
 
     if (userDefinedKey) {
         state.MK = userDefinedKey;
+        console.log(`[Config] MapTiler key: localStorage (manual) [${state.MK.substring(0, 8)}...]`);
         return;
     }
 
@@ -45,14 +46,20 @@ export async function resolveMapTilerKey(): Promise<void> {
                 // On choisit une clé au hasard parmi celles non bannies
                 const validKeys = availableKeys.filter(k => !bannedKeys.has(k));
                 if (validKeys.length > 0) {
-                    state.MK = validKeys[Math.floor(Math.random() * validKeys.length)];
+                    const idx = Math.floor(Math.random() * validKeys.length);
+                    state.MK = validKeys[idx];
+                    console.log(`[Config] MapTiler key: Gist rotation active (${validKeys.length} valides) [${state.MK.substring(0, 8)}...]`);
                 } else if (bundledKey) {
                     state.MK = bundledKey;
+                    console.log(`[Config] MapTiler key: .env fallback [${state.MK.substring(0, 8)}...]`);
                 }
             }
         }
     } catch (e) {
-        if (bundledKey) state.MK = bundledKey;
+        if (bundledKey) {
+            state.MK = bundledKey;
+            console.log(`[Config] MapTiler key: .env (bundled) [${state.MK.substring(0, 8)}...]`);
+        }
     }
 }
 

@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.21] - 2026-04-16
+### Improved
+- **Logs Config** : Rétablissement des messages informatifs dans la console pour suivre l'utilisation et la rotation des clés MapTiler.
+
 ## [5.29.20] - 2026-04-16
 ### Fixed
 - **Résilience MapTiler (Relief)** : Implémentation d'une rotation automatique des clés d'API. En cas d'erreur 403, l'application change de clé au lieu de désactiver le service, garantissant le maintien du relief 3D.
