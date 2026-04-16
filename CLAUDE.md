@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.29.8)
+# SunTrail — Guide IA (v5.29.9)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-16 suite à la v5.29.8 (Tests 100% Vert & Stabilité Totale).
+> Mis à jour le 2026-04-16 suite à la v5.29.9 (Fix Build Android).
 
 ## Projet
 
