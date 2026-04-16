@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.27] - 2026-04-16
+### Fixed
+- **Robustesse du Zoom** : Implémentation d'un verrou de mise à jour intelligente (`updatePending`) pour éviter les conflits d'exécution et les "trous" dans la carte.
+- **Optimisation de la File d'Attente** : Filtrage strict des tuiles obsolètes dans `loadQueue`. Les tuiles d'un ancien LOD sont instantanément ignorées lors du dézoom.
+- **Réactivité** : Correction d'un bug de boucle de rendu (`dx = -range`) et réduction des délais de verrouillage pour un zoom plus fluide.
+
 ## [5.29.26] - 2026-04-16
 ### Optimized
 - **Mode 2D Ultra-Fluide** : Refonte totale du pipeline 2D pour les mobiles de milieu de gamme (Galaxy A53). Utilisation d'une résolution de maillage minimale (1 quad) et de shaders simplifiés.

@@ -15,7 +15,7 @@ export { Tile, terrainUniforms } from './terrain/Tile';
 export { loadQueue, processLoadQueue, clearLoadQueue, addToLoadQueue, removeFromLoadQueue } from './terrain/tileQueue';
 
 import { Tile } from './terrain/Tile';
-import { loadQueue, processLoadQueue } from './terrain/tileQueue';
+import { loadQueue, processLoadQueue, clearLoadQueue } from './terrain/tileQueue';
 
 export const activeTiles = new Map<string, Tile>(); 
 export const activeLabels = new Map<string, any>(); 
@@ -165,10 +165,15 @@ export function autoSelectMapSource(lat: number, lon: number): void {
 import { terrainUniforms } from './terrain/Tile';
 
 let isUpdating = false;
+let updatePending = false;
 
-export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number | null = null, worldZ: number | null = null, force: boolean = false): Promise<void> {
-    if (isUpdating && !force) return Promise.resolve();
+export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number | null = null, worldZ: number | null = null): Promise<void> {
+    if (isUpdating) {
+        updatePending = true;
+        return Promise.resolve();
+    }
     isUpdating = true;
+    updatePending = false;
 
     try {
         const is2DGlobal = state.IS_2D_MODE || state.PERFORMANCE_PRESET === 'eco' || state.ZOOM <= 10;
@@ -179,27 +184,28 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
 
         if (!state.camera) return Promise.resolve();
 
-        // v5.28.1 : Utiliser la cible des contrôles par défaut (plus précis que la position caméra en 3D)
         const wx = (worldX !== null) ? worldX : (state.controls ? state.controls.target.x : state.camera.position.x);
         const wz = (worldZ !== null) ? worldZ : (state.controls ? state.controls.target.z : state.camera.position.z);
 
         const currentGPS = worldToLngLat(wx, wz, state.originTile);
         const zoom = state.ZOOM; const maxTile = Math.pow(2, zoom);
         const centerTile = lngLatToTile(currentGPS.lon, currentGPS.lat, zoom);
-        const camGPS = worldToLngLat(state.camera.position.x, state.camera.position.z, state.originTile);
-        const camTile = lngLatToTile(camGPS.lon, camGPS.lat, zoom);
         const currentActiveKeys = new Set<string>();
 
         const isZoomIn = zoom > lastRenderedZoom;
         const lodChanging = lastRenderedZoom !== -1 && zoom !== lastRenderedZoom;
 
-        // v5.28.42 : Si on change de LOD, on purge les fantômes actuels pour éviter l'accumulation (effet mille-feuille)
-        if (lodChanging && fadingOutTiles.size > 0) {
-            for (const t of fadingOutTiles) t.dispose();
-            fadingOutTiles.clear();
+        // v5.28.48 : Nettoyage immédiat lors d'un changement de LOD
+        if (lodChanging) {
+            clearLoadQueue();
+            if (fadingOutTiles.size > 0) {
+                for (const t of fadingOutTiles) t.dispose();
+                fadingOutTiles.clear();
+            }
         }
 
-        // v5.28.42 : La clé inclut maintenant la source pour empêcher le mélange Swisstopo/OpenTopo/IGN
+        const camGPS = worldToLngLat(state.camera.position.x, state.camera.position.z, state.originTile);
+        const camTile = lngLatToTile(camGPS.lon, camGPS.lat, zoom);
         const camKey = `${state.MAP_SOURCE}_${camTile.x}_${camTile.y}_${zoom}`;
         if (camTile.x >= 0 && camTile.x < maxTile && camTile.y >= 0 && camTile.y < maxTile) {
             currentActiveKeys.add(camKey);
@@ -218,71 +224,33 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
 
         if (!state.IS_2D_MODE && state.ZOOM >= 14 && state.controls) {
             const polar = state.controls.getPolarAngle();
-            if (polar > 0.4) {
-                range = Math.min(range + 1, state.RANGE + 2);
-            }
+            if (polar > 0.4) range = Math.min(range + 1, state.RANGE + 2);
         }
 
-        // v5.28.25 : Forcer une portée minimale garantie lors d'un saut force
-        if (force) range = Math.max(range, 3);
-
-        let newlyAddedCount = 0;
-        const isPC = !isMobileDevice();
-
-        // v5.28.34 : Limite de tuiles augmentée pour un remplissage plus rapide
-        const MAX_NEW_TILES_PER_FRAME = force ? 100 : (isPC 
-            ? 40 
-            : (state.PERFORMANCE_PRESET === 'performance') ? 12 
-            : (state.PERFORMANCE_PRESET === 'balanced') ? 8 
-            : 4);
-
-        let hasMoreToLoad = false;
-
-        // Skip addition if camera is invalid, but STILL proceed to cleanup loop below
         const isCameraReady = Math.abs(state.camera.position.y) >= 1;
-
         if (isCameraReady) {
             for (let dy = -range; dy <= range; dy++) {
                 for (let dx = -range; dx <= range; dx++) {
                     const tx = centerTile.x + dx; const ty = centerTile.y + dy;
                     if (tx < 0 || tx >= maxTile || ty < 0 || ty >= maxTile) continue;
-                    
-                    // v5.28.42 : Clé incluant la source
                     const key = `${state.MAP_SOURCE}_${tx}_${ty}_${zoom}`; 
                     currentActiveKeys.add(key);
-                    let tile = activeTiles.get(key);
-                    if (!tile) {
-                        if (newlyAddedCount >= MAX_NEW_TILES_PER_FRAME) {
-                            hasMoreToLoad = true;
-                            continue; 
-                        }
-
-                        tile = new Tile(tx, ty, zoom, key);
+                    if (!activeTiles.has(key)) {
+                        const tile = new Tile(tx, ty, zoom, key);
                         if (tile.isVisible() || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) { 
                             activeTiles.set(key, tile); 
                             insertTile(tile); 
                             loadQueue.add(tile); 
-                            newlyAddedCount++;
                         }
                     }
                 }
             }
         }
 
-        // v5.28.41 : Pulse plus réactif sur PC (30ms) pour éliminer la sensation de lenteur
-        if (hasMoreToLoad) {
-            setTimeout(() => {
-                updateVisibleTiles(_camLat, _camLon, _camAltitude, wx, wz, force);
-            }, mobile ? 100 : 30);
-        }
-
-        // v5.28.39 : On met à jour lastRenderedZoom AVANT de traiter les suppressions
         lastRenderedZoom = zoom;
 
         for (const [key, tile] of activeTiles.entries()) {
             if (!currentActiveKeys.has(key)) {
-                // v5.28.38 : Seul le zoom-in justifie des ghost tiles (tuiles parentes visibles en fond)
-                // En zoom-out, les tuiles enfants sont trop détaillées et masquent le parent plus rapide.
                 if (lodChanging && isZoomIn && tile.mesh && tile.status !== 'disposed') {
                     removeTile(tile);
                     activeTiles.delete(key);
@@ -296,37 +264,12 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
             }
         }
 
-        // v5.28.41 : Capacité maximale de tuiles fantômes (sécurité RAM/GPU)
-        // Si on dépasse 15 tuiles en transition, on tue les plus anciennes immédiatement.
-        if (fadingOutTiles.size > 15) {
-            const sortedGhosts = Array.from(fadingOutTiles);
-            for (let i = 0; i < sortedGhosts.length - 10; i++) {
-                const t = sortedGhosts[i];
-                fadingOutTiles.delete(t);
-                t.dispose();
-            }
-        }
-
         processLoadQueue();
-
-        // Prefetch LOD suivant si la file est vide
-        if (loadQueue.size === 0) {
-            const nextZoom = zoom + 1;
-            if (nextZoom <= 18) {
-                const ct = lngLatToTile(currentGPS.lon, currentGPS.lat, nextZoom);
-                for (let dy = -1; dy <= 1; dy++) {
-                    for (let dx = -1; dx <= 1; dx++) {
-                        const tx = ct.x + dx; const ty = ct.y + dy;
-                        if (tx < 0 || tx >= Math.pow(2, nextZoom) || ty < 0 || ty >= Math.pow(2, nextZoom)) continue;
-                        const pKey = `${tx}_${ty}_${nextZoom}`;
-                        if (!hasInCache(getTileCacheKey(pKey, nextZoom))) loadQueue.add(new Tile(tx, ty, nextZoom, pKey));
-                    }
-                }
-            }
-            if (loadQueue.size > 0) processLoadQueue();
-        }
     } finally {
         isUpdating = false;
+        if (updatePending) {
+            setTimeout(() => { updateVisibleTiles(); }, 50);
+        }
     }
     return Promise.resolve();
 }

@@ -1,5 +1,6 @@
 import { state } from '../state';
 import type { Tile } from './Tile';
+import { activeTiles } from '../terrain';
 
 export let loadQueue: Set<Tile> = new Set<Tile>();
 let isProcessingQueue = false;
@@ -21,6 +22,13 @@ export async function processLoadQueue() {
             } return v; 
         };
 
+        // v5.28.48 : Filtrage immédiat des tuiles qui ne sont plus dans activeTiles (LOD obsolète)
+        for (const t of loadQueue) {
+            if (!activeTiles.has(t.key)) {
+                loadQueue.delete(t);
+            }
+        }
+
         const sorted = Array.from(loadQueue).sort((a, b) => {
             if (!state.camera) return 0;
             const camPos = state.camera.position;
@@ -37,12 +45,14 @@ export async function processLoadQueue() {
         const effectiveBatch = isTransitioning
             ? Math.max(1, state.MAX_BUILDS_PER_CYCLE + 2)
             : Math.max(1, state.MAX_BUILDS_PER_CYCLE);
+        
         const batch = sorted.slice(0, effectiveBatch);
         batch.forEach(t => loadQueue.delete(t));
 
         await Promise.all(batch.map(async (tile) => {
             try { 
-                if (tile.status === 'idle') {
+                // v5.28.48 : Double vérification avant chargement effectif
+                if (tile.status === 'idle' && activeTiles.has(tile.key)) {
                     state.isProcessingTiles = true;
                     await tile.load(); 
                 }

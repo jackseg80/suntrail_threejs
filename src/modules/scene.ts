@@ -187,6 +187,15 @@ export async function initScene(): Promise<void> {
     state.controls!.addEventListener('end', () => {
         state.isUserInteracting = false;
         lastInteractionTime = performance.now();
+
+        // v5.28.47 : Rafraîchissement forcé à la fin de l'interaction (zoom fini) pour garantir le bon LOD
+        if (state.camera && state.controls) {
+            const dx = state.controls.target.x, dz = state.controls.target.z;
+            const groundH = state.IS_2D_MODE ? 0 : getAltitudeAt(state.camera.position.x, state.camera.position.z);
+            const dist = state.IS_2D_MODE ? Math.max(45, state.camera.position.y - groundH) : state.camera.position.distanceTo(state.controls.target);
+            void updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, dist, dx, dz, true);
+        }
+
         if (isMobile && state.renderer) {
             dprRestoreTimer = setTimeout(() => {
                 if (state.renderer) state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
@@ -285,7 +294,8 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
         const currentZoom = state.ZOOM;
         const now = performance.now();
         if (newZoom !== state.ZOOM) {
-            if (now - lastLodChangeTime > 800) {
+            // v5.28.47 : Réduction du verrou de changement de zoom pour plus de réactivité (800ms -> 350ms)
+            if (now - lastLodChangeTime > 350) {
                 state.ZOOM = newZoom;
                 lastLodChangeTime = now;
             } else {
