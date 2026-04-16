@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.29.1)
+# SunTrail — Guide IA (v5.29.2)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-15 suite à la v5.29.1 (Accès PRO & Chrono GPS).
+> Mis à jour le 2026-04-15 suite à la v5.29.2 (Tests Stabilité & PRO Réactif).
 
 ## Projet
 

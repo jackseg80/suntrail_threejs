@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.2] - 2026-04-15
+### Fixed
+- **Accès PRO Full Réactif** : Déverrouillage instantané du Satellite, de la Météo et du Solaire lors de l'activation d'un essai (Trial). Plus besoin de redémarrer l'app.
+- **Robustesse du Moteur** : Ajout d'une suite de 7 tests de stabilité couvrant les clés de tuiles, la persistance GPS et la logique PRO.
+
 ## [5.29.1] - 2026-04-15
 ### Fixed
 - **Accès PRO & Trial** : Correction de l'accès aux fonctionnalités avancées (Météo, Solaire) qui étaient bloquées pour les utilisateurs en période d'essai gratuite. Utilisation systématique de `isProActive()`.
