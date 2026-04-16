@@ -153,7 +153,10 @@ export class Tile {
                 // v5.29.12 : Utilisation du pool de buffers pour réduire la pression GC
                 if (data.pixelData) {
                     this.pixelData = pixelDataPool.acquire();
-                    this.pixelData.set(new Uint8ClampedArray(data.pixelData));
+                    const srcArray = (data.pixelData instanceof Uint8ClampedArray) 
+                        ? data.pixelData 
+                        : new Uint8ClampedArray(data.pixelData);
+                    this.pixelData.set(srcArray);
                 }
             } else { this.elevationTex = new THREE.CanvasTexture(document.createElement('canvas')); }
 
@@ -298,6 +301,8 @@ export class Tile {
         if (is2D) (material as THREE.MeshBasicMaterial).map = this.colorTex;
         else (material as THREE.MeshStandardMaterial).map = this.colorTex;
 
+        // v5.29.14 : Si le matériel a déjà un shader (réutilisé), on met à jour les uniforms immédiatement.
+        // Sinon, onCompile s'en chargera lors de la compilation Three.js.
         const shader = (material as any).userData.shader;
         if (shader) {
             shader.uniforms.uElevationMap.value = this.elevationTex;

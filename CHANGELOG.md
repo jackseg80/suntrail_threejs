@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.14] - 2026-04-16
+### Fixed
+- **Rendu 3D & Éclairage** : Correction d'un bug majeur dans le pool de matériaux qui rendait les tuiles sombres ou plates. Les textures d'élévation et de normales sont désormais correctement ré-injectées lors de la réutilisation d'un matériel.
+- **Data Integrity** : Sécurisation de la copie des `pixelData` pour éviter la corruption du relief lors du chargement.
+
 ## [5.29.13] - 2026-04-16
 ### Fixed
 - **Anti-Écran Blanc** : Correction d'une race condition dans le dédoublonnage des workers. Les tuiles annulées trop vite sont désormais correctement rechargées.
