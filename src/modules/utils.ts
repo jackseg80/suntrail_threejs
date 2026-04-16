@@ -104,19 +104,20 @@ async function processNextOverpass() {
     (window as any)._overpassIdx++;
 
     try {
+        // v5.29.19 : Timeout ultra-court (3s) pour ne pas bloquer les slots réseau en cas de panne Overpass
         const response = await fetch(`${server}?data=${encodeURIComponent(item.query)}`, {
-            signal: AbortSignal.timeout(30000)
+            signal: AbortSignal.timeout(3000)
         });
 
-        if (response.status === 429 || response.status === 504) {
+        if (response.status === 429 || response.status === 504 || response.status === 502) {
             _overpassConsecutiveFails++;
             console.warn(`[Overpass] ${response.status} sur ${server}.`);
 
-            // Disjoncteur après 3 échecs : désactivation Hydrologie/Bâtiments
-            if (_overpassConsecutiveFails >= 3) {
-                console.warn("[Overpass] Trop d'échecs. Désactivation Hydrologie/Bâtiments pour 10 min.");
+            // Disjoncteur agressif : on coupe immédiatement si le serveur est en carafe
+            if (response.status === 504 || response.status === 502 || _overpassConsecutiveFails >= 2) {
+                console.warn("[Overpass] Serveur saturé ou en panne. Désactivation Hydrologie/Bâtiments pour 10 min.");
                 _lowPriorityDisabledUntil = Date.now() + 600000;
-                _overpassConsecutiveFails = 0; // Reset pour le prochain cycle
+                _overpassConsecutiveFails = 0;
             }
 
             if (item.priority) {
