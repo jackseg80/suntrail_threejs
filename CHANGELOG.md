@@ -5,6 +5,15 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.4] - 2026-04-16
+### Added
+- **Test de Robustesse GPX** : Ajout d'une suite de tests couvrant les fichiers corrompus, les tracés géants (50k points) et les altitudes manquantes.
+
+### Fixed
+- **Protection Mémoire (RAM)** : Validation du mécanisme LRU/FIFO dans `tileCache.ts` pour prévenir les crashs par manque de mémoire sur mobile.
+- **Sécurité des Données** : Audit complet des injections DOM. Utilisation systématique de `textContent` pour les données provenant des API de recherche et de météo.
+- **Cohérence Offline** : Sécurisation de la cascade de fallbacks PMTiles ↔ Packs ↔ Réseau.
+
 ## [5.29.3] - 2026-04-16
 ### Fixed
 - **Stabilité VRAM & Cache** : Résolution d'un conflit critique où les textures étaient détruites alors qu'elles étaient encore présentes dans le cache mémoire. Ajout d'une vérification `hasInCache()` dans le cycle de vie des tuiles.

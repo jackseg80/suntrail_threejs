@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.29.2)
+# SunTrail — Guide IA (v5.29.4)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-15 suite à la v5.29.2 (Tests Stabilité & PRO Réactif).
+> Mis à jour le 2026-04-16 suite à la v5.29.4 (Audit Expert & Robustesse GPX).
 
 ## Projet
 
@@ -45,15 +45,15 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 - **D+ / D-** : Algorithme d'**Hystérésis avec seuil de 3m** (Garmin standard) via `calculateHysteresis()`. Source de vérité unique pour les tracés et le profil (v5.28.20).
 - **Lissage** : Moyenne mobile 3 points sur l'altitude GPS (v5.28.5).
 - **Filtrage GPS (v5.28.5)** : Rejeter tout point GPS avec saut vertical > 200m (si intervalle < 10s), distance horizontale < 2.5m (anti-champignon), ou vitesse > 600km/h.
-- **Moteur de Terrain (v5.29.3)** : 
+- **Moteur de Terrain (v5.29.4)** : 
     - **Clé Unique** : Doit TOUJOURS inclure `MAP_SOURCE` (ex: `source_x_y_z`) pour éviter les superpositions de couches Swisstopo/OpenTopo.
-    - **Gestion Mémoire** : Libérer la VRAM via `texture.dispose()` UNIQUEMENT si la tuile n'est plus dans le `tileCache` (v5.29.3).
+    - **Gestion Mémoire** : Libération la VRAM via `texture.dispose()` UNIQUEMENT si la tuile n'est plus dans le `tileCache` (v5.29.3). Protection RAM via limite LRU/FIFO 60-800 tuiles (v5.29.4).
     - **Circuit Breaker** : Bascule automatique sur OSM/OpenTopo si MapTiler renvoie 403/429 (v5.29.3).
     - **LOD Asymétrique** : Ghost Tiles uniquement lors du Zoom-In. Purge immédiate au Zoom-Out.
 - **Rendu & Batterie (v5.29.3)** :
     - **Deep Sleep** : Réduction à **~1.5 FPS** après 30s d'inactivité pour préserver la batterie.
     - **Throttling** : 20 FPS en idle standard, 30 FPS en mode économie, 60 FPS en interaction.
-- **TubeGeometry Stabilité (v5.28.34)** : Utiliser `centripetal` pour les splines. Rendu temps réel à 1500 segments max. Simplification RDP avec epsilon 1.0. **Debouncing 100-150ms** sur les mises à jour pour fluidifier la navigation.
+- **TubeGeometry Stabilité (v5.29.4)** : Utiliser `centripetal` pour les splines. Rendu temps réel à 1500 segments max (anti-crash v5.29.4). Simplification RDP avec epsilon 1.0. **Debouncing 100-150ms** sur les mises à jour pour fluidifier la navigation.
 - **Cache Unifié (v5.28.33)** : `suntrail-tiles-v28` synchronisé entre thread principal et workers. Garantit l'affichage instantané des packs hors-ligne et PMTiles.
 - **Remplissage Visuel (v5.28.42)** : Quota de tuiles par frame (40 sur PC, 8-12 sur mobile) et pulse ultra-rapide sur PC (30ms) pour un affichage nerveux.
 

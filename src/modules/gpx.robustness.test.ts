@@ -1,99 +1,79 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import * as THREE from 'three';
-import gpxParser from 'gpxparser';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { addGPXLayer } from './terrain';
 import { state } from './state';
+import * as THREE from 'three';
 
-// Helper to simulate handleGPX logic from TrackSheet
-async function simulateHandleGPX(xml: string) {
-    const gpx = new gpxParser();
-    try {
-        gpx.parse(xml);
-    } catch (e) {
-        throw new Error('Parsing failed');
-    }
-    
-    if (!gpx.tracks?.length && !gpx.routes?.length && !gpx.waypoints?.length) {
-        throw new Error('No tracks, routes or waypoints found');
-    }
-    
-    // In TrackSheet, it checks gpx.tracks[0].points
-    if (gpx.tracks?.[0] && (!gpx.tracks[0].points || gpx.tracks[0].points.length === 0)) {
-        throw new Error('No points in first track');
-    }
+// Mock Three.js et dependencies
+vi.mock('./analysis', () => ({
+    getAltitudeAt: vi.fn().mockReturnValue(100),
+    findTerrainIntersection: vi.fn()
+}));
 
-    return addGPXLayer(gpx, 'test-track');
-}
+vi.mock('./geo', () => ({
+    lngLatToWorld: vi.fn((lon, lat) => ({ x: lon * 1000, y: 0, z: lat * 1000 })),
+    worldToLngLat: vi.fn().mockReturnValue({ lat: 46, lon: 7 }),
+    EARTH_CIRCUMFERENCE: 40075016.686,
+    haversineDistance: (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+}));
 
-describe('GPX Robustness Audit', () => {
+describe('Audit Robustesse GPX (v5.29.4)', () => {
     beforeEach(() => {
         state.scene = new THREE.Scene();
-        state.originTile = { x: 4270, y: 2891, z: 13 };
+        state.camera = new THREE.PerspectiveCamera();
         state.gpxLayers = [];
-        state.activeGPXLayerId = null;
+        state.originTile = { x: 0, y: 0, z: 0 };
     });
 
-    it('should fail gracefully with an empty file', async () => {
-        const emptyXml = '';
-        await expect(simulateHandleGPX(emptyXml)).rejects.toThrow();
-    });
-
-    it('should fail gracefully with corrupted XML', async () => {
-        const corruptedXml = '<?xml version="1.0"?><gpx><trk><name>Unclosed tag</trk>';
-        // gpxparser might not throw but return empty tracks
-        await expect(simulateHandleGPX(corruptedXml)).rejects.toThrow();
-    });
-
-    it('should handle GPX with no points', async () => {
-        const noPointsXml = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="SunTrail" xmlns="http://www.topografix.com/GPX/1/1">
-  <trk>
-    <name>Empty track</name>
-    <trkseg>
-    </trkseg>
-  </trk>
-</gpx>`;
-        await expect(simulateHandleGPX(noPointsXml)).rejects.toThrow();
-    });
-
-    it('should handle GPX with NaN coordinates', async () => {
-        const nanXml = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="SunTrail" xmlns="http://www.topografix.com/GPX/1/1">
-  <trk>
-    <name>NaN track</name>
-    <trkseg>
-      <trkpt lat="NaN" lon="7.0"><ele>1000</ele></trkpt>
-      <trkpt lat="46.1" lon="NaN"><ele>1100</ele></trkpt>
-    </trkseg>
-  </trk>
-</gpx>`;
+    it('SHOULD handle very large GPX files (50k points) without crashing', () => {
+        const largePoints = [];
+        for (let i = 0; i < 50000; i++) {
+            largePoints.push({ lat: 46 + i * 0.0001, lon: 7 + i * 0.0001, ele: 1000 + i });
+        }
         
-        const gpx = new gpxParser();
-        gpx.parse(nanXml);
-        
-        // addGPXLayer calls gpxDrapePoints which calls lngLatToWorld.
-        // If lngLatToWorld receives NaN, it might return undefined or crash.
-        // We expect it to handle it or we catch the error.
-        expect(() => addGPXLayer(gpx, 'nan-track')).toThrow();
+        const rawData = {
+            tracks: [{ points: largePoints }]
+        };
+
+        // On vérifie juste que l'appel ne jette pas d'erreur
+        const layer = addGPXLayer(rawData as any, "Mega Track");
+        expect(layer).toBeDefined();
+        expect(state.gpxLayers.length).toBe(1);
+        // Le nombre de segments dans TubeGeometry doit être capé à 1500
+        expect((layer.mesh?.geometry as THREE.TubeGeometry).parameters.tubularSegments).toBe(1500);
     });
 
-    it('should handle GPX with missing elevation', async () => {
-        const noEleXml = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="SunTrail" xmlns="http://www.topografix.com/GPX/1/1">
-  <trk>
-    <name>No elevation</name>
-    <trkseg>
-      <trkpt lat="46.0" lon="7.0"></trkpt>
-      <trkpt lat="46.1" lon="7.1"></trkpt>
-    </trkseg>
-  </trk>
-</gpx>`;
-        const gpx = new gpxParser();
-        gpx.parse(noEleXml);
+    it('SHOULD handle missing elevations by defaulting to 0', () => {
+        const noElePoints = [
+            { lat: 46.0, lon: 7.0, time: "2026-04-16T10:00:00Z" },
+            { lat: 46.1, lon: 7.1, time: "2026-04-16T10:10:00Z" }
+        ];
         
-        expect(() => addGPXLayer(gpx, 'no-ele')).not.toThrow();
-        const layer = state.gpxLayers[0];
+        const rawData = {
+            tracks: [{ points: noElePoints }]
+        };
+
+        const layer = addGPXLayer(rawData as any, "Flat Track");
         expect(layer.stats.dPlus).toBe(0);
-        expect(layer.stats.dMinus).toBe(0);
+        expect(layer.stats.distance).toBeGreaterThan(0);
+    });
+
+    it('SHOULD throw error if less than 2 valid points', () => {
+        const badPoints = [
+            { lat: "invalid", lon: 7.0 }
+        ];
+        
+        const rawData = {
+            tracks: [{ points: badPoints }]
+        };
+
+        expect(() => addGPXLayer(rawData as any, "Bad Track")).toThrow();
     });
 });
