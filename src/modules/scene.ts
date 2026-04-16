@@ -231,7 +231,8 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
         const dx = state.controls.target.x, dz = state.controls.target.z;
         const rawDist = state.camera.position.distanceTo(state.controls.target);
 
-        const cameraGroundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
+        // v5.28.45 : En mode 2D, le sol visuel est à 0. On ne doit pas soustraire l'altitude réelle du terrain.
+        const cameraGroundH = state.IS_2D_MODE ? 0 : getAltitudeAt(state.camera.position.x, state.camera.position.z);
         const heightAboveGround = Math.max(45, state.camera.position.y - cameraGroundH);
         let dist: number;
         if (state.IS_2D_MODE) {
@@ -568,23 +569,23 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
                 state.simDate = newDate;
             }
 
-            const groundH = getAltitudeAt(state.camera.position.x, state.camera.position.z);
+            // v5.28.46 : Altitude du sol sous la caméra (0 en 2D)
+            const groundH = state.IS_2D_MODE ? 0 : getAltitudeAt(state.camera.position.x, state.camera.position.z);
 
             if (!state.isFlyingTo && !state.isFollowingUser) {
-                const targetGroundH = (Math.abs(state.controls.target.x - state.camera.position.x) < 100
-                    && Math.abs(state.controls.target.z - state.camera.position.z) < 100)
-                    ? groundH
-                    : getAltitudeAt(state.controls.target.x, state.controls.target.z);
-                if (targetGroundH > 0) {
-                    const diff = targetGroundH - state.controls.target.y;
-                    if (Math.abs(diff) > 1) {
-                        const trackLerp = interacting ? 0.08 : 0.03;
-                        const yDelta = diff * trackLerp;
-                        state.controls.target.y += yDelta;
-                        state.camera.position.y += yDelta;
-                    }
+                // v5.28.46 : En mode 2D, le sol est à 0. On ne doit pas suivre l'altitude réelle.
+                const targetGroundH = state.IS_2D_MODE ? 0 : getAltitudeAt(state.controls.target.x, state.controls.target.z);
+                
+                const diff = targetGroundH - state.controls.target.y;
+                if (Math.abs(diff) > 0.1) {
+                    const trackLerp = interacting ? 0.08 : 0.03;
+                    const yDelta = diff * trackLerp;
+                    state.controls.target.y += yDelta;
+                    state.camera.position.y += yDelta;
                 }
             }
+            
+            // v5.28.46 : Sécurité collision sol adaptée au mode 2D
             if (state.camera.position.y < groundH + 45) {
                 state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, groundH + 45, 0.2);
                 state.controls.update();

@@ -183,10 +183,14 @@ export class Tile {
     buildMesh(resolution: number): void {
         if (!this.elevationTex || !this.colorTex || this.status as string === 'disposed') return;
         if (!activeTiles.has(this.key) && !this.isFadingOut) return;
-        if (this.zoom >= 15) resolution = Math.min(resolution, 64);
 
         const is2D = (this.zoom <= 10 || state.IS_2D_MODE);
         const isLight = (state.PERFORMANCE_PRESET === 'eco');
+        
+        // v5.28.43 : En 2D, un seul quad (résolution 1) suffit et économise énormément de CPU/GPU
+        if (is2D) resolution = 1;
+        else if (this.zoom >= 15) resolution = Math.min(resolution, 64);
+
         const oldMesh = this.mesh;
         
         const onCompile = (shader: any) => {
@@ -222,11 +226,12 @@ export class Tile {
 
                 shader.vertexShader = `
                     #define IS_LIGHT ${isLight ? '1' : '0'}
+                    #define IS_2D ${is2D ? '1' : '0'}
                     ${shader.vertexShader}
                 `.replace('#include <common>', `#include <common>\nattribute float aSkirt;\nvarying vec3 vTrueNormal; varying vec2 vWorldXZ; uniform vec2 uColorOffset; uniform float uColorScale; uniform sampler2D uNormalMap; ${sharedShaderChunk}`)
                  .replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);`);
 
-                if (isLight) {
+                if (is2D || isLight) {
                     shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\nobjectNormal = vec3(0.0,1.0,0.0); vTrueNormal = vec3(0.0,1.0,0.0);`);
                 } else {
                     shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n
@@ -237,12 +242,21 @@ export class Tile {
                         objectNormal = normalize(vec3(normalSample.x * uExaggeration, normalSample.y, normalSample.z * uExaggeration));
                     `);
                 }
-                shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv) - aSkirt * uTileSize * 0.02; vWorldXZ = (modelMatrix * vec4(transformed, 1.0)).xz;`);
+
+                // v5.28.43 : Bypass du calcul de hauteur en 2D (économie de texture lookup au vertex shader)
+                if (is2D) {
+                    shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = - aSkirt * uTileSize * 0.02; vWorldXZ = (modelMatrix * vec4(transformed, 1.0)).xz;`);
+                } else {
+                    shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv) - aSkirt * uTileSize * 0.02; vWorldXZ = (modelMatrix * vec4(transformed, 1.0)).xz;`);
+                }
+
                 shader.fragmentShader = `
+                    #define IS_2D ${is2D ? '1' : '0'}
                     uniform sampler2D uOverlayMap; uniform bool uHasOverlay; uniform float uShowSlopes; uniform float uShowHydrology; uniform float uTime; varying vec3 vTrueNormal; varying vec2 vWorldXZ;
                     ${shader.fragmentShader}
                 `.replace('#include <map_fragment>', `
                     #include <map_fragment>
+                    #if IS_2D == 0
                     if (uShowHydrology > 0.5) {
                         vec3 colorIn = diffuseColor.rgb;
                         float blueVsRed = colorIn.b - colorIn.r;
@@ -264,6 +278,7 @@ export class Tile {
                             }
                         }
                     }
+                    #endif
                     if (uHasOverlay) { vec4 oCol = texture2D(uOverlayMap, vMapUv); diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a); }
                     if (uShowSlopes > 0.5) {
                         float slopeDeg = degrees(acos(clamp(dot(normalize(vTrueNormal), vec3(0.0, 1.0, 0.0)), 0.0, 1.0)));
@@ -342,18 +357,22 @@ export class Tile {
 
         const delay = (ms: number) => ms * state.LOAD_DELAY_FACTOR;
         if (state.SHOW_SIGNPOSTS && this.zoom >= state.POI_ZOOM_THRESHOLD) setTimeout(() => { if (this.status !== 'disposed') loadPOIsForTile(this); }, delay(600));
-        if (state.SHOW_BUILDINGS && this.zoom >= state.BUILDING_ZOOM_THRESHOLD) setTimeout(() => { if (this.status !== 'disposed') loadBuildingsForTile(this); }, delay(150));
-        if (state.SHOW_HYDROLOGY && this.zoom >= 13) setTimeout(() => { if (this.status !== 'disposed') loadHydrologyForTile(this); }, delay(100));
-        if (state.SHOW_VEGETATION && this.zoom >= 14) setTimeout(() => {
-            if (this.status as any === 'disposed') return;
-            const forest = createForestForTile(this);
-            if (forest && state.scene && (this.status as any !== 'disposed')) {
-                if (this.forestMesh) state.scene.remove(this.forestMesh);
-                this.forestMesh = forest; 
-                this.forestMesh.position.set(this.worldX, 0, this.worldZ);
-                state.scene.add(this.forestMesh);
-            }
-        }, delay(300));
+
+        // v5.28.44 : En mode 2D, on ne charge pas les objets 3D volumineux qui flotteraient
+        if (!is2D) {
+            if (state.SHOW_BUILDINGS && this.zoom >= state.BUILDING_ZOOM_THRESHOLD) setTimeout(() => { if (this.status !== 'disposed') loadBuildingsForTile(this); }, delay(150));
+            if (state.SHOW_HYDROLOGY && this.zoom >= 13) setTimeout(() => { if (this.status !== 'disposed') loadHydrologyForTile(this); }, delay(100));
+            if (state.SHOW_VEGETATION && this.zoom >= 14) setTimeout(() => {
+                if (this.status as any === 'disposed') return;
+                const forest = createForestForTile(this);
+                if (forest && state.scene && (this.status as any !== 'disposed')) {
+                    if (this.forestMesh) state.scene.remove(this.forestMesh);
+                    this.forestMesh = forest; 
+                    this.forestMesh.position.set(this.worldX, 0, this.worldZ);
+                    state.scene.add(this.forestMesh);
+                }
+            }, delay(300));
+        }
 
         if (oldMesh) {
             if (state.scene) state.scene.remove(oldMesh); 

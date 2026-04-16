@@ -15,6 +15,7 @@ function pseudoRandom(x: number, y: number, seed: number = 0): number {
 interface TreeEssence {
     geometry: THREE.BufferGeometry;
     material: THREE.MeshStandardMaterial;
+    material2D: THREE.MeshBasicMaterial;
     mesh: THREE.InstancedMesh | null;
 }
 
@@ -36,6 +37,7 @@ export function initVegetationResources() {
     essences.sapin = {
         geometry: sapinGeo,
         material: new THREE.MeshStandardMaterial({ color: 0x14331a, roughness: 0.9, emissive: 0x050805, emissiveIntensity: 0.2 }),
+        material2D: new THREE.MeshBasicMaterial({ color: 0x14331a }),
         mesh: null
     };
 
@@ -45,6 +47,7 @@ export function initVegetationResources() {
     essences.meleze = {
         geometry: melezeGeo,
         material: new THREE.MeshStandardMaterial({ color: 0x2d4c1e, roughness: 0.8, emissive: 0x0a1205, emissiveIntensity: 0.2 }),
+        material2D: new THREE.MeshBasicMaterial({ color: 0x2d4c1e }),
         mesh: null
     };
 
@@ -55,6 +58,7 @@ export function initVegetationResources() {
     essences.feuillu = {
         geometry: feuilluGeo,
         material: new THREE.MeshStandardMaterial({ color: 0x2d5a27, roughness: 0.9, emissive: 0x051005, emissiveIntensity: 0.1 }),
+        material2D: new THREE.MeshBasicMaterial({ color: 0x2d5a27 }),
         mesh: null
     };
 }
@@ -192,13 +196,15 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
     Object.keys(instances).forEach(type => {
         const data = instances[type];
         if (data.count > 0) {
-            const iMesh = new THREE.InstancedMesh(essences[type].geometry, essences[type].material, data.count);
+            const is2D = state.IS_2D_MODE;
+            const mat = is2D ? essences[type].material2D : essences[type].material;
+            const iMesh = new THREE.InstancedMesh(essences[type].geometry, mat, data.count);
             for (let j = 0; j < data.count; j++) {
                 iMesh.setMatrixAt(j, data.matrices[j]);
             }
             // Phase 2 : castShadow désactivé sur mobile mid-range (économise ~18 draw calls shadow pass)
-            iMesh.castShadow = state.VEGETATION_CAST_SHADOW;
-            iMesh.receiveShadow = true;
+            iMesh.castShadow = !is2D && state.VEGETATION_CAST_SHADOW;
+            iMesh.receiveShadow = !is2D;
             forestGroup.add(iMesh);
         }
     });

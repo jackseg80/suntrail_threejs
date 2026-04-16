@@ -94,7 +94,7 @@ export function updateUserMarker() {
         return;
     }
 
-    const groundH = getAltitudeAt(pos.x, pos.z);
+    const groundH = state.IS_2D_MODE ? 0 : getAltitudeAt(pos.x, pos.z);
     const finalY = groundH + 10; // Un peu plus haut pour éviter l'occlusion par le relief
 
     if (!state.userMarker) {
@@ -143,9 +143,10 @@ export function centerOnUser(delta: number) {
     if (!state.userLocation || !state.controls || !state.camera || !state.originTile) return;
     
     const targetWorldPos = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
-    const groundH = getAltitudeAt(targetWorldPos.x, targetWorldPos.z);
+    const groundH = state.IS_2D_MODE ? 0 : getAltitudeAt(targetWorldPos.x, targetWorldPos.z);
     
     // On vise l'altitude réelle pour éviter l'effet de décalage (v5.5.15)
+    // En 2D, on vise le niveau 0.
     const finalTarget = new THREE.Vector3(targetWorldPos.x, groundH, targetWorldPos.z);
 
     const isInitial = (Date.now() - state.lastTrackingUpdate < 3000);

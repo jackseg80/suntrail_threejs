@@ -251,16 +251,18 @@ export function drapeToTerrain(
 ): THREE.Vector3[] {
     const result: THREE.Vector3[] = [];
     let lastPos: THREE.Vector3 | null = null;
+    const is2D = state.IS_2D_MODE;
 
     for (let i = 0; i < points.length; i++) {
         const p = points[i];
         const pos = lngLatToWorld(p.lon, p.lat, originTile);
         const rawAlt = (p.ele !== undefined ? p.ele : (p.alt !== undefined ? p.alt : 0));
         const elevGPX = rawAlt * state.RELIEF_EXAGGERATION;
-        const terrainY = getAltitudeAt(pos.x, pos.z);
+        const terrainY = is2D ? 0 : getAltitudeAt(pos.x, pos.z);
         
         // On prend le max entre l'altitude GPS et le terrain pour éviter que le trait s'enterre
-        const y = Math.max(terrainY, elevGPX) + surfaceOffset;
+        // En 2D, on force à 0 + offset
+        const y = is2D ? surfaceOffset : Math.max(terrainY, elevGPX) + surfaceOffset;
         const currentPos = new THREE.Vector3(pos.x, y, pos.z);
 
         // v5.28.5: Filtrage anti-frétillement (jitter) au niveau du draping
@@ -284,8 +286,8 @@ export function drapeToTerrain(
                 
                 const iPos = lngLatToWorld(iLon, iLat, originTile);
                 const iElevGPX = iEle * state.RELIEF_EXAGGERATION;
-                const iTerrainY = getAltitudeAt(iPos.x, iPos.z);
-                const iY = Math.max(iTerrainY, iElevGPX) + surfaceOffset;
+                const iTerrainY = is2D ? 0 : getAltitudeAt(iPos.x, iPos.z);
+                const iY = is2D ? surfaceOffset : Math.max(iTerrainY, iElevGPX) + surfaceOffset;
                 
                 const currentIPos = new THREE.Vector3(iPos.x, iY, iPos.z);
                 if (lastPos && currentIPos.distanceTo(lastPos) < 1.0) {

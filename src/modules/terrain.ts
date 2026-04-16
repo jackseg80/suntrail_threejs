@@ -38,9 +38,19 @@ export function resetTerrain(): void {
 
 export function rebuildActiveTiles(): void {
     const toReload: string[] = [];
+    const is2D = state.IS_2D_MODE;
+    
     for (const tile of activeTiles.values()) {
         if (!tile.elevationTex || !tile.colorTex) continue;
-        if (!state.IS_2D_MODE && !tile.pixelData && tile.zoom > 10) {
+        
+        // v5.28.45 : Nettoyage forcé des objets 3D si on passe en 2D
+        if (is2D) {
+            if (tile.forestMesh) { if (state.scene) state.scene.remove(tile.forestMesh); disposeObject(tile.forestMesh); tile.forestMesh = null; }
+            if (tile.buildingGroup) { if (state.scene) state.scene.remove(tile.buildingGroup); disposeObject(tile.buildingGroup); tile.buildingGroup = null; }
+            if (tile.hydroGroup) { if (state.scene) state.scene.remove(tile.hydroGroup); disposeObject(tile.hydroGroup); tile.hydroGroup = null; }
+        }
+
+        if (!is2D && !tile.pixelData && tile.zoom > 10) {
             toReload.push(tile.key);
         } else {
             tile.buildMesh(state.RESOLUTION);
@@ -398,12 +408,13 @@ function gpxDrapePoints(
     densifySteps = 4
 ): THREE.Vector3[] {
     const result: THREE.Vector3[] = [];
+    const is2D = state.IS_2D_MODE;
     for (let i = 0; i < rawPts.length; i++) {
         const p = rawPts[i];
         const pos = lngLatToWorld(p.lon, p.lat, originTile);
         const elevGPX = (p.ele || 0) * state.RELIEF_EXAGGERATION;
-        const terrainY = getAltitudeAt(pos.x, pos.z);
-        const y = Math.max(terrainY, elevGPX) + GPX_SURFACE_OFFSET;
+        const terrainY = is2D ? 0 : getAltitudeAt(pos.x, pos.z);
+        const y = is2D ? GPX_SURFACE_OFFSET : Math.max(terrainY, elevGPX) + GPX_SURFACE_OFFSET;
         result.push(new THREE.Vector3(pos.x, y, pos.z));
         if (i < rawPts.length - 1 && densifySteps > 0) {
             const pNext = rawPts[i + 1];
@@ -414,8 +425,8 @@ function gpxDrapePoints(
                 const iEle = (p.ele || 0) + ((pNext.ele || 0) - (p.ele || 0)) * t;
                 const iPos = lngLatToWorld(iLon, iLat, originTile);
                 const iElevGPX = iEle * state.RELIEF_EXAGGERATION;
-                const iTerrainY = getAltitudeAt(iPos.x, iPos.z);
-                const iY = Math.max(iTerrainY, iElevGPX) + GPX_SURFACE_OFFSET;
+                const iTerrainY = is2D ? 0 : getAltitudeAt(iPos.x, iPos.z);
+                const iY = is2D ? GPX_SURFACE_OFFSET : Math.max(iTerrainY, iElevGPX) + GPX_SURFACE_OFFSET;
                 result.push(new THREE.Vector3(iPos.x, iY, iPos.z));
             }
         }
@@ -464,10 +475,16 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     threePoints.forEach(v => box.expandByPoint(v));
     const curve = new THREE.CatmullRomCurve3(threePoints);
     const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length, 1500), thickness, 4, false);
-    const material = new THREE.MeshStandardMaterial({
-        color: color, emissive: color, emissiveIntensity: 0.3, transparent: true, opacity: 0.95, depthWrite: false,
-        polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
-    });
+    const is2D = state.IS_2D_MODE;
+    const material = is2D 
+        ? new THREE.MeshBasicMaterial({
+            color: color, transparent: true, opacity: 0.95, depthWrite: false,
+            polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
+        })
+        : new THREE.MeshStandardMaterial({
+            color: color, emissive: color, emissiveIntensity: 0.3, transparent: true, opacity: 0.95, depthWrite: false,
+            polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
+        });
     const mesh = new THREE.Mesh(geometry, material);
     mesh.renderOrder = 10;
     mesh.userData = { type: 'gpx-track', layerId: id };
@@ -533,10 +550,16 @@ function _doUpdateAllGPXMeshes(): void {
         
         const curve = new THREE.CatmullRomCurve3(threePoints);
         const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length, 1500), thickness, 4, false);
-        const material = new THREE.MeshStandardMaterial({
-            color: layer.color, emissive: layer.color, emissiveIntensity: 0.3, transparent: true, opacity: 0.95, depthWrite: false,
-            polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
-        });
+        const is2D = state.IS_2D_MODE;
+        const material = is2D 
+            ? new THREE.MeshBasicMaterial({
+                color: layer.color, transparent: true, opacity: 0.95, depthWrite: false,
+                polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
+            })
+            : new THREE.MeshStandardMaterial({
+                color: layer.color, emissive: layer.color, emissiveIntensity: 0.3, transparent: true, opacity: 0.95, depthWrite: false,
+                polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
+            });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.renderOrder = 10; mesh.visible = layer.visible;
         mesh.userData = { type: 'gpx-track', layerId: layer.id };
@@ -590,7 +613,10 @@ function _doUpdateRecordedTrackMesh(): void {
         // et utilisation de 'centripetal' pour éviter les overshoots des splines.
         const curve = new THREE.CatmullRomCurve3(simplifiedPoints, false, 'centripetal');
         const geometry = new THREE.TubeGeometry(curve, Math.min(simplifiedPoints.length * 3, 1500), thickness, 4, false);
-        const material = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.5, transparent: true, opacity: 0.8 });
+        const is2D = state.IS_2D_MODE;
+        const material = is2D
+            ? new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.8 })
+            : new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.5, transparent: true, opacity: 0.8 });
         state.recordedMesh = new THREE.Mesh(geometry, material);
         state.scene.add(state.recordedMesh);
     } catch (e) {

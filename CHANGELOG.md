@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.26] - 2026-04-16
+### Optimized
+- **Mode 2D Ultra-Fluide** : Refonte totale du pipeline 2D pour les mobiles de milieu de gamme (Galaxy A53). Utilisation d'une résolution de maillage minimale (1 quad) et de shaders simplifiés.
+- **Suppression Parallaxe** : Rendu forcé au niveau zéro en 2D pour éliminer les effets de flottaison des objets.
+- **Gestion Objets 3D** : Désactivation et nettoyage instantané des arbres et bâtiments lors du passage en 2D.
+- **Ajustement Caméra** : Compensation d'altitude automatique lors du switch 2D/3D et libération du Zoom 18 en 2D.
+- **Preset STD (Balanced)** : Augmentation de la résolution 3D de 64 à 96 segments et amélioration de la netteté (Pixel Ratio 1.2).
+
 ## [5.29.25] - 2026-04-16
 ### Added
 - **Régression Multi-Tracés** : Rétablissement du stress test validant l'affichage simultané de 10 randonnées (543 tests au total).

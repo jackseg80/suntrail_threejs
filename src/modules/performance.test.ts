@@ -163,12 +163,12 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
             expect(state.PIXEL_RATIO_LIMIT).toBe(2.0);
         });
 
-        it('preset balanced sur mobile laisse PIXEL_RATIO_LIMIT=1.0 intact (déjà ≤ 2.0)', () => {
+        it('preset balanced sur mobile laisse PIXEL_RATIO_LIMIT=1.2 intact (déjà ≤ 2.0)', () => {
             setUA(ANDROID_UA);
 
             applyPreset('balanced');
 
-            expect(state.PIXEL_RATIO_LIMIT).toBe(1.0);
+            expect(state.PIXEL_RATIO_LIMIT).toBe(1.2);
         });
     });
 

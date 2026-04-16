@@ -7,6 +7,7 @@ import { rebuildActiveTiles, updateVisibleTiles } from '../../terrain';
 import { haptic } from '../../haptics';
 import { forceImmediateLODUpdate } from '../../scene';
 import { updateUserMarker } from '../../location';
+import { getAltitudeAt } from '../../analysis';
 
 export class NavigationBar extends BaseComponent {
     constructor() {
@@ -61,7 +62,25 @@ export class NavigationBar extends BaseComponent {
 
             const onModeToggleClick = () => {
                 void haptic('light');
-                const newMode = !state.IS_2D_MODE;
+                const oldMode = state.IS_2D_MODE;
+                const newMode = !oldMode;
+
+                // v5.28.45 : Compensation d'altitude pour éviter le saut de LOD visuel (sensation de hauteur)
+                if (state.camera && state.controls) {
+                    if (newMode) {
+                        // Passage 3D -> 2D : On descend la caméra du montant de l'altitude de la cible actuelle
+                        const targetAlt = state.controls.target.y;
+                        state.camera.position.y -= targetAlt;
+                        state.controls.target.y = 0;
+                    } else {
+                        // Passage 2D -> 3D : On remonte la caméra du montant de l'altitude réelle du terrain
+                        const groundH = getAltitudeAt(state.controls.target.x, state.controls.target.z);
+                        state.camera.position.y += groundH;
+                        state.controls.target.y = groundH;
+                    }
+                    state.controls.update();
+                }
+
                 state.IS_2D_MODE = newMode;
                 state.isTiltTransitioning = true; // animation douce du tilt
                 document.body.classList.toggle('mode-2d', newMode);

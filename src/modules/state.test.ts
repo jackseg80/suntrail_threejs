@@ -44,7 +44,7 @@ describe('state.ts', () => {
         });
 
         it('balanced (STD) — Galaxy A53 : valeurs calibrées actuelles', () => {
-            expect(PRESETS.balanced.RESOLUTION).toBe(64);             // v5.21: 32 → 64 (meilleur rendu mid-range)
+            expect(PRESETS.balanced.RESOLUTION).toBe(96);             // v5.28.43: 64 → 96 (meilleur rendu mid-range car mode 2D ultra-léger)
             expect(PRESETS.balanced.VEGETATION_DENSITY).toBe(1500);   // v5.21: 500 → 1500
             expect(PRESETS.balanced.WEATHER_DENSITY).toBe(1000);
         });

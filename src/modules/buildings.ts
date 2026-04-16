@@ -24,6 +24,10 @@ const buildingMaterial = new THREE.MeshStandardMaterial({
     metalness: 0.2
 });
 
+const buildingMaterial2D = new THREE.MeshBasicMaterial({
+    color: 0xcccccc
+});
+
 /**
  * Charge les bâtiments 3D pour une tuile (v5.28.20)
  * Priorité : MapTiler (Vector Tiles) > OSM Overpass (Fallback)
@@ -238,9 +242,10 @@ function renderBuildingsMerged(tile: Tile, elements: any[], limit: number = 150)
     if (geometries.length > 0) {
         try {
             const merged = BufferGeometryUtils.mergeGeometries(geometries);
-            const mesh = new THREE.Mesh(merged, buildingMaterial);
-            mesh.castShadow = (state.PERFORMANCE_PRESET === 'ultra' || state.PERFORMANCE_PRESET === 'performance');
-            mesh.receiveShadow = true;
+            const is2D = state.IS_2D_MODE;
+            const mesh = new THREE.Mesh(merged, is2D ? buildingMaterial2D : buildingMaterial);
+            mesh.castShadow = !is2D && (state.PERFORMANCE_PRESET === 'ultra' || state.PERFORMANCE_PRESET === 'performance');
+            mesh.receiveShadow = !is2D;
 
             if (tile.buildingGroup && state.scene) state.scene.remove(tile.buildingGroup);
             
