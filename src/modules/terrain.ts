@@ -116,17 +116,23 @@ const EARTH_CIRCUMFERENCE_VAL = 40075016.686;
 export function animateTiles(delta: number): boolean { 
     let stillFading = false;
     for (const tile of activeTiles.values()) { if (tile.isFadingIn) { tile.updateFade(delta); stillFading = true; } }
+    
+    // v5.28.40 : Optimisation — Ne pas créer d'Array si le Set est vide (évite le GC pressure à 60fps)
     if (fadingOutTiles.size > 0) {
         const deltaMs = delta * 1000;
+        const toRemove: Tile[] = [];
         for (const tile of fadingOutTiles) {
             tile.updateFadeOut(deltaMs);
             if (!tile.isFadingOut) {
-                markCacheKeyInactive(getTileCacheKey(tile.key, tile.zoom));
-                fadingOutTiles.delete(tile);
-                tile.dispose();
+                toRemove.push(tile);
             } else {
                 stillFading = true;
             }
+        }
+        for (const tile of toRemove) {
+            markCacheKeyInactive(getTileCacheKey(tile.key, tile.zoom));
+            fadingOutTiles.delete(tile);
+            tile.dispose();
         }
     }
     return stillFading;
@@ -174,10 +180,25 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
         const camTile = lngLatToTile(camGPS.lon, camGPS.lat, zoom);
         const currentActiveKeys = new Set<string>();
 
-        const camKey = `${camTile.x}_${camTile.y}_${zoom}`;
+        const isZoomIn = zoom > lastRenderedZoom;
+        const lodChanging = lastRenderedZoom !== -1 && zoom !== lastRenderedZoom;
+
+        // v5.28.42 : Si on change de LOD, on purge les fantômes actuels pour éviter l'accumulation (effet mille-feuille)
+        if (lodChanging && fadingOutTiles.size > 0) {
+            for (const t of fadingOutTiles) t.dispose();
+            fadingOutTiles.clear();
+        }
+
+        // v5.28.42 : La clé inclut maintenant la source pour empêcher le mélange Swisstopo/OpenTopo/IGN
+        const camKey = `${state.MAP_SOURCE}_${camTile.x}_${camTile.y}_${zoom}`;
         if (camTile.x >= 0 && camTile.x < maxTile && camTile.y >= 0 && camTile.y < maxTile) {
             currentActiveKeys.add(camKey);
-            if (!activeTiles.has(camKey)) { const t = new Tile(camTile.x, camTile.y, zoom, camKey); activeTiles.set(camKey, t); insertTile(t); loadQueue.add(t); }
+            if (!activeTiles.has(camKey)) { 
+                const t = new Tile(camTile.x, camTile.y, zoom, camKey); 
+                activeTiles.set(camKey, t); 
+                insertTile(t); 
+                loadQueue.add(t); 
+            }
         }
 
         const mobile = isMobileDevice();
@@ -201,9 +222,9 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
         // v5.28.34 : Limite de tuiles augmentée pour un remplissage plus rapide
         const MAX_NEW_TILES_PER_FRAME = force ? 100 : (isPC 
             ? 40 
-            : (state.PERFORMANCE_PRESET === 'performance') ? 20 
-            : (state.PERFORMANCE_PRESET === 'balanced') ? 12 
-            : 6);
+            : (state.PERFORMANCE_PRESET === 'performance') ? 12 
+            : (state.PERFORMANCE_PRESET === 'balanced') ? 8 
+            : 4);
 
         let hasMoreToLoad = false;
 
@@ -215,20 +236,15 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
                 for (let dx = -range; dx <= range; dx++) {
                     const tx = centerTile.x + dx; const ty = centerTile.y + dy;
                     if (tx < 0 || tx >= maxTile || ty < 0 || ty >= maxTile) continue;
-                    const key = `${tx}_${ty}_${zoom}`; currentActiveKeys.add(key);
+                    
+                    // v5.28.42 : Clé incluant la source
+                    const key = `${state.MAP_SOURCE}_${tx}_${ty}_${zoom}`; 
+                    currentActiveKeys.add(key);
                     let tile = activeTiles.get(key);
                     if (!tile) {
                         if (newlyAddedCount >= MAX_NEW_TILES_PER_FRAME) {
                             hasMoreToLoad = true;
                             continue; 
-                        }
-
-                        // v5.28.25 : Éviter les doublons entre active et fadingOut (Fix chevauchement LOD)
-                        for (const oldTile of fadingOutTiles) {
-                            if (oldTile.key === key) {
-                                fadingOutTiles.delete(oldTile);
-                                oldTile.dispose();
-                            }
                         }
 
                         tile = new Tile(tx, ty, zoom, key);
@@ -243,18 +259,21 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
             }
         }
 
-        // v5.28.34 : Délai réduit à 50ms pour un remplissage plus nerveux
+        // v5.28.41 : Pulse plus réactif sur PC (30ms) pour éliminer la sensation de lenteur
         if (hasMoreToLoad) {
             setTimeout(() => {
                 updateVisibleTiles(_camLat, _camLon, _camAltitude, wx, wz, force);
-            }, 50);
+            }, mobile ? 100 : 30);
         }
 
-        const lodChanging = lastRenderedZoom !== -1 && zoom !== lastRenderedZoom;
+        // v5.28.39 : On met à jour lastRenderedZoom AVANT de traiter les suppressions
+        lastRenderedZoom = zoom;
 
         for (const [key, tile] of activeTiles.entries()) {
             if (!currentActiveKeys.has(key)) {
-                if (lodChanging && tile.mesh && tile.status !== 'disposed') {
+                // v5.28.38 : Seul le zoom-in justifie des ghost tiles (tuiles parentes visibles en fond)
+                // En zoom-out, les tuiles enfants sont trop détaillées et masquent le parent plus rapide.
+                if (lodChanging && isZoomIn && tile.mesh && tile.status !== 'disposed') {
                     removeTile(tile);
                     activeTiles.delete(key);
                     fadingOutTiles.add(tile);
@@ -265,7 +284,19 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
                     activeTiles.delete(key);
                 }
             }
-        }        lastRenderedZoom = zoom;
+        }
+
+        // v5.28.41 : Capacité maximale de tuiles fantômes (sécurité RAM/GPU)
+        // Si on dépasse 15 tuiles en transition, on tue les plus anciennes immédiatement.
+        if (fadingOutTiles.size > 15) {
+            const sortedGhosts = Array.from(fadingOutTiles);
+            for (let i = 0; i < sortedGhosts.length - 10; i++) {
+                const t = sortedGhosts[i];
+                fadingOutTiles.delete(t);
+                t.dispose();
+            }
+        }
+
         processLoadQueue();
 
         // Prefetch LOD suivant si la file est vide

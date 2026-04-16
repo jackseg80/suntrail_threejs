@@ -362,20 +362,19 @@ export async function loadTileData(tx: number, ty: number, zoom: number, is2D: b
     const colorUrl = getColorUrl(Math.floor(tx/cr), Math.floor(ty/cr), cz);
     const overlayUrl = getOverlayUrl(tx, ty, zoom);
 
-    // Pré-injection : on ATTEND le seeding pour les sources locales avant de lancer le worker
-    // Cela garantit que le worker trouvera la tuile dans son cache.
+    // Pré-injection : on déclenche le seeding SANS ATTENDRE pour ne pas bloquer le thread principal.
+    // Le worker trouvera la tuile dans son cache si le seeding finit à temps, 
+    // sinon il la chargera normalement depuis le réseau/source.
     if (embeddedPMTiles && zoom <= EMBEDDED_MAX_ZOOM) {
-        await seedEmbeddedTile(colorUrl, cz, Math.floor(tx/cr), Math.floor(ty/cr));
+        seedEmbeddedTile(colorUrl, cz, Math.floor(tx/cr), Math.floor(ty/cr)).catch(() => {});
     }
 
     if (packManager.hasMountedPacks() && zoom >= 12) {
         const cx = Math.floor(tx/cr);
         const cy = Math.floor(ty/cr);
-        const seeds = [];
-        seeds.push(seedPackTile(colorUrl, cz, cx, cy, 'color'));
-        if (elevUrl && zoom <= 14) seeds.push(seedPackTile(elevUrl, zoom, tx, ty, 'elevation'));
-        if (overlayUrl) seeds.push(seedPackTile(overlayUrl, zoom, tx, ty, 'overlay'));
-        await Promise.all(seeds);
+        seedPackTile(colorUrl, cz, cx, cy, 'color').catch(() => {});
+        if (elevUrl && zoom <= 14) seedPackTile(elevUrl, zoom, tx, ty, 'elevation').catch(() => {});
+        if (overlayUrl) seedPackTile(overlayUrl, zoom, tx, ty, 'overlay').catch(() => {});
     }
 
     return tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl, zoom, sourceZoom);

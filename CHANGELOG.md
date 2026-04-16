@@ -5,6 +5,19 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.28.42] - 2026-04-15
+### Fixed
+- **Superposition de Sources** : La clé unique des tuiles inclut désormais `MAP_SOURCE` (ex: `swisstopo_10_20_14`), empêchant définitivement le mélange de couches Swisstopo/OpenTopo/IGN au même endroit.
+- **Fuites VRAM & RAM** : Ajout de `texture.dispose()` systématique lors du nettoyage des tuiles et sécurisation des boucles de transition (`Array.from`) pour éviter l'accumulation de maillages "fantômes" orphelins (ex: Delémont restant visible ailleurs).
+- **Transitions LOD** : Rétablissement de la logique asymétrique (Ghost Tiles uniquement au Zoom-In) et purge immédiate des transitions lors d'un changement de zoom majeur pour éliminer l'effet "mille-feuille".
+- **Bridage Mémoire Mobile** : Réduction du fondu à 300ms et limite stricte à 15 tuiles en transition simultanée.
+- **Android Build** : Correction d'une erreur de syntaxe dans `build.gradle` qui bloquait l'instrumentation des tests.
+- **Shadow Acne** : Ajustement dynamique du `normalBias` sur mobile pour supprimer les traits noirs sur le terrain.
+
+### Optimized
+- **Startup Speed (PC/Mobile)** : Accélération radicale du démarrage. `initUI()` est lancé via `requestAnimationFrame` et le premier chargement de terrain est non-bloquant (`setTimeout 0`). L'interface s'affiche instantanément.
+- **Seeding Non-Bloquant** : La pré-injection du cache depuis les PMTiles est maintenant asynchrone, libérant le thread principal des écritures disque saccadées.
+
 ## [5.28.37] - 2026-04-15
 ### Fixed
 - **Superposition LOD** : Correction d'un bug majeur où les tuiles restaient affichées lors du dézoom si la caméra était proche du sol (garde-fou `camera.y < 1` déplacé pour ne plus bloquer la purge).

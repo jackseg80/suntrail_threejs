@@ -15,7 +15,9 @@ import { removeFromLoadQueue } from './tileQueue';
 
 const frustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
-const GHOST_FADE_MS = 800; // v5.28.37 : Augmenté pour fluidité (README mentionne 1.2s)
+
+// v5.28.41 : Délai réduit sur mobile pour libérer la RAM/GPU plus vite
+const GHOST_FADE_MS = (window.innerWidth <= 768) ? 400 : 800; 
 
 export const terrainUniforms = { 
     uExaggeration: { value: state.RELIEF_EXAGGERATION },
@@ -135,6 +137,8 @@ export class Tile {
             this.activeTaskId = taskId;
             const data = await promise;
             this.activeTaskId = -1;
+            
+            // v5.28.41 : Sécurité renforcée lors du retour de chargement
             if (this.status as string === 'disposed' || !data) return;
 
             if (data.elevBitmap) {
@@ -173,13 +177,21 @@ export class Tile {
 
             addToCache(cacheKey, this.elevationTex!, this.pixelData, this.colorTex!, this.overlayTex, this.normalTex);
             markCacheKeyActive(cacheKey);
-            this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
+            this.status = 'loaded'; 
+            
+            // v5.28.41 : Vérification ultime avant buildMesh
+            if (this.status as string !== 'disposed') {
+                this.buildMesh(state.RESOLUTION);
+            }
         } catch (e) { this.status = 'failed'; }
     }
 
     buildMesh(resolution: number): void {
-        if (!this.elevationTex || !this.colorTex || this.status as any === 'disposed') return;
-        if (!activeTiles.has(this.key)) return;
+        if (!this.elevationTex || !this.colorTex || this.status as string === 'disposed') return;
+        
+        // v5.28.41 : Sécurité absolue — une tuile ne peut avoir un maillage QUE si elle est suivie
+        // par le moteur de terrain (active ou en transition). Empêche Delémont de persister ailleurs.
+        if (!activeTiles.has(this.key) && !this.isFadingOut) return;
 
         if (this.zoom >= 15) resolution = Math.min(resolution, 64);
 
@@ -333,7 +345,11 @@ export class Tile {
         this.mesh.renderOrder = this.zoom; 
         this.mesh.castShadow = !is2D; this.mesh.receiveShadow = !is2D;
 
-        if (state.scene) state.scene.add(this.mesh);
+        // v5.28.41 : Vérification finale avant ajout effectif à la scène
+        if (state.scene && (this.status as string !== 'disposed')) {
+            state.scene.add(this.mesh);
+        }
+        
         this.currentResolution = resolution;
         
         if (is2D) {
@@ -350,7 +366,7 @@ export class Tile {
         if (state.SHOW_VEGETATION && this.zoom >= 14) setTimeout(() => {
             if (this.status as any === 'disposed') return;
             const forest = createForestForTile(this);
-            if (forest && state.scene && this.status as any !== 'disposed') {
+            if (forest && state.scene && (this.status as any !== 'disposed')) {
                 if (this.forestMesh) state.scene.remove(this.forestMesh);
                 this.forestMesh = forest; 
                 this.forestMesh.position.set(this.worldX, 0, this.worldZ);
@@ -396,25 +412,24 @@ export class Tile {
         markCacheKeyInactive(getTileCacheKey(this.key, this.zoom));
         if (this.mesh) {
             if (state.scene) state.scene.remove(this.mesh);
-            
-            // v5.28.37 : Relâcher les matériaux dans le pool au lieu de les détruire
-            if (this.mesh.material instanceof THREE.Material) {
-                materialPool.release(this.mesh.material);
-            }
-            if (this.mesh.customDepthMaterial instanceof THREE.Material) {
-                materialPool.release(this.mesh.customDepthMaterial);
-            }
-
-            // NE PAS utiliser disposeObject(this.mesh) car il détruirait la géométrie PARTAGÉE
+            if (this.mesh.material instanceof THREE.Material) materialPool.release(this.mesh.material);
+            if (this.mesh.customDepthMaterial instanceof THREE.Material) materialPool.release(this.mesh.customDepthMaterial);
             this.mesh.geometry = null as any;
             this.mesh.material = null as any;
             this.mesh = null;
         }
+
+        // v5.28.41 : Libération explicite des textures (indispensable pour libérer la VRAM)
+        if (this.elevationTex) { this.elevationTex.dispose(); this.elevationTex = null; }
+        if (this.colorTex) { this.colorTex.dispose(); this.colorTex = null; }
+        if (this.overlayTex) { this.overlayTex.dispose(); this.overlayTex = null; }
+        if (this.normalTex) { this.normalTex.dispose(); this.normalTex = null; }
+
         if (this.forestMesh) { if (state.scene) state.scene.remove(this.forestMesh); disposeObject(this.forestMesh); this.forestMesh = null; }
         if (this.poiGroup) { if (state.scene) state.scene.remove(this.poiGroup); disposeObject(this.poiGroup); this.poiGroup = null; }
         if (this.buildingGroup) { if (state.scene) state.scene.remove(this.buildingGroup); disposeObject(this.buildingGroup); this.buildingGroup = null; }
         if (this.buildingMesh) { if (state.scene) state.scene.remove(this.buildingMesh); disposeObject(this.buildingMesh); this.buildingMesh = null; }
         if (this.hydroGroup) { if (state.scene) state.scene.remove(this.hydroGroup); disposeObject(this.hydroGroup); this.hydroGroup = null; }
-        this.elevationTex = null; this.colorTex = null; this.overlayTex = null; this.normalTex = null;
+        this.pixelData = null;
     }
 }

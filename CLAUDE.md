@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.28.37)
+# SunTrail — Guide IA (v5.28.42)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-14 suite aux optimisations terrain et corrections GPX.
+> Mis à jour le 2026-04-15 suite à la correction majeure des régressions LOD et mémoire.
 
 ## Projet
 
@@ -10,7 +10,7 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 **Stack** : TypeScript strict · Three.js r160 · Vite 5 · Capacitor 6 · RevenueCat
 
-## ⚠️ Règles & Décisions Actées (v5.28.35)
+## ⚠️ Règles & Décisions Actées (v5.28.42)
 
 ### 🚀 Protocole de Release (IMPÉRATIF)
 1. **Version Name** : Incrémenter dans `package.json` (ex: 5.27.5 → 5.27.6).
@@ -45,9 +45,14 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 - **D+ / D-** : Algorithme d'**Hystérésis avec seuil de 3m** (Garmin standard) via `calculateHysteresis()`. Source de vérité unique pour les tracés et le profil (v5.28.20).
 - **Lissage** : Moyenne mobile 3 points sur l'altitude GPS (v5.28.5).
 - **Filtrage GPS (v5.28.5)** : Rejeter tout point GPS avec saut vertical > 200m (si intervalle < 10s), distance horizontale < 2.5m (anti-champignon), ou vitesse > 600km/h.
+- **Moteur de Terrain (v5.28.42)** : 
+    - **Clé Unique** : Doit TOUJOURS inclure `MAP_SOURCE` (ex: `source_x_y_z`) pour éviter les superpositions de couches Swisstopo/OpenTopo.
+    - **Gestion Mémoire** : Libérer explicitement la VRAM via `texture.dispose()` dans le cycle de vie `Tile.dispose()`.
+    - **LOD Asymétrique** : Ghost Tiles uniquement lors du Zoom-In. Purge immédiate au Zoom-Out.
 - **TubeGeometry Stabilité (v5.28.34)** : Utiliser `centripetal` pour les splines. Rendu temps réel à 1500 segments max. Simplification RDP avec epsilon 1.0. **Debouncing 100-150ms** sur les mises à jour pour fluidifier la navigation.
 - **Cache Unifié (v5.28.33)** : `suntrail-tiles-v28` synchronisé entre thread principal et workers. Garantit l'affichage instantané des packs hors-ligne et PMTiles.
-- **Remplissage Visuel (v5.28.35)** : Quota de tuiles par frame augmenté (25→40 sur PC) et délai réduit à 50ms pour une apparition plus rapide du terrain.
+- **Remplissage Visuel (v5.28.42)** : Quota de tuiles par frame (40 sur PC, 8-12 sur mobile) et pulse ultra-rapide sur PC (30ms) pour un affichage nerveux.
+
 
 ## Structure du Projet
 - `src/modules/iapService.ts` : Liaison RevenueCat ↔ Google Play.

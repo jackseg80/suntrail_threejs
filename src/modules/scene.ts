@@ -375,7 +375,15 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
     state.sunLight.shadow.camera.left = -5000; state.sunLight.shadow.camera.right = 5000;
     state.sunLight.shadow.camera.top = 5000; state.sunLight.shadow.camera.bottom = -5000;
     state.sunLight.shadow.camera.near = 1000; state.sunLight.shadow.camera.far = 500000;
-    state.sunLight.shadow.bias = -0.0005; state.sunLight.shadow.normalBias = 0.05;
+    
+    // v5.28.38 : Biais ajusté pour mobile (précision Z-buffer moindre)
+    if (isMobile) {
+        state.sunLight.shadow.bias = -0.0002; 
+        state.sunLight.shadow.normalBias = 0.15; // Augmenté de 0.05 à 0.15 pour mobile
+    } else {
+        state.sunLight.shadow.bias = -0.0005; 
+        state.sunLight.shadow.normalBias = 0.05;
+    }
     state.scene.add(state.sunLight); state.scene.add(state.sunLight.target);
 
     initVegetationResources();
@@ -608,5 +616,8 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
     state.controls?.update();
     state.camera?.updateMatrixWorld(true);
 
-    await loadTerrain();
+    // v5.28.40 : Premier chargement asynchrone pour ne pas bloquer l'affichage de l'UI
+    setTimeout(() => {
+        void loadTerrain();
+    }, 0);
 }

@@ -23,9 +23,23 @@ registerSW({
   },
 });
 
+// Lancement de l'initialisation globale de l'interface (v5.28.39)
+// On utilise requestAnimationFrame pour laisser le navigateur souffler (Splash screen / CSS) 
+// avant de lancer le moteur Three.js qui est gourmand en CPU au démarrage.
+requestAnimationFrame(() => {
+    initUI();
+    initBatteryManager();
+});
+
+
 // Système unifié de recovery au démarrage (v5.28.1 - Unification native).
 window.addEventListener('suntrail:uiReady', async () => {
     try {
+        // Chargement asynchrone des services lents en arrière-plan
+        void initNetworkMonitor();
+        void initEmbeddedOverview();
+        void packManager.initialize();
+
         // Initialisation unifiée (Natif + Preferences)
         await nativeGPSService.init();
 
@@ -53,15 +67,3 @@ window.addEventListener('suntrail:uiReady', async () => {
     }
 }, { once: true });
 
-// Détection réseau (event-driven, zéro polling)
-void initNetworkMonitor();
-
-// Monte l'archive de tuiles overview embarquée (LOD 5-7, Europe)
-void initEmbeddedOverview();
-
-// Initialise le gestionnaire de packs pays
-void packManager.initialize();
-
-// Lancement de l'initialisation globale de l'interface
-initUI();
-initBatteryManager();
