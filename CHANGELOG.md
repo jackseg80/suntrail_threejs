@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.16] - 2026-04-16
+### Fixed
+- **Moteur 3D (LOD 11+)** : Résolution définitive de l'écran blanc. Les uniforms des matériaux recyclés sont désormais mis à jour directement via `userData.uniforms`, contournant la limitation de Three.js sur `onBeforeCompile`.
+- **Validation** : Rétablissement de la rigueur de test avant chaque commit.
+
 ## [5.29.15] - 2026-04-16
 ### Fixed
 - **Anti-Écran Blanc (CTRL+F5)** : Sécurisation de l'ancrage initial du terrain. Les appels Overpass et Météo sont différés pour prioriser le rendu 3D.

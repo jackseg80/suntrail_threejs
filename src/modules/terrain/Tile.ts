@@ -301,19 +301,18 @@ export class Tile {
         if (is2D) (material as THREE.MeshBasicMaterial).map = this.colorTex;
         else (material as THREE.MeshStandardMaterial).map = this.colorTex;
 
-        // v5.29.14 : Si le matériel a déjà un shader (réutilisé), on met à jour les uniforms immédiatement.
-        // Sinon, onCompile s'en chargera lors de la compilation Three.js.
-        const shader = (material as any).userData.shader;
-        if (shader) {
-            shader.uniforms.uElevationMap.value = this.elevationTex;
-            shader.uniforms.uNormalMap.value = this.normalTex;
-            shader.uniforms.uOverlayMap.value = this.overlayTex;
-            shader.uniforms.uTileSize.value = this.tileSizeMeters;
-            shader.uniforms.uElevOffset.value = this.elevOffset;
-            shader.uniforms.uElevScale.value = this.elevScale;
-            shader.uniforms.uColorOffset.value = this.colorOffset;
-            shader.uniforms.uColorScale.value = this.colorScale;
-            shader.uniforms.uHasOverlay.value = !!this.overlayTex;
+        // v5.29.16 : Mise à jour directe des uniforms persistants (indépendant de onBeforeCompile)
+        const uniforms = (material as any).userData.uniforms;
+        if (uniforms) {
+            uniforms.uElevationMap.value = this.elevationTex;
+            uniforms.uNormalMap.value = this.normalTex;
+            uniforms.uOverlayMap.value = this.overlayTex;
+            uniforms.uTileSize.value = this.tileSizeMeters;
+            uniforms.uElevOffset.value.copy(this.elevOffset);
+            uniforms.uElevScale.value = this.elevScale;
+            uniforms.uColorOffset.value.copy(this.colorOffset);
+            uniforms.uColorScale.value = this.colorScale;
+            uniforms.uHasOverlay.value = !!this.overlayTex;
         }
 
         if (!is2D) {

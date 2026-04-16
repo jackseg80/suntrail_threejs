@@ -35,12 +35,33 @@ class MaterialPool {
      */
     acquire(is2D: boolean, onCompile: (shader: any) => void): THREE.Material {
         if (is2D) {
-            const mat = this.basicPool.pop() || new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 });
-            mat.onBeforeCompile = onCompile;
-            return mat;
+            return this.basicPool.pop() || new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 });
         } else {
             const mat = this.standardPool.pop() || new THREE.MeshStandardMaterial({ roughness: 1.0, metalness: 0.0, transparent: true, opacity: 0 });
-            mat.onBeforeCompile = onCompile;
+            
+            // v5.29.16 : Initialisation systématique des uniforms personnalisés
+            if (!mat.userData.uniforms) {
+                mat.userData.uniforms = {
+                    uElevationMap: { value: null },
+                    uNormalMap: { value: null },
+                    uOverlayMap: { value: null },
+                    uTileSize: { value: 0 },
+                    uElevOffset: { value: new THREE.Vector2() },
+                    uElevScale: { value: 1.0 },
+                    uColorOffset: { value: new THREE.Vector2() },
+                    uColorScale: { value: 1.0 },
+                    uHasOverlay: { value: false }
+                };
+            }
+            
+            mat.onBeforeCompile = (shader: any) => {
+                mat.userData.shader = shader;
+                // On lie les uniforms du shader à nos objets persistants dans userData
+                Object.assign(shader.uniforms, mat.userData.uniforms);
+                // On laisse le reste de la logique spécifique (injectée par Tile.ts) s'exécuter
+                onCompile(shader);
+            };
+            
             return mat;
         }
     }
@@ -50,7 +71,21 @@ class MaterialPool {
      */
     acquireDepth(onCompile: (shader: any) => void): THREE.MeshDepthMaterial {
         const mat = this.depthPool.pop() || new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, alphaTest: 0.5 });
-        mat.onBeforeCompile = onCompile;
+        
+        if (!mat.userData.uniforms) {
+            mat.userData.uniforms = {
+                uElevationMap: { value: null },
+                uElevOffset: { value: new THREE.Vector2() },
+                uElevScale: { value: 1.0 }
+            };
+        }
+
+        mat.onBeforeCompile = (shader: any) => {
+            mat.userData.shader = shader;
+            Object.assign(shader.uniforms, mat.userData.uniforms);
+            onCompile(shader);
+        };
+        
         return mat;
     }
 

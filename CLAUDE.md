@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.29.15)
+# SunTrail — Guide IA (v5.29.16)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-16 suite à la v5.29.15 (Fix Écran Blanc Boot).
+> Mis à jour le 2026-04-16 suite à la v5.29.16 (Fix LOD 11+ & Uniforms).
 
 ## Projet
 
