@@ -523,8 +523,12 @@ async function _initSecondaryUI(): Promise<void> {
 function startApp() {
     try {
         initScene();
-        fetchWeather(state.TARGET_LAT, state.TARGET_LON);
-        fetchLocalPeaks(state.TARGET_LAT, state.TARGET_LON);
+        
+        // v5.29.15 : Décaler les appels non-critiques pour prioriser le terrain (Anti-Écran Blanc)
+        setTimeout(() => {
+            fetchWeather(state.TARGET_LAT, state.TARGET_LON);
+            fetchLocalPeaks(state.TARGET_LAT, state.TARGET_LON);
+        }, 1500);
         
         const navBar = document.getElementById('nav-bar');
         const topBar = document.getElementById('top-status-bar');

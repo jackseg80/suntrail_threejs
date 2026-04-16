@@ -323,7 +323,11 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
 
 export function updateHydrologyVisibility(visible: boolean): void { state.SHOW_HYDROLOGY = visible; resetTerrain(); updateVisibleTiles(); }
 export function updateSlopeVisibility(visible: boolean): void { state.SHOW_SLOPES = visible; resetTerrain(); updateVisibleTiles(); }
-export async function loadTerrain(): Promise<void> { await updateVisibleTiles(); }
+export async function loadTerrain(): Promise<void> { 
+    // v5.29.15 : Ancrage initial forcé pour éviter l'écran blanc après CTRL+F5
+    state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, state.ZOOM);
+    await updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, 5000, 0, 0, true); 
+}
 
 /**
  * v5.28.2: Centralise la réinitialisation du terrain.
