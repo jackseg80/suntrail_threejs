@@ -20,13 +20,9 @@ class TileWorkerManager {
     private nextTaskId = 0;
     /** Quel worker gère quelle task — nécessaire pour envoyer le message cancel au bon worker. */
     private taskWorkerMap = new Map<number, Worker>();
-    /** Dédoublonnage des requêtes en cours pour éviter de surcharger les workers. */
-    private inFlight = new Map<string, { promise: Promise<any>, taskId: number, refCount: number }>();
 
     constructor(poolSize?: number) {
         if (typeof Worker === 'undefined') return;
-        // Mobile : 4 workers max (moins de parsing JS au démarrage, ~2-4s économisées)
-        // PC    : 8 workers max (cores abondants, parsing instantané)
         const isMobile = typeof navigator !== 'undefined' && (/Mobi|Android/i.test(navigator.userAgent) || window.innerWidth <= 768);
         const maxWorkers = isMobile ? 4 : 8;
         const count = poolSize ?? Math.min(navigator.hardwareConcurrency || 4, maxWorkers);
@@ -42,14 +38,6 @@ class TileWorkerManager {
 
     private handleMessage(e: MessageEvent) {
         const { id, error, cacheHits, networkRequests, forbidden, rateLimited, networkError, ...data } = e.data;
-
-        // v5.29.5 : On cherche à quelle clé inFlight cette task correspond pour la nettoyer
-        for (const [key, entry] of this.inFlight.entries()) {
-            if (entry.taskId === id) {
-                this.inFlight.delete(key);
-                break;
-            }
-        }
 
         if (forbidden) {
             if (!state.isMapTilerDisabled) {
@@ -74,6 +62,8 @@ class TileWorkerManager {
         if (!task) return;
 
         this.tasks.delete(id);
+        this.taskWorkerMap.delete(id);
+
         if (error) {
             task.reject(error);
         } else {
@@ -82,19 +72,10 @@ class TileWorkerManager {
     }
 
     /**
-     * Lance le chargement d'une tuile et retourne { promise, taskId }.
-     * Le taskId permet d'annuler la task via cancelTile().
+     * Lance le chargement d'une tuile.
      */
     loadTile(elevUrl: string | null, colorUrl: string | null, overlayUrl: string | null, zoom: number, elevSourceZoom: number = zoom): { promise: Promise<any>, taskId: number } {
         if (this.workers.length === 0 || !state.USE_WORKERS) return { promise: Promise.resolve(null), taskId: -1 };
-
-        // v5.29.5 : Dédoublonnage in-flight
-        const dedupeKey = `${elevUrl}|${colorUrl}|${overlayUrl}|${zoom}|${elevSourceZoom}`;
-        const existing = this.inFlight.get(dedupeKey);
-        if (existing) {
-            existing.refCount++;
-            return { promise: existing.promise, taskId: existing.taskId };
-        }
 
         const id = this.nextTaskId++;
         const worker = this.workers[this.nextWorkerIndex];
@@ -109,7 +90,6 @@ class TileWorkerManager {
                 settled = true;
                 this.tasks.delete(id);
                 this.taskWorkerMap.delete(id);
-                console.error(`[WorkerManager] Task ${id} timed out!`);
                 reject(new Error(`Worker timeout for task ${id}`));
             }, 15000);
 
@@ -118,14 +98,12 @@ class TileWorkerManager {
                     if (settled) return;
                     settled = true;
                     clearTimeout(timeout);
-                    this.taskWorkerMap.delete(id);
                     resolve(data);
                 },
                 reject: (err: any) => {
                     if (settled) return;
                     settled = true;
                     clearTimeout(timeout);
-                    this.taskWorkerMap.delete(id);
                     reject(err);
                 }
             });
@@ -133,34 +111,19 @@ class TileWorkerManager {
             worker.postMessage({ id, elevUrl, colorUrl, overlayUrl, isOffline: state.IS_OFFLINE, zoom, elevSourceZoom });
         });
 
-        this.inFlight.set(dedupeKey, { promise, taskId: id, refCount: 1 });
         return { promise, taskId: id };
     }
 
     /**
-     * Annule une task en cours (ou décrémente son refCount).
+     * Annule une task en cours.
      */
     cancelTile(taskId: number): void {
         if (taskId < 0) return;
-
-        // v5.29.13 : Si la tâche est annulée, on la retire IMMÉDIATEMENT de inFlight
-        // pour que les demandes suivantes créent une nouvelle tâche propre.
-        for (const [key, entry] of this.inFlight.entries()) {
-            if (entry.taskId === taskId) {
-                entry.refCount--;
-                if (entry.refCount <= 0) {
-                    this.inFlight.delete(key);
-                } else {
-                    return; // Toujours attendue par un autre demandeur, on ne l'annule pas côté worker
-                }
-                break;
-            }
-        }
-
         const task = this.tasks.get(taskId);
-        if (!task) return;
-        this.tasks.delete(taskId);
-        task.resolve(null); 
+        if (task) {
+            this.tasks.delete(taskId);
+            task.resolve(null);
+        }
         const worker = this.taskWorkerMap.get(taskId);
         if (worker) {
             worker.postMessage({ type: 'cancel', id: taskId });

@@ -55,6 +55,6 @@ describe('materialPool.ts', () => {
         mat.userData.shader = mockShader;
         
         materialPool.release(mat);
-        expect(mockShader.uniforms.uElevationMap.value).toBeNull();
+        expect((mat as any).userData.shader).toBeNull();
     });
 });

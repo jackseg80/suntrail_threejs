@@ -12,12 +12,10 @@ import { loadTileData, cancelTileLoad } from '../tileLoader';
 import { materialPool } from '../materialPool';
 import { activeTiles } from '../terrain';
 import { removeFromLoadQueue } from './tileQueue';
-import { pixelDataPool } from './pixelDataPool';
 
 const frustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
 
-// v5.28.41 : Délai réduit sur mobile pour libérer la RAM/GPU plus vite
 const GHOST_FADE_MS = (window.innerWidth <= 768) ? 400 : 800; 
 
 export const terrainUniforms = { 
@@ -139,7 +137,6 @@ export class Tile {
             const data = await promise;
             this.activeTaskId = -1;
             
-            // v5.28.41 : Sécurité renforcée lors du retour de chargement
             if (this.status as string === 'disposed' || !data) return;
 
             if (data.elevBitmap) {
@@ -149,15 +146,7 @@ export class Tile {
                 this.elevationTex.minFilter = THREE.LinearFilter;
                 this.elevationTex.wrapS = this.elevationTex.wrapT = THREE.ClampToEdgeWrapping;
                 this.elevationTex.needsUpdate = true;
-                
-                // v5.29.12 : Utilisation du pool de buffers pour réduire la pression GC
-                if (data.pixelData) {
-                    this.pixelData = pixelDataPool.acquire();
-                    const srcArray = (data.pixelData instanceof Uint8ClampedArray) 
-                        ? data.pixelData 
-                        : new Uint8ClampedArray(data.pixelData);
-                    this.pixelData.set(srcArray);
-                }
+                if (data.pixelData) this.pixelData = new Uint8ClampedArray(data.pixelData);
             } else { this.elevationTex = new THREE.CanvasTexture(document.createElement('canvas')); }
 
             if (data.colorBitmap) {
@@ -187,21 +176,13 @@ export class Tile {
             addToCache(cacheKey, this.elevationTex!, this.pixelData, this.colorTex!, this.overlayTex, this.normalTex);
             markCacheKeyActive(cacheKey);
             this.status = 'loaded'; 
-            
-            // v5.28.41 : Vérification ultime avant buildMesh
-            if (this.status as string !== 'disposed') {
-                this.buildMesh(state.RESOLUTION);
-            }
+            if (this.status as string !== 'disposed') this.buildMesh(state.RESOLUTION);
         } catch (e) { this.status = 'failed'; }
     }
 
     buildMesh(resolution: number): void {
         if (!this.elevationTex || !this.colorTex || this.status as string === 'disposed') return;
-        
-        // v5.28.41 : Sécurité absolue — une tuile ne peut avoir un maillage QUE si elle est suivie
-        // par le moteur de terrain (active ou en transition). Empêche Delémont de persister ailleurs.
         if (!activeTiles.has(this.key) && !this.isFadingOut) return;
-
         if (this.zoom >= 15) resolution = Math.min(resolution, 64);
 
         const is2D = (this.zoom <= 10 || state.IS_2D_MODE);
@@ -209,7 +190,7 @@ export class Tile {
         const oldMesh = this.mesh;
         
         const onCompile = (shader: any) => {
-            material.userData.shader = shader;
+            (material as any).userData.shader = shader;
             shader.uniforms.uElevationMap = { value: this.elevationTex };
             shader.uniforms.uNormalMap = { value: this.normalTex };
             shader.uniforms.uOverlayMap = { value: this.overlayTex };
@@ -301,18 +282,18 @@ export class Tile {
         if (is2D) (material as THREE.MeshBasicMaterial).map = this.colorTex;
         else (material as THREE.MeshStandardMaterial).map = this.colorTex;
 
-        // v5.29.16 : Mise à jour directe des uniforms persistants (indépendant de onBeforeCompile)
-        const uniforms = (material as any).userData.uniforms;
-        if (uniforms) {
-            uniforms.uElevationMap.value = this.elevationTex;
-            uniforms.uNormalMap.value = this.normalTex;
-            uniforms.uOverlayMap.value = this.overlayTex;
-            uniforms.uTileSize.value = this.tileSizeMeters;
-            uniforms.uElevOffset.value.copy(this.elevOffset);
-            uniforms.uElevScale.value = this.elevScale;
-            uniforms.uColorOffset.value.copy(this.colorOffset);
-            uniforms.uColorScale.value = this.colorScale;
-            uniforms.uHasOverlay.value = !!this.overlayTex;
+        // On injecte systématiquement les textures si le shader existe déjà
+        const shader = (material as any).userData.shader;
+        if (shader) {
+            shader.uniforms.uElevationMap.value = this.elevationTex;
+            shader.uniforms.uNormalMap.value = this.normalTex;
+            shader.uniforms.uOverlayMap.value = this.overlayTex;
+            shader.uniforms.uTileSize.value = this.tileSizeMeters;
+            shader.uniforms.uElevOffset.value.copy(this.elevOffset);
+            shader.uniforms.uElevScale.value = this.elevScale;
+            shader.uniforms.uColorOffset.value.copy(this.colorOffset);
+            shader.uniforms.uColorScale.value = this.colorScale;
+            shader.uniforms.uHasOverlay.value = !!this.overlayTex;
         }
 
         if (!is2D) {
@@ -323,7 +304,6 @@ export class Tile {
                 shader.uniforms.uElevOffset = { value: this.elevOffset };
                 shader.uniforms.uElevScale = { value: this.elevScale };
                 shader.uniforms.uTileSize = { value: this.tileSizeMeters };
-
                 if (!shader.vertexShader.includes('decodeHeight')) {
                     shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n
                         attribute float aSkirt; uniform sampler2D uElevationMap; uniform float uExaggeration; uniform float uTileSize; uniform vec2 uElevOffset; uniform float uElevScale;
@@ -336,15 +316,13 @@ export class Tile {
                     `).replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv) - aSkirt * uTileSize * 0.02;`);
                 }
             };
-
             const depth = materialPool.acquireDepth(onDepthCompile);
             const depthShader = (depth as any).userData.shader;
             if (depthShader) {
                 depthShader.uniforms.uElevationMap.value = this.elevationTex;
-                depthShader.uniforms.uElevOffset.value = this.elevOffset;
+                depthShader.uniforms.uElevOffset.value.copy(this.elevOffset);
                 depthShader.uniforms.uElevScale.value = this.elevScale;
             }
-
             this.mesh = new THREE.Mesh(getPlaneGeometry(resolution, this.tileSizeMeters), material);
             this.mesh.customDepthMaterial = depth;
         } else {
@@ -354,35 +332,13 @@ export class Tile {
         this.mesh.position.set(this.worldX, 0, this.worldZ);
         this.mesh.renderOrder = this.zoom; 
         this.mesh.castShadow = !is2D; this.mesh.receiveShadow = !is2D;
-
-        // v5.28.41 : Vérification finale avant ajout effectif à la scène
-        if (state.scene && (this.status as string !== 'disposed')) {
-            state.scene.add(this.mesh);
-        }
-        
+        if (state.scene && (this.status as string !== 'disposed')) state.scene.add(this.mesh);
         this.currentResolution = resolution;
         
         if (is2D) {
             this.opacity = 1; this.isFadingIn = false;
             if (this.mesh.material instanceof THREE.Material) { this.mesh.material.opacity = 1; this.mesh.material.transparent = false; }
-        } else {
-            this.opacity = 0; this.isFadingIn = true;
-        }
-
-        const delay = (ms: number) => ms * state.LOAD_DELAY_FACTOR;
-        if (state.SHOW_SIGNPOSTS && this.zoom >= state.POI_ZOOM_THRESHOLD) setTimeout(() => { if (this.status !== 'disposed') loadPOIsForTile(this); }, delay(600));
-        if (state.SHOW_BUILDINGS && this.zoom >= state.BUILDING_ZOOM_THRESHOLD) setTimeout(() => { if (this.status !== 'disposed') loadBuildingsForTile(this); }, delay(150));
-        if (state.SHOW_HYDROLOGY && this.zoom >= 13) setTimeout(() => { if (this.status !== 'disposed') loadHydrologyForTile(this); }, delay(100));
-        if (state.SHOW_VEGETATION && this.zoom >= 14) setTimeout(() => {
-            if (this.status as any === 'disposed') return;
-            const forest = createForestForTile(this);
-            if (forest && state.scene && (this.status as any !== 'disposed')) {
-                if (this.forestMesh) state.scene.remove(this.forestMesh);
-                this.forestMesh = forest; 
-                this.forestMesh.position.set(this.worldX, 0, this.worldZ);
-                state.scene.add(this.forestMesh);
-            }
-        }, delay(300));
+        } else { this.opacity = 0; this.isFadingIn = true; }
 
         if (oldMesh) {
             if (state.scene) state.scene.remove(oldMesh); 
@@ -403,7 +359,6 @@ export class Tile {
         this.isFadingOut = true; this.ghostFadeRemaining = GHOST_FADE_MS;
         this.mesh.position.y = -0.5;
         if (this.mesh.material instanceof THREE.Material) { this.mesh.material.transparent = true; this.mesh.material.opacity = 1.0; }
-        if (this.buildingMesh) this.buildingMesh.visible = false;
         markCacheKeyActive(getTileCacheKey(this.key, this.zoom));
     }
 
@@ -429,8 +384,6 @@ export class Tile {
             this.mesh = null;
         }
 
-        // v5.28.41 : Libération explicite des textures (indispensable pour libérer la VRAM)
-        // v5.29.3 : Sécurité — Ne pas dispose si la texture est encore dans le tileCache
         const cacheKey = getTileCacheKey(this.key, this.zoom);
         const inCache = hasInCache(cacheKey);
 
@@ -439,17 +392,9 @@ export class Tile {
             if (this.colorTex) { this.colorTex.dispose(); }
             if (this.overlayTex) { this.overlayTex.dispose(); }
             if (this.normalTex) { this.normalTex.dispose(); }
-            // v5.29.12 : Pooling mémoire
-            if (this.pixelData) {
-                pixelDataPool.release(this.pixelData);
-            }
         }
 
-        this.elevationTex = null;
-        this.colorTex = null;
-        this.overlayTex = null;
-        this.normalTex = null;
-
+        this.elevationTex = null; this.colorTex = null; this.overlayTex = null; this.normalTex = null;
         if (this.forestMesh) { if (state.scene) state.scene.remove(this.forestMesh); disposeObject(this.forestMesh); this.forestMesh = null; }
         if (this.poiGroup) { if (state.scene) state.scene.remove(this.poiGroup); disposeObject(this.poiGroup); this.poiGroup = null; }
         if (this.buildingGroup) { if (state.scene) state.scene.remove(this.buildingGroup); disposeObject(this.buildingGroup); this.buildingGroup = null; }

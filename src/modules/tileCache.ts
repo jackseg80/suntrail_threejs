@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { state } from './state';
 import { isMobileDevice } from './utils';
-import { pixelDataPool } from './terrain/pixelDataPool';
 
 /**
  * Interface pour les données de tuiles mises en cache.
@@ -21,8 +20,6 @@ const dataCache = new Map<string, CachedTileData>();
 
 /**
  * Clés de cache des tuiles actuellement en scène (à ne pas évincer).
- * Terrain.ts marque/démarque via markCacheKeyActive/Inactive.
- * Évite le flash blanc causé par la suppression de textures GPU encore rendues (v5.11.1).
  */
 const activeCacheKeys = new Set<string>();
 
@@ -34,13 +31,7 @@ export function markCacheKeyInactive(key: string): void {
 }
 
 /**
- * Taille max du cache alignée sur le RANGE effectif de chaque tier (v5.11).
- *
- * Calcul : RANGE N → tuiles actives max = (2N+1)² ≈ couvrir 1.5× pour smooth scrolling
- *   performance (RANGE=5) → 121 tuiles → cache ~180
- *   balanced    (RANGE=4) → 81 tuiles  → cache ~120
- *   ultra mobile (RANGE=8) → 289 tuiles → cache ~350
- *   ultra desktop (RANGE=12) → 625 tuiles → cache 800
+ * Taille max du cache alignée sur le RANGE effectif de chaque tier.
  */
 function getMaxCacheSize(): number {
     const mobile = isMobileDevice();
@@ -60,17 +51,13 @@ export function getTileCacheKey(key: string, zoom: number): string {
 
 /**
  * Ajoute des données de tuiles au cache. 
- * Si la taille maximale est atteinte, l'entrée la plus ancienne est supprimée (FIFO).
  */
 export function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8ClampedArray | null, colorTex: THREE.Texture, overlayTex: THREE.Texture | null, normalTex: THREE.Texture | null): void {
     if (dataCache.size >= getMaxCacheSize()) {
-        // Chercher la première entrée non-active (non rendue en scène) pour éviction.
-        // Évite le flash blanc causé par la suppression d'une texture encore rendue (v5.11.1).
         let evictKey: string | undefined;
         for (const k of dataCache.keys()) {
             if (!activeCacheKeys.has(k)) { evictKey = k; break; }
         }
-        // Fallback : toutes les entrées sont actives (rare) → éviction FIFO classique
         if (!evictKey) evictKey = dataCache.keys().next().value;
         if (evictKey) {
             const entry = dataCache.get(evictKey);
@@ -79,8 +66,6 @@ export function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8
                 entry.color.dispose();
                 if (entry.overlay) entry.overlay.dispose();
                 if (entry.normal) entry.normal.dispose();
-                // v5.29.12 : Pooling mémoire
-                if (entry.pixelData) pixelDataPool.release(entry.pixelData);
             }
             dataCache.delete(evictKey);
         }
@@ -89,26 +74,22 @@ export function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8
 }
 
 /**
- * Récupère des données du cache et met à jour leur position pour la logique de remplacement.
+ * Récupère des données du cache.
  */
 export function getFromCache(key: string): CachedTileData | null {
     const data = dataCache.get(key);
     if (!data) return null;
-    // On déplace l'entrée à la fin pour la logique LRU/FIFO
     dataCache.delete(key);
     dataCache.set(key, data);
     return data;
 }
 
 /**
- * Élague le cache jusqu'à sa taille maximale actuelle (éviction FIFO des plus anciens).
- * À appeler après un changement de preset ou après l'application des caps mobiles,
- * pour libérer immédiatement la VRAM excédentaire sans attendre les prochains addToCache().
+ * Élague le cache jusqu'à sa taille maximale.
  */
 export function trimCache(): void {
     const maxSize = getMaxCacheSize();
     while (dataCache.size > maxSize) {
-        // Même logique d'éviction : préférer les tuiles inactives (v5.11.1)
         let evictKey: string | undefined;
         for (const k of dataCache.keys()) {
             if (!activeCacheKeys.has(k)) { evictKey = k; break; }
@@ -127,7 +108,7 @@ export function trimCache(): void {
 }
 
 /**
- * Vide complètement le cache et libère les ressources GPU.
+ * Vide complètement le cache.
  */
 export function disposeAllCachedTiles(): void {
     for (const entry of dataCache.values()) {
@@ -135,8 +116,6 @@ export function disposeAllCachedTiles(): void {
         entry.color.dispose();
         if (entry.overlay) entry.overlay.dispose();
         if (entry.normal) entry.normal.dispose();
-        // v5.29.12 : Pooling mémoire
-        if (entry.pixelData) pixelDataPool.release(entry.pixelData);
     }
     dataCache.clear();
     activeCacheKeys.clear();
@@ -150,7 +129,7 @@ export function hasInCache(key: string): boolean {
 }
 
 /**
- * Retourne le nombre d'entrées dans le cache (pour le debug).
+ * Retourne le nombre d'entrées dans le cache.
  */
 export function getCacheSize(): number {
     return dataCache.size;

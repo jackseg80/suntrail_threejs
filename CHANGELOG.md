@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.17] - 2026-04-16
+### Fixed
+- **Restauration de Stabilité** : Suppression des optimisations risquées (dédoublonnage workers, pooling mémoire) pour résoudre les problèmes d'écran blanc et de terrain plat.
+- **Rendu 3D** : Simplification de l'injection des uniforms pour garantir l'affichage correct du relief et de l'éclairage sur tous les niveaux de zoom.
+
 ## [5.29.16] - 2026-04-16
 ### Fixed
 - **Moteur 3D (LOD 11+)** : Résolution définitive de l'écran blanc. Les uniforms des matériaux recyclés sont désormais mis à jour directement via `userData.uniforms`, contournant la limitation de Three.js sur `onBeforeCompile`.
