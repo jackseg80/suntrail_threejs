@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.11] - 2026-04-16
+### Fixed
+- **Build Android** : Correction définitive de la syntaxe Gradle (suppression antislash parasite).
+
 ## [5.29.10] - 2026-04-16
 ### Fixed
 - **TypeScript** : Nettoyage des imports inutilisés bloquant le déploiement.
