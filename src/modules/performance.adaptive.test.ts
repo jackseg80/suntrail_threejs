@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { checkPerformanceThrottle, _resetPerformanceCounters } from './performance';
 import { state } from './state';
-import * as THREE from 'three';
 
 describe('Audit Performance Adaptative (v5.29.7)', () => {
     beforeEach(() => {
