@@ -12,6 +12,9 @@ function extractGistKeys(data: any): string[] {
         .filter((k: string) => k && k.length > 10);
 }
 
+let availableKeys: string[] = [];
+let bannedKeys = new Set<string>();
+
 /**
  * Résout la clé MapTiler à utiliser (v5.28.20).
  * Priorité : localStorage (manuel) > .env (build) > Gist (runtime rotation).
@@ -19,7 +22,6 @@ function extractGistKeys(data: any): string[] {
 export async function resolveMapTilerKey(): Promise<void> {
     if (window.location.search.includes('mode=test')) {
         state.MK = 'test-key-bypass';
-        console.log('[Config] MapTiler key: test mode bypass');
         return;
     }
 
@@ -30,43 +32,48 @@ export async function resolveMapTilerKey(): Promise<void> {
 
     if (userDefinedKey) {
         state.MK = userDefinedKey;
-        console.log('[Config] MapTiler key: localStorage (manual)');
         return;
     }
 
-    if (bundledKey && bundledKey.length > 10) {
-        state.MK = bundledKey;
-        console.log('[Config] MapTiler key: .env (bundled)');
-        
-        // Background update from Gist (rotation)
-        fetch(GIST_URL, { cache: 'no-cache' })
-            .then(r => r.ok ? r.json() : null)
-            .then(data => {
-                const keys = extractGistKeys(data);
-                if (keys.length > 0) {
-                    const idx = Math.floor(Math.random() * keys.length);
-                    state.MK = keys[idx];
-                    console.log(`[Config] MapTiler key: Gist rotation (${idx + 1}/${keys.length})`);
+    // Background update from Gist (rotation)
+    try {
+        const r = await fetch(GIST_URL, { cache: 'no-cache' });
+        if (r.ok) {
+            const data = await r.json();
+            availableKeys = extractGistKeys(data);
+            if (availableKeys.length > 0) {
+                // On choisit une clé au hasard parmi celles non bannies
+                const validKeys = availableKeys.filter(k => !bannedKeys.has(k));
+                if (validKeys.length > 0) {
+                    state.MK = validKeys[Math.floor(Math.random() * validKeys.length)];
+                } else if (bundledKey) {
+                    state.MK = bundledKey;
                 }
-            })
-            .catch(() => {});
-        return;
+            }
+        }
+    } catch (e) {
+        if (bundledKey) state.MK = bundledKey;
+    }
+}
+
+/**
+ * Marque la clé actuelle comme invalide (403) et passe à la suivante.
+ * Retourne true si une nouvelle clé a pu être trouvée.
+ */
+export function rotateMapTilerKey(): boolean {
+    if (!state.MK) return false;
+    
+    console.warn(`[Config] Clé MapTiler bannie (403) : ${state.MK.substring(0, 8)}...`);
+    bannedKeys.add(state.MK);
+
+    const validKeys = availableKeys.filter(k => !bannedKeys.has(k));
+    if (validKeys.length > 0) {
+        state.MK = validKeys[Math.floor(Math.random() * validKeys.length)];
+        console.log(`[Config] Rotation effectuée. Nouvelle clé : ${state.MK.substring(0, 8)}...`);
+        return true;
     }
 
-    // No local key -> Wait for Gist (max 3s)
-    console.log('[Config] MapTiler key: Waiting for Gist...');
-    await Promise.race([
-        fetch(GIST_URL, { cache: 'no-cache' })
-            .then(r => r.ok ? r.json() : null)
-            .then(data => {
-                const keys = extractGistKeys(data);
-                if (keys.length > 0) {
-                    const idx = Math.floor(Math.random() * keys.length);
-                    state.MK = keys[idx];
-                    console.log(`[Config] MapTiler key: Gist (${idx + 1}/${keys.length})`);
-                }
-            })
-            .catch(() => { console.warn('[Config] Gist inaccessible'); }),
-        new Promise<void>(resolve => setTimeout(resolve, 3000))
-    ]);
+    console.error("[Config] Toutes les clés MapTiler ont été bannies.");
+    state.isMapTilerDisabled = true;
+    return false;
 }

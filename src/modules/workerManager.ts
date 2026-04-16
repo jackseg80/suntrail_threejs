@@ -7,6 +7,8 @@
 import { state } from './state';
 import { updateStorageUI } from './tileLoader';
 import { reportNetworkFailure, reportNetworkSuccess } from './networkMonitor';
+import { rotateMapTilerKey } from './config';
+import { disposeAllCachedTiles } from './tileCache';
 
 interface WorkerTask {
     resolve: (value: any) => void;
@@ -52,9 +54,11 @@ class TileWorkerManager {
         }
 
         if (forbidden) {
-            if (!state.isMapTilerDisabled) {
-                console.warn("[WorkerManager] 403 Forbidden reçu d'un worker. Désactivation de MapTiler et basculement OSM.");
-                state.isMapTilerDisabled = true;
+            // v5.29.20 : Au lieu de désactiver tout de suite, on tente une rotation de clé
+            const hasMoreKeys = rotateMapTilerKey();
+            if (hasMoreKeys) {
+                // On vide le cache mémoire pour forcer les tuiles échouées à être re-demandées avec la nouvelle clé
+                disposeAllCachedTiles();
             }
         }
         if (rateLimited) {
@@ -74,6 +78,8 @@ class TileWorkerManager {
         if (!task) return;
 
         this.tasks.delete(id);
+        this.taskWorkerMap.delete(id);
+
         if (error) {
             task.reject(error);
         } else {
@@ -83,7 +89,6 @@ class TileWorkerManager {
 
     /**
      * Lance le chargement d'une tuile et retourne { promise, taskId }.
-     * Le taskId permet d'annuler la task via cancelTile().
      */
     loadTile(elevUrl: string | null, colorUrl: string | null, overlayUrl: string | null, zoom: number, elevSourceZoom: number = zoom): { promise: Promise<any>, taskId: number } {
         if (this.workers.length === 0 || !state.USE_WORKERS) return { promise: Promise.resolve(null), taskId: -1 };
@@ -118,14 +123,12 @@ class TileWorkerManager {
                     if (settled) return;
                     settled = true;
                     clearTimeout(timeout);
-                    this.taskWorkerMap.delete(id);
                     resolve(data);
                 },
                 reject: (err: any) => {
                     if (settled) return;
                     settled = true;
                     clearTimeout(timeout);
-                    this.taskWorkerMap.delete(id);
                     reject(err);
                 }
             });
@@ -143,12 +146,14 @@ class TileWorkerManager {
     cancelTile(taskId: number): void {
         if (taskId < 0) return;
 
-        // v5.29.5 : Trouver l'entrée inFlight correspondante
         for (const [key, entry] of this.inFlight.entries()) {
             if (entry.taskId === taskId) {
                 entry.refCount--;
-                if (entry.refCount > 0) return; // Toujours attendue par quelqu'un d'autre
-                this.inFlight.delete(key);
+                if (entry.refCount <= 0) {
+                    this.inFlight.delete(key);
+                } else {
+                    return; // Toujours attendue par un autre demandeur
+                }
                 break;
             }
         }
@@ -156,11 +161,11 @@ class TileWorkerManager {
         const task = this.tasks.get(taskId);
         if (!task) return;
         this.tasks.delete(taskId);
+        this.taskWorkerMap.delete(taskId);
         task.resolve(null); 
         const worker = this.taskWorkerMap.get(taskId);
         if (worker) {
             worker.postMessage({ type: 'cancel', id: taskId });
-            this.taskWorkerMap.delete(taskId);
         }
     }
 }

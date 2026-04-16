@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.29.19)
+# SunTrail — Guide IA (v5.29.20)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-16 suite à la v5.29.19 (Fix Réseau & Saturation Overpass).
+> Mis à jour le 2026-04-16 suite à la v5.29.20 (Fix Rotation Clés MapTiler).
 
 ## Projet
 
