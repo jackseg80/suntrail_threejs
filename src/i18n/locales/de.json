@@ -453,7 +453,8 @@
     }
   },
   "performance": {
-    "autoEco": "🚀 Leistung begrenzt — Wechsel in den Eco-Modus für mehr Flüssigkeit"
+    "autoEco": "🚀 Leistung begrenzt — Wechsel in den Eco-Modus für mehr Flüssigkeit",
+    "adaptiveActive": "⚙️ Auflösung reduziert, um die Anzeige zu stabilisieren"
   },
   "preset": {
     "applied": "Profil angewendet: {{preset}}",

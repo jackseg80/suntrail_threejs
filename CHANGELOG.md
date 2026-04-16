@@ -5,6 +5,21 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.7] - 2026-04-16
+### Fixed
+- **Débrayage Performance Adaptatif** : Remplacement du forçage mode ECO par une réduction dynamique de la résolution (DPR). L'app retrouve sa qualité originale automatiquement dès que les FPS remontent.
+- **Garde-fou Chargement** : La surveillance des FPS est désormais suspendue pendant le chargement des tuiles pour éviter les faux-positifs sur les machines puissantes.
+- **i18n** : Ajout des messages de statut pour le mode adaptatif dans les 4 langues.
+
+## [5.29.6] - 2026-04-16
+### Added
+- **Persistance de Vue** : Sauvegarde et restauration automatique de la position (Lat/Lon) et du zoom pour une reprise invisible après un redémarrage de l'application par l'OS.
+
+### Fixed
+- **Gestion du Stockage GPS** : Auto-purge des points non sauvegardés après 48h et limitation à 10 000 points pour protéger l'espace disque.
+- **Auto-Throttle Performance** : Bascule automatique en mode ECO si le rendu descend sous 15 FPS pendant 10s.
+- **Confidentialité des Logs** : Masquage des logs techniques et protection des informations sensibles en production via `DEBUG_MODE`.
+
 ## [5.29.5] - 2026-04-16
 ### Fixed
 - **Fuites de mémoire UI** : Nettoyage rigoureux des abonnements `EventBus` et des écouteurs `window` dans `TrackSheet`, `ExpertSheets` (SOS) et `InclinometerWidget`.

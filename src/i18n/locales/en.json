@@ -449,7 +449,8 @@
     }
   },
   "performance": {
-    "autoEco": "🚀 Performance limited — switching to Eco mode to maintain fluidity"
+    "autoEco": "🚀 Performance limited — switching to Eco mode to maintain fluidity",
+    "adaptiveActive": "⚙️ Resolution reduced to stabilize rendering"
   },
   "preset": {
     "applied": "Applied preset: {{preset}}",

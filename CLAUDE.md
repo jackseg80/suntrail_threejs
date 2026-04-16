@@ -49,9 +49,11 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
     - **Clé Unique** : Doit TOUJOURS inclure `MAP_SOURCE` (ex: `source_x_y_z`) pour éviter les superpositions de couches Swisstopo/OpenTopo.
     - **Gestion Mémoire** : Libération la VRAM via `texture.dispose()` UNIQUEMENT si la tuile n'est plus dans le `tileCache` (v5.29.3). Protection RAM via limite LRU/FIFO 60-800 tuiles (v5.29.4). Nettoyage strict des abonnements UI (v5.29.5).
     - **Circuit Breaker** : Bascule automatique sur OSM/OpenTopo si MapTiler renvoie 403/429 (v5.29.3). Timeouts réseau 10s (v5.29.5).
+    - **Auto-Save Vue** : Persistance automatique de la position/zoom lors de l'arrêt de l'interaction (v5.29.6).
     - **LOD Asymétrique** : Ghost Tiles uniquement lors du Zoom-In. Purge immédiate au Zoom-Out.
-- **Rendu & Batterie (v5.29.3)** :
+- **Rendu & Batterie (v5.29.7)** :
     - **Deep Sleep** : Réduction à **~1.5 FPS** après 30s d'inactivité pour préserver la batterie.
+    - **Auto-Throttle** : Réduction dynamique du DPR si FPS < 15 pendant 10s. Rétablissement auto si FPS > 40 (v5.29.7).
     - **Throttling** : 20 FPS en idle standard, 30 FPS en mode économie, 60 FPS en interaction.
 - **TubeGeometry Stabilité (v5.29.4)** : Utiliser `centripetal` pour les splines. Rendu temps réel à 1500 segments max (anti-crash v5.29.4). Simplification RDP avec epsilon 1.0. **Debouncing 100-150ms** sur les mises à jour pour fluidifier la navigation.
 - **Cache Unifié (v5.28.33)** : `suntrail-tiles-v28` synchronisé entre thread principal et workers. Garantit l'affichage instantané des packs hors-ligne et PMTiles.

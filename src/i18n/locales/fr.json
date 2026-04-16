@@ -440,7 +440,8 @@
     }
   },
   "performance": {
-    "autoEco": "🚀 Performance limitée — passage en mode Éco pour maintenir la fluidité"
+    "autoEco": "🚀 Performance limitée — passage en mode Éco pour maintenir la fluidité",
+    "adaptiveActive": "⚙️ Résolution réduite pour stabiliser l'affichage"
   },
   "preset": {
     "applied": "Profil appliqué : {{preset}}",

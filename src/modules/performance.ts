@@ -246,28 +246,58 @@ export function applyCustomSettings(settings: any): void {
 }
 
 let lowFpsCount = 0;
-let lastThrottleTime = 0;
+let highFpsCount = 0;
+let isDynamicallyThrottled = false;
+let originalDPR = 1.0;
 
 /**
- * Surveillance active des FPS pour débrayage automatique (v5.29.6)
- * Si < 15 FPS pendant 10s, on force le mode ECO pour sauver l'UX.
+ * Surveillance intelligente des FPS (v5.29.7)
+ * - Ignore les phases de chargement de tuiles.
+ * - Réduit le DPR (résolution) si < 15 FPS pendant 10s.
+ * - Rétablit le DPR original si > 40 FPS pendant 5s.
  */
 export function checkPerformanceThrottle(fps: number): void {
-    // Ne pas débrayer si on est déjà en ECO ou si on vient de le faire (< 5min)
-    if (state.PERFORMANCE_PRESET === 'eco') return;
-    if (Date.now() - lastThrottleTime < 300_000) return;
+    // Ne rien faire si on charge des tuiles (saccades normales)
+    if (state.isProcessingTiles || state.isFlyingTo) {
+        lowFpsCount = 0;
+        return;
+    }
 
+    // 1. DÉBRAYAGE (Si rames persistantes)
     if (fps > 0 && fps < 15) {
         lowFpsCount++;
-        if (lowFpsCount >= 10) {
-            console.warn(`[Performance] FPS trop bas (${fps}). Débrayage automatique vers mode ECO.`);
-            showToast(i18n.t('performance.autoEco'), 8000);
-            applyPreset('eco');
-            lastThrottleTime = Date.now();
+        highFpsCount = 0;
+
+        if (lowFpsCount >= 10 && !isDynamicallyThrottled) {
+            console.warn(`[Performance] FPS bas (${fps}). Réduction adaptative de la résolution.`);
+            originalDPR = state.PIXEL_RATIO_LIMIT;
+            
+            // On réduit le DPR à 1.0 (suffisant pour la fluidité sans perdre la 3D)
+            if (originalDPR > 1.0) {
+                state.PIXEL_RATIO_LIMIT = 1.0;
+                if (state.renderer) state.renderer.setPixelRatio(1.0);
+                isDynamicallyThrottled = true;
+                showToast(i18n.t('performance.adaptiveActive'), 4000);
+            }
             lowFpsCount = 0;
         }
-    } else {
+    } 
+    // 2. RÉCUPÉRATION (Si tout va bien)
+    else if (fps >= 40 && isDynamicallyThrottled) {
+        highFpsCount++;
         lowFpsCount = 0;
+
+        if (highFpsCount >= 5) {
+            console.log(`[Performance] FPS stables (${fps}). Rétablissement de la résolution native.`);
+            state.PIXEL_RATIO_LIMIT = originalDPR;
+            if (state.renderer) state.renderer.setPixelRatio(originalDPR);
+            isDynamicallyThrottled = false;
+            highFpsCount = 0;
+        }
+    }
+    else {
+        lowFpsCount = 0;
+        highFpsCount = 0;
     }
 }
 
