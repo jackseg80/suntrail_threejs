@@ -12,6 +12,7 @@ import { loadTileData, cancelTileLoad } from '../tileLoader';
 import { materialPool } from '../materialPool';
 import { activeTiles } from '../terrain';
 import { removeFromLoadQueue } from './tileQueue';
+import { pixelDataPool } from './pixelDataPool';
 
 const frustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
@@ -148,7 +149,12 @@ export class Tile {
                 this.elevationTex.minFilter = THREE.LinearFilter;
                 this.elevationTex.wrapS = this.elevationTex.wrapT = THREE.ClampToEdgeWrapping;
                 this.elevationTex.needsUpdate = true;
-                if (data.pixelData) this.pixelData = new Uint8ClampedArray(data.pixelData);
+                
+                // v5.29.12 : Utilisation du pool de buffers pour réduire la pression GC
+                if (data.pixelData) {
+                    this.pixelData = pixelDataPool.acquire();
+                    this.pixelData.set(new Uint8ClampedArray(data.pixelData));
+                }
             } else { this.elevationTex = new THREE.CanvasTexture(document.createElement('canvas')); }
 
             if (data.colorBitmap) {
@@ -429,6 +435,10 @@ export class Tile {
             if (this.colorTex) { this.colorTex.dispose(); }
             if (this.overlayTex) { this.overlayTex.dispose(); }
             if (this.normalTex) { this.normalTex.dispose(); }
+            // v5.29.12 : Pooling mémoire
+            if (this.pixelData) {
+                pixelDataPool.release(this.pixelData);
+            }
         }
 
         this.elevationTex = null;

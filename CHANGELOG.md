@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.12] - 2026-04-16
+### Optimized
+- **Pooling Mémoire** : Réutilisation des buffers `Uint8ClampedArray` pour les données d'altitude. Réduit radicalement la pression sur le Garbage Collector et élimine les micro-saccades lors des vols.
+- **Intégrité Offline** : Validation stricte des téléchargements de zones. L'application signale désormais si une zone est incomplète.
+
+### Fixed
+- **UI Stack** : Sécurisation du `SheetManager` pour garantir l'exclusivité des panneaux et le nettoyage systématique du DOM.
+
 ## [5.29.11] - 2026-04-16
 ### Fixed
 - **Build Android** : Correction définitive de la syntaxe Gradle (suppression antislash parasite).

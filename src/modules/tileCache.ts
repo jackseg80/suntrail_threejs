@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { state } from './state';
 import { isMobileDevice } from './utils';
+import { pixelDataPool } from './terrain/pixelDataPool';
 
 /**
  * Interface pour les données de tuiles mises en cache.
@@ -78,6 +79,8 @@ export function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8
                 entry.color.dispose();
                 if (entry.overlay) entry.overlay.dispose();
                 if (entry.normal) entry.normal.dispose();
+                // v5.29.12 : Pooling mémoire
+                if (entry.pixelData) pixelDataPool.release(entry.pixelData);
             }
             dataCache.delete(evictKey);
         }
@@ -132,6 +135,8 @@ export function disposeAllCachedTiles(): void {
         entry.color.dispose();
         if (entry.overlay) entry.overlay.dispose();
         if (entry.normal) entry.normal.dispose();
+        // v5.29.12 : Pooling mémoire
+        if (entry.pixelData) pixelDataPool.release(entry.pixelData);
     }
     dataCache.clear();
     activeCacheKeys.clear();
