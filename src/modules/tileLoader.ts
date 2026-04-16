@@ -440,13 +440,13 @@ export interface VisibleTileRef { tx: number; ty: number; zoom: number; }
 
 /**
  * Télécharge exactement les tuiles visibles à l'écran pour l'usage hors-ligne.
- * "Ce que tu vois = ce que tu télécharges."
- * Max 300 tuiles pour éviter les téléchargements accidentels à LOD 18 sur une grande zone.
+ * Max 300 tuiles pour éviter les téléchargements accidentels.
+ * Retourne true si TOUTES les tuiles ont été récupérées avec succès.
  */
 export async function downloadVisibleZone(
     tiles: VisibleTileRef[],
     onProgress: (done: number, total: number) => void
-): Promise<void> {
+): Promise<boolean> {
     const capped = tiles.slice(0, 300);
     const urls: string[] = [];
     for (const { tx, ty, zoom } of capped) {
@@ -457,13 +457,22 @@ export async function downloadVisibleZone(
         if (elevUrl) urls.push(elevUrl);
         if (overlayUrl) urls.push(overlayUrl);
     }
+    
     const total = urls.length;
     let done = 0;
+    let successCount = 0;
+
     for (const url of urls) {
-        try { await fetchWithCache(url, true); } catch (_) { /* silence */ }
+        try { 
+            const blob = await fetchWithCache(url, true); 
+            if (blob) successCount++;
+        } catch (_) { /* silence */ }
+        
         done++;
         if (done % 5 === 0) onProgress(done, total);
     }
+    
     onProgress(total, total);
+    return successCount === total;
 }
 

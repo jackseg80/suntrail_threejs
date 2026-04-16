@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.22] - 2026-04-16
+### Fixed
+- **Intégrité Offline (v2)** : Ré-implémentation sécurisée de la validation des téléchargements de zones.
+- **Stress Test** : Validation de la stabilité de l'application avec 10 tracés simultanés.
+- **UI Management** : Confirmation de l'exclusivité des panneaux coulissants.
+
 ## [5.29.21] - 2026-04-16
 ### Improved
 - **Logs Config** : Rétablissement des messages informatifs dans la console pour suivre l'utilisation et la rotation des clés MapTiler.
