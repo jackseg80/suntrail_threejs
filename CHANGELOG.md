@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.8] - 2026-04-16
+### Fixed
+- **Validation Totale** : Correction des tests unitaires de persistance GPS et de performance. Tous les tests (540+) sont désormais au VERT.
+- **Dette Technique** : Export des constantes de version pour assurer la cohérence des tests de stockage.
+
 ## [5.29.7] - 2026-04-16
 ### Fixed
 - **Débrayage Performance Adaptatif** : Remplacement du forçage mode ECO par une réduction dynamique de la résolution (DPR). L'app retrouve sa qualité originale automatiquement dès que les FPS remontent.
