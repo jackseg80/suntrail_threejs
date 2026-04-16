@@ -79,6 +79,7 @@ export class LayersSheet extends BaseComponent {
         };
         syncSatelliteBadge();
         this.addSubscription(state.subscribe('isPro', syncSatelliteBadge));
+        this.addSubscription(state.subscribe('trialEnd', syncSatelliteBadge));
 
         this.addSubscription(state.subscribe('MAP_SOURCE', () => this.updateActiveLayer()));
         this.addSubscription(state.subscribe('SHOW_TRAILS', (val: boolean) => {
