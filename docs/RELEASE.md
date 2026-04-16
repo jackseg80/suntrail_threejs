@@ -125,6 +125,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | 612 | 5.28.27 | v5.28.27 | **Double-tap to zoom**, zoomToPoint function, haptic feedback | 2026-04-12 |
 | 613 | 5.28.27 | v5.28.27-rev2 | Tentative fix conflit versionCode (Échec : déjà utilisé) | 2026-04-12 |
 | **650** | **5.28.27** | **v5.28.27-final** | Jump de sécurité (613+) pour résoudre conflits persistants Play Console | 2026-04-12 |
+| 664 | 5.29.27 | v5.29.27 | Optimisations 2D Galaxy A53 et robustesse Zoom | 2026-04-16 |
 
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
