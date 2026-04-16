@@ -340,6 +340,22 @@ export class Tile {
             if (this.mesh.material instanceof THREE.Material) { this.mesh.material.opacity = 1; this.mesh.material.transparent = false; }
         } else { this.opacity = 0; this.isFadingIn = true; }
 
+        // v5.29.18 : Restauration des appels de couches (Audit 26)
+        const delay = (ms: number) => ms * state.LOAD_DELAY_FACTOR;
+        if (state.SHOW_SIGNPOSTS && this.zoom >= state.POI_ZOOM_THRESHOLD) setTimeout(() => { if (this.status !== 'disposed') loadPOIsForTile(this); }, delay(600));
+        if (state.SHOW_BUILDINGS && this.zoom >= state.BUILDING_ZOOM_THRESHOLD) setTimeout(() => { if (this.status !== 'disposed') loadBuildingsForTile(this); }, delay(150));
+        if (state.SHOW_HYDROLOGY && this.zoom >= 13) setTimeout(() => { if (this.status !== 'disposed') loadHydrologyForTile(this); }, delay(100));
+        if (state.SHOW_VEGETATION && this.zoom >= 14) setTimeout(() => {
+            if (this.status as any === 'disposed') return;
+            const forest = createForestForTile(this);
+            if (forest && state.scene && (this.status as any !== 'disposed')) {
+                if (this.forestMesh) state.scene.remove(this.forestMesh);
+                this.forestMesh = forest; 
+                this.forestMesh.position.set(this.worldX, 0, this.worldZ);
+                state.scene.add(this.forestMesh);
+            }
+        }, delay(300));
+
         if (oldMesh) {
             if (state.scene) state.scene.remove(oldMesh); 
             if (oldMesh.material instanceof THREE.Material) materialPool.release(oldMesh.material);

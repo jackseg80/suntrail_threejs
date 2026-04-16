@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.18] - 2026-04-16
+### Fixed
+- **Restauration Fonctionnalités** : Rétablissement des couches de bâtiments 3D, forêts, hydrologie et points d'intérêt (POIs) indûment supprimées lors du nettoyage précédent.
+- **Correction visuelle** : Résolution des trous entre les tuiles.
+- **TypeScript** : Nettoyage final des variables inutilisées (`isInitializing`).
+
 ## [5.29.17] - 2026-04-16
 ### Fixed
 - **Restauration de Stabilité** : Suppression des optimisations risquées (dédoublonnage workers, pooling mémoire) pour résoudre les problèmes d'écran blanc et de terrain plat.
