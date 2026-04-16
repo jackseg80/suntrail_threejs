@@ -108,7 +108,7 @@ export function isCompassAnimating(): boolean {
 }
 
 export function renderCompass() {
-    if (compassRenderer && compassObject && compassScene && compassCamera && state.camera) {
+    if (compassRenderer && compassObject && compassScene && compassCamera && state.camera && state.controls) {
         compassObject.quaternion.copy(state.camera.quaternion).invert();
         compassRenderer.render(compassScene, compassCamera);
     }

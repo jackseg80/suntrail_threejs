@@ -1,4 +1,4 @@
-import { haversineDistance } from './utils';
+import { haversineDistance } from './geo';
 import { cleanGPSTrack } from './gpsDeduplication';
 import { LocationPoint } from './geo';
 

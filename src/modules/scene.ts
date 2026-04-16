@@ -448,11 +448,19 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
         if (state.isFollowingUser && !state.ENERGY_SAVER && (now - lastRenderTime < 33)) return;
 
         const isWeatherActive = state.SHOW_WEATHER && state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0;
+        const idleTime = now - lastInteractionTime;
         const isIdleMode = !state.isUserInteracting && !state.isFlyingTo && !state.isFollowingUser
             && !state.isTiltTransitioning
             && !(isWeatherActive && weatherFrameDue)
-            && (now - lastInteractionTime >= 800);
-        if (isIdleMode && (now - lastRenderTime < 50)) return; 
+            && (idleTime >= 800);
+
+        // v5.29.3 : Deep Sleep (1.5 FPS) si inactif depuis > 30s — idéal pour économiser la batterie en rando
+        if (isIdleMode && idleTime > 30000) {
+            if (now - lastRenderTime < 650) return; // ~1.5 FPS
+        } else if (isIdleMode && (now - lastRenderTime < 50)) {
+            return; // 20 FPS standard idle
+        }
+        
         lastRenderTime = now;
 
         updateCompassAnimation();

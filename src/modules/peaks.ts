@@ -1,5 +1,5 @@
 import { state, Peak } from './state';
-import { haversineDistance } from './utils';
+import { haversineDistance } from './geo';
 
 const CACHE_KEY = 'suntrail_peaks_cache';
 const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days

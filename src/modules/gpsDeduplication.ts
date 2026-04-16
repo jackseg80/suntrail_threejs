@@ -1,4 +1,4 @@
-import { haversineDistance } from './utils';
+import { haversineDistance } from './geo';
 
 /**
  * Interface générique pour un point GPS

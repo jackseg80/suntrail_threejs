@@ -162,7 +162,7 @@ export class InclinometerWidget {
     }
 
     private update(): void {
-        if (!this.el || !state.controls || !state.camera) return;
+        if (!this.el || !state.controls || !state.camera || !state.originTile) return;
 
         let targetX = 0;
         let targetZ = 0;

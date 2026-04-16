@@ -28,4 +28,18 @@ describe('PRO Logic & Trials (v5.29.2)', () => {
         state.trialEnd = Date.now() - 3600000;
         expect(isProActive()).toBe(false);
     });
+
+    it('SHOULD notify subscribers when trialEnd changes (v5.29.3)', async () => {
+        let notified = false;
+        state.subscribe('trialEnd', () => {
+            notified = true;
+        });
+
+        state.trialEnd = Date.now() + 3600000;
+        
+        // Attendre la fin de la microtask (ReactiveState utilise queueMicrotask)
+        await new Promise(resolve => queueMicrotask(() => resolve(null)));
+        
+        expect(notified).toBe(true);
+    });
 });

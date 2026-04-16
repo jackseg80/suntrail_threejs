@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { haversineDistance } from './utils';
+import { haversineDistance } from './geo';
 import { calculateTrackStats } from './geoStats';
 import { LocationPoint } from './geo';
 

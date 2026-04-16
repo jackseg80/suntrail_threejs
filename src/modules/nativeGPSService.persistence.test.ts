@@ -13,24 +13,32 @@ vi.mock('@capacitor/preferences', () => ({
 }));
 
 // Mock Recording Native
-vi.mock('@capacitor/core', () => ({
-    Capacitor: { isNativePlatform: () => true },
-    registerPlugin: () => ({
+const { mockRecording } = vi.hoisted(() => ({
+    mockRecording: {
         startCourse: vi.fn().mockResolvedValue({ courseId: 'test-123' }),
-        getCurrentCourse: vi.fn().mockResolvedValue({ courseId: 'test-123', isRunning: true }),
+        stopCourse: vi.fn().mockResolvedValue(undefined),
+        getCurrentCourse: vi.fn().mockResolvedValue({ courseId: 'test-123', isRunning: false }),
         getPoints: vi.fn().mockResolvedValue({ points: [] }),
         addListener: vi.fn(),
         removeAllListeners: vi.fn()
-    })
+    }
+}));
+
+vi.mock('@capacitor/core', () => ({
+    Capacitor: { isNativePlatform: () => true },
+    registerPlugin: () => mockRecording
 }));
 
 describe('GPS Chrono Persistence (v5.29.1)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         state.recordingStartTime = null;
+        state.recordedPoints = [];
+        mockRecording.getCurrentCourse.mockResolvedValue({ courseId: 'test-123', isRunning: false });
     });
 
     it('SHOULD save startTime in Preferences when starting a course', async () => {
+        mockRecording.startCourse.mockResolvedValue({ courseId: 'test-123' });
         await nativeGPSService.startCourse();
         expect(Preferences.set).toHaveBeenCalledWith(expect.objectContaining({
             key: 'suntrail_recording_start_time'
@@ -39,11 +47,33 @@ describe('GPS Chrono Persistence (v5.29.1)', () => {
     });
 
     it('SHOULD restore startTime from Preferences during init if course is active', async () => {
+        mockRecording.getCurrentCourse.mockResolvedValue({ courseId: 'test-123', isRunning: true });
         const fakeStartTime = 1713170000000;
         (Preferences.get as any).mockResolvedValue({ value: fakeStartTime.toString() });
 
         await nativeGPSService.init();
 
         expect(state.recordingStartTime).toBe(fakeStartTime);
+    });
+
+    it('SHOULD restore points and trigger mesh update during recovery (v5.29.3)', async () => {
+        const fakePoints = [
+            { lat: 46.0, lon: 7.0, alt: 1000, timestamp: 1000 },
+            { lat: 46.1, lon: 7.1, alt: 1010, timestamp: 2000 }
+        ];
+        
+        mockRecording.getCurrentCourse.mockResolvedValue({ isRunning: false });
+        
+        (Preferences.get as any).mockImplementation(({ key }: { key: string }) => {
+            if (key === 'suntrail_current_course_id') return { value: 'old-id' };
+            if (key === 'suntrail_recorded_points') return { value: JSON.stringify(fakePoints) };
+            if (key === 'suntrail_recording_start_time') return { value: '1000' };
+            return { value: null };
+        });
+
+        await nativeGPSService.init();
+
+        expect(state.recordedPoints.length).toBe(2);
+        expect(state.recordingStartTime).toBe(1000);
     });
 });

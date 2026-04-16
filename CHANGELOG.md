@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.3] - 2026-04-16
+### Fixed
+- **Stabilité VRAM & Cache** : Résolution d'un conflit critique où les textures étaient détruites alors qu'elles étaient encore présentes dans le cache mémoire. Ajout d'une vérification `hasInCache()` dans le cycle de vie des tuiles.
+- **Résilience API** : Implémentation d'un circuit breaker pour MapTiler. En cas d'erreur 403 ou 429, l'application bascule automatiquement sur les sources de secours (OpenTopoMap/OSM) sans interruption.
+- **Conditions de Course au Démarrage** : Sécurisation de l'accès aux objets Three.js (camera, controls, sunLight) dans les widgets pour éviter les crashs lors d'interactions ultra-rapides au lancement.
+- **Réactivité PRO** : Correction du cycle de notification asynchrone pour l'activation des essais (Trial).
+
+### Optimized
+- **Autonomie Batterie (Deep Sleep)** : Le moteur de rendu descend désormais à ~1.5 FPS après 30 secondes d'inactivité, préservant la batterie en randonnée tout en maintenant l'affichage de la trace.
+- **Unification Algorithmique** : Centralisation définitive de `haversineDistance()` dans `geo.ts` comme source de vérité unique pour tout le projet.
+
 ## [5.29.2] - 2026-04-15
 ### Fixed
 - **Accès PRO Full Réactif** : Déverrouillage instantané du Satellite, de la Météo et du Solaire lors de l'activation d'un essai (Trial). Plus besoin de redémarrer l'app.

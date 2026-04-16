@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lngLatToWorld, worldToLngLat, lngLatToTile, getTileBounds, isPositionInSwitzerland, isPositionInFrance } from './geo';
+import { lngLatToWorld, worldToLngLat, lngLatToTile, getTileBounds, isPositionInSwitzerland, isPositionInFrance, haversineDistance } from './geo';
 
 describe('Module Géo (geo.ts)', () => {
     const originTile = { x: 4270, y: 2891, z: 13 }; // Spiez, Suisse
@@ -88,5 +88,21 @@ describe('Module Géo (geo.ts)', () => {
         const world = lngLatToWorld(lon, lat, originTile);
         expect(world.x).toBeCloseTo(0, 1);
         expect(world.z).toBeCloseTo(0, 1);
+    });
+
+    describe('Haversine Distance', () => {
+        it('should calculate distance correctly between Paris and Lyon', () => {
+            const paris = { lat: 48.8566, lon: 2.3522 };
+            const lyon = { lat: 45.7640, lon: 4.8357 };
+            const dist = haversineDistance(paris.lat, paris.lon, lyon.lat, lyon.lon);
+            // ~391km
+            expect(dist).toBeGreaterThan(390);
+            expect(dist).toBeLessThan(393);
+        });
+
+        it('should return 0 for same points', () => {
+            const dist = haversineDistance(46.0, 7.0, 46.0, 7.0);
+            expect(dist).toBe(0);
+        });
     });
 });

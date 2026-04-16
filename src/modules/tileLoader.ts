@@ -192,6 +192,18 @@ export async function fetchWithCache(url: string, usePersistentCache: boolean = 
 
         if (state.IS_OFFLINE) return null;
         const r = await fetch(url, { mode: 'cors' });
+
+        // v5.29.3 : Disjoncteur MapTiler (Rate Limit ou Clé invalide)
+        if (url.includes('api.maptiler.com')) {
+            if (r.status === 403 || r.status === 429) {
+                console.error(`[MapTiler] Erreur ${r.status}. Basculement sur les sources de secours (OSM/OpenTopo).`);
+                state.isMapTilerDisabled = true;
+                // v5.29.3 : On vide le cache mémoire pour forcer le rechargement avec les nouvelles URLs de secours
+                disposeAllCachedTiles();
+                return null; // La tuile sera retentée via getColorUrl() au prochain tick
+            }
+        }
+
         if (r.ok) {
             const blob = await r.blob();
             state.networkRequests++;

@@ -6,7 +6,7 @@ import { createForestForTile } from '../vegetation';
 import { loadPOIsForTile } from '../poi';
 import { loadBuildingsForTile } from '../buildings';
 import { loadHydrologyForTile } from '../hydrology';
-import { addToCache, getFromCache, getTileCacheKey, markCacheKeyActive, markCacheKeyInactive } from '../tileCache';
+import { addToCache, getFromCache, getTileCacheKey, markCacheKeyActive, markCacheKeyInactive, hasInCache } from '../tileCache';
 import { getPlaneGeometry } from '../geometryCache';
 import { loadTileData, cancelTileLoad } from '../tileLoader';
 import { materialPool } from '../materialPool';
@@ -420,10 +420,21 @@ export class Tile {
         }
 
         // v5.28.41 : Libération explicite des textures (indispensable pour libérer la VRAM)
-        if (this.elevationTex) { this.elevationTex.dispose(); this.elevationTex = null; }
-        if (this.colorTex) { this.colorTex.dispose(); this.colorTex = null; }
-        if (this.overlayTex) { this.overlayTex.dispose(); this.overlayTex = null; }
-        if (this.normalTex) { this.normalTex.dispose(); this.normalTex = null; }
+        // v5.29.3 : Sécurité — Ne pas dispose si la texture est encore dans le tileCache
+        const cacheKey = getTileCacheKey(this.key, this.zoom);
+        const inCache = hasInCache(cacheKey);
+
+        if (!inCache) {
+            if (this.elevationTex) { this.elevationTex.dispose(); }
+            if (this.colorTex) { this.colorTex.dispose(); }
+            if (this.overlayTex) { this.overlayTex.dispose(); }
+            if (this.normalTex) { this.normalTex.dispose(); }
+        }
+
+        this.elevationTex = null;
+        this.colorTex = null;
+        this.overlayTex = null;
+        this.normalTex = null;
 
         if (this.forestMesh) { if (state.scene) state.scene.remove(this.forestMesh); disposeObject(this.forestMesh); this.forestMesh = null; }
         if (this.poiGroup) { if (state.scene) state.scene.remove(this.poiGroup); disposeObject(this.poiGroup); this.poiGroup = null; }

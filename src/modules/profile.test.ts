@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as THREE from 'three';
 import { updateElevationProfile } from './profile';
-import { haversineDistance } from './utils';
+import { haversineDistance } from './geo';
 import { state } from './state';
 import type { GPXLayer } from './state';
 
