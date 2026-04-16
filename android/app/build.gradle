@@ -1,6 +1,6 @@
-﻿apply plugin: 'com.android.application'
+apply plugin: 'com.android.application'
 
-// Chargement des propriÃ©tÃ©s du keystore (fichier NON committÃ© dans Git)
+// Chargement des propri????????t????????s du keystore (fichier NON committ???????? dans Git)
 def keystorePropertiesFile = rootProject.file("keystore.properties")
 def keystoreProperties = new Properties()
 if (keystorePropertiesFile.exists()) {
@@ -55,7 +55,7 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
-    // GPS natif dans RecordingService (FusedLocationProviderClient) â€” v5.23
+    // GPS natif dans RecordingService (FusedLocationProviderClient) ?????????????????? v5.23
     implementation "com.google.android.gms:play-services-location:21.3.0"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
