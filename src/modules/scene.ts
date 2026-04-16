@@ -635,8 +635,16 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
     state.controls?.update();
     state.camera?.updateMatrixWorld(true);
 
+    // v5.29.13 : Verrouillage des contrôles pendant l'init critique pour éviter l'écran blanc
+    if (state.controls) state.controls.enabled = false;
+
     // v5.28.40 : Premier chargement asynchrone pour ne pas bloquer l'affichage de l'UI
-    setTimeout(() => {
-        void loadTerrain();
+    setTimeout(async () => {
+        try {
+            await loadTerrain();
+        } finally {
+            // Réactivation des contrôles une fois l'originTile ancré
+            if (state.controls) state.controls.enabled = true;
+        }
     }, 0);
 }

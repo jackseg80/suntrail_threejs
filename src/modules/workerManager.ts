@@ -143,12 +143,16 @@ class TileWorkerManager {
     cancelTile(taskId: number): void {
         if (taskId < 0) return;
 
-        // v5.29.5 : Trouver l'entrée inFlight correspondante
+        // v5.29.13 : Si la tâche est annulée, on la retire IMMÉDIATEMENT de inFlight
+        // pour que les demandes suivantes créent une nouvelle tâche propre.
         for (const [key, entry] of this.inFlight.entries()) {
             if (entry.taskId === taskId) {
                 entry.refCount--;
-                if (entry.refCount > 0) return; // Toujours attendue par quelqu'un d'autre
-                this.inFlight.delete(key);
+                if (entry.refCount <= 0) {
+                    this.inFlight.delete(key);
+                } else {
+                    return; // Toujours attendue par un autre demandeur, on ne l'annule pas côté worker
+                }
                 break;
             }
         }

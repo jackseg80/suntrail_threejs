@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.13] - 2026-04-16
+### Fixed
+- **Anti-Écran Blanc** : Correction d'une race condition dans le dédoublonnage des workers. Les tuiles annulées trop vite sont désormais correctement rechargées.
+- **Sécurité Démarrage** : Verrouillage temporaire des contrôles caméra pendant l'initialisation du terrain pour éviter la corruption des coordonnées de référence (`originTile`).
+
 ## [5.29.12] - 2026-04-16
 ### Optimized
 - **Pooling Mémoire** : Réutilisation des buffers `Uint8ClampedArray` pour les données d'altitude. Réduit radicalement la pression sur le Garbage Collector et élimine les micro-saccades lors des vols.

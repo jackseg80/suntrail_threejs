@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.29.12)
+# SunTrail — Guide IA (v5.29.13)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-16 suite à la v5.29.12 (Optimisations Mémoire & Offline).
+> Mis à jour le 2026-04-16 suite à la v5.29.13 (Fix Race Condition Écran Blanc).
 
 ## Projet
 
