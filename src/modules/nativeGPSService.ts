@@ -9,6 +9,7 @@
 import { registerPlugin, Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import { state } from './state';
+import { LocationPoint } from './geo';
 import { updateRecordedTrackMesh } from './terrain';
 import { cleanGPSTrack } from './gpsDeduplication';
 
@@ -90,8 +91,21 @@ class NativeGPSService {
                 if (savedCourseId.value) {
                     const savedPoints = await Preferences.get({ key: STORAGE_KEY_POINTS });
                     if (savedPoints.value) {
+                        const points = JSON.parse(savedPoints.value) as LocationPoint[];
+                        
+                        // v5.29.6 : Expiration 48h pour éviter de polluer l'UI avec de vieux tracés abandonnés
+                        const now = Date.now();
+                        const lastPt = points.length > 0 ? points[points.length - 1] : null;
+                        if (lastPt && (now - lastPt.timestamp > 48 * 3600 * 1000)) {
+                            console.log('[NativeGPSService] Vieux points expirés (>48h), purge.');
+                            await Preferences.remove({ key: STORAGE_KEY_POINTS });
+                            await Preferences.remove({ key: STORAGE_KEY_COURSE_ID });
+                            await Preferences.remove({ key: STORAGE_KEY_START_TIME });
+                            return;
+                        }
+
                         console.log('[NativeGPSService] Recovery via Preferences détectée');
-                        state.recordedPoints = JSON.parse(savedPoints.value);
+                        state.recordedPoints = points;
                         state.currentCourseId = savedCourseId.value;
                         this.currentCourseId = savedCourseId.value;
                         
@@ -184,9 +198,13 @@ class NativeGPSService {
      */
     private async persistPoints(): Promise<void> {
         try {
+            // v5.29.6 : Cap à 10 000 points pour la persistance locale (sécurité localStorage)
+            // 10k points @ 5s interval = ~14h de rando non-stop. Plus que suffisant pour un crash-recovery.
+            const pointsToSave = state.recordedPoints.slice(-10000);
+            
             await Preferences.set({
                 key: STORAGE_KEY_POINTS,
-                value: JSON.stringify(state.recordedPoints)
+                value: JSON.stringify(pointsToSave)
             });
         } catch (e) {
             console.warn('[NativeGPSService] Failed to persist points:', e);

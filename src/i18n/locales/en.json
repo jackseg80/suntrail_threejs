@@ -448,8 +448,11 @@
       "apiKey": "MapTiler API Key"
     }
   },
+  "performance": {
+    "autoEco": "🚀 Performance limited — switching to Eco mode to maintain fluidity"
+  },
   "preset": {
-    "applied": "Profile applied: {{preset}}",
+    "applied": "Applied preset: {{preset}}",
     "lowBattery": "🔋 Low battery: Eco mode enabled"
   },
   "coords": {

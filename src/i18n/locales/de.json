@@ -452,6 +452,9 @@
       "apiKey": "MapTiler API-Schlüssel"
     }
   },
+  "performance": {
+    "autoEco": "🚀 Leistung begrenzt — Wechsel in den Eco-Modus für mehr Flüssigkeit"
+  },
   "preset": {
     "applied": "Profil angewendet: {{preset}}",
     "lowBattery": "🔋 Akku schwach: Eco-Modus aktiviert"

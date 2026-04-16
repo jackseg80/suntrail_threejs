@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
-import { state } from './state';
+import { state, saveLastView } from './state';
 import { eventBus } from './eventBus';
 import { updateSunPosition } from './sun';
 import { getAltitudeAt, resetAnalysisCache } from './analysis';
@@ -19,6 +19,7 @@ import { centerOnUser } from './location';
 import { initTouchControls } from './touchControls';
 import { initCamera, initControls, flyTo, onWindowResize } from './cameraManager';
 import { isFeatureEnabled } from './featureFlags';
+import { checkPerformanceThrottle } from './performance';
 
 export { flyTo };
 
@@ -422,6 +423,7 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
 
     let lastPrefetchTime = 0;
     let lastCompassTime = 0;
+    let lastInteracting = false;
 
     const renderLoopFn = () => {
         if (!state.renderer || !state.camera || !state.scene || !state.controls) return;
@@ -490,6 +492,12 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
         const currentTilt = state.controls.getPolarAngle();
         const distToTarget = state.camera.position.distanceTo(state.controls.target);
         
+        // v5.29.6 : Persister la vue si on vient d'arrêter d'interagir
+        if (!interacting && lastInteracting) {
+            saveLastView();
+        }
+        lastInteracting = interacting;
+
         let tiltAnimating = false;
         if (state.IS_2D_MODE || state.ZOOM <= 10) {
             if (state.isTiltTransitioning && currentTilt > 0.005) {
@@ -603,6 +611,9 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
                 state.currentFPS = Math.round(fpsFrameCount * 1000 / (fpsTick - fpsLastTime));
                 fpsFrameCount = 0;
                 fpsLastTime = fpsTick;
+                
+                // v5.29.6 : Audit performance
+                checkPerformanceThrottle(state.currentFPS);
             }
         }
 

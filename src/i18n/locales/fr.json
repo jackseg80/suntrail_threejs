@@ -439,6 +439,9 @@
       "apiKey": "Clé API MapTiler"
     }
   },
+  "performance": {
+    "autoEco": "🚀 Performance limitée — passage en mode Éco pour maintenir la fluidité"
+  },
   "preset": {
     "applied": "Profil appliqué : {{preset}}",
     "lowBattery": "🔋 Batterie faible : Mode Éco activé"

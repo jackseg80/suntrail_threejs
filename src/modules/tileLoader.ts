@@ -88,7 +88,7 @@ export async function initEmbeddedOverview(): Promise<void> {
         _workerCache = cache;
         embeddedPMTiles = archive;
 
-        console.log(`[Embedded] Overview chargé.`);
+        if (state.DEBUG_MODE) console.log(`[Embedded] Overview chargé.`);
 
         // Warmup en arrière-plan pour ne pas bloquer le thread principal au démarrage
         // (après ce call, les extractions suivantes sont ~10× plus rapides)

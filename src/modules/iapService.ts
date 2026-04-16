@@ -60,7 +60,7 @@ class IAPService {
         if (this.initialized) return;
 
         try {
-            await Purchases.setLogLevel({ level: LOG_LEVEL.INFO });
+            await Purchases.setLogLevel({ level: state.DEBUG_MODE ? LOG_LEVEL.INFO : LOG_LEVEL.ERROR });
             await Purchases.configure({ apiKey: sdkKey });
             this.initialized = true;
 
@@ -76,7 +76,7 @@ class IAPService {
                 }
             });
 
-            console.log('[IAP] RevenueCat initialisé.');
+            if (state.DEBUG_MODE) console.log('[IAP] RevenueCat initialisé.');
         } catch (e) {
             console.warn('[IAP] Erreur initialisation RevenueCat:', e);
         }

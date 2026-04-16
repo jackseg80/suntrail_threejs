@@ -245,6 +245,32 @@ export function applyCustomSettings(settings: any): void {
     refreshTerrain();
 }
 
+let lowFpsCount = 0;
+let lastThrottleTime = 0;
+
+/**
+ * Surveillance active des FPS pour débrayage automatique (v5.29.6)
+ * Si < 15 FPS pendant 10s, on force le mode ECO pour sauver l'UX.
+ */
+export function checkPerformanceThrottle(fps: number): void {
+    // Ne pas débrayer si on est déjà en ECO ou si on vient de le faire (< 5min)
+    if (state.PERFORMANCE_PRESET === 'eco') return;
+    if (Date.now() - lastThrottleTime < 300_000) return;
+
+    if (fps > 0 && fps < 15) {
+        lowFpsCount++;
+        if (lowFpsCount >= 10) {
+            console.warn(`[Performance] FPS trop bas (${fps}). Débrayage automatique vers mode ECO.`);
+            showToast(i18n.t('performance.autoEco'), 8000);
+            applyPreset('eco');
+            lastThrottleTime = Date.now();
+            lowFpsCount = 0;
+        }
+    } else {
+        lowFpsCount = 0;
+    }
+}
+
 /**
  * Initialise la surveillance de la batterie pour forcer le mode Éco
  */

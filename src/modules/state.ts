@@ -228,6 +228,7 @@ export interface State {
     trialEnd: number | null;
     purchasedPacks: string[];
     installedPacks: string[];
+    DEBUG_MODE: boolean; // v5.29.6 : Contrôle des logs sensibles
 }
 
 const initialState: State = {
@@ -288,6 +289,7 @@ const initialState: State = {
     trialEnd: null,
     purchasedPacks: [],
     installedPacks: [],
+    DEBUG_MODE: false,
 };
 
 export const state = createReactiveState(initialState);
@@ -318,6 +320,9 @@ export interface SavedSettings {
     WEATHER_DENSITY: number;
     WEATHER_SPEED: number;
     IS_2D_MODE?: boolean;
+    LAST_LAT?: number;
+    LAST_LON?: number;
+    LAST_ZOOM?: number;
 }
 
 const SETTINGS_KEY = 'suntrail_settings';
@@ -349,7 +354,10 @@ export function saveSettings(): void {
             VEGETATION_DENSITY: state.VEGETATION_DENSITY,
             WEATHER_DENSITY: state.WEATHER_DENSITY,
             WEATHER_SPEED: state.WEATHER_SPEED,
-            IS_2D_MODE: state.IS_2D_MODE
+            IS_2D_MODE: state.IS_2D_MODE,
+            LAST_LAT: state.TARGET_LAT,
+            LAST_LON: state.TARGET_LON,
+            LAST_ZOOM: state.ZOOM
         };
         try {
             localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsToSave));
@@ -434,9 +442,39 @@ export function loadSettings(): SavedSettings | null {
             if (parsed.WEATHER_DENSITY !== undefined) state.WEATHER_DENSITY = parsed.WEATHER_DENSITY;
             if (parsed.WEATHER_SPEED !== undefined) state.WEATHER_SPEED = parsed.WEATHER_SPEED;
         }
+        if (parsed.LAST_LAT !== undefined) {
+            state.TARGET_LAT = parsed.LAST_LAT;
+            state.initialLat = parsed.LAST_LAT;
+        }
+        if (parsed.LAST_LON !== undefined) {
+            state.TARGET_LON = parsed.LAST_LON;
+            state.initialLon = parsed.LAST_LON;
+        }
+        if (parsed.LAST_ZOOM !== undefined) state.ZOOM = parsed.LAST_ZOOM;
+
         return parsed;
     } catch (e) {
         localStorage.removeItem(SETTINGS_KEY);
         return null;
     }
+}
+
+/**
+ * Sauvegarde la vue actuelle (Lat, Lon, Zoom) après conversion depuis le monde Three.js.
+ * Appelé quand l'utilisateur arrête d'interagir.
+ */
+import { worldToLngLat } from './geo';
+
+export function saveLastView(): void {
+    if (!state.controls || !state.camera) return;
+    
+    // On prend la cible des contrôles comme centre de la vue
+    const target = state.controls.target;
+    const gps = worldToLngLat(target.x, target.z, state.originTile);
+    
+    state.TARGET_LAT = gps.lat;
+    state.TARGET_LON = gps.lon;
+    state.ZOOM = state.ZOOM; // Déjà à jour via les événements de zoom
+    
+    saveSettings();
 }
