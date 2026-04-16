@@ -57,9 +57,10 @@ describe('GPS Chrono Persistence (v5.29.1)', () => {
     });
 
     it('SHOULD restore points and trigger mesh update during recovery (v5.29.3)', async () => {
+        const now = Date.now();
         const fakePoints = [
-            { lat: 46.0, lon: 7.0, alt: 1000, timestamp: 1000 },
-            { lat: 46.1, lon: 7.1, alt: 1010, timestamp: 2000 }
+            { lat: 46.0, lon: 7.0, alt: 1000, timestamp: now - 2000 },
+            { lat: 46.1, lon: 7.1, alt: 1010, timestamp: now - 1000 }
         ];
         
         mockRecording.getCurrentCourse.mockResolvedValue({ isRunning: false });
@@ -67,13 +68,13 @@ describe('GPS Chrono Persistence (v5.29.1)', () => {
         (Preferences.get as any).mockImplementation(({ key }: { key: string }) => {
             if (key === 'suntrail_current_course_id') return { value: 'old-id' };
             if (key === 'suntrail_recorded_points') return { value: JSON.stringify(fakePoints) };
-            if (key === 'suntrail_recording_start_time') return { value: '1000' };
+            if (key === 'suntrail_recording_start_time') return { value: (now - 3000).toString() };
             return { value: null };
         });
 
         await nativeGPSService.init();
 
         expect(state.recordedPoints.length).toBe(2);
-        expect(state.recordingStartTime).toBe(1000);
+        expect(state.recordingStartTime).toBe(now - 3000);
     });
 });

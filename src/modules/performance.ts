@@ -376,3 +376,12 @@ export function updatePerformanceUI(preset: PresetType): void {
         }
     });
 }
+
+/**
+ * RÉINITIALISATION (Pour les tests unitaires uniquement)
+ */
+export function _resetPerformanceCounters(): void {
+    lowFpsCount = 0;
+    highFpsCount = 0;
+    isDynamicallyThrottled = false;
+}
