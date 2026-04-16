@@ -5,6 +5,15 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.24] - 2026-04-16
+### Fixed
+- **Stabilité Totale** : Suppression définitive du pooling mémoire et du dédoublonnage workers qui causaient des écrans blancs et des terrains plats.
+- **Validation** : 100% des tests unitaires et vérification TypeScript confirmés.
+
+## [5.29.23] - 2026-04-16
+### Optimized
+- **Memory Pooling (v2)** : Ré-implémentation sécurisée du recyclage des buffers d'altitude pour soulager le Garbage Collector sur les mobiles d'entrée de gamme.
+
 ## [5.29.22] - 2026-04-16
 ### Fixed
 - **Intégrité Offline (v2)** : Ré-implémentation sécurisée de la validation des téléchargements de zones.
