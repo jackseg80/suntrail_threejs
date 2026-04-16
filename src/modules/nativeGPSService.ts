@@ -42,6 +42,7 @@ const RecordingNative = Capacitor.isNativePlatform()
 
 const STORAGE_KEY_POINTS = 'suntrail_recorded_points';
 const STORAGE_KEY_COURSE_ID = 'suntrail_current_course_id';
+const STORAGE_KEY_START_TIME = 'suntrail_recording_start_time'; // v5.29.1
 
 class NativeGPSService {
     private currentCourseId: string | null = null;
@@ -65,6 +66,12 @@ class NativeGPSService {
                 state.currentCourseId = nativeCourse.courseId;
                 state.isRecording = true;
                 
+                // v5.29.1 : Restaurer le temps de départ
+                const savedStartTime = await Preferences.get({ key: STORAGE_KEY_START_TIME });
+                if (savedStartTime.value) {
+                    state.recordingStartTime = parseInt(savedStartTime.value, 10);
+                }
+
                 if (nativeCourse.originTile) {
                     state.originTile = nativeCourse.originTile;
                 }
@@ -87,6 +94,13 @@ class NativeGPSService {
                         state.recordedPoints = JSON.parse(savedPoints.value);
                         state.currentCourseId = savedCourseId.value;
                         this.currentCourseId = savedCourseId.value;
+                        
+                        // v5.29.1 : Restaurer le temps de départ même en mode recovery crash
+                        const savedStartTime = await Preferences.get({ key: STORAGE_KEY_START_TIME });
+                        if (savedStartTime.value) {
+                            state.recordingStartTime = parseInt(savedStartTime.value, 10);
+                        }
+                        
                         updateRecordedTrackMesh();
                     }
                 }
@@ -117,6 +131,12 @@ class NativeGPSService {
         const result = await RecordingNative.startCourse({ originTile });
         this.currentCourseId = result.courseId;
         state.isPaused = false;
+        state.isRecording = true;
+        
+        // v5.29.1 : Persister le temps de départ
+        const startTime = Date.now();
+        state.recordingStartTime = startTime;
+        await Preferences.set({ key: STORAGE_KEY_START_TIME, value: startTime.toString() });
         
         await Preferences.set({ key: STORAGE_KEY_COURSE_ID, value: result.courseId });
         await Preferences.remove({ key: STORAGE_KEY_POINTS });
@@ -148,7 +168,11 @@ class NativeGPSService {
         this.removeListeners();
         this.currentCourseId = null;
         state.isPaused = false;
+        state.isRecording = false;
+        state.recordingStartTime = null; // Reset
         
+        // v5.29.1 : Nettoyage
+        await Preferences.remove({ key: STORAGE_KEY_START_TIME });
         await Preferences.remove({ key: STORAGE_KEY_COURSE_ID });
         await Preferences.remove({ key: STORAGE_KEY_POINTS });
 

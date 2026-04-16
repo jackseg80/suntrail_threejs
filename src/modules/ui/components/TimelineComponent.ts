@@ -76,9 +76,10 @@ export class TimelineComponent {
             dateWrapper.appendChild(dateTrap);
             this._dateTrap = dateTrap;
 
-            // Initialiser l'aspect visuel du sélecteur de date selon isPro
+            // Initialiser l'aspect visuel du sélecteur de date selon isProActive
             this.syncDateInputLock();
             this.subscriptions.push(state.subscribe('isPro', () => this.syncDateInputLock()));
+            this.subscriptions.push(state.subscribe('trialEnd', () => this.syncDateInputLock()));
 
             this.dateInput.addEventListener('change', (e) => {
                 const d = new Date((e.target as HTMLInputElement).value);

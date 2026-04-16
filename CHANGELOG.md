@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.1] - 2026-04-15
+### Fixed
+- **Accès PRO & Trial** : Correction de l'accès aux fonctionnalités avancées (Météo, Solaire) qui étaient bloquées pour les utilisateurs en période d'essai gratuite. Utilisation systématique de `isProActive()`.
+- **Chronomètre GPS** : Persistance du temps de début d'enregistrement (`recordingStartTime`). Le chrono reprend désormais sa valeur réelle lors d'une récupération automatique (crash, redémarrage worker).
+- **Synchronisation Solaire** : Mise à jour réactive du sélecteur de date lors de l'activation du statut Pro.
+
 ## [5.29.0] - 2026-04-15
 ### Fixed
 - **Moteur de Terrain "Étanche"** : Correction structurelle des fuites de mémoire et des superpositions. La fluidité est radicalement améliorée par la libération explicite de la VRAM (`texture.dispose()`).

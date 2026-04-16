@@ -196,9 +196,10 @@ export interface State {
     isTiltTransitioning: boolean;
     isRecording: boolean;
     isPaused: boolean;
+    recordingStartTime: number | null; // v5.29.1 : Persistance du temps de REC
     currentCourseId: string | null;
     recordedPoints: LocationPoint[];
-    recoveredPoints: any[] | null;
+    recoveredPoints: LocationPoint[] | null;
     userLocation: { lat: number; lon: number; alt: number } | null;
     userLocationAccuracy: number | null;
     userHeading: number | null;
@@ -266,6 +267,7 @@ const initialState: State = {
     isTiltTransitioning: false,
     isRecording: false,
     isPaused: false,
+    recordingStartTime: null, // Initialisation v5.29.1
     currentCourseId: null,
     recordedPoints: [],
     recoveredPoints: null,

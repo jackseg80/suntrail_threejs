@@ -1,5 +1,5 @@
 import { BaseComponent } from '../core/BaseComponent';
-import { state } from '../../state';
+import { state, isProActive } from '../../state';
 import { runSolarProbe, getAltitudeAt, type SolarAnalysisResult } from '../../analysis';
 import { worldToLngLat } from '../../geo';
 import { showToast } from '../../toast';
@@ -350,7 +350,7 @@ export class WeatherSheet extends BaseComponent {
         }
 
         // Météo avancée uniquement si Pro ET toggle activé
-        const showAdvancedWeather = state.isPro && (state as any).SHOW_WEATHER_PRO;
+        const showAdvancedWeather = isProActive() && (state as any).SHOW_WEATHER_PRO;
 
         if (!showAdvancedWeather) {
             // ── FREE version ou PRO simple ────────────────────────────────────
@@ -367,7 +367,7 @@ export class WeatherSheet extends BaseComponent {
 
             // Prévisions 3 jours UNIQUEMENT pour les utilisateurs gratuits (teaser)
             // Les utilisateurs Pro en mode simple ne voient PAS les prévisions 3 jours
-            if (!state.isPro && wd.daily && wd.daily.length > 0) {
+            if (!isProActive() && wd.daily && wd.daily.length > 0) {
                 const forecastTitle = document.createElement('div');
                 forecastTitle.classList.add('exp-probe-section-title');
                 forecastTitle.textContent = i18n.t('weather.section.forecast3d');
@@ -622,7 +622,7 @@ export class SolarProbeSheet extends BaseComponent {
         statusEl.textContent = i18n.t('solar.status.done');
         this.contentEl.appendChild(statusEl);
 
-        if (!state.isPro) {
+        if (!isProActive()) {
             // ── FREE version ──────────────────────────────────────────────────
             const grid = document.createElement('div');
             grid.classList.add('exp-stat-grid', 'exp-probe-grid-mb');
