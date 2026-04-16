@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.25] - 2026-04-16
+### Added
+- **Régression Multi-Tracés** : Rétablissement du stress test validant l'affichage simultané de 10 randonnées (543 tests au total).
+- **Stabilité TypeScript** : Correction des types dans les mocks de test.
+
 ## [5.29.24] - 2026-04-16
 ### Fixed
 - **Stabilité Totale** : Suppression définitive du pooling mémoire et du dédoublonnage workers qui causaient des écrans blancs et des terrains plats.
