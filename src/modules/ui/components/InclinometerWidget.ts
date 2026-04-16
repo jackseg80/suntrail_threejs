@@ -121,8 +121,16 @@ export class InclinometerWidget {
         this.reticle.addEventListener('pointerdown', (e) => this.onReticleDown(e));
 
         // Événements globaux pour le drag
-        window.addEventListener('pointermove', (e) => this.onPointerMove(e));
-        window.addEventListener('pointerup', (e) => this.onPointerUp(e));
+        const onMove = (e: PointerEvent) => this.onPointerMove(e);
+        const onUp = (e: PointerEvent) => this.onPointerUp(e);
+        
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+        
+        this.unsubscribers.push(() => {
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+        });
 
         // Abonnements
         this.unsubscribers.push(state.subscribe('isPro', () => this.syncVisibility()));

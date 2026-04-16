@@ -35,6 +35,7 @@ export class SearchSheet extends BaseComponent {
     private geoResults: HTMLElement | null = null;
     private timer: any = null;
     private activeFilter: FilterKey = 'all';
+    private abortController: AbortController | null = null;
 
     constructor() {
         super('template-search', 'sheet-container');
@@ -89,6 +90,11 @@ export class SearchSheet extends BaseComponent {
         }
     }
 
+    public override dispose(): void {
+        if (this.abortController) this.abortController.abort();
+        super.dispose();
+    }
+
     private createFilterChips(): void {
         const searchEl = this.element?.querySelector('#search');
         if (!searchEl || !this.geoInput) return;
@@ -128,6 +134,10 @@ export class SearchSheet extends BaseComponent {
         if (!this.geoInput || !this.geoResults) return;
 
         if (this.timer) clearTimeout(this.timer);
+        if (this.abortController) this.abortController.abort();
+        this.abortController = new AbortController();
+        const signal = this.abortController.signal;
+
         const q = this.geoInput.value.trim().toLowerCase();
 
         if (q.length < 2) {
@@ -170,10 +180,11 @@ export class SearchSheet extends BaseComponent {
                 const shouldSearchGeo = this.activeFilter !== 'mountains';
 
                 const [locations, overpassPeaks] = await Promise.all([
-                    shouldSearchGeo ? searchLocations(q) : Promise.resolve([]),
+                    shouldSearchGeo ? searchLocations(q, signal) : Promise.resolve([]),
                     shouldSearchPeaks ? searchPeaksByName(q) : Promise.resolve([]),
                 ]);
 
+                if (signal.aborted) return;
                 loadingEl.remove();
 
                 const localNames = new Set(localMatches.map(p => p.name.toLowerCase()));

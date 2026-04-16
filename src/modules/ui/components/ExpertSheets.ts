@@ -579,7 +579,7 @@ export class SolarProbeSheet extends BaseComponent {
     private fmtDuration(minutes: number): string {
         const h = Math.floor(minutes / 60);
         const m = minutes % 60;
-        return `${h}h ${m.toString().padStart(2, '0')}m`;
+        return `${h}h ${m.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
     }
 
     private moonEmoji(name: string): string {
@@ -938,6 +938,8 @@ export class SolarProbeSheet extends BaseComponent {
 }
 
 export class SOSSheet extends BaseComponent {
+    private attachSosBtnTimer: any = null;
+
     constructor() {
         super('template-sos', 'sheet-container');
     }
@@ -968,28 +970,32 @@ export class SOSSheet extends BaseComponent {
         const sosTextContainer = document.getElementById('sos-text-container');
         sosTextContainer?.setAttribute('aria-live', 'polite');
 
-        // Résolution GPS déclenchée sur l'événement sheetOpened — fonctionne quel que soit
-        // le point d'entrée : bouton TopStatusBar (sheetManager.toggle) ou pill coords-panel.
-        // Précédemment openSOSModal() n'était attaché qu'au #sos-btn-pill, ce qui laissait
-        // le sheet ouvert via TopStatusBar bloqué sur "Localisation en cours..." à jamais.
+        // Résolution GPS déclenchée sur l'événement sheetOpened
         const onSheetOpened = ({ id }: { id: string }) => {
             if (id === 'sos') void this.resolveAndDisplay();
         };
         eventBus.on('sheetOpened', onSheetOpened);
         this.addSubscription(() => eventBus.off('sheetOpened', onSheetOpened));
 
-        // Bouton pill (widget coords) — ouvre simplement le sheet ; la résolution est
-        // gérée par le listener sheetOpened ci-dessus.
+        // Bouton pill (widget coords) — ouvre simplement le sheet
         const attachSosBtn = () => {
             const sosBtn = document.getElementById('sos-btn-pill');
             if (sosBtn) {
                 sosBtn.setAttribute('aria-label', 'Appel SOS urgence');
                 sosBtn.onclick = () => sheetManager.open('sos');
             } else {
-                setTimeout(attachSosBtn, 500);
+                this.attachSosBtnTimer = setTimeout(attachSosBtn, 500);
             }
         };
         attachSosBtn();
+    }
+
+    public override dispose(): void {
+        if (this.attachSosBtnTimer) {
+            clearTimeout(this.attachSosBtnTimer);
+            this.attachSosBtnTimer = null;
+        }
+        super.dispose();
     }
 
     private async resolveAndDisplay(): Promise<void> {
@@ -1023,9 +1029,6 @@ export class SOSSheet extends BaseComponent {
         const message = `🆘 SOS SUNTRAIL: ${lat.toFixed(5)},${lon.toFixed(5)} | ALT:${Math.round(alt)}m | BAT:${bat}% | ${time}`;
         textContainer.textContent = message;
 
-        // Activer le bouton SMS avec le message résolu.
-        // URI scheme sms:?body= : ouvre l'app SMS native (Android & iOS) avec le message
-        // pré-rempli. L'utilisateur tape simplement "Envoyer". Zéro permission requise.
         const smsBtn = document.getElementById('sos-sms-btn') as HTMLButtonElement | null;
         if (smsBtn) {
             smsBtn.disabled = false;

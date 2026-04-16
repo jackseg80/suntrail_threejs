@@ -191,28 +191,39 @@ export async function fetchWithCache(url: string, usePersistentCache: boolean = 
         }
 
         if (state.IS_OFFLINE) return null;
-        const r = await fetch(url, { mode: 'cors' });
+        
+        // v5.29.5 : Ajout d'un timeout pour ne pas bloquer les slots de connexion (max 6)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-        // v5.29.3 : Disjoncteur MapTiler (Rate Limit ou Clé invalide)
-        if (url.includes('api.maptiler.com')) {
-            if (r.status === 403 || r.status === 429) {
-                console.error(`[MapTiler] Erreur ${r.status}. Basculement sur les sources de secours (OSM/OpenTopo).`);
-                state.isMapTilerDisabled = true;
-                // v5.29.3 : On vide le cache mémoire pour forcer le rechargement avec les nouvelles URLs de secours
-                disposeAllCachedTiles();
-                return null; // La tuile sera retentée via getColorUrl() au prochain tick
-            }
-        }
+        try {
+            const r = await fetch(url, { mode: 'cors', signal: controller.signal });
+            clearTimeout(timeoutId);
 
-        if (r.ok) {
-            const blob = await r.blob();
-            state.networkRequests++;
-            updateStorageUI();
-            if (usePersistentCache) {
-                const cache = await caches.open(CACHE_NAME);
-                cache.put(url, new Response(blob));
+            // v5.29.3 : Disjoncteur MapTiler (Rate Limit ou Clé invalide)
+            if (url.includes('api.maptiler.com')) {
+                if (r.status === 403 || r.status === 429) {
+                    console.error(`[MapTiler] Erreur ${r.status}. Basculement sur les sources de secours (OSM/OpenTopo).`);
+                    state.isMapTilerDisabled = true;
+                    disposeAllCachedTiles();
+                    return null;
+                }
             }
-            return blob;
+
+            if (r.ok) {
+                const blob = await r.blob();
+                state.networkRequests++;
+                updateStorageUI();
+                if (usePersistentCache && _workerCache) {
+                    try { await _workerCache.put(url, new Response(blob)); } catch (e) {}
+                }
+                return blob;
+            }
+        } catch (e) {
+            clearTimeout(timeoutId);
+            if ((e as Error).name === 'AbortError') {
+                console.warn(`[tileLoader] Timeout ou Abort sur ${url}`);
+            }
         }
         return null;
     } catch (e) {

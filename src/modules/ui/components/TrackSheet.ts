@@ -211,7 +211,9 @@ export class TrackSheet extends BaseComponent {
         this.updateStats();
 
         // Écouter la récupération d'un enregistrement interrompu (v5.19.1)
-        eventBus.on('recordingRecovered', () => this.showRecoveryPrompt());
+        const onRecovered = () => this.showRecoveryPrompt();
+        eventBus.on('recordingRecovered', onRecovered);
+        this.addSubscription(() => eventBus.off('recordingRecovered', onRecovered));
         // Recovery peut avoir été détectée avant que cette sheet soit rendue (timing main.ts)
         if (state.recoveredPoints && state.recoveredPoints.length >= 2) {
             this.showRecoveryPrompt();

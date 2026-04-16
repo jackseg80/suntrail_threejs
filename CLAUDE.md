@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.29.4)
+# SunTrail — Guide IA (v5.29.5)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-16 suite à la v5.29.4 (Audit Expert & Robustesse GPX).
+> Mis à jour le 2026-04-16 suite à la v5.29.5 (Nettoyage Mémoire & Résilience Réseau).
 
 ## Projet
 
@@ -45,10 +45,10 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 - **D+ / D-** : Algorithme d'**Hystérésis avec seuil de 3m** (Garmin standard) via `calculateHysteresis()`. Source de vérité unique pour les tracés et le profil (v5.28.20).
 - **Lissage** : Moyenne mobile 3 points sur l'altitude GPS (v5.28.5).
 - **Filtrage GPS (v5.28.5)** : Rejeter tout point GPS avec saut vertical > 200m (si intervalle < 10s), distance horizontale < 2.5m (anti-champignon), ou vitesse > 600km/h.
-- **Moteur de Terrain (v5.29.4)** : 
+- **Moteur de Terrain (v5.29.5)** : 
     - **Clé Unique** : Doit TOUJOURS inclure `MAP_SOURCE` (ex: `source_x_y_z`) pour éviter les superpositions de couches Swisstopo/OpenTopo.
-    - **Gestion Mémoire** : Libération la VRAM via `texture.dispose()` UNIQUEMENT si la tuile n'est plus dans le `tileCache` (v5.29.3). Protection RAM via limite LRU/FIFO 60-800 tuiles (v5.29.4).
-    - **Circuit Breaker** : Bascule automatique sur OSM/OpenTopo si MapTiler renvoie 403/429 (v5.29.3).
+    - **Gestion Mémoire** : Libération la VRAM via `texture.dispose()` UNIQUEMENT si la tuile n'est plus dans le `tileCache` (v5.29.3). Protection RAM via limite LRU/FIFO 60-800 tuiles (v5.29.4). Nettoyage strict des abonnements UI (v5.29.5).
+    - **Circuit Breaker** : Bascule automatique sur OSM/OpenTopo si MapTiler renvoie 403/429 (v5.29.3). Timeouts réseau 10s (v5.29.5).
     - **LOD Asymétrique** : Ghost Tiles uniquement lors du Zoom-In. Purge immédiate au Zoom-Out.
 - **Rendu & Batterie (v5.29.3)** :
     - **Deep Sleep** : Réduction à **~1.5 FPS** après 30s d'inactivité pour préserver la batterie.

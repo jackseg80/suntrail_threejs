@@ -153,7 +153,7 @@ async function processNextOverpass() {
 // --- GÉOCODAGE AVEC SECOURS (v5.4.7) ---
 let _geocodingBackoffUntil = 0; // timestamp until which geocoding is paused (429 backoff)
 
-export async function fetchGeocoding(params: { lat?: number, lon?: number, query?: string }): Promise<any> {
+export async function fetchGeocoding(params: { lat?: number, lon?: number, query?: string }, signal?: AbortSignal): Promise<any> {
     // Backoff global après un 429 — ne pas retenter avant l'expiration
     if (Date.now() < _geocodingBackoffUntil) return null;
 
@@ -177,7 +177,7 @@ export async function fetchGeocoding(params: { lat?: number, lon?: number, query
     // 1. Tenter MapTiler (si pas déjà banni)
     if (!state.isMapTilerDisabled && key) {
         try {
-            const r = await fetch(maptilerUrl);
+            const r = await fetch(maptilerUrl, { signal: signal || AbortSignal.timeout(10000) });
             if (r.status === 403) {
                 console.warn("[MapTiler] Clé invalide détectée (403) sur geocoding. Backoff 5min.");
                 _geocodingBackoffUntil = Date.now() + 300_000;
@@ -191,6 +191,7 @@ export async function fetchGeocoding(params: { lat?: number, lon?: number, query
                 return d.features || d;
             }
         } catch (e) {
+            if ((e as Error).name === 'AbortError') throw e;
             // Erreur réseau (CORS block sur 429, etc.) — backoff 30s
             console.error("[MapTiler] Erreur réseau geocoding — backoff 30s");
             _geocodingBackoffUntil = Date.now() + 30_000;
@@ -199,7 +200,10 @@ export async function fetchGeocoding(params: { lat?: number, lon?: number, query
 
     // 2. Secours OSM (Gratuit et libre)
     try {
-        const r = await fetch(osmUrl, { headers: { 'User-Agent': 'SunTrail-3D-App' }});
+        const r = await fetch(osmUrl, { 
+            headers: { 'User-Agent': 'SunTrail-3D-App' },
+            signal: signal || AbortSignal.timeout(10000)
+        });
         if (r.ok) return await r.json();
         if (r.status === 429) {
             console.warn("[OSM] Rate limit Nominatim (429). Backoff 60s.");
@@ -207,6 +211,7 @@ export async function fetchGeocoding(params: { lat?: number, lon?: number, query
             return null;
         }
     } catch (e) {
+        if ((e as Error).name === 'AbortError') throw e;
         // CORS block = probablement un 429 masqué — backoff 30s
         _geocodingBackoffUntil = Date.now() + 30_000;
     }

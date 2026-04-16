@@ -85,8 +85,8 @@ export interface GeocodingResult {
  * Récupère le nom d'un lieu (ville, village ou localité) à partir de coordonnées.
  * Utilisé pour le nommage automatique des tracés GPX.
  */
-export async function getPlaceName(lat: number, lon: number): Promise<string | null> {
-    const data = await fetchGeocoding({ lat, lon });
+export async function getPlaceName(lat: number, lon: number, signal?: AbortSignal): Promise<string | null> {
+    const data = await fetchGeocoding({ lat, lon }, signal);
     if (!data) return null;
 
     // MapTiler format
@@ -111,8 +111,8 @@ export async function getPlaceName(lat: number, lon: number): Promise<string | n
 /**
  * Service de recherche unifié (MapTiler / Nominatim).
  */
-export async function searchLocations(query: string): Promise<GeocodingResult[]> {
-    const geoData = await fetchGeocoding({ query });
+export async function searchLocations(query: string, signal?: AbortSignal): Promise<GeocodingResult[]> {
+    const geoData = await fetchGeocoding({ query }, signal);
     if (!geoData) return [];
 
     const results: GeocodingResult[] = [];

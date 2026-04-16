@@ -5,6 +5,15 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.5] - 2026-04-16
+### Fixed
+- **Fuites de mémoire UI** : Nettoyage rigoureux des abonnements `EventBus` et des écouteurs `window` dans `TrackSheet`, `ExpertSheets` (SOS) et `InclinometerWidget`.
+- **Résilience Réseau** : Ajout de timeouts de 10s sur les requêtes de tuiles et implémentation de `AbortController` dans le service de recherche pour annuler les requêtes obsolètes.
+- **Concurrence Workers** : Implémentation du dédoublonnage des requêtes en cours (*in-flight deduplication*) dans le `workerManager` pour éviter de décoder plusieurs fois la même tuile.
+
+### Improved
+- **Accessibilité (A11y)** : Augmentation de la taille des cibles tactiles à 44px (paramètres, thèmes) et 36px (chips de recherche). Passage de la taille de police minimale à 11px pour une meilleure lisibilité en extérieur.
+
 ## [5.29.4] - 2026-04-16
 ### Added
 - **Test de Robustesse GPX** : Ajout d'une suite de tests couvrant les fichiers corrompus, les tracés géants (50k points) et les altitudes manquantes.
