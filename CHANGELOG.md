@@ -2,10 +2,26 @@
 
 Toutes les modifications notables de ce projet seront documentées ici.
 
-Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
-et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
+Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [5.29.34] - 2026-04-17
+### Added
+- **AI Intelligence & Workflows** : Centralisation massive des connaissances IA (`AI_ARCHITECTURE`, `AI_PERFORMANCE`, `AI_UI_STYLE_GUIDE`).
+- **Style Guide UI** : Documentation des patterns de design (grilles, instruments, graphiques) pour assurer une cohérence visuelle 100% IA-friendly.
+- **Mapping EventBus** : Documentation exhaustive de tous les événements système.
+- **Dictionnaire Performance** : Recensement et justification technique de tous les "Magic Numbers" du projet.
+
+### Refactored
+- **State Strict Typing** : Nettoyage des casts `any` pour une meilleure sécurité du State réactif.
+- **Centralized Formatters** : Mutualisation des fonctions `fmtTime` et `fmtDuration` dans `utils.ts`.
+
+### Fixed
+- **I18n Synchronization** : Mise à jour complète des traductions anglaises pour les nouvelles fonctionnalités (Solaire/Météo).
+- **Quality Control** : Correction d'imports de tests et d'avertissements TypeScript.
 
 ## [5.29.33] - 2026-04-17
+
 ### Added
 - **Instrument Solaire (Pro)** : Nouveau tableau de bord avec boussole d'azimut temps réel, élévation max et phase lunaire détaillée.
 - **Station Météo (Pro)** : Interface de type instrument avec cadran de vent dynamique (direction/vitesse) et indicateurs de confort.
