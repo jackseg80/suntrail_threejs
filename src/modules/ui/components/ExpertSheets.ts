@@ -520,7 +520,6 @@ export class SolarProbeSheet extends BaseComponent {
     private realtimeAzimuthEl: HTMLElement | null = null;
     private realtimeElevationEl: HTMLElement | null = null;
     private realtimeCompassEl: SVGPathElement | null = null;
-    private realtimeElevBarEl: HTMLElement | null = null;
     private svgCurrentLineEl: SVGLineElement | null = null;
 
     constructor() {
@@ -598,7 +597,6 @@ export class SolarProbeSheet extends BaseComponent {
         this.realtimeAzimuthEl = null;
         this.realtimeElevationEl = null;
         this.realtimeCompassEl = null;
-        this.realtimeElevBarEl = null;
         this.svgCurrentLineEl = null;
 
         const addStat = (parent: HTMLElement, label: string, value: string, icon?: string) => {
