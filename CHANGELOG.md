@@ -5,7 +5,15 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [5.29.28] - 2026-04-17
+## [5.29.31] - 2026-04-17
+### Optimized
+- **Budget de Montage (Smooth Tiles)** : Implémentation d'une file d'attente de montage (`buildQueue`) limitée à 6ms par frame. Élimine les micro-saccades lors du chargement massif de tuiles en lissant l'upload GPU.
+- **Hystérésis de Zoom** : Introduction d'une zone morte de 5% sur les seuils de changement de LOD. Stabilise l'affichage et évite les oscillations nerveuses de résolution à certaines altitudes critiques.
+- **Shader Terrain (GPU Fast-Path)** : Optimisation mathématique du calcul des pentes. Remplacement des fonctions trigonométriques coûteuses (`acos`, `degrees`) par des approximations vectorielles directes sur la normale.
+- **Détection d'Eau Robuste** : Ajout d'une vérification de la saturation des couleurs dans le shader d'hydrologie. Empêche les faux positifs sur les roches grises ou ombrées.
+- **Visuals** : Passage du fondu d'apparition (Fade In) des tuiles à une courbe `smoothstep` pour un rendu plus premium.
+
+## [5.29.30] - 2026-04-17
 ### Reliability & Performance
 - **Fiabilité D+/D- (Galaxy A53)** : Implémentation d'un lissage d'altitude sur 5 points et passage du seuil d'hystérésis à 5m. Réduction de 400% du faux dénivelé sur les appareils sans baromètre tout en préservant le signal réel.
 - **Affichage Traces 3D** : Correction d'un bug d'altitude des traces GPX lors du switch 2D/3D. Les tracés sont désormais parfaitement plaqués sur le relief grâce à un rafraîchissement forcé post-chargement du terrain.

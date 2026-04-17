@@ -1,18 +1,20 @@
-# SunTrail — Performance & Optimisation (v5.26.6)
+# SunTrail — Performance & Optimisation (v5.29.31)
 
 > Stratégies de rendu, budget énergie et presets GPU. Point d'entrée : [CLAUDE.md](../CLAUDE.md)
 
 ---
 
-## Gestion de l'Énergie (v5.26.6)
+## Gestion de l'Énergie (v5.29.31)
 
 - **Deep Sleep** : Suspension totale du rendu (`renderer.setAnimationLoop(null)`) lorsque l'application passe en arrière-plan (`visibilitychange hidden`) ou que l'écran est verrouillé. Zéro consommation GPU/CPU au repos.
 - **Throttling Dynamique** :
     - **Météo & Eau** : Shaders et particules limités à **20 FPS** (échantillonnage toutes les 50ms) pour économiser le GPU, indépendamment du framerate global.
     - **Idle Mode** : Si aucune interaction n'est détectée pendant 800ms, le rendu tombe à **20 FPS** (sauf pendant un `flyTo` ou `followUser`).
+    - **Deep Sleep Inactif** : Si inactivité > 30s, le rendu tombe à **~1.5 FPS** (v5.29.3).
     - **Energy Saver** : Mode 30 FPS constant pour une économie batterie maximale (cible ≤ 15%/h en rando).
 - **DPR Cap** : Le `devicePixelRatio` est capé à **2.0** maximum sur mobile. Les écrans ultra-haute résolution (S23/S24 3×/4×) sont bridés pour éviter un surcoût de rendu invisible.
 - **Adaptive Resolution** : Pendant les manipulations (pan/zoom/rotate), la résolution tombe à 1.0 (DPR) pour garantir la fluidité, puis remonte à la cible 200ms après l'arrêt.
+- **Texture Upload Budgeting (v5.29.31)** : Limitation du temps passé à instancier les textures GPU à **6ms par frame**. Empêche les micro-saccades lors de l'arrivée massive de nouvelles tuiles (chargement asynchrone étalé).
 
 ---
 
@@ -22,6 +24,7 @@
 - **WebWorkers Pool** : 4 workers (mobile) / 8 workers (desktop) pour le calcul des Normal Maps et le fetch des tuiles. Thread principal dédié exclusivement à l'UI et au rendu.
 - **Dithered Vegetation** : Utilisation de `InstancedMesh` avec shader d'apparition progressive pour supprimer le pop-in visuel des forêts.
 - **GPU-driven Weather** : Positions des particules calculées intégralement dans le vertex shader via `uTime`.
+- **Fast-Path Shaders (v5.29.31)** : Optimisation du calcul des pentes par élimination des fonctions trigonométriques (`acos`) au profit de produits scalaires directs.
 
 ---
 

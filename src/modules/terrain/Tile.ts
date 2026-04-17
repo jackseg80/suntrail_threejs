@@ -11,7 +11,7 @@ import { getPlaneGeometry } from '../geometryCache';
 import { loadTileData, cancelTileLoad } from '../tileLoader';
 import { materialPool } from '../materialPool';
 import { activeTiles } from '../terrain';
-import { removeFromLoadQueue } from './tileQueue';
+import { removeFromLoadQueue, queueBuildMesh } from './tileQueue';
 
 const frustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
@@ -176,7 +176,7 @@ export class Tile {
             addToCache(cacheKey, this.elevationTex!, this.pixelData, this.colorTex!, this.overlayTex, this.normalTex);
             markCacheKeyActive(cacheKey);
             this.status = 'loaded'; 
-            if (this.status as string !== 'disposed') this.buildMesh(state.RESOLUTION);
+            if (this.status as string !== 'disposed') queueBuildMesh(this);
         } catch (e) { this.status = 'failed'; }
     }
 
@@ -260,7 +260,10 @@ export class Tile {
                     if (uShowHydrology > 0.5) {
                         vec3 colorIn = diffuseColor.rgb;
                         float blueVsRed = colorIn.b - colorIn.r;
-                        if (blueVsRed > 0.02 && vTrueNormal.y > 0.998) {
+                        float maxColor = max(colorIn.r, max(colorIn.g, colorIn.b));
+                        float minColor = min(colorIn.r, min(colorIn.g, colorIn.b));
+                        float saturation = (maxColor > 0.0) ? (maxColor - minColor) / maxColor : 0.0;
+                        if (blueVsRed > 0.02 && vTrueNormal.y > 0.998 && saturation > 0.05) {
                             float blueVsGreen = colorIn.b - colorIn.g;
                             float isWater = smoothstep(0.02, 0.10, blueVsRed) * smoothstep(0.0, 0.06, blueVsGreen) * smoothstep(0.998, 1.0, vTrueNormal.y);
                             float greenDominance = colorIn.g - max(colorIn.r, colorIn.b);
@@ -281,10 +284,10 @@ export class Tile {
                     #endif
                     if (uHasOverlay) { vec4 oCol = texture2D(uOverlayMap, vMapUv); diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a); }
                     if (uShowSlopes > 0.5) {
-                        float slopeDeg = degrees(acos(clamp(dot(normalize(vTrueNormal), vec3(0.0, 1.0, 0.0)), 0.0, 1.0)));
-                        float yellowMix = smoothstep(28.0, 32.0, slopeDeg);
-                        float orangeMix = smoothstep(33.0, 37.0, slopeDeg);
-                        float redMix = smoothstep(38.0, 42.0, slopeDeg);
+                        float ny = clamp(normalize(vTrueNormal).y, 0.0, 1.0);
+                        float yellowMix = smoothstep(0.8829, 0.8480, ny);
+                        float orangeMix = smoothstep(0.8387, 0.7986, ny);
+                        float redMix = smoothstep(0.7880, 0.7431, ny);
                         vec3 slopeColor = mix(vec3(1.0, 1.0, 0.0), vec3(1.0, 0.5, 0.0), orangeMix);
                         slopeColor = mix(slopeColor, vec3(1.0, 0.0, 0.0), redMix);
                         diffuseColor.rgb = mix(diffuseColor.rgb, slopeColor, yellowMix * 0.55);
@@ -385,7 +388,10 @@ export class Tile {
         if (!this.isFadingIn || !this.mesh) return;
         this.opacity += delta * 2.0;
         if (this.opacity >= 1) { this.opacity = 1; this.isFadingIn = false; if (this.mesh.material instanceof THREE.Material) this.mesh.material.transparent = false; }
-        if (this.mesh.material instanceof THREE.Material) this.mesh.material.opacity = this.opacity;
+        if (this.mesh.material instanceof THREE.Material) {
+            const t = this.opacity;
+            this.mesh.material.opacity = t * t * (3.0 - 2.0 * t);
+        }
     }
 
     startFadeOut(): void {

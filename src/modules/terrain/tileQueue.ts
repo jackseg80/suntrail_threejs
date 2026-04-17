@@ -5,6 +5,39 @@ import { activeTiles } from '../terrain';
 export let loadQueue: Set<Tile> = new Set<Tile>();
 let isProcessingQueue = false;
 
+// v5.29.31 : Budget de Montage de Textures pour lisser les micro-saccades
+export const buildQueue: Tile[] = [];
+let isProcessingBuildQueue = false;
+
+export function queueBuildMesh(tile: Tile) {
+    if (tile.status === 'disposed') return;
+    if (!buildQueue.includes(tile)) {
+        buildQueue.push(tile);
+    }
+    if (!isProcessingBuildQueue) {
+        isProcessingBuildQueue = true;
+        requestAnimationFrame(processBuildQueue);
+    }
+}
+
+function processBuildQueue() {
+    const BUILD_BUDGET_MS = 6; // Max 6ms par frame pour ne pas casser les 60fps (16ms)
+    const start = performance.now();
+    
+    while (buildQueue.length > 0 && (performance.now() - start < BUILD_BUDGET_MS)) {
+        const tile = buildQueue.shift();
+        if (tile && tile.status !== 'disposed' && activeTiles.has(tile.key)) {
+            tile.buildMesh(state.RESOLUTION);
+        }
+    }
+    
+    if (buildQueue.length > 0) {
+        requestAnimationFrame(processBuildQueue);
+    } else {
+        isProcessingBuildQueue = false;
+    }
+}
+
 export async function processLoadQueue() {
     if (isProcessingQueue || loadQueue.size === 0) {
         state.isProcessingTiles = false;
@@ -70,6 +103,7 @@ export async function processLoadQueue() {
 
 export function clearLoadQueue() {
     loadQueue.clear();
+    buildQueue.length = 0; // Vider également la file de montage en cas de changement majeur (LOD, Source)
 }
 
 export function addToLoadQueue(tile: Tile) {
@@ -78,4 +112,6 @@ export function addToLoadQueue(tile: Tile) {
 
 export function removeFromLoadQueue(tile: Tile) {
     loadQueue.delete(tile);
+    const index = buildQueue.indexOf(tile);
+    if (index !== -1) buildQueue.splice(index, 1);
 }

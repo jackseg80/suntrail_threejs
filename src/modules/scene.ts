@@ -108,22 +108,30 @@ export async function disposeScene(): Promise<void> {
     currentThrottledSunUpdate = null;
 }
 
-function getIdealZoom(dist: number): number {
+function getIdealZoom(dist: number, currentZoom: number = -1): number {
     const boost = state.MAP_SOURCE === 'satellite' ? 2.0
                 : state.MAP_SOURCE === 'swisstopo' ? 1.0
                 : 1.2;
-    if (dist < 800 * boost) return 18;
-    if (dist < 1800 * boost) return 17;
-    if (dist < 4000 * boost) return 16;
-    if (dist < 9000 * boost) return 15;
-    if (dist < 22000) return 14;
-    if (dist < 45000) return 13;
-    if (dist < 90000) return 12;
-    if (dist < 180000) return 11;
-    if (dist < 350000) return 10;
-    if (dist < 700000) return 9;
-    if (dist < 1200000) return 8;
-    if (dist < 2000000) return 7;
+                
+    // v5.29.31 : Hystérésis de 5% intégrée pour éviter les oscillations
+    const getThresh = (base: number, z: number) => {
+        if (currentZoom === z) return base * 1.05;
+        if (currentZoom === z - 1) return base * 0.95;
+        return base;
+    };
+
+    if (dist < getThresh(800 * boost, 18)) return 18;
+    if (dist < getThresh(1800 * boost, 17)) return 17;
+    if (dist < getThresh(4000 * boost, 16)) return 16;
+    if (dist < getThresh(9000 * boost, 15)) return 15;
+    if (dist < getThresh(22000, 14)) return 14;
+    if (dist < getThresh(45000, 13)) return 13;
+    if (dist < getThresh(90000, 12)) return 12;
+    if (dist < getThresh(180000, 11)) return 11;
+    if (dist < getThresh(350000, 10)) return 10;
+    if (dist < getThresh(700000, 9)) return 9;
+    if (dist < getThresh(1200000, 8)) return 8;
+    if (dist < getThresh(2000000, 7)) return 7;
     return 6;
 }
 
