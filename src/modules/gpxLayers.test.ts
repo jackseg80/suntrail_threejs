@@ -40,17 +40,21 @@ describe('Multi-GPX Layers (v5.10)', () => {
                 points: [
                     { lat: 46.5000, lon: 7.5000, ele: 1000, time: '2024-01-01T10:00:00Z' },
                     { lat: 46.5000, lon: 7.5000, ele: 1000, time: '2024-01-01T10:01:00Z' },
+                    { lat: 46.5000, lon: 7.5000, ele: 1000, time: '2024-01-01T10:02:00Z' },
                     { lat: 46.5001, lon: 7.5001, ele: 1500, time: '2024-01-01T10:10:00Z' },
                     { lat: 46.5001, lon: 7.5001, ele: 1500, time: '2024-01-01T10:11:00Z' },
+                    { lat: 46.5001, lon: 7.5001, ele: 1500, time: '2024-01-01T10:12:00Z' },
                     { lat: 46.5002, lon: 7.5002, ele: 1200, time: '2024-01-01T10:20:00Z' },
-                    { lat: 46.5002, lon: 7.5002, ele: 1200, time: '2024-01-01T10:21:00Z' }
+                    { lat: 46.5002, lon: 7.5002, ele: 1200, time: '2024-01-01T10:21:00Z' },
+                    { lat: 46.5002, lon: 7.5002, ele: 1200, time: '2024-01-01T10:22:00Z' }
                 ]
             }]
         };
 
         const layer = addGPXLayer(raw, 'stats-test');
         expect(layer.stats.distance).toBeGreaterThan(0);
-        expect(layer.stats.dPlus).toBeGreaterThan(300);
-        expect(layer.stats.dMinus).toBeGreaterThanOrEqual(200);
+        // v5.29.28: Le lissage 5-pts réduit les pics sur les traces courtes.
+        expect(layer.stats.dPlus).toBeGreaterThan(150);
+        expect(layer.stats.dMinus).toBeGreaterThan(150);
     });
 });

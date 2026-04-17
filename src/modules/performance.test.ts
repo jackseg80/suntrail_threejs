@@ -3,7 +3,7 @@ import { state } from './state';
 import { detectBestPreset, applyPreset } from './performance';
 
 // Mocks des dépendances lourdes de performance.ts
-vi.mock('./terrain', () => ({ resetTerrain: vi.fn(), updateVisibleTiles: vi.fn(), refreshTerrain: vi.fn() }));
+vi.mock('./terrain', () => ({ resetTerrain: vi.fn(), updateVisibleTiles: vi.fn(), refreshTerrain: vi.fn(), refreshTracks: vi.fn() }));
 vi.mock('./sun', () => ({ updateShadowMapResolution: vi.fn() }));
 vi.mock('./utils', () => ({ isMobileDevice: vi.fn(() => false) }));
 vi.mock('./toast', () => ({ showToast: vi.fn() }));
