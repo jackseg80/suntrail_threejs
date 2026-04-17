@@ -14,6 +14,9 @@ describe('Profil d\'altitude (Module Profile)', () => {
             <div id="profile-chart-container"></div>
             <svg id="profile-svg"></svg>
             <div id="profile-cursor"></div>
+            <div id="gpx-dist"></div>
+            <div id="gpx-dplus"></div>
+            <div id="gpx-dminus"></div>
         `;
         state.scene = new THREE.Scene();
         state.gpxLayers = [];
@@ -147,7 +150,7 @@ describe('Profil d\'altitude (Module Profile)', () => {
         });
 
         it('devrait calculer les distances cumulativement entre points 3D consécutifs', () => {
-            // Points espacés de 100m en 3D
+            // 5 points espacés de 100m (distance totale ~400m = 0.4km)
             const layer: GPXLayer = {
                 id: 'test-distance',
                 name: 'Test Distance',
@@ -181,6 +184,46 @@ describe('Profil d\'altitude (Module Profile)', () => {
             // Le profil devrait refléter la distance totale de 0.4km
             const profileEl = document.getElementById('elevation-profile');
             expect(profileEl?.classList.contains('is-open')).toBe(true);
+        });
+
+        it('devrait maintenir l\'altitude correcte même quand gpxPoints3D.length > rawPoints.length (Fix v5.29.32)', () => {
+            const layer: GPXLayer = {
+                id: 'test-fix-v5.29',
+                name: 'Test Fix',
+                color: '#3b7ef8',
+                visible: true,
+                rawData: {
+                    tracks: [{
+                        points: [
+                            { lat: 46.0, lon: 7.0, ele: 1000 },
+                            { lat: 46.1, lon: 7.1, ele: 1200 }
+                        ]
+                    }]
+                },
+                // 6 points 3D pour seulement 2 points GPX bruts
+                points: [
+                    new THREE.Vector3(0, 30, 0),
+                    new THREE.Vector3(20, 30, 0),
+                    new THREE.Vector3(40, 30, 0),
+                    new THREE.Vector3(60, 30, 0),
+                    new THREE.Vector3(80, 30, 0),
+                    new THREE.Vector3(100, 30, 0)
+                ],
+                mesh: null,
+                stats: { distance: 0.1, dPlus: 200, dMinus: 0, pointCount: 2 }
+            };
+            
+            state.gpxLayers = [layer];
+            state.activeGPXLayerId = 'test-fix-v5.29';
+            // On simule le mode 2D ou un défaut de terrain où Y=30 (surface offset)
+            // Sans le fix, dès i=2, l'altitude tomberait à (30-30)/2 = 0m.
+            
+            updateElevationProfile();
+            
+            // On vérifie que les altitudes calculées pour les points ne sont pas 0
+            // On peut s'assurer de cela indirectement en vérifiant que dPlus est correct
+            const pEl = document.getElementById('gpx-dplus');
+            expect(pEl?.textContent).toContain('200 m D+');
         });
     });
 });

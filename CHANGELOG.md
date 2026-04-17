@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.32] - 2026-04-17
+### Fixed
+- **Profil d'Élévation & Pente** : Correction d'un bug d'indexation critique lors de la densification des points GPX. L'altitude ne chute plus à 0m après 25% du parcours, garantissant des courbes d'altitude et des calculs de pente exacts sur l'intégralité de la trace.
+
 ## [5.29.31] - 2026-04-17
 ### Optimized
 - **Budget de Montage (Smooth Tiles)** : Implémentation d'une file d'attente de montage (`buildQueue`) limitée à 6ms par frame. Élimine les micro-saccades lors du chargement massif de tuiles en lissant l'upload GPU.

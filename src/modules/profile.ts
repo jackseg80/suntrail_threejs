@@ -42,8 +42,8 @@ export function updateElevationProfile(layerId?: string): void {
     const gpxPoints3D = layer.points;
     console.log('[Profile] Points count:', gpxPoints3D.length);
 
-    // v5.29.28: Utiliser en priorité les données GPX brutes pour l'altitude
-    // pour éviter les déformations dues au mode 2D ou aux offsets de surface.
+    // v5.29.32: Utiliser en priorité les données GPX brutes pour l'altitude
+    // avec un mapping correct de l'index pour supporter les points densifiés.
     const rawPoints = layer.rawData?.tracks?.[0]?.points || [];
     const hasRawEle = rawPoints.length > 0 && typeof rawPoints[0].ele === 'number';
 
@@ -58,9 +58,10 @@ export function updateElevationProfile(layerId?: string): void {
         
         // Altitude : priorité au raw, sinon Y monde corrigé
         let ele = 0;
-        if (hasRawEle && i < rawPoints.length) {
-            // Note: gpxPoints3D peut être densifié (plus de points que raw)
-            const rawIdx = Math.floor((i / gpxPoints3D.length) * rawPoints.length);
+        if (hasRawEle) {
+            // Note: gpxPoints3D est densifié (plus de points que raw)
+            // On mappe l'index i vers l'index correspondant dans les données brutes
+            const rawIdx = Math.min(rawPoints.length - 1, Math.floor((i / gpxPoints3D.length) * rawPoints.length));
             ele = rawPoints[rawIdx].ele || 0;
         } else {
             // Fallback: soustraire l'offset de surface avant de diviser par l'exagération
