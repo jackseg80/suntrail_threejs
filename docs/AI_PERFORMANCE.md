@@ -1,48 +1,36 @@
-# SunTrail — Performance & Optimisation (v5.29.31)
+# AI Performance & Constants Guide (v5.29.33)
 
-> Stratégies de rendu, budget énergie et presets GPU. Point d'entrée : [CLAUDE.md](../CLAUDE.md)
+Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 
----
+## 1. Map & Terrain Performance
 
-## Gestion de l'Énergie (v5.29.31)
+| Constant | Value | File | Rationale |
+| :--- | :--- | :--- | :--- |
+| `MAX_BUILD_TIME` | 6ms | `Tile.ts` | Max time per frame spent mounting meshes. Prevents micro-stutter on Galaxy A53. |
+| `TILE_CACHE_SIZE` | 120 | `terrain.ts` | Number of tile textures kept in RAM. Balances fly-to speed and memory usage. |
+| `LOD_HYSTERESIS` | 0.05 (5%) | `Tile.ts` | Dead-zone for LOD switching. Prevents "flickering" between high/low res tiles. |
+| `ZOOM_CAP_FREE` | 14 | `Tile.ts` | Technical ceiling for free users. Forces upsell for high-res maps. |
 
-- **Deep Sleep** : Suspension totale du rendu (`renderer.setAnimationLoop(null)`) lorsque l'application passe en arrière-plan (`visibilitychange hidden`) ou que l'écran est verrouillé. Zéro consommation GPU/CPU au repos.
-- **Throttling Dynamique** :
-    - **Météo & Eau** : Shaders et particules limités à **20 FPS** (échantillonnage toutes les 50ms) pour économiser le GPU, indépendamment du framerate global.
-    - **Idle Mode** : Si aucune interaction n'est détectée pendant 800ms, le rendu tombe à **20 FPS** (sauf pendant un `flyTo` ou `followUser`).
-    - **Deep Sleep Inactif** : Si inactivité > 30s, le rendu tombe à **~1.5 FPS** (v5.29.3).
-    - **Energy Saver** : Mode 30 FPS constant pour une économie batterie maximale (cible ≤ 15%/h en rando).
-- **DPR Cap** : Le `devicePixelRatio` est capé à **2.0** maximum sur mobile. Les écrans ultra-haute résolution (S23/S24 3×/4×) sont bridés pour éviter un surcoût de rendu invisible.
-- **Adaptive Resolution** : Pendant les manipulations (pan/zoom/rotate), la résolution tombe à 1.0 (DPR) pour garantir la fluidité, puis remonte à la cible 200ms après l'arrêt.
-- **Texture Upload Budgeting (v5.29.31)** : Limitation du temps passé à instancier les textures GPU à **6ms par frame**. Empêche les micro-saccades lors de l'arrivée massive de nouvelles tuiles (chargement asynchrone étalé).
+## 2. Navigation & GPS Logic
 
----
+| Constant | Value | File | Rationale |
+| :--- | :--- | :--- | :--- |
+| `HYSTERESIS_THRESHOLD` | 5m | `geoStats.ts` | Minimum vertical movement to count in D+/D-. Filters sensor noise. |
+| `GPS_SMOOTH_POINTS` | 5 | `nativeGPSService.ts` | Moving average window for altitude. Balances responsiveness and noise. |
+| `ANTICHAMPIGNON_DIST` | 2.5m | `gpsDeduplication.ts` | Min distance between points. Filters noise when standing still. |
+| `MAX_GPS_ALT_JUMP` | 200m | `gpsDeduplication.ts` | Rejects teleportation bugs if time interval < 10s. |
 
-## Pipeline de Rendu & Workers
+## 3. External Services (Weather/API)
 
-- **Material Pooling** : Réutilisation systématique des shaders via `materialPool.ts` pour éviter les micro-saccades de compilation Three.js.
-- **WebWorkers Pool** : 4 workers (mobile) / 8 workers (desktop) pour le calcul des Normal Maps et le fetch des tuiles. Thread principal dédié exclusivement à l'UI et au rendu.
-- **Dithered Vegetation** : Utilisation de `InstancedMesh` avec shader d'apparition progressive pour supprimer le pop-in visuel des forêts.
-- **GPU-driven Weather** : Positions des particules calculées intégralement dans le vertex shader via `uTime`.
-- **Fast-Path Shaders (v5.29.31)** : Optimisation du calcul des pentes par élimination des fonctions trigonométriques (`acos`) au profit de produits scalaires directs.
+| Constant | Value | File | Rationale |
+| :--- | :--- | :--- | :--- |
+| `MIN_FETCH_INTERVAL` | 15s | `weather.ts` | API Rate Limiting. Prevents Open-Meteo IP bans on fast camera moves. |
+| `WEATHER_THROTTLE` | 50ms (20fps) | `scene.ts` | Render throttle for weather uniforms. Saves battery on non-essential visuals. |
+| `DEEP_SLEEP_DELAY` | 30s | `scene.ts` | Time before dropping to 1.5 FPS when app is idle. |
 
----
+## 4. UI & Interaction
 
-## Presets GPU (`performance.ts`)
-
-L'application détecte le GPU via `UNMASKED_RENDERER_WEBGL`.
-
-| Preset | Cible Hardware | Caractéristiques |
-|---|---|---|
-| **Eco** | Vieux mobile (Mali-G52, Adreno 5xx) | 2D forcé, pas de végétation/bâtiments, range 3 |
-| **Balanced** | Mid-range 2021 (A53, Intel HD 620) | Range 4, Végétation (sans ombre), Bâtiments, 30fps |
-| **Performance** | Flagship mobile (S23, GTX 1050) | Range 6, Ombres végétation, Hydrologie, 60fps |
-| **Ultra** | PC bureau / Snapdragon Elite | Range 12, Ombres 4k, Météo dense, 60fps+ |
-
----
-
-## Optimisations Startup (v5.21.1)
-
-- **Lazy-loading UI** : `initUI()` hydrate uniquement les éléments critiques au démarrage. Les 10 "sheets" secondaires sont chargées de manière asynchrone après le premier frame (gain de ~100kB sur le bundle initial).
-- **Objets Scratch THREE** : Utilisation de variables module-level pré-allouées (`_vec3`, `_quat`, etc.) dans les boucles critiques (TouchControls, Sun) pour éliminer le Garbage Collection lié aux `new THREE.Vector3()`.
-- **CSS Composited** : Animations (REC pulse, loading shimmer) utilisant uniquement `transform` et `opacity` pour garantir 60fps sur l'UI sans repaint.
+| Constant | Value | File | Rationale |
+| :--- | :--- | :--- | :--- |
+| `LONG_PRESS_MS` | 500ms | `touchControls.ts` | Standard duration to differentiate tap from probe. |
+| `AUTO_HIDE_DELAY` | 3000ms | `autoHide.ts` | Delay for controls fade-out after user stops moving. |

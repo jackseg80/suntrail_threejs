@@ -1,7 +1,20 @@
-# SunTrail — Guide de Débogage (v5.19.6)
+# SunTrail — Guide de Débogage (v5.29.33)
 
 > Référence détaillée pour agents IA. Point d'entrée : [CLAUDE.md](../CLAUDE.md)
 > Consulter ce fichier quand un bug est signalé ou qu'un symptôme visuel est observé.
+
+## 🛠️ Simulation & Workflows Développeur
+
+Pour tester des cas complexes sans attendre les conditions réelles, utilisez la console (F12) :
+
+| Cas de Test | Action Console | Effet Attendu |
+| :--- | :--- | :--- |
+| **Simuler mode PRO** | `state.isPro = true` | Débloque instantanément les instruments Solaire/Météo avancés et le Zoom 18+. |
+| **Simuler Offline** | `eventBus.emit('networkOffline')` | Affiche l'overlay de déconnexion et active les fallbacks caches. |
+| **Erreur Météo** | `state.weatherUnavailable = true` | Affiche le message "Météo indisponible" dans le panneau Météo. |
+| **Météo OK** | `state.weatherUnavailable = false` | Restaure l'affichage normal du panneau (nécessite des données valides). |
+| **Vider Cache Tuiles** | `state.tileCache.clear()` | Force le re-téléchargement de toutes les tuiles visibles. |
+| **Stress Test 3D** | `state.PERFORMANCE_PRESET = 'ultra'` | Force le Pixel Ratio 2.0 et la résolution maximale pour tester les limites GPU. |
 
 ---
 

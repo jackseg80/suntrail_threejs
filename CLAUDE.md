@@ -25,11 +25,11 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 | Domaine | Document de Référence | Contenu |
 | :--- | :--- | :--- |
-| **État & Logique** | [docs/AI_ARCHITECTURE.md](docs/AI_ARCHITECTURE.md) | Proxy State, EventBus, **Calcul Haversine**, Hystérésis 5m. |
-| **Rendu & Batterie** | [docs/AI_PERFORMANCE.md](docs/AI_PERFORMANCE.md) | Deep Sleep, Throttle 20fps, DPR Cap, Presets GPU. |
-| **Business & Gates** | [docs/MONETIZATION.md](docs/MONETIZATION.md) | RevenueCat, Grille Free/Pro, Logique des verrous (LOD, Solaire). |
+| **État & Logique** | [docs/AI_ARCHITECTURE.md](docs/AI_ARCHITECTURE.md) | Proxy State, **Mapping EventBus**, **Architecture Shaders**. |
+| **Rendu & Batterie** | [docs/AI_PERFORMANCE.md](docs/AI_PERFORMANCE.md) | **Dictionnaire des Magic Numbers**, Deep Sleep, DPR Cap. |
+| **Business & Gates** | [docs/MONETIZATION.md](docs/MONETIZATION.md) | RevenueCat, Grille Free/Pro, Logique des verrous. |
 | **Interface & UX** | [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md) | TouchControls, SheetManager, DraggablePanels. |
-| **Roadmap** | [docs/TODO.md](docs/TODO.md) | Priorités Production V5 et Roadmap V6. |
+| **Débogage** | [docs/AI_DEBUGGING.md](docs/AI_DEBUGGING.md) | **Workflows de Simulation**, Troubleshooting visuel. |
 | **Historique** | [docs/archives/COMPLETED_HISTORY.md](docs/archives/COMPLETED_HISTORY.md) | Tout ce qui a été fait avant la v5.26.6. |
 
 ### Monétisation & Gates (Web vs Mobile)
