@@ -19,26 +19,24 @@ describe('GPS Deduplication (v5.28.5)', () => {
         expect(uniquePoints[2].timestamp).toBe(30000);
     });
 
-    it('should apply 3-point moving average to altitude', () => {
+    it('should apply 5-point moving average to altitude (v5.29.28)', () => {
         const points = [
             { lat: 46.5000, lon: 7.5000, alt: 1000, timestamp: 10000 },
             { lat: 46.5001, lon: 7.5001, alt: 1010, timestamp: 20000 },
-            { lat: 46.5002, lon: 7.5002, alt: 1005, timestamp: 30000 },
-            { lat: 46.5003, lon: 7.5003, alt: 1015, timestamp: 40000 },
+            { lat: 46.5002, lon: 7.5002, alt: 1020, timestamp: 30000 },
+            { lat: 46.5003, lon: 7.5003, alt: 1010, timestamp: 40000 },
+            { lat: 46.5004, lon: 7.5004, alt: 1000, timestamp: 50000 },
         ];
         
         const smoothed = cleanGPSTrack(points);
         
-        expect(smoothed.length).toBe(4);
-        // First and last points should be untouched
-        expect(smoothed[0].alt).toBe(1000);
-        expect(smoothed[3].alt).toBe(1015);
+        expect(smoothed.length).toBe(5);
         
-        // Point 1: (1000 + 1010 + 1005) / 3 = 1005
-        expect(smoothed[1].alt).toBeCloseTo(1005, 1);
+        // Point 2 (index 2) : Moyenne de [1000, 1010, 1020, 1010, 1000] / 5 = 5040 / 5 = 1008
+        expect(smoothed[2].alt).toBeCloseTo(1008, 1);
         
-        // Point 2: (1010 + 1005 + 1015) / 3 = 1010
-        expect(smoothed[2].alt).toBeCloseTo(1010, 1);
+        // Point 1 (index 1) : Moyenne de [1000, 1010, 1020, 1010] / 4 = 1010
+        expect(smoothed[1].alt).toBeCloseTo(1010, 1);
     });
 
     it('should reject altitude outliers (jumps)', () => {

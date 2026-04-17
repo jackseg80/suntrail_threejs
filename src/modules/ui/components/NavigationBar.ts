@@ -3,7 +3,7 @@ import { sheetManager } from '../core/SheetManager';
 import { eventBus } from '../../eventBus';
 import { i18n } from '../../../i18n/I18nService';
 import { state } from '../../state';
-import { rebuildActiveTiles, updateVisibleTiles } from '../../terrain';
+import { rebuildActiveTiles, updateVisibleTiles, refreshTracks } from '../../terrain';
 import { haptic } from '../../haptics';
 import { forceImmediateLODUpdate } from '../../scene';
 import { updateUserMarker } from '../../location';
@@ -86,6 +86,9 @@ export class NavigationBar extends BaseComponent {
                 document.body.classList.toggle('mode-2d', newMode);
                 syncToggleVisual();
                 
+                // v5.29.28 : Rafraîchir les tracés immédiatement pour réactivité visuelle (altitude 0 ou surfaceOffset)
+                refreshTracks();
+
                 // v5.28.1 : Forcer le remplissage du centre immédiatement après le tilt
                 setTimeout(() => {
                     rebuildActiveTiles();
@@ -103,7 +106,10 @@ export class NavigationBar extends BaseComponent {
                     // v5.28.32 : Correction du décalage visuel du marqueur utilisateur lors du switch
                     forceImmediateLODUpdate();
                     updateUserMarker();
-                }, 150);
+
+                    // v5.29.28 : Rafraîchir à nouveau une fois le terrain chargé pour un plaquage précis en 3D
+                    refreshTracks();
+                }, 500); // 500ms pour laisser le temps au terrain de charger ses pixelData
             };
 
             modeToggle.addEventListener('click', onModeToggleClick);
@@ -131,6 +137,7 @@ export class NavigationBar extends BaseComponent {
                         state.IS_2D_MODE = true;
                         rebuildActiveTiles();
                         updateVisibleTiles();
+                        refreshTracks(); // v5.29.28
                     }
                     // Toujours synchroniser la classe CSS mode-2d même si IS_2D_MODE
                     // était déjà true depuis localStorage (classe absente au démarrage sinon)

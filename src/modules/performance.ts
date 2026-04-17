@@ -1,7 +1,7 @@
 import { state, PRESETS, PresetType, saveSettings } from './state';
 import { showToast } from './toast';
 import { updateShadowMapResolution } from './sun';
-import { refreshTerrain } from './terrain';
+import { refreshTerrain, refreshTracks } from './terrain';
 import { trimCache } from './tileCache';
 import { i18n } from '../i18n/I18nService';
 
@@ -209,6 +209,11 @@ export function applyPreset(preset: PresetType): void {
 
     updatePerformanceUI(preset);
     refreshTerrain();
+    refreshTracks(); // v5.29.28 : Immédiat
+    
+    // v5.29.28 : Différé pour le draping 3D précis si le terrain doit charger
+    setTimeout(() => refreshTracks(), 500);
+
     saveSettings();
     showToast(i18n.t('preset.applied', { preset: preset.toUpperCase() }));
 }
@@ -243,6 +248,8 @@ export function applyCustomSettings(settings: any): void {
     }
 
     refreshTerrain();
+    refreshTracks();
+    setTimeout(() => refreshTracks(), 500);
 }
 
 let lowFpsCount = 0;

@@ -23,12 +23,14 @@ registerSW({
   },
 });
 
-// Lancement de l'initialisation globale de l'interface (v5.28.39)
-// On utilise requestAnimationFrame pour laisser le navigateur souffler (Splash screen / CSS) 
-// avant de lancer le moteur Three.js qui est gourmand en CPU au démarrage.
+// Lancement de l'initialisation globale de l'interface (v5.29.28)
 requestAnimationFrame(() => {
-    initUI();
-    initBatteryManager();
+    // v5.29.28 : On utilise setTimeout 0 pour garantir que le splash screen / CSS est rendu
+    // avant de lancer l'initialisation qui peut être bloquante sur certains navigateurs.
+    setTimeout(() => {
+        initUI();
+        initBatteryManager();
+    }, 0);
 });
 
 

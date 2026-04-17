@@ -1,12 +1,42 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { state } from './state';
 import { getTileCacheKey } from './tileCache';
+import { autoSelectMapSource } from './terrain';
 
-describe('Terrain Source Keys (v5.29.0)', () => {
+describe('Terrain Source Keys (v5.29.28)', () => {
     beforeEach(() => {
         state.originTile = { x: 4270, y: 2891, z: 14 };
         state.SHOW_TRAILS = true;
         state.RESOLUTION = 64;
+        state.hasManualSource = false;
+        state.MAP_SOURCE = 'opentopomap';
+        state.ZOOM = 14;
+    });
+
+    it('SHOULD respect hasManualSource flag and NOT auto-switch if true', () => {
+        state.hasManualSource = true;
+        state.MAP_SOURCE = 'satellite';
+        
+        // Coordonnées en Suisse (Normalement force swisstopo)
+        const lat = 46.5; 
+        const lon = 6.6;
+        
+        autoSelectMapSource(lat, lon);
+        
+        expect(state.MAP_SOURCE).toBe('satellite');
+    });
+
+    it('SHOULD auto-switch if hasManualSource is false', () => {
+        state.hasManualSource = false;
+        state.MAP_SOURCE = 'opentopomap';
+        
+        // Coordonnées en Suisse
+        const lat = 46.5; 
+        const lon = 6.6;
+        
+        autoSelectMapSource(lat, lon);
+        
+        expect(state.MAP_SOURCE).toBe('swisstopo');
     });
 
     it('SHOULD generate different keys for different MAP_SOURCE at same coords', () => {

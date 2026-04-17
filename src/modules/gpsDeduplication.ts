@@ -75,28 +75,29 @@ export function cleanGPSTrack<T extends GPSPoint>(points: T[]): T[] {
         preCleaned.push(curr);
     }
 
-    if (preCleaned.length < 3) return preCleaned;
+    if (preCleaned.length < 5) return preCleaned;
 
-    // 3. Lissage de l'altitude (Moyenne mobile 3 points) (v5.28.5)
+    // 3. Lissage de l'altitude (Moyenne mobile 5 points) (v5.29.28)
     // Aide à stabiliser le D+/D- sur les capteurs GPS bruités (ex: Galaxy A53)
     const smoothed: T[] = [];
-    smoothed.push(preCleaned[0]); // Garder le premier point intact
-
-    for (let i = 1; i < preCleaned.length - 1; i++) {
-        const prev = preCleaned[i - 1];
-        const curr = preCleaned[i];
-        const next = preCleaned[i + 1];
+    
+    for (let i = 0; i < preCleaned.length; i++) {
+        let sum = 0;
+        let count = 0;
         
-        // On ne lisse QUE l'altitude
-        const avgAlt = (prev.alt + curr.alt + next.alt) / 3;
+        // Fenêtre de 5 points (i-2 à i+2)
+        for (let j = i - 2; j <= i + 2; j++) {
+            if (j >= 0 && j < preCleaned.length) {
+                sum += preCleaned[j].alt;
+                count++;
+            }
+        }
         
         smoothed.push({
-            ...curr,
-            alt: avgAlt
+            ...preCleaned[i],
+            alt: sum / count
         });
     }
-
-    smoothed.push(preCleaned[preCleaned.length - 1]); // Garder le dernier point intact
 
     return smoothed;
 }

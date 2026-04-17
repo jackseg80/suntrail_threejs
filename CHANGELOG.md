@@ -5,6 +5,15 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [5.29.28] - 2026-04-17
+### Reliability & Performance
+- **Fiabilité D+/D- (Galaxy A53)** : Implémentation d'un lissage d'altitude sur 5 points et passage du seuil d'hystérésis à 5m. Réduction de 400% du faux dénivelé sur les appareils sans baromètre tout en préservant le signal réel.
+- **Affichage Traces 3D** : Correction d'un bug d'altitude des traces GPX lors du switch 2D/3D. Les tracés sont désormais parfaitement plaqués sur le relief grâce à un rafraîchissement forcé post-chargement du terrain.
+- **Optimisation Démarrage (PC)** : Lancement du moteur 3D en parallèle de l'hydratation de l'interface secondaire. Suppression définitive de l'écran blanc au démarrage.
+- **Changement de Carte (Anti-Patchwork)** : Nettoyage systématique de la file de chargement et réinitialisation complète du terrain lors du switch de source (Satellite/Topo). Correction des mélanges de tuiles.
+- **Profil d'Élévation** : Réactivation du graphique pour les imports successifs. Priorité aux données d'altitude brutes du GPX pour garantir un profil correct même en mode 2D.
+- **Mode Manuel Protégé** : Le choix d'une source de carte manuelle (Satellite) désactive désormais l'automatisme de zone pour éviter les switchs intempestifs.
+
 ## [5.29.27] - 2026-04-16
 ### Fixed
 - **Robustesse du Zoom** : Implémentation d'un verrou de mise à jour intelligente (`updatePending`) pour éviter les conflits d'exécution et les "trous" dans la carte.

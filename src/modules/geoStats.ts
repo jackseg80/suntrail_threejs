@@ -12,9 +12,9 @@ export interface TrackStats {
  * Calcule le dénivelé cumulé (D+/D-) à partir d'une série d'altitudes.
  * Utilise l'algorithme d'hystérésis (standard Garmin) pour filtrer le bruit.
  * @param elevations Tableau des altitudes en mètres.
- * @param threshold Seuil d'hystérésis en mètres (défaut: 3m).
+ * @param threshold Seuil d'hystérésis en mètres (défaut: 5m).
  */
-export function calculateHysteresis(elevations: number[], threshold: number = 3): { dPlus: number, dMinus: number } {
+export function calculateHysteresis(elevations: number[], threshold: number = 5): { dPlus: number, dMinus: number } {
     if (elevations.length < 2) {
         return { dPlus: 0, dMinus: 0 };
     }
@@ -41,9 +41,9 @@ export function calculateHysteresis(elevations: number[], threshold: number = 3)
 
 /**
  * Calcule les statistiques d'un tracé GPS avec un algorithme d'hystérésis
- * Seuil par défaut : 3 mètres (v5.28.5 - standard Garmin robuste)
+ * Seuil par défaut : 5 mètres (v5.29.28 - compromis robustesse/précision)
  */
-export function calculateTrackStats(points: LocationPoint[], threshold: number = 3): TrackStats {
+export function calculateTrackStats(points: LocationPoint[], threshold: number = 5): TrackStats {
     // v5.28.2: Utilisation de la source de vérité unique pour le nettoyage
     const uniquePoints = cleanGPSTrack(points);
 

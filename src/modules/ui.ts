@@ -41,7 +41,7 @@ export function initUI(): void {
     void iapService.initialize();
 
     // Résolution de la clé MapTiler (centralisée v5.28.20)
-    const gistKeyReady = resolveMapTilerKey();
+    resolveMapTilerKey();
 
     const savedSettings = loadSettings();
     if (savedSettings) {
@@ -181,13 +181,14 @@ export function initUI(): void {
     initAutoHide();
     initMobileUI();
 
-    const secondaryUIReady = _initSecondaryUI();
+    // v5.29.28 : Lancement de la scène en PARALLÈLE de l'hydratation secondaire
+    // On n'attend plus _initSecondaryUI ni la clé MapTiler pour afficher le canvas 3D.
+    // L'utilisateur voit tout de suite le moteur de rendu, même si les données arrivent après.
+    launchScene();
 
-    // Démarrage automatique — attend la résolution de la clé MapTiler (avec timeout de sécurité)
-    const safetyTimeout = new Promise<void>(resolve => setTimeout(resolve, 5000));
-    void Promise.race([gistKeyReady, safetyTimeout]).then(async () => {
-        await secondaryUIReady;
-        launchScene();
+    // Hydratation des composants lourds en arrière-plan
+    void _initSecondaryUI().then(() => {
+        console.log('[UI] Secondary UI Hydrated');
     });
 
     (window as any).sheetManager = sheetManager;

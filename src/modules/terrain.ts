@@ -23,15 +23,21 @@ export const activeLabels = new Map<string, any>();
 const fadingOutTiles = new Set<Tile>();
 let lastRenderedZoom: number = -1;
 
+let lastMapSource: string = '';
+
 export function resetTerrain(): void {
     clearLabels();
+    clearLoadQueue(); // v5.29.28 : Annuler les chargements en cours de l'ancienne source/LOD
     for (const tile of fadingOutTiles) {
         markCacheKeyInactive(getTileCacheKey(tile.key, tile.zoom));
         tile.dispose();
     }
     fadingOutTiles.clear();
     lastRenderedZoom = -1;
-    for (const tile of activeTiles.values()) tile.dispose();
+    for (const tile of activeTiles.values()) {
+        removeTile(tile);
+        tile.dispose();
+    }
     activeTiles.clear();
     clearSpatialIndex();
 }
@@ -116,9 +122,19 @@ export function repositionAllTiles(): void {
 export const terrainUpdates = {
     updateAllGPXMeshes,
     updateRecordedTrackMesh,
+    refreshTracks,
     resetTerrain,
     repositionAllTiles
 };
+
+/**
+ * Rafraîchit l'affichage de tous les tracés (GPX et enregistrement en cours).
+ * Utile après un changement de mode 2D/3D ou un déplacement majeur.
+ */
+export function refreshTracks(): void {
+    updateAllGPXMeshes();
+    updateRecordedTrackMesh();
+}
 
 // Fixed constant access
 const EARTH_CIRCUMFERENCE_VAL = 40075016.686;
@@ -149,9 +165,12 @@ export function animateTiles(delta: number): boolean {
 }
 
 export function autoSelectMapSource(lat: number, lon: number): void {
+    // v5.29.28 : Protection renforcée. Si l'utilisateur a choisi une source, on n'y touche plus.
     if (state.hasManualSource || isNaN(lat) || lat === 0) return;
+    
     let newSource = (state.ZOOM > 10 && (isPositionInSwitzerland(lat, lon) || isPositionInFrance(lat, lon))) ? 'swisstopo' : 'opentopomap';
     if (state.MAP_SOURCE !== newSource) {
+        console.log(`[Terrain] Auto-switching source to ${newSource} based on location`);
         state.MAP_SOURCE = newSource;
         document.querySelectorAll('.layer-item').forEach(i => { i.classList.remove('active'); if ((i as HTMLElement).dataset.source === newSource) i.classList.add('active'); });
         if (state.camera && state.controls) {
@@ -167,13 +186,19 @@ import { terrainUniforms } from './terrain/Tile';
 let isUpdating = false;
 let updatePending = false;
 
-export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number | null = null, worldZ: number | null = null): Promise<void> {
-    if (isUpdating) {
+export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _camLon: number = state.TARGET_LON, _camAltitude: number = 5000, worldX: number | null = null, worldZ: number | null = null, force: boolean = false): Promise<void> {
+    if (isUpdating && !force) {
         updatePending = true;
         return Promise.resolve();
     }
     isUpdating = true;
     updatePending = false;
+
+    // v5.29.28 : Détection de changement de source de carte
+    if (lastMapSource !== state.MAP_SOURCE) {
+        lastMapSource = state.MAP_SOURCE;
+        resetTerrain();
+    }
 
     try {
         const is2DGlobal = state.IS_2D_MODE || state.PERFORMANCE_PRESET === 'eco' || state.ZOOM <= 10;
@@ -434,7 +459,7 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     if (state.scene) state.scene.add(mesh);
     const layer: GPXLayer = { id, name, color, visible: true, rawData, points: threePoints, mesh, stats: { distance, dPlus, dMinus, pointCount: validPoints.length } };
     state.gpxLayers = [...state.gpxLayers, layer];
-    if (!state.activeGPXLayerId) state.activeGPXLayerId = id;
+    state.activeGPXLayerId = id; // v5.29.28 : Toujours activer le dernier import
     const lats = validPoints.map((p: any) => p.lat as number); const lons = validPoints.map((p: any) => p.lon as number); const eles = validPoints.map((p: any) => (p.ele as number) || 0);
     const centerLat = (Math.max(...lats) + Math.min(...lats)) / 2; const centerLon = (Math.max(...lons) + Math.min(...lons)) / 2;
     const avgEle = eles.reduce((s: number, v: number) => s + v, 0) / eles.length;
