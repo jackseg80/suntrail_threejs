@@ -5,7 +5,7 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [5.29.32] - 2026-04-17
+## [5.29.33] - 2026-04-17
 ### Added
 - **Instrument Solaire (Pro)** : Nouveau tableau de bord avec boussole d'azimut temps réel, élévation max et phase lunaire détaillée.
 - **Station Météo (Pro)** : Interface de type instrument avec cadran de vent dynamique (direction/vitesse) et indicateurs de confort.
