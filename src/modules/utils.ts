@@ -291,3 +291,16 @@ function distanceToSegmentSquared3D(
     const dx = p.x - qx, dy = p.y - qy, dz = p.z - qz;
     return dx * dx + dy * dy + dz * dz;
 }
+
+// --- FORMATAGE (v5.29.33) ---
+
+export function fmtTime(d: Date | null): string {
+    if (!d) return '—:—';
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+export function fmtDuration(minutes: number): string {
+    const h = Math.floor(minutes / 60);
+    const m = Math.floor(minutes % 60);
+    return `${h}h ${m.toString().padStart(2, '0')}`;
+}

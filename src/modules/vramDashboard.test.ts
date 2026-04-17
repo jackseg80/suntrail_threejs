@@ -73,7 +73,7 @@ describe('VRAMDashboard', () => {
                 render: { calls: 55, triangles: 12345 }
             }
         };
-        (state as any).PERFORMANCE_PRESET = 'balanced';
+        state.PERFORMANCE_PRESET = 'balanced';
         // Tests de toggle : partir d'un état caché (SHOW_STATS=false)
         (state as any).SHOW_STATS = false;
 

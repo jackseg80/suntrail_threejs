@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.29.33)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-17 suite à la v5.29.33 (Solar & Weather Redesign).
+> Mis à jour le 2026-04-17 suite à la v5.29.33 (Architecture, Style Guide & I18n sync).
 
 ## Projet
 
@@ -25,8 +25,9 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 | Domaine | Document de Référence | Contenu |
 | :--- | :--- | :--- |
-| **État & Logique** | [docs/AI_ARCHITECTURE.md](docs/AI_ARCHITECTURE.md) | Proxy State, **Mapping EventBus**, **Architecture Shaders**. |
+| **État & Logique** | [docs/AI_ARCHITECTURE.md](docs/AI_ARCHITECTURE.md) | Proxy State, **Mapping EventBus**, Architecture Shaders. |
 | **Rendu & Batterie** | [docs/AI_PERFORMANCE.md](docs/AI_PERFORMANCE.md) | **Dictionnaire des Magic Numbers**, Deep Sleep, DPR Cap. |
+| **Design & UI** | [docs/AI_UI_STYLE_GUIDE.md](docs/AI_UI_STYLE_GUIDE.md) | **Grilles 2x2**, Instruments, Charts SVG, Variables CSS. |
 | **Business & Gates** | [docs/MONETIZATION.md](docs/MONETIZATION.md) | RevenueCat, Grille Free/Pro, Logique des verrous. |
 | **Interface & UX** | [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md) | TouchControls, SheetManager, DraggablePanels. |
 | **Débogage** | [docs/AI_DEBUGGING.md](docs/AI_DEBUGGING.md) | **Workflows de Simulation**, Troubleshooting visuel. |

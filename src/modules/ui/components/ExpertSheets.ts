@@ -9,6 +9,7 @@ import { sheetManager } from '../core/SheetManager';
 import { i18n } from '../../../i18n/I18nService';
 import { eventBus } from '../../eventBus';
 import { showUpgradePrompt } from '../../iap';
+import { fmtTime, fmtDuration } from '../../utils';
 import SunCalc from 'suncalc';
 
 export class WeatherSheet extends BaseComponent {
@@ -363,7 +364,7 @@ export class WeatherSheet extends BaseComponent {
             this.contentEl.appendChild(locHeader);
         }
 
-        const isPro = isProActive() && (state as any).SHOW_WEATHER_PRO;
+        const isPro = isProActive() && state.SHOW_WEATHER_PRO;
 
         if (!isPro) {
             // ── FREE version ──────────────────────────────────────────────────
@@ -581,17 +582,6 @@ export class SolarProbeSheet extends BaseComponent {
         attachProbeBtn();
     }
 
-    private fmtTime(d: Date | null): string {
-        if (!d) return '—:—';
-        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-
-    private fmtDuration(minutes: number): string {
-        const h = Math.floor(minutes / 60);
-        const m = minutes % 60;
-        return `${h}h ${m.toString().padStart(2, '0')}`;
-    }
-
     private moonEmoji(name: string): string {
         const map: Record<string, string> = {
             new: '🌑', waxing_crescent: '🌒', first_quarter: '🌓',
@@ -642,8 +632,8 @@ export class SolarProbeSheet extends BaseComponent {
             // ── FREE version ──────────────────────────────────────────────────
             const grid = document.createElement('div');
             grid.classList.add('exp-stat-grid', 'exp-probe-grid-mb');
-            addStat(grid, i18n.t('solar.stat.sunlight'), this.fmtDuration(result.totalSunlightMinutes), '☀️');
-            addStat(grid, i18n.t('solar.stat.firstRay'), this.fmtTime(result.firstSunTime), '🌅');
+            addStat(grid, i18n.t('solar.stat.sunlight'), fmtDuration(result.totalSunlightMinutes), '☀️');
+            addStat(grid, i18n.t('solar.stat.firstRay'), fmtTime(result.firstSunTime), '🌅');
             this.contentEl.appendChild(grid);
 
             this.buildTimeline(this.contentEl, result);
@@ -755,13 +745,13 @@ export class SolarProbeSheet extends BaseComponent {
             const grid1 = document.createElement('div');
             grid1.classList.add('exp-stat-grid', 'exp-probe-grid-mb');
             
-            addStat(grid1, i18n.t('solar.stat.dayDuration'), this.fmtDuration(result.dayDurationMinutes), '⏱️');
-            addStat(grid1, i18n.t('solar.stat.sunlight'), this.fmtDuration(result.totalSunlightMinutes), '☀️');
+            addStat(grid1, i18n.t('solar.stat.dayDuration'), fmtDuration(result.dayDurationMinutes), '⏱️');
+            addStat(grid1, i18n.t('solar.stat.sunlight'), fmtDuration(result.totalSunlightMinutes), '☀️');
             
             addStat(grid1, 'H. Dorée Matin',
-                `${this.fmtTime(result.goldenHourMorningStart)} — ${this.fmtTime(result.goldenHourMorningEnd)}`, '🌅');
+                `${fmtTime(result.goldenHourMorningStart)} — ${fmtTime(result.goldenHourMorningEnd)}`, '🌅');
             addStat(grid1, 'H. Dorée Soir',
-                `${this.fmtTime(result.goldenHourEveningStart)} — ${this.fmtTime(result.goldenHourEveningEnd)}`, '🌇');
+                `${fmtTime(result.goldenHourEveningStart)} — ${fmtTime(result.goldenHourEveningEnd)}`, '🌇');
             
             this.contentEl.appendChild(grid1);
 
@@ -896,7 +886,8 @@ export class SolarProbeSheet extends BaseComponent {
             txt.setAttribute('text-anchor', 'middle');
             txt.setAttribute('fill', color); txt.setAttribute('font-size', '8');
             txt.setAttribute('font-weight', 'bold');
-            txt.textContent = `${label} ${this.fmtTime(date)}`;
+            txt.textContent = `${label} ${fmtTime(date)}`;
+
             svg.appendChild(txt);
         };
 
@@ -965,13 +956,13 @@ export class SolarProbeSheet extends BaseComponent {
         const lines = [
             'SunTrail Solar Report',
             `Location: ${result.gps.lat.toFixed(5)}, ${result.gps.lon.toFixed(5)}`,
-            `${i18n.t('solar.stat.sunlight')}: ${this.fmtDuration(result.totalSunlightMinutes)}`,
-            `${i18n.t('solar.stat.sunrise')}: ${this.fmtTime(result.sunrise)}`,
-            `${i18n.t('solar.stat.noon')}: ${this.fmtTime(result.solarNoon)}`,
-            `${i18n.t('solar.stat.sunset')}: ${this.fmtTime(result.sunset)}`,
-            `${i18n.t('solar.stat.dayDuration')}: ${this.fmtDuration(result.dayDurationMinutes)}`,
-            `${i18n.t('solar.stat.goldenMorning')}: ${this.fmtTime(result.goldenHourMorningStart)} → ${this.fmtTime(result.goldenHourMorningEnd)}`,
-            `${i18n.t('solar.stat.goldenEvening')}: ${this.fmtTime(result.goldenHourEveningStart)} → ${this.fmtTime(result.goldenHourEveningEnd)}`,
+            `${i18n.t('solar.stat.sunlight')}: ${fmtDuration(result.totalSunlightMinutes)}`,
+            `${i18n.t('solar.stat.sunrise')}: ${fmtTime(result.sunrise)}`,
+            `${i18n.t('solar.stat.noon')}: ${fmtTime(result.solarNoon)}`,
+            `${i18n.t('solar.stat.sunset')}: ${fmtTime(result.sunset)}`,
+            `${i18n.t('solar.stat.dayDuration')}: ${fmtDuration(result.dayDurationMinutes)}`,
+            `${i18n.t('solar.stat.goldenMorning')}: ${fmtTime(result.goldenHourMorningStart)} → ${fmtTime(result.goldenHourMorningEnd)}`,
+            `${i18n.t('solar.stat.goldenEvening')}: ${fmtTime(result.goldenHourEveningStart)} → ${fmtTime(result.goldenHourEveningEnd)}`,
             `${i18n.t('solar.stat.azimuth')}: ${Math.round(result.currentAzimuthDeg)}°`,
             `${i18n.t('solar.stat.elevation')}: ${Math.round(result.currentElevationDeg)}°`,
             `${i18n.t('solar.stat.moonPhase')}: ${this.moonEmoji(result.moonPhaseName)} ${Math.round(result.moonPhase * 100)}%`,

@@ -358,6 +358,7 @@
       "windDir": "Wind direction",
       "cloudCover": "Cloud cover",
       "uvIndex": "UV Index",
+      "maxElevation": "Max Elevation",
       "precipProb": "Precipitation",
       "comfortIndex": "Hiking comfort"
     },
