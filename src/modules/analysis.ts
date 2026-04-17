@@ -97,6 +97,7 @@ export interface SolarAnalysisResult {
     moonPhaseName: string;
     // New — 24h elevation curve (144 pts, one per 10 min)
     elevationCurve: number[];
+    maxElevationDeg: number;
 }
 
 /**
@@ -183,12 +184,15 @@ export function runSolarProbe(worldX: number, worldZ: number, altitude: number):
     const moonPhaseName = getMoonPhaseName(moonPhase);
 
     // ── 24h elevation curve (144 pts × 10 min) ────────────────────────────────
+    let maxElevationDeg = -90;
     const elevationCurve: number[] = [];
     for (let i = 0; i < 144; i++) {
         const d = new Date(state.simDate);
         d.setHours(0, i * 10, 0, 0);
         const pos = SunCalc.getPosition(d, gps.lat, gps.lon);
-        elevationCurve.push(pos.altitude * (180 / Math.PI));
+        const elev = pos.altitude * (180 / Math.PI);
+        elevationCurve.push(elev);
+        if (elev > maxElevationDeg) maxElevationDeg = elev;
     }
 
     return {
@@ -209,6 +213,7 @@ export function runSolarProbe(worldX: number, worldZ: number, altitude: number):
         moonPhase,
         moonPhaseName,
         elevationCurve,
+        maxElevationDeg,
     };
 }
 

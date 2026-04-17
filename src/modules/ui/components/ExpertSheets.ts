@@ -579,7 +579,7 @@ export class SolarProbeSheet extends BaseComponent {
     private fmtDuration(minutes: number): string {
         const h = Math.floor(minutes / 60);
         const m = minutes % 60;
-        return `${h}h ${m.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+        return `${h}h ${m.toString().padStart(2, '0')}`;
     }
 
     private moonEmoji(name: string): string {
@@ -601,9 +601,16 @@ export class SolarProbeSheet extends BaseComponent {
         this.realtimeElevBarEl = null;
         this.svgCurrentLineEl = null;
 
-        const addStat = (parent: HTMLElement, label: string, value: string) => {
+        const addStat = (parent: HTMLElement, label: string, value: string, icon?: string) => {
             const div = document.createElement('div');
             div.classList.add('exp-probe-card');
+            if (icon) {
+                const iconEl = document.createElement('span');
+                iconEl.style.fontSize = '14px';
+                iconEl.style.marginRight = '4px';
+                iconEl.textContent = icon;
+                div.appendChild(iconEl);
+            }
             const lbl = document.createElement('div');
             lbl.classList.add('exp-probe-label');
             lbl.textContent = label;
@@ -626,8 +633,8 @@ export class SolarProbeSheet extends BaseComponent {
             // ── FREE version ──────────────────────────────────────────────────
             const grid = document.createElement('div');
             grid.classList.add('exp-stat-grid', 'exp-probe-grid-mb');
-            addStat(grid, i18n.t('solar.stat.sunlight'), this.fmtDuration(result.totalSunlightMinutes));
-            addStat(grid, i18n.t('solar.stat.firstRay'), this.fmtTime(result.firstSunTime));
+            addStat(grid, i18n.t('solar.stat.sunlight'), this.fmtDuration(result.totalSunlightMinutes), '☀️');
+            addStat(grid, i18n.t('solar.stat.firstRay'), this.fmtTime(result.firstSunTime), '🌅');
             this.contentEl.appendChild(grid);
 
             this.buildTimeline(this.contentEl, result);
@@ -646,110 +653,116 @@ export class SolarProbeSheet extends BaseComponent {
         } else {
             // ── PRO version ───────────────────────────────────────────────────
 
-            // Bloc 1 — Données du jour
-            const sectionTitle1 = document.createElement('div');
-            sectionTitle1.classList.add('exp-probe-section-title');
-            sectionTitle1.textContent = i18n.t('solar.section.dayData');
-            this.contentEl.appendChild(sectionTitle1);
+            // 1. Graphique d'élévation 24h (Prominent at top)
+            const chartSection = document.createElement('div');
+            chartSection.style.marginBottom = 'var(--space-4)';
+            chartSection.appendChild(this.buildElevationChart(result));
+            this.contentEl.appendChild(chartSection);
 
-            const grid1 = document.createElement('div');
-            grid1.classList.add('exp-stat-grid', 'exp-probe-grid-mb', 'exp-stat-grid-3');
-            addStat(grid1, i18n.t('solar.stat.sunrise'), this.fmtTime(result.sunrise));
-            addStat(grid1, i18n.t('solar.stat.noon'), this.fmtTime(result.solarNoon));
-            addStat(grid1, i18n.t('solar.stat.sunset'), this.fmtTime(result.sunset));
-            addStat(grid1, i18n.t('solar.stat.goldenMorning'),
-                `${this.fmtTime(result.goldenHourMorningStart)} → ${this.fmtTime(result.goldenHourMorningEnd)}`);
-            addStat(grid1, i18n.t('solar.stat.goldenEvening'),
-                `${this.fmtTime(result.goldenHourEveningStart)} → ${this.fmtTime(result.goldenHourEveningEnd)}`);
-            addStat(grid1, i18n.t('solar.stat.dayDuration'), this.fmtDuration(result.dayDurationMinutes));
-            addStat(grid1, i18n.t('solar.stat.sunlight'), this.fmtDuration(result.totalSunlightMinutes));
-            this.contentEl.appendChild(grid1);
-
-            // Bloc 2 — Temps réel
-            const sectionTitle2 = document.createElement('div');
-            sectionTitle2.classList.add('exp-probe-section-title');
-            sectionTitle2.textContent = i18n.t('solar.section.realtime');
-            this.contentEl.appendChild(sectionTitle2);
-
+            // 2. Temps réel & Boussole
             const rtContainer = document.createElement('div');
-            rtContainer.classList.add('solar-realtime-block');
-
-            // Azimuth with compass
-            const azRow = document.createElement('div');
-            azRow.classList.add('solar-realtime-row');
-            const azLabel = document.createElement('span');
-            azLabel.classList.add('exp-probe-label');
-            azLabel.textContent = i18n.t('solar.stat.azimuth');
-            const azValue = document.createElement('span');
-            azValue.classList.add('exp-probe-value', 'solar-rt-value');
-            this.realtimeAzimuthEl = azValue;
-
-            // Inline SVG compass arrow
+            rtContainer.classList.add('solar-realtime-instrument');
+            
+            // Left: Compass
+            const compassBox = document.createElement('div');
+            compassBox.classList.add('solar-instrument-compass');
             const compassSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            compassSvg.setAttribute('viewBox', '0 0 24 24');
-            compassSvg.setAttribute('width', '20');
-            compassSvg.setAttribute('height', '20');
-            compassSvg.classList.add('solar-compass-svg');
+            compassSvg.setAttribute('viewBox', '0 0 100 100');
+            compassSvg.classList.add('solar-compass-large');
+            // Dial
+            const dial = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            dial.setAttribute('cx', '50'); dial.setAttribute('cy', '50'); dial.setAttribute('r', '45');
+            dial.setAttribute('stroke', 'var(--border)'); dial.setAttribute('fill', 'rgba(0,0,0,0.2)');
+            compassSvg.appendChild(dial);
+            // Marks N/E/S/W
+            ['N','E','S','W'].forEach((label, i) => {
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                const angle = i * 90 * (Math.PI/180) - Math.PI/2;
+                text.setAttribute('x', String(50 + 35 * Math.cos(angle)));
+                text.setAttribute('y', String(50 + 35 * Math.sin(angle) + 4));
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('fill', 'var(--text-3)');
+                text.setAttribute('font-size', '10');
+                text.setAttribute('font-weight', 'bold');
+                text.textContent = label;
+                compassSvg.appendChild(text);
+            });
+            // Arrow
             const compassArrow = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            compassArrow.setAttribute('fill', '#FFD700');
-            compassArrow.setAttribute('d', 'M12 2 L14 20 L12 17 L10 20 Z');
+            compassArrow.setAttribute('fill', 'var(--gold)');
+            compassArrow.setAttribute('d', 'M50 20 L58 75 L50 65 L42 75 Z');
             this.realtimeCompassEl = compassArrow;
             compassSvg.appendChild(compassArrow);
+            compassBox.appendChild(compassSvg);
+            
+            // Right: RT Stats
+            const rtStats = document.createElement('div');
+            rtStats.classList.add('solar-instrument-stats');
+            
+            const rtAz = document.createElement('div');
+            rtAz.className = 'solar-rt-stat-item';
+            rtAz.innerHTML = `<span class="exp-probe-label">${i18n.t('solar.stat.azimuth')}</span>`;
+            const rtAzVal = document.createElement('div');
+            rtAzVal.className = 'exp-probe-value';
+            this.realtimeAzimuthEl = rtAzVal;
+            rtAz.appendChild(rtAzVal);
+            
+            const rtEl = document.createElement('div');
+            rtEl.className = 'solar-rt-stat-item';
+            rtEl.innerHTML = `<span class="exp-probe-label">${i18n.t('solar.stat.elevation')}</span>`;
+            const rtElVal = document.createElement('div');
+            rtElVal.className = 'exp-probe-value';
+            this.realtimeElevationEl = rtElVal;
+            rtEl.appendChild(rtElVal);
 
-            azRow.appendChild(azLabel);
-            azRow.appendChild(azValue);
-            azRow.appendChild(compassSvg);
-            rtContainer.appendChild(azRow);
+            const rtMoon = document.createElement('div');
+            rtMoon.className = 'solar-rt-stat-item';
+            rtMoon.innerHTML = `<span class="exp-probe-label">${i18n.t('solar.stat.moonPhase')}</span>`;
+            const rtMoonVal = document.createElement('div');
+            rtMoonVal.className = 'exp-probe-value';
+            rtMoonVal.style.fontSize = 'var(--text-md)';
+            rtMoonVal.textContent = `${this.moonEmoji(result.moonPhaseName)} ${Math.round(result.moonPhase * 100)}%`;
+            rtMoon.appendChild(rtMoonVal);
 
-            // Elevation with progress bar
-            const elevRow = document.createElement('div');
-            elevRow.classList.add('solar-realtime-row');
-            const elevLabel = document.createElement('span');
-            elevLabel.classList.add('exp-probe-label');
-            elevLabel.textContent = i18n.t('solar.stat.elevation');
-            const elevValue = document.createElement('span');
-            elevValue.classList.add('exp-probe-value', 'solar-rt-value');
-            this.realtimeElevationEl = elevValue;
-            const elevBarWrap = document.createElement('div');
-            elevBarWrap.classList.add('solar-elev-bar-wrap');
-            const elevBar = document.createElement('div');
-            elevBar.classList.add('solar-elev-bar');
-            this.realtimeElevBarEl = elevBar;
-            elevBarWrap.appendChild(elevBar);
-            elevRow.appendChild(elevLabel);
-            elevRow.appendChild(elevValue);
-            elevRow.appendChild(elevBarWrap);
-            rtContainer.appendChild(elevRow);
+            const rtMaxEl = document.createElement('div');
+            rtMaxEl.className = 'solar-rt-stat-item';
+            rtMaxEl.innerHTML = `<span class="exp-probe-label">${i18n.t('solar.stat.maxElevation')}</span>`;
+            const rtMaxElVal = document.createElement('div');
+            rtMaxElVal.className = 'exp-probe-value';
+            rtMaxElVal.style.fontSize = 'var(--text-md)';
+            rtMaxElVal.textContent = `${Math.round(result.maxElevationDeg)}°`;
+            rtMaxEl.appendChild(rtMaxElVal);
 
-            // Moon phase
-            const moonRow = document.createElement('div');
-            moonRow.classList.add('solar-realtime-row');
-            const moonLabel = document.createElement('span');
-            moonLabel.classList.add('exp-probe-label');
-            moonLabel.textContent = i18n.t('solar.stat.moonPhase');
-            const moonValue = document.createElement('span');
-            moonValue.classList.add('exp-probe-value', 'solar-rt-value');
-            moonValue.textContent = `${this.moonEmoji(result.moonPhaseName)} ${Math.round(result.moonPhase * 100)}%`;
-            moonRow.appendChild(moonLabel);
-            moonRow.appendChild(moonValue);
-            rtContainer.appendChild(moonRow);
-
+            rtStats.appendChild(rtAz);
+            rtStats.appendChild(rtEl);
+            rtStats.appendChild(rtMaxEl);
+            rtStats.appendChild(rtMoon);
+            
+            rtContainer.appendChild(compassBox);
+            rtContainer.appendChild(rtStats);
             this.contentEl.appendChild(rtContainer);
 
-            // Bloc 3 — Graphique d'élévation 24h
-            const sectionTitle3 = document.createElement('div');
-            sectionTitle3.classList.add('exp-probe-section-title');
-            sectionTitle3.textContent = i18n.t('solar.stat.elevationChart');
-            this.contentEl.appendChild(sectionTitle3);
+            // 3. Bloc Données du jour (Simplified Grid)
+            const grid1 = document.createElement('div');
+            grid1.classList.add('exp-stat-grid', 'exp-probe-grid-mb');
+            
+            addStat(grid1, i18n.t('solar.stat.dayDuration'), this.fmtDuration(result.dayDurationMinutes), '⏱️');
+            addStat(grid1, i18n.t('solar.stat.sunlight'), this.fmtDuration(result.totalSunlightMinutes), '☀️');
+            
+            addStat(grid1, 'H. Dorée Matin',
+                `${this.fmtTime(result.goldenHourMorningStart)} — ${this.fmtTime(result.goldenHourMorningEnd)}`, '🌅');
+            addStat(grid1, 'H. Dorée Soir',
+                `${this.fmtTime(result.goldenHourEveningStart)} — ${this.fmtTime(result.goldenHourEveningEnd)}`, '🌇');
+            
+            this.contentEl.appendChild(grid1);
 
-            this.contentEl.appendChild(this.buildElevationChart(result));
-
-            // Bloc 4 — Timeline
+            // 4. Timeline (Evolution détaillée)
             this.buildTimeline(this.contentEl, result);
 
-            // Bloc 5 — Rapport exportable
+            // 5. Rapport exportable
             const copyBtn = document.createElement('button');
             copyBtn.className = 'btn-go';
+            copyBtn.style.marginTop = 'var(--space-2)';
             copyBtn.setAttribute('aria-label', i18n.t('solar.btn.copy'));
             copyBtn.textContent = i18n.t('solar.btn.copy');
             copyBtn.onclick = () => this.copyReport(result);
@@ -777,9 +790,9 @@ export class SolarProbeSheet extends BaseComponent {
             if (t.isNight) {
                 bar.style.background = '#000';
             } else if (t.inShadow) {
-                bar.style.background = '#444';
+                bar.style.background = 'rgba(255,80,80,0.3)'; // Reddish for shadow
             } else {
-                bar.style.background = '#ffd700';
+                bar.style.background = 'var(--gold)';
             }
             timelineContainer.appendChild(bar);
         });
@@ -787,102 +800,128 @@ export class SolarProbeSheet extends BaseComponent {
     }
 
     private buildElevationChart(result: SolarAnalysisResult): SVGSVGElement {
-        const W = 288;
-        const H = 80;
-        const PADDING_BOTTOM = 14; // space for hour labels
+        const W = 320;
+        const H = 120;
+        const PADDING_BOTTOM = 20; 
         const CHART_H = H - PADDING_BOTTOM;
 
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-        svg.setAttribute('preserveAspectRatio', 'none');
-        svg.classList.add('solar-elevation-chart');
+        svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        svg.classList.add('solar-elevation-chart-v2');
+        svg.style.width = '100%';
+        svg.style.height = 'auto';
+        svg.style.background = 'var(--surface-subtle)';
+        svg.style.borderRadius = 'var(--radius-md)';
+        svg.style.border = '1px solid var(--border)';
 
-        // Background — night base
-        const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        bgRect.setAttribute('x', '0'); bgRect.setAttribute('y', '0');
-        bgRect.setAttribute('width', String(W)); bgRect.setAttribute('height', String(CHART_H));
-        bgRect.setAttribute('fill', '#0a0a1a');
-        svg.appendChild(bgRect);
+        // 1. Defined Gradients
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const skyGrad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+        skyGrad.setAttribute('id', 'skyGrad'); skyGrad.setAttribute('x1', '0'); skyGrad.setAttribute('y1', '0'); skyGrad.setAttribute('x2', '0'); skyGrad.setAttribute('y2', '1');
+        skyGrad.innerHTML = `<stop offset="0%" stop-color="#4a8ef8" stop-opacity="0.4"/><stop offset="100%" stop-color="#4a8ef8" stop-opacity="0.05"/>`;
+        defs.appendChild(skyGrad);
+        svg.appendChild(defs);
 
-        // Colored zones: day vs twilight based on elevation
-        const curve = result.elevationCurve; // 144 pts
-        const xStep = W / 144;
-        // Draw daytime fill (elevation > 0) as sky blue
-        // Draw twilight band (elevation -6..0) as gradient orange-ish
-        // We'll do a simple approach: sky blue above 0°, dark below
-        const yForElev = (elev: number) => {
-            // Map -90..90 → CHART_H..0
-            return CHART_H - ((elev + 90) / 180) * CHART_H;
-        };
+        // 2. Background zones
+        const yForElev = (elev: number) => CHART_H - ((elev + 20) / 110) * CHART_H; // Map -20..90 to CHART_H..0
         const horizonY = yForElev(0);
 
-        // Day zone background fill (above horizon)
-        const dayRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        dayRect.setAttribute('x', '0'); dayRect.setAttribute('y', '0');
-        dayRect.setAttribute('width', String(W)); dayRect.setAttribute('height', String(horizonY));
-        dayRect.setAttribute('fill', '#87ceeb');
-        dayRect.setAttribute('opacity', '0.25');
-        svg.appendChild(dayRect);
+        // Day background
+        const dayBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        dayBg.setAttribute('x', '0'); dayBg.setAttribute('y', '0');
+        dayBg.setAttribute('width', String(W)); dayBg.setAttribute('height', String(horizonY));
+        dayBg.setAttribute('fill', 'url(#skyGrad)');
+        svg.appendChild(dayBg);
 
-        // Shadow segments (inShadow bars) — one per 30min = 2 pts on chart (2/144 = 1 bar = 4px wide)
+        // Shadow segments
         result.timeline.forEach((t, i) => {
             if (!t.isNight && t.inShadow) {
                 const x = (i / 48) * W;
                 const barW = W / 48;
                 const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                r.setAttribute('x', String(x));
-                r.setAttribute('y', '0');
-                r.setAttribute('width', String(barW));
-                r.setAttribute('height', String(CHART_H));
-                r.setAttribute('fill', 'rgba(255,80,80,0.18)');
+                r.setAttribute('x', String(x)); r.setAttribute('y', '0');
+                r.setAttribute('width', String(barW)); r.setAttribute('height', String(CHART_H));
+                r.setAttribute('fill', 'rgba(239,68,68,0.15)');
                 svg.appendChild(r);
             }
         });
 
-        // Elevation curve path
-        let d = '';
-        curve.forEach((elev, i) => {
-            const x = i * xStep;
-            const y = yForElev(elev);
-            d += i === 0 ? `M${x.toFixed(1)},${y.toFixed(1)}` : ` L${x.toFixed(1)},${y.toFixed(1)}`;
-        });
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', d);
-        path.setAttribute('stroke', '#FFD700');
-        path.setAttribute('stroke-width', '1.5');
-        path.setAttribute('fill', 'none');
-        svg.appendChild(path);
-
-        // Horizon line
+        // 3. Grid & Horizon
         const horizLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         horizLine.setAttribute('x1', '0'); horizLine.setAttribute('x2', String(W));
         horizLine.setAttribute('y1', String(horizonY)); horizLine.setAttribute('y2', String(horizonY));
-        horizLine.setAttribute('stroke', 'var(--canvas-stroke)');
-        horizLine.setAttribute('stroke-width', '0.5');
+        horizLine.setAttribute('stroke', 'var(--text-3)'); horizLine.setAttribute('stroke-width', '0.5');
+        horizLine.setAttribute('stroke-dasharray', '2,2');
         svg.appendChild(horizLine);
 
-        // Current time vertical line
-        const currentMins = state.simDate.getHours() * 60 + state.simDate.getMinutes();
-        const currentX = (currentMins / 1440) * W;
+        // 4. Elevation curve
+        const curve = result.elevationCurve;
+        let d = '';
+        curve.forEach((elev, i) => {
+            const x = (i / 143) * W;
+            const y = yForElev(elev);
+            d += i === 0 ? `M${x},${y}` : ` L${x},${y}`;
+        });
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', d);
+        path.setAttribute('stroke', 'var(--gold)'); path.setAttribute('stroke-width', '2');
+        path.setAttribute('fill', 'none');
+        svg.appendChild(path);
+
+        // 5. Markers (Sunrise, Sunset, Noon)
+        const addMarker = (date: Date | null, label: string, color: string) => {
+            if (!date) return;
+            const mins = date.getHours() * 60 + date.getMinutes();
+            const x = (mins / 1440) * W;
+            
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', String(x)); line.setAttribute('x2', String(x));
+            line.setAttribute('y1', '0'); line.setAttribute('y2', String(CHART_H));
+            line.setAttribute('stroke', color); line.setAttribute('stroke-width', '1');
+            line.setAttribute('stroke-dasharray', '3,3');
+            svg.appendChild(line);
+
+            const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            txt.setAttribute('x', String(x)); txt.setAttribute('y', '12');
+            txt.setAttribute('text-anchor', 'middle');
+            txt.setAttribute('fill', color); txt.setAttribute('font-size', '8');
+            txt.setAttribute('font-weight', 'bold');
+            txt.textContent = `${label} ${this.fmtTime(date)}`;
+            svg.appendChild(txt);
+        };
+
+        addMarker(result.sunrise, '↑', 'var(--gold)');
+        addMarker(result.sunset, '↓', 'var(--text-2)');
+        addMarker(result.solarNoon, '☼', 'var(--accent)');
+
+        // Max elevation marker
+        const maxIdx = result.elevationCurve.indexOf(result.maxElevationDeg);
+        if (maxIdx !== -1) {
+            const mins = maxIdx * 10;
+            const x = (mins / 1440) * W;
+            const y = yForElev(result.maxElevationDeg);
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', String(x)); circle.setAttribute('cy', String(y));
+            circle.setAttribute('r', '3'); circle.setAttribute('fill', 'var(--gold)');
+            svg.appendChild(circle);
+        }
+
+        // 6. Current time cursor
         const currentLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        currentLine.setAttribute('x1', String(currentX)); currentLine.setAttribute('x2', String(currentX));
         currentLine.setAttribute('y1', '0'); currentLine.setAttribute('y2', String(CHART_H));
-        currentLine.setAttribute('stroke', 'var(--canvas-text)');
-        currentLine.setAttribute('stroke-width', '1');
-        currentLine.setAttribute('stroke-dasharray', '2,2');
+        currentLine.setAttribute('stroke', 'var(--text)'); currentLine.setAttribute('stroke-width', '1.5');
         this.svgCurrentLineEl = currentLine as unknown as SVGLineElement;
         svg.appendChild(currentLine);
 
-        // Hour labels
+        // 7. Time labels
         [0, 6, 12, 18, 24].forEach((h) => {
             const x = (h / 24) * W;
             const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            label.setAttribute('x', String(x));
-            label.setAttribute('y', String(H - 2));
+            label.setAttribute('x', String(x)); label.setAttribute('y', String(H - 4));
             label.setAttribute('text-anchor', 'middle');
-            label.setAttribute('fill', 'var(--canvas-text)');
-            label.setAttribute('font-size', '8');
-            label.textContent = `${String(h).padStart(2, '0')}:00`;
+            label.setAttribute('fill', 'var(--text-3)'); label.setAttribute('font-size', '9');
+            label.textContent = `${h}h`;
             svg.appendChild(label);
         });
 
@@ -903,15 +942,11 @@ export class SolarProbeSheet extends BaseComponent {
             this.realtimeElevationEl.textContent = `${Math.round(elevDeg)}°`;
         }
         if (this.realtimeCompassEl) {
-            this.realtimeCompassEl.setAttribute('transform', `rotate(${azDeg}, 12, 12)`);
-        }
-        if (this.realtimeElevBarEl) {
-            const pct = Math.max(0, Math.min(100, (elevDeg / 90) * 100));
-            this.realtimeElevBarEl.style.width = `${pct}%`;
+            this.realtimeCompassEl.setAttribute('transform', `rotate(${azDeg}, 50, 50)`);
         }
         if (this.svgCurrentLineEl) {
             const currentMins = state.simDate.getHours() * 60 + state.simDate.getMinutes();
-            const x = String((currentMins / 1440) * 288);
+            const x = String((currentMins / 1440) * 320);
             this.svgCurrentLineEl.setAttribute('x1', x);
             this.svgCurrentLineEl.setAttribute('x2', x);
         }

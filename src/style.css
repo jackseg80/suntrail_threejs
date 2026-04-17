@@ -1480,6 +1480,53 @@ body.preset-eco #timeline-toggle-btn { display: none !important; }
     font-size: var(--text-sm);
 }
 
+/* ── SOLAR ANALYSIS V2 (v5.28.37) ───────────────────────────────────────── */
+
+.solar-realtime-instrument {
+    display: flex;
+    background: var(--surface-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3);
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+    align-items: center;
+}
+
+.solar-instrument-compass {
+    flex: 0 0 100px;
+    height: 100px;
+    position: relative;
+}
+
+.solar-compass-large {
+    width: 100%;
+    height: 100%;
+}
+
+.solar-instrument-stats {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.solar-rt-stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 2px;
+}
+
+.solar-rt-stat-item:last-child {
+    border-bottom: none;
+}
+
+.solar-elevation-chart-v2 {
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+}
+
 /* SWIPE HANDLE */
 .sheet-drag-handle {
     width: 100%;

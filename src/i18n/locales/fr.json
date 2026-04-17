@@ -408,6 +408,7 @@
       "dayDuration": "Durée du jour",
       "azimuth": "Azimut",
       "elevation": "Élévation",
+      "maxElevation": "Élévation Max",
       "moonPhase": "Phase lunaire",
       "elevationChart": "Courbe d'élévation 24h"
     },
