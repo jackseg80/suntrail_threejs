@@ -46,31 +46,39 @@ function getMaxCacheSize(): number {
  */
 export function getTileCacheKey(key: string, zoom: number): string {
     const is2D = (zoom <= 10 || state.RESOLUTION <= 2);
-    return `${state.MAP_SOURCE}_${state.SHOW_TRAILS}_${is2D ? '2D' : '3D'}_${key}`;
+    return `${state.MAP_SOURCE}_z${zoom}_${state.SHOW_TRAILS}_${is2D ? '2D' : '3D'}_${key}`;
+}
+
+/**
+ * Purge les données pixelData (RAM) des tuiles non prioritaires.
+ * v5.29.31 : Optimisation majeure de la RAM.
+ */
+export function purgeOldPixelData(): void {
+    let purgedCount = 0;
+    
+    for (const [key, data] of dataCache.entries()) {
+        if (!data.pixelData) continue;
+        
+        // On ne purge QUE si la tuile n'est pas active (actuellement à l'écran)
+        // ET si elle n'est pas dans un zoom "haute précision" (LOD > 14)
+        if (!activeCacheKeys.has(key)) {
+            const isHighRes = key.includes('_z15') || key.includes('_z16') || key.includes('_z17') || key.includes('_z18');
+            if (!isHighRes) {
+                data.pixelData = null;
+                purgedCount++;
+            }
+        }
+    }
 }
 
 /**
  * Ajoute des données de tuiles au cache. 
  */
 export function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8ClampedArray | null, colorTex: THREE.Texture, overlayTex: THREE.Texture | null, normalTex: THREE.Texture | null): void {
-    if (dataCache.size >= getMaxCacheSize()) {
-        let evictKey: string | undefined;
-        for (const k of dataCache.keys()) {
-            if (!activeCacheKeys.has(k)) { evictKey = k; break; }
-        }
-        if (!evictKey) evictKey = dataCache.keys().next().value;
-        if (evictKey) {
-            const entry = dataCache.get(evictKey);
-            if (entry) {
-                entry.elev.dispose();
-                entry.color.dispose();
-                if (entry.overlay) entry.overlay.dispose();
-                if (entry.normal) entry.normal.dispose();
-            }
-            dataCache.delete(evictKey);
-        }
-    }
     dataCache.set(key, { elev: elevTex, pixelData, color: colorTex, overlay: overlayTex, normal: normalTex });
+    if (dataCache.size > getMaxCacheSize()) {
+        trimCache();
+    }
 }
 
 /**

@@ -6,7 +6,7 @@ import { updateElevationProfile } from './profile';
 import { lngLatToWorld, worldToLngLat, lngLatToTile, isPositionInSwitzerland, isPositionInFrance } from './geo';
 import { eventBus } from './eventBus';
 import { getAltitudeAt, drapeToTerrain } from './analysis';
-import { getTileCacheKey, markCacheKeyInactive, hasInCache, getFromCache } from './tileCache';
+import { getTileCacheKey, markCacheKeyInactive, hasInCache, getFromCache, purgeOldPixelData } from './tileCache';
 import { insertTile, removeTile, clearIndex as clearSpatialIndex } from './tileSpatialIndex';
 import { calculateTrackStats } from './geoStats';
 
@@ -223,6 +223,7 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
         // v5.28.48 : Nettoyage immédiat lors d'un changement de LOD
         if (lodChanging) {
             clearLoadQueue();
+            purgeOldPixelData(); // v5.29.31 : Libérer la RAM des anciennes données d'altitude
             if (fadingOutTiles.size > 0) {
                 for (const t of fadingOutTiles) t.dispose();
                 fadingOutTiles.clear();

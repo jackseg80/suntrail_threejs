@@ -16,15 +16,19 @@ export function queueBuildMesh(tile: Tile) {
     }
     if (!isProcessingBuildQueue) {
         isProcessingBuildQueue = true;
+        state.isProcessingTiles = true; // v5.29.31 : Garder le moteur éveillé pendant le montage
         requestAnimationFrame(processBuildQueue);
     }
 }
 
 function processBuildQueue() {
-    const BUILD_BUDGET_MS = 6; // Max 6ms par frame pour ne pas casser les 60fps (16ms)
+    const BUILD_BUDGET_MS = 10; // Augmenté à 10ms pour plus de réactivité
     const start = performance.now();
     
-    while (buildQueue.length > 0 && (performance.now() - start < BUILD_BUDGET_MS)) {
+    // v5.29.31 : Traiter au moins une tuile par frame quoi qu'il arrive
+    let first = true;
+    while (buildQueue.length > 0 && (first || (performance.now() - start < BUILD_BUDGET_MS))) {
+        first = false;
         const tile = buildQueue.shift();
         if (tile && tile.status !== 'disposed' && activeTiles.has(tile.key)) {
             tile.buildMesh(state.RESOLUTION);
@@ -32,9 +36,14 @@ function processBuildQueue() {
     }
     
     if (buildQueue.length > 0) {
+        state.isProcessingTiles = true;
         requestAnimationFrame(processBuildQueue);
     } else {
         isProcessingBuildQueue = false;
+        // On ne coupe isProcessingTiles que si la loadQueue est aussi vide
+        if (loadQueue.size === 0) {
+            state.isProcessingTiles = false;
+        }
     }
 }
 

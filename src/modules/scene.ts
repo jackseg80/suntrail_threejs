@@ -444,6 +444,104 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
     let lastCompassTime = 0;
     let lastInteracting = false;
 
+/**
+ * Calcule et applique l'inclinaison (tilt) automatique de la caméra.
+ * v5.29.31 : Refactorisation pour alléger la boucle de rendu.
+ */
+function updateAutoTilt(distToTarget: number): boolean {
+    if (!state.controls) return false;
+
+    let tiltCap = 1.10;
+    if (state.ZOOM <= 10) tiltCap = 0;
+    else if (state.ZOOM === 11) tiltCap = 0.45;
+    else if (state.ZOOM === 12) tiltCap = 0.70;
+    else if (state.ZOOM === 13) tiltCap = 0.90;
+    else if (state.ZOOM === 14) tiltCap = 0.95; 
+    else if (state.ZOOM === 15) tiltCap = 0.85;
+    else if (state.ZOOM === 16) tiltCap = 0.65;
+    else if (state.ZOOM === 17) tiltCap = 0.50;
+    else if (state.ZOOM >= 18)  tiltCap = 0.40;
+
+    if (state.ZOOM >= 14 && !state.IS_2D_MODE) {
+        const targetH = getAltitudeAt(state.controls.target.x, state.controls.target.z);
+        const elevFactor = THREE.MathUtils.clamp(targetH / 8000, 0, 0.50);
+        tiltCap *= (1.0 - elevFactor);
+    }
+
+    const interacting = state.isUserInteracting;
+    const currentTilt = state.controls.getPolarAngle();
+    
+    if (state.IS_2D_MODE || state.ZOOM <= 10) {
+        if (state.isTiltTransitioning && currentTilt > 0.005) {
+            const newTilt = THREE.MathUtils.lerp(currentTilt, 0, 0.06);
+            state.controls.minPolarAngle = 0;
+            state.controls.maxPolarAngle = Math.max(0, newTilt);
+            return true;
+        } else {
+            state.controls.minPolarAngle = 0; state.controls.maxPolarAngle = 0;
+            if (state.isTiltTransitioning) state.isTiltTransitioning = false;
+            return false;
+        }
+    } else if (state.isTiltTransitioning) {
+        const desiredTilt = Math.max(tiltCap * 0.85, 0.5);
+        if (Math.abs(currentTilt - desiredTilt) > 0.01) {
+            const newTilt = THREE.MathUtils.lerp(currentTilt, desiredTilt, 0.07);
+            state.controls.minPolarAngle = Math.max(0.05, newTilt - 0.01);
+            state.controls.maxPolarAngle = Math.min(tiltCap, newTilt + 0.01);
+            return true;
+        } else {
+            state.isTiltTransitioning = false;
+            state.controls.minPolarAngle = 0.05; state.controls.maxPolarAngle = tiltCap;
+            return false;
+        }
+    } else if (interacting) {
+        state.controls.minPolarAngle = 0.05; state.controls.maxPolarAngle = tiltCap;
+        return false;
+    } else {
+        const hFactor = THREE.MathUtils.clamp((distToTarget - 2000) / 100000, 0, 1);
+        let desiredTilt = THREE.MathUtils.lerp(tiltCap * 0.95, 0.05, Math.pow(hFactor, 0.4));
+        if (state.ZOOM <= 11) desiredTilt = Math.min(desiredTilt, tiltCap * 0.9);
+        if (Math.abs(currentTilt - desiredTilt) > 0.005) {
+            const newTilt = THREE.MathUtils.lerp(currentTilt, desiredTilt, 0.02);
+            state.controls.minPolarAngle = Math.max(0.05, newTilt - 0.2);
+            state.controls.maxPolarAngle = Math.min(tiltCap, newTilt + 0.2);
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Gère la physique de la caméra par rapport au terrain (suivi d'altitude et collision).
+ * v5.29.31 : Isolation de la logique physique.
+ */
+function updateTerrainPhysics(interacting: boolean): void {
+    if (!state.camera || !state.controls) return;
+
+    // v5.28.46 : Altitude du sol sous la caméra (0 en 2D)
+    const groundH = state.IS_2D_MODE ? 0 : getAltitudeAt(state.camera.position.x, state.camera.position.z);
+
+    if (!state.isFlyingTo && !state.isFollowingUser) {
+        // v5.28.46 : En mode 2D, le sol est à 0. On ne doit pas suivre l'altitude réelle.
+        const targetGroundH = state.IS_2D_MODE ? 0 : getAltitudeAt(state.controls.target.x, state.controls.target.z);
+        
+        const diff = targetGroundH - state.controls.target.y;
+        if (Math.abs(diff) > 0.1) {
+            const trackLerp = interacting ? 0.08 : 0.03;
+            const yDelta = diff * trackLerp;
+            state.controls.target.y += yDelta;
+            state.camera.position.y += yDelta;
+        }
+    }
+    
+    // v5.28.46 : Sécurité collision sol adaptée au mode 2D
+    if (state.camera.position.y < groundH + 45) {
+        state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, groundH + 45, 0.2);
+        state.controls.update();
+    }
+    state.controls.minDistance = Math.max(100, groundH * 0.1);
+}
+
     const renderLoopFn = () => {
         if (!state.renderer || !state.camera || !state.scene || !state.controls) return;
 
@@ -490,25 +588,7 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
             state.sunLight.castShadow = state.SHADOWS && !state.isUserInteracting;
         }
 
-        let tiltCap = 1.10;
-        if (state.ZOOM <= 10) tiltCap = 0;
-        else if (state.ZOOM === 11) tiltCap = 0.45;
-        else if (state.ZOOM === 12) tiltCap = 0.70;
-        else if (state.ZOOM === 13) tiltCap = 0.90;
-        else if (state.ZOOM === 14) tiltCap = 0.95; 
-        else if (state.ZOOM === 15) tiltCap = 0.85;
-        else if (state.ZOOM === 16) tiltCap = 0.65;
-        else if (state.ZOOM === 17) tiltCap = 0.50;
-        else if (state.ZOOM >= 18)  tiltCap = 0.40;
-
-        if (state.ZOOM >= 14 && !state.IS_2D_MODE) {
-            const targetH = getAltitudeAt(state.controls.target.x, state.controls.target.z);
-            const elevFactor = THREE.MathUtils.clamp(targetH / 8000, 0, 0.50);
-            tiltCap *= (1.0 - elevFactor);
-        }
-
         const interacting = state.isUserInteracting;
-        const currentTilt = state.controls.getPolarAngle();
         const distToTarget = state.camera.position.distanceTo(state.controls.target);
         
         // v5.29.6 : Persister la vue si on vient d'arrêter d'interagir
@@ -517,41 +597,7 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
         }
         lastInteracting = interacting;
 
-        let tiltAnimating = false;
-        if (state.IS_2D_MODE || state.ZOOM <= 10) {
-            if (state.isTiltTransitioning && currentTilt > 0.005) {
-                tiltAnimating = true;
-                const newTilt = THREE.MathUtils.lerp(currentTilt, 0, 0.06);
-                state.controls.minPolarAngle = 0;
-                state.controls.maxPolarAngle = Math.max(0, newTilt);
-            } else {
-                state.controls.minPolarAngle = 0; state.controls.maxPolarAngle = 0;
-                if (state.isTiltTransitioning) state.isTiltTransitioning = false;
-            }
-        } else if (state.isTiltTransitioning) {
-            const desiredTilt = Math.max(tiltCap * 0.85, 0.5);
-            if (Math.abs(currentTilt - desiredTilt) > 0.01) {
-                tiltAnimating = true;
-                const newTilt = THREE.MathUtils.lerp(currentTilt, desiredTilt, 0.07);
-                state.controls.minPolarAngle = Math.max(0.05, newTilt - 0.01);
-                state.controls.maxPolarAngle = Math.min(tiltCap, newTilt + 0.01);
-            } else {
-                state.isTiltTransitioning = false;
-                state.controls.minPolarAngle = 0.05; state.controls.maxPolarAngle = tiltCap;
-            }
-        } else if (interacting) {
-            state.controls.minPolarAngle = 0.05; state.controls.maxPolarAngle = tiltCap;
-        } else {
-            const hFactor = THREE.MathUtils.clamp((distToTarget - 2000) / 100000, 0, 1);
-            let desiredTilt = THREE.MathUtils.lerp(tiltCap * 0.95, 0.05, Math.pow(hFactor, 0.4));
-            if (state.ZOOM <= 11) desiredTilt = Math.min(desiredTilt, tiltCap * 0.9);
-            if (Math.abs(currentTilt - desiredTilt) > 0.005) {
-                tiltAnimating = true;
-                const newTilt = THREE.MathUtils.lerp(currentTilt, desiredTilt, 0.02);
-                state.controls.minPolarAngle = Math.max(0.05, newTilt - 0.2);
-                state.controls.maxPolarAngle = Math.min(tiltCap, newTilt + 0.2);
-            }
-        }
+        const tiltAnimating = updateAutoTilt(distToTarget);
 
         const controlsDirty = state.controls.update();
         const needsUpdate =
@@ -587,28 +633,7 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
                 state.simDate = newDate;
             }
 
-            // v5.28.46 : Altitude du sol sous la caméra (0 en 2D)
-            const groundH = state.IS_2D_MODE ? 0 : getAltitudeAt(state.camera.position.x, state.camera.position.z);
-
-            if (!state.isFlyingTo && !state.isFollowingUser) {
-                // v5.28.46 : En mode 2D, le sol est à 0. On ne doit pas suivre l'altitude réelle.
-                const targetGroundH = state.IS_2D_MODE ? 0 : getAltitudeAt(state.controls.target.x, state.controls.target.z);
-                
-                const diff = targetGroundH - state.controls.target.y;
-                if (Math.abs(diff) > 0.1) {
-                    const trackLerp = interacting ? 0.08 : 0.03;
-                    const yDelta = diff * trackLerp;
-                    state.controls.target.y += yDelta;
-                    state.camera.position.y += yDelta;
-                }
-            }
-            
-            // v5.28.46 : Sécurité collision sol adaptée au mode 2D
-            if (state.camera.position.y < groundH + 45) {
-                state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, groundH + 45, 0.2);
-                state.controls.update();
-            }
-            state.controls.minDistance = Math.max(100, groundH * 0.1);
+            updateTerrainPhysics(interacting);
 
             if (state.scene.fog instanceof THREE.Fog) {
                 const alt = state.camera.position.y;
