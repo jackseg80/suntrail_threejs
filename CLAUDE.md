@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.29.32)
+# SunTrail — Guide IA (v5.29.33)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-17 suite à la v5.29.32 (Profile & Slope Fix).
+> Mis à jour le 2026-04-17 suite à la v5.29.33 (Solar & Weather Redesign).
 
 ## Projet
 
@@ -10,13 +10,16 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 **Stack** : TypeScript strict · Three.js r160 · Vite 5 · Capacitor 6 · RevenueCat
 
-## ⚠️ Règles & Décisions Actées (v5.29.30)
+## ⚠️ Règles & Décisions Actées (v5.29.33)
 
 ### 🚀 Protocole de Release (IMPÉRATIF)
-1. **Version Name** : Incrémenter dans `package.json` (ex: 5.27.5 → 5.27.6).
-2. **Version Code** : Incrémenter **TOUJOURS** le `versionCode` dans `android/app/build.gradle` (ex: 587 → 588). Google Play rejette tout build avec un version code déjà utilisé.
-3. **Changelog** : Mettre à jour `CHANGELOG.md` et `TODO.md`.
-4. **Git** : Taguer la version (`git tag vX.Y.Z`) et pusher les tags.
+1. **Pre-check** : Exécuter `npm run check` et `npm test`.
+2. **Version Name** : Incrémenter dans `package.json` (ex: 5.27.5 → 5.27.6).
+3. **Version Code** : **OBLIGATOIRE** - Incrémenter le `versionCode` dans `android/app/build.gradle` (ex: 668 → 669). Google Play rejette tout doublon.
+4. **VersionName Android** : Synchroniser `versionName` dans `android/app/build.gradle` avec `package.json`.
+5. **Changelog** : Mettre à jour `CHANGELOG.md` et `TODO.md`.
+6. **IA Context** : Mettre à jour les headers de `CLAUDE.md` et `GEMINI.md`.
+7. **Git** : Committer les changements de version, taguer (`git tag vX.Y.Z`) et pusher (`git push origin main --follow-tags`).
 
 ### 📚 Index de Documentation (Essentiel pour l'IA)
 
