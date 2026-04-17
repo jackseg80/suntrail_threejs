@@ -55,25 +55,21 @@ export class WeatherSheet extends BaseComponent {
         return val;
     }
 
-    private buildWindArrowSVG(deg: number): SVGSVGElement {
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('viewBox', '0 0 20 20');
-        svg.setAttribute('width', '20');
-        svg.setAttribute('height', '20');
-        svg.style.verticalAlign = 'middle';
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('fill', '#60a5fa');
-        path.setAttribute('d', 'M10 2 L12 16 L10 13 L8 16 Z');
-        path.setAttribute('transform', `rotate(${deg}, 10, 10)`);
-        svg.appendChild(path);
-        return svg;
-    }
-
     private buildHourlyScroll(wd: NonNullable<typeof state.weatherData>, maxItems: number): HTMLElement {
         const container = document.createElement('div');
         container.classList.add('exp-hourly-scroll');
         const items = wd.hourly ? wd.hourly.slice(0, maxItems) : [];
-        items.forEach(h => {
+
+        // Simple helper to find sunrise/sunset for the current day
+        const now = new Date();
+        const { lat, lon } = worldToLngLat(state.lastClickedCoords.x, state.lastClickedCoords.z, state.originTile);
+        const sun = SunCalc.getTimes(now, lat, lon);
+        const sunEvents = [
+            { time: sun.sunrise, icon: '🌅', label: 'Sunrise' },
+            { time: sun.sunset, icon: '🌇', label: 'Sunset' }
+        ];
+
+        items.forEach((h) => {
             const hDiv = document.createElement('div');
             hDiv.classList.add('exp-hourly-item');
 
@@ -89,21 +85,34 @@ export class WeatherSheet extends BaseComponent {
             tempDiv.classList.add('exp-hourly-temp');
             tempDiv.textContent = `${Math.round(h.temp)}°`;
 
+            hDiv.appendChild(timeDiv);
+            hDiv.appendChild(iconDiv);
+            hDiv.appendChild(tempDiv);
+
             if (h.precip !== undefined && h.precip > 0) {
                 const precipDiv = document.createElement('div');
                 precipDiv.style.fontSize = '9px';
                 precipDiv.style.color = '#60a5fa';
                 precipDiv.textContent = `${h.precip}%`;
-                hDiv.appendChild(timeDiv);
-                hDiv.appendChild(iconDiv);
-                hDiv.appendChild(tempDiv);
                 hDiv.appendChild(precipDiv);
-            } else {
-                hDiv.appendChild(timeDiv);
-                hDiv.appendChild(iconDiv);
-                hDiv.appendChild(tempDiv);
             }
             container.appendChild(hDiv);
+
+            // Insert sunrise/sunset if it happens between this hour and next
+            const hHour = parseInt(h.time.split(':')[0]);
+            sunEvents.forEach(ev => {
+                if (ev.time.getHours() === hHour) {
+                    const evDiv = document.createElement('div');
+                    evDiv.classList.add('exp-hourly-item');
+                    evDiv.style.opacity = '0.7';
+                    evDiv.innerHTML = `
+                        <div class="exp-hourly-time">${ev.time.getHours()}h${ev.time.getMinutes().toString().padStart(2,'0')}</div>
+                        <div class="exp-hourly-icon">${ev.icon}</div>
+                        <div class="exp-hourly-temp" style="font-size:9px; color:var(--gold)">${ev.label}</div>
+                    `;
+                    container.appendChild(evDiv);
+                }
+            });
         });
         return container;
     }
@@ -325,15 +334,17 @@ export class WeatherSheet extends BaseComponent {
 
         this.contentEl.textContent = '';
 
-        // ✅ Afficher message si la météo est indisponible (API en panne)
-        if (state.weatherUnavailable) {
+        // ── 0. Unavailable State ─────────────────────────────────────────────
+        if (state.weatherUnavailable || (!wd && !state.weatherData)) {
             const msgContainer = document.createElement('div');
             msgContainer.className = 'weather-unavailable-message';
-            msgContainer.style.cssText = 'padding: 20px; text-align: center; color: #666; font-style: italic;';
+            msgContainer.style.cssText = 'padding: var(--space-8) var(--space-4); text-align: center; color: var(--text-3);';
             msgContainer.innerHTML = `
-                <div style="font-size: 2em; margin-bottom: 10px;">🌤️</div>
-                <div>Service météo temporairement indisponible</div>
-                <div style="font-size: 0.9em; margin-top: 8px; color: #999;">Les prévisions réapparaîtront automatiquement</div>
+                <div style="font-size: 32px; margin-bottom: var(--space-3);">🌤️</div>
+                <div style="font-weight: 600; color: var(--text);">${i18n.t('weather.noData')}</div>
+                <div style="font-size: var(--text-sm); margin-top: var(--space-2); opacity: 0.7;">
+                    ${state.weatherUnavailable ? 'Service météo temporairement indisponible.' : 'Localisation en cours...'}
+                </div>
             `;
             this.contentEl.appendChild(msgContainer);
             return;
@@ -341,19 +352,21 @@ export class WeatherSheet extends BaseComponent {
 
         if (!wd) return;
 
-        // Nom de lieu en en-tête (issu du reverse geocoding dans weather.ts)
+        // Header
         if (wd.locationName) {
             const locHeader = document.createElement('div');
             locHeader.className = 'weather-location-name';
+            locHeader.style.marginBottom = 'var(--space-4)';
+            locHeader.style.fontSize = 'var(--text-lg)';
+            locHeader.style.fontWeight = '700';
             locHeader.textContent = wd.locationName;
             this.contentEl.appendChild(locHeader);
         }
 
-        // Météo avancée uniquement si Pro ET toggle activé
-        const showAdvancedWeather = isProActive() && (state as any).SHOW_WEATHER_PRO;
+        const isPro = isProActive() && (state as any).SHOW_WEATHER_PRO;
 
-        if (!showAdvancedWeather) {
-            // ── FREE version ou PRO simple ────────────────────────────────────
+        if (!isPro) {
+            // ── FREE version ──────────────────────────────────────────────────
             const basicGrid = document.createElement('div');
             basicGrid.classList.add('exp-stat-grid', 'exp-stat-grid-mb');
             this.makeStat(basicGrid, i18n.t('weather.temp'), `${Math.round(wd.temp)}°C`);
@@ -362,11 +375,8 @@ export class WeatherSheet extends BaseComponent {
             this.makeStat(basicGrid, i18n.t('weather.humidity'), `${wd.humidity}%`);
             this.contentEl.appendChild(basicGrid);
 
-            // Scroll 12h seulement
             this.contentEl.appendChild(this.buildHourlyScroll(wd, 12));
 
-            // Prévisions 3 jours UNIQUEMENT pour les utilisateurs gratuits (teaser)
-            // Les utilisateurs Pro en mode simple ne voient PAS les prévisions 3 jours
             if (!isProActive() && wd.daily && wd.daily.length > 0) {
                 const forecastTitle = document.createElement('div');
                 forecastTitle.classList.add('exp-probe-section-title');
@@ -374,91 +384,95 @@ export class WeatherSheet extends BaseComponent {
                 this.contentEl.appendChild(forecastTitle);
                 this.contentEl.appendChild(this.buildDailyForecastPreview(wd));
 
-                // Upsell banner (uniquement pour les gratuits)
                 const upsell = document.createElement('div');
                 upsell.classList.add('weather-upsell-banner');
-                const upsellSpan = document.createElement('span');
-                upsellSpan.textContent = i18n.t('weather.upsell.pro');
+                upsell.innerHTML = `<span>${i18n.t('weather.upsell.pro')}</span>`;
                 const upsellBtn = document.createElement('button');
                 upsellBtn.className = 'btn-go weather-upsell-btn';
                 upsellBtn.textContent = 'Pro ↗';
                 upsellBtn.onclick = () => showUpgradePrompt('weather_extended');
-                upsell.appendChild(upsellSpan);
                 upsell.appendChild(upsellBtn);
                 this.contentEl.appendChild(upsell);
             }
 
         } else {
-            // ── PRO version — 5 blocs ─────────────────────────────────────────
+            // ── PRO version ───────────────────────────────────────────────────
 
-            // Bloc 1 — Conditions actuelles complètes
-            const sec1 = document.createElement('div');
-            sec1.classList.add('exp-probe-section-title');
-            sec1.textContent = i18n.t('weather.section.current');
-            this.contentEl.appendChild(sec1);
+            // 1. Current Conditions Instrument
+            const rtContainer = document.createElement('div');
+            rtContainer.classList.add('weather-instrument-panel');
+            
+            // Left: Thermometer/Icon
+            const leftBox = document.createElement('div');
+            leftBox.classList.add('weather-instrument-main');
+            const mainIcon = document.createElement('div');
+            mainIcon.style.fontSize = '40px';
+            const currentCode = wd.hourly?.[0]?.code ?? 0;
+            mainIcon.textContent = getWeatherIcon(currentCode);
+            const mainTemp = document.createElement('div');
+            mainTemp.style.fontSize = '32px';
+            mainTemp.style.fontWeight = '800';
+            mainTemp.textContent = `${Math.round(wd.temp)}°`;
+            leftBox.appendChild(mainIcon);
+            leftBox.appendChild(mainTemp);
+            
+            // Middle: Wind Dial
+            const windBox = document.createElement('div');
+            windBox.classList.add('weather-instrument-wind');
+            const windSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            windSvg.setAttribute('viewBox', '0 0 100 100');
+            windSvg.style.width = '70px'; windSvg.style.height = '70px';
+            const dial = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            dial.setAttribute('cx', '50'); dial.setAttribute('cy', '50'); dial.setAttribute('r', '45');
+            dial.setAttribute('stroke', 'var(--border)'); dial.setAttribute('fill', 'rgba(0,0,0,0.1)');
+            windSvg.appendChild(dial);
+            const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            arrow.setAttribute('d', 'M50 15 L60 85 L50 75 L40 85 Z');
+            arrow.setAttribute('fill', '#60a5fa');
+            arrow.setAttribute('transform', `rotate(${wd.windDirDeg ?? wd.windDir}, 50, 50)`);
+            windSvg.appendChild(arrow);
+            windBox.appendChild(windSvg);
+            const windSpd = document.createElement('div');
+            windSpd.style.fontSize = '12px'; windSpd.style.fontWeight = '700';
+            windSpd.textContent = `${Math.round(wd.windSpeed)} km/h`;
+            windBox.appendChild(windSpd);
 
-            const grid1 = document.createElement('div');
-            grid1.classList.add('exp-stat-grid', 'exp-stat-grid-3', 'exp-stat-grid-mb');
+            // Right: Secondary RT stats
+            const rightStats = document.createElement('div');
+            rightStats.classList.add('weather-instrument-stats');
+            const addRt = (label: string, val: string) => {
+                const d = document.createElement('div');
+                d.className = 'weather-rt-row';
+                d.innerHTML = `<span class="exp-stat-label">${label}</span><span class="exp-stat-value">${val}</span>`;
+                rightStats.appendChild(d);
+            };
+            addRt(i18n.t('weather.feelsLike'), `${Math.round(wd.apparentTemp)}°C`);
+            addRt(i18n.t('weather.humidity'), `${wd.humidity}%`);
+            addRt(i18n.t('weather.stat.uvIndex'), `${Math.round(wd.uvIndex ?? 0)}`);
 
-            // Row 1: Temp | Ressenti | Humidité
-            this.makeStat(grid1, i18n.t('weather.temp'), `${Math.round(wd.temp)}°C`);
-            this.makeStat(grid1, i18n.t('weather.feelsLike'), `${Math.round(wd.apparentTemp)}°C`);
-            this.makeStat(grid1, i18n.t('weather.humidity'), `${wd.humidity}%`);
+            rtContainer.appendChild(leftBox);
+            rtContainer.appendChild(windBox);
+            rtContainer.appendChild(rightStats);
+            this.contentEl.appendChild(rtContainer);
 
-            // Row 2: Point de rosée | UV Index | Couverture nuageuse
-            this.makeStat(grid1, i18n.t('weather.dewPoint'), `${Math.round(wd.dewPoint ?? 0)}°C`);
+            // 2. Secondary Stats Grid
+            const grid2 = document.createElement('div');
+            grid2.classList.add('exp-stat-grid', 'exp-stat-grid-mb');
+            this.makeStat(grid2, i18n.t('weather.dewPoint'), `${Math.round(wd.dewPoint ?? 0)}°C`);
+            this.makeStat(grid2, i18n.t('weather.gusts'), `${Math.round(wd.windGusts ?? 0)} km/h`);
+            this.makeStat(grid2, i18n.t('weather.visibility'), `${Math.round(wd.visibility ?? 0)} km`);
+            this.makeStat(grid2, i18n.t('weather.stat.precipProb'), `${Math.round(wd.precProb ?? 0)}%`);
+            this.contentEl.appendChild(grid2);
 
-            // UV Index with color
-            const uvCat = getUVCategory(wd.uvIndex ?? 0);
-            const uvColor = { low: '#22c55e', moderate: '#eab308', high: '#f97316', veryHigh: '#ef4444', extreme: '#a855f7' }[uvCat];
-            const uvCard = document.createElement('div');
-            uvCard.classList.add('exp-stat-card');
-            const uvLbl = document.createElement('div'); uvLbl.classList.add('exp-stat-label');
-            uvLbl.textContent = i18n.t('weather.stat.uvIndex');
-            const uvVal = document.createElement('div'); uvVal.classList.add('exp-stat-value');
-            uvVal.style.color = uvColor;
-            uvVal.textContent = `${Math.round(wd.uvIndex ?? 0)} — ${i18n.t('weather.uv.' + uvCat)}`;
-            uvCard.appendChild(uvLbl); uvCard.appendChild(uvVal);
-            grid1.appendChild(uvCard);
-
-            this.makeStat(grid1, i18n.t('weather.stat.cloudCover'), `${Math.round(wd.cloudCover)}%`);
-
-            // Row 3: Vent + flèche | Rafales | Visibilité
-            const windCard = document.createElement('div');
-            windCard.classList.add('exp-stat-card');
-            const windLbl = document.createElement('div'); windLbl.classList.add('exp-stat-label');
-            windLbl.textContent = i18n.t('weather.stat.windDir');
-            const windVal = document.createElement('div'); windVal.classList.add('exp-stat-value');
-            windVal.style.display = 'flex'; windVal.style.alignItems = 'center'; windVal.style.gap = '4px';
-            const windText = document.createTextNode(`${Math.round(wd.windSpeed)} km/h ${fmtWindDir(wd.windDirDeg ?? wd.windDir)} `);
-            windVal.appendChild(windText);
-            windVal.appendChild(this.buildWindArrowSVG(wd.windDirDeg ?? wd.windDir));
-            windCard.appendChild(windLbl); windCard.appendChild(windVal);
-            grid1.appendChild(windCard);
-
-            this.makeStat(grid1, i18n.t('weather.gusts'), `${Math.round(wd.windGusts ?? 0)} km/h`);
-            this.makeStat(grid1, i18n.t('weather.visibility'), `${Math.round(wd.visibility ?? 0)} km`);
-
-            // Row 4: Isotherme 0°C | Précip % | vide
-            this.makeStat(grid1, i18n.t('weather.freezingLevel'), `${Math.round(wd.freezingLevel ?? 0)} m`);
-            this.makeStat(grid1, i18n.t('weather.stat.precipProb'), `${Math.round(wd.precProb ?? 0)}%`);
-            // vide (3ème colonne)
-            const empty = document.createElement('div');
-            grid1.appendChild(empty);
-
-            this.contentEl.appendChild(grid1);
-
-            // Bloc 2 — Scroll 24h enrichi
+            // 3. Forecast 24h & Chart
             const sec2 = document.createElement('div');
             sec2.classList.add('exp-probe-section-title');
             sec2.textContent = i18n.t('weather.section.forecast24h');
             this.contentEl.appendChild(sec2);
             this.contentEl.appendChild(this.buildHourlyScroll(wd, 24));
-
-            // Bloc 3 — Graphique SVG température 24h
             this.contentEl.appendChild(this.buildTempChart(wd));
 
-            // Bloc 4 — Prévisions 3 jours
+            // 4. Daily Forecast & Mountain Alert
             if (wd.daily && wd.daily.length > 0) {
                 const sec4 = document.createElement('div');
                 sec4.classList.add('exp-probe-section-title');
@@ -467,14 +481,12 @@ export class WeatherSheet extends BaseComponent {
                 this.contentEl.appendChild(this.buildDailyForecast(wd));
             }
 
-            // Bloc 5 — Alerte Montagne
-            const sec5 = document.createElement('div');
-            sec5.classList.add('exp-probe-section-title');
-            sec5.textContent = i18n.t('weather.section.mountain');
-            this.contentEl.appendChild(sec5);
-            this.contentEl.appendChild(this.buildMountainAlert(wd));
+            const mountainBox = document.createElement('div');
+            mountainBox.style.marginTop = 'var(--space-4)';
+            mountainBox.appendChild(this.buildMountainAlert(wd));
+            this.contentEl.appendChild(mountainBox);
 
-            // Bouton copier rapport
+            // 5. Copy Report
             const copyBtn = document.createElement('button');
             copyBtn.className = 'btn-go';
             copyBtn.textContent = i18n.t('solar.btn.copy');
@@ -483,7 +495,6 @@ export class WeatherSheet extends BaseComponent {
             this.contentEl.appendChild(copyBtn);
         }
 
-        // Toujours afficher depuis le haut après reconstruction du contenu
         requestAnimationFrame(() => { if (this.element) this.element.scrollTop = 0; });
     }
 

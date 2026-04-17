@@ -362,6 +362,7 @@
       "cloudCover": "Couverture nuageuse",
       "uvIndex": "UV Index",
       "precipProb": "Précipitations",
+      "mountainComfort": "Confort Montagne",
       "comfortIndex": "Confort rando"
     },
     "uv": {
