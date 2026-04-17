@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.29.35] - 2026-04-17
+### Fixed
+- **Build Hotfix** : Correction de la syntaxe du fichier `build.gradle` (suppression des antislashs accidentels sur le `versionName`) pour restaurer la compilation Android.
+
 ## [5.29.34] - 2026-04-17
 ### Added
 - **AI Intelligence & Workflows** : Centralisation massive des connaissances IA (`AI_ARCHITECTURE`, `AI_PERFORMANCE`, `AI_UI_STYLE_GUIDE`).
