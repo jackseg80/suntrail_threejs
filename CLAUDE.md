@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.29.28)
+# SunTrail — Guide IA (v5.29.29)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-17 suite à la v5.29.28 (Reliability & Performance Update).
+> Mis à jour le 2026-04-17 suite à la v5.29.29 (Reliability & Performance Update).
 
 ## Projet
 
@@ -10,7 +10,7 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 **Stack** : TypeScript strict · Three.js r160 · Vite 5 · Capacitor 6 · RevenueCat
 
-## ⚠️ Règles & Décisions Actées (v5.29.28)
+## ⚠️ Règles & Décisions Actées (v5.29.29)
 
 ### 🚀 Protocole de Release (IMPÉRATIF)
 1. **Version Name** : Incrémenter dans `package.json` (ex: 5.27.5 → 5.27.6).
@@ -42,10 +42,10 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 ### Calculs & Précision
 - **Distance** : Formule **Haversine** (précision < 0.5%) via `haversineDistance()`.
-- **D+ / D-** : Algorithme d'**Hystérésis avec seuil de 5m** (v5.29.28) via `calculateHysteresis()`. Optimisé pour les capteurs GPS sans baromètre (A53).
-- **Lissage** : Moyenne mobile **5 points** sur l'altitude GPS (v5.29.28).
+- **D+ / D-** : Algorithme d'**Hystérésis avec seuil de 5m** (v5.29.29) via `calculateHysteresis()`. Optimisé pour les capteurs GPS sans baromètre (A53).
+- **Lissage** : Moyenne mobile **5 points** sur l'altitude GPS (v5.29.29).
 - **Filtrage GPS (v5.28.5)** : Rejeter tout point GPS avec saut vertical > 200m (si intervalle < 10s), distance horizontale < 2.5m (anti-champignon), ou vitesse > 600km/h.
-- **Moteur de Terrain (v5.29.28)** : 
+- **Moteur de Terrain (v5.29.29)** : 
     - **Clé Unique** : Doit TOUJOURS inclure `MAP_SOURCE` (ex: `source_x_y_z`).
     - **Switch de Source** : `resetTerrain()` systématique lors du changement de `MAP_SOURCE` + vidage de la file de chargement (anti-patchwork).
     - **Gestion Mémoire** : Libération la VRAM via `texture.dispose()` UNIQUEMENT si la tuile n'est plus dans le `tileCache`.
@@ -53,7 +53,7 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 - **Rendu & Batterie (v5.29.7)** :
     - **Deep Sleep** : Réduction à **~1.5 FPS** après 30s d'inactivité.
     - **Auto-Throttle** : Réduction dynamique du DPR si FPS < 15.
-- **Démarrage & UI (v5.29.28)** :
+- **Démarrage & UI (v5.29.29)** :
     - **Parallélisation** : Lancement de la scène 3D en parallèle de l'hydratation de l'UI secondaire pour éliminer l'écran blanc.
     - **TubeGeometry Stabilité** : Utiliser `centripetal` pour les splines. Rendu temps réel à 1500 segments max.
 - **Cache Unifié (v5.28.33)** : `suntrail-tiles-v28` synchronisé entre thread principal et workers.
@@ -62,7 +62,7 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 ## Structure du Projet
 - `src/modules/iapService.ts` : Liaison RevenueCat ↔ Google Play.
 - `src/modules/config.ts` : Résolution centralisée des clés API (Gist/Env).
-- `src/modules/profile.ts` : Graphique d'élévation (v5.29.28: Priorité aux données raw GPX).
+- `src/modules/profile.ts` : Graphique d'élévation (v5.29.29: Priorité aux données raw GPX).
 - `src/modules/scene.ts` : Moteur de rendu et boucle principale.
 - `src/modules/cameraManager.ts` : Gestion de la caméra, animations flyTo et resize.
 

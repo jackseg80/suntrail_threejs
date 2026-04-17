@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { state } from './state';
 import { getTileCacheKey } from './tileCache';
 import { autoSelectMapSource } from './terrain';
