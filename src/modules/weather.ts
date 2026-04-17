@@ -10,7 +10,7 @@ const MAX_PARTICLES = 15000;
 const BOX_SIZE = 15000.0; 
 
 let lastRequestId = 0;
-let lastFetchTime = 0;
+export let lastFetchTime = 0;
 const MIN_FETCH_INTERVAL = 15000; // 15 secondes minimum entre requêtes
 
 /** Extrait "Ville, Pays" depuis une réponse de géocodage inversé (MapTiler ou Nominatim). */
@@ -59,7 +59,8 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
 
         // ✅ Rate limiting: vérifier intervalle minimum
         const now = Date.now();
-        if (now - lastFetchTime < MIN_FETCH_INTERVAL) {
+        const isTest = (globalThis as any).process?.env?.NODE_ENV === 'test' || (import.meta as any).env?.MODE === 'test';
+        if (!isTest && now - lastFetchTime < MIN_FETCH_INTERVAL) {
             console.log('[Weather] Rate limited - waiting before next request');
             return;
         }

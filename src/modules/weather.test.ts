@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fetchWeather, extractLocationName } from './weather';
 import { state } from './state';
 
@@ -6,6 +6,7 @@ describe('Weather Module', () => {
     beforeEach(() => {
         state.weatherData = null;
         state.currentWeather = 'clear';
+        state.weatherUnavailable = false;
         vi.restoreAllMocks();
     });
 
@@ -62,10 +63,35 @@ describe('Weather Module', () => {
         expect(state.weatherData?.locationName).toBe('Delémont, Suisse');
     });
 
-    it('should default to clear on API error', async () => {
-        globalThis.fetch = vi.fn().mockResolvedValue({ ok: false });
-        await fetchWeather(0, 0);
+    it('should set weatherUnavailable flag to true on API error', async () => {
+        globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 502 });
+        await fetchWeather(46.8, 8.2);
+        expect(state.weatherUnavailable).toBe(true);
         expect(state.currentWeather).toBe('clear');
+    });
+
+    it('should reset weatherUnavailable flag to false on success', async () => {
+        // Mock success
+        globalThis.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({
+                current: { temperature_2m: 20, weather_code: 0 },
+                hourly: { 
+                    time: Array(24).fill('2024-01-01T12:00'),
+                    temperature_2m: Array(24).fill(20),
+                    weather_code: Array(24).fill(0),
+                    uv_index: Array(24).fill(1),
+                    freezing_level_height: Array(24).fill(2000),
+                    visibility: Array(24).fill(10000),
+                    precipitation_probability: Array(24).fill(0)
+                }
+            })
+        });
+        
+        state.weatherUnavailable = true; // start as true
+        await fetchWeather(46.8, 8.2);
+        expect(state.weatherUnavailable).toBe(false);
+        expect(state.weatherData?.temp).toBe(20);
     });
 });
 
