@@ -156,6 +156,14 @@ describe('runSolarProbe — Swiss coordinates (lat:46.8, lon:8.2)', () => {
         const result = runSolarProbe(x, z, altitude)!;
         expect(result.timeline).toHaveLength(48);
     });
+
+    it('13. maxElevationDeg est cohérent avec elevationCurve', () => {
+        const result = runSolarProbe(x, z, altitude)!;
+        expect(result.maxElevationDeg).toBeGreaterThanOrEqual(-90);
+        expect(result.maxElevationDeg).toBeLessThanOrEqual(90);
+        const maxFromCurve = Math.max(...result.elevationCurve);
+        expect(result.maxElevationDeg).toBeCloseTo(maxFromCurve, 5);
+    });
 });
 
 describe('getMoonPhaseName', () => {
