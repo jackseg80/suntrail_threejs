@@ -6,6 +6,17 @@ Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [5.29.32] - 2026-04-17
+### Added
+- **Instrument Solaire (Pro)** : Nouveau tableau de bord avec boussole d'azimut temps réel, élévation max et phase lunaire détaillée.
+- **Station Météo (Pro)** : Interface de type instrument avec cadran de vent dynamique (direction/vitesse) et indicateurs de confort.
+- **Analyse Solaire** : Ajout de marqueurs visuels (Lever, Coucher, Midi) directement sur le graphique d'élévation 24h.
+- **Fiabilité Météo** : Ajout d'un message d'état clair lorsque le service météo est indisponible ou en cours de chargement.
+
+### Improved
+- **Lisibilité Mobile** : Refonte complète des panneaux Solaire et Météo avec une grille standardisée (2x2) pour une meilleure lecture sur petits écrans.
+- **Graphique Météo** : Intégration des précipitations (histogramme bleu) et de l'isotherme 0°C sur la courbe de température 24h.
+- **Flux Horaire** : Insertion des icônes Lever (🌅) et Coucher (🌇) dans le défilement horaire de la météo.
+
 ### Fixed
 - **Profil d'Élévation & Pente** : Correction d'un bug d'indexation critique lors de la densification des points GPX. L'altitude ne chute plus à 0m après 25% du parcours, garantissant des courbes d'altitude et des calculs de pente exacts sur l'intégralité de la trace.
 
