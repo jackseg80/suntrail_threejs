@@ -68,10 +68,32 @@ async function getTileFromPMTiles(z: number, x: number, y: number): Promise<Blob
 }
 
 /**
+ * Nettoie les anciennes versions du cache (v5.29.40).
+ * Supprime tout cache dont le nom commence par 'suntrail-tiles-' mais ne correspond pas à CACHE_NAME.
+ */
+async function cleanupOldCaches(): Promise<void> {
+    try {
+        const cacheNames = await caches.keys();
+        const deletions = cacheNames
+            .filter(name => name.startsWith('suntrail-tiles-') && name !== CACHE_NAME)
+            .map(name => {
+                if (state.DEBUG_MODE) console.log(`[Cache] Suppression de l'ancienne version : ${name}`);
+                return caches.delete(name);
+            });
+        await Promise.all(deletions);
+    } catch (e) {
+        console.warn("[Cache] Échec du nettoyage des anciens caches", e);
+    }
+}
+
+/**
  * Monte l'archive PMTiles overview embarquée dans l'APK/PWA (LOD 5-11).
  * Appelée une fois au démarrage, fire-and-forget.
  */
 export async function initEmbeddedOverview(): Promise<void> {
+    // Nettoyer les vieux résidus de cache avant de commencer
+    void cleanupOldCaches();
+
     try {
         const url = './tiles/europe-overview.pmtiles';
         
