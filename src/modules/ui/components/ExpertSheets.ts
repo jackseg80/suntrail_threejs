@@ -13,6 +13,8 @@ import { fmtTime, fmtDuration } from '../../utils';
 import SunCalc from 'suncalc';
 import { expertService } from '../../expertService';
 
+import { getPlaceName } from '../../geocodingService';
+
 export class WeatherSheet extends BaseComponent {
     private contentEl: HTMLElement | null = null;
 
@@ -355,15 +357,15 @@ export class WeatherSheet extends BaseComponent {
         if (!wd) return;
 
         // Header
-        if (wd.locationName) {
-            const locHeader = document.createElement('div');
-            locHeader.className = 'weather-location-name';
-            locHeader.style.marginBottom = 'var(--space-4)';
-            locHeader.style.fontSize = 'var(--text-lg)';
-            locHeader.style.fontWeight = '700';
-            locHeader.textContent = wd.locationName;
-            this.contentEl.appendChild(locHeader);
-        }
+        const locName = wd.locationName || i18n.t('weather.mountain.title');
+        const locHeader = document.createElement('div');
+        locHeader.className = 'weather-location-name';
+        locHeader.style.marginBottom = 'var(--space-4)';
+        locHeader.style.fontSize = 'var(--text-lg)';
+        locHeader.style.fontWeight = '700';
+        locHeader.style.textAlign = 'center';
+        locHeader.textContent = locName;
+        this.contentEl.appendChild(locHeader);
 
         const isPro = isProActive() && state.SHOW_WEATHER_PRO;
 
@@ -545,13 +547,20 @@ export class SolarProbeSheet extends BaseComponent {
         const attachProbeBtn = () => {
             const probeBtn = document.getElementById('probe-btn');
             if (probeBtn) {
-                probeBtn.onclick = () => {
+                probeBtn.onclick = async () => {
                     if (state.hasLastClicked) {
                         const result = runSolarProbe(state.lastClickedCoords.x, state.lastClickedCoords.z, state.lastClickedCoords.alt);
                         if (result) {
                             this.currentResult = result;
                             this.updateUI(result);
                             sheetManager.open('solar-probe');
+                            
+                            // v5.30.1 : Résolution asynchrone du nom du lieu pour l'analyse solaire
+                            const locName = await getPlaceName(result.gps.lat, result.gps.lon);
+                            if (locName) {
+                                const titleEl = document.getElementById('solar-location-title');
+                                if (titleEl) titleEl.textContent = locName;
+                            }
                         }
                     } else {
                         showToast(i18n.t('solar.toast.clickFirst'));
@@ -594,6 +603,14 @@ export class SolarProbeSheet extends BaseComponent {
             parent.appendChild(div);
             return val;
         };
+
+        // ── Header (Location) ────────────────────────────────────────────────
+        const locHeader = document.createElement('h3');
+        locHeader.id = 'solar-location-title';
+        locHeader.className = 'exp-location-title';
+        locHeader.style.cssText = 'margin:0 0 var(--space-4); font-size:14px; color:var(--text-2); text-align:center;';
+        locHeader.textContent = i18n.t('solar.status.calculating') || 'Analyse en cours...';
+        this.contentEl.appendChild(locHeader);
 
         // ── Status ───────────────────────────────────────────────────────────
         const statusEl = document.createElement('div');

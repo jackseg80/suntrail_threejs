@@ -19,17 +19,18 @@ export function getAltitudeAt(worldX: number, worldZ: number, hintTile: any = nu
         if (lastUsedTile && lastUsedTile.status === 'loaded' && lastUsedTile.bounds && lastUsedTile.bounds.containsPoint(testPoint)) {
             tile = lastUsedTile;
         } else {
-            // O(1) spatial index lookup instead of O(n) activeTiles iteration
+            // O(1) spatial index lookup
             const candidates = queryTiles(worldX, worldZ);
             for (const t of candidates) {
-                if (t.status === 'loaded' && t.bounds && t.bounds.containsPoint(testPoint)) {
+                // v5.30.1 : Priorité aux tuiles chargées avec données pixel
+                if (t.status === 'loaded' && t.pixelData && t.bounds && t.bounds.containsPoint(testPoint)) {
                     if (!tile || t.zoom > tile.zoom) tile = t;
                 }
             }
-            // Fallback to full scan if spatial index is empty (e.g. during init)
+            // Fallback to full scan
             if (!tile) {
                 for (const t of activeTiles.values()) {
-                    if (t.status === 'loaded' && t.bounds && t.bounds.containsPoint(testPoint)) {
+                    if (t.status === 'loaded' && t.pixelData && t.bounds && t.bounds.containsPoint(testPoint)) {
                         if (!tile || t.zoom > tile.zoom) tile = t;
                     }
                 }
@@ -227,12 +228,13 @@ export function findTerrainIntersection(ray: THREE.Ray): THREE.Vector3 | null {
     const maxDist = 500000;
     const p = new THREE.Vector3();
     let hintTile: any = null;
-    let dist = 100;
+    let dist = 0; // v5.30.1 : Commencer à 0 pour ne pas rater le terrain proche
     while (dist < maxDist) {
         ray.at(dist, p);
         const groundH = getAltitudeAt(p.x, p.z, hintTile);
         if (p.y < groundH) {
-            return ray.at(dist - (dist > 1000 ? 50 : 25), new THREE.Vector3());
+            // Recul de sécurité pour ne pas être "sous" le terrain
+            return ray.at(dist - (dist > 1000 ? 50 : 10), new THREE.Vector3());
         }
         // Step adaptatif : grand pas en altitude, petit pas proche du terrain
         const gap = p.y - groundH;

@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.30.1] - 2026-04-18
+### Fixed
+- **Altitude 3D (0m fix)** : Correction d'un bug où le clic sur la carte renvoyait parfois une altitude de 0m. Amélioration de la recherche de données d'élévation (fallback sur les tuiles parentes chargées) et ajustement du Raycaster terrain.
+
+### Added
+- **Nom du Lieu (Analyse)** : Affichage dynamique du nom de la localité/sommet dans les panneaux "Météo Montagne" et "Analyse Solaire" pour un meilleur contexte géographique.
+
 ## [5.30.0] - 2026-04-18
 ### Added
 - **Modernisation du Tutoriel** : Refonte visuelle complète de l'onboarding avec animations de transition fluides et retours haptiques premium.
