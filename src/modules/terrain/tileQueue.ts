@@ -10,6 +10,11 @@ export const buildQueue: Tile[] = [];
 const buildQueueKeys = new Set<string>();
 let isProcessingBuildQueue = false;
 
+// v5.31.1 : Sort cache to amortize O(n log n) cost
+let sortedCache: Tile[] | null = null;
+let lastSortTime = 0;
+const SORT_INTERVAL_MS = 200;
+
 export function queueBuildMesh(tile: Tile) {
     if (tile.status === 'disposed') return;
     if (buildQueueKeys.has(tile.key)) return;
@@ -77,24 +82,29 @@ export async function processLoadQueue() {
             }
         }
 
-        const sorted = Array.from(loadQueue).sort((a, b) => {
-            if (!state.camera) return 0;
-            const camPos = state.camera.position;
-            const aVis = isVis(a) ? 1 : 0;
-            const bVis = isVis(b) ? 1 : 0;
-            if (aVis !== bVis) return bVis - aVis;
-            const da = (a.worldX - camPos.x) ** 2 + (a.worldZ - camPos.z) ** 2;
-            const db = (b.worldX - camPos.x) ** 2 + (b.worldZ - camPos.z) ** 2;
-            return da - db;
-        });
+        // v5.31.1 : Amortized sort — only re-sort every 200ms or when queue changes significantly
+        const now = performance.now();
+        if (!sortedCache || (now - lastSortTime) > SORT_INTERVAL_MS) {
+            sortedCache = Array.from(loadQueue).sort((a, b) => {
+                if (!state.camera) return 0;
+                const camPos = state.camera.position;
+                const aVis = isVis(a) ? 1 : 0;
+                const bVis = isVis(b) ? 1 : 0;
+                if (aVis !== bVis) return bVis - aVis;
+                const da = (a.worldX - camPos.x) ** 2 + (a.worldZ - camPos.z) ** 2;
+                const db = (b.worldX - camPos.x) ** 2 + (b.worldZ - camPos.z) ** 2;
+                return da - db;
+            });
+            lastSortTime = now;
+        }
 
-        const visiblePending = sorted.filter(t => isVis(t)).length;
+        const visiblePending = sortedCache.filter(t => isVis(t)).length;
         const isTransitioning = visiblePending >= 4;
         const effectiveBatch = isTransitioning
             ? Math.max(1, state.MAX_BUILDS_PER_CYCLE + 2)
             : Math.max(1, state.MAX_BUILDS_PER_CYCLE);
         
-        const batch = sorted.slice(0, effectiveBatch);
+        const batch = sortedCache.slice(0, effectiveBatch);
         batch.forEach(t => loadQueue.delete(t));
 
         await Promise.all(batch.map(async (tile) => {
@@ -118,16 +128,19 @@ export async function processLoadQueue() {
 
 export function clearLoadQueue() {
     loadQueue.clear();
+    sortedCache = null;
     buildQueue.length = 0;
     buildQueueKeys.clear();
 }
 
 export function addToLoadQueue(tile: Tile) {
     loadQueue.add(tile);
+    sortedCache = null;
 }
 
 export function removeFromLoadQueue(tile: Tile) {
     loadQueue.delete(tile);
+    sortedCache = null;
     buildQueueKeys.delete(tile.key);
     const index = buildQueue.indexOf(tile);
     if (index !== -1) buildQueue.splice(index, 1);

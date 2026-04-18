@@ -30,7 +30,14 @@ Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 | **Shadow frustum per preset** | `scene.ts`, `sun.ts` | Balanced=15000m, Performance=25000m, Ultra=30000m max extent. `near=100`, `far=200000` (was near=1000, far=500000). Reduces shadow map GPU cost significantly on mobile. |
 | **Ground plane reduced** | `scene.ts` | 500km×500km → 100km×100km. Still covers viewport at LOD 6. Smaller bounding sphere improves frustum culling. |
 | **LOD logic unified** | `scene.ts` | Removed duplicated zoom-threshold if/else cascade (lines 286-298). Now uses `getIdealZoom()` exclusively with 5% hysteresis. |
-| **Fog dynamic altitude** | `scene.ts` | Linear fog with altitude-adaptive near/far: `fogNear = max(FOG_NEAR*0.3, FOG_NEAR - alt*0.3)`, `fogFar = FOG_FAR + alt*4.0`. At high altitude fog recedes naturally; at ground level fog is visible at FOG_NEAR. FogExp2 was tested but reverted — unsuitable for 4Mm altitude range (density×distance = total opacity at LOD 6). |
+| **Fog dynamic altitude** | `scene.ts` | Linear fog with altitude-adaptive near/far: `fogNear = max(FOG_NEAR*0.3, FOG_NEAR - alt*0.3)`, `fogFar = FOG_FAR + alt*4.0`. FogExp2 was tested and reverted — unsuitable for 4Mm altitude range. |
+
+## 1d. Rendering Optimizations (v5.31.1 — Audit Vague 3)
+
+| Optimization | File | Description |
+| :--- | :--- | :--- |
+| **Shared GPX materials** | `terrain.ts` | 1 material per color×mode (max 16) instead of N per layer. Reduces GPU material binds and GC pressure. `getGPXMaterial(color, is2D)` caches via Map. Geometry still per-track. |
+| **Amortized loadQueue sort** | `tileQueue.ts` | Sort cache: only re-sort every 200ms or when queue changes. Invalidated on add/remove/clear. Reduces O(n log n) cost from every 32ms call to every 200ms. |
 
 ## 2. Navigation & GPS Logic
 

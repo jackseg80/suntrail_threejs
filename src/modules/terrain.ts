@@ -10,6 +10,33 @@ import { getTileCacheKey, markCacheKeyInactive, hasInCache, getFromCache, purgeO
 import { insertTile, removeTile, clearIndex as clearSpatialIndex } from './tileSpatialIndex';
 import { calculateTrackStats } from './geoStats';
 
+// v5.31.1 : Shared GPX track materials (1 per color × mode = 16 max instead of N per layer)
+const gpxMaterials3D = new Map<string, THREE.MeshStandardMaterial>();
+const gpxMaterials2D = new Map<string, THREE.MeshBasicMaterial>();
+
+function getGPXMaterial(color: string, is2D: boolean): THREE.Material {
+    if (is2D) {
+        let mat = gpxMaterials2D.get(color);
+        if (!mat) {
+            mat = new THREE.MeshBasicMaterial({
+                color, transparent: true, opacity: 0.95, depthWrite: false,
+                polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
+            });
+            gpxMaterials2D.set(color, mat);
+        }
+        return mat;
+    }
+    let mat = gpxMaterials3D.get(color);
+    if (!mat) {
+        mat = new THREE.MeshStandardMaterial({
+            color, emissive: color, emissiveIntensity: 0.3, transparent: true, opacity: 0.95, depthWrite: false,
+            polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
+        });
+        gpxMaterials3D.set(color, mat);
+    }
+    return mat;
+}
+
 // Re-exports de la refactorisation
 export { Tile, terrainUniforms, sharedFrustum } from './terrain/Tile';
 export { loadQueue, processLoadQueue, clearLoadQueue, addToLoadQueue, removeFromLoadQueue } from './terrain/tileQueue';
@@ -522,7 +549,7 @@ function _doUpdateAllGPXMeshes(): void {
     const camAlt = state.camera.position.y;
     const thickness = Math.max(1.5, camAlt / 1200);
     const updatedLayers: GPXLayer[] = state.gpxLayers.map(layer => {
-        if (layer.mesh) { if (state.scene) state.scene.remove(layer.mesh); disposeObject(layer.mesh); }
+if (layer.mesh) { if (state.scene) state.scene.remove(layer.mesh); layer.mesh.geometry?.dispose(); }
         const track = layer.rawData.tracks[0]; const points = track.points; 
         
         // v5.28.4 : Utilisation de la fonction centralisée drapeToTerrain
@@ -531,15 +558,7 @@ function _doUpdateAllGPXMeshes(): void {
         const curve = new THREE.CatmullRomCurve3(threePoints);
         const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length, 1500), thickness, 4, false);
         const is2D = state.IS_2D_MODE;
-        const material = is2D 
-            ? new THREE.MeshBasicMaterial({
-                color: layer.color, transparent: true, opacity: 0.95, depthWrite: false,
-                polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
-            })
-            : new THREE.MeshStandardMaterial({
-                color: layer.color, emissive: layer.color, emissiveIntensity: 0.3, transparent: true, opacity: 0.95, depthWrite: false,
-                polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
-            });
+        const material = getGPXMaterial(layer.color, is2D);
         const mesh = new THREE.Mesh(geometry, material);
         mesh.renderOrder = 10; mesh.visible = layer.visible;
         mesh.userData = { type: 'gpx-track', layerId: layer.id };
@@ -574,7 +593,8 @@ function _doUpdateRecordedTrackMesh(): void {
     
     if (state.recordedMesh) { 
         state.scene.remove(state.recordedMesh); 
-        disposeObject(state.recordedMesh); 
+        state.recordedMesh.geometry?.dispose();
+        state.recordedMesh = null; 
     }
     
     const originTile = state.originTile;
@@ -605,7 +625,7 @@ function _doUpdateRecordedTrackMesh(): void {
 }
 
 export function clearAllGPXLayers(): void {
-    for (const layer of state.gpxLayers) { if (layer.mesh) { if (state.scene) state.scene.remove(layer.mesh); disposeObject(layer.mesh); } }
+    for (const layer of state.gpxLayers) { if (layer.mesh) { if (state.scene) state.scene.remove(layer.mesh); layer.mesh.geometry?.dispose(); } }
     state.gpxLayers = []; state.activeGPXLayerId = null;
     if (state.recordedMesh) { if (state.scene) state.scene.remove(state.recordedMesh); disposeObject(state.recordedMesh); state.recordedMesh = null; }
     const prof = document.getElementById('elevation-profile'); if (prof) prof.style.display = 'none';
