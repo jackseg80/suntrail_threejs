@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.29.44] - 2026-04-18
+### Fixed
+- **Sélection de Tracé** : Correction d'un oubli d'abonnement au changement de calque actif. Désormais, les cartes de statistiques principales se mettent instantanément à jour dès qu'on sélectionne un tracé dans la liste.
+
 ## [5.29.43] - 2026-04-18
 ### Fixed
 - **Affichage Stats GPX** : Correction de l'UI pour que les cartes de statistiques (Distance, D+, Temps estimé) se mettent à jour lors de la sélection d'un tracé dans la liste, et non plus seulement lors d'un enregistrement en direct.

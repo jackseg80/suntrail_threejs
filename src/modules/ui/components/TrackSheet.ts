@@ -112,6 +112,11 @@ export class TrackSheet extends BaseComponent {
             this.renderLayersList();
             this.updateEmptyState();
         }));
+
+        // v5.29.43 : Mettre à jour les tuiles de stats quand on change de calque actif
+        this.addSubscription(state.subscribe('activeGPXLayerId', () => {
+            this.updateStats();
+        }));
         
         this.updateRecUI();
         this.updateStats();
