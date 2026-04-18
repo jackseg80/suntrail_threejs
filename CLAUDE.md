@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.29.36)
+# SunTrail — Guide IA (v5.29.37)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-18 suite à la v5.29.36 (Tech Debt Cleanup & Test refactor).
+> Mis à jour le 2026-04-18 suite à la v5.29.37 (Test Audit & Logic Extraction).
 
 ## Projet
 
@@ -10,7 +10,7 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 **Stack** : TypeScript strict · Three.js r160 · Vite 5 · Capacitor 6 · RevenueCat
 
-## ⚠️ Règles & Décisions Actées (v5.29.33)
+## ⚠️ Règles & Décisions Actées (v5.29.37)
 
 ### 🚀 Protocole de Release (IMPÉRATIF)
 1. **Pre-check** : Exécuter `npm run check` et `npm test`.
@@ -65,12 +65,14 @@ Android natif (Capacitor) + PWA. Freemium (RevenueCat).
 
 ## Structure du Projet
 - `src/modules/iapService.ts` : Liaison RevenueCat ↔ Google Play.
+- `src/modules/recordingService.ts` : (v5.29.37) Logique orchestrée d'enregistrement GPS.
+- `src/modules/gpxService.ts` : (v5.29.37) Import/Export et utilitaires GPX.
 - `src/modules/config.ts` : Résolution centralisée des clés API (Gist/Env).
 - `src/modules/profile.ts` : Graphique d'élévation (v5.29.30: Priorité aux données raw GPX).
 - `src/modules/scene.ts` : Moteur de rendu et boucle principale.
 - `src/modules/cameraManager.ts` : Gestion de la caméra, animations flyTo et resize.
 
 ## Tests & Qualité
-- **Unitaires (Vitest)** : `npm test` (500+ tests). Sécurise `scene.ts`, `touchControls.ts`, `ui.ts`.
+- **Unitaires (Vitest)** : `npm test` (600+ tests). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`.
 - **E2E (Playwright)** : `npx playwright test --ui` (Onboarding, GPS, Expert).
 - **Mocks** : `src/test/setup.ts` pour WebGL. `ui.test.ts` utilise des timers fictifs.

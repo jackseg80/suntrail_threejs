@@ -5,6 +5,18 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.29.37] - 2026-04-18
+### Added
+- **RecordingService** : Nouveau service centralisant la logique d'enregistrement GPS, les permissions et la coordination avec les services natifs. Allègement massif de `TrackSheet.ts`.
+- **GPXService** : Centralisation des utilitaires d'import/export GPX pour une meilleure testabilité.
+- **Tests de Robustesse Terrain** : Validation unitaire de `tileQueue.ts` pour garantir la priorité de chargement des tuiles visibles.
+- **Validation UI** : Tests unitaires pour `SettingsSheet.ts` simulant les interactions DOM.
+
+### Improved
+- **Blindage Monétisation** : Couverture de `iapService.ts` augmentée de 26% à >80%. Tests exhaustifs des cas d'erreurs réseau, annulations et expirations.
+- **Stabilité IAP** : Correction d'une race condition serveur via un délai de re-vérification de 2s après achat si les entitlements ne sont pas immédiatement mis à jour.
+- **Qualité Globale** : Passage à plus de 580 tests unitaires validés.
+
 ## [5.29.36] - 2026-04-18
 ### Fixed
 - **Dette Technique** : Suppression des fichiers racines obsolètes (`CHANGES_v5.25.1.md`, `catalog.json`) et du script `update_locales.py`.

@@ -14,8 +14,8 @@ android {
         applicationId "com.suntrail.threejs"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 672
-        versionName "5.29.36"
+        versionCode 673
+        versionName "5.29.37"
 testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

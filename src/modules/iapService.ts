@@ -315,6 +315,12 @@ class IAPService {
             return purchased;
         } catch { return []; }
     }
+
+    /** @internal Reset state for testing purposes */
+    public resetForTest(): void {
+        this.initialized = false;
+        this._initPromise = null;
+    }
 }
 
 export const iapService = new IAPService();

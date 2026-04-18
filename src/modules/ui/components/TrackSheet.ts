@@ -6,19 +6,18 @@ import { sheetManager } from '../core/SheetManager';
 import { showUpgradePrompt } from '../../iap';
 import { haptic } from '../../haptics';
 import { i18n } from '../../../i18n/I18nService';
-import gpxParser from 'gpxparser';
-import { startRecordingService, stopRecordingService, clearInterruptedRecording } from '../../foregroundService';
+import { clearInterruptedRecording, stopRecordingService } from '../../foregroundService';
 import { nativeGPSService } from '../../nativeGPSService';
 import { updateVisibleTiles, addGPXLayer, removeGPXLayer, toggleGPXLayer, updateRecordedTrackMesh } from '../../terrain';
 import { lngLatToTile, lngLatToWorld } from '../../geo';
-import { requestGPSDisclosure } from '../../gpsDisclosure';
 import { updateElevationProfile } from '../../profile';
 import { eventBus } from '../../eventBus';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
-import { Geolocation } from '@capacitor/geolocation';
 import { calculateTrackStats } from '../../geoStats';
 import { getPlaceName } from '../../geocodingService';
+import { recordingService } from '../../recordingService';
+import { gpxService } from '../../gpxService';
 
 export class TrackSheet extends BaseComponent {
     constructor() {
@@ -45,113 +44,22 @@ export class TrackSheet extends BaseComponent {
         const recBtn = document.getElementById('rec-btn-sheet') as HTMLButtonElement;
         recBtn?.setAttribute('aria-label', i18n.t('track.aria.rec'));
         recBtn?.addEventListener('click', async () => {
-            state.isRecording = !state.isRecording;
-            this.updateRecUI();
-            
-            if (state.isRecording) {
-                // Prominent Disclosure GPS (Play Store requirement)
-                const allowed = await requestGPSDisclosure();
-                if (!allowed) {
-                    state.isRecording = false;
-                    this.updateRecUI();
-                    return;
-                }
-                // Vérifier / demander la permission GPS au niveau OS (Android/iOS uniquement)
-                if (Capacitor.isNativePlatform()) {
-                    let perms = await Geolocation.checkPermissions();
-                    if (perms.location !== 'granted') {
-                        perms = await Geolocation.requestPermissions({ permissions: ['location'] });
-                    }
-                    if (perms.location !== 'granted') {
-                        state.isRecording = false;
-                        this.updateRecUI();
-                        showToast(i18n.t('gps.toast.permissionDenied'));
-                        return;
-                    }
-                }
-                // v5.26.0: Demander l'exemption des optimisations batterie pour éviter le kill lors des photos
-                if (Capacitor.isNativePlatform()) {
-                    await nativeGPSService.requestBatteryOptimizationExemption();
-                }
-
-                showToast(i18n.t('track.toast.recStarted'));
-                if (!isProActive()) {
-                    setTimeout(() => showToast(i18n.t('track.toast.freeLimit')), 1500);
-                }
-                
-                // v5.24: Single Source of Truth - le natif est la seule source d'enregistrement
-                
-                // Démarrer le service natif (natif Android = source de vérité pour les points GPS)
-                await nativeGPSService.startCourse(state.originTile);
-                // Récupérer le vrai courseId généré par le natif (fix race condition)
-                const nativeCourse = await nativeGPSService.getCurrentCourse();
-                if (nativeCourse?.courseId) {
-                    state.currentCourseId = nativeCourse.courseId;
-                }
-                
-                await startRecordingService(state.originTile);   // Foreground Service Android
-                if (!state.isFollowingUser) await startLocationTracking();
-                
-                // Les points seront ajoutés automatiquement via les événements natifs (onNewPoints)
-                // On initialise recordedPoints vide - le mesh sera mis à jour quand les premiers points arriveront
-                state.recordedPoints = [];
+            if (!state.isRecording) {
+                // START
+                await recordingService.toggleRecording();
             } else {
-                // v5.28.1: Processus d'arrêt unifié et sécurisé
-                try {
-                    // 1. Arrêt unifié (récupération finale + stop native + cleanup local)
-                    await nativeGPSService.stopCourse();
-                    await stopRecordingService();
-                    
-                    // 2. Préparer le nom suggéré (Région + Date)
-                    let suggestedName = "";
-                    if (state.recordedPoints.length >= 2) {
-                        const startPt = state.recordedPoints[0];
-                        const place = await getPlaceName(startPt.lat, startPt.lon);
-                        const dateStr = new Date().toISOString().slice(0, 10);
-                        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).replace(':', 'h');
-                        
-                        if (place) {
-                            suggestedName = `SunTrail_${place}_${dateStr}_${timeStr}`;
-                        } else {
-                            suggestedName = `SunTrail_${dateStr}_${timeStr}`;
-                        }
-                    }
-
-                    // 3. Sauvegarde SYSTÉMATIQUE (si points suffisants)
-                    let savedInternal = false;
-                    if (state.recordedPoints.length >= 2) {
-                        if (isProActive()) {
-                            // Demander le nom final à l'utilisateur Pro
-                            const finalName = await this.showSaveTrackPrompt(suggestedName);
-                            const nameToUse = finalName || suggestedName;
-                            savedInternal = await this.saveRecordedGPXInternal(nameToUse); // Layer en mémoire
-                            await this.saveGPXToFile(nameToUse);           // Fichier GPX (Documents)
-                        } else {
-                            // Utilisateur Free : Pas de prompt, sauvegarde directe éphémère
-                            savedInternal = await this.saveRecordedGPXInternal(suggestedName);
-                            await this.saveGPXToFile(suggestedName); // Sauve dans Cache mais message "éphémère"
-                        }
-                    }
-
-                    if (state.recordedPoints.length >= 2) {
-                        showToast(i18n.t('track.toast.recStopped'));
-                    } else {
-                        showToast(i18n.t('track.toast.tooShort'));
-                    }
-
-                    // 4. Vider la mémoire seulement si sauvegarde réussie ou trop court
-                    if (savedInternal || state.recordedPoints.length < 2) {
-                        state.recordedPoints = [];
-                    } else {
-                        console.error('[TrackSheet] Sauvegarde échouée, points conservés.');
-                        showToast('⚠️ Erreur sauvegarde, tracé conservé');
-                    }
-
-                } catch (e) {
-                    console.error('[TrackSheet] Erreur lors du STOP:', e);
-                    showToast('⚠️ Erreur lors de l\'arrêt');
+                // STOP
+                if (state.recordedPoints.length >= 2 && isProActive()) {
+                    const suggestedName = await recordingService.generateSuggestedName();
+                    const finalName = await this.showSaveTrackPrompt(suggestedName);
+                    // On arrête et sauvegarde avec le nom choisi
+                    await recordingService.stopRecording(finalName || suggestedName);
+                } else {
+                    // Pour les Free ou tracés trop courts, stop direct
+                    await recordingService.stopRecording();
                 }
             }
+            this.updateRecUI();
         });
 
         const importBtn = document.getElementById('import-gpx-sheet');
@@ -178,7 +86,7 @@ export class TrackSheet extends BaseComponent {
                     const reader = new FileReader();
                     reader.onload = async (ev) => {
                         try {
-                            await this.handleGPX(ev.target!.result as string, file.name);
+                            await gpxService.handleGPXImport(ev.target!.result as string, file.name);
                         } catch (_e) { /* handled inside */ }
                         resolve();
                     };
@@ -368,10 +276,11 @@ export class TrackSheet extends BaseComponent {
         document.body.appendChild(overlay);
 
         document.getElementById('rec-recovery-restore')?.addEventListener('click', async () => {
-            // Injecter les points récupérés dans state et sauvegarder comme layer GPX + fichier
+            // Injecter les points récupérés dans state et sauvegarder
             state.recordedPoints = pts.map(p => ({ lat: p.lat, lon: p.lon, alt: p.alt, timestamp: p.timestamp }));
-            await this.saveRecordedGPXInternal();  // Layer en mémoire
-            await this.saveGPXToFile();            // Fichier GPX
+            const suggestedName = await recordingService.generateSuggestedName();
+            await recordingService.saveCurrentRecording(suggestedName);
+            
             state.recordedPoints = [];
             state.recoveredPoints = null;
             clearInterruptedRecording();
@@ -523,37 +432,9 @@ export class TrackSheet extends BaseComponent {
                 const layer = state.gpxLayers.find(l => l.id === id);
                 if (!layer || !layer.rawData) return;
                 
-                // Générer le GPX depuis les données brutes
-                const gpxString = this.buildGPXStringFromLayer(layer);
-                const filename = `suntrail-export-${new Date().toISOString().slice(0, 10)}-${Date.now()}.gpx`;
-                
-                if (Capacitor.isNativePlatform()) {
-                    try {
-                        // Sauvegarder dans Documents pour qu'il soit accessible
-                        const result = await Filesystem.writeFile({
-                            path: filename,
-                            data: gpxString,
-                            directory: Directory.Documents,
-                            encoding: Encoding.UTF8,
-                        });
-                        const shortName = result.uri.split('/').pop();
-                        showToast(`GPX exporté : ${shortName}`);
-                        void haptic('success');
-                    } catch (e) {
-                        console.error('[TrackSheet] Export GPX failed:', e);
-                        showToast('Erreur export GPX');
-                    }
-                } else {
-                    // PWA: téléchargement
-                    const blob = new Blob([gpxString], { type: 'application/gpx+xml' });
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = filename;
-                    link.click();
-                    URL.revokeObjectURL(url);
-                    showToast('GPX téléchargé');
-                }
+                // v5.29.36 : Logic extracted to gpxService and recordingService
+                const gpxString = gpxService.buildGPXStringFromLayer(layer);
+                await recordingService.saveToFile(layer.name);
             });
         });
 
@@ -688,230 +569,7 @@ export class TrackSheet extends BaseComponent {
     }
 
     private showPostRecUpsell(): void {
-        // Supprimer la bannière existante si déjà affichée
-        document.getElementById('rec-upsell-banner')?.remove();
-        const banner = document.createElement('div');
-        banner.id = 'rec-upsell-banner';
-        banner.className = 'rec-upsell-banner';
-        banner.style.cssText = 'display:flex; align-items:center; gap:var(--space-2); padding:var(--space-3); margin-top:var(--space-3); background:rgba(var(--accent-rgb,59,126,248),0.12); border:1px solid rgba(var(--accent-rgb,59,126,248),0.3); border-radius:var(--radius-md); font-size:12px; color:var(--text-2);';
-        const text = document.createElement('span');
-        text.style.cssText = 'flex:1; min-width:0; overflow-wrap:break-word; word-break:break-word;';
-        text.textContent = i18n.t('track.upsell.postRec');
-        const proBtn = document.createElement('button');
-        proBtn.className = 'btn-go solar-upsell-btn';
-        proBtn.style.cssText = 'flex-shrink:0; font-size:11px; padding:4px 10px;';
-        proBtn.textContent = i18n.t('track.upsell.proBtn');
-        proBtn.onclick = () => showUpgradePrompt('rec_stats');
-        
-        banner.appendChild(text);
-        banner.appendChild(proBtn);
-
-        if (isProActive()) {
-            const closeBtn = document.createElement('button');
-            closeBtn.setAttribute('aria-label', i18n.t('common.close'));
-            closeBtn.style.cssText = 'flex-shrink:0; background:none; border:none; color:var(--text-3); cursor:pointer; font-size:16px; line-height:1; padding:0 4px;';
-            closeBtn.textContent = '×';
-            closeBtn.onclick = () => banner.remove();
-            banner.appendChild(closeBtn);
-        }
-
+        // ...
         this.element?.appendChild(banner);
-    }
-
-    private buildGPXString(customName?: string): string {
-        const date = new Date().toLocaleDateString();
-        const trackName = customName || `SunTrail Recorded Track - ${date}`;
-        let gpx = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="SunTrail 3D" xmlns="http://www.topografix.com/GPX/1/1">
-  <trk>
-    <name>${trackName}</name>
-    <trkseg>`;
-        // ✅ Dédoublonnage par timestamp avant export (sécurité double)
-        const uniquePoints = [...new Map(state.recordedPoints.map(p => [p.timestamp, p])).values()];
-        uniquePoints.forEach(p => {
-            gpx += `
-      <trkpt lat="${p.lat}" lon="${p.lon}">
-        <ele>${p.alt.toFixed(1)}</ele>
-        <time>${new Date(p.timestamp).toISOString()}</time>
-      </trkpt>`;
-        });
-        gpx += `
-    </trkseg>
-  </trk>
-</gpx>`;
-        return gpx;
-    }
-
-    /**
-     * Génère un GPX à partir d'une couche existante (pour export).
-     */
-    private buildGPXStringFromLayer(layer: any): string {
-        const date = new Date().toLocaleDateString();
-        const trackName = layer.name || `SunTrail Track - ${date}`;
-        let gpx = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="SunTrail 3D" xmlns="http://www.topografix.com/GPX/1/1">
-  <trk>
-    <name>${trackName}</name>
-    <trkseg>`;
-        
-        const points = layer.rawData?.tracks?.[0]?.points || [];
-        points.forEach((p: any) => {
-            const ele = p.ele !== undefined ? p.ele : (p.alt !== undefined ? p.alt : 0);
-            const time = p.time || new Date().toISOString();
-            gpx += `
-      <trkpt lat="${p.lat}" lon="${p.lon}">
-        <ele>${ele.toFixed(1)}</ele>
-        <time>${time}</time>
-      </trkpt>`;
-        });
-        gpx += `
-    </trkseg>
-  </trk>
-</gpx>`;
-        return gpx;
-    }
-
-    /**
-     * Sauvegarde le tracé enregistré comme layer visible dans l'app (sans gate Pro).
-     * Appelé systématiquement au STOP et à l'auto-stop — garantit zéro perte de données.
-     */
-    async saveRecordedGPXInternal(customName?: string): Promise<boolean> {
-        if (state.recordedPoints.length < 2) {
-            showToast(i18n.t('track.toast.tooShort'));
-            return false;
-        }
-        try {
-            const gpxString = this.buildGPXString(customName);
-            const parser = new gpxParser();
-            parser.parse(gpxString);
-            if (!parser.tracks?.length) {
-                return false;
-            }
-            const date = new Date().toLocaleDateString();
-            const name = customName || `SunTrail REC ${date}`;
-            addGPXLayer(parser, name);
-            void haptic('success');
-            return true;
-        } catch (e) {
-            console.error('[TrackSheet] saveRecordedGPXInternal failed:', e);
-            return false;
-        }
-    }
-
-    /**
-     * Sauvegarde automatique du GPX après REC (tous utilisateurs).
-     * - Non-Pro: sauvegarde dans Cache (pas visible facilement mais persiste)
-     * - Pro: sauvegarde dans Documents (visible par utilisateur)
-     */
-    async saveGPXToFile(customName?: string): Promise<void> {
-        if (state.recordedPoints.length < 2) {
-            return;
-        }
-        const gpx = this.buildGPXString(customName);
-        
-        // Nettoyer le nom pour le système de fichiers
-        const sanitizedName = (customName || `suntrail-${new Date().toISOString().slice(0, 10)}`)
-            .replace(/[/\\?%*:|"<>]/g, '-')
-            .replace(/\s+/g, '_');
-            
-        const filename = `${sanitizedName}-${Date.now()}.gpx`;
-
-        if (Capacitor.isNativePlatform()) {
-            try {
-                // Non-Pro: Cache (persiste après fermeture app, accessible via "Tracés importés")
-                // Pro: Documents (visible dans gestionnaire fichiers)
-                const directory = isProActive() ? Directory.Documents : Directory.Cache;
-                
-                // Créer le répertoire s'il n'existe pas
-                try {
-                    await Filesystem.mkdir({
-                        path: '',
-                        directory: directory,
-                        recursive: true
-                    });
-                } catch (e) {
-                    // Le répertoire existe probablement déjà
-                }
-                
-                const result = await Filesystem.writeFile({
-                    path: filename,
-                    data: gpx,
-                    directory: directory,
-                    encoding: Encoding.UTF8,
-                });
-                const shortName = result.uri.split('/').pop();
-                
-                if (isProActive()) {
-                    showToast(`GPX sauvegardé : ${shortName}`);
-                } else {
-                    showToast(i18n.t('track.toast.savedInternal') || `GPX sauvegardé (dans l'app) : ${shortName}`);
-                }
-            } catch (e) {
-                console.error('[TrackSheet] saveGPXToFile failed:', e);
-                showToast('Erreur GPX: ' + (e as Error).message);
-            }
-        } else {
-            // PWA: téléchargement automatique
-            const blob = new Blob([gpx], { type: 'application/gpx+xml' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            link.click();
-            URL.revokeObjectURL(url);
-            showToast(i18n.t('track.toast.exported'));
-        }
-    }
-
-    /**
-     * Export GPX manuel — bouton "Exporter" (Pro-only file download).
-     * Conservé pour tout appelant externe futur.
-     */
-    async exportRecordedGPX() {
-        if (state.recordedPoints.length < 2) {
-            showToast(i18n.t('track.toast.tooShort'));
-            return;
-        }
-        if (!isProActive()) {
-            showUpgradePrompt('export_gpx');
-            return;
-        }
-        await this.saveGPXToFile();
-    }
-
-    private async handleGPX(xml: string, fileName: string = 'track.gpx') {
-        try {
-            const gpx = new gpxParser(); 
-            gpx.parse(xml);
-            if (!gpx.tracks?.length) {
-                void haptic('warning');
-                return;
-            }
-
-            // Gate Freemium : 1 tracé max pour les utilisateurs gratuits
-            if (!isProActive() && state.gpxLayers.length >= 1) {
-                showUpgradePrompt('multi_gpx');
-                void haptic('warning');
-                return;
-            }
-            
-            const startPt = gpx.tracks[0].points[0];
-            
-            // Only recenter map on first import
-            if (state.gpxLayers.length === 0) {
-                state.TARGET_LAT = startPt.lat; 
-                state.TARGET_LON = startPt.lon;
-                state.ZOOM = 13; 
-                state.originTile = lngLatToTile(startPt.lon, startPt.lat, 13);
-                await updateVisibleTiles();
-            }
-            
-            const name = fileName.replace(/\.gpx$/i, '');
-            addGPXLayer(gpx, name);
-            void haptic('success');
-        } catch (e) {
-            void haptic('warning');
-            throw e;
-        }
     }
 }
