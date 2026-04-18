@@ -403,6 +403,12 @@ export class Tile {
             if (this.mesh.material instanceof THREE.Material) { this.mesh.material.opacity = 1; this.mesh.material.transparent = false; }
         } else { this.opacity = 0; this.isFadingIn = true; }
 
+        // v5.30.12 : Retour au déclenchement différé (v5.29.40 style) pour garantir l'affichage
+        const delay = (ms: number) => ms * state.LOAD_DELAY_FACTOR;
+        setTimeout(() => {
+            if (this.status !== 'disposed') this.loadHighLODFeatures();
+        }, delay(150));
+
         if (oldMesh) {
             if (state.scene) state.scene.remove(oldMesh); 
             if (oldMesh.material instanceof THREE.Material) materialPool.release(oldMesh.material);

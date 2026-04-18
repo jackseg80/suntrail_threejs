@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.30.12] - 2026-04-18
+### Fixed
+- **Stabilité 3D (Définitive)** : Retour à un cycle de vie éprouvé pour les arbres et bâtiments. Suppression de la boucle de retry qui causait l'empilement vertical. Mise en place d'un système de `requestId` garantissant qu'une seule instance d'objets 3D peut exister par tuile.
+
 ## [5.30.11] - 2026-04-18
 ### Fixed
 - **Objets 3D (Végétation, Bâtiments, POIs)** : Rétablissement du chargement automatique pour toutes les sources (réseau et cache). Centralisation de la logique dans `loadHighLODFeatures()` pour garantir qu'aucune donnée 3D ne manque, tout en conservant la protection anti-multiplication.

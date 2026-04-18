@@ -13,9 +13,7 @@ import { disposeObject } from './memory';
 const buildingMemoryCache = new BoundedCache<string, any[]>({ maxSize: 200 });
 const maptilerFeaturesCache = new BoundedCache<string, any[]>({ maxSize: 100 });
 
-const buildingFetchPromises = new Map<string, Promise<any[] | null>>();
 const maptilerFetchPromises = new Map<string, Promise<any[] | null>>();
-const zoneFailureCooldown = new Map<string, number>();
 const CACHE_NAME = 'suntrail-buildings-v4';
 
 // Matériaux partagés
@@ -30,69 +28,55 @@ const buildingMaterial2D = new THREE.MeshBasicMaterial({
 });
 
 /**
- * Charge les bâtiments 3D pour une tuile (v5.30.9)
+ * Charge les bâtiments 3D pour une tuile (v5.30.12)
  * Priorité : MapTiler (Vector Tiles) > OSM Overpass (Fallback)
  */
 export async function loadBuildingsForTile(tile: Tile) {
     if (!state.SHOW_BUILDINGS || tile.zoom < 14 || (tile.status as string) === 'disposed') return;
     
-    // v5.30.9 : Protection absolue - On ne charge qu'une seule fois
-    if (tile.buildingGroup || (tile as any)._loadingBuildings) return;
-
-    // Si les données ne sont pas là, on ne boucle pas (le trigger est dans Tile.ts)
-    if (!tile.pixelData || tile.status !== 'loaded') return;
-
-    (tile as any)._loadingBuildings = true;
+    // v5.30.12 : Système d'ID de requête unique pour tuer les doublons au berceau
+    if (!(tile as any)._buildingRequestId) (tile as any)._buildingRequestId = 0;
+    const currentId = ++(tile as any)._buildingRequestId;
 
     try {
-        // --- PHASE 1 : MAPTILER (Vector Tiles) ---
+        // --- PHASE 1 : MAPTILER ---
         if (!state.isMapTilerDisabled) {
             const maptilerBuildings = await fetchBuildingsMapTiler(tile);
+            
+            // Si une nouvelle requête a été lancée entre temps, on abandonne celle-ci
+            if (currentId !== (tile as any)._buildingRequestId) return;
+            
             if (maptilerBuildings && maptilerBuildings.length > 0) {
                 renderBuildingsMerged(tile, maptilerBuildings, 150);
                 return;
             }
         }
 
-        // --- PHASE 2 : OVERPASS (OSM Fallback) ---
+        // --- PHASE 2 : OVERPASS (Fallback) ---
         if (isOverpassInBackoff()) return;
-
+        // ... logique overpass ...
         const zoneZ = 14; 
         const ratio = Math.pow(2, tile.zoom - zoneZ);
         const zx = Math.floor(tile.tx / ratio);
         const zy = Math.floor(tile.ty / ratio);
         const zoneKey = `bld_z${zoneZ}_${zx}_${zy}`;
 
-        const failTime = zoneFailureCooldown.get(zoneKey);
-        if (failTime && Date.now() < failTime) return;
-
         let buildings: any[] | null | undefined = buildingMemoryCache.get(zoneKey);
         if (!buildings) {
-            let promise = buildingFetchPromises.get(zoneKey);
-            if (!promise) {
-                promise = fetchBuildingsWithCache(zoneZ, zx, zy, zoneKey);
-                buildingFetchPromises.set(zoneKey, promise);
-            }
-            buildings = await promise;
-            if (buildings) buildingMemoryCache.set(zoneKey, buildings);
-            else zoneFailureCooldown.set(zoneKey, Date.now() + 60000);
-            buildingFetchPromises.delete(zoneKey);
+            buildings = await fetchBuildingsWithCache(zoneZ, zx, zy, zoneKey);
         }
 
-        if (!buildings || buildings.length === 0 || (tile.status as string) === 'disposed') return;
+        if (currentId !== (tile as any)._buildingRequestId) return;
+        if (!buildings || buildings.length === 0) return;
 
         const bounds = tile.getBounds();
-        const latPad = (bounds.north - bounds.south) * 0.05;
-        const lonPad = (bounds.east - bounds.west) * 0.05;
-
         const tileBuildings = buildings.filter(el => {
             if (!el.geometry || el.geometry.length === 0) return false;
             let sumLat = 0, sumLon = 0;
             for (const p of el.geometry) { sumLat += p.lat; sumLon += p.lon; }
             const clat = sumLat / el.geometry.length;
             const clon = sumLon / el.geometry.length;
-            return clat <= (bounds.north + latPad) && clat >= (bounds.south - latPad) && 
-                   clon <= (bounds.east + lonPad) && clon >= (bounds.west - lonPad);
+            return clat <= bounds.north && clat >= bounds.south && clon <= bounds.east && clon >= bounds.west;
         });
 
         if (tileBuildings.length > 0) {
@@ -100,8 +84,6 @@ export async function loadBuildingsForTile(tile: Tile) {
         }
     } catch (e) {
         console.warn('[Buildings] Load failed:', e);
-    } finally {
-        (tile as any)._loadingBuildings = false;
     }
 }
 
@@ -185,12 +167,21 @@ async function fetchBuildingsWithCache(z: number, x: number, y: number, key: str
 function renderBuildingsMerged(tile: Tile, elements: any[], limit: number = 150) {
     if ((tile.status as string) === 'disposed' || !tile.mesh) return;
 
-    // v5.30.9 : Nettoyage radical - on supprime tout ancien groupe rattaché à la tuile
-    tile.mesh.traverse((obj) => {
-        if (obj instanceof THREE.Group && obj.name === 'building-group') {
-            tile.mesh?.remove(obj);
-            disposeObject(obj);
-        }
+    // v5.30.12 : Nettoyage synchrone et exhaustif (Ancienne méthode + Nouvelle méthode)
+    // 1. Retirer de la scène globale (v5.29.40 style)
+    if (tile.buildingGroup) {
+        if (state.scene) state.scene.remove(tile.buildingGroup);
+        disposeObject(tile.buildingGroup);
+        tile.buildingGroup = null;
+    }
+    // 2. Retirer du mesh de la tuile (v5.30.9 style)
+    const toRemove: THREE.Object3D[] = [];
+    tile.mesh.children.forEach(child => {
+        if (child.name === 'building-group') toRemove.push(child);
+    });
+    toRemove.forEach(obj => {
+        tile.mesh?.remove(obj);
+        disposeObject(obj);
     });
 
     const geometries: THREE.BufferGeometry[] = [];
@@ -218,7 +209,6 @@ function renderBuildingsMerged(tile: Tile, elements: any[], limit: number = 150)
                 
                 if (minTerrainAlt === Infinity || minTerrainAlt === 0) return;
 
-                // Positionner relativement à la tuile (le mesh de la tuile est déjà en worldX, worldZ)
                 const matrix = new THREE.Matrix4()
                     .makeRotationX(-Math.PI / 2)
                     .setPosition(0, minTerrainAlt - skirt, 0);
@@ -239,10 +229,10 @@ function renderBuildingsMerged(tile: Tile, elements: any[], limit: number = 150)
             mesh.receiveShadow = !is2D;
 
             const group = new THREE.Group();
-            group.name = 'building-group'; // Pour le repérage au nettoyage
+            group.name = 'building-group';
             group.add(mesh);
             
-            // ✅ AJOUT DIRECT À LA TUILE (plus de décalage possible, nettoyage auto)
+            // ✅ AJOUT DIRECT À LA TUILE (plus robuste pour le cycle de vie)
             tile.mesh.add(group);
             tile.buildingGroup = group;
         } catch (e) {}
