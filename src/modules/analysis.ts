@@ -13,43 +13,43 @@ export function resetAnalysisCache(): void {
 
 /**
  * Récupère l'altitude précise à une coordonnée monde (x, z).
- * v5.30.3 : Recherche multi-niveaux ultra-robuste avec fallback parent.
+ * v5.30.3 : Recherche multi-niveaux ultra-robuste avec cache et interpolation bilinéaire.
  */
 export function getAltitudeAt(worldX: number, worldZ: number, hintTile: any = null): number {
     const testPoint = new THREE.Vector3(worldX, 0, worldZ);
     let tile = hintTile;
 
     if (!tile) {
-        // 1. Index spatial (O(1))
-        const candidates = queryTiles(worldX, worldZ);
-        for (const t of candidates) {
-            if (t.status === 'loaded' && t.pixelData && t.bounds && t.bounds.containsPoint(testPoint)) {
-                if (!tile || t.zoom > tile.zoom) tile = t;
-            }
-        }
-        // 2. Scan complet (fallback sécurité)
-        if (!tile) {
-            for (const t of activeTiles.values()) {
+        if (lastUsedTile && lastUsedTile.status === 'loaded' && lastUsedTile.pixelData && lastUsedTile.bounds && lastUsedTile.bounds.containsPoint(testPoint)) {
+            tile = lastUsedTile;
+        } else {
+            const candidates = queryTiles(worldX, worldZ);
+            for (const t of candidates) {
                 if (t.status === 'loaded' && t.pixelData && t.bounds && t.bounds.containsPoint(testPoint)) {
                     if (!tile || t.zoom > tile.zoom) tile = t;
                 }
             }
+            if (!tile) {
+                for (const t of activeTiles.values()) {
+                    if (t.status === 'loaded' && t.pixelData && t.bounds && t.bounds.containsPoint(testPoint)) {
+                        if (!tile || t.zoom > tile.zoom) tile = t;
+                    }
+                }
+            }
+            if (tile) lastUsedTile = tile;
         }
     }
 
     if (!tile || !tile.pixelData) return 0;
 
-    // Calcul de l'index dans le buffer pixelData (Terrain-RGB décodé)
-    // res est généralement 256 ou 512
     const res = Math.sqrt(tile.pixelData.length / 4);
-    
-    const relX = (worldX - tile.worldX) / tile.tileSizeMeters + 0.5;
-    const relZ = (worldZ - tile.worldZ) / tile.tileSizeMeters + 0.5;
+    const b = tile.bounds;
+    const localX = (worldX - b.min.x) / (b.max.x - b.min.x);
+    const localZ = (worldZ - b.min.z) / (b.max.z - b.min.z);
 
     // v5.30.3 : Interpolation bilinéaire avec décalage demi-pixel
-    // On veut que le centre du pixel (0,0) soit à fx=0.0
-    const fx = (relX * res) - 0.5;
-    const fz = (relZ * res) - 0.5;
+    const fx = (localX * res) - 0.5;
+    const fz = (localZ * res) - 0.5;
     const x0 = Math.floor(fx);
     const z0 = Math.floor(fz);
     const x1 = x0 + 1;
@@ -67,7 +67,6 @@ export function getAltitudeAt(worldX: number, worldZ: number, hintTile: any = nu
         return decodeTerrainRGB(r, g, b, state.RELIEF_EXAGGERATION);
     };
 
-    // Interpolation bilinéaire
     const h00 = getH(x0, z0);
     const h10 = getH(x1, z0);
     const h01 = getH(x0, z1);
@@ -146,6 +145,7 @@ export function runSolarProbe(worldX: number, worldZ: number, altitude: number):
     const sunset = toValidDate(times.sunset);
     
     const nowPos = SunCalc.getPosition(state.simDate, gps.lat, gps.lon);
+    const baseMoon = SunCalc.getMoonIllumination(baseDate);
     
     return {
         totalSunlightMinutes,
@@ -162,8 +162,8 @@ export function runSolarProbe(worldX: number, worldZ: number, altitude: number):
         dayDurationMinutes: sunrise && sunset ? Math.round((sunset.getTime() - sunrise.getTime()) / 60000) : 0,
         currentAzimuthDeg: ((nowPos.azimuth * (180 / Math.PI)) + 180 + 360) % 360,
         currentElevationDeg: nowPos.altitude * (180 / Math.PI),
-        moonPhase: SunCalc.getMoonIllumination(baseDate).phase,
-        moonPhaseName: getMoonPhaseName(SunCalc.getMoonIllumination(baseDate).phase),
+        moonPhase: baseMoon.phase,
+        moonPhaseName: getMoonPhaseName(baseMoon.phase),
         elevationCurve: Array.from({length:144}, (_, i) => {
             const d = new Date(state.simDate); d.setHours(0, i*10, 0, 0);
             return SunCalc.getPosition(d, gps.lat, gps.lon).altitude * (180/Math.PI);

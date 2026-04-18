@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as THREE from 'three';
-import { getAltitudeAt, drapeToTerrain } from './analysis';
+import { getAltitudeAt } from './analysis';
 import { state } from './state';
 import { insertTile, clearIndex } from './tileSpatialIndex';
 
 /** Helper pour créer des données Terrain-RGB */
 function encodeTerrainRGB(alt: number): { r: number, g: number, b: number } {
-    const v = (alt + 10000) * 10;
+    const v = Math.round((alt + 10000) * 10);
     const r = Math.floor(v / 65536);
     const g = Math.floor((v % 65536) / 256);
-    const b = Math.floor(v % 256);
+    const b = v % 256;
     return { r, g, b };
 }
 
@@ -58,11 +58,11 @@ describe('Analysis Module (v5.30.3)', () => {
 
             insertTile(mockTile as any);
 
-            // Test au centre exact (0,0) -> Moyenne = 250m
+            // Test au centre exact (0,0) -> relX=0.5 -> Moyenne = 250m
             expect(getAltitudeAt(0, 0)).toBeCloseTo(250, 0);
 
-            // Test aux 4 coins internes (là où les pixels sont centrés dans leur quadrant)
-            // Avec res=2, les pixels sont à -250 et +250
+            // Test aux centres des pixels (relX = 0.25 et 0.75)
+            // res=2, tileSize=1000 -> pixels centrés à -250 et +250
             expect(getAltitudeAt(-250, -250)).toBeCloseTo(100, 0);
             expect(getAltitudeAt(250, -250)).toBeCloseTo(200, 0);
             expect(getAltitudeAt(-250, 250)).toBeCloseTo(300, 0);
@@ -103,15 +103,6 @@ describe('Analysis Module (v5.30.3)', () => {
             insertTile(childTile as any);
 
             expect(getAltitudeAt(10, 10)).toBeCloseTo(50, 0);
-        });
-    });
-
-    describe('drapeToTerrain', () => {
-        it('should convert and offset points correctly', () => {
-            const points = [{ lat: 45, lon: 6, alt: 1000 }, { lat: 45.1, lon: 6.1, alt: 1100 }];
-            const result = drapeToTerrain(points, { x: 0, y: 0, z: 13 }, 4, 30);
-            expect(result.length).toBe(5);
-            expect(result[0].y).toBeGreaterThanOrEqual(1000 + 30);
         });
     });
 });

@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.30.4] - 2026-04-18
+### Fixed
+- **Analyse d'Altitude** : Correction finale du bug d'interpolation bilinéaire (décalage demi-pixel) pour une précision topographique maximale.
+- **TypeScript Cleanup** : Résolution de l'avertissement `lastUsedTile` inutilisé tout en conservant l'optimisation de cache pour les performances (2 FPS fix).
+
 ## [5.30.3] - 2026-04-18
 ### Fixed
 - **Moteur d'Altitude** : Implémentation d'une interpolation bilinéaire pour des relevés de terrain fluides. Correction d'un bug de précision d'indexation pixel.

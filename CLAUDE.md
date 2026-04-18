@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.30.3)
+# SunTrail — Guide IA (v5.30.4)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-18 suite à la v5.30.3 (Bilinear Altitude Interpolation & Robust Location).
+> Mis à jour le 2026-04-18 suite à la v5.30.4 (Bilinear Fix & TS Cleanup).
 
 ## Projet
 
