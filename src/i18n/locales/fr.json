@@ -640,6 +640,31 @@
     "locateMe": "Localiser ma position",
     "toggle2d3d": "Basculer 2D/3D"
   },
+  "acceptance": {
+    "title": "Informations importantes avant utilisation",
+    "item1": {
+      "title": "Outil d'aide à la planification uniquement",
+      "desc": "SunTrail n'est pas un dispositif de sauvetage. En cas d'urgence, contactez le 112."
+    },
+    "item2": {
+      "title": "Données GPS et 3D approximatives",
+      "desc": "Le signal GPS peut être inexact en montagne. Le terrain 3D est basé sur des modèles numériques avec une résolution de 5–25m."
+    },
+    "item3": {
+      "title": "Simulation solaire indicative",
+      "desc": "Les calculs ne tiennent pas compte de la météo, des nuages, ni des obstacles locaux non modélisés."
+    },
+    "item4": {
+      "title": "Pentes et risque avalanche",
+      "desc": "La coloration des pentes (>30°) ne remplace pas l'analyse terrain et la méthode 3×3 de réduction des risques d'avalanche."
+    },
+    "item5": {
+      "title": "Prévoyez une batterie externe",
+      "desc": "L'usage intensif du GPS et du rendu 3D vide rapidement la batterie. Emportez toujours une carte papier."
+    },
+    "legal": "En continuant, vous acceptez les conditions d'utilisation de SunTrail et reconnaissez avoir lu ces informations de sécurité.",
+    "btn": "J'ai compris — Continuer"
+  },
   "packs": {
     "title": "Packs Pays",
     "storage": "Stockage",

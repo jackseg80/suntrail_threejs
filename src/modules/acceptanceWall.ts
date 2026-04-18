@@ -9,6 +9,8 @@
  * des CGU ou des avertissements de sécurité pour forcer un re-affichage.
  */
 
+import { i18n } from '../i18n/I18nService';
+
 const ACCEPTANCE_VERSION = 'v1';
 const STORAGE_KEY = `suntrail_acceptance_${ACCEPTANCE_VERSION}`;
 
@@ -19,7 +21,6 @@ export function hasAccepted(): boolean {
 /**
  * Affiche le disclaimer si pas encore accepté pour cette version.
  * Retourne une Promise qui se résout quand l'utilisateur clique "J'accepte".
- * La Promise ne rejette jamais — l'utilisateur ne peut pas passer outre.
  */
 export function requestAcceptance(): Promise<void> {
     if (hasAccepted()) return Promise.resolve();
@@ -43,73 +44,98 @@ function _show(resolve: () => void): void {
                 inset: 0;
                 background: var(--overlay-bg);
                 display: flex;
-                align-items: flex-end;
+                align-items: center;
                 justify-content: center;
                 z-index: 9998;
-                padding: 0;
-                backdrop-filter: blur(8px);
-                -webkit-backdrop-filter: blur(8px);
+                padding: 20px;
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
             }
             .aw-card {
                 background: var(--surface-solid, #1a1d2e);
                 border: 1px solid var(--border, rgba(255,255,255,0.1));
-                border-radius: var(--radius-xl, 20px) var(--radius-xl, 20px) 0 0;
-                padding: 32px 24px 40px;
-                max-width: 480px;
+                border-radius: var(--radius-xl, 24px);
+                padding: 36px 24px 32px;
+                max-width: 440px;
                 width: 100%;
-                max-height: 90vh;
-                overflow-y: auto;
-                box-shadow: 0 -8px 32px var(--shadow-lg);
+                max-height: 85vh;
+                display: flex;
+                flex-direction: column;
+                box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+                animation: aw-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                overflow: hidden;
             }
+            @keyframes aw-pop {
+                from { opacity: 0; transform: scale(0.9) translateY(20px); }
+                to { opacity: 1; transform: scale(1) translateY(0); }
+            }
+            .aw-scroll-area {
+                overflow-y: auto;
+                flex: 1;
+                margin-bottom: 20px;
+                padding-right: 4px;
+            }
+            /* Custom scrollbar for better look */
+            .aw-scroll-area::-webkit-scrollbar { width: 4px; }
+            .aw-scroll-area::-webkit-scrollbar-track { background: transparent; }
+            .aw-scroll-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
             .aw-icon {
-                font-size: 2.5rem;
+                font-size: 3rem;
                 text-align: center;
                 margin-bottom: 16px;
             }
             .aw-title {
-                font-size: var(--text-lg, 1.1rem);
-                font-weight: 700;
+                font-size: 1.25rem;
+                font-weight: 800;
                 color: var(--text-1, #fff);
                 text-align: center;
-                margin: 0 0 20px;
+                margin: 0 0 24px;
                 line-height: 1.3;
             }
             .aw-items {
                 list-style: none;
                 padding: 0;
-                margin: 0 0 24px;
+                margin: 0;
                 display: flex;
                 flex-direction: column;
-                gap: 14px;
+                gap: 18px;
             }
             .aw-item {
                 display: flex;
-                gap: 12px;
+                gap: 14px;
                 align-items: flex-start;
             }
             .aw-item-icon {
-                font-size: 1.2rem;
+                font-size: 1.3rem;
                 flex-shrink: 0;
                 margin-top: 1px;
+                background: var(--surface-subtle);
+                width: 36px;
+                height: 36px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 10px;
             }
             .aw-item-text {
-                font-size: var(--text-sm, 0.85rem);
+                font-size: 0.9rem;
                 color: var(--text-2, rgba(255,255,255,0.75));
                 line-height: 1.5;
             }
             .aw-item-text strong {
                 color: var(--text-1, #fff);
-                font-weight: 600;
+                font-weight: 700;
                 display: block;
-                margin-bottom: 2px;
+                margin-bottom: 3px;
             }
-            .aw-divider {
-                height: 1px;
-                background: var(--border, rgba(255,255,255,0.1));
-                margin: 0 0 20px;
+            .aw-footer {
+                border-top: 1px solid var(--border, rgba(255,255,255,0.1));
+                padding-top: 20px;
+                background: var(--surface-solid);
             }
             .aw-legal {
-                font-size: var(--text-xs, 0.75rem);
+                font-size: 0.75rem;
                 color: var(--text-3, rgba(255,255,255,0.45));
                 text-align: center;
                 margin: 0 0 20px;
@@ -121,69 +147,71 @@ function _show(resolve: () => void): void {
                 background: var(--accent, #4a8ef8);
                 color: #fff;
                 border: none;
-                border-radius: var(--radius-lg, 12px);
-                font-size: var(--text-md, 0.95rem);
+                border-radius: var(--radius-lg, 14px);
+                font-size: 1rem;
                 font-weight: 700;
                 cursor: pointer;
-                transition: opacity 0.15s;
-                letter-spacing: 0.01em;
+                transition: transform 0.2s, background 0.2s;
+                box-shadow: 0 4px 15px rgba(74, 142, 248, 0.3);
             }
-            .aw-accept-btn:hover { opacity: 0.9; }
-            .aw-accept-btn:active { opacity: 0.8; }
+            .aw-accept-btn:hover { background: #5a9bff; transform: translateY(-2px); }
+            .aw-accept-btn:active { transform: translateY(0); }
         </style>
 
         <div class="aw-card" role="document">
             <div class="aw-icon">⛰️</div>
             <h2 class="aw-title" id="acceptance-title">
-                Informations importantes avant utilisation
+                ${i18n.t('acceptance.title')}
             </h2>
 
-            <ul class="aw-items" id="acceptance-body">
-                <li class="aw-item">
-                    <span class="aw-item-icon">🧭</span>
-                    <div class="aw-item-text">
-                        <strong>Outil d'aide à la planification uniquement</strong>
-                        SunTrail n'est pas un dispositif de sauvetage. En cas d'urgence, contactez le 112.
-                    </div>
-                </li>
-                <li class="aw-item">
-                    <span class="aw-item-icon">📡</span>
-                    <div class="aw-item-text">
-                        <strong>Données GPS et 3D approximatives</strong>
-                        Le signal GPS peut être inexact en montagne. Le terrain 3D est basé sur des modèles numériques avec une résolution de 5–25m.
-                    </div>
-                </li>
-                <li class="aw-item">
-                    <span class="aw-item-icon">☀️</span>
-                    <div class="aw-item-text">
-                        <strong>Simulation solaire indicative</strong>
-                        Les calculs ne tiennent pas compte de la météo, des nuages, ni des obstacles locaux non modélisés.
-                    </div>
-                </li>
-                <li class="aw-item">
-                    <span class="aw-item-icon">⚠️</span>
-                    <div class="aw-item-text">
-                        <strong>Pentes et risque avalanche</strong>
-                        La coloration des pentes (&gt;30°) ne remplace pas l'analyse terrain et la méthode 3×3 de réduction des risques d'avalanche.
-                    </div>
-                </li>
-                <li class="aw-item">
-                    <span class="aw-item-icon">🔋</span>
-                    <div class="aw-item-text">
-                        <strong>Prévoyez une batterie externe</strong>
-                        L'usage intensif du GPS et du rendu 3D vide rapidement la batterie. Emportez toujours une carte papier.
-                    </div>
-                </li>
-            </ul>
+            <div class="aw-scroll-area">
+                <ul class="aw-items" id="acceptance-body">
+                    <li class="aw-item">
+                        <span class="aw-item-icon">🧭</span>
+                        <div class="aw-item-text">
+                            <strong>${i18n.t('acceptance.item1.title')}</strong>
+                            ${i18n.t('acceptance.item1.desc')}
+                        </div>
+                    </li>
+                    <li class="aw-item">
+                        <span class="aw-item-icon">📡</span>
+                        <div class="aw-item-text">
+                            <strong>${i18n.t('acceptance.item2.title')}</strong>
+                            ${i18n.t('acceptance.item2.desc')}
+                        </div>
+                    </li>
+                    <li class="aw-item">
+                        <span class="aw-item-icon">☀️</span>
+                        <div class="aw-item-text">
+                            <strong>${i18n.t('acceptance.item3.title')}</strong>
+                            ${i18n.t('acceptance.item3.desc')}
+                        </div>
+                    </li>
+                    <li class="aw-item">
+                        <span class="aw-item-icon">⚠️</span>
+                        <div class="aw-item-text">
+                            <strong>${i18n.t('acceptance.item4.title')}</strong>
+                            ${i18n.t('acceptance.item4.desc')}
+                        </div>
+                    </li>
+                    <li class="aw-item">
+                        <span class="aw-item-icon">🔋</span>
+                        <div class="aw-item-text">
+                            <strong>${i18n.t('acceptance.item5.title')}</strong>
+                            ${i18n.t('acceptance.item5.desc')}
+                        </div>
+                    </li>
+                </ul>
+            </div>
 
-            <div class="aw-divider"></div>
-            <p class="aw-legal">
-                En continuant, vous acceptez les conditions d'utilisation de SunTrail
-                et reconnaissez avoir lu ces informations de sécurité.
-            </p>
-            <button class="aw-accept-btn" id="aw-accept-btn">
-                J'ai compris — Continuer
-            </button>
+            <div class="aw-footer">
+                <p class="aw-legal">
+                    ${i18n.t('acceptance.legal')}
+                </p>
+                <button class="aw-accept-btn" id="aw-accept-btn">
+                    ${i18n.t('acceptance.btn')}
+                </button>
+            </div>
         </div>
     `;
 
