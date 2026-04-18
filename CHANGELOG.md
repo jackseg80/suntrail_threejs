@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.29.36] - 2026-04-18
+### Fixed
+- **Dette Technique** : Suppression des fichiers racines obsolètes (`CHANGES_v5.25.1.md`, `catalog.json`) et du script `update_locales.py`.
+- **Organisation Documentaire** : Archivage massif des anciens plans et protocoles dans `docs/archives/`.
+- **Refactor des Tests** : Déplacement et uniformisation des tests unitaires (`solarAnalysis.test.ts`, `weatherPro.test.ts`) directement dans `src/modules/`.
+- **Gestion GPX** : Nettoyage et structuration du dossier `/gpx/` avec création d'un sous-dossier `/samples/`.
+
 ## [5.29.35] - 2026-04-17
 ### Fixed
 - **Build Hotfix** : Correction de la syntaxe du fichier `build.gradle` (suppression des antislashs accidentels sur le `versionName`) pour restaurer la compilation Android.
