@@ -7,7 +7,7 @@ import { disposeAllCachedTiles } from './tileCache';
 import * as pmtiles from 'pmtiles';
 import { packManager } from './packManager';
 
-export const CACHE_NAME = 'suntrail-tiles-v28';
+export const CACHE_NAME = 'suntrail-tiles-v30';
 
 // --- PMTILES SUPPORT (v5.7.0) ---
 let localPMTiles: pmtiles.PMTiles | null = null;
@@ -185,11 +185,14 @@ export async function fetchWithCache(url: string, usePersistentCache: boolean = 
         if (embeddedPMTiles && tileMatch) {
             const ez = parseInt(tileMatch[1]);
             if (ez <= EMBEDDED_MAX_ZOOM) {
-                const blob = await getTileFromEmbedded(ez, parseInt(tileMatch[2]), parseInt(tileMatch[3]));
-                if (blob) return blob;
+                // v5.29.39 : Ne pas utiliser le fallback Topo si on est en mode satellite et online
+                const useLocal = state.MAP_SOURCE !== 'satellite' || state.IS_OFFLINE;
+                if (useLocal) {
+                    const blob = await getTileFromEmbedded(ez, parseInt(tileMatch[2]), parseInt(tileMatch[3]));
+                    if (blob) return blob;
+                }
             }
         }
-
         if (state.IS_OFFLINE) return null;
         
         // v5.29.5 : Ajout d'un timeout pour ne pas bloquer les slots de connexion (max 6)
