@@ -46,7 +46,12 @@ export class SettingsSheet extends BaseComponent {
         this.bindExpandToggle('weather-expand-btn', 'weather-suboptions');
 
         // Toggles
-        this.bindToggle('energy-saver-toggle', 'ENERGY_SAVER');
+        this.bindToggle('energy-saver-toggle', 'ENERGY_SAVER', (val: boolean) => {
+            showToast(val 
+                ? i18n.t('settings.toast.energySaverOn') || 'Mode Éco activé (FPS limités)' 
+                : i18n.t('settings.toast.energySaverOff') || 'Mode Éco désactivé'
+            );
+        });
         this.bindToggle('stats-toggle', 'SHOW_STATS', (val: boolean) => {
             // setVisible(val) synchronise exactement l'état du toggle avec l'affichage
             state.vramPanel?.setVisible?.(val);

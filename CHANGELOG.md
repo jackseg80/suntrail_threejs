@@ -5,7 +5,18 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.29.45] - 2026-04-18
+## [5.30.18] - 2026-04-18
+### Added
+- **Feedback Réseau** : Ajout de Toasts informatifs lors des timeouts de l'API Overpass (sommets) et Météo.
+- **UX Énergie** : Toast de confirmation lors de l'activation/désactivation du mode Économie d'énergie.
+- **Onboarding Moderne** : Tutoriel interactif avec animations et retours haptiques (vibrations).
+- **Nom des lieux** : Affichage automatique du nom de la localité ou du sommet dans les outils Météo et Solaire.
+
+### Refactored
+- **Modularité UI** : Scission de `ExpertSheets.ts` en composants dédiés (`WeatherSheet.ts`, `SolarProbeSheet.ts`, `SOSSheet.ts`) pour une maintenance accrue.
+- **Stabilité 3D** : Consolidation du moteur de rendu sur la base stable v5.29.45, garantissant l'absence de duplication de bâtiments et de ralentissements sur PC.
+
+## [5.30.0] - 2026-04-18
 ### Added
 - **Recherche Intégrations Externes** : Étude de faisabilité et roadmap pour l'intégration de Strava, Suunto, Wikiloc et Decathlon Outdoor dans l'écosystème SunTrail.
 - **Roadmap v6.0 (Hub Rando)** : Ajout des connecteurs externes comme priorité de développement pour la version 6.0.
