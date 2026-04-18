@@ -319,9 +319,18 @@
       "northAligned": "🧭 Nord réaligné"
     }
   },
+  "peaks": {
+    "toast": {
+      "timeout": "Serveur des sommets indisponible (Timeout)",
+      "error": "Erreur de chargement des sommets"
+    }
+  },
   "weather": {
     "title": "Bulletin Météo",
     "noData": "Aucune donnée météo",
+    "toast": {
+      "timeout": "Météo hors-ligne (Délai dépassé)"
+    },
     "temp": "Température",
     "feelsLike": "Ressenti",
     "humidity": "Humidité",
