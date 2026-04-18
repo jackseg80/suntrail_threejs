@@ -1,5 +1,5 @@
 import { state } from './state';
-import { isPositionInSwitzerland, isPositionInFrance, getTileBounds } from './geo';
+import { isPositionInSwitzerland, isPositionInFrance } from './geo';
 import { showToast } from './toast';
 
 import { tileWorkerManager } from './workerManager';
@@ -235,70 +235,54 @@ export async function fetchWithCache(url: string, usePersistentCache: boolean = 
 }
 
 /**
- * Vérifie si une tuile est ENTIÈREMENT dans un pays donné (check 4 coins).
- * Évite les tuiles-frontière partiellement hors couverture (ex: SwissTopo noir hors CH).
+ * Vérifie si une tuile est majoritairement dans une région (check le centre).
+ * Plus tolérant que le check des 4 coins pour les zones frontalières.
  */
-function isTileFullyInRegion(
-    tx: number, ty: number, zoom: number,
-    check: (lat: number, lon: number) => boolean
-): boolean {
-    const { north, south, west, east } = getTileBounds({ zoom, tx, ty });
-    // Note: getTileBounds expects {zoom, tx, ty}. 
-    // Wait, let me check geo.ts getTileBounds arguments again.
-    // getTileBounds(tile: {zoom: number, tx: number, ty: number})
-    // But wait, the original code used ty for lat and tx for lon.
-    // latN = f(ty), latS = f(ty+1), lonW = f(tx), lonE = f(tx+1)
-    // So north = latN, south = latS, west = lonW, east = lonE.
-    return check(north, west) && check(north, east) && check(south, west) && check(south, east);
+function isTileInRegion(tx: number, ty: number, zoom: number, check: (lat: number, lon: number) => boolean): boolean {
+    const n = Math.pow(2, zoom);
+    const centerLat = Math.atan(Math.sinh(Math.PI * (1 - 2 * (ty + 0.5) / n))) * 180 / Math.PI;
+    const centerLon = (tx + 0.5) / n * 360 - 180;
+    return check(centerLat, centerLon);
 }
 
 /**
  * Génère l'URL pour la texture de couleur/carte d'une tuile.
  */
 export function getColorUrl(tx: number, ty: number, zoom: number): string {
-    // Pour les sources nationales (SwissTopo, IGN), on vérifie que la tuile entière
-    // est dans le pays — évite les zones noires hors-couverture sur les tuiles-frontière.
-    const inCH = isTileFullyInRegion(tx, ty, zoom, isPositionInSwitzerland);
-    const inFR = isTileFullyInRegion(tx, ty, zoom, isPositionInFrance);
-
+    const inCH = isTileInRegion(tx, ty, zoom, isPositionInSwitzerland);
+    const inFR = isTileInRegion(tx, ty, zoom, isPositionInFrance);
     const hasKey = state.MK && state.MK.length > 10 && !state.isMapTilerDisabled;
     
-    // --- UNIFICATION GLOBALE (v5.7.4, révisé v5.14.1) ---
-    // Si le zoom est faible (LOD <= 10), on force OpenTopoMap pour éviter l'effet "patchwork".
-    // MapTiler n'est PAS utilisé à ces échelles : coût quota élevé pour une qualité visuelle
-    // identique, risque de rate-limiting (429) global qui bloquerait tous les LODs.
-    // OpenTopoMap : CC-BY-SA, 3 sous-domaines (a/b/c), idéal pour vue d'ensemble alpine.
+    // --- MODE SATELLITE (v5.29.40 : Priorité absolue et stricte) ---
+    if (state.MAP_SOURCE === 'satellite') {
+        // Fallback progressif pour garantir du satellite partout
+        if (inCH && zoom >= 10) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${zoom}/${tx}/${ty}.jpeg`;
+        if (inFR && zoom >= 10) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX=${zoom}&TILEROW=${ty}&TILECOL=${tx}`;
+        
+        // Global Satellite (MapTiler ou ESRI en dernier recours)
+        if (hasKey) return `https://api.maptiler.com/maps/satellite/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
+        
+        // Fallback ultime SATELLITE (ESRI) si pas de clé MapTiler, pour éviter de tomber sur de la Topo/OSM
+        return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${ty}/${tx}`;
+    }
+
+    // --- MODE TOPO / AUTRE ---
+    
+    // Bas zoom (vue d'ensemble) : OpenTopoMap pour tout le monde
     if (zoom <= 10) {
-        const sub = ['a', 'b', 'c'][(tx + ty) % 3]; // rotation des sous-domaines
+        const sub = ['a', 'b', 'c'][(tx + ty) % 3];
         return `https://${sub}.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`;
     }
 
-    // 1. SATELLITE (Hybride Swisstopo/IGN/MapTiler)
-    if (state.MAP_SOURCE === 'satellite') {
-        if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${zoom}/${tx}/${ty}.jpeg`;
-        if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX=${zoom}&TILEROW=${ty}&TILECOL=${tx}`;
-        if (hasKey) return `https://api.maptiler.com/maps/satellite/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
-        return `https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`; // Fallback OSM Standard sans clé
-    }
-    
-    // 2. TOPO CH (Priorité Swisstopo/IGN, fallback Topo MapTiler)
+    // Swisstopo / Topo CH
     if (state.MAP_SOURCE === 'swisstopo') {
-        if (inCH) {
-            // Utilisation de la version 'pixelkarte-farbe' qui contient des informations de couleur plus saturées pour l'eau
-            return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${zoom}/${tx}/${ty}.jpeg`;
-        }
+        if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${zoom}/${tx}/${ty}.jpeg`;
         if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${zoom}&TILEROW=${ty}&TILECOL=${tx}`;
         if (hasKey) return `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
-        // Sans clé MapTiler : OpenTopoMap (style topo cohérent avec SwissTopo, évite le patchwork visuel OSM Standard)
-        // Zoom ≤ 17 : OpenTopoMap natif. Zoom 18 (Pro uniquement) : OSM Standard acceptable.
-        if (zoom <= 17) { const sub = ['a','b','c'][(tx+ty)%3]; return `https://${sub}.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`; }
-        return `https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`;
     }
     
-    // 3. OPENTOPOMAP / source non reconnue (MapTiler Topo v2 si clé présente, sinon OpenTopoMap)
-    if (hasKey) {
-        return `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
-    }
+    // Fallback Topo Global (MapTiler > OpenTopoMap > OSM)
+    if (hasKey) return `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
     if (zoom <= 17) { const sub = ['a','b','c'][(tx+ty)%3]; return `https://${sub}.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`; }
     return `https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`;
 }
@@ -311,7 +295,7 @@ export function getOverlayUrl(tx: number, ty: number, zoom: number): string | nu
     if (!state.SHOW_TRAILS || zoom < MIN_TRAIL_LOD) return null;
 
     // SwissTopo wanderwege : CDN gouvernemental, supporte Z0-28, rapide et fiable
-    if (isTileFullyInRegion(tx, ty, zoom, isPositionInSwitzerland)) {
+    if (isTileInRegion(tx, ty, zoom, isPositionInSwitzerland)) {
         if (zoom > 18) return null;
         return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${zoom}/${tx}/${ty}.png`;
     }
