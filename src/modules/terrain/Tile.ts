@@ -466,8 +466,11 @@ export class Tile {
         this.elevationTex = null; this.colorTex = null; this.overlayTex = null; this.normalTex = null;
         if (this.forestMesh) { if (state.scene) state.scene.remove(this.forestMesh); disposeObject(this.forestMesh); this.forestMesh = null; }
         if (this.poiGroup) { if (state.scene) state.scene.remove(this.poiGroup); disposeObject(this.poiGroup); this.poiGroup = null; }
-        if (this.buildingGroup) { if (state.scene) state.scene.remove(this.buildingGroup); disposeObject(this.buildingGroup); this.buildingGroup = null; }
-        if (this.buildingMesh) { if (state.scene) state.scene.remove(this.buildingMesh); disposeObject(this.buildingMesh); this.buildingMesh = null; }
+        
+        // v5.30.13 : Suppression via le registre global obligatoire
+        removeBuildingsForTile(this.key);
+        this.buildingGroup = null;
+        
         if (this.hydroGroup) { if (state.scene) state.scene.remove(this.hydroGroup); disposeObject(this.hydroGroup); this.hydroGroup = null; }
         this.pixelData = null;
     }

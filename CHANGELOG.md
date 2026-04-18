@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.30.13] - 2026-04-18
+### Fixed
+- **Bâtiments 3D (Registre Global Insubmersible)** : Correction majeure du problème de multiplication verticale des bâtiments. Implémentation d'un registre global unique (`activeBuildingGroups`) qui garantit qu'une seule instance de bâtiments peut exister par tuile dans la scène, éliminant les doublons orphelins et restaurant les FPS sur PC et mobile.
+
 ## [5.30.12] - 2026-04-18
 ### Fixed
 - **Stabilité 3D (Définitive)** : Retour à un cycle de vie éprouvé pour les arbres et bâtiments. Suppression de la boucle de retry qui causait l'empilement vertical. Mise en place d'un système de `requestId` garantissant qu'une seule instance d'objets 3D peut exister par tuile.
