@@ -1,8 +1,19 @@
-# AI Architecture Guide (v5.29.33)
+# AI Architecture Guide (v5.29.44)
 
 This document maps the core reactive logic and rendering systems to help AI agents understand how modules interact.
 
-## 1. EventBus Mapping
+## 1. Service-Oriented Logic (v5.29.38+)
+
+To improve testability and keep UI components lean, business logic is extracted into stateless or singleton services.
+
+| Service | Responsibility | Key Methods |
+| :--- | :--- | :--- |
+| `expertService` | Weather reporting, Solar analysis, SOS message generation. | `generateSOSMessage`, `generateWeatherReport` |
+| `recordingService`| Orchestration of GPS recording, permissions, and file saving. | `toggleRecording`, `stopRecording`, `saveToFile` |
+| `gpxService` | GPX data handling, parsing, and string generation. | `handleGPXImport`, `buildGPXStringFromLayer` |
+| `iapService` | RevenueCat integration, Pro status synchronization. | `initialize`, `purchase`, `syncProStatus` |
+
+## 2. EventBus Mapping
 
 The `eventBus` is the central hub for module-to-module communication.
 
@@ -20,6 +31,7 @@ The `eventBus` is the central hub for module-to-module communication.
 | `packStatusChanged` | `packManager` | `{ packId, status }` | Tracks download/mounting progress. |
 | `terrainReady` | `scene` | none | First batch of tiles is loaded and rendered. |
 | `recordingRecovered` | `main` | none | GPS recording resumed after app restart. |
+| `onServiceStopped` | `nativeGPSService` | none | Android Foreground Service stopped via notification. |
 
 ## 2. Shader Architecture & Uniforms
 
