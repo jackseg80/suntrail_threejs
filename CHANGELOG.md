@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.30.5] - 2026-04-18
+### Refactored
+- **Modularité UI** : Scission du fichier massif `ExpertSheets.ts` (~1000 lignes) en trois composants indépendants : `WeatherSheet.ts`, `SolarProbeSheet.ts` et `SOSSheet.ts`. Amélioration de la maintenance et du temps de chargement.
+
 ## [5.30.4] - 2026-04-18
 ### Fixed
 - **Analyse d'Altitude** : Correction finale du bug d'interpolation bilinéaire (décalage demi-pixel) pour une précision topographique maximale.
