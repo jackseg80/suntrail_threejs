@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.29.39)
+# SunTrail — Guide IA (v5.29.40)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-18 suite à la v5.29.39 (Swiss Satellite Fix).
+> Mis à jour le 2026-04-18 suite à la v5.29.40 (Auto-Cleanup & BBox refinement).
 
 ## Projet
 

@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.29.40] - 2026-04-18
+### Added
+- **Auto-Cleanup du Cache** : Implémentation d'un système de nettoyage automatique des anciennes versions du cache (`v28`, `v29`, etc.) au démarrage pour libérer l'espace disque et garantir l'intégrité des tuiles.
+
+### Improved
+- **Robustesse Satellite** : Refonte du calcul de zone frontalière (check au centre) pour une transition SwissTopo Satellite beaucoup plus fiable et performante.
+- **Enforcement du Mode Satellite** : Garantie technique que le mode satellite ne renvoie jamais de tuiles Topo, même en cas de repli (fallback vers ESRI Satellite).
+
 ## [5.29.39] - 2026-04-18
 ### Fixed
 - **Satellite Suisse (LOD 11-14)** : Correction d'un bug où les packs de pays (Topo) écrasaient les tuiles satellite du réseau en raison d'une interception trop agressive des sources locales.
