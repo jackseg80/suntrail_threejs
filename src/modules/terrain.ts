@@ -433,10 +433,6 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
         timestamp: p.time ? new Date(p.time).getTime() : 0
     })));
 
-    const distance = stats.distance;
-    const dPlus = stats.dPlus;
-    const dMinus = stats.dMinus;
-
     const box = new THREE.Box3();
     const camAlt = state.camera ? state.camera.position.y : 10000;
     const thickness = Math.max(1.5, camAlt / 1200);
@@ -458,7 +454,16 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     mesh.renderOrder = 10;
     mesh.userData = { type: 'gpx-track', layerId: id };
     if (state.scene) state.scene.add(mesh);
-    const layer: GPXLayer = { id, name, color, visible: true, rawData, points: threePoints, mesh, stats: { distance, dPlus, dMinus, pointCount: validPoints.length } };
+    const layer: GPXLayer = {
+        id, name, color, visible: true, rawData, points: threePoints, mesh,
+        stats: { 
+            distance: stats.distance, 
+            dPlus: stats.dPlus, 
+            dMinus: stats.dMinus, 
+            pointCount: validPoints.length, 
+            estimatedTime: stats.estimatedTime 
+        }
+    };
     state.gpxLayers = [...state.gpxLayers, layer];
     state.activeGPXLayerId = id; // v5.29.28 : Toujours activer le dernier import
     const lats = validPoints.map((p: any) => p.lat as number); const lons = validPoints.map((p: any) => p.lon as number); const eles = validPoints.map((p: any) => (p.ele as number) || 0);

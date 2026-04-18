@@ -29,12 +29,17 @@
 
 ---
 
-## 🚀 Priorité 2 : Trail Intelligence (v6.0)
+## 🚀 Priorité 2 : Trail Intelligence & Routing (v6.0)
 
-> Module d'analyse intelligente de tracés et terrain. **Alertes sécurité = TOUJOURS FREE.**
+> Module d'analyse intelligente et planification d'itinéraires. **Alertes sécurité = TOUJOURS FREE.**
 
-- [ ] **v6.0 — Cotation & Temps estimé** : Badge CAS T1-T6 (Pro) et Durée Munter.
-- [ ] **Refactoring Profond** : Unification des caches (`tileCache`, `geometryCache`) avec `boundedCache` et audit strict des accès altitude via `getAltitudeAt` uniquement.
+- [ ] **v6.0 — Le Planificateur Intelligent (Komoot-Style)** :
+    - [ ] **Moteur de Routing** : Intégration de l'API MapTiler Direction pour tracer sur les sentiers existants (OSM).
+    - [ ] **Édition 3D** : Interface permettant de cliquer sur la carte pour ajouter/déplacer des waypoints.
+    - [ ] **Stats en direct** : Distance, dénivelé et temps estimé mis à jour pendant le tracé.
+- [ ] **v6.0 — Analyse & Temps estimé** : 
+    - [ ] **Méthode Munter** : Calcul automatique de la durée basée sur la distance et le D+.
+    - [ ] **Cotation CAS** : Badge de difficulté T1-T6 basé sur la pente (Pro).
 - [ ] **v6.1 — Exposition solaire & Segments** : Barre ombre/soleil détaillée par km (Pro).
 - [ ] **v6.2 — Alertes sécurité & Heure de départ** : Avalanche, windchill, nuit sur tracé (Toutes FREE).
 - [ ] **v6.3 — Score condition & Estimation physio** : Hydratation, calories, VAM cible (Pro).

@@ -6,6 +6,21 @@ export interface TrackStats {
     distance: number; // en km
     dPlus: number;    // en m
     dMinus: number;   // en m
+    estimatedTime?: number; // en minutes (Méthode Munter)
+}
+
+/**
+ * Calcule le temps de marche estimé via la méthode Munter (standard suisse).
+ * Formule : (Distance + D+/100) / 4 = Temps en heures pour un marcheur moyen.
+ * Retourne le temps en minutes.
+ */
+export function calculateEstimatedTime(distance: number, dPlus: number): number {
+    if (distance <= 0) return 0;
+    // 1 effort-km = 1 km horizontal ou 100m vertical
+    const effortKm = distance + (dPlus / 100);
+    // Vitesse moyenne : 4 effort-km / heure
+    const hours = effortKm / 4;
+    return Math.round(hours * 60);
 }
 
 /**
@@ -59,6 +74,7 @@ export function calculateTrackStats(points: LocationPoint[], threshold: number =
     }
 
     const { dPlus, dMinus } = calculateHysteresis(uniquePoints.map(p => p.alt), threshold);
+    const estimatedTime = calculateEstimatedTime(distance, dPlus);
 
-    return { distance, dPlus, dMinus };
+    return { distance, dPlus, dMinus, estimatedTime };
 }

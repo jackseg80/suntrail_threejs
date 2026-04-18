@@ -1,5 +1,30 @@
 import { describe, it, expect } from 'vitest';
-import { calculateTrackStats } from './geoStats';
+import { calculateTrackStats, calculateEstimatedTime } from './geoStats';
+
+describe('geoStats - Munter Method (v5.29.40)', () => {
+    it('should estimate time correctly (4km/h base)', () => {
+        // 4 km plat = 1h (60 min)
+        expect(calculateEstimatedTime(4, 0)).toBe(60);
+        // 8 km plat = 2h (120 min)
+        expect(calculateEstimatedTime(8, 0)).toBe(120);
+    });
+
+    it('should include D+ in estimation (400m D+ = 1h)', () => {
+        // 0 km horizontal + 400m D+ = 1h effort (60 min)
+        expect(calculateEstimatedTime(0.001, 400)).toBe(60);
+    });
+
+    it('should combine distance and D+ (Tour du lac de Champex example)', () => {
+        // Ex: 5km + 300m D+
+        // Effort = 5 + (300/100) = 8 effort-km
+        // Time = 8 / 4 = 2h (120 min)
+        expect(calculateEstimatedTime(5, 300)).toBe(120);
+    });
+
+    it('should return 0 for zero distance', () => {
+        expect(calculateEstimatedTime(0, 1000)).toBe(0);
+    });
+});
 
 describe('geoStats - Hysteresis Algorithm', () => {
     

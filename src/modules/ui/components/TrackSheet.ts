@@ -15,6 +15,7 @@ import { Capacitor } from '@capacitor/core';
 import { calculateTrackStats } from '../../geoStats';
 import { recordingService } from '../../recordingService';
 import { gpxService } from '../../gpxService';
+import { fmtDuration } from '../../utils';
 
 export class TrackSheet extends BaseComponent {
     constructor() {
@@ -345,12 +346,13 @@ export class TrackSheet extends BaseComponent {
             ${layers.map(layer => {
                 const truncName = layer.name.length > 20 ? layer.name.slice(0, 20) + '...' : layer.name;
                 const isActive = state.activeGPXLayerId === layer.id;
+                const duration = layer.stats.estimatedTime ? fmtDuration(layer.stats.estimatedTime) : '—';
                 return `
                 <div class="gpx-layer-item${isActive ? ' active' : ''}" data-layer-id="${layer.id}">
                     <span class="gpx-layer-dot" style="background:${layer.color}"></span>
                     <div class="gpx-layer-info">
                         <span class="gpx-layer-name">${truncName}</span>
-                        <span class="gpx-layer-stats">${layer.stats.distance.toFixed(2)} km · D+ ${Math.round(layer.stats.dPlus)} m · D- ${Math.round(layer.stats.dMinus)} m</span>
+                        <span class="gpx-layer-stats">${layer.stats.distance.toFixed(2)} km · D+ ${Math.round(layer.stats.dPlus)} m · ⏱️ ${duration}</span>
                     </div>
                     <button class="gpx-layer-profile" data-action="profile" data-id="${layer.id}"
                             aria-label="${i18n.t('track.imported.showProfile')}"
@@ -541,12 +543,14 @@ export class TrackSheet extends BaseComponent {
         const pointsEl = document.getElementById('track-points');
         const dplusEl = document.getElementById('track-dplus');
         const dminusEl = document.getElementById('track-dminus');
+        const durationEl = document.getElementById('track-duration');
 
         // ARIA: stats are live regions
         distEl?.setAttribute('aria-live', 'polite');
         pointsEl?.setAttribute('aria-live', 'polite');
         dplusEl?.setAttribute('aria-live', 'polite');
         dminusEl?.setAttribute('aria-live', 'polite');
+        durationEl?.setAttribute('aria-live', 'polite');
 
         if (pointsEl) pointsEl.textContent = state.recordedPoints.length.toString();
         
@@ -554,6 +558,7 @@ export class TrackSheet extends BaseComponent {
             if (distEl) distEl.innerHTML = `0.0 <span class="trk-stat-unit">km</span>`;
             if (dplusEl) dplusEl.innerHTML = `+0 <span class="trk-stat-unit-plain">m</span>`;
             if (dminusEl) dminusEl.innerHTML = `−0 <span class="trk-stat-unit-plain">m</span>`;
+            if (durationEl) durationEl.textContent = '—';
             return;
         }
 
@@ -562,6 +567,7 @@ export class TrackSheet extends BaseComponent {
         if (distEl) distEl.innerHTML = `${stats.distance.toFixed(2)} <span class="trk-stat-unit">km</span>`;
         if (dplusEl) dplusEl.innerHTML = `+${Math.round(stats.dPlus)} <span class="trk-stat-unit-plain">m</span>`;
         if (dminusEl) dminusEl.innerHTML = `−${Math.round(stats.dMinus)} <span class="trk-stat-unit-plain">m</span>`;
+        if (durationEl) durationEl.textContent = stats.estimatedTime ? fmtDuration(stats.estimatedTime) : '—';
     }
 
     private showPostRecUpsell(): void {

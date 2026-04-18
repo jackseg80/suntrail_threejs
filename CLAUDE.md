@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.29.40)
+# SunTrail — Guide IA (v5.29.41)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-18 suite à la v5.29.40 (Auto-Cleanup & BBox refinement).
+> Mis à jour le 2026-04-18 suite à la v5.29.41 (Munter Method implementation).
 
 ## Projet
 

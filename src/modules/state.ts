@@ -22,6 +22,7 @@ export interface GPXLayer {
         dPlus: number;
         dMinus: number;
         pointCount: number;
+        estimatedTime?: number;
     };
 }
 

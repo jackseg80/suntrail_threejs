@@ -49,7 +49,8 @@
       "distance": "Distance",
       "points": "Points",
       "dplus": "Dénivelé +",
-      "dminus": "Dénivelé −"
+      "dminus": "Dénivelé −",
+      "duration": "Temps estimé"
     },
     "imported": {
       "title": "Tracés importés",

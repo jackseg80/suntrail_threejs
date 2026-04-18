@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.29.41] - 2026-04-18
+### Added
+- **Méthode Munter** : Implémentation du calcul du temps de marche estimé basé sur la distance et le dénivelé (norme suisse : 1h = 4km horizontal ou 400m vertical).
+- **Affichage Durée** : Ajout du temps estimé dans le panneau de parcours pour les enregistrements en direct et les tracés importés.
+
+### Improved
+- **Roadmap v6.0** : Mise à jour des objectifs futurs incluant le planificateur de trajet (Routing Komoot-style).
+
 ## [5.29.40] - 2026-04-18
 ### Added
 - **Auto-Cleanup du Cache** : Implémentation d'un système de nettoyage automatique des anciennes versions du cache (`v28`, `v29`, etc.) au démarrage pour libérer l'espace disque et garantir l'intégrité des tuiles.

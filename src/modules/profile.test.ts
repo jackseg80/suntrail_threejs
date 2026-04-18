@@ -54,7 +54,7 @@ describe('Profil d\'altitude (Module Profile)', () => {
             },
             points: [new THREE.Vector3(0,0,0), new THREE.Vector3(100,100,100)],
             mesh: null,
-            stats: { distance: 10, dPlus: 200, dMinus: 0, pointCount: 2 }
+            stats: { distance: 10, dPlus: 200, dMinus: 0, pointCount: 2, estimatedTime: 180 }
         };
         state.gpxLayers = [layer];
         state.activeGPXLayerId = 'test-layer';
@@ -96,7 +96,8 @@ describe('Profil d\'altitude (Module Profile)', () => {
                     new THREE.Vector3(100, 2400, 100)   // Point 2: altitude 1200m * 2
                 ],
                 mesh: null,
-                stats: { distance: 15, dPlus: 200, dMinus: 0, pointCount: 2 }
+                stats: { distance: 10, dPlus: 200, dMinus: 0, pointCount: 2, estimatedTime: 180 }
+
             };
             
             state.gpxLayers = [layer];
@@ -134,7 +135,8 @@ describe('Profil d\'altitude (Module Profile)', () => {
                     new THREE.Vector3(100, 3000, 100) // altitude = 3000 / 2 = 1500m
                 ],
                 mesh: null,
-                stats: { distance: 10, dPlus: 1000, dMinus: 0, pointCount: 2 }
+                stats: { distance: 10, dPlus: 200, dMinus: 0, pointCount: 2, estimatedTime: 180 }
+
             };
             
             state.gpxLayers = [layer];
@@ -210,7 +212,8 @@ describe('Profil d\'altitude (Module Profile)', () => {
                     new THREE.Vector3(100, 30, 0)
                 ],
                 mesh: null,
-                stats: { distance: 0.1, dPlus: 200, dMinus: 0, pointCount: 2 }
+                stats: { distance: 10, dPlus: 200, dMinus: 0, pointCount: 2, estimatedTime: 180 }
+
             };
             
             state.gpxLayers = [layer];

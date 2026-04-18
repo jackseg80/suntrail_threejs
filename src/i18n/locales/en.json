@@ -48,7 +48,8 @@
       "distance": "Distance",
       "points": "Points",
       "dplus": "Elev+",
-      "dminus": "Elev−"
+      "dminus": "Elev−",
+      "duration": "Est. Time"
     },
     "imported": {
       "title": "Imported tracks",
