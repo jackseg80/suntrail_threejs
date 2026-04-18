@@ -8,6 +8,7 @@ import { showUpgradePrompt } from '../../iap';
 import { fmtTime, fmtDuration } from '../../utils';
 import SunCalc from 'suncalc';
 import { expertService } from '../../expertService';
+import { getPlaceName } from '../../geocodingService';
 
 export class SolarProbeSheet extends BaseComponent {
     private contentEl: HTMLElement | null = null;
@@ -47,13 +48,30 @@ export class SolarProbeSheet extends BaseComponent {
         const attachProbeBtn = () => {
             const probeBtn = document.getElementById('probe-btn');
             if (probeBtn) {
-                probeBtn.onclick = () => {
+                probeBtn.onclick = async () => {
                     if (state.hasLastClicked) {
                         const result = runSolarProbe(state.lastClickedCoords.x, state.lastClickedCoords.z, state.lastClickedCoords.alt);
                         if (result) {
                             this.currentResult = result;
                             this.updateUI(result);
                             sheetManager.open('solar-probe');
+                            
+                            // v5.30.16 : Résolution robuste avec timeout de 3s
+                            const titleEl = document.getElementById('solar-location-title');
+                            const timer = setTimeout(() => {
+                                if (titleEl && titleEl.textContent?.includes('...')) {
+                                    titleEl.textContent = `${result.gps.lat.toFixed(4)}, ${result.gps.lon.toFixed(4)}`;
+                                }
+                            }, 3000);
+
+                            try {
+                                const locName = await getPlaceName(result.gps.lat, result.gps.lon);
+                                clearTimeout(timer);
+                                if (locName && titleEl) titleEl.textContent = locName;
+                                else if (titleEl) titleEl.textContent = `${result.gps.lat.toFixed(4)}, ${result.gps.lon.toFixed(4)}`;
+                            } catch (e) {
+                                if (titleEl) titleEl.textContent = `${result.gps.lat.toFixed(4)}, ${result.gps.lon.toFixed(4)}`;
+                            }
                         }
                     } else {
                         showToast(i18n.t('solar.toast.clickFirst'));
@@ -96,6 +114,14 @@ export class SolarProbeSheet extends BaseComponent {
             parent.appendChild(div);
             return val;
         };
+
+        // ── Header (Location) ────────────────────────────────────────────────
+        const locHeader = document.createElement('h3');
+        locHeader.id = 'solar-location-title';
+        locHeader.className = 'exp-location-title';
+        locHeader.style.cssText = 'margin:0 0 var(--space-4); font-size:14px; color:var(--text-2); text-align:center;';
+        locHeader.textContent = 'Analyse en cours...';
+        this.contentEl.appendChild(locHeader);
 
         // ── Status ───────────────────────────────────────────────────────────
         const statusEl = document.createElement('div');

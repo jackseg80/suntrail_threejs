@@ -351,15 +351,20 @@ export class WeatherSheet extends BaseComponent {
 
         if (!wd) return;
 
-        // Header
-        if (wd.locationName) {
-            const locHeader = document.createElement('div');
-            locHeader.className = 'weather-location-name';
-            locHeader.style.marginBottom = 'var(--space-4)';
-            locHeader.style.fontSize = 'var(--text-lg)';
-            locHeader.style.fontWeight = '700';
-            locHeader.textContent = wd.locationName;
-            this.contentEl.appendChild(locHeader);
+        // Header (v5.30.16 : Affichage du lieu)
+        const locName = wd.locationName || i18n.t('weather.mountain.title');
+        const locHeader = document.getElementById('weather-location-name');
+        if (locHeader) {
+            locHeader.textContent = locName;
+        } else {
+            const newHeader = document.createElement('div');
+            newHeader.id = 'weather-location-name';
+            newHeader.style.marginBottom = 'var(--space-4)';
+            newHeader.style.fontSize = 'var(--text-lg)';
+            newHeader.style.fontWeight = '700';
+            newHeader.style.textAlign = 'center';
+            newHeader.textContent = locName;
+            this.contentEl.appendChild(newHeader);
         }
 
         const isPro = isProActive() && state.SHOW_WEATHER_PRO;
