@@ -5,7 +5,13 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.31.0] - 2026-04-18
+### Added
+- **Jump VersionCode 700** : Bond en avant du numéro de version Android pour résoudre les conflits de déploiement dans la Google Play Console.
+- **Release Stable** : Cette version consolide tous les polissages (Toasts, Onboarding, AcceptanceWall centré) sur le moteur de rendu sain et performant.
+
 ## [5.30.18] - 2026-04-18
+
 ### Added
 - **Feedback Réseau** : Ajout de Toasts informatifs lors des timeouts de l'API Overpass (sommets) et Météo.
 - **UX Énergie** : Toast de confirmation lors de l'activation/désactivation du mode Économie d'énergie.
