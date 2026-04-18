@@ -90,7 +90,11 @@ class TileWorkerManager {
     /**
      * Lance le chargement d'une tuile et retourne { promise, taskId }.
      */
-    loadTile(elevUrl: string | null, colorUrl: string | null, overlayUrl: string | null, zoom: number, elevSourceZoom: number = zoom): { promise: Promise<any>, taskId: number } {
+    loadTile(
+        elevUrl: string | null, colorUrl: string | null, overlayUrl: string | null, 
+        zoom: number, elevSourceZoom: number = zoom,
+        blobs?: { elev?: Blob | null, color?: Blob | null, overlay?: Blob | null }
+    ): { promise: Promise<any>, taskId: number } {
         if (this.workers.length === 0 || !state.USE_WORKERS) return { promise: Promise.resolve(null), taskId: -1 };
 
         // v5.29.5 : Dédoublonnage in-flight
@@ -133,7 +137,12 @@ class TileWorkerManager {
                 }
             });
 
-            worker.postMessage({ id, elevUrl, colorUrl, overlayUrl, isOffline: state.IS_OFFLINE, zoom, elevSourceZoom });
+            worker.postMessage({ 
+                id, elevUrl, colorUrl, overlayUrl, isOffline: state.IS_OFFLINE, zoom, elevSourceZoom,
+                elevBlob: blobs?.elev,
+                colorBlob: blobs?.color,
+                overlayBlob: blobs?.overlay
+            });
         });
 
         this.inFlight.set(dedupeKey, { promise, taskId: id, refCount: 1 });

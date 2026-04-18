@@ -44,7 +44,7 @@ function resetMapTilerBackoff(): void {
 }
 
 self.onmessage = async (e) => {
-    const { id, type, elevUrl, colorUrl, overlayUrl, isOffline, zoom, elevSourceZoom } = e.data;
+    const { id, type, elevUrl, colorUrl, overlayUrl, isOffline, zoom, elevSourceZoom, elevBlob, colorBlob, overlayBlob } = e.data;
 
     // --- ANNULATION ---
     if (type === 'cancel') {
@@ -65,9 +65,9 @@ self.onmessage = async (e) => {
 
         // --- EXÉCUTION PARALLÈLE ---
         const [elevRes, colorRes, overlayRes] = await Promise.all([
-            elevUrl ? fetchTile(elevUrl, isOffline, signal) : Promise.resolve(null),
-            colorUrl ? fetchTile(colorUrl, isOffline, signal) : Promise.resolve(null),
-            overlayUrl ? fetchTile(overlayUrl, isOffline, signal) : Promise.resolve(null)
+            elevUrl ? fetchTile(elevUrl, isOffline, signal, elevBlob) : Promise.resolve(null),
+            colorUrl ? fetchTile(colorUrl, isOffline, signal, colorBlob) : Promise.resolve(null),
+            overlayUrl ? fetchTile(overlayUrl, isOffline, signal, overlayBlob) : Promise.resolve(null)
         ]);
 
         // Si la task a été annulée pendant les fetches, ne pas répondre
@@ -160,9 +160,18 @@ self.onmessage = async (e) => {
     }
 };
 
-async function fetchTile(url: string, isOffline: boolean, signal?: AbortSignal): Promise<{ bitmap: ImageBitmap, fromCache: boolean, forbidden?: boolean, rateLimited?: boolean, networkError?: boolean } | null> {
+async function fetchTile(url: string, isOffline: boolean, signal?: AbortSignal, providedBlob?: Blob): Promise<{ bitmap: ImageBitmap, fromCache: boolean, forbidden?: boolean, rateLimited?: boolean, networkError?: boolean } | null> {
     try {
         const cache = await getCache();
+
+        // 1. Priorité au Blob fourni (seeding direct via postMessage)
+        if (providedBlob) {
+            // v5.29.35 : On l'injecte dans le cache worker pour les futurs accès standards (fetch)
+            cache.put(url, new Response(providedBlob.slice()));
+            const bitmap = await createImageBitmap(providedBlob, { colorSpaceConversion: 'none' });
+            return { bitmap, fromCache: true };
+        }
+
         const cached = await cache.match(url);
         if (cached) {
             const blob = await cached.blob();

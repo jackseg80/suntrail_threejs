@@ -33,15 +33,20 @@ import { attachDraggablePanel } from './ui/draggablePanel';
 // Référence de l'intervalle updateStorageUI (W5) — stockée pour permettre clearInterval si besoin
 let storageUIIntervalId: ReturnType<typeof setInterval> | null = null;
 
-export function initUI(): void {
+export async function initUI(): Promise<void> {
     // Charger le statut Pro en premier (clé séparée, immune aux resets de version)
     loadProStatus();
 
     // Initialiser RevenueCat en fire-and-forget (natif seulement — no-op sur web)
     void iapService.initialize();
 
-    // Résolution de la clé MapTiler (centralisée v5.28.20)
-    resolveMapTilerKey();
+    // v5.29.35 : Priorité absolue — Résolution de la clé MapTiler et chargement du catalog des packs.
+    // Sans la clé, le relief ne charge pas. Sans le catalog, les packs ne se montent pas.
+    // On attend ces deux ressources AVANT de continuer pour éviter les race conditions au démarrage.
+    await Promise.all([
+        resolveMapTilerKey(),
+        import('./packManager').then(m => m.packManager.fetchCatalog())
+    ]);
 
     const savedSettings = loadSettings();
     if (savedSettings) {
@@ -106,7 +111,7 @@ export function initUI(): void {
     storageUIIntervalId = setInterval(updateStorageUI, 2000);
 
     // Helper : enregistre le listener sceneReady + démarre la scène
-    const launchScene = () => {
+    const launchScene = async () => {
         window.addEventListener('suntrail:sceneReady', () => {
             void requestAcceptance().then(() => requestOnboarding());
 
@@ -147,7 +152,7 @@ export function initUI(): void {
             }
         }, { once: true });
 
-        startApp();
+        await startApp();
     };
 
     // --- INDICATEUR DE CHARGEMENT DES TUILES ---
@@ -181,17 +186,17 @@ export function initUI(): void {
     initAutoHide();
     initMobileUI();
 
-    // v5.29.28 : Lancement de la scène en PARALLÈLE de l'hydratation secondaire
-    // On n'attend plus _initSecondaryUI ni la clé MapTiler pour afficher le canvas 3D.
-    // L'utilisateur voit tout de suite le moteur de rendu, même si les données arrivent après.
-    launchScene();
+    // v5.29.35 : On lance la scène en séquentiel pour garantir que les ressources 
+    // critiques (Clés, Packs) sont déjà prêtes.
+    await launchScene();
 
-    // Hydratation des composants lourds en arrière-plan
+    // Hydratation des composants lourds en arrière-plan (non-bloquant)
     void _initSecondaryUI().then(() => {
         console.log('[UI] Secondary UI Hydrated');
     });
 
     (window as any).sheetManager = sheetManager;
+    // ... rest of file unchanged ...
 
     const gpsMainBtn = document.getElementById('gps-main-btn');
     let gpsLongPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -521,9 +526,9 @@ async function _initSecondaryUI(): Promise<void> {
     }
 }
 
-function startApp() {
+async function startApp() {
     try {
-        initScene();
+        await initScene();
         fetchWeather(state.TARGET_LAT, state.TARGET_LON);
         fetchLocalPeaks(state.TARGET_LAT, state.TARGET_LON);
         

@@ -27,9 +27,9 @@ registerSW({
 requestAnimationFrame(() => {
     // v5.29.28 : On utilise setTimeout 0 pour garantir que le splash screen / CSS est rendu
     // avant de lancer l'initialisation qui peut être bloquante sur certains navigateurs.
-    setTimeout(() => {
-        initUI();
-        initBatteryManager();
+    setTimeout(async () => {
+        await initUI();
+        await initBatteryManager();
     }, 0);
 });
 

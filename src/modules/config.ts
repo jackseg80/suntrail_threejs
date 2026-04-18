@@ -38,7 +38,10 @@ export async function resolveMapTilerKey(): Promise<void> {
 
     // Background update from Gist (rotation)
     try {
-        const r = await fetch(GIST_URL, { cache: 'no-cache' });
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 4000); // v5.29.35 : Timeout 4s pour ne pas bloquer le démarrage
+        const r = await fetch(GIST_URL, { cache: 'no-cache', signal: ctrl.signal });
+        clearTimeout(tid);
         if (r.ok) {
             const data = await r.json();
             availableKeys = extractGistKeys(data);

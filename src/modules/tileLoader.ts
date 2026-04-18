@@ -333,44 +333,6 @@ export function getElevationUrl(tx: number, ty: number, zoom: number, is2D: bool
 
 // Référence cachée au CacheStorage worker — évite caches.open() à chaque tuile
 let _workerCache: Cache | null = null;
-// Set de URLs déjà injectées dans cette session — évite cache.match() répétitifs
-const _seededUrls = new Set<string>();
-
-/**
- * Injecte une tuile de l'archive embarquée dans le CacheStorage du worker.
- */
-async function seedEmbeddedTile(url: string, z: number, x: number, y: number): Promise<void> {
-    if (!embeddedPMTiles || z > EMBEDDED_MAX_ZOOM) return;
-    if (_seededUrls.has(url)) return;
-    try {
-        if (!_workerCache) _workerCache = await caches.open(CACHE_NAME);
-        const blob = await getTileFromEmbedded(z, x, y);
-        if (blob) {
-            await _workerCache.put(url, new Response(blob));
-            _seededUrls.add(url); // On ne marque comme seedé QUE si le put a réussi
-        }
-    } catch {
-        _seededUrls.delete(url);
-    }
-}
-
-/**
- * Injecte une tuile d'un country pack dans le CacheStorage du worker.
- */
-async function seedPackTile(url: string, z: number, x: number, y: number, type: 'color' | 'elevation' | 'overlay'): Promise<void> {
-    if (!packManager.hasMountedPacks()) return;
-    if (_seededUrls.has(url)) return;
-    try {
-        if (!_workerCache) _workerCache = await caches.open(CACHE_NAME);
-        const blob = await packManager.getTileFromPacks(z, x, y, type);
-        if (blob) {
-            await _workerCache.put(url, new Response(blob));
-            _seededUrls.add(url);
-        }
-    } catch {
-        _seededUrls.delete(url);
-    }
-}
 
 /**
  * Lance le chargement d'une tuile via les Workers.
@@ -385,22 +347,23 @@ export async function loadTileData(tx: number, ty: number, zoom: number, is2D: b
     const colorUrl = getColorUrl(Math.floor(tx/cr), Math.floor(ty/cr), cz);
     const overlayUrl = getOverlayUrl(tx, ty, zoom);
 
-    // Pré-injection : on déclenche le seeding SANS ATTENDRE pour ne pas bloquer le thread principal.
-    // Le worker trouvera la tuile dans son cache si le seeding finit à temps, 
-    // sinon il la chargera normalement depuis le réseau/source.
+    // v5.29.35 : Extraction directe des Blobs depuis les sources locales
+    // On ne "seed" plus le cache sur le thread principal (trop lent), on passe les blobs au worker.
+    const blobs: { elev?: Blob | null, color?: Blob | null, overlay?: Blob | null } = {};
+
     if (embeddedPMTiles && zoom <= EMBEDDED_MAX_ZOOM) {
-        seedEmbeddedTile(colorUrl, cz, Math.floor(tx/cr), Math.floor(ty/cr)).catch(() => {});
+        blobs.color = await getTileFromEmbedded(cz, Math.floor(tx/cr), Math.floor(ty/cr));
     }
 
     if (packManager.hasMountedPacks() && zoom >= 12) {
         const cx = Math.floor(tx/cr);
         const cy = Math.floor(ty/cr);
-        seedPackTile(colorUrl, cz, cx, cy, 'color').catch(() => {});
-        if (elevUrl && zoom <= 14) seedPackTile(elevUrl, zoom, tx, ty, 'elevation').catch(() => {});
-        if (overlayUrl) seedPackTile(overlayUrl, zoom, tx, ty, 'overlay').catch(() => {});
+        if (!blobs.color) blobs.color = await packManager.getTileFromPacks(cz, cx, cy, 'color');
+        if (elevUrl && zoom <= 14) blobs.elev = await packManager.getTileFromPacks(zoom, tx, ty, 'elevation');
+        if (overlayUrl) blobs.overlay = await packManager.getTileFromPacks(zoom, tx, ty, 'overlay');
     }
 
-    return tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl, zoom, sourceZoom);
+    return tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl, zoom, sourceZoom, blobs);
 }
 
 /**
