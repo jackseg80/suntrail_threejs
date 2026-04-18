@@ -159,9 +159,14 @@
       "openmeteoLabel": "Open-Meteo — open-meteo.com"
     },
     "tutorial": {
-      "btn": "\u2753 Aide & Tutoriel"
+      "btn": "❓ Aide & Tutoriel"
+    },
+    "toast": {
+      "energySaverOn": "🔋 Mode Éco activé (FPS limités)",
+      "energySaverOff": "⚡ Mode Éco désactivé"
     }
-  },
+    },
+
   "search": {
     "title": "Exploration",
     "aria": {

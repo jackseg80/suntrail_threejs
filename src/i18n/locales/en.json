@@ -160,6 +160,10 @@
     },
     "tutorial": {
       "btn": "❓ Help & Tutorial"
+    },
+    "toast": {
+      "energySaverOn": "🔋 Eco Mode On (FPS limited)",
+      "energySaverOff": "⚡ Eco Mode Off"
     }
   },
   "search": {
