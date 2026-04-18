@@ -177,7 +177,7 @@ export async function fetchWithCache(url: string, usePersistentCache: boolean = 
             parseInt(tileMatch[1]), parseInt(tileMatch[2]), parseInt(tileMatch[3])
         );
         if (pmBlob) {
-            console.log(`[PMTiles] HIT pour ${tileMatch[1]}/${tileMatch[2]}/${tileMatch[3]}`);
+            if (state.DEBUG_MODE) console.log(`[PMTiles] HIT pour ${tileMatch[1]}/${tileMatch[2]}/${tileMatch[3]}`);
             return pmBlob;
         }
     }

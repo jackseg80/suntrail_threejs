@@ -616,7 +616,7 @@ function updateTerrainPhysics(interacting: boolean): void {
             || state.isFollowingUser;
 
         if (needsUpdate) {
-            state.stats?.begin();
+            if (state.SHOW_STATS) state.stats?.begin();
             if (waterFrameDue) terrainUniforms.uTime.value += WATER_THROTTLE_MS / 1000;
             tilesFading = animateTiles(delta);
             if (needsInitialRender > 0) needsInitialRender--;
@@ -637,13 +637,12 @@ function updateTerrainPhysics(interacting: boolean): void {
 
             if (state.scene.fog instanceof THREE.Fog) {
                 const alt = state.camera.position.y;
-                state.scene.fog.near = (state.FOG_NEAR * 0.5) + (alt * 1.5); 
+                state.scene.fog.near = (state.FOG_NEAR * 0.5) + (alt * 1.5);
                 state.scene.fog.far = (state.FOG_FAR * 0.5) + (alt * 8.0);
             }
 
             state.renderer.render(state.scene, state.camera);
-            state.stats?.end();
-
+            if (state.SHOW_STATS) state.stats?.end();
             if (isIdleMode && !state.isProcessingTiles && (now - lastPrefetchTime > 5000)) {
                 lastPrefetchTime = now;
                 prefetchAdjacentLODs();

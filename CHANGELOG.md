@@ -5,7 +5,18 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.30.0] - 2026-04-18
+### Added
+- **Modernisation du Tutoriel** : Refonte visuelle complète de l'onboarding avec animations de transition fluides et retours haptiques premium.
+- **Stats de Performance Optionnelles** : Intégration du dashboard de performance (FPS, VRAM) comme option dans les réglages, avec arrêt total des calculs en tâche de fond pour économiser la batterie.
+
+### Improved
+- **Blindage Réseau** : Réduction des timeouts d'API (Météo, Geocoding) à 5s pour une meilleure résilience en zone de faible couverture.
+- **Inertie Caméra** : Ajustement du `dampingFactor` pour un glissement de carte plus "soyeux" et réactif sur mobile.
+- **Nettoyage Production** : Suppression des logs de debug et optimisation de la boucle de rendu pour minimiser la charge CPU.
+
 ## [5.29.45] - 2026-04-18
+
 ### Added
 - **Recherche Intégrations Externes** : Étude de faisabilité et roadmap pour l'intégration de Strava, Suunto, Wikiloc et Decathlon Outdoor dans l'écosystème SunTrail.
 - **Roadmap v6.0 (Hub Rando)** : Ajout des connecteurs externes comme priorité de développement pour la version 6.0.

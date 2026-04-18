@@ -31,16 +31,16 @@ function resolveActiveLayer(layerId?: string): GPXLayer | null {
  * v5.24.3: Fix mismatch entre points originaux et points densifiés 3D
  */
 export function updateElevationProfile(layerId?: string): void {
-    console.log('[Profile] Updating elevation profile for layer:', layerId || 'active');
+    if (state.DEBUG_MODE) console.log('[Profile] Updating elevation profile for layer:', layerId || 'active');
     const layer = resolveActiveLayer(layerId);
     if (!layer || !layer.points.length) {
-        console.warn('[Profile] No layer or points found');
+        if (state.DEBUG_MODE) console.warn('[Profile] No layer or points found');
         closeElevationProfile();
         return;
     }
 
     const gpxPoints3D = layer.points;
-    console.log('[Profile] Points count:', gpxPoints3D.length);
+    if (state.DEBUG_MODE) console.log('[Profile] Points count:', gpxPoints3D.length);
 
     // v5.29.32: Utiliser en priorité les données GPX brutes pour l'altitude
     // avec un mapping correct de l'index pour supporter les points densifiés.

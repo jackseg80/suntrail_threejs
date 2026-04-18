@@ -9,6 +9,7 @@
  */
 
 import { i18n } from '../i18n/I18nService';
+import { haptic } from './haptics';
 
 const ONBOARDING_KEY = 'suntrail_onboarding_v2';
 
@@ -126,21 +127,28 @@ function _show(resolve: () => void): void {
             .ob-card {
                 background: var(--surface-solid, #1a1d2e);
                 border: 1px solid var(--border, rgba(255,255,255,0.1));
-                border-radius: var(--radius-xl, 20px);
-                max-width: 360px;
+                border-radius: var(--radius-xl, 24px);
+                max-width: 380px;
                 width: 100%;
-                padding: 36px 24px 28px;
-                box-shadow: 0 8px 32px var(--shadow-lg);
+                padding: 40px 24px 32px;
+                box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 overflow: hidden;
+                position: relative;
             }
-            .ob-body {
-                width: 100%;
-                text-align: center;
-                will-change: transform, opacity;
+            .ob-icon {
+                font-size: 56px;
+                line-height: 1;
+                margin-bottom: 20px;
+                filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
+                transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             }
+            .ob-card:hover .ob-icon {
+                transform: scale(1.1);
+            }
+
             .ob-icon {
                 font-size: 48px;
                 line-height: 1;
@@ -317,13 +325,13 @@ function _show(resolve: () => void): void {
         const buildContent = (): string => {
             let descHtml: string;
             if (slide.special === 'gesture-grid') {
-                descHtml = `<p class="ob-desc" style="margin-bottom:8px">${i18n.t(slide.descKey)}</p>${_buildGestureGrid()}`;
+                descHtml = `<p class="ob-desc" style="margin-bottom:12px">${i18n.t(slide.descKey)}</p>${_buildGestureGrid()}`;
             } else if (slide.special === 'fab-grid') {
-                descHtml = `<p class="ob-desc" style="margin-bottom:8px">${i18n.t(slide.descKey)}</p>${_buildFabGrid()}`;
+                descHtml = `<p class="ob-desc" style="margin-bottom:12px">${i18n.t(slide.descKey)}</p>${_buildFabGrid()}`;
             } else if (slide.special === 'track-grid') {
-                descHtml = `<p class="ob-desc" style="margin-bottom:8px">${i18n.t(slide.descKey)}</p>${_buildTrackGrid()}`;
+                descHtml = `<p class="ob-desc" style="margin-bottom:12px">${i18n.t(slide.descKey)}</p>${_buildTrackGrid()}`;
             } else if (slide.special === 'analysis-grid') {
-                descHtml = `<p class="ob-desc" style="margin-bottom:8px">${i18n.t(slide.descKey)}</p>${_buildAnalysisGrid()}`;
+                descHtml = `<p class="ob-desc" style="margin-bottom:12px">${i18n.t(slide.descKey)}</p>${_buildAnalysisGrid()}`;
             } else {
                 descHtml = `<p class="ob-desc">${i18n.t(slide.descKey)}</p>`;
             }
@@ -353,24 +361,25 @@ function _show(resolve: () => void): void {
         }
 
         // Animate out current content
-        body.style.transition = 'transform 220ms ease-in-out, opacity 220ms ease-in-out';
-        body.style.transform = direction === 'left' ? 'translateX(-40px)' : 'translateX(40px)';
+        body.style.transition = 'transform 250ms cubic-bezier(0.4, 0, 0.2, 1), opacity 200ms ease';
+        body.style.transform = direction === 'left' ? 'translateX(-30px)' : 'translateX(30px)';
         body.style.opacity = '0';
 
         setTimeout(() => {
             body.innerHTML = buildContent();
             // Position for entrance from opposite side
             body.style.transition = 'none';
-            body.style.transform = direction === 'left' ? 'translateX(40px)' : 'translateX(-40px)';
+            body.style.transform = direction === 'left' ? 'translateX(30px)' : 'translateX(-30px)';
             void body.offsetHeight; // force reflow
             // Animate in
-            body.style.transition = 'transform 220ms ease-in-out, opacity 220ms ease-in-out';
+            body.style.transition = 'transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 250ms ease';
             body.style.transform = 'translateX(0)';
             body.style.opacity = '1';
         }, 220);
     }
 
-    function close(): void {
+    function close(success = false): void {
+        if (success) void haptic('success');
         overlay.style.transition = 'opacity 0.3s ease';
         overlay.style.opacity = '0';
         setTimeout(() => overlay.remove(), 300);
@@ -380,13 +389,14 @@ function _show(resolve: () => void): void {
     // Button handlers
     nextBtn.addEventListener('click', () => {
         if (currentSlide === SLIDES.length - 1) {
-            close();
+            close(true);
         } else {
+            void haptic('light');
             currentSlide++;
             renderSlide(true, 'left');
         }
     });
-    skipBtn.addEventListener('click', close);
+    skipBtn.addEventListener('click', () => close(false));
 
     // Swipe handling
     let pointerStartX = 0;
