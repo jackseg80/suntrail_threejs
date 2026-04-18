@@ -189,7 +189,7 @@ async function fetchTile(url: string, isOffline: boolean, signal?: AbortSignal, 
         if (isMapTilerUrl(url) && isInMapTilerBackoff()) {
             return { bitmap: null as any, fromCache: false, rateLimited: true };
         }
-        const response = await fetch(url, { mode: 'cors', signal });
+        const response = await fetch(url, { mode: 'cors', referrerPolicy: 'same-origin', signal });
         if (response.status === 403) return { bitmap: null as any, fromCache: false, forbidden: true };
         if (response.status === 429) {
             triggerMapTilerBackoff();

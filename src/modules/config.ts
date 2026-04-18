@@ -14,6 +14,7 @@ function extractGistKeys(data: any): string[] {
 
 let availableKeys: string[] = [];
 let bannedKeys = new Set<string>();
+let banTimestamp = 0;
 
 /**
  * Résout la clé MapTiler à utiliser (v5.28.20).
@@ -75,12 +76,27 @@ export function rotateMapTilerKey(): boolean {
     
     console.warn(`[Config] Clé MapTiler bannie (403) : ${state.MK.substring(0, 8)}...`);
     bannedKeys.add(state.MK);
+    banTimestamp = Date.now();
 
     const validKeys = availableKeys.filter(k => !bannedKeys.has(k));
     if (validKeys.length > 0) {
         state.MK = validKeys[Math.floor(Math.random() * validKeys.length)];
         console.log(`[Config] Rotation effectuée. Nouvelle clé : ${state.MK.substring(0, 8)}...`);
         return true;
+    }
+
+    // v5.32.0 : Auto-recovery — reset bans after 2 minutes to retry
+    // (Brave may temporarily strip Referer, causing 403 on valid keys)
+    const BAN_COOLDOWN_MS = 120_000;
+    if (Date.now() - banTimestamp > BAN_COOLDOWN_MS) {
+        console.log("[Config] Reset MapTiler bans after cooldown — retrying...");
+        bannedKeys.clear();
+        state.isMapTilerDisabled = false;
+        if (availableKeys.length > 0) {
+            state.MK = availableKeys[Math.floor(Math.random() * availableKeys.length)];
+            console.log(`[Config] Retry avec clé : ${state.MK.substring(0, 8)}...`);
+            return true;
+        }
     }
 
     console.error("[Config] Toutes les clés MapTiler ont été bannies.");

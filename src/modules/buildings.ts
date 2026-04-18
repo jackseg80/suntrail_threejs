@@ -119,7 +119,7 @@ async function fetchBuildingsMapTiler(tile: Tile): Promise<any[] | null> {
             if (!state.MK) return null;
             const url = `https://api.maptiler.com/tiles/buildings/${requestZoom}/${rtx}/${rty}.pbf?key=${state.MK}`;
             try {
-                const response = await fetch(url);
+                const response = await fetch(url, { referrerPolicy: 'same-origin' });
                 if (response.status === 403 || response.status === 401) {
                     console.warn(`[MapTiler] Auth Error ${response.status}. Fallback to OSM.`);
                     state.isMapTilerDisabled = true;

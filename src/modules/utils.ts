@@ -178,7 +178,7 @@ export async function fetchGeocoding(params: { lat?: number, lon?: number, query
     // 1. Tenter MapTiler (si pas déjà banni)
     if (!state.isMapTilerDisabled && key) {
         try {
-            const r = await fetch(maptilerUrl, { signal: signal || AbortSignal.timeout(10000) });
+            const r = await fetch(maptilerUrl, { signal: signal || AbortSignal.timeout(10000), referrerPolicy: 'same-origin' });
             if (r.status === 403) {
                 console.warn("[MapTiler] Clé invalide détectée (403) sur geocoding. Backoff 5min.");
                 _geocodingBackoffUntil = Date.now() + 300_000;
