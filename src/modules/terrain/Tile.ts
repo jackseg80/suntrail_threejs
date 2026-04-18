@@ -4,7 +4,7 @@ import { state } from '../state';
 import { EARTH_CIRCUMFERENCE, getTileBounds } from '../geo';
 import { createForestForTile } from '../vegetation';
 import { loadPOIsForTile } from '../poi';
-import { loadBuildingsForTile } from '../buildings';
+import { loadBuildingsForTile, removeBuildingsForTile } from '../buildings';
 import { loadHydrologyForTile } from '../hydrology';
 import { addToCache, getFromCache, getTileCacheKey, markCacheKeyActive, markCacheKeyInactive, hasInCache } from '../tileCache';
 import { getPlaneGeometry } from '../geometryCache';

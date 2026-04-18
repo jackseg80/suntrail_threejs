@@ -56,7 +56,7 @@ export async function loadBuildingsForTile(tile: Tile) {
         const zy = Math.floor(tile.ty / ratio);
         const zoneKey = `bld_z${zoneZ}_${zx}_${zy}`;
 
-        let buildings = buildingMemoryCache.get(zoneKey);
+        let buildings: any[] | null | undefined = buildingMemoryCache.get(zoneKey);
         if (!buildings) {
             buildings = await fetchBuildingsWithCache(zoneZ, zx, zy, zoneKey);
         }
