@@ -46,6 +46,7 @@ describe('Buildings Integration', () => {
         const tile = new Tile(0, 0, 14, '14/0/0');
         tile.mesh = new THREE.Mesh();
         tile.status = 'loaded';
+        tile.pixelData = new Uint8ClampedArray(256 * 256 * 4); // v5.30.7 : Requis pour le lock altitude
 
         // Mock Overpass Response
         (fetchOverpassData as any).mockResolvedValue([

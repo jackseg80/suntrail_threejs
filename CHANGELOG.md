@@ -5,7 +5,14 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.30.5] - 2026-04-18
+## [5.30.7] - 2026-04-18
+### Fixed
+- **Bâtiments 3D (Z-Order & Multiplication)** : Correction d'un bug majeur où des milliers de bâtiments s'empilaient les uns sur les autres, saturant la VRAM et causant des ralentissements extrêmes. Mise en place d'un verrou de chargement par tuile.
+- **Ancrage au sol** : Les bâtiments attendent désormais que les données d'altitude de la tuile soient 100% chargées avant d'être générés, éliminant les bâtiments "volants" à 0m.
+- **Fuites Mémoire GPU** : Optimisation de la suppression des bâtiments lors des déplacements pour libérer réellement la mémoire vidéo (VRAM).
+
+## [5.30.6] - 2026-04-18
+
 ### Refactored
 - **Modularité UI** : Scission du fichier massif `ExpertSheets.ts` (~1000 lignes) en trois composants indépendants : `WeatherSheet.ts`, `SolarProbeSheet.ts` et `SOSSheet.ts`. Amélioration de la maintenance et du temps de chargement.
 
