@@ -1,16 +1,17 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { state, isProActive } from '../../state';
-import { runSolarProbe, getAltitudeAt, type SolarAnalysisResult } from '../../analysis';
+import { runSolarProbe, type SolarAnalysisResult } from '../../analysis';
 import { worldToLngLat } from '../../geo';
 import { showToast } from '../../toast';
 import { getWeatherIcon } from '../../weather';
-import { getUVCategory, getComfortIndex, getFreezingAlert, fmtWindDir } from '../../weatherUtils';
+import { getUVCategory, getComfortIndex, getFreezingAlert } from '../../weatherUtils';
 import { sheetManager } from '../core/SheetManager';
 import { i18n } from '../../../i18n/I18nService';
 import { eventBus } from '../../eventBus';
 import { showUpgradePrompt } from '../../iap';
 import { fmtTime, fmtDuration } from '../../utils';
 import SunCalc from 'suncalc';
+import { expertService } from '../../expertService';
 
 export class WeatherSheet extends BaseComponent {
     private contentEl: HTMLElement | null = null;
@@ -500,27 +501,8 @@ export class WeatherSheet extends BaseComponent {
     }
 
     private copyWeatherReport(wd: NonNullable<typeof state.weatherData>): void {
-        const lines = [
-            'SunTrail Weather Report',
-            `${i18n.t('weather.location')}: ${wd.locationName ?? '—'}`,
-            `${i18n.t('weather.temp')}: ${Math.round(wd.temp)}°C`,
-            `${i18n.t('weather.feelsLike')}: ${Math.round(wd.apparentTemp)}°C`,
-            `${i18n.t('weather.humidity')}: ${wd.humidity}%`,
-            `${i18n.t('weather.wind')}: ${Math.round(wd.windSpeed)} km/h ${fmtWindDir(wd.windDirDeg ?? wd.windDir)}`,
-            `${i18n.t('weather.gusts')}: ${Math.round(wd.windGusts ?? 0)} km/h`,
-            `${i18n.t('weather.stat.uvIndex')}: ${Math.round(wd.uvIndex ?? 0)}`,
-            `${i18n.t('weather.freezingLevel')}: ${Math.round(wd.freezingLevel ?? 0)} m`,
-            `${i18n.t('weather.visibility')}: ${Math.round(wd.visibility ?? 0)} km`,
-            `${i18n.t('weather.stat.comfortIndex')}: ${Math.round(getComfortIndex(wd.temp, wd.windSpeed, wd.uvIndex ?? 0) * 10) / 10}/10`,
-        ];
-        if (wd.daily) {
-            lines.push('');
-            lines.push(i18n.t('weather.section.forecast3d') + ':');
-            wd.daily.slice(0, 3).forEach(d => {
-                lines.push(`  ${d.date}: ${Math.round(d.tempMax)}°/${Math.round(d.tempMin)}° · 💧${d.precipSum.toFixed(1)}mm · UV${Math.round(d.uvIndexMax)} · 💨${Math.round(d.windSpeedMax)}km/h`);
-            });
-        }
-        navigator.clipboard.writeText(lines.join('\n'));
+        const report = expertService.generateWeatherReport(wd);
+        navigator.clipboard.writeText(report);
         showToast(i18n.t('solar.toast.copied'));
     }
 }
@@ -580,15 +562,6 @@ export class SolarProbeSheet extends BaseComponent {
             }
         };
         attachProbeBtn();
-    }
-
-    private moonEmoji(name: string): string {
-        const map: Record<string, string> = {
-            new: '🌑', waxing_crescent: '🌒', first_quarter: '🌓',
-            waxing_gibbous: '🌔', full: '🌕', waning_gibbous: '🌖',
-            last_quarter: '🌗', waning_crescent: '🌘',
-        };
-        return map[name] ?? '🌙';
     }
 
     private updateUI(result: SolarAnalysisResult) {
@@ -720,7 +693,7 @@ export class SolarProbeSheet extends BaseComponent {
             const rtMoonVal = document.createElement('div');
             rtMoonVal.className = 'exp-probe-value';
             rtMoonVal.style.fontSize = 'var(--text-md)';
-            rtMoonVal.textContent = `${this.moonEmoji(result.moonPhaseName)} ${Math.round(result.moonPhase * 100)}%`;
+            rtMoonVal.textContent = `${expertService.getMoonEmoji(result.moonPhaseName)} ${Math.round(result.moonPhase * 100)}%`;
             rtMoon.appendChild(rtMoonVal);
 
             const rtMaxEl = document.createElement('div');
@@ -953,21 +926,8 @@ export class SolarProbeSheet extends BaseComponent {
     }
 
     private copyReport(result: SolarAnalysisResult): void {
-        const lines = [
-            'SunTrail Solar Report',
-            `Location: ${result.gps.lat.toFixed(5)}, ${result.gps.lon.toFixed(5)}`,
-            `${i18n.t('solar.stat.sunlight')}: ${fmtDuration(result.totalSunlightMinutes)}`,
-            `${i18n.t('solar.stat.sunrise')}: ${fmtTime(result.sunrise)}`,
-            `${i18n.t('solar.stat.noon')}: ${fmtTime(result.solarNoon)}`,
-            `${i18n.t('solar.stat.sunset')}: ${fmtTime(result.sunset)}`,
-            `${i18n.t('solar.stat.dayDuration')}: ${fmtDuration(result.dayDurationMinutes)}`,
-            `${i18n.t('solar.stat.goldenMorning')}: ${fmtTime(result.goldenHourMorningStart)} → ${fmtTime(result.goldenHourMorningEnd)}`,
-            `${i18n.t('solar.stat.goldenEvening')}: ${fmtTime(result.goldenHourEveningStart)} → ${fmtTime(result.goldenHourEveningEnd)}`,
-            `${i18n.t('solar.stat.azimuth')}: ${Math.round(result.currentAzimuthDeg)}°`,
-            `${i18n.t('solar.stat.elevation')}: ${Math.round(result.currentElevationDeg)}°`,
-            `${i18n.t('solar.stat.moonPhase')}: ${this.moonEmoji(result.moonPhaseName)} ${Math.round(result.moonPhase * 100)}%`,
-        ];
-        navigator.clipboard.writeText(lines.join('\n'));
+        const report = expertService.generateSolarReport(result);
+        navigator.clipboard.writeText(report);
         showToast(i18n.t('solar.toast.copied'));
     }
 }
@@ -1038,30 +998,8 @@ export class SOSSheet extends BaseComponent {
         if (!textContainer) return;
 
         textContainer.textContent = "⌛ Localisation en cours...";
-
-        let lat: number, lon: number, alt: number;
-
-        if (state.userLocation) {
-            lat = state.userLocation.lat;
-            lon = state.userLocation.lon;
-            alt = state.userLocation.alt;
-        } else {
-            const gps = worldToLngLat(state.controls?.target.x || 0, state.controls?.target.z || 0, state.originTile);
-            lat = gps.lat;
-            lon = gps.lon;
-            alt = getAltitudeAt(state.controls?.target.x || 0, state.controls?.target.z || 0) / state.RELIEF_EXAGGERATION;
-        }
-
-        let bat = "??";
-        try {
-            const battery = await (navigator as any).getBattery();
-            bat = Math.round(battery.level * 100).toString();
-        } catch(e) {}
-
-        const now = new Date();
-        const time = `${now.getHours()}h${now.getMinutes().toString().padStart(2, '0')}`;
-
-        const message = `🆘 SOS SUNTRAIL: ${lat.toFixed(5)},${lon.toFixed(5)} | ALT:${Math.round(alt)}m | BAT:${bat}% | ${time}`;
+        
+        const message = await expertService.generateSOSMessage();
         textContainer.textContent = message;
 
         const smsBtn = document.getElementById('sos-sms-btn') as HTMLButtonElement | null;

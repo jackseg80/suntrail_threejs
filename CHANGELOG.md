@@ -5,6 +5,15 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.29.38] - 2026-04-18
+### Added
+- **ExpertService** : Nouveau service centralisant la logique métier des Expert Sheets (Météo, Solaire, SOS).
+- **Tests Expert** : Validation unitaire de la génération des messages SOS et des rapports.
+
+### Improved
+- **Modularité UI** : Allègement de `ExpertSheets.ts` via délégation au service expert.
+- **Robustesse Recording** : Correction de types et nettoyage des imports sur `RecordingService`.
+
 ## [5.29.37] - 2026-04-18
 ### Added
 - **RecordingService** : Nouveau service centralisant la logique d'enregistrement GPS, les permissions et la coordination avec les services natifs. Allègement massif de `TrackSheet.ts`.
