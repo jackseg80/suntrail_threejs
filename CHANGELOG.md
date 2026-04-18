@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.30.3] - 2026-04-18
+### Fixed
+- **Moteur d'Altitude** : Implémentation d'une interpolation bilinéaire pour des relevés de terrain fluides. Correction d'un bug de précision d'indexation pixel.
+- **Résilience Localisation** : Hardening de la résolution des noms de lieux avec timeout de 3s et fallback sur coordonnées brutes pour éviter les UI bloquées.
+
 ## [5.30.2] - 2026-04-18
 ### Fixed
 - **Analyse Solaire (UI Fix)** : Correction du titre de localisation qui affichait la clé de traduction brute au lieu du nom du lieu.
