@@ -19,7 +19,7 @@ export interface LocationPoint {
  * Permet une extension facile à de nouveaux pays.
  */
 export const REGIONS: Record<string, BBox[]> = {
-    CH: [{ minLat: 45.8, maxLat: 47.8, minLon: 5.9, maxLon: 10.5 }],
+    CH: [{ minLat: 45.7, maxLat: 47.9, minLon: 5.8, maxLon: 10.6 }],
     FR: [
         // France métropolitaine continentale
         { minLat: 41.3, maxLat: 51.1, minLon: -5.1, maxLon: 8.3 },

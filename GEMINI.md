@@ -1,4 +1,4 @@
-# SunTrail — Guide Développeur (v5.29.38)
+# SunTrail — Guide Développeur (v5.29.39)
 
 
 > La base de connaissance technique est maintenue dans **`CLAUDE.md`**.

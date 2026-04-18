@@ -348,17 +348,27 @@ export async function loadTileData(tx: number, ty: number, zoom: number, is2D: b
     const overlayUrl = getOverlayUrl(tx, ty, zoom);
 
     // v5.29.35 : Extraction directe des Blobs depuis les sources locales
-    // On ne "seed" plus le cache sur le thread principal (trop lent), on passe les blobs au worker.
+    // v5.29.39 : Fix Satellite en Suisse (LOD 11-14). 
+    // Les sources locales (packs/embedded) ne contiennent que la Topo.
+    // On ne les utilise pour la 'color' que si on n'est PAS en mode satellite, 
+    // SAUF si on est offline (où c'est mieux que rien).
     const blobs: { elev?: Blob | null, color?: Blob | null, overlay?: Blob | null } = {};
+    const useLocalColor = state.MAP_SOURCE !== 'satellite' || state.IS_OFFLINE;
 
-    if (embeddedPMTiles && zoom <= EMBEDDED_MAX_ZOOM) {
-        blobs.color = await getTileFromEmbedded(cz, Math.floor(tx/cr), Math.floor(ty/cr));
+    if (useLocalColor) {
+        if (embeddedPMTiles && zoom <= EMBEDDED_MAX_ZOOM) {
+            blobs.color = await getTileFromEmbedded(cz, Math.floor(tx/cr), Math.floor(ty/cr));
+        }
+
+        if (packManager.hasMountedPacks() && zoom >= 12) {
+            const cx = Math.floor(tx/cr);
+            const cy = Math.floor(ty/cr);
+            if (!blobs.color) blobs.color = await packManager.getTileFromPacks(cz, cx, cy, 'color');
+        }
     }
 
+    // L'élévation et l'overlay du pack sont toujours utiles, même en satellite
     if (packManager.hasMountedPacks() && zoom >= 12) {
-        const cx = Math.floor(tx/cr);
-        const cy = Math.floor(ty/cr);
-        if (!blobs.color) blobs.color = await packManager.getTileFromPacks(cz, cx, cy, 'color');
         if (elevUrl && zoom <= 14) blobs.elev = await packManager.getTileFromPacks(zoom, tx, ty, 'elevation');
         if (overlayUrl) blobs.overlay = await packManager.getTileFromPacks(zoom, tx, ty, 'overlay');
     }

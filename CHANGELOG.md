@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.29.39] - 2026-04-18
+### Fixed
+- **Satellite Suisse (LOD 11-14)** : Correction d'un bug où les packs de pays (Topo) écrasaient les tuiles satellite du réseau en raison d'une interception trop agressive des sources locales.
+- **Limites Géo Suisse** : Élargissement léger de la BBox Suisse (`REGIONS.CH`) pour éviter les basculements prématurés vers MapTiler/OSM sur les tuiles-frontière à faible zoom.
+
 ## [5.29.38] - 2026-04-18
 ### Added
 - **ExpertService** : Nouveau service centralisant la logique métier des Expert Sheets (Météo, Solaire, SOS).

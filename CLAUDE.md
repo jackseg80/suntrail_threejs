@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.29.38)
+# SunTrail — Guide IA (v5.29.39)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-18 suite à la v5.29.38 (Expert Logic Extraction).
+> Mis à jour le 2026-04-18 suite à la v5.29.39 (Swiss Satellite Fix).
 
 ## Projet
 
