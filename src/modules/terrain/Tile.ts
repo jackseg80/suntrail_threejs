@@ -181,9 +181,6 @@ export class Tile {
             addToCache(cacheKey, this.elevationTex!, this.pixelData, this.colorTex!, this.overlayTex, this.normalTex);
             markCacheKeyActive(cacheKey);
             this.status = 'loaded'; 
-            
-            // v5.30.11 : Déclenchement des objets 3D (network path)
-            this.loadHighLODFeatures();
 
             if (this.status as string !== 'disposed') queueBuildMesh(this);
         } catch (e) { this.status = 'failed'; }
