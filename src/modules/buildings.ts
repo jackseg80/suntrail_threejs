@@ -30,25 +30,19 @@ const buildingMaterial2D = new THREE.MeshBasicMaterial({
 });
 
 /**
- * Charge les bâtiments 3D pour une tuile (v5.30.8)
+ * Charge les bâtiments 3D pour une tuile (v5.30.9)
  * Priorité : MapTiler (Vector Tiles) > OSM Overpass (Fallback)
  */
 export async function loadBuildingsForTile(tile: Tile) {
     if (!state.SHOW_BUILDINGS || tile.zoom < 14 || (tile.status as string) === 'disposed') return;
     
-    // v5.30.8 : Lock préventif IMMÉDIAT pour éviter les rafales de timeouts
+    // v5.30.9 : Protection absolue - On ne charge qu'une seule fois
     if (tile.buildingGroup || (tile as any)._loadingBuildings) return;
-    
-    (tile as any)._loadingBuildings = true;
 
-    // Si l'altitude n'est pas encore prête, on attend un peu mais le verrou est posé
-    if (!tile.pixelData || tile.status !== 'loaded') {
-        setTimeout(() => {
-            (tile as any)._loadingBuildings = false; // Relâcher pour la prochaine tentative
-            loadBuildingsForTile(tile);
-        }, 500);
-        return;
-    }
+    // Si les données ne sont pas là, on ne boucle pas (le trigger est dans Tile.ts)
+    if (!tile.pixelData || tile.status !== 'loaded') return;
+
+    (tile as any)._loadingBuildings = true;
 
     try {
         // --- PHASE 1 : MAPTILER (Vector Tiles) ---
@@ -191,12 +185,13 @@ async function fetchBuildingsWithCache(z: number, x: number, y: number, key: str
 function renderBuildingsMerged(tile: Tile, elements: any[], limit: number = 150) {
     if ((tile.status as string) === 'disposed' || !tile.mesh) return;
 
-    // Nettoyage de l'ancien groupe s'il existe
-    if (tile.buildingGroup) {
-        if (state.scene) state.scene.remove(tile.buildingGroup);
-        disposeObject(tile.buildingGroup);
-        tile.buildingGroup = null;
-    }
+    // v5.30.9 : Nettoyage radical - on supprime tout ancien groupe rattaché à la tuile
+    tile.mesh.traverse((obj) => {
+        if (obj instanceof THREE.Group && obj.name === 'building-group') {
+            tile.mesh?.remove(obj);
+            disposeObject(obj);
+        }
+    });
 
     const geometries: THREE.BufferGeometry[] = [];
     const processed = elements.slice(0, limit);
@@ -213,7 +208,7 @@ function renderBuildingsMerged(tile: Tile, elements: any[], limit: number = 150)
                 const shape = new THREE.Shape(points);
                 const levels = el.tags?.['building:levels'] || el.tags?.levels;
                 const height = (levels ? parseFloat(levels) * 3.5 : 8) * state.RELIEF_EXAGGERATION;
-                const skirt = 10 * state.RELIEF_EXAGGERATION; 
+                const skirt = 15 * state.RELIEF_EXAGGERATION; 
                 
                 let minTerrainAlt = Infinity;
                 points.forEach(p => {
@@ -221,9 +216,9 @@ function renderBuildingsMerged(tile: Tile, elements: any[], limit: number = 150)
                     if (alt < minTerrainAlt) minTerrainAlt = alt;
                 });
                 
-                // Si l'altitude est nulle ou infinie, on attend
                 if (minTerrainAlt === Infinity || minTerrainAlt === 0) return;
 
+                // Positionner relativement à la tuile (le mesh de la tuile est déjà en worldX, worldZ)
                 const matrix = new THREE.Matrix4()
                     .makeRotationX(-Math.PI / 2)
                     .setPosition(0, minTerrainAlt - skirt, 0);
@@ -243,10 +238,13 @@ function renderBuildingsMerged(tile: Tile, elements: any[], limit: number = 150)
             mesh.castShadow = !is2D && (state.PERFORMANCE_PRESET === 'ultra' || state.PERFORMANCE_PRESET === 'performance');
             mesh.receiveShadow = !is2D;
 
-            tile.buildingGroup = new THREE.Group();
-            tile.buildingGroup.add(mesh);
-            tile.buildingGroup.position.set(tile.worldX, 0, tile.worldZ);
-            if (state.scene) state.scene.add(tile.buildingGroup);
+            const group = new THREE.Group();
+            group.name = 'building-group'; // Pour le repérage au nettoyage
+            group.add(mesh);
+            
+            // ✅ AJOUT DIRECT À LA TUILE (plus de décalage possible, nettoyage auto)
+            tile.mesh.add(group);
+            tile.buildingGroup = group;
         } catch (e) {}
         finally {
             geometries.forEach(g => g.dispose());

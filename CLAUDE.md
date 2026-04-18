@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.30.8)
+# SunTrail — Guide IA (v5.30.9)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-18 suite à la v5.30.8 (Building Duplication Fix & Lock logic).
+> Mis à jour le 2026-04-18 suite à la v5.30.9 (Radical Building Stack Fix).
 
 ## Projet
 
