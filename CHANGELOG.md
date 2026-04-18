@@ -5,6 +5,27 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.32.0] - 2026-04-18
+### Changed — Audit Performance Moteur de Rendu
+**Vague 1 (Quick Wins)**
+- **Frustum cache** : Calcul du frustum une seule fois par frame au lieu de N×par tile. Élimine ~81 multiplications matricielles/frame.
+- **buildQueue O(1)** : Déduplication via `Set<string>` au lieu de `Array.includes()` O(n).
+- **Ombres gelées pendant interaction** : `shadowMap.autoUpdate = false` au lieu de toggler `castShadow`, évitant la recompilation shader et le flash visuel.
+- **Vecteurs pré-alloués** : `_queryPoint` réutilisé dans `getAltitudeAt()`, réduit la pression GC.
+- **Shader pre-warming** : `renderer.compile()` appelé 200ms après l'init.
+- **Near plane** : Testé à 50, reverté à 10 (z-fighting LOD 6).
+
+**Vague 2 (Mémoire & UX)**
+- **pixelData purge LRU** : Limite par preset (eco/balanced=10, performance=30, ultra=50). Libère ~15-20 MB RAM mobile.
+- **Shadow frustum adaptatif** : Max extent par preset (balanced=15km, performance=25km, ultra=30km). near=100, far=200000.
+- **Ground plane réduit** : 500km → 100km. Meilleur frustum culling.
+- **LOD unifié** : Suppression de la cascade if/else dupliquée, utilisation exclusive de `getIdealZoom()` avec hystérésis 5%.
+- **Fog** : FogExp2 testé et reverté — incompatible avec l'altitude 4Mm. Formule linéaire adaptative : `fogNear = max(FOG_NEAR*0.3, FOG_NEAR - alt*0.3)`, `fogFar = FOG_FAR + alt*4.0`.
+
+**Vague 3 (Architecture légère)**
+- **Matériaux GPX partagés** : 1 matériau par couleur×mode (max 16) au lieu de N par layer. Réduction des binds GPU et pression GC.
+- **Tri amorti loadQueue** : Cache de tri ré-évalué toutes les 200ms au lieu de chaque 32ms. O(n log n) amorti.
+
 ## [5.31.2] - 2026-04-18
 ### Fixed
 - **Notification Robustesse** : Affichage forcé des statistiques même lorsqu'elles sont nulles (0.00 km, +0m) pour éviter les disparitions d'UI dans la notification Android.
