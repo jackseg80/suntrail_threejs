@@ -10,20 +10,20 @@ import { describe, it, expect, vi } from 'vitest';
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 // weather.ts importe Three.js — on mock le module mais on garde la vraie getWeatherIcon
-vi.mock('../modules/weather', async () => {
-    const actual = await vi.importActual<typeof import('../modules/weather')>('../modules/weather');
+vi.mock('./weather', async () => {
+    const actual = await vi.importActual<typeof import('./weather')>('./weather');
     return { getWeatherIcon: actual.getWeatherIcon };
 });
 
 // ── Imports ───────────────────────────────────────────────────────────────────
 
-import { getWeatherIcon } from '../modules/weather';
+import { getWeatherIcon } from './weather';
 import {
     getUVCategory,
     getComfortIndex,
     getFreezingAlert,
     fmtWindDir,
-} from '../modules/weatherUtils';
+} from './weatherUtils';
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 

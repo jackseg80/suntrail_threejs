@@ -10,12 +10,12 @@ import { describe, it, expect, vi, beforeAll } from 'vitest';
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 // Mock terrain (activeTiles) — empty map, no elevation data
-vi.mock('../modules/terrain', () => ({
+vi.mock('./terrain', () => ({
     activeTiles: new Map(),
 }));
 
 // Mock state with Swiss coordinates
-vi.mock('../modules/state', () => ({
+vi.mock('./state', () => ({
     state: {
         simDate: new Date('2024-06-21T12:00:00Z'),
         originTile: { x: 2126, y: 1462, z: 12 },
@@ -61,11 +61,11 @@ function swissWorldCoords(): { x: number; z: number } {
 
 // ── Import module under test (after mocks are registered) ─────────────────────
 
-let runSolarProbe: typeof import('../modules/analysis').runSolarProbe;
-let getMoonPhaseName: typeof import('../modules/analysis').getMoonPhaseName;
+let runSolarProbe: typeof import('./analysis').runSolarProbe;
+let getMoonPhaseName: typeof import('./analysis').getMoonPhaseName;
 
 beforeAll(async () => {
-    const mod = await import('../modules/analysis');
+    const mod = await import('./analysis');
     runSolarProbe = mod.runSolarProbe;
     getMoonPhaseName = mod.getMoonPhaseName;
 });

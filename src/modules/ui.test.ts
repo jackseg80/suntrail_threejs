@@ -76,16 +76,16 @@ describe('ui.ts', () => {
         vi.useRealTimers();
     });
 
-    it('should initialize the UI and setup listeners', () => {
-        initUI();
+    it('should initialize the UI and setup listeners', async () => {
+        await initUI();
         expect(state.uiVisible).toBe(true);
     });
 
-    it('should open settings when settings tab is clicked', () => {
+    it('should open settings when settings tab is clicked', async () => {
         // Mock SheetManager.toggle
         const toggleSpy = vi.spyOn(sheetManager, 'toggle');
         
-        initUI();
+        await initUI();
         
         // Simuler la présence d'un onglet dans la navbar (normalement injecté par NavigationBar.hydrate)
         const navBar = document.getElementById('nav-bar');
@@ -114,7 +114,7 @@ describe('ui.ts', () => {
     it('should trigger GPS disclosure when gps-main-btn is clicked', async () => {
         const { requestGPSDisclosure } = await import('./gpsDisclosure');
         
-        initUI();
+        await initUI();
         
         const gpsBtn = document.getElementById('gps-main-btn');
         gpsBtn?.dispatchEvent(new Event('click'));
