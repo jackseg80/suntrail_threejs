@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.29.45] - 2026-04-18
+### Added
+- **Recherche Intégrations Externes** : Étude de faisabilité et roadmap pour l'intégration de Strava, Suunto, Wikiloc et Decathlon Outdoor dans l'écosystème SunTrail.
+- **Roadmap v6.0 (Hub Rando)** : Ajout des connecteurs externes comme priorité de développement pour la version 6.0.
+
 ## [5.29.44] - 2026-04-18
 ### Fixed
 - **Sélection de Tracé** : Correction d'un oubli d'abonnement au changement de calque actif. Désormais, les cartes de statistiques principales se mettent instantanément à jour dès qu'on sélectionne un tracé dans la liste.
