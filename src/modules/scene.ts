@@ -109,10 +109,6 @@ export async function disposeScene(): Promise<void> {
     currentThrottledSunUpdate = null;
 }
 
-function fogDensityFromFar(fogFar: number): number {
-    return 2.0 / Math.max(fogFar, 1000);
-}
-
 function getIdealZoom(dist: number, currentZoom: number = -1): number {
     const boost = state.MAP_SOURCE === 'satellite' ? 2.0
                 : state.MAP_SOURCE === 'swisstopo' ? 1.0
@@ -147,7 +143,7 @@ export async function initScene(): Promise<void> {
 
     state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, state.ZOOM);
     state.scene = new THREE.Scene();
-    state.scene.fog = new THREE.FogExp2(0x87CEEB, fogDensityFromFar(state.FOG_FAR));
+    state.scene.fog = new THREE.Fog(0x87CEEB, state.FOG_NEAR, state.FOG_FAR);
 
     const isMobile = window.innerWidth <= 768 || /Mobi|Android/i.test(navigator.userAgent);
     const useAntialias = !isMobile && state.PERFORMANCE_PRESET !== 'eco';
@@ -637,12 +633,13 @@ function updateTerrainPhysics(interacting: boolean): void {
 
             updateTerrainPhysics(interacting);
 
-            // v5.31.1 : FogExp2 — density adapts to altitude for natural fog
-            if (state.scene.fog instanceof THREE.FogExp2) {
+            // v5.31.1 : Dynamic fog — shrinks near altitude for natural fade
+            if (state.scene.fog instanceof THREE.Fog) {
                 const alt = state.camera.position.y;
-                const baseDensity = fogDensityFromFar(state.FOG_FAR);
-                const altFactor = Math.max(0.3, 1.0 - (alt / 400000));
-                state.scene.fog.density = baseDensity * altFactor;
+                const fogNear = Math.max(state.FOG_NEAR * 0.3, state.FOG_NEAR - alt * 0.3);
+                const fogFar = state.FOG_FAR + alt * 4.0;
+                state.scene.fog.near = fogNear;
+                state.scene.fog.far = fogFar;
             }
 
             state.renderer.render(state.scene, state.camera);

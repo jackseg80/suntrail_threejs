@@ -30,7 +30,7 @@ Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 | **Shadow frustum per preset** | `scene.ts`, `sun.ts` | Balanced=15000m, Performance=25000m, Ultra=30000m max extent. `near=100`, `far=200000` (was near=1000, far=500000). Reduces shadow map GPU cost significantly on mobile. |
 | **Ground plane reduced** | `scene.ts` | 500km×500km → 100km×100km. Still covers viewport at LOD 6. Smaller bounding sphere improves frustum culling. |
 | **LOD logic unified** | `scene.ts` | Removed duplicated zoom-threshold if/else cascade (lines 286-298). Now uses `getIdealZoom()` exclusively with 5% hysteresis. |
-| **FogExp2** | `scene.ts` | Replaced `THREE.Fog(near, far)` with `THREE.FogExp2(density)`. Density adapts to altitude: `baseDensity * max(0.3, 1 - alt/400000)`. Fog slider UI updates density directly. More natural rendering, no per-frame near/far calculation. |
+| **Fog dynamic altitude** | `scene.ts` | Linear fog with altitude-adaptive near/far: `fogNear = max(FOG_NEAR*0.3, FOG_NEAR - alt*0.3)`, `fogFar = FOG_FAR + alt*4.0`. At high altitude fog recedes naturally; at ground level fog is visible at FOG_NEAR. FogExp2 was tested but reverted — unsuitable for 4Mm altitude range (density×distance = total opacity at LOD 6). |
 
 ## 2. Navigation & GPS Logic
 
