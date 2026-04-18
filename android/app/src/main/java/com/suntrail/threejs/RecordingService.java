@@ -58,9 +58,8 @@ public class RecordingService extends Service {
     private static final String PREFS_NAME      = "suntrail_rec_config";
     static final String         STOP_ACTION     = "com.suntrail.threejs.STOP_RECORDING";
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // CONSTANTES DE FILTRAGE GPS (Single Source of Truth)
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── CONSTANTES DE FILTRAGE GPS (Single Source of Truth) ────────────────────────
+
     private static final float  MAX_SPEED_MPS       = 15.0f;       // 54 km/h — reject si plus rapide
     private static final float  MIN_DISTANCE_M      = 3.0f;        // 3m — reject jitter (augmenté pour éviter les doublons)
     private static final long   MIN_TIME_MS         = 1000L;        // 1s — reject rafales OEM
@@ -68,9 +67,7 @@ public class RecordingService extends Service {
     private static final double MIN_ALT_M           = -500.0;       // reject alt aberrantes
     private static final double MAX_ALT_M           = 9000.0;
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // CALLBACK pour notifier le Plugin JS
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── CALLBACK pour notifier le Plugin JS ────────────────────────────────────────
 
     /**
      * Callback statique pour notifier RecordingPlugin quand de nouveaux points sont disponibles.
@@ -91,9 +88,7 @@ public class RecordingService extends Service {
         return sCallback;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // CHAMPS DU SERVICE
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── CHAMPS DU SERVICE ──────────────────────────────────────────────────────────
 
     // GPS
     private FusedLocationProviderClient mFusedClient;
@@ -117,8 +112,8 @@ public class RecordingService extends Service {
 
     // Buffer pour batch inserts (v5.25.1) - réduit I/O disque
     private final List<GPSPoint> mPointBuffer = new ArrayList<>();
-    private static final int BATCH_SIZE = 3; // v5.26.1: RÃ©duit Ã  3 pour plus de sÃ©curitÃ© (zÃ©ro perte)
-    private static final long BATCH_FLUSH_INTERVAL_MS = 10000; // Flush forcÃ© toutes les 10s
+    private static final int BATCH_SIZE = 3; // v5.26.1: Réduit à 3 pour plus de sécurité (zéro perte)
+    private static final long BATCH_FLUSH_INTERVAL_MS = 10000; // Flush forcé toutes les 10s
     private long mLastBatchFlush = 0;
 
     // WakeLock partiel : maintient le CPU actif pendant l'enregistrement
@@ -127,6 +122,7 @@ public class RecordingService extends Service {
     // Stats pour la notification (v5.29.38)
     private double mStatsDistance = 0.0;
     private double mStatsElevation = 0.0;
+    private double mStatsElevationMinus = 0.0;
 
     // Gestion de la durée et de l'immobilité (v5.24.6)
     private long    mStartTime                 = 0;
@@ -157,7 +153,7 @@ public class RecordingService extends Service {
     private static final float SPEED_WALKING_FAST = 1.4f;    // ~5km/h
     private static final float SPEED_RUNNING = 2.5f;         // ~9km/h
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────────
+    // ── Lifecycle ──────────────────────────────────────────────────────────────────
 
     @Override
     public void onCreate() {
@@ -178,39 +174,39 @@ public class RecordingService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         createNotificationChannel();
 
-        // v5.26.0: Gestion intelligente du courseId pour le recovery aprÃ¨s kill
+        // v5.26.0: Gestion intelligente du courseId pour le recovery après kill
         boolean isNewCourse = (intent != null) && intent.getBooleanExtra("isNewCourse", false);
 
         if (isNewCourse) {
-            // DÃ©marrage explicite d'une NOUVELLE course (depuis le bouton REC)
+            // Démarrage explicite d'une NOUVELLE course (depuis le bouton REC)
             mCurrentCourseId = java.util.UUID.randomUUID().toString();
             mPointCount.set(0);
             mStartTime = System.currentTimeMillis();
-            Log.i(TAG, "DÃ©marrage d'une NOUVELLE course: " + mCurrentCourseId);
+            Log.i(TAG, "Démarrage d'une NOUVELLE course: " + mCurrentCourseId);
         } else {
-            // RedÃ©marrage par le systÃ¨me (START_STICKY) ou rÃ©activation
+            // Redémarrage par le système (START_STICKY) ou réactivation
             SharedPreferences recoveryPrefs = getSharedPreferences("RecordingPrefs", MODE_PRIVATE);
             mCurrentCourseId = recoveryPrefs.getString("currentCourseId", null);
             mStartTime = recoveryPrefs.getLong("startTime", System.currentTimeMillis());
 
             if (mCurrentCourseId != null) {
-                // Course existante : on rÃ©cupÃ¨re le nombre de points pour la notification
+                // Course existante : on récupère le nombre de points pour la notification
                 mDbExecutor.execute(() -> {
                     try {
                         int count = mDao.getPointCount(mCurrentCourseId);
                         mPointCount.set(count);
                         updateNotification(count);
-                        Log.i(TAG, "Course rÃ©cupÃ©rÃ©e (" + mCurrentCourseId + ") : " + count + " points");
+                        Log.i(TAG, "Course récupérée (" + mCurrentCourseId + ") : " + count + " points");
                     } catch (Exception e) {
-                        Log.e(TAG, "Erreur rÃ©cupÃ©ration pointCount: " + e.getMessage());
+                        Log.e(TAG, "Erreur récupération pointCount: " + e.getMessage());
                     }
                 });
             } else {
-                // Cas rare: START_STICKY sans courseId en SharedPreferences -> on en crÃ©e un
+                // Cas rare: START_STICKY sans courseId en SharedPreferences -> on en crée un
                 mCurrentCourseId = java.util.UUID.randomUUID().toString();
                 mPointCount.set(0);
                 mStartTime = System.currentTimeMillis();
-                Log.w(TAG, "Course absente des prefs, crÃ©ation d'un nouveau ID: " + mCurrentCourseId);
+                Log.w(TAG, "Course absente des prefs, création d'un nouveau ID: " + mCurrentCourseId);
             }
         }
 
@@ -264,8 +260,8 @@ public class RecordingService extends Service {
         mStartTime = System.currentTimeMillis();
         mLastMovementTime = mStartTime;
 
-        // v5.26.0: SpÃ©cification du type de service pour Android 10+ (API 29+)
-        // Requis pour Ã©viter que le service soit killÃ© lors d'opÃ©rations mÃ©moire (ex: photos)
+        // v5.26.0: Spécification du type de service pour Android 10+ (API 29+)
+        // Requis pour éviter que le service soit killé lors d'opérations mémoire (ex: photos)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(NOTIFICATION_ID, buildNotification(mPointCount.get()), ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
         } else {
@@ -277,8 +273,8 @@ public class RecordingService extends Service {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
         long   interval        = (intent != null) ? intent.getLongExtra("interval", 3000L)          : prefs.getLong("interval", 3000L);
-        float  minDisplacement = (intent != null) ? intent.getFloatExtra("minDisplacement", 0.5f)  : prefs.getFloat("minDisplacement", 0.5f);
-        boolean highAccuracy   = (intent != null) ? intent.getBooleanExtra("highAccuracy", true)   : prefs.getBoolean("highAccuracy", true);
+        float  minDisplacement = (intent != null) ? intent.getFloatExtra("minDisplacement", 0.5f)  : prefs.getFloat("minDisplacement", 0.5f);    
+        boolean highAccuracy   = (intent != null) ? intent.getBooleanExtra("highAccuracy", true)   : prefs.getBoolean("highAccuracy", true);     
 
         // Sauvegarder pour le redémarrage éventuel
         prefs.edit()
@@ -297,14 +293,12 @@ public class RecordingService extends Service {
                 ? Priority.PRIORITY_HIGH_ACCURACY
                 : Priority.PRIORITY_BALANCED_POWER_ACCURACY);
 
-        // ═══════════════════════════════════════════════════════════════════════
-        // LOCATION CALLBACK — LOGIQUE DE FILTRAGE COMPLETE (Single Source of Truth)
-        // ═══════════════════════════════════════════════════════════════════════
+        // ── LOCATION CALLBACK — LOGIQUE DE FILTRAGE COMPLETE (Single Source of Truth) ──
         mLocationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(@NonNull LocationResult result) {
                 for (Location loc : result.getLocations()) {
-                    // ── Étape 1: Filtrage précision ──────────────────────────────
+                    // ── Étape 1: Filtrage précision ──────────────────────────
                     if (loc.getAccuracy() > MAX_ACCURACY_M) {
                         Log.d(TAG, "REJECT: accuracy " + loc.getAccuracy() + "m > " + MAX_ACCURACY_M + "m");
                         continue;
@@ -321,12 +315,12 @@ public class RecordingService extends Service {
                     // mais on veut altitude orthométrique (au-dessus du niveau de la mer = MSL)
                     double altOrthometric;
                     double altEllipsoidal = loc.getAltitude();
-                    
+
                     // Android 12+ (API 31) fournit directement l'altitude MSL (Mean Sea Level)
                     // C'est la vraie altitude orthométrique précise
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && loc.hasMslAltitude()) {
                         altOrthometric = loc.getMslAltitudeMeters();
-                        Log.d(TAG, String.format("ALTITUDE MSL (API 31+): raw=%.1fm msl=%.1fm", 
+                        Log.d(TAG, String.format("ALTITUDE MSL (API 31+): raw=%.1fm msl=%.1fm",
                                 altEllipsoidal, altOrthometric));
                     } else {
                         // Android < 12: utiliser approximation du géoïde
@@ -334,10 +328,10 @@ public class RecordingService extends Service {
                         // En Suisse: entre 48m et 55m selon les coordonnées
                         double geoIdHeight = estimateGeoIdHeight(loc.getLatitude(), loc.getLongitude());
                         altOrthometric = altEllipsoidal - geoIdHeight;
-                        Log.d(TAG, String.format("ALTITUDE estimated: raw=%.1fm geoId=%.1fm corrected=%.1fm", 
+                        Log.d(TAG, String.format("ALTITUDE estimated: raw=%.1fm geoId=%.1fm corrected=%.1fm",
                                 altEllipsoidal, geoIdHeight, altOrthometric));
                     }
-                    
+
                     if (altOrthometric < MIN_ALT_M || altOrthometric > MAX_ALT_M) {
                         Log.d(TAG, "REJECT: altitude " + altOrthometric + "m out of range");
                         continue;
@@ -351,22 +345,22 @@ public class RecordingService extends Service {
                         continue;
                     }
 
-                    // ── Étape 5: Calcul distance 3D depuis dernier point valide ─
+                    // ── Étape 5: Calcul distance 3D depuis dernier point valide ──
                     double distance3D = 0; // Pour calcul vitesse dans updateAdaptiveGpsConfig
                     if (mLastValidLocation != null) {
                         float distance2D = mLastValidLocation.distanceTo(loc);
 
-                        // ── Étape 6: Filtrage jitter (distance 2D < 1m) ─────────
+                        // ── Étape 6: Filtrage jitter (distance 2D < 1m) ───────────
                         if (distance2D < MIN_DISTANCE_M) {
                             Log.d(TAG, "REJECT: distance2D " + distance2D + "m < " + MIN_DISTANCE_M + "m (jitter)");
                             continue;
                         }
 
-                        // ── Étape 7: Calcul vitesse 3D ───────────────────────────
+                        // ── Étape 7: Calcul vitesse 3D ────────────────────────────  
                         // Distance 3D = sqrt(distance2D² + altDiff²)
                         // Utiliser altitude orthométrique pour le calcul
                         double currentAltOrthometric = altOrthometric;
-                        double lastAltOrthometric = mLastValidLocation.getAltitude() - 
+                        double lastAltOrthometric = mLastValidLocation.getAltitude() -
                             estimateGeoIdHeight(mLastValidLocation.getLatitude(), mLastValidLocation.getLongitude());
                         double altDiff = currentAltOrthometric - lastAltOrthometric;
                         distance3D = Math.sqrt(distance2D * distance2D + altDiff * altDiff);
@@ -382,10 +376,7 @@ public class RecordingService extends Service {
                                 distance2D, distance3D, speedMps, timeDiff));
                     }
 
-                    // ══════════════════════════════════════════════════════════
-                    // ── Étape 9: POINT VALIDE — Insert SQLite + notify ─────────
-                    // ══════════════════════════════════════════════════════════
-
+                    // ── Étape 9: POINT VALIDE — Insert SQLite + notify ──────────
                     final GPSPoint point = new GPSPoint(
                         mCurrentCourseId,
                         loc.getLatitude(),
@@ -398,25 +389,25 @@ public class RecordingService extends Service {
                     // v5.25.1: Batch insert optimisation - réduit I/O disque
                     mPointBuffer.add(point);
                     int newCount = mPointCount.incrementAndGet();
-                    
+
                     // Vérifier si on doit flush le buffer
-                    boolean shouldFlush = mPointBuffer.size() >= BATCH_SIZE || 
+                    boolean shouldFlush = mPointBuffer.size() >= BATCH_SIZE ||
                                          (now - mLastBatchFlush) > BATCH_FLUSH_INTERVAL_MS;
-                    
+
                     if (shouldFlush) {
                         final List<GPSPoint> pointsToInsert = new ArrayList<>(mPointBuffer);
                         mPointBuffer.clear();
                         mLastBatchFlush = now;
-                        
+
                         mDbExecutor.execute(() -> {
                             mDao.insertAll(pointsToInsert);
-                            
+
                             // Notifier le Plugin JS via callback (une fois par batch)
                             RecordingCallback cb = getCallback();
                             if (cb != null) {
                                 cb.onNewPoints(mCurrentCourseId, newCount);
                             }
-                            
+
                             Log.d(TAG, "INSERTED batch of " + pointsToInsert.size() + " points (total: " + newCount + ")");
                         });
                     } else {
@@ -441,8 +432,6 @@ public class RecordingService extends Service {
                         mCurrentSpeedMps = (float) (distance3D / (timeDiff / 1000.0));
                     }
                     updateAdaptiveGpsConfig();
-
-                    // Mise à jour notification (post delayed pour éviter surcharge)
                 }
 
                 // Mise à jour de la notification avec le compteur de points et durée
@@ -543,10 +532,10 @@ public class RecordingService extends Service {
         return null; // Service non bindable
     }
 
-    // ── Détection d'immobilité ───────────────────────────────────────────────────
+    // ── Détection d'immobilité ──────────────────────────────────────────────────────
 
     /**
-     * Met à jour le statut d'immobilité basé sur la distance parcourue.
+     * Met à jour le statut d'immobilités basé sur la distance parcourue.
      * L'utilisateur est considéré immobile s'il n'a pas bougé de plus de 30m pendant 30 minutes.
      */
     private void updateImmobilityStatus(Location currentLocation) {
@@ -594,23 +583,28 @@ public class RecordingService extends Service {
         }
     }
 
-    // ── Notification ──────────────────────────────────────────────────────────────
+    // ── Notification ────────────────────────────────────────────────────────────────
 
     private Notification buildNotification(int pointCount) {
         String elapsedTime = getElapsedTimeString();
 
-        String text;
+        StringBuilder sb = new StringBuilder();
+        sb.append(elapsedTime);
+        
         if (pointCount == 0) {
-            text = elapsedTime + " — En attente du premier point...";
+            sb.append(" — En attente du premier point...");
         } else {
-            text = elapsedTime + " — " + pointCount + " points";
+            sb.append(" — ").append(pointCount).append(" pts");
             if (mStatsDistance > 0) {
-                text += String.format(" — %.1f km", mStatsDistance);
+                sb.append(String.format(" — %.1f km", mStatsDistance));
             }
-            if (mStatsElevation > 0) {
-                text += String.format(" — +%d m", (int)mStatsElevation);
+            if (mStatsElevation > 0 || mStatsElevationMinus > 0) {
+                sb.append(" — +").append((int)mStatsElevation).append("m");
+                sb.append(" / -").append((int)mStatsElevationMinus).append("m");
             }
         }
+
+        String text = sb.toString();
 
         String title;
         int importance;
@@ -639,9 +633,10 @@ public class RecordingService extends Service {
         return builder.build();
     }
 
-    public void updateNotificationStats(double distanceKm, double elevationGainM) {
+    public void updateNotificationStats(double distanceKm, double elevationGainM, double elevationLossM) {
         this.mStatsDistance = distanceKm;
         this.mStatsElevation = elevationGainM;
+        this.mStatsElevationMinus = elevationLossM;
         updateNotification(mPointCount.get());
     }
 
@@ -672,34 +667,24 @@ public class RecordingService extends Service {
     /**
      * v5.25.1: Optimisation batterie - Ajuste dynamiquement la précision GPS
      * selon la vitesse de déplacement et la durée d'enregistrement.
-     * 
-     * Stratégie:
-     * - Immobile ou très lent (< 0.8 m/s = ~3km/h): Mode économie (10s, basse précision)
-     * - Marche normale (0.8-1.4 m/s = 3-5km/h): Mode standard (5s, équilibré)
-     * - Marche rapide ou course (> 1.4 m/s = >5km/h): Mode précision (3s, haute précision)
-     * 
-     * Avantages:
-     * - 35-40% d'économie de batterie sur randos longues
-     * - Pas de perte de qualité sur trace (7s max, pas 15s)
-     * - Adaptatif: s'ajuste automatiquement aux pauses
      */
     private void updateAdaptiveGpsConfig() {
         long now = System.currentTimeMillis();
-        
+
         // Ne re-vérifier que toutes les 30 secondes (évite changements trop fréquents)
         if (now - mLastGpsConfigUpdate < GPS_CONFIG_UPDATE_INTERVAL_MS) {
             return;
         }
         mLastGpsConfigUpdate = now;
-        
+
         // Calculer durée écoulée
         long elapsedMinutes = (now - mStartTime) / (60 * 1000L);
-        
+
         // Déterminer le mode optimal selon vitesse et durée
         long newInterval;
         int newPriority;
         String modeDescription;
-        
+
         if (mCurrentSpeedMps < SPEED_WALKING_SLOW || mIsImmobile) {
             // Mode économie: immobile ou très lent
             newInterval = 10000; // 10s
@@ -716,21 +701,21 @@ public class RecordingService extends Service {
                 newInterval = 3000;
                 modeDescription = "PRECISION (fast)";
             }
-            }
-        
+        }
+
         // Vérifier si un changement est nécessaire
-        if (mLocationRequest.getInterval() != newInterval || 
+        if (mLocationRequest.getInterval() != newInterval ||
             mLocationRequest.getPriority() != newPriority) {
-            
+
             // Mettre à jour la configuration
             mLocationRequest.setInterval(newInterval);
             mLocationRequest.setPriority(newPriority);
-            
+
             // Réappliquer les changements au FusedLocationProvider
             try {
                 mFusedClient.removeLocationUpdates(mLocationCallback);
                 mFusedClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.getMainLooper());
-                
+
                 Log.i(TAG, String.format("GPS adaptatif: %s — Intervalle=%ds, Vitesse=%.1fm/s, Durée=%dmin",
                     modeDescription, newInterval/1000, mCurrentSpeedMps, elapsedMinutes));
             } catch (SecurityException e) {
@@ -742,16 +727,6 @@ public class RecordingService extends Service {
     /**
      * Estime la hauteur du géoïde (différence entre ellipsoïde WGS84 et niveau de la mer)
      * pour corriger l'altitude GPS.
-     * 
-     * Valeurs approximatives pour différentes régions:
-     * - Suisse (CH): ~50-55m
-     * - France métropolitaine: ~45-52m  
-     * - Europe centrale: ~45-50m
-     * - Global: approximation basée sur la latitude
-     * 
-     * @param lat Latitude en degrés
-     * @param lon Longitude en degrés
-     * @return Hauteur du géoïde en mètres (à soustraire de l'altitude ellipsoïdale)
      */
     private double estimateGeoIdHeight(double lat, double lon) {
         // Approximation simplifiée basée sur la localisation
@@ -767,9 +742,7 @@ public class RecordingService extends Service {
             return 50.0;
         } else {
             // Approximation globale basée sur la latitude
-            // Le géoïde varie globalement entre -100m et +80m
-            // À l'équateur: ~-30m, aux pôles: ~+15m
-            return 50.0; // Valeur conservatrice par défaut
+            return 50.0; 
         }
     }
 }

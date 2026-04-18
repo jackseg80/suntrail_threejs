@@ -51,9 +51,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
     private ExecutorService mDbExecutor;
     private String          mCurrentCourseId; // Course ID actif (mis à jour via onNewPoints)
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Lifecycle
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Lifecycle ──────────────────────────────────────────────────────────────────
 
     @Override
     public void load() {
@@ -75,9 +73,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // RecordingCallback — appelé par RecordingService quand nouveaux points
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── RecordingCallback — appelé par RecordingService quand nouveaux points ───────
 
     /**
      * Called by RecordingService when new points are inserted in SQLite.
@@ -104,18 +100,17 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
     public void updateNotificationStats(PluginCall call) {
         Double distance = call.getDouble("distance", 0.0);
         Double elevation = call.getDouble("elevation", 0.0);
+        Double elevationMinus = call.getDouble("elevationMinus", 0.0);
 
         if (RecordingService.isRunning()) {
-            RecordingService instance = RecordingService.getInstance(); 
+            RecordingService instance = RecordingService.getInstance();
             if (instance != null) {
-                instance.updateNotificationStats(distance, elevation);
+                instance.updateNotificationStats(distance, elevation, elevationMinus);
             }
         }
         call.resolve();
     }
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Plugin Methods
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Plugin Methods ─────────────────────────────────────────────────────────────
 
     /**
      * Démarre une course d'enregistrement GPS (v5.25.0).
@@ -127,7 +122,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         // Ré-enregistrer le callback (au cas où le service a été arrêté et redémarré)
         // C'est crucial pour que le 2ème REC et suivants fonctionnent
         RecordingService.setCallback(this);
-        
+
         // Récupérer l'originTile si fourni
         JSObject originTileObj = call.getObject("originTile");
         if (originTileObj != null) {
@@ -144,10 +139,10 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
                 android.util.Log.w("RecordingPlugin", "Failed to parse originTile", e);
             }
         }
-        
-        // DÃ©marrer le service avec flag NOUVELLE course
+
+        // Démarrer le service avec flag NOUVELLE course
         startServiceInternal(call, true);
-        
+
         // Le courseId sera envoyé via onNewPoints callback
         // On retourne immédiatement, le JS recevra le vrai courseId via l'événement
         JSObject result = new JSObject();
@@ -165,7 +160,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         startServiceInternal(call, false);
         call.resolve();
     }
-    
+
     private void startServiceInternal(PluginCall call, boolean isNewCourse) {
         // Android 13+ (API 33) : POST_NOTIFICATIONS est une permission runtime.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -209,7 +204,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         stopServiceInternal();
         call.resolve();
     }
-    
+
     /**
      * Arrête la course d'enregistrement GPS (v5.25.0).
      * Alias de stopForeground pour compatibilité avec l'API nativeGPSService.
@@ -220,7 +215,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
         mCurrentCourseId = null;
         call.resolve();
     }
-    
+
     private void stopServiceInternal() {
         Intent serviceIntent = new Intent(getContext(), RecordingService.class);
         getContext().stopService(serviceIntent);
@@ -294,7 +289,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
     /**
      * Retourne les points GPS depuis Room SQLite avec filtre depuis un timestamp.
      * Format : { points: [{ lat, lon, alt, timestamp, accuracy }, ...] }
-     * 
+     *
      * Si since > 0, ne retourne que les points avec timestamp > since (polling incrémental).
      */
     @PluginMethod
@@ -448,7 +443,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
     @PluginMethod
     public void getCurrentCourse(PluginCall call) {
         boolean isRunning = RecordingService.isRunning();
-        
+
         // Récupérer le courseId du service natif si le plugin a été recréé (app killée et relancée)
         String courseId = mCurrentCourseId;
         if (courseId == null && isRunning) {
@@ -457,7 +452,7 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
             android.content.SharedPreferences prefs = getContext().getSharedPreferences("RecordingPrefs", Context.MODE_PRIVATE);
             courseId = prefs.getString("currentCourseId", null);
         }
-        
+
         if (courseId == null || !isRunning) {
             // Pas de course active
             JSObject result = new JSObject();
@@ -466,12 +461,12 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
             call.resolve(result);
             return;
         }
-        
+
         // Course active - retourner les infos
         JSObject result = new JSObject();
         result.put("courseId", courseId);
         result.put("isRunning", true);
-        
+
         // Récupérer originTile depuis SharedPreferences si disponible
         android.content.SharedPreferences prefs = getContext().getSharedPreferences("RecordingPrefs", Context.MODE_PRIVATE);
         if (prefs.contains("originTileX")) {
@@ -481,10 +476,10 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
             originTile.put("z", prefs.getInt("originTileZ", 0));
             result.put("originTile", originTile);
         }
-        
+
         // Mettre à jour mCurrentCourseId pour les prochaines requêtes
         mCurrentCourseId = courseId;
-        
+
         call.resolve(result);
     }
 }

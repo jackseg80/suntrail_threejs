@@ -34,7 +34,7 @@ interface RecordingPlugin {
     getPoints(options: { courseId: string; since: number }): Promise<{ points: NativeGPSPoint[] }>;
     getCurrentCourse(): Promise<{ courseId: string; isRunning: boolean; originTile?: { x: number; y: number; z: number } }>;
     requestBatteryOptimizationExemption(): Promise<{ granted: boolean }>;
-    updateNotificationStats(options: { distance: number; elevation: number }): Promise<void>;
+    updateNotificationStats(options: { distance: number; elevation: number; elevationMinus?: number }): Promise<void>;
     addListener(event: string, callback: (event: any) => void): Promise<any>;
     removeAllListeners(): Promise<void>;
 }
@@ -348,8 +348,9 @@ class NativeGPSService {
             if (state.isRecording && state.recordedPoints.length >= 2) {
                 const stats = calculateTrackStats(state.recordedPoints);
                 RecordingNative.updateNotificationStats({
-                    distance: stats.distance / 1000,
-                    elevation: stats.dPlus
+                    distance: stats.distance,
+                    elevation: stats.dPlus,
+                    elevationMinus: stats.dMinus
                 });
             }
         }, 30000);

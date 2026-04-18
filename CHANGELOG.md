@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.31.1] - 2026-04-18
+### Fixed
+- **Notification Enregistrement** : Correction du bug affichant "0km" dans la notification persistante Android. La distance utilise désormais les unités correctes (km).
+- **Dénivelé Négatif** : Ajout du cumul de dénivelé négatif (D-) dans la notification pour un suivi complet de l'effort en temps réel.
+
 ## [5.31.0] - 2026-04-18
 ### Added
 - **Jump VersionCode 700** : Bond en avant du numéro de version Android pour résoudre les conflits de déploiement dans la Google Play Console.
