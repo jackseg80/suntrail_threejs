@@ -9,6 +9,11 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
   base: './',
+  server: {
+    headers: {
+      'Referrer-Policy': 'same-origin',
+    },
+  },
   build: {
     outDir: 'dist',
     // Three.js fait ~520kB minifié (dans son propre chunk — correct)
