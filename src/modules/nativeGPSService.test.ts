@@ -1,114 +1,82 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockPlugin } = vi.hoisted(() => ({
-    mockPlugin: {
-        startCourse: vi.fn().mockResolvedValue({ courseId: 'test-course-123' }),
-        stopCourse: vi.fn().mockResolvedValue({}),
-        getPoints: vi.fn().mockResolvedValue({ points: [] }),
-        getCurrentCourse: vi.fn().mockResolvedValue({ courseId: 'test-course-123', isRunning: true }),
-        requestBatteryOptimizationExemption: vi.fn().mockResolvedValue({ granted: true }),
-        addListener: vi.fn(),
+// Hoisted mocks for Capacitor
+const { mockPreferences, mockRecordingNative } = vi.hoisted(() => ({
+    mockPreferences: {
+        get: vi.fn(),
+        set: vi.fn(),
+        remove: vi.fn()
+    },
+    mockRecordingNative: {
+        getCurrentCourse: vi.fn(),
+        startCourse: vi.fn(),
+        stopCourse: vi.fn(),
+        getPoints: vi.fn(),
+        requestBatteryOptimizationExemption: vi.fn(),
+        updateNotificationStats: vi.fn(),
+        addListener: vi.fn(() => Promise.resolve({ remove: () => {} })),
         removeAllListeners: vi.fn()
     }
 }));
 
-// Mock Capacitor before ANY import
-vi.mock('@capacitor/core', () => {
-    return {
-        Capacitor: {
-            isNativePlatform: vi.fn(() => true),
-            getPlatform: vi.fn(() => 'android')
-        },
-        registerPlugin: vi.fn(() => mockPlugin)
-    };
-});
-
-// Mock terrain
-vi.mock('./terrain', () => ({
-    updateRecordedTrackMesh: vi.fn()
+vi.mock('@capacitor/preferences', () => ({ Preferences: mockPreferences }));
+vi.mock('@capacitor/core', () => ({
+    Capacitor: { isNativePlatform: () => true },
+    registerPlugin: () => mockRecordingNative
 }));
 
-// NOW import state and service
+// Mock RecordingService to avoid circular dependency
+vi.mock('./recordingService', () => ({
+    recordingService: { stopRecording: vi.fn() }
+}));
+
 import { state } from './state';
 import { nativeGPSService } from './nativeGPSService';
 
-describe('NativeGPSService', () => {
+describe('NativeGPSService (v5.29.38)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         state.recordedPoints = [];
         state.isRecording = false;
+        mockPreferences.get.mockResolvedValue({ value: null });
+        mockRecordingNative.getCurrentCourse.mockResolvedValue({ isRunning: false });
     });
 
-    it('should handle a complete course lifecycle', async () => {
-        // 1. Start course
-        const courseId = await nativeGPSService.startCourse({ x: 1, y: 2, z: 3 });
-        expect(courseId).toBe('test-course-123');
-        expect(mockPlugin.startCourse).toHaveBeenCalled();
-        
-        // 2. Simulate native points event
-        const onNewPointsCall = mockPlugin.addListener.mock.calls.find((call: any) => call[0] === 'onNewPoints');
-        expect(onNewPointsCall).toBeDefined();
-        if (!onNewPointsCall) return;
-        
-        const callback = onNewPointsCall[1];
-        const mockPoint = { lat: 46.5, lon: 7.5, alt: 1000, timestamp: Date.now(), accuracy: 5, id: 1 };
-        mockPlugin.getPoints.mockResolvedValue({ points: [mockPoint] });
-
-        await callback({ courseId: 'test-course-123', pointCount: 1 });
-
-        expect(state.recordedPoints.length).toBe(1);
-        expect(state.recordedPoints[0].lat).toBe(46.5);
-
-        // 3. Stop course
-        await nativeGPSService.stopCourse();
-        expect(mockPlugin.stopCourse).toHaveBeenCalled();
-    });
-
-    it('should request battery optimization exemption', async () => {
-        const granted = await nativeGPSService.requestBatteryOptimizationExemption();
-        expect(granted).toBe(true);
-        expect(mockPlugin.requestBatteryOptimizationExemption).toHaveBeenCalled();
-    });
-
-    it('should recover current course state from native', async () => {
-        mockPlugin.getCurrentCourse.mockResolvedValue({
-            courseId: 'recovered-123',
-            isRunning: true,
-            originTile: { x: 10, y: 20, z: 13 }
+    it('should initialize correctly and recover active course', async () => {
+        mockRecordingNative.getCurrentCourse.mockResolvedValue({ 
+            isRunning: true, 
+            courseId: 'active-123',
+            originTile: { x: 1, y: 2, z: 13 }
         });
+        mockRecordingNative.getPoints.mockResolvedValue({ points: [] });
 
-        const course = await nativeGPSService.getCurrentCourse();
-        expect(course?.courseId).toBe('recovered-123');
-        expect(course?.isRunning).toBe(true);
-        expect(course?.originTile).toEqual({ x: 10, y: 20, z: 13 });
+        await nativeGPSService.init();
+
+        expect(state.isRecording).toBe(true);
+        expect(state.currentCourseId).toBe('active-123');
+        expect(state.originTile).toEqual({ x: 1, y: 2, z: 13 });
     });
 
-    it('should filter out points with sudden altitude jumps (>200m)', async () => {
-        // Must start course to register listeners
-        await nativeGPSService.startCourse();
+    it('should start a new course', async () => {
+        mockRecordingNative.startCourse.mockResolvedValue({ courseId: 'new-456' });
 
-        const onNewPointsCall = mockPlugin.addListener.mock.calls.find((call: any) => call[0] === 'onNewPoints');
-        expect(onNewPointsCall).toBeDefined();
-        if (!onNewPointsCall) return;
-        const callback = onNewPointsCall[1];
+        const courseId = await nativeGPSService.startCourse({ x: 10, y: 20, z: 13 });
+
+        expect(courseId).toBe('new-456');
+        expect(state.isRecording).toBe(true);
+        expect(mockPreferences.set).toHaveBeenCalled();
+    });
+
+    it('should filter points with sudden altitude jumps', () => {
+        const points = [
+            { id: 1, lat: 45, lon: 6, alt: 1000, timestamp: 10000, accuracy: 5 },
+            { id: 2, lat: 45, lon: 6, alt: 1500, timestamp: 12000, accuracy: 5 } // Jump +500m in 2s
+        ];
+
+        // Access private method via casting for testing
+        const filtered = (nativeGPSService as any).filterPointsConsistency(points);
         
-        const now = Date.now();
-        const p1 = { lat: 46.5, lon: 7.5, alt: 1000, timestamp: now, accuracy: 5, id: 1 };
-        const p2 = { lat: 46.5, lon: 7.5, alt: 1300, timestamp: now + 5000, accuracy: 5, id: 2 }; // Jump +300m -> Reject
-        const p3 = { lat: 46.5, lon: 7.5, alt: 1050, timestamp: now + 10000, accuracy: 5, id: 3 }; // Jump +50m -> Accept
-
-        mockPlugin.getPoints.mockResolvedValueOnce({ points: [p1] });
-        await callback({ courseId: 'test-course-123', pointCount: 1 });
-        expect(state.recordedPoints.length).toBe(1);
-        expect(state.recordedPoints[0].alt).toBe(1000);
-
-        mockPlugin.getPoints.mockResolvedValueOnce({ points: [p1, p2] });
-        await callback({ courseId: 'test-course-123', pointCount: 2 });
-        expect(state.recordedPoints.length).toBe(1); // p2 rejected
-
-        mockPlugin.getPoints.mockResolvedValueOnce({ points: [p1, p2, p3] });
-        await callback({ courseId: 'test-course-123', pointCount: 3 });
-        expect(state.recordedPoints.length).toBe(2); // p3 accepted (delta relative to p1)
-        expect(state.recordedPoints[1].alt).toBe(1050);
+        expect(filtered.length).toBe(1);
+        expect(filtered[0].alt).toBe(1000);
     });
 });

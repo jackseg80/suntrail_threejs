@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { state } from './state';
 import { isMobileDevice } from './utils';
+import { BoundedCache } from './boundedCache';
 
 /**
  * Interface pour les données de tuiles mises en cache.
@@ -14,14 +15,23 @@ export interface CachedTileData {
 }
 
 /**
- * Cache interne pour les données de tuiles.
- */
-const dataCache = new Map<string, CachedTileData>();
-
-/**
  * Clés de cache des tuiles actuellement en scène (à ne pas évincer).
  */
 const activeCacheKeys = new Set<string>();
+
+/**
+ * Cache interne pour les données de tuiles (v5.29.38 : LRU + Pinning).
+ */
+const dataCache = new BoundedCache<string, CachedTileData>({
+    maxSize: 120, // Valeur par défaut (balanced mobile)
+    isPinned: (key) => activeCacheKeys.has(key),
+    onEvict: (_key, data) => {
+        data.elev.dispose();
+        data.color.dispose();
+        if (data.overlay) data.overlay.dispose();
+        if (data.normal) data.normal.dispose();
+    }
+});
 
 export function markCacheKeyActive(key: string): void {
     activeCacheKeys.add(key);
@@ -54,8 +64,6 @@ export function getTileCacheKey(key: string, zoom: number): string {
  * v5.29.31 : Optimisation majeure de la RAM.
  */
 export function purgeOldPixelData(): void {
-    let purgedCount = 0;
-    
     for (const [key, data] of dataCache.entries()) {
         if (!data.pixelData) continue;
         
@@ -65,7 +73,6 @@ export function purgeOldPixelData(): void {
             const isHighRes = key.includes('_z15') || key.includes('_z16') || key.includes('_z17') || key.includes('_z18');
             if (!isHighRes) {
                 data.pixelData = null;
-                purgedCount++;
             }
         }
     }
@@ -75,56 +82,28 @@ export function purgeOldPixelData(): void {
  * Ajoute des données de tuiles au cache. 
  */
 export function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8ClampedArray | null, colorTex: THREE.Texture, overlayTex: THREE.Texture | null, normalTex: THREE.Texture | null): void {
+    dataCache.resize(getMaxCacheSize());
     dataCache.set(key, { elev: elevTex, pixelData, color: colorTex, overlay: overlayTex, normal: normalTex });
-    if (dataCache.size > getMaxCacheSize()) {
-        trimCache();
-    }
 }
 
 /**
  * Récupère des données du cache.
  */
 export function getFromCache(key: string): CachedTileData | null {
-    const data = dataCache.get(key);
-    if (!data) return null;
-    dataCache.delete(key);
-    dataCache.set(key, data);
-    return data;
+    return dataCache.get(key) || null;
 }
 
 /**
  * Élague le cache jusqu'à sa taille maximale.
  */
 export function trimCache(): void {
-    const maxSize = getMaxCacheSize();
-    while (dataCache.size > maxSize) {
-        let evictKey: string | undefined;
-        for (const k of dataCache.keys()) {
-            if (!activeCacheKeys.has(k)) { evictKey = k; break; }
-        }
-        if (!evictKey) evictKey = dataCache.keys().next().value;
-        if (!evictKey) break;
-        const entry = dataCache.get(evictKey);
-        if (entry) {
-            entry.elev.dispose();
-            entry.color.dispose();
-            if (entry.overlay) entry.overlay.dispose();
-            if (entry.normal) entry.normal.dispose();
-        }
-        dataCache.delete(evictKey);
-    }
+    dataCache.resize(getMaxCacheSize());
 }
 
 /**
  * Vide complètement le cache.
  */
 export function disposeAllCachedTiles(): void {
-    for (const entry of dataCache.values()) {
-        entry.elev.dispose();
-        entry.color.dispose();
-        if (entry.overlay) entry.overlay.dispose();
-        if (entry.normal) entry.normal.dispose();
-    }
     dataCache.clear();
     activeCacheKeys.clear();
 }

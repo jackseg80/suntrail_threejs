@@ -11,6 +11,7 @@
 
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Preferences } from '@capacitor/preferences';
 import { nativeGPSService } from './nativeGPSService';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -29,9 +30,6 @@ const POINTS_FILE  = 'suntrail_rec_points_v1.json';
 /**
  * Démarre le Foreground Service et persist l'état.
  * Appelé quand l'utilisateur active REC.
- * 
- * Note: L'enregistrement GPS est géré par nativeGPSService.startCourse() dans TrackSheet.ts.
- * Cette fonction conserve la persistence localStorage pour la recovery.
  */
 export async function startRecordingService(originTile?: { x: number; y: number; z: number }): Promise<void> {
     const snapshot: RecordingSnapshot = {
@@ -40,7 +38,7 @@ export async function startRecordingService(originTile?: { x: number; y: number;
         pointCount:  0,
         originTile:  originTile,
     };
-    localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshot));
+    await Preferences.set({ key: SNAPSHOT_KEY, value: JSON.stringify(snapshot) });
 
     // Nettoyer le fichier de points orphan si présent
     if (Capacitor.isNativePlatform()) {
@@ -51,12 +49,9 @@ export async function startRecordingService(originTile?: { x: number; y: number;
 
 /**
  * Arrête le Foreground Service et efface la persistence.
- * Appelé quand l'utilisateur arrête REC ou exporte.
- * 
- * Note: L'arrêt de l'enregistrement GPS est géré par nativeGPSService.stopCourse() dans TrackSheet.ts.
  */
 export async function stopRecordingService(): Promise<void> {
-    localStorage.removeItem(SNAPSHOT_KEY);
+    await Preferences.remove({ key: SNAPSHOT_KEY });
 
     if (Capacitor.isNativePlatform()) {
         Filesystem.deleteFile({ path: POINTS_FILE, directory: Directory.Cache })
@@ -65,16 +60,15 @@ export async function stopRecordingService(): Promise<void> {
 }
 
 /**
- * Met à jour le nombre de points dans le snapshot (appelé à chaque nouveau point GPS).
- * Permet de savoir où on en était si l'app est quand même tuée.
+ * Met à jour le nombre de points dans le snapshot.
  */
-export function updateRecordingSnapshot(pointCount: number): void {
-    const raw = localStorage.getItem(SNAPSHOT_KEY);
-    if (!raw) return;
+export async function updateRecordingSnapshot(pointCount: number): Promise<void> {
+    const { value } = await Preferences.get({ key: SNAPSHOT_KEY });
+    if (!value) return;
     try {
-        const snapshot: RecordingSnapshot = JSON.parse(raw);
+        const snapshot: RecordingSnapshot = JSON.parse(value);
         snapshot.pointCount = pointCount;
-        localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshot));
+        await Preferences.set({ key: SNAPSHOT_KEY, value: JSON.stringify(snapshot) });
     } catch { /* ignore */ }
 }
 
@@ -137,14 +131,12 @@ export async function isRecordingServiceRunning(): Promise<boolean> {
 
 /**
  * Vérifie si un enregistrement était actif lors du dernier lancement.
- * Retourne le snapshot si oui, null sinon.
- * Utilisé au démarrage pour proposer une reprise.
  */
-export function getInterruptedRecording(): RecordingSnapshot | null {
-    const raw = localStorage.getItem(SNAPSHOT_KEY);
-    if (!raw) return null;
+export async function getInterruptedRecording(): Promise<RecordingSnapshot | null> {
+    const { value } = await Preferences.get({ key: SNAPSHOT_KEY });
+    if (!value) return null;
     try {
-        const snapshot: RecordingSnapshot = JSON.parse(raw);
+        const snapshot: RecordingSnapshot = JSON.parse(value);
         return snapshot.isRecording ? snapshot : null;
     } catch {
         return null;
@@ -154,8 +146,8 @@ export function getInterruptedRecording(): RecordingSnapshot | null {
 /**
  * Efface le snapshot d'enregistrement interrompu sans arrêter le service.
  */
-export function clearInterruptedRecording(): void {
-    localStorage.removeItem(SNAPSHOT_KEY);
+export async function clearInterruptedRecording(): Promise<void> {
+    await Preferences.remove({ key: SNAPSHOT_KEY });
 }
 
 /**

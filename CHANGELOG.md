@@ -8,9 +8,12 @@ et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ## [5.29.38] - 2026-04-18
 ### Added
 - **ExpertService** : Nouveau service centralisant la logique métier des Expert Sheets (Météo, Solaire, SOS).
+- **Super-Notification Android** : Bouton "Arrêter REC" directement dans la notification et mise à jour dynamique des statistiques (km et D+) en temps réel.
 - **Tests Expert** : Validation unitaire de la génération des messages SOS et des rapports.
 
 ### Improved
+- **Unification des Caches** : Migration de `tileCache` et `geometryCache` vers un moteur unique `BoundedCache` avec support du pinning. Libération automatique de la VRAM lors de l'éviction.
+- **Stabilité de Persistance** : Migration de `localStorage` vers Capacitor `Preferences` pour l'état d'enregistrement (évite les erreurs de sécurité sur certains OS).
 - **Modularité UI** : Allègement de `ExpertSheets.ts` via délégation au service expert.
 - **Robustesse Recording** : Correction de types et nettoyage des imports sur `RecordingService`.
 

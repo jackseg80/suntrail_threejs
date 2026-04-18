@@ -3,9 +3,10 @@
  * Centralizes cache management for OSM data (buildings, hydrology, POIs).
  */
 
-export interface BoundedCacheOptions<V> {
+export interface BoundedCacheOptions<K, V> {
     maxSize?: number;
-    onEvict?: (value: V) => void;
+    onEvict?: (key: K, value: V) => void;
+    isPinned?: (key: K, value: V) => boolean;
 }
 
 /**
@@ -14,25 +15,21 @@ export interface BoundedCacheOptions<V> {
 export class BoundedCache<K, V> {
     private cache = new Map<K, V>();
     private maxSize: number;
-    private onEvict?: (value: V) => void;
+    private onEvict?: (key: K, value: V) => void;
+    private isPinned?: (key: K, value: V) => boolean;
 
-    constructor(options: BoundedCacheOptions<V> = {}) {
+    constructor(options: BoundedCacheOptions<K, V> = {}) {
         this.maxSize = options.maxSize || 200;
         this.onEvict = options.onEvict;
+        this.isPinned = options.isPinned;
     }
 
     set(key: K, value: V): void {
         if (this.cache.has(key)) {
             this.cache.delete(key);
-        } else if (this.cache.size >= this.maxSize) {
-            const oldestKey = this.cache.keys().next().value;
-            if (oldestKey !== undefined) {
-                const oldestValue = this.cache.get(oldestKey);
-                if (oldestValue && this.onEvict) this.onEvict(oldestValue);
-                this.cache.delete(oldestKey);
-            }
         }
         this.cache.set(key, value);
+        this.trim();
     }
 
     get(key: K): V | undefined {
@@ -45,14 +42,26 @@ export class BoundedCache<K, V> {
         return value;
     }
 
+    delete(key: K): boolean {
+        return this.cache.delete(key);
+    }
+
+    entries(): IterableIterator<[K, V]> {
+        return this.cache.entries();
+    }
+
+    values(): IterableIterator<V> {
+        return this.cache.values();
+    }
+
     has(key: K): boolean {
         return this.cache.has(key);
     }
 
     clear(): void {
         if (this.onEvict) {
-            for (const value of this.cache.values()) {
-                this.onEvict(value);
+            for (const [key, value] of this.cache.entries()) {
+                this.onEvict(key, value);
             }
         }
         this.cache.clear();
@@ -72,14 +81,27 @@ export class BoundedCache<K, V> {
 
     private trim(): void {
         while (this.cache.size > this.maxSize) {
-            const oldestKey = this.cache.keys().next().value;
-            if (oldestKey !== undefined) {
-                const oldestValue = this.cache.get(oldestKey);
-                if (oldestValue && this.onEvict) this.onEvict(oldestValue);
-                this.cache.delete(oldestKey);
-            } else {
+            let evictKey: K | undefined;
+            
+            // Find the oldest item that is NOT pinned
+            for (const [k, v] of this.cache.entries()) {
+                if (!this.isPinned || !this.isPinned(k, v)) {
+                    evictKey = k;
+                    break;
+                }
+            }
+
+            if (evictKey === undefined) {
+                // All items in cache are currently pinned, we can't trim further
+                // without breaking the pinning contract.
                 break;
             }
+
+            const evictValue = this.cache.get(evictKey);
+            if (evictValue !== undefined && this.onEvict) {
+                this.onEvict(evictKey, evictValue);
+            }
+            this.cache.delete(evictKey);
         }
     }
 }

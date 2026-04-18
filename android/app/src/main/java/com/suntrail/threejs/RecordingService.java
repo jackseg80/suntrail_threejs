@@ -78,6 +78,7 @@ public class RecordingService extends Service {
      */
     public interface RecordingCallback {
         void onNewPoints(String courseId, int pointCount);
+        void onServiceStopped();
     }
 
     private static RecordingCallback sCallback;
@@ -123,6 +124,10 @@ public class RecordingService extends Service {
     // WakeLock partiel : maintient le CPU actif pendant l'enregistrement
     private PowerManager.WakeLock mWakeLock;
 
+    // Stats pour la notification (v5.29.38)
+    private double mStatsDistance = 0.0;
+    private double mStatsElevation = 0.0;
+
     // Gestion de la durée et de l'immobilité (v5.24.6)
     private long    mStartTime                 = 0;
     private Location mLastSignificantLocation  = null;
@@ -138,7 +143,10 @@ public class RecordingService extends Service {
 
     // Flag statique : permet au JS de savoir si le service tourne encore
     private static volatile boolean sIsRunning = false;
+    private static RecordingService sInstance = null;
+
     public static boolean isRunning() { return sIsRunning; }
+    public static RecordingService getInstance() { return sInstance; }
 
     // Optimisation batterie v5.25.1 - GPS adaptatif selon vitesse et durée
     private LocationRequest mLocationRequest; // Référence pour mise à jour dynamique
@@ -155,6 +163,7 @@ public class RecordingService extends Service {
     public void onCreate() {
         super.onCreate();
         sIsRunning = true;
+        sInstance = this;
 
         // Initialiser Room (Single Source of Truth)
         mDatabase = AppDatabase.getInstance(getApplicationContext());
@@ -515,9 +524,14 @@ public class RecordingService extends Service {
             mWakeLock.release();
         }
 
+        // Notifier la fin du service (v5.29.38)
+        if (sCallback != null) {
+            sCallback.onServiceStopped();
+        }
+
         // Clear callback pour éviter les fuites d'événements
-        // Le plugin ré-enregistrera le callback quand startCourse() sera appelé
         sCallback = null;
+        sInstance = null;
 
         stopForeground(true);
         super.onDestroy();
@@ -589,7 +603,13 @@ public class RecordingService extends Service {
         if (pointCount == 0) {
             text = elapsedTime + " — En attente du premier point...";
         } else {
-            text = elapsedTime + " — " + pointCount + " point" + (pointCount > 1 ? "s" : "") + " enregistré" + (pointCount > 1 ? "s" : "");
+            text = elapsedTime + " — " + pointCount + " points";
+            if (mStatsDistance > 0) {
+                text += String.format(" — %.1f km", mStatsDistance);
+            }
+            if (mStatsElevation > 0) {
+                text += String.format(" — +%d m", (int)mStatsElevation);
+            }
         }
 
         String title;
@@ -617,6 +637,12 @@ public class RecordingService extends Service {
         }
 
         return builder.build();
+    }
+
+    public void updateNotificationStats(double distanceKm, double elevationGainM) {
+        this.mStatsDistance = distanceKm;
+        this.mStatsElevation = elevationGainM;
+        updateNotification(mPointCount.get());
     }
 
     private void updateNotification(int pointCount) {

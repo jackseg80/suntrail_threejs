@@ -1,24 +1,27 @@
 import * as THREE from 'three';
+import { BoundedCache } from './boundedCache';
 
 /**
- * Cache interne pour les géométries de plans avec skirt.
- * Le skirt (jupe verticale) masque les fissures entre tuiles adjacentes
- * sur les pentes raides (hauteurs de bord non synchronisées).
+ * Cache interne pour les géométries de plans avec skirt (v5.29.38 : LRU).
  */
-const geometryCache = new Map<string, THREE.BufferGeometry>();
+const geometryCache = new BoundedCache<string, THREE.BufferGeometry>({
+    maxSize: 64, // Garder les 64 dernières résolutions/tailles utilisées
+    onEvict: (_key, geometry) => {
+        geometry.dispose();
+    }
+});
 
 /**
  * Récupère ou crée une géométrie de plan avec skirt et la résolution/taille spécifiées.
- * Les UVs sont inversés sur l'axe Y pour correspondre aux textures des tuiles.
- * L'attribut `aSkirt` (0=surface, 1=skirt) permet au vertex shader de déplacer les
- * vertices de skirt vers le bas.
  */
 export function getPlaneGeometry(res: number, size: number): THREE.BufferGeometry {
     const key = `${res}_${size}`;
-    if (!geometryCache.has(key)) {
-        geometryCache.set(key, createPlaneWithSkirt(res, size));
-    }
-    return geometryCache.get(key)!;
+    const cached = geometryCache.get(key);
+    if (cached) return cached;
+
+    const newGeom = createPlaneWithSkirt(res, size);
+    geometryCache.set(key, newGeom);
+    return newGeom;
 }
 
 function createPlaneWithSkirt(res: number, size: number): THREE.BufferGeometry {
@@ -99,8 +102,5 @@ function createPlaneWithSkirt(res: number, size: number): THREE.BufferGeometry {
  * Vide le cache de géométries et libère la mémoire.
  */
 export function disposeAllGeometries(): void {
-    for (const geometry of geometryCache.values()) {
-        geometry.dispose();
-    }
     geometryCache.clear();
 }

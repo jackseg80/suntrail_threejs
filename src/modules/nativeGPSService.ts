@@ -12,6 +12,10 @@ import { state } from './state';
 import { LocationPoint } from './geo';
 import { updateRecordedTrackMesh } from './terrain';
 import { cleanGPSTrack } from './gpsDeduplication';
+import { calculateTrackStats } from './geoStats';
+import { recordingService } from './recordingService';
+
+// ... (Types remain the same)
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -30,8 +34,9 @@ interface RecordingPlugin {
     getPoints(options: { courseId: string; since: number }): Promise<{ points: NativeGPSPoint[] }>;
     getCurrentCourse(): Promise<{ courseId: string; isRunning: boolean; originTile?: { x: number; y: number; z: number } }>;
     requestBatteryOptimizationExemption(): Promise<{ granted: boolean }>;
-    addListener(event: string, callback: (event: any) => void): void;
-    removeAllListeners(): void;
+    updateNotificationStats(options: { distance: number; elevation: number }): Promise<void>;
+    addListener(event: string, callback: (event: any) => void): Promise<any>;
+    removeAllListeners(): Promise<void>;
 }
 
 // ── Plugin natif (no-op sur web) ───────────────────────────────────────────────
@@ -50,6 +55,7 @@ class NativeGPSService {
     private isListening = false;
     private meshUpdateTimeout: number | null = null;
     private pendingMeshUpdate = false;
+    private statsUpdateInterval: number | null = null;
 
     /**
      * Initialisation et récupération au démarrage (v5.28.1)
@@ -328,12 +334,35 @@ class NativeGPSService {
             state.userLocation = { lat: event.lat, lon: event.lon, alt: event.alt };
             state.userLocationAccuracy = event.accuracy ?? null;
         });
+
+        // v5.29.38 : Listener pour arrêt via notification Android
+        RecordingNative.addListener('onServiceStopped', () => {
+            console.log('[NativeGPSService] Service stopped from notification');
+            if (state.isRecording) {
+                recordingService.stopRecording();
+            }
+        });
+
+        // Intervalle de mise à jour des stats dans la notification (toutes les 30s)
+        this.statsUpdateInterval = window.setInterval(() => {
+            if (state.isRecording && state.recordedPoints.length >= 2) {
+                const stats = calculateTrackStats(state.recordedPoints);
+                RecordingNative.updateNotificationStats({
+                    distance: stats.distance / 1000,
+                    elevation: stats.dPlus
+                });
+            }
+        }, 30000);
     }
 
     /**
      * Supprime les listeners.
      */
     private removeListeners(): void {
+        if (this.statsUpdateInterval) {
+            clearInterval(this.statsUpdateInterval);
+            this.statsUpdateInterval = null;
+        }
         if (!RecordingNative) return;
         RecordingNative.removeAllListeners();
         this.isListening = false;

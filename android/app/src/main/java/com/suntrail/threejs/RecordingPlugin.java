@@ -87,15 +87,32 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
     public void onNewPoints(String courseId, int pointCount) {
         // Stocker le courseId courant
         mCurrentCourseId = courseId;
-        
+
         // Envoyer un événement au JS via notifyListeners()
-        // Le JS peut écouter via Recording.addListener('onNewPoints', ...)
         JSObject eventData = new JSObject();
         eventData.put("courseId", courseId);
         eventData.put("pointCount", pointCount);
         notifyListeners("onNewPoints", eventData);
     }
 
+    @Override
+    public void onServiceStopped() {
+        notifyListeners("onServiceStopped", new JSObject());
+    }
+
+    @PluginMethod
+    public void updateNotificationStats(PluginCall call) {
+        Double distance = call.getDouble("distance", 0.0);
+        Double elevation = call.getDouble("elevation", 0.0);
+
+        if (RecordingService.isRunning()) {
+            RecordingService instance = RecordingService.getInstance(); 
+            if (instance != null) {
+                instance.updateNotificationStats(distance, elevation);
+            }
+        }
+        call.resolve();
+    }
     // ═══════════════════════════════════════════════════════════════════════════
     // Plugin Methods
     // ═══════════════════════════════════════════════════════════════════════════
