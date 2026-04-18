@@ -126,7 +126,12 @@ export class Tile {
             this.elevationTex = cached.elev; this.pixelData = cached.pixelData;
             this.colorTex = cached.color; this.overlayTex = cached.overlay; this.normalTex = cached.normal;
             markCacheKeyActive(cacheKey);
-            this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
+            this.status = 'loaded'; 
+            
+            // v5.30.11 : Déclenchement des objets 3D (cache path)
+            this.loadHighLODFeatures();
+            
+            this.buildMesh(state.RESOLUTION);
             return;
         }
         this.status = 'loading';
@@ -177,13 +182,47 @@ export class Tile {
             markCacheKeyActive(cacheKey);
             this.status = 'loaded'; 
             
-            // v5.30.9 : Déclenchement unique des bâtiments dès que la tuile est 100% chargée (plus de multiplication)
-            if (state.SHOW_BUILDINGS && this.zoom >= state.BUILDING_ZOOM_THRESHOLD) {
-                void loadBuildingsForTile(this);
-            }
+            // v5.30.11 : Déclenchement des objets 3D (network path)
+            this.loadHighLODFeatures();
 
             if (this.status as string !== 'disposed') queueBuildMesh(this);
         } catch (e) { this.status = 'failed'; }
+    }
+
+    /**
+     * Gère le chargement asynchrone des objets 3D additionnels (v5.30.11).
+     * Centralisé pour éviter la duplication et les oublis.
+     */
+    private loadHighLODFeatures(): void {
+        const is2D = (this.zoom <= 10 || state.IS_2D_MODE);
+        const delay = (ms: number) => ms * state.LOAD_DELAY_FACTOR;
+
+        // Signalisations
+        if (state.SHOW_SIGNPOSTS && this.zoom >= state.POI_ZOOM_THRESHOLD) {
+            setTimeout(() => { if (this.status !== 'disposed') loadPOIsForTile(this); }, delay(600));
+        }
+
+        // Bâtiments, Hydrologie et Végétation (3D uniquement)
+        if (!is2D) {
+            if (state.SHOW_BUILDINGS && this.zoom >= state.BUILDING_ZOOM_THRESHOLD) {
+                setTimeout(() => { if (this.status !== 'disposed') loadBuildingsForTile(this); }, delay(150));
+            }
+            if (state.SHOW_HYDROLOGY && this.zoom >= 13) {
+                setTimeout(() => { if (this.status !== 'disposed') loadHydrologyForTile(this); }, delay(100));
+            }
+            if (state.SHOW_VEGETATION && this.zoom >= 14) {
+                setTimeout(() => {
+                    if (this.status as any === 'disposed') return;
+                    const forest = createForestForTile(this);
+                    if (forest && state.scene && (this.status as any !== 'disposed')) {
+                        if (this.forestMesh) state.scene.remove(this.forestMesh);
+                        this.forestMesh = forest; 
+                        this.forestMesh.position.set(this.worldX, 0, this.worldZ);
+                        state.scene.add(this.forestMesh);
+                    }
+                }, delay(300));
+            }
+        }
     }
 
     buildMesh(resolution: number): void {

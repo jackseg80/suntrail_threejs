@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.30.11] - 2026-04-18
+### Fixed
+- **Objets 3D (Végétation, Bâtiments, POIs)** : Rétablissement du chargement automatique pour toutes les sources (réseau et cache). Centralisation de la logique dans `loadHighLODFeatures()` pour garantir qu'aucune donnée 3D ne manque, tout en conservant la protection anti-multiplication.
+
 ## [5.30.9] - 2026-04-18
 ### Fixed
 - **Bâtiments 3D (Z-Stacking Definitive Fix)** : Changement radical d'architecture. Les bâtiments sont désormais rattachés directement au mesh de leur tuile parente au lieu de la scène globale. Cela garantit un nettoyage automatique et atomique lors du déchargement d'une tuile, rendant toute multiplication impossible.
