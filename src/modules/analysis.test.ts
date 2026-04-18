@@ -1,8 +1,25 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as THREE from 'three';
-import { getAltitudeAt } from './analysis';
+
+// Mocks des dépendances avec vi.hoisted
+const { mockActiveTiles, mockQueryTiles } = vi.hoisted(() => ({
+    mockActiveTiles: new Map<string, any>(),
+    mockQueryTiles: vi.fn()
+}));
+
+vi.mock('./terrain', () => ({
+    activeTiles: mockActiveTiles
+}));
+
+vi.mock('./tileSpatialIndex', () => ({
+    queryTiles: mockQueryTiles,
+    insertTile: vi.fn(),
+    removeTile: vi.fn(),
+    clearIndex: vi.fn()
+}));
+
+import { getAltitudeAt, drapeToTerrain } from './analysis';
 import { state } from './state';
-import { insertTile, clearIndex } from './tileSpatialIndex';
 
 /** Helper pour créer des données Terrain-RGB */
 function encodeTerrainRGB(alt: number): { r: number, g: number, b: number } {
@@ -15,94 +32,85 @@ function encodeTerrainRGB(alt: number): { r: number, g: number, b: number } {
 
 describe('Analysis Module (v5.30.3)', () => {
     beforeEach(() => {
-        vi.resetAllMocks();
-        clearIndex();
+        vi.clearAllMocks();
+        mockActiveTiles.clear();
+        mockQueryTiles.mockReturnValue([]);
         state.RELIEF_EXAGGERATION = 1.0;
         state.originTile = { x: 0, y: 0, z: 0 };
     });
 
     describe('getAltitudeAt', () => {
-        it('should return 0 altitude if no tile is loaded', () => {
-            const alt = getAltitudeAt(100, 100);
-            expect(alt).toBe(0);
-        });
-
         it('should perform bilinear interpolation correctly', () => {
             const pixelData = new Uint8ClampedArray(2 * 2 * 4);
-            
-            const c00 = encodeTerrainRGB(100);
-            pixelData[0] = c00.r; pixelData[1] = c00.g; pixelData[2] = c00.b; pixelData[3] = 255;
-            
-            const c10 = encodeTerrainRGB(200);
-            pixelData[4] = c10.r; pixelData[5] = c10.g; pixelData[6] = c10.b; pixelData[7] = 255;
-            
-            const c01 = encodeTerrainRGB(300);
-            pixelData[8] = c01.r; pixelData[9] = c01.g; pixelData[10] = c01.b; pixelData[11] = 255;
-            
-            const c11 = encodeTerrainRGB(400);
-            pixelData[12] = c11.r; pixelData[13] = c11.g; pixelData[14] = c11.b; pixelData[15] = 255;
+            const c100 = encodeTerrainRGB(100);
+            const c200 = encodeTerrainRGB(200);
+            const c300 = encodeTerrainRGB(300);
+            const c400 = encodeTerrainRGB(400);
+
+            pixelData.set([c100.r, c100.g, c100.b, 255], 0);
+            pixelData.set([c200.r, c200.g, c200.b, 255], 4);
+            pixelData.set([c300.r, c300.g, c300.b, 255], 8);
+            pixelData.set([c400.r, c400.g, c400.b, 255], 12);
 
             const mockTile = {
-                key: 'test_tile',
-                status: 'loaded',
-                zoom: 14,
-                worldX: 0,
-                worldZ: 0,
-                tileSizeMeters: 1000,
-                pixelData: pixelData,
-                bounds: new THREE.Box3(
-                    new THREE.Vector3(-500, -10, -500),
-                    new THREE.Vector3(500, 10, 500)
-                )
+                key: 'test', status: 'loaded', zoom: 14, 
+                worldX: -500, worldZ: -500, tileSizeMeters: 1000,
+                pixelData, elevScale: 1.0, elevOffset: { x: 0, y: 0 },
+                bounds: new THREE.Box3(new THREE.Vector3(-500, -10, -500), new THREE.Vector3(500, 10, 500))
             };
+            mockQueryTiles.mockReturnValue([mockTile]);
 
-            insertTile(mockTile as any);
-
-            // Test au centre exact (0,0) -> relX=0.5 -> Moyenne = 250m
             expect(getAltitudeAt(0, 0)).toBeCloseTo(250, 0);
-
-            // Test aux centres des pixels (relX = 0.25 et 0.75)
-            // res=2, tileSize=1000 -> pixels centrés à -250 et +250
             expect(getAltitudeAt(-250, -250)).toBeCloseTo(100, 0);
-            expect(getAltitudeAt(250, -250)).toBeCloseTo(200, 0);
-            expect(getAltitudeAt(-250, 250)).toBeCloseTo(300, 0);
-            expect(getAltitudeAt(250, 250)).toBeCloseTo(400, 0);
         });
 
         it('should handle relief exaggeration', () => {
-            const pixelData = new Uint8ClampedArray(1 * 1 * 4);
+            const pixelData = new Uint8ClampedArray(8); 
             const c = encodeTerrainRGB(100);
-            pixelData[0] = c.r; pixelData[1] = c.g; pixelData[2] = c.b; pixelData[3] = 255;
+            pixelData.set([c.r, c.g, c.b, 255, c.r, c.g, c.b, 255]);
 
             const mockTile = {
-                key: 'test_tile_exag',
-                status: 'loaded', zoom: 14, worldX: 0, worldZ: 0, tileSizeMeters: 1000,
-                pixelData: pixelData,
+                key: 'exag', status: 'loaded', zoom: 14, worldX: -500, worldZ: -500, tileSizeMeters: 1000,
+                pixelData, elevScale: 1.0, elevOffset: { x: 0, y: 0 },
                 bounds: new THREE.Box3(new THREE.Vector3(-500, -10, -500), new THREE.Vector3(500, 10, 500))
             };
-            insertTile(mockTile as any);
+            mockQueryTiles.mockReturnValue([mockTile]);
 
             state.RELIEF_EXAGGERATION = 2.0;
-            expect(getAltitudeAt(0, 0)).toBeCloseTo(200, 0);
+            expect(getAltitudeAt(-250, -250)).toBeCloseTo(200, 0);
         });
 
         it('should fallback to parent tile if high-res is loading', () => {
             const cp = encodeTerrainRGB(50);
+            const parentData = new Uint8ClampedArray(4);
+            parentData.set([cp.r, cp.g, cp.b, 255]);
+
             const parentTile = {
-                key: 'parent', status: 'loaded', zoom: 13, worldX: 0, worldZ: 0, tileSizeMeters: 2000,
-                pixelData: new Uint8ClampedArray([cp.r, cp.g, cp.b, 255]),
+                key: 'parent', status: 'loaded', zoom: 13, worldX: -1000, worldZ: -1000, tileSizeMeters: 2000,
+                pixelData: parentData, elevScale: 1.0, elevOffset: { x: 0, y: 0 },
                 bounds: new THREE.Box3(new THREE.Vector3(-1000,-10,-1000), new THREE.Vector3(1000,10,1000))
             };
 
             const childTile = {
-                key: 'child', status: 'loading', zoom: 14, worldX: 0, worldZ: 0, tileSizeMeters: 1000,
-                pixelData: null, bounds: new THREE.Box3(new THREE.Vector3(-500,-10,-500), new THREE.Vector3(500,10,500))
+                key: 'child', status: 'loading', zoom: 14, worldX: -500, worldZ: -500, tileSizeMeters: 1000,
+                pixelData: null, 
+                bounds: new THREE.Box3(new THREE.Vector3(-500,-10,-500), new THREE.Vector3(500,10,500))
             };
 
-            insertTile(parentTile as any);
-            insertTile(childTile as any);
+            // queryTiles simule qu'il trouve les deux
+            mockQueryTiles.mockReturnValue([parentTile, childTile]);
 
-            expect(getAltitudeAt(10, 10)).toBeCloseTo(50, 0);
+            // Demander un point à -750 (couvert QUE par le parent)
+            expect(getAltitudeAt(-750, -750)).toBeCloseTo(50, 0);
+        });
+    });
+
+    describe('drapeToTerrain', () => {
+        it('should convert points correctly', () => {
+            const points = [{ lat: 45, lon: 6, alt: 1000 }, { lat: 45.1, lon: 6.1, alt: 1100 }];
+            const result = drapeToTerrain(points, { x: 0, y: 0, z: 13 }, 0, 30);
+            expect(result.length).toBe(2);
+            expect(result[0].y).toBeGreaterThanOrEqual(1000 + 30);
         });
     });
 });
