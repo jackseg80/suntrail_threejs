@@ -4,10 +4,15 @@ import { state } from '../state';
 import * as THREE from 'three';
 
 // Mocks minimaux conformes TS
-vi.mock('../analysis', () => ({
-    getAltitudeAt: vi.fn().mockReturnValue(100),
-    findTerrainIntersection: vi.fn()
-}));
+vi.mock('../analysis', async (importOriginal) => {
+    const actual = await importOriginal<any>();
+    return {
+        ...actual,
+        getAltitudeAt: vi.fn().mockReturnValue(100),
+        findTerrainIntersection: vi.fn(),
+        drapeToTerrain: vi.fn().mockReturnValue([])
+    };
+});
 
 vi.mock('../geo', () => ({
     lngLatToWorld: vi.fn(() => new THREE.Vector3(0, 0, 0)),

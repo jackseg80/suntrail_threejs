@@ -9,6 +9,7 @@
  */
 
 import { i18n } from '../i18n/I18nService';
+import { haptic } from './haptics';
 
 const ONBOARDING_KEY = 'suntrail_onboarding_v2';
 
@@ -380,13 +381,18 @@ function _show(resolve: () => void): void {
     // Button handlers
     nextBtn.addEventListener('click', () => {
         if (currentSlide === SLIDES.length - 1) {
+            void haptic('medium');
             close();
         } else {
             currentSlide++;
+            void haptic('light');
             renderSlide(true, 'left');
         }
     });
-    skipBtn.addEventListener('click', close);
+    skipBtn.addEventListener('click', () => {
+        void haptic('light');
+        close();
+    });
 
     // Swipe handling
     let pointerStartX = 0;
