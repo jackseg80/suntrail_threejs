@@ -393,7 +393,11 @@
       "twilight": "🌌 Crépuscule",
       "night": "🌙 Nuit"
     },
-    "status": { "done": "Analyse terminée" },
+    "status": {
+      "done": "Analyse terminée",
+      "calculating": "Localisation en cours..."
+    },
+
     "section": {
       "dayData": "Données du jour",
       "realtime": "Temps réel"

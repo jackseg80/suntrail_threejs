@@ -356,7 +356,7 @@ export class WeatherSheet extends BaseComponent {
 
         if (!wd) return;
 
-        // Header
+        // Header (v5.30.1 : Affichage du lieu)
         const locName = wd.locationName || i18n.t('weather.mountain.title');
         const locHeader = document.createElement('div');
         locHeader.className = 'weather-location-name';

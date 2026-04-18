@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.30.2] - 2026-04-18
+### Fixed
+- **Analyse Solaire (UI Fix)** : Correction du titre de localisation qui affichait la clé de traduction brute au lieu du nom du lieu.
+- **I18n** : Ajout des clés de traduction manquantes pour les états de chargement de l'analyse solaire en français.
+
 ## [5.30.1] - 2026-04-18
 ### Fixed
 - **Altitude 3D (0m fix)** : Correction d'un bug où le clic sur la carte renvoyait parfois une altitude de 0m. Amélioration de la recherche de données d'élévation (fallback sur les tuiles parentes chargées) et ajustement du Raycaster terrain.
