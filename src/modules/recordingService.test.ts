@@ -37,7 +37,6 @@ vi.mock('./location', () => ({ startLocationTracking: vi.fn(), isWatchActive: vi
 
 import { state } from './state';
 import { recordingService } from './recordingService';
-import { requestGPSDisclosure } from './gpsDisclosure';
 
 describe('RecordingService (v5.29.36)', () => {
     beforeEach(() => {

@@ -7,15 +7,12 @@ import { showUpgradePrompt } from '../../iap';
 import { haptic } from '../../haptics';
 import { i18n } from '../../../i18n/I18nService';
 import { clearInterruptedRecording, stopRecordingService } from '../../foregroundService';
-import { nativeGPSService } from '../../nativeGPSService';
-import { updateVisibleTiles, addGPXLayer, removeGPXLayer, toggleGPXLayer, updateRecordedTrackMesh } from '../../terrain';
-import { lngLatToTile, lngLatToWorld } from '../../geo';
+import { removeGPXLayer, toggleGPXLayer, updateRecordedTrackMesh } from '../../terrain';
+import { lngLatToWorld } from '../../geo';
 import { updateElevationProfile } from '../../profile';
 import { eventBus } from '../../eventBus';
 import { Capacitor } from '@capacitor/core';
-import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { calculateTrackStats } from '../../geoStats';
-import { getPlaceName } from '../../geocodingService';
 import { recordingService } from '../../recordingService';
 import { gpxService } from '../../gpxService';
 
@@ -432,9 +429,8 @@ export class TrackSheet extends BaseComponent {
                 const layer = state.gpxLayers.find(l => l.id === id);
                 if (!layer || !layer.rawData) return;
                 
-                // v5.29.36 : Logic extracted to gpxService and recordingService
                 const gpxString = gpxService.buildGPXStringFromLayer(layer);
-                await recordingService.saveToFile(layer.name);
+                await recordingService.saveToFile(layer.name, gpxString);
             });
         });
 
@@ -569,7 +565,34 @@ export class TrackSheet extends BaseComponent {
     }
 
     private showPostRecUpsell(): void {
-        // ...
+        document.getElementById('rec-upsell-banner')?.remove();
+        const banner = document.createElement('div');
+        banner.id = 'rec-upsell-banner';
+        banner.className = 'rec-upsell-banner';
+        banner.style.cssText = 'display:flex; align-items:center; gap:var(--space-2); padding:var(--space-3); margin-top:var(--space-3); background:rgba(var(--accent-rgb,59,126,248),0.12); border:1px solid rgba(var(--accent-rgb,59,126,248),0.3); border-radius:var(--radius-md); font-size:12px; color:var(--text-2);';
+        
+        const text = document.createElement('span');
+        text.style.cssText = 'flex:1; min-width:0; overflow-wrap:break-word; word-break:break-word;';
+        text.textContent = i18n.t('track.upsell.postRec');
+        
+        const proBtn = document.createElement('button');
+        proBtn.className = 'btn-go solar-upsell-btn';
+        proBtn.style.cssText = 'flex-shrink:0; font-size:11px; padding:4px 10px;';
+        proBtn.textContent = i18n.t('track.upsell.proBtn');
+        proBtn.onclick = () => showUpgradePrompt('rec_stats');
+        
+        banner.appendChild(text);
+        banner.appendChild(proBtn);
+
+        if (isProActive()) {
+            const closeBtn = document.createElement('button');
+            closeBtn.setAttribute('aria-label', i18n.t('common.close'));
+            closeBtn.style.cssText = 'flex-shrink:0; background:none; border:none; color:var(--text-3); cursor:pointer; font-size:16px; line-height:1; padding:0 4px;';
+            closeBtn.textContent = '×';
+            closeBtn.onclick = () => banner.remove();
+            banner.appendChild(closeBtn);
+        }
+
         this.element?.appendChild(banner);
     }
 }

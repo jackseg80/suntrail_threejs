@@ -7,14 +7,13 @@
 
 import { state, isProActive } from './state';
 import { showToast } from './toast';
-import { startLocationTracking, isWatchActive } from './location';
-import { showUpgradePrompt } from './iap';
+import { startLocationTracking } from './location';
 import { haptic } from './haptics';
 import { i18n } from '../i18n/I18nService';
 import gpxParser from 'gpxparser';
 import { startRecordingService, stopRecordingService } from './foregroundService';
 import { nativeGPSService } from './nativeGPSService';
-import { addGPXLayer, updateRecordedTrackMesh } from './terrain';
+import { addGPXLayer } from './terrain';
 import { requestGPSDisclosure } from './gpsDisclosure';
 import { getPlaceName } from './geocodingService';
 import { Capacitor } from '@capacitor/core';
@@ -32,7 +31,8 @@ export class RecordingService {
         if (state.isRecording) {
             return await this.startRecording();
         } else {
-            return await this.stopRecording();
+            const name = await this.stopRecording();
+            return !!name;
         }
     }
 
@@ -159,10 +159,10 @@ export class RecordingService {
         return true;
     }
 
-    async saveToFile(customName: string): Promise<string | null> {
-        if (state.recordedPoints.length < 2) return null;
+    async saveToFile(customName: string, content?: string): Promise<string | null> {
+        if (!content && state.recordedPoints.length < 2) return null;
         
-        const gpx = this.buildGPXString(customName);
+        const gpx = content || this.buildGPXString(customName);
         const sanitizedName = customName.replace(/[/\\?%*:|"<>]/g, '-').replace(/\s+/g, '_');
         const filename = `${sanitizedName}-${Date.now()}.gpx`;
 

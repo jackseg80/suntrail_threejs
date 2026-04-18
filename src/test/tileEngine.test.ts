@@ -16,7 +16,7 @@ const mockTile = (key: string, visible = true) => ({
 
 import { state } from '../modules/state';
 import { activeTiles } from '../modules/terrain';
-import { loadQueue, buildQueue, addToLoadQueue, processLoadQueue, clearLoadQueue } from '../modules/terrain/tileQueue';
+import { loadQueue, addToLoadQueue, processLoadQueue, clearLoadQueue } from '../modules/terrain/tileQueue';
 
 describe('Terrain Engine - TileQueue & Robustness (v5.29.36)', () => {
     beforeEach(() => {
