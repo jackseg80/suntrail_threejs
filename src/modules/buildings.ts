@@ -30,20 +30,25 @@ const buildingMaterial2D = new THREE.MeshBasicMaterial({
 });
 
 /**
- * Charge les bâtiments 3D pour une tuile (v5.30.7)
+ * Charge les bâtiments 3D pour une tuile (v5.30.8)
  * Priorité : MapTiler (Vector Tiles) > OSM Overpass (Fallback)
  */
 export async function loadBuildingsForTile(tile: Tile) {
     if (!state.SHOW_BUILDINGS || tile.zoom < 14 || (tile.status as string) === 'disposed') return;
     
-    // Lock pour éviter les doublons et attendre que l'altitude soit prête
+    // v5.30.8 : Lock préventif IMMÉDIAT pour éviter les rafales de timeouts
     if (tile.buildingGroup || (tile as any)._loadingBuildings) return;
+    
+    (tile as any)._loadingBuildings = true;
+
+    // Si l'altitude n'est pas encore prête, on attend un peu mais le verrou est posé
     if (!tile.pixelData || tile.status !== 'loaded') {
-        setTimeout(() => loadBuildingsForTile(tile), 500);
+        setTimeout(() => {
+            (tile as any)._loadingBuildings = false; // Relâcher pour la prochaine tentative
+            loadBuildingsForTile(tile);
+        }, 500);
         return;
     }
-
-    (tile as any)._loadingBuildings = true;
 
     try {
         // --- PHASE 1 : MAPTILER (Vector Tiles) ---

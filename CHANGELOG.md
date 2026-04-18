@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.30.8] - 2026-04-18
+### Fixed
+- **Bâtiments 3D (Multiplication Height Fix)** : Correction d'une race condition dans le système de verrouillage des bâtiments. Le verrou est désormais posé AVANT les délais de chargement, empêchant les rafales de requêtes de créer des doublons empilés.
+
 ## [5.30.7] - 2026-04-18
 ### Fixed
 - **Bâtiments 3D (Z-Order & Multiplication)** : Correction d'un bug majeur où des milliers de bâtiments s'empilaient les uns sur les autres, saturant la VRAM et causant des ralentissements extrêmes. Mise en place d'un verrou de chargement par tuile.
