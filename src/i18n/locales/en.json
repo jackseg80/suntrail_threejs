@@ -266,7 +266,9 @@
       "downloadZone": "Download Zone"
     },
     "toast": {
-      "cacheCleared": "Cache cleared"
+      "cacheCleared": "Cache cleared",
+      "energySaverOn": "🔋 Eco Mode On (FPS limited)",
+      "energySaverOff": "⚡ Eco Mode Off"
     },
     "download": {
       "progress": "Loading {{percent}}%",
@@ -319,9 +321,18 @@
       "northAligned": "🧭 North aligned"
     }
   },
+  "peaks": {
+    "toast": {
+      "timeout": "Peaks server unavailable (Timeout)",
+      "error": "Error loading peaks"
+    }
+  },
   "weather": {
     "title": "Weather Bulletin",
     "noData": "No weather data",
+    "toast": {
+      "timeout": "Weather offline (Timeout)"
+    },
     "temp": "Temperature",
     "feelsLike": "Feels like",
     "humidity": "Humidity",

@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { state } from './state';
 import { fetchGeocoding } from './utils';
+import { i18n } from '../i18n/I18nService';
+import { showToast } from './toast';
 
 let weatherPoints: THREE.Points | null = null;
 let weatherMaterial: THREE.ShaderMaterial | null = null;
@@ -173,14 +175,19 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
             state.weatherUnavailable = false;
         }
 
-    } catch (e) {
+    } catch (e: any) {
         // Gestion robuste des erreurs CORS et réseau
         const errorMsg = e instanceof Error ? e.message : 'Unknown error';
-        console.warn(`[Weather] Failed to fetch weather: ${errorMsg}`);
         
-        // Si c'est une erreur CORS ou réseau, on ne bloque pas l'app
-        if (errorMsg.includes('CORS') || errorMsg.includes('Failed to fetch') || errorMsg.includes('502') || errorMsg.includes('429')) {
-            console.warn('[Weather] CORS or network error - weather unavailable');
+        if (e.name === 'AbortError') {
+            console.warn(`[Weather] Timeout Weather API (5s)`);
+            showToast(i18n.t('weather.toast.timeout') || 'Météo hors-ligne (Délai dépassé)');
+        } else {
+            console.warn(`[Weather] Failed to fetch weather: ${errorMsg}`);
+            // Si c'est une erreur CORS ou réseau, on ne bloque pas l'app
+            if (errorMsg.includes('CORS') || errorMsg.includes('Failed to fetch') || errorMsg.includes('502') || errorMsg.includes('429')) {
+                console.warn('[Weather] CORS or network error - weather unavailable');
+            }
         }
         
         // ✅ Indiquer que la météo est indisponible pour afficher un message dans l'UI

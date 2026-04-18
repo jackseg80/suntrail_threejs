@@ -266,7 +266,9 @@
       "downloadZone": "Télécharger Zone"
     },
     "toast": {
-      "cacheCleared": "Cache vidé"
+      "cacheCleared": "Cache vidé",
+      "energySaverOn": "🔋 Mode Éco activé (FPS limités)",
+      "energySaverOff": "⚡ Mode Éco désactivé"
     },
     "download": {
       "progress": "Chargement {{percent}}%",
@@ -319,9 +321,18 @@
       "northAligned": "🧭 Nord réaligné"
     }
   },
+  "peaks": {
+    "toast": {
+      "timeout": "Serveur des sommets indisponible (Timeout)",
+      "error": "Erreur de chargement des sommets"
+    }
+  },
   "weather": {
     "title": "Bulletin Météo",
     "noData": "Aucune donnée météo",
+    "toast": {
+      "timeout": "Météo hors-ligne (Délai dépassé)"
+    },
     "temp": "Température",
     "feelsLike": "Ressenti",
     "humidity": "Humidité",

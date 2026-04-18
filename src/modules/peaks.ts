@@ -1,5 +1,7 @@
 import { state, Peak } from './state';
 import { haversineDistance } from './geo';
+import { showToast } from './toast';
+import { i18n } from '../i18n/I18nService';
 
 const CACHE_KEY = 'suntrail_peaks_cache';
 const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -24,7 +26,7 @@ export async function fetchLocalPeaks(lat: number, lon: number, radiusKm: number
             }
         }
 
-        // 2. Fetch from Overpass API
+        // 2. Fetch from Overpass API (with 5s timeout)
         const bbox = `
             ${lat - (radiusKm / 111)},
             ${lon - (radiusKm / (111 * Math.cos(lat * Math.PI / 180)))},
@@ -39,10 +41,16 @@ export async function fetchLocalPeaks(lat: number, lon: number, radiusKm: number
             out body;
         `;
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
         const response = await fetch('https://overpass-api.de/api/interpreter', {
             method: 'POST',
-            body: 'data=' + encodeURIComponent(query)
+            body: 'data=' + encodeURIComponent(query),
+            signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
 
         if (!response.ok) throw new Error('Overpass API error');
 
@@ -70,7 +78,13 @@ export async function fetchLocalPeaks(lat: number, lon: number, radiusKm: number
         };
         localStorage.setItem(CACHE_KEY, JSON.stringify(newCache));
 
-    } catch (error) {
-        console.error("Failed to fetch local peaks:", error);
+    } catch (error: any) {
+        if (error.name === 'AbortError') {
+            console.warn("[Peaks] Timeout Overpass API (5s)");
+            showToast(i18n.t('peaks.toast.timeout') || 'Serveur des sommets indisponible');
+        } else {
+            console.error("[Peaks] Failed to fetch local peaks:", error);
+            // On ne spamme pas de toast pour les erreurs silencieuses sauf si c'est persistant
+        }
     }
 }
