@@ -555,11 +555,21 @@ export class SolarProbeSheet extends BaseComponent {
                             this.updateUI(result);
                             sheetManager.open('solar-probe');
                             
-                            // v5.30.1 : Résolution asynchrone du nom du lieu pour l'analyse solaire
-                            const locName = await getPlaceName(result.gps.lat, result.gps.lon);
-                            if (locName) {
-                                const titleEl = document.getElementById('solar-location-title');
-                                if (titleEl) titleEl.textContent = locName;
+                            // v5.30.3 : Résolution robuste avec timeout de 3s
+                            const titleEl = document.getElementById('solar-location-title');
+                            const timer = setTimeout(() => {
+                                if (titleEl && titleEl.textContent?.includes('...')) {
+                                    titleEl.textContent = `${result.gps.lat.toFixed(4)}, ${result.gps.lon.toFixed(4)}`;
+                                }
+                            }, 3000);
+
+                            try {
+                                const locName = await getPlaceName(result.gps.lat, result.gps.lon);
+                                clearTimeout(timer);
+                                if (locName && titleEl) titleEl.textContent = locName;
+                                else if (titleEl) titleEl.textContent = `${result.gps.lat.toFixed(4)}, ${result.gps.lon.toFixed(4)}`;
+                            } catch (e) {
+                                if (titleEl) titleEl.textContent = `${result.gps.lat.toFixed(4)}, ${result.gps.lon.toFixed(4)}`;
                             }
                         }
                     } else {

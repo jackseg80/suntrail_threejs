@@ -16,63 +16,40 @@ export function getAltitudeAt(worldX: number, worldZ: number, hintTile: any = nu
     let tile = hintTile;
 
     if (!tile) {
-        if (lastUsedTile && lastUsedTile.status === 'loaded' && lastUsedTile.bounds && lastUsedTile.bounds.containsPoint(testPoint)) {
-            tile = lastUsedTile;
-        } else {
-            // O(1) spatial index lookup
-            const candidates = queryTiles(worldX, worldZ);
-            for (const t of candidates) {
-                // v5.30.1 : Priorité aux tuiles chargées avec données pixel
+        // v5.30.3 : Recherche multi-niveaux ultra-robuste
+        const candidates = queryTiles(worldX, worldZ);
+        
+        // 1. Chercher d'abord la tuile la plus précise (zoom max) ayant des données
+        for (const t of candidates) {
+            if (t.status === 'loaded' && t.pixelData && t.bounds && t.bounds.containsPoint(testPoint)) {
+                if (!tile || t.zoom > tile.zoom) tile = t;
+            }
+        }
+        
+        // 2. Si rien trouvé dans l'index spatial, scan complet des tuiles actives (plus lent mais sûr)
+        if (!tile) {
+            for (const t of activeTiles.values()) {
                 if (t.status === 'loaded' && t.pixelData && t.bounds && t.bounds.containsPoint(testPoint)) {
                     if (!tile || t.zoom > tile.zoom) tile = t;
                 }
             }
-            // Fallback to full scan
-            if (!tile) {
-                for (const t of activeTiles.values()) {
-                    if (t.status === 'loaded' && t.pixelData && t.bounds && t.bounds.containsPoint(testPoint)) {
-                        if (!tile || t.zoom > tile.zoom) tile = t;
-                    }
-                }
-            }
-            if (tile) lastUsedTile = tile;
         }
     }
 
     if (!tile || !tile.pixelData) return 0;
 
-    const res = Math.sqrt(tile.pixelData.length / 4);
-    let relX = (worldX - tile.worldX) / tile.tileSizeMeters + 0.5;
-    let relZ = (worldZ - tile.worldZ) / tile.tileSizeMeters + 0.5;
+    // Calcul de l'index dans le buffer 256x256
+    const b = tile.bounds;
+    const localX = (worldX - b.min.x) / (b.max.x - b.min.x);
+    const localZ = (worldZ - b.min.z) / (b.max.z - b.min.z);
 
-    if (tile.elevScale < 1.0) {
-        relX = tile.elevOffset.x + (relX * tile.elevScale);
-        relZ = tile.elevOffset.y + (relZ * tile.elevScale);
-    }
-
-    const fx = relX * res;
-    const fz = relZ * res;
-    const x0 = Math.floor(fx);
-    const z0 = Math.floor(fz);
-    const x1 = Math.min(x0 + 1, res - 1);
-    const z1 = Math.min(z0 + 1, res - 1);
-    const dx = fx - x0;
-    const dz = fz - z0;
-
-    const getH = (x: number, z: number) => {
-        const i = (Math.max(0, Math.min(res - 1, z)) * res + Math.max(0, Math.min(res - 1, x))) * 4;
-        const r = tile.pixelData[i];
-        const g = tile.pixelData[i+1];
-        const b = tile.pixelData[i+2];
-        return decodeTerrainRGB(r, g, b, state.RELIEF_EXAGGERATION);
-    };
-
-    const h00 = getH(x0, z0);
-    const h10 = getH(x1, z0);
-    const h01 = getH(x0, z1);
-    const h11 = getH(x1, z1);
-
-    return (h00 * (1 - dx) * (1 - dz) + h10 * dx * (1 - dz) + h01 * (1 - dx) * dz + h11 * dx * dz);
+    const px = Math.min(255, Math.max(0, Math.floor(localX * 255)));
+    const pz = Math.min(255, Math.max(0, Math.floor(localZ * 255)));
+    const idx = (pz * 256 + px);
+    
+    // Altitude brute (0..255) mappée sur l'échelle réelle (ex: 0..5000m)
+    const rawH = tile.pixelData[idx];
+    return rawH * tile.heightScale * state.RELIEF_EXAGGERATION;
 }
 
 export interface SolarAnalysisResult {
