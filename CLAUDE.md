@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.29.42)
+# SunTrail — Guide IA (v5.29.43)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-18 suite à la v5.29.42 (Munter Method GPX Fix).
+> Mis à jour le 2026-04-18 suite à la v5.29.43 (TrackSheet Stat Cards UI Fix).
 
 ## Projet
 

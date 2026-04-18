@@ -552,6 +552,21 @@ export class TrackSheet extends BaseComponent {
         dminusEl?.setAttribute('aria-live', 'polite');
         durationEl?.setAttribute('aria-live', 'polite');
 
+        // v5.29.41 : Priorité à l'affichage du calque actif si on n'enregistre pas
+        if (!state.isRecording && state.activeGPXLayerId) {
+            const activeLayer = state.gpxLayers.find(l => l.id === state.activeGPXLayerId);
+            if (activeLayer) {
+                const s = activeLayer.stats;
+                if (distEl) distEl.innerHTML = `${s.distance.toFixed(2)} <span class="trk-stat-unit">km</span>`;
+                if (dplusEl) dplusEl.innerHTML = `+${Math.round(s.dPlus)} <span class="trk-stat-unit-plain">m</span>`;
+                if (dminusEl) dminusEl.innerHTML = `−${Math.round(s.dMinus)} <span class="trk-stat-unit-plain">m</span>`;
+                if (pointsEl) pointsEl.textContent = s.pointCount.toString();
+                if (durationEl) durationEl.textContent = s.estimatedTime ? fmtDuration(s.estimatedTime) : '—';
+                return;
+            }
+        }
+
+        // Sinon, affichage des stats de l'enregistrement en cours
         if (pointsEl) pointsEl.textContent = state.recordedPoints.length.toString();
         
         if (state.recordedPoints.length < 2) {
