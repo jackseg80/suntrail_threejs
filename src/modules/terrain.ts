@@ -426,11 +426,12 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     }
     
     // ✅ Utiliser l'algorithme centralisé avec hystérésis (coherent avec TrackSheet)
-    const stats = calculateTrackStats(validPoints.map((p: any) => ({
+    const stats = calculateTrackStats(validPoints.map((p: any, i: number) => ({
         lat: p.lat,
         lon: p.lon,
         alt: p.ele !== undefined ? p.ele : (p.alt !== undefined ? p.alt : 0),
-        timestamp: p.time ? new Date(p.time).getTime() : 0
+        // v5.29.41 : Si pas de temps, mettre un index pour éviter le dédoublonnage temporel
+        timestamp: p.time ? new Date(p.time).getTime() : i * 1000 
     })));
 
     const box = new THREE.Box3();

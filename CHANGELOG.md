@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.29.42] - 2026-04-18
+### Fixed
+- **Temps Estimé GPX** : Correction d'un bug où les tracés importés sans horodatage (timestamps) affichaient une durée nulle. Ajout de marqueurs temporels fictifs incrémentaux lors de l'import pour permettre le calcul de la méthode Munter.
+
 ## [5.29.41] - 2026-04-18
 ### Added
 - **Méthode Munter** : Implémentation du calcul du temps de marche estimé basé sur la distance et le dénivelé (norme suisse : 1h = 4km horizontal ou 400m vertical).
