@@ -125,10 +125,14 @@ export function updateSunPosition(minutes: number): void {
         state.sunLight.intensity = sunIntensity;
         state.sunLight.color.copy(_sunColor);
 
-        // Shadow camera dynamique par RANGE — adapte le frustum au terrain visible (v5.16.9)
+        // Shadow camera dynamique par RANGE — adapte le frustum au terrain visible (v5.16.9, v5.31.1 tightened)
         if (state.SHADOWS && state.sunLight.shadow) {
             const tileSizeMeters = 40075000 / Math.pow(2, state.ZOOM);
-            const extent = Math.max(2000, Math.min(state.RANGE * tileSizeMeters * 0.8, 30000));
+            // v5.31.1 : Tighter per-preset caps to reduce GPU cost on mobile
+            const maxShadowExtent = state.PERFORMANCE_PRESET === 'balanced' ? 15000
+                : state.PERFORMANCE_PRESET === 'performance' ? 25000
+                : 30000; // ultra
+            const extent = Math.max(2000, Math.min(state.RANGE * tileSizeMeters * 0.8, maxShadowExtent));
             const cam = state.sunLight.shadow.camera;
             if (Math.abs(cam.right - extent) > 500) {
                 cam.left = -extent; cam.right = extent;

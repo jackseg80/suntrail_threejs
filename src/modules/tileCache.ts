@@ -61,19 +61,36 @@ export function getTileCacheKey(key: string, zoom: number): string {
 
 /**
  * Purge les données pixelData (RAM) des tuiles non prioritaires.
- * v5.29.31 : Optimisation majeure de la RAM.
+ * v5.31.1 : Purge agressive par preset — garde seulement les N plus récentes.
+ * eco/balanced: 10, performance: 30, ultra: 50
  */
 export function purgeOldPixelData(): void {
-    for (const [key, data] of dataCache.entries()) {
+    const preset = state.PERFORMANCE_PRESET;
+    const maxPixelData = preset === 'ultra' ? 50
+        : preset === 'performance' ? 30
+        : 10; // eco, balanced, custom
+    
+    // Collect active pixelData entries (keys of tiles currently on screen)
+    let keptCount = 0;
+    const entries = [...dataCache.entries()];
+    
+    // Pass 1: Keep pixelData for active tiles (currently visible)
+    for (const [key, data] of entries) {
+        if (data.pixelData && activeCacheKeys.has(key)) {
+            keptCount++;
+        }
+    }
+    
+    // Pass 2: For inactive tiles, purge pixelData keeping only the most recently used
+    // The BoundedCache is LRU, so entries at the end are most recent
+    for (const [key, data] of entries) {
         if (!data.pixelData) continue;
+        if (activeCacheKeys.has(key)) continue; // Always keep active tiles
         
-        // On ne purge QUE si la tuile n'est pas active (actuellement à l'écran)
-        // ET si elle n'est pas dans un zoom "haute précision" (LOD > 14)
-        if (!activeCacheKeys.has(key)) {
-            const isHighRes = key.includes('_z15') || key.includes('_z16') || key.includes('_z17') || key.includes('_z18');
-            if (!isHighRes) {
-                data.pixelData = null;
-            }
+        if (keptCount < maxPixelData) {
+            keptCount++;
+        } else {
+            data.pixelData = null;
         }
     }
 }

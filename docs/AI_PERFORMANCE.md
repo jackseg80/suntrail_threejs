@@ -22,6 +22,16 @@ Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 | **Shader pre-warming** | `scene.ts` | `renderer.compile(scene, camera)` called 200ms after init. Moves shader compilation cost from first interaction to startup. |
 | **Near plane** | `cameraManager.ts` | Kept at `near: 10` (not 50). Near=50 causes z-fighting at LOD 6 with the ground plane due to extreme near/far ratio (50/4M). |
 
+## 1c. Rendering Optimizations (v5.31.1 — Audit Vague 2)
+
+| Optimization | File | Description |
+| :--- | :--- | :--- |
+| **Aggressive pixelData purge** | `tileCache.ts` | LRU-based: keeps only N most recent pixelData (eco/balanced=10, performance=30, ultra=50). Frees ~15-20MB RAM on mobile. `getAltitudeAt()` falls back to 0 for purged tiles. |
+| **Shadow frustum per preset** | `scene.ts`, `sun.ts` | Balanced=15000m, Performance=25000m, Ultra=30000m max extent. `near=100`, `far=200000` (was near=1000, far=500000). Reduces shadow map GPU cost significantly on mobile. |
+| **Ground plane reduced** | `scene.ts` | 500km×500km → 100km×100km. Still covers viewport at LOD 6. Smaller bounding sphere improves frustum culling. |
+| **LOD logic unified** | `scene.ts` | Removed duplicated zoom-threshold if/else cascade (lines 286-298). Now uses `getIdealZoom()` exclusively with 5% hysteresis. |
+| **FogExp2** | `scene.ts` | Replaced `THREE.Fog(near, far)` with `THREE.FogExp2(density)`. Density adapts to altitude: `baseDensity * max(0.3, 1 - alt/400000)`. Fog slider UI updates density directly. More natural rendering, no per-frame near/far calculation. |
+
 ## 2. Navigation & GPS Logic
 
 | Constant | Value | File | Rationale |

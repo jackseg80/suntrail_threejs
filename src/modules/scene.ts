@@ -109,6 +109,10 @@ export async function disposeScene(): Promise<void> {
     currentThrottledSunUpdate = null;
 }
 
+function fogDensityFromFar(fogFar: number): number {
+    return 2.0 / Math.max(fogFar, 1000);
+}
+
 function getIdealZoom(dist: number, currentZoom: number = -1): number {
     const boost = state.MAP_SOURCE === 'satellite' ? 2.0
                 : state.MAP_SOURCE === 'swisstopo' ? 1.0
@@ -143,7 +147,7 @@ export async function initScene(): Promise<void> {
 
     state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, state.ZOOM);
     state.scene = new THREE.Scene();
-    state.scene.fog = new THREE.Fog(0x87CEEB, state.FOG_NEAR, state.FOG_FAR);
+    state.scene.fog = new THREE.FogExp2(0x87CEEB, fogDensityFromFar(state.FOG_FAR));
 
     const isMobile = window.innerWidth <= 768 || /Mobi|Android/i.test(navigator.userAgent);
     const useAntialias = !isMobile && state.PERFORMANCE_PRESET !== 'eco';
@@ -172,7 +176,7 @@ export async function initScene(): Promise<void> {
     state.scene.add(sky);
     state.sky = sky;
 
-    const groundGeo = new THREE.PlaneGeometry(500_000, 500_000);
+    const groundGeo = new THREE.PlaneGeometry(100_000, 100_000);
     groundGeo.rotateX(-Math.PI / 2);
     const groundMat = new THREE.MeshBasicMaterial({ color: 0x1a1a2e, fog: true, depthWrite: false });
     groundPlane = new THREE.Mesh(groundGeo, groundMat);
@@ -280,24 +284,7 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
         if (Math.abs(targetZoom - state.ZOOM) > 1) {
             newZoom = targetZoom;
         } else {
-            const boost = state.MAP_SOURCE === 'satellite' ? 2.0
-                        : state.MAP_SOURCE === 'swisstopo' ? 1.0
-                        : 1.2;
-            if (state.ZOOM === 13) { if (dist < 22000) newZoom = 14; else if (dist > 65000) newZoom = 12; }
-            else if (state.ZOOM === 14) { if (dist > 35000) newZoom = 13; else if (dist < 9000 * boost) newZoom = 15; }
-            else if (state.ZOOM === 15) { if (dist > 14000 * boost) newZoom = 14; else if (dist < 4000 * boost) newZoom = 16; }
-            else if (state.ZOOM === 16) { if (dist > 6000 * boost) newZoom = 15; else if (dist < 1800 * boost) newZoom = 17; }
-            else if (state.ZOOM === 17) { if (dist > 2500 * boost) newZoom = 16; else if (dist < 800 * boost) newZoom = 18; }
-            else if (state.ZOOM === 18) { if (dist > 1200 * boost) newZoom = 17; }
-            else if (state.ZOOM === 12) { if (dist < 45000) newZoom = 13; else if (dist > 120000) newZoom = 11; }
-            else if (state.ZOOM === 11) { if (dist < 90000) newZoom = 12; else if (dist > 250000) newZoom = 10; }
-            else if (state.ZOOM === 10) { if (dist < 180000) newZoom = 11; else if (dist > 500000) newZoom = 9; }
-            else if (state.ZOOM === 9)  { if (dist < 350000) newZoom = 10; else if (dist > 900000) newZoom = 8; }
-            else if (state.ZOOM === 8)  { if (dist < 700000) newZoom = 9;  else if (dist > 1600000) newZoom = 7; }
-            else if (state.ZOOM === 7)  { if (dist < 1200000) newZoom = 8; else if (dist > 2500000) newZoom = 6; }
-            else if (state.ZOOM <= 6)  { if (dist < 2000000) newZoom = 7; }
-            
-            if (newZoom > effectiveMaxZoom) newZoom = effectiveMaxZoom;
+            newZoom = targetZoom;
         }
 
         const currentZoom = state.ZOOM;
@@ -392,10 +379,11 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
     state.ambientLight = new THREE.AmbientLight(0xffffff, 0.2); state.scene.add(state.ambientLight);
     state.sunLight = new THREE.DirectionalLight(0xffffff, 6.0);
     state.sunLight.castShadow = state.SHADOWS;
-    state.sunLight.shadow.mapSize.set(2048, 2048);
-    state.sunLight.shadow.camera.left = -5000; state.sunLight.shadow.camera.right = 5000;
-    state.sunLight.shadow.camera.top = 5000; state.sunLight.shadow.camera.bottom = -5000;
-    state.sunLight.shadow.camera.near = 1000; state.sunLight.shadow.camera.far = 500000;
+    state.sunLight.shadow.mapSize.set(state.SHADOW_RES, state.SHADOW_RES);
+    // v5.31.1 : Tighter shadow frustum — dynamically adjusted in updateSunPosition()
+    state.sunLight.shadow.camera.left = -2500; state.sunLight.shadow.camera.right = 2500;
+    state.sunLight.shadow.camera.top = 2500; state.sunLight.shadow.camera.bottom = -2500;
+    state.sunLight.shadow.camera.near = 100; state.sunLight.shadow.camera.far = 200000;
     
     // v5.28.38 : Biais ajusté pour mobile (précision Z-buffer moindre)
     if (isMobile) {
@@ -649,10 +637,12 @@ function updateTerrainPhysics(interacting: boolean): void {
 
             updateTerrainPhysics(interacting);
 
-            if (state.scene.fog instanceof THREE.Fog) {
+            // v5.31.1 : FogExp2 — density adapts to altitude for natural fog
+            if (state.scene.fog instanceof THREE.FogExp2) {
                 const alt = state.camera.position.y;
-                state.scene.fog.near = (state.FOG_NEAR * 0.5) + (alt * 1.5); 
-                state.scene.fog.far = (state.FOG_FAR * 0.5) + (alt * 8.0);
+                const baseDensity = fogDensityFromFar(state.FOG_FAR);
+                const altFactor = Math.max(0.3, 1.0 - (alt / 400000));
+                state.scene.fog.density = baseDensity * altFactor;
             }
 
             state.renderer.render(state.scene, state.camera);

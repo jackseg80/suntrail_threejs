@@ -113,8 +113,8 @@ export class SettingsSheet extends BaseComponent {
                 state.FOG_FAR = parseFloat((e.target as HTMLInputElement).value) * 1000;
                 // ARIA: sync valuenow
                 fogSlider.setAttribute('aria-valuenow', (e.target as HTMLInputElement).value);
-                if (state.scene?.fog && state.scene.fog instanceof THREE.Fog) {
-                    state.scene.fog.far = state.FOG_FAR;
+                if (state.scene?.fog && state.scene.fog instanceof THREE.FogExp2) {
+                    state.scene.fog.density = 2.0 / Math.max(state.FOG_FAR, 1000);
                 }
             });
             fogSlider.addEventListener('change', () => saveSettings());
