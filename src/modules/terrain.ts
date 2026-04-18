@@ -11,10 +11,11 @@ import { insertTile, removeTile, clearIndex as clearSpatialIndex } from './tileS
 import { calculateTrackStats } from './geoStats';
 
 // Re-exports de la refactorisation
-export { Tile, terrainUniforms } from './terrain/Tile';
+export { Tile, terrainUniforms, sharedFrustum } from './terrain/Tile';
 export { loadQueue, processLoadQueue, clearLoadQueue, addToLoadQueue, removeFromLoadQueue } from './terrain/tileQueue';
 
 import { Tile } from './terrain/Tile';
+import { sharedFrustum } from './terrain/Tile';
 import { loadQueue, processLoadQueue, clearLoadQueue } from './terrain/tileQueue';
 
 export const activeTiles = new Map<string, Tile>(); 
@@ -255,6 +256,10 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
 
         const isCameraReady = Math.abs(state.camera.position.y) >= 1;
         if (isCameraReady) {
+            // v5.31 : Ensure camera matrices are current before frustum computation
+            state.camera.updateMatrixWorld();
+            const proj = new THREE.Matrix4().multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
+            sharedFrustum.setFromProjectionMatrix(proj);
             for (let dy = -range; dy <= range; dy++) {
                 for (let dx = -range; dx <= range; dx++) {
                     const tx = centerTile.x + dx; const ty = centerTile.y + dy;
@@ -263,7 +268,7 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
                     currentActiveKeys.add(key);
                     if (!activeTiles.has(key)) {
                         const tile = new Tile(tx, ty, zoom, key);
-                        if (tile.isVisible() || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) { 
+                        if (tile.isVisible(sharedFrustum) || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) { 
                             activeTiles.set(key, tile); 
                             insertTile(tile); 
                             loadQueue.add(tile); 

@@ -1,4 +1,4 @@
-# AI Performance & Constants Guide (v5.29.33)
+# AI Performance & Constants Guide (v5.31.1)
 
 Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 
@@ -10,6 +10,17 @@ Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 | `TILE_CACHE_SIZE` | 120 | `terrain.ts` | Number of tile textures kept in RAM. Balances fly-to speed and memory usage. |
 | `LOD_HYSTERESIS` | 0.05 (5%) | `Tile.ts` | Dead-zone for LOD switching. Prevents "flickering" between high/low res tiles. |
 | `ZOOM_CAP_FREE` | 14 | `Tile.ts` | Technical ceiling for free users. Forces upsell for high-res maps. |
+
+## 1b. Rendering Optimizations (v5.31.1 — Audit Vague 1)
+
+| Optimization | File | Description |
+| :--- | :--- | :--- |
+| **Frustum cache per frame** | `Tile.ts`, `scene.ts`, `terrain.ts` | `sharedFrustum` computed once per frame with `camera.updateMatrixWorld()`. Passed to `Tile.isVisible(frustum?)`. Eliminates ~81 mat4 multiplies/frame. |
+| **buildQueue O(1) dedup** | `tileQueue.ts` | `buildQueueKeys: Set<string>` parallel to `buildQueue[]`. Replaces `Array.includes()` O(n) with `Set.has()` O(1). |
+| **Frozen shadows during interaction** | `scene.ts` | `renderer.shadowMap.autoUpdate = !isUserInteracting` instead of toggling `sunLight.castShadow`. Prevents shader recompilation (USE_SHADOWMAP macro toggle) and visual flash. Shadows freeze in place during pan/zoom, then auto-update resumes. |
+| **Pre-allocated query vector** | `analysis.ts` | `_queryPoint` Vector3 reused across `getAltitudeAt()` calls. Eliminates per-call allocation in hot path (~5-10 calls/frame). |
+| **Shader pre-warming** | `scene.ts` | `renderer.compile(scene, camera)` called 200ms after init. Moves shader compilation cost from first interaction to startup. |
+| **Near plane** | `cameraManager.ts` | Kept at `near: 10` (not 50). Near=50 causes z-fighting at LOD 6 with the ground plane due to extreme near/far ratio (50/4M). |
 
 ## 2. Navigation & GPS Logic
 

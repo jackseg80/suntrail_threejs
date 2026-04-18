@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { state } from '../state';
 import type { Tile } from './Tile';
 import { activeTiles } from '../terrain';
@@ -5,32 +6,32 @@ import { activeTiles } from '../terrain';
 export let loadQueue: Set<Tile> = new Set<Tile>();
 let isProcessingQueue = false;
 
-// v5.29.31 : Budget de Montage de Textures pour lisser les micro-saccades
 export const buildQueue: Tile[] = [];
+const buildQueueKeys = new Set<string>();
 let isProcessingBuildQueue = false;
 
 export function queueBuildMesh(tile: Tile) {
     if (tile.status === 'disposed') return;
-    if (!buildQueue.includes(tile)) {
-        buildQueue.push(tile);
-    }
+    if (buildQueueKeys.has(tile.key)) return;
+    buildQueueKeys.add(tile.key);
+    buildQueue.push(tile);
     if (!isProcessingBuildQueue) {
         isProcessingBuildQueue = true;
-        state.isProcessingTiles = true; // v5.29.31 : Garder le moteur éveillé pendant le montage
+        state.isProcessingTiles = true;
         requestAnimationFrame(processBuildQueue);
     }
 }
 
 function processBuildQueue() {
-    const BUILD_BUDGET_MS = 10; // Augmenté à 10ms pour plus de réactivité
+    const BUILD_BUDGET_MS = 10;
     const start = performance.now();
     
-    // v5.29.31 : Traiter au moins une tuile par frame quoi qu'il arrive
     let first = true;
     while (buildQueue.length > 0 && (first || (performance.now() - start < BUILD_BUDGET_MS))) {
         first = false;
-        const tile = buildQueue.shift();
-        if (tile && tile.status !== 'disposed' && activeTiles.has(tile.key)) {
+        const tile = buildQueue.shift()!;
+        buildQueueKeys.delete(tile.key);
+        if (tile.status !== 'disposed' && activeTiles.has(tile.key)) {
             tile.buildMesh(state.RESOLUTION);
         }
     }
@@ -40,7 +41,6 @@ function processBuildQueue() {
         requestAnimationFrame(processBuildQueue);
     } else {
         isProcessingBuildQueue = false;
-        // On ne coupe isProcessingTiles que si la loadQueue est aussi vide
         if (loadQueue.size === 0) {
             state.isProcessingTiles = false;
         }
@@ -55,11 +55,17 @@ export async function processLoadQueue() {
     isProcessingQueue = true;
     state.isProcessingTiles = true;
     try {
+        let frameFrustum: THREE.Frustum | null = null;
+        if (state.camera && state.camera.projectionMatrix && state.camera.matrixWorldInverse) {
+            const proj = new THREE.Matrix4().multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
+            frameFrustum = new THREE.Frustum();
+            frameFrustum.setFromProjectionMatrix(proj);
+        }
         const visCache = new Map<Tile, boolean>();
         const isVis = (t: Tile) => { 
             let v = visCache.get(t); 
             if (v === undefined) { 
-                v = t.isVisible(); 
+                v = t.isVisible(frameFrustum ?? undefined); 
                 visCache.set(t, v); 
             } return v; 
         };
@@ -112,7 +118,8 @@ export async function processLoadQueue() {
 
 export function clearLoadQueue() {
     loadQueue.clear();
-    buildQueue.length = 0; // Vider également la file de montage en cas de changement majeur (LOD, Source)
+    buildQueue.length = 0;
+    buildQueueKeys.clear();
 }
 
 export function addToLoadQueue(tile: Tile) {
@@ -121,6 +128,7 @@ export function addToLoadQueue(tile: Tile) {
 
 export function removeFromLoadQueue(tile: Tile) {
     loadQueue.delete(tile);
+    buildQueueKeys.delete(tile.key);
     const index = buildQueue.indexOf(tile);
     if (index !== -1) buildQueue.splice(index, 1);
 }

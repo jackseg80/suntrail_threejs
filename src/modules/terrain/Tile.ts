@@ -13,7 +13,7 @@ import { materialPool } from '../materialPool';
 import { activeTiles } from '../terrain';
 import { removeFromLoadQueue, queueBuildMesh } from './tileQueue';
 
-const frustum = new THREE.Frustum();
+export const sharedFrustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
 
 const GHOST_FADE_MS = (window.innerWidth <= 768) ? 400 : 800; 
@@ -87,11 +87,12 @@ export class Tile {
         this.extendedBounds.copy(this.bounds).expandByScalar(this.tileSizeMeters * 0.2);
     }
 
-    public isVisible(): boolean {
+    public isVisible(precomputedFrustum?: THREE.Frustum): boolean {
         if (!state.camera) return true;
+        if (precomputedFrustum) return precomputedFrustum.intersectsBox(this.extendedBounds);
         projScreenMatrix.multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
-        frustum.setFromProjectionMatrix(projScreenMatrix);
-        return frustum.intersectsBox(this.extendedBounds);
+        sharedFrustum.setFromProjectionMatrix(projScreenMatrix);
+        return sharedFrustum.intersectsBox(this.extendedBounds);
     }
 
     public lngLatToLocal(lon: number, lat: number): THREE.Vector3 {

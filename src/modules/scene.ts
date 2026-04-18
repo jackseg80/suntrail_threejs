@@ -6,6 +6,7 @@ import { eventBus } from './eventBus';
 import { updateSunPosition } from './sun';
 import { getAltitudeAt, resetAnalysisCache } from './analysis';
 import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, resetTerrain, autoSelectMapSource, terrainUniforms, prefetchAdjacentLODs } from './terrain';
+import { sharedFrustum } from './terrain';
 import { disposeAllCachedTiles } from './tileCache';
 import { disposeAllGeometries } from './geometryCache';
 import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat, clampTargetToBounds } from './geo';
@@ -585,7 +586,10 @@ function updateTerrainPhysics(interacting: boolean): void {
         updateCompassAnimation();
 
         if (state.sunLight) {
-            state.sunLight.castShadow = state.SHADOWS && !state.isUserInteracting;
+            state.sunLight.castShadow = state.SHADOWS;
+            if (state.renderer) {
+                state.renderer.shadowMap.autoUpdate = !state.isUserInteracting;
+            }
         }
 
         const interacting = state.isUserInteracting;
@@ -594,6 +598,9 @@ function updateTerrainPhysics(interacting: boolean): void {
         // v5.29.6 : Persister la vue si on vient d'arrêter d'interagir
         if (!interacting && lastInteracting) {
             saveLastView();
+            if (state.renderer && state.SHADOWS) {
+                state.renderer.shadowMap.needsUpdate = true;
+            }
         }
         lastInteracting = interacting;
 
@@ -614,6 +621,13 @@ function updateTerrainPhysics(interacting: boolean): void {
             || tilesFading
             || needsInitialRender > 0
             || state.isFollowingUser;
+
+        // v5.31 : Pre-compute frustum once per frame for tile visibility
+        if (state.camera) {
+            state.camera.updateMatrixWorld();
+            const proj = new THREE.Matrix4().multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
+            sharedFrustum.setFromProjectionMatrix(proj);
+        }
 
         if (needsUpdate) {
             state.stats?.begin();
@@ -683,4 +697,11 @@ function updateTerrainPhysics(interacting: boolean): void {
     setTimeout(() => {
         void loadTerrain();
     }, 0);
+
+    // v5.31 : Pre-compile shaders to avoid first-frame stutter
+    setTimeout(() => {
+        if (state.renderer && state.scene && state.camera) {
+            try { state.renderer.compile(state.scene, state.camera); } catch (_) { /* silently ignore */ }
+        }
+    }, 200);
 }

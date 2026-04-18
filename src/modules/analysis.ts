@@ -6,30 +6,31 @@ import { queryTiles } from './tileSpatialIndex';
 import { worldToLngLat, lngLatToWorld, decodeTerrainRGB } from './geo';
 
 let lastUsedTile: any = null;
+const _queryPoint = new THREE.Vector3();
 
 export function resetAnalysisCache(): void {
     lastUsedTile = null;
 }
 
 export function getAltitudeAt(worldX: number, worldZ: number, hintTile: any = null): number {
-    const testPoint = new THREE.Vector3(worldX, 0, worldZ);
+    _queryPoint.set(worldX, 0, worldZ);
     let tile = hintTile;
 
     if (!tile) {
-        if (lastUsedTile && lastUsedTile.status === 'loaded' && lastUsedTile.bounds && lastUsedTile.bounds.containsPoint(testPoint)) {
+        if (lastUsedTile && lastUsedTile.status === 'loaded' && lastUsedTile.bounds && lastUsedTile.bounds.containsPoint(_queryPoint)) {
             tile = lastUsedTile;
         } else {
             // O(1) spatial index lookup instead of O(n) activeTiles iteration
             const candidates = queryTiles(worldX, worldZ);
             for (const t of candidates) {
-                if (t.status === 'loaded' && t.bounds && t.bounds.containsPoint(testPoint)) {
+                if (t.status === 'loaded' && t.bounds && t.bounds.containsPoint(_queryPoint)) {
                     if (!tile || t.zoom > tile.zoom) tile = t;
                 }
             }
             // Fallback to full scan if spatial index is empty (e.g. during init)
             if (!tile) {
                 for (const t of activeTiles.values()) {
-                    if (t.status === 'loaded' && t.bounds && t.bounds.containsPoint(testPoint)) {
+                    if (t.status === 'loaded' && t.bounds && t.bounds.containsPoint(_queryPoint)) {
                         if (!tile || t.zoom > tile.zoom) tile = t;
                     }
                 }
@@ -217,8 +218,11 @@ export function runSolarProbe(worldX: number, worldZ: number, altitude: number):
     };
 }
 
+const _rayPoint = new THREE.Vector3();
+
 export function isAtShadow(worldX: number, worldZ: number, altitude: number, sunPos: THREE.Vector3): boolean {
-    const ray = new THREE.Ray(new THREE.Vector3(worldX, altitude + 2, worldZ), sunPos.clone().normalize());
+    _rayPoint.set(worldX, altitude + 2, worldZ);
+    const ray = new THREE.Ray(_rayPoint.clone(), sunPos.clone().normalize());
     const hit = findTerrainIntersection(ray);
     return hit !== null;
 }
