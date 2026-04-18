@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.31.2] - 2026-04-18
+### Fixed
+- **Notification Robustesse** : Affichage forcé des statistiques même lorsqu'elles sont nulles (0.00 km, +0m) pour éviter les disparitions d'UI dans la notification Android.
+- **Réactivité Stats** : Augmentation de la fréquence de mise à jour des statistiques dans la notification (toutes les 10 secondes au lieu de 30).
+- **Traces & Logs** : Ajout de logs Android pour tracer la réception des statistiques depuis le JavaScript.
+
 ## [5.31.1] - 2026-04-18
 ### Fixed
 - **Notification Enregistrement** : Correction du bug affichant "0km" dans la notification persistante Android. La distance utilise désormais les unités correctes (km).

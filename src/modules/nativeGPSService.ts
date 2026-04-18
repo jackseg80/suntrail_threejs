@@ -1,5 +1,5 @@
 /**
- * nativeGPSService.ts — Interface avec le GPS natif Android (v5.24)
+ * nativeGPSService.ts — Interface avec le GPS natif Android (v5.31.2)
  * 
  * Ce service est le SEUL point de contact pour l'enregistrement GPS natif.
  * Le JS ne fait plus d'enregistrement autonome — il écoute uniquement les événements
@@ -343,7 +343,7 @@ class NativeGPSService {
             }
         });
 
-        // Intervalle de mise à jour des stats dans la notification (toutes les 30s)
+        // Intervalle de mise à jour des stats dans la notification (toutes les 10s)
         this.statsUpdateInterval = window.setInterval(() => {
             if (state.isRecording && state.recordedPoints.length >= 2) {
                 const stats = calculateTrackStats(state.recordedPoints);
@@ -353,7 +353,7 @@ class NativeGPSService {
                     elevationMinus: stats.dMinus
                 });
             }
-        }, 30000);
+        }, 10000);
     }
 
     /**
