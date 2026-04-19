@@ -81,7 +81,7 @@ export function rebuildActiveTiles(): void {
         if (is2D) {
             if (tile.forestMesh) { if (state.scene) state.scene.remove(tile.forestMesh); disposeObject(tile.forestMesh); tile.forestMesh = null; }
             if (tile.buildingGroup) { if (state.scene) state.scene.remove(tile.buildingGroup); disposeObject(tile.buildingGroup); tile.buildingGroup = null; }
-            if (tile.hydroGroup) { if (state.scene) state.scene.remove(tile.hydroGroup); disposeObject(tile.hydroGroup); tile.hydroGroup = null; }
+            if (tile.waterMaskTex) { tile.waterMaskTex.dispose(); tile.waterMaskTex = null; }
         }
 
         if (!is2D && !tile.pixelData && tile.zoom > 10) {

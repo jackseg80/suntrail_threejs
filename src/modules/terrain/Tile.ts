@@ -40,7 +40,7 @@ export class Tile {
     poiGroup: THREE.Group | null = null;
     buildingGroup: THREE.Group | null = null;
     buildingMesh: THREE.Mesh | null = null;
-    hydroGroup: THREE.Group | null = null;
+    waterMaskTex: THREE.Texture | null = null;
     currentResolution: number = -1;
     tileSizeMeters: number;
     opacity: number = 0;
@@ -79,7 +79,6 @@ export class Tile {
         if (this.forestMesh) this.forestMesh.position.set(this.worldX, yOffset, this.worldZ);
         if (this.poiGroup) this.poiGroup.position.set(this.worldX, yOffset, this.worldZ);
         if (this.buildingGroup) this.buildingGroup.position.set(this.worldX, yOffset, this.worldZ);
-        if (this.hydroGroup) this.hydroGroup.position.set(this.worldX, yOffset, this.worldZ);
         
         this.bounds.set(
             new THREE.Vector3(this.worldX - this.tileSizeMeters/2, -1000, this.worldZ - this.tileSizeMeters/2),
@@ -230,6 +229,8 @@ export class Tile {
             shader.uniforms.uColorOffset = { value: this.colorOffset };
             shader.uniforms.uColorScale = { value: this.colorScale };
             shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
+            shader.uniforms.uWaterMask = { value: this.waterMaskTex };
+            shader.uniforms.uHasWaterMask = { value: !!this.waterMaskTex };
 
             if (!shader.vertexShader.includes('vTrueNormal')) {
                 const sharedShaderChunk = `
@@ -249,9 +250,10 @@ export class Tile {
                 shader.vertexShader = `
                     #define IS_LIGHT ${isLight ? '1' : '0'}
                     #define IS_2D ${is2D ? '1' : '0'}
+                    varying vec2 vLocalUv;
                     ${shader.vertexShader}
                 `.replace('#include <common>', `#include <common>\nattribute float aSkirt;\nvarying vec3 vTrueNormal; varying vec2 vWorldXZ; uniform vec2 uColorOffset; uniform float uColorScale; uniform sampler2D uNormalMap; ${sharedShaderChunk}`)
-                 .replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);`);
+                 .replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);\nvLocalUv = uv;`);
 
                 if (is2D || isLight) {
                     shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\nobjectNormal = vec3(0.0,1.0,0.0); vTrueNormal = vec3(0.0,1.0,0.0);`);
@@ -277,37 +279,29 @@ export class Tile {
 
                 shader.fragmentShader = `
                     #define IS_2D ${is2D ? '1' : '0'}
+                    varying vec2 vLocalUv;
                     uniform sampler2D uOverlayMap; uniform bool uHasOverlay; uniform float uShowSlopes; uniform float uShowHydrology; uniform float uTime; varying vec3 vTrueNormal; varying vec2 vWorldXZ;
+                    uniform sampler2D uWaterMask; uniform bool uHasWaterMask;
                     ${shader.fragmentShader}
                 `.replace('#include <map_fragment>', `
                     #include <map_fragment>
+                    if (uHasOverlay) { vec4 oCol = texture2D(uOverlayMap, vMapUv); diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a); }
+
                     #if IS_2D == 0
-                    if (uShowHydrology > 0.5) {
-                        vec3 colorIn = diffuseColor.rgb;
-                        float blueVsRed = colorIn.b - colorIn.r;
-                        float maxColor = max(colorIn.r, max(colorIn.g, colorIn.b));
-                        float minColor = min(colorIn.r, min(colorIn.g, colorIn.b));
-                        float saturation = (maxColor > 0.0) ? (maxColor - minColor) / maxColor : 0.0;
-                        if (blueVsRed > 0.02 && vTrueNormal.y > 0.998 && saturation > 0.05) {
-                            float blueVsGreen = colorIn.b - colorIn.g;
-                            float isWater = smoothstep(0.02, 0.10, blueVsRed) * smoothstep(0.0, 0.06, blueVsGreen) * smoothstep(0.998, 1.0, vTrueNormal.y);
-                            float greenDominance = colorIn.g - max(colorIn.r, colorIn.b);
-                            isWater *= (1.0 - smoothstep(0.0, 0.1, greenDominance));
-                            float brightness = (colorIn.r + colorIn.g + colorIn.b) / 3.0;
-                            isWater *= (1.0 - smoothstep(0.8, 0.98, brightness) * (1.0 - smoothstep(0.1, 0.3, blueVsRed)));
-                            if (isWater > 0.05) {
-                                vec3 waterBlue = vec3(0.02, 0.18, 0.52);
-                                float t = uTime * 0.5;
-                                float w1 = sin(vWorldXZ.x * 0.002 + vWorldXZ.y * 0.0015 + t) * 0.5 + 0.5;
-                                float w2 = sin(vWorldXZ.x * 0.001 - vWorldXZ.y * 0.0025 + t * 0.6) * 0.5 + 0.5;
-                                float wave = mix(w1, w2, 0.4);
-                                diffuseColor.rgb = mix(colorIn, waterBlue, 0.65 * isWater);
-                                diffuseColor.rgb += vec3(0.2, 0.4, 0.7) * (wave - 0.5) * isWater * 0.4;
-                            }
+                    if (uShowHydrology > 0.5 && uHasWaterMask) {
+                        float isWater = texture2D(uWaterMask, vLocalUv).r;
+                        if (isWater > 0.5) {
+                            vec3 waterBlue = vec3(0.02, 0.18, 0.52);
+                            float t = uTime * 0.5;
+                            float w1 = sin(vWorldXZ.x * 0.002 + vWorldXZ.y * 0.0015 + t) * 0.5 + 0.5;
+                            float w2 = sin(vWorldXZ.x * 0.001 - vWorldXZ.y * 0.0025 + t * 0.6) * 0.5 + 0.5;
+                            float wave = mix(w1, w2, 0.4);
+                            diffuseColor.rgb = mix(diffuseColor.rgb, waterBlue, 0.65);
+                            diffuseColor.rgb += vec3(0.2, 0.4, 0.7) * (wave - 0.5) * 0.4;
                         }
                     }
                     #endif
-                    if (uHasOverlay) { vec4 oCol = texture2D(uOverlayMap, vMapUv); diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a); }
+
                     if (uShowSlopes > 0.5) {
                         float ny = clamp(normalize(vTrueNormal).y, 0.0, 1.0);
                         float yellowMix = smoothstep(0.8829, 0.8480, ny);
@@ -487,7 +481,6 @@ export class Tile {
         if (this.poiGroup) { if (state.scene) state.scene.remove(this.poiGroup); disposeObject(this.poiGroup); this.poiGroup = null; }
         if (this.buildingGroup) { if (state.scene) state.scene.remove(this.buildingGroup); disposeObject(this.buildingGroup); this.buildingGroup = null; }
         if (this.buildingMesh) { if (state.scene) state.scene.remove(this.buildingMesh); disposeObject(this.buildingMesh); this.buildingMesh = null; }
-        if (this.hydroGroup) { if (state.scene) state.scene.remove(this.hydroGroup); disposeObject(this.hydroGroup); this.hydroGroup = null; }
         this.pixelData = null;
     }
 }

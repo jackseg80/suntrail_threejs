@@ -1,225 +1,127 @@
 import * as THREE from 'three';
-import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { state } from './state';
 import { Tile } from './terrain/Tile';
-import { fetchOverpassData, isOverpassInBackoff } from './utils';
-import { getAltitudeAt } from './analysis';
-import { terrainUniforms } from './terrain';
-import { BoundedCache } from './boundedCache';
-
-const hydroMemoryCache = new BoundedCache<string, any[]>({ maxSize: 200 });
-const hydroFetchPromises = new Map<string, Promise<any[] | null>>();
-const zoneFailureCooldown = new Map<string, number>();
-const COOLDOWN_MAX_SIZE = 200;
-const CACHE_NAME = 'suntrail-hydro-v1';
-
-// Matériau partagé pour l'eau (Performance)
-const waterMaterial = new THREE.MeshStandardMaterial({
-    color: 0x0055bb,
-    transparent: true,
-    opacity: 0.5,
-    roughness: 0.05,
-    metalness: 0.6,
-    polygonOffset: true,
-    polygonOffsetFactor: -2,
-    polygonOffsetUnits: -2
-});
-
-// --- AJOUT DES ONDULATIONS DYNAMIQUES (v5.8.4) ---
-waterMaterial.onBeforeCompile = (shader) => {
-    shader.uniforms.uTime = terrainUniforms.uTime;
-        shader.vertexShader = `
-        uniform float uTime;
-        ${shader.vertexShader}
-    `.replace('#include <begin_vertex>', `
-        #include <begin_vertex>
-        // Rouleaux coordonnés entre les tuiles (coordonnées monde absolues)
-        // Amplitude réduite à ±0.8m max (vs ±3.7m avant) pour éviter les artéfacts
-        // shadow map aux LOD 17-18 où l'eau pénétrait le terrain (v5.11.1)
-        vec4 worldPos = modelMatrix * vec4(position, 1.0);
-        float t = uTime * 0.8;
-        float w1 = sin(worldPos.x * 0.002 + worldPos.z * 0.0015 + t) * 0.6;
-        float w2 = sin(worldPos.x * 0.001 - worldPos.z * 0.0025 + t * 0.7) * 0.3;
-        transformed.z += (w1 + w2); 
-    `);
-    
-    shader.fragmentShader = `
-        uniform float uTime;
-        ${shader.fragmentShader}
-    `.replace('#include <normal_fragment_maps>', `
-        #include <normal_fragment_maps>
-        // Scintillement des normales en lignes coordonné sur la vue
-        float t = uTime * 1.5;
-        // Basse fréquence (0.005) pour éviter le moiré
-        float ripple = sin(vViewPosition.x * 0.005 + vViewPosition.y * 0.003 + t);
-        ripple += sin(vViewPosition.x * 0.002 - vViewPosition.y * 0.006 + t * 0.8) * 0.5;
-        
-        vec3 rippleNormal = vec3(
-            ripple * 0.1,
-            1.0,
-            ripple * 0.08
-        );
-        normal = normalize(rippleNormal);
-    `);
-};
+import { fetchLandcoverPBF } from './landcover';
+import { isPositionInSwitzerland } from './geo';
 
 /**
- * Charge l'hydrologie 3D (Lacs et Rivières larges)
+ * Charge l'hydrologie via Vector Tiles PBF et génère un masque 2D de haute précision (v5.33.5)
+ * Cette approche "Texture Mask" résout tous les problèmes d'élévation, de découpage,
+ * de Z-fighting et de tesselation en appliquant l'eau directement dans le shader du terrain.
  */
 export async function loadHydrologyForTile(tile: Tile) {
-    if (!state.SHOW_HYDROLOGY || tile.zoom < 13 || (tile.status as string) === 'disposed') return;
-    if (tile.hydroGroup) return;
-
-    if (state.isUserInteracting) {
-        setTimeout(() => loadHydrologyForTile(tile), 1000);
-        return;
-    }
-
-    const zoneZ = 12;
-    const ratio = Math.pow(2, tile.zoom - zoneZ);
-    const zx = Math.floor(tile.tx / ratio);
-    const zy = Math.floor(tile.ty / ratio);
-    const zoneKey = `hydro_z${zoneZ}_${zx}_${zy}`;
-
-    const failTime = zoneFailureCooldown.get(zoneKey);
-    if (failTime && Date.now() < failTime) return;
-
-    // Pas la peine de lancer un fetch si Overpass est en backoff global
-    if (isOverpassInBackoff()) return;
-
-    let elements: any[] | null | undefined = hydroMemoryCache.get(zoneKey);
-
-    if (!elements) {
-        let promise = hydroFetchPromises.get(zoneKey);
-        if (!promise) {
-            promise = fetchHydroWithCache(zoneZ, zx, zy, zoneKey);
-            hydroFetchPromises.set(zoneKey, promise);
-        }
-        elements = await promise;
-        if (elements) {
-            hydroMemoryCache.set(zoneKey, elements);
-        } else {
-            // Purger les entrées expirées pour borner la taille du cache
-            if (zoneFailureCooldown.size > COOLDOWN_MAX_SIZE) {
-                const now = Date.now();
-                for (const [k, v] of zoneFailureCooldown) {
-                    if (now >= v) zoneFailureCooldown.delete(k);
-                }
-            }
-            zoneFailureCooldown.set(zoneKey, Date.now() + 60000);
-        }
-        hydroFetchPromises.delete(zoneKey);
-    }
-
-    if (!elements || elements.length === 0 || (tile.status as string) === 'disposed') return;
-
-    const bounds = tile.getBounds();
+    if (!state.SHOW_HYDROLOGY || tile.zoom < 14 || (tile.status as string) === 'disposed') return;
     
-    const tileHydro = elements.filter(el => {
-        if (!el.geometry || el.geometry.length === 0) return false;
-        const lat = el.geometry[0].lat;
-        const lon = el.geometry[0].lon;
-        return lat <= bounds.north && lat >= bounds.south && lon <= bounds.east && lon >= bounds.west;
-    });
+    // Si la texture est déjà générée ou en cours pour cette tuile, on ignore.
+    if (tile.waterMaskTex) return;
 
-    if (tileHydro.length > 0) {
-        renderHydrology(tile, tileHydro);
-    }
+    const landcover = await fetchLandcoverPBF(tile);
+    if (!landcover || !landcover.water || landcover.water.length === 0 || (tile.status as string) === 'disposed') return;
+
+    renderHydrologyMask(tile, landcover.water);
 }
 
-async function fetchHydroWithCache(z: number, x: number, y: number, key: string): Promise<any[] | null> {
-    try {
-        const cache = await caches.open(CACHE_NAME);
-        const cached = await cache.match(key);
-        if (cached) return await cached.json();
-    } catch (e) { console.warn('[Hydrology] Cache read failed, proceeding without cache:', e); }
-
-    const n = Math.pow(2, z);
-    const w = x / n * 360 - 180;
-    const e = (x + 1) / n * 360 - 180;
-    const latNorth = Math.atan(Math.sinh(Math.PI * (1 - 2 * y / n))) * 180 / Math.PI;
-    const latSouth = Math.atan(Math.sinh(Math.PI * (1 - 2 * (y + 1) / n))) * 180 / Math.PI;
-
-    // On cherche les lacs (natural=water) et les larges rivières (waterway=riverbank)
-    const query = `[out:json][timeout:25];(way["natural"="water"](${latSouth.toFixed(4)},${w.toFixed(4)},${latNorth.toFixed(4)},${e.toFixed(4)});way["waterway"~"riverbank|dock"](${latSouth.toFixed(4)},${w.toFixed(4)},${latNorth.toFixed(4)},${e.toFixed(4)}););out body geom;`;
-    
-    const data = await fetchOverpassData(query);
-    if (data && data.elements) {
-        try {
-            const cache = await caches.open(CACHE_NAME);
-            await cache.put(key, new Response(JSON.stringify(data.elements)));
-        } catch(e) { console.warn('[Hydrology] Cache write failed silently:', e); }
-        return data.elements;
-    }
-    return null;
-}
-
-function renderHydrology(tile: Tile, elements: any[]) {
+function renderHydrologyMask(tile: Tile, waterFeatures: any[]) {
     if ((tile.status as string) === 'disposed' || !tile.mesh) return;
 
-    const group = new THREE.Group();
-    const geometries: THREE.BufferGeometry[] = [];
+    const nTile = Math.pow(2, tile.zoom);
+    const lonTileCenter = (tile.tx + 0.5) / nTile * 360 - 180;
+    const latRadTileCenter = Math.atan(Math.sinh(Math.PI * (1 - 2 * (tile.ty + 0.5) / nTile)));
+    const latTileCenter = latRadTileCenter * 180 / Math.PI;
+    const inCH = isPositionInSwitzerland(latTileCenter, lonTileCenter);
 
-    elements.forEach(el => {
-        if (el.type === 'way' && el.geometry && el.geometry.length > 2) {
-            const points: THREE.Vector2[] = [];
-            let avgX = 0, avgZ = 0;
+    const requestZoom = inCH ? 12 : 10;
+    const ratio = Math.pow(2, tile.zoom - requestZoom);
+    const rtx = Math.floor(tile.tx / ratio);
+    const rty = Math.floor(tile.ty / ratio);
 
-            el.geometry.forEach((p: any) => {
-                const localPos = tile.lngLatToLocal(p.lon, p.lat);
-                points.push(new THREE.Vector2(localPos.x, -localPos.z));
-                avgX += localPos.x;
-                avgZ += localPos.z;
-            });
-            avgX /= el.geometry.length;
-            avgZ /= el.geometry.length;
+    const MASK_SIZE = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = MASK_SIZE;
+    canvas.height = MASK_SIZE;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-            try {
-                const shape = new THREE.Shape(points);
-                const shapeGeo = new THREE.ShapeGeometry(shape);
+    // Fond noir (pas d'eau)
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, MASK_SIZE, MASK_SIZE);
+    
+    // Polygones blancs (eau)
+    ctx.fillStyle = '#FFF';
 
-                // Détection de l'altitude : On échantillonne le terrain au centre de l'objet d'eau
-                const worldX = tile.worldX + avgX;
-                const worldZ = tile.worldZ + avgZ;
-                const baseAlt = getAltitudeAt(worldX, worldZ, tile);
+    let drawn = false;
 
-                // Appliquer la rotation X et la translation Y directement dans la géométrie
-                // pour pouvoir merger toutes les géométries en un seul mesh
-                const matrix = new THREE.Matrix4()
-                    .makeRotationX(-Math.PI / 2)
-                    .setPosition(0, baseAlt + 2.0, 0);
-                shapeGeo.applyMatrix4(matrix);
+    waterFeatures.forEach(feat => {
+        if (feat.type !== 3) return;
 
-                geometries.push(shapeGeo);
-            } catch (e) { console.warn('[Hydrology] Water mesh creation failed silently:', e); }
+        const rings = feat.geometry;
+        if (!rings || rings.length === 0) return;
+        
+        const extent = feat.extent || 4096;
+        const bbox = feat.bbox;
+
+        // v5.33.6 : Filtrage spatial ultra-rapide (Bounding Box)
+        // On évite de boucler sur les milliers de points si le polygone est hors de la tuile Z14
+        if (bbox) {
+            const ratio = Math.pow(2, tile.zoom - requestZoom);
+            const tileMinX = (tile.tx % ratio) * (extent / ratio);
+            const tileMaxX = tileMinX + (extent / ratio);
+            const tileMinY = (tile.ty % ratio) * (extent / ratio);
+            const tileMaxY = tileMinY + (extent / ratio);
+
+            // Si la BBox du polygone ne touche pas la tuile Z14, on skip
+            if (bbox.maxX < tileMinX || bbox.minX > tileMaxX || bbox.maxY < tileMinY || bbox.minY > tileMaxY) {
+                return;
+            }
         }
+
+        ctx.beginPath();
+        rings.forEach((ring: any[]) => {
+            ring.forEach((p: any, i: number) => {
+                const nPBF = Math.pow(2, requestZoom);
+                const lng = (rtx + p.x / extent) / nPBF * 360 - 180;
+                const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (rty + p.y / extent) / nPBF)));
+                const lat = latRad * 180 / Math.PI;
+
+                const localPos = tile.lngLatToLocal(lng, lat);
+                
+                // Projection sur le canvas 256x256
+                // localPos.x va de -tileSizeMeters/2 à +tileSizeMeters/2 (Ouest -> Est)
+                // localPos.z va de -tileSizeMeters/2 à +tileSizeMeters/2 (Nord -> Sud)
+                const px = (localPos.x / tile.tileSizeMeters + 0.5) * MASK_SIZE;
+                const py = (localPos.z / tile.tileSizeMeters + 0.5) * MASK_SIZE;
+                
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            });
+            ctx.closePath();
+        });
+        
+        // 'evenodd' gère parfaitement et automatiquement les îles (trous) dans les multipolygones
+        ctx.fill('evenodd');
+        drawn = true;
     });
 
-    if (geometries.length > 0) {
-        try {
-            const merged = BufferGeometryUtils.mergeGeometries(geometries);
-            const mesh = new THREE.Mesh(merged, waterMaterial);
-            mesh.receiveShadow = true;
-            group.add(mesh);
-        } catch (e) {
-            // Fallback : si le merge échoue, ajouter les géométries individuellement
-            geometries.forEach(geo => {
-                const mesh = new THREE.Mesh(geo, waterMaterial);
-                mesh.receiveShadow = true;
-                group.add(mesh);
-            });
-        } finally {
-            geometries.forEach(g => g.dispose());
-        }
-    }
+    if (drawn) {
+        const waterTex = new THREE.CanvasTexture(canvas);
+        waterTex.flipY = false; // Essentiel : aligne l'orientation UV avec la géométrie du terrain
+        waterTex.generateMipmaps = false;
+        // LinearFilter permet des bords de lacs/rivières adoucis
+        waterTex.minFilter = THREE.LinearFilter;
+        waterTex.magFilter = THREE.LinearFilter;
+        // Clamp pour éviter que l'eau ne "fuite" sur le bord opposé
+        waterTex.wrapS = THREE.ClampToEdgeWrapping;
+        waterTex.wrapT = THREE.ClampToEdgeWrapping;
+        
+        tile.waterMaskTex = waterTex;
 
-    if (group.children.length > 0) {
-        // v5.28.1 : Mandat - PAS de hierarchy attachment (scene.add)
-        if (tile.hydroGroup && state.scene) state.scene.remove(tile.hydroGroup);
-        
-        tile.hydroGroup = group;
-        tile.hydroGroup.position.set(tile.worldX, 0, tile.worldZ);
-        
-        if (state.scene) state.scene.add(tile.hydroGroup);
+        // Mise à jour immédiate du shader de terrain s'il est déjà compilé
+        if (tile.mesh && tile.mesh.material) {
+            const shader = (tile.mesh.material as any).userData.shader;
+            if (shader) {
+                shader.uniforms.uWaterMask.value = waterTex;
+                shader.uniforms.uHasWaterMask.value = true;
+            }
+        }
     }
 }

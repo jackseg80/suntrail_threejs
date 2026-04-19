@@ -3,34 +3,22 @@ import * as THREE from 'three';
 import { loadHydrologyForTile } from './hydrology';
 import { state } from './state';
 import { Tile } from './terrain';
-import { fetchOverpassData } from './utils';
-
-// Mock global caches API
-(global as any).caches = {
-    open: vi.fn().mockResolvedValue({
-        match: vi.fn().mockResolvedValue(null),
-        put: vi.fn().mockResolvedValue(undefined)
-    })
-};
+import { fetchLandcoverPBF } from './landcover';
 
 // Mocks
 vi.mock('./analysis', () => ({
     getAltitudeAt: vi.fn(() => 1000)
 }));
 
-vi.mock('./utils', () => ({
-    fetchOverpassData: vi.fn(),
-    isOverpassInBackoff: vi.fn(() => false)
+vi.mock('./landcover', () => ({
+    fetchLandcoverPBF: vi.fn()
 }));
 
-vi.mock('./boundedCache', () => ({
-    BoundedCache: class {
-        get = vi.fn();
-        set = vi.fn();
-        has = vi.fn();
-        clear = vi.fn();
-    },
-    boundedCacheSet: vi.fn()
+vi.mock('./geo', () => ({
+    isPositionInSwitzerland: vi.fn(() => true),
+    decodeTerrainRGB: vi.fn(() => 0),
+    getTileBounds: vi.fn(() => ({ north: 90, south: -90, east: 180, west: -180 })),
+    EARTH_CIRCUMFERENCE: 40075016.686
 }));
 
 describe('Hydrology Integration', () => {
@@ -38,46 +26,44 @@ describe('Hydrology Integration', () => {
         vi.clearAllMocks();
         state.SHOW_HYDROLOGY = true;
         state.isUserInteracting = false;
+        state.originTile = { x: 0, y: 0, z: 0 };
     });
 
-    it('should load hydrology from Overpass and add it to tile', async () => {
+    it('should load hydrology from PBF and add it to tile', async () => {
         const tile = new Tile(0, 0, 14, '14/0/0');
         tile.mesh = new THREE.Mesh();
         tile.status = 'loaded';
 
-        // Mock Overpass Response (a small lake)
-        (fetchOverpassData as any).mockResolvedValue({
-            elements: [
+        // Mock PBF Data
+        (fetchLandcoverPBF as any).mockResolvedValue({
+            forests: [],
+            water: [
                 {
-                    type: 'way',
-                    id: 100,
+                    type: 3, // Polygon
                     geometry: [
-                        { lat: 46.5, lon: 7.5 },
-                        { lat: 46.501, lon: 7.5 },
-                        { lat: 46.501, lon: 7.501 },
-                        { lat: 46.5, lon: 7.501 },
-                        { lat: 46.5, lon: 7.5 }
+                        [
+                            { x: 1000, y: 1000 },
+                            { x: 2000, y: 1000 },
+                            { x: 2000, y: 2000 },
+                            { x: 1000, y: 2000 },
+                            { x: 1000, y: 1000 }
+                        ]
                     ],
-                    tags: { natural: 'water' }
+                    extent: 4096,
+                    bbox: { minX: 1000, maxX: 2000, minY: 1000, maxY: 2000 },
+                    properties: { class: 'lake' }
                 }
             ]
         });
 
-        // Mock tile bounds and coordinate conversion
-        vi.spyOn(tile, 'getBounds').mockReturnValue({
-            north: 46.6, south: 46.4, east: 7.6, west: 7.4
-        });
-        
         tile.lngLatToLocal = vi.fn().mockReturnValue({ x: 10, z: 10 });
         tile.worldX = 1000;
         tile.worldZ = 1000;
 
         await loadHydrologyForTile(tile);
 
-        expect(fetchOverpassData).toHaveBeenCalled();
-        expect(tile.hydroGroup).toBeDefined();
-        if (tile.hydroGroup) {
-            expect(tile.hydroGroup.children.length).toBeGreaterThan(0);
-        }
+        expect(fetchLandcoverPBF).toHaveBeenCalled();
+        expect(tile.waterMaskTex).toBeDefined();
+        expect(tile.waterMaskTex).not.toBeNull();
     });
 });

@@ -5,6 +5,21 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.34.0] - 2026-04-19
+### Added
+- **Refonte Majeure de l'Hydrologie (PBF & Texture Mask)** : Passage d'un rendu par Mesh 3D (Overpass) à une détection sémantique vectorielle mondiale via PBF (SwissTopo/MapTiler).
+    - **Technique du "Texture Mask"** : L'eau est désormais peinte sur un masque 2D dynamique injecté dans le shader du terrain.
+    - **Adéquation Relief-Eau** : L'eau épouse parfaitement chaque ravin et pente sans jamais "voler" au-dessus du sol.
+    - **Zéro Z-Fighting** : Disparition totale des scintillements et des superpositions de plans d'eau.
+
+### Fixed
+- **Bords de Lacs et Rivières** : Les rivières ne sont plus coupées aux limites de tuiles grâce au rendu par fragment shader.
+- **Eau dans les Champs** : Suppression définitive de la détection visuelle heuristique (basée sur la couleur bleue) qui causait des inondations artificielles selon l'heure de la journée.
+
+### Optimized
+- **Filtrage Spatial par Bounding Box** : Accélération massive du rendu de la végétation et de l'eau en sautant instantanément les polygones vectoriels hors champ.
+- **Rendu Canvas Précis** : Utilisation du mode `evenodd` pour gérer automatiquement les îles et les trous dans les lacs complexes.
+
 ## [5.33.3] - 2026-04-19
 ### Fixed
 - **Correction des Ombres Carrées (Lumière Rasante)** : 

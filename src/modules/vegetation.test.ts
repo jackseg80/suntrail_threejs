@@ -4,7 +4,7 @@ import { createForestForTile, initVegetationResources } from './vegetation';
 import { state } from './state';
 
 vi.mock('./landcover', () => ({
-    fetchForestsPBF: vi.fn().mockResolvedValue(null),
+    fetchLandcoverPBF: vi.fn().mockResolvedValue(null),
     isPointInForest: vi.fn().mockReturnValue(false)
 }));
 

@@ -1,15 +1,16 @@
-# SunTrail — Guide IA (v5.33.3)
+# SunTrail — Guide IA (v5.34.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-19 suite à la v5.33.3 (Vector Vegetation & Shadow Fix).
+> Mis à jour le 2026-04-19 suite à la v5.34.0 (Vector Hydrology & Texture Mask).
 
 
 ## Projet
 
 App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacitor).
 - **Core** : LOD adaptatif, PMTiles, Offline-first, Support GPX.
-- **Végétation v5.33.1** : Détection sémantique vectorielle (SwissTopo/MapTiler), plus performant et précis.
-- **LOD v5.32.18** : Moteur zero-latency, nettoyage agressif dézoom, optimisations 2D, build Gradle automatisé (Foojay).
+- **Hydrologie v5.34.0** : Refonte totale via Vector Tiles PBF (SwissTopo/MapTiler) et technique du "Texture Mask". Zéro Z-fighting, précision au pixel, adéquation relief parfaite.
+- **Végétation v5.33.1** : Détection sémantique vectorielle (SwissTopo/MapTiler), filtrage par BBox optimisé (v5.34.0).
+- **LOD v5.32.18** : Moteur zero-latency, nettoyage agressif dézoom, optimisations 2D.
 
 
 ### ⚠️ Règles de Modification de Fichiers (SÉCURITÉ)

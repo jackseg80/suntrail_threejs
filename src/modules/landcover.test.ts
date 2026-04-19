@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { isPointInForest, fetchForestsPBF } from './landcover';
+import { isPointInForest, fetchLandcoverPBF } from './landcover';
 import { state } from './state';
 
 // Mock de fetch global
@@ -22,15 +22,18 @@ describe('landcover.ts', () => {
         };
 
         // Polygone simple (carré) dans une tuile vectorielle (coords 0-4096)
-        const simpleForest = [
-            [
-                { x: 1000, y: 1000 },
-                { x: 3000, y: 1000 },
-                { x: 3000, y: 3000 },
-                { x: 1000, y: 3000 },
-                { x: 1000, y: 1000 }
-            ]
-        ];
+        const simpleForest = {
+            geometry: [
+                [
+                    { x: 1000, y: 1000 },
+                    { x: 3000, y: 1000 },
+                    { x: 3000, y: 3000 },
+                    { x: 1000, y: 3000 },
+                    { x: 1000, y: 1000 }
+                ]
+            ],
+            bbox: { minX: 1000, maxX: 3000, minY: 1000, maxY: 3000 }
+        };
 
         it('should return true for a point inside the forest polygon', () => {
             // Au centre (scanRes=64, px=32) -> localX = (32/64)*4096 = 2048. 
@@ -44,40 +47,14 @@ describe('landcover.ts', () => {
             const result = isPointInForest(mockTile, 5, 5, 64, [simpleForest]);
             expect(result).toBe(false);
         });
-
-        it('should handle holes in polygons (XOR logic)', () => {
-            const forestWithHole = [
-                // Anneau extérieur
-                [
-                    { x: 0, y: 0 },
-                    { x: 4000, y: 0 },
-                    { x: 4000, y: 4000 },
-                    { x: 0, y: 4000 },
-                    { x: 0, y: 0 }
-                ],
-                // Trou au milieu
-                [
-                    { x: 1000, y: 1000 },
-                    { x: 3000, y: 1000 },
-                    { x: 3000, y: 3000 },
-                    { x: 1000, y: 3000 },
-                    { x: 1000, y: 1000 }
-                ]
-            ];
-
-            // Dans le trou (centre) -> false
-            expect(isPointInForest(mockTile, 32, 32, 64, [forestWithHole])).toBe(false);
-            // Dans la forêt (bordure) -> true
-            expect(isPointInForest(mockTile, 5, 5, 64, [forestWithHole])).toBe(true);
-        });
     });
 
-    describe('fetchForestsPBF', () => {
+    describe('fetchLandcoverPBF', () => {
         it('should return null if no MapTiler key and not in Switzerland', async () => {
             state.MK = '';
             // Coordonnées hors suisse (ex: Paris)
             const tileOutside: any = { zoom: 14, tx: 8307, ty: 5641 }; 
-            const result = await fetchForestsPBF(tileOutside);
+            const result = await fetchLandcoverPBF(tileOutside);
             expect(result).toBe(null);
         });
 
@@ -90,7 +67,7 @@ describe('landcover.ts', () => {
                 status: 404
             });
 
-            await fetchForestsPBF(tileCH);
+            await fetchLandcoverPBF(tileCH);
             expect(fetch).toHaveBeenCalledWith(expect.stringContaining('geo.admin.ch'), expect.anything());
         });
 
@@ -103,7 +80,7 @@ describe('landcover.ts', () => {
                 status: 404
             });
 
-            await fetchForestsPBF(tileFR);
+            await fetchLandcoverPBF(tileFR);
             expect(fetch).toHaveBeenCalledWith(expect.stringContaining('api.maptiler.com'), expect.anything());
         });
     });

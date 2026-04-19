@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { state } from './state';
 import type { Tile } from './terrain';
 import { decodeTerrainRGB } from './geo';
-import { fetchForestsPBF, isPointInForest } from './landcover';
+import { fetchLandcoverPBF, isPointInForest } from './landcover';
 
 /**
  * Seeded pseudo-random function for deterministic placement (v5.8.15)
@@ -79,7 +79,7 @@ export async function createForestForTile(tile: Tile): Promise<THREE.Group | nul
 
     // --- PHASE 2/3 : FETCH VECTOR LANDCOVER (PBF) ---
     // On lance le fetch en parallèle du scan raster pour masquer la latence
-    const forestsPromise = fetchForestsPBF(tile);
+    const landcoverPromise = fetchLandcoverPBF(tile);
 
     // --- SCAN RESOLUTION STABLE (v5.8.10) ---
     const scanRes = 64;
@@ -100,7 +100,8 @@ export async function createForestForTile(tile: Tile): Promise<THREE.Group | nul
     }
     
     const colorData = ctx.getImageData(0, 0, scanRes, scanRes).data;
-    const forests = await forestsPromise; // Attente du PBF (déjà en cache si chargé par une tuile voisine)
+    const landcover = await landcoverPromise; // Attente du PBF (déjà en cache si chargé par une tuile voisine)
+    const forests = landcover?.forests;
 
     // --- DENSITÉ HARMONISÉE (v5.33.1) ---
     const hasVectors = (forests && forests.length > 0);
