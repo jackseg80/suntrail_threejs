@@ -75,11 +75,9 @@ describe('vegetation.ts', () => {
         expect(forest).toBeInstanceOf(THREE.Group);
         expect(forest!.children.length).toBeGreaterThan(0);
         
-        // v5.32.5 : Vérifier que le fix du frustum culling est présent
+        // v5.32.7+ : Vérifier que le fix du frustum culling est présent
         const iMesh = forest!.children[0] as THREE.InstancedMesh;
-        expect(iMesh.boundingBox).not.toBeNull();
-        expect(iMesh.boundingSphere).not.toBeNull();
-        expect(iMesh.boundingSphere!.radius).toBeGreaterThan(0);
+        expect(iMesh.frustumCulled).toBe(false);
     });
 
     it('should respect the SHOW_VEGETATION flag', () => {

@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.32.8] - 2026-04-19
+### Fixed
+- **Vegetation Syntax**: Fixed a syntax error in `vegetation.ts` introduced in the previous patch.
+- **Tests**: Updated vegetation tests to validate the `frustumCulled = false` strategy.
+
 ## [5.32.7] - 2026-04-19
 ### Fixed
 - **Vegetation Culling (Final)**: Disabled `frustumCulled` on vegetation `InstancedMesh`. Native culling was based on the small source geometry at the tile center, causing trees to disappear during rotations even if still in view.

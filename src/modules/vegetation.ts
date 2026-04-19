@@ -193,6 +193,16 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
         }
     }
 
+    Object.keys(instances).forEach(type => {
+        const data = instances[type];
+        if (data.count > 0) {
+            const is2D = state.IS_2D_MODE;
+            const mat = is2D ? essences[type].material2D : essences[type].material;
+            const iMesh = new THREE.InstancedMesh(essences[type].geometry, mat, data.count);
+            for (let j = 0; j < data.count; j++) {
+                iMesh.setMatrixAt(j, data.matrices[j]);
+            }
+            
             // v5.32.7 : Fix Frustum Culling. 
             // On désactive le culling natif de l'InstancedMesh car il se base sur la géométrie 
             // source (petit cône) et non sur l'emprise des instances, provoquant des disparitions 
