@@ -1,17 +1,14 @@
-# SunTrail — Guide IA (v5.32.17)
+# SunTrail — Guide IA (v5.32.18)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-19 suite à la v5.32.17 (Zero-Latency LOD Engine & 2D Fast-Path).
+> Mis à jour le 2026-04-19 suite à la v5.32.18 (Production-Ready LOD & Automated Toolchain).
 
 
 ## Projet
 
-App cartographique 3D mobile-first pour la randonnée alpine.
-Android natif (Capacitor) + PWA. Freemium (RevenueCat).
-
-**Stack** : TypeScript strict · Three.js r160 · Vite 5 · Capacitor 6 · RevenueCat
-
-## ⚠️ Règles & Décisions Actées (v5.29.37)
+App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacitor).
+- **Core** : LOD adaptatif, PMTiles, Offline-first, Support GPX.
+- **LOD v5.32.18** : Moteur zero-latency, nettoyage agressif dézoom, optimisations 2D, build Gradle automatisé (Foojay).
 
 ### 🚀 Protocole de Release (IMPÉRATIF)
 1. **Pre-check** : Exécuter `npm run check` et `npm test`.
