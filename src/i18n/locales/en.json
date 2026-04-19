@@ -59,7 +59,7 @@
       "setActive": "Show profile for this track",
       "showProfile": "View elevation profile",
       "export": "Export GPX"
-      },
+    },
     "recording": {
       "title": "GPS Recording"
     },
@@ -304,6 +304,7 @@
       "centered": "📍 Position centered",
       "followOn": "🚶 Continuous tracking enabled",
       "followOff": "📍 Continuous tracking disabled",
+      "disabled": "Location disabled",
       "permissionDenied": "GPS permission denied. Check your browser settings.",
       "error": "GPS error or timeout",
       "interrupted": "Tracking interrupted"
@@ -366,13 +367,13 @@
       "current": "Current conditions",
       "forecast24h": "24h forecast",
       "forecast3d": "3-day forecast",
-      "mountain": "Mountain alert"
+      "mountain": "Mountain alert",
+      "mountainTitle": "Mountain Weather"
     },
     "stat": {
       "windDir": "Wind direction",
       "cloudCover": "Cloud cover",
       "uvIndex": "UV Index",
-      "maxElevation": "Max Elevation",
       "precipProb": "Precipitation",
       "comfortIndex": "Hiking comfort"
     },
@@ -387,7 +388,8 @@
       "aboveFreezing": "You are above the 0°C isotherm",
       "nearFreezing": "Snow possible near your position (isotherm at",
       "belowFreezing": "0°C isotherm",
-      "comfort": "Hiking comfort"
+      "comfort": "Hiking comfort",
+      "title": "Mountain Alert"
     },
     "daily": {
       "precip": "Precip.",
@@ -425,6 +427,7 @@
       "dayDuration": "Day duration",
       "azimuth": "Azimuth",
       "elevation": "Elevation",
+      "maxElevation": "Max Elevation",
       "moonPhase": "Moon phase",
       "elevationChart": "24h elevation curve"
     },
@@ -436,7 +439,8 @@
     },
     "toast": {
       "copied": "📋 Report copied",
-      "clickFirst": "Click on terrain first"
+      "clickFirst": "Click on terrain first",
+      "notIn2D": "Solar simulation only available in 3D mode"
     },
     "aria": {
       "close": "Close solar analysis"
@@ -599,7 +603,6 @@
       "cta": "Try Pro (3 days) — Free"
     },
     "legal": "Auto-renewable subscription · Cancel at any time in the Play Store.",
-
     "web": {
       "playStore": "Get it on Google Play",
       "note": "Pro upgrade is available via the Android app on Google Play."
@@ -640,6 +643,7 @@
     "confirm": "Confirm",
     "loading": "Loading...",
     "error": "Error",
+    "errorWebglLost": "Graphics context lost. Please refresh the application.",
     "unit": {
       "km": "km",
       "m": "m",

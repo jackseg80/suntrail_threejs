@@ -58,7 +58,8 @@
       "toggleVisible": "Masquer/afficher le tracé",
       "remove": "Supprimer le tracé",
       "setActive": "Afficher le profil de ce tracé",
-      "showProfile": "Voir le profil d'élévation"
+      "showProfile": "Voir le profil d'élévation",
+      "export": "Exporter GPX"
     },
     "recording": {
       "title": "Enregistrement GPS"
@@ -304,6 +305,7 @@
       "centered": "📍 Position centrée",
       "followOn": "🚶 Suivi continu activé",
       "followOff": "📍 Suivi continu désactivé",
+      "disabled": "Position désactivée",
       "permissionDenied": "Permission GPS refusée. Vérifiez les réglages de votre navigateur.",
       "error": "Erreur GPS ou délai dépassé",
       "interrupted": "Suivi interrompu"
@@ -341,8 +343,12 @@
     "wind": "Vent",
     "location": "Lieu",
     "unknown": "Inconnu",
-    "expert": { "title": "Données Avancées" },
-    "aria": { "close": "Fermer météo" },
+    "expert": {
+      "title": "Données Avancées"
+    },
+    "aria": {
+      "close": "Fermer météo"
+    },
     "gusts": "Rafales",
     "clouds": "Couverture nuageuse",
     "dewPoint": "Point de rosée",
@@ -355,7 +361,8 @@
       "veryHigh": "Très élevé",
       "extreme": "Extrême"
     },
-    "visibility": "Visibilité",    "precipitation": "Probabilité de précipitations",
+    "visibility": "Visibilité",
+    "precipitation": "Probabilité de précipitations",
     "forecast": "Prévisions",
     "label": {
       "intensity": "INTENSITÉ",
@@ -364,12 +371,15 @@
     "btn": {
       "expert": "📊 Station Météo Expert"
     },
-    "upsell": { "pro": "🌡️ Prévisions 3 jours + alertes montagne disponibles avec Pro" },
+    "upsell": {
+      "pro": "🌡️ Prévisions 3 jours + alertes montagne disponibles avec Pro"
+    },
     "section": {
       "current": "Conditions actuelles",
       "forecast24h": "Prévisions 24h",
       "forecast3d": "Prévisions 3 jours",
-      "mountain": "Alerte Montagne"
+      "mountain": "Alerte Montagne",
+      "mountainTitle": "Météo Montagne"
     },
     "stat": {
       "windDir": "Direction vent",
@@ -379,14 +389,8 @@
       "mountainComfort": "Confort Montagne",
       "comfortIndex": "Confort rando"
     },
-    "uv": {
-      "low": "Faible",
-      "moderate": "Modéré",
-      "high": "Élevé",
-      "veryHigh": "Très élevé",
-      "extreme": "Extrême"
-    },
     "mountain": {
+      "title": "Météo Montagne",
       "aboveFreezing": "Vous êtes au-dessus de l'isotherme 0°C",
       "nearFreezing": "Neige possible près de votre position (isotherme à",
       "belowFreezing": "Isotherme 0°C",
@@ -406,7 +410,9 @@
       "twilight": "🌌 Crépuscule",
       "night": "🌙 Nuit"
     },
-    "status": { "done": "Analyse terminée" },
+    "status": {
+      "done": "Analyse terminée"
+    },
     "section": {
       "dayData": "Données du jour",
       "realtime": "Temps réel"
@@ -430,9 +436,17 @@
     "upsell": {
       "solar": "☀️ Données solaires complètes disponibles avec Pro"
     },
-    "btn": { "copy": "📋 Copier le rapport" },
-    "toast": { "copied": "📋 Rapport copié", "clickFirst": "Cliquez sur le terrain d'abord" },
-    "aria": { "close": "Fermer analyse solaire" }
+    "btn": {
+      "copy": "📋 Copier le rapport"
+    },
+    "toast": {
+      "copied": "📋 Rapport copié",
+      "clickFirst": "Cliquez sur le terrain d'abord",
+      "notIn2D": "Simulation solaire disponible uniquement en mode 3D"
+    },
+    "aria": {
+      "close": "Fermer analyse solaire"
+    }
   },
   "sos": {
     "title": "URGENCE SOS",
@@ -487,7 +501,9 @@
     "triangles": "Triangles",
     "tiles": "Tuiles actives",
     "workers": "Workers",
-    "alert": { "textures": "Textures GPU élevées" }
+    "alert": {
+      "textures": "Textures GPU élevées"
+    }
   },
   "onboarding": {
     "skip": "Passer",
@@ -495,7 +511,7 @@
     "start": "Commencer",
     "slide1": {
       "title": "Naviguez en 3D",
-      "desc": "D\u00e9placez la carte avec 1 doigt \u00b7 Pincez pour zoomer \u00b7 2 doigts pour pivoter ou incliner la vue"
+      "desc": "Déplacez la carte avec 1 doigt · Pincez pour zoomer · 2 doigts pour pivoter ou incliner la vue"
     },
     "slideGestures": {
       "title": "Gestes tactiles",
@@ -511,13 +527,13 @@
     },
     "slide2": {
       "title": "Recherchez un lieu",
-      "desc": "Tapez le nom d\u2019une ville, d\u2019un sommet ou d\u2019un pays dans la barre de recherche. Des filtres rapides affinent les r\u00e9sultats."
+      "desc": "Tapez le nom d’une ville, d’un sommet ou d’un pays dans la barre de recherche. Des filtres rapides affinent les résultats."
     },
     "slide3": {
-      "title": "Les boutons de contr\u00f4le",
-      "desc": "Sur la droite de l\u2019\u00e9cran :",
+      "title": "Les boutons de contrôle",
+      "desc": "Sur la droite de l’écran :",
       "compass": "Boussole",
-      "compassDesc": "r\u00e9oriente vers le Nord",
+      "compassDesc": "réoriente vers le Nord",
       "layers": "Couches",
       "layersDesc": "change le type de carte",
       "mode": "2D / 3D",
@@ -527,11 +543,11 @@
     },
     "slide4": {
       "title": "Vos parcours",
-      "desc": "Importez ou enregistrez vos randonn\u00e9es :",
+      "desc": "Importez ou enregistrez vos randonnées :",
       "import": "Import GPX",
-      "importDesc": "Chargez un fichier GPX \u2014 le trac\u00e9 s\u2019affiche en 3D sur le terrain",
+      "importDesc": "Chargez un fichier GPX — le tracé s’affiche en 3D sur le terrain",
       "rec": "Enregistrement GPS",
-      "recDesc": "D\u00e9marrez REC pour tracer votre rando en direct"
+      "recDesc": "Démarrez REC pour tracer votre rando en direct"
     },
     "slide5": {
       "title": "Simulez le soleil",
@@ -612,8 +628,14 @@
     },
     "hint": "Zone critique avalanche : 30-45°",
     "directions": {
-      "N": "N", "NE": "NE", "E": "E", "SE": "SE",
-      "S": "S", "SW": "SO", "W": "O", "NW": "NO"
+      "N": "N",
+      "NE": "NE",
+      "E": "E",
+      "SE": "SE",
+      "S": "S",
+      "SW": "SO",
+      "W": "O",
+      "NW": "NO"
     }
   },
   "common": {
@@ -623,6 +645,7 @@
     "confirm": "Confirmer",
     "loading": "Chargement...",
     "error": "Erreur",
+    "errorWebglLost": "Contexte graphique perdu. Veuillez rafraîchir l'application.",
     "unit": {
       "km": "km",
       "m": "m",

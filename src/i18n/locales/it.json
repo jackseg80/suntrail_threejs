@@ -70,7 +70,7 @@
       "title": "Salva percorso",
       "body": "Dai un nome alla tua escursione:"
     }
-    },
+  },
   "settings": {
     "title": "Impostazioni",
     "aria": {
@@ -159,6 +159,10 @@
     },
     "tutorial": {
       "btn": "❓ Aiuto & Tutorial"
+    },
+    "toast": {
+      "energySaverOn": "Risparmio energetico attivato",
+      "energySaverOff": "Risparmio energetico disattivato"
     }
   },
   "search": {
@@ -301,7 +305,8 @@
       "followOff": "📍 Tracciamento continuo disattivato",
       "permissionDenied": "Permesso GPS negato. Controlla le impostazioni del browser.",
       "error": "Errore GPS ou timeout",
-      "interrupted": "Tracciamento interrotto"
+      "interrupted": "Tracciamento interrotto",
+      "disabled": "GPS disattivato"
     },
     "disclosure": {
       "title": "Accesso alla tua posizione",
@@ -372,7 +377,8 @@
       "aboveFreezing": "Sei sopra lo zero termico",
       "nearFreezing": "Neve possibile vicino a te (zero termico a",
       "belowFreezing": "Zero termico",
-      "comfort": "Comfort escursione"
+      "comfort": "Comfort escursione",
+      "title": "Avviso Montagna"
     },
     "daily": {
       "precip": "Precip.",
@@ -411,7 +417,8 @@
       "azimuth": "Azimut",
       "elevation": "Elevazione",
       "moonPhase": "Fase lunare",
-      "elevationChart": "Curva di elevazione 24h"
+      "elevationChart": "Curva di elevazione 24h",
+      "maxElevation": "Elevazione max"
     },
     "upsell": {
       "solar": "☀️ Dati solari completi disponibili con Pro"
@@ -421,7 +428,8 @@
     },
     "toast": {
       "copied": "📋 Rapporto copiato",
-      "clickFirst": "Clicca prima sul terreno"
+      "clickFirst": "Clicca prima sul terreno",
+      "notIn2D": "Simulazione solare disponibile solo in modalità 3D"
     },
     "aria": {
       "close": "Chiudi analisi solare"
@@ -623,6 +631,7 @@
     "confirm": "Conferma",
     "loading": "Caricamento...",
     "error": "Errore",
+    "errorWebglLost": "Contesto grafico perso. Si prega di aggiornare l'applicazione.",
     "unit": {
       "km": "km",
       "m": "m",
@@ -639,6 +648,31 @@
     "changeMapType": "Cambia tipo di mappa",
     "locateMe": "Localizza la mia posizione",
     "toggle2d3d": "Alterna 2D/3D"
+  },
+  "acceptance": {
+    "title": "Informazioni importanti prima dell'uso",
+    "item1": {
+      "title": "Strumento di supporto alla pianificazione",
+      "desc": "SunTrail non è un dispositivo di salvataggio. In caso di emergenza, contattare il 112."
+    },
+    "item2": {
+      "title": "Dati GPS e 3D approssimativi",
+      "desc": "Il segnale GPS può essere impreciso in montagna. Il terreno 3D è basato su modelli digitali con una risoluzione di 5–25m."
+    },
+    "item3": {
+      "title": "Simulazione solare indicativa",
+      "desc": "I calcoli non tengono conto del meteo, delle nuvole o degli ostacoli locali non modellati."
+    },
+    "item4": {
+      "title": "Pendenze e rischio valanghe",
+      "desc": "La colorazione delle pendenze (>30°) non sostituisce l'analisi del terreno e il metodo 3×3 per la riduzione del rischio valanghe."
+    },
+    "item5": {
+      "title": "Prevedere una batteria esterna",
+      "desc": "L'uso intensivo del GPS e del rendering 3D consuma rapidamente la batteria. Portare sempre con sé una mappa cartacea."
+    },
+    "legal": "Continuando, accetti le condizioni d'uso di SunTrail e confermi di aver letto queste informazioni di sicurezza.",
+    "btn": "Ho capito — Continua"
   },
   "packs": {
     "title": "Pacchetti Paese",

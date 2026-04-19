@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.32.11] - 2026-04-19
+### Fixed
+- **i18n Consolidation**: Completed German and Italian translations (Acceptance Wall, Toasts, Weather). Fixed missing keys in FR/EN.
+- **WebGL Robustness**: Added `webglcontextlost` handler to inform users in case of GPU context failure (common on Android WebView).
+
 ## [5.32.10] - 2026-04-19
 ### Improved
 - **LOD Transitions**: Refined `prioritizeNewZoom` to keep parent zoom tiles (`z-1`) in the load queue. This ensures that "backdrop" tiles for the Fade Out effect are not discarded prematurely, resulting in smoother visual transitions.

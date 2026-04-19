@@ -166,6 +166,13 @@ export async function initScene(): Promise<void> {
     state.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     state.renderer.toneMapping = THREE.AgXToneMapping;
     container.appendChild(state.renderer.domElement);
+
+    // v5.32.11 : Gestion de la perte de contexte WebGL (Fréquent sur Android WebView en cas de pression mémoire)
+    state.renderer.domElement.addEventListener('webglcontextlost', (event) => {
+        event.preventDefault();
+        console.error('[WebGL] Contexte perdu !');
+        showToast(i18n.t('common.errorWebglLost'), 0); // Toast persistant
+    }, false);
     
     state.renderer.domElement.setAttribute('role', 'img');
     state.renderer.domElement.setAttribute('aria-label', i18n.t('a11y.canvas3d'));

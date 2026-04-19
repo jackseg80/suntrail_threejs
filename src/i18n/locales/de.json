@@ -25,6 +25,7 @@
       "recStarted": "🔴 Aufnahme gestartet",
       "recStopped": "⏹️ Aufnahme gestoppt",
       "recWarning5min": "⏱ 30-Min-Limit — noch 5 Minuten Aufnahme",
+      "freeLimit": "💡 Temporärer Track: Er wird beim Schliessen der App gelöscht. Wechseln Sie zu PRO, um ihn zu exportieren.",
       "tooShort": "Strecke zu kurz für Export",
       "exported": "GPX heruntergeladen",
       "exportError": "GPX-Exportfehler"
@@ -55,7 +56,8 @@
       "toggleVisible": "Tour ein-/ausblenden",
       "remove": "Tour entfernen",
       "setActive": "Höhenprofil dieser Tour anzeigen",
-      "showProfile": "Höhenprofil anzeigen"
+      "showProfile": "Höhenprofil anzeigen",
+      "export": "GPX exportieren"
     },
     "recording": {
       "title": "GPS-Aufzeichnung"
@@ -68,7 +70,7 @@
       "title": "Tour speichern",
       "body": "Geben Sie Ihrer Wanderung einen Namen:"
     }
-    },
+  },
   "settings": {
     "title": "Einstellungen",
     "aria": {
@@ -157,6 +159,10 @@
     },
     "tutorial": {
       "btn": "❓ Hilfe & Tutorial"
+    },
+    "toast": {
+      "energySaverOn": "Energiesparmodus aktiviert",
+      "energySaverOff": "Energiesparmodus deaktiviert"
     }
   },
   "search": {
@@ -299,7 +305,8 @@
       "followOff": "📍 Kontinuierliche Verfolgung deaktiviert",
       "permissionDenied": "GPS-Berechtigung verweigert. Überprüfen Sie Ihre Browsereinstellungen.",
       "error": "GPS-Fehler oder Zeitüberschreitung",
-      "interrupted": "Verfolgung unterbrochen"
+      "interrupted": "Verfolgung unterbrochen",
+      "disabled": "GPS deaktiviert"
     },
     "disclosure": {
       "title": "Zugriff auf Ihren Standort",
@@ -340,7 +347,8 @@
       "veryHigh": "Sehr hoch",
       "extreme": "Extrem"
     },
-    "visibility": "Sichtweite",    "precipitation": "Niederschlagswahrscheinlichkeit",
+    "visibility": "Sichtweite",
+    "precipitation": "Niederschlagswahrscheinlichkeit",
     "forecast": "Vorhersage",
     "label": {
       "intensity": "INTENSITÄT",
@@ -365,18 +373,12 @@
       "precipProb": "Niederschlag",
       "comfortIndex": "Wanderkomfort"
     },
-    "uv": {
-      "low": "Niedrig",
-      "moderate": "Mäßig",
-      "high": "Hoch",
-      "veryHigh": "Sehr hoch",
-      "extreme": "Extrem"
-    },
     "mountain": {
       "aboveFreezing": "Sie befinden sich oberhalb der Nullgradgrenze",
       "nearFreezing": "Schnee möglich in Ihrer Nähe (Nullgradgrenze bei",
       "belowFreezing": "Nullgradgrenze",
-      "comfort": "Wanderkomfort"
+      "comfort": "Wanderkomfort",
+      "title": "Berg-Warnung"
     },
     "daily": {
       "precip": "Nied.",
@@ -415,7 +417,8 @@
       "azimuth": "Azimut",
       "elevation": "Elevation",
       "moonPhase": "Mondphase",
-      "elevationChart": "24h-Höhenverlauf"
+      "elevationChart": "24h-Höhenverlauf",
+      "maxElevation": "Max. Erhöhung"
     },
     "upsell": {
       "solar": "☀️ Vollständige Sonnendaten mit Pro verfügbar"
@@ -425,7 +428,8 @@
     },
     "toast": {
       "copied": "📋 Bericht kopiert",
-      "clickFirst": "Klicken Sie zuerst auf das Gelände"
+      "clickFirst": "Klicken Sie zuerst auf das Gelände",
+      "notIn2D": "Sonnensimulation nur im 3D-Modus verfügbar"
     },
     "aria": {
       "close": "Sonnenanalyse schliessen"
@@ -627,6 +631,7 @@
     "confirm": "Bestätigen",
     "loading": "Laden...",
     "error": "Fehler",
+    "errorWebglLost": "Grafikkontext verloren. Bitte laden Sie die App neu.",
     "unit": {
       "km": "km",
       "m": "m",
@@ -686,5 +691,30 @@
     "aria": {
       "close": "Pakete schliessen"
     }
+  },
+  "acceptance": {
+    "title": "Wichtige Informationen vor der Nutzung",
+    "item1": {
+      "title": "Nur Planungshilfsmittel",
+      "desc": "SunTrail ist kein Rettungsgerät. Im Notfall kontaktieren Sie die 112."
+    },
+    "item2": {
+      "title": "Ungefähre GPS- und 3D-Daten",
+      "desc": "Das GPS-Signal kann im Gebirge ungenau sein. Das 3D-Gelände basiert auf digitalen Modellen mit einer Auflösung von 5–25 m."
+    },
+    "item3": {
+      "title": "Indikative Sonnensimulation",
+      "desc": "Die Berechnungen berücksichtigen weder Wetter, Wolken noch lokale, nicht modellierte Hindernisse."
+    },
+    "item4": {
+      "title": "Hänge und Lawinenrisiko",
+      "desc": "Die Einfärbung von Hängen (>30°) ersetzt nicht die Geländeanalyse und die 3×3-Methode zur Reduzierung des Lawinenrisikos."
+    },
+    "item5": {
+      "title": "Planen Sie einen externen Akku ein",
+      "desc": "Die intensive Nutzung von GPS und 3D-Rendering leert den Akku schnell. Führen Sie immer eine Papierkarte mit sich."
+    },
+    "legal": "Indem Sie fortfahren, akzeptieren Sie die Nutzungsbedingungen von SunTrail und bestätigen, diese Sicherheitshinweise gelesen zu haben.",
+    "btn": "Ich habe verstanden — Weiter"
   }
 }
