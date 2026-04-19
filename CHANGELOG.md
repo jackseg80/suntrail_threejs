@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.32.19] - 2026-04-19
+### Fixed
+- **Build**: Final fix for the `versionName` syntax error in `build.gradle`. Replaced all malformed escapes with clean quotes.
+
 ## [5.32.18] - 2026-04-19
 ### Optimized
 - **Fluid LOD Engine**: Zero-latency system where Level of Detail tracks camera movement image-by-image, including during damping.
@@ -16,11 +20,6 @@ et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - **Build & CI**: Added Foojay Toolchain Resolver and removed vendor constraints to automate JDK 21 setup.
 - **Move-to-Refresh Bug**: Fixed map staying blurry at the end of a pinch/zoom interaction.
 - **Worker Robustness**: Fixed `ReferenceError` on `is2D` in the tile worker.
-
-## [5.32.17] - 2026-04-19 [BROKEN]
-- Failed build attempt (Gradle syntax and Toolchain issues).
-
-## [5.32.14] - 2026-04-19
 ### Optimization
 - **Unified LOD Geometries**: Terrain now uses shared 1x1 unit geometries across all tiles, significantly reducing BufferGeometry allocations and VRAM footprint. Tile scaling is handled via `mesh.scale`.
 - **Adaptive GPX Simplification**: Introduced dynamic RDP (Ramer-Douglas-Peucker) simplification for all GPX tracks. Epsilon is now tied to screen pixel size and performance presets (Eco/Balanced/Ultra), drastically reducing vertex counts at low zoom levels.
