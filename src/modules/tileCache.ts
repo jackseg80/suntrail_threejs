@@ -45,10 +45,10 @@ export function markCacheKeyInactive(key: string): void {
  */
 function getMaxCacheSize(): number {
     const mobile = isMobileDevice();
-    if (state.PERFORMANCE_PRESET === 'ultra')       return mobile ? 350 : 800;
-    if (state.PERFORMANCE_PRESET === 'performance') return mobile ? 180 : 400;
-    if (state.PERFORMANCE_PRESET === 'balanced')    return mobile ? 120 : 300;
-    return 60; // eco
+    if (state.PERFORMANCE_PRESET === 'ultra')       return mobile ? 500 : 800;
+    if (state.PERFORMANCE_PRESET === 'performance') return mobile ? 360 : 500;
+    if (state.PERFORMANCE_PRESET === 'balanced')    return mobile ? 200 : 400;
+    return 80; // eco
 }
 
 /**

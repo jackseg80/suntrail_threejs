@@ -1,4 +1,4 @@
-# AI Performance & Constants Guide (v5.31.1)
+# AI Performance & Constants Guide (v5.32.1)
 
 Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 

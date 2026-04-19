@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.32.1] - 2026-04-19
+### Fixed
+- **tileCache.test.ts**: Updated 6 test assertions to match new cache sizes (eco 60→80, performance desktop 400→500) introduced by LOD retention feature.
+
 ## [5.32.0] - 2026-04-19
 ### Changed — LOD Retention & MapTiler Brave Fix
 **LOD Retention (No more black holes on zoom transitions)**

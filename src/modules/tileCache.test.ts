@@ -34,16 +34,16 @@ describe('tileCache.ts', () => {
     });
 
     it('should respect maximum cache size (FIFO)', () => {
-        // En mode eco, la taille est 60 (v5.11 : réduit de 80 → 60).
+        // En mode eco, la taille est 80 (v5.32.0 : increased for LOD retention).
         state.PERFORMANCE_PRESET = 'eco';
         
-        for (let i = 0; i < 70; i++) {
+        for (let i = 0; i < 90; i++) {
             addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
         }
 
-        expect(getCacheSize()).toBe(60);
+        expect(getCacheSize()).toBe(80);
         expect(hasInCache('key_0')).toBe(false); // Le premier a dû être supprimé
-        expect(hasInCache('key_69')).toBe(true); // Le dernier doit être là
+        expect(hasInCache('key_89')).toBe(true); // Le dernier doit être là
     });
 
     it('should dispose textures when cleared', () => {
@@ -61,18 +61,18 @@ describe('tileCache.ts', () => {
     });
 
     it('trimCache() réduit le cache à la taille max du preset actuel', () => {
-        state.PERFORMANCE_PRESET = 'eco'; // max = 60
+        state.PERFORMANCE_PRESET = 'eco'; // max = 80
         // Remplir au-delà via état précédent (simuler changement de preset)
-        state.PERFORMANCE_PRESET = 'performance'; // max = 400 (desktop)
-        for (let i = 0; i < 100; i++) {
+        state.PERFORMANCE_PRESET = 'performance'; // max = 500 (desktop)
+        for (let i = 0; i < 120; i++) {
             addToCache(`perf_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
         }
-        expect(getCacheSize()).toBe(100);
+        expect(getCacheSize()).toBe(120);
 
-        // Changer vers eco : max devient 60, trim doit purger les 40 plus anciens
+        // Changer vers eco : max devient 80, trim doit purger les 40 plus anciens
         state.PERFORMANCE_PRESET = 'eco';
         trimCache();
-        expect(getCacheSize()).toBe(60);
+        expect(getCacheSize()).toBe(80);
         expect(hasInCache('perf_0')).toBe(false);  // évincés
         expect(hasInCache('perf_99')).toBe(true);  // conservés
     });
@@ -88,16 +88,16 @@ describe('tileCache.ts', () => {
 
     describe('markCacheKeyActive / markCacheKeyInactive (v5.11.1)', () => {
         it('tuile active protégée contre l\'éviction FIFO', () => {
-            state.PERFORMANCE_PRESET = 'eco'; // max = 60
+            state.PERFORMANCE_PRESET = 'eco'; // max = 80
 
-            for (let i = 0; i < 60; i++) {
+            for (let i = 0; i < 80; i++) {
                 addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
             }
 
             // Marquer key_0 comme active (rendue en scène)
             markCacheKeyActive('key_0');
 
-            // Ajouter un 61ème item → devrait évincer key_1, pas key_0
+            // Ajouter un 81ème item → devrait évincer key_1, pas key_0
             addToCache('key_new', new THREE.Texture(), null, new THREE.Texture(), null, null);
 
             expect(hasInCache('key_0')).toBe(true);  // protégée
@@ -110,7 +110,7 @@ describe('tileCache.ts', () => {
         it('tuile inactive peut être évincée normalement', () => {
             state.PERFORMANCE_PRESET = 'eco';
 
-            for (let i = 0; i < 60; i++) {
+            for (let i = 0; i < 80; i++) {
                 addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
             }
 
@@ -126,20 +126,20 @@ describe('tileCache.ts', () => {
         });
 
         it('trimCache respecte les tuiles actives', () => {
-            state.PERFORMANCE_PRESET = 'performance'; // max = 400 desktop
+            state.PERFORMANCE_PRESET = 'performance'; // max = 500 desktop
 
-            for (let i = 0; i < 80; i++) {
+            for (let i = 0; i < 120; i++) {
                 addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
             }
 
             // Marquer les 5 premières clés comme actives
             for (let i = 0; i < 5; i++) markCacheKeyActive(`key_${i}`);
 
-            // Réduire vers eco (max = 60) → doit évincer les inactives d'abord
+            // Réduire vers eco (max = 80) → doit évincer les inactives d'abord
             state.PERFORMANCE_PRESET = 'eco';
             trimCache();
 
-            expect(getCacheSize()).toBe(60);
+            expect(getCacheSize()).toBe(80);
             // Les 5 clés actives doivent survivre
             for (let i = 0; i < 5; i++) {
                 expect(hasInCache(`key_${i}`)).toBe(true);
@@ -159,11 +159,11 @@ describe('tileCache.ts', () => {
 
             // Remplir le cache avec la texture observable en premier
             addToCache('victim', victimElev, null, victimColor, null, null);
-            for (let i = 1; i < 60; i++) {
+            for (let i = 1; i < 80; i++) {
                 addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
             }
 
-            // Ajouter un 61ème → 'victim' (la plus ancienne, inactive) est évincée
+            // Ajouter un 81ème → 'victim' (la plus ancienne, inactive) est évincée
             addToCache('trigger', new THREE.Texture(), null, new THREE.Texture(), null, null);
 
             expect(hasInCache('victim')).toBe(false);
@@ -173,17 +173,17 @@ describe('tileCache.ts', () => {
     });
 
     it('should move accessed item to the end of FIFO queue', () => {
-        state.PERFORMANCE_PRESET = 'eco'; // Taille 60 (v5.11)
+        state.PERFORMANCE_PRESET = 'eco'; // Taille 80 (v5.32.0)
         
-        // Remplir 60 items
-        for (let i = 0; i < 60; i++) {
+        // Remplir 80 items
+        for (let i = 0; i < 80; i++) {
             addToCache(`key_${i}`, new THREE.Texture(), null, new THREE.Texture(), null, null);
         }
         
         // Accéder au premier item (key_0) pour le "rafraîchir"
         getFromCache('key_0');
         
-        // Ajouter un 61ème item
+        // Ajouter un 81ème item
         addToCache('key_new', new THREE.Texture(), null, new THREE.Texture(), null, null);
         
         // key_1 devrait être supprimé au lieu de key_0
