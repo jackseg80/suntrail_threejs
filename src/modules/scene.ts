@@ -113,37 +113,43 @@ export async function disposeScene(): Promise<void> {
 
 /**
  * Détermine le niveau de zoom idéal en fonction de la distance caméra-sol.
- * v5.32.9 : Hystérésis renforcée (10-15%) pour éviter les oscillations LOD 15-18.
+ * v5.32.13 : Compromis stabilité/performance. 
+ * Hystérésis réduite à 10% (plus réactif au dézoom) + prise en compte du tilt.
  */
 function getIdealZoom(dist: number, currentZoom: number): number {
     const boost = state.MAP_SOURCE === 'satellite' ? 2.0
                 : state.MAP_SOURCE === 'swisstopo' ? 1.0
                 : 1.2;
+
+    // v5.32.13 : Si on est très incliné (3D), on augmente artificiellement la distance 
+    // pour basculer plus tôt sur un LOD inférieur (gain perf massif à l'horizon).
+    let effectiveDist = dist;
+    if (state.controls && !state.IS_2D_MODE) {
+        const polar = state.controls.getPolarAngle(); // 0 (zénith) à ~1.5 (horizon)
+        const tiltFactor = Math.max(0, (polar - 0.6) * 0.5); // Pénalité si tilt > 35°
+        effectiveDist *= (1.0 + tiltFactor);
+    }
                 
-    // Hystérésis : on rend plus difficile la sortie du zoom actuel que l'entrée.
-    // Si on est déjà à Z, on augmente le seuil pour y rester (on accepte une distance plus grande).
-    // Si on n'y est pas, on utilise le seuil de base.
     const getThresh = (base: number, z: number) => {
         if (currentZoom === z) {
-            // Hystérésis plus forte (15%) pour les zooms élevés où le terrain change beaucoup
-            const factor = (z >= 15) ? 1.15 : 1.08;
-            return base * factor;
+            // Hystérésis à 10% (suffisant pour éviter le rebond sans surcharger le GPU)
+            return base * 1.10;
         }
         return base;
     };
 
-    if (dist < getThresh(800 * boost, 18)) return 18;
-    if (dist < getThresh(1800 * boost, 17)) return 17;
-    if (dist < getThresh(4000 * boost, 16)) return 16;
-    if (dist < getThresh(9000 * boost, 15)) return 15;
-    if (dist < getThresh(22000, 14)) return 14;
-    if (dist < getThresh(45000, 13)) return 13;
-    if (dist < getThresh(90000, 12)) return 12;
-    if (dist < getThresh(180000, 11)) return 11;
-    if (dist < getThresh(350000, 10)) return 10;
-    if (dist < getThresh(700000, 9)) return 9;
-    if (dist < getThresh(1200000, 8)) return 8;
-    if (dist < getThresh(2000000, 7)) return 7;
+    if (effectiveDist < getThresh(800 * boost, 18)) return 18;
+    if (effectiveDist < getThresh(1800 * boost, 17)) return 17;
+    if (effectiveDist < getThresh(4000 * boost, 16)) return 16;
+    if (effectiveDist < getThresh(9000 * boost, 15)) return 15;
+    if (effectiveDist < getThresh(22000, 14)) return 14;
+    if (effectiveDist < getThresh(45000, 13)) return 13;
+    if (effectiveDist < getThresh(90000, 12)) return 12;
+    if (effectiveDist < getThresh(180000, 11)) return 11;
+    if (effectiveDist < getThresh(350000, 10)) return 10;
+    if (effectiveDist < getThresh(700000, 9)) return 9;
+    if (effectiveDist < getThresh(1200000, 8)) return 8;
+    if (effectiveDist < getThresh(2000000, 7)) return 7;
     return 6;
 }
 

@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.32.13] - 2026-04-19
+### Improved
+- **LOD Balance**: Refined `getIdealZoom` for a better middle ground between stability and performance.
+  - Reduced hysteresis from 15% to 10% for faster transitions when zooming out.
+  - **Tilt-Aware LOD**: Added a dynamic distance penalty based on camera tilt. When looking at the horizon, the system now switches to lower LODs earlier, significantly reducing GPU load and tile count without affecting foreground quality.
+
 ## [5.32.12] - 2026-04-19
 ### Fixed
 - **Build**: Fixed TypeScript errors in `scene.test.ts` caused by unused imports (blocking `npm run deploy`).
