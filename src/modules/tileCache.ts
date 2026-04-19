@@ -62,6 +62,7 @@ export function getTileCacheKey(key: string, zoom: number): string {
 /**
  * Purge les données pixelData (RAM) des tuiles non prioritaires.
  * v5.32.0 : Purge par preset + immunité pour les tuiles z-1 (parent LOD).
+ * v5.32.3 : Correction LRU (itération inverse) + séparation budgets Pass 1.
  * eco/balanced: 10+5, performance: 30+15, ultra: 50+25
  */
 export function purgeOldPixelData(): void {
@@ -78,18 +79,25 @@ export function purgeOldPixelData(): void {
     let keptParentCount = 0;
     const entries = [...dataCache.entries()];
     
-    // Pass 1: Keep pixelData for active tiles (currently visible)
+    // Pass 1: Count active tiles (currently visible) in their respective budgets
     for (const [key, data] of entries) {
         if (data.pixelData && activeCacheKeys.has(key)) {
-            keptCount++;
+            const isParentZoom = key.includes(`_z${currentZoom - 1}_`);
+            if (isParentZoom) {
+                keptParentCount++;
+            } else {
+                keptCount++;
+            }
         }
     }
     
-    // Pass 2: For inactive tiles, purge pixelData keeping only the most recently used
-    // Tiles at z-1 (parent LOD) get a separate budget for fast zoom-out recovery
-    for (const [key, data] of entries) {
+    // Pass 2: For inactive tiles, purge pixelData keeping only the most recently used.
+    // Loop in REVERSE order (from newest to oldest) to respect LRU.
+    for (let i = entries.length - 1; i >= 0; i--) {
+        const [key, data] = entries[i];
+        
         if (!data.pixelData) continue;
-        if (activeCacheKeys.has(key)) continue; // Always keep active tiles
+        if (activeCacheKeys.has(key)) continue; // Already counted in Pass 1
         
         const isParentZoom = key.includes(`_z${currentZoom - 1}_`);
         
@@ -97,13 +105,13 @@ export function purgeOldPixelData(): void {
             if (keptParentCount < maxParentPixelData) {
                 keptParentCount++;
             } else {
-                data.pixelData = null;
+                data.pixelData = null; // Purge
             }
         } else {
             if (keptCount < maxPixelData) {
                 keptCount++;
             } else {
-                data.pixelData = null;
+                data.pixelData = null; // Purge
             }
         }
     }

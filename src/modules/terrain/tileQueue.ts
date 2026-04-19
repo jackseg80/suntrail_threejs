@@ -104,7 +104,7 @@ export async function processLoadQueue() {
             ? Math.max(1, state.MAX_BUILDS_PER_CYCLE + 2)
             : Math.max(1, state.MAX_BUILDS_PER_CYCLE);
         
-        const batch = sortedCache.slice(0, effectiveBatch);
+        const batch = sortedCache.splice(0, effectiveBatch);
         batch.forEach(t => loadQueue.delete(t));
 
         await Promise.all(batch.map(async (tile) => {
@@ -163,7 +163,9 @@ export function addToLoadQueue(tile: Tile) {
 export function removeFromLoadQueue(tile: Tile) {
     loadQueue.delete(tile);
     sortedCache = null;
-    buildQueueKeys.delete(tile.key);
-    const index = buildQueue.indexOf(tile);
-    if (index !== -1) buildQueue.splice(index, 1);
+    if (buildQueueKeys.has(tile.key)) {
+        buildQueueKeys.delete(tile.key);
+        const index = buildQueue.indexOf(tile);
+        if (index !== -1) buildQueue.splice(index, 1);
+    }
 }

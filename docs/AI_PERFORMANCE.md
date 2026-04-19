@@ -32,14 +32,14 @@ Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 | **LOD logic unified** | `scene.ts` | Removed duplicated zoom-threshold if/else cascade (lines 286-298). Now uses `getIdealZoom()` exclusively with 5% hysteresis. |
 | **Fog dynamic altitude** | `scene.ts` | Linear fog with altitude-adaptive near/far: `fogNear = max(FOG_NEAR*0.3, FOG_NEAR - alt*0.3)`, `fogFar = FOG_FAR + alt*4.0`. FogExp2 was tested and reverted — unsuitable for 4Mm altitude range. |
 
-## 1d. Rendering Optimizations (v5.31.1 — Audit Vague 3)
+## 1d. Rendering Optimizations (v5.32.3 — LOD & Critical Fixes)
 
 | Optimization | File | Description |
 | :--- | :--- | :--- |
 | **Shared GPX materials** | `terrain.ts` | 1 material per color×mode (max 16) instead of N per layer. Reduces GPU material binds and GC pressure. `getGPXMaterial(color, is2D)` caches via Map. Geometry still per-track. |
-| **Amortized loadQueue sort** | `tileQueue.ts` | Sort cache: only re-sort every 200ms or when queue changes. Invalidated on add/remove/clear. Reduces O(n log n) cost from every 32ms call to every 200ms. |
+| **Amortized loadQueue sort** | `tileQueue.ts` | Sort cache: only re-sort every 200ms or when queue changes. Invalidated on add/remove/clear. Reduces O(n log n) cost from every 32ms call to every 200ms. **v5.32.3**: Consumed via `splice` to avoid redundant processing. |
 | **LOD retention** | `terrain.ts`, `tileQueue.ts` | 4 changes: (1) `prioritizeNewZoom()` replaces `clearLoadQueue()` on LOD change — old-zoom tiles removed from queue but in-flight requests finish; (2) GHOST_FADE_MS increased 800→2000ms (400→800ms mobile); (3) Parent Protection: old LOD tiles fade out on both zoom-in and zoom-out, not just zoom-in; (4) Prefetch trigger reduced from 5s idle to 2s stable, plus immediate trigger on LOD change. |
-| **pixelData z-1 immunity** | `tileCache.ts` | Separate budget for parent LOD tiles (z-1): eco/bal=5, perf=15, ultra=25. Ensures fast zoom-out recovery. |
+| **pixelData z-1 immunity** | `tileCache.ts` | Separate budget for parent LOD tiles (z-1): eco/bal=5, perf=15, ultra=25. Ensures fast zoom-out recovery. **v5.32.3**: Fixed LRU order (now purges oldest first). |
 
 ## 2. Navigation & GPS Logic
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { state } from './state';
-import { addToCache, getFromCache, disposeAllCachedTiles, getCacheSize, hasInCache, trimCache, markCacheKeyActive, markCacheKeyInactive } from './tileCache';
+import { addToCache, getFromCache, disposeAllCachedTiles, getCacheSize, hasInCache, trimCache, markCacheKeyActive, markCacheKeyInactive, purgeOldPixelData } from './tileCache';
 
 // Mock de utils pour isMobileDevice
 vi.mock('./utils', () => ({
@@ -189,5 +189,71 @@ describe('tileCache.ts', () => {
         // key_1 devrait être supprimé au lieu de key_0
         expect(hasInCache('key_1')).toBe(false);
         expect(hasInCache('key_0')).toBe(true);
+    });
+
+    describe('purgeOldPixelData (v5.32.0)', () => {
+        it('devrait purger les pixelData les plus anciens et garder les plus récents (LRU)', () => {
+            state.PERFORMANCE_PRESET = 'eco'; // Budget pixelData = 10
+            state.ZOOM = 14;
+
+            const dummyTexture = new THREE.Texture();
+            const dummyData = new Uint8ClampedArray(10);
+
+            // Ajouter 15 tuiles. Budget est de 10.
+            // On inclut _z14_ dans la clé pour simuler le zoom actuel.
+            for (let i = 0; i < 15; i++) {
+                addToCache(`key_z14_tile_${i}`, dummyTexture, dummyData.slice(), dummyTexture, null, null);
+            }
+
+            purgeOldPixelData();
+
+            // Vérifier que les 10 plus RÉCENTS (5 à 14) ont encore leurs pixelData
+            let keptOld = 0;
+            for (let i = 0; i < 5; i++) {
+                if (getFromCache(`key_z14_tile_${i}`)?.pixelData) keptOld++;
+            }
+
+            let keptNew = 0;
+            for (let i = 10; i < 15; i++) {
+                if (getFromCache(`key_z14_tile_${i}`)?.pixelData) keptNew++;
+            }
+
+            expect(keptNew).toBe(5);
+            expect(keptOld).toBe(0);
+        });
+
+        it('devrait respecter l\'immunité des tuiles parents (z-1)', () => {
+            state.PERFORMANCE_PRESET = 'eco'; // Budget global = 10, Budget parent = 5
+            state.ZOOM = 14;
+
+            const dummyTexture = new THREE.Texture();
+            const dummyData = new Uint8ClampedArray(10);
+
+            // 1. Ajouter 5 tuiles parents (z=13)
+            for (let i = 0; i < 5; i++) {
+                addToCache(`key_z13_parent_${i}`, dummyTexture, dummyData.slice(), dummyTexture, null, null);
+            }
+
+            // 2. Ajouter 15 tuiles normales (z=14). Budget global=10.
+            for (let i = 0; i < 15; i++) {
+                addToCache(`key_z14_normal_${i}`, dummyTexture, dummyData.slice(), dummyTexture, null, null);
+            }
+
+            purgeOldPixelData();
+
+            // Les 5 parents devraient avoir survécu
+            for (let i = 0; i < 5; i++) {
+                expect(getFromCache(`key_z13_parent_${i}`)?.pixelData).not.toBeNull();
+            }
+
+            // Les 10 normales les plus récentes (5-14) devraient avoir survécu
+            for (let i = 5; i < 15; i++) {
+                expect(getFromCache(`key_z14_normal_${i}`)?.pixelData).not.toBeNull();
+            }
+            // Les 5 normales les plus anciennes (0-4) devraient être purgées
+            for (let i = 0; i < 5; i++) {
+                expect(getFromCache(`key_z14_normal_${i}`)?.pixelData).toBeNull();
+            }
+        });
     });
 });

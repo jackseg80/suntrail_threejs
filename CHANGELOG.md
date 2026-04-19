@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.32.3] - 2026-04-19
+### Fixed
+- **tileCache LRU Fix**: Corrected `purgeOldPixelData` to properly respect LRU (it was purging newest tiles instead of oldest).
+- **tileQueue Redundancy Fix**: Fixed `processLoadQueue` to consume `sortedCache` using `splice` instead of `slice`, preventing redundant processing of the same tiles during the 200ms sort amortization window.
+- **tileQueue Optimization**: Improved `removeFromLoadQueue` to avoid O(N) search if the key is not present.
+
 ## [5.32.2] - 2026-04-19
 ### Fixed
 - **Gradle build**: Removed `foojay-resolver-convention` plugin (failed to provision JetBrains JDK 21). Removed hardcoded `org.gradle.java.home` (invalid on CI). Upgraded CI workflow to JDK 21 (Temurin).

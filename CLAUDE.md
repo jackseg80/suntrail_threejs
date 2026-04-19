@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.32.2)
+# SunTrail — Guide IA (v5.32.3)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-19 suite à la v5.32.2 (Gradle build fix + CI JDK 21).
+> Mis à jour le 2026-04-19 suite à la v5.32.3 (Critical performance & cache fixes).
 
 
 ## Projet
