@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.34.1] - 2026-04-19
+### Fixed
+- **Ghosting de l'Eau** : Correction d'un bug où le masque d'eau d'une tuile restait visible sur une nouvelle tuile lors du recyclage des matériaux.
+- **Roadmap** : Ajout de la migration des POI et Sommets vers le système PBF pour améliorer la fiabilité réseau.
+
 ## [5.34.0] - 2026-04-19
 ### Added
 - **Refonte Majeure de l'Hydrologie (PBF & Texture Mask)** : Passage d'un rendu par Mesh 3D (Overpass) à une détection sémantique vectorielle mondiale via PBF (SwissTopo/MapTiler).

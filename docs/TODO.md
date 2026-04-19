@@ -30,11 +30,12 @@
 
 ---
 
-## 🌿 Végétation & Landcover (v5.33+)
+## 🌿 Végétation, Hydrologie & Landcover (v5.34+)
 
-- [x] **Détection Sémantique (v5.33.0)** : Remplacement du scan raster par l'analyse vectorielle (évite les arbres sur terrains de foot).
-- [x] **Connecteur SwissTopo (v5.33.1)** : Utilisation des tuiles vectorielles officielles suisses (Gratuit).
-- [ ] **Solution Souveraine (Mondial)** : Générer et héberger un fichier `forests-world.pmtiles` sur Cloudflare R2 pour supprimer la dépendance à MapTiler (Souveraineté des données).
+- [x] **Refonte Hydrologie (v5.34.0)** : Passage au vectoriel (PBF) et technique du "Texture Mask".
+- [x] **Détection Sémantique Forêts (v5.33.0)** : Remplacement du scan raster par l'analyse vectorielle.
+- [ ] **Migration POI & Sommets (PBF)** : Remplacer les requêtes Overpass API par l'extraction des couches `poi`, `label` et `natural` des tuiles vectorielles pour éliminer les erreurs CORS/406 et accélérer l'affichage.
+- [ ] **Solution Souveraine (Mondial)** : Générer et héberger un fichier `forests-world.pmtiles` sur Cloudflare R2.
 - [ ] **Adaptation par Pays (Vecteur Natif)** :
     - [ ] **France (IGN)** : Intégration du Plan IGN v2 vectoriel (Forêts gratuites).
     - [ ] **Autres pays** : Auditer les services VectorTiles nationaux (Autriche, Espagne, etc.) et implémenter des connecteurs spécifiques.

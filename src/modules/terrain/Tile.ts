@@ -331,6 +331,8 @@ export class Tile {
             shader.uniforms.uColorOffset.value.copy(this.colorOffset);
             shader.uniforms.uColorScale.value = this.colorScale;
             shader.uniforms.uHasOverlay.value = !!this.overlayTex;
+            shader.uniforms.uWaterMask.value = this.waterMaskTex;
+            shader.uniforms.uHasWaterMask.value = !!this.waterMaskTex;
         }
 
         if (!is2D) {
