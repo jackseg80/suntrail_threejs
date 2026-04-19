@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.32.20] - 2026-04-19
+### Added
+- **Backdrop Stretching (Matching Swisstopo)**: Parent tiles now stay visible and stretched for up to 2500ms during zoom-in, until children are fully loaded. This eliminates white/grey "flickering" during rapid navigation.
+- **Dynamic Render Order**: Fading-out tiles are now rendered behind active tiles to ensure they act as a visual background without masking new data.
+
 ## [5.32.19] - 2026-04-19
 ### Fixed
 - **Build**: Final fix for the `versionName` syntax error in `build.gradle`. Replaced all malformed escapes with clean quotes.

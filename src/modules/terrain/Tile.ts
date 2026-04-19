@@ -46,6 +46,7 @@ export class Tile {
     opacity: number = 0;
     isFadingIn: boolean = false;
     isFadingOut: boolean = false;
+    ghostFadeDuration: number = 2000;
     ghostFadeRemaining: number = 0;
     worldX: number = 0; worldZ: number = 0;
     bounds: THREE.Box3 = new THREE.Box3();
@@ -418,19 +419,35 @@ export class Tile {
         }
     }
 
-    startFadeOut(): void {
+    startFadeOut(durationMs: number = GHOST_FADE_MS): void {
         if (this.isFadingOut || !this.mesh) return;
-        this.isFadingOut = true; this.ghostFadeRemaining = GHOST_FADE_MS;
-        this.mesh.position.y = -0.5;
-        if (this.mesh.material instanceof THREE.Material) { this.mesh.material.transparent = true; this.mesh.material.opacity = 1.0; }
+        this.isFadingOut = true; 
+        this.ghostFadeDuration = durationMs;
+        this.ghostFadeRemaining = durationMs;
+        
+        // v5.32.19 : On place la tuile légèrement en dessous et on baisse son renderOrder
+        // pour qu'elle serve de fond (backdrop) sans masquer les nouvelles tuiles.
+        this.mesh.position.y = -1.0;
+        this.mesh.renderOrder = -2; 
+        
+        if (this.mesh.material instanceof THREE.Material) { 
+            this.mesh.material.transparent = true; 
+            this.mesh.material.opacity = 1.0; 
+        }
         markCacheKeyActive(getTileCacheKey(this.key, this.zoom));
     }
 
     updateFadeOut(deltaMs: number): void {
         if (!this.isFadingOut || !this.mesh) return;
         this.ghostFadeRemaining -= deltaMs;
-        const t = Math.max(0, this.ghostFadeRemaining / GHOST_FADE_MS);
-        if (this.mesh.material instanceof THREE.Material) { this.mesh.material.opacity = t; }
+        
+        // v5.32.19 : Utilisation de la durée dynamique (prolongée pour les parents)
+        const t = Math.max(0, this.ghostFadeRemaining / this.ghostFadeDuration);
+        
+        if (this.mesh.material instanceof THREE.Material) { 
+            // Courbe de fade-out plus douce pour éviter le clignotement final
+            this.mesh.material.opacity = t * t; 
+        }
         if (this.ghostFadeRemaining <= 0) this.isFadingOut = false;
     }
 

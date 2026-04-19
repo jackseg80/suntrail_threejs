@@ -306,10 +306,7 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
 
         for (const [key, tile] of activeTiles.entries()) {
             if (!currentActiveKeys.has(key)) {
-                // v5.32.16 : Aggressive Cleanup.
-                // Si on dézoome (new zoom < old zoom), on DÉTRUIT immédiatement les 
-                // petites tuiles (LOD élevé) au lieu de les fader. Elles sont inutiles et 
-                // bloquent la file d'attente (workers/réseau).
+                // v5.32.19 : Aggressive Cleanup + Parent Retention (Backdrop Stretching)
                 const isZoomingOut = lodChanging && (zoom < lastRenderedZoom);
 
                 if (lodChanging && tile.mesh && tile.status !== 'disposed' && !isZoomingOut) {
@@ -317,7 +314,9 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
                     activeTiles.delete(key);
                     if (!fadingOutTiles.has(tile)) {
                         fadingOutTiles.add(tile);
-                        tile.startFadeOut();
+                        // v5.32.19 : On augmente le délai de survie (2500ms) pour que le parent 
+                        // étiré couvre le chargement des enfants (Matching Swisstopo).
+                        tile.startFadeOut(2500); 
                     }
                 } else {
                     removeTile(tile);
