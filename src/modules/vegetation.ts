@@ -202,7 +202,18 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
             for (let j = 0; j < data.count; j++) {
                 iMesh.setMatrixAt(j, data.matrices[j]);
             }
-            // Phase 2 : castShadow désactivé sur mobile mid-range (économise ~18 draw calls shadow pass)
+            
+            // v5.32.5 : Fix Frustum Culling. On définit une bounding box qui couvre TOUTE la tuile
+            // pour éviter que les arbres ne disparaissent dès que le centre de la tuile sort du champ.
+            const halfSize = size / 2;
+            iMesh.geometry.computeBoundingSphere(); // Important pour la base
+            iMesh.boundingBox = new THREE.Box3(
+                new THREE.Vector3(-halfSize, -50, -halfSize),
+                new THREE.Vector3(halfSize, 500, halfSize)
+            );
+            iMesh.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), size);
+            
+            // Phase 2 : castShadow désactivé sur mobile mid-range
             iMesh.castShadow = !is2D && state.VEGETATION_CAST_SHADOW;
             iMesh.receiveShadow = !is2D;
             forestGroup.add(iMesh);
