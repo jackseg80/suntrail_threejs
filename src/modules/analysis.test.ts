@@ -6,6 +6,7 @@ describe('analysis.ts', () => {
     beforeEach(() => {
         vi.resetAllMocks();
         state.RELIEF_EXAGGERATION = 1.0;
+        state.IS_2D_MODE = false;
         state.originTile = { x: 4270, y: 2891, z: 13 };
     });
 

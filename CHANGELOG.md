@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.34.4] - 2026-04-19
+### Fixed
+- **Intégrité des Tests** : Correction des tests unitaires `analysis.test.ts` et `terrain.test.ts` qui échouaient suite au passage en mode 2D par défaut, afin de garantir le bon déroulement du pipeline CI/CD (GitHub Actions).
+
 ## [5.34.3] - 2026-04-19
 ### Fixed
 - **API Overpass (CORS/406)** : Remplacement des requêtes POST par des requêtes GET pour améliorer la compatibilité réseau (CORS) avec l'API Overpass lors du téléchargement des sommets et des points d'intérêt.

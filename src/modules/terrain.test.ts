@@ -114,6 +114,7 @@ describe('terrain.ts', () => {
             state.PERFORMANCE_PRESET = 'balanced';
             state.ZOOM = 14;
             state.SHOW_SLOPES = true;
+            state.IS_2D_MODE = false;
             await updateVisibleTiles();
             expect(terrainUniforms.uShowSlopes.value).toBe(1.0);
         });
