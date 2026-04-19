@@ -57,14 +57,16 @@ export function forceImmediateLODUpdate(): void {
         dist = THREE.MathUtils.lerp(heightAboveGround, rawDist, tiltBlend * 0.5);
     }
     
-    const idealZoom = getIdealZoom(dist);
+    const idealZoom = getIdealZoom(dist, state.ZOOM);
     const effectiveMaxZoom = isFeatureEnabled('lod_high')
         ? (state.MAX_ALLOWED_ZOOM || 18)
         : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
 
     const targetZoom = Math.min(idealZoom, effectiveMaxZoom);
-    state.ZOOM = targetZoom;
-    lastLodChangeTime = performance.now(); // On marque le changement pour bloquer les micro-oscillations suivantes
+    if (targetZoom !== state.ZOOM) {
+        state.ZOOM = targetZoom;
+        lastLodChangeTime = performance.now();
+    }
     
     const gpsCenter = worldToLngLat(dx, dz, state.originTile);
     autoSelectMapSource(gpsCenter.lat, gpsCenter.lon);
@@ -109,15 +111,24 @@ export async function disposeScene(): Promise<void> {
     currentThrottledSunUpdate = null;
 }
 
-function getIdealZoom(dist: number, currentZoom: number = -1): number {
+/**
+ * Détermine le niveau de zoom idéal en fonction de la distance caméra-sol.
+ * v5.32.9 : Hystérésis renforcée (10-15%) pour éviter les oscillations LOD 15-18.
+ */
+function getIdealZoom(dist: number, currentZoom: number): number {
     const boost = state.MAP_SOURCE === 'satellite' ? 2.0
                 : state.MAP_SOURCE === 'swisstopo' ? 1.0
                 : 1.2;
                 
-    // v5.29.31 : Hystérésis de 5% intégrée pour éviter les oscillations
+    // Hystérésis : on rend plus difficile la sortie du zoom actuel que l'entrée.
+    // Si on est déjà à Z, on augmente le seuil pour y rester (on accepte une distance plus grande).
+    // Si on n'y est pas, on utilise le seuil de base.
     const getThresh = (base: number, z: number) => {
-        if (currentZoom === z) return base * 1.05;
-        if (currentZoom === z - 1) return base * 0.95;
+        if (currentZoom === z) {
+            // Hystérésis plus forte (15%) pour les zooms élevés où le terrain change beaucoup
+            const factor = (z >= 15) ? 1.15 : 1.08;
+            return base * factor;
+        }
         return base;
     };
 
@@ -262,7 +273,7 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
         }
 
         let newZoom = state.ZOOM;
-        const idealZoom = getIdealZoom(dist);
+        const idealZoom = getIdealZoom(dist, state.ZOOM);
         const effectiveMaxZoom = isFeatureEnabled('lod_high')
             ? (state.MAX_ALLOWED_ZOOM || 18)
             : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
@@ -277,17 +288,13 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
             }
         }
 
-        if (Math.abs(targetZoom - state.ZOOM) > 1) {
-            newZoom = targetZoom;
-        } else {
-            newZoom = targetZoom;
-        }
+        newZoom = targetZoom;
 
         const currentZoom = state.ZOOM;
         const now = performance.now();
         if (newZoom !== state.ZOOM) {
-            // v5.28.47 : Réduction du verrou de changement de zoom pour plus de réactivité (800ms -> 350ms)
-            if (now - lastLodChangeTime > 350) {
+            // v5.32.9 : Verrou temporel augmenté à 500ms pour stabiliser le terrain après saut de LOD
+            if (now - lastLodChangeTime > 500) {
                 state.ZOOM = newZoom;
                 lastLodChangeTime = now;
                 // v5.32.0 : Prefetch adjacent LODs immediately after zoom change

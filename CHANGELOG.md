@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.32.9] - 2026-04-19
+### Fixed
+- **LOD Stability (Anti-Bounce)**: Fixed infinite oscillation between zoom levels (e.g. 16-17-16) at high LODs.
+  - Increased hysteresis to 15% for LOD 15-18 (8% for others).
+  - Enforced mandatory `currentZoom` parameter in `getIdealZoom` to prevent hysteresis bypass.
+  - Increased LOD change lock timer from 350ms to 500ms to allow mesh stabilization.
+
 ## [5.32.8] - 2026-04-19
 ### Fixed
 - **Vegetation Syntax**: Fixed a syntax error in `vegetation.ts` introduced in the previous patch.
