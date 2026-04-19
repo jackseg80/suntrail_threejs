@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.32.4] - 2026-04-19
+### Fixed
+- **tileQueue Startup Latency**: Fixed a performance "hole" where the system would wait for the 200ms amortization timer even if the sorted cache was empty. Now triggers an immediate re-sort if no tiles are ready, ensuring fast initial map display.
+- **tileQueue Ghost Tiles**: Invalidates sorted cache when tiles are pruned from the main queue (e.g. on LOD change).
+
 ## [5.32.3] - 2026-04-19
 ### Fixed
 - **tileCache LRU Fix**: Corrected `purgeOldPixelData` to properly respect LRU (it was purging newest tiles instead of oldest).

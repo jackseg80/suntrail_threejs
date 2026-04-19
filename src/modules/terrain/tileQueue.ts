@@ -76,15 +76,19 @@ export async function processLoadQueue() {
         };
 
         // v5.28.48 : Filtrage immédiat des tuiles qui ne sont plus dans activeTiles (LOD obsolète)
+        let pruned = false;
         for (const t of loadQueue) {
             if (!activeTiles.has(t.key)) {
                 loadQueue.delete(t);
+                pruned = true;
             }
         }
+        if (pruned) sortedCache = null;
 
         // v5.31.1 : Amortized sort — only re-sort every 200ms or when queue changes significantly
+        // v5.32.4 : Re-sort IMMEDIATELY if cache is empty to avoid "performance holes"
         const now = performance.now();
-        if (!sortedCache || (now - lastSortTime) > SORT_INTERVAL_MS) {
+        if (!sortedCache || sortedCache.length === 0 || (now - lastSortTime) > SORT_INTERVAL_MS) {
             sortedCache = Array.from(loadQueue).sort((a, b) => {
                 if (!state.camera) return 0;
                 const camPos = state.camera.position;
