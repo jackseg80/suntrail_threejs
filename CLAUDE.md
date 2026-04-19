@@ -1,14 +1,26 @@
-# SunTrail — Guide IA (v5.32.21)
+# SunTrail — Guide IA (v5.33.3)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-19 suite à la v5.32.21 (Test Coverage & Observability).
+> Mis à jour le 2026-04-19 suite à la v5.33.3 (Vector Vegetation & Shadow Fix).
 
 
 ## Projet
 
 App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacitor).
 - **Core** : LOD adaptatif, PMTiles, Offline-first, Support GPX.
+- **Végétation v5.33.1** : Détection sémantique vectorielle (SwissTopo/MapTiler), plus performant et précis.
 - **LOD v5.32.18** : Moteur zero-latency, nettoyage agressif dézoom, optimisations 2D, build Gradle automatisé (Foojay).
+
+
+### ⚠️ Règles de Modification de Fichiers (SÉCURITÉ)
+
+Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage et de syntaxe se produisent fréquemment lors de l'utilisation de commandes `replace` via Shell.
+1. **Zéro BOM (Byte Order Mark)** : Ne JAMAIS utiliser `Out-File` ou `Set-Content` sans précaution sur les fichiers système Android (`build.gradle`, etc.). Gradle échoue si un caractère invisible est présent au début du fichier.
+2. **Méthode .NET Garantie** : Pour modifier un fichier texte, préférer l'objet .NET en PowerShell qui garantit un UTF-8 sans signature :
+   `$p='path'; $c=[System.IO.File]::ReadAllText($p) -replace 'old','new'; [System.IO.File]::WriteAllText($p, $c, (New-Object System.Text.UTF8Encoding($false)))`
+3. **Double-Échappement** : Les guillemets dans les commandes Shell sous Windows nécessitent souvent un triple échappement (`\"\"\"` ou `\`). Si une modification échoue ou insère des antislashs indésirables, utiliser l'outil `write_file` pour réécrire le fichier complet proprement.
+4. **Validation Android Studio** : Après toute modification de `build.gradle`, vérifier la validité de la syntaxe.
+
 
 ### 🚀 Protocole de Release (IMPÉRATIF)
 1. **Pre-check** : Exécuter `npm run check` et `npm test`.
