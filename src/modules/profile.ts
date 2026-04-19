@@ -31,10 +31,8 @@ function resolveActiveLayer(layerId?: string): GPXLayer | null {
  * v5.24.3: Fix mismatch entre points originaux et points densifiés 3D
  */
 export function updateElevationProfile(layerId?: string): void {
-    console.log('[Profile] Updating elevation profile for layer:', layerId || 'active');
     const layer = resolveActiveLayer(layerId);
     if (!layer || !layer.points.length) {
-        console.warn('[Profile] No layer or points found');
         closeElevationProfile();
         return;
     }

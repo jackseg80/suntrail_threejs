@@ -100,7 +100,20 @@ export function updateUserMarker() {
     if (!state.userMarker) {
         state.userMarker = new THREE.Group();
         
-        // ... (le reste du code de création du canvas et du sprite reste identique)
+        // v5.32.22 : Ajout d'une sphère 3D pour la "pastille 3D" demandée
+        // Plus visible et immersive en mode 3D que le simple sprite
+        const sphereGeo = new THREE.SphereGeometry(15, 16, 16);
+        const sphereMat = new THREE.MeshStandardMaterial({ 
+            color: 0xff0000, 
+            emissive: 0xff0000, 
+            emissiveIntensity: 0.5,
+            metalness: 0.5,
+            roughness: 0.2
+        });
+        const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+        sphere.name = 'user-sphere';
+        state.userMarker.add(sphere);
+
         const canvas = document.createElement('canvas');
         canvas.width = 128; canvas.height = 128;
         const ctx = canvas.getContext('2d')!;
@@ -121,6 +134,11 @@ export function updateUserMarker() {
     }
 
     state.userMarker.visible = true;
+    
+    // v5.32.22 : Gérer la visibilité des composants 2D/3D du marqueur
+    const sphere = state.userMarker.getObjectByName('user-sphere');
+    if (sphere) sphere.visible = !state.IS_2D_MODE;
+    
     state.userMarker.position.set(pos.x, finalY, pos.z);
 }
 

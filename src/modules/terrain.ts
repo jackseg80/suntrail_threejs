@@ -158,10 +158,29 @@ export const terrainUpdates = {
 /**
  * Rafraîchit l'affichage de tous les tracés (GPX et enregistrement en cours).
  * Utile après un changement de mode 2D/3D ou un déplacement majeur.
+ * v5.32.22 : Ajout de rafraîchissements différés pour suivre le chargement progressif du terrain.
  */
 export function refreshTracks(): void {
     updateAllGPXMeshes();
     updateRecordedTrackMesh();
+    
+    // v5.32.22 : Mettre aussi à jour le marqueur utilisateur (pastille)
+    import('./location').then(m => m.updateUserMarker());
+
+    // Rafraîchissements de sécurité pour épouser le relief qui charge
+    setTimeout(() => {
+        updateAllGPXMeshes();
+        updateRecordedTrackMesh();
+        import('./location').then(m => m.updateUserMarker());
+    }, 2000);
+
+    setTimeout(() => {
+        if (state.gpxLayers.length > 0 || state.recordedPoints.length > 0) {
+            updateAllGPXMeshes();
+            updateRecordedTrackMesh();
+            import('./location').then(m => m.updateUserMarker());
+        }
+    }, 5000);
 }
 
 // Fixed constant access
@@ -589,6 +608,8 @@ function _doUpdateAllGPXMeshes(): void {
         return { ...layer, points: drapedPoints, mesh };
     });
     state.gpxLayers = updatedLayers;
+    // v5.32.22 : Rafraîchir les données du profil UNIQUEMENT s'il y a des tracés pour éviter le spam console
+    if (state.gpxLayers.length > 0) updateElevationProfile();
 }
 
 export function updateRecordedTrackMesh(): void {

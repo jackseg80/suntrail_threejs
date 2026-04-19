@@ -128,16 +128,38 @@ export function updateSunPosition(minutes: number): void {
         // Shadow camera dynamique par RANGE — adapte le frustum au terrain visible (v5.16.9, v5.31.1 tightened)
         if (state.SHADOWS && state.sunLight.shadow) {
             const tileSizeMeters = 40075000 / Math.pow(2, state.ZOOM);
-            // v5.31.1 : Tighter per-preset caps to reduce GPU cost on mobile
             const maxShadowExtent = state.PERFORMANCE_PRESET === 'balanced' ? 15000
                 : state.PERFORMANCE_PRESET === 'performance' ? 25000
                 : 30000; // ultra
             const extent = Math.max(2000, Math.min(state.RANGE * tileSizeMeters * 0.8, maxShadowExtent));
             const cam = state.sunLight.shadow.camera;
-            if (Math.abs(cam.right - extent) > 500) {
+            
+            // v5.32.22 : Optimisation radicale de la précision Z pour les ombres
+            // Au lieu de 100 -> 200000, on se centre sur la distance réelle du soleil (150000)
+            // avec une marge pour le relief (exagéré à 9000m max).
+            const zMargin = 15000;
+            const newNear = distance - zMargin;
+            const newFar = distance + zMargin;
+
+            if (Math.abs(cam.right - extent) > 500 || Math.abs(cam.near - newNear) > 100) {
                 cam.left = -extent; cam.right = extent;
                 cam.top = extent; cam.bottom = -extent;
+                cam.near = newNear;
+                cam.far = newFar;
                 cam.updateProjectionMatrix();
+
+                // v5.32.22 : Ajustement dynamique du biais selon le zoom
+                // Plus on est zoomé, plus on réduit le biais pour éviter le "Peter Panning" (espace blanc)
+                const zoomFactor = Math.max(0, (state.ZOOM - 14) / 4); // 0 à LOD 14, 1 à LOD 18
+                const isMobile = window.innerWidth <= 768;
+                
+                if (isMobile) {
+                    state.sunLight.shadow.bias = THREE.MathUtils.lerp(-0.0005, -0.0001, zoomFactor);
+                    state.sunLight.shadow.normalBias = THREE.MathUtils.lerp(0.02, 0.005, zoomFactor);
+                } else {
+                    state.sunLight.shadow.bias = THREE.MathUtils.lerp(-0.0001, -0.00002, zoomFactor);
+                    state.sunLight.shadow.normalBias = THREE.MathUtils.lerp(0.01, 0.002, zoomFactor);
+                }
             }
         }
     }

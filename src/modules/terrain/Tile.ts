@@ -261,7 +261,10 @@ export class Tile {
                         vec2 elevUv = clamp(uElevOffset + (uv * uElevScale), vec2(HT_N), vec2(1.0 - HT_N));
                         vec3 normalSample = texture2D(uNormalMap, elevUv).rgb * 2.0 - 1.0;
                         vTrueNormal = normalize(normalSample);
-                        objectNormal = normalize(vec3(normalSample.x * uExaggeration, normalSample.y, normalSample.z * uExaggeration));
+                        // v5.32.22 : Correction cruciale pour géométrie unitaire (1x1)
+                        // Comme le mesh est scalé par uTileSize, la normale locale doit être multipliée par ce même 
+                        // facteur sur X et Z pour que la normalMatrix (inverse-transpose) donne une normale monde correcte.
+                        objectNormal = normalize(vec3(normalSample.x * uExaggeration * uTileSize, normalSample.y, normalSample.z * uExaggeration * uTileSize));
                     `);
                 }
 

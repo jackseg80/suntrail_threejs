@@ -413,12 +413,14 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
     state.sunLight.shadow.camera.near = 100; state.sunLight.shadow.camera.far = 200000;
     
     // v5.28.38 : Biais ajusté pour mobile (précision Z-buffer moindre)
+    // v5.32.22 : Ajustement final pour éviter le décalage des ombres d'arbres (Peter Panning)
+    // Des valeurs négatives de bias plus marquées "collent" l'ombre à l'objet.
     if (isMobile) {
-        state.sunLight.shadow.bias = -0.0002; 
-        state.sunLight.shadow.normalBias = 0.15; // Augmenté de 0.05 à 0.15 pour mobile
-    } else {
         state.sunLight.shadow.bias = -0.0005; 
-        state.sunLight.shadow.normalBias = 0.05;
+        state.sunLight.shadow.normalBias = 0.02; 
+    } else {
+        state.sunLight.shadow.bias = -0.0001; 
+        state.sunLight.shadow.normalBias = 0.01;
     }
     state.scene.add(state.sunLight); state.scene.add(state.sunLight.target);
 
@@ -603,7 +605,13 @@ function updateTerrainPhysics(interacting: boolean): void {
         if (state.sunLight) {
             state.sunLight.castShadow = state.SHADOWS;
             if (state.renderer) {
-                state.renderer.shadowMap.autoUpdate = !state.isUserInteracting;
+                // v5.32.22 : Synchronisation de l'état des ombres
+                if (state.renderer.shadowMap.enabled !== state.SHADOWS) {
+                    state.renderer.shadowMap.enabled = state.SHADOWS;
+                }
+                // v5.32.22 : Désactivation du "freeze" des ombres pendant l'interaction
+                // car la position du soleil dépend des coordonnées GPS qui changent lors du déplacement.
+                state.renderer.shadowMap.autoUpdate = true;
             }
         }
 

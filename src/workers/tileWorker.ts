@@ -109,7 +109,13 @@ self.onmessage = async (e) => {
                                     return -10000.0 + ((data[i] * 65536.0 + data[i+1] * 256.0 + data[i+2]) * 0.1);
                                 };
                                 const hL = getH(px - 1, py), hR = getH(px + 1, py), hD = getH(px, py - 1), hU = getH(px, py + 1);
-                                const vx = hL - hR, vy = pixelSize * 2.0, vz = hD - hU;
+                                // v5.32.22 : Calcul de la normale indépendant de la taille réelle de la tuile.
+                                // On utilise la pente (mètres par pixel) pour que la normale soit correcte 
+                                // dans l'espace local (1x1) de la géométrie Three.js.
+                                const vx = (hL - hR) / pixelSize;
+                                const vy = 2.0; // Distance horizontale entre hL/hR et hD/hU en unités de pixels (2 pixels)
+                                const vz = (hD - hU) / pixelSize;
+                                
                                 const len = Math.sqrt(vx * vx + vy * vy + vz * vz);
                                 normalData[idx] = ((vx / len) * 0.5 + 0.5) * 255;
                                 normalData[idx+1] = ((vy / len) * 0.5 + 0.5) * 255;

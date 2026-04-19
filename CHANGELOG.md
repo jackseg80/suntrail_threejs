@@ -5,6 +5,21 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.32.22] - 2026-04-19
+### Added
+- **Pastille 3D immersive** : Ajout d'une sphère 3D réelle au marqueur utilisateur (visible uniquement en mode 3D). Elle suit fidèlement le relief grâce à un cycle de rafraîchissement différé (0s, 2s, 5s) qui attend le chargement complet des tuiles.
+
+### Fixed
+- **Rendu du Relief (Normal Matrix)** : Correction du calcul des normales sur les géométries unitaires (1x1). Les normales sont désormais mises à l'échelle par `uTileSize` dans le shader, rétablissant le volume des montagnes et corrigeant l'éclairage des versants.
+- **Précision des Ombres (Anti-Peter Panning)** : 
+    - Optimisation du frustum Z de la caméra d'ombre (plage de 200km réduite à 30km), multipliant par 6 la précision du Z-buffer.
+    - Implémentation d'un **Shadow Bias adaptatif** selon le zoom. À LOD 17-18, le biais est réduit au minimum pour supprimer l'espace blanc entre les arbres/bâtiments et leurs ombres.
+- **Cohérence Lumineuse** : Désactivation du "Shadow Freeze" pendant l'interaction. Les ombres se mettent désormais à jour en temps réel avec le déplacement GPS pour rester synchronisées avec l'ombrage du relief.
+
+### Optimized
+- **Performance de rendu** : Suppression d'un `scene.traverse` systématique dans la boucle principale.
+- **Nettoyage Logs** : Suppression du spam "No layer found" dans la console lors de l'initialisation du profil d'élévation.
+
 ## [5.32.21] - 2026-04-19
 ### Added
 - **Test Coverage**: Added comprehensive unit tests for Backdrop Stretching and 2D worker flag propagation (589 tests total).
