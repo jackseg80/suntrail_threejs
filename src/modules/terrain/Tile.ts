@@ -356,7 +356,11 @@ export class Tile {
                             vec4 col = texture2D(uElevationMap, elevUv);
                             return decodeHeight(col) * uExaggeration;
                         }
-                    `).replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv) - aSkirt * uTileSize * 0.02;`);
+                    `).replace('#include <begin_vertex>', `#include <begin_vertex>\n
+                        // v5.33.3 : Fix ombres carrées. On ignore les skirts (aSkirt) dans le calcul de profondeur
+                        // pour éviter que les rebords verticaux ne projettent des ombres à lumière rasante.
+                        transformed.y = getTerrainHeight(uv);
+                    `);
                 }
             };
             const depth = materialPool.acquireDepth(onDepthCompile);

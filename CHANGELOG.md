@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.33.3] - 2026-04-19
+### Fixed
+- **Correction des Ombres Carrées (Lumière Rasante)** : 
+    - Neutralisation des "Skirts" (rebords de tuiles) dans le `customDepthMaterial`. Les bords verticaux des tuiles ne projettent plus d'ombres sur leurs voisins, éliminant les lignes sombres artificielles à l'heure dorée.
+    - **Shadow Bias Adaptatif** : Ajustement dynamique du biais d'ombre selon l'altitude du soleil pour supprimer le "Shadow Acne" (bandes noires) lorsque le soleil approche de l'horizon.
+
 ## [5.33.1] - 2026-04-19
 ### Added
 - **Détection Sémantique des Forêts (Suisse & Monde)** : Implémentation d'un système de détection basé sur les données vectorielles (PBF) pour éliminer les faux positifs (arbres sur terrains de foot, parcs tondus).

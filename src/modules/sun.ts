@@ -125,6 +125,13 @@ export function updateSunPosition(minutes: number): void {
         state.sunLight.intensity = sunIntensity;
         state.sunLight.color.copy(_sunColor);
 
+        // v5.33.3 : Shadow Bias adaptatif (Fix ombres carrées à lumière rasante)
+        // Plus le soleil est bas, plus on augmente le biais pour éviter les artefacts de précision.
+        const isMobile = (window.innerWidth <= 768);
+        const baseBias = isMobile ? -0.0005 : -0.0001;
+        const biasFactor = THREE.MathUtils.clamp((10 - altDeg) / 10, 0, 1);
+        state.sunLight.shadow.bias = baseBias + (biasFactor * 0.0002);
+
         // Shadow camera dynamique par RANGE — adapte le frustum au terrain visible (v5.16.9, v5.31.1 tightened)
         if (state.SHADOWS && state.sunLight.shadow) {
             const tileSizeMeters = 40075000 / Math.pow(2, state.ZOOM);
