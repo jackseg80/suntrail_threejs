@@ -87,18 +87,16 @@ class TileWorkerManager {
         }
     }
 
-    /**
-     * Lance le chargement d'une tuile et retourne { promise, taskId }.
-     */
     loadTile(
         elevUrl: string | null, colorUrl: string | null, overlayUrl: string | null, 
         zoom: number, elevSourceZoom: number = zoom,
-        blobs?: { elev?: Blob | null, color?: Blob | null, overlay?: Blob | null }
+        blobs?: { elev?: Blob | null, color?: Blob | null, overlay?: Blob | null },
+        is2D: boolean = false
     ): { promise: Promise<any>, taskId: number } {
         if (this.workers.length === 0 || !state.USE_WORKERS) return { promise: Promise.resolve(null), taskId: -1 };
 
         // v5.29.5 : Dédoublonnage in-flight
-        const dedupeKey = `${elevUrl}|${colorUrl}|${overlayUrl}|${zoom}|${elevSourceZoom}`;
+        const dedupeKey = `${elevUrl}|${colorUrl}|${overlayUrl}|${zoom}|${elevSourceZoom}|${is2D}`;
         const existing = this.inFlight.get(dedupeKey);
         if (existing) {
             existing.refCount++;
@@ -139,6 +137,7 @@ class TileWorkerManager {
 
             worker.postMessage({ 
                 id, elevUrl, colorUrl, overlayUrl, isOffline: state.IS_OFFLINE, zoom, elevSourceZoom,
+                is2D,
                 elevBlob: blobs?.elev,
                 colorBlob: blobs?.color,
                 overlayBlob: blobs?.overlay

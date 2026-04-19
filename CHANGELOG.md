@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.32.17] - 2026-04-19
+### Optimized
+- **Fluid LOD Engine**: Replaced the legacy 500ms LOD lock with a zero-latency system. Level of Detail now tracks camera movement image-by-image during damping, ensuring instant visual crispness.
+- **Aggressive Zoom-Out Cleanup**: High-LOD tiles and their pending network/worker tasks are now instantly destroyed when zooming out, freeing 100% bandwidth for parent tiles.
+- **2D Fast-Path**: Workers now skip Normal Map generation in 2D mode or low LODs, saving ~15% CPU per tile on mobile.
+- **Snappy Transitions**: Accelerated tile fade-in from 500ms to 200ms for a more reactive "native" feel.
+
+### Fixed
+- **Move-to-Refresh Bug**: Fixed a long-standing issue where the map stayed blurry until moved slightly. Zoom is now recalculating with mathematical precision at the exact end of user interaction.
+- **Worker Robustness**: Fixed a `ReferenceError` on `is2D` in the tile worker that caused white screens at LOD 11+.
+
 ## [5.32.14] - 2026-04-19
 ### Optimization
 - **Unified LOD Geometries**: Terrain now uses shared 1x1 unit geometries across all tiles, significantly reducing BufferGeometry allocations and VRAM footprint. Tile scaling is handled via `mesh.scale`.

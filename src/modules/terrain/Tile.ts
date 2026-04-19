@@ -409,7 +409,8 @@ export class Tile {
 
     updateFade(delta: number): void {
         if (!this.isFadingIn || !this.mesh) return;
-        this.opacity += delta * 2.0;
+        // v5.32.17 : Fade-in plus rapide (200ms) pour une sensation de fluidité accrue (LOD snapping)
+        this.opacity += delta * 5.0;
         if (this.opacity >= 1) { this.opacity = 1; this.isFadingIn = false; if (this.mesh.material instanceof THREE.Material) this.mesh.material.transparent = false; }
         if (this.mesh.material instanceof THREE.Material) {
             const t = this.opacity;

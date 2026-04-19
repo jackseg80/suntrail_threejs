@@ -44,7 +44,7 @@ function resetMapTilerBackoff(): void {
 }
 
 self.onmessage = async (e) => {
-    const { id, type, elevUrl, colorUrl, overlayUrl, isOffline, zoom, elevSourceZoom, elevBlob, colorBlob, overlayBlob } = e.data;
+    const { id, type, elevUrl, colorUrl, overlayUrl, isOffline, zoom, elevSourceZoom, is2D, elevBlob, colorBlob, overlayBlob } = e.data;
 
     // --- ANNULATION ---
     if (type === 'cancel') {
@@ -92,37 +92,39 @@ self.onmessage = async (e) => {
                     results.pixelData = data.buffer;
                     transferables.push(results.pixelData);
 
-                    // --- GÉNÉRATION NORMAL MAP ---
-                    const normalData = new Uint8ClampedArray(width * height * 4);
-                    const sourceZ = elevSourceZoom || zoom || 14;
-                    const tileSizeMeters = 40075016.686 / Math.pow(2, sourceZ);
-                    const pixelSize = tileSizeMeters / width;
+                    // --- GÉNÉRATION NORMAL MAP (Sautée en 2D pour économiser ~15% CPU) ---
+                    if (!is2D) {
+                        const normalData = new Uint8ClampedArray(width * height * 4);
+                        const sourceZ = elevSourceZoom || zoom || 14;
+                        const tileSizeMeters = 40075016.686 / Math.pow(2, sourceZ);
+                        const pixelSize = tileSizeMeters / width;
 
-                    for (let py = 0; py < height; py++) {
-                        for (let px = 0; px < width; px++) {
-                            const idx = (py * width + px) * 4;
-                            const getH = (x: number, y: number) => {
-                                const ix = Math.max(0, Math.min(width - 1, x));
-                                const iy = Math.max(0, Math.min(height - 1, y));
-                                const i = (iy * width + ix) * 4;
-                                return -10000.0 + ((data[i] * 65536.0 + data[i+1] * 256.0 + data[i+2]) * 0.1);
-                            };
-                            const hL = getH(px - 1, py), hR = getH(px + 1, py), hD = getH(px, py - 1), hU = getH(px, py + 1);
-                            const vx = hL - hR, vy = pixelSize * 2.0, vz = hD - hU;
-                            const len = Math.sqrt(vx * vx + vy * vy + vz * vz);
-                            normalData[idx] = ((vx / len) * 0.5 + 0.5) * 255;
-                            normalData[idx+1] = ((vy / len) * 0.5 + 0.5) * 255;
-                            normalData[idx+2] = ((vz / len) * 0.5 + 0.5) * 255;
-                            normalData[idx+3] = 255;
+                        for (let py = 0; py < height; py++) {
+                            for (let px = 0; px < width; px++) {
+                                const idx = (py * width + px) * 4;
+                                const getH = (x: number, y: number) => {
+                                    const ix = Math.max(0, Math.min(width - 1, x));
+                                    const iy = Math.max(0, Math.min(height - 1, y));
+                                    const i = (iy * width + ix) * 4;
+                                    return -10000.0 + ((data[i] * 65536.0 + data[i+1] * 256.0 + data[i+2]) * 0.1);
+                                };
+                                const hL = getH(px - 1, py), hR = getH(px + 1, py), hD = getH(px, py - 1), hU = getH(px, py + 1);
+                                const vx = hL - hR, vy = pixelSize * 2.0, vz = hD - hU;
+                                const len = Math.sqrt(vx * vx + vy * vy + vz * vz);
+                                normalData[idx] = ((vx / len) * 0.5 + 0.5) * 255;
+                                normalData[idx+1] = ((vy / len) * 0.5 + 0.5) * 255;
+                                normalData[idx+2] = ((vz / len) * 0.5 + 0.5) * 255;
+                                normalData[idx+3] = 255;
+                            }
                         }
-                    }
-                    const nCanvas = new OffscreenCanvas(width, height);
-                    const nCtx = nCanvas.getContext('2d');
-                    if (nCtx) {
-                        nCtx.putImageData(new ImageData(normalData, width, height), 0, 0);
-                        const normalBitmap = nCanvas.transferToImageBitmap();
-                        results.normalBitmap = normalBitmap;
-                        transferables.push(normalBitmap);
+                        const nCanvas = new OffscreenCanvas(width, height);
+                        const nCtx = nCanvas.getContext('2d');
+                        if (nCtx) {
+                            nCtx.putImageData(new ImageData(normalData, width, height), 0, 0);
+                            const normalBitmap = nCanvas.transferToImageBitmap();
+                            results.normalBitmap = normalBitmap;
+                            transferables.push(normalBitmap);
+                        }
                     }
                 }
             }

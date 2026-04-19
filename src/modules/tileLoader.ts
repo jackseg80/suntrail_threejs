@@ -382,7 +382,7 @@ export async function loadTileData(tx: number, ty: number, zoom: number, is2D: b
         if (overlayUrl) blobs.overlay = await packManager.getTileFromPacks(zoom, tx, ty, 'overlay');
     }
 
-    return tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl, zoom, sourceZoom, blobs);
+    return tileWorkerManager.loadTile(elevUrl, colorUrl, overlayUrl, zoom, sourceZoom, blobs, is2D);
 }
 
 /**

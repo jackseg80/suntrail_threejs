@@ -33,8 +33,6 @@ let _lastLodUpsellTime = 0;
 // Ground plane — empêche le vide blanc quand la caméra voit sous le terrain au tilt max
 let groundPlane: THREE.Mesh | null = null;
 
-let lastLodChangeTime = 0;
-
 /**
  * Force une mise à jour immédiate du LOD (v5.28.25).
  * Ignore le throttle de 800ms pour éviter la "bouillie de pixels" après un flyTo.
@@ -65,7 +63,6 @@ export function forceImmediateLODUpdate(): void {
     const targetZoom = Math.min(idealZoom, effectiveMaxZoom);
     if (targetZoom !== state.ZOOM) {
         state.ZOOM = targetZoom;
-        lastLodChangeTime = performance.now();
     }
     
     const gpsCenter = worldToLngLat(dx, dz, state.originTile);
@@ -221,11 +218,29 @@ export async function initScene(): Promise<void> {
         state.isUserInteracting = false;
         lastInteractionTime = performance.now();
 
-        // v5.28.47 : Rafraîchissement forcé à la fin de l'interaction (zoom fini) pour garantir le bon LOD
+        // v5.32.17 : Calcul final du LOD à la fin de l'interaction (et du damping)
         if (state.camera && state.controls) {
             const dx = state.controls.target.x, dz = state.controls.target.z;
-            const groundH = state.IS_2D_MODE ? 0 : getAltitudeAt(state.camera.position.x, state.camera.position.z);
-            const dist = state.IS_2D_MODE ? Math.max(45, state.camera.position.y - groundH) : state.camera.position.distanceTo(state.controls.target);
+            const rawDist = state.camera.position.distanceTo(state.controls.target);
+            const cameraGroundH = state.IS_2D_MODE ? 0 : getAltitudeAt(state.camera.position.x, state.camera.position.z);
+            const heightAboveGround = Math.max(45, state.camera.position.y - cameraGroundH);
+            let dist: number;
+            if (state.IS_2D_MODE) {
+                dist = heightAboveGround;
+            } else {
+                const polar = state.controls.getPolarAngle();
+                const tiltBlend = THREE.MathUtils.clamp(polar / 1.2, 0, 1);
+                dist = THREE.MathUtils.lerp(heightAboveGround, rawDist, tiltBlend * 0.5);
+            }
+            
+            const idealZoom = getIdealZoom(dist, state.ZOOM);
+            const effectiveMaxZoom = isFeatureEnabled('lod_high') ? (state.MAX_ALLOWED_ZOOM || 18) : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
+            const targetZoom = Math.min(idealZoom, effectiveMaxZoom);
+            
+            if (targetZoom !== state.ZOOM) {
+                state.ZOOM = targetZoom;
+            }
+            
             void updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, dist, dx, dz, true);
         }
 
@@ -304,17 +319,11 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
         newZoom = targetZoom;
 
         const currentZoom = state.ZOOM;
-        const now = performance.now();
         if (newZoom !== state.ZOOM) {
-            // v5.32.9 : Verrou temporel augmenté à 500ms pour stabiliser le terrain après saut de LOD
-            if (now - lastLodChangeTime > 500) {
-                state.ZOOM = newZoom;
-                lastLodChangeTime = now;
-                // v5.32.0 : Prefetch adjacent LODs immediately after zoom change
-                lastPrefetchTime = 0;
-            } else {
-                newZoom = state.ZOOM;
-            }
+            // FIX: Suppression complète du verrou 500ms qui bloquait le LOD pendant et après le damping.
+            // L'hystérésis de 10% dans getIdealZoom suffit à empêcher les clignotements.
+            state.ZOOM = newZoom;
+            lastPrefetchTime = 0;
         }
 
         const gpsCenter = worldToLngLat(dx, dz, state.originTile);
@@ -382,7 +391,7 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
             }
         }
         updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, dist, state.controls!.target.x, state.controls!.target.z);
-    }, 100);
+    }, 50);
     
     currentThrottledUpdate = throttledUpdate;
     state.controls!.addEventListener('change', currentThrottledUpdate);

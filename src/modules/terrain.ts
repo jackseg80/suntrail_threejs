@@ -306,9 +306,13 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
 
         for (const [key, tile] of activeTiles.entries()) {
             if (!currentActiveKeys.has(key)) {
-                // v5.32.0 : Parent Protection — keep old LOD tiles as fading backdrop
-                // until new LOD tiles are loaded, regardless of zoom direction.
-                if (lodChanging && tile.mesh && tile.status !== 'disposed') {
+                // v5.32.16 : Aggressive Cleanup.
+                // Si on dézoome (new zoom < old zoom), on DÉTRUIT immédiatement les 
+                // petites tuiles (LOD élevé) au lieu de les fader. Elles sont inutiles et 
+                // bloquent la file d'attente (workers/réseau).
+                const isZoomingOut = lodChanging && (zoom < lastRenderedZoom);
+
+                if (lodChanging && tile.mesh && tile.status !== 'disposed' && !isZoomingOut) {
                     removeTile(tile);
                     activeTiles.delete(key);
                     if (!fadingOutTiles.has(tile)) {
@@ -327,7 +331,7 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
     } finally {
         isUpdating = false;
         if (updatePending) {
-            setTimeout(() => { updateVisibleTiles(); }, 50);
+            requestAnimationFrame(() => { updateVisibleTiles(); });
         }
     }
     return Promise.resolve();
