@@ -48,7 +48,7 @@ import { loadQueue, processLoadQueue, clearLoadQueue, prioritizeNewZoom } from '
 export const activeTiles = new Map<string, Tile>(); 
 export const activeLabels = new Map<string, any>(); 
 
-const fadingOutTiles = new Set<Tile>();
+export const fadingOutTiles = new Set<Tile>();
 let lastRenderedZoom: number = -1;
 
 let lastMapSource: string = '';

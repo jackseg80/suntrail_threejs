@@ -47,7 +47,6 @@ describe('tileLoader.ts URLs', () => {
     });
 
     it('should generate correct Elevation URL', () => {
-        // getElevationUrl returns {url, sourceZoom} since v5.8.17
         const result = getElevationUrl(10, 20, 14, false);
         expect(result.url).toContain('terrain-rgb-v2/14/10/20');
         expect(result.url).toContain('key=test_key_valid_12345');
@@ -61,8 +60,6 @@ describe('tileLoader.ts URLs', () => {
 
     it('should generate correct Color URL for OpenTopoMap (Global Fallback)', () => {
         state.MAP_SOURCE = 'opentopomap';
-        // On teste au dessus du zoom 10 pour s'assurer que le fallback global fonctionne 
-        // (à zoom <= 10, c'est forcé de toute façon)
         const url = getColorUrl(0, 0, 11); 
         expect(url).toContain('topo-v2/256/11/0/0');
     });
@@ -80,25 +77,26 @@ describe('tileLoader.ts URLs', () => {
     });
 
     it('should generate Waymarked Trails overlay outside Switzerland (Raster)', () => {
-        // Tuile en France (Z13: Mont Blanc area approx 4240, 2915)
         const url = getOverlayUrl(4240, 2915, 13);
         expect(url).toContain('tile.waymarkedtrails.org');
         expect(url).toContain('.png');
     });
 
     it('should return SwissTopo overlay at LOD 16-18 for Swiss tiles', () => {
-        // Tuile Z13 (4270,2891) scaled: Z16=×8, Z17=×16, Z18=×32
         expect(getOverlayUrl(34160, 23128, 16)).toContain('ch.swisstopo.swisstlm3d-wanderwege');
         expect(getOverlayUrl(68320, 46256, 17)).toContain('ch.swisstopo.swisstlm3d-wanderwege');
         expect(getOverlayUrl(136640, 92512, 18)).toContain('ch.swisstopo.swisstlm3d-wanderwege');
     });
+
     it('should return null for Swiss overlay at LOD 19', () => {
         expect(getOverlayUrl(273280, 185024, 19)).toBeNull();
     });
+
     it('should return Waymarked Trails overlay at LOD 16-17 outside Switzerland', () => {
         expect(getOverlayUrl(4240, 2915, 16)).toContain('tile.waymarkedtrails.org');
         expect(getOverlayUrl(4240, 2915, 17)).toContain('tile.waymarkedtrails.org');
     });
+
     it('should return null for Waymarked overlay at LOD 18 outside Switzerland', () => {
         expect(getOverlayUrl(4240, 2915, 18)).toBeNull();
     });
@@ -107,5 +105,27 @@ describe('tileLoader.ts URLs', () => {
         state.SHOW_TRAILS = false;
         const url = getOverlayUrl(4270, 2891, 13);
         expect(url).toBeNull();
+    });
+
+    describe('loadTileData (v5.32.17+)', () => {
+        it('should pass is2D=true to worker when zoom <= 10', async () => {
+            const { loadTileData } = await import('./tileLoader');
+            const { tileWorkerManager } = await import('./workerManager');
+            await loadTileData(0, 0, 10, true);
+            expect(tileWorkerManager.loadTile).toHaveBeenCalledWith(
+                null, expect.any(String), null, 10, 10, expect.any(Object), true
+            );
+        });
+
+        it('should pass is2D=false to worker when zoom > 10 and not in eco mode', async () => {
+            const { loadTileData } = await import('./tileLoader');
+            const { tileWorkerManager } = await import('./workerManager');
+            state.PERFORMANCE_PRESET = 'balanced';
+            state.IS_2D_MODE = false;
+            await loadTileData(0, 0, 14, false);
+            expect(tileWorkerManager.loadTile).toHaveBeenCalledWith(
+                expect.any(String), expect.any(String), expect.any(String), 14, 14, expect.any(Object), false
+            );
+        });
     });
 });

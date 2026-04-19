@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.32.18)
+# SunTrail — Guide IA (v5.32.21)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-19 suite à la v5.32.18 (Production-Ready LOD & Automated Toolchain).
+> Mis à jour le 2026-04-19 suite à la v5.32.21 (Test Coverage & Observability).
 
 
 ## Projet
