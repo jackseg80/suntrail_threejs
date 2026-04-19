@@ -127,8 +127,15 @@ export class Tile {
             this.elevationTex = cached.elev; this.pixelData = cached.pixelData;
             this.colorTex = cached.color; this.overlayTex = cached.overlay; this.normalTex = cached.normal;
             markCacheKeyActive(cacheKey);
-            this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
-            return;
+            
+            // v5.32.7 : Si le pixelData a été purgé du cache RAM mais qu'on en a besoin 
+            // pour les objets 3D (zoom >= 14), on doit forcer un rechargement.
+            if (!this.pixelData && this.zoom >= 14 && (state.SHOW_VEGETATION || state.SHOW_BUILDINGS)) {
+                // On continue le processus de chargement pour restaurer pixelData
+            } else {
+                this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
+                return;
+            }
         }
         this.status = 'loading';
         const fetchAs2D = (this.zoom <= 10);

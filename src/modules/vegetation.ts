@@ -193,25 +193,11 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
         }
     }
 
-    Object.keys(instances).forEach(type => {
-        const data = instances[type];
-        if (data.count > 0) {
-            const is2D = state.IS_2D_MODE;
-            const mat = is2D ? essences[type].material2D : essences[type].material;
-            const iMesh = new THREE.InstancedMesh(essences[type].geometry, mat, data.count);
-            for (let j = 0; j < data.count; j++) {
-                iMesh.setMatrixAt(j, data.matrices[j]);
-            }
-            
-            // v5.32.5 : Fix Frustum Culling. On définit une bounding box qui couvre TOUTE la tuile
-            // pour éviter que les arbres ne disparaissent dès que le centre de la tuile sort du champ.
-            const halfSize = size / 2;
-            iMesh.geometry.computeBoundingSphere(); // Important pour la base
-            iMesh.boundingBox = new THREE.Box3(
-                new THREE.Vector3(-halfSize, -50, -halfSize),
-                new THREE.Vector3(halfSize, 500, halfSize)
-            );
-            iMesh.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), size);
+            // v5.32.7 : Fix Frustum Culling. 
+            // On désactive le culling natif de l'InstancedMesh car il se base sur la géométrie 
+            // source (petit cône) et non sur l'emprise des instances, provoquant des disparitions 
+            // prématurées lors des rotations. La tuile gère déjà son propre cycle de vie.
+            iMesh.frustumCulled = false;
             
             // Phase 2 : castShadow désactivé sur mobile mid-range
             iMesh.castShadow = !is2D && state.VEGETATION_CAST_SHADOW;

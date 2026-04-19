@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.32.7] - 2026-04-19
+### Fixed
+- **Vegetation Culling (Final)**: Disabled `frustumCulled` on vegetation `InstancedMesh`. Native culling was based on the small source geometry at the tile center, causing trees to disappear during rotations even if still in view.
+- **PixelData Restoration**: Fixed a bug where zooming back into a level would use cached tiles with purged `pixelData`, causing 3D objects (trees, buildings) to be placed at altitude 0 (underground). `Tile.load()` now forces a data restore if `pixelData` is missing.
+
 ## [5.32.6] - 2026-04-19
 ### Added
 - **Tests**: Added regression tests for `vegetation.ts` to ensure bounding volumes are always computed for `InstancedMesh`.
