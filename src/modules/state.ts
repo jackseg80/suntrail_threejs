@@ -282,7 +282,7 @@ const initialState: State = {
     connectionType: 'unknown',
     isMapTilerDisabled: false,
     networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isUserInteracting: false,
-    isProcessingTiles: false, IS_2D_MODE: false, currentFPS: 0, lastUIInteraction: Date.now(),
+    isProcessingTiles: false, IS_2D_MODE: true, currentFPS: 0, lastUIInteraction: Date.now(),
     lastClickedCoords: { x: 0, z: 0, alt: 0 },
     hasLastClicked: false,
     isFlying: false,

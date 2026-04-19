@@ -34,18 +34,20 @@ describe('cameraManager.ts', () => {
         expect(state.camera).toBe(camera);
     });
 
-    it('should initialize MapControls with correct limits and position', () => {
+    it('should initialize MapControls with correct limits and position based on state.ZOOM (v5.34.2)', () => {
         const camera = new THREE.PerspectiveCamera();
         const domElement = document.createElement('div');
         
+        state.ZOOM = 14; // Simuler un zoom de départ sauvegardé
         const controls = initControls(camera, domElement);
         
         expect(controls).toBeDefined();
-        expect(controls.maxDistance).toBe(4000000); // Pour LOD 6
+        expect(controls.maxDistance).toBe(4000000); 
         expect(controls.screenSpacePanning).toBe(false); // Mode carte
         
-        // Vérifier la position initiale (LOD 6 ~ 2000km)
-        expect(camera.position.y).toBe(4000000);
+        // Vérifier la position initiale (Z14 ~ 18km)
+        // Note: MapSource est 'swisstopo' par défaut dans initialState, donc boost=1.0
+        expect(camera.position.y).toBe(18000);
         expect(state.controls).toBe(controls);
     });
 

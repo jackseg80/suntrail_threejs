@@ -19,13 +19,39 @@ export function initControls(camera: THREE.PerspectiveCamera, domElement: HTMLEl
     controls.maxDistance = 4000000; // v5.28.21 : Augmenté pour permettre le dézoom LOD 6
     controls.maxPolarAngle = Math.PI / 2.1;
     
-    // Position initiale : dézoom maximum (LOD 6)
-    camera.position.set(0, 4000000, 3000000);
+    // Position initiale : respecte le zoom chargé depuis les réglages (v5.34.2)
+    const dist = getDistanceFromZoom(state.ZOOM);
+    camera.position.set(0, dist, dist * 0.7); // Inclinaison initiale légère
     controls.target.set(0, 0, 0);
     controls.update();
     
     state.controls = controls;
     return controls;
+}
+
+/**
+ * Retourne la distance caméra-cible approximative pour un niveau de zoom donné.
+ * Inverse de getIdealZoom().
+ */
+function getDistanceFromZoom(zoom: number): number {
+    const boost = state.MAP_SOURCE === 'satellite' ? 2.0
+                : state.MAP_SOURCE === 'swisstopo' ? 1.0
+                : 1.2;
+
+    const z = Math.round(zoom);
+    if (z >= 18) return 600 * boost;
+    if (z === 17) return 1500 * boost;
+    if (z === 16) return 3000 * boost;
+    if (z === 15) return 7000 * boost;
+    if (z === 14) return 18000;
+    if (z === 13) return 35000;
+    if (z === 12) return 70000;
+    if (z === 11) return 140000;
+    if (z === 10) return 280000;
+    if (z === 9) return 550000;
+    if (z === 8) return 1000000;
+    if (z === 7) return 1800000;
+    return 4000000;
 }
 
 export function onWindowResize(): void {

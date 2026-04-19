@@ -5,6 +5,18 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.34.2] - 2026-04-19
+### Added
+- **Restauration de la Vue** : L'application s'ouvre désormais exactement sur la dernière position (Lat, Lon) et le dernier niveau de Zoom utilisés lors de la précédente session.
+- **Persistance du Mode 2D/3D** : Le choix de l'utilisateur entre 2D et 3D est désormais sauvegardé immédiatement et restauré au démarrage.
+
+### Changed
+- **2D par Défaut** : L'application démarre désormais en mode 2D (plus fluide) pour la première session ou si aucun choix n'a été mémorisé.
+
+### Fixed
+- **Switch LOD Bas Zoom** : Amélioration de la fiabilité du retour en 3D lors du passage de LOD 10 à 11 pour respecter strictement le choix de l'utilisateur.
+- **Intégrité des Tests** : Mise à jour des tests unitaires pour valider la dynamique de hauteur de caméra et la persistance des réglages de vue.
+
 ## [5.34.1] - 2026-04-19
 ### Fixed
 - **Ghosting de l'Eau** : Correction d'un bug où le masque d'eau d'une tuile restait visible sur une nouvelle tuile lors du recyclage des matériaux.

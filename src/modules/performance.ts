@@ -174,11 +174,7 @@ export function applyPreset(preset: PresetType): void {
         trimCache();
     }
 
-    // Classe preset-eco pour masquer les contrôles inutiles (bouton 3D, timeline)
-    document.body.classList.toggle('preset-eco', preset === 'eco');
-
     if (preset === 'eco') {
-        document.body.classList.add('mode-2d');
         state.IS_2D_MODE = true;
         // Fermer la timeline si elle est ouverte (inutile en 2D)
         const bottomBar = document.getElementById('bottom-bar');
@@ -186,11 +182,11 @@ export function applyPreset(preset: PresetType): void {
             document.body.classList.remove('timeline-open');
             bottomBar.classList.remove('is-open');
         }
-    } else {
-        document.body.classList.remove('mode-2d');
-        // Ne pas réinitialiser IS_2D_MODE ici — l'utilisateur peut vouloir garder le 2D
-        // (le bouton 2D/3D dans la nav bar est la seule source de vérité)
     }
+
+    // Toujours synchroniser la classe CSS avec l'état réel (v5.34.2)
+    document.body.classList.toggle('mode-2d', state.IS_2D_MODE);
+    document.body.classList.toggle('preset-eco', preset === 'eco');
 
     if (state.sunLight) {
         state.sunLight.castShadow = state.SHADOWS;

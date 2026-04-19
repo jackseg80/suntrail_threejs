@@ -2,7 +2,7 @@ import { BaseComponent } from '../core/BaseComponent';
 import { sheetManager } from '../core/SheetManager';
 import { eventBus } from '../../eventBus';
 import { i18n } from '../../../i18n/I18nService';
-import { state } from '../../state';
+import { state, saveSettings } from '../../state';
 import { rebuildActiveTiles, updateVisibleTiles, refreshTracks } from '../../terrain';
 import { haptic } from '../../haptics';
 import { forceImmediateLODUpdate } from '../../scene';
@@ -82,6 +82,7 @@ export class NavigationBar extends BaseComponent {
                 }
 
                 state.IS_2D_MODE = newMode;
+                saveSettings(); // v5.34.2 : Persister immédiatement le choix
                 state.isTiltTransitioning = true; // animation douce du tilt
                 document.body.classList.toggle('mode-2d', newMode);
                 syncToggleVisual();
@@ -146,7 +147,7 @@ export class NavigationBar extends BaseComponent {
                 } else if (!isLowZoom && btn.disabled) {
                     // → Sortie zone LOD ≤ 10 : restaurer le mode précédent
                     btn.disabled = false;
-                    const previousMode = _modeBeforeLowZoom ?? false;
+                    const previousMode = _modeBeforeLowZoom ?? state.IS_2D_MODE;
                     _modeBeforeLowZoom = null;
                     if (previousMode !== state.IS_2D_MODE) {
                         state.IS_2D_MODE = previousMode;

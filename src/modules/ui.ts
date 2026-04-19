@@ -63,6 +63,9 @@ export async function initUI(): Promise<void> {
         applyPreset(bestPreset);
     }
 
+    // Sync 2D mode CSS class (v5.34.2)
+    document.body.classList.toggle('mode-2d', state.IS_2D_MODE);
+
     // Sync i18n with persisted language
     i18n.setLocale(state.lang);
 

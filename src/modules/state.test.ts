@@ -68,6 +68,10 @@ describe('state.ts', () => {
     it('should have USE_WORKERS enabled by default (v5.0.1)', () => {
         expect(state.USE_WORKERS).toBe(true);
     });
+
+    it('should have IS_2D_MODE enabled by default (v5.34.2)', () => {
+        expect(state.IS_2D_MODE).toBe(true);
+    });
 });
 
 import { saveSettings, loadSettings } from './state';
@@ -79,6 +83,7 @@ describe('state persistance (v5.7)', () => {
         state.MAP_SOURCE = 'swisstopo';
         state.PERFORMANCE_PRESET = 'balanced';
         state.SHOW_TRAILS = false;
+        state.IS_2D_MODE = true;
     });
 
     afterEach(() => {
@@ -88,12 +93,14 @@ describe('state persistance (v5.7)', () => {
     it('should save and load basic settings', () => {
         state.MAP_SOURCE = 'satellite';
         state.SHOW_TRAILS = true;
+        state.IS_2D_MODE = false;
         
         saveSettings();
         vi.advanceTimersByTime(300);
         
         state.MAP_SOURCE = 'opentopomap'; // change to something else
         state.SHOW_TRAILS = false;
+        state.IS_2D_MODE = true;
         
         const loaded = loadSettings();
         expect(loaded).not.toBeNull();
@@ -102,6 +109,29 @@ describe('state persistance (v5.7)', () => {
         // Ensure state was modified
         expect(state.MAP_SOURCE).toBe('satellite');
         expect(state.SHOW_TRAILS).toBe(true);
+        expect(state.IS_2D_MODE).toBe(false);
+    });
+
+    it('should save and restore last view coordinates and zoom (v5.34.2)', () => {
+        state.TARGET_LAT = 45.0;
+        state.TARGET_LON = 6.0;
+        state.ZOOM = 14.5;
+        
+        saveSettings();
+        vi.advanceTimersByTime(300);
+        
+        // Reset state
+        state.TARGET_LAT = 0;
+        state.TARGET_LON = 0;
+        state.ZOOM = 6;
+        
+        loadSettings();
+        
+        expect(state.TARGET_LAT).toBe(45.0);
+        expect(state.TARGET_LON).toBe(6.0);
+        expect(state.ZOOM).toBe(14.5);
+        expect(state.initialLat).toBe(45.0);
+        expect(state.initialLon).toBe(6.0);
     });
 
     it('should return null and clear if data is corrupted', () => {
