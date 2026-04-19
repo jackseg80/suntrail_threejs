@@ -28,12 +28,12 @@ jobs:
           node-version: 22
           cache: npm
 
-      # ── 3. Java 17 (requis pour Gradle + Android) ────────────────────────────
+      # ── 3. Java 21 (requis pour Gradle 9.x + AGP 9.x) ────────────────────────
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       # ── 4. Install deps + build web ──────────────────────────────────────────
       - name: Install dependencies
