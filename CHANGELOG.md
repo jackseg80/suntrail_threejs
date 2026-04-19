@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.32.6] - 2026-04-19
+### Added
+- **Tests**: Added regression tests for `vegetation.ts` to ensure bounding volumes are always computed for `InstancedMesh`.
+
 ## [5.32.5] - 2026-04-19
 ### Fixed
 - **Vegetation Frustum Culling**: Fixed 3D trees disappearing near the camera during rotation. `InstancedMesh` now has a manual bounding box/sphere covering the entire tile, preventing premature culling when the tile center leaves the frustum.
