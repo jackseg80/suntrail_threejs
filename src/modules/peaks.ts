@@ -4,6 +4,11 @@ import { haversineDistance } from './geo';
 const CACHE_KEY = 'suntrail_peaks_cache';
 const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+// v5.34.3 : Backoff pour éviter de spammer une API qui nous rejette (CORS/406)
+let isOverpassBanned = false;
+let lastFailureTime = 0;
+const BAN_DURATION = 5 * 60 * 1000; // 5 minutes
+
 interface PeakCache {
     timestamp: number;
     lat: number;
@@ -12,6 +17,12 @@ interface PeakCache {
 }
 
 export async function fetchLocalPeaks(lat: number, lon: number, radiusKm: number = 50): Promise<void> {
+    // 0. Vérifier si l'API est en pause suite à un échec récent
+    if (isOverpassBanned) {
+        if (Date.now() - lastFailureTime < BAN_DURATION) return;
+        isOverpassBanned = false;
+    }
+
     try {
         // 1. Check Cache
         const cachedStr = localStorage.getItem(CACHE_KEY);
@@ -25,26 +36,26 @@ export async function fetchLocalPeaks(lat: number, lon: number, radiusKm: number
         }
 
         // 2. Fetch from Overpass API
-        const bbox = `
-            ${lat - (radiusKm / 111)},
-            ${lon - (radiusKm / (111 * Math.cos(lat * Math.PI / 180)))},
-            ${lat + (radiusKm / 111)},
-            ${lon + (radiusKm / (111 * Math.cos(lat * Math.PI / 180)))}
-        `;
+        const bbox = `${lat - (radiusKm / 111)},${lon - (radiusKm / (111 * Math.cos(lat * Math.PI / 180)))},${lat + (radiusKm / 111)},${lon + (radiusKm / (111 * Math.cos(lat * Math.PI / 180)))}`;
         
-        // We look for peaks with a name and an elevation > 1000m to avoid noise
-        const query = `
-            [out:json][timeout:25];
-            node["natural"="peak"]["name"]["ele"](${bbox});
-            out body;
-        `;
+        const query = `[out:json][timeout:25];node["natural"="peak"]["name"]["ele"](${bbox});out body;`;
 
-        const response = await fetch('https://overpass-api.de/api/interpreter', {
-            method: 'POST',
-            body: 'data=' + encodeURIComponent(query)
+        // v5.34.3 : Utilisation de GET au lieu de POST (plus robuste pour CORS sur certains miroirs)
+        const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+        
+        const response = await fetch(url, { 
+            method: 'GET',
+            referrerPolicy: 'same-origin'
         });
 
-        if (!response.ok) throw new Error('Overpass API error');
+        if (!response.ok) {
+            if (response.status === 406 || response.status === 429) {
+                isOverpassBanned = true;
+                lastFailureTime = Date.now();
+                console.warn(`[Peaks] Overpass API restricted (${response.status}). Pausing requests for 5min.`);
+            }
+            return;
+        }
 
         const data = await response.json();
         
@@ -56,8 +67,8 @@ export async function fetchLocalPeaks(lat: number, lon: number, radiusKm: number
                 lon: el.lon,
                 ele: parseFloat(el.tags.ele) || 0
             }))
-            .filter((p: Peak) => p.ele > 1000) // Filter out low peaks/hills
-            .sort((a: Peak, b: Peak) => b.ele - a.ele); // Sort by elevation descending
+            .filter((p: Peak) => p.ele > 1000) 
+            .sort((a: Peak, b: Peak) => b.ele - a.ele);
 
         state.localPeaks = peaks;
 
@@ -71,6 +82,7 @@ export async function fetchLocalPeaks(lat: number, lon: number, radiusKm: number
         localStorage.setItem(CACHE_KEY, JSON.stringify(newCache));
 
     } catch (error) {
-        console.error("Failed to fetch local peaks:", error);
+        isOverpassBanned = true;
+        lastFailureTime = Date.now();
     }
 }

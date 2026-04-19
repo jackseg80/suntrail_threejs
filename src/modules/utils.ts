@@ -109,6 +109,14 @@ async function processNextOverpass() {
             signal: AbortSignal.timeout(3000)
         });
 
+        if (response.status === 406 || response.status === 403) {
+            console.warn(`[Overpass] Request rejected (${response.status}) by ${server}. Pausing all Overpass requests for 5min.`);
+            _overpassBackoffUntil = Date.now() + 300000; // 5 min
+            item.resolve(null);
+            isOverpassProcessing = false;
+            return;
+        }
+
         if (response.status === 429 || response.status === 504 || response.status === 502) {
             _overpassConsecutiveFails++;
             console.warn(`[Overpass] ${response.status} sur ${server}.`);

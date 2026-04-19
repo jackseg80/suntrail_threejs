@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.34.3] - 2026-04-19
+### Fixed
+- **API Overpass (CORS/406)** : Remplacement des requêtes POST par des requêtes GET pour améliorer la compatibilité réseau (CORS) avec l'API Overpass lors du téléchargement des sommets et des points d'intérêt.
+- **Robustesse Réseau** : Ajout d'un mécanisme de "backoff" (pause de 5 minutes) après une erreur 406/429 pour éviter de surcharger la console d'erreurs (spam) lorsque les serveurs Overpass sont instables.
+
 ## [5.34.2] - 2026-04-19
 ### Added
 - **Restauration de la Vue** : L'application s'ouvre désormais exactement sur la dernière position (Lat, Lon) et le dernier niveau de Zoom utilisés lors de la précédente session.
