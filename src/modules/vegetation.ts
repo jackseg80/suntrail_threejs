@@ -142,7 +142,7 @@ export async function createForestForTile(tile: Tile): Promise<THREE.Group | nul
             let isForest = false;
             
             // --- STRATÉGIE DE DÉTECTION (v5.33.1) ---
-            if (forests !== null) {
+            if (forests) {
                 // Tier 1/3 : Données vectorielles (on fait confiance au vecteur, même si vide)
                 isForest = (forests.length > 0) && isPointInForest(tile, spx, spy, scanRes, forests);
             } else {
