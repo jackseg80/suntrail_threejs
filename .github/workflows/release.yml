@@ -84,7 +84,7 @@ jobs:
 
       - name: Build AAB
         working-directory: android
-        run: ./gradlew bundleRelease --no-daemon
+        run: ./gradlew bundleRelease --no-daemon -Dorg.gradle.java.installations.auto-download=false -Dorg.gradle.java.home=$JAVA_HOME
 
       # ── 8. Upload AAB comme artifact ─────────────────────────────────────────
       - name: Upload AAB artifact
