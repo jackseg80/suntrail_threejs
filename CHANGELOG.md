@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.32.10] - 2026-04-19
+### Improved
+- **LOD Transitions**: Refined `prioritizeNewZoom` to keep parent zoom tiles (`z-1`) in the load queue. This ensures that "backdrop" tiles for the Fade Out effect are not discarded prematurely, resulting in smoother visual transitions.
+
 ## [5.32.9] - 2026-04-19
 ### Fixed
 - **LOD Stability (Anti-Bounce)**: Fixed infinite oscillation between zoom levels (e.g. 16-17-16) at high LODs.

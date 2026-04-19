@@ -132,19 +132,19 @@ export async function processLoadQueue() {
 
 /**
  * v5.32.0 : Prioritize new LOD tiles over old ones.
- * Removes old-zoom tiles from load and build queues but does NOT cancel
- * in-flight network requests. New-zoom tiles get priority.
+ * v5.32.10: Keep parent zoom tiles (newZoom - 1) for Fade Out protection.
  */
 export function prioritizeNewZoom(newZoom: number): void {
-    // Remove old-zoom tiles from load queue (not yet started)
+    // Remove old-zoom tiles from load queue (except parent LOD for backdrop)
     for (const t of loadQueue) {
-        if (t.zoom !== newZoom) {
+        if (t.zoom !== newZoom && t.zoom !== newZoom - 1) {
             loadQueue.delete(t);
         }
     }
-    // Remove old-zoom tiles from build queue
+    // Remove old-zoom tiles from build queue (except parent LOD)
     for (let i = buildQueue.length - 1; i >= 0; i--) {
-        if (buildQueue[i].zoom !== newZoom) {
+        const z = buildQueue[i].zoom;
+        if (z !== newZoom && z !== newZoom - 1) {
             buildQueueKeys.delete(buildQueue[i].key);
             buildQueue.splice(i, 1);
         }
