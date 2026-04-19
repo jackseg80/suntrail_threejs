@@ -12,7 +12,7 @@ et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - **Anisotropic Filtering**: Enabled on all terrain color textures to eliminate aliasing and shimmering when viewing the horizon in 3D.
 
 ### Fixed
-- **Build**: Resolved persistent CI failure by removing tracked `.idea/misc.xml` which forced a JetBrains JDK. Fixed `JAVA_HOME` binding in workflow.
+- **Build**: Forced Adoptium (Temurin) toolchain in `build.gradle` to override persistent IDE-injected JetBrains JDK constraints in CI.
 - **Elevation Profile Marker**: Fixed marker being hidden by terrain in 3D mode. It now uses a larger sphere with `depthTest: false` and a longer vertical guide line for guaranteed visibility.
 - **Accessibility**: Resolved ARIA conflict on the elevation profile drag handle.
 

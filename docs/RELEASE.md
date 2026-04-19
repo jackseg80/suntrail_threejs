@@ -125,7 +125,8 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | 612 | 5.28.27 | v5.28.27 | **Double-tap to zoom**, zoomToPoint function, haptic feedback | 2026-04-12 |
 | 613 | 5.28.27 | v5.28.27-rev2 | Tentative fix conflit versionCode (Échec : déjà utilisé) | 2026-04-12 |
 | **650** | **5.28.27** | **v5.28.27-final** | Jump de sécurité (613+) pour résoudre conflits persistants Play Console | 2026-04-12 |
-| **727** | **5.32.14** | **v5.32.14** | **Audit LOD: Unified Geometries, Adaptive GPX Simplification, Anisotropic Filtering, Fix Profile Marker 3D** | **2026-04-19** |
+| **730** | **5.32.14** | **v5.32.14-final** | **LOD audit, adaptive GPX, Anisotropy, Fix Profile 3D, Build Toolchain Fix** | **2026-04-19** |
+| 727 | 5.32.14 | v5.32.14 | Audit LOD: Unified Geometries, Adaptive GPX Simplification, Anisotropic Filtering, Fix Profile Marker 3D | 2026-04-19 |
 | 726 | 5.32.13 | v5.32.13 | Refined LOD Balance (tilt-aware), fixed scene.test.ts, i18n consolidation | 2026-04-19 |
 | **712** | **5.31.2** | **v5.31.2** | **Fix notification (affichage forcé stats 0.00km + logs + réactivité 10s)** | **2026-04-18** |
 | **711** | **5.31.1** | **v5.31.1** | **Fix notification 0km (unités) + Ajout dénivelé négatif (D-) dans la notification persistante Android** | **2026-04-18** |

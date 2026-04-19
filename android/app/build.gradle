@@ -14,7 +14,7 @@ android {
         applicationId "com.suntrail.threejs"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 729
+        versionCode 730
         versionName "5.32.14"
 
 
@@ -42,6 +42,14 @@ testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+    }
+}
+
+// v5.32.14 : Forcer la toolchain pour le CI (évite la recherche JetBrains jbr-21)
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+        vendor = JvmVendorSpec.ADOPTIUM
     }
 }
 
