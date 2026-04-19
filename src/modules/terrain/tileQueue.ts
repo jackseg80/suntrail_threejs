@@ -126,6 +126,28 @@ export async function processLoadQueue() {
     }
 }
 
+/**
+ * v5.32.0 : Prioritize new LOD tiles over old ones.
+ * Removes old-zoom tiles from load and build queues but does NOT cancel
+ * in-flight network requests. New-zoom tiles get priority.
+ */
+export function prioritizeNewZoom(newZoom: number): void {
+    // Remove old-zoom tiles from load queue (not yet started)
+    for (const t of loadQueue) {
+        if (t.zoom !== newZoom) {
+            loadQueue.delete(t);
+        }
+    }
+    // Remove old-zoom tiles from build queue
+    for (let i = buildQueue.length - 1; i >= 0; i--) {
+        if (buildQueue[i].zoom !== newZoom) {
+            buildQueueKeys.delete(buildQueue[i].key);
+            buildQueue.splice(i, 1);
+        }
+    }
+    sortedCache = null; // Force re-sort with new priorities
+}
+
 export function clearLoadQueue() {
     loadQueue.clear();
     sortedCache = null;

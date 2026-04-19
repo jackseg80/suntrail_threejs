@@ -16,7 +16,7 @@ import { removeFromLoadQueue, queueBuildMesh } from './tileQueue';
 export const sharedFrustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
 
-const GHOST_FADE_MS = (window.innerWidth <= 768) ? 400 : 800; 
+const GHOST_FADE_MS = (window.innerWidth <= 768) ? 800 : 2000; 
 
 export const terrainUniforms = { 
     uExaggeration: { value: state.RELIEF_EXAGGERATION },

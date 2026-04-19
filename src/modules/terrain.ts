@@ -39,11 +39,11 @@ function getGPXMaterial(color: string, is2D: boolean): THREE.Material {
 
 // Re-exports de la refactorisation
 export { Tile, terrainUniforms, sharedFrustum } from './terrain/Tile';
-export { loadQueue, processLoadQueue, clearLoadQueue, addToLoadQueue, removeFromLoadQueue } from './terrain/tileQueue';
+export { loadQueue, processLoadQueue, clearLoadQueue, addToLoadQueue, removeFromLoadQueue, prioritizeNewZoom } from './terrain/tileQueue';
 
 import { Tile } from './terrain/Tile';
 import { sharedFrustum } from './terrain/Tile';
-import { loadQueue, processLoadQueue, clearLoadQueue } from './terrain/tileQueue';
+import { loadQueue, processLoadQueue, clearLoadQueue, prioritizeNewZoom } from './terrain/tileQueue';
 
 export const activeTiles = new Map<string, Tile>(); 
 export const activeLabels = new Map<string, any>(); 
@@ -245,17 +245,14 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
         const centerTile = lngLatToTile(currentGPS.lon, currentGPS.lat, zoom);
         const currentActiveKeys = new Set<string>();
 
-        const isZoomIn = zoom > lastRenderedZoom;
         const lodChanging = lastRenderedZoom !== -1 && zoom !== lastRenderedZoom;
 
-        // v5.28.48 : Nettoyage immédiat lors d'un changement de LOD
+        // v5.32.0 : Prioritize new LOD tiles over old ones (don't clear in-flight requests)
         if (lodChanging) {
-            clearLoadQueue();
-            purgeOldPixelData(); // v5.29.31 : Libérer la RAM des anciennes données d'altitude
-            if (fadingOutTiles.size > 0) {
-                for (const t of fadingOutTiles) t.dispose();
-                fadingOutTiles.clear();
-            }
+            prioritizeNewZoom(zoom);
+            purgeOldPixelData();
+            // v5.32.0 : Don't dispose fading-out tiles on LOD change — keep them as parent backdrop
+            // until new zoom tiles are loaded. They'll be collected by animateTiles() after fade.
         }
 
         const camGPS = worldToLngLat(state.camera.position.x, state.camera.position.z, state.originTile);
@@ -309,11 +306,15 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
 
         for (const [key, tile] of activeTiles.entries()) {
             if (!currentActiveKeys.has(key)) {
-                if (lodChanging && isZoomIn && tile.mesh && tile.status !== 'disposed') {
+                // v5.32.0 : Parent Protection — keep old LOD tiles as fading backdrop
+                // until new LOD tiles are loaded, regardless of zoom direction.
+                if (lodChanging && tile.mesh && tile.status !== 'disposed') {
                     removeTile(tile);
                     activeTiles.delete(key);
-                    fadingOutTiles.add(tile);
-                    tile.startFadeOut();
+                    if (!fadingOutTiles.has(tile)) {
+                        fadingOutTiles.add(tile);
+                        tile.startFadeOut();
+                    }
                 } else {
                     removeTile(tile);
                     tile.dispose();

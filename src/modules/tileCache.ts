@@ -61,17 +61,21 @@ export function getTileCacheKey(key: string, zoom: number): string {
 
 /**
  * Purge les données pixelData (RAM) des tuiles non prioritaires.
- * v5.31.1 : Purge agressive par preset — garde seulement les N plus récentes.
- * eco/balanced: 10, performance: 30, ultra: 50
+ * v5.32.0 : Purge par preset + immunité pour les tuiles z-1 (parent LOD).
+ * eco/balanced: 10+5, performance: 30+15, ultra: 50+25
  */
 export function purgeOldPixelData(): void {
     const preset = state.PERFORMANCE_PRESET;
     const maxPixelData = preset === 'ultra' ? 50
         : preset === 'performance' ? 30
         : 10; // eco, balanced, custom
+    const maxParentPixelData = preset === 'ultra' ? 25
+        : preset === 'performance' ? 15
+        : 5; // eco, balanced, custom
+    const currentZoom = state.ZOOM;
     
-    // Collect active pixelData entries (keys of tiles currently on screen)
     let keptCount = 0;
+    let keptParentCount = 0;
     const entries = [...dataCache.entries()];
     
     // Pass 1: Keep pixelData for active tiles (currently visible)
@@ -82,15 +86,25 @@ export function purgeOldPixelData(): void {
     }
     
     // Pass 2: For inactive tiles, purge pixelData keeping only the most recently used
-    // The BoundedCache is LRU, so entries at the end are most recent
+    // Tiles at z-1 (parent LOD) get a separate budget for fast zoom-out recovery
     for (const [key, data] of entries) {
         if (!data.pixelData) continue;
         if (activeCacheKeys.has(key)) continue; // Always keep active tiles
         
-        if (keptCount < maxPixelData) {
-            keptCount++;
+        const isParentZoom = key.includes(`_z${currentZoom - 1}_`);
+        
+        if (isParentZoom) {
+            if (keptParentCount < maxParentPixelData) {
+                keptParentCount++;
+            } else {
+                data.pixelData = null;
+            }
         } else {
-            data.pixelData = null;
+            if (keptCount < maxPixelData) {
+                keptCount++;
+            } else {
+                data.pixelData = null;
+            }
         }
     }
 }

@@ -290,6 +290,8 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
             if (now - lastLodChangeTime > 350) {
                 state.ZOOM = newZoom;
                 lastLodChangeTime = now;
+                // v5.32.0 : Prefetch adjacent LODs immediately after zoom change
+                lastPrefetchTime = 0;
             } else {
                 newZoom = state.ZOOM;
             }
@@ -645,7 +647,7 @@ function updateTerrainPhysics(interacting: boolean): void {
             state.renderer.render(state.scene, state.camera);
             state.stats?.end();
 
-            if (isIdleMode && !state.isProcessingTiles && (now - lastPrefetchTime > 5000)) {
+            if (!state.isProcessingTiles && (now - lastPrefetchTime > 2000)) {
                 lastPrefetchTime = now;
                 prefetchAdjacentLODs();
             }

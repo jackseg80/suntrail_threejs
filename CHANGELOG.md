@@ -5,7 +5,36 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.32.0] - 2026-04-18
+## [5.32.0] - 2026-04-19
+### Changed — LOD Retention & MapTiler Brave Fix
+**LOD Retention (No more black holes on zoom transitions)**
+- **Queue prioritization**: `prioritizeNewZoom()` replaces `clearLoadQueue()` on LOD change — old-zoom tiles are removed from queue but in-flight network requests finish naturally instead of being cancelled.
+- **Parent Protection**: Old LOD tiles fade out on both zoom-in AND zoom-out (not just zoom-in), keeping them as backdrop while new tiles load.
+- **GHOST_FADE_MS**: Increased from 800→2000ms (desktop) and 400→800ms (mobile) — tiles fade slowly enough for new tiles to load.
+- **Prefetch trigger**: Reduced from 5s idle to 2s stable, plus immediate trigger on LOD change. Zoom-in followed by zoom-out is now nearly instant from cache.
+- **pixelData z-1 immunity**: Separate budget for parent LOD tiles (eco/bal=5, perf=15, ultra=25) ensures fast zoom-out recovery.
+
+### Fixed
+- **MapTiler 403 on Brave**: Added `referrerPolicy: 'same-origin'` to all MapTiler fetch calls (tileWorker, utils, buildings). Added Referrer-Policy meta tag and Vite dev server header. Auto-recovery: banned keys reset after 2min cooldown.
+
+### Changed — Performance Audit (3 Vagues)
+**Vague 1 (Quick Wins)**
+- **Frustum cache**: Computed once per frame with `camera.updateMatrixWorld()`. Passes to `Tile.isVisible(frustum?)`. ~81 mat4 multiplies/frame eliminated.
+- **buildQueue O(1)**: `Set<string>` parallel to `buildQueue[]` for O(1) dedup.
+- **Shadow freeze**: `shadowMap.autoUpdate = false` during interaction instead of toggling `castShadow`. Shadows freeze in place, no shader recompilation.
+- **Pre-allocated vectors**: `_queryPoint` reused in `getAltitudeAt()`.
+- **Shader pre-warming**: `renderer.compile()` 200ms after init.
+
+**Vague 2 (Memory & UX)**
+- **pixelData purge LRU**: Keeps N most recent (eco/bal=10, perf=30, ultra=50). ~15-20 MB RAM freed on mobile.
+- **Shadow frustum per preset**: balanced=15km, performance=25km, ultra=30km. near=100, far=200000.
+- **Ground plane**: 500km → 100km.
+- **LOD unified**: Removed duplicated if/else cascade, uses `getIdealZoom()` exclusively.
+- **Fog**: FogExp2 tested and reverted. Linear fog with adaptive formula: `fogNear = max(FOG_NEAR*0.3, FOG_NEAR - alt*0.3)`, `fogFar = FOG_FAR + alt*4.0`.
+
+**Vague 3 (Architecture)**
+- **Shared GPX materials**: 1 material per color×mode (max 16) instead of N per layer.
+- **Amortized loadQueue sort**: Cache re-sorted every 200ms instead of every 32ms.
 ### Changed — Audit Performance Moteur de Rendu
 **Vague 1 (Quick Wins)**
 - **Frustum cache** : Calcul du frustum une seule fois par frame au lieu de N×par tile. Élimine ~81 multiplications matricielles/frame.
