@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.32.2] - 2026-04-19
+### Fixed
+- **Gradle build**: Removed `foojay-resolver-convention` plugin (failed to provision JetBrains JDK 21). Removed hardcoded `org.gradle.java.home` (invalid on CI). Upgraded CI workflow to JDK 21 (Temurin).
+- **tileCache.test.ts**: Updated 6 test assertions to match new cache sizes (eco 60→80, performance desktop 400→500).
+
 ## [5.32.1] - 2026-04-19
 ### Fixed
 - **tileCache.test.ts**: Updated 6 test assertions to match new cache sizes (eco 60→80, performance desktop 400→500) introduced by LOD retention feature.
