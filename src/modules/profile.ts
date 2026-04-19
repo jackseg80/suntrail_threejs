@@ -187,22 +187,31 @@ function setupProfileInteractions(): void {
     if (!container || !cursor || !info || !svg) return;
 
     if (!state.profileMarker) {
-        const geo = new THREE.SphereGeometry(25, 32, 32);
+        // v5.32.14 : Sphère plus grande et depthTest désactivé pour visibilité totale en 3D
+        const geo = new THREE.SphereGeometry(40, 32, 32);
         const mat = new THREE.MeshStandardMaterial({ 
             color: 0x00ffff, 
             emissive: 0x00ffff, 
             emissiveIntensity: 2,
             roughness: 0,
-            metalness: 1
+            metalness: 1,
+            depthTest: false,
+            transparent: true // Nécessaire avec depthTest: false pour certaines passes
         });
         state.profileMarker = new THREE.Mesh(geo, mat);
         
-        const lineGeo = new THREE.CylinderGeometry(2, 2, 2000, 8);
-        const line = new THREE.Mesh(lineGeo, new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.4 }));
-        line.position.y = -1000;
+        const lineGeo = new THREE.CylinderGeometry(2, 2, 4000, 8);
+        const lineMat = new THREE.MeshBasicMaterial({ 
+            color: 0x00ffff, 
+            transparent: true, 
+            opacity: 0.4,
+            depthTest: false 
+        });
+        const line = new THREE.Mesh(lineGeo, lineMat);
+        line.position.y = -2000;
         state.profileMarker.add(line);
         
-        state.profileMarker.renderOrder = 2000;
+        state.profileMarker.renderOrder = 9999;
         state.profileMarker.visible = false;
         if (state.scene) state.scene.add(state.profileMarker);
     }

@@ -12,14 +12,16 @@ const geometryCache = new BoundedCache<string, THREE.BufferGeometry>({
 });
 
 /**
- * Récupère ou crée une géométrie de plan avec skirt et la résolution/taille spécifiées.
+ * Récupère ou crée une géométrie de plan avec skirt pour la résolution spécifiée.
+ * v5.32.14 : Géométrie unitaire (1x1) — la taille réelle est appliquée via mesh.scale
  */
-export function getPlaneGeometry(res: number, size: number): THREE.BufferGeometry {
-    const key = `${res}_${size}`;
+export function getPlaneGeometry(res: number): THREE.BufferGeometry {
+    const key = `${res}`;
     const cached = geometryCache.get(key);
     if (cached) return cached;
 
-    const newGeom = createPlaneWithSkirt(res, size);
+    // On crée toujours une géométrie de taille 1.0, le Tile appliquera le scale.
+    const newGeom = createPlaneWithSkirt(res, 1.0);
     geometryCache.set(key, newGeom);
     return newGeom;
 }

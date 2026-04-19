@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.32.11)
+# SunTrail — Guide IA (v5.32.14)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-19 suite à la v5.32.11 (Global audit: i18n & WebGL robustness).
+> Mis à jour le 2026-04-19 suite à la v5.32.14 (Audit LOD, Unified Geometries & Adaptive GPX).
 
 
 ## Projet

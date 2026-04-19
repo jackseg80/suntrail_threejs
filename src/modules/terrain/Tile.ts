@@ -159,7 +159,14 @@ export class Tile {
 
             if (data.colorBitmap) {
                 this.colorTex = new THREE.Texture(data.colorBitmap);
-                this.colorTex.flipY = false; this.colorTex.needsUpdate = true; this.colorTex.colorSpace = THREE.SRGBColorSpace;
+                this.colorTex.flipY = false;
+                this.colorTex.needsUpdate = true;
+                this.colorTex.colorSpace = THREE.SRGBColorSpace;
+                
+                // v5.32.14 : Anisotropic Filtering pour réduire l'aliasing à l'horizon
+                if (state.renderer) {
+                    this.colorTex.anisotropy = state.renderer.capabilities.getMaxAnisotropy();
+                }
             } else {
                 const fb = document.createElement('canvas'); fb.width = 256; fb.height = 256;
                 const fbCtx = fb.getContext('2d');
@@ -169,7 +176,13 @@ export class Tile {
 
             if (data.overlayBitmap) {
                 this.overlayTex = new THREE.Texture(data.overlayBitmap);
-                this.overlayTex.flipY = false; this.overlayTex.needsUpdate = true; this.overlayTex.colorSpace = THREE.SRGBColorSpace;
+                this.overlayTex.flipY = false;
+                this.overlayTex.needsUpdate = true;
+                this.overlayTex.colorSpace = THREE.SRGBColorSpace;
+                
+                if (state.renderer) {
+                    this.overlayTex.anisotropy = state.renderer.capabilities.getMaxAnisotropy();
+                }
             }
 
             if (data.normalBitmap) {
@@ -349,10 +362,12 @@ export class Tile {
                 depthShader.uniforms.uElevOffset.value.copy(this.elevOffset);
                 depthShader.uniforms.uElevScale.value = this.elevScale;
             }
-            this.mesh = new THREE.Mesh(getPlaneGeometry(resolution, this.tileSizeMeters), material);
+            this.mesh = new THREE.Mesh(getPlaneGeometry(resolution), material);
+            this.mesh.scale.set(this.tileSizeMeters, 1, this.tileSizeMeters);
             this.mesh.customDepthMaterial = depth;
         } else {
-            this.mesh = new THREE.Mesh(getPlaneGeometry(resolution, this.tileSizeMeters), material);
+            this.mesh = new THREE.Mesh(getPlaneGeometry(resolution), material);
+            this.mesh.scale.set(this.tileSizeMeters, 1, this.tileSizeMeters);
         }
 
         this.mesh.position.set(this.worldX, 0, this.worldZ);

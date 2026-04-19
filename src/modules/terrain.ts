@@ -467,13 +467,20 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
         timestamp: p.time ? new Date(p.time).getTime() : i * 1000 
     })));
 
-    const box = new THREE.Box3();
     const camAlt = state.camera ? state.camera.position.y : 10000;
     const thickness = Math.max(1.5, camAlt / 1200);
+    
+    // v5.32.14 : Epsilon adaptatif initial
+    const baseEpsilon = EARTH_CIRCUMFERENCE_VAL / Math.pow(2, state.ZOOM + 8);
+    const epsilon = Math.max(0.5, baseEpsilon);
+
+    const box = new THREE.Box3();
     const threePoints = gpxDrapePoints(validPoints, state.originTile);
-    threePoints.forEach(v => box.expandByPoint(v));
-    const curve = new THREE.CatmullRomCurve3(threePoints);
-    const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length, 1500), thickness, 4, false);
+    const simplifiedPoints = simplifyRDP(threePoints, epsilon, (v) => v);
+    
+    simplifiedPoints.forEach(v => box.expandByPoint(v));
+    const curve = new THREE.CatmullRomCurve3(simplifiedPoints);
+    const geometry = new THREE.TubeGeometry(curve, Math.min(simplifiedPoints.length * 2, 1500), thickness, 4, false);
     const is2D = state.IS_2D_MODE;
     const material = is2D 
         ? new THREE.MeshBasicMaterial({
@@ -549,22 +556,34 @@ function _doUpdateAllGPXMeshes(): void {
     if (!state.camera) return;
     const camAlt = state.camera.position.y;
     const thickness = Math.max(1.5, camAlt / 1200);
+
+    // v5.32.14 : Epsilon adaptatif pour la simplification RDP
+    // On veut un epsilon qui correspond à environ 1 pixel écran (256px par tuile)
+    const baseEpsilon = EARTH_CIRCUMFERENCE_VAL / Math.pow(2, state.ZOOM + 8);
+    const multiplier = state.PERFORMANCE_PRESET === 'eco' ? 2.0 
+                     : state.PERFORMANCE_PRESET === 'ultra' ? 0.5 
+                     : 1.0;
+    const epsilon = Math.max(0.5, baseEpsilon * multiplier);
+
     const updatedLayers: GPXLayer[] = state.gpxLayers.map(layer => {
-if (layer.mesh) { if (state.scene) state.scene.remove(layer.mesh); layer.mesh.geometry?.dispose(); }
+        if (layer.mesh) { if (state.scene) state.scene.remove(layer.mesh); layer.mesh.geometry?.dispose(); }
         const track = layer.rawData.tracks[0]; const points = track.points; 
         
         // v5.28.4 : Utilisation de la fonction centralisée drapeToTerrain
-        const threePoints = drapeToTerrain(points, state.originTile, 4, 30);
+        const drapedPoints = drapeToTerrain(points, state.originTile, 4, 30);
         
-        const curve = new THREE.CatmullRomCurve3(threePoints);
-        const geometry = new THREE.TubeGeometry(curve, Math.min(threePoints.length, 1500), thickness, 4, false);
+        // v5.32.14 : Simplification RDP avant création du tube
+        const simplifiedPoints = simplifyRDP(drapedPoints, epsilon, (v) => v);
+        
+        const curve = new THREE.CatmullRomCurve3(simplifiedPoints);
+        const geometry = new THREE.TubeGeometry(curve, Math.min(simplifiedPoints.length * 2, 1500), thickness, 4, false);
         const is2D = state.IS_2D_MODE;
         const material = getGPXMaterial(layer.color, is2D);
         const mesh = new THREE.Mesh(geometry, material);
         mesh.renderOrder = 10; mesh.visible = layer.visible;
         mesh.userData = { type: 'gpx-track', layerId: layer.id };
         if (state.scene) state.scene.add(mesh);
-        return { ...layer, points: threePoints, mesh };
+        return { ...layer, points: drapedPoints, mesh };
     });
     state.gpxLayers = updatedLayers;
 }
@@ -604,8 +623,16 @@ function _doUpdateRecordedTrackMesh(): void {
     // v5.28.25 : surfaceOffset=12 (au lieu de 8) pour être légèrement au dessus du terrain et éviter le Z-fighting
     const threePoints = drapeToTerrain(uniquePoints, originTile, 0, 12);
 
-    // v5.28.5: Simplification RDP plus fine (epsilon 1.0 au lieu de 2.0)
-    const simplifiedPoints = simplifyRDP(threePoints, 1.0, (v) => v);
+    // v5.32.14 : Epsilon adaptatif pour le tracé enregistré
+    // On garde une base plus fine (0.5 pixel) car c'est l'élément central du suivi
+    const baseEpsilon = EARTH_CIRCUMFERENCE_VAL / Math.pow(2, state.ZOOM + 9);
+    const multiplier = state.PERFORMANCE_PRESET === 'eco' ? 2.0 
+                     : state.PERFORMANCE_PRESET === 'ultra' ? 0.5 
+                     : 1.0;
+    const epsilon = Math.max(0.2, baseEpsilon * multiplier);
+
+    // v5.28.5: Simplification RDP avec epsilon adaptatif
+    const simplifiedPoints = simplifyRDP(threePoints, epsilon, (v) => v);
 
     if (simplifiedPoints.length < 2) return;
     

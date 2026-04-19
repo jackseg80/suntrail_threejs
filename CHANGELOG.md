@@ -5,6 +5,16 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.32.14] - 2026-04-19
+### Optimization
+- **Unified LOD Geometries**: Terrain now uses shared 1x1 unit geometries across all tiles, significantly reducing BufferGeometry allocations and VRAM footprint. Tile scaling is handled via `mesh.scale`.
+- **Adaptive GPX Simplification**: Introduced dynamic RDP (Ramer-Douglas-Peucker) simplification for all GPX tracks. Epsilon is now tied to screen pixel size and performance presets (Eco/Balanced/Ultra), drastically reducing vertex counts at low zoom levels.
+- **Anisotropic Filtering**: Enabled on all terrain color textures to eliminate aliasing and shimmering when viewing the horizon in 3D.
+
+### Fixed
+- **Elevation Profile Marker**: Fixed marker being hidden by terrain in 3D mode. It now uses a larger sphere with `depthTest: false` and a longer vertical guide line for guaranteed visibility.
+- **Accessibility**: Resolved ARIA conflict on the elevation profile drag handle.
+
 ## [5.32.13] - 2026-04-19
 ### Improved
 - **LOD Balance**: Refined `getIdealZoom` for a better middle ground between stability and performance.
