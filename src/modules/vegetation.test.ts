@@ -3,6 +3,11 @@ import * as THREE from 'three';
 import { createForestForTile, initVegetationResources } from './vegetation';
 import { state } from './state';
 
+vi.mock('./landcover', () => ({
+    fetchForestsPBF: vi.fn().mockResolvedValue(null),
+    isPointInForest: vi.fn().mockReturnValue(false)
+}));
+
 describe('vegetation.ts', () => {
     let mockTile: any;
 
@@ -12,17 +17,19 @@ describe('vegetation.ts', () => {
         state.VEGETATION_DENSITY = 100;
         state.RELIEF_EXAGGERATION = 1.0;
         state.PERFORMANCE_PRESET = 'balanced';
-        // 'outdoor' : pas satellite → pas de guard isSatellite
         state.MAP_SOURCE = 'outdoor';
 
-        // Couleurs SwissTopo forêt : G légèrement dominant (220>210>180), pas isTooVivid (220 < 210*1.38=290)
+        // Couleurs SwissTopo forêt : G légèrement dominant (220>210>180)
+        // Ajout d'une légère variation (jitter) pour passer le filtre variance (Phase 1)
         const mockImageData = {
             data: new Uint8ClampedArray(48 * 48 * 4).map((_, i) => {
                 const ch = i % 4;
-                if (ch === 0) return 210; // R
-                if (ch === 1) return 220; // G dominant → isForestColor
-                if (ch === 2) return 180; // B
-                return 255;              // A
+                const pixelIdx = Math.floor(i / 4);
+                const jitter = (pixelIdx % 2 === 0) ? 2 : 0; // Alterne +2 sur le vert pour créer de la variance
+                if (ch === 0) return 210; 
+                if (ch === 1) return 220 + jitter; // G dominant avec texture
+                if (ch === 2) return 180; 
+                return 255;              
             })
         };
 
@@ -42,8 +49,7 @@ describe('vegetation.ts', () => {
             return {} as any;
         });
 
-        // Élévation encodée MapTiler : h = -10000 + (R*65536 + G*256 + B) * 0.1
-        // R=1, G=193, B=56 → h ≈ 1500m (dans la plage 1-2450 du filtre végétation)
+        // Élévation encodée MapTiler
         const mockPixelData = new Uint8ClampedArray(256 * 256 * 4).map((_, i) => {
             const ch = i % 4;
             if (ch === 0) return 1;
@@ -67,22 +73,21 @@ describe('vegetation.ts', () => {
         };
     });
 
-    it('should initialize and create a forest group', () => {
+    it('should initialize and create a forest group', async () => {
         initVegetationResources();
-        const forest = createForestForTile(mockTile);
+        const forest = await createForestForTile(mockTile);
         
         expect(forest).not.toBeNull();
         expect(forest).toBeInstanceOf(THREE.Group);
         expect(forest!.children.length).toBeGreaterThan(0);
         
-        // v5.32.7+ : Vérifier que le fix du frustum culling est présent
         const iMesh = forest!.children[0] as THREE.InstancedMesh;
         expect(iMesh.frustumCulled).toBe(false);
     });
 
-    it('should respect the SHOW_VEGETATION flag', () => {
+    it('should respect the SHOW_VEGETATION flag', async () => {
         state.SHOW_VEGETATION = false;
-        const forest = createForestForTile(mockTile);
+        const forest = await createForestForTile(mockTile);
         expect(forest).toBeNull();
     });
 });

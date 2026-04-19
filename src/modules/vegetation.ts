@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { state } from './state';
 import type { Tile } from './terrain';
 import { decodeTerrainRGB } from './geo';
+import { fetchForestsPBF, isPointInForest } from './landcover';
 
 /**
  * Seeded pseudo-random function for deterministic placement (v5.8.15)
@@ -64,10 +65,10 @@ export function initVegetationResources() {
 }
 
 /**
- * Génère une forêt bio-fidèle sur une tuile (v5.4.2)
- * Filtre amélioré pour exclure les terrains de sport (trop clairs/saturés)
+ * Génère une forêt bio-fidèle sur une tuile (v5.33.0)
+ * Stratégie Tiered : Vector PBF (SwissTopo/MapTiler) -> Raster Variance Fallback
  */
-export function createForestForTile(tile: Tile): THREE.Group | null {
+export async function createForestForTile(tile: Tile): Promise<THREE.Group | null> {
     const isSatellite = state.MAP_SOURCE === 'satellite' || state.MAP_SOURCE === 'ign-ortho';
     if (!state.SHOW_VEGETATION || isSatellite || !tile.colorTex || !tile.pixelData || tile.zoom < 14) return null;
 
@@ -76,6 +77,10 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
 
     initVegetationResources();
 
+    // --- PHASE 2/3 : FETCH VECTOR LANDCOVER (PBF) ---
+    // On lance le fetch en parallèle du scan raster pour masquer la latence
+    const forestsPromise = fetchForestsPBF(tile);
+
     // --- SCAN RESOLUTION STABLE (v5.8.10) ---
     const scanRes = 64;
     if (!scanCanvas) {
@@ -83,7 +88,6 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
         scanCanvas.width = scanRes; scanCanvas.height = scanRes;
         scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true, alpha: false });
     } else if (scanCtx) {
-        // Nettoyer le canvas réutilisé (pas nécessaire au premier appel)
         scanCtx.clearRect(0, 0, scanRes, scanRes);
     }
     const ctx = scanCtx;
@@ -96,20 +100,19 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
     }
     
     const colorData = ctx.getImageData(0, 0, scanRes, scanRes).data;
+    const forests = await forestsPromise; // Attente du PBF (déjà en cache si chargé par une tuile voisine)
+
+    // --- DENSITÉ HARMONISÉE (v5.33.1) ---
+    const hasVectors = (forests && forests.length > 0);
+    // Si on a des vecteurs, on utilise un pas de 2 minimum pour économiser du CPU (le résultat est déjà précis)
+    const step = hasVectors ? Math.max(2, (state.PERFORMANCE_PRESET === 'eco' ? 4 : 2)) : ((state.PERFORMANCE_PRESET === 'ultra') ? 1 : ((state.PERFORMANCE_PRESET === 'performance') ? 2 : 4));
     
-    // --- DENSITÉ HARMONISÉE (v5.8.14) ---
-    // On calcule la probabilité de placement pour éviter le "Hard Cut-off" ligne par ligne
-    const step = (state.PERFORMANCE_PRESET === 'ultra') ? 1 : ((state.PERFORMANCE_PRESET === 'performance') ? 2 : 4);
     const totalSlots = (scanRes / step) * (scanRes / step);
-    
-    // Nombre cible d'arbres pour CETTE tuile (normalisé par l'aire physique)
-    // Référence LOD 15. À LOD 16 on a 4x plus de tuiles, donc 4x moins d'arbres par tuile.
     const areaRatio = Math.pow(4, 15 - tile.zoom);
     const targetTrees = Math.max(20, Math.floor(state.VEGETATION_DENSITY * areaRatio));
     
-    // Probabilité qu'un slot éligible (forêt) reçoive effectivement un arbre
-    // On utilise un multiplicateur de 1.0 pour une distribution uniforme (v5.8.15)
-    const placementProbability = Math.min(1.0, targetTrees / totalSlots);
+    // Probabilité ajustée : on booste le placement vectoriel car il est plus restrictif géographiquement
+    const placementProbability = Math.min(1.0, (hasVectors ? 2.0 : 1.0) * targetTrees / totalSlots);
     
     const dummy = new THREE.Object3D();
     const size = tile.tileSizeMeters;
@@ -130,8 +133,6 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
             const globalX = tile.tx * scanRes + px;
             const globalY = tile.ty * scanRes + py;
 
-            // --- DITHERED SCAN (v5.8.15) ---
-            // On ajoute un petit décalage au point de scan pour éviter les bandes de moiré
             const spx = Math.floor(px + pseudoRandom(globalX, globalY, 1) * step);
             const spy = Math.floor(py + pseudoRandom(globalX, globalY, 2) * step);
             const i = (Math.min(scanRes - 1, spy) * scanRes + Math.min(scanRes - 1, spx)) * 4;
@@ -139,28 +140,33 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
             const r = colorData[i], g = colorData[i+1], b = colorData[i+2];
             
             let isForest = false;
-            if (state.MAP_SOURCE === 'opentopomap') {
-                isForest = (g > b * 1.1 && (g + r * 0.3) > b * 1.3 && g > 30);
+            
+            // --- STRATÉGIE DE DÉTECTION (v5.33.1) ---
+            if (forests !== null) {
+                // Tier 1/3 : Données vectorielles (on fait confiance au vecteur, même si vide)
+                isForest = (forests.length > 0) && isPointInForest(tile, spx, spy, scanRes, forests);
             } else {
-                const brightness = (r + g + b) / 3;
-                
-                // --- FILTRE DENSITÉ CONTINUE (v5.8.14) ---
-                // On détecte toute la zone forestière (fond light green + symboles dark green)
-                // Forêt fond SwissTopo : G dominant (~220), R présent (~210), B (~180)
-                // Prairie : Très claire (> 235) et plus saturée en jaune
-                const isForestColor = (g > r * 1.02 && g > b * 1.05 && brightness < 228 && g > 40);
-                
-                const isTooVivid = (g > r * 1.38); // Rejet des terrains de sport électriques
-                const isNeutral = (Math.abs(r - g) < 10 && Math.abs(g - b) < 10 && r > 160);
-                
-                isForest = isForestColor && !isTooVivid && !isNeutral;
+                // Tier 4 : Fallback Raster avec filtre de variance (Erreur réseau ou offline sans vecteur)
+                if (state.MAP_SOURCE === 'opentopomap') {
+                    isForest = (g > b * 1.1 && (g + r * 0.3) > b * 1.3 && g > 30);
+                } else {
+                    const brightness = (r + g + b) / 3;
+                    const isForestColor = (g > r * 1.02 && g > b * 1.05 && brightness < 228 && g > 40);
+                    const isTooVivid = (g > r * 1.28); 
+                    const isNeutral = (Math.abs(r - g) < 10 && Math.abs(g - b) < 10 && r > 160);
+                    
+                    const i_r = (Math.min(scanRes - 1, spy) * scanRes + Math.min(scanRes - 1, spx + 1)) * 4;
+                    const i_d = (Math.min(scanRes - 1, spy + 1) * scanRes + Math.min(scanRes - 1, spx)) * 4;
+                    const variance = Math.abs(g - colorData[i_r + 1]) + Math.abs(g - colorData[i_d + 1]);
+                    const isArtificial = (variance < 1);
+                    
+                    isForest = isForestColor && !isTooVivid && !isNeutral && !isArtificial;
+                }
             }
 
             if (isForest) {
-                // --- PLACEMENT PROBABILISTE ---
                 if (pseudoRandom(globalX, globalY, 3) > placementProbability) continue;
 
-                // Jitter spatial accru pour casser totalement la grille
                 const jx = (pseudoRandom(globalX, globalY, 4) - 0.5) * (size / scanRes) * step;
                 const jz = (pseudoRandom(globalX, globalY, 5) - 0.5) * (size / scanRes) * step;
                 const lx = ((px / scanRes) - 0.5) * size + jx;
@@ -180,7 +186,6 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
                 }
 
                 dummy.position.set(lx, h, lz);
-                // Ajustement de l'échelle pour plus de densité visuelle sans étouffer
                 const scale = (0.35 + pseudoRandom(globalX, globalY, 7) * 0.65) * densityBoost; 
                 dummy.scale.set(scale, scale * (0.85 + pseudoRandom(globalX, globalY, 8) * 0.45), scale);
                 dummy.rotation.y = pseudoRandom(globalX, globalY, 9) * Math.PI;
@@ -202,14 +207,7 @@ export function createForestForTile(tile: Tile): THREE.Group | null {
             for (let j = 0; j < data.count; j++) {
                 iMesh.setMatrixAt(j, data.matrices[j]);
             }
-            
-            // v5.32.7 : Fix Frustum Culling. 
-            // On désactive le culling natif de l'InstancedMesh car il se base sur la géométrie 
-            // source (petit cône) et non sur l'emprise des instances, provoquant des disparitions 
-            // prématurées lors des rotations. La tuile gère déjà son propre cycle de vie.
             iMesh.frustumCulled = false;
-            
-            // Phase 2 : castShadow désactivé sur mobile mid-range
             iMesh.castShadow = !is2D && state.VEGETATION_CAST_SHADOW;
             iMesh.receiveShadow = !is2D;
             forestGroup.add(iMesh);

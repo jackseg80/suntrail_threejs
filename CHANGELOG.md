@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.33.1] - 2026-04-19
+### Added
+- **Détection Sémantique des Forêts (Suisse & Monde)** : Implémentation d'un système de détection basé sur les données vectorielles (PBF) pour éliminer les faux positifs (arbres sur terrains de foot, parcs tondus).
+    - **Connecteur SwissTopo Vector** : Utilisation des tuiles officielles gratuites de SwissTopo (`base.vt`) pour une précision chirurgicale en Suisse.
+    - **Overzooming MapTiler (Tier 3)** : Utilisation des tuiles vectorielles mondiales au Zoom 10, optimisant radicalement le quota d'API (1 requête couvre ~64 tuiles 3D).
+    - **Fallback Raster Variance** : En mode hors-ligne ou erreur réseau, l'analyse d'image utilise désormais un calcul de variance spatiale (texture) pour rejeter les aplats artificiels.
+
+### Optimized
+- **Chargement Asynchrone de la Végétation** : La génération des forêts est désormais asynchrone, permettant de masquer la latence réseau des données vectorielles sans bloquer l'affichage du relief.
+- **Cache Géographique** : Mise en cache agnostique des polygones de forêt pour accélérer la navigation.
+
 ## [5.32.22] - 2026-04-19
 ### Added
 - **Pastille 3D immersive** : Ajout d'une sphère 3D réelle au marqueur utilisateur (visible uniquement en mode 3D). Elle suit fidèlement le relief grâce à un cycle de rafraîchissement différé (0s, 2s, 5s) qui attend le chargement complet des tuiles.

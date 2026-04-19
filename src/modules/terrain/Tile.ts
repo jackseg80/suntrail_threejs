@@ -392,9 +392,9 @@ export class Tile {
         if (!is2D) {
             if (state.SHOW_BUILDINGS && this.zoom >= state.BUILDING_ZOOM_THRESHOLD) setTimeout(() => { if (this.status !== 'disposed') loadBuildingsForTile(this); }, delay(150));
             if (state.SHOW_HYDROLOGY && this.zoom >= 13) setTimeout(() => { if (this.status !== 'disposed') loadHydrologyForTile(this); }, delay(100));
-            if (state.SHOW_VEGETATION && this.zoom >= 14) setTimeout(() => {
+            if (state.SHOW_VEGETATION && this.zoom >= 14) setTimeout(async () => {
                 if (this.status as any === 'disposed') return;
-                const forest = createForestForTile(this);
+                const forest = await createForestForTile(this);
                 if (forest && state.scene && (this.status as any !== 'disposed')) {
                     if (this.forestMesh) state.scene.remove(this.forestMesh);
                     this.forestMesh = forest; 

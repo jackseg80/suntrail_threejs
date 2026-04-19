@@ -29,6 +29,17 @@
 
 ---
 
+## 🌿 Végétation & Landcover (v5.33+)
+
+- [x] **Détection Sémantique (v5.33.0)** : Remplacement du scan raster par l'analyse vectorielle (évite les arbres sur terrains de foot).
+- [x] **Connecteur SwissTopo (v5.33.1)** : Utilisation des tuiles vectorielles officielles suisses (Gratuit).
+- [ ] **Solution Souveraine (Mondial)** : Générer et héberger un fichier `forests-world.pmtiles` sur Cloudflare R2 pour supprimer la dépendance à MapTiler (Souveraineté des données).
+- [ ] **Adaptation par Pays (Vecteur Natif)** :
+    - [ ] **France (IGN)** : Intégration du Plan IGN v2 vectoriel (Forêts gratuites).
+    - [ ] **Autres pays** : Auditer les services VectorTiles nationaux (Autriche, Espagne, etc.) et implémenter des connecteurs spécifiques.
+
+---
+
 ## 🚀 Priorité 2 : Trail Intelligence & Routing (v6.0)
 
 > Module d'analyse intelligente et planification d'itinéraires. **Alertes sécurité = TOUJOURS FREE.**

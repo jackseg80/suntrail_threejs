@@ -111,6 +111,7 @@ Le CI (`.github/workflows/release.yml`) build l'AAB signé et crée une GitHub R
 | Source | Couverture | Licence |
 |---|---|---|
 | SwissTopo WMTS | 🇨🇭 Suisse | OGD — gratuit |
+| SwissTopo Vector Tiles | 🇨🇭 Suisse | OGD — gratuit |
 | Plan IGN v2 | 🇫🇷 France | Etalab 2.0 — gratuit |
 | OpenTopoMap | 🌍 Mondial (LOD ≤ 10) | CC-BY-SA |
 | OpenStreetMap | 🌍 Mondial | ODbL — gratuit |
