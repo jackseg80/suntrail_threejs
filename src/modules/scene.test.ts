@@ -1,9 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
-vi.mock('./toast', () => ({ showToast: vi.fn() }));
-import { showToast } from './toast';
-import { flyTo, disposeScene, initScene } from './scene';
+import { flyTo, disposeScene } from './scene';
 import { state } from './state';
 
 // Mocks for Three.js examples (not available in standard THREE namespace in tests)
