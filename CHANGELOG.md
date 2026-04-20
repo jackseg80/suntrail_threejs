@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.34.5] - 2026-04-19
+### Optimized
+- **Chargement Non-Bloquant (Connection Pool)** : Refonte de la file d'attente de chargement pour autoriser plusieurs tuiles en parallèle sans bloquer tout le lot. Utilisation d'un "pool" de connexion intelligent qui sature mieux les workers et la bande passante.
+- **Trigonométrie Court-Circuitée** : Accélération massive du dessin de l'eau en remplaçant les projections géographiques complexes par un mapping direct Web Mercator. Réduction drastique du temps de calcul sur le thread principal.
+- **Vitesse des Tuiles** : Augmentation du nombre de builds simultanés par cycle, rendant l'apparition de la carte beaucoup plus rapide, surtout sur les appareils puissants.
+- **Gestion VRAM** : Correction d'une fuite de mémoire potentielle en assurant la destruction propre des masques d'eau inutilisés.
+
 ## [5.34.4] - 2026-04-19
 ### Fixed
 - **Intégrité des Tests** : Correction des tests unitaires `analysis.test.ts` et `terrain.test.ts` qui échouaient suite au passage en mode 2D par défaut, afin de garantir le bon déroulement du pipeline CI/CD (GitHub Actions).

@@ -34,6 +34,10 @@ function renderHydrologyMask(tile: Tile, waterFeatures: any[]) {
     const ratio = Math.pow(2, tile.zoom - requestZoom);
     const rtx = Math.floor(tile.tx / ratio);
     const rty = Math.floor(tile.ty / ratio);
+    
+    // v5.34.5 : Constantes de projection linéaire pour court-circuiter la trigonométrie
+    const offsetX = rtx * ratio - tile.tx;
+    const offsetY = rty * ratio - tile.ty;
 
     const MASK_SIZE = 256;
     const canvas = document.createElement('canvas');
@@ -61,15 +65,12 @@ function renderHydrologyMask(tile: Tile, waterFeatures: any[]) {
         const bbox = feat.bbox;
 
         // v5.33.6 : Filtrage spatial ultra-rapide (Bounding Box)
-        // On évite de boucler sur les milliers de points si le polygone est hors de la tuile Z14
         if (bbox) {
-            const ratio = Math.pow(2, tile.zoom - requestZoom);
             const tileMinX = (tile.tx % ratio) * (extent / ratio);
             const tileMaxX = tileMinX + (extent / ratio);
             const tileMinY = (tile.ty % ratio) * (extent / ratio);
             const tileMaxY = tileMinY + (extent / ratio);
 
-            // Si la BBox du polygone ne touche pas la tuile Z14, on skip
             if (bbox.maxX < tileMinX || bbox.minX > tileMaxX || bbox.maxY < tileMinY || bbox.minY > tileMaxY) {
                 return;
             }
@@ -78,18 +79,10 @@ function renderHydrologyMask(tile: Tile, waterFeatures: any[]) {
         ctx.beginPath();
         rings.forEach((ring: any[]) => {
             ring.forEach((p: any, i: number) => {
-                const nPBF = Math.pow(2, requestZoom);
-                const lng = (rtx + p.x / extent) / nPBF * 360 - 180;
-                const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (rty + p.y / extent) / nPBF)));
-                const lat = latRad * 180 / Math.PI;
-
-                const localPos = tile.lngLatToLocal(lng, lat);
-                
-                // Projection sur le canvas 256x256
-                // localPos.x va de -tileSizeMeters/2 à +tileSizeMeters/2 (Ouest -> Est)
-                // localPos.z va de -tileSizeMeters/2 à +tileSizeMeters/2 (Nord -> Sud)
-                const px = (localPos.x / tile.tileSizeMeters + 0.5) * MASK_SIZE;
-                const py = (localPos.z / tile.tileSizeMeters + 0.5) * MASK_SIZE;
+                // v5.34.5 : Projection Mercator Directe (Court-circuit mathématique)
+                // Comme le PBF est déjà en Web Mercator, la conversion est une simple homothétie.
+                const px = (p.x / extent * ratio + offsetX) * MASK_SIZE;
+                const py = (p.y / extent * ratio + offsetY) * MASK_SIZE;
                 
                 if (i === 0) ctx.moveTo(px, py);
                 else ctx.lineTo(px, py);

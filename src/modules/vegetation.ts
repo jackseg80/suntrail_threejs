@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { state } from './state';
 import type { Tile } from './terrain';
-import { decodeTerrainRGB } from './geo';
+import { decodeTerrainRGB, isPositionInSwitzerland } from './geo';
 import { fetchLandcoverPBF, isPointInForest } from './landcover';
 
 /**
@@ -103,6 +103,16 @@ export async function createForestForTile(tile: Tile): Promise<THREE.Group | nul
     const landcover = await landcoverPromise; // Attente du PBF (déjà en cache si chargé par une tuile voisine)
     const forests = landcover?.forests;
 
+    // --- OPTIMISATION RATIO (v5.34.5) ---
+    // On calcule le ratio Mercator une seule fois au lieu de 4096 fois dans la boucle
+    const n = Math.pow(2, tile.zoom);
+    const lon = (tile.tx + 0.5) / n * 360 - 180;
+    const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (tile.ty + 0.5) / n)));
+    const lat = latRad * 180 / Math.PI;
+    const inCH = isPositionInSwitzerland(lat, lon);
+    const requestZoom = inCH ? 12 : 10;
+    const ratio = Math.pow(2, tile.zoom - requestZoom);
+
     // --- DENSITÉ HARMONISÉE (v5.33.1) ---
     const hasVectors = (forests && forests.length > 0);
     // Si on a des vecteurs, on utilise un pas de 2 minimum pour économiser du CPU (le résultat est déjà précis)
@@ -145,7 +155,8 @@ export async function createForestForTile(tile: Tile): Promise<THREE.Group | nul
             // --- STRATÉGIE DE DÉTECTION (v5.33.1) ---
             if (forests) {
                 // Tier 1/3 : Données vectorielles (on fait confiance au vecteur, même si vide)
-                isForest = (forests.length > 0) && isPointInForest(tile, spx, spy, scanRes, forests);
+                // v5.34.5 : Passage du ratio pré-calculé (Optimisation CPU massive)
+                isForest = (forests.length > 0) && isPointInForest(spx, spy, scanRes, forests, ratio, tile.tx, tile.ty);
             } else {
                 // Tier 4 : Fallback Raster avec filtre de variance (Erreur réseau ou offline sans vecteur)
                 if (state.MAP_SOURCE === 'opentopomap') {

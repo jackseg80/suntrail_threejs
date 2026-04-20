@@ -14,6 +14,7 @@ let isProcessingBuildQueue = false;
 let sortedCache: Tile[] | null = null;
 let lastSortTime = 0;
 const SORT_INTERVAL_MS = 200;
+let loadingCount = 0; // v5.34.5 : True connection pool counter
 
 export function queueBuildMesh(tile: Tile) {
     if (tile.status === 'disposed') return;
@@ -46,7 +47,7 @@ function processBuildQueue() {
         requestAnimationFrame(processBuildQueue);
     } else {
         isProcessingBuildQueue = false;
-        if (loadQueue.size === 0) {
+        if (loadQueue.size === 0 && loadingCount === 0) {
             state.isProcessingTiles = false;
         }
     }
@@ -54,7 +55,7 @@ function processBuildQueue() {
 
 export async function processLoadQueue() {
     if (isProcessingQueue || loadQueue.size === 0) {
-        state.isProcessingTiles = false;
+        if (loadingCount === 0) state.isProcessingTiles = false;
         return;
     }
     isProcessingQueue = true;
@@ -104,28 +105,41 @@ export async function processLoadQueue() {
 
         const visiblePending = sortedCache.filter(t => isVis(t)).length;
         const isTransitioning = visiblePending >= 4;
-        const effectiveBatch = isTransitioning
+        const targetInFlight = isTransitioning
             ? Math.max(1, state.MAX_BUILDS_PER_CYCLE + 2)
             : Math.max(1, state.MAX_BUILDS_PER_CYCLE);
         
-        const batch = sortedCache.splice(0, effectiveBatch);
+        // v5.34.5 : Calcul des slots disponibles dans le "pool" de connexion
+        const availableSlots = Math.max(0, targetInFlight - loadingCount);
+        if (availableSlots <= 0) {
+            return; // On attend que des tuiles finissent de charger
+        }
+        
+        const batch = sortedCache.splice(0, availableSlots);
         batch.forEach(t => loadQueue.delete(t));
 
-        await Promise.all(batch.map(async (tile) => {
-            try { 
-                // v5.28.48 : Double vérification avant chargement effectif
-                if (tile.status === 'idle' && activeTiles.has(tile.key)) {
-                    state.isProcessingTiles = true;
-                    await tile.load(); 
-                }
+        // On lance le chargement de manière asynchrone (fire-and-forget pour la file).
+        // Le statut 'loaded' déclenchera automatiquement queueBuildMesh() à la fin du chargement réel.
+        batch.forEach((tile) => {
+            if (tile.status === 'idle' && activeTiles.has(tile.key)) {
+                loadingCount++;
+                state.isProcessingTiles = true;
+                tile.load().finally(() => {
+                    loadingCount--;
+                    // Si on vient de finir une tuile, on relance immédiatement la queue pour boucher le trou
+                    if (!isProcessingQueue && loadQueue.size > 0) processLoadQueue();
+                }).catch(() => {
+                    tile.status = 'failed';
+                });
             }
-            catch (e) { tile.status = 'failed'; }
-        }));
+        });
     } finally {
         isProcessingQueue = false;
-        if (loadQueue.size > 0) setTimeout(processLoadQueue, 32);
-        else {
-            setTimeout(() => { state.isProcessingTiles = false; }, 50);
+        if (loadQueue.size > 0) {
+            // Intervalle réduit (16ms) pour saturer les workers plus vite si slots dispo
+            setTimeout(processLoadQueue, 16);
+        } else {
+            setTimeout(() => { if (loadingCount === 0) state.isProcessingTiles = false; }, 100);
         }
     }
 }

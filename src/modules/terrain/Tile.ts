@@ -483,6 +483,7 @@ export class Tile {
         if (this.poiGroup) { if (state.scene) state.scene.remove(this.poiGroup); disposeObject(this.poiGroup); this.poiGroup = null; }
         if (this.buildingGroup) { if (state.scene) state.scene.remove(this.buildingGroup); disposeObject(this.buildingGroup); this.buildingGroup = null; }
         if (this.buildingMesh) { if (state.scene) state.scene.remove(this.buildingMesh); disposeObject(this.buildingMesh); this.buildingMesh = null; }
+        if (this.waterMaskTex) { this.waterMaskTex.dispose(); this.waterMaskTex = null; }
         this.pixelData = null;
     }
 }

@@ -13,14 +13,6 @@ describe('landcover.ts', () => {
     });
 
     describe('isPointInForest', () => {
-        // On utilise une tuile hors Suisse à Zoom 10 pour que requestZoom soit aussi 10.
-        // Ainsi le ratio est 1 et le mapping des coordonnées est direct.
-        const mockTile: any = {
-            zoom: 10,
-            tx: 100, 
-            ty: 100
-        };
-
         // Polygone simple (carré) dans une tuile vectorielle (coords 0-4096)
         const simpleForest = {
             geometry: [
@@ -38,13 +30,14 @@ describe('landcover.ts', () => {
         it('should return true for a point inside the forest polygon', () => {
             // Au centre (scanRes=64, px=32) -> localX = (32/64)*4096 = 2048. 
             // 2048 est bien entre 1000 et 3000.
-            const result = isPointInForest(mockTile, 32, 32, 64, [simpleForest]);
+            // ratio=1, tileTx=100, tileTy=100
+            const result = isPointInForest(32, 32, 64, [simpleForest], 1, 100, 100);
             expect(result).toBe(true);
         });
 
         it('should return false for a point outside the forest polygon', () => {
             // (5/64)*4096 = 320. 320 est en dehors de 1000-3000.
-            const result = isPointInForest(mockTile, 5, 5, 64, [simpleForest]);
+            const result = isPointInForest(5, 5, 64, [simpleForest], 1, 100, 100);
             expect(result).toBe(false);
         });
     });

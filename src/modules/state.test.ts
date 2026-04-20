@@ -53,7 +53,7 @@ describe('state.ts', () => {
             expect(PRESETS.performance.RESOLUTION).toBe(160);
             expect(PRESETS.performance.RANGE).toBe(6);
             expect(PRESETS.performance.SHADOW_RES).toBe(1024);
-            expect(PRESETS.performance.MAX_BUILDS_PER_CYCLE).toBe(4); // v5.21: 2 → 4
+            expect(PRESETS.performance.MAX_BUILDS_PER_CYCLE).toBe(6); // v5.34.5: 4 → 6
             expect(PRESETS.performance.MAX_ALLOWED_ZOOM).toBe(18);
             expect(PRESETS.performance.POI_ZOOM_THRESHOLD).toBe(15);
         });

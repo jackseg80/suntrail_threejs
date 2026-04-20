@@ -139,26 +139,24 @@ export async function fetchLandcoverPBF(tile: Tile): Promise<LandcoverData | nul
 /**
  * Vérifie si un point local à une tuile (0-scanRes) se trouve dans une forêt.
  */
-export function isPointInForest(tile: Tile, px: number, py: number, scanRes: number, forests: any[]): boolean {
+export function isPointInForest(
+    px: number, 
+    py: number, 
+    scanRes: number, 
+    forests: any[], 
+    ratio: number, 
+    tileTx: number, 
+    tileTy: number
+): boolean {
     if (!forests || forests.length === 0) return false;
 
-    const n = Math.pow(2, tile.zoom);
-    const lon = (tile.tx + 0.5) / n * 360 - 180;
-    const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (tile.ty + 0.5) / n)));
-    const lat = latRad * 180 / Math.PI;
-    const inCH = isPositionInSwitzerland(lat, lon);
-
-    // v5.33.1 : Doit être identique aux valeurs de fetchLandcoverPBF
-    const requestZoom = inCH ? 12 : 10;
-    const ratio = Math.pow(2, tile.zoom - requestZoom);
-    
     // Coordonnées locales (0-4095) dans la tuile source vectorielle
     const localX = (px / scanRes) * 4096;
     const localY = (py / scanRes) * 4096;
     
-    // Projection vers les coordonnées de la tuile overzoomée
-    const targetX = (tile.tx % ratio) * (4096 / ratio) + (localX / ratio);
-    const targetY = (tile.ty % ratio) * (4096 / ratio) + (localY / ratio);
+    // Projection vers les coordonnées de la tuile overzoomée (Mercator Linéaire)
+    const targetX = (tileTx % ratio) * (4096 / ratio) + (localX / ratio);
+    const targetY = (tileTy % ratio) * (4096 / ratio) + (localY / ratio);
 
     for (const poly of forests) {
         // v5.33.6 : Filtrage spatial ultra-rapide (Bounding Box)
