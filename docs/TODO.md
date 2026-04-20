@@ -1,4 +1,4 @@
-# SunTrail 3D — TODO (v5.34.2)
+# SunTrail 3D — TODO (v5.34.8)
 
 > Guide IA : [CLAUDE.md](../CLAUDE.md) | Historique : [COMPLETED_HISTORY.md](archives/COMPLETED_HISTORY.md)
 

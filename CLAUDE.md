@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.34.7)
+# SunTrail — Guide IA (v5.34.8)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-19 suite à la v5.34.7 (Final Stabilization).
+> Mis à jour le 2026-04-19 suite à la v5.34.8 (Android Build Hotfix).
 
 
 ## Projet

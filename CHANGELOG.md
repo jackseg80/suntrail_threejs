@@ -5,6 +5,10 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.34.8] - 2026-04-19
+### Fixed
+- **Hotfix Build Android** : Correction définitive de la syntaxe du fichier `build.gradle` (guillemets mal échappés sur le `versionName`) pour débloquer la CI.
+
 ## [5.34.7] - 2026-04-19
 ### Fixed
 - **Stabilisation du Build** : Correction d'erreurs TypeScript (variables inutilisées) bloquant le déploiement.
