@@ -148,15 +148,26 @@ async function processNextOverpass() {
             item.resolve(data);
         }
     } catch (e) {
-        _overpassConsecutiveFails++;
-        const backoff = Math.min(OVERPASS_BASE_BACKOFF, 30000);
-        _overpassBackoffUntil = Date.now() + backoff;
+        // v5.34.6 : Si erreur réseau ou CORS (ERR_FAILED), on active aussi le backoff de 5min pour éviter le spam console
+        console.warn(`[Overpass] Network/CORS failure. Pausing all Overpass requests for 5min.`);
+        _overpassBackoffUntil = Date.now() + 300000; 
         item.resolve(null);
         isOverpassProcessing = false;
         return;
     }
 
     setTimeout(processNextOverpass, OVERPASS_DELAY);
+}
+
+/**
+ * v5.34.6 : Patch pour éviter ERR_CACHE_OPERATION_NOT_SUPPORTED sur PMTiles en local
+ * Désactive la mise en cache navigateur sur localhost.
+ */
+export async function fetchWithNoCacheIfLocal(url: string, options: any = {}) {
+    if (url.includes('localhost') || url.includes('127.0.0.1')) {
+        options.cache = 'no-store';
+    }
+    return fetch(url, options);
 }
 
 // --- GÉOCODAGE AVEC SECOURS (v5.4.7) ---

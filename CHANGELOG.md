@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.34.6] - 2026-04-19
+### Fixed
+- **Silence Réseau (Overpass)** : Amélioration du disjoncteur (Backoff) pour détecter et stopper immédiatement le spam de logs lors d'échecs réseau ou de blocages CORS (ERR_FAILED), rendant la console beaucoup plus propre.
+- **Développement Local** : Correction de l'erreur `ERR_CACHE_OPERATION_NOT_SUPPORTED` lors de la lecture des fichiers PMTiles en local (localhost) sous Chrome.
+
+### Optimized
+- **Parallélisme Accru** : Augmentation drastique du nombre de tuiles chargées en simultané via un "Connection Pool" asynchrone. La carte apparaît désormais presque instantanément sur les connexions rapides.
+
 ## [5.34.5] - 2026-04-19
 ### Optimized
 - **Chargement Non-Bloquant (Connection Pool)** : Refonte de la file d'attente de chargement pour autoriser plusieurs tuiles en parallèle sans bloquer tout le lot. Utilisation d'un "pool" de connexion intelligent qui sature mieux les workers et la bande passante.
