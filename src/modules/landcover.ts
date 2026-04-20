@@ -8,6 +8,32 @@ import type { Tile } from './terrain';
 export interface LandcoverData {
     forests: any[];
     water: any[];
+    buildings: any[];
+    forestGrid?: any[][]; // v5.36.0 : Grille spatiale pour accélération
+}
+
+const GRID_SIZE = 16;
+const CELL_UNITS = 4096 / GRID_SIZE;
+
+/**
+ * Construit une grille spatiale pour accélérer les tests Point-in-Polygon (v5.36.0)
+ */
+function buildSpatialGrid(features: any[]): any[][] {
+    const grid: any[][] = Array.from({ length: GRID_SIZE * GRID_SIZE }, () => []);
+    features.forEach(feat => {
+        if (!feat.bbox) return;
+        const startX = Math.max(0, Math.floor(feat.bbox.minX / CELL_UNITS));
+        const endX = Math.min(GRID_SIZE - 1, Math.floor(feat.bbox.maxX / CELL_UNITS));
+        const startY = Math.max(0, Math.floor(feat.bbox.minY / CELL_UNITS));
+        const endY = Math.min(GRID_SIZE - 1, Math.floor(feat.bbox.maxY / CELL_UNITS));
+
+        for (let gx = startX; gx <= endX; gx++) {
+            for (let gy = startY; gy <= endY; gy++) {
+                grid[gy * GRID_SIZE + gx].push(feat);
+            }
+        }
+    });
+    return grid;
 }
 
 // Cache des données vectorielles (Z10-Z14)
@@ -15,7 +41,7 @@ const landcoverCache = new BoundedCache<string, LandcoverData>({ maxSize: 100 })
 const fetchPromises = new Map<string, Promise<LandcoverData | null>>();
 
 /**
- * Récupère les données sémantiques (Forêts, Eau) via tuiles vectorielles.
+ * Récupère les données sémantiques (Forêts, Eau, Bâtiments) via tuiles vectorielles.
  * Tier 1: SwissTopo (Gratuit, Suisse, Z12)
  * Tier 3: MapTiler (Monde, Overzoom Z10 pour préserver quota)
  */
@@ -64,6 +90,7 @@ export async function fetchLandcoverPBF(tile: Tile): Promise<LandcoverData | nul
             
             const forests: any[] = [];
             const water: any[] = [];
+            const buildings: any[] = [];
 
             // --- 1. EXTRACTION FORÊTS ---
             const forestLayer = vtile.layers.landcover || vtile.layers.park || vtile.layers.landuse;
@@ -121,7 +148,38 @@ export async function fetchLandcoverPBF(tile: Tile): Promise<LandcoverData | nul
                 }
             }
 
-            const data = { forests, water };
+            // --- 3. EXTRACTION BÂTIMENTS (v5.35.0) ---
+            const buildingLayer = vtile.layers.building || vtile.layers.buildings;
+            if (buildingLayer) {
+                for (let i = 0; i < buildingLayer.length; i++) {
+                    const feat = buildingLayer.feature(i);
+                    const geometry = feat.loadGeometry();
+                    const extent = buildingLayer.extent || 4096;
+                    
+                    // Calcul BBox
+                    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                    geometry.forEach((ring: any[]) => {
+                        ring.forEach(p => {
+                            if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+                            if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+                        });
+                    });
+
+                    buildings.push({
+                        geometry,
+                        properties: feat.properties,
+                        extent,
+                        bbox: { minX, maxX, minY, maxY }
+                    });
+                }
+            }
+
+            const data: LandcoverData = { 
+                forests, 
+                water, 
+                buildings,
+                forestGrid: buildSpatialGrid(forests)
+            };
             landcoverCache.set(cacheKey, data);
             return data;
         } catch (e) {
@@ -146,7 +204,8 @@ export function isPointInForest(
     forests: any[], 
     ratio: number, 
     tileTx: number, 
-    tileTy: number
+    tileTy: number,
+    forestGrid?: any[][]
 ): boolean {
     if (!forests || forests.length === 0) return false;
 
@@ -158,7 +217,15 @@ export function isPointInForest(
     const targetX = (tileTx % ratio) * (4096 / ratio) + (localX / ratio);
     const targetY = (tileTy % ratio) * (4096 / ratio) + (localY / ratio);
 
-    for (const poly of forests) {
+    // v5.36.0 : Utilisation de la grille pour ne tester que les candidats probables
+    let candidates = forests;
+    if (forestGrid) {
+        const gx = Math.max(0, Math.min(GRID_SIZE - 1, Math.floor(targetX / CELL_UNITS)));
+        const gy = Math.max(0, Math.min(GRID_SIZE - 1, Math.floor(targetY / CELL_UNITS)));
+        candidates = forestGrid[gy * GRID_SIZE + gx];
+    }
+
+    for (const poly of candidates) {
         // v5.33.6 : Filtrage spatial ultra-rapide (Bounding Box)
         if (poly.bbox) {
             if (targetX < poly.bbox.minX || targetX > poly.bbox.maxX || targetY < poly.bbox.minY || targetY > poly.bbox.maxY) {

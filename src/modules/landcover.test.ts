@@ -40,6 +40,21 @@ describe('landcover.ts', () => {
             const result = isPointInForest(5, 5, 64, [simpleForest], 1, 100, 100);
             expect(result).toBe(false);
         });
+
+        it('should use spatial grid if provided', () => {
+            // On crée une grille où la cellule (8,8) contient notre forêt
+            // (2048/256 = 8)
+            const grid: any[][] = Array.from({ length: 16 * 16 }, () => []);
+            grid[8 * 16 + 8] = [simpleForest];
+
+            // Point dedans avec la grille
+            const result = isPointInForest(32, 32, 64, [simpleForest], 1, 100, 100, grid);
+            expect(result).toBe(true);
+
+            // Point dehors (cellule vide dans la grille)
+            const resultEmpty = isPointInForest(5, 5, 64, [simpleForest], 1, 100, 100, grid);
+            expect(resultEmpty).toBe(false);
+        });
     });
 
     describe('fetchLandcoverPBF', () => {

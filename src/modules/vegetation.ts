@@ -130,14 +130,18 @@ export async function createForestForTile(tile: Tile): Promise<THREE.Group | nul
     const exaggeration = state.RELIEF_EXAGGERATION;
 
     const forestGroup = new THREE.Group();
-    const instances: Record<string, { count: number, matrices: THREE.Matrix4[] }> = {
-        sapin: { count: 0, matrices: [] },
-        meleze: { count: 0, matrices: [] },
-        feuillu: { count: 0, matrices: [] }
+    // v5.36.0 : Utilisation de buffers plats (Float32Array) pour éviter les allocations de Matrix4
+    const instances: Record<string, { count: number, buffer: Float32Array }> = {
+        sapin: { count: 0, buffer: new Float32Array(totalSlots * 16) },
+        meleze: { count: 0, buffer: new Float32Array(totalSlots * 16) },
+        feuillu: { count: 0, buffer: new Float32Array(totalSlots * 16) }
     };
 
     const densityBoost = (state.PERFORMANCE_PRESET === 'ultra') ? 1.1 : 1.0;
     let totalActive = 0;
+    
+    // v5.36.0 : Cache de la résolution pour éviter Math.sqrt (Gain CPU)
+    const elevRes = Math.sqrt(tile.pixelData.length / 4);
 
     for (let py = 0; py < scanRes; py += step) {
         for (let px = 0; px < scanRes; px += step) {
@@ -156,7 +160,8 @@ export async function createForestForTile(tile: Tile): Promise<THREE.Group | nul
             if (forests) {
                 // Tier 1/3 : Données vectorielles (on fait confiance au vecteur, même si vide)
                 // v5.34.5 : Passage du ratio pré-calculé (Optimisation CPU massive)
-                isForest = (forests.length > 0) && isPointInForest(spx, spy, scanRes, forests, ratio, tile.tx, tile.ty);
+                // v5.36.0 : Passage de la grille spatiale pour accélération O(1)
+                isForest = (forests.length > 0) && isPointInForest(spx, spy, scanRes, forests, ratio, tile.tx, tile.ty, landcover?.forestGrid);
             } else {
                 // Tier 4 : Fallback Raster avec filtre de variance (Erreur réseau ou offline sans vecteur)
                 if (state.MAP_SOURCE === 'opentopomap') {
@@ -184,7 +189,7 @@ export async function createForestForTile(tile: Tile): Promise<THREE.Group | nul
                 const lx = ((px / scanRes) - 0.5) * size + jx;
                 const lz = ((py / scanRes) - 0.5) * size + jz;
 
-                const h = getSimpleAltitude(tile, lx, lz, exaggeration);
+                const h = getSimpleAltitude(tile, lx, lz, exaggeration, elevRes);
                 const realAlt = h / exaggeration;
 
                 if (realAlt > 2450 || realAlt < 1) continue;
@@ -203,7 +208,9 @@ export async function createForestForTile(tile: Tile): Promise<THREE.Group | nul
                 dummy.rotation.y = pseudoRandom(globalX, globalY, 9) * Math.PI;
                 dummy.updateMatrix();
                 
-                instances[type].matrices.push(dummy.matrix.clone());
+                // v5.36.0 : Copie directe de la matrice dans le buffer
+                const offset = instances[type].count * 16;
+                dummy.matrix.toArray(instances[type].buffer, offset);
                 instances[type].count++;
                 totalActive++;
             }
@@ -216,9 +223,11 @@ export async function createForestForTile(tile: Tile): Promise<THREE.Group | nul
             const is2D = state.IS_2D_MODE;
             const mat = is2D ? essences[type].material2D : essences[type].material;
             const iMesh = new THREE.InstancedMesh(essences[type].geometry, mat, data.count);
-            for (let j = 0; j < data.count; j++) {
-                iMesh.setMatrixAt(j, data.matrices[j]);
-            }
+            
+            // v5.36.0 : Injection directe du buffer optimisé
+            iMesh.instanceMatrix.array.set(data.buffer.subarray(0, data.count * 16));
+            iMesh.instanceMatrix.needsUpdate = true;
+
             iMesh.frustumCulled = false;
             iMesh.castShadow = !is2D && state.VEGETATION_CAST_SHADOW;
             iMesh.receiveShadow = !is2D;
@@ -229,9 +238,8 @@ export async function createForestForTile(tile: Tile): Promise<THREE.Group | nul
     return totalActive > 0 ? forestGroup : null;
 }
 
-function getSimpleAltitude(tile: Tile, localX: number, localZ: number, exaggeration: number): number {
+function getSimpleAltitude(tile: Tile, localX: number, localZ: number, exaggeration: number, res: number): number {
     if (!tile.pixelData) return 0;
-    const res = Math.sqrt(tile.pixelData.length / 4);
     
     let relX = (localX / tile.tileSizeMeters) + 0.5;
     let relZ = (localZ / tile.tileSizeMeters) + 0.5;

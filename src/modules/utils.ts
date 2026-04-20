@@ -103,7 +103,8 @@ async function processNextOverpass() {
     (window as any)._overpassIdx++;
 
     try {
-        // v5.29.19 : Timeout ultra-court (3s) pour ne pas bloquer les slots réseau en cas de panne Overpass
+        // v5.37.4 : Suppression du header User-Agent (interdit en navigateur, cause erreur CORS)
+        // L'identification se fait maintenant via un commentaire dans la query si nécessaire
         const response = await fetch(`${server}?data=${encodeURIComponent(item.query)}`, {
             signal: AbortSignal.timeout(3000)
         });
