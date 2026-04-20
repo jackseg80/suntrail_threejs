@@ -149,8 +149,10 @@ async function processNextOverpass() {
         }
     } catch (e) {
         // v5.34.6 : Si erreur réseau ou CORS (ERR_FAILED), on active aussi le backoff de 5min pour éviter le spam console
-        console.warn(`[Overpass] Network/CORS failure. Pausing all Overpass requests for 5min.`);
-        _overpassBackoffUntil = Date.now() + 300000; 
+        if (Date.now() > _overpassBackoffUntil) {
+            console.warn(`[Overpass] Network/CORS failure. Pausing all Overpass requests for 5min.`);
+            _overpassBackoffUntil = Date.now() + 300000; 
+        }
         item.resolve(null);
         isOverpassProcessing = false;
         return;

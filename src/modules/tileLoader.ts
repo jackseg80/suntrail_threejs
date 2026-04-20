@@ -99,11 +99,10 @@ export async function initEmbeddedOverview(): Promise<void> {
         const url = './tiles/europe-overview.pmtiles';
         
         // Paralléliser l'ouverture du cache worker et l'init PMTiles
-        // v5.34.6 : On force no-cache en local pour éviter ERR_CACHE_OPERATION_NOT_SUPPORTED
         const [cache, archive] = await Promise.all([
             caches.open(CACHE_NAME),
             (async () => {
-                const p = new pmtiles.PMTiles(new pmtiles.FetchSource(url, { fetch: fetchWithNoCacheIfLocal }));
+                const p = new pmtiles.PMTiles(url);
                 await p.getHeader();
                 return p;
             })()
