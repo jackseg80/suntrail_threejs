@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.34.7] - 2026-04-19
+### Fixed
+- **Stabilisation du Build** : Correction d'erreurs TypeScript (variables inutilisées) bloquant le déploiement.
+- **Réparation PMTiles** : Correction définitive de l'initialisation des archives PMTiles (overview) qui causait un crash au démarrage.
+- **Intégrité des Tests** : Mise à jour des tests de performance pour refléter les nouvelles capacités de parallélisme du moteur.
+
 ## [5.34.6] - 2026-04-19
 ### Fixed
 - **Silence Réseau (Overpass)** : Amélioration du disjoncteur (Backoff) pour détecter et stopper immédiatement le spam de logs lors d'échecs réseau ou de blocages CORS (ERR_FAILED), rendant la console beaucoup plus propre.

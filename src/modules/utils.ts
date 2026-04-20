@@ -42,7 +42,6 @@ let _overpassBackoffUntil = 0;
 let _overpassConsecutiveFails = 0;  
 let _lowPriorityDisabledUntil = 0; // Disjoncteur pour hydrologie/bâtiments
 const OVERPASS_DELAY = 2000;       // Augmenté à 2s pour éviter les 429 massifs
-const OVERPASS_BASE_BACKOFF = 30000;  
 const OVERPASS_MAX_QUEUE = 15;      
 
 export function isOverpassInBackoff(): boolean {

@@ -1,7 +1,6 @@
 import { state } from './state';
 import { isPositionInSwitzerland, isPositionInFrance } from './geo';
 import { showToast } from './toast';
-import { fetchWithNoCacheIfLocal } from './utils';
 
 import { tileWorkerManager } from './workerManager';
 import { disposeAllCachedTiles } from './tileCache';

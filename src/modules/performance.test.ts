@@ -277,9 +277,9 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
             expect(state.SHADOW_RES).toBe(1024);
         });
 
-        it('performance preset : MAX_BUILDS_PER_CYCLE=4 quelle que soit la plateforme', () => {
+        it('performance preset : MAX_BUILDS_PER_CYCLE=6 quelle que soit la plateforme', () => {
             applyPreset('performance');
-            expect(state.MAX_BUILDS_PER_CYCLE).toBe(4); // v5.21: 2 → 4
+            expect(state.MAX_BUILDS_PER_CYCLE).toBe(6); // v5.34.5: 4 → 6
         });
     });
 });
