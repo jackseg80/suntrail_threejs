@@ -5,11 +5,19 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.38.1] - 2026-04-21
+## [5.38.2] - 2026-04-21
+### Added
+- **Mode Topo (Auto)** : Renommage du fond de carte "Topo CH" en "Topo (Auto)" pour refléter la sélection dynamique et intelligente de la meilleure source topographique selon la position.
+- **Support Officiel de l'Italie** : Intégration de la région Italie et utilisation systématique d'OpenTopoMap (LOD 11-17) pour garantir un rendu montagneux homogène et précis.
+- **Indicateur de Source Dynamique** : Le label de statut en haut à gauche affiche désormais la source réelle au centre de l'écran (SWISS, IGN FR, ITALY, WORLD, SAT).
+
 ### Fixed
-- **Synchronisation GPS & Artefacts "Champignons"** : Centralisation de la synchronisation des points dans `NativeGPSService.syncPoints()` pour garantir que le filtrage `cleanGPSTrack` est appliqué systématiquement, même lors du retour de l'application au premier plan.
-- **Robustesse Filtrage GPS** : Ajout de vérifications de sécurité contre les valeurs `NaN` et injection de points (0,0) pour éliminer les lignes parasites sur le tracé en temps réel.
-- **Fluidité de Rendu** : Throttling systématique de la mise à jour du mesh 3D lors de l'injection massive de points (reprise après background).
+- **Transitions Frontalières (Aoste/Chamonix)** : Affinage chirurgical des segments géographiques (BBoxes) pour épouser les frontières réelles et supprimer définitivement les tuiles blanches ou les mélanges de styles à Aoste et dans les Alpes.
+- **Unification Visuelle LOD 11** : Extension de la source mondiale unique jusqu'au LOD 11 pour supprimer le "patchwork" visuel lors de la transition vers les cartes haute résolution.
+- **Sécurité des Packs Hors-ligne** : Les packs Suisse et France sont désormais bridés géographiquement pour ne plus polluer les territoires voisins avec leurs styles locaux.
+- **Fiabilité LOD 12+** : Correction d'une erreur de comparaison inclusive dans la détection géographique, restaurant le chargement complet de SwissTopo en Suisse centrale.
+
+## [5.38.1] - 2026-04-21
 
 ## [5.38.0] - 2026-04-20
 ### Added

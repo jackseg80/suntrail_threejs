@@ -37,9 +37,11 @@
 - [x] **Détection Sémantique Forêts (v5.33.0)** : Remplacement du scan raster par l'analyse vectorielle.
 - [ ] **Migration POI & Sommets (PBF)** : Remplacer les requêtes Overpass API par l'extraction des couches `poi`, `label` et `natural` des tuiles vectorielles pour éliminer les erreurs CORS/406 et accélérer l'affichage.
 - [ ] **Solution Souveraine (Mondial)** : Générer et héberger un fichier `forests-world.pmtiles` sur Cloudflare R2.
-- [ ] **Adaptation par Pays (Vecteur Natif)** :
-    - [ ] **France (IGN)** : Intégration du Plan IGN v2 vectoriel (Forêts gratuites).
-    - [ ] **Autres pays** : Auditer les services VectorTiles nationaux (Autriche, Espagne, etc.) et implémenter des connecteurs spécifiques.
+- [x] **Adaptation par Pays (v5.38.2)** :
+    - [x] **Italie** : Implémentation du moteur OpenTopoMap et détection géographique IT.
+    - [x] **Unification Frontalière** : Correction chirurgicale d'Aoste et unification LOD 11.
+    - [ ] **France (IGN)** : Migration vers le Plan IGN v2 vectoriel (Forêts gratuites).
+    - [ ] **Autres pays** : Auditer les services VectorTiles nationaux (Autriche, Espagne, etc.).
 
 ---
 
