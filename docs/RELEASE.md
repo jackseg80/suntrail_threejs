@@ -125,6 +125,8 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | 612 | 5.28.27 | v5.28.27 | **Double-tap to zoom**, zoomToPoint function, haptic feedback | 2026-04-12 |
 | 613 | 5.28.27 | v5.28.27-rev2 | Tentative fix conflit versionCode (Échec : déjà utilisé) | 2026-04-12 |
 | **650** | **5.28.27** | **v5.28.27-final** | Jump de sécurité (613+) pour résoudre conflits persistants Play Console | 2026-04-12 |
+| **751** | **5.38.2** | **v5.38.2** | **Production (Tuiles + Gradle Fix)** | **2026-04-21** |
+| **750** | **5.38.1** | **v5.38.1** | **GPS Robustness Stable** | **2026-04-21** |
 | **730** | **5.32.14** | **v5.32.14-final** | **LOD audit, adaptive GPX, Anisotropy, Fix Profile 3D, Build Toolchain Fix** | **2026-04-19** |
 | 727 | 5.32.14 | v5.32.14 | Audit LOD: Unified Geometries, Adaptive GPX Simplification, Anisotropic Filtering, Fix Profile Marker 3D | 2026-04-19 |
 | 726 | 5.32.13 | v5.32.13 | Refined LOD Balance (tilt-aware), fixed scene.test.ts, i18n consolidation | 2026-04-19 |
