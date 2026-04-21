@@ -230,8 +230,10 @@
     },
     "lod": {
       "swiss": "SWISS",
-      "world": "MONDO",
-      "format": "{{country}} · LVL {{level}}"
+      "ign": "IGN FR",
+      "italy": "ITALY",
+      "world": "WORLD",
+      "sat": "SAT"
     }
   },
   "upsell": {

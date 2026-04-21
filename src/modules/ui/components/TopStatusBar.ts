@@ -4,6 +4,7 @@ import { i18n } from '../../../i18n/I18nService';
 import { eventBus } from '../../eventBus';
 import { sheetManager } from '../core/SheetManager';
 import { getWeatherIcon } from '../../weather';
+import { isPositionInSwitzerland, isPositionInFrance, isPositionInItaly } from '../../geo';
 
 export class TopStatusBar extends BaseComponent {
     private lodBadge: HTMLElement | null = null;
@@ -128,8 +129,21 @@ export class TopStatusBar extends BaseComponent {
 
     private updateLOD(zoom: number): void {
         if (this.lodBadge) {
-            const country = state.ZOOM > 10 ? i18n.t('topbar.lod.swiss') : i18n.t('topbar.lod.world');
-            this.lodBadge.textContent = i18n.t('topbar.lod.format', { country, level: Math.floor(zoom).toString() });
+            let sourceKey = 'world';
+            
+            if (state.MAP_SOURCE === 'satellite') {
+                sourceKey = 'sat';
+            } else {
+                const lat = state.TARGET_LAT;
+                const lon = state.TARGET_LON;
+                
+                if (isPositionInSwitzerland(lat, lon)) sourceKey = 'swiss';
+                else if (isPositionInItaly(lat, lon)) sourceKey = 'italy';
+                else if (isPositionInFrance(lat, lon)) sourceKey = 'ign';
+            }
+
+            const country = i18n.t(`topbar.lod.${sourceKey}`);
+            this.lodBadge.textContent = `${country} · LVL ${Math.floor(zoom)}`;
             this.updatePillAriaLabel();
         }
     }

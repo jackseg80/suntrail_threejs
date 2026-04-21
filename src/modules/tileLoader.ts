@@ -292,7 +292,8 @@ export function getColorUrl(tx: number, ty: number, zoom: number): string {
     // --- MODE TOPO / AUTRE ---
     
     // Bas zoom (vue d'ensemble) : OpenTopoMap pour tout le monde
-    if (zoom <= 10) {
+    // v5.35.4 : Étendu au zoom 11 pour garantir une unité visuelle parfaite avant le zoom détail.
+    if (zoom <= 11) {
         const sub = ['a', 'b', 'c'][(tx + ty) % 3];
         return `https://${sub}.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`;
     }
