@@ -35,7 +35,7 @@ SunTrail est un moteur de terrain 3D WebGL conçu pour les randonneurs et alpini
 
 | Tier Gratuit | Tier Pro |
 |---|---|
-| Carte topo CH+FR (LOD ≤ 14) | LOD 18 + Satellite HD + Bâtiments 3D |
+| Carte topo (Auto) (CH+FR+IT) | LOD 18 + Satellite HD + Bâtiments 3D |
 | GPS live + météo 12h | Météo 3 jours + alertes montagne |
 | Simulation solaire (jour actuel) | Calendrier illimité (dates passées/futures) |
 | Analyse solaire de base | Analyse Pro complète (azimut, élévation, graphique 24h, phase lunaire) |

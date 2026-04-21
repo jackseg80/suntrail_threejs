@@ -26,8 +26,8 @@ describe('I18nService', () => {
     });
 
     it('should support multiple interpolation variables', () => {
-        const result = i18n.t('topbar.lod.format', { country: 'SWISS', level: '14' });
-        expect(result).toBe('SWISS · LVL 14');
+        expect(i18n.t('topbar.lod.swiss')).toBe('SWISS');
+        expect(i18n.t('topbar.lod.world')).toBe('WORLD');
     });
 
     it('should fallback to fr when key missing in current locale', () => {

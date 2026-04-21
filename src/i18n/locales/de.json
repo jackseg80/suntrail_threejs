@@ -205,7 +205,7 @@
       "close": "Ebenen schliessen"
     },
     "source": {
-      "swisstopo": "Topo CH",
+      "swisstopo": "Topo (Auto)",
       "satellite": "Satellit",
       "topo": "OpenTopo",
       "osm": "OpenStreetMap",

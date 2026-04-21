@@ -206,7 +206,7 @@
       "close": "Close layers"
     },
     "source": {
-      "swisstopo": "Topo CH",
+      "swisstopo": "Topo (Auto)",
       "satellite": "Satellite",
       "topo": "OpenTopo",
       "osm": "OpenStreetMap",
