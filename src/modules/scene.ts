@@ -116,7 +116,7 @@ export async function disposeScene(): Promise<void> {
 function getIdealZoom(dist: number, currentZoom: number): number {
     const boost = state.MAP_SOURCE === 'satellite' ? 2.0
                 : state.MAP_SOURCE === 'swisstopo' ? 1.0
-                : 1.2;
+                : 0.5; // v5.38.6 : Effet Loupe x2 pour l'IGN/OpenTopo (écritures x2)
 
     // v5.32.13 : Si on est très incliné (3D), on augmente artificiellement la distance 
     // pour basculer plus tôt sur un LOD inférieur (gain perf massif à l'horizon).
@@ -139,10 +139,10 @@ function getIdealZoom(dist: number, currentZoom: number): number {
     if (effectiveDist < getThresh(1800 * boost, 17)) return 17;
     if (effectiveDist < getThresh(4000 * boost, 16)) return 16;
     if (effectiveDist < getThresh(9000 * boost, 15)) return 15;
-    if (effectiveDist < getThresh(22000, 14)) return 14;
-    if (effectiveDist < getThresh(45000, 13)) return 13;
-    if (effectiveDist < getThresh(90000, 12)) return 12;
-    if (effectiveDist < getThresh(180000, 11)) return 11;
+    if (effectiveDist < getThresh(22000 * boost, 14)) return 14;
+    if (effectiveDist < getThresh(45000 * boost, 13)) return 13;
+    if (effectiveDist < getThresh(90000 * boost, 12)) return 12;
+    if (effectiveDist < getThresh(180000 * boost, 11)) return 11;
     if (effectiveDist < getThresh(350000, 10)) return 10;
     if (effectiveDist < getThresh(700000, 9)) return 9;
     if (effectiveDist < getThresh(1200000, 8)) return 8;

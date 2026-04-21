@@ -12,6 +12,7 @@ et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - **Indicateur de Source Dynamique** : Le label de statut en haut à gauche affiche désormais la source réelle au centre de l'écran (SWISS, IGN FR, ITALY, WORLD, SAT).
 
 ### Fixed
+- **Lisibilité des Étiquettes (IGN/OpenTopo)** : Implémentation d'un "effet Loupe" (boost 0.5) pour les sources non-suisses. Cela décale l'affichage d'un niveau de zoom (LOD) complet pour doubler la taille visuelle des noms de villes et villages, compensant la petite taille native des polices IGN et Italiennes.
 - **Transitions Frontalières (Aoste/Chamonix)** : Affinage chirurgical des segments géographiques (BBoxes) pour épouser les frontières réelles et supprimer définitivement les tuiles blanches ou les mélanges de styles à Aoste et dans les Alpes.
 - **Unification Visuelle LOD 11** : Extension de la source mondiale unique jusqu'au LOD 11 pour supprimer le "patchwork" visuel lors de la transition vers les cartes haute résolution.
 - **Sécurité des Packs Hors-ligne** : Les packs Suisse et France sont désormais bridés géographiquement pour ne plus polluer les territoires voisins avec leurs styles locaux.
