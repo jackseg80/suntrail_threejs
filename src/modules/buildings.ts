@@ -54,8 +54,8 @@ export async function loadBuildingsForTile(tile: Tile) {
             promise = fetchBuildingsOverpassWithCache(zoneZ, zx, zy, zoneKey);
             overpassFetchPromises.set(zoneKey, promise);
         }
-        buildings = await promise;
-        if (buildings) overpassMemoryCache.set(zoneKey, buildings);
+        buildings = (await promise) || [];
+        if (buildings.length > 0) overpassMemoryCache.set(zoneKey, buildings);
         else zoneFailureCooldown.set(zoneKey, Date.now() + 60000);
         overpassFetchPromises.delete(zoneKey);
     }
@@ -111,7 +111,7 @@ function renderBuildingsOverpass(tile: Tile, elements: any[]) {
         });
         try {
             let ax = 0, az = 0;
-            ring.forEach(p => { ax += p.x; az += p.y; });
+            ring.forEach((p: THREE.Vector2) => { ax += p.x; az += p.y; });
             const worldX = tile.worldX + (ax / ring.length);
             const worldZ = tile.worldZ + (az / ring.length);
             const baseAlt = getAltitudeAt(worldX, worldZ, tile);
@@ -185,7 +185,7 @@ function finalizeBuildings(tile: Tile, geometries: THREE.BufferGeometry[]) {
             const merged = BufferGeometryUtils.mergeGeometries(geometries);
             if (!merged) return;
             const mesh = new THREE.Mesh(merged, state.IS_2D_MODE ? buildingMaterial2D : buildingMaterial);
-            mesh.castShadow = !state.IS_2D_MODE && state.PERFORMANCE_PRESET !== 'low';
+            mesh.castShadow = !state.IS_2D_MODE && state.PERFORMANCE_PRESET !== 'eco';
             mesh.receiveShadow = !state.IS_2D_MODE;
 
             if (tile.buildingGroup && state.scene) state.scene.remove(tile.buildingGroup);

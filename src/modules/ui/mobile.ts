@@ -3,7 +3,6 @@ import { sheetManager } from './core/SheetManager';
 import { state } from '../state';
 import { startLocationTracking, isWatchActive } from '../location';
 import { nativeGPSService } from '../nativeGPSService';
-import { updateRecordedTrackMesh } from '../terrain';
 
 /**
  * Initializes mobile-specific UI logic, such as back button handling.
