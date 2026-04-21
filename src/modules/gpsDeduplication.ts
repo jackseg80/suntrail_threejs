@@ -32,6 +32,7 @@ export function cleanGPSTrack<T extends GPSPoint>(points: T[]): T[] {
 
     for (const curr of sorted) {
         // Ignorer les points "zéro" ou invalides du démarrage (Cause majeure de champignons)
+        if (!curr || isNaN(curr.lat) || isNaN(curr.lon) || isNaN(curr.alt)) continue;
         if (curr.lat === 0 && curr.lon === 0) continue;
         if (Math.abs(curr.lat) < 0.0001 && Math.abs(curr.lon) < 0.0001) continue;
         

@@ -281,53 +281,16 @@ class NativeGPSService {
 
         RecordingNative.addListener('onNewPoints', async (event: { courseId: string; pointCount: number }) => {
             if (!event.courseId) return;
-            
+
             if (!this.currentCourseId && event.courseId) {
                 this.currentCourseId = event.courseId;
                 state.currentCourseId = event.courseId;
                 state.isRecording = true;
                 Preferences.set({ key: STORAGE_KEY_COURSE_ID, value: event.courseId });
             }
-            
+
             if (event.pointCount === 0) return;
-
-            const lastTimestamp = state.recordedPoints.length > 0
-                ? state.recordedPoints[state.recordedPoints.length - 1].timestamp
-                : 0;
-
-            try {
-                const newPoints = await this.getAllPoints(event.courseId, lastTimestamp);
-                
-                if (newPoints.length > 0) {
-                    const allPoints = [...state.recordedPoints, ...newPoints];
-                    const cleanedAll = cleanGPSTrack(allPoints);
-                    const existingTimestamps = new Set(state.recordedPoints.map(p => p.timestamp));
-                    const uniqueNewPoints = cleanedAll.filter(p => !existingTimestamps.has(p.timestamp));
-
-                    if (uniqueNewPoints.length > 0) {
-                        state.recordedPoints = [...state.recordedPoints, ...uniqueNewPoints];
-                        this.persistPoints();
-
-                        const totalPoints = state.recordedPoints.length;
-                        if (totalPoints < 10) {
-                            updateRecordedTrackMesh();
-                        } else {
-                            this.pendingMeshUpdate = true;
-                            if (!this.meshUpdateTimeout) {
-                                this.meshUpdateTimeout = window.setTimeout(() => {
-                                    if (this.pendingMeshUpdate) {
-                                        updateRecordedTrackMesh();
-                                        this.pendingMeshUpdate = false;
-                                    }
-                                    this.meshUpdateTimeout = null;
-                                }, 500);
-                            }
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error('[NativeGPSService] Failed to fetch new points:', e);
-            }
+            await this.syncPoints();
         });
 
         RecordingNative.addListener('onLocationUpdate', (event: { lat: number; lon: number; alt: number; accuracy: number }) => {
@@ -354,6 +317,53 @@ class NativeGPSService {
                 });
             }
         }, 10000);
+    }
+
+    /**
+     * Synchronise les points enregistrés par le service natif (v5.34.9).
+     * Centralise le filtrage cleanGPSTrack pour éviter les artefacts de "champignons".
+     */
+    async syncPoints(): Promise<void> {
+        if (!this.currentCourseId || !RecordingNative) return;
+
+        const lastTimestamp = state.recordedPoints.length > 0
+            ? state.recordedPoints[state.recordedPoints.length - 1].timestamp
+            : 0;
+
+        try {
+            const newPoints = await this.getAllPoints(this.currentCourseId, lastTimestamp);
+            if (newPoints.length > 0) {
+                // v5.28.1 : Unification du filtrage pour éviter les (0,0) injectés
+                const allPoints = [...state.recordedPoints, ...newPoints];
+                const cleanedAll = cleanGPSTrack(allPoints);
+
+                const existingTimestamps = new Set(state.recordedPoints.map(p => p.timestamp));
+                const uniqueNewPoints = cleanedAll.filter(p => !existingTimestamps.has(p.timestamp));
+
+                if (uniqueNewPoints.length > 0) {
+                    state.recordedPoints = [...state.recordedPoints, ...uniqueNewPoints];
+                    this.persistPoints();
+
+                    const totalPoints = state.recordedPoints.length;
+                    if (totalPoints < 10) {
+                        updateRecordedTrackMesh();
+                    } else {
+                        this.pendingMeshUpdate = true;
+                        if (!this.meshUpdateTimeout) {
+                            this.meshUpdateTimeout = window.setTimeout(() => {
+                                if (this.pendingMeshUpdate) {
+                                    updateRecordedTrackMesh();
+                                    this.pendingMeshUpdate = false;
+                                }
+                                this.meshUpdateTimeout = null;
+                            }, 500);
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('[NativeGPSService] Sync failure:', e);
+        }
     }
 
     /**

@@ -43,27 +43,9 @@ export function initMobileUI(): void {
                 _wasRecordingWhenBackgrounded = false;
 
                 // Récupérer les points enregistrés pendant le background
-                // Le natif les a stockés dans SQLite, on les récupère via getAllPoints
-                const lastTimestamp = state.recordedPoints.length > 0 
-                    ? state.recordedPoints[state.recordedPoints.length - 1].timestamp 
-                    : 0;
-                
-                const newPoints = await nativeGPSService.getAllPoints(
-                    state.currentCourseId, 
-                    lastTimestamp
-                );
-                
-                if (newPoints.length > 0) {
-                    // Convertir NativeGPSPoint[] en LocationPoint[]
-                    const convertedPoints = newPoints.map(p => ({
-                        lat: p.lat,
-                        lon: p.lon,
-                        alt: p.alt,
-                        timestamp: p.timestamp
-                    }));
-                    state.recordedPoints.push(...convertedPoints);
-                    updateRecordedTrackMesh();
-                }
+                // v5.34.9 : Utilisation de syncPoints() pour garantir le filtrage (cleanGPSTrack)
+                // et éviter les artefacts de "champignons" liés aux points (0,0) injectés.
+                await nativeGPSService.syncPoints();
 
                 // Relancer watchPosition si le callback est mort avec la WebView
                 // (pour l'affichage UI uniquement, pas pour l'enregistrement)

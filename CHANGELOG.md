@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.38.1] - 2026-04-21
+### Fixed
+- **Synchronisation GPS & Artefacts "Champignons"** : Centralisation de la synchronisation des points dans `NativeGPSService.syncPoints()` pour garantir que le filtrage `cleanGPSTrack` est appliqué systématiquement, même lors du retour de l'application au premier plan.
+- **Robustesse Filtrage GPS** : Ajout de vérifications de sécurité contre les valeurs `NaN` et injection de points (0,0) pour éliminer les lignes parasites sur le tracé en temps réel.
+- **Fluidité de Rendu** : Throttling systématique de la mise à jour du mesh 3D lors de l'injection massive de points (reprise après background).
+
 ## [5.38.0] - 2026-04-20
 ### Added
 - **Optimisation Mémoire Végétation** : Remplacement des objets `Matrix4` par des `Float32Array` plats pour les instances d'arbres, réduisant drastiquement le travail du Garbage Collector et le *stuttering*.
