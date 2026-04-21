@@ -309,9 +309,19 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
                     if (tx < 0 || tx >= maxTile || ty < 0 || ty >= maxTile) continue;
                     const key = `${state.MAP_SOURCE}_${tx}_${ty}_${zoom}`; 
                     currentActiveKeys.add(key);
+
+                    // v5.38.2 : Rayon forcé dynamique (Prop A)
+                    let forcedRadius = 1;
+                    if (state.PERFORMANCE_PRESET === 'performance' || state.PERFORMANCE_PRESET === 'ultra') {
+                        forcedRadius = 2; // 5x5 au lieu de 3x3
+                    }
+                    if (state.IS_2D_MODE && mobile) {
+                        forcedRadius = Math.max(forcedRadius, 2); // 5x5 minimum en 2D Mobile
+                    }
+
                     if (!activeTiles.has(key)) {
                         const tile = new Tile(tx, ty, zoom, key);
-                        if (tile.isVisible(sharedFrustum) || (Math.abs(dx) <= 1 && Math.abs(dy) <= 1)) { 
+                        if (tile.isVisible(sharedFrustum) || (Math.abs(dx) <= forcedRadius && Math.abs(dy) <= forcedRadius)) { 
                             activeTiles.set(key, tile); 
                             insertTile(tile); 
                             loadQueue.add(tile); 

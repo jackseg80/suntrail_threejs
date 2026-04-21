@@ -15,7 +15,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 750
-        versionName \"5.38.1\"
+        versionName "5.38.2"
 
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

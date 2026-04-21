@@ -7,11 +7,13 @@ et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [5.38.2] - 2026-04-21
 ### Added
+- **Optimisation du Panoramique (Tuiles)** : Augmentation du rayon de chargement forcé (5x5) pour les presets High/Ultra et élargissement de la marge de visibilité (60%) pour les presets Eco/Balanced. Mode 2D Mobile ultra-généreux (100% de marge) pour une fluidité parfaite sans "pop-in".
 - **Mode Topo (Auto)** : Renommage du fond de carte "Topo CH" en "Topo (Auto)" pour refléter la sélection dynamique et intelligente de la meilleure source topographique selon la position.
 - **Support Officiel de l'Italie** : Intégration de la région Italie et utilisation systématique d'OpenTopoMap (LOD 11-17) pour garantir un rendu montagneux homogène et précis.
 - **Indicateur de Source Dynamique** : Le label de statut en haut à gauche affiche désormais la source réelle au centre de l'écran (SWISS, IGN FR, ITALY, WORLD, SAT).
 
 ### Fixed
+- **Build Android** : Correction d'une erreur de syntaxe (backslashes parasites) dans le fichier `build.gradle` empêchant la compilation.
 - **Lisibilité des Étiquettes (IGN/OpenTopo)** : Implémentation d'un "effet Loupe" (boost 0.5) pour les sources non-suisses. Cela décale l'affichage d'un niveau de zoom (LOD) complet pour doubler la taille visuelle des noms de villes et villages, compensant la petite taille native des polices IGN et Italiennes.
 - **Transitions Frontalières (Aoste/Chamonix)** : Affinage chirurgical des segments géographiques (BBoxes) pour épouser les frontières réelles et supprimer définitivement les tuiles blanches ou les mélanges de styles à Aoste et dans les Alpes.
 - **Unification Visuelle LOD 11** : Extension de la source mondiale unique jusqu'au LOD 11 pour supprimer le "patchwork" visuel lors de la transition vers les cartes haute résolution.

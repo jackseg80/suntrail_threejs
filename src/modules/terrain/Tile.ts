@@ -84,7 +84,20 @@ export class Tile {
             new THREE.Vector3(this.worldX - this.tileSizeMeters/2, -1000, this.worldZ - this.tileSizeMeters/2),
             new THREE.Vector3(this.worldX + this.tileSizeMeters/2, 9000, this.worldZ + this.tileSizeMeters/2)
         );
-        this.extendedBounds.copy(this.bounds).expandByScalar(this.tileSizeMeters * 0.2);
+
+        // v5.38.2 : Marge de visibilité dynamique selon preset (Prop B) et mode 2D Mobile
+        let marginFactor = 0.2; // Défaut historique
+        const isMobile = window.innerWidth <= 768;
+        
+        if (state.PERFORMANCE_PRESET === 'eco' || state.PERFORMANCE_PRESET === 'balanced') {
+            marginFactor = 0.6; // Prop B : On élargit la zone de détection pour compenser le faible rayon forcé
+        }
+        
+        if (state.IS_2D_MODE && isMobile) {
+            marginFactor = Math.max(marginFactor, 1.0); // Très généreux en 2D Mobile
+        }
+
+        this.extendedBounds.copy(this.bounds).expandByScalar(this.tileSizeMeters * marginFactor);
     }
 
     public isVisible(precomputedFrustum?: THREE.Frustum): boolean {
