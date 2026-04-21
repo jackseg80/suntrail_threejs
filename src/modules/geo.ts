@@ -20,14 +20,24 @@ export interface LocationPoint {
  */
 export const REGIONS: Record<string, BBox[]> = {
     CH: [
-        // Suisse - Bloc National (v5.35.2 : remonté à 45.82 pour libérer Aoste)
-        { minLat: 45.82, maxLat: 47.9, minLon: 5.8, maxLon: 10.6 }
+        // Suisse - Ouest (Léman / Jura)
+        { minLat: 46.12, maxLat: 47.9, minLon: 5.8, maxLon: 7.0 },
+        // Suisse - Centrale (Valais / Berne / Zürich / Tessin Nord)
+        { minLat: 45.94, maxLat: 47.9, minLon: 7.0, maxLon: 8.6 },
+        // Suisse - Sud (Lugano / Chiasso)
+        { minLat: 45.8, maxLat: 46.6, minLon: 8.6, maxLon: 9.3 },
+        // Suisse - Est (Grisons / Engadine)
+        { minLat: 46.2, maxLat: 47.1, minLon: 9.3, maxLon: 10.6 }
     ],
     FR: [
-        // France - Bloc Principal (v5.35.2 : serré à 7.1 pour libérer l'Italie)
-        { minLat: 41.3, maxLat: 51.1, minLon: -5.1, maxLon: 7.1 },
-        // France - Alsace / Est (Uniquement au dessus de la Suisse)
-        { minLat: 47.5, maxLat: 51.1, minLon: 7.1, maxLon: 8.2 },
+        // France - Bloc Principal Ouest (Jusqu'aux Alpes)
+        { minLat: 41.3, maxLat: 51.1, minLon: -5.1, maxLon: 6.0 },
+        // France - Alpes du Nord (Savoie / Haute-Savoie) - Serré pour éviter Aoste
+        { minLat: 44.5, maxLat: 46.5, minLon: 6.0, maxLon: 7.1 },
+        // France - Alpes du Sud (PACA / Nice)
+        { minLat: 43.0, maxLat: 44.5, minLon: 6.0, maxLon: 7.6 },
+        // France - Alsace / Est (Au dessus de la Suisse)
+        { minLat: 47.5, maxLat: 51.1, minLon: 6.0, maxLon: 8.2 },
         // Corse
         { minLat: 41.0, maxLat: 43.1, minLon: 8.4, maxLon: 9.7 }
     ],
