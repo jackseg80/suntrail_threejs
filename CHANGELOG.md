@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet seront documentées ici.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 et ce projet respecte le [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.38.3] - 2026-04-21
+### Fixed
+- **Robustesse Enregistrement GPS (Samsung A53)** : Correction du bug de la "ligne droite" et du début de parcours manquant.
+  - Implémentation d'un filtre de rejet des positions "stale" (anciennes) au démarrage.
+  - Maintien forcé de la `HIGH_ACCURACY` tant que l'utilisateur est en mouvement (évite le basculement en mode éco/Cell qui coupait le GPS en arrière-plan sur Galaxy A53).
+  - Assouplissement temporaire du filtre de précision (100m) pour les 5 premiers points afin de garantir un accrochage immédiat de la trace.
+  - Ajustement des seuils de vitesse pour l'intervalle adaptatif, mieux adapté à la randonnée lente en forte pente (seuil abaissé à 1.8 km/h).
+
 ## [5.38.2] - 2026-04-21
 ### Added
 - **Optimisation du Panoramique (Tuiles)** : Augmentation du rayon de chargement forcé (5x5) pour les presets High/Ultra et élargissement de la marge de visibilité (60%) pour les presets Eco/Balanced. Mode 2D Mobile ultra-généreux (100% de marge) pour une fluidité parfaite sans "pop-in".

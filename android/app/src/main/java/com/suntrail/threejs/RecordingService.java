@@ -227,13 +227,24 @@ public class RecordingService extends Service {
                     if (altOrthometric < MIN_ALT_M || altOrthometric > MAX_ALT_M) continue;
 
                     long now = loc.getTime();
+                    
+                    // v5.38.3 : Rejeter les positions "stale" (anciennes) lors du démarrage d'une nouvelle course
+                    // Évite le bug de la "ligne droite" depuis le dernier point connu (souvent à la maison)
+                    if (mPointCount.get() == 0 && now < mStartTime - 15000) {
+                        Log.w(TAG, "Position ignorée : trop ancienne (stale) de " + (mStartTime - now)/1000 + "s");
+                        continue;
+                    }
+
                     long timeDiff = now - mLastValidTimestamp;
                     if (mLastValidTimestamp > 0 && timeDiff < MIN_TIME_MS) continue;
 
                     double distance3D = 0;
                     if (mLastValidLocation != null) {
                         float distance2D = mLastValidLocation.distanceTo(loc);
-                        if (distance2D < MIN_DISTANCE_M) continue;
+                        
+                        // v5.38.3 : Filtre de distance un peu plus souple au démarrage pour accrocher la trace
+                        float minDistance = (mPointCount.get() < 5) ? 1.5f : MIN_DISTANCE_M;
+                        if (distance2D < minDistance) continue;
 
                         double lastAltOrthometric = mLastValidLocation.getAltitude() - estimateGeoIdHeight(mLastValidLocation.getLatitude(), mLastValidLocation.getLongitude());
                         double altDiff = altOrthometric - lastAltOrthometric;
@@ -243,6 +254,11 @@ public class RecordingService extends Service {
                         if (speedMps > MAX_SPEED_MPS) continue;
                         mCurrentSpeedMps = speedMps;
                     }
+
+                    // v5.38.3 : Précision plus tolérante pour les 5 premiers points (100m au lieu de 50m)
+                    // Garantit qu'on commence à enregistrer même si le "cold start" du GPS est laborieux
+                    float accuracyThreshold = (mPointCount.get() < 5) ? 100.0f : MAX_ACCURACY_M;
+                    if (loc.getAccuracy() > accuracyThreshold) continue;
 
                     final GPSPoint point = new GPSPoint(mCurrentCourseId, loc.getLatitude(), loc.getLongitude(), altOrthometric, now, loc.getAccuracy());
                     mPointBuffer.add(point);
@@ -380,16 +396,28 @@ public class RecordingService extends Service {
         long now = System.currentTimeMillis();
         if (now - mLastGpsConfigUpdate < GPS_CONFIG_UPDATE_INTERVAL_MS) return;
         mLastGpsConfigUpdate = now;
-        long elapsedMinutes = (now - mStartTime) / (60 * 1000L);
-        long newInterval = (mCurrentSpeedMps < 0.8f || mIsImmobile) ? 10000 : (mCurrentSpeedMps < 1.4f ? (elapsedMinutes < 180 ? 5000 : 7000) : 3000);
-        int newPriority = (mCurrentSpeedMps < 0.8f || mIsImmobile) ? Priority.PRIORITY_BALANCED_POWER_ACCURACY : Priority.PRIORITY_HIGH_ACCURACY;
+
+        // v5.38.3 : Intervalles simplifiés et plus adaptés à la rando
+        // mIsImmobile (30min sans bouger) -> 30s
+        // Vitesse < 0.5 m/s (1.8 km/h, rando lente/montée) -> 10s
+        // Vitesse < 1.4 m/s (5 km/h, marche normale) -> 5s
+        // Vitesse > 1.4 m/s (course/vélo) -> 3s
+        long newInterval = mIsImmobile ? 30000 : (mCurrentSpeedMps < 0.5f ? 10000 : (mCurrentSpeedMps < 1.4f ? 5000 : 3000));
+        
+        // v5.38.3 : Règle CRITIQUE pour Samsung A53 et background
+        // Ne JAMAIS passer en BALANCED_POWER_ACCURACY tant qu'on bouge.
+        // BALANCED_POWER_ACCURACY coupe souvent le vrai GPS en background au profit du Cell/WiFi (>100m accuracy).
+        int newPriority = mIsImmobile ? Priority.PRIORITY_BALANCED_POWER_ACCURACY : Priority.PRIORITY_HIGH_ACCURACY;
 
         if (mLocationRequest.getInterval() != newInterval || mLocationRequest.getPriority() != newPriority) {
+            Log.d(TAG, "GPS Config Update: Interval=" + newInterval + "ms, Priority=" + (newPriority == Priority.PRIORITY_HIGH_ACCURACY ? "HIGH" : "BALANCED"));
             mLocationRequest.setInterval(newInterval).setPriority(newPriority);
             try {
                 mFusedClient.removeLocationUpdates(mLocationCallback);
                 mFusedClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.getMainLooper());
-            } catch (SecurityException e) {}
+            } catch (SecurityException e) {
+                Log.e(TAG, "Failed to update GPS config: " + e.getMessage());
+            }
         }
     }
 
