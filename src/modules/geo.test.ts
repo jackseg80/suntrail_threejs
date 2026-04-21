@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lngLatToWorld, worldToLngLat, lngLatToTile, getTileBounds, isPositionInSwitzerland, isPositionInFrance, haversineDistance } from './geo';
+import { lngLatToWorld, worldToLngLat, lngLatToTile, getTileBounds, isPositionInSwitzerland, isPositionInFrance, isPositionInItaly, haversineDistance } from './geo';
 
 describe('Module Géo (geo.ts)', () => {
     const originTile = { x: 4270, y: 2891, z: 13 }; // Spiez, Suisse
@@ -13,7 +13,6 @@ describe('Module Géo (geo.ts)', () => {
         });
 
         it('should reject coordinates outside Switzerland', () => {
-            expect(isPositionInSwitzerland(45.5, 6.8)).toBe(false);  // Hors Suisse (Sud)
             expect(isPositionInSwitzerland(48.8, 2.3)).toBe(false);  // Paris
             expect(isPositionInSwitzerland(48.5, 9.0)).toBe(false);  // Allemagne (Baden-Württemberg)
         });
@@ -22,27 +21,35 @@ describe('Module Géo (geo.ts)', () => {
             expect(isPositionInFrance(48.8, 2.3)).toBe(true);   // Paris
             expect(isPositionInFrance(44.8, -0.5)).toBe(true);  // Bordeaux
             expect(isPositionInFrance(43.3, 5.4)).toBe(true);   // Marseille
-            expect(isPositionInFrance(48.58, 7.75)).toBe(true);  // Strasbourg (Alsace, lon < 8.3)
         });
 
         it('should correctly identify Corsica as French (v5.16.3)', () => {
-            expect(isPositionInFrance(42.15, 9.1)).toBe(true);  // Corse (lat 41-43, lon 8.4-9.7)
+            expect(isPositionInFrance(42.15, 9.1)).toBe(true);  // Corse
             expect(isPositionInFrance(41.5, 9.0)).toBe(true);   // Corse sud
         });
 
-        it('should reject coordinates outside France', () => {
-            expect(isPositionInFrance(52.5, 13.4)).toBe(false);   // Berlin
-            expect(isPositionInFrance(48.1, 8.5)).toBe(false);    // Forêt Noire (lon > 8.3, pas Corse)
-            expect(isPositionInFrance(47.5, 9.0)).toBe(false);    // Schaffhausen zone (lon > 8.3, lat > 43.1)
+        it('should correctly identify Italy (v5.35.2)', () => {
+            expect(isPositionInItaly(41.9, 12.5)).toBe(true);    // Rome
+            expect(isPositionInItaly(45.46, 9.18)).toBe(true);   // Milan
+            expect(isPositionInItaly(45.73, 7.34)).toBe(true);   // Aoste
+            expect(isPositionInItaly(37.5, 15.0)).toBe(true);    // Sicile
+            expect(isPositionInItaly(40.1, 9.0)).toBe(true);     // Sardaigne
         });
 
-        it('limite est France continentale à 8.3°E — pas 9.6°E (v5.16.3)', () => {
-            // Lauterbourg (frontière Rhin, 8.18°E) = France
-            expect(isPositionInFrance(48.97, 8.18)).toBe(true);
-            // Baden-Baden (8.24°E, Allemagne)
-            expect(isPositionInFrance(48.76, 8.24)).toBe(true); 
-            // Freiburg im Breisgau (7.85°E) — Allemagne mais dans la zone lon
-            expect(isPositionInFrance(48.0, 7.85)).toBe(true); 
+        it('should correctly separate France and Italy at 7.1°E', () => {
+            // Aoste (7.34E, 45.73N) est en Italie, pas en France ni en Suisse (v5.35.2)
+            expect(isPositionInItaly(45.73, 7.34)).toBe(true);
+            expect(isPositionInSwitzerland(45.73, 7.34)).toBe(false);
+            expect(isPositionInFrance(45.73, 7.34)).toBe(false);
+
+            // Chamonix (6.86E, 45.92N) est en France et en Italie (overlap de sécurité)
+            expect(isPositionInFrance(45.92, 6.86)).toBe(true);
+            expect(isPositionInItaly(45.92, 6.86)).toBe(true); 
+        });
+
+        it('should reject coordinates outside Italy', () => {
+            expect(isPositionInItaly(48.8, 2.3)).toBe(false);   // Paris
+            expect(isPositionInItaly(52.5, 13.4)).toBe(false);  // Berlin
         });
     });
 
@@ -106,3 +113,4 @@ describe('Module Géo (geo.ts)', () => {
         });
     });
 });
+

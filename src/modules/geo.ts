@@ -19,12 +19,21 @@ export interface LocationPoint {
  * Permet une extension facile à de nouveaux pays.
  */
 export const REGIONS: Record<string, BBox[]> = {
-    CH: [{ minLat: 45.7, maxLat: 47.9, minLon: 5.8, maxLon: 10.6 }],
+    CH: [
+        // Suisse - Bloc National (v5.35.2 : remonté à 45.82 pour libérer Aoste)
+        { minLat: 45.82, maxLat: 47.9, minLon: 5.8, maxLon: 10.6 }
+    ],
     FR: [
-        // France métropolitaine continentale
-        { minLat: 41.3, maxLat: 51.1, minLon: -5.1, maxLon: 8.3 },
+        // France - Bloc Principal (v5.35.2 : serré à 7.1 pour libérer l'Italie)
+        { minLat: 41.3, maxLat: 51.1, minLon: -5.1, maxLon: 7.1 },
+        // France - Alsace / Est (Uniquement au dessus de la Suisse)
+        { minLat: 47.5, maxLat: 51.1, minLon: 7.1, maxLon: 8.2 },
         // Corse
         { minLat: 41.0, maxLat: 43.1, minLon: 8.4, maxLon: 9.7 }
+    ],
+    IT: [
+        // Italie continentale + Sicile + Sardaigne
+        { minLat: 35.4, maxLat: 47.1, minLon: 6.6, maxLon: 18.6 }
     ]
 };
 
@@ -33,8 +42,8 @@ export function isPositionInRegion(lat: number, lon: number, regionCode: string)
     const bboxes = REGIONS[regionCode];
     if (!bboxes) return false;
     return bboxes.some(bbox => 
-        lat > bbox.minLat && lat < bbox.maxLat && 
-        lon > bbox.minLon && lon < bbox.maxLon
+        lat >= bbox.minLat && lat <= bbox.maxLat && 
+        lon >= bbox.minLon && lon <= bbox.maxLon
     );
 }
 
@@ -56,6 +65,10 @@ export function isPositionInSwitzerland(lat: number, lon: number): boolean {
 
 export function isPositionInFrance(lat: number, lon: number): boolean {
     return isPositionInRegion(lat, lon, 'FR');
+}
+
+export function isPositionInItaly(lat: number, lon: number): boolean {
+    return isPositionInRegion(lat, lon, 'IT');
 }
 
 export function lngLatToWorld(lon: number, lat: number, originTile: {x: number, y: number, z: number}): { x: number; z: number } {

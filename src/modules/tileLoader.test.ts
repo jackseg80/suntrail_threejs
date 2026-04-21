@@ -13,12 +13,16 @@ vi.mock('./geo', async (importOriginal) => {
     return {
         ...actual,
         isPositionInSwitzerland: vi.fn((lat, lon) => {
-            // Mock: Zone Suisse entre lon 7 et 10, lat 45 et 48
-            return lon >= 7 && lon <= 10 && lat >= 45 && lat <= 48;
+            // Mock: Zone Suisse réelle commence à 45.82N (v5.35.2)
+            return lon >= 7 && lon <= 10 && lat >= 45.82 && lat <= 48;
         }),
         isPositionInFrance: vi.fn((lat, lon) => {
             // Mock: Zone France (simplifiée) entre lon -5 et 8
             return lon >= -5 && lon < 8 && lat >= 42 && lat <= 51;
+        }),
+        isPositionInItaly: vi.fn((lat, lon) => {
+            // Mock: Zone Italie entre lon 6.6 et 18.6
+            return lon >= 6.6 && lon <= 18.6 && lat >= 35 && lat <= 47.1;
         })
     };
 });
@@ -68,6 +72,30 @@ describe('tileLoader.ts URLs', () => {
         state.MAP_SOURCE = 'swisstopo';
         const url = getColorUrl(4270, 2891, 13);
         expect(url).toContain('ch.swisstopo.pixelkarte-farbe');
+    });
+
+    it('should correctly identify Italy (v5.35.2)', () => {
+        state.MAP_SOURCE = 'swisstopo';
+        // Coordonnées typiques d'Italie (hors mock CH/FR)
+        const url = getColorUrl(5000, 3000, 13); // Quelque part en Italie
+        // On accepte OpenTopoMap OU MapTiler si une clé est présente
+        expect(url).toMatch(/opentopomap\.org|api\.maptiler\.com/);
+    });
+
+    it('should prioritize Switzerland over Italy and France', () => {
+        state.MAP_SOURCE = 'swisstopo';
+        // Zone de conflit (Suisse gagne)
+        // Spiez (Suisse)
+        const url = getColorUrl(4270, 2891, 13);
+        expect(url).toContain('ch.swisstopo.pixelkarte-farbe');
+    });
+
+    it('should prioritize Italy over France', () => {
+        state.MAP_SOURCE = 'swisstopo';
+        // Aoste (Italie à 7.34E, aussi dans le mock France < 8E)
+        // tx=4263, ty=2922 au zoom 13 correspond à Aoste
+        const url = getColorUrl(4263, 2922, 13);
+        expect(url).toContain('opentopomap.org'); // Italie gagne (OpenTopo)
     });
 
     it('should generate correct Overlay URL for Switzerland (Raster)', () => {

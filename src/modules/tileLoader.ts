@@ -1,5 +1,5 @@
 import { state } from './state';
-import { isPositionInSwitzerland, isPositionInFrance } from './geo';
+import { isPositionInSwitzerland, isPositionInFrance, isPositionInItaly } from './geo';
 import { showToast } from './toast';
 
 import { tileWorkerManager } from './workerManager';
@@ -273,6 +273,7 @@ function isTileInRegion(tx: number, ty: number, zoom: number, check: (lat: numbe
 export function getColorUrl(tx: number, ty: number, zoom: number): string {
     const inCH = isTileInRegion(tx, ty, zoom, isPositionInSwitzerland);
     const inFR = isTileInRegion(tx, ty, zoom, isPositionInFrance);
+    const inIT = isTileInRegion(tx, ty, zoom, isPositionInItaly);
     const hasKey = state.MK && state.MK.length > 10 && !state.isMapTilerDisabled;
     
     // --- MODE SATELLITE (v5.29.40 : Priorité absolue et stricte) ---
@@ -296,11 +297,19 @@ export function getColorUrl(tx: number, ty: number, zoom: number): string {
         return `https://${sub}.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`;
     }
 
-    // Swisstopo / Topo CH
+    // Swisstopo / Topo (Auto)
     if (state.MAP_SOURCE === 'swisstopo') {
+        // 1. Suisse PRIORITAIRE (v5.35.2)
         if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${zoom}/${tx}/${ty}.jpeg`;
+        
+        // 2. Italie (v5.35.3 : Prioritaire sur France pour Aoste/Piedmont)
+        if (inIT) {
+            if (zoom <= 17) { const sub = ['a','b','c'][(tx+ty)%3]; return `https://${sub}.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`; }
+            if (hasKey) return `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
+        }
+
+        // 3. France (uniquement si pas déjà pris par CH ou IT)
         if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${zoom}&TILEROW=${ty}&TILECOL=${tx}`;
-        if (hasKey) return `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
     }
     
     // Fallback Topo Global (MapTiler > OpenTopoMap > OSM)
@@ -353,6 +362,11 @@ export async function loadTileData(tx: number, ty: number, zoom: number, is2D: b
     const cz = Math.min(zoom, nativeMax);
     const cr = Math.pow(2, Math.max(0, zoom - nativeMax));
 
+    // v5.35.3 : Définition des flags pour la logique de priorité
+    const inCH = isTileInRegion(Math.floor(tx/cr), Math.floor(ty/cr), cz, isPositionInSwitzerland);
+    const inFR = isTileInRegion(Math.floor(tx/cr), Math.floor(ty/cr), cz, isPositionInFrance);
+    const inIT = isTileInRegion(Math.floor(tx/cr), Math.floor(ty/cr), cz, isPositionInItaly);
+
     const colorUrl = getColorUrl(Math.floor(tx/cr), Math.floor(ty/cr), cz);
     const overlayUrl = getOverlayUrl(tx, ty, zoom);
 
@@ -372,7 +386,11 @@ export async function loadTileData(tx: number, ty: number, zoom: number, is2D: b
         if (packManager.hasMountedPacks() && zoom >= 12) {
             const cx = Math.floor(tx/cr);
             const cy = Math.floor(ty/cr);
-            if (!blobs.color) blobs.color = await packManager.getTileFromPacks(cz, cx, cy, 'color');
+            // v5.35.2 : N'utiliser les packs color que si on est strictement en zone CH ou FR (évite débordement Italie)
+            const inPackZone = (inCH || inFR) && !inIT;
+            if (!blobs.color && inPackZone) {
+                blobs.color = await packManager.getTileFromPacks(cz, cx, cy, 'color');
+            }
         }
     }
 
