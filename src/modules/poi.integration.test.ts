@@ -3,7 +3,6 @@ import * as THREE from 'three';
 import { loadPOIsForTile } from './poi';
 import { state } from './state';
 import { Tile } from './terrain';
-import { fetchOverpassData } from './utils';
 
 // Mock global caches API
 (global as any).caches = {
@@ -13,13 +12,28 @@ import { fetchOverpassData } from './utils';
     })
 };
 
+// Mock de @mapbox/vector-tile
+vi.mock('@mapbox/vector-tile', () => {
+    return {
+        VectorTile: class {
+            layers = {
+                poi: {
+                    length: 1,
+                    extent: 4096,
+                    feature: (_i: number) => ({
+                        id: 1000,
+                        properties: { information: 'guidepost', name: 'Test POI' },
+                        loadGeometry: () => [[{ x: 2048, y: 2048 }]]
+                    })
+                }
+            };
+        }
+    };
+});
+
 // Mocks
 vi.mock('./analysis', () => ({
     getAltitudeAt: vi.fn(() => 1000)
-}));
-
-vi.mock('./utils', () => ({
-    fetchOverpassData: vi.fn()
 }));
 
 vi.mock('./boundedCache', () => ({
@@ -28,6 +42,7 @@ vi.mock('./boundedCache', () => ({
         set = vi.fn();
         has = vi.fn();
         clear = vi.fn();
+        delete = vi.fn();
     },
     boundedCacheSet: vi.fn()
 }));
@@ -38,25 +53,18 @@ describe('POI Integration', () => {
         state.SHOW_SIGNPOSTS = true;
         state.POI_ZOOM_THRESHOLD = 13;
         state.isUserInteracting = false;
+        state.scene = new THREE.Scene();
+        state.MK = 'test-key';
+        globalThis.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            arrayBuffer: async () => new ArrayBuffer(0)
+        });
     });
 
-    it('should load POIs from Overpass and add them to tile as sprites', async () => {
+    it('should load POIs from PBF and add them to tile as sprites', async () => {
         const tile = new Tile(0, 0, 14, '14/0/0');
         tile.mesh = new THREE.Mesh();
         tile.status = 'loaded';
-
-        // Mock Overpass Response (a signpost)
-        (fetchOverpassData as any).mockResolvedValue({
-            elements: [
-                {
-                    type: 'node',
-                    id: 1000,
-                    lat: 46.5,
-                    lon: 7.5,
-                    tags: { information: 'guidepost', name: 'Test POI' }
-                }
-            ]
-        });
 
         // Mock tile bounds and coordinate conversion
         vi.spyOn(tile, 'getBounds').mockReturnValue({
@@ -69,11 +77,12 @@ describe('POI Integration', () => {
 
         await loadPOIsForTile(tile);
 
-        expect(fetchOverpassData).toHaveBeenCalled();
+        expect(globalThis.fetch).toHaveBeenCalled();
         expect(tile.poiGroup).toBeDefined();
         if (tile.poiGroup) {
             expect(tile.poiGroup.children.length).toBe(1);
             expect(tile.poiGroup.children[0]).toBeInstanceOf(THREE.Sprite);
+            expect(tile.poiGroup.children[0].userData.name).toBe('Test POI');
         }
     });
 });

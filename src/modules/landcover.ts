@@ -5,11 +5,22 @@ import { state } from './state';
 import { isPositionInSwitzerland } from './geo';
 import type { Tile } from './terrain';
 
+export interface BBox { minX: number; maxX: number; minY: number; maxY: number; }
+export interface Point2D { x: number; y: number; }
+
+export interface VectorFeature {
+    geometry: Point2D[][];
+    bbox?: BBox;
+    properties?: Record<string, any>;
+    type?: number;
+    extent?: number;
+}
+
 export interface LandcoverData {
-    forests: any[];
-    water: any[];
-    buildings: any[];
-    forestGrid?: any[][]; // v5.36.0 : Grille spatiale pour accélération
+    forests: VectorFeature[];
+    water: VectorFeature[];
+    buildings: VectorFeature[];
+    forestGrid?: VectorFeature[][]; // v5.36.0 : Grille spatiale pour accélération
 }
 
 const GRID_SIZE = 16;
@@ -18,8 +29,8 @@ const CELL_UNITS = 4096 / GRID_SIZE;
 /**
  * Construit une grille spatiale pour accélérer les tests Point-in-Polygon (v5.36.0)
  */
-function buildSpatialGrid(features: any[]): any[][] {
-    const grid: any[][] = Array.from({ length: GRID_SIZE * GRID_SIZE }, () => []);
+function buildSpatialGrid(features: VectorFeature[]): VectorFeature[][] {
+    const grid: VectorFeature[][] = Array.from({ length: GRID_SIZE * GRID_SIZE }, () => []);
     features.forEach(feat => {
         if (!feat.bbox) return;
         const startX = Math.max(0, Math.floor(feat.bbox.minX / CELL_UNITS));
@@ -201,11 +212,11 @@ export function isPointInForest(
     px: number, 
     py: number, 
     scanRes: number, 
-    forests: any[], 
+    forests: VectorFeature[], 
     ratio: number, 
     tileTx: number, 
     tileTy: number,
-    forestGrid?: any[][]
+    forestGrid?: VectorFeature[][]
 ): boolean {
     if (!forests || forests.length === 0) return false;
 

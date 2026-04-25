@@ -1,4 +1,4 @@
-# SunTrail 3D — TODO (v5.34.8)
+# SunTrail 3D — TODO (v5.38.4)
 
 > Guide IA : [CLAUDE.md](../CLAUDE.md) | Historique : [COMPLETED_HISTORY.md](archives/COMPLETED_HISTORY.md)
 
@@ -15,7 +15,7 @@
 - [x] **Qualité & Tests (v5.28.6)** : Infrastructure E2E Playwright opérationnelle et sécurisation du moteur 3D (scene.ts, touchControls.ts).
 - [x] **Réparation Tests Intégration** : Hydrologie et PackManager corrigés.
 - [x] **Robustesse Packs Pays (v5.27.1)** : Correction bug 404, catalogue v2, URLs absolues.
-- [ ] **Audit Performance Mobile** : Tester via `chrome://inspect` sur Galaxy S23 (High) et A53 (STD) selon [PROTOCOL_TEST_PERF_MOBILE.md](PROTOCOL_TEST_PERF_MOBILE.md).
+- [ ] **Audit de Performance (Desktop/Web)** : Tester via `chrome://inspect` sur Galaxy S23 (High) et A53 (STD) selon [PROTOCOL_TEST_PERF_MOBILE.md](PROTOCOL_TEST_PERF_MOBILE.md).
 - [ ] **Ajustement Limites (v5.27.0)** : Adapter les limites de chargement selon les résultats de l'audit mobile.
 - [x] **Optimisation Chargement (v5.26.13)** : Progressive loading avec pulses de 50ms et limites par preset.
 - [x] **Optimisation PC (v5.26.9)** : Progressive Loading & Refactor Throttle.
@@ -26,6 +26,7 @@
 - [x] **Optimisation Mémoire (v5.26.8)** : Nettoyage des sheets à la fermeture.
 - [x] **Protocole Release (v5.26.8)** : Règle `versionCode` actée.
 - [ ] **Closed Testing (14 jours)** : Atteindre les 20 testeurs actifs requis par Google Play.
+- [ ] **Refactor de index.html** : Découpage des templates UI.
 - [ ] **Screenshots Marketing** : Refaire des captures soignées Phone + Tablette (actuellement placeholders).
 - [ ] **Supprimer le "Mode Testeur"** : Retirer les 7 taps sur la version avant le build final.
 
@@ -35,7 +36,7 @@
 
 - [x] **Refonte Hydrologie (v5.34.0)** : Passage au vectoriel (PBF) et technique du "Texture Mask".
 - [x] **Détection Sémantique Forêts (v5.33.0)** : Remplacement du scan raster par l'analyse vectorielle.
-- [ ] **Migration POI & Sommets (PBF)** : Remplacer les requêtes Overpass API par l'extraction des couches `poi`, `label` et `natural` des tuiles vectorielles pour éliminer les erreurs CORS/406 et accélérer l'affichage.
+- [x] **Migration POI & Sommets (PBF)** : Migration terminée pour Sommets, POIs et Bâtiments. : Remplacer les requêtes Overpass API par l'extraction des couches `poi`, `label` et `natural` des tuiles vectorielles pour éliminer les erreurs CORS/406 et accélérer l'affichage.
 - [ ] **Solution Souveraine (Mondial)** : Générer et héberger un fichier `forests-world.pmtiles` sur Cloudflare R2.
 - [x] **Adaptation par Pays (v5.38.2)** :
     - [x] **Italie** : Implémentation du moteur OpenTopoMap et détection géographique IT.

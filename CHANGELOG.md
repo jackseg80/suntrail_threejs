@@ -1,3 +1,12 @@
+## [5.38.4] - 2026-04-25
+### Added
+- **Migration PBF Totale (Sommets, POIs, Bâtiments)** : Suppression définitive de l'API Overpass pour éliminer les erreurs CORS/406 et fiabiliser l'affichage.
+- **Unification du Cache** : Passage à l'API Cache du navigateur pour les POIs et Sommets (plus performant et persistant).
+- **Optimisation POI (v5.38.4)** : Ajustement de l'altitude automatique en mode 2D (fix parallax) et détection élargie de la signalétique randonnée.
+
+### Improved
+- **Sécurité du Typage** : Renforcement du typage dans landcover.ts avec des interfaces strictes pour les données vectorielles.
+
 # Changelog
 
 Toutes les modifications notables de ce projet seront documentées ici.

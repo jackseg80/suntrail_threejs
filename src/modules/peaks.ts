@@ -1,88 +1,137 @@
+import Pbf from 'pbf';
+import { VectorTile } from '@mapbox/vector-tile';
 import { state, Peak } from './state';
-import { haversineDistance } from './geo';
+import { isPositionInSwitzerland } from './geo';
+import { BoundedCache } from './boundedCache';
 
-const CACHE_KEY = 'suntrail_peaks_cache';
-const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
+/**
+ * peaks.ts — Migration PBF (v5.38.4)
+ * Remplace Overpass API par l'extraction des tuiles vectorielles.
+ */
 
-// v5.34.3 : Backoff pour éviter de spammer une API qui nous rejette (CORS/406)
-let isOverpassBanned = false;
-let lastFailureTime = 0;
-const BAN_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_NAME = 'suntrail-peaks-v2';
+const peaksMemoryCache = new BoundedCache<string, Peak[]>({ maxSize: 100 });
+const fetchPromises = new Map<string, Promise<Peak[] | null>>();
 
-interface PeakCache {
-    timestamp: number;
-    lat: number;
-    lon: number;
-    peaks: Peak[];
+/**
+ * Récupère les sommets locaux via tuiles vectorielles (PBF).
+ */
+export async function fetchLocalPeaks(lat: number, lon: number, _radiusKm: number = 50): Promise<void> {
+    const inCH = isPositionInSwitzerland(lat, lon);
+    
+    // On utilise Z12 pour SwissTopo, Z10 pour MapTiler (compromis quota/précision)
+    const z = inCH ? 12 : 10;
+    const n = Math.pow(2, z);
+    const tx = Math.floor(((lon + 180) / 360) * n);
+    const ty = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n);
+    
+    const cacheKey = `${inCH ? 'ch' : 'mt'}-${z}-${tx}-${ty}`;
+
+    // 1. Cache Mémoire
+    const cached = peaksMemoryCache.get(cacheKey);
+    if (cached) {
+        state.localPeaks = cached;
+        return;
+    }
+
+    // 2. Déduplication des requêtes en cours
+    if (fetchPromises.has(cacheKey)) {
+        const peaks = await fetchPromises.get(cacheKey);
+        if (peaks) state.localPeaks = peaks;
+        return;
+    }
+
+    const promise = fetchPeaksWithCache(z, tx, ty, cacheKey, inCH);
+    fetchPromises.set(cacheKey, promise);
+    
+    const result = await promise;
+    if (result) {
+        state.localPeaks = result;
+        peaksMemoryCache.set(cacheKey, result);
+    }
+    fetchPromises.delete(cacheKey);
 }
 
-export async function fetchLocalPeaks(lat: number, lon: number, radiusKm: number = 50): Promise<void> {
-    // 0. Vérifier si l'API est en pause suite à un échec récent
-    if (isOverpassBanned) {
-        if (Date.now() - lastFailureTime < BAN_DURATION) return;
-        isOverpassBanned = false;
+/**
+ * Pour les tests : vide les caches mémoire.
+ */
+export function _clearPeaksCache(): void {
+    peaksMemoryCache.clear();
+    fetchPromises.clear();
+}
+
+async function fetchPeaksWithCache(z: number, tx: number, ty: number, key: string, inCH: boolean): Promise<Peak[] | null> {
+    try {
+        const cache = await caches.open(CACHE_NAME);
+        const cached = await cache.match(key);
+        if (cached) return await cached.json();
+    } catch (e) { /* Cache API non dispo ou erreur */ }
+
+    let url = "";
+    if (inCH) {
+        url = `https://vectortiles.geo.admin.ch/tiles/ch.swisstopo.base.vt/v1.0.0/${z}/${tx}/${ty}.pbf`;
+    } else {
+        if (!state.MK || state.isMapTilerDisabled) return null;
+        url = `https://api.maptiler.com/tiles/v3/${z}/${tx}/${ty}.pbf?key=${state.MK}`;
     }
 
     try {
-        // 1. Check Cache
-        const cachedStr = localStorage.getItem(CACHE_KEY);
-        if (cachedStr) {
-            const cache: PeakCache = JSON.parse(cachedStr);
-            const dist = haversineDistance(lat, lon, cache.lat, cache.lon);
-            if (Date.now() - cache.timestamp < CACHE_EXPIRY && dist < (radiusKm / 2)) {
-                state.localPeaks = cache.peaks;
-                return;
+        const res = await fetch(url, { referrerPolicy: 'same-origin' });
+        if (!res.ok) return null;
+        const buffer = await res.arrayBuffer();
+        
+        // @ts-ignore
+        const PbfConstructor = Pbf.default || Pbf;
+        const vtile = new VectorTile(new PbfConstructor(buffer));
+        
+        const peaks: Peak[] = [];
+        // Couches standards pour les sommets
+        const peakLayer = vtile.layers.mountain_peak || vtile.layers.poi || vtile.layers.label;
+        
+        if (peakLayer) {
+            for (let i = 0; i < peakLayer.length; i++) {
+                const feat = peakLayer.feature(i);
+                const props = feat.properties;
+                const cls = props.class || props.subclass || props.type || props.label;
+                
+                // Détection d'un sommet
+                if (cls === 'mountain_peak' || props.natural === 'peak' || props.amenity === 'mountain_peak') {
+                    const geom = feat.loadGeometry()[0][0]; // Point
+                    const extent = peakLayer.extent || 4096;
+                    
+                    // Conversion locale (0-extent) -> WGS84
+                    const lon = (tx + geom.x / extent) / Math.pow(2, z) * 360 - 180;
+                    const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (ty + geom.y / extent) / Math.pow(2, z))));
+                    const lat = latRad * 180 / Math.PI;
+                    
+                    const ele = parseFloat(String(props.ele)) || parseFloat(String(props.elevation)) || 0;
+                    if (ele > 0) {
+                        peaks.push({
+                            id: feat.id as number || Math.random(),
+                            name: String(props.name || props.name_en || props.name_fr || "Sommet"),
+                            lat,
+                            lon,
+                            ele
+                        });
+                    }
+                }
             }
         }
 
-        // 2. Fetch from Overpass API
-        const bbox = `${lat - (radiusKm / 111)},${lon - (radiusKm / (111 * Math.cos(lat * Math.PI / 180)))},${lat + (radiusKm / 111)},${lon + (radiusKm / (111 * Math.cos(lat * Math.PI / 180)))}`;
-        
-        const query = `[out:json][timeout:25];node["natural"="peak"]["name"]["ele"](${bbox});out body;`;
+        // Filtrage et tri (on garde les sommets significatifs > 1000m)
+        const filtered = peaks
+            .filter(p => p.ele > 1000)
+            .sort((a, b) => b.ele - a.ele);
 
-        // v5.34.3 : Utilisation de GET au lieu de POST (plus robuste pour CORS sur certains miroirs)
-        const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-        
-        const response = await fetch(url, { 
-            method: 'GET',
-            referrerPolicy: 'same-origin'
-        });
+        // Mise en cache persistante
+        try {
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(key, new Response(JSON.stringify(filtered)));
+        } catch (e) { /* ignore */ }
 
-        if (!response.ok) {
-            if (response.status === 406 || response.status === 429) {
-                isOverpassBanned = true;
-                lastFailureTime = Date.now();
-                console.warn(`[Peaks] Overpass API restricted (${response.status}). Pausing requests for 5min.`);
-            }
-            return;
-        }
-
-        const data = await response.json();
-        
-        const peaks: Peak[] = data.elements
-            .map((el: any) => ({
-                id: el.id,
-                name: el.tags.name,
-                lat: el.lat,
-                lon: el.lon,
-                ele: parseFloat(el.tags.ele) || 0
-            }))
-            .filter((p: Peak) => p.ele > 1000) 
-            .sort((a: Peak, b: Peak) => b.ele - a.ele);
-
-        state.localPeaks = peaks;
-
-        // 3. Update Cache
-        const newCache: PeakCache = {
-            timestamp: Date.now(),
-            lat,
-            lon,
-            peaks
-        };
-        localStorage.setItem(CACHE_KEY, JSON.stringify(newCache));
-
-    } catch (error) {
-        isOverpassBanned = true;
-        lastFailureTime = Date.now();
+        return filtered;
+    } catch (e) {
+        console.warn('[Peaks] PBF Fetch failed:', e);
+        return null;
     }
 }
