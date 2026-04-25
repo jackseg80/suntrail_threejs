@@ -1,4 +1,4 @@
-# SunTrail 3D — TODO (v5.38.4)
+# SunTrail 3D — TODO (v5.39.0)
 
 > Guide IA : [CLAUDE.md](../CLAUDE.md) | Historique : [COMPLETED_HISTORY.md](archives/COMPLETED_HISTORY.md)
 
@@ -26,7 +26,7 @@
 - [x] **Optimisation Mémoire (v5.26.8)** : Nettoyage des sheets à la fermeture.
 - [x] **Protocole Release (v5.26.8)** : Règle `versionCode` actée.
 - [ ] **Closed Testing (14 jours)** : Atteindre les 20 testeurs actifs requis par Google Play.
-- [ ] **Refactor de index.html** : Découpage des templates UI.
+- [x] **Refactor de index.html** : Découpage des 14 templates UI vers src/modules/ui/templates/. : Découpage des templates UI.
 - [ ] **Screenshots Marketing** : Refaire des captures soignées Phone + Tablette (actuellement placeholders).
 - [ ] **Supprimer le "Mode Testeur"** : Retirer les 7 taps sur la version avant le build final.
 

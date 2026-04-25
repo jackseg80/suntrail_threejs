@@ -9,10 +9,11 @@ import { eventBus } from '../../eventBus';
 import { i18n } from '../../../i18n/I18nService';
 import { Capacitor } from '@capacitor/core';
 import type { PackMeta, PackStatus } from '../../packTypes';
+import templateHTML from '../templates/packs.html?raw';
 
 export class PacksSheet extends BaseComponent {
     constructor() {
-        super('template-packs', 'sheet-container');
+        super('template-packs', 'sheet-container', templateHTML);
     }
 
     public render(): void {

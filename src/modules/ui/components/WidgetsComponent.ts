@@ -1,8 +1,9 @@
 import { BaseComponent } from '../core/BaseComponent';
+import templateHTML from '../templates/widgets.html?raw';
 
 export class WidgetsComponent extends BaseComponent {
     constructor() {
-        super('template-widgets', 'body'); // Mount directly to body
+        super('template-widgets', 'body', templateHTML); // Mount directly to body
     }
 
     public render(): void {

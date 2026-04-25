@@ -6,6 +6,7 @@ import { iapService } from '../../iapService';
 import { i18n } from '../../../i18n/I18nService';
 import { Capacitor } from '@capacitor/core';
 import { activateDiscoveryTrial, isProActive } from '../../iap';
+import templateHTML from '../templates/upgrade.html?raw';
 
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.suntrail.threejs';
 
@@ -16,7 +17,7 @@ export class UpgradeSheet extends BaseComponent {
     private static readonly PRICES_TTL = 300_000; // 5 min
 
     constructor() {
-        super('template-upgrade', 'sheet-container');
+        super('template-upgrade', 'sheet-container', templateHTML);
     }
 
     public render(): void {

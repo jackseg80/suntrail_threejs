@@ -16,10 +16,11 @@ import { calculateTrackStats } from '../../geoStats';
 import { recordingService } from '../../recordingService';
 import { gpxService } from '../../gpxService';
 import { fmtDuration } from '../../utils';
+import templateHTML from '../templates/track.html?raw';
 
 export class TrackSheet extends BaseComponent {
     constructor() {
-        super('template-track', 'sheet-container');
+        super('template-track', 'sheet-container', templateHTML);
     }
 
     public render(): void {

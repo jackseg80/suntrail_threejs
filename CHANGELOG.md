@@ -1,3 +1,8 @@
+## [5.39.0] - 2026-04-25
+### Changed
+- **Refactor index.html** : Nettoyage massif du fichier HTML principal (-90% de lignes). Extraction de 14 templates UI vers des fichiers .html individuels chargés à la demande via Vite.
+- **Architecture UI** : Évolution de BaseComponent pour supporter l'injection dynamique de templates HTML via les imports ?raw.
+
 ## [5.38.5] - 2026-04-25
 ### Fixed
 - **UI Collision** : Repositionnement automatique de l'inclinomètre en haut de l'écran lors de l'ouverture de la barre temporelle (Timeline) pour éviter les chevauchements.

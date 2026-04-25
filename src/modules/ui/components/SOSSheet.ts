@@ -4,12 +4,13 @@ import { i18n } from '../../../i18n/I18nService';
 import { eventBus } from '../../eventBus';
 import { showToast } from '../../toast';
 import { expertService } from '../../expertService';
+import templateHTML from '../templates/sos.html?raw';
 
 export class SOSSheet extends BaseComponent {
     private attachSosBtnTimer: any = null;
 
     constructor() {
-        super('template-sos', 'sheet-container');
+        super('template-sos', 'sheet-container', templateHTML);
     }
 
     public render(): void {

@@ -1,0 +1,19 @@
+<div id="search" class="bottom-sheet">
+    <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
+    <div class="sheet-header">
+        <span class="sheet-title" data-i18n="search.title">Exploration</span>
+        <div class="sheet-close" id="close-search">×</div>
+    </div>
+    <div style="padding: 0 0 10px;">
+        <div class="search-input-wrap">
+          <span class="search-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="7" cy="7" r="4.5" stroke="rgba(139,143,168,0.6)" stroke-width="1.3"/>
+              <path d="M10.5 10.5l3 3" stroke="rgba(139,143,168,0.6)" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <input type="text" id="geo-input" placeholder="Chercher un sommet ou un lieu...">
+        </div>
+    </div>
+    <div id="geo-results" role="listbox" aria-label="Résultats de recherche" aria-live="polite"></div>
+</div>

@@ -4,21 +4,31 @@ import { eventBus } from '../../eventBus';
 export abstract class BaseComponent {
     protected templateId: string;
     protected containerId: string;
+    protected templateHTML: string | null;
     protected element: HTMLElement | null = null;
     protected subscriptions: Array<() => void> = [];
 
-    constructor(templateId: string, containerId: string) {
+    constructor(templateId: string, containerId: string, templateHTML: string | null = null) {
         this.templateId = templateId;
         this.containerId = containerId;
+        this.templateHTML = templateHTML;
     }
 
     public hydrate(): void {
-        const template = document.getElementById(this.templateId) as HTMLTemplateElement;
+        let content: DocumentFragment;
         const container = this.containerId === 'body' ? document.body : document.getElementById(this.containerId);
 
-        if (!template) {
-            console.error(`Template with id "${this.templateId}" not found.`);
-            return;
+        if (this.templateHTML) {
+            const temp = document.createElement('template');
+            temp.innerHTML = this.templateHTML;
+            content = temp.content;
+        } else {
+            const template = document.getElementById(this.templateId) as HTMLTemplateElement;
+            if (!template) {
+                console.error(`Template with id "${this.templateId}" not found.`);
+                return;
+            }
+            content = template.content;
         }
 
         if (!container) {
@@ -26,7 +36,7 @@ export abstract class BaseComponent {
             return;
         }
 
-        const clone = template.content.cloneNode(true) as DocumentFragment;
+        const clone = content.cloneNode(true) as DocumentFragment;
         this.element = clone.firstElementChild as HTMLElement;
         
         if (this.element) {

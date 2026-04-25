@@ -9,6 +9,7 @@ import { fmtTime, fmtDuration } from '../../utils';
 import SunCalc from 'suncalc';
 import { expertService } from '../../expertService';
 import { getPlaceName } from '../../geocodingService';
+import templateHTML from '../templates/solar-probe.html?raw';
 
 export class SolarProbeSheet extends BaseComponent {
     private contentEl: HTMLElement | null = null;
@@ -20,7 +21,7 @@ export class SolarProbeSheet extends BaseComponent {
     private svgCurrentLineEl: SVGLineElement | null = null;
 
     constructor() {
-        super('template-solar-probe', 'sheet-container');
+        super('template-solar-probe', 'sheet-container', templateHTML);
     }
 
     public render(): void {

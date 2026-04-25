@@ -1,0 +1,42 @@
+<div id="track" class="bottom-sheet">
+    <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
+    <div class="sheet-header">
+        <span class="sheet-title" data-i18n="track.title">Parcours</span>
+        <div class="sheet-close" id="close-track">×</div>
+    </div>
+    <div class="track-stats">
+        <div class="stat-card">
+            <div class="stat-card-label" data-i18n="track.stats.distance">Distance</div>
+            <div class="stat-card-value" id="track-dist">0.0 <span style="font-size:13px;color:var(--text-2)">km</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-label" data-i18n="track.stats.points">Points</div>
+            <div class="stat-card-value" id="track-points">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-label" data-i18n="track.stats.dplus">Dénivelé +</div>
+            <div class="stat-card-value green" id="track-dplus">+0 <span style="font-size:12px">m</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-label" data-i18n="track.stats.dminus">Dénivelé −</div>
+            <div class="stat-card-value red" id="track-dminus">−0 <span style="font-size:12px">m</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-label" data-i18n="track.stats.duration">Temps estimé</div>
+            <div class="stat-card-value" id="track-duration">—</div>
+        </div>
+    </div>
+    <div class="track-actions">
+        <button class="track-btn rec" id="rec-btn-sheet">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.3"/>
+              <circle cx="6" cy="6" r="3" fill="currentColor"/>
+            </svg>
+            REC
+        </button>
+        <button class="track-btn secondary" id="import-gpx-sheet">
+            <span data-i18n="track.btn.import">📥 Import GPX</span>
+        </button>
+        <input type="file" id="gpx-upload" accept=".gpx" style="display:none;">
+    </div>
+</div>

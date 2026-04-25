@@ -2,12 +2,13 @@ import { BaseComponent } from '../core/BaseComponent';
 import { state } from '../../state';
 import { showToast } from '../../toast';
 import { haptic } from '../../haptics';
+import templateHTML from '../templates/api-key-form.html?raw';
 
 export class SharedAPIKeyComponent extends BaseComponent {
     private onKeyChange?: () => void;
 
     constructor(containerId: string, onKeyChange?: () => void) {
-        super('template-api-key-form', containerId);
+        super('template-api-key-form', containerId, templateHTML);
         this.onKeyChange = onKeyChange;
     }
 

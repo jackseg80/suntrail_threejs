@@ -13,10 +13,11 @@ import { SharedAPIKeyComponent } from './SharedAPIKeyComponent';
 import { haptic } from '../../haptics';
 import { i18n } from '../../../i18n/I18nService';
 import { setManualOffline } from '../../networkMonitor';
+import templateHTML from '../templates/connectivity.html?raw';
 
 export class ConnectivitySheet extends BaseComponent {
     constructor() {
-        super('template-connectivity', 'sheet-container');
+        super('template-connectivity', 'sheet-container', templateHTML);
     }
 
     public render(): void {

@@ -8,10 +8,11 @@ import { haptic } from '../../haptics';
 import { forceImmediateLODUpdate } from '../../scene';
 import { updateUserMarker } from '../../location';
 import { getAltitudeAt } from '../../analysis';
+import templateHTML from '../templates/nav-bar.html?raw';
 
 export class NavigationBar extends BaseComponent {
     constructor() {
-        super('template-nav-bar', 'nav-bar');
+        super('template-nav-bar', 'nav-bar', templateHTML);
     }
 
     public render(): void {

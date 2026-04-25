@@ -9,12 +9,13 @@ import SunCalc from 'suncalc';
 import { expertService } from '../../expertService';
 import { showUpgradePrompt } from '../../iap';
 import { showToast } from '../../toast';
+import templateHTML from '../templates/weather.html?raw';
 
 export class WeatherSheet extends BaseComponent {
     private contentEl: HTMLElement | null = null;
 
     constructor() {
-        super('template-weather', 'sheet-container');
+        super('template-weather', 'sheet-container', templateHTML);
     }
 
     public render(): void {

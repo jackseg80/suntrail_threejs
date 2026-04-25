@@ -13,6 +13,7 @@ import {
     CLASSIFICATIONS, 
     ResultClassification 
 } from '../../geocodingService';
+import templateHTML from '../templates/search.html?raw';
 
 // ── Filter types ──────────────────────────────────────────────────────
 type FilterKey = 'all' | 'cities' | 'mountains' | 'countries';
@@ -38,7 +39,7 @@ export class SearchSheet extends BaseComponent {
     private abortController: AbortController | null = null;
 
     constructor() {
-        super('template-search', 'sheet-container');
+        super('template-search', 'sheet-container', templateHTML);
     }
 
     public render(): void {

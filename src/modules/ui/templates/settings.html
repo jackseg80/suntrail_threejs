@@ -1,0 +1,262 @@
+<div id="settings" class="bottom-sheet">
+    <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
+    <div class="sheet-header">
+        <span class="sheet-title" data-i18n="settings.title">Réglages</span>
+        <div class="sheet-close" id="close-panel">×</div>
+    </div>
+    
+    <div class="section-label" data-i18n="settings.section.presets">Profil de performance</div>
+    <div class="preset-grid">
+        <button class="preset-btn" data-preset="eco" data-i18n="settings.preset.eco">Éco</button>
+        <button class="preset-btn" data-preset="balanced" data-i18n="settings.preset.balanced">Std</button>
+        <button class="preset-btn" data-preset="performance" data-i18n="settings.preset.performance">High</button>
+        <button class="preset-btn" data-preset="ultra" data-i18n="settings.preset.ultra">Ultra</button>
+    </div>
+
+    <!-- Sélecteur de thème clair/sombre/auto -->
+    <div class="section-label" data-i18n="settings.section.theme">Thème</div>
+    <div class="theme-grid" id="theme-selector">
+        <button class="theme-btn" data-theme="light" data-i18n="settings.theme.light">Clair</button>
+        <button class="theme-btn" data-theme="dark" data-i18n="settings.theme.dark">Sombre</button>
+        <button class="theme-btn" data-theme="auto" data-i18n="settings.theme.auto">Auto</button>
+    </div>
+
+    <div class="setting-row" style="margin-top:15px; padding:12px; background:var(--surface-subtle); border-radius:12px; border:1px solid var(--surface-subtle);">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:16px;">🔋</span>
+            <div class="setting-label" style="font-size:13px;" data-i18n="settings.label.energySaver">Économie d'énergie</div>
+        </div>
+        <input type="checkbox" id="energy-saver-toggle" aria-label="Économie d'énergie">
+    </div>
+
+    <div class="control-group" style="margin-top: 20px;">
+        <div class="section-label" data-i18n="settings.section.rendering">Rendu 3D & Détails</div>
+        
+        <div class="setting-row">
+            <div class="setting-label-group">
+                <button type="button" id="veg-expand-btn" class="sub-expand-btn" aria-expanded="false" aria-controls="veg-suboptions">▶</button>
+                <div class="setting-label" data-i18n="settings.label.vegetation">Forêts & Végétation</div>
+            </div>
+            <input type="checkbox" id="veg-toggle" checked aria-label="Forêts & Végétation">
+        </div>
+        <div id="veg-suboptions" class="sub-options">
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-3); margin-bottom: 4px;">
+                <span data-i18n="settings.section.density">DENSITÉ DÉTAILS</span>
+                <span id="veg-density-disp">4000</span>
+            </div>
+            <input type="range" id="veg-density-slider" min="0" max="15000" step="500" value="4000" aria-label="Densité végétation">
+        </div>
+        
+        <div class="setting-row">
+            <div class="setting-label" data-i18n="settings.label.hydrology">Lacs & Rivières</div>
+            <input type="checkbox" id="hydro-toggle" checked aria-label="Lacs & Rivières">
+        </div>
+        <div class="setting-row">
+            <div class="setting-label-group">
+                <button type="button" id="weather-expand-btn" class="sub-expand-btn" aria-expanded="false" aria-controls="weather-suboptions">▶</button>
+                <div class="setting-label" data-i18n="settings.label.weather">Météo</div>
+            </div>
+            <input type="checkbox" id="weather-toggle" checked aria-label="Météo">
+        </div>
+        <div id="weather-suboptions" class="sub-options">
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-3); margin-bottom: 4px;">
+                <span data-i18n="weather.label.intensity">INTENSITÉ</span>
+                <span id="weather-density-disp" style="font-family:var(--font-mono);">2500</span>
+            </div>
+            <input type="range" id="weather-density-slider" min="0" max="15000" step="500" value="2500" aria-label="Intensité météo">
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-3); margin-bottom: 4px; margin-top: 10px;">
+                <span data-i18n="weather.label.speed">VITESSE</span>
+                <span id="weather-speed-disp" style="font-family:var(--font-mono);">1.0</span>
+            </div>
+            <input type="range" id="weather-speed-slider" min="0.5" max="3.0" step="0.1" value="1.0" aria-label="Vitesse météo">
+        </div>
+        <div class="setting-row">
+            <div class="setting-label" data-i18n="settings.label.signposts">Signalisation 3D</div>
+            <input type="checkbox" id="poi-toggle" checked aria-label="Signalisation 3D">
+        </div>
+    </div>
+
+    <!-- Section PRO regroupée -->
+    <div class="control-group settings-pro-section" style="margin-top: 20px; border: 1.5px solid var(--gold); border-radius: 12px; padding: 16px; background: rgba(255,215,0,0.03);">
+        <div class="section-label" style="display: flex; align-items: center; gap: 8px; color: var(--gold);">
+            <span style="font-size: 16px;">✨</span>
+            <span data-i18n="settings.section.pro">Fonctionnalités PRO</span>
+            <span class="pro-badge" style="font-size: 9px; background: var(--gold); color: #000; padding: 2px 8px; border-radius: 4px; font-weight: 700; margin-left: auto;">PRO</span>
+        </div>
+        <p style="font-size: 11px; color: var(--text-3); margin: 8px 0 12px 0; line-height: 1.5;" data-i18n="settings.pro.description">Débloquez toutes les fonctionnalités premium avec SunTrail Pro</p>
+        
+        <div class="setting-row pro-feature-row" id="row-buildings" style="cursor: pointer;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                <span style="font-size: 18px;">🏢</span>
+                <div>
+                    <div class="setting-label" data-i18n="settings.label.buildings">Bâtiments 3D</div>
+                    <div style="font-size: 10px; color: var(--text-3);" data-i18n="settings.pro.buildingsDesc">Architecture réaliste sur le terrain</div>
+                </div>
+            </div>
+            <span class="pro-badge" style="font-size: 9px; background: var(--gold); color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 700;">PRO</span>
+            <input type="checkbox" id="buildings-toggle" checked aria-label="Bâtiments OSM" style="margin-left: 8px;">
+        </div>
+
+        <div class="setting-row pro-feature-row" id="row-inclinometer" style="cursor: pointer;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                <span style="font-size: 18px;">📐</span>
+                <div>
+                    <div class="setting-label" data-i18n="settings.label.inclinometer">Inclinomètre</div>
+                    <div style="font-size: 10px; color: var(--text-3);" data-i18n="settings.pro.inclinometerDesc">Pente du terrain en temps réel (°, %)</div>
+                </div>
+            </div>
+            <span class="pro-badge" style="font-size: 9px; background: var(--gold); color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 700;">PRO</span>
+            <input type="checkbox" id="inclinometer-toggle" checked aria-label="Inclinomètre" style="margin-left: 8px;">
+        </div>
+
+        <div class="setting-row pro-feature-row" id="row-weather-pro" style="cursor: pointer;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                <span style="font-size: 18px;">🌡️</span>
+                <div>
+                    <div class="setting-label" data-i18n="settings.label.weatherPro">Météo Avancée</div>
+                    <div style="font-size: 10px; color: var(--text-3);" data-i18n="settings.pro.weatherDesc">Graphique 24h + Prévisions 3 jours</div>
+                </div>
+            </div>
+            <span class="pro-badge" style="font-size: 9px; background: var(--gold); color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 700;">PRO</span>
+            <input type="checkbox" id="weather-pro-toggle" aria-label="Météo Avancée" style="margin-left: 8px;">
+        </div>
+
+        <!-- Séparateur -->
+        <div style="border-top: 1px solid rgba(255,215,0,0.12); margin: 12px 0 10px;"></div>
+        <div style="font-size: 10px; color: var(--text-3); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;" data-i18n="settings.pro.includedLabel">Inclus avec Pro</div>
+
+        <div class="setting-row pro-info-row" style="opacity: 0.7; padding: 4px 0;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                <span style="font-size: 18px;">🗓️</span>
+                <div>
+                    <div class="setting-label" data-i18n="settings.pro.solarCalLabel">Calendrier solaire</div>
+                    <div style="font-size: 10px; color: var(--text-3);" data-i18n="settings.pro.solarCalDesc">Ombres pour n'importe quel jour de l'année</div>
+                </div>
+            </div>
+            <span class="pro-check" style="font-size: 14px; color: var(--gold);">✓</span>
+        </div>
+
+        <div class="setting-row pro-info-row" style="opacity: 0.7; padding: 4px 0;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                <span style="font-size: 18px;">☀️</span>
+                <div>
+                    <div class="setting-label" data-i18n="settings.pro.solarAnalLabel">Analyse solaire Pro</div>
+                    <div style="font-size: 10px; color: var(--text-3);" data-i18n="settings.pro.solarAnalDesc">Azimut, élévation, graphique 24h, phase lunaire</div>
+                </div>
+            </div>
+            <span class="pro-check" style="font-size: 14px; color: var(--gold);">✓</span>
+        </div>
+
+        <div class="setting-row pro-info-row" style="opacity: 0.7; padding: 4px 0;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                <span style="font-size: 18px;">🗺️</span>
+                <div>
+                    <div class="setting-label" data-i18n="settings.pro.lodLabel">Zoom LOD 18 + Satellite</div>
+                    <div style="font-size: 10px; color: var(--text-3);" data-i18n="settings.pro.lodDesc">Détail maximum — sentiers, bâtiments, végétation</div>
+                </div>
+            </div>
+            <span class="pro-check" style="font-size: 14px; color: var(--gold);">✓</span>
+        </div>
+
+        <div class="setting-row pro-info-row" style="opacity: 0.7; padding: 4px 0;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                <span style="font-size: 18px;">📍</span>
+                <div>
+                    <div class="setting-label" data-i18n="settings.pro.gpxLabel">Multi-tracés + Export GPX</div>
+                    <div style="font-size: 10px; color: var(--text-3);" data-i18n="settings.pro.gpxDesc">Importez et exportez autant de randonnées que vous voulez</div>
+                </div>
+            </div>
+            <span class="pro-check" style="font-size: 14px; color: var(--gold);">✓</span>
+        </div>
+
+        <div class="setting-row pro-info-row" style="opacity: 0.7; padding: 4px 0;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                <span style="font-size: 18px;">📶</span>
+                <div>
+                    <div class="setting-label" data-i18n="settings.pro.offlineLabel">Zones offline illimitées</div>
+                    <div style="font-size: 10px; color: var(--text-3);" data-i18n="settings.pro.offlineDesc">Téléchargez autant de régions que vous voulez</div>
+                </div>
+            </div>
+            <span class="pro-check" style="font-size: 14px; color: var(--gold);">✓</span>
+        </div>
+
+        <button id="btn-upgrade-pro" class="btn-go" style="width: 100%; margin-top: 16px; padding: 14px; font-size: 14px; font-weight: 700; background: linear-gradient(135deg, var(--gold) 0%, #ffb700 100%); color: #000; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>🔓</span>
+            <span data-i18n="settings.pro.cta">Passer à Pro</span>
+        </button>
+    </div>
+
+    <details class="control-group" style="margin-top: 15px;">
+        <summary style="font-size:11px; color:var(--gold); font-weight:700; text-transform:uppercase; cursor:pointer; outline:none; letter-spacing:1px; padding:10px 0;" data-i18n="settings.section.advanced">⚙️ Paramètres Avancés</summary>
+        
+        <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 4px;">
+            <div class="setting-row">
+                <div class="setting-label" data-i18n="settings.label.resolution">Résolution (LOD)</div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span id="res-disp" style="font-size:10px; color:var(--text-3); font-family:var(--font-mono);">64</span>
+                    <input type="range" id="res-slider" min="16" max="256" step="16" value="64" style="width:80px;" aria-label="Résolution LOD">
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-label" data-i18n="settings.label.range">Rayon de rendu</div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span id="range-disp" style="font-size:10px; color:var(--text-3); font-family:var(--font-mono);">3</span>
+                    <input type="range" id="range-slider" min="1" max="12" step="1" value="3" style="width:80px;" aria-label="Rayon de rendu">
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-label" data-i18n="settings.label.exaggeration">Exagération relief</div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span id="exag-disp" style="font-size:10px; color:var(--text-3); font-family:var(--font-mono);">1.4</span>
+                    <input type="range" id="exag-slider" min="1.0" max="3.0" step="0.1" value="1.4" style="width:80px;" aria-label="Exagération relief">
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-label" data-i18n="settings.label.stats">Stats de performance (FPS)</div>
+                <input type="checkbox" id="stats-toggle" aria-label="Stats de performance (FPS)">
+            </div>
+            
+            <div class="setting-row">
+                <div class="setting-label" data-i18n="settings.label.shadows">Ombres portées</div>
+                <input type="checkbox" id="shadow-toggle" aria-label="Ombres portées">
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-label" data-i18n="settings.label.debug">Infos de debug</div>
+                <input type="checkbox" id="debug-toggle" aria-label="Infos de debug">
+            </div>
+
+
+            </div>
+                <!-- Sources de données & clause de non-responsabilité (requis politique Play Store) -->
+                <div style="margin-top:20px; padding:14px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.07);">
+                    <div style="font-size:11px; color:var(--gold); font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;" data-i18n="settings.section.sources">Sources de données & Légal</div>
+                    <p style="font-size:11px; color:var(--text-3); line-height:1.6; margin:0 0 12px 0;" data-i18n="settings.legal.disclaimer">SunTrail 3D est une application indépendante, non affiliée à une entité gouvernementale. Les données cartographiques proviennent de fournisseurs open-data officiels.</p>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <a href="https://www.swisstopo.admin.ch" target="_blank" rel="noopener noreferrer" style="font-size:11px; color:var(--accent); text-decoration:none; display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:14px;">🇨🇭</span>
+                            <span data-i18n="settings.legal.swisstopoLabel">SwissTopo — swisstopo.admin.ch</span>
+                        </a>
+                        <a href="https://www.geoportail.gouv.fr" target="_blank" rel="noopener noreferrer" style="font-size:11px; color:var(--accent); text-decoration:none; display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:14px;">🇫🇷</span>
+                            <span data-i18n="settings.legal.ignLabel">IGN Géoplateforme — geoportail.gouv.fr</span>
+                        </a>
+                        <a href="https://www.openstreetmap.org" target="_blank" rel="noopener noreferrer" style="font-size:11px; color:var(--accent); text-decoration:none; display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:14px;">🌍</span>
+                            <span data-i18n="settings.legal.osmLabel">OpenStreetMap — openstreetmap.org</span>
+                        </a>
+                        <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer" style="font-size:11px; color:var(--accent); text-decoration:none; display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:14px;">🌤️</span>
+                            <span data-i18n="settings.legal.openmeteoLabel">Open-Meteo — open-meteo.com</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="settings-version" style="font-size:11px; color:var(--text-3); text-align:center; margin-top:24px; padding:10px 0 12px 0; opacity:0.6; cursor:pointer; user-select:none; letter-spacing:1px; border-top:1px solid rgba(255,255,255,0.04);">
+                    v?
+                </div>
+        </details>
+    </div>

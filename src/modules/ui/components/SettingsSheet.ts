@@ -14,10 +14,11 @@ import { iapService } from '../../iapService';
 import { showToast } from '../../toast';
 import { haptic } from '../../haptics';
 import { showUpgradePrompt, isProActive, activateDiscoveryTrial } from '../../iap';
+import templateHTML from '../templates/settings.html?raw';
 
 export class SettingsSheet extends BaseComponent {
     constructor() {
-        super('template-settings', 'sheet-container');
+        super('template-settings', 'sheet-container', templateHTML);
     }
 
     public render(): void {

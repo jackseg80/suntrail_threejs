@@ -5,6 +5,7 @@ import { eventBus } from '../../eventBus';
 import { sheetManager } from '../core/SheetManager';
 import { getWeatherIcon } from '../../weather';
 import { isPositionInSwitzerland, isPositionInFrance, isPositionInItaly } from '../../geo';
+import templateHTML from '../templates/top-status-bar.html?raw';
 
 export class TopStatusBar extends BaseComponent {
     private lodBadge: HTMLElement | null = null;
@@ -16,7 +17,7 @@ export class TopStatusBar extends BaseComponent {
     private recInterval: any = null;
 
     constructor() {
-        super('template-top-status-bar', 'top-status-bar');
+        super('template-top-status-bar', 'top-status-bar', templateHTML);
     }
 
     public render(): void {

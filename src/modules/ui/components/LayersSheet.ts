@@ -5,10 +5,11 @@ import { sheetManager } from '../core/SheetManager';
 import { i18n } from '../../../i18n/I18nService';
 import { showUpgradePrompt, isProActive } from '../../iap';
 import { haptic } from '../../haptics';
+import templateHTML from '../templates/layers.html?raw';
 
 export class LayersSheet extends BaseComponent {
     constructor() {
-        super('template-layers', 'sheet-container');
+        super('template-layers', 'sheet-container', templateHTML);
     }
 
     public render(): void {
