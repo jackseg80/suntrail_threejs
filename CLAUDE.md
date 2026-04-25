@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.38.4)
+# SunTrail — Guide IA (v5.38.5)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-21 suite à la v5.38.4 (Galaxy A53 GPS Fix).
+> Mis à jour le 2026-04-21 suite à la v5.38.5 (Galaxy A53 GPS Fix).
 
 
 ## Projet

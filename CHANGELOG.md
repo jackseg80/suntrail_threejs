@@ -1,3 +1,8 @@
+## [5.38.5] - 2026-04-25
+### Fixed
+- **UI Collision** : Repositionnement automatique de l'inclinomètre en haut de l'écran lors de l'ouverture de la barre temporelle (Timeline) pour éviter les chevauchements.
+- **Stabilité de Position** : L'inclinomètre mémorise désormais les déplacements manuels par l'utilisateur et désactive l'ajustement auto dans ce cas.
+
 ## [5.38.4] - 2026-04-25
 ### Added
 - **Migration PBF Totale (Sommets, POIs, Bâtiments)** : Suppression définitive de l'API Overpass pour éliminer les erreurs CORS/406 et fiabiliser l'affichage.

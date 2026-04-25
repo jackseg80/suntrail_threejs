@@ -141,7 +141,29 @@ export class InclinometerWidget {
             this.syncVisibility();
         }));
 
+        // v5.38.4 : Synchronisation avec l'ouverture de la timeline
+        const observer = new MutationObserver(() => this.syncPosition());
+        observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        this.unsubscribers.push(() => observer.disconnect());
+
         this.syncVisibility();
+        this.syncPosition();
+    }
+
+    private syncPosition(): void {
+        if (!this.el || this._isCustomWidgetPos) return;
+
+        const isTimelineOpen = document.body.classList.contains('timeline-open');
+        
+        if (isTimelineOpen) {
+            // Déplacer en HAUT (sous la barre de statut)
+            this.el.style.bottom = 'auto';
+            this.el.style.top = 'calc(var(--top-bar-h) + var(--safe-top) + 16px)';
+        } else {
+            // Remettre en BAS
+            this.el.style.top = 'auto';
+            this.el.style.bottom = 'calc(var(--bar-h) + var(--safe-bottom) + 16px)';
+        }
     }
 
     private syncVisibility(): void {
