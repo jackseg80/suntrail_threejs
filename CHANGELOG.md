@@ -1,3 +1,9 @@
+## [5.39.1] - 2026-04-25
+### Fixed
+- **UI Stability** : Restauration de la structure HTML sémantique (<main>, <header>) pour corriger le rendu CSS et le centrage de l'écran de chargement.
+- **Initialization Fix** : Sécurisation de updatePerformanceUI pour éviter les crashs JS si les éléments du DOM ne sont pas encore hydratés.
+- **Assets Restoration** : Rétablissement de l'icône 2D/3D originale et masquage automatique des infos de diagnostic technique.
+
 ## [5.39.0] - 2026-04-25
 ### Changed
 - **Refactor index.html** : Nettoyage massif du fichier HTML principal (-90% de lignes). Extraction de 14 templates UI vers des fichiers .html individuels chargés à la demande via Vite.

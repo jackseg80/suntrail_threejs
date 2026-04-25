@@ -34,6 +34,17 @@ import { attachDraggablePanel } from './ui/draggablePanel';
 let storageUIIntervalId: ReturnType<typeof setInterval> | null = null;
 
 export async function initUI(): Promise<void> {
+    // --- 1. HYDRATATION IMMÉDIATE DES COMPOSANTS SYSTÈME ---
+    // Ces composants contiennent les IDs requis par le reste de l'init (diag-gpu, tile-loading-bar, etc.)
+    const topStatusBar = new TopStatusBar();
+    topStatusBar.hydrate();
+
+    const navBar = new NavigationBar();
+    navBar.hydrate();
+
+    const widgets = new WidgetsComponent();
+    widgets.hydrate();
+
     // Charger le statut Pro en premier (clé séparée, immune aux resets de version)
     loadProStatus();
 
@@ -72,16 +83,22 @@ export async function initUI(): Promise<void> {
     // Initialiser le thème clair/sombre après chargement des settings
     initTheme();
 
-    // Diagnostic matériel
+    // Diagnostic matériel (v5.39.1 : sécurisé)
     const gpuInfo = getGpuInfo();
     const diagGpu = document.getElementById('diag-gpu');
     if (diagGpu) diagGpu.textContent = `GPU: ${gpuInfo.renderer}`;
+    
     const diagCpu = document.getElementById('diag-cpu');
     if (diagCpu) diagCpu.textContent = `CPU: ${navigator.hardwareConcurrency || '--'} cores`;
+    
     const diagPreset = document.getElementById('diag-preset');
     if (diagPreset) diagPreset.textContent = `PROFIL: ${state.PERFORMANCE_PRESET.toUpperCase()}`;
+    
     const techInfo = document.getElementById('tech-info');
-    if (techInfo) techInfo.style.display = 'block';
+    if (techInfo) {
+        // Affiché uniquement si on force le mode debug via URL ou state
+        techInfo.style.display = state.SHOW_DEBUG ? 'block' : 'none';
+    }
 
     // Resize géré par scene.ts (unique handler, pas de doublon).
     let _orientPollId: ReturnType<typeof setTimeout> | null = null;
@@ -176,15 +193,6 @@ export async function initUI(): Promise<void> {
     }
 
     // --- INITIALISATION COMPOSANTS ---
-    const navBar = new NavigationBar();
-    navBar.hydrate();
-
-    const topStatusBar = new TopStatusBar();
-    topStatusBar.hydrate();
-
-    const widgets = new WidgetsComponent();
-    widgets.hydrate();
-
     new TimelineComponent();
     initAutoHide();
     initMobileUI();

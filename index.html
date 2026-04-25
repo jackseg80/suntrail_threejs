@@ -1,85 +1,113 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>SunTrail 3D — Randonnée Solaire</title>
-  <meta name="description" content="Planifiez vos randonnées en 3D avec simulation d'ensoleillement en temps réel.">
-  
-  <link rel="icon" type="image/svg+xml" href="/assets/icons/favicon.svg">
-  <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#0a0a0f">
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="referrer" content="same-origin">
+    <meta name="description" content="SunTrail 3D — Carte topographique 3D interactive pour la randonnée. Terrain réaliste, GPS, météo, analyse solaire et tracés GPX.">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SunTrail 3D">
+    <title>SunTrail - Moteur Three.js</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap">
+    <link rel="stylesheet" href="/src/style.css">
 </head>
-<body>
-  <div id="app">
-    <canvas id="canvas-3d" aria-label="Carte 3D interactive"></canvas>
-    <div id="ui-layer">
-        
-        <div id="top-status-bar" class="top-status-bar">
-            <!-- Injecté par TopStatusBar.ts -->
-        </div>
+<body id="body">
 
-        <div id="floating-widgets">
-            <div id="zoom-indicator" class="glass-pill" style="display:none;">LOD --</div>
-            <div id="compass-container">
-                <canvas id="compass-canvas" width="60" height="60" style="display:none;" aria-label="Boussole"></canvas>
-            </div>
-            <div id="location-btn" class="fab-btn" role="button" tabindex="0" aria-label="Ma position">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-            </div>
-        </div>
+<a href="#canvas-container" class="skip-link" data-i18n="a11y.skipToContent">Aller au contenu</a>
+<h1 class="sr-only">SunTrail - Carte 3D</h1>
 
-        <div id="fab-stack">
-            <button id="nav-layers-btn" class="fab-btn" aria-label="Fonds de carte">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-            </button>
-            <button id="nav-2d-toggle" class="fab-btn" aria-label="Basculer 2D/3D" aria-pressed="false">
-                <span class="nav-mode-label">3D</span>
-            </button>
-        </div>
+<!-- Indicateur de chargement des tuiles réseau -->
+<div id="tile-loading-bar" aria-hidden="true"></div>
 
-        <div id="center-reticle" aria-hidden="true">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" style="filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));">
-                <circle cx="12" cy="12" r="1" fill="white"/>
-                <path d="M12 4v4m0 8v4M4 12h4m8 0h4" stroke-linecap="round"/>
-            </svg>
-        </div>
-
-        <div id="sheet-overlay" class="sheet-overlay"></div>
-        <div id="sheet-container">
-            <!-- Les Sheets (Settings, Search, etc.) sont injectées ici dynamiquement -->
-        </div>
-
-        <nav id="nav-bar" class="nav-bar">
-            <!-- Injecté par NavigationBar.ts -->
-        </nav>
-
-        <div id="toast-container" aria-live="assertive"></div>
+<!-- Overlay de chargement de la carte — bloqué tant que le moteur n'est pas prêt -->
+<div id="map-loading-overlay">
+    <span class="spinner map-loading-spinner"></span>
+    <span class="map-loading-text" data-i18n="loading.map">Chargement de la carte...</span>
+    <div id="map-loading-offline-msg" style="display:none;">
+        <span data-i18n="network.overlay.title">Pas de connexion</span>
+        <span class="map-loading-offline-sub" data-i18n="network.overlay.subtitle">La carte sera chargée depuis le cache si disponible</span>   
     </div>
+</div>
+
+<main>
+    <div id="canvas-container">
+        <!-- Le canvas sera injecté ici par initScene() -->
+    </div>
+</main>
+
+<header>
+    <div id="top-status-bar"></div>
+</header>
+
+<!-- COORDS PILL -->
+<div id="coords-pill" class="hidden">
+  <div class="coords-lat" id="click-latlon">—</div>
+  <div class="coords-alt" id="click-alt">—</div>
+  <div class="coords-actions">
+        <button class="coords-btn solar" id="probe-btn" data-i18n="coords.solar">☀️ Solaire</button>
+        <button class="coords-btn sos" id="sos-btn-pill" style="display:none;">SOS</button>
+  </div>
+</div>
+
+<div id="zoom-indicator" style="display:none;">LOD --</div>
+
+<nav id="nav-bar"></nav>
+
+<div id="sheet-overlay"></div>
+<div id="sheet-container"></div>
+<div id="toast-container"></div>
+
+<!-- PILE DE BOUTONS FLOTTANTS -->
+<div class="fab-stack">
+  <!-- BOUSSOLE -->
+  <div id="compass-fab" class="fab-btn" role="button" tabindex="0" aria-label="Réinitialiser le Nord" data-i18n-aria-label="a11y.resetNorth">   
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" id="compass-svg">
+      <path d="M12 2L15 12L12 22L9 12L12 2Z" fill="#ef4444" stroke="#ef4444" stroke-width="1"/>
+      <path d="M12 2L15 12H9L12 2Z" fill="#ef4444"/>
+      <circle cx="12" cy="12" r="1" fill="white"/>
+    </svg>
   </div>
 
-  <div id="onboarding-container"></div>
-  <div id="loading-screen">
-    <div class="loader-content">
-        <div class="loader-logo">
-            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 2L12 12L22 12" stroke-linecap="round"/>
-                <path d="M12 22L12 12" stroke-linecap="round"/>
-            </svg>
-        </div>
-        <div class="loader-title">SunTrail 3D</div>
-        <div class="loader-bar"><div id="loader-progress"></div></div>
-        <div class="loader-status" id="loader-status">Initialisation du moteur...</div>
-    </div>
+  <!-- POSITION -->
+  <div id="gps-main-btn" class="fab-btn" role="button" tabindex="0" aria-label="Ma position" data-i18n-aria-label="a11y.myLocation">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+      <circle cx="12" cy="10" r="3"/>
+    </svg>
   </div>
 
-  <script type="module" src="/src/main.ts"></script>
+  <!-- COUCHES -->
+  <div id="layers-fab" class="fab-btn" role="button" tabindex="0" aria-label="Fonds de carte" data-i18n-aria-label="a11y.mapLayers">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+      <polyline points="2 17 12 22 22 17"/>
+      <polyline points="2 12 12 17 22 12"/>
+    </svg>
+  </div>
+
+  <!-- MODE 2D/3D -->
+  <button class="fab-btn nav-mode-toggle" id="nav-2d-toggle" aria-label="Basculer 2D/3D" data-i18n-aria-label="a11y.toggle2d3d" aria-pressed="false" style="flex-direction:column; gap:1px; padding:2px;">
+      <svg class="grid-icon" width="18" height="18" viewBox="0 0 22 22" fill="none" style="flex-shrink:0;">
+        <line x1="2" y1="6"  x2="20" y2="6"  stroke="currentColor" stroke-width="1.0" opacity="0.35"/>
+        <line x1="2" y1="11" x2="20" y2="11" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="2" y1="16" x2="20" y2="16" stroke="currentColor" stroke-width="1.0" opacity="0.35"/>
+        <line x1="5"  y1="3" x2="5"  y2="19" stroke="currentColor" stroke-width="1.0" opacity="0.35"/>
+        <line x1="11" y1="3" x2="11" y2="19" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="17" y1="3" x2="17" y2="19" stroke="currentColor" stroke-width="1.0" opacity="0.35"/>
+        <path class="grid-peak" d="M7 11 L11 5 L15 11" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+      </svg>
+      <span class="nav-mode-label" style="font-size:9px; font-weight:600; line-height:1; margin-top:1px;">3D</span>
+  </button>
+</div>
+
+<!-- Widgets conteneur (Timebar, Profil) -->
+<div id="widgets-container"></div>
+
+<script type="module" src="/src/main.ts"></script>
 </body>
 </html>

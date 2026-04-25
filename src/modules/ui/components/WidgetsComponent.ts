@@ -3,7 +3,7 @@ import templateHTML from '../templates/widgets.html?raw';
 
 export class WidgetsComponent extends BaseComponent {
     constructor() {
-        super('template-widgets', 'body', templateHTML); // Mount directly to body
+        super('template-widgets', 'widgets-container', templateHTML); // Mount to widgets container
     }
 
     public render(): void {
