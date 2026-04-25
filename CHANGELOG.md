@@ -1,3 +1,9 @@
+## [5.39.2] - 2026-04-25
+### Added
+- **Signalétique Enrichie** : Introduction d'icônes différenciées pour les belvédères (🔭), les abris (🏠) et les points d'information (i).
+- **Moteur de Textures** : Système de génération de textures à la demande par catégorie de POI avec mise en cache optimisée.
+- **Stabilité de Structure** : Finalisation du test d'intégrité de l'initialisation pour prévenir les régressions HTML.
+
 ## [5.39.1] - 2026-04-25
 ### Fixed
 - **UI Stability** : Restauration de la structure HTML sémantique (<main>, <header>) pour corriger le rendu CSS et le centrage de l'écran de chargement.

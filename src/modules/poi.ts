@@ -8,40 +8,82 @@ import { Tile } from './terrain/Tile';
 import { BoundedCache } from './boundedCache';
 
 /**
- * poi.ts — Migration PBF (v5.38.4)
- * Récupération de la signalétique randonnée via tuiles vectorielles.
+ * poi.ts — Finalisation de la Signalétique (v5.39.2)
+ * Récupération et rendu différencié des POIs via tuiles vectorielles.
  */
 
-const poiMemoryCache = new BoundedCache<string, any[]>({ maxSize: 200 });
-const poiFetchPromises = new Map<string, Promise<any[] | null>>();
+type POICategory = 'guidepost' | 'viewpoint' | 'shelter' | 'info';
+
+interface POIData {
+    id: number | string;
+    lat: number;
+    lon: number;
+    name: string;
+    category: POICategory;
+}
+
+const poiMemoryCache = new BoundedCache<string, POIData[]>({ maxSize: 200 });
+const poiFetchPromises = new Map<string, Promise<POIData[] | null>>();
 const zoneFailureCooldown = new Map<string, number>();
-const CACHE_NAME = 'suntrail-poi-v7-stable';
+const CACHE_NAME = 'suntrail-poi-v8-categories';
 
-const signpostTexture = createSignpostTexture();
+// Cache des textures par catégorie
+const textureCache = new Map<POICategory, THREE.Texture>();
 
-function createSignpostTexture(): THREE.Texture {
+function getPOITexture(category: POICategory): THREE.Texture {
+    if (textureCache.has(category)) return textureCache.get(category)!;
+
     const canvas = document.createElement('canvas');
     canvas.width = 64; canvas.height = 64;
     const ctx = canvas.getContext('2d');
+    
     if (ctx) {
-        ctx.beginPath();
-        ctx.moveTo(32, 6);
-        ctx.lineTo(58, 32);
-        ctx.lineTo(32, 58);
-        ctx.lineTo(6, 32);
-        ctx.closePath();
-        if (ctx.createRadialGradient) {
+        // Ombre portée commune
+        ctx.shadowColor = 'rgba(0,0,0,0.4)';
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetY = 2;
+
+        if (category === 'guidepost') {
+            // Losange jaune classique
+            ctx.beginPath();
+            ctx.moveTo(32, 6); ctx.lineTo(58, 32); ctx.lineTo(32, 58); ctx.lineTo(6, 32); ctx.closePath();
             const grad = ctx.createRadialGradient(32, 32, 5, 32, 32, 30);
-            grad.addColorStop(0, '#FFEB3B'); 
-            grad.addColorStop(1, '#FBC02D');
+            grad.addColorStop(0, '#FFEB3B'); grad.addColorStop(1, '#FBC02D');
             ctx.fillStyle = grad;
-        } else { ctx.fillStyle = '#FFD700'; }
-        ctx.fill();
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 4;
-        ctx.stroke();
+            ctx.fill();
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.stroke();
+        } else if (category === 'viewpoint') {
+            // Cercle bleu avec icône belvédère (télescope simplifié)
+            ctx.beginPath(); ctx.arc(32, 32, 26, 0, Math.PI * 2);
+            ctx.fillStyle = '#3b82f8'; ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 32px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('🔭', 32, 34);
+        } else if (category === 'shelter') {
+            // Carré vert avec icône abri
+            ctx.fillStyle = '#10b981';
+            if (ctx.roundRect) {
+                ctx.roundRect(8, 8, 48, 48, 8);
+            } else {
+                ctx.rect(8, 8, 48, 48);
+            }
+            ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 32px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('🏠', 32, 34);
+        } else if (category === 'info') {
+            // Cercle orange avec icône "i"
+            ctx.beginPath(); ctx.arc(32, 32, 26, 0, Math.PI * 2);
+            ctx.fillStyle = '#f59e0b'; ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 34px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('i', 32, 32);
+        }
     }
-    return new THREE.CanvasTexture(canvas);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    textureCache.set(category, tex);
+    return tex;
 }
 
 export async function loadPOIsForTile(tile: Tile) {
@@ -68,7 +110,7 @@ export async function loadPOIsForTile(tile: Tile) {
     const failTime = zoneFailureCooldown.get(zoneKey);
     if (failTime && Date.now() < failTime) return;
 
-    let pois: any[] | null | undefined = poiMemoryCache.get(zoneKey);
+    let pois: POIData[] | null | undefined = poiMemoryCache.get(zoneKey);
 
     if (!pois) {
         let promise = poiFetchPromises.get(zoneKey);
@@ -97,7 +139,7 @@ export async function loadPOIsForTile(tile: Tile) {
     }
 }
 
-async function fetchPOIsWithCache(z: number, x: number, y: number, key: string, inCH: boolean): Promise<any[] | null> {
+async function fetchPOIsWithCache(z: number, x: number, y: number, key: string, inCH: boolean): Promise<POIData[] | null> {
     try {
         const cache = await caches.open(CACHE_NAME);
         const cached = await cache.match(key);
@@ -121,7 +163,7 @@ async function fetchPOIsWithCache(z: number, x: number, y: number, key: string, 
         const PbfConstructor = Pbf.default || Pbf;
         const vtile = new VectorTile(new PbfConstructor(buffer));
         
-        const elements: any[] = [];
+        const elements: POIData[] = [];
         const layers = Object.keys(vtile.layers);
         
         layers.forEach(layerName => {
@@ -131,17 +173,22 @@ async function fetchPOIsWithCache(z: number, x: number, y: number, key: string, 
             for (let i = 0; i < layer.length; i++) {
                 const feat = layer.feature(i);
                 const props = feat.properties;
-                
-                const rawString = JSON.stringify(props).toLowerCase();
-                const isSignpost = 
-                    rawString.includes('guidepost') || 
-                    rawString.includes('signpost') ||
-                    rawString.includes('hiking') ||
-                    props.class === 'information' ||
-                    props.subclass === 'information' ||
-                    props.tourism === 'information';
+                const raw = JSON.stringify(props).toLowerCase();
 
-                if (isSignpost) {
+                let category: POICategory | null = null;
+                
+                // Logique de catégorisation améliorée
+                if (props.class === 'viewpoint' || props.tourism === 'viewpoint') {
+                    category = 'viewpoint';
+                } else if (props.amenity === 'shelter' || props.class === 'shelter') {
+                    category = 'shelter';
+                } else if (props.information === 'map' || props.information === 'board' || props.tourism === 'information') {
+                    category = 'info';
+                } else if (raw.includes('guidepost') || raw.includes('signpost') || props.hiking === 'yes') {
+                    category = 'guidepost';
+                }
+
+                if (category) {
                     const geom = feat.loadGeometry()[0][0];
                     const extent = layer.extent || 4096;
                     
@@ -150,15 +197,17 @@ async function fetchPOIsWithCache(z: number, x: number, y: number, key: string, 
                     const lat = latRad * 180 / Math.PI;
 
                     elements.push({
-                        id: feat.id || Math.random(),
+                        id: feat.id || `${lat.toFixed(6)}|${lon.toFixed(6)}`,
                         lat,
                         lon,
-                        tags: { name: props.name || props.name_en || "Signalétique" }
+                        name: String(props.name || props.name_en || "Point d'intérêt"),
+                        category
                     });
                 }
             }
         });
 
+        // Déduplication par position
         const uniqueElements = Array.from(new Map(elements.map(e => [`${e.lat.toFixed(5)}|${e.lon.toFixed(5)}`, e])).values());
 
         try {
@@ -173,24 +222,17 @@ async function fetchPOIsWithCache(z: number, x: number, y: number, key: string, 
     }
 }
 
-function renderPOIs(tile: Tile, elements: any[]) {
+function renderPOIs(tile: Tile, elements: POIData[]) {
     if (tile.status !== 'loaded' || !state.scene) return;
 
     const group = new THREE.Group();
-    const material = new THREE.SpriteMaterial({ 
-        map: signpostTexture, 
-        transparent: true, 
-        depthTest: true,
-        depthWrite: false,
-        sizeAttenuation: true
-    });
+    
+    // On crée une Map locale de matériaux pour cette tuile pour éviter les redondances
+    const materials = new Map<POICategory, THREE.SpriteMaterial>();
 
     elements.forEach(el => {
-        // Position relative au début de la tuile ( worldX / worldZ )
         const local = tile.lngLatToLocal(el.lon, el.lat);
         
-        // Altitude : 0 en 2D pour éviter le "vol" au-dessus de la carte plate,
-        // sinon altitude réelle du terrain en 3D.
         let h = 0;
         if (!state.IS_2D_MODE) {
             const worldX = tile.worldX + local.x;
@@ -198,19 +240,27 @@ function renderPOIs(tile: Tile, elements: any[]) {
             h = getAltitudeAt(worldX, worldZ, tile);
         }
 
-        const sprite = new THREE.Sprite(material);
+        // Récupération ou création du matériau pour la catégorie
+        if (!materials.has(el.category)) {
+            materials.set(el.category, new THREE.SpriteMaterial({
+                map: getPOITexture(el.category),
+                transparent: true,
+                depthTest: true,
+                depthWrite: false,
+                sizeAttenuation: true
+            }));
+        }
+
+        const sprite = new THREE.Sprite(materials.get(el.category));
         sprite.scale.set(24, 24, 1);
-        
-        // On place le sprite. En 2D h=0, donc il est collé à la carte.
         sprite.position.set(local.x, h + 12, local.z);
-        sprite.userData = { name: el.tags?.name || "Signalétique", lat: el.lat, lon: el.lon };
+        sprite.userData = { name: el.name, lat: el.lat, lon: el.lon, category: el.category };
         group.add(sprite);
     });
 
     if (tile.poiGroup && state.scene) state.scene.remove(tile.poiGroup);
     
     tile.poiGroup = group;
-    // On cale le groupe à la position monde de la tuile pour que tout soit stable
     tile.poiGroup.position.set(tile.worldX, 0, tile.worldZ);
     state.scene.add(tile.poiGroup);
 }

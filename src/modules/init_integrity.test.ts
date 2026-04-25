@@ -41,7 +41,6 @@ describe('Initialization Integrity', () => {
     it('should initialize UI and find critical structural IDs', async () => {
         // Mock startApp car il lance initScene qui est trop complexe à mocker ici
         // On veut juste tester l'hydratation de l'UI
-        const { initScene } = await import('./scene');
         vi.mock('./scene', async () => {
             const actual = await vi.importActual('./scene') as any;
             return { ...actual, initScene: vi.fn().mockResolvedValue(undefined) };
