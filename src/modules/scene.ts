@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { state, saveLastView } from './state';
 import { eventBus } from './eventBus';
@@ -21,6 +20,7 @@ import { initTouchControls } from './touchControls';
 import { initCamera, initControls, flyTo, onWindowResize } from './cameraManager';
 import { isFeatureEnabled } from './featureFlags';
 import { checkPerformanceThrottle } from './performance';
+import { initEnvironment, updateEnvironment, createGroundPlane } from './environment';
 
 export { flyTo };
 
@@ -80,7 +80,6 @@ let currentThrottledUpdate: (() => void) | null = null;
 let currentThrottledSunUpdate: (() => void) | null = null;
 
 export async function disposeScene(): Promise<void> {
-    // Nettoyage des listeners sur les contrôles avant de les détruire
     if (state.controls) {
         if (currentThrottledUpdate) state.controls.removeEventListener('change', currentThrottledUpdate);
         if (currentThrottledSunUpdate) state.controls.removeEventListener('change', currentThrottledSunUpdate);
@@ -112,30 +111,20 @@ export async function disposeScene(): Promise<void> {
     currentThrottledSunUpdate = null;
 }
 
-/**
- * Détermine le niveau de zoom idéal en fonction de la distance caméra-sol.
- * v5.32.13 : Compromis stabilité/performance. 
- * Hystérésis réduite à 10% (plus réactif au dézoom) + prise en compte du tilt.
- */
 function getIdealZoom(dist: number, currentZoom: number): number {
     const boost = state.MAP_SOURCE === 'satellite' ? 2.0
                 : state.MAP_SOURCE === 'swisstopo' ? 1.0
-                : 0.5; // v5.38.6 : Effet Loupe x2 pour l'IGN/OpenTopo (écritures x2)
+                : 0.5;
 
-    // v5.32.13 : Si on est très incliné (3D), on augmente artificiellement la distance 
-    // pour basculer plus tôt sur un LOD inférieur (gain perf massif à l'horizon).
     let effectiveDist = dist;
     if (state.controls && !state.IS_2D_MODE) {
-        const polar = state.controls.getPolarAngle(); // 0 (zénith) à ~1.5 (horizon)
-        const tiltFactor = Math.max(0, (polar - 0.6) * 0.5); // Pénalité si tilt > 35°
+        const polar = state.controls.getPolarAngle();
+        const tiltFactor = Math.max(0, (polar - 0.6) * 0.5);
         effectiveDist *= (1.0 + tiltFactor);
     }
                 
     const getThresh = (base: number, z: number) => {
-        if (currentZoom === z) {
-            // Hystérésis à 10% (suffisant pour éviter le rebond sans surcharger le GPU)
-            return base * 1.10;
-        }
+        if (currentZoom === z) return base * 1.10;
         return base;
     };
 
@@ -161,7 +150,9 @@ export async function initScene(): Promise<void> {
 
     state.originTile = lngLatToTile(state.TARGET_LON, state.TARGET_LAT, state.ZOOM);
     state.scene = new THREE.Scene();
-    state.scene.fog = new THREE.Fog(0x87CEEB, state.FOG_NEAR, state.FOG_FAR);
+    
+    // v5.40.19 : Isolation de l'environnement (Sky, Fog, Lights)
+    initEnvironment(state.scene);
 
     const isMobile = window.innerWidth <= 768 || /Mobi|Android/i.test(navigator.userAgent);
     const useAntialias = !isMobile && state.PERFORMANCE_PRESET !== 'eco';
@@ -174,11 +165,10 @@ export async function initScene(): Promise<void> {
     state.renderer.toneMapping = THREE.AgXToneMapping;
     container.appendChild(state.renderer.domElement);
 
-    // v5.32.11 : Gestion de la perte de contexte WebGL (Fréquent sur Android WebView en cas de pression mémoire)
     state.renderer.domElement.addEventListener('webglcontextlost', (event) => {
         event.preventDefault();
         console.error('[WebGL] Contexte perdu !');
-        showToast(i18n.t('common.errorWebglLost'), 0); // Toast persistant
+        showToast(i18n.t('common.errorWebglLost'), 0);
     }, false);
     
     state.renderer.domElement.setAttribute('role', 'img');
@@ -192,20 +182,7 @@ export async function initScene(): Promise<void> {
 
     initCompass();
 
-    const sky = new Sky();
-    sky.scale.setScalar(10000000); 
-    state.scene.add(sky);
-    state.sky = sky;
-
-    const groundGeo = new THREE.PlaneGeometry(100_000, 100_000);
-    groundGeo.rotateX(-Math.PI / 2);
-    const groundMat = new THREE.MeshBasicMaterial({ color: 0x1a1a2e, fog: true, depthWrite: false });
-    groundPlane = new THREE.Mesh(groundGeo, groundMat);
-    groundPlane.position.y = -200;
-    groundPlane.renderOrder = -1;
-    groundPlane.castShadow = false;
-    groundPlane.receiveShadow = false;
-    groundPlane.frustumCulled = true;
+    groundPlane = createGroundPlane();
     state.scene.add(groundPlane);
 
     initCamera();
@@ -222,7 +199,6 @@ export async function initScene(): Promise<void> {
         state.isUserInteracting = false;
         lastInteractionTime = performance.now();
 
-        // v5.32.17 : Calcul final du LOD à la fin de l'interaction (et du damping)
         if (state.camera && state.controls) {
             const dx = state.controls.target.x, dz = state.controls.target.z;
             const rawDist = state.camera.position.distanceTo(state.controls.target);
@@ -266,14 +242,12 @@ export async function initScene(): Promise<void> {
 
     let lastRecenterTime = 0;
 
-    // Version debouncée pour éviter de spammer l'API météo lors des mouvements rapides
-const debouncedFetchWeather = debounce((lat: number, lon: number) => {
-    state.lastWeatherLat = lat;
-    state.lastWeatherLon = lon;
-    fetchWeather(lat, lon);
-}, 1000);
+    const debouncedFetchWeather = debounce((lat: number, lon: number) => {
+        state.lastWeatherLat = lat;
+        state.lastWeatherLon = lon;
+        fetchWeather(lat, lon);
+    }, 1000);
 
-// v5.28.25 : Throttle réduit à 100ms pour éviter les chevauchements LOD
     const throttledUpdate = throttle(() => {
         if (!state.controls || !state.camera) return;
 
@@ -292,7 +266,6 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
         const dx = state.controls.target.x, dz = state.controls.target.z;
         const rawDist = state.camera.position.distanceTo(state.controls.target);
 
-        // v5.28.45 : En mode 2D, le sol visuel est à 0. On ne doit pas soustraire l'altitude réelle du terrain.
         const cameraGroundH = state.IS_2D_MODE ? 0 : getAltitudeAt(state.camera.position.x, state.camera.position.z);
         const heightAboveGround = Math.max(45, state.camera.position.y - cameraGroundH);
         let dist: number;
@@ -306,10 +279,7 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
 
         let newZoom = state.ZOOM;
         const idealZoom = getIdealZoom(dist, state.ZOOM);
-        const effectiveMaxZoom = isFeatureEnabled('lod_high')
-            ? (state.MAX_ALLOWED_ZOOM || 18)
-            : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
-
+        const effectiveMaxZoom = isFeatureEnabled('lod_high') ? (state.MAX_ALLOWED_ZOOM || 18) : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
         const targetZoom = Math.min(idealZoom, effectiveMaxZoom);
 
         if (!isFeatureEnabled('lod_high') && idealZoom > effectiveMaxZoom && state.ZOOM >= effectiveMaxZoom) {
@@ -324,8 +294,6 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
 
         const currentZoom = state.ZOOM;
         if (newZoom !== state.ZOOM) {
-            // FIX: Suppression complète du verrou 500ms qui bloquait le LOD pendant et après le damping.
-            // L'hystérésis de 10% dans getIdealZoom suffit à empêcher les clignotements.
             state.ZOOM = newZoom;
             lastPrefetchTime = 0;
         }
@@ -334,7 +302,7 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
         autoSelectMapSource(gpsCenter.lat, gpsCenter.lon);
 
         const distToLastWeather = haversineDistance(gpsCenter.lat, gpsCenter.lon, state.lastWeatherLat, state.lastWeatherLon);
-        if (distToLastWeather > 5) debouncedFetchWeather(gpsCenter.lat, gpsCenter.lon); // 5km threshold
+        if (distToLastWeather > 5) debouncedFetchWeather(gpsCenter.lat, gpsCenter.lon);
 
         const distFromOrigin = Math.sqrt(dx*dx + dz*dz);
 
@@ -408,26 +376,20 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
     currentThrottledSunUpdate = throttledSunUpdate;
     state.controls!.addEventListener('change', currentThrottledSunUpdate);
 
-    state.ambientLight = new THREE.AmbientLight(0xffffff, 0.2); state.scene.add(state.ambientLight);
-    state.sunLight = new THREE.DirectionalLight(0xffffff, 6.0);
-    state.sunLight.castShadow = state.SHADOWS;
-    state.sunLight.shadow.mapSize.set(state.SHADOW_RES, state.SHADOW_RES);
-    // v5.31.1 : Tighter shadow frustum — dynamically adjusted in updateSunPosition()
-    state.sunLight.shadow.camera.left = -2500; state.sunLight.shadow.camera.right = 2500;
-    state.sunLight.shadow.camera.top = 2500; state.sunLight.shadow.camera.bottom = -2500;
-    state.sunLight.shadow.camera.near = 100; state.sunLight.shadow.camera.far = 200000;
+    state.sunLight!.castShadow = state.SHADOWS;
+    state.sunLight!.shadow.mapSize.set(state.SHADOW_RES, state.SHADOW_RES);
+    state.sunLight!.shadow.camera.left = -2500; state.sunLight!.shadow.camera.right = 2500;
+    state.sunLight!.shadow.camera.top = 2500; state.sunLight!.shadow.camera.bottom = -2500;
+    state.sunLight!.shadow.camera.near = 100; state.sunLight!.shadow.camera.far = 200000;
     
-    // v5.28.38 : Biais ajusté pour mobile (précision Z-buffer moindre)
-    // v5.32.22 : Ajustement final pour éviter le décalage des ombres d'arbres (Peter Panning)
-    // Des valeurs négatives de bias plus marquées "collent" l'ombre à l'objet.
     if (isMobile) {
-        state.sunLight.shadow.bias = -0.0005; 
-        state.sunLight.shadow.normalBias = 0.02; 
+        state.sunLight!.shadow.bias = -0.0005; 
+        state.sunLight!.shadow.normalBias = 0.02; 
     } else {
-        state.sunLight.shadow.bias = -0.0001; 
-        state.sunLight.shadow.normalBias = 0.01;
+        state.sunLight!.shadow.bias = -0.0001; 
+        state.sunLight!.shadow.normalBias = 0.01;
     }
-    state.scene.add(state.sunLight); state.scene.add(state.sunLight.target);
+    state.scene.add(state.sunLight!.target);
 
     initVegetationResources();
     initWeatherSystem(state.scene);
@@ -467,103 +429,88 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
     let lastCompassTime = 0;
     let lastInteracting = false;
 
-/**
- * Calcule et applique l'inclinaison (tilt) automatique de la caméra.
- * v5.29.31 : Refactorisation pour alléger la boucle de rendu.
- */
-function updateAutoTilt(distToTarget: number): boolean {
-    if (!state.controls) return false;
+    function updateAutoTilt(distToTarget: number): boolean {
+        if (!state.controls) return false;
 
-    let tiltCap = 1.10;
-    if (state.ZOOM <= 10) tiltCap = 0;
-    else if (state.ZOOM === 11) tiltCap = 0.45;
-    else if (state.ZOOM === 12) tiltCap = 0.70;
-    else if (state.ZOOM === 13) tiltCap = 0.90;
-    else if (state.ZOOM === 14) tiltCap = 0.95; 
-    else if (state.ZOOM === 15) tiltCap = 0.85;
-    else if (state.ZOOM === 16) tiltCap = 0.65;
-    else if (state.ZOOM === 17) tiltCap = 0.50;
-    else if (state.ZOOM >= 18)  tiltCap = 0.40;
+        let tiltCap = 1.10;
+        if (state.ZOOM <= 10) tiltCap = 0;
+        else if (state.ZOOM === 11) tiltCap = 0.45;
+        else if (state.ZOOM === 12) tiltCap = 0.70;
+        else if (state.ZOOM === 13) tiltCap = 0.90;
+        else if (state.ZOOM === 14) tiltCap = 0.95; 
+        else if (state.ZOOM === 15) tiltCap = 0.85;
+        else if (state.ZOOM === 16) tiltCap = 0.65;
+        else if (state.ZOOM === 17) tiltCap = 0.50;
+        else if (state.ZOOM >= 18)  tiltCap = 0.40;
 
-    if (state.ZOOM >= 14 && !state.IS_2D_MODE) {
-        const targetH = getAltitudeAt(state.controls.target.x, state.controls.target.z);
-        const elevFactor = THREE.MathUtils.clamp(targetH / 8000, 0, 0.50);
-        tiltCap *= (1.0 - elevFactor);
-    }
-
-    const interacting = state.isUserInteracting;
-    const currentTilt = state.controls.getPolarAngle();
-    
-    if (state.IS_2D_MODE || state.ZOOM <= 10) {
-        if (state.isTiltTransitioning && currentTilt > 0.005) {
-            const newTilt = THREE.MathUtils.lerp(currentTilt, 0, 0.06);
-            state.controls.minPolarAngle = 0;
-            state.controls.maxPolarAngle = Math.max(0, newTilt);
-            return true;
-        } else {
-            state.controls.minPolarAngle = 0; state.controls.maxPolarAngle = 0;
-            if (state.isTiltTransitioning) state.isTiltTransitioning = false;
-            return false;
+        if (state.ZOOM >= 14 && !state.IS_2D_MODE) {
+            const targetH = getAltitudeAt(state.controls.target.x, state.controls.target.z);
+            const elevFactor = THREE.MathUtils.clamp(targetH / 8000, 0, 0.50);
+            tiltCap *= (1.0 - elevFactor);
         }
-    } else if (state.isTiltTransitioning) {
-        const desiredTilt = Math.max(tiltCap * 0.85, 0.5);
-        if (Math.abs(currentTilt - desiredTilt) > 0.01) {
-            const newTilt = THREE.MathUtils.lerp(currentTilt, desiredTilt, 0.07);
-            state.controls.minPolarAngle = Math.max(0.05, newTilt - 0.01);
-            state.controls.maxPolarAngle = Math.min(tiltCap, newTilt + 0.01);
-            return true;
-        } else {
-            state.isTiltTransitioning = false;
+
+        const interacting = state.isUserInteracting;
+        const currentTilt = state.controls.getPolarAngle();
+        
+        if (state.IS_2D_MODE || state.ZOOM <= 10) {
+            if (state.isTiltTransitioning && currentTilt > 0.005) {
+                const newTilt = THREE.MathUtils.lerp(currentTilt, 0, 0.06);
+                state.controls.minPolarAngle = 0;
+                state.controls.maxPolarAngle = Math.max(0, newTilt);
+                return true;
+            } else {
+                state.controls.minPolarAngle = 0; state.controls.maxPolarAngle = 0;
+                if (state.isTiltTransitioning) state.isTiltTransitioning = false;
+                return false;
+            }
+        } else if (state.isTiltTransitioning) {
+            const desiredTilt = Math.max(tiltCap * 0.85, 0.5);
+            if (Math.abs(currentTilt - desiredTilt) > 0.01) {
+                const newTilt = THREE.MathUtils.lerp(currentTilt, desiredTilt, 0.07);
+                state.controls.minPolarAngle = Math.max(0.05, newTilt - 0.01);
+                state.controls.maxPolarAngle = Math.min(tiltCap, newTilt + 0.01);
+                return true;
+            } else {
+                state.isTiltTransitioning = false;
+                state.controls.minPolarAngle = 0.05; state.controls.maxPolarAngle = tiltCap;
+                return false;
+            }
+        } else if (interacting) {
             state.controls.minPolarAngle = 0.05; state.controls.maxPolarAngle = tiltCap;
             return false;
+        } else {
+            const hFactor = THREE.MathUtils.clamp((distToTarget - 2000) / 100000, 0, 1);
+            let desiredTilt = THREE.MathUtils.lerp(tiltCap * 0.95, 0.05, Math.pow(hFactor, 0.4));
+            if (state.ZOOM <= 11) desiredTilt = Math.min(desiredTilt, tiltCap * 0.9);
+            if (Math.abs(currentTilt - desiredTilt) > 0.005) {
+                const newTilt = THREE.MathUtils.lerp(currentTilt, desiredTilt, 0.02);
+                state.controls.minPolarAngle = Math.max(0.05, newTilt - 0.2);
+                state.controls.maxPolarAngle = Math.min(tiltCap, newTilt + 0.2);
+                return true;
+            }
         }
-    } else if (interacting) {
-        state.controls.minPolarAngle = 0.05; state.controls.maxPolarAngle = tiltCap;
         return false;
-    } else {
-        const hFactor = THREE.MathUtils.clamp((distToTarget - 2000) / 100000, 0, 1);
-        let desiredTilt = THREE.MathUtils.lerp(tiltCap * 0.95, 0.05, Math.pow(hFactor, 0.4));
-        if (state.ZOOM <= 11) desiredTilt = Math.min(desiredTilt, tiltCap * 0.9);
-        if (Math.abs(currentTilt - desiredTilt) > 0.005) {
-            const newTilt = THREE.MathUtils.lerp(currentTilt, desiredTilt, 0.02);
-            state.controls.minPolarAngle = Math.max(0.05, newTilt - 0.2);
-            state.controls.maxPolarAngle = Math.min(tiltCap, newTilt + 0.2);
-            return true;
+    }
+
+    function updateTerrainPhysics(interacting: boolean): void {
+        if (!state.camera || !state.controls) return;
+        const groundH = state.IS_2D_MODE ? 0 : getAltitudeAt(state.camera.position.x, state.camera.position.z);
+        if (!state.isFlyingTo && !state.isFollowingUser) {
+            const targetGroundH = state.IS_2D_MODE ? 0 : getAltitudeAt(state.controls.target.x, state.controls.target.z);
+            const diff = targetGroundH - state.controls.target.y;
+            if (Math.abs(diff) > 0.1) {
+                const trackLerp = interacting ? 0.08 : 0.03;
+                const yDelta = diff * trackLerp;
+                state.controls.target.y += yDelta;
+                state.camera.position.y += yDelta;
+            }
         }
-    }
-    return false;
-}
-
-/**
- * Gère la physique de la caméra par rapport au terrain (suivi d'altitude et collision).
- * v5.29.31 : Isolation de la logique physique.
- */
-function updateTerrainPhysics(interacting: boolean): void {
-    if (!state.camera || !state.controls) return;
-
-    // v5.28.46 : Altitude du sol sous la caméra (0 en 2D)
-    const groundH = state.IS_2D_MODE ? 0 : getAltitudeAt(state.camera.position.x, state.camera.position.z);
-
-    if (!state.isFlyingTo && !state.isFollowingUser) {
-        // v5.28.46 : En mode 2D, le sol est à 0. On ne doit pas suivre l'altitude réelle.
-        const targetGroundH = state.IS_2D_MODE ? 0 : getAltitudeAt(state.controls.target.x, state.controls.target.z);
-        
-        const diff = targetGroundH - state.controls.target.y;
-        if (Math.abs(diff) > 0.1) {
-            const trackLerp = interacting ? 0.08 : 0.03;
-            const yDelta = diff * trackLerp;
-            state.controls.target.y += yDelta;
-            state.camera.position.y += yDelta;
+        if (state.camera.position.y < groundH + 45) {
+            state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, groundH + 45, 0.2);
+            state.controls.update();
         }
+        state.controls.minDistance = Math.max(100, groundH * 0.1);
     }
-    
-    // v5.28.46 : Sécurité collision sol adaptée au mode 2D
-    if (state.camera.position.y < groundH + 45) {
-        state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, groundH + 45, 0.2);
-        state.controls.update();
-    }
-    state.controls.minDistance = Math.max(100, groundH * 0.1);
-}
 
     const renderLoopFn = () => {
         if (!state.renderer || !state.camera || !state.scene || !state.controls) return;
@@ -596,11 +543,10 @@ function updateTerrainPhysics(interacting: boolean): void {
             && !(isWeatherActive && weatherFrameDue)
             && (idleTime >= 800);
 
-        // v5.29.3 : Deep Sleep (1.5 FPS) si inactif depuis > 30s — idéal pour économiser la batterie en rando
         if (isIdleMode && idleTime > 30000) {
-            if (now - lastRenderTime < 650) return; // ~1.5 FPS
+            if (now - lastRenderTime < 650) return;
         } else if (isIdleMode && (now - lastRenderTime < 50)) {
-            return; // 20 FPS standard idle
+            return;
         }
         
         lastRenderTime = now;
@@ -610,12 +556,9 @@ function updateTerrainPhysics(interacting: boolean): void {
         if (state.sunLight) {
             state.sunLight.castShadow = state.SHADOWS;
             if (state.renderer) {
-                // v5.32.22 : Synchronisation de l'état des ombres
                 if (state.renderer.shadowMap.enabled !== state.SHADOWS) {
                     state.renderer.shadowMap.enabled = state.SHADOWS;
                 }
-                // v5.32.22 : Désactivation du "freeze" des ombres pendant l'interaction
-                // car la position du soleil dépend des coordonnées GPS qui changent lors du déplacement.
                 state.renderer.shadowMap.autoUpdate = true;
             }
         }
@@ -623,7 +566,6 @@ function updateTerrainPhysics(interacting: boolean): void {
         const interacting = state.isUserInteracting;
         const distToTarget = state.camera.position.distanceTo(state.controls.target);
         
-        // v5.29.6 : Persister la vue si on vient d'arrêter d'interagir
         if (!interacting && lastInteracting) {
             saveLastView();
             if (state.renderer && state.SHADOWS) {
@@ -650,8 +592,6 @@ function updateTerrainPhysics(interacting: boolean): void {
             || needsInitialRender > 0
             || state.isFollowingUser;
 
-        // v5.31 : Pre-compute frustum once per frame for tile visibility
-        // v5.40.18 : Zero-allocation pattern — reuse static matrix
         if (state.camera) {
             state.camera.updateMatrixWorld();
             _sharedMatrix.multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
@@ -671,22 +611,13 @@ function updateTerrainPhysics(interacting: boolean): void {
 
             if (state.isSunAnimating) {
                 const mins = (state.simDate.getHours() * 60 + state.simDate.getMinutes() + state.animationSpeed) % 1440;
-                // v5.40.18 : Re-use static date object instead of 'new Date()'
                 _sharedDate.setTime(state.simDate.getTime());
                 _sharedDate.setHours(Math.floor(mins / 60), Math.floor(mins % 60), 0, 0);
                 state.simDate = _sharedDate;
             }
 
             updateTerrainPhysics(interacting);
-
-            // v5.31.1 : Dynamic fog — shrinks near altitude for natural fade
-            if (state.scene.fog instanceof THREE.Fog) {
-                const alt = state.camera.position.y;
-                const fogNear = Math.max(state.FOG_NEAR * 0.3, state.FOG_NEAR - alt * 0.3);
-                const fogFar = state.FOG_FAR + alt * 4.0;
-                state.scene.fog.near = fogNear;
-                state.scene.fog.far = fogFar;
-            }
+            updateEnvironment(state.camera.position.y);
 
             state.renderer.render(state.scene, state.camera);
             state.stats?.end();
@@ -702,8 +633,6 @@ function updateTerrainPhysics(interacting: boolean): void {
                 state.currentFPS = Math.round(fpsFrameCount * 1000 / (fpsTick - fpsLastTime));
                 fpsFrameCount = 0;
                 fpsLastTime = fpsTick;
-                
-                // v5.29.6 : Audit performance
                 checkPerformanceThrottle(state.currentFPS);
             }
         }
@@ -715,26 +644,18 @@ function updateTerrainPhysics(interacting: boolean): void {
 
     visibilityChangeHandler = () => {
         if (!state.renderer) return;
-        if (document.hidden) {
-            state.renderer.setAnimationLoop(null);
-        } else {
-            state.renderer.setAnimationLoop(renderLoopFn);
-        }
+        if (document.hidden) state.renderer.setAnimationLoop(null);
+        else state.renderer.setAnimationLoop(renderLoopFn);
     };
     document.addEventListener('visibilitychange', visibilityChangeHandler);
 
     state.controls?.update();
     state.camera?.updateMatrixWorld(true);
 
-    // v5.28.40 : Premier chargement asynchrone pour ne pas bloquer l'affichage de l'UI
-    setTimeout(() => {
-        void loadTerrain();
-    }, 0);
-
-    // v5.31 : Pre-compile shaders to avoid first-frame stutter
+    setTimeout(() => { void loadTerrain(); }, 0);
     setTimeout(() => {
         if (state.renderer && state.scene && state.camera) {
-            try { state.renderer.compile(state.scene, state.camera); } catch (_) { /* silently ignore */ }
+            try { state.renderer.compile(state.scene, state.camera); } catch (_) {}
         }
     }, 200);
 }

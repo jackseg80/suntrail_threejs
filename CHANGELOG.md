@@ -1,3 +1,9 @@
+## [5.40.20] - 2026-04-27
+### Changed
+- **Engine Modularization** :
+  - **Environment Service** : Extraction de la gestion de l'atmosphère (Ciel, Brouillard dynamique, Lumières) de `scene.ts` vers un nouveau module `environment.ts`.
+  - **Scene Cleanup** : Réduction de la complexité de `scene.ts`, recentré exclusivement sur l'orchestration du rendu et la physique de la caméra.
+
 ## [5.40.19] - 2026-04-27
 ### Changed
 - **Architecture Refactoring (v6.0 Preparation)** :

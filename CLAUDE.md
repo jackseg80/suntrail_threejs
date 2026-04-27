@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.40.18)
+# SunTrail — Guide IA (v5.40.20)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-27 suite à la v5.40.18 (Zero-Allocation Fix).
+> Mis à jour le 2026-04-27 suite à la v5.40.20 (Engine Modularization).
 
 
 ## Projet
@@ -83,6 +83,7 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - `src/modules/gpxService.ts` : (v5.29.37) Import/Export et utilitaires GPX.
 - `src/modules/gpxLayers.ts` : (v5.40.19) Gestion du rendu 3D des tracés (ex-terrain.ts).
 - `src/modules/appInit.ts` : (v5.40.19) Orchestration du démarrage (ex-ui.ts).
+- `src/modules/environment.ts` : (v5.40.20) Ambiance 3D, Fog, Sky, Lights (ex-scene.ts).
 - `src/modules/config.ts` : Résolution centralisée des clés API (Gist/Env).
 - `src/modules/profile.ts` : Graphique d'élévation (v5.29.30: Priorité aux données raw GPX).
 - `src/modules/scene.ts` : Moteur de rendu et boucle principale.
