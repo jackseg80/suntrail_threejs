@@ -1,4 +1,4 @@
-# SunTrail 3D — TODO (v5.40.14)
+# SunTrail 3D — TODO (v5.40.15)
 
 > Guide IA : [CLAUDE.md](../CLAUDE.md) | Historique : [COMPLETED_HISTORY.md](archives/COMPLETED_HISTORY.md)
 
@@ -6,6 +6,7 @@
 
 ## 🎯 Priorité 1 : Finalisation Production (V5.x)
 
+- [x] **Cleanup & Typage (v5.40.15)** : Typage strict des Web Workers et nettoyage chirurgical des logs de production.
 - [x] **Audit Play Store (v5.40.14)** : Unification du nom en "SunTrail 3D" et suppression de la permission battery optimization.
 - [x] **Signalétique Suisse** : Rétablissement des losanges jaunes via filtrage de couches permissif (label/transportation). (v5.40.13)
 - [x] **Transition 2D/3D** : Suppression instantanée des objets 3D lors du switch. (v5.40.13)
