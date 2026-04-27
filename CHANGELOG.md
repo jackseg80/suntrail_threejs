@@ -31,6 +31,11 @@
 
 # Changelog
 
+## [5.40.16] - 2026-04-27
+### Fixed
+- **Configuration Capacitor** : Unification du `appName` en "SunTrail 3D" pour cohérence avec le Store.
+- **Final Audit** : Validation finale des types et des tests (604 tests OK).
+
 ## [5.40.15] - 2026-04-27
 ### Improved
 - **Typage Strict Web Workers** : Sécurisation complète du pipeline de chargement des tuiles avec des interfaces TypeScript pour les messages entre les threads.

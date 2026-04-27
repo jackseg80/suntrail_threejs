@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.40.15)
+# SunTrail — Guide IA (v5.40.16)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-27 suite à la v5.40.15 (Nettoyage & Typage).
+> Mis à jour le 2026-04-27 suite à la v5.40.16 (Release Ready).
 
 
 ## Projet
