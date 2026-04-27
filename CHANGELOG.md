@@ -1,3 +1,7 @@
+## [5.40.22] - 2026-04-27
+### Added
+- **Integrity Testing** : Introduction de `environment.test.ts` pour valider la structure du graphe de scène (Lights, Fog, Sky). Prévient les régressions visuelles silencieuses lors des refactorisations 3D.
+
 ## [5.40.21] - 2026-04-27
 ### Fixed
 - **3D Visuals Fix** : Restauration de la luminosité solaire et des ombres portées suite à la modularisation de l'environnement.
