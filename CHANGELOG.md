@@ -31,6 +31,13 @@
 
 # Changelog
 
+## [5.40.11] - 2026-04-27
+### Added
+- **Signalétique Enrichie** : Restauration des icônes différenciées pour les belvédères (🔭), les abris (🏠) et les points d'information (i).
+- **Moteur de Textures** : Système de génération de textures à la demande par catégorie de POI.
+- **Stabilité de Structure** : Restauration du test d'intégrité de l'initialisation pour prévenir les régressions HTML.
+- **Trail Picking** : Affichage du nom des sentiers au clic (MapTiler & SwissTopo).
+
 Toutes les modifications notables de ce projet seront documentées ici.
 
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),

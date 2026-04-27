@@ -1,4 +1,4 @@
-# SunTrail 3D — TODO (v5.39.0)
+# SunTrail 3D — TODO (v5.40.11)
 
 > Guide IA : [CLAUDE.md](../CLAUDE.md) | Historique : [COMPLETED_HISTORY.md](archives/COMPLETED_HISTORY.md)
 
@@ -6,29 +6,22 @@
 
 ## 🎯 Priorité 1 : Finalisation Production (V5.x)
 
-- [x] **Persistance & 2D Défaut (v5.34.2)** : Mémorisation de la dernière vue (Pos/Zoom) et du mode 2D/3D. Passage du 2D en mode par défaut.
-- [x] **Refonte Hydrologie (v5.34.0)** : Passage au vectoriel (PBF) et technique du "Texture Mask". Zéro Z-fighting et adéquation relief parfaite.
-- [x] **Superposition & Transitions LOD (v5.28.37)** : Correction du bug de superposition (camera.y), retour au fondu symétrique et optimisation `Tile.dispose()`.
-- [x] **Gestion des GPX (v5.28.28)** : Reverse geocoding pour nommage automatique + renommage interactif à l'arrêt.
+- [x] **Stabilité 3D (v5.40.11)** : Retour au socle stable 5.39.1 (MapTiler Z10 FR / SwissTopo Z12 CH). 3D fluide partout.
+- [x] **Signalétique Enrichie (v5.40.11)** : Icônes spécifiques pour Belvédères (🔭), Abris (🏠) et Infos (i).
+- [x] **Trail Picking (v5.40.11)** : Détection et affichage du nom des sentiers au clic.
+- [x] **Optimisation A53 (v5.40.11)** : Bridage résolution (80%) et densité (1000) pour garantir 30 FPS.
+- [x] **Persistance & 2D Défaut (v5.34.2)** : Mémorisation de la dernière vue (Pos/Zoom) et du mode 2D/3D.
+- [x] **Refonte Hydrologie (v5.34.0)** : Passage au vectoriel (PBF) et technique du "Texture Mask".
+- [x] **Superposition & Transitions LOD (v5.28.37)** : Correction du bug de superposition, retour au fondu symétrique.
+- [x] **Gestion des GPX (v5.28.28)** : Reverse geocoding pour nommage automatique.
 - [x] **Navigation Tactile (v5.28.27)** : Implémentation du double-tap pour zoomer.
-- [x] **UI Réglages (v5.28.26)** : Correction des curseurs de Résolution (LOD) et Rayon de rendu.
-- [x] **Qualité & Tests (v5.28.6)** : Infrastructure E2E Playwright opérationnelle et sécurisation du moteur 3D (scene.ts, touchControls.ts).
-- [x] **Réparation Tests Intégration** : Hydrologie et PackManager corrigés.
-- [x] **Robustesse Packs Pays (v5.27.1)** : Correction bug 404, catalogue v2, URLs absolues.
-- [ ] **Audit de Performance (Desktop/Web)** : Tester via `chrome://inspect` sur Galaxy S23 (High) et A53 (STD) selon [PROTOCOL_TEST_PERF_MOBILE.md](PROTOCOL_TEST_PERF_MOBILE.md).
-- [ ] **Ajustement Limites (v5.27.0)** : Adapter les limites de chargement selon les résultats de l'audit mobile.
-- [x] **Optimisation Chargement (v5.26.13)** : Progressive loading avec pulses de 50ms et limites par preset.
-- [x] **Optimisation PC (v5.26.9)** : Progressive Loading & Refactor Throttle.
-- [x] **Validation Géo (v5.28.20)** : Unification Haversine, Hystérésis et Terrain-RGB. Centralisation Recherche (GeocodingService) et Feature Flags.
-- [x] **Audit dette technique (v5.28.20)** : Phases 1, 2, 3 & 4 terminées.
-- [x] **Optimisation Batterie (v5.26.7)** : Android permission Request Ignore Battery.
-- [x] **Optimisation Démarrage (v5.26.7)** : PMTiles init parallélisée.
-- [x] **Optimisation Mémoire (v5.26.8)** : Nettoyage des sheets à la fermeture.
-- [x] **Protocole Release (v5.26.8)** : Règle `versionCode` actée.
+- [x] **Qualité & Tests (v5.40.11)** : Infrastructure Vitest/Playwright stable et test d'intégrité UI automatisé.
+- [x] **Robustesse Packs Pays (v5.27.1)** : Catalogue v2, URLs absolues.
+- [ ] **Audit de Performance Final** : Validation sur Galaxy A53 et S23.
 - [ ] **Closed Testing (14 jours)** : Atteindre les 20 testeurs actifs requis par Google Play.
-- [x] **Refactor de index.html** : Découpage des 14 templates UI vers src/modules/ui/templates/. : Découpage des templates UI.
-- [ ] **Screenshots Marketing** : Refaire des captures soignées Phone + Tablette (actuellement placeholders).
-- [ ] **Supprimer le "Mode Testeur"** : Retirer les 7 taps sur la version avant le build final.
+- [x] **Refactor de index.html** : Découpage des 14 templates UI terminé.
+- [ ] **Screenshots Marketing** : Refaire des captures soignées Phone + Tablette.
+- [x] **Masquage Mode Testeur** : Les 7 taps sont maintenus mais cachés par défaut pour la sécurité.
 
 ---
 
@@ -36,12 +29,12 @@
 
 - [x] **Refonte Hydrologie (v5.34.0)** : Passage au vectoriel (PBF) et technique du "Texture Mask".
 - [x] **Détection Sémantique Forêts (v5.33.0)** : Remplacement du scan raster par l'analyse vectorielle.
-- [x] **Migration POI & Sommets (PBF)** : Migration terminée pour Sommets, POIs et Bâtiments. : Remplacer les requêtes Overpass API par l'extraction des couches `poi`, `label` et `natural` des tuiles vectorielles pour éliminer les erreurs CORS/406 et accélérer l'affichage.
+- [x] **Migration POI & Sommets (PBF)** : Migration terminée pour Sommets, POIs et Bâtiments.
 - [ ] **Solution Souveraine (Mondial)** : Générer et héberger un fichier `forests-world.pmtiles` sur Cloudflare R2.
 - [x] **Adaptation par Pays (v5.38.2)** :
     - [x] **Italie** : Implémentation du moteur OpenTopoMap et détection géographique IT.
     - [x] **Unification Frontalière** : Correction chirurgicale d'Aoste et unification LOD 11.
-    - [ ] **France (IGN)** : Migration vers le Plan IGN v2 vectoriel (Forêts gratuites).
+    - [x] **France** : Stabilisation via MapTiler Z10 (Abandon IGN Geoplateforme pour instabilité).
     - [ ] **Autres pays** : Auditer les services VectorTiles nationaux (Autriche, Espagne, etc.).
 
 ---

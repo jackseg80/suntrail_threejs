@@ -47,9 +47,15 @@ function getPOITexture(category: POICategory): THREE.Texture {
             // Losange jaune classique
             ctx.beginPath();
             ctx.moveTo(32, 6); ctx.lineTo(58, 32); ctx.lineTo(32, 58); ctx.lineTo(6, 32); ctx.closePath();
-            const grad = ctx.createRadialGradient(32, 32, 5, 32, 32, 30);
-            grad.addColorStop(0, '#FFEB3B'); grad.addColorStop(1, '#FBC02D');
-            ctx.fillStyle = grad;
+            
+            if (ctx.createRadialGradient) {
+                const grad = ctx.createRadialGradient(32, 32, 5, 32, 32, 30);
+                grad.addColorStop(0, '#FFEB3B'); grad.addColorStop(1, '#FBC02D');
+                ctx.fillStyle = grad;
+            } else {
+                ctx.fillStyle = '#FBC02D';
+            }
+            
             ctx.fill();
             ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.stroke();
         } else if (category === 'viewpoint') {
@@ -62,7 +68,9 @@ function getPOITexture(category: POICategory): THREE.Texture {
         } else if (category === 'shelter') {
             // Carré vert avec icône abri
             ctx.fillStyle = '#10b981';
+            // @ts-ignore
             if (ctx.roundRect) {
+                // @ts-ignore
                 ctx.roundRect(8, 8, 48, 48, 8);
             } else {
                 ctx.rect(8, 8, 48, 48);
@@ -87,26 +95,21 @@ function getPOITexture(category: POICategory): THREE.Texture {
 }
 
 export async function loadPOIsForTile(tile: Tile) {
-    if (!state.SHOW_SIGNPOSTS || tile.zoom < state.POI_ZOOM_THRESHOLD || tile.status !== 'loaded') return;
+    if (!state.SHOW_SIGNPOSTS || tile.zoom < state.POI_ZOOM_THRESHOLD || (tile.status as string) === 'disposed') return;
     if (tile.poiGroup) return;
 
-    if (state.isUserInteracting) {
-        setTimeout(() => loadPOIsForTile(tile), 1000);
-        return;
-    }
-    const zoneZ = 14;
-    const ratio = Math.pow(2, tile.zoom - zoneZ);
-    const zx = Math.floor(tile.tx / ratio);
-    const zy = Math.floor(tile.ty / ratio);
+    const n = Math.pow(2, tile.zoom);
+    const lonC = (tile.tx + 0.5) / n * 360 - 180;
+    const latC = Math.atan(Math.sinh(Math.PI * (1 - 2 * (tile.ty + 0.5) / n))) * 180 / Math.PI;
+    const inCH = isPositionInSwitzerland(latC, lonC);
     
-    const n = Math.pow(2, zoneZ);
-    const lon = (zx + 0.5) / n * 360 - 180;
-    const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (zy + 0.5) / n)));
-    const lat = latRad * 180 / Math.PI;
-    const inCH = isPositionInSwitzerland(lat, lon);
+    // Zoom fixe pour la signalétique (v5.38.4) : Z14 SwissTopo, Z12 MapTiler
+    const requestZoom = inCH ? 14 : 12;
+    const ratio = Math.pow(2, tile.zoom - requestZoom);
+    const rtx = Math.floor(tile.tx / ratio), rty = Math.floor(tile.ty / ratio);
+    const zoneKey = `${requestZoom}/${rtx}/${rty}`;
 
-    const zoneKey = `poi_z${zoneZ}_${zx}_${zy}_${inCH ? 'ch' : 'mt'}`;
-
+    // Éviter de re-fetcher si une erreur récente a eu lieu sur cette zone
     const failTime = zoneFailureCooldown.get(zoneKey);
     if (failTime && Date.now() < failTime) return;
 
@@ -115,27 +118,15 @@ export async function loadPOIsForTile(tile: Tile) {
     if (!pois) {
         let promise = poiFetchPromises.get(zoneKey);
         if (!promise) {
-            promise = fetchPOIsWithCache(zoneZ, zx, zy, zoneKey, inCH);
+            promise = fetchPOIsWithCache(requestZoom, rtx, rty, zoneKey, inCH);
             poiFetchPromises.set(zoneKey, promise);
         }
         pois = await promise;
-        if (pois) {
-            poiMemoryCache.set(zoneKey, pois);
-        } else {
-            zoneFailureCooldown.set(zoneKey, Date.now() + 60000);
-        }
         poiFetchPromises.delete(zoneKey);
     }
 
-    if (!pois || pois.length === 0 || (tile.status as string) === 'disposed') return;
-
-    const bounds = tile.getBounds();
-    const tilePOIs = pois.filter(el => {
-        return el.lat <= bounds.north && el.lat >= bounds.south && el.lon <= bounds.east && el.lon >= bounds.west;
-    });
-
-    if (tilePOIs.length > 0) {
-        renderPOIs(tile, tilePOIs);
+    if (pois && pois.length > 0) {
+        renderPOIs(tile, pois);
     }
 }
 
@@ -143,32 +134,34 @@ async function fetchPOIsWithCache(z: number, x: number, y: number, key: string, 
     try {
         const cache = await caches.open(CACHE_NAME);
         const cached = await cache.match(key);
-        if (cached) return await cached.json();
-    } catch (e) {}
+        let buffer: ArrayBuffer;
 
-    let url = "";
-    if (inCH) {
-        url = `https://vectortiles.geo.admin.ch/tiles/ch.swisstopo.base.vt/v1.0.0/${z}/${x}/${y}.pbf`;
-    } else {
-        if (!state.MK || state.isMapTilerDisabled) return null;
-        url = `https://api.maptiler.com/tiles/v3/${z}/${x}/${y}.pbf?key=${state.MK}`;
-    }
+        if (cached) {
+            buffer = await cached.arrayBuffer();
+        } else {
+            const url = inCH 
+                ? `https://vectortiles.geo.admin.ch/tiles/ch.swisstopo.base.vt/v1.0.0/${z}/${x}/${y}.pbf`
+                : `https://api.maptiler.com/tiles/v3/${z}/${x}/${y}.pbf?key=${state.MK}`;
+            
+            const res = await fetch(url, { referrerPolicy: 'same-origin' });
+            if (!res.ok) {
+                zoneFailureCooldown.set(key, Date.now() + 60000); 
+                return null;
+            }
+            buffer = await res.arrayBuffer();
+            void cache.put(key, new Response(buffer.slice(0)));
+        }
 
-    try {
-        const res = await fetch(url, { referrerPolicy: 'same-origin' });
-        if (!res.ok) return null;
-        const buffer = await res.arrayBuffer();
-        
         // @ts-ignore
         const PbfConstructor = Pbf.default || Pbf;
         const vtile = new VectorTile(new PbfConstructor(buffer));
         
         const elements: POIData[] = [];
         const layers = Object.keys(vtile.layers);
-        
+
         layers.forEach(layerName => {
             const layer = vtile.layers[layerName];
-            if (!layer) return;
+            if (!layerName.toLowerCase().includes('poi') && !layerName.toLowerCase().includes('point')) return;
 
             for (let i = 0; i < layer.length; i++) {
                 const feat = layer.feature(i);
@@ -176,7 +169,7 @@ async function fetchPOIsWithCache(z: number, x: number, y: number, key: string, 
                 const raw = JSON.stringify(props).toLowerCase();
 
                 let category: POICategory | null = null;
-                
+
                 // Logique de catégorisation améliorée
                 if (props.class === 'viewpoint' || props.tourism === 'viewpoint') {
                     category = 'viewpoint';
@@ -191,9 +184,9 @@ async function fetchPOIsWithCache(z: number, x: number, y: number, key: string, 
                 if (category) {
                     const geom = feat.loadGeometry()[0][0];
                     const extent = layer.extent || 4096;
-                    
-                    const lon = (x + geom.x / extent) / Math.pow(2, z) * 360 - 180;
-                    const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (y + geom.y / extent) / Math.pow(2, z))));
+
+                    const lon = geom.x / extent * 360 / Math.pow(2, z) + x * 360 / Math.pow(2, z) - 180;
+                    const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (geom.y / extent + y) / Math.pow(2, z))));
                     const lat = latRad * 180 / Math.PI;
 
                     elements.push({
@@ -211,19 +204,17 @@ async function fetchPOIsWithCache(z: number, x: number, y: number, key: string, 
         const uniqueElements = Array.from(new Map(elements.map(e => [`${e.lat.toFixed(5)}|${e.lon.toFixed(5)}`, e])).values());
 
         try {
-            const cache = await caches.open(CACHE_NAME);
-            await cache.put(key, new Response(JSON.stringify(uniqueElements)));
+            poiMemoryCache.set(key, uniqueElements);
         } catch(e) {}
         
         return uniqueElements;
     } catch (e) {
-        console.warn('[POI] PBF Fetch failed:', e);
         return null;
     }
 }
 
 function renderPOIs(tile: Tile, elements: POIData[]) {
-    if (tile.status !== 'loaded' || !state.scene) return;
+    if ((tile.status as string) !== 'loaded' || !state.scene) return;
 
     const group = new THREE.Group();
     
@@ -232,7 +223,7 @@ function renderPOIs(tile: Tile, elements: POIData[]) {
 
     elements.forEach(el => {
         const local = tile.lngLatToLocal(el.lon, el.lat);
-        
+
         let h = 0;
         if (!state.IS_2D_MODE) {
             const worldX = tile.worldX + local.x;
@@ -251,15 +242,18 @@ function renderPOIs(tile: Tile, elements: POIData[]) {
             }));
         }
 
-        const sprite = new THREE.Sprite(materials.get(el.category));
-        sprite.scale.set(24, 24, 1);
-        sprite.position.set(local.x, h + 12, local.z);
-        sprite.userData = { name: el.name, lat: el.lat, lon: el.lon, category: el.category };
-        group.add(sprite);
+        const mat = materials.get(el.category);
+        if (mat) {
+            const sprite = new THREE.Sprite(mat);
+            sprite.scale.set(24, 24, 1);
+            sprite.position.set(local.x, h + 12, local.z);
+            sprite.userData = { name: el.name, lat: el.lat, lon: el.lon, category: el.category };
+            group.add(sprite);
+        }
     });
 
     if (tile.poiGroup && state.scene) state.scene.remove(tile.poiGroup);
-    
+
     tile.poiGroup = group;
     tile.poiGroup.position.set(tile.worldX, 0, tile.worldZ);
     state.scene.add(tile.poiGroup);
