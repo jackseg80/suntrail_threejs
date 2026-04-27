@@ -160,7 +160,7 @@ export async function initScene(): Promise<void> {
     state.renderer = new THREE.WebGLRenderer({ antialias: useAntialias, logarithmicDepthBuffer: true, alpha: true });
     state.renderer.setSize(window.innerWidth, window.innerHeight, false);
     state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
-    state.renderer.shadowMap.enabled = true;
+    state.renderer.shadowMap.enabled = state.SHADOWS;
     state.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     state.renderer.toneMapping = THREE.AgXToneMapping;
     container.appendChild(state.renderer.domElement);
@@ -375,21 +375,6 @@ export async function initScene(): Promise<void> {
     }, 1000);
     currentThrottledSunUpdate = throttledSunUpdate;
     state.controls!.addEventListener('change', currentThrottledSunUpdate);
-
-    state.sunLight!.castShadow = state.SHADOWS;
-    state.sunLight!.shadow.mapSize.set(state.SHADOW_RES, state.SHADOW_RES);
-    state.sunLight!.shadow.camera.left = -2500; state.sunLight!.shadow.camera.right = 2500;
-    state.sunLight!.shadow.camera.top = 2500; state.sunLight!.shadow.camera.bottom = -2500;
-    state.sunLight!.shadow.camera.near = 100; state.sunLight!.shadow.camera.far = 200000;
-    
-    if (isMobile) {
-        state.sunLight!.shadow.bias = -0.0005; 
-        state.sunLight!.shadow.normalBias = 0.02; 
-    } else {
-        state.sunLight!.shadow.bias = -0.0001; 
-        state.sunLight!.shadow.normalBias = 0.01;
-    }
-    state.scene.add(state.sunLight!.target);
 
     initVegetationResources();
     initWeatherSystem(state.scene);

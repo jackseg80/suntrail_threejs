@@ -1,3 +1,9 @@
+## [5.40.21] - 2026-04-27
+### Fixed
+- **3D Visuals Fix** : Restauration de la luminosité solaire et des ombres portées suite à la modularisation de l'environnement.
+  - Correction de l'ajout de la lumière directionnelle et de sa cible à la scène 3D.
+  - Harmonisation de l'activation du ShadowMap avec l'état global.
+
 ## [5.40.20] - 2026-04-27
 ### Changed
 - **Engine Modularization** :
