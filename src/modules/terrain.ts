@@ -217,7 +217,7 @@ export function autoSelectMapSource(lat: number, lon: number): void {
     
     let newSource = (state.ZOOM > 10 && (isPositionInSwitzerland(lat, lon) || isPositionInFrance(lat, lon))) ? 'swisstopo' : 'opentopomap';
     if (state.MAP_SOURCE !== newSource) {
-        console.log(`[Terrain] Auto-switching source to ${newSource} based on location`);
+        if (state.DEBUG_MODE) console.log(`[Terrain] Auto-switching source to ${newSource} based on location`);
         state.MAP_SOURCE = newSource;
         document.querySelectorAll('.layer-item').forEach(i => { i.classList.remove('active'); if ((i as HTMLElement).dataset.source === newSource) i.classList.add('active'); });
         if (state.camera && state.controls) {

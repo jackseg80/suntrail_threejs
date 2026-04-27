@@ -9,9 +9,10 @@ import { updateStorageUI } from './tileLoader';
 import { reportNetworkFailure, reportNetworkSuccess } from './networkMonitor';
 import { rotateMapTilerKey } from './config';
 import { disposeAllCachedTiles } from './tileCache';
+import type { TileWorkerRequest, TileWorkerResponse } from '../types/worker';
 
 interface WorkerTask {
-    resolve: (value: any) => void;
+    resolve: (value: TileWorkerResponse | null) => void;
     reject: (reason: any) => void;
 }
 
@@ -23,7 +24,7 @@ class TileWorkerManager {
     /** Quel worker gère quelle task — nécessaire pour envoyer le message cancel au bon worker. */
     private taskWorkerMap = new Map<number, Worker>();
     /** Dédoublonnage des requêtes en cours pour éviter de surcharger les workers. */
-    private inFlight = new Map<string, { promise: Promise<any>, taskId: number, refCount: number }>();
+    private inFlight = new Map<string, { promise: Promise<TileWorkerResponse | null>, taskId: number, refCount: number }>();
 
     constructor(poolSize?: number) {
         if (typeof Worker === 'undefined') return;
@@ -35,14 +36,14 @@ class TileWorkerManager {
 
         for (let i = 0; i < count; i++) {
             const worker = new Worker(new URL('../workers/tileWorker.ts', import.meta.url), { type: 'module' });
-            worker.onmessage = (e) => this.handleMessage(e);
+            worker.onmessage = (e: MessageEvent<TileWorkerResponse>) => this.handleMessage(e);
             worker.onerror = (e) => console.error('[WorkerManager] Worker crash:', e.message, e.filename, e.lineno);
             this.workers.push(worker);
         }
-        console.log(`[WorkerManager] Initialized with ${this.workers.length} workers.`);
+        if (state.DEBUG_MODE) console.log(`[WorkerManager] Initialized with ${this.workers.length} workers.`);
     }
 
-    private handleMessage(e: MessageEvent) {
+    private handleMessage(e: MessageEvent<TileWorkerResponse>) {
         const { id, error, cacheHits, networkRequests, forbidden, rateLimited, networkError, ...data } = e.data;
 
         // v5.29.5 : On cherche à quelle clé inFlight cette task correspond pour la nettoyer
@@ -83,7 +84,7 @@ class TileWorkerManager {
         if (error) {
             task.reject(error);
         } else {
-            task.resolve(data);
+            task.resolve({ id, cacheHits, networkRequests, ...data } as TileWorkerResponse);
         }
     }
 
@@ -92,7 +93,7 @@ class TileWorkerManager {
         zoom: number, elevSourceZoom: number = zoom,
         blobs?: { elev?: Blob | null, color?: Blob | null, overlay?: Blob | null },
         is2D: boolean = false
-    ): { promise: Promise<any>, taskId: number } {
+    ): { promise: Promise<TileWorkerResponse | null>, taskId: number } {
         if (this.workers.length === 0 || !state.USE_WORKERS) return { promise: Promise.resolve(null), taskId: -1 };
 
         // v5.29.5 : Dédoublonnage in-flight
@@ -108,7 +109,7 @@ class TileWorkerManager {
         this.nextWorkerIndex = (this.nextWorkerIndex + 1) % this.workers.length;
         this.taskWorkerMap.set(id, worker);
 
-        const promise = new Promise<any>((resolve, reject) => {
+        const promise = new Promise<TileWorkerResponse | null>((resolve, reject) => {
             let settled = false;
 
             const timeout = setTimeout(() => {
@@ -121,7 +122,7 @@ class TileWorkerManager {
             }, 15000);
 
             this.tasks.set(id, {
-                resolve: (data: any) => {
+                resolve: (data: TileWorkerResponse | null) => {
                     if (settled) return;
                     settled = true;
                     clearTimeout(timeout);
@@ -135,13 +136,14 @@ class TileWorkerManager {
                 }
             });
 
-            worker.postMessage({ 
+            const msg: TileWorkerRequest = { 
                 id, elevUrl, colorUrl, overlayUrl, isOffline: state.IS_OFFLINE, zoom, elevSourceZoom,
                 is2D,
                 elevBlob: blobs?.elev,
                 colorBlob: blobs?.color,
                 overlayBlob: blobs?.overlay
-            });
+            };
+            worker.postMessage(msg);
         });
 
         this.inFlight.set(dedupeKey, { promise, taskId: id, refCount: 1 });

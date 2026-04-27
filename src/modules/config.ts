@@ -89,12 +89,12 @@ export function rotateMapTilerKey(): boolean {
     // (Brave may temporarily strip Referer, causing 403 on valid keys)
     const BAN_COOLDOWN_MS = 120_000;
     if (Date.now() - banTimestamp > BAN_COOLDOWN_MS) {
-        console.log("[Config] Reset MapTiler bans after cooldown — retrying...");
+        if (state.DEBUG_MODE) console.log("[Config] Reset MapTiler bans after cooldown — retrying...");
         bannedKeys.clear();
         state.isMapTilerDisabled = false;
         if (availableKeys.length > 0) {
             state.MK = availableKeys[Math.floor(Math.random() * availableKeys.length)];
-            console.log(`[Config] Retry avec clé : ${state.MK.substring(0, 8)}...`);
+            if (state.DEBUG_MODE) console.log(`[Config] Retry avec clé : ${state.MK.substring(0, 8)}...`);
             return true;
         }
     }

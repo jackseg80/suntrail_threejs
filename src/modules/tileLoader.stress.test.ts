@@ -38,7 +38,7 @@ describe('TileLoader Stress Test', () => {
         expect(resultsWrappers.length).toBe(100);
         
         const results = await Promise.all(resultsWrappers.map(w => w.promise));
-        results.forEach(res => {
+        results.forEach((res: any) => {
             expect(res).not.toBeNull();
             expect(res.elevBitmap).toBeDefined();
         });
@@ -51,6 +51,6 @@ describe('TileLoader Stress Test', () => {
         }
         const resultsWrappers = await Promise.all(requests);
         const results = await Promise.all(resultsWrappers.map(w => w.promise));
-        expect(results.every(r => r !== null)).toBe(true);
+        expect(results.every((r: any) => r !== null)).toBe(true);
     });
 });

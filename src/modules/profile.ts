@@ -38,7 +38,7 @@ export function updateElevationProfile(layerId?: string): void {
     }
 
     const gpxPoints3D = layer.points;
-    console.log('[Profile] Points count:', gpxPoints3D.length);
+    if (state.DEBUG_MODE) console.log('[Profile] Points count:', gpxPoints3D.length);
 
     // v5.29.32: Utiliser en priorité les données GPX brutes pour l'altitude
     // avec un mapping correct de l'index pour supporter les points densifiés.

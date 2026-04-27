@@ -61,7 +61,7 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
         const now = Date.now();
         const isTest = (globalThis as any).process?.env?.NODE_ENV === 'test' || (import.meta as any).env?.MODE === 'test';
         if (!isTest && now - lastFetchTime < MIN_FETCH_INTERVAL) {
-            console.log('[Weather] Rate limited - waiting before next request');
+            if (state.DEBUG_MODE) console.log('[Weather] Rate limited - waiting before next request');
             return;
         }
 

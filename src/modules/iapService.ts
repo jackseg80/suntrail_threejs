@@ -50,7 +50,7 @@ class IAPService {
 
         // RevenueCat ne fonctionne que sur Android/iOS natif
         if (!Capacitor.isNativePlatform()) {
-            console.log('[IAP] Web platform — RevenueCat skipped.');
+            if (state.DEBUG_MODE) console.log('[IAP] Web platform — RevenueCat skipped.');
             return;
         }
         if (!sdkKey || sdkKey.length < 10) {

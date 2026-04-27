@@ -87,7 +87,7 @@ class PackManager {
                       params.get('allpacks') === 'true' || params.get('dev') === 'true';
 
         if (isDev) {
-            console.log('[Packs] Dev mode détecté : déblocage de tous les packs.');
+            if (state.DEBUG_MODE) console.log('[Packs] Dev mode détecté : déblocage de tous les packs.');
             for (const meta of this.getAvailablePacks()) {
                 this.markPurchased(meta.id);
             }
@@ -97,7 +97,7 @@ class PackManager {
         await this.mountAllInstalled();
         // Sync pack purchases avec RevenueCat (restaure après clear storage)
         this.syncPackPurchases().catch(() => {});
-        console.log(`[Packs] Initialisé. ${this.mountedArchives.size} pack(s) monté(s).`);
+        if (state.DEBUG_MODE) console.log(`[Packs] Initialisé. ${this.mountedArchives.size} pack(s) monté(s).`);
     }
 
     /**
@@ -120,7 +120,7 @@ class PackManager {
                 if (ps.status === 'purchased' || ps.status === 'not_purchased') {
                     try {
                         await packsDir.getFileHandle(`${meta.id}.pmtiles`);
-                        console.log(`[Packs] ${meta.id}: fichier trouvé sur disque, restauration de l'état 'installed'.`);
+                        if (state.DEBUG_MODE) console.log(`[Packs] ${meta.id}: fichier trouvé sur disque, restauration de l'état 'installed'.`);
                         ps.status = 'installed';
                         ps.installedVersion = ps.installedVersion || meta.version;
                         ps.sizeMB = meta.sizeMB;

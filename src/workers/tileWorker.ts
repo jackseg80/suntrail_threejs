@@ -43,7 +43,11 @@ function resetMapTilerBackoff(): void {
     _maptilerBackoffMs = 500;
 }
 
-self.onmessage = async (e) => {
+import type { TileWorkerRequest, TileWorkerResponse } from '../types/worker';
+
+// ... (backoff functions unchanged)
+
+self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
     const { id, type, elevUrl, colorUrl, overlayUrl, isOffline, zoom, elevSourceZoom, is2D, elevBlob, colorBlob, overlayBlob } = e.data;
 
     // --- ANNULATION ---
@@ -60,14 +64,14 @@ self.onmessage = async (e) => {
     const { signal } = controller;
 
     try {
-        const results: any = { id, cacheHits: 0, networkRequests: 0 };
+        const results: TileWorkerResponse = { id, cacheHits: 0, networkRequests: 0 };
         const transferables: Transferable[] = [];
 
         // --- EXÉCUTION PARALLÈLE ---
         const [elevRes, colorRes, overlayRes] = await Promise.all([
-            elevUrl ? fetchTile(elevUrl, isOffline, signal, elevBlob) : Promise.resolve(null),
-            colorUrl ? fetchTile(colorUrl, isOffline, signal, colorBlob) : Promise.resolve(null),
-            overlayUrl ? fetchTile(overlayUrl, isOffline, signal, overlayBlob) : Promise.resolve(null)
+            elevUrl ? fetchTile(elevUrl, isOffline, signal, elevBlob || undefined) : Promise.resolve(null),
+            colorUrl ? fetchTile(colorUrl, isOffline, signal, colorBlob || undefined) : Promise.resolve(null),
+            overlayUrl ? fetchTile(overlayUrl, isOffline, signal, overlayBlob || undefined) : Promise.resolve(null)
         ]);
 
         // Si la task a été annulée pendant les fetches, ne pas répondre
@@ -75,8 +79,8 @@ self.onmessage = async (e) => {
 
         if (elevRes) {
             if (elevRes.forbidden) results.forbidden = true;
-            if ((elevRes as any).rateLimited) results.rateLimited = true;
-            if ((elevRes as any).networkError) results.networkError = true;
+            if (elevRes.rateLimited) results.rateLimited = true;
+            if (elevRes.networkError) results.networkError = true;
             if (elevRes.fromCache) results.cacheHits++; else results.networkRequests++;
             if (elevRes.bitmap) {
                 results.elevBitmap = elevRes.bitmap;
@@ -138,8 +142,8 @@ self.onmessage = async (e) => {
 
         if (colorRes) {
             if (colorRes.forbidden) results.forbidden = true;
-            if ((colorRes as any).rateLimited) results.rateLimited = true;
-            if ((colorRes as any).networkError) results.networkError = true;
+            if (colorRes.rateLimited) results.rateLimited = true;
+            if (colorRes.networkError) results.networkError = true;
             if (colorRes.fromCache) results.cacheHits++; else results.networkRequests++;
             if (colorRes.bitmap) {
                 results.colorBitmap = colorRes.bitmap;
@@ -149,8 +153,8 @@ self.onmessage = async (e) => {
 
         if (overlayRes) {
             if (overlayRes.forbidden) results.forbidden = true;
-            if ((overlayRes as any).rateLimited) results.rateLimited = true;
-            if ((overlayRes as any).networkError) results.networkError = true;
+            if (overlayRes.rateLimited) results.rateLimited = true;
+            if (overlayRes.networkError) results.networkError = true;
             if (overlayRes.fromCache) results.cacheHits++; else results.networkRequests++;
             if (overlayRes.bitmap) {
                 results.overlayBitmap = overlayRes.bitmap;

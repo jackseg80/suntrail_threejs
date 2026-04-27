@@ -102,14 +102,14 @@ class NativeGPSService {
                         const now = Date.now();
                         const lastPt = points.length > 0 ? points[points.length - 1] : null;
                         if (lastPt && (now - lastPt.timestamp > 48 * 3600 * 1000)) {
-                            console.log('[NativeGPSService] Vieux points expirés (>48h), purge.');
+                            if (state.DEBUG_MODE) console.log('[NativeGPSService] Vieux points expirés (>48h), purge.');
                             await Preferences.remove({ key: STORAGE_KEY_POINTS });
                             await Preferences.remove({ key: STORAGE_KEY_COURSE_ID });
                             await Preferences.remove({ key: STORAGE_KEY_START_TIME });
                             return;
                         }
 
-                        console.log('[NativeGPSService] Recovery via Preferences détectée');
+                        if (state.DEBUG_MODE) console.log('[NativeGPSService] Recovery via Preferences détectée');
                         state.recordedPoints = points;
                         state.currentCourseId = savedCourseId.value;
                         this.currentCourseId = savedCourseId.value;
@@ -285,7 +285,7 @@ class NativeGPSService {
 
         // v5.29.38 : Listener pour arrêt via notification Android
         RecordingNative.addListener('onServiceStopped', () => {
-            console.log('[NativeGPSService] Service stopped from notification');
+            if (state.DEBUG_MODE) console.log('[NativeGPSService] Service stopped from notification');
             if (state.isRecording) {
                 recordingService.stopRecording();
             }

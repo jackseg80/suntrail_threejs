@@ -31,6 +31,11 @@
 
 # Changelog
 
+## [5.40.15] - 2026-04-27
+### Improved
+- **Typage Strict Web Workers** : Sécurisation complète du pipeline de chargement des tuiles avec des interfaces TypeScript pour les messages entre les threads.
+- **Console Cleanup** : Suppression ou conditionnement (via `state.DEBUG_MODE`) des logs de développement dans le code de production pour une console plus propre.
+
 ## [5.40.14] - 2026-04-27
 ### Fixed
 - **Audit Google Play Store** : Unification du nom de l'application en "SunTrail 3D".

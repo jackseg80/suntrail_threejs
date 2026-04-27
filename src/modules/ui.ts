@@ -203,7 +203,7 @@ export async function initUI(): Promise<void> {
 
     // Hydratation des composants lourds en arrière-plan (non-bloquant)
     void _initSecondaryUI().then(() => {
-        console.log('[UI] Secondary UI Hydrated');
+        if (state.DEBUG_MODE) console.log('[UI] Secondary UI Hydrated');
     });
 
     (window as any).sheetManager = sheetManager;
