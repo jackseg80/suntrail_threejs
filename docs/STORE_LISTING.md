@@ -16,25 +16,26 @@ Carte topo 3D avec simulation solaire : voyez les ombres sur le relief en temps 
 ```
 ⛰️ Préparez vos sorties comme jamais : voyez exactement quand le soleil éclaire votre sentier.
 
-SunTrail 3D est la seule application de randonnée qui projette les ombres du soleil sur un vrai terrain 3D. Pas une estimation sur carte plate — un calcul topographique précis qui montre heure par heure quand une vallée, un bivouac ou un col est au soleil ou à l'ombre. Indispensable pour choisir l'heure de départ, éviter un passage exposé, ou repérer le meilleur emplacement de bivouac.
+SunTrail 3D est la seule application de randonnée qui projette les ombres du soleil sur un vrai terrain 3D. Contrairement aux cartes plates, notre moteur calcule heure par heure quand une vallée, un bivouac ou un col est au soleil ou à l'ombre. Indispensable pour choisir l'heure de départ, éviter un passage glacé le matin, ou repérer le meilleur emplacement de bivouac.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 ☀️ SIMULATION SOLAIRE — CE QUI NOUS REND UNIQUES
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Ombres portées en temps réel sur le relief 3D — pas un aplat, mais le vrai terrain
+• Ombres portées en temps réel sur le relief 3D — le vrai terrain projeté
+• **Forêts & Bâtiments** : Les ombres se projettent sur les massifs forestiers et les bâtiments 3D pour un réalisme saisissant.
 • Glissez le curseur d'heure : voyez les ombres se déplacer dans les vallées
 • Lever, coucher, heure dorée, crépuscule — chaque phase visualisée sur la carte
 • Version Pro : simulez n'importe quel jour de l'année pour planifier à l'avance
 • Analyse solaire complète : azimut, élévation, graphique 24h, phase lunaire
 
 ━━━━━━━━━━━━━━━━━━━━━━━
-🗺️ CARTES TOPOGRAPHIQUES DE PRÉCISION
+🗺️ CARTES TOPOGRAPHIQUES & DISPONIBILITÉ
 ━━━━━━━━━━━━━━━━━━━━━━━
-• SwissTopo — la référence officielle suisse, précision au mètre
-• IGN / Géoplateforme — cartographie officielle de la France
+• SwissTopo (Suisse) — la référence officielle, précision au mètre
+• IGN / Géoplateforme (France) — cartographie officielle haute précision
 • OpenTopoMap & OpenStreetMap — couverture mondiale
 • Vue satellite HD (Pro)
-• Sentiers de randonnée balisés + carte des pentes dangereuses (30°/35°/40°+)
+• **Évolution Constante** : SunTrail est en développement actif. Certaines fonctionnalités avancées (bâtiments HD, signalétique précise) peuvent varier d'un pays à l'autre selon les données disponibles, mais nous étendons la couverture chaque jour !
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 🧭 NAVIGATION 3D INTUITIVE

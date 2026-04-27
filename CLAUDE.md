@@ -7,6 +7,9 @@
 ## Projet
 
 App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacitor).
+- **Simulation Solaire Unique** : Calcul d'ombres portées en temps réel sur le relief, mais aussi sur les **forêts (InstancedMesh)** et les **bâtiments 3D**, offrant un réalisme topographique inégalé.
+- **Analyse Topographique** : Moteur d'analyse de profil, stats de précision (D+/D-, VAM) et inclinomètre numérique pro.
+- **Disponibilité Géo** : Fonctionnalités HD variables selon les pays (priorité CH/FR/IT), projet en évolution constante pour étendre la couverture des données haute fidélité.
 - **Core** : LOD adaptatif, PMTiles, Offline-first, Support GPX.
 - **Hydrologie v5.34.0** : Refonte totale via Vector Tiles PBF (SwissTopo/MapTiler) et technique du "Texture Mask". Zéro Z-fighting, précision au pixel, adéquation relief parfaite.
 - **Végétation v5.33.1** : Détection sémantique vectorielle (SwissTopo/MapTiler), filtrage par BBox optimisé (v5.34.0).
