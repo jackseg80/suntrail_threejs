@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { addGPXLayer } from '../terrain';
+import { addGPXLayer } from '../gpxLayers';
 import { state } from '../state';
 import * as THREE from 'three';
 

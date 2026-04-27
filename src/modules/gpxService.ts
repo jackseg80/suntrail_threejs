@@ -6,7 +6,8 @@ import gpxParser from 'gpxparser';
 import { state, isProActive } from './state';
 import { showUpgradePrompt } from './iap';
 import { haptic } from './haptics';
-import { addGPXLayer, updateVisibleTiles } from './terrain';
+import { addGPXLayer } from './gpxLayers';
+import { updateVisibleTiles } from './terrain';
 import { lngLatToTile } from './geo';
 
 export class GPXService {

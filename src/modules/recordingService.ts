@@ -13,7 +13,7 @@ import { i18n } from '../i18n/I18nService';
 import gpxParser from 'gpxparser';
 import { startRecordingService, stopRecordingService } from './foregroundService';
 import { nativeGPSService } from './nativeGPSService';
-import { addGPXLayer } from './terrain';
+import { addGPXLayer } from './gpxLayers';
 import { requestGPSDisclosure } from './gpsDisclosure';
 import { getPlaceName } from './geocodingService';
 import { Capacitor } from '@capacitor/core';

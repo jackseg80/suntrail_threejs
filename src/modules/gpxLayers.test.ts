@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as THREE from 'three';
-import { addGPXLayer } from './terrain';
+import { addGPXLayer } from './gpxLayers';
 import { state } from './state';
 
 describe('Multi-GPX Layers (v5.10)', () => {

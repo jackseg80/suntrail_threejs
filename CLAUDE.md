@@ -81,6 +81,8 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - `src/modules/iapService.ts` : Liaison RevenueCat ↔ Google Play.
 - `src/modules/recordingService.ts` : (v5.29.37) Logique orchestrée d'enregistrement GPS.
 - `src/modules/gpxService.ts` : (v5.29.37) Import/Export et utilitaires GPX.
+- `src/modules/gpxLayers.ts` : (v5.40.19) Gestion du rendu 3D des tracés (ex-terrain.ts).
+- `src/modules/appInit.ts` : (v5.40.19) Orchestration du démarrage (ex-ui.ts).
 - `src/modules/config.ts` : Résolution centralisée des clés API (Gist/Env).
 - `src/modules/profile.ts` : Graphique d'élévation (v5.29.30: Priorité aux données raw GPX).
 - `src/modules/scene.ts` : Moteur de rendu et boucle principale.

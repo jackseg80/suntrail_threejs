@@ -7,7 +7,7 @@ import { showUpgradePrompt } from '../../iap';
 import { haptic } from '../../haptics';
 import { i18n } from '../../../i18n/I18nService';
 import { clearInterruptedRecording, stopRecordingService } from '../../foregroundService';
-import { removeGPXLayer, toggleGPXLayer, updateRecordedTrackMesh } from '../../terrain';
+import { removeGPXLayer, toggleGPXLayer, updateRecordedTrackMesh } from '../../gpxLayers';
 import { lngLatToWorld } from '../../geo';
 import { updateElevationProfile } from '../../profile';
 import { eventBus } from '../../eventBus';

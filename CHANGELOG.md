@@ -1,3 +1,13 @@
+## [5.40.19] - 2026-04-27
+### Changed
+- **Architecture Refactoring (v6.0 Preparation)** :
+  - **Modular GPX Engine** : Extraction de toute la logique de gestion des tracés GPX (rendu 3D, matériaux partagés, simplification RDP adaptative) de `terrain.ts` vers un nouveau module `gpxLayers.ts`.
+  - **App Orchestration** : Création de `appInit.ts` pour centraliser la séquence d'initialisation complexe (Services, UI, Scène), transformant `ui.ts` en un point d'entrée léger.
+  - **Cohesion & SRP** : Réduction de la dette technique en appliquant le principe de responsabilité unique (SRP) aux modules fondamentaux du moteur.
+
+### Fixed
+- **Test Stability** : Adaptation de la suite de tests (604 tests) pour valider la nouvelle structure d'imports et les espions de modules.
+
 ## [5.40.18] - 2026-04-27
 ### Fixed
 - **Zero-Allocation Finalization** : Utilisation effective de l'objet `Date` partagé dans la boucle d'animation pour supprimer toute allocation d'objet temporelle.

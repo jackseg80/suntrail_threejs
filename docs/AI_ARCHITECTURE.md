@@ -1,4 +1,4 @@
-# AI Architecture Guide (v5.29.44)
+# AI Architecture Guide (v5.40.19)
 
 This document maps the core reactive logic and rendering systems to help AI agents understand how modules interact.
 
@@ -11,7 +11,9 @@ To improve testability and keep UI components lean, business logic is extracted 
 | `expertService` | Weather reporting, Solar analysis, SOS message generation. | `generateSOSMessage`, `generateWeatherReport` |
 | `recordingService`| Orchestration of GPS recording, permissions, and file saving. | `toggleRecording`, `stopRecording`, `saveToFile` |
 | `gpxService` | GPX data handling, parsing, and string generation. | `handleGPXImport`, `buildGPXStringFromLayer` |
+| `gpxLayers` | (v5.40.19) 3D rendering and management of GPX track layers. | `addGPXLayer`, `updateAllGPXMeshes` |
 | `iapService` | RevenueCat integration, Pro status synchronization. | `initialize`, `purchase`, `syncProStatus` |
+| `appInit` | (v5.40.19) Centralized application bootstrap and UI hydration. | `appInit` |
 
 ## 2. EventBus Mapping
 

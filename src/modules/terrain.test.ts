@@ -176,7 +176,7 @@ describe('terrain.ts', () => {
         });
 
         it('should not crash with invalid GPS coordinates', async () => {
-            const { updateRecordedTrackMesh } = await import('./terrain');
+            const { updateRecordedTrackMesh } = await import('./gpxLayers');
             state.recordedPoints = [
                 { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 1000 },
                 { lat: NaN, lon: 7.5, alt: 1000, timestamp: 2000 }
@@ -187,8 +187,10 @@ describe('terrain.ts', () => {
 
     describe('Origin Shifting (v5.27.3)', () => {
         it('should trigger GPX mesh updates when origin shifts', async () => {
-            const { repositionAllTiles, terrainUpdates } = await import('./terrain');
-            const spyGPX = vi.spyOn(terrainUpdates, 'updateAllGPXMeshes');
+            const gpxLayers = await import('./gpxLayers');
+            const spyGPX = vi.spyOn(gpxLayers, 'updateAllGPXMeshes');
+            const { repositionAllTiles } = await import('./terrain');
+            
             repositionAllTiles(); 
             state.originTile = { x: 101, y: 101, z: 13 };
             repositionAllTiles(); 

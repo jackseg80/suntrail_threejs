@@ -10,7 +10,7 @@ import { registerPlugin, Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import { state } from './state';
 import { LocationPoint } from './geo';
-import { updateRecordedTrackMesh } from './terrain';
+import { updateRecordedTrackMesh } from './gpxLayers';
 import { cleanGPSTrack } from './gpsDeduplication';
 import { calculateTrackStats } from './geoStats';
 import { recordingService } from './recordingService';
