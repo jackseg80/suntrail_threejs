@@ -1,4 +1,4 @@
-# SunTrail 3D — TODO (v5.40.15)
+# SunTrail 3D — TODO (v5.40.23)
 
 > Guide IA : [CLAUDE.md](../CLAUDE.md) | Historique : [COMPLETED_HISTORY.md](archives/COMPLETED_HISTORY.md)
 
@@ -6,6 +6,8 @@
 
 ## 🎯 Priorité 1 : Finalisation Production (V5.x)
 
+- [x] **Modularisation Architecturale (v5.40.23)** : Extraction du moteur GPX (`gpxLayers`), isolation de l'environnement 3D (`environment`) et orchestration de l'initialisation (`appInit`).
+- [x] **Garantie de Non-Régression (v5.40.23)** : Extension de la suite de tests (608 tests) incluant l'intégrité de la scène 3D et la séquence de boot.
 - [x] **Cleanup & Typage (v5.40.15)** : Typage strict des Web Workers et nettoyage chirurgical des logs de production.
 - [x] **Audit Play Store (v5.40.14)** : Unification du nom en "SunTrail 3D" et suppression de la permission battery optimization.
 - [x] **Signalétique Suisse** : Rétablissement des losanges jaunes via filtrage de couches permissif (label/transportation). (v5.40.13)
@@ -32,7 +34,7 @@
 ## 🌿 Végétation, Hydrologie & Landcover (v5.34+)
 
 - [x] **Refonte Hydrologie (v5.34.0)** : Passage au vectoriel (PBF) et technique du "Texture Mask".
-- [x] **Détection Sémantique Forêts (v5.33.0)** : Remplacement du scan raster par l'analyse vectorielle.
+- [x] **Détection Sémantique Forêts (v5.33.0)** : Remplacement des scan raster par l'analyse vectorielle.
 - [x] **Migration POI & Sommets (PBF)** : Migration terminée pour Sommets, POIs et Bâtiments.
 - [ ] **Solution Souveraine (Mondial)** : Générer et héberger un fichier `forests-world.pmtiles` sur Cloudflare R2.
 - [x] **Adaptation par Pays (v5.38.2)** :
