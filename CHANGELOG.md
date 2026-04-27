@@ -31,6 +31,12 @@
 
 # Changelog
 
+## [5.40.13] - 2026-04-27
+### Fixed
+- **Signalétique Suisse** : Rétablissement de la détection des panneaux dans les couches "label" et "transportation" de SwissTopo.
+- **Robustesse POI** : Assouplissement de la détection sémantique (tags hiking/guidepost) pour ne rater aucune signalétique 3D.
+- **Transition 2D/3D** : Suppression instantanée des objets 3D lors du passage en mode 2D.
+
 ## [5.40.11] - 2026-04-27
 ### Added
 - **Signalétique Enrichie** : Restauration des icônes différenciées pour les belvédères (🔭), les abris (🏠) et les points d'information (i).

@@ -6,6 +6,8 @@
 
 ## 🎯 Priorité 1 : Finalisation Production (V5.x)
 
+- [x] **Signalétique Suisse** : Rétablissement des losanges jaunes via filtrage de couches permissif (label/transportation). (v5.40.13)
+- [x] **Transition 2D/3D** : Suppression instantanée des objets 3D lors du switch. (v5.40.13)
 - [x] **Stabilité 3D (v5.40.11)** : Retour au socle stable 5.39.1 (MapTiler Z10 FR / SwissTopo Z12 CH). 3D fluide partout.
 - [x] **Signalétique Enrichie (v5.40.11)** : Icônes spécifiques pour Belvédères (🔭), Abris (🏠) et Infos (i).
 - [x] **Trail Picking (v5.40.11)** : Détection et affichage du nom des sentiers au clic.

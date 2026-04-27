@@ -161,7 +161,13 @@ async function fetchPOIsWithCache(z: number, x: number, y: number, key: string, 
 
         layers.forEach(layerName => {
             const layer = vtile.layers[layerName];
-            if (!layerName.toLowerCase().includes('poi') && !layerName.toLowerCase().includes('point')) return;
+            const lowerLayer = layerName.toLowerCase();
+            
+            // v5.40.13 : Filtrage intelligent — on ignore les couches de polygones/lignes 
+            // mais on accepte tout le reste (poi, label, point, transportation) pour ne rien rater.
+            if (lowerLayer.includes('line') || lowerLayer.includes('poly') || 
+                lowerLayer.includes('water') || lowerLayer.includes('landuse') ||
+                lowerLayer.includes('building')) return;
 
             for (let i = 0; i < layer.length; i++) {
                 const feat = layer.feature(i);
@@ -170,14 +176,14 @@ async function fetchPOIsWithCache(z: number, x: number, y: number, key: string, 
 
                 let category: POICategory | null = null;
 
-                // Logique de catégorisation améliorée
+                // Logique de catégorisation améliorée (v5.40.12 : assouplissement pour guidepost)
                 if (props.class === 'viewpoint' || props.tourism === 'viewpoint') {
                     category = 'viewpoint';
                 } else if (props.amenity === 'shelter' || props.class === 'shelter') {
                     category = 'shelter';
                 } else if (props.information === 'map' || props.information === 'board' || props.tourism === 'information') {
                     category = 'info';
-                } else if (raw.includes('guidepost') || raw.includes('signpost') || props.hiking === 'yes') {
+                } else if (raw.includes('guidepost') || raw.includes('signpost') || raw.includes('hiking') || props.information === 'guidepost') {
                     category = 'guidepost';
                 }
 
