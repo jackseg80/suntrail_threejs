@@ -21,9 +21,13 @@ vi.mock('./analysis', () => ({
     getAltitudeAt: mockAnalysis.getAltitudeAt
 }));
 
-vi.mock('./geo', () => ({
-    worldToLngLat: mockGeo.worldToLngLat
-}));
+vi.mock('./geo', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('./geo')>();
+    return {
+        ...actual,
+        worldToLngLat: mockGeo.worldToLngLat
+    };
+});
 
 import { state } from './state';
 import { expertService } from './expertService';

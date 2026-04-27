@@ -2,7 +2,7 @@ import Pbf from 'pbf';
 import { VectorTile } from '@mapbox/vector-tile';
 import { BoundedCache } from './boundedCache';
 import { state } from './state';
-import { isPositionInSwitzerland } from './geo';
+import { isPositionInSwitzerland, getPow2, xNormToLon, yNormToLat } from './geo';
 import type { Tile } from './terrain';
 
 export interface BBox { minX: number; maxX: number; minY: number; maxY: number; }
@@ -57,16 +57,15 @@ const fetchPromises = new Map<string, Promise<LandcoverData | null>>();
  * Tier 3: MapTiler (Monde, Overzoom Z10 pour préserver quota)
  */
 export async function fetchLandcoverPBF(tile: Tile): Promise<LandcoverData | null> {
-    const n = Math.pow(2, tile.zoom);
-    const lon = (tile.tx + 0.5) / n * 360 - 180;
-    const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (tile.ty + 0.5) / n)));
-    const lat = latRad * 180 / Math.PI;
+    const n = getPow2(tile.zoom);
+    const lon = xNormToLon((tile.tx + 0.5) / n);
+    const lat = yNormToLat((tile.ty + 0.5) / n);
 
     const inCH = isPositionInSwitzerland(lat, lon);
     
     // v5.33.1 : Utilisation de Z12 pour SwissTopo pour une meilleure couverture sémantique
     const requestZoom = inCH ? 12 : 10;
-    const ratio = Math.pow(2, tile.zoom - requestZoom);
+    const ratio = getPow2(tile.zoom - requestZoom);
     const rtx = Math.floor(tile.tx / ratio);
     const rty = Math.floor(tile.ty / ratio);
     const cacheKey = `${inCH ? 'ch' : 'mt'}-${requestZoom}-${rtx}-${rty}`;

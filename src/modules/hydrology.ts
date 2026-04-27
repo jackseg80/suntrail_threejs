@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { state } from './state';
 import { Tile } from './terrain/Tile';
 import { fetchLandcoverPBF } from './landcover';
-import { isPositionInSwitzerland } from './geo';
+import { isPositionInSwitzerland, getPow2, xNormToLon, yNormToLat } from './geo';
 
 /**
  * Charge l'hydrologie via Vector Tiles PBF et génère un masque 2D de haute précision (v5.33.5)
@@ -24,14 +24,13 @@ export async function loadHydrologyForTile(tile: Tile) {
 function renderHydrologyMask(tile: Tile, waterFeatures: any[]) {
     if ((tile.status as string) === 'disposed' || !tile.mesh) return;
 
-    const nTile = Math.pow(2, tile.zoom);
-    const lonTileCenter = (tile.tx + 0.5) / nTile * 360 - 180;
-    const latRadTileCenter = Math.atan(Math.sinh(Math.PI * (1 - 2 * (tile.ty + 0.5) / nTile)));
-    const latTileCenter = latRadTileCenter * 180 / Math.PI;
+    const nTile = getPow2(tile.zoom);
+    const lonTileCenter = xNormToLon((tile.tx + 0.5) / nTile);
+    const latTileCenter = yNormToLat((tile.ty + 0.5) / nTile);
     const inCH = isPositionInSwitzerland(latTileCenter, lonTileCenter);
 
     const requestZoom = inCH ? 12 : 10;
-    const ratio = Math.pow(2, tile.zoom - requestZoom);
+    const ratio = getPow2(tile.zoom - requestZoom);
     const rtx = Math.floor(tile.tx / ratio);
     const rty = Math.floor(tile.ty / ratio);
     

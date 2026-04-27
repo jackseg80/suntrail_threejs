@@ -11,9 +11,13 @@ vi.mock('../../iap', () => ({
     showUpgradePrompt: vi.fn()
 }));
 
-vi.mock('../../geo', () => ({
-    lngLatToWorld: vi.fn(() => ({ x: 0, z: 0 }))
-}));
+vi.mock('../../geo', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../geo')>();
+    return {
+        ...actual,
+        lngLatToWorld: vi.fn(() => ({ x: 0, z: 0 }))
+    };
+});
 
 describe('InclinometerWidget', () => {
     let widget: InclinometerWidget;

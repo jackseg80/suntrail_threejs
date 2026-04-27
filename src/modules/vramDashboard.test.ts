@@ -27,13 +27,17 @@ vi.mock('./toast', () => ({
 }));
 
 // Mock geo
-vi.mock('./geo', () => ({
-    isPositionInSwitzerland: vi.fn(),
-    isPositionInFrance: vi.fn(),
-    lngLatToWorld: vi.fn(),
-    worldToLngLat: vi.fn(),
-    lngLatToTile: vi.fn()
-}));
+vi.mock('./geo', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('./geo')>();
+    return {
+        ...actual,
+        isPositionInSwitzerland: vi.fn(),
+        isPositionInFrance: vi.fn(),
+        lngLatToWorld: vi.fn(),
+        worldToLngLat: vi.fn(),
+        lngLatToTile: vi.fn()
+    };
+});
 
 // Mock i18n
 vi.mock('../i18n/I18nService', () => ({

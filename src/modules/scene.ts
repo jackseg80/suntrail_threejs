@@ -9,7 +9,7 @@ import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, rese
 import { sharedFrustum } from './terrain';
 import { disposeAllCachedTiles } from './tileCache';
 import { disposeAllGeometries } from './geometryCache';
-import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat, clampTargetToBounds } from './geo';
+import { EARTH_CIRCUMFERENCE, lngLatToTile, worldToLngLat, clampTargetToBounds, haversineDistance, getPow2 } from './geo';
 import { throttle, debounce } from './utils';
 import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
@@ -26,6 +26,10 @@ export { flyTo };
 
 // Handler de visibilité : suspend le GPU quand l'app passe en arrière-plan (v5.11)
 let visibilityChangeHandler: (() => void) | null = null;
+
+// v5.40.18 : Objets statiques partagés pour éviter le Garbage Collection (Zero-Allocation Pattern)
+const _sharedMatrix = new THREE.Matrix4();
+const _sharedDate = new Date();
 
 // Upsell LOD — debounce pour ne pas spammer le toast (1 fois par 30s max)
 let _lastLodUpsellTime = 0;
@@ -329,8 +333,8 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
         const gpsCenter = worldToLngLat(dx, dz, state.originTile);
         autoSelectMapSource(gpsCenter.lat, gpsCenter.lon);
 
-        const distToLastWeather = Math.sqrt(Math.pow(gpsCenter.lat - state.lastWeatherLat, 2) + Math.pow(gpsCenter.lon - state.lastWeatherLon, 2));
-        if (distToLastWeather > 0.05) debouncedFetchWeather(gpsCenter.lat, gpsCenter.lon);
+        const distToLastWeather = haversineDistance(gpsCenter.lat, gpsCenter.lon, state.lastWeatherLat, state.lastWeatherLon);
+        if (distToLastWeather > 5) debouncedFetchWeather(gpsCenter.lat, gpsCenter.lon); // 5km threshold
 
         const distFromOrigin = Math.sqrt(dx*dx + dz*dz);
 
@@ -339,10 +343,11 @@ const debouncedFetchWeather = debounce((lat: number, lon: number) => {
             if (state.ZOOM >= 12 && !state.isUserInteracting && !state.isFlyingTo && (newZoom === currentZoom) && (timeSinceLast > 5000)) {
                 const newTile = lngLatToTile(gpsCenter.lon, gpsCenter.lat, state.originTile.z);
                 if (!isNaN(newTile.x) && !isNaN(newTile.y)) {
-                    const oldXN = (state.originTile.x + 0.5) / Math.pow(2, state.originTile.z);
-                    const oldYN = (state.originTile.y + 0.5) / Math.pow(2, state.originTile.z);
-                    const newXN = (newTile.x + 0.5) / Math.pow(2, state.originTile.z);
-                    const newYN = (newTile.y + 0.5) / Math.pow(2, state.originTile.z);
+                    const unit = 1.0 / getPow2(state.originTile.z);
+                    const oldXN = (state.originTile.x + 0.5) * unit;
+                    const oldYN = (state.originTile.y + 0.5) * unit;
+                    const newXN = (newTile.x + 0.5) * unit;
+                    const newYN = (newTile.y + 0.5) * unit;
                     const offsetX = (oldXN - newXN) * EARTH_CIRCUMFERENCE;
                     const offsetZ = (oldYN - newYN) * EARTH_CIRCUMFERENCE;
                     
@@ -646,10 +651,11 @@ function updateTerrainPhysics(interacting: boolean): void {
             || state.isFollowingUser;
 
         // v5.31 : Pre-compute frustum once per frame for tile visibility
+        // v5.40.18 : Zero-allocation pattern — reuse static matrix
         if (state.camera) {
             state.camera.updateMatrixWorld();
-            const proj = new THREE.Matrix4().multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
-            sharedFrustum.setFromProjectionMatrix(proj);
+            _sharedMatrix.multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
+            sharedFrustum.setFromProjectionMatrix(_sharedMatrix);
         }
 
         if (needsUpdate) {

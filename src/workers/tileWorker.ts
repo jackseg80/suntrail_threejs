@@ -100,30 +100,37 @@ self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
                     if (!is2D) {
                         const normalData = new Uint8ClampedArray(width * height * 4);
                         const sourceZ = elevSourceZoom || zoom || 14;
-                        const tileSizeMeters = 40075016.686 / Math.pow(2, sourceZ);
+                        // v5.40.18 : Optimisation mathématique — EARTH_CIRCUMFERENCE / 2^z
+                        const tileSizeMeters = 40075016.686 / (1 << sourceZ);
                         const pixelSize = tileSizeMeters / width;
+                        const invPixelSize = 1.0 / pixelSize;
 
                         for (let py = 0; py < height; py++) {
+                            const py_width = py * width;
                             for (let px = 0; px < width; px++) {
-                                const idx = (py * width + px) * 4;
-                                const getH = (x: number, y: number) => {
-                                    const ix = Math.max(0, Math.min(width - 1, x));
-                                    const iy = Math.max(0, Math.min(height - 1, y));
-                                    const i = (iy * width + ix) * 4;
-                                    return -10000.0 + ((data[i] * 65536.0 + data[i+1] * 256.0 + data[i+2]) * 0.1);
-                                };
-                                const hL = getH(px - 1, py), hR = getH(px + 1, py), hD = getH(px, py - 1), hU = getH(px, py + 1);
-                                // v5.32.22 : Calcul de la normale indépendant de la taille réelle de la tuile.
-                                // On utilise la pente (mètres par pixel) pour que la normale soit correcte 
-                                // dans l'espace local (1x1) de la géométrie Three.js.
-                                const vx = (hL - hR) / pixelSize;
-                                const vy = 2.0; // Distance horizontale entre hL/hR et hD/hU en unités de pixels (2 pixels)
-                                const vz = (hD - hU) / pixelSize;
+                                const idx = (py_width + px) * 4;
                                 
-                                const len = Math.sqrt(vx * vx + vy * vy + vz * vz);
-                                normalData[idx] = ((vx / len) * 0.5 + 0.5) * 255;
-                                normalData[idx+1] = ((vy / len) * 0.5 + 0.5) * 255;
-                                normalData[idx+2] = ((vz / len) * 0.5 + 0.5) * 255;
+                                // v5.40.18 : Inline decoding with bitwise operators for maximum speed in nested loop
+                                const getH = (x: number, y: number) => {
+                                    const ix = (x < 0) ? 0 : (x >= width ? width - 1 : x);
+                                    const iy = (y < 0) ? 0 : (y >= height ? height - 1 : y);
+                                    const i = (iy * width + ix) * 4;
+                                    // RGB to Altitude conversion (-10000 + (R*65536 + G*256 + B) * 0.1)
+                                    return ((data[i] << 16 | data[i+1] << 8 | data[i+2]) * 0.1) - 10000.0;
+                                };
+
+                                const hL = getH(px - 1, py), hR = getH(px + 1, py), hD = getH(px, py - 1), hU = getH(px, py + 1);
+                                
+                                // v5.32.22 : Calcul de la normale local (1x1 unit space)
+                                const vx = (hL - hR) * invPixelSize;
+                                const vy = 2.0; 
+                                const vz = (hD - hU) * invPixelSize;
+                                
+                                // Normalization
+                                const invLen = 1.0 / Math.sqrt(vx * vx + vy * vy + vz * vz);
+                                normalData[idx]   = (vx * invLen * 0.5 + 0.5) * 255;
+                                normalData[idx+1] = (vy * invLen * 0.5 + 0.5) * 255;
+                                normalData[idx+2] = (vz * invLen * 0.5 + 0.5) * 255;
                                 normalData[idx+3] = 255;
                             }
                         }

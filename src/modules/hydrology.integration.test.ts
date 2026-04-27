@@ -14,12 +14,15 @@ vi.mock('./landcover', () => ({
     fetchLandcoverPBF: vi.fn()
 }));
 
-vi.mock('./geo', () => ({
-    isPositionInSwitzerland: vi.fn(() => true),
-    decodeTerrainRGB: vi.fn(() => 0),
-    getTileBounds: vi.fn(() => ({ north: 90, south: -90, east: 180, west: -180 })),
-    EARTH_CIRCUMFERENCE: 40075016.686
-}));
+vi.mock('./geo', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('./geo')>();
+    return {
+        ...actual,
+        isPositionInSwitzerland: vi.fn(() => true),
+        decodeTerrainRGB: vi.fn(() => 0),
+        getTileBounds: vi.fn(() => ({ north: 90, south: -90, east: 180, west: -180 })),
+    };
+});
 
 describe('Hydrology Integration', () => {
     beforeEach(() => {

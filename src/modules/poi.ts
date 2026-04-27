@@ -3,7 +3,7 @@ import Pbf from 'pbf';
 import { VectorTile } from '@mapbox/vector-tile';
 import { state } from './state';
 import { getAltitudeAt } from './analysis';
-import { isPositionInSwitzerland } from './geo';
+import { isPositionInSwitzerland, getPow2, xNormToLon, yNormToLat } from './geo';
 import { Tile } from './terrain/Tile';
 import { BoundedCache } from './boundedCache';
 
@@ -98,14 +98,14 @@ export async function loadPOIsForTile(tile: Tile) {
     if (!state.SHOW_SIGNPOSTS || tile.zoom < state.POI_ZOOM_THRESHOLD || (tile.status as string) === 'disposed') return;
     if (tile.poiGroup) return;
 
-    const n = Math.pow(2, tile.zoom);
-    const lonC = (tile.tx + 0.5) / n * 360 - 180;
-    const latC = Math.atan(Math.sinh(Math.PI * (1 - 2 * (tile.ty + 0.5) / n))) * 180 / Math.PI;
+    const n = getPow2(tile.zoom);
+    const lonC = xNormToLon((tile.tx + 0.5) / n);
+    const latC = yNormToLat((tile.ty + 0.5) / n);
     const inCH = isPositionInSwitzerland(latC, lonC);
     
     // Zoom fixe pour la signalétique (v5.38.4) : Z14 SwissTopo, Z12 MapTiler
     const requestZoom = inCH ? 14 : 12;
-    const ratio = Math.pow(2, tile.zoom - requestZoom);
+    const ratio = getPow2(tile.zoom - requestZoom);
     const rtx = Math.floor(tile.tx / ratio), rty = Math.floor(tile.ty / ratio);
     const zoneKey = `${requestZoom}/${rtx}/${rty}`;
 
@@ -191,9 +191,11 @@ async function fetchPOIsWithCache(z: number, x: number, y: number, key: string, 
                     const geom = feat.loadGeometry()[0][0];
                     const extent = layer.extent || 4096;
 
-                    const lon = geom.x / extent * 360 / Math.pow(2, z) + x * 360 / Math.pow(2, z) - 180;
-                    const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (geom.y / extent + y) / Math.pow(2, z))));
-                    const lat = latRad * 180 / Math.PI;
+                    const invN = 1.0 / getPow2(z);
+                    const xNorm = (x + geom.x / extent) * invN;
+                    const yNorm = (y + geom.y / extent) * invN;
+                    const lon = xNormToLon(xNorm);
+                    const lat = yNormToLat(yNorm);
 
                     elements.push({
                         id: feat.id || `${lat.toFixed(6)}|${lon.toFixed(6)}`,

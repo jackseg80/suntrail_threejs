@@ -1,3 +1,14 @@
+## [5.40.17] - 2026-04-27
+### Changed
+- **Optimisation Mathématique Majeure** : Centralisation et mise en cache des calculs de puissances de 2 et des projections Web Mercator (`geo.ts`), réduisant la charge CPU globale.
+- **Zero-Allocation Pattern** : Réutilisation d'objets statiques (`Matrix4`, `Date`) dans la boucle de rendu pour minimiser le Garbage Collection et éliminer les micro-saccades sur mobile.
+- **Calibration des Presets** : Optimisation du preset *Balanced* (résolution 64 segments, range 5) pour un meilleur compromis fluidité/profondeur de champ.
+- **Worker Performance** : Refonte de la génération des Normal Maps via des opérateurs binaires (`bitwise`) et un décodage RGB inline.
+
+### Fixed
+- **Stabilité** : Correction des imports circulaires et des références manquantes introduites lors du refactoring géomathématique.
+- **Précision** : Remplacement des approximations euclidiennes par la formule de Haversine pour le rafraîchissement météo.
+
 ## [5.39.2] - 2026-04-25
 ### Added
 - **Signalétique Enrichie** : Introduction d'icônes différenciées pour les belvédères (🔭), les abris (🏠) et les points d'information (i).

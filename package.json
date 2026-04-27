@@ -1,6 +1,6 @@
 {
   "name": "suntrail_threejs",
-  "version": "5.40.16",
+  "version": "5.40.17",
 
   "scripts": {
     "dev": "vite",

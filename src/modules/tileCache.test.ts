@@ -10,10 +10,14 @@ vi.mock('./utils', () => ({
 }));
 
 // Mock de geo
-vi.mock('./geo', () => ({
-    isPositionInSwitzerland: vi.fn(),
-    isPositionInFrance: vi.fn()
-}));
+vi.mock('./geo', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('./geo')>();
+    return {
+        ...actual,
+        isPositionInSwitzerland: vi.fn(),
+        isPositionInFrance: vi.fn()
+    };
+});
 
 describe('tileCache.ts', () => {
     beforeEach(() => {

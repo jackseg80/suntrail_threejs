@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { disposeObject } from '../memory';
 import { state } from '../state';
-import { EARTH_CIRCUMFERENCE, getTileBounds } from '../geo';
+import { EARTH_CIRCUMFERENCE, getTileBounds, getPow2, lonToXNorm, latToYNorm } from '../geo';
 import { createForestForTile } from '../vegetation';
 import { loadPOIsForTile } from '../poi';
 import { loadBuildingsForTile } from '../buildings';
@@ -56,7 +56,7 @@ export class Tile {
 
     constructor(tx: number, ty: number, zoom: number, key: string) {
         this.tx = tx; this.ty = ty; this.zoom = zoom; this.key = key;
-        this.tileSizeMeters = EARTH_CIRCUMFERENCE / Math.pow(2, zoom);
+        this.tileSizeMeters = EARTH_CIRCUMFERENCE / getPow2(zoom);
         this.updateWorldPosition();
         this.updateHybridSettings();
     }
@@ -66,12 +66,15 @@ export class Tile {
     }
 
     updateWorldPosition(): void {
-        const unit = 1.0 / Math.pow(2, this.zoom);
+        const unit = 1.0 / getPow2(this.zoom);
         const txNorm = (this.tx + 0.5) * unit;
         const tyNorm = (this.ty + 0.5) * unit;
-        const originUnit = 1.0 / Math.pow(2, state.originTile.z);
+        
+        // v5.40.17 : Utilisation des fonctions centralisées pour éviter les répétitions de Math.pow
+        const originUnit = 1.0 / getPow2(state.originTile.z);
         const oxNorm = (state.originTile.x + 0.5) * originUnit;
         const oyNorm = (state.originTile.y + 0.5) * originUnit;
+
         this.worldX = (txNorm - oxNorm) * EARTH_CIRCUMFERENCE;
         this.worldZ = (tyNorm - oyNorm) * EARTH_CIRCUMFERENCE;
         const yOffset = this.isFadingOut ? -0.5 : 0;
@@ -85,16 +88,15 @@ export class Tile {
             new THREE.Vector3(this.worldX + this.tileSizeMeters/2, 9000, this.worldZ + this.tileSizeMeters/2)
         );
 
-        // v5.38.2 : Marge de visibilité dynamique selon preset (Prop B) et mode 2D Mobile
-        let marginFactor = 0.2; // Défaut historique
+        let marginFactor = 0.2; 
         const isMobile = window.innerWidth <= 768;
         
         if (state.PERFORMANCE_PRESET === 'eco' || state.PERFORMANCE_PRESET === 'balanced') {
-            marginFactor = 0.6; // Prop B : On élargit la zone de détection pour compenser le faible rayon forcé
+            marginFactor = 0.6; 
         }
         
         if (state.IS_2D_MODE && isMobile) {
-            marginFactor = Math.max(marginFactor, 1.0); // Très généreux en 2D Mobile
+            marginFactor = Math.max(marginFactor, 1.0);
         }
 
         this.extendedBounds.copy(this.bounds).expandByScalar(this.tileSizeMeters * marginFactor);
@@ -109,9 +111,9 @@ export class Tile {
     }
 
     public lngLatToLocal(lon: number, lat: number): THREE.Vector3 {
-        const n = Math.pow(2, this.zoom);
-        const xNorm = (lon + 180) / 360;
-        const yNorm = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2;
+        const n = getPow2(this.zoom);
+        const xNorm = lonToXNorm(lon);
+        const yNorm = latToYNorm(lat);
         const txNorm = (this.tx + 0.5) / n;
         const tyNorm = (this.ty + 0.5) / n;
         return new THREE.Vector3((xNorm - txNorm) * EARTH_CIRCUMFERENCE, 0, (yNorm - tyNorm) * EARTH_CIRCUMFERENCE);
@@ -121,12 +123,12 @@ export class Tile {
         const MAX_RGB_ZOOM = 14;
         const nativeMax = 18;
         if (this.zoom > MAX_RGB_ZOOM) {
-            const ratio = Math.pow(2, this.zoom - MAX_RGB_ZOOM);
+            const ratio = getPow2(this.zoom - MAX_RGB_ZOOM);
             this.elevScale = 1.0 / ratio;
             this.elevOffset.set((this.tx % ratio) * this.elevScale, (this.ty % ratio) * this.elevScale);
         } else { this.elevScale = 1.0; this.elevOffset.set(0, 0); }
         if (this.zoom > nativeMax) {
-            const ratio = Math.pow(2, this.zoom - nativeMax);
+            const ratio = getPow2(this.zoom - nativeMax);
             this.colorScale = 1.0 / ratio;
             this.colorOffset.set((this.tx % ratio) * this.colorScale, (this.ty % ratio) * this.colorScale);
         } else { this.colorScale = 1.0; this.colorOffset.set(0, 0); }

@@ -4,7 +4,7 @@ import { state } from './state';
 import { Tile } from './terrain/Tile';
 import { getAltitudeAt } from './analysis';
 import { fetchLandcoverPBF } from './landcover';
-import { isPositionInSwitzerland } from './geo';
+import { isPositionInSwitzerland, getPow2, xNormToLon, yNormToLat } from './geo';
 
 /**
  * buildings.ts — Migration PBF Totale (v5.38.4)
@@ -42,13 +42,13 @@ export async function loadBuildingsForTile(tile: Tile) {
 function renderBuildingsPBF(tile: Tile, buildings: any[]) {
     if ((tile.status as string) === 'disposed' || !tile.mesh) return;
 
-    const n = Math.pow(2, tile.zoom);
-    const lonC = (tile.tx + 0.5) / n * 360 - 180;
-    const latC = Math.atan(Math.sinh(Math.PI * (1 - 2 * (tile.ty + 0.5) / n))) * 180 / Math.PI;
+    const n = getPow2(tile.zoom);
+    const lonC = xNormToLon((tile.tx + 0.5) / n);
+    const latC = yNormToLat((tile.ty + 0.5) / n);
     
     const inCH = isPositionInSwitzerland(latC, lonC);
     const requestZoom = inCH ? 12 : 10;
-    const ratio = Math.pow(2, tile.zoom - requestZoom);
+    const ratio = getPow2(tile.zoom - requestZoom);
     
     const rtx = Math.floor(tile.tx / ratio), rty = Math.floor(tile.ty / ratio);
     const offX = rtx * ratio - tile.tx, offY = rty * ratio - tile.ty;

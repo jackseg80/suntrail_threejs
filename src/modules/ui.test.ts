@@ -24,7 +24,15 @@ vi.mock('./onboardingTutorial', () => ({ requestOnboarding: vi.fn().mockResolved
 vi.mock('./scene', () => ({ initScene: vi.fn(), flyTo: vi.fn() }));
 vi.mock('./terrain', () => ({ updateVisibleTiles: vi.fn(), resetTerrain: vi.fn() }));
 vi.mock('./tileLoader', () => ({ updateStorageUI: vi.fn() }));
-vi.mock('./geo', () => ({ lngLatToTile: vi.fn(), lngLatToWorld: vi.fn(), worldToLngLat: vi.fn() }));
+vi.mock('./geo', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('./geo')>();
+    return {
+        ...actual,
+        lngLatToTile: vi.fn(),
+        lngLatToWorld: vi.fn(),
+        worldToLngLat: vi.fn()
+    };
+});
 vi.mock('./utils', () => ({ throttle: (fn: any) => fn, isMobileDevice: false, detectBestPreset: () => 'balanced' }));
 vi.mock('./toast', () => ({ showToast: vi.fn() }));
 vi.mock('./performance', () => ({ applyPreset: vi.fn(), detectBestPreset: () => 'balanced', getGpuInfo: () => ({ renderer: 'mock' }), applyCustomSettings: vi.fn() }));

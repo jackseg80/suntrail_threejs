@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { state } from './state';
 import type { Tile } from './terrain';
-import { decodeTerrainRGB, isPositionInSwitzerland } from './geo';
+import { decodeTerrainRGB, isPositionInSwitzerland, getPow2, xNormToLon, yNormToLat } from './geo';
 import { fetchLandcoverPBF, isPointInForest } from './landcover';
 
 /**
@@ -103,15 +103,14 @@ export async function createForestForTile(tile: Tile): Promise<THREE.Group | nul
     const landcover = await landcoverPromise; // Attente du PBF (déjà en cache si chargé par une tuile voisine)
     const forests = landcover?.forests;
 
-    // --- OPTIMISATION RATIO (v5.34.5) ---
-    // On calcule le ratio Mercator une seule fois au lieu de 4096 fois dans la boucle
-    const n = Math.pow(2, tile.zoom);
-    const lon = (tile.tx + 0.5) / n * 360 - 180;
-    const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (tile.ty + 0.5) / n)));
-    const lat = latRad * 180 / Math.PI;
+    // --- OPTIMISATION RATIO (v5.40.17) ---
+    // Utilisation des fonctions centralisées
+    const n = getPow2(tile.zoom);
+    const lon = xNormToLon((tile.tx + 0.5) / n);
+    const lat = yNormToLat((tile.ty + 0.5) / n);
     const inCH = isPositionInSwitzerland(lat, lon);
     const requestZoom = inCH ? 12 : 10;
-    const ratio = Math.pow(2, tile.zoom - requestZoom);
+    const ratio = getPow2(tile.zoom - requestZoom);
 
     // --- DENSITÉ HARMONISÉE (v5.33.1) ---
     const hasVectors = (forests && forests.length > 0);

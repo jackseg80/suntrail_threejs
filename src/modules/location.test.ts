@@ -17,10 +17,14 @@ HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
     stroke: vi.fn(),
 })) as any;
 
-// Mock de geo.ts car on ne veut pas tester les calculs de projection ici
-vi.mock('./geo', () => ({
-    lngLatToWorld: vi.fn((lon, lat) => ({ x: lon * 100, z: lat * 100 })),
-}));
+// Mock de geo.ts
+vi.mock('./geo', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('./geo')>();
+    return {
+        ...actual,
+        lngLatToWorld: vi.fn((lon, lat) => ({ x: lon * 100, z: lat * 100 })),
+    };
+});
 
 describe('location.ts', () => {
     beforeEach(() => {

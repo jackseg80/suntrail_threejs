@@ -14,12 +14,15 @@ vi.mock('../analysis', async (importOriginal) => {
     };
 });
 
-vi.mock('../geo', () => ({
-    lngLatToWorld: vi.fn(() => new THREE.Vector3(0, 0, 0)),
-    worldToLngLat: vi.fn().mockReturnValue({ lat: 46, lon: 7 }),
-    EARTH_CIRCUMFERENCE: 40075016.686,
-    haversineDistance: () => 1.0
-}));
+vi.mock('../geo', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../geo')>();
+    return {
+        ...actual,
+        lngLatToWorld: vi.fn(() => new THREE.Vector3(0, 0, 0)),
+        worldToLngLat: vi.fn().mockReturnValue({ lat: 46, lon: 7 }),
+        haversineDistance: () => 1.0
+    };
+});
 
 describe('Audit Stress Test Multi-Tracés (v5.29.25)', () => {
     beforeEach(() => {
