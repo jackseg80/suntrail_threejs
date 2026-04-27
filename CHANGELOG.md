@@ -1,3 +1,8 @@
+## [5.40.18] - 2026-04-27
+### Fixed
+- **Zero-Allocation Finalization** : Utilisation effective de l'objet `Date` partagé dans la boucle d'animation pour supprimer toute allocation d'objet temporelle.
+- **Test Integrity** : Mise à jour de la suite de tests unitaires pour valider les nouveaux presets de performance (Balanced @ 64 segments).
+
 ## [5.40.17] - 2026-04-27
 ### Changed
 - **Optimisation Mathématique Majeure** : Centralisation et mise en cache des calculs de puissances de 2 et des projections Web Mercator (`geo.ts`), réduisant la charge CPU globale.
