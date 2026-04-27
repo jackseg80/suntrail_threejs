@@ -389,44 +389,6 @@ public class RecordingPlugin extends Plugin implements RecordingService.Recordin
     }
 
     /**
-     * Demande à Android d'exempter l'app des optimisations batterie (Doze mode).
-     */
-    @PluginMethod
-    public void requestBatteryOptimizationExemption(PluginCall call) {
-        PowerManager pm = (PowerManager) getContext().getSystemService(android.content.Context.POWER_SERVICE);
-        JSObject result = new JSObject();
-
-        if (pm == null) {
-            result.put("granted", false);
-            call.resolve(result);
-            return;
-        }
-
-        String packageName = getContext().getPackageName();
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (pm.isIgnoringBatteryOptimizations(packageName)) {
-                result.put("granted", true);
-                call.resolve(result);
-            } else {
-                try {
-                    Intent intent = new Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-                    intent.setData(android.net.Uri.parse("package:" + packageName));
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    getContext().startActivity(intent);
-                    result.put("granted", true);
-                } catch (Exception e) {
-                    result.put("granted", false);
-                }
-                call.resolve(result);
-            }
-        } else {
-            result.put("granted", true);
-            call.resolve(result);
-        }
-    }
-
-    /**
      * Retourne le courseId courant du RecordingService.
      */
     @PluginMethod

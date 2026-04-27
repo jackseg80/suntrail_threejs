@@ -1,4 +1,4 @@
-# SunTrail 3D — TODO (v5.40.11)
+# SunTrail 3D — TODO (v5.40.14)
 
 > Guide IA : [CLAUDE.md](../CLAUDE.md) | Historique : [COMPLETED_HISTORY.md](archives/COMPLETED_HISTORY.md)
 
@@ -6,6 +6,7 @@
 
 ## 🎯 Priorité 1 : Finalisation Production (V5.x)
 
+- [x] **Audit Play Store (v5.40.14)** : Unification du nom en "SunTrail 3D" et suppression de la permission battery optimization.
 - [x] **Signalétique Suisse** : Rétablissement des losanges jaunes via filtrage de couches permissif (label/transportation). (v5.40.13)
 - [x] **Transition 2D/3D** : Suppression instantanée des objets 3D lors du switch. (v5.40.13)
 - [x] **Stabilité 3D (v5.40.11)** : Retour au socle stable 5.39.1 (MapTiler Z10 FR / SwissTopo Z12 CH). 3D fluide partout.

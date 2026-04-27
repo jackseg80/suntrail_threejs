@@ -31,6 +31,12 @@
 
 # Changelog
 
+## [5.40.14] - 2026-04-27
+### Fixed
+- **Audit Google Play Store** : Unification du nom de l'application en "SunTrail 3D".
+- **Sécurité & Batterie** : Suppression de la permission `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` pour garantir la conformité avec les politiques de Google. Le maintien du processus est assuré par le Foreground Service et le WakeLock.
+- **Cleanup Technique** : Suppression du code mort lié aux optimisations de batterie dans les plugins natifs et les services JS.
+
 ## [5.40.13] - 2026-04-27
 ### Fixed
 - **Signalétique Suisse** : Rétablissement de la détection des panneaux dans les couches "label" et "transportation" de SwissTopo.

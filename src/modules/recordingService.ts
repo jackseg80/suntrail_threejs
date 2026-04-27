@@ -55,9 +55,6 @@ export class RecordingService {
                 showToast(i18n.t('gps.toast.permissionDenied'));
                 return false;
             }
-
-            // Request battery optimization exemption
-            await nativeGPSService.requestBatteryOptimizationExemption();
         }
 
         showToast(i18n.t('track.toast.recStarted'));

@@ -133,6 +133,8 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **712** | **5.31.2** | **v5.31.2** | **Fix notification (affichage forcé stats 0.00km + logs + réactivité 10s)** | **2026-04-18** |
 | **711** | **5.31.1** | **v5.31.1** | **Fix notification 0km (unités) + Ajout dénivelé négatif (D-) dans la notification persistante Android** | **2026-04-18** |
 | **710** | **5.31.0** | **v5.31.0** | **Stable release (Jump VersionCode 700 + consolidation polissage UI/UX)** | **2026-04-18** |
+| **763** | **5.40.14** | **v5.40.14** | **Audit Google Play Store (App Name + Battery Perm removal)** | **2026-04-27** |
+| **762** | **5.40.13** | **v5.40.13** | **Production (Correctif Signalétique Suisse)** | **2026-04-27** |
 | 664 | 5.29.27 | v5.29.27 | Optimisations 2D Galaxy A53 et robustesse Zoom | 2026-04-16 |
 
 

@@ -195,7 +195,7 @@ Available in Français, Deutsch, Italiano and English.
 | Description longue FR | ✅ Prêt | ~2000 cars |
 | Description longue EN | ✅ Prêt | ~2000 cars |
 | Privacy Policy URL | ✅ Live | https://jackseg80.github.io/suntrail_threejs/privacy.html |
-| Icône 512×512px | ⬜ À vérifier | Générée via capacitor-assets ? |
+| Icône 512×512px | ✅ Prêt | public/assets/icons/icon_512.png |
 | Screenshots téléphone | ⬜ À faire | 4-8 captures portrait (min 1080×1920) |
 | Screenshot tablette | ⬜ À faire | 1 capture min (min 1200×1920) |
 | Feature Graphic | ⬜ À faire | 1024×500px — visuel de couverture |

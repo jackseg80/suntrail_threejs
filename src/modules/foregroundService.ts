@@ -149,13 +149,3 @@ export async function getInterruptedRecording(): Promise<RecordingSnapshot | nul
 export async function clearInterruptedRecording(): Promise<void> {
     await Preferences.remove({ key: SNAPSHOT_KEY });
 }
-
-/**
- * Demande à Android d'exempter l'app des optimisations batterie.
- * Appelé une seule fois au démarrage du premier REC.
- * Retourne true si déjà exempté ou si l'utilisateur a accepté.
- */
-export async function requestBatteryOptimizationExemption(): Promise<boolean> {
-    if (!Capacitor.isNativePlatform()) return true;
-    return await nativeGPSService.requestBatteryOptimizationExemption();
-}
