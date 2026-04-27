@@ -1,3 +1,10 @@
+## [5.40.23] - 2026-04-27
+### Added
+- **Extended Unit Testing** :
+  - `appInit.test.ts` : Validation de la séquence orchestrée de démarrage.
+  - `gpxLayers.test.ts` : Test de la simplification RDP adaptative selon les presets de performance.
+  - `ui.test.ts` : Refonte pour s'aligner sur la nouvelle architecture modulaire.
+
 ## [5.40.22] - 2026-04-27
 ### Added
 - **Integrity Testing** : Introduction de `environment.test.ts` pour valider la structure du graphe de scène (Lights, Fog, Sky). Prévient les régressions visuelles silencieuses lors des refactorisations 3D.

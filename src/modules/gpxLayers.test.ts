@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as THREE from 'three';
-import { addGPXLayer } from './gpxLayers';
+import { addGPXLayer, updateAllGPXMeshes } from './gpxLayers';
 import { state } from './state';
 
 describe('Multi-GPX Layers (v5.10)', () => {
@@ -53,8 +53,41 @@ describe('Multi-GPX Layers (v5.10)', () => {
 
         const layer = addGPXLayer(raw, 'stats-test');
         expect(layer.stats.distance).toBeGreaterThan(0);
-        // v5.29.28: Le lissage 5-pts réduit les pics sur les traces courtes.
         expect(layer.stats.dPlus).toBeGreaterThan(150);
         expect(layer.stats.dMinus).toBeGreaterThan(150);
+    });
+
+    it('updateAllGPXMeshes: should adapt RDP epsilon based on performance preset', async () => {
+        const utils = await import('./utils');
+        const spyRDP = vi.spyOn(utils, 'simplifyRDP');
+
+        const raw = {
+            tracks: [{
+                points: [
+                    { lat: 46.5000, lon: 7.5000, ele: 1000 },
+                    { lat: 46.5001, lon: 7.5001, ele: 1005 },
+                    { lat: 46.5002, lon: 7.5002, ele: 1010 },
+                    { lat: 46.5003, lon: 7.5003, ele: 1015 }
+                ]
+            }]
+        };
+
+        addGPXLayer(raw, 'rdp-test');
+        vi.useFakeTimers();
+
+        // 1. Test en mode ECO (Epsilon large)
+        state.PERFORMANCE_PRESET = 'eco';
+        updateAllGPXMeshes();
+        vi.runAllTimers();
+        const epsEco = spyRDP.mock.calls[spyRDP.mock.calls.length - 1][1];
+
+        // 2. Test en mode ULTRA (Epsilon fin)
+        state.PERFORMANCE_PRESET = 'ultra';
+        updateAllGPXMeshes();
+        vi.runAllTimers();
+        const epsUltra = spyRDP.mock.calls[spyRDP.mock.calls.length - 1][1];
+
+        expect(epsEco).toBeGreaterThan(epsUltra);
+        expect(epsEco).toBe(epsUltra * 4); // Eco=2.0, Ultra=0.5 -> Ratio 4
     });
 });
