@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { appInit } from './appInit';
-import { state } from './state';
 
 // Mocking all external services called by appInit
 vi.mock('./state', () => ({
@@ -60,12 +59,11 @@ describe('appInit.ts — Initialization Sequence', () => {
 
     it('should apply saved settings if they exist', async () => {
         const { loadSettings } = await import('./state');
-        const { applyPreset } = await import('./performance');
         
         vi.mocked(loadSettings).mockReturnValue({ 
             MAP_SOURCE: 'swisstopo', 
             PERFORMANCE_PRESET: 'ultra' 
-        });
+        } as any);
 
         await appInit();
 

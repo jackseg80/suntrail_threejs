@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.40.23)
+# SunTrail — Guide IA (v5.40.24)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-27 suite à la v5.40.23 (Extended Unit Testing).
+> Mis à jour le 2026-04-27 suite à la v5.40.24 (Architecture Stabilization).
 
 
 ## Projet
@@ -90,6 +90,6 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - `src/modules/cameraManager.ts` : Gestion de la caméra, animations flyTo et resize.
 
 ## Tests & Qualité
-- **Unitaires (Vitest)** : `npm test` (600+ tests). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`.
+- **Unitaires (Vitest)** : `npm test` (609 tests). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`.
 - **E2E (Playwright)** : `npx playwright test --ui` (Onboarding, GPS, Expert).
 - **Mocks** : `src/test/setup.ts` pour WebGL. `ui.test.ts` utilise des timers fictifs.

@@ -1,3 +1,9 @@
+## [5.40.24] - 2026-04-27
+### Changed
+- **Architectural Stabilization** : Finalisation du découpage modulaire (GPX, Init, Environment) pour la v6.0.
+- **Improved Testing** : Correction des types de tests et extension de la couverture à 609 tests unitaires.
+- **Performance** : Optimisation de la VRAM via des matériaux partagés pour les tracés GPX.
+
 ## [5.40.23] - 2026-04-27
 ### Added
 - **Extended Unit Testing** :
