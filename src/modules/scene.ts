@@ -671,9 +671,10 @@ function updateTerrainPhysics(interacting: boolean): void {
 
             if (state.isSunAnimating) {
                 const mins = (state.simDate.getHours() * 60 + state.simDate.getMinutes() + state.animationSpeed) % 1440;
-                const newDate = new Date(state.simDate);
-                newDate.setHours(Math.floor(mins / 60), Math.floor(mins % 60), 0, 0);
-                state.simDate = newDate;
+                // v5.40.18 : Re-use static date object instead of 'new Date()'
+                _sharedDate.setTime(state.simDate.getTime());
+                _sharedDate.setHours(Math.floor(mins / 60), Math.floor(mins % 60), 0, 0);
+                state.simDate = _sharedDate;
             }
 
             updateTerrainPhysics(interacting);
