@@ -57,8 +57,13 @@ function renderBuildingsPBF(tile: Tile, buildings: any[]) {
     const geometries: THREE.BufferGeometry[] = [];
     let count = 0;
 
+    // v5.40.27 : Le quota s'adapte au preset de performance. 
+    // Pour la Suisse (Z14), on multiplie le quota par 3 car les empreintes sont individuelles
+    // (donc plus nombreuses que les blocs Z12/MapTiler), plafonné à 500.
+    const maxBuildings = inCH ? Math.min(500, state.BUILDING_LIMIT * 3) : state.BUILDING_LIMIT;
+
     buildings.forEach(feat => {
-        if (count >= 500) return;
+        if (count >= maxBuildings) return;
         
         const bbox = feat.bbox;
         const extent = feat.extent || 4096;
