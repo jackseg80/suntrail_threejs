@@ -1,3 +1,9 @@
+## [5.40.27] - 2026-04-28
+### Fixed
+- **Swiss 3D Buildings** : Passage au Zoom 14 pour les données vectorielles SwissTopo, garantissant des empreintes de bâtiments individuelles précises et corrigeant les effets de "blocs urbains" généralisés.
+- **Building Density** : Correction du bug de quota de bâtiments et augmentation de la limite à 500 objets par tuile pour les zones denses.
+- **Hydrology & Vegetation** : Alignement de la précision vectorielle sur le Zoom 14 en Suisse pour une cohérence géographique totale.
+
 ## [5.40.26] - 2026-04-28
 ### Fixed
 - **Recorded Track Cleanup** : Correction du bug où la trace rouge (REC) persistait après avoir été effacée.

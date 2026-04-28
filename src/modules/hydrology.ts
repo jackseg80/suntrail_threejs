@@ -29,7 +29,7 @@ function renderHydrologyMask(tile: Tile, waterFeatures: any[]) {
     const latTileCenter = yNormToLat((tile.ty + 0.5) / nTile);
     const inCH = isPositionInSwitzerland(latTileCenter, lonTileCenter);
 
-    const requestZoom = inCH ? 12 : 10;
+    const requestZoom = inCH ? 14 : 10;
     const ratio = getPow2(tile.zoom - requestZoom);
     const rtx = Math.floor(tile.tx / ratio);
     const rty = Math.floor(tile.ty / ratio);

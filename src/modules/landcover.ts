@@ -64,7 +64,8 @@ export async function fetchLandcoverPBF(tile: Tile): Promise<LandcoverData | nul
     const inCH = isPositionInSwitzerland(lat, lon);
     
     // v5.33.1 : Utilisation de Z12 pour SwissTopo pour une meilleure couverture sémantique
-    const requestZoom = inCH ? 12 : 10;
+    // v5.40.27 : Passage à Z14 pour la Suisse pour éviter la généralisation des bâtiments en blocs
+    const requestZoom = inCH ? 14 : 10;
     const ratio = getPow2(tile.zoom - requestZoom);
     const rtx = Math.floor(tile.tx / ratio);
     const rty = Math.floor(tile.ty / ratio);

@@ -47,7 +47,7 @@ function renderBuildingsPBF(tile: Tile, buildings: any[]) {
     const latC = yNormToLat((tile.ty + 0.5) / n);
     
     const inCH = isPositionInSwitzerland(latC, lonC);
-    const requestZoom = inCH ? 12 : 10;
+    const requestZoom = inCH ? 14 : 10;
     const ratio = getPow2(tile.zoom - requestZoom);
     
     const rtx = Math.floor(tile.tx / ratio), rty = Math.floor(tile.ty / ratio);
@@ -58,7 +58,7 @@ function renderBuildingsPBF(tile: Tile, buildings: any[]) {
     let count = 0;
 
     buildings.forEach(feat => {
-        if (count >= 150) return;
+        if (count >= 500) return;
         
         const bbox = feat.bbox;
         const extent = feat.extent || 4096;

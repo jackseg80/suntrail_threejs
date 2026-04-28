@@ -109,7 +109,7 @@ export async function createForestForTile(tile: Tile): Promise<THREE.Group | nul
     const lon = xNormToLon((tile.tx + 0.5) / n);
     const lat = yNormToLat((tile.ty + 0.5) / n);
     const inCH = isPositionInSwitzerland(lat, lon);
-    const requestZoom = inCH ? 12 : 10;
+    const requestZoom = inCH ? 14 : 10;
     const ratio = getPow2(tile.zoom - requestZoom);
 
     // --- DENSITÉ HARMONISÉE (v5.33.1) ---
