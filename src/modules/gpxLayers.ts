@@ -35,7 +35,7 @@ function getGPXMaterial(color: string, is2D: boolean): THREE.Material {
     return mat;
 }
 
-const GPX_SURFACE_OFFSET = 30;
+const GPX_SURFACE_OFFSET = 12;
 
 function gpxDrapePoints(
     rawPts: Array<{lon: number; lat: number; ele: number}>,
@@ -232,7 +232,16 @@ export function updateRecordedTrackMesh(): void {
 }
 
 function _doUpdateRecordedTrackMesh(): void {
-    if (state.recordedPoints.length < 2 || !state.camera || !state.scene || !state.originTile) return;
+    if (state.recordedPoints.length < 2) {
+        if (state.recordedMesh) {
+            if (state.scene) state.scene.remove(state.recordedMesh);
+            state.recordedMesh.geometry?.dispose();
+            state.recordedMesh = null;
+        }
+        return;
+    }
+    
+    if (!state.camera || !state.scene || !state.originTile) return;
     
     // v5.28.25 : Dédoublonnage strict par timestamp pour éviter les artefacts de "traits droits"
     // (Retours en arrière si des points avec le même timestamp mais positions différentes existent)
@@ -241,7 +250,14 @@ function _doUpdateRecordedTrackMesh(): void {
         uniquePointsMap.set(p.timestamp, p);
     }
     const uniquePoints = Array.from(uniquePointsMap.values()).sort((a, b) => a.timestamp - b.timestamp);
-    if (uniquePoints.length < 2) return;
+    if (uniquePoints.length < 2) {
+        if (state.recordedMesh) {
+            if (state.scene) state.scene.remove(state.recordedMesh);
+            state.recordedMesh.geometry?.dispose();
+            state.recordedMesh = null;
+        }
+        return;
+    }
 
     const camAlt = state.camera.position.y; 
     const thickness = Math.max(2.0, camAlt / 800); 

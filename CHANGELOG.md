@@ -1,3 +1,8 @@
+## [5.40.26] - 2026-04-28
+### Fixed
+- **Recorded Track Cleanup** : Correction du bug où la trace rouge (REC) persistait après avoir été effacée.
+- **Altitude Consistency** : Harmonisation de l'altitude de survol (surfaceOffset) à 12m pour tous les tracés (GPX et REC) dans tous les modes pour éviter les disparités de visibilité 2D/3D.
+
 ## [5.40.25] - 2026-04-28
 ### Fixed
 - **Mode Toggle Correction** : Suppression systématique des objets 3D (Signalisation, Bâtiments, Forêts) lors du passage 2D/3D pour garantir leur plaquage immédiat à la bonne altitude.

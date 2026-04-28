@@ -256,7 +256,7 @@ export function drapeToTerrain(
     points: Array<{lon: number; lat: number; ele?: number; alt?: number}>,
     originTile: {x: number; y: number; z: number},
     densifySteps = 4,
-    surfaceOffset = 30
+    surfaceOffset = 12
 ): THREE.Vector3[] {
     const result: THREE.Vector3[] = [];
     let lastPos: THREE.Vector3 | null = null;

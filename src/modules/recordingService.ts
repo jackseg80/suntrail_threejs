@@ -13,7 +13,7 @@ import { i18n } from '../i18n/I18nService';
 import gpxParser from 'gpxparser';
 import { startRecordingService, stopRecordingService } from './foregroundService';
 import { nativeGPSService } from './nativeGPSService';
-import { addGPXLayer } from './gpxLayers';
+import { addGPXLayer, updateRecordedTrackMesh } from './gpxLayers';
 import { requestGPSDisclosure } from './gpsDisclosure';
 import { getPlaceName } from './geocodingService';
 import { Capacitor } from '@capacitor/core';
@@ -74,6 +74,7 @@ export class RecordingService {
             if (!state.isFollowingUser) await startLocationTracking();
             
             state.recordedPoints = [];
+            updateRecordedTrackMesh();
             return true;
         } catch (e) {
             console.error('[RecordingService] Failed to start:', e);
@@ -102,9 +103,11 @@ export class RecordingService {
                 await this.saveCurrentRecording(nameToUse);
                 showToast(i18n.t('track.toast.recStopped'));
                 state.recordedPoints = [];
+                updateRecordedTrackMesh();
             } else {
                 showToast(i18n.t('track.toast.tooShort'));
                 state.recordedPoints = [];
+                updateRecordedTrackMesh();
             }
 
             state.isRecording = false;

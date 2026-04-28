@@ -286,6 +286,7 @@ export class TrackSheet extends BaseComponent {
             await recordingService.saveCurrentRecording(suggestedName);
             
             state.recordedPoints = [];
+            updateRecordedTrackMesh();
             state.recoveredPoints = null;
             clearInterruptedRecording();
             void stopRecordingService();
