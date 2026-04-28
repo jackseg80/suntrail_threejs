@@ -1,3 +1,13 @@
+## [5.40.28] - 2026-04-28
+### Added
+- **Inclinomètre Réactif** : Distance d'anticipation réduite à 8m pour une lecture immédiate et fidèle en mode suivi.
+- **Support Rotation GPX** : Redessin automatique du profil d'élévation GPX lors du basculement portrait/paysage pour assurer une visibilité complète du tracé.
+
+### Fixed
+- **Inclinomètre (Crash)** : Correction d'une erreur de référence sur `ANTICIPATION_DISTANCE_M`.
+- **UI Inclinomètre** : Harmonisation de l'affichage (tout en %) et persistance du panneau de détail.
+- **Positionnement UI** : Décalage intelligent de 120px au-dessus de la barre de temps.
+
 ## [5.40.27] - 2026-04-28
 ### Fixed
 - **Swiss 3D Buildings** : Passage au Zoom 14 pour les données vectorielles SwissTopo, garantissant des empreintes de bâtiments individuelles précises et corrigeant les effets de "blocs urbains" généralisés.

@@ -143,7 +143,13 @@ export function drawProfileSVG(): void {
     const svg = document.getElementById('profile-svg') as unknown as SVGSVGElement;
     if (!svg || profileData.length === 0) return;
 
-    const width = svg.clientWidth || 800;
+    // v5.40.28: S'assurer que le conteneur est en display:block pour avoir une largeur réelle
+    const profileEl = document.getElementById('elevation-profile');
+    if (profileEl && profileEl.style.display === 'none') {
+        profileEl.style.display = 'block';
+    }
+
+    const width = svg.clientWidth || window.innerWidth - 40 || 800;
     const height = svg.clientHeight || 80;
 
     const maxDist = profileData[profileData.length - 1].dist;
@@ -175,6 +181,14 @@ export function drawProfileSVG(): void {
         <path d="${pointsStr}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" />
     `;
 }
+
+// v5.40.28: Redessiner lors du redimensionnement (rotation écran)
+window.addEventListener('resize', () => {
+    const profileEl = document.getElementById('elevation-profile');
+    if (profileEl && profileEl.classList.contains('is-open')) {
+        drawProfileSVG();
+    }
+});
 
 function setupProfileInteractions(): void {
     const container = document.getElementById('profile-chart-container');

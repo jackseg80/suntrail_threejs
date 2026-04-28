@@ -23,8 +23,7 @@ const SAMPLE_DELTA_M = 4;
 const UPDATE_INTERVAL_MS = 200;
 const MIN_ZOOM_DISPLAY = 13;
 const DRAG_HOLD_MS = 200;       // Délai avant activation du drag (distingue tap vs drag)
-const DETAIL_AUTO_CLOSE_MS = 5000;
-const ANTICIPATION_DISTANCE_M = 15; // Distance devant l'utilisateur en mode suivi
+const ANTICIPATION_DISTANCE_M = 8; // Distance devant l'utilisateur en mode suivi (réduit v5.40.28)
 
 const COMPASS_DIRS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
 
@@ -41,7 +40,6 @@ export class InclinometerWidget {
     private _isDraggingWidget = false;
     private _isCustomWidgetPos = false;
     private _dragHoldTimer: ReturnType<typeof setTimeout> | null = null;
-    private _detailTimer: ReturnType<typeof setTimeout> | null = null;
     private _lastTapTimeWidget = 0;
     private _lastTapTimeReticle = 0;
     
@@ -156,14 +154,15 @@ export class InclinometerWidget {
         const isTimelineOpen = document.body.classList.contains('timeline-open');
         
         if (isTimelineOpen) {
-            // Déplacer en HAUT (sous la barre de statut)
-            this.el.style.bottom = 'auto';
-            this.el.style.top = 'calc(var(--top-bar-h) + var(--safe-top) + 16px)';
+            // v5.40.27 : Reste en BAS mais décalé au dessus de la timeline
+            this.el.style.top = 'auto';
+            this.el.style.bottom = 'calc(var(--bar-h) + var(--safe-bottom) + 120px)';
         } else {
-            // Remettre en BAS
+            // Position standard
             this.el.style.top = 'auto';
             this.el.style.bottom = 'calc(var(--bar-h) + var(--safe-bottom) + 16px)';
         }
+        if (this._isExpanded) this.positionDetail();
     }
 
     private syncVisibility(): void {
@@ -224,23 +223,42 @@ export class InclinometerWidget {
             }
         }
 
-        const hCenter = getAltitudeAt(targetX, targetZ);
-        const hX      = getAltitudeAt(targetX + SAMPLE_DELTA_M, targetZ);
-        const hZ      = getAltitudeAt(targetX, targetZ + SAMPLE_DELTA_M);
+        const d = SAMPLE_DELTA_M / 2;
+        const hE = getAltitudeAt(targetX + d, targetZ);
+        const hW = getAltitudeAt(targetX - d, targetZ);
+        const hS = getAltitudeAt(targetX, targetZ + d);
+        const hN = getAltitudeAt(targetX, targetZ - d);
 
         const exag = state.RELIEF_EXAGGERATION || 1;
-        const realDHdX = (hX - hCenter) / exag / SAMPLE_DELTA_M;
-        const realDHdZ = (hZ - hCenter) / exag / SAMPLE_DELTA_M;
+        const realDHdX = (hE - hW) / exag / (2 * d);
+        const realDHdZ = (hS - hN) / exag / (2 * d);
 
-        const slopeRad = Math.atan(Math.sqrt(realDHdX * realDHdX + realDHdZ * realDHdZ));
-        this._lastSlopeDeg = Math.round(slopeRad * (180 / Math.PI));
-        this._lastSlopePct = Math.round(Math.tan(slopeRad) * 100);
+        const maxSlopeRad = Math.atan(Math.sqrt(realDHdX * realDHdX + realDHdZ * realDHdZ));
+        this._lastSlopeDeg = Math.round(maxSlopeRad * (180 / Math.PI));
+        this._lastSlopePct = Math.round(Math.tan(maxSlopeRad) * 100);
         this._lastAspectDeg = Math.round(((Math.atan2(realDHdX, realDHdZ) * 180 / Math.PI) + 360) % 360);
 
         // Mise à jour UI
         const labelKey = state.isFollowingUser ? 'inclinometer.label_following' : 'inclinometer.label';
         const label = i18n.t(labelKey);
-        this.el.textContent = `⛰ ${this._lastSlopeDeg}° (${this._lastSlopePct}%) — ${label}`;
+
+        if (state.isFollowingUser) {
+            // MODE SUIVI : Tout en % pour plus de clarté intuitive (v5.40.27)
+            const headingRad = (state.userHeading || 0) * Math.PI / 180;
+            const dirX = Math.sin(headingRad);
+            const dirZ = -Math.cos(headingRad);
+            
+            const pathSlope = realDHdX * dirX + realDHdZ * dirZ;
+            const pathSlopePct = Math.round(pathSlope * 100);
+            const sign = pathSlopePct > 0 ? '+' : '';
+            
+            // Format : 📈 +3% (max. 45%)
+            this.el.textContent = `📈 ${sign}${pathSlopePct}% (max. ${this._lastSlopePct}%) — ${label}`;
+        } else {
+            // MODE LIBRE : Priorité à la pente max du terrain (°) pour la lecture de carte/avalanche
+            // Format : ⛰ 45° (100%)
+            this.el.textContent = `⛰ ${this._lastSlopeDeg}° (${this._lastSlopePct}%) — ${label}`;
+        }
 
         // Couleurs selon danger (seuil avalanche Swisstopo)
         let color = '#a0a4bc'; // Gris par défaut
@@ -425,12 +443,10 @@ export class InclinometerWidget {
         this.positionDetail();
 
         requestAnimationFrame(() => { if (this.detailEl) this.detailEl.style.opacity = '1'; });
-        this._detailTimer = setTimeout(() => this.closeDetail(), DETAIL_AUTO_CLOSE_MS);
     }
 
     private closeDetail(): void {
         this._isExpanded = false;
-        if (this._detailTimer) { clearTimeout(this._detailTimer); this._detailTimer = null; }
         if (this.detailEl) { this.detailEl.remove(); this.detailEl = null; }
     }
 
