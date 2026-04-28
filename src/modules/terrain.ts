@@ -47,10 +47,13 @@ export function rebuildActiveTiles(): void {
     for (const tile of activeTiles.values()) {
         if (!tile.elevationTex || !tile.colorTex) continue;
         
-        // v5.28.45 : Nettoyage forcé des objets 3D si on passe en 2D
+        // v5.40.18 : Nettoyage forcé des objets 3D lors d'un changement de mode (2D/3D)
+        // On les supprime systématiquement pour forcer un re-rendu à la bonne altitude (0 en 2D, réel en 3D).
+        if (tile.forestMesh) { if (state.scene) state.scene.remove(tile.forestMesh); disposeObject(tile.forestMesh); tile.forestMesh = null; }
+        if (tile.buildingGroup) { if (state.scene) state.scene.remove(tile.buildingGroup); disposeObject(tile.buildingGroup); tile.buildingGroup = null; }
+        if (tile.poiGroup) { if (state.scene) state.scene.remove(tile.poiGroup); disposeObject(tile.poiGroup); tile.poiGroup = null; }
+        
         if (is2D) {
-            if (tile.forestMesh) { if (state.scene) state.scene.remove(tile.forestMesh); disposeObject(tile.forestMesh); tile.forestMesh = null; }
-            if (tile.buildingGroup) { if (state.scene) state.scene.remove(tile.buildingGroup); disposeObject(tile.buildingGroup); tile.buildingGroup = null; }
             if (tile.waterMaskTex) { tile.waterMaskTex.dispose(); tile.waterMaskTex = null; }
         }
 

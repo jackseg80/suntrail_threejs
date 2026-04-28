@@ -1,3 +1,7 @@
+## [5.40.25] - 2026-04-28
+### Fixed
+- **Mode Toggle Correction** : Suppression systématique des objets 3D (Signalisation, Bâtiments, Forêts) lors du passage 2D/3D pour garantir leur plaquage immédiat à la bonne altitude.
+
 ## [5.40.24] - 2026-04-27
 ### Changed
 - **Architectural Stabilization** : Finalisation du découpage modulaire (GPX, Init, Environment) pour la v6.0.
