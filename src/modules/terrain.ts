@@ -192,7 +192,7 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
         const is2DGlobal = state.IS_2D_MODE || state.PERFORMANCE_PRESET === 'eco' || state.ZOOM <= 10;
         terrainUniforms.uExaggeration.value = state.RELIEF_EXAGGERATION;
         const MIN_SLOPE_LOD = 11;
-        terrainUniforms.uShowSlopes.value = (state.SHOW_SLOPES && !is2DGlobal && state.ZOOM >= MIN_SLOPE_LOD) ? 1.0 : 0.0;
+        terrainUniforms.uShowSlopes.value = (state.SHOW_SLOPES && state.ZOOM >= MIN_SLOPE_LOD) ? 1.0 : 0.0;
         terrainUniforms.uShowHydrology.value = state.SHOW_HYDROLOGY ? 1.0 : 0.0;
 
         if (!state.camera) return Promise.resolve();

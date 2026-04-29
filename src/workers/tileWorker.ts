@@ -48,7 +48,7 @@ import type { TileWorkerRequest, TileWorkerResponse } from '../types/worker';
 // ... (backoff functions unchanged)
 
 self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
-    const { id, type, elevUrl, colorUrl, overlayUrl, isOffline, zoom, elevSourceZoom, is2D, elevBlob, colorBlob, overlayBlob } = e.data;
+    const { id, type, tileX, tileY, elevUrl, colorUrl, overlayUrl, isOffline, zoom, elevSourceZoom, is2D, elevBlob, colorBlob, overlayBlob } = e.data;
 
     // --- ANNULATION ---
     if (type === 'cancel') {
@@ -96,12 +96,25 @@ self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
                     results.pixelData = data.buffer;
                     transferables.push(results.pixelData);
 
-                    // --- GÉNÉRATION NORMAL MAP (Sautée en 2D pour économiser ~15% CPU) ---
-                    if (!is2D) {
+                    // --- GÉNÉRATION NORMAL MAP ---
+                    // v5.40.28 : Toujours générer pour supporter les pentes en 2D (style Swissmobile)
+                    if (true) {
                         const normalData = new Uint8ClampedArray(width * height * 4);
                         const sourceZ = elevSourceZoom || zoom || 14;
+
                         // v5.40.18 : Optimisation mathématique — EARTH_CIRCUMFERENCE / 2^z
-                        const tileSizeMeters = 40075016.686 / (1 << sourceZ);
+                        // v5.40.28 : Correction LATITUDE pour le calcul des pentes (crucial hors équateur)
+                        const equatorTileSize = 40075016.686 / (1 << sourceZ);
+                        
+                        let latFactor = 1.0;
+                        if (tileY !== undefined) {
+                            const n = Math.pow(2, zoom);
+                            const yNorm = (tileY + 0.5) / n; // centre de la tuile
+                            const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * yNorm)));
+                            latFactor = Math.cos(latRad);
+                        }
+                        
+                        const tileSizeMeters = equatorTileSize * latFactor;
                         const pixelSize = tileSizeMeters / width;
                         const invPixelSize = 1.0 / pixelSize;
 

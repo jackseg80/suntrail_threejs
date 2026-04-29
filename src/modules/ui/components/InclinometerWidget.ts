@@ -15,7 +15,7 @@ import { state, isProActive } from '../../state';
 import { getAltitudeAt, findTerrainIntersection } from '../../analysis';
 import { showUpgradePrompt } from '../../iap';
 import { i18n } from '../../../i18n/I18nService';
-import { lngLatToWorld } from '../../geo';
+import { lngLatToWorld, worldToLngLat } from '../../geo';
 import * as THREE from 'three';
 
 /** Décalage d'échantillonnage en mètres monde pour le calcul du gradient */
@@ -230,8 +230,18 @@ export class InclinometerWidget {
         const hN = getAltitudeAt(targetX, targetZ - d);
 
         const exag = state.RELIEF_EXAGGERATION || 1;
-        const realDHdX = (hE - hW) / exag / (2 * d);
-        const realDHdZ = (hS - hN) / exag / (2 * d);
+        let realDHdX = (hE - hW) / exag / (2 * d);
+        let realDHdZ = (hS - hN) / exag / (2 * d);
+
+        // v5.40.28 : Correction LATITUDE pour l'inclinomètre
+        // En Mercator, les distances horizontales sont dilatées par 1/cos(lat).
+        // Pour retrouver la pente réelle, on doit diviser la pente apparente par cos(lat).
+        const { lat } = worldToLngLat(targetX, targetZ, state.originTile);
+        const latFactor = Math.cos(lat * Math.PI / 180);
+        if (latFactor > 0.01) {
+            realDHdX /= latFactor;
+            realDHdZ /= latFactor;
+        }
 
         const maxSlopeRad = Math.atan(Math.sqrt(realDHdX * realDHdX + realDHdZ * realDHdZ));
         this._lastSlopeDeg = Math.round(maxSlopeRad * (180 / Math.PI));
@@ -248,6 +258,7 @@ export class InclinometerWidget {
             const dirX = Math.sin(headingRad);
             const dirZ = -Math.cos(headingRad);
             
+            // v5.40.28 : La pente projetée doit aussi être corrigée par la latitude
             const pathSlope = realDHdX * dirX + realDHdZ * dirZ;
             const pathSlopePct = Math.round(pathSlope * 100);
             const sign = pathSlopePct > 0 ? '+' : '';

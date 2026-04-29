@@ -89,6 +89,7 @@ class TileWorkerManager {
     }
 
     loadTile(
+        tileX: number, tileY: number,
         elevUrl: string | null, colorUrl: string | null, overlayUrl: string | null, 
         zoom: number, elevSourceZoom: number = zoom,
         blobs?: { elev?: Blob | null, color?: Blob | null, overlay?: Blob | null },
@@ -97,7 +98,7 @@ class TileWorkerManager {
         if (this.workers.length === 0 || !state.USE_WORKERS) return { promise: Promise.resolve(null), taskId: -1 };
 
         // v5.29.5 : Dédoublonnage in-flight
-        const dedupeKey = `${elevUrl}|${colorUrl}|${overlayUrl}|${zoom}|${elevSourceZoom}|${is2D}`;
+        const dedupeKey = `${tileX}|${tileY}|${elevUrl}|${colorUrl}|${overlayUrl}|${zoom}|${elevSourceZoom}|${is2D}`;
         const existing = this.inFlight.get(dedupeKey);
         if (existing) {
             existing.refCount++;
@@ -137,7 +138,7 @@ class TileWorkerManager {
             });
 
             const msg: TileWorkerRequest = { 
-                id, elevUrl, colorUrl, overlayUrl, isOffline: state.IS_OFFLINE, zoom, elevSourceZoom,
+                id, tileX, tileY, elevUrl, colorUrl, overlayUrl, isOffline: state.IS_OFFLINE, zoom, elevSourceZoom,
                 is2D,
                 elevBlob: blobs?.elev,
                 colorBlob: blobs?.color,

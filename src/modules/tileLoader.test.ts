@@ -144,7 +144,7 @@ describe('tileLoader.ts URLs', () => {
             const { tileWorkerManager } = await import('./workerManager');
             await loadTileData(0, 0, 10, true);
             expect(tileWorkerManager.loadTile).toHaveBeenCalledWith(
-                null, expect.any(String), null, 10, 10, expect.any(Object), true
+                0, 0, null, expect.any(String), null, 10, 10, expect.any(Object), true
             );
         });
 
@@ -155,7 +155,7 @@ describe('tileLoader.ts URLs', () => {
             state.IS_2D_MODE = false;
             await loadTileData(0, 0, 14, false);
             expect(tileWorkerManager.loadTile).toHaveBeenCalledWith(
-                expect.any(String), expect.any(String), expect.any(String), 14, 14, expect.any(Object), false
+                0, 0, expect.any(String), expect.any(String), expect.any(String), 14, 14, expect.any(Object), false
             );
         });
     });

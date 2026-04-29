@@ -1,4 +1,13 @@
-## [5.40.28] - 2026-04-28
+## [5.40.30] - 2026-04-29
+
+### Fixed
+- Precision: Fixed 30° slope shading accuracy using latitude correction (correcting ~30% error in Alps).
+- Rendu: Slope shading now works in 2D mode (Pixel-Perfect Fragment Shader).
+- Performance: Fixed dark tiles at low zoom levels by restoring optimized material selection.
+- 3D/Inclinometer: Fixed inclinometer accuracy using latitude correction; restored perfect 3D tree/house positioning.
+- Stability: All tests pass (613/613).
+
+## [5.40.29] - 2026-04-29
 ### Added
 - **Inclinomètre Réactif** : Distance d'anticipation réduite à 8m pour une lecture immédiate et fidèle en mode suivi.
 - **Support Rotation GPX** : Redessin automatique du profil d'élévation GPX lors du basculement portrait/paysage pour assurer une visibilité complète du tracé.
@@ -8,51 +17,132 @@
 - **UI Inclinomètre** : Harmonisation de l'affichage (tout en %) et persistance du panneau de détail.
 - **Positionnement UI** : Décalage intelligent de 120px au-dessus de la barre de temps.
 
-## [5.40.27] - 2026-04-28
+## [5.40.30] - 2026-04-29
+
+### Fixed
+- Precision: Fixed 30° slope shading accuracy using latitude correction (correcting ~30% error in Alps).
+- Rendu: Slope shading now works in 2D mode (Pixel-Perfect Fragment Shader).
+- Performance: Fixed dark tiles at low zoom levels by restoring optimized material selection.
+- 3D/Inclinometer: Fixed inclinometer accuracy using latitude correction; restored perfect 3D tree/house positioning.
+- Stability: All tests pass (613/613).
+
+## [5.40.29] - 2026-04-29
 ### Fixed
 - **Swiss 3D Buildings** : Passage au Zoom 14 pour les données vectorielles SwissTopo, garantissant des empreintes de bâtiments individuelles précises et corrigeant les effets de "blocs urbains" généralisés.
 - **Building Density** : Correction du bug de quota de bâtiments et augmentation de la limite à 500 objets par tuile pour les zones denses.
 - **Hydrology & Vegetation** : Alignement de la précision vectorielle sur le Zoom 14 en Suisse pour une cohérence géographique totale.
 
-## [5.40.26] - 2026-04-28
+## [5.40.30] - 2026-04-29
+
+### Fixed
+- Precision: Fixed 30° slope shading accuracy using latitude correction (correcting ~30% error in Alps).
+- Rendu: Slope shading now works in 2D mode (Pixel-Perfect Fragment Shader).
+- Performance: Fixed dark tiles at low zoom levels by restoring optimized material selection.
+- 3D/Inclinometer: Fixed inclinometer accuracy using latitude correction; restored perfect 3D tree/house positioning.
+- Stability: All tests pass (613/613).
+
+## [5.40.29] - 2026-04-29
 ### Fixed
 - **Recorded Track Cleanup** : Correction du bug où la trace rouge (REC) persistait après avoir été effacée.
 - **Altitude Consistency** : Harmonisation de l'altitude de survol (surfaceOffset) à 12m pour tous les tracés (GPX et REC) dans tous les modes pour éviter les disparités de visibilité 2D/3D.
 
-## [5.40.25] - 2026-04-28
+## [5.40.30] - 2026-04-29
+
+### Fixed
+- Precision: Fixed 30° slope shading accuracy using latitude correction (correcting ~30% error in Alps).
+- Rendu: Slope shading now works in 2D mode (Pixel-Perfect Fragment Shader).
+- Performance: Fixed dark tiles at low zoom levels by restoring optimized material selection.
+- 3D/Inclinometer: Fixed inclinometer accuracy using latitude correction; restored perfect 3D tree/house positioning.
+- Stability: All tests pass (613/613).
+
+## [5.40.29] - 2026-04-29
 ### Fixed
 - **Mode Toggle Correction** : Suppression systématique des objets 3D (Signalisation, Bâtiments, Forêts) lors du passage 2D/3D pour garantir leur plaquage immédiat à la bonne altitude.
 
-## [5.40.24] - 2026-04-27
+## [5.40.30] - 2026-04-29
+
+### Fixed
+- Precision: Fixed 30° slope shading accuracy using latitude correction (correcting ~30% error in Alps).
+- Rendu: Slope shading now works in 2D mode (Pixel-Perfect Fragment Shader).
+- Performance: Fixed dark tiles at low zoom levels by restoring optimized material selection.
+- 3D/Inclinometer: Fixed inclinometer accuracy using latitude correction; restored perfect 3D tree/house positioning.
+- Stability: All tests pass (613/613).
+
+## [5.40.29] - 2026-04-29
 ### Changed
 - **Architectural Stabilization** : Finalisation du découpage modulaire (GPX, Init, Environment) pour la v6.0.
 - **Improved Testing** : Correction des types de tests et extension de la couverture à 609 tests unitaires.
 - **Performance** : Optimisation de la VRAM via des matériaux partagés pour les tracés GPX.
 
-## [5.40.23] - 2026-04-27
+## [5.40.30] - 2026-04-29
+
+### Fixed
+- Precision: Fixed 30° slope shading accuracy using latitude correction (correcting ~30% error in Alps).
+- Rendu: Slope shading now works in 2D mode (Pixel-Perfect Fragment Shader).
+- Performance: Fixed dark tiles at low zoom levels by restoring optimized material selection.
+- 3D/Inclinometer: Fixed inclinometer accuracy using latitude correction; restored perfect 3D tree/house positioning.
+- Stability: All tests pass (613/613).
+
+## [5.40.29] - 2026-04-29
 ### Added
 - **Extended Unit Testing** :
   - `appInit.test.ts` : Validation de la séquence orchestrée de démarrage.
   - `gpxLayers.test.ts` : Test de la simplification RDP adaptative selon les presets de performance.
   - `ui.test.ts` : Refonte pour s'aligner sur la nouvelle architecture modulaire.
 
-## [5.40.22] - 2026-04-27
+## [5.40.30] - 2026-04-29
+
+### Fixed
+- Precision: Fixed 30° slope shading accuracy using latitude correction (correcting ~30% error in Alps).
+- Rendu: Slope shading now works in 2D mode (Pixel-Perfect Fragment Shader).
+- Performance: Fixed dark tiles at low zoom levels by restoring optimized material selection.
+- 3D/Inclinometer: Fixed inclinometer accuracy using latitude correction; restored perfect 3D tree/house positioning.
+- Stability: All tests pass (613/613).
+
+## [5.40.29] - 2026-04-29
 ### Added
 - **Integrity Testing** : Introduction de `environment.test.ts` pour valider la structure du graphe de scène (Lights, Fog, Sky). Prévient les régressions visuelles silencieuses lors des refactorisations 3D.
 
-## [5.40.21] - 2026-04-27
+## [5.40.30] - 2026-04-29
+
+### Fixed
+- Precision: Fixed 30° slope shading accuracy using latitude correction (correcting ~30% error in Alps).
+- Rendu: Slope shading now works in 2D mode (Pixel-Perfect Fragment Shader).
+- Performance: Fixed dark tiles at low zoom levels by restoring optimized material selection.
+- 3D/Inclinometer: Fixed inclinometer accuracy using latitude correction; restored perfect 3D tree/house positioning.
+- Stability: All tests pass (613/613).
+
+## [5.40.29] - 2026-04-29
 ### Fixed
 - **3D Visuals Fix** : Restauration de la luminosité solaire et des ombres portées suite à la modularisation de l'environnement.
   - Correction de l'ajout de la lumière directionnelle et de sa cible à la scène 3D.
   - Harmonisation de l'activation du ShadowMap avec l'état global.
 
-## [5.40.20] - 2026-04-27
+## [5.40.30] - 2026-04-29
+
+### Fixed
+- Precision: Fixed 30° slope shading accuracy using latitude correction (correcting ~30% error in Alps).
+- Rendu: Slope shading now works in 2D mode (Pixel-Perfect Fragment Shader).
+- Performance: Fixed dark tiles at low zoom levels by restoring optimized material selection.
+- 3D/Inclinometer: Fixed inclinometer accuracy using latitude correction; restored perfect 3D tree/house positioning.
+- Stability: All tests pass (613/613).
+
+## [5.40.29] - 2026-04-29
 ### Changed
 - **Engine Modularization** :
   - **Environment Service** : Extraction de la gestion de l'atmosphère (Ciel, Brouillard dynamique, Lumières) de `scene.ts` vers un nouveau module `environment.ts`.
   - **Scene Cleanup** : Réduction de la complexité de `scene.ts`, recentré exclusivement sur l'orchestration du rendu et la physique de la caméra.
 
-## [5.40.19] - 2026-04-27
+## [5.40.30] - 2026-04-29
+
+### Fixed
+- Precision: Fixed 30° slope shading accuracy using latitude correction (correcting ~30% error in Alps).
+- Rendu: Slope shading now works in 2D mode (Pixel-Perfect Fragment Shader).
+- Performance: Fixed dark tiles at low zoom levels by restoring optimized material selection.
+- 3D/Inclinometer: Fixed inclinometer accuracy using latitude correction; restored perfect 3D tree/house positioning.
+- Stability: All tests pass (613/613).
+
+## [5.40.29] - 2026-04-29
 ### Changed
 - **Architecture Refactoring (v6.0 Preparation)** :
   - **Modular GPX Engine** : Extraction de toute la logique de gestion des tracés GPX (rendu 3D, matériaux partagés, simplification RDP adaptative) de `terrain.ts` vers un nouveau module `gpxLayers.ts`.

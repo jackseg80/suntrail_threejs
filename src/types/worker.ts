@@ -5,6 +5,8 @@
 export interface TileWorkerRequest {
     id: number;
     type?: 'cancel';
+    tileX?: number;
+    tileY?: number;
     elevUrl: string | null;
     colorUrl: string | null;
     overlayUrl: string | null;
