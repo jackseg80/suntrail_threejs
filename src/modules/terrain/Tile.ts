@@ -244,7 +244,6 @@ export class Tile {
             shader.uniforms.uColorOffset = { value: this.colorOffset };
             shader.uniforms.uColorScale = { value: this.colorScale };
             shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
-            shader.uniforms.uHasNormalMap = { value: !!this.normalTex };
             shader.uniforms.uWaterMask = { value: this.waterMaskTex };
             shader.uniforms.uHasWaterMask = { value: !!this.waterMaskTex };
 
@@ -272,20 +271,17 @@ export class Tile {
                  .replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);\nvLocalUv = uv;`);
 
                 if (is2D || isLight) {
-                    // v5.40.28 : En 2D ou Light, vTrueNormal n'est pas calculé au vertex pour économiser du CPU
-                    // objectNormal n'existe que dans MeshStandardMaterial (3D Light)
-                    if (!is2D) {
-                        shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\nobjectNormal = vec3(0.0,1.0,0.0);`);
-                    }
+                    shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\nobjectNormal = vec3(0.0,1.0,0.0); vTrueNormal = vec3(0.0,1.0,0.0);`);
                 } else {
                     shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n
                         const float HT_N = 0.5 / 256.0;
                         vec2 elevUv = clamp(uElevOffset + (uv * uElevScale), vec2(HT_N), vec2(1.0 - HT_N));
                         vec3 normalSample = texture2D(uNormalMap, elevUv).rgb * 2.0 - 1.0;
                         vTrueNormal = normalize(normalSample);
-
-                        // v5.40.28 : Calcul de la normale pour la lumière (objectNormal)
-                        objectNormal = normalize(vec3(normalSample.x * uExaggeration, normalSample.y, normalSample.z * uExaggeration));
+                        // v5.32.22 : Correction cruciale pour géométrie unitaire (1x1)
+                        // Comme le mesh est scalé par uTileSize, la normale locale doit être multipliée par ce même 
+                        // facteur sur X et Z pour que la normalMatrix (inverse-transpose) donne une normale monde correcte.
+                        objectNormal = normalize(vec3(normalSample.x * uExaggeration * uTileSize, normalSample.y, normalSample.z * uExaggeration * uTileSize));
                     `);
                 }
 
@@ -299,9 +295,7 @@ export class Tile {
                 shader.fragmentShader = `
                     #define IS_2D ${is2D ? '1' : '0'}
                     varying vec2 vLocalUv;
-                    uniform sampler2D uOverlayMap; uniform bool uHasOverlay; uniform float uShowSlopes; uniform float uShowHydrology; uniform float uTime; 
-                    varying vec3 vTrueNormal; varying vec2 vWorldXZ;
-                    uniform sampler2D uNormalMap; uniform vec2 uElevOffset; uniform float uElevScale; uniform bool uHasNormalMap;
+                    uniform sampler2D uOverlayMap; uniform bool uHasOverlay; uniform float uShowSlopes; uniform float uShowHydrology; uniform float uTime; varying vec3 vTrueNormal; varying vec2 vWorldXZ;
                     uniform sampler2D uWaterMask; uniform bool uHasWaterMask;
                     ${shader.fragmentShader}
                 `.replace('#include <map_fragment>', `
@@ -323,13 +317,8 @@ export class Tile {
                     }
                     #endif
 
-                    if (uShowSlopes > 0.5 && uHasNormalMap) {
-                        // v5.40.28 : Calcul de pente au pixel (Fragment Shader) pour un rendu parfait en 2D
-                        const float HT_N = 0.5 / 256.0;
-                        vec2 elevUv = clamp(uElevOffset + (vLocalUv * uElevScale), vec2(HT_N), vec2(1.0 - HT_N));
-                        vec3 normal = texture2D(uNormalMap, elevUv).rgb * 2.0 - 1.0;
-                        
-                        float ny = clamp(normalize(normal).y, 0.0, 1.0);
+                    if (uShowSlopes > 0.5) {
+                        float ny = clamp(normalize(vTrueNormal).y, 0.0, 1.0);
                         float yellowMix = smoothstep(0.8829, 0.8480, ny);
                         float orangeMix = smoothstep(0.8387, 0.7986, ny);
                         float redMix = smoothstep(0.7880, 0.7431, ny);
@@ -341,10 +330,7 @@ export class Tile {
             }
         };
 
-        // v5.40.28 : On utilise le matériau 2D (Basic) ou 3D (Standard) selon le mode.
-        // Le shader de pente fonctionnera sur les deux grâce à l'échantillonnage au pixel.
         const material = materialPool.acquire(is2D, onCompile);
-        
         if (is2D) (material as THREE.MeshBasicMaterial).map = this.colorTex;
         else (material as THREE.MeshStandardMaterial).map = this.colorTex;
 
