@@ -244,6 +244,7 @@ export class Tile {
             shader.uniforms.uColorOffset = { value: this.colorOffset };
             shader.uniforms.uColorScale = { value: this.colorScale };
             shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
+            shader.uniforms.uHasNormalMap = { value: !!this.normalTex };
             shader.uniforms.uWaterMask = { value: this.waterMaskTex };
             shader.uniforms.uHasWaterMask = { value: !!this.waterMaskTex };
 
@@ -300,7 +301,7 @@ export class Tile {
                     varying vec2 vLocalUv;
                     uniform sampler2D uOverlayMap; uniform bool uHasOverlay; uniform float uShowSlopes; uniform float uShowHydrology; uniform float uTime; 
                     varying vec3 vTrueNormal; varying vec2 vWorldXZ;
-                    uniform sampler2D uNormalMap; uniform vec2 uElevOffset; uniform float uElevScale;
+                    uniform sampler2D uNormalMap; uniform vec2 uElevOffset; uniform float uElevScale; uniform bool uHasNormalMap;
                     uniform sampler2D uWaterMask; uniform bool uHasWaterMask;
                     ${shader.fragmentShader}
                 `.replace('#include <map_fragment>', `
@@ -322,7 +323,7 @@ export class Tile {
                     }
                     #endif
 
-                    if (uShowSlopes > 0.5) {
+                    if (uShowSlopes > 0.5 && uHasNormalMap) {
                         // v5.40.28 : Calcul de pente au pixel (Fragment Shader) pour un rendu parfait en 2D
                         const float HT_N = 0.5 / 256.0;
                         vec2 elevUv = clamp(uElevOffset + (vLocalUv * uElevScale), vec2(HT_N), vec2(1.0 - HT_N));

@@ -1,3 +1,9 @@
+## [5.40.31] - 2026-04-29
+
+### Fixed
+- UI/UX: Fixed transient red flashes on tiles during rapid zoom/dezoom when slope shading is enabled.
+- Rendering: Added `uHasNormalMap` check in fragment shader to ensure slopes only display when data is ready.
+
 ## [5.40.30] - 2026-04-29
 
 ### Fixed
@@ -17,6 +23,12 @@
 - **UI Inclinomètre** : Harmonisation de l'affichage (tout en %) et persistance du panneau de détail.
 - **Positionnement UI** : Décalage intelligent de 120px au-dessus de la barre de temps.
 
+## [5.40.31] - 2026-04-29
+
+### Fixed
+- UI/UX: Fixed transient red flashes on tiles during rapid zoom/dezoom when slope shading is enabled.
+- Rendering: Added `uHasNormalMap` check in fragment shader to ensure slopes only display when data is ready.
+
 ## [5.40.30] - 2026-04-29
 
 ### Fixed
@@ -32,6 +44,12 @@
 - **Building Density** : Correction du bug de quota de bâtiments et augmentation de la limite à 500 objets par tuile pour les zones denses.
 - **Hydrology & Vegetation** : Alignement de la précision vectorielle sur le Zoom 14 en Suisse pour une cohérence géographique totale.
 
+## [5.40.31] - 2026-04-29
+
+### Fixed
+- UI/UX: Fixed transient red flashes on tiles during rapid zoom/dezoom when slope shading is enabled.
+- Rendering: Added `uHasNormalMap` check in fragment shader to ensure slopes only display when data is ready.
+
 ## [5.40.30] - 2026-04-29
 
 ### Fixed
@@ -46,6 +64,12 @@
 - **Recorded Track Cleanup** : Correction du bug où la trace rouge (REC) persistait après avoir été effacée.
 - **Altitude Consistency** : Harmonisation de l'altitude de survol (surfaceOffset) à 12m pour tous les tracés (GPX et REC) dans tous les modes pour éviter les disparités de visibilité 2D/3D.
 
+## [5.40.31] - 2026-04-29
+
+### Fixed
+- UI/UX: Fixed transient red flashes on tiles during rapid zoom/dezoom when slope shading is enabled.
+- Rendering: Added `uHasNormalMap` check in fragment shader to ensure slopes only display when data is ready.
+
 ## [5.40.30] - 2026-04-29
 
 ### Fixed
@@ -58,6 +82,12 @@
 ## [5.40.29] - 2026-04-29
 ### Fixed
 - **Mode Toggle Correction** : Suppression systématique des objets 3D (Signalisation, Bâtiments, Forêts) lors du passage 2D/3D pour garantir leur plaquage immédiat à la bonne altitude.
+
+## [5.40.31] - 2026-04-29
+
+### Fixed
+- UI/UX: Fixed transient red flashes on tiles during rapid zoom/dezoom when slope shading is enabled.
+- Rendering: Added `uHasNormalMap` check in fragment shader to ensure slopes only display when data is ready.
 
 ## [5.40.30] - 2026-04-29
 
@@ -73,6 +103,12 @@
 - **Architectural Stabilization** : Finalisation du découpage modulaire (GPX, Init, Environment) pour la v6.0.
 - **Improved Testing** : Correction des types de tests et extension de la couverture à 609 tests unitaires.
 - **Performance** : Optimisation de la VRAM via des matériaux partagés pour les tracés GPX.
+
+## [5.40.31] - 2026-04-29
+
+### Fixed
+- UI/UX: Fixed transient red flashes on tiles during rapid zoom/dezoom when slope shading is enabled.
+- Rendering: Added `uHasNormalMap` check in fragment shader to ensure slopes only display when data is ready.
 
 ## [5.40.30] - 2026-04-29
 
@@ -90,6 +126,12 @@
   - `gpxLayers.test.ts` : Test de la simplification RDP adaptative selon les presets de performance.
   - `ui.test.ts` : Refonte pour s'aligner sur la nouvelle architecture modulaire.
 
+## [5.40.31] - 2026-04-29
+
+### Fixed
+- UI/UX: Fixed transient red flashes on tiles during rapid zoom/dezoom when slope shading is enabled.
+- Rendering: Added `uHasNormalMap` check in fragment shader to ensure slopes only display when data is ready.
+
 ## [5.40.30] - 2026-04-29
 
 ### Fixed
@@ -102,6 +144,12 @@
 ## [5.40.29] - 2026-04-29
 ### Added
 - **Integrity Testing** : Introduction de `environment.test.ts` pour valider la structure du graphe de scène (Lights, Fog, Sky). Prévient les régressions visuelles silencieuses lors des refactorisations 3D.
+
+## [5.40.31] - 2026-04-29
+
+### Fixed
+- UI/UX: Fixed transient red flashes on tiles during rapid zoom/dezoom when slope shading is enabled.
+- Rendering: Added `uHasNormalMap` check in fragment shader to ensure slopes only display when data is ready.
 
 ## [5.40.30] - 2026-04-29
 
@@ -118,6 +166,12 @@
   - Correction de l'ajout de la lumière directionnelle et de sa cible à la scène 3D.
   - Harmonisation de l'activation du ShadowMap avec l'état global.
 
+## [5.40.31] - 2026-04-29
+
+### Fixed
+- UI/UX: Fixed transient red flashes on tiles during rapid zoom/dezoom when slope shading is enabled.
+- Rendering: Added `uHasNormalMap` check in fragment shader to ensure slopes only display when data is ready.
+
 ## [5.40.30] - 2026-04-29
 
 ### Fixed
@@ -132,6 +186,12 @@
 - **Engine Modularization** :
   - **Environment Service** : Extraction de la gestion de l'atmosphère (Ciel, Brouillard dynamique, Lumières) de `scene.ts` vers un nouveau module `environment.ts`.
   - **Scene Cleanup** : Réduction de la complexité de `scene.ts`, recentré exclusivement sur l'orchestration du rendu et la physique de la caméra.
+
+## [5.40.31] - 2026-04-29
+
+### Fixed
+- UI/UX: Fixed transient red flashes on tiles during rapid zoom/dezoom when slope shading is enabled.
+- Rendering: Added `uHasNormalMap` check in fragment shader to ensure slopes only display when data is ready.
 
 ## [5.40.30] - 2026-04-29
 
