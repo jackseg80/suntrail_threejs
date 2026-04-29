@@ -54,9 +54,18 @@ export class Tile {
     elevOffset = new THREE.Vector2(); elevScale = 1.0;
     colorOffset = new THREE.Vector2(); colorScale = 1.0;
 
+    latFactor: number = 1.0;
+
     constructor(tx: number, ty: number, zoom: number, key: string) {
         this.tx = tx; this.ty = ty; this.zoom = zoom; this.key = key;
         this.tileSizeMeters = EARTH_CIRCUMFERENCE / getPow2(zoom);
+
+        // v5.40.33 : Facteur de correction de latitude pour les pentes (sans casser la géométrie)
+        const n = getPow2(zoom);
+        const yNorm = (ty + 0.5) / n;
+        const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * yNorm)));
+        this.latFactor = Math.cos(latRad);
+
         this.updateWorldPosition();
         this.updateHybridSettings();
     }
@@ -239,6 +248,7 @@ export class Tile {
             shader.uniforms.uShowHydrology = terrainUniforms.uShowHydrology;
             shader.uniforms.uTime = terrainUniforms.uTime;
             shader.uniforms.uTileSize = { value: this.tileSizeMeters };
+            shader.uniforms.uLatFactor = { value: this.latFactor };
             shader.uniforms.uElevOffset = { value: this.elevOffset };
             shader.uniforms.uElevScale = { value: this.elevScale };
             shader.uniforms.uColorOffset = { value: this.colorOffset };
@@ -284,8 +294,11 @@ export class Tile {
                         vec3 normalSample = texture2D(uNormalMap, elevUv).rgb * 2.0 - 1.0;
                         vTrueNormal = normalize(normalSample);
 
-                        // v5.40.28 : Calcul de la normale pour la lumière (objectNormal)
-                        objectNormal = normalize(vec3(normalSample.x * uExaggeration, normalSample.y, normalSample.z * uExaggeration));
+                        // v5.40.33 : Calcul de la normale pour la lumière (objectNormal)
+                        // On ré-introduit uTileSize pour que la normale locale tienne compte de l'étirement
+                        // Mercator du maillage (cancels normalMatrix scaling).
+                        // normalSample est ici une normale "Mercator" générée par le worker.
+                        objectNormal = normalize(vec3(normalSample.x * uExaggeration * uTileSize, normalSample.y, normalSample.z * uExaggeration * uTileSize));
                     `);
                 }
 
@@ -302,6 +315,7 @@ export class Tile {
                     uniform sampler2D uOverlayMap; uniform bool uHasOverlay; uniform float uShowSlopes; uniform float uShowHydrology; uniform float uTime; 
                     varying vec3 vTrueNormal; varying vec2 vWorldXZ;
                     uniform sampler2D uNormalMap; uniform vec2 uElevOffset; uniform float uElevScale; uniform bool uHasNormalMap;
+                    uniform float uLatFactor;
                     uniform sampler2D uWaterMask; uniform bool uHasWaterMask;
                     ${shader.fragmentShader}
                 `.replace('#include <map_fragment>', `
@@ -324,12 +338,17 @@ export class Tile {
                     #endif
 
                     if (uShowSlopes > 0.5 && uHasNormalMap) {
-                        // v5.40.28 : Calcul de pente au pixel (Fragment Shader) pour un rendu parfait en 2D
+                        // v5.40.33 : Calcul de pente au pixel (Fragment Shader)
                         const float HT_N = 0.5 / 256.0;
                         vec2 elevUv = clamp(uElevOffset + (vLocalUv * uElevScale), vec2(HT_N), vec2(1.0 - HT_N));
-                        vec3 normal = texture2D(uNormalMap, elevUv).rgb * 2.0 - 1.0;
+                        vec3 normalMerc = texture2D(uNormalMap, elevUv).rgb * 2.0 - 1.0;
                         
-                        float ny = clamp(normalize(normal).y, 0.0, 1.0);
+                        // v5.40.33 : On "redresse" la normale Mercator pour retrouver la pente réelle
+                        // En Mercator, la pente est dilatée par 1/cos(lat). 
+                        // Pour retrouver la pente réelle, on réduit la composante Y de la normale.
+                        vec3 normalReal = normalize(vec3(normalMerc.x, normalMerc.y * uLatFactor, normalMerc.z));
+                        
+                        float ny = clamp(normalReal.y, 0.0, 1.0);
                         float yellowMix = smoothstep(0.8829, 0.8480, ny);
                         float orangeMix = smoothstep(0.8387, 0.7986, ny);
                         float redMix = smoothstep(0.7880, 0.7431, ny);

@@ -103,18 +103,11 @@ self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
                         const sourceZ = elevSourceZoom || zoom || 14;
 
                         // v5.40.18 : Optimisation mathématique — EARTH_CIRCUMFERENCE / 2^z
-                        // v5.40.28 : Correction LATITUDE pour le calcul des pentes (crucial hors équateur)
-                        const equatorTileSize = 40075016.686 / (1 << sourceZ);
+                        // v5.40.33 : On revient à la taille ÉQUATORIALE pour la Normal Map.
+                        // L'éclairage (Standard Material) doit être cohérent avec la géométrie Mercator.
+                        // La correction de latitude pour les pentes se fera dans le Fragment Shader.
+                        const tileSizeMeters = 40075016.686 / (1 << sourceZ);
                         
-                        let latFactor = 1.0;
-                        if (tileY !== undefined) {
-                            const n = Math.pow(2, zoom);
-                            const yNorm = (tileY + 0.5) / n; // centre de la tuile
-                            const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * yNorm)));
-                            latFactor = Math.cos(latRad);
-                        }
-                        
-                        const tileSizeMeters = equatorTileSize * latFactor;
                         const pixelSize = tileSizeMeters / width;
                         const invPixelSize = 1.0 / pixelSize;
 
