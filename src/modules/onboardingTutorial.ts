@@ -24,11 +24,11 @@ const SLIDES: Slide[] = [
     { icon: '\u{1F3D4}\uFE0F', titleKey: 'onboarding.slide1.title', descKey: 'onboarding.slide1.desc' },
     { icon: '\u{1F590}\uFE0F', titleKey: 'onboarding.slideGestures.title', descKey: 'onboarding.slideGestures.desc', special: 'gesture-grid' },
     { icon: '\u{1F50D}', titleKey: 'onboarding.slide2.title', descKey: 'onboarding.slide2.desc' },
-    { icon: '\u{1F39B}\uFE0F', titleKey: 'onboarding.slide3.title', descKey: 'onboarding.slide3.desc', special: 'fab-grid' },
-    { icon: '\u{1F97E}', titleKey: 'onboarding.slide4.title', descKey: 'onboarding.slide4.desc', special: 'track-grid' },
+    { icon: '\u{1F6E0}\uFE0F', titleKey: 'onboarding.slide3.title', descKey: 'onboarding.slide3.desc', special: 'fab-grid' },
+    { icon: '\u{1F463}', titleKey: 'onboarding.slide4.title', descKey: 'onboarding.slide4.desc', special: 'track-grid' },
     { icon: '\u2600\uFE0F', titleKey: 'onboarding.slide5.title', descKey: 'onboarding.slide5.desc' },
     { icon: '\u{1F326}\uFE0F', titleKey: 'onboarding.slide6.title', descKey: 'onboarding.slide6.desc' },
-    { icon: '\u{1F4D0}', titleKey: 'onboarding.slide7.title', descKey: 'onboarding.slide7.desc', special: 'analysis-grid' },
+    { icon: '\u{1F4C8}', titleKey: 'onboarding.slide7.title', descKey: 'onboarding.slide7.desc', special: 'analysis-grid' },
     { icon: '\u{1F198}', titleKey: 'onboarding.slide8.title', descKey: 'onboarding.slide8.desc' },
 ];
 
@@ -80,7 +80,7 @@ function _buildFabGrid(): string {
     return _buildGrid([
         { icon: '\u{1F9ED}', labelKey: 'onboarding.slide3.compass', descKey: 'onboarding.slide3.compassDesc' },
         { icon: '\u{1F5FA}\uFE0F', labelKey: 'onboarding.slide3.layers', descKey: 'onboarding.slide3.layersDesc' },
-        { icon: '\u229E', labelKey: 'onboarding.slide3.mode', descKey: 'onboarding.slide3.modeDesc' },
+        { icon: '\u{1F3CA}', labelKey: 'onboarding.slide3.mode', descKey: 'onboarding.slide3.modeDesc' },
         { icon: '\u{1F4CD}', labelKey: 'onboarding.slide3.gps', descKey: 'onboarding.slide3.gpsDesc' },
     ], false);
 }

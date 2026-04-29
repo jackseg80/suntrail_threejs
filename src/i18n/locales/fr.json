@@ -532,46 +532,46 @@
       "desc": "Tapez le nom d’une ville, d’un sommet ou d’un pays dans la barre de recherche. Des filtres rapides affinent les résultats."
     },
     "slide3": {
-      "title": "Les boutons de contrôle",
-      "desc": "Sur la droite de l’écran :",
+      "title": "Contrôles de la carte",
+      "desc": "Outils rapides à droite de l'écran :",
       "compass": "Boussole",
       "compassDesc": "réoriente vers le Nord",
-      "layers": "Couches",
-      "layersDesc": "change le type de carte",
+      "layers": "Calques & Packs",
+      "layersDesc": "fonds de carte et packs haute résolution (SwissTopo/IGN)",
       "mode": "2D / 3D",
-      "modeDesc": "bascule le relief 3D",
+      "modeDesc": "bascule le relief 3D (activé par défaut)",
       "gps": "Position",
       "gpsDesc": "centre sur votre GPS"
     },
     "slide4": {
       "title": "Vos parcours",
-      "desc": "Importez ou enregistrez vos randonnées :",
+      "desc": "Gérez vos traces GPX :",
       "import": "Import GPX",
-      "importDesc": "Chargez un fichier GPX — le tracé s’affiche en 3D sur le terrain",
+      "importDesc": "Chargez vos fichiers — le tracé s’affiche en 3D sur le terrain",
       "rec": "Enregistrement GPS",
       "recDesc": "Démarrez REC pour tracer votre rando en direct"
     },
     "slide5": {
-      "title": "Simulez le soleil",
-      "desc": "La timeline en bas permet de visualiser l’ensoleillement à n’importe quelle heure de la journée."
+      "title": "Simulation solaire",
+      "desc": "La barre de temps en bas permet de visualiser l’ensoleillement et les ombres portées à n’importe quelle heure."
     },
     "slide6": {
-      "title": "Météo en direct",
-      "desc": "La pastille météo en haut affiche la température actuelle. Tapez dessus pour les prévisions, le vent et les alertes."
+      "title": "Météo & Alertes",
+      "desc": "Tapez sur la pastille météo en haut pour les prévisions, le vent et les alertes montagne."
     },
     "slide7": {
       "title": "Outils d’analyse",
       "desc": "Analysez le terrain en détail :",
       "profile": "Profil d’élévation",
       "profileDesc": "Distance, altitude et pente à chaque point du tracé",
-      "inclino": "Inclinomètre",
-      "inclinoDesc": "Pente du terrain en temps réel sous le réticule",
-      "drag": "Panneaux déplaçables",
+      "inclino": "Inclinomètre (PRO)",
+      "inclinoDesc": "Pente exacte au centre de l'écran (sous le réticule)",
+      "drag": "Panneaux mobiles",
       "dragDesc": "Maintenez appuyé pour repositionner les widgets"
     },
     "slide8": {
-      "title": "Sécurité & hors-ligne",
-      "desc": "Le bouton SOS affiche votre position exacte pour les secours. L’app fonctionne aussi sans réseau grâce au cache de tuiles."
+      "title": "Sécurité & Hors-ligne",
+      "desc": "Le bouton SOS affiche vos coordonnées même sans réseau. Téléchargez les Packs Pays pour une cartographie 100% hors-ligne."
     }
   },
   "upgrade": {
