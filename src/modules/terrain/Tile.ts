@@ -54,9 +54,18 @@ export class Tile {
     elevOffset = new THREE.Vector2(); elevScale = 1.0;
     colorOffset = new THREE.Vector2(); colorScale = 1.0;
 
+    latFactor: number = 1.0;
+
     constructor(tx: number, ty: number, zoom: number, key: string) {
         this.tx = tx; this.ty = ty; this.zoom = zoom; this.key = key;
         this.tileSizeMeters = EARTH_CIRCUMFERENCE / getPow2(zoom);
+
+        // v5.40.33 : Facteur de correction de latitude pour les pentes (sans casser la géométrie)
+        const n = getPow2(zoom);
+        const yNorm = (ty + 0.5) / n;
+        const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * yNorm)));
+        this.latFactor = Math.cos(latRad);
+
         this.updateWorldPosition();
         this.updateHybridSettings();
     }
@@ -239,11 +248,13 @@ export class Tile {
             shader.uniforms.uShowHydrology = terrainUniforms.uShowHydrology;
             shader.uniforms.uTime = terrainUniforms.uTime;
             shader.uniforms.uTileSize = { value: this.tileSizeMeters };
+            shader.uniforms.uLatFactor = { value: this.latFactor };
             shader.uniforms.uElevOffset = { value: this.elevOffset };
             shader.uniforms.uElevScale = { value: this.elevScale };
             shader.uniforms.uColorOffset = { value: this.colorOffset };
             shader.uniforms.uColorScale = { value: this.colorScale };
             shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
+            shader.uniforms.uHasNormalMap = { value: !!this.normalTex };
             shader.uniforms.uWaterMask = { value: this.waterMaskTex };
             shader.uniforms.uHasWaterMask = { value: !!this.waterMaskTex };
 
@@ -267,23 +278,86 @@ export class Tile {
                     #define IS_2D ${is2D ? '1' : '0'}
                     varying vec2 vLocalUv;
                     ${shader.vertexShader}
-                `.replace('#include <common>', `#include <common>\nattribute float aSkirt;\nvarying vec3 vTrueNormal; varying vec2 vWorldXZ; uniform vec2 uColorOffset; uniform float uColorScale; uniform sampler2D uNormalMap; ${sharedShaderChunk}`)
+                `.replace('#include <common>', `#include <common>\nattribute float aSkirt;\nvarying vec3 vTrueNormal; varying vec2 vWorldXZ; uniform vec2 uColorOffset; uniform float uColorScale; uniform sampler2D uNormalMap; uniform float uLatFactor; ${sharedShaderChunk}`)
                  .replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);\nvLocalUv = uv;`);
 
                 if (is2D || isLight) {
-                    shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\nobjectNormal = vec3(0.0,1.0,0.0); vTrueNormal = vec3(0.0,1.0,0.0);`);
+                    // v5.40.33 : En 2D ou Light, on calculera vTrueNormal au pixel (Fragment)
+                    if (!is2D) {
+                        shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\nobjectNormal = vec3(0.0,1.0,0.0);`);
+                    }
                 } else {
                     shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n
                         const float HT_N = 0.5 / 256.0;
                         vec2 elevUv = clamp(uElevOffset + (uv * uElevScale), vec2(HT_N), vec2(1.0 - HT_N));
                         vec3 normalSample = texture2D(uNormalMap, elevUv).rgb * 2.0 - 1.0;
-                        vTrueNormal = normalize(normalSample);
-                        // v5.32.22 : Correction cruciale pour géométrie unitaire (1x1)
-                        // Comme le mesh est scalé par uTileSize, la normale locale doit être multipliée par ce même 
-                        // facteur sur X et Z pour que la normalMatrix (inverse-transpose) donne une normale monde correcte.
+                        
+                        // v5.40.33 : On redresse la normale Mercator pour les pentes > 30° (vTrueNormal)
+                        vTrueNormal = normalize(vec3(normalSample.x, normalSample.y * uLatFactor, normalSample.z));
+
+                        // v5.40.33 : Calcul de la normale pour la lumière (objectNormal)
+                        // On garde la normale Mercator brute multipliée par uTileSize pour des ombres parfaites.
                         objectNormal = normalize(vec3(normalSample.x * uExaggeration * uTileSize, normalSample.y, normalSample.z * uExaggeration * uTileSize));
                     `);
                 }
+
+                // v5.28.43 : Bypass du calcul de hauteur en 2D (économie de texture lookup au vertex shader)
+                if (is2D) {
+                    shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = - aSkirt * uTileSize * 0.02; vWorldXZ = (modelMatrix * vec4(transformed, 1.0)).xz;`);
+                } else {
+                    shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv) - aSkirt * uTileSize * 0.02; vWorldXZ = (modelMatrix * vec4(transformed, 1.0)).xz;`);
+                }
+
+                shader.fragmentShader = `
+                    #define IS_2D ${is2D ? '1' : '0'}
+                    varying vec2 vLocalUv;
+                    uniform sampler2D uOverlayMap; uniform bool uHasOverlay; uniform float uShowSlopes; uniform float uShowHydrology; uniform float uTime; 
+                    varying vec3 vTrueNormal; varying vec2 vWorldXZ;
+                    uniform sampler2D uNormalMap; uniform vec2 uElevOffset; uniform float uElevScale; uniform bool uHasNormalMap;
+                    uniform float uLatFactor;
+                    uniform sampler2D uWaterMask; uniform bool uHasWaterMask;
+                    ${shader.fragmentShader}
+                `.replace('#include <map_fragment>', `
+                    #include <map_fragment>
+                    if (uHasOverlay) { vec4 oCol = texture2D(uOverlayMap, vMapUv); diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a); }
+
+                    #if IS_2D == 0
+                    if (uShowHydrology > 0.5 && uHasWaterMask) {
+                        float isWater = texture2D(uWaterMask, vLocalUv).r;
+                        if (isWater > 0.5) {
+                            vec3 waterBlue = vec3(0.02, 0.18, 0.52);
+                            float t = uTime * 0.5;
+                            float w1 = sin(vWorldXZ.x * 0.002 + vWorldXZ.y * 0.0015 + t) * 0.5 + 0.5;
+                            float w2 = sin(vWorldXZ.x * 0.001 - vWorldXZ.y * 0.0025 + t * 0.6) * 0.5 + 0.5;
+                            float wave = mix(w1, w2, 0.4);
+                            diffuseColor.rgb = mix(diffuseColor.rgb, waterBlue, 0.65);
+                            diffuseColor.rgb += vec3(0.2, 0.4, 0.7) * (wave - 0.5) * 0.4;
+                        }
+                    }
+                    #endif
+
+                    if (uShowSlopes > 0.5 && uHasNormalMap) {
+                        vec3 normal;
+                        #if IS_2D == 1
+                            const float HT_N = 0.5 / 256.0;
+                            vec2 elevUv = clamp(uElevOffset + (vLocalUv * uElevScale), vec2(HT_N), vec2(1.0 - HT_N));
+                            vec3 nMerc = texture2D(uNormalMap, elevUv).rgb * 2.0 - 1.0;
+                            normal = normalize(vec3(nMerc.x, nMerc.y * uLatFactor, nMerc.z));
+                        #else
+                            normal = vTrueNormal;
+                        #endif
+                        
+                        float ny = clamp(normal.y, 0.0, 1.0);
+                        float yellowMix = smoothstep(0.8829, 0.8480, ny);
+                        float orangeMix = smoothstep(0.8387, 0.7986, ny);
+                        float redMix = smoothstep(0.7880, 0.7431, ny);
+                        vec3 slopeColor = mix(vec3(1.0, 1.0, 0.0), vec3(1.0, 0.5, 0.0), orangeMix);
+                        slopeColor = mix(slopeColor, vec3(1.0, 0.0, 0.0), redMix);
+                        diffuseColor.rgb = mix(diffuseColor.rgb, slopeColor, yellowMix * 0.55);
+                    }
+                `);
+            }
+        };
 
                 // v5.28.43 : Bypass du calcul de hauteur en 2D (économie de texture lookup au vertex shader)
                 if (is2D) {
