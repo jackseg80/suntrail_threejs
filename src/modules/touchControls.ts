@@ -345,7 +345,10 @@ function onPointerUp(e: PointerEvent): void {
         if (!_prefersReducedMotion && (Math.abs(_velX) > 0.5 || Math.abs(_velY) > 0.5)) {
             _inertiaId = requestAnimationFrame(tickInertia);
         }
-        if (_controls) _controls.enabled = true;
+        if (_controls) {
+            _controls.enabled = true;
+            _controls.dispatchEvent?.({ type: 'end' });
+        }
         if (_onEnd) _onEnd();
         window.removeEventListener('pointermove',   onPointerMove);
         window.removeEventListener('pointerup',     onPointerUp);

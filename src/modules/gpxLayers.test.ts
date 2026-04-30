@@ -1,7 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as THREE from 'three';
-import { addGPXLayer, updateAllGPXMeshes } from './gpxLayers';
+import { addGPXLayer, updateAllGPXMeshes, updateRecordedTrackMesh } from './gpxLayers';
 import { state } from './state';
+
+const rawData = {
+    tracks: [{
+        points: [
+            { lat: 46.5000, lon: 7.5000, ele: 1000, time: '2024-01-01T10:00:00Z' },
+            { lat: 46.5000, lon: 7.5000, ele: 1000, time: '2024-01-01T10:01:00Z' },
+            { lat: 46.5100, lon: 7.5100, ele: 1010, time: '2024-01-01T10:20:00Z' },
+            { lat: 46.5100, lon: 7.5100, ele: 1010, time: '2024-01-01T10:21:00Z' }
+        ]
+    }]
+};
 
 describe('Multi-GPX Layers (v5.10)', () => {
     beforeEach(() => {
@@ -16,18 +27,7 @@ describe('Multi-GPX Layers (v5.10)', () => {
     });
 
     it('addGPXLayer: should create a layer with correct structure', () => {
-        const raw = {
-            tracks: [{
-                points: [
-                    { lat: 46.5000, lon: 7.5000, ele: 1000, time: '2024-01-01T10:00:00Z' },
-                    { lat: 46.5000, lon: 7.5000, ele: 1000, time: '2024-01-01T10:01:00Z' },
-                    { lat: 46.5100, lon: 7.5100, ele: 1010, time: '2024-01-01T10:20:00Z' },
-                    { lat: 46.5100, lon: 7.5100, ele: 1010, time: '2024-01-01T10:21:00Z' }
-                ]
-            }]
-        };
-
-        const layer = addGPXLayer(raw, 'test-track');
+        const layer = addGPXLayer(rawData, 'test-track');
         expect(layer.name).toBe('test-track');
         expect(layer.stats.pointCount).toBe(4);
         expect(layer.stats.dPlus).toBeGreaterThan(5);
@@ -57,22 +57,77 @@ describe('Multi-GPX Layers (v5.10)', () => {
         expect(layer.stats.dMinus).toBeGreaterThan(150);
     });
 
+    it('should use zoom-based exponential thickness (Komoot-style) for imported tracks', () => {
+        state.gpxLayers = [];
+        state.ZOOM = 18;
+        const layerZ18 = addGPXLayer(rawData, 'z18');
+        const radiusZ18 = (layerZ18.mesh!.geometry as THREE.TubeGeometry).parameters.radius;
+        expect(radiusZ18).toBeCloseTo(1.5, 1);
+
+        state.gpxLayers = [];
+        state.ZOOM = 17;
+        const layerZ17 = addGPXLayer(rawData, 'z17');
+        const radiusZ17 = (layerZ17.mesh!.geometry as THREE.TubeGeometry).parameters.radius;
+        expect(radiusZ17).toBeCloseTo(3.0, 1);
+
+        state.gpxLayers = [];
+        state.ZOOM = 14;
+        const layerZ14 = addGPXLayer(rawData, 'z14');
+        const radiusZ14 = (layerZ14.mesh!.geometry as THREE.TubeGeometry).parameters.radius;
+        expect(radiusZ14).toBeCloseTo(24.0, 1);
+
+        state.gpxLayers = [];
+        state.ZOOM = 10;
+        const layerZ10 = addGPXLayer(rawData, 'z10');
+        const radiusZ10 = (layerZ10.mesh!.geometry as THREE.TubeGeometry).parameters.radius;
+        expect(radiusZ10).toBeCloseTo(200, 1);
+    });
+
+    it('should use zoom-based exponential thickness for recorded tracks', async () => {
+        vi.useFakeTimers();
+        state.ZOOM = 18;
+        state.recordedPoints = [
+            { lat: 46.5000, lon: 7.5000, alt: 1000, timestamp: 1000 },
+            { lat: 46.5100, lon: 7.5100, alt: 1010, timestamp: 2000 },
+            { lat: 46.5200, lon: 7.5200, alt: 1020, timestamp: 3000 }
+        ];
+        state.recordedMesh = new THREE.Mesh(new THREE.TubeGeometry(
+            new THREE.CatmullRomCurve3([new THREE.Vector3(0,0,0), new THREE.Vector3(1,0,1)]), 4, 5, 2, false
+        ));
+
+        updateRecordedTrackMesh();
+        vi.runAllTimers();
+        const radiusZ18 = (state.recordedMesh!.geometry as THREE.TubeGeometry).parameters.radius;
+        expect(radiusZ18).toBeCloseTo(2.0, 1);
+
+        state.recordedMesh = new THREE.Mesh(new THREE.TubeGeometry(
+            new THREE.CatmullRomCurve3([new THREE.Vector3(0,0,0), new THREE.Vector3(1,0,1)]), 4, 5, 2, false
+        ));
+        state.ZOOM = 14;
+        updateRecordedTrackMesh();
+        vi.runAllTimers();
+        const radiusZ14 = (state.recordedMesh!.geometry as THREE.TubeGeometry).parameters.radius;
+        expect(radiusZ14).toBeCloseTo(32.0, 1);
+
+        state.recordedMesh = new THREE.Mesh(new THREE.TubeGeometry(
+            new THREE.CatmullRomCurve3([new THREE.Vector3(0,0,0), new THREE.Vector3(1,0,1)]), 4, 5, 2, false
+        ));
+        state.ZOOM = 10;
+        updateRecordedTrackMesh();
+        vi.runAllTimers();
+        const radiusZ10 = (state.recordedMesh!.geometry as THREE.TubeGeometry).parameters.radius;
+        expect(radiusZ10).toBeCloseTo(250, 1);
+
+        vi.useRealTimers();
+    });
+
     it('updateAllGPXMeshes: should adapt RDP epsilon based on performance preset', async () => {
         const utils = await import('./utils');
         const spyRDP = vi.spyOn(utils, 'simplifyRDP');
 
-        const raw = {
-            tracks: [{
-                points: [
-                    { lat: 46.5000, lon: 7.5000, ele: 1000 },
-                    { lat: 46.5001, lon: 7.5001, ele: 1005 },
-                    { lat: 46.5002, lon: 7.5002, ele: 1010 },
-                    { lat: 46.5003, lon: 7.5003, ele: 1015 }
-                ]
-            }]
-        };
+        state.gpxLayers = [];
 
-        addGPXLayer(raw, 'rdp-test');
+        addGPXLayer(rawData, 'rdp-test');
         vi.useFakeTimers();
 
         // 1. Test en mode ECO (Epsilon large)

@@ -4,7 +4,7 @@ import { state, saveLastView } from './state';
 import { eventBus } from './eventBus';
 import { updateSunPosition } from './sun';
 import { getAltitudeAt, resetAnalysisCache } from './analysis';
-import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, resetTerrain, autoSelectMapSource, terrainUniforms, prefetchAdjacentLODs } from './terrain';
+import { loadTerrain, updateVisibleTiles, repositionAllTiles, animateTiles, resetTerrain, autoSelectMapSource, terrainUniforms, prefetchAdjacentLODs, refreshTracks } from './terrain';
 import { sharedFrustum } from './terrain';
 import { disposeAllCachedTiles } from './tileCache';
 import { disposeAllGeometries } from './geometryCache';
@@ -219,6 +219,7 @@ export async function initScene(): Promise<void> {
             
             if (targetZoom !== state.ZOOM) {
                 state.ZOOM = targetZoom;
+                void refreshTracks();
             }
             
             void updateVisibleTiles(state.TARGET_LAT, state.TARGET_LON, dist, dx, dz, true);
@@ -296,6 +297,7 @@ export async function initScene(): Promise<void> {
         if (newZoom !== state.ZOOM) {
             state.ZOOM = newZoom;
             lastPrefetchTime = 0;
+            void refreshTracks();
         }
 
         const gpsCenter = worldToLngLat(dx, dz, state.originTile);

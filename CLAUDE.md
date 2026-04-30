@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.40.39)
+# SunTrail — Guide IA (v5.40.40)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-30 suite à la v5.40.39 (UI : timebar auto-open 3D, icône 2D/3D cube, FAB stack préservé sur grand écran).
+> Mis à jour le 2026-04-30 suite à la v5.40.40 (GPX : épaisseur zoom-based Komoot, rebuild robuste, dette technique nettoyée).
 
 
 ## Projet
@@ -80,6 +80,9 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - **Démarrage & UI (v5.29.30)** :
     - **Parallélisation** : Lancement de la scène 3D en parallèle de l'hydratation de l'UI secondaire pour éliminer l'écran blanc.
     - **TubeGeometry Stabilité** : Utiliser `centripetal` pour les splines. Rendu temps réel à 1500 segments max.
+- **GPX Track Thickness (v5.40.40)** : Épaisseur exponentielle zoom-based (Komoot-style) : `base * 2^(max(0, 18-ZOOM))` avec cap 200m (import) / 250m (recording). Fonction partagée `computeTrackThickness()`. Rebuild déclenché par `controls.end` + throttle zoom + `touchControls` (`dispatchEvent('end')`).
+- **Surface Offset GPX (v5.40.40)** : `GPX_SURFACE_OFFSET = 12` utilisé partout (`drapeToTerrain`, `addGPXLayer`, rebuild) au lieu du 30 hardcodé dans `_doUpdateAllGPXMeshes`.
+- **Rebuild Robuste (v5.40.40)** : `_doUpdateAllGPXMeshes` utilise `for...of` + `try/catch` par layer au lieu de `.map()` qui faisait tout échouer si un layer plantait.
 - **Cache Unifié (v5.28.33)** : `suntrail-tiles-v28` synchronisé entre thread principal et workers.
 
 
@@ -97,6 +100,6 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - `src/modules/poi.ts` : (v5.40.38) Détection et rendu 3D des POIs depuis tuiles vectorielles (SwissTopo/MapTiler). 8 catégories : trail (🔶 sentiers nommés), hut (🟤 refuges), rest (🟢 haltes), attraction (🔵 curiosités), viewpoint (🔭), shelter (🏠), info (i), guidepost (Signalisation). Détection unifiée SwissTopo (class/subclass) + MapTiler. Cache PBF zone-based.
 
 ## Tests & Qualité
-- **Unitaires (Vitest)** : `npm test` (667 tests). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`.
+- **Unitaires (Vitest)** : `npm test` (669 tests). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`.
 - **E2E (Playwright)** : `npx playwright test --ui` (Onboarding, GPS, Expert).
 - **Mocks** : `src/test/setup.ts` pour WebGL. `ui.test.ts` utilise des timers fictifs.

@@ -10,7 +10,7 @@ vi.mock('../analysis', async (importOriginal) => {
         ...actual,
         getAltitudeAt: vi.fn().mockReturnValue(100),
         findTerrainIntersection: vi.fn(),
-        drapeToTerrain: vi.fn().mockReturnValue([])
+        drapeToTerrain: vi.fn().mockImplementation((pts: any[]) => pts.map(() => new THREE.Vector3(0, 12, 0)))
     };
 });
 

@@ -5,12 +5,28 @@ import { simplifyRDP } from './utils';
 import { updateElevationProfile } from './profile';
 import { lngLatToWorld, EARTH_CIRCUMFERENCE } from './geo';
 import { eventBus } from './eventBus';
-import { drapeToTerrain, getAltitudeAt } from './analysis';
+import { drapeToTerrain } from './analysis';
 import { calculateTrackStats } from './geoStats';
 
 // v5.31.1 : Shared GPX track materials (1 per color × mode = 16 max instead of N per layer)
 const gpxMaterials3D = new Map<string, THREE.MeshStandardMaterial>();
 const gpxMaterials2D = new Map<string, THREE.MeshBasicMaterial>();
+
+let _recMaterial3D: THREE.MeshStandardMaterial | null = null;
+let _recMaterial2D: THREE.MeshBasicMaterial | null = null;
+
+function getRecordedMaterial(is2D: boolean): THREE.Material {
+    if (is2D) {
+        if (!_recMaterial2D) {
+            _recMaterial2D = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.8 });
+        }
+        return _recMaterial2D;
+    }
+    if (!_recMaterial3D) {
+        _recMaterial3D = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.5, transparent: true, opacity: 0.8 });
+    }
+    return _recMaterial3D;
+}
 
 function getGPXMaterial(color: string, is2D: boolean): THREE.Material {
     if (is2D) {
@@ -37,36 +53,10 @@ function getGPXMaterial(color: string, is2D: boolean): THREE.Material {
 
 const GPX_SURFACE_OFFSET = 12;
 
-function gpxDrapePoints(
-    rawPts: Array<{lon: number; lat: number; ele: number}>,
-    originTile: {x: number; y: number; z: number},
-    densifySteps = 4
-): THREE.Vector3[] {
-    const result: THREE.Vector3[] = [];
-    const is2D = state.IS_2D_MODE;
-    for (let i = 0; i < rawPts.length; i++) {
-        const p = rawPts[i];
-        const pos = lngLatToWorld(p.lon, p.lat, originTile);
-        const elevGPX = (p.ele || 0) * state.RELIEF_EXAGGERATION;
-        const terrainY = is2D ? 0 : getAltitudeAt(pos.x, pos.z);
-        const y = is2D ? GPX_SURFACE_OFFSET : Math.max(terrainY, elevGPX) + GPX_SURFACE_OFFSET;
-        result.push(new THREE.Vector3(pos.x, y, pos.z));
-        if (i < rawPts.length - 1 && densifySteps > 0) {
-            const pNext = rawPts[i + 1];
-            for (let s = 1; s < densifySteps; s++) {
-                const t = s / densifySteps;
-                const iLon = p.lon + (pNext.lon - p.lon) * t;
-                const iLat = p.lat + (pNext.lat - p.lat) * t;
-                const iEle = (p.ele || 0) + ((pNext.ele || 0) - (p.ele || 0)) * t;
-                const iPos = lngLatToWorld(iLon, iLat, originTile);
-                const iElevGPX = iEle * state.RELIEF_EXAGGERATION;
-                const iTerrainY = is2D ? 0 : getAltitudeAt(iPos.x, iPos.z);
-                const iY = is2D ? GPX_SURFACE_OFFSET : Math.max(iTerrainY, iElevGPX) + GPX_SURFACE_OFFSET;
-                result.push(new THREE.Vector3(iPos.x, iY, iPos.z));
-            }
-        }
-    }
-    return result;
+function computeTrackThickness(base: number, max: number): number {
+    const zoom = state.ZOOM || 10;
+    const exponent = Math.max(0, 18 - zoom);
+    return Math.max(base, Math.min(max, base * Math.pow(2, exponent)));
 }
 
 export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLayer {
@@ -100,30 +90,23 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
         timestamp: p.time ? new Date(p.time).getTime() : i * 1000 
     })));
 
-    const camAlt = state.camera ? state.camera.position.y : 10000;
-    const thickness = Math.max(1.5, camAlt / 1200);
+    const thickness = computeTrackThickness(1.5, 200);
     
-    // v5.32.14 : Epsilon adaptatif initial
     const baseEpsilon = EARTH_CIRCUMFERENCE / Math.pow(2, state.ZOOM + 8);
     const epsilon = Math.max(0.5, baseEpsilon);
 
     const box = new THREE.Box3();
-    const threePoints = gpxDrapePoints(validPoints, state.originTile!);
+    const threePoints = drapeToTerrain(validPoints, state.originTile!, 4, GPX_SURFACE_OFFSET);
     const simplifiedPoints = simplifyRDP(threePoints, epsilon, (v) => v);
+    if (simplifiedPoints.length < 2) {
+        throw new Error('Not enough simplified points for GPX layer');
+    }
     
     simplifiedPoints.forEach(v => box.expandByPoint(v));
     const curve = new THREE.CatmullRomCurve3(simplifiedPoints);
     const geometry = new THREE.TubeGeometry(curve, Math.min(simplifiedPoints.length * 2, 1500), thickness, 4, false);
     const is2D = state.IS_2D_MODE;
-    const material = is2D 
-        ? new THREE.MeshBasicMaterial({
-            color: color, transparent: true, opacity: 0.95, depthWrite: false,
-            polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
-        })
-        : new THREE.MeshStandardMaterial({
-            color: color, emissive: color, emissiveIntensity: 0.3, transparent: true, opacity: 0.95, depthWrite: false,
-            polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
-        });
+    const material = getGPXMaterial(color, is2D);
     const mesh = new THREE.Mesh(geometry, material);
     mesh.renderOrder = 10;
     mesh.userData = { type: 'gpx-track', layerId: id };
@@ -139,7 +122,7 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
         }
     };
     state.gpxLayers = [...state.gpxLayers, layer];
-    state.activeGPXLayerId = id; // v5.29.28 : Toujours activer le dernier import
+    state.activeGPXLayerId = id;
     const lats = validPoints.map((p: any) => p.lat as number); const lons = validPoints.map((p: any) => p.lon as number); const eles = validPoints.map((p: any) => (p.ele as number) || 0);
     const centerLat = (Math.max(...lats) + Math.min(...lats)) / 2; const centerLon = (Math.max(...lons) + Math.min(...lons)) / 2;
     const avgEle = eles.reduce((s: number, v: number) => s + v, 0) / eles.length;
@@ -149,8 +132,7 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     const targetElevation = avgEle * state.RELIEF_EXAGGERATION;
     eventBus.emit('flyTo', { worldX: flyCenter.x, worldZ: flyCenter.z, targetElevation, targetDistance: viewDistance });
     setTimeout(() => updateAllGPXMeshes(), 0);
-    setTimeout(() => { if (state.gpxLayers.length > 0) updateAllGPXMeshes(); }, 3000);
-    setTimeout(() => { if (state.gpxLayers.length > 0) updateAllGPXMeshes(); }, 6000);
+    setTimeout(() => updateAllGPXMeshes(), 3000);
     updateElevationProfile();
     return layer;
 }
@@ -187,39 +169,38 @@ export function updateAllGPXMeshes(): void {
 
 function _doUpdateAllGPXMeshes(): void {
     if (!state.camera || !state.originTile) return;
-    const camAlt = state.camera.position.y;
-    const thickness = Math.max(1.5, camAlt / 1200);
+    const thickness = computeTrackThickness(1.5, 200);
 
-    // v5.32.14 : Epsilon adaptatif pour la simplification RDP
-    // On veut un epsilon qui correspond à environ 1 pixel écran (256px par tuile)
-    const baseEpsilon = EARTH_CIRCUMFERENCE / Math.pow(2, state.ZOOM + 8);
+    const baseEpsilon = EARTH_CIRCUMFERENCE / Math.pow(2, (state.ZOOM || 10) + 8);
     const multiplier = state.PERFORMANCE_PRESET === 'eco' ? 2.0 
                      : state.PERFORMANCE_PRESET === 'ultra' ? 0.5 
                      : 1.0;
     const epsilon = Math.max(0.5, baseEpsilon * multiplier);
 
-    const updatedLayers: GPXLayer[] = state.gpxLayers.map(layer => {
-        if (layer.mesh) { if (state.scene) state.scene.remove(layer.mesh); layer.mesh.geometry?.dispose(); }
-        const track = layer.rawData.tracks[0]; const points = track.points; 
-        
-        // v5.28.4 : Utilisation de la fonction centralisée drapeToTerrain
-        const drapedPoints = drapeToTerrain(points, state.originTile!, 4, 30);
-        
-        // v5.32.14 : Simplification RDP avant création du tube
-        const simplifiedPoints = simplifyRDP(drapedPoints, epsilon, (v) => v);
-        
-        const curve = new THREE.CatmullRomCurve3(simplifiedPoints);
-        const geometry = new THREE.TubeGeometry(curve, Math.min(simplifiedPoints.length * 2, 1500), thickness, 4, false);
-        const is2D = state.IS_2D_MODE;
-        const material = getGPXMaterial(layer.color, is2D);
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.renderOrder = 10; mesh.visible = layer.visible;
-        mesh.userData = { type: 'gpx-track', layerId: layer.id };
-        if (state.scene) state.scene.add(mesh);
-        return { ...layer, points: drapedPoints, mesh };
-    });
+    const is2D = state.IS_2D_MODE;
+    const updatedLayers: GPXLayer[] = [];
+    for (const layer of state.gpxLayers) {
+        try {
+            if (layer.mesh) { if (state.scene) state.scene.remove(layer.mesh); layer.mesh.geometry?.dispose(); }
+            const track = layer.rawData.tracks[0]; const points = track.points;
+            
+            const drapedPoints = drapeToTerrain(points, state.originTile, 4, GPX_SURFACE_OFFSET);
+            const simplifiedPoints = simplifyRDP(drapedPoints, epsilon, (v) => v);
+            if (simplifiedPoints.length < 2) throw new Error('Not enough simplified points');
+            
+            const curve = new THREE.CatmullRomCurve3(simplifiedPoints);
+            const geometry = new THREE.TubeGeometry(curve, Math.min(simplifiedPoints.length * 2, 1500), thickness, 4, false);
+            const material = getGPXMaterial(layer.color, is2D);
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.renderOrder = 10; mesh.visible = layer.visible;
+            mesh.userData = { type: 'gpx-track', layerId: layer.id };
+            if (state.scene) state.scene.add(mesh);
+            updatedLayers.push({ ...layer, points: drapedPoints, mesh });
+        } catch (e) {
+            console.warn('[GPX] Failed to rebuild layer', layer.name, e);
+        }
+    }
     state.gpxLayers = updatedLayers;
-    // v5.32.22 : Rafraîchir les données du profil UNIQUEMENT s'il y a des tracés pour éviter le spam console
     if (state.gpxLayers.length > 0) updateElevationProfile();
 }
 
@@ -259,8 +240,7 @@ function _doUpdateRecordedTrackMesh(): void {
         return;
     }
 
-    const camAlt = state.camera.position.y; 
-    const thickness = Math.max(2.0, camAlt / 800); 
+    const thickness = computeTrackThickness(2.0, 250); 
     
     if (state.recordedMesh) { 
         state.scene.remove(state.recordedMesh); 
@@ -269,14 +249,9 @@ function _doUpdateRecordedTrackMesh(): void {
     }
     
     const originTile = state.originTile;
-    
-    // v5.28.4: Utilisation de drapeToTerrain pour uniformiser le plaquage.
-    // v5.28.25 : surfaceOffset=12 (au lieu de 8) pour être légèrement au dessus du terrain et éviter le Z-fighting
-    const threePoints = drapeToTerrain(uniquePoints, originTile, 0, 12);
+    const threePoints = drapeToTerrain(uniquePoints, originTile, 0, GPX_SURFACE_OFFSET);
 
-    // v5.32.14 : Epsilon adaptatif pour le tracé enregistré
-    // On garde une base plus fine (0.5 pixel) car c'est l'élément central du suivi
-    const baseEpsilon = EARTH_CIRCUMFERENCE / Math.pow(2, state.ZOOM + 9);
+    const baseEpsilon = EARTH_CIRCUMFERENCE / Math.pow(2, (state.ZOOM || 10) + 9);
     const multiplier = state.PERFORMANCE_PRESET === 'eco' ? 2.0 
                      : state.PERFORMANCE_PRESET === 'ultra' ? 0.5 
                      : 1.0;
@@ -288,14 +263,9 @@ function _doUpdateRecordedTrackMesh(): void {
     if (simplifiedPoints.length < 2) return;
     
     try {
-        // v5.28.5: Augmentation du nombre de segments pour fluidité (1500 au lieu de 800)
-        // et utilisation de 'centripetal' pour éviter les overshoots des splines.
         const curve = new THREE.CatmullRomCurve3(simplifiedPoints, false, 'centripetal');
         const geometry = new THREE.TubeGeometry(curve, Math.min(simplifiedPoints.length * 3, 1500), thickness, 4, false);
-        const is2D = state.IS_2D_MODE;
-        const material = is2D
-            ? new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.8 })
-            : new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.5, transparent: true, opacity: 0.8 });
+        const material = getRecordedMaterial(state.IS_2D_MODE);
         state.recordedMesh = new THREE.Mesh(geometry, material);
         state.scene.add(state.recordedMesh);
     } catch (e) {
