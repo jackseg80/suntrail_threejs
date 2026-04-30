@@ -175,19 +175,21 @@ public class RecordingService extends Service {
         stopBroadcast.setPackage(getPackageName());
         mStopPendingIntent = PendingIntent.getBroadcast(this, 1, stopBroadcast, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        if (mStopReceiver == null) {
-            mStopReceiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    stopSelf();
-                }
-            };
-            IntentFilter filter = new IntentFilter(STOP_ACTION);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                registerReceiver(mStopReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-            } else {
-                registerReceiver(mStopReceiver, filter);
+        if (mStopReceiver != null) {
+            try { unregisterReceiver(mStopReceiver); } catch (Exception e) { Log.w(TAG, "Unregister stop receiver: " + e.getMessage()); }
+            mStopReceiver = null;
+        }
+        mStopReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                stopSelf();
             }
+        };
+        IntentFilter filter = new IntentFilter(STOP_ACTION);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(mStopReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(mStopReceiver, filter);
         }
 
         mLastMovementTime = System.currentTimeMillis();
@@ -306,7 +308,7 @@ public class RecordingService extends Service {
     public void onDestroy() {
         sIsRunning = false;
         getSharedPreferences("RecordingPrefs", MODE_PRIVATE).edit().remove("currentCourseId").apply();
-        if (mStopReceiver != null) { try { unregisterReceiver(mStopReceiver); } catch (Exception e) {} }
+        if (mStopReceiver != null) { try { unregisterReceiver(mStopReceiver); } catch (Exception e) {} mStopReceiver = null; }
         if (mFusedClient != null && mLocationCallback != null) mFusedClient.removeLocationUpdates(mLocationCallback);
         if (!mPointBuffer.isEmpty() && mDbExecutor != null) {
             final List<GPSPoint> remaining = new ArrayList<>(mPointBuffer);

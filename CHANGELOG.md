@@ -1,3 +1,11 @@
+## [5.40.36] - 2026-04-30
+
+### Fixed
+- **Android Notifications** : Le bouton "Arrêter REC" de la notification ne fonctionnait pas sur Galaxy A53 (One UI). Forçage d'une réinscription systématique du BroadcastReceiver à chaque `onStartCommand()`.
+- **Profil GPX** : La croix de fermeture du panneau "Profil d'élévation & Pentes" était inactive. Ajout du handler `click` manquant.
+- **Profil 2D** : Le point GPX était saccadé en mode 2D (render loop en idle). Ajout de `isInteractingWithUI = true` pendant l'interaction souris/touch sur le graphique.
+- **Profil (Listeners)** : Les event listeners `pointermove/pointerdown/...` s'accumulaient à chaque ouverture du profil. Ajout d'un flag guard `profileInteractionsAttached`.
+
 ## [5.40.35] - 2026-04-30
 
 ### Fixed

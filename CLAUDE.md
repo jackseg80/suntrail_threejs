@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.40.35)
+# SunTrail — Guide IA (v5.40.36)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-30 suite à la v5.40.35 (Worker Load Balancing & Render Loop Optimization).
+> Mis à jour le 2026-04-30 suite à la v5.40.36 (Hotfix : Workers, Profil & Performances 2D).
 
 
 ## Projet

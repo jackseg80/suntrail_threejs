@@ -197,6 +197,18 @@ function setupProfileInteractions(): void {
     const svg = document.getElementById('profile-svg');
 
     if (!container || !cursor || !info || !svg) return;
+    if (profileInteractionsAttached) return;
+    profileInteractionsAttached = true;
+
+    let _profileTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function setInteracting() {
+        if (_profileTimer) { clearTimeout(_profileTimer); _profileTimer = null; }
+        state.isInteractingWithUI = true;
+    }
+    function clearInteracting() {
+        _profileTimer = setTimeout(() => { state.isInteractingWithUI = false; }, 150);
+    }
 
     if (!state.profileMarker) {
         // v5.32.14 : Sphère plus grande et depthTest désactivé pour visibilité totale en 3D
@@ -255,22 +267,17 @@ function setupProfileInteractions(): void {
         }
     };
 
-    container.onmousemove = onMove;
-    container.ontouchmove = (e) => {
-        onMove(e);
-        e.preventDefault();
-    };
-
+    container.addEventListener('pointerdown', setInteracting);
+    container.addEventListener('pointermove', onMove);
+    container.addEventListener('pointerup', clearInteracting);
+    container.addEventListener('pointerleave', clearInteracting);
+    container.addEventListener('pointercancel', clearInteracting);
+    
     container.onmouseleave = () => {
         cursor.style.display = 'none';
         if (state.profileMarker) state.profileMarker.visible = false;
         const maxDist = profileData.length > 0 ? profileData[profileData.length - 1].dist : 0;
         info.textContent = `Distance : ${maxDist.toFixed(2)}km | Alt : 0m`;
-    };
-    
-    container.ontouchend = () => {
-        cursor.style.display = 'none';
-        if (state.profileMarker) state.profileMarker.visible = false;
     };
 }
 
@@ -281,10 +288,14 @@ export function closeElevationProfile(): void {
 }
 
 let swipeAttached = false;
+let profileInteractionsAttached = false;
 
 function setupSwipeGesture(profileEl: HTMLElement): void {
     if (swipeAttached) return;
     swipeAttached = true;
+
+    const closeBtn = profileEl.querySelector<HTMLElement>('#close-profile');
+    closeBtn?.addEventListener('click', () => closeElevationProfile());
 
     const handle = profileEl.querySelector<HTMLElement>('.profile-drag-handle');
     if (!handle) return;
