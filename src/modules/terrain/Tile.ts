@@ -53,17 +53,9 @@ export class Tile {
     private extendedBounds: THREE.Box3 = new THREE.Box3();
     elevOffset = new THREE.Vector2(); elevScale = 1.0;
     colorOffset = new THREE.Vector2(); colorScale = 1.0;
-    latFactor: number = 1.0;
-
     constructor(tx: number, ty: number, zoom: number, key: string) {
         this.tx = tx; this.ty = ty; this.zoom = zoom; this.key = key;
         this.tileSizeMeters = EARTH_CIRCUMFERENCE / getPow2(zoom);
-
-        // v5.40.33 : Facteur de correction de latitude pour les pentes (sans casser la géométrie)
-        const n = getPow2(zoom);
-        const yNorm = (ty + 0.5) / n;
-        const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * yNorm)));
-        this.latFactor = Math.cos(latRad);
 
         this.updateWorldPosition();
         this.updateHybridSettings();
@@ -240,7 +232,6 @@ export class Tile {
             shader.uniforms.uShowHydrology = terrainUniforms.uShowHydrology;
             shader.uniforms.uTime = terrainUniforms.uTime;
             shader.uniforms.uTileSize = { value: this.tileSizeMeters };
-            shader.uniforms.uLatFactor = { value: this.latFactor };
             shader.uniforms.uElevOffset = { value: this.elevOffset };
             shader.uniforms.uElevScale = { value: this.elevScale };
             shader.uniforms.uColorOffset = { value: this.colorOffset };
@@ -270,7 +261,7 @@ export class Tile {
                     #define IS_2D ${is2D ? '1' : '0'}
                     varying vec2 vLocalUv;
                     ${shader.vertexShader}
-                `.replace('#include <common>', `#include <common>\nattribute float aSkirt;\nvarying vec3 vTrueNormal; varying vec2 vWorldXZ; uniform vec2 uColorOffset; uniform float uColorScale; uniform sampler2D uNormalMap; uniform float uLatFactor; ${sharedShaderChunk}`)
+                `.replace('#include <common>', `#include <common>\nattribute float aSkirt;\nvarying vec3 vTrueNormal; varying vec2 vWorldXZ; uniform vec2 uColorOffset; uniform float uColorScale; uniform sampler2D uNormalMap; ${sharedShaderChunk}`)
                  .replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);\nvLocalUv = uv;`);
 
                 if (is2D || isLight) {
@@ -282,7 +273,7 @@ export class Tile {
                         const float HT_N = 0.5 / 256.0;
                         vec2 elevUv = clamp(uElevOffset + (uv * uElevScale), vec2(HT_N), vec2(1.0 - HT_N));
                         vec3 normalSample = texture2D(uNormalMap, elevUv).rgb * 2.0 - 1.0;
-                        vTrueNormal = normalize(vec3(normalSample.x, normalSample.y * uLatFactor, normalSample.z));
+                        vTrueNormal = normalize(vec3(normalSample.x, normalSample.y, normalSample.z));
                         objectNormal = normalize(vec3(normalSample.x * uExaggeration * uTileSize, normalSample.y, normalSample.z * uExaggeration * uTileSize));
                     `);
                 }
@@ -299,7 +290,6 @@ export class Tile {
                     uniform sampler2D uOverlayMap; uniform bool uHasOverlay; uniform float uShowSlopes; uniform float uShowHydrology; uniform float uTime; 
                     varying vec3 vTrueNormal; varying vec2 vWorldXZ;
                     uniform sampler2D uNormalMap; uniform vec2 uElevOffset; uniform float uElevScale; uniform bool uHasNormalMap;
-                    uniform float uLatFactor;
                     uniform sampler2D uWaterMask; uniform bool uHasWaterMask;
                     ${shader.fragmentShader}
                 `.replace('#include <map_fragment>', `
@@ -327,7 +317,7 @@ export class Tile {
                             const float HT_N = 0.5 / 256.0;
                             vec2 elevUv = clamp(uElevOffset + (vLocalUv * uElevScale), vec2(HT_N), vec2(1.0 - HT_N));
                             vec3 nMerc = texture2D(uNormalMap, elevUv).rgb * 2.0 - 1.0;
-                            normal = normalize(vec3(nMerc.x, nMerc.y * uLatFactor, nMerc.z));
+                            normal = normalize(vec3(nMerc.x, nMerc.y, nMerc.z));
                         #else
                             normal = vTrueNormal;
                         #endif

@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.40.38)
+# SunTrail — Guide IA (v5.40.39)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-30 suite à la v5.40.38 (POI enrichis : 8 catégories, détection SwissTopo class/subclass).
+> Mis à jour le 2026-04-30 suite à la v5.40.39 (fix pentes : suppression double correction latitude dans le shader).
 
 
 ## Projet

@@ -1,3 +1,8 @@
+## [5.40.39] - 2026-04-30
+
+### Fixed
+- **Pentes monde entier** : Suppression de la double correction de latitude dans le shader GLSL (`Tile.ts`). La normal map était déjà corrigée dans le worker (`tileWorker.ts` via `pixelSize × cos(lat)`), mais le shader multipliait une seconde fois `normal.y` par `latFactor`. Résultat : une pente réelle de 30° en Suisse (46°N) s'affichait à ~40°. L'erreur augmentait avec la latitude. Fix : suppression de `* uLatFactor` dans les shaders vertex et fragment.
+
 ## [5.40.37] - 2026-04-30
 
 ### Added
