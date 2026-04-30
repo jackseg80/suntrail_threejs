@@ -577,13 +577,12 @@ export async function initScene(): Promise<void> {
             || needsInitialRender > 0
             || state.isFollowingUser;
 
-        if (state.camera) {
-            state.camera.updateMatrixWorld();
-            _sharedMatrix.multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
-            sharedFrustum.setFromProjectionMatrix(_sharedMatrix);
-        }
-
         if (needsUpdate) {
+            if (state.camera) {
+                state.camera.updateMatrixWorld();
+                _sharedMatrix.multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
+                sharedFrustum.setFromProjectionMatrix(_sharedMatrix);
+            }
             state.stats?.begin();
             if (waterFrameDue) terrainUniforms.uTime.value += WATER_THROTTLE_MS / 1000;
             tilesFading = animateTiles(delta);

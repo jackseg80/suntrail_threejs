@@ -139,7 +139,7 @@ export async function createForestForTile(tile: Tile): Promise<THREE.Group | nul
     const densityBoost = (state.PERFORMANCE_PRESET === 'ultra') ? 1.1 : 1.0;
     let totalActive = 0;
     
-    // v5.36.0 : Cache de la résolution pour éviter Math.sqrt (Gain CPU)
+    if (!tile.pixelData) return null;
     const elevRes = Math.sqrt(tile.pixelData.length / 4);
 
     for (let py = 0; py < scanRes; py += step) {
