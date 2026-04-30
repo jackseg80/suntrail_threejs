@@ -24,7 +24,7 @@ const buildingMaterial2D = new THREE.MeshBasicMaterial({
 });
 
 export async function loadBuildingsForTile(tile: Tile) {
-    if (!state.SHOW_BUILDINGS || tile.zoom < 14 || (tile.status as string) === 'disposed') return;
+    if (!state.SHOW_BUILDINGS || tile.zoom < 15 || (tile.status as string) === 'disposed') return;
     if (tile.buildingGroup) return;
 
     if (state.isUserInteracting) {

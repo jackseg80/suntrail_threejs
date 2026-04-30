@@ -37,7 +37,7 @@ describe('buildings.ts', () => {
 
     it('should not load buildings if zoom level is below threshold', async () => {
         state.SHOW_BUILDINGS = true;
-        state.BUILDING_ZOOM_THRESHOLD = 16;
+        state.BUILDING_ZOOM_THRESHOLD = 15;
         const tile = new Tile(0, 0, 14, '14/0/0');
         tile.status = 'loaded';
         await loadBuildingsForTile(tile);
@@ -45,7 +45,7 @@ describe('buildings.ts', () => {
     });
 
     it('should render buildings when PBF data is available', async () => {
-        const tile = new Tile(0, 0, 14, '14/0/0');
+        const tile = new Tile(0, 0, 15, '15/0/0');
         tile.mesh = new THREE.Mesh();
         tile.status = 'loaded';
 
