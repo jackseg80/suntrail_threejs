@@ -60,7 +60,7 @@ describe('Buildings Integration', () => {
     });
 
     it('should load buildings from PBF and NOT use Overpass', async () => {
-        const tile = new Tile(0, 0, 14, '14/0/0');
+        const tile = new Tile(0, 0, 15, '15/0/0');
         tile.mesh = new THREE.Mesh();
         tile.status = 'loaded';
 
