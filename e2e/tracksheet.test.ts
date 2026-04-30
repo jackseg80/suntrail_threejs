@@ -52,8 +52,10 @@ test.describe('TrackSheet Functionality', () => {
     await page.setInputFiles('#gpx-upload', filePath);
 
     const toggleBtn = page.locator('.gpx-layer-toggle').first();
+    await expect(toggleBtn).toBeVisible();
     await expect(toggleBtn).toHaveText('👁');
     
+    await toggleBtn.scrollIntoViewIfNeeded();
     await toggleBtn.click();
     await expect(toggleBtn).toHaveText('🚫');
 

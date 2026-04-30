@@ -37,10 +37,13 @@ test.describe('Discovery Trial E2E', () => {
     
     // Stop recording
     await page.click('#rec-btn-sheet');
-    // If a save prompt appears, just cancel it
+    // If a save prompt appears, just cancel it (with explicit timeout)
     const cancelBtn = page.locator('#rec-save-cancel');
-    if (await cancelBtn.isVisible()) {
+    try {
+        await cancelBtn.waitFor({ state: 'visible', timeout: 3000 });
         await cancelBtn.click();
+    } catch {
+        // No save prompt — recording may have been too short
     }
   });
 

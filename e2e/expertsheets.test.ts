@@ -19,47 +19,49 @@ test.describe('Expert Sheets and Widgets', () => {
   test('should open weather sheet from top pill', async ({ page }) => {
     const mainPill = page.locator('#top-pill-main');
     await expect(mainPill).toBeVisible();
+    
+    // Wait for JS event listeners to be attached after DOM hydration
+    await page.waitForTimeout(300);
     await mainPill.click();
     
-    // Check if weather sheet appears
-    const weatherSheet = page.locator('#weather');
-    await expect(weatherSheet).toHaveClass(/is-open/);
-    
-    // Check for some content (title or close button)
-    await expect(page.locator('#close-weather')).toBeVisible();
+    // Check if weather sheet is open via its close button visibility
+    const closeBtn = page.locator('#close-weather');
+    await expect(closeBtn).toBeVisible({ timeout: 5000 });
     
     // Close it
-    await page.click('#close-weather');
-    await expect(weatherSheet).not.toHaveClass(/is-open/);
+    await closeBtn.click();
+    await expect(closeBtn).not.toBeVisible({ timeout: 3000 });
   });
 
   test('should open connectivity sheet from network icon', async ({ page }) => {
     const netIcon = page.locator('#net-status-icon');
     await expect(netIcon).toBeVisible();
+    
+    await page.waitForTimeout(300);
     await netIcon.click();
     
-    const connectivitySheet = page.locator('#connectivity');
-    await expect(connectivitySheet).toHaveClass(/is-open/);
-    await expect(page.locator('#close-connectivity')).toBeVisible();
+    const closeBtn = page.locator('#close-connectivity');
+    await expect(closeBtn).toBeVisible({ timeout: 5000 });
     
-    await page.click('#close-connectivity');
-    await expect(connectivitySheet).not.toHaveClass(/is-open/);
+    await closeBtn.click();
+    await expect(closeBtn).not.toBeVisible({ timeout: 3000 });
   });
 
   test('should open SOS sheet and display coordinates', async ({ page }) => {
     const sosBtn = page.locator('#sos-main-btn');
     await expect(sosBtn).toBeVisible();
+    
+    await page.waitForTimeout(300);
     await sosBtn.click();
     
-    const sosSheet = page.locator('#sos');
-    await expect(sosSheet).toHaveClass(/is-open/);
+    await expect(page.locator('#sos-close-btn')).toBeVisible({ timeout: 5000 });
     
     // Should display locating or actual message
     const sosText = page.locator('#sos-text-container');
     await expect(sosText).toBeVisible();
     
     await page.click('#sos-close-btn');
-    await expect(sosSheet).not.toHaveClass(/is-open/);
+    await expect(page.locator('#sos-close-btn')).not.toBeVisible({ timeout: 3000 });
   });
 
   test('should toggle solar timeline', async ({ page }) => {

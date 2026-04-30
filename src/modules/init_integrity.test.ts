@@ -6,6 +6,11 @@ import { initUI } from './ui';
 // On charge le VRAI index.html
 const html = readFileSync(resolve(__dirname, '../../index.html'), 'utf8');
 
+vi.mock('./scene', async () => {
+    const actual = await vi.importActual('./scene') as any;
+    return { ...actual, initScene: vi.fn().mockResolvedValue(undefined) };
+});
+
 // Mock robuste de MutationObserver
 class MockMutationObserver {
     observe = vi.fn();
@@ -39,13 +44,6 @@ describe('Initialization Integrity', () => {
     });
 
     it('should initialize UI and find critical structural IDs', async () => {
-        // Mock startApp car il lance initScene qui est trop complexe à mocker ici
-        // On veut juste tester l'hydratation de l'UI
-        vi.mock('./scene', async () => {
-            const actual = await vi.importActual('./scene') as any;
-            return { ...actual, initScene: vi.fn().mockResolvedValue(undefined) };
-        });
-
         await initUI();
 
         // --- TESTS DE STRUCTURE CRITIQUES ---

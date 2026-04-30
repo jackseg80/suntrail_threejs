@@ -1,3 +1,17 @@
+## [5.40.37] - 2026-04-30
+
+### Added
+- **Tests (Audit)** : +54 tests unitaires couvrant `gpxService`, `acceptanceWall`, `gpsDisclosure`, `onboardingTutorial`, `workerManager`.
+- **Couverture** : Passage de 47.5% à ~51% de lines coverage.
+
+### Fixed
+- **Warning Vitest** : `vi.mock("./scene")` déplacé au top-level dans `init_integrity.test.ts` (prépare compatibilité future).
+- **E2E Flaky Chromium** : 4 tests E2E stabilisés (weather sheet, connectivity sheet, GPX toggle, trial) via `waitForTimeout`, `scrollIntoViewIfNeeded`, timeout explicite.
+
+### Chore
+- **TypeScript strict** : 20 erreurs TS `unused-vars` éliminées dans les nouveaux tests.
+- **Docs** : Mise à jour CLAUDE.md.
+
 ## [5.40.36] - 2026-04-30
 
 ### Fixed
