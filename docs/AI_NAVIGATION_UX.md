@@ -1,4 +1,4 @@
-# SunTrail — Navigation & Modules Fonctionnels (v5.40.37)
+# SunTrail — Navigation & Modules Fonctionnels (v5.40.39)
 
 > Référence détaillée pour agents IA. Point d'entrée : [CLAUDE.md](../CLAUDE.md)
 
@@ -95,3 +95,17 @@
 - **Singleton `tileWorkerManager`** : 4 workers (mobile) / 8 workers (desktop).
 - Gestion par ID avec Promises, déduplication, timeout 15s. Annulation via `cancelTile()` → `AbortController.abort()`.
 - Reporting erreurs 403 pour désactiver MapTiler globalement.
+
+---
+
+### Timeline / Simulation Solaire (`TimelineComponent.ts`)
+- **Toggle** : Bouton `#timeline-toggle-btn` dans la top status bar (🕒). Ouvert seulement en mode 3D.
+- **Auto-open/close** : La timeline s'ouvre automatiquement au passage en 3D, se ferme au passage en 2D.
+- **Drag** : Swipe down pour fermer, drag libre vers le haut pour repositionner. Chevauchement dynamique des widgets voisins.
+- **FAB stack** : Les boutons flottants restent visibles sur écrans larges (>600px). Masqués sur petits écrans où la timeline les chevauche.
+
+### Bouton 2D/3D (`NavigationBar.ts`)
+- **Emplacement** : FAB stack (bas-droite). Icône et label indiquent le **mode de destination** (appel à l'action).
+  - En mode 2D : icône cube isométrique + label "3D" → "cliquez pour la 3D"
+  - En mode 3D : icône plan quadrillé + label "2D" → "cliquez pour la 2D"
+- **Verrouillage LOD ≤ 10** : Forcé en 2D, bouton désactivé (0.35 opacité). Le mode précédent est restauré au dézoom > 10.

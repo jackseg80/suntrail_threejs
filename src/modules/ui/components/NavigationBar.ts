@@ -52,13 +52,8 @@ export class NavigationBar extends BaseComponent {
             const syncToggleVisual = () => {
                 const is2D = state.IS_2D_MODE;
                 const label = modeToggle.querySelector('.nav-mode-label');
-                if (label) label.textContent = is2D ? '2D' : '3D';
+                if (label) label.textContent = is2D ? '3D' : '2D';
                 modeToggle.setAttribute('aria-pressed', String(is2D));
-                if (is2D) {
-                    modeToggle.classList.add('active');
-                } else {
-                    modeToggle.classList.remove('active');
-                }
             };
 
             const onModeToggleClick = () => {

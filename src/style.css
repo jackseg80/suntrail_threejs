@@ -302,38 +302,17 @@ body, html {
 }
 .nav-tab.has-notif .nav-dot { display: block; }
 
-/* 2D/3D MODE TOGGLE — perspective grid icon (dans FAB stack, v5.14.1) */
-.nav-mode-icon {
-    perspective: 60px;
-}
+/* 2D/3D MODE TOGGLE — icône cube (destination 3D) / plan (destination 2D) */
+/* Icône cube (affiché quand on est en 2D → propose de passer en 3D) */
+.mode-icon-3d { display: none; }
+.mode-icon-2d { display: inline; }
 
-.nav-mode-icon .grid-icon {
-    transition: transform var(--transition-slow);
-    transform-origin: center center;
-    /* 3D state (default): tilted grid → perspective terrain */
-    transform: rotateX(45deg);
-}
+body.mode-2d .mode-icon-3d { display: inline; }
+body.mode-2d .mode-icon-2d { display: none; }
 
-.nav-mode-icon .grid-peak {
-    transition: opacity var(--transition-normal), transform var(--transition-normal);
-    opacity: 1;
-}
-
-/* 2D active state: flat top-down grid, peak hidden */
-.nav-mode-toggle.active .nav-mode-icon .grid-icon {
-    transform: rotateX(0deg);
-}
-
-.nav-mode-toggle.active .nav-mode-icon .grid-peak {
-    opacity: 0;
-}
-
-/* Dans FAB stack : état actif (2D) utilise la couleur accent */
-#nav-2d-toggle.active {
-    background: var(--accent);
-    color: white;
-    border-color: rgba(255,255,255,0.1);
-    box-shadow: 0 4px 20px var(--accent-glow);
+.mode-icon-3d,
+.mode-icon-2d {
+    transition: opacity 0.3s ease;
 }
 
 /* Bouton 2D verrouillé (LOD ≤ 10 — tuiles déjà en 2D, toggle sans effet) */
@@ -850,11 +829,14 @@ body.sheet-open .fab-stack {
     pointer-events: none;
 }
 
-/* Timeline ouverte en position par défaut → cacher les FABs (chevauchement bas-centre/bas-droite) */
-body.timeline-open .fab-stack {
-    transform: translateY(20px) scale(0.9);
-    opacity: 0;
-    pointer-events: none;
+/* Timeline ouverte en position par défaut → ne cacher les FABs que sur petits écrans où elle les touche */
+/* Breakpoint ~600px : la timeline (max-width 450px) + FAB (52px + gap 16px) se chevauchent */
+@media (max-width: 600px) {
+    body.timeline-open .fab-stack {
+        transform: translateY(20px) scale(0.9);
+        opacity: 0;
+        pointer-events: none;
+    }
 }
 /* En mode drag libre, annuler la règle statique — .widget-overlap-hidden prend le relai */
 body.timeline-custom-pos .fab-stack {
@@ -992,20 +974,12 @@ body.sheet-layers-sheet-open #sheet-overlay {
     transform: scale(0.92);
 }
 
-.nav-mode-toggle .grid-icon {
+.nav-mode-toggle .mode-icon-3d,
+.nav-mode-toggle .mode-icon-2d {
     width: 18px;
     height: 18px;
     flex-shrink: 0;
     transition: all 0.3s ease;
-}
-
-.nav-mode-toggle .grid-peak {
-    transition: opacity 0.3s ease;
-}
-
-/* État 2D — pic caché (vue plate) */
-body.mode-2d .nav-mode-toggle .grid-peak {
-    opacity: 0;
 }
 
 /* Label du mode */
@@ -1016,17 +990,6 @@ body.mode-2d .nav-mode-toggle .grid-peak {
     margin-top: 1px;
     color: var(--text);
     transition: color 0.3s ease;
-}
-
-/* État actif — accent */
-.nav-mode-toggle.active {
-    background: var(--accent);
-    color: white;
-    box-shadow: 0 4px 20px var(--accent-glow);
-}
-
-.nav-mode-toggle.active .nav-mode-label {
-    color: white;
 }
 
 /* TOGGLES DISABLED (features Pro) */

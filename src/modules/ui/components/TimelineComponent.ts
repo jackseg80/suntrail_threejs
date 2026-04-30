@@ -216,13 +216,18 @@ export class TimelineComponent {
             if (playBtn) playBtn.textContent = val ? '⏸' : '▶';
         }));
 
-        // Fermer la timeline automatiquement quand on bascule en mode 2D
+        // Ouvrir/fermer la timeline automatiquement au changement de mode
         this.subscriptions.push(state.subscribe('IS_2D_MODE', (is2D: boolean) => {
             if (is2D && bottomBar && bottomBar.classList.contains('is-open')) {
                 bottomBar.classList.remove('is-open');
                 document.body.classList.remove('timeline-open');
                 document.body.classList.remove('timeline-custom-pos');
                 if (toggleBtn) toggleBtn.classList.remove('active');
+            }
+            if (!is2D && bottomBar && !bottomBar.classList.contains('is-open')) {
+                bottomBar.classList.add('is-open');
+                document.body.classList.add('timeline-open');
+                if (toggleBtn) toggleBtn.classList.add('active');
             }
         }));
     }
