@@ -1,3 +1,23 @@
+## [5.40.40] - 2026-04-30
+
+### Added
+- **GPX Track : épaisseur zoom-based Komoot** : La trace s'agrandit en dézoomant et s'amincit en zoomant, via formule exponentielle `base × 2^(18-ZOOM)`, cap à 200m (import) / 250m (enregistrement). Fonction partagée `computeTrackThickness()` dans `gpxLayers.ts`.
+- **Rebuild épaisseur sur mobile** : `touchControls` dispatche désormais `controls.dispatchEvent({ type: 'end' })` quand le doigt se lève → le `controls.end` handler recalcule le zoom et reconstruit les tracés à la bonne épaisseur.
+- **Materials cachés** : Matériau du tracé enregistré mis en cache (`getRecordedMaterial()`) — plus de `new Material` à chaque mise à jour GPS.
+
+### Fixed
+- **STOP/Save bloqué sur A53 STD** : Le géocodage réseau (`getPlaceName`) ne bloque plus l'affichage du modal d'enregistrement. Le nom fallback (date locale) s'affiche immédiatement, le géocodage tourne en arrière-plan. Ajout d'un `try/catch` global pour éviter l'UI freeze.
+- **Profil d'élévation : touch inactif sur mobile** : Ajout `touch-action:none` sur le conteneur du profil et exclusion de `isInteractingWithUI` du deep sleep — le curseur suit maintenant le doigt en continu.
+- **Profil d'élévation : performance** : Recherche binaire O(log n) au lieu de linéaire O(n) dans `onMove`.
+- **Rebuild GPX robuste** : `_doUpdateAllGPXMeshes` utilise `for...of` + `try/catch` par layer (`.map()` précédent faisait échouer tous les layers si un seul plantait).
+- **Surface offset GPX** : `GPX_SURFACE_OFFSET = 12` utilisé partout (`drapeToTerrain`, `addGPXLayer`, rebuild) au lieu du 30 hardcodé qui causait du Z-fighting.
+- **E2E Search** : Correction du bug où le route handler Playwright interceptait `geocodingService.ts` (Vite ajoute `?t=...`), résolu en utilisant `pathname` au lieu de `href` pour la détection `.ts/.js`.
+- **Dette technique** : `gpxDrapePoints` supprimé (31 lignes en doublon de `drapeToTerrain` de `analysis.ts`). Import `getAltitudeAt` retiré de `gpxLayers.ts`.
+
+### Housekeeping
+- **.gitignore** : Nettoyé des caractères binaires corrompus, ajout `coverage/`.
+- **Artefacts supprimés du tracking git** : `coverage/`, `playwright-report/`, `test-results/` retirés du suivi de version.
+
 ## [5.40.39] - 2026-04-30
 
 ### Fixed
