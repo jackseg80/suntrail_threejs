@@ -56,9 +56,13 @@
 - **Exports** : `initCompass()`, `renderCompass()`, `resetToNorth()`, `updateCompassAnimation()`, `isCompassAnimating()`.
 
 ### POI & Signalisation (`poi.ts`)
-- **Source** : Overpass API (`information~"guidepost|map|board"`).
-- Sprites Three.js (cercle doré) à altitude terrain + 25m.
-- Cache mémoire + Cache API (zone-based, zoom 12). Cooldown 60s/zone en erreur.
+- **Source** : Vector Tiles PBF — SwissTopo (`ch.swisstopo.base.vt`) en CH via zoom 14, MapTiler v3 hors CH via zoom 12.
+- **Détection unifiée** (v5.40.38) : supporte le format SwissTopo (`class`/`subclass`, ex: `lodging`/`alpine_hut`) et MapTiler (`class` seule).
+- **8 catégories** : trail (🔶 sentiers nommés via `transportation_name`), hut (🟤 refuges/cabanes), rest (🟢 haltes/pique-nique/eau), attraction (🔵 cascades/grottes), viewpoint (🔭), shelter (🏠), info (i), guidepost.
+- Sprites Three.js à altitude terrain + 12m, échelle 24×24.
+- **Interaction** : clic → affiche le nom du POI dans `coords-pill` avec sa catégorie.
+- **Filtrage couches** : ignore `line`, `poly`, `water`, `landuse`, `building`, `transportation`, `road`, `highway` mais conserve `transportation_name`.
+- Cache mémoire + Cache API (zone-based, 200 entrées max). Cooldown 60s/zone en erreur.
 
 ### Sommets (`peaks.ts`)
 - **Source** : Overpass API (`natural=peak`, `ele > 1000m`), trié par altitude décroissante.

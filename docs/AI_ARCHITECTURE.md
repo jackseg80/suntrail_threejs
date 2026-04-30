@@ -1,4 +1,4 @@
-# AI Architecture Guide (v5.40.37)
+# AI Architecture Guide (v5.40.38)
 
 This document maps the core reactive logic and rendering systems to help AI agents understand how modules interact.
 

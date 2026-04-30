@@ -1,4 +1,4 @@
-# SunTrail 3D — TODO (v5.40.23)
+# SunTrail 3D — TODO (v5.40.38)
 
 > Guide IA : [CLAUDE.md](../CLAUDE.md) | Historique : [COMPLETED_HISTORY.md](archives/COMPLETED_HISTORY.md)
 
@@ -6,11 +6,8 @@
 
 ## 🎯 Priorité 1 : Finalisation Production (V5.x)
 
-- [x] **Modularisation Architecturale (v5.40.23)** : Extraction du moteur GPX (`gpxLayers`), isolation de l'environnement 3D (`environment`) et orchestration de l'initialisation (`appInit`).
-- [x] **Garantie de Non-Régression (v5.40.23)** : Extension de la suite de tests (608 tests) incluant l'intégrité de la scène 3D et la séquence de boot.
-- [x] **Cleanup & Typage (v5.40.15)** : Typage strict des Web Workers et nettoyage chirurgical des logs de production.
-- [x] **Audit Play Store (v5.40.14)** : Unification du nom en "SunTrail 3D" et suppression de la permission battery optimization.
-- [x] **Signalétique Suisse** : Rétablissement des losanges jaunes via filtrage de couches permissif (label/transportation). (v5.40.13)
+- [x] **POI Enrichis (v5.40.38)** : 8 catégories (trail, hut, rest, attraction + 4 existantes), détection SwissTopo class/subclass + MapTiler, nom affiché au clic. Suppression du faux matching `hiking`.
+- [x] **Signalétique Suisse (v5.40.13)** : Filtrage permissif des couches (label/transportation_name) pour sentiers nommés.
 - [x] **Transition 2D/3D** : Suppression instantanée des objets 3D lors du switch. (v5.40.13)
 - [x] **Stabilité 3D (v5.40.11)** : Retour au socle stable 5.39.1 (MapTiler Z10 FR / SwissTopo Z12 CH). 3D fluide partout.
 - [x] **Signalétique Enrichie (v5.40.11)** : Icônes spécifiques pour Belvédères (🔭), Abris (🏠) et Infos (i).

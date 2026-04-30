@@ -12,7 +12,7 @@ import { BoundedCache } from './boundedCache';
  * Récupération et rendu différencié des POIs via tuiles vectorielles.
  */
 
-type POICategory = 'guidepost' | 'viewpoint' | 'shelter' | 'info';
+type POICategory = 'guidepost' | 'viewpoint' | 'shelter' | 'info' | 'trail' | 'hut' | 'rest' | 'attraction';
 
 interface POIData {
     id: number | string;
@@ -86,6 +86,47 @@ function getPOITexture(category: POICategory): THREE.Texture {
             ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
             ctx.fillStyle = '#fff'; ctx.font = 'bold 34px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText('i', 32, 32);
+        } else if (category === 'trail') {
+            // Losange jaune pour sentiers nommés
+            ctx.beginPath();
+            ctx.moveTo(32, 6); ctx.lineTo(58, 32); ctx.lineTo(32, 58); ctx.lineTo(6, 32); ctx.closePath();
+            if (ctx.createRadialGradient) {
+                const grad = ctx.createRadialGradient(32, 32, 5, 32, 32, 30);
+                grad.addColorStop(0, '#FFEB3B'); grad.addColorStop(1, '#FBC02D');
+                ctx.fillStyle = grad;
+            } else {
+                ctx.fillStyle = '#FBC02D';
+            }
+            ctx.fill();
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.stroke();
+        } else if (category === 'hut') {
+            // Refuge : carré brun avec icône maison
+            ctx.fillStyle = '#8B4513';
+            // @ts-ignore
+            if (ctx.roundRect) {
+                // @ts-ignore
+                ctx.roundRect(6, 6, 52, 52, 10);
+            } else {
+                ctx.rect(6, 6, 52, 52);
+            }
+            ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 28px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('🛖', 32, 34);
+        } else if (category === 'rest') {
+            // Halte : cercle vert avec icône pique-nique
+            ctx.beginPath(); ctx.arc(32, 32, 26, 0, Math.PI * 2);
+            ctx.fillStyle = '#22c55e'; ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 28px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('🧺', 32, 34);
+        } else if (category === 'attraction') {
+            // Curiosité naturelle : cercle cyan avec icône étoile
+            ctx.beginPath(); ctx.arc(32, 32, 26, 0, Math.PI * 2);
+            ctx.fillStyle = '#06b6d4'; ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 28px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('✨', 32, 34);
         }
     }
 
@@ -130,6 +171,25 @@ export async function loadPOIsForTile(tile: Tile) {
     }
 }
 
+function extractPOIName(props: Record<string, unknown>, category: string): string {
+    const nameFields = ['name', 'name_en', 'text', 'name_fr', 'name_de', 'name_it', 'name:fr', 'name:de', 'name:it', 'label'];
+    for (const field of nameFields) {
+        const val = props[field];
+        if (val && typeof val === 'string' && val.trim()) return val.trim();
+    }
+    const catLabels: Record<string, string> = {
+        guidepost: 'Signalisation',
+        viewpoint: 'Point de vue',
+        shelter: 'Abri',
+        info: 'Information',
+        trail: 'Sentier',
+        hut: 'Refuge',
+        rest: 'Halte',
+        attraction: 'Curiosité'
+    };
+    return catLabels[category] || "Point d'intérêt";
+}
+
 async function fetchPOIsWithCache(z: number, x: number, y: number, key: string, inCH: boolean): Promise<POIData[] | null> {
     try {
         const cache = await caches.open(CACHE_NAME);
@@ -163,28 +223,77 @@ async function fetchPOIsWithCache(z: number, x: number, y: number, key: string, 
             const layer = vtile.layers[layerName];
             const lowerLayer = layerName.toLowerCase();
             
-            // v5.40.13 : Filtrage intelligent — on ignore les couches de polygones/lignes 
-            // mais on accepte tout le reste (poi, label, point, transportation) pour ne rien rater.
-            if (lowerLayer.includes('line') || lowerLayer.includes('poly') || 
+            const isTransportName = lowerLayer.includes('transport') && lowerLayer.includes('name');
+
+            // Filtrage des couches de géométrie (polygones/lignes) — on ignore sauf transportation_name
+            if (!isTransportName && (
+                lowerLayer.includes('line') || lowerLayer.includes('poly') || 
                 lowerLayer.includes('water') || lowerLayer.includes('landuse') ||
-                lowerLayer.includes('building')) return;
+                lowerLayer.includes('building') || lowerLayer.includes('transport') ||
+                lowerLayer.includes('road') || lowerLayer.includes('highway')
+            )) return;
 
             for (let i = 0; i < layer.length; i++) {
                 const feat = layer.feature(i);
                 const props = feat.properties;
                 const raw = JSON.stringify(props).toLowerCase();
+                const cls = String(props.class || '').toLowerCase();
+                const sub = String(props.subclass || '').toLowerCase();
 
                 let category: POICategory | null = null;
 
-                // Logique de catégorisation améliorée (v5.40.12 : assouplissement pour guidepost)
-                if (props.class === 'viewpoint' || props.tourism === 'viewpoint') {
-                    category = 'viewpoint';
-                } else if (props.amenity === 'shelter' || props.class === 'shelter') {
-                    category = 'shelter';
-                } else if (props.information === 'map' || props.information === 'board' || props.tourism === 'information') {
-                    category = 'info';
-                } else if (raw.includes('guidepost') || raw.includes('signpost') || raw.includes('hiking') || props.information === 'guidepost') {
-                    category = 'guidepost';
+                // Sentiers nommés (transportation_name — Suisse : sentiers de rando avec nom)
+                if (isTransportName) {
+                    const trailClasses = ['footway', 'path', 'track', 'bridleway', 'steps'];
+                    const hasName = props.name && typeof props.name === 'string' && (props.name as string).trim();
+                    if (hasName && trailClasses.includes(cls)) {
+                        category = 'trail';
+                    }
+                }
+
+                if (!category) {
+                    // Détection unifiée (SwissTopo class/subclass + MapTiler class seule)
+                    // Refuges & cabanes
+                    if ((cls === 'lodging' && ['alpine_hut', 'wilderness_hut'].includes(sub)) ||
+                        cls === 'alpine_hut' || cls === 'wilderness_hut' ||
+                        (cls === 'tourism' && sub === 'alpine_hut')) {
+                        category = 'hut';
+                    }
+                    // Haltes (pique-nique, campings, eau potable)
+                    else if ((cls === 'tourism' && ['picnic_site', 'camp_site'].includes(sub)) ||
+                        (cls === 'lodging' && sub === 'camp_site') ||
+                        (cls === 'amenity' && ['drinking_water', 'fountain'].includes(sub)) ||
+                        cls === 'picnic_site' || cls === 'camp_site' ||
+                        props.amenity === 'drinking_water' || props.tourism === 'picnic_site') {
+                        category = 'rest';
+                    }
+                    // Curiosités naturelles
+                    else if ((cls === 'natural' && ['waterfall', 'cave_entrance'].includes(sub)) ||
+                        cls === 'waterfall' || cls === 'cave_entrance' ||
+                        props.natural === 'cave_entrance' || props.waterway === 'waterfall') {
+                        category = 'attraction';
+                    }
+                    // Points de vue
+                    else if (cls === 'viewpoint' || props.tourism === 'viewpoint' ||
+                        (cls === 'tourism' && sub === 'viewpoint')) {
+                        category = 'viewpoint';
+                    }
+                    // Abris
+                    else if (cls === 'shelter' || props.amenity === 'shelter' ||
+                        (cls === 'amenity' && sub === 'shelter')) {
+                        category = 'shelter';
+                    }
+                    // Information
+                    else if (props.information === 'map' || props.information === 'board' || 
+                        props.tourism === 'information' ||
+                        (cls === 'tourism' && sub === 'information')) {
+                        category = 'info';
+                    }
+                    // Guideposts
+                    else if (props.information === 'guidepost' || 
+                        raw.includes('guidepost') || raw.includes('signpost')) {
+                        category = 'guidepost';
+                    }
                 }
 
                 if (category) {
@@ -201,7 +310,7 @@ async function fetchPOIsWithCache(z: number, x: number, y: number, key: string, 
                         id: feat.id || `${lat.toFixed(6)}|${lon.toFixed(6)}`,
                         lat,
                         lon,
-                        name: String(props.name || props.name_en || "Point d'intérêt"),
+                        name: extractPOIName(props, category),
                         category
                     });
                 }

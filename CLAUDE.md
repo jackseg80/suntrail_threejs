@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.40.37)
+# SunTrail — Guide IA (v5.40.38)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-30 suite à la v5.40.37 (Audit Tests : +54 tests, fix TS, E2E stable).
+> Mis à jour le 2026-04-30 suite à la v5.40.38 (POI enrichis : 8 catégories, détection SwissTopo class/subclass).
 
 
 ## Projet
@@ -88,6 +88,7 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - `src/modules/profile.ts` : Graphique d'élévation (v5.29.30: Priorité aux données raw GPX).
 - `src/modules/scene.ts` : Moteur de rendu et boucle principale.
 - `src/modules/cameraManager.ts` : Gestion de la caméra, animations flyTo et resize.
+- `src/modules/poi.ts` : (v5.40.38) Détection et rendu 3D des POIs depuis tuiles vectorielles (SwissTopo/MapTiler). 8 catégories : trail (🔶 sentiers nommés), hut (🟤 refuges), rest (🟢 haltes), attraction (🔵 curiosités), viewpoint (🔭), shelter (🏠), info (i), guidepost (Signalisation). Détection unifiée SwissTopo (class/subclass) + MapTiler. Cache PBF zone-based.
 
 ## Tests & Qualité
 - **Unitaires (Vitest)** : `npm test` (667 tests). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`.

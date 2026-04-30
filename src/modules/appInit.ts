@@ -269,6 +269,21 @@ async function initSecondaryUI(): Promise<void> {
 
 function handleGlobalClick(_e: MouseEvent) {}
 
+const POI_CATEGORY_LABELS: Record<string, string> = {
+    guidepost: 'Signalisation',
+    viewpoint: 'Point de vue',
+    shelter: 'Abri',
+    info: 'Information',
+    trail: 'Sentier',
+    hut: 'Refuge',
+    rest: 'Halte',
+    attraction: 'Curiosité'
+};
+
+function getPOICategoryLabel(category: string): string {
+    return POI_CATEGORY_LABELS[category] || '';
+}
+
 async function handleMapClick(e: MouseEvent) {
     if (!state.renderer || !state.camera || !state.scene) return;
 
@@ -299,11 +314,35 @@ async function handleMapClick(e: MouseEvent) {
         const poiData = spriteHit.object.userData;
         if (poiData && poiData.name) {
             state.hasLastClicked = true;
+            const worldX = spriteHit.object.position.x + (spriteHit.object.parent?.position.x || 0);
+            const worldZ = spriteHit.object.position.z + (spriteHit.object.parent?.position.z || 0);
             state.lastClickedCoords = { 
-                x: spriteHit.object.position.x + (spriteHit.object.parent?.position.x || 0), 
-                z: spriteHit.object.position.z + (spriteHit.object.parent?.position.z || 0), 
-                alt: getAltitudeAt(spriteHit.object.position.x, spriteHit.object.position.z) 
+                x: worldX,
+                z: worldZ, 
+                alt: getAltitudeAt(worldX, worldZ) 
             };
+            
+            const cp = document.getElementById('coords-pill');
+            if (cp) {
+                cp.classList.remove('panel-custom-pos');
+                cp.style.left = ''; cp.style.top = ''; cp.style.bottom = ''; cp.style.transform = '';
+                cp.classList.remove('hidden');
+                const gps = worldToLngLat(worldX, worldZ, state.originTile!);
+                const clickLatLon = document.getElementById('click-latlon');
+                if (clickLatLon) clickLatLon.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
+                const clickAlt = document.getElementById('click-alt');
+                if (clickAlt) clickAlt.textContent = `${Math.round(state.lastClickedCoords.alt / state.RELIEF_EXAGGERATION)} m`;
+                const clickPoiName = document.getElementById('click-poi-name');
+                if (clickPoiName) {
+                    clickPoiName.style.display = 'block';
+                    const catLabel = getPOICategoryLabel(poiData.category);
+                    if (catLabel && poiData.name !== catLabel) {
+                        clickPoiName.textContent = `📍 ${catLabel} : ${poiData.name}`;
+                    } else {
+                        clickPoiName.textContent = `📍 ${poiData.name}`;
+                    }
+                }
+            }
             return;
         }
     }
@@ -323,6 +362,8 @@ async function handleMapClick(e: MouseEvent) {
             if (clickLatLon) clickLatLon.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
             const clickAlt = document.getElementById('click-alt');
             if (clickAlt) clickAlt.textContent = `${Math.round(state.lastClickedCoords.alt / state.RELIEF_EXAGGERATION)} m`;
+            const clickPoiName = document.getElementById('click-poi-name');
+            if (clickPoiName) clickPoiName.style.display = 'none';
         }
     } else {
         state.hasLastClicked = false;

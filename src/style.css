@@ -1097,6 +1097,7 @@ body.mode-2d .nav-mode-toggle .grid-peak {
 #coords-pill.hidden { opacity: 0; transform: translateX(-10px); pointer-events: none; }
 .coords-lat { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-2); }
 .coords-alt { font-size: var(--text-lg); font-weight: 700; color: var(--gold); letter-spacing: -0.5px; }
+.coords-poi { font-size: var(--text-sm); font-weight: 600; color: var(--gold); margin-top: 2px; }
 .coords-actions { display: flex; gap: 6px; margin-top: var(--space-2); }
 .coords-btn {
     flex: 1; padding: 7px 0; min-height: 48px;  /* ≥ 48dp touch target */
