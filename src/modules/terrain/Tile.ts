@@ -53,7 +53,6 @@ export class Tile {
     private extendedBounds: THREE.Box3 = new THREE.Box3();
     elevOffset = new THREE.Vector2(); elevScale = 1.0;
     colorOffset = new THREE.Vector2(); colorScale = 1.0;
-
     latFactor: number = 1.0;
 
     constructor(tx: number, ty: number, zoom: number, key: string) {
@@ -79,7 +78,6 @@ export class Tile {
         const txNorm = (this.tx + 0.5) * unit;
         const tyNorm = (this.ty + 0.5) * unit;
         
-        // v5.40.17 : Utilisation des fonctions centralisées pour éviter les répétitions de Math.pow
         const originUnit = 1.0 / getPow2(state.originTile.z);
         const oxNorm = (state.originTile.x + 0.5) * originUnit;
         const oyNorm = (state.originTile.y + 0.5) * originUnit;
@@ -152,8 +150,6 @@ export class Tile {
             this.colorTex = cached.color; this.overlayTex = cached.overlay; this.normalTex = cached.normal;
             markCacheKeyActive(cacheKey);
             
-            // v5.32.7 : Si le pixelData a été purgé du cache RAM mais qu'on en a besoin 
-            // pour les objets 3D (zoom >= 14), on doit forcer un rechargement.
             if (!this.pixelData && this.zoom >= 14 && (state.SHOW_VEGETATION || state.SHOW_BUILDINGS)) {
                 // On continue le processus de chargement pour restaurer pixelData
             } else {
@@ -186,8 +182,6 @@ export class Tile {
                 this.colorTex.flipY = false;
                 this.colorTex.needsUpdate = true;
                 this.colorTex.colorSpace = THREE.SRGBColorSpace;
-                
-                // v5.32.14 : Anisotropic Filtering pour réduire l'aliasing à l'horizon
                 if (state.renderer) {
                     this.colorTex.anisotropy = state.renderer.capabilities.getMaxAnisotropy();
                 }
@@ -203,7 +197,6 @@ export class Tile {
                 this.overlayTex.flipY = false;
                 this.overlayTex.needsUpdate = true;
                 this.overlayTex.colorSpace = THREE.SRGBColorSpace;
-                
                 if (state.renderer) {
                     this.overlayTex.anisotropy = state.renderer.capabilities.getMaxAnisotropy();
                 }
@@ -232,7 +225,6 @@ export class Tile {
         const is2D = (this.zoom <= 10 || state.IS_2D_MODE);
         const isLight = (state.PERFORMANCE_PRESET === 'eco');
         
-        // v5.28.43 : En 2D, un seul quad (résolution 1) suffit et économise énormément de CPU/GPU
         if (is2D) resolution = 1;
         else if (this.zoom >= 15) resolution = Math.min(resolution, 64);
 
@@ -282,7 +274,6 @@ export class Tile {
                  .replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);\nvLocalUv = uv;`);
 
                 if (is2D || isLight) {
-                    // v5.40.33 : En 2D ou Light, on calculera vTrueNormal au pixel (Fragment)
                     if (!is2D) {
                         shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\nobjectNormal = vec3(0.0,1.0,0.0);`);
                     }
@@ -291,17 +282,11 @@ export class Tile {
                         const float HT_N = 0.5 / 256.0;
                         vec2 elevUv = clamp(uElevOffset + (uv * uElevScale), vec2(HT_N), vec2(1.0 - HT_N));
                         vec3 normalSample = texture2D(uNormalMap, elevUv).rgb * 2.0 - 1.0;
-                        
-                        // v5.40.33 : On redresse la normale Mercator pour les pentes > 30° (vTrueNormal)
                         vTrueNormal = normalize(vec3(normalSample.x, normalSample.y * uLatFactor, normalSample.z));
-
-                        // v5.40.33 : Calcul de la normale pour la lumière (objectNormal)
-                        // On garde la normale Mercator brute multipliée par uTileSize pour des ombres parfaites.
                         objectNormal = normalize(vec3(normalSample.x * uExaggeration * uTileSize, normalSample.y, normalSample.z * uExaggeration * uTileSize));
                     `);
                 }
 
-                // v5.28.43 : Bypass du calcul de hauteur en 2D (économie de texture lookup au vertex shader)
                 if (is2D) {
                     shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = - aSkirt * uTileSize * 0.02; vWorldXZ = (modelMatrix * vec4(transformed, 1.0)).xz;`);
                 } else {
@@ -346,53 +331,7 @@ export class Tile {
                         #else
                             normal = vTrueNormal;
                         #endif
-                        
                         float ny = clamp(normal.y, 0.0, 1.0);
-                        float yellowMix = smoothstep(0.8829, 0.8480, ny);
-                        float orangeMix = smoothstep(0.8387, 0.7986, ny);
-                        float redMix = smoothstep(0.7880, 0.7431, ny);
-                        vec3 slopeColor = mix(vec3(1.0, 1.0, 0.0), vec3(1.0, 0.5, 0.0), orangeMix);
-                        slopeColor = mix(slopeColor, vec3(1.0, 0.0, 0.0), redMix);
-                        diffuseColor.rgb = mix(diffuseColor.rgb, slopeColor, yellowMix * 0.55);
-                    }
-                `);
-            }
-        };
-
-                // v5.28.43 : Bypass du calcul de hauteur en 2D (économie de texture lookup au vertex shader)
-                if (is2D) {
-                    shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = - aSkirt * uTileSize * 0.02; vWorldXZ = (modelMatrix * vec4(transformed, 1.0)).xz;`);
-                } else {
-                    shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv) - aSkirt * uTileSize * 0.02; vWorldXZ = (modelMatrix * vec4(transformed, 1.0)).xz;`);
-                }
-
-                shader.fragmentShader = `
-                    #define IS_2D ${is2D ? '1' : '0'}
-                    varying vec2 vLocalUv;
-                    uniform sampler2D uOverlayMap; uniform bool uHasOverlay; uniform float uShowSlopes; uniform float uShowHydrology; uniform float uTime; varying vec3 vTrueNormal; varying vec2 vWorldXZ;
-                    uniform sampler2D uWaterMask; uniform bool uHasWaterMask;
-                    ${shader.fragmentShader}
-                `.replace('#include <map_fragment>', `
-                    #include <map_fragment>
-                    if (uHasOverlay) { vec4 oCol = texture2D(uOverlayMap, vMapUv); diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a); }
-
-                    #if IS_2D == 0
-                    if (uShowHydrology > 0.5 && uHasWaterMask) {
-                        float isWater = texture2D(uWaterMask, vLocalUv).r;
-                        if (isWater > 0.5) {
-                            vec3 waterBlue = vec3(0.02, 0.18, 0.52);
-                            float t = uTime * 0.5;
-                            float w1 = sin(vWorldXZ.x * 0.002 + vWorldXZ.y * 0.0015 + t) * 0.5 + 0.5;
-                            float w2 = sin(vWorldXZ.x * 0.001 - vWorldXZ.y * 0.0025 + t * 0.6) * 0.5 + 0.5;
-                            float wave = mix(w1, w2, 0.4);
-                            diffuseColor.rgb = mix(diffuseColor.rgb, waterBlue, 0.65);
-                            diffuseColor.rgb += vec3(0.2, 0.4, 0.7) * (wave - 0.5) * 0.4;
-                        }
-                    }
-                    #endif
-
-                    if (uShowSlopes > 0.5) {
-                        float ny = clamp(normalize(vTrueNormal).y, 0.0, 1.0);
                         float yellowMix = smoothstep(0.8829, 0.8480, ny);
                         float orangeMix = smoothstep(0.8387, 0.7986, ny);
                         float redMix = smoothstep(0.7880, 0.7431, ny);
@@ -408,7 +347,6 @@ export class Tile {
         if (is2D) (material as THREE.MeshBasicMaterial).map = this.colorTex;
         else (material as THREE.MeshStandardMaterial).map = this.colorTex;
 
-        // v5.29.17 : Rétablissement de l'injection forcée des textures pour les matériaux recyclés
         const shader = (material as any).userData.shader;
         if (shader) {
             shader.uniforms.uElevationMap.value = this.elevationTex;
@@ -441,11 +379,7 @@ export class Tile {
                             vec4 col = texture2D(uElevationMap, elevUv);
                             return decodeHeight(col) * uExaggeration;
                         }
-                    `).replace('#include <begin_vertex>', `#include <begin_vertex>\n
-                        // v5.33.3 : Fix ombres carrées. On ignore les skirts (aSkirt) dans le calcul de profondeur
-                        // pour éviter que les rebords verticaux ne projettent des ombres à lumière rasante.
-                        transformed.y = getTerrainHeight(uv);
-                    `);
+                    `).replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv);`);
                 }
             };
             const depth = materialPool.acquireDepth(onDepthCompile);
@@ -477,7 +411,6 @@ export class Tile {
         const delay = (ms: number) => ms * state.LOAD_DELAY_FACTOR;
         if (state.SHOW_SIGNPOSTS && this.zoom >= state.POI_ZOOM_THRESHOLD) setTimeout(() => { if (this.status !== 'disposed') loadPOIsForTile(this); }, delay(600));
 
-        // v5.28.44 : En mode 2D, on ne charge pas les objets 3D volumineux qui flotteraient
         if (!is2D) {
             if (state.SHOW_BUILDINGS && this.zoom >= state.BUILDING_ZOOM_THRESHOLD) setTimeout(() => { if (this.status !== 'disposed') loadBuildingsForTile(this); }, delay(150));
             if (state.SHOW_HYDROLOGY && this.zoom >= 13) setTimeout(() => { if (this.status !== 'disposed') loadHydrologyForTile(this); }, delay(100));
@@ -502,7 +435,6 @@ export class Tile {
 
     updateFade(delta: number): void {
         if (!this.isFadingIn || !this.mesh) return;
-        // v5.32.17 : Fade-in plus rapide (200ms) pour une sensation de fluidité accrue (LOD snapping)
         this.opacity += delta * 5.0;
         if (this.opacity >= 1) { this.opacity = 1; this.isFadingIn = false; if (this.mesh.material instanceof THREE.Material) this.mesh.material.transparent = false; }
         if (this.mesh.material instanceof THREE.Material) {
@@ -516,12 +448,8 @@ export class Tile {
         this.isFadingOut = true; 
         this.ghostFadeDuration = durationMs;
         this.ghostFadeRemaining = durationMs;
-        
-        // v5.32.19 : On place la tuile légèrement en dessous et on baisse son renderOrder
-        // pour qu'elle serve de fond (backdrop) sans masquer les nouvelles tuiles.
         this.mesh.position.y = -1.0;
         this.mesh.renderOrder = -2; 
-        
         if (this.mesh.material instanceof THREE.Material) { 
             this.mesh.material.transparent = true; 
             this.mesh.material.opacity = 1.0; 
@@ -532,12 +460,8 @@ export class Tile {
     updateFadeOut(deltaMs: number): void {
         if (!this.isFadingOut || !this.mesh) return;
         this.ghostFadeRemaining -= deltaMs;
-        
-        // v5.32.19 : Utilisation de la durée dynamique (prolongée pour les parents)
         const t = Math.max(0, this.ghostFadeRemaining / this.ghostFadeDuration);
-        
         if (this.mesh.material instanceof THREE.Material) { 
-            // Courbe de fade-out plus douce pour éviter le clignotement final
             this.mesh.material.opacity = t * t; 
         }
         if (this.ghostFadeRemaining <= 0) this.isFadingOut = false;
