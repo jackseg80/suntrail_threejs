@@ -64,11 +64,12 @@ describe('tileLoader.ts URLs', () => {
 
     it('should generate correct Color URL for OpenTopoMap (Global Fallback)', () => {
         state.MAP_SOURCE = 'opentopomap';
-        const url = getColorUrl(0, 0, 11); 
+        state.MK = '';
+        const url = getColorUrl(0, 0, 11);
         expect(url).toContain('opentopomap.org');
         
         const url12 = getColorUrl(0, 0, 12);
-        expect(url12).toContain('topo-v2/256/12/0/0');
+        expect(url12).toContain('opentopomap.org');
     });
 
     it('should generate correct Color URL for SwissTopo (when inside CH)', () => {

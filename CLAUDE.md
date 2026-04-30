@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.40.40)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-30 suite à la v5.40.40 (GPX : épaisseur zoom-based Komoot, rebuild robuste, dette technique nettoyée).
+> Mis à jour le 2026-04-30 suite à la v5.40.40 (fix LOD régression v5.38.x, CH geo gaps, UI timebar 3D, GPX zoom-based).
 
 
 ## Projet
