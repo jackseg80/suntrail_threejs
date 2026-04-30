@@ -13,7 +13,13 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **Core** : LOD adaptatif, PMTiles, Offline-first, Support GPX.
 - **Hydrologie v5.34.0** : Refonte totale via Vector Tiles PBF (SwissTopo/MapTiler) et technique du "Texture Mask". Zéro Z-fighting, précision au pixel, adéquation relief parfaite.
 - **Végétation v5.33.1** : Détection sémantique vectorielle (SwissTopo/MapTiler), filtrage par BBox optimisé (v5.34.0).
-- **LOD v5.32.18** : Moteur zero-latency, nettoyage agressif dézoom, optimisations 2D.
+- **LOD v5.40.40** : Fix régression v5.38.x :
+  - `boost=0.5` pour OpenTopoMap → `1.2` (causait un saut de seuils LOD au changement de source autoSelectMapSource, LOD 10→12 direct)
+  - `* boost` retiré de LOD 11-14 + 10-7 (incohérence avec `autoSelectMapSource`)
+  - `zoom <= 11` OpenTopoMap → `zoom <= 10` (juxtaposition OpenTopoMap/swisstopo au LOD 11)
+  - `forcedRadius` dynamique → fixé à 1 (5×5 tuiles → 3×3, évite chevauchement)
+  - `marginFactor` dynamique → fixé à 0.2 (tuiles persistantes, superposition de sources)
+  - Sous-régions CH dans `geo.ts` : trous comblés (Sud 45.7°, nouvelle 46.6-47.9/8.6-9.3 pour Uri/Schwyz, Est étendu à 47.9°)
 
 
 ### ⚠️ Règles de Modification de Fichiers (SÉCURITÉ)

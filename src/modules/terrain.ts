@@ -247,9 +247,7 @@ export async function updateVisibleTiles(_camLat: number = state.TARGET_LAT, _ca
                     const key = `${state.MAP_SOURCE}_${tx}_${ty}_${zoom}`; 
                     currentActiveKeys.add(key);
 
-                    let forcedRadius = 1;
-                    if (state.PERFORMANCE_PRESET === 'performance' || state.PERFORMANCE_PRESET === 'ultra') forcedRadius = 2;
-                    if (state.IS_2D_MODE && mobile) forcedRadius = Math.max(forcedRadius, 2);
+                    const forcedRadius = 1;
 
                     if (!activeTiles.has(key)) {
                         const tile = new Tile(tx, ty, zoom, key);

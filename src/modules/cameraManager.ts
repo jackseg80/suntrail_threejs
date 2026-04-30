@@ -36,17 +36,17 @@ export function initControls(camera: THREE.PerspectiveCamera, domElement: HTMLEl
 function getDistanceFromZoom(zoom: number): number {
     const boost = state.MAP_SOURCE === 'satellite' ? 2.0
                 : state.MAP_SOURCE === 'swisstopo' ? 1.0
-                : 0.5; // v5.38.6 : Rapprochement drastique pour agrandir les étiquettes IGN x2
+                : 1.2;
 
     const z = Math.round(zoom);
     if (z >= 18) return 600 * boost;
     if (z === 17) return 1500 * boost;
     if (z === 16) return 3000 * boost;
     if (z === 15) return 7000 * boost;
-    if (z === 14) return 18000 * boost;
-    if (z === 13) return 35000 * boost;
-    if (z === 12) return 70000 * boost;
-    if (z === 11) return 140000 * boost;
+    if (z === 14) return 18000;
+    if (z === 13) return 35000;
+    if (z === 12) return 70000;
+    if (z === 11) return 140000;
     if (z === 10) return 280000;
     if (z === 9) return 550000;
     if (z === 8) return 1000000;

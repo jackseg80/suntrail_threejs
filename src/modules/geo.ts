@@ -33,8 +33,9 @@ export const REGIONS: Record<string, BBox[]> = {
     CH: [
         { minLat: 46.12, maxLat: 47.9, minLon: 5.8, maxLon: 7.0 },
         { minLat: 45.94, maxLat: 47.9, minLon: 7.0, maxLon: 8.6 },
-        { minLat: 45.8, maxLat: 46.6, minLon: 8.6, maxLon: 9.3 },
-        { minLat: 46.2, maxLat: 47.1, minLon: 9.3, maxLon: 10.6 }
+        { minLat: 45.7, maxLat: 46.6, minLon: 8.6, maxLon: 9.3 },
+        { minLat: 46.6, maxLat: 47.9, minLon: 8.6, maxLon: 9.3 },
+        { minLat: 46.2, maxLat: 47.9, minLon: 9.3, maxLon: 10.6 }
     ],
     FR: [
         { minLat: 41.3, maxLat: 51.1, minLon: -5.1, maxLon: 6.0 },

@@ -87,16 +87,7 @@ export class Tile {
             new THREE.Vector3(this.worldX + this.tileSizeMeters/2, 9000, this.worldZ + this.tileSizeMeters/2)
         );
 
-        let marginFactor = 0.2; 
-        const isMobile = window.innerWidth <= 768;
-        
-        if (state.PERFORMANCE_PRESET === 'eco' || state.PERFORMANCE_PRESET === 'balanced') {
-            marginFactor = 0.6; 
-        }
-        
-        if (state.IS_2D_MODE && isMobile) {
-            marginFactor = Math.max(marginFactor, 1.0);
-        }
+        const marginFactor = 0.2;
 
         this.extendedBounds.copy(this.bounds).expandByScalar(this.tileSizeMeters * marginFactor);
     }
