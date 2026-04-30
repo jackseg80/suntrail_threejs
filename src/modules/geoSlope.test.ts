@@ -42,7 +42,6 @@ describe('Slope Latitude Correction', () => {
 
     it('should correctly adjust pixelSize based on latitude', () => {
         const zoom = 14;
-        const width = 256;
         const equatorSize = EARTH_CIRCUMFERENCE / (1 << zoom);
         
         // Simulation Suisse ty=5815 @ Z14

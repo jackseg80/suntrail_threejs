@@ -1,4 +1,4 @@
-# SunTrail — Navigation & Modules Fonctionnels (v5.19.6)
+# SunTrail — Navigation & Modules Fonctionnels (v5.40.37)
 
 > Référence détaillée pour agents IA. Point d'entrée : [CLAUDE.md](../CLAUDE.md)
 
@@ -6,24 +6,25 @@
 
 ## Mouvements de Caméra
 
-- **Vue de démarrage (v5.11.2)** : Centroïde Suisse — `TARGET_LAT: 46.8182, TARGET_LON: 8.2275`, `ZOOM: 6`. Caméra initiale à `(0, 2000000, 2000000)`. `TARGET_LAT/LON` et `ZOOM` non persistés en localStorage.
-- **Cinematic flyTo** : Trajectoire parabolique (`easeInOutCubic`) + vérification anti-collision en temps réel.
-- **Adaptive Zoom (v5.8.6)** : Saut intelligent de LOD lors des téléportations — netteté immédiate à l'arrivée.
-- **Tilt Parabola** : Inclinaison max dynamique — pic au LOD 14, redressement à haute altitude pour masquer l'horizon vide.
-- **Tilt Transition 2D↔3D (v5.16.8)** : `state.isTiltTransitioning` — lerp du polar angle vers 85% du `tiltCap`. `rebuildActiveTiles()` décalé de 150ms.
+- **Vue de démarrage** : Centroïde Suisse — `TARGET_LAT: 46.8182, TARGET_LON: 8.2275`, `ZOOM: 6`.
+- **Cinematic flyTo** : Trajectoire parabolique (`easeInOutCubic`) via `cameraManager.ts`.
+- **Adaptive Zoom** : Saut intelligent de LOD lors des téléportations.
+- **Tilt Parabola** : Inclinaison max dynamique — pic au LOD 14.
+- **Tilt Transition 2D↔3D** : `state.isTiltTransitioning` — lerp du polar angle vers 85% du `tiltCap`.
 
 ---
 
-## Navigation Tactile Google Earth (v5.11)
+## Navigation Tactile style Google Earth (v6.3)
 
-`src/modules/touchControls.ts` — module autonome interceptant les **PointerEvents** (pas TouchEvents) en phase capture avant OrbitControls. Désactive `controls.enabled = false` au premier contact, réactive à la fin.
+`src/modules/touchControls.ts` — module autonome interceptant les **PointerEvents**.
 
 ### Architecture 2 doigts :
-- **Zoom** : pinch-spread → `doZoomToPoint()` raycasting (zoome vers le centre des doigts).
-- **Rotation** : twist → `doRotate()`, 3 guards : `|dAngle| > ROT_DEADZONE` + `|dAngle| > spreadDelta × 0.5` + `|dAngle| × 150 > |dy|`.
-- **Tilt** : détecté par le **placement initial des doigts** (style Google Earth). Si doigts côte à côte (angle < `TILT_ANGLE = 45°`) → `_tiltPreArmed = true`. Dès `|dy| > |dx|` + spread stable → `_tiltLocked = true` → seul `doTilt(dy)`. **⚠️ Erreur fatale** : détecter par accumulation (v2→v5) → PointerEvents un pointeur à la fois → faux positifs. Seule la détection par placement fonctionne.
+- **Zoom** : pinch-spread → `zoomToPoint()` via raycasting.
+- **Rotation** : twist → `doRotate()`, avec zone morte `ROT_DEADZONE`.
+- **Tilt** : Détection par le **placement initial des doigts**. Si doigts côte à côte (angle < `TILT_ANGLE`) → pré-armement du tilt.
 - **Pan** : 1 doigt (avec inertie) ou 2 doigts horizontaux.
-- **Paramètres** ajustables en tête de fichier : `PAN_SPEED`, `TILT_SPEED`, `INERTIA`, `ROT_DEADZONE`, `TILT_ANGLE`.
+- **Double-Tap** : Zoom rapide sur le point cliqué.
+- **Inertie** : Désactivée si `prefers-reduced-motion` est actif.
 
 ---
 

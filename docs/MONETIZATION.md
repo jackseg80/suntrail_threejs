@@ -1,4 +1,4 @@
-# SunTrail 3D — Stratégie de Monétisation (v5.26.6)
+# SunTrail 3D — Stratégie de Monétisation (v5.40.37)
 
 > Objectif : Offrir une valeur alpine gratuite indispensable (sécurité) tout en incitant à l'abonnement Pro pour l'analyse et le confort.
 

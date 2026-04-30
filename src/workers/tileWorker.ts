@@ -48,7 +48,7 @@ import type { TileWorkerRequest, TileWorkerResponse } from '../types/worker';
 // ... (backoff functions unchanged)
 
 self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
-    const { id, type, tileX, tileY, elevUrl, colorUrl, overlayUrl, isOffline, zoom, elevSourceZoom, is2D, elevBlob, colorBlob, overlayBlob } = e.data;
+    const { id, type, tileY, elevUrl, colorUrl, overlayUrl, isOffline, zoom, elevSourceZoom, is2D, elevBlob, colorBlob, overlayBlob } = e.data;
 
     // --- ANNULATION ---
     if (type === 'cancel') {

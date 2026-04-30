@@ -54,7 +54,7 @@ describe('InclinometerWidget', () => {
     });
 
     it('should display correct format in Free Look mode', () => {
-        (getAltitudeAt as any).mockImplementation((x: number, z: number) => {
+        (getAltitudeAt as any).mockImplementation((x: number, _z: number) => {
             if (x > 0.1) return 1002; 
             if (x < -0.1) return 998;  
             return 1000;
@@ -70,7 +70,7 @@ describe('InclinometerWidget', () => {
         state.isFollowingUser = true;
         state.userHeading = 90; 
         
-        (getAltitudeAt as any).mockImplementation((x: number, z: number) => {
+        (getAltitudeAt as any).mockImplementation((_x: number, z: number) => {
             if (z > 0.1) return 1002; 
             if (z < -0.1) return 998;  
             return 1000;

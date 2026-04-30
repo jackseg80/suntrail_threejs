@@ -1,4 +1,4 @@
-# AI Architecture Guide (v5.40.19)
+# AI Architecture Guide (v5.40.37)
 
 This document maps the core reactive logic and rendering systems to help AI agents understand how modules interact.
 
@@ -40,7 +40,7 @@ The `eventBus` is the central hub for module-to-module communication.
 The terrain uses `MeshStandardMaterial` modified via `onBeforeCompile` for performance and features.
 
 ### A. Terrain Shader (`src/modules/terrain/Tile.ts`)
-**Uniforms (TerrainUniforms):**
+**Uniforms (terrainUniforms):**
 - `uElevationMap`: Terrain-RGB texture.
 - `uNormalMap`: RGB normal texture (pre-calculated).
 - `uOverlayMap`: Mapbox/IGN imagery texture.

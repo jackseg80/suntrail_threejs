@@ -1,4 +1,4 @@
-# AI UI Style Guide (v5.29.33)
+# AI UI Style Guide (v5.40.37)
 
 This guide defines the standardized UI patterns for SunTrail to ensure visual consistency across all panels (Expert Sheets, Settings, etc.).
 
