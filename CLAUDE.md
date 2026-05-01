@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.40.41)
+# SunTrail — Guide IA (v5.50.x)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-04-30 suite à la v5.40.41 (versionCode 784, révision LOD régression v5.38.x).
+> Mis à jour le 2026-05-01 — v5.50.x : Planificateur d'itinéraire mondial (ORS/OSRM).
 
 
 ## Projet

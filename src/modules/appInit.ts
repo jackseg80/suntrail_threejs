@@ -43,6 +43,14 @@ export async function appInit(): Promise<void> {
     // Charger le statut Pro en premier
     loadProStatus();
 
+    // Charger la clé ORS depuis localStorage (v5.50.x)
+    try {
+        const savedORSKey = localStorage.getItem('suntrail_ors_key');
+        if (savedORSKey && savedORSKey.length > 10) {
+            state.ORS_KEY = savedORSKey;
+        }
+    } catch { /* ignore */ }
+
     // Initialiser RevenueCat en fire-and-forget
     void iapService.initialize();
 
@@ -231,6 +239,7 @@ async function initSecondaryUI(): Promise<void> {
             { UpgradeSheet },
             { VRAMDashboard },
             { InclinometerWidget },
+            { RoutePlannerSheet },
         ] = await Promise.all([
             import('./ui/components/SettingsSheet'),
             import('./ui/components/LayersSheet'),
@@ -244,6 +253,7 @@ async function initSecondaryUI(): Promise<void> {
             import('./ui/components/UpgradeSheet'),
             import('./ui/components/VRAMDashboard'),
             import('./ui/components/InclinometerWidget'),
+            import('./ui/components/RoutePlannerSheet'),
         ]);
 
         new SettingsSheet().hydrate();
@@ -262,6 +272,8 @@ async function initSecondaryUI(): Promise<void> {
         state.vramPanel = vramDashboard;
 
         new InclinometerWidget().init();
+
+        new RoutePlannerSheet().hydrate();
     } catch (e) {
         console.error('[UI] Secondary hydration failed:', e);
     }
@@ -288,7 +300,10 @@ async function handleMapClick(e: MouseEvent) {
     if (!state.renderer || !state.camera || !state.scene) return;
 
     if (sheetManager.getActiveSheetId()) {
-        sheetManager.close();
+        const activeSheet = sheetManager.getActiveSheetId();
+        if (activeSheet !== 'route-planner-sheet') {
+            sheetManager.close();
+        }
     }
 
     const mouse = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
@@ -299,7 +314,7 @@ async function handleMapClick(e: MouseEvent) {
     const intersects = raycaster.intersectObjects(state.scene.children, true);
 
     const gpxHit = intersects.find(hit => hit.object.userData?.type === 'gpx-track');
-    if (gpxHit) {
+    if (gpxHit && !state.isPlacingWaypoint) {
         const layerId = gpxHit.object.userData.layerId;
         if (layerId) {
             state.activeGPXLayerId = layerId;
@@ -312,14 +327,26 @@ async function handleMapClick(e: MouseEvent) {
     const spriteHit = intersects.find(hit => hit.object.type === 'Sprite');
     if (spriteHit) {
         const poiData = spriteHit.object.userData;
+        const spriteWorldX = spriteHit.object.position.x + (spriteHit.object.parent?.position.x || 0);
+        const spriteWorldZ = spriteHit.object.position.z + (spriteHit.object.parent?.position.z || 0);
+
+        if (state.isPlacingWaypoint) {
+            const gps = worldToLngLat(spriteWorldX, spriteWorldZ, state.originTile!);
+            const alt = getAltitudeAt(spriteWorldX, spriteWorldZ);
+            const poiName = poiData?.name || undefined;
+            state.routeWaypoints = [...state.routeWaypoints, { lat: gps.lat, lon: gps.lon, alt, name: poiName }];
+            state.isPlacingWaypoint = false;
+            state.hasLastClicked = false;
+            sheetManager.open('route-planner-sheet');
+            return;
+        }
+
         if (poiData && poiData.name) {
             state.hasLastClicked = true;
-            const worldX = spriteHit.object.position.x + (spriteHit.object.parent?.position.x || 0);
-            const worldZ = spriteHit.object.position.z + (spriteHit.object.parent?.position.z || 0);
             state.lastClickedCoords = { 
-                x: worldX,
-                z: worldZ, 
-                alt: getAltitudeAt(worldX, worldZ) 
+                x: spriteWorldX,
+                z: spriteWorldZ, 
+                alt: getAltitudeAt(spriteWorldX, spriteWorldZ) 
             };
             
             const cp = document.getElementById('coords-pill');
@@ -327,7 +354,7 @@ async function handleMapClick(e: MouseEvent) {
                 cp.classList.remove('panel-custom-pos');
                 cp.style.left = ''; cp.style.top = ''; cp.style.bottom = ''; cp.style.transform = '';
                 cp.classList.remove('hidden');
-                const gps = worldToLngLat(worldX, worldZ, state.originTile!);
+                const gps = worldToLngLat(spriteWorldX, spriteWorldZ, state.originTile!);
                 const clickLatLon = document.getElementById('click-latlon');
                 if (clickLatLon) clickLatLon.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
                 const clickAlt = document.getElementById('click-alt');
@@ -349,6 +376,17 @@ async function handleMapClick(e: MouseEvent) {
 
     const hit = findTerrainIntersection(raycaster.ray);
     if (hit && state.originTile) {
+
+        if (state.isPlacingWaypoint) {
+            const gps = worldToLngLat(hit.x, hit.z, state.originTile);
+            const alt = getAltitudeAt(hit.x, hit.z);
+            state.routeWaypoints = [...state.routeWaypoints, { lat: gps.lat, lon: gps.lon, alt }];
+            state.isPlacingWaypoint = false;
+            state.hasLastClicked = false;
+            sheetManager.open('route-planner-sheet');
+            return;
+        }
+
         state.hasLastClicked = true;
         state.lastClickedCoords = { x: hit.x, z: hit.z, alt: getAltitudeAt(hit.x, hit.z) };
         

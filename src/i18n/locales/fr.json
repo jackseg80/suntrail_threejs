@@ -4,6 +4,8 @@
       "search": "Recherche",
       "layers": "Calques",
       "track": "Parcours",
+      "routePlanner": "Itinéraire",
+      "route-planner-sheet": "Itinéraire",
       "settings": "Réglages",
       "toggle2d": "2D",
       "toggle3d": "3D"
@@ -71,6 +73,53 @@
     "save": {
       "title": "Enregistrer le tracé",
       "body": "Donnez un nom à votre rando :"
+    }
+  },
+  "routePlanner": {
+    "title": "Planificateur d'itinéraire",
+    "hint": "Cliquez sur la carte pour ajouter des waypoints",
+    "profile": "Profil",
+    "profiles": {
+      "hiking": "Randonnée",
+      "walking": "Marche",
+      "cycling": "Vélo",
+      "mtb": "VTT"
+    },
+    "btn": {
+      "add": "+ Point",
+      "reverse": "↺ Inverser",
+      "clear": "✕ Effacer",
+      "compute": "▶ Calculer l'itinéraire",
+      "loop": "↻ Boucle (retour au départ)"
+    },
+    "loop": "boucle",
+    "loading": "Calcul de l'itinéraire...",
+    "stats": {
+      "distance": "Distance",
+      "ascent": "Dénivelé +",
+      "descent": "Dénivelé −",
+      "duration": "Temps estimé"
+    },
+    "noKey": {
+      "title": "Clé ORS recommandée",
+      "body": "Sans clé OpenRouteService, le routage utilise OSRM (profil marche, sans données d'élévation). Obtenez une clé gratuite sur openrouteservice.org pour le profil randonnée avec dénivelé.",
+      "placeholder": "Coller votre clé ORS ici...",
+      "save": "Enregistrer la clé"
+    },
+    "toast": {
+      "computed": "Itinéraire calculé",
+      "tapMap": "Cliquez sur la carte pour ajouter un point",
+      "keySaved": "Clé ORS enregistrée"
+    },
+    "error": {
+      "minWaypoints": "Ajoutez au moins 2 waypoints",
+      "maxWaypoints": "Maximum 10 waypoints atteint",
+      "noRoute": "Aucun itinéraire trouvé",
+      "generic": "Erreur de calcul d'itinéraire"
+    },
+    "aria": {
+      "close": "Fermer le planificateur",
+      "removeWaypoint": "Supprimer le waypoint"
     }
   },
   "settings": {

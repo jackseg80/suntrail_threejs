@@ -1,4 +1,4 @@
-# SunTrail 3D — TODO (v5.40.38)
+# SunTrail 3D — TODO (v5.50.x)
 
 > Guide IA : [CLAUDE.md](../CLAUDE.md) | Historique : [COMPLETED_HISTORY.md](archives/COMPLETED_HISTORY.md)
 
@@ -28,6 +28,19 @@
 
 ---
 
+## 🗺️ Planificateur d'itinéraire (v5.50.x)
+
+- [x] **Moteur de Routing** : Intégration OpenRouteService `foot-hiking` + fallback OSRM `foot` (gratuit mondial).
+- [x] **Interface waypoints** : Onglet nav-bar, clic carte pour ajouter, liste interactive, inversion, suppression.
+- [x] **Stats en direct** : Distance, dénivelé, temps estimé Munter, rendu 3D automatique via pipeline GPX.
+- [x] **Profil sélection** : Randonnée / Marche / Vélo / VTT.
+- [x] **Géocodage inverse** : Nommage automatique des waypoints via Nominatim.
+- [x] **Key ORS** : Saisie optionnelle de clé API OpenRouteService (dénivelé + profil randonnée dédié).
+- [x] **Export GPX** : Sauvegarde du tracé planifié (réutilise le pipeline GPX existant).
+- [x] **Tests** : +29 tests (routingService 23, RoutePlannerSheet 6, state 5 mis à jour).
+
+---
+
 ## 🌿 Végétation, Hydrologie & Landcover (v5.34+)
 
 - [x] **Refonte Hydrologie (v5.34.0)** : Passage au vectoriel (PBF) et technique du "Texture Mask".
@@ -46,13 +59,11 @@
 
 > Module d'analyse intelligente et planification d'itinéraires. **Alertes sécurité = TOUJOURS FREE.**
 
-- [ ] **v6.0 — Le Planificateur Intelligent (Komoot-Style)** :
-    - [ ] **Moteur de Routing** : Intégration de l'API MapTiler Direction pour tracer sur les sentiers existants (OSM).
-    - [ ] **Édition 3D** : Interface permettant de cliquer sur la carte pour ajouter/déplacer des waypoints.
-    - [ ] **Stats en direct** : Distance, dénivelé et temps estimé mis à jour pendant le tracé.
-- [ ] **v6.0 — Analyse & Temps estimé** : 
-    - [ ] **Méthode Munter** : Calcul automatique de la durée basée sur la distance et le D+.
+- [ ] **v6.0 — Montée en gamme** :
+    - [ ] **GraphHopper** : Routing `hike` Pro avec SAC scale T1-T6 segmenté par segment.
+    - [ ] **Édition 3D waypoints** : Drag & drop des waypoints sur la carte 3D (actuellement : clic seul).
     - [ ] **Cotation CAS** : Badge de difficulté T1-T6 basé sur la pente (Pro).
+    - [ ] **Profil coloré par pente** : Vertex colors sur le tracé 3D (vert → rouge, Pro).
 - [ ] **v6.1 — Connecteurs Externes (Hub Rando)** :
     - [ ] **Strava** : Importation des activités passées et des routes planifiées (OAuth2).
     - [ ] **Suunto** : Récupération des entraînements (format FIT) et synchronisation de routes.

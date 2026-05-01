@@ -4,6 +4,8 @@
       "search": "Ricerca",
       "layers": "Livelli",
       "track": "Percorso",
+      "routePlanner": "Itinerario",
+      "route-planner-sheet": "Itinerario",
       "settings": "Impostazioni",
       "toggle2d": "2D",
       "toggle3d": "3D"
@@ -69,6 +71,53 @@
     "save": {
       "title": "Salva percorso",
       "body": "Dai un nome alla tua escursione:"
+    }
+  },
+  "routePlanner": {
+    "title": "Pianificatore di itinerario",
+    "hint": "Tocca la mappa per aggiungere waypoint",
+    "profile": "Profilo",
+    "profiles": {
+      "hiking": "Escursionismo",
+      "walking": "Camminata",
+      "cycling": "Bicicletta",
+      "mtb": "Mountain Bike"
+    },
+    "btn": {
+      "add": "+ Punto",
+      "reverse": "↺ Inverti",
+      "clear": "✕ Cancella",
+      "compute": "▶ Calcola percorso",
+      "loop": "↻ Anello (ritorno al punto di partenza)"
+    },
+    "loop": "anello",
+    "loading": "Calcolo del percorso...",
+    "stats": {
+      "distance": "Distanza",
+      "ascent": "Dislivello +",
+      "descent": "Dislivello −",
+      "duration": "Tempo stimato"
+    },
+    "noKey": {
+      "title": "Chiave ORS consigliata",
+      "body": "Senza una chiave OpenRouteService, il routing utilizza OSRM (profilo camminata, senza dati di elevazione). Ottieni una chiave gratuita su openrouteservice.org per il profilo escursionismo con dislivello.",
+      "placeholder": "Incolla la tua chiave ORS qui...",
+      "save": "Salva chiave"
+    },
+    "toast": {
+      "computed": "Percorso calcolato",
+      "tapMap": "Tocca la mappa per aggiungere un punto",
+      "keySaved": "Chiave ORS salvata"
+    },
+    "error": {
+      "minWaypoints": "Aggiungi almeno 2 waypoint",
+      "maxWaypoints": "Massimo 10 waypoint raggiunto",
+      "noRoute": "Nessun percorso trovato",
+      "generic": "Errore di calcolo del percorso"
+    },
+    "aria": {
+      "close": "Chiudi pianificatore",
+      "removeWaypoint": "Rimuovi waypoint"
     }
   },
   "settings": {

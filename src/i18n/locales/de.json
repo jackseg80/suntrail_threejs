@@ -4,6 +4,8 @@
       "search": "Suche",
       "layers": "Ebenen",
       "track": "Tour",
+      "routePlanner": "Route",
+      "route-planner-sheet": "Route",
       "settings": "Einstellungen",
       "toggle2d": "2D",
       "toggle3d": "3D"
@@ -69,6 +71,53 @@
     "save": {
       "title": "Tour speichern",
       "body": "Geben Sie Ihrer Wanderung einen Namen:"
+    }
+  },
+  "routePlanner": {
+    "title": "Routenplaner",
+    "hint": "Tippen Sie auf die Karte, um Wegpunkte hinzuzufügen",
+    "profile": "Profil",
+    "profiles": {
+      "hiking": "Wandern",
+      "walking": "Gehen",
+      "cycling": "Fahrrad",
+      "mtb": "Mountainbike"
+    },
+    "btn": {
+      "add": "+ Punkt",
+      "reverse": "↺ Umkehren",
+      "clear": "✕ Löschen",
+      "compute": "▶ Route berechnen",
+      "loop": "↻ Rundweg (Rückkehr zum Start)"
+    },
+    "loop": "Rundweg",
+    "loading": "Route wird berechnet...",
+    "stats": {
+      "distance": "Distanz",
+      "ascent": "Aufstieg",
+      "descent": "Abstieg",
+      "duration": "Geschätzte Zeit"
+    },
+    "noKey": {
+      "title": "ORS-Schlüssel empfohlen",
+      "body": "Ohne OpenRouteService-Schlüssel verwendet das Routing OSRM (Gehprofil, ohne Höhendaten). Holen Sie sich einen kostenlosen Schlüssel auf openrouteservice.org für das Wanderprofil mit Höhenangaben.",
+      "placeholder": "ORS-Schlüssel hier einfügen...",
+      "save": "Schlüssel speichern"
+    },
+    "toast": {
+      "computed": "Route berechnet",
+      "tapMap": "Tippen Sie auf die Karte für einen Punkt",
+      "keySaved": "ORS-Schlüssel gespeichert"
+    },
+    "error": {
+      "minWaypoints": "Mindestens 2 Wegpunkte erforderlich",
+      "maxWaypoints": "Maximal 10 Wegpunkte erreicht",
+      "noRoute": "Keine Route gefunden",
+      "generic": "Fehler bei der Routenberechnung"
+    },
+    "aria": {
+      "close": "Routenplaner schließen",
+      "removeWaypoint": "Wegpunkt entfernen"
     }
   },
   "settings": {

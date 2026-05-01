@@ -1,7 +1,6 @@
-# Trail Intelligence — Roadmap v6.0
+# Trail Intelligence — Roadmap
 
 > Module d'analyse intelligente de tracés et terrain.
-> Planifié pour **v6.0** — la v5.x reste dédiée à la stabilisation et au lancement.
 
 ## Principes
 
@@ -21,15 +20,33 @@
 
 ---
 
-## v6.0 — Cotation & Temps estimé
+## v5.50.x — Planificateur d'itinéraire mondial (implémenté)
 
-### Sur un tracé GPX
+> Routing gratuit mondial basé sur OpenRouteService / OSRM.
+
+| Feature | Gratuit | Gate |
+|---|---|---|
+| **Planification waypoint** | Ajout/suppression/inversion de waypoints par clic carte | Aucune |
+| **Profil randonnée** | `foot-hiking` (ORS, avec clé) / `foot` (OSRM, sans clé) | Aucune |
+| **Rendu 3D + stats** | Tracé 3D sur le terrain, distance, dénivelé, temps Munter | Aucune |
+| **Export GPX** | Sauvegarde du tracé planifié | Aucune |
+| **Profil Marche/Vélo/VTT** | Sélecteur de profil dans le panel | Aucune |
+
+**Architecture :** `routingService.ts` → API ORS (`foot-hiking`) avec fallback OSRM (`foot`) → conversion GeoJSON → pipeline `addGPXLayer()` existant → rendu 3D automatique.
+
+---
+
+## v6.0 — Montée en gamme (Europe & Monde)
+
+> Amélioration de la qualité du routing et enrichissement des données.
 
 | Feature | Free | Pro | Gate |
 |---|---|---|---|
-| Durée estimée (Munter) | Temps total | + temps par segment | `state.isPro` |
-| Cotation difficulté | Badge simplifié | Cotation CAS T1-T6 + UIAA | `state.isPro` |
-| Profil coloré par pente | Monochrome | Vertex colors (vert → rouge) | `state.isPro` |
+| **Routing GraphHopper** | — | `hike` dédié, SAC scale T1-T6 segmenté | `state.isPro` |
+| **Édition 3D waypoints** | Drag & drop des waypoints sur la carte 3D | Idem + altitude précise | Aucune |
+| **Durée estimée (Munter)** | Temps total | + temps par segment | `state.isPro` |
+| **Cotation difficulté** | Badge simplifié | Cotation CAS T1-T6 + UIAA | `state.isPro` |
+| **Profil coloré par pente** | Monochrome | Vertex colors (vert → rouge) | `state.isPro` |
 
 ### Sur un point carte
 
@@ -37,6 +54,14 @@
 |---|---|---|---|
 | Pente locale | **Inclinomètre Pro** | **Inclinomètre Pro** | `state.isPro` |
 | Altitude | Valeur brute | + distance sommet proche | `state.isPro` |
+
+---
+
+## v6.1 — Connecteurs Externes (Hub Rando)
+
+- **Strava** : Importation des activités passées et des routes planifiées (OAuth2).
+- **Suunto** : Récupération des entraînements (format FIT) et synchronisation de routes.
+- **Wikiloc** : Recherche et import direct de parcours communautaires (API Partner).
 
 ---
 
@@ -51,4 +76,11 @@ Déclenchées au chargement d'un GPX ou au changement météo.
 | Orage | Prévision instable + altitude | ORANGE |
 | Batterie | D+ restant > 800m + batterie < 30% | JAUNE |
 
-**Note :** Ces fonctions seront développées dans le cycle v6.x.
+## v6.2 — Exposition solaire & Segments (Pro)
+
+- Barre ombre/soleil détaillée par km sous le profil d'élévation.
+- Score condition & estimation physio : hydratation, calories, VAM cible.
+
+## v6.4 — Mode Photo Pro
+
+- Capture sans UI avec watermark SunTrail.

@@ -4,6 +4,8 @@
       "search": "Search",
       "layers": "Layers",
       "track": "Track",
+      "routePlanner": "Route",
+      "route-planner-sheet": "Route",
       "settings": "Settings",
       "toggle2d": "2D",
       "toggle3d": "3D"
@@ -70,6 +72,53 @@
     "save": {
       "title": "Save Track",
       "body": "Give your hike a name:"
+    }
+  },
+  "routePlanner": {
+    "title": "Route Planner",
+    "hint": "Tap the map to add waypoints",
+    "profile": "Profile",
+    "profiles": {
+      "hiking": "Hiking",
+      "walking": "Walking",
+      "cycling": "Cycling",
+      "mtb": "Mountain Bike"
+    },
+    "btn": {
+      "add": "+ Point",
+      "reverse": "↺ Reverse",
+      "clear": "✕ Clear",
+      "compute": "▶ Compute route",
+      "loop": "↻ Loop (return to start)"
+    },
+    "loop": "loop",
+    "loading": "Computing route...",
+    "stats": {
+      "distance": "Distance",
+      "ascent": "Ascent",
+      "descent": "Descent",
+      "duration": "Est. time"
+    },
+    "noKey": {
+      "title": "ORS key recommended",
+      "body": "Without an OpenRouteService key, routing uses OSRM (walking profile, no elevation data). Get a free key at openrouteservice.org for the hiking profile with elevation.",
+      "placeholder": "Paste your ORS key here...",
+      "save": "Save key"
+    },
+    "toast": {
+      "computed": "Route computed",
+      "tapMap": "Tap the map to add a point",
+      "keySaved": "ORS key saved"
+    },
+    "error": {
+      "minWaypoints": "Add at least 2 waypoints",
+      "maxWaypoints": "Maximum 10 waypoints reached",
+      "noRoute": "No route found",
+      "generic": "Route computation error"
+    },
+    "aria": {
+      "close": "Close route planner",
+      "removeWaypoint": "Remove waypoint"
     }
   },
   "settings": {

@@ -178,4 +178,42 @@ describe('state persistance (v5.7)', () => {
         // loadSettings only restores these on 'custom', so it shouldn't modify state.RESOLUTION here
         expect(state.RESOLUTION).toBe(64);
     });
+
+    describe('route planner state (v5.50.x)', () => {
+        it('should have default route planner properties', () => {
+            expect(state.ORS_KEY).toBe('');
+            expect(state.routeWaypoints).toEqual([]);
+            expect(state.routeLoading).toBe(false);
+            expect(state.routeError).toBeNull();
+            expect(state.activeRouteProfile).toBe('foot-hiking');
+        });
+
+        it('should allow adding route waypoints', () => {
+            state.routeWaypoints = [
+                { lat: 46.5, lon: 7.5 },
+                { lat: 46.6, lon: 7.6 },
+            ];
+            expect(state.routeWaypoints.length).toBe(2);
+            expect(state.routeWaypoints[0].lat).toBe(46.5);
+        });
+
+        it('should allow setting ORS key', () => {
+            state.ORS_KEY = 'test-key-12345';
+            expect(state.ORS_KEY).toBe('test-key-12345');
+        });
+
+        it('should allow changing route profile', () => {
+            state.activeRouteProfile = 'foot-walking';
+            expect(state.activeRouteProfile).toBe('foot-walking');
+        });
+
+        it('should track route loading and error states', () => {
+            state.routeLoading = true;
+            expect(state.routeLoading).toBe(true);
+            state.routeError = 'Network error';
+            expect(state.routeError).toBe('Network error');
+            state.routeLoading = false;
+            expect(state.routeLoading).toBe(false);
+        });
+    });
 });

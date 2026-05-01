@@ -1,3 +1,18 @@
+## [5.50.0] - 2026-05-01
+
+### Added
+- **Planificateur d'itinéraire mondial (GRATUIT)** : Nouvel onglet "Itinéraire" dans la navbar. Moteur de routing OpenRouteService `foot-hiking` (avec clé gratuite) + fallback OSRM `foot` (sans clé). Profils : Randonnée, Marche, Vélo, VTT.
+- **Waypoints clic carte** : Ajout par clic sur la carte (mode placement), suppression, inversion, boucle retour au départ. Géocodage inverse automatique des waypoints via Nominatim.
+- **Rendu 3D automatique** : Réutilisation du pipeline GPX existant (`gpxLayers.addGPXLayer`) — tracé TubeGeometry drappé sur le terrain, stats distance/D+/D-/temps Munter, profil d'élévation.
+- **Boucle (↻)** : Option checkbox pour créer un itinéraire aller-retour (A → B → A).
+- **Clé ORS** : Saisie optionnelle dans le panel. Stockée dans localStorage. Sans clé, routage via OSRM gratuit.
+- **Tests** : 34 nouveaux tests (routingService 27, RoutePlannerSheet 6, state 5 mis à jour).
+
+### Fixed
+- **UI Planificateur** : CSS complet dans le thème de l'app (design tokens, glass-morphism, accent).
+- **NaN dénivelé** : Correction du parsing ORS — `ascent`/`descent` lus depuis `properties.*` au lieu de `properties.summary.*`.
+- **Clic carte bloqué** : L'overlay du sheet n'intercepte plus le mode placement — le sheet se ferme temporairement pendant le clic, se rouvre après.
+
 ## [5.40.40] - 2026-04-30
 
 ### Added

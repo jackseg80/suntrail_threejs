@@ -26,6 +26,15 @@ export interface GPXLayer {
     };
 }
 
+export interface RouteWaypoint {
+    lat: number;
+    lon: number;
+    alt?: number;
+    name?: string;
+}
+
+export type RoutingProfile = 'foot-hiking' | 'foot-walking' | 'cycling-regular' | 'cycling-mountain';
+
 export const GPX_COLORS = ['#3b7ef8','#22c55e','#f97316','#a855f7','#ec4899','#06b6d4','#eab308','#ef4444'];
 
 export interface PerformanceSettings {
@@ -230,6 +239,13 @@ export interface State {
     purchasedPacks: string[];
     installedPacks: string[];
     DEBUG_MODE: boolean; // v5.29.6 : Contrôle des logs sensibles
+    ORS_KEY: string;
+    routeWaypoints: RouteWaypoint[];
+    routeLoading: boolean;
+    routeError: string | null;
+    activeRouteProfile: RoutingProfile;
+    isPlacingWaypoint: boolean;
+    routeLoopEnabled: boolean;
 }
 
 const initialState: State = {
@@ -291,6 +307,13 @@ const initialState: State = {
     purchasedPacks: [],
     installedPacks: [],
     DEBUG_MODE: false,
+    ORS_KEY: '',
+    routeWaypoints: [],
+    routeLoading: false,
+    routeError: null,
+    activeRouteProfile: 'foot-hiking',
+    isPlacingWaypoint: false,
+    routeLoopEnabled: false,
 };
 
 export const state = createReactiveState(initialState);
