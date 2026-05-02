@@ -1668,6 +1668,10 @@ body.preset-eco #timeline-toggle-btn { display: none !important; }
     color: #6b9ecf;
 }
 
+.solar-route-rec-forest {
+    color: #4caf72;
+}
+
 .solar-route-rec-pro {
     color: var(--gold);
 }

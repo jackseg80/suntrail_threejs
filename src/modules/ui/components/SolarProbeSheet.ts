@@ -652,6 +652,16 @@ export class SolarProbeSheet extends BaseComponent {
         addCard(i18n.t('solarRoute.stat.totalKm'), `${routeData.totalKm.toFixed(1)} km`);
         section.appendChild(grid);
 
+        // Info forêt — affichée sous la grille si le tracé traverse une zone boisée
+        if (routeData.forestKm > 0) {
+            const forestInfo = document.createElement('div');
+            forestInfo.className = 'solar-route-rec-item solar-route-rec-forest';
+            forestInfo.textContent = i18n.t('solarRoute.rec.forestSection', {
+                km: routeData.forestKm.toFixed(1),
+            });
+            section.appendChild(forestInfo);
+        }
+
         // Recommandations
         const recs = document.createElement('div');
         recs.className = 'solar-route-recs';
@@ -778,7 +788,7 @@ export class SolarProbeSheet extends BaseComponent {
         for (let i = 0; i < routeData.points.length; i++) {
             const pt = routeData.points[i];
             const h = pt.evalDate.getHours();
-            const isStrongSun = !pt.isNight && !pt.inShadow && h >= 10 && h < 16;
+            const isStrongSun = !pt.isNight && !pt.inShadow && !pt.inForest && h >= 10 && h < 16;
 
             if (isStrongSun && segStart === null) {
                 segStart = pt.evalDate.getTime();

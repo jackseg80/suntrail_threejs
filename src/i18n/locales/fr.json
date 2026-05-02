@@ -777,7 +777,8 @@
       "optimalDeparture": "Départ optimal {{time}} → {{pct}}% au soleil",
       "goldenHour": "Heure dorée au sommet ({{alt}}m) : {{start}}–{{end}}",
       "strongExposure": "⚠️ Forte exposition : km {{start}}–{{end}} ({{duration}} min)",
-      "estimatedArrival": "Arrivée estimée : {{time}}"
+      "estimatedArrival": "Arrivée estimée : {{time}}",
+      "forestSection": "🌲 {{km}} km sous forêt"
     },
     "speed": {
       "label": "Vitesse :",
