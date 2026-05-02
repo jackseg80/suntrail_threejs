@@ -63,6 +63,48 @@
 <div id="sheet-container"></div>
 <div id="toast-container"></div>
 
+<!-- ROUTE BAR — mini-panneau persistant planificateur d'itinéraire -->
+<div id="route-bar" role="region" aria-label="Planificateur d'itinéraire">
+  <div class="rb-dots" id="rb-dots" aria-hidden="true"></div>
+  <div class="rb-info" id="rb-info" aria-live="polite"></div>
+  <button class="rb-btn" id="rb-settings-btn" aria-label="Réglages de l'itinéraire">⚙</button>
+  <button class="rb-btn rb-btn-danger" id="rb-clear-btn" aria-label="Effacer l'itinéraire">✕</button>
+</div>
+
+<!-- Panel réglages itinéraire (profil · boucle · clé ORS · waypoints) -->
+<div id="route-settings" class="route-settings-panel hidden" role="dialog" aria-label="Réglages itinéraire">
+  <!-- Profil + boucle sur la même ligne -->
+  <div class="rs-row">
+    <select id="rs-profile" class="rs-profile-select">
+      <option value="foot-hiking">🥾 Randonnée</option>
+      <option value="foot-walking">🚶 Marche</option>
+      <option value="cycling-regular">🚴 Vélo</option>
+      <option value="cycling-mountain">🚵 VTT</option>
+    </select>
+    <label class="rs-loop-inline">
+      <input type="checkbox" id="rs-loop"> <span>↻</span>
+    </label>
+  </div>
+  <!-- Clé ORS -->
+  <div class="rs-row rs-key-row">
+    <span>🔑</span>
+    <input id="rs-ors-key" type="password" autocomplete="off" placeholder="Clé ORS (optionnel)">
+    <button id="rs-save-key">✓</button>
+  </div>
+  <!-- Liste des waypoints -->
+  <div id="rs-waypoints-list" class="rs-waypoints-list"></div>
+</div>
+
+<!-- Indicateur visuel long-press -->
+<div id="lp-indicator" aria-hidden="true">
+  <svg viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="22" cy="22" r="18" fill="none"
+      stroke="var(--accent, #f97316)" stroke-width="3"
+      stroke-dasharray="113" stroke-dashoffset="113"
+      id="lp-circle"/>
+  </svg>
+</div>
+
 <!-- PILE DE BOUTONS FLOTTANTS -->
 <div class="fab-stack">
   <!-- BOUSSOLE -->

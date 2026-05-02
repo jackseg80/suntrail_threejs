@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.50.x)
+# SunTrail — Guide IA (v5.51.x)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-01 — v5.50.x : Planificateur d'itinéraire mondial (ORS/OSRM).
+> Mis à jour le 2026-05-02 — v5.51.x : UX planificateur "zero-mode" (long-press, markers 3D, auto-compute).
 
 
 ## Projet
@@ -91,7 +91,8 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - `src/modules/recordingService.ts` : (v5.29.37) Logique orchestrée d'enregistrement GPS.
 - `src/modules/gpxService.ts` : (v5.29.37) Import/Export et utilitaires GPX.
 - `src/modules/gpxLayers.ts` : (v5.40.19) Gestion du rendu 3D des tracés (ex-terrain.ts).
-- `src/modules/appInit.ts` : (v5.40.19) Orchestration du démarrage (ex-ui.ts).
+- `src/modules/routeManager.ts` : (v5.51.0) Gestionnaire d'itinéraire "zero-mode" — markers 3D (Sprite orange cliquable), auto-compute debounce 800ms, mise à jour barre + panel réglages.
+- `src/modules/appInit.ts` : (v5.51.0) Orchestration du démarrage. `setupLongPress()` (500ms + SVG feedback), `setupRouteBar()` (⚙ profil/boucle/ORS + ✕ effacer).
 - `src/modules/environment.ts` : (v5.40.20) Ambiance 3D, Fog, Sky, Lights (ex-scene.ts).
 - `src/modules/config.ts` : Résolution centralisée des clés API (Gist/Env).
 - `src/modules/profile.ts` : Graphique d'élévation (v5.29.30: Priorité aux données raw GPX).

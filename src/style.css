@@ -2207,3 +2207,309 @@ body,
 #rp-save-key:hover {
     opacity: 0.9;
 }
+
+/* ─── Route Bar (v5.51.0) ────────────────────────────────────────────────────
+   Barre compacte non-bloquante au-dessus de la navbar, active pendant la
+   planification d'itinéraire. La carte reste entièrement interactive derrière.
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+    --route-bar-h: 52px;
+}
+
+#route-bar {
+    position: fixed;
+    bottom: calc(var(--bar-h) + var(--safe-bottom));
+    left: 0; right: 0;
+    height: var(--route-bar-h);
+    background: var(--surface-solid, var(--surface));
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 var(--space-4);
+    gap: var(--space-3);
+    z-index: 1950;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+    backdrop-filter: var(--glass);
+}
+
+body.route-planner-active #route-bar {
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+/* Décale les FABs et la coords-pill quand la barre est visible */
+body.route-planner-active .fab-stack {
+    bottom: calc(var(--bar-h) + var(--safe-bottom) + var(--route-bar-h) + 16px);
+}
+body.route-planner-active #coords-pill {
+    bottom: calc(var(--bar-h) + var(--safe-bottom) + var(--route-bar-h) + 80px);
+}
+
+/* Cache la barre quand un menu est ouvert (sheet-open posé par SheetManager) */
+body.sheet-open #route-bar {
+    transform: translateY(100%);
+    pointer-events: none;
+}
+
+/* Intégration auto-hide */
+body.ui-hidden #route-bar {
+    transform: translateY(200%);
+    opacity: 0;
+}
+
+/* Pastilles indicatrices de waypoints */
+.rb-dots {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-shrink: 0;
+}
+.rb-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.35;
+    transition: opacity 0.2s;
+}
+.rb-dot.active { opacity: 1; }
+
+/* Texte d'info (comptage, stats) */
+.rb-info {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--text-sm);
+    color: var(--text-2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+/* Boutons de la barre */
+.rb-btn {
+    flex-shrink: 0;
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-active);
+    background: var(--surface-hover);
+    color: var(--text);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    transition: opacity var(--transition-fast), background var(--transition-fast);
+    white-space: nowrap;
+}
+.rb-btn:active { opacity: 0.7; }
+.rb-btn:disabled { opacity: 0.35; cursor: default; }
+
+.rb-btn-danger {
+    color: var(--danger, #ef4444);
+    border-color: rgba(239, 68, 68, 0.2);
+    background: rgba(239, 68, 68, 0.06);
+}
+.rb-btn-danger:hover { background: rgba(239, 68, 68, 0.12); border-color: var(--danger, #ef4444); }
+
+/* Flash de confirmation quand un waypoint est ajouté */
+@keyframes rb-flash {
+    0%   { background: color-mix(in srgb, var(--accent) 25%, transparent); }
+    100% { background: transparent; }
+}
+#route-bar.rb-flash {
+    animation: rb-flash 0.45s ease-out;
+}
+
+/* ─── Long-press indicator ────────────────────────────────────────────────── */
+
+#lp-indicator {
+    position: fixed;
+    width: 44px; height: 44px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 9999;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+#lp-indicator.active { display: block; opacity: 1; }
+#lp-indicator svg { width: 100%; height: 100%; }
+#lp-indicator circle {
+    transition: stroke-dashoffset 0.5s linear;
+}
+#lp-indicator.filling circle { stroke-dashoffset: 0; }
+#lp-indicator.done circle { stroke: var(--success, #22c55e); }
+
+/* ─── Route settings panel ────────────────────────────────────────────────── */
+
+.route-settings-panel {
+    position: fixed;
+    bottom: calc(var(--bar-h) + var(--safe-bottom) + var(--route-bar-h) + 8px);
+    left: var(--space-4, 16px);
+    right: var(--space-4, 16px);
+    background: var(--surface-solid, var(--surface));
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg, 12px);
+    padding: var(--space-3, 12px) var(--space-4, 16px);
+    z-index: 1960;
+    box-shadow: 0 -4px 24px var(--shadow-sm, rgba(0,0,0,0.12));
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 8px);
+    transition: opacity 0.2s;
+}
+.route-settings-panel.hidden { display: none; }
+
+.rs-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 8px);
+    font-size: var(--text-sm, 13px);
+}
+.rs-profile-select {
+    flex: 1;
+    min-width: 0;
+    padding: 0 var(--space-2, 8px);
+    height: 36px;
+    background: var(--surface-subtle, var(--surface));
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md, 8px);
+    color: var(--text);
+    font-family: inherit;
+    font-size: var(--text-sm, 13px);
+    outline: none;
+    cursor: pointer;
+    transition: border-color var(--transition-fast);
+}
+.rs-profile-select:focus { border-color: var(--accent); }
+
+.rs-loop-inline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+    user-select: none;
+    flex-shrink: 0;
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md, 8px);
+    background: var(--surface-subtle, var(--surface));
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-2);
+    transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+    white-space: nowrap;
+    line-height: 1;
+}
+.rs-loop-inline input[type="checkbox"] {
+    width: 15px; height: 15px;
+    accent-color: var(--accent);
+    margin: 0;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.rs-loop-inline span { pointer-events: none; font-size: 15px; }
+.rs-loop-inline:has(input:checked) {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.rs-key-row input[type="password"] {
+    flex: 1;
+    min-width: 0;
+    padding: 0 var(--space-2, 8px);
+    height: 36px;
+    background: var(--surface-subtle, var(--surface));
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md, 8px);
+    color: var(--text);
+    font-family: inherit;
+    font-size: var(--text-sm, 13px);
+    outline: none;
+    transition: border-color var(--transition-fast);
+}
+.rs-key-row input[type="password"]:focus { border-color: var(--accent); }
+.rs-key-row span:first-child { flex-shrink: 0; }
+
+#rs-save-key {
+    flex-shrink: 0;
+    width: 36px; height: 36px;
+    border-radius: var(--radius-md, 8px);
+    border: none;
+    background: var(--accent);
+    color: var(--on-accent, #fff);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity var(--transition-fast);
+}
+#rs-save-key:hover { opacity: 0.85; }
+
+/* Liste des waypoints dans le panel réglages */
+.rs-waypoints-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: var(--space-1, 4px);
+    max-height: 180px;
+    overflow-y: auto;
+}
+.rs-wp-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 8px);
+    padding: 4px var(--space-2, 8px);
+    border-radius: var(--radius-sm, 6px);
+    background: var(--surface-subtle, var(--surface));
+    font-size: var(--text-xs, 11px);
+}
+.rs-wp-num {
+    flex-shrink: 0;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--accent, #f97316);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.rs-wp-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-2);
+}
+.rs-wp-up,
+.rs-wp-dn,
+.rs-wp-del {
+    flex-shrink: 0;
+    width: 22px; height: 22px;
+    border-radius: var(--radius-sm, 6px);
+    border: none;
+    background: transparent;
+    color: var(--text-3);
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background var(--transition-fast), color var(--transition-fast);
+    line-height: 1;
+}
+.rs-wp-up:hover,
+.rs-wp-dn:hover { background: var(--surface-hover); color: var(--text); }
+.rs-wp-up:disabled,
+.rs-wp-dn:disabled { opacity: 0.25; cursor: default; }
+.rs-wp-del:hover { background: rgba(239,68,68,0.12); color: var(--danger, #ef4444); }

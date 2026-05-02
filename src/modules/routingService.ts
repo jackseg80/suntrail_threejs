@@ -1,7 +1,9 @@
 import { state } from './state';
-import { addGPXLayer } from './gpxLayers';
+import { addGPXLayer, removeGPXLayer } from './gpxLayers';
 import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
+
+let _currentRouteLayerId: string | null = null;
 
 export interface RouteWaypoint {
     lat: number;
@@ -51,8 +53,8 @@ function getOSRMEndpoint(): string {
     return 'https://router.project-osrm.org/route/v1/foot/';
 }
 
-function getORSEndpoint(): string {
-    return 'https://api.openrouteservice.org/v2/directions/foot-hiking/geojson';
+function getORSEndpoint(profile: RoutingProfile): string {
+    return `https://api.openrouteservice.org/v2/directions/${profile}/geojson`;
 }
 
 function waypointsToORSFormat(waypoints: RouteWaypoint[]): [number, number][] {
@@ -63,7 +65,7 @@ function waypointsToOSRMFormat(waypoints: RouteWaypoint[]): string {
     return waypoints.map(wp => `${wp.lon},${wp.lat}`).join(';');
 }
 
-async function fetchFromORS(waypoints: RouteWaypoint[]): Promise<ORSResponse> {
+async function fetchFromORS(waypoints: RouteWaypoint[], profile: RoutingProfile): Promise<ORSResponse> {
     const key = getORSKey();
     const body = JSON.stringify({
         coordinates: waypointsToORSFormat(waypoints),
@@ -71,7 +73,7 @@ async function fetchFromORS(waypoints: RouteWaypoint[]): Promise<ORSResponse> {
         instructions: false,
     });
 
-    const response = await fetch(getORSEndpoint(), {
+    const response = await fetch(getORSEndpoint(profile), {
         method: 'POST',
         headers: {
             'Authorization': key,
@@ -164,7 +166,7 @@ export async function computeRoute(
 
     try {
         if (useORS) {
-            const response = await fetchFromORS(loopedWaypoints);
+            const response = await fetchFromORS(loopedWaypoints, activeProfile);
             const points = orsResponseToPoints(response);
             const props = response.features[0].properties;
             const summary = props.summary;
@@ -172,12 +174,11 @@ export async function computeRoute(
             const descent = props.descent ?? 0;
 
             const rawData = buildGPXCompatibleData(points);
-            const name = buildRouteName(waypoints, state.routeLoopEnabled);
-            const routeName = state.gpxLayers.length > 0
-                ? `${name} (${state.gpxLayers.length + 1})`
-                : name;
+            const routeName = buildRouteName(waypoints, state.routeLoopEnabled);
 
-            addGPXLayer(rawData, routeName);
+            if (_currentRouteLayerId) { removeGPXLayer(_currentRouteLayerId); _currentRouteLayerId = null; }
+            const layer = addGPXLayer(rawData, routeName);
+            _currentRouteLayerId = layer.id;
             void showToast(i18n.t('routePlanner.toast.computed') || 'Route computed');
 
             return {
@@ -194,12 +195,11 @@ export async function computeRoute(
         const route = response.routes[0];
 
         const rawData = buildGPXCompatibleData(points);
-        const name = buildRouteName(waypoints, state.routeLoopEnabled);
-        const routeName = state.gpxLayers.length > 0
-            ? `${name} (${state.gpxLayers.length + 1})`
-            : name;
+        const routeName = buildRouteName(waypoints, state.routeLoopEnabled);
 
-        addGPXLayer(rawData, routeName);
+        if (_currentRouteLayerId) { removeGPXLayer(_currentRouteLayerId); _currentRouteLayerId = null; }
+        const layer = addGPXLayer(rawData, routeName);
+        _currentRouteLayerId = layer.id;
         void showToast(i18n.t('routePlanner.toast.computed') || 'Route computed');
 
         return {
@@ -251,6 +251,7 @@ export function addRouteWaypoint(wp: RouteWaypoint): void {
 }
 
 export function clearRouteWaypoints(): void {
+    if (_currentRouteLayerId) { removeGPXLayer(_currentRouteLayerId); _currentRouteLayerId = null; }
     state.routeWaypoints = [];
     state.routeError = null;
 }

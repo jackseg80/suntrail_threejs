@@ -41,6 +41,8 @@ class SheetManager {
      * Opens a specific sheet by ID, closing any other open sheet.
      */
     public open(id: string): void {
+        if (this.activeSheetId === id) return;
+
         const sheet = document.getElementById(id);
         if (!sheet) {
             console.warn(`SheetManager: Sheet with id '${id}' not found.`);

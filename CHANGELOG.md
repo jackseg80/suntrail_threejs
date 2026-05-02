@@ -1,3 +1,22 @@
+## [5.51.0] - 2026-05-02
+
+### Changed
+
+- **UX planificateur "zero-mode"** : Suppression du mode planificateur et de l'onglet "Itinéraire". Appui long 500ms sur la carte = waypoint posé directement, sans activation préalable. Feedback visuel SVG (cercle qui se remplit). La route se calcule automatiquement (debounce 800ms) dès 2 waypoints.
+- **Markers 3D cliquables** : Chaque waypoint est représenté par un sprite Three.js orange numéroté (●1 ●2…) placé sur le terrain. Un tap dessus le supprime.
+- **Route bar simplifiée** : Boutons [⚙ Réglages] + [✕ Effacer] — plus de [+ Tap] ni [▶ Calculer]. La barre se masque automatiquement quand un menu est ouvert.
+- **Panel réglages inline** : Profil + boucle sur une seule ligne. Liste des waypoints avec boutons ↑↓✕ pour réorganiser ou supprimer. Clé ORS toujours accessible.
+- **Trace unique** : `computeRoute` remplace la trace précédente au lieu d'en ajouter une nouvelle — plus de doublons dans "Parcours".
+
+### Added
+
+- `src/modules/routeManager.ts` — module centralisé : markers 3D, auto-compute, gestion barre
+
+### Removed
+
+- `RoutePlannerSheet.ts`, `route-planner.html` — remplacés par `routeManager.ts`
+- `state.isPlacingWaypoint`, `state.isRoutePlannerActive` — notion de "mode" supprimée
+
 ## [5.50.0] - 2026-05-01
 
 ### Added

@@ -244,7 +244,6 @@ export interface State {
     routeLoading: boolean;
     routeError: string | null;
     activeRouteProfile: RoutingProfile;
-    isPlacingWaypoint: boolean;
     routeLoopEnabled: boolean;
 }
 
@@ -312,7 +311,6 @@ const initialState: State = {
     routeLoading: false,
     routeError: null,
     activeRouteProfile: 'foot-hiking',
-    isPlacingWaypoint: false,
     routeLoopEnabled: false,
 };
 

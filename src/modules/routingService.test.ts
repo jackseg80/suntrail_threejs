@@ -16,7 +16,11 @@ vi.mock('./state', () => ({
     },
 }));
 
-vi.mock('./gpxLayers', () => ({ addGPXLayer: vi.fn() }));
+const _mockLayer = { id: 'mock-layer-id', name: 'mock', color: '#fff', visible: true, rawData: {}, points: [], mesh: null, stats: { distance: 0, dPlus: 0, dMinus: 0, pointCount: 0 } };
+vi.mock('./gpxLayers', () => ({
+    addGPXLayer: vi.fn(() => _mockLayer),
+    removeGPXLayer: vi.fn(),
+}));
 vi.mock('./toast', () => ({ showToast: vi.fn() }));
 
 vi.mock('../i18n/I18nService', () => ({
@@ -79,7 +83,7 @@ describe('routingService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockFetch = vi.fn();
-        global.fetch = mockFetch;
+        global.fetch = mockFetch as unknown as typeof fetch;
         state.ORS_KEY = '';
         state.routeWaypoints = [];
         state.routeLoading = false;
@@ -156,7 +160,7 @@ describe('routingService', () => {
             expect(url).toContain('openrouteservice.org');
             expect(url).toContain('foot-hiking');
             expect(options.method).toBe('POST');
-            expect(options.headers.Authorization).toBe(state.ORS_KEY);
+            expect((options.headers as Record<string, string>).Authorization).toBe(state.ORS_KEY);
             expect(mockAddGPXLayer).toHaveBeenCalledTimes(1);
         });
 
