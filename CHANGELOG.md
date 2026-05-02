@@ -1,3 +1,8 @@
+## [5.52.7] - 2026-05-02
+
+### Added
+- Sentiers Suisse (SwissTopo) : affichage restreint aux niveaux de zoom 13 et supérieurs (LOD 13+).
+
 ## [5.52.6] - 2026-05-02
 
 ### Added

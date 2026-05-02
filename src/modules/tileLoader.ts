@@ -328,7 +328,7 @@ export function getOverlayUrl(tx: number, ty: number, zoom: number): string | nu
 
     // SwissTopo wanderwege : CDN gouvernemental, supporte Z0-28, rapide et fiable
     if (isTileInRegion(tx, ty, zoom, isPositionInSwitzerland)) {
-        if (zoom > 18) return null;
+        if (zoom < 13 || zoom > 18) return null;
         return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${zoom}/${tx}/${ty}.png`;
     }
     // Waymarked Trails : serveur OSM bénévole — plafonné à Z17 (tuiles Z18 souvent vides)
