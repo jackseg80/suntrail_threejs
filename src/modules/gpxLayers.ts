@@ -7,6 +7,7 @@ import { lngLatToWorld, EARTH_CIRCUMFERENCE, worldToLngLat } from './geo';
 import { eventBus } from './eventBus';
 import { drapeToTerrain, getAltitudeAt } from './analysis';
 import { calculateTrackStats } from './geoStats';
+import { disposeSolarOverlay, buildSolarOverlay, setOverlayVisible, getCurrentRouteSolarAnalysis, scheduleRouteSolarAnalysis, invalidateRouteCache, clearSolarRouteAnalysis } from './solarRoute';
 
 // v5.31.1 : Shared GPX track materials (1 per color × mode = 16 max instead of N per layer)
 const gpxMaterials3D = new Map<string, THREE.MeshStandardMaterial>();
@@ -160,6 +161,7 @@ export function addGPXLayer(rawData: Record<string, any>, name: string, opts?: {
     };
     state.gpxLayers = [...state.gpxLayers, layer];
     state.activeGPXLayerId = id;
+    scheduleRouteSolarAnalysis(1500); // Analyse solaire après flyTo
     const lats = validPoints.map((p: any) => p.lat as number); const lons = validPoints.map((p: any) => p.lon as number); const eles = validPoints.map((p: any) => (p.ele as number) || 0);
     const centerLat = (Math.max(...lats) + Math.min(...lats)) / 2; const centerLon = (Math.max(...lons) + Math.min(...lons)) / 2;
     const avgEle = eles.reduce((s: number, v: number) => s + v, 0) / eles.length;
@@ -178,6 +180,7 @@ export function addGPXLayer(rawData: Record<string, any>, name: string, opts?: {
 export function removeGPXLayer(id: string): void {
     const layer = state.gpxLayers.find(l => l.id === id);
     if (!layer) return;
+    if (id === state.activeGPXLayerId) clearSolarRouteAnalysis();
     if (layer.mesh) { if (state.scene) state.scene.remove(layer.mesh); disposeObject(layer.mesh); }
     state.gpxLayers = state.gpxLayers.filter(l => l.id !== id);
     if (state.activeGPXLayerId === id) state.activeGPXLayerId = state.gpxLayers.length > 0 ? state.gpxLayers[0].id : null;
@@ -191,6 +194,7 @@ export function toggleGPXLayer(id: string): void {
     const layer = layers[idx];
     const newVisible = !layer.visible;
     if (layer.mesh) layer.mesh.visible = newVisible;
+    if (id === state.activeGPXLayerId) setOverlayVisible(newVisible);
     const updated = [...layers]; updated[idx] = { ...layer, visible: newVisible }; state.gpxLayers = updated;
 }
 
@@ -219,13 +223,15 @@ function _doUpdateAllGPXMeshes(): void {
     const updatedLayers: GPXLayer[] = [];
     for (const layer of state.gpxLayers) {
         try {
+            // Disposer l'overlay AVANT geometry.dispose() (géométrie partagée)
+            if (layer.id === state.activeGPXLayerId) disposeSolarOverlay();
             if (layer.mesh) { if (state.scene) state.scene.remove(layer.mesh); layer.mesh.geometry?.dispose(); }
             const track = layer.rawData.tracks[0]; const points = track.points;
-            
+
             const drapedPoints = drapeToTerrain(points, state.originTile, 4, GPX_SURFACE_OFFSET);
             const simplifiedPoints = simplifyRDP(drapedPoints, epsilon, (v) => v);
             if (simplifiedPoints.length < 2) throw new Error('Not enough simplified points');
-            
+
             const curve = new THREE.CatmullRomCurve3(simplifiedPoints);
             const geometry = new THREE.TubeGeometry(curve, Math.min(simplifiedPoints.length * 2, 1500), thickness, 4, false);
             const material = getGPXMaterial(layer.color, is2D);
@@ -234,6 +240,18 @@ function _doUpdateAllGPXMeshes(): void {
             mesh.userData = { type: 'gpx-track', layerId: layer.id };
             if (state.scene) state.scene.add(mesh);
 
+            // Reconstruire l'overlay solar si ce layer est actif et qu'une analyse existe
+            if (layer.id === state.activeGPXLayerId) {
+                const existing = getCurrentRouteSolarAnalysis();
+                if (existing) {
+                    buildSolarOverlay(mesh, existing);
+                } else {
+                    // Déclencher une nouvelle analyse après le rebuild
+                    invalidateRouteCache();
+                    scheduleRouteSolarAnalysis(500);
+                }
+            }
+
             const updated = recalcLayerStatsFromTerrain({ ...layer, points: drapedPoints, mesh });
             updatedLayers.push(updated);
         } catch (e) {
@@ -241,7 +259,7 @@ function _doUpdateAllGPXMeshes(): void {
         }
     }
     state.gpxLayers = updatedLayers;
-    if (state.gpxLayers.length > 0) updateElevationProfile();
+    if (state.gpxLayers.length > 0) updateElevationProfile(undefined, { noOpen: true });
 }
 
 export function updateRecordedTrackMesh(): void {

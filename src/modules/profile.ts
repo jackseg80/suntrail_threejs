@@ -4,6 +4,7 @@ import type { GPXLayer } from './state';
 import { attachDraggablePanel } from './ui/draggablePanel';
 import { calculateHysteresis } from './geoStats';
 import { getAltitudeAt } from './analysis';
+import type { RouteSolarAnalysis } from './solarRoute';
 
 interface ProfilePoint {
     dist: number; // Distance cumulée en km
@@ -13,6 +14,17 @@ interface ProfilePoint {
 }
 
 let profileData: ProfilePoint[] = [];
+let _solarBandData: RouteSolarAnalysis | null = null;
+
+export function setSolarBandData(analysis: RouteSolarAnalysis | null): void {
+    _solarBandData = analysis;
+    drawProfileSVG();
+    const btn = document.getElementById('profile-solar-btn') as HTMLButtonElement | null;
+    if (btn) {
+        btn.style.display = analysis ? 'inline-flex' : 'none';
+        btn.onclick = () => window.dispatchEvent(new CustomEvent('openSolarProbeSheet'));
+    }
+}
 
 /**
  * Résout le layer GPX actif à utiliser pour le profil
@@ -31,7 +43,7 @@ function resolveActiveLayer(layerId?: string): GPXLayer | null {
  * Initialise et dessine le profil d'altitude à partir des données GPX
  * v5.24.3: Fix mismatch entre points originaux et points densifiés 3D
  */
-export function updateElevationProfile(layerId?: string): void {
+export function updateElevationProfile(layerId?: string, opts?: { noOpen?: boolean }): void {
     const layer = resolveActiveLayer(layerId);
     if (!layer || !layer.points.length) {
         closeElevationProfile();
@@ -107,9 +119,12 @@ export function updateElevationProfile(layerId?: string): void {
     
     const profileEl = document.getElementById('elevation-profile');
     if (profileEl) {
-        // v5.29.28 : Forcer un reflow visuel pour assurer l'animation et l'affichage
+        if (opts?.noOpen) {
+            // Rebuild de tuiles : ne pas rouvrir si l'utilisateur a fermé le panel
+            return;
+        }
         profileEl.classList.remove('is-open');
-        void profileEl.offsetWidth; // Force reflow
+        void profileEl.offsetWidth;
         profileEl.classList.add('is-open');
         setupSwipeGesture(profileEl);
     }
@@ -171,6 +186,8 @@ export function drawProfileSVG(): void {
 
     const areaStr = pointsStr + `L ${width} ${height} L 0 ${height} Z`;
 
+    const solarBand = _solarBandData ? buildSolarBandSVG(_solarBandData, width, height) : '';
+
     svg.innerHTML = `
         <defs>
             <linearGradient id="profile-grad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -180,7 +197,29 @@ export function drawProfileSVG(): void {
         </defs>
         <path d="${areaStr}" fill="url(#profile-grad)" />
         <path d="${pointsStr}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" />
+        ${solarBand}
     `;
+}
+
+function buildSolarBandSVG(analysis: RouteSolarAnalysis, width: number, height: number): string {
+    const BAND_H = 12;
+    const BAND_Y = height - BAND_H;
+    const totalKm = analysis.totalKm || 1;
+
+    const bgRect = `<rect x="0" y="${BAND_Y}" width="${width}" height="${BAND_H}" fill="rgba(0,0,0,0.35)" rx="2"/>`;
+    let segments = '';
+
+    for (let i = 0; i < analysis.points.length - 1; i++) {
+        const p = analysis.points[i];
+        const pNext = analysis.points[i + 1];
+        const x1 = (p.distKm / totalKm) * width;
+        const x2 = (pNext.distKm / totalKm) * width;
+        const segW = Math.max(1, x2 - x1);
+
+        const fill = p.isNight ? 'rgba(10,15,30,0.6)' : p.inShadow ? 'rgba(71,85,120,0.8)' : 'rgba(245,166,35,0.85)';
+        segments += `<rect x="${x1.toFixed(1)}" y="${BAND_Y}" width="${segW.toFixed(1)}" height="${BAND_H}" fill="${fill}"/>`;
+    }
+    return bgRect + segments;
 }
 
 // v5.40.28: Redessiner lors du redimensionnement (rotation écran)
@@ -202,13 +241,25 @@ function setupProfileInteractions(): void {
     profileInteractionsAttached = true;
 
     let _profileTimer: ReturnType<typeof setTimeout> | null = null;
+    let _keepAliveRaf: number | null = null;
+
+    function startKeepAlive() {
+        state.isInteractingWithUI = true;
+        const tick = () => {
+            state.isInteractingWithUI = true;
+            _keepAliveRaf = requestAnimationFrame(tick);
+        };
+        _keepAliveRaf = requestAnimationFrame(tick);
+    }
+    function stopKeepAlive() {
+        if (_keepAliveRaf !== null) { cancelAnimationFrame(_keepAliveRaf); _keepAliveRaf = null; }
+        if (_profileTimer) { clearTimeout(_profileTimer); _profileTimer = null; }
+        _profileTimer = setTimeout(() => { state.isInteractingWithUI = false; }, 150);
+    }
 
     function setInteracting() {
         if (_profileTimer) { clearTimeout(_profileTimer); _profileTimer = null; }
         state.isInteractingWithUI = true;
-    }
-    function clearInteracting() {
-        _profileTimer = setTimeout(() => { state.isInteractingWithUI = false; }, 150);
     }
 
     if (!state.profileMarker) {
@@ -242,6 +293,7 @@ function setupProfileInteractions(): void {
     }
 
     const onMove = (e: MouseEvent | TouchEvent) => {
+        setInteracting(); // Maintenir le renderer actif (évite le Deep Sleep en 2D)
         const rect = container.getBoundingClientRect();
         const clientX = (e as MouseEvent).clientX || (e as TouchEvent).touches[0].clientX;
         const x = clientX - rect.left;
@@ -268,11 +320,11 @@ function setupProfileInteractions(): void {
         }
     };
 
-    container.addEventListener('pointerdown', setInteracting);
+    container.addEventListener('pointerdown', startKeepAlive);
     container.addEventListener('pointermove', onMove);
-    container.addEventListener('pointerup', clearInteracting);
-    container.addEventListener('pointerleave', clearInteracting);
-    container.addEventListener('pointercancel', clearInteracting);
+    container.addEventListener('pointerup', stopKeepAlive);
+    container.addEventListener('pointerleave', stopKeepAlive);
+    container.addEventListener('pointercancel', stopKeepAlive);
     
     container.onmouseleave = () => {
         cursor.style.display = 'none';

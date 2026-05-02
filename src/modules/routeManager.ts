@@ -5,6 +5,7 @@ import { getAltitudeAt } from './analysis';
 import { lngLatToWorld } from './geo';
 import { i18n } from '../i18n/I18nService';
 import { getPlaceName } from './geocodingService';
+import { scheduleRouteSolarAnalysis, invalidateRouteCache } from './solarRoute';
 
 const waypointGroup = new THREE.Group();
 let autoComputeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -21,6 +22,13 @@ export function initRouteManager(): void {
         updateBar();
         scheduleAutoCompute();
         scheduleGeocodeNames();
+        // Invalider immédiatement le cache solar (avant le debounce de 1200ms)
+        invalidateRouteCache();
+        scheduleRouteSolarAnalysis(1200);
+    });
+    state.subscribe('simDate', () => {
+        // Re-analyse rapide : cache hit probable → juste recolorer
+        scheduleRouteSolarAnalysis(200);
     });
     state.subscribe('routeLoading', () => updateBar());
     state.subscribe('originTile', () => rebuildMarkers());

@@ -1027,6 +1027,11 @@ body.sheet-layers-sheet-open #sheet-overlay {
     opacity: 1;
     pointer-events: auto;
 }
+/* Timebar ouverte : remonter le profil pour ne pas être couvert */
+body.timeline-open #elevation-profile:not(.panel-custom-pos) {
+    bottom: calc(var(--bar-h) + var(--safe-bottom) + 150px);
+    transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s;
+}
 .profile-drag-handle {
     width: 100%;
     padding: var(--space-2) 0 var(--space-2);
@@ -1421,6 +1426,170 @@ body.preset-eco #timeline-toggle-btn { display: none !important; }
     overflow: hidden;
     margin-bottom: var(--space-4);
 }
+
+/* ─── Solar Route Analysis ────────────────────────────────────────────────── */
+
+.solar-route-section {
+    margin: var(--space-4) 0;
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface-subtle);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+}
+
+.solar-route-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-3);
+}
+
+.solar-route-title {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.solar-route-grid {
+    margin-bottom: var(--space-3);
+}
+
+.solar-route-time-badge {
+    background: rgba(245,166,35,0.12);
+    border: 1px solid rgba(245,166,35,0.35);
+    border-radius: 10px;
+    color: #f5a623;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    padding: 1px 7px;
+    cursor: help;
+}
+
+.solar-route-time-control {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.solar-route-time-slider {
+    flex: 1;
+    height: 4px;
+    accent-color: #f5a623;
+    cursor: pointer;
+    min-width: 0;
+}
+
+.solar-route-time-disp {
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    color: #f5a623;
+    font-weight: 600;
+    white-space: nowrap;
+    min-width: 38px;
+    text-align: center;
+}
+
+.solar-route-date-input {
+    background: var(--surface-hover);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-2);
+    font-size: 11px;
+    padding: 2px 4px;
+    cursor: pointer;
+    max-width: 110px;
+}
+
+.solar-route-mode-btn {
+    background: var(--surface-hover);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-2);
+    font-size: var(--text-xs);
+    padding: 2px var(--space-2);
+    cursor: pointer;
+}
+
+.solar-route-recs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.solar-route-rec-item {
+    font-size: var(--text-sm);
+    color: var(--text-2);
+    padding: var(--space-1) 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.solar-route-rec-item:last-child {
+    border-bottom: none;
+}
+
+.solar-route-rec-shade {
+    color: #6b9ecf;
+}
+
+.solar-route-rec-pro {
+    color: var(--gold);
+}
+
+.solar-route-rec-alert {
+    color: #f97316;
+    font-weight: 600;
+}
+
+.solar-route-rec-computing {
+    color: var(--text-3);
+    font-style: italic;
+}
+
+.solar-route-speed-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
+    flex-wrap: wrap;
+}
+
+.solar-route-speed-btn {
+    background: var(--surface-hover);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-2);
+    font-size: var(--text-xs);
+    padding: 2px var(--space-2);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.solar-route-speed-btn:hover {
+    background: var(--surface-active, rgba(255,255,255,0.12));
+    color: var(--text);
+}
+
+.solar-route-speed-btn.active {
+    background: rgba(245,166,35,0.18);
+    border-color: rgba(245,166,35,0.5);
+    color: #f5a623;
+}
+
+.solar-route-pro-teaser {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--text-3);
+    padding-top: var(--space-2);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
 
 .solar-upsell-banner {
     display: flex;

@@ -193,6 +193,15 @@ export function updateSunPosition(minutes: number): void {
     }
 }
 
+/**
+ * Calcule le vecteur unitaire pointant vers le soleil à une date et position données.
+ * Source unique de vérité pour solarRoute.ts — évite toute dérive avec l'ombre visuelle.
+ */
+export function getSunDirection(date: Date, lat: number, lon: number): THREE.Vector3 {
+    const pos = SunCalc.getPosition(date, lat, lon);
+    return new THREE.Vector3().setFromSphericalCoords(1, Math.PI / 2 - pos.altitude, pos.azimuth + Math.PI);
+}
+
 export function updateShadowMapResolution(): void {
     if (!state.sunLight) return;
     const res = state.SHADOW_RES;

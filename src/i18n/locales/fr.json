@@ -759,5 +759,38 @@
     "aria": {
       "close": "Fermer les packs"
     }
+  },
+  "solarRoute": {
+    "section": {
+      "title": "Analyse solaire du parcours"
+    },
+    "stat": {
+      "sunPct": "Au soleil",
+      "sunKm": "Km soleil",
+      "shadowKm": "Km ombre",
+      "totalKm": "Total"
+    },
+    "rec": {
+      "snapshotSun": "{{pct}}% du parcours au soleil actuellement",
+      "shadeSegment": "Section ombragée : km {{start}} → {{end}}",
+      "hikerSun": "Au rythme de {{speed}} km/h, {{pct}}% au soleil",
+      "hikerShade": "Ombre fraîche km {{start}}–{{end}} — vers {{time}}",
+      "optimalDeparture": "Départ optimal {{time}} → {{pct}}% au soleil",
+      "goldenHour": "Heure dorée au sommet ({{alt}}m) : {{start}}–{{end}}",
+      "strongExposure": "⚠️ Forte exposition : km {{start}}–{{end}} ({{duration}} min)",
+      "estimatedArrival": "Arrivée estimée : {{time}}"
+    },
+    "speed": {
+      "label": "Vitesse :",
+      "unit": "km/h"
+    },
+    "status": {
+      "analyzing": "Calcul du départ optimal…",
+      "noRoute": "Tracez un itinéraire ou importez un GPX pour démarrer l'analyse"
+    },
+    "upsell": {
+      "pro": "Analyse temporelle et départ optimal avec Pro",
+      "btn": "Pro ↗"
+    }
   }
 }

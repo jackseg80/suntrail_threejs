@@ -757,5 +757,38 @@
     "aria": {
       "close": "Close packs"
     }
+  },
+  "solarRoute": {
+    "section": {
+      "title": "Route solar analysis"
+    },
+    "stat": {
+      "sunPct": "In sun",
+      "sunKm": "Sun km",
+      "shadowKm": "Shade km",
+      "totalKm": "Total"
+    },
+    "rec": {
+      "snapshotSun": "{{pct}}% of route currently in sun",
+      "shadeSegment": "Shaded section: km {{start}} → {{end}}",
+      "hikerSun": "At {{speed}} km/h pace, {{pct}}% in sun",
+      "hikerShade": "Cool shade km {{start}}–{{end}} — arriving ~{{time}}",
+      "optimalDeparture": "Best departure {{time}} → {{pct}}% in sun",
+      "goldenHour": "Golden hour at summit ({{alt}}m): {{start}}–{{end}}",
+      "strongExposure": "⚠️ Strong exposure: km {{start}}–{{end}} ({{duration}} min)",
+      "estimatedArrival": "Estimated arrival: {{time}}"
+    },
+    "speed": {
+      "label": "Pace:",
+      "unit": "km/h"
+    },
+    "status": {
+      "analyzing": "Computing optimal departure…",
+      "noRoute": "Trace a route or import a GPX to start the analysis"
+    },
+    "upsell": {
+      "pro": "Timeline analysis and optimal departure with Pro",
+      "btn": "Pro ↗"
+    }
   }
 }
