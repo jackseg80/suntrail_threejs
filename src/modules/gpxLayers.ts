@@ -3,7 +3,7 @@ import { disposeObject } from './memory';
 import { state, type GPXLayer, GPX_COLORS } from './state';
 import { simplifyRDP } from './utils';
 import { updateElevationProfile } from './profile';
-import { lngLatToWorld, EARTH_CIRCUMFERENCE } from './geo';
+import { lngLatToWorld, EARTH_CIRCUMFERENCE, worldToLngLat } from './geo';
 import { eventBus } from './eventBus';
 import { drapeToTerrain } from './analysis';
 import { calculateTrackStats } from './geoStats';
@@ -197,7 +197,31 @@ function _doUpdateAllGPXMeshes(): void {
             mesh.renderOrder = 10; mesh.visible = layer.visible;
             mesh.userData = { type: 'gpx-track', layerId: layer.id };
             if (state.scene) state.scene.add(mesh);
-            updatedLayers.push({ ...layer, points: drapedPoints, mesh });
+
+            // Recalculer les stats depuis les points drapés (tuiles chargées → altitude réelle)
+            const relief = state.RELIEF_EXAGGERATION || 1;
+            const updatedStats = calculateTrackStats(drapedPoints.map((v, i) => {
+                const gps = worldToLngLat(v.x, v.z, state.originTile!);
+                return {
+                    lat: gps.lat,
+                    lon: gps.lon,
+                    alt: v.y / relief,
+                    timestamp: i * 1000,
+                };
+            }));
+
+            updatedLayers.push({
+                ...layer,
+                points: drapedPoints,
+                mesh,
+                stats: {
+                    ...layer.stats,
+                    distance: updatedStats.distance,
+                    dPlus: updatedStats.dPlus,
+                    dMinus: updatedStats.dMinus,
+                    estimatedTime: updatedStats.estimatedTime,
+                },
+            });
         } catch (e) {
             console.warn('[GPX] Failed to rebuild layer', layer.name, e);
         }

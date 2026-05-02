@@ -609,9 +609,17 @@ function setupLongPress() {
     let timer: ReturnType<typeof setTimeout> | null = null;
     let startX = 0;
     let startY = 0;
+    let activePointers = 0;
     const indicator = document.getElementById('lp-indicator');
 
+    const cancel = () => {
+        if (timer) { clearTimeout(timer); timer = null; }
+        indicator?.classList.remove('active', 'filling', 'done');
+    };
+
     container.addEventListener('pointerdown', (e: PointerEvent) => {
+        activePointers++;
+        if (activePointers > 1) { cancel(); return; }
         if (e.button !== 0) return;
         startX = e.clientX;
         startY = e.clientY;
@@ -636,7 +644,7 @@ function setupLongPress() {
     });
 
     container.addEventListener('pointermove', (e: PointerEvent) => {
-        if (!timer) return;
+        if (!timer || activePointers > 1) return;
         if (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8) {
             clearTimeout(timer);
             timer = null;
@@ -647,12 +655,13 @@ function setupLongPress() {
         }
     }, { passive: true });
 
-    const cancel = () => {
-        if (timer) { clearTimeout(timer); timer = null; }
-        indicator?.classList.remove('active', 'filling', 'done');
+    const onPointerUp = () => {
+        activePointers = Math.max(0, activePointers - 1);
+        if (activePointers === 0) cancel();
     };
-    container.addEventListener('pointerup', cancel);
-    container.addEventListener('pointercancel', cancel);
+    container.addEventListener('pointerup', onPointerUp);
+    container.addEventListener('pointercancel', onPointerUp);
+    container.addEventListener('pointerleave', onPointerUp);
     container.addEventListener('contextmenu', (e) => { if (_longPressJustFired) e.preventDefault(); });
 }
 

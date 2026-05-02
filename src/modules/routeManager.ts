@@ -30,6 +30,7 @@ export function initRouteManager(): void {
     state.subscribe('isProcessingTiles', (processing: boolean) => {
         if (!processing) rebuildMarkers();
     });
+    state.subscribe('gpxLayers', () => updateBarFromLayerStats());
 }
 
 function rebuildMarkers(): void {
@@ -190,6 +191,24 @@ export function clearRoute(): void {
 }
 
 function updateBar(): void {
+    updateBarFromLayerStats();
+    renderBar();
+}
+
+function updateBarFromLayerStats(): void {
+    if (state.routeWaypoints.length < 2) return;
+    const currentLayer = state.gpxLayers.find(l => l.stats.dPlus > 0);
+    if (currentLayer) {
+        _barStats = {
+            distance: currentLayer.stats.distance,
+            ascent: currentLayer.stats.dPlus,
+            descent: currentLayer.stats.dMinus,
+            duration: currentLayer.stats.estimatedTime ?? 0,
+        };
+    }
+}
+
+function renderBar(): void {
     const count = state.routeWaypoints.length;
     if (count === 0) {
         document.body.classList.remove('route-planner-active');
