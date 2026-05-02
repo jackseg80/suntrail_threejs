@@ -30,7 +30,8 @@
       "freeLimit": "💡 GPX file export is reserved for the PRO version",
       "tooShort": "Track too short for export",
       "exported": "GPX downloaded",
-      "exportError": "GPX export error"
+      "exportError": "GPX export error",
+      "savedInternal": "Ephemeral track (RAM only)"
     },
     "recovery": {
       "title": "Recording recovered",
@@ -76,7 +77,9 @@
   },
   "routePlanner": {
     "title": "Route Planner",
-    "hint": "Tap the map to add waypoints",
+    "hint": {
+      "orsSwiss": "For Swiss hiking trails, add an OpenRouteService key"
+    },
     "profile": "Profile",
     "profiles": {
       "hiking": "Hiking",
@@ -122,14 +125,11 @@
     "aria": {
       "close": "Close route planner",
       "removeWaypoint": "Remove waypoint"
-    },
-    "hint": {
-      "orsSwiss": "For Swiss hiking trails, add an OpenRouteService key"
     }
   },
   "routeBar": {
-    "computing": "Computing\u2026",
-    "onePoint": "1 point \u00b7 place a 2nd one"
+    "computing": "Computing…",
+    "onePoint": "1 point · place a 2nd one"
   },
   "gpx": {
     "limitPro": "Maximum 10 tracks reached"
@@ -439,7 +439,8 @@
       "cloudCover": "Cloud cover",
       "uvIndex": "UV Index",
       "precipProb": "Precipitation",
-      "comfortIndex": "Hiking comfort"
+      "comfortIndex": "Hiking comfort",
+      "mountainComfort": "Mountain Comfort"
     },
     "uv": {
       "low": "Low",

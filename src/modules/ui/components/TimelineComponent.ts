@@ -171,11 +171,13 @@ export class TimelineComponent {
             };
 
             window.addEventListener('pointermove', checkTimelineOverlap, { passive: true });
-            new MutationObserver(checkTimelineOverlap).observe(bottomBar, {
+            const tlOverlapObserver = new MutationObserver(checkTimelineOverlap);
+            tlOverlapObserver.observe(bottomBar, {
                 attributes: true, attributeFilter: ['class', 'style'],
             });
             this.subscriptions.push(() => {
                 window.removeEventListener('pointermove', checkTimelineOverlap);
+                tlOverlapObserver.disconnect();
                 document.body.classList.remove('timeline-custom-pos');
             });
         }

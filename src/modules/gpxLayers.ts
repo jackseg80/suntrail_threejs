@@ -5,7 +5,7 @@ import { simplifyRDP } from './utils';
 import { updateElevationProfile } from './profile';
 import { lngLatToWorld, EARTH_CIRCUMFERENCE, worldToLngLat } from './geo';
 import { eventBus } from './eventBus';
-import { drapeToTerrain, getAltitudeAt } from './analysis';
+import { drapeToTerrain, getAltitudeAt, GPX_SURFACE_OFFSET } from './analysis';
 import { calculateTrackStats } from './geoStats';
 import { disposeSolarOverlay, buildSolarOverlay, setOverlayVisible, getCurrentRouteSolarAnalysis, scheduleRouteSolarAnalysis, invalidateRouteCache, clearSolarRouteAnalysis } from './solarRoute';
 
@@ -52,7 +52,7 @@ function getGPXMaterial(color: string, is2D: boolean): THREE.Material {
     return mat;
 }
 
-const GPX_SURFACE_OFFSET = 12;
+// v5.52.7 : GPX_SURFACE_OFFSET importé de analysis.ts (source unique)
 
 function computeTrackThickness(base: number, max: number): number {
     const zoom = state.ZOOM || 10;
@@ -355,14 +355,6 @@ function _doUpdateRecordedTrackMesh(): void {
     } catch (e) {
         console.error('[Terrain] Failed to create recorded track mesh:', e);
     }
-}
-
-export function clearAllGPXLayers(): void {
-    for (const layer of state.gpxLayers) { if (layer.mesh) { if (state.scene) state.scene.remove(layer.mesh); layer.mesh.geometry?.dispose(); } }
-    state.gpxLayers = []; state.activeGPXLayerId = null;
-    if (state.recordedMesh) { if (state.scene) state.scene.remove(state.recordedMesh); disposeObject(state.recordedMesh); state.recordedMesh = null; }
-    const prof = document.getElementById('elevation-profile'); if (prof) prof.style.display = 'none';
-    const tc = document.getElementById('trail-controls'); if (tc) tc.style.display = 'none';
 }
 
 export function refreshTracks(): void {

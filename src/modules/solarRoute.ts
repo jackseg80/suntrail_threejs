@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import SunCalc from 'suncalc';
 import { state, isProActive } from './state';
-import { isAtShadow, drapeToTerrain, getAltitudeAt } from './analysis';
+import { isAtShadow, drapeToTerrain, getAltitudeAt, GPX_SURFACE_OFFSET } from './analysis';
 import { worldToLngLat } from './geo';
 import { getSunDirection } from './sun';
 
@@ -76,13 +76,12 @@ export function setSolarRouteMode(mode: SolarRouteMode): void {
 // ─── Source resolution ────────────────────────────────────────────────────────
 
 function getActivePoints(): THREE.Vector3[] | null {
-    // Priorité 1 : itinéraire manuel (2+ waypoints) → draper les waypoints
     if (state.routeWaypoints.length >= 2 && state.originTile) {
         const draped = drapeToTerrain(
             state.routeWaypoints.map(w => ({ lat: w.lat, lon: w.lon, ele: w.alt ?? 0 })),
             state.originTile,
             4,
-            12
+            GPX_SURFACE_OFFSET
         );
         if (draped.length >= 2) return draped;
     }
@@ -104,13 +103,13 @@ function getActiveSourceMesh(): THREE.Mesh | null {
 
 // ─── Cache ────────────────────────────────────────────────────────────────────
 
-function buildRouteHash(points: THREE.Vector3[]): string {
+export function buildRouteHash(points: THREE.Vector3[]): string {
     if (points.length < 2) return '';
     const f = points[0]; const l = points[points.length - 1];
     return `${f.x.toFixed(0)},${f.z.toFixed(0)},${l.x.toFixed(0)},${l.z.toFixed(0)},${points.length}`;
 }
 
-function makeCacheKey(routeHash: string, simDate: Date, mode: SolarRouteMode, avgSpeed: number): string {
+export function makeCacheKey(routeHash: string, simDate: Date, mode: SolarRouteMode, avgSpeed: number): string {
     const dateStr = simDate.toISOString().slice(0, 10);
     const slot30 = Math.floor((simDate.getHours() * 60 + simDate.getMinutes()) / 30);
     return `${routeHash}|${dateStr}|${slot30}|${mode}|${Math.round(avgSpeed * 10)}`;
@@ -124,7 +123,7 @@ export function invalidateRouteCache(): void {
 
 // ─── Sampling ─────────────────────────────────────────────────────────────────
 
-function sampleRoutePoints(points: THREE.Vector3[]): THREE.Vector3[] {
+export function sampleRoutePoints(points: THREE.Vector3[]): THREE.Vector3[] {
     if (points.length === 0) return [];
     // Distance totale en mètres (coordonnées monde)
     let totalM = 0;
@@ -164,14 +163,17 @@ async function analyzeRouteSolar(
     signal: AbortSignal,
 ): Promise<RouteSolarAnalysis> {
     const samples = sampleRoutePoints(points);
+    if (samples.length === 0) {
+        return buildAnalysis([], mode);
+    }
     const results: RouteSolarPoint[] = [];
     let cumulativeDistKm = 0;
 
-    // Centre de la route pour le calcul de la position GPS
     const midPt = samples[Math.floor(samples.length / 2)];
-    const midGps = worldToLngLat(midPt.x, midPt.z, state.originTile!);
+    const originTile = state.originTile;
+    if (!originTile) return buildAnalysis([], mode);
+    const midGps = worldToLngLat(midPt.x, midPt.z, originTile);
 
-    // Snapshot : un seul vecteur solaire pour tout le parcours
     const snapshotSunVec = mode === 'snapshot'
         ? getSunDirection(state.simDate, midGps.lat, midGps.lon)
         : null;
@@ -193,10 +195,9 @@ async function analyzeRouteSolar(
             let sunVec: THREE.Vector3;
 
             if (mode === 'hikerTimeline') {
-                // Heure d'arrivée estimée au point
                 const delayHours = cumulativeDistKm / avgSpeedKmh;
-                evalDate = new Date(state.simDate.getTime() + delayHours * 3_600_000);
-                const ptGps = worldToLngLat(pt.x, pt.z, state.originTile!);
+                evalDate = new Date(state.simDate.getTime() + delayHours * 3600 * 1000);
+                const ptGps = worldToLngLat(pt.x, pt.z, originTile);
                 sunVec = getSunDirection(evalDate, ptGps.lat, ptGps.lon);
             } else {
                 evalDate = state.simDate;
@@ -205,23 +206,20 @@ async function analyzeRouteSolar(
 
             const sunPos = SunCalc.getPosition(evalDate, midGps.lat, midGps.lon);
             const isNight = sunPos.altitude <= 0;
-            // Recalculer l'altitude terrain au moment de l'analyse (les tuiles GPX peuvent avoir
-            // été drappées avant le chargement complet des tuiles → pt.y ≈ 12 = niveau mer)
             const terrainY = getAltitudeAt(pt.x, pt.z);
-            const altForShadow = terrainY > 0 ? terrainY + 12 : pt.y;
+            const altForShadow = terrainY > 0 ? terrainY + GPX_SURFACE_OFFSET : pt.y;
             const inShadow = !isNight && isAtShadow(pt.x, pt.z, altForShadow, sunVec);
 
             results.push({ worldPos: pt, distKm: cumulativeDistKm, evalDate, inShadow, isNight });
         }
 
-        // Yield au event loop entre chaque chunk pour ne pas bloquer l'UI
         await new Promise<void>(res => setTimeout(res, 0));
     }
 
     return buildAnalysis(results, mode);
 }
 
-function buildAnalysis(points: RouteSolarPoint[], mode: SolarRouteMode): RouteSolarAnalysis {
+export function buildAnalysis(points: RouteSolarPoint[], mode: SolarRouteMode): RouteSolarAnalysis {
     const totalKm = points.at(-1)?.distKm ?? 0;
     let sunExposedKm = 0;
     let shadowKm = 0;
@@ -263,18 +261,20 @@ async function analyzeOptimalDeparture(
     signal: AbortSignal,
 ): Promise<void> {
     const samples = sampleRoutePoints(points);
+    if (samples.length === 0) return;
     const midPt = samples[Math.floor(samples.length / 2)];
-    const midGps = worldToLngLat(midPt.x, midPt.z, state.originTile!);
+    const originTile = state.originTile;
+    if (!originTile) return;
+    const midGps = worldToLngLat(midPt.x, midPt.z, originTile);
     const summitPt = samples.reduce((a, b) => b.y > a.y ? b : a, samples[0]);
 
-    // Calculer la durée réelle du parcours (jamais hardcoded à 2h)
     let totalDistKm = 0;
     for (let i = 1; i < samples.length; i++) {
         const dx = samples[i].x - samples[i - 1].x;
         const dz = samples[i].z - samples[i - 1].z;
         totalDistKm += Math.sqrt(dx * dx + dz * dz) / 1000;
     }
-    const totalDurationMs = (totalDistKm / Math.max(0.1, _avgSpeedKmh)) * 3_600_000;
+    const totalDurationMs = (totalDistKm / Math.max(0.1, _avgSpeedKmh)) * 3600 * 1000;
 
     // Passe 1 : grossière — 48 slots × 1 point sur 10
     const coarseSamples = samples.filter((_, i) => i % Math.max(1, Math.floor(samples.length / 20)) === 0);
@@ -294,7 +294,7 @@ async function analyzeOptimalDeparture(
             const ptDate = new Date(testDate.getTime() + (ci / coarseSamples.length) * totalDurationMs);
             const pSunVec = getSunDirection(ptDate, midGps.lat, midGps.lon);
             const terrainY = getAltitudeAt(pt.x, pt.z);
-            const altForShadow = terrainY > 0 ? terrainY + 12 : pt.y;
+            const altForShadow = terrainY > 0 ? terrainY + GPX_SURFACE_OFFSET : pt.y;
             if (!isAtShadow(pt.x, pt.z, altForShadow, pSunVec)) sunCount++;
         }
         slotScores.push({ minutes, pct: Math.round((sunCount / coarseSamples.length) * 100) });
@@ -317,7 +317,7 @@ async function analyzeOptimalDeparture(
             const pSunVec = getSunDirection(arrivalDate, midGps.lat, midGps.lon);
             const pSunPos = SunCalc.getPosition(arrivalDate, midGps.lat, midGps.lon);
             const terrainY = getAltitudeAt(pt.x, pt.z);
-            const altForShadow = terrainY > 0 ? terrainY + 12 : pt.y;
+            const altForShadow = terrainY > 0 ? terrainY + GPX_SURFACE_OFFSET : pt.y;
             if (pSunPos.altitude > 0 && !isAtShadow(pt.x, pt.z, altForShadow, pSunVec)) sunCount++;
         }
         const pct = Math.round((sunCount / samples.length) * 100);
@@ -325,8 +325,8 @@ async function analyzeOptimalDeparture(
         await new Promise<void>(res => setTimeout(res, 0));
     }
 
-    // Golden hour au sommet (point le plus haut)
-    const summitGps = worldToLngLat(summitPt.x, summitPt.z, state.originTile!);
+    // Golden hour au sommet
+    const summitGps = worldToLngLat(summitPt.x, summitPt.z, originTile);
     const times = SunCalc.getTimes(state.simDate, summitGps.lat, summitGps.lon);
     let goldenHourSummit: RouteSolarAnalysis['goldenHourSummit'];
 
@@ -507,8 +507,9 @@ async function runRouteSolarAnalysis(): Promise<void> {
         if (isProActive() && _currentMode === 'hikerTimeline') {
             void analyzeOptimalDeparture(points, signal);
         }
-    } catch (e: any) {
-        if (e?.name !== 'AbortError') console.warn('[SolarRoute] Analysis failed', e);
+    } catch (e: unknown) {
+        if (e instanceof DOMException && e.name === 'AbortError') return;
+        console.warn('[SolarRoute] Analysis failed', e);
     }
 }
 

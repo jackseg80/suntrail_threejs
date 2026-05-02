@@ -61,6 +61,22 @@ export function initCompass() {
 }
 
 export function disposeCompass() {
+    if (compassObject) {
+        compassObject.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                child.geometry?.dispose();
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(m => m.dispose());
+                } else {
+                    child.material?.dispose();
+                }
+            }
+            if (child instanceof THREE.Sprite) {
+                child.material?.map?.dispose();
+                child.material?.dispose();
+            }
+        });
+    }
     if (compassRenderer) compassRenderer.dispose();
     compassScene = null;
     compassCamera = null;

@@ -20,7 +20,7 @@
     "btn": {
       "rec": "REC",
       "stop": "STOP",
-      "import": "📥 Import GPX",
+      "import": "📥 Importer GPX",
       "export": "📤 Exporter"
     },
     "toast": {
@@ -77,7 +77,9 @@
   },
   "routePlanner": {
     "title": "Planificateur d'itinéraire",
-    "hint": "Cliquez sur la carte pour ajouter des waypoints",
+    "hint": {
+      "orsSwiss": "Pour les sentiers suisses, ajoutez une clé OpenRouteService"
+    },
     "profile": "Profil",
     "profiles": {
       "hiking": "Randonnée",
@@ -123,14 +125,11 @@
     "aria": {
       "close": "Fermer le planificateur",
       "removeWaypoint": "Supprimer le waypoint"
-    },
-    "hint": {
-      "orsSwiss": "Pour les sentiers suisses, ajoutez une clé OpenRouteService"
     }
   },
   "routeBar": {
-    "computing": "Calcul\u2026",
-    "onePoint": "1 point \u00b7 posez-en un 2e"
+    "computing": "Calcul…",
+    "onePoint": "1 point · posez-en un 2e"
   },
   "gpx": {
     "limitPro": "Maximum 10 tracés atteint"
@@ -448,7 +447,7 @@
     "stat": {
       "windDir": "Direction vent",
       "cloudCover": "Couverture nuageuse",
-      "uvIndex": "UV Index",
+      "uvIndex": "Index UV",
       "precipProb": "Précipitations",
       "mountainComfort": "Confort Montagne",
       "comfortIndex": "Confort rando"

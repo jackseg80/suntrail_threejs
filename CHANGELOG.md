@@ -1,6 +1,23 @@
 ## [5.52.7] - 2026-05-02
 
+### Fixed
+- **Crash solarRoute** : Guards `samples` vide, `originTile` null, `catch (e: any)`→`unknown`.
+- **Fuites mémoire** : 8 subscriptions routeManager stockées + disposeRouteManager(), subscribe originTile déplacé dans lifecycle location.ts, dispose Three.js compass + marker profile, MutationObserver TimelineComponent disconnect.
+- **Version sync** : `build.gradle` versionName 5.52.5→5.52.7, versionCode 793→794.
+- **Script cassé** : `audit:i18n` → `python scripts/audit_i18n.py`.
+- **Nettoyage code mort** : Système Overpass mort (135 lignes), `clearAllGPXLayers`, `buildQueue` export.
+- **CSS mort** : 287 lignes de classe `rp-*` (Route Planner Sheet) supprimées.
+
 ### Added
+- **Tests solarRoute.ts** : 25 tests unitaires (sampleRoutePoints, buildAnalysis, cache, mode/speed, gardes).
+- **GPX_SURFACE_OFFSET** : Constantifiée dans `analysis.ts`, importée par `gpxLayers.ts` et `solarRoute.ts`.
+
+### i18n
+- **de.json / it.json** : 25 clés manquantes ajoutées (`solarRoute.*`, `peaks.*`, `track.stats.duration`, etc.).
+- **it.json** : 9 corruptions FR corrigées.
+- **en.json** : 2 clés extra de `fr.json` ajoutées.
+- **fr.json** : `track.btn.import` et `weather.stat.uvIndex` traduits.
+
 - Sentiers Suisse (SwissTopo) : affichage restreint aux niveaux de zoom 13 et supérieurs (LOD 13+).
 
 ## [5.52.6] - 2026-05-02

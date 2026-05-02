@@ -5,6 +5,8 @@ import { activeTiles } from './terrain';
 import { queryTiles } from './tileSpatialIndex';
 import { worldToLngLat, lngLatToWorld, decodeTerrainRGB } from './geo';
 
+export const GPX_SURFACE_OFFSET = 12;
+
 let lastUsedTile: any = null;
 const _queryPoint = new THREE.Vector3();
 

@@ -5,6 +5,7 @@ import { lngLatToWorld } from './geo';
 import { getAltitudeAt } from './analysis';
 
 let watchId: string | null = null;
+let _originTileUnsub: (() => void) | null = null;
 
 /**
  * DÉTECTION ORIENTATION MOBILE (v5.5.14)
@@ -49,6 +50,10 @@ export async function startLocationTracking() {
     if (watchId !== null) return;
     initOrientationTracking();
 
+    if (!_originTileUnsub) {
+        _originTileUnsub = state.subscribe('originTile', () => updateUserMarker());
+    }
+
     try {
         watchId = await Geolocation.watchPosition({
             enableHighAccuracy: true,
@@ -80,6 +85,7 @@ export function stopLocationTracking() {
         Geolocation.clearWatch({ id: watchId });
         watchId = null;
     }
+    if (_originTileUnsub) { _originTileUnsub(); _originTileUnsub = null; }
 }
 
 export function updateUserMarker() {
@@ -153,9 +159,6 @@ export function clearUserMarker() {
     state.userLocation = null;
     state.isFollowingUser = false;
 }
-
-// v5.28.31 : Mise à jour automatique du marqueur lors d'un changement d'origine (Recherche, etc.)
-state.subscribe('originTile', () => updateUserMarker());
 
 export function centerOnUser(delta: number) {
     if (!state.userLocation || !state.controls || !state.camera || !state.originTile) return;

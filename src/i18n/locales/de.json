@@ -50,7 +50,8 @@
       "distance": "Distanz",
       "points": "Punkte",
       "dplus": "Hm+",
-      "dminus": "Hm−"
+      "dminus": "Hm−",
+      "duration": "Gesch. Zeit"
     },
     "imported": {
       "title": "Importierte Touren",
@@ -75,7 +76,9 @@
   },
   "routePlanner": {
     "title": "Routenplaner",
-    "hint": "Tippen Sie auf die Karte, um Wegpunkte hinzuzufügen",
+    "hint": {
+      "orsSwiss": "Für Schweizer Wanderwege einen OpenRouteService-Schlüssel hinzufügen"
+    },
     "profile": "Profil",
     "profiles": {
       "hiking": "Wandern",
@@ -121,14 +124,11 @@
     "aria": {
       "close": "Routenplaner schließen",
       "removeWaypoint": "Wegpunkt entfernen"
-    },
-    "hint": {
-      "orsSwiss": "Für Schweizer Wanderwege einen OpenRouteService-Schlüssel hinzufügen"
     }
   },
   "routeBar": {
-    "computing": "Berechnung\u2026",
-    "onePoint": "1 Punkt \u00b7 2. Punkt setzen"
+    "computing": "Berechnung…",
+    "onePoint": "1 Punkt · 2. Punkt setzen"
   },
   "gpx": {
     "limitPro": "Maximal 10 Tracks erreicht"
@@ -428,7 +428,8 @@
       "current": "Aktuelle Bedingungen",
       "forecast24h": "24h-Vorhersage",
       "forecast3d": "3-Tage-Vorhersage",
-      "mountain": "Bergwarnung"
+      "mountain": "Bergwarnung",
+      "mountainTitle": "Bergwetter"
     },
     "stat": {
       "windDir": "Windrichtung",
@@ -451,6 +452,9 @@
     },
     "aria": {
       "close": "Wetter schließen"
+    },
+    "toast": {
+      "timeout": "Wetter offline (Timeout)"
     }
   },
   "solar": {
@@ -651,7 +655,8 @@
       "SW": "SW",
       "W": "W",
       "NW": "NW"
-    }
+    },
+    "label_following": "aktuelle Neigung"
   },
   "common": {
     "close": "Schliessen",
@@ -745,5 +750,44 @@
     },
     "legal": "Indem Sie fortfahren, akzeptieren Sie die Nutzungsbedingungen von SunTrail und bestätigen, diese Sicherheitshinweise gelesen zu haben.",
     "btn": "Ich habe verstanden — Weiter"
+  },
+  "peaks": {
+    "toast": {
+      "timeout": "Gipfelserver nicht erreichbar (Timeout)",
+      "error": "Fehler beim Laden der Gipfel"
+    }
+  },
+  "solarRoute": {
+    "section": {
+      "title": "Routen-Solaranalyse"
+    },
+    "stat": {
+      "sunPct": "In der Sonne",
+      "sunKm": "Sonnen-km",
+      "shadowKm": "Schatten-km",
+      "totalKm": "Gesamt"
+    },
+    "rec": {
+      "snapshotSun": "{{pct}}% der Route aktuell in der Sonne",
+      "shadeSegment": "Schattenabschnitt: km {{start}} → {{end}}",
+      "hikerSun": "Bei {{speed}} km/h Tempo, {{pct}}% in der Sonne",
+      "hikerShade": "Kühler Schatten km {{start}}–{{end}} — Ankunft ~{{time}}",
+      "optimalDeparture": "Beste Abfahrt {{time}} → {{pct}}% in der Sonne",
+      "goldenHour": "Goldene Stunde am Gipfel ({{alt}}m): {{start}}–{{end}}",
+      "strongExposure": "⚠️ Starke Exposition: km {{start}}–{{end}} ({{duration}} min)",
+      "estimatedArrival": "Geschätzte Ankunft: {{time}}"
+    },
+    "speed": {
+      "label": "Tempo:",
+      "unit": "km/h"
+    },
+    "status": {
+      "analyzing": "Optimalen Start berechnen…",
+      "noRoute": "Route eingeben oder GPX importieren"
+    },
+    "upsell": {
+      "pro": "Zeitanalyse und optimale Abfahrt mit Pro",
+      "btn": "Pro ↗"
+    }
   }
 }

@@ -50,7 +50,8 @@
       "distance": "Distanza",
       "points": "Punti",
       "dplus": "Dislivello+",
-      "dminus": "Dislivello−"
+      "dminus": "Dislivello−",
+      "duration": "Tempo stim."
     },
     "imported": {
       "title": "Tracce importate",
@@ -75,7 +76,9 @@
   },
   "routePlanner": {
     "title": "Pianificatore di itinerario",
-    "hint": "Tocca la mappa per aggiungere waypoint",
+    "hint": {
+      "orsSwiss": "Per i sentieri svizzeri, aggiungi una chiave OpenRouteService"
+    },
     "profile": "Profilo",
     "profiles": {
       "hiking": "Escursionismo",
@@ -121,14 +124,11 @@
     "aria": {
       "close": "Chiudi pianificatore",
       "removeWaypoint": "Rimuovi waypoint"
-    },
-    "hint": {
-      "orsSwiss": "Per i sentieri svizzeri, aggiungi una chiave OpenRouteService"
     }
   },
   "routeBar": {
-    "computing": "Calcolo\u2026",
-    "onePoint": "1 punto \u00b7 aggiungine un 2\u00B0"
+    "computing": "Calcolo…",
+    "onePoint": "1 punto · aggiungine un 2°"
   },
   "gpx": {
     "limitPro": "Massimo 10 tracce raggiunto"
@@ -196,7 +196,7 @@
       "signposts": "Segnaletica 3D",
       "inclinometer": "Inclinometro",
       "shadows": "Ombre",
-      "weather": "Météo",
+      "weather": "Meteo",
       "weatherPro": "Meteo Avanzato",
       "trailFollow": "Segui sentiero"
     },
@@ -368,7 +368,7 @@
       "followOn": "🚶 Tracciamento continuo attivato",
       "followOff": "📍 Tracciamento continuo disattivato",
       "permissionDenied": "Permesso GPS negato. Controlla le impostazioni del browser.",
-      "error": "Errore GPS ou timeout",
+      "error": "Errore GPS o timeout",
       "interrupted": "Tracciamento interrotto",
       "disabled": "GPS disattivato"
     },
@@ -428,7 +428,8 @@
       "current": "Condizioni attuali",
       "forecast24h": "Previsioni 24h",
       "forecast3d": "Previsioni 3 giorni",
-      "mountain": "Avviso Montagna"
+      "mountain": "Avviso Montagna",
+      "mountainTitle": "Meteo Montagna"
     },
     "stat": {
       "windDir": "Direzione vento",
@@ -451,6 +452,9 @@
     },
     "aria": {
       "close": "Chiudi meteo"
+    },
+    "toast": {
+      "timeout": "Meteo offline (Timeout)"
     }
   },
   "solar": {
@@ -529,7 +533,7 @@
     "lowBattery": "🔋 Batteria scarica: Modalità Eco attivata"
   },
   "coords": {
-    "solar": "☀ Solaire"
+    "solar": "☀️ Solare"
   },
   "apiKey": {
     "label": "Chiave MapTiler",
@@ -542,7 +546,7 @@
   },
   "timeline": {
     "sunPhase": "☀️ Pieno giorno",
-    "requires3D": "Simulazione solare disponible in modalità 3D"
+    "requires3D": "Simulazione solare disponibile in modalità 3D"
   },
   "vram": {
     "label": "Statistiche GPU (VRAM)",
@@ -584,21 +588,21 @@
       "desc": "Tocca la pillola meteo in alto per le previsioni. Cambia gli sfondi della mappa (SwissTopo/IGN) tramite la scheda 'Livelli'."
     },
     "slide6": {
-      "title": "Sicurezza e Autonomie",
+      "title": "Sicurezza e Autonomia",
       "desc": "Il pulsante SOS in alto a destra mostra le tue coordinate di emergenza. Scarica i Pacchetti Paesi nelle Impostazioni per la modalità offline."
     }
   },
   "upgrade": {
     "title": "Passa a Pro ✨",
     "hero": {
-      "title": "Simulazione solare unique al mondo",
+      "title": "Simulazione solare unica al mondo",
       "subtitle": "Scopri esattamente quando il sole illumina il tuo sentiero. Ombre reali sul terreno 3D — per qualsiasi giorno dell'anno."
     },
     "feature": {
       "maxDetail": "Zoom LOD 18 massimo",
       "satellite": "Vista Satellite HD",
       "buildings": "Edifici 3D realistici",
-      "solarCalendar": "Calendrier solare illimitato",
+      "solarCalendar": "Calendario solare illimitato",
       "solarAnalysis": "Analisi solare completa",
       "weatherStation": "Meteo 3 giorni + allerte",
       "inclinometer": "Inclinometro pendenza",
@@ -622,7 +626,7 @@
     },
     "legal": "Abbonamento con rinnovo automatico · Annullabile in qualsiasi momento nel Play Store.",
     "web": {
-      "playStore": "Disponible su Google Play",
+      "playStore": "Disponibile su Google Play",
       "note": "L'upgrade Pro è disponibile tramite l'app Android su Google Play."
     },
     "toast": {
@@ -651,7 +655,8 @@
       "SW": "SO",
       "W": "O",
       "NW": "NO"
-    }
+    },
+    "label_following": "pendenza attuale"
   },
   "common": {
     "close": "Chiudi",
@@ -679,7 +684,7 @@
     "toggle2d3d": "Alterna 2D/3D"
   },
   "acceptance": {
-    "title": "Informations importanti prima dell'uso",
+    "title": "Informazioni importanti prima dell'uso",
     "item1": {
       "title": "Strumento di supporto alla pianificazione",
       "desc": "SunTrail non è un dispositivo di salvataggio. In caso di emergenza, contattare il 112."
@@ -744,6 +749,45 @@
     },
     "aria": {
       "close": "Chiudi pacchetti"
+    }
+  },
+  "peaks": {
+    "toast": {
+      "timeout": "Server vette non disponibile (Timeout)",
+      "error": "Errore caricamento vette"
+    }
+  },
+  "solarRoute": {
+    "section": {
+      "title": "Analisi solare del percorso"
+    },
+    "stat": {
+      "sunPct": "Al sole",
+      "sunKm": "Km al sole",
+      "shadowKm": "Km in ombra",
+      "totalKm": "Totale"
+    },
+    "rec": {
+      "snapshotSun": "{{pct}}% del percorso attualmente al sole",
+      "shadeSegment": "Tratto ombreggiato: km {{start}} → {{end}}",
+      "hikerSun": "A {{speed}} km/h, {{pct}}% al sole",
+      "hikerShade": "Ombra fresca km {{start}}–{{end}} — arrivo ~{{time}}",
+      "optimalDeparture": "Partenza ideale {{time}} → {{pct}}% al sole",
+      "goldenHour": "Ora d'oro in vetta ({{alt}}m): {{start}}–{{end}}",
+      "strongExposure": "⚠️ Forte esposizione: km {{start}}–{{end}} ({{duration}} min)",
+      "estimatedArrival": "Arrivo stimato: {{time}}"
+    },
+    "speed": {
+      "label": "Andatura:",
+      "unit": "km/h"
+    },
+    "status": {
+      "analyzing": "Calcolo partenza ottimale…",
+      "noRoute": "Traccia un percorso o importa un GPX"
+    },
+    "upsell": {
+      "pro": "Analisi timeline e partenza ottimale con Pro",
+      "btn": "Pro ↗"
     }
   }
 }

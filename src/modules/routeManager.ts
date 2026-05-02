@@ -15,34 +15,38 @@ let _rebuildThrottle: ReturnType<typeof setTimeout> | null = null;
 let _geocodeTimer: ReturnType<typeof setTimeout> | null = null;
 const _geocodeCache = new Map<string, string>();
 const GEOCODE_THROTTLE_MS = 1500;
+const _unsubscribers: (() => void)[] = [];
 
 export function initRouteManager(): void {
-    state.subscribe('routeWaypoints', () => {
-        rebuildMarkers();
-        updateBar();
-        scheduleAutoCompute();
-        scheduleGeocodeNames();
-        // Invalider immédiatement le cache solar (avant le debounce de 1200ms)
-        invalidateRouteCache();
-        scheduleRouteSolarAnalysis(1200);
-    });
-    state.subscribe('simDate', () => {
-        // Re-analyse rapide : cache hit probable → juste recolorer
-        scheduleRouteSolarAnalysis(200);
-    });
-    state.subscribe('routeLoading', () => updateBar());
-    state.subscribe('originTile', () => rebuildMarkers());
-    state.subscribe('ZOOM', () => rebuildMarkers());
-    state.subscribe('IS_2D_MODE', () => rebuildMarkers());
-    // Quand les tuiles finissent de charger, l'altitude devient disponible
-    state.subscribe('isProcessingTiles', (processing: boolean) => {
-        if (!processing) {
+    _unsubscribers.push(
+        state.subscribe('routeWaypoints', () => {
             rebuildMarkers();
-            // Forcer un rebuild GPX pour recalculer les stats depuis les tuiles fraîchement chargées
-            void import('./gpxLayers').then(({ updateAllGPXMeshes }) => updateAllGPXMeshes());
-        }
-    });
-    state.subscribe('gpxLayers', () => updateBar());
+            updateBar();
+            scheduleAutoCompute();
+            scheduleGeocodeNames();
+            invalidateRouteCache();
+            scheduleRouteSolarAnalysis(1200);
+        }),
+        state.subscribe('simDate', () => {
+            scheduleRouteSolarAnalysis(200);
+        }),
+        state.subscribe('routeLoading', () => updateBar()),
+        state.subscribe('originTile', () => rebuildMarkers()),
+        state.subscribe('ZOOM', () => rebuildMarkers()),
+        state.subscribe('IS_2D_MODE', () => rebuildMarkers()),
+        state.subscribe('isProcessingTiles', (processing: boolean) => {
+            if (!processing) {
+                rebuildMarkers();
+                void import('./gpxLayers').then(({ updateAllGPXMeshes }) => updateAllGPXMeshes());
+            }
+        }),
+        state.subscribe('gpxLayers', () => updateBar()),
+    );
+}
+
+export function disposeRouteManager(): void {
+    for (const unsub of _unsubscribers) unsub();
+    _unsubscribers.length = 0;
 }
 
 function rebuildMarkers(): void {

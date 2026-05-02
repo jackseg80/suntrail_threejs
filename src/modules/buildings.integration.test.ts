@@ -17,10 +17,7 @@ vi.mock('./analysis', () => ({
     getAltitudeAt: vi.fn(() => 1000)
 }));
 
-vi.mock('./utils', () => ({
-    fetchOverpassData: vi.fn(),
-    isOverpassInBackoff: vi.fn(() => false)
-}));
+vi.mock('./utils', () => ({}));
 
 // Mock de @mapbox/vector-tile
 vi.mock('@mapbox/vector-tile', () => {

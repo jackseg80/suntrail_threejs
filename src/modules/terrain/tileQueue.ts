@@ -6,7 +6,7 @@ import { activeTiles } from '../terrain';
 export let loadQueue: Set<Tile> = new Set<Tile>();
 let isProcessingQueue = false;
 
-export const buildQueue: Tile[] = [];
+const buildQueue: Tile[] = [];
 const buildQueueKeys = new Set<string>();
 let isProcessingBuildQueue = false;
 

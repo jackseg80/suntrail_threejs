@@ -342,7 +342,21 @@ function setupProfileInteractions(): void {
 export function closeElevationProfile(): void {
     const profileEl = document.getElementById('elevation-profile');
     if (profileEl) profileEl.classList.remove('is-open');
-    if (state.profileMarker) state.profileMarker.visible = false;
+    if (state.profileMarker) {
+        state.profileMarker.visible = false;
+        state.profileMarker.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                child.geometry?.dispose();
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(m => m.dispose());
+                } else {
+                    child.material?.dispose();
+                }
+            }
+        });
+        if (state.scene) state.scene.remove(state.profileMarker);
+        state.profileMarker = null;
+    }
 }
 
 let swipeAttached = false;

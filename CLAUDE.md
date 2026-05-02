@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.52.2)
+# SunTrail — Guide IA (v5.52.7)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-02 — v5.52.5 : D+/D- manual trace altitude fix (test fix, release bump).
+> Mis à jour le 2026-05-02 — v5.52.7 : Audit global — crashs, fuites mémoire, dead code, i18n.
 
 
 ## Projet
