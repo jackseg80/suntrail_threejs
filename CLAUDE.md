@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.51.3)
+# SunTrail — Guide IA (v5.52.1)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-02 — v5.51.3 : Fix fuite mémoire, stats OSRM, auto-flyTo, placement 2D, limites distance, geocode waypoints.
+> Mis à jour le 2026-05-02 — v5.52.1 : Routing — stats terrain unifiées, 2D fix, limites distance, geocode, refactor recalcLayerStatsFromTerrain().
 
 
 ## Projet

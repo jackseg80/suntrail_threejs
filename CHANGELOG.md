@@ -1,3 +1,21 @@
+## [5.52.1] - 2026-05-02
+
+### Fixed
+- **D+/D− et profil 2D** : Le calcul des stats utilisait `v.y` (position visuelle forcée à 12 en 2D). Utilise maintenant `getAltitudeAt()` directement — indépendant du mode 2D/3D.
+- **Stats GPX importés écrasées** : `recalcLayerStatsFromTerrain()` préserve les stats d'origine des GPX importés (qui ont des élévations brutes réelles). Seuls les layers OSRM sans élévation sont recalculés.
+- **Pinch-zoom ajoutait des waypoints** : Le long-press détecte maintenant les gestes multi-touch et annule le timer quand un 2e doigt est présent.
+- **Parcours non synchronisé** : `TrackSheet` appelle `updateStats()` sur chaque changement de `gpxLayers`, et `updateBar()` est appelée (via `renderBar()`) après mise à jour des stats layer.
+- **Inclinomètre caché par route-bar** : Remonté en haut de l'écran via CSS `body.route-planner-active #inclinometer-widget`.
+
+### Changed
+- **Refactor** : `recalcLayerStatsFromTerrain()` extrait comme source unique de vérité pour le calcul D+/D− depuis le terrain. Utilisé par `_computeDrapedResult`, `_doUpdateAllGPXMeshes`, etc.
+- **D− ajouté** dans la barre (`↓Zm`) et dans la liste des tracés du Parcours.
+
+### Added
+- **Limites de distance** : Free = 25 km, Pro = 500 km. Vérifié dans `computeRoute()` avant appel API.
+- **Reverse geocode waypoints** : Les noms de lieux sont résolus automatiquement après un long-press, avec cache et throttle 1.5s.
+- **Nettoyage code** : `reverseGeocodeWaypoint` mort supprimé, `GPX_SURFACE_OFFSET` unifié à 12.
+
 ## [5.52.0] - 2026-05-02
 ### Added
 - Refonte complète du tutoriel d'onboarding (v6.0) :
