@@ -121,6 +121,10 @@
       "removeWaypoint": "Remove waypoint"
     }
   },
+  "routeBar": {
+    "computing": "Computing\u2026",
+    "onePoint": "1 point \u00b7 place a 2nd one"
+  },
   "settings": {
     "title": "Settings",
     "aria": {

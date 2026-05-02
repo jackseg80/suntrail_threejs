@@ -120,6 +120,10 @@
       "removeWaypoint": "Rimuovi waypoint"
     }
   },
+  "routeBar": {
+    "computing": "Calcolo\u2026",
+    "onePoint": "1 punto \u00b7 aggiungine un 2\u00B0"
+  },
   "settings": {
     "title": "Impostazioni",
     "aria": {

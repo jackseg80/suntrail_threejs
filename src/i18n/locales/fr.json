@@ -122,6 +122,10 @@
       "removeWaypoint": "Supprimer le waypoint"
     }
   },
+  "routeBar": {
+    "computing": "Calcul\u2026",
+    "onePoint": "1 point \u00b7 posez-en un 2e"
+  },
   "settings": {
     "title": "Réglages",
     "aria": {

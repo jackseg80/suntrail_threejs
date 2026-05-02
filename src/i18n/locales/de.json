@@ -120,6 +120,10 @@
       "removeWaypoint": "Wegpunkt entfernen"
     }
   },
+  "routeBar": {
+    "computing": "Berechnung\u2026",
+    "onePoint": "1 Punkt \u00b7 2. Punkt setzen"
+  },
   "settings": {
     "title": "Einstellungen",
     "aria": {

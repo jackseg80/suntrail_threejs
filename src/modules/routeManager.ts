@@ -3,10 +3,13 @@ import { state } from './state';
 import { computeRoute, clearRouteWaypoints } from './routingService';
 import { getAltitudeAt } from './analysis';
 import { lngLatToWorld } from './geo';
+import { i18n } from '../i18n/I18nService';
 
 const waypointGroup = new THREE.Group();
 let autoComputeTimer: ReturnType<typeof setTimeout> | null = null;
 let _barStats: { distance: number; ascent: number; descent: number; duration: number } | null = null;
+let _lastWaypointCount = 0;
+let _rebuildThrottle: ReturnType<typeof setTimeout> | null = null;
 
 export function initRouteManager(): void {
     state.subscribe('routeWaypoints', () => {
@@ -25,28 +28,71 @@ export function initRouteManager(): void {
 }
 
 function rebuildMarkers(): void {
-    waypointGroup.clear();
+    if (_rebuildThrottle) return;
+    _rebuildThrottle = setTimeout(() => { _rebuildThrottle = null; }, 100);
+
     if (!state.scene) return;
+
+    const zoom = state.ZOOM || 14;
+
+    // Masquer les markers en dessous du LOD 14 (inutile, trop petits)
+    if (zoom < 14) {
+        disposeWaypointSprites();
+        state.scene.remove(waypointGroup);
+        _lastWaypointCount = 0;
+        return;
+    }
+
     if (!state.scene.children.includes(waypointGroup)) state.scene.add(waypointGroup);
 
-    // Échelle adaptée au zoom (même formule que computeTrackThickness)
-    const zoom = state.ZOOM || 14;
-    const scale = Math.max(20, 20 * Math.pow(2, Math.max(0, 16 - zoom)));
+    // Échelle adaptative discrète
+    const scale = Math.max(20, 20 * Math.pow(2, Math.max(0, 17 - zoom)));
+    const spriteHeight = state.IS_2D_MODE ? 2 : Math.max(18, scale * 0.15);
+    const count = state.routeWaypoints.length;
 
+    if (count !== _lastWaypointCount) {
+        disposeWaypointSprites();
+        _lastWaypointCount = count;
+
+        state.routeWaypoints.forEach((wp, i) => {
+            if (!state.originTile) return;
+            const world = lngLatToWorld(wp.lon, wp.lat, state.originTile);
+            const h = state.IS_2D_MODE ? 0 : getAltitudeAt(world.x, world.z);
+            const sprite = createWaypointSprite(i + 1);
+            sprite.scale.set(scale, scale, 1);
+            sprite.position.set(world.x, h + spriteHeight, world.z);
+            sprite.userData = { type: 'waypoint-marker', waypointIndex: i };
+            waypointGroup.add(sprite);
+        });
+        return;
+    }
+
+    const children = waypointGroup.children as THREE.Sprite[];
     state.routeWaypoints.forEach((wp, i) => {
         if (!state.originTile) return;
+        const sprite = children[i];
+        if (!sprite) return;
         const world = lngLatToWorld(wp.lon, wp.lat, state.originTile);
-        // En 2D le terrain est à y=0 même si getAltitudeAt retourne l'altitude exagérée
         const h = state.IS_2D_MODE ? 0 : getAltitudeAt(world.x, world.z);
-        const sprite = createWaypointSprite(i + 1);
+        sprite.position.set(world.x, h + spriteHeight, world.z);
         sprite.scale.set(scale, scale, 1);
-        sprite.position.set(world.x, h + 18, world.z);
-        sprite.userData = { type: 'waypoint-marker', waypointIndex: i };
-        waypointGroup.add(sprite);
+        sprite.userData.waypointIndex = i;
     });
 }
 
-function createWaypointSprite(num: number): THREE.Sprite {
+function disposeWaypointSprites(): void {
+    waypointGroup.children.forEach((child) => {
+        const sprite = child as THREE.Sprite;
+        if (sprite.material) {
+            const mat = sprite.material as THREE.SpriteMaterial;
+            if (mat.map) mat.map.dispose();
+            mat.dispose();
+        }
+    });
+    waypointGroup.clear();
+}
+
+function buildSharedCanvas(num: number): { canvas: HTMLCanvasElement } {
     const canvas = document.createElement('canvas');
     canvas.width = 64;
     canvas.height = 64;
@@ -63,6 +109,11 @@ function createWaypointSprite(num: number): THREE.Sprite {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(String(num), 32, 33);
+    return { canvas };
+}
+
+function createWaypointSprite(num: number): THREE.Sprite {
+    const { canvas } = buildSharedCanvas(num);
     const mat = new THREE.SpriteMaterial({
         map: new THREE.CanvasTexture(canvas),
         depthTest: false,
@@ -98,7 +149,9 @@ export function removeWaypointAt(index: number): void {
 
 export function clearRoute(): void {
     clearRouteWaypoints();
-    waypointGroup.clear();
+    disposeWaypointSprites();
+    state.scene?.remove(waypointGroup);
+    _lastWaypointCount = 0;
     _barStats = null;
     document.body.classList.remove('route-planner-active');
 }
@@ -124,11 +177,11 @@ function updateBar(): void {
 
     if (infoEl) {
         if (state.routeLoading) {
-            infoEl.textContent = 'Calcul…';
+            infoEl.textContent = i18n.t('routeBar.computing') || 'Calcul\u2026';
         } else if (_barStats) {
-            infoEl.textContent = `${_barStats.distance.toFixed(1)} km · ↑${Math.round(_barStats.ascent)}m · ${fmt(_barStats.duration)}`;
+            infoEl.textContent = `${_barStats.distance.toFixed(1)} km \u00b7 \u2191${Math.round(_barStats.ascent)}m \u00b7 \u2193${Math.round(_barStats.descent)}m \u00b7 ${fmt(_barStats.duration)}`;
         } else if (count === 1) {
-            infoEl.textContent = '1 point · posez-en un 2e';
+            infoEl.textContent = i18n.t('routeBar.onePoint') || '1 point \u00b7 posez-en un 2e';
         } else {
             infoEl.textContent = `${count} points`;
         }

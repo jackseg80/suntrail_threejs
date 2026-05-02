@@ -59,7 +59,7 @@ function computeTrackThickness(base: number, max: number): number {
     return Math.max(base, Math.min(max, base * Math.pow(2, exponent)));
 }
 
-export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLayer {
+export function addGPXLayer(rawData: Record<string, any>, name: string, opts?: { silent?: boolean }): GPXLayer {
     const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `gpx-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     const colorIndex = state.gpxLayers.length % GPX_COLORS.length;
     const color = GPX_COLORS[colorIndex];
@@ -130,7 +130,9 @@ export function addGPXLayer(rawData: Record<string, any>, name: string): GPXLaye
     const trackSpread = Math.max(size.x, size.z); const viewDistance = Math.max(trackSpread * 1.5, 3000);
     const flyCenter = lngLatToWorld(centerLon, centerLat, state.originTile!);
     const targetElevation = avgEle * state.RELIEF_EXAGGERATION;
-    eventBus.emit('flyTo', { worldX: flyCenter.x, worldZ: flyCenter.z, targetElevation, targetDistance: viewDistance });
+    if (!opts?.silent) {
+        eventBus.emit('flyTo', { worldX: flyCenter.x, worldZ: flyCenter.z, targetElevation, targetDistance: viewDistance });
+    }
     setTimeout(() => updateAllGPXMeshes(), 0);
     setTimeout(() => updateAllGPXMeshes(), 3000);
     updateElevationProfile();

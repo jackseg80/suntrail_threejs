@@ -32,12 +32,18 @@ vi.mock('./geo', () => ({
     lngLatToWorld: vi.fn(() => ({ x: 100, z: 200 })),
 }));
 
+vi.mock('../i18n/I18nService', () => ({
+    i18n: { t: vi.fn((key: string) => key) },
+}));
+
 import { state } from './state';
 import { computeRoute, clearRouteWaypoints } from './routingService';
+import { i18n } from '../i18n/I18nService';
 import { initRouteManager, removeWaypointAt, clearRoute } from './routeManager';
 
 const mockComputeRoute = computeRoute as ReturnType<typeof vi.fn>;
 const mockClearRouteWaypoints = clearRouteWaypoints as ReturnType<typeof vi.fn>;
+const mockI18nT = i18n.t as ReturnType<typeof vi.fn>;
 
 describe('routeManager', () => {
     beforeEach(() => {
@@ -154,6 +160,52 @@ describe('routeManager', () => {
             if (waypointCallback) {
                 waypointCallback();
                 expect(document.body.classList.contains('route-planner-active')).toBe(false);
+            }
+        });
+    });
+
+    describe('i18n strings in route bar', () => {
+        it('affiche le texte i18n pour le calcul en cours', () => {
+            state.routeWaypoints = [{ lat: 46.0, lon: 7.0 }];
+            state.routeLoading = true;
+            document.body.innerHTML = `
+                <div id="route-bar">
+                    <div id="rb-dots"></div>
+                    <div id="rb-info">old</div>
+                </div>`;
+
+            initRouteManager();
+            const routeLoadingCallback = (state.subscribe as ReturnType<typeof vi.fn>).mock.calls
+                .filter((c: any[]) => c[0] === 'routeLoading')
+                .slice(-1)[0]?.[1];
+
+            if (routeLoadingCallback) {
+                routeLoadingCallback();
+                const infoEl = document.getElementById('rb-info');
+                expect(infoEl?.textContent).toBe('routeBar.computing');
+                expect(mockI18nT).toHaveBeenCalledWith('routeBar.computing');
+            }
+        });
+
+        it('affiche le texte i18n pour 1 seul point', () => {
+            state.routeWaypoints = [{ lat: 46.0, lon: 7.0 }];
+            state.routeLoading = false;
+            document.body.innerHTML = `
+                <div id="route-bar">
+                    <div id="rb-dots"></div>
+                    <div id="rb-info">old</div>
+                </div>`;
+
+            initRouteManager();
+            const waypointCallback = (state.subscribe as ReturnType<typeof vi.fn>).mock.calls
+                .filter((c: any[]) => c[0] === 'routeWaypoints')
+                .slice(-1)[0]?.[1];
+
+            if (waypointCallback) {
+                waypointCallback();
+                const infoEl = document.getElementById('rb-info');
+                expect(infoEl?.textContent).toBe('routeBar.onePoint');
+                expect(mockI18nT).toHaveBeenCalledWith('routeBar.onePoint');
             }
         });
     });

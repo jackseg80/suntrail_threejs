@@ -640,7 +640,10 @@ function setupLongPress() {
         if (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8) {
             clearTimeout(timer);
             timer = null;
-            indicator?.classList.remove('active', 'filling', 'done');
+            if (indicator) {
+                indicator.classList.remove('filling');
+                setTimeout(() => indicator.classList.remove('active', 'done'), 50);
+            }
         }
     }, { passive: true });
 
@@ -663,10 +666,30 @@ function placeWaypointAt(clientX: number, clientY: number): void {
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, state.camera);
 
-    const hit = findTerrainIntersection(raycaster.ray);
+    const intersects = raycaster.intersectObjects(state.scene.children, true);
+
+    const blockedHit = intersects.find(h =>
+        h.object.userData?.type === 'waypoint-marker' || h.object.userData?.type === 'gpx-track'
+    );
+    if (blockedHit) return;
+
+    let hit: { x: number; z: number } | null = null;
+
+    if (state.IS_2D_MODE) {
+        // En 2D, le terrain est plat à y=0, on intersecte le plan horizontal
+        const dir = raycaster.ray.direction;
+        const t = -raycaster.ray.origin.y / (dir.y || -1);
+        hit = {
+            x: raycaster.ray.origin.x + t * dir.x,
+            z: raycaster.ray.origin.z + t * dir.z,
+        };
+    } else {
+        hit = findTerrainIntersection(raycaster.ray);
+    }
+
     if (hit && state.originTile) {
         const gps = worldToLngLat(hit.x, hit.z, state.originTile);
-        const alt = getAltitudeAt(hit.x, hit.z);
+        const alt = state.IS_2D_MODE ? 0 : getAltitudeAt(hit.x, hit.z);
         if (state.routeWaypoints.length >= 10) return;
         state.routeWaypoints = [...state.routeWaypoints, { lat: gps.lat, lon: gps.lon, alt }];
 
@@ -697,6 +720,7 @@ function setupRouteBar(): void {
 
     document.getElementById('rs-profile')?.addEventListener('change', (e) => {
         state.activeRouteProfile = (e.target as HTMLSelectElement).value as any;
+        if (state.routeWaypoints.length >= 2) scheduleAutoCompute();
     });
 
     const loopChk = document.getElementById('rs-loop') as HTMLInputElement | null;

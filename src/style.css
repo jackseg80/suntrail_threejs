@@ -2246,6 +2246,9 @@ body.route-planner-active .fab-stack {
 body.route-planner-active #coords-pill {
     bottom: calc(var(--bar-h) + var(--safe-bottom) + var(--route-bar-h) + 80px);
 }
+body.route-planner-active #elevation-profile {
+    bottom: calc(var(--bar-h) + var(--safe-bottom) + var(--route-bar-h) + 8px);
+}
 
 /* Cache la barre quand un menu est ouvert (sheet-open posé par SheetManager) */
 body.sheet-open #route-bar {

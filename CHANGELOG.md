@@ -1,3 +1,23 @@
+## [5.51.3] - 2026-05-02
+
+### Fixed
+
+- **Fuite mémoire WebGL** : `rebuildMarkers()` dispose maintenant les textures/material des sprites supprimés. Les sprites sont réutilisés (mise à jour position/scale) quand le nombre de waypoints ne change pas, évitant la création de textures à chaque pan/zoom.
+- **Stats OSRM à 0** : Les stats (D+/D-, temps) sont recalculées depuis les points drapés sur le terrain pour les routes OSRM (sans élévation API). Les routes ORS conservent leurs stats API.
+- **Auto-flyTo intempestif** : Nouveau paramètre `{ silent: true }` dans `addGPXLayer()`. Les calculs d'itinéraire automatiques n'émettent plus l'événement `flyTo`, évitant le saut de caméra pendant la pose de waypoints.
+- **Placement 2D décalé** : En mode 2D, l'intersection se fait avec le plan y=0 au lieu du `findTerrainIntersection` 3D, qui utilisait l'altitude réelle du relief.
+- **Profil recouvert par route-bar** : Ajout CSS `body.route-planner-active #elevation-profile` pour remonter le panneau au-dessus de la barre d'itinéraire.
+- **Race condition auto-compute** : Compteur de génération annulant les calculs concurrents (2e appel annule le 1er).
+- **i18n missing** : Clés `routeBar.computing` et `routeBar.onePoint` ajoutées aux 4 locales.
+- **Nominatim conformité** : L'appel raw a été remplacé par `getPlaceName()` via `geocodingService.ts`, respectant User-Agent et rate limits.
+- **Filtre d'intersection long-press** : Le long-press ignore les GPX tracks et waypoint-markers existants.
+- **D− ajouté à la barre** : Affichage `↓Zm` dans `rb-info`.
+
+### Changed
+
+- **Sprite scaling** : Formule révisée `20 × 2^(17-zoom)`. Sprites plus grands à bas LOD (160@14) vs (80@14) avant, masqués en dessous de LOD 14. Hauteur flottante proportionnelle.
+- **D+ API ignoré** : ORS conserve ses stats d'élévation API. OSRM recalculé depuis le terrain drapé.
+
 ## [5.51.2] - 2026-05-02
 
 ### Fixed

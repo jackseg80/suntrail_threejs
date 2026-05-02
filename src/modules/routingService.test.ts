@@ -16,7 +16,10 @@ vi.mock('./state', () => ({
     },
 }));
 
-const _mockLayer = { id: 'mock-layer-id', name: 'mock', color: '#fff', visible: true, rawData: {}, points: [], mesh: null, stats: { distance: 6.2, dPlus: 350, dMinus: 230, pointCount: 5, estimatedTime: 75 } };
+const _baseMockLayer = { id: 'mock-layer-id', name: 'mock', color: '#fff', visible: true, rawData: {}, points: [] as any[], mesh: null, stats: { distance: 6.2, dPlus: 350, dMinus: 230, pointCount: 5, estimatedTime: 75 } };
+
+let _mockLayer: typeof _baseMockLayer;
+
 vi.mock('./gpxLayers', () => ({
     addGPXLayer: vi.fn(() => _mockLayer),
     removeGPXLayer: vi.fn(),
@@ -27,8 +30,23 @@ vi.mock('../i18n/I18nService', () => ({
     i18n: { t: vi.fn((key: string) => key) },
 }));
 
+vi.mock('./geo', () => ({
+    worldToLngLat: vi.fn((x: number, z: number) => ({ lat: 46 + x * 0.001, lon: 7 + z * 0.001 })),
+}));
+
+vi.mock('./geoStats', () => ({
+    calculateTrackStats: vi.fn(() => ({
+        distance: 8.5,
+        dPlus: 500,
+        dMinus: 300,
+        estimatedTime: 120,
+    })),
+}));
+
 import { state } from './state';
 import { addGPXLayer } from './gpxLayers';
+import { worldToLngLat } from './geo';
+import { calculateTrackStats } from './geoStats';
 import {
     computeRoute,
     addRouteWaypoint,
@@ -39,6 +57,8 @@ import {
 } from './routingService';
 
 const mockAddGPXLayer = addGPXLayer as ReturnType<typeof vi.fn>;
+const mockWorldToLngLat = worldToLngLat as ReturnType<typeof vi.fn>;
+const mockCalculateTrackStats = calculateTrackStats as ReturnType<typeof vi.fn>;
 
 const VALID_ORS_RESPONSE = {
     features: [{
@@ -82,6 +102,7 @@ describe('routingService', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        _mockLayer = { ..._baseMockLayer, stats: { ..._baseMockLayer.stats }, points: [..._baseMockLayer.points] };
         mockFetch = vi.fn();
         global.fetch = mockFetch as unknown as typeof fetch;
         state.ORS_KEY = '';
@@ -383,6 +404,7 @@ describe('routingService', () => {
             expect(mockAddGPXLayer).toHaveBeenCalledWith(
                 expect.any(Object),
                 '46.000, 7.000 → 46.040, 7.040',
+                { silent: true },
             );
         });
 
@@ -400,6 +422,7 @@ describe('routingService', () => {
             expect(mockAddGPXLayer).toHaveBeenCalledWith(
                 expect.any(Object),
                 'Start → End',
+                { silent: true },
             );
         });
 
@@ -478,6 +501,163 @@ describe('routingService', () => {
         it('should not loop with less than 2 waypoints even if enabled', async () => {
             state.routeLoopEnabled = true;
             expect(state.routeLoopEnabled).toBe(true);
+        });
+    });
+
+    describe('draped stats recalculation', () => {
+        beforeEach(() => {
+            state.gpxLayers = [];
+            _mockLayer.points = [
+                { x: 100, y: 1500, z: 200 },
+                { x: 110, y: 1550, z: 210 },
+                { x: 120, y: 1600, z: 220 },
+            ] as any[];
+            _mockLayer.stats = { distance: 0, dPlus: 0, dMinus: 0, pointCount: 3, estimatedTime: 0 };
+        });
+
+        it('should recalculate stats from draped terrain for OSRM routes', async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(VALID_OSRM_RESPONSE),
+            });
+
+            const result = await computeRoute([
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.04, lon: 7.04 },
+            ]);
+
+            expect(mockWorldToLngLat).toHaveBeenCalled();
+            expect(mockCalculateTrackStats).toHaveBeenCalled();
+            expect(result.distance).toBe(8.5);
+            expect(result.ascent).toBe(500);
+            expect(result.descent).toBe(300);
+            expect(result.duration).toBe(120);
+        });
+
+        it('should use ORS API stats directly (no draping override)', async () => {
+            _mockLayer.stats = { distance: 6.2, dPlus: 350, dMinus: 230, pointCount: 5, estimatedTime: 75 };
+            state.ORS_KEY = 'test-ors-key-1234567890';
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(VALID_ORS_RESPONSE),
+            });
+
+            const result = await computeRoute([
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.04, lon: 7.04 },
+            ]);
+
+            // ORS utilise les stats du layer (calculées sur données API avec élévation), pas le drapage
+            expect(result.distance).toBe(6.2);
+            expect(result.ascent).toBe(350);
+            expect(result.descent).toBe(230);
+            expect(result.duration).toBe(75);
+        });
+
+        it('should skip draping when layer has insufficient points', async () => {
+            _mockLayer.points = [{ x: 100, y: 1500, z: 200 }] as any[];
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(VALID_OSRM_RESPONSE),
+            });
+
+            await computeRoute([
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.04, lon: 7.04 },
+            ]);
+
+            expect(mockCalculateTrackStats).not.toHaveBeenCalled();
+        });
+
+        it('should skip draping when no originTile', async () => {
+            state.originTile = null as any;
+            _mockLayer.points = [
+                { x: 100, y: 1500, z: 200 },
+                { x: 110, y: 1550, z: 210 },
+            ] as any[];
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(VALID_OSRM_RESPONSE),
+            });
+
+            await computeRoute([
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.04, lon: 7.04 },
+            ]);
+
+            expect(mockCalculateTrackStats).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('generation counter (race condition)', () => {
+        let resolveFirst: (value: any) => void;
+
+        beforeEach(() => {
+            state.gpxLayers = [];
+        });
+
+        it('should cancel stale computation when a newer one starts', async () => {
+            // Premier appel : fetch lent qui ne résout jamais
+            const firstPromise = new Promise<Response>(resolve => {
+                resolveFirst = resolve;
+            });
+            mockFetch.mockReturnValueOnce(firstPromise);
+
+            const firstCall = computeRoute([
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.1, lon: 7.1 },
+            ]);
+
+            // Deuxième appel immédiat : incrémente la génération
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(VALID_OSRM_RESPONSE),
+            });
+
+            const secondCall = computeRoute([
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.1, lon: 7.1 },
+            ]);
+
+            // Résoudre le premier fetch (trop tard)
+            resolveFirst!({
+                ok: true,
+                json: () => Promise.resolve(VALID_OSRM_RESPONSE),
+            });
+
+            await expect(firstCall).rejects.toThrow('Route cancelled');
+            const secondResult = await secondCall;
+            expect(secondResult.distance).toBe(6.2);
+            expect(state.routeError).toBeNull();
+        });
+
+        it('should reject cancelled computation without setting routeError', async () => {
+            const firstPromise = new Promise<Response>(resolve => {
+                resolveFirst = resolve;
+            });
+            mockFetch.mockReturnValueOnce(firstPromise);
+
+            const firstCall = computeRoute([
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.1, lon: 7.1 },
+            ]);
+
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(VALID_OSRM_RESPONSE),
+            });
+            void computeRoute([
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.1, lon: 7.1 },
+            ]);
+
+            resolveFirst!({
+                ok: true,
+                json: () => Promise.resolve(VALID_OSRM_RESPONSE),
+            });
+
+            await expect(firstCall).rejects.toThrow('Route cancelled');
+            expect(state.routeError).toBeNull();
         });
     });
 });

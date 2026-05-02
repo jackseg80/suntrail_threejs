@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.51.2)
+# SunTrail — Guide IA (v5.51.3)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-02 — v5.51.2 : Regressions fixes (sprites adaptatifs, stats unifiées).
+> Mis à jour le 2026-05-02 — v5.51.3 : Fix fuite mémoire, stats OSRM, auto-flyTo, placement 2D.
 
 
 ## Projet

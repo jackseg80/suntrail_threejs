@@ -2,8 +2,12 @@ import { state } from './state';
 import { addGPXLayer, removeGPXLayer } from './gpxLayers';
 import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
+import { worldToLngLat } from './geo';
+import { calculateTrackStats } from './geoStats';
+import { getPlaceName } from './geocodingService';
 
 let _currentRouteLayerId: string | null = null;
+let _routeGeneration = 0;
 
 export interface RouteWaypoint {
     lat: number;
@@ -128,7 +132,17 @@ function osrmResponseToPoints(response: OSRMResponse): Array<{ lat: number; lon:
     }));
 }
 
-function buildGPXCompatibleData(points: Array<{ lat: number; lon: number; ele: number }>): Record<string, any> {
+interface GPXCompatibleData {
+    tracks: Array<{
+        points: Array<{
+            lat: number;
+            lon: number;
+            ele: number;
+        }>;
+    }>;
+}
+
+function buildGPXCompatibleData(points: Array<{ lat: number; lon: number; ele: number }>): GPXCompatibleData {
     return {
         tracks: [{
             points: points.map(p => ({
@@ -156,6 +170,8 @@ export async function computeRoute(
     state.routeLoading = true;
     state.routeError = null;
 
+    const generation = ++_routeGeneration;
+
     const useORS = hasORSKey();
     const activeProfile = profile || getActiveProfile();
 
@@ -163,16 +179,43 @@ export async function computeRoute(
         ? [...waypoints, waypoints[0]]
         : waypoints;
 
+    const _computeDrapedResult = (layer: ReturnType<typeof addGPXLayer>) => {
+        const originTile = state.originTile;
+        if (!originTile || !layer.points || layer.points.length < 2) return layer;
+        const relief = state.RELIEF_EXAGGERATION || 1;
+        const drapedStats = calculateTrackStats(layer.points.map((v, i) => {
+            const gps = worldToLngLat(v.x, v.z, originTile);
+            return {
+                lat: gps.lat,
+                lon: gps.lon,
+                alt: v.y / relief,
+                timestamp: i * 1000,
+            };
+        }));
+        const updatedStats = {
+            ...layer.stats,
+            distance: drapedStats.distance,
+            dPlus: drapedStats.dPlus,
+            dMinus: drapedStats.dMinus,
+            estimatedTime: drapedStats.estimatedTime,
+        };
+        state.gpxLayers = state.gpxLayers.map(l =>
+            l.id === layer.id ? { ...l, stats: updatedStats } : l
+        );
+        return { ...layer, stats: updatedStats };
+    };
+
     try {
         if (useORS) {
             const response = await fetchFromORS(loopedWaypoints, activeProfile);
+            if (generation !== _routeGeneration) throw new Error('Route cancelled');
             const points = orsResponseToPoints(response);
 
             const rawData = buildGPXCompatibleData(points);
             const routeName = buildRouteName(waypoints, state.routeLoopEnabled);
 
             if (_currentRouteLayerId) { removeGPXLayer(_currentRouteLayerId); _currentRouteLayerId = null; }
-            const layer = addGPXLayer(rawData, routeName);
+            const layer = addGPXLayer(rawData, routeName, { silent: true });
             _currentRouteLayerId = layer.id;
             void showToast(i18n.t('routePlanner.toast.computed') || 'Route computed');
 
@@ -186,13 +229,14 @@ export async function computeRoute(
         }
 
         const response = await fetchFromOSRM(loopedWaypoints);
+        if (generation !== _routeGeneration) throw new Error('Route cancelled');
         const points = osrmResponseToPoints(response);
 
         const rawData = buildGPXCompatibleData(points);
         const routeName = buildRouteName(waypoints, state.routeLoopEnabled);
 
         if (_currentRouteLayerId) { removeGPXLayer(_currentRouteLayerId); _currentRouteLayerId = null; }
-        const layer = addGPXLayer(rawData, routeName);
+        const layer = _computeDrapedResult(addGPXLayer(rawData, routeName, { silent: true }));
         _currentRouteLayerId = layer.id;
         void showToast(i18n.t('routePlanner.toast.computed') || 'Route computed');
 
@@ -204,6 +248,10 @@ export async function computeRoute(
             descent: layer.stats.dMinus,
         };
     } catch (error: any) {
+        if (error?.message === 'Route cancelled') {
+            state.routeLoading = false;
+            throw error;
+        }
         const message = error?.message || (i18n.t('routePlanner.error.generic') || 'Routing failed');
         state.routeError = message;
         void showToast(message);
@@ -259,13 +307,7 @@ export async function reverseGeocodeWaypoint(
     lon: number,
 ): Promise<string | null> {
     try {
-        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=16`;
-        const response = await fetch(url, {
-            headers: { 'Accept-Language': state.lang },
-        });
-        if (!response.ok) return null;
-        const data = await response.json();
-        return data.name || data.display_name?.split(',')[0]?.trim() || null;
+        return await getPlaceName(lat, lon);
     } catch {
         return null;
     }
