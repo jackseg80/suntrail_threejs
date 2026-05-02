@@ -60,9 +60,17 @@ function computeTrackThickness(base: number, max: number): number {
 }
 
 /** Recalcule les stats (distance, D+/D-, temps) d'un layer depuis l'altitude réelle du terrain.
- *  Source unique de vérité — utilisée par _computeDrapedResult, _doUpdateAllGPXMeshes, etc. */
+ *  Source unique de vérité — utilisée par _computeDrapedResult, _doUpdateAllGPXMeshes, etc.
+ *  ⚠️ Ne recalcule PAS si le layer a déjà une élévation brute réelle (GPX importé). */
 export function recalcLayerStatsFromTerrain(layer: GPXLayer): GPXLayer {
     if (!state.originTile || !layer.points || layer.points.length < 2) return layer;
+
+    // Si le layer a déjà des D+ > 0 depuis les données brutes (GPX importé avec élévation),
+    // ne pas écraser avec les stats terrain qui pourraient être incomplètes
+    const rawPoints = layer.rawData?.tracks?.[0]?.points || [];
+    const hasRawElevation = rawPoints.length > 0 && rawPoints.some((p: any) => (p.ele || p.alt || 0) > 0);
+    if (hasRawElevation && layer.stats.dPlus > 0) return layer;
+
     const relief = state.RELIEF_EXAGGERATION || 1;
     const drapedStats = calculateTrackStats(layer.points.map((v, i) => {
         const gps = worldToLngLat(v.x, v.z, state.originTile!);
