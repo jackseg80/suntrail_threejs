@@ -1,3 +1,13 @@
+## [5.52.2] - 2026-05-02
+
+### Added
+- **GPX import limit** : Free = 1, Pro = 10. Message toast + haptic quand le max est atteint. Prévient la surcharge GPU/CPU mobile.
+- **i18n** : Clés `gpx.limitPro` ajoutées aux 4 locales (FR, EN, DE, IT).
+
+### Perf
+- **Rebuilds redondants supprimés** : `setTimeout(updateAllGPXMeshes, 3000)` retiré de `addGPXLayer` (déjà couvert par le trigger `isProcessingTiles`). Passe de 3 rebuilds par nouveau tracé à 2.
+- **`recalcLayerStatsFromTerrain()` skip** : Ne recalcule pas les stats si D+ > 0 et provient de données fiables (GPX importé) ou déjà recalculé (OSRM avec `estimatedTime > 0`). Évite le recalcul inutile lors des rebuilds multiples.
+
 ## [5.52.1] - 2026-05-02
 
 ### Fixed

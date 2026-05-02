@@ -1,4 +1,4 @@
-# SunTrail — Guide Développeur (v5.52.1)
+# SunTrail — Guide Développeur (v5.52.2)
 
 
 
