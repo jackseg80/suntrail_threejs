@@ -327,7 +327,20 @@ function setupProfileInteractions(): void {
 
         cursor.style.display = 'block';
         cursor.style.left = `${(point.dist / maxDist) * 100}%`;
-        info.textContent = `Distance : ${point.dist.toFixed(2)}km | Alt : ${Math.round(point.ele)}m | Pente : ${Math.round(point.slope)}%`;
+
+        let timeStr = '';
+        if (_solarBandData && _solarBandData.points.length > 0) {
+            let closest = _solarBandData.points[0];
+            for (const sp of _solarBandData.points) {
+                if (Math.abs(sp.distKm - point.dist) < Math.abs(closest.distKm - point.dist)) {
+                    closest = sp;
+                }
+            }
+            const h = String(closest.evalDate.getHours()).padStart(2, '0');
+            const m = String(closest.evalDate.getMinutes()).padStart(2, '0');
+            timeStr = ` | ${h}h${m}`;
+        }
+        info.textContent = `Distance : ${point.dist.toFixed(2)}km | Alt : ${Math.round(point.ele)}m | Pente : ${Math.round(point.slope)}%${timeStr}`;
 
         if (state.profileMarker) {
             state.profileMarker.position.copy(point.pos).add(new THREE.Vector3(0, 20, 0));
