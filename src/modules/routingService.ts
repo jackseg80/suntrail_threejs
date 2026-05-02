@@ -129,14 +129,13 @@ function osrmResponseToPoints(response: OSRMResponse): Array<{ lat: number; lon:
 }
 
 function buildGPXCompatibleData(points: Array<{ lat: number; lon: number; ele: number }>): Record<string, any> {
-    const now = new Date().toISOString();
     return {
         tracks: [{
             points: points.map(p => ({
                 lat: p.lat,
                 lon: p.lon,
                 ele: p.ele,
-                time: now,
+                // pas de time → addGPXLayer utilise i*1000 (timestamps uniques, évite la déduplication)
             })),
         }],
     };

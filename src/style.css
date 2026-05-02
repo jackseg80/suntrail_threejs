@@ -2387,35 +2387,32 @@ body.ui-hidden #route-bar {
 }
 .rs-profile-select:focus { border-color: var(--accent); }
 
-.rs-loop-inline {
-    display: flex;
+.rs-hidden-check {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+.rs-loop-btn {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: 5px;
-    cursor: pointer;
-    user-select: none;
-    flex-shrink: 0;
-    height: 36px;
+    gap: 4px;
     padding: 0 10px;
+    height: 36px;
     border: 1px solid var(--border);
     border-radius: var(--radius-md, 8px);
-    background: var(--surface-subtle, var(--surface));
+    cursor: pointer;
     font-size: 13px;
     font-weight: 500;
     color: var(--text-2);
-    transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
-    white-space: nowrap;
-    line-height: 1;
-}
-.rs-loop-inline input[type="checkbox"] {
-    width: 15px; height: 15px;
-    accent-color: var(--accent);
-    margin: 0;
+    background: var(--surface-subtle, var(--surface));
+    user-select: none;
     flex-shrink: 0;
-    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
 }
-.rs-loop-inline span { pointer-events: none; font-size: 15px; }
-.rs-loop-inline:has(input:checked) {
+#rs-loop:checked + .rs-loop-btn {
     border-color: var(--accent);
     color: var(--accent);
     background: color-mix(in srgb, var(--accent) 10%, transparent);

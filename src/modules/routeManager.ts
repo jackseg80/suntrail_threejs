@@ -15,6 +15,9 @@ export function initRouteManager(): void {
         scheduleAutoCompute();
     });
     state.subscribe('routeLoading', () => updateBar());
+    // Repositionner les sprites quand le tile d'origine change (pan) ou le zoom change (LOD)
+    state.subscribe('originTile', () => rebuildMarkers());
+    state.subscribe('ZOOM', () => rebuildMarkers());
 }
 
 function rebuildMarkers(): void {
