@@ -115,7 +115,9 @@
       "minWaypoints": "Ajoutez au moins 2 waypoints",
       "maxWaypoints": "Maximum 10 waypoints atteint",
       "noRoute": "Aucun itinéraire trouvé",
-      "generic": "Erreur de calcul d'itinéraire"
+      "generic": "Erreur de calcul d'itinéraire",
+      "tooLong": "Distance maximale de 500 km dépassée",
+      "upgradeDistance": "Limite de 25 km atteinte (version gratuite). Passez Pro pour 500 km."
     },
     "aria": {
       "close": "Fermer le planificateur",

@@ -2,9 +2,9 @@ import { state } from './state';
 import { addGPXLayer, removeGPXLayer } from './gpxLayers';
 import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
-import { worldToLngLat } from './geo';
+import { worldToLngLat, haversineDistance } from './geo';
 import { calculateTrackStats } from './geoStats';
-import { getPlaceName } from './geocodingService';
+import { isProActive } from './state';
 
 let _currentRouteLayerId: string | null = null;
 let _routeGeneration = 0;
@@ -167,6 +167,17 @@ export async function computeRoute(
         throw new Error(i18n.t('routePlanner.error.minWaypoints') || 'At least 2 waypoints required');
     }
 
+    const maxKm = isProActive() ? 500 : 25;
+    let totalKm = 0;
+    for (let i = 1; i < waypoints.length; i++) {
+        totalKm += haversineDistance(waypoints[i-1].lat, waypoints[i-1].lon, waypoints[i].lat, waypoints[i].lon);
+    }
+    if (totalKm > maxKm) {
+        throw new Error(isProActive()
+            ? i18n.t('routePlanner.error.tooLong') || 'Distance maximale de 500 km dépassée'
+            : i18n.t('routePlanner.error.upgradeDistance') || 'Limite de 25 km atteinte (version gratuite)');
+    }
+
     state.routeLoading = true;
     state.routeError = null;
 
@@ -300,15 +311,4 @@ export function clearRouteWaypoints(): void {
 
 export function reverseWaypoints(): void {
     state.routeWaypoints = [...state.routeWaypoints].reverse();
-}
-
-export async function reverseGeocodeWaypoint(
-    lat: number,
-    lon: number,
-): Promise<string | null> {
-    try {
-        return await getPlaceName(lat, lon);
-    } catch {
-        return null;
-    }
 }

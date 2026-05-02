@@ -113,7 +113,9 @@
       "minWaypoints": "Mindestens 2 Wegpunkte erforderlich",
       "maxWaypoints": "Maximal 10 Wegpunkte erreicht",
       "noRoute": "Keine Route gefunden",
-      "generic": "Fehler bei der Routenberechnung"
+      "generic": "Fehler bei der Routenberechnung",
+      "tooLong": "Maximale Distanz von 500 km überschritten",
+      "upgradeDistance": "25 km Limit erreicht (Gratis). Holen Sie sich Pro für 500 km."
     },
     "aria": {
       "close": "Routenplaner schließen",

@@ -114,7 +114,9 @@
       "minWaypoints": "Add at least 2 waypoints",
       "maxWaypoints": "Maximum 10 waypoints reached",
       "noRoute": "No route found",
-      "generic": "Route computation error"
+      "generic": "Route computation error",
+      "tooLong": "Maximum distance of 500 km exceeded",
+      "upgradeDistance": "25 km limit reached (free version). Go Pro for 500 km."
     },
     "aria": {
       "close": "Close route planner",

@@ -13,7 +13,9 @@ vi.mock('./state', () => ({
         RELIEF_EXAGGERATION: 1,
         scene: null,
         IS_2D_MODE: false,
+        isPro: false,
     },
+    isProActive: vi.fn(() => false),
 }));
 
 const _baseMockLayer = { id: 'mock-layer-id', name: 'mock', color: '#fff', visible: true, rawData: {}, points: [] as any[], mesh: null, stats: { distance: 6.2, dPlus: 350, dMinus: 230, pointCount: 5, estimatedTime: 75 } };
@@ -32,6 +34,7 @@ vi.mock('../i18n/I18nService', () => ({
 
 vi.mock('./geo', () => ({
     worldToLngLat: vi.fn((x: number, z: number) => ({ lat: 46 + x * 0.001, lon: 7 + z * 0.001 })),
+    haversineDistance: vi.fn(() => 5),
 }));
 
 vi.mock('./geoStats', () => ({
@@ -45,7 +48,7 @@ vi.mock('./geoStats', () => ({
 
 import { state } from './state';
 import { addGPXLayer } from './gpxLayers';
-import { worldToLngLat } from './geo';
+import { worldToLngLat, haversineDistance } from './geo';
 import { calculateTrackStats } from './geoStats';
 import {
     computeRoute,
@@ -55,10 +58,13 @@ import {
     reverseWaypoints,
     getActiveProfile,
 } from './routingService';
+import { isProActive } from './state';
 
 const mockAddGPXLayer = addGPXLayer as ReturnType<typeof vi.fn>;
 const mockWorldToLngLat = worldToLngLat as ReturnType<typeof vi.fn>;
 const mockCalculateTrackStats = calculateTrackStats as ReturnType<typeof vi.fn>;
+const mockHaversineDistance = haversineDistance as ReturnType<typeof vi.fn>;
+const mockIsProActive = isProActive as ReturnType<typeof vi.fn>;
 
 const VALID_ORS_RESPONSE = {
     features: [{
@@ -110,6 +116,8 @@ describe('routingService', () => {
         state.routeLoading = false;
         state.routeError = null;
         state.gpxLayers = [];
+        state.originTile = { x: 0, y: 0, z: 13 };
+        state.routeLoopEnabled = false;
     });
 
     describe('computeRoute (OSRM fallback - no ORS key)', () => {
@@ -658,6 +666,100 @@ describe('routingService', () => {
 
             await expect(firstCall).rejects.toThrow('Route cancelled');
             expect(state.routeError).toBeNull();
+        });
+    });
+
+    describe('distance limit', () => {
+        beforeEach(() => {
+            state.ORS_KEY = '';
+            state.routeWaypoints = [];
+            state.routeLoading = false;
+            state.routeError = null;
+            state.gpxLayers = [];
+            mockFetch = vi.fn();
+            global.fetch = mockFetch as unknown as typeof fetch;
+            _mockLayer = { ..._baseMockLayer, stats: { ..._baseMockLayer.stats }, points: [..._baseMockLayer.points] };
+            mockIsProActive.mockReturnValue(false);
+            mockHaversineDistance.mockReturnValue(5);
+        });
+
+        it('should allow routes under 25 km for free users', async () => {
+            mockHaversineDistance.mockReturnValue(3);
+            _mockLayer.points = [{ x: 1, y: 100, z: 1 }, { x: 2, y: 200, z: 2 }, { x: 3, y: 300, z: 3 }] as any[];
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(VALID_OSRM_RESPONSE),
+            });
+
+            const result = await computeRoute([
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.04, lon: 7.04 },
+            ]);
+
+            expect(result.distance).toBeGreaterThan(0);
+            expect(result.ascent).toBeGreaterThan(0);
+        });
+
+        it('should reject routes over 25 km for free users', async () => {
+            mockIsProActive.mockReturnValue(false);
+            mockHaversineDistance.mockReturnValue(30);
+
+            await expect(computeRoute([
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.1, lon: 7.1 },
+            ])).rejects.toThrow('routePlanner.error.upgradeDistance');
+
+            expect(state.routeLoading).toBe(false);
+        });
+
+        it('should allow routes up to 500 km for pro users', async () => {
+            mockIsProActive.mockReturnValue(true);
+            mockHaversineDistance.mockReturnValue(50);
+            _mockLayer.points = [{ x: 1, y: 100, z: 1 }, { x: 2, y: 200, z: 2 }, { x: 3, y: 300, z: 3 }] as any[];
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(VALID_OSRM_RESPONSE),
+            });
+
+            const result = await computeRoute([
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.04, lon: 7.04 },
+            ]);
+
+            expect(mockCalculateTrackStats).toHaveBeenCalled();
+            expect(mockHaversineDistance).toHaveBeenCalled();
+            expect(result.distance).toBeGreaterThan(0);
+            expect(result.ascent).toBeGreaterThan(0);
+        });
+
+        it('should reject routes over 500 km for pro users', async () => {
+            mockIsProActive.mockReturnValue(true);
+            mockHaversineDistance.mockReturnValue(600);
+
+            await expect(computeRoute([
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.1, lon: 7.1 },
+            ])).rejects.toThrow('routePlanner.error.tooLong');
+
+            expect(state.routeLoading).toBe(false);
+        });
+
+        it('should sum pairwise distances correctly', async () => {
+            mockIsProActive.mockReturnValue(true);
+            mockHaversineDistance.mockReturnValue(5);
+            _mockLayer.points = [{ x: 1, y: 100, z: 1 }, { x: 2, y: 200, z: 2 }] as any[];
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(VALID_OSRM_RESPONSE),
+            });
+
+            await computeRoute([
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.1, lon: 7.1 },
+                { lat: 46.2, lon: 7.2 },
+            ]);
+
+            expect(mockHaversineDistance).toHaveBeenCalledTimes(2);
         });
     });
 });

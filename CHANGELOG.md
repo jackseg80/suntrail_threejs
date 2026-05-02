@@ -12,6 +12,11 @@
 - **Nominatim conformité** : L'appel raw a été remplacé par `getPlaceName()` via `geocodingService.ts`, respectant User-Agent et rate limits.
 - **Filtre d'intersection long-press** : Le long-press ignore les GPX tracks et waypoint-markers existants.
 - **D− ajouté à la barre** : Affichage `↓Zm` dans `rb-info`.
+- **Inclinomètre caché par route-bar** : Ajout CSS `body.route-planner-active #inclinometer-widget` pour le remonter en haut de l'écran.
+- **Code mort** : Suppression de `reverseGeocodeWaypoint` (plus utilisé depuis v5.51.0).
+- **Noms de waypoints** : Reverse geocode automatique après long-press via `getPlaceName()`, avec cache et throttle 1.5s.
+- **Offset 2D sprites** : Aligné sur `GPX_SURFACE_OFFSET` (12) au lieu de 2.
+- **Limites de distance** : Free = 25 km, Pro = 500 km. Vérifié dans `computeRoute()` avant appel API. Clés i18n dédiées.
 
 ### Changed
 

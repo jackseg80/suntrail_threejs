@@ -20,7 +20,6 @@ vi.mock('./routingService', () => ({
     addRouteWaypoint: vi.fn(),
     removeRouteWaypoint: vi.fn(),
     reverseWaypoints: vi.fn(),
-    reverseGeocodeWaypoint: vi.fn(() => Promise.resolve(null)),
     getActiveProfile: vi.fn(() => 'foot-hiking'),
 }));
 
@@ -36,14 +35,20 @@ vi.mock('../i18n/I18nService', () => ({
     i18n: { t: vi.fn((key: string) => key) },
 }));
 
+vi.mock('./geocodingService', () => ({
+    getPlaceName: vi.fn(() => Promise.resolve('Mürren')),
+}));
+
 import { state } from './state';
 import { computeRoute, clearRouteWaypoints } from './routingService';
 import { i18n } from '../i18n/I18nService';
-import { initRouteManager, removeWaypointAt, clearRoute } from './routeManager';
+import { getPlaceName } from './geocodingService';
+import { initRouteManager, removeWaypointAt, clearRoute, scheduleGeocodeNames } from './routeManager';
 
 const mockComputeRoute = computeRoute as ReturnType<typeof vi.fn>;
 const mockClearRouteWaypoints = clearRouteWaypoints as ReturnType<typeof vi.fn>;
 const mockI18nT = i18n.t as ReturnType<typeof vi.fn>;
+const mockGetPlaceName = getPlaceName as ReturnType<typeof vi.fn>;
 
 describe('routeManager', () => {
     beforeEach(() => {
@@ -207,6 +212,40 @@ describe('routeManager', () => {
                 expect(infoEl?.textContent).toBe('routeBar.onePoint');
                 expect(mockI18nT).toHaveBeenCalledWith('routeBar.onePoint');
             }
+        });
+    });
+
+    describe('geocode naming', () => {
+        beforeEach(() => {
+            vi.clearAllMocks();
+            state.routeWaypoints = [];
+            state.routeLoading = false;
+            mockGetPlaceName.mockResolvedValue('Mürren');
+        });
+
+        it('scheduleGeocodeNames should be exported', () => {
+            expect(typeof scheduleGeocodeNames).toBe('function');
+        });
+
+        it('should resolve names for unnamed waypoints via throttle', async () => {
+            vi.useFakeTimers();
+            state.routeWaypoints = [
+                { lat: 46.5, lon: 7.5 },
+                { lat: 46.6, lon: 7.6, name: 'Known' },
+            ];
+
+            scheduleGeocodeNames();
+            vi.advanceTimersByTime(1500);
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(mockGetPlaceName).toHaveBeenCalledTimes(1);
+            expect(mockGetPlaceName).toHaveBeenCalledWith(46.5, 7.5);
+            // Le waypoint connu ne doit pas être géocodé
+            expect(state.routeWaypoints[0].name).toBe('Mürren');
+            expect(state.routeWaypoints[1].name).toBe('Known');
+
+            vi.useRealTimers();
         });
     });
 });

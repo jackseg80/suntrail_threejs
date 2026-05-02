@@ -4,18 +4,23 @@ import { computeRoute, clearRouteWaypoints } from './routingService';
 import { getAltitudeAt } from './analysis';
 import { lngLatToWorld } from './geo';
 import { i18n } from '../i18n/I18nService';
+import { getPlaceName } from './geocodingService';
 
 const waypointGroup = new THREE.Group();
 let autoComputeTimer: ReturnType<typeof setTimeout> | null = null;
 let _barStats: { distance: number; ascent: number; descent: number; duration: number } | null = null;
 let _lastWaypointCount = 0;
 let _rebuildThrottle: ReturnType<typeof setTimeout> | null = null;
+let _geocodeTimer: ReturnType<typeof setTimeout> | null = null;
+const _geocodeCache = new Map<string, string>();
+const GEOCODE_THROTTLE_MS = 1500;
 
 export function initRouteManager(): void {
     state.subscribe('routeWaypoints', () => {
         rebuildMarkers();
         updateBar();
         scheduleAutoCompute();
+        scheduleGeocodeNames();
     });
     state.subscribe('routeLoading', () => updateBar());
     state.subscribe('originTile', () => rebuildMarkers());
@@ -47,7 +52,7 @@ function rebuildMarkers(): void {
 
     // Échelle adaptative discrète
     const scale = Math.max(20, 20 * Math.pow(2, Math.max(0, 17 - zoom)));
-    const spriteHeight = state.IS_2D_MODE ? 2 : Math.max(18, scale * 0.15);
+    const spriteHeight = state.IS_2D_MODE ? 12 : Math.max(18, scale * 0.15);
     const count = state.routeWaypoints.length;
 
     if (count !== _lastWaypointCount) {
@@ -139,6 +144,34 @@ export function scheduleAutoCompute(): void {
             updateBar();
         } catch { /* erreur affichée via state.routeError */ }
     }, 800);
+}
+
+export function scheduleGeocodeNames(): void {
+    if (_geocodeTimer) clearTimeout(_geocodeTimer);
+    _geocodeTimer = setTimeout(async () => {
+        const wps = state.routeWaypoints;
+        for (let i = 0; i < wps.length; i++) {
+            const wp = wps[i];
+            if (wp.name) continue;
+            const key = `${wp.lat.toFixed(5)},${wp.lon.toFixed(5)}`;
+            const cached = _geocodeCache.get(key);
+            if (cached) {
+                const updated = [...state.routeWaypoints];
+                updated[i] = { ...updated[i], name: cached };
+                state.routeWaypoints = updated;
+                continue;
+            }
+            try {
+                const name = await getPlaceName(wp.lat, wp.lon);
+                if (name) {
+                    _geocodeCache.set(key, name);
+                    const updated = [...state.routeWaypoints];
+                    updated[i] = { ...updated[i], name };
+                    state.routeWaypoints = updated;
+                }
+            } catch { /* silencieux */ }
+        }
+    }, GEOCODE_THROTTLE_MS);
 }
 
 export function removeWaypointAt(index: number): void {

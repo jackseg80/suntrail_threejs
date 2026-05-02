@@ -113,7 +113,9 @@
       "minWaypoints": "Aggiungi almeno 2 waypoint",
       "maxWaypoints": "Massimo 10 waypoint raggiunto",
       "noRoute": "Nessun percorso trovato",
-      "generic": "Errore di calcolo del percorso"
+      "generic": "Errore di calcolo del percorso",
+      "tooLong": "Distanza massima di 500 km superata",
+      "upgradeDistance": "Limite 25 km raggiunto (versione gratuita). Passa a Pro per 500 km."
     },
     "aria": {
       "close": "Chiudi pianificatore",
