@@ -27,6 +27,15 @@ export class GPXService {
                 void haptic('warning');
                 return;
             }
+
+            // Limite Pro : 10 tracés max (préserve les perfs mobiles)
+            if (isProActive() && state.gpxLayers.length >= 10) {
+                const { showToast } = await import('./toast');
+                const { i18n } = await import('../i18n/I18nService');
+                void showToast(i18n.t('gpx.limitPro') || 'Maximum 10 tracks reached');
+                void haptic('warning');
+                return;
+            }
             
             const startPt = gpx.tracks[0].points[0];
             

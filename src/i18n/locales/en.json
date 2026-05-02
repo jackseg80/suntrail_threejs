@@ -127,6 +127,9 @@
     "computing": "Computing\u2026",
     "onePoint": "1 point \u00b7 place a 2nd one"
   },
+  "gpx": {
+    "limitPro": "Maximum 10 tracks reached"
+  },
   "settings": {
     "title": "Settings",
     "aria": {

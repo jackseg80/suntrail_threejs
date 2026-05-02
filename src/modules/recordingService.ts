@@ -149,6 +149,15 @@ export class RecordingService {
     }
 
     private async saveToInternalLayer(name: string): Promise<boolean> {
+        // Limite Pro : 10 tracés max
+        if (state.gpxLayers.length >= 10) {
+            const { showToast } = await import('./toast');
+            const { i18n } = await import('../i18n/I18nService');
+            void showToast(i18n.t('gpx.limitPro') || 'Maximum 10 tracks reached');
+            void haptic('warning');
+            return false;
+        }
+
         const gpxString = this.buildGPXString(name);
         const parser = new gpxParser();
         parser.parse(gpxString);

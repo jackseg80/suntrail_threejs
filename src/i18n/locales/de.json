@@ -126,6 +126,9 @@
     "computing": "Berechnung\u2026",
     "onePoint": "1 Punkt \u00b7 2. Punkt setzen"
   },
+  "gpx": {
+    "limitPro": "Maximal 10 Tracks erreicht"
+  },
   "settings": {
     "title": "Einstellungen",
     "aria": {

@@ -126,6 +126,9 @@
     "computing": "Calcolo\u2026",
     "onePoint": "1 punto \u00b7 aggiungine un 2\u00B0"
   },
+  "gpx": {
+    "limitPro": "Massimo 10 tracce raggiunto"
+  },
   "settings": {
     "title": "Impostazioni",
     "aria": {
