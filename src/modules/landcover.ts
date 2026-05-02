@@ -2,7 +2,7 @@ import Pbf from 'pbf';
 import { VectorTile } from '@mapbox/vector-tile';
 import { BoundedCache } from './boundedCache';
 import { state } from './state';
-import { isPositionInSwitzerland, getPow2, xNormToLon, yNormToLat } from './geo';
+import { isPositionInSwitzerland, getPow2, xNormToLon, yNormToLat, lonToXNorm, latToYNorm } from './geo';
 import type { Tile } from './terrain';
 
 export interface BBox { minX: number; maxX: number; minY: number; maxY: number; }
@@ -264,4 +264,20 @@ function isPointInRing(x: number, y: number, ring: {x: number, y: number}[]) {
         }
     }
     return inside;
+}
+
+export function isLatLonInForest(lat: number, lon: number): boolean {
+    const inCH = isPositionInSwitzerland(lat, lon);
+    const requestZoom = inCH ? 14 : 10;
+    const n = getPow2(requestZoom);
+    const xNorm = lonToXNorm(lon);
+    const yNorm = latToYNorm(lat);
+    const tileX = Math.floor(xNorm * n);
+    const tileY = Math.floor(yNorm * n);
+    const cacheKey = `${inCH ? 'ch' : 'mt'}-${requestZoom}-${tileX}-${tileY}`;
+    const cached = landcoverCache.get(cacheKey);
+    if (!cached) return false;
+    const pbfX = (xNorm * n - tileX) * 4096;
+    const pbfY = (yNorm * n - tileY) * 4096;
+    return isPointInForest(pbfX, pbfY, 4096, cached.forests, 1, 0, 0, cached.forestGrid);
 }

@@ -3,6 +3,7 @@ import SunCalc from 'suncalc';
 import { state, isProActive } from './state';
 import { isAtShadow, drapeToTerrain, getAltitudeAt, GPX_SURFACE_OFFSET } from './analysis';
 import { worldToLngLat, haversineDistance } from './geo';
+import { isLatLonInForest } from './landcover';
 import { getSunDirection } from './sun';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -15,6 +16,7 @@ export interface RouteSolarPoint {
     evalDate: Date;      // simDate (snapshot) ou arrivalDate (hikerTimeline)
     inShadow: boolean;
     isNight: boolean;
+    inForest: boolean;
 }
 
 export interface RouteSolarAnalysis {
@@ -22,7 +24,8 @@ export interface RouteSolarAnalysis {
     points: RouteSolarPoint[];
     sunExposedKm: number;
     shadowKm: number;
-    sunPct: number;       // 0–100
+    forestKm: number;
+    sunPct: number;       // 0–100 (soleil direct uniquement, forêt exclue)
     totalKm: number;
     shadowSegments: { startKm: number; endKm: number; lengthKm: number }[];
     optimalDepartureMinutes?: number;
@@ -214,8 +217,9 @@ async function analyzeRouteSolar(
             const terrainY = getAltitudeAt(pt.x, pt.z);
             const altForShadow = terrainY > 0 ? terrainY + GPX_SURFACE_OFFSET : pt.y;
             const inShadow = !isNight && isAtShadow(pt.x, pt.z, altForShadow, sunVec);
+            const inForest = !isNight && !inShadow && isLatLonInForest(ptGps.lat, ptGps.lon);
 
-            results.push({ worldPos: pt, distKm: cumulativeDistKm, evalDate, inShadow, isNight });
+            results.push({ worldPos: pt, distKm: cumulativeDistKm, evalDate, inShadow, isNight, inForest });
         }
 
         await new Promise<void>(res => setTimeout(res, 0));
@@ -228,6 +232,7 @@ export function buildAnalysis(points: RouteSolarPoint[], mode: SolarRouteMode): 
     const totalKm = points.at(-1)?.distKm ?? 0;
     let sunExposedKm = 0;
     let shadowKm = 0;
+    let forestKm = 0;
     const shadowSegments: { startKm: number; endKm: number; lengthKm: number }[] = [];
     let segStart: number | null = null;
 
@@ -237,8 +242,9 @@ export function buildAnalysis(points: RouteSolarPoint[], mode: SolarRouteMode): 
         const segLen = cur.distKm - prev.distKm;
 
         if (!cur.isNight) {
-            if (cur.inShadow) { shadowKm += segLen; }
-            else { sunExposedKm += segLen; }
+            if (cur.inShadow)      { shadowKm += segLen; }
+            else if (cur.inForest) { forestKm += segLen; }
+            else                   { sunExposedKm += segLen; }
         }
 
         // Détecter les segments ombragés continus (par indice, jamais par position géo)
@@ -257,7 +263,7 @@ export function buildAnalysis(points: RouteSolarPoint[], mode: SolarRouteMode): 
     // quand tout le trajet est de nuit sauf 1 km final au soleil.
     const sunPct = totalKm > 0 ? Math.round((sunExposedKm / totalKm) * 100) : 0;
 
-    return { mode, points, sunExposedKm, shadowKm, sunPct, totalKm, shadowSegments };
+    return { mode, points, sunExposedKm, shadowKm, forestKm, sunPct, totalKm, shadowSegments };
 }
 
 // ─── PRO : départ optimal (deux passes) ──────────────────────────────────────
@@ -358,9 +364,10 @@ async function analyzeOptimalDeparture(
 // ─── Overlay 3D ───────────────────────────────────────────────────────────────
 
 // Couleurs RGBA (uint8)
-const _COL_SUN   = [245, 166, 35, 220] as const;
-const _COL_SHADE = [71, 85, 120, 200] as const;
-const _COL_NIGHT = [10, 15, 30, 153] as const;  // bleu très sombre, 60% opacité
+const _COL_SUN    = [245, 166, 35, 220] as const;
+const _COL_SHADE  = [71, 85, 120, 200] as const;
+const _COL_NIGHT  = [10, 15, 30, 153] as const;  // bleu très sombre, 60% opacité
+const _COL_FOREST = [30, 100, 50, 200] as const;  // vert sombre, canopée
 
 function findClosestPoint(points: RouteSolarPoint[], targetKm: number): RouteSolarPoint {
     let best = points[0];
@@ -377,7 +384,10 @@ function fillTextureData(data: Uint8Array, analysis: RouteSolarAnalysis): void {
     for (let i = 0; i < TEXTURE_WIDTH; i++) {
         const progressKm = (i / TEXTURE_WIDTH) * totalKm;
         const pt = findClosestPoint(analysis.points, progressKm);
-        const col = pt.isNight ? _COL_NIGHT : pt.inShadow ? _COL_SHADE : _COL_SUN;
+        const col = pt.isNight  ? _COL_NIGHT
+                  : pt.inShadow ? _COL_SHADE
+                  : pt.inForest ? _COL_FOREST
+                  : _COL_SUN;
         data[i * 4]     = col[0];
         data[i * 4 + 1] = col[1];
         data[i * 4 + 2] = col[2];

@@ -231,7 +231,10 @@ function buildSolarBandSVG(analysis: RouteSolarAnalysis, width: number, height: 
         const x2 = (pNext.distKm / totalKm) * width;
         const segW = Math.max(1, x2 - x1);
 
-        const fill = p.isNight ? 'rgba(10,15,30,0.6)' : p.inShadow ? 'rgba(71,85,120,0.8)' : 'rgba(245,166,35,0.85)';
+        const fill = p.isNight   ? 'rgba(10,15,30,0.6)'
+                   : p.inShadow  ? 'rgba(71,85,120,0.8)'
+                   : p.inForest  ? 'rgba(30,100,50,0.8)'
+                   : 'rgba(245,166,35,0.85)';
         segments += `<rect x="${x1.toFixed(1)}" y="${BAND_Y}" width="${segW.toFixed(1)}" height="${BAND_H}" fill="${fill}"/>`;
     }
     return bgRect + segments;
