@@ -517,11 +517,6 @@ export class SolarProbeSheet extends BaseComponent {
             return;
         }
 
-        const hint = document.createElement('div');
-        hint.style.cssText = 'font-size:11px; color:var(--text-3); text-align:center; margin-bottom:var(--space-3);';
-        hint.textContent = i18n.t('solar.toast.clickFirst');
-        this.contentEl.appendChild(hint);
-
         this.routeSolarSectionEl = document.createElement('div');
         this.contentEl.appendChild(this.routeSolarSectionEl);
         this.buildRouteSolarSection(this.routeSolarSectionEl);
@@ -548,16 +543,6 @@ export class SolarProbeSheet extends BaseComponent {
         title.className = 'exp-probe-label solar-route-title';
         title.textContent = i18n.t('solarRoute.section.title');
         titleRow.appendChild(title);
-
-        // Badge heure — toujours depuis state.simDate pour être instantané
-        const evalTime = state.simDate;
-        const hh = String(evalTime.getHours()).padStart(2, '0');
-        const mm = String(evalTime.getMinutes()).padStart(2, '0');
-        const timeBadge = document.createElement('span');
-        timeBadge.className = 'solar-route-time-badge';
-        timeBadge.title = 'Heure du slider — déplacer pour mettre à jour en direct';
-        timeBadge.textContent = `${hh}h${mm}`;
-        titleRow.appendChild(timeBadge);
 
         if (isProActive()) {
             const currentMode = getSolarRouteMode();
@@ -614,7 +599,6 @@ export class SolarProbeSheet extends BaseComponent {
         timeSlider.addEventListener('input', () => {
             const m = parseInt(timeSlider.value);
             timeDisp.textContent = fmtSlider(m);
-            timeBadge.textContent = fmtSlider(m).replace(':', 'h'); // badge live aussi
             const d = new Date(state.simDate);
             d.setHours(Math.floor(m / 60), m % 60, 0, 0);
             state.simDate = d;

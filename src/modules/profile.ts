@@ -21,6 +21,7 @@ export function setSolarBandData(analysis: RouteSolarAnalysis | null): void {
     drawProfileSVG();
     const btn = document.getElementById('profile-solar-btn') as HTMLButtonElement | null;
     if (btn) {
+        btn.textContent = '☀️ Analyse';
         btn.style.display = analysis ? 'inline-flex' : 'none';
         btn.onclick = () => window.dispatchEvent(new CustomEvent('openSolarProbeSheet'));
     }
@@ -166,7 +167,7 @@ export function drawProfileSVG(): void {
     }
 
     const width = svg.clientWidth || window.innerWidth - 40 || 800;
-    const height = svg.clientHeight || 80;
+    const height = svg.clientHeight || 100; // v5.51.4: Base 100px
 
     const maxDist = profileData[profileData.length - 1].dist;
     const altitudes = profileData.map(p => p.ele);
@@ -174,13 +175,15 @@ export function drawProfileSVG(): void {
     const maxEle = Math.max(...altitudes);
     const eleRange = (maxEle - minEle) || 1;
 
-    const pad = height * 0.1;
-    const usableHeight = height - (pad * 2);
+    // v5.51.4: Marges asymétriques pour laisser de la place à la bande solaire en bas
+    const padTop = 15;
+    const padBottom = _solarBandData ? 24 : 10; 
+    const usableHeight = height - padTop - padBottom;
 
     let pointsStr = "";
     profileData.forEach((p, i) => {
         const x = (p.dist / maxDist) * width;
-        const y = height - (pad + ((p.ele - minEle) / eleRange) * usableHeight);
+        const y = height - (padBottom + ((p.ele - minEle) / eleRange) * usableHeight);
         pointsStr += `${i === 0 ? 'M' : 'L'} ${x} ${y} `;
     });
 
@@ -203,7 +206,7 @@ export function drawProfileSVG(): void {
 
 function buildSolarBandSVG(analysis: RouteSolarAnalysis, width: number, height: number): string {
     const BAND_H = 12;
-    const BAND_Y = height - BAND_H;
+    const BAND_Y = height - BAND_H - 4; // v5.51.4: Un peu d'air par rapport au bord bas
     const totalKm = analysis.totalKm || 1;
 
     const bgRect = `<rect x="0" y="${BAND_Y}" width="${width}" height="${BAND_H}" fill="rgba(0,0,0,0.35)" rx="2"/>`;

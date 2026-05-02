@@ -1,3 +1,13 @@
+## [5.52.6] - 2026-05-02
+
+### Added
+- Solar Analysis panel: Instructional hint "Click the terrain first" removed for cleaner UI.
+
+### Fixed
+- UI Mobile: Elevation Profile header layout (Title/Analysis button) and stat line.
+- UI Mobile: Solar Analysis panel time slider layout and redundancy cleanup.
+- Bug: Fixed `ReferenceError: timeBadge is not defined` in Solar Analysis panel.
+
 ## [5.52.5] - 2026-05-02
 
 ### Fixed
