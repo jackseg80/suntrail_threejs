@@ -48,21 +48,22 @@ export function updateElevationProfile(layerId?: string): void {
     profileData = [];
     let cumulativeDist = 0;
     const elevations: number[] = [];
-    const GPX_SURFACE_OFFSET = 30; // Doit être cohérent avec terrain.ts
+    const GPX_SURFACE_OFFSET = 12; // Cohérent avec gpxLayers.ts (v5.51.3)
+
+    // Détecter si les données brutes ont une élévation réelle (OSRM → ele=0 partout)
+    const maxRawEle = rawPoints.reduce((max: number, p: any) => Math.max(max, (p.ele || 0), (p.alt || 0)), 0);
+    const useRawEle = hasRawEle && maxRawEle > 0;
 
     for (let i = 0; i < gpxPoints3D.length; i++) {
         const pos = gpxPoints3D[i];
         let slope = 0;
         
-        // Altitude : priorité au raw, sinon Y monde corrigé
+        // Altitude : priorité au raw si élévation réelle, sinon Y monde drapé
         let ele = 0;
-        if (hasRawEle) {
-            // Note: gpxPoints3D est densifié (plus de points que raw)
-            // On mappe l'index i vers l'index correspondant dans les données brutes
+        if (useRawEle) {
             const rawIdx = Math.min(rawPoints.length - 1, Math.floor((i / gpxPoints3D.length) * rawPoints.length));
-            ele = rawPoints[rawIdx].ele || 0;
+            ele = rawPoints[rawIdx].ele || rawPoints[rawIdx].alt || 0;
         } else {
-            // Fallback: soustraire l'offset de surface avant de diviser par l'exagération
             const yCorrected = pos.y - GPX_SURFACE_OFFSET;
             ele = Math.max(0, yCorrected / state.RELIEF_EXAGGERATION);
         }

@@ -28,7 +28,11 @@ export function initRouteManager(): void {
     state.subscribe('IS_2D_MODE', () => rebuildMarkers());
     // Quand les tuiles finissent de charger, l'altitude devient disponible
     state.subscribe('isProcessingTiles', (processing: boolean) => {
-        if (!processing) rebuildMarkers();
+        if (!processing) {
+            rebuildMarkers();
+            // Forcer un rebuild GPX pour recalculer les stats depuis les tuiles fraîchement chargées
+            void import('./gpxLayers').then(({ updateAllGPXMeshes }) => updateAllGPXMeshes());
+        }
     });
     state.subscribe('gpxLayers', () => updateBar());
 }
