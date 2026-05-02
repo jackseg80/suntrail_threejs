@@ -111,6 +111,7 @@ export class TrackSheet extends BaseComponent {
         }));
         this.addSubscription(state.subscribe('gpxLayers', () => {
             this.renderLayersList();
+            this.updateStats();
             this.updateEmptyState();
         }));
 
