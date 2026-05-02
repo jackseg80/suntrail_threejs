@@ -1,8 +1,13 @@
-## [5.51.3] - 2026-05-02
+## [5.52.0] - 2026-05-02
+### Added
+- Refonte complète du tutoriel d'onboarding (v6.0) :
+  - Immersion totale plein écran avec flou d'arrière-plan.
+  - Structure en 6 slides pédagogiques.
+  - Animations SVG conceptuelles et mockups UI réels.
+  - Menu de démarrage actionnable (Explorer, Importer, Chercher).
+  - Internationalisation complète (FR, EN, DE, IT).
+- Roadmap mise à jour : analyse solaire détaillée sur GPX/manuels planifiée pour la v6.2.
 
-### Fixed
-
-- **Fuite mémoire WebGL** : `rebuildMarkers()` dispose maintenant les textures/material des sprites supprimés. Les sprites sont réutilisés (mise à jour position/scale) quand le nombre de waypoints ne change pas, évitant la création de textures à chaque pan/zoom.
 - **Stats OSRM à 0** : Les stats (D+/D-, temps) sont recalculées depuis les points drapés sur le terrain pour les routes OSRM (sans élévation API). Les routes ORS conservent leurs stats API.
 - **Auto-flyTo intempestif** : Nouveau paramètre `{ silent: true }` dans `addGPXLayer()`. Les calculs d'itinéraire automatiques n'émettent plus l'événement `flyTo`, évitant le saut de caméra pendant la pose de waypoints.
 - **Placement 2D décalé** : En mode 2D, l'intersection se fait avec le plan y=0 au lieu du `findTerrainIntersection` 3D, qui utilisait l'altitude réelle du relief.
