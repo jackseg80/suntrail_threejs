@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.52.7)
+# SunTrail — Guide IA (v5.52.8)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-02 — v5.52.7 : Audit global — crashs, fuites mémoire, dead code, i18n.
+> Mis à jour le 2026-05-02 — v5.52.8 : Détection de forêts dans analyse solaire, heure estimée au profil.
 
 
 ## Projet
@@ -100,7 +100,7 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - `src/modules/scene.ts` : Moteur de rendu et boucle principale.
 - `src/modules/cameraManager.ts` : Gestion de la caméra, animations flyTo et resize.
 - `src/modules/poi.ts` : (v5.40.38) Détection et rendu 3D des POIs depuis tuiles vectorielles (SwissTopo/MapTiler). 8 catégories : trail (🔶 sentiers nommés), hut (🟤 refuges), rest (🟢 haltes), attraction (🔵 curiosités), viewpoint (🔭), shelter (🏠), info (i), guidepost (Signalisation). Détection unifiée SwissTopo (class/subclass) + MapTiler. Cache PBF zone-based.
-- `src/modules/solarRoute.ts` : (v5.52.3) Analyse solaire des itinéraires — **deux modes distincts** : Snapshot (ombre à l'heure du slider, Free) et Hiker Timeline (ombre à l'heure d'arrivée estimée, Pro). **Overlay 3D** : DataTexture 256×1 mappée sur TubeGeometry pour colorisation or/bleu/nuit live (~200ms cache hit). **Sampling adaptatif** : max 200 points, step dynamique. **Cache** : clé `${routeHash}|${date}|${slot30}|${mode}|${speed}`, invalide sur changement route ou date. **RAF keepalive** pour fluidité 2D (state.isInteractingWithUI toggle). **Ombre précise** : utilise `getAltitudeAt()` au moment de l'analyse (pas draping stale). **Recommandations** : section stats grille 2×2 + alertes exposition forte (> 90 min soleil consécutif). **Speed** : [3, 4, 6] km/h sélectionnable, auto-bascule en hikerTimeline.
+- `src/modules/solarRoute.ts` : (v5.52.8) Analyse solaire des itinéraires — **deux modes distincts** : Snapshot (ombre à l'heure du slider, Free) et Hiker Timeline (ombre à l'heure d'arrivée estimée, Pro). **Overlay 3D** : DataTexture 256×1 mappée sur TubeGeometry pour colorisation 4 états (soleil or / forêt vert / ombre bleu / nuit bleu-nuit) live (~200ms cache hit). **Détection forêt** (v5.52.8) : `isLatLonInForest()` via `landcover.ts` — réutilise cache déjà chargé, fallback silencieux si cache froid, nouveau champ `inForest` et `forestKm`. **Sampling adaptatif** : max 200 points, step dynamique. **Cache** : clé `${routeHash}|${date}|${slot30}|${mode}|${speed}`, invalide sur changement route ou date. **RAF keepalive** pour fluidité 2D. **Ombre précise** : utilise `getAltitudeAt()` au moment de l'analyse. **Recommandations** : grille 2×2 stats + info forêt + segments ombragés + alerte exposition forte (excl. forêt depuis v5.52.8). **Speed** : [3, 4, 6] km/h sélectionnable, auto-bascule en hikerTimeline.
 
 ## Tests & Qualité
 - **Unitaires (Vitest)** : `npm test` (747 tests). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`, `solarRoute.ts`. Solar route analysis valide (27 tests dédies).

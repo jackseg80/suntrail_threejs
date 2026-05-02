@@ -1,3 +1,18 @@
+## [5.52.8] - 2026-05-02
+
+### Added
+- **Détection de forêts dans analyse solaire** : Nouvelle couleur verte (forêt/canopée) dans bande solaire du profil et overlay 3D. Réutilise `isPointInForest()` depuis `landcover.ts` (cache partagé avec arbres 3D). Fallback silencieux si cache froid.
+- **Heure estimée au profil** : Survol du graphique d'élévation affiche l'heure d'arrivée estimée (mode hikerTimeline) ou l'heure du slider (snapshot).
+- **Info forêt dans panel** : Ligne `🌲 X km sous forêt` sous grille stats si tracé traverse zone boisée.
+- **Fix alerte exposition UV** : Forêt exclue du calcul "forte exposition" (pas d'UV direct sous les arbres).
+
+### Fixed
+- **Mercator distortion** : Profile.ts corrige écart distance vs route-bar via facteur `stats.distance/cumulativeDist`, rescale aussi les pentes inversement.
+- **solarRoute stats** : `sunPct` maintenant = soleil direct / total km (forêt et nuit exclus, vrai % de soleil).
+
+### Tests
+- Added 3 tests forestKm (buildAnalysis), total 750 tests.
+
 ## [5.52.7] - 2026-05-02
 
 ### Fixed
