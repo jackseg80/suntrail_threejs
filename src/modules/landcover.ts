@@ -266,6 +266,25 @@ function isPointInRing(x: number, y: number, ring: {x: number, y: number}[]) {
     return inside;
 }
 
+export async function prefetchLandcoverForPoints(latLons: ReadonlyArray<{ lat: number; lon: number }>): Promise<void> {
+    const seen = new Set<string>();
+    const fetches: Promise<LandcoverData | null>[] = [];
+    for (const { lat, lon } of latLons) {
+        const inCH = isPositionInSwitzerland(lat, lon);
+        const zoom = inCH ? 14 : 10;
+        const n = getPow2(zoom);
+        const tx = Math.floor(lonToXNorm(lon) * n);
+        const ty = Math.floor(latToYNorm(lat) * n);
+        const key = `${inCH ? 'ch' : 'mt'}-${zoom}-${tx}-${ty}`;
+        if (!seen.has(key)) {
+            seen.add(key);
+            // Fake tile at requestZoom : fetchLandcoverPBF recalcule les mêmes coords/clé
+            fetches.push(fetchLandcoverPBF({ tx, ty, zoom } as unknown as Tile));
+        }
+    }
+    if (fetches.length > 0) await Promise.all(fetches);
+}
+
 export function isLatLonInForest(lat: number, lon: number): boolean {
     const inCH = isPositionInSwitzerland(lat, lon);
     const requestZoom = inCH ? 14 : 10;

@@ -3,7 +3,7 @@ import SunCalc from 'suncalc';
 import { state, isProActive } from './state';
 import { isAtShadow, drapeToTerrain, getAltitudeAt, GPX_SURFACE_OFFSET } from './analysis';
 import { worldToLngLat, haversineDistance } from './geo';
-import { isLatLonInForest } from './landcover';
+import { isLatLonInForest, prefetchLandcoverForPoints } from './landcover';
 import { getSunDirection } from './sun';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -182,6 +182,11 @@ async function analyzeRouteSolar(
     const snapshotSunVec = mode === 'snapshot'
         ? getSunDirection(state.simDate, midGps.lat, midGps.lon)
         : null;
+
+    // Pré-charger les tuiles landcover pour toute la route avant la boucle principale
+    // (évite le fallback cache-froid : l'analyse court avant que la végétation soit chargée)
+    const gpsPts = samples.map(pt => worldToLngLat(pt.x, pt.z, originTile));
+    await prefetchLandcoverForPoints(gpsPts);
 
     const CHUNK = 10;
     for (let i = 0; i < samples.length; i += CHUNK) {
