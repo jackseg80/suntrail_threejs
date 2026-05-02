@@ -15,9 +15,13 @@ export function initRouteManager(): void {
         scheduleAutoCompute();
     });
     state.subscribe('routeLoading', () => updateBar());
-    // Repositionner les sprites quand le tile d'origine change (pan) ou le zoom change (LOD)
     state.subscribe('originTile', () => rebuildMarkers());
     state.subscribe('ZOOM', () => rebuildMarkers());
+    state.subscribe('IS_2D_MODE', () => rebuildMarkers());
+    // Quand les tuiles finissent de charger, l'altitude devient disponible
+    state.subscribe('isProcessingTiles', (processing: boolean) => {
+        if (!processing) rebuildMarkers();
+    });
 }
 
 function rebuildMarkers(): void {
@@ -28,7 +32,8 @@ function rebuildMarkers(): void {
     state.routeWaypoints.forEach((wp, i) => {
         if (!state.originTile) return;
         const world = lngLatToWorld(wp.lon, wp.lat, state.originTile);
-        const h = getAltitudeAt(world.x, world.z);
+        // En 2D le terrain est à y=0 même si getAltitudeAt retourne l'altitude exagérée
+        const h = state.IS_2D_MODE ? 0 : getAltitudeAt(world.x, world.z);
         const sprite = createWaypointSprite(i + 1);
         sprite.position.set(world.x, h + 18, world.z);
         sprite.userData = { type: 'waypoint-marker', waypointIndex: i };
