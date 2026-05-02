@@ -105,6 +105,18 @@ export function updateElevationProfile(layerId?: string, opts?: { noOpen?: boole
         });
     }
 
+    // Correction de la distorsion Mercator : les coordonnées monde Three.js
+    // surestiment les distances (facteur ≈ 1/cos(lat) ≈ 1.47 à 47°N).
+    // On utilise la distance haversine (layer.stats.distance) comme référence.
+    if (layer.stats?.distance && cumulativeDist > 0) {
+        const scaleFactor = layer.stats.distance / cumulativeDist;
+        for (const pd of profileData) {
+            pd.dist *= scaleFactor;
+            pd.slope /= scaleFactor; // d2d sous-estimé → pente surestimée, corriger
+        }
+        cumulativeDist = layer.stats.distance;
+    }
+
     // Calcul du dénivelé avec l'algorithme d'hystérésis standard (3m)
     const { dPlus, dMinus } = calculateHysteresis(elevations, 3);
 
