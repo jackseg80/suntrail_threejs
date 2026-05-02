@@ -61,15 +61,17 @@ function computeTrackThickness(base: number, max: number): number {
 
 /** Recalcule les stats (distance, D+/D-, temps) d'un layer depuis l'altitude réelle du terrain.
  *  Source unique de vérité — utilisée par _computeDrapedResult, _doUpdateAllGPXMeshes, etc.
- *  ⚠️ Ne recalcule PAS si le layer a déjà une élévation brute réelle (GPX importé). */
+ *  ⚠️ Skip si stats déjà correctes (GPX importé avec élévation ou OSRM déjà recalculé). */
 export function recalcLayerStatsFromTerrain(layer: GPXLayer): GPXLayer {
     if (!state.originTile || !layer.points || layer.points.length < 2) return layer;
 
-    // Si le layer a déjà des D+ > 0 depuis les données brutes (GPX importé avec élévation),
-    // ne pas écraser avec les stats terrain qui pourraient être incomplètes
-    const rawPoints = layer.rawData?.tracks?.[0]?.points || [];
-    const hasRawElevation = rawPoints.length > 0 && rawPoints.some((p: any) => (p.ele || p.alt || 0) > 0);
-    if (hasRawElevation && layer.stats.dPlus > 0) return layer;
+    // Si D+ déjà > 0 et provient de données fiables → ne pas recalculer
+    if (layer.stats.dPlus > 0) {
+        const rawPoints = layer.rawData?.tracks?.[0]?.points || [];
+        const hasRawElevation = rawPoints.length > 0 && rawPoints.some((p: any) => (p.ele || p.alt || 0) > 0);
+        if (hasRawElevation) return layer;                     // GPX importé : stats correctes d'origine
+        if (layer.stats.estimatedTime && layer.stats.estimatedTime > 0) return layer; // OSRM déjà recalculé par un rebuild précédent
+    }
 
     const relief = state.RELIEF_EXAGGERATION || 1;
     const drapedStats = calculateTrackStats(layer.points.map((v, i) => {
@@ -169,7 +171,6 @@ export function addGPXLayer(rawData: Record<string, any>, name: string, opts?: {
         eventBus.emit('flyTo', { worldX: flyCenter.x, worldZ: flyCenter.z, targetElevation, targetDistance: viewDistance });
     }
     setTimeout(() => updateAllGPXMeshes(), 0);
-    setTimeout(() => updateAllGPXMeshes(), 3000);
     updateElevationProfile();
     return layer;
 }
