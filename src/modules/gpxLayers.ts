@@ -62,28 +62,54 @@ function computeTrackThickness(base: number, max: number): number {
 
 /** Recalcule les stats (distance, D+/D-, temps) d'un layer depuis l'altitude réelle du terrain.
  *  Source unique de vérité — utilisée par _computeDrapedResult, _doUpdateAllGPXMeshes, etc.
- *  ⚠️ Skip si stats déjà correctes (GPX importé avec élévation ou OSRM déjà recalculé). */
+ *  ⚠️ Skip uniquement pour GPX importé avec élévation réelle.
+ *  Interpole les trous d'altitude (tuiles non chargées) pour éviter les faux D+/D-. */
 export function recalcLayerStatsFromTerrain(layer: GPXLayer): GPXLayer {
     if (!state.originTile || !layer.points || layer.points.length < 2) return layer;
 
-    // Si D+ déjà > 0 et provient de données fiables → ne pas recalculer
-    if (layer.stats.dPlus > 0) {
-        const rawPoints = layer.rawData?.tracks?.[0]?.points || [];
-        const hasRawElevation = rawPoints.length > 0 && rawPoints.some((p: any) => (p.ele || p.alt || 0) > 0);
-        if (hasRawElevation) return layer;                     // GPX importé : stats correctes d'origine
-        if (layer.stats.estimatedTime && layer.stats.estimatedTime > 0) return layer; // OSRM déjà recalculé par un rebuild précédent
-    }
+    const rawPoints = layer.rawData?.tracks?.[0]?.points || [];
+    const hasRawElevation = rawPoints.length > 0 && rawPoints.some((p: any) => (p.ele || p.alt || 0) > 0);
+
+    if (hasRawElevation && layer.stats.dPlus > 0) return layer;
 
     const relief = state.RELIEF_EXAGGERATION || 1;
-    const drapedStats = calculateTrackStats(layer.points.map((v, i) => {
+    const n = layer.points.length;
+    const alts: number[] = new Array(n);
+    for (let i = 0; i < n; i++) {
+        alts[i] = getAltitudeAt(layer.points[i].x, layer.points[i].z) / relief;
+    }
+
+    const interpAlts = [...alts];
+    for (let i = 0; i < n; i++) {
+        if (interpAlts[i] !== 0) continue;
+
+        let prevIdx = i - 1;
+        while (prevIdx >= 0 && alts[prevIdx] === 0) prevIdx--;
+
+        let nextIdx = i + 1;
+        while (nextIdx < n && alts[nextIdx] === 0) nextIdx++;
+
+        if (prevIdx >= 0 && nextIdx < n) {
+            const t = (i - prevIdx) / (nextIdx - prevIdx);
+            interpAlts[i] = alts[prevIdx] + t * (alts[nextIdx] - alts[prevIdx]);
+        } else if (prevIdx >= 0) {
+            interpAlts[i] = alts[prevIdx];
+        } else if (nextIdx < n) {
+            interpAlts[i] = alts[nextIdx];
+        }
+    }
+
+    const drapedPoints = layer.points.map((v, i) => {
         const gps = worldToLngLat(v.x, v.z, state.originTile!);
         return {
             lat: gps.lat,
             lon: gps.lon,
-            alt: getAltitudeAt(v.x, v.z) / relief,
+            alt: interpAlts[i],
             timestamp: i * 1000,
         };
-    }));
+    });
+
+    const drapedStats = calculateTrackStats(drapedPoints);
     const updatedStats = {
         ...layer.stats,
         distance: drapedStats.distance,

@@ -112,10 +112,10 @@ function orsResponseToPoints(response: ORSResponse): Array<{ lat: number; lon: n
         throw new Error(i18n.t('routePlanner.error.noRoute') || 'No route found');
     }
     const coords = response.features[0].geometry.coordinates;
-    return coords.map(([lon, lat, ele]) => ({
+    return coords.map(([lon, lat]) => ({
         lat,
         lon,
-        ele: ele || 0,
+        ele: 0,
     }));
 }
 
@@ -208,7 +208,7 @@ export async function computeRoute(
             const routeName = buildRouteName(waypoints, state.routeLoopEnabled);
 
             if (_currentRouteLayerId) { removeGPXLayer(_currentRouteLayerId); _currentRouteLayerId = null; }
-            const layer = addGPXLayer(rawData, routeName, { silent: true });
+            const layer = _computeDrapedResult(addGPXLayer(rawData, routeName, { silent: true }));
             _currentRouteLayerId = layer.id;
             void showToast(i18n.t('routePlanner.toast.computed') || 'Route computed');
 

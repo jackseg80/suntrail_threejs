@@ -1,3 +1,10 @@
+## [5.52.4] - 2026-05-02
+
+### Fixed
+- **D+/D− tracé manuel erroné (823m au lieu de 305m)** : `recalcLayerStatsFromTerrain()` utilisait `getAltitudeAt()` qui retourne 0 pour les tuiles terrain non chargées. L'algorithme d'hystérésis voyait des chutes 400→0→400 et les comptait comme D+ fantômes. Fix : interpolation linéaire des trous d'altitude entre les points valides voisins (résultat immédiat, converge vers l'exact quand les tuiles chargent).
+- **ORS elevation supplantait le terrain** : `computeRoute()` utilisait l'altitude de l'API ORS (DEM SRTM) au lieu du terrain local via `_computeDrapedResult()`. Fix : les deux chemins (ORS/OSRM) passent maintenant par `recalcLayerStatsFromTerrain()`.
+- **Guard `estimatedTime > 0` bloquant la re-correction** : Le guard ajouté en 4f83e7e empêchait le recalcul correctif après chargement des tuiles. Supprimé — seul le guard `hasRawElevation` est conservé (GPX importé).
+
 ## [5.52.3] - 2026-05-02
 
 ### Fixed
