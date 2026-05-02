@@ -84,7 +84,7 @@
       "mtb": "Mountain Bike"
     },
     "btn": {
-      "add": "+ Punto",
+      "add": "+ Point",
       "reverse": "↺ Inverti",
       "clear": "✕ Cancella",
       "compute": "▶ Calcola percorso",
@@ -144,7 +144,7 @@
     },
     "pro": {
       "description": "Sblocca tutte le funzionalità premium con SunTrail Pro",
-      "buildingsDesc": "Architettura realistica sul terreno",
+      "buildingsDesc": "Architettura realistica sul terrain",
       "inclinometerDesc": "Pendenza del terreno in tempo reale (°, %)",
       "weatherDesc": "Grafico 24h + Previsioni 3 giorni",
       "cta": "Passa a Pro",
@@ -189,7 +189,7 @@
       "signposts": "Segnaletica 3D",
       "inclinometer": "Inclinometro",
       "shadows": "Ombre",
-      "weather": "Meteo",
+      "weather": "Météo",
       "weatherPro": "Meteo Avanzato",
       "trailFollow": "Segui sentiero"
     },
@@ -553,73 +553,38 @@
     "skip": "Salta",
     "next": "Avanti",
     "start": "Inizia",
+    "explore": "Esplora la mappa",
+    "importGpx": "Importa GPX",
+    "searchPeak": "Cerca una vetta",
     "slide1": {
-      "title": "Naviga in 3D",
-      "desc": "1 dito per spostarsi · Pizzica per zoomare · 2 dita per ruotare o inclinare la vista"
-    },
-    "slideGestures": {
-      "title": "Gesti tattili",
-      "desc": "SunTrail segue i gesti di Google Earth:",
-      "pan": "1 dito — Spostare",
-      "panDesc": "Scorri per spostare la mappa. Lascia con slancio per un'inerzia fluida.",
-      "pinch": "Pizzico — Zoom",
-      "pinchDesc": "Avvicina o allontana 2 dita. Lo zoom si centra tra le dita.",
-      "rotate": "2 dita — Ruotare",
-      "rotateDesc": "Ruota 2 dita per orientare la vista.",
-      "tilt": "2 dita affiancate — Inclinare",
-      "tiltDesc": "Appoggia 2 dita orizzontalmente poi scorri su o giù."
+      "title": "Immersione e Libertà",
+      "desc": "Scopri la montagna in vero 3D. Usa il pulsante 2D/3D in basso a destra per alternare. Inclina la vista con 2 dita per attivare il rilievo."
     },
     "slide2": {
-      "title": "Cerca un luogo",
-      "desc": "Digita il nome di una città, vetta ou paese nella barra di ricerca. I filtri rapidi affinano i risultati."
+      "title": "Padroneggia la Luce",
+      "desc": "Anticipa l'illuminazione con la barra del tempo in basso (solo 3D). Le ombre seguono l'ora solare reale."
     },
     "slide3": {
-      "title": "I pulsanti di controllo",
-      "desc": "Sul lato destro dello schermo:",
-      "compass": "Bussola",
-      "compassDesc": "riorienta verso il Nord",
-      "layers": "Livelli",
-      "layersDesc": "cambia il tipo di mappa",
-      "mode": "2D / 3D",
-      "modeDesc": "alterna il rilievo 3D",
-      "gps": "Posizione",
-      "gpsDesc": "centra sul tuo GPS"
+      "title": "Traccia la tua Avventura",
+      "desc": "Pianifica il tuo itinerario nella scheda 'Itinerario', importa i file GPX tramite la scheda 'Track' o registra la tua traccia GPS dal vivo."
     },
     "slide4": {
-      "title": "I tuoi percorsi",
-      "desc": "Importa o registra le tue escursioni:",
-      "import": "Import GPX",
-      "importDesc": "Carica un file GPX — il percorso appare in 3D sul terreno",
-      "rec": "Registrazione GPS",
-      "recDesc": "Avvia REC per tracciare la tua escursione in diretta"
+      "title": "L'Occhio dell'Esperto",
+      "desc": "Analizza la pendenza esatta al centro dello schermo con l'inclinometro (PRO). Trova le profilo altimetrico sui tuoi percorsi."
     },
     "slide5": {
-      "title": "Simula il sole",
-      "desc": "La timeline in basso mostra l’insolazione a qualsiasi ora del giorno."
+      "title": "Condizioni e Mappe",
+      "desc": "Tocca la pillola meteo in alto per le previsioni. Cambia gli sfondi della mappa (SwissTopo/IGN) tramite la scheda 'Livelli'."
     },
     "slide6": {
-      "title": "Meteo in diretta",
-      "desc": "La pillola meteo in alto mostra la temperatura attuale. Toccala per previsioni, vento e allerte."
-    },
-    "slide7": {
-      "title": "Strumenti di analisi",
-      "desc": "Analizza il terreno in dettaglio:",
-      "profile": "Profilo altimetrico",
-      "profileDesc": "Distanza, altitudine e pendenza in ogni punto del percorso",
-      "inclino": "Inclinometro",
-      "inclinoDesc": "Pendenza del terreno in tempo reale sotto il mirino",
-      "drag": "Pannelli trascinabili",
-      "dragDesc": "Premi a lungo per riposizionare i widget"
-    },
-    "slide8": {
-      "title": "Sicurezza & offline",
-      "desc": "Il pulsante SOS mostra la tua posizione esatta per i soccorsi. L’app funziona anche offline grazie alla cache delle mappe."
+      "title": "Sicurezza e Autonomie",
+      "desc": "Il pulsante SOS in alto a destra mostra le tue coordinate di emergenza. Scarica i Pacchetti Paesi nelle Impostazioni per la modalità offline."
     }
   },
   "upgrade": {
     "title": "Passa a Pro ✨",
     "hero": {
-      "title": "Simulazione solare unica al mondo",
+      "title": "Simulazione solare unique al mondo",
       "subtitle": "Scopri esattamente quando il sole illumina il tuo sentiero. Ombre reali sul terreno 3D — per qualsiasi giorno dell'anno."
     },
     "feature": {
@@ -707,7 +672,7 @@
     "toggle2d3d": "Alterna 2D/3D"
   },
   "acceptance": {
-    "title": "Informazioni importanti prima dell'uso",
+    "title": "Informations importanti prima dell'uso",
     "item1": {
       "title": "Strumento di supporto alla pianificazione",
       "desc": "SunTrail non è un dispositivo di salvataggio. In caso di emergenza, contattare il 112."

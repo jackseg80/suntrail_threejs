@@ -564,67 +564,32 @@
     "skip": "Skip",
     "next": "Next",
     "start": "Start",
+    "explore": "Explore the map",
+    "importGpx": "Import GPX",
+    "searchPeak": "Search for a peak",
     "slide1": {
-      "title": "Navigate in 3D",
-      "desc": "Pan with 1 finger · Pinch to zoom · 2 fingers to rotate or tilt the view"
-    },
-    "slideGestures": {
-      "title": "Touch gestures",
-      "desc": "SunTrail follows Google Earth gestures:",
-      "pan": "1 finger — Pan",
-      "panDesc": "Drag to move the map. Flick to keep momentum with smooth inertia.",
-      "pinch": "Pinch — Zoom",
-      "pinchDesc": "Spread or pinch 2 fingers. Zoom centres between your fingers.",
-      "rotate": "2 fingers — Rotate",
-      "rotateDesc": "Twist 2 fingers to orient the view.",
-      "tilt": "2 fingers side by side — Tilt",
-      "tiltDesc": "Place 2 fingers horizontally, then slide up or down."
+      "title": "Immersion & Freedom",
+      "desc": "Discover the mountains in real 3D. Use the 2D/3D button at the bottom right to toggle. Tilt the view with 2 fingers to activate relief."
     },
     "slide2": {
-      "title": "Search for a place",
-      "desc": "Type a city, peak, or country name in the search bar. Quick filter chips help narrow results."
+      "title": "Master the Light",
+      "desc": "Predict sunlight with the time bar at the bottom (3D only). Cast shadows follow the actual sun time."
     },
     "slide3": {
-      "title": "Control buttons",
-      "desc": "On the right side of the screen:",
-      "compass": "Compass",
-      "compassDesc": "reorients to North",
-      "layers": "Layers",
-      "layersDesc": "changes the map type",
-      "mode": "2D / 3D",
-      "modeDesc": "toggles 3D relief",
-      "gps": "Position",
-      "gpsDesc": "centers on your GPS"
+      "title": "Trace your Adventure",
+      "desc": "Plan your route in the 'Route' tab, import GPX files via the 'Track' tab or record your GPS track live."
     },
     "slide4": {
-      "title": "Your tracks",
-      "desc": "Import or record your hikes:",
-      "import": "Import GPX",
-      "importDesc": "Load a GPX file — the route appears in 3D on the terrain",
-      "rec": "GPS Recording",
-      "recDesc": "Start REC to trace your hike live"
+      "title": "The Expert's Eye",
+      "desc": "Analyze the exact slope in the center of the screen with the inclinometer (PRO). Find the elevation profile on your tracks."
     },
     "slide5": {
-      "title": "Simulate the sun",
-      "desc": "The timeline at the bottom shows sunlight at any time of day."
+      "title": "Conditions & Maps",
+      "desc": "Tap the weather pill at the top for forecasts. Change map backgrounds (SwissTopo/IGN) via the 'Layers' tab."
     },
     "slide6": {
-      "title": "Live weather",
-      "desc": "The weather pill at the top shows the current temperature. Tap it for forecasts, wind and alerts."
-    },
-    "slide7": {
-      "title": "Analysis tools",
-      "desc": "Analyze the terrain in detail:",
-      "profile": "Elevation profile",
-      "profileDesc": "Distance, altitude and slope at every point on the track",
-      "inclino": "Inclinometer",
-      "inclinoDesc": "Real-time terrain slope under the crosshair",
-      "drag": "Draggable panels",
-      "dragDesc": "Long-press to reposition widgets"
-    },
-    "slide8": {
-      "title": "Safety & offline",
-      "desc": "The SOS button shows your exact position for rescue services. The app also works offline thanks to tile caching."
+      "title": "Security & Autonomy",
+      "desc": "The SOS button at the top right shows your emergency coordinates. Download Country Packs in Settings for offline mode."
     }
   },
   "upgrade": {

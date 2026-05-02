@@ -1,9 +1,9 @@
 /**
- * onboardingTutorial.ts — Tutoriel d'onboarding 1er démarrage
+ * onboardingTutorial.ts — Tutoriel d'onboarding immersif v6.0
  *
  * Affiché au PREMIER lancement après l'acceptance wall.
- * 9 slides passives avec navigation (Suivant/Passer/Commencer).
- * Accessible depuis les Réglages via showOnboarding().
+ * 6 slides plein écran avec flou d'arrière-plan.
+ * Optimisé pour mobile (Portrait/Paysage) et Desktop.
  *
  * Storage key : 'suntrail_onboarding_v2'
  */
@@ -14,28 +14,23 @@ import { haptic } from './haptics';
 const ONBOARDING_KEY = 'suntrail_onboarding_v2';
 
 interface Slide {
-    icon: string;
+    type: 'tilt' | 'solar' | 'track' | 'expert' | 'weather' | 'safety';
     titleKey: string;
     descKey: string;
-    special?: 'fab-grid' | 'track-grid' | 'analysis-grid' | 'gesture-grid';
+    special?: 'final-menu';
 }
 
 const SLIDES: Slide[] = [
-    { icon: '\u{1F3D4}\uFE0F', titleKey: 'onboarding.slide1.title', descKey: 'onboarding.slide1.desc' },
-    { icon: '\u{1F590}\uFE0F', titleKey: 'onboarding.slideGestures.title', descKey: 'onboarding.slideGestures.desc', special: 'gesture-grid' },
-    { icon: '\u{1F50D}', titleKey: 'onboarding.slide2.title', descKey: 'onboarding.slide2.desc' },
-    { icon: '\u{1F6E0}\uFE0F', titleKey: 'onboarding.slide3.title', descKey: 'onboarding.slide3.desc', special: 'fab-grid' },
-    { icon: '\u{1F463}', titleKey: 'onboarding.slide4.title', descKey: 'onboarding.slide4.desc', special: 'track-grid' },
-    { icon: '\u2600\uFE0F', titleKey: 'onboarding.slide5.title', descKey: 'onboarding.slide5.desc' },
-    { icon: '\u{1F326}\uFE0F', titleKey: 'onboarding.slide6.title', descKey: 'onboarding.slide6.desc' },
-    { icon: '\u{1F4C8}', titleKey: 'onboarding.slide7.title', descKey: 'onboarding.slide7.desc', special: 'analysis-grid' },
-    { icon: '\u{1F198}', titleKey: 'onboarding.slide8.title', descKey: 'onboarding.slide8.desc' },
+    { type: 'tilt', titleKey: 'onboarding.slide1.title', descKey: 'onboarding.slide1.desc' },
+    { type: 'solar', titleKey: 'onboarding.slide2.title', descKey: 'onboarding.slide2.desc' },
+    { type: 'track', titleKey: 'onboarding.slide3.title', descKey: 'onboarding.slide3.desc' },
+    { type: 'expert', titleKey: 'onboarding.slide4.title', descKey: 'onboarding.slide4.desc' },
+    { type: 'weather', titleKey: 'onboarding.slide5.title', descKey: 'onboarding.slide5.desc' },
+    { type: 'safety', titleKey: 'onboarding.slide6.title', descKey: 'onboarding.slide6.desc', special: 'final-menu' },
 ];
 
 /**
  * Affiche le tutoriel uniquement au 1er lancement (flag localStorage).
- * La Promise se résout quand l'utilisateur termine ou passe le tutoriel.
- * Le flag est persisté après la complétion.
  */
 export function requestOnboarding(): Promise<void> {
     if (localStorage.getItem(ONBOARDING_KEY) === '1') return Promise.resolve();
@@ -45,8 +40,7 @@ export function requestOnboarding(): Promise<void> {
 }
 
 /**
- * Affiche le tutoriel sans vérifier le flag (pour le bouton Réglages).
- * La Promise se résout quand l'utilisateur termine ou passe.
+ * Affiche le tutoriel sans vérifier le flag.
  */
 export function showOnboarding(): Promise<void> {
     return new Promise<void>((resolve) => {
@@ -54,50 +48,98 @@ export function showOnboarding(): Promise<void> {
     });
 }
 
-function _buildGrid(items: { icon: string; labelKey: string; descKey: string }[], vertical: boolean): string {
-    const cls = vertical ? 'ob-list-grid' : 'ob-fab-grid';
-    return `<div class="${cls}">${items.map(item =>
-        `<div class="ob-fab-item">
-            <span class="ob-fab-icon">${item.icon}</span>
-            <div class="ob-fab-text">
-                <strong>${i18n.t(item.labelKey)}</strong>
-                <span>${i18n.t(item.descKey)}</span>
-            </div>
-        </div>`
-    ).join('')}</div>`;
+function _getSvgIcon(type: string): string {
+    switch (type) {
+        case 'tilt':
+            return `
+                <svg viewBox="0 0 100 100" class="ob-svg">
+                    <path d="M20 70 L80 70 L60 30 L20 70" fill="none" stroke="currentColor" stroke-width="2" />
+                    <circle cx="50" cy="50" r="5" fill="var(--accent)" class="anim-tilt-hand" />
+                    <circle cx="70" cy="50" r="5" fill="var(--accent)" class="anim-tilt-hand" />
+                </svg>`;
+        case 'solar':
+            return `
+                <svg viewBox="0 0 100 100" class="ob-svg">
+                    <path d="M10 80 Q 50 10 90 80" fill="none" stroke="var(--text-3)" stroke-dasharray="2 2" />
+                    <circle cx="10" cy="80" r="6" fill="var(--gold)" class="anim-solar-sun" />
+                    <path d="M30 80 L50 40 L70 80" fill="var(--surface-subtle)" stroke="currentColor" />
+                </svg>`;
+        case 'track':
+            return `
+                <svg viewBox="0 0 100 100" class="ob-svg">
+                    <circle cx="20" cy="70" r="3" fill="currentColor" />
+                    <circle cx="50" cy="30" r="3" fill="currentColor" />
+                    <circle cx="80" cy="50" r="3" fill="currentColor" />
+                    <path d="M20 70 L50 30 L80 50" fill="none" stroke="var(--accent)" stroke-width="3" class="anim-track-path" />
+                </svg>`;
+        case 'expert':
+            return `
+                <svg viewBox="0 0 100 100" class="ob-svg">
+                    <path d="M20 80 L80 80 L80 40 Z" fill="none" stroke="currentColor" stroke-width="2" />
+                    <path d="M80 80 L80 40" stroke="var(--accent)" stroke-width="4" />
+                    <text x="45" y="75" font-size="8" fill="var(--accent)">35°</text>
+                </svg>`;
+        case 'weather':
+            return `
+                <svg viewBox="0 0 100 100" class="ob-svg">
+                    <circle cx="70" cy="30" r="10" fill="var(--gold)" />
+                    <path d="M20 60 Q35 40 50 60 Q65 40 80 60 L80 75 Q50 90 20 75 Z" fill="currentColor" opacity="0.8" />
+                </svg>`;
+        case 'safety':
+            return `
+                <svg viewBox="0 0 100 100" class="ob-svg">
+                    <circle cx="50" cy="50" r="10" fill="none" stroke="var(--accent)" stroke-width="2" class="anim-pulse" />
+                    <circle cx="50" cy="50" r="20" fill="none" stroke="var(--accent)" stroke-width="1" class="anim-pulse" style="animation-delay: 0.5s" />
+                    <path d="M50 35 V65 M35 50 H65" stroke="#ef4444" stroke-width="6" stroke-linecap="round" />
+                </svg>`;
+        default: return '';
+    }
 }
 
-function _buildGestureGrid(): string {
-    return _buildGrid([
-        { icon: '\u261D\uFE0F', labelKey: 'onboarding.slideGestures.pan', descKey: 'onboarding.slideGestures.panDesc' },
-        { icon: '\u{1F90F}', labelKey: 'onboarding.slideGestures.pinch', descKey: 'onboarding.slideGestures.pinchDesc' },
-        { icon: '\u{1F504}', labelKey: 'onboarding.slideGestures.rotate', descKey: 'onboarding.slideGestures.rotateDesc' },
-        { icon: '\u2195\uFE0F', labelKey: 'onboarding.slideGestures.tilt', descKey: 'onboarding.slideGestures.tiltDesc' },
-    ], false);
-}
-
-function _buildFabGrid(): string {
-    return _buildGrid([
-        { icon: '\u{1F9ED}', labelKey: 'onboarding.slide3.compass', descKey: 'onboarding.slide3.compassDesc' },
-        { icon: '\u{1F5FA}\uFE0F', labelKey: 'onboarding.slide3.layers', descKey: 'onboarding.slide3.layersDesc' },
-        { icon: '\u{1F3CA}', labelKey: 'onboarding.slide3.mode', descKey: 'onboarding.slide3.modeDesc' },
-        { icon: '\u{1F4CD}', labelKey: 'onboarding.slide3.gps', descKey: 'onboarding.slide3.gpsDesc' },
-    ], false);
-}
-
-function _buildTrackGrid(): string {
-    return _buildGrid([
-        { icon: '\u{1F4E5}', labelKey: 'onboarding.slide4.import', descKey: 'onboarding.slide4.importDesc' },
-        { icon: '\u{1F534}', labelKey: 'onboarding.slide4.rec', descKey: 'onboarding.slide4.recDesc' },
-    ], true);
-}
-
-function _buildAnalysisGrid(): string {
-    return _buildGrid([
-        { icon: '\u{1F4C8}', labelKey: 'onboarding.slide7.profile', descKey: 'onboarding.slide7.profileDesc' },
-        { icon: '\u{1F4D0}', labelKey: 'onboarding.slide7.inclino', descKey: 'onboarding.slide7.inclinoDesc' },
-        { icon: '\u270B', labelKey: 'onboarding.slide7.drag', descKey: 'onboarding.slide7.dragDesc' },
-    ], true);
+function _getMockup(type: string): string {
+    switch (type) {
+        case 'tilt':
+            return `
+                <div class="ob-mockup-fab">
+                    <div class="fab-btn" style="background:var(--surface); border:1px solid var(--accent); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; width:56px; height:56px; border-radius:16px; backdrop-filter:blur(10px); gap:2px; padding:4px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M12 3L20 7.5L12 12L4 7.5L12 3Z" fill="currentColor" opacity="0.15" stroke-linejoin="round" />
+                            <path d="M4 7.5V16.5L12 21 M20 7.5V16.5L12 21 M12 12V21" stroke="currentColor" />
+                        </svg>
+                        <span style="font-size:10px; font-weight:800; line-height:1;">3D</span>
+                    </div>
+                </div>`;
+        case 'solar':
+            return `
+                <div class="ob-mockup-bottom" style="background:rgba(25,28,45,0.95); border:1px solid rgba(255,255,255,0.15); padding:16px; border-radius:20px; width:100%; max-width:280px; box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div style="font-weight:800; font-size:16px; color:#fff;">14:30</div>
+                            <div style="font-size:10px; font-weight:800; color:var(--gold); text-transform:uppercase; letter-spacing:1px;">☀️ Plein jour</div>
+                        </div>
+                        <div style="color:#fff; font-size:16px;">▶</div>
+                    </div>
+                    <div style="width:100%; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; position:relative;">
+                        <div style="position:absolute; left:60%; top:50%; transform:translate(-50%, -50%); width:20px; height:20px; background:var(--accent); border-radius:50%; border:2px solid #fff; box-shadow:0 0 10px var(--accent);"></div>
+                    </div>
+                </div>`;
+        case 'weather':
+            return `
+                <div class="ob-mockup-top">
+                    <div class="status-widget" style="background:rgba(25,28,45,0.9); border:1px solid var(--accent); color:#fff; display:flex; align-items:center; gap:8px; padding:8px 16px; border-radius:20px; min-height:48px;">
+                        <span style="font-size:18px;">☀️</span>
+                        <strong style="font-size:16px;">22°</strong>
+                    </div>
+                </div>`;
+        case 'safety':
+            return `
+                <div class="ob-mockup-top" style="justify-content:center;">
+                    <div class="status-widget" style="background:rgba(239,68,68,0.15); border:1.5px solid #ef4444; color:#ef4444; display:flex; align-items:center; justify-content:center; width:64px; height:48px; border-radius:20px;">
+                        <strong style="font-size:14px; letter-spacing:1px;">SOS</strong>
+                    </div>
+                </div>`;
+        default: return '';
+    }
 }
 
 function _show(resolve: () => void): void {
@@ -105,280 +147,274 @@ function _show(resolve: () => void): void {
 
     const overlay = document.createElement('div');
     overlay.id = 'onboarding-overlay';
-    overlay.setAttribute('role', 'dialog');
-    overlay.setAttribute('aria-modal', 'true');
-    overlay.setAttribute('aria-labelledby', 'ob-title');
-
     overlay.innerHTML = `
         <style>
             #onboarding-overlay {
                 position: fixed;
                 inset: 0;
-                z-index: 9000;
-                background: var(--overlay-bg);
-                backdrop-filter: blur(8px);
-                -webkit-backdrop-filter: blur(8px);
+                z-index: 9999;
+                background: rgba(0,0,0,0.4);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
                 display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 16px;
-                touch-action: none;
+                flex-direction: column;
+                color: #fff;
+                font-family: system-ui, -apple-system, sans-serif;
+                overflow: hidden;
             }
-            .ob-card {
-                background: var(--surface-solid, #1a1d2e);
-                border: 1px solid var(--border, rgba(255,255,255,0.1));
-                border-radius: var(--radius-xl, 20px);
-                max-width: 360px;
-                width: 100%;
-                padding: 36px 24px 28px;
-                box-shadow: 0 8px 32px var(--shadow-lg);
+            .ob-container {
+                flex: 1;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                overflow: hidden;
-            }
-            .ob-body {
-                width: 100%;
-                text-align: center;
-                will-change: transform, opacity;
-            }
-            .ob-icon {
-                font-size: 48px;
-                line-height: 1;
-                margin-bottom: 16px;
-            }
-            .ob-title {
-                font-size: 1.25rem;
-                font-weight: 700;
-                color: var(--text-1, #fff);
-                margin: 0 0 12px;
-                line-height: 1.3;
-            }
-            .ob-desc {
-                font-size: 0.85rem;
-                color: var(--text-2, rgba(255,255,255,0.75));
-                line-height: 1.6;
-                margin: 0 0 24px;
-                text-align: center;
-            }
-            .ob-fab-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
-                text-align: left;
-                margin-bottom: 24px;
-            }
-            .ob-list-grid {
-                display: grid;
-                grid-template-columns: 1fr;
-                gap: 12px;
-                text-align: left;
-                margin-bottom: 24px;
-            }
-            .ob-fab-item {
-                display: flex;
-                align-items: flex-start;
-                gap: 8px;
-            }
-            .ob-fab-icon {
-                font-size: 1.1rem;
-                flex-shrink: 0;
-                margin-top: 1px;
-            }
-            .ob-fab-text {
-                font-size: 0.75rem;
-                color: var(--text-2, rgba(255,255,255,0.75));
-                line-height: 1.4;
-            }
-            .ob-fab-text strong {
-                color: var(--text-1, #fff);
-                font-weight: 600;
-                display: block;
-                margin-bottom: 1px;
-            }
-            .ob-dots {
-                display: flex;
-                gap: 6px;
                 justify-content: center;
-                margin-bottom: 20px;
-            }
-            .ob-dot {
-                width: 7px;
-                height: 7px;
-                border-radius: 50%;
-                background: rgba(255, 255, 255, 0.25);
-                transition: background 0.22s ease;
-            }
-            .ob-dot--active {
-                background: var(--accent, #4a8ef8);
+                padding: 24px;
+                text-align: center;
+                max-width: 800px;
+                margin: 0 auto;
+                width: 100%;
+                box-sizing: border-box;
             }
             @media (min-width: 768px) {
-                .ob-card {
-                    max-width: 520px;
-                    padding: 48px 40px 36px;
+                .ob-container {
+                    flex-direction: row;
+                    text-align: left;
+                    gap: 48px;
                 }
-                .ob-icon {
-                    font-size: 64px;
-                    margin-bottom: 20px;
-                }
-                .ob-title {
-                    font-size: 1.6rem;
-                    margin-bottom: 16px;
-                }
-                .ob-desc {
-                    font-size: 1.05rem;
-                    margin-bottom: 28px;
-                }
-                .ob-fab-grid {
-                    gap: 14px;
-                    margin-bottom: 28px;
-                }
-                .ob-list-grid {
-                    gap: 16px;
-                    margin-bottom: 28px;
-                }
-                .ob-fab-icon {
-                    font-size: 1.3rem;
-                }
-                .ob-fab-text {
-                    font-size: 0.9rem;
-                }
-                .ob-dot {
-                    width: 9px;
-                    height: 9px;
-                }
-                .ob-dots {
-                    gap: 8px;
-                    margin-bottom: 24px;
-                }
-                .ob-skip, .ob-next {
-                    font-size: 1rem;
-                }
-                .ob-next {
-                    padding: 12px 28px;
-                }
+                .ob-visual { flex: 1; }
+                .ob-content { flex: 1; }
+            }
+            .ob-visual {
+                width: 100%;
+                max-width: 320px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 32px;
+                gap: 24px;
+                position: relative;
+            }
+            .ob-svg-container {
+                width: 140px;
+                height: 140px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .ob-svg {
+                width: 100%;
+                height: 100%;
+                color: #fff;
+            }
+            .ob-mockup-container {
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+            }
+            .ob-mockup-label {
+                font-size: 10px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                color: rgba(255,255,255,0.4);
+            }
+            .ob-mockup-fab { width: 56px; height: 56px; transform: scale(1.2); }
+            .ob-mockup-bottom { width: 100%; max-width: 260px; background: var(--surface); padding: 12px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+            .ob-mockup-top { width: 100%; display: flex; justify-content: center; transform: scale(1.1); }
+            
+            .ob-title {
+                font-size: 1.75rem;
+                font-weight: 800;
+                margin: 0 0 16px;
+                line-height: 1.2;
+            }
+            .ob-desc {
+                font-size: 1.05rem;
+                color: rgba(255,255,255,0.8);
+                line-height: 1.6;
+                margin: 0 0 40px;
+            }
+            .ob-footer {
+                padding: 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+                align-items: center;
+                background: linear-gradient(to top, rgba(0,0,0,0.4), transparent);
             }
             .ob-actions {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
                 width: 100%;
+                max-width: 400px;
+                display: flex;
+                gap: 12px;
             }
-            .ob-skip {
-                background: none;
+            .ob-btn {
+                flex: 1;
+                height: 56px;
+                border-radius: 16px;
                 border: none;
-                color: var(--text-2, rgba(255,255,255,0.75));
-                font-size: var(--text-sm, 0.85rem);
+                font-size: 1rem;
+                font-weight: 700;
                 cursor: pointer;
-                padding: 8px 4px;
+                transition: transform 0.1s, opacity 0.1s;
+                display: flex; align-items: center; justify-content: center; gap: 8px;
             }
-            .ob-skip:hover { opacity: 0.8; }
-            .ob-next {
-                background: var(--accent-btn, #2668d4);
-                color: #fff;
-                border: none;
-                border-radius: var(--radius-md, 10px);
-                padding: 10px 20px;
-                font-weight: 600;
-                font-size: var(--text-sm, 0.85rem);
-                cursor: pointer;
-                transition: opacity 0.15s;
-            }
-            .ob-next:hover { opacity: 0.9; }
-            .ob-next:active { opacity: 0.8; }
-        </style>
+            .ob-btn--primary { background: var(--accent, #4a8ef8); color: #fff; }
+            .ob-btn--secondary { background: rgba(255,255,255,0.1); color: #fff; backdrop-filter: blur(10px); }
+            .ob-btn:active { transform: scale(0.97); opacity: 0.9; }
 
-        <div class="ob-card">
-            <div class="ob-body" id="ob-body"></div>
+            .ob-dots { display: flex; gap: 8px; margin-bottom: 8px; }
+            .ob-dot { width: 8px; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.2); transition: width 0.3s, background 0.3s; }
+            .ob-dot--active { width: 24px; background: var(--accent, #4a8ef8); }
+
+            .ob-menu-grid { display: grid; grid-template-columns: 1fr; gap: 12px; width: 100%; margin-top: 24px; }
+            .ob-menu-item {
+                background: rgba(255,255,255,0.08); padding: 16px; border-radius: 12px;
+                display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer;
+                border: 1px solid rgba(255,255,255,0.1);
+            }
+            .ob-menu-item:hover { background: rgba(255,255,255,0.12); }
+            .ob-menu-icon { font-size: 1.5rem; }
+
+            /* Animations */
+            @keyframes tilt-hand { 0%, 100% { transform: translateY(10px); } 50% { transform: translateY(-20px); } }
+            .anim-tilt-hand { animation: tilt-hand 3s ease-in-out infinite; }
+            @keyframes solar-sun { 0% { transform: translate(0, 0); } 50% { transform: translate(40px, -60px); } 100% { transform: translate(80px, 0); } }
+            .anim-solar-sun { animation: solar-sun 5s linear infinite; }
+            @keyframes track-path { 0% { stroke-dasharray: 0 200; } 100% { stroke-dasharray: 200 200; } }
+            .anim-track-path { animation: track-path 3s ease-out infinite; }
+            @keyframes pulse { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+            .anim-pulse { transform-origin: center; animation: pulse 2s ease-out infinite; }
+        </style>
+        <div class="ob-container" id="ob-container">
+            <div class="ob-visual" id="ob-visual"></div>
+            <div class="ob-content">
+                <h1 class="ob-title" id="ob-title"></h1>
+                <p class="ob-desc" id="ob-desc"></p>
+                <div id="ob-special"></div>
+            </div>
+        </div>
+        <div class="ob-footer">
             <div class="ob-dots" id="ob-dots"></div>
             <div class="ob-actions">
-                <button class="ob-skip" id="ob-skip"></button>
-                <button class="ob-next" id="ob-next"></button>
+                <button class="ob-btn ob-btn--secondary" id="ob-skip"></button>
+                <button class="ob-btn ob-btn--primary" id="ob-next"></button>
             </div>
         </div>
     `;
 
     document.body.appendChild(overlay);
 
-    const body = overlay.querySelector('#ob-body') as HTMLElement;
+    const title = overlay.querySelector('#ob-title') as HTMLElement;
+    const desc = overlay.querySelector('#ob-desc') as HTMLElement;
+    const visual = overlay.querySelector('#ob-visual') as HTMLElement;
+    const special = overlay.querySelector('#ob-special') as HTMLElement;
     const dotsContainer = overlay.querySelector('#ob-dots') as HTMLElement;
     const skipBtn = overlay.querySelector('#ob-skip') as HTMLButtonElement;
     const nextBtn = overlay.querySelector('#ob-next') as HTMLButtonElement;
 
-    // Build dot indicators
-    for (let i = 0; i < SLIDES.length; i++) {
-        const dot = document.createElement('span');
+    // Create dots
+    SLIDES.forEach(() => {
+        const dot = document.createElement('div');
         dot.className = 'ob-dot';
         dotsContainer.appendChild(dot);
-    }
+    });
 
-    function renderSlide(animate: boolean, direction: 'left' | 'right' = 'left'): void {
+    function renderSlide(): void {
         const slide = SLIDES[currentSlide];
+        const isLast = currentSlide === SLIDES.length - 1;
 
-        const buildContent = (): string => {
-            let descHtml: string;
-            if (slide.special === 'gesture-grid') {
-                descHtml = `<p class="ob-desc" style="margin-bottom:8px">${i18n.t(slide.descKey)}</p>${_buildGestureGrid()}`;
-            } else if (slide.special === 'fab-grid') {
-                descHtml = `<p class="ob-desc" style="margin-bottom:8px">${i18n.t(slide.descKey)}</p>${_buildFabGrid()}`;
-            } else if (slide.special === 'track-grid') {
-                descHtml = `<p class="ob-desc" style="margin-bottom:8px">${i18n.t(slide.descKey)}</p>${_buildTrackGrid()}`;
-            } else if (slide.special === 'analysis-grid') {
-                descHtml = `<p class="ob-desc" style="margin-bottom:8px">${i18n.t(slide.descKey)}</p>${_buildAnalysisGrid()}`;
-            } else {
-                descHtml = `<p class="ob-desc">${i18n.t(slide.descKey)}</p>`;
-            }
-            return `
-                <div class="ob-icon">${slide.icon}</div>
-                <h2 class="ob-title" id="ob-title">${i18n.t(slide.titleKey)}</h2>
-                ${descHtml}
-            `;
-        };
+        title.textContent = i18n.t(slide.titleKey);
+        desc.textContent = i18n.t(slide.descKey);
+        
+        const mockupHtml = _getMockup(slide.type);
+        
+        visual.innerHTML = `
+            <div class="ob-svg-container">
+                ${_getSvgIcon(slide.type)}
+            </div>
+            ${mockupHtml ? `
+                <div class="ob-mockup-container">
+                    <span class="ob-mockup-label">Interface</span>
+                    ${mockupHtml}
+                </div>
+            ` : ''}
+        `;
 
-        // Update dots
+        // Dots
         const dots = dotsContainer.querySelectorAll('.ob-dot');
         dots.forEach((dot, i) => {
             dot.classList.toggle('ob-dot--active', i === currentSlide);
         });
 
-        // Update button labels
+        // Buttons
         skipBtn.textContent = i18n.t('onboarding.skip');
-        const isLast = currentSlide === SLIDES.length - 1;
-        nextBtn.textContent = isLast
-            ? `${i18n.t('onboarding.start')} \u2713`
-            : `${i18n.t('onboarding.next')} \u2192`;
+        nextBtn.textContent = isLast ? i18n.t('onboarding.start') : i18n.t('onboarding.next');
+        skipBtn.style.display = isLast ? 'none' : 'block';
 
-        if (!animate) {
-            body.innerHTML = buildContent();
-            return;
+        // Special Menu
+        special.innerHTML = '';
+        if (slide.special === 'final-menu') {
+            const grid = document.createElement('div');
+            grid.className = 'ob-menu-grid';
+            grid.innerHTML = `
+                <div class="ob-menu-item" data-action="explore">
+                    <span class="ob-menu-icon">🌍</span>
+                    <div>
+                        <strong>${i18n.t('onboarding.explore')}</strong>
+                    </div>
+                </div>
+                <div class="ob-menu-item" data-action="import">
+                    <span class="ob-menu-icon">📥</span>
+                    <div>
+                        <strong>${i18n.t('onboarding.importGpx')}</strong>
+                    </div>
+                </div>
+                <div class="ob-menu-item" data-action="search">
+                    <span class="ob-menu-icon">🏔️</span>
+                    <div>
+                        <strong>${i18n.t('onboarding.searchPeak')}</strong>
+                    </div>
+                </div>
+            `;
+            special.appendChild(grid);
+
+            grid.querySelectorAll('.ob-menu-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const action = (item as HTMLElement).dataset.action;
+                    _handleFinalAction(action);
+                });
+            });
         }
+    }
 
-        // Animate out current content
-        body.style.transition = 'transform 220ms ease-in-out, opacity 220ms ease-in-out';
-        body.style.transform = direction === 'left' ? 'translateX(-40px)' : 'translateX(40px)';
-        body.style.opacity = '0';
-
-        setTimeout(() => {
-            body.innerHTML = buildContent();
-            // Position for entrance from opposite side
-            body.style.transition = 'none';
-            body.style.transform = direction === 'left' ? 'translateX(40px)' : 'translateX(-40px)';
-            void body.offsetHeight; // force reflow
-            // Animate in
-            body.style.transition = 'transform 220ms ease-in-out, opacity 220ms ease-in-out';
-            body.style.transform = 'translateX(0)';
-            body.style.opacity = '1';
-        }, 220);
+    function _handleFinalAction(action: string | undefined): void {
+        void haptic('medium');
+        close();
+        if (action === 'import') {
+            document.querySelector<HTMLElement>('[data-tab="track"]')?.click();
+            setTimeout(() => {
+                document.getElementById('import-gpx-btn')?.click();
+            }, 500);
+        } else if (action === 'search') {
+            document.querySelector<HTMLElement>('[data-tab="search"]')?.click();
+            setTimeout(() => {
+                document.querySelector<HTMLInputElement>('#search-sheet input')?.focus();
+            }, 500);
+        }
     }
 
     function close(): void {
-        overlay.style.transition = 'opacity 0.3s ease';
+        overlay.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
         overlay.style.opacity = '0';
-        setTimeout(() => overlay.remove(), 300);
+        overlay.style.transform = 'scale(1.05)';
+        setTimeout(() => overlay.remove(), 400);
         resolve();
     }
 
-    // Button handlers
     nextBtn.addEventListener('click', () => {
         if (currentSlide === SLIDES.length - 1) {
             void haptic('medium');
@@ -386,68 +422,31 @@ function _show(resolve: () => void): void {
         } else {
             currentSlide++;
             void haptic('light');
-            renderSlide(true, 'left');
+            renderSlide();
         }
     });
+
     skipBtn.addEventListener('click', () => {
         void haptic('light');
         close();
     });
 
     // Swipe handling
-    let pointerStartX = 0;
-    let pointerStartY = 0;
-    let swiping = false;
-
-    overlay.addEventListener('pointerdown', (e: PointerEvent) => {
-        const target = e.target as HTMLElement;
-        if (target.closest('.ob-skip') || target.closest('.ob-next')) {
-            swiping = false;
-            return;
-        }
-        pointerStartX = e.clientX;
-        pointerStartY = e.clientY;
-        swiping = true;
-    });
-
-    overlay.addEventListener('pointermove', (e: PointerEvent) => {
-        if (!swiping) return;
-        e.preventDefault();
-    });
-
-    overlay.addEventListener('pointerup', (e: PointerEvent) => {
-        if (!swiping) return;
-        swiping = false;
-        const dx = e.clientX - pointerStartX;
-        const dy = e.clientY - pointerStartY;
-        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
-            if (dx < 0 && currentSlide < SLIDES.length - 1) {
+    let startX = 0;
+    overlay.addEventListener('touchstart', (e) => startX = e.touches[0].clientX);
+    overlay.addEventListener('touchend', (e) => {
+        const diff = startX - e.changedTouches[0].clientX;
+        if (Math.abs(diff) > 50) {
+            if (diff > 0 && currentSlide < SLIDES.length - 1) {
                 currentSlide++;
-                renderSlide(true, 'left');
-            } else if (dx > 0 && currentSlide > 0) {
+                renderSlide();
+            } else if (diff < 0 && currentSlide > 0) {
                 currentSlide--;
-                renderSlide(true, 'right');
+                renderSlide();
             }
         }
     });
 
-    // Keyboard navigation
-    overlay.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (e.key === 'Escape') { close(); return; }
-        if (e.key === 'ArrowRight' && currentSlide < SLIDES.length - 1) {
-            currentSlide++;
-            renderSlide(true, 'left');
-        }
-        if (e.key === 'ArrowLeft' && currentSlide > 0) {
-            currentSlide--;
-            renderSlide(true, 'right');
-        }
-        if (e.key === 'Tab') e.preventDefault();
-    });
-
-    // Initial render
-    renderSlide(false);
-
-    // Focus on next button for accessibility
-    requestAnimationFrame(() => nextBtn.focus());
+    renderSlide();
 }
+

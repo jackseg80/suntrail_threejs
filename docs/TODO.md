@@ -68,7 +68,7 @@
     - [ ] **Strava** : Importation des activités passées et des routes planifiées (OAuth2).
     - [ ] **Suunto** : Récupération des entraînements (format FIT) et synchronisation de routes.
     - [ ] **Wikiloc** : Recherche et import direct de parcours communautaires (API Partner).
-- [ ] **v6.2 — Exposition solaire & Segments** : Barre ombre/soleil détaillée par km (Pro).
+- [ ] **v6.2 — Exposition solaire & Segments** : Analyse d'ombre/soleil détaillée par km sur tracés GPX et itinéraires manuels (Pro).
 - [ ] **v6.2 — Alertes sécurité & Heure de départ** : Avalanche, windchill, nuit sur tracé (Toutes FREE).
 - [ ] **v6.3 — Score condition & Estimation physio** : Hydratation, calories, VAM cible (Pro).
 - [ ] **v6.4 — Mode Photo Pro** : Capture sans UI avec watermark SunTrail.

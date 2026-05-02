@@ -552,68 +552,33 @@
   "onboarding": {
     "skip": "Überspringen",
     "next": "Weiter",
-    "start": "Loslegen",
+    "start": "Starten",
+    "explore": "Karte erkunden",
+    "importGpx": "GPX importieren",
+    "searchPeak": "Gipfel suchen",
     "slide1": {
-      "title": "In 3D navigieren",
-      "desc": "1 Finger zum Verschieben · Zusammendrücken zum Zoomen · 2 Finger zum Drehen oder Neigen"
-    },
-    "slideGestures": {
-      "title": "Touch-Gesten",
-      "desc": "SunTrail folgt den Google Earth-Gesten:",
-      "pan": "1 Finger — Verschieben",
-      "panDesc": "Wischen zum Verschieben der Karte. Mit Schwung loslassen für flüssige Trägheit.",
-      "pinch": "Pinch — Zoomen",
-      "pinchDesc": "2 Finger auseinander oder zusammenführen. Zoom zentriert sich zwischen den Fingern.",
-      "rotate": "2 Finger — Drehen",
-      "rotateDesc": "2 Finger drehen, um die Ansicht auszurichten.",
-      "tilt": "2 Finger nebeneinander — Neigen",
-      "tiltDesc": "2 Finger horizontal anlegen, dann nach oben oder unten gleiten."
+      "title": "Immersion & Freiheit",
+      "desc": "Entdecken Sie die Berge in echtem 3D. Nutzen Sie die 2D/3D-Taste unten rechts zum Umschalten. Neigen Sie die Ansicht mit 2 Fingern, um das Relief zu aktivieren."
     },
     "slide2": {
-      "title": "Ort suchen",
-      "desc": "Geben Sie den Namen einer Stadt, eines Gipfels oder Landes in die Suchleiste ein. Schnellfilter verfeinern die Ergebnisse."
+      "title": "Meistern Sie das Licht",
+      "desc": "Sonneneinstrahlung mit der Zeitleiste unten vorhersagen (nur 3D). Schlagschatten folgen der tatsächlichen Sonnenzeit."
     },
     "slide3": {
-      "title": "Die Bedienknöpfe",
-      "desc": "Auf der rechten Seite:",
-      "compass": "Kompass",
-      "compassDesc": "richtet zum Norden aus",
-      "layers": "Ebenen",
-      "layersDesc": "wechselt den Kartentyp",
-      "mode": "2D / 3D",
-      "modeDesc": "schaltet 3D-Relief um",
-      "gps": "Position",
-      "gpsDesc": "zentriert auf Ihr GPS"
+      "title": "Planen Sie Ihr Abenteuer",
+      "desc": "Planen Sie Ihre Route im Tab 'Route', importieren Sie GPX-Dateien über den Tab 'Tour' oder zeichnen Sie Ihren GPS-Track live auf."
     },
     "slide4": {
-      "title": "Ihre Touren",
-      "desc": "Importieren oder zeichnen Sie Ihre Wanderungen auf:",
-      "import": "GPX importieren",
-      "importDesc": "Laden Sie eine GPX-Datei — die Route erscheint 3D auf dem Gelände",
-      "rec": "GPS-Aufnahme",
-      "recDesc": "Starten Sie REC, um Ihre Tour live aufzuzeichnen"
+      "title": "Das Auge des Experten",
+      "desc": "Analysieren Sie die exakte Neigung in der Bildschirmmitte mit dem Neigungsmesser (PRO). Finden Sie das Höhenprofil auf Ihren Tracks."
     },
     "slide5": {
-      "title": "Sonne simulieren",
-      "desc": "Die Timeline unten zeigt die Sonneneinstrahlung zu jeder Tageszeit."
+      "title": "Bedingungen & Karten",
+      "desc": "Tippen Sie oben auf die Wetter-Anzeige für Vorhersagen. Ändern Sie Kartenhintergründe (SwissTopo/IGN) über den Tab 'Ebenen'."
     },
     "slide6": {
-      "title": "Live-Wetter",
-      "desc": "Die Wetter-Anzeige oben zeigt die aktuelle Temperatur. Tippen Sie darauf für Vorhersagen, Wind und Warnungen."
-    },
-    "slide7": {
-      "title": "Analyse-Werkzeuge",
-      "desc": "Gelände im Detail analysieren:",
-      "profile": "Höhenprofil",
-      "profileDesc": "Distanz, Höhe und Steigung an jedem Punkt der Route",
-      "inclino": "Neigungsmesser",
-      "inclinoDesc": "Echtzeit-Geländeneigung unter dem Fadenkreuz",
-      "drag": "Verschiebbare Panels",
-      "dragDesc": "Lange drücken, um Widgets zu repositionieren"
-    },
-    "slide8": {
-      "title": "Sicherheit & offline",
-      "desc": "Der SOS-Knopf zeigt Ihren genauen Standort für die Rettung. Die App funktioniert auch offline dank Kachel-Caching."
+      "title": "Sicherheit & Autonomie",
+      "desc": "Die SOS-Taste oben rechts zeigt Ihre Notfallkoordinaten. Laden Sie Länderpakete in den Einstellungen für den Offline-Modus herunter."
     }
   },
   "upgrade": {
