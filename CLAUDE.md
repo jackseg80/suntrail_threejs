@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.52.2)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-02 — v5.52.2 : GPX import limit, ORS key UI, détection Suisse, perf rebuilds, i18n complète.
+> Mis à jour le 2026-05-02 — v5.52.2+ : Solar Route Analysis (RAF keepalive 2D, Hiker Timeline, 3D overlay, shadow accuracy).
 
 
 ## Projet
@@ -87,6 +87,7 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 
 
 ## Structure du Projet
+
 - `src/modules/iapService.ts` : Liaison RevenueCat ↔ Google Play.
 - `src/modules/recordingService.ts` : (v5.29.37) Logique orchestrée d'enregistrement GPS.
 - `src/modules/gpxService.ts` : (v5.29.37) Import/Export et utilitaires GPX.
@@ -99,8 +100,9 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - `src/modules/scene.ts` : Moteur de rendu et boucle principale.
 - `src/modules/cameraManager.ts` : Gestion de la caméra, animations flyTo et resize.
 - `src/modules/poi.ts` : (v5.40.38) Détection et rendu 3D des POIs depuis tuiles vectorielles (SwissTopo/MapTiler). 8 catégories : trail (🔶 sentiers nommés), hut (🟤 refuges), rest (🟢 haltes), attraction (🔵 curiosités), viewpoint (🔭), shelter (🏠), info (i), guidepost (Signalisation). Détection unifiée SwissTopo (class/subclass) + MapTiler. Cache PBF zone-based.
+- `src/modules/solarRoute.ts` : (v5.52.3) Analyse solaire des itinéraires — **deux modes distincts** : Snapshot (ombre à l'heure du slider, Free) et Hiker Timeline (ombre à l'heure d'arrivée estimée, Pro). **Overlay 3D** : DataTexture 256×1 mappée sur TubeGeometry pour colorisation or/bleu/nuit live (~200ms cache hit). **Sampling adaptatif** : max 200 points, step dynamique. **Cache** : clé `${routeHash}|${date}|${slot30}|${mode}|${speed}`, invalide sur changement route ou date. **RAF keepalive** pour fluidité 2D (state.isInteractingWithUI toggle). **Ombre précise** : utilise `getAltitudeAt()` au moment de l'analyse (pas draping stale). **Recommandations** : section stats grille 2×2 + alertes exposition forte (> 90 min soleil consécutif). **Speed** : [3, 4, 6] km/h sélectionnable, auto-bascule en hikerTimeline.
 
 ## Tests & Qualité
-- **Unitaires (Vitest)** : `npm test` (669 tests). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`.
+- **Unitaires (Vitest)** : `npm test` (720 tests). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`. Solar route analysis valide via tests existants (pas d'API change, pure UX refinement).
 - **E2E (Playwright)** : `npx playwright test --ui` (Onboarding, GPS, Expert).
 - **Mocks** : `src/test/setup.ts` pour WebGL. `ui.test.ts` utilise des timers fictifs.
