@@ -25,8 +25,9 @@ vi.mock('./analysis', () => ({
 }));
 
 vi.mock('./geo', () => ({
-    worldToLngLat: vi.fn(() => ({ lat: 46.8, lon: 8.2 })),
+    worldToLngLat: vi.fn((_x: number, _z: number) => ({ lat: 46.8, lon: 8.2 })),
     lngLatToWorld: vi.fn(),
+    haversineDistance: vi.fn((_lat1: number, _lon1: number, _lat2: number, _lon2: number) => 0.1),
     EARTH_CIRCUMFERENCE: 40075016.68,
 }));
 
@@ -223,7 +224,8 @@ describe('buildAnalysis', () => {
         expect(result.sunExposedKm).toBe(2);
     });
 
-    it('ignores night segments for sunPct', () => {
+    it('calculates sunPct over total km (night segments included in denominator)', () => {
+        // 2 km de nuit + 1 km de jour au soleil = 33% du total, pas 100%
         const points = [
             { worldPos: new THREE.Vector3(0, 0, 0), distKm: 0, evalDate: new Date(), inShadow: false, isNight: true },
             { worldPos: new THREE.Vector3(1, 0, 0), distKm: 2, evalDate: new Date(), inShadow: false, isNight: true },
@@ -232,7 +234,27 @@ describe('buildAnalysis', () => {
         const result = buildAnalysis(points, 'snapshot');
         expect(result.totalKm).toBe(3);
         expect(result.sunExposedKm).toBe(1);
+        // 1 km soleil / 3 km total = 33%
+        expect(result.sunPct).toBe(33);
+    });
+
+    it('returns 100% when fully sunny (no night)', () => {
+        const points = [
+            { worldPos: new THREE.Vector3(0, 0, 0), distKm: 0, evalDate: new Date(), inShadow: false, isNight: false },
+            { worldPos: new THREE.Vector3(1, 0, 0), distKm: 5, evalDate: new Date(), inShadow: false, isNight: false },
+        ];
+        const result = buildAnalysis(points, 'snapshot');
         expect(result.sunPct).toBe(100);
+    });
+
+    it('returns 0% when fully in night', () => {
+        const points = [
+            { worldPos: new THREE.Vector3(0, 0, 0), distKm: 0, evalDate: new Date(), inShadow: false, isNight: true },
+            { worldPos: new THREE.Vector3(1, 0, 0), distKm: 5, evalDate: new Date(), inShadow: false, isNight: true },
+        ];
+        const result = buildAnalysis(points, 'snapshot');
+        expect(result.sunPct).toBe(0);
+        expect(result.sunExposedKm).toBe(0);
     });
 
     it('detects continuous shadow segments', () => {

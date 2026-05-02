@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import SunCalc from 'suncalc';
 import { state, isProActive } from './state';
 import { isAtShadow, drapeToTerrain, getAltitudeAt, GPX_SURFACE_OFFSET } from './analysis';
-import { worldToLngLat } from './geo';
+import { worldToLngLat, haversineDistance } from './geo';
 import { getSunDirection } from './sun';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -76,6 +76,13 @@ export function setSolarRouteMode(mode: SolarRouteMode): void {
 // ─── Source resolution ────────────────────────────────────────────────────────
 
 function getActivePoints(): THREE.Vector3[] | null {
+    // Priorité 1 : layer GPX actif — contient la vraie géométrie OSRM/ORS (centaines de points)
+    // plutôt que les waypoints bruts (seulement 2-5 points à vol d'oiseau).
+    if (state.activeGPXLayerId) {
+        const layer = state.gpxLayers.find(l => l.id === state.activeGPXLayerId);
+        if (layer?.points && layer.points.length >= 2) return layer.points;
+    }
+    // Priorité 2 : waypoints bruts si aucun layer calculé (route en cours de calcul)
     if (state.routeWaypoints.length >= 2 && state.originTile) {
         const draped = drapeToTerrain(
             state.routeWaypoints.map(w => ({ lat: w.lat, lon: w.lon, ele: w.alt ?? 0 })),
@@ -84,11 +91,6 @@ function getActivePoints(): THREE.Vector3[] | null {
             GPX_SURFACE_OFFSET
         );
         if (draped.length >= 2) return draped;
-    }
-    // Priorité 2 : layer GPX actif
-    if (state.activeGPXLayerId) {
-        const layer = state.gpxLayers.find(l => l.id === state.activeGPXLayerId);
-        if (layer?.points && layer.points.length >= 2) return layer.points;
     }
     return null;
 }
@@ -185,10 +187,13 @@ async function analyzeRouteSolar(
         const chunk = samples.slice(i, Math.min(i + CHUNK, samples.length));
         for (const pt of chunk) {
             const prevResult = results[results.length - 1];
+            // Convertir en GPS une fois — utilisé pour la distance haversine ET le soleil local
+            const ptGps = worldToLngLat(pt.x, pt.z, originTile);
+
             if (prevResult) {
-                const dx = pt.x - prevResult.worldPos.x;
-                const dz = pt.z - prevResult.worldPos.z;
-                cumulativeDistKm += Math.sqrt(dx * dx + dz * dz) / 1000;
+                // Haversine au lieu de coordonnées Mercator (évite la déformation 1/cos(lat) ≈ 1.47 à 47°N)
+                const prevGps = worldToLngLat(prevResult.worldPos.x, prevResult.worldPos.z, originTile);
+                cumulativeDistKm += haversineDistance(prevGps.lat, prevGps.lon, ptGps.lat, ptGps.lon);
             }
 
             let evalDate: Date;
@@ -196,15 +201,15 @@ async function analyzeRouteSolar(
 
             if (mode === 'hikerTimeline') {
                 const delayHours = cumulativeDistKm / avgSpeedKmh;
-                evalDate = new Date(state.simDate.getTime() + delayHours * 3600 * 1000);
-                const ptGps = worldToLngLat(pt.x, pt.z, originTile);
+                evalDate = new Date(state.simDate.getTime() + delayHours * 3_600_000);
                 sunVec = getSunDirection(evalDate, ptGps.lat, ptGps.lon);
             } else {
                 evalDate = state.simDate;
                 sunVec = snapshotSunVec!;
             }
 
-            const sunPos = SunCalc.getPosition(evalDate, midGps.lat, midGps.lon);
+            // Position solaire au GPS local du point (plus précis que midGps pour les longs tracés)
+            const sunPos = SunCalc.getPosition(evalDate, ptGps.lat, ptGps.lon);
             const isNight = sunPos.altitude <= 0;
             const terrainY = getAltitudeAt(pt.x, pt.z);
             const altForShadow = terrainY > 0 ? terrainY + GPX_SURFACE_OFFSET : pt.y;
@@ -248,8 +253,9 @@ export function buildAnalysis(points: RouteSolarPoint[], mode: SolarRouteMode): 
         shadowSegments.push({ startKm: segStart, endKm: totalKm, lengthKm: totalKm - segStart });
     }
 
-    const dayKm = sunExposedKm + shadowKm;
-    const sunPct = dayKm > 0 ? Math.round((sunExposedKm / dayKm) * 100) : 0;
+    // sunPct sur le total du parcours (km nuit inclus) — évite le 100% trompeur
+    // quand tout le trajet est de nuit sauf 1 km final au soleil.
+    const sunPct = totalKm > 0 ? Math.round((sunExposedKm / totalKm) * 100) : 0;
 
     return { mode, points, sunExposedKm, shadowKm, sunPct, totalKm, shadowSegments };
 }
