@@ -2249,6 +2249,10 @@ body.route-planner-active #coords-pill {
 body.route-planner-active #elevation-profile {
     bottom: calc(var(--bar-h) + var(--safe-bottom) + var(--route-bar-h) + 8px);
 }
+body.route-planner-active #inclinometer-widget {
+    bottom: auto !important;
+    top: calc(var(--safe-top, 0px) + 16px) !important;
+}
 
 /* Cache la barre quand un menu est ouvert (sheet-open posé par SheetManager) */
 body.sheet-open #route-bar {
