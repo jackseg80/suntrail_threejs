@@ -4,6 +4,7 @@ import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
 import { worldToLngLat, haversineDistance } from './geo';
 import { calculateTrackStats } from './geoStats';
+import { getAltitudeAt } from './analysis';
 import { isProActive } from './state';
 
 let _currentRouteLayerId: string | null = null;
@@ -199,7 +200,7 @@ export async function computeRoute(
             return {
                 lat: gps.lat,
                 lon: gps.lon,
-                alt: v.y / relief,
+                alt: getAltitudeAt(v.x, v.z) / relief,
                 timestamp: i * 1000,
             };
         }));

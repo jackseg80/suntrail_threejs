@@ -3,6 +3,7 @@ import { state } from './state';
 import type { GPXLayer } from './state';
 import { attachDraggablePanel } from './ui/draggablePanel';
 import { calculateHysteresis } from './geoStats';
+import { getAltitudeAt } from './analysis';
 
 interface ProfilePoint {
     dist: number; // Distance cumulée en km
@@ -48,7 +49,6 @@ export function updateElevationProfile(layerId?: string): void {
     profileData = [];
     let cumulativeDist = 0;
     const elevations: number[] = [];
-    const GPX_SURFACE_OFFSET = 12; // Cohérent avec gpxLayers.ts (v5.51.3)
 
     // Détecter si les données brutes ont une élévation réelle (OSRM → ele=0 partout)
     const maxRawEle = rawPoints.reduce((max: number, p: any) => Math.max(max, (p.ele || 0), (p.alt || 0)), 0);
@@ -64,8 +64,8 @@ export function updateElevationProfile(layerId?: string): void {
             const rawIdx = Math.min(rawPoints.length - 1, Math.floor((i / gpxPoints3D.length) * rawPoints.length));
             ele = rawPoints[rawIdx].ele || rawPoints[rawIdx].alt || 0;
         } else {
-            const yCorrected = pos.y - GPX_SURFACE_OFFSET;
-            ele = Math.max(0, yCorrected / state.RELIEF_EXAGGERATION);
+            const h = getAltitudeAt(pos.x, pos.z);
+            ele = Math.max(0, h / state.RELIEF_EXAGGERATION);
         }
         
         elevations.push(ele);

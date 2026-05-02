@@ -5,7 +5,7 @@ import { simplifyRDP } from './utils';
 import { updateElevationProfile } from './profile';
 import { lngLatToWorld, EARTH_CIRCUMFERENCE, worldToLngLat } from './geo';
 import { eventBus } from './eventBus';
-import { drapeToTerrain } from './analysis';
+import { drapeToTerrain, getAltitudeAt } from './analysis';
 import { calculateTrackStats } from './geoStats';
 
 // v5.31.1 : Shared GPX track materials (1 per color × mode = 16 max instead of N per layer)
@@ -198,14 +198,14 @@ function _doUpdateAllGPXMeshes(): void {
             mesh.userData = { type: 'gpx-track', layerId: layer.id };
             if (state.scene) state.scene.add(mesh);
 
-            // Recalculer les stats depuis les points drapés (tuiles chargées → altitude réelle)
+            // Recalculer les stats depuis l'altitude réelle du terrain (indépendant du mode 2D/3D)
             const relief = state.RELIEF_EXAGGERATION || 1;
             const updatedStats = calculateTrackStats(drapedPoints.map((v, i) => {
                 const gps = worldToLngLat(v.x, v.z, state.originTile!);
                 return {
                     lat: gps.lat,
                     lon: gps.lon,
-                    alt: v.y / relief,
+                    alt: getAltitudeAt(v.x, v.z) / relief,
                     timestamp: i * 1000,
                 };
             }));

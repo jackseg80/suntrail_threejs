@@ -46,6 +46,10 @@ vi.mock('./geoStats', () => ({
     })),
 }));
 
+vi.mock('./analysis', () => ({
+    getAltitudeAt: vi.fn(() => 1000),
+}));
+
 import { state } from './state';
 import { addGPXLayer } from './gpxLayers';
 import { worldToLngLat, haversineDistance } from './geo';
