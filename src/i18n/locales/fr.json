@@ -109,7 +109,8 @@
     "toast": {
       "computed": "Itinéraire calculé",
       "tapMap": "Cliquez sur la carte pour ajouter un point",
-      "keySaved": "Clé ORS enregistrée"
+      "keySaved": "Clé ORS enregistrée",
+      "invalidKey": "Clé invalide (minimum 10 caractères)"
     },
     "error": {
       "minWaypoints": "Ajoutez au moins 2 waypoints",

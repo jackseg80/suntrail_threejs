@@ -107,7 +107,8 @@
     "toast": {
       "computed": "Route berechnet",
       "tapMap": "Tippen Sie auf die Karte für einen Punkt",
-      "keySaved": "ORS-Schlüssel gespeichert"
+      "keySaved": "ORS-Schlüssel gespeichert",
+      "invalidKey": "Ungültiger Schlüssel (mindestens 10 Zeichen)"
     },
     "error": {
       "minWaypoints": "Mindestens 2 Wegpunkte erforderlich",

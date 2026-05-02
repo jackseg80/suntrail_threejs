@@ -2456,6 +2456,18 @@ body.ui-hidden #route-bar {
 }
 #rs-save-key:hover { opacity: 0.85; }
 
+.rs-key-hint {
+    padding: 4px 12px 0;
+    font-size: 11px;
+    text-align: center;
+}
+.rs-key-hint a {
+    color: var(--accent);
+    text-decoration: none;
+    opacity: 0.8;
+}
+.rs-key-hint a:hover { opacity: 1; text-decoration: underline; }
+
 /* Liste des waypoints dans le panel réglages */
 .rs-waypoints-list {
     display: flex;

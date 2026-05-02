@@ -107,7 +107,8 @@
     "toast": {
       "computed": "Percorso calcolato",
       "tapMap": "Tocca la mappa per aggiungere un punto",
-      "keySaved": "Chiave ORS salvata"
+      "keySaved": "Chiave ORS salvata",
+      "invalidKey": "Chiave non valida (minimo 10 caratteri)"
     },
     "error": {
       "minWaypoints": "Aggiungi almeno 2 waypoint",

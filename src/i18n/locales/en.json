@@ -108,7 +108,8 @@
     "toast": {
       "computed": "Route computed",
       "tapMap": "Tap the map to add a point",
-      "keySaved": "ORS key saved"
+      "keySaved": "ORS key saved",
+      "invalidKey": "Invalid key (minimum 10 characters)"
     },
     "error": {
       "minWaypoints": "Add at least 2 waypoints",

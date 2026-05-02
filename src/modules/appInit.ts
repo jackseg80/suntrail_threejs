@@ -743,6 +743,9 @@ function setupRouteBar(): void {
         if (key && key.length > 10) {
             state.ORS_KEY = key;
             try { localStorage.setItem('suntrail_ors_key', key); } catch { /* ignore */ }
+            void showToast(i18n.t('routePlanner.toast.keySaved') || 'Clé ORS enregistrée');
+        } else {
+            void showToast(i18n.t('routePlanner.toast.invalidKey') || 'Clé invalide (minimum 10 caractères)');
         }
     });
 }
