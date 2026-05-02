@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.52.2)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-02 — v5.52.2 : GPX import limit (Pro 10), perf rebuilds, i18n.
+> Mis à jour le 2026-05-02 — v5.52.2 : GPX import limit, ORS key UI, détection Suisse, perf rebuilds, i18n complète.
 
 
 ## Projet

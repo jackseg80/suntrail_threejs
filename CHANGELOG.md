@@ -2,7 +2,9 @@
 
 ### Added
 - **GPX import limit** : Free = 1, Pro = 10. Message toast + haptic quand le max est atteint. Prévient la surcharge GPU/CPU mobile.
-- **i18n** : Clés `gpx.limitPro` ajoutées aux 4 locales (FR, EN, DE, IT).
+- **ORS key UI** : Lien d'inscription (openrouteservice.org) sous le champ clé dans les réglages. Feedback toast à l'enregistrement (validé / invalide).
+- **Détection Suisse** : Si les waypoints sont en Suisse sans clé ORS, un toast suggère d'ajouter une clé OpenRouteService pour les sentiers de randonnée.
+- **i18n** : Clés `gpx.limitPro`, `routePlanner.toast.invalidKey`, `routePlanner.hint.orsSwiss` ajoutées aux 4 locales (FR, EN, DE, IT).
 
 ### Perf
 - **Rebuilds redondants supprimés** : `setTimeout(updateAllGPXMeshes, 3000)` retiré de `addGPXLayer` (déjà couvert par le trigger `isProcessingTiles`). Passe de 3 rebuilds par nouveau tracé à 2.
