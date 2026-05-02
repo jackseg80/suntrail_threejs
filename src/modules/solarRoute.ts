@@ -267,6 +267,15 @@ async function analyzeOptimalDeparture(
     const midGps = worldToLngLat(midPt.x, midPt.z, state.originTile!);
     const summitPt = samples.reduce((a, b) => b.y > a.y ? b : a, samples[0]);
 
+    // Calculer la durée réelle du parcours (jamais hardcoded à 2h)
+    let totalDistKm = 0;
+    for (let i = 1; i < samples.length; i++) {
+        const dx = samples[i].x - samples[i - 1].x;
+        const dz = samples[i].z - samples[i - 1].z;
+        totalDistKm += Math.sqrt(dx * dx + dz * dz) / 1000;
+    }
+    const totalDurationMs = (totalDistKm / Math.max(0.1, _avgSpeedKmh)) * 3_600_000;
+
     // Passe 1 : grossière — 48 slots × 1 point sur 10
     const coarseSamples = samples.filter((_, i) => i % Math.max(1, Math.floor(samples.length / 20)) === 0);
     const slotScores: { minutes: number; pct: number }[] = [];
@@ -282,9 +291,11 @@ async function analyzeOptimalDeparture(
         let sunCount = 0;
         for (let ci = 0; ci < coarseSamples.length; ci++) {
             const pt = coarseSamples[ci];
-            const ptDate = new Date(testDate.getTime() + (ci / coarseSamples.length) * (_avgSpeedKmh > 0 ? 2 : 0) * 3_600_000);
+            const ptDate = new Date(testDate.getTime() + (ci / coarseSamples.length) * totalDurationMs);
             const pSunVec = getSunDirection(ptDate, midGps.lat, midGps.lon);
-            if (!isAtShadow(pt.x, pt.z, pt.y, pSunVec)) sunCount++;
+            const terrainY = getAltitudeAt(pt.x, pt.z);
+            const altForShadow = terrainY > 0 ? terrainY + 12 : pt.y;
+            if (!isAtShadow(pt.x, pt.z, altForShadow, pSunVec)) sunCount++;
         }
         slotScores.push({ minutes, pct: Math.round((sunCount / coarseSamples.length) * 100) });
         await new Promise<void>(res => setTimeout(res, 0));
@@ -302,10 +313,12 @@ async function analyzeOptimalDeparture(
         let sunCount = 0;
         for (let si = 0; si < samples.length; si++) {
             const pt = samples[si];
-            const arrivalDate = new Date(testDate.getTime() + (si / samples.length) * 2 * 3_600_000);
+            const arrivalDate = new Date(testDate.getTime() + (si / samples.length) * totalDurationMs);
             const pSunVec = getSunDirection(arrivalDate, midGps.lat, midGps.lon);
             const pSunPos = SunCalc.getPosition(arrivalDate, midGps.lat, midGps.lon);
-            if (pSunPos.altitude > 0 && !isAtShadow(pt.x, pt.z, pt.y, pSunVec)) sunCount++;
+            const terrainY = getAltitudeAt(pt.x, pt.z);
+            const altForShadow = terrainY > 0 ? terrainY + 12 : pt.y;
+            if (pSunPos.altitude > 0 && !isAtShadow(pt.x, pt.z, altForShadow, pSunVec)) sunCount++;
         }
         const pct = Math.round((sunCount / samples.length) * 100);
         if (pct > bestPct) { bestPct = pct; bestMinutes = minutes; }
