@@ -16,7 +16,7 @@ vi.mock('./state', () => ({
     },
 }));
 
-const _mockLayer = { id: 'mock-layer-id', name: 'mock', color: '#fff', visible: true, rawData: {}, points: [], mesh: null, stats: { distance: 0, dPlus: 0, dMinus: 0, pointCount: 0 } };
+const _mockLayer = { id: 'mock-layer-id', name: 'mock', color: '#fff', visible: true, rawData: {}, points: [], mesh: null, stats: { distance: 6.2, dPlus: 350, dMinus: 230, pointCount: 5, estimatedTime: 75 } };
 vi.mock('./gpxLayers', () => ({
     addGPXLayer: vi.fn(() => _mockLayer),
     removeGPXLayer: vi.fn(),

@@ -167,10 +167,6 @@ export async function computeRoute(
         if (useORS) {
             const response = await fetchFromORS(loopedWaypoints, activeProfile);
             const points = orsResponseToPoints(response);
-            const props = response.features[0].properties;
-            const summary = props.summary;
-            const ascent = props.ascent ?? 0;
-            const descent = props.descent ?? 0;
 
             const rawData = buildGPXCompatibleData(points);
             const routeName = buildRouteName(waypoints, state.routeLoopEnabled);
@@ -182,16 +178,15 @@ export async function computeRoute(
 
             return {
                 name: routeName,
-                distance: summary.distance / 1000,
-                duration: Math.round(summary.duration / 60),
-                ascent: Math.round(ascent),
-                descent: Math.round(descent),
+                distance: layer.stats.distance,
+                duration: layer.stats.estimatedTime ?? 0,
+                ascent: layer.stats.dPlus,
+                descent: layer.stats.dMinus,
             };
         }
 
         const response = await fetchFromOSRM(loopedWaypoints);
         const points = osrmResponseToPoints(response);
-        const route = response.routes[0];
 
         const rawData = buildGPXCompatibleData(points);
         const routeName = buildRouteName(waypoints, state.routeLoopEnabled);
@@ -203,10 +198,10 @@ export async function computeRoute(
 
         return {
             name: routeName,
-            distance: route.distance / 1000,
-            duration: Math.round(route.duration / 60),
-            ascent: 0,
-            descent: 0,
+            distance: layer.stats.distance,
+            duration: layer.stats.estimatedTime ?? 0,
+            ascent: layer.stats.dPlus,
+            descent: layer.stats.dMinus,
         };
     } catch (error: any) {
         const message = error?.message || (i18n.t('routePlanner.error.generic') || 'Routing failed');

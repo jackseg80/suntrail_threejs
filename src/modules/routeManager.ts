@@ -29,12 +29,17 @@ function rebuildMarkers(): void {
     if (!state.scene) return;
     if (!state.scene.children.includes(waypointGroup)) state.scene.add(waypointGroup);
 
+    // Échelle adaptée au zoom (même formule que computeTrackThickness)
+    const zoom = state.ZOOM || 14;
+    const scale = Math.max(20, 20 * Math.pow(2, Math.max(0, 16 - zoom)));
+
     state.routeWaypoints.forEach((wp, i) => {
         if (!state.originTile) return;
         const world = lngLatToWorld(wp.lon, wp.lat, state.originTile);
         // En 2D le terrain est à y=0 même si getAltitudeAt retourne l'altitude exagérée
         const h = state.IS_2D_MODE ? 0 : getAltitudeAt(world.x, world.z);
         const sprite = createWaypointSprite(i + 1);
+        sprite.scale.set(scale, scale, 1);
         sprite.position.set(world.x, h + 18, world.z);
         sprite.userData = { type: 'waypoint-marker', waypointIndex: i };
         waypointGroup.add(sprite);
@@ -65,7 +70,6 @@ function createWaypointSprite(num: number): THREE.Sprite {
         transparent: true,
     });
     const sprite = new THREE.Sprite(mat);
-    sprite.scale.set(40, 40, 1);
     sprite.renderOrder = 999;
     return sprite;
 }
