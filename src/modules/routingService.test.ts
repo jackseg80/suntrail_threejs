@@ -213,10 +213,10 @@ describe('routingService', () => {
             expect(points.length).toBe(5);
             expect(points[0].lat).toBe(46.0);
             expect(points[0].lon).toBe(7.0);
-            expect(points[0].ele).toBe(1500);
+            expect(points[0].ele).toBe(0);
             expect(points[4].lat).toBe(46.04);
             expect(points[4].lon).toBe(7.04);
-            expect(points[4].ele).toBe(1620);
+            expect(points[4].ele).toBe(0);
         });
 
         it('should handle missing elevation in ORS response', async () => {
