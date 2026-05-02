@@ -1,3 +1,8 @@
+## [5.52.9] - 2026-05-03
+
+### Fixed
+- **Détection forêt globale** : Pré-fetch des tuiles landcover Z10/Z14 avant analyse solaire élimine cache-froid. Fonctionnalité détection forêt maintenant opérationnelle hors Suisse (MapTiler Z10).
+
 ## [5.52.8] - 2026-05-02
 
 ### Added
