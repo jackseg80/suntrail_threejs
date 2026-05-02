@@ -122,6 +122,9 @@
     "aria": {
       "close": "Fermer le planificateur",
       "removeWaypoint": "Supprimer le waypoint"
+    },
+    "hint": {
+      "orsSwiss": "Pour les sentiers suisses, ajoutez une clé OpenRouteService"
     }
   },
   "routeBar": {

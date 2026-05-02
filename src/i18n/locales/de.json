@@ -120,6 +120,9 @@
     "aria": {
       "close": "Routenplaner schließen",
       "removeWaypoint": "Wegpunkt entfernen"
+    },
+    "hint": {
+      "orsSwiss": "Für Schweizer Wanderwege einen OpenRouteService-Schlüssel hinzufügen"
     }
   },
   "routeBar": {

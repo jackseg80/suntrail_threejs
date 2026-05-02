@@ -121,6 +121,9 @@
     "aria": {
       "close": "Close route planner",
       "removeWaypoint": "Remove waypoint"
+    },
+    "hint": {
+      "orsSwiss": "For Swiss hiking trails, add an OpenRouteService key"
     }
   },
   "routeBar": {

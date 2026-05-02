@@ -120,6 +120,9 @@
     "aria": {
       "close": "Chiudi pianificatore",
       "removeWaypoint": "Rimuovi waypoint"
+    },
+    "hint": {
+      "orsSwiss": "Per i sentieri svizzeri, aggiungi una chiave OpenRouteService"
     }
   },
   "routeBar": {

@@ -36,6 +36,7 @@ vi.mock('../i18n/I18nService', () => ({
 vi.mock('./geo', () => ({
     worldToLngLat: vi.fn((x: number, z: number) => ({ lat: 46 + x * 0.001, lon: 7 + z * 0.001 })),
     haversineDistance: vi.fn(() => 5),
+    isPositionInSwitzerland: vi.fn(() => false),
 }));
 
 vi.mock('./geoStats', () => ({

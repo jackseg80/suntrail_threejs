@@ -2,7 +2,7 @@ import { state } from './state';
 import { addGPXLayer, removeGPXLayer, recalcLayerStatsFromTerrain } from './gpxLayers';
 import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
-import { haversineDistance } from './geo';
+import { haversineDistance, isPositionInSwitzerland } from './geo';
 import { isProActive } from './state';
 
 let _currentRouteLayerId: string | null = null;
@@ -188,6 +188,11 @@ export async function computeRoute(
     const loopedWaypoints = (state.routeLoopEnabled && waypoints.length >= 2)
         ? [...waypoints, waypoints[0]]
         : waypoints;
+
+    // Suggestion ORS pour la Suisse (sentiers de randonnée non priorisés par OSRM générique)
+    if (!useORS && waypoints.some(wp => isPositionInSwitzerland(wp.lat, wp.lon))) {
+        void showToast(i18n.t('routePlanner.hint.orsSwiss') || 'Pour les sentiers suisses, ajoutez une clé OpenRouteService');
+    }
 
     const _computeDrapedResult = (layer: ReturnType<typeof addGPXLayer>) => {
         return recalcLayerStatsFromTerrain(layer);
