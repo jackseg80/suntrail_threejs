@@ -25,6 +25,7 @@ let _mockLayer: typeof _baseMockLayer;
 vi.mock('./gpxLayers', () => ({
     addGPXLayer: vi.fn(() => _mockLayer),
     removeGPXLayer: vi.fn(),
+    recalcLayerStatsFromTerrain: vi.fn((layer: any) => layer),
 }));
 vi.mock('./toast', () => ({ showToast: vi.fn() }));
 
@@ -51,9 +52,8 @@ vi.mock('./analysis', () => ({
 }));
 
 import { state } from './state';
-import { addGPXLayer } from './gpxLayers';
-import { worldToLngLat, haversineDistance } from './geo';
-import { calculateTrackStats } from './geoStats';
+import { addGPXLayer, recalcLayerStatsFromTerrain } from './gpxLayers';
+import { haversineDistance } from './geo';
 import {
     computeRoute,
     addRouteWaypoint,
@@ -65,8 +65,7 @@ import {
 import { isProActive } from './state';
 
 const mockAddGPXLayer = addGPXLayer as ReturnType<typeof vi.fn>;
-const mockWorldToLngLat = worldToLngLat as ReturnType<typeof vi.fn>;
-const mockCalculateTrackStats = calculateTrackStats as ReturnType<typeof vi.fn>;
+const mockRecalcLayerStats = recalcLayerStatsFromTerrain as ReturnType<typeof vi.fn>;
 const mockHaversineDistance = haversineDistance as ReturnType<typeof vi.fn>;
 const mockIsProActive = isProActive as ReturnType<typeof vi.fn>;
 
@@ -527,23 +526,18 @@ describe('routingService', () => {
             _mockLayer.stats = { distance: 0, dPlus: 0, dMinus: 0, pointCount: 3, estimatedTime: 0 };
         });
 
-        it('should recalculate stats from draped terrain for OSRM routes', async () => {
+        it('should call recalcLayerStatsFromTerrain for OSRM routes', async () => {
             mockFetch.mockResolvedValueOnce({
                 ok: true,
                 json: () => Promise.resolve(VALID_OSRM_RESPONSE),
             });
 
-            const result = await computeRoute([
+            await computeRoute([
                 { lat: 46.0, lon: 7.0 },
                 { lat: 46.04, lon: 7.04 },
             ]);
 
-            expect(mockWorldToLngLat).toHaveBeenCalled();
-            expect(mockCalculateTrackStats).toHaveBeenCalled();
-            expect(result.distance).toBe(8.5);
-            expect(result.ascent).toBe(500);
-            expect(result.descent).toBe(300);
-            expect(result.duration).toBe(120);
+            expect(mockRecalcLayerStats).toHaveBeenCalled();
         });
 
         it('should use ORS API stats directly (no draping override)', async () => {
@@ -559,45 +553,10 @@ describe('routingService', () => {
                 { lat: 46.04, lon: 7.04 },
             ]);
 
-            // ORS utilise les stats du layer (calculées sur données API avec élévation), pas le drapage
             expect(result.distance).toBe(6.2);
             expect(result.ascent).toBe(350);
             expect(result.descent).toBe(230);
             expect(result.duration).toBe(75);
-        });
-
-        it('should skip draping when layer has insufficient points', async () => {
-            _mockLayer.points = [{ x: 100, y: 1500, z: 200 }] as any[];
-            mockFetch.mockResolvedValueOnce({
-                ok: true,
-                json: () => Promise.resolve(VALID_OSRM_RESPONSE),
-            });
-
-            await computeRoute([
-                { lat: 46.0, lon: 7.0 },
-                { lat: 46.04, lon: 7.04 },
-            ]);
-
-            expect(mockCalculateTrackStats).not.toHaveBeenCalled();
-        });
-
-        it('should skip draping when no originTile', async () => {
-            state.originTile = null as any;
-            _mockLayer.points = [
-                { x: 100, y: 1500, z: 200 },
-                { x: 110, y: 1550, z: 210 },
-            ] as any[];
-            mockFetch.mockResolvedValueOnce({
-                ok: true,
-                json: () => Promise.resolve(VALID_OSRM_RESPONSE),
-            });
-
-            await computeRoute([
-                { lat: 46.0, lon: 7.0 },
-                { lat: 46.04, lon: 7.04 },
-            ]);
-
-            expect(mockCalculateTrackStats).not.toHaveBeenCalled();
         });
     });
 
@@ -730,7 +689,7 @@ describe('routingService', () => {
                 { lat: 46.04, lon: 7.04 },
             ]);
 
-            expect(mockCalculateTrackStats).toHaveBeenCalled();
+            expect(mockRecalcLayerStats).toHaveBeenCalled();
             expect(mockHaversineDistance).toHaveBeenCalled();
             expect(result.distance).toBeGreaterThan(0);
             expect(result.ascent).toBeGreaterThan(0);

@@ -360,7 +360,7 @@ export class TrackSheet extends BaseComponent {
                     <span class="gpx-layer-dot" style="background:${layer.color}"></span>
                     <div class="gpx-layer-info">
                         <span class="gpx-layer-name">${truncName}</span>
-                        <span class="gpx-layer-stats">${layer.stats.distance.toFixed(2)} km · D+ ${Math.round(layer.stats.dPlus)} m · ⏱️ ${duration}</span>
+                        <span class="gpx-layer-stats">${layer.stats.distance.toFixed(2)} km · D+ ${Math.round(layer.stats.dPlus)} m · D− ${Math.round(layer.stats.dMinus)} m · ⏱️ ${duration}</span>
                     </div>
                     <button class="gpx-layer-profile" data-action="profile" data-id="${layer.id}"
                             aria-label="${i18n.t('track.imported.showProfile')}"

@@ -1,10 +1,8 @@
 import { state } from './state';
-import { addGPXLayer, removeGPXLayer } from './gpxLayers';
+import { addGPXLayer, removeGPXLayer, recalcLayerStatsFromTerrain } from './gpxLayers';
 import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
-import { worldToLngLat, haversineDistance } from './geo';
-import { calculateTrackStats } from './geoStats';
-import { getAltitudeAt } from './analysis';
+import { haversineDistance } from './geo';
 import { isProActive } from './state';
 
 let _currentRouteLayerId: string | null = null;
@@ -192,29 +190,7 @@ export async function computeRoute(
         : waypoints;
 
     const _computeDrapedResult = (layer: ReturnType<typeof addGPXLayer>) => {
-        const originTile = state.originTile;
-        if (!originTile || !layer.points || layer.points.length < 2) return layer;
-        const relief = state.RELIEF_EXAGGERATION || 1;
-        const drapedStats = calculateTrackStats(layer.points.map((v, i) => {
-            const gps = worldToLngLat(v.x, v.z, originTile);
-            return {
-                lat: gps.lat,
-                lon: gps.lon,
-                alt: getAltitudeAt(v.x, v.z) / relief,
-                timestamp: i * 1000,
-            };
-        }));
-        const updatedStats = {
-            ...layer.stats,
-            distance: drapedStats.distance,
-            dPlus: drapedStats.dPlus,
-            dMinus: drapedStats.dMinus,
-            estimatedTime: drapedStats.estimatedTime,
-        };
-        state.gpxLayers = state.gpxLayers.map(l =>
-            l.id === layer.id ? { ...l, stats: updatedStats } : l
-        );
-        return { ...layer, stats: updatedStats };
+        return recalcLayerStatsFromTerrain(layer);
     };
 
     try {

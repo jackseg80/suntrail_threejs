@@ -59,6 +59,33 @@ function computeTrackThickness(base: number, max: number): number {
     return Math.max(base, Math.min(max, base * Math.pow(2, exponent)));
 }
 
+/** Recalcule les stats (distance, D+/D-, temps) d'un layer depuis l'altitude réelle du terrain.
+ *  Source unique de vérité — utilisée par _computeDrapedResult, _doUpdateAllGPXMeshes, etc. */
+export function recalcLayerStatsFromTerrain(layer: GPXLayer): GPXLayer {
+    if (!state.originTile || !layer.points || layer.points.length < 2) return layer;
+    const relief = state.RELIEF_EXAGGERATION || 1;
+    const drapedStats = calculateTrackStats(layer.points.map((v, i) => {
+        const gps = worldToLngLat(v.x, v.z, state.originTile!);
+        return {
+            lat: gps.lat,
+            lon: gps.lon,
+            alt: getAltitudeAt(v.x, v.z) / relief,
+            timestamp: i * 1000,
+        };
+    }));
+    const updatedStats = {
+        ...layer.stats,
+        distance: drapedStats.distance,
+        dPlus: drapedStats.dPlus,
+        dMinus: drapedStats.dMinus,
+        estimatedTime: drapedStats.estimatedTime,
+    };
+    state.gpxLayers = state.gpxLayers.map(l =>
+        l.id === layer.id ? { ...l, stats: updatedStats } : l
+    );
+    return { ...layer, stats: updatedStats };
+}
+
 export function addGPXLayer(rawData: Record<string, any>, name: string, opts?: { silent?: boolean }): GPXLayer {
     const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `gpx-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     const colorIndex = state.gpxLayers.length % GPX_COLORS.length;
@@ -198,30 +225,8 @@ function _doUpdateAllGPXMeshes(): void {
             mesh.userData = { type: 'gpx-track', layerId: layer.id };
             if (state.scene) state.scene.add(mesh);
 
-            // Recalculer les stats depuis l'altitude réelle du terrain (indépendant du mode 2D/3D)
-            const relief = state.RELIEF_EXAGGERATION || 1;
-            const updatedStats = calculateTrackStats(drapedPoints.map((v, i) => {
-                const gps = worldToLngLat(v.x, v.z, state.originTile!);
-                return {
-                    lat: gps.lat,
-                    lon: gps.lon,
-                    alt: getAltitudeAt(v.x, v.z) / relief,
-                    timestamp: i * 1000,
-                };
-            }));
-
-            updatedLayers.push({
-                ...layer,
-                points: drapedPoints,
-                mesh,
-                stats: {
-                    ...layer.stats,
-                    distance: updatedStats.distance,
-                    dPlus: updatedStats.dPlus,
-                    dMinus: updatedStats.dMinus,
-                    estimatedTime: updatedStats.estimatedTime,
-                },
-            });
+            const updated = recalcLayerStatsFromTerrain({ ...layer, points: drapedPoints, mesh });
+            updatedLayers.push(updated);
         } catch (e) {
             console.warn('[GPX] Failed to rebuild layer', layer.name, e);
         }
