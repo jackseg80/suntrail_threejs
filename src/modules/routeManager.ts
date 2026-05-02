@@ -30,7 +30,7 @@ export function initRouteManager(): void {
     state.subscribe('isProcessingTiles', (processing: boolean) => {
         if (!processing) rebuildMarkers();
     });
-    state.subscribe('gpxLayers', () => updateBarFromLayerStats());
+    state.subscribe('gpxLayers', () => updateBar());
 }
 
 function rebuildMarkers(): void {
