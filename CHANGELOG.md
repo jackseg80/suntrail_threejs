@@ -1,3 +1,8 @@
+## [5.52.5] - 2026-05-02
+
+### Fixed
+- Test `routingService.test.ts` : expectations `ele` mises à jour après le changement `orsResponseToPoints` (ele forcé à 0).
+
 ## [5.52.4] - 2026-05-02
 
 ### Fixed
