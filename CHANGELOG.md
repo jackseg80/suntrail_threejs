@@ -1,3 +1,19 @@
+## [5.51.2] - 2026-05-02
+
+### Fixed
+
+- **Sprites adaptatifs** : Échelle basée sur le zoom (formule `20 × 2^(16-zoom)`) pour visibilité à tous les niveaux. À zoom 10-12 (vue 2D), sprites de 1.2km visibles ; à zoom 16+, 20-30m. Élimine l'invisibilité en mode 2D et adapte automatiquement.
+- **Stats unifiées (route bar = Parcours)** : `computeRoute()` retourne maintenant `layer.stats` (haversine distance, D+ hystérésis, temps Munter) au lieu des valeurs API. Ancien temps ORS (1h28 pour 7.4km/590m) était irréaliste ; Munter (3h05) cohérent partout.
+
+## [5.51.1] - 2026-05-02
+
+### Fixed
+
+- **Parallaxe sprites + LOD** : Ajout subscribes à `originTile` + `ZOOM` + `IS_2D_MODE` + `isProcessingTiles` pour que `rebuildMarkers()` soit appelée quand le contexte change. Les sprites suivent maintenant le pan de caméra et s'adaptent lors du changement de LOD.
+- **Sprites flottants en 2D** : `getAltitudeAt()` retourne l'altitude exagérée (~2400m) mais en 2D le terrain est à y=0 → sprite utilisait `h + 18` (flottait massivement). Fix : `h = state.IS_2D_MODE ? 0 : getAltitudeAt(...)`.
+- **Boucle bouton illisible** : Checkbox native cachée (opacity:0, width:0), label stylé comme pill-bouton clair. CSS sibling selector `#rs-loop:checked + .rs-loop-btn` pour l'état actif.
+- **Stats Parcours 0.00 km** : `buildGPXCompatibleData` assignait le même timestamp ISO à tous les points → `cleanGPSTrack` les considérait comme doublons (< 2 points unique) → distance=0. Suppression du champ `time` ; fallback `i*1000` dans `addGPXLayer` garantit l'unicité.
+
 ## [5.51.0] - 2026-05-02
 
 ### Changed

@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.51.x)
+# SunTrail — Guide IA (v5.51.2)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-02 — v5.51.x : UX planificateur "zero-mode" (long-press, markers 3D, auto-compute).
+> Mis à jour le 2026-05-02 — v5.51.2 : Regressions fixes (sprites adaptatifs, stats unifiées).
 
 
 ## Projet
