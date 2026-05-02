@@ -292,10 +292,11 @@ function setupProfileInteractions(): void {
         if (state.scene) state.scene.add(state.profileMarker);
     }
 
-    const onMove = (e: PointerEvent) => {
+    const onMove = (e: MouseEvent | TouchEvent) => {
         setInteracting(); // Maintenir le renderer actif (évite le Deep Sleep en 2D)
         const rect = container.getBoundingClientRect();
-        const x = e.clientX - rect.left;
+        const clientX = (e as MouseEvent).clientX || (e as TouchEvent).touches[0]?.clientX || 0;
+        const x = clientX - rect.left;
         const width = rect.width;
         
         const ratio = THREE.MathUtils.clamp(x / width, 0, 1);
@@ -319,20 +320,12 @@ function setupProfileInteractions(): void {
         }
     };
 
-    // setPointerCapture garde le tracking même si le doigt sort du container (évite pointercancel sur scroll mobile)
-    container.addEventListener('pointerdown', (e: PointerEvent) => {
-        container.setPointerCapture(e.pointerId);
-        startKeepAlive();
-    });
-    container.addEventListener('pointermove', (e: PointerEvent) => onMove(e));
-    container.addEventListener('pointerup', (e: PointerEvent) => {
-        if (container.hasPointerCapture(e.pointerId)) container.releasePointerCapture(e.pointerId);
-        stopKeepAlive();
-        if (e.pointerType === 'touch') {
-            cursor.style.display = 'none';
-            if (state.profileMarker) state.profileMarker.visible = false;
-        }
-    });
+    // touch-action:none sur le container (HTML) empêche le browser de capturer le scroll
+    // et déclencher pointercancel pendant le drag sur mobile
+    container.addEventListener('pointerdown', startKeepAlive);
+    container.addEventListener('pointermove', onMove as EventListener);
+    container.addEventListener('pointerup', stopKeepAlive);
+    container.addEventListener('pointerleave', stopKeepAlive);
     container.addEventListener('pointercancel', stopKeepAlive);
 
     container.onmouseleave = () => {
