@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.52.2)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-02 — v5.52.2+ : Solar Route Analysis (RAF keepalive 2D, Hiker Timeline, 3D overlay, shadow accuracy).
+> Mis à jour le 2026-05-02 — v5.52.3 : Solar Route Analysis fixes (départ optimal, profile mobile touch-action:none).
 
 
 ## Projet

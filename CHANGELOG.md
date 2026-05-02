@@ -1,3 +1,9 @@
+## [5.52.3] - 2026-05-02
+
+### Fixed
+- **Solar Route — départ optimal** : Double bug dans `analyzeOptimalDeparture()` : (1) utilisait `pt.y ≈ 12` (altitude GPX drappée avant tuiles) → tout détecté comme ombre → score 0% pour tous les créneaux → résultat `00h00 → 0%`. Fix : utiliser `getAltitudeAt(pt.x, pt.z) + 12` comme dans `analyzeRouteSolar()`. (2) Durée parcours hardcodée à 2h pour tous les tracés → heures d'arrivée fausses sur 30-40min. Fix : calculer durée réelle = `totalDistKm / avgSpeedKmh`.
+- **Profile interaction mobile** : `setPointerCapture` introduisait des effets de bord. Solution robuste : `touch-action: none` sur le container empêche le browser d'intercepter le scroll natif, donc `pointercancel` n'est jamais déclenché pendant le drag. Revenir à event listeners 9d4b4d4 (sans setPointerCapture).
+
 ## [5.52.2] - 2026-05-02
 
 ### Added
