@@ -1,3 +1,10 @@
+## [5.53.1] - 2026-05-03
+
+### Fixed
+
+- **OEM agressifs (Samsung/Xiaomi/OPPO)** : `onTaskRemoved()` dans `RecordingService` replanifie un redémarrage via `AlarmManager` (1s délai) si l'OS tue le service au swipe. Corrige la perte de trace partielle observée sur certains appareils.
+- **Permission `SCHEDULE_EXACT_ALARM`** ajoutée au Manifest pour le redémarrage AlarmManager.
+
 ## [5.53.0] - 2026-05-03
 
 ### Fixed

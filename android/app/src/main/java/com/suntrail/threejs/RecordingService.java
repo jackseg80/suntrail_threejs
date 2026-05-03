@@ -364,6 +364,26 @@ public class RecordingService extends Service {
     @Override
     public IBinder onBind(Intent intent) { return null; }
 
+    /**
+     * Appelé quand l'utilisateur swipe l'app des recents.
+     * Avec stopWithTask="false", Android ne tue pas le service — mais certains OEMs
+     * (Samsung, Xiaomi, OPPO) le font quand même. On replanifie un redémarrage explicite.
+     */
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        super.onTaskRemoved(rootIntent);
+        Log.i(TAG, "onTaskRemoved — replanification du service");
+        Intent restartIntent = new Intent(getApplicationContext(), RecordingService.class);
+        android.app.PendingIntent pi = android.app.PendingIntent.getService(
+                getApplicationContext(), 1, restartIntent,
+                android.app.PendingIntent.FLAG_ONE_SHOT | android.app.PendingIntent.FLAG_IMMUTABLE);
+        android.app.AlarmManager am = (android.app.AlarmManager) getSystemService(ALARM_SERVICE);
+        if (am != null) {
+            am.set(android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                    android.os.SystemClock.elapsedRealtime() + 1000, pi);
+        }
+    }
+
     // ── Broadcast helper ───────────────────────────────────────────────────────────
 
     private void sendPointsBroadcast(String courseId, int pointCount) {

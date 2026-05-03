@@ -79,4 +79,6 @@
     <uses-permission android:name="com.android.vending.BILLING" />
     <!-- Wake Lock — maintient le CPU actif pendant l'enregistrement GPS (v5.23) -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- AlarmManager pour relancer RecordingService si swipé par OEM agressif (v5.53.1) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 </manifest>
