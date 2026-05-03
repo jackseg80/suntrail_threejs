@@ -27,10 +27,28 @@
             </intent-filter>
         </activity>
 
-        <!-- Foreground Service pour maintien du processus pendant l'enregistrement GPS -->
-        <!-- stopWithTask="false" : le service survit même si l'utilisateur swipe l'app des recents (v5.23) -->
+        <!--
+            TrackingActivity — Activity transparente dans le processus :tracking (v5.53.0).
+            Ce processus est indépendant du processus principal (MainActivity).
+            Quand l'utilisateur kill l'app principale, RecordingService continue dans :tracking.
+        -->
+        <activity
+            android:name=".TrackingActivity"
+            android:process=":tracking"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true" />
+
+        <!--
+            Foreground Service GPS dans le processus :tracking (v5.53.0).
+            android:process=":tracking" — processus séparé du processus principal.
+            android:stopWithTask="false" — survit au swipe de l'app des recents.
+            Avec android:process séparé, survivra même au kill du processus principal.
+        -->
         <service
             android:name=".RecordingService"
+            android:process=":tracking"
             android:foregroundServiceType="location"
             android:stopWithTask="false"
             android:exported="false" />

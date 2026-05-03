@@ -1,3 +1,19 @@
+## [5.53.0] - 2026-05-03
+
+### Fixed
+
+- **Foreground Service survit au kill de l'app** : Processus Android séparé `:tracking` pour `RecordingService` + `TrackingActivity`. Communication via Broadcasts (`ACTION_POINTS_UPDATED`, `ACTION_SERVICE_STOPPED`) au lieu d'interface statique cross-processus. État partagé : fichier `rec_state.json` dans `filesDir`. Room SQLite : `enableMultiInstanceInvalidation()` pour synchronisation cross-processus. Impact: GPS continue même après swipe de l'app des recents (v5.52.9 tuait les deux processus).
+
+### Changed
+
+- `RecordingService.java` : Plus d'interface `RecordingCallback` statique. Broadcasts + JSON state file.
+- `RecordingPlugin.java` : `BroadcastReceiver` au lieu d'implémentation `RecordingCallback`.
+- `AndroidManifest.xml` : Ajout `android:process=":tracking"` sur Service + TrackingActivity.
+
+### Tests
+
+- Tests existants inchangés (744 tests vitest passent).
+
 ## [5.52.9] - 2026-05-03
 
 ### Fixed

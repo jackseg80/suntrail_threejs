@@ -32,6 +32,10 @@ import com.suntrail.threejs.data.AppDatabase;
 import com.suntrail.threejs.data.GPSPoint;
 import com.suntrail.threejs.data.GPSPointDao;
 
+import org.json.JSONObject;
+
+import java.io.File;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -39,73 +43,79 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * RecordingService — Foreground Service Android avec GPS natif (v5.31.2)
+ * RecordingService — Foreground Service Android avec GPS natif (v5.53.0)
+ *
+ * PROCESSUS : android:process=":tracking" — indépendant de MainActivity.
+ * Lorsque l'utilisateur kill l'app principale, ce processus continue à tourner
+ * car il gère un Foreground Service (notification persistante).
+ *
+ * Communication avec RecordingPlugin (processus principal) :
+ *   - Service → Plugin : Broadcasts (ACTION_POINTS_UPDATED, ACTION_SERVICE_STOPPED)
+ *   - Plugin → Service : Intent via startForegroundService() avec actions nommées
+ *   - État partagé     : fichier rec_state.json dans filesDir (partagé entre processus)
  */
 public class RecordingService extends Service {
 
     private static final String TAG             = "RecordingService";
     private static final String CHANNEL_ID      = "suntrail_recording_v1";
     private static final int    NOTIFICATION_ID = 42;
-    private static final String PREFS_NAME      = "suntrail_rec_config";
-    static final String         STOP_ACTION     = "com.suntrail.threejs.STOP_RECORDING";
 
-    // ── CONSTANTES DE FILTRAGE GPS (Single Source of Truth) ────────────────────────
-    private static final float  MAX_SPEED_MPS       = 15.0f;       // 54 km/h
-    private static final float  MIN_DISTANCE_M      = 3.0f;        // 3m
-    private static final long   MIN_TIME_MS         = 1000L;       // 1s
-    private static final float  MAX_ACCURACY_M      = 50.0f;       // 50m
-    private static final double MIN_ALT_M           = -500.0;
-    private static final double MAX_ALT_M           = 9000.0;
+    // ── Actions Broadcast (Service → Plugin) ───────────────────────────────────────
+    public static final String ACTION_POINTS_UPDATED  = "com.suntrail.threejs.POINTS_UPDATED";
+    public static final String ACTION_SERVICE_STOPPED = "com.suntrail.threejs.SERVICE_STOPPED";
 
-    public interface RecordingCallback {
-        void onNewPoints(String courseId, int pointCount);
-        void onServiceStopped();
-    }
+    // ── Actions Intent (Plugin → Service via startForegroundService) ───────────────
+    public static final String ACTION_UPDATE_STATS = "com.suntrail.threejs.UPDATE_STATS";
+    public static final String ACTION_STOP_COURSE  = "com.suntrail.threejs.STOP_COURSE";
 
-    private static RecordingCallback sCallback;
-    public static void setCallback(RecordingCallback callback) { sCallback = callback; }
-    public static RecordingCallback getCallback() { return sCallback; }
+    // ── Fichier d'état partagé entre processus ─────────────────────────────────────
+    private static final String STATE_FILE = "rec_state.json";
+
+    // ── Bouton STOP dans la notification ──────────────────────────────────────────
+    static final String STOP_ACTION = "com.suntrail.threejs.STOP_RECORDING";
+
+    // ── Constantes GPS ─────────────────────────────────────────────────────────────
+    private static final float  MAX_SPEED_MPS  = 15.0f;
+    private static final float  MIN_DISTANCE_M = 3.0f;
+    private static final long   MIN_TIME_MS    = 1000L;
+    private static final float  MAX_ACCURACY_M = 50.0f;
+    private static final double MIN_ALT_M      = -500.0;
+    private static final double MAX_ALT_M      = 9000.0;
 
     private FusedLocationProviderClient mFusedClient;
-    private LocationCallback             mLocationCallback;
-    private AppDatabase   mDatabase;
-    private GPSPointDao  mDao;
-    private ExecutorService mDbExecutor;
+    private LocationCallback            mLocationCallback;
+    private AppDatabase                 mDatabase;
+    private GPSPointDao                 mDao;
+    private ExecutorService             mDbExecutor;
 
-    private String mCurrentCourseId;
-    private Location mLastValidLocation;
-    private long     mLastValidTimestamp;
-    private final AtomicInteger mPointCount = new AtomicInteger(0);
+    private String              mCurrentCourseId;
+    private Location            mLastValidLocation;
+    private long                mLastValidTimestamp;
+    private final AtomicInteger mPointCount   = new AtomicInteger(0);
     private final List<GPSPoint> mPointBuffer = new ArrayList<>();
-    private static final int BATCH_SIZE = 3;
-    private static final long BATCH_FLUSH_INTERVAL_MS = 10000;
-    private long mLastBatchFlush = 0;
+    private static final int    BATCH_SIZE    = 3;
+    private static final long   BATCH_FLUSH_INTERVAL_MS = 10000;
+    private long                mLastBatchFlush = 0;
 
     private PowerManager.WakeLock mWakeLock;
 
-    // Stats pour la notification (Single Source of Truth coming from JS)
-    private double mStatsDistance = 0.0;
-    private double mStatsElevation = 0.0;
+    private double mStatsDistance      = 0.0;
+    private double mStatsElevation     = 0.0;
     private double mStatsElevationMinus = 0.0;
 
-    private long    mStartTime                 = 0;
-    private Location mLastSignificantLocation  = null;
-    private long    mLastMovementTime          = 0;
-    private boolean mIsImmobile                = false;
-    private static final float  IMMOBILITY_DISTANCE_THRESHOLD = 30.0f;
-    private static final long   IMMOBILITY_TIME_THRESHOLD     = 30 * 60 * 1000L;
+    private long     mStartTime               = 0;
+    private Location mLastSignificantLocation = null;
+    private long     mLastMovementTime        = 0;
+    private boolean  mIsImmobile              = false;
+    private static final float IMMOBILITY_DISTANCE_THRESHOLD = 30.0f;
+    private static final long  IMMOBILITY_TIME_THRESHOLD     = 30 * 60 * 1000L;
 
     private PendingIntent    mOpenPendingIntent;
     private PendingIntent    mStopPendingIntent;
     private BroadcastReceiver mStopReceiver;
 
-    private static volatile boolean sIsRunning = false;
-    private static RecordingService sInstance = null;
-    public static boolean isRunning() { return sIsRunning; }
-    public static RecordingService getInstance() { return sInstance; }
-
     private LocationRequest mLocationRequest;
-    private long mLastGpsConfigUpdate = 0;
+    private long  mLastGpsConfigUpdate = 0;
     private static final long GPS_CONFIG_UPDATE_INTERVAL_MS = 30000;
     private float mCurrentSpeedMps = 0f;
     private static final float SPEED_WALKING_SLOW = 0.8f;
@@ -114,10 +124,8 @@ public class RecordingService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        sIsRunning = true;
-        sInstance = this;
-        mDatabase = AppDatabase.getInstance(getApplicationContext());
-        mDao = mDatabase.gpsPointDao();
+        mDatabase   = AppDatabase.getInstance(getApplicationContext());
+        mDao        = mDatabase.gpsPointDao();
         mDbExecutor = Executors.newSingleThreadExecutor();
         mFusedClient = LocationServices.getFusedLocationProviderClient(this);
     }
@@ -125,6 +133,22 @@ public class RecordingService extends Service {
     @Override
     @SuppressWarnings("deprecation")
     public int onStartCommand(Intent intent, int flags, int startId) {
+        String action = intent != null ? intent.getAction() : null;
+
+        // ── Commandes de contrôle (sans lancer une nouvelle course) ──────────────
+        if (ACTION_UPDATE_STATS.equals(action)) {
+            double dist      = intent.getDoubleExtra("distance", 0.0);
+            double elev      = intent.getDoubleExtra("elevation", 0.0);
+            double elevMinus = intent.getDoubleExtra("elevationMinus", 0.0);
+            updateNotificationStats(dist, elev, elevMinus);
+            return START_STICKY;
+        }
+        if (ACTION_STOP_COURSE.equals(action)) {
+            stopSelf();
+            return START_NOT_STICKY;
+        }
+
+        // ── Démarrage / reprise de course ─────────────────────────────────────────
         createNotificationChannel();
         boolean isNewCourse = (intent != null) && intent.getBooleanExtra("isNewCourse", false);
 
@@ -134,9 +158,9 @@ public class RecordingService extends Service {
             mStartTime = System.currentTimeMillis();
             Log.i(TAG, "Démarrage d'une NOUVELLE course: " + mCurrentCourseId);
         } else {
-            SharedPreferences recoveryPrefs = getSharedPreferences("RecordingPrefs", MODE_PRIVATE);
-            mCurrentCourseId = recoveryPrefs.getString("currentCourseId", null);
-            mStartTime = recoveryPrefs.getLong("startTime", System.currentTimeMillis());
+            SharedPreferences prefs = getSharedPreferences("RecordingPrefs", MODE_PRIVATE);
+            mCurrentCourseId = prefs.getString("currentCourseId", null);
+            mStartTime = prefs.getLong("startTime", System.currentTimeMillis());
 
             if (mCurrentCourseId != null) {
                 mDbExecutor.execute(() -> {
@@ -155,7 +179,7 @@ public class RecordingService extends Service {
             }
         }
 
-        mLastValidLocation = null;
+        mLastValidLocation  = null;
         mLastValidTimestamp = 0;
 
         getSharedPreferences("RecordingPrefs", MODE_PRIVATE).edit()
@@ -163,20 +187,26 @@ public class RecordingService extends Service {
             .putLong("startTime", mStartTime)
             .apply();
 
-        if (sCallback != null) {
-            sCallback.onNewPoints(mCurrentCourseId, mPointCount.get());
-        }
+        // Écrire l'état partagé (lu cross-processus par RecordingPlugin)
+        writeStateFile(true);
 
+        // Notifier le plugin que la course est démarrée
+        sendPointsBroadcast(mCurrentCourseId, mPointCount.get());
+
+        // PendingIntent : tap sur la notification → ouvre MainActivity
         Intent openIntent = new Intent(this, MainActivity.class);
         openIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        mOpenPendingIntent = PendingIntent.getActivity(this, 0, openIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        mOpenPendingIntent = PendingIntent.getActivity(this, 0, openIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
+        // PendingIntent : bouton "Arrêter REC" dans la notification
         Intent stopBroadcast = new Intent(STOP_ACTION);
         stopBroadcast.setPackage(getPackageName());
-        mStopPendingIntent = PendingIntent.getBroadcast(this, 1, stopBroadcast, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        mStopPendingIntent = PendingIntent.getBroadcast(this, 1, stopBroadcast,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         if (mStopReceiver != null) {
-            try { unregisterReceiver(mStopReceiver); } catch (Exception e) { Log.w(TAG, "Unregister stop receiver: " + e.getMessage()); }
+            try { unregisterReceiver(mStopReceiver); } catch (Exception ignored) {}
             mStopReceiver = null;
         }
         mStopReceiver = new BroadcastReceiver() {
@@ -185,25 +215,27 @@ public class RecordingService extends Service {
                 stopSelf();
             }
         };
-        IntentFilter filter = new IntentFilter(STOP_ACTION);
+        IntentFilter stopFilter = new IntentFilter(STOP_ACTION);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(mStopReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            registerReceiver(mStopReceiver, stopFilter, Context.RECEIVER_NOT_EXPORTED);
         } else {
-            registerReceiver(mStopReceiver, filter);
+            registerReceiver(mStopReceiver, stopFilter);
         }
 
         mLastMovementTime = System.currentTimeMillis();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(NOTIFICATION_ID, buildNotification(mPointCount.get()), ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+            startForeground(NOTIFICATION_ID, buildNotification(mPointCount.get()),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
         } else {
             startForeground(NOTIFICATION_ID, buildNotification(mPointCount.get()));
         }
 
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        long interval = (intent != null) ? intent.getLongExtra("interval", 3000L) : prefs.getLong("interval", 3000L);
-        float minDisplacement = (intent != null) ? intent.getFloatExtra("minDisplacement", 0.5f) : prefs.getFloat("minDisplacement", 0.5f);
-        boolean highAccuracy = (intent != null) ? intent.getBooleanExtra("highAccuracy", true) : prefs.getBoolean("highAccuracy", true);
+        // Config GPS depuis les extras ou SharedPreferences
+        SharedPreferences prefs = getSharedPreferences("suntrail_rec_config", MODE_PRIVATE);
+        long    interval        = (intent != null) ? intent.getLongExtra("interval", 3000L)            : prefs.getLong("interval", 3000L);
+        float   minDisplacement = (intent != null) ? intent.getFloatExtra("minDisplacement", 0.5f)     : prefs.getFloat("minDisplacement", 0.5f);
+        boolean highAccuracy    = (intent != null) ? intent.getBooleanExtra("highAccuracy", true)      : prefs.getBoolean("highAccuracy", true);
 
         mLocationRequest = LocationRequest.create()
             .setInterval(interval)
@@ -229,11 +261,9 @@ public class RecordingService extends Service {
                     if (altOrthometric < MIN_ALT_M || altOrthometric > MAX_ALT_M) continue;
 
                     long now = loc.getTime();
-                    
-                    // v5.38.3 : Rejeter les positions "stale" (anciennes) lors du démarrage d'une nouvelle course
-                    // Évite le bug de la "ligne droite" depuis le dernier point connu (souvent à la maison)
+
                     if (mPointCount.get() == 0 && now < mStartTime - 15000) {
-                        Log.w(TAG, "Position ignorée : trop ancienne (stale) de " + (mStartTime - now)/1000 + "s");
+                        Log.w(TAG, "Position ignorée : trop ancienne (stale) de " + (mStartTime - now) / 1000 + "s");
                         continue;
                     }
 
@@ -243,13 +273,11 @@ public class RecordingService extends Service {
                     double distance3D = 0;
                     if (mLastValidLocation != null) {
                         float distance2D = mLastValidLocation.distanceTo(loc);
-                        
-                        // v5.38.3 : Filtre de distance un peu plus souple au démarrage pour accrocher la trace
                         float minDistance = (mPointCount.get() < 5) ? 1.5f : MIN_DISTANCE_M;
                         if (distance2D < minDistance) continue;
 
-                        double lastAltOrthometric = mLastValidLocation.getAltitude() - estimateGeoIdHeight(mLastValidLocation.getLatitude(), mLastValidLocation.getLongitude());
-                        double altDiff = altOrthometric - lastAltOrthometric;
+                        double lastAlt = mLastValidLocation.getAltitude() - estimateGeoIdHeight(mLastValidLocation.getLatitude(), mLastValidLocation.getLongitude());
+                        double altDiff = altOrthometric - lastAlt;
                         distance3D = Math.sqrt(distance2D * distance2D + altDiff * altDiff);
 
                         float speedMps = (float) (distance3D / (timeDiff / 1000.0));
@@ -257,30 +285,28 @@ public class RecordingService extends Service {
                         mCurrentSpeedMps = speedMps;
                     }
 
-                    // v5.38.3 : Précision plus tolérante pour les 5 premiers points (100m au lieu de 50m)
-                    // Garantit qu'on commence à enregistrer même si le "cold start" du GPS est laborieux
                     float accuracyThreshold = (mPointCount.get() < 5) ? 100.0f : MAX_ACCURACY_M;
                     if (loc.getAccuracy() > accuracyThreshold) continue;
 
-                    final GPSPoint point = new GPSPoint(mCurrentCourseId, loc.getLatitude(), loc.getLongitude(), altOrthometric, now, loc.getAccuracy());
+                    final GPSPoint point = new GPSPoint(mCurrentCourseId, loc.getLatitude(),
+                            loc.getLongitude(), altOrthometric, now, loc.getAccuracy());
                     mPointBuffer.add(point);
                     int newCount = mPointCount.incrementAndGet();
 
                     if (mPointBuffer.size() >= BATCH_SIZE || (now - mLastBatchFlush) > BATCH_FLUSH_INTERVAL_MS) {
-                        final List<GPSPoint> pointsToInsert = new ArrayList<>(mPointBuffer);
+                        final List<GPSPoint> toInsert = new ArrayList<>(mPointBuffer);
                         mPointBuffer.clear();
                         mLastBatchFlush = now;
+                        final String courseId = mCurrentCourseId;
                         mDbExecutor.execute(() -> {
-                            mDao.insertAll(pointsToInsert);
-                            RecordingCallback cb = getCallback();
-                            if (cb != null) cb.onNewPoints(mCurrentCourseId, newCount);
+                            mDao.insertAll(toInsert);
+                            sendPointsBroadcast(courseId, newCount);
                         });
                     } else {
-                        RecordingCallback cb = getCallback();
-                        if (cb != null) cb.onNewPoints(mCurrentCourseId, newCount);
+                        sendPointsBroadcast(mCurrentCourseId, newCount);
                     }
 
-                    mLastValidLocation = loc;
+                    mLastValidLocation  = loc;
                     mLastValidTimestamp = now;
                     updateImmobilityStatus(loc);
                     updateAdaptiveGpsConfig();
@@ -306,10 +332,18 @@ public class RecordingService extends Service {
 
     @Override
     public void onDestroy() {
-        sIsRunning = false;
-        getSharedPreferences("RecordingPrefs", MODE_PRIVATE).edit().remove("currentCourseId").apply();
-        if (mStopReceiver != null) { try { unregisterReceiver(mStopReceiver); } catch (Exception e) {} mStopReceiver = null; }
-        if (mFusedClient != null && mLocationCallback != null) mFusedClient.removeLocationUpdates(mLocationCallback);
+        writeStateFile(false);
+
+        getSharedPreferences("RecordingPrefs", MODE_PRIVATE).edit()
+                .remove("currentCourseId").apply();
+
+        if (mStopReceiver != null) {
+            try { unregisterReceiver(mStopReceiver); } catch (Exception ignored) {}
+            mStopReceiver = null;
+        }
+        if (mFusedClient != null && mLocationCallback != null) {
+            mFusedClient.removeLocationUpdates(mLocationCallback);
+        }
         if (!mPointBuffer.isEmpty() && mDbExecutor != null) {
             final List<GPSPoint> remaining = new ArrayList<>(mPointBuffer);
             mPointBuffer.clear();
@@ -317,8 +351,12 @@ public class RecordingService extends Service {
         }
         if (mDbExecutor != null) mDbExecutor.shutdown();
         if (mWakeLock != null && mWakeLock.isHeld()) mWakeLock.release();
-        if (sCallback != null) sCallback.onServiceStopped();
-        sInstance = null;
+
+        // Notifier le plugin que le service s'arrête
+        Intent bcast = new Intent(ACTION_SERVICE_STOPPED);
+        bcast.setPackage(getPackageName());
+        sendBroadcast(bcast);
+
         stopForeground(true);
         super.onDestroy();
     }
@@ -326,37 +364,53 @@ public class RecordingService extends Service {
     @Override
     public IBinder onBind(Intent intent) { return null; }
 
-    private void updateImmobilityStatus(Location currentLocation) {
-        long now = System.currentTimeMillis();
-        if (mLastSignificantLocation == null) {
-            mLastSignificantLocation = currentLocation;
-            mLastMovementTime = now;
-            return;
-        }
-        if (mLastSignificantLocation.distanceTo(currentLocation) > IMMOBILITY_DISTANCE_THRESHOLD) {
-            mLastSignificantLocation = currentLocation;
-            mLastMovementTime = now;
-            mIsImmobile = false;
-        } else if (now - mLastMovementTime > IMMOBILITY_TIME_THRESHOLD) {
-            mIsImmobile = true;
+    // ── Broadcast helper ───────────────────────────────────────────────────────────
+
+    private void sendPointsBroadcast(String courseId, int pointCount) {
+        Intent bcast = new Intent(ACTION_POINTS_UPDATED);
+        bcast.setPackage(getPackageName());
+        bcast.putExtra("courseId", courseId);
+        bcast.putExtra("pointCount", pointCount);
+        sendBroadcast(bcast);
+    }
+
+    // ── Fichier d'état cross-processus ─────────────────────────────────────────────
+
+    private void writeStateFile(boolean running) {
+        try {
+            JSONObject json = new JSONObject();
+            json.put("isRunning", running);
+            json.put("courseId", running && mCurrentCourseId != null ? mCurrentCourseId : "");
+            json.put("startTime", running ? mStartTime : 0);
+            File f = new File(getFilesDir(), STATE_FILE);
+            try (FileWriter fw = new FileWriter(f)) { fw.write(json.toString()); }
+        } catch (Exception e) {
+            Log.w(TAG, "writeStateFile: " + e.getMessage());
         }
     }
 
-    private String getElapsedTimeString() {
-        long elapsedMinutes = (System.currentTimeMillis() - mStartTime) / (60 * 1000L);
-        return (elapsedMinutes >= 60) ? (elapsedMinutes / 60) + "h " + (elapsedMinutes % 60) + "min" : elapsedMinutes + "min";
+    // ── Notification ───────────────────────────────────────────────────────────────
+
+    public void updateNotificationStats(double distanceKm, double elevationGainM, double elevationLossM) {
+        this.mStatsDistance      = distanceKm;
+        this.mStatsElevation     = elevationGainM;
+        this.mStatsElevationMinus = elevationLossM;
+        updateNotification(mPointCount.get());
+    }
+
+    private void updateNotification(int pointCount) {
+        NotificationManager nm = getSystemService(NotificationManager.class);
+        if (nm != null) nm.notify(NOTIFICATION_ID, buildNotification(pointCount));
     }
 
     private Notification buildNotification(int pointCount) {
         StringBuilder sb = new StringBuilder();
         sb.append(getElapsedTimeString());
-        
         if (pointCount == 0) {
             sb.append(" — En attente du GPS...");
         } else {
-            // v5.31.2 : On affiche TOUJOURS les stats, même si 0.0, pour rassurer l'utilisateur
             sb.append(String.format(" — %d pts — %.2f km", pointCount, mStatsDistance));
-            sb.append(String.format(" — +%dm / -%dm", (int)mStatsElevation, (int)mStatsElevationMinus));
+            sb.append(String.format(" — +%dm / -%dm", (int) mStatsElevation, (int) mStatsElevationMinus));
         }
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
@@ -368,29 +422,37 @@ public class RecordingService extends Service {
             .setPriority(mIsImmobile ? NotificationCompat.PRIORITY_DEFAULT : NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_SERVICE);
 
-        if (mStopPendingIntent != null) builder.addAction(android.R.drawable.ic_delete, "Arrêter REC", mStopPendingIntent);
+        if (mStopPendingIntent != null) {
+            builder.addAction(android.R.drawable.ic_delete, "Arrêter REC", mStopPendingIntent);
+        }
         return builder.build();
-    }
-
-    public void updateNotificationStats(double distanceKm, double elevationGainM, double elevationLossM) {
-        Log.d(TAG, String.format("UpdateStats: %.2f km, +%.0f, -%.0f", distanceKm, elevationGainM, elevationLossM));
-        this.mStatsDistance = distanceKm;
-        this.mStatsElevation = elevationGainM;
-        this.mStatsElevationMinus = elevationLossM;
-        updateNotification(mPointCount.get());
-    }
-
-    private void updateNotification(int pointCount) {
-        NotificationManager nm = getSystemService(NotificationManager.class);
-        if (nm != null) nm.notify(NOTIFICATION_ID, buildNotification(pointCount));
     }
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Enregistrement SunTrail", NotificationManager.IMPORTANCE_LOW);
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID, "Enregistrement SunTrail", NotificationManager.IMPORTANCE_LOW);
             channel.setShowBadge(false);
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) manager.createNotificationChannel(channel);
+        }
+    }
+
+    // ── GPS adaptatif ──────────────────────────────────────────────────────────────
+
+    private void updateImmobilityStatus(Location loc) {
+        long now = System.currentTimeMillis();
+        if (mLastSignificantLocation == null) {
+            mLastSignificantLocation = loc;
+            mLastMovementTime = now;
+            return;
+        }
+        if (mLastSignificantLocation.distanceTo(loc) > IMMOBILITY_DISTANCE_THRESHOLD) {
+            mLastSignificantLocation = loc;
+            mLastMovementTime = now;
+            mIsImmobile = false;
+        } else if (now - mLastMovementTime > IMMOBILITY_TIME_THRESHOLD) {
+            mIsImmobile = true;
         }
     }
 
@@ -399,20 +461,14 @@ public class RecordingService extends Service {
         if (now - mLastGpsConfigUpdate < GPS_CONFIG_UPDATE_INTERVAL_MS) return;
         mLastGpsConfigUpdate = now;
 
-        // v5.38.3 : Intervalles simplifiés et plus adaptés à la rando
-        // mIsImmobile (30min sans bouger) -> 30s
-        // Vitesse < 0.5 m/s (1.8 km/h, rando lente/montée) -> 10s
-        // Vitesse < 1.4 m/s (5 km/h, marche normale) -> 5s
-        // Vitesse > 1.4 m/s (course/vélo) -> 3s
-        long newInterval = mIsImmobile ? 30000 : (mCurrentSpeedMps < 0.5f ? 10000 : (mCurrentSpeedMps < 1.4f ? 5000 : 3000));
-        
-        // v5.38.3 : Règle CRITIQUE pour Samsung A53 et background
-        // Ne JAMAIS passer en BALANCED_POWER_ACCURACY tant qu'on bouge.
-        // BALANCED_POWER_ACCURACY coupe souvent le vrai GPS en background au profit du Cell/WiFi (>100m accuracy).
-        int newPriority = mIsImmobile ? Priority.PRIORITY_BALANCED_POWER_ACCURACY : Priority.PRIORITY_HIGH_ACCURACY;
+        long newInterval = mIsImmobile ? 30000
+                : (mCurrentSpeedMps < 0.5f ? 10000 : (mCurrentSpeedMps < 1.4f ? 5000 : 3000));
+        int newPriority = mIsImmobile
+                ? Priority.PRIORITY_BALANCED_POWER_ACCURACY : Priority.PRIORITY_HIGH_ACCURACY;
 
         if (mLocationRequest.getInterval() != newInterval || mLocationRequest.getPriority() != newPriority) {
-            Log.d(TAG, "GPS Config Update: Interval=" + newInterval + "ms, Priority=" + (newPriority == Priority.PRIORITY_HIGH_ACCURACY ? "HIGH" : "BALANCED"));
+            Log.d(TAG, "GPS Config: " + newInterval + "ms, " +
+                    (newPriority == Priority.PRIORITY_HIGH_ACCURACY ? "HIGH" : "BALANCED"));
             mLocationRequest.setInterval(newInterval).setPriority(newPriority);
             try {
                 mFusedClient.removeLocationUpdates(mLocationCallback);
@@ -421,6 +477,13 @@ public class RecordingService extends Service {
                 Log.e(TAG, "Failed to update GPS config: " + e.getMessage());
             }
         }
+    }
+
+    private String getElapsedTimeString() {
+        long elapsedMinutes = (System.currentTimeMillis() - mStartTime) / (60 * 1000L);
+        return (elapsedMinutes >= 60)
+                ? (elapsedMinutes / 60) + "h " + (elapsedMinutes % 60) + "min"
+                : elapsedMinutes + "min";
     }
 
     private double estimateGeoIdHeight(double lat, double lon) {

@@ -34,7 +34,8 @@ public abstract class AppDatabase extends RoomDatabase {
                         AppDatabase.class,
                         DATABASE_NAME
                     )
-                    .fallbackToDestructiveMigration() // Recrée la BDD si schéma change
+                    .fallbackToDestructiveMigration()
+                    .enableMultiInstanceInvalidation() // Synchronisation cross-processus (:tracking ↔ principal)
                     .build();
                 }
             }

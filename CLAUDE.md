@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.52.9)
+# SunTrail — Guide IA (v5.53.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-03 — v5.52.9 : Détection forêts globale (pré-fetch landcover), heure au profil.
+> Mis à jour le 2026-05-03 — v5.53.0 : Processus Android séparé pour GPS (foreground service survit app kill).
 
 
 ## Projet
@@ -20,6 +20,13 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
   - `forcedRadius` dynamique → fixé à 1 (5×5 tuiles → 3×3, évite chevauchement)
   - `marginFactor` dynamique → fixé à 0.2 (tuiles persistantes, superposition de sources)
   - Sous-régions CH dans `geo.ts` : trous comblés (Sud 45.7°, nouvelle 46.6-47.9/8.6-9.3 pour Uri/Schwyz, Est étendu à 47.9°)
+- **Foreground Service v5.53.0** : Architecture processus séparé `:tracking`
+  - `RecordingService` dans `android:process=":tracking"` — survit au kill de l'app principale
+  - `TrackingActivity` transparente dans `:tracking` — point d'entrée du processus isolé
+  - Communication Plugin ↔ Service : Broadcasts (`ACTION_POINTS_UPDATED`, `ACTION_SERVICE_STOPPED`)
+  - État partagé cross-processus : fichier `rec_state.json` dans `filesDir`
+  - Room SQLite : `enableMultiInstanceInvalidation()` pour synchronisation entre processus
+  - Impact : GPS continue même quand l'utilisateur swipe l'app des recents (killer foreground service) ✓
 
 
 ### ⚠️ Règles de Modification de Fichiers (SÉCURITÉ)
