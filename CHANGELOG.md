@@ -1,3 +1,12 @@
+## [5.53.2] - 2026-05-03
+
+### Fixed
+
+- **Exemption batterie opt-in** : Au premier démarrage de REC, Android ouvre le dialogue "Désactiver l'optimisation batterie pour SunTrail". Mémorisé dans localStorage — une seule demande. Corrige le kill agressif par OEM (Samsung/Xiaomi/OPPO) qui ignoraient `stopWithTask=false`. Remet la permission `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` retirée en v5.40.14.
+- `RecordingPlugin.java` : `requestBatteryOptimizationExemption()` rétablie.
+- `nativeGPSService.ts` : méthode + interface TypeScript rétablies.
+- `recordingService.ts` : appel opt-in avec guard `localStorage` (une seule fois).
+
 ## [5.53.1] - 2026-05-03
 
 ### Fixed

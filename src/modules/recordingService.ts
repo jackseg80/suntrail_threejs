@@ -62,6 +62,16 @@ export class RecordingService {
             setTimeout(() => showToast(i18n.t('track.toast.freeLimit')), 1500);
         }
 
+        // Demander l'exemption batterie une seule fois (opt-in, dialogue Android)
+        // Évite que Samsung/Xiaomi/OPPO tuent RecordingService pendant les longues randos
+        if (Capacitor.isNativePlatform()) {
+            const asked = localStorage.getItem('suntrail_battery_exemption_asked');
+            if (!asked) {
+                localStorage.setItem('suntrail_battery_exemption_asked', '1');
+                void nativeGPSService.requestBatteryOptimizationExemption();
+            }
+        }
+
         // Start native services
         try {
             await nativeGPSService.startCourse(state.originTile);

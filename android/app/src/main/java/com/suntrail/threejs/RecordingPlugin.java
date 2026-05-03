@@ -6,7 +6,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
+import android.os.PowerManager;
+import android.provider.Settings;
 import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
@@ -271,6 +274,44 @@ public class RecordingPlugin extends Plugin {
             originTile.put("y", prefs.getInt("originTileY", 0));
             originTile.put("z", prefs.getInt("originTileZ", 0));
             result.put("originTile", originTile);
+        }
+        call.resolve(result);
+    }
+
+    /**
+     * Ouvre le dialogue Android "Désactiver l'optimisation batterie pour cette app".
+     * Appelé une seule fois au premier REC (mémorisé côté JS dans localStorage).
+     * Garantit que RecordingService n'est pas tué par l'OS pendant les longues randonnées.
+     */
+    @PluginMethod
+    public void requestBatteryOptimizationExemption(PluginCall call) {
+        JSObject result = new JSObject();
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            result.put("granted", true);
+            call.resolve(result);
+            return;
+        }
+        PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
+        if (pm == null) {
+            result.put("granted", false);
+            call.resolve(result);
+            return;
+        }
+        String packageName = getContext().getPackageName();
+        if (pm.isIgnoringBatteryOptimizations(packageName)) {
+            result.put("granted", true);
+            call.resolve(result);
+            return;
+        }
+        try {
+            Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+            intent.setData(Uri.parse("package:" + packageName));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+            result.put("granted", true);
+        } catch (Exception e) {
+            Log.w(TAG, "requestBatteryOptimizationExemption: " + e.getMessage());
+            result.put("granted", false);
         }
         call.resolve(result);
     }

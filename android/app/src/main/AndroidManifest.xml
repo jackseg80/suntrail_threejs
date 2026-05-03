@@ -81,4 +81,6 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- AlarmManager pour relancer RecordingService si swipé par OEM agressif (v5.53.1) -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Exemption batterie — l'utilisateur est invité à désactiver l'optimisation batterie pour garantir le GPS long (v5.53.2) -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 </manifest>

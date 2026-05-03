@@ -34,6 +34,7 @@ interface RecordingPlugin {
     getPoints(options: { courseId: string; since: number }): Promise<{ points: NativeGPSPoint[] }>;
     getCurrentCourse(): Promise<{ courseId: string; isRunning: boolean; originTile?: { x: number; y: number; z: number } }>;
     updateNotificationStats(options: { distance: number; elevation: number; elevationMinus?: number }): Promise<void>;
+    requestBatteryOptimizationExemption(): Promise<{ granted: boolean }>;
     addListener(event: string, callback: (event: any) => void): Promise<any>;
     removeAllListeners(): Promise<void>;
 }
@@ -254,6 +255,21 @@ class NativeGPSService {
         } catch (e) {
             console.warn('[NativeGPSService] getCurrentCourse failed:', e);
             return null;
+        }
+    }
+
+    /**
+     * Demande l'exemption batterie Android une seule fois (opt-in).
+     * Stocké dans localStorage pour ne pas redemander à chaque REC.
+     */
+    async requestBatteryOptimizationExemption(): Promise<boolean> {
+        if (!RecordingNative) return true;
+        try {
+            const result = await RecordingNative.requestBatteryOptimizationExemption();
+            return result.granted;
+        } catch (e) {
+            console.warn('[NativeGPSService] requestBatteryOptimizationExemption failed:', e);
+            return false;
         }
     }
 

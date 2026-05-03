@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.53.1)
+# SunTrail — Guide IA (v5.53.2)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-03 — v5.53.1 : onTaskRemoved() + AlarmManager pour OEM agressifs (Samsung/Xiaomi).
+> Mis à jour le 2026-05-03 — v5.53.2 : Exemption batterie opt-in au premier REC (Samsung/Xiaomi).
 
 
 ## Projet
