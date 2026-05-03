@@ -365,9 +365,31 @@ function setupProfileInteractions(): void {
         const maxDist = profileData.length > 0 ? profileData[profileData.length - 1].dist : 0;
         info.textContent = `Distance : ${maxDist.toFixed(2)}km | Alt : 0m`;
     };
+
+    let _uiHideTimer: ReturnType<typeof setTimeout> | null = null;
+    const profileEl = document.getElementById('elevation-profile');
+    if (profileEl) {
+        const hideUI = () => {
+            if (_uiHideTimer) clearTimeout(_uiHideTimer);
+            _uiHideTimer = null;
+            document.body.classList.add('profile-interacting');
+        };
+        const showUI = () => {
+            if (_uiHideTimer) clearTimeout(_uiHideTimer);
+            _uiHideTimer = setTimeout(() => {
+                document.body.classList.remove('profile-interacting');
+            }, 250);
+        };
+
+        profileEl.addEventListener('pointerdown', hideUI);
+        profileEl.addEventListener('pointerup', showUI);
+        profileEl.addEventListener('pointerleave', showUI);
+        profileEl.addEventListener('pointercancel', showUI);
+    }
 }
 
 export function closeElevationProfile(): void {
+    document.body.classList.remove('profile-interacting');
     const profileEl = document.getElementById('elevation-profile');
     if (profileEl) profileEl.classList.remove('is-open');
     if (state.profileMarker) {

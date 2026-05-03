@@ -2285,6 +2285,20 @@ body.ui-hidden #route-bar {
     opacity: 0;
 }
 
+/* PROFILE INTERACTION — masquer tout sauf le profil quand on touche le graphique */
+body.profile-interacting #top-status-bar,
+body.profile-interacting #nav-bar,
+body.profile-interacting #coords-pill,
+body.profile-interacting #route-bar,
+body.profile-interacting #route-settings,
+body.profile-interacting .fab-stack,
+body.profile-interacting #bottom-bar {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: scale(0.92) !important;
+    transition: opacity 0.15s ease, transform 0.15s ease !important;
+}
+
 /* Pastilles indicatrices de waypoints */
 .rb-dots {
     display: flex;
