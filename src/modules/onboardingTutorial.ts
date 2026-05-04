@@ -14,7 +14,7 @@ import { haptic } from './haptics';
 const ONBOARDING_KEY = 'suntrail_onboarding_v2';
 
 interface Slide {
-    type: 'tilt' | 'solar' | 'track' | 'expert' | 'weather' | 'safety';
+    type: 'tilt' | 'solar' | 'solar-analysis' | 'track' | 'expert' | 'safety';
     titleKey: string;
     descKey: string;
     special?: 'final-menu';
@@ -24,8 +24,8 @@ const SLIDES: Slide[] = [
     { type: 'tilt', titleKey: 'onboarding.slide1.title', descKey: 'onboarding.slide1.desc' },
     { type: 'solar', titleKey: 'onboarding.slide2.title', descKey: 'onboarding.slide2.desc' },
     { type: 'track', titleKey: 'onboarding.slide3.title', descKey: 'onboarding.slide3.desc' },
-    { type: 'expert', titleKey: 'onboarding.slide4.title', descKey: 'onboarding.slide4.desc' },
-    { type: 'weather', titleKey: 'onboarding.slide5.title', descKey: 'onboarding.slide5.desc' },
+    { type: 'solar-analysis', titleKey: 'onboarding.slide4.title', descKey: 'onboarding.slide4.desc' },
+    { type: 'expert', titleKey: 'onboarding.slide5.title', descKey: 'onboarding.slide5.desc' },
     { type: 'safety', titleKey: 'onboarding.slide6.title', descKey: 'onboarding.slide6.desc', special: 'final-menu' },
 ];
 
@@ -64,6 +64,15 @@ function _getSvgIcon(type: string): string {
                     <circle cx="10" cy="80" r="6" fill="var(--gold)" class="anim-solar-sun" />
                     <path d="M30 80 L50 40 L70 80" fill="var(--surface-subtle)" stroke="currentColor" />
                 </svg>`;
+        case 'solar-analysis':
+            return `
+                <svg viewBox="0 0 100 100" class="ob-svg">
+                    <circle cx="50" cy="35" r="15" fill="none" stroke="var(--gold)" stroke-width="2" />
+                    <path d="M50 20 V25 M50 45 V50 M35 35 H40 M60 35 H65" stroke="var(--gold)" stroke-width="2" />
+                    <rect x="30" y="60" width="40" height="2" fill="currentColor" />
+                    <rect x="30" y="68" width="25" height="2" fill="currentColor" opacity="0.6" />
+                    <rect x="30" y="76" width="35" height="2" fill="currentColor" opacity="0.4" />
+                </svg>`;
         case 'track':
             return `
                 <svg viewBox="0 0 100 100" class="ob-svg">
@@ -71,19 +80,15 @@ function _getSvgIcon(type: string): string {
                     <circle cx="50" cy="30" r="3" fill="currentColor" />
                     <circle cx="80" cy="50" r="3" fill="currentColor" />
                     <path d="M20 70 L50 30 L80 50" fill="none" stroke="var(--accent)" stroke-width="3" class="anim-track-path" />
+                    <path d="M75 45 L85 45 M80 40 L80 50" stroke="#fff" stroke-width="2" />
                 </svg>`;
         case 'expert':
             return `
                 <svg viewBox="0 0 100 100" class="ob-svg">
                     <path d="M20 80 L80 80 L80 40 Z" fill="none" stroke="currentColor" stroke-width="2" />
                     <path d="M80 80 L80 40" stroke="var(--accent)" stroke-width="4" />
-                    <text x="45" y="75" font-size="8" fill="var(--accent)">35°</text>
-                </svg>`;
-        case 'weather':
-            return `
-                <svg viewBox="0 0 100 100" class="ob-svg">
-                    <circle cx="70" cy="30" r="10" fill="var(--gold)" />
-                    <path d="M20 60 Q35 40 50 60 Q65 40 80 60 L80 75 Q50 90 20 75 Z" fill="currentColor" opacity="0.8" />
+                    <circle cx="30" cy="30" r="8" fill="var(--gold)" />
+                    <path d="M45 35 Q55 25 65 35" stroke="currentColor" fill="none" stroke-width="2" />
                 </svg>`;
         case 'safety':
             return `
@@ -123,12 +128,34 @@ function _getMockup(type: string): string {
                         <div style="position:absolute; left:60%; top:50%; transform:translate(-50%, -50%); width:20px; height:20px; background:var(--accent); border-radius:50%; border:2px solid #fff; box-shadow:0 0 10px var(--accent);"></div>
                     </div>
                 </div>`;
-        case 'weather':
+        case 'track':
             return `
-                <div class="ob-mockup-top">
-                    <div class="status-widget" style="background:rgba(25,28,45,0.9); border:1px solid var(--accent); color:#fff; display:flex; align-items:center; gap:8px; padding:8px 16px; border-radius:20px; min-height:48px;">
-                        <span style="font-size:18px;">☀️</span>
-                        <strong style="font-size:16px;">22°</strong>
+                <div class="ob-mockup-bottom" style="background:rgba(25,28,45,0.9); border:1px solid rgba(255,255,255,0.1); padding:10px; border-radius:12px; display:flex; gap:8px; width:fit-content; margin:0 auto;">
+                    <div style="background:var(--accent); color:#fff; font-size:11px; font-weight:800; padding:6px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.2);">+ Point</div>
+                    <div style="background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.5); font-size:11px; font-weight:800; padding:6px 12px; border-radius:8px; backdrop-filter:blur(5px);">Tracé GPX</div>
+                </div>`;
+        case 'solar-analysis':
+            return `
+                <div class="ob-mockup-bottom" style="background:rgba(25,28,45,0.95); border:1px solid rgba(255,255,255,0.15); padding:12px; border-radius:16px; width:100%; max-width:240px; box-shadow:0 8px 24px rgba(0,0,0,0.4); text-align:left;">
+                    <div style="font-size:10px; font-weight:800; color:var(--accent); margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px; text-transform:uppercase; letter-spacing:1px;">Rapport Solaire</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                        <div style="font-size:11px; color:rgba(255,255,255,0.7);">Lever: <span style="color:#fff; font-weight:600;">06:42</span></div>
+                        <div style="font-size:11px; color:rgba(255,255,255,0.7);">Coucher: <span style="color:#fff; font-weight:600;">20:15</span></div>
+                        <div style="font-size:11px; color:rgba(255,255,255,0.7);">Total: <span style="color:var(--gold); font-weight:700;">13h 33</span></div>
+                    </div>
+                </div>`;
+        case 'expert':
+            return `
+                <div style="display:flex; flex-direction:column; gap:12px; align-items:center; width:100%;">
+                    <div class="ob-mockup-top" style="justify-content:center;">
+                        <div class="status-widget" style="background:rgba(25,28,45,0.9); border:1px solid var(--accent); color:#fff; display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:16px; min-height:40px;">
+                            <span style="font-size:14px;">☀️</span>
+                            <strong style="font-size:14px;">22°</strong>
+                        </div>
+                    </div>
+                    <div class="ob-mockup-bottom" style="background:rgba(25,28,45,0.95); border:1px solid rgba(255,255,255,0.1); padding:10px; border-radius:16px; width:120px; text-align:center;">
+                        <div style="font-size:18px; font-weight:800; color:var(--accent);">35°</div>
+                        <div style="font-size:9px; color:rgba(255,255,255,0.5); text-transform:uppercase; letter-spacing:1px;">Pente</div>
                     </div>
                 </div>`;
         case 'safety':

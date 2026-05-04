@@ -585,22 +585,21 @@
     },
     "slide3": {
       "title": "Tracez votre Aventure",
-      "desc": "Planifiez votre itinéraire dans l'onglet 'Itinéraire', importez vos GPX via l'onglet 'Parcours' ou enregistrez votre trace GPS en direct."
+      "desc": "Planifiez votre itinéraire (clic carte ou saisie manuelle), importez vos GPX via l'onglet 'Parcours' ou enregistrez votre trace GPS en direct."
     },
     "slide4": {
-      "title": "L'Oeil de l'Expert",
-      "desc": "Analysez la pente exacte au centre de l'écran avec l'inclinomètre (PRO). Retrouvez le profil d'élévation sur vos tracés."
+      "title": "Analyse Solaire",
+      "desc": "La fonction signature : tapez n'importe où pour obtenir un rapport d'ensoleillement complet. Indispensable pour vos bivouacs et sorties hivernales."
     },
     "slide5": {
-      "title": "Conditions & Cartes",
-      "desc": "Tapez sur la pastille météo en haut pour les prévisions. Changez de fond de carte (SwissTopo/IGN) via l'onglet 'Calques'."
+      "title": "Expert & Conditions",
+      "desc": "Analysez la pente exacte (PRO) et consultez la météo en haut. Changez de fond de carte (SwissTopo/IGN) via l'onglet 'Calques'."
     },
     "slide6": {
       "title": "Sécurité & Autonomie",
       "desc": "Le bouton SOS en haut à droite affiche vos coordonnées d'urgence. Téléchargez les Packs Pays dans les Réglages pour le mode hors-ligne."
     }
-  },
-  "upgrade": {
+  },  "upgrade": {
     "title": "Passer à Pro ✨",
     "hero": {
       "title": "Simulation solaire unique au monde",

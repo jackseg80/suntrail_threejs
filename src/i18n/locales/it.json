@@ -577,15 +577,15 @@
     },
     "slide3": {
       "title": "Traccia la tua Avventura",
-      "desc": "Pianifica il tuo itinerario nella scheda 'Itinerario', importa i file GPX tramite la scheda 'Track' o registra la tua traccia GPS dal vivo."
+      "desc": "Pianifica il tuo itinerario (clic sulla mappa o inserimento manuale), importa i file GPX tramite la scheda 'Track' o registra la tua traccia GPS dal vivo."
     },
     "slide4": {
-      "title": "L'Occhio dell'Esperto",
-      "desc": "Analizza la pendenza esatta al centro dello schermo con l'inclinometro (PRO). Trova le profilo altimetrico sui tuoi percorsi."
+      "title": "Analisi Solare",
+      "desc": "Funzione esclusiva: tocca un punto qualsiasi per ottenere un rapporto solare completo. Essenziale per bivacchi ed escursioni invernali."
     },
     "slide5": {
-      "title": "Condizioni e Mappe",
-      "desc": "Tocca la pillola meteo in alto per le previsioni. Cambia gli sfondi della mappa (SwissTopo/IGN) tramite la scheda 'Livelli'."
+      "title": "Esperti e Condizioni",
+      "desc": "Analizza la pendenza esatta (PRO) e controlla il meteo in vetta. Cambia gli sfondi della mappa (SwissTopo/IGN) tramite la scheda 'Livelli'."
     },
     "slide6": {
       "title": "Sicurezza e Autonomia",

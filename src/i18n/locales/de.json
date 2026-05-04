@@ -577,15 +577,15 @@
     },
     "slide3": {
       "title": "Planen Sie Ihr Abenteuer",
-      "desc": "Planen Sie Ihre Route im Tab 'Route', importieren Sie GPX-Dateien über den Tab 'Tour' oder zeichnen Sie Ihren GPS-Track live auf."
+      "desc": "Planen Sie Ihre Route (Klick auf Karte oder manuelle Eingabe), importieren Sie GPX-Dateien über den Tab 'Tour' oder zeichnen Sie Ihren GPS-Track live auf."
     },
     "slide4": {
-      "title": "Das Auge des Experten",
-      "desc": "Analysieren Sie die exakte Neigung in der Bildschirmmitte mit dem Neigungsmesser (PRO). Finden Sie das Höhenprofil auf Ihren Tracks."
+      "title": "Sonnenanalyse",
+      "desc": "Exklusive Funktion: Tippen Sie an eine beliebige Stelle, um einen vollständigen Sonnenscheinbericht zu erhalten. Unverzichtbar für Biwak- und Wintertouren."
     },
     "slide5": {
-      "title": "Bedingungen & Karten",
-      "desc": "Tippen Sie oben auf die Wetter-Anzeige für Vorhersagen. Ändern Sie Kartenhintergründe (SwissTopo/IGN) über den Tab 'Ebenen'."
+      "title": "Experten & Bedingungen",
+      "desc": "Analysieren Sie die exakte Neigung (PRO) und prüfen Sie das Wetter am Gipfel. Ändern Sie Kartenhintergründe (SwissTopo/IGN) über den Tab 'Ebenen'."
     },
     "slide6": {
       "title": "Sicherheit & Autonomie",

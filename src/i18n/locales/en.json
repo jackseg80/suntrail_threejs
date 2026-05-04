@@ -585,22 +585,21 @@
     },
     "slide3": {
       "title": "Trace your Adventure",
-      "desc": "Plan your route in the 'Route' tab, import GPX files via the 'Track' tab or record your GPS track live."
+      "desc": "Plan your route (map click or manual entry), import GPX files via the 'Track' tab or record your GPS track live."
     },
     "slide4": {
-      "title": "The Expert's Eye",
-      "desc": "Analyze the exact slope in the center of the screen with the inclinometer (PRO). Find the elevation profile on your tracks."
+      "title": "Solar Analysis",
+      "desc": "Signature feature: tap anywhere to get a full sunlight report. Essential for bivouacs and winter outings."
     },
     "slide5": {
-      "title": "Conditions & Maps",
-      "desc": "Tap the weather pill at the top for forecasts. Change map backgrounds (SwissTopo/IGN) via the 'Layers' tab."
+      "title": "Expert & Conditions",
+      "desc": "Analyze the exact slope (PRO) and check weather at the top. Change map backgrounds (SwissTopo/IGN) via the 'Layers' tab."
     },
     "slide6": {
       "title": "Security & Autonomy",
       "desc": "The SOS button at the top right shows your emergency coordinates. Download Country Packs in Settings for offline mode."
     }
-  },
-  "upgrade": {
+  },  "upgrade": {
     "title": "Go Pro ✨",
     "hero": {
       "title": "World's only solar terrain simulation",
