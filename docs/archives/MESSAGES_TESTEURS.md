@@ -25,7 +25,7 @@ Hello !
 
 Je développe SunTrail 3D, une app de rando Android, et je cherche des testeurs avant le lancement officiel.
 
-L'app visualise le relief en 3D et simule les ombres du soleil en temps réel sur le terrain — tu peux voir exactement si ton bivouac aura du soleil le matin, ou si un couloir reste à l'ombre toute la journée. + GPS live, météo montagne, tracés GPX, mode hors-ligne.
+L'app visualise le relief en 3D et simule les ombres du soleil en temps réel sur le terrain — tu peux voir exactement si ton bivouac aura du soleil le matin, ou si un couloir reste à l'ombre toute la journée (nouveau : détection des forêts 🌲 !). L'app intègre aussi un planificateur d'itinéraire mondial (waypoints 3D), GPS live ultra-robuste, météo montagne, et mode hors-ligne.
 
 Ce que je te demande : installer l'app, l'essayer 20-30 min sur le terrain (ou chez toi), remplir un formulaire de retour.
 
@@ -43,17 +43,18 @@ Si tu es partant(e), envoie-moi l'adresse email liée à ton Google Play Store �
 **Objet :** Invitation à tester SunTrail 3D avant son lancement — abonnement Pro offert
 
 ```
-Imagine pouvoir voir, avant de partir en rando, exactement quand le soleil va illuminer ou mettre dans l'ombre ton bivouac, ton col, ou le couloir que tu vises — et ça pour n'importe quel jour de l'année. C'est ce que fait SunTrail 3D, et j'ai besoin de retours terrain avant le lancement officiel.
+Imagine pouvoir voir, avant de partir en rando, exactement quand le soleil va illuminer ou mettre dans l'ombre ton bivouac, ton col, ou le couloir que tu vises — en tenant compte du relief ET des forêts. C'est ce que fait SunTrail 3D, et j'ai besoin de retours terrain avant le lancement officiel.
 
 ─────────────────────────────────────
 🏔️  QU'EST-CE QUE SUNTRAIL 3D ?
 ─────────────────────────────────────
 SunTrail est une application Android de navigation en montagne avec :
-• Cartes topographiques en relief 3D — SwissTopo pour la Suisse, IGN pour la France, OpenTopoMap pour le monde entier
-• Simulation solaire en temps réel sur le terrain 3D réel — pas sur une carte plate
-• GPS live + enregistrement de tracés GPX
+• Cartes topographiques en relief 3D — SwissTopo, IGN, OpenTopoMap (Monde)
+• Simulation solaire temps réel — calcule les ombres sur le terrain ET détecte la forêt 🌲
+• Planificateur d'itinéraire mondial — pose tes points en 3D, le tracé se calcule seul
+• GPS live ultra-robuste — enregistre ta trace même si l'app est fermée
 • Météo montagne avec particules pluie/neige
-• Mode offline complet (fonctionne sans réseau une fois les tuiles chargées)
+• Mode offline complet (fonctionne sans réseau)
 • Inclinomètre numérique avec panel de danger avalanche
 
 ─────────────────────────────────────
@@ -64,14 +65,14 @@ SunTrail est une application Android de navigation en montagne avec :
 
 La version Pro débloque notamment :
 • Calendrier solaire — simule les ombres pour n'importe quel jour (passé et futur)
-• Analyse solaire complète — azimut, élévation, graphique 24h, phase lunaire
+• Analyse solaire Pro — détection forêt, départ optimal, graphique 24h
 • Station météo avancée — prévisions 3 jours, alertes montagne
 • LOD 18 + Satellite HD + Bâtiments 3D
-• Multi-tracés GPX + export + statistiques (VAM, pente)
+• Multi-tracés GPX + export + statistiques avancées (VAM, pente)
 • Zones hors-ligne illimitées
 • Inclinomètre Pro avec panel de danger interactif
 
-Note : l'enregistrement GPS est gratuit et illimité pour tout le monde.
+Note : le planificateur et l'enregistrement GPS de base sont gratuits pour tous.
 
 ─────────────────────────────────────
 ✅  CE QUE JE TE DEMANDE
@@ -111,7 +112,7 @@ Salut à tous ! 👋
 
 Je cherche des testeurs Android pour SunTrail 3D, une app de rando que je développe.
 
-L'idée : cartes topo en relief 3D, et surtout une simulation des ombres solaires sur le terrain réel — tu peux voir exactement quand un versant, un bivouac ou un couloir sera à l'ombre ou au soleil, heure par heure et pour n'importe quel jour de l'année. + GPS, inclinomètre de pente, météo montagne, hors-ligne. Données SwissTopo pour la Suisse, IGN pour la France, monde entier disponible.
+L'idée : cartes topo en relief 3D, planificateur mondial, et surtout une simulation des ombres solaires sur le terrain réel (relief + forêts 🌲) — tu peux voir exactement quand un versant, un bivouac ou un couloir sera à l'ombre ou au soleil, heure par heure. + GPS ultra-robuste, inclinomètre de pente, météo montagne, hors-ligne. Données SwissTopo, IGN, monde entier.
 
 🎁 En échange de quelques retours :
 → 20-30 min de test = 3 mois Pro offerts
