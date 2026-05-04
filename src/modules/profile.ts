@@ -258,13 +258,12 @@ function setupProfileInteractions(): void {
 
     // Recréer le marker s'il a été supprimé par closeElevationProfile()
     if (!state.profileMarker) {
-        // v5.32.14 : Sphère plus grande et depthTest désactivé pour visibilité totale en 3D
-        // v5.53.5 : Ajout d'un contour noir pour la visibilité (cohérent avec les tracés)
-        const geo = new THREE.SphereGeometry(40, 32, 32);
+        // v5.53.7 : Réduction de la taille de base (40 -> 6) car l'échelle est maintenant adaptative
+        const geo = new THREE.SphereGeometry(6, 32, 32);
         const mat = new THREE.MeshStandardMaterial({ 
             color: 0x00ffff, 
             emissive: 0x00ffff, 
-            emissiveIntensity: 3, // v5.53.5 : Increased from 2
+            emissiveIntensity: 3, 
             roughness: 0,
             metalness: 1,
             depthTest: false,
@@ -272,17 +271,17 @@ function setupProfileInteractions(): void {
         });
         state.profileMarker = new THREE.Mesh(geo, mat);
 
-        // Contour noir
-        const outlineGeo = new THREE.SphereGeometry(46, 32, 32);
+        // Contour noir proportionnel
+        const outlineGeo = new THREE.SphereGeometry(7.2, 32, 32);
         const outlineMat = new THREE.MeshBasicMaterial({ color: 0x000000, depthTest: false, transparent: true, opacity: 0.5 });
         const outline = new THREE.Mesh(outlineGeo, outlineMat);
         state.profileMarker.add(outline);
         
-        const lineGeo = new THREE.CylinderGeometry(2, 2, 4000, 8);
+        const lineGeo = new THREE.CylinderGeometry(1.5, 1.5, 4000, 8);
         const lineMat = new THREE.MeshBasicMaterial({ 
             color: 0x00ffff, 
             transparent: true, 
-            opacity: 0.5, // v5.53.5 : Increased from 0.4
+            opacity: 0.5,
             depthTest: false 
         });
         const line = new THREE.Mesh(lineGeo, lineMat);
