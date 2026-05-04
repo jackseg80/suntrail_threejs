@@ -13,6 +13,14 @@ import { disposeSolarOverlay, buildSolarOverlay, setOverlayVisible, getCurrentRo
 const gpxMaterials3D = new Map<string, THREE.MeshStandardMaterial>();
 const gpxMaterials2D = new Map<string, THREE.MeshBasicMaterial>();
 
+// v5.53.3 : Shared outline material for track visibility
+const gpxOutlineMaterial = new THREE.MeshBasicMaterial({ 
+    color: 0x000000, 
+    transparent: true, 
+    opacity: 0.35, 
+    depthWrite: false 
+});
+
 let _recMaterial3D: THREE.MeshStandardMaterial | null = null;
 let _recMaterial2D: THREE.MeshBasicMaterial | null = null;
 
@@ -24,7 +32,13 @@ function getRecordedMaterial(is2D: boolean): THREE.Material {
         return _recMaterial2D;
     }
     if (!_recMaterial3D) {
-        _recMaterial3D = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.5, transparent: true, opacity: 0.8 });
+        _recMaterial3D = new THREE.MeshStandardMaterial({ 
+            color: 0xef4444, 
+            emissive: 0xef4444, 
+            emissiveIntensity: 1.2, // v5.53.3 : Increased from 0.8
+            transparent: true, 
+            opacity: 0.9 
+        });
     }
     return _recMaterial3D;
 }
@@ -44,7 +58,12 @@ function getGPXMaterial(color: string, is2D: boolean): THREE.Material {
     let mat = gpxMaterials3D.get(color);
     if (!mat) {
         mat = new THREE.MeshStandardMaterial({
-            color, emissive: color, emissiveIntensity: 0.3, transparent: true, opacity: 0.95, depthWrite: false,
+            color, 
+            emissive: color, 
+            emissiveIntensity: 1.0, // v5.53.3 : Increased from 0.6
+            transparent: true, 
+            opacity: 0.95, 
+            depthWrite: false,
             polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
         });
         gpxMaterials3D.set(color, mat);
@@ -58,6 +77,16 @@ function computeTrackThickness(base: number, max: number): number {
     const zoom = state.ZOOM || 10;
     const exponent = Math.max(0, 18 - zoom);
     return Math.max(base, Math.min(max, base * Math.pow(2, exponent)));
+}
+
+/** v5.53.3 : Ajoute un contour noir translucide derrière le tracé pour améliorer le contraste */
+function applyTrackOutline(mesh: THREE.Mesh, curve: THREE.Curve<THREE.Vector3>, segments: number, thickness: number): void {
+    const outlineThickness = thickness * 1.4;
+    const outlineGeometry = new THREE.TubeGeometry(curve, segments, outlineThickness, 4, false);
+    const outlineMesh = new THREE.Mesh(outlineGeometry, gpxOutlineMaterial);
+    outlineMesh.renderOrder = 9; // Derrière le tracé principal (10)
+    outlineMesh.userData = { type: 'gpx-track-outline' };
+    mesh.add(outlineMesh);
 }
 
 /** Recalcule les stats (distance, D+/D-, temps) d'un layer depuis l'altitude réelle du terrain.
@@ -154,7 +183,7 @@ export function addGPXLayer(rawData: Record<string, any>, name: string, opts?: {
         timestamp: p.time ? new Date(p.time).getTime() : i * 1000 
     })));
 
-    const thickness = computeTrackThickness(1.5, 200);
+    const thickness = computeTrackThickness(2.0, 200); // v5.53.3 : Increased from 1.5
     
     const baseEpsilon = EARTH_CIRCUMFERENCE / Math.pow(2, state.ZOOM + 8);
     const epsilon = Math.max(0.5, baseEpsilon);
@@ -174,6 +203,10 @@ export function addGPXLayer(rawData: Record<string, any>, name: string, opts?: {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.renderOrder = 10;
     mesh.userData = { type: 'gpx-track', layerId: id };
+
+    // v5.53.3 : Ajout du contour pour la visibilité
+    applyTrackOutline(mesh, curve, geometry.parameters.tubularSegments, thickness);
+
     if (state.scene) state.scene.add(mesh);
     const layer: GPXLayer = {
         id, name, color, visible: true, rawData, points: threePoints, mesh,
@@ -237,7 +270,7 @@ export function updateAllGPXMeshes(): void {
 
 function _doUpdateAllGPXMeshes(): void {
     if (!state.camera || !state.originTile) return;
-    const thickness = computeTrackThickness(1.5, 200);
+    const thickness = computeTrackThickness(2.0, 200); // v5.53.3 : Increased from 1.5
 
     const baseEpsilon = EARTH_CIRCUMFERENCE / Math.pow(2, (state.ZOOM || 10) + 8);
     const multiplier = state.PERFORMANCE_PRESET === 'eco' ? 2.0 
@@ -251,7 +284,17 @@ function _doUpdateAllGPXMeshes(): void {
         try {
             // Disposer l'overlay AVANT geometry.dispose() (géométrie partagée)
             if (layer.id === state.activeGPXLayerId) disposeSolarOverlay();
-            if (layer.mesh) { if (state.scene) state.scene.remove(layer.mesh); layer.mesh.geometry?.dispose(); }
+            if (layer.mesh) { 
+                if (state.scene) state.scene.remove(layer.mesh); 
+                layer.mesh.geometry?.dispose();
+                // v5.53.3 : Dispose outline geometry
+                layer.mesh.children.forEach(c => {
+                    if (c instanceof THREE.Mesh && c.geometry !== layer.mesh!.geometry) {
+                        c.geometry?.dispose();
+                    }
+                });
+            }
+
             const track = layer.rawData.tracks[0]; const points = track.points;
 
             const drapedPoints = drapeToTerrain(points, state.originTile, 4, GPX_SURFACE_OFFSET);
@@ -264,6 +307,10 @@ function _doUpdateAllGPXMeshes(): void {
             const mesh = new THREE.Mesh(geometry, material);
             mesh.renderOrder = 10; mesh.visible = layer.visible;
             mesh.userData = { type: 'gpx-track', layerId: layer.id };
+
+            // v5.53.3 : Ajout du contour pour la visibilité
+            applyTrackOutline(mesh, curve, geometry.parameters.tubularSegments, thickness);
+
             if (state.scene) state.scene.add(mesh);
 
             // Reconstruire l'overlay solar si ce layer est actif et qu'une analyse existe
@@ -324,11 +371,17 @@ function _doUpdateRecordedTrackMesh(): void {
         return;
     }
 
-    const thickness = computeTrackThickness(2.0, 250); 
+    const thickness = computeTrackThickness(2.5, 250); // v5.53.3 : Increased from 2.0
     
     if (state.recordedMesh) { 
-        state.scene.remove(state.recordedMesh); 
+        if (state.scene) state.scene.remove(state.recordedMesh); 
         state.recordedMesh.geometry?.dispose();
+        // v5.53.3 : Dispose outline geometry
+        state.recordedMesh.children.forEach(c => {
+            if (c instanceof THREE.Mesh && c.geometry !== state.recordedMesh!.geometry) {
+                c.geometry?.dispose();
+            }
+        });
         state.recordedMesh = null; 
     }
     
@@ -351,6 +404,10 @@ function _doUpdateRecordedTrackMesh(): void {
         const geometry = new THREE.TubeGeometry(curve, Math.min(simplifiedPoints.length * 3, 1500), thickness, 4, false);
         const material = getRecordedMaterial(state.IS_2D_MODE);
         state.recordedMesh = new THREE.Mesh(geometry, material);
+        
+        // v5.53.3 : Ajout du contour pour la visibilité
+        applyTrackOutline(state.recordedMesh, curve, geometry.parameters.tubularSegments, thickness);
+
         state.scene.add(state.recordedMesh);
     } catch (e) {
         console.error('[Terrain] Failed to create recorded track mesh:', e);

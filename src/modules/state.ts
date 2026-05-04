@@ -35,7 +35,16 @@ export interface RouteWaypoint {
 
 export type RoutingProfile = 'foot-hiking' | 'foot-walking' | 'cycling-regular' | 'cycling-mountain';
 
-export const GPX_COLORS = ['#3b7ef8','#22c55e','#f97316','#a855f7','#ec4899','#06b6d4','#eab308','#ef4444'];
+export const GPX_COLORS = [
+    '#0066ff', // Blue (Vivid)
+    '#00d42e', // Green (Vivid)
+    '#ff6600', // Orange (Vivid)
+    '#b026ff', // Purple (Vivid)
+    '#ff007f', // Pink (Vivid)
+    '#00e5ff', // Cyan (Vivid)
+    '#ffff00', // Yellow (Neon)
+    '#ff0000'  // Red (Vivid)
+];
 
 export interface PerformanceSettings {
     RESOLUTION: number;
