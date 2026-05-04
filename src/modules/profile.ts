@@ -277,17 +277,6 @@ function setupProfileInteractions(): void {
         const outline = new THREE.Mesh(outlineGeo, outlineMat);
         state.profileMarker.add(outline);
         
-        const lineGeo = new THREE.CylinderGeometry(1.5, 1.5, 4000, 8);
-        const lineMat = new THREE.MeshBasicMaterial({ 
-            color: 0x00ffff, 
-            transparent: true, 
-            opacity: 0.5,
-            depthTest: false 
-        });
-        const line = new THREE.Mesh(lineGeo, lineMat);
-        line.position.y = -2000;
-        state.profileMarker.add(line);
-        
         state.profileMarker.renderOrder = 9999;
         state.profileMarker.visible = false;
         if (state.scene) state.scene.add(state.profileMarker);
