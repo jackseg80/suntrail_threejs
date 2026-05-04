@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.53.2)
+# SunTrail — Guide IA (v5.53.3)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-03 — v5.53.2 : Exemption batterie opt-in au premier REC (Samsung/Xiaomi).
+> Mis à jour le 2026-05-04 — v5.53.3 : Fix point profil disparu après fermeture/réouverture du panel.
 
 
 ## Projet

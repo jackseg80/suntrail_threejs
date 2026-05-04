@@ -355,13 +355,18 @@ function setupProfileInteractions(): void {
         info.textContent = `Distance : ${point.dist.toFixed(2)}km | Alt : ${Math.round(point.ele)}m | Pente : ${Math.round(point.slope)}%${timeStr}`;
 
         if (state.profileMarker) {
-            // v5.53.5 : Échelle adaptative selon le zoom pour rester visible en altitude
+            // v5.53.6 : Échelle adaptative calquée sur computeTrackThickness
+            // La base (40) est déjà définie dans la géométrie initiale (SphereGeometry(40)).
+            // À LOD 18, l'exposant est 0, scale = 1.
+            // À LOD 14, l'exposant est 4, scale = 2^4 = 16.
             const zoom = state.ZOOM || 10;
             const exponent = Math.max(0, 18 - zoom);
-            const scale = Math.pow(1.35, exponent); // Croissance modérée
+            const scale = Math.pow(2, exponent);
+            
             state.profileMarker.scale.setScalar(scale);
 
-            // Ajuster l'offset vertical pour que la sphère soit toujours au-dessus du sol
+            // Ajuster l'offset vertical proportionnellement pour que la sphère "flotte"
+            // tout en restant visible (20 pixels monde à LOD 18)
             state.profileMarker.position.copy(point.pos).add(new THREE.Vector3(0, 20 * scale, 0));
             state.profileMarker.visible = true;
         }

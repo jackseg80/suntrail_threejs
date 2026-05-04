@@ -1,3 +1,9 @@
+## [5.53.3] - 2026-05-04
+
+### Fixed
+
+- **Point profil sur carte** : Le marqueur cyan (sphère 3D synchronisée avec le survol du graphique d'élévation) disparaissait après fermeture et réouverture du panel "Profil et pentes". La création du `profileMarker` était bloquée par le flag `profileInteractionsAttached` qui n'était jamais réinitialisé dans `closeElevationProfile()`. Fix : la création du marker est maintenant placée avant le garde, indépendamment de l'état des event listeners.
+
 ## [5.53.2] - 2026-05-03
 
 ### Fixed
