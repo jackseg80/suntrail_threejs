@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.53.3)
+# SunTrail — Guide IA (v5.53.4)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-04 — v5.53.3 : Fix point profil disparu après fermeture/réouverture du panel.
+> Mis à jour le 2026-05-04 — v5.53.4 : Paiements web RevenueCat + Stripe, gating Pro cohérent web/Android.
 
 
 ## Projet

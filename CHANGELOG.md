@@ -1,3 +1,20 @@
+## [5.53.4] - 2026-05-04
+
+### Added
+
+- **Paiements web via RevenueCat + Stripe** : Les utilisateurs web peuvent maintenant acheter Pro (mensuel, annuel, lifetime) et les packs pays (Suisse, France Alpes) directement via Stripe Checkout, au lieu d'être redirigés vers Play Store.
+- **SDK web RevenueCat** : `@revenuecat/purchases-js` chargé dynamiquement sur web (pas sur Android). App User ID persistent dans localStorage.
+- **Cohérence web/Android** : Pack Suisse HD est maintenant **payant sur web** (était gratuit en v5.53.3). Gating des features Pro identique web/Android.
+
+### Changed
+
+- **Masquage offline sur web** : La section "Télécharger zone" est cachée sur web car le stockage OPFS n'est pas disponible dans un navigateur. Les zones restent téléchargeables sur Android.
+- **Révocation packs sur web** : `syncPackPurchases()` réinitialise d'abord tous les états `purchased` en localStorage avant de les re-confirmer via RevenueCat. Élimine les auto-unlocks résiduels de v5.53.3.
+
+### Fixed
+
+- **Entrée gratuite Pack Suisse sur web** : Suppression du code qui auto-débloquait Pack Suisse pour tous les utilisateurs web.
+
 ## [5.53.3] - 2026-05-04
 
 ### Fixed

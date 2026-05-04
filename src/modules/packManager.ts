@@ -132,6 +132,24 @@ class PackManager {
     private async syncPackPurchases(): Promise<void> {
         const ready = await iapService.waitForInit();
         if (!ready) return;
+
+        // Sur web : RevenueCat est la source de vérité — réinitialiser les états
+        // 'purchased' avant de re-vérifier, pour révoquer les anciens auto-unlocks.
+        // Les états 'installed' restent intacts (fichier téléchargé localement).
+        if (!Capacitor.isNativePlatform()) {
+            let changed = false;
+            for (const [, ps] of this.packStates) {
+                if (ps.status === 'purchased') {
+                    ps.status = 'not_purchased';
+                    changed = true;
+                }
+            }
+            if (changed) {
+                this.persistStates();
+                eventBus.emit('packStatusChanged', { packId: '', status: 'not_purchased' });
+            }
+        }
+
         const purchased = await iapService.checkAllPackPurchases();
         for (const packId of purchased) {
             this.markPurchased(packId);
