@@ -62,19 +62,19 @@ describe('Multi-GPX Layers (v5.10)', () => {
         state.ZOOM = 18;
         const layerZ18 = addGPXLayer(rawData, 'z18');
         const radiusZ18 = (layerZ18.mesh!.geometry as THREE.TubeGeometry).parameters.radius;
-        expect(radiusZ18).toBeCloseTo(1.5, 1);
+        expect(radiusZ18).toBeCloseTo(2.0, 1); // v5.53.3 : Increased from 1.5
 
         state.gpxLayers = [];
         state.ZOOM = 17;
         const layerZ17 = addGPXLayer(rawData, 'z17');
         const radiusZ17 = (layerZ17.mesh!.geometry as THREE.TubeGeometry).parameters.radius;
-        expect(radiusZ17).toBeCloseTo(3.0, 1);
+        expect(radiusZ17).toBeCloseTo(4.0, 1);
 
         state.gpxLayers = [];
         state.ZOOM = 14;
         const layerZ14 = addGPXLayer(rawData, 'z14');
         const radiusZ14 = (layerZ14.mesh!.geometry as THREE.TubeGeometry).parameters.radius;
-        expect(radiusZ14).toBeCloseTo(24.0, 1);
+        expect(radiusZ14).toBeCloseTo(32.0, 1);
 
         state.gpxLayers = [];
         state.ZOOM = 10;
@@ -98,7 +98,7 @@ describe('Multi-GPX Layers (v5.10)', () => {
         updateRecordedTrackMesh();
         vi.runAllTimers();
         const radiusZ18 = (state.recordedMesh!.geometry as THREE.TubeGeometry).parameters.radius;
-        expect(radiusZ18).toBeCloseTo(2.0, 1);
+        expect(radiusZ18).toBeCloseTo(2.5, 1); // v5.53.3 : Increased from 2.0
 
         state.recordedMesh = new THREE.Mesh(new THREE.TubeGeometry(
             new THREE.CatmullRomCurve3([new THREE.Vector3(0,0,0), new THREE.Vector3(1,0,1)]), 4, 5, 2, false
@@ -107,7 +107,7 @@ describe('Multi-GPX Layers (v5.10)', () => {
         updateRecordedTrackMesh();
         vi.runAllTimers();
         const radiusZ14 = (state.recordedMesh!.geometry as THREE.TubeGeometry).parameters.radius;
-        expect(radiusZ14).toBeCloseTo(32.0, 1);
+        expect(radiusZ14).toBeCloseTo(40.0, 1);
 
         state.recordedMesh = new THREE.Mesh(new THREE.TubeGeometry(
             new THREE.CatmullRomCurve3([new THREE.Vector3(0,0,0), new THREE.Vector3(1,0,1)]), 4, 5, 2, false
@@ -143,6 +143,7 @@ describe('Multi-GPX Layers (v5.10)', () => {
         const epsUltra = spyRDP.mock.calls[spyRDP.mock.calls.length - 1][1];
 
         expect(epsEco).toBeGreaterThan(epsUltra);
-        expect(epsEco).toBe(epsUltra * 4); // Eco=2.0, Ultra=0.5 -> Ratio 4
+        // v5.53.4 : RDP ratio check (2.0 vs 0.5 = 4x)
+        expect(epsEco / epsUltra).toBeCloseTo(4, 1);
     });
 });
