@@ -146,9 +146,16 @@
       "advanced": "⚙️ Paramètres Avancés",
       "dataManagement": "Gestion des données",
       "language": "Langue",
+      "account": "Compte",
       "sources": "Sources de données & Légal",
       "pro": "Fonctionnalités PRO",
       "theme": "Thème"
+    },
+    "account": {
+      "loggedInAs": "Connecté :",
+      "guest": "Mode Invité",
+      "logout": "Se déconnecter",
+      "login": "Se connecter / S'inscrire"
     },
     "pro": {
       "description": "Débloquez toutes les fonctionnalités premium avec SunTrail Pro",

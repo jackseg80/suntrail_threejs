@@ -4,6 +4,19 @@
         <span class="sheet-title" data-i18n="settings.title">Réglages</span>
         <div class="sheet-close" id="close-panel">×</div>
     </div>
+
+    <!-- Section Compte / Authentification -->
+    <div class="section-label" data-i18n="settings.section.account">Compte</div>
+    <div id="account-section" class="setting-row" style="margin-bottom: 20px; padding: 12px; background: var(--surface-subtle); border-radius: 12px; border: 1px solid var(--border);">
+        <div style="display: flex; align-items: center; gap: 12px; flex: 1; overflow: hidden;">
+            <span style="font-size: 20px;">👤</span>
+            <div style="display: flex; flex-direction: column; overflow: hidden;">
+                <div id="account-status" style="font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px;">Mode Invité</div>
+                <div id="account-email" style="font-size: 13px; font-weight: 500; color: var(--text-1); white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">Connectez-vous pour synchroniser Pro</div>
+            </div>
+        </div>
+        <button id="account-action-btn" class="btn-secondary" style="padding: 8px 14px; font-size: 12px; border-radius: 8px; flex-shrink: 0;"></button>
+    </div>
     
     <div class="section-label" data-i18n="settings.section.presets">Profil de performance</div>
     <div class="preset-grid">

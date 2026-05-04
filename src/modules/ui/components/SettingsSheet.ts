@@ -11,6 +11,8 @@ import type { Locale } from '../../../i18n/I18nService';
 import { sheetManager } from '../core/SheetManager';
 import { eventBus } from '../../eventBus';
 import { iapService } from '../../iapService';
+import { authService } from '../../authService';
+import { Capacitor } from '@capacitor/core';
 import { showToast } from '../../toast';
 import { haptic } from '../../haptics';
 import { showUpgradePrompt, isProActive, activateDiscoveryTrial } from '../../iap';
@@ -23,6 +25,16 @@ export class SettingsSheet extends BaseComponent {
 
     public render(): void {
         if (!this.element) return;
+
+        // Account management (Web only for now)
+        if (!Capacitor.isNativePlatform()) {
+            this.updateAccountSection();
+        } else {
+            const accSec = this.element.querySelector('#account-section') as HTMLElement;
+            const accLabel = this.element.querySelector('[data-i18n="settings.section.account"]') as HTMLElement;
+            if (accSec) accSec.style.display = 'none';
+            if (accLabel) accLabel.style.display = 'none';
+        }
 
         // Close panel
         const closePanel = this.element.querySelector('#close-panel');
@@ -173,7 +185,33 @@ export class SettingsSheet extends BaseComponent {
         this.updateAllUI();
     }
 
+    private updateAccountSection(): void {
+        if (!this.element) return;
+        const statusEl = this.element.querySelector('#account-status');
+        const emailEl = this.element.querySelector('#account-email');
+        const btn = this.element.querySelector('#account-action-btn') as HTMLButtonElement;
 
+        if (!statusEl || !emailEl || !btn) return;
+
+        if (authService.isAuthenticated) {
+            statusEl.textContent = i18n.t('settings.account.loggedInAs') || 'Connecté :';
+            emailEl.textContent = authService.user?.email || '';
+            btn.textContent = i18n.t('settings.account.logout') || 'Déconnexion';
+            btn.onclick = async () => {
+                await authService.signOut();
+                window.location.reload(); // Recharger pour réinitialiser RevenueCat en mode anonyme
+            };
+        } else {
+            statusEl.textContent = i18n.t('settings.account.guest') || 'Mode Invité';
+            emailEl.textContent = 'Connectez-vous pour synchroniser Pro';
+            btn.textContent = i18n.t('settings.account.login') || 'Connexion';
+            btn.onclick = () => {
+                const isProd = window.location.hostname !== 'localhost';
+                const base = isProd ? '/suntrail_threejs/' : '/';
+                window.location.href = base + 'login.html';
+            };
+        }
+    }
 
     private bindSlider(id: string, stateKey: keyof typeof state, dispId: string, onChange?: () => void) {
         if (!this.element) return;

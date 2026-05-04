@@ -87,3 +87,19 @@ if (typeof global !== 'undefined' && !(global as any).caches) {
         })
     };
 }
+
+// Global mock for Supabase
+vi.mock('@supabase/supabase-js', () => ({
+    createClient: vi.fn(() => ({
+        auth: {
+            getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+            onAuthStateChange: vi.fn((cb) => {
+                // On peut simuler des changements d'état ici si besoin
+                return { data: { subscription: { unsubscribe: vi.fn() } } };
+            }),
+            signInWithPassword: vi.fn(),
+            signUp: vi.fn(),
+            signOut: vi.fn(),
+        }
+    }))
+}));

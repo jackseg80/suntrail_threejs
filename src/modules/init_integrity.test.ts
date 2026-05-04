@@ -3,8 +3,8 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { initUI } from './ui';
 
-// On charge le VRAI index.html
-const html = readFileSync(resolve(__dirname, '../../index.html'), 'utf8');
+// On charge le VRAI app.html (l'app elle-même)
+const html = readFileSync(resolve(__dirname, '../../app.html'), 'utf8');
 
 vi.mock('./scene', async () => {
     const actual = await vi.importActual('./scene') as any;

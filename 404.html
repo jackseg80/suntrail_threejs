@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SunTrail 3D — Page introuvable</title>
+    <script>
+        // GitHub Pages Hack pour les SPAs/MPAs avec routage
+        // Redirige vers la page d'accueil avec le chemin d'origine en paramètre
+        var path = window.location.pathname;
+        var isProd = window.location.hostname !== 'localhost';
+        var base = isProd ? '/suntrail_threejs/' : '/';
+        
+        // Si on cherche une page spécifique, on tente de rediriger intelligemment
+        if (path.includes('app')) {
+            window.location.href = base + 'app.html';
+        } else if (path.includes('login')) {
+            window.location.href = base + 'login.html';
+        } else {
+            window.location.href = base;
+        }
+    </script>
+</head>
+<body>
+    Redirection en cours...
+</body>
+</html>

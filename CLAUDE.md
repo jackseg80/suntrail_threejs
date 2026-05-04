@@ -1,12 +1,13 @@
-# SunTrail — Guide IA (v5.53.4)
+# SunTrail — Guide IA (v5.53.5)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-04 — v5.53.4 : Paiements web RevenueCat + Stripe, gating Pro cohérent web/Android.
-
+> Mis à jour le 2026-05-04 — v5.53.5 : Landing Page, Authentification Supabase, Synchronisation PRO web/Android.
 
 ## Projet
 
 App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacitor).
+- **Architecture Multi-Page (v5.53.5)** : Séparation en 3 pages : `index.html` (Landing SEO), `app.html` (App 3D), `login.html` (Supabase Auth). 
+- **Authentification (v5.53.5)** : Utilisation de Supabase pour l'identité utilisateur. Sync automatique des droits PRO via RevenueCat (`appUserId` = Supabase UID).
 - **Simulation Solaire Unique** : Calcul d'ombres portées en temps réel sur le relief, mais aussi sur les **forêts (InstancedMesh)** et les **bâtiments 3D**, offrant un réalisme topographique inégalé.
 - **Analyse Topographique** : Moteur d'analyse de profil, stats de précision (D+/D-, VAM) et inclinomètre numérique pro.
 - **Disponibilité Géo** : Fonctionnalités HD variables selon les pays (priorité CH/FR/IT), projet en évolution constante pour étendre la couverture des données haute fidélité.
@@ -16,7 +17,6 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **LOD v5.40.40** : Fix régression v5.38.x :
   - `boost=0.5` pour OpenTopoMap → `1.2` (causait un saut de seuils LOD au changement de source autoSelectMapSource, LOD 10→12 direct)
   - `* boost` retiré de LOD 11-14 + 10-7 (incohérence avec `autoSelectMapSource`)
-  - `zoom <= 11` OpenTopoMap → `zoom <= 10` (juxtaposition OpenTopoMap/swisstopo au LOD 11)
   - `forcedRadius` dynamique → fixé à 1 (5×5 tuiles → 3×3, évite chevauchement)
   - `marginFactor` dynamique → fixé à 0.2 (tuiles persistantes, superposition de sources)
   - Sous-régions CH dans `geo.ts` : trous comblés (Sud 45.7°, nouvelle 46.6-47.9/8.6-9.3 pour Uri/Schwyz, Est étendu à 47.9°)
@@ -27,7 +27,6 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
   - État partagé cross-processus : fichier `rec_state.json` dans `filesDir`
   - Room SQLite : `enableMultiInstanceInvalidation()` pour synchronisation entre processus
   - Impact : GPS continue même quand l'utilisateur swipe l'app des recents (killer foreground service) ✓
-
 
 ### ⚠️ Règles de Modification de Fichiers (SÉCURITÉ)
 
@@ -110,6 +109,6 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - `src/modules/solarRoute.ts` : (v5.52.9) Analyse solaire des itinéraires — **deux modes distincts** : Snapshot (ombre à l'heure du slider, Free) et Hiker Timeline (ombre à l'heure d'arrivée estimée, Pro). **Overlay 3D** : DataTexture 256×1 mappée sur TubeGeometry pour colorisation 4 états (soleil or / forêt vert / ombre bleu / nuit bleu-nuit) live (~200ms cache hit). **Détection forêt globale** (v5.52.9) : `prefetchLandcoverForPoints()` pré-charge toutes tuiles Z14 (CH) / Z10 (monde) avant analyse — élimine cache-froid. Fallback silencieux si MapTiler indisponible. **Sampling adaptatif** : max 200 points, step dynamique. **Cache** : clé `${routeHash}|${date}|${slot30}|${mode}|${speed}`, invalide sur changement route ou date. **RAF keepalive** pour fluidité 2D. **Ombre précise** : utilise `getAltitudeAt()` au moment de l'analyse. **Recommandations** : grille 2×2 stats + info forêt + segments ombragés + alerte exposition forte (excl. forêt). **Speed** : [3, 4, 6] km/h sélectionnable, auto-bascule en hikerTimeline.
 
 ## Tests & Qualité
-- **Unitaires (Vitest)** : `npm test` (747 tests). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`, `solarRoute.ts`. Solar route analysis valide (27 tests dédies).
+- **Unitaires (Vitest)** : `npm test` (754 tests). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`, `solarRoute.ts`, `authService.ts`. Solar route analysis valide (27 tests dédies).
 - **E2E (Playwright)** : `npx playwright test --ui` (Onboarding, GPS, Expert).
 - **Mocks** : `src/test/setup.ts` pour WebGL. `ui.test.ts` utilise des timers fictifs.

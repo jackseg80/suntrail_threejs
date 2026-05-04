@@ -1,14 +1,19 @@
 import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
 import { readFileSync } from 'fs';
+import { resolve } from 'path';
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8')) as { version: string };
+
+const isProd = process.env.NODE_ENV === 'production';
+const isCapacitor = process.env.CAPACITOR === 'true';
 
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
-  base: './',
+  // Sur GitHub Pages on a besoin de /suntrail_threejs/, mais sur Capacitor on a besoin de ./ (relatif)
+  base: isCapacitor ? './' : (isProd ? '/suntrail_threejs/' : '/'),
   server: {
     headers: {
       'Referrer-Policy': 'same-origin',
@@ -16,10 +21,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    // Three.js fait ~520kB minifié (dans son propre chunk — correct)
-    // On relève le seuil pour éviter le warning sur un chunk qu'on ne peut pas réduire
     chunkSizeWarningLimit: 600,
-    // Strip tous les console.log/debug en production (W7 — sécurité + perf)
     minify: 'terser',
     terserOptions: {
       compress: {
@@ -28,12 +30,12 @@ export default defineConfig({
       },
     },
     rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        app: resolve(__dirname, 'app.html'),
+        login: resolve(__dirname, 'login.html'),
+      },
       output: {
-        // Découpe le bundle pour un LCP optimal :
-        //  - three     : ~350 kB, rarement mis à jour → cache long
-        //  - vendor    : deps tierces stables
-        //  - pmtiles   : optionnel (mode hors-ligne seulement)
-        //  - app       : code métier, change à chaque déploiement
         manualChunks(id) {
           if (id.includes('node_modules/three')) return 'three';
           if (id.includes('node_modules/pmtiles')) return 'pmtiles';
@@ -41,7 +43,8 @@ export default defineConfig({
             id.includes('node_modules/suncalc') ||
             id.includes('node_modules/gpxparser') ||
             id.includes('node_modules/@mapbox') ||
-            id.includes('node_modules/pbf')
+            id.includes('node_modules/pbf') ||
+            id.includes('node_modules/@supabase')
           ) return 'vendor';
         },
       },

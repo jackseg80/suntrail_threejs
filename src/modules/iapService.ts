@@ -94,8 +94,14 @@ class IAPService {
         try {
             // Import dynamique : ne charge pas le SDK web sur Android (et inversement)
             const { Purchases: PurchasesWeb } = await import('@revenuecat/purchases-js');
-            // appUserId obligatoire pour le SDK web — générer/récupérer un ID anonyme stable
-            const appUserId = this._getOrCreateWebUserId();
+            const { authService } = await import('./authService');
+
+            // Attendre que la session Supabase soit chargée
+            await authService.waitForInit();
+
+            // On utilise l'UID Supabase si l'utilisateur est connecté, sinon l'ID anonyme habituel
+            const appUserId = authService.user?.id || this._getOrCreateWebUserId();
+            
             PurchasesWeb.configure({ apiKey: webKey, appUserId });
             this._webPurchases = PurchasesWeb.getSharedInstance();
             this.initialized = true;
