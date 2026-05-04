@@ -7,7 +7,6 @@ import { showToast } from '../../toast';
 import { haptic } from '../../haptics';
 import { eventBus } from '../../eventBus';
 import { i18n } from '../../../i18n/I18nService';
-import { Capacitor } from '@capacitor/core';
 import type { PackMeta, PackStatus } from '../../packTypes';
 import templateHTML from '../templates/packs.html?raw';
 
@@ -119,12 +118,10 @@ export class PacksSheet extends BaseComponent {
         if (status === 'not_purchased') {
             const buyBtn = this.createButton('packs.btn.buy', 'var(--accent, #3b7ef8)');
             buyBtn.addEventListener('click', () => this.handleBuy(meta.id));
-            // Append price if available on native
-            if (Capacitor.isNativePlatform()) {
-                void iapService.getPackPrice(meta.id).then(price => {
-                    if (price !== '—') buyBtn.textContent = `${i18n.t('packs.btn.buy')} ${price}`;
-                });
-            }
+            // Afficher le prix (natif + web)
+            void iapService.getPackPrice(meta.id).then(price => {
+                if (price !== '—') buyBtn.textContent = `${i18n.t('packs.btn.buy')} ${price}`;
+            });
             actions.appendChild(buyBtn);
 
         } else if (status === 'purchased') {
@@ -221,14 +218,6 @@ export class PacksSheet extends BaseComponent {
 
     private async handleBuy(packId: string): Promise<void> {
         void haptic('medium');
-        
-        // Sur le Web, on autorise l'achat virtuel (déblocage immédiat)
-        if (!Capacitor.isNativePlatform()) {
-            packManager.onPurchaseCompleted(packId);
-            showToast('Pack débloqué (Web/Dev mode)');
-            this.renderPackList();
-            return;
-        }
 
         const success = await iapService.purchasePack(packId);
         if (success) {

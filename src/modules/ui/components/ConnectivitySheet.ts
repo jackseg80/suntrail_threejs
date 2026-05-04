@@ -1,4 +1,5 @@
 import { BaseComponent } from '../core/BaseComponent';
+import { Capacitor } from '@capacitor/core';
 import { state, isProActive } from '../../state';
 import {
     deleteTerrainCache, setPMTilesSource,
@@ -50,6 +51,12 @@ export class ConnectivitySheet extends BaseComponent {
             await deleteTerrainCache();
             showToast(i18n.t('connectivity.toast.cacheCleared'));
         });
+
+        // Zones offline non disponibles sur web (implémentation native OPFS uniquement)
+        if (!Capacitor.isNativePlatform()) {
+            const dlZoneBtn = this.element.querySelector<HTMLElement>('#conn-download-zone');
+            if (dlZoneBtn) dlZoneBtn.style.display = 'none';
+        }
 
         const downloadZoneBtn = this.element.querySelector('#conn-download-zone') as HTMLButtonElement | null;
 

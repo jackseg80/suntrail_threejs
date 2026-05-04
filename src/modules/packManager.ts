@@ -75,13 +75,7 @@ class PackManager {
         // si le localStorage a été vidé (très utile après une mise à jour système ou app).
         await this.syncDiskStates();
 
-        // 1. Débloquer le pack Suisse par défaut pour tout le monde sur le Web (v5.26.6)
-        // Offre la cartographie HD (LOD 14) immédiatement via CDN/Streaming.
-        if (!Capacitor.isNativePlatform()) {
-            this.markPurchased('switzerland');
-        }
-
-        // 2. Auto-débloquer TOUS les packs sur localhost (Dev mode) ou via paramètre URL
+        // Auto-débloquer TOUS les packs sur localhost (Dev mode) ou via paramètre URL
         const params = new URLSearchParams(window.location.search);
         const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || 
                       params.get('allpacks') === 'true' || params.get('dev') === 'true';
@@ -134,9 +128,8 @@ class PackManager {
         }
     }
 
-    /** Vérifie les achats de packs sur RevenueCat et met à jour les états locaux. */
+    /** Vérifie les achats de packs sur RevenueCat (natif + web) et met à jour les états locaux. */
     private async syncPackPurchases(): Promise<void> {
-        if (!Capacitor.isNativePlatform()) return;
         const ready = await iapService.waitForInit();
         if (!ready) return;
         const purchased = await iapService.checkAllPackPurchases();

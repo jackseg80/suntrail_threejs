@@ -1,29 +1,32 @@
 /**
- * iapService.ts — RevenueCat integration
+ * iapService.ts — RevenueCat integration (natif + web)
  *
- * Gère le cycle de vie complet des achats In-App :
- *   - Initialisation au démarrage
- *   - Vérification du statut Pro existant
- *   - Déclenchement d'un achat
- *   - Restauration des achats
- *   - Synchronisation avec state.isPro
+ * Android/iOS : @revenuecat/purchases-capacitor via Google Play / App Store
+ * Web         : @revenuecat/purchases-js via Stripe (import dynamique)
  *
  * Entitlement RevenueCat : 'SunTrail 3D Pro'
  * Offerings : monthly | yearly | lifetime
  */
 
-import { Purchases, LOG_LEVEL, type CustomerInfo, type PurchasesOffering } from '@revenuecat/purchases-capacitor';
+import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor';
 import { Capacitor } from '@capacitor/core';
 import { state } from './state';
 import { grantProAccess, revokeProAccess } from './iap';
 
 const ENTITLEMENT_ID = 'SunTrail 3D Pro';
 
+// Interface commune aux deux SDKs (Capacitor et purchases-js partagent la même forme)
+interface ICustomerInfo {
+    entitlements: { active: Record<string, unknown> };
+}
+
 class IAPService {
     private initialized = false;
     private _initPromise: Promise<void> | null = null;
+    private _webPurchases: any = null; // instance @revenuecat/purchases-js (web uniquement)
+    private _visibilityHandler: (() => void) | null = null;
 
-    /** Attend que l'init soit terminée (max 5s) — utile si getPrices() est appelé avant que initialize() ait fini */
+    /** Attend que l'init soit terminée (max 5s) */
     async waitForInit(timeoutMs = 5000): Promise<boolean> {
         if (this.initialized) return true;
         if (!this._initPromise) return false;
@@ -46,13 +49,14 @@ class IAPService {
     }
 
     private async _doInitialize(): Promise<void> {
-        const sdkKey = import.meta.env.VITE_REVENUECAT_KEY as string | undefined;
-
-        // RevenueCat ne fonctionne que sur Android/iOS natif
         if (!Capacitor.isNativePlatform()) {
-            if (state.DEBUG_MODE) console.log('[IAP] Web platform — RevenueCat skipped.');
-            return;
+            return this._doInitializeWeb();
         }
+        return this._doInitializeNative();
+    }
+
+    private async _doInitializeNative(): Promise<void> {
+        const sdkKey = import.meta.env.VITE_REVENUECAT_KEY as string | undefined;
         if (!sdkKey || sdkKey.length < 10) {
             console.warn('[IAP] VITE_REVENUECAT_KEY manquante — achats désactivés.');
             return;
@@ -64,21 +68,60 @@ class IAPService {
             await Purchases.configure({ apiKey: sdkKey });
             this.initialized = true;
 
-            // Vérifier le statut Pro au démarrage (override le cache localStorage)
             await this.syncProStatus();
 
-            // Écouter les changements d'abonnement en temps réel
-            // (renouvellements, annulations, remboursements)
-            // Guard isPro : évite un 2e toast si purchase() a déjà accordé l'accès
+            // Écouter les changements en temps réel (renouvellements, annulations, remboursements)
             Purchases.addCustomerInfoUpdateListener((customerInfo) => {
                 if (!state.isPro) {
                     this.updateStateFromCustomerInfo(customerInfo);
                 }
             });
 
-            if (state.DEBUG_MODE) console.log('[IAP] RevenueCat initialisé.');
+            if (state.DEBUG_MODE) console.log('[IAP] RevenueCat (Android) initialisé.');
         } catch (e) {
             console.warn('[IAP] Erreur initialisation RevenueCat:', e);
+        }
+    }
+
+    private async _doInitializeWeb(): Promise<void> {
+        const webKey = import.meta.env.VITE_REVENUECAT_WEB_KEY as string | undefined;
+        if (!webKey || webKey.length < 10) {
+            if (state.DEBUG_MODE) console.log('[IAP] VITE_REVENUECAT_WEB_KEY manquante — achats web désactivés.');
+            return;
+        }
+        if (this.initialized) return;
+
+        try {
+            // Import dynamique : ne charge pas le SDK web sur Android (et inversement)
+            const { Purchases: PurchasesWeb } = await import('@revenuecat/purchases-js');
+            // appUserId obligatoire pour le SDK web — générer/récupérer un ID anonyme stable
+            const appUserId = this._getOrCreateWebUserId();
+            PurchasesWeb.configure({ apiKey: webKey, appUserId });
+            this._webPurchases = PurchasesWeb.getSharedInstance();
+            this.initialized = true;
+
+            await this.syncProStatus();
+
+            // Filet de sécurité : re-sync Pro quand l'onglet redevient actif (après Stripe)
+            this._visibilityHandler = () => {
+                if (document.visibilityState === 'visible') {
+                    void this._pollProStatusWeb();
+                }
+            };
+            document.addEventListener('visibilitychange', this._visibilityHandler);
+
+            if (state.DEBUG_MODE) console.log('[IAP] RevenueCat Web (Stripe) initialisé.');
+        } catch (e) {
+            console.warn('[IAP] Erreur initialisation RevenueCat Web:', e);
+        }
+    }
+
+    /** Polling post-paiement Stripe : vérifie le statut Pro jusqu'à confirmation (max 30s) */
+    private async _pollProStatusWeb(maxAttempts = 6): Promise<void> {
+        for (let i = 0; i < maxAttempts; i++) {
+            await new Promise(r => setTimeout(r, 2000));
+            const isPro = await this.syncProStatus();
+            if (isPro) return;
         }
     }
 
@@ -87,20 +130,24 @@ class IAPService {
     async syncProStatus(): Promise<boolean> {
         if (!this.initialized) return state.isPro;
         try {
-            const { customerInfo } = await Purchases.getCustomerInfo();
-            return this.updateStateFromCustomerInfo(customerInfo);
+            if (Capacitor.isNativePlatform()) {
+                const { customerInfo } = await Purchases.getCustomerInfo();
+                return this.updateStateFromCustomerInfo(customerInfo);
+            } else {
+                const customerInfo = await this._webPurchases.getCustomerInfo();
+                return this.updateStateFromCustomerInfo(customerInfo);
+            }
         } catch (e) {
             console.warn('[IAP] Impossible de vérifier le statut Pro:', e);
-            return state.isPro; // Garder le cache localStorage
+            return state.isPro;
         }
     }
 
-    private updateStateFromCustomerInfo(customerInfo: CustomerInfo): boolean {
+    private updateStateFromCustomerInfo(customerInfo: ICustomerInfo): boolean {
         const isPro = customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined;
         if (isPro && !state.isPro) {
             grantProAccess();
         } else if (!isPro && state.isPro) {
-            // Révoquer uniquement si on était Pro (évite les faux négatifs au boot)
             revokeProAccess();
         }
         return isPro;
@@ -108,10 +155,6 @@ class IAPService {
 
     // ── Achat ─────────────────────────────────────────────────────────────────
 
-    /**
-     * Déclenche le flow d'achat Play Store.
-     * @param packageType 'monthly' | 'yearly' | 'lifetime'
-     */
     async purchase(packageType: 'monthly' | 'yearly' | 'lifetime'): Promise<boolean> {
         if (!this.initialized) {
             console.warn('[IAP] RevenueCat non initialisé.');
@@ -121,31 +164,34 @@ class IAPService {
             const offering = await this.getCurrentOffering();
             if (!offering) return false;
 
-            // RevenueCat utilise 'ANNUAL' (pas 'YEARLY') comme packageType pour les abonnements annuels.
-            // L'identifier 'suntrail_pro_annual' ne contient pas 'yearly'.
-            // On normalise 'yearly' → 'annual' pour correspondre à la convention RevenueCat.
+            // RevenueCat utilise 'ANNUAL' (pas 'YEARLY') — on normalise
             const normalized = packageType === 'yearly' ? 'annual' : packageType;
             const pkg = offering.availablePackages.find(
-                p => p.packageType.toLowerCase() === normalized ||
+                (p: any) => p.packageType.toLowerCase() === normalized ||
                      p.packageType.toLowerCase() === packageType ||
                      p.identifier.toLowerCase().includes(normalized) ||
                      p.identifier.toLowerCase().includes(packageType)
             );
             if (!pkg) {
-                console.warn(`[IAP] Package '${packageType}' (normalized: '${normalized}') introuvable dans l'offering.`, offering.availablePackages.map(p => ({ id: p.identifier, type: p.packageType })));
+                console.warn(`[IAP] Package '${packageType}' introuvable dans l'offering.`);
                 return false;
             }
 
-            const { customerInfo } = await Purchases.purchasePackage({ aPackage: pkg });
-            const granted = this.updateStateFromCustomerInfo(customerInfo);
-            // Si Play Store valide mais RevenueCat n'a pas encore accordé l'entitlement
-            // (validation serveur en attente — typique sans Service Account), re-vérifier après 2s
-            if (!granted) {
-                await new Promise(r => setTimeout(r, 2000));
-                const { customerInfo: ci2 } = await Purchases.getCustomerInfo();
-                return this.updateStateFromCustomerInfo(ci2);
+            if (Capacitor.isNativePlatform()) {
+                const { customerInfo } = await Purchases.purchasePackage({ aPackage: pkg });
+                const granted = this.updateStateFromCustomerInfo(customerInfo);
+                // Retry si la validation serveur est en attente (Service Account absent)
+                if (!granted) {
+                    await new Promise(r => setTimeout(r, 2000));
+                    const { customerInfo: ci2 } = await Purchases.getCustomerInfo();
+                    return this.updateStateFromCustomerInfo(ci2);
+                }
+                return granted;
+            } else {
+                // Web : ouvre le checkout Stripe (overlay in-page, pas de redirect)
+                const { customerInfo } = await this._webPurchases.purchase({ rcPackage: pkg });
+                return this.updateStateFromCustomerInfo(customerInfo);
             }
-            return granted;
 
         } catch (e: any) {
             if (e?.userCancelled) {
@@ -162,8 +208,14 @@ class IAPService {
     async restorePurchases(): Promise<boolean> {
         if (!this.initialized) return false;
         try {
-            const { customerInfo } = await Purchases.restorePurchases();
-            return this.updateStateFromCustomerInfo(customerInfo);
+            if (Capacitor.isNativePlatform()) {
+                const { customerInfo } = await Purchases.restorePurchases();
+                return this.updateStateFromCustomerInfo(customerInfo);
+            } else {
+                // purchases-js retourne CustomerInfo directement (sans wrapper)
+                const customerInfo = await this._webPurchases.restorePurchases();
+                return this.updateStateFromCustomerInfo(customerInfo);
+            }
         } catch (e) {
             console.warn('[IAP] Erreur restauration:', e);
             return false;
@@ -172,34 +224,42 @@ class IAPService {
 
     // ── Offerings ─────────────────────────────────────────────────────────────
 
-    async getCurrentOffering(): Promise<PurchasesOffering | null> {
+    async getCurrentOffering(): Promise<any> {
         if (!this.initialized) return null;
         try {
-            const offerings = await Purchases.getOfferings();
-            return offerings.current ?? null;
+            if (Capacitor.isNativePlatform()) {
+                const offerings = await Purchases.getOfferings();
+                return offerings.current ?? null;
+            } else {
+                const offerings = await this._webPurchases.getOfferings();
+                return offerings.current ?? null;
+            }
         } catch (e) {
             console.warn('[IAP] Impossible de charger les offerings:', e);
             return null;
         }
     }
 
-    /** Retourne l'anonymous ID RevenueCat — utilisé pour l'identification des testeurs */
+    /** ID RevenueCat anonyme — utilisé pour l'identification des testeurs */
     async getAppUserID(): Promise<string> {
-        if (!Capacitor.isNativePlatform()) return '';
         if (!this.initialized) await this.waitForInit();
         if (!this.initialized) return '';
         try {
-            const result = await Purchases.getAppUserID();
-            return result.appUserID ?? '';
+            if (Capacitor.isNativePlatform()) {
+                const result = await Purchases.getAppUserID();
+                return result.appUserID ?? '';
+            } else {
+                // purchases-js : méthode synchrone
+                return this._webPurchases.getAppUserId() ?? '';
+            }
         } catch {
             return '';
         }
     }
 
-    /** Retourne les prix formatés pour affichage dans l'UpgradeSheet */
+    /** Prix formatés pour l'UpgradeSheet (cache 5min via caller) */
     async getPrices(): Promise<{ monthly: string; yearly: string; lifetime: string }> {
         const defaults = { monthly: '—', yearly: '—', lifetime: '—' };
-        // Attendre l'init si elle est en cours (max 5s)
         if (!this.initialized) await this.waitForInit();
         if (!this.initialized) return defaults;
         try {
@@ -208,16 +268,17 @@ class IAPService {
             const prices = { ...defaults };
             for (const pkg of offering.availablePackages) {
                 const id = pkg.identifier.toLowerCase();
-                const raw = pkg.product.priceString ?? '';
-                // Google Play test subscriptions appendent la période raccourcie (ex: "for 5 minutes")
-                // Aussi supprimer les suffixes de période (/mois, /an, /month, /year, etc.)
+                // Capacitor SDK : pkg.product.priceString
+                // Web SDK      : pkg.rcBillingProduct.currentPrice.formattedPrice
+                const raw = pkg.product?.priceString ??
+                            pkg.rcBillingProduct?.currentPrice?.formattedPrice ?? '';
                 const price = raw
                     .replace(/\s*(for|per|pour|durch|para|in)\s*\d+\s*(minutes?|min\.?)/gi, '')
                     .replace(/\s*\/\s*(mois|an|month|year|mes|monat|jahr|anno)/gi, '')
                     .trim();
-                if (id.includes('monthly')) prices.monthly = price;
-                else if (id.includes('yearly') || id.includes('annual')) prices.yearly = price;
-                else if (id.includes('lifetime')) prices.lifetime = price;
+                if (id.includes('monthly')) prices.monthly = price || '—';
+                else if (id.includes('yearly') || id.includes('annual')) prices.yearly = price || '—';
+                else if (id.includes('lifetime')) prices.lifetime = price || '—';
             }
             return prices;
         } catch {
@@ -243,23 +304,40 @@ class IAPService {
         if (!productId) return false;
 
         try {
-            const offerings = await Purchases.getOfferings();
-            // Chercher dans toutes les offerings le produit correspondant
-            let targetPkg = null;
-            for (const offering of Object.values(offerings.all ?? {})) {
-                targetPkg = offering.availablePackages.find(
-                    p => p.identifier.toLowerCase().includes(productId) ||
-                         p.product.identifier === productId
-                );
-                if (targetPkg) break;
+            if (Capacitor.isNativePlatform()) {
+                const offerings = await Purchases.getOfferings();
+                let targetPkg = null;
+                for (const offering of Object.values(offerings.all ?? {})) {
+                    targetPkg = offering.availablePackages.find(
+                        p => p.identifier.toLowerCase().includes(productId) ||
+                             p.product.identifier === productId
+                    );
+                    if (targetPkg) break;
+                }
+                if (!targetPkg) {
+                    console.warn(`[IAP] Pack product '${productId}' introuvable.`);
+                    return false;
+                }
+                const { customerInfo } = await Purchases.purchasePackage({ aPackage: targetPkg });
+                return this.hasPackEntitlement(customerInfo, packId);
+            } else {
+                const offerings = await this._webPurchases.getOfferings();
+                let targetPkg: any = null;
+                for (const offering of Object.values((offerings.all ?? {}) as Record<string, any>)) {
+                    targetPkg = offering.availablePackages?.find(
+                        (p: any) => p.identifier?.toLowerCase().includes(productId) ||
+                                    p.product?.identifier === productId ||
+                                    p.rcBillingProduct?.identifier === productId
+                    );
+                    if (targetPkg) break;
+                }
+                if (!targetPkg) {
+                    console.warn(`[IAP] Pack web '${productId}' introuvable.`);
+                    return false;
+                }
+                const { customerInfo } = await this._webPurchases.purchase({ rcPackage: targetPkg });
+                return this.hasPackEntitlement(customerInfo, packId);
             }
-            if (!targetPkg) {
-                console.warn(`[IAP] Pack product '${productId}' introuvable dans les offerings.`);
-                return false;
-            }
-
-            const { customerInfo } = await Purchases.purchasePackage({ aPackage: targetPkg });
-            return this.hasPackEntitlement(customerInfo, packId);
         } catch (e: any) {
             if (e?.userCancelled) {
                 console.log('[IAP] Achat pack annulé.');
@@ -270,7 +348,7 @@ class IAPService {
         }
     }
 
-    hasPackEntitlement(customerInfo: CustomerInfo, packId: string): boolean {
+    hasPackEntitlement(customerInfo: ICustomerInfo, packId: string): boolean {
         const entId = IAPService.PACK_ENTITLEMENTS[packId];
         if (!entId) return false;
         return customerInfo.entitlements.active[entId] !== undefined;
@@ -279,8 +357,13 @@ class IAPService {
     async isPackPurchased(packId: string): Promise<boolean> {
         if (!this.initialized) return false;
         try {
-            const { customerInfo } = await Purchases.getCustomerInfo();
-            return this.hasPackEntitlement(customerInfo, packId);
+            if (Capacitor.isNativePlatform()) {
+                const { customerInfo } = await Purchases.getCustomerInfo();
+                return this.hasPackEntitlement(customerInfo, packId);
+            } else {
+                const customerInfo = await this._webPurchases.getCustomerInfo();
+                return this.hasPackEntitlement(customerInfo, packId);
+            }
         } catch { return false; }
     }
 
@@ -290,13 +373,20 @@ class IAPService {
         const productId = IAPService.PACK_PRODUCT_IDS[packId];
         if (!productId) return '—';
         try {
-            const offerings = await Purchases.getOfferings();
-            for (const offering of Object.values(offerings.all ?? {})) {
-                const pkg = offering.availablePackages.find(
-                    p => p.identifier.toLowerCase().includes(productId) ||
-                         p.product.identifier === productId
+            const offeringsData = Capacitor.isNativePlatform()
+                ? await Purchases.getOfferings()
+                : await this._webPurchases.getOfferings();
+            for (const offering of Object.values((offeringsData.all ?? {}) as Record<string, any>)) {
+                const pkg = offering.availablePackages?.find(
+                    (p: any) => p.identifier?.toLowerCase().includes(productId) ||
+                                p.product?.identifier === productId ||
+                                p.rcBillingProduct?.identifier === productId
                 );
-                if (pkg) return pkg.product.priceString ?? '—';
+                if (pkg) {
+                    return pkg.product?.priceString ??
+                           pkg.rcBillingProduct?.currentPrice?.formattedPrice ??
+                           '—';
+                }
             }
             return '—';
         } catch { return '—'; }
@@ -305,7 +395,13 @@ class IAPService {
     async checkAllPackPurchases(): Promise<string[]> {
         if (!this.initialized) return [];
         try {
-            const { customerInfo } = await Purchases.getCustomerInfo();
+            let customerInfo: ICustomerInfo;
+            if (Capacitor.isNativePlatform()) {
+                const result = await Purchases.getCustomerInfo();
+                customerInfo = result.customerInfo;
+            } else {
+                customerInfo = await this._webPurchases.getCustomerInfo();
+            }
             const purchased: string[] = [];
             for (const packId of Object.keys(IAPService.PACK_ENTITLEMENTS)) {
                 if (this.hasPackEntitlement(customerInfo, packId)) {
@@ -316,10 +412,26 @@ class IAPService {
         } catch { return []; }
     }
 
+    /** ID anonyme stable pour le SDK web (persisted in localStorage) */
+    private _getOrCreateWebUserId(): string {
+        const key = 'rc_web_user_id';
+        let id = localStorage.getItem(key);
+        if (!id) {
+            id = 'web_' + Math.random().toString(36).slice(2, 9) + '_' + Date.now().toString(36);
+            localStorage.setItem(key, id);
+        }
+        return id;
+    }
+
     /** @internal Reset state for testing purposes */
     public resetForTest(): void {
         this.initialized = false;
         this._initPromise = null;
+        this._webPurchases = null;
+        if (this._visibilityHandler) {
+            document.removeEventListener('visibilitychange', this._visibilityHandler);
+            this._visibilityHandler = null;
+        }
     }
 }
 
