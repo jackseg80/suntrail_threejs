@@ -255,6 +255,45 @@ function setupProfileInteractions(): void {
     const svg = document.getElementById('profile-svg');
 
     if (!container || !cursor || !info || !svg) return;
+
+    // Recréer le marker s'il a été supprimé par closeElevationProfile()
+    if (!state.profileMarker) {
+        // v5.32.14 : Sphère plus grande et depthTest désactivé pour visibilité totale en 3D
+        // v5.53.5 : Ajout d'un contour noir pour la visibilité (cohérent avec les tracés)
+        const geo = new THREE.SphereGeometry(40, 32, 32);
+        const mat = new THREE.MeshStandardMaterial({ 
+            color: 0x00ffff, 
+            emissive: 0x00ffff, 
+            emissiveIntensity: 3, // v5.53.5 : Increased from 2
+            roughness: 0,
+            metalness: 1,
+            depthTest: false,
+            transparent: true 
+        });
+        state.profileMarker = new THREE.Mesh(geo, mat);
+
+        // Contour noir
+        const outlineGeo = new THREE.SphereGeometry(46, 32, 32);
+        const outlineMat = new THREE.MeshBasicMaterial({ color: 0x000000, depthTest: false, transparent: true, opacity: 0.5 });
+        const outline = new THREE.Mesh(outlineGeo, outlineMat);
+        state.profileMarker.add(outline);
+        
+        const lineGeo = new THREE.CylinderGeometry(2, 2, 4000, 8);
+        const lineMat = new THREE.MeshBasicMaterial({ 
+            color: 0x00ffff, 
+            transparent: true, 
+            opacity: 0.5, // v5.53.5 : Increased from 0.4
+            depthTest: false 
+        });
+        const line = new THREE.Mesh(lineGeo, lineMat);
+        line.position.y = -2000;
+        state.profileMarker.add(line);
+        
+        state.profileMarker.renderOrder = 9999;
+        state.profileMarker.visible = false;
+        if (state.scene) state.scene.add(state.profileMarker);
+    }
+
     if (profileInteractionsAttached) return;
     profileInteractionsAttached = true;
 
@@ -278,36 +317,6 @@ function setupProfileInteractions(): void {
     function setInteracting() {
         if (_profileTimer) { clearTimeout(_profileTimer); _profileTimer = null; }
         state.isInteractingWithUI = true;
-    }
-
-    if (!state.profileMarker) {
-        // v5.32.14 : Sphère plus grande et depthTest désactivé pour visibilité totale en 3D
-        const geo = new THREE.SphereGeometry(40, 32, 32);
-        const mat = new THREE.MeshStandardMaterial({ 
-            color: 0x00ffff, 
-            emissive: 0x00ffff, 
-            emissiveIntensity: 2,
-            roughness: 0,
-            metalness: 1,
-            depthTest: false,
-            transparent: true // Nécessaire avec depthTest: false pour certaines passes
-        });
-        state.profileMarker = new THREE.Mesh(geo, mat);
-        
-        const lineGeo = new THREE.CylinderGeometry(2, 2, 4000, 8);
-        const lineMat = new THREE.MeshBasicMaterial({ 
-            color: 0x00ffff, 
-            transparent: true, 
-            opacity: 0.4,
-            depthTest: false 
-        });
-        const line = new THREE.Mesh(lineGeo, lineMat);
-        line.position.y = -2000;
-        state.profileMarker.add(line);
-        
-        state.profileMarker.renderOrder = 9999;
-        state.profileMarker.visible = false;
-        if (state.scene) state.scene.add(state.profileMarker);
     }
 
     const onMove = (e: MouseEvent | TouchEvent) => {
@@ -346,7 +355,14 @@ function setupProfileInteractions(): void {
         info.textContent = `Distance : ${point.dist.toFixed(2)}km | Alt : ${Math.round(point.ele)}m | Pente : ${Math.round(point.slope)}%${timeStr}`;
 
         if (state.profileMarker) {
-            state.profileMarker.position.copy(point.pos).add(new THREE.Vector3(0, 20, 0));
+            // v5.53.5 : Échelle adaptative selon le zoom pour rester visible en altitude
+            const zoom = state.ZOOM || 10;
+            const exponent = Math.max(0, 18 - zoom);
+            const scale = Math.pow(1.35, exponent); // Croissance modérée
+            state.profileMarker.scale.setScalar(scale);
+
+            // Ajuster l'offset vertical pour que la sphère soit toujours au-dessus du sol
+            state.profileMarker.position.copy(point.pos).add(new THREE.Vector3(0, 20 * scale, 0));
             state.profileMarker.visible = true;
         }
     };
