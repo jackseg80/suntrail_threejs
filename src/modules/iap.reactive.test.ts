@@ -2,10 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { state } from './state';
 import { isProActive } from './iap';
 
-describe('PRO Logic & Trials (v5.29.2)', () => {
+describe('PRO Logic (v5.53.6)', () => {
     beforeEach(() => {
         state.isPro = false;
-        state.trialEnd = null;
     });
 
     it('SHOULD return false for basic users', () => {
@@ -17,25 +16,13 @@ describe('PRO Logic & Trials (v5.29.2)', () => {
         expect(isProActive()).toBe(true);
     });
 
-    it('SHOULD return true if user is in trial period', () => {
-        // Trial expire dans 1 heure
-        state.trialEnd = Date.now() + 3600000;
-        expect(isProActive()).toBe(true);
-    });
-
-    it('SHOULD return false if trial has expired', () => {
-        // Trial a expiré il y a 1 heure
-        state.trialEnd = Date.now() - 3600000;
-        expect(isProActive()).toBe(false);
-    });
-
-    it('SHOULD notify subscribers when trialEnd changes (v5.29.3)', async () => {
+    it('SHOULD notify subscribers when isPro changes', async () => {
         let notified = false;
-        state.subscribe('trialEnd', () => {
+        state.subscribe('isPro', () => {
             notified = true;
         });
 
-        state.trialEnd = Date.now() + 3600000;
+        state.isPro = true;
         
         // Attendre la fin de la microtask (ReactiveState utilise queueMicrotask)
         await new Promise(resolve => queueMicrotask(() => resolve(null)));

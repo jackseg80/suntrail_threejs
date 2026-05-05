@@ -3,8 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const { mockIap } = vi.hoisted(() => ({
     mockIap: {
         isProActive: vi.fn(() => false),
-        showUpgradePrompt: vi.fn(),
-        activateDiscoveryTrial: vi.fn()
+        showUpgradePrompt: vi.fn()
     }
 }));
 

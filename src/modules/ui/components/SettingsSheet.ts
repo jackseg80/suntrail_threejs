@@ -15,7 +15,7 @@ import { authService } from '../../authService';
 import { Capacitor } from '@capacitor/core';
 import { showToast } from '../../toast';
 import { haptic } from '../../haptics';
-import { showUpgradePrompt, isProActive, activateDiscoveryTrial } from '../../iap';
+import { showUpgradePrompt, isProActive } from '../../iap';
 import templateHTML from '../templates/settings.html?raw';
 
 export class SettingsSheet extends BaseComponent {
@@ -534,7 +534,7 @@ export class SettingsSheet extends BaseComponent {
     }
 
     /**
-     * Easter egg : 7 taps sur le numéro de version → bascule mode Pro testeur (RAM uniquement, non persisté).
+     * Easter egg : 7 taps sur le numéro de version → toggle Pro tester mode (RAM uniquement, non persisté).
      * Taps 4-6 : haptic light + clignotement. Tap 7 : haptic success + toast + couleur accent.
      */
     private setupVersionTapEgg(): void {
@@ -559,22 +559,22 @@ export class SettingsSheet extends BaseComponent {
                 versionEl.style.opacity = tapCount % 2 === 0 ? '1' : '0.2';
                 setTimeout(() => { versionEl.style.opacity = '0.5'; }, 200);
             } else if (tapCount === 7) {
-                // Toggle Pro au 7e tap
+                // Toggle Pro au 7e tap (Debug uniquement, non persistant pour tests rapides)
                 tapCount = 0;
                 if (tapTimer) clearTimeout(tapTimer);
                 
-                // Si déjà Pro ou Trial actif -> on reset tout (utile pour les testeurs)
-                if (isProActive()) {
-                    state.isPro = false;
-                    state.trialEnd = null;
-                    saveProStatus();
-                    void haptic('warning');
-                    showToast('🔒 Mode Pro/Trial désactivé & réinitialisé', 3000);
-                } else {
-                    // Sinon on active un Trial de 14 jours (confort pour les testeurs Google)
-                    activateDiscoveryTrial(14);
+                state.isPro = !state.isPro;
+                saveProStatus();
+                
+                if (state.isPro) {
+                    state.SHOW_BUILDINGS = true;
+                    state.SHOW_INCLINOMETER = true;
+                    state.SHOW_WEATHER_PRO = true;
                     void haptic('success');
-                    showToast('🔓 Mode Testeur : Essai Pro 14j activé', 3000);
+                    showToast('🔓 Mode Testeur : Pro activé (Session)', 3000);
+                } else {
+                    void haptic('warning');
+                    showToast('🔒 Mode Testeur : Pro désactivé', 3000);
                 }
                 
                 versionEl.style.color = isProActive() ? 'var(--accent)' : '';

@@ -4,7 +4,7 @@ import { showToast } from '../../toast';
 import { haptic } from '../../haptics';
 import { iapService } from '../../iapService';
 import { i18n } from '../../../i18n/I18nService';
-import { activateDiscoveryTrial, isProActive } from '../../iap';
+import { isProActive } from '../../iap';
 import templateHTML from '../templates/upgrade.html?raw';
 
 export class UpgradeSheet extends BaseComponent {
