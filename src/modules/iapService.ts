@@ -195,13 +195,27 @@ class IAPService {
         if (!Capacitor.isNativePlatform()) {
             const { authService } = await import('./authService');
             if (!authService.isAuthenticated) {
-                const confirmGuest = confirm("Vous êtes en mode invité. Cet achat sera lié à ce navigateur uniquement. Voulez-vous continuer ou vous connecter d'abord pour synchroniser vos droits sur tous vos appareils ?\n\nOK : Continuer (Invité)\nAnnuler : Me connecter");
-                if (!confirmGuest) {
-                    const isProd = window.location.hostname !== 'localhost';
-                    const base = isProd ? '/suntrail_threejs/' : '/';
-                    window.location.href = base + 'login.html';
-                    return false;
-                }
+                const proceed = await new Promise<boolean>((resolve) => {
+                    const win = window.open('guest-purchase-modal.html', '_blank', 'width=500,height=500');
+                    const handler = (event: MessageEvent) => {
+                        if (event.data.type === 'PURCHASE_GUEST_CONTINUE') {
+                            window.removeEventListener('message', handler);
+                            resolve(true);
+                        }
+                    };
+                    window.addEventListener('message', handler);
+                    
+                    // Cleanup si la fenêtre est fermée
+                    const checkClosed = setInterval(() => {
+                        if (win?.closed) {
+                            clearInterval(checkClosed);
+                            window.removeEventListener('message', handler);
+                            resolve(false);
+                        }
+                    }, 500);
+                });
+
+                if (!proceed) return false;
             }
         }
 
