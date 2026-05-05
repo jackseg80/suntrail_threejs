@@ -197,7 +197,9 @@ class IAPService {
             if (!authService.isAuthenticated) {
                 const proceed = await new Promise<boolean>((resolve) => {
                     let resolved = false;
-                    const win = window.open('guest-purchase-modal.html', '_blank', 'width=500,height=550');
+                    const isProd = window.location.hostname !== 'localhost';
+                    const base = isProd ? '/suntrail_threejs/' : '/';
+                    const win = window.open(`${base}guest-purchase-modal.html`, '_blank', 'width=500,height=550');
                     
                     const handler = (event: MessageEvent) => {
                         if (event.data.type === 'PURCHASE_GUEST_CONTINUE') {
