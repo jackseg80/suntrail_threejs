@@ -53,11 +53,11 @@ test.describe('TrackSheet Functionality', () => {
 
     const toggleBtn = page.locator('.gpx-layer-toggle').first();
     await expect(toggleBtn).toBeVisible();
-    await expect(toggleBtn).toHaveText('👁');
+    await expect(toggleBtn).toHaveAttribute('data-visible', 'true');
     
     await toggleBtn.scrollIntoViewIfNeeded();
     await toggleBtn.click();
-    await expect(toggleBtn).toHaveText('🚫');
+    await expect(toggleBtn).toHaveAttribute('data-visible', 'false');
 
     // Final check: app should be loaded (check for the main 3D canvas)
     await expect(page.locator('#canvas-container canvas').first()).toBeVisible();

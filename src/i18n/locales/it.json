@@ -20,8 +20,8 @@
     "btn": {
       "rec": "REC",
       "stop": "STOP",
-      "import": "📥 Importa GPX",
-      "export": "📤 Esporta"
+      "import": "Importa GPX",
+      "export": "Esporta"
     },
     "toast": {
       "recStarted": "🔴 Registrazione avviata",

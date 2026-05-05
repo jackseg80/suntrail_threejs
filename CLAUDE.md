@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.53.8)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-05 — v5.53.8 : Modernisation UI panels — icônes SVG, responsive mobile, harmonisation thème bleu.
+> Mis à jour le 2026-05-05 — v5.53.8 : Modernisation UI panels — icônes SVG, responsive mobile, harmonisation thème bleu. Restructuration panneau Parcours : bouton REC/STOP fixe, bannière PRO déplacée, masquage distractions pendant REC, emojis → SVG.
 
 ## Projet
 

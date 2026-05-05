@@ -1,3 +1,18 @@
+## [5.53.5] - 2026-05-05
+
+### Changed
+
+- **Restructuration panneau Parcours** : Bouton REC/STOP ne change plus de position lors du basculement. Bannière PRO déplacée après les actions (plus avant les stats). Import GPX et liste des tracés masqués pendant l'enregistrement pour réduire la distraction. Nouvel indicateur REC en top bar basé sur CSS (dot animé) au lieu de l'emoji 🔴.
+
+### Fixed
+
+- **Bouton REC sautant visuellement** : La bannière PRO était injectée avant `.track-stats`, décalant tout le contenu vers le bas. Elle est maintenant insérée après `.track-actions`, stabilisant la position du bouton REC/STOP.
+
+### Icons
+
+- **SVG remplace tous les emojis dans la liste des tracés importés** : Les icônes 📈(profil), 👁/🚫(visibilité), 💾(export), ⏱️(durée) et 📥(import GPX) sont remplacées par des icônes SVG Lucide-style. Cohérent avec la modernisation v5.53.8.
+- **Locales i18n** : Emojis retirés des clés `track.btn.import`, `track.btn.export` dans les 4 locales (fr, en, de, it). Le test E2E `tracksheet.test.ts` mis à jour pour utiliser `data-visible` au lieu du texte emoji.
+
 ## [5.53.4] - 2026-05-04
 
 ### Added

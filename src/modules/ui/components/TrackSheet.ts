@@ -360,21 +360,25 @@ export class TrackSheet extends BaseComponent {
                     <span class="gpx-layer-dot" style="background:${layer.color}"></span>
                     <div class="gpx-layer-info">
                         <span class="gpx-layer-name">${truncName}</span>
-                        <span class="gpx-layer-stats">${layer.stats.distance.toFixed(2)} km · D+ ${Math.round(layer.stats.dPlus)} m · D− ${Math.round(layer.stats.dMinus)} m · ⏱️ ${duration}</span>
+                        <span class="gpx-layer-stats">${layer.stats.distance.toFixed(2)} km · D+ ${Math.round(layer.stats.dPlus)} m · D− ${Math.round(layer.stats.dMinus)} m · <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:text-top"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${duration}</span>
                     </div>
                     <button class="gpx-layer-profile" data-action="profile" data-id="${layer.id}"
                             aria-label="${i18n.t('track.imported.showProfile')}"
                             title="${i18n.t('track.imported.showProfile')}">
-                        📈
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                        </svg>
                     </button>
-                    <button class="gpx-layer-toggle" data-action="toggle" data-id="${layer.id}" 
+                    <button class="gpx-layer-toggle" data-action="toggle" data-id="${layer.id}" data-visible="${layer.visible}"
                             aria-label="${i18n.t('track.imported.toggleVisible')}"
                             title="${i18n.t('track.imported.toggleVisible')}">
-                        ${layer.visible ? '👁' : '🚫'}
+                        ${layer.visible
+                            ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
+                            : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`}
                     </button>
                     ${isProActive() ? `<button class="gpx-layer-export" data-action="export" data-id="${layer.id}"
                             aria-label="${i18n.t('track.imported.export') || 'Exporter GPX'}"
-                            title="${i18n.t('track.imported.export') || 'Exporter GPX'}">💾</button>` : ''}
+                            title="${i18n.t('track.imported.export') || 'Exporter GPX'}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>` : ''}
                     <button class="gpx-layer-remove" data-action="remove" data-id="${layer.id}"
                             aria-label="${i18n.t('track.imported.remove')}"
                             title="${i18n.t('track.imported.remove')}">×</button>
@@ -490,6 +494,9 @@ export class TrackSheet extends BaseComponent {
                 </svg> ${i18n.t('track.btn.stop')}`;
             navTab?.classList.add('has-notif');
             
+            document.getElementById('import-gpx-sheet')?.style.setProperty('display', 'none');
+            document.getElementById('gpx-layers-list')?.style.setProperty('display', 'none');
+            
             // Upsell Pro permanent pendant l'enregistrement pour les gratuits
             if (!isProActive()) {
                 this.showRecordingUpsell();
@@ -505,6 +512,9 @@ export class TrackSheet extends BaseComponent {
                 </svg> ${i18n.t('track.btn.rec')}`;
             navTab?.classList.remove('has-notif');
             document.getElementById('rec-recording-upsell')?.remove();
+            
+            document.getElementById('import-gpx-sheet')?.style.removeProperty('display');
+            this.renderLayersList();
         }
     }
 
@@ -535,10 +545,9 @@ export class TrackSheet extends BaseComponent {
         banner.appendChild(text);
         banner.appendChild(proBtn);
         
-        // Insérer avant les stats
-        const stats = this.element?.querySelector('.track-stats');
-        if (stats) {
-            stats.parentNode?.insertBefore(banner, stats);
+        const trackActions = this.element?.querySelector('.track-actions');
+        if (trackActions) {
+            this.element?.insertBefore(banner, trackActions.nextSibling);
         } else {
             this.element?.appendChild(banner);
         }
