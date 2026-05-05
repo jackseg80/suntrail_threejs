@@ -4,9 +4,10 @@ import { state, saveSettings, saveProStatus, type ThemePreference } from '../../
 import { applyPreset, getGpuInfo, detectBestPreset } from '../../performance';
 import { updateHydrologyVisibility, refreshTerrain } from '../../terrain';
 import { updateWeatherVisibility } from '../../weather';
-import { i18n } from '../../../i18n/I18nService';
+import { ICON_CHECK } from '../icons';
 import { showOnboarding } from '../../onboardingTutorial';
 import type { Locale } from '../../../i18n/I18nService';
+import { i18n } from '../../../i18n/I18nService';
 
 import { sheetManager } from '../core/SheetManager';
 import { eventBus } from '../../eventBus';
@@ -473,7 +474,7 @@ export class SettingsSheet extends BaseComponent {
                 if (!id) return;
                 void navigator.clipboard.writeText(id).then(() => {
                     const btn = section.querySelector('#tester-id-copy') as HTMLButtonElement;
-                    if (btn) { btn.textContent = '✓ Copié'; setTimeout(() => { btn.textContent = 'Copier'; }, 1500); }
+                    if (btn) { btn.innerHTML = `${ICON_CHECK} Copié`; setTimeout(() => { btn.textContent = 'Copier'; }, 1500); }
                 });
             });
         });

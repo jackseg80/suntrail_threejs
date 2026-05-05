@@ -3,6 +3,7 @@ import { activeTiles } from '../../terrain';
 import { tileWorkerManager } from '../../workerManager';
 import { showToast } from '../../toast';
 import { i18n } from '../../../i18n/I18nService';
+import { ICON_RECORD, ICON_STOP } from '../icons';
 import type { PresetType } from '../../state';
 
 export const TEXTURE_LIMITS: Record<string, number> = {
@@ -85,7 +86,7 @@ export class VRAMDashboard {
             <div class="vram-row"><span class="vram-label">${i18n.t('vram.workers')}</span><span class="vram-value" id="vram-workers">—</span></div>
             <div class="vram-row vram-row--fps"><span class="vram-label">FPS</span><span class="vram-value" id="vram-fps">—</span></div>
             <div class="vram-record-bar">
-                <button id="vram-record-btn" class="vram-record-btn" aria-label="Enregistrer session perf">⏺ Enregistrer</button>
+                <button id="vram-record-btn" class="vram-record-btn" aria-label="Enregistrer session perf">${ICON_RECORD} Enregistrer</button>
                 <span id="vram-record-status" class="vram-record-status"></span>
             </div>
         `;
@@ -286,10 +287,10 @@ export class VRAMDashboard {
         const btn = this.panel?.querySelector<HTMLButtonElement>('#vram-record-btn');
         if (!btn) return;
         if (this.isRecording) {
-            btn.textContent = '⏹ Stop + Copier';
+            btn.innerHTML = `${ICON_STOP} Stop + Copier`;
             btn.classList.add('vram-record-btn--active');
         } else {
-            btn.textContent = '⏺ Enregistrer';
+            btn.innerHTML = `${ICON_RECORD} Enregistrer`;
             btn.classList.remove('vram-record-btn--active');
             this.updateStatus('');
         }

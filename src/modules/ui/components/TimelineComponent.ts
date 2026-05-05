@@ -6,6 +6,7 @@ import { i18n } from '../../../i18n/I18nService';
 import { worldToLngLat } from '../../geo';
 import { showUpgradePrompt } from '../../iap';
 import { attachDraggablePanel } from '../draggablePanel';
+import { ICON_PLAY, ICON_PAUSE } from '../icons';
 import SunCalc from 'suncalc';
 
 export class TimelineComponent {
@@ -215,7 +216,7 @@ export class TimelineComponent {
         }));
 
         this.subscriptions.push(state.subscribe('isSunAnimating', (val: boolean) => {
-            if (playBtn) playBtn.textContent = val ? '⏸' : '▶';
+            if (playBtn) playBtn.innerHTML = val ? ICON_PAUSE : ICON_PLAY;
         }));
 
         // Ouvrir/fermer la timeline automatiquement au changement de mode

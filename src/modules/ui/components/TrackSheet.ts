@@ -13,6 +13,7 @@ import { updateElevationProfile } from '../../profile';
 import { eventBus } from '../../eventBus';
 import { Capacitor } from '@capacitor/core';
 import { calculateTrackStats } from '../../geoStats';
+import { ICON_CLOSE } from '../icons';
 import { recordingService } from '../../recordingService';
 import { gpxService } from '../../gpxService';
 import { fmtDuration } from '../../utils';
@@ -381,7 +382,7 @@ export class TrackSheet extends BaseComponent {
                             title="${i18n.t('track.imported.export') || 'Exporter GPX'}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>` : ''}
                     <button class="gpx-layer-remove" data-action="remove" data-id="${layer.id}"
                             aria-label="${i18n.t('track.imported.remove')}"
-                            title="${i18n.t('track.imported.remove')}">×</button>
+                            title="${i18n.t('track.imported.remove')}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                 </div>`;
             }).join('')}`;
 
@@ -626,7 +627,7 @@ export class TrackSheet extends BaseComponent {
             const closeBtn = document.createElement('button');
             closeBtn.setAttribute('aria-label', i18n.t('common.close'));
             closeBtn.style.cssText = 'flex-shrink:0; background:none; border:none; color:var(--text-3); cursor:pointer; font-size:16px; line-height:1; padding:0 4px;';
-            closeBtn.textContent = '×';
+            closeBtn.innerHTML = ICON_CLOSE;
             closeBtn.onclick = () => banner.remove();
             banner.appendChild(closeBtn);
         }

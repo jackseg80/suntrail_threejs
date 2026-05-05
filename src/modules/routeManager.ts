@@ -272,7 +272,7 @@ function renderSettingsWaypoints(): void {
             <span class="rs-wp-label">${label}</span>
             <button class="rs-wp-up" data-idx="${i}" ${i === 0 ? 'disabled' : ''} aria-label="Monter le point ${i + 1}">↑</button>
             <button class="rs-wp-dn" data-idx="${i}" ${i === last ? 'disabled' : ''} aria-label="Descendre le point ${i + 1}">↓</button>
-            <button class="rs-wp-del" data-idx="${i}" aria-label="Supprimer le point ${i + 1}">✕</button>
+            <button class="rs-wp-del" data-idx="${i}" aria-label="Supprimer le point ${i + 1}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>`;
     }).join('');
 

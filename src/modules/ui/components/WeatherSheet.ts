@@ -9,6 +9,7 @@ import SunCalc from 'suncalc';
 import { expertService } from '../../expertService';
 import { showUpgradePrompt } from '../../iap';
 import { showToast } from '../../toast';
+import { ICON_LOCK } from '../icons';
 import templateHTML from '../templates/weather.html?raw';
 
 export class WeatherSheet extends BaseComponent {
@@ -212,7 +213,7 @@ export class WeatherSheet extends BaseComponent {
 
             const icon = document.createElement('span');
             icon.classList.add('weather-daily-icon');
-            icon.textContent = isLocked ? '🔒' : getWeatherIcon(d.code);
+            icon.innerHTML = isLocked ? ICON_LOCK : getWeatherIcon(d.code);
 
             const dateEl = document.createElement('span');
             dateEl.classList.add('weather-daily-date');

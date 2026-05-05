@@ -2,7 +2,7 @@
     <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
     <div class="sheet-header">
         <span id="layers-sheet-title" class="sheet-title" data-i18n="layers.title">Fonds de carte</span>
-        <div class="sheet-close" id="close-layers">×</div>
+        <div class="sheet-close" id="close-layers"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
     </div>
     
     <div class="layer-grid" role="listbox" aria-labelledby="layers-sheet-title">
@@ -34,22 +34,10 @@
                 </div>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <div class="info-icon" title="Zoomer d'avantage (LVL 11+) pour voir les sentiers">ⓘ</div>
-                <input type="checkbox" id="layers-trails-toggle" checked aria-label="Sentiers">
-            </div>
-        </div>
-        <div class="setting-row" id="row-slopes" style="padding: 10px 0;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <div class="icon-btn-sm" style="width:30px; height:30px; background: rgba(239,68,68,0.1); color: var(--danger); border: none;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
-                </div>
-                <div>
-                    <div class="setting-label" data-i18n="layers.overlay.slopes">Pentes > 30°</div>
-                    <div class="lod-warning" style="display:none; font-size:9px; color:var(--text-3); margin-top:1px;" data-i18n="layers.overlay.slopesUnavailable">Indisponible à ce zoom</div>
-                </div>
+                <div class="info-icon" title="Zoomer d'avantage (LVL 11+) pour voir les sentiers"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <div class="info-icon" title="Zoomer d'avantage (LVL 11+) pour voir les pentes">ⓘ</div>
+                <div class="info-icon" title="Zoomer d'avantage (LVL 11+) pour voir les pentes"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
                 <input type="checkbox" id="layers-slopes-toggle" aria-label="Pentes > 30°">
             </div>
         </div>

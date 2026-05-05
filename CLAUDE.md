@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.53.8)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-05 — v5.53.8 : Modernisation UI panels — icônes SVG, responsive mobile, harmonisation thème bleu. Restructuration panneau Parcours : bouton REC/STOP fixe, bannière PRO déplacée, masquage distractions pendant REC, emojis → SVG.
+> Mis à jour le 2026-05-05 — v5.53.8 : Modernisation UI panels — icônes SVG, responsive mobile, harmonisation thème bleu. Restructuration panneau Parcours : bouton REC/STOP fixe, bannière PRO déplacée, masquage distractions pendant REC, emojis → SVG. Centralisation icônes SVG dans `src/modules/ui/icons.ts`.
 
 ## Projet
 
@@ -39,6 +39,8 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **AcceptanceWall** (`src/modules/acceptanceWall.ts`) : Icônes SVG remplaçant les emojis, card plus compacte, hero mountain/sun SVG.
 - **SettingsSheet** (`src/modules/ui/components/SettingsSheet.ts`) : Bouton Pro avec SVGs (cadenas/check), gradient bleu au lieu de doré.
 - **i18n** (4 locales) : Emojis retirés des clés `upgrade.title`, `upgrade.plan.badge`.
+- **Icon module** (`src/modules/ui/icons.ts`) : Module centralisé avec 9 icônes SVG (close, play, pause, stop, record, check, lock, unlock, info) remplaçant les émojis dans tous les contrôles UI critiques.
+- **Consistance UI** : 32 emojis remplacés par des SVG — fermeture sheets (× dans 8 templates), play/pause timeline, record/stop VRAM, checkmarks PRO (×5), cadenas PRO, info layers, et boutons de suppression. Émojis météo, POI canvas, lune et i18n conservés (usage programmatique ou décoratif).
 
 ### ⚠️ Règles de Modification de Fichiers (SÉCURITÉ)
 
