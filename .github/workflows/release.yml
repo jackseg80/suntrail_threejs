@@ -46,6 +46,8 @@ jobs:
         env:
           VITE_MAPTILER_KEY: ${{ secrets.VITE_MAPTILER_KEY }}
           VITE_REVENUECAT_KEY: ${{ secrets.VITE_REVENUECAT_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
 
       # ── 5. Capacitor sync ────────────────────────────────────────────────────
