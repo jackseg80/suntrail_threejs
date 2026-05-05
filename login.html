@@ -110,7 +110,16 @@
                     alert("Compte créé ! Vérifiez vos emails pour confirmer.");
                 } else {
                     await authService.signIn(emailInput.value, passInput.value);
-                    // Succès : Redirection vers l'app
+                    
+                    // Succès : Récupérer l'UID Supabase
+                    const session = await authService.getSession();
+                    const uid = session?.user?.id;
+                    
+                    // On prévient RevenueCat de l'identité pour fusionner les achats
+                    // avant la redirection si possible, ou on laisse app.html le faire à l'init.
+                    // Ici, la redirection vers app.html va de toute façon déclencher iapService.init()
+                    // qui utilisera authService.user.id.
+                    
                     const isProd = window.location.hostname !== 'localhost';
                     const base = isProd ? '/suntrail_threejs/' : '/';
                     window.location.href = base + 'app.html';

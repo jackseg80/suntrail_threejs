@@ -83,6 +83,30 @@ class IAPService {
         }
     }
 
+    /**
+     * Bascule l'identité RevenueCat vers un utilisateur authentifié (Supabase)
+     * et fusionne les achats anonymes existants si nécessaire.
+     */
+    public async identify(supabaseUserId: string): Promise<void> {
+        const webKey = import.meta.env.VITE_REVENUECAT_WEB_KEY as string | undefined;
+        if (!webKey) return;
+        
+        try {
+            if (state.DEBUG_MODE) console.log(`[IAP] Identification RevenueCat : ${supabaseUserId}`);
+            
+            // Sur le Web, pour changer d'ID tout en gardant l'instance partagée
+            // on re-configure le SDK. RevenueCat gère la fusion des droits si l'ID précédent
+            // avait des achats actifs sur ce même navigateur.
+            const { Purchases: PurchasesWeb } = await import('@revenuecat/purchases-js');
+            PurchasesWeb.configure({ apiKey: webKey, appUserId: supabaseUserId });
+            
+            this._webPurchases = PurchasesWeb.getSharedInstance();
+            await this.syncProStatus();
+        } catch (e) {
+            console.error('[IAP] Échec identification :', e);
+        }
+    }
+
     private async _doInitializeWeb(): Promise<void> {
         const webKey = import.meta.env.VITE_REVENUECAT_WEB_KEY as string | undefined;
         if (!webKey || webKey.length < 10) {
@@ -166,6 +190,21 @@ class IAPService {
             console.warn('[IAP] RevenueCat non initialisé.');
             return false;
         }
+
+        // Prévention mode invité sur le Web
+        if (!Capacitor.isNativePlatform()) {
+            const { authService } = await import('./authService');
+            if (!authService.isAuthenticated) {
+                const confirmGuest = confirm("Vous êtes en mode invité. Cet achat sera lié à ce navigateur uniquement. Voulez-vous continuer ou vous connecter d'abord pour synchroniser vos droits sur tous vos appareils ?\n\nOK : Continuer (Invité)\nAnnuler : Me connecter");
+                if (!confirmGuest) {
+                    const isProd = window.location.hostname !== 'localhost';
+                    const base = isProd ? '/suntrail_threejs/' : '/';
+                    window.location.href = base + 'login.html';
+                    return false;
+                }
+            }
+        }
+
         try {
             const offering = await this.getCurrentOffering();
             if (!offering) return false;
