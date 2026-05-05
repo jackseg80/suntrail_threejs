@@ -607,7 +607,7 @@
       "desc": "Le bouton SOS en haut à droite affiche vos coordonnées d'urgence. Téléchargez les Packs Pays dans les Réglages pour le mode hors-ligne."
     }
   },  "upgrade": {
-    "title": "Passer à Pro ✨",
+    "title": "Passer à Pro",
     "hero": {
       "title": "Simulation solaire unique au monde",
       "subtitle": "Voyez exactement quand le soleil éclaire votre sentier. Ombres projetées sur le vrai relief 3D — pour n'importe quel jour de l'année."
@@ -631,7 +631,7 @@
       "perMonth": "par mois",
       "perYear": "par an",
       "oneTime": "paiement unique",
-      "badge": "⭐ 7 jours gratuits",
+      "badge": "7 jours gratuits",
       "monthShort": "mois"
     },
     "restore": "Restaurer un achat",

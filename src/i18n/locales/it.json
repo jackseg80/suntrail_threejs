@@ -593,7 +593,7 @@
     }
   },
   "upgrade": {
-    "title": "Passa a Pro ✨",
+    "title": "Passa a Pro",
     "hero": {
       "title": "Simulazione solare unica al mondo",
       "subtitle": "Scopri esattamente quando il sole illumina il tuo sentiero. Ombre reali sul terreno 3D — per qualsiasi giorno dell'anno."
@@ -617,7 +617,7 @@
       "perMonth": "al mese",
       "perYear": "all'anno",
       "oneTime": "pagamento unico",
-      "badge": "⭐ 7 giorni gratis",
+      "badge": "7 giorni gratis",
       "monthShort": "mese"
     },
     "restore": "Ripristina un acquisto",

@@ -671,13 +671,13 @@ export class SettingsSheet extends BaseComponent {
         if (!btn) return;
 
         if (isProActive()) {
-            btn.innerHTML = '<span>✓</span><span data-i18n="settings.pro.active">Pro Actif</span>';
+            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="settings.pro.active">Pro Actif</span>';
             btn.style.background = `linear-gradient(135deg, var(--success) 0%, ${document.documentElement.dataset.theme === 'light' ? '#15803d' : '#16a34a'} 100%)`;
             btn.style.cursor = 'default';
             btn.disabled = true;
         } else {
-            btn.innerHTML = '<span>🔓</span><span data-i18n="settings.pro.cta">Passer à Pro</span>';
-            btn.style.background = 'linear-gradient(135deg, var(--gold) 0%, var(--gold) 100%)';
+            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0"/></svg><span data-i18n="settings.pro.cta">Passer à Pro</span>';
+            btn.style.background = 'linear-gradient(135deg, var(--accent) 0%, var(--accent-btn) 100%)';
             btn.style.cursor = 'pointer';
             btn.disabled = false;
         }

@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.53.7)
+# SunTrail — Guide IA (v5.53.8)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-04 — v5.53.7 : Nettoyage des trials locaux, sécurisation des achats, finalisation MPA.
+> Mis à jour le 2026-05-05 — v5.53.8 : Modernisation UI panels — icônes SVG, responsive mobile, harmonisation thème bleu.
 
 ## Projet
 
@@ -28,6 +28,17 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
   - État partagé cross-processus : fichier `rec_state.json` dans `filesDir`
   - Room SQLite : `enableMultiInstanceInvalidation()` pour synchronisation entre processus
   - Impact : GPS continue même quand l'utilisateur swipe l'app des recents (killer foreground service) ✓
+
+## UI — Modernisation v5.53.8
+- **UpgradeSheet** (`src/modules/ui/templates/upgrade.html`) : Refonte complète du panneau "Passer à Pro".
+  - Icônes SVG vectorielles dual-tone (bleu `--accent` + doré `--gold` pour les éléments naturels) au lieu d'emojis
+  - Illustration SVG héro (soleil doré, montagnes, cône d'ombre bleu)
+  - Grille responsive 2→1 colonne sous 340px
+  - Plans tarifaires empilés verticalement sur très petits écrans
+  - Badge et bordure du plan "best" : `--accent` au lieu de `--gold`
+- **AcceptanceWall** (`src/modules/acceptanceWall.ts`) : Icônes SVG remplaçant les emojis, card plus compacte, hero mountain/sun SVG.
+- **SettingsSheet** (`src/modules/ui/components/SettingsSheet.ts`) : Bouton Pro avec SVGs (cadenas/check), gradient bleu au lieu de doré.
+- **i18n** (4 locales) : Emojis retirés des clés `upgrade.title`, `upgrade.plan.badge`.
 
 ### ⚠️ Règles de Modification de Fichiers (SÉCURITÉ)
 
@@ -110,6 +121,6 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - `src/modules/solarRoute.ts` : (v5.52.9) Analyse solaire des itinéraires — **deux modes distincts** : Snapshot (ombre à l'heure du slider, Free) et Hiker Timeline (ombre à l'heure d'arrivée estimée, Pro). **Overlay 3D** : DataTexture 256×1 mappée sur TubeGeometry pour colorisation 4 états (soleil or / forêt vert / ombre bleu / nuit bleu-nuit) live (~200ms cache hit). **Détection forêt globale** (v5.52.9) : `prefetchLandcoverForPoints()` pré-charge toutes tuiles Z14 (CH) / Z10 (monde) avant analyse — élimine cache-froid. Fallback silencieux si MapTiler indisponible. **Sampling adaptatif** : max 200 points, step dynamique. **Cache** : clé `${routeHash}|${date}|${slot30}|${mode}|${speed}`, invalide sur changement route ou date. **RAF keepalive** pour fluidité 2D. **Ombre précise** : utilise `getAltitudeAt()` au moment de l'analyse. **Recommandations** : grille 2×2 stats + info forêt + segments ombragés + alerte exposition forte (excl. forêt). **Speed** : [3, 4, 6] km/h sélectionnable, auto-bascule en hikerTimeline.
 
 ## Tests & Qualité
-- **Unitaires (Vitest)** : `npm test` (754 tests). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`, `solarRoute.ts`, `authService.ts`. Solar route analysis valide (27 tests dédies).
+- **Unitaires (Vitest)** : `npm test` (748 tests). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`, `solarRoute.ts`, `authService.ts`. Solar route analysis valide (27 tests dédies).
 - **E2E (Playwright)** : `npx playwright test --ui` (Onboarding, GPS, Expert).
 - **Mocks** : `src/test/setup.ts` pour WebGL. `ui.test.ts` utilise des timers fictifs.

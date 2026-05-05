@@ -593,7 +593,7 @@
     }
   },
   "upgrade": {
-    "title": "Pro werden ✨",
+    "title": "Pro werden",
     "hero": {
       "title": "Weltweit einzigartige Sonnensimulation",
       "subtitle": "Sehen Sie genau, wann die Sonne Ihren Weg beleuchtet. Echte Schatten auf 3D-Gelände — für jeden Tag des Jahres."
@@ -617,7 +617,7 @@
       "perMonth": "pro Monat",
       "perYear": "pro Jahr",
       "oneTime": "Einmalzahlung",
-      "badge": "⭐ 7 Tage kostenlos",
+      "badge": "7 Tage kostenlos",
       "monthShort": "Monat"
     },
     "restore": "Kauf wiederherstellen",

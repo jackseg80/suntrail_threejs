@@ -3,221 +3,341 @@
         .upgrade-content {
             padding: 0 var(--space-4) var(--space-4);
         }
-        .upgrade-features {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-3);
-            margin-bottom: var(--space-5);
+        .upgrade-content * { box-sizing: border-box; }
+
+        .up-hero {
+            position: relative;
+            overflow: hidden;
+            border-radius: var(--radius-xl);
+            padding: 20px 16px 16px;
+            margin-bottom: var(--space-4);
+            background: linear-gradient(145deg, rgba(74,142,248,0.08) 0%, rgba(74,142,248,0.04) 60%, rgba(99,155,255,0.02) 100%);
+            border: 1px solid rgba(74,142,248,0.14);
         }
-        .upgrade-feature-row {
-            display: flex;
-            align-items: center;
-            gap: var(--space-3);
+        .up-hero-svg {
+            display: block;
+            width: 100%;
+            max-width: 260px;
+            height: auto;
+            margin: 0 auto 12px;
         }
-        .upgrade-feature-icon {
-            font-size: var(--text-xl);
-            flex-shrink: 0;
-            width: 2em;
+        .up-hero-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
             text-align: center;
+            margin-bottom: 4px;
+            letter-spacing: -0.1px;
         }
-        .upgrade-feature-label {
-            font-size: var(--text-sm);
-            color: var(--text-1);
-            font-weight: 500;
-        }
-        .upgrade-price-block {
+        .up-hero-sub {
+            font-size: 10.5px;
+            color: var(--text-2);
             text-align: center;
+            line-height: 1.5;
+            max-width: 280px;
+            margin: 0 auto;
+        }
+
+        .up-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 10px;
             margin-bottom: var(--space-4);
         }
-        .upgrade-price-main {
-            font-size: var(--text-xl);
-            font-weight: 700;
-            color: var(--accent);
-            margin-bottom: var(--space-1);
+        @media (max-width: 340px) {
+            .up-grid { grid-template-columns: 1fr; }
         }
-        .upgrade-price-alt {
-            font-size: var(--text-xs);
-            color: var(--text-3);
+        .up-feat {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 8px 10px;
+            border-radius: var(--radius-md);
+            background: var(--surface-subtle);
+            border: 1px solid transparent;
         }
-        .upgrade-cta {
-            display: block;
-            width: 100%;
-            padding: var(--space-3) var(--space-4);
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            border-radius: var(--radius-lg);
-            font-size: var(--text-sm);
-            font-weight: 700;
-            cursor: pointer;
-            transition: opacity var(--transition-fast);
-            margin-bottom: var(--space-3);
+        .up-feat svg {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
         }
-        .upgrade-cta:active {
-            opacity: 0.85;
+        .up-feat-label {
+            font-size: 11px;
+            color: var(--text);
+            font-weight: 500;
+            line-height: 1.3;
         }
-        .upgrade-restore {
-            display: block;
-            width: 100%;
-            padding: var(--space-2) 0;
-            background: none;
-            border: none;
-            color: var(--text-3);
-            font-size: var(--text-xs);
-            cursor: pointer;
-            text-align: center;
-            margin-bottom: var(--space-2);
-        }
-        .upgrade-restore:active {
-            color: var(--text-2);
-        }
-        .upgrade-legal {
-            font-size: var(--text-xs);
-            color: var(--text-3);
-            text-align: center;
-            line-height: 1.4;
-        }
-        /* Plans tarifaires */
-        .upgrade-plans {
+
+        .up-plans {
             display: flex;
             gap: 8px;
-            margin: calc(var(--space-4) + 10px) 0 var(--space-4); /* +10px pour le badge */
-            width: 100%;
-            box-sizing: border-box;
+            margin: var(--space-4) 0;
             align-items: stretch;
         }
-        .upgrade-plan {
-            flex: 1 1 0;            /* equal width */
-            min-width: 0;           /* allow shrink below content */
+        @media (max-width: 340px) {
+            .up-plans { flex-direction: column; }
+        }
+        .up-plan {
+            flex: 1 1 0;
+            min-width: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 2px;
-            padding: 12px 4px;      /* réduit pour accommoder €99.99 */
-            background: rgba(255,255,255,0.04);
+            gap: 3px;
+            padding: 14px 6px;
+            background: var(--surface-subtle);
             border: 1.5px solid var(--border);
             border-radius: var(--radius-lg);
             cursor: pointer;
             transition: all var(--transition-fast);
             position: relative;
-            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
-        .upgrade-plan:active { transform: scale(0.97); }
-        .upgrade-plan-best {
+        .up-plan:active { transform: scale(0.97); background: var(--surface-hover); }
+        .up-plan--best {
             border-color: var(--accent);
-            background: rgba(59,126,248,0.08);
+            background: rgba(74,142,248,0.08);
         }
-        .upgrade-plan-badge {
+        .up-plan--best .up-plan-price { color: var(--accent); }
+        .up-plan-badge {
             position: absolute;
-            top: -10px;
+            top: -11px;
             left: 50%;
             transform: translateX(-50%);
             background: var(--accent);
-            color: white;
+            color: #fff;
             font-size: 9px;
             font-weight: 800;
-            padding: 2px 7px;
+            padding: 3px 8px;
             border-radius: 20px;
             white-space: nowrap;
+            letter-spacing: 0.2px;
         }
-        .upgrade-plan-period {
+        .up-plan-period {
             font-size: 11px;
             color: var(--text-2);
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 4px;
+            letter-spacing: 0.4px;
+            margin-top: 2px;
         }
-        .upgrade-plan-price {
+        .up-plan-price {
             font-size: 20px;
             font-weight: 800;
             color: var(--text);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            max-width: 100%;
+            line-height: 1.2;
         }
-        .upgrade-plan-best .upgrade-plan-price { color: var(--accent); }
-        .upgrade-plan-sub {
+        .up-plan-sub {
             font-size: 9px;
             color: var(--text-3);
             text-align: center;
         }
+
+        .up-restore {
+            display: block;
+            width: 100%;
+            padding: 10px 0;
+            background: none;
+            border: none;
+            color: var(--text-3);
+            font-size: 11px;
+            cursor: pointer;
+            text-align: center;
+            margin-bottom: var(--space-2);
+            min-height: 44px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .up-restore:active { color: var(--text-2); }
+
+        .up-legal {
+            font-size: 10px;
+            color: var(--text-3);
+            text-align: center;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .btn-loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
     </style>
+
     <div class="sheet-drag-handle" aria-hidden="true"><div class="sheet-drag-indicator"></div></div>
     <div class="sheet-header">
-        <span class="sheet-title" data-i18n="upgrade.title">Passer à Pro ✨</span>
+        <span class="sheet-title" data-i18n="upgrade.title">Passer à Pro</span>
         <div class="sheet-close" id="close-upgrade">×</div>
     </div>
+
     <div class="upgrade-content">
-         <!-- Hero block — killer feature -->
-         <div class="upgrade-hero" style="background: linear-gradient(135deg, rgba(255,160,0,0.10) 0%, rgba(255,80,0,0.06) 100%); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: var(--space-4); border: 1px solid rgba(255,160,0,0.18);">
-             <div style="font-size: 28px; text-align: center; margin-bottom: 6px;">☀️</div>
-             <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-1); text-align: center; margin-bottom: 4px;" data-i18n="upgrade.hero.title">Simulation solaire unique au monde</div>
-             <div style="font-size: 11px; color: var(--text-2); text-align: center; line-height: 1.5;" data-i18n="upgrade.hero.subtitle">Voyez exactement quand le soleil éclaire votre sentier. Ombres projetées sur le vrai relief 3D — pour n'importe quel jour de l'année.</div>
-         </div>
-         <!-- Feature grid — 2 colonnes compactes -->
-         <div class="upgrade-features" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-bottom: var(--space-5);">
-             <div class="upgrade-feature-row">
-                 <span class="upgrade-feature-icon">🗓️</span>
-                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.solarCalendar">Calendrier solaire illimité</span>
-             </div>
-             <div class="upgrade-feature-row">
-                 <span class="upgrade-feature-icon">☀️</span>
-                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.solarAnalysis">Analyse solaire complète</span>
-             </div>
-             <div class="upgrade-feature-row">
-                 <span class="upgrade-feature-icon">🌡️</span>
-                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.weatherStation">Météo 3 jours + alertes</span>
-             </div>
-             <div class="upgrade-feature-row">
-                 <span class="upgrade-feature-icon">🗺️</span>
-                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.maxDetail">Zoom LOD 18 maximum</span>
-             </div>
-             <div class="upgrade-feature-row">
-                 <span class="upgrade-feature-icon">🛰️</span>
-                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.satellite">Vue Satellite HD</span>
-             </div>
-             <div class="upgrade-feature-row">
-                 <span class="upgrade-feature-icon">🏢</span>
-                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.buildings">Bâtiments 3D réalistes</span>
-             </div>
-             <div class="upgrade-feature-row">
-                 <span class="upgrade-feature-icon">📐</span>
-                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.inclinometer">Inclinomètre de pente</span>
-             </div>
-             <div class="upgrade-feature-row">
-                 <span class="upgrade-feature-icon">📍</span>
-                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.multiGpx">Multi-tracés GPX</span>
-             </div>
-             <div class="upgrade-feature-row">
-                 <span class="upgrade-feature-icon">💾</span>
-                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.exportStats">Export GPX + stats</span>
-             </div>
-             <div class="upgrade-feature-row">
-                 <span class="upgrade-feature-icon">📶</span>
-                 <span class="upgrade-feature-label" data-i18n="upgrade.feature.offlineZones">Offline illimité</span>
-             </div>
-         </div>
-        <!-- Sélecteur de plan — 3 options -->
-        <div class="upgrade-plans">
-            <button class="upgrade-plan" id="upgrade-monthly-btn">
-                <div class="upgrade-plan-period" data-i18n="upgrade.plan.monthly">Mensuel</div>
-                <div class="upgrade-plan-price" id="upgrade-monthly-price">—</div>
-                <div class="upgrade-plan-sub" data-i18n="upgrade.plan.perMonth">par mois</div>
+        <!-- Hero -->
+        <div class="up-hero">
+            <svg class="up-hero-svg" viewBox="0 0 260 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="up-hero-shade" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.18"/>
+                        <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+                    </linearGradient>
+                </defs>
+                <!-- Back mountain -->
+                <path d="M0 90 L60 35 L90 55 L140 20 L190 48 L220 30 L260 60 L260 90 Z" fill="var(--border-subtle)"/>
+                <!-- Front mountain -->
+                <path d="M0 90 L40 50 L70 62 L130 28 L180 55 L210 38 L260 65 L260 90 Z" fill="var(--surface-subtle)"/>
+                <!-- Sun -->
+                <circle cx="195" cy="22" r="12" fill="var(--gold)" opacity="0.2"/>
+                <circle cx="195" cy="22" r="8" fill="var(--gold)" opacity="0.4"/>
+                <circle cx="195" cy="22" r="5" fill="var(--gold)"/>
+                <!-- Sun rays -->
+                <g stroke="var(--gold)" stroke-width="1.2" stroke-linecap="round" opacity="0.5">
+                    <line x1="195" y1="4" x2="195" y2="8"/>
+                    <line x1="195" y1="36" x2="195" y2="40"/>
+                    <line x1="177" y1="22" x2="181" y2="22"/>
+                    <line x1="209" y1="22" x2="213" y2="22"/>
+                    <line x1="183" y1="11" x2="186" y2="14"/>
+                    <line x1="204" y1="30" x2="207" y2="33"/>
+                    <line x1="207" y1="11" x2="204" y2="14"/>
+                    <line x1="186" y1="30" x2="183" y2="33"/>
+                </g>
+                <!-- Shadow projection accent -->
+                <path d="M140 20 L180 55 L160 38" fill="url(#up-hero-shade)"/>
+                <path d="M130 28 L180 55 L160 40" fill="url(#up-hero-shade)"/>
+            </svg>
+            <div class="up-hero-title" data-i18n="upgrade.hero.title">Simulation solaire unique au monde</div>
+            <div class="up-hero-sub" data-i18n="upgrade.hero.subtitle">Voyez exactement quand le soleil éclaire votre sentier. Ombres projetées sur le vrai relief 3D — pour n'importe quel jour de l'année.</div>
+        </div>
+
+        <!-- Feature Grid -->
+        <div class="up-grid">
+            <div class="up-feat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                    <circle cx="12" cy="15" r="1.5" fill="var(--gold)" stroke="none"/>
+                    <line x1="12" y1="13" x2="12" y2="8"/>
+                    <line x1="14.5" y1="13.5" x2="17" y2="12"/>
+                    <line x1="9.5" y1="13.5" x2="7" y2="12"/>
+                </svg>
+                <span class="up-feat-label" data-i18n="upgrade.feature.solarCalendar">Calendrier solaire illimité</span>
+            </div>
+            <div class="up-feat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="4.5" fill="var(--gold)" stroke="none"/>
+                    <circle cx="12" cy="12" r="4.5"/>
+                    <line x1="12" y1="1" x2="12" y2="4"/>
+                    <line x1="12" y1="20" x2="12" y2="23"/>
+                    <line x1="4.5" y1="4.5" x2="6.6" y2="6.6"/>
+                    <line x1="17.4" y1="17.4" x2="19.5" y2="19.5"/>
+                    <line x1="1" y1="12" x2="4" y2="12"/>
+                    <line x1="20" y1="12" x2="23" y2="12"/>
+                    <line x1="4.5" y1="19.5" x2="6.6" y2="17.4"/>
+                    <line x1="17.4" y1="6.6" x2="19.5" y2="4.5"/>
+                </svg>
+                <span class="up-feat-label" data-i18n="upgrade.feature.solarAnalysis">Analyse solaire complète</span>
+            </div>
+            <div class="up-feat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 19a4.5 4.5 0 0 1 5-7h.3A4.5 4.5 0 0 1 14 13"/>
+                    <circle cx="15" cy="8" r="4" fill="var(--gold)" stroke="none" opacity="0.5"/>
+                    <circle cx="15" cy="8" r="4"/>
+                    <circle cx="15" cy="8" r="1.5" fill="var(--gold)" stroke="none"/>
+                    <line x1="15" y1="4" x2="15" y2="12"/>
+                    <line x1="11" y1="8" x2="19" y2="8"/>
+                </svg>
+                <span class="up-feat-label" data-i18n="upgrade.feature.weatherStation">Météo 3 jours + alertes</span>
+            </div>
+            <div class="up-feat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="8" width="18" height="13" rx="1"/>
+                    <line x1="8" y1="21" x2="16" y2="21"/>
+                    <line x1="12" y1="6" x2="12" y2="8"/>
+                    <circle cx="12" cy="14" r="3"/>
+                    <line x1="12" y1="11.5" x2="12" y2="12.5"/>
+                    <line x1="14" y1="14" x2="15" y2="14"/>
+                </svg>
+                <span class="up-feat-label" data-i18n="upgrade.feature.maxDetail">Zoom LOD 18 maximum</span>
+            </div>
+            <div class="up-feat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 22 L4 9 L2 7 L12 2 L22 7 L20 9 L20 22"/>
+                    <circle cx="12" cy="12" r="4"/>
+                    <circle cx="12" cy="12" r="1" fill="var(--gold)" stroke="none"/>
+                    <line x1="12" y1="8" x2="12" y2="6"/>
+                </svg>
+                <span class="up-feat-label" data-i18n="upgrade.feature.satellite">Vue Satellite HD</span>
+            </div>
+            <div class="up-feat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="8" width="4" height="14"/>
+                    <rect x="10" y="2" width="4" height="20"/>
+                    <rect x="16" y="5" width="4" height="17"/>
+                </svg>
+                <span class="up-feat-label" data-i18n="upgrade.feature.buildings">Bâtiments 3D réalistes</span>
+            </div>
+            <div class="up-feat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 18 L12 4 L18 18"/>
+                    <line x1="9" y1="12" x2="15" y2="12" stroke="var(--gold)" stroke-width="2"/>
+                    <line x1="2" y1="18" x2="22" y2="18"/>
+                </svg>
+                <span class="up-feat-label" data-i18n="upgrade.feature.inclinometer">Inclinomètre de pente</span>
+            </div>
+            <div class="up-feat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="5" cy="18" r="2" fill="var(--gold)" stroke="none"/>
+                    <circle cx="12" cy="10" r="2" fill="var(--gold)" stroke="none"/>
+                    <circle cx="19" cy="6" r="2" fill="var(--gold)" stroke="none"/>
+                    <circle cx="5" cy="18" r="2"/>
+                    <circle cx="12" cy="10" r="2"/>
+                    <circle cx="19" cy="6" r="2"/>
+                    <path d="M5 16 L12 8 L17 5"/>
+                </svg>
+                <span class="up-feat-label" data-i18n="upgrade.feature.multiGpx">Multi-tracés GPX</span>
+            </div>
+            <div class="up-feat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span class="up-feat-label" data-i18n="upgrade.feature.exportStats">Export GPX + stats</span>
+            </div>
+            <div class="up-feat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17.5 19H19a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h1.5"/>
+                    <polyline points="8 11 12 15 16 11"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span class="up-feat-label" data-i18n="upgrade.feature.offlineZones">Offline illimité</span>
+            </div>
+        </div>
+
+        <!-- Pricing Plans -->
+        <div class="up-plans">
+            <button class="up-plan" id="upgrade-monthly-btn">
+                <div class="up-plan-period" data-i18n="upgrade.plan.monthly">Mensuel</div>
+                <div class="up-plan-price" id="upgrade-monthly-price">—</div>
+                <div class="up-plan-sub" data-i18n="upgrade.plan.perMonth">par mois</div>
             </button>
-            <button class="upgrade-plan upgrade-plan-best" id="upgrade-cta-btn">
-                <div class="upgrade-plan-badge" data-i18n="upgrade.plan.badge">⭐ 7 jours gratuits</div>
-                <div class="upgrade-plan-period" data-i18n="upgrade.plan.yearly">Annuel</div>
-                <div class="upgrade-plan-price" id="upgrade-yearly-price">—</div>
-                <div class="upgrade-plan-sub" id="upgrade-yearly-sub" data-i18n="upgrade.plan.perYear">par an</div>
+            <button class="up-plan up-plan--best" id="upgrade-cta-btn">
+                <div class="up-plan-badge" data-i18n="upgrade.plan.badge">7 jours gratuits</div>
+                <div class="up-plan-period" data-i18n="upgrade.plan.yearly">Annuel</div>
+                <div class="up-plan-price" id="upgrade-yearly-price">—</div>
+                <div class="up-plan-sub" id="upgrade-yearly-sub" data-i18n="upgrade.plan.perYear">par an</div>
             </button>
-            <button class="upgrade-plan" id="upgrade-lifetime-btn">
-                <div class="upgrade-plan-period" data-i18n="upgrade.plan.lifetime">À vie</div>
-                <div class="upgrade-plan-price" id="upgrade-lifetime-price">—</div>
-                <div class="upgrade-plan-sub" data-i18n="upgrade.plan.oneTime">paiement unique</div>
+            <button class="up-plan" id="upgrade-lifetime-btn">
+                <div class="up-plan-period" data-i18n="upgrade.plan.lifetime">À vie</div>
+                <div class="up-plan-price" id="upgrade-lifetime-price">—</div>
+                <div class="up-plan-sub" data-i18n="upgrade.plan.oneTime">paiement unique</div>
             </button>
         </div>
-        <button class="upgrade-restore" id="upgrade-restore-btn" data-i18n="upgrade.restore">Restaurer un achat</button>
-        <p class="upgrade-legal" data-i18n="upgrade.legal">Abonnement auto-renouvelable · Résiliable à tout moment dans le Play Store.</p>
+
+        <button class="up-restore" id="upgrade-restore-btn" data-i18n="upgrade.restore">Restaurer un achat</button>
+        <p class="up-legal" data-i18n="upgrade.legal">Abonnement auto-renouvelable · Résiliable à tout moment dans le Play Store.</p>
     </div>
 </div>

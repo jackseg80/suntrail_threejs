@@ -600,7 +600,7 @@
       "desc": "The SOS button at the top right shows your emergency coordinates. Download Country Packs in Settings for offline mode."
     }
   },  "upgrade": {
-    "title": "Go Pro ✨",
+    "title": "Go Pro",
     "hero": {
       "title": "World's only solar terrain simulation",
       "subtitle": "See exactly when the sun hits your trail. Real shadows cast on 3D terrain — for any day of the year."
@@ -624,7 +624,7 @@
       "perMonth": "per month",
       "perYear": "per year",
       "oneTime": "one-time payment",
-      "badge": "⭐ 7 days free",
+      "badge": "7 days free",
       "monthShort": "mo"
     },
     "restore": "Restore purchase",
