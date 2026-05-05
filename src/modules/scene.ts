@@ -29,7 +29,6 @@ let visibilityChangeHandler: (() => void) | null = null;
 
 // v5.40.18 : Objets statiques partagés pour éviter le Garbage Collection (Zero-Allocation Pattern)
 const _sharedMatrix = new THREE.Matrix4();
-const _sharedDate = new Date();
 
 // Upsell LOD — debounce pour ne pas spammer le toast (1 fois par 30s max)
 let _lastLodUpsellTime = 0;
@@ -597,10 +596,7 @@ export async function initScene(): Promise<void> {
             if (state.isFollowingUser && !interacting) centerOnUser(delta);
 
             if (state.isSunAnimating) {
-                const mins = (state.simDate.getHours() * 60 + state.simDate.getMinutes() + state.animationSpeed) % 1440;
-                _sharedDate.setTime(state.simDate.getTime());
-                _sharedDate.setHours(Math.floor(mins / 60), Math.floor(mins % 60), 0, 0);
-                state.simDate = _sharedDate;
+                // Animation driven by TimelineComponent interval (robuste aux throttles rAF)
             }
 
             updateTerrainPhysics(interacting);
