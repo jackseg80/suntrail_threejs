@@ -107,6 +107,11 @@ export class TimelineComponent {
 
         const playBtn = document.getElementById('play-btn');
         if (playBtn) {
+            playBtn.style.display = 'inline-flex';
+            playBtn.style.alignItems = 'center';
+            playBtn.style.justifyContent = 'center';
+            playBtn.style.width = '32px';
+            playBtn.style.height = '32px';
             playBtn.setAttribute('aria-label', 'Lecture/Pause simulation solaire');
             playBtn.addEventListener('click', () => {
                 state.isSunAnimating = !state.isSunAnimating;
@@ -216,7 +221,11 @@ export class TimelineComponent {
         }));
 
         this.subscriptions.push(state.subscribe('isSunAnimating', (val: boolean) => {
-            if (playBtn) playBtn.innerHTML = val ? ICON_PAUSE : ICON_PLAY;
+            if (playBtn) {
+                playBtn.innerHTML = val ? ICON_PAUSE : ICON_PLAY;
+                const svg = playBtn.querySelector('svg');
+                if (svg) { svg.setAttribute('width', '18'); svg.setAttribute('height', '18'); }
+            }
         }));
 
         // Ouvrir/fermer la timeline automatiquement au changement de mode
