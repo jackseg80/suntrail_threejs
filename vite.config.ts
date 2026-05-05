@@ -34,6 +34,8 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         app: resolve(__dirname, 'app.html'),
         login: resolve(__dirname, 'login.html'),
+        guestModal: resolve(__dirname, 'guest-purchase-modal.html'),
+        notFound: resolve(__dirname, '404.html'),
       },
       output: {
         manualChunks(id) {
