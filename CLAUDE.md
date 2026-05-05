@@ -1,14 +1,14 @@
-# SunTrail — Guide IA (v5.53.6)
+# SunTrail — Guide IA (v5.53.7)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-04 — v5.53.6 : Landing Page professionnelle, Authentification Supabase, Synchronisation PRO.
+> Mis à jour le 2026-05-04 — v5.53.7 : Nettoyage des trials locaux, sécurisation des achats, finalisation MPA.
 
 ## Projet
 
 App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacitor).
-- **Landing Page (v5.53.6)** : Refonte complète avec design moderne (Glassmorphism), section fonctionnalités détaillée (6 cartes), et système de redirection Capacitor pour isoler l'expérience mobile.
 - **Architecture Multi-Page (v5.53.5)** : Séparation en 3 pages : `index.html` (Landing SEO), `app.html` (App 3D), `login.html` (Supabase Auth). 
 - **Authentification (v5.53.5)** : Utilisation de Supabase pour l'identité utilisateur. Sync automatique des droits PRO via RevenueCat (`appUserId` = Supabase UID).
+- **Monétisation (v5.53.7)** : Passage aux essais gratuits (Free Trials) natifs RevenueCat/Stores. Suppression des trials locaux.
 - **Simulation Solaire Unique** : Calcul d'ombres portées en temps réel sur le relief, mais aussi sur les **forêts (InstancedMesh)** et les **bâtiments 3D**, offrant un réalisme topographique inégalé.
 - **Analyse Topographique** : Moteur d'analyse de profil, stats de précision (D+/D-, VAM) et inclinomètre numérique pro.
 - **Disponibilité Géo** : Fonctionnalités HD variables selon les pays (priorité CH/FR/IT), projet en évolution constante pour étendre la couverture des données haute fidélité.
