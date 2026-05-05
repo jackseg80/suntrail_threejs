@@ -5,7 +5,6 @@ import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { createReactiveState } from './ui/core/ReactiveState';
 import type { VRAMDashboard } from './ui/components/VRAMDashboard';
 import { LocationPoint } from './geo';
-import { showToast } from './toast';
 
 export type PresetType = 'eco' | 'balanced' | 'performance' | 'ultra' | 'custom';
 
@@ -244,7 +243,6 @@ export interface State {
     hasLastClicked: boolean;
     isFlying: boolean;
     isPro: boolean;
-    trialEnd: number | null;
     purchasedPacks: string[];
     installedPacks: string[];
     DEBUG_MODE: boolean; // v5.29.6 : Contrôle des logs sensibles
@@ -275,7 +273,7 @@ const initialState: State = {
     MAX_BUILDS_PER_CYCLE: PRESETS.balanced.MAX_BUILDS_PER_CYCLE,
     MAX_ALLOWED_ZOOM: PRESETS.balanced.MAX_ALLOWED_ZOOM,
 
-    TARGET_LAT: 46.8182, TARGET_LON: 8.2275, initialLat: 46.8182, initialLon: 8.2275,
+    TARGET_LAT: 46.8182, TARGET_LON: 8.2275, initialLat: 46.8182, initialLon: 46.8182,
     ZOOM: 6, RELIEF_EXAGGERATION: 2.0, FOG_NEAR: 5000, FOG_FAR: 40000,
     originTile: { x: 0, y: 0, z: 6 },
     scene: null, camera: null, renderer: null, controls: null, sunLight: null, ambientLight: null, sky: null,
@@ -311,7 +309,6 @@ const initialState: State = {
     hasLastClicked: false,
     isFlying: false,
     isPro: false,
-    trialEnd: null,
     purchasedPacks: [],
     installedPacks: [],
     DEBUG_MODE: false,
@@ -404,8 +401,7 @@ const PRO_KEY = 'suntrail_pro';
 export function saveProStatus(): void {
     try {
         localStorage.setItem(PRO_KEY, JSON.stringify({ 
-            isPro: state.isPro,
-            trialEnd: state.trialEnd
+            isPro: state.isPro
         }));
     } catch (e) {
         console.warn('[State] Could not save pro status:', e);
@@ -418,26 +414,13 @@ export function loadProStatus(): void {
         if (!saved) return;
         const parsed = JSON.parse(saved);
         state.isPro = !!parsed.isPro;
-        state.trialEnd = parsed.trialEnd || null;
     } catch (e) {
         console.warn('[State] Could not load pro status:', e);
     }
 }
 
 export function isProActive(): boolean {
-    if (state.isPro) return true;
-    if (state.trialEnd && Date.now() < state.trialEnd) return true;
-    return false;
-}
-
-export function activateDiscoveryTrial(days = 3): void {
-    const durationMs = days * 24 * 60 * 60 * 1000;
-    state.trialEnd = Date.now() + durationMs;
-    state.SHOW_BUILDINGS = true;
-    state.SHOW_INCLINOMETER = true;
-    state.SHOW_WEATHER_PRO = true;
-    saveProStatus();
-    showToast(`✨ Essai Pro activé pour ${days} jours !`);
+    return state.isPro;
 }
 
 export function loadSettings(): SavedSettings | null {

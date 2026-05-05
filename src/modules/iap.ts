@@ -7,7 +7,7 @@
 
 import { showToast } from './toast';
 import { saveProStatus, state } from './state';
-export { isProActive, activateDiscoveryTrial } from './state';
+export { isProActive } from './state';
 import { sheetManager } from './ui/core/SheetManager';
 
 // Messages par feature (sera remplacé par i18n quand les clés seront ajoutées)
@@ -40,6 +40,8 @@ export function showUpgradePrompt(feature: string): void {
  * Point unique de changement d'état Pro → persistance automatique.
  */
 export function grantProAccess(): void {
+    if (state.isPro) return; // Éviter les appels multiples
+    
     state.isPro = true;
     
     // Activer toutes les fonctionnalités Pro par défaut

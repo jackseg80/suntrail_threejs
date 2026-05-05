@@ -23,20 +23,6 @@ export class UpgradeSheet extends BaseComponent {
         const closeBtn = this.element.querySelector('#close-upgrade');
         closeBtn?.addEventListener('click', () => sheetManager.close());
 
-        const discoveryBtn = this.element.querySelector('#btn-discovery-trial') as HTMLButtonElement;
-        if (discoveryBtn) {
-            // Masquer si déjà Pro actif
-            if (isProActive()) {
-                discoveryBtn.style.display = 'none';
-            }
-
-            discoveryBtn.addEventListener('click', () => {
-                activateDiscoveryTrial(3);
-                void haptic('success');
-                sheetManager.close();
-            });
-        }
-
         // Charger les prix depuis RevenueCat — cache 5min, retry si échoué
         const now = Date.now();
         if (!this._pricesLoaded || (now - this._pricesCacheTime > UpgradeSheet.PRICES_TTL)) {

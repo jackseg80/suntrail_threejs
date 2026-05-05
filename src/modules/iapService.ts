@@ -196,26 +196,31 @@ class IAPService {
             const { authService } = await import('./authService');
             if (!authService.isAuthenticated) {
                 const proceed = await new Promise<boolean>((resolve) => {
-                    const win = window.open('guest-purchase-modal.html', '_blank', 'width=500,height=500');
+                    let resolved = false;
+                    const win = window.open('guest-purchase-modal.html', '_blank', 'width=500,height=550');
+                    
                     const handler = (event: MessageEvent) => {
                         if (event.data.type === 'PURCHASE_GUEST_CONTINUE') {
+                            resolved = true;
                             window.removeEventListener('message', handler);
                             resolve(true);
                         }
                     };
                     window.addEventListener('message', handler);
                     
-                    // Cleanup si la fenêtre est fermée
                     const checkClosed = setInterval(() => {
                         if (win?.closed) {
                             clearInterval(checkClosed);
                             window.removeEventListener('message', handler);
-                            resolve(false);
+                            if (!resolved) resolve(false);
                         }
                     }, 500);
                 });
 
-                if (!proceed) return false;
+                if (proceed !== true) {
+                    if (state.DEBUG_MODE) console.log('[IAP] Achat invité annulé ou fenêtre fermée.');
+                    return false;
+                }
             }
         }
 
