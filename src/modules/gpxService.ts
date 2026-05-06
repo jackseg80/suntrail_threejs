@@ -21,15 +21,11 @@ export class GPXService {
                 return;
             }
 
-            // Gate Freemium : 1 tracé max pour les utilisateurs gratuits
-            if (!isProActive() && state.gpxLayers.length >= 1) {
-                showUpgradePrompt('multi_gpx');
-                void haptic('warning');
-                return;
-            }
+            // v5.54 : On autorise l'import de multiples GPX pour tout le monde.
+            // La TrackSheet se chargera de les afficher comme "verrouillés" pour les Free.
 
-            // Limite Pro : 10 tracés max (préserve les perfs mobiles)
-            if (isProActive() && state.gpxLayers.length >= 10) {
+            // Limite technique : 10 tracés max (préserve les perfs mobiles)
+            if (state.gpxLayers.length >= 10) {
                 const { showToast } = await import('./toast');
                 const { i18n } = await import('../i18n/I18nService');
                 void showToast(i18n.t('gpx.limitPro') || 'Maximum 10 tracks reached');
@@ -45,7 +41,7 @@ export class GPXService {
                 state.TARGET_LON = startPt.lon;
                 state.ZOOM = 13; 
                 state.originTile = lngLatToTile(startPt.lon, startPt.lat, 13);
-                await updateVisibleTiles();
+                void updateVisibleTiles();
             }
             
             const name = fileName.replace(/\.gpx$/i, '');

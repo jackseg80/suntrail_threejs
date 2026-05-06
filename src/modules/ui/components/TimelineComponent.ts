@@ -6,6 +6,7 @@ import { i18n } from '../../../i18n/I18nService';
 import { worldToLngLat } from '../../geo';
 import { showUpgradePrompt } from '../../iap';
 import { attachDraggablePanel } from '../draggablePanel';
+import { ICON_LOCK } from '../icons';
 import SunCalc from 'suncalc';
 
 export class TimelineComponent {
@@ -14,7 +15,6 @@ export class TimelineComponent {
     private subscriptions: Array<() => void> = [];
     private tlAzimuthEl: HTMLElement | null = null;
     private tlElevationEl: HTMLElement | null = null;
-    private _dateTrap: HTMLElement | null = null;
 
     constructor() {
         // No hydration, just attach to existing DOM
@@ -63,18 +63,16 @@ export class TimelineComponent {
         }
 
         if (this.dateInput) {
-            // Overlay trap : intercepte les clics non-Pro avant que le picker natif ne s'ouvre.
-            // pointer-events:none sur l'input bloque le picker Android WebView de façon fiable ;
-            // l'overlay (z-index supérieur) reçoit le tap et affiche le prompt IAP.
+            // v5.54 : Plus de trap pour permettre l'ouverture du calendrier (Teasing)
             const dateWrapper = document.createElement('div');
             dateWrapper.className = 'date-input-wrapper';
             this.dateInput.parentNode!.insertBefore(dateWrapper, this.dateInput);
             dateWrapper.appendChild(this.dateInput);
-            const dateTrap = document.createElement('div');
-            dateTrap.className = 'date-input-trap';
-            dateTrap.addEventListener('click', () => showUpgradePrompt('solar_calendar'));
-            dateWrapper.appendChild(dateTrap);
-            this._dateTrap = dateTrap;
+            
+            const lockIcon = document.createElement('div');
+            lockIcon.className = 'date-input-lock';
+            lockIcon.innerHTML = ICON_LOCK;
+            dateWrapper.appendChild(lockIcon);
 
             // Initialiser l'aspect visuel du sélecteur de date selon isProActive
             this.syncDateInputLock();
@@ -285,7 +283,8 @@ export class TimelineComponent {
         if (!this.dateInput) return;
         const locked = !isProActive();
         this.dateInput.classList.toggle('date-input-locked', locked);
-        this._dateTrap?.classList.toggle('active', locked);
+        const lock = this.dateInput.parentNode?.querySelector('.date-input-lock') as HTMLElement;
+        if (lock) lock.style.display = locked ? 'flex' : 'none';
     }
 
     private updateSolarInfo(): void {

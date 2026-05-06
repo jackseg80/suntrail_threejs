@@ -868,9 +868,45 @@ body.timeline-custom-pos .fab-stack.widget-overlap-hidden {
     display: none;
 }
 .date-input-trap.active { display: block; }
-#date-input.date-input-locked {
-    opacity: 0.4;
+#date-input.date-input-locked,
+.solar-route-date-input.date-input-locked {
+    opacity: 0.5;
     filter: grayscale(1);
+}
+
+.date-input-lock {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    color: var(--gold);
+    z-index: 2;
+}
+
+.date-input-lock svg {
+    width: 14px;
+    height: 14px;
+}
+
+.gpx-layer-locked {
+    border-color: var(--gold) !important;
+    background: rgba(255, 215, 0, 0.03) !important;
+}
+
+.pro-feature-locked {
+    filter: grayscale(1);
+    cursor: pointer;
+}
+
+.pro-feature-locked input[type="checkbox"] {
+    background: var(--text-3) !important;
+}
+
+.pro-feature-locked .setting-label {
+    color: var(--text-3);
 }
 
 /* Masquage individuel des widgets quand coords-pill les chevauche (drag) */

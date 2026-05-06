@@ -1,3 +1,25 @@
+## [5.54.0] - 2026-05-06
+
+### Added
+
+- **Freemium multi-tracés GPX** : Remplacement du gate binaire (`state.gpxLayers.length >= 1`) par une logique basée sur l'index. Utilisateurs Free peuvent importer illimité de tracés GPX, mais seul le 1er est sélectionnable/visible 3D (teasing).
+- **Distinction routes manuelles** : Nouveaux champs `isManualRoute?: boolean` dans `GPXLayer` et option dans `addGPXLayer()`. Routes planificateur exclus du comptage des imports GPX (jamais verrouillées en Free).
+- **Verrouillage UI par index** : Tracés importés 2+ affichent cadenas + couleur doré en Free. Clic ou sélection → `showUpgradePrompt('multi_gpx')`.
+- **Visibilité 3D conditionnelle** : `initialVisible = forceVisible || isManualRoute || isProActive() || isFirstImport`. Routes manuels + 1er import toujours visibles. Multi-imports masqués visuellement en Free (mais présents en mémoire).
+
+### Fixed
+
+- **Bug : import GPX bloqué avec route manuelle existante** : Le gate `state.gpxLayers.length >= 1` (ancien code v5.53.x) bloquait l'import du 1er GPX si une route manuelle était en mémoire. Résolu en supprimant le gate et en filtrées les tracés par `isManualRoute`.
+- **Affichage bouton export en Free** : Bouton export maintenant visible pour tous, mais verrouillé en Free (ICON_LOCK + couleur doré). Avant : caché conditionnellement en Free.
+
+### Changed
+
+- **gpxLayers.ts** : `addGPXLayer()` signature étendue (`{ silent?, forceVisible?, isManualRoute? }`). Logique visibilité 3D + anti-actif pour tracés verrouillés.
+- **gpxService.ts** : Gate freemium supprimé (ligne ~25). Import autorisé pour tous jusqu'à 10 tracés.
+- **routingService.ts** : Routes via ORS/Dénivélé passent `isManualRoute: true` à `addGPXLayer()`.
+- **TrackSheet.ts** : Refonte `renderLayersList()` — index-based locking, affichage cadenas ICON_LOCK, event handlers capturent `layer = layers[index]` + `importedLayers.filter()` pour vérifier status.
+- **state.ts** : `GPXLayer.isManualRoute?: boolean` (optionnel pour compatibilité).
+
 ## [5.53.10] - 2026-05-06
 
 ### Fixed

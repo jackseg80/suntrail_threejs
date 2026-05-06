@@ -624,13 +624,26 @@ export class SettingsSheet extends BaseComponent {
         const toggle = this.element.querySelector(`#${toggleId}`) as HTMLInputElement;
         if (!toggle) return;
         
-        // Initialiser : désactivé et décoché pour les utilisateurs gratuits
-        toggle.disabled = !isProActive();
-        toggle.checked = isProActive() && !!(state as any)[stateKey];
+        const row = rowId ? this.element.querySelector(`#${rowId}`) : null;
+        
+        const updateVisuals = () => {
+            const isPro = isProActive();
+            toggle.checked = isPro && !!(state as any)[stateKey];
+            if (row) {
+                row.classList.toggle('pro-feature-locked', !isPro);
+                (row as HTMLElement).style.opacity = isPro ? '1' : '0.6';
+                const check = row.querySelector('.pro-check') as HTMLElement;
+                if (check) check.style.color = isPro ? '#22c55e' : 'var(--gold)';
+            }
+        };
+        
+        // v5.54 : Plus de 'disabled' physique pour permettre le clic et l'upsell teaser
+        updateVisuals();
         
         // Gérer le changement
-        toggle.addEventListener('change', () => {
+        toggle.addEventListener('change', (e) => {
             if (!isProActive()) {
+                // Annuler visuellement le changement immédiat
                 toggle.checked = false;
                 showUpgradePrompt(upgradeFeatureKey);
                 return;
@@ -641,10 +654,9 @@ export class SettingsSheet extends BaseComponent {
         });
         
         // Gérer les clics sur la ligne entière (si rowId fourni)
-        if (rowId) {
-            const row = this.element.querySelector(`#${rowId}`);
-            row?.addEventListener('click', (e) => {
-                // Ne pas déclencher si on a cliqué directement sur le toggle
+        if (row) {
+            row.addEventListener('click', (e) => {
+                // Ne pas déclencher si on a cliqué directement sur le toggle (géré par listener change)
                 if (e.target === toggle || (e.target as HTMLElement).tagName === 'INPUT') return;
                 
                 if (!isProActive()) {
@@ -661,16 +673,12 @@ export class SettingsSheet extends BaseComponent {
         
         // Mettre à jour si isPro change
         this.addSubscription(state.subscribe('isPro', () => {
-            toggle.disabled = !isProActive();
             if (!isProActive()) {
-                toggle.checked = false;
                 (state as any)[stateKey] = false;
                 saveSettings();
                 if (onChange) onChange(false);
-            } else {
-                // Restaurer l'état sauvegardé quand on passe Pro
-                toggle.checked = !!(state as any)[stateKey];
             }
+            updateVisuals();
         }));
     }
     

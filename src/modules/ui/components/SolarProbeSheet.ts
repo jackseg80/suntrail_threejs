@@ -18,6 +18,7 @@ import {
     getAvgSpeedKmh as _getAvgSpeedKmh,
     type RouteSolarAnalysis,
 } from '../../solarRoute';
+import { ICON_LOCK } from '../icons';
 import templateHTML from '../templates/solar-probe.html?raw';
 
 export class SolarProbeSheet extends BaseComponent {
@@ -604,28 +605,55 @@ export class SolarProbeSheet extends BaseComponent {
             state.simDate = d;
         });
 
-        // Sélecteur date (Pro uniquement pour changer la date)
+        // Sélecteur date (v5.54 : mode teasing)
         const dateStr = state.simDate.toISOString().slice(0, 10);
         const dateInput = document.createElement('input');
         dateInput.type = 'date';
         dateInput.value = dateStr;
         dateInput.className = 'solar-route-date-input';
+        
+        const dateWrapper = document.createElement('div');
+        dateWrapper.className = 'date-input-wrapper';
+        dateWrapper.style.cssText = 'display:inline-flex; align-items:center; position:relative;';
+        
+        const lockIcon = document.createElement('div');
+        lockIcon.className = 'date-input-lock';
+        lockIcon.style.cssText = 'position:absolute; right:8px; pointer-events:none; display:flex; align-items:center; opacity:0.6;';
+        lockIcon.innerHTML = ICON_LOCK;
+        const svgLock = lockIcon.querySelector('svg');
+        if (svgLock) { svgLock.setAttribute('width', '12'); svgLock.setAttribute('height', '12'); }
+        
+        if (isProActive()) {
+            lockIcon.style.display = 'none';
+        } else {
+            dateInput.classList.add('date-input-locked');
+        }
+
         dateInput.addEventListener('change', () => {
             const d = new Date(dateInput.value);
             if (isNaN(d.getTime())) return;
             if (!isProActive()) {
                 const today = new Date();
-                const isToday = d.toDateString() === today.toDateString();
-                if (!isToday) { dateInput.value = today.toISOString().slice(0, 10); showUpgradePrompt('solar_calendar'); return; }
+                const isToday = d.getFullYear() === today.getFullYear() &&
+                                d.getMonth()    === today.getMonth()    &&
+                                d.getDate()     === today.getDate();
+                if (!isToday) {
+                    dateInput.value = today.toISOString().slice(0, 10);
+                    showUpgradePrompt('solar_calendar');
+                    return;
+                }
             }
             const nd = new Date(state.simDate);
             nd.setFullYear(d.getFullYear(), d.getMonth(), d.getDate());
             state.simDate = nd;
         });
 
+        dateWrapper.appendChild(dateInput);
+        dateWrapper.appendChild(lockIcon);
+
         timeControl.appendChild(timeSlider);
         timeControl.appendChild(timeDisp);
-        timeControl.appendChild(dateInput);
+        timeControl.appendChild(dateWrapper);
         section.appendChild(timeControl);
 
         // Grille 2×2 stats
@@ -654,44 +682,56 @@ export class SolarProbeSheet extends BaseComponent {
 
         // Info forêt — affichée sous la grille si le tracé traverse une zone boisée
         if (routeData.forestKm > 0) {
-            const forestInfo = document.createElement('div');
-            forestInfo.className = 'solar-route-rec-item solar-route-rec-forest';
-            forestInfo.textContent = i18n.t('solarRoute.rec.forestSection', {
-                km: routeData.forestKm.toFixed(1),
-            });
-            section.appendChild(forestInfo);
+            if (isProActive()) {
+                const forestInfo = document.createElement('div');
+                forestInfo.className = 'solar-route-rec-item solar-route-rec-forest';
+                forestInfo.textContent = i18n.t('solarRoute.rec.forestSection', {
+                    km: routeData.forestKm.toFixed(1),
+                });
+                section.appendChild(forestInfo);
+            } else {
+                this.makeLockedItem(section, i18n.t('solarRoute.rec.forestSection', { km: '—' }), () => showUpgradePrompt('solar_forest'));
+            }
         }
 
         // Recommandations
         const recs = document.createElement('div');
         recs.className = 'solar-route-recs';
 
-        // Recommandation principale (adaptée au mode)
-        const mainRec = document.createElement('div');
-        mainRec.className = 'solar-route-rec-item';
-        if (routeData.mode === 'hikerTimeline') {
-            mainRec.textContent = i18n.t('solarRoute.rec.hikerSun', {
-                speed: String(_getAvgSpeedKmh()),
-                pct: String(routeData.sunPct),
-            });
+        // Recommandation principale (PRO : mode dynamique, FREE : hiker locked)
+        if (isProActive()) {
+            const mainRec = document.createElement('div');
+            mainRec.className = 'solar-route-rec-item';
+            if (routeData.mode === 'hikerTimeline') {
+                mainRec.textContent = i18n.t('solarRoute.rec.hikerSun', {
+                    speed: String(_getAvgSpeedKmh()),
+                    pct: String(routeData.sunPct),
+                });
+            } else {
+                mainRec.textContent = i18n.t('solarRoute.rec.snapshotSun', { pct: String(routeData.sunPct) });
+            }
+            recs.appendChild(mainRec);
         } else {
-            mainRec.textContent = i18n.t('solarRoute.rec.snapshotSun', { pct: String(routeData.sunPct) });
-        }
-        recs.appendChild(mainRec);
-
-        // Segments ombragés (Free : 1er seulement, Pro : tous)
-        const segLimit = isProActive() ? routeData.shadowSegments.length : 1;
-        for (const seg of routeData.shadowSegments.slice(0, segLimit)) {
-            const rec = document.createElement('div');
-            rec.className = 'solar-route-rec-item solar-route-rec-shade';
-            rec.textContent = i18n.t('solarRoute.rec.shadeSegment', {
-                start: seg.startKm.toFixed(1),
-                end: seg.endKm.toFixed(1),
-            });
-            recs.appendChild(rec);
+            // Upsell Hiker mode
+            this.makeLockedItem(recs, i18n.t('solarRoute.rec.hikerSun', { speed: '4', pct: '—' }), () => showUpgradePrompt('solar_route_timeline'));
         }
 
-        // PRO : sélecteur vitesse + heure d'arrivée (hikerTimeline uniquement) + départ optimal
+        // Segments ombragés (Free : 1er locked, Pro : tous)
+        if (isProActive()) {
+            for (const seg of routeData.shadowSegments) {
+                const rec = document.createElement('div');
+                rec.className = 'solar-route-rec-item solar-route-rec-shade';
+                rec.textContent = i18n.t('solarRoute.rec.shadeSegment', {
+                    start: seg.startKm.toFixed(1),
+                    end: seg.endKm.toFixed(1),
+                });
+                recs.appendChild(rec);
+            }
+        } else if (routeData.shadowSegments.length > 0) {
+            this.makeLockedItem(recs, i18n.t('solarRoute.rec.shadeSegment', { start: '—', end: '—' }), () => showUpgradePrompt('solar_shade_segments'));
+        }
+
+        // PRO : sélecteur vitesse + heure d'arrivée (hikerTimeline uniquement)
         if (isProActive()) {
             // Sélecteur vitesse — cliquer bascule automatiquement en hikerTimeline
             const currentSpeed = _getAvgSpeedKmh();
@@ -725,9 +765,14 @@ export class SolarProbeSheet extends BaseComponent {
                     recs.appendChild(arrRec);
                 }
             }
+        } else {
+            // FREE : Upsell Arrival (placeholder)
+            this.makeLockedItem(recs, i18n.t('solarRoute.rec.estimatedArrival', { time: '—h—' }), () => showUpgradePrompt('solar_arrival_time'));
+        }
 
-            // Départ optimal
-            const optData = getOptimalDepartureData();
+        // Départ optimal (PRO : données réelles, FREE : locked)
+        const optData = getOptimalDepartureData();
+        if (isProActive()) {
             if (optData?.optimalDepartureMinutes !== undefined) {
                 const hh = String(Math.floor(optData.optimalDepartureMinutes / 60)).padStart(2, '0');
                 const mm = String(optData.optimalDepartureMinutes % 60).padStart(2, '0');
@@ -758,7 +803,13 @@ export class SolarProbeSheet extends BaseComponent {
                 computing.textContent = i18n.t('solarRoute.status.analyzing');
                 recs.appendChild(computing);
             }
+        } else if (routeData.totalKm > 0.1) {
+            this.makeLockedItem(recs, i18n.t('solarRoute.rec.optimalDeparture', { time: '—h—', pct: '—' }), () => showUpgradePrompt('solar_optimal_departure'));
+            // Golden hour placeholder
+            this.makeLockedItem(recs, i18n.t('solarRoute.rec.goldenHour', { alt: '—', start: '—h—', end: '—h—' }), () => showUpgradePrompt('solar_golden_hour'));
+        }
 
+        if (isProActive()) {
             // Alerte exposition forte : segments soleil > 90 min entre 10h–16h
             this.buildExposureAlerts(recs, routeData);
         } else {
@@ -778,6 +829,37 @@ export class SolarProbeSheet extends BaseComponent {
 
         section.appendChild(recs);
         parent.appendChild(section);
+    }
+
+    private makeLockedItem(parent: HTMLElement, text: string, onClick: () => void) {
+        const item = document.createElement('div');
+        item.className = 'solar-route-rec-item solar-route-rec-locked';
+        item.style.cssText = 'display:flex; align-items:center; cursor:pointer;';
+        
+        const content = document.createElement('span');
+        content.style.opacity = '0.38';
+        content.textContent = text;
+        
+        const lock = document.createElement('span');
+        lock.style.cssText = 'margin-left:8px; display:inline-flex; align-items:center; opacity:0.38;';
+        lock.innerHTML = ICON_LOCK;
+        const svg = lock.querySelector('svg');
+        if (svg) { svg.setAttribute('width', '14'); svg.setAttribute('height', '14'); }
+
+        const badge = document.createElement('span');
+        badge.style.cssText = 'font-size:10px; color:var(--accent); font-weight:700; margin-left:auto; padding-left:8px;';
+        badge.textContent = 'PRO ↗';
+
+        item.appendChild(content);
+        item.appendChild(lock);
+        item.appendChild(badge);
+        
+        item.onclick = (e) => {
+            e.stopPropagation();
+            onClick();
+        };
+        
+        parent.appendChild(item);
     }
 
     private buildExposureAlerts(parent: HTMLElement, routeData: RouteSolarAnalysis): void {

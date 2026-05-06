@@ -16,6 +16,7 @@ import { getAltitudeAt, findTerrainIntersection } from '../../analysis';
 import { showUpgradePrompt } from '../../iap';
 import { i18n } from '../../../i18n/I18nService';
 import { lngLatToWorld, worldToLngLat } from '../../geo';
+import { ICON_LOCK } from '../icons';
 import * as THREE from 'three';
 
 /** Décalage d'échantillonnage en mètres monde pour le calcul du gradient */
@@ -166,7 +167,7 @@ export class InclinometerWidget {
     }
 
     private syncVisibility(): void {
-        const shouldShow = isProActive() && state.ZOOM >= MIN_ZOOM_DISPLAY && state.SHOW_INCLINOMETER;
+        const shouldShow = state.ZOOM >= MIN_ZOOM_DISPLAY && state.SHOW_INCLINOMETER;
         if (this.el) this.el.style.display = shouldShow ? 'block' : 'none';
         
         // Réticule visible uniquement en mode libre
@@ -192,6 +193,19 @@ export class InclinometerWidget {
 
     private update(): void {
         if (!this.el || !state.controls || !state.camera || !state.originTile) return;
+
+        // Si pas Pro : on affiche juste le verrou (v5.54)
+        if (!isProActive()) {
+            this.el.style.borderColor = 'var(--border)';
+            this.el.innerHTML = `<span style="display:flex; align-items:center; gap:8px;">⛰ —° (—%) <span style="display:inline-flex; align-items:center; opacity:0.6;">${ICON_LOCK}</span></span>`;
+            const svg = this.el.querySelector('svg');
+            if (svg) { svg.setAttribute('width', '14'); svg.setAttribute('height', '14'); }
+            if (this.reticle) {
+                this.reticle.style.borderColor = 'var(--border)';
+                (this.reticle.firstChild as HTMLElement).style.background = 'rgba(255,255,255,0.2)';
+            }
+            return;
+        }
 
         let targetX = 0;
         let targetZ = 0;
@@ -422,6 +436,10 @@ export class InclinometerWidget {
     // ── Panel de détail ────────────────────────────────────────────────
 
     private toggleDetail(): void {
+        if (!isProActive()) {
+            showUpgradePrompt('inclinometer');
+            return;
+        }
         if (this._isExpanded) this.closeDetail();
         else this.openDetail();
     }

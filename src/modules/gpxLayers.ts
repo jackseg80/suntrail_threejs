@@ -152,7 +152,7 @@ export function recalcLayerStatsFromTerrain(layer: GPXLayer): GPXLayer {
     return { ...layer, stats: updatedStats };
 }
 
-export function addGPXLayer(rawData: Record<string, any>, name: string, opts?: { silent?: boolean }): GPXLayer {
+export function addGPXLayer(rawData: Record<string, any>, name: string, opts?: { silent?: boolean, forceVisible?: boolean, isManualRoute?: boolean }): GPXLayer {
     const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `gpx-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     const colorIndex = state.gpxLayers.length % GPX_COLORS.length;
     const color = GPX_COLORS[colorIndex];
@@ -207,9 +207,21 @@ export function addGPXLayer(rawData: Record<string, any>, name: string, opts?: {
     // v5.53.3 : Ajout du contour pour la visibilité
     applyTrackOutline(mesh, curve, geometry.parameters.tubularSegments, thickness);
 
+    // v5.54 : Logique de visibilité Free (Teasing Multi-GPX)
+    // 1. Les itinéraires manuels sont TOUJOURS visibles.
+    // 2. Le PREMIER import GPX est TOUJOURS visible.
+    // 3. Les imports GPX suivants (Multi-GPX) sont masqués en Free.
+    const isManual = !!opts?.isManualRoute;
+    const importedGpxCount = state.gpxLayers.filter(l => !l.isManualRoute).length;
+    const isFirstImport = !isManual && importedGpxCount === 0;
+    
+    const initialVisible = opts?.forceVisible || isManual || isProActive() || isFirstImport;
+
     if (state.scene) state.scene.add(mesh);
     const layer: GPXLayer = {
-        id, name, color, visible: true, rawData, points: threePoints, mesh,
+        id, name, color, visible: initialVisible, 
+        isManualRoute: isManual, // v5.54 : Persistance du type
+        rawData, points: threePoints, mesh,
         stats: { 
             distance: stats.distance, 
             dPlus: stats.dPlus, 
@@ -218,9 +230,16 @@ export function addGPXLayer(rawData: Record<string, any>, name: string, opts?: {
             estimatedTime: stats.estimatedTime 
         }
     };
+    if (mesh) mesh.visible = initialVisible;
     state.gpxLayers = [...state.gpxLayers, layer];
-    state.activeGPXLayerId = id;
-    scheduleRouteSolarAnalysis(1500); // Analyse solaire après flyTo
+    
+    // v5.54 : Un calque "verrouillé" ne doit pas devenir le calque actif
+    // (sinon il écrase les stats et déclenche l'analyse solaire/pente)
+    if (initialVisible) {
+        state.activeGPXLayerId = id;
+        scheduleRouteSolarAnalysis(1500); // Analyse solaire après flyTo
+    }
+
     const lats = validPoints.map((p: any) => p.lat as number); const lons = validPoints.map((p: any) => p.lon as number); const eles = validPoints.map((p: any) => (p.ele as number) || 0);
     const centerLat = (Math.max(...lats) + Math.min(...lats)) / 2; const centerLon = (Math.max(...lons) + Math.min(...lons)) / 2;
     const avgEle = eles.reduce((s: number, v: number) => s + v, 0) / eles.length;
@@ -228,7 +247,9 @@ export function addGPXLayer(rawData: Record<string, any>, name: string, opts?: {
     const trackSpread = Math.max(size.x, size.z); const viewDistance = Math.max(trackSpread * 1.5, 3000);
     const flyCenter = lngLatToWorld(centerLon, centerLat, state.originTile!);
     const targetElevation = avgEle * state.RELIEF_EXAGGERATION;
-    if (!opts?.silent) {
+    
+    // FlyTo uniquement si visible (sinon c'est déroutant pour les imports en masse)
+    if (!opts?.silent && initialVisible) {
         eventBus.emit('flyTo', { worldX: flyCenter.x, worldZ: flyCenter.z, targetElevation, targetDistance: viewDistance });
     }
     setTimeout(() => updateAllGPXMeshes(), 0);

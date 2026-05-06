@@ -13,7 +13,7 @@ import { updateElevationProfile } from '../../profile';
 import { eventBus } from '../../eventBus';
 import { Capacitor } from '@capacitor/core';
 import { calculateTrackStats } from '../../geoStats';
-import { ICON_CLOSE } from '../icons';
+import { ICON_CLOSE, ICON_LOCK } from '../icons';
 import { recordingService } from '../../recordingService';
 import { gpxService } from '../../gpxService';
 import { fmtDuration } from '../../utils';
@@ -349,18 +349,28 @@ export class TrackSheet extends BaseComponent {
             return;
         }
 
+        const importedLayers = layers.filter(l => !l.isManualRoute);
+
         container.style.display = 'block';
         container.innerHTML = `
             <div class="gpx-layers-header" data-i18n="track.imported.title">${i18n.t('track.imported.title')}</div>
-            ${layers.map(layer => {
+            ${layers.map((layer) => {
                 const truncName = layer.name.length > 20 ? layer.name.slice(0, 20) + '...' : layer.name;
                 const isActive = state.activeGPXLayerId === layer.id;
                 const duration = layer.stats.estimatedTime ? fmtDuration(layer.stats.estimatedTime) : '—';
+                
+                // v5.54 : Si Free, seul le 1er calque GPX importé est "utilisable".
+                // Les itinéraires manuels (Planificateur) sont toujours utilisables et non verrouillés.
+                const isLocked = !isProActive() && !layer.isManualRoute && importedLayers.indexOf(layer) > 0;
+                
+                const layerClass = isActive ? ' active' : '';
+                const lockedClass = isLocked ? ' gpx-layer-locked' : '';
+                
                 return `
-                <div class="gpx-layer-item${isActive ? ' active' : ''}" data-layer-id="${layer.id}">
+                <div class="gpx-layer-item${layerClass}${lockedClass}" data-layer-id="${layer.id}" style="${isLocked ? 'opacity:0.5;' : ''}">
                     <span class="gpx-layer-dot" style="background:${layer.color}"></span>
                     <div class="gpx-layer-info">
-                        <span class="gpx-layer-name">${truncName}</span>
+                        <span class="gpx-layer-name">${isLocked ? ICON_LOCK + ' ' : ''}${truncName}</span>
                         <span class="gpx-layer-stats">${layer.stats.distance.toFixed(2)} km · D+ ${Math.round(layer.stats.dPlus)} m · D− ${Math.round(layer.stats.dMinus)} m · <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:text-top"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${duration}</span>
                     </div>
                     <button class="gpx-layer-profile" data-action="profile" data-id="${layer.id}"
@@ -377,9 +387,13 @@ export class TrackSheet extends BaseComponent {
                             ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
                             : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`}
                     </button>
-                    ${isProActive() ? `<button class="gpx-layer-export" data-action="export" data-id="${layer.id}"
+                    <button class="gpx-layer-export" data-action="export" data-id="${layer.id}"
                             aria-label="${i18n.t('track.imported.export') || 'Exporter GPX'}"
-                            title="${i18n.t('track.imported.export') || 'Exporter GPX'}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>` : ''}
+                            title="${i18n.t('track.imported.export') || 'Exporter GPX'}"
+                            style="${!isProActive() ? 'color:var(--gold);' : ''}">
+                        ${!isProActive() ? ICON_LOCK : ''}
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </button>
                     <button class="gpx-layer-remove" data-action="remove" data-id="${layer.id}"
                             aria-label="${i18n.t('track.imported.remove')}"
                             title="${i18n.t('track.imported.remove')}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -387,43 +401,32 @@ export class TrackSheet extends BaseComponent {
             }).join('')}`;
 
         // Bind events
-        container.querySelectorAll('.gpx-layer-item').forEach(item => {
+        container.querySelectorAll('.gpx-layer-item').forEach((item, index) => {
+            const layer = layers[index];
             item.addEventListener('click', (e) => {
-                const target = e.target as HTMLElement;
-                // Don't activate if clicking a button
-                if (target.closest('[data-action]')) return;
-                const layerId = (item as HTMLElement).dataset.layerId;
-                if (!layerId) return;
-                state.activeGPXLayerId = layerId;
-                updateElevationProfile(layerId);
-                // FlyTo
-                const layer = state.gpxLayers.find(l => l.id === layerId);
-                if (layer && layer.rawData?.tracks?.[0]?.points?.length > 0) {
-                    // Always derive from raw lat/lon using CURRENT originTile
-                    // so coords are correct regardless of any origin shifts that happened
-                    const rawPts = layer.rawData.tracks[0].points as any[];
-                    const lats = rawPts.map(p => p.lat as number);
-                    const lons = rawPts.map(p => p.lon as number);
-                    const eles = rawPts.map(p => (p.ele as number) || 0);
-                    const centerLat = (Math.max(...lats) + Math.min(...lats)) / 2;
-                    const centerLon = (Math.max(...lons) + Math.min(...lons)) / 2;
-                    const avgEle = eles.reduce((s, v) => s + v, 0) / eles.length;
-                    const worldPos = lngLatToWorld(centerLon, centerLat, state.originTile);
-                    const targetElevation = avgEle * state.RELIEF_EXAGGERATION;
-                    // Use spread from stored points for distance (they're correct after origin-shift updates)
-                    const xs = layer.points.map(p => p.x);
-                    const zs = layer.points.map(p => p.z);
-                    const spread = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs));
-                    const viewDistance = Math.max(spread * 1.5, 3000);
-                    eventBus.emit('flyTo', { worldX: worldPos.x, worldZ: worldPos.z, targetElevation, targetDistance: viewDistance });
+                if ((e.target as HTMLElement).closest('[data-action]')) return;
+                
+                const importedLayers = state.gpxLayers.filter(l => !l.isManualRoute);
+                if (!isProActive() && !layer.isManualRoute && importedLayers.indexOf(layer) > 0) {
+                    showUpgradePrompt('multi_gpx');
+                    return;
                 }
+
+                state.activeGPXLayerId = layer.id;
+                updateElevationProfile(layer.id);
                 this.renderLayersList();
             });
         });
 
-        container.querySelectorAll('[data-action="toggle"]').forEach(btn => {
+        container.querySelectorAll('[data-action="toggle"]').forEach((btn, index) => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                const layer = layers[index];
+                const importedLayers = state.gpxLayers.filter(l => !l.isManualRoute);
+                if (!isProActive() && !layer.isManualRoute && importedLayers.indexOf(layer) > 0) {
+                    showUpgradePrompt('multi_gpx');
+                    return;
+                }
                 const id = (btn as HTMLElement).dataset.id;
                 if (id) {
                     toggleGPXLayer(id);
@@ -459,9 +462,15 @@ export class TrackSheet extends BaseComponent {
             });
         });
 
-        container.querySelectorAll('[data-action="profile"]').forEach(btn => {
+        container.querySelectorAll('[data-action="profile"]').forEach((btn, index) => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                const layer = layers[index];
+                const importedLayers = state.gpxLayers.filter(l => !l.isManualRoute);
+                if (!isProActive() && !layer.isManualRoute && importedLayers.indexOf(layer) > 0) {
+                    showUpgradePrompt('multi_gpx');
+                    return;
+                }
                 const id = (btn as HTMLElement).dataset.id;
                 if (id) {
                     state.activeGPXLayerId = id;
@@ -470,9 +479,7 @@ export class TrackSheet extends BaseComponent {
                 }
             });
         });
-    }
-
-    private updateEmptyState(): void {
+    }    private updateEmptyState(): void {
         const emptyEl = document.getElementById('track-empty-state');
         const statsEl = this.element?.querySelector('.track-stats') as HTMLElement | null;
         if (!emptyEl) return;

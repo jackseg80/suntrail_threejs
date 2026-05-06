@@ -208,7 +208,7 @@ export async function computeRoute(
             const routeName = buildRouteName(waypoints, state.routeLoopEnabled);
 
             if (_currentRouteLayerId) { removeGPXLayer(_currentRouteLayerId); _currentRouteLayerId = null; }
-            const layer = _computeDrapedResult(addGPXLayer(rawData, routeName, { silent: true }));
+            const layer = _computeDrapedResult(addGPXLayer(rawData, routeName, { silent: true, forceVisible: true, isManualRoute: true }));
             _currentRouteLayerId = layer.id;
             void showToast(i18n.t('routePlanner.toast.computed') || 'Route computed');
 
@@ -229,7 +229,7 @@ export async function computeRoute(
         const routeName = buildRouteName(waypoints, state.routeLoopEnabled);
 
         if (_currentRouteLayerId) { removeGPXLayer(_currentRouteLayerId); _currentRouteLayerId = null; }
-        const layer = _computeDrapedResult(addGPXLayer(rawData, routeName, { silent: true }));
+        const layer = _computeDrapedResult(addGPXLayer(rawData, routeName, { silent: true, forceVisible: true, isManualRoute: true }));
         _currentRouteLayerId = layer.id;
         void showToast(i18n.t('routePlanner.toast.computed') || 'Route computed');
 

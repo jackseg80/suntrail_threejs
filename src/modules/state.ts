@@ -13,6 +13,7 @@ export interface GPXLayer {
     name: string;
     color: string;
     visible: boolean;
+    isManualRoute?: boolean; // v5.54 : Distinguer le planificateur des imports GPX
     rawData: Record<string, any>;
     points: THREE.Vector3[];
     mesh: THREE.Mesh | null;
