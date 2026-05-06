@@ -212,6 +212,13 @@
       "it": "Italiano",
       "en": "English"
     },
+    "account": {
+      "loggedInAs": "Connesso come",
+      "guest": "Modalità ospite",
+      "logout": "Disconnettiti",
+      "login": "Accedi / Registrati",
+      "loginHint": "Accedi per sincronizzare Pro"
+    },
     "legal": {
       "disclaimer": "SunTrail 3D è un'applicazione indipendente, non affiliata ad alcun ente governativo (né swisstopo né IGN). I dati cartografici ufficiali sono utilizzati in conformità alle rispettive licenze open-data.",
       "swisstopoLabel": "SwissTopo — swisstopo.admin.ch",

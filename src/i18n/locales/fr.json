@@ -155,7 +155,8 @@
       "loggedInAs": "Connecté :",
       "guest": "Mode Invité",
       "logout": "Se déconnecter",
-      "login": "Se connecter / S'inscrire"
+      "login": "Se connecter / S'inscrire",
+      "loginHint": "Connectez-vous pour synchroniser Pro"
     },
     "pro": {
       "description": "Débloquez toutes les fonctionnalités premium avec SunTrail Pro",
