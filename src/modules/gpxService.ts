@@ -3,8 +3,7 @@
  */
 
 import gpxParser from 'gpxparser';
-import { state, isProActive } from './state';
-import { showUpgradePrompt } from './iap';
+import { state } from './state';
 import { haptic } from './haptics';
 import { addGPXLayer } from './gpxLayers';
 import { updateVisibleTiles } from './terrain';
@@ -47,6 +46,9 @@ export class GPXService {
             const name = fileName.replace(/\.gpx$/i, '');
             addGPXLayer(gpx, name);
             void haptic('success');
+            const { showToast } = await import('./toast');
+            const { i18n } = await import('../i18n/I18nService');
+            void showToast(i18n.t('gpx.imported') || `"${name}" importé`);
         } catch (e) {
             void haptic('warning');
             throw e;

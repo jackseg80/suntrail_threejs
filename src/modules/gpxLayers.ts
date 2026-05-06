@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { disposeObject } from './memory';
-import { state, type GPXLayer, GPX_COLORS } from './state';
+import { state, type GPXLayer, GPX_COLORS, isProActive } from './state';
 import { simplifyRDP } from './utils';
 import { updateElevationProfile } from './profile';
 import { lngLatToWorld, EARTH_CIRCUMFERENCE, worldToLngLat } from './geo';

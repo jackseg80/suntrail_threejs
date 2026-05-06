@@ -8,7 +8,6 @@ import { haptic } from '../../haptics';
 import { i18n } from '../../../i18n/I18nService';
 import { clearInterruptedRecording, stopRecordingService } from '../../foregroundService';
 import { removeGPXLayer, toggleGPXLayer, updateRecordedTrackMesh } from '../../gpxLayers';
-import { lngLatToWorld } from '../../geo';
 import { updateElevationProfile } from '../../profile';
 import { eventBus } from '../../eventBus';
 import { Capacitor } from '@capacitor/core';
@@ -87,7 +86,11 @@ export class TrackSheet extends BaseComponent {
                     reader.onload = async (ev) => {
                         try {
                             await gpxService.handleGPXImport(ev.target!.result as string, file.name);
-                        } catch (_e) { /* handled inside */ }
+                        } catch (e) {
+                            console.error('[GPX] Import error:', e);
+                            const { showToast } = await import('../../toast');
+                            void showToast(i18n.t('gpx.importError') || 'Erreur lors de l\'import GPX');
+                        }
                         resolve();
                     };
                     reader.onerror = () => resolve();
@@ -390,8 +393,8 @@ export class TrackSheet extends BaseComponent {
                     <button class="gpx-layer-export" data-action="export" data-id="${layer.id}"
                             aria-label="${i18n.t('track.imported.export') || 'Exporter GPX'}"
                             title="${i18n.t('track.imported.export') || 'Exporter GPX'}"
-                            style="${!isProActive() ? 'color:var(--gold);' : ''}">
-                        ${!isProActive() ? ICON_LOCK : ''}
+                            style="${isLocked ? 'color:var(--gold);' : ''}">
+                        ${isLocked ? ICON_LOCK : ''}
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     </button>
                     <button class="gpx-layer-remove" data-action="remove" data-id="${layer.id}"
@@ -435,20 +438,23 @@ export class TrackSheet extends BaseComponent {
             });
         });
 
-        container.querySelectorAll('[data-action="export"]').forEach(btn => {
+        container.querySelectorAll('[data-action="export"]').forEach((btn, index) => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                if (!isProActive()) {
+                const layer = layers[index];
+                const importedLayers = state.gpxLayers.filter(l => !l.isManualRoute);
+                const isLockedLayer = !isProActive() && !layer.isManualRoute && importedLayers.indexOf(layer) > 0;
+                if (isLockedLayer) {
                     showUpgradePrompt('export_gpx');
                     return;
                 }
                 const id = (btn as HTMLElement).dataset.id;
                 if (!id) return;
-                const layer = state.gpxLayers.find(l => l.id === id);
-                if (!layer || !layer.rawData) return;
-                
-                const gpxString = gpxService.buildGPXStringFromLayer(layer);
-                await recordingService.saveToFile(layer.name, gpxString);
+                const layerToExport = state.gpxLayers.find(l => l.id === id);
+                if (!layerToExport || !layerToExport.rawData) return;
+
+                const gpxString = gpxService.buildGPXStringFromLayer(layerToExport);
+                await recordingService.saveToFile(layerToExport.name, gpxString);
             });
         });
 

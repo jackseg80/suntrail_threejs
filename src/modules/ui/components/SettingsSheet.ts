@@ -641,7 +641,7 @@ export class SettingsSheet extends BaseComponent {
         updateVisuals();
         
         // Gérer le changement
-        toggle.addEventListener('change', (e) => {
+        toggle.addEventListener('change', (_e) => {
             if (!isProActive()) {
                 // Annuler visuellement le changement immédiat
                 toggle.checked = false;
