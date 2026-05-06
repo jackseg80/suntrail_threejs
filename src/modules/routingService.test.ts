@@ -416,7 +416,7 @@ describe('routingService', () => {
             expect(mockAddGPXLayer).toHaveBeenCalledWith(
                 expect.any(Object),
                 '46.000, 7.000 → 46.040, 7.040',
-                { silent: true },
+                { silent: true, forceVisible: true, isManualRoute: true },
             );
         });
 
@@ -434,7 +434,7 @@ describe('routingService', () => {
             expect(mockAddGPXLayer).toHaveBeenCalledWith(
                 expect.any(Object),
                 'Start → End',
-                { silent: true },
+                { silent: true, forceVisible: true, isManualRoute: true },
             );
         });
 

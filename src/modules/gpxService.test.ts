@@ -126,21 +126,21 @@ describe('GPXService', () => {
             expect(mockUpdateVisibleTiles).not.toHaveBeenCalled();
         });
 
-        it('should block free users from importing more than 1 track', async () => {
+        it('should allow all users to import multiple tracks (v5.54: locking moved to UI)', async () => {
             mockParse.mockImplementation(function (this: any) {
                 this.tracks = validTrack.tracks;
             });
             mockIsProActive.mockReturnValue(false);
             state.gpxLayers = [{ id: 'existing', name: 'Existing' } as any];
 
-            await gpxService.handleGPXImport('<gpx>...</gpx>', 'blocked.gpx');
+            await gpxService.handleGPXImport('<gpx>...</gpx>', 'multi-track.gpx');
 
-            expect(mockShowUpgradePrompt).toHaveBeenCalledWith('multi_gpx');
-            expect(mockHaptic).toHaveBeenCalledWith('warning');
-            expect(mockAddGPXLayer).not.toHaveBeenCalled();
+            expect(mockShowUpgradePrompt).not.toHaveBeenCalled();
+            expect(mockAddGPXLayer).toHaveBeenCalled();
+            expect(mockHaptic).toHaveBeenCalledWith('success');
         });
 
-        it('should allow pro users to import multiple tracks', async () => {
+        it('should also work for pro users', async () => {
             mockParse.mockImplementation(function (this: any) {
                 this.tracks = validTrack.tracks;
             });

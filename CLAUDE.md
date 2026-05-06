@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.54.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-06 — v5.54.0 : Freemium GPX multi-tracés, 1 import gratuit (teasing), verrouillage UI par index, routes manuelles toujours libres, logique visibilité 3D (free=premier tracé visible).
+> Mis à jour le 2026-05-06 — v5.54.0 : Freemium GPX multi-tracés, 1 import gratuit + exportable (teasing), verrouillage UI par index (2ème+ imports), routes manuelles toujours libres, logique visibilité 3D (free=premier tracé visible), feedback import (succès + erreur visible).
 
 ## Projet
 

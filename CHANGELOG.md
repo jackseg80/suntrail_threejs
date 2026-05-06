@@ -2,23 +2,26 @@
 
 ### Added
 
-- **Freemium multi-tracés GPX** : Remplacement du gate binaire (`state.gpxLayers.length >= 1`) par une logique basée sur l'index. Utilisateurs Free peuvent importer illimité de tracés GPX, mais seul le 1er est sélectionnable/visible 3D (teasing).
+- **Freemium multi-tracés GPX** : Remplacement du gate binaire (`state.gpxLayers.length >= 1`) par une logique basée sur l'index. Utilisateurs Free peuvent importer illimité de tracés GPX, mais seul le 1er est sélectionnable/visible 3D/exportable (teasing).
 - **Distinction routes manuelles** : Nouveaux champs `isManualRoute?: boolean` dans `GPXLayer` et option dans `addGPXLayer()`. Routes planificateur exclus du comptage des imports GPX (jamais verrouillées en Free).
-- **Verrouillage UI par index** : Tracés importés 2+ affichent cadenas + couleur doré en Free. Clic ou sélection → `showUpgradePrompt('multi_gpx')`.
+- **Verrouillage UI par index** : Tracés importés 2+ affichent cadenas + couleur doré en Free. Clic ou sélection → `showUpgradePrompt('multi_gpx')`. Export aussi verrouillé pour multi-GPX.
 - **Visibilité 3D conditionnelle** : `initialVisible = forceVisible || isManualRoute || isProActive() || isFirstImport`. Routes manuels + 1er import toujours visibles. Multi-imports masqués visuellement en Free (mais présents en mémoire).
+- **Feedback import visible** : Toast de succès après import réussi. Toast + console.error si import échoue (au lieu du silence total).
 
 ### Fixed
 
 - **Bug : import GPX bloqué avec route manuelle existante** : Le gate `state.gpxLayers.length >= 1` (ancien code v5.53.x) bloquait l'import du 1er GPX si une route manuelle était en mémoire. Résolu en supprimant le gate et en filtrées les tracés par `isManualRoute`.
-- **Affichage bouton export en Free** : Bouton export maintenant visible pour tous, mais verrouillé en Free (ICON_LOCK + couleur doré). Avant : caché conditionnellement en Free.
+- **Export cadenas même pour le 1er tracé Free** : Bouton export montrait cadenas + upgrade prompt pour TOUS les Free. Maintenant : cadenas seulement sur les tracés verrouillés (2+). 1er tracé est entièrement exploitable en Free.
+- **Import échoue silencieusement** : Si `addGPXLayer` levait exception, rien n'était affiché. Maintenant : toast + console.error visible.
 
 ### Changed
 
-- **gpxLayers.ts** : `addGPXLayer()` signature étendue (`{ silent?, forceVisible?, isManualRoute? }`). Logique visibilité 3D + anti-actif pour tracés verrouillés.
-- **gpxService.ts** : Gate freemium supprimé (ligne ~25). Import autorisé pour tous jusqu'à 10 tracés.
+- **gpxLayers.ts** : `addGPXLayer()` signature étendue (`{ silent?, forceVisible?, isManualRoute? }`). Logique visibilité 3D + anti-actif pour tracés verrouillés. Import `isProActive` ajouté.
+- **gpxService.ts** : Gate freemium supprimé (ligne ~25). Import autorisé pour tous jusqu'à 10 tracés. Toast succès après ajout. Imports inutilisés supprimés.
 - **routingService.ts** : Routes via ORS/Dénivélé passent `isManualRoute: true` à `addGPXLayer()`.
-- **TrackSheet.ts** : Refonte `renderLayersList()` — index-based locking, affichage cadenas ICON_LOCK, event handlers capturent `layer = layers[index]` + `importedLayers.filter()` pour vérifier status.
+- **TrackSheet.ts** : Refonte `renderLayersList()` — index-based locking + export lock cohérent (seuls tracés `isLocked = true` bloqent export). Catch import silencieux → toast + console.error. Import `lngLatToWorld` supprimé (inutilisé).
 - **state.ts** : `GPXLayer.isManualRoute?: boolean` (optionnel pour compatibilité).
+- **Tests** : `routingService.test.ts` et `gpxService.test.ts` mis à jour pour v5.54 (appels `addGPXLayer` avec options, gate suppr). 765 tests passent.
 
 ## [5.53.10] - 2026-05-06
 
