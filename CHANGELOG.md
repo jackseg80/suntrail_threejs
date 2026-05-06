@@ -1,3 +1,9 @@
+## [5.54.1] - 2026-05-06
+
+### Fixed
+
+- **CI release Android (régression v5.53.8)** : Le workflow GitHub Actions ne passait pas `CAPACITOR=true` lors du build Vite, générant des chemins d'assets absolus (`/suntrail_threejs/...`) incompatibles avec la WebView Android. Résultat : page blanche sur mobile (Google Play) alors que les builds Android Studio fonctionnaient. Fix : ajout de `CAPACITOR: true` dans les env du step "Build web (Vite)" de `release.yml`.
+
 ## [5.54.0] - 2026-05-06
 
 ### Added
