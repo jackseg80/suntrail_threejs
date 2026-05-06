@@ -7,15 +7,17 @@
 
     <!-- Section Compte / Authentification -->
     <div class="section-label" data-i18n="settings.section.account">Compte</div>
-    <div id="account-section" class="setting-row" style="margin-bottom: 20px; padding: 12px; background: var(--surface-subtle); border-radius: 12px; border: 1px solid var(--border);">
-        <div style="display: flex; align-items: center; gap: 12px; flex: 1; overflow: hidden;">
-            <span style="font-size: 20px;">👤</span>
-            <div style="display: flex; flex-direction: column; overflow: hidden;">
-                <div id="account-status" style="font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px;">Mode Invité</div>
+    <div id="account-section" style="margin-bottom: 20px; border-radius: 14px; border: 1px solid var(--border); overflow: hidden;">
+        <!-- Bandeau identité -->
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--surface-subtle);">
+            <div id="account-avatar" style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--accent) 0%, var(--accent-btn) 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff;"></div>
+            <div style="display: flex; flex-direction: column; overflow: hidden; flex: 1;">
+                <div id="account-status" style="font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1px;">Mode Invité</div>
                 <div id="account-email" style="font-size: 13px; font-weight: 500; color: var(--text-1); white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">Connectez-vous pour synchroniser Pro</div>
             </div>
         </div>
-        <button id="account-action-btn" class="btn-secondary" style="padding: 8px 14px; font-size: 12px; border-radius: 8px; flex-shrink: 0;"></button>
+        <!-- Bouton action -->
+        <button id="account-action-btn" style="width: 100%; padding: 11px 16px; border: none; border-top: 1px solid var(--border); background: linear-gradient(135deg, var(--accent) 0%, var(--accent-btn) 100%); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; letter-spacing: 0.2px;"></button>
     </div>
     
     <div class="section-label" data-i18n="settings.section.presets">Profil de performance</div>

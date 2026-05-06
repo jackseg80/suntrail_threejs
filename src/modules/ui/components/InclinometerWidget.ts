@@ -66,7 +66,7 @@ export class InclinometerWidget {
         this.el.id = 'inclinometer-widget';
         this.el.style.cssText = [
             'position:fixed',
-            'bottom:calc(var(--bar-h) + var(--safe-bottom) + 16px)',
+            'bottom:calc(var(--ui-bottom-offset) + 16px)',
             'left:50%',
             'transform:translateX(-50%)',
             'background:var(--surface)',
@@ -156,11 +156,11 @@ export class InclinometerWidget {
         if (isTimelineOpen) {
             // v5.40.27 : Reste en BAS mais décalé au dessus de la timeline
             this.el.style.top = 'auto';
-            this.el.style.bottom = 'calc(var(--bar-h) + var(--safe-bottom) + 120px)';
+            this.el.style.bottom = 'calc(var(--ui-bottom-offset) + 120px)';
         } else {
             // Position standard
             this.el.style.top = 'auto';
-            this.el.style.bottom = 'calc(var(--bar-h) + var(--safe-bottom) + 16px)';
+            this.el.style.bottom = 'calc(var(--ui-bottom-offset) + 16px)';
         }
         if (this._isExpanded) this.positionDetail();
     }
@@ -413,7 +413,7 @@ export class InclinometerWidget {
         if (!this.el) return;
         this.el.style.left = '50%';
         this.el.style.top = '';
-        this.el.style.bottom = 'calc(var(--bar-h) + var(--safe-bottom) + 16px)';
+        this.el.style.bottom = 'calc(var(--ui-bottom-offset) + 16px)';
         this.el.style.transform = 'translateX(-50%)';
         this._isCustomWidgetPos = false;
         if (this._isExpanded) this.positionDetail();

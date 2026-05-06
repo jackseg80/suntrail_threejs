@@ -101,7 +101,8 @@ export function updateUserMarker() {
     }
 
     const groundH = state.IS_2D_MODE ? 0 : getAltitudeAt(pos.x, pos.z);
-    const finalY = groundH + 10; // Un peu plus haut pour éviter l'occlusion par le relief
+    // Offset minimal : évite le Z-clipping sans créer de décalage de parallaxe sous angle oblique
+    const finalY = groundH + 2;
 
     if (!state.userMarker) {
         state.userMarker = new THREE.Group();

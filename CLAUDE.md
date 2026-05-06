@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.53.9)
+# SunTrail — Guide IA (v5.53.10)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-06 — v5.53.9 : Animation solaire fluide rétablie (rAF 60fps au lieu de setInterval 5Hz), FPS drop post-flyTo corrigé (grace period 800ms), slider mis à jour en temps réel pendant animation.
+> Mis à jour le 2026-05-06 — v5.53.10 : Pastille GPS rasante (offset +2, parallaxe éliminée), deep sleep bloquant graphique profil corrigé (isInteractingWithUI dans isIdleMode), bouton Se connecter Réglages modernisé (SVG + gradient bleu).
 
 ## Projet
 

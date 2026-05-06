@@ -1,3 +1,15 @@
+## [5.53.10] - 2026-05-06
+
+### Fixed
+
+- **Pastille GPS en 3D** : Offset vertical réduit de +10 à +2 unités monde. L'ancienne valeur créait un décalage de parallaxe visible sous angle oblique, donnant l'impression que la pastille était à côté du chemin.
+- **Graphique de profil bloqué à 2fps** : `state.isInteractingWithUI` n'était pas inclus dans `isIdleMode`. Le deep sleep (1.5fps) se déclenchait même lors d'une interaction avec le graphique, bloquant le rendu avant la vérification de `needsUpdate`.
+- **Bouton Se connecter / S'inscrire** : Remplace le `btn-secondary` générique et l'emoji 👤 par un design cohérent avec le thème bleu — gradient `var(--accent)`, icônes SVG `ICON_LOG_IN` / `ICON_LOG_OUT` / `ICON_USER`, avatar avec fond bleu. État déconnecté : bouton bleu plein. État connecté : bouton neutre avec icône logout.
+
+### Changed
+
+- **icons.ts** : 3 nouvelles icônes — `ICON_USER`, `ICON_LOG_IN`, `ICON_LOG_OUT`.
+
 ## [5.53.9] - 2026-05-06
 
 ### Fixed

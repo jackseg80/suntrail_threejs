@@ -537,6 +537,7 @@ export async function initScene(): Promise<void> {
         const isIdleMode = !state.isUserInteracting && !state.isFlyingTo && !state.isFollowingUser
             && !state.isTiltTransitioning
             && !state.isSunAnimating
+            && !state.isInteractingWithUI
             && !(isWeatherActive && weatherFrameDue)
             && (idleTime >= 800);
 
