@@ -108,18 +108,16 @@ describe('scene.ts', () => {
 
     describe('flyTo', () => {
         it('should set isFlyingTo flag and update camera/target', () => {
-            const targetX = 1000;
-            const targetZ = 2000;
-            const targetElev = 500;
-
-            flyTo(targetX, targetZ, targetElev, 5000, 1000);
-
+            flyTo(1000, 2000, 500, 5000, 1000);
             expect(state.isFlyingTo).toBe(true);
-            // After some time, it should have moved (using fake timers)
-            vi.advanceTimersByTime(1100);
-            
-            // We can't easily test the exact position because of the animation loop requestAnimationFrame
-            // but we can check if it eventually resets the flag if we mock the animation frame
+        });
+
+        it('should reset isFlyingTo to false once animation completes via rAF', async () => {
+            vi.useRealTimers();
+            const promise = flyTo(1000, 2000, 500, 5000, 10); // très courte durée
+            await promise;
+            expect(state.isFlyingTo).toBe(false);
+            vi.useFakeTimers();
         });
 
         it('should perform instant move if prefers-reduced-motion is active', () => {

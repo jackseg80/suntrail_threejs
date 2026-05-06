@@ -1,3 +1,17 @@
+## [5.53.9] - 2026-05-06
+
+### Fixed
+
+- **Animation solaire fluide rétablie** : Le passage à `setInterval(200ms)` en v5.53.8 causait une animation saccadée (5 Hz visible). Retour à l'animation rAF-driven (60 fps) avec timer indépendant pour vitesse frame-rate-indépendante. Sun position updated immédiatement avant rendu du même frame.
+- **FPS drop après flyTo** : `lastInteractionTime` n'était jamais réinitialisée quand `isFlyingTo = false`, causant un throttle immédiat à 20fps (ou 1.5fps en deep sleep). Grace period de 800ms ajoutée après la fin du vol.
+- **Slider figé pendant animation** : `syncUI()` avait un guard `!state.isSunAnimating` qui gelait le slider. Guard supprimé — slider suit maintenant l'heure en temps réel.
+- **Avancement du temps en onglet caché** : `setInterval` continuait d'avancer `simDate` quand `document.hidden = true`. Guard `if (document.hidden) return;` ajouté (bien que setInterval soit maintenant supprimé en faveur du rAF).
+
+### Changed
+
+- **Architecture animation solaire** : Déplacée du `setInterval(200ms)` de TimelineComponent vers la boucle de rendu (scene.ts). Accumulateur `sunAnimFractMins` pour précision sub-minute. Subscriber `simDate` n'appelle `updateSunPosition` que hors animation (la boucle de rendu s'en charge pendant animation).
+- **Tests** : 7 nouveaux tests pour TimelineComponent (slider, updateSunPosition, button state) et scene.ts (flyTo grace period). Total: 765 tests (757 + 8 nouveaux).
+
 ## [5.53.5] - 2026-05-05
 
 ### Changed

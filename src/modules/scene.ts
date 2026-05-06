@@ -395,9 +395,10 @@ export async function initScene(): Promise<void> {
     let lastRenderTime = 0;
     window.addEventListener('resize', onWindowResize);
 
-    let needsInitialRender = 60; 
+    let needsInitialRender = 60;
     let tilesFading = true;
     let lastInteractionTime = 0;
+    let prevWasFlyingTo = false;
 
     let fpsFrameCount = 0;
     let fpsLastTime = performance.now();
@@ -414,6 +415,9 @@ export async function initScene(): Promise<void> {
     let lastPrefetchTime = 0;
     let lastCompassTime = 0;
     let lastInteracting = false;
+    // Animation solaire : timer indépendant du frame-rate pour une progression constante
+    let lastSunAnimTime = 0;
+    let sunAnimFractMins = 0;
 
     function updateAutoTilt(distToTarget: number): boolean {
         if (!state.controls) return false;
@@ -522,6 +526,12 @@ export async function initScene(): Promise<void> {
         if (isMobile && state.PERFORMANCE_PRESET !== 'ultra' && (now - lastRenderTime < 16.0)) return;
         if (state.isFollowingUser && !state.ENERGY_SAVER && (now - lastRenderTime < 33)) return;
 
+        // Grace period : évite le throttle idle immédiatement après la fin d'un flyTo
+        if (prevWasFlyingTo && !state.isFlyingTo) {
+            lastInteractionTime = now;
+        }
+        prevWasFlyingTo = state.isFlyingTo;
+
         const isWeatherActive = state.SHOW_WEATHER && state.currentWeather !== 'clear' && state.WEATHER_DENSITY > 0;
         const idleTime = now - lastInteractionTime;
         const isIdleMode = !state.isUserInteracting && !state.isFlyingTo && !state.isFollowingUser
@@ -596,7 +606,22 @@ export async function initScene(): Promise<void> {
             if (state.isFollowingUser && !interacting) centerOnUser(delta);
 
             if (state.isSunAnimating) {
-                // Animation driven by TimelineComponent interval (robuste aux throttles rAF)
+                if (lastSunAnimTime === 0) lastSunAnimTime = now;
+                const elapsed = Math.min((now - lastSunAnimTime) / 1000, 0.5);
+                lastSunAnimTime = now;
+                sunAnimFractMins += elapsed * 60 * state.animationSpeed;
+                const step = Math.floor(sunAnimFractMins);
+                if (step >= 1) {
+                    sunAnimFractMins -= step;
+                    const mins = (state.simDate.getHours() * 60 + state.simDate.getMinutes() + step) % 1440;
+                    const d = new Date(state.simDate);
+                    d.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
+                    state.simDate = d;
+                    updateSunPosition(mins);
+                }
+            } else {
+                lastSunAnimTime = 0;
+                sunAnimFractMins = 0;
             }
 
             updateTerrainPhysics(interacting);

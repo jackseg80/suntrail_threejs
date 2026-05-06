@@ -15,7 +15,6 @@ export class TimelineComponent {
     private tlAzimuthEl: HTMLElement | null = null;
     private tlElevationEl: HTMLElement | null = null;
     private _dateTrap: HTMLElement | null = null;
-    private _animTimer: ReturnType<typeof setInterval> | null = null;
 
     constructor() {
         // No hydration, just attach to existing DOM
@@ -210,26 +209,16 @@ export class TimelineComponent {
         // Subscribe to state changes
         this.subscriptions.push(state.subscribe('simDate', () => {
             this.syncUI();
-            const mins = state.simDate.getHours() * 60 + state.simDate.getMinutes();
-            updateSunPosition(mins);
+            // Quand l'animation tourne, la boucle de rendu appelle updateSunPosition directement
+            if (!state.isSunAnimating) {
+                const mins = state.simDate.getHours() * 60 + state.simDate.getMinutes();
+                updateSunPosition(mins);
+            }
             if (isProActive()) this.updateSolarInfo();
         }));
 
         this.subscriptions.push(state.subscribe('isSunAnimating', (val: boolean) => {
             if (playBtn) playBtn.textContent = val ? '⏸' : '▶';
-            if (val) {
-                if (!this._animTimer) {
-                    this._animTimer = setInterval(() => {
-                        const advance = state.animationSpeed * 12; // 200ms → animationSpeed*60*0.2
-                        const mins = (state.simDate.getHours() * 60 + state.simDate.getMinutes() + advance) % 1440;
-                        const d = new Date(state.simDate);
-                        d.setHours(Math.floor(mins / 60), Math.floor(mins % 60), 0, 0);
-                        state.simDate = d;
-                    }, 200);
-                }
-            } else {
-                if (this._animTimer) { clearInterval(this._animTimer); this._animTimer = null; }
-            }
         }));
 
         // Ouvrir/fermer la timeline automatiquement au changement de mode
@@ -255,7 +244,7 @@ export class TimelineComponent {
             const day = String(state.simDate.getDate()).padStart(2, '0');
             this.dateInput.value = `${year}-${month}-${day}`;
         }
-        if (this.timeSlider && !state.isSunAnimating) {
+        if (this.timeSlider) {
             const val = (state.simDate.getHours() * 60 + state.simDate.getMinutes()).toString();
             this.timeSlider.value = val;
             // ARIA: sync valuenow
@@ -324,7 +313,6 @@ export class TimelineComponent {
     }
 
     public dispose(): void {
-        if (this._animTimer) { clearInterval(this._animTimer); this._animTimer = null; }
         this.subscriptions.forEach(unsubscribe => unsubscribe());
         this.subscriptions = [];
     }
