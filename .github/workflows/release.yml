@@ -44,6 +44,7 @@ jobs:
 
       - name: Build web (Vite)
         env:
+          CAPACITOR: true
           VITE_MAPTILER_KEY: ${{ secrets.VITE_MAPTILER_KEY }}
           VITE_REVENUECAT_KEY: ${{ secrets.VITE_REVENUECAT_KEY }}
           VITE_REVENUECAT_WEB_KEY: ${{ secrets.VITE_REVENUECAT_WEB_KEY }}
