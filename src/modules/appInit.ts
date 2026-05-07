@@ -505,14 +505,15 @@ function setupFabs() {
     compassFab?.addEventListener('click', () => {
         if (state.controls && state.camera) {
             const controls = state.controls;
+            const camera = state.camera;
             const startAngle = controls.getAzimuthalAngle();
             let targetAngle = 0;
-            
+
             let diff = targetAngle - startAngle;
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
             targetAngle = startAngle + diff;
-            
+
             const startTime = Date.now();
             const duration = 500;
             const initialAngle = startAngle;
@@ -524,11 +525,11 @@ function setupFabs() {
                 const eased = 1 - Math.pow(1 - progress, 3);
                 const currentAngle = initialAngle + (targetAngle - initialAngle) * eased;
 
-                const offset = state.camera!.position.clone().sub(controls.target);
+                const offset = camera.position.clone().sub(controls.target);
                 const spherical = new THREE.Spherical().setFromVector3(offset);
                 spherical.theta = currentAngle;
                 const newPos = new THREE.Vector3().setFromSpherical(spherical).add(controls.target);
-                state.camera!.position.copy(newPos);
+                camera.position.copy(newPos);
                 controls.update();
 
                 if (progress < 1) {
