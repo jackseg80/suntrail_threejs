@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { disposeObject } from './memory';
 import { state, type GPXLayer, GPX_COLORS, isProActive } from './state';
 import { simplifyRDP } from './utils';
-import { updateElevationProfile } from './profile';
+import { updateElevationProfile, closeElevationProfile } from './profile';
 import { lngLatToWorld, EARTH_CIRCUMFERENCE, worldToLngLat } from './geo';
 import { eventBus } from './eventBus';
 import { drapeToTerrain, getAltitudeAt, GPX_SURFACE_OFFSET } from './analysis';
@@ -264,7 +264,7 @@ export function removeGPXLayer(id: string): void {
     if (layer.mesh) { if (state.scene) state.scene.remove(layer.mesh); disposeObject(layer.mesh); }
     state.gpxLayers = state.gpxLayers.filter(l => l.id !== id);
     if (state.activeGPXLayerId === id) state.activeGPXLayerId = state.gpxLayers.length > 0 ? state.gpxLayers[0].id : null;
-    if (state.gpxLayers.length === 0) { const prof = document.getElementById('elevation-profile'); if (prof) prof.style.display = 'none'; } else updateElevationProfile();
+    if (state.gpxLayers.length === 0) { closeElevationProfile(); } else updateElevationProfile();
 }
 
 export function toggleGPXLayer(id: string): void {

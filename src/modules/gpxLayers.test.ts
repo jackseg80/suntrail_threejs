@@ -1,7 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as THREE from 'three';
-import { addGPXLayer, updateAllGPXMeshes, updateRecordedTrackMesh } from './gpxLayers';
+import { addGPXLayer, removeGPXLayer, updateAllGPXMeshes, updateRecordedTrackMesh } from './gpxLayers';
 import { state } from './state';
+import { closeElevationProfile, updateElevationProfile } from './profile';
+
+vi.mock('./profile', () => ({
+    updateElevationProfile: vi.fn(),
+    closeElevationProfile: vi.fn(),
+}));
+
+vi.mock('./solarRoute', () => ({
+    disposeSolarOverlay: vi.fn(),
+    buildSolarOverlay: vi.fn(),
+    setOverlayVisible: vi.fn(),
+    getCurrentRouteSolarAnalysis: vi.fn(),
+    scheduleRouteSolarAnalysis: vi.fn(),
+    invalidateRouteCache: vi.fn(),
+    clearSolarRouteAnalysis: vi.fn(),
+}));
+
+const mockCloseElevationProfile = closeElevationProfile as ReturnType<typeof vi.fn>;
+const mockUpdateElevationProfile = updateElevationProfile as ReturnType<typeof vi.fn>;
 
 const rawData = {
     tracks: [{
@@ -145,5 +164,86 @@ describe('Multi-GPX Layers (v5.10)', () => {
         expect(epsEco).toBeGreaterThan(epsUltra);
         // v5.53.4 : RDP ratio check (2.0 vs 0.5 = 4x)
         expect(epsEco / epsUltra).toBeCloseTo(4, 1);
+    });
+});
+
+describe('removeGPXLayer', () => {
+    beforeEach(() => {
+        state.gpxLayers = [];
+        state.activeGPXLayerId = null;
+        state.scene = new THREE.Scene();
+        state.scene.add = vi.fn();
+        state.scene.remove = vi.fn();
+        state.originTile = { x: 2130, y: 1445, z: 12 };
+        state.camera = new THREE.PerspectiveCamera();
+        state.camera.position.set(0, 1000, 0);
+        mockCloseElevationProfile.mockClear();
+        mockUpdateElevationProfile.mockClear();
+    });
+
+    it('appelle closeElevationProfile quand le dernier layer est supprimé', () => {
+        const layer = addGPXLayer(rawData, 'seul-layer');
+        expect(state.gpxLayers).toHaveLength(1);
+        mockCloseElevationProfile.mockClear();
+        mockUpdateElevationProfile.mockClear();
+
+        removeGPXLayer(layer.id);
+
+        expect(state.gpxLayers).toHaveLength(0);
+        expect(mockCloseElevationProfile).toHaveBeenCalledOnce();
+        expect(mockUpdateElevationProfile).not.toHaveBeenCalled();
+    });
+
+    it('appelle updateElevationProfile quand des layers restent après suppression', () => {
+        const layer1 = addGPXLayer(rawData, 'layer-1');
+        const layer2 = addGPXLayer(rawData, 'layer-2');
+        expect(state.gpxLayers).toHaveLength(2);
+        mockUpdateElevationProfile.mockClear();
+
+        removeGPXLayer(layer1.id);
+
+        expect(state.gpxLayers).toHaveLength(1);
+        expect(state.gpxLayers[0].id).toBe(layer2.id);
+        expect(mockUpdateElevationProfile).toHaveBeenCalled();
+        expect(mockCloseElevationProfile).not.toHaveBeenCalled();
+    });
+
+    it('supprime le mesh de la scène 3D', () => {
+        const layer = addGPXLayer(rawData, 'mesh-test');
+        expect(layer.mesh).toBeTruthy();
+
+        removeGPXLayer(layer.id);
+
+        expect(state.scene!.remove).toHaveBeenCalled();
+    });
+
+    it('ne fait rien si l\'id est inconnu', () => {
+        addGPXLayer(rawData, 'existant');
+        mockUpdateElevationProfile.mockClear();
+
+        removeGPXLayer('id-inexistant');
+
+        expect(state.gpxLayers).toHaveLength(1);
+        expect(mockCloseElevationProfile).not.toHaveBeenCalled();
+        expect(mockUpdateElevationProfile).not.toHaveBeenCalled();
+    });
+
+    it('bascule activeGPXLayerId vers un layer restant', () => {
+        const layer1 = addGPXLayer(rawData, 'layer-a');
+        const layer2 = addGPXLayer(rawData, 'layer-b');
+        state.activeGPXLayerId = layer1.id;
+
+        removeGPXLayer(layer1.id);
+
+        expect(state.activeGPXLayerId).toBe(layer2.id);
+    });
+
+    it('met activeGPXLayerId à null quand aucun layer ne reste', () => {
+        const layer = addGPXLayer(rawData, 'seul');
+        state.activeGPXLayerId = layer.id;
+
+        removeGPXLayer(layer.id);
+
+        expect(state.activeGPXLayerId).toBeNull();
     });
 });
