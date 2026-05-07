@@ -1,3 +1,23 @@
+## [5.54.2] - 2026-05-07
+
+### Fixed
+
+- **Fuite mémoire Capacitor listeners** : `nativeGPSService.setupListeners()` ne stockait pas les handles retournés par `RecordingPlugin.addListener()`, empêchant le cleanup des 3 listeners (onNewPoints, onLocationUpdate, onServiceStopped). Fix : stockage dans tableau `_listenerHandles[]` et cleanup systématique avant `removeAllListeners()`.
+- **Listener orphelin iapService.addListener('message')** : Le listener créé dans `purchase()` pour la modale guest persistait si l'utilisateur naviguait pendant l'attente. Fix : fonction `cleanup()` centralisée + event `pagehide` comme filet de sécurité. Stockage dans `_purchaseCleanup` pour cleanup dans `resetForTest()`.
+- **Promesses fire-and-forget silencieuses** : `iapService.initialize()`, `packManager.syncPackPurchases()`, `packManager.mountPack()` n'étaient pas loggées en cas d'échec. Fix : logging DEBUG en cas d'erreur.
+- **Erreurs géométrie bâtiments non loggées** : Catch vides dans `buildings.ts` empêchaient de détecter les erreurs de rendu. Fix : warn DEBUG sur `renderBuildingsPBF()` et `createBuildingManualGeometry()`.
+- **npm audit : 7 vulnérabilités** : @xmldom/xmldom (3 high), fast-xml-parser + postcss + protocol-buffers-schema (4 moderate). Fix : `npm audit fix` (ajout @xmldom@>=0.8.13, fast-xml-parser@>=5.7.0, etc.). 0 vulnérabilité restante.
+
+### Added
+
+- **Tests haptics, theme, toast, weatherUtils** : Couverture complète des 4 modules manquants. +66 tests (814 total, 90 fichiers).
+- **Centralisation clés localStorage** : Nouveau fichier `src/constants/storage.ts` avec 14 clés `suntrail_*` (SETTINGS, PRO, ORS_KEY, ACCEPTANCE_V1, GPS_DISCLOSURE_V1, ONBOARDING_V2, RECORDED_POINTS, CURRENT_COURSE_ID, RECORDING_START_TIME, PACK_STATES, PACK_CATALOG, BATTERY_EXEMPTION, REC_SNAPSHOT_V1, UPSELL_LAST_SHOW). Migré dans 9 modules (state, packManager, nativeGPSService, etc.).
+- **Logging ui/mobile.ts** : App listeners (backButton, appStateChange) loggent en DEBUG.
+
+### Changed
+
+- **appInit.test.ts, nativeGPSService.persistence.test.ts** : Mocks `iapService.initialize` et `RecordingNative.addListener` retournent maintenant Promise (au lieu de void) pour être compatibles avec `.catch()` et `.then()`.
+
 ## [5.54.1] - 2026-05-06
 
 ### Fixed
