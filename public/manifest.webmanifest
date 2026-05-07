@@ -1,13 +1,13 @@
 {
   "name": "SunTrail 3D",
   "short_name": "SunTrail",
-  "start_url": "/suntrail_threejs/app.html",
+  "start_url": "./app.html",
   "display": "standalone",
   "background_color": "#030712",
   "theme_color": "#f97316",
   "icons": [
     {
-      "src": "/suntrail_threejs/assets/icons/icon_512.png",
+      "src": "assets/icons/icon_512.png",
       "sizes": "512x512",
       "type": "image/png"
     }

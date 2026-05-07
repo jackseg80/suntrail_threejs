@@ -740,6 +740,10 @@ function setupRouteBar(): void {
         if (state.routeWaypoints.length >= 2) scheduleAutoCompute();
     });
 
+    document.getElementById('rs-ors-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+    });
+
     document.getElementById('rs-save-key')?.addEventListener('click', () => {
         const key = (document.getElementById('rs-ors-key') as HTMLInputElement)?.value.trim();
         if (key && key.length > 10) {

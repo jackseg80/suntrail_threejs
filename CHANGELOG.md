@@ -1,3 +1,10 @@
+## [5.54.4] - 2026-05-07
+
+### Fixed
+
+- **Manifest PWA** : Correction des chemins des icônes pour une compatibilité multi-plateforme (Web & Android). Utilisation de chemins relatifs (`./assets/...`) au lieu de chemins absolus.
+- **Dom Warning (ORS Key)** : Correction de l'avertissement console "Password field is not contained in a form". Le champ est désormais enveloppé dans un formulaire `<form>` avec prévention de soumission par défaut, améliorant l'accessibilité.
+
 ## [5.54.3] - 2026-05-07
 
 ### Fixed
