@@ -73,6 +73,7 @@ export function applyPreset(preset: PresetType): void {
     if (preset === 'custom') {
         state.PERFORMANCE_PRESET = 'custom';
         updatePerformanceUI('custom');
+        document.body.classList.remove('high-quality-ui');
         saveSettings();
         return;
     }
@@ -127,6 +128,7 @@ export function applyPreset(preset: PresetType): void {
 
     document.body.classList.toggle('mode-2d', state.IS_2D_MODE);
     document.body.classList.toggle('preset-eco', preset === 'eco');
+    document.body.classList.toggle('high-quality-ui', preset === 'performance' || preset === 'ultra');
 
     if (state.sunLight) {
         state.sunLight.castShadow = state.SHADOWS;
@@ -164,6 +166,7 @@ export function applyCustomSettings(settings: any): void {
     if (settings.FOG_FAR !== undefined) state.FOG_FAR = settings.FOG_FAR;
 
     updatePerformanceUI('custom');
+    document.body.classList.remove('high-quality-ui');
     
     if (state.sunLight) {
         state.sunLight.castShadow = state.SHADOWS;
