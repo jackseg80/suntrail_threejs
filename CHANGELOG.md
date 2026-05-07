@@ -1,3 +1,13 @@
+## [5.54.3] - 2026-05-07
+
+### Fixed
+
+- **Profil/pentes restant visible après suppression tracé** : Quand `removeGPXLayer` supprimait le dernier layer GPX, il ne faisait que `prof.style.display = 'none'` sans appeler `closeElevationProfile()`. Résultat : la classe `is-open` restait, le marker 3D (`profileMarker`) restait actif sur la scène, et la pastille continuait à bouger en interactif sur l'ancienne trace. Fix : appel à `closeElevationProfile()` qui nettoie l'état complet (retire `is-open`, cache marker 3D, dispose géométrie).
+
+### Added
+
+- **Tests removeGPXLayer** : 6 tests pour couvrir tous les cas (fermeture profil dernier layer, mise à jour reste, suppression mesh, id inconnu, bascule activeGPXLayerId, reset à null). Impact : tous les chemins de suppression (route manuelle, imports GPX, enregistrements) dorénavant testés.
+
 ## [5.54.2] - 2026-05-07
 
 ### Fixed

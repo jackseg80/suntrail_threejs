@@ -1,4 +1,4 @@
-# SunTrail — TODO (v5.54.2)
+# SunTrail — TODO (v5.54.3)
 
 > Dernière mise à jour : 2026-05-07
 
@@ -22,6 +22,7 @@
 
 ## ✅ Récemment complété (v5.54.x)
 
+- [x] **Profil/pentes cleanup au nettoyage GPX** — closeElevationProfile() + 6 tests removeGPXLayer (v5.54.3)
 - [x] **Hardening listeners Capacitor** — nativeGPSService._listenerHandles (v5.54.2)
 - [x] **iapService cleanup** — message listener + pagehide guard (v5.54.2)
 - [x] **Storage constants centralisés** — src/constants/storage.ts, 14 clés (v5.54.2)
