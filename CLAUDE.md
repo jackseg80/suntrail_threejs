@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.54.2)
+# SunTrail — Guide IA (v5.54.3)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-07 — v5.54.2 : Hardening (listeners Capacitor, cleanup iapService, tests haptics/theme/toast/weatherUtils, centralisation clés storage, npm audit fix). Release candidate.
+> Mis à jour le 2026-05-07 — v5.54.3 : Fix profil/pentes (closeElevationProfile au lieu de display:none au nettoyage GPX). v5.54.2 : Hardening (listeners Capacitor, cleanup iapService, tests haptics/theme/toast/weatherUtils, centralisation clés storage, npm audit fix).
 
 ## Projet
 
