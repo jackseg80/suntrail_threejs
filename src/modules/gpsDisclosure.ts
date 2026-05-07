@@ -10,8 +10,9 @@
  */
 
 import { i18n } from '../i18n/I18nService';
+import { STORAGE_KEYS } from '../constants/storage';
 
-const STORAGE_KEY = 'suntrail_gps_disclosure_v1';
+const STORAGE_KEY = STORAGE_KEYS.GPS_DISCLOSURE_V1;
 
 /**
  * Vérifie si la modale a déjà été affichée (quel que soit le choix de l'utilisateur).

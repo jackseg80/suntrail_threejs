@@ -14,6 +14,7 @@ import { updateRecordedTrackMesh } from './gpxLayers';
 import { cleanGPSTrack } from './gpsDeduplication';
 import { calculateTrackStats } from './geoStats';
 import { recordingService } from './recordingService';
+import { STORAGE_KEYS } from '../constants/storage';
 
 // ... (Types remain the same)
 
@@ -46,9 +47,9 @@ const RecordingNative = Capacitor.isNativePlatform()
 
 // ── Service ───────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY_POINTS = 'suntrail_recorded_points';
-const STORAGE_KEY_COURSE_ID = 'suntrail_current_course_id';
-const STORAGE_KEY_START_TIME = 'suntrail_recording_start_time'; // v5.29.1
+const STORAGE_KEY_POINTS = STORAGE_KEYS.RECORDED_POINTS;
+const STORAGE_KEY_COURSE_ID = STORAGE_KEYS.CURRENT_COURSE_ID;
+const STORAGE_KEY_START_TIME = STORAGE_KEYS.RECORDING_START_TIME;
 
 class NativeGPSService {
     private currentCourseId: string | null = null;
@@ -56,6 +57,7 @@ class NativeGPSService {
     private meshUpdateTimeout: number | null = null;
     private pendingMeshUpdate = false;
     private statsUpdateInterval: number | null = null;
+    private _listenerHandles: Array<{ remove(): void }> = [];
 
     /**
      * Initialisation et récupération au démarrage (v5.28.1)
@@ -292,12 +294,12 @@ class NativeGPSService {
 
             if (event.pointCount === 0) return;
             await this.syncPoints();
-        });
+        }).then(h => this._listenerHandles.push(h));
 
         RecordingNative.addListener('onLocationUpdate', (event: { lat: number; lon: number; alt: number; accuracy: number }) => {
             state.userLocation = { lat: event.lat, lon: event.lon, alt: event.alt };
             state.userLocationAccuracy = event.accuracy ?? null;
-        });
+        }).then(h => this._listenerHandles.push(h));
 
         // v5.29.38 : Listener pour arrêt via notification Android
         RecordingNative.addListener('onServiceStopped', () => {
@@ -305,7 +307,7 @@ class NativeGPSService {
             if (state.isRecording) {
                 recordingService.stopRecording();
             }
-        });
+        }).then(h => this._listenerHandles.push(h));
 
         // Intervalle de mise à jour des stats dans la notification (toutes les 10s)
         this.statsUpdateInterval = window.setInterval(() => {
@@ -375,6 +377,8 @@ class NativeGPSService {
             clearInterval(this.statsUpdateInterval);
             this.statsUpdateInterval = null;
         }
+        for (const h of this._listenerHandles) { h.remove(); }
+        this._listenerHandles = [];
         if (!RecordingNative) return;
         RecordingNative.removeAllListeners();
         this.isListening = false;

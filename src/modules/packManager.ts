@@ -20,11 +20,12 @@ import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
 import type { PackMeta, PackState, PackCatalog, PackStatus } from './packTypes';
 import { iapService } from './iapService';
+import { STORAGE_KEYS } from '../constants/storage';
 
 const CDN_BASE_URL = 'https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev';
 const CATALOG_URL = import.meta.env.VITE_PACKS_CATALOG_URL as string | undefined;
-const PACK_STATES_KEY = 'suntrail_pack_states';
-const CATALOG_CACHE_KEY = 'suntrail_pack_catalog';
+const PACK_STATES_KEY = STORAGE_KEYS.PACK_STATES;
+const CATALOG_CACHE_KEY = STORAGE_KEYS.PACK_CATALOG;
 const PACKS_DIR = 'packs';
 
 // Catalog embarqué — fallback si réseau absent ET localStorage vide.
@@ -90,7 +91,7 @@ class PackManager {
         // Mount all installed packs (purchased/installed/update_available)
         await this.mountAllInstalled();
         // Sync pack purchases avec RevenueCat (restaure après clear storage)
-        this.syncPackPurchases().catch(() => {});
+        this.syncPackPurchases().catch(e => { if (state.DEBUG_MODE) console.warn('[Packs] Sync failed', e); });
         if (state.DEBUG_MODE) console.log(`[Packs] Initialisé. ${this.mountedArchives.size} pack(s) monté(s).`);
     }
 
@@ -483,7 +484,7 @@ class PackManager {
         this.persistStates();
         this.emitStatus(packId, 'purchased');
         // Auto-mount via CDN (pas besoin de download pour servir les tuiles)
-        void this.mountPack(packId);
+        void this.mountPack(packId).catch(e => { if (state.DEBUG_MODE) console.warn('[Packs] Mount failed', e); });
     }
 
     markPurchased(packId: string): void {
@@ -493,7 +494,7 @@ class PackManager {
             this.persistStates();
             this.emitStatus(packId, 'purchased');
             // Auto-mount via CDN
-            void this.mountPack(packId);
+            void this.mountPack(packId).catch(e => { if (state.DEBUG_MODE) console.warn('[Packs] Mount failed', e); });
         }
     }
 

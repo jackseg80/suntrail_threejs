@@ -10,9 +10,9 @@
  */
 
 import { i18n } from '../i18n/I18nService';
+import { STORAGE_KEYS } from '../constants/storage';
 
-const ACCEPTANCE_VERSION = 'v1';
-const STORAGE_KEY = `suntrail_acceptance_${ACCEPTANCE_VERSION}`;
+const STORAGE_KEY = STORAGE_KEYS.ACCEPTANCE_V1;
 
 export function hasAccepted(): boolean {
     return localStorage.getItem(STORAGE_KEY) === '1';

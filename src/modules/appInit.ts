@@ -20,6 +20,7 @@ import { fetchLocalPeaks } from './peaks';
 import { initTheme } from './theme';
 import { haptic } from './haptics';
 import { resolveMapTilerKey } from './config';
+import { STORAGE_KEYS } from '../constants/storage';
 
 import { NavigationBar } from './ui/components/NavigationBar';
 import { TopStatusBar } from './ui/components/TopStatusBar';
@@ -46,14 +47,14 @@ export async function appInit(): Promise<void> {
 
     // Charger la clé ORS depuis localStorage (v5.50.x)
     try {
-        const savedORSKey = localStorage.getItem('suntrail_ors_key');
+        const savedORSKey = localStorage.getItem(STORAGE_KEYS.ORS_KEY);
         if (savedORSKey && savedORSKey.length > 10) {
             state.ORS_KEY = savedORSKey;
         }
     } catch { /* ignore */ }
 
     // Initialiser RevenueCat en fire-and-forget
-    void iapService.initialize();
+    void iapService.initialize().catch(e => { if (state.DEBUG_MODE) console.warn('[IAP] Init failed', e); });
 
     // v5.29.35 : Résolution de la clé MapTiler et chargement du catalog des packs.
     await Promise.all([
@@ -742,7 +743,7 @@ function setupRouteBar(): void {
         const key = (document.getElementById('rs-ors-key') as HTMLInputElement)?.value.trim();
         if (key && key.length > 10) {
             state.ORS_KEY = key;
-            try { localStorage.setItem('suntrail_ors_key', key); } catch { /* ignore */ }
+            try { localStorage.setItem(STORAGE_KEYS.ORS_KEY, key); } catch { /* ignore */ }
             void showToast(i18n.t('routePlanner.toast.keySaved') || 'Clé ORS enregistrée');
         } else {
             void showToast(i18n.t('routePlanner.toast.invalidKey') || 'Clé invalide (minimum 10 caractères)');

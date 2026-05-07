@@ -5,6 +5,7 @@ import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { createReactiveState } from './ui/core/ReactiveState';
 import type { VRAMDashboard } from './ui/components/VRAMDashboard';
 import { LocationPoint } from './geo';
+import { STORAGE_KEYS } from '../constants/storage';
 
 export type PresetType = 'eco' | 'balanced' | 'performance' | 'ultra' | 'custom';
 
@@ -354,7 +355,7 @@ export interface SavedSettings {
     LAST_ZOOM?: number;
 }
 
-const SETTINGS_KEY = 'suntrail_settings';
+const SETTINGS_KEY = STORAGE_KEYS.SETTINGS;
 let saveTimeout: any = null;
 
 export function saveSettings(): void {
@@ -397,7 +398,7 @@ export function saveSettings(): void {
     }, 300);
 }
 
-const PRO_KEY = 'suntrail_pro';
+const PRO_KEY = STORAGE_KEYS.PRO;
 
 export function saveProStatus(): void {
     try {

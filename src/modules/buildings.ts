@@ -99,7 +99,7 @@ function renderBuildingsPBF(tile: Tile, buildings: any[]) {
 
                 geometries.push(createBuildingManualGeometry(processed, h, 10 * state.RELIEF_EXAGGERATION, baseAlt));
                 count++;
-            } catch (e) {}
+            } catch (e) { if (state.DEBUG_MODE) console.warn('[Buildings] Geometry failed', e); }
         }
     });
     finalizeBuildings(tile, geometries);
@@ -142,7 +142,7 @@ function createBuildingManualGeometry(rings: THREE.Vector2[][], height: number, 
             roof.deleteAttribute('uv');
             roof.deleteAttribute('normal');
             geometries.push(roof);
-        } catch (e) {}
+        } catch (e) { if (state.DEBUG_MODE) console.warn('[Buildings] ShapeGeometry failed', e); }
     }
 
     const v: number[] = [], idx: number[] = [];

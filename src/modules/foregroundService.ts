@@ -13,6 +13,7 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
 import { nativeGPSService } from './nativeGPSService';
+import { STORAGE_KEYS } from '../constants/storage';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface RecordingSnapshot {
@@ -22,7 +23,7 @@ interface RecordingSnapshot {
     originTile?: { x: number; y: number; z: number };
 }
 
-const SNAPSHOT_KEY = 'suntrail_rec_snapshot_v1';
+const SNAPSHOT_KEY = STORAGE_KEYS.REC_SNAPSHOT_V1;
 const POINTS_FILE  = 'suntrail_rec_points_v1.json';
 
 // ── API publique ───────────────────────────────────────────────────────────────

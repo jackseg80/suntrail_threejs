@@ -13,6 +13,7 @@ import { i18n } from '../i18n/I18nService';
 import gpxParser from 'gpxparser';
 import { startRecordingService, stopRecordingService } from './foregroundService';
 import { nativeGPSService } from './nativeGPSService';
+import { STORAGE_KEYS } from '../constants/storage';
 import { addGPXLayer, updateRecordedTrackMesh } from './gpxLayers';
 import { requestGPSDisclosure } from './gpsDisclosure';
 import { getPlaceName } from './geocodingService';
@@ -65,9 +66,9 @@ export class RecordingService {
         // Demander l'exemption batterie une seule fois (opt-in, dialogue Android)
         // Évite que Samsung/Xiaomi/OPPO tuent RecordingService pendant les longues randos
         if (Capacitor.isNativePlatform()) {
-            const asked = localStorage.getItem('suntrail_battery_exemption_asked');
+            const asked = localStorage.getItem(STORAGE_KEYS.BATTERY_EXEMPTION);
             if (!asked) {
-                localStorage.setItem('suntrail_battery_exemption_asked', '1');
+                localStorage.setItem(STORAGE_KEYS.BATTERY_EXEMPTION, '1');
                 void nativeGPSService.requestBatteryOptimizationExemption();
             }
         }

@@ -22,7 +22,7 @@ export function initMobileUI(): void {
         } else {
             window.history.back();
         }
-    }).catch(() => {});
+    }).catch(e => { if (state.DEBUG_MODE) console.warn('[Mobile] backButton listener failed', e); });
 
     // Gestion du cycle de vie Android (v5.25.0)
     // — Background : le natif continue d'enregistrer dans SQLite
@@ -53,5 +53,5 @@ export function initMobileUI(): void {
                 }
             }
         }
-    }).catch(() => {});
+    }).catch(e => { if (state.DEBUG_MODE) console.warn('[Mobile] appStateChange listener failed', e); });
 }

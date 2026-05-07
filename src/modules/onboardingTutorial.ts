@@ -10,8 +10,9 @@
 
 import { i18n } from '../i18n/I18nService';
 import { haptic } from './haptics';
+import { STORAGE_KEYS } from '../constants/storage';
 
-const ONBOARDING_KEY = 'suntrail_onboarding_v2';
+const ONBOARDING_KEY = STORAGE_KEYS.ONBOARDING_V2;
 
 interface Slide {
     type: 'tilt' | 'solar' | 'solar-analysis' | 'track' | 'expert' | 'safety';

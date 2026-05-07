@@ -18,7 +18,7 @@ vi.mock('./state', () => ({
     loadProStatus: vi.fn(),
 }));
 
-vi.mock('./iapService', () => ({ iapService: { initialize: vi.fn() } }));
+vi.mock('./iapService', () => ({ iapService: { initialize: vi.fn().mockResolvedValue(undefined) } }));
 vi.mock('./config', () => ({ resolveMapTilerKey: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('./scene', () => ({ initScene: vi.fn().mockResolvedValue(undefined), flyTo: vi.fn() }));
 vi.mock('./theme', () => ({ initTheme: vi.fn() }));

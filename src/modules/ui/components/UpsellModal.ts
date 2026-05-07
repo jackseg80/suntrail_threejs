@@ -1,13 +1,14 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { isProActive } from '../../state';
 import { sheetManager } from '../core/SheetManager';
+import { STORAGE_KEYS } from '../../../constants/storage';
 
 /**
  * UpsellModal.ts — Interstitiel de démarrage pour inciter au passage Pro.
  * S'affiche au boot (logique de fréquence localstorage).
  */
 export class UpsellModal extends BaseComponent {
-    private static readonly LAST_SHOW_KEY = 'suntrail_upsell_last_show';
+    private static readonly LAST_SHOW_KEY = STORAGE_KEYS.UPSELL_LAST_SHOW;
     private static readonly SHOW_INTERVAL_MS = 24 * 60 * 60 * 1000; // 1x par 24h
 
     constructor() {

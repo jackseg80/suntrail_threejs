@@ -19,7 +19,7 @@ const { mockRecording } = vi.hoisted(() => ({
         stopCourse: vi.fn().mockResolvedValue(undefined),
         getCurrentCourse: vi.fn().mockResolvedValue({ courseId: 'test-123', isRunning: false }),
         getPoints: vi.fn().mockResolvedValue({ points: [] }),
-        addListener: vi.fn(),
+        addListener: vi.fn().mockResolvedValue({ remove: vi.fn() }),
         removeAllListeners: vi.fn()
     }
 }));

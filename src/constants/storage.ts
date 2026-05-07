@@ -1,0 +1,16 @@
+export const STORAGE_KEYS = {
+    SETTINGS:               'suntrail_settings',
+    PRO:                    'suntrail_pro',
+    ORS_KEY:                'suntrail_ors_key',
+    ACCEPTANCE_V1:          'suntrail_acceptance_v1',
+    GPS_DISCLOSURE_V1:      'suntrail_gps_disclosure_v1',
+    ONBOARDING_V2:          'suntrail_onboarding_v2',
+    RECORDED_POINTS:        'suntrail_recorded_points',
+    CURRENT_COURSE_ID:      'suntrail_current_course_id',
+    RECORDING_START_TIME:   'suntrail_recording_start_time',
+    PACK_STATES:            'suntrail_pack_states',
+    PACK_CATALOG:           'suntrail_pack_catalog',
+    BATTERY_EXEMPTION:      'suntrail_battery_exemption_asked',
+    REC_SNAPSHOT_V1:        'suntrail_rec_snapshot_v1',
+    UPSELL_LAST_SHOW:       'suntrail_upsell_last_show',
+} as const;

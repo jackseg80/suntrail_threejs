@@ -25,6 +25,7 @@ class IAPService {
     private _initPromise: Promise<void> | null = null;
     private _webPurchases: any = null; // instance @revenuecat/purchases-js (web uniquement)
     private _visibilityHandler: (() => void) | null = null;
+    private _purchaseCleanup: (() => void) | null = null;
 
     /** Attend que l'init soit terminée (max 5s) */
     async waitForInit(timeoutMs = 5000): Promise<boolean> {
@@ -200,23 +201,32 @@ class IAPService {
                     const isProd = window.location.hostname !== 'localhost';
                     const base = isProd ? '/suntrail_threejs/' : '/';
                     const win = window.open(`${base}guest-purchase-modal.html`, '_blank', 'width=500,height=550');
-                    
+
+                    const cleanup = () => {
+                        clearInterval(checkClosed);
+                        window.removeEventListener('message', handler);
+                        window.removeEventListener('pagehide', cleanup);
+                        this._purchaseCleanup = null;
+                    };
+
                     const handler = (event: MessageEvent) => {
                         if (event.data.type === 'PURCHASE_GUEST_CONTINUE') {
                             resolved = true;
-                            window.removeEventListener('message', handler);
+                            cleanup();
                             resolve(true);
                         }
                     };
                     window.addEventListener('message', handler);
-                    
+
                     const checkClosed = setInterval(() => {
                         if (win?.closed) {
-                            clearInterval(checkClosed);
-                            window.removeEventListener('message', handler);
+                            cleanup();
                             if (!resolved) resolve(false);
                         }
                     }, 500);
+
+                    window.addEventListener('pagehide', cleanup, { once: true });
+                    this._purchaseCleanup = cleanup;
                 });
 
                 if (proceed !== true) {
@@ -497,6 +507,10 @@ class IAPService {
         if (this._visibilityHandler) {
             document.removeEventListener('visibilitychange', this._visibilityHandler);
             this._visibilityHandler = null;
+        }
+        if (this._purchaseCleanup) {
+            this._purchaseCleanup();
+            this._purchaseCleanup = null;
         }
     }
 }
