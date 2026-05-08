@@ -34,16 +34,37 @@ export function initMobileUI(): void {
         if (!url.startsWith('com.suntrail.threejs://login-callback')) return;
         try {
             const { Browser } = await import('@capacitor/browser');
-            await Browser.close();
-            const { supabase, authService } = await import('../authService');
+            const { supabase } = await import('../authService');
+
+            // Échanger le code pour une session
             const { error } = await supabase.auth.exchangeCodeForSession(url);
-            if (!error && authService.user?.id) {
-                const { iapService } = await import('../iapService');
-                await iapService.identify(authService.user.id);
+            if (error) {
+                if (state.DEBUG_MODE) console.error('[OAuth] exchangeCodeForSession failed:', error);
+                await Browser.close().catch(() => {});
+                return;
             }
-            window.location.reload();
+
+            // Vérifier que la session est bien établie
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !session?.user?.id) {
+                if (state.DEBUG_MODE) console.error('[OAuth] Session not established after exchange');
+                await Browser.close().catch(() => {});
+                return;
+            }
+
+            // Identifier à RevenueCat
+            const { iapService } = await import('../iapService');
+            await iapService.identify(session.user.id);
+
+            // Fermer le Chrome Custom Tab — cela revient à l'app native
+            await Browser.close();
+            // Ne PAS recharger — l'app reprend avec la session établie
         } catch (e) {
             if (state.DEBUG_MODE) console.error('[OAuth] Callback error', e);
+            try {
+                const { Browser } = await import('@capacitor/browser');
+                await Browser.close();
+            } catch {}
         }
     }).catch(e => { if (state.DEBUG_MODE) console.warn('[Mobile] appUrlOpen listener failed', e); });
 
