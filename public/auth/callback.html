@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>OAuth Callback</title>
+    <script>
+        const url = new URL(window.location);
+        const code = url.searchParams.get('code');
+        const state = url.searchParams.get('state');
+
+        if (code && state) {
+            // Rediriger vers le deep link avec les paramètres OAuth
+            window.location.href = `com.suntrail.threejs://auth-callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
+        } else {
+            // Fallback vers app.html si pas de paramètres
+            window.location.href = '/app.html';
+        }
+    </script>
+</head>
+<body>Redirecting...</body>
+</html>

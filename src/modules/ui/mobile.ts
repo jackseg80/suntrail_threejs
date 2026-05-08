@@ -29,9 +29,9 @@ export function initMobileUI(): void {
     // — Resume    : récupérer les nouveaux points depuis le natif
     let _wasRecordingWhenBackgrounded = false;
 
-    // OAuth Google — deep link de retour depuis Chrome Custom Tab
+    // OAuth Google — deep link de retour depuis Chrome Custom Tab (via Firebase redirect)
     App.addListener('appUrlOpen', async ({ url }) => {
-        if (!url.startsWith('com.suntrail.threejs://login-callback')) return;
+        if (!url.startsWith('com.suntrail.threejs://auth-callback')) return;
         try {
             const { Browser } = await import('@capacitor/browser');
             const { supabase } = await import('../authService');

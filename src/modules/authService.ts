@@ -78,7 +78,7 @@ export class AuthService {
         const isNative = Capacitor.isNativePlatform();
         const isProd = typeof window !== 'undefined' && window.location.hostname !== 'localhost';
         const redirectTo = isNative
-            ? 'com.suntrail.threejs://login-callback'
+            ? 'https://suntrail-491719.web.app/auth/callback'
             : `${window.location.origin}${isProd ? '/suntrail_threejs/' : '/'}app.html`;
 
         const opts = { provider: 'google' as const, options: { redirectTo, skipBrowserRedirect: isNative } };
