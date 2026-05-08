@@ -285,13 +285,33 @@
   <p>Sur Android, ces données sont isolées dans le <strong>bac à sable applicatif</strong> (sandbox) du système. Aucune autre application ne peut y accéder sans permission root. Elles sont exclues des sauvegardes Google Drive via la configuration <code>android:fullBackupContent</code>.</p>
   <p>Les communications réseau vers les services tiers utilisent exclusivement le protocole <strong>HTTPS</strong>. Le trafic HTTP en clair est bloqué au niveau système (<code>android:usesCleartextTraffic="false"</code>).</p>
 
-  <h2>6. Vos droits (RGPD / LPD)</h2>
+  <h2 id="account-deletion">6. Vos droits (RGPD / LPD) &amp; Suppression de compte</h2>
   <p>Conformément au Règlement Général sur la Protection des Données (RGPD) et à la Loi fédérale suisse sur la Protection des Données (LPD), vous disposez des droits suivants :</p>
+
+  <h3>Données stockées localement</h3>
+  <p>Vos préférences, tracés GPX, coordonnées GPS enregistrées et clé API MapTiler personnalisée sont stockés <strong>uniquement sur votre appareil</strong>. Vous pouvez les supprimer à tout moment via les paramètres de l'application ou en désinstallant l'app.</p>
+
+  <h3>Données de compte (Supabase Auth)</h3>
+  <p>Si vous créez un compte SunTrail, les informations suivantes sont stockées sur les serveurs de <a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase</a> (hébergement UE disponible) :</p>
   <ul>
-    <li><strong>Droit d'accès et de suppression</strong> : toutes vos données étant stockées localement sur votre appareil, vous pouvez les supprimer à tout moment via les paramètres de l'application ou en désinstallant l'app.</li>
-    <li><strong>Droit d'opposition</strong> : vous pouvez désactiver le GPS à tout moment via les paramètres Android.</li>
+    <li><strong>Adresse e-mail</strong> utilisée lors de l'inscription</li>
+    <li><strong>Identifiant utilisateur unique (UID)</strong> — utilisé pour synchroniser vos droits PRO via RevenueCat</li>
   </ul>
-  <p>Étant donné qu'aucune donnée personnelle n'est transmise à SunTrail, il n'est pas possible de soumettre une demande d'accès ou de suppression auprès du développeur — il n'y a tout simplement rien à supprimer de notre côté.</p>
+
+  <h3>Supprimer votre compte</h3>
+  <p>Vous pouvez supprimer votre compte et toutes les données associées directement depuis l'application :</p>
+  <ol>
+    <li>Ouvrez <strong>Réglages</strong> (onglet en bas de l'écran)</li>
+    <li>Dans la section <strong>Compte</strong>, appuyez sur <strong>Supprimer mon compte</strong></li>
+    <li>Confirmez la suppression dans la boîte de dialogue</li>
+  </ol>
+  <p>La suppression est <strong>immédiate et irréversible</strong>. Elle efface votre compte Supabase et l'identifiant de session RevenueCat. Elle <strong>ne résilie pas</strong> votre abonnement Google Play — pour l'annuler, accédez à Google Play → Paramètres → Abonnements.</p>
+
+  <h3>Autres droits</h3>
+  <ul>
+    <li><strong>Droit d'opposition</strong> : vous pouvez désactiver le GPS à tout moment via les paramètres Android.</li>
+    <li><strong>Droit d'accès</strong> : pour toute demande relative à vos données, contactez-nous via GitHub (voir section 9).</li>
+  </ul>
 
   <h2>7. Enfants</h2>
   <p>SunTrail 3D ne collecte pas sciemment de données provenant d'enfants de moins de 13 ans. L'application ne requiert aucune inscription ni saisie de données personnelles.</p>
@@ -304,7 +324,7 @@
   <p><strong>Développeur</strong> : Jacques Segalla<br>
   <strong>GitHub</strong> : <a href="https://github.com/jackseg80/suntrail_threejs" target="_blank" rel="noopener">github.com/jackseg80/suntrail_threejs</a></p>
 
-  <div class="date">Dernière mise à jour : avril 2026</div>
+  <div class="date">Dernière mise à jour : mai 2026</div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ ENGLISH -->

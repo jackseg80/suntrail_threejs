@@ -94,12 +94,33 @@ vi.mock('@supabase/supabase-js', () => ({
         auth: {
             getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
             onAuthStateChange: vi.fn((_cb) => {
-                // On peut simuler des changements d'état ici si besoin
                 return { data: { subscription: { unsubscribe: vi.fn() } } };
             }),
             signInWithPassword: vi.fn(),
             signUp: vi.fn(),
             signOut: vi.fn(),
-        }
+            signInWithOAuth: vi.fn().mockResolvedValue({ data: { url: 'https://oauth.example.com' }, error: null }),
+            linkIdentity: vi.fn().mockResolvedValue({ data: { url: 'https://oauth.example.com' }, error: null }),
+            exchangeCodeForSession: vi.fn().mockResolvedValue({ data: {}, error: null }),
+        },
+        rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
     }))
+}));
+
+// Global mock for @capacitor/core
+vi.mock('@capacitor/core', () => ({
+    Capacitor: {
+        isNativePlatform: vi.fn(() => false),
+        getPlatform: vi.fn(() => 'web'),
+        isPluginAvailable: vi.fn(() => false),
+    },
+    registerPlugin: vi.fn(() => ({})),
+}));
+
+// Global mock for @capacitor/browser
+vi.mock('@capacitor/browser', () => ({
+    Browser: {
+        open: vi.fn().mockResolvedValue(undefined),
+        close: vi.fn().mockResolvedValue(undefined),
+    },
 }));

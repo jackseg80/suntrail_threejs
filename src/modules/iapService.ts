@@ -89,22 +89,26 @@ class IAPService {
      * et fusionne les achats anonymes existants si nécessaire.
      */
     public async identify(supabaseUserId: string): Promise<void> {
-        const webKey = import.meta.env.VITE_REVENUECAT_WEB_KEY as string | undefined;
-        if (!webKey) return;
-        
-        try {
-            if (state.DEBUG_MODE) console.log(`[IAP] Identification RevenueCat : ${supabaseUserId}`);
-            
-            // Sur le Web, pour changer d'ID tout en gardant l'instance partagée
-            // on re-configure le SDK. RevenueCat gère la fusion des droits si l'ID précédent
-            // avait des achats actifs sur ce même navigateur.
-            const { Purchases: PurchasesWeb } = await import('@revenuecat/purchases-js');
-            PurchasesWeb.configure({ apiKey: webKey, appUserId: supabaseUserId });
-            
-            this._webPurchases = PurchasesWeb.getSharedInstance();
-            await this.syncProStatus();
-        } catch (e) {
-            console.error('[IAP] Échec identification :', e);
+        if (state.DEBUG_MODE) console.log(`[IAP] Identification RevenueCat : ${supabaseUserId}`);
+
+        if (!Capacitor.isNativePlatform()) {
+            const webKey = import.meta.env.VITE_REVENUECAT_WEB_KEY as string | undefined;
+            if (!webKey) return;
+            try {
+                const { Purchases: PurchasesWeb } = await import('@revenuecat/purchases-js');
+                PurchasesWeb.configure({ apiKey: webKey, appUserId: supabaseUserId });
+                this._webPurchases = PurchasesWeb.getSharedInstance();
+                await this.syncProStatus();
+            } catch (e) {
+                console.error('[IAP] Échec identification web :', e);
+            }
+        } else {
+            try {
+                await Purchases.logIn({ appUserID: supabaseUserId });
+                await this.syncProStatus();
+            } catch (e) {
+                console.error('[IAP] Échec identification native :', e);
+            }
         }
     }
 

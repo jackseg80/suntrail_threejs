@@ -4,6 +4,7 @@ const { mockPurchases, mockCapacitor } = vi.hoisted(() => ({
     mockPurchases: {
         setLogLevel: vi.fn(),
         configure: vi.fn(),
+        logIn: vi.fn(),
         getCustomerInfo: vi.fn(),
         addCustomerInfoUpdateListener: vi.fn(),
         getOfferings: vi.fn(),
@@ -313,13 +314,26 @@ describe('IAPService - Blindage (v5.29.36)', () => {
     it('updateStateFromCustomerInfo doit révoquer si on passe de Pro à non-Pro', async () => {
         state.isPro = true;
         await iapService.initialize();
-        
+
         // Simuler un retour customerInfo sans entitlement actif
         const customerInfo = { entitlements: { active: {} } };
         // On accède à la méthode privée via bypass TS
         (iapService as any).updateStateFromCustomerInfo(customerInfo);
-        
+
         expect(revokeProAccess).toHaveBeenCalled();
         expect(state.isPro).toBe(false);
+    });
+
+    // --- identify() natif ---
+
+    it('identify — native: appelle Purchases.logIn avec le supabaseUserId', async () => {
+        mockCapacitor.isNativePlatform.mockReturnValue(true);
+        mockPurchases.logIn.mockResolvedValue({ customerInfo: { entitlements: { active: {} } }, created: false });
+        mockPurchases.getCustomerInfo.mockResolvedValue({ customerInfo: { entitlements: { active: {} } } });
+        await iapService.initialize();
+
+        await iapService.identify('supabase-uid-test');
+
+        expect(mockPurchases.logIn).toHaveBeenCalledWith({ appUserID: 'supabase-uid-test' });
     });
 });

@@ -18,6 +18,10 @@
         </div>
         <!-- Bouton action -->
         <button id="account-action-btn" style="width: 100%; padding: 11px 16px; border: none; border-top: 1px solid var(--border); background: linear-gradient(135deg, var(--accent) 0%, var(--accent-btn) 100%); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; letter-spacing: 0.2px;"></button>
+        <!-- Bouton suppression compte (visible uniquement si connecté) -->
+        <button id="account-delete-btn" style="display:none; width:100%; padding:10px 16px; border:none; border-top:1px solid var(--border); background:rgba(239,68,68,0.12); color:#ef4444; font-size:13px; font-weight:500; cursor:pointer;" data-i18n="settings.account.deleteAccount">Supprimer mon compte</button>
+        <!-- Bouton liaison Google — visible quand connecté ET Google pas encore lié -->
+        <button id="account-link-google-btn" style="display:none; width:100%; padding:10px 16px; border:none; border-top:1px solid var(--border); background:var(--surface-subtle); color:var(--text-1); font-size:13px; font-weight:500; cursor:pointer; align-items:center; justify-content:center; gap:8px;" data-i18n="settings.account.linkGoogle">Lier mon compte Google</button>
     </div>
     
     <div class="section-label" data-i18n="settings.section.presets">Profil de performance</div>

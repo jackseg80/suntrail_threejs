@@ -29,6 +29,24 @@ export function initMobileUI(): void {
     // — Resume    : récupérer les nouveaux points depuis le natif
     let _wasRecordingWhenBackgrounded = false;
 
+    // OAuth Google — deep link de retour depuis Chrome Custom Tab
+    App.addListener('appUrlOpen', async ({ url }) => {
+        if (!url.startsWith('com.suntrail.threejs://login-callback')) return;
+        try {
+            const { Browser } = await import('@capacitor/browser');
+            await Browser.close();
+            const { supabase, authService } = await import('../authService');
+            const { error } = await supabase.auth.exchangeCodeForSession(url);
+            if (!error && authService.user?.id) {
+                const { iapService } = await import('../iapService');
+                await iapService.identify(authService.user.id);
+            }
+            window.location.reload();
+        } catch (e) {
+            if (state.DEBUG_MODE) console.error('[OAuth] Callback error', e);
+        }
+    }).catch(e => { if (state.DEBUG_MODE) console.warn('[Mobile] appUrlOpen listener failed', e); });
+
     App.addListener('appStateChange', async ({ isActive }) => {
         if (!isActive) {
             // App passe en background

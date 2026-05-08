@@ -13,7 +13,6 @@ import { sheetManager } from '../core/SheetManager';
 import { eventBus } from '../../eventBus';
 import { iapService } from '../../iapService';
 import { authService } from '../../authService';
-import { Capacitor } from '@capacitor/core';
 import { showToast } from '../../toast';
 import { haptic } from '../../haptics';
 import { showUpgradePrompt, isProActive } from '../../iap';
@@ -27,15 +26,8 @@ export class SettingsSheet extends BaseComponent {
     public render(): void {
         if (!this.element) return;
 
-        // Account management (Web only for now)
-        if (!Capacitor.isNativePlatform()) {
-            this.updateAccountSection();
-        } else {
-            const accSec = this.element.querySelector('#account-section') as HTMLElement;
-            const accLabel = this.element.querySelector('[data-i18n="settings.section.account"]') as HTMLElement;
-            if (accSec) accSec.style.display = 'none';
-            if (accLabel) accLabel.style.display = 'none';
-        }
+        // Account management (Web + Native — requis Play Store RGPD)
+        this.updateAccountSection();
 
         // Close panel
         const closePanel = this.element.querySelector('#close-panel');
@@ -195,6 +187,9 @@ export class SettingsSheet extends BaseComponent {
 
         if (!statusEl || !emailEl || !btn) return;
 
+        const deleteBtn = this.element.querySelector('#account-delete-btn') as HTMLButtonElement | null;
+        const linkGoogleBtn = this.element.querySelector('#account-link-google-btn') as HTMLButtonElement | null;
+
         if (authService.isAuthenticated) {
             if (avatarEl) avatarEl.innerHTML = ICON_CHECK;
             btn.style.background = 'var(--surface-subtle)';
@@ -207,6 +202,34 @@ export class SettingsSheet extends BaseComponent {
                 await authService.signOut();
                 window.location.reload();
             };
+            if (deleteBtn) {
+                deleteBtn.style.display = 'block';
+                deleteBtn.textContent = i18n.t('settings.account.deleteAccount') || 'Supprimer mon compte';
+                deleteBtn.onclick = async () => {
+                    const confirmed = confirm(i18n.t('settings.account.deleteConfirmMsg') || 'Supprimer définitivement votre compte et vos données ? Cette action ne résilie pas votre abonnement. Irréversible.');
+                    if (!confirmed) return;
+                    const { error } = await authService.deleteAccount();
+                    if (error) {
+                        showToast(i18n.t('settings.account.deleteError') || 'Erreur lors de la suppression.', 4000);
+                    } else {
+                        window.location.reload();
+                    }
+                };
+            }
+            if (linkGoogleBtn) {
+                const alreadyLinked = authService.isGoogleLinked();
+                linkGoogleBtn.style.display = alreadyLinked ? 'none' : 'flex';
+                if (!alreadyLinked) {
+                    linkGoogleBtn.textContent = i18n.t('settings.account.linkGoogle') || 'Lier mon compte Google';
+                    linkGoogleBtn.onclick = async () => {
+                        try {
+                            await authService.linkGoogleAccount();
+                        } catch (e) {
+                            showToast(i18n.t('settings.account.deleteError') || 'Erreur de liaison.', 3000);
+                        }
+                    };
+                }
+            }
         } else {
             if (avatarEl) avatarEl.innerHTML = ICON_USER;
             btn.style.background = 'linear-gradient(135deg, var(--accent) 0%, var(--accent-btn) 100%)';
@@ -214,12 +237,16 @@ export class SettingsSheet extends BaseComponent {
             btn.style.borderTop = '1px solid transparent';
             statusEl.textContent = i18n.t('settings.account.guest') || 'Mode Invité';
             emailEl.textContent = i18n.t('settings.account.loginHint') || 'Connectez-vous pour synchroniser Pro';
-            btn.innerHTML = `${ICON_LOG_IN}<span>${i18n.t('settings.account.login') || 'Se connecter / S\'inscrire'}</span>`;
-            btn.onclick = () => {
-                const isProd = window.location.hostname !== 'localhost';
-                const base = isProd ? '/suntrail_threejs/' : '/';
-                window.location.href = base + 'login.html';
+            btn.innerHTML = `${ICON_LOG_IN}<span>${i18n.t('settings.account.continueWithGoogle') || 'Continuer avec Google'}</span>`;
+            btn.onclick = async () => {
+                try {
+                    await authService.signInWithGoogle();
+                } catch (e) {
+                    showToast(i18n.t('settings.account.deleteError') || 'Erreur de connexion.', 3000);
+                }
             };
+            if (deleteBtn) deleteBtn.style.display = 'none';
+            if (linkGoogleBtn) linkGoogleBtn.style.display = 'none';
         }
     }
 

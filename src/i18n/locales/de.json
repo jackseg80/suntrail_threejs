@@ -217,7 +217,13 @@
       "guest": "Gastmodus",
       "logout": "Abmelden",
       "login": "Anmelden",
-      "loginHint": "Melden Sie sich an, um Pro zu synchronisieren"
+      "loginHint": "Melden Sie sich an, um Pro zu synchronisieren",
+      "deleteAccount": "SunTrail-Konto löschen",
+      "deleteConfirmMsg": "Konto und alle Daten dauerhaft löschen? Hinweis: Diese Aktion kündigt Ihr Google Play-Abonnement nicht. Um es zu kündigen, gehen Sie zu Google Play-Einstellungen → Abonnements. Diese Aktion ist unwiderruflich.",
+      "deleteError": "Fehler beim Löschen. Bitte erneut versuchen oder Support kontaktieren.",
+      "continueWithGoogle": "Mit Google fortfahren",
+      "linkGoogle": "Google-Konto verknüpfen",
+      "linkGoogleSuccess": "Google-Konto verknüpft"
     },
     "legal": {
       "disclaimer": "SunTrail 3D ist eine unabhängige App ohne Verbindung zu einer Behörde (weder swisstopo noch IGN). Kartendaten stammen von offiziellen Open-Data-Anbietern gemäß deren jeweiliger Lizenz.",

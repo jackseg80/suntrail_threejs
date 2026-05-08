@@ -156,7 +156,13 @@
       "guest": "Mode Invité",
       "logout": "Se déconnecter",
       "login": "Se connecter / S'inscrire",
-      "loginHint": "Connectez-vous pour synchroniser Pro"
+      "loginHint": "Connectez-vous pour synchroniser Pro",
+      "deleteAccount": "Supprimer mon compte SunTrail",
+      "deleteConfirmMsg": "Supprimer définitivement votre compte et vos données ? Note : cette action ne résilie pas votre abonnement Google Play. Pour l'annuler, allez dans Paramètres Google Play → Abonnements. Cette action est irréversible.",
+      "deleteError": "Erreur lors de la suppression. Réessayez ou contactez le support.",
+      "continueWithGoogle": "Continuer avec Google",
+      "linkGoogle": "Lier mon compte Google",
+      "linkGoogleSuccess": "Compte Google lié avec succès"
     },
     "pro": {
       "description": "Débloquez toutes les fonctionnalités premium avec SunTrail Pro",
