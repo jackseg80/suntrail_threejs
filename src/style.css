@@ -109,8 +109,21 @@ body.high-quality-ui {
     --overlay-bg: rgba(0, 0, 0, 0.2);
 }
 
+/* On mobile, increase opacity to 97% to barely see the background and improve legibility */
+@media (max-width: 600px) {
+    body.high-quality-ui {
+        --surface-solid: rgba(18, 22, 34, 0.97);
+    }
+}
+
 [data-theme="light"] body.high-quality-ui {
     --surface-solid: rgba(255, 255, 255, 0.72);
+}
+
+@media (max-width: 600px) {
+    [data-theme="light"] body.high-quality-ui {
+        --surface-solid: rgba(255, 255, 255, 0.97);
+    }
 }
 
 body.high-quality-ui .bottom-sheet,
