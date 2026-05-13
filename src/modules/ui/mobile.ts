@@ -29,17 +29,42 @@ export function initMobileUI(): void {
     // — Resume    : récupérer les nouveaux points depuis le natif
     let _wasRecordingWhenBackgrounded = false;
 
-    // OAuth Google — deep link de retour depuis Chrome Custom Tab (via Firebase redirect)
+    // OAuth Google — deep link de retour depuis Chrome Custom Tab
     App.addListener('appUrlOpen', async ({ url }) => {
         if (!url.startsWith('com.suntrail.threejs://auth-callback')) return;
         try {
             const { Browser } = await import('@capacitor/browser');
             const { supabase } = await import('../authService');
 
-            // Échanger le code pour une session
-            const { error } = await supabase.auth.exchangeCodeForSession(url);
+            // Extract tokens from both query params (Code Flow) and hash fragment (Implicit Flow)
+            const urlObj = new URL(url);
+            let accessToken = urlObj.searchParams.get('access_token');
+            let refreshToken = urlObj.searchParams.get('refresh_token');
+
+            // If not found in query params, try hash fragment
+            if (!accessToken && url.includes('#')) {
+                const hashPart = url.split('#')[1];
+                const hashParams = new URLSearchParams(hashPart);
+                accessToken = hashParams.get('access_token');
+                refreshToken = hashParams.get('refresh_token');
+            }
+
+            let error;
+            if (accessToken && refreshToken) {
+                // Implicit Flow — tokens directs reçus du callback
+                const { error: setError } = await supabase.auth.setSession({
+                    access_token: accessToken,
+                    refresh_token: refreshToken
+                });
+                error = setError;
+            } else {
+                // Code Flow — échanger code pour session
+                const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(url);
+                error = exchangeError;
+            }
+
             if (error) {
-                if (state.DEBUG_MODE) console.error('[OAuth] exchangeCodeForSession failed:', error);
+                if (state.DEBUG_MODE) console.error('[OAuth] Auth failed:', error);
                 await Browser.close().catch(() => {});
                 return;
             }
@@ -47,7 +72,7 @@ export function initMobileUI(): void {
             // Vérifier que la session est bien établie
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
             if (sessionError || !session?.user?.id) {
-                if (state.DEBUG_MODE) console.error('[OAuth] Session not established after exchange');
+                if (state.DEBUG_MODE) console.error('[OAuth] Session not established');
                 await Browser.close().catch(() => {});
                 return;
             }
@@ -56,9 +81,8 @@ export function initMobileUI(): void {
             const { iapService } = await import('../iapService');
             await iapService.identify(session.user.id);
 
-            // Fermer le Chrome Custom Tab — cela revient à l'app native
+            // Fermer le Chrome Custom Tab — revient à l'app native
             await Browser.close();
-            // Ne PAS recharger — l'app reprend avec la session établie
         } catch (e) {
             if (state.DEBUG_MODE) console.error('[OAuth] Callback error', e);
             try {

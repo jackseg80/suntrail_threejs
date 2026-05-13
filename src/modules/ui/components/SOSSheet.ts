@@ -72,16 +72,21 @@ export class SOSSheet extends BaseComponent {
         if (!textContainer) return;
 
         textContainer.textContent = "⌛ Localisation en cours...";
-        
-        const message = await expertService.generateSOSMessage();
-        textContainer.textContent = message;
 
-        const smsBtn = document.getElementById('sos-sms-btn') as HTMLButtonElement | null;
-        if (smsBtn) {
-            smsBtn.disabled = false;
-            smsBtn.onclick = () => {
-                window.open(`sms:?body=${encodeURIComponent(message)}`);
-            };
+        try {
+            const message = await expertService.generateSOSMessage();
+            textContainer.textContent = message;
+
+            const smsBtn = document.getElementById('sos-sms-btn') as HTMLButtonElement | null;
+            if (smsBtn) {
+                smsBtn.disabled = false;
+                smsBtn.onclick = () => {
+                    window.open(`sms:?body=${encodeURIComponent(message)}`);
+                };
+            }
+        } catch (e) {
+            textContainer.textContent = "Erreur lors de la génération du message SOS";
+            console.error('[SOS] Failed to generate message:', e);
         }
     }
 }

@@ -6,6 +6,7 @@ import { tileWorkerManager } from './workerManager';
 import { disposeAllCachedTiles } from './tileCache';
 import * as pmtiles from 'pmtiles';
 import { packManager } from './packManager';
+import { STORAGE_KEYS } from '../constants/storage';
 import type { TileWorkerResponse } from '../types/worker';
 
 export const CACHE_NAME = 'suntrail-tiles-v30';
@@ -416,16 +417,14 @@ export function cancelTileLoad(taskId: number): void {
 
 // ── Offline zone helpers ─────────────────────────────────────────────────────
 
-const OFFLINE_ZONES_KEY = 'suntrail-offline-zones-count';
-
 /** Nombre de zones hors-ligne téléchargées (toutes sessions confondues). */
 export function getOfflineZoneCount(): number {
-    return parseInt(localStorage.getItem(OFFLINE_ZONES_KEY) ?? '0', 10);
+    return parseInt(localStorage.getItem(STORAGE_KEYS.OFFLINE_ZONES_COUNT) ?? '0', 10);
 }
 
 /** Incrémente le compteur de zones téléchargées. */
 export function incrementOfflineZoneCount(): void {
-    localStorage.setItem(OFFLINE_ZONES_KEY, String(getOfflineZoneCount() + 1));
+    localStorage.setItem(STORAGE_KEYS.OFFLINE_ZONES_COUNT, String(getOfflineZoneCount() + 1));
 }
 
 /**

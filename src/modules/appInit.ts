@@ -172,7 +172,12 @@ async function launchScene() {
                 if (available) hideOfflineMsg(); else showOfflineMsg();
             });
 
+            let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+            let safetyTimer: ReturnType<typeof setTimeout> | null = null;
+
             const hideOverlay = () => {
+                if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
+                if (safetyTimer) { clearTimeout(safetyTimer); safetyTimer = null; }
                 mapOverlay.classList.add('fade-out');
                 setTimeout(() => { mapOverlay.style.display = 'none'; }, 300);
                 unsubNet();
@@ -183,8 +188,8 @@ async function launchScene() {
                 if (!processing && tilesStarted) { hideOverlay(); unsub(); }
             });
 
-            setTimeout(() => { if (!tilesStarted) { hideOverlay(); unsub(); } }, 2000);
-            setTimeout(() => { if (mapOverlay.classList.contains('visible')) hideOverlay(); }, 15000);
+            fallbackTimer = setTimeout(() => { if (!tilesStarted) { hideOverlay(); unsub(); } }, 2000);
+            safetyTimer = setTimeout(() => { if (mapOverlay.classList.contains('visible')) hideOverlay(); }, 15000);
         }
     }, { once: true });
 

@@ -1,5 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type User, type Session } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
+import { STORAGE_KEYS } from '../constants/storage';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -13,7 +14,7 @@ export interface UserProfile {
 
 export class AuthService {
     private _user: UserProfile | null = null;
-    private _rawUser: any = null;
+    private _rawUser: User | null = null;
     private _initialized = false;
     private _initPromise: Promise<void> | null = null;
 
@@ -27,6 +28,11 @@ export class AuthService {
     }
 
     private async init() {
+        // Register listener BEFORE getSession to catch initial SIGNED_IN event
+        supabase.auth.onAuthStateChange((_event, session) => {
+            this._setUserFromSession(session);
+        });
+
         try {
             const { data: { session } } = await supabase.auth.getSession();
             this._setUserFromSession(session);
@@ -35,13 +41,9 @@ export class AuthService {
         }
 
         this._initialized = true;
-
-        supabase.auth.onAuthStateChange((_event, session) => {
-            this._setUserFromSession(session);
-        });
     }
 
-    private _setUserFromSession(session: any) {
+    private _setUserFromSession(session: Session | null) {
         if (session?.user) {
             this._rawUser = session.user;
             this._user = {
@@ -66,6 +68,7 @@ export class AuthService {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
         this._user = null;
+        this._rawUser = null;
     }
 
     async getSession() {
@@ -76,10 +79,8 @@ export class AuthService {
 
     private async _openGoogleOAuth(method: 'signInWithOAuth' | 'linkIdentity'): Promise<void> {
         const isNative = Capacitor.isNativePlatform();
-        const isProd = typeof window !== 'undefined' && window.location.hostname !== 'localhost';
-        const redirectTo = isNative
-            ? 'https://suntrail-491719.web.app/auth/callback'
-            : `${window.location.origin}${isProd ? '/suntrail_threejs/' : '/'}app.html`;
+        const isProd = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const redirectTo = `${window.location.origin}${isProd ? '/suntrail_threejs/' : '/'}app.html`;
 
         const opts = { provider: 'google' as const, options: { redirectTo, skipBrowserRedirect: isNative } };
         const result = method === 'signInWithOAuth'
@@ -88,9 +89,9 @@ export class AuthService {
 
         if (result.error) throw result.error;
 
-        if (isNative && (result.data as any)?.url) {
+        if (isNative && result.data?.url) {
             const { Browser } = await import('@capacitor/browser');
-            await Browser.open({ url: (result.data as any).url });
+            await Browser.open({ url: result.data.url });
         }
     }
 
@@ -103,16 +104,20 @@ export class AuthService {
     }
 
     isGoogleLinked(): boolean {
-        return this._rawUser?.identities?.some((i: any) => i.provider === 'google') ?? false;
+        return this._rawUser?.identities?.some((i: { provider: string }) => i.provider === 'google') ?? false;
     }
 
     async deleteAccount(): Promise<{ error: Error | null }> {
-        const { error } = await supabase.rpc('delete_user_account');
-        if (!error) {
+        try {
+            const { error } = await supabase.rpc('delete_user_account');
+            if (error) return { error: error as Error };
+
             await this.signOut();
-            localStorage.removeItem('rc_web_user_id');
+            localStorage.removeItem(STORAGE_KEYS.RC_WEB_USER_ID);
+            return { error: null };
+        } catch (e) {
+            return { error: e instanceof Error ? e : new Error(String(e)) };
         }
-        return { error: error as Error | null };
     }
 }
 

@@ -1,6 +1,7 @@
 import { sheetManager } from './core/SheetManager';
 
 let hideTimer: ReturnType<typeof setTimeout> | null = null;
+let _isInitialized = false;
 
 const hideUI = () => {
     if (sheetManager.getActiveSheetId() === null) {
@@ -17,6 +18,10 @@ const resetTimer = () => {
 };
 
 export const initAutoHide = () => {
+    // Idempotence: only initialize once
+    if (_isInitialized) return;
+    _isInitialized = true;
+
     // Initial setup: hide UI after 5 seconds if no interaction
     resetTimer();
 
@@ -25,4 +30,16 @@ export const initAutoHide = () => {
     window.addEventListener('mousemove', resetTimer);
     window.addEventListener('touchstart', resetTimer);
     window.addEventListener('keydown', resetTimer);
+};
+
+export const cleanupAutoHide = () => {
+    _isInitialized = false;
+    if (hideTimer) {
+        clearTimeout(hideTimer);
+        hideTimer = null;
+    }
+    window.removeEventListener('mousedown', resetTimer);
+    window.removeEventListener('mousemove', resetTimer);
+    window.removeEventListener('touchstart', resetTimer);
+    window.removeEventListener('keydown', resetTimer);
 };

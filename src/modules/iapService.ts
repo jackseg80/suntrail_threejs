@@ -12,6 +12,7 @@ import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor';
 import { Capacitor } from '@capacitor/core';
 import { state } from './state';
 import { grantProAccess, revokeProAccess } from './iap';
+import { STORAGE_KEYS } from '../constants/storage';
 
 const ENTITLEMENT_ID = 'SunTrail 3D Pro';
 
@@ -494,11 +495,10 @@ class IAPService {
 
     /** ID anonyme stable pour le SDK web (persisted in localStorage) */
     private _getOrCreateWebUserId(): string {
-        const key = 'rc_web_user_id';
-        let id = localStorage.getItem(key);
+        let id = localStorage.getItem(STORAGE_KEYS.RC_WEB_USER_ID);
         if (!id) {
             id = 'web_' + Math.random().toString(36).slice(2, 9) + '_' + Date.now().toString(36);
-            localStorage.setItem(key, id);
+            localStorage.setItem(STORAGE_KEYS.RC_WEB_USER_ID, id);
         }
         return id;
     }

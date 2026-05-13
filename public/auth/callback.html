@@ -3,19 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <title>OAuth Callback</title>
-    <script>
-        const url = new URL(window.location);
-        const code = url.searchParams.get('code');
-        const state = url.searchParams.get('state');
-
-        if (code && state) {
-            // Rediriger vers le deep link avec les paramètres OAuth
-            window.location.href = `com.suntrail.threejs://auth-callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
-        } else {
-            // Fallback vers app.html si pas de paramètres
-            window.location.href = '/app.html';
-        }
-    </script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; text-align: center; padding: 40px 20px; background: #f5f5f5; }
+        .container { max-width: 400px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        p { color: #666; margin: 20px 0; }
+        a { display: inline-block; margin-top: 20px; padding: 12px 24px; background: #0066cc; color: white; text-decoration: none; border-radius: 6px; font-weight: 500; }
+        a:hover { background: #0052a3; }
+    </style>
 </head>
-<body>Redirecting...</body>
+<body>
+    <div class="container">
+        <p>Authentication in progress...</p>
+        <a id="continue-link">Continue to SunTrail</a>
+    </div>
+
+    <script>
+        // Extraire tokens du hash ou code du search
+        const hash = window.location.hash.substring(1);
+        const search = window.location.search.substring(1);
+        const params = new URLSearchParams(hash || search);
+
+        // Stocker les tokens dans localStorage pour la communication interprocessus
+        if (hash) {
+            // Implicit Flow — tokens directs
+            try {
+                localStorage.setItem('__oauth_hash', hash);
+                localStorage.setItem('oauth_timestamp', Date.now().toString());
+            } catch (e) {
+                console.error('Failed to store OAuth hash:', e);
+            }
+        }
+
+        // Construire le deep link avec les paramètres
+        let deepLinkUrl = 'com.suntrail.threejs://auth-callback';
+        if (hash || search) {
+            deepLinkUrl += '?' + (hash || search);
+        }
+
+        // Configurer le lien pour redirection
+        const link = document.getElementById('continue-link');
+        link.href = deepLinkUrl;
+
+        // Essayer de cliquer automatiquement
+        setTimeout(() => {
+            link.click();
+        }, 100);
+
+        // Fallback: afficher le lien et redirection après 2s
+        setTimeout(() => {
+            // Redirection universelle en fallback (web et natif)
+            if (hash || search) {
+                // Deep link pour natif (Android)
+                window.location.href = deepLinkUrl;
+            } else {
+                // Pas de tokens, redirection web vers app.html
+                window.location.href = '/app.html';
+            }
+        }, 2000);
+    </script>
+</body>
 </html>

@@ -6,16 +6,20 @@ import { getAltitudeAt } from './analysis';
 
 let watchId: string | null = null;
 let _originTileUnsub: (() => void) | null = null;
+let _orientationHandler: ((event: DeviceOrientationEvent) => void) | null = null;
 
 /**
  * DÉTECTION ORIENTATION MOBILE (v5.5.14)
  * Implémentation d'un filtre passe-bas pour la stabilité Swisstopo.
  */
 function initOrientationTracking() {
-    const handleOrientation = (event: DeviceOrientationEvent) => {
+    // Avoid adding multiple listeners if called more than once
+    if (_orientationHandler !== null) return;
+
+    _orientationHandler = (event: DeviceOrientationEvent) => {
         let rawHeading = event.webkitCompassHeading || event.alpha;
         if (event.absolute && event.alpha !== null) rawHeading = 360 - event.alpha;
-        
+
         if (rawHeading !== undefined && rawHeading !== null) {
             // --- FILTRAGE PASSE-BAS (Lissage Swisstopo) ---
             if (state.userHeading === null) {
@@ -25,10 +29,10 @@ function initOrientationTracking() {
                 // Correction du passage 0/360°
                 if (diff > 180) diff -= 360;
                 if (diff < -180) diff += 360;
-                
+
                 // On applique un lissage de 10% (très stable)
                 state.userHeading += diff * 0.1;
-                
+
                 // Normalisation 0-360
                 if (state.userHeading < 0) state.userHeading += 360;
                 if (state.userHeading >= 360) state.userHeading -= 360;
@@ -39,10 +43,12 @@ function initOrientationTracking() {
 
     if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
         (DeviceOrientationEvent as any).requestPermission().then((res: string) => {
-            if (res === 'granted') window.addEventListener('deviceorientationabsolute', handleOrientation as any);
+            if (res === 'granted' && _orientationHandler) {
+                window.addEventListener('deviceorientationabsolute', _orientationHandler as any);
+            }
         });
     } else {
-        window.addEventListener('deviceorientationabsolute', handleOrientation as any);
+        window.addEventListener('deviceorientationabsolute', _orientationHandler as any);
     }
 }
 
@@ -84,6 +90,10 @@ export function stopLocationTracking() {
     if (watchId !== null) {
         Geolocation.clearWatch({ id: watchId });
         watchId = null;
+    }
+    if (_orientationHandler) {
+        window.removeEventListener('deviceorientationabsolute', _orientationHandler as any);
+        _orientationHandler = null;
     }
     if (_originTileUnsub) { _originTileUnsub(); _originTileUnsub = null; }
 }

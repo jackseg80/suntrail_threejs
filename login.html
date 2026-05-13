@@ -2,8 +2,63 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0;url=app.html">
-    <title>SunTrail 3D</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SunTrail - OAuth Callback</title>
+    <style>
+        body { font-family: system-ui, sans-serif; text-align: center; padding: 40px; background: #030712; color: #f9fafb; }
+        p { margin-top: 40px; color: #9ca3af; }
+    </style>
 </head>
-<body></body>
+<body>
+    <p>Establishing session...</p>
+
+    <script type="module">
+        // Importer Supabase
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/+esm';
+
+        // Créer le client Supabase
+        const supabaseUrl = 'https://esennvviieylqhbleqdv.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzZW5udnZpaWV5bHFoYmxlcWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDk3NDk1MjIsImV4cCI6MjAyNTMyOTUyMn0.tH5TGLx7iMEKK9sOaEu8WPpE7OKzPVxqwYpLNLmJpDc';
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+        async function handleOAuthCallback() {
+            try {
+                // Extraire les paramètres du hash
+                const hash = window.location.hash.substring(1);
+                const params = new URLSearchParams(hash);
+
+                const accessToken = params.get('access_token');
+                const refreshToken = params.get('refresh_token');
+
+                if (accessToken && refreshToken) {
+                    // Établir la session avec les tokens
+                    const { error } = await supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken
+                    });
+
+                    if (error) {
+                        console.error('Session setup failed:', error);
+                        setTimeout(() => { window.location.href = 'app.html'; }, 2000);
+                        return;
+                    }
+
+                    // Session établie → rediriger vers app.html
+                    document.body.innerHTML = '<p>✓ Connected. Redirecting...</p>';
+                    setTimeout(() => {
+                        window.location.href = 'app.html';
+                    }, 500);
+                } else {
+                    // Pas de tokens → redirect vers app.html
+                    window.location.href = 'app.html';
+                }
+            } catch (e) {
+                console.error('OAuth callback error:', e);
+                setTimeout(() => { window.location.href = 'app.html'; }, 2000);
+            }
+        }
+
+        handleOAuthCallback();
+    </script>
+</body>
 </html>

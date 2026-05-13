@@ -10,7 +10,35 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SunTrail 3D">
     <title>SunTrail - Moteur Three.js</title>
-    
+
+    <!-- OAuth token initialization — doit être AVANT main.ts -->
+    <script>
+        (async function() {
+            const hash = localStorage.getItem('__oauth_hash');
+            if (hash) {
+                try {
+                    // Importer Supabase et établir la session
+                    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/+esm');
+                    const supabase = createClient(
+                        'https://esennvviieylqhbleqdv.supabase.co',
+                        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzZW5udnZpaWV5bHFoYmxlcWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDk3NDk1MjIsImV4cCI6MjAyNTMyOTUyMn0.tH5TGLx7iMEKK9sOaEu8WPpE7OKzPVxqwYpLNLmJpDc'
+                    );
+
+                    const params = new URLSearchParams(hash);
+                    const accessToken = params.get('access_token');
+                    const refreshToken = params.get('refresh_token');
+
+                    if (accessToken && refreshToken) {
+                        await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+                        localStorage.removeItem('__oauth_hash');
+                    }
+                } catch (e) {
+                    console.error('[OAuth] Setup failed:', e);
+                }
+            }
+        })();
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap">

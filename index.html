@@ -5,10 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SunTrail 3D — La Montagne sous un nouveau jour</title>
     <script>
-        // Redirection immédiate si on est sur l'app mobile (Capacitor)
-        if (window.hasOwnProperty('Capacitor') || /Capacitor/i.test(navigator.userAgent)) {
+        // OAuth token handling — Supabase redirige TOUJOURS ici avec tokens en hash
+        const hash = window.location.hash.substring(1);
+        if (hash && hash.includes('access_token')) {
+            try {
+                // Stocker les tokens en localStorage pour app.html
+                localStorage.setItem('__oauth_hash', hash);
+            } catch (e) {
+                console.warn('Failed to store OAuth hash:', e);
+            }
+            // Nettoyer l'URL et aller à app.html
+            window.history.replaceState({}, '', window.location.pathname + window.location.search);
+            window.location.href = 'app.html';
+        } else if (window.hasOwnProperty('Capacitor') || /Capacitor/i.test(navigator.userAgent)) {
+            // Mobile native — aller à app.html
             window.location.href = 'app.html';
         }
+        // Sinon : page de démarrage (landing page)
     </script>
     <meta name="description" content="Carte topographique 3D haute performance avec simulation solaire, analyse de trail et sécurité montagne.">
     <link rel="preconnect" href="https://fonts.googleapis.com">

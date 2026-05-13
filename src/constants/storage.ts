@@ -13,4 +13,7 @@ export const STORAGE_KEYS = {
     BATTERY_EXEMPTION:      'suntrail_battery_exemption_asked',
     REC_SNAPSHOT_V1:        'suntrail_rec_snapshot_v1',
     UPSELL_LAST_SHOW:       'suntrail_upsell_last_show',
+    RC_WEB_USER_ID:         'rc_web_user_id',
+    MAPTILER_KEY:           'maptiler_key',
+    OFFLINE_ZONES_COUNT:    'suntrail-offline-zones-count',
 } as const;

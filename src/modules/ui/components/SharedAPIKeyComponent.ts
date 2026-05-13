@@ -2,6 +2,7 @@ import { BaseComponent } from '../core/BaseComponent';
 import { state } from '../../state';
 import { showToast } from '../../toast';
 import { haptic } from '../../haptics';
+import { STORAGE_KEYS } from '../../../constants/storage';
 import templateHTML from '../templates/api-key-form.html?raw';
 
 export class SharedAPIKeyComponent extends BaseComponent {
@@ -27,7 +28,7 @@ export class SharedAPIKeyComponent extends BaseComponent {
             const key = input.value.trim();
             if (key.length < 10) return;
             state.MK = key;
-            localStorage.setItem('maptiler_key', key);
+            localStorage.setItem(STORAGE_KEYS.MAPTILER_KEY, key);
             showToast('Clé API mise à jour');
             void haptic('success');
             if (this.onKeyChange) this.onKeyChange();
