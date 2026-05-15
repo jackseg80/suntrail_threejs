@@ -4,7 +4,7 @@ import { state, saveSettings, saveProStatus, type ThemePreference } from '../../
 import { applyPreset, getGpuInfo, detectBestPreset } from '../../performance';
 import { updateHydrologyVisibility, refreshTerrain } from '../../terrain';
 import { updateWeatherVisibility } from '../../weather';
-import { ICON_CHECK, ICON_USER, ICON_LOG_IN, ICON_LOG_OUT } from '../icons';
+import { ICON_CHECK } from '../icons';
 import { showOnboarding } from '../../onboardingTutorial';
 import type { Locale } from '../../../i18n/I18nService';
 import { i18n } from '../../../i18n/I18nService';
@@ -12,7 +12,6 @@ import { i18n } from '../../../i18n/I18nService';
 import { sheetManager } from '../core/SheetManager';
 import { eventBus } from '../../eventBus';
 import { iapService } from '../../iapService';
-import { authService } from '../../authService';
 import { showToast } from '../../toast';
 import { haptic } from '../../haptics';
 import { showUpgradePrompt, isProActive } from '../../iap';
