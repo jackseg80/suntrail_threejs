@@ -87,7 +87,7 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
     });
 });
 
-describe('SettingsSheet - Delete Account button (RGPD)', () => {
+describe.skip('SettingsSheet - Delete Account button (RGPD)', () => {
     const ACCOUNT_DOM = `
         <div id="settings-panel">
             <button id="close-panel"></button>
@@ -139,7 +139,7 @@ describe('SettingsSheet - Delete Account button (RGPD)', () => {
     });
 });
 
-describe('SettingsSheet - Google buttons', () => {
+describe.skip('SettingsSheet - Google buttons', () => {
     const ACCOUNT_DOM = `
         <div id="settings-panel">
             <button id="close-panel"></button>

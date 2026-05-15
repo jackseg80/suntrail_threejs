@@ -27,7 +27,7 @@ export class SettingsSheet extends BaseComponent {
         if (!this.element) return;
 
         // Account management (Web + Native — requis Play Store RGPD)
-        this.updateAccountSection();
+        // this.updateAccountSection(); // CACHÉ v5.54.4 (bug OAuth)
 
         // Close panel
         const closePanel = this.element.querySelector('#close-panel');
