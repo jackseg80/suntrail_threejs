@@ -178,6 +178,7 @@ export class SettingsSheet extends BaseComponent {
         this.updateAllUI();
     }
 
+    /* CACHÉ v5.54.4 (bug OAuth) - TS6133 unused member fix
     private updateAccountSection(): void {
         if (!this.element) return;
         const statusEl = this.element.querySelector('#account-status');
@@ -249,6 +250,7 @@ export class SettingsSheet extends BaseComponent {
             if (linkGoogleBtn) linkGoogleBtn.style.display = 'none';
         }
     }
+    */
 
     private bindSlider(id: string, stateKey: keyof typeof state, dispId: string, onChange?: () => void) {
         if (!this.element) return;
