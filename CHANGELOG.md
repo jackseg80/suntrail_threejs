@@ -1,9 +1,22 @@
-## [5.54.4] - 2026-05-07
+## [5.54.4] - 2026-05-12
 
 ### Fixed
 
+- **Authentification Google (temporaire)** : Masquage de l'UI de connexion et des options de compte en raison de problèmes de stabilité. Les tests unitaires associés sont également ignorés.
+- **Fuites mémoire DeviceOrientation** : Correction des listeners d'orientation mobile dans `location.ts` (ajout d'un cleanup systématique).
+- **Build TS (TS6133)** : Suppression des imports et méthodes inutilisés suite au masquage de l'auth.
 - **Manifest PWA** : Correction des chemins des icônes pour une compatibilité multi-plateforme (Web & Android). Utilisation de chemins relatifs (`./assets/...`) au lieu de chemins absolus.
-- **Dom Warning (ORS Key)** : Correction de l'avertissement console "Password field is not contained in a form". Le champ est désormais enveloppé dans un formulaire `<form>` avec prévention de soumission par défaut, améliorant l'accessibilité.
+- **Dom Warning (ORS Key)** : Correction de l'avertissement console "Password field is not contained in a form". Le champ est désormais enveloppé dans un formulaire `<form>`.
+
+### Added
+
+- **Robustesse OAuth Supabase** : Amélioration de la récupération de session après redirection Google (gestion des fragments hash et handshake localStorage).
+- **Centralisation Storage** : Migration vers `STORAGE_KEYS` pour tous les accès `localStorage` afin d'éviter les collisions et les chaînes magiques.
+- **Cache Tuiles v30** : Synchronisation de la version du cache entre le worker et le loader principal pour assurer la cohérence des données.
+
+### Changed
+
+- **Logs MapTiler** : Réduction du bruit dans la console en limitant les logs non-essentiels au mode DEBUG.
 
 ## [5.54.3] - 2026-05-07
 

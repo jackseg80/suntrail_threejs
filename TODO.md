@@ -1,6 +1,6 @@
-# SunTrail — TODO (v5.54.3)
+# SunTrail — TODO (v5.54.4)
 
-> Dernière mise à jour : 2026-05-07
+> Dernière mise à jour : 2026-05-12
 
 ## 🔴 Critique (next release)
 
@@ -8,6 +8,7 @@
 
 ## 🟡 Court terme (v5.55.x)
 
+- **Debug OAuth Google** — Résoudre les problèmes de stabilité et réactiver l'UI
 - **Refactoring SolarProbeSheet.ts** (896 lignes) — Extraire les sous-composants UI et handlers en modules séparés
 - **Refactoring SettingsSheet.ts** (711 lignes) — Découper par section (résolution, carte, GPS, etc.)
 - **Tests poi.ts** — Couverture partielle : tester la détection de catégories avec PBF mockés
@@ -22,6 +23,10 @@
 
 ## ✅ Récemment complété (v5.54.x)
 
+- [x] **Masquage temporaire Auth Google** — UI et tests ignorés pour stabilité (v5.54.4)
+- [x] **Robustesse OAuth Supabase** — Redirection fragments + handshake localStorage (v5.54.4)
+- [x] **Sync cache tuiles v30** — Alignement worker et loader principal (v5.54.4)
+- [x] **Fix fuites listeners orientation** — Cleanup listeners DeviceOrientation (v5.54.4)
 - [x] **Profil/pentes cleanup au nettoyage GPX** — closeElevationProfile() + 6 tests removeGPXLayer (v5.54.3)
 - [x] **Hardening listeners Capacitor** — nativeGPSService._listenerHandles (v5.54.2)
 - [x] **iapService cleanup** — message listener + pagehide guard (v5.54.2)
