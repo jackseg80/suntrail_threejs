@@ -1,3 +1,27 @@
+## [5.55.0] - 2026-05-16
+
+### Added
+
+- **Benchmark de performance dynamique v2.0** :
+  - Remplacement de la détection statique par un micro-benchmark (<500ms) au premier démarrage (test CPU/GPU/Mémoire).
+  - Calibration automatique des presets (Eco, Balanced, Performance, Ultra) basée sur le score réel de l'appareil.
+  - Ajout d'une section "Test de Performance" dans les Réglages Avancés permettant de relancer le test et d'afficher les scores techniques (CPU/GPU/Total).
+  - Intégration d'un système de synchronisation réelle (`gl.readPixels`) pour éviter les scores artificiels sur mobile.
+  - Classification intelligente : S23 (Adreno 740/750) classé en 'Performance' (High) par défaut ; 'Ultra' réservé aux stations de travail.
+
+### Changed
+
+- **Ajustement des seuils de preset** :
+  - Seuil 'Ultra' relevé à 92+.
+  - Seuil 'Performance' ajusté à 65+.
+  - Seuil 'Balanced' à partir de 30+.
+  - Réduction de la pondération de la liste GPU statique au profit du benchmark réel.
+
+### Fixed
+
+- **Granularité CPU** : Correction du test CPU pour éviter les scores à 0 sur mobile grâce à une boucle de mesure plus fine (1024 ops).
+- **Stabilité GPU** : Forçage de synchronisation (readPixels) pour mesurer les frames réelles et éviter la saturation du buffer.
+
 ## [5.54.4] - 2026-05-12
 
 ### Fixed
