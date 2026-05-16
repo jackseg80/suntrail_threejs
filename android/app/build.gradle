@@ -14,7 +14,7 @@ android {
         applicationId "com.suntrail.threejs"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 809
+        versionCode 810
         versionName "5.55.0"
 
 
