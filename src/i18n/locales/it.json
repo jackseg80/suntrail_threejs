@@ -128,13 +128,22 @@
   },
   "routeBar": {
     "computing": "Calcolo…",
-    "onePoint": "1 punto · aggiungine un 2°"
+    "onePoint": "1 punto · aggiungine un 2º"
+  },
+  "benchmark": {
+    "running": "Ottimizzazione per il tuo dispositivo...",
+    "result": "Profilo {{preset}} applicato in base alle prestazioni."
   },
   "gpx": {
-    "limitPro": "Massimo 10 tracce raggiunto"
+    "limitPro": "Limite di 10 tracce raggiunto"
   },
   "settings": {
     "title": "Impostazioni",
+    "advanced": {
+      "benchmarkTitle": "Test delle Prestazioni",
+      "benchmarkDesc": "Analizza la potenza di CPU/GPU per calibrare le impostazioni ottimali.",
+      "benchmarkBtn": "Riavvia Ottimizzazione"
+    },
     "aria": {
       "close": "Chiudi impostazioni"
     },

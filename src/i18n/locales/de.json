@@ -128,15 +128,24 @@
   },
   "routeBar": {
     "computing": "Berechnung…",
-    "onePoint": "1 Punkt · 2. Punkt setzen"
+    "onePoint": "1 Punkt · fügen Sie einen 2. hinzu"
+  },
+  "benchmark": {
+    "running": "Optimierung für Ihr Gerät...",
+    "result": "{{preset}}-Profil basierend auf der Leistung angewendet."
   },
   "gpx": {
-    "limitPro": "Maximal 10 Tracks erreicht"
+    "limitPro": "Maximum von 10 Tracks erreicht"
   },
   "settings": {
     "title": "Einstellungen",
+    "advanced": {
+      "benchmarkTitle": "Performance-Test",
+      "benchmarkDesc": "Analysiert die CPU/GPU-Leistung, um optimale Einstellungen zu kalibrieren.",
+      "benchmarkBtn": "Optimierung neu starten"
+    },
     "aria": {
-      "close": "Einstellungen schliessen"
+      "close": "Einstellungen schließen"
     },
     "section": {
       "presets": "Leistungsprofil",

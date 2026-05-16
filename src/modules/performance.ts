@@ -33,7 +33,7 @@ export function getGpuInfo(): { renderer: string, vendor: string } {
 export function detectBestPreset(): PresetType {
     const gpu = getGpuInfo().renderer.toLowerCase();
 
-    if (gpu.includes('adreno') && /83[0-9]/.test(gpu)) return 'ultra';
+    if (gpu.includes('adreno') && /8[0-9][0-9]/.test(gpu)) return 'ultra';
     if (gpu.includes('apple m'))                        return 'ultra';
     if (gpu.includes('rtx'))                            return 'ultra';
     if (gpu.includes('arc a'))                          return 'ultra';
@@ -42,7 +42,8 @@ export function detectBestPreset(): PresetType {
     if (/gtx\s*1[0-9][6-9]\d/.test(gpu))              return 'ultra';
     if (/gtx\s*10[6-9]\d/.test(gpu))                  return 'ultra';
 
-    if (gpu.includes('adreno') && /7[3-9]\d|80\d/.test(gpu)) return 'performance';
+    if (gpu.includes('adreno') && /7[45]\d/.test(gpu)) return 'performance';
+    if (gpu.includes('adreno') && /7[0-3]\d/.test(gpu)) return 'performance';
     if (gpu.includes('apple'))                          return 'performance';
     if (gpu.includes('mali') && /g7[89]|g710|g715/.test(gpu)) return 'performance';
     if (/gtx\s*105\d/.test(gpu))                      return 'performance';

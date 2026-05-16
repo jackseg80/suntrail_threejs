@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { BaseComponent } from '../core/BaseComponent';
 import { state, saveSettings, saveProStatus, type ThemePreference } from '../../state';
 import { applyPreset, getGpuInfo, detectBestPreset } from '../../performance';
+import { runBenchmark } from '../../benchmark';
 import { updateHydrologyVisibility, refreshTerrain } from '../../terrain';
 import { updateWeatherVisibility } from '../../weather';
 import { ICON_CHECK } from '../icons';
@@ -155,6 +156,30 @@ export class SettingsSheet extends BaseComponent {
             }));
         });
 
+        // Benchmark button
+        const benchBtn = this.element.querySelector('#run-benchmark-btn') as HTMLButtonElement;
+        if (benchBtn) {
+            benchBtn.addEventListener('click', async () => {
+                benchBtn.disabled = true;
+                const originalText = benchBtn.textContent;
+                benchBtn.textContent = i18n.t('benchmark.running') || 'Optimisation...';
+                void haptic('light');
+                
+                try {
+                    const result = await runBenchmark();
+                    applyPreset(result.recommendedPreset);
+                    void haptic('success');
+                    showToast(i18n.t('benchmark.result', { preset: result.recommendedPreset.toUpperCase() }) || `Profil ${result.recommendedPreset.toUpperCase()} appliqué.`);
+                } catch (e) {
+                    showToast('Erreur benchmark');
+                } finally {
+                    benchBtn.disabled = false;
+                    benchBtn.textContent = originalText;
+                    this.updateBenchmarkResults();
+                }
+            });
+        }
+
         // Theme selector
         this.bindThemeSelector();
 
@@ -175,6 +200,23 @@ export class SettingsSheet extends BaseComponent {
 
         // Initial UI update
         this.updateAllUI();
+        this.updateBenchmarkResults();
+    }
+
+    private updateBenchmarkResults(): void {
+        if (!this.element) return;
+        const results = state.benchmarkResults;
+        const area = this.element.querySelector('#benchmark-results-area') as HTMLElement;
+        if (!results || !area) return;
+
+        area.style.display = 'block';
+        const cpu = area.querySelector('#bench-cpu');
+        const gpu = area.querySelector('#bench-gpu');
+        const total = area.querySelector('#bench-total');
+
+        if (cpu) cpu.textContent = results.cpuScore.toString();
+        if (gpu) gpu.textContent = results.gpuScore.toString();
+        if (total) total.textContent = results.totalScore.toString();
     }
 
     /* CACHÉ v5.54.4 (bug OAuth) - TS6133 unused member fix

@@ -241,6 +241,12 @@ export interface State {
     IS_2D_MODE: boolean;
     currentFPS: number;
     lastUIInteraction: number;
+    benchmarkResults: {
+        cpuScore: number;
+        gpuScore: number;
+        totalScore: number;
+        timestamp: number;
+    } | null;
     lastClickedCoords: { x: number; z: number; alt: number };
     hasLastClicked: boolean;
     isFlying: boolean;
@@ -307,6 +313,7 @@ const initialState: State = {
     isMapTilerDisabled: false,
     networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isUserInteracting: false,
     isProcessingTiles: false, IS_2D_MODE: true, currentFPS: 0, lastUIInteraction: Date.now(),
+    benchmarkResults: null,
     lastClickedCoords: { x: 0, z: 0, alt: 0 },
     hasLastClicked: false,
     isFlying: false,

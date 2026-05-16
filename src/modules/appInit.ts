@@ -13,6 +13,7 @@ import { startLocationTracking, updateUserMarker, stopLocationTracking, clearUse
 import { lngLatToTile, lngLatToWorld, worldToLngLat } from './geo';
 import { showToast } from './toast';
 import { applyPreset, detectBestPreset, getGpuInfo, applyCustomSettings } from './performance';
+import { runBenchmark } from './benchmark';
 import { findTerrainIntersection, getAltitudeAt } from './analysis';
 import { initRouteManager, removeWaypointAt, scheduleAutoCompute, clearRoute } from './routeManager';
 import { fetchWeather } from './weather';
@@ -72,8 +73,22 @@ export async function appInit(): Promise<void> {
             applyPreset(savedSettings.PERFORMANCE_PRESET);
         }
     } else {
-        const bestPreset = detectBestPreset();
-        applyPreset(bestPreset);
+        // Premier démarrage : Benchmark automatique
+        void (async () => {
+            try {
+                // Petit délai pour laisser le splash screen s'afficher proprement
+                await new Promise(resolve => setTimeout(resolve, 500));
+                showToast(i18n.t('benchmark.running') || 'Optimisation pour votre appareil...', 3000);
+                
+                const { recommendedPreset } = await runBenchmark();
+                applyPreset(recommendedPreset);
+                
+                showToast(i18n.t('benchmark.result', { preset: recommendedPreset.toUpperCase() }) || `Profil ${recommendedPreset.toUpperCase()} appliqué.`, 4000);
+            } catch (e) {
+                console.warn('[AppInit] Benchmark failed, falling back to static detection', e);
+                applyPreset(detectBestPreset());
+            }
+        })();
     }
 
     document.body.classList.toggle('mode-2d', state.IS_2D_MODE);

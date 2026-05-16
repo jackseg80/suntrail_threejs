@@ -131,11 +131,20 @@
     "computing": "Calcul…",
     "onePoint": "1 point · posez-en un 2e"
   },
+  "benchmark": {
+    "running": "Optimisation pour votre appareil...",
+    "result": "Profil {{preset}} appliqué selon vos performances."
+  },
   "gpx": {
     "limitPro": "Maximum 10 tracés atteint"
   },
   "settings": {
     "title": "Réglages",
+    "advanced": {
+      "benchmarkTitle": "Test de Performance",
+      "benchmarkDesc": "Analyse la puissance CPU/GPU pour calibrer les réglages optimaux.",
+      "benchmarkBtn": "Relancer l'optimisation"
+    },
     "aria": {
       "close": "Fermer les réglages"
     },

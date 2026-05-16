@@ -129,13 +129,22 @@
   },
   "routeBar": {
     "computing": "Computing…",
-    "onePoint": "1 point · place a 2nd one"
+    "onePoint": "1 point · add a 2nd"
+  },
+  "benchmark": {
+    "running": "Optimizing for your device...",
+    "result": "{{preset}} profile applied based on performance."
   },
   "gpx": {
     "limitPro": "Maximum 10 tracks reached"
   },
   "settings": {
     "title": "Settings",
+    "advanced": {
+      "benchmarkTitle": "Performance Test",
+      "benchmarkDesc": "Analyzes CPU/GPU power to calibrate optimal settings.",
+      "benchmarkBtn": "Relaunch Optimization"
+    },
     "aria": {
       "close": "Close settings"
     },
