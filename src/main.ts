@@ -63,7 +63,7 @@ window.addEventListener('suntrail:uiReady', async () => {
     } catch (e) {
         console.error('[Main] Recovery failure:', e);
     } finally {
-        // Tente d'afficher l'interstitiel Pro ( Discovery Trial )
+        // Tente d'afficher l'interstitiel Pro ( Google Play Trial )
         const { UpsellModal } = await import('./modules/ui/components/UpsellModal');
         UpsellModal.tryShow();
     }

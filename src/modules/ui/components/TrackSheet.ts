@@ -552,7 +552,7 @@ export class TrackSheet extends BaseComponent {
         const proBtn = document.createElement('button');
         proBtn.className = 'btn-go';
         proBtn.style.cssText = 'padding:6px; font-size:11px; margin-top:4px; width:100%;';
-        proBtn.textContent = i18n.t('upgrade.trial.cta') || 'Essayer Pro';
+        proBtn.textContent = i18n.t('upgrade.trial.cta') || 'Essayer Pro Gratuitement';
         proBtn.onclick = () => sheetManager.open('upgrade-sheet');
         
         banner.appendChild(title);

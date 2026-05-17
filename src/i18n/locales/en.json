@@ -621,7 +621,8 @@
       "title": "Security & Autonomy",
       "desc": "The SOS button at the top right shows your emergency coordinates. Download Country Packs in Settings for offline mode."
     }
-  },  "upgrade": {
+  },
+  "upgrade": {
     "title": "Go Pro",
     "hero": {
       "title": "World's only solar terrain simulation",
@@ -646,12 +647,12 @@
       "perMonth": "per month",
       "perYear": "per year",
       "oneTime": "one-time payment",
-      "badge": "7 days free",
+      "badge": "7 DAYS FREE",
       "monthShort": "mo"
     },
     "restore": "Restore purchase",
     "trial": {
-      "cta": "Try Pro (3 days) — Free"
+      "cta": "Start Free Trial (7d)"
     },
     "legal": "Auto-renewable subscription · Cancel at any time in the Play Store.",
     "web": {

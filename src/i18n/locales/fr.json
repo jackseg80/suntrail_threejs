@@ -622,7 +622,8 @@
       "title": "Sécurité & Autonomie",
       "desc": "Le bouton SOS en haut à droite affiche vos coordonnées d'urgence. Téléchargez les Packs Pays dans les Réglages pour le mode hors-ligne."
     }
-  },  "upgrade": {
+  },
+  "upgrade": {
     "title": "Passer à Pro",
     "hero": {
       "title": "Simulation solaire unique au monde",
@@ -647,12 +648,12 @@
       "perMonth": "par mois",
       "perYear": "par an",
       "oneTime": "paiement unique",
-      "badge": "7 jours gratuits",
+      "badge": "7 JOURS GRATUITS",
       "monthShort": "mois"
     },
     "restore": "Restaurer un achat",
     "trial": {
-      "cta": "Essayer Pro (3 jours) — Gratuit"
+      "cta": "Démarrer l'essai gratuit (7j)"
     },
     "legal": "Abonnement auto-renouvelable · Résiliable à tout moment dans le Play Store.",
     "web": {
