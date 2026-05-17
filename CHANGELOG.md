@@ -1,3 +1,10 @@
+## [5.55.2] - 2026-05-17
+
+### Fixed
+- **Trial Period Harmonization** : Clarification des essais gratuits (7 jours) dans l'interface et suppression des mentions obsolètes "3 jours" (Discovery Trial).
+- **Traductions** : Correction des erreurs de syntaxe JSON dans `en.json` et `fr.json`.
+
+---
 ## [5.55.1] - 2026-05-17
 
 ### Fixed
