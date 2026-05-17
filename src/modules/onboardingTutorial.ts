@@ -266,7 +266,7 @@ function _show(resolve: () => void): void {
                 margin: 0 0 40px;
             }
             .ob-footer {
-                padding: 24px;
+                padding: 24px 24px calc(24px + env(safe-area-inset-bottom, 0px));
                 display: flex;
                 flex-direction: column;
                 gap: 16px;

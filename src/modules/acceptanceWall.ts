@@ -48,6 +48,7 @@ function _show(resolve: () => void): void {
                 justify-content: center;
                 z-index: 9998;
                 padding: 16px;
+                padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
                 backdrop-filter: blur(14px);
                 -webkit-backdrop-filter: blur(14px);
             }

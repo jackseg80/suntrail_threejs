@@ -194,5 +194,16 @@ describe('onboardingTutorial', () => {
             expect(menuItems.length).toBe(3);
             expect(menuItems[0].textContent).toContain('Explorer');
         });
+
+        it('should have safe area padding in footer style', async () => {
+            void showOnboarding();
+            await vi.waitFor(() => {
+                expect(document.getElementById('onboarding-overlay')).not.toBeNull();
+            });
+
+            const overlay = document.getElementById('onboarding-overlay')!;
+            const style = overlay.querySelector('style')!;
+            expect(style.textContent).toContain('padding: 24px 24px calc(24px + env(safe-area-inset-bottom, 0px))');
+        });
     });
 });
