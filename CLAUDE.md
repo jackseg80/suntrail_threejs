@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.55.1)
+# SunTrail — Guide IA (v5.55.2)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-17 — v5.55.1 : Fix carte noire au démarrage (race condition benchmark), correction initialLon (typo), robustesse status tuiles, auto-reload sur perte WebGL. v5.55.0 : Benchmark de performance dynamique v2.0.
+> Mis à jour le 2026-05-17 — v5.55.2 : Harmonisation des essais gratuits (7 jours) et nettoyage des mentions obsolètes. v5.55.1 : Fix carte noire au démarrage (race condition benchmark), correction initialLon (typo), robustesse status tuiles, auto-reload sur perte WebGL. v5.55.0 : Benchmark de performance dynamique v2.0.
 
 ## Projet
 
