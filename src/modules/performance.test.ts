@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { state } from './state';
 import { detectBestPreset, applyPreset } from './performance';
+import { refreshTerrain } from './terrain';
 
 // Mocks des dépendances lourdes de performance.ts
 vi.mock('./terrain', () => ({ resetTerrain: vi.fn(), updateVisibleTiles: vi.fn(), refreshTerrain: vi.fn(), refreshTracks: vi.fn() }));
@@ -36,6 +37,13 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
         setUA(DESKTOP_UA);
         setInnerWidth(1920);
         setDevicePixelRatio(1.0);
+    });
+
+    describe('applyPreset() — Side effects', () => {
+        it('should call refreshTerrain(true) to force a refresh and avoid race conditions', () => {
+            applyPreset('balanced');
+            expect(refreshTerrain).toHaveBeenCalledWith(true);
+        });
     });
 
     // -------------------------------------------------------------------------

@@ -1,3 +1,16 @@
+## [5.55.1] - 2026-05-17
+
+### Fixed
+
+- **Carte noire au démarrage (Race Condition)** : Correction d'un conflit entre le benchmark initial et le chargement de la scène. `refreshTerrain(true)` force désormais une mise à jour même si une autre est en cours, garantissant l'affichage de la carte dès la fin du benchmark.
+- **Initialisation Longitude** : Correction d'une faute de frappe dans l'état initial où `initialLon` prenait la valeur de la latitude.
+- **Robustesse chargement tuiles** : Les tuiles passent désormais en état `failed` au lieu de rester bloquées en `loading` si aucune donnée n'est renvoyée (timeout/erreur worker).
+- **Récupération WebGL mobile** : Ajout d'un rechargement automatique de la page après 2 secondes en cas de perte du contexte WebGL (manque de mémoire GPU), permettant à l'application de se relancer proprement.
+
+### Added
+
+- **Tests de non-régression** : Ajout de tests pour vérifier le forçage du rafraîchissement terrain et la validité des coordonnées initiales.
+
 ## [5.55.0] - 2026-05-16
 
 ### Added

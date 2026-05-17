@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.54.4)
+# SunTrail — Guide IA (v5.55.1)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-12 — v5.54.4 : Masquage temporaire Auth Google (stabilité), robustesse OAuth (hash handling, localStorage handshake), centralisation STORAGE_KEYS, cache tuiles v30, cleanup listeners DeviceOrientation. v5.54.3 : Fix profil/pentes (closeElevationProfile au lieu de display:none au nettoyage GPX).
+> Mis à jour le 2026-05-17 — v5.55.1 : Fix carte noire au démarrage (race condition benchmark), correction initialLon (typo), robustesse status tuiles, auto-reload sur perte WebGL. v5.55.0 : Benchmark de performance dynamique v2.0.
 
 ## Projet
 

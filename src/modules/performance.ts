@@ -141,7 +141,7 @@ export function applyPreset(preset: PresetType): void {
     }
 
     updatePerformanceUI(preset);
-    refreshTerrain();
+    refreshTerrain(true);
     refreshTracks();
     
     setTimeout(() => refreshTracks(), 500);
@@ -178,7 +178,7 @@ export function applyCustomSettings(settings: any): void {
         state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
     }
 
-    refreshTerrain();
+    refreshTerrain(true);
     refreshTracks();
     setTimeout(() => refreshTracks(), 500);
 }

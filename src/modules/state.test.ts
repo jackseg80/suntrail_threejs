@@ -9,6 +9,8 @@ describe('state.ts', () => {
     it('should have a default TARGET_LAT and TARGET_LON (Suisse centroïde)', () => {
         expect(state.TARGET_LAT).toBe(46.8182);
         expect(state.TARGET_LON).toBe(8.2275);
+        expect(state.initialLat).toBe(46.8182);
+        expect(state.initialLon).toBe(8.2275);
     });
 
     it('should have initial three.js instances as null', () => {

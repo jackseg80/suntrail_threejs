@@ -167,7 +167,8 @@ export async function initScene(): Promise<void> {
     state.renderer.domElement.addEventListener('webglcontextlost', (event) => {
         event.preventDefault();
         console.error('[WebGL] Contexte perdu !');
-        showToast(i18n.t('common.errorWebglLost'), 0);
+        showToast(i18n.t('common.errorWebglLost'), 5000);
+        setTimeout(() => window.location.reload(), 2000);
     }, false);
     
     state.renderer.domElement.setAttribute('role', 'img');

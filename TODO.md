@@ -1,12 +1,12 @@
-# SunTrail — TODO (v5.54.4)
+# SunTrail — TODO (v5.55.1)
 
-> Dernière mise à jour : 2026-05-12
+> Dernière mise à jour : 2026-05-17
 
 ## 🔴 Critique (next release)
 
 - Aucun item critique en cours.
 
-## 🟡 Court terme (v5.55.x)
+## 🟡 Court terme (v5.56.x)
 
 - **Debug OAuth Google** — Résoudre les problèmes de stabilité et réactiver l'UI
 - **Refactoring SolarProbeSheet.ts** (896 lignes) — Extraire les sous-composants UI et handlers en modules séparés
@@ -21,8 +21,13 @@
 - **Offline Alertes** — Système d'alertes sécurité hors-ligne (v6.0+)
 - **Abonnement familial** — Pack famille RevenueCat (v6.1+)
 
-## ✅ Récemment complété (v5.54.x)
+## ✅ Récemment complété (v5.55.x)
 
+- [x] **Fix carte noire démarrage** — Résolution race condition benchmark/terrain (v5.55.1)
+- [x] **Fix initialLon typo** — Coordonnées de départ correctes (v5.55.1)
+- [x] **Auto-reload WebGL lost** : Récupération automatique sur perte de contexte GPU (v5.55.1)
+- [x] **Benchmark de performance v2.0** — Micro-benchmark matériel au 1er boot (v5.55.0)
+- [x] **Calibration presets** — Presets basés sur le score réel CPU/GPU (v5.55.0)
 - [x] **Masquage temporaire Auth Google** — UI et tests ignorés pour stabilité (v5.54.4)
 - [x] **Robustesse OAuth Supabase** — Redirection fragments + handshake localStorage (v5.54.4)
 - [x] **Sync cache tuiles v30** — Alignement worker et loader principal (v5.54.4)

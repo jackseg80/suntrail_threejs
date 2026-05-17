@@ -148,7 +148,11 @@ export class Tile {
             const data = await promise;
             this.activeTaskId = -1;
             
-            if (this.status as string === 'disposed' || !data) return;
+            if (this.status as string === 'disposed') return;
+            if (!data) {
+                this.status = 'failed';
+                return;
+            }
 
             if (data.elevBitmap) {
                 this.elevationTex = new THREE.Texture(data.elevBitmap);
