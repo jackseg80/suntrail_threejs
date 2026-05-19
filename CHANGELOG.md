@@ -1,3 +1,9 @@
+## [5.55.3] - 2026-05-19
+
+### Fixed
+- **Menus (High/Ultra)** : Correction de la transparence (glassmorphism) — uniformisation de l'opacité (0.95) pour une lisibilité constante en mode portrait et paysage, quel que soit l'appareil.
+
+---
 ## [5.55.2] - 2026-05-17
 
 ### Fixed
