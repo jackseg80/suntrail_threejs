@@ -1,94 +1,63 @@
-# SunTrail 3D — Play Store Listing
+# SunTrail 3D — Play Store Listing (v5.55.2)
 
 ## 🇫🇷 FRANÇAIS
 
 ### Titre (26 cars)
 ```
-SunTrail 3D — Carte Relief
+SunTrail 3D — Rando & Soleil
 ```
 
 ### Description courte (80 cars max)
 ```
-Carte topo 3D avec simulation solaire : voyez les ombres sur le relief en temps réel.
+Simulation solaire 3D unique : planifiez vos randos selon l'ombre et le soleil.
 ```
 
 ### Description longue (≤ 4000 cars)
 ```
-⛰️ Préparez vos sorties comme jamais : voyez exactement quand le soleil éclaire votre sentier.
+⛰️ SunTrail 3D : L'expertise solaire pour vos randonnées, balades et sorties montagne.
 
-SunTrail 3D est la seule application de randonnée qui projette les ombres du soleil sur un vrai terrain 3D. Contrairement aux cartes plates, notre moteur calcule heure par heure quand une vallée, un bivouac ou un col est au soleil ou à l'ombre. Indispensable pour choisir l'heure de départ, éviter un passage glacé le matin, ou repérer le meilleur emplacement de bivouac.
+Que vous soyez un promeneur du dimanche cherchant le soleil ou un alpiniste pro anticipant les zones de glace, SunTrail 3D est la seule application qui projette les ombres du soleil en temps réel sur un vrai terrain 3D. 
 
-━━━━━━━━━━━━━━━━━━━━━━━
-☀️ SIMULATION SOLAIRE — CE QUI NOUS REND UNIQUES
-━━━━━━━━━━━━━━━━━━━━━━━
-• Ombres portées en temps réel sur le relief 3D — le vrai terrain projeté
-• **Forêts & Bâtiments** : Les ombres se projettent sur les massifs forestiers et les bâtiments 3D pour un réalisme saisissant.
-• Glissez le curseur d'heure : voyez les ombres se déplacer dans les vallées
-• Lever, coucher, heure dorée, crépuscule — chaque phase visualisée sur la carte
-• Version Pro : simulez n'importe quel jour de l'année pour planifier à l'avance
-• Analyse solaire complète : azimut, élévation, graphique 24h, phase lunaire
+Optimisé pour la SUISSE (SwissTopo HD) et disponible dans le monde entier.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
-🗺️ CARTES TOPOGRAPHIQUES & DISPONIBILITÉ
+☀️ EXCLUSIF : LA TIMELINE DU RANDONNEUR (PRO)
 ━━━━━━━━━━━━━━━━━━━━━━━
-• SwissTopo (Suisse) — la référence officielle, précision au mètre
-• IGN / Géoplateforme (France) — cartographie officielle haute précision
-• OpenTopoMap & OpenStreetMap — couverture mondiale
-• Vue satellite HD (Pro)
-• **Évolution Constante** : SunTrail est en développement actif. Certaines fonctionnalités avancées (bâtiments HD, signalétique précise) peuvent varier d'un pays à l'autre selon les données disponibles, mais nous étendons la couverture chaque jour !
+Ne vous demandez plus si vous serez à l'ombre à l'arrivée au col. 
+• Colorisation 3D : Votre tracé change de couleur (Or / Vert / Bleu) selon l'exposition solaire prévue à votre heure de passage.
+• Prise en compte de votre vitesse : L'analyse s'adapte à votre rythme de marche.
+• Ombres réelles : Calcul sur le relief, mais aussi sur les massifs forestiers et les bâtiments pour un réalisme total.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
-🧭 NAVIGATION 3D INTUITIVE
+🏔️ LE MOTEUR 3D LE PLUS AVANCÉ
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Gestes Google Earth : pan, zoom, rotation, inclinaison — tout au doigt
-• Recherche intégrée : trouvez un lieu, un sommet ou une ville en 2 secondes
-• Boussole 3D temps réel avec lissage professionnel
-• Bascule 2D/3D instantanée — 2D pour randonner, 3D pour préparer
+• Cartographie Haute Précision : SwissTopo (Suisse), IGN (France), Satellite HD.
+• Immersion totale : Visualisez le relief sous tous les angles avec une fluidité exceptionnelle.
+• Météo en direct : Particules de pluie et neige animées directement sur la carte 3D.
+• Inclinomètre Numérique : Mesurez les pentes en direct pour votre sécurité (anti-avalanche).
 
 ━━━━━━━━━━━━━━━━━━━━━━━
-📍 GPX — VOS TRACÉS EN 3D
+📍 GPX & NAVIGATION
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Importez vos fichiers GPX — tracé drapé sur le vrai relief
-• Profil d'élévation interactif avec pente, D+/D-, distance
-• Enregistrement GPS en direct (fonctionne même écran éteint)
-• Multi-tracés simultanés (Pro)
+• Importez vos tracés GPX : Visualisez-les "drapés" sur le relief réel.
+• Enregistrement robuste : Suivi GPS haute précision qui fonctionne même écran éteint.
+• Profil d'élévation intelligent : Stats de distance, D+/D-, pente et VAM.
+• Mode Hors-ligne : Téléchargez vos cartes avant de partir pour une autonomie totale en montagne.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
-🌤️ MÉTÉO MONTAGNE
+🛡️ SÉCURITÉ & CONFIDENTIALITÉ
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Données en temps réel via Open-Meteo
-• Température, vent, précipitations, UV, couverture nuageuse
-• Pluie et neige animées sur la carte 3D (particules shader)
-• Pro : prévisions 3 jours, alerte montagne (limite neige/pluie, indice confort)
+• Bouton SOS : Partagez votre position exacte et votre altitude en un tap.
+• Zéro Compte : Aucun compte requis, aucune donnée personnelle collectée.
+• Respect total : Vos tracés restent sur votre téléphone.
+• Indépendance : Application développée avec passion, sans trackers publicitaires.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
-🛡️ SÉCURITÉ & OFFLINE
+⚠️ INFOS PRATIQUES
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Bouton SOS : coordonnées GPS + altitude + batterie en un tap
-• Inclinomètre numérique : pente en ° et %, alerte danger (Pro)
-• Mode hors-ligne complet — téléchargez la zone avant de partir
-• 4 profils de performance : Éco (économie batterie max) → Ultra (qualité max)
+SunTrail 3D utilise les données officielles (swisstopo, IGN) conformément à leurs licences open-data. L'application est indépendante de ces entités.
 
-━━━━━━━━━━━━━━━━━━━━━━━
-🔒 CONFIDENTIALITÉ TOTALE
-━━━━━━━━━━━━━━━━━━━━━━━
-• Aucun compte requis — achats gérés via Google Play
-• Aucune donnée transmise à nos serveurs
-• GPS utilisé uniquement au premier plan, jamais partagé
-• Vos tracés restent sur votre appareil
-
-━━━━━━━━━━━━━━━━━━━━━━━
-⚠️ APPLICATION INDÉPENDANTE
-━━━━━━━━━━━━━━━━━━━━━━━
-SunTrail 3D est une application indépendante et n'est affiliée à aucune entité gouvernementale, ni à swisstopo, ni à l'IGN. Les données officielles sont utilisées conformément à leurs licences open-data respectives.
-
-Sources officielles des données cartographiques :
-• swisstopo (Confédération suisse) : https://www.swisstopo.admin.ch
-• IGN Géoplateforme (République française) : https://www.geoportail.gouv.fr
-• OpenStreetMap : https://www.openstreetmap.org
-• Open-Meteo : https://open-meteo.com
-
-Disponible en français, deutsch, italiano et English.
+Disponible en Français, English, Deutsch et Italiano.
 ```
 
 ---
@@ -97,108 +66,216 @@ Disponible en français, deutsch, italiano et English.
 
 ### Title (25 cars)
 ```
-SunTrail 3D — Topo Hiking
+SunTrail 3D — Solar Hiking
 ```
 
 ### Short description (80 cars max)
 ```
-3D topo map with solar simulation: see real shadows on the terrain in real time.
+Unique 3D solar simulation: plan your hikes based on real shade and sunlight.
 ```
 
 ### Full description (≤ 4000 cars)
 ```
-⛰️ Plan your hikes like never before: see exactly when the sun hits your trail.
+⛰️ SunTrail 3D: The ultimate solar expert for your hikes, walks, and mountain adventures.
 
-SunTrail 3D is the only hiking app that projects real sun shadows onto actual 3D terrain. Not a flat-map estimate — a precise topographic calculation that shows hour by hour when a valley, bivouac spot, or mountain pass is in sunlight or shade. Essential for choosing your departure time, avoiding exposed sections, or finding the best campsite.
+Whether you're a casual walker looking for the sun or a pro alpinist avoiding morning ice, SunTrail 3D is the only app that projects real sun shadows onto actual 3D terrain in real-time.
 
-━━━━━━━━━━━━━━━━━━━━━━━
-☀️ SOLAR SIMULATION — WHAT MAKES US UNIQUE
-━━━━━━━━━━━━━━━━━━━━━━━
-• Real shadows cast on 3D terrain — not a flat overlay, but actual topography
-• Drag the time slider: watch shadows move through valleys in real time
-• Sunrise, sunset, golden hour, twilight — every phase visualized on the map
-• Pro: simulate any day of the year to plan ahead
-• Full solar analysis: azimuth, elevation, 24h chart, moon phase
+Optimized for SWITZERLAND (SwissTopo HD) and available worldwide.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
-🗺️ PRECISION TOPOGRAPHIC MAPS
+☀️ EXCLUSIVE: HIKER TIMELINE (PRO)
 ━━━━━━━━━━━━━━━━━━━━━━━
-• SwissTopo — Switzerland's official map, meter-level accuracy
-• IGN / Géoplateforme — France's official topographic data
-• OpenTopoMap & OpenStreetMap — worldwide coverage
-• HD satellite imagery (Pro)
-• Hiking trails overlay + dangerous slope map (30°/35°/40°+)
+Stop guessing if you'll be in the sun when you reach that mountain pass.
+• 3D Colorization: Your track changes color (Gold / Green / Blue) based on solar exposure at your estimated arrival time.
+• Pace-Aware: The analysis adapts to your walking speed.
+• Real Shadows: Calculation includes terrain, forests, and 3D buildings for total realism.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
-🧭 INTUITIVE 3D NAVIGATION
+🏔️ ADVANCED 3D ENGINE
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Google Earth-style gestures: pan, zoom, rotate, tilt — all touch-based
-• Built-in search: find any place, peak, or city in 2 seconds
-• Real-time 3D compass with professional smoothing
-• Instant 2D/3D toggle — 2D for hiking, 3D for planning
+• High-Precision Maps: SwissTopo (Switzerland), IGN (France), HD Satellite.
+• Total Immersion: Visualize terrain from any angle with exceptional smoothness.
+• Live Weather: Animated rain and snow particles directly on the 3D map.
+• Digital Inclinometer: Measure slopes in real-time for your safety (avalanche risk).
 
 ━━━━━━━━━━━━━━━━━━━━━━━
-📍 GPX — YOUR TRACKS IN 3D
+📍 GPX & NAVIGATION
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Import GPX files — track draped on real terrain
-• Interactive elevation profile with slope, gain/loss, distance
-• Live GPS recording (works with screen off)
-• Multiple simultaneous tracks (Pro)
+• Import GPX Tracks: See them "draped" over the actual 3D relief.
+• Robust Recording: High-precision GPS tracking that works even with the screen off.
+• Smart Elevation Profile: Distance, elevation gain/loss, slope, and VAM stats.
+• Offline Mode: Download maps before you go for total autonomy in the mountains.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
-🌤️ MOUNTAIN WEATHER
+🛡️ SAFETY & PRIVACY
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Real-time data via Open-Meteo
-• Temperature, wind, precipitation, UV, cloud cover
-• Animated rain and snow on the 3D map (shader particles)
-• Pro: 3-day forecast, mountain alerts (snow/rain limit, comfort index)
+• SOS Button: Share your exact coordinates and altitude in one tap.
+• No Account Needed: No login required, no personal data collected.
+• Complete Privacy: Your tracks stay on your device.
+• Independent: Developed with passion, zero ad trackers.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
-🛡️ SAFETY & OFFLINE
+⚠️ INFORMATION
 ━━━━━━━━━━━━━━━━━━━━━━━
-• SOS button: GPS coordinates + altitude + battery in one tap
-• Digital inclinometer: slope in ° and %, danger alert (Pro)
-• Full offline mode — download the area before you go
-• 4 performance profiles: Eco (max battery saving) → Ultra (max quality)
+SunTrail 3D uses official data (swisstopo, IGN) according to their open-data licenses. The app is independent of these entities.
 
-━━━━━━━━━━━━━━━━━━━━━━━
-🔒 COMPLETE PRIVACY
-━━━━━━━━━━━━━━━━━━━━━━━
-• No account required — purchases managed via Google Play
-• No data transmitted to our servers
-• GPS used in foreground only, never shared
-• Your tracks stay on your device
-
-━━━━━━━━━━━━━━━━━━━━━━━
-⚠️ INDEPENDENT APPLICATION
-━━━━━━━━━━━━━━━━━━━━━━━
-SunTrail 3D is an independent application and is not affiliated with any government entity, including swisstopo or IGN. Official map data is used under their respective open-data licences.
-
-Official data sources:
-• swisstopo (Swiss Confederation): https://www.swisstopo.admin.ch
-• IGN Géoplateforme (French Republic): https://www.geoportail.gouv.fr
-• OpenStreetMap: https://www.openstreetmap.org
-• Open-Meteo: https://open-meteo.com
-
-Available in Français, Deutsch, Italiano and English.
+Available in English, Français, Deutsch, and Italiano.
 ```
 
 ---
 
-## 📋 Checklist Play Console
+## 🇩🇪 DEUTSCH
 
-| Élément | Status | Notes |
-|---------|--------|-------|
-| Titre FR | ✅ Prêt | "SunTrail 3D — Carte Relief" (26 cars) |
-| Titre EN | ✅ Prêt | "SunTrail 3D — Topo Hiking" (25 cars) |
-| Description courte FR | ✅ Prêt | 80 cars |
-| Description courte EN | ✅ Prêt | 77 cars |
-| Description longue FR | ✅ Prêt | ~2000 cars |
-| Description longue EN | ✅ Prêt | ~2000 cars |
-| Privacy Policy URL | ✅ Live | https://jackseg80.github.io/suntrail_threejs/privacy.html |
-| Icône 512×512px | ✅ Prêt | public/assets/icons/icon_512.png |
-| Screenshots téléphone | ⬜ À faire | 4-8 captures portrait (min 1080×1920) |
-| Screenshot tablette | ⬜ À faire | 1 capture min (min 1200×1920) |
-| Feature Graphic | ⬜ À faire | 1024×500px — visuel de couverture |
-| Data Safety | ⬜ À faire | Formulaire Play Console |
-| Content Rating (IARC) | ⬜ À faire | Questionnaire Play Console |
+### Titel (26 cars)
+```
+SunTrail 3D — Wandern & Sonne
+```
+
+### Kurzbeschreibung (80 cars max)
+```
+Einzigartige 3D-Sonnensimulation: Planen Sie Ihre Touren nach Schatten und Sonne.
+```
+
+### Ausführliche Beschreibung (≤ 4000 cars)
+```
+⛰️ SunTrail 3D: Die Solar-Expertise für Ihre Wanderungen, Spaziergänge und Bergtouren.
+
+Ob Sie ein Genusswanderer auf der Suche nach Sonne sind oder ein Profi-Alpinist, der morgendliche Eispassagen vermeiden möchte – SunTrail 3D ist die einzige App, die echte Sonnenschatten in Echtzeit auf ein reales 3D-Gelände projiziert.
+
+Optimiert für die SCHWEIZ (SwissTopo HD) und weltweit verfügbar.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+☀️ EXKLUSIV: DIE WANDERER-TIMELINE (PRO)
+━━━━━━━━━━━━━━━━━━━━━━━
+Fragen Sie sich nicht mehr, ob Sie bei der Ankunft am Pass im Schatten stehen werden.
+• 3D-Einfärbung: Ihre Route ändert die Farbe (Gold / Grün / Blau) basierend auf der Sonneneinstrahlung zu Ihrer geplanten Ankunftszeit.
+• Tempo-Anpassung: Die Analyse passt sich Ihrer Gehgeschwindigkeit an.
+• Reale Schatten: Berechnung auf dem Relief sowie auf Waldflächen und 3D-Gebäuden für absoluten Realismus.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+🏔️ DIE FORTSCHRITTLICHSTE 3D-ENGINE
+━━━━━━━━━━━━━━━━━━━━━━━
+• Hochpräzise Karten: SwissTopo (Schweiz), IGN (Frankreich), HD-Satellit.
+• Volle Immersion: Visualisieren Sie das Gelände aus jedem Winkel mit außergewöhnlicher Flüssigkeit.
+• Live-Wetter: Animierte Regen- und Schneepartikel direkt auf der 3D-Karte.
+• Digitaler Neigungsmesser: Messen Sie Hangneigungen live für Ihre Sicherheit (Lawinenprävention).
+
+━━━━━━━━━━━━━━━━━━━━━━━
+📍 GPX & NAVIGATION
+━━━━━━━━━━━━━━━━━━━━━━━
+• GPX-Tracks importieren: Sehen Sie Ihre Routen direkt auf dem realen 3D-Relief.
+• Robuste Aufzeichnung: Hochpräzises GPS-Tracking, das auch bei ausgeschaltetem Bildschirm funktioniert.
+• Intelligentes Höhenprofil: Statistiken zu Distanz, Höhenmetern, Neigung und VAM.
+• Offline-Modus: Laden Sie Ihre Karten vorab herunter für volle Autonomie in den Bergen.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+🛡️ SICHERHEIT & DATENSCHUTZ
+━━━━━━━━━━━━━━━━━━━━━━━
+• SOS-Knopf: Teilen Sie Ihre exakte Position und Höhe mit einem Fingertipp.
+• Kein Account nötig: Keine Anmeldung erforderlich, keine persönlichen Daten werden gesammelt.
+• Volle Privatsphäre: Ihre Tracks bleiben auf Ihrem Telefon.
+• Unabhängig: Mit Leidenschaft entwickelte App, ohne Werbe-Tracker.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ INFOS
+━━━━━━━━━━━━━━━━━━━━━━━
+SunTrail 3D nutzt offizielle Daten (swisstopo, IGN) gemäß deren Open-Data-Lizenzen. Die App ist unabhängig von diesen Stellen.
+
+Verfügbar in Deutsch, Français, English und Italiano.
+
+---
+
+## 🇮🇹 ITALIANO
+
+### Titolo (26 cars)
+```
+SunTrail 3D — Sole & Trekking
+```
+
+### Breve descrizione (80 cars max)
+```
+Simulazione solare 3D unica: pianifica i tuoi trekking in base a ombre e sole.
+```
+
+### Descrizione lunga (≤ 4000 cars)
+```
+⛰️ SunTrail 3D: L'esperto solare per le tue escursioni, passeggiate e avventure in montagna.
+
+Che tu sia un escursionista della domenica in cerca di sole o un alpinista esperto che vuole evitare il ghiaccio mattutino, SunTrail 3D è l'unica app che proietta ombre solari reali in tempo reale su un vero terreno 3D.
+
+Ottimizzato per la SVIZZERA (Svizzeratopo HD) e disponibile in tutto il mondo.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+☀️ ESCLUSIVO: LA TIMELINE DELL'ESCURSIONISTA (PRO)
+━━━━━━━━━━━━━━━━━━━━━━━
+Non chiederti più se sarai all'ombra quando arriverai al colle.
+• Colorazione 3D: Il tuo percorso cambia colore (Oro / Verde / Blu) in base all'esposizione solare prevista all'ora del tuo passaggio.
+• Adattamento al ritmo: L'analisi si adatta alla tua velocità di camminata.
+• Ombre reali: Calcolo basato sul rilievo, ma anche su aree boschive e edifici 3D per un realismo totale.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+🏔️ IL MOTORE 3D PIÙ AVANZATO
+━━━━━━━━━━━━━━━━━━━━━━━
+• Cartografia ad Alta Precisione: SwissTopo (Svizzera), IGN (Francia), Satellite HD.
+• Immersione totale: Visualizza il rilievo da ogni angolazione con una fluidità eccezionale.
+• Meteo in diretta: Particelle di pioggia e neve animate direttamente sulla mappa 3D.
+• Inclinometro Digitale: Misura le pendenze in tempo reale per la tua sicurezza (prevenzione valanghe).
+
+━━━━━━━━━━━━━━━━━━━━━━━
+📍 GPX & NAVIGAZIONE
+━━━━━━━━━━━━━━━━━━━━━━━
+• Importa tracce GPX: Visualizzale "adagiate" sul rilievo reale in 3D.
+• Registrazione robusta: Tracking GPS ad alta precisione che funciona anche a schermo spento.
+• Profilo altimetrico intelligente: Statistiche di distanza, dislivello, pendenza e VAM.
+• Modalità Offline: Scarica le tue mappe prima di partire per una totale autonomia in montagna.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+🛡️ SICUREZZA & PRIVACY
+━━━━━━━━━━━━━━━━━━━━━━━
+• Pulsante SOS: Condividi la tua posizione esatta e altitudine con un tocco.
+• Nessun Account: Nessun login richiesto, nessun dato personale raccolto.
+• Privacy totale: I tuoi percorsi rimangono sul tuo telefono.
+• Indipendente: App sviluppata con passione, senza tracker pubblicitari.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ INFORMAZIONI
+━━━━━━━━━━━━━━━━━━━━━━━
+SunTrail 3D utilizza dati ufficiali (swisstopo, IGN) in conformità con le loro licenze open-data. L'applicazione è indipendente da tali enti.
+
+Disponibile in Italiano, Français, English e Deutsch.
+```
+
+---
+
+## 🚀 STRATÉGIE DE VISIBILITÉ GOOGLE PLAY (ASO)
+
+### 1. Tags & Catégories
+Dans la Google Play Console, assurez-vous d'avoir sélectionné :
+- **Catégorie :** Cartes et navigation (ou Santé et forme, mais Cartes est plus pertinent pour le moteur 3D).
+- **Tags (Max 5) :**
+    1. Randonnée
+    2. Cartes et navigation
+    3. GPS de randonnée
+    4. Planificateur de voyage
+    5. Plein air
+
+### 2. Mots-clés de Recherche (Keywords)
+Google indexe le **Titre**, la **Description courte** et les **premières lignes** de la description longue.
+- **Mots à fort volume inclus :** "Randonnée", "Suisse", "3D", "GPS", "Soleil", "Ombre", "Carte", "IGN", "SwissTopo".
+- **Astuce :** Ne répétez pas 50 fois le même mot, utilisez des synonymes ("balade", "sortie", "trekking").
+
+### 3. Visuels (Le plus important pour convertir)
+- **Captures d'écran (Screenshots) :**
+    - Capture 1 : Une vue 3D époustouflante avec le soleil (Heure dorée).
+    - Capture 2 : **La Timeline du randonneur** (tracé coloré or/bleu).
+    - Capture 3 : Les couches de cartes (SwissTopo vs Satellite).
+    - Capture 4 : L'inclinomètre ou la météo animée.
+    - *Texte sur les images :* Utilisez des gros titres lisibles sur les captures (ex: "Ombres 3D réelles").
+- **Vidéo de présentation :** Une vidéo de 15-30 secondes montrant le glissement du curseur temporel et l'ombre qui bouge est le meilleur outil de vente pour SunTrail.
+
+### 4. Localisation
+Même si vous visez le monde, remplissez les fiches en **Allemand** et **Italien**. Pour la Suisse, c'est crucial.
+- *Astuce :* Si vous ne voulez pas tout traduire, copiez au moins la description anglaise dans les sections DE/IT, mais le titre doit être traduit.
+
+### 5. Expériences (A/B Testing)
+Utilisez l'outil "Expériences sur la fiche Google Play" pour tester deux versions du Titre ou de l'Icône. Laissez tourner 15 jours pour voir laquelle génère le plus d'installations.
