@@ -449,6 +449,7 @@
 ## [5.40.35] - 2026-04-30
 
 ### Fixed
+- **Menus (High/Ultra)** : Correction de la transparence (glassmorphism) — uniformisation de l'opacité (0.95) pour une lisibilité constante en mode portrait et paysage, quel que soit l'appareil.
 - **Worker Timeouts** : Timeout passé de 15s à 45s pour éviter les faux positifs sur les grandes files d'attente (ultra preset, 625 tuiles).
 - **Worker Load Balancing** : Ajout du least-loaded scheduling avec cap à 4 tâches concurrentes par worker + file d'attente. Évite la saturation intra-worker et les timeouts en cascade.
 - **Vegetation Crash** : Race condition corrigée dans `createForestForTile()` — pendant `await landcoverPromise`, `dispose()` pouvait nullifier `pixelData`. Double null-guard ajouté.
