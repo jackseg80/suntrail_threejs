@@ -4,7 +4,7 @@ import { i18n } from '../../../i18n/I18nService';
 import { eventBus } from '../../eventBus';
 import { sheetManager } from '../core/SheetManager';
 import { getWeatherIcon } from '../../weather';
-import { isPositionInSwitzerland, isPositionInFrance, isPositionInItaly } from '../../geo';
+import { getCountryCode } from '../../geo';
 import templateHTML from '../templates/top-status-bar.html?raw';
 
 export class TopStatusBar extends BaseComponent {
@@ -137,10 +137,13 @@ export class TopStatusBar extends BaseComponent {
             } else {
                 const lat = state.TARGET_LAT;
                 const lon = state.TARGET_LON;
+                const code = getCountryCode(lat, lon);
                 
-                if (isPositionInSwitzerland(lat, lon)) sourceKey = 'swiss';
-                else if (isPositionInItaly(lat, lon)) sourceKey = 'italy';
-                else if (isPositionInFrance(lat, lon)) sourceKey = 'ign';
+                switch (code) {
+                    case 'CH': sourceKey = 'swiss'; break;
+                    case 'IT': sourceKey = 'italy'; break;
+                    case 'FR': sourceKey = 'ign'; break;
+                }
             }
 
             const country = i18n.t(`topbar.lod.${sourceKey}`);

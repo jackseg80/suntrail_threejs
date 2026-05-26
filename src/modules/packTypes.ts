@@ -14,7 +14,7 @@ export interface PackMeta {
     version: number;
     sizeMB: number;
     cdnUrl: string;
-    regionCheck: 'switzerland' | 'france_alps';
+    regionCheck: string;           // code pays ISO (ex: 'CH', 'FR')
 }
 
 /** État local d'un pack — persisté en localStorage. */

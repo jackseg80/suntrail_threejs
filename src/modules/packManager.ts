@@ -20,6 +20,7 @@ import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
 import type { PackMeta, PackState, PackCatalog, PackStatus } from './packTypes';
 import { iapService } from './iapService';
+import { isPointInCountry } from './geo';
 import { STORAGE_KEYS } from '../constants/storage';
 
 const CDN_BASE_URL = 'https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev';
@@ -42,7 +43,7 @@ const EMBEDDED_CATALOG: PackCatalog = {
             version: 2,
             sizeMB: 716,
             cdnUrl: `${CDN_BASE_URL}/packs/suntrail-pack-switzerland-v2.pmtiles`,
-            regionCheck: 'switzerland',
+            regionCheck: 'CH',
         },
         {
             id: 'france_alps',
@@ -53,7 +54,7 @@ const EMBEDDED_CATALOG: PackCatalog = {
             version: 2,
             sizeMB: 515,
             cdnUrl: `${CDN_BASE_URL}/packs/suntrail-pack-france_alps-v2.pmtiles`,
-            regionCheck: 'france_alps',
+            regionCheck: 'FR',
         },
     ],
 };
@@ -469,9 +470,10 @@ class PackManager {
 
     private isTileInPackRegion(tx: number, ty: number, zoom: number, meta: PackMeta): boolean {
         const n = Math.pow(2, zoom);
-        // Centre de la tuile
         const centerLat = Math.atan(Math.sinh(Math.PI * (1 - 2 * (ty + 0.5) / n))) * 180 / Math.PI;
         const centerLon = (tx + 0.5) / n * 360 - 180;
+        // Vérification polygone si le pays est connu, sinon fallback bbox
+        if (meta.regionCheck && isPointInCountry(centerLat, centerLon, meta.regionCheck)) return true;
         return centerLat >= meta.bounds.minLat && centerLat <= meta.bounds.maxLat &&
                centerLon >= meta.bounds.minLon && centerLon <= meta.bounds.maxLon;
     }

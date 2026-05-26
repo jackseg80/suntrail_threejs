@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.55.4)
+# SunTrail — Guide IA (v5.56.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-26 — v5.55.4 : Refonte des frontières (polygones Suisse OSM 54 points, multi-point tile check, LOD cap 14 Swisstopo). v5.55.3 : Harmonisation des essais gratuits (7 jours) et nettoyage des mentions obsolètes.
+> Mis à jour le 2026-05-26 — v5.56.0 : Frontières Europe data-driven (Natural Earth 1:10m, 55 pays). Architecture configurable par pays (tileSources.ts). Pack filtering polygonal.
 
 ## Projet
 
@@ -11,17 +11,14 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **Monétisation (v5.53.7)** : Passage aux essais gratuits (Free Trials) natifs RevenueCat/Stores. Suppression des trials locaux.
 - **Simulation Solaire Unique** : Calcul d'ombres portées en temps réel sur le relief, mais aussi sur les **forêts (InstancedMesh)** et les **bâtiments 3D**, offrant un réalisme topographique inégalé.
 - **Analyse Topographique** : Moteur d'analyse de profil, stats de précision (D+/D-, VAM) et inclinomètre numérique pro.
-- **Disponibilité Géo** : Fonctionnalités HD variables selon les pays (priorité CH/FR/IT), projet en évolution constante pour étendre la couverture des données haute fidélité.
 - **Core** : LOD adaptatif, PMTiles, Offline-first, Support GPX.
 - **Hydrologie v5.34.0** : Refonte totale via Vector Tiles PBF (SwissTopo/MapTiler) et technique du "Texture Mask". Zéro Z-fighting, précision au pixel, adéquation relief parfaite.
 - **Végétation v5.33.1** : Détection sémantique vectorielle (SwissTopo/MapTiler), filtrage par BBox optimisé (v5.34.0).
-- **LOD v5.55.4** : Refonte complète du système de frontières (polygones OSM multi-pays) :
-  - **Polygone Suisse** : 54 points simplifiés depuis OSM (relation 51701, Ramer-Douglas-Peucker ~2 km). Stocké dans `geo.ts:SWITZERLAND_POLYGON`. BBox pré-calculée au chargement (`_CH_BBOX`).
-  - **Ray-casting** : `isPointInPolygon(px, py, polygon)` — O(n), zéro allocation. Utilisé par `isPointInCountry(lat, lon, countryCode)` avec pré-filtre BBox rapide.
-  - **Tile multi-points** : `isTileInCountry(tx, ty, zoom, 'CH', threshold)` teste centre + 4 coins. `isTileInSwitzerland()` = seuil 3/5, `isTileInSwitzerlandStrict()` = seuil 5/5.
-  - **LOD cap 14 Swisstopo** : Si `zoom > 14 && !isTileInSwitzerlandStrict()` → interdit Swisstopo, fallback IGN (France) ou MapTiler. Élimine les tuiles vides aux frontières.
-  - **Architecture extensible** : `COUNTRY_POLYGONS` / `COUNTRY_BBOX` — ajouter un polygone pour FR, IT, etc. en une entrée. Les pays sans polygone continuent avec `REGIONS` (rectangles).
-  - **Suppression `REGIONS.CH`** : Les 5 rectangles CH chevauchants sont remplacés par le polygone. `REGIONS.FR` et `REGIONS.IT` conservés pour la couverture IGN/MapTiler.
+- **Frontières v5.56.0** : Système data-driven Europe entière (Natural Earth 1:10m, 55 pays). Voir `src/modules/geo.ts`, `src/data/countries.ts`, `src/modules/tileSources.ts`.
+  - **Données** : `src/data/countries.ts` — 55 pays, polygones simplifiés (~1.6 km). Généré par `scripts/ingest-natural-earth.ts`. CH utilise un polygone OSM indépendant (54 pts, plus précis aux frontières). → [src/data/countries.ts](src/data/countries.ts) | [scripts/ingest-natural-earth.ts](scripts/ingest-natural-earth.ts)
+  - **Détection** : `getCountryCode(lat, lon)` → code ISO ou `null`. `getCountryAtTile(tx, ty, zoom)` → pays majoritaire dans une tuile. BBox pre-filter → ray-casting (O(n), zéro allocation). Micro-états testés en premier (priorité). → [src/modules/geo.ts](src/modules/geo.ts)
+  - **Sources de tuiles** : `COUNTRY_SOURCES` (data-driven). Chaque pays a une config : `colorTopo`, `colorSatellite`, `overlay`, `minZoom`, `strictAtHighZoom`. Pour ajouter la source HD d'un pays : une entrée dans `COUNTRY_SOURCES`. Sans config → fallback global (MapTiler → OpenTopoMap → OSM). → [src/modules/tileSources.ts](src/modules/tileSources.ts)
+  - **Backward compat** : `isPositionInSwitzerland/France/Italy`, `isTileInSwitzerland/Strict` conservés comme wrappers.
 - **Foreground Service v5.53.0** : Architecture processus séparé `:tracking`
   - `RecordingService` dans `android:process=":tracking"` — survit au kill de l'app principale
   - `TrackingActivity` transparente dans `:tracking` — point d'entrée du processus isolé

@@ -1,5 +1,6 @@
 import { state } from './state';
-import { isPositionInFrance, isPositionInItaly, isTileInSwitzerland, isTileInSwitzerlandStrict } from './geo';
+import { getCountryAtTile, isTileInCountry } from './geo';
+import { COUNTRY_SOURCES } from './tileSources';
 import { showToast } from './toast';
 
 import { tileWorkerManager } from './workerManager';
@@ -259,61 +260,52 @@ export async function fetchWithCache(url: string, usePersistentCache: boolean = 
 }
 
 /**
- * Vérifie si une tuile est majoritairement dans une région (check le centre).
- * Plus tolérant que le check des 4 coins pour les zones frontalières.
- */
-function isTileInRegion(tx: number, ty: number, zoom: number, check: (lat: number, lon: number) => boolean): boolean {
-    const n = Math.pow(2, zoom);
-    const centerLat = Math.atan(Math.sinh(Math.PI * (1 - 2 * (ty + 0.5) / n))) * 180 / Math.PI;
-    const centerLon = (tx + 0.5) / n * 360 - 180;
-    return check(centerLat, centerLon);
-}
-
-/**
  * Génère l'URL pour la texture de couleur/carte d'une tuile.
+ * Data-driven : le pays est détecté via les polygones Natural Earth,
+ * la source de tuiles est configurée dans tileSources.ts.
  */
 export function getColorUrl(tx: number, ty: number, zoom: number): string {
-    const inCH = isTileInSwitzerland(tx, ty, zoom);
-    const inCHStrict = isTileInSwitzerlandStrict(tx, ty, zoom);
-    const inFR = isTileInRegion(tx, ty, zoom, isPositionInFrance);
-    const inIT = isTileInRegion(tx, ty, zoom, isPositionInItaly);
     const hasKey = state.MK && state.MK.length > 10 && !state.isMapTilerDisabled;
-    
-    // --- MODE SATELLITE (v5.29.40 : Priorité absolue et stricte) ---
+
+    // --- MODE SATELLITE ---
     if (state.MAP_SOURCE === 'satellite') {
-        if (inCH && zoom >= 10) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${zoom}/${tx}/${ty}.jpeg`;
-        if (inFR && zoom >= 10) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX=${zoom}&TILEROW=${ty}&TILECOL=${tx}`;
-        
+        const code = getCountryAtTile(tx, ty, zoom, 3);
+        if (code) {
+            const src = COUNTRY_SOURCES[code];
+            if (src?.colorSatellite && (src.minZoom ?? 0) <= zoom && (src.maxZoom ?? 99) >= zoom) {
+                return src.colorSatellite(zoom, tx, ty);
+            }
+        }
         if (hasKey) return `https://api.maptiler.com/maps/satellite/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
         return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${ty}/${tx}`;
     }
 
     // --- MODE TOPO / AUTRE ---
-    
+
     // Bas zoom (vue d'ensemble) : OpenTopoMap pour tout le monde
     if (zoom <= 10) {
         const sub = ['a', 'b', 'c'][(tx + ty) % 3];
         return `https://${sub}.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`;
     }
 
-    // Swisstopo / Topo (Auto)
+    // Swisstopo / Topo (Auto) : data-driven via COUNTRY_SOURCES
     if (state.MAP_SOURCE === 'swisstopo') {
-        // Swisstopo dispo si : en CH ET (LOD ≤ 14 OU strictement en CH pour LOD > 14)
-        const canUseSwisstopo = inCH && (zoom <= 14 || inCHStrict);
-        if (canUseSwisstopo) {
-            return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${zoom}/${tx}/${ty}.jpeg`;
+        const code = getCountryAtTile(tx, ty, zoom, 3);
+        if (code) {
+            const src = COUNTRY_SOURCES[code];
+            if (src?.colorTopo && (src.minZoom ?? 0) <= zoom && (src.maxZoom ?? 99) >= zoom) {
+                // Vérification strictAtHighZoom (ex: CH Swisstopo LOD > 14)
+                if (src.strictAtHighZoom?.useStrictAbove && zoom > src.strictAtHighZoom.thresholdZoom) {
+                    const inStrict = isTileInCountry(tx, ty, zoom, code, 5);
+                    if (inStrict) return src.colorTopo(zoom, tx, ty);
+                    // Fallback : ne pas utiliser cette source, continuer la chaîne
+                } else {
+                    return src.colorTopo(zoom, tx, ty);
+                }
+            }
         }
-        
-        // 2. Italie (v5.35.3 : Prioritaire sur France pour Aoste/Piedmont)
-        if (inIT) {
-            if (zoom <= 17) { const sub = ['a','b','c'][(tx+ty)%3]; return `https://${sub}.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`; }
-            if (hasKey) return `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
-        }
-
-        // 3. France (uniquement si pas déjà pris par CH ou IT)
-        if (inFR) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${zoom}&TILEROW=${ty}&TILECOL=${tx}`;
     }
-    
+
     // Fallback Topo Global (MapTiler > OpenTopoMap > OSM)
     if (hasKey) return `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
     if (zoom <= 17) { const sub = ['a','b','c'][(tx+ty)%3]; return `https://${sub}.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`; }
@@ -321,18 +313,18 @@ export function getColorUrl(tx: number, ty: number, zoom: number): string {
 }
 
 /**
- * Génère l'URL pour la texture des sentiers/POI (Raster fallback pour stabilité).
+ * Génère l'URL pour la texture des sentiers/POI.
  */
 export function getOverlayUrl(tx: number, ty: number, zoom: number): string | null {
     const MIN_TRAIL_LOD = 11;
     if (!state.SHOW_TRAILS || zoom < MIN_TRAIL_LOD) return null;
 
-    // SwissTopo wanderwege : CDN gouvernemental, supporte Z0-28, rapide et fiable
-    if (isTileInSwitzerland(tx, ty, zoom)) {
+    // SwissTopo wanderwege
+    if (isTileInCountry(tx, ty, zoom, 'CH', 3)) {
         if (zoom < 13 || zoom > 18) return null;
         return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${zoom}/${tx}/${ty}.png`;
     }
-    // Waymarked Trails : serveur OSM bénévole — plafonné à Z17 (tuiles Z18 souvent vides)
+    // Waymarked Trails
     if (zoom > 17) return null;
     return `https://tile.waymarkedtrails.org/hiking/${zoom}/${tx}/${ty}.png`;
 }
@@ -364,10 +356,11 @@ export async function loadTileData(tx: number, ty: number, zoom: number, is2D: b
     const cz = Math.min(zoom, nativeMax);
     const cr = Math.pow(2, Math.max(0, zoom - nativeMax));
 
-    // v5.35.3 : Définition des flags pour la logique de priorité
-    const inCH = isTileInSwitzerland(Math.floor(tx/cr), Math.floor(ty/cr), cz);
-    const inFR = isTileInRegion(Math.floor(tx/cr), Math.floor(ty/cr), cz, isPositionInFrance);
-    const inIT = isTileInRegion(Math.floor(tx/cr), Math.floor(ty/cr), cz, isPositionInItaly);
+    // Définition des flags pays via polygones Natural Earth
+    const countryCode = getCountryAtTile(Math.floor(tx/cr), Math.floor(ty/cr), cz, 3);
+    const inCH = countryCode === 'CH';
+    const inFR = countryCode === 'FR';
+    const inIT = countryCode === 'IT';
 
     const colorUrl = getColorUrl(Math.floor(tx/cr), Math.floor(ty/cr), cz);
     const overlayUrl = getOverlayUrl(tx, ty, zoom);

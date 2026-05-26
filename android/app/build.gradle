@@ -14,8 +14,8 @@ android {
         applicationId "com.suntrail.threejs"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 814
-        versionName "5.55.4"
+        versionCode 815
+        versionName "5.56.0"
 
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

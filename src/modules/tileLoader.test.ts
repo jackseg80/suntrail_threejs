@@ -91,9 +91,10 @@ describe('tileLoader.ts URLs', () => {
 
     it('should prioritize Italy over France', () => {
         state.MAP_SOURCE = 'swisstopo';
-        // Aoste (Italie à 7.34E, aussi dans le mock France < 8E)
+        // Aoste (Italie à 7.34E) — détecté comme IT par les polygones Natural Earth
+        // IT n'a pas de source HD native → fallback global (MapTiler)
         const url = getColorUrl(4263, 2922, 13);
-        expect(url).toContain('opentopomap.org');
+        expect(url).toContain('maptiler.com');
     });
 
     it('should generate correct Overlay URL for Switzerland (polygon-based)', () => {

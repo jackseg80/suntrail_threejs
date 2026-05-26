@@ -71,13 +71,13 @@ describe('Module Géo (geo.ts)', () => {
             expect(isPositionInItaly(40.1, 9.0)).toBe(true);     // Sardaigne
         });
 
-        it('should correctly separate France and Italy at 7.1°E', () => {
+        it('should correctly separate France and Italy at the Alpine border', () => {
             expect(isPositionInItaly(45.73, 7.34)).toBe(true);
             expect(isPositionInSwitzerland(45.73, 7.34)).toBe(false);
             expect(isPositionInFrance(45.73, 7.34)).toBe(false);
 
             expect(isPositionInFrance(45.92, 6.86)).toBe(true);
-            expect(isPositionInItaly(45.92, 6.86)).toBe(true);
+            expect(isPositionInItaly(45.92, 6.86)).toBe(false);
         });
 
         it('should reject coordinates outside Italy', () => {

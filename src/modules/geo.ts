@@ -1,6 +1,26 @@
+/**
+ * geo.ts — Détection géographique data-driven (v5.56.0)
+ *
+ * Architecture :
+ *   Données  → src/data/countries.ts (Natural Earth 1:10m, généré par scripts/ingest-natural-earth.ts)
+ *   Détection → getCountryCode(lat, lon): string | null  (point → pays)
+ *               getCountryAtTile(tx, ty, zoom): string | null (tuile → pays)
+ *   Sources   → src/modules/tileSources.ts (config par pays, data-driven)
+ *
+ * CH utilise un polygone OSM indépendant (54 pts) plus précis que Natural Earth
+ * pour les zones frontalières critiques (Chiasso, Issenheim).
+ *
+ * Pour ajouter un pays : le fichier countries.ts est régénéré via le script d'ingest.
+ * Pour ajouter une source de tuiles : une entrée dans tileSources.ts.
+ *
+ * Voir aussi : CLAUDE.md § Frontières
+ */
+
 export const EARTH_CIRCUMFERENCE = 40075016.686;
 
-/** 
+import { COUNTRIES } from '../data/countries';
+
+/**
  * Cache pour les puissances de 2 (Zooms 0 à 25).
  * Évite Math.pow() dans les boucles de rendu et workers.
  */
@@ -27,11 +47,10 @@ export interface LocationPoint {
 }
 
 /**
- * Polygone simplifié de la Suisse (~54 points, précision ~2 km).
- * Contour OSM (relation 51701) simplifié via Ramer-Douglas-Peucker.
- * Format : [lon, lat] (convention GeoJSON).
+ * Polygone OSM de la Suisse (~54 pts) — plus précis que Natural Earth
+ * pour les zones frontalières critiques (Chiasso, Tessin, Issenheim).
  */
-export const SWITZERLAND_POLYGON: number[][] = [
+const SWITZERLAND_POLYGON_OSM: number[][] = [
     [5.956248, 46.132004],
     [6.294686, 46.225153],
     [6.219551, 46.311884],
@@ -49,7 +68,7 @@ export const SWITZERLAND_POLYGON: number[][] = [
     [8.852035, 46.075631],
     [8.785922, 45.989150],
     [9.017535, 45.817988],
-    [9.038,    45.829000],  // Chiasso — correction pointe du Tessin
+    [9.038,    45.829000],
     [9.009541, 46.037382],
     [9.248590, 46.233699],
     [9.282229, 46.496479],
@@ -88,35 +107,44 @@ export const SWITZERLAND_POLYGON: number[][] = [
     [5.956248, 46.132004],
 ];
 
-/** BBox englobante de la Suisse — pré-calculée au chargement du module. */
-const _CH_BBOX: BBox = (() => {
+// ── Polygones pays (multi-polygone, Natural Earth 1:10m) ───────────────────
+
+const COUNTRY_POLYGONS: Record<string, number[][][]> = {};
+const COUNTRY_BBOX: Record<string, BBox> = {};
+const COUNTRY_CODES: string[] = [];
+
+for (const [code, def] of Object.entries(COUNTRIES)) {
+    COUNTRY_POLYGONS[code] = def.polygons;
+    COUNTRY_BBOX[code] = def.bbox;
+    COUNTRY_CODES.push(code);
+}
+
+// Remplacer CH par le polygone OSM (plus précis aux frontières)
+// et recalculer sa BBox
+if (COUNTRY_POLYGONS['CH']) {
+    COUNTRY_POLYGONS['CH'] = [SWITZERLAND_POLYGON_OSM];
+    const poly = SWITZERLAND_POLYGON_OSM;
     let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
-    for (const [lon, lat] of SWITZERLAND_POLYGON) {
+    for (const [lon, lat] of poly) {
         if (lat < minLat) minLat = lat;
         if (lat > maxLat) maxLat = lat;
         if (lon < minLon) minLon = lon;
         if (lon > maxLon) maxLon = lon;
     }
-    return { minLat, maxLat, minLon, maxLon };
-})();
+    COUNTRY_BBOX['CH'] = { minLat, maxLat, minLon, maxLon };
+}
 
-/**
- * Polygones par pays. Structure extensible : ajouter une entrée pour
- * généraliser le test frontalier à n'importe quel pays.
- */
-const COUNTRY_POLYGONS: Record<string, number[][]> = {
-    CH: SWITZERLAND_POLYGON,
-};
+// Trier par priorité : d'abord les petits pays enclavés (pour éviter de les
+// rater dans les marges d'erreur des grands polygones adjacents).
+const PRIORITY_SMALL = new Set(['LI', 'SM', 'MC', 'AD', 'VA', 'GI', 'MT', 'JE', 'GG', 'IM']);
+COUNTRY_CODES.sort((a, b) => {
+    const aSmall = PRIORITY_SMALL.has(a) ? 1 : 0;
+    const bSmall = PRIORITY_SMALL.has(b) ? 1 : 0;
+    return bSmall - aSmall;
+});
 
-/** BBox pré-calculées par pays. */
-const COUNTRY_BBOX: Record<string, BBox> = {
-    CH: _CH_BBOX,
-};
+// ── Point-in-polygon ────────────────────────────────────────────────────────
 
-/**
- * Test point-dans-polygone (algorithme ray-casting, O(n), zéro allocation).
- * Accepte des coordonnées [lon, lat] (compatibles GeoJSON).
- */
 export function isPointInPolygon(px: number, py: number, polygon: number[][]): boolean {
     let inside = false;
     for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -129,26 +157,31 @@ export function isPointInPolygon(px: number, py: number, polygon: number[][]): b
     return inside;
 }
 
-/**
- * Vérifie si un point (lat, lon) est dans un pays donné.
- * Pré-vérification rapide via BBox suivie d'un test polygone.
- * Si le pays n'a pas de polygone, retourne false.
- */
 export function isPointInCountry(lat: number, lon: number, countryCode: string): boolean {
-    const polygon = COUNTRY_POLYGONS[countryCode];
-    if (!polygon) return false;
+    const polygons = COUNTRY_POLYGONS[countryCode];
+    if (!polygons) return false;
     const bbox = COUNTRY_BBOX[countryCode];
     if (lon < bbox.minLon || lon > bbox.maxLon || lat < bbox.minLat || lat > bbox.maxLat) return false;
-    return isPointInPolygon(lon, lat, polygon);
+    for (const ring of polygons) {
+        if (ring.length >= 3 && isPointInPolygon(lon, lat, ring)) return true;
+    }
+    return false;
 }
 
 /**
- * Vérifie si une tuile est majoritairement dans un pays en testant 5 points
- * (centre + 4 coins). Retourne true si ≥ threshold points sont à l'intérieur.
- *
- * @param threshold 3 = majorité simple, 5 = strict (tous les points).
- *                  Recommandé : 3 pour LOD ≤ 14, 5 pour LOD > 14.
+ * Détermine le code ISO du pays dans lequel se trouve un point.
+ * Retourne null si le point est en dehors de tous les pays.
+ * Les micro-états sont testés en premier (priorité).
  */
+export function getCountryCode(lat: number, lon: number): string | null {
+    for (const code of COUNTRY_CODES) {
+        if (isPointInCountry(lat, lon, code)) return code;
+    }
+    return null;
+}
+
+// ── Tile-in-country ─────────────────────────────────────────────────────────
+
 export function isTileInCountry(
     tx: number, ty: number, zoom: number,
     countryCode: string,
@@ -165,20 +198,71 @@ export function isTileInCountry(
     return inside >= threshold;
 }
 
+/**
+ * Retourne le code ISO du pays majoritaire dans une tuile.
+ * Teste les 5 points (centre + 4 coins) et retourne le pays ayant
+ * le plus de points. null si aucun pays n'a au moins threshold points.
+ */
+export function getCountryAtTile(
+    tx: number, ty: number, zoom: number,
+    threshold: number = 3
+): string | null {
+    const n = getPow2(zoom);
+    const sampleLats = new Float64Array(5);
+    const sampleLons = new Float64Array(5);
+    const points: [number, number][] = [[tx + 0.5, ty + 0.5], [tx, ty], [tx + 1, ty], [tx, ty + 1], [tx + 1, ty + 1]];
+    for (let i = 0; i < 5; i++) {
+        const [px, py] = points[i];
+        sampleLats[i] = Math.atan(Math.sinh(Math.PI * (1 - 2 * py / n))) * 180 / Math.PI;
+        sampleLons[i] = (px / n) * 360 - 180;
+    }
+
+    let bestCode: string | null = null;
+    let bestCount = 0;
+    for (const code of COUNTRY_CODES) {
+        const polygons = COUNTRY_POLYGONS[code];
+        const bbox = COUNTRY_BBOX[code];
+        let count = 0;
+        for (let i = 0; i < 5; i++) {
+            const lat = sampleLats[i], lon = sampleLons[i];
+            if (lon < bbox.minLon || lon > bbox.maxLon || lat < bbox.minLat || lat > bbox.maxLat) continue;
+            for (const ring of polygons) {
+                if (ring.length >= 3 && isPointInPolygon(lon, lat, ring)) { count++; break; }
+            }
+        }
+        if (count > bestCount) { bestCount = count; bestCode = code; }
+    }
+    return bestCount >= threshold ? bestCode : null;
+}
+
+// ── Wrappers backward-compat ────────────────────────────────────────────────
+
 /** Tuile majoritairement en Suisse (≥ 3/5 points). */
 export function isTileInSwitzerland(tx: number, ty: number, zoom: number): boolean {
     return isTileInCountry(tx, ty, zoom, 'CH', 3);
 }
 
-/** Tuile intégralement en Suisse (5/5 points). Utilisé pour le cap Swisstopo LOD > 14. */
+/** Tuile intégralement en Suisse (5/5 points). */
 export function isTileInSwitzerlandStrict(tx: number, ty: number, zoom: number): boolean {
     return isTileInCountry(tx, ty, zoom, 'CH', 5);
 }
 
-/** 
- * Limites géographiques par rectangles — conservées pour FR et IT
- * (couverture IGN / MapTiler). La Suisse utilise désormais un polygone.
- */
+export function isPositionInSwitzerland(lat: number, lon: number): boolean {
+    return isPointInCountry(lat, lon, 'CH');
+}
+
+/** Utilise les polygones (plus précis que l'ancien REGIONS). */
+export function isPositionInFrance(lat: number, lon: number): boolean {
+    return isPointInCountry(lat, lon, 'FR');
+}
+
+/** Utilise les polygones (plus précis que l'ancien REGIONS). */
+export function isPositionInItaly(lat: number, lon: number): boolean {
+    return isPointInCountry(lat, lon, 'IT');
+}
+
+// ── REGIONS (deprecated) — conservé pour rétrocompatibilité ─────────────────
+
 export const REGIONS: Record<string, BBox[]> = {
     FR: [
         { minLat: 41.3, maxLat: 51.1, minLon: -5.1, maxLon: 6.0 },
@@ -195,30 +279,28 @@ export const REGIONS: Record<string, BBox[]> = {
 export function isPositionInRegion(lat: number, lon: number, regionCode: string): boolean {
     const bboxes = REGIONS[regionCode];
     if (!bboxes) return false;
-    return bboxes.some(bbox => 
-        lat >= bbox.minLat && lat <= bbox.maxLat && 
+    return bboxes.some(bbox =>
+        lat >= bbox.minLat && lat <= bbox.maxLat &&
         lon >= bbox.minLon && lon <= bbox.maxLon
     );
 }
 
-/** Conversion Latitude -> Y Normalisé [0, 1] (Web Mercator) */
+// ── Conversions cartographiques ─────────────────────────────────────────────
+
 export function latToYNorm(lat: number): number {
     const latRad = lat * Math.PI / 180;
     return (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2;
 }
 
-/** Conversion Longitude -> X Normalisé [0, 1] (Web Mercator) */
 export function lonToXNorm(lon: number): number {
     return (lon + 180) / 360;
 }
 
-/** Inverse Y Normalisé -> Latitude */
 export function yNormToLat(yNorm: number): number {
     const n = Math.PI - 2 * Math.PI * yNorm;
     return 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
 }
 
-/** Inverse X Normalisé -> Longitude */
 export function xNormToLon(xNorm: number): number {
     return xNorm * 360 - 180;
 }
@@ -227,36 +309,23 @@ export function decodeTerrainRGB(r: number, g: number, b: number, exaggeration: 
     return (-10000 + (r * 65536 + g * 256 + b) * 0.1) * exaggeration;
 }
 
-export function isPositionInSwitzerland(lat: number, lon: number): boolean {
-    return isPointInCountry(lat, lon, 'CH');
-}
-
-export function isPositionInFrance(lat: number, lon: number): boolean {
-    return isPositionInRegion(lat, lon, 'FR');
-}
-
-export function isPositionInItaly(lat: number, lon: number): boolean {
-    return isPositionInRegion(lat, lon, 'IT');
-}
-
 export function lngLatToWorld(lon: number, lat: number, originTile: {x: number, y: number, z: number}): { x: number; z: number } {
     return lngLatToWorldTarget(lon, lat, originTile, { x: 0, z: 0 });
 }
 
-/** Version optimisée sans allocation pour les boucles (ex: tracés GPX) */
 export function lngLatToWorldTarget<T extends {x: number, z: number}>(
-    lon: number, lat: number, 
-    originTile: {x: number, y: number, z: number}, 
+    lon: number, lat: number,
+    originTile: {x: number, y: number, z: number},
     target: T
 ): T {
     const xNorm = (lon + 180) / 360;
     const latRad = lat * Math.PI / 180;
     const yNorm = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2;
-    
+
     const originUnit = 1.0 / getPow2(originTile.z);
     const oxNorm = (originTile.x + 0.5) * originUnit;
     const oyNorm = (originTile.y + 0.5) * originUnit;
-    
+
     target.x = (xNorm - oxNorm) * EARTH_CIRCUMFERENCE;
     target.z = (yNorm - oyNorm) * EARTH_CIRCUMFERENCE;
     return target;
@@ -266,19 +335,18 @@ export function worldToLngLat(worldX: number, worldZ: number, originTile: {x: nu
     return worldToLngLatTarget(worldX, worldZ, originTile, { lat: 0, lon: 0 });
 }
 
-/** Version optimisée sans allocation */
 export function worldToLngLatTarget<T extends {lat: number, lon: number}>(
-    worldX: number, worldZ: number, 
-    originTile: {x: number, y: number, z: number}, 
+    worldX: number, worldZ: number,
+    originTile: {x: number, y: number, z: number},
     target: T
 ): T {
     const originUnit = 1.0 / getPow2(originTile.z);
     const oxNorm = (originTile.x + 0.5) * originUnit;
     const oyNorm = (originTile.y + 0.5) * originUnit;
-    
+
     const xNorm = worldX / EARTH_CIRCUMFERENCE + oxNorm;
     const yNorm = worldZ / EARTH_CIRCUMFERENCE + oyNorm;
-    
+
     target.lon = xNorm * 360 - 180;
     const n = Math.PI - 2 * Math.PI * yNorm;
     target.lat = 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
@@ -294,7 +362,6 @@ export function lngLatToTile(lon: number, lat: number, zoom: number): { x: numbe
     return { x, y, z: zoom };
 }
 
-/** Limites géographiques valides du système de tuiles Web Mercator */
 export const WORLD_BOUNDS = {
     minLat: -85.051,
     maxLat:  85.051,
@@ -323,7 +390,7 @@ export function getTileBounds(tile: {zoom: number, tx: number, ty: number}) {
 }
 
 export function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371; // km
+    const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat/2) * Math.sin(dLat/2) +

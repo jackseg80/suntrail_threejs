@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { disposeObject } from './memory';
 import { state, isProActive } from './state';
 import { isMobileDevice } from './utils';
-import { worldToLngLat, lngLatToTile, isPositionInSwitzerland, isPositionInFrance, EARTH_CIRCUMFERENCE } from './geo';
+import { worldToLngLat, lngLatToTile, getCountryCode, EARTH_CIRCUMFERENCE } from './geo';
+import { COUNTRY_SOURCES } from './tileSources';
 import { getTileCacheKey, markCacheKeyInactive, hasInCache, getFromCache, purgeOldPixelData } from './tileCache';
 import { insertTile, removeTile, clearIndex as clearSpatialIndex } from './tileSpatialIndex';
 import { updateAllGPXMeshes, updateRecordedTrackMesh, refreshTracks as gpxRefreshTracks } from './gpxLayers';
@@ -159,8 +160,17 @@ export function animateTiles(delta: number): boolean {
 
 export function autoSelectMapSource(lat: number, lon: number): void {
     if (state.hasManualSource || isNaN(lat) || lat === 0) return;
-    
-    let newSource = (state.ZOOM > 10 && (isPositionInSwitzerland(lat, lon) || isPositionInFrance(lat, lon))) ? 'swisstopo' : 'opentopomap';
+
+    const code = getCountryCode(lat, lon);
+    let newSource: string = 'opentopomap';
+
+    if (state.ZOOM > 10 && code) {
+        const src = COUNTRY_SOURCES[code];
+        if (src?.colorTopo) {
+            newSource = 'swisstopo';
+        }
+    }
+
     if (state.MAP_SOURCE !== newSource) {
         state.MAP_SOURCE = newSource;
         document.querySelectorAll('.layer-item').forEach(i => { i.classList.remove('active'); if ((i as HTMLElement).dataset.source === newSource) i.classList.add('active'); });

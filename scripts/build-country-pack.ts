@@ -18,6 +18,7 @@ import {
     serializeDirectory, buildTwoLevelDirectory, buildHeader, HEADER_SIZE,
     deduplicateTiles,
 } from './pmtiles-writer';
+import { COUNTRIES } from '../src/data/countries';
 
 const OFFSET_ELEV = 100_000_000_000;
 const OFFSET_OVERLAY = 200_000_000_000;
@@ -29,6 +30,7 @@ interface PackDef {
     zooms: number[];
     source: 'swisstopo' | 'ign';
     version: number;
+    countryCode: string; // ISO 3166-1 alpha-2
 }
 
 const PACKS: Record<string, PackDef> = {
@@ -39,6 +41,7 @@ const PACKS: Record<string, PackDef> = {
         zooms: [8, 9, 10, 11, 12, 13, 14],
         source: 'swisstopo',
         version: 3,
+        countryCode: 'CH',
     },
     france_alps: {
         id: 'france_alps',
@@ -47,30 +50,42 @@ const PACKS: Record<string, PackDef> = {
         zooms: [8, 9, 10, 11, 12, 13, 14],
         source: 'ign',
         version: 3,
+        countryCode: 'FR',
     },
 };
 
 type TileType = 'color' | 'elevation' | 'overlay';
 const RATE_LIMIT_MS = 50; // Plus rapide pour le rebuild
 
-// --- Filtre géographique strict ---
-// On utilise les mêmes fonctions que l'app pour être cohérent
-function isLatLonInSwitzerland(lat: number, lon: number): boolean {
-    return lon >= 5.9 && lon <= 10.5 && lat >= 45.8 && lat <= 47.8;
+// --- Filtre géographique par polygones (Natural Earth 1:10m) ---
+
+function isPointInPolygon(px: number, py: number, polygon: number[][]): boolean {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i][0], yi = polygon[i][1];
+        const xj = polygon[j][0], yj = polygon[j][1];
+        if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) {
+            inside = !inside;
+        }
+    }
+    return inside;
 }
 
-function isTileFullyInRegion(tx: number, ty: number, zoom: number, bounds: PackDef['bounds']): boolean {
+function isTileInCountryPolygon(tx: number, ty: number, zoom: number, code: string): boolean {
+    const def = COUNTRIES[code];
+    if (!def) return false;
     const n = Math.pow(2, zoom);
-    const check = (lat: number, lon: number) =>
-        lat >= bounds.minLat && lat <= bounds.maxLat && lon >= bounds.minLon && lon <= bounds.maxLon;
-    
-    // Check 4 coins
-    const latN = Math.atan(Math.sinh(Math.PI * (1 - 2 * ty / n))) * 180 / Math.PI;
-    const latS = Math.atan(Math.sinh(Math.PI * (1 - 2 * (ty + 1) / n))) * 180 / Math.PI;
-    const lonW = tx / n * 360 - 180;
-    const lonE = (tx + 1) / n * 360 - 180;
-    
-    return check(latN, lonW) && check(latN, lonE) && check(latS, lonW) && check(latS, lonE);
+    // Check 5 points (centre + 4 coins)
+    const points = [[tx + 0.5, ty + 0.5], [tx, ty], [tx + 1, ty], [tx, ty + 1], [tx + 1, ty + 1]];
+    let inside = 0;
+    for (const [px, py] of points) {
+        const lat = Math.atan(Math.sinh(Math.PI * (1 - 2 * py / n))) * 180 / Math.PI;
+        const lon = (px / n) * 360 - 180;
+        for (const ring of def.polygons) {
+            if (ring.length >= 3 && isPointInPolygon(lon, lat, ring)) { inside++; break; }
+        }
+    }
+    return inside >= 3;
 }
 
 function getTileUrl(z: number, x: number, y: number, type: TileType, source: PackDef['source'], maptilerKey?: string): string {
@@ -117,8 +132,8 @@ async function main() {
         const yMax = latToTileY(pack.bounds.minLat, z);
         for (let x = xMin; x <= xMax; x++) {
             for (let y = yMin; y <= yMax; y++) {
-                // FILTRE STRICT : Uniquement si la tuile est VRAIMENT dans la zone
-                if (isTileFullyInRegion(x, y, z, pack.bounds)) {
+                // Filtre polygonal strict (Natural Earth 1:10m)
+                if (isTileInCountryPolygon(x, y, z, pack.countryCode)) {
                     for (const type of types) refs.push({ z, x, y, type });
                 }
             }
