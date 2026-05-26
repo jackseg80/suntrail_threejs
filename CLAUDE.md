@@ -1,4 +1,4 @@
-# SunTrail — Guide IA (v5.56.0)
+# SunTrail — Guide IA (v5.56.1)
 
 > Point d'entrée unique pour tous les agents IA.
 > Mis à jour le 2026-05-26 — v5.56.1 : Sources HD actives: CH (SwissTopo), FR (IGN), AT (basemap.at), DE (BKG), ES (IGN España). NO (Kartverket topo4) codé mais désactivé.
@@ -19,6 +19,11 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
   - **Détection** : `getCountryCode(lat, lon)` → code ISO ou `null`. `getCountryAtTile(tx, ty, zoom)` → pays majoritaire dans une tuile. BBox pre-filter → ray-casting (O(n), zéro allocation). Micro-états testés en premier (priorité). → [src/modules/geo.ts](src/modules/geo.ts)
   - **Sources de tuiles** : `COUNTRY_SOURCES` (data-driven). Sources actives : CH (SwissTopo), FR (IGN), AT (basemap.at — CC-BY 4.0), DE (BKG — dl-de/by-2-0), ES (IGN España — CC-BY 4.0 scne.es). NO (Kartverket topo4 — CC-BY 4.0) codé mais désactivé. Pour ajouter la source HD d'un pays : une entrée dans `COUNTRY_SOURCES`. Sans config → fallback global (MapTiler → OpenTopoMap → OSM). → [src/modules/tileSources.ts](src/modules/tileSources.ts)
   - **Backward compat** : `isPositionInSwitzerland/France/Italy`, `isTileInSwitzerland/Strict` conservés comme wrappers.
+- **Sources HD Pays (v5.56.1)** : 5 sources actives, 6 prêtes à activer après vérification locale.
+  - **Actives** : CH (SwissTopo), FR (IGN), AT (basemap.at), DE (BKG), ES (IGN España).
+  - **Désactivée (code prêt)** : NO (Kartverket topo4) — timeout, à tester depuis un VPN/téléphone norvégien.
+  - **Endpoints inaccessibles** : CZ (ČÚZK), PL (Geoportal), SK (ZBGIS), FI (MML), SE (Lantmäteriet) — 401/404/503 depuis l'étranger. URLs documentées dans `tileSources.ts:145-160`.
+  - **Hors Europe (nécessite extension Natural Earth)** : JP (GSI Maps) — URL fonctionnelle, mais JP absent du dataset Europe. Voir `ROADMAP.md` pour les URLs exactes.
 - **Foreground Service v5.53.0** : Architecture processus séparé `:tracking`
   - `RecordingService` dans `android:process=":tracking"` — survit au kill de l'app principale
   - `TrackingActivity` transparente dans `:tracking` — point d'entrée du processus isolé

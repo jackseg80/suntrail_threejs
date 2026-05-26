@@ -136,10 +136,23 @@ export const COUNTRY_SOURCES: Record<string, TileSourceConfig> = {
         colorTopo: (z, x, y) => ignSpainTopo(z, x, y),
         minZoom: 10,
     },
-    // NO: Kartverket topo4 — endpoint inaccessible, à vérifier localement
+    // NO: Kartverket topo4 — endpoint inaccessible (timeout), à vérifier localement
     // NO: {
     //     colorTopo: (z, x, y) => kartverketTopo(z, x, y),
     //     colorSatellite: (z, x, y) => kartverketSatellite(z, x, y),
     //     minZoom: 10,
     // },
+    //
+    // ── Pays à activer après vérification locale des endpoints ──
+    // (tests 2026-05-26 : tous inaccessibles depuis l'étranger — 401/403/404/503)
+    //
+    // République Tchèque (ČÚZK): https://ags.cuzk.gov.cz/arcgis/rest/services/ZM/MapServer/WMTS/tile/1.0.0/ZM/default/GoogleMapsCompatible/{z}/{y}/{x}.png
+    // Pologne (Geoportal 2): https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMTS/StandardResolution?service=WMTS&request=GetCapabilities
+    // Slovaquie (ZBGIS): https://zbgisws.skgeodesy.sk/zbgisservices/wmts/service.svc/get?SERVICE=WMTS&REQUEST=GetCapabilities&VERSION=1.0.0
+    // Finlande (MML): https://avoin-karttakuva.maanmittauslaitos.fi/avoin/wmts/1.0.0/maastokartta/default/WGS84_Pseudo-Mercator/{z}/{y}/{x}.png
+    // Suède (Lantmäteriet): https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/tile/1.0.0/topowebb/default/web_mercator/{z}/{y}/{x}.png
+    //
+    // Japon (GSI Maps) — fonctionne, mais JP pas dans le dataset Natural Earth Europe.
+    // Pour activer le Japon, d'abord étendre `scripts/ingest-natural-earth.ts` à l'Asie.
+    // URL: https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png
 };

@@ -1,6 +1,6 @@
 # SunTrail — Roadmap
 
-## v5.56.0+ (Court terme — Sources HD par pays)
+## v5.56.1+ (Sources HD par pays)
 
 ### Cartes gouvernementales HD gratuites
 
@@ -9,30 +9,61 @@ Architecture data-driven : une entrée dans `COUNTRY_SOURCES` suffit, la détect
 Natural Earth est automatique.
 
 **Implémenté :**
-- ✅ Suisse (SwissTopo)
-- ✅ France (IGN Geoplateforme)
-- ✅ Autriche (basemap.at)
-- ✅ Allemagne (BKG TopPlusOpen)
-- ✅ Espagne (IGN España)
+- ✅ Suisse (SwissTopo) — `wmts.geo.admin.ch`
+- ✅ France (IGN Geoplateforme) — `data.geopf.fr`
+- ✅ Autriche (basemap.at) — `mapsneu.wien.gv.at`
+- ✅ Allemagne (BKG TopPlusOpen) — `sgx.geodatenzentrum.de`
+- ✅ Espagne (IGN España) — `www.ign.es`
 
-**Prochaine étape :**
-| # | Pays | Source | Statut |
-|---|------|--------|--------|
-| 6 | Norvège | Kartverket topo4 | ❌ Endpoint inaccessible (timeout) — à tester depuis un VPN norvégien |
-| 7 | Slovénie | GURS | URL à vérifier sur place |
-| 8 | Italie | Geoportale Nazionale | Qualité rando variable |
-| 9 | Royaume-Uni | Ordnance Survey | API key (free tier) |
+### Pays testés mais endpoints inaccessibles (à vérifier localement)
 
-**Hors-Europe :**
-| # | Pays | Source | Licence |
-|---|------|--------|---------|
-| 10 | Nouvelle-Zélande | LINZ Topo50 | OGD CC-BY |
-| 11 | Japon | GSI Maps | OGD |
-| 12 | USA | USGS National Map | PD |
-| 13 | Canada | NRCan CanTopo | OGL |
+Testé le 2026-05-26 depuis l'étranger. Tous nécessitent une vérification locale
+(depuis un navigateur situé dans le pays ou un VPN).
 
-**Futur — Vectoriel partiel :** Labels superposés via tuiles vectorielles (ex: basemap.at BMAPV) pour
-résoudre le problème de lisibilité des noms à certains zooms, sans migration complète du pipeline raster.
+| Pays | Source | Code | Cause probable |
+|------|--------|------|----------------|
+| 🇳🇴 Norvège | Kartverket topo4 | Timeout | Blocage géographique ? |
+| 🇨🇿 République Tchèque | ČÚZK ZM | 404 | Endpoint ArcGIS changé |
+| 🇵🇱 Pologne | Geoportal 2 | 404 | API migrée |
+| 🇸🇰 Slovaquie | ZBGIS | 404 | Endpoint changé |
+| 🇫🇮 Finlande | MML maastokartta | 401 | Auth requise |
+| 🇸🇪 Suède | Lantmäteriet | 503 | Service down |
+
+**Comment activer :** Tester l'URL depuis l'app/navigateur local → si OK, décommenter
+l'entrée dans `COUNTRY_SOURCES` et le helper dans `tileSources.ts`.
+
+### Pays nécessitant des prérequis
+
+| Pays | Source | Prérequis |
+|------|--------|-----------|
+| 🇸🇮 Slovénie | GURS | URL WMTS à trouver (recherche docs GURS) |
+| 🇮🇹 Italie | Geoportale Nazionale | Pas de WMTS national de qualité rando |
+| 🇬🇧 Royaume-Uni | Ordnance Survey | Clé API gratuite à configurer |
+| 🇯🇵 Japon | GSI Maps | Étendre `countries.ts` à l'Asie (ingest Asia) |
+| 🇳🇿 Nouvelle-Zélande | LINZ Topo50 | Clé API gratuite à configurer |
+| 🇺🇸🇨🇦 USA/Canada | USGS/NRCan | Faible priorité rando Europe |
+
+### URLs trouvées (prêtes dans `tileSources.ts`)
+
+```
+CZ: https://ags.cuzk.gov.cz/arcgis/rest/services/ZM/MapServer/WMTS/tile/1.0.0/ZM/default/GoogleMapsCompatible/{z}/{y}/{x}.png
+PL: https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMTS/StandardResolution?SERVICE=WMTS&REQUEST=GetCapabilities&VERSION=1.0.0
+SK: https://zbgisws.skgeodesy.sk/zbgisservices/wmts/service.svc/get?SERVICE=WMTS&REQUEST=GetCapabilities&VERSION=1.0.0
+FI: https://avoin-karttakuva.maanmittauslaitos.fi/avoin/wmts/1.0.0/maastokartta/default/WGS84_Pseudo-Mercator/{z}/{y}/{x}.png
+SE: https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/tile/1.0.0/topowebb/default/web_mercator/{z}/{y}/{x}.png
+JP: https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png
+```
+
+### Pour reprendre
+
+1. Vérifier les URLs WMTS depuis un navigateur/navire dans le pays cible
+2. Décommenter le helper URL dans `tileSources.ts` (ex: `cuzkTopo()`, `gsiJpTopo()`)
+3. Décommenter l'entrée dans `COUNTRY_SOURCES`
+4. Ajouter les tests dans `tileLoader.test.ts` + `terrain.source.test.ts`
+5. Lancer `npm test` — 859+ tests doivent passer
+
+**Futur — Vectoriel partiel :** Labels superposés via tuiles vectorielles (ex: basemap.at BMAPV)
+pour résoudre le problème de lisibilité des noms à certains zooms.
 
 ---
 
