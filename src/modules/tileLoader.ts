@@ -1,5 +1,5 @@
 import { state } from './state';
-import { isPositionInSwitzerland, isPositionInFrance, isPositionInItaly } from './geo';
+import { isPositionInFrance, isPositionInItaly, isTileInSwitzerland, isTileInSwitzerlandStrict } from './geo';
 import { showToast } from './toast';
 
 import { tileWorkerManager } from './workerManager';
@@ -273,21 +273,18 @@ function isTileInRegion(tx: number, ty: number, zoom: number, check: (lat: numbe
  * Génère l'URL pour la texture de couleur/carte d'une tuile.
  */
 export function getColorUrl(tx: number, ty: number, zoom: number): string {
-    const inCH = isTileInRegion(tx, ty, zoom, isPositionInSwitzerland);
+    const inCH = isTileInSwitzerland(tx, ty, zoom);
+    const inCHStrict = isTileInSwitzerlandStrict(tx, ty, zoom);
     const inFR = isTileInRegion(tx, ty, zoom, isPositionInFrance);
     const inIT = isTileInRegion(tx, ty, zoom, isPositionInItaly);
     const hasKey = state.MK && state.MK.length > 10 && !state.isMapTilerDisabled;
     
     // --- MODE SATELLITE (v5.29.40 : Priorité absolue et stricte) ---
     if (state.MAP_SOURCE === 'satellite') {
-        // Fallback progressif pour garantir du satellite partout
         if (inCH && zoom >= 10) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/${zoom}/${tx}/${ty}.jpeg`;
         if (inFR && zoom >= 10) return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX=${zoom}&TILEROW=${ty}&TILECOL=${tx}`;
         
-        // Global Satellite (MapTiler ou ESRI en dernier recours)
         if (hasKey) return `https://api.maptiler.com/maps/satellite/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
-        
-        // Fallback ultime SATELLITE (ESRI) si pas de clé MapTiler, pour éviter de tomber sur de la Topo/OSM
         return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${ty}/${tx}`;
     }
 
@@ -301,8 +298,11 @@ export function getColorUrl(tx: number, ty: number, zoom: number): string {
 
     // Swisstopo / Topo (Auto)
     if (state.MAP_SOURCE === 'swisstopo') {
-        // 1. Suisse PRIORITAIRE (v5.35.2)
-        if (inCH) return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${zoom}/${tx}/${ty}.jpeg`;
+        // Swisstopo dispo si : en CH ET (LOD ≤ 14 OU strictement en CH pour LOD > 14)
+        const canUseSwisstopo = inCH && (zoom <= 14 || inCHStrict);
+        if (canUseSwisstopo) {
+            return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${zoom}/${tx}/${ty}.jpeg`;
+        }
         
         // 2. Italie (v5.35.3 : Prioritaire sur France pour Aoste/Piedmont)
         if (inIT) {
@@ -328,7 +328,7 @@ export function getOverlayUrl(tx: number, ty: number, zoom: number): string | nu
     if (!state.SHOW_TRAILS || zoom < MIN_TRAIL_LOD) return null;
 
     // SwissTopo wanderwege : CDN gouvernemental, supporte Z0-28, rapide et fiable
-    if (isTileInRegion(tx, ty, zoom, isPositionInSwitzerland)) {
+    if (isTileInSwitzerland(tx, ty, zoom)) {
         if (zoom < 13 || zoom > 18) return null;
         return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${zoom}/${tx}/${ty}.png`;
     }
@@ -365,7 +365,7 @@ export async function loadTileData(tx: number, ty: number, zoom: number, is2D: b
     const cr = Math.pow(2, Math.max(0, zoom - nativeMax));
 
     // v5.35.3 : Définition des flags pour la logique de priorité
-    const inCH = isTileInRegion(Math.floor(tx/cr), Math.floor(ty/cr), cz, isPositionInSwitzerland);
+    const inCH = isTileInSwitzerland(Math.floor(tx/cr), Math.floor(ty/cr), cz);
     const inFR = isTileInRegion(Math.floor(tx/cr), Math.floor(ty/cr), cz, isPositionInFrance);
     const inIT = isTileInRegion(Math.floor(tx/cr), Math.floor(ty/cr), cz, isPositionInItaly);
 

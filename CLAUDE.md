@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.55.2)
+# SunTrail — Guide IA (v5.55.4)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-17 — v5.55.2 : Harmonisation des essais gratuits (7 jours) et nettoyage des mentions obsolètes. v5.55.1 : Fix carte noire au démarrage (race condition benchmark), correction initialLon (typo), robustesse status tuiles, auto-reload sur perte WebGL. v5.55.0 : Benchmark de performance dynamique v2.0.
+> Mis à jour le 2026-05-26 — v5.55.4 : Refonte des frontières (polygones Suisse OSM 54 points, multi-point tile check, LOD cap 14 Swisstopo). v5.55.3 : Harmonisation des essais gratuits (7 jours) et nettoyage des mentions obsolètes.
 
 ## Projet
 
@@ -15,12 +15,13 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **Core** : LOD adaptatif, PMTiles, Offline-first, Support GPX.
 - **Hydrologie v5.34.0** : Refonte totale via Vector Tiles PBF (SwissTopo/MapTiler) et technique du "Texture Mask". Zéro Z-fighting, précision au pixel, adéquation relief parfaite.
 - **Végétation v5.33.1** : Détection sémantique vectorielle (SwissTopo/MapTiler), filtrage par BBox optimisé (v5.34.0).
-- **LOD v5.40.40** : Fix régression v5.38.x :
-  - `boost=0.5` pour OpenTopoMap → `1.2` (causait un saut de seuils LOD au changement de source autoSelectMapSource, LOD 10→12 direct)
-  - `* boost` retiré de LOD 11-14 + 10-7 (incohérence avec `autoSelectMapSource`)
-  - `forcedRadius` dynamique → fixé à 1 (5×5 tuiles → 3×3, évite chevauchement)
-  - `marginFactor` dynamique → fixé à 0.2 (tuiles persistantes, superposition de sources)
-  - Sous-régions CH dans `geo.ts` : trous comblés (Sud 45.7°, nouvelle 46.6-47.9/8.6-9.3 pour Uri/Schwyz, Est étendu à 47.9°)
+- **LOD v5.55.4** : Refonte complète du système de frontières (polygones OSM multi-pays) :
+  - **Polygone Suisse** : 54 points simplifiés depuis OSM (relation 51701, Ramer-Douglas-Peucker ~2 km). Stocké dans `geo.ts:SWITZERLAND_POLYGON`. BBox pré-calculée au chargement (`_CH_BBOX`).
+  - **Ray-casting** : `isPointInPolygon(px, py, polygon)` — O(n), zéro allocation. Utilisé par `isPointInCountry(lat, lon, countryCode)` avec pré-filtre BBox rapide.
+  - **Tile multi-points** : `isTileInCountry(tx, ty, zoom, 'CH', threshold)` teste centre + 4 coins. `isTileInSwitzerland()` = seuil 3/5, `isTileInSwitzerlandStrict()` = seuil 5/5.
+  - **LOD cap 14 Swisstopo** : Si `zoom > 14 && !isTileInSwitzerlandStrict()` → interdit Swisstopo, fallback IGN (France) ou MapTiler. Élimine les tuiles vides aux frontières.
+  - **Architecture extensible** : `COUNTRY_POLYGONS` / `COUNTRY_BBOX` — ajouter un polygone pour FR, IT, etc. en une entrée. Les pays sans polygone continuent avec `REGIONS` (rectangles).
+  - **Suppression `REGIONS.CH`** : Les 5 rectangles CH chevauchants sont remplacés par le polygone. `REGIONS.FR` et `REGIONS.IT` conservés pour la couverture IGN/MapTiler.
 - **Foreground Service v5.53.0** : Architecture processus séparé `:tracking`
   - `RecordingService` dans `android:process=":tracking"` — survit au kill de l'app principale
   - `TrackingActivity` transparente dans `:tracking` — point d'entrée du processus isolé

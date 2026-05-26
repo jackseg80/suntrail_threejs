@@ -2,32 +2,23 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { state } from './state';
 import { getColorUrl, getOverlayUrl, getElevationUrl } from './tileLoader';
 
-// Mock de utils
 vi.mock('./utils', () => ({
     showToast: vi.fn()
 }));
 
-// Mock de geo
 vi.mock('./geo', async (importOriginal) => {
     const actual = await importOriginal<typeof import('./geo')>();
     return {
         ...actual,
-        isPositionInSwitzerland: vi.fn((lat, lon) => {
-            // Mock: Zone Suisse réelle commence à 45.82N (v5.35.2)
-            return lon >= 7 && lon <= 10 && lat >= 45.82 && lat <= 48;
-        }),
         isPositionInFrance: vi.fn((lat, lon) => {
-            // Mock: Zone France (simplifiée) entre lon -5 et 8
             return lon >= -5 && lon < 8 && lat >= 42 && lat <= 51;
         }),
         isPositionInItaly: vi.fn((lat, lon) => {
-            // Mock: Zone Italie entre lon 6.6 et 18.6
             return lon >= 6.6 && lon <= 18.6 && lat >= 35 && lat <= 47.1;
         })
     };
 });
 
-// Mock de tileWorkerManager
 vi.mock('./workerManager', () => ({
     tileWorkerManager: {
         loadTile: vi.fn(() => Promise.resolve({
@@ -72,23 +63,27 @@ describe('tileLoader.ts URLs', () => {
         expect(url12).toContain('opentopomap.org');
     });
 
-    it('should generate correct Color URL for SwissTopo (when inside CH)', () => {
+    it('should generate correct Color URL for SwissTopo (when inside CH) — polygon-based', () => {
         state.MAP_SOURCE = 'swisstopo';
         const url = getColorUrl(4270, 2891, 13);
         expect(url).toContain('ch.swisstopo.pixelkarte-farbe');
     });
 
-    it('should correctly identify Italy (v5.35.2)', () => {
+    it('should not use SwissTopo at LOD > 14 for border tiles (LOD cap)', () => {
         state.MAP_SOURCE = 'swisstopo';
-        // Coordonnées typiques d'Italie (hors mock CH/FR)
-        const url = getColorUrl(5000, 3000, 13); // Quelque part en Italie
-        // On accepte OpenTopoMap OU MapTiler si une clé est présente
-        expect(url).toMatch(/opentopomap\.org|api\.maptiler\.com/);
+        // Issenheim tile (~47.90, ~7.25) — hors CH selon le polygone
+        // Les coordonnées tx/ty pour Issenheim au LOD 15
+        // LOD 15: n=32768, tx≈4258, ty≈14369
+        const issenheimX = 4258, issenheimY = 14369;
+        const url = getColorUrl(issenheimX, issenheimY, 15);
+        // Ne doit PAS contenir swisstopo (car hors-CH + LOD>14)
+        expect(url).not.toContain('ch.swisstopo');
+        // Doit utiliser IGN (France) ou fallback
+        expect(url).toMatch(/geopf\.fr|opentopomap\.org|maptiler\.com|openstreetmap\.org/);
     });
 
     it('should prioritize Switzerland over Italy and France', () => {
         state.MAP_SOURCE = 'swisstopo';
-        // Zone de conflit (Suisse gagne)
         // Spiez (Suisse)
         const url = getColorUrl(4270, 2891, 13);
         expect(url).toContain('ch.swisstopo.pixelkarte-farbe');
@@ -97,18 +92,17 @@ describe('tileLoader.ts URLs', () => {
     it('should prioritize Italy over France', () => {
         state.MAP_SOURCE = 'swisstopo';
         // Aoste (Italie à 7.34E, aussi dans le mock France < 8E)
-        // tx=4263, ty=2922 au zoom 13 correspond à Aoste
         const url = getColorUrl(4263, 2922, 13);
-        expect(url).toContain('opentopomap.org'); // Italie gagne (OpenTopo)
+        expect(url).toContain('opentopomap.org');
     });
 
-    it('should generate correct Overlay URL for Switzerland (Raster)', () => {
+    it('should generate correct Overlay URL for Switzerland (polygon-based)', () => {
         const url = getOverlayUrl(4270, 2891, 13);
         expect(url).toContain('ch.swisstopo.swisstlm3d-wanderwege');
         expect(url).toContain('.png');
     });
 
-    it('should generate Waymarked Trails overlay outside Switzerland (Raster)', () => {
+    it('should generate Waymarked Trails overlay outside Switzerland', () => {
         const url = getOverlayUrl(4240, 2915, 13);
         expect(url).toContain('tile.waymarkedtrails.org');
         expect(url).toContain('.png');

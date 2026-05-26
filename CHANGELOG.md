@@ -1,3 +1,18 @@
+## [5.55.4] - 2026-05-26
+
+### Changed
+- **Frontières vectorielles (Polygone Suisse OSM)** : Remplacement des 5 rectangles CH chevauchants par un polygone simplifié de 54 points (OSM relation 51701, Ramer-Douglas-Peucker ~2 km de précision). Suppression des `REGIONS.CH`.
+- **Sélection multi-points par tuile** : `isTileInCountry()` teste centre + 4 coins (seuil 3/5 pour LOD ≤ 14, 5/5 pour LOD > 14). Élimine l'oscillation de source entre LODs aux frontières.
+- **LOD cap 14 Swisstopo** : Si `zoom > 14` et la tuile n'est pas STRICTEMENT en Suisse (5/5), bascule automatique sur IGN (France) ou MapTiler. Zéro tuile vide aux frontières.
+
+### Fixed
+- **Tessin/Chiasso** : La pointe sud du Tessin (~45.83°N, 9.03°E) est maintenant correctement classée en Suisse (point manquant dans le polygone simplifié corrigé).
+- **Issenheim (Alsace)** : Les tuiles à LOD 14+ affichent désormais IGN au lieu de blanc (Swisstopo expire à LOD 14 hors CH).
+
+### Architecture
+- **Système extensible** : `COUNTRY_POLYGONS` / `COUNTRY_BBOX` dans `geo.ts` permet d'ajouter n'importe quel pays en polygone (FR, IT, AT...). `isPointInPolygon()` ray-casting O(n) zéro allocation. Pré-filtre BBox calculé une seule fois au chargement du module.
+- **Tests** : +28 tests `geo.test.ts` (polygone, 31 localisations réelles, Issenheim, Chiasso, LOD consistency). +1 test LOD cap dans `tileLoader.test.ts`. Suite complète : 828 tests passent.
+
 ## [5.55.3] - 2026-05-19
 
 ### Fixed

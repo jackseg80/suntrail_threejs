@@ -1,10 +1,10 @@
-# SunTrail — TODO (v5.55.1)
+# SunTrail — TODO (v5.55.4)
 
-> Dernière mise à jour : 2026-05-17
+> Dernière mise à jour : 2026-05-26
 
 ## 🔴 Critique (next release)
 
-- Aucun item critique en cours.
+- [x] **Frontières vectorielles (polygones OSM)** — Polygone Suisse 54 points, multi-point tile check, LOD cap Swisstopo 14 (v5.55.4)
 
 ## 🟡 Court terme (v5.56.x)
 
@@ -23,6 +23,7 @@
 
 ## ✅ Récemment complété (v5.55.x)
 
+- [x] **Frontières vectorielles** — Polygone Suisse OSM 54 points, multi-point tile check, LOD cap Swisstopo 14 (v5.55.4)
 - [x] **Fix carte noire démarrage** — Résolution race condition benchmark/terrain (v5.55.1)
 - [x] **Fix initialLon typo** — Coordonnées de départ correctes (v5.55.1)
 - [x] **Auto-reload WebGL lost** : Récupération automatique sur perte de contexte GPU (v5.55.1)

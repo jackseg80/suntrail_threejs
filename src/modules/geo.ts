@@ -26,17 +26,160 @@ export interface LocationPoint {
     timestamp: number;
 }
 
+/**
+ * Polygone simplifié de la Suisse (~54 points, précision ~2 km).
+ * Contour OSM (relation 51701) simplifié via Ramer-Douglas-Peucker.
+ * Format : [lon, lat] (convention GeoJSON).
+ */
+export const SWITZERLAND_POLYGON: number[][] = [
+    [5.956248, 46.132004],
+    [6.294686, 46.225153],
+    [6.219551, 46.311884],
+    [6.335202, 46.403716],
+    [6.681871, 46.454333],
+    [6.821070, 46.427157],
+    [6.797569, 46.136710],
+    [7.101549, 45.859175],
+    [7.570121, 45.987679],
+    [7.863563, 45.916700],
+    [8.154025, 46.146219],
+    [8.085672, 46.266551],
+    [8.446126, 46.463701],
+    [8.444463, 46.248958],
+    [8.852035, 46.075631],
+    [8.785922, 45.989150],
+    [9.017535, 45.817988],
+    [9.038,    45.829000],  // Chiasso — correction pointe du Tessin
+    [9.009541, 46.037382],
+    [9.248590, 46.233699],
+    [9.282229, 46.496479],
+    [9.463549, 46.508876],
+    [9.549538, 46.302342],
+    [9.952759, 46.379301],
+    [10.132300, 46.224879],
+    [10.043958, 46.540118],
+    [10.238877, 46.635352],
+    [10.471554, 46.542865],
+    [10.381797, 46.684305],
+    [10.489352, 46.937789],
+    [10.384695, 46.999997],
+    [10.105242, 46.840885],
+    [9.876130, 46.934628],
+    [9.876246, 47.021227],
+    [9.475786, 47.051752],
+    [9.658569, 47.452617],
+    [9.267701, 47.656237],
+    [8.894162, 47.648255],
+    [8.568028, 47.808454],
+    [8.405576, 47.674200],
+    [8.628632, 47.648985],
+    [8.464184, 47.572192],
+    [7.589039, 47.589897],
+    [7.246518, 47.420342],
+    [6.982967, 47.494551],
+    [6.879326, 47.352580],
+    [7.056984, 47.334368],
+    [6.432655, 46.928684],
+    [6.452400, 46.773983],
+    [6.110491, 46.576448],
+    [6.063858, 46.416395],
+    [6.169917, 46.366084],
+    [5.955832, 46.132308],
+    [5.956248, 46.132004],
+];
+
+/** BBox englobante de la Suisse — pré-calculée au chargement du module. */
+const _CH_BBOX: BBox = (() => {
+    let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+    for (const [lon, lat] of SWITZERLAND_POLYGON) {
+        if (lat < minLat) minLat = lat;
+        if (lat > maxLat) maxLat = lat;
+        if (lon < minLon) minLon = lon;
+        if (lon > maxLon) maxLon = lon;
+    }
+    return { minLat, maxLat, minLon, maxLon };
+})();
+
+/**
+ * Polygones par pays. Structure extensible : ajouter une entrée pour
+ * généraliser le test frontalier à n'importe quel pays.
+ */
+const COUNTRY_POLYGONS: Record<string, number[][]> = {
+    CH: SWITZERLAND_POLYGON,
+};
+
+/** BBox pré-calculées par pays. */
+const COUNTRY_BBOX: Record<string, BBox> = {
+    CH: _CH_BBOX,
+};
+
+/**
+ * Test point-dans-polygone (algorithme ray-casting, O(n), zéro allocation).
+ * Accepte des coordonnées [lon, lat] (compatibles GeoJSON).
+ */
+export function isPointInPolygon(px: number, py: number, polygon: number[][]): boolean {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i][0], yi = polygon[i][1];
+        const xj = polygon[j][0], yj = polygon[j][1];
+        if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) {
+            inside = !inside;
+        }
+    }
+    return inside;
+}
+
+/**
+ * Vérifie si un point (lat, lon) est dans un pays donné.
+ * Pré-vérification rapide via BBox suivie d'un test polygone.
+ * Si le pays n'a pas de polygone, retourne false.
+ */
+export function isPointInCountry(lat: number, lon: number, countryCode: string): boolean {
+    const polygon = COUNTRY_POLYGONS[countryCode];
+    if (!polygon) return false;
+    const bbox = COUNTRY_BBOX[countryCode];
+    if (lon < bbox.minLon || lon > bbox.maxLon || lat < bbox.minLat || lat > bbox.maxLat) return false;
+    return isPointInPolygon(lon, lat, polygon);
+}
+
+/**
+ * Vérifie si une tuile est majoritairement dans un pays en testant 5 points
+ * (centre + 4 coins). Retourne true si ≥ threshold points sont à l'intérieur.
+ *
+ * @param threshold 3 = majorité simple, 5 = strict (tous les points).
+ *                  Recommandé : 3 pour LOD ≤ 14, 5 pour LOD > 14.
+ */
+export function isTileInCountry(
+    tx: number, ty: number, zoom: number,
+    countryCode: string,
+    threshold: number = 3
+): boolean {
+    const n = getPow2(zoom);
+    const points: [number, number][] = [[tx + 0.5, ty + 0.5], [tx, ty], [tx + 1, ty], [tx, ty + 1], [tx + 1, ty + 1]];
+    let inside = 0;
+    for (const [px, py] of points) {
+        const lat = Math.atan(Math.sinh(Math.PI * (1 - 2 * py / n))) * 180 / Math.PI;
+        const lon = (px / n) * 360 - 180;
+        if (isPointInCountry(lat, lon, countryCode)) inside++;
+    }
+    return inside >= threshold;
+}
+
+/** Tuile majoritairement en Suisse (≥ 3/5 points). */
+export function isTileInSwitzerland(tx: number, ty: number, zoom: number): boolean {
+    return isTileInCountry(tx, ty, zoom, 'CH', 3);
+}
+
+/** Tuile intégralement en Suisse (5/5 points). Utilisé pour le cap Swisstopo LOD > 14. */
+export function isTileInSwitzerlandStrict(tx: number, ty: number, zoom: number): boolean {
+    return isTileInCountry(tx, ty, zoom, 'CH', 5);
+}
+
 /** 
- * Limites géographiques des régions supportées (v5.28.2) 
+ * Limites géographiques par rectangles — conservées pour FR et IT
+ * (couverture IGN / MapTiler). La Suisse utilise désormais un polygone.
  */
 export const REGIONS: Record<string, BBox[]> = {
-    CH: [
-        { minLat: 46.12, maxLat: 47.9, minLon: 5.8, maxLon: 7.0 },
-        { minLat: 45.94, maxLat: 47.9, minLon: 7.0, maxLon: 8.6 },
-        { minLat: 45.7, maxLat: 46.6, minLon: 8.6, maxLon: 9.3 },
-        { minLat: 46.6, maxLat: 47.9, minLon: 8.6, maxLon: 9.3 },
-        { minLat: 46.2, maxLat: 47.9, minLon: 9.3, maxLon: 10.6 }
-    ],
     FR: [
         { minLat: 41.3, maxLat: 51.1, minLon: -5.1, maxLon: 6.0 },
         { minLat: 44.5, maxLat: 46.5, minLon: 6.0, maxLon: 7.1 },
@@ -85,7 +228,7 @@ export function decodeTerrainRGB(r: number, g: number, b: number, exaggeration: 
 }
 
 export function isPositionInSwitzerland(lat: number, lon: number): boolean {
-    return isPositionInRegion(lat, lon, 'CH');
+    return isPointInCountry(lat, lon, 'CH');
 }
 
 export function isPositionInFrance(lat: number, lon: number): boolean {
