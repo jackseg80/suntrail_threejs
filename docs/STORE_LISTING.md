@@ -31,7 +31,7 @@ Ne vous demandez plus si vous serez à l'ombre à l'arrivée au col.
 ━━━━━━━━━━━━━━━━━━━━━━━
 🏔️ LE MOTEUR 3D LE PLUS AVANCÉ
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Cartographie Haute Précision : SwissTopo (Suisse), IGN (France), Satellite HD.
+• Cartographie Haute Précision : SwissTopo (Suisse), IGN (France), basemap.at (Autriche), BKG (Allemagne), IGN (Espagne), Satellite HD.
 • Immersion totale : Visualisez le relief sous tous les angles avec une fluidité exceptionnelle.
 • Météo en direct : Particules de pluie et neige animées directement sur la carte 3D.
 • Inclinomètre Numérique : Mesurez les pentes en direct pour votre sécurité (anti-avalanche).
@@ -93,7 +93,7 @@ Stop guessing if you'll be in the sun when you reach that mountain pass.
 ━━━━━━━━━━━━━━━━━━━━━━━
 🏔️ ADVANCED 3D ENGINE
 ━━━━━━━━━━━━━━━━━━━━━━━
-• High-Precision Maps: SwissTopo (Switzerland), IGN (France), HD Satellite.
+• High-Precision Maps: SwissTopo (Switzerland), IGN (France), basemap.at (Austria), BKG (Germany), IGN (Spain), HD Satellite.
 • Total Immersion: Visualize terrain from any angle with exceptional smoothness.
 • Live Weather: Animated rain and snow particles directly on the 3D map.
 • Digital Inclinometer: Measure slopes in real-time for your safety (avalanche risk).
@@ -155,7 +155,7 @@ Fragen Sie sich nicht mehr, ob Sie bei der Ankunft am Pass im Schatten stehen we
 ━━━━━━━━━━━━━━━━━━━━━━━
 🏔️ DIE FORTSCHRITTLICHSTE 3D-ENGINE
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Hochpräzise Karten: SwissTopo (Schweiz), IGN (Frankreich), HD-Satellit.
+• Hochpräzise Karten: SwissTopo (Schweiz), IGN (Frankreich), basemap.at (Österreich), BKG (Deutschland), IGN (Spanien), HD-Satellit.
 • Volle Immersion: Visualisieren Sie das Gelände aus jedem Winkel mit außergewöhnlicher Flüssigkeit.
 • Live-Wetter: Animierte Regen- und Schneepartikel direkt auf der 3D-Karte.
 • Digitaler Neigungsmesser: Messen Sie Hangneigungen live für Ihre Sicherheit (Lawinenprävention).
@@ -216,7 +216,7 @@ Non chiederti più se sarai all'ombra quando arriverai al colle.
 ━━━━━━━━━━━━━━━━━━━━━━━
 🏔️ IL MOTORE 3D PIÙ AVANZATO
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Cartografia ad Alta Precisione: SwissTopo (Svizzera), IGN (Francia), Satellite HD.
+• Cartografia ad Alta Precisione: SwissTopo (Svizzera), IGN (Francia), basemap.at (Austria), BKG (Germania), IGN (Spagna), Satellite HD.
 • Immersione totale: Visualizza il rilievo da ogni angolazione con una fluidità eccezionale.
 • Meteo in diretta: Particelle di pioggia e neve animate direttamente sulla mappa 3D.
 • Inclinometro Digitale: Misura le pendenze in tempo reale per la tua sicurezza (prevenzione valanghe).

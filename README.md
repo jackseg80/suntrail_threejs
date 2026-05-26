@@ -30,7 +30,7 @@ Le cœur de SunTrail est son **module d'analyse solaire**. Contrairement aux aut
 > **Note sur la disponibilité** : Le projet est en constante évolution. Certaines fonctionnalités avancées (comme la précision extrême des bâtiments ou la signalétique spécifique) peuvent varier d'un pays à l'autre selon la disponibilité des données sources (SwissTopo, IGN, MapTiler). Nous travaillons chaque jour pour étendre la couverture HD.
 
 ## Marchés Prioritaires
-🇨🇭 **Suisse** (Données HD SwissTopo) · 🇫🇷 **France** (IGN) · 🇮🇹 **Italie** · 🌍 **Monde** (Satellite & OpenTopo)
+🇨🇭 **Suisse** · 🇫🇷 **France** · 🇦🇹 **Autriche** · 🇩🇪 **Allemagne** · 🇪🇸 **Espagne** · 🇮🇹 **Italie** · 🌍 **Monde**
 
 ## Modèle Freemium
 

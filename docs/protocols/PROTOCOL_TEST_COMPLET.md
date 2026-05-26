@@ -389,7 +389,7 @@ SunTrail est en développement actif. En tant que testeur de la première heure,
 | Fonctionnalité | Description |
 |---|---|
 | 🏔️ Visibilité 360° | Quels sommets peut-on voir exactement depuis ta position ? |
-| 🌍 Autriche + nord Italie | Mêmes données haute qualité qu'en CH/FR |
+| 🌍 Autriche, Allemagne, Espagne | Données HD gouvernementales (automatique selon la position) |
 | 📸 Mode Photo Pro | Capture sans UI avec watermark GPS/altitude optionnel |
 
 ### Version 6.0 — Connexion aux outils que tu utilises déjà

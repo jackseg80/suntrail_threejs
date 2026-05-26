@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.56.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-26 — v5.56.0 : Frontières Europe data-driven (Natural Earth 1:10m, 55 pays). Architecture configurable par pays (tileSources.ts). Pack filtering polygonal.
+> Mis à jour le 2026-05-26 — v5.56.1 : Sources HD actives: CH (SwissTopo), FR (IGN), AT (basemap.at), DE (BKG), ES (IGN España). NO (Kartverket topo4) codé mais désactivé.
 
 ## Projet
 
@@ -17,7 +17,7 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **Frontières v5.56.0** : Système data-driven Europe entière (Natural Earth 1:10m, 55 pays). Voir `src/modules/geo.ts`, `src/data/countries.ts`, `src/modules/tileSources.ts`.
   - **Données** : `src/data/countries.ts` — 55 pays, polygones simplifiés (~1.6 km). Généré par `scripts/ingest-natural-earth.ts`. CH utilise un polygone OSM indépendant (54 pts, plus précis aux frontières). → [src/data/countries.ts](src/data/countries.ts) | [scripts/ingest-natural-earth.ts](scripts/ingest-natural-earth.ts)
   - **Détection** : `getCountryCode(lat, lon)` → code ISO ou `null`. `getCountryAtTile(tx, ty, zoom)` → pays majoritaire dans une tuile. BBox pre-filter → ray-casting (O(n), zéro allocation). Micro-états testés en premier (priorité). → [src/modules/geo.ts](src/modules/geo.ts)
-  - **Sources de tuiles** : `COUNTRY_SOURCES` (data-driven). Chaque pays a une config : `colorTopo`, `colorSatellite`, `overlay`, `minZoom`, `strictAtHighZoom`. Pour ajouter la source HD d'un pays : une entrée dans `COUNTRY_SOURCES`. Sans config → fallback global (MapTiler → OpenTopoMap → OSM). → [src/modules/tileSources.ts](src/modules/tileSources.ts)
+  - **Sources de tuiles** : `COUNTRY_SOURCES` (data-driven). Sources actives : CH (SwissTopo), FR (IGN), AT (basemap.at — CC-BY 4.0), DE (BKG — dl-de/by-2-0), ES (IGN España — CC-BY 4.0 scne.es). NO (Kartverket topo4 — CC-BY 4.0) codé mais désactivé. Pour ajouter la source HD d'un pays : une entrée dans `COUNTRY_SOURCES`. Sans config → fallback global (MapTiler → OpenTopoMap → OSM). → [src/modules/tileSources.ts](src/modules/tileSources.ts)
   - **Backward compat** : `isPositionInSwitzerland/France/Italy`, `isTileInSwitzerland/Strict` conservés comme wrappers.
 - **Foreground Service v5.53.0** : Architecture processus séparé `:tracking`
   - `RecordingService` dans `android:process=":tracking"` — survit au kill de l'app principale
@@ -121,7 +121,7 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - `src/modules/solarRoute.ts` : (v5.52.9) Analyse solaire des itinéraires — **deux modes distincts** : Snapshot (ombre à l'heure du slider, Free) et Hiker Timeline (ombre à l'heure d'arrivée estimée, Pro). **Overlay 3D** : DataTexture 256×1 mappée sur TubeGeometry pour colorisation 4 états (soleil or / forêt vert / ombre bleu / nuit bleu-nuit) live (~200ms cache hit). **Détection forêt globale** (v5.52.9) : `prefetchLandcoverForPoints()` pré-charge toutes tuiles Z14 (CH) / Z10 (monde) avant analyse — élimine cache-froid. Fallback silencieux si MapTiler indisponible. **Sampling adaptatif** : max 200 points, step dynamique. **Cache** : clé `${routeHash}|${date}|${slot30}|${mode}|${speed}`, invalide sur changement route ou date. **RAF keepalive** pour fluidité 2D. **Ombre précise** : utilise `getAltitudeAt()` au moment de l'analyse. **Recommandations** : grille 2×2 stats + info forêt + segments ombragés + alerte exposition forte (excl. forêt). **Speed** : [3, 4, 6] km/h sélectionnable, auto-bascule en hikerTimeline.
 
 ## Tests & Qualité
-- **Unitaires (Vitest)** : `npm test` (814 tests, +66 depuis v5.54.0). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`, `solarRoute.ts`, `authService.ts`, `haptics.ts`, `theme.ts`, `toast.ts`, `weatherUtils.ts`, `nativeGPSService.ts`. Solar route analysis valide (27 tests dédies).
+- **Unitaires (Vitest)** : `npm test` (859 tests). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`, `solarRoute.ts`, `authService.ts`, `haptics.ts`, `theme.ts`, `toast.ts`, `weatherUtils.ts`, `nativeGPSService.ts`. Solar route analysis valide (27 tests dédies).
 - **Hardening (v5.54.1)** : Fuites mémoire Capacitor (nativeGPSService, iapService), logging fire-and-forget, centralization clés localStorage (`src/constants/storage.ts`), npm audit fix (7 vulnérabilités).
 - **E2E (Playwright)** : `npx playwright test --ui` (Onboarding, GPS, Expert).
 - **Mocks** : `src/test/setup.ts` pour WebGL. `ui.test.ts` utilise des timers fictifs.

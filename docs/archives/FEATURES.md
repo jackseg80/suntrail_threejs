@@ -8,7 +8,7 @@ Ce document dresse la liste exhaustive des capacités techniques et fonctionnell
 *   **Moteur Asynchrone (WebWorkers)** : Déportation du téléchargement et du décodage des tuiles vers un pool de WebWorkers (4 mobile / 8 desktop) pour une fluidité totale.
 *   **Architecture Découplée (Event Bus)** : Communication inter-modules via un bus d'événements centralisé.
 *   **Rendu de Relief Dynamique (LOD)** : Terrain 3D haute performance (MapTiler/OSM) avec LOD progressif (6 à 18).
-*   **Support Multi-Source Topo** : Basculement automatique entre **SwissTopo** (Suisse), **IGN** (France), et **OpenTopoMap** (Monde) selon la position.
+*   **Support Multi-Source Topo** : Basculement automatique entre **SwissTopo** (Suisse), **IGN** (France), **basemap.at** (Autriche), **BKG** (Allemagne), **IGN España**, et **OpenTopoMap** (Monde) selon la position.
 *   **Hybride 2D/3D Adaptatif (Turbo Engine)** : Bascule 2D optimisée à haute altitude (LOD ≤ 10) et 3D détaillée au sol.
 *   **Carte des Pentes HD** : Shader personnalisé avec correction de latitude pour une précision de 30° parfaite dans les Alpes. Jaune 30° / Orange 35° / Rouge 40°+.
 *   **Hydrologie & Végétation** : Moteur GPU pour l'eau (ondulations/reflets) et placement déterministe des forêts (Feuillus, Sapins, Mélèzes).

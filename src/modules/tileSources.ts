@@ -58,6 +58,31 @@ export function ignSatellite(z: number, x: number, y: number): string {
     return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
 }
 
+export function basemapAtTopo(z: number, x: number, y: number): string {
+    return `https://mapsneu.wien.gv.at/basemap/geolandbasemap/normal/google3857/${z}/${y}/${x}.png`;
+}
+
+export function basemapAtSatellite(z: number, x: number, y: number): string {
+    return `https://mapsneu.wien.gv.at/basemap/bmaporthofoto30cm/normal/google3857/${z}/${y}/${x}.jpeg`;
+}
+
+export function bkgTopo(z: number, x: number, y: number): string {
+    const zStr = String(z).padStart(2, '0');
+    return `https://sgx.geodatenzentrum.de/wmts_topplus_open/tile/1.0.0/web/default/WEBMERCATOR/${zStr}/${y}/${x}.png`;
+}
+
+export function ignSpainTopo(z: number, x: number, y: number): string {
+    return `https://www.ign.es/wmts/ign-base?service=WMTS&request=GetTile&version=1.0.0&layer=IGNBaseTodo-nofondo&style=default&tilematrixset=GoogleMapsCompatible&tilematrix=${z}&tilerow=${y}&tilecol=${x}&format=image/png`;
+}
+
+export function kartverketTopo(z: number, x: number, y: number): string {
+    return `https://opencache.statkart.no/gatekeeper/gk/gk.open_wmts?service=WMTS&request=GetTile&version=1.0.0&layer=topo4&style=default&tilematrixset=EPSG:3857&tilematrix=${z}&tilerow=${y}&tilecol=${x}&format=image/png`;
+}
+
+export function kartverketSatellite(z: number, x: number, y: number): string {
+    return `https://opencache.statkart.no/gatekeeper/gk/gk.open_wmts?service=WMTS&request=GetTile&version=1.0.0&layer=norgeibilder&style=default&tilematrixset=EPSG:3857&tilematrix=${z}&tilerow=${y}&tilecol=${x}&format=image/jpeg`;
+}
+
 export function opentopomapUrl(z: number, x: number, y: number): string {
     const sub = ['a', 'b', 'c'][(x + y) % 3];
     return `https://${sub}.tile.opentopomap.org/${z}/${x}/${y}.png`;
@@ -98,4 +123,23 @@ export const COUNTRY_SOURCES: Record<string, TileSourceConfig> = {
         // Italie : pas de source HD native → fallback OpenTopoMap/MapTiler
         minZoom: 10,
     },
+    AT: {
+        colorTopo: (z, x, y) => basemapAtTopo(z, x, y),
+        colorSatellite: (z, x, y) => basemapAtSatellite(z, x, y),
+        minZoom: 10,
+    },
+    DE: {
+        colorTopo: (z, x, y) => bkgTopo(z, x, y),
+        minZoom: 10,
+    },
+    ES: {
+        colorTopo: (z, x, y) => ignSpainTopo(z, x, y),
+        minZoom: 10,
+    },
+    // NO: Kartverket topo4 — endpoint inaccessible, à vérifier localement
+    // NO: {
+    //     colorTopo: (z, x, y) => kartverketTopo(z, x, y),
+    //     colorSatellite: (z, x, y) => kartverketSatellite(z, x, y),
+    //     minZoom: 10,
+    // },
 };

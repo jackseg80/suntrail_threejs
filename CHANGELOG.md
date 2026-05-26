@@ -1,3 +1,16 @@
+## [5.56.1] - 2026-05-26
+
+### Added
+- **Sources cartographiques HD par pays** : Système data-driven `COUNTRY_SOURCES` dans `tileSources.ts`. Ajout de 3 nouvelles sources gouvernementales gratuites :
+  - 🇦🇹 **Autriche** : basemap.at (`geolandbasemap` + `bmaporthofoto30cm`) — CC-BY 4.0, zoom max 20
+  - 🇩🇪 **Allemagne** : BKG TopPlusOpen (`sgx.geodatenzentrum.de`) — dl-de/by-2-0, zoom max 18
+  - 🇪🇸 **Espagne** : IGN España Mapa Base (`IGNBaseTodo-nofondo`) — CC-BY 4.0 scne.es, zoom max 20
+- **Détection automatique** : Basculement transparent vers la source HD quand l'utilisateur se déplace dans un pays couvert.
+- **Architecture extensible** : Ajouter un pays = une entrée dans `COUNTRY_SOURCES` + une fonction helper URL. Zéro changement dans `tileLoader.ts` ou `geo.ts`.
+
+### Tests
+- **+5 tests** : tileLoader (AT×3, DE×1, ES×1) et terrain.source (AT, DE, ES auto-sélection). Suite complète : 859 tests passent.
+
 ## [5.55.4] - 2026-05-26
 
 ### Changed

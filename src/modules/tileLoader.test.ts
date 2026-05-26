@@ -97,6 +97,59 @@ describe('tileLoader.ts URLs', () => {
         expect(url).toContain('maptiler.com');
     });
 
+    it('SHOULD use basemap.at for Austrian tiles in Topo mode', () => {
+        state.MAP_SOURCE = 'swisstopo';
+        state.MK = '';
+        // Vienna (16.37°E, 48.21°N) — LOD 13, profond en Autriche
+        const url = getColorUrl(4469, 2841, 13);
+        expect(url).toContain('mapsneu.wien.gv.at');
+        expect(url).toContain('geolandbasemap');
+    });
+
+    it('SHOULD use basemap.at orthofoto for Austrian tiles in Satellite mode', () => {
+        state.MAP_SOURCE = 'satellite';
+        state.MK = '';
+        const url = getColorUrl(4469, 2841, 13);
+        expect(url).toContain('mapsneu.wien.gv.at');
+        expect(url).toContain('bmaporthofoto30cm');
+    });
+
+    it('SHOULD fallback to OpenTopoMap at low zoom even in Austria', () => {
+        state.MAP_SOURCE = 'swisstopo';
+        state.MK = '';
+        const url = getColorUrl(266, 182, 10);
+        expect(url).toContain('opentopomap.org');
+    });
+
+    it('SHOULD use BKG TopPlusOpen for German tiles', () => {
+        state.MAP_SOURCE = 'swisstopo';
+        state.MK = '';
+        // Munich (11.58°E, 48.14°N) — LOD 13
+        const url = getColorUrl(4338, 2847, 13);
+        expect(url).toContain('sgx.geodatenzentrum.de');
+        expect(url).toContain('topplus_open');
+        expect(url).toContain('WEBMERCATOR');
+    });
+
+    it('SHOULD use IGN Spain for Spanish tiles', () => {
+        state.MAP_SOURCE = 'swisstopo';
+        state.MK = '';
+        // Madrid (40.42°N, -3.70°W) — LOD 13
+        const url = getColorUrl(3967, 3075, 13);
+        expect(url).toContain('ign.es');
+        expect(url).toContain('IGNBaseTodo-nofondo');
+        expect(url).toContain('GoogleMapsCompatible');
+    });
+
+    it('SHOULD fallback to MapTiler/OpenTopo for Norway (Kartverket disabled)', () => {
+        state.MAP_SOURCE = 'swisstopo';
+        state.MK = 'test_key_valid_12345';
+        // Oslo (10.75°E, 59.91°N) — LOD 13 — Kartverket non activé
+        const url = getColorUrl(4341, 2384, 13);
+        expect(url).not.toContain('statkart.no');
+        expect(url).toContain('maptiler.com');
+    });
+
     it('should generate correct Overlay URL for Switzerland (polygon-based)', () => {
         const url = getOverlayUrl(4270, 2891, 13);
         expect(url).toContain('ch.swisstopo.swisstlm3d-wanderwege');

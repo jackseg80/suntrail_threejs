@@ -55,6 +55,71 @@ describe('Terrain Source Keys (v5.29.28)', () => {
         expect(key1).not.toBe(key2);
     });
 
+    it('SHOULD auto-switch to HD source for Austria (basemap.at)', () => {
+        state.hasManualSource = false;
+        state.MAP_SOURCE = 'opentopomap';
+
+        // Innsbruck, Autriche
+        const lat = 47.27;
+        const lon = 11.39;
+
+        autoSelectMapSource(lat, lon);
+
+        expect(state.MAP_SOURCE).toBe('swisstopo');
+    });
+
+    it('SHOULD auto-switch to HD source for Germany (BKG TopPlusOpen)', () => {
+        state.hasManualSource = false;
+        state.MAP_SOURCE = 'opentopomap';
+
+        // Munich, Allemagne
+        const lat = 48.14;
+        const lon = 11.58;
+
+        autoSelectMapSource(lat, lon);
+
+        expect(state.MAP_SOURCE).toBe('swisstopo');
+    });
+
+    it('SHOULD auto-switch to HD source for Spain (IGN)', () => {
+        state.hasManualSource = false;
+        state.MAP_SOURCE = 'opentopomap';
+
+        // Madrid, Espagne
+        const lat = 40.42;
+        const lon = -3.70;
+
+        autoSelectMapSource(lat, lon);
+
+        expect(state.MAP_SOURCE).toBe('swisstopo');
+    });
+
+    it('SHOULD keep opentopomap for Norway (Kartverket disabled)', () => {
+        state.hasManualSource = false;
+        state.MAP_SOURCE = 'opentopomap';
+
+        // Oslo, Norvège (Kartverket désactivé car endpoint inaccessible)
+        const lat = 59.91;
+        const lon = 10.75;
+
+        autoSelectMapSource(lat, lon);
+
+        expect(state.MAP_SOURCE).toBe('opentopomap');
+    });
+
+    it('SHOULD keep opentopomap for country without HD source', () => {
+        state.hasManualSource = false;
+        state.MAP_SOURCE = 'opentopomap';
+
+        // Rome, Italie (pas encore de source HD native)
+        const lat = 41.90;
+        const lon = 12.50;
+
+        autoSelectMapSource(lat, lon);
+
+        expect(state.MAP_SOURCE).toBe('opentopomap');
+    });
+
     it('SHOULD include MAP_SOURCE in tileCache keys', () => {
         const tileKey = '4270_2891_14';
         const zoom = 14;

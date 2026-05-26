@@ -1,4 +1,4 @@
-# SunTrail — TODO (v5.55.4)
+# SunTrail — TODO (v5.56.1)
 
 > Dernière mise à jour : 2026-05-26
 
@@ -17,12 +17,13 @@
 ## 🟢 Long terme (v6.x)
 
 - **Trail Intelligence** — Module d'analyse IA des itinéraires (repoussé à v6.0-v6.3)
-- **Coverage pays** — France complète, Italie, Autriche (priorité CH → FR → IT → AT)
+- **Coverage pays** — Slovénie, Italie, Norvège, UK (voir ROADMAP.md)
 - **Offline Alertes** — Système d'alertes sécurité hors-ligne (v6.0+)
 - **Abonnement familial** — Pack famille RevenueCat (v6.1+)
 
-## ✅ Récemment complété (v5.55.x)
+## ✅ Récemment complété (v5.56.x)
 
+- [x] **Sources HD pays** — Autriche (basemap.at), Allemagne (BKG TopPlusOpen), Espagne (IGN España) (v5.56.0)
 - [x] **Frontières vectorielles** — Polygone Suisse OSM 54 points, multi-point tile check, LOD cap Swisstopo 14 (v5.55.4)
 - [x] **Fix carte noire démarrage** — Résolution race condition benchmark/terrain (v5.55.1)
 - [x] **Fix initialLon typo** — Coordonnées de départ correctes (v5.55.1)

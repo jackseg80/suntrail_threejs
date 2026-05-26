@@ -3,7 +3,7 @@
 > Ce fichier contient les templates de messages à envoyer aux testeurs potentiels.
 > Personnalise le prénom et le lien avant d'envoyer.
 
-> ℹ️ L'application est actuellement optimisée pour la Suisse (SwissTopo) et la France (IGN), mais le monde entier est disponible via OpenStreetMap/OpenTopoMap.
+> ℹ️ L'application est optimisée pour la Suisse (SwissTopo), la France (IGN), l'Autriche (basemap.at), l'Allemagne (BKG) et l'Espagne (IGN España). Le reste du monde est disponible via OpenTopoMap/MapTiler.
 
 ---
 
@@ -49,7 +49,7 @@ Imagine pouvoir voir, avant de partir en rando, exactement quand le soleil va il
 🏔️  QU'EST-CE QUE SUNTRAIL 3D ?
 ─────────────────────────────────────
 SunTrail est une application Android de navigation en montagne avec :
-• Cartes topographiques en relief 3D — SwissTopo, IGN, OpenTopoMap (Monde)
+• Cartes topographiques en relief 3D — SwissTopo, IGN, basemap.at, BKG, IGN España, OpenTopoMap (Monde)
 • Simulation solaire temps réel — calcule les ombres sur le terrain ET détecte la forêt 🌲
 • Planificateur d'itinéraire mondial — pose tes points en 3D, le tracé se calcule seul
 • GPS live ultra-robuste — enregistre ta trace même si l'app est fermée
@@ -112,7 +112,7 @@ Salut à tous ! 👋
 
 Je cherche des testeurs Android pour SunTrail 3D, une app de rando que je développe.
 
-L'idée : cartes topo en relief 3D, planificateur mondial, et surtout une simulation des ombres solaires sur le terrain réel (relief + forêts 🌲) — tu peux voir exactement quand un versant, un bivouac ou un couloir sera à l'ombre ou au soleil, heure par heure. + GPS ultra-robuste, inclinomètre de pente, météo montagne, hors-ligne. Données SwissTopo, IGN, monde entier.
+L'idée : cartes topo en relief 3D, planificateur mondial, et surtout une simulation des ombres solaires sur le terrain réel (relief + forêts 🌲) — tu peux voir exactement quand un versant, un bivouac ou un couloir sera à l'ombre ou au soleil, heure par heure. + GPS ultra-robuste, inclinomètre de pente, météo montagne, hors-ligne. Données SwissTopo, IGN, basemap.at, BKG, IGN España, monde entier.
 
 🎁 En échange de quelques retours :
 → 20-30 min de test = 3 mois Pro offerts

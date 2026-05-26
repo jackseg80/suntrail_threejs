@@ -11,7 +11,7 @@ Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 | `LOD_HYSTERESIS` | 0.05 (5%) | `Tile.ts` | Dead-zone for LOD switching. Prevents "flickering" between high/low res tiles. |
 | `ZOOM_BOOST_SATELLITE` | 2.0 | `scene.ts` | Over-sampling factor for satellite imagery (crisper textures). |
 | `ZOOM_BOOST_SWISSTOPO` | 1.0 | `scene.ts` | Reference factor for Swiss map (optimal native readability). |
-| `ZOOM_BOOST_OTHER_TOPO`| 0.5 | `scene.ts` | Magnification factor for IGN/OpenTopo. Forces 1-LOD delay to double label size. |
+| `ZOOM_BOOST_OTHER_TOPO`| 0.5 | `scene.ts` | Magnification factor for IGN/basemap.at/BKG/IGN España/OpenTopo. Forces 1-LOD delay to double label size. |
 | `ZOOM_CAP_FREE` | 14 | `Tile.ts` | Technical ceiling for free users. Forces upsell for high-res maps. |
 
 ## 1b. Rendering Optimizations (v5.31.1 — Audit Vague 1)
