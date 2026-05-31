@@ -3,11 +3,13 @@
  */
 
 import gpxParser from 'gpxparser';
-import { state } from './state';
+import { state, type GPXLayer } from './state';
 import { haptic } from './haptics';
 import { addGPXLayer } from './gpxLayers';
 import { updateVisibleTiles } from './terrain';
 import { lngLatToTile } from './geo';
+import { getElevation } from './gpxTypes';
+import type { GPXRawData } from './gpxTypes';
 
 export class GPXService {
     
@@ -19,9 +21,6 @@ export class GPXService {
                 void haptic('warning');
                 return;
             }
-
-            // v5.54 : On autorise l'import de multiples GPX pour tout le monde.
-            // La TrackSheet se chargera de les afficher comme "verrouillés" pour les Free.
 
             // Limite technique : 10 tracés max (préserve les perfs mobiles)
             if (state.gpxLayers.length >= 10) {
@@ -44,7 +43,7 @@ export class GPXService {
             }
             
             const name = fileName.replace(/\.gpx$/i, '');
-            addGPXLayer(gpx, name);
+            addGPXLayer(gpx as unknown as GPXRawData, name);
             void haptic('success');
             const { showToast } = await import('./toast');
             const { i18n } = await import('../i18n/I18nService');
@@ -58,7 +57,7 @@ export class GPXService {
     /**
      * Génère un GPX à partir d'une couche existante (pour export).
      */
-    buildGPXStringFromLayer(layer: any): string {
+    buildGPXStringFromLayer(layer: GPXLayer): string {
         const date = new Date().toLocaleDateString();
         const trackName = layer.name || `SunTrail Track - ${date}`;
         let gpx = `<?xml version="1.0" encoding="UTF-8"?>
@@ -66,11 +65,11 @@ export class GPXService {
   <trk>
     <name>${trackName}</name>
     <trkseg>`;
-        
+
         const points = layer.rawData?.tracks?.[0]?.points || [];
-        points.forEach((p: any) => {
-            const ele = p.ele !== undefined ? p.ele : (p.alt !== undefined ? p.alt : 0);
-            const time = p.time || new Date().toISOString();
+        points.forEach(p => {
+            const ele = getElevation(p);
+            const time = p.time ? (p.time instanceof Date ? p.time.toISOString() : p.time) : new Date().toISOString();
             gpx += `
       <trkpt lat="${p.lat}" lon="${p.lon}">
         <ele>${ele.toFixed(1)}</ele>

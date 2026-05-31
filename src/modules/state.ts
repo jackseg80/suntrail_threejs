@@ -6,6 +6,8 @@ import { createReactiveState } from './ui/core/ReactiveState';
 import type { VRAMDashboard } from './ui/components/VRAMDashboard';
 import { LocationPoint } from './geo';
 import { STORAGE_KEYS } from '../constants/storage';
+import type { GPXHistoryEntry } from './gpxHistoryService';
+import type { GPXRawData } from './gpxTypes';
 
 export type PresetType = 'eco' | 'balanced' | 'performance' | 'ultra' | 'custom';
 
@@ -15,7 +17,7 @@ export interface GPXLayer {
     color: string;
     visible: boolean;
     isManualRoute?: boolean; // v5.54 : Distinguer le planificateur des imports GPX
-    rawData: Record<string, any>;
+    rawData: GPXRawData;
     points: THREE.Vector3[];
     mesh: THREE.Mesh | null;
     stats: {
@@ -207,6 +209,7 @@ export interface State {
     } | null;
     localPeaks: Peak[];
     gpxLayers: GPXLayer[];
+    gpxHistory: GPXHistoryEntry[];
     activeGPXLayerId: string | null;
     recordedMesh: THREE.Mesh | null;
     profileMarker: THREE.Mesh | null;
@@ -292,6 +295,7 @@ const initialState: State = {
     weatherData: null, weatherUnavailable: false, ephemeris: null,
     localPeaks: [],
     gpxLayers: [],
+    gpxHistory: [],
     activeGPXLayerId: null,
     recordedMesh: null,
     profileMarker: null, trailProgress: 0, isFollowingTrail: false,
@@ -500,4 +504,10 @@ export function saveLastView(): void {
     state.ZOOM = state.ZOOM; // Déjà à jour via les événements de zoom
     
     saveSettings();
+}
+
+import { loadHistory } from './gpxHistoryService';
+
+export function loadGpxHistory(): void {
+    state.gpxHistory = loadHistory();
 }

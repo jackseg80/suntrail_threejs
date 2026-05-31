@@ -179,6 +179,18 @@ describe('GPXService', () => {
     });
 
     describe('buildGPXStringFromLayer', () => {
+        const makeLayer = (overrides: Record<string, any> = {}) => ({
+            id: 'test',
+            name: 'Test',
+            color: '#0066ff',
+            visible: true,
+            points: [],
+            mesh: null,
+            stats: { distance: 1, dPlus: 0, dMinus: 0, pointCount: 2 },
+            rawData: { tracks: [{ points: [] }] },
+            ...overrides,
+        });
+
         beforeEach(() => {
             vi.useFakeTimers();
             vi.setSystemTime(new Date('2024-06-15T12:00:00Z'));
@@ -189,7 +201,7 @@ describe('GPXService', () => {
         });
 
         it('should generate valid GPX XML from a layer', () => {
-            const layer = {
+            const layer = makeLayer({
                 name: 'My Track',
                 rawData: {
                     tracks: [{
@@ -199,7 +211,7 @@ describe('GPXService', () => {
                         ]
                     }]
                 }
-            };
+            });
 
             const result = gpxService.buildGPXStringFromLayer(layer);
 
@@ -212,7 +224,7 @@ describe('GPXService', () => {
         });
 
         it('should use alt when ele is undefined', () => {
-            const layer = {
+            const layer = makeLayer({
                 name: 'Alt Track',
                 rawData: {
                     tracks: [{
@@ -222,7 +234,7 @@ describe('GPXService', () => {
                         ]
                     }]
                 }
-            };
+            });
 
             const result = gpxService.buildGPXStringFromLayer(layer);
 
@@ -231,11 +243,12 @@ describe('GPXService', () => {
         });
 
         it('should use fallback name when layer has no name', () => {
-            const layer = {
+            const layer = makeLayer({
+                name: '',
                 rawData: {
                     tracks: [{ points: [{ lat: 46.5, lon: 7.5, ele: 500 }] }]
                 }
-            };
+            });
 
             const result = gpxService.buildGPXStringFromLayer(layer);
 
@@ -243,10 +256,10 @@ describe('GPXService', () => {
         });
 
         it('should handle layers with no points', () => {
-            const layer = {
+            const layer = makeLayer({
                 name: 'Empty',
                 rawData: { tracks: [{ points: [] }] }
-            };
+            });
 
             const result = gpxService.buildGPXStringFromLayer(layer);
 

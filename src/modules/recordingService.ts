@@ -174,7 +174,7 @@ export class RecordingService {
         parser.parse(gpxString);
         if (!parser.tracks?.length) return false;
         
-        addGPXLayer(parser, name);
+        addGPXLayer(parser, name, { source: 'rec' });
         void haptic('success');
         return true;
     }

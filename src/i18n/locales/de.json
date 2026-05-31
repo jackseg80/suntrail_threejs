@@ -62,6 +62,14 @@
       "showProfile": "Höhenprofil anzeigen",
       "export": "GPX exportieren"
     },
+    "history": {
+      "title": "Kürzlich",
+      "rec": "Aufzeichnung",
+      "import": "Import",
+      "select": "Auswählen",
+      "reload": "Neu laden",
+      "remove": "Entfernen"
+    },
     "recording": {
       "title": "GPS-Aufzeichnung"
     },

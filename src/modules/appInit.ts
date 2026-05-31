@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Geolocation } from '@capacitor/geolocation';
-import { state, loadSettings, loadProStatus } from './state';
+import { state, loadSettings, loadProStatus, loadGpxHistory } from './state';
 import { iapService } from './iapService';
 import { requestGPSDisclosure } from './gpsDisclosure';
 import { requestAcceptance } from './acceptanceWall';
@@ -45,6 +45,9 @@ export async function appInit(): Promise<void> {
 
     // Charger le statut Pro en premier
     loadProStatus();
+
+    // Charger l'historique GPX depuis localStorage
+    loadGpxHistory();
 
     // Charger la clé ORS depuis localStorage (v5.50.x)
     try {

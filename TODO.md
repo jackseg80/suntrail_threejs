@@ -1,6 +1,6 @@
-# SunTrail — TODO (v5.56.1)
+# SunTrail — TODO (v5.56.2)
 
-> Dernière mise à jour : 2026-05-26
+> Dernière mise à jour : 2026-05-31
 
 ## 🔴 Critique (next release)
 
@@ -20,6 +20,16 @@
 - **Coverage pays** — Slovénie, Italie, Norvège, UK (voir ROADMAP.md)
 - **Offline Alertes** — Système d'alertes sécurité hors-ligne (v6.0+)
 - **Abonnement familial** — Pack famille RevenueCat (v6.1+)
+
+## ✅ Récemment complété (v5.56.2)
+
+- [x] **Historique GPX persistant** — 5 derniers imports/REC en localStorage avec mini-carte (v5.56.2)
+- [x] **Fusion panneaux GPX** — Liste unifiée "Parcours" (historique + layers actifs + routes manuelles) (v5.56.2)
+- [x] **Reverse geocoding GPX** — Nom de lieu automatique (MapTiler/Nominatim) + fallback pays 55 pays (v5.56.2)
+- [x] **Bouton profil toggle** — Icône active bleue, ouvrir/fermer le panneau d'élévation (v5.56.2)
+- [x] **Types GPX centralisés** — `gpxTypes.ts`, `GeoPoint`, `GPXRawData`, `getElevation()` (v5.56.2)
+- [x] **Robustesse mesh REC** — Build avant dispose, plus de perte si erreur (v5.56.2)
+- [x] **Dette technique** — Extraction `disposeTrackMesh`, `getPerformanceEpsilonMultiplier`, `createGlassModal`, cache localStorage, guard GPX_COLORS (v5.56.2)
 
 ## ✅ Récemment complété (v5.56.x)
 

@@ -63,6 +63,14 @@
       "showProfile": "Voir le profil d'élévation",
       "export": "Exporter GPX"
     },
+    "history": {
+      "title": "Récents",
+      "rec": "Enregistrement",
+      "import": "Import",
+      "select": "Sélectionner",
+      "reload": "Recharger",
+      "remove": "Retirer"
+    },
     "recording": {
       "title": "Enregistrement GPS"
     },

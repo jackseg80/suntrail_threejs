@@ -701,6 +701,14 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
     text-overflow: ellipsis;
 }
 
+.gpx-layer-location {
+    font-size: var(--text-xs);
+    color: var(--text-2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .gpx-layer-stats {
     font-size: var(--text-xs);
     color: var(--text-3);
@@ -739,6 +747,27 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
     background: rgba(239, 68, 68, 0.2);
     border-color: var(--danger);
     color: var(--danger);
+}
+
+/* GPX LAYER MINIMAP (unified history + layers) */
+.gpx-layer-minimap {
+    width: 64px;
+    height: 45px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface-subtle);
+    flex-shrink: 0;
+}
+
+/* PROFILE BUTTON ACTIVE STATE */
+.gpx-layer-profile.profile-active {
+    background: rgba(74, 142, 248, 0.2);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.gpx-layer-profile.profile-active:hover {
+    background: rgba(74, 142, 248, 0.3);
 }
 
 .track-btn {

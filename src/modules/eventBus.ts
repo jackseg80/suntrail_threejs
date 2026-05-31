@@ -17,6 +17,7 @@ type EventMap = {
     'packMounted': { packId: string };
     'packUnmounted': { packId: string };
     'themeChanged': { theme: 'light' | 'dark' };
+    'gpxHistoryUpdated': void;
 };
 
 type Listener<T> = (payload: T) => void;

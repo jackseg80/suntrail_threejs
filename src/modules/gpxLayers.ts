@@ -2,12 +2,16 @@ import * as THREE from 'three';
 import { disposeObject } from './memory';
 import { state, type GPXLayer, GPX_COLORS, isProActive } from './state';
 import { simplifyRDP } from './utils';
+import type { GPXRawData } from './gpxTypes';
+import { getElevation, isValidGeoPoint } from './gpxTypes';
 import { updateElevationProfile, closeElevationProfile } from './profile';
 import { lngLatToWorld, EARTH_CIRCUMFERENCE, worldToLngLat } from './geo';
 import { eventBus } from './eventBus';
 import { drapeToTerrain, getAltitudeAt, GPX_SURFACE_OFFSET } from './analysis';
 import { calculateTrackStats } from './geoStats';
 import { disposeSolarOverlay, buildSolarOverlay, setOverlayVisible, getCurrentRouteSolarAnalysis, scheduleRouteSolarAnalysis, invalidateRouteCache, clearSolarRouteAnalysis } from './solarRoute';
+import { saveToHistory, updateHistoryEntryLocation } from './gpxHistoryService';
+import { getPlaceName } from './geocodingService';
 
 // v5.31.1 : Shared GPX track materials (1 per color × mode = 16 max instead of N per layer)
 const gpxMaterials3D = new Map<string, THREE.MeshStandardMaterial>();
@@ -152,8 +156,9 @@ export function recalcLayerStatsFromTerrain(layer: GPXLayer): GPXLayer {
     return { ...layer, stats: updatedStats };
 }
 
-export function addGPXLayer(rawData: Record<string, any>, name: string, opts?: { silent?: boolean, forceVisible?: boolean, isManualRoute?: boolean }): GPXLayer {
-    const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `gpx-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+export function addGPXLayer(rawData: GPXRawData, name: string, opts?: { silent?: boolean, forceVisible?: boolean, isManualRoute?: boolean, source?: 'import' | 'rec', id?: string }): GPXLayer {
+    const id = opts?.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `gpx-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
+    if (GPX_COLORS.length === 0) throw new Error('GPX_COLORS is empty');
     const colorIndex = state.gpxLayers.length % GPX_COLORS.length;
     const color = GPX_COLORS[colorIndex];
     const track = rawData.tracks[0];
@@ -165,22 +170,17 @@ export function addGPXLayer(rawData: Record<string, any>, name: string, opts?: {
     }
     
     // Vérifier que les points ont des coordonnées valides
-    const validPoints = points.filter((p: any) => 
-        typeof p.lat === 'number' && typeof p.lon === 'number' && 
-        !isNaN(p.lat) && !isNaN(p.lon)
-    );
-    
+    const validPoints = points.filter(isValidGeoPoint);
+
     if (validPoints.length < 2) {
         throw new Error(`Cannot add GPX layer: not enough valid points (${validPoints.length})`);
     }
-    
-    // ✅ Utiliser l'algorithme centralisé avec hystérésis (coherent avec TrackSheet)
-    const stats = calculateTrackStats(validPoints.map((p: any, i: number) => ({
+
+    const stats = calculateTrackStats(validPoints.map((p, i) => ({
         lat: p.lat,
         lon: p.lon,
-        alt: p.ele !== undefined ? p.ele : (p.alt !== undefined ? p.alt : 0),
-        // v5.29.41 : Si pas de temps, mettre un index pour éviter le dédoublonnage temporel
-        timestamp: p.time ? new Date(p.time).getTime() : i * 1000 
+        alt: getElevation(p),
+        timestamp: p.time ? new Date(p.time).getTime() : i * 1000
     })));
 
     const thickness = computeTrackThickness(2.0, 200); // v5.53.3 : Increased from 1.5
@@ -232,7 +232,18 @@ export function addGPXLayer(rawData: Record<string, any>, name: string, opts?: {
     };
     if (mesh) mesh.visible = initialVisible;
     state.gpxLayers = [...state.gpxLayers, layer];
-    
+
+    if (!isManual) {
+        saveToHistory(layer, opts?.source || 'import');
+        if (validPoints.length > 0) {
+            const clat = validPoints.reduce((s, p) => s + p.lat, 0) / validPoints.length;
+            const clon = validPoints.reduce((s, p) => s + p.lon, 0) / validPoints.length;
+            getPlaceName(clat, clon).then(loc => {
+                if (loc) updateHistoryEntryLocation(layer.id, loc);
+            }).catch(() => {});
+        }
+    }
+
     // v5.54 : Un calque "verrouillé" ne doit pas devenir le calque actif
     // (sinon il écrase les stats et déclenche l'analyse solaire/pente)
     if (initialVisible) {
@@ -240,7 +251,9 @@ export function addGPXLayer(rawData: Record<string, any>, name: string, opts?: {
         scheduleRouteSolarAnalysis(1500); // Analyse solaire après flyTo
     }
 
-    const lats = validPoints.map((p: any) => p.lat as number); const lons = validPoints.map((p: any) => p.lon as number); const eles = validPoints.map((p: any) => (p.ele as number) || 0);
+    const lats = validPoints.map(p => p.lat);
+    const lons = validPoints.map(p => p.lon);
+    const eles = validPoints.map(p => getElevation(p));
     const centerLat = (Math.max(...lats) + Math.min(...lats)) / 2; const centerLon = (Math.max(...lons) + Math.min(...lons)) / 2;
     const avgEle = eles.reduce((s: number, v: number) => s + v, 0) / eles.length;
     const size = new THREE.Vector3(); box.getSize(size);
@@ -252,7 +265,7 @@ export function addGPXLayer(rawData: Record<string, any>, name: string, opts?: {
     if (!opts?.silent && initialVisible) {
         eventBus.emit('flyTo', { worldX: flyCenter.x, worldZ: flyCenter.z, targetElevation, targetDistance: viewDistance });
     }
-    setTimeout(() => updateAllGPXMeshes(), 0);
+    requestAnimationFrame(() => updateAllGPXMeshes());
     updateElevationProfile();
     return layer;
 }
@@ -278,6 +291,23 @@ export function toggleGPXLayer(id: string): void {
     const updated = [...layers]; updated[idx] = { ...layer, visible: newVisible }; state.gpxLayers = updated;
 }
 
+function getPerformanceEpsilonMultiplier(): number {
+    if (state.PERFORMANCE_PRESET === 'eco') return 2.0;
+    if (state.PERFORMANCE_PRESET === 'ultra') return 0.5;
+    return 1.0;
+}
+
+function disposeTrackMesh(mesh: THREE.Mesh | null): void {
+    if (!mesh) return;
+    if (state.scene) state.scene.remove(mesh);
+    mesh.children.forEach(c => {
+        if (c instanceof THREE.Mesh && c.geometry !== mesh.geometry) {
+            c.geometry?.dispose();
+        }
+    });
+    mesh.geometry?.dispose();
+}
+
 let gpxUpdateTimeout: any = null;
 let recordedUpdateTimeout: any = null;
 
@@ -294,10 +324,7 @@ function _doUpdateAllGPXMeshes(): void {
     const thickness = computeTrackThickness(2.0, 200); // v5.53.3 : Increased from 1.5
 
     const baseEpsilon = EARTH_CIRCUMFERENCE / Math.pow(2, (state.ZOOM || 10) + 8);
-    const multiplier = state.PERFORMANCE_PRESET === 'eco' ? 2.0 
-                     : state.PERFORMANCE_PRESET === 'ultra' ? 0.5 
-                     : 1.0;
-    const epsilon = Math.max(0.5, baseEpsilon * multiplier);
+    const epsilon = Math.max(0.5, baseEpsilon * getPerformanceEpsilonMultiplier());
 
     const is2D = state.IS_2D_MODE;
     const updatedLayers: GPXLayer[] = [];
@@ -305,16 +332,7 @@ function _doUpdateAllGPXMeshes(): void {
         try {
             // Disposer l'overlay AVANT geometry.dispose() (géométrie partagée)
             if (layer.id === state.activeGPXLayerId) disposeSolarOverlay();
-            if (layer.mesh) { 
-                if (state.scene) state.scene.remove(layer.mesh); 
-                layer.mesh.geometry?.dispose();
-                // v5.53.3 : Dispose outline geometry
-                layer.mesh.children.forEach(c => {
-                    if (c instanceof THREE.Mesh && c.geometry !== layer.mesh!.geometry) {
-                        c.geometry?.dispose();
-                    }
-                });
-            }
+            disposeTrackMesh(layer.mesh);
 
             const track = layer.rawData.tracks[0]; const points = track.points;
 
@@ -366,73 +384,52 @@ export function updateRecordedTrackMesh(): void {
 
 function _doUpdateRecordedTrackMesh(): void {
     if (state.recordedPoints.length < 2) {
-        if (state.recordedMesh) {
-            if (state.scene) state.scene.remove(state.recordedMesh);
-            state.recordedMesh.geometry?.dispose();
-            state.recordedMesh = null;
-        }
+        disposeTrackMesh(state.recordedMesh);
+        state.recordedMesh = null;
         return;
     }
     
     if (!state.camera || !state.scene || !state.originTile) return;
     
-    // v5.28.25 : Dédoublonnage strict par timestamp pour éviter les artefacts de "traits droits"
-    // (Retours en arrière si des points avec le même timestamp mais positions différentes existent)
+    // v5.28.25 : Dédoublonnage strict par timestamp
     const uniquePointsMap = new Map<number, typeof state.recordedPoints[0]>();
     for (const p of state.recordedPoints) {
         uniquePointsMap.set(p.timestamp, p);
     }
     const uniquePoints = Array.from(uniquePointsMap.values()).sort((a, b) => a.timestamp - b.timestamp);
     if (uniquePoints.length < 2) {
-        if (state.recordedMesh) {
-            if (state.scene) state.scene.remove(state.recordedMesh);
-            state.recordedMesh.geometry?.dispose();
-            state.recordedMesh = null;
-        }
+        disposeTrackMesh(state.recordedMesh);
+        state.recordedMesh = null;
         return;
     }
 
-    const thickness = computeTrackThickness(2.5, 250); // v5.53.3 : Increased from 2.0
-    
-    if (state.recordedMesh) { 
-        if (state.scene) state.scene.remove(state.recordedMesh); 
-        state.recordedMesh.geometry?.dispose();
-        // v5.53.3 : Dispose outline geometry
-        state.recordedMesh.children.forEach(c => {
-            if (c instanceof THREE.Mesh && c.geometry !== state.recordedMesh!.geometry) {
-                c.geometry?.dispose();
-            }
-        });
-        state.recordedMesh = null; 
-    }
-    
+    const thickness = computeTrackThickness(2.5, 250);
     const originTile = state.originTile;
+    
     const threePoints = drapeToTerrain(uniquePoints, originTile, 0, GPX_SURFACE_OFFSET);
-
     const baseEpsilon = EARTH_CIRCUMFERENCE / Math.pow(2, (state.ZOOM || 10) + 9);
-    const multiplier = state.PERFORMANCE_PRESET === 'eco' ? 2.0 
-                     : state.PERFORMANCE_PRESET === 'ultra' ? 0.5 
-                     : 1.0;
-    const epsilon = Math.max(0.2, baseEpsilon * multiplier);
-
-    // v5.28.5: Simplification RDP avec epsilon adaptatif
+    const epsilon = Math.max(0.2, baseEpsilon * getPerformanceEpsilonMultiplier());
     const simplifiedPoints = simplifyRDP(threePoints, epsilon, (v) => v);
 
     if (simplifiedPoints.length < 2) return;
-    
+
+    // Build new mesh BEFORE disposing old one (safety)
+    let newMesh: THREE.Mesh | null = null;
     try {
         const curve = new THREE.CatmullRomCurve3(simplifiedPoints, false, 'centripetal');
         const geometry = new THREE.TubeGeometry(curve, Math.min(simplifiedPoints.length * 3, 1500), thickness, 4, false);
         const material = getRecordedMaterial(state.IS_2D_MODE);
-        state.recordedMesh = new THREE.Mesh(geometry, material);
-        
-        // v5.53.3 : Ajout du contour pour la visibilité
-        applyTrackOutline(state.recordedMesh, curve, geometry.parameters.tubularSegments, thickness);
-
-        state.scene.add(state.recordedMesh);
+        newMesh = new THREE.Mesh(geometry, material);
+        applyTrackOutline(newMesh, curve, geometry.parameters.tubularSegments, thickness);
     } catch (e) {
-        console.error('[Terrain] Failed to create recorded track mesh:', e);
+        console.error('[GPX] Failed to create recorded track mesh:', e);
+        return;
     }
+
+    // Only dispose old mesh after new one is successfully built
+    disposeTrackMesh(state.recordedMesh);
+    state.recordedMesh = newMesh;
+    state.scene.add(state.recordedMesh);
 }
 
 export function refreshTracks(): void {

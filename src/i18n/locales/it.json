@@ -62,6 +62,14 @@
       "showProfile": "Visualizza profilo altimetrico",
       "export": "Esporta GPX"
     },
+    "history": {
+      "title": "Recenti",
+      "rec": "Registrazione",
+      "import": "Import",
+      "select": "Seleziona",
+      "reload": "Ricarica",
+      "remove": "Rimuovi"
+    },
     "recording": {
       "title": "Registrazione GPS"
     },

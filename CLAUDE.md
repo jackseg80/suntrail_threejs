@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.56.1)
+# SunTrail — Guide IA (v5.56.2)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-26 — v5.56.1 : Sources HD actives: CH (SwissTopo), FR (IGN), AT (basemap.at), DE (BKG), ES (IGN España). NO (Kartverket topo4) codé mais désactivé.
+> Mis à jour le 2026-05-31 — v5.56.2 : Historique GPX persistant, fusion panneaux, reverse geocoding, types centralisés, dette technique.
 
 ## Projet
 
@@ -25,6 +25,8 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
   - **Endpoints inaccessibles** : CZ (ČÚZK), PL (Geoportal), SK (ZBGIS), FI (MML), SE (Lantmäteriet) — 401/404/503 depuis l'étranger. URLs documentées dans `tileSources.ts:145-160`.
   - **Hors Europe (nécessite extension Natural Earth)** : JP (GSI Maps) — URL fonctionnelle, mais JP absent du dataset Europe. Voir `ROADMAP.md` pour les URLs exactes.
 - **Foreground Service v5.53.0** : Architecture processus séparé `:tracking`
+- **Historique GPX v5.56.2** : Persistance des 5 derniers tracés (imports + REC) en localStorage. Mini-carte canvas OpenTopoMap. Reverse geocoding ville/pays auto. Fusion en liste unifiée avec les layers actifs.
+- **Types GPX v5.56.2** : Module centralisé `gpxTypes.ts` — `GeoPoint`, `GPXRawData`, `isValidGeoPoint()`, `getElevation()`. Remplace `Record<string, any>` dans tout le pipeline.
   - `RecordingService` dans `android:process=":tracking"` — survit au kill de l'app principale
   - `TrackingActivity` transparente dans `:tracking` — point d'entrée du processus isolé
   - Communication Plugin ↔ Service : Broadcasts (`ACTION_POINTS_UPDATED`, `ACTION_SERVICE_STOPPED`)
@@ -114,7 +116,9 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - `src/modules/iapService.ts` : Liaison RevenueCat ↔ Google Play.
 - `src/modules/recordingService.ts` : (v5.29.37) Logique orchestrée d'enregistrement GPS.
 - `src/modules/gpxService.ts` : (v5.29.37) Import/Export et utilitaires GPX.
-- `src/modules/gpxLayers.ts` : (v5.40.19) Gestion du rendu 3D des tracés (ex-terrain.ts).
+- `src/modules/gpxLayers.ts` : (v5.56.2) Gestion du rendu 3D des tracés. Extraction `disposeTrackMesh`, `getPerformanceEpsilonMultiplier`, build-before-dispose pour mesh REC.
+- `src/modules/gpxHistoryService.ts` : (v5.56.2) **NOUVEAU** — Persistance historique GPX (max 5, localStorage, déduplication, cache mémoire).
+- `src/modules/gpxTypes.ts` : (v5.56.2) **NOUVEAU** — Types centralisés `GeoPoint`, `GPXRawData`, utilitaires `isValidGeoPoint`, `getElevation`.
 - `src/modules/routeManager.ts` : (v5.51.0) Gestionnaire d'itinéraire "zero-mode" — markers 3D (Sprite orange cliquable), auto-compute debounce 800ms, mise à jour barre + panel réglages.
 - `src/modules/appInit.ts` : (v5.51.0) Orchestration du démarrage. `setupLongPress()` (500ms + SVG feedback), `setupRouteBar()` (⚙ profil/boucle/ORS + ✕ effacer).
 - `src/modules/environment.ts` : (v5.40.20) Ambiance 3D, Fog, Sky, Lights (ex-scene.ts).

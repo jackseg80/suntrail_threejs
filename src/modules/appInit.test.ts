@@ -16,6 +16,7 @@ vi.mock('./state', () => ({
     },
     loadSettings: vi.fn().mockReturnValue({ MAP_SOURCE: 'swisstopo', PERFORMANCE_PRESET: 'balanced' }),
     loadProStatus: vi.fn(),
+    loadGpxHistory: vi.fn(),
 }));
 
 vi.mock('./iapService', () => ({ iapService: { initialize: vi.fn().mockResolvedValue(undefined) } }));

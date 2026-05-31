@@ -7,8 +7,8 @@ import { showUpgradePrompt } from '../../iap';
 import { haptic } from '../../haptics';
 import { i18n } from '../../../i18n/I18nService';
 import { clearInterruptedRecording, stopRecordingService } from '../../foregroundService';
-import { removeGPXLayer, toggleGPXLayer, updateRecordedTrackMesh } from '../../gpxLayers';
-import { updateElevationProfile } from '../../profile';
+import { removeGPXLayer, toggleGPXLayer, addGPXLayer, updateRecordedTrackMesh } from '../../gpxLayers';
+import { updateElevationProfile, closeElevationProfile } from '../../profile';
 import { eventBus } from '../../eventBus';
 import { Capacitor } from '@capacitor/core';
 import { calculateTrackStats } from '../../geoStats';
@@ -16,7 +16,12 @@ import { ICON_CLOSE, ICON_LOCK } from '../icons';
 import { recordingService } from '../../recordingService';
 import { gpxService } from '../../gpxService';
 import { fmtDuration } from '../../utils';
+import { loadHistory, removeFromHistory, updateHistoryEntryLocation, COUNTRY_NAMES, type GPXHistoryEntry } from '../../gpxHistoryService';
+import { lngLatToWorld, getCountryCode } from '../../geo';
+import { getPlaceName } from '../../geocodingService';
 import templateHTML from '../templates/track.html?raw';
+
+const pendingGeocode = new Set<string>();
 
 export class TrackSheet extends BaseComponent {
     constructor() {
@@ -30,9 +35,9 @@ export class TrackSheet extends BaseComponent {
         this.createEmptyState();
         this.updateEmptyState();
 
-        // --- Layers list container ---
+        // --- Unified track list container ---
         this.createLayersListContainer();
-        this.renderLayersList();
+        this.renderUnifiedTrackList();
 
         const closeBtn = document.getElementById('close-track');
         closeBtn?.setAttribute('aria-label', i18n.t('track.aria.close'));
@@ -114,7 +119,7 @@ export class TrackSheet extends BaseComponent {
             this.updateEmptyState();
         }));
         this.addSubscription(state.subscribe('gpxLayers', () => {
-            this.renderLayersList();
+            this.renderUnifiedTrackList();
             this.updateStats();
             this.updateEmptyState();
         }));
@@ -131,6 +136,12 @@ export class TrackSheet extends BaseComponent {
         const onRecovered = () => this.showRecoveryPrompt();
         eventBus.on('recordingRecovered', onRecovered);
         this.addSubscription(() => eventBus.off('recordingRecovered', onRecovered));
+
+        // Écouter les mises à jour de localisation dans l'historique
+        const onHistoryUpdated = () => this.renderUnifiedTrackList();
+        eventBus.on('gpxHistoryUpdated', onHistoryUpdated);
+        this.addSubscription(() => eventBus.off('gpxHistoryUpdated', onHistoryUpdated));
+
         // Recovery peut avoir été détectée avant que cette sheet soit rendue (timing main.ts)
         if (state.recoveredPoints && state.recoveredPoints.length >= 2) {
             this.showRecoveryPrompt();
@@ -162,29 +173,30 @@ export class TrackSheet extends BaseComponent {
         this.addSubscription(state.subscribe('trialEnd', updateUpsellVisibility));
     }
 
+    private createGlassModal(innerHTML: string, width = '340px'): HTMLDivElement {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);';
+        const panel = document.createElement('div');
+        panel.style.cssText = `
+            background: var(--glass-bg, rgba(30,30,50,0.95));
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-radius: var(--radius-xl, 20px);
+            padding: var(--space-4, 24px);
+            max-width: ${width}; width: 90%;
+            color: var(--text-1, #fff);
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+        `;
+        panel.innerHTML = innerHTML;
+        overlay.appendChild(panel);
+        document.body.appendChild(overlay);
+        return overlay;
+    }
+
     private async showSaveTrackPrompt(suggestedName: string): Promise<string | null> {
         return new Promise((resolve) => {
-            const overlay = document.createElement('div');
-            overlay.className = 'rec-save-overlay';
-            overlay.style.cssText = `
-                position: fixed; inset: 0; z-index: 9500;
-                display: flex; align-items: center; justify-content: center;
-                background: rgba(0,0,0,0.6);
-            `;
-            const panel = document.createElement('div');
-            panel.style.cssText = `
-                background: var(--glass-bg, rgba(30,30,50,0.95));
-                backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-                border-radius: var(--radius-xl, 20px);
-                padding: var(--space-4, 24px);
-                max-width: 340px; width: 90%;
-                color: var(--text-1, #fff);
-                text-align: center;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-                border: 1px solid rgba(255,255,255,0.1);
-            `;
-
-            panel.innerHTML = `
+            const overlay = this.createGlassModal(`
                 <div style="font-size:var(--text-lg,18px);font-weight:700;margin-bottom:var(--space-2,12px)">
                     ${i18n.t('track.save.title') || 'Enregistrer le tracé'}
                 </div>
@@ -206,9 +218,7 @@ export class TrackSheet extends BaseComponent {
                         background:transparent; color:var(--text-2,#a0a4bc); font-weight:600; cursor:pointer;
                     ">${i18n.t('common.cancel') || 'Annuler'}</button>
                 </div>
-            `;
-            overlay.appendChild(panel);
-            document.body.appendChild(overlay);
+            `);
 
             const input = document.getElementById('rec-save-name') as HTMLInputElement;
             input?.focus();
@@ -241,29 +251,11 @@ export class TrackSheet extends BaseComponent {
         const pts = state.recoveredPoints;
         if (!pts || pts.length < 2) return;
 
-        const overlay = document.createElement('div');
-        overlay.className = 'rec-recovery-overlay';
-        overlay.style.cssText = `
-            position: fixed; inset: 0; z-index: 9500;
-            display: flex; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.5);
-        `;
-        const panel = document.createElement('div');
-        panel.style.cssText = `
-            background: var(--glass-bg, rgba(30,30,50,0.92));
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-radius: var(--radius-xl, 16px);
-            padding: var(--space-4, 20px);
-            max-width: 320px; width: 90%;
-            color: var(--text-1, #fff);
-            text-align: center;
-        `;
-
         const mins = pts.length > 0
             ? Math.round((pts[pts.length - 1].timestamp - pts[0].timestamp) / 60000)
             : 0;
 
-        panel.innerHTML = `
+        const overlay = this.createGlassModal(`
             <div style="font-size:var(--text-lg,18px);font-weight:700;margin-bottom:var(--space-2,8px)">
                 ${i18n.t('track.recovery.title')}
             </div>
@@ -280,9 +272,7 @@ export class TrackSheet extends BaseComponent {
                     background:transparent;color:var(--text-2,#a0a4bc);font-weight:600;cursor:pointer;
                 ">${i18n.t('track.recovery.discard')}</button>
             </div>
-        `;
-        overlay.appendChild(panel);
-        document.body.appendChild(overlay);
+        `, '320px');
 
         document.getElementById('rec-recovery-restore')?.addEventListener('click', async () => {
             // Injecter les points récupérés dans state et sauvegarder
@@ -341,147 +331,447 @@ export class TrackSheet extends BaseComponent {
         }
     }
 
-    public renderLayersList(): void {
+    private renderMiniMap(entry: GPXHistoryEntry, canvas: HTMLCanvasElement): void {
+        const dpr = window.devicePixelRatio || 1;
+        const w = canvas.clientWidth || 100;
+        const h = canvas.clientHeight || 70;
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.scale(dpr, dpr);
+
+        // Background
+        ctx.fillStyle = 'var(--surface-subtle, #1a1a2e)';
+        ctx.fillRect(0, 0, w, h);
+
+        // Grid pattern fallback
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 0.5;
+        for (let x = 0; x < w; x += 12) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+        for (let y = 0; y < h; y += 12) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+
+        // Try loading tile (OpenTopoMap) — non-blocking
+        const bounds = entry.bounds;
+        const padding = 1.15;
+        const latExtent = (bounds.maxLat - bounds.minLat) * padding;
+        const lonExtent = (bounds.maxLon - bounds.minLon) * padding;
+        const extent = Math.max(latExtent, lonExtent);
+        const zoom = Math.min(14, Math.max(6, Math.floor(Math.log2(360 / extent))));
+        const centerLat = entry.centerLat;
+        const centerLon = entry.centerLon;
+        const tileCount = Math.pow(2, zoom);
+        const tileX = (centerLon + 180) / 360 * tileCount;
+        const tileY = (1 - Math.log(Math.tan(centerLat * Math.PI / 180) + 1 / Math.cos(centerLat * Math.PI / 180)) / Math.PI) / 2 * tileCount;
+        const tx = Math.floor(tileX);
+        const ty = Math.floor(tileY);
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            ctx.clearRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            this.drawPolylineOnCanvas(ctx, entry, w, h);
+        };
+        img.onerror = () => {
+            this.drawPolylineOnCanvas(ctx, entry, w, h);
+        };
+        img.src = `https://tile.opentopomap.org/${zoom}/${tx}/${ty}.png`;
+    }
+
+    private drawPolylineOnCanvas(ctx: CanvasRenderingContext2D, entry: GPXHistoryEntry, w: number, h: number): void {
+        const pts = entry.simplifiedPoints;
+        if (pts.length < 2) return;
+
+        const bounds = entry.bounds;
+        const pad = 0.08;
+        const latRange = (bounds.maxLat - bounds.minLat) || 0.01;
+        const lonRange = (bounds.maxLon - bounds.minLon) || 0.01;
+
+        const toX = (lon: number) => ((lon - bounds.minLon) / lonRange) * (1 - 2 * pad) * w + pad * w;
+        const toY = (lat: number) => h - (((lat - bounds.minLat) / latRange) * (1 - 2 * pad) * h + pad * h);
+
+        ctx.beginPath();
+        ctx.moveTo(toX(pts[0].lon), toY(pts[0].lat));
+        for (let i = 1; i < pts.length; i++) {
+            ctx.lineTo(toX(pts[i].lon), toY(pts[i].lat));
+        }
+        ctx.strokeStyle = entry.color;
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        // Start dot
+        ctx.beginPath();
+        ctx.arc(toX(pts[0].lon), toY(pts[0].lat), 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#22c55e';
+        ctx.fill();
+
+        // End dot
+        ctx.beginPath();
+        ctx.arc(toX(pts[pts.length - 1].lon), toY(pts[pts.length - 1].lat), 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#ef4444';
+        ctx.fill();
+    }
+
+    private async loadHistoryEntry(entry: GPXHistoryEntry): Promise<void> {
+        const pts = entry.simplifiedPoints;
+        if (pts.length < 2) return;
+
+        const points = pts.map((p, i) => ({
+            lat: p.lat,
+            lon: p.lon,
+            ele: p.ele,
+            time: new Date(entry.timestamp + i * 1000).toISOString(),
+        }));
+
+        const rawData = {
+            tracks: [{
+                name: entry.name,
+                points,
+            }],
+        };
+
+        try {
+            addGPXLayer(rawData, entry.name, { source: entry.source, forceVisible: true, id: entry.id });
+        } catch (e) {
+            console.error('[History] Failed to load entry:', e);
+            showToast(i18n.t('gpx.importError') || 'Erreur lors du chargement');
+        }
+    }
+
+    public renderUnifiedTrackList(): void {
         const container = document.getElementById('gpx-layers-list');
         if (!container) return;
 
-        const layers = state.gpxLayers;
-        if (layers.length === 0) {
+        const history = loadHistory();
+
+        // Lazy geocoding for entries missing locationName
+        for (const entry of history) {
+            if (!entry.locationName && !entry.countryName && !pendingGeocode.has(entry.id)) {
+                pendingGeocode.add(entry.id);
+                const countryCode = getCountryCode(entry.centerLat, entry.centerLon);
+                const country = countryCode ? (COUNTRY_NAMES[countryCode] || countryCode) : '';
+                if (country) {
+                    updateHistoryEntryLocation(entry.id, country);
+                }
+                getPlaceName(entry.centerLat, entry.centerLon).then(loc => {
+                    if (loc) {
+                        updateHistoryEntryLocation(entry.id, loc);
+                    }
+                }).catch(() => {}).finally(() => {
+                    pendingGeocode.delete(entry.id);
+                    if (document.getElementById('gpx-layers-list')) {
+                        this.renderUnifiedTrackList();
+                    }
+                });
+            }
+        }
+
+        const loadedLayers = state.gpxLayers;
+        const manualRoutes = loadedLayers.filter(l => l.isManualRoute);
+        const nonManualLoaded = loadedLayers.filter(l => !l.isManualRoute);
+        const hasImportedGpx = nonManualLoaded.length > 0;
+
+        // Build a merged list: history entries first (with their loaded state), then manual routes
+        interface UnifiedRow {
+            type: 'history' | 'manual';
+            id: string;
+            name: string;
+            color: string;
+            stats: { distance: number; dPlus: number; dMinus: number; pointCount: number; estimatedTime?: number };
+            isLoaded: boolean;
+            isLocked: boolean;
+            visible: boolean;
+            isActive: boolean;
+            isProfileActive: boolean;
+            entry?: GPXHistoryEntry;
+            entryIndex?: number;
+        }
+
+        const mergedRows: UnifiedRow[] = [];
+        const seenIds = new Set<string>();
+
+        // History entries
+        for (let i = 0; i < history.length; i++) {
+            const entry = history[i];
+            const loadedLayer = loadedLayers.find(l => l.id === entry.id);
+            const isLoaded = !!loadedLayer;
+            const isFirstOrPro = isProActive() || !hasImportedGpx || (loadedLayer && nonManualLoaded.indexOf(loadedLayer) === 0);
+            const isLocked = !isFirstOrPro && !isLoaded;
+
+            mergedRows.push({
+                type: 'history',
+                id: entry.id,
+                name: entry.name,
+                color: loadedLayer ? loadedLayer.color : entry.color,
+                stats: loadedLayer ? loadedLayer.stats : entry.stats,
+                isLoaded,
+                isLocked,
+                visible: loadedLayer ? loadedLayer.visible : false,
+                isActive: !!loadedLayer && state.activeGPXLayerId === entry.id,
+                isProfileActive: !!loadedLayer && state.activeGPXLayerId === entry.id && !!document.getElementById('elevation-profile')?.classList.contains('is-open'),
+                entry,
+                entryIndex: i,
+            });
+            seenIds.add(entry.id);
+        }
+
+        // Loaded non-manual layers NOT in history (fresh imports before page reload, edge case)
+        for (const layer of nonManualLoaded) {
+            if (!seenIds.has(layer.id)) {
+                mergedRows.push({
+                    type: 'history',
+                    id: layer.id,
+                    name: layer.name,
+                    color: layer.color,
+                    stats: layer.stats,
+                    isLoaded: true,
+                    isLocked: !isProActive() && nonManualLoaded.indexOf(layer) > 0,
+                    visible: layer.visible,
+                    isActive: state.activeGPXLayerId === layer.id,
+                    isProfileActive: state.activeGPXLayerId === layer.id && !!document.getElementById('elevation-profile')?.classList.contains('is-open'),
+                });
+            }
+        }
+
+        // Manual routes
+        for (let i = 0; i < manualRoutes.length; i++) {
+            const layer = manualRoutes[i];
+            mergedRows.push({
+                type: 'manual',
+                id: layer.id,
+                name: layer.name,
+                color: layer.color,
+                stats: layer.stats,
+                isLoaded: true,
+                isLocked: false,
+                visible: layer.visible,
+                isActive: state.activeGPXLayerId === layer.id,
+                isProfileActive: state.activeGPXLayerId === layer.id && !!document.getElementById('elevation-profile')?.classList.contains('is-open'),
+            });
+        }
+
+        if (mergedRows.length === 0) {
             container.innerHTML = '';
             container.style.display = 'none';
             return;
         }
 
-        const importedLayers = layers.filter(l => !l.isManualRoute);
-
         container.style.display = 'block';
-        container.innerHTML = `
-            <div class="gpx-layers-header" data-i18n="track.imported.title">${i18n.t('track.imported.title')}</div>
-            ${layers.map((layer) => {
-                const truncName = layer.name.length > 20 ? layer.name.slice(0, 20) + '...' : layer.name;
-                const isActive = state.activeGPXLayerId === layer.id;
-                const duration = layer.stats.estimatedTime ? fmtDuration(layer.stats.estimatedTime) : '—';
-                
-                // v5.54 : Si Free, seul le 1er calque GPX importé est "utilisable".
-                // Les itinéraires manuels (Planificateur) sont toujours utilisables et non verrouillés.
-                const isLocked = !isProActive() && !layer.isManualRoute && importedLayers.indexOf(layer) > 0;
-                
-                const layerClass = isActive ? ' active' : '';
-                const lockedClass = isLocked ? ' gpx-layer-locked' : '';
-                
-                return `
-                <div class="gpx-layer-item${layerClass}${lockedClass}" data-layer-id="${layer.id}" style="${isLocked ? 'opacity:0.5;' : ''}">
-                    <span class="gpx-layer-dot" style="background:${layer.color}"></span>
-                    <div class="gpx-layer-info">
-                        <span class="gpx-layer-name">${isLocked ? ICON_LOCK + ' ' : ''}${truncName}</span>
-                        <span class="gpx-layer-stats">${layer.stats.distance.toFixed(2)} km · D+ ${Math.round(layer.stats.dPlus)} m · D− ${Math.round(layer.stats.dMinus)} m · <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:text-top"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${duration}</span>
-                    </div>
-                    <button class="gpx-layer-profile" data-action="profile" data-id="${layer.id}"
-                            aria-label="${i18n.t('track.imported.showProfile')}"
-                            title="${i18n.t('track.imported.showProfile')}">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                        </svg>
-                    </button>
-                    <button class="gpx-layer-toggle" data-action="toggle" data-id="${layer.id}" data-visible="${layer.visible}"
-                            aria-label="${i18n.t('track.imported.toggleVisible')}"
-                            title="${i18n.t('track.imported.toggleVisible')}">
-                        ${layer.visible
-                            ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
-                            : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`}
-                    </button>
-                    <button class="gpx-layer-export" data-action="export" data-id="${layer.id}"
-                            aria-label="${i18n.t('track.imported.export') || 'Exporter GPX'}"
-                            title="${i18n.t('track.imported.export') || 'Exporter GPX'}"
-                            style="${isLocked ? 'color:var(--gold);' : ''}">
-                        ${isLocked ? ICON_LOCK : ''}
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    </button>
-                    <button class="gpx-layer-remove" data-action="remove" data-id="${layer.id}"
-                            aria-label="${i18n.t('track.imported.remove')}"
-                            title="${i18n.t('track.imported.remove')}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-                </div>`;
-            }).join('')}`;
+        let html = '';
+        let inManualSection = false;
+        const entryMap = new Map<number, GPXHistoryEntry>();
 
-        // Bind events
-        container.querySelectorAll('.gpx-layer-item').forEach((item, index) => {
-            const layer = layers[index];
+        for (let i = 0; i < mergedRows.length; i++) {
+            const row = mergedRows[i];
+
+            if (row.type === 'manual' && !inManualSection) {
+                inManualSection = true;
+                html += `<div class="gpx-layers-header" style="margin-top:var(--space-3)">${i18n.t('track.manual.title') || 'Itinéraire planifié'}</div>`;
+            }
+
+            const duration = row.stats.estimatedTime ? fmtDuration(row.stats.estimatedTime) : '—';
+            const truncName = row.name.length > 20 ? row.name.slice(0, 20) + '...' : row.name;
+            const layerClass = row.isActive ? ' active' : '';
+            const lockedClass = row.isLocked ? ' gpx-layer-locked' : '';
+
+            if (row.type === 'manual') {
+                // Manual route: color dot, no mini-map
+                html += `
+                <div class="gpx-layer-item${layerClass}${lockedClass}" data-layer-id="${row.id}" data-row-idx="${i}">
+                    <span class="gpx-layer-dot" style="background:${row.color}"></span>
+                    <div class="gpx-layer-info">
+                        <span class="gpx-layer-name">${truncName}</span>
+                        <span class="gpx-layer-stats">${row.stats.distance.toFixed(2)} km · D+ ${Math.round(row.stats.dPlus)} m · D− ${Math.round(row.stats.dMinus)} m · <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:text-top"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${duration}</span>
+                    </div>
+                    <button class="gpx-layer-profile${row.isProfileActive ? ' profile-active' : ''}" data-action="profile" data-id="${row.id}"
+                            aria-label="${i18n.t('track.imported.showProfile')}" title="${i18n.t('track.imported.showProfile')}">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="${row.isProfileActive ? 'var(--accent)' : 'none'}" stroke="${row.isProfileActive ? 'var(--accent)' : 'currentColor'}" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    </button>
+                    <button class="gpx-layer-remove" data-action="remove" data-id="${row.id}" aria-label="${i18n.t('track.imported.remove')}" title="${i18n.t('track.imported.remove')}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                </div>`;
+            } else {
+                // History entry: mini-map instead of color dot
+                entryMap.set(i, row.entry || history.find(e => e.id === row.id)!);
+                const locName = row.entry?.locationName || row.entry?.countryName || '';
+                const dateStr = new Date(row.entry?.timestamp || Date.now()).toLocaleDateString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+                const subInfo = locName ? `${locName} · ${dateStr}` : dateStr;
+                html += `
+                <div class="gpx-layer-item${layerClass}${lockedClass}" data-layer-id="${row.id}" data-row-idx="${i}" style="${row.isLocked ? 'opacity:0.5;' : ''}">
+                    <canvas class="gpx-layer-minimap" data-history-idx="${row.entryIndex ?? i}" width="120" height="84"></canvas>
+                    <div class="gpx-layer-info">
+                        <span class="gpx-layer-name">${row.isLocked ? ICON_LOCK + ' ' : ''}${truncName}</span>
+                        <span class="gpx-layer-location">${subInfo}</span>
+                        <span class="gpx-layer-stats">${row.stats.distance.toFixed(2)} km · D+ ${Math.round(row.stats.dPlus)} m · D− ${Math.round(row.stats.dMinus)} m · <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:text-top"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${duration}</span>
+                    </div>
+                    <button class="gpx-layer-profile${row.isProfileActive ? ' profile-active' : ''}" data-action="profile" data-id="${row.id}"
+                            aria-label="${i18n.t('track.imported.showProfile')}" title="${i18n.t('track.imported.showProfile')}">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="${row.isProfileActive ? 'var(--accent)' : 'none'}" stroke="${row.isProfileActive ? 'var(--accent)' : 'currentColor'}" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    </button>
+                    ${row.isLoaded ? `
+                    <button class="gpx-layer-toggle" data-action="toggle" data-id="${row.id}" data-visible="${row.visible}"
+                            aria-label="${i18n.t('track.imported.toggleVisible')}" title="${i18n.t('track.imported.toggleVisible')}">
+                        ${row.visible
+                            ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
+                            : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`}
+                    </button>
+                    <button class="gpx-layer-export" data-action="export" data-id="${row.id}"
+                            aria-label="${i18n.t('track.imported.export') || 'Exporter GPX'}" title="${i18n.t('track.imported.export') || 'Exporter GPX'}"
+                            style="${row.isLocked ? 'color:var(--gold);' : ''}">
+                        ${row.isLocked ? ICON_LOCK : ''}
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </button>
+                    ` : ''}
+                    <button class="gpx-layer-remove" data-action="${row.isLoaded ? 'remove' : 'history-remove'}" data-id="${row.id}"
+                            aria-label="${row.isLoaded ? i18n.t('track.imported.remove') : i18n.t('track.history.remove')}"
+                            title="${row.isLoaded ? i18n.t('track.imported.remove') : i18n.t('track.history.remove')}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                </div>`;
+            }
+        }
+
+        container.innerHTML = html;
+
+        // Bind row clicks: load (if history + not loaded) or select (if loaded)
+        container.querySelectorAll('.gpx-layer-item').forEach(item => {
+            const rowIdx = parseInt((item as HTMLElement).dataset.rowIdx || '-1');
+            if (rowIdx < 0 || rowIdx >= mergedRows.length) return;
+            const row = mergedRows[rowIdx];
+
             item.addEventListener('click', (e) => {
                 if ((e.target as HTMLElement).closest('[data-action]')) return;
-                
-                const importedLayers = state.gpxLayers.filter(l => !l.isManualRoute);
-                if (!isProActive() && !layer.isManualRoute && importedLayers.indexOf(layer) > 0) {
-                    showUpgradePrompt('multi_gpx');
-                    return;
-                }
 
-                state.activeGPXLayerId = layer.id;
-                updateElevationProfile(layer.id);
-                this.renderLayersList();
+                if (row.type === 'history' && !row.isLoaded) {
+                    // Load from history, then select
+                    if (!isProActive() && hasImportedGpx) {
+                        showUpgradePrompt('multi_gpx');
+                        return;
+                    }
+                    if (state.gpxLayers.length >= 10) {
+                        showToast(i18n.t('gpx.limitPro') || 'Maximum 10 tracks reached');
+                        return;
+                    }
+                    if (row.entry) this.loadHistoryEntry(row.entry);
+                } else if (row.isLoaded) {
+                    // Select loaded layer
+                    const layer = state.gpxLayers.find(l => l.id === row.id);
+                    if (!layer) return;
+                    const importedLayers = state.gpxLayers.filter(l => !l.isManualRoute);
+                    if (!isProActive() && !layer.isManualRoute && importedLayers.indexOf(layer) > 0) {
+                        showUpgradePrompt('multi_gpx');
+                        return;
+                    }
+                    state.activeGPXLayerId = row.id;
+                    updateElevationProfile(row.id);
+                    if (state.originTile && row.entry) {
+                        const e = row.entry;
+                        const wpos = lngLatToWorld(e.centerLon, e.centerLat, state.originTile);
+                        const span = Math.max(
+                            (e.bounds.maxLat - e.bounds.minLat) * 111320,
+                            (e.bounds.maxLon - e.bounds.minLon) * 111320 * Math.cos(e.centerLat * Math.PI / 180)
+                        );
+                        eventBus.emit('flyTo', { worldX: wpos.x, worldZ: wpos.z, targetElevation: 0, targetDistance: Math.max(span * 1.5, 3000) });
+                    }
+                    this.renderUnifiedTrackList();
+                }
             });
         });
 
-        container.querySelectorAll('[data-action="toggle"]').forEach((btn, index) => {
+        // Profile buttons (toggle open/close)
+        container.querySelectorAll('[data-action="profile"]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const layer = layers[index];
-                const importedLayers = state.gpxLayers.filter(l => !l.isManualRoute);
-                if (!isProActive() && !layer.isManualRoute && importedLayers.indexOf(layer) > 0) {
-                    showUpgradePrompt('multi_gpx');
+                const id = (btn as HTMLElement).dataset.id;
+                if (!id) return;
+                const row = mergedRows.find(r => r.id === id);
+                if (!row) return;
+
+                if (!row.isLoaded && row.type === 'history') {
+                    if (!isProActive() && hasImportedGpx) { showUpgradePrompt('multi_gpx'); return; }
+                    if (state.gpxLayers.length >= 10) { showToast(i18n.t('gpx.limitPro') || 'Maximum 10 tracks reached'); return; }
+                    if (row.entry) this.loadHistoryEntry(row.entry);
                     return;
                 }
+
+                if (row.isLocked) { showUpgradePrompt('multi_gpx'); return; }
+
+                const panelOpen = !!document.getElementById('elevation-profile')?.classList.contains('is-open');
+                const isSameTrack = state.activeGPXLayerId === id;
+
+                if (panelOpen && isSameTrack) {
+                    closeElevationProfile();
+                } else {
+                    state.activeGPXLayerId = id;
+                    updateElevationProfile(id);
+                }
+                this.renderUnifiedTrackList();
+            });
+        });
+
+        // Toggle visibility
+        container.querySelectorAll('[data-action="toggle"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 const id = (btn as HTMLElement).dataset.id;
+                if (!id) return;
+                const row = mergedRows.find(r => r.id === id);
+                if (row?.isLocked) { showUpgradePrompt('multi_gpx'); return; }
                 if (id) {
                     toggleGPXLayer(id);
-                    this.renderLayersList();
+                    this.renderUnifiedTrackList();
                 }
             });
         });
 
-        container.querySelectorAll('[data-action="export"]').forEach((btn, index) => {
+        // Export
+        container.querySelectorAll('[data-action="export"]').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                const layer = layers[index];
-                const importedLayers = state.gpxLayers.filter(l => !l.isManualRoute);
-                const isLockedLayer = !isProActive() && !layer.isManualRoute && importedLayers.indexOf(layer) > 0;
-                if (isLockedLayer) {
-                    showUpgradePrompt('export_gpx');
-                    return;
-                }
                 const id = (btn as HTMLElement).dataset.id;
                 if (!id) return;
+                const row = mergedRows.find(r => r.id === id);
+                if (row?.isLocked) { showUpgradePrompt('export_gpx'); return; }
                 const layerToExport = state.gpxLayers.find(l => l.id === id);
                 if (!layerToExport || !layerToExport.rawData) return;
-
                 const gpxString = gpxService.buildGPXStringFromLayer(layerToExport);
                 await recordingService.saveToFile(layerToExport.name, gpxString);
             });
         });
 
+        // Remove (loaded layers) or history-remove (history entries)
         container.querySelectorAll('[data-action="remove"]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const id = (btn as HTMLElement).dataset.id;
                 if (id) {
+                    removeFromHistory(id);
                     removeGPXLayer(id);
                 }
             });
         });
-
-        container.querySelectorAll('[data-action="profile"]').forEach((btn, index) => {
+        container.querySelectorAll('[data-action="history-remove"]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const layer = layers[index];
-                const importedLayers = state.gpxLayers.filter(l => !l.isManualRoute);
-                if (!isProActive() && !layer.isManualRoute && importedLayers.indexOf(layer) > 0) {
-                    showUpgradePrompt('multi_gpx');
-                    return;
-                }
                 const id = (btn as HTMLElement).dataset.id;
                 if (id) {
-                    state.activeGPXLayerId = id;
-                    updateElevationProfile(id);
-                    this.renderLayersList();
+                    removeFromHistory(id);
+                    state.gpxHistory = loadHistory();
+                    this.renderUnifiedTrackList();
+                }
+            });
+        });
+
+        // Render mini-maps
+        requestAnimationFrame(() => {
+            container.querySelectorAll<HTMLCanvasElement>('.gpx-layer-minimap').forEach(canvas => {
+                const hIdx = parseInt(canvas.dataset.historyIdx || '-1');
+                const entry = entryMap.get(hIdx);
+                if (!entry) {
+                    const entryById = history.find(e => e.id === (canvas.closest('[data-layer-id]') as HTMLElement)?.dataset.layerId);
+                    if (entryById) this.renderMiniMap(entryById, canvas);
+                } else {
+                    this.renderMiniMap(entry, canvas);
                 }
             });
         });
@@ -528,7 +818,7 @@ export class TrackSheet extends BaseComponent {
             document.getElementById('rec-recording-upsell')?.remove();
             
             document.getElementById('import-gpx-sheet')?.style.removeProperty('display');
-            this.renderLayersList();
+            this.renderUnifiedTrackList();
         }
     }
 

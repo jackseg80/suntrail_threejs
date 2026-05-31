@@ -1,5 +1,16 @@
 # SunTrail — Roadmap
 
+## v5.56.2 (2026-05-31) — ✅ Complété
+
+### Historique GPX & Dette Technique
+
+- ✅ **Historique GPX persistant** — 5 derniers imports/REC en localStorage, mini-carte canvas
+- ✅ **Fusion panneaux GPX** — Liste unifiée (historique + layers actifs + routes manuelles)
+- ✅ **Reverse geocoding automatique** — Nom de lieu (MapTiler/Nominatim) + fallback pays 55 pays
+- ✅ **Bouton profil toggle** — État actif, ouvrir/fermer le panneau d'élévation
+- ✅ **Types GPX centralisés** — `gpxTypes.ts`, `GeoPoint`, `GPXRawData`, `getElevation()`
+- ✅ **Dette technique** — `disposeTrackMesh`, `getPerformanceEpsilonMultiplier`, `createGlassModal`, cache localStorage, build-before-dispose REC mesh
+
 ## v5.56.1+ (Sources HD par pays)
 
 ### Cartes gouvernementales HD gratuites
@@ -62,8 +73,26 @@ JP: https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png
 4. Ajouter les tests dans `tileLoader.test.ts` + `terrain.source.test.ts`
 5. Lancer `npm test` — 859+ tests doivent passer
 
-**Futur — Vectoriel partiel :** Labels superposés via tuiles vectorielles (ex: basemap.at BMAPV)
-pour résoudre le problème de lisibilité des noms à certains zooms.
+**Futur — Vectoriel partiel (labels superposés) :** Tentative le 2026-05-28 d'implémenter
+des labels vectoriels via tuiles PBF (Swisstopo `base.vt`, IGN `planign`, MapTiler v3)
+superposés en sprites Three.js Canvas. Abandonné — problèmes non résolus :
+
+- **Doublons** : labels vecto + labels raster se superposent, opacité conditionnelle au
+  zoom insuffisante pour éviter la redondance visuelle.
+- **Parallax** : sprites 3D se déplacent différemment du terrain lors du pan (décalage
+  de perspective entre le sprite et le mesh de la tuile).
+- **Densité** : tuiles vectorielles contiennent trop d'entités (centaines de communes),
+  nécessite un filtrage agressif par admin_level qui devient spécifique à chaque source.
+- **Sources** : endpoints PBF hétérogènes (schémas de couches incompatibles entre pays),
+  absence de tuiles vectorielles pour l'Allemagne (BKG raster-only), Suisse LightBaseMap
+  inaccessible (geoblock probable).
+
+**Pistes alternatives à explorer :**
+- Rendu HTML/CSS overlay (CSS3DRenderer) au lieu de sprites 3D — éliminerait le parallax
+  mais coût perf élevé.
+- Remplacer les sources raster avec labels par des sources raster sans labels + overlay
+  vecto (nécessite des endpoints "no labels" que peu de fournisseurs proposent).
+- Améliorer la lisibilité des labels raster existants (upscaling @2x, sharpening shader).
 
 ---
 

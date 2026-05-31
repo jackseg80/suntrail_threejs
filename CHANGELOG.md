@@ -1,3 +1,28 @@
+## [5.56.2] - 2026-05-31
+
+### Added
+- **Historique GPX persistant** : Les 5 derniers GPX importés ou REC sauvegardés sont conservés en localStorage et affichés dans une liste unifiée (`gpxHistoryService.ts`).
+- **Mini-carte de prévisualisation** : Canvas avec tuiles OpenTopoMap + polyline du tracé pour chaque entrée d'historique (64×45 px, retina).
+- **Nom de lieu automatique** : Reverse geocoding (MapTiler/OsmNominatim) + fallback pays via base interne de 55 polygones (`getCountryCode`). Affiche ville/région + pays + date.
+- **Bouton profil avec état actif** : Icône bleue remplie quand le panneau d'élévation est ouvert pour ce tracé. Toggle ouvrir/fermer.
+- **Module de types centralisé** : `gpxTypes.ts` avec `GeoPoint`, `GPXRawData`, `isValidGeoPoint()`, `getElevation()` — remplace `Record<string, any>` et `(p: any)` dans tout le pipeline GPX.
+
+### Changed
+- **Fusion des panneaux GPX** : L'ancien "Tracés importés" et le nouveau "Récents" sont fusionnés en une seule liste unifiée. Les routes manuelles (planificateur) sont affichées séparément en dessous.
+- **Robustesse du mesh REC** : Le mesh enregistré est construit AVANT de disposer l'ancien — plus de perte de tracé si la reconstruction échoue.
+- **Extraction de code dupliqué** : `disposeTrackMesh()`, `getPerformanceEpsilonMultiplier()`, `createGlassModal()`.
+- **Cache mémoire pour l'historique** : `loadHistory()` utilise un cache invalidé par `persistHistory()`/`clearHistory()`.
+- **Remplacement `setTimeout(0)` → `requestAnimationFrame`** dans `addGPXLayer`.
+- **Guard `GPX_COLORS` vide** : Évite un crash si le tableau de couleurs est vide.
+
+### Fixed
+- **Suppression de tracé** : `removeFromHistory()` est appelé avant `removeGPXLayer()` pour éviter qu'une entrée fantôme réapparaisse.
+- **`getCountryCode` sans try/catch** : Wrappé dans un try/catch pour éviter de perdre le save si la détection pays échoue.
+- **Nom trompeur** : `simplifyPointsRDP` renommé `simplifyPointsUniform` (n'implémente pas RDP).
+
+### Tests
+- **+21 tests** : `src/test/gpxHistoryService.test.ts` — save, load, dedup ID/hash, FIFO, country, malformed entries, update location, cache. Suite complète : 880 tests passent.
+
 ## [5.56.1] - 2026-05-26
 
 ### Added
