@@ -33,7 +33,7 @@ describe('featureFlags.ts', () => {
     it('should return correct limit values', () => {
         state.isPro = false;
         expect(getFeatureLimit('lod_high', 18, 14)).toBe(14);
-        
+
         state.isPro = true;
         expect(getFeatureLimit('lod_high', 18, 14)).toBe(18);
     });

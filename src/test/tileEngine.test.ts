@@ -2,13 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mocks
 vi.mock('../modules/terrain', () => ({
-    activeTiles: new Map()
+    activeTiles: new Map(),
 }));
 
 const mockTile = (key: string, visible = true) => ({
     key,
     status: 'idle',
-    worldX: 0, worldZ: 0,
+    worldX: 0,
+    worldZ: 0,
     isVisible: vi.fn(() => visible),
     load: vi.fn().mockResolvedValue(undefined),
     buildMesh: vi.fn(),
@@ -16,7 +17,12 @@ const mockTile = (key: string, visible = true) => ({
 
 import { state } from '../modules/state';
 import { activeTiles } from '../modules/terrain';
-import { loadQueue, addToLoadQueue, processLoadQueue, clearLoadQueue } from '../modules/terrain/tileQueue';
+import {
+    loadQueue,
+    addToLoadQueue,
+    processLoadQueue,
+    clearLoadQueue,
+} from '../modules/terrain/tileQueue';
 
 describe('Terrain Engine - TileQueue & Robustness (v5.29.36)', () => {
     beforeEach(() => {
@@ -33,7 +39,7 @@ describe('Terrain Engine - TileQueue & Robustness (v5.29.36)', () => {
         t1.worldX = 1000;
         const t2 = mockTile('1/1/1', true) as any;
         t2.worldX = 10;
-        
+
         activeTiles.set(t1.key, t1);
         activeTiles.set(t2.key, t2);
         addToLoadQueue(t1);
@@ -49,7 +55,7 @@ describe('Terrain Engine - TileQueue & Robustness (v5.29.36)', () => {
     it('doit ignorer les tuiles qui ne sont plus actives', async () => {
         const t1 = mockTile('1/0/0') as any;
         addToLoadQueue(t1);
-        
+
         await processLoadQueue();
 
         expect(t1.load).not.toHaveBeenCalled();
@@ -63,9 +69,9 @@ describe('Terrain Engine - TileQueue & Robustness (v5.29.36)', () => {
 
         const promise = processLoadQueue();
         expect(state.isProcessingTiles).toBe(true);
-        
+
         await promise;
-        await new Promise(r => setTimeout(r, 100));
+        await new Promise((r) => setTimeout(r, 100));
         expect(state.isProcessingTiles).toBe(false);
     });
 });

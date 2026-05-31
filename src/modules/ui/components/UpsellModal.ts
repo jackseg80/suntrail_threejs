@@ -21,29 +21,34 @@ export class UpsellModal extends BaseComponent {
 
     public static tryShow(): void {
         // Ne pas afficher en mode test E2E (Playwright) ou si explicitement désactivé
-        const isTest = window.location.search.includes('mode=test') || 
-                       (window as any).IS_E2E || 
-                       navigator.userAgent.includes('Playwright') ||
-                       navigator.webdriver;
-        
+        const isTest =
+            window.location.search.includes('mode=test') ||
+            (window as any).IS_E2E ||
+            navigator.userAgent.includes('Playwright') ||
+            navigator.webdriver;
+
         if (isTest) {
-            console.log('[UpsellModal] Test mode detected (webdriver/useragent), skipping.');
+            console.log(
+                '[UpsellModal] Test mode detected (webdriver/useragent), skipping.'
+            );
             return;
         }
         // 1. Pas déjà Pro (achat ou trial)
         // 2. Pas affiché depuis > 24h
         // 3. Pas au tout premier démarrage (on laisse l'utilisateur découvrir)
-        
+
         if (isProActive()) return;
 
-        const lastShow = parseInt(localStorage.getItem(this.LAST_SHOW_KEY) || '0');
+        const lastShow = parseInt(
+            localStorage.getItem(this.LAST_SHOW_KEY) || '0'
+        );
         const now = Date.now();
 
         if (now - lastShow < this.SHOW_INTERVAL_MS) return;
 
         // On affiche
         localStorage.setItem(this.LAST_SHOW_KEY, now.toString());
-        
+
         // On attend que la scène soit un peu chargée (2s)
         setTimeout(() => {
             if (isProActive()) return; // Re-check

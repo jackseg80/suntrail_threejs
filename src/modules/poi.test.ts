@@ -10,7 +10,7 @@ const { mockState } = vi.hoisted(() => ({
         scene: {} as any,
         MK: 'test-key',
         originTile: { x: 2126, y: 1462, z: 12 },
-    }
+    },
 }));
 
 vi.mock('./state', () => ({ state: mockState }));
@@ -22,7 +22,7 @@ vi.mock('./geo', () => ({
     yNormToLat: vi.fn(() => 46.8),
 }));
 vi.mock('@mapbox/vector-tile', () => ({
-    VectorTile: vi.fn(() => ({ layers: {} }))
+    VectorTile: vi.fn(() => ({ layers: {} })),
 }));
 vi.mock('pbf', () => ({ default: vi.fn(() => ({})) }));
 
@@ -30,22 +30,28 @@ vi.mock('pbf', () => ({ default: vi.fn(() => ({})) }));
 vi.mock('./boundedCache', () => ({
     BoundedCache: class {
         private _data = new Map<string, any>();
-        get(k: string) { return this._data.get(k); }
-        set(k: string, v: any) { this._data.set(k, v); }
-    }
+        get(k: string) {
+            return this._data.get(k);
+        }
+        set(k: string, v: any) {
+            this._data.set(k, v);
+        }
+    },
 }));
 
 import { loadPOIsForTile } from './poi';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function makeTile(overrides: Partial<{
-    zoom: number;
-    tx: number;
-    ty: number;
-    status: string;
-    poiGroup: object | null;
-}> = {}) {
+function makeTile(
+    overrides: Partial<{
+        zoom: number;
+        tx: number;
+        ty: number;
+        status: string;
+        poiGroup: object | null;
+    }> = {}
+) {
     return {
         tx: 2126,
         ty: 1462,
@@ -102,7 +108,7 @@ describe('loadPOIsForTile() — comportement réseau', () => {
             open: vi.fn().mockResolvedValue({
                 match: vi.fn().mockResolvedValue(null),
                 put: vi.fn().mockResolvedValue(undefined),
-            })
+            }),
         };
     });
 

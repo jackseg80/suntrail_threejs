@@ -16,16 +16,16 @@ describe('Performance Integration - Battery Management', () => {
             level: 1.0,
             addEventListener: vi.fn(),
         };
-        
+
         vi.stubGlobal('navigator', {
             getBattery: vi.fn().mockResolvedValue(mockBattery),
-            userAgent: 'Mozilla/5.0'
+            userAgent: 'Mozilla/5.0',
         });
 
         initBatteryManager();
-        
+
         // Wait for promise resolution
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
 
         expect(state.PERFORMANCE_PRESET).toBe('balanced');
     });
@@ -38,14 +38,14 @@ describe('Performance Integration - Battery Management', () => {
                 if (event === 'levelchange') levelChangeListener = listener;
             }),
         };
-        
+
         vi.stubGlobal('navigator', {
             getBattery: vi.fn().mockResolvedValue(mockBattery),
-            userAgent: 'Mozilla/5.0'
+            userAgent: 'Mozilla/5.0',
         });
 
         initBatteryManager();
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
 
         // Initial check at 25% should not trigger eco
         expect(state.PERFORMANCE_PRESET).toBe('balanced');
@@ -64,14 +64,14 @@ describe('Performance Integration - Battery Management', () => {
             level: 0.05,
             addEventListener: vi.fn(),
         };
-        
+
         vi.stubGlobal('navigator', {
             getBattery: vi.fn().mockResolvedValue(mockBattery),
-            userAgent: 'Mozilla/5.0'
+            userAgent: 'Mozilla/5.0',
         });
 
         initBatteryManager();
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
 
         expect(state.PERFORMANCE_PRESET).toBe('eco');
         expect(state.SHOW_SLOPES).toBe(false);

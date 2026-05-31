@@ -23,14 +23,14 @@ const { MockMapControls } = vi.hoisted(() => {
 });
 
 vi.mock('three/examples/jsm/controls/MapControls.js', () => ({
-    MapControls: MockMapControls
+    MapControls: MockMapControls,
 }));
 
 vi.mock('three/examples/jsm/objects/Sky.js', () => ({
     Sky: vi.fn().mockImplementation(() => ({
         mesh: new THREE.Mesh(),
-        material: { uniforms: { sunPosition: { value: new THREE.Vector3() } } }
-    }))
+        material: { uniforms: { sunPosition: { value: new THREE.Vector3() } } },
+    })),
 }));
 
 vi.mock('three/examples/jsm/libs/stats.module.js', () => ({
@@ -39,7 +39,7 @@ vi.mock('three/examples/jsm/libs/stats.module.js', () => ({
         begin: vi.fn(),
         end: vi.fn(),
         update: vi.fn(),
-    }))
+    })),
 }));
 
 // Mock other modules to avoid side effects
@@ -55,28 +55,34 @@ vi.mock('./terrain', () => ({
 }));
 
 vi.mock('./sun', () => ({ updateSunPosition: vi.fn() }));
-vi.mock('./analysis', () => ({ getAltitudeAt: vi.fn().mockReturnValue(100), resetAnalysisCache: vi.fn() }));
+vi.mock('./analysis', () => ({
+    getAltitudeAt: vi.fn().mockReturnValue(100),
+    resetAnalysisCache: vi.fn(),
+}));
 vi.mock('./tileCache', () => ({ disposeAllCachedTiles: vi.fn() }));
 vi.mock('./geometryCache', () => ({ disposeAllGeometries: vi.fn() }));
-vi.mock('./utils', () => ({ 
-    throttle: (fn: any) => fn, 
+vi.mock('./utils', () => ({
+    throttle: (fn: any) => fn,
     showToast: vi.fn(),
-    isMobileDevice: false 
+    isMobileDevice: false,
 }));
-vi.mock('./weather', () => ({ 
-    initWeatherSystem: vi.fn(), 
-    updateWeatherSystem: vi.fn(), 
-    fetchWeather: vi.fn(), 
-    disposeWeatherSystem: vi.fn() 
+vi.mock('./weather', () => ({
+    initWeatherSystem: vi.fn(),
+    updateWeatherSystem: vi.fn(),
+    fetchWeather: vi.fn(),
+    disposeWeatherSystem: vi.fn(),
 }));
-vi.mock('./compass', () => ({ 
-    initCompass: vi.fn(), 
-    disposeCompass: vi.fn(), 
-    renderCompass: vi.fn(), 
-    updateCompassAnimation: vi.fn(), 
-    isCompassAnimating: vi.fn().mockReturnValue(false) 
+vi.mock('./compass', () => ({
+    initCompass: vi.fn(),
+    disposeCompass: vi.fn(),
+    renderCompass: vi.fn(),
+    updateCompassAnimation: vi.fn(),
+    isCompassAnimating: vi.fn().mockReturnValue(false),
 }));
-vi.mock('./touchControls', () => ({ initTouchControls: vi.fn(), disposeTouchControls: vi.fn() }));
+vi.mock('./touchControls', () => ({
+    initTouchControls: vi.fn(),
+    disposeTouchControls: vi.fn(),
+}));
 
 describe('scene.ts', () => {
     beforeEach(() => {
@@ -84,7 +90,7 @@ describe('scene.ts', () => {
         // Setup minimal state
         state.scene = new THREE.Scene();
         state.camera = new THREE.PerspectiveCamera();
-        
+
         // Mock WebGLRenderer
         state.renderer = {
             dispose: vi.fn(),
@@ -94,7 +100,10 @@ describe('scene.ts', () => {
             domElement: document.createElement('canvas'),
         } as any;
 
-        state.controls = new MapControls(state.camera, state.renderer?.domElement);
+        state.controls = new MapControls(
+            state.camera,
+            state.renderer?.domElement
+        );
         state.isFlyingTo = false;
         state.isUserInteracting = false;
     });
@@ -124,7 +133,7 @@ describe('scene.ts', () => {
             // Mock window.matchMedia
             Object.defineProperty(window, 'matchMedia', {
                 writable: true,
-                value: vi.fn().mockImplementation(query => ({
+                value: vi.fn().mockImplementation((query) => ({
                     matches: query === '(prefers-reduced-motion: reduce)',
                     media: query,
                     onchange: null,

@@ -1,28 +1,37 @@
 import { state } from './state';
 
-export function throttle<T extends (...args: any[]) => any>(func: T, limit: number): T {
+export function throttle<T extends (...args: any[]) => any>(
+    func: T,
+    limit: number
+): T {
     let lastFunc: ReturnType<typeof setTimeout> | null = null;
     let lastRan: number | null = null;
-    return function(this: any, ...args: any[]) {
+    return function (this: any, ...args: any[]) {
         const context = this;
         if (!lastRan) {
             func.apply(context, args);
             lastRan = Date.now();
         } else {
             if (lastFunc) clearTimeout(lastFunc);
-            lastFunc = setTimeout(function() {
-                if ((Date.now() - (lastRan || 0)) >= limit) {
-                    func.apply(context, args);
-                    lastRan = Date.now();
-                }
-            }, limit - (Date.now() - (lastRan || 0)));
+            lastFunc = setTimeout(
+                function () {
+                    if (Date.now() - (lastRan || 0) >= limit) {
+                        func.apply(context, args);
+                        lastRan = Date.now();
+                    }
+                },
+                limit - (Date.now() - (lastRan || 0))
+            );
         }
     } as T;
 }
 
-export function debounce<T extends (...args: any[]) => any>(func: T, wait: number): (...args: Parameters<T>) => void {
+export function debounce<T extends (...args: any[]) => any>(
+    func: T,
+    wait: number
+): (...args: Parameters<T>) => void {
     let timeout: ReturnType<typeof setTimeout> | null = null;
-    return function(this: any, ...args: Parameters<T>) {
+    return function (this: any, ...args: Parameters<T>) {
         const context = this;
         if (timeout) clearTimeout(timeout);
         timeout = setTimeout(() => {
@@ -32,13 +41,20 @@ export function debounce<T extends (...args: any[]) => any>(func: T, wait: numbe
 }
 
 export function isMobileDevice(): boolean {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+    return (
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+            navigator.userAgent
+        ) || window.innerWidth < 768
+    );
 }
 
 // --- GÉOCODAGE AVEC SECOURS (v5.4.7) ---
 let _geocodingBackoffUntil = 0; // timestamp until which geocoding is paused (429 backoff)
 
-export async function fetchGeocoding(params: { lat?: number, lon?: number, query?: string }, signal?: AbortSignal): Promise<any> {
+export async function fetchGeocoding(
+    params: { lat?: number; lon?: number; query?: string },
+    signal?: AbortSignal
+): Promise<any> {
     // Backoff global après un 429 — ne pas retenter avant l'expiration
     if (Date.now() < _geocodingBackoffUntil) return null;
 
@@ -48,8 +64,8 @@ export async function fetchGeocoding(params: { lat?: number, lon?: number, query
     }
 
     const key = state.MK;
-    let maptilerUrl = "";
-    let osmUrl = "";
+    let maptilerUrl = '';
+    let osmUrl = '';
 
     if (params.lat && params.lon) {
         maptilerUrl = `https://api.maptiler.com/geocoding/${params.lon},${params.lat}.json?key=${key}`;
@@ -62,13 +78,20 @@ export async function fetchGeocoding(params: { lat?: number, lon?: number, query
     // 1. Tenter MapTiler (si pas déjà banni)
     if (!state.isMapTilerDisabled && key) {
         try {
-            const r = await fetch(maptilerUrl, { signal: signal || AbortSignal.timeout(10000), referrerPolicy: 'same-origin' });
+            const r = await fetch(maptilerUrl, {
+                signal: signal || AbortSignal.timeout(10000),
+                referrerPolicy: 'same-origin',
+            });
             if (r.status === 403) {
-                console.warn("[MapTiler] Clé invalide détectée (403) sur geocoding. Backoff 5min.");
+                console.warn(
+                    '[MapTiler] Clé invalide détectée (403) sur geocoding. Backoff 5min.'
+                );
                 _geocodingBackoffUntil = Date.now() + 300_000;
                 return null;
             } else if (r.status === 429) {
-                console.warn("[MapTiler] Rate limit geocoding (429). Backoff 60s.");
+                console.warn(
+                    '[MapTiler] Rate limit geocoding (429). Backoff 60s.'
+                );
                 _geocodingBackoffUntil = Date.now() + 60_000;
                 return null;
             } else if (r.ok) {
@@ -78,20 +101,20 @@ export async function fetchGeocoding(params: { lat?: number, lon?: number, query
         } catch (e) {
             if ((e as Error).name === 'AbortError') throw e;
             // Erreur réseau (CORS block sur 429, etc.) — backoff 30s
-            console.error("[MapTiler] Erreur réseau geocoding — backoff 30s");
+            console.error('[MapTiler] Erreur réseau geocoding — backoff 30s');
             _geocodingBackoffUntil = Date.now() + 30_000;
         }
     }
 
     // 2. Secours OSM (Gratuit et libre)
     try {
-        const r = await fetch(osmUrl, { 
+        const r = await fetch(osmUrl, {
             headers: { 'User-Agent': 'SunTrail-3D-App' },
-            signal: signal || AbortSignal.timeout(10000)
+            signal: signal || AbortSignal.timeout(10000),
         });
         if (r.ok) return await r.json();
         if (r.status === 429) {
-            console.warn("[OSM] Rate limit Nominatim (429). Backoff 60s.");
+            console.warn('[OSM] Rate limit Nominatim (429). Backoff 60s.');
             _geocodingBackoffUntil = Date.now() + 60_000;
             return null;
         }
@@ -114,7 +137,7 @@ export async function fetchGeocoding(params: { lat?: number, lon?: number, query
 export function simplifyRDP<T>(
     points: T[],
     epsilon: number,
-    getPos: (p: T) => { x: number, y: number, z: number }
+    getPos: (p: T) => { x: number; y: number; z: number }
 ): T[] {
     if (points.length <= 2) return points;
 
@@ -159,12 +182,16 @@ export function simplifyRDP<T>(
 
 /** Distance d'un point P à un segment [A, B] en 3D (au carré pour perf) */
 function distanceToSegmentSquared3D(
-    p: { x: number, y: number, z: number },
-    a: { x: number, y: number, z: number },
-    b: { x: number, y: number, z: number }
+    p: { x: number; y: number; z: number },
+    a: { x: number; y: number; z: number },
+    b: { x: number; y: number; z: number }
 ): number {
-    const abx = b.x - a.x, aby = b.y - a.y, abz = b.z - a.z;
-    const apx = p.x - a.x, apy = p.y - a.y, apz = p.z - a.z;
+    const abx = b.x - a.x,
+        aby = b.y - a.y,
+        abz = b.z - a.z;
+    const apx = p.x - a.x,
+        apy = p.y - a.y,
+        apz = p.z - a.z;
     const l2 = abx * abx + aby * aby + abz * abz;
     if (l2 === 0) return apx * apx + apy * apy + apz * apz;
     let t = (apx * abx + apy * aby + apz * abz) / l2;
@@ -172,7 +199,9 @@ function distanceToSegmentSquared3D(
     const qx = a.x + t * abx;
     const qy = a.y + t * aby;
     const qz = a.z + t * abz;
-    const dx = p.x - qx, dy = p.y - qy, dz = p.z - qz;
+    const dx = p.x - qx,
+        dy = p.y - qy,
+        dz = p.z - qz;
     return dx * dx + dy * dy + dz * dz;
 }
 

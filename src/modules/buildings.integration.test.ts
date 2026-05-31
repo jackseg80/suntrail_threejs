@@ -8,13 +8,13 @@ import { Tile } from './terrain';
 (global as any).caches = {
     open: vi.fn().mockResolvedValue({
         match: vi.fn().mockResolvedValue(null),
-        put: vi.fn().mockResolvedValue(undefined)
-    })
+        put: vi.fn().mockResolvedValue(undefined),
+    }),
 };
 
 // Mocks
 vi.mock('./analysis', () => ({
-    getAltitudeAt: vi.fn(() => 1000)
+    getAltitudeAt: vi.fn(() => 1000),
 }));
 
 vi.mock('./utils', () => ({}));
@@ -30,12 +30,20 @@ vi.mock('@mapbox/vector-tile', () => {
                     feature: (_i: number) => ({
                         id: 1,
                         properties: { levels: 2 },
-                        loadGeometry: () => [[{ x: 2048, y: 2048 }, { x: 2100, y: 2048 }, { x: 2100, y: 2100 }, { x: 2048, y: 2100 }, { x: 2048, y: 2048 }]],
-                        type: 3
-                    })
-                }
+                        loadGeometry: () => [
+                            [
+                                { x: 2048, y: 2048 },
+                                { x: 2100, y: 2048 },
+                                { x: 2100, y: 2100 },
+                                { x: 2048, y: 2100 },
+                                { x: 2048, y: 2048 },
+                            ],
+                        ],
+                        type: 3,
+                    }),
+                },
             };
-        }
+        },
     };
 });
 
@@ -48,11 +56,11 @@ describe('Buildings Integration', () => {
         state.isMapTilerDisabled = false;
         state.RELIEF_EXAGGERATION = 1.0;
         state.scene = new THREE.Scene();
-        
+
         // Mock global fetch for PBF
         global.fetch = vi.fn().mockResolvedValue({
             ok: true,
-            arrayBuffer: async () => new ArrayBuffer(0)
+            arrayBuffer: async () => new ArrayBuffer(0),
         });
     });
 

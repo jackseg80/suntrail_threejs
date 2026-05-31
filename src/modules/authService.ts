@@ -34,7 +34,9 @@ export class AuthService {
         });
 
         try {
-            const { data: { session } } = await supabase.auth.getSession();
+            const {
+                data: { session },
+            } = await supabase.auth.getSession();
             this._setUserFromSession(session);
         } catch (e) {
             console.error('[Auth] Error getting session:', e);
@@ -72,20 +74,32 @@ export class AuthService {
     }
 
     async getSession() {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const {
+            data: { session },
+            error,
+        } = await supabase.auth.getSession();
         if (error) throw error;
         return session;
     }
 
-    private async _openGoogleOAuth(method: 'signInWithOAuth' | 'linkIdentity'): Promise<void> {
+    private async _openGoogleOAuth(
+        method: 'signInWithOAuth' | 'linkIdentity'
+    ): Promise<void> {
         const isNative = Capacitor.isNativePlatform();
-        const isProd = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const isProd =
+            typeof window !== 'undefined' &&
+            window.location.hostname !== 'localhost' &&
+            window.location.hostname !== '127.0.0.1';
         const redirectTo = `${window.location.origin}${isProd ? '/suntrail_threejs/' : '/'}app.html`;
 
-        const opts = { provider: 'google' as const, options: { redirectTo, skipBrowserRedirect: isNative } };
-        const result = method === 'signInWithOAuth'
-            ? await supabase.auth.signInWithOAuth(opts)
-            : await supabase.auth.linkIdentity(opts);
+        const opts = {
+            provider: 'google' as const,
+            options: { redirectTo, skipBrowserRedirect: isNative },
+        };
+        const result =
+            method === 'signInWithOAuth'
+                ? await supabase.auth.signInWithOAuth(opts)
+                : await supabase.auth.linkIdentity(opts);
 
         if (result.error) throw result.error;
 
@@ -104,7 +118,11 @@ export class AuthService {
     }
 
     isGoogleLinked(): boolean {
-        return this._rawUser?.identities?.some((i: { provider: string }) => i.provider === 'google') ?? false;
+        return (
+            this._rawUser?.identities?.some(
+                (i: { provider: string }) => i.provider === 'google'
+            ) ?? false
+        );
     }
 
     async deleteAccount(): Promise<{ error: Error | null }> {

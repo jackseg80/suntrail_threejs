@@ -88,11 +88,21 @@ export function opentopomapUrl(z: number, x: number, y: number): string {
     return `https://${sub}.tile.opentopomap.org/${z}/${x}/${y}.png`;
 }
 
-export function maptilerTopo(z: number, x: number, y: number, apiKey: string): string {
+export function maptilerTopo(
+    z: number,
+    x: number,
+    y: number,
+    apiKey: string
+): string {
     return `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.webp?key=${apiKey}`;
 }
 
-export function maptilerSatellite(z: number, x: number, y: number, apiKey: string): string {
+export function maptilerSatellite(
+    z: number,
+    x: number,
+    y: number,
+    apiKey: string
+): string {
     return `https://api.maptiler.com/maps/satellite/256/${z}/${x}/${y}@2x.webp?key=${apiKey}`;
 }
 

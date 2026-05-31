@@ -15,18 +15,25 @@ vi.mock('@capacitor/filesystem', () => ({
 // Mocking PMTiles
 vi.mock('pmtiles', () => {
     return {
-        PMTiles: function() {
+        PMTiles: function () {
             return {
                 getHeader: vi.fn().mockResolvedValue({
                     minZoom: 8,
                     maxZoom: 14,
                     numTileEntries: 1000,
-                    minLon: 5, maxLon: 11, minLat: 45, maxLat: 48
+                    minLon: 5,
+                    maxLon: 11,
+                    minLat: 45,
+                    maxLat: 48,
                 }),
-                getZxy: vi.fn().mockResolvedValue({ data: new Uint8Array([1, 2, 3]).buffer }),
+                getZxy: vi.fn().mockResolvedValue({
+                    data: new Uint8Array([1, 2, 3]).buffer,
+                }),
             };
         },
-        FileSource: function() { return {}; },
+        FileSource: function () {
+            return {};
+        },
         zxyToTileId: vi.fn((_z, _x, _y) => 123),
         tileIdToZxy: vi.fn((_id) => [12, 2133, 1450]), // Mock simple
     };
@@ -37,7 +44,7 @@ vi.mock('./iapService', () => ({
     iapService: {
         waitForInit: vi.fn().mockResolvedValue(true),
         checkAllPackPurchases: vi.fn().mockResolvedValue([]),
-    }
+    },
 }));
 
 describe('PackManager Integration', () => {
@@ -48,35 +55,44 @@ describe('PackManager Integration', () => {
         state.IS_OFFLINE = false;
         state.installedPacks = [];
         state.purchasedPacks = [];
-        
+
         // Mock OPFS - par défaut, le fichier n'existe pas
         const mockDirectoryHandle = {
-            getFileHandle: vi.fn().mockRejectedValue(new Error('File not found'))
+            getFileHandle: vi
+                .fn()
+                .mockRejectedValue(new Error('File not found')),
         };
         const mockRoot = {
             getDirectoryHandle: vi.fn().mockResolvedValue(mockDirectoryHandle),
         };
-        
+
         if (!(navigator as any).storage) {
             (navigator as any).storage = {};
         }
-        (navigator as any).storage.getDirectory = vi.fn().mockResolvedValue(mockRoot);
+        (navigator as any).storage.getDirectory = vi
+            .fn()
+            .mockResolvedValue(mockRoot);
     });
 
     it('should initialize and load persisted states from localStorage', async () => {
         // Pour ce test, on simule que le fichier EXISTE sur le disque
         const mockRoot = await (navigator as any).storage.getDirectory();
         const mockDir = await mockRoot.getDirectoryHandle();
-        mockDir.getFileHandle.mockResolvedValue({ getFile: vi.fn().mockResolvedValue(new Blob()) });
+        mockDir.getFileHandle.mockResolvedValue({
+            getFile: vi.fn().mockResolvedValue(new Blob()),
+        });
 
-        localStorage.setItem('suntrail_pack_states', JSON.stringify({
-            'switzerland': {
-                id: 'switzerland',
-                status: 'installed',
-                installedVersion: 2,
-                filePath: 'opfs://packs/switzerland.pmtiles'
-            }
-        }));
+        localStorage.setItem(
+            'suntrail_pack_states',
+            JSON.stringify({
+                switzerland: {
+                    id: 'switzerland',
+                    status: 'installed',
+                    installedVersion: 2,
+                    filePath: 'opfs://packs/switzerland.pmtiles',
+                },
+            })
+        );
 
         await packManager.initialize();
 
@@ -87,25 +103,30 @@ describe('PackManager Integration', () => {
         // Simuler fichier présent
         const mockRoot = await (navigator as any).storage.getDirectory();
         const mockDir = await mockRoot.getDirectoryHandle();
-        mockDir.getFileHandle.mockResolvedValue({ getFile: vi.fn().mockResolvedValue(new Blob()) });
+        mockDir.getFileHandle.mockResolvedValue({
+            getFile: vi.fn().mockResolvedValue(new Blob()),
+        });
 
         // Setup a mounted pack
-        localStorage.setItem('suntrail_pack_states', JSON.stringify({
-            'switzerland': {
-                id: 'switzerland',
-                status: 'installed',
-                installedVersion: 2,
-                filePath: 'opfs://packs/switzerland.pmtiles'
-            }
-        }));
-        
+        localStorage.setItem(
+            'suntrail_pack_states',
+            JSON.stringify({
+                switzerland: {
+                    id: 'switzerland',
+                    status: 'installed',
+                    installedVersion: 2,
+                    filePath: 'opfs://packs/switzerland.pmtiles',
+                },
+            })
+        );
+
         await packManager.initialize();
-        
+
         // coordinates for Switzerland approx
         const z = 12;
         const x = 2133;
-        const y = 1450; 
-        
+        const y = 1450;
+
         const blob = await packManager.getTileFromPacks(z, x, y);
         expect(blob).toBeDefined();
         expect(blob?.type).toBe('image/webp');
@@ -115,42 +136,62 @@ describe('PackManager Integration', () => {
         // Simuler fichier présent
         const mockRoot = await (navigator as any).storage.getDirectory();
         const mockDir = await mockRoot.getDirectoryHandle();
-        mockDir.getFileHandle.mockResolvedValue({ getFile: vi.fn().mockResolvedValue(new Blob()) });
+        mockDir.getFileHandle.mockResolvedValue({
+            getFile: vi.fn().mockResolvedValue(new Blob()),
+        });
 
-        localStorage.setItem('suntrail_pack_states', JSON.stringify({
-            'switzerland': {
-                id: 'switzerland',
-                status: 'installed',
-                installedVersion: 3,
-                filePath: 'opfs://packs/switzerland.pmtiles'
-            }
-        }));
-        
+        localStorage.setItem(
+            'suntrail_pack_states',
+            JSON.stringify({
+                switzerland: {
+                    id: 'switzerland',
+                    status: 'installed',
+                    installedVersion: 3,
+                    filePath: 'opfs://packs/switzerland.pmtiles',
+                },
+            })
+        );
+
         await packManager.initialize();
-        
-        const z = 12, x = 2133, y = 1450;
-        
+
+        const z = 12,
+            x = 2133,
+            y = 1450;
+
         // Elevation
-        const elevBlob = await packManager.getTileFromPacks(z, x, y, 'elevation');
+        const elevBlob = await packManager.getTileFromPacks(
+            z,
+            x,
+            y,
+            'elevation'
+        );
         expect(elevBlob?.type).toBe('image/png');
-        
+
         // Overlay
-        const overlayBlob = await packManager.getTileFromPacks(z, x, y, 'overlay');
+        const overlayBlob = await packManager.getTileFromPacks(
+            z,
+            x,
+            y,
+            'overlay'
+        );
         expect(overlayBlob?.type).toBe('image/png');
     });
 
     it('should not serve a tile if offline and pack is not installed (CDN only)', async () => {
         // On s'assure que le fichier n'existe PAS sur le disque (déjà le cas par défaut dans beforeEach)
-        
+
         // Pack purchased but not installed (CDN)
-        localStorage.setItem('suntrail_pack_states', JSON.stringify({
-            'switzerland': {
-                id: 'switzerland',
-                status: 'purchased',
-                installedVersion: 0,
-                filePath: null
-            }
-        }));
+        localStorage.setItem(
+            'suntrail_pack_states',
+            JSON.stringify({
+                switzerland: {
+                    id: 'switzerland',
+                    status: 'purchased',
+                    installedVersion: 0,
+                    filePath: null,
+                },
+            })
+        );
 
         await packManager.initialize();
         state.IS_OFFLINE = true;

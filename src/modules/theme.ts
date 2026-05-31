@@ -8,9 +8,10 @@ import { eventBus } from './eventBus';
 
 type EffectiveTheme = 'light' | 'dark';
 
-const darkMediaQuery = typeof window !== 'undefined'
-    ? window.matchMedia('(prefers-color-scheme: dark)')
-    : null;
+const darkMediaQuery =
+    typeof window !== 'undefined'
+        ? window.matchMedia('(prefers-color-scheme: dark)')
+        : null;
 
 /** Résout 'auto' → thème effectif selon la préférence système */
 export function getEffectiveTheme(): EffectiveTheme {
@@ -23,7 +24,9 @@ function applyTheme(theme: EffectiveTheme): void {
     document.documentElement.dataset.theme = theme;
 
     // Meta theme-color pour Android status bar et PWA
-    let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    let meta = document.querySelector<HTMLMetaElement>(
+        'meta[name="theme-color"]'
+    );
     if (!meta) {
         meta = document.createElement('meta');
         meta.name = 'theme-color';

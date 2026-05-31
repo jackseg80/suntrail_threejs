@@ -9,7 +9,12 @@ import { scheduleRouteSolarAnalysis, invalidateRouteCache } from './solarRoute';
 
 const waypointGroup = new THREE.Group();
 let autoComputeTimer: ReturnType<typeof setTimeout> | null = null;
-let _barStats: { distance: number; ascent: number; descent: number; duration: number } | null = null;
+let _barStats: {
+    distance: number;
+    ascent: number;
+    descent: number;
+    duration: number;
+} | null = null;
 let _lastWaypointCount = 0;
 let _rebuildThrottle: ReturnType<typeof setTimeout> | null = null;
 let _geocodeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -37,10 +42,12 @@ export function initRouteManager(): void {
         state.subscribe('isProcessingTiles', (processing: boolean) => {
             if (!processing) {
                 rebuildMarkers();
-                void import('./gpxLayers').then(({ updateAllGPXMeshes }) => updateAllGPXMeshes());
+                void import('./gpxLayers').then(({ updateAllGPXMeshes }) =>
+                    updateAllGPXMeshes()
+                );
             }
         }),
-        state.subscribe('gpxLayers', () => updateBar()),
+        state.subscribe('gpxLayers', () => updateBar())
     );
 }
 
@@ -51,7 +58,9 @@ export function disposeRouteManager(): void {
 
 function rebuildMarkers(): void {
     if (_rebuildThrottle) return;
-    _rebuildThrottle = setTimeout(() => { _rebuildThrottle = null; }, 100);
+    _rebuildThrottle = setTimeout(() => {
+        _rebuildThrottle = null;
+    }, 100);
 
     if (!state.scene) return;
 
@@ -65,7 +74,8 @@ function rebuildMarkers(): void {
         return;
     }
 
-    if (!state.scene.children.includes(waypointGroup)) state.scene.add(waypointGroup);
+    if (!state.scene.children.includes(waypointGroup))
+        state.scene.add(waypointGroup);
 
     // Échelle adaptative discrète
     const scale = Math.max(20, 20 * Math.pow(2, Math.max(0, 17 - zoom)));
@@ -157,9 +167,16 @@ export function scheduleAutoCompute(): void {
     autoComputeTimer = setTimeout(async () => {
         try {
             const result = await computeRoute(state.routeWaypoints);
-            _barStats = { distance: result.distance, ascent: result.ascent, descent: result.descent, duration: result.duration };
+            _barStats = {
+                distance: result.distance,
+                ascent: result.ascent,
+                descent: result.descent,
+                duration: result.duration,
+            };
             updateBar();
-        } catch { /* erreur affichée via state.routeError */ }
+        } catch {
+            /* erreur affichée via state.routeError */
+        }
     }, 800);
 }
 
@@ -186,7 +203,9 @@ export function scheduleGeocodeNames(): void {
                     updated[i] = { ...updated[i], name };
                     state.routeWaypoints = updated;
                 }
-            } catch { /* silencieux */ }
+            } catch {
+                /* silencieux */
+            }
         }
     }, GEOCODE_THROTTLE_MS);
 }
@@ -213,7 +232,7 @@ function updateBar(): void {
 
 function updateBarFromLayerStats(): void {
     if (state.routeWaypoints.length < 2) return;
-    const currentLayer = state.gpxLayers.find(l => l.stats.dPlus > 0);
+    const currentLayer = state.gpxLayers.find((l) => l.stats.dPlus > 0);
     if (currentLayer) {
         _barStats = {
             distance: currentLayer.stats.distance,
@@ -238,8 +257,9 @@ function renderBar(): void {
     const infoEl = document.getElementById('rb-info');
 
     if (dotsEl) {
-        dotsEl.innerHTML = Array.from({ length: Math.min(count, 5) }, () =>
-            '<div class="rb-dot active" aria-hidden="true"></div>'
+        dotsEl.innerHTML = Array.from(
+            { length: Math.min(count, 5) },
+            () => '<div class="rb-dot active" aria-hidden="true"></div>'
         ).join('');
     }
 
@@ -249,7 +269,8 @@ function renderBar(): void {
         } else if (_barStats) {
             infoEl.textContent = `${_barStats.distance.toFixed(1)} km \u00b7 \u2191${Math.round(_barStats.ascent)}m \u00b7 \u2193${Math.round(_barStats.descent)}m \u00b7 ${fmt(_barStats.duration)}`;
         } else if (count === 1) {
-            infoEl.textContent = i18n.t('routeBar.onePoint') || '1 point \u00b7 posez-en un 2e';
+            infoEl.textContent =
+                i18n.t('routeBar.onePoint') || '1 point \u00b7 posez-en un 2e';
         } else {
             infoEl.textContent = `${count} points`;
         }
@@ -262,41 +283,54 @@ function renderSettingsWaypoints(): void {
     const container = document.getElementById('rs-waypoints-list');
     if (!container) return;
     const waypoints = state.routeWaypoints;
-    if (waypoints.length === 0) { container.innerHTML = ''; return; }
+    if (waypoints.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
 
     const last = waypoints.length - 1;
-    container.innerHTML = waypoints.map((wp, i) => {
-        const label = wp.name || `${wp.lat.toFixed(4)}, ${wp.lon.toFixed(4)}`;
-        return `<div class="rs-wp-item">
+    container.innerHTML = waypoints
+        .map((wp, i) => {
+            const label =
+                wp.name || `${wp.lat.toFixed(4)}, ${wp.lon.toFixed(4)}`;
+            return `<div class="rs-wp-item">
             <span class="rs-wp-num">${i + 1}</span>
             <span class="rs-wp-label">${label}</span>
             <button class="rs-wp-up" data-idx="${i}" ${i === 0 ? 'disabled' : ''} aria-label="Monter le point ${i + 1}">↑</button>
             <button class="rs-wp-dn" data-idx="${i}" ${i === last ? 'disabled' : ''} aria-label="Descendre le point ${i + 1}">↓</button>
             <button class="rs-wp-del" data-idx="${i}" aria-label="Supprimer le point ${i + 1}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>`;
-    }).join('');
+        })
+        .join('');
 
-    container.querySelectorAll<HTMLButtonElement>('.rs-wp-up, .rs-wp-dn, .rs-wp-del').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const idx = parseInt(btn.dataset.idx ?? '', 10);
-            if (isNaN(idx)) return;
-            const wps = [...state.routeWaypoints];
-            if (btn.classList.contains('rs-wp-del')) {
-                wps.splice(idx, 1);
-            } else if (btn.classList.contains('rs-wp-up') && idx > 0) {
-                [wps[idx - 1], wps[idx]] = [wps[idx], wps[idx - 1]];
-            } else if (btn.classList.contains('rs-wp-dn') && idx < wps.length - 1) {
-                [wps[idx], wps[idx + 1]] = [wps[idx + 1], wps[idx]];
-            }
-            state.routeWaypoints = wps;
+    container
+        .querySelectorAll<HTMLButtonElement>('.rs-wp-up, .rs-wp-dn, .rs-wp-del')
+        .forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idx = parseInt(btn.dataset.idx ?? '', 10);
+                if (isNaN(idx)) return;
+                const wps = [...state.routeWaypoints];
+                if (btn.classList.contains('rs-wp-del')) {
+                    wps.splice(idx, 1);
+                } else if (btn.classList.contains('rs-wp-up') && idx > 0) {
+                    [wps[idx - 1], wps[idx]] = [wps[idx], wps[idx - 1]];
+                } else if (
+                    btn.classList.contains('rs-wp-dn') &&
+                    idx < wps.length - 1
+                ) {
+                    [wps[idx], wps[idx + 1]] = [wps[idx + 1], wps[idx]];
+                }
+                state.routeWaypoints = wps;
+            });
         });
-    });
 }
 
 function fmt(min: number): string {
     if (min <= 0) return '—';
     const h = Math.floor(min / 60);
     const m = Math.round(min % 60);
-    return h === 0 ? `${m} min` : `${h}h${m > 0 ? m.toString().padStart(2, '0') : ''}`;
+    return h === 0
+        ? `${m} min`
+        : `${h}h${m > 0 ? m.toString().padStart(2, '0') : ''}`;
 }

@@ -24,7 +24,7 @@ interface RecordingSnapshot {
 }
 
 const SNAPSHOT_KEY = STORAGE_KEYS.REC_SNAPSHOT_V1;
-const POINTS_FILE  = 'suntrail_rec_points_v1.json';
+const POINTS_FILE = 'suntrail_rec_points_v1.json';
 
 // ── API publique ───────────────────────────────────────────────────────────────
 
@@ -32,19 +32,30 @@ const POINTS_FILE  = 'suntrail_rec_points_v1.json';
  * Démarre le Foreground Service et persist l'état.
  * Appelé quand l'utilisateur active REC.
  */
-export async function startRecordingService(originTile?: { x: number; y: number; z: number }): Promise<void> {
+export async function startRecordingService(originTile?: {
+    x: number;
+    y: number;
+    z: number;
+}): Promise<void> {
     const snapshot: RecordingSnapshot = {
         isRecording: true,
-        startTime:   Date.now(),
-        pointCount:  0,
-        originTile:  originTile,
+        startTime: Date.now(),
+        pointCount: 0,
+        originTile: originTile,
     };
-    await Preferences.set({ key: SNAPSHOT_KEY, value: JSON.stringify(snapshot) });
+    await Preferences.set({
+        key: SNAPSHOT_KEY,
+        value: JSON.stringify(snapshot),
+    });
 
     // Nettoyer le fichier de points orphan si présent
     if (Capacitor.isNativePlatform()) {
-        Filesystem.deleteFile({ path: POINTS_FILE, directory: Directory.Cache })
-            .catch(() => { /* fichier absent = normal */ });
+        Filesystem.deleteFile({
+            path: POINTS_FILE,
+            directory: Directory.Cache,
+        }).catch(() => {
+            /* fichier absent = normal */
+        });
     }
 }
 
@@ -55,39 +66,52 @@ export async function stopRecordingService(): Promise<void> {
     await Preferences.remove({ key: SNAPSHOT_KEY });
 
     if (Capacitor.isNativePlatform()) {
-        Filesystem.deleteFile({ path: POINTS_FILE, directory: Directory.Cache })
-            .catch(() => { /* fichier absent = normal */ });
+        Filesystem.deleteFile({
+            path: POINTS_FILE,
+            directory: Directory.Cache,
+        }).catch(() => {
+            /* fichier absent = normal */
+        });
     }
 }
 
 /**
  * Met à jour le nombre de points dans le snapshot.
  */
-export async function updateRecordingSnapshot(pointCount: number): Promise<void> {
+export async function updateRecordingSnapshot(
+    pointCount: number
+): Promise<void> {
     const { value } = await Preferences.get({ key: SNAPSHOT_KEY });
     if (!value) return;
     try {
         const snapshot: RecordingSnapshot = JSON.parse(value);
         snapshot.pointCount = pointCount;
-        await Preferences.set({ key: SNAPSHOT_KEY, value: JSON.stringify(snapshot) });
-    } catch { /* ignore */ }
+        await Preferences.set({
+            key: SNAPSHOT_KEY,
+            value: JSON.stringify(snapshot),
+        });
+    } catch {
+        /* ignore */
+    }
 }
 
 /**
  * Persiste immédiatement tous les points sur disque.
  * Appelé lors du passage en background (appStateChange) pour éviter toute perte.
- * 
+ *
  * Note: Cette fonction persiste les points dans un fichier local mais ce n'est plus
  * la source de vérité - le natif reste la seule source fiable.
  */
-export async function persistAllPointsNow(points: { lat: number; lon: number; alt: number; timestamp: number }[]): Promise<void> {
+export async function persistAllPointsNow(
+    points: { lat: number; lon: number; alt: number; timestamp: number }[]
+): Promise<void> {
     if (!Capacitor.isNativePlatform() || points.length === 0) return;
     try {
         await Filesystem.writeFile({
-            path:      POINTS_FILE,
-            data:      JSON.stringify(points),
+            path: POINTS_FILE,
+            data: JSON.stringify(points),
             directory: Directory.Cache,
-            encoding:  Encoding.UTF8,
+            encoding: Encoding.UTF8,
         });
     } catch (e) {
         console.warn('[RecordingService] persistAllPointsNow failed:', e);
@@ -97,17 +121,19 @@ export async function persistAllPointsNow(points: { lat: number; lon: number; al
 /**
  * Lit les points d'enregistrement persistés sur le filesystem (fallback legacy).
  * Retourne null si aucun fichier ou si on est sur web.
- * 
+ *
  * Note: Cette fonction n'est plus utilisée pour la recovery car nativeGPSService
  * récupère les points directement depuis le natif via getCurrentCourse().
  */
-export async function getPersistedRecordingPoints(): Promise<{ lat: number; lon: number; alt: number; timestamp: number }[] | null> {
+export async function getPersistedRecordingPoints(): Promise<
+    { lat: number; lon: number; alt: number; timestamp: number }[] | null
+> {
     if (!Capacitor.isNativePlatform()) return null;
     try {
         const result = await Filesystem.readFile({
-            path:      POINTS_FILE,
+            path: POINTS_FILE,
             directory: Directory.Cache,
-            encoding:  Encoding.UTF8,
+            encoding: Encoding.UTF8,
         });
         return JSON.parse(result.data as string);
     } catch {

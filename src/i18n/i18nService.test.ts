@@ -97,8 +97,12 @@ describe('I18nService', () => {
     });
 
     it('should handle deeply nested key resolution', () => {
-        expect(i18n.t('connectivity.download.progress')).toBe('Chargement {{percent}}%');
-        const result = i18n.t('connectivity.download.progress', { percent: '75' });
+        expect(i18n.t('connectivity.download.progress')).toBe(
+            'Chargement {{percent}}%'
+        );
+        const result = i18n.t('connectivity.download.progress', {
+            percent: '75',
+        });
         expect(result).toBe('Chargement 75%');
     });
 });

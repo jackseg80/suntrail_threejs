@@ -9,8 +9,20 @@ const { mockEventBusEmit, mockGetCountryCode } = vi.hoisted(() => {
     };
 });
 
-vi.mock('../modules/eventBus', () => ({ eventBus: { emit: mockEventBusEmit, on: vi.fn(), off: vi.fn() } }));
-vi.mock('../modules/geo', () => ({ getCountryCode: mockGetCountryCode, COUNTRY_NAMES: { CH: 'Suisse', FR: 'France', IT: 'Italie', DE: 'Allemagne', AT: 'Autriche', ES: 'Espagne' } }));
+vi.mock('../modules/eventBus', () => ({
+    eventBus: { emit: mockEventBusEmit, on: vi.fn(), off: vi.fn() },
+}));
+vi.mock('../modules/geo', () => ({
+    getCountryCode: mockGetCountryCode,
+    COUNTRY_NAMES: {
+        CH: 'Suisse',
+        FR: 'France',
+        IT: 'Italie',
+        DE: 'Allemagne',
+        AT: 'Autriche',
+        ES: 'Espagne',
+    },
+}));
 
 import {
     saveToHistory,
@@ -41,7 +53,13 @@ function makeLayer(overrides: Partial<GPXLayer> = {}): GPXLayer {
         rawData: { tracks: [{ name: 'TestTrack.gpx', points }] },
         points: [],
         mesh: null,
-        stats: { distance: 10.5 + base * 0.1, dPlus: 500 + base, dMinus: 300 + base, pointCount: 10, estimatedTime: 7200 },
+        stats: {
+            distance: 10.5 + base * 0.1,
+            dPlus: 500 + base,
+            dMinus: 300 + base,
+            pointCount: 10,
+            estimatedTime: 7200,
+        },
         ...overrides,
     };
 }
@@ -70,12 +88,17 @@ describe('gpxHistoryService', () => {
             expect(history[0].source).toBe('import');
             expect(history[0].color).toBe('#0066ff');
             expect(history[0].stats.distance).toBeGreaterThan(0);
-            expect(history[0].simplifiedPoints.length).toBeGreaterThanOrEqual(2);
+            expect(history[0].simplifiedPoints.length).toBeGreaterThanOrEqual(
+                2
+            );
         });
 
         it('should cap at 5 entries (FIFO)', () => {
             for (let i = 0; i < 7; i++) {
-                saveToHistory(makeLayer({ id: `id-${i}`, name: `Track${i}` }), 'import');
+                saveToHistory(
+                    makeLayer({ id: `id-${i}`, name: `Track${i}` }),
+                    'import'
+                );
             }
             const history = loadHistory();
             expect(history).toHaveLength(5);
@@ -88,7 +111,7 @@ describe('gpxHistoryService', () => {
             saveToHistory(layer, 'import');
             const firstTimestamp = loadHistory()[0].timestamp;
 
-            await new Promise(r => setTimeout(r, 5));
+            await new Promise((r) => setTimeout(r, 5));
             saveToHistory(layer, 'import');
             const history = loadHistory();
             expect(history).toHaveLength(1);
@@ -106,12 +129,24 @@ describe('gpxHistoryService', () => {
             const layer1 = makeLayer({
                 id: 'id-a',
                 rawData: { tracks: [{ name: 'A', points: [...sharedPoints] }] },
-                stats: { distance: 10, dPlus: 500, dMinus: 300, pointCount: 5, estimatedTime: 3600 },
+                stats: {
+                    distance: 10,
+                    dPlus: 500,
+                    dMinus: 300,
+                    pointCount: 5,
+                    estimatedTime: 3600,
+                },
             });
             const layer2 = makeLayer({
                 id: 'id-b',
                 rawData: { tracks: [{ name: 'B', points: [...sharedPoints] }] },
-                stats: { distance: 10, dPlus: 500, dMinus: 300, pointCount: 5, estimatedTime: 3600 },
+                stats: {
+                    distance: 10,
+                    dPlus: 500,
+                    dMinus: 300,
+                    pointCount: 5,
+                    estimatedTime: 3600,
+                },
             });
 
             saveToHistory(layer1, 'import');
@@ -162,7 +197,9 @@ describe('gpxHistoryService', () => {
             const layer = makeLayer({ id: 'many' });
             layer.rawData.tracks[0].points = manyPoints;
             saveToHistory(layer, 'import');
-            expect(loadHistory()[0].simplifiedPoints.length).toBeLessThanOrEqual(200);
+            expect(
+                loadHistory()[0].simplifiedPoints.length
+            ).toBeLessThanOrEqual(200);
         });
     });
 
@@ -173,12 +210,34 @@ describe('gpxHistoryService', () => {
 
         it('should filter out malformed entries (insufficient points)', () => {
             clearHistory(); // reset cache before direct localStorage write
-            localStorage.setItem(STORAGE_KEYS.GPX_HISTORY, JSON.stringify([
-                { id: 'ok', simplifiedPoints: [{ lat: 1, lon: 1 }, { lat: 2, lon: 2 }], name: 'x', color: '#000', source: 'import', timestamp: 1, stats: { distance: 1, dPlus: 1, dMinus: 1, pointCount: 2 }, centerLat: 1, centerLon: 1, bounds: { minLat: 1, maxLat: 2, minLon: 1, maxLon: 2 } },
-                { notAnEntry: true },
-                { id: 'bad', simplifiedPoints: [{ lat: 1, lon: 1 }] },
-                null,
-            ]));
+            localStorage.setItem(
+                STORAGE_KEYS.GPX_HISTORY,
+                JSON.stringify([
+                    {
+                        id: 'ok',
+                        simplifiedPoints: [
+                            { lat: 1, lon: 1 },
+                            { lat: 2, lon: 2 },
+                        ],
+                        name: 'x',
+                        color: '#000',
+                        source: 'import',
+                        timestamp: 1,
+                        stats: {
+                            distance: 1,
+                            dPlus: 1,
+                            dMinus: 1,
+                            pointCount: 2,
+                        },
+                        centerLat: 1,
+                        centerLon: 1,
+                        bounds: { minLat: 1, maxLat: 2, minLon: 1, maxLon: 2 },
+                    },
+                    { notAnEntry: true },
+                    { id: 'bad', simplifiedPoints: [{ lat: 1, lon: 1 }] },
+                    null,
+                ])
+            );
             const history = loadHistory();
             expect(history).toHaveLength(1);
             expect(history[0].id).toBe('ok');
@@ -234,7 +293,7 @@ describe('gpxHistoryService', () => {
         it('should set locationName on an entry', () => {
             saveToHistory(makeLayer({ id: 'loc-1' }), 'import');
             updateHistoryEntryLocation('loc-1', 'Chamonix');
-            const entry = loadHistory().find(e => e.id === 'loc-1');
+            const entry = loadHistory().find((e) => e.id === 'loc-1');
             expect(entry?.locationName).toBe('Chamonix');
         });
 

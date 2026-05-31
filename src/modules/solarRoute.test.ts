@@ -22,8 +22,11 @@ vi.mock('./landcover', () => ({
 
 vi.mock('./analysis', () => ({
     isAtShadow: vi.fn(() => false),
-    drapeToTerrain: vi.fn((pts: any[]) => pts.map((_: any, i: number) =>
-        new THREE.Vector3(i * 1000, 500, i * 200))),
+    drapeToTerrain: vi.fn((pts: any[]) =>
+        pts.map(
+            (_: any, i: number) => new THREE.Vector3(i * 1000, 500, i * 200)
+        )
+    ),
     getAltitudeAt: vi.fn(() => 500),
     GPX_SURFACE_OFFSET: 12,
 }));
@@ -31,7 +34,9 @@ vi.mock('./analysis', () => ({
 vi.mock('./geo', () => ({
     worldToLngLat: vi.fn((_x: number, _z: number) => ({ lat: 46.8, lon: 8.2 })),
     lngLatToWorld: vi.fn(),
-    haversineDistance: vi.fn((_lat1: number, _lon1: number, _lat2: number, _lon2: number) => 0.1),
+    haversineDistance: vi.fn(
+        (_lat1: number, _lon1: number, _lat2: number, _lon2: number) => 0.1
+    ),
     EARTH_CIRCUMFERENCE: 40075016.68,
 }));
 
@@ -164,7 +169,7 @@ describe('makeCacheKey', () => {
             'abc',
             new Date('2024-06-21T12:30:00Z'),
             'snapshot',
-            4,
+            4
         );
         expect(key).toContain('abc');
         expect(key).toContain('2024-06-21');
@@ -173,20 +178,50 @@ describe('makeCacheKey', () => {
     });
 
     it('chagnes with different mode', () => {
-        const k1 = makeCacheKey('abc', new Date('2024-06-21T12:00:00Z'), 'snapshot', 4);
-        const k2 = makeCacheKey('abc', new Date('2024-06-21T12:00:00Z'), 'hikerTimeline', 4);
+        const k1 = makeCacheKey(
+            'abc',
+            new Date('2024-06-21T12:00:00Z'),
+            'snapshot',
+            4
+        );
+        const k2 = makeCacheKey(
+            'abc',
+            new Date('2024-06-21T12:00:00Z'),
+            'hikerTimeline',
+            4
+        );
         expect(k1).not.toBe(k2);
     });
 
     it('bundles timestamps into 30-min slots', () => {
-        const k1 = makeCacheKey('abc', new Date('2024-06-21T12:05:00Z'), 'snapshot', 4);
-        const k2 = makeCacheKey('abc', new Date('2024-06-21T12:25:00Z'), 'snapshot', 4);
+        const k1 = makeCacheKey(
+            'abc',
+            new Date('2024-06-21T12:05:00Z'),
+            'snapshot',
+            4
+        );
+        const k2 = makeCacheKey(
+            'abc',
+            new Date('2024-06-21T12:25:00Z'),
+            'snapshot',
+            4
+        );
         expect(k1).toBe(k2);
     });
 
     it('changes slots after 30 minutes', () => {
-        const k1 = makeCacheKey('abc', new Date('2024-06-21T12:00:00Z'), 'snapshot', 4);
-        const k2 = makeCacheKey('abc', new Date('2024-06-21T12:35:00Z'), 'snapshot', 4);
+        const k1 = makeCacheKey(
+            'abc',
+            new Date('2024-06-21T12:00:00Z'),
+            'snapshot',
+            4
+        );
+        const k2 = makeCacheKey(
+            'abc',
+            new Date('2024-06-21T12:35:00Z'),
+            'snapshot',
+            4
+        );
         expect(k1).not.toBe(k2);
     });
 });
@@ -205,9 +240,30 @@ describe('buildAnalysis', () => {
 
     it('counts sun-exposed km correctly', () => {
         const points = [
-            { worldPos: new THREE.Vector3(0, 0, 0), distKm: 0, evalDate: new Date(), inShadow: false, isNight: false, inForest: false },
-            { worldPos: new THREE.Vector3(1, 0, 0), distKm: 1, evalDate: new Date(), inShadow: false, isNight: false, inForest: false },
-            { worldPos: new THREE.Vector3(2, 0, 0), distKm: 2, evalDate: new Date(), inShadow: false, isNight: false, inForest: false },
+            {
+                worldPos: new THREE.Vector3(0, 0, 0),
+                distKm: 0,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: false,
+                inForest: false,
+            },
+            {
+                worldPos: new THREE.Vector3(1, 0, 0),
+                distKm: 1,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: false,
+                inForest: false,
+            },
+            {
+                worldPos: new THREE.Vector3(2, 0, 0),
+                distKm: 2,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: false,
+                inForest: false,
+            },
         ];
         const result = buildAnalysis(points, 'snapshot');
         expect(result.totalKm).toBe(2);
@@ -218,9 +274,30 @@ describe('buildAnalysis', () => {
 
     it('counts shadow km correctly', () => {
         const points = [
-            { worldPos: new THREE.Vector3(0, 0, 0), distKm: 0, evalDate: new Date(), inShadow: true, isNight: false, inForest: false },
-            { worldPos: new THREE.Vector3(1, 0, 0), distKm: 3, evalDate: new Date(), inShadow: true, isNight: false, inForest: false },
-            { worldPos: new THREE.Vector3(2, 0, 0), distKm: 5, evalDate: new Date(), inShadow: false, isNight: false, inForest: false },
+            {
+                worldPos: new THREE.Vector3(0, 0, 0),
+                distKm: 0,
+                evalDate: new Date(),
+                inShadow: true,
+                isNight: false,
+                inForest: false,
+            },
+            {
+                worldPos: new THREE.Vector3(1, 0, 0),
+                distKm: 3,
+                evalDate: new Date(),
+                inShadow: true,
+                isNight: false,
+                inForest: false,
+            },
+            {
+                worldPos: new THREE.Vector3(2, 0, 0),
+                distKm: 5,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: false,
+                inForest: false,
+            },
         ];
         const result = buildAnalysis(points, 'snapshot');
         expect(result.totalKm).toBe(5);
@@ -231,9 +308,30 @@ describe('buildAnalysis', () => {
     it('calculates sunPct over total km (night segments included in denominator)', () => {
         // 2 km de nuit + 1 km de jour au soleil = 33% du total, pas 100%
         const points = [
-            { worldPos: new THREE.Vector3(0, 0, 0), distKm: 0, evalDate: new Date(), inShadow: false, isNight: true, inForest: false },
-            { worldPos: new THREE.Vector3(1, 0, 0), distKm: 2, evalDate: new Date(), inShadow: false, isNight: true, inForest: false },
-            { worldPos: new THREE.Vector3(2, 0, 0), distKm: 3, evalDate: new Date(), inShadow: false, isNight: false, inForest: false },
+            {
+                worldPos: new THREE.Vector3(0, 0, 0),
+                distKm: 0,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: true,
+                inForest: false,
+            },
+            {
+                worldPos: new THREE.Vector3(1, 0, 0),
+                distKm: 2,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: true,
+                inForest: false,
+            },
+            {
+                worldPos: new THREE.Vector3(2, 0, 0),
+                distKm: 3,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: false,
+                inForest: false,
+            },
         ];
         const result = buildAnalysis(points, 'snapshot');
         expect(result.totalKm).toBe(3);
@@ -244,8 +342,22 @@ describe('buildAnalysis', () => {
 
     it('returns 100% when fully sunny (no night)', () => {
         const points = [
-            { worldPos: new THREE.Vector3(0, 0, 0), distKm: 0, evalDate: new Date(), inShadow: false, isNight: false, inForest: false },
-            { worldPos: new THREE.Vector3(1, 0, 0), distKm: 5, evalDate: new Date(), inShadow: false, isNight: false, inForest: false },
+            {
+                worldPos: new THREE.Vector3(0, 0, 0),
+                distKm: 0,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: false,
+                inForest: false,
+            },
+            {
+                worldPos: new THREE.Vector3(1, 0, 0),
+                distKm: 5,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: false,
+                inForest: false,
+            },
         ];
         const result = buildAnalysis(points, 'snapshot');
         expect(result.sunPct).toBe(100);
@@ -253,8 +365,22 @@ describe('buildAnalysis', () => {
 
     it('returns 0% when fully in night', () => {
         const points = [
-            { worldPos: new THREE.Vector3(0, 0, 0), distKm: 0, evalDate: new Date(), inShadow: false, isNight: true, inForest: false },
-            { worldPos: new THREE.Vector3(1, 0, 0), distKm: 5, evalDate: new Date(), inShadow: false, isNight: true, inForest: false },
+            {
+                worldPos: new THREE.Vector3(0, 0, 0),
+                distKm: 0,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: true,
+                inForest: false,
+            },
+            {
+                worldPos: new THREE.Vector3(1, 0, 0),
+                distKm: 5,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: true,
+                inForest: false,
+            },
         ];
         const result = buildAnalysis(points, 'snapshot');
         expect(result.sunPct).toBe(0);
@@ -263,10 +389,38 @@ describe('buildAnalysis', () => {
 
     it('detects continuous shadow segments', () => {
         const points = [
-            { worldPos: new THREE.Vector3(0, 0, 0), distKm: 0, evalDate: new Date(), inShadow: false, isNight: false, inForest: false },
-            { worldPos: new THREE.Vector3(1, 0, 0), distKm: 1, evalDate: new Date(), inShadow: true, isNight: false, inForest: false },
-            { worldPos: new THREE.Vector3(2, 0, 0), distKm: 3, evalDate: new Date(), inShadow: true, isNight: false, inForest: false },
-            { worldPos: new THREE.Vector3(3, 0, 0), distKm: 5, evalDate: new Date(), inShadow: false, isNight: false, inForest: false },
+            {
+                worldPos: new THREE.Vector3(0, 0, 0),
+                distKm: 0,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: false,
+                inForest: false,
+            },
+            {
+                worldPos: new THREE.Vector3(1, 0, 0),
+                distKm: 1,
+                evalDate: new Date(),
+                inShadow: true,
+                isNight: false,
+                inForest: false,
+            },
+            {
+                worldPos: new THREE.Vector3(2, 0, 0),
+                distKm: 3,
+                evalDate: new Date(),
+                inShadow: true,
+                isNight: false,
+                inForest: false,
+            },
+            {
+                worldPos: new THREE.Vector3(3, 0, 0),
+                distKm: 5,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: false,
+                inForest: false,
+            },
         ];
         const result = buildAnalysis(points, 'snapshot');
         expect(result.shadowSegments).toHaveLength(1);
@@ -284,9 +438,30 @@ describe('buildAnalysis', () => {
 
     it('counts forest km separately from sun-exposed km', () => {
         const points = [
-            { worldPos: new THREE.Vector3(0, 0, 0), distKm: 0, evalDate: new Date(), inShadow: false, isNight: false, inForest: false },
-            { worldPos: new THREE.Vector3(1, 0, 0), distKm: 2, evalDate: new Date(), inShadow: false, isNight: false, inForest: true  },
-            { worldPos: new THREE.Vector3(2, 0, 0), distKm: 4, evalDate: new Date(), inShadow: false, isNight: false, inForest: false },
+            {
+                worldPos: new THREE.Vector3(0, 0, 0),
+                distKm: 0,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: false,
+                inForest: false,
+            },
+            {
+                worldPos: new THREE.Vector3(1, 0, 0),
+                distKm: 2,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: false,
+                inForest: true,
+            },
+            {
+                worldPos: new THREE.Vector3(2, 0, 0),
+                distKm: 4,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: false,
+                inForest: false,
+            },
         ];
         const result = buildAnalysis(points, 'snapshot');
         expect(result.forestKm).toBe(2);
@@ -297,8 +472,22 @@ describe('buildAnalysis', () => {
 
     it('does not count forest km in sunExposedKm', () => {
         const points = [
-            { worldPos: new THREE.Vector3(0, 0, 0), distKm: 0, evalDate: new Date(), inShadow: false, isNight: false, inForest: true },
-            { worldPos: new THREE.Vector3(1, 0, 0), distKm: 5, evalDate: new Date(), inShadow: false, isNight: false, inForest: true },
+            {
+                worldPos: new THREE.Vector3(0, 0, 0),
+                distKm: 0,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: false,
+                inForest: true,
+            },
+            {
+                worldPos: new THREE.Vector3(1, 0, 0),
+                distKm: 5,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: false,
+                inForest: true,
+            },
         ];
         const result = buildAnalysis(points, 'snapshot');
         expect(result.forestKm).toBe(5);

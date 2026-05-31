@@ -49,7 +49,10 @@ describe('UpgradeSheet i18n keys', () => {
             for (const key of UPGRADE_KEYS) {
                 it(`has key "${key}"`, () => {
                     const value = resolve(data, key);
-                    expect(value, `Missing key "${key}" in ${lang}.json`).toBeDefined();
+                    expect(
+                        value,
+                        `Missing key "${key}" in ${lang}.json`
+                    ).toBeDefined();
                     expect(typeof value).toBe('string');
                     expect(value.length).toBeGreaterThan(0);
                 });

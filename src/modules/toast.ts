@@ -28,7 +28,7 @@ export function showToast(message: string, duration: number = 3000) {
     toast.textContent = message;
 
     container.appendChild(toast);
-    toast.offsetHeight;
+    void toast.offsetHeight;
     toast.style.opacity = '1';
     toast.style.transform = 'translateY(0)';
 

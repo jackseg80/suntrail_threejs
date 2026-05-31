@@ -3,12 +3,12 @@ import { initUI, disposeUI } from './ui';
 
 // Mock appInit call
 vi.mock('./appInit', () => ({
-    appInit: vi.fn().mockResolvedValue(undefined)
+    appInit: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock tileLoader for interval tracking
 vi.mock('./tileLoader', () => ({
-    updateStorageUI: vi.fn()
+    updateStorageUI: vi.fn(),
 }));
 
 describe('ui.ts — Entry Point Orchestration', () => {
@@ -43,7 +43,7 @@ describe('ui.ts — Entry Point Orchestration', () => {
         disposeUI();
 
         vi.advanceTimersByTime(2001);
-        // Should only have been called during the first interval if we didn't advance fast enough, 
+        // Should only have been called during the first interval if we didn't advance fast enough,
         // but here we verify it stops repeating.
         vi.clearAllMocks();
         vi.advanceTimersByTime(2001);

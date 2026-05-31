@@ -45,12 +45,17 @@ describe('a11y — GPS Disclosure Modal', () => {
 
     it('ne doit avoir aucune violation WCAG 2.1 AA', async () => {
         const violations = await runAxe(container);
-        expect(violations, violations.map(v => `${v.id}: ${v.description}`).join('\n')).toHaveLength(0);
+        expect(
+            violations,
+            violations.map((v) => `${v.id}: ${v.description}`).join('\n')
+        ).toHaveLength(0);
     });
 
     it('les boutons ont un texte accessible', () => {
-        const allowBtn  = container.querySelector<HTMLButtonElement>('#allow-btn');
-        const declineBtn = container.querySelector<HTMLButtonElement>('#decline-btn');
+        const allowBtn =
+            container.querySelector<HTMLButtonElement>('#allow-btn');
+        const declineBtn =
+            container.querySelector<HTMLButtonElement>('#decline-btn');
         expect(allowBtn?.textContent?.trim()).toBeTruthy();
         expect(declineBtn?.textContent?.trim()).toBeTruthy();
     });
@@ -80,12 +85,15 @@ describe('a11y — Navigation Bar', () => {
 
     it('ne doit avoir aucune violation WCAG 2.1 AA', async () => {
         const violations = await runAxe(container);
-        expect(violations, violations.map(v => `${v.id}: ${v.description}`).join('\n')).toHaveLength(0);
+        expect(
+            violations,
+            violations.map((v) => `${v.id}: ${v.description}`).join('\n')
+        ).toHaveLength(0);
     });
 
     it('chaque tab a un aria-label', () => {
         const tabs = container.querySelectorAll('[role="tab"]');
-        tabs.forEach(tab => {
+        tabs.forEach((tab) => {
             expect(tab.getAttribute('aria-label')).toBeTruthy();
         });
     });
@@ -112,7 +120,10 @@ describe('a11y — Bottom Sheet générique', () => {
 
     it('ne doit avoir aucune violation WCAG 2.1 AA', async () => {
         const violations = await runAxe(container);
-        expect(violations, violations.map(v => `${v.id}: ${v.description}`).join('\n')).toHaveLength(0);
+        expect(
+            violations,
+            violations.map((v) => `${v.id}: ${v.description}`).join('\n')
+        ).toHaveLength(0);
     });
 });
 
@@ -137,7 +148,10 @@ describe('a11y — Onboarding Dialog', () => {
 
     it('ne doit avoir aucune violation WCAG 2.1 AA', async () => {
         const violations = await runAxe(container);
-        expect(violations, violations.map(v => `${v.id}: ${v.description}`).join('\n')).toHaveLength(0);
+        expect(
+            violations,
+            violations.map((v) => `${v.id}: ${v.description}`).join('\n')
+        ).toHaveLength(0);
     });
 
     it('le dialog a aria-labelledby pointant vers le titre', () => {
@@ -178,20 +192,29 @@ describe('a11y — Settings Form Controls', () => {
 
     it('ne doit avoir aucune violation WCAG 2.1 AA', async () => {
         const violations = await runAxe(container);
-        expect(violations, violations.map(v => `${v.id}: ${v.description}`).join('\n')).toHaveLength(0);
+        expect(
+            violations,
+            violations.map((v) => `${v.id}: ${v.description}`).join('\n')
+        ).toHaveLength(0);
     });
 
     it('tous les toggles ont un aria-label', () => {
         const toggles = container.querySelectorAll('input[type="checkbox"]');
-        toggles.forEach(toggle => {
-            expect(toggle.getAttribute('aria-label'), `toggle ${toggle.id} manque aria-label`).toBeTruthy();
+        toggles.forEach((toggle) => {
+            expect(
+                toggle.getAttribute('aria-label'),
+                `toggle ${toggle.id} manque aria-label`
+            ).toBeTruthy();
         });
     });
 
     it('tous les sliders ont un aria-label', () => {
         const sliders = container.querySelectorAll('input[type="range"]');
-        sliders.forEach(slider => {
-            expect(slider.getAttribute('aria-label'), `slider ${slider.id} manque aria-label`).toBeTruthy();
+        sliders.forEach((slider) => {
+            expect(
+                slider.getAttribute('aria-label'),
+                `slider ${slider.id} manque aria-label`
+            ).toBeTruthy();
         });
     });
 
@@ -214,6 +237,9 @@ describe('a11y — Bouton FAB GPS', () => {
 
     it('a un aria-label et une taille cible ≥ 48px', async () => {
         const violations = await runAxe(container);
-        expect(violations, violations.map(v => `${v.id}: ${v.description}`).join('\n')).toHaveLength(0);
+        expect(
+            violations,
+            violations.map((v) => `${v.id}: ${v.description}`).join('\n')
+        ).toHaveLength(0);
     });
 });

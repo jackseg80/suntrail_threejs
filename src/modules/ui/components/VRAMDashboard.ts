@@ -11,7 +11,7 @@ export const TEXTURE_LIMITS: Record<string, number> = {
     balanced: 150,
     performance: 300,
     ultra: 500,
-    custom: 200
+    custom: 200,
 };
 
 export function formatTriangles(n: number): string {
@@ -76,7 +76,8 @@ export class VRAMDashboard {
         this.panel = document.createElement('div');
         this.panel.id = 'vram-dashboard';
         this.panel.className = 'vram-panel';
-        this.panel.style.cssText = 'display:none; position:fixed; top:130px; left:0; z-index:9999;';
+        this.panel.style.cssText =
+            'display:none; position:fixed; top:130px; left:0; z-index:9999;';
         this.panel.innerHTML = `
             <div class="vram-row"><span class="vram-label">${i18n.t('vram.geometries')}</span><span class="vram-value" id="vram-geo">—</span></div>
             <div class="vram-row"><span class="vram-label">${i18n.t('vram.textures')}</span><span class="vram-value" id="vram-tex">—</span></div>
@@ -93,7 +94,8 @@ export class VRAMDashboard {
         document.body.appendChild(this.panel);
 
         // Brancher le bouton record
-        const btn = this.panel.querySelector<HTMLButtonElement>('#vram-record-btn');
+        const btn =
+            this.panel.querySelector<HTMLButtonElement>('#vram-record-btn');
         btn?.addEventListener('click', () => this.toggleRecording());
 
         // Synchroniser avec state.SHOW_STATS dès l'initialisation
@@ -173,7 +175,9 @@ export class VRAMDashboard {
             appVersion: '5.11.0',
             preset: state.PERFORMANCE_PRESET,
             ua: navigator.userAgent,
-            startedAt: new Date(Date.now() - (performance.now() - this.recordingStartTime)).toISOString(),
+            startedAt: new Date(
+                Date.now() - (performance.now() - this.recordingStartTime)
+            ).toISOString(),
             sampleIntervalMs: 500,
             totalSamples: this.samples.length,
             durationMs: Math.round(this.samples[this.samples.length - 1].t),
@@ -183,13 +187,20 @@ export class VRAMDashboard {
         const json = JSON.stringify(session, null, 2);
 
         if (navigator.clipboard?.writeText) {
-            navigator.clipboard.writeText(json).then(() => {
-                showToast('📋 Session perf copiée — colle dans le chat pour analyse');
-                this.updateStatus(`✅ ${this.samples.length} échantillons copiés`);
-            }).catch(() => {
-                // Fallback si clipboard API refusée
-                this.fallbackCopy(json);
-            });
+            navigator.clipboard
+                .writeText(json)
+                .then(() => {
+                    showToast(
+                        '📋 Session perf copiée — colle dans le chat pour analyse'
+                    );
+                    this.updateStatus(
+                        `✅ ${this.samples.length} échantillons copiés`
+                    );
+                })
+                .catch(() => {
+                    // Fallback si clipboard API refusée
+                    this.fallbackCopy(json);
+                });
         } else {
             this.fallbackCopy(json);
         }
@@ -262,7 +273,9 @@ export class VRAMDashboard {
 
             // Mise à jour du compteur d'échantillons dans le bouton
             const elapsed = Math.floor(t / 1000);
-            this.updateStatus(`⏺ ${elapsed}s — ${this.samples.length} échantillons`);
+            this.updateStatus(
+                `⏺ ${elapsed}s — ${this.samples.length} échantillons`
+            );
         }
     }
 
@@ -278,13 +291,20 @@ export class VRAMDashboard {
             const now = Date.now();
             if (now - this.lastAlertTime >= VRAMDashboard.ALERT_COOLDOWN) {
                 this.lastAlertTime = now;
-                showToast('\u26A0\uFE0F ' + i18n.t('vram.alert.textures') + ' (' + tex + ')');
+                showToast(
+                    '\u26A0\uFE0F ' +
+                        i18n.t('vram.alert.textures') +
+                        ' (' +
+                        tex +
+                        ')'
+                );
             }
         }
     }
 
     private updateRecordBtn(): void {
-        const btn = this.panel?.querySelector<HTMLButtonElement>('#vram-record-btn');
+        const btn =
+            this.panel?.querySelector<HTMLButtonElement>('#vram-record-btn');
         if (!btn) return;
         if (this.isRecording) {
             btn.innerHTML = `${ICON_STOP} Stop + Copier`;
@@ -297,7 +317,9 @@ export class VRAMDashboard {
     }
 
     private updateStatus(msg: string): void {
-        const el = this.panel?.querySelector<HTMLElement>('#vram-record-status');
+        const el = this.panel?.querySelector<HTMLElement>(
+            '#vram-record-status'
+        );
         if (el) el.textContent = msg;
     }
 

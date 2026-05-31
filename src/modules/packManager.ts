@@ -24,7 +24,9 @@ import { isPointInCountry } from './geo';
 import { STORAGE_KEYS } from '../constants/storage';
 
 const CDN_BASE_URL = 'https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev';
-const CATALOG_URL = import.meta.env.VITE_PACKS_CATALOG_URL as string | undefined;
+const CATALOG_URL = import.meta.env.VITE_PACKS_CATALOG_URL as
+    | string
+    | undefined;
 const PACK_STATES_KEY = STORAGE_KEYS.PACK_STATES;
 const CATALOG_CACHE_KEY = STORAGE_KEYS.PACK_CATALOG;
 const PACKS_DIR = 'packs';
@@ -37,7 +39,12 @@ const EMBEDDED_CATALOG: PackCatalog = {
         {
             id: 'switzerland',
             productId: 'suntrail_pack_switzerland',
-            name: { fr: 'Suisse HD', de: 'Schweiz HD', it: 'Svizzera HD', en: 'Switzerland HD' },
+            name: {
+                fr: 'Suisse HD',
+                de: 'Schweiz HD',
+                it: 'Svizzera HD',
+                en: 'Switzerland HD',
+            },
             bounds: { minLat: 45.8, maxLat: 47.8, minLon: 5.9, maxLon: 10.5 },
             lodRange: { min: 8, max: 14 },
             version: 2,
@@ -48,7 +55,12 @@ const EMBEDDED_CATALOG: PackCatalog = {
         {
             id: 'france_alps',
             productId: 'suntrail_pack_france_alps',
-            name: { fr: 'France Alpes HD', de: 'Französische Alpen HD', it: 'Alpi Francesi HD', en: 'French Alps HD' },
+            name: {
+                fr: 'France Alpes HD',
+                de: 'Französische Alpen HD',
+                it: 'Alpi Francesi HD',
+                en: 'French Alps HD',
+            },
             bounds: { minLat: 43.5, maxLat: 46.5, minLon: 4.5, maxLon: 7.8 },
             lodRange: { min: 8, max: 14 },
             version: 2,
@@ -79,11 +91,17 @@ class PackManager {
 
         // Auto-débloquer TOUS les packs sur localhost (Dev mode) ou via paramètre URL
         const params = new URLSearchParams(window.location.search);
-        const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || 
-                      params.get('allpacks') === 'true' || params.get('dev') === 'true';
+        const isDev =
+            location.hostname === 'localhost' ||
+            location.hostname === '127.0.0.1' ||
+            params.get('allpacks') === 'true' ||
+            params.get('dev') === 'true';
 
         if (isDev) {
-            if (state.DEBUG_MODE) console.log('[Packs] Dev mode détecté : déblocage de tous les packs.');
+            if (state.DEBUG_MODE)
+                console.log(
+                    '[Packs] Dev mode détecté : déblocage de tous les packs.'
+                );
             for (const meta of this.getAvailablePacks()) {
                 this.markPurchased(meta.id);
             }
@@ -92,8 +110,13 @@ class PackManager {
         // Mount all installed packs (purchased/installed/update_available)
         await this.mountAllInstalled();
         // Sync pack purchases avec RevenueCat (restaure après clear storage)
-        this.syncPackPurchases().catch(e => { if (state.DEBUG_MODE) console.warn('[Packs] Sync failed', e); });
-        if (state.DEBUG_MODE) console.log(`[Packs] Initialisé. ${this.mountedArchives.size} pack(s) monté(s).`);
+        this.syncPackPurchases().catch((e) => {
+            if (state.DEBUG_MODE) console.warn('[Packs] Sync failed', e);
+        });
+        if (state.DEBUG_MODE)
+            console.log(
+                `[Packs] Initialisé. ${this.mountedArchives.size} pack(s) monté(s).`
+            );
     }
 
     /**
@@ -106,22 +129,33 @@ class PackManager {
             let packsDir: FileSystemDirectoryHandle;
             try {
                 packsDir = await root.getDirectoryHandle(PACKS_DIR);
-            } catch { return; } // Répertoire inexistant
+            } catch {
+                return;
+            } // Répertoire inexistant
 
             for (const meta of this.getAvailablePacks()) {
                 const ps = this.getOrCreateState(meta.id);
 
                 // Si l'état dit pas installé, mais que le fichier est là : on resync
                 // On accepte 'purchased' ou 'not_purchased' (si on a un fichier on le prend)
-                if (ps.status === 'purchased' || ps.status === 'not_purchased') {
+                if (
+                    ps.status === 'purchased' ||
+                    ps.status === 'not_purchased'
+                ) {
                     try {
                         await packsDir.getFileHandle(`${meta.id}.pmtiles`);
-                        if (state.DEBUG_MODE) console.log(`[Packs] ${meta.id}: fichier trouvé sur disque, restauration de l'état 'installed'.`);
+                        if (state.DEBUG_MODE)
+                            console.log(
+                                `[Packs] ${meta.id}: fichier trouvé sur disque, restauration de l'état 'installed'.`
+                            );
                         ps.status = 'installed';
-                        ps.installedVersion = ps.installedVersion || meta.version;
+                        ps.installedVersion =
+                            ps.installedVersion || meta.version;
                         ps.sizeMB = meta.sizeMB;
                         ps.filePath = `opfs://${PACKS_DIR}/${meta.id}.pmtiles`;
-                    } catch { /* absent */ }
+                    } catch {
+                        /* absent */
+                    }
                 }
             }
             this.persistStates();
@@ -148,7 +182,10 @@ class PackManager {
             }
             if (changed) {
                 this.persistStates();
-                eventBus.emit('packStatusChanged', { packId: '', status: 'not_purchased' });
+                eventBus.emit('packStatusChanged', {
+                    packId: '',
+                    status: 'not_purchased',
+                });
             }
         }
 
@@ -174,16 +211,21 @@ class PackManager {
             try {
                 const ctrl = new AbortController();
                 const tid = setTimeout(() => ctrl.abort(), 3000);
-                const resp = await fetch(CATALOG_URL, { cache: 'no-cache', signal: ctrl.signal });
+                const resp = await fetch(CATALOG_URL, {
+                    cache: 'no-cache',
+                    signal: ctrl.signal,
+                });
                 clearTimeout(tid);
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                const data = await resp.json() as PackCatalog;
+                const data = (await resp.json()) as PackCatalog;
                 this.catalog = data;
                 localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(data));
                 this.checkForUpdates();
                 return data;
             } catch {
-                console.warn('[Packs] Catalog réseau indisponible, fallback cache/embarqué.');
+                console.warn(
+                    '[Packs] Catalog réseau indisponible, fallback cache/embarqué.'
+                );
             }
         }
         // Priorité : localStorage → catalog embarqué (jamais null)
@@ -194,8 +236,10 @@ class PackManager {
     private getCachedCatalog(): PackCatalog | null {
         try {
             const raw = localStorage.getItem(CATALOG_CACHE_KEY);
-            return raw ? JSON.parse(raw) as PackCatalog : null;
-        } catch { return null; }
+            return raw ? (JSON.parse(raw) as PackCatalog) : null;
+        } catch {
+            return null;
+        }
     }
 
     getAvailablePacks(): PackMeta[] {
@@ -203,7 +247,7 @@ class PackManager {
     }
 
     getPackMeta(packId: string): PackMeta | undefined {
-        return this.catalog?.packs.find(p => p.id === packId);
+        return this.catalog?.packs.find((p) => p.id === packId);
     }
 
     getPackState(packId: string): PackState | null {
@@ -212,7 +256,10 @@ class PackManager {
 
     // ── Download & Install ───────────────────────────────────────────────────
 
-    async downloadPack(packId: string, onProgress?: (p: number) => void): Promise<boolean> {
+    async downloadPack(
+        packId: string,
+        onProgress?: (p: number) => void
+    ): Promise<boolean> {
         const meta = this.getPackMeta(packId);
         if (!meta) return false;
 
@@ -242,7 +289,6 @@ class PackManager {
             await this.mountPack(packId);
             showToast(i18n.t('packs.toast.installed'));
             return true;
-
         } catch (e) {
             if ((e as Error).name === 'AbortError') {
                 ps.status = 'purchased';
@@ -259,7 +305,9 @@ class PackManager {
                 if (msg.includes('quota') || msg.includes('ENOSPC')) {
                     showToast(i18n.t('packs.error.storageFull'));
                 } else {
-                    showToast(`${i18n.t('packs.error.downloadFailed')} (${msg.slice(0, 60)})`);
+                    showToast(
+                        `${i18n.t('packs.error.downloadFailed')} (${msg.slice(0, 60)})`
+                    );
                 }
                 // Cleanup partial file
                 this.deletePackFile(packId).catch(() => {});
@@ -271,13 +319,19 @@ class PackManager {
     }
 
     private async downloadWeb(
-        meta: PackMeta, ps: PackState,
-        onProgress?: (p: number) => void, signal?: AbortSignal
+        meta: PackMeta,
+        ps: PackState,
+        onProgress?: (p: number) => void,
+        signal?: AbortSignal
     ): Promise<void> {
         // OPFS (Origin Private File System) pour PWA
         const root = await navigator.storage.getDirectory();
-        const packsDir = await root.getDirectoryHandle(PACKS_DIR, { create: true });
-        const fileHandle = await packsDir.getFileHandle(`${meta.id}.pmtiles`, { create: true });
+        const packsDir = await root.getDirectoryHandle(PACKS_DIR, {
+            create: true,
+        });
+        const fileHandle = await packsDir.getFileHandle(`${meta.id}.pmtiles`, {
+            create: true,
+        });
         const writable = await fileHandle.createWritable();
 
         const resp = await fetch(meta.cdnUrl, { signal });
@@ -286,7 +340,10 @@ class PackManager {
         const reader = resp.body?.getReader();
         if (!reader) throw new Error('No response body');
 
-        const contentLength = parseInt(resp.headers.get('content-length') ?? '0', 10);
+        const contentLength = parseInt(
+            resp.headers.get('content-length') ?? '0',
+            10
+        );
         let received = 0;
 
         try {
@@ -335,7 +392,9 @@ class PackManager {
             const root = await navigator.storage.getDirectory();
             const packsDir = await root.getDirectoryHandle(PACKS_DIR);
             await packsDir.removeEntry(`${packId}.pmtiles`);
-        } catch { /* may not exist */ }
+        } catch {
+            /* may not exist */
+        }
         // Ancienne installation via Filesystem.External (migration)
         if (Capacitor.isNativePlatform()) {
             try {
@@ -343,7 +402,9 @@ class PackManager {
                     path: `${packId}.pmtiles`,
                     directory: Directory.External,
                 });
-            } catch { /* may not exist */ }
+            } catch {
+                /* may not exist */
+            }
         }
     }
 
@@ -353,14 +414,22 @@ class PackManager {
         if (this.mountedArchives.has(packId)) return;
 
         const ps = this.packStates.get(packId);
-        if (!ps || (ps.status !== 'installed' && ps.status !== 'purchased' && ps.status !== 'update_available')) return;
+        if (
+            !ps ||
+            (ps.status !== 'installed' &&
+                ps.status !== 'purchased' &&
+                ps.status !== 'update_available')
+        )
+            return;
 
         try {
             let archive: pmtiles.PMTiles;
 
-            // v5.28.2 : On utilise le fichier local si status === 'installed' 
+            // v5.28.2 : On utilise le fichier local si status === 'installed'
             // OU si status === 'update_available' et que le fichier est présent.
-            const hasLocalFile = ps.status === 'installed' || (ps.status === 'update_available' && ps.filePath);
+            const hasLocalFile =
+                ps.status === 'installed' ||
+                (ps.status === 'update_available' && ps.filePath);
 
             if (hasLocalFile) {
                 // OPFS : FileSource lit les bytes directement (file.slice), sans réseau.
@@ -368,7 +437,9 @@ class PackManager {
                 try {
                     const root = await navigator.storage.getDirectory();
                     const packsDir = await root.getDirectoryHandle(PACKS_DIR);
-                    const fileHandle = await packsDir.getFileHandle(`${packId}.pmtiles`);
+                    const fileHandle = await packsDir.getFileHandle(
+                        `${packId}.pmtiles`
+                    );
                     const file = await fileHandle.getFile();
                     archive = new pmtiles.PMTiles(new pmtiles.FileSource(file));
                 } catch {
@@ -376,7 +447,9 @@ class PackManager {
                     // → fallback CDN si possible, sinon reset
                     const meta = this.getPackMeta(packId);
                     if (meta) {
-                        console.warn(`[Packs] ${packId}: fichier OPFS absent, fallback CDN streaming.`);
+                        console.warn(
+                            `[Packs] ${packId}: fichier OPFS absent, fallback CDN streaming.`
+                        );
                         archive = new pmtiles.PMTiles(meta.cdnUrl);
                     } else {
                         throw new Error('Pack metadata missing');
@@ -391,11 +464,12 @@ class PackManager {
 
             // Warmup: read header pour vérifier l'archive
             const header = await archive.getHeader();
-            console.log(`[Packs] ${packId} monté. LOD ${header.minZoom}-${header.maxZoom}, ${header.numTileEntries} tuiles`);
+            console.log(
+                `[Packs] ${packId} monté. LOD ${header.minZoom}-${header.maxZoom}, ${header.numTileEntries} tuiles`
+            );
 
             this.mountedArchives.set(packId, archive);
             eventBus.emit('packMounted', { packId });
-
         } catch (e) {
             console.error(`[Packs] Erreur montage ${packId}:`, e);
         }
@@ -410,7 +484,11 @@ class PackManager {
     async mountAllInstalled(): Promise<void> {
         const promises: Promise<void>[] = [];
         for (const [packId, ps] of this.packStates) {
-            if (ps.status === 'installed' || ps.status === 'purchased' || ps.status === 'update_available') {
+            if (
+                ps.status === 'installed' ||
+                ps.status === 'purchased' ||
+                ps.status === 'update_available'
+            ) {
                 promises.push(this.mountPack(packId));
             }
         }
@@ -424,7 +502,12 @@ class PackManager {
         return this.mountedArchives.size > 0;
     }
 
-    async getTileFromPacks(z: number, x: number, y: number, type: 'color' | 'elevation' | 'overlay' = 'color'): Promise<Blob | null> {
+    async getTileFromPacks(
+        z: number,
+        x: number,
+        y: number,
+        type: 'color' | 'elevation' | 'overlay' = 'color'
+    ): Promise<Blob | null> {
         // Deux passes : OPFS (installed) en premier, CDN (purchased) ensuite.
         for (const pass of [true, false]) {
             for (const [packId, archive] of this.mountedArchives) {
@@ -434,14 +517,16 @@ class PackManager {
                 if (!this.isTileInPackRegion(x, y, z, meta)) continue;
 
                 const ps = this.packStates.get(packId);
-                const isOpfs = ps?.status === 'installed' || ps?.status === 'update_available';
+                const isOpfs =
+                    ps?.status === 'installed' ||
+                    ps?.status === 'update_available';
 
                 if (pass !== isOpfs) continue;
                 if (!isOpfs && state.IS_OFFLINE) continue;
 
                 try {
                     let tileData;
-                    
+
                     // v5.28.1 : Support Multi-Layer (Couleur + Élévation + Overlay dans 1 seul PMTiles)
                     if (type === 'color') {
                         tileData = await archive.getZxy(z, x, y);
@@ -449,15 +534,19 @@ class PackManager {
                         // On utilise les offsets Hilbert définis dans build-country-pack.ts
                         const OFFSET_ELEV = 100_000_000_000;
                         const OFFSET_OVERLAY = 200_000_000_000;
-                        const offset = (type === 'elevation') ? OFFSET_ELEV : OFFSET_OVERLAY;
-                        
+                        const offset =
+                            type === 'elevation' ? OFFSET_ELEV : OFFSET_OVERLAY;
+
                         const baseId = pmtiles.zxyToTileId(z, x, y);
-                        const [fz, fx, fy] = pmtiles.tileIdToZxy(baseId + offset);
+                        const [fz, fx, fy] = pmtiles.tileIdToZxy(
+                            baseId + offset
+                        );
                         tileData = await archive.getZxy(fz, fx, fy);
                     }
 
                     if (tileData?.data) {
-                        const mime = (type === 'color') ? 'image/webp' : 'image/png';
+                        const mime =
+                            type === 'color' ? 'image/webp' : 'image/png';
                         return new Blob([tileData.data], { type: mime });
                     }
                 } catch {
@@ -468,14 +557,29 @@ class PackManager {
         return null;
     }
 
-    private isTileInPackRegion(tx: number, ty: number, zoom: number, meta: PackMeta): boolean {
+    private isTileInPackRegion(
+        tx: number,
+        ty: number,
+        zoom: number,
+        meta: PackMeta
+    ): boolean {
         const n = Math.pow(2, zoom);
-        const centerLat = Math.atan(Math.sinh(Math.PI * (1 - 2 * (ty + 0.5) / n))) * 180 / Math.PI;
-        const centerLon = (tx + 0.5) / n * 360 - 180;
+        const centerLat =
+            (Math.atan(Math.sinh(Math.PI * (1 - (2 * (ty + 0.5)) / n))) * 180) /
+            Math.PI;
+        const centerLon = ((tx + 0.5) / n) * 360 - 180;
         // Vérification polygone si le pays est connu, sinon fallback bbox
-        if (meta.regionCheck && isPointInCountry(centerLat, centerLon, meta.regionCheck)) return true;
-        return centerLat >= meta.bounds.minLat && centerLat <= meta.bounds.maxLat &&
-               centerLon >= meta.bounds.minLon && centerLon <= meta.bounds.maxLon;
+        if (
+            meta.regionCheck &&
+            isPointInCountry(centerLat, centerLon, meta.regionCheck)
+        )
+            return true;
+        return (
+            centerLat >= meta.bounds.minLat &&
+            centerLat <= meta.bounds.maxLat &&
+            centerLon >= meta.bounds.minLon &&
+            centerLon <= meta.bounds.maxLon
+        );
     }
 
     // ── Purchase status ──────────────────────────────────────────────────────
@@ -486,7 +590,9 @@ class PackManager {
         this.persistStates();
         this.emitStatus(packId, 'purchased');
         // Auto-mount via CDN (pas besoin de download pour servir les tuiles)
-        void this.mountPack(packId).catch(e => { if (state.DEBUG_MODE) console.warn('[Packs] Mount failed', e); });
+        void this.mountPack(packId).catch((e) => {
+            if (state.DEBUG_MODE) console.warn('[Packs] Mount failed', e);
+        });
     }
 
     markPurchased(packId: string): void {
@@ -496,7 +602,9 @@ class PackManager {
             this.persistStates();
             this.emitStatus(packId, 'purchased');
             // Auto-mount via CDN
-            void this.mountPack(packId).catch(e => { if (state.DEBUG_MODE) console.warn('[Packs] Mount failed', e); });
+            void this.mountPack(packId).catch((e) => {
+                if (state.DEBUG_MODE) console.warn('[Packs] Mount failed', e);
+            });
         }
     }
 
@@ -506,7 +614,11 @@ class PackManager {
         if (!this.catalog) return;
         for (const meta of this.catalog.packs) {
             const ps = this.packStates.get(meta.id);
-            if (ps && ps.status === 'installed' && ps.installedVersion < meta.version) {
+            if (
+                ps &&
+                ps.status === 'installed' &&
+                ps.installedVersion < meta.version
+            ) {
                 ps.status = 'update_available';
                 this.persistStates();
                 this.emitStatus(meta.id, 'update_available');
@@ -528,13 +640,17 @@ class PackManager {
             .filter(([, ps]) => ps.status !== 'not_purchased')
             .map(([id]) => id);
         state.installedPacks = [...this.packStates.entries()]
-            .filter(([, ps]) => ps.status === 'installed' || ps.status === 'update_available')
+            .filter(
+                ([, ps]) =>
+                    ps.status === 'installed' ||
+                    ps.status === 'update_available'
+            )
             .map(([id]) => id);
     }
 
     private loadPersistedStates(): void {
         try {
-            // v5.28.19 : Toujours réinitialiser les Maps pour éviter les fuites d'état 
+            // v5.28.19 : Toujours réinitialiser les Maps pour éviter les fuites d'état
             // entre les tests ou lors de re-initialisations manuelles.
             this.packStates.clear();
             this.mountedArchives.clear();
@@ -551,7 +667,9 @@ class PackManager {
                 this.packStates.set(id, ps);
             }
             this.persistStates();
-        } catch { /* corrupt data */ }
+        } catch {
+            /* corrupt data */
+        }
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

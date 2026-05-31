@@ -1,12 +1,25 @@
 import * as THREE from 'three';
 import { disposeObject } from '../memory';
 import { state } from '../state';
-import { EARTH_CIRCUMFERENCE, getTileBounds, getPow2, lonToXNorm, latToYNorm } from '../geo';
+import {
+    EARTH_CIRCUMFERENCE,
+    getTileBounds,
+    getPow2,
+    lonToXNorm,
+    latToYNorm,
+} from '../geo';
 import { createForestForTile } from '../vegetation';
 import { loadPOIsForTile } from '../poi';
 import { loadBuildingsForTile } from '../buildings';
 import { loadHydrologyForTile } from '../hydrology';
-import { addToCache, getFromCache, getTileCacheKey, markCacheKeyActive, markCacheKeyInactive, hasInCache } from '../tileCache';
+import {
+    addToCache,
+    getFromCache,
+    getTileCacheKey,
+    markCacheKeyActive,
+    markCacheKeyInactive,
+    hasInCache,
+} from '../tileCache';
 import { getPlaneGeometry } from '../geometryCache';
 import { loadTileData, cancelTileLoad } from '../tileLoader';
 import { materialPool } from '../materialPool';
@@ -16,18 +29,21 @@ import { removeFromLoadQueue, queueBuildMesh } from './tileQueue';
 export const sharedFrustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
 
-const GHOST_FADE_MS = (window.innerWidth <= 768) ? 800 : 2000; 
+const GHOST_FADE_MS = window.innerWidth <= 768 ? 800 : 2000;
 
-export const terrainUniforms = { 
+export const terrainUniforms = {
     uExaggeration: { value: state.RELIEF_EXAGGERATION },
     uShowSlopes: { value: state.SHOW_SLOPES ? 1.0 : 0.0 },
     uShowHydrology: { value: state.SHOW_HYDROLOGY ? 1.0 : 0.0 },
     uTime: { value: 0.0 },
-    uSunPos: { value: new THREE.Vector3(0, 1, 0) }
+    uSunPos: { value: new THREE.Vector3(0, 1, 0) },
 };
 
 export class Tile {
-    tx: number; ty: number; zoom: number; key: string;
+    tx: number;
+    ty: number;
+    zoom: number;
+    key: string;
     status: 'idle' | 'loading' | 'loaded' | 'failed' | 'disposed' = 'idle';
     activeTaskId: number = -1;
     mesh: THREE.Mesh | null = null;
@@ -48,13 +64,19 @@ export class Tile {
     isFadingOut: boolean = false;
     ghostFadeDuration: number = 2000;
     ghostFadeRemaining: number = 0;
-    worldX: number = 0; worldZ: number = 0;
+    worldX: number = 0;
+    worldZ: number = 0;
     bounds: THREE.Box3 = new THREE.Box3();
     private extendedBounds: THREE.Box3 = new THREE.Box3();
-    elevOffset = new THREE.Vector2(); elevScale = 1.0;
-    colorOffset = new THREE.Vector2(); colorScale = 1.0;
+    elevOffset = new THREE.Vector2();
+    elevScale = 1.0;
+    colorOffset = new THREE.Vector2();
+    colorScale = 1.0;
     constructor(tx: number, ty: number, zoom: number, key: string) {
-        this.tx = tx; this.ty = ty; this.zoom = zoom; this.key = key;
+        this.tx = tx;
+        this.ty = ty;
+        this.zoom = zoom;
+        this.key = key;
         this.tileSizeMeters = EARTH_CIRCUMFERENCE / getPow2(zoom);
 
         this.updateWorldPosition();
@@ -69,7 +91,7 @@ export class Tile {
         const unit = 1.0 / getPow2(this.zoom);
         const txNorm = (this.tx + 0.5) * unit;
         const tyNorm = (this.ty + 0.5) * unit;
-        
+
         const originUnit = 1.0 / getPow2(state.originTile.z);
         const oxNorm = (state.originTile.x + 0.5) * originUnit;
         const oyNorm = (state.originTile.y + 0.5) * originUnit;
@@ -77,25 +99,43 @@ export class Tile {
         this.worldX = (txNorm - oxNorm) * EARTH_CIRCUMFERENCE;
         this.worldZ = (tyNorm - oyNorm) * EARTH_CIRCUMFERENCE;
         const yOffset = this.isFadingOut ? -0.5 : 0;
-        if (this.mesh) this.mesh.position.set(this.worldX, yOffset, this.worldZ);
-        if (this.forestMesh) this.forestMesh.position.set(this.worldX, yOffset, this.worldZ);
-        if (this.poiGroup) this.poiGroup.position.set(this.worldX, yOffset, this.worldZ);
-        if (this.buildingGroup) this.buildingGroup.position.set(this.worldX, yOffset, this.worldZ);
-        
+        if (this.mesh)
+            this.mesh.position.set(this.worldX, yOffset, this.worldZ);
+        if (this.forestMesh)
+            this.forestMesh.position.set(this.worldX, yOffset, this.worldZ);
+        if (this.poiGroup)
+            this.poiGroup.position.set(this.worldX, yOffset, this.worldZ);
+        if (this.buildingGroup)
+            this.buildingGroup.position.set(this.worldX, yOffset, this.worldZ);
+
         this.bounds.set(
-            new THREE.Vector3(this.worldX - this.tileSizeMeters/2, -1000, this.worldZ - this.tileSizeMeters/2),
-            new THREE.Vector3(this.worldX + this.tileSizeMeters/2, 9000, this.worldZ + this.tileSizeMeters/2)
+            new THREE.Vector3(
+                this.worldX - this.tileSizeMeters / 2,
+                -1000,
+                this.worldZ - this.tileSizeMeters / 2
+            ),
+            new THREE.Vector3(
+                this.worldX + this.tileSizeMeters / 2,
+                9000,
+                this.worldZ + this.tileSizeMeters / 2
+            )
         );
 
         const marginFactor = 0.2;
 
-        this.extendedBounds.copy(this.bounds).expandByScalar(this.tileSizeMeters * marginFactor);
+        this.extendedBounds
+            .copy(this.bounds)
+            .expandByScalar(this.tileSizeMeters * marginFactor);
     }
 
     public isVisible(precomputedFrustum?: THREE.Frustum): boolean {
         if (!state.camera) return true;
-        if (precomputedFrustum) return precomputedFrustum.intersectsBox(this.extendedBounds);
-        projScreenMatrix.multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
+        if (precomputedFrustum)
+            return precomputedFrustum.intersectsBox(this.extendedBounds);
+        projScreenMatrix.multiplyMatrices(
+            state.camera.projectionMatrix,
+            state.camera.matrixWorldInverse
+        );
         sharedFrustum.setFromProjectionMatrix(projScreenMatrix);
         return sharedFrustum.intersectsBox(this.extendedBounds);
     }
@@ -106,7 +146,11 @@ export class Tile {
         const yNorm = latToYNorm(lat);
         const txNorm = (this.tx + 0.5) / n;
         const tyNorm = (this.ty + 0.5) / n;
-        return new THREE.Vector3((xNorm - txNorm) * EARTH_CIRCUMFERENCE, 0, (yNorm - tyNorm) * EARTH_CIRCUMFERENCE);
+        return new THREE.Vector3(
+            (xNorm - txNorm) * EARTH_CIRCUMFERENCE,
+            0,
+            (yNorm - tyNorm) * EARTH_CIRCUMFERENCE
+        );
     }
 
     updateHybridSettings(): void {
@@ -115,13 +159,25 @@ export class Tile {
         if (this.zoom > MAX_RGB_ZOOM) {
             const ratio = getPow2(this.zoom - MAX_RGB_ZOOM);
             this.elevScale = 1.0 / ratio;
-            this.elevOffset.set((this.tx % ratio) * this.elevScale, (this.ty % ratio) * this.elevScale);
-        } else { this.elevScale = 1.0; this.elevOffset.set(0, 0); }
+            this.elevOffset.set(
+                (this.tx % ratio) * this.elevScale,
+                (this.ty % ratio) * this.elevScale
+            );
+        } else {
+            this.elevScale = 1.0;
+            this.elevOffset.set(0, 0);
+        }
         if (this.zoom > nativeMax) {
             const ratio = getPow2(this.zoom - nativeMax);
             this.colorScale = 1.0 / ratio;
-            this.colorOffset.set((this.tx % ratio) * this.colorScale, (this.ty % ratio) * this.colorScale);
-        } else { this.colorScale = 1.0; this.colorOffset.set(0, 0); }
+            this.colorOffset.set(
+                (this.tx % ratio) * this.colorScale,
+                (this.ty % ratio) * this.colorScale
+            );
+        } else {
+            this.colorScale = 1.0;
+            this.colorOffset.set(0, 0);
+        }
     }
 
     async load(): Promise<void> {
@@ -129,26 +185,39 @@ export class Tile {
         const cacheKey = getTileCacheKey(this.key, this.zoom);
         const cached = getFromCache(cacheKey);
         if (cached) {
-            this.elevationTex = cached.elev; this.pixelData = cached.pixelData;
-            this.colorTex = cached.color; this.overlayTex = cached.overlay; this.normalTex = cached.normal;
+            this.elevationTex = cached.elev;
+            this.pixelData = cached.pixelData;
+            this.colorTex = cached.color;
+            this.overlayTex = cached.overlay;
+            this.normalTex = cached.normal;
             markCacheKeyActive(cacheKey);
-            
-            if (!this.pixelData && this.zoom >= 14 && (state.SHOW_VEGETATION || state.SHOW_BUILDINGS)) {
+
+            if (
+                !this.pixelData &&
+                this.zoom >= 14 &&
+                (state.SHOW_VEGETATION || state.SHOW_BUILDINGS)
+            ) {
                 // On continue le processus de chargement pour restaurer pixelData
             } else {
-                this.status = 'loaded'; this.buildMesh(state.RESOLUTION);
+                this.status = 'loaded';
+                this.buildMesh(state.RESOLUTION);
                 return;
             }
         }
         this.status = 'loading';
-        const fetchAs2D = (this.zoom <= 10);
+        const fetchAs2D = this.zoom <= 10;
         try {
-            const { promise, taskId } = await loadTileData(this.tx, this.ty, this.zoom, fetchAs2D);
+            const { promise, taskId } = await loadTileData(
+                this.tx,
+                this.ty,
+                this.zoom,
+                fetchAs2D
+            );
             this.activeTaskId = taskId;
             const data = await promise;
             this.activeTaskId = -1;
-            
-            if (this.status as string === 'disposed') return;
+
+            if ((this.status as string) === 'disposed') return;
             if (!data) {
                 this.status = 'failed';
                 return;
@@ -159,10 +228,16 @@ export class Tile {
                 this.elevationTex.flipY = false;
                 this.elevationTex.generateMipmaps = false;
                 this.elevationTex.minFilter = THREE.LinearFilter;
-                this.elevationTex.wrapS = this.elevationTex.wrapT = THREE.ClampToEdgeWrapping;
+                this.elevationTex.wrapS = this.elevationTex.wrapT =
+                    THREE.ClampToEdgeWrapping;
                 this.elevationTex.needsUpdate = true;
-                if (data.pixelData) this.pixelData = new Uint8ClampedArray(data.pixelData);
-            } else { this.elevationTex = new THREE.CanvasTexture(document.createElement('canvas')); }
+                if (data.pixelData)
+                    this.pixelData = new Uint8ClampedArray(data.pixelData);
+            } else {
+                this.elevationTex = new THREE.CanvasTexture(
+                    document.createElement('canvas')
+                );
+            }
 
             if (data.colorBitmap) {
                 this.colorTex = new THREE.Texture(data.colorBitmap);
@@ -170,12 +245,18 @@ export class Tile {
                 this.colorTex.needsUpdate = true;
                 this.colorTex.colorSpace = THREE.SRGBColorSpace;
                 if (state.renderer) {
-                    this.colorTex.anisotropy = state.renderer.capabilities.getMaxAnisotropy();
+                    this.colorTex.anisotropy =
+                        state.renderer.capabilities.getMaxAnisotropy();
                 }
             } else {
-                const fb = document.createElement('canvas'); fb.width = 256; fb.height = 256;
+                const fb = document.createElement('canvas');
+                fb.width = 256;
+                fb.height = 256;
                 const fbCtx = fb.getContext('2d');
-                if (fbCtx) { fbCtx.fillStyle = '#c8dde3'; fbCtx.fillRect(0, 0, 256, 256); }
+                if (fbCtx) {
+                    fbCtx.fillStyle = '#c8dde3';
+                    fbCtx.fillRect(0, 0, 256, 256);
+                }
                 this.colorTex = new THREE.CanvasTexture(fb);
             }
 
@@ -185,7 +266,8 @@ export class Tile {
                 this.overlayTex.needsUpdate = true;
                 this.overlayTex.colorSpace = THREE.SRGBColorSpace;
                 if (state.renderer) {
-                    this.overlayTex.anisotropy = state.renderer.capabilities.getMaxAnisotropy();
+                    this.overlayTex.anisotropy =
+                        state.renderer.capabilities.getMaxAnisotropy();
                 }
             }
 
@@ -194,29 +276,44 @@ export class Tile {
                 this.normalTex.flipY = false;
                 this.normalTex.generateMipmaps = false;
                 this.normalTex.minFilter = THREE.LinearFilter;
-                this.normalTex.wrapS = this.normalTex.wrapT = THREE.ClampToEdgeWrapping;
+                this.normalTex.wrapS = this.normalTex.wrapT =
+                    THREE.ClampToEdgeWrapping;
                 this.normalTex.needsUpdate = true;
             }
 
-            addToCache(cacheKey, this.elevationTex!, this.pixelData, this.colorTex!, this.overlayTex, this.normalTex);
+            addToCache(
+                cacheKey,
+                this.elevationTex!,
+                this.pixelData,
+                this.colorTex!,
+                this.overlayTex,
+                this.normalTex
+            );
             markCacheKeyActive(cacheKey);
-            this.status = 'loaded'; 
-            if (this.status as string !== 'disposed') queueBuildMesh(this);
-        } catch (e) { this.status = 'failed'; }
+            this.status = 'loaded';
+            if ((this.status as string) !== 'disposed') queueBuildMesh(this);
+        } catch (e) {
+            this.status = 'failed';
+        }
     }
 
     buildMesh(resolution: number): void {
-        if (!this.elevationTex || !this.colorTex || this.status as string === 'disposed') return;
+        if (
+            !this.elevationTex ||
+            !this.colorTex ||
+            (this.status as string) === 'disposed'
+        )
+            return;
         if (!activeTiles.has(this.key) && !this.isFadingOut) return;
 
-        const is2D = (this.zoom <= 10 || state.IS_2D_MODE);
-        const isLight = (state.PERFORMANCE_PRESET === 'eco');
-        
+        const is2D = this.zoom <= 10 || state.IS_2D_MODE;
+        const isLight = state.PERFORMANCE_PRESET === 'eco';
+
         if (is2D) resolution = 1;
         else if (this.zoom >= 15) resolution = Math.min(resolution, 64);
 
         const oldMesh = this.mesh;
-        
+
         const onCompile = (shader: any) => {
             material.userData.shader = shader;
             shader.uniforms.uElevationMap = { value: this.elevationTex };
@@ -256,27 +353,46 @@ export class Tile {
                     #define IS_2D ${is2D ? '1' : '0'}
                     varying vec2 vLocalUv;
                     ${shader.vertexShader}
-                `.replace('#include <common>', `#include <common>\nattribute float aSkirt;\nvarying vec3 vTrueNormal; varying vec2 vWorldXZ; uniform vec2 uColorOffset; uniform float uColorScale; uniform sampler2D uNormalMap; ${sharedShaderChunk}`)
-                 .replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);\nvLocalUv = uv;`);
+                `
+                    .replace(
+                        '#include <common>',
+                        `#include <common>\nattribute float aSkirt;\nvarying vec3 vTrueNormal; varying vec2 vWorldXZ; uniform vec2 uColorOffset; uniform float uColorScale; uniform sampler2D uNormalMap; ${sharedShaderChunk}`
+                    )
+                    .replace(
+                        '#include <uv_vertex>',
+                        `#include <uv_vertex>\nvMapUv = uColorOffset + (uv * uColorScale);\nvLocalUv = uv;`
+                    );
 
                 if (is2D || isLight) {
                     if (!is2D) {
-                        shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\nobjectNormal = vec3(0.0,1.0,0.0);`);
+                        shader.vertexShader = shader.vertexShader.replace(
+                            '#include <beginnormal_vertex>',
+                            `#include <beginnormal_vertex>\nobjectNormal = vec3(0.0,1.0,0.0);`
+                        );
                     }
                 } else {
-                    shader.vertexShader = shader.vertexShader.replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>\n
+                    shader.vertexShader = shader.vertexShader.replace(
+                        '#include <beginnormal_vertex>',
+                        `#include <beginnormal_vertex>\n
                         const float HT_N = 0.5 / 256.0;
                         vec2 elevUv = clamp(uElevOffset + (uv * uElevScale), vec2(HT_N), vec2(1.0 - HT_N));
                         vec3 normalSample = texture2D(uNormalMap, elevUv).rgb * 2.0 - 1.0;
                         vTrueNormal = normalize(vec3(normalSample.x, normalSample.y, normalSample.z));
                         objectNormal = normalize(vec3(normalSample.x * uExaggeration * uTileSize, normalSample.y, normalSample.z * uExaggeration * uTileSize));
-                    `);
+                    `
+                    );
                 }
 
                 if (is2D) {
-                    shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = - aSkirt * uTileSize * 0.02; vWorldXZ = (modelMatrix * vec4(transformed, 1.0)).xz;`);
+                    shader.vertexShader = shader.vertexShader.replace(
+                        '#include <begin_vertex>',
+                        `#include <begin_vertex>\ntransformed.y = - aSkirt * uTileSize * 0.02; vWorldXZ = (modelMatrix * vec4(transformed, 1.0)).xz;`
+                    );
                 } else {
-                    shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv) - aSkirt * uTileSize * 0.02; vWorldXZ = (modelMatrix * vec4(transformed, 1.0)).xz;`);
+                    shader.vertexShader = shader.vertexShader.replace(
+                        '#include <begin_vertex>',
+                        `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv) - aSkirt * uTileSize * 0.02; vWorldXZ = (modelMatrix * vec4(transformed, 1.0)).xz;`
+                    );
                 }
 
                 shader.fragmentShader = `
@@ -287,7 +403,9 @@ export class Tile {
                     uniform sampler2D uNormalMap; uniform vec2 uElevOffset; uniform float uElevScale; uniform bool uHasNormalMap;
                     uniform sampler2D uWaterMask; uniform bool uHasWaterMask;
                     ${shader.fragmentShader}
-                `.replace('#include <map_fragment>', `
+                `.replace(
+                    '#include <map_fragment>',
+                    `
                     #include <map_fragment>
                     if (uHasOverlay) { vec4 oCol = texture2D(uOverlayMap, vMapUv); diffuseColor.rgb = mix(diffuseColor.rgb, oCol.rgb, oCol.a); }
 
@@ -324,7 +442,8 @@ export class Tile {
                         slopeColor = mix(slopeColor, vec3(1.0, 0.0, 0.0), redMix);
                         diffuseColor.rgb = mix(diffuseColor.rgb, slopeColor, yellowMix * 0.55);
                     }
-                `);
+                `
+                );
             }
         };
 
@@ -356,7 +475,10 @@ export class Tile {
                 shader.uniforms.uElevScale = { value: this.elevScale };
                 shader.uniforms.uTileSize = { value: this.tileSizeMeters };
                 if (!shader.vertexShader.includes('decodeHeight')) {
-                    shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n
+                    shader.vertexShader = shader.vertexShader
+                        .replace(
+                            '#include <common>',
+                            `#include <common>\n
                         attribute float aSkirt; uniform sampler2D uElevationMap; uniform float uExaggeration; uniform float uTileSize; uniform vec2 uElevOffset; uniform float uElevScale;
                         float decodeHeight(vec4 rgba) { return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1); }
                         float getTerrainHeight(vec2 uv) {
@@ -364,7 +486,12 @@ export class Tile {
                             vec4 col = texture2D(uElevationMap, elevUv);
                             return decodeHeight(col) * uExaggeration;
                         }
-                    `).replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv);`);
+                    `
+                        )
+                        .replace(
+                            '#include <begin_vertex>',
+                            `#include <begin_vertex>\ntransformed.y = getTerrainHeight(uv);`
+                        );
                 }
             };
             const depth = materialPool.acquireDepth(onDepthCompile);
@@ -383,45 +510,83 @@ export class Tile {
         }
 
         this.mesh.position.set(this.worldX, 0, this.worldZ);
-        this.mesh.renderOrder = this.zoom; 
-        this.mesh.castShadow = !is2D; this.mesh.receiveShadow = !is2D;
-        if (state.scene && (this.status as string !== 'disposed')) state.scene.add(this.mesh);
+        this.mesh.renderOrder = this.zoom;
+        this.mesh.castShadow = !is2D;
+        this.mesh.receiveShadow = !is2D;
+        if (state.scene && (this.status as string) !== 'disposed')
+            state.scene.add(this.mesh);
         this.currentResolution = resolution;
-        
+
         if (is2D) {
-            this.opacity = 1; this.isFadingIn = false;
-            if (this.mesh.material instanceof THREE.Material) { this.mesh.material.opacity = 1; this.mesh.material.transparent = false; }
-        } else { this.opacity = 0; this.isFadingIn = true; }
+            this.opacity = 1;
+            this.isFadingIn = false;
+            if (this.mesh.material instanceof THREE.Material) {
+                this.mesh.material.opacity = 1;
+                this.mesh.material.transparent = false;
+            }
+        } else {
+            this.opacity = 0;
+            this.isFadingIn = true;
+        }
 
         const delay = (ms: number) => ms * state.LOAD_DELAY_FACTOR;
-        if (state.SHOW_SIGNPOSTS && this.zoom >= state.POI_ZOOM_THRESHOLD) setTimeout(() => { if (this.status !== 'disposed') loadPOIsForTile(this); }, delay(600));
+        if (state.SHOW_SIGNPOSTS && this.zoom >= state.POI_ZOOM_THRESHOLD)
+            setTimeout(() => {
+                if (this.status !== 'disposed') loadPOIsForTile(this);
+            }, delay(600));
 
         if (!is2D) {
-            if (state.SHOW_BUILDINGS && this.zoom >= state.BUILDING_ZOOM_THRESHOLD) setTimeout(() => { if (this.status !== 'disposed') loadBuildingsForTile(this); }, delay(150));
-            if (state.SHOW_HYDROLOGY && this.zoom >= 13) setTimeout(() => { if (this.status !== 'disposed') loadHydrologyForTile(this); }, delay(100));
-            if (state.SHOW_VEGETATION && this.zoom >= 14) setTimeout(async () => {
-                if (this.status as any === 'disposed') return;
-                const forest = await createForestForTile(this);
-                if (forest && state.scene && (this.status as any !== 'disposed')) {
-                    if (this.forestMesh) state.scene.remove(this.forestMesh);
-                    this.forestMesh = forest; 
-                    this.forestMesh.position.set(this.worldX, 0, this.worldZ);
-                    state.scene.add(this.forestMesh);
-                }
-            }, delay(300));
+            if (
+                state.SHOW_BUILDINGS &&
+                this.zoom >= state.BUILDING_ZOOM_THRESHOLD
+            )
+                setTimeout(() => {
+                    if (this.status !== 'disposed') loadBuildingsForTile(this);
+                }, delay(150));
+            if (state.SHOW_HYDROLOGY && this.zoom >= 13)
+                setTimeout(() => {
+                    if (this.status !== 'disposed') loadHydrologyForTile(this);
+                }, delay(100));
+            if (state.SHOW_VEGETATION && this.zoom >= 14)
+                setTimeout(async () => {
+                    if ((this.status as any) === 'disposed') return;
+                    const forest = await createForestForTile(this);
+                    if (
+                        forest &&
+                        state.scene &&
+                        (this.status as any) !== 'disposed'
+                    ) {
+                        if (this.forestMesh)
+                            state.scene.remove(this.forestMesh);
+                        this.forestMesh = forest;
+                        this.forestMesh.position.set(
+                            this.worldX,
+                            0,
+                            this.worldZ
+                        );
+                        state.scene.add(this.forestMesh);
+                    }
+                }, delay(300));
         }
 
         if (oldMesh) {
-            if (state.scene) state.scene.remove(oldMesh); 
-            if (oldMesh.material instanceof THREE.Material) materialPool.release(oldMesh.material);
-            if (oldMesh.customDepthMaterial instanceof THREE.Material) materialPool.release(oldMesh.customDepthMaterial);
+            if (state.scene) state.scene.remove(oldMesh);
+            if (oldMesh.material instanceof THREE.Material)
+                materialPool.release(oldMesh.material);
+            if (oldMesh.customDepthMaterial instanceof THREE.Material)
+                materialPool.release(oldMesh.customDepthMaterial);
         }
     }
 
     updateFade(delta: number): void {
         if (!this.isFadingIn || !this.mesh) return;
         this.opacity += delta * 5.0;
-        if (this.opacity >= 1) { this.opacity = 1; this.isFadingIn = false; if (this.mesh.material instanceof THREE.Material) this.mesh.material.transparent = false; }
+        if (this.opacity >= 1) {
+            this.opacity = 1;
+            this.isFadingIn = false;
+            if (this.mesh.material instanceof THREE.Material)
+                this.mesh.material.transparent = false;
+        }
         if (this.mesh.material instanceof THREE.Material) {
             const t = this.opacity;
             this.mesh.material.opacity = t * t * (3.0 - 2.0 * t);
@@ -430,14 +595,14 @@ export class Tile {
 
     startFadeOut(durationMs: number = GHOST_FADE_MS): void {
         if (this.isFadingOut || !this.mesh) return;
-        this.isFadingOut = true; 
+        this.isFadingOut = true;
         this.ghostFadeDuration = durationMs;
         this.ghostFadeRemaining = durationMs;
         this.mesh.position.y = -1.0;
-        this.mesh.renderOrder = -2; 
-        if (this.mesh.material instanceof THREE.Material) { 
-            this.mesh.material.transparent = true; 
-            this.mesh.material.opacity = 1.0; 
+        this.mesh.renderOrder = -2;
+        if (this.mesh.material instanceof THREE.Material) {
+            this.mesh.material.transparent = true;
+            this.mesh.material.opacity = 1.0;
         }
         markCacheKeyActive(getTileCacheKey(this.key, this.zoom));
     }
@@ -446,21 +611,26 @@ export class Tile {
         if (!this.isFadingOut || !this.mesh) return;
         this.ghostFadeRemaining -= deltaMs;
         const t = Math.max(0, this.ghostFadeRemaining / this.ghostFadeDuration);
-        if (this.mesh.material instanceof THREE.Material) { 
-            this.mesh.material.opacity = t * t; 
+        if (this.mesh.material instanceof THREE.Material) {
+            this.mesh.material.opacity = t * t;
         }
         if (this.ghostFadeRemaining <= 0) this.isFadingOut = false;
     }
 
     dispose(): void {
-        this.status = 'disposed'; 
+        this.status = 'disposed';
         removeFromLoadQueue(this);
-        if (this.activeTaskId >= 0) { cancelTileLoad(this.activeTaskId); this.activeTaskId = -1; }
+        if (this.activeTaskId >= 0) {
+            cancelTileLoad(this.activeTaskId);
+            this.activeTaskId = -1;
+        }
         markCacheKeyInactive(getTileCacheKey(this.key, this.zoom));
         if (this.mesh) {
             if (state.scene) state.scene.remove(this.mesh);
-            if (this.mesh.material instanceof THREE.Material) materialPool.release(this.mesh.material);
-            if (this.mesh.customDepthMaterial instanceof THREE.Material) materialPool.release(this.mesh.customDepthMaterial);
+            if (this.mesh.material instanceof THREE.Material)
+                materialPool.release(this.mesh.material);
+            if (this.mesh.customDepthMaterial instanceof THREE.Material)
+                materialPool.release(this.mesh.customDepthMaterial);
             this.mesh.geometry = null as any;
             this.mesh.material = null as any;
             this.mesh = null;
@@ -470,18 +640,48 @@ export class Tile {
         const inCache = hasInCache(cacheKey);
 
         if (!inCache) {
-            if (this.elevationTex) { this.elevationTex.dispose(); }
-            if (this.colorTex) { this.colorTex.dispose(); }
-            if (this.overlayTex) { this.overlayTex.dispose(); }
-            if (this.normalTex) { this.normalTex.dispose(); }
+            if (this.elevationTex) {
+                this.elevationTex.dispose();
+            }
+            if (this.colorTex) {
+                this.colorTex.dispose();
+            }
+            if (this.overlayTex) {
+                this.overlayTex.dispose();
+            }
+            if (this.normalTex) {
+                this.normalTex.dispose();
+            }
         }
 
-        this.elevationTex = null; this.colorTex = null; this.overlayTex = null; this.normalTex = null;
-        if (this.forestMesh) { if (state.scene) state.scene.remove(this.forestMesh); disposeObject(this.forestMesh); this.forestMesh = null; }
-        if (this.poiGroup) { if (state.scene) state.scene.remove(this.poiGroup); disposeObject(this.poiGroup); this.poiGroup = null; }
-        if (this.buildingGroup) { if (state.scene) state.scene.remove(this.buildingGroup); disposeObject(this.buildingGroup); this.buildingGroup = null; }
-        if (this.buildingMesh) { if (state.scene) state.scene.remove(this.buildingMesh); disposeObject(this.buildingMesh); this.buildingMesh = null; }
-        if (this.waterMaskTex) { this.waterMaskTex.dispose(); this.waterMaskTex = null; }
+        this.elevationTex = null;
+        this.colorTex = null;
+        this.overlayTex = null;
+        this.normalTex = null;
+        if (this.forestMesh) {
+            if (state.scene) state.scene.remove(this.forestMesh);
+            disposeObject(this.forestMesh);
+            this.forestMesh = null;
+        }
+        if (this.poiGroup) {
+            if (state.scene) state.scene.remove(this.poiGroup);
+            disposeObject(this.poiGroup);
+            this.poiGroup = null;
+        }
+        if (this.buildingGroup) {
+            if (state.scene) state.scene.remove(this.buildingGroup);
+            disposeObject(this.buildingGroup);
+            this.buildingGroup = null;
+        }
+        if (this.buildingMesh) {
+            if (state.scene) state.scene.remove(this.buildingMesh);
+            disposeObject(this.buildingMesh);
+            this.buildingMesh = null;
+        }
+        if (this.waterMaskTex) {
+            this.waterMaskTex.dispose();
+            this.waterMaskTex = null;
+        }
         this.pixelData = null;
     }
 }

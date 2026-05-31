@@ -1,7 +1,18 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
-import { Tile, updateVisibleTiles, terrainUniforms, activeTiles, fadingOutTiles } from './terrain';
-import { worldToLngLat, EARTH_CIRCUMFERENCE, getTileBounds, decodeTerrainRGB } from './geo';
+import {
+    Tile,
+    updateVisibleTiles,
+    terrainUniforms,
+    activeTiles,
+    fadingOutTiles,
+} from './terrain';
+import {
+    worldToLngLat,
+    EARTH_CIRCUMFERENCE,
+    getTileBounds,
+    decodeTerrainRGB,
+} from './geo';
 import { state } from './state';
 
 describe('terrain.ts', () => {
@@ -29,7 +40,14 @@ describe('terrain.ts', () => {
             const oxNorm = (state.originTile.x + 0.5) * originUnit;
             const oyNorm = (state.originTile.y + 0.5) * originUnit;
             const xNorm = (initialLon + 180) / 360;
-            const yNorm = (1 - Math.log(Math.tan(initialLat * Math.PI / 180) + 1 / Math.cos(initialLat * Math.PI / 180)) / Math.PI) / 2;
+            const yNorm =
+                (1 -
+                    Math.log(
+                        Math.tan((initialLat * Math.PI) / 180) +
+                            1 / Math.cos((initialLat * Math.PI) / 180)
+                    ) /
+                        Math.PI) /
+                2;
             const worldX = (xNorm - oxNorm) * EARTH_CIRCUMFERENCE;
             const worldZ = (yNorm - oyNorm) * EARTH_CIRCUMFERENCE;
             const result = worldToLngLat(worldX, worldZ, state.originTile);
@@ -68,7 +86,11 @@ describe('terrain.ts', () => {
 
         it('should correctly handle bounding box calculations', () => {
             const tile = new Tile(4270, 2891, 13, '13/4270/2891');
-            const bounds = getTileBounds({ zoom: tile.zoom, tx: tile.tx, ty: tile.ty });
+            const bounds = getTileBounds({
+                zoom: tile.zoom,
+                tx: tile.tx,
+                ty: tile.ty,
+            });
             expect(bounds.north).toBeGreaterThan(46.0);
             expect(bounds.south).toBeLessThan(47.0);
         });
@@ -92,7 +114,7 @@ describe('terrain.ts', () => {
         it('should handle extreme low zooms (LOD 6)', () => {
             const tile = new Tile(32, 32, 6, '6/32/32');
             expect(tile.zoom).toBe(6);
-            expect(tile.tileSizeMeters).toBeGreaterThan(600000); 
+            expect(tile.tileSizeMeters).toBeGreaterThan(600000);
         });
 
         it('should disable slopes in Eco mode', async () => {
@@ -136,14 +158,14 @@ describe('terrain.ts', () => {
             parentTile!.elevationTex = new THREE.Texture();
             parentTile!.colorTex = new THREE.Texture();
             parentTile!.buildMesh(32);
-            
+
             state.ZOOM = 14;
             await updateVisibleTiles();
 
             expect(activeTiles.has(parentKey)).toBe(false);
             expect(fadingOutTiles.has(parentTile!)).toBe(true);
             expect(parentTile!.isFadingOut).toBe(true);
-            expect(parentTile!.ghostFadeDuration).toBe(2500); 
+            expect(parentTile!.ghostFadeDuration).toBe(2500);
             expect(parentTile!.mesh!.renderOrder).toBe(-2);
         });
 
@@ -156,7 +178,7 @@ describe('terrain.ts', () => {
         it('should use camera position as default center in updateVisibleTiles', async () => {
             state.ZOOM = 13;
             const dist = EARTH_CIRCUMFERENCE / Math.pow(2, 13);
-            state.camera!.position.set(dist * 5, 1000, 0); 
+            state.camera!.position.set(dist * 5, 1000, 0);
             const geo = await import('./geo');
             const spy = vi.spyOn(geo, 'worldToLngLat');
             await updateVisibleTiles();
@@ -179,7 +201,7 @@ describe('terrain.ts', () => {
             const { updateRecordedTrackMesh } = await import('./gpxLayers');
             state.recordedPoints = [
                 { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 1000 },
-                { lat: NaN, lon: 7.5, alt: 1000, timestamp: 2000 }
+                { lat: NaN, lon: 7.5, alt: 1000, timestamp: 2000 },
             ];
             expect(() => updateRecordedTrackMesh()).not.toThrow();
         });
@@ -190,10 +212,10 @@ describe('terrain.ts', () => {
             const gpxLayers = await import('./gpxLayers');
             const spyGPX = vi.spyOn(gpxLayers, 'updateAllGPXMeshes');
             const { repositionAllTiles } = await import('./terrain');
-            
-            repositionAllTiles(); 
+
+            repositionAllTiles();
             state.originTile = { x: 101, y: 101, z: 13 };
-            repositionAllTiles(); 
+            repositionAllTiles();
             vi.runAllTimers();
             expect(spyGPX).toHaveBeenCalled();
         });
@@ -201,7 +223,8 @@ describe('terrain.ts', () => {
 
     describe('V5.28.2 Optimizations', () => {
         it('should remove tile from loadQueue when disposed', async () => {
-            const { addToLoadQueue, loadQueue } = await import('./terrain/tileQueue');
+            const { addToLoadQueue, loadQueue } =
+                await import('./terrain/tileQueue');
             const tile = new Tile(10, 10, 5, '5/10/10');
             addToLoadQueue(tile);
             tile.dispose();
@@ -209,7 +232,8 @@ describe('terrain.ts', () => {
         });
 
         it('refreshTerrain should reset terrain and reposition all tiles', async () => {
-            const { refreshTerrain, terrainUpdates } = await import('./terrain');
+            const { refreshTerrain, terrainUpdates } =
+                await import('./terrain');
             const spyReset = vi.spyOn(terrainUpdates, 'resetTerrain');
             const spyRepo = vi.spyOn(terrainUpdates, 'repositionAllTiles');
             refreshTerrain();
@@ -228,16 +252,19 @@ describe('terrain.ts', () => {
         it('should sort tiles by visibility and distance', async () => {
             const t1 = new Tile(10, 10, 10, '10/10/10'); // Visible, Close
             vi.spyOn(t1, 'isVisible').mockReturnValue(true);
-            t1.worldX = 10; t1.worldZ = 10;
-            
+            t1.worldX = 10;
+            t1.worldZ = 10;
+
             const t2 = new Tile(11, 11, 10, '10/11/11'); // Visible, Far
             vi.spyOn(t2, 'isVisible').mockReturnValue(true);
-            t2.worldX = 1000; t2.worldZ = 1000;
-            
+            t2.worldX = 1000;
+            t2.worldZ = 1000;
+
             const t3 = new Tile(12, 12, 10, '10/12/12'); // Invisible
             vi.spyOn(t3, 'isVisible').mockReturnValue(false);
-            t3.worldX = 20; t3.worldZ = 20;
-            
+            t3.worldX = 20;
+            t3.worldZ = 20;
+
             expect(t1.status).toBe('idle');
             expect(t2.status).toBe('idle');
             expect(t3.status).toBe('idle');

@@ -17,7 +17,9 @@ describe('getEffectiveTheme()', () => {
         vi.resetModules();
         Object.defineProperty(window, 'matchMedia', {
             writable: true,
-            value: vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn() }),
+            value: vi
+                .fn()
+                .mockReturnValue({ matches: false, addEventListener: vi.fn() }),
         });
     });
 
@@ -37,7 +39,9 @@ describe('getEffectiveTheme()', () => {
         mockState.themePreference = 'auto';
         Object.defineProperty(window, 'matchMedia', {
             writable: true,
-            value: vi.fn().mockReturnValue({ matches: true, addEventListener: vi.fn() }),
+            value: vi
+                .fn()
+                .mockReturnValue({ matches: true, addEventListener: vi.fn() }),
         });
         const { getEffectiveTheme } = await import('./theme');
         expect(getEffectiveTheme()).toBe('dark');
@@ -60,7 +64,9 @@ describe('initTheme()', () => {
         mockState.subscribe = vi.fn();
         Object.defineProperty(window, 'matchMedia', {
             writable: true,
-            value: vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn() }),
+            value: vi
+                .fn()
+                .mockReturnValue({ matches: false, addEventListener: vi.fn() }),
         });
     });
 
@@ -78,25 +84,34 @@ describe('initTheme()', () => {
     it('crée meta[name="theme-color"] si absent', async () => {
         const { initTheme } = await import('./theme');
         initTheme();
-        expect(document.querySelector('meta[name="theme-color"]')).not.toBeNull();
+        expect(
+            document.querySelector('meta[name="theme-color"]')
+        ).not.toBeNull();
     });
 
     it('définit meta theme-color sur la valeur light', async () => {
         const { initTheme } = await import('./theme');
         initTheme();
-        const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+        const meta = document.querySelector<HTMLMetaElement>(
+            'meta[name="theme-color"]'
+        );
         expect(meta?.content).toBe('#f5f5f0');
     });
 
     it('émet themeChanged au démarrage', async () => {
         const { initTheme } = await import('./theme');
         initTheme();
-        expect(mockEventBus.emit).toHaveBeenCalledWith('themeChanged', { theme: 'light' });
+        expect(mockEventBus.emit).toHaveBeenCalledWith('themeChanged', {
+            theme: 'light',
+        });
     });
 
     it('subscribe aux changements de themePreference', async () => {
         const { initTheme } = await import('./theme');
         initTheme();
-        expect(mockState.subscribe).toHaveBeenCalledWith('themePreference', expect.any(Function));
+        expect(mockState.subscribe).toHaveBeenCalledWith(
+            'themePreference',
+            expect.any(Function)
+        );
     });
 });

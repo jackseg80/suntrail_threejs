@@ -23,10 +23,10 @@ describe('PRO Logic (v5.53.6)', () => {
         });
 
         state.isPro = true;
-        
+
         // Attendre la fin de la microtask (ReactiveState utilise queueMicrotask)
-        await new Promise(resolve => queueMicrotask(() => resolve(null)));
-        
+        await new Promise((resolve) => queueMicrotask(() => resolve(null)));
+
         expect(notified).toBe(true);
     });
 });

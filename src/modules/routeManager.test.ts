@@ -43,7 +43,12 @@ import { state } from './state';
 import { computeRoute, clearRouteWaypoints } from './routingService';
 import { i18n } from '../i18n/I18nService';
 import { getPlaceName } from './geocodingService';
-import { initRouteManager, removeWaypointAt, clearRoute, scheduleGeocodeNames } from './routeManager';
+import {
+    initRouteManager,
+    removeWaypointAt,
+    clearRoute,
+    scheduleGeocodeNames,
+} from './routeManager';
 
 const mockComputeRoute = computeRoute as ReturnType<typeof vi.fn>;
 const mockClearRouteWaypoints = clearRouteWaypoints as ReturnType<typeof vi.fn>;
@@ -67,13 +72,19 @@ describe('routeManager', () => {
     describe('initRouteManager()', () => {
         it('souscrit aux changements de routeWaypoints et routeLoading', () => {
             initRouteManager();
-            expect(state.subscribe).toHaveBeenCalledWith('routeWaypoints', expect.any(Function));
-            expect(state.subscribe).toHaveBeenCalledWith('routeLoading', expect.any(Function));
+            expect(state.subscribe).toHaveBeenCalledWith(
+                'routeWaypoints',
+                expect.any(Function)
+            );
+            expect(state.subscribe).toHaveBeenCalledWith(
+                'routeLoading',
+                expect.any(Function)
+            );
         });
     });
 
     describe('removeWaypointAt()', () => {
-        it('retire le waypoint à l\'index donné', () => {
+        it("retire le waypoint à l'index donné", () => {
             state.routeWaypoints = [
                 { lat: 46.0, lon: 7.0 },
                 { lat: 46.1, lon: 7.1 },
@@ -85,8 +96,11 @@ describe('routeManager', () => {
             expect(state.routeWaypoints[1].lat).toBe(46.2);
         });
 
-        it('ne modifie pas l\'original (immutabilité)', () => {
-            const original = [{ lat: 46.0, lon: 7.0 }, { lat: 46.1, lon: 7.1 }];
+        it("ne modifie pas l'original (immutabilité)", () => {
+            const original = [
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.1, lon: 7.1 },
+            ];
             state.routeWaypoints = original;
             removeWaypointAt(0);
             expect(original).toHaveLength(2);
@@ -102,7 +116,9 @@ describe('routeManager', () => {
         it('retire la classe route-planner-active du body', () => {
             document.body.classList.add('route-planner-active');
             clearRoute();
-            expect(document.body.classList.contains('route-planner-active')).toBe(false);
+            expect(
+                document.body.classList.contains('route-planner-active')
+            ).toBe(false);
         });
     });
 
@@ -122,8 +138,9 @@ describe('routeManager', () => {
             ];
 
             // Simuler le déclenchement via le subscribe
-            const waypointCallback = (state.subscribe as ReturnType<typeof vi.fn>).mock.calls
-                .find((c: any[]) => c[0] === 'routeWaypoints')?.[1];
+            const waypointCallback = (
+                state.subscribe as ReturnType<typeof vi.fn>
+            ).mock.calls.find((c: any[]) => c[0] === 'routeWaypoints')?.[1];
             if (waypointCallback) waypointCallback();
 
             vi.advanceTimersByTime(800);
@@ -131,7 +148,9 @@ describe('routeManager', () => {
             await Promise.resolve();
 
             if (mockComputeRoute.mock.calls.length > 0) {
-                expect(mockComputeRoute).toHaveBeenCalledWith(state.routeWaypoints);
+                expect(mockComputeRoute).toHaveBeenCalledWith(
+                    state.routeWaypoints
+                );
             }
 
             vi.useRealTimers();
@@ -143,13 +162,17 @@ describe('routeManager', () => {
             state.routeWaypoints = [{ lat: 46.0, lon: 7.0 }];
             initRouteManager();
 
-            const waypointCallback = (state.subscribe as ReturnType<typeof vi.fn>).mock.calls
+            const waypointCallback = (
+                state.subscribe as ReturnType<typeof vi.fn>
+            ).mock.calls
                 .filter((c: any[]) => c[0] === 'routeWaypoints')
                 .slice(-1)[0]?.[1];
 
             if (waypointCallback) {
                 waypointCallback();
-                expect(document.body.classList.contains('route-planner-active')).toBe(true);
+                expect(
+                    document.body.classList.contains('route-planner-active')
+                ).toBe(true);
             }
         });
 
@@ -158,13 +181,17 @@ describe('routeManager', () => {
             state.routeWaypoints = [];
             initRouteManager();
 
-            const waypointCallback = (state.subscribe as ReturnType<typeof vi.fn>).mock.calls
+            const waypointCallback = (
+                state.subscribe as ReturnType<typeof vi.fn>
+            ).mock.calls
                 .filter((c: any[]) => c[0] === 'routeWaypoints')
                 .slice(-1)[0]?.[1];
 
             if (waypointCallback) {
                 waypointCallback();
-                expect(document.body.classList.contains('route-planner-active')).toBe(false);
+                expect(
+                    document.body.classList.contains('route-planner-active')
+                ).toBe(false);
             }
         });
     });
@@ -180,7 +207,9 @@ describe('routeManager', () => {
                 </div>`;
 
             initRouteManager();
-            const routeLoadingCallback = (state.subscribe as ReturnType<typeof vi.fn>).mock.calls
+            const routeLoadingCallback = (
+                state.subscribe as ReturnType<typeof vi.fn>
+            ).mock.calls
                 .filter((c: any[]) => c[0] === 'routeLoading')
                 .slice(-1)[0]?.[1];
 
@@ -202,7 +231,9 @@ describe('routeManager', () => {
                 </div>`;
 
             initRouteManager();
-            const waypointCallback = (state.subscribe as ReturnType<typeof vi.fn>).mock.calls
+            const waypointCallback = (
+                state.subscribe as ReturnType<typeof vi.fn>
+            ).mock.calls
                 .filter((c: any[]) => c[0] === 'routeWaypoints')
                 .slice(-1)[0]?.[1];
 

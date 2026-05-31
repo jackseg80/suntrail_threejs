@@ -8,16 +8,23 @@ import { i18n } from '../i18n/I18nService';
 /**
  * Détecte les informations du GPU
  */
-export function getGpuInfo(): { renderer: string, vendor: string } {
+export function getGpuInfo(): { renderer: string; vendor: string } {
     const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    const gl =
+        canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     if (!gl) return { renderer: 'Unknown', vendor: 'Unknown' };
-    
-    const debugInfo = (gl as WebGLRenderingContext).getExtension('WEBGL_debug_renderer_info');
+
+    const debugInfo = (gl as WebGLRenderingContext).getExtension(
+        'WEBGL_debug_renderer_info'
+    );
     if (!debugInfo) return { renderer: 'Unknown', vendor: 'Unknown' };
-    
-    let renderer = (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-    let vendor = (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+
+    let renderer = (gl as WebGLRenderingContext).getParameter(
+        debugInfo.UNMASKED_RENDERER_WEBGL
+    );
+    const vendor = (gl as WebGLRenderingContext).getParameter(
+        debugInfo.UNMASKED_VENDOR_WEBGL
+    );
 
     if (renderer.includes('ANGLE')) {
         const parts = renderer.split(', ');
@@ -34,35 +41,46 @@ export function detectBestPreset(): PresetType {
     const gpu = getGpuInfo().renderer.toLowerCase();
 
     if (gpu.includes('adreno') && /8[0-9][0-9]/.test(gpu)) return 'ultra';
-    if (gpu.includes('apple m'))                        return 'ultra';
-    if (gpu.includes('rtx'))                            return 'ultra';
-    if (gpu.includes('arc a'))                          return 'ultra';
-    if (/radeon rx [5-9]\d{3}/.test(gpu))              return 'ultra';
-    if (/radeon rx [45][7-9]\d/.test(gpu))             return 'ultra';
-    if (/gtx\s*1[0-9][6-9]\d/.test(gpu))              return 'ultra';
-    if (/gtx\s*10[6-9]\d/.test(gpu))                  return 'ultra';
+    if (gpu.includes('apple m')) return 'ultra';
+    if (gpu.includes('rtx')) return 'ultra';
+    if (gpu.includes('arc a')) return 'ultra';
+    if (/radeon rx [5-9]\d{3}/.test(gpu)) return 'ultra';
+    if (/radeon rx [45][7-9]\d/.test(gpu)) return 'ultra';
+    if (/gtx\s*1[0-9][6-9]\d/.test(gpu)) return 'ultra';
+    if (/gtx\s*10[6-9]\d/.test(gpu)) return 'ultra';
 
     if (gpu.includes('adreno') && /7[45]\d/.test(gpu)) return 'performance';
     if (gpu.includes('adreno') && /7[0-3]\d/.test(gpu)) return 'performance';
-    if (gpu.includes('apple'))                          return 'performance';
-    if (gpu.includes('mali') && /g7[89]|g710|g715/.test(gpu)) return 'performance';
-    if (/gtx\s*105\d/.test(gpu))                      return 'performance';
-    if (/gtx\s*9[78]\d/.test(gpu))                    return 'performance';
-    if (/radeon rx [45][4-6]\d/.test(gpu))             return 'performance';
-    if (gpu.includes('radeon') && gpu.includes('r9'))  return 'performance';
-    if (gpu.includes('iris') && gpu.includes('xe'))    return 'performance';
+    if (gpu.includes('apple')) return 'performance';
+    if (gpu.includes('mali') && /g7[89]|g710|g715/.test(gpu))
+        return 'performance';
+    if (/gtx\s*105\d/.test(gpu)) return 'performance';
+    if (/gtx\s*9[78]\d/.test(gpu)) return 'performance';
+    if (/radeon rx [45][4-6]\d/.test(gpu)) return 'performance';
+    if (gpu.includes('radeon') && gpu.includes('r9')) return 'performance';
+    if (gpu.includes('iris') && gpu.includes('xe')) return 'performance';
 
-    if (gpu.includes('adreno') && /6[0-9]\d|7[0-2]\d/.test(gpu)) return 'balanced';
+    if (gpu.includes('adreno') && /6[0-9]\d|7[0-2]\d/.test(gpu))
+        return 'balanced';
     if (gpu.includes('mali') && /g68|g76|g57|g72/.test(gpu)) return 'balanced';
-    if (gpu.includes('mali') && (navigator.hardwareConcurrency || 0) >= 8) return 'balanced';
-    if (/gtx\s*9[56]\d/.test(gpu))                    return 'balanced';
+    if (gpu.includes('mali') && (navigator.hardwareConcurrency || 0) >= 8)
+        return 'balanced';
+    if (/gtx\s*9[56]\d/.test(gpu)) return 'balanced';
     if (gpu.includes('radeon') && gpu.includes('vega')) return 'balanced';
-    if (gpu.includes('radeon') && gpu.includes('r7'))  return 'balanced';
+    if (gpu.includes('radeon') && gpu.includes('r7')) return 'balanced';
     if (gpu.includes('radeon') && !gpu.includes('rx')) return 'balanced';
-    if (gpu.includes('intel') && /(?:hd|uhd)[\s()]*(?:graphics[\s()]*)?6\d\d/.test(gpu)) return 'balanced';
-    if (gpu.includes('intel') && /(?:hd|uhd)[\s()]*(?:graphics[\s()]*)?5[2-9]\d/.test(gpu)) return 'balanced';
-    if (gpu.includes('iris'))                          return 'balanced';
-    if ((navigator.hardwareConcurrency || 0) >= 8)    return 'balanced';
+    if (
+        gpu.includes('intel') &&
+        /(?:hd|uhd)[\s()]*(?:graphics[\s()]*)?6\d\d/.test(gpu)
+    )
+        return 'balanced';
+    if (
+        gpu.includes('intel') &&
+        /(?:hd|uhd)[\s()]*(?:graphics[\s()]*)?5[2-9]\d/.test(gpu)
+    )
+        return 'balanced';
+    if (gpu.includes('iris')) return 'balanced';
+    if ((navigator.hardwareConcurrency || 0) >= 8) return 'balanced';
 
     return 'eco';
 }
@@ -81,7 +99,7 @@ export function applyPreset(preset: PresetType): void {
 
     const settings = PRESETS[preset];
     state.PERFORMANCE_PRESET = preset;
-    
+
     state.RESOLUTION = settings.RESOLUTION;
     state.RANGE = settings.RANGE;
     state.SHADOWS = settings.SHADOWS;
@@ -91,7 +109,7 @@ export function applyPreset(preset: PresetType): void {
     state.SHOW_BUILDINGS = settings.SHOW_BUILDINGS;
     state.SHOW_HYDROLOGY = settings.SHOW_HYDROLOGY;
     state.SHOW_SLOPES = settings.SHOW_SLOPES;
-    
+
     state.VEGETATION_DENSITY = settings.VEGETATION_DENSITY;
     state.VEGETATION_CAST_SHADOW = settings.VEGETATION_CAST_SHADOW;
     state.BUILDINGS_SHADOWS = settings.BUILDINGS_SHADOWS;
@@ -108,11 +126,12 @@ export function applyPreset(preset: PresetType): void {
     state.WEATHER_SPEED = settings.WEATHER_SPEED;
     state.FOG_FAR = settings.FOG_FAR;
 
-    const isMobilePreset = /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
+    const isMobilePreset =
+        /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
     if (isMobilePreset) {
         if (preset === 'ultra') {
             if (state.SHADOW_RES > 2048) state.SHADOW_RES = 2048;
-            if (state.RANGE > 8)         state.RANGE = 8;
+            if (state.RANGE > 8) state.RANGE = 8;
         }
         if (state.PIXEL_RATIO_LIMIT > 2.0) state.PIXEL_RATIO_LIMIT = 2.0;
         trimCache();
@@ -129,13 +148,16 @@ export function applyPreset(preset: PresetType): void {
 
     document.body.classList.toggle('mode-2d', state.IS_2D_MODE);
     document.body.classList.toggle('preset-eco', preset === 'eco');
-    document.body.classList.toggle('high-quality-ui', preset === 'performance' || preset === 'ultra');
+    document.body.classList.toggle(
+        'high-quality-ui',
+        preset === 'performance' || preset === 'ultra'
+    );
 
     if (state.sunLight) {
         state.sunLight.castShadow = state.SHADOWS;
         updateShadowMapResolution();
     }
-    
+
     if (state.renderer) {
         state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
     }
@@ -143,7 +165,7 @@ export function applyPreset(preset: PresetType): void {
     updatePerformanceUI(preset);
     refreshTerrain(true);
     refreshTracks();
-    
+
     setTimeout(() => refreshTracks(), 500);
 
     saveSettings();
@@ -155,25 +177,30 @@ export function applyPreset(preset: PresetType): void {
  */
 export function applyCustomSettings(settings: any): void {
     state.PERFORMANCE_PRESET = 'custom';
-    
+
     if (settings.RESOLUTION) state.RESOLUTION = settings.RESOLUTION;
     if (settings.RANGE) state.RANGE = settings.RANGE;
     if (settings.SHADOWS !== undefined) state.SHADOWS = settings.SHADOWS;
-    if (settings.SHOW_VEGETATION !== undefined) state.SHOW_VEGETATION = settings.SHOW_VEGETATION;
-    if (settings.VEGETATION_DENSITY !== undefined) state.VEGETATION_DENSITY = settings.VEGETATION_DENSITY;
-    if (settings.SHOW_WEATHER !== undefined) state.SHOW_WEATHER = settings.SHOW_WEATHER;
-    if (settings.WEATHER_DENSITY !== undefined) state.WEATHER_DENSITY = settings.WEATHER_DENSITY;
-    if (settings.WEATHER_SPEED !== undefined) state.WEATHER_SPEED = settings.WEATHER_SPEED;
+    if (settings.SHOW_VEGETATION !== undefined)
+        state.SHOW_VEGETATION = settings.SHOW_VEGETATION;
+    if (settings.VEGETATION_DENSITY !== undefined)
+        state.VEGETATION_DENSITY = settings.VEGETATION_DENSITY;
+    if (settings.SHOW_WEATHER !== undefined)
+        state.SHOW_WEATHER = settings.SHOW_WEATHER;
+    if (settings.WEATHER_DENSITY !== undefined)
+        state.WEATHER_DENSITY = settings.WEATHER_DENSITY;
+    if (settings.WEATHER_SPEED !== undefined)
+        state.WEATHER_SPEED = settings.WEATHER_SPEED;
     if (settings.FOG_FAR !== undefined) state.FOG_FAR = settings.FOG_FAR;
 
     updatePerformanceUI('custom');
     document.body.classList.remove('high-quality-ui');
-    
+
     if (state.sunLight) {
         state.sunLight.castShadow = state.SHADOWS;
         updateShadowMapResolution();
     }
-    
+
     if (state.renderer) {
         state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
     }
@@ -211,8 +238,7 @@ export function checkPerformanceThrottle(fps: number): void {
             }
             lowFpsCount = 0;
         }
-    } 
-    else if (fps >= 40 && isDynamicallyThrottled) {
+    } else if (fps >= 40 && isDynamicallyThrottled) {
         highFpsCount++;
         lowFpsCount = 0;
 
@@ -222,8 +248,7 @@ export function checkPerformanceThrottle(fps: number): void {
             isDynamicallyThrottled = false;
             highFpsCount = 0;
         }
-    }
-    else {
+    } else {
         lowFpsCount = 0;
         highFpsCount = 0;
     }
@@ -234,16 +259,22 @@ export function checkPerformanceThrottle(fps: number): void {
  */
 export function initBatteryManager(): void {
     if ('getBattery' in navigator) {
-        (navigator as any).getBattery().then((battery: any) => {
-            const checkBattery = () => {
-                if (battery.level < 0.20 && state.PERFORMANCE_PRESET !== 'eco') {
-                    showToast(i18n.t('preset.lowBattery'));
-                    applyPreset('eco');
-                }
-            };
-            battery.addEventListener('levelchange', checkBattery);
-            checkBattery();
-        }).catch(() => {});
+        (navigator as any)
+            .getBattery()
+            .then((battery: any) => {
+                const checkBattery = () => {
+                    if (
+                        battery.level < 0.2 &&
+                        state.PERFORMANCE_PRESET !== 'eco'
+                    ) {
+                        showToast(i18n.t('preset.lowBattery'));
+                        applyPreset('eco');
+                    }
+                };
+                battery.addEventListener('levelchange', checkBattery);
+                checkBattery();
+            })
+            .catch(() => {});
     }
 }
 
@@ -252,21 +283,35 @@ export function initBatteryManager(): void {
  */
 export function updatePerformanceUI(preset: PresetType): void {
     const resSlider = document.getElementById('res-slider') as HTMLInputElement;
-    const rangeSlider = document.getElementById('range-slider') as HTMLInputElement;
-    const shadowToggle = document.getElementById('shadow-toggle') as HTMLInputElement;
+    const rangeSlider = document.getElementById(
+        'range-slider'
+    ) as HTMLInputElement;
+    const shadowToggle = document.getElementById(
+        'shadow-toggle'
+    ) as HTMLInputElement;
     const vegToggle = document.getElementById('veg-toggle') as HTMLInputElement;
     const poiToggle = document.getElementById('poi-toggle') as HTMLInputElement;
-    const buildingsToggle = document.getElementById('buildings-toggle') as HTMLInputElement;
-    const hydroToggle = document.getElementById('hydro-toggle') as HTMLInputElement;
-    const vegDensitySlider = document.getElementById('veg-density-slider') as HTMLInputElement;
-    
+    const buildingsToggle = document.getElementById(
+        'buildings-toggle'
+    ) as HTMLInputElement;
+    const hydroToggle = document.getElementById(
+        'hydro-toggle'
+    ) as HTMLInputElement;
+    const vegDensitySlider = document.getElementById(
+        'veg-density-slider'
+    ) as HTMLInputElement;
+
     const resDisp = document.getElementById('res-disp');
     const rangeDisp = document.getElementById('range-disp');
     const vegDensityDisp = document.getElementById('veg-density-disp');
 
-    const weatherDensitySlider = document.getElementById('weather-density-slider') as HTMLInputElement;
+    const weatherDensitySlider = document.getElementById(
+        'weather-density-slider'
+    ) as HTMLInputElement;
     const weatherDensityDisp = document.getElementById('weather-density-disp');
-    const weatherSpeedSlider = document.getElementById('weather-speed-slider') as HTMLInputElement;
+    const weatherSpeedSlider = document.getElementById(
+        'weather-speed-slider'
+    ) as HTMLInputElement;
     const weatherSpeedDisp = document.getElementById('weather-speed-disp');
 
     if (resDisp) resDisp.textContent = state.RESOLUTION.toString();
@@ -278,23 +323,31 @@ export function updatePerformanceUI(preset: PresetType): void {
     if (poiToggle) poiToggle.checked = state.SHOW_SIGNPOSTS;
     if (buildingsToggle) buildingsToggle.checked = state.SHOW_BUILDINGS;
     if (hydroToggle) hydroToggle.checked = state.SHOW_HYDROLOGY;
-    
-    const slopesToggle = document.getElementById('slopes-toggle') as HTMLInputElement;
-    if (slopesToggle) slopesToggle.checked = state.SHOW_SLOPES;
-    
-    if (vegDensitySlider) vegDensitySlider.value = state.VEGETATION_DENSITY.toString();
-    if (vegDensityDisp) vegDensityDisp.textContent = state.VEGETATION_DENSITY.toString();
 
-    if (weatherDensitySlider) weatherDensitySlider.value = state.WEATHER_DENSITY.toString();
-    if (weatherDensityDisp) weatherDensityDisp.textContent = state.WEATHER_DENSITY.toString();
-    if (weatherSpeedSlider) weatherSpeedSlider.value = state.WEATHER_SPEED.toString();
-    if (weatherSpeedDisp) weatherSpeedDisp.textContent = state.WEATHER_SPEED.toFixed(1);
+    const slopesToggle = document.getElementById(
+        'slopes-toggle'
+    ) as HTMLInputElement;
+    if (slopesToggle) slopesToggle.checked = state.SHOW_SLOPES;
+
+    if (vegDensitySlider)
+        vegDensitySlider.value = state.VEGETATION_DENSITY.toString();
+    if (vegDensityDisp)
+        vegDensityDisp.textContent = state.VEGETATION_DENSITY.toString();
+
+    if (weatherDensitySlider)
+        weatherDensitySlider.value = state.WEATHER_DENSITY.toString();
+    if (weatherDensityDisp)
+        weatherDensityDisp.textContent = state.WEATHER_DENSITY.toString();
+    if (weatherSpeedSlider)
+        weatherSpeedSlider.value = state.WEATHER_SPEED.toString();
+    if (weatherSpeedDisp)
+        weatherSpeedDisp.textContent = state.WEATHER_SPEED.toFixed(1);
 
     const fogSlider = document.getElementById('fog-slider') as HTMLInputElement;
     if (fogSlider) fogSlider.value = (state.FOG_FAR / 1000).toString();
 
     const buttons = document.querySelectorAll('.preset-btn');
-    buttons.forEach(btn => {
+    buttons.forEach((btn) => {
         if (btn.getAttribute('data-preset') === preset) {
             btn.classList.add('active');
         } else {

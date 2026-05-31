@@ -4,8 +4,8 @@ import { LocationPoint } from './geo';
 
 export interface TrackStats {
     distance: number; // en km
-    dPlus: number;    // en m
-    dMinus: number;   // en m
+    dPlus: number; // en m
+    dMinus: number; // en m
     estimatedTime?: number; // en minutes (Méthode Munter)
 }
 
@@ -14,10 +14,13 @@ export interface TrackStats {
  * Formule : (Distance + D+/100) / 4 = Temps en heures pour un marcheur moyen.
  * Retourne le temps en minutes.
  */
-export function calculateEstimatedTime(distance: number, dPlus: number): number {
+export function calculateEstimatedTime(
+    distance: number,
+    dPlus: number
+): number {
     if (distance <= 0) return 0;
     // 1 effort-km = 1 km horizontal ou 100m vertical
-    const effortKm = distance + (dPlus / 100);
+    const effortKm = distance + dPlus / 100;
     // Vitesse moyenne : 4 effort-km / heure
     const hours = effortKm / 4;
     return Math.round(hours * 60);
@@ -29,7 +32,10 @@ export function calculateEstimatedTime(distance: number, dPlus: number): number 
  * @param elevations Tableau des altitudes en mètres.
  * @param threshold Seuil d'hystérésis en mètres (défaut: 5m).
  */
-export function calculateHysteresis(elevations: number[], threshold: number = 5): { dPlus: number, dMinus: number } {
+export function calculateHysteresis(
+    elevations: number[],
+    threshold: number = 5
+): { dPlus: number; dMinus: number } {
     if (elevations.length < 2) {
         return { dPlus: 0, dMinus: 0 };
     }
@@ -58,7 +64,10 @@ export function calculateHysteresis(elevations: number[], threshold: number = 5)
  * Calcule les statistiques d'un tracé GPS avec un algorithme d'hystérésis
  * Seuil par défaut : 5 mètres (v5.29.28 - compromis robustesse/précision)
  */
-export function calculateTrackStats(points: LocationPoint[], threshold: number = 5): TrackStats {
+export function calculateTrackStats(
+    points: LocationPoint[],
+    threshold: number = 5
+): TrackStats {
     // v5.28.2: Utilisation de la source de vérité unique pour le nettoyage
     const uniquePoints = cleanGPSTrack(points);
 
@@ -73,7 +82,10 @@ export function calculateTrackStats(points: LocationPoint[], threshold: number =
         distance += haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
     }
 
-    const { dPlus, dMinus } = calculateHysteresis(uniquePoints.map(p => p.alt), threshold);
+    const { dPlus, dMinus } = calculateHysteresis(
+        uniquePoints.map((p) => p.alt),
+        threshold
+    );
     const estimatedTime = calculateEstimatedTime(distance, dPlus);
 
     return { distance, dPlus, dMinus, estimatedTime };

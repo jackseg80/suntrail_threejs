@@ -9,7 +9,12 @@ import { STORAGE_KEYS } from '../constants/storage';
 import type { GPXHistoryEntry } from './gpxHistoryService';
 import type { GPXRawData } from './gpxTypes';
 
-export type PresetType = 'eco' | 'balanced' | 'performance' | 'ultra' | 'custom';
+export type PresetType =
+    | 'eco'
+    | 'balanced'
+    | 'performance'
+    | 'ultra'
+    | 'custom';
 
 export interface GPXLayer {
     id: string;
@@ -36,7 +41,11 @@ export interface RouteWaypoint {
     name?: string;
 }
 
-export type RoutingProfile = 'foot-hiking' | 'foot-walking' | 'cycling-regular' | 'cycling-mountain';
+export type RoutingProfile =
+    | 'foot-hiking'
+    | 'foot-walking'
+    | 'cycling-regular'
+    | 'cycling-mountain';
 
 export const GPX_COLORS = [
     '#0066ff', // Blue (Vivid)
@@ -46,7 +55,7 @@ export const GPX_COLORS = [
     '#ff007f', // Pink (Vivid)
     '#00e5ff', // Cyan (Vivid)
     '#ffff00', // Yellow (Neon)
-    '#ff0000'  // Red (Vivid)
+    '#ff0000', // Red (Vivid)
 ];
 
 export interface PerformanceSettings {
@@ -59,55 +68,128 @@ export interface PerformanceSettings {
     SHOW_SIGNPOSTS: boolean;
     SHOW_BUILDINGS: boolean;
     SHOW_HYDROLOGY: boolean;
-    BUILDINGS_SHADOWS: boolean; 
-    MAX_ALLOWED_ZOOM: number;    
-    VEGETATION_DENSITY: number;  
+    BUILDINGS_SHADOWS: boolean;
+    MAX_ALLOWED_ZOOM: number;
+    VEGETATION_DENSITY: number;
     VEGETATION_CAST_SHADOW: boolean;
-    BUILDING_LIMIT: number;      
-    POI_ZOOM_THRESHOLD: number;  
-    BUILDING_ZOOM_THRESHOLD: number; 
-    MAX_BUILDS_PER_CYCLE: number; 
-    LOAD_DELAY_FACTOR: number;   
-    SHOW_WEATHER: boolean;       
-    WEATHER_DENSITY: number;     
-    WEATHER_SPEED: number;       
-    FOG_FAR: number;             
+    BUILDING_LIMIT: number;
+    POI_ZOOM_THRESHOLD: number;
+    BUILDING_ZOOM_THRESHOLD: number;
+    MAX_BUILDS_PER_CYCLE: number;
+    LOAD_DELAY_FACTOR: number;
+    SHOW_WEATHER: boolean;
+    WEATHER_DENSITY: number;
+    WEATHER_SPEED: number;
+    FOG_FAR: number;
     SHOW_SLOPES: boolean;
 }
 
-export const PRESETS: Record<Exclude<PresetType, 'custom'>, PerformanceSettings> = {
+export const PRESETS: Record<
+    Exclude<PresetType, 'custom'>,
+    PerformanceSettings
+> = {
     eco: {
-        RESOLUTION: 2, RANGE: 3, SHADOWS: false, SHADOW_RES: 128, PIXEL_RATIO_LIMIT: 1.0,
-        SHOW_VEGETATION: false, SHOW_SIGNPOSTS: false, SHOW_BUILDINGS: false, SHOW_HYDROLOGY: false, BUILDINGS_SHADOWS: false,
-        MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 0, BUILDING_LIMIT: 0, POI_ZOOM_THRESHOLD: 16, BUILDING_ZOOM_THRESHOLD: 17,
-        MAX_BUILDS_PER_CYCLE: 2, LOAD_DELAY_FACTOR: 2.0, SHOW_WEATHER: false, WEATHER_DENSITY: 0, WEATHER_SPEED: 1.0,
-        FOG_FAR: 25000, SHOW_SLOPES: false, VEGETATION_CAST_SHADOW: false
+        RESOLUTION: 2,
+        RANGE: 3,
+        SHADOWS: false,
+        SHADOW_RES: 128,
+        PIXEL_RATIO_LIMIT: 1.0,
+        SHOW_VEGETATION: false,
+        SHOW_SIGNPOSTS: false,
+        SHOW_BUILDINGS: false,
+        SHOW_HYDROLOGY: false,
+        BUILDINGS_SHADOWS: false,
+        MAX_ALLOWED_ZOOM: 18,
+        VEGETATION_DENSITY: 0,
+        BUILDING_LIMIT: 0,
+        POI_ZOOM_THRESHOLD: 16,
+        BUILDING_ZOOM_THRESHOLD: 17,
+        MAX_BUILDS_PER_CYCLE: 2,
+        LOAD_DELAY_FACTOR: 2.0,
+        SHOW_WEATHER: false,
+        WEATHER_DENSITY: 0,
+        WEATHER_SPEED: 1.0,
+        FOG_FAR: 25000,
+        SHOW_SLOPES: false,
+        VEGETATION_CAST_SHADOW: false,
     },
     balanced: {
-        RESOLUTION: 64, RANGE: 5, SHADOWS: true, SHADOW_RES: 512, PIXEL_RATIO_LIMIT: 1.2,
-        SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: true, BUILDINGS_SHADOWS: false,
-        MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 1500, VEGETATION_CAST_SHADOW: false,
-        BUILDING_LIMIT: 40, POI_ZOOM_THRESHOLD: 15, BUILDING_ZOOM_THRESHOLD: 16,
-        MAX_BUILDS_PER_CYCLE: 4, LOAD_DELAY_FACTOR: 1.2, SHOW_WEATHER: true, WEATHER_DENSITY: 1000,
-        WEATHER_SPEED: 1.0, FOG_FAR: 40000, SHOW_SLOPES: false
+        RESOLUTION: 64,
+        RANGE: 5,
+        SHADOWS: true,
+        SHADOW_RES: 512,
+        PIXEL_RATIO_LIMIT: 1.2,
+        SHOW_VEGETATION: true,
+        SHOW_SIGNPOSTS: true,
+        SHOW_BUILDINGS: true,
+        SHOW_HYDROLOGY: true,
+        BUILDINGS_SHADOWS: false,
+        MAX_ALLOWED_ZOOM: 18,
+        VEGETATION_DENSITY: 1500,
+        VEGETATION_CAST_SHADOW: false,
+        BUILDING_LIMIT: 40,
+        POI_ZOOM_THRESHOLD: 15,
+        BUILDING_ZOOM_THRESHOLD: 16,
+        MAX_BUILDS_PER_CYCLE: 4,
+        LOAD_DELAY_FACTOR: 1.2,
+        SHOW_WEATHER: true,
+        WEATHER_DENSITY: 1000,
+        WEATHER_SPEED: 1.0,
+        FOG_FAR: 40000,
+        SHOW_SLOPES: false,
     },
     performance: {
-        RESOLUTION: 160, RANGE: 6, SHADOWS: true, SHADOW_RES: 1024, PIXEL_RATIO_LIMIT: 1.5,
-        SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: true, BUILDINGS_SHADOWS: true,
-        MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 5000, VEGETATION_CAST_SHADOW: true,
-        BUILDING_LIMIT: 80, POI_ZOOM_THRESHOLD: 15, BUILDING_ZOOM_THRESHOLD: 16,
-        MAX_BUILDS_PER_CYCLE: 6, LOAD_DELAY_FACTOR: 0.5, SHOW_WEATHER: true, WEATHER_DENSITY: 5000, WEATHER_SPEED: 1.2,
-        FOG_FAR: 60000, SHOW_SLOPES: false
+        RESOLUTION: 160,
+        RANGE: 6,
+        SHADOWS: true,
+        SHADOW_RES: 1024,
+        PIXEL_RATIO_LIMIT: 1.5,
+        SHOW_VEGETATION: true,
+        SHOW_SIGNPOSTS: true,
+        SHOW_BUILDINGS: true,
+        SHOW_HYDROLOGY: true,
+        BUILDINGS_SHADOWS: true,
+        MAX_ALLOWED_ZOOM: 18,
+        VEGETATION_DENSITY: 5000,
+        VEGETATION_CAST_SHADOW: true,
+        BUILDING_LIMIT: 80,
+        POI_ZOOM_THRESHOLD: 15,
+        BUILDING_ZOOM_THRESHOLD: 16,
+        MAX_BUILDS_PER_CYCLE: 6,
+        LOAD_DELAY_FACTOR: 0.5,
+        SHOW_WEATHER: true,
+        WEATHER_DENSITY: 5000,
+        WEATHER_SPEED: 1.2,
+        FOG_FAR: 60000,
+        SHOW_SLOPES: false,
     },
     ultra: {
-        get PIXEL_RATIO_LIMIT() { return typeof window !== 'undefined' ? window.devicePixelRatio : 1; },
-        RESOLUTION: 256, RANGE: 12, SHADOWS: true, SHADOW_RES: 4096,
-        SHOW_VEGETATION: true, SHOW_SIGNPOSTS: true, SHOW_BUILDINGS: true, SHOW_HYDROLOGY: true, BUILDINGS_SHADOWS: true,
-        MAX_ALLOWED_ZOOM: 18, VEGETATION_DENSITY: 8000, VEGETATION_CAST_SHADOW: true,
-        BUILDING_LIMIT: 250, POI_ZOOM_THRESHOLD: 15, BUILDING_ZOOM_THRESHOLD: 15,
-        MAX_BUILDS_PER_CYCLE: 12, LOAD_DELAY_FACTOR: 0.2, SHOW_WEATHER: true, WEATHER_DENSITY: 15000, WEATHER_SPEED: 1.5,
-        FOG_FAR: 100000, SHOW_SLOPES: false
-    } as PerformanceSettings
+        get PIXEL_RATIO_LIMIT() {
+            return typeof window !== 'undefined' ? window.devicePixelRatio : 1;
+        },
+        RESOLUTION: 256,
+        RANGE: 12,
+        SHADOWS: true,
+        SHADOW_RES: 4096,
+        SHOW_VEGETATION: true,
+        SHOW_SIGNPOSTS: true,
+        SHOW_BUILDINGS: true,
+        SHOW_HYDROLOGY: true,
+        BUILDINGS_SHADOWS: true,
+        MAX_ALLOWED_ZOOM: 18,
+        VEGETATION_DENSITY: 8000,
+        VEGETATION_CAST_SHADOW: true,
+        BUILDING_LIMIT: 250,
+        POI_ZOOM_THRESHOLD: 15,
+        BUILDING_ZOOM_THRESHOLD: 15,
+        MAX_BUILDS_PER_CYCLE: 12,
+        LOAD_DELAY_FACTOR: 0.2,
+        SHOW_WEATHER: true,
+        WEATHER_DENSITY: 15000,
+        WEATHER_SPEED: 1.5,
+        FOG_FAR: 100000,
+        SHOW_SLOPES: false,
+    } as PerformanceSettings,
 };
 
 export interface Peak {
@@ -171,7 +253,7 @@ export interface State {
     sunLight: THREE.DirectionalLight | null;
     ambientLight: THREE.AmbientLight | null;
     sky: Sky | null;
-    stats: any | null; 
+    stats: any | null;
     vramPanel: VRAMDashboard | null;
     simDate: Date;
     isSunAnimating: boolean;
@@ -183,12 +265,26 @@ export interface State {
     WEATHER_DENSITY: number;
     WEATHER_SPEED: number;
     weatherData: {
-        temp: number; apparentTemp: number; windSpeed: number; windDir: number;
+        temp: number;
+        apparentTemp: number;
+        windSpeed: number;
+        windDir: number;
         windDirDeg?: number;
-        windGusts?: number; dewPoint?: number;
-        humidity: number; cloudCover: number; locationName?: string;
-        freezingLevel?: number; uvIndex?: number; visibility?: number; precProb?: number;
-        hourly?: { time: string; temp: number; code: number; precip?: number }[];
+        windGusts?: number;
+        dewPoint?: number;
+        humidity: number;
+        cloudCover: number;
+        locationName?: string;
+        freezingLevel?: number;
+        uvIndex?: number;
+        visibility?: number;
+        precProb?: number;
+        hourly?: {
+            time: string;
+            temp: number;
+            code: number;
+            precip?: number;
+        }[];
         daily?: {
             date: string;
             tempMax: number;
@@ -204,8 +300,13 @@ export interface State {
     } | null;
     weatherUnavailable: boolean;
     ephemeris: {
-        sunrise: string; sunset: string; goldenHour: string; blueHour: string;
-        moonPhaseText: string; moonPhaseIcon: string; moonIllum: number;
+        sunrise: string;
+        sunset: string;
+        goldenHour: string;
+        blueHour: string;
+        moonPhaseText: string;
+        moonPhaseIcon: string;
+        moonIllum: number;
     } | null;
     localPeaks: Peak[];
     gpxLayers: GPXLayer[];
@@ -269,12 +370,28 @@ const initialState: State = {
     lang: 'fr',
     themePreference: 'auto',
     ENERGY_SAVER: false,
-    MK: '', MAP_SOURCE: 'swisstopo', hasManualSource: false,
-    PERFORMANCE_PRESET: 'balanced', RESOLUTION: PRESETS.balanced.RESOLUTION, RANGE: PRESETS.balanced.RANGE,
-    PIXEL_RATIO_LIMIT: PRESETS.balanced.PIXEL_RATIO_LIMIT, LOAD_DELAY_FACTOR: PRESETS.balanced.LOAD_DELAY_FACTOR,
-    SHOW_TRAILS: false, SHOW_SLOPES: false, SHOW_SIGNPOSTS: PRESETS.balanced.SHOW_SIGNPOSTS,
-    SHOW_BUILDINGS: PRESETS.balanced.SHOW_BUILDINGS, SHOW_HYDROLOGY: PRESETS.balanced.SHOW_HYDROLOGY, SHOW_VEGETATION: true, SHOW_WEATHER: PRESETS.balanced.SHOW_WEATHER, SHOW_WEATHER_PRO: true,
-    SHOW_DEBUG: true, SHOW_STATS: false, SHOW_INCLINOMETER: true, USE_WORKERS: true, SHADOWS: PRESETS.balanced.SHADOWS, SHADOW_RES: PRESETS.balanced.SHADOW_RES,
+    MK: '',
+    MAP_SOURCE: 'swisstopo',
+    hasManualSource: false,
+    PERFORMANCE_PRESET: 'balanced',
+    RESOLUTION: PRESETS.balanced.RESOLUTION,
+    RANGE: PRESETS.balanced.RANGE,
+    PIXEL_RATIO_LIMIT: PRESETS.balanced.PIXEL_RATIO_LIMIT,
+    LOAD_DELAY_FACTOR: PRESETS.balanced.LOAD_DELAY_FACTOR,
+    SHOW_TRAILS: false,
+    SHOW_SLOPES: false,
+    SHOW_SIGNPOSTS: PRESETS.balanced.SHOW_SIGNPOSTS,
+    SHOW_BUILDINGS: PRESETS.balanced.SHOW_BUILDINGS,
+    SHOW_HYDROLOGY: PRESETS.balanced.SHOW_HYDROLOGY,
+    SHOW_VEGETATION: true,
+    SHOW_WEATHER: PRESETS.balanced.SHOW_WEATHER,
+    SHOW_WEATHER_PRO: true,
+    SHOW_DEBUG: true,
+    SHOW_STATS: false,
+    SHOW_INCLINOMETER: true,
+    USE_WORKERS: true,
+    SHADOWS: PRESETS.balanced.SHADOWS,
+    SHADOW_RES: PRESETS.balanced.SHADOW_RES,
     VEGETATION_DENSITY: PRESETS.balanced.VEGETATION_DENSITY,
     VEGETATION_CAST_SHADOW: PRESETS.balanced.VEGETATION_CAST_SHADOW,
     BUILDINGS_SHADOWS: PRESETS.balanced.BUILDINGS_SHADOWS,
@@ -284,21 +401,44 @@ const initialState: State = {
     MAX_BUILDS_PER_CYCLE: PRESETS.balanced.MAX_BUILDS_PER_CYCLE,
     MAX_ALLOWED_ZOOM: PRESETS.balanced.MAX_ALLOWED_ZOOM,
 
-    TARGET_LAT: 46.8182, TARGET_LON: 8.2275, initialLat: 46.8182, initialLon: 8.2275,
-    ZOOM: 6, RELIEF_EXAGGERATION: 2.0, FOG_NEAR: 5000, FOG_FAR: 40000,
+    TARGET_LAT: 46.8182,
+    TARGET_LON: 8.2275,
+    initialLat: 46.8182,
+    initialLon: 8.2275,
+    ZOOM: 6,
+    RELIEF_EXAGGERATION: 2.0,
+    FOG_NEAR: 5000,
+    FOG_FAR: 40000,
     originTile: { x: 0, y: 0, z: 6 },
-    scene: null, camera: null, renderer: null, controls: null, sunLight: null, ambientLight: null, sky: null,
-    stats: null, vramPanel: null,
-    simDate: new Date(), isSunAnimating: false, animationSpeed: 1.0,
-    lastWeatherLat: 0, lastWeatherLon: 0, currentWeather: 'clear', weatherIntensity: 0,
-    WEATHER_DENSITY: PRESETS.balanced.WEATHER_DENSITY, WEATHER_SPEED: PRESETS.balanced.WEATHER_SPEED,
-    weatherData: null, weatherUnavailable: false, ephemeris: null,
+    scene: null,
+    camera: null,
+    renderer: null,
+    controls: null,
+    sunLight: null,
+    ambientLight: null,
+    sky: null,
+    stats: null,
+    vramPanel: null,
+    simDate: new Date(),
+    isSunAnimating: false,
+    animationSpeed: 1.0,
+    lastWeatherLat: 0,
+    lastWeatherLon: 0,
+    currentWeather: 'clear',
+    weatherIntensity: 0,
+    WEATHER_DENSITY: PRESETS.balanced.WEATHER_DENSITY,
+    WEATHER_SPEED: PRESETS.balanced.WEATHER_SPEED,
+    weatherData: null,
+    weatherUnavailable: false,
+    ephemeris: null,
     localPeaks: [],
     gpxLayers: [],
     gpxHistory: [],
     activeGPXLayerId: null,
     recordedMesh: null,
-    profileMarker: null, trailProgress: 0, isFollowingTrail: false,
+    profileMarker: null,
+    trailProgress: 0,
+    isFollowingTrail: false,
     isFlyingTo: false,
     isTiltTransitioning: false,
     isRecording: false,
@@ -307,7 +447,11 @@ const initialState: State = {
     currentCourseId: null,
     recordedPoints: [],
     recoveredPoints: null,
-    userLocation: null, userLocationAccuracy: null, userHeading: null, isFollowingUser: false, userMarker: null,
+    userLocation: null,
+    userLocationAccuracy: null,
+    userHeading: null,
+    isFollowingUser: false,
+    userMarker: null,
     smoothUserPos: new THREE.Vector3(),
     smoothUserHeading: 0,
     lastTrackingUpdate: 0,
@@ -315,8 +459,15 @@ const initialState: State = {
     isNetworkAvailable: true,
     connectionType: 'unknown',
     isMapTilerDisabled: false,
-    networkRequests: 0, cacheHits: 0, uiVisible: true, isInteractingWithUI: false, isUserInteracting: false,
-    isProcessingTiles: false, IS_2D_MODE: true, currentFPS: 0, lastUIInteraction: Date.now(),
+    networkRequests: 0,
+    cacheHits: 0,
+    uiVisible: true,
+    isInteractingWithUI: false,
+    isUserInteracting: false,
+    isProcessingTiles: false,
+    IS_2D_MODE: true,
+    currentFPS: 0,
+    lastUIInteraction: Date.now(),
     benchmarkResults: null,
     lastClickedCoords: { x: 0, z: 0, alt: 0 },
     hasLastClicked: false,
@@ -398,12 +549,12 @@ export function saveSettings(): void {
             IS_2D_MODE: state.IS_2D_MODE,
             LAST_LAT: state.TARGET_LAT,
             LAST_LON: state.TARGET_LON,
-            LAST_ZOOM: state.ZOOM
+            LAST_ZOOM: state.ZOOM,
         };
         try {
             localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsToSave));
         } catch (e) {
-            console.warn("Could not save settings to localStorage:", e);
+            console.warn('Could not save settings to localStorage:', e);
         }
         saveTimeout = null;
     }, 300);
@@ -413,9 +564,12 @@ const PRO_KEY = STORAGE_KEYS.PRO;
 
 export function saveProStatus(): void {
     try {
-        localStorage.setItem(PRO_KEY, JSON.stringify({ 
-            isPro: state.isPro
-        }));
+        localStorage.setItem(
+            PRO_KEY,
+            JSON.stringify({
+                isPro: state.isPro,
+            })
+        );
     } catch (e) {
         console.warn('[State] Could not save pro status:', e);
     }
@@ -447,27 +601,34 @@ export function loadSettings(): SavedSettings | null {
             return null;
         }
         if (parsed.lang) state.lang = parsed.lang;
-        if (parsed.themePreference) state.themePreference = parsed.themePreference;
+        if (parsed.themePreference)
+            state.themePreference = parsed.themePreference;
         state.MAP_SOURCE = parsed.MAP_SOURCE;
         state.ENERGY_SAVER = !!parsed.ENERGY_SAVER;
         state.SHOW_TRAILS = !!parsed.SHOW_TRAILS;
         state.SHOW_SLOPES = !!parsed.SHOW_SLOPES;
-        if (parsed.IS_2D_MODE !== undefined) state.IS_2D_MODE = !!parsed.IS_2D_MODE;
+        if (parsed.IS_2D_MODE !== undefined)
+            state.IS_2D_MODE = !!parsed.IS_2D_MODE;
         if (parsed.PERFORMANCE_PRESET === 'custom') {
             state.SHOW_SIGNPOSTS = !!parsed.SHOW_SIGNPOSTS;
             state.SHOW_BUILDINGS = !!parsed.SHOW_BUILDINGS;
             state.SHOW_HYDROLOGY = !!parsed.SHOW_HYDROLOGY;
             state.SHOW_VEGETATION = !!parsed.SHOW_VEGETATION;
             state.SHOW_WEATHER = !!parsed.SHOW_WEATHER;
-            if (parsed.SHOW_WEATHER_PRO !== undefined) state.SHOW_WEATHER_PRO = !!parsed.SHOW_WEATHER_PRO;
-            if (parsed.SHOW_INCLINOMETER !== undefined) state.SHOW_INCLINOMETER = !!parsed.SHOW_INCLINOMETER;
+            if (parsed.SHOW_WEATHER_PRO !== undefined)
+                state.SHOW_WEATHER_PRO = !!parsed.SHOW_WEATHER_PRO;
+            if (parsed.SHOW_INCLINOMETER !== undefined)
+                state.SHOW_INCLINOMETER = !!parsed.SHOW_INCLINOMETER;
             state.SHADOWS = !!parsed.SHADOWS;
             if (parsed.RESOLUTION) state.RESOLUTION = parsed.RESOLUTION;
             if (parsed.RANGE) state.RANGE = parsed.RANGE;
             if (parsed.FOG_FAR) state.FOG_FAR = parsed.FOG_FAR;
-            if (parsed.VEGETATION_DENSITY !== undefined) state.VEGETATION_DENSITY = parsed.VEGETATION_DENSITY;
-            if (parsed.WEATHER_DENSITY !== undefined) state.WEATHER_DENSITY = parsed.WEATHER_DENSITY;
-            if (parsed.WEATHER_SPEED !== undefined) state.WEATHER_SPEED = parsed.WEATHER_SPEED;
+            if (parsed.VEGETATION_DENSITY !== undefined)
+                state.VEGETATION_DENSITY = parsed.VEGETATION_DENSITY;
+            if (parsed.WEATHER_DENSITY !== undefined)
+                state.WEATHER_DENSITY = parsed.WEATHER_DENSITY;
+            if (parsed.WEATHER_SPEED !== undefined)
+                state.WEATHER_SPEED = parsed.WEATHER_SPEED;
         }
         if (parsed.LAST_LAT !== undefined) {
             state.TARGET_LAT = parsed.LAST_LAT;
@@ -494,15 +655,15 @@ import { worldToLngLat } from './geo';
 
 export function saveLastView(): void {
     if (!state.controls || !state.camera) return;
-    
+
     // On prend la cible des contrôles comme centre de la vue
     const target = state.controls.target;
     const gps = worldToLngLat(target.x, target.z, state.originTile);
-    
+
     state.TARGET_LAT = gps.lat;
     state.TARGET_LON = gps.lon;
-    state.ZOOM = state.ZOOM; // Déjà à jour via les événements de zoom
-    
+    // ZOOM already up to date via zoom events
+
     saveSettings();
 }
 

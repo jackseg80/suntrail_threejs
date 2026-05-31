@@ -42,7 +42,9 @@ export class PacksSheet extends BaseComponent {
         // Listen for pack status changes
         const onStatusChanged = () => this.renderPackList();
         eventBus.on('packStatusChanged', onStatusChanged);
-        this.subscriptions.push(() => eventBus.off('packStatusChanged', onStatusChanged));
+        this.subscriptions.push(() =>
+            eventBus.off('packStatusChanged', onStatusChanged)
+        );
 
         // Initial render — retenter le fetch catalog si pas encore chargé
         void this.loadAndRender();
@@ -84,14 +86,19 @@ export class PacksSheet extends BaseComponent {
 
         const card = document.createElement('div');
         card.className = 'pack-card';
-        card.style.cssText = 'padding:var(--space-3); margin-bottom:var(--space-3); background:var(--glass-bg); border-radius:var(--radius-lg); border:1px solid var(--glass-border);';
+        card.style.cssText =
+            'padding:var(--space-3); margin-bottom:var(--space-3); background:var(--glass-bg); border-radius:var(--radius-lg); border:1px solid var(--glass-border);';
 
         // Header: flag + name + size
-        const flag = meta.regionCheck === 'switzerland' ? '\u{1f1e8}\u{1f1ed}' : '\u{1f1eb}\u{1f1f7}';
+        const flag =
+            meta.regionCheck === 'switzerland'
+                ? '\u{1f1e8}\u{1f1ed}'
+                : '\u{1f1eb}\u{1f1f7}';
         const name = meta.name[lang] || meta.name['fr'] || meta.id;
 
         const header = document.createElement('div');
-        header.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-2);';
+        header.style.cssText =
+            'display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-2);';
         header.innerHTML = `
             <div style="display:flex; align-items:center; gap:var(--space-2);">
                 <span style="font-size:24px;">${flag}</span>
@@ -107,41 +114,50 @@ export class PacksSheet extends BaseComponent {
         // Description
         const descKey = `packs.description.${meta.id}`;
         const desc = document.createElement('div');
-        desc.style.cssText = 'font-size:var(--text-xs); color:var(--text-3); margin-bottom:var(--space-2);';
+        desc.style.cssText =
+            'font-size:var(--text-xs); color:var(--text-3); margin-bottom:var(--space-2);';
         desc.textContent = i18n.t(descKey);
         card.appendChild(desc);
 
         // Status & action button
         const actions = document.createElement('div');
-        actions.style.cssText = 'display:flex; align-items:center; gap:var(--space-2);';
+        actions.style.cssText =
+            'display:flex; align-items:center; gap:var(--space-2);';
 
         if (status === 'not_purchased') {
-            const buyBtn = this.createButton('packs.btn.buy', 'var(--accent, #3b7ef8)');
+            const buyBtn = this.createButton(
+                'packs.btn.buy',
+                'var(--accent, #3b7ef8)'
+            );
             buyBtn.addEventListener('click', () => this.handleBuy(meta.id));
             // Afficher le prix (natif + web)
-            void iapService.getPackPrice(meta.id).then(price => {
-                if (price !== '—') buyBtn.textContent = `${i18n.t('packs.btn.buy')} ${price}`;
+            void iapService.getPackPrice(meta.id).then((price) => {
+                if (price !== '—')
+                    buyBtn.textContent = `${i18n.t('packs.btn.buy')} ${price}`;
             });
             actions.appendChild(buyBtn);
-
         } else if (status === 'purchased') {
             // Pack acheté = streaming CDN (réseau requis, pas de copie locale)
             const badge = document.createElement('span');
-            badge.style.cssText = 'color:#f59e0b; font-size:var(--text-sm); font-weight:600;';
+            badge.style.cssText =
+                'color:#f59e0b; font-size:var(--text-sm); font-weight:600;';
             badge.textContent = i18n.t('packs.status.online');
             actions.appendChild(badge);
 
             // Bouton download pour mode offline
-            const dlBtn = this.createButton('packs.btn.download', 'var(--accent, #3b7ef8)');
+            const dlBtn = this.createButton(
+                'packs.btn.download',
+                'var(--accent, #3b7ef8)'
+            );
             dlBtn.style.marginLeft = 'auto';
             dlBtn.addEventListener('click', () => this.handleDownload(meta.id));
             actions.appendChild(dlBtn);
-
         } else if (status === 'downloading') {
             // Progress bar
             const progress = ps?.downloadProgress ?? 0;
             const bar = document.createElement('div');
-            bar.style.cssText = 'flex:1; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden;';
+            bar.style.cssText =
+                'flex:1; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden;';
             const fill = document.createElement('div');
             fill.id = `pack-progress-${meta.id}`;
             fill.style.cssText = `height:100%; background:var(--accent, #3b7ef8); border-radius:3px; width:${Math.round(progress * 100)}%; transition:width 0.3s;`;
@@ -150,19 +166,22 @@ export class PacksSheet extends BaseComponent {
 
             const pct = document.createElement('span');
             pct.id = `pack-pct-${meta.id}`;
-            pct.style.cssText = 'font-size:var(--text-xs); color:var(--text-2); min-width:35px; text-align:right;';
+            pct.style.cssText =
+                'font-size:var(--text-xs); color:var(--text-2); min-width:35px; text-align:right;';
             pct.textContent = `${Math.round(progress * 100)}%`;
             actions.appendChild(pct);
 
             const cancelBtn = this.createButton('packs.btn.cancel', '#ef4444');
             cancelBtn.style.padding = 'var(--space-1) var(--space-2)';
             cancelBtn.style.fontSize = 'var(--text-xs)';
-            cancelBtn.addEventListener('click', () => packManager.cancelDownload(meta.id));
+            cancelBtn.addEventListener('click', () =>
+                packManager.cancelDownload(meta.id)
+            );
             actions.appendChild(cancelBtn);
-
         } else if (status === 'installed') {
             const badge = document.createElement('span');
-            badge.style.cssText = 'color:#22c55e; font-size:var(--text-sm); font-weight:600;';
+            badge.style.cssText =
+                'color:#22c55e; font-size:var(--text-sm); font-weight:600;';
             badge.textContent = `\u2713 ${i18n.t('packs.status.installed')}`;
             actions.appendChild(badge);
 
@@ -170,27 +189,35 @@ export class PacksSheet extends BaseComponent {
             delBtn.style.marginLeft = 'auto';
             delBtn.addEventListener('click', () => this.handleDelete(meta.id));
             actions.appendChild(delBtn);
-
         } else if (status === 'update_available') {
             const badge = document.createElement('span');
             badge.style.cssText = 'color:#f97316; font-size:var(--text-xs);';
             badge.textContent = i18n.t('packs.status.updateAvailable');
             actions.appendChild(badge);
 
-            const updateBtn = this.createButton('packs.btn.update', 'var(--accent, #3b7ef8)');
+            const updateBtn = this.createButton(
+                'packs.btn.update',
+                'var(--accent, #3b7ef8)'
+            );
             updateBtn.style.marginLeft = 'auto';
-            updateBtn.addEventListener('click', () => this.handleDownload(meta.id));
+            updateBtn.addEventListener('click', () =>
+                this.handleDownload(meta.id)
+            );
             actions.appendChild(updateBtn);
-
         } else if (status === 'error') {
             const errMsg = document.createElement('span');
             errMsg.style.cssText = 'color:#ef4444; font-size:var(--text-xs);';
             errMsg.textContent = i18n.t('packs.status.error');
             actions.appendChild(errMsg);
 
-            const retryBtn = this.createButton('packs.btn.retry', 'var(--accent, #3b7ef8)');
+            const retryBtn = this.createButton(
+                'packs.btn.retry',
+                'var(--accent, #3b7ef8)'
+            );
             retryBtn.style.marginLeft = 'auto';
-            retryBtn.addEventListener('click', () => this.handleDownload(meta.id));
+            retryBtn.addEventListener('click', () =>
+                this.handleDownload(meta.id)
+            );
             actions.appendChild(retryBtn);
         }
 
@@ -209,7 +236,8 @@ export class PacksSheet extends BaseComponent {
     private renderFallbackList(container: Element): void {
         // When catalog is not loaded, show minimal info
         const fallback = document.createElement('div');
-        fallback.style.cssText = 'text-align:center; padding:var(--space-4); color:var(--text-3); font-size:var(--text-sm);';
+        fallback.style.cssText =
+            'text-align:center; padding:var(--space-4); color:var(--text-3); font-size:var(--text-sm);';
         fallback.textContent = i18n.t('packs.error.catalogFailed');
         container.appendChild(fallback);
     }
@@ -239,8 +267,12 @@ export class PacksSheet extends BaseComponent {
         void haptic('medium');
         await packManager.downloadPack(packId, (progress) => {
             // Update progress bar in real-time
-            const fill = this.element?.querySelector(`#pack-progress-${packId}`) as HTMLElement;
-            const pct = this.element?.querySelector(`#pack-pct-${packId}`) as HTMLElement;
+            const fill = this.element?.querySelector(
+                `#pack-progress-${packId}`
+            ) as HTMLElement;
+            const pct = this.element?.querySelector(
+                `#pack-pct-${packId}`
+            ) as HTMLElement;
             if (fill) fill.style.width = `${Math.round(progress * 100)}%`;
             if (pct) pct.textContent = `${Math.round(progress * 100)}%`;
         });
@@ -268,7 +300,10 @@ export class PacksSheet extends BaseComponent {
             const ps = packManager.getPackState(meta.id);
             // v5.28.2 : Seuls 'installed' et 'update_available' occupent de l'espace disque.
             // 'purchased' signifie que le pack est disponible en streaming (0 MB local).
-            if (ps && (ps.status === 'installed' || ps.status === 'update_available')) {
+            if (
+                ps &&
+                (ps.status === 'installed' || ps.status === 'update_available')
+            ) {
                 installedMB += meta.sizeMB;
             }
         }
@@ -284,7 +319,10 @@ export class PacksSheet extends BaseComponent {
 
         if (installedMB > 0 || downloadingMB > 0) {
             const total = installedMB + downloadingMB;
-            const suffix = downloadingMB > 0 ? ` (${i18n.t('packs.status.downloading').toLowerCase()}...)` : '';
+            const suffix =
+                downloadingMB > 0
+                    ? ` (${i18n.t('packs.status.downloading').toLowerCase()}...)`
+                    : '';
             valueEl.textContent = `${total} MB${suffix}`;
         } else {
             valueEl.textContent = i18n.t('packs.storageEmpty');

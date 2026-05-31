@@ -8,7 +8,7 @@ import type { RouteSolarAnalysis } from './solarRoute';
 
 interface ProfilePoint {
     dist: number; // Distance cumulée en km
-    ele: number;  // Altitude en m
+    ele: number; // Altitude en m
     pos: THREE.Vector3; // Position 3D correspondante
     slope: number; // Pente locale en %
 }
@@ -19,11 +19,14 @@ let _solarBandData: RouteSolarAnalysis | null = null;
 export function setSolarBandData(analysis: RouteSolarAnalysis | null): void {
     _solarBandData = analysis;
     drawProfileSVG();
-    const btn = document.getElementById('profile-solar-btn') as HTMLButtonElement | null;
+    const btn = document.getElementById(
+        'profile-solar-btn'
+    ) as HTMLButtonElement | null;
     if (btn) {
         btn.textContent = '☀️ Analyse';
         btn.style.display = analysis ? 'inline-flex' : 'none';
-        btn.onclick = () => window.dispatchEvent(new CustomEvent('openSolarProbeSheet'));
+        btn.onclick = () =>
+            window.dispatchEvent(new CustomEvent('openSolarProbeSheet'));
     }
 }
 
@@ -32,10 +35,12 @@ export function setSolarBandData(analysis: RouteSolarAnalysis | null): void {
  */
 function resolveActiveLayer(layerId?: string): GPXLayer | null {
     if (layerId) {
-        return state.gpxLayers.find(l => l.id === layerId) || null;
+        return state.gpxLayers.find((l) => l.id === layerId) || null;
     }
     if (state.activeGPXLayerId) {
-        return state.gpxLayers.find(l => l.id === state.activeGPXLayerId) || null;
+        return (
+            state.gpxLayers.find((l) => l.id === state.activeGPXLayerId) || null
+        );
     }
     return state.gpxLayers.length > 0 ? state.gpxLayers[0] : null;
 }
@@ -44,7 +49,10 @@ function resolveActiveLayer(layerId?: string): GPXLayer | null {
  * Initialise et dessine le profil d'altitude à partir des données GPX
  * v5.24.3: Fix mismatch entre points originaux et points densifiés 3D
  */
-export function updateElevationProfile(layerId?: string, opts?: { noOpen?: boolean }): void {
+export function updateElevationProfile(
+    layerId?: string,
+    opts?: { noOpen?: boolean }
+): void {
     const layer = resolveActiveLayer(layerId);
     if (!layer || !layer.points.length) {
         closeElevationProfile();
@@ -52,56 +60,64 @@ export function updateElevationProfile(layerId?: string, opts?: { noOpen?: boole
     }
 
     const gpxPoints3D = layer.points;
-    if (state.DEBUG_MODE) console.log('[Profile] Points count:', gpxPoints3D.length);
+    if (state.DEBUG_MODE)
+        console.log('[Profile] Points count:', gpxPoints3D.length);
 
     // v5.29.32: Utiliser en priorité les données GPX brutes pour l'altitude
     // avec un mapping correct de l'index pour supporter les points densifiés.
     const rawPoints = layer.rawData?.tracks?.[0]?.points || [];
-    const hasRawEle = rawPoints.length > 0 && typeof rawPoints[0].ele === 'number';
+    const hasRawEle =
+        rawPoints.length > 0 && typeof rawPoints[0].ele === 'number';
 
     profileData = [];
     let cumulativeDist = 0;
     const elevations: number[] = [];
 
     // Détecter si les données brutes ont une élévation réelle (OSRM → ele=0 partout)
-    const maxRawEle = rawPoints.reduce((max: number, p: any) => Math.max(max, (p.ele || 0), (p.alt || 0)), 0);
+    const maxRawEle = rawPoints.reduce(
+        (max: number, p: any) => Math.max(max, p.ele || 0, p.alt || 0),
+        0
+    );
     const useRawEle = hasRawEle && maxRawEle > 0;
 
     for (let i = 0; i < gpxPoints3D.length; i++) {
         const pos = gpxPoints3D[i];
         let slope = 0;
-        
+
         // Altitude : priorité au raw si élévation réelle, sinon Y monde drapé
-        let ele = 0;
+        let ele: number;
         if (useRawEle) {
-            const rawIdx = Math.min(rawPoints.length - 1, Math.floor((i / gpxPoints3D.length) * rawPoints.length));
+            const rawIdx = Math.min(
+                rawPoints.length - 1,
+                Math.floor((i / gpxPoints3D.length) * rawPoints.length)
+            );
             ele = rawPoints[rawIdx].ele || rawPoints[rawIdx].alt || 0;
         } else {
             const h = getAltitudeAt(pos.x, pos.z);
             ele = Math.max(0, h / state.RELIEF_EXAGGERATION);
         }
-        
+
         elevations.push(ele);
-        
+
         if (i > 0) {
-            const prevPos = gpxPoints3D[i-1];
+            const prevPos = gpxPoints3D[i - 1];
             const dx = pos.x - prevPos.x;
             const dz = pos.z - prevPos.z;
-            const d2d = Math.sqrt(dx*dx + dz*dz); 
-            cumulativeDist += d2d / 1000; 
+            const d2d = Math.sqrt(dx * dx + dz * dz);
+            cumulativeDist += d2d / 1000;
 
-            const prevEle = profileData[i-1].ele;
+            const prevEle = profileData[i - 1].ele;
             const diff = ele - prevEle;
             if (d2d > 0.1) {
                 slope = (diff / d2d) * 100;
             }
         }
-        
+
         profileData.push({
             dist: cumulativeDist,
             ele: ele,
             pos: pos,
-            slope: slope
+            slope: slope,
         });
     }
 
@@ -124,12 +140,12 @@ export function updateElevationProfile(layerId?: string, opts?: { noOpen?: boole
     const displayDist = layer.stats?.distance ?? cumulativeDist;
     const displayDPlus = layer.stats?.dPlus ?? dPlus;
     const displayDMinus = layer.stats?.dMinus ?? dMinus;
-    
+
     updateStatsUI(displayDist, displayDPlus, displayDMinus);
 
     drawProfileSVG();
     setupProfileInteractions();
-    
+
     const profileEl = document.getElementById('elevation-profile');
     if (profileEl) {
         if (opts?.noOpen) {
@@ -148,28 +164,33 @@ function updateStatsUI(dist: number, dPlus: number, dMinus: number): void {
     const pEl = document.getElementById('gpx-dplus');
     const mEl = document.getElementById('gpx-dminus');
     const profileInfo = document.getElementById('profile-info');
-    
+
     if (dEl) dEl.textContent = `${dist.toFixed(2)} km`;
     if (pEl) pEl.textContent = `${Math.round(dPlus)} m D+`;
     if (mEl) mEl.textContent = `${Math.round(dMinus)} m D-`;
-    
+
     if (profileInfo) {
         profileInfo.textContent = `Distance : ${dist.toFixed(2)}km | D+ : ${Math.round(dPlus)}m | D- : ${Math.round(dMinus)}m`;
     }
-    
+
     if (!state.isRecording) {
         const trackDist = document.getElementById('track-dist');
         const trackDplus = document.getElementById('track-dplus');
         const trackDminus = document.getElementById('track-dminus');
-        
-        if (trackDist) trackDist.innerHTML = `${dist.toFixed(2)} <span style="font-size:13px;color:var(--text-2)">km</span>`;
-        if (trackDplus) trackDplus.innerHTML = `+${Math.round(dPlus)} <span style="font-size:12px">m</span>`;
-        if (trackDminus) trackDminus.innerHTML = `−${Math.round(dMinus)} <span style="font-size:12px">m</span>`;
+
+        if (trackDist)
+            trackDist.innerHTML = `${dist.toFixed(2)} <span style="font-size:13px;color:var(--text-2)">km</span>`;
+        if (trackDplus)
+            trackDplus.innerHTML = `+${Math.round(dPlus)} <span style="font-size:12px">m</span>`;
+        if (trackDminus)
+            trackDminus.innerHTML = `−${Math.round(dMinus)} <span style="font-size:12px">m</span>`;
     }
 }
 
 export function drawProfileSVG(): void {
-    const svg = document.getElementById('profile-svg') as unknown as SVGSVGElement;
+    const svg = document.getElementById(
+        'profile-svg'
+    ) as unknown as SVGSVGElement;
     if (!svg || profileData.length === 0) return;
 
     // v5.40.28: S'assurer que le conteneur est en display:block pour avoir une largeur réelle
@@ -182,26 +203,29 @@ export function drawProfileSVG(): void {
     const height = svg.clientHeight || 100; // v5.51.4: Base 100px
 
     const maxDist = profileData[profileData.length - 1].dist;
-    const altitudes = profileData.map(p => p.ele);
+    const altitudes = profileData.map((p) => p.ele);
     const minEle = Math.min(...altitudes);
     const maxEle = Math.max(...altitudes);
-    const eleRange = (maxEle - minEle) || 1;
+    const eleRange = maxEle - minEle || 1;
 
     // v5.51.4: Marges asymétriques pour laisser de la place à la bande solaire en bas
     const padTop = 15;
-    const padBottom = _solarBandData ? 24 : 10; 
+    const padBottom = _solarBandData ? 24 : 10;
     const usableHeight = height - padTop - padBottom;
 
-    let pointsStr = "";
+    let pointsStr = '';
     profileData.forEach((p, i) => {
         const x = (p.dist / maxDist) * width;
-        const y = height - (padBottom + ((p.ele - minEle) / eleRange) * usableHeight);
+        const y =
+            height - (padBottom + ((p.ele - minEle) / eleRange) * usableHeight);
         pointsStr += `${i === 0 ? 'M' : 'L'} ${x} ${y} `;
     });
 
     const areaStr = pointsStr + `L ${width} ${height} L 0 ${height} Z`;
 
-    const solarBand = _solarBandData ? buildSolarBandSVG(_solarBandData, width, height) : '';
+    const solarBand = _solarBandData
+        ? buildSolarBandSVG(_solarBandData, width, height)
+        : '';
 
     svg.innerHTML = `
         <defs>
@@ -216,7 +240,11 @@ export function drawProfileSVG(): void {
     `;
 }
 
-function buildSolarBandSVG(analysis: RouteSolarAnalysis, width: number, height: number): string {
+function buildSolarBandSVG(
+    analysis: RouteSolarAnalysis,
+    width: number,
+    height: number
+): string {
     const BAND_H = 12;
     const BAND_Y = height - BAND_H - 4; // v5.51.4: Un peu d'air par rapport au bord bas
     const totalKm = analysis.totalKm || 1;
@@ -231,10 +259,13 @@ function buildSolarBandSVG(analysis: RouteSolarAnalysis, width: number, height: 
         const x2 = (pNext.distKm / totalKm) * width;
         const segW = Math.max(1, x2 - x1);
 
-        const fill = p.isNight   ? 'rgba(10,15,30,0.6)'
-                   : p.inShadow  ? 'rgba(71,85,120,0.8)'
-                   : p.inForest  ? 'rgba(30,100,50,0.8)'
-                   : 'rgba(245,166,35,0.85)';
+        const fill = p.isNight
+            ? 'rgba(10,15,30,0.6)'
+            : p.inShadow
+              ? 'rgba(71,85,120,0.8)'
+              : p.inForest
+                ? 'rgba(30,100,50,0.8)'
+                : 'rgba(245,166,35,0.85)';
         segments += `<rect x="${x1.toFixed(1)}" y="${BAND_Y}" width="${segW.toFixed(1)}" height="${BAND_H}" fill="${fill}"/>`;
     }
     return bgRect + segments;
@@ -260,23 +291,28 @@ function setupProfileInteractions(): void {
     if (!state.profileMarker) {
         // v5.53.7 : Réduction de la taille de base (40 -> 6) car l'échelle est maintenant adaptative
         const geo = new THREE.SphereGeometry(6, 32, 32);
-        const mat = new THREE.MeshStandardMaterial({ 
-            color: 0x00ffff, 
-            emissive: 0x00ffff, 
-            emissiveIntensity: 3, 
+        const mat = new THREE.MeshStandardMaterial({
+            color: 0x00ffff,
+            emissive: 0x00ffff,
+            emissiveIntensity: 3,
             roughness: 0,
             metalness: 1,
             depthTest: false,
-            transparent: true 
+            transparent: true,
         });
         state.profileMarker = new THREE.Mesh(geo, mat);
 
         // Contour noir proportionnel
         const outlineGeo = new THREE.SphereGeometry(7.2, 32, 32);
-        const outlineMat = new THREE.MeshBasicMaterial({ color: 0x000000, depthTest: false, transparent: true, opacity: 0.5 });
+        const outlineMat = new THREE.MeshBasicMaterial({
+            color: 0x000000,
+            depthTest: false,
+            transparent: true,
+            opacity: 0.5,
+        });
         const outline = new THREE.Mesh(outlineGeo, outlineMat);
         state.profileMarker.add(outline);
-        
+
         state.profileMarker.renderOrder = 9999;
         state.profileMarker.visible = false;
         if (state.scene) state.scene.add(state.profileMarker);
@@ -297,30 +333,47 @@ function setupProfileInteractions(): void {
         _keepAliveRaf = requestAnimationFrame(tick);
     }
     function stopKeepAlive() {
-        if (_keepAliveRaf !== null) { cancelAnimationFrame(_keepAliveRaf); _keepAliveRaf = null; }
-        if (_profileTimer) { clearTimeout(_profileTimer); _profileTimer = null; }
-        _profileTimer = setTimeout(() => { state.isInteractingWithUI = false; }, 150);
+        if (_keepAliveRaf !== null) {
+            cancelAnimationFrame(_keepAliveRaf);
+            _keepAliveRaf = null;
+        }
+        if (_profileTimer) {
+            clearTimeout(_profileTimer);
+            _profileTimer = null;
+        }
+        _profileTimer = setTimeout(() => {
+            state.isInteractingWithUI = false;
+        }, 150);
     }
 
     function setInteracting() {
-        if (_profileTimer) { clearTimeout(_profileTimer); _profileTimer = null; }
+        if (_profileTimer) {
+            clearTimeout(_profileTimer);
+            _profileTimer = null;
+        }
         state.isInteractingWithUI = true;
     }
 
     const onMove = (e: MouseEvent | TouchEvent) => {
         setInteracting(); // Maintenir le renderer actif (évite le Deep Sleep en 2D)
         const rect = container.getBoundingClientRect();
-        const clientX = (e as MouseEvent).clientX || (e as TouchEvent).touches[0]?.clientX || 0;
+        const clientX =
+            (e as MouseEvent).clientX ||
+            (e as TouchEvent).touches[0]?.clientX ||
+            0;
         const x = clientX - rect.left;
         const width = rect.width;
-        
+
         const ratio = THREE.MathUtils.clamp(x / width, 0, 1);
         const maxDist = profileData[profileData.length - 1].dist;
         const targetDist = ratio * maxDist;
-        
+
         let point = profileData[0];
         for (let i = 1; i < profileData.length; i++) {
-            if (Math.abs(profileData[i].dist - targetDist) < Math.abs(point.dist - targetDist)) {
+            if (
+                Math.abs(profileData[i].dist - targetDist) <
+                Math.abs(point.dist - targetDist)
+            ) {
                 point = profileData[i];
             }
         }
@@ -332,7 +385,10 @@ function setupProfileInteractions(): void {
         if (_solarBandData && _solarBandData.points.length > 0) {
             let closest = _solarBandData.points[0];
             for (const sp of _solarBandData.points) {
-                if (Math.abs(sp.distKm - point.dist) < Math.abs(closest.distKm - point.dist)) {
+                if (
+                    Math.abs(sp.distKm - point.dist) <
+                    Math.abs(closest.distKm - point.dist)
+                ) {
                     closest = sp;
                 }
             }
@@ -350,12 +406,14 @@ function setupProfileInteractions(): void {
             const zoom = state.ZOOM || 10;
             const exponent = Math.max(0, 18 - zoom);
             const scale = Math.pow(2, exponent);
-            
+
             state.profileMarker.scale.setScalar(scale);
 
             // Ajuster l'offset vertical proportionnellement pour que la sphère "flotte"
             // tout en restant visible (20 pixels monde à LOD 18)
-            state.profileMarker.position.copy(point.pos).add(new THREE.Vector3(0, 20 * scale, 0));
+            state.profileMarker.position
+                .copy(point.pos)
+                .add(new THREE.Vector3(0, 20 * scale, 0));
             state.profileMarker.visible = true;
         }
     };
@@ -363,7 +421,7 @@ function setupProfileInteractions(): void {
     // touch-action:none sur le container (HTML) empêche le browser de capturer le scroll
     // et déclencher pointercancel pendant le drag sur mobile
     container.addEventListener('pointerdown', startKeepAlive);
-    container.addEventListener('pointermove', onMove as EventListener);
+    container.addEventListener('pointermove', onMove);
     container.addEventListener('pointerup', stopKeepAlive);
     container.addEventListener('pointerleave', stopKeepAlive);
     container.addEventListener('pointercancel', stopKeepAlive);
@@ -371,7 +429,10 @@ function setupProfileInteractions(): void {
     container.onmouseleave = () => {
         cursor.style.display = 'none';
         if (state.profileMarker) state.profileMarker.visible = false;
-        const maxDist = profileData.length > 0 ? profileData[profileData.length - 1].dist : 0;
+        const maxDist =
+            profileData.length > 0
+                ? profileData[profileData.length - 1].dist
+                : 0;
         info.textContent = `Distance : ${maxDist.toFixed(2)}km | Alt : 0m`;
     };
 
@@ -407,7 +468,7 @@ export function closeElevationProfile(): void {
             if (child instanceof THREE.Mesh) {
                 child.geometry?.dispose();
                 if (Array.isArray(child.material)) {
-                    child.material.forEach(m => m.dispose());
+                    child.material.forEach((m) => m.dispose());
                 } else {
                     child.material?.dispose();
                 }

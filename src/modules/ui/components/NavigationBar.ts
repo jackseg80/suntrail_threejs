@@ -3,7 +3,11 @@ import { sheetManager } from '../core/SheetManager';
 import { eventBus } from '../../eventBus';
 import { i18n } from '../../../i18n/I18nService';
 import { state, saveSettings } from '../../state';
-import { rebuildActiveTiles, updateVisibleTiles, refreshTracks } from '../../terrain';
+import {
+    rebuildActiveTiles,
+    updateVisibleTiles,
+    refreshTracks,
+} from '../../terrain';
 import { haptic } from '../../haptics';
 import { forceImmediateLODUpdate } from '../../scene';
 import { updateUserMarker } from '../../location';
@@ -22,8 +26,8 @@ export class NavigationBar extends BaseComponent {
         this.element.setAttribute('role', 'tablist');
 
         const tabs = this.element.querySelectorAll('.nav-tab');
-        
-        tabs.forEach(tab => {
+
+        tabs.forEach((tab) => {
             // ARIA: each tab has role=tab and initial aria-selected
             tab.setAttribute('role', 'tab');
             tab.setAttribute('aria-selected', 'false');
@@ -40,9 +44,11 @@ export class NavigationBar extends BaseComponent {
                     this.setActiveTab(tabId);
                 }
             };
-            
+
             tab.addEventListener('click', onClick);
-            this.addSubscription(() => tab.removeEventListener('click', onClick));
+            this.addSubscription(() =>
+                tab.removeEventListener('click', onClick)
+            );
         });
 
         // Bouton 2D/3D — toggle direct (ne passe pas par SheetManager)
@@ -70,7 +76,10 @@ export class NavigationBar extends BaseComponent {
                         state.controls.target.y = 0;
                     } else {
                         // Passage 2D -> 3D : On remonte la caméra du montant de l'altitude réelle du terrain
-                        const groundH = getAltitudeAt(state.controls.target.x, state.controls.target.z);
+                        const groundH = getAltitudeAt(
+                            state.controls.target.x,
+                            state.controls.target.z
+                        );
                         state.camera.position.y += groundH;
                         state.controls.target.y = groundH;
                     }
@@ -82,7 +91,7 @@ export class NavigationBar extends BaseComponent {
                 state.isTiltTransitioning = true; // animation douce du tilt
                 document.body.classList.toggle('mode-2d', newMode);
                 syncToggleVisual();
-                
+
                 // v5.29.28 : Rafraîchir les tracés immédiatement pour réactivité visuelle (altitude 0 ou surfaceOffset)
                 refreshTracks();
 
@@ -91,15 +100,24 @@ export class NavigationBar extends BaseComponent {
                     rebuildActiveTiles();
                     if (state.controls) {
                         updateVisibleTiles(
-                            state.TARGET_LAT, state.TARGET_LON, 
+                            state.TARGET_LAT,
+                            state.TARGET_LON,
                             state.camera?.position.y || 5000,
-                            state.controls.target.x, state.controls.target.z,
+                            state.controls.target.x,
+                            state.controls.target.z,
                             true // force=true
                         );
                     } else {
-                        updateVisibleTiles(undefined, undefined, undefined, null, null, true);
+                        updateVisibleTiles(
+                            undefined,
+                            undefined,
+                            undefined,
+                            null,
+                            null,
+                            true
+                        );
                     }
-                    
+
                     // v5.28.32 : Correction du décalage visuel du marqueur utilisateur lors du switch
                     forceImmediateLODUpdate();
                     updateUserMarker();
@@ -110,7 +128,9 @@ export class NavigationBar extends BaseComponent {
             };
 
             modeToggle.addEventListener('click', onModeToggleClick);
-            this.addSubscription(() => modeToggle.removeEventListener('click', onModeToggleClick));
+            this.addSubscription(() =>
+                modeToggle.removeEventListener('click', onModeToggleClick)
+            );
 
             // Sync réactif si IS_2D_MODE change depuis ailleurs (applyPreset eco)
             const unsubIS2D = state.subscribe('IS_2D_MODE', syncToggleVisual);
@@ -167,16 +187,20 @@ export class NavigationBar extends BaseComponent {
         if (overlay) {
             const onOverlayClick = () => this.setActiveTab(null);
             overlay.addEventListener('click', onOverlayClick);
-            this.addSubscription(() => overlay.removeEventListener('click', onOverlayClick));
+            this.addSubscription(() =>
+                overlay.removeEventListener('click', onOverlayClick)
+            );
         }
 
         // Subscribe to sheet events for syncing active tab
-        const onSheetOpened = ({ id }: { id: string }) => this.syncActiveTab(id);
-        const onSheetClosed = ({ id }: { id: string | null }) => this.syncActiveTab(id);
-        
+        const onSheetOpened = ({ id }: { id: string }) =>
+            this.syncActiveTab(id);
+        const onSheetClosed = ({ id }: { id: string | null }) =>
+            this.syncActiveTab(id);
+
         eventBus.on('sheetOpened', onSheetOpened);
         eventBus.on('sheetClosed', onSheetClosed);
-        
+
         this.addSubscription(() => {
             eventBus.off('sheetOpened', onSheetOpened);
             eventBus.off('sheetClosed', onSheetClosed);
@@ -185,7 +209,9 @@ export class NavigationBar extends BaseComponent {
         // Update tab labels on locale change
         const onLocaleChanged = () => this.updateTabLabels();
         eventBus.on('localeChanged', onLocaleChanged);
-        this.addSubscription(() => eventBus.off('localeChanged', onLocaleChanged));
+        this.addSubscription(() =>
+            eventBus.off('localeChanged', onLocaleChanged)
+        );
 
         // Set initial labels and state
         this.updateTabLabels();
@@ -195,7 +221,7 @@ export class NavigationBar extends BaseComponent {
     private updateTabLabels(): void {
         if (!this.element) return;
         const tabs = this.element.querySelectorAll('.nav-tab');
-        tabs.forEach(tab => {
+        tabs.forEach((tab) => {
             const tabId = tab.getAttribute('data-tab');
             if (!tabId) return;
             const labelEl = tab.querySelector('.nav-label');
@@ -212,12 +238,14 @@ export class NavigationBar extends BaseComponent {
 
     private setActiveTab(tabId: string | null): void {
         if (!this.element) return;
-        
+
         const tabs = this.element.querySelectorAll('.nav-tab');
-        tabs.forEach(tab => {
+        tabs.forEach((tab) => {
             // Skip mode toggle — its active state is managed independently
             if (tab.id === 'nav-2d-toggle') return;
-            const isActive = !!(tabId && tab.getAttribute('data-tab') === tabId);
+            const isActive = !!(
+                tabId && tab.getAttribute('data-tab') === tabId
+            );
             if (isActive) {
                 tab.classList.add('active');
             } else {

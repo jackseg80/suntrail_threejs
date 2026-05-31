@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const { mockIap, mockAuthService } = vi.hoisted(() => ({
     mockIap: {
         isProActive: vi.fn(() => false),
-        showUpgradePrompt: vi.fn()
+        showUpgradePrompt: vi.fn(),
     },
     mockAuthService: {
         isAuthenticated: false,
@@ -13,18 +13,18 @@ const { mockIap, mockAuthService } = vi.hoisted(() => ({
         signInWithGoogle: vi.fn().mockResolvedValue(undefined),
         linkGoogleAccount: vi.fn().mockResolvedValue(undefined),
         isGoogleLinked: vi.fn(() => false),
-    }
+    },
 }));
 
 vi.mock('../../performance', () => ({
     applyPreset: vi.fn(),
     getGpuInfo: vi.fn(() => 'Mock GPU'),
-    detectBestPreset: vi.fn(() => 'balanced')
+    detectBestPreset: vi.fn(() => 'balanced'),
 }));
 
 vi.mock('../../terrain', () => ({
     updateHydrologyVisibility: vi.fn(),
-    refreshTerrain: vi.fn()
+    refreshTerrain: vi.fn(),
 }));
 
 vi.mock('../../iap', () => mockIap);
@@ -40,7 +40,7 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        
+
         document.body.innerHTML = `
             <div id="settings-panel">
                 <button id="close-panel"></button>
@@ -53,25 +53,29 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
             </div>
             <div id="sheet-container"></div>
         `;
-        
+
         sheet = new SettingsSheet();
         (sheet as any).element = document.getElementById('settings-panel');
         sheet.render();
     });
 
-    it('doit mettre à jour le state lors du changement d\'un slider', () => {
-        const slider = document.getElementById('res-slider') as HTMLInputElement;
+    it("doit mettre à jour le state lors du changement d'un slider", () => {
+        const slider = document.getElementById(
+            'res-slider'
+        ) as HTMLInputElement;
         const disp = document.getElementById('res-disp');
-        
-        slider.value = "75";
+
+        slider.value = '75';
         slider.dispatchEvent(new Event('input'));
-        
+
         expect(state.RESOLUTION).toBe(75);
-        expect(disp?.textContent).toBe("75");
+        expect(disp?.textContent).toBe('75');
     });
 
-    it('doit mettre à jour le state lors du basculement d\'un toggle', () => {
-        const toggle = document.getElementById('energy-saver-toggle') as HTMLInputElement;
+    it("doit mettre à jour le state lors du basculement d'un toggle", () => {
+        const toggle = document.getElementById(
+            'energy-saver-toggle'
+        ) as HTMLInputElement;
         toggle.checked = true;
         toggle.dispatchEvent(new Event('change'));
         expect(state.ENERGY_SAVER).toBe(true);
@@ -79,7 +83,9 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
 
     it('doit bloquer les features PRO pour les utilisateurs gratuits', () => {
         mockIap.isProActive.mockReturnValue(false);
-        const toggle = document.getElementById('inclinometer-toggle') as HTMLInputElement;
+        const toggle = document.getElementById(
+            'inclinometer-toggle'
+        ) as HTMLInputElement;
         toggle.checked = true;
         toggle.dispatchEvent(new Event('change'));
         expect(toggle.checked).toBe(false);
@@ -122,7 +128,9 @@ describe.skip('SettingsSheet - Delete Account button (RGPD)', () => {
         (sheet as any).element = document.getElementById('settings-panel');
         sheet.render();
 
-        const deleteBtn = document.getElementById('account-delete-btn') as HTMLButtonElement;
+        const deleteBtn = document.getElementById(
+            'account-delete-btn'
+        ) as HTMLButtonElement;
         expect(deleteBtn.style.display).toBe('block');
     });
 
@@ -134,7 +142,9 @@ describe.skip('SettingsSheet - Delete Account button (RGPD)', () => {
         (sheet as any).element = document.getElementById('settings-panel');
         sheet.render();
 
-        const deleteBtn = document.getElementById('account-delete-btn') as HTMLButtonElement;
+        const deleteBtn = document.getElementById(
+            'account-delete-btn'
+        ) as HTMLButtonElement;
         expect(deleteBtn.style.display).toBe('none');
     });
 });
@@ -175,7 +185,9 @@ describe.skip('SettingsSheet - Google buttons', () => {
         (sheet as any).element = document.getElementById('settings-panel');
         sheet.render();
 
-        const actionBtn = document.getElementById('account-action-btn') as HTMLButtonElement;
+        const actionBtn = document.getElementById(
+            'account-action-btn'
+        ) as HTMLButtonElement;
         await actionBtn.onclick?.(new MouseEvent('click') as any);
 
         expect(mockAuthService.signInWithGoogle).toHaveBeenCalled();
@@ -190,7 +202,9 @@ describe.skip('SettingsSheet - Google buttons', () => {
         (sheet as any).element = document.getElementById('settings-panel');
         sheet.render();
 
-        const linkBtn = document.getElementById('account-link-google-btn') as HTMLButtonElement;
+        const linkBtn = document.getElementById(
+            'account-link-google-btn'
+        ) as HTMLButtonElement;
         expect(linkBtn.style.display).toBe('flex');
     });
 
@@ -203,7 +217,9 @@ describe.skip('SettingsSheet - Google buttons', () => {
         (sheet as any).element = document.getElementById('settings-panel');
         sheet.render();
 
-        const linkBtn = document.getElementById('account-link-google-btn') as HTMLButtonElement;
+        const linkBtn = document.getElementById(
+            'account-link-google-btn'
+        ) as HTMLButtonElement;
         expect(linkBtn.style.display).toBe('none');
     });
 });

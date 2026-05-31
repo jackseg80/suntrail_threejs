@@ -16,7 +16,7 @@ vi.mock('three/examples/jsm/controls/MapControls.js', () => {
             maxPolarAngle = 0;
             update = vi.fn();
             addEventListener = vi.fn();
-        }
+        },
     };
 });
 
@@ -37,14 +37,14 @@ describe('cameraManager.ts', () => {
     it('should initialize MapControls with correct limits and position based on state.ZOOM (v5.34.2)', () => {
         const camera = new THREE.PerspectiveCamera();
         const domElement = document.createElement('div');
-        
+
         state.ZOOM = 14; // Simuler un zoom de départ sauvegardé
         const controls = initControls(camera, domElement);
-        
+
         expect(controls).toBeDefined();
-        expect(controls.maxDistance).toBe(4000000); 
+        expect(controls.maxDistance).toBe(4000000);
         expect(controls.screenSpacePanning).toBe(false); // Mode carte
-        
+
         // Vérifier la position initiale (Z14 ~ 18km)
         // Note: MapSource est 'swisstopo' par défaut dans initialState, donc boost=1.0
         expect(camera.position.y).toBe(18000);
@@ -59,22 +59,22 @@ describe('cameraManager.ts', () => {
             target: new THREE.Vector3(0, 0, 0),
             update: vi.fn(),
             minDistance: 100,
-            maxDistance: 4000000
+            maxDistance: 4000000,
         } as any;
         state.controls = controls;
-        
+
         camera.position.set(0, 10000, 10000);
-        
-        import('./cameraManager').then(m => {
+
+        import('./cameraManager').then((m) => {
             m.zoomToPoint(100, 200);
-            
+
             // On avance le temps pour voir si la position a changé
             vi.advanceTimersByTime(200);
-            
+
             expect(controls.target.x).not.toBe(0);
             expect(controls.target.z).not.toBe(0);
             expect(camera.position.y).toBeLessThan(10000); // On doit avoir zoomé
-            
+
             vi.useRealTimers();
         });
     });

@@ -6,14 +6,14 @@ vi.mock('./state', () => ({
         USE_WORKERS: true,
         IS_OFFLINE: false,
         cacheHits: 0,
-        networkRequests: 0
-    }
+        networkRequests: 0,
+    },
 }));
 
 vi.mock('./tileLoader', () => ({ updateStorageUI: vi.fn() }));
 vi.mock('./networkMonitor', () => ({
     reportNetworkFailure: vi.fn(),
-    reportNetworkSuccess: vi.fn()
+    reportNetworkSuccess: vi.fn(),
 }));
 vi.mock('./config', () => ({ rotateMapTilerKey: vi.fn(() => true) }));
 vi.mock('./tileCache', () => ({ disposeAllCachedTiles: vi.fn() }));
@@ -30,17 +30,20 @@ describe('TileWorkerManager', () => {
         state.cacheHits = 0;
         state.networkRequests = 0;
 
-        vi.stubGlobal('Worker', class {
-            onmessage: ((e: any) => void) | null = null;
-            onerror: ((e: any) => void) | null = null;
-            postMessage = vi.fn();
-            terminate = vi.fn();
-            constructor(_url: string, _options?: any) {}
-        });
+        vi.stubGlobal(
+            'Worker',
+            class {
+                onmessage: ((e: any) => void) | null = null;
+                onerror: ((e: any) => void) | null = null;
+                postMessage = vi.fn();
+                terminate = vi.fn();
+                constructor(_url: string, _options?: any) {}
+            }
+        );
 
         vi.stubGlobal('navigator', {
             hardwareConcurrency: 4,
-            userAgent: 'Mozilla/5.0'
+            userAgent: 'Mozilla/5.0',
         });
 
         // Force re-import to get fresh module with stubs
@@ -65,7 +68,7 @@ describe('TileWorkerManager', () => {
     it('should create fewer workers on mobile', async () => {
         vi.stubGlobal('navigator', {
             hardwareConcurrency: 8,
-            userAgent: 'Mozilla/5.0 (Linux; Android 13)'
+            userAgent: 'Mozilla/5.0 (Linux; Android 13)',
         });
         vi.stubGlobal('innerWidth', 375);
 

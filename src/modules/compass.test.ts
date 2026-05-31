@@ -12,11 +12,16 @@ vi.mock('three', async () => {
             render() {}
             dispose() {}
             domElement = document.createElement('canvas');
-        }
+        },
     };
 });
 
-import { initCompass, disposeCompass, isCompassAnimating, resetToNorth } from './compass';
+import {
+    initCompass,
+    disposeCompass,
+    isCompassAnimating,
+    resetToNorth,
+} from './compass';
 import { state } from './state';
 
 describe('Compass Module', () => {
@@ -24,7 +29,10 @@ describe('Compass Module', () => {
         document.body.innerHTML = '<canvas id="compass-canvas"></canvas>';
         disposeCompass();
         state.camera = new THREE.PerspectiveCamera();
-        state.controls = { target: new THREE.Vector3(), update: vi.fn() } as any;
+        state.controls = {
+            target: new THREE.Vector3(),
+            update: vi.fn(),
+        } as any;
     });
 
     it('should initialize compass if canvas is present', () => {

@@ -2,8 +2,12 @@ import { BaseComponent } from '../core/BaseComponent';
 import { Capacitor } from '@capacitor/core';
 import { state, isProActive } from '../../state';
 import {
-    deleteTerrainCache, setPMTilesSource,
-    downloadVisibleZone, getOfflineZoneCount, incrementOfflineZoneCount, estimateZoneSizeMB,
+    deleteTerrainCache,
+    setPMTilesSource,
+    downloadVisibleZone,
+    getOfflineZoneCount,
+    incrementOfflineZoneCount,
+    estimateZoneSizeMB,
 } from '../../tileLoader';
 import { activeTiles } from '../../terrain';
 import { showUpgradePrompt } from '../../iap';
@@ -29,12 +33,17 @@ export class ConnectivitySheet extends BaseComponent {
         closeBtn?.addEventListener('click', () => sheetManager.close());
 
         // Offline toggle
-        const offlineToggle = this.element.querySelector('#offline-toggle') as HTMLInputElement;
+        const offlineToggle = this.element.querySelector(
+            '#offline-toggle'
+        ) as HTMLInputElement;
         if (offlineToggle) {
             offlineToggle.checked = state.IS_OFFLINE;
             // ARIA: toggle as switch
             offlineToggle.setAttribute('role', 'switch');
-            offlineToggle.setAttribute('aria-checked', String(offlineToggle.checked));
+            offlineToggle.setAttribute(
+                'aria-checked',
+                String(offlineToggle.checked)
+            );
 
             offlineToggle.addEventListener('change', (e) => {
                 const checked = (e.target as HTMLInputElement).checked;
@@ -54,11 +63,15 @@ export class ConnectivitySheet extends BaseComponent {
 
         // Zones offline non disponibles sur web (implémentation native OPFS uniquement)
         if (!Capacitor.isNativePlatform()) {
-            const dlZoneBtn = this.element.querySelector<HTMLElement>('#conn-download-zone');
+            const dlZoneBtn = this.element.querySelector<HTMLElement>(
+                '#conn-download-zone'
+            );
             if (dlZoneBtn) dlZoneBtn.style.display = 'none';
         }
 
-        const downloadZoneBtn = this.element.querySelector('#conn-download-zone') as HTMLButtonElement | null;
+        const downloadZoneBtn = this.element.querySelector(
+            '#conn-download-zone'
+        ) as HTMLButtonElement | null;
 
         /** Met à jour le libellé du bouton avec le nombre de tuiles visibles et la taille estimée. */
         const syncDownloadBtnLabel = () => {
@@ -71,7 +84,9 @@ export class ConnectivitySheet extends BaseComponent {
             }
             const size = estimateZoneSizeMB(count);
             const zonesUsed = getOfflineZoneCount();
-            const limitStr = isProActive() ? '' : ` · ${zonesUsed}/1 ${i18n.t('connectivity.label.zonesUsed') || 'zone utilisée'}`;
+            const limitStr = isProActive()
+                ? ''
+                : ` · ${zonesUsed}/1 ${i18n.t('connectivity.label.zonesUsed') || 'zone utilisée'}`;
             span.textContent = `📥 ${count} ${i18n.t('connectivity.label.tiles') || 'tuiles'} · ${size}${limitStr}`;
         };
 
@@ -90,7 +105,11 @@ export class ConnectivitySheet extends BaseComponent {
                 return;
             }
 
-            const tiles = Array.from(activeTiles.values()).map(t => ({ tx: t.tx, ty: t.ty, zoom: t.zoom }));
+            const tiles = Array.from(activeTiles.values()).map((t) => ({
+                tx: t.tx,
+                ty: t.ty,
+                zoom: t.zoom,
+            }));
             if (tiles.length === 0) {
                 showToast('Aucune tuile visible à télécharger.');
                 return;
@@ -103,7 +122,8 @@ export class ConnectivitySheet extends BaseComponent {
 
             try {
                 await downloadVisibleZone(tiles, (done, total) => {
-                    if (span) span.textContent = `⏬ ${Math.round(done / total * 100)}%…`;
+                    if (span)
+                        span.textContent = `⏬ ${Math.round((done / total) * 100)}%…`;
                 });
                 incrementOfflineZoneCount();
                 void haptic('success');
@@ -121,7 +141,9 @@ export class ConnectivitySheet extends BaseComponent {
 
         // PMTiles
         const pmtilesBtn = this.element.querySelector('#conn-pmtiles-btn');
-        const pmtilesUpload = this.element.querySelector('#conn-pmtiles-upload') as HTMLInputElement;
+        const pmtilesUpload = this.element.querySelector(
+            '#conn-pmtiles-upload'
+        ) as HTMLInputElement;
         pmtilesBtn?.addEventListener('click', () => pmtilesUpload?.click());
         pmtilesUpload?.addEventListener('change', async (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
@@ -146,18 +168,30 @@ export class ConnectivitySheet extends BaseComponent {
         }).hydrate();
 
         // Real-time updates
-        this.addSubscription(state.subscribe('IS_OFFLINE', (val: boolean) => {
-            if (offlineToggle) {
-                offlineToggle.checked = val;
-                offlineToggle.setAttribute('aria-checked', String(val));
-            }
-            this.updateNetworkStatus();
-        }));
-        this.addSubscription(state.subscribe('connectionType', () => this.updateNetworkStatus()));
-        this.addSubscription(state.subscribe('isNetworkAvailable', () => this.updateNetworkStatus()));
+        this.addSubscription(
+            state.subscribe('IS_OFFLINE', (val: boolean) => {
+                if (offlineToggle) {
+                    offlineToggle.checked = val;
+                    offlineToggle.setAttribute('aria-checked', String(val));
+                }
+                this.updateNetworkStatus();
+            })
+        );
+        this.addSubscription(
+            state.subscribe('connectionType', () => this.updateNetworkStatus())
+        );
+        this.addSubscription(
+            state.subscribe('isNetworkAvailable', () =>
+                this.updateNetworkStatus()
+            )
+        );
 
-        this.addSubscription(state.subscribe('userLocation', () => this.updateGPSInfo()));
-        this.addSubscription(state.subscribe('userLocationAccuracy', () => this.updateGPSInfo()));
+        this.addSubscription(
+            state.subscribe('userLocation', () => this.updateGPSInfo())
+        );
+        this.addSubscription(
+            state.subscribe('userLocationAccuracy', () => this.updateGPSInfo())
+        );
 
         // Initial update
         this.updateNetworkStatus();
@@ -165,8 +199,12 @@ export class ConnectivitySheet extends BaseComponent {
     }
 
     private updateNetworkStatus() {
-        const statusEl = this.element?.querySelector('#net-status') as HTMLElement;
-        const typeEl = this.element?.querySelector('#net-connection-type') as HTMLElement;
+        const statusEl = this.element?.querySelector(
+            '#net-status'
+        ) as HTMLElement;
+        const typeEl = this.element?.querySelector(
+            '#net-connection-type'
+        ) as HTMLElement;
         const isOffline = state.IS_OFFLINE || !state.isNetworkAvailable;
 
         if (statusEl) {
@@ -185,7 +223,9 @@ export class ConnectivitySheet extends BaseComponent {
             } else if (state.IS_OFFLINE) {
                 typeEl.textContent = i18n.t('network.status.manualOffline');
             } else {
-                typeEl.textContent = i18n.t(`network.type.${state.connectionType}`);
+                typeEl.textContent = i18n.t(
+                    `network.type.${state.connectionType}`
+                );
             }
         }
     }
@@ -196,7 +236,8 @@ export class ConnectivitySheet extends BaseComponent {
             // ARIA: live region for dynamic GPS accuracy
             accuracyEl.setAttribute('aria-live', 'polite');
             // Affiche la précision GPS réelle ou '--' si pas de signal
-            const acc = state.userLocationAccuracy ?? (state.userLocation ? '5' : '--');
+            const acc =
+                state.userLocationAccuracy ?? (state.userLocation ? '5' : '--');
             accuracyEl.innerHTML = `${acc} <span class="conn-unit">m</span>`;
         }
     }

@@ -10,7 +10,15 @@ interface BatteryManager extends EventTarget {
     readonly chargingTime: number;
     readonly dischargingTime: number;
     readonly level: number;
-    addEventListener(type: 'levelchange' | 'chargingchange' | 'chargingtimechange' | 'dischargingtimechange', listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(
+        type:
+            | 'levelchange'
+            | 'chargingchange'
+            | 'chargingtimechange'
+            | 'dischargingtimechange',
+        listener: EventListenerOrEventListenerObject,
+        options?: boolean | AddEventListenerOptions
+    ): void;
 }
 
 interface Navigator {

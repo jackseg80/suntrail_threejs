@@ -1,29 +1,37 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { TEXTURE_LIMITS, formatTriangles, VRAMDashboard } from './ui/components/VRAMDashboard';
+import {
+    TEXTURE_LIMITS,
+    formatTriangles,
+    VRAMDashboard,
+} from './ui/components/VRAMDashboard';
 import { state } from './state';
 import { showToast } from './toast';
 
 // Mock terrain activeTiles
 vi.mock('./terrain', () => ({
-    activeTiles: new Map([['tile1', {}], ['tile2', {}], ['tile3', {}]]),
+    activeTiles: new Map([
+        ['tile1', {}],
+        ['tile2', {}],
+        ['tile3', {}],
+    ]),
     resetTerrain: vi.fn(),
     updateVisibleTiles: vi.fn(),
-    updateHydrologyVisibility: vi.fn()
+    updateHydrologyVisibility: vi.fn(),
 }));
 
 // Mock workerManager
 vi.mock('./workerManager', () => ({
-    tileWorkerManager: { workers: new Array(8) }
+    tileWorkerManager: { workers: new Array(8) },
 }));
 
 // Mock utils
 vi.mock('./utils', () => ({
-    throttle: vi.fn((fn: any) => fn)
+    throttle: vi.fn((fn: any) => fn),
 }));
 
 // Mock toast
 vi.mock('./toast', () => ({
-    showToast: vi.fn()
+    showToast: vi.fn(),
 }));
 
 // Mock geo
@@ -35,7 +43,7 @@ vi.mock('./geo', async (importOriginal) => {
         isPositionInFrance: vi.fn(),
         lngLatToWorld: vi.fn(),
         worldToLngLat: vi.fn(),
-        lngLatToTile: vi.fn()
+        lngLatToTile: vi.fn(),
     };
 });
 
@@ -45,8 +53,8 @@ vi.mock('../i18n/I18nService', () => ({
         t: (key: string) => key,
         applyToDOM: vi.fn(),
         getLocale: vi.fn(() => 'fr'),
-        setLocale: vi.fn()
-    }
+        setLocale: vi.fn(),
+    },
 }));
 
 // Mock eventBus
@@ -54,8 +62,8 @@ vi.mock('./eventBus', () => ({
     eventBus: {
         on: vi.fn(),
         off: vi.fn(),
-        emit: vi.fn()
-    }
+        emit: vi.fn(),
+    },
 }));
 
 const mockedShowToast = vi.mocked(showToast);
@@ -74,8 +82,8 @@ describe('VRAMDashboard', () => {
         (state as any).renderer = {
             info: {
                 memory: { geometries: 42, textures: 100 },
-                render: { calls: 55, triangles: 12345 }
-            }
+                render: { calls: 55, triangles: 12345 },
+            },
         };
         state.PERFORMANCE_PRESET = 'balanced';
         // Tests de toggle : partir d'un état caché (SHOW_STATS=false)
@@ -121,7 +129,9 @@ describe('VRAMDashboard', () => {
         dashboard.stop();
 
         expect(mockedShowToast).toHaveBeenCalledTimes(1);
-        expect(mockedShowToast).toHaveBeenCalledWith(expect.stringContaining('200'));
+        expect(mockedShowToast).toHaveBeenCalledWith(
+            expect.stringContaining('200')
+        );
     });
 
     // Test 4: Alert respects 30s cooldown
@@ -254,7 +264,7 @@ describe('VRAMDashboard', () => {
             expect(s.t).toBeGreaterThanOrEqual(0);
         });
 
-        it('stopRecording() arrête l\'enregistrement et vide le flag', () => {
+        it("stopRecording() arrête l'enregistrement et vide le flag", () => {
             dashboard.startRecording();
             vi.advanceTimersByTime(500);
             dashboard.stopRecording(false); // sans export
@@ -282,7 +292,7 @@ describe('VRAMDashboard', () => {
             expect(dashboard.getSamples().length).toBeLessThanOrEqual(600);
         });
 
-        it('fermer le panel (setVisible false) arrête automatiquement l\'enregistrement', () => {
+        it("fermer le panel (setVisible false) arrête automatiquement l'enregistrement", () => {
             dashboard.startRecording();
             vi.advanceTimersByTime(500);
             expect(dashboard.getIsRecording()).toBe(true);
@@ -302,6 +312,8 @@ describe('VRAMDashboard', () => {
         dashboard.stop();
 
         expect(mockedShowToast).toHaveBeenCalledTimes(1);
-        expect(mockedShowToast).toHaveBeenCalledWith(expect.stringContaining('60'));
+        expect(mockedShowToast).toHaveBeenCalledWith(
+            expect.stringContaining('60')
+        );
     });
 });

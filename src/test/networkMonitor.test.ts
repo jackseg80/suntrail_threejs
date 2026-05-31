@@ -15,7 +15,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mock @capacitor/network
 vi.mock('@capacitor/network', () => ({
     Network: {
-        getStatus: vi.fn().mockResolvedValue({ connected: true, connectionType: 'wifi' }),
+        getStatus: vi
+            .fn()
+            .mockResolvedValue({ connected: true, connectionType: 'wifi' }),
         addListener: vi.fn(),
     },
 }));

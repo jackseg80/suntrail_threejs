@@ -20,6 +20,8 @@ import {
 } from '../../solarRoute';
 import { ICON_LOCK } from '../icons';
 import templateHTML from '../templates/solar-probe.html?raw';
+import { buildTimeline } from './solarprobe/SolarTimeline';
+import { makeLockedItem } from './solarprobe/SolarLockedItem';
 
 export class SolarProbeSheet extends BaseComponent {
     private contentEl: HTMLElement | null = null;
@@ -51,16 +53,20 @@ export class SolarProbeSheet extends BaseComponent {
         });
 
         // Subscribe to simDate for real-time updates
-        this.addSubscription(state.subscribe('simDate', () => {
-            if (this.currentResult) this.updateRealtimeElements();
-        }));
+        this.addSubscription(
+            state.subscribe('simDate', () => {
+                if (this.currentResult) this.updateRealtimeElements();
+            })
+        );
 
         // Mise à jour de la section route quand l'analyse solaire de route change
         const onSolarRouteUpdated = () => {
             if (this.routeSolarSectionEl) this.updateRouteSolarSection();
         };
         window.addEventListener('solarRouteUpdated', onSolarRouteUpdated);
-        this.addSubscription(() => window.removeEventListener('solarRouteUpdated', onSolarRouteUpdated));
+        this.addSubscription(() =>
+            window.removeEventListener('solarRouteUpdated', onSolarRouteUpdated)
+        );
 
         // Bouton "☀️ Soleil" dans le panel profil → ouvrir le panel solaire
         const onOpenSolarProbe = () => {
@@ -68,39 +74,58 @@ export class SolarProbeSheet extends BaseComponent {
             sheetManager.open('solar-probe');
         };
         window.addEventListener('openSolarProbeSheet', onOpenSolarProbe);
-        this.addSubscription(() => window.removeEventListener('openSolarProbeSheet', onOpenSolarProbe));
+        this.addSubscription(() =>
+            window.removeEventListener('openSolarProbeSheet', onOpenSolarProbe)
+        );
 
         // Re-render when Pro status changes
-        this.addSubscription(state.subscribe('isPro', () => {
-            if (this.currentResult) this.updateUI(this.currentResult);
-        }));
+        this.addSubscription(
+            state.subscribe('isPro', () => {
+                if (this.currentResult) this.updateUI(this.currentResult);
+            })
+        );
 
         const attachProbeBtn = () => {
             const probeBtn = document.getElementById('probe-btn');
             if (probeBtn) {
                 probeBtn.onclick = async () => {
                     if (state.hasLastClicked) {
-                        const result = runSolarProbe(state.lastClickedCoords.x, state.lastClickedCoords.z, state.lastClickedCoords.alt);
+                        const result = runSolarProbe(
+                            state.lastClickedCoords.x,
+                            state.lastClickedCoords.z,
+                            state.lastClickedCoords.alt
+                        );
                         if (result) {
                             this.currentResult = result;
                             this.updateUI(result);
                             sheetManager.open('solar-probe');
-                            
+
                             // v5.30.16 : Résolution robuste avec timeout de 3s
-                            const titleEl = document.getElementById('solar-location-title');
+                            const titleEl = document.getElementById(
+                                'solar-location-title'
+                            );
                             const timer = setTimeout(() => {
-                                if (titleEl && titleEl.textContent?.includes('...')) {
+                                if (
+                                    titleEl &&
+                                    titleEl.textContent?.includes('...')
+                                ) {
                                     titleEl.textContent = `${result.gps.lat.toFixed(4)}, ${result.gps.lon.toFixed(4)}`;
                                 }
                             }, 3000);
 
                             try {
-                                const locName = await getPlaceName(result.gps.lat, result.gps.lon);
+                                const locName = await getPlaceName(
+                                    result.gps.lat,
+                                    result.gps.lon
+                                );
                                 clearTimeout(timer);
-                                if (locName && titleEl) titleEl.textContent = locName;
-                                else if (titleEl) titleEl.textContent = `${result.gps.lat.toFixed(4)}, ${result.gps.lon.toFixed(4)}`;
+                                if (locName && titleEl)
+                                    titleEl.textContent = locName;
+                                else if (titleEl)
+                                    titleEl.textContent = `${result.gps.lat.toFixed(4)}, ${result.gps.lon.toFixed(4)}`;
                             } catch (e) {
-                                if (titleEl) titleEl.textContent = `${result.gps.lat.toFixed(4)}, ${result.gps.lon.toFixed(4)}`;
+                                if (titleEl)
+                                    titleEl.textContent = `${result.gps.lat.toFixed(4)}, ${result.gps.lon.toFixed(4)}`;
                             }
                         }
                     } else {
@@ -123,7 +148,12 @@ export class SolarProbeSheet extends BaseComponent {
         this.realtimeCompassEl = null;
         this.svgCurrentLineEl = null;
 
-        const addStat = (parent: HTMLElement, label: string, value: string, icon?: string) => {
+        const addStat = (
+            parent: HTMLElement,
+            label: string,
+            value: string,
+            icon?: string
+        ) => {
             const div = document.createElement('div');
             div.classList.add('exp-probe-card');
             if (icon) {
@@ -149,7 +179,8 @@ export class SolarProbeSheet extends BaseComponent {
         const locHeader = document.createElement('h3');
         locHeader.id = 'solar-location-title';
         locHeader.className = 'exp-location-title';
-        locHeader.style.cssText = 'margin:0 0 var(--space-4); font-size:14px; color:var(--text-2); text-align:center;';
+        locHeader.style.cssText =
+            'margin:0 0 var(--space-4); font-size:14px; color:var(--text-2); text-align:center;';
         locHeader.textContent = 'Analyse en cours...';
         this.contentEl.appendChild(locHeader);
 
@@ -163,11 +194,21 @@ export class SolarProbeSheet extends BaseComponent {
             // ── FREE version ──────────────────────────────────────────────────
             const grid = document.createElement('div');
             grid.classList.add('exp-stat-grid', 'exp-probe-grid-mb');
-            addStat(grid, i18n.t('solar.stat.sunlight'), fmtDuration(result.totalSunlightMinutes), '☀️');
-            addStat(grid, i18n.t('solar.stat.firstRay'), fmtTime(result.firstSunTime), '🌅');
+            addStat(
+                grid,
+                i18n.t('solar.stat.sunlight'),
+                fmtDuration(result.totalSunlightMinutes),
+                '☀️'
+            );
+            addStat(
+                grid,
+                i18n.t('solar.stat.firstRay'),
+                fmtTime(result.firstSunTime),
+                '🌅'
+            );
             this.contentEl.appendChild(grid);
 
-            this.buildTimeline(this.contentEl, result);
+            buildTimeline(this.contentEl, result);
 
             // Section route solar (Free)
             this.routeSolarSectionEl = document.createElement('div');
@@ -184,7 +225,6 @@ export class SolarProbeSheet extends BaseComponent {
             upsellBtn.onclick = () => showUpgradePrompt('solar_full');
             upsell.appendChild(upsellBtn);
             this.contentEl.appendChild(upsell);
-
         } else {
             // ── PRO version ───────────────────────────────────────────────────
 
@@ -197,22 +237,34 @@ export class SolarProbeSheet extends BaseComponent {
             // 2. Temps réel & Boussole
             const rtContainer = document.createElement('div');
             rtContainer.classList.add('solar-realtime-instrument');
-            
+
             // Left: Compass
             const compassBox = document.createElement('div');
             compassBox.classList.add('solar-instrument-compass');
-            const compassSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            const compassSvg = document.createElementNS(
+                'http://www.w3.org/2000/svg',
+                'svg'
+            );
             compassSvg.setAttribute('viewBox', '0 0 100 100');
             compassSvg.classList.add('solar-compass-large');
             // Dial
-            const dial = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            dial.setAttribute('cx', '50'); dial.setAttribute('cy', '50'); dial.setAttribute('r', '45');
-            dial.setAttribute('stroke', 'var(--border)'); dial.setAttribute('fill', 'rgba(0,0,0,0.2)');
+            const dial = document.createElementNS(
+                'http://www.w3.org/2000/svg',
+                'circle'
+            );
+            dial.setAttribute('cx', '50');
+            dial.setAttribute('cy', '50');
+            dial.setAttribute('r', '45');
+            dial.setAttribute('stroke', 'var(--border)');
+            dial.setAttribute('fill', 'rgba(0,0,0,0.2)');
             compassSvg.appendChild(dial);
             // Marks N/E/S/W
-            ['N','E','S','W'].forEach((label, i) => {
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                const angle = i * 90 * (Math.PI/180) - Math.PI/2;
+            ['N', 'E', 'S', 'W'].forEach((label, i) => {
+                const text = document.createElementNS(
+                    'http://www.w3.org/2000/svg',
+                    'text'
+                );
+                const angle = i * 90 * (Math.PI / 180) - Math.PI / 2;
                 text.setAttribute('x', String(50 + 35 * Math.cos(angle)));
                 text.setAttribute('y', String(50 + 35 * Math.sin(angle) + 4));
                 text.setAttribute('text-anchor', 'middle');
@@ -223,17 +275,20 @@ export class SolarProbeSheet extends BaseComponent {
                 compassSvg.appendChild(text);
             });
             // Arrow
-            const compassArrow = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const compassArrow = document.createElementNS(
+                'http://www.w3.org/2000/svg',
+                'path'
+            );
             compassArrow.setAttribute('fill', 'var(--gold)');
             compassArrow.setAttribute('d', 'M50 20 L58 75 L50 65 L42 75 Z');
             this.realtimeCompassEl = compassArrow;
             compassSvg.appendChild(compassArrow);
             compassBox.appendChild(compassSvg);
-            
+
             // Right: RT Stats
             const rtStats = document.createElement('div');
             rtStats.classList.add('solar-instrument-stats');
-            
+
             const rtAz = document.createElement('div');
             rtAz.className = 'solar-rt-stat-item';
             rtAz.innerHTML = `<span class="exp-probe-label">${i18n.t('solar.stat.azimuth')}</span>`;
@@ -241,7 +296,7 @@ export class SolarProbeSheet extends BaseComponent {
             rtAzVal.className = 'exp-probe-value';
             this.realtimeAzimuthEl = rtAzVal;
             rtAz.appendChild(rtAzVal);
-            
+
             const rtEl = document.createElement('div');
             rtEl.className = 'solar-rt-stat-item';
             rtEl.innerHTML = `<span class="exp-probe-label">${i18n.t('solar.stat.elevation')}</span>`;
@@ -272,7 +327,7 @@ export class SolarProbeSheet extends BaseComponent {
             rtStats.appendChild(rtEl);
             rtStats.appendChild(rtMaxEl);
             rtStats.appendChild(rtMoon);
-            
+
             rtContainer.appendChild(compassBox);
             rtContainer.appendChild(rtStats);
             this.contentEl.appendChild(rtContainer);
@@ -280,19 +335,37 @@ export class SolarProbeSheet extends BaseComponent {
             // 3. Bloc Données du jour (Simplified Grid)
             const grid1 = document.createElement('div');
             grid1.classList.add('exp-stat-grid', 'exp-probe-grid-mb');
-            
-            addStat(grid1, i18n.t('solar.stat.dayDuration'), fmtDuration(result.dayDurationMinutes), '⏱️');
-            addStat(grid1, i18n.t('solar.stat.sunlight'), fmtDuration(result.totalSunlightMinutes), '☀️');
-            
-            addStat(grid1, 'H. Dorée Matin',
-                `${fmtTime(result.goldenHourMorningStart)} — ${fmtTime(result.goldenHourMorningEnd)}`, '🌅');
-            addStat(grid1, 'H. Dorée Soir',
-                `${fmtTime(result.goldenHourEveningStart)} — ${fmtTime(result.goldenHourEveningEnd)}`, '🌇');
-            
+
+            addStat(
+                grid1,
+                i18n.t('solar.stat.dayDuration'),
+                fmtDuration(result.dayDurationMinutes),
+                '⏱️'
+            );
+            addStat(
+                grid1,
+                i18n.t('solar.stat.sunlight'),
+                fmtDuration(result.totalSunlightMinutes),
+                '☀️'
+            );
+
+            addStat(
+                grid1,
+                'H. Dorée Matin',
+                `${fmtTime(result.goldenHourMorningStart)} — ${fmtTime(result.goldenHourMorningEnd)}`,
+                '🌅'
+            );
+            addStat(
+                grid1,
+                'H. Dorée Soir',
+                `${fmtTime(result.goldenHourEveningStart)} — ${fmtTime(result.goldenHourEveningEnd)}`,
+                '🌇'
+            );
+
             this.contentEl.appendChild(grid1);
 
             // 4. Timeline (Evolution détaillée)
-            this.buildTimeline(this.contentEl, result);
+            buildTimeline(this.contentEl, result);
 
             // 5. Section route solar (Pro)
             this.routeSolarSectionEl = document.createElement('div');
@@ -313,39 +386,21 @@ export class SolarProbeSheet extends BaseComponent {
         }
 
         // Toujours afficher depuis le haut après reconstruction du contenu
-        requestAnimationFrame(() => { if (this.element) this.element.scrollTop = 0; });
-    }
-
-    private buildTimeline(parent: HTMLElement, result: SolarAnalysisResult): void {
-        const timelineTitle = document.createElement('div');
-        timelineTitle.classList.add('exp-timeline-title');
-        timelineTitle.textContent = i18n.t('solar.stat.evolution');
-        parent.appendChild(timelineTitle);
-
-        const timelineContainer = document.createElement('div');
-        timelineContainer.classList.add('exp-timeline');
-        result.timeline.forEach((t) => {
-            const bar = document.createElement('div');
-            bar.classList.add('exp-timeline-bar');
-            if (t.isNight) {
-                bar.style.background = '#000';
-            } else if (t.inShadow) {
-                bar.style.background = 'rgba(255,80,80,0.3)'; // Reddish for shadow
-            } else {
-                bar.style.background = 'var(--gold)';
-            }
-            timelineContainer.appendChild(bar);
+        requestAnimationFrame(() => {
+            if (this.element) this.element.scrollTop = 0;
         });
-        parent.appendChild(timelineContainer);
     }
 
     private buildElevationChart(result: SolarAnalysisResult): SVGSVGElement {
         const W = 320;
         const H = 120;
-        const PADDING_BOTTOM = 20; 
+        const PADDING_BOTTOM = 20;
         const CHART_H = H - PADDING_BOTTOM;
 
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        const svg = document.createElementNS(
+            'http://www.w3.org/2000/svg',
+            'svg'
+        );
         svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
         svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
         svg.classList.add('solar-elevation-chart-v2');
@@ -356,21 +411,37 @@ export class SolarProbeSheet extends BaseComponent {
         svg.style.border = '1px solid var(--border)';
 
         // 1. Defined Gradients
-        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-        const skyGrad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
-        skyGrad.setAttribute('id', 'skyGrad'); skyGrad.setAttribute('x1', '0'); skyGrad.setAttribute('y1', '0'); skyGrad.setAttribute('x2', '0'); skyGrad.setAttribute('y2', '1');
+        const defs = document.createElementNS(
+            'http://www.w3.org/2000/svg',
+            'defs'
+        );
+        const skyGrad = document.createElementNS(
+            'http://www.w3.org/2000/svg',
+            'linearGradient'
+        );
+        skyGrad.setAttribute('id', 'skyGrad');
+        skyGrad.setAttribute('x1', '0');
+        skyGrad.setAttribute('y1', '0');
+        skyGrad.setAttribute('x2', '0');
+        skyGrad.setAttribute('y2', '1');
         skyGrad.innerHTML = `<stop offset="0%" stop-color="#4a8ef8" stop-opacity="0.4"/><stop offset="100%" stop-color="#4a8ef8" stop-opacity="0.05"/>`;
         defs.appendChild(skyGrad);
         svg.appendChild(defs);
 
         // 2. Background zones
-        const yForElev = (elev: number) => CHART_H - ((elev + 20) / 110) * CHART_H; // Map -20..90 to CHART_H..0
+        const yForElev = (elev: number) =>
+            CHART_H - ((elev + 20) / 110) * CHART_H; // Map -20..90 to CHART_H..0
         const horizonY = yForElev(0);
 
         // Day background
-        const dayBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        dayBg.setAttribute('x', '0'); dayBg.setAttribute('y', '0');
-        dayBg.setAttribute('width', String(W)); dayBg.setAttribute('height', String(horizonY));
+        const dayBg = document.createElementNS(
+            'http://www.w3.org/2000/svg',
+            'rect'
+        );
+        dayBg.setAttribute('x', '0');
+        dayBg.setAttribute('y', '0');
+        dayBg.setAttribute('width', String(W));
+        dayBg.setAttribute('height', String(horizonY));
         dayBg.setAttribute('fill', 'url(#skyGrad)');
         svg.appendChild(dayBg);
 
@@ -379,19 +450,30 @@ export class SolarProbeSheet extends BaseComponent {
             if (!t.isNight && t.inShadow) {
                 const x = (i / 48) * W;
                 const barW = W / 48;
-                const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                r.setAttribute('x', String(x)); r.setAttribute('y', '0');
-                r.setAttribute('width', String(barW)); r.setAttribute('height', String(CHART_H));
+                const r = document.createElementNS(
+                    'http://www.w3.org/2000/svg',
+                    'rect'
+                );
+                r.setAttribute('x', String(x));
+                r.setAttribute('y', '0');
+                r.setAttribute('width', String(barW));
+                r.setAttribute('height', String(CHART_H));
                 r.setAttribute('fill', 'rgba(239,68,68,0.15)');
                 svg.appendChild(r);
             }
         });
 
         // 3. Grid & Horizon
-        const horizLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        horizLine.setAttribute('x1', '0'); horizLine.setAttribute('x2', String(W));
-        horizLine.setAttribute('y1', String(horizonY)); horizLine.setAttribute('y2', String(horizonY));
-        horizLine.setAttribute('stroke', 'var(--text-3)'); horizLine.setAttribute('stroke-width', '0.5');
+        const horizLine = document.createElementNS(
+            'http://www.w3.org/2000/svg',
+            'line'
+        );
+        horizLine.setAttribute('x1', '0');
+        horizLine.setAttribute('x2', String(W));
+        horizLine.setAttribute('y1', String(horizonY));
+        horizLine.setAttribute('y2', String(horizonY));
+        horizLine.setAttribute('stroke', 'var(--text-3)');
+        horizLine.setAttribute('stroke-width', '0.5');
         horizLine.setAttribute('stroke-dasharray', '2,2');
         svg.appendChild(horizLine);
 
@@ -403,9 +485,13 @@ export class SolarProbeSheet extends BaseComponent {
             const y = yForElev(elev);
             d += i === 0 ? `M${x},${y}` : ` L${x},${y}`;
         });
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const path = document.createElementNS(
+            'http://www.w3.org/2000/svg',
+            'path'
+        );
         path.setAttribute('d', d);
-        path.setAttribute('stroke', 'var(--gold)'); path.setAttribute('stroke-width', '2');
+        path.setAttribute('stroke', 'var(--gold)');
+        path.setAttribute('stroke-width', '2');
         path.setAttribute('fill', 'none');
         svg.appendChild(path);
 
@@ -414,18 +500,29 @@ export class SolarProbeSheet extends BaseComponent {
             if (!date) return;
             const mins = date.getHours() * 60 + date.getMinutes();
             const x = (mins / 1440) * W;
-            
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', String(x)); line.setAttribute('x2', String(x));
-            line.setAttribute('y1', '0'); line.setAttribute('y2', String(CHART_H));
-            line.setAttribute('stroke', color); line.setAttribute('stroke-width', '1');
+
+            const line = document.createElementNS(
+                'http://www.w3.org/2000/svg',
+                'line'
+            );
+            line.setAttribute('x1', String(x));
+            line.setAttribute('x2', String(x));
+            line.setAttribute('y1', '0');
+            line.setAttribute('y2', String(CHART_H));
+            line.setAttribute('stroke', color);
+            line.setAttribute('stroke-width', '1');
             line.setAttribute('stroke-dasharray', '3,3');
             svg.appendChild(line);
 
-            const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            txt.setAttribute('x', String(x)); txt.setAttribute('y', '12');
+            const txt = document.createElementNS(
+                'http://www.w3.org/2000/svg',
+                'text'
+            );
+            txt.setAttribute('x', String(x));
+            txt.setAttribute('y', '12');
             txt.setAttribute('text-anchor', 'middle');
-            txt.setAttribute('fill', color); txt.setAttribute('font-size', '8');
+            txt.setAttribute('fill', color);
+            txt.setAttribute('font-size', '8');
             txt.setAttribute('font-weight', 'bold');
             txt.textContent = `${label} ${fmtTime(date)}`;
 
@@ -442,26 +539,41 @@ export class SolarProbeSheet extends BaseComponent {
             const mins = maxIdx * 10;
             const x = (mins / 1440) * W;
             const y = yForElev(result.maxElevationDeg);
-            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            circle.setAttribute('cx', String(x)); circle.setAttribute('cy', String(y));
-            circle.setAttribute('r', '3'); circle.setAttribute('fill', 'var(--gold)');
+            const circle = document.createElementNS(
+                'http://www.w3.org/2000/svg',
+                'circle'
+            );
+            circle.setAttribute('cx', String(x));
+            circle.setAttribute('cy', String(y));
+            circle.setAttribute('r', '3');
+            circle.setAttribute('fill', 'var(--gold)');
             svg.appendChild(circle);
         }
 
         // 6. Current time cursor
-        const currentLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        currentLine.setAttribute('y1', '0'); currentLine.setAttribute('y2', String(CHART_H));
-        currentLine.setAttribute('stroke', 'var(--text)'); currentLine.setAttribute('stroke-width', '1.5');
+        const currentLine = document.createElementNS(
+            'http://www.w3.org/2000/svg',
+            'line'
+        );
+        currentLine.setAttribute('y1', '0');
+        currentLine.setAttribute('y2', String(CHART_H));
+        currentLine.setAttribute('stroke', 'var(--text)');
+        currentLine.setAttribute('stroke-width', '1.5');
         this.svgCurrentLineEl = currentLine as unknown as SVGLineElement;
         svg.appendChild(currentLine);
 
         // 7. Time labels
         [0, 6, 12, 18, 24].forEach((h) => {
             const x = (h / 24) * W;
-            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            label.setAttribute('x', String(x)); label.setAttribute('y', String(H - 4));
+            const label = document.createElementNS(
+                'http://www.w3.org/2000/svg',
+                'text'
+            );
+            label.setAttribute('x', String(x));
+            label.setAttribute('y', String(H - 4));
             label.setAttribute('text-anchor', 'middle');
-            label.setAttribute('fill', 'var(--text-3)'); label.setAttribute('font-size', '9');
+            label.setAttribute('fill', 'var(--text-3)');
+            label.setAttribute('font-size', '9');
             label.textContent = `${h}h`;
             svg.appendChild(label);
         });
@@ -474,7 +586,7 @@ export class SolarProbeSheet extends BaseComponent {
         const { lat, lon } = this.currentResult.gps;
         const pos = SunCalc.getPosition(state.simDate, lat, lon);
         const elevDeg = pos.altitude * (180 / Math.PI);
-        const azDeg   = ((pos.azimuth * (180 / Math.PI)) + 180 + 360) % 360;
+        const azDeg = (pos.azimuth * (180 / Math.PI) + 180 + 360) % 360;
 
         if (this.realtimeAzimuthEl) {
             this.realtimeAzimuthEl.textContent = `${Math.round(azDeg)}°`;
@@ -483,10 +595,14 @@ export class SolarProbeSheet extends BaseComponent {
             this.realtimeElevationEl.textContent = `${Math.round(elevDeg)}°`;
         }
         if (this.realtimeCompassEl) {
-            this.realtimeCompassEl.setAttribute('transform', `rotate(${azDeg}, 50, 50)`);
+            this.realtimeCompassEl.setAttribute(
+                'transform',
+                `rotate(${azDeg}, 50, 50)`
+            );
         }
         if (this.svgCurrentLineEl) {
-            const currentMins = state.simDate.getHours() * 60 + state.simDate.getMinutes();
+            const currentMins =
+                state.simDate.getHours() * 60 + state.simDate.getMinutes();
             const x = String((currentMins / 1440) * 320);
             this.svgCurrentLineEl.setAttribute('x1', x);
             this.svgCurrentLineEl.setAttribute('x2', x);
@@ -550,11 +666,14 @@ export class SolarProbeSheet extends BaseComponent {
             const modeBtn = document.createElement('button');
             modeBtn.className = 'solar-route-mode-btn';
             modeBtn.textContent = currentMode === 'snapshot' ? '📍' : '🥾';
-            modeBtn.title = currentMode === 'snapshot'
-                ? 'Mode Instantané (même heure partout) — cliquer pour Timeline'
-                : 'Mode Timeline (heure réelle d\'arrivée) — cliquer pour Instantané';
+            modeBtn.title =
+                currentMode === 'snapshot'
+                    ? 'Mode Instantané (même heure partout) — cliquer pour Timeline'
+                    : "Mode Timeline (heure réelle d'arrivée) — cliquer pour Instantané";
             modeBtn.onclick = () => {
-                setSolarRouteMode(currentMode === 'snapshot' ? 'hikerTimeline' : 'snapshot');
+                setSolarRouteMode(
+                    currentMode === 'snapshot' ? 'hikerTimeline' : 'snapshot'
+                );
             };
             titleRow.appendChild(modeBtn);
         }
@@ -583,13 +702,21 @@ export class SolarProbeSheet extends BaseComponent {
         const startSliderKeepAlive = () => {
             this._sliderDragging = true;
             state.isInteractingWithUI = true;
-            const tick = () => { state.isInteractingWithUI = true; _sliderRaf = requestAnimationFrame(tick); };
+            const tick = () => {
+                state.isInteractingWithUI = true;
+                _sliderRaf = requestAnimationFrame(tick);
+            };
             _sliderRaf = requestAnimationFrame(tick);
         };
         const stopSliderKeepAlive = () => {
             this._sliderDragging = false;
-            if (_sliderRaf !== null) { cancelAnimationFrame(_sliderRaf); _sliderRaf = null; }
-            setTimeout(() => { state.isInteractingWithUI = false; }, 150);
+            if (_sliderRaf !== null) {
+                cancelAnimationFrame(_sliderRaf);
+                _sliderRaf = null;
+            }
+            setTimeout(() => {
+                state.isInteractingWithUI = false;
+            }, 150);
             // Rebuild maintenant que le drag est terminé
             this.updateRouteSolarSection();
         };
@@ -611,18 +738,23 @@ export class SolarProbeSheet extends BaseComponent {
         dateInput.type = 'date';
         dateInput.value = dateStr;
         dateInput.className = 'solar-route-date-input';
-        
+
         const dateWrapper = document.createElement('div');
         dateWrapper.className = 'date-input-wrapper';
-        dateWrapper.style.cssText = 'display:inline-flex; align-items:center; position:relative;';
-        
+        dateWrapper.style.cssText =
+            'display:inline-flex; align-items:center; position:relative;';
+
         const lockIcon = document.createElement('div');
         lockIcon.className = 'date-input-lock';
-        lockIcon.style.cssText = 'position:absolute; right:8px; pointer-events:none; display:flex; align-items:center; opacity:0.6;';
+        lockIcon.style.cssText =
+            'position:absolute; right:8px; pointer-events:none; display:flex; align-items:center; opacity:0.6;';
         lockIcon.innerHTML = ICON_LOCK;
         const svgLock = lockIcon.querySelector('svg');
-        if (svgLock) { svgLock.setAttribute('width', '12'); svgLock.setAttribute('height', '12'); }
-        
+        if (svgLock) {
+            svgLock.setAttribute('width', '12');
+            svgLock.setAttribute('height', '12');
+        }
+
         if (isProActive()) {
             lockIcon.style.display = 'none';
         } else {
@@ -634,9 +766,10 @@ export class SolarProbeSheet extends BaseComponent {
             if (isNaN(d.getTime())) return;
             if (!isProActive()) {
                 const today = new Date();
-                const isToday = d.getFullYear() === today.getFullYear() &&
-                                d.getMonth()    === today.getMonth()    &&
-                                d.getDate()     === today.getDate();
+                const isToday =
+                    d.getFullYear() === today.getFullYear() &&
+                    d.getMonth() === today.getMonth() &&
+                    d.getDate() === today.getDate();
                 if (!isToday) {
                     dateInput.value = today.toISOString().slice(0, 10);
                     showUpgradePrompt('solar_calendar');
@@ -675,22 +808,39 @@ export class SolarProbeSheet extends BaseComponent {
         };
 
         addCard(i18n.t('solarRoute.stat.sunPct'), `${routeData.sunPct}%`);
-        addCard(i18n.t('solarRoute.stat.sunKm'), `${routeData.sunExposedKm.toFixed(1)} km`);
-        addCard(i18n.t('solarRoute.stat.shadowKm'), `${routeData.shadowKm.toFixed(1)} km`);
-        addCard(i18n.t('solarRoute.stat.totalKm'), `${routeData.totalKm.toFixed(1)} km`);
+        addCard(
+            i18n.t('solarRoute.stat.sunKm'),
+            `${routeData.sunExposedKm.toFixed(1)} km`
+        );
+        addCard(
+            i18n.t('solarRoute.stat.shadowKm'),
+            `${routeData.shadowKm.toFixed(1)} km`
+        );
+        addCard(
+            i18n.t('solarRoute.stat.totalKm'),
+            `${routeData.totalKm.toFixed(1)} km`
+        );
         section.appendChild(grid);
 
         // Info forêt — affichée sous la grille si le tracé traverse une zone boisée
         if (routeData.forestKm > 0) {
             if (isProActive()) {
                 const forestInfo = document.createElement('div');
-                forestInfo.className = 'solar-route-rec-item solar-route-rec-forest';
-                forestInfo.textContent = i18n.t('solarRoute.rec.forestSection', {
-                    km: routeData.forestKm.toFixed(1),
-                });
+                forestInfo.className =
+                    'solar-route-rec-item solar-route-rec-forest';
+                forestInfo.textContent = i18n.t(
+                    'solarRoute.rec.forestSection',
+                    {
+                        km: routeData.forestKm.toFixed(1),
+                    }
+                );
                 section.appendChild(forestInfo);
             } else {
-                this.makeLockedItem(section, i18n.t('solarRoute.rec.forestSection', { km: '—' }), () => showUpgradePrompt('solar_forest'));
+                makeLockedItem(
+                    section,
+                    i18n.t('solarRoute.rec.forestSection', { km: '—' }),
+                    () => showUpgradePrompt('solar_forest')
+                );
             }
         }
 
@@ -708,12 +858,18 @@ export class SolarProbeSheet extends BaseComponent {
                     pct: String(routeData.sunPct),
                 });
             } else {
-                mainRec.textContent = i18n.t('solarRoute.rec.snapshotSun', { pct: String(routeData.sunPct) });
+                mainRec.textContent = i18n.t('solarRoute.rec.snapshotSun', {
+                    pct: String(routeData.sunPct),
+                });
             }
             recs.appendChild(mainRec);
         } else {
             // Upsell Hiker mode
-            this.makeLockedItem(recs, i18n.t('solarRoute.rec.hikerSun', { speed: '4', pct: '—' }), () => showUpgradePrompt('solar_route_timeline'));
+            makeLockedItem(
+                recs,
+                i18n.t('solarRoute.rec.hikerSun', { speed: '4', pct: '—' }),
+                () => showUpgradePrompt('solar_route_timeline')
+            );
         }
 
         // Segments ombragés (Free : 1er locked, Pro : tous)
@@ -728,7 +884,11 @@ export class SolarProbeSheet extends BaseComponent {
                 recs.appendChild(rec);
             }
         } else if (routeData.shadowSegments.length > 0) {
-            this.makeLockedItem(recs, i18n.t('solarRoute.rec.shadeSegment', { start: '—', end: '—' }), () => showUpgradePrompt('solar_shade_segments'));
+            makeLockedItem(
+                recs,
+                i18n.t('solarRoute.rec.shadeSegment', { start: '—', end: '—' }),
+                () => showUpgradePrompt('solar_shade_segments')
+            );
         }
 
         // PRO : sélecteur vitesse + heure d'arrivée (hikerTimeline uniquement)
@@ -741,9 +901,11 @@ export class SolarProbeSheet extends BaseComponent {
             speedLabel.className = 'exp-probe-label';
             speedLabel.textContent = i18n.t('solarRoute.speed.label');
             speedRow.appendChild(speedLabel);
-            [3, 4, 6].forEach(speed => {
+            [3, 4, 6].forEach((speed) => {
                 const btn = document.createElement('button');
-                btn.className = 'solar-route-speed-btn' + (speed === currentSpeed ? ' active' : '');
+                btn.className =
+                    'solar-route-speed-btn' +
+                    (speed === currentSpeed ? ' active' : '');
                 btn.textContent = `${speed} ${i18n.t('solarRoute.speed.unit')}`;
                 btn.onclick = () => {
                     setSolarRouteMode('hikerTimeline');
@@ -757,25 +919,43 @@ export class SolarProbeSheet extends BaseComponent {
             if (routeData.mode === 'hikerTimeline') {
                 const lastPt = routeData.points.at(-1);
                 if (lastPt) {
-                    const arrH = String(lastPt.evalDate.getHours()).padStart(2, '0');
-                    const arrM = String(lastPt.evalDate.getMinutes()).padStart(2, '0');
+                    const arrH = String(lastPt.evalDate.getHours()).padStart(
+                        2,
+                        '0'
+                    );
+                    const arrM = String(lastPt.evalDate.getMinutes()).padStart(
+                        2,
+                        '0'
+                    );
                     const arrRec = document.createElement('div');
-                    arrRec.className = 'solar-route-rec-item solar-route-rec-pro';
-                    arrRec.textContent = i18n.t('solarRoute.rec.estimatedArrival', { time: `${arrH}h${arrM}` });
+                    arrRec.className =
+                        'solar-route-rec-item solar-route-rec-pro';
+                    arrRec.textContent = i18n.t(
+                        'solarRoute.rec.estimatedArrival',
+                        { time: `${arrH}h${arrM}` }
+                    );
                     recs.appendChild(arrRec);
                 }
             }
         } else {
             // FREE : Upsell Arrival (placeholder)
-            this.makeLockedItem(recs, i18n.t('solarRoute.rec.estimatedArrival', { time: '—h—' }), () => showUpgradePrompt('solar_arrival_time'));
+            makeLockedItem(
+                recs,
+                i18n.t('solarRoute.rec.estimatedArrival', { time: '—h—' }),
+                () => showUpgradePrompt('solar_arrival_time')
+            );
         }
 
         // Départ optimal (PRO : données réelles, FREE : locked)
         const optData = getOptimalDepartureData();
         if (isProActive()) {
             if (optData?.optimalDepartureMinutes !== undefined) {
-                const hh = String(Math.floor(optData.optimalDepartureMinutes / 60)).padStart(2, '0');
-                const mm = String(optData.optimalDepartureMinutes % 60).padStart(2, '0');
+                const hh = String(
+                    Math.floor(optData.optimalDepartureMinutes / 60)
+                ).padStart(2, '0');
+                const mm = String(
+                    optData.optimalDepartureMinutes % 60
+                ).padStart(2, '0');
                 const optRec = document.createElement('div');
                 optRec.className = 'solar-route-rec-item solar-route-rec-pro';
                 optRec.textContent = i18n.t('solarRoute.rec.optimalDeparture', {
@@ -787,9 +967,11 @@ export class SolarProbeSheet extends BaseComponent {
                 // Golden hour au sommet
                 if (optData.goldenHourSummit) {
                     const gh = optData.goldenHourSummit;
-                    const fmtMin = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}h${String(m % 60).padStart(2, '0')}`;
+                    const fmtMin = (m: number) =>
+                        `${String(Math.floor(m / 60)).padStart(2, '0')}h${String(m % 60).padStart(2, '0')}`;
                     const ghRec = document.createElement('div');
-                    ghRec.className = 'solar-route-rec-item solar-route-rec-pro';
+                    ghRec.className =
+                        'solar-route-rec-item solar-route-rec-pro';
                     ghRec.textContent = i18n.t('solarRoute.rec.goldenHour', {
                         alt: String(gh.altitudeM),
                         start: fmtMin(gh.startMinutes),
@@ -799,14 +981,30 @@ export class SolarProbeSheet extends BaseComponent {
                 }
             } else if (getSolarRouteMode() === 'hikerTimeline') {
                 const computing = document.createElement('div');
-                computing.className = 'solar-route-rec-item solar-route-rec-computing';
+                computing.className =
+                    'solar-route-rec-item solar-route-rec-computing';
                 computing.textContent = i18n.t('solarRoute.status.analyzing');
                 recs.appendChild(computing);
             }
         } else if (routeData.totalKm > 0.1) {
-            this.makeLockedItem(recs, i18n.t('solarRoute.rec.optimalDeparture', { time: '—h—', pct: '—' }), () => showUpgradePrompt('solar_optimal_departure'));
+            makeLockedItem(
+                recs,
+                i18n.t('solarRoute.rec.optimalDeparture', {
+                    time: '—h—',
+                    pct: '—',
+                }),
+                () => showUpgradePrompt('solar_optimal_departure')
+            );
             // Golden hour placeholder
-            this.makeLockedItem(recs, i18n.t('solarRoute.rec.goldenHour', { alt: '—', start: '—h—', end: '—h—' }), () => showUpgradePrompt('solar_golden_hour'));
+            makeLockedItem(
+                recs,
+                i18n.t('solarRoute.rec.goldenHour', {
+                    alt: '—',
+                    start: '—h—',
+                    end: '—h—',
+                }),
+                () => showUpgradePrompt('solar_golden_hour')
+            );
         }
 
         if (isProActive()) {
@@ -831,38 +1029,10 @@ export class SolarProbeSheet extends BaseComponent {
         parent.appendChild(section);
     }
 
-    private makeLockedItem(parent: HTMLElement, text: string, onClick: () => void) {
-        const item = document.createElement('div');
-        item.className = 'solar-route-rec-item solar-route-rec-locked';
-        item.style.cssText = 'display:flex; align-items:center; cursor:pointer;';
-        
-        const content = document.createElement('span');
-        content.style.opacity = '0.38';
-        content.textContent = text;
-        
-        const lock = document.createElement('span');
-        lock.style.cssText = 'margin-left:8px; display:inline-flex; align-items:center; opacity:0.38;';
-        lock.innerHTML = ICON_LOCK;
-        const svg = lock.querySelector('svg');
-        if (svg) { svg.setAttribute('width', '14'); svg.setAttribute('height', '14'); }
-
-        const badge = document.createElement('span');
-        badge.style.cssText = 'font-size:10px; color:var(--accent); font-weight:700; margin-left:auto; padding-left:8px;';
-        badge.textContent = 'PRO ↗';
-
-        item.appendChild(content);
-        item.appendChild(lock);
-        item.appendChild(badge);
-        
-        item.onclick = (e) => {
-            e.stopPropagation();
-            onClick();
-        };
-        
-        parent.appendChild(item);
-    }
-
-    private buildExposureAlerts(parent: HTMLElement, routeData: RouteSolarAnalysis): void {
+    private buildExposureAlerts(
+        parent: HTMLElement,
+        routeData: RouteSolarAnalysis
+    ): void {
         // Trouver les segments en plein soleil entre 10h–16h durant plus de 90 min
         let segStart: number | null = null;
         let segStartKm: number | null = null;
@@ -870,22 +1040,36 @@ export class SolarProbeSheet extends BaseComponent {
         for (let i = 0; i < routeData.points.length; i++) {
             const pt = routeData.points[i];
             const h = pt.evalDate.getHours();
-            const isStrongSun = !pt.isNight && !pt.inShadow && !pt.inForest && h >= 10 && h < 16;
+            const isStrongSun =
+                !pt.isNight &&
+                !pt.inShadow &&
+                !pt.inForest &&
+                h >= 10 &&
+                h < 16;
 
             if (isStrongSun && segStart === null) {
                 segStart = pt.evalDate.getTime();
                 segStartKm = pt.distKm;
             }
-            if ((!isStrongSun || i === routeData.points.length - 1) && segStart !== null) {
-                const durationMin = Math.round((pt.evalDate.getTime() - segStart) / 60_000);
+            if (
+                (!isStrongSun || i === routeData.points.length - 1) &&
+                segStart !== null
+            ) {
+                const durationMin = Math.round(
+                    (pt.evalDate.getTime() - segStart) / 60_000
+                );
                 if (durationMin >= 90) {
                     const alert = document.createElement('div');
-                    alert.className = 'solar-route-rec-item solar-route-rec-alert';
-                    alert.textContent = i18n.t('solarRoute.rec.strongExposure', {
-                        start: (segStartKm ?? 0).toFixed(1),
-                        end: pt.distKm.toFixed(1),
-                        duration: String(durationMin),
-                    });
+                    alert.className =
+                        'solar-route-rec-item solar-route-rec-alert';
+                    alert.textContent = i18n.t(
+                        'solarRoute.rec.strongExposure',
+                        {
+                            start: (segStartKm ?? 0).toFixed(1),
+                            end: pt.distKm.toFixed(1),
+                            duration: String(durationMin),
+                        }
+                    );
                     parent.appendChild(alert);
                 }
                 segStart = null;

@@ -19,22 +19,28 @@ describe('environment.ts — 3D Atmospheric Integrity', () => {
 
         // 1. Fog
         expect(scene.fog).toBeInstanceOf(THREE.Fog);
-        expect((scene.fog as THREE.Fog).color.getHex()).toBe(0x87CEEB);
+        expect((scene.fog as THREE.Fog).color.getHex()).toBe(0x87ceeb);
 
         // 2. Lights
-        const directionalLights = scene.children.filter(c => c instanceof THREE.DirectionalLight);
-        const ambientLights = scene.children.filter(c => c instanceof THREE.AmbientLight);
+        const directionalLights = scene.children.filter(
+            (c) => c instanceof THREE.DirectionalLight
+        );
+        const ambientLights = scene.children.filter(
+            (c) => c instanceof THREE.AmbientLight
+        );
 
         expect(directionalLights.length).toBe(1);
         expect(ambientLights.length).toBe(1);
-        
+
         // 3. Sun target (vital for shadow direction)
-        const hasSunTarget = scene.children.some(c => c === (directionalLights[0] as THREE.DirectionalLight).target);
+        const hasSunTarget = scene.children.some(
+            (c) => c === (directionalLights[0] as THREE.DirectionalLight).target
+        );
         expect(hasSunTarget).toBe(true);
 
         // 4. Sky
         expect(state.sky).toBeDefined();
-        expect(scene.children.some(c => c === state.sky)).toBe(true);
+        expect(scene.children.some((c) => c === state.sky)).toBe(true);
     });
 
     it('updateEnvironment should adjust fog based on altitude', () => {

@@ -8,7 +8,7 @@ let weatherMaterial: THREE.ShaderMaterial | null = null;
 let geometry: THREE.BufferGeometry | null = null;
 
 const MAX_PARTICLES = 15000;
-const BOX_SIZE = 15000.0; 
+const BOX_SIZE = 15000.0;
 
 let lastRequestId = 0;
 export let lastFetchTime = 0;
@@ -22,9 +22,14 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
 
         // ✅ Rate limiting: vérifier intervalle minimum
         const now = Date.now();
-        const isTest = (globalThis as any).process?.env?.NODE_ENV === 'test' || (import.meta as any).env?.MODE === 'test';
+        const isTest =
+            (globalThis as any).process?.env?.NODE_ENV === 'test' ||
+            (import.meta as any).env?.MODE === 'test';
         if (!isTest && now - lastFetchTime < MIN_FETCH_INTERVAL) {
-            if (state.DEBUG_MODE) console.log('[Weather] Rate limited - waiting before next request');
+            if (state.DEBUG_MODE)
+                console.log(
+                    '[Weather] Rate limited - waiting before next request'
+                );
             return;
         }
 
@@ -33,17 +38,22 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
         // Ajouter un timeout pour éviter les blocages
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-        
-        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,weather_code,freezing_level_height,uv_index,visibility,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,uv_index_max,weather_code&timezone=auto&forecast_days=3`, {
-            signal: controller.signal,
-            headers: {
-                'Accept': 'application/json',
+
+        const weatherRes = await fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,weather_code,freezing_level_height,uv_index,visibility,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,uv_index_max,weather_code&timezone=auto&forecast_days=3`,
+            {
+                signal: controller.signal,
+                headers: {
+                    Accept: 'application/json',
+                },
             }
-        });
+        );
         clearTimeout(timeoutId);
-        
+
         if (!weatherRes.ok) {
-            throw new Error(`Weather API error: ${weatherRes.status} ${weatherRes.statusText}`);
+            throw new Error(
+                `Weather API error: ${weatherRes.status} ${weatherRes.statusText}`
+            );
         }
         const data = await weatherRes.json();
 
@@ -54,18 +64,27 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
             const placeName = await getPlaceName(lat, lon);
             const countryName = getCountryName(lat, lon);
             if (placeName) {
-                locationName = countryName ? `${placeName}, ${countryName}` : placeName;
+                locationName = countryName
+                    ? `${placeName}, ${countryName}`
+                    : placeName;
             } else if (countryName) {
                 locationName = countryName;
             }
-        } catch (geoErr) { console.warn('[Weather] Geolocation reverse-geocoding failed silently:', geoErr); }
-        
+        } catch (geoErr) {
+            console.warn(
+                '[Weather] Geolocation reverse-geocoding failed silently:',
+                geoErr
+            );
+        }
+
         const current = data.current || data.current_weather;
         const code = current?.weather_code ?? current?.weathercode ?? 0;
 
         const date = new Date();
         const nowISO = date.toISOString().split(':')[0] + ':00';
-        let startIndex = data.hourly.time.findIndex((t: string) => t.startsWith(nowISO));
+        let startIndex = data.hourly.time.findIndex((t: string) =>
+            t.startsWith(nowISO)
+        );
         if (startIndex === -1) startIndex = date.getHours();
 
         const hourlyForecast = [];
@@ -75,13 +94,24 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
                     time: data.hourly.time[i].split('T')[1],
                     temp: data.hourly.temperature_2m[i],
                     code: data.hourly.weather_code[i],
-                    precip: data.hourly.precipitation_probability[i] ?? 0
+                    precip: data.hourly.precipitation_probability[i] ?? 0,
                 });
             }
         }
 
         // Parse daily forecast
-        const dailyForecast: { date: string; tempMax: number; tempMin: number; precipSum: number; precipProbMax: number; windSpeedMax: number; windGustsMax: number; windDirDominant: number; uvIndexMax: number; code: number; }[] = [];
+        const dailyForecast: {
+            date: string;
+            tempMax: number;
+            tempMin: number;
+            precipSum: number;
+            precipProbMax: number;
+            windSpeedMax: number;
+            windGustsMax: number;
+            windDirDominant: number;
+            uvIndexMax: number;
+            code: number;
+        }[] = [];
         if (data.daily && data.daily.time) {
             for (let i = 0; i < data.daily.time.length; i++) {
                 dailyForecast.push({
@@ -89,12 +119,14 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
                     tempMax: data.daily.temperature_2m_max[i],
                     tempMin: data.daily.temperature_2m_min[i],
                     precipSum: data.daily.precipitation_sum[i] ?? 0,
-                    precipProbMax: data.daily.precipitation_probability_max[i] ?? 0,
+                    precipProbMax:
+                        data.daily.precipitation_probability_max[i] ?? 0,
                     windSpeedMax: data.daily.wind_speed_10m_max[i] ?? 0,
                     windGustsMax: data.daily.wind_gusts_10m_max[i] ?? 0,
-                    windDirDominant: data.daily.wind_direction_10m_dominant[i] ?? 0,
+                    windDirDominant:
+                        data.daily.wind_direction_10m_dominant[i] ?? 0,
                     uvIndexMax: data.daily.uv_index_max[i] ?? 0,
-                    code: data.daily.weather_code[i] ?? 0
+                    code: data.daily.weather_code[i] ?? 0,
                 });
             }
         }
@@ -103,7 +135,7 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
         let speedMult = 1.0;
         if (code >= 51) {
             state.currentWeather = code >= 71 ? 'snow' : 'rain';
-            targetDensity = (code === 65 || code === 75) ? 10000 : 4000;
+            targetDensity = code === 65 || code === 75 ? 10000 : 4000;
             speedMult = code >= 65 ? 1.3 : 1.0;
         } else {
             state.currentWeather = 'clear';
@@ -125,30 +157,38 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
                 cloudCover: data.current.cloud_cover,
                 locationName: locationName,
                 uvIndex: data.hourly?.uv_index[startIndex] || 0,
-                freezingLevel: data.hourly?.freezing_level_height[startIndex] || 0,
+                freezingLevel:
+                    data.hourly?.freezing_level_height[startIndex] || 0,
                 visibility: (data.hourly?.visibility[startIndex] || 0) / 1000,
-                precProb: data.hourly?.precipitation_probability[startIndex] || 0,
+                precProb:
+                    data.hourly?.precipitation_probability[startIndex] || 0,
                 hourly: hourlyForecast,
-                daily: dailyForecast
+                daily: dailyForecast,
             };
-            
+
             // ✅ Météo récupérée avec succès, reset le flag d'indisponibilité
             state.weatherUnavailable = false;
         }
-
     } catch (e) {
         // Gestion robuste des erreurs CORS et réseau
         const errorMsg = e instanceof Error ? e.message : 'Unknown error';
         console.warn(`[Weather] Failed to fetch weather: ${errorMsg}`);
-        
+
         // Si c'est une erreur CORS ou réseau, on ne bloque pas l'app
-        if (errorMsg.includes('CORS') || errorMsg.includes('Failed to fetch') || errorMsg.includes('502') || errorMsg.includes('429')) {
-            console.warn('[Weather] CORS or network error - weather unavailable');
+        if (
+            errorMsg.includes('CORS') ||
+            errorMsg.includes('Failed to fetch') ||
+            errorMsg.includes('502') ||
+            errorMsg.includes('429')
+        ) {
+            console.warn(
+                '[Weather] CORS or network error - weather unavailable'
+            );
         }
-        
+
         // ✅ Indiquer que la météo est indisponible pour afficher un message dans l'UI
         state.weatherUnavailable = true;
-        
+
         // Fallback: météo claire pour que l'app continue de fonctionner
         state.currentWeather = 'clear';
     }
@@ -170,19 +210,25 @@ export function initWeatherSystem(scene: THREE.Scene): void {
     const positions = new Float32Array(MAX_PARTICLES * 3);
     const randoms = new Float32Array(MAX_PARTICLES);
     for (let i = 0; i < MAX_PARTICLES; i++) {
-        positions[i*3] = (Math.random()-0.5)*BOX_SIZE; positions[i*3+1] = (Math.random()-0.5)*BOX_SIZE; positions[i*3+2] = (Math.random()-0.5)*BOX_SIZE;
+        positions[i * 3] = (Math.random() - 0.5) * BOX_SIZE;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * BOX_SIZE;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * BOX_SIZE;
         randoms[i] = Math.random();
     }
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1));
-    
+
     weatherMaterial = new THREE.ShaderMaterial({
         uniforms: {
-            uTime: { value: 0 }, uCameraPos: { value: new THREE.Vector3() },
-            uSpeed: { value: 2000.0 }, uSize: { value: 30.0 },
-            uColor: { value: new THREE.Color(1, 1, 1) }, uBoxSize: { value: BOX_SIZE },
-            uOpacity: { value: 0.8 }, uIsRain: { value: 0.0 },
-            uWindVec: { value: new THREE.Vector3(0, 0, 0) }
+            uTime: { value: 0 },
+            uCameraPos: { value: new THREE.Vector3() },
+            uSpeed: { value: 2000.0 },
+            uSize: { value: 30.0 },
+            uColor: { value: new THREE.Color(1, 1, 1) },
+            uBoxSize: { value: BOX_SIZE },
+            uOpacity: { value: 0.8 },
+            uIsRain: { value: 0.0 },
+            uWindVec: { value: new THREE.Vector3(0, 0, 0) },
         },
         vertexShader: `
             #include <common>
@@ -236,11 +282,16 @@ export function initWeatherSystem(scene: THREE.Scene): void {
                 }
             }
         `,
-        transparent: true, depthWrite: false, depthTest: true, blending: THREE.NormalBlending
+        transparent: true,
+        depthWrite: false,
+        depthTest: true,
+        blending: THREE.NormalBlending,
     });
     weatherPoints = new THREE.Points(geometry, weatherMaterial);
-    weatherPoints.frustumCulled = false; weatherPoints.renderOrder = 9999;
-    weatherPoints.visible = false; scene.add(weatherPoints);
+    weatherPoints.frustumCulled = false;
+    weatherPoints.renderOrder = 9999;
+    weatherPoints.visible = false;
+    scene.add(weatherPoints);
 }
 
 /**
@@ -253,13 +304,23 @@ export function tickWeatherTime(delta: number): void {
     weatherMaterial.uniformsNeedUpdate = true;
 }
 
-export function updateWeatherSystem(delta: number, cameraPos: THREE.Vector3): void {
+export function updateWeatherSystem(
+    delta: number,
+    cameraPos: THREE.Vector3
+): void {
     if (!weatherPoints || !weatherMaterial || !geometry) return;
     const altitude = cameraPos.y;
     const is2D = state.RESOLUTION <= 2;
 
-    if (!state.SHOW_WEATHER || state.currentWeather === 'clear' || state.WEATHER_DENSITY <= 0 || altitude > 100000 || is2D) {
-        weatherPoints.visible = false; return;
+    if (
+        !state.SHOW_WEATHER ||
+        state.currentWeather === 'clear' ||
+        state.WEATHER_DENSITY <= 0 ||
+        altitude > 100000 ||
+        is2D
+    ) {
+        weatherPoints.visible = false;
+        return;
     }
     weatherPoints.visible = true;
     weatherMaterial.uniforms.uTime.value += delta;
@@ -267,24 +328,33 @@ export function updateWeatherSystem(delta: number, cameraPos: THREE.Vector3): vo
     weatherMaterial.uniformsNeedUpdate = true;
     geometry.setDrawRange(0, Math.min(state.WEATHER_DENSITY, MAX_PARTICLES));
 
-    let windMultiplier = 1.0; let windVec = new THREE.Vector3(0, 0, 0);
+    let windMultiplier = 1.0;
+    const windVec = new THREE.Vector3(0, 0, 0);
     if (state.weatherData) {
-        windMultiplier = 1.0 + (state.weatherData.windSpeed / 60.0);
+        windMultiplier = 1.0 + state.weatherData.windSpeed / 60.0;
         const angleRad = (state.weatherData.windDir - 90) * (Math.PI / 180);
         const windForce = state.weatherData.windSpeed * 20.0;
-        windVec.set(Math.cos(angleRad) * windForce, 0, Math.sin(angleRad) * windForce);
+        windVec.set(
+            Math.cos(angleRad) * windForce,
+            0,
+            Math.sin(angleRad) * windForce
+        );
     }
     weatherMaterial.uniforms.uWindVec.value.copy(windVec);
 
     if (state.currentWeather === 'rain') {
         weatherMaterial.uniforms.uIsRain.value = 1.0;
-        weatherMaterial.uniforms.uSpeed.value = 4000.0 * state.WEATHER_SPEED * windMultiplier;
-        weatherMaterial.uniforms.uSize.value = 50.0; weatherMaterial.uniforms.uColor.value.setHex(0xaaaaee);
+        weatherMaterial.uniforms.uSpeed.value =
+            4000.0 * state.WEATHER_SPEED * windMultiplier;
+        weatherMaterial.uniforms.uSize.value = 50.0;
+        weatherMaterial.uniforms.uColor.value.setHex(0xaaaaee);
         weatherMaterial.uniforms.uOpacity.value = 0.4;
     } else {
         weatherMaterial.uniforms.uIsRain.value = 0.0;
-        weatherMaterial.uniforms.uSpeed.value = 700.0 * state.WEATHER_SPEED * windMultiplier;
-        weatherMaterial.uniforms.uSize.value = 45.0; weatherMaterial.uniforms.uColor.value.setHex(0xffffff);
+        weatherMaterial.uniforms.uSpeed.value =
+            700.0 * state.WEATHER_SPEED * windMultiplier;
+        weatherMaterial.uniforms.uSize.value = 45.0;
+        weatherMaterial.uniforms.uColor.value.setHex(0xffffff);
         weatherMaterial.uniforms.uOpacity.value = 0.8;
     }
 }
@@ -309,6 +379,12 @@ export function disposeWeatherSystem(): void {
         weatherPoints.parent?.remove(weatherPoints);
         weatherPoints = null;
     }
-    if (geometry) { geometry.dispose(); geometry = null; }
-    if (weatherMaterial) { weatherMaterial.dispose(); weatherMaterial = null; }
+    if (geometry) {
+        geometry.dispose();
+        geometry = null;
+    }
+    if (weatherMaterial) {
+        weatherMaterial.dispose();
+        weatherMaterial = null;
+    }
 }

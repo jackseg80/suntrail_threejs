@@ -3,7 +3,7 @@ import { fetchWeather } from './weather';
 import { state } from './state';
 
 vi.mock('./geocodingService', () => ({
-    getPlaceName: vi.fn()
+    getPlaceName: vi.fn(),
 }));
 
 vi.mock('./geo', async () => {
@@ -30,26 +30,27 @@ describe('Weather Module (fetchWeather)', () => {
             if (url.includes('open-meteo')) {
                 return Promise.resolve({
                     ok: true,
-                    json: () => Promise.resolve({
-                        current: {
-                            temperature_2m: 12.5,
-                            weather_code: 61,
-                            apparent_temperature: 10.2,
-                            relative_humidity_2m: 80,
-                            wind_speed_10m: 15,
-                            wind_direction_10m: 220,
-                            cloud_cover: 90
-                        },
-                        hourly: {
-                            time: Array(48).fill('2024-01-01T12:00'),
-                            temperature_2m: Array(48).fill(12),
-                            weather_code: Array(48).fill(61),
-                            uv_index: Array(48).fill(1),
-                            freezing_level_height: Array(48).fill(2000),
-                            visibility: Array(48).fill(10000),
-                            precipitation_probability: Array(48).fill(80)
-                        }
-                    })
+                    json: () =>
+                        Promise.resolve({
+                            current: {
+                                temperature_2m: 12.5,
+                                weather_code: 61,
+                                apparent_temperature: 10.2,
+                                relative_humidity_2m: 80,
+                                wind_speed_10m: 15,
+                                wind_direction_10m: 220,
+                                cloud_cover: 90,
+                            },
+                            hourly: {
+                                time: Array(48).fill('2024-01-01T12:00'),
+                                temperature_2m: Array(48).fill(12),
+                                weather_code: Array(48).fill(61),
+                                uv_index: Array(48).fill(1),
+                                freezing_level_height: Array(48).fill(2000),
+                                visibility: Array(48).fill(10000),
+                                precipitation_probability: Array(48).fill(80),
+                            },
+                        }),
                 });
             }
             return Promise.reject(new Error('Unknown URL'));
@@ -61,7 +62,9 @@ describe('Weather Module (fetchWeather)', () => {
     });
 
     it('should set weatherUnavailable flag to true on API error', async () => {
-        globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 502 });
+        globalThis.fetch = vi
+            .fn()
+            .mockResolvedValue({ ok: false, status: 502 });
         await fetchWeather(46.8, 8.2);
         expect(state.weatherUnavailable).toBe(true);
         expect(state.currentWeather).toBe('clear');
@@ -72,20 +75,21 @@ describe('Weather Module (fetchWeather)', () => {
 
         globalThis.fetch = vi.fn().mockResolvedValue({
             ok: true,
-            json: () => Promise.resolve({
-                current: { temperature_2m: 20, weather_code: 0 },
-                hourly: { 
-                    time: Array(24).fill('2024-01-01T12:00'),
-                    temperature_2m: Array(24).fill(20),
-                    weather_code: Array(24).fill(0),
-                    uv_index: Array(24).fill(1),
-                    freezing_level_height: Array(24).fill(2000),
-                    visibility: Array(24).fill(10000),
-                    precipitation_probability: Array(24).fill(0)
-                }
-            })
+            json: () =>
+                Promise.resolve({
+                    current: { temperature_2m: 20, weather_code: 0 },
+                    hourly: {
+                        time: Array(24).fill('2024-01-01T12:00'),
+                        temperature_2m: Array(24).fill(20),
+                        weather_code: Array(24).fill(0),
+                        uv_index: Array(24).fill(1),
+                        freezing_level_height: Array(24).fill(2000),
+                        visibility: Array(24).fill(10000),
+                        precipitation_probability: Array(24).fill(0),
+                    },
+                }),
         });
-        
+
         state.weatherUnavailable = true;
         await fetchWeather(46.8, 8.2);
         expect(state.weatherUnavailable).toBe(false);

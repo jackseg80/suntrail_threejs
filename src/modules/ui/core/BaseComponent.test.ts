@@ -53,21 +53,35 @@ describe('BaseComponent', () => {
     });
 
     it('should handle missing template gracefully', () => {
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-        const component = new TestComponent('missing-template', 'test-container');
+        const consoleSpy = vi
+            .spyOn(console, 'error')
+            .mockImplementation(() => {});
+        const component = new TestComponent(
+            'missing-template',
+            'test-container'
+        );
         component.hydrate();
 
-        expect(consoleSpy).toHaveBeenCalledWith('Template with id "missing-template" not found.');
+        expect(consoleSpy).toHaveBeenCalledWith(
+            'Template with id "missing-template" not found.'
+        );
         expect(component.renderCalled).toBe(false);
         consoleSpy.mockRestore();
     });
 
     it('should handle missing container gracefully', () => {
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-        const component = new TestComponent('test-template', 'missing-container');
+        const consoleSpy = vi
+            .spyOn(console, 'error')
+            .mockImplementation(() => {});
+        const component = new TestComponent(
+            'test-template',
+            'missing-container'
+        );
         component.hydrate();
 
-        expect(consoleSpy).toHaveBeenCalledWith('Container with id "missing-container" not found.');
+        expect(consoleSpy).toHaveBeenCalledWith(
+            'Container with id "missing-container" not found.'
+        );
         expect(component.renderCalled).toBe(false);
         consoleSpy.mockRestore();
     });

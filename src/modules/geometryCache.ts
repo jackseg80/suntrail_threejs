@@ -8,7 +8,7 @@ const geometryCache = new BoundedCache<string, THREE.BufferGeometry>({
     maxSize: 64, // Garder les 64 dernières résolutions/tailles utilisées
     onEvict: (_key, geometry) => {
         geometry.dispose();
-    }
+    },
 });
 
 /**
@@ -43,10 +43,10 @@ function createPlaneWithSkirt(res: number, size: number): THREE.BufferGeometry {
     // Périmètre dans le sens horaire (vu de dessus) — nécessaire pour que
     // les triangles du skirt aient leur face visible vers l'extérieur.
     const perim: number[] = [];
-    for (let c = 0; c <= res; c++) perim.push(c);                            // top edge →
-    for (let r = 1; r <= res; r++) perim.push(r * stride + res);             // right edge ↓
-    for (let c = res - 1; c >= 0; c--) perim.push(res * stride + c);         // bottom edge ←
-    for (let r = res - 1; r >= 1; r--) perim.push(r * stride);               // left edge ↑
+    for (let c = 0; c <= res; c++) perim.push(c); // top edge →
+    for (let r = 1; r <= res; r++) perim.push(r * stride + res); // right edge ↓
+    for (let c = res - 1; c >= 0; c--) perim.push(res * stride + c); // bottom edge ←
+    for (let r = res - 1; r >= 1; r--) perim.push(r * stride); // left edge ↑
 
     const skirtCount = perim.length;
     const totalVerts = baseVertCount + skirtCount;
@@ -65,12 +65,12 @@ function createPlaneWithSkirt(res: number, size: number): THREE.BufferGeometry {
     for (let i = 0; i < skirtCount; i++) {
         const src = perim[i];
         const dst = baseVertCount + i;
-        positions[dst * 3]     = basePos[src * 3];
+        positions[dst * 3] = basePos[src * 3];
         positions[dst * 3 + 1] = basePos[src * 3 + 1];
         positions[dst * 3 + 2] = basePos[src * 3 + 2];
-        uvs[dst * 2]     = baseUvs[src * 2];
+        uvs[dst * 2] = baseUvs[src * 2];
         uvs[dst * 2 + 1] = baseUvs[src * 2 + 1];
-        normals[dst * 3]     = baseNormals[src * 3];
+        normals[dst * 3] = baseNormals[src * 3];
         normals[dst * 3 + 1] = baseNormals[src * 3 + 1];
         normals[dst * 3 + 2] = baseNormals[src * 3 + 2];
         aSkirt[dst] = 1.0;

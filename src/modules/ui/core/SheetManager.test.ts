@@ -65,7 +65,7 @@ describe('SheetManager', () => {
         expect(sheetManager.getActiveSheetId()).toBe('sheet-2');
     });
 
-    it('ARIA : role=dialog et aria-modal=true posés à l\'ouverture', () => {
+    it("ARIA : role=dialog et aria-modal=true posés à l'ouverture", () => {
         const sheet = createSheet('aria-sheet');
         sheetManager.open('aria-sheet');
 
@@ -114,11 +114,15 @@ describe('SheetManager', () => {
         createSheet('body-sheet');
         sheetManager.open('body-sheet');
         expect(document.body.classList.contains('sheet-open')).toBe(true);
-        expect(document.body.classList.contains('sheet-body-sheet-open')).toBe(true);
+        expect(document.body.classList.contains('sheet-body-sheet-open')).toBe(
+            true
+        );
 
         sheetManager.close();
         expect(document.body.classList.contains('sheet-open')).toBe(false);
-        expect(document.body.classList.contains('sheet-body-sheet-open')).toBe(false);
+        expect(document.body.classList.contains('sheet-body-sheet-open')).toBe(
+            false
+        );
     });
 
     // Note: le test overlay n'est pas fiable car SheetManager est un singleton
@@ -138,7 +142,10 @@ describe('SheetManager', () => {
         createSheet('esc-sheet');
         sheetManager.open('esc-sheet');
 
-        const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+        const event = new KeyboardEvent('keydown', {
+            key: 'Escape',
+            bubbles: true,
+        });
         document.dispatchEvent(event);
 
         expect(sheetManager.getActiveSheetId()).toBeNull();

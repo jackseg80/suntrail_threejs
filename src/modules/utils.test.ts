@@ -9,10 +9,10 @@ describe('utils.ts', () => {
     });
 
     it('should show toast message', () => {
-        showToast("Hello");
+        showToast('Hello');
         const toast = document.querySelector('.toast');
         expect(toast).not.toBeNull();
-        expect(toast?.textContent).toContain("Hello");
+        expect(toast?.textContent).toContain('Hello');
     });
 
     it('should debounce function calls', async () => {
@@ -25,7 +25,7 @@ describe('utils.ts', () => {
         debounced();
 
         expect(func).not.toHaveBeenCalled();
-        
+
         vi.advanceTimersByTime(150);
         expect(func).toHaveBeenCalledTimes(1);
         vi.useRealTimers();

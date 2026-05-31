@@ -56,10 +56,10 @@ describe('sun.ts', () => {
     it('should update sunLight intensity based on time', () => {
         updateSunPosition(720); // Midi
         const noonIntensity = state.sunLight?.intensity || 0;
-        
+
         updateSunPosition(0); // Minuit
         const midnightIntensity = state.sunLight?.intensity || 0;
-        
+
         expect(noonIntensity).toBeGreaterThan(midnightIntensity);
     });
 
@@ -82,7 +82,10 @@ describe('sun.ts', () => {
         // extent = max(2000, min(4 * 2446 * 0.8, 30000)) ≈ 7827
         expect(cam.right).toBeLessThan(50000);
         expect(cam.right).toBeGreaterThan(2000);
-        expect(cam.right).toBeCloseTo(4 * (40075000 / Math.pow(2, 14)) * 0.8, -2);
+        expect(cam.right).toBeCloseTo(
+            4 * (40075000 / Math.pow(2, 14)) * 0.8,
+            -2
+        );
         expect(cam.left).toBe(-cam.right);
         expect(cam.top).toBe(cam.right);
         expect(cam.bottom).toBe(-cam.right);
@@ -93,7 +96,7 @@ describe('sun.ts', () => {
         state.sunLight!.shadow.camera.right = 50000;
         state.SHADOWS = true;
         state.RANGE = 12; // ultra
-        state.ZOOM = 6;   // vue très large — tileSize énorme
+        state.ZOOM = 6; // vue très large — tileSize énorme
         state.controls = { target: new THREE.Vector3(0, 0, 0) } as any;
 
         updateSunPosition(720);
@@ -116,8 +119,8 @@ describe('sun.ts', () => {
 
     it('should handle NaN minutes gracefully', () => {
         const timeDisp = document.getElementById('time-disp');
-        if (timeDisp) timeDisp.textContent = "Old Value";
-        
+        if (timeDisp) timeDisp.textContent = 'Old Value';
+
         updateSunPosition(NaN);
         expect(timeDisp?.textContent).toBe('Old Value');
     });

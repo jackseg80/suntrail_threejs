@@ -16,7 +16,7 @@ describe('Slope Latitude Correction', () => {
 
     it('should have latFactor close to 1.0 at equator', () => {
         const zoom = 10;
-        const equatorTy = Math.pow(2, zoom-1); // Milieu de la grille Y
+        const equatorTy = Math.pow(2, zoom - 1); // Milieu de la grille Y
         const factor = getTileLatFactor(equatorTy, zoom);
         expect(factor).toBeGreaterThan(0.99);
     });
@@ -29,13 +29,13 @@ describe('Slope Latitude Correction', () => {
         // PI * (1 - 2 * yNorm) = asinh(tan(lat))
         // 1 - 2 * yNorm = asinh(tan(lat)) / PI
         // 2 * yNorm = 1 - asinh(tan(lat)) / PI
-        const latRad = 46 * Math.PI / 180;
-        const val = Math.log(Math.tan(latRad) + 1/Math.cos(latRad)); // asinh(tan(lat))
+        const latRad = (46 * Math.PI) / 180;
+        const val = Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)); // asinh(tan(lat))
         const yNorm = (1 - val / Math.PI) / 2;
-        
+
         const zoom = 14;
         const ty = Math.floor(yNorm * Math.pow(2, zoom));
-        
+
         const factor = getTileLatFactor(ty, zoom);
         expect(factor).toBeCloseTo(0.694, 1);
     });
@@ -43,12 +43,12 @@ describe('Slope Latitude Correction', () => {
     it('should correctly adjust pixelSize based on latitude', () => {
         const zoom = 14;
         const equatorSize = EARTH_CIRCUMFERENCE / (1 << zoom);
-        
+
         // Simulation Suisse ty=5815 @ Z14
-        const tySwiss = 5815; 
+        const tySwiss = 5815;
         const factor = getTileLatFactor(tySwiss, zoom);
         const swissTileSize = equatorSize * factor;
-        
+
         expect(swissTileSize).toBeLessThan(equatorSize * 0.8);
         expect(swissTileSize).toBeGreaterThan(equatorSize * 0.6);
     });

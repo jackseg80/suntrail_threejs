@@ -1,4 +1,3 @@
-
 /**
  * SunTrail Tile Worker Manager (v5.40.35)
  * Load balancing: least-loaded worker selection with per-worker concurrency cap.
@@ -33,7 +32,14 @@ class TileWorkerManager {
     /** Quel worker gère quelle task — nécessaire pour envoyer le message cancel au bon worker. */
     private taskWorkerMap = new Map<number, Worker>();
     /** Dédoublonnage des requêtes en cours pour éviter de surcharger les workers. */
-    private inFlight = new Map<string, { promise: Promise<TileWorkerResponse | null>, taskId: number, refCount: number }>();
+    private inFlight = new Map<
+        string,
+        {
+            promise: Promise<TileWorkerResponse | null>;
+            taskId: number;
+            refCount: number;
+        }
+    >();
     /** Nombre de tâches actives par worker (cap à MAX_PER_WORKER pour éviter la concurrence intra-worker). */
     private workerLoadCounts = new Map<Worker, number>();
     /** Tâches en attente quand tous les workers sont saturés. */
@@ -42,21 +48,48 @@ class TileWorkerManager {
 
     constructor(poolSize?: number) {
         if (typeof Worker === 'undefined') return;
-        const isMobile = typeof navigator !== 'undefined' && (/Mobi|Android/i.test(navigator.userAgent) || window.innerWidth <= 768);
+        const isMobile =
+            typeof navigator !== 'undefined' &&
+            (/Mobi|Android/i.test(navigator.userAgent) ||
+                window.innerWidth <= 768);
         const maxWorkers = isMobile ? 4 : 8;
-        const count = poolSize ?? Math.min(navigator.hardwareConcurrency || 4, maxWorkers);
+        const count =
+            poolSize ??
+            Math.min(navigator.hardwareConcurrency || 4, maxWorkers);
 
         for (let i = 0; i < count; i++) {
-            const worker = new Worker(new URL('../workers/tileWorker.ts', import.meta.url), { type: 'module' });
-            worker.onmessage = (e: MessageEvent<TileWorkerResponse>) => this.handleMessage(e);
-            worker.onerror = (e) => console.error('[WorkerManager] Worker crash:', e.message, e.filename, e.lineno);
+            const worker = new Worker(
+                new URL('../workers/tileWorker.ts', import.meta.url),
+                { type: 'module' }
+            );
+            worker.onmessage = (e: MessageEvent<TileWorkerResponse>) =>
+                this.handleMessage(e);
+            worker.onerror = (e) =>
+                console.error(
+                    '[WorkerManager] Worker crash:',
+                    e.message,
+                    e.filename,
+                    e.lineno
+                );
             this.workers.push(worker);
         }
-        if (state.DEBUG_MODE) console.log(`[WorkerManager] Initialized with ${this.workers.length} workers.`);
+        if (state.DEBUG_MODE)
+            console.log(
+                `[WorkerManager] Initialized with ${this.workers.length} workers.`
+            );
     }
 
     private handleMessage(e: MessageEvent<TileWorkerResponse>) {
-        const { id, error, cacheHits, networkRequests, forbidden, rateLimited, networkError, ...data } = e.data;
+        const {
+            id,
+            error,
+            cacheHits,
+            networkRequests,
+            forbidden,
+            rateLimited,
+            networkError,
+            ...data
+        } = e.data;
 
         for (const [key, entry] of this.inFlight.entries()) {
             if (entry.taskId === id) {
@@ -70,7 +103,9 @@ class TileWorkerManager {
             if (hasMoreKeys) disposeAllCachedTiles();
         }
         if (rateLimited) {
-            console.warn("[WorkerManager] 429 Rate limit MapTiler — backoff exponentiel actif dans les workers.");
+            console.warn(
+                '[WorkerManager] 429 Rate limit MapTiler — backoff exponentiel actif dans les workers.'
+            );
         }
         if (networkError) {
             reportNetworkFailure();
@@ -98,7 +133,12 @@ class TileWorkerManager {
         if (error) {
             task.reject(error);
         } else {
-            task.resolve({ id, cacheHits, networkRequests, ...data } as TileWorkerResponse);
+            task.resolve({
+                id,
+                cacheHits,
+                networkRequests,
+                ...data,
+            } as TileWorkerResponse);
         }
     }
 
@@ -109,7 +149,8 @@ class TileWorkerManager {
         for (const w of this.workers) {
             const load = this.workerLoadCounts.get(w) || 0;
             if (load < TileWorkerManager.MAX_PER_WORKER && load < bestLoad) {
-                best = w; bestLoad = load;
+                best = w;
+                bestLoad = load;
             }
         }
         return best;
@@ -167,7 +208,7 @@ class TileWorkerManager {
                 }
                 this.flushPendingQueue();
                 reject(err);
-            }
+            },
         });
 
         worker.postMessage(msg);
@@ -184,13 +225,22 @@ class TileWorkerManager {
     }
 
     loadTile(
-        tileX: number, tileY: number,
-        elevUrl: string | null, colorUrl: string | null, overlayUrl: string | null,
-        zoom: number, elevSourceZoom: number = zoom,
-        blobs?: { elev?: Blob | null, color?: Blob | null, overlay?: Blob | null },
+        tileX: number,
+        tileY: number,
+        elevUrl: string | null,
+        colorUrl: string | null,
+        overlayUrl: string | null,
+        zoom: number,
+        elevSourceZoom: number = zoom,
+        blobs?: {
+            elev?: Blob | null;
+            color?: Blob | null;
+            overlay?: Blob | null;
+        },
         is2D: boolean = false
-    ): { promise: Promise<TileWorkerResponse | null>, taskId: number } {
-        if (this.workers.length === 0 || !state.USE_WORKERS) return { promise: Promise.resolve(null), taskId: -1 };
+    ): { promise: Promise<TileWorkerResponse | null>; taskId: number } {
+        if (this.workers.length === 0 || !state.USE_WORKERS)
+            return { promise: Promise.resolve(null), taskId: -1 };
 
         const dedupeKey = `${tileX}|${tileY}|${elevUrl}|${colorUrl}|${overlayUrl}|${zoom}|${elevSourceZoom}|${is2D}`;
         const existing = this.inFlight.get(dedupeKey);
@@ -202,28 +252,40 @@ class TileWorkerManager {
         const taskId = this.nextTaskId++;
 
         const msg: TileWorkerRequest = {
-            id: taskId, tileX, tileY, elevUrl, colorUrl, overlayUrl,
-            isOffline: state.IS_OFFLINE, zoom, elevSourceZoom, is2D,
-            elevBlob: blobs?.elev, colorBlob: blobs?.color, overlayBlob: blobs?.overlay
+            id: taskId,
+            tileX,
+            tileY,
+            elevUrl,
+            colorUrl,
+            overlayUrl,
+            isOffline: state.IS_OFFLINE,
+            zoom,
+            elevSourceZoom,
+            is2D,
+            elevBlob: blobs?.elev,
+            colorBlob: blobs?.color,
+            overlayBlob: blobs?.overlay,
         };
 
-        const promise = new Promise<TileWorkerResponse | null>((resolve, reject) => {
-            const worker = this.selectWorker();
-            if (worker) {
-                this.dispatchTask(taskId, worker, msg, resolve, reject);
-            } else {
-                this.pendingQueue.push({
-                    id: taskId,
-                    dedupeKey,
-                    resolve,
-                    reject,
-                    dispatch: () => {
-                        const w = this.selectWorker()!;
-                        this.dispatchTask(taskId, w, msg, resolve, reject);
-                    }
-                });
+        const promise = new Promise<TileWorkerResponse | null>(
+            (resolve, reject) => {
+                const worker = this.selectWorker();
+                if (worker) {
+                    this.dispatchTask(taskId, worker, msg, resolve, reject);
+                } else {
+                    this.pendingQueue.push({
+                        id: taskId,
+                        dedupeKey,
+                        resolve,
+                        reject,
+                        dispatch: () => {
+                            const w = this.selectWorker()!;
+                            this.dispatchTask(taskId, w, msg, resolve, reject);
+                        },
+                    });
+                }
             }
-        });
+        );
 
         this.inFlight.set(dedupeKey, { promise, taskId, refCount: 1 });
         return { promise, taskId };
@@ -245,7 +307,9 @@ class TileWorkerManager {
         }
 
         // Retirer de la file d'attente si pas encore dispatché
-        const pendingIndex = this.pendingQueue.findIndex(e => e.id === taskId);
+        const pendingIndex = this.pendingQueue.findIndex(
+            (e) => e.id === taskId
+        );
         if (pendingIndex !== -1) {
             const entry = this.pendingQueue.splice(pendingIndex, 1)[0];
             entry.resolve(null);

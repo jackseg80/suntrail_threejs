@@ -20,7 +20,7 @@ const { mockT, mockHaptic } = vi.hoisted(() => {
             'onboarding.start': 'Commencer',
             'onboarding.explore': 'Explorer',
             'onboarding.importGpx': 'Importer',
-            'onboarding.searchPeak': 'Chercher'
+            'onboarding.searchPeak': 'Chercher',
         };
         return defaults[key] || key;
     });
@@ -29,11 +29,11 @@ const { mockT, mockHaptic } = vi.hoisted(() => {
 });
 
 vi.mock('../i18n/I18nService', () => ({
-    i18n: { t: mockT }
+    i18n: { t: mockT },
 }));
 
 vi.mock('./haptics', () => ({
-    haptic: mockHaptic
+    haptic: mockHaptic,
 }));
 
 import { requestOnboarding, showOnboarding } from './onboardingTutorial';
@@ -62,7 +62,9 @@ describe('onboardingTutorial', () => {
         it('should show overlay when not yet completed', async () => {
             void requestOnboarding();
             await vi.waitFor(() => {
-                expect(document.getElementById('onboarding-overlay')).not.toBeNull();
+                expect(
+                    document.getElementById('onboarding-overlay')
+                ).not.toBeNull();
             });
         });
 
@@ -114,7 +116,9 @@ describe('onboardingTutorial', () => {
             localStorage.setItem(ONBOARDING_KEY, '1');
             void showOnboarding();
             await vi.waitFor(() => {
-                expect(document.getElementById('onboarding-overlay')).not.toBeNull();
+                expect(
+                    document.getElementById('onboarding-overlay')
+                ).not.toBeNull();
             });
         });
 
@@ -198,12 +202,16 @@ describe('onboardingTutorial', () => {
         it('should have safe area padding in footer style', async () => {
             void showOnboarding();
             await vi.waitFor(() => {
-                expect(document.getElementById('onboarding-overlay')).not.toBeNull();
+                expect(
+                    document.getElementById('onboarding-overlay')
+                ).not.toBeNull();
             });
 
             const overlay = document.getElementById('onboarding-overlay')!;
             const style = overlay.querySelector('style')!;
-            expect(style.textContent).toContain('padding: 24px 24px calc(24px + env(safe-area-inset-bottom, 0px))');
+            expect(style.textContent).toContain(
+                'padding: 24px 24px calc(24px + env(safe-area-inset-bottom, 0px))'
+            );
         });
     });
 });

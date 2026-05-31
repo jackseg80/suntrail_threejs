@@ -17,16 +17,18 @@ vi.mock('./state', () => ({
         TARGET_LAT: 46.0,
         TARGET_LON: 7.0,
         ZOOM: 10,
-        originTile: { x: 0, y: 0, z: 10 }
+        originTile: { x: 0, y: 0, z: 10 },
     },
-    isProActive: vi.fn(() => false)
+    isProActive: vi.fn(() => false),
 }));
 
 vi.mock('./iap', () => ({ showUpgradePrompt: vi.fn() }));
 vi.mock('./haptics', () => ({ haptic: vi.fn() }));
 vi.mock('./gpxLayers', () => ({ addGPXLayer: vi.fn() }));
 vi.mock('./terrain', () => ({ updateVisibleTiles: vi.fn() }));
-vi.mock('./geo', () => ({ lngLatToTile: vi.fn(() => ({ x: 2130, y: 1445, z: 13 })) }));
+vi.mock('./geo', () => ({
+    lngLatToTile: vi.fn(() => ({ x: 2130, y: 1445, z: 13 })),
+}));
 
 import { GPXService } from './gpxService';
 import { state, isProActive } from './state';
@@ -46,12 +48,24 @@ const mockShowUpgradePrompt = showUpgradePrompt as ReturnType<typeof vi.fn>;
 describe('GPXService', () => {
     let gpxService: GPXService;
     const validTrack = {
-        tracks: [{
-            points: [
-                { lat: 46.5, lon: 7.5, ele: 1000, time: '2024-01-01T10:00:00Z' },
-                { lat: 46.51, lon: 7.51, ele: 1100, time: '2024-01-01T10:30:00Z' }
-            ]
-        }]
+        tracks: [
+            {
+                points: [
+                    {
+                        lat: 46.5,
+                        lon: 7.5,
+                        ele: 1000,
+                        time: '2024-01-01T10:00:00Z',
+                    },
+                    {
+                        lat: 46.51,
+                        lon: 7.51,
+                        ele: 1100,
+                        time: '2024-01-01T10:30:00Z',
+                    },
+                ],
+            },
+        ],
     };
 
     beforeEach(() => {
@@ -113,7 +127,9 @@ describe('GPXService', () => {
             mockParse.mockImplementation(function (this: any) {
                 this.tracks = validTrack.tracks;
             });
-            state.gpxLayers = [{ id: 'existing', name: 'Existing Track' } as any];
+            state.gpxLayers = [
+                { id: 'existing', name: 'Existing Track' } as any,
+            ];
             state.TARGET_LAT = 47.0;
             state.TARGET_LON = 8.0;
             state.ZOOM = 11;
@@ -133,7 +149,10 @@ describe('GPXService', () => {
             mockIsProActive.mockReturnValue(false);
             state.gpxLayers = [{ id: 'existing', name: 'Existing' } as any];
 
-            await gpxService.handleGPXImport('<gpx>...</gpx>', 'multi-track.gpx');
+            await gpxService.handleGPXImport(
+                '<gpx>...</gpx>',
+                'multi-track.gpx'
+            );
 
             expect(mockShowUpgradePrompt).not.toHaveBeenCalled();
             expect(mockAddGPXLayer).toHaveBeenCalled();
@@ -176,6 +195,87 @@ describe('GPXService', () => {
             expect(mockAddGPXLayer).toHaveBeenCalled();
             expect(mockAddGPXLayer.mock.calls[0][1]).toBe('track');
         });
+
+        it('should reject duplicate GPX import (same points)', async () => {
+            mockParse.mockImplementation(function (this: any) {
+                this.tracks = validTrack.tracks;
+            });
+
+            // First import
+            await gpxService.handleGPXImport('<gpx>...</gpx>', 'track.gpx');
+            expect(mockAddGPXLayer).toHaveBeenCalledTimes(1);
+
+            // Add the layer to state to simulate a previous import
+            state.gpxLayers = [
+                {
+                    id: 'existing-1',
+                    name: 'track',
+                    color: '#0066ff',
+                    rawData: validTrack as any,
+                } as any,
+            ];
+
+            // Second import of same data
+            mockAddGPXLayer.mockClear();
+            mockHaptic.mockClear();
+            await gpxService.handleGPXImport(
+                '<gpx>...</gpx>',
+                'track-duplicate.gpx'
+            );
+
+            expect(mockAddGPXLayer).not.toHaveBeenCalled();
+            expect(mockHaptic).toHaveBeenCalledWith('warning');
+        });
+
+        it('should allow import of different GPX (different points)', async () => {
+            mockParse.mockImplementation(function (this: any) {
+                this.tracks = validTrack.tracks;
+            });
+
+            // First import
+            await gpxService.handleGPXImport('<gpx>...</gpx>', 'track-a.gpx');
+            expect(mockAddGPXLayer).toHaveBeenCalledTimes(1);
+
+            // Add the layer to state
+            state.gpxLayers = [
+                {
+                    id: 'existing-1',
+                    name: 'track-a',
+                    color: '#0066ff',
+                    rawData: validTrack as any,
+                } as any,
+            ];
+
+            // Second import with different points
+            const differentTrack = {
+                tracks: [
+                    {
+                        points: [
+                            {
+                                lat: 48.8,
+                                lon: 2.3,
+                                ele: 50,
+                                time: '2024-01-01T10:00:00Z',
+                            },
+                            {
+                                lat: 48.81,
+                                lon: 2.31,
+                                ele: 60,
+                                time: '2024-01-01T10:30:00Z',
+                            },
+                        ],
+                    },
+                ],
+            };
+            mockParse.mockImplementation(function (this: any) {
+                this.tracks = differentTrack.tracks;
+            });
+
+            mockAddGPXLayer.mockClear();
+            await gpxService.handleGPXImport('<gpx>...</gpx>', 'track-b.gpx');
+
+            expect(mockAddGPXLayer).toHaveBeenCalledTimes(1);
+        });
     });
 
     describe('buildGPXStringFromLayer', () => {
@@ -204,13 +304,25 @@ describe('GPXService', () => {
             const layer = makeLayer({
                 name: 'My Track',
                 rawData: {
-                    tracks: [{
-                        points: [
-                            { lat: 46.5, lon: 7.5, ele: 1000, time: '2024-01-01T10:00:00Z' },
-                            { lat: 46.51, lon: 7.51, ele: 1100, time: '2024-01-01T10:30:00Z' }
-                        ]
-                    }]
-                }
+                    tracks: [
+                        {
+                            points: [
+                                {
+                                    lat: 46.5,
+                                    lon: 7.5,
+                                    ele: 1000,
+                                    time: '2024-01-01T10:00:00Z',
+                                },
+                                {
+                                    lat: 46.51,
+                                    lon: 7.51,
+                                    ele: 1100,
+                                    time: '2024-01-01T10:30:00Z',
+                                },
+                            ],
+                        },
+                    ],
+                },
             });
 
             const result = gpxService.buildGPXStringFromLayer(layer);
@@ -227,13 +339,15 @@ describe('GPXService', () => {
             const layer = makeLayer({
                 name: 'Alt Track',
                 rawData: {
-                    tracks: [{
-                        points: [
-                            { lat: 46.5, lon: 7.5, alt: 1500 },
-                            { lat: 46.51, lon: 7.51 }
-                        ]
-                    }]
-                }
+                    tracks: [
+                        {
+                            points: [
+                                { lat: 46.5, lon: 7.5, alt: 1500 },
+                                { lat: 46.51, lon: 7.51 },
+                            ],
+                        },
+                    ],
+                },
             });
 
             const result = gpxService.buildGPXStringFromLayer(layer);
@@ -246,8 +360,8 @@ describe('GPXService', () => {
             const layer = makeLayer({
                 name: '',
                 rawData: {
-                    tracks: [{ points: [{ lat: 46.5, lon: 7.5, ele: 500 }] }]
-                }
+                    tracks: [{ points: [{ lat: 46.5, lon: 7.5, ele: 500 }] }],
+                },
             });
 
             const result = gpxService.buildGPXStringFromLayer(layer);
@@ -258,7 +372,7 @@ describe('GPXService', () => {
         it('should handle layers with no points', () => {
             const layer = makeLayer({
                 name: 'Empty',
-                rawData: { tracks: [{ points: [] }] }
+                rawData: { tracks: [{ points: [] }] },
             });
 
             const result = gpxService.buildGPXStringFromLayer(layer);

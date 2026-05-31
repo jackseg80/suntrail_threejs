@@ -17,23 +17,32 @@ import { worldToLngLat } from './geo';
 let _lastAltDeg = 0;
 
 // Objets pré-alloués — évite les allocations GC dans updateSun() appelé chaque frame
-const _sunColor          = new THREE.Color();
-const _ambientColor      = new THREE.Color();
+const _sunColor = new THREE.Color();
+const _ambientColor = new THREE.Color();
 const _nightAmbientColor = new THREE.Color(0x444477);
-const _lerpA             = new THREE.Color();
-const _lerpB             = new THREE.Color();
-const _fogNight          = new THREE.Color(0x151530);
-const _fogDay            = new THREE.Color(0x87CEEB);
-const _sunVector         = new THREE.Vector3();
+const _lerpA = new THREE.Color();
+const _lerpB = new THREE.Color();
+const _fogNight = new THREE.Color(0x151530);
+const _fogDay = new THREE.Color(0x87ceeb);
+const _sunVector = new THREE.Vector3();
 
 /** Apply the translated solar phase label to #sun-phase based on altitude. */
 function applySolarPhaseLabel(altDeg: number): void {
     const phaseSpan = document.getElementById('sun-phase');
     if (!phaseSpan) return;
-    if (altDeg > 6) { phaseSpan.textContent = i18n.t('solar.phase.day'); phaseSpan.style.color = "#FFD700"; }
-    else if (altDeg > -4) { phaseSpan.textContent = i18n.t('solar.phase.golden'); phaseSpan.style.color = "#FF8C00"; }
-    else if (altDeg > -12) { phaseSpan.textContent = i18n.t('solar.phase.twilight'); phaseSpan.style.color = "#ADFF2F"; }
-    else { phaseSpan.textContent = i18n.t('solar.phase.night'); phaseSpan.style.color = "#87CEEB"; }
+    if (altDeg > 6) {
+        phaseSpan.textContent = i18n.t('solar.phase.day');
+        phaseSpan.style.color = '#FFD700';
+    } else if (altDeg > -4) {
+        phaseSpan.textContent = i18n.t('solar.phase.golden');
+        phaseSpan.style.color = '#FF8C00';
+    } else if (altDeg > -12) {
+        phaseSpan.textContent = i18n.t('solar.phase.twilight');
+        phaseSpan.style.color = '#ADFF2F';
+    } else {
+        phaseSpan.textContent = i18n.t('solar.phase.night');
+        phaseSpan.style.color = '#87CEEB';
+    }
 }
 
 // Re-translate the solar phase label whenever the locale changes
@@ -41,15 +50,19 @@ eventBus.on('localeChanged', () => applySolarPhaseLabel(_lastAltDeg));
 
 export function updateSunPosition(minutes: number): void {
     if (!state.sunLight || isNaN(minutes)) return;
-    
+
     const date = new Date(state.simDate);
     date.setHours(Math.floor(minutes / 60), Math.floor(minutes % 60), 0, 0);
-    
+
     // Utiliser la position réelle de la caméra (pas TARGET_LAT/LON qui est fixe)
     let lat = state.TARGET_LAT;
     let lon = state.TARGET_LON;
     if (state.controls?.target && state.originTile) {
-        const gps = worldToLngLat(state.controls.target.x, state.controls.target.z, state.originTile);
+        const gps = worldToLngLat(
+            state.controls.target.x,
+            state.controls.target.z,
+            state.originTile
+        );
         lat = gps.lat;
         lon = gps.lon;
     }
@@ -57,21 +70,22 @@ export function updateSunPosition(minutes: number): void {
     const pos = SunCalc.getPosition(date, lat, lon);
     const moonPos = SunCalc.getMoonPosition(date, lat, lon);
     const moonIllum = SunCalc.getMoonIllumination(date);
-    const altDeg = pos.altitude * 180 / Math.PI;
+    const altDeg = (pos.altitude * 180) / Math.PI;
     _lastAltDeg = altDeg;
-    
+
     // --- MISE À JOUR UI ---
     const timeDisp = document.getElementById('time-disp');
-    if (timeDisp) timeDisp.textContent = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    if (timeDisp)
+        timeDisp.textContent = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
     applySolarPhaseLabel(altDeg);
 
     // --- LOGIQUE DE LUMINOSITÉ ---
-    let sunIntensity = 0;
+    let sunIntensity: number;
     _sunColor.setHex(0xffffff);
-    let ambientIntensity = 0.20;
+    let ambientIntensity: number;
     _ambientColor.setHex(0xeef5ff);
 
-    const nightSunIntensity = 0.5 + (moonIllum.fraction * 1.0);
+    const nightSunIntensity = 0.5 + moonIllum.fraction * 1.0;
 
     let phi = pos.altitude;
     let az = pos.azimuth;
@@ -79,11 +93,19 @@ export function updateSunPosition(minutes: number): void {
     if (altDeg > 0) {
         // --- JOUR (incluant Heure Dorée) ---
         const t = Math.sin(pos.altitude);
-        sunIntensity = 1.2 + (t * 8.8);
-        ambientIntensity = 0.25 + (t * 0.10);
+        sunIntensity = 1.2 + t * 8.8;
+        ambientIntensity = 0.25 + t * 0.1;
         const colorT = Math.min(1, (altDeg + 4) / 10);
-        _sunColor.lerpColors(_lerpA.setHex(0xff4400), _lerpB.setHex(0xffffff), colorT);
-        _ambientColor.lerpColors(_lerpA.setHex(0xd0d8ff), _lerpB.setHex(0xf0f4ff), t);
+        _sunColor.lerpColors(
+            _lerpA.setHex(0xff4400),
+            _lerpB.setHex(0xffffff),
+            colorT
+        );
+        _ambientColor.lerpColors(
+            _lerpA.setHex(0xd0d8ff),
+            _lerpB.setHex(0xf0f4ff),
+            t
+        );
     } else if (altDeg > -12) {
         // --- CRÉPUSCULE (Transition vers la Lune) ---
         const t = (altDeg + 12) / 12; // 1 à l'horizon, 0 à la nuit
@@ -93,17 +115,25 @@ export function updateSunPosition(minutes: number): void {
         az = THREE.MathUtils.lerp(moonPos.azimuth, pos.azimuth, t);
 
         sunIntensity = THREE.MathUtils.lerp(nightSunIntensity, 1.2, t);
-        _sunColor.lerpColors(_lerpA.setHex(0xadc7ff), _lerpB.setHex(0xff4400), t);
+        _sunColor.lerpColors(
+            _lerpA.setHex(0xadc7ff),
+            _lerpB.setHex(0xff4400),
+            t
+        );
 
-        ambientIntensity = 0.20 + (t * 0.05);
-        _ambientColor.lerpColors(_nightAmbientColor, _lerpA.setHex(0xd0d8ff), t);
+        ambientIntensity = 0.2 + t * 0.05;
+        _ambientColor.lerpColors(
+            _nightAmbientColor,
+            _lerpA.setHex(0xd0d8ff),
+            t
+        );
     } else {
         // --- NUIT ---
         phi = moonPos.altitude > 0 ? moonPos.altitude : Math.PI / 4;
         az = moonPos.azimuth;
         sunIntensity = nightSunIntensity;
         _sunColor.setHex(0xadc7ff);
-        ambientIntensity = 0.20;
+        ambientIntensity = 0.2;
         _ambientColor.copy(_nightAmbientColor);
     }
 
@@ -116,7 +146,11 @@ export function updateSunPosition(minutes: number): void {
 
     if (state.sunLight) {
         if (state.controls?.target) {
-            state.sunLight.position.set(state.controls.target.x + _sunVector.x, state.controls.target.y + _sunVector.y, state.controls.target.z + _sunVector.z);
+            state.sunLight.position.set(
+                state.controls.target.x + _sunVector.x,
+                state.controls.target.y + _sunVector.y,
+                state.controls.target.z + _sunVector.z
+            );
             state.sunLight.target.position.copy(state.controls.target);
             state.sunLight.target.updateMatrixWorld();
         } else {
@@ -127,20 +161,26 @@ export function updateSunPosition(minutes: number): void {
 
         // v5.33.3 : Shadow Bias adaptatif (Fix ombres carrées à lumière rasante)
         // Plus le soleil est bas, plus on augmente le biais pour éviter les artefacts de précision.
-        const isMobile = (window.innerWidth <= 768);
+        const isMobile = window.innerWidth <= 768;
         const baseBias = isMobile ? -0.0005 : -0.0001;
         const biasFactor = THREE.MathUtils.clamp((10 - altDeg) / 10, 0, 1);
-        state.sunLight.shadow.bias = baseBias + (biasFactor * 0.0002);
+        state.sunLight.shadow.bias = baseBias + biasFactor * 0.0002;
 
         // Shadow camera dynamique par RANGE — adapte le frustum au terrain visible (v5.16.9, v5.31.1 tightened)
         if (state.SHADOWS && state.sunLight.shadow) {
             const tileSizeMeters = 40075000 / Math.pow(2, state.ZOOM);
-            const maxShadowExtent = state.PERFORMANCE_PRESET === 'balanced' ? 15000
-                : state.PERFORMANCE_PRESET === 'performance' ? 25000
-                : 30000; // ultra
-            const extent = Math.max(2000, Math.min(state.RANGE * tileSizeMeters * 0.8, maxShadowExtent));
+            const maxShadowExtent =
+                state.PERFORMANCE_PRESET === 'balanced'
+                    ? 15000
+                    : state.PERFORMANCE_PRESET === 'performance'
+                      ? 25000
+                      : 30000; // ultra
+            const extent = Math.max(
+                2000,
+                Math.min(state.RANGE * tileSizeMeters * 0.8, maxShadowExtent)
+            );
             const cam = state.sunLight.shadow.camera;
-            
+
             // v5.32.22 : Optimisation radicale de la précision Z pour les ombres
             // Au lieu de 100 -> 200000, on se centre sur la distance réelle du soleil (150000)
             // avec une marge pour le relief (exagéré à 9000m max).
@@ -148,9 +188,14 @@ export function updateSunPosition(minutes: number): void {
             const newNear = distance - zMargin;
             const newFar = distance + zMargin;
 
-            if (Math.abs(cam.right - extent) > 500 || Math.abs(cam.near - newNear) > 100) {
-                cam.left = -extent; cam.right = extent;
-                cam.top = extent; cam.bottom = -extent;
+            if (
+                Math.abs(cam.right - extent) > 500 ||
+                Math.abs(cam.near - newNear) > 100
+            ) {
+                cam.left = -extent;
+                cam.right = extent;
+                cam.top = extent;
+                cam.bottom = -extent;
                 cam.near = newNear;
                 cam.far = newFar;
                 cam.updateProjectionMatrix();
@@ -159,13 +204,29 @@ export function updateSunPosition(minutes: number): void {
                 // Plus on est zoomé, plus on réduit le biais pour éviter le "Peter Panning" (espace blanc)
                 const zoomFactor = Math.max(0, (state.ZOOM - 14) / 4); // 0 à LOD 14, 1 à LOD 18
                 const isMobile = window.innerWidth <= 768;
-                
+
                 if (isMobile) {
-                    state.sunLight.shadow.bias = THREE.MathUtils.lerp(-0.0005, -0.0001, zoomFactor);
-                    state.sunLight.shadow.normalBias = THREE.MathUtils.lerp(0.02, 0.005, zoomFactor);
+                    state.sunLight.shadow.bias = THREE.MathUtils.lerp(
+                        -0.0005,
+                        -0.0001,
+                        zoomFactor
+                    );
+                    state.sunLight.shadow.normalBias = THREE.MathUtils.lerp(
+                        0.02,
+                        0.005,
+                        zoomFactor
+                    );
                 } else {
-                    state.sunLight.shadow.bias = THREE.MathUtils.lerp(-0.0001, -0.00002, zoomFactor);
-                    state.sunLight.shadow.normalBias = THREE.MathUtils.lerp(0.01, 0.002, zoomFactor);
+                    state.sunLight.shadow.bias = THREE.MathUtils.lerp(
+                        -0.0001,
+                        -0.00002,
+                        zoomFactor
+                    );
+                    state.sunLight.shadow.normalBias = THREE.MathUtils.lerp(
+                        0.01,
+                        0.002,
+                        zoomFactor
+                    );
                 }
             }
         }
@@ -179,15 +240,22 @@ export function updateSunPosition(minutes: number): void {
     if (state.sky) {
         const uniforms = state.sky.material.uniforms;
         uniforms['sunPosition'].value.copy(_sunVector);
-        const skyFactor = Math.pow(Math.max(0, Math.min(1, (altDeg + 15) / 30)), 0.5);
-        uniforms['turbidity'].value = 1 + (skyFactor * 9);
-        uniforms['rayleigh'].value = 0.1 + (skyFactor * 3.0);
+        const skyFactor = Math.pow(
+            Math.max(0, Math.min(1, (altDeg + 15) / 30)),
+            0.5
+        );
+        uniforms['turbidity'].value = 1 + skyFactor * 9;
+        uniforms['rayleigh'].value = 0.1 + skyFactor * 3.0;
         uniforms['mieCoefficient'].value = 0.005;
     }
 
     if (state.renderer) state.renderer.shadowMap.needsUpdate = true;
 
-    if (state.scene?.fog && (state.scene.fog instanceof THREE.Fog || state.scene.fog instanceof THREE.FogExp2)) {
+    if (
+        state.scene?.fog &&
+        (state.scene.fog instanceof THREE.Fog ||
+            state.scene.fog instanceof THREE.FogExp2)
+    ) {
         const t = Math.max(0, (altDeg + 12) / 24);
         state.scene.fog.color.lerpColors(_fogNight, _fogDay, t);
     }
@@ -197,15 +265,26 @@ export function updateSunPosition(minutes: number): void {
  * Calcule le vecteur unitaire pointant vers le soleil à une date et position données.
  * Source unique de vérité pour solarRoute.ts — évite toute dérive avec l'ombre visuelle.
  */
-export function getSunDirection(date: Date, lat: number, lon: number): THREE.Vector3 {
+export function getSunDirection(
+    date: Date,
+    lat: number,
+    lon: number
+): THREE.Vector3 {
     const pos = SunCalc.getPosition(date, lat, lon);
-    return new THREE.Vector3().setFromSphericalCoords(1, Math.PI / 2 - pos.altitude, pos.azimuth + Math.PI);
+    return new THREE.Vector3().setFromSphericalCoords(
+        1,
+        Math.PI / 2 - pos.altitude,
+        pos.azimuth + Math.PI
+    );
 }
 
 export function updateShadowMapResolution(): void {
     if (!state.sunLight) return;
     const res = state.SHADOW_RES;
     state.sunLight.shadow.mapSize.set(res, res);
-    if (state.sunLight.shadow.map) { state.sunLight.shadow.map.dispose(); state.sunLight.shadow.map = null; }
+    if (state.sunLight.shadow.map) {
+        state.sunLight.shadow.map.dispose();
+        state.sunLight.shadow.map = null;
+    }
     if (state.renderer) state.renderer.shadowMap.needsUpdate = true;
 }

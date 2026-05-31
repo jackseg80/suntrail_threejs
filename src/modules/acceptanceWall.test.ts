@@ -9,13 +9,14 @@ const { mockT } = vi.hoisted(() => {
             'acceptance.item2.title': 'Reseau',
             'acceptance.item2.desc': 'La couverture reseau nest pas garantie.',
             'acceptance.item3.title': 'Meteo',
-            'acceptance.item3.desc': 'Les conditions peuvent changer rapidement.',
+            'acceptance.item3.desc':
+                'Les conditions peuvent changer rapidement.',
             'acceptance.item4.title': 'Risques',
             'acceptance.item4.desc': 'Randonnee comporte des risques.',
             'acceptance.item5.title': 'Batterie',
             'acceptance.item5.desc': 'Le GPS consomme de la batterie.',
             'acceptance.legal': 'En acceptant, vous reconnaissez...',
-            'acceptance.btn': 'J\'accepte'
+            'acceptance.btn': "J'accepte",
         };
         return defaults[key] || key;
     });
@@ -23,7 +24,7 @@ const { mockT } = vi.hoisted(() => {
 });
 
 vi.mock('../i18n/I18nService', () => ({
-    i18n: { t: mockT }
+    i18n: { t: mockT },
 }));
 
 import { hasAccepted, requestAcceptance } from './acceptanceWall';
@@ -67,21 +68,29 @@ describe('acceptanceWall', () => {
         it('should show overlay when not yet accepted', async () => {
             void requestAcceptance();
             await vi.waitFor(() => {
-                expect(document.getElementById('acceptance-wall-overlay')).not.toBeNull();
+                expect(
+                    document.getElementById('acceptance-wall-overlay')
+                ).not.toBeNull();
             });
-            expect(document.getElementById('acceptance-wall-overlay')).not.toBeNull();
+            expect(
+                document.getElementById('acceptance-wall-overlay')
+            ).not.toBeNull();
         });
 
         it('should render overlay with proper ARIA attributes', async () => {
             void requestAcceptance();
             await vi.waitFor(() => {
-                expect(document.getElementById('acceptance-wall-overlay')).not.toBeNull();
+                expect(
+                    document.getElementById('acceptance-wall-overlay')
+                ).not.toBeNull();
             });
 
             const overlay = document.getElementById('acceptance-wall-overlay')!;
             expect(overlay.getAttribute('role')).toBe('dialog');
             expect(overlay.getAttribute('aria-modal')).toBe('true');
-            expect(overlay.getAttribute('aria-labelledby')).toBe('acceptance-title');
+            expect(overlay.getAttribute('aria-labelledby')).toBe(
+                'acceptance-title'
+            );
         });
 
         it('should contain the accept button with correct text', async () => {
@@ -123,7 +132,9 @@ describe('acceptanceWall', () => {
 
             // After 320ms, overlay is removed
             vi.advanceTimersByTime(320);
-            expect(document.getElementById('acceptance-wall-overlay')).toBeNull();
+            expect(
+                document.getElementById('acceptance-wall-overlay')
+            ).toBeNull();
 
             vi.useRealTimers();
             await promise;
@@ -132,11 +143,17 @@ describe('acceptanceWall', () => {
         it('should trap focus (Tab key is prevented)', async () => {
             void requestAcceptance();
             await vi.waitFor(() => {
-                expect(document.getElementById('acceptance-wall-overlay')).not.toBeNull();
+                expect(
+                    document.getElementById('acceptance-wall-overlay')
+                ).not.toBeNull();
             });
 
             const overlay = document.getElementById('acceptance-wall-overlay')!;
-            const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+            const event = new KeyboardEvent('keydown', {
+                key: 'Tab',
+                bubbles: true,
+                cancelable: true,
+            });
             overlay.dispatchEvent(event);
 
             expect(event.defaultPrevented).toBe(true);

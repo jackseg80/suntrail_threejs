@@ -7,11 +7,11 @@ import { fetchLandcoverPBF } from './landcover';
 
 // Mocks
 vi.mock('./analysis', () => ({
-    getAltitudeAt: vi.fn(() => 1000)
+    getAltitudeAt: vi.fn(() => 1000),
 }));
 
 vi.mock('./landcover', () => ({
-    fetchLandcoverPBF: vi.fn()
+    fetchLandcoverPBF: vi.fn(),
 }));
 
 vi.mock('./geo', async (importOriginal) => {
@@ -20,7 +20,12 @@ vi.mock('./geo', async (importOriginal) => {
         ...actual,
         isPositionInSwitzerland: vi.fn(() => true),
         decodeTerrainRGB: vi.fn(() => 0),
-        getTileBounds: vi.fn(() => ({ north: 90, south: -90, east: 180, west: -180 })),
+        getTileBounds: vi.fn(() => ({
+            north: 90,
+            south: -90,
+            east: 180,
+            west: -180,
+        })),
     };
 });
 
@@ -49,14 +54,14 @@ describe('Hydrology Integration', () => {
                             { x: 2000, y: 1000 },
                             { x: 2000, y: 2000 },
                             { x: 1000, y: 2000 },
-                            { x: 1000, y: 1000 }
-                        ]
+                            { x: 1000, y: 1000 },
+                        ],
                     ],
                     extent: 4096,
                     bbox: { minX: 1000, maxX: 2000, minY: 1000, maxY: 2000 },
-                    properties: { class: 'lake' }
-                }
-            ]
+                    properties: { class: 'lake' },
+                },
+            ],
         });
 
         tile.lngLatToLocal = vi.fn().mockReturnValue({ x: 10, z: 10 });

@@ -5,7 +5,7 @@ describe('eventBus.ts', () => {
     it('should register and trigger listeners', () => {
         const spy = vi.fn();
         eventBus.on('terrainReady', spy);
-        
+
         eventBus.emit('terrainReady');
         expect(spy).toHaveBeenCalled();
     });
@@ -14,7 +14,7 @@ describe('eventBus.ts', () => {
         const spy = vi.fn();
         const payload = { worldX: 100, worldZ: 200, targetElevation: 1500 };
         eventBus.on('flyTo', spy);
-        
+
         eventBus.emit('flyTo', payload);
         expect(spy).toHaveBeenCalledWith(payload);
     });
@@ -23,7 +23,7 @@ describe('eventBus.ts', () => {
         const spy = vi.fn();
         eventBus.on('terrainReady', spy);
         eventBus.off('terrainReady', spy);
-        
+
         eventBus.emit('terrainReady');
         expect(spy).not.toHaveBeenCalled();
     });

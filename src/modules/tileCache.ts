@@ -30,7 +30,7 @@ const dataCache = new BoundedCache<string, CachedTileData>({
         data.color.dispose();
         if (data.overlay) data.overlay.dispose();
         if (data.normal) data.normal.dispose();
-    }
+    },
 });
 
 export function markCacheKeyActive(key: string): void {
@@ -45,9 +45,9 @@ export function markCacheKeyInactive(key: string): void {
  */
 function getMaxCacheSize(): number {
     const mobile = isMobileDevice();
-    if (state.PERFORMANCE_PRESET === 'ultra')       return mobile ? 500 : 800;
+    if (state.PERFORMANCE_PRESET === 'ultra') return mobile ? 500 : 800;
     if (state.PERFORMANCE_PRESET === 'performance') return mobile ? 360 : 500;
-    if (state.PERFORMANCE_PRESET === 'balanced')    return mobile ? 200 : 400;
+    if (state.PERFORMANCE_PRESET === 'balanced') return mobile ? 200 : 400;
     return 80; // eco
 }
 
@@ -55,7 +55,7 @@ function getMaxCacheSize(): number {
  * Génère une clé de cache cohérente pour une tuile.
  */
 export function getTileCacheKey(key: string, zoom: number): string {
-    const is2D = (zoom <= 10 || state.RESOLUTION <= 2);
+    const is2D = zoom <= 10 || state.RESOLUTION <= 2;
     return `${state.MAP_SOURCE}_z${zoom}_${state.SHOW_TRAILS}_${is2D ? '2D' : '3D'}_${key}`;
 }
 
@@ -67,18 +67,16 @@ export function getTileCacheKey(key: string, zoom: number): string {
  */
 export function purgeOldPixelData(): void {
     const preset = state.PERFORMANCE_PRESET;
-    const maxPixelData = preset === 'ultra' ? 50
-        : preset === 'performance' ? 30
-        : 10; // eco, balanced, custom
-    const maxParentPixelData = preset === 'ultra' ? 25
-        : preset === 'performance' ? 15
-        : 5; // eco, balanced, custom
+    const maxPixelData =
+        preset === 'ultra' ? 50 : preset === 'performance' ? 30 : 10; // eco, balanced, custom
+    const maxParentPixelData =
+        preset === 'ultra' ? 25 : preset === 'performance' ? 15 : 5; // eco, balanced, custom
     const currentZoom = state.ZOOM;
-    
+
     let keptCount = 0;
     let keptParentCount = 0;
     const entries = [...dataCache.entries()];
-    
+
     // Pass 1: Count active tiles (currently visible) in their respective budgets
     for (const [key, data] of entries) {
         if (data.pixelData && activeCacheKeys.has(key)) {
@@ -90,17 +88,17 @@ export function purgeOldPixelData(): void {
             }
         }
     }
-    
+
     // Pass 2: For inactive tiles, purge pixelData keeping only the most recently used.
     // Loop in REVERSE order (from newest to oldest) to respect LRU.
     for (let i = entries.length - 1; i >= 0; i--) {
         const [key, data] = entries[i];
-        
+
         if (!data.pixelData) continue;
         if (activeCacheKeys.has(key)) continue; // Already counted in Pass 1
-        
+
         const isParentZoom = key.includes(`_z${currentZoom - 1}_`);
-        
+
         if (isParentZoom) {
             if (keptParentCount < maxParentPixelData) {
                 keptParentCount++;
@@ -118,11 +116,24 @@ export function purgeOldPixelData(): void {
 }
 
 /**
- * Ajoute des données de tuiles au cache. 
+ * Ajoute des données de tuiles au cache.
  */
-export function addToCache(key: string, elevTex: THREE.Texture, pixelData: Uint8ClampedArray | null, colorTex: THREE.Texture, overlayTex: THREE.Texture | null, normalTex: THREE.Texture | null): void {
+export function addToCache(
+    key: string,
+    elevTex: THREE.Texture,
+    pixelData: Uint8ClampedArray | null,
+    colorTex: THREE.Texture,
+    overlayTex: THREE.Texture | null,
+    normalTex: THREE.Texture | null
+): void {
     dataCache.resize(getMaxCacheSize());
-    dataCache.set(key, { elev: elevTex, pixelData, color: colorTex, overlay: overlayTex, normal: normalTex });
+    dataCache.set(key, {
+        elev: elevTex,
+        pixelData,
+        color: colorTex,
+        overlay: overlayTex,
+        normal: normalTex,
+    });
 }
 
 /**

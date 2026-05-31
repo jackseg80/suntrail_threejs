@@ -16,12 +16,18 @@ const FAILURE_THRESHOLD = 3;
  * Maps Capacitor connectionType to our state type.
  * On web fallback, uses Network Information API (Chromium only).
  */
-function mapConnectionType(type: string): 'wifi' | 'cellular' | 'none' | 'unknown' {
+function mapConnectionType(
+    type: string
+): 'wifi' | 'cellular' | 'none' | 'unknown' {
     switch (type) {
-        case 'wifi': return 'wifi';
-        case 'cellular': return 'cellular';
-        case 'none': return 'none';
-        default: return 'unknown';
+        case 'wifi':
+            return 'wifi';
+        case 'cellular':
+            return 'cellular';
+        case 'none':
+            return 'none';
+        default:
+            return 'unknown';
     }
 }
 
@@ -83,9 +89,12 @@ export async function initNetworkMonitor(): Promise<void> {
             const status: ConnectionStatus = await Network.getStatus();
             applyStatus(status.connected, status.connectionType, false);
 
-            Network.addListener('networkStatusChange', (status: ConnectionStatus) => {
-                applyStatus(status.connected, status.connectionType, true);
-            });
+            Network.addListener(
+                'networkStatusChange',
+                (status: ConnectionStatus) => {
+                    applyStatus(status.connected, status.connectionType, true);
+                }
+            );
         } catch {
             // Plugin not available — fall through to web fallback
             await initWebFallback();
@@ -108,7 +117,11 @@ async function initWebFallback() {
     window.addEventListener('online', async () => {
         // Verify the claim with a real probe — navigator.onLine can lie
         const reallyOnline = await probeConnectivity();
-        applyStatus(reallyOnline, reallyOnline ? getWebConnectionType() : 'none', true);
+        applyStatus(
+            reallyOnline,
+            reallyOnline ? getWebConnectionType() : 'none',
+            true
+        );
     });
 
     window.addEventListener('offline', () => {
@@ -119,8 +132,12 @@ async function initWebFallback() {
     const conn = (navigator as any).connection;
     if (conn?.addEventListener) {
         conn.addEventListener('change', async () => {
-            const isOnline = navigator.onLine && await probeConnectivity();
-            applyStatus(isOnline, isOnline ? getWebConnectionType() : 'none', true);
+            const isOnline = navigator.onLine && (await probeConnectivity());
+            applyStatus(
+                isOnline,
+                isOnline ? getWebConnectionType() : 'none',
+                true
+            );
         });
     }
 }
@@ -136,7 +153,8 @@ function getWebConnectionType(): string {
     if (t === 'cellular') return 'cellular';
     if (t === 'none') return 'none';
     // effectiveType fallback (4g, 3g, 2g, slow-2g)
-    if (conn.effectiveType && conn.effectiveType !== 'unknown') return 'cellular';
+    if (conn.effectiveType && conn.effectiveType !== 'unknown')
+        return 'cellular';
     return 'unknown';
 }
 

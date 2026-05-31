@@ -1,11 +1,11 @@
 import { isProActive } from './iap';
 
-export type FeatureId = 
-    | 'lod_high'        // Capacité à zoomer au-delà de 14
-    | 'solar_calendar'  // Accès au calendrier solaire complet
-    | 'weather_pro'     // Météo détaillée (graphiques, 3 jours)
-    | 'satellite'       // Source satellite
-    | 'inclinometer'    // Viseur mobile
+export type FeatureId =
+    | 'lod_high' // Capacité à zoomer au-delà de 14
+    | 'solar_calendar' // Accès au calendrier solaire complet
+    | 'weather_pro' // Météo détaillée (graphiques, 3 jours)
+    | 'satellite' // Source satellite
+    | 'inclinometer' // Viseur mobile
     | 'offline_unlimited'; // Plus d'une zone hors-ligne
 
 /**
@@ -21,7 +21,7 @@ export function isFeatureEnabled(featureId: FeatureId): boolean {
         case 'lod_high':
             // Retourne false pour forcer le plafonnement à 14 dans scene.ts
             return false;
-            
+
         case 'solar_calendar':
         case 'weather_pro':
         case 'satellite':
@@ -37,6 +37,10 @@ export function isFeatureEnabled(featureId: FeatureId): boolean {
 /**
  * Retourne la valeur plafonnée pour une ressource selon le statut Pro.
  */
-export function getFeatureLimit<T>(featureId: FeatureId, proValue: T, freeValue: T): T {
+export function getFeatureLimit<T>(
+    featureId: FeatureId,
+    proValue: T,
+    freeValue: T
+): T {
     return isFeatureEnabled(featureId) ? proValue : freeValue;
 }

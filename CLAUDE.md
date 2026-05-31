@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.56.3)
+# SunTrail — Guide IA (v5.56.4)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-31 — v5.56.3 : Unification geocoding, bouton refresh météo, fix label source carte, format GPX Ville (Pays).
+> Mis à jour le 2026-05-31 — v5.56.4 : ESLint+Prettier configurés, refactoring SolarProbeSheet, détection doublon GPX, +33 tests, corrections qualité code.
 
 ## Projet
 

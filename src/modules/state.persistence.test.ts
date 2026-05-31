@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { saveLastView, state, loadSettings, CURRENT_SETTINGS_VERSION } from './state';
+import {
+    saveLastView,
+    state,
+    loadSettings,
+    CURRENT_SETTINGS_VERSION,
+} from './state';
 import * as THREE from 'three';
 
 describe('Audit Persistance Vue (v5.29.6)', () => {
@@ -16,11 +21,13 @@ describe('Audit Persistance Vue (v5.29.6)', () => {
 
     it('SHOULD save current target coordinates and zoom to localStorage after debounce', () => {
         saveLastView();
-        
+
         // Faire avancer le temps pour déclencher le saveSettings()
         vi.advanceTimersByTime(400);
-        
-        const saved = JSON.parse(localStorage.getItem('suntrail_settings') || '{}');
+
+        const saved = JSON.parse(
+            localStorage.getItem('suntrail_settings') || '{}'
+        );
         expect(saved.LAST_LAT).toBeDefined();
         expect(saved.LAST_LON).toBeDefined();
         expect(saved.LAST_ZOOM).toBe(15);
@@ -34,7 +41,7 @@ describe('Audit Persistance Vue (v5.29.6)', () => {
             PERFORMANCE_PRESET: 'balanced',
             LAST_LAT: 45.123,
             LAST_LON: 6.456,
-            LAST_ZOOM: 12
+            LAST_ZOOM: 12,
         };
         localStorage.setItem('suntrail_settings', JSON.stringify(settings));
 

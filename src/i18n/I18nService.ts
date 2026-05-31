@@ -36,7 +36,10 @@ class I18nService {
             return key;
         }
         if (vars) {
-            return value.replace(/\{\{(\w+)\}\}/g, (_, name: string) => vars[name] ?? `{{${name}}}`);
+            return value.replace(
+                /\{\{(\w+)\}\}/g,
+                (_, name: string) => vars[name] ?? `{{${name}}}`
+            );
         }
         return value;
     }
@@ -68,19 +71,19 @@ class I18nService {
     applyToDOM(root: Element | DocumentFragment): void {
         // textContent translations
         const els = root.querySelectorAll('[data-i18n]');
-        els.forEach(el => {
+        els.forEach((el) => {
             const key = el.getAttribute('data-i18n');
             if (key) el.textContent = this.t(key);
         });
         // placeholder translations
         const placeholders = root.querySelectorAll('[data-i18n-placeholder]');
-        placeholders.forEach(el => {
+        placeholders.forEach((el) => {
             const key = el.getAttribute('data-i18n-placeholder');
             if (key) (el as HTMLInputElement).placeholder = this.t(key);
         });
         // aria-label translations (a11y)
         const ariaLabels = root.querySelectorAll('[data-i18n-aria-label]');
-        ariaLabels.forEach(el => {
+        ariaLabels.forEach((el) => {
             const key = el.getAttribute('data-i18n-aria-label');
             if (key) el.setAttribute('aria-label', this.t(key));
         });
@@ -91,7 +94,8 @@ class I18nService {
         const parts = key.split('.');
         let current: unknown = obj;
         for (const part of parts) {
-            if (current == null || typeof current !== 'object') return undefined;
+            if (current == null || typeof current !== 'object')
+                return undefined;
             current = (current as Record<string, unknown>)[part];
         }
         return typeof current === 'string' ? current : undefined;

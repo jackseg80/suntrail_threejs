@@ -5,7 +5,7 @@ const { mockHaptics } = vi.hoisted(() => ({
         impact: vi.fn(),
         notification: vi.fn(),
         selectionChanged: vi.fn(),
-    }
+    },
 }));
 
 vi.mock('@capacitor/haptics', () => ({
@@ -17,7 +17,9 @@ vi.mock('@capacitor/haptics', () => ({
 import { haptic } from './haptics';
 
 describe('haptic()', () => {
-    beforeEach(() => { vi.clearAllMocks(); });
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
 
     it('appelle Haptics.impact avec Light pour "light"', async () => {
         await haptic('light');
@@ -36,12 +38,16 @@ describe('haptic()', () => {
 
     it('appelle Haptics.notification avec Success pour "success"', async () => {
         await haptic('success');
-        expect(mockHaptics.notification).toHaveBeenCalledWith({ type: 'SUCCESS' });
+        expect(mockHaptics.notification).toHaveBeenCalledWith({
+            type: 'SUCCESS',
+        });
     });
 
     it('appelle Haptics.notification avec Warning pour "warning"', async () => {
         await haptic('warning');
-        expect(mockHaptics.notification).toHaveBeenCalledWith({ type: 'WARNING' });
+        expect(mockHaptics.notification).toHaveBeenCalledWith({
+            type: 'WARNING',
+        });
     });
 
     it('appelle Haptics.selectionChanged pour "selection"', async () => {

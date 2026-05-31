@@ -26,7 +26,9 @@ export class TopStatusBar extends BaseComponent {
         this.lodBadge = this.element.querySelector('.lod-badge');
         this.weatherIcon = this.element.querySelector('.weather-icon');
         this.weatherTemp = this.element.querySelector('.weather-temp');
-        this.netStatusIcon = this.element.querySelector('#net-status-icon') as HTMLElement;
+        this.netStatusIcon = this.element.querySelector(
+            '#net-status-icon'
+        ) as HTMLElement;
         this.recWidget = this.element.querySelector('.rec-indicator');
         this.recTimer = this.element.querySelector('.rec-timer');
 
@@ -39,7 +41,10 @@ export class TopStatusBar extends BaseComponent {
         });
 
         // ARIA: icon buttons need aria-label
-        this.netStatusIcon?.setAttribute('aria-label', i18n.t('topbar.aria.network'));
+        this.netStatusIcon?.setAttribute(
+            'aria-label',
+            i18n.t('topbar.aria.network')
+        );
         this.netStatusIcon?.addEventListener('click', (e) => {
             e.stopPropagation();
             sheetManager.toggle('connectivity');
@@ -63,24 +68,47 @@ export class TopStatusBar extends BaseComponent {
         this.updateNetwork();
         this.updateRecStatus(state.isRecording);
 
-        this.addSubscription(state.subscribe('ZOOM', (val: number) => this.updateLOD(val)));
-        this.addSubscription(state.subscribe('MAP_SOURCE', () => this.updateLOD(state.ZOOM)));
-        this.addSubscription(state.subscribe('TARGET_LAT', () => this.updateLOD(state.ZOOM)));
-        this.addSubscription(state.subscribe('weatherData', (val: any) => this.updateWeather(val)));
-        this.addSubscription(state.subscribe('IS_OFFLINE', () => this.updateNetwork()));
-        this.addSubscription(state.subscribe('isNetworkAvailable', () => this.updateNetwork()));
-        this.addSubscription(state.subscribe('isRecording', (val: boolean) => this.updateRecStatus(val)));
+        this.addSubscription(
+            state.subscribe('ZOOM', (val: number) => this.updateLOD(val))
+        );
+        this.addSubscription(
+            state.subscribe('MAP_SOURCE', () => this.updateLOD(state.ZOOM))
+        );
+        this.addSubscription(
+            state.subscribe('TARGET_LAT', () => this.updateLOD(state.ZOOM))
+        );
+        this.addSubscription(
+            state.subscribe('weatherData', (val: any) =>
+                this.updateWeather(val)
+            )
+        );
+        this.addSubscription(
+            state.subscribe('IS_OFFLINE', () => this.updateNetwork())
+        );
+        this.addSubscription(
+            state.subscribe('isNetworkAvailable', () => this.updateNetwork())
+        );
+        this.addSubscription(
+            state.subscribe('isRecording', (val: boolean) =>
+                this.updateRecStatus(val)
+            )
+        );
 
         // Update aria-labels on locale change
         const onLocaleChanged = () => this.updateAriaLabels();
         eventBus.on('localeChanged', onLocaleChanged);
-        this.addSubscription(() => eventBus.off('localeChanged', onLocaleChanged));
+        this.addSubscription(() =>
+            eventBus.off('localeChanged', onLocaleChanged)
+        );
     }
 
     private updateAriaLabels(): void {
         if (!this.element) return;
         this.updatePillAriaLabel();
-        this.netStatusIcon?.setAttribute('aria-label', i18n.t('topbar.aria.network'));
+        this.netStatusIcon?.setAttribute(
+            'aria-label',
+            i18n.t('topbar.aria.network')
+        );
         const recWidget = this.element.querySelector('.rec-indicator');
         recWidget?.setAttribute('aria-label', i18n.t('topbar.aria.recording'));
         const sosBtn = this.element.querySelector('#sos-main-btn');
@@ -91,7 +119,7 @@ export class TopStatusBar extends BaseComponent {
 
     private updateRecStatus(isRecording: boolean): void {
         if (!this.recWidget) return;
-        
+
         if (isRecording) {
             this.recWidget.style.display = 'flex';
             this.startTimer();
@@ -103,22 +131,26 @@ export class TopStatusBar extends BaseComponent {
 
     private startTimer() {
         if (this.recInterval) clearInterval(this.recInterval);
-        const startTime = state.recordedPoints.length > 0 ? state.recordedPoints[0].timestamp : Date.now();
-        
+        const startTime =
+            state.recordedPoints.length > 0
+                ? state.recordedPoints[0].timestamp
+                : Date.now();
+
         const update = () => {
             if (!this.recTimer) return;
             const elapsed = Date.now() - startTime;
             const sec = Math.floor((elapsed / 1000) % 60);
             const min = Math.floor((elapsed / 60000) % 60);
             const hrs = Math.floor(elapsed / 3600000);
-            
-            const timeStr = hrs > 0 
-                ? `${hrs}:${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
-                : `${min}:${sec.toString().padStart(2, '0')}`;
-            
+
+            const timeStr =
+                hrs > 0
+                    ? `${hrs}:${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
+                    : `${min}:${sec.toString().padStart(2, '0')}`;
+
             this.recTimer.textContent = timeStr;
         };
-        
+
         update();
         this.recInterval = setInterval(update, 1000);
     }
@@ -133,18 +165,24 @@ export class TopStatusBar extends BaseComponent {
     private updateLOD(zoom: number): void {
         if (this.lodBadge) {
             let sourceKey = 'world';
-            
+
             if (state.MAP_SOURCE === 'satellite') {
                 sourceKey = 'sat';
             } else {
                 const lat = state.TARGET_LAT;
                 const lon = state.TARGET_LON;
                 const code = getCountryCode(lat, lon);
-                
+
                 switch (code) {
-                    case 'CH': sourceKey = 'swiss'; break;
-                    case 'IT': sourceKey = 'italy'; break;
-                    case 'FR': sourceKey = 'ign'; break;
+                    case 'CH':
+                        sourceKey = 'swiss';
+                        break;
+                    case 'IT':
+                        sourceKey = 'italy';
+                        break;
+                    case 'FR':
+                        sourceKey = 'ign';
+                        break;
                 }
             }
 

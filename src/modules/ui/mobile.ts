@@ -7,7 +7,7 @@ import { nativeGPSService } from '../nativeGPSService';
 /**
  * Initializes mobile-specific UI logic, such as back button handling.
  * This is primarily for Android/Capacitor environments.
- * 
+ *
  * v5.25.0 - Single Source of Truth : le natif Android gère entièrement
  * l'enregistrement GPS. Le JS n'a plus besoin de persister ou merger.
  */
@@ -22,7 +22,10 @@ export function initMobileUI(): void {
         } else {
             window.history.back();
         }
-    }).catch(e => { if (state.DEBUG_MODE) console.warn('[Mobile] backButton listener failed', e); });
+    }).catch((e) => {
+        if (state.DEBUG_MODE)
+            console.warn('[Mobile] backButton listener failed', e);
+    });
 
     // Gestion du cycle de vie Android (v5.25.0)
     // — Background : le natif continue d'enregistrer dans SQLite
@@ -54,25 +57,31 @@ export function initMobileUI(): void {
                 // Implicit Flow — tokens directs reçus du callback
                 const { error: setError } = await supabase.auth.setSession({
                     access_token: accessToken,
-                    refresh_token: refreshToken
+                    refresh_token: refreshToken,
                 });
                 error = setError;
             } else {
                 // Code Flow — échanger code pour session
-                const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(url);
+                const { error: exchangeError } =
+                    await supabase.auth.exchangeCodeForSession(url);
                 error = exchangeError;
             }
 
             if (error) {
-                if (state.DEBUG_MODE) console.error('[OAuth] Auth failed:', error);
+                if (state.DEBUG_MODE)
+                    console.error('[OAuth] Auth failed:', error);
                 await Browser.close().catch(() => {});
                 return;
             }
 
             // Vérifier que la session est bien établie
-            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            const {
+                data: { session },
+                error: sessionError,
+            } = await supabase.auth.getSession();
             if (sessionError || !session?.user?.id) {
-                if (state.DEBUG_MODE) console.error('[OAuth] Session not established');
+                if (state.DEBUG_MODE)
+                    console.error('[OAuth] Session not established');
                 await Browser.close().catch(() => {});
                 return;
             }
@@ -88,9 +97,14 @@ export function initMobileUI(): void {
             try {
                 const { Browser } = await import('@capacitor/browser');
                 await Browser.close();
-            } catch {}
+            } catch {
+                /* Browser close can fail */
+            }
         }
-    }).catch(e => { if (state.DEBUG_MODE) console.warn('[Mobile] appUrlOpen listener failed', e); });
+    }).catch((e) => {
+        if (state.DEBUG_MODE)
+            console.warn('[Mobile] appUrlOpen listener failed', e);
+    });
 
     App.addListener('appStateChange', async ({ isActive }) => {
         if (!isActive) {
@@ -101,7 +115,11 @@ export function initMobileUI(): void {
             }
         } else {
             // App revient en foreground
-            if (_wasRecordingWhenBackgrounded && state.isRecording && state.currentCourseId) {
+            if (
+                _wasRecordingWhenBackgrounded &&
+                state.isRecording &&
+                state.currentCourseId
+            ) {
                 _wasRecordingWhenBackgrounded = false;
 
                 // Récupérer les points enregistrés pendant le background
@@ -116,5 +134,8 @@ export function initMobileUI(): void {
                 }
             }
         }
-    }).catch(e => { if (state.DEBUG_MODE) console.warn('[Mobile] appStateChange listener failed', e); });
+    }).catch((e) => {
+        if (state.DEBUG_MODE)
+            console.warn('[Mobile] appStateChange listener failed', e);
+    });
 }

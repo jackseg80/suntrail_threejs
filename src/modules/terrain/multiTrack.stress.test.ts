@@ -10,7 +10,11 @@ vi.mock('../analysis', async (importOriginal) => {
         ...actual,
         getAltitudeAt: vi.fn().mockReturnValue(100),
         findTerrainIntersection: vi.fn(),
-        drapeToTerrain: vi.fn().mockImplementation((pts: any[]) => pts.map(() => new THREE.Vector3(0, 12, 0)))
+        drapeToTerrain: vi
+            .fn()
+            .mockImplementation((pts: any[]) =>
+                pts.map(() => new THREE.Vector3(0, 12, 0))
+            ),
     };
 });
 
@@ -20,7 +24,7 @@ vi.mock('../geo', async (importOriginal) => {
         ...actual,
         lngLatToWorld: vi.fn(() => new THREE.Vector3(0, 0, 0)),
         worldToLngLat: vi.fn().mockReturnValue({ lat: 46, lon: 7 }),
-        haversineDistance: () => 1.0
+        haversineDistance: () => 1.0,
     };
 });
 
@@ -40,15 +44,15 @@ describe('Audit Stress Test Multi-Tracés (v5.29.25)', () => {
         for (let t = 0; t < TRACK_COUNT; t++) {
             const points = [];
             for (let i = 0; i < POINTS_PER_TRACK; i++) {
-                points.push({ 
-                    lat: 46 + t * 0.01 + i * 0.0001, 
-                    lon: 7 + t * 0.01 + i * 0.0001, 
-                    ele: 1000 
+                points.push({
+                    lat: 46 + t * 0.01 + i * 0.0001,
+                    lon: 7 + t * 0.01 + i * 0.0001,
+                    ele: 1000,
                 });
             }
 
             const rawData = {
-                tracks: [{ points }]
+                tracks: [{ points }],
             };
 
             const layer = addGPXLayer(rawData as any, `StressTrack_${t}`);

@@ -1,9 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { classifyFeature, searchLocations, CLASSIFICATIONS, getPlaceName } from './geocodingService';
+import {
+    classifyFeature,
+    searchLocations,
+    CLASSIFICATIONS,
+    getPlaceName,
+} from './geocodingService';
 import * as utils from './utils';
 
 vi.mock('./utils', () => ({
-    fetchGeocoding: vi.fn()
+    fetchGeocoding: vi.fn(),
 }));
 
 describe('geocodingService.ts', () => {
@@ -16,8 +21,8 @@ describe('geocodingService.ts', () => {
             vi.mocked(utils.fetchGeocoding).mockResolvedValue({
                 features: [
                     { place_type: ['place'], text: 'Zermatt' },
-                    { place_type: ['region'], text: 'Valais' }
-                ]
+                    { place_type: ['region'], text: 'Valais' },
+                ],
             });
 
             const name = await getPlaceName(46.02, 7.74);
@@ -26,7 +31,7 @@ describe('geocodingService.ts', () => {
 
         it('should return village name from Nominatim format', async () => {
             vi.mocked(utils.fetchGeocoding).mockResolvedValue({
-                address: { village: 'Arolla', county: 'Hérens' }
+                address: { village: 'Arolla', county: 'Hérens' },
             });
 
             const name = await getPlaceName(46.02, 7.48);
@@ -58,7 +63,9 @@ describe('geocodingService.ts', () => {
 
         it('should force peak classification when specified', () => {
             const feature = { place_type: ['place'] };
-            expect(classifyFeature(feature, true)).toEqual(CLASSIFICATIONS.peak);
+            expect(classifyFeature(feature, true)).toEqual(
+                CLASSIFICATIONS.peak
+            );
         });
     });
 
@@ -69,11 +76,13 @@ describe('geocodingService.ts', () => {
 
         it('should handle MapTiler GeoJSON format', async () => {
             vi.mocked(utils.fetchGeocoding).mockResolvedValue({
-                features: [{
-                    geometry: { coordinates: [7.5, 46.5] },
-                    place_name: 'Test Place',
-                    place_type: ['place']
-                }]
+                features: [
+                    {
+                        geometry: { coordinates: [7.5, 46.5] },
+                        place_name: 'Test Place',
+                        place_type: ['place'],
+                    },
+                ],
             });
 
             const results = await searchLocations('test');
@@ -85,12 +94,14 @@ describe('geocodingService.ts', () => {
         });
 
         it('should handle Nominatim OSM format', async () => {
-            vi.mocked(utils.fetchGeocoding).mockResolvedValue([{
-                lat: '46.5',
-                lon: '7.5',
-                display_name: 'OSM Place',
-                type: 'city'
-            }]);
+            vi.mocked(utils.fetchGeocoding).mockResolvedValue([
+                {
+                    lat: '46.5',
+                    lon: '7.5',
+                    display_name: 'OSM Place',
+                    type: 'city',
+                },
+            ]);
 
             const results = await searchLocations('test');
             expect(results).toHaveLength(1);

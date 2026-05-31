@@ -71,7 +71,7 @@ export class BoundedCache<K, V> {
         return this.cache.size;
     }
 
-    /** 
+    /**
      * Adjusts the max size and trims the cache if needed.
      */
     resize(newSize: number): void {
@@ -82,7 +82,7 @@ export class BoundedCache<K, V> {
     private trim(): void {
         while (this.cache.size > this.maxSize) {
             let evictKey: K | undefined;
-            
+
             // Find the oldest item that is NOT pinned
             for (const [k, v] of this.cache.entries()) {
                 if (!this.isPinned || !this.isPinned(k, v)) {
@@ -110,7 +110,12 @@ export class BoundedCache<K, V> {
  * Legacy support for the procedural API (to avoid breaking existing imports immediately).
  * @deprecated Use BoundedCache class instead.
  */
-export function boundedCacheSet<K, V>(map: Map<K, V>, key: K, value: V, maxSize: number = 200): void {
+export function boundedCacheSet<K, V>(
+    map: Map<K, V>,
+    key: K,
+    value: V,
+    maxSize: number = 200
+): void {
     map.set(key, value);
     if (map.size > maxSize) {
         const oldest = map.keys().next().value;

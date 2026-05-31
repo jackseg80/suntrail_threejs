@@ -8,8 +8,8 @@ import { Tile } from './terrain';
 (global as any).caches = {
     open: vi.fn().mockResolvedValue({
         match: vi.fn().mockResolvedValue(null),
-        put: vi.fn().mockResolvedValue(undefined)
-    })
+        put: vi.fn().mockResolvedValue(undefined),
+    }),
 };
 
 // Mock de @mapbox/vector-tile
@@ -22,18 +22,21 @@ vi.mock('@mapbox/vector-tile', () => {
                     extent: 4096,
                     feature: (_i: number) => ({
                         id: 1000,
-                        properties: { information: 'guidepost', name: 'Test POI' },
-                        loadGeometry: () => [[{ x: 2048, y: 2048 }]]
-                    })
-                }
+                        properties: {
+                            information: 'guidepost',
+                            name: 'Test POI',
+                        },
+                        loadGeometry: () => [[{ x: 2048, y: 2048 }]],
+                    }),
+                },
             };
-        }
+        },
     };
 });
 
 // Mocks
 vi.mock('./analysis', () => ({
-    getAltitudeAt: vi.fn(() => 1000)
+    getAltitudeAt: vi.fn(() => 1000),
 }));
 
 vi.mock('./boundedCache', () => ({
@@ -44,7 +47,7 @@ vi.mock('./boundedCache', () => ({
         clear = vi.fn();
         delete = vi.fn();
     },
-    boundedCacheSet: vi.fn()
+    boundedCacheSet: vi.fn(),
 }));
 
 describe('POI Integration', () => {
@@ -57,7 +60,7 @@ describe('POI Integration', () => {
         state.MK = 'test-key';
         globalThis.fetch = vi.fn().mockResolvedValue({
             ok: true,
-            arrayBuffer: async () => new ArrayBuffer(0)
+            arrayBuffer: async () => new ArrayBuffer(0),
         });
     });
 
@@ -68,9 +71,12 @@ describe('POI Integration', () => {
 
         // Mock tile bounds and coordinate conversion
         vi.spyOn(tile, 'getBounds').mockReturnValue({
-            north: 46.6, south: 46.4, east: 7.6, west: 7.4
+            north: 46.6,
+            south: 46.4,
+            east: 7.6,
+            west: 7.4,
         });
-        
+
         tile.lngLatToLocal = vi.fn().mockReturnValue({ x: 10, z: 10 });
         tile.worldX = 1000;
         tile.worldZ = 1000;

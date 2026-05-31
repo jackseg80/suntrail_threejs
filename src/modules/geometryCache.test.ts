@@ -18,7 +18,7 @@ describe('geometryCache.ts', () => {
     it('should cache and reuse geometries', () => {
         const geo1 = getPlaneGeometry(32);
         const geo2 = getPlaneGeometry(32);
-        
+
         expect(geo1).toBe(geo2); // Doivent être la même instance
     });
 
@@ -33,12 +33,12 @@ describe('geometryCache.ts', () => {
 
     it('should have correct orientation and UVs', () => {
         const geo = getPlaneGeometry(2);
-        
+
         // La rotation X devrait être appliquée (-Math.PI / 2)
-        // Note: Three.js stocke les rotations différemment, 
+        // Note: Three.js stocke les rotations différemment,
         // on vérifie plutôt le résultat sur les positions ou normals.
         // Ici on fait confiance à l'implémentation car c'est une migration directe.
-        
+
         const uvs = geo.attributes.uv.array;
         // On vérifie que certains UVs ont été modifiés (v = 1.0 - v)
         // Les UVs d'un plan standard sont [0,1, 1,1, 0,0, 1,0]
@@ -49,9 +49,9 @@ describe('geometryCache.ts', () => {
     it('should dispose all geometries when cleared', () => {
         const geo = getPlaneGeometry(32);
         const spy = vi.spyOn(geo, 'dispose');
-        
+
         disposeAllGeometries();
-        
+
         expect(spy).toHaveBeenCalled();
     });
 });

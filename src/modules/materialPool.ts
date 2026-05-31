@@ -35,11 +35,20 @@ class MaterialPool {
      */
     acquire(is2D: boolean, onCompile: (shader: any) => void): THREE.Material {
         if (is2D) {
-            const mat = this.basicPool.pop() || new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 });
+            const mat =
+                this.basicPool.pop() ||
+                new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 });
             mat.onBeforeCompile = onCompile;
             return mat;
         } else {
-            const mat = this.standardPool.pop() || new THREE.MeshStandardMaterial({ roughness: 1.0, metalness: 0.0, transparent: true, opacity: 0 });
+            const mat =
+                this.standardPool.pop() ||
+                new THREE.MeshStandardMaterial({
+                    roughness: 1.0,
+                    metalness: 0.0,
+                    transparent: true,
+                    opacity: 0,
+                });
             mat.onBeforeCompile = onCompile;
             return mat;
         }
@@ -49,7 +58,12 @@ class MaterialPool {
      * Acquiert un matériau de profondeur depuis le pool.
      */
     acquireDepth(onCompile: (shader: any) => void): THREE.MeshDepthMaterial {
-        const mat = this.depthPool.pop() || new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, alphaTest: 0.5 });
+        const mat =
+            this.depthPool.pop() ||
+            new THREE.MeshDepthMaterial({
+                depthPacking: THREE.RGBADepthPacking,
+                alphaTest: 0.5,
+            });
         mat.onBeforeCompile = onCompile;
         return mat;
     }
@@ -61,34 +75,50 @@ class MaterialPool {
         if (!material) return;
 
         // Reset des textures pour libérer les références du cache
-        if (material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshBasicMaterial) {
+        if (
+            material instanceof THREE.MeshStandardMaterial ||
+            material instanceof THREE.MeshBasicMaterial
+        ) {
             material.map = null;
             material.opacity = 0;
             material.transparent = true;
-            
+
             // Nettoyage des uniforms personnalisés via userData
-            if ((material as any).userData && (material as any).userData.shader) {
+            if (
+                (material as any).userData &&
+                (material as any).userData.shader
+            ) {
                 const shader = (material as any).userData.shader;
                 if (shader.uniforms) {
-                    if (shader.uniforms.uElevationMap) shader.uniforms.uElevationMap.value = null;
-                    if (shader.uniforms.uNormalMap) shader.uniforms.uNormalMap.value = null;
-                    if (shader.uniforms.uOverlayMap) shader.uniforms.uOverlayMap.value = null;
+                    if (shader.uniforms.uElevationMap)
+                        shader.uniforms.uElevationMap.value = null;
+                    if (shader.uniforms.uNormalMap)
+                        shader.uniforms.uNormalMap.value = null;
+                    if (shader.uniforms.uOverlayMap)
+                        shader.uniforms.uOverlayMap.value = null;
                 }
             }
 
             if (material instanceof THREE.MeshStandardMaterial) {
-                if (this.standardPool.length < MAX_POOL_SIZE) this.standardPool.push(material);
+                if (this.standardPool.length < MAX_POOL_SIZE)
+                    this.standardPool.push(material);
                 else material.dispose();
             } else {
-                if (this.basicPool.length < MAX_POOL_SIZE) this.basicPool.push(material);
+                if (this.basicPool.length < MAX_POOL_SIZE)
+                    this.basicPool.push(material);
                 else material.dispose();
             }
         } else if (material instanceof THREE.MeshDepthMaterial) {
-            if ((material as any).userData && (material as any).userData.shader) {
+            if (
+                (material as any).userData &&
+                (material as any).userData.shader
+            ) {
                 const shader = (material as any).userData.shader;
-                if (shader.uniforms && shader.uniforms.uElevationMap) shader.uniforms.uElevationMap.value = null;
+                if (shader.uniforms && shader.uniforms.uElevationMap)
+                    shader.uniforms.uElevationMap.value = null;
             }
-            if (this.depthPool.length < MAX_POOL_SIZE) this.depthPool.push(material);
+            if (this.depthPool.length < MAX_POOL_SIZE)
+                this.depthPool.push(material);
             else material.dispose();
         }
     }
@@ -97,7 +127,9 @@ class MaterialPool {
      * Vide le pool et détruit physiquement les matériaux.
      */
     disposeAll(): void {
-        [...this.standardPool, ...this.basicPool, ...this.depthPool].forEach(m => m.dispose());
+        [...this.standardPool, ...this.basicPool, ...this.depthPool].forEach(
+            (m) => m.dispose()
+        );
         this.standardPool = [];
         this.basicPool = [];
         this.depthPool = [];

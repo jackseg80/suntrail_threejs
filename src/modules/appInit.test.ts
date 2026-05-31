@@ -12,24 +12,52 @@ vi.mock('./state', () => ({
         TARGET_LAT: 46.5,
         TARGET_LON: 7.5,
         IS_2D_MODE: false,
-        originTile: { x: 0, y: 0, z: 14 }
+        originTile: { x: 0, y: 0, z: 14 },
     },
-    loadSettings: vi.fn().mockReturnValue({ MAP_SOURCE: 'swisstopo', PERFORMANCE_PRESET: 'balanced' }),
+    loadSettings: vi.fn().mockReturnValue({
+        MAP_SOURCE: 'swisstopo',
+        PERFORMANCE_PRESET: 'balanced',
+    }),
     loadProStatus: vi.fn(),
     loadGpxHistory: vi.fn(),
 }));
 
-vi.mock('./iapService', () => ({ iapService: { initialize: vi.fn().mockResolvedValue(undefined) } }));
-vi.mock('./config', () => ({ resolveMapTilerKey: vi.fn().mockResolvedValue(undefined) }));
-vi.mock('./scene', () => ({ initScene: vi.fn().mockResolvedValue(undefined), flyTo: vi.fn() }));
+vi.mock('./iapService', () => ({
+    iapService: { initialize: vi.fn().mockResolvedValue(undefined) },
+}));
+vi.mock('./config', () => ({
+    resolveMapTilerKey: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('./scene', () => ({
+    initScene: vi.fn().mockResolvedValue(undefined),
+    flyTo: vi.fn(),
+}));
 vi.mock('./theme', () => ({ initTheme: vi.fn() }));
-vi.mock('../i18n/I18nService', () => ({ i18n: { setLocale: vi.fn(), t: (k: string) => k } }));
+vi.mock('../i18n/I18nService', () => ({
+    i18n: { setLocale: vi.fn(), t: (k: string) => k },
+}));
 
 // Mock components
-vi.mock('./ui/components/TopStatusBar', () => ({ TopStatusBar: class { hydrate = vi.fn() } }));
-vi.mock('./ui/components/NavigationBar', () => ({ NavigationBar: class { hydrate = vi.fn() } }));
-vi.mock('./ui/components/WidgetsComponent', () => ({ WidgetsComponent: class { hydrate = vi.fn() } }));
-vi.mock('./ui/components/TimelineComponent', () => ({ TimelineComponent: class { hydrate = vi.fn() } }));
+vi.mock('./ui/components/TopStatusBar', () => ({
+    TopStatusBar: class {
+        hydrate = vi.fn();
+    },
+}));
+vi.mock('./ui/components/NavigationBar', () => ({
+    NavigationBar: class {
+        hydrate = vi.fn();
+    },
+}));
+vi.mock('./ui/components/WidgetsComponent', () => ({
+    WidgetsComponent: class {
+        hydrate = vi.fn();
+    },
+}));
+vi.mock('./ui/components/TimelineComponent', () => ({
+    TimelineComponent: class {
+        hydrate = vi.fn();
+    },
+}));
 
 describe('appInit.ts — Initialization Sequence', () => {
     beforeEach(() => {
@@ -60,10 +88,10 @@ describe('appInit.ts — Initialization Sequence', () => {
 
     it('should apply saved settings if they exist', async () => {
         const { loadSettings } = await import('./state');
-        
-        vi.mocked(loadSettings).mockReturnValue({ 
-            MAP_SOURCE: 'swisstopo', 
-            PERFORMANCE_PRESET: 'ultra' 
+
+        vi.mocked(loadSettings).mockReturnValue({
+            MAP_SOURCE: 'swisstopo',
+            PERFORMANCE_PRESET: 'ultra',
         } as any);
 
         await appInit();
@@ -79,19 +107,34 @@ vi.mock('./performance', () => ({
     applyPreset: vi.fn(),
     detectBestPreset: () => 'balanced',
     getGpuInfo: () => ({ renderer: 'mock' }),
-    applyCustomSettings: vi.fn()
+    applyCustomSettings: vi.fn(),
 }));
 
 vi.mock('./weather', () => ({ fetchWeather: vi.fn() }));
 vi.mock('./peaks', () => ({ fetchLocalPeaks: vi.fn() }));
 vi.mock('./ui/autoHide', () => ({ initAutoHide: vi.fn() }));
 vi.mock('./ui/mobile', () => ({ initMobileUI: vi.fn() }));
-vi.mock('./acceptanceWall', () => ({ requestAcceptance: vi.fn().mockResolvedValue(undefined) }));
-vi.mock('./onboardingTutorial', () => ({ requestOnboarding: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('./acceptanceWall', () => ({
+    requestAcceptance: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('./onboardingTutorial', () => ({
+    requestOnboarding: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock('./gpsDisclosure', () => ({ requestGPSDisclosure: vi.fn() }));
-vi.mock('./location', () => ({ startLocationTracking: vi.fn(), updateUserMarker: vi.fn(), stopLocationTracking: vi.fn(), clearUserMarker: vi.fn() }));
+vi.mock('./location', () => ({
+    startLocationTracking: vi.fn(),
+    updateUserMarker: vi.fn(),
+    stopLocationTracking: vi.fn(),
+    clearUserMarker: vi.fn(),
+}));
 vi.mock('./terrain', () => ({ refreshTerrain: vi.fn() }));
-vi.mock('./analysis', () => ({ findTerrainIntersection: vi.fn(), getAltitudeAt: vi.fn() }));
-vi.mock('./profile', () => ({ closeElevationProfile: vi.fn(), updateElevationProfile: vi.fn() }));
+vi.mock('./analysis', () => ({
+    findTerrainIntersection: vi.fn(),
+    getAltitudeAt: vi.fn(),
+}));
+vi.mock('./profile', () => ({
+    closeElevationProfile: vi.fn(),
+    updateElevationProfile: vi.fn(),
+}));
 vi.mock('./haptics', () => ({ haptic: vi.fn() }));
 vi.mock('./eventBus', () => ({ eventBus: { emit: vi.fn(), on: vi.fn() } }));

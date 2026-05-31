@@ -7,8 +7,8 @@ import { state } from './state';
 vi.mock('./packManager', () => ({
     packManager: {
         hasMountedPacks: vi.fn(),
-        getTileFromPacks: vi.fn()
-    }
+        getTileFromPacks: vi.fn(),
+    },
 }));
 
 // Mock de fetch global
@@ -19,30 +19,42 @@ describe('TileLoader Integration with Packs', () => {
         vi.clearAllMocks();
         state.IS_OFFLINE = false;
         (packManager.hasMountedPacks as any).mockReturnValue(false);
-        (packManager.getTileFromPacks as any).mockReturnValue(Promise.resolve(null));
+        (packManager.getTileFromPacks as any).mockReturnValue(
+            Promise.resolve(null)
+        );
     });
 
     it('should prioritize pack over network when pack is mounted', async () => {
         const mockBlob = new Blob(['tile-data'], { type: 'image/webp' });
         (packManager.hasMountedPacks as any).mockReturnValue(true);
-        (packManager.getTileFromPacks as any).mockReturnValue(Promise.resolve(mockBlob));
+        (packManager.getTileFromPacks as any).mockReturnValue(
+            Promise.resolve(mockBlob)
+        );
 
         const url = 'https://tile.openstreetmap.org/12/2133/1450.png';
         const result = await fetchWithCache(url);
 
         // Vérifier que packManager a été consulté
-        expect(packManager.getTileFromPacks).toHaveBeenCalledWith(12, 2133, 1450);
-        
+        expect(packManager.getTileFromPacks).toHaveBeenCalledWith(
+            12,
+            2133,
+            1450
+        );
+
         // Vérifier que fetch n'a PAS été appelé
         expect(global.fetch).not.toHaveBeenCalled();
         expect(result).toBe(mockBlob);
     });
 
     it('should work offline when pack is mounted', async () => {
-        const mockBlob = new Blob(['offline-tile-data'], { type: 'image/webp' });
+        const mockBlob = new Blob(['offline-tile-data'], {
+            type: 'image/webp',
+        });
         state.IS_OFFLINE = true;
         (packManager.hasMountedPacks as any).mockReturnValue(true);
-        (packManager.getTileFromPacks as any).mockReturnValue(Promise.resolve(mockBlob));
+        (packManager.getTileFromPacks as any).mockReturnValue(
+            Promise.resolve(mockBlob)
+        );
 
         const url = 'https://tile.openstreetmap.org/12/2133/1450.png';
         const result = await fetchWithCache(url);
@@ -54,11 +66,13 @@ describe('TileLoader Integration with Packs', () => {
 
     it('should fallback to network if pack does not have the tile', async () => {
         (packManager.hasMountedPacks as any).mockReturnValue(true);
-        (packManager.getTileFromPacks as any).mockReturnValue(Promise.resolve(null)); // Pas dans le pack
-        
+        (packManager.getTileFromPacks as any).mockReturnValue(
+            Promise.resolve(null)
+        ); // Pas dans le pack
+
         const mockResponse = {
             ok: true,
-            blob: vi.fn().mockResolvedValue(new Blob(['network-data']))
+            blob: vi.fn().mockResolvedValue(new Blob(['network-data'])),
         };
         (global.fetch as any).mockResolvedValue(mockResponse);
 
@@ -67,7 +81,7 @@ describe('TileLoader Integration with Packs', () => {
 
         // Vérifier que packManager a été consulté
         expect(packManager.getTileFromPacks).toHaveBeenCalled();
-        
+
         // Vérifier que fetch a été appelé en fallback
         expect(global.fetch).toHaveBeenCalledWith(url, expect.anything());
         expect(result).toBeDefined();
@@ -76,7 +90,9 @@ describe('TileLoader Integration with Packs', () => {
     it('should return null when offline and not in pack', async () => {
         state.IS_OFFLINE = true;
         (packManager.hasMountedPacks as any).mockReturnValue(true);
-        (packManager.getTileFromPacks as any).mockReturnValue(Promise.resolve(null));
+        (packManager.getTileFromPacks as any).mockReturnValue(
+            Promise.resolve(null)
+        );
 
         const url = 'https://tile.openstreetmap.org/12/2133/1450.png';
         const result = await fetchWithCache(url);

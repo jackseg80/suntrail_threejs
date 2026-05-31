@@ -9,13 +9,28 @@ import { i18n } from '../i18n/I18nService';
 import { initScene, flyTo, forceImmediateLODUpdate } from './scene';
 import { refreshTerrain } from './terrain';
 import { updateElevationProfile } from './profile';
-import { startLocationTracking, updateUserMarker, stopLocationTracking, clearUserMarker } from './location';
+import {
+    startLocationTracking,
+    updateUserMarker,
+    stopLocationTracking,
+    clearUserMarker,
+} from './location';
 import { lngLatToTile, lngLatToWorld, worldToLngLat } from './geo';
 import { showToast } from './toast';
-import { applyPreset, detectBestPreset, getGpuInfo, applyCustomSettings } from './performance';
+import {
+    applyPreset,
+    detectBestPreset,
+    getGpuInfo,
+    applyCustomSettings,
+} from './performance';
 import { runBenchmark } from './benchmark';
 import { findTerrainIntersection, getAltitudeAt } from './analysis';
-import { initRouteManager, removeWaypointAt, scheduleAutoCompute, clearRoute } from './routeManager';
+import {
+    initRouteManager,
+    removeWaypointAt,
+    scheduleAutoCompute,
+    clearRoute,
+} from './routeManager';
 import { fetchWeather } from './weather';
 import { fetchLocalPeaks } from './peaks';
 import { initTheme } from './theme';
@@ -55,21 +70,27 @@ export async function appInit(): Promise<void> {
         if (savedORSKey && savedORSKey.length > 10) {
             state.ORS_KEY = savedORSKey;
         }
-    } catch { /* ignore */ }
+    } catch {
+        /* ignore */
+    }
 
     // Initialiser RevenueCat en fire-and-forget
-    void iapService.initialize().catch(e => { if (state.DEBUG_MODE) console.warn('[IAP] Init failed', e); });
+    void iapService.initialize().catch((e) => {
+        if (state.DEBUG_MODE) console.warn('[IAP] Init failed', e);
+    });
 
     // v5.29.35 : Résolution de la clé MapTiler et chargement du catalog des packs.
     await Promise.all([
         resolveMapTilerKey(),
-        import('./packManager').then(m => m.packManager.fetchCatalog())
+        import('./packManager').then((m) => m.packManager.fetchCatalog()),
     ]);
 
     const savedSettings = loadSettings();
     if (savedSettings) {
         const AUTO_SOURCES = ['swisstopo', 'opentopomap'];
-        state.hasManualSource = !AUTO_SOURCES.includes(savedSettings.MAP_SOURCE);
+        state.hasManualSource = !AUTO_SOURCES.includes(
+            savedSettings.MAP_SOURCE
+        );
         if (savedSettings.PERFORMANCE_PRESET === 'custom') {
             applyCustomSettings(savedSettings);
         } else {
@@ -80,15 +101,27 @@ export async function appInit(): Promise<void> {
         void (async () => {
             try {
                 // Petit délai pour laisser le splash screen s'afficher proprement
-                await new Promise(resolve => setTimeout(resolve, 500));
-                showToast(i18n.t('benchmark.running') || 'Optimisation pour votre appareil...', 3000);
-                
+                await new Promise((resolve) => setTimeout(resolve, 500));
+                showToast(
+                    i18n.t('benchmark.running') ||
+                        'Optimisation pour votre appareil...',
+                    3000
+                );
+
                 const { recommendedPreset } = await runBenchmark();
                 applyPreset(recommendedPreset);
-                
-                showToast(i18n.t('benchmark.result', { preset: recommendedPreset.toUpperCase() }) || `Profil ${recommendedPreset.toUpperCase()} appliqué.`, 4000);
+
+                showToast(
+                    i18n.t('benchmark.result', {
+                        preset: recommendedPreset.toUpperCase(),
+                    }) || `Profil ${recommendedPreset.toUpperCase()} appliqué.`,
+                    4000
+                );
             } catch (e) {
-                console.warn('[AppInit] Benchmark failed, falling back to static detection', e);
+                console.warn(
+                    '[AppInit] Benchmark failed, falling back to static detection',
+                    e
+                );
                 applyPreset(detectBestPreset());
             }
         })();
@@ -102,21 +135,24 @@ export async function appInit(): Promise<void> {
     const gpuInfo = getGpuInfo();
     const diagGpu = document.getElementById('diag-gpu');
     if (diagGpu) diagGpu.textContent = `GPU: ${gpuInfo.renderer}`;
-    
+
     const diagCpu = document.getElementById('diag-cpu');
-    if (diagCpu) diagCpu.textContent = `CPU: ${navigator.hardwareConcurrency || '--'} cores`;
-    
+    if (diagCpu)
+        diagCpu.textContent = `CPU: ${navigator.hardwareConcurrency || '--'} cores`;
+
     const diagPreset = document.getElementById('diag-preset');
-    if (diagPreset) diagPreset.textContent = `PROFIL: ${state.PERFORMANCE_PRESET.toUpperCase()}`;
-    
+    if (diagPreset)
+        diagPreset.textContent = `PROFIL: ${state.PERFORMANCE_PRESET.toUpperCase()}`;
+
     const techInfo = document.getElementById('tech-info');
     if (techInfo) techInfo.style.display = state.SHOW_DEBUG ? 'block' : 'none';
 
     setupOrientationHandler();
-    
+
     document.addEventListener('click', handleGlobalClick);
     const canvasContainer = document.getElementById('canvas-container');
-    if (canvasContainer) canvasContainer.addEventListener('click', handleMapClick);
+    if (canvasContainer)
+        canvasContainer.addEventListener('click', handleMapClick);
 
     // Initialiser les composants
     new TimelineComponent();
@@ -166,50 +202,83 @@ function setupOrientationHandler() {
 }
 
 async function launchScene() {
-    window.addEventListener('suntrail:sceneReady', () => {
-        void requestAcceptance().then(() => requestOnboarding());
+    window.addEventListener(
+        'suntrail:sceneReady',
+        () => {
+            void requestAcceptance().then(() => requestOnboarding());
 
-        const mapOverlay = document.getElementById('map-loading-overlay');
-        if (mapOverlay) {
-            mapOverlay.classList.add('visible');
-            let tilesStarted = false;
+            const mapOverlay = document.getElementById('map-loading-overlay');
+            if (mapOverlay) {
+                mapOverlay.classList.add('visible');
+                let tilesStarted = false;
 
-            const offlineMsg = document.getElementById('map-loading-offline-msg');
-            const spinnerText = mapOverlay.querySelector('.map-loading-text') as HTMLElement;
-            const showOfflineMsg = () => {
-                if (offlineMsg) offlineMsg.style.display = 'flex';
-                if (spinnerText) spinnerText.style.display = 'none';
-            };
-            const hideOfflineMsg = () => {
-                if (offlineMsg) offlineMsg.style.display = 'none';
-                if (spinnerText) spinnerText.style.display = '';
-            };
+                const offlineMsg = document.getElementById(
+                    'map-loading-offline-msg'
+                );
+                const spinnerText = mapOverlay.querySelector(
+                    '.map-loading-text'
+                ) as HTMLElement;
+                const showOfflineMsg = () => {
+                    if (offlineMsg) offlineMsg.style.display = 'flex';
+                    if (spinnerText) spinnerText.style.display = 'none';
+                };
+                const hideOfflineMsg = () => {
+                    if (offlineMsg) offlineMsg.style.display = 'none';
+                    if (spinnerText) spinnerText.style.display = '';
+                };
 
-            if (!state.isNetworkAvailable) showOfflineMsg();
-            const unsubNet = state.subscribe('isNetworkAvailable', (available: boolean) => {
-                if (available) hideOfflineMsg(); else showOfflineMsg();
-            });
+                if (!state.isNetworkAvailable) showOfflineMsg();
+                const unsubNet = state.subscribe(
+                    'isNetworkAvailable',
+                    (available: boolean) => {
+                        if (available) hideOfflineMsg();
+                        else showOfflineMsg();
+                    }
+                );
 
-            let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
-            let safetyTimer: ReturnType<typeof setTimeout> | null = null;
+                let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+                let safetyTimer: ReturnType<typeof setTimeout> | null = null;
 
-            const hideOverlay = () => {
-                if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
-                if (safetyTimer) { clearTimeout(safetyTimer); safetyTimer = null; }
-                mapOverlay.classList.add('fade-out');
-                setTimeout(() => { mapOverlay.style.display = 'none'; }, 300);
-                unsubNet();
-            };
+                const hideOverlay = () => {
+                    if (fallbackTimer) {
+                        clearTimeout(fallbackTimer);
+                        fallbackTimer = null;
+                    }
+                    if (safetyTimer) {
+                        clearTimeout(safetyTimer);
+                        safetyTimer = null;
+                    }
+                    mapOverlay.classList.add('fade-out');
+                    setTimeout(() => {
+                        mapOverlay.style.display = 'none';
+                    }, 300);
+                    unsubNet();
+                };
 
-            const unsub = state.subscribe('isProcessingTiles', (processing: boolean) => {
-                if (processing) tilesStarted = true;
-                if (!processing && tilesStarted) { hideOverlay(); unsub(); }
-            });
+                const unsub = state.subscribe(
+                    'isProcessingTiles',
+                    (processing: boolean) => {
+                        if (processing) tilesStarted = true;
+                        if (!processing && tilesStarted) {
+                            hideOverlay();
+                            unsub();
+                        }
+                    }
+                );
 
-            fallbackTimer = setTimeout(() => { if (!tilesStarted) { hideOverlay(); unsub(); } }, 2000);
-            safetyTimer = setTimeout(() => { if (mapOverlay.classList.contains('visible')) hideOverlay(); }, 15000);
-        }
-    }, { once: true });
+                fallbackTimer = setTimeout(() => {
+                    if (!tilesStarted) {
+                        hideOverlay();
+                        unsub();
+                    }
+                }, 2000);
+                safetyTimer = setTimeout(() => {
+                    if (mapOverlay.classList.contains('visible')) hideOverlay();
+                }, 15000);
+            }
+        },
+        { once: true }
+    );
 
     await startApp();
 
@@ -220,10 +289,15 @@ async function launchScene() {
         if (!bar) return;
         if (processing) {
             if (!debounce) {
-                debounce = setTimeout(() => { bar.classList.add('visible'); }, 600);
+                debounce = setTimeout(() => {
+                    bar.classList.add('visible');
+                }, 600);
             }
         } else {
-            if (debounce) { clearTimeout(debounce); debounce = null; }
+            if (debounce) {
+                clearTimeout(debounce);
+                debounce = null;
+            }
             bar.classList.remove('visible');
         }
     });
@@ -234,13 +308,22 @@ async function startApp() {
         await initScene();
         fetchWeather(state.TARGET_LAT, state.TARGET_LON);
         fetchLocalPeaks(state.TARGET_LAT, state.TARGET_LON);
-        
-        const ids = ['nav-bar', 'top-status-bar', 'widgets-container', 'bottom-bar'];
-        ids.forEach(id => {
+
+        const ids = [
+            'nav-bar',
+            'top-status-bar',
+            'widgets-container',
+            'bottom-bar',
+        ];
+        ids.forEach((id) => {
             const el = document.getElementById(id);
-            if (el) el.style.display = id === 'widgets-container' || id === 'bottom-bar' ? 'block' : 'flex';
+            if (el)
+                el.style.display =
+                    id === 'widgets-container' || id === 'bottom-bar'
+                        ? 'block'
+                        : 'flex';
         });
-        
+
         const fabStack = document.querySelector('.fab-stack') as HTMLElement;
         if (fabStack) fabStack.style.display = 'flex';
     } catch (e) {
@@ -315,7 +398,7 @@ const POI_CATEGORY_LABELS: Record<string, string> = {
     trail: 'Sentier',
     hut: 'Refuge',
     rest: 'Halte',
-    attraction: 'Curiosité'
+    attraction: 'Curiosité',
 };
 
 function getPOICategoryLabel(category: string): string {
@@ -323,14 +406,20 @@ function getPOICategoryLabel(category: string): string {
 }
 
 async function handleMapClick(e: MouseEvent) {
-    if (_longPressJustFired) { _longPressJustFired = false; return; }
+    if (_longPressJustFired) {
+        _longPressJustFired = false;
+        return;
+    }
     if (!state.renderer || !state.camera || !state.scene) return;
 
     if (sheetManager.getActiveSheetId()) {
         sheetManager.close();
     }
 
-    const mouse = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+    const mouse = new THREE.Vector2(
+        (e.clientX / window.innerWidth) * 2 - 1,
+        -(e.clientY / window.innerHeight) * 2 + 1
+    );
     const raycaster = new THREE.Raycaster();
     raycaster.params.Sprite = { threshold: 35 };
     raycaster.setFromCamera(mouse, state.camera);
@@ -338,14 +427,18 @@ async function handleMapClick(e: MouseEvent) {
     const intersects = raycaster.intersectObjects(state.scene.children, true);
 
     // Tap sur un marker de waypoint → supprimer
-    const waypointHit = intersects.find(h => h.object.userData?.type === 'waypoint-marker');
+    const waypointHit = intersects.find(
+        (h) => h.object.userData?.type === 'waypoint-marker'
+    );
     if (waypointHit) {
         void haptic('medium');
         removeWaypointAt(waypointHit.object.userData.waypointIndex as number);
         return;
     }
 
-    const gpxHit = intersects.find(hit => hit.object.userData?.type === 'gpx-track');
+    const gpxHit = intersects.find(
+        (hit) => hit.object.userData?.type === 'gpx-track'
+    );
     if (gpxHit) {
         const layerId = gpxHit.object.userData.layerId;
         if (layerId) {
@@ -356,30 +449,43 @@ async function handleMapClick(e: MouseEvent) {
         return;
     }
 
-    const spriteHit = intersects.find(hit => hit.object.type === 'Sprite');
+    const spriteHit = intersects.find((hit) => hit.object.type === 'Sprite');
     if (spriteHit) {
         const poiData = spriteHit.object.userData;
-        const spriteWorldX = spriteHit.object.position.x + (spriteHit.object.parent?.position.x || 0);
-        const spriteWorldZ = spriteHit.object.position.z + (spriteHit.object.parent?.position.z || 0);
+        const spriteWorldX =
+            spriteHit.object.position.x +
+            (spriteHit.object.parent?.position.x || 0);
+        const spriteWorldZ =
+            spriteHit.object.position.z +
+            (spriteHit.object.parent?.position.z || 0);
 
         if (poiData && poiData.name) {
             state.hasLastClicked = true;
-            state.lastClickedCoords = { 
+            state.lastClickedCoords = {
                 x: spriteWorldX,
-                z: spriteWorldZ, 
-                alt: getAltitudeAt(spriteWorldX, spriteWorldZ) 
+                z: spriteWorldZ,
+                alt: getAltitudeAt(spriteWorldX, spriteWorldZ),
             };
-            
+
             const cp = document.getElementById('coords-pill');
             if (cp) {
                 cp.classList.remove('panel-custom-pos');
-                cp.style.left = ''; cp.style.top = ''; cp.style.bottom = ''; cp.style.transform = '';
+                cp.style.left = '';
+                cp.style.top = '';
+                cp.style.bottom = '';
+                cp.style.transform = '';
                 cp.classList.remove('hidden');
-                const gps = worldToLngLat(spriteWorldX, spriteWorldZ, state.originTile!);
+                const gps = worldToLngLat(
+                    spriteWorldX,
+                    spriteWorldZ,
+                    state.originTile!
+                );
                 const clickLatLon = document.getElementById('click-latlon');
-                if (clickLatLon) clickLatLon.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
+                if (clickLatLon)
+                    clickLatLon.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
                 const clickAlt = document.getElementById('click-alt');
-                if (clickAlt) clickAlt.textContent = `${Math.round(state.lastClickedCoords.alt / state.RELIEF_EXAGGERATION)} m`;
+                if (clickAlt)
+                    clickAlt.textContent = `${Math.round(state.lastClickedCoords.alt / state.RELIEF_EXAGGERATION)} m`;
                 const clickPoiName = document.getElementById('click-poi-name');
                 if (clickPoiName) {
                     clickPoiName.style.display = 'block';
@@ -397,20 +503,28 @@ async function handleMapClick(e: MouseEvent) {
 
     const hit = findTerrainIntersection(raycaster.ray);
     if (hit && state.originTile) {
-
         state.hasLastClicked = true;
-        state.lastClickedCoords = { x: hit.x, z: hit.z, alt: getAltitudeAt(hit.x, hit.z) };
-        
+        state.lastClickedCoords = {
+            x: hit.x,
+            z: hit.z,
+            alt: getAltitudeAt(hit.x, hit.z),
+        };
+
         const cp = document.getElementById('coords-pill');
         if (cp) {
             cp.classList.remove('panel-custom-pos');
-            cp.style.left = ''; cp.style.top = ''; cp.style.bottom = ''; cp.style.transform = '';
+            cp.style.left = '';
+            cp.style.top = '';
+            cp.style.bottom = '';
+            cp.style.transform = '';
             cp.classList.remove('hidden');
             const gps = worldToLngLat(hit.x, hit.z, state.originTile);
             const clickLatLon = document.getElementById('click-latlon');
-            if (clickLatLon) clickLatLon.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
+            if (clickLatLon)
+                clickLatLon.textContent = `${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
             const clickAlt = document.getElementById('click-alt');
-            if (clickAlt) clickAlt.textContent = `${Math.round(state.lastClickedCoords.alt / state.RELIEF_EXAGGERATION)} m`;
+            if (clickAlt)
+                clickAlt.textContent = `${Math.round(state.lastClickedCoords.alt / state.RELIEF_EXAGGERATION)} m`;
             const clickPoiName = document.getElementById('click-poi-name');
             if (clickPoiName) clickPoiName.style.display = 'none';
         }
@@ -429,7 +543,7 @@ function setupGpsButton() {
     gpsMainBtn?.addEventListener('pointerdown', (e) => {
         if (e.button !== 0) return;
         longPressTriggered = false;
-        
+
         gpsLongPressTimer = setTimeout(() => {
             clearUserMarker();
             stopLocationTracking();
@@ -449,7 +563,9 @@ function setupGpsButton() {
     };
 
     gpsMainBtn?.addEventListener('pointerup', () => {
-        setTimeout(() => { longPressTriggered = false; }, 10);
+        setTimeout(() => {
+            longPressTriggered = false;
+        }, 10);
         cancelGpsLongPress();
     });
     gpsMainBtn?.addEventListener('pointerleave', cancelGpsLongPress);
@@ -457,16 +573,16 @@ function setupGpsButton() {
 
     gpsMainBtn?.addEventListener('click', async () => {
         if (longPressTriggered) return;
-        
+
         try {
             const allowed = await requestGPSDisclosure();
             if (!allowed) return;
 
             const position = await Geolocation.getCurrentPosition({
                 timeout: 5000,
-                enableHighAccuracy: true
+                enableHighAccuracy: true,
             });
-            
+
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
             const isAlreadyCentered = gpsMainBtn.classList.contains('active');
@@ -476,24 +592,36 @@ function setupGpsButton() {
                 state.TARGET_LON = lon;
                 state.ZOOM = 14;
                 state.originTile = lngLatToTile(lon, lat, 14);
-                state.userLocation = { lat, lon, alt: position.coords.altitude || 0 };
+                state.userLocation = {
+                    lat,
+                    lon,
+                    alt: position.coords.altitude || 0,
+                };
                 updateUserMarker();
                 refreshTerrain();
-                
+
                 const worldPos = lngLatToWorld(lon, lat, state.originTile);
                 const altWorld = getAltitudeAt(worldPos.x, worldPos.z);
-                
-                await flyTo(worldPos.x, worldPos.z, (altWorld / state.RELIEF_EXAGGERATION) + 500);
+
+                await flyTo(
+                    worldPos.x,
+                    worldPos.z,
+                    altWorld / state.RELIEF_EXAGGERATION + 500
+                );
                 forceImmediateLODUpdate();
-                
+
                 fetchWeather(lat, lon);
                 gpsMainBtn.classList.add('active');
                 showToast(i18n.t('gps.toast.centered'));
             } else {
                 gpsMainBtn.classList.toggle('following');
                 const isFollowing = gpsMainBtn.classList.contains('following');
-                showToast(isFollowing ? i18n.t('gps.toast.followOn') : i18n.t('gps.toast.followOff'));
-                
+                showToast(
+                    isFollowing
+                        ? i18n.t('gps.toast.followOn')
+                        : i18n.t('gps.toast.followOff')
+                );
+
                 if (isFollowing) {
                     state.isFollowingUser = true;
                     await startLocationTracking();
@@ -501,8 +629,12 @@ function setupGpsButton() {
                     state.isFollowingUser = false;
                 }
             }
-        } catch (e: any) { 
-            showToast(e.code === 1 ? i18n.t('gps.toast.permissionDenied') : i18n.t('gps.toast.error')); 
+        } catch (e: any) {
+            showToast(
+                e.code === 1
+                    ? i18n.t('gps.toast.permissionDenied')
+                    : i18n.t('gps.toast.error')
+            );
         }
     });
 
@@ -546,12 +678,15 @@ function setupFabs() {
                 const elapsed = Date.now() - startTime;
                 const progress = Math.min(elapsed / duration, 1);
                 const eased = 1 - Math.pow(1 - progress, 3);
-                const currentAngle = initialAngle + (targetAngle - initialAngle) * eased;
+                const currentAngle =
+                    initialAngle + (targetAngle - initialAngle) * eased;
 
                 const offset = camera.position.clone().sub(controls.target);
                 const spherical = new THREE.Spherical().setFromVector3(offset);
                 spherical.theta = currentAngle;
-                const newPos = new THREE.Vector3().setFromSpherical(spherical).add(controls.target);
+                const newPos = new THREE.Vector3()
+                    .setFromSpherical(spherical)
+                    .add(controls.target);
                 camera.position.copy(newPos);
                 controls.update();
 
@@ -586,7 +721,7 @@ function setupCoordsPill() {
 
     attachDraggablePanel({
         panel: coordsPill,
-        handle: coordsPill, 
+        handle: coordsPill,
         customPosClass: 'panel-custom-pos',
         onDismiss: () => {
             coordsPill.classList.add('hidden');
@@ -606,7 +741,7 @@ function setupCoordsPill() {
 
     const checkPillOverlap = (): void => {
         if (coordsPill.classList.contains('hidden')) {
-            OVERLAP_TARGETS.forEach(t => t.el?.classList.remove(OVERLAP_CLS));
+            OVERLAP_TARGETS.forEach((t) => t.el?.classList.remove(OVERLAP_CLS));
             return;
         }
         const pr = coordsPill.getBoundingClientRect();
@@ -616,15 +751,19 @@ function setupCoordsPill() {
             if (had) el.classList.remove(OVERLAP_CLS);
             const r = el.getBoundingClientRect();
             if (had) el.classList.add(OVERLAP_CLS);
-            const overlaps = pr.right > r.left - 8 && pr.left < r.right + 8
-                          && pr.bottom > r.top - 8 && pr.top < r.bottom + 8;
+            const overlaps =
+                pr.right > r.left - 8 &&
+                pr.left < r.right + 8 &&
+                pr.bottom > r.top - 8 &&
+                pr.top < r.bottom + 8;
             el.classList.toggle(OVERLAP_CLS, overlaps);
         });
     };
 
     window.addEventListener('pointermove', checkPillOverlap, { passive: true });
     new MutationObserver(checkPillOverlap).observe(coordsPill, {
-        attributes: true, attributeFilter: ['class'],
+        attributes: true,
+        attributeFilter: ['class'],
     });
 }
 
@@ -638,13 +777,19 @@ function setupLongPress() {
     const indicator = document.getElementById('lp-indicator');
 
     const cancel = () => {
-        if (timer) { clearTimeout(timer); timer = null; }
+        if (timer) {
+            clearTimeout(timer);
+            timer = null;
+        }
         indicator?.classList.remove('active', 'filling', 'done');
     };
 
     container.addEventListener('pointerdown', (e: PointerEvent) => {
         activePointers++;
-        if (activePointers > 1) { cancel(); return; }
+        if (activePointers > 1) {
+            cancel();
+            return;
+        }
         if (e.button !== 0) return;
         startX = e.clientX;
         startY = e.clientY;
@@ -660,7 +805,11 @@ function setupLongPress() {
             timer = null;
             if (indicator) {
                 indicator.classList.add('done');
-                setTimeout(() => indicator.classList.remove('active', 'filling', 'done'), 300);
+                setTimeout(
+                    () =>
+                        indicator.classList.remove('active', 'filling', 'done'),
+                    300
+                );
             }
             _longPressJustFired = true;
             void haptic('medium');
@@ -668,17 +817,27 @@ function setupLongPress() {
         }, 500);
     });
 
-    container.addEventListener('pointermove', (e: PointerEvent) => {
-        if (!timer || activePointers > 1) return;
-        if (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8) {
-            clearTimeout(timer);
-            timer = null;
-            if (indicator) {
-                indicator.classList.remove('filling');
-                setTimeout(() => indicator.classList.remove('active', 'done'), 50);
+    container.addEventListener(
+        'pointermove',
+        (e: PointerEvent) => {
+            if (!timer || activePointers > 1) return;
+            if (
+                Math.abs(e.clientX - startX) > 8 ||
+                Math.abs(e.clientY - startY) > 8
+            ) {
+                clearTimeout(timer);
+                timer = null;
+                if (indicator) {
+                    indicator.classList.remove('filling');
+                    setTimeout(
+                        () => indicator.classList.remove('active', 'done'),
+                        50
+                    );
+                }
             }
-        }
-    }, { passive: true });
+        },
+        { passive: true }
+    );
 
     const onPointerUp = () => {
         activePointers = Math.max(0, activePointers - 1);
@@ -687,27 +846,32 @@ function setupLongPress() {
     container.addEventListener('pointerup', onPointerUp);
     container.addEventListener('pointercancel', onPointerUp);
     container.addEventListener('pointerleave', onPointerUp);
-    container.addEventListener('contextmenu', (e) => { if (_longPressJustFired) e.preventDefault(); });
+    container.addEventListener('contextmenu', (e) => {
+        if (_longPressJustFired) e.preventDefault();
+    });
 }
 
 function placeWaypointAt(clientX: number, clientY: number): void {
-    if (!state.renderer || !state.camera || !state.scene || !state.originTile) return;
+    if (!state.renderer || !state.camera || !state.scene || !state.originTile)
+        return;
 
     const mouse = new THREE.Vector2(
         (clientX / window.innerWidth) * 2 - 1,
-        -(clientY / window.innerHeight) * 2 + 1,
+        -(clientY / window.innerHeight) * 2 + 1
     );
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, state.camera);
 
     const intersects = raycaster.intersectObjects(state.scene.children, true);
 
-    const blockedHit = intersects.find(h =>
-        h.object.userData?.type === 'waypoint-marker' || h.object.userData?.type === 'gpx-track'
+    const blockedHit = intersects.find(
+        (h) =>
+            h.object.userData?.type === 'waypoint-marker' ||
+            h.object.userData?.type === 'gpx-track'
     );
     if (blockedHit) return;
 
-    let hit: { x: number; z: number } | null = null;
+    let hit: { x: number; z: number } | null;
 
     if (state.IS_2D_MODE) {
         // En 2D, le terrain est plat à y=0, on intersecte le plan horizontal
@@ -725,29 +889,45 @@ function placeWaypointAt(clientX: number, clientY: number): void {
         const gps = worldToLngLat(hit.x, hit.z, state.originTile);
         const alt = state.IS_2D_MODE ? 0 : getAltitudeAt(hit.x, hit.z);
         if (state.routeWaypoints.length >= 10) return;
-        state.routeWaypoints = [...state.routeWaypoints, { lat: gps.lat, lon: gps.lon, alt }];
+        state.routeWaypoints = [
+            ...state.routeWaypoints,
+            { lat: gps.lat, lon: gps.lon, alt },
+        ];
 
         const bar = document.getElementById('route-bar');
         if (bar) {
             bar.classList.remove('rb-flash');
             void bar.offsetWidth;
             bar.classList.add('rb-flash');
-            bar.addEventListener('animationend', () => bar.classList.remove('rb-flash'), { once: true });
+            bar.addEventListener(
+                'animationend',
+                () => bar.classList.remove('rb-flash'),
+                { once: true }
+            );
         }
     }
 }
 
 function setupRouteBar(): void {
-    document.getElementById('rb-clear-btn')?.addEventListener('click', () => clearRoute());
+    document
+        .getElementById('rb-clear-btn')
+        ?.addEventListener('click', () => clearRoute());
 
-    document.getElementById('rb-settings-btn')?.addEventListener('click', () => {
-        document.getElementById('route-settings')?.classList.toggle('hidden');
-    });
+    document
+        .getElementById('rb-settings-btn')
+        ?.addEventListener('click', () => {
+            document
+                .getElementById('route-settings')
+                ?.classList.toggle('hidden');
+        });
 
     document.addEventListener('click', (e) => {
         const panel = document.getElementById('route-settings');
         if (!panel || panel.classList.contains('hidden')) return;
-        if (!panel.contains(e.target as Node) && !(e.target as Element)?.closest('#rb-settings-btn')) {
+        if (
+            !panel.contains(e.target as Node) &&
+            !(e.target as Element)?.closest('#rb-settings-btn')
+        ) {
             panel.classList.add('hidden');
         }
     });
@@ -757,7 +937,9 @@ function setupRouteBar(): void {
         if (state.routeWaypoints.length >= 2) scheduleAutoCompute();
     });
 
-    const loopChk = document.getElementById('rs-loop') as HTMLInputElement | null;
+    const loopChk = document.getElementById(
+        'rs-loop'
+    ) as HTMLInputElement | null;
     loopChk?.addEventListener('change', () => {
         state.routeLoopEnabled = loopChk.checked;
         if (state.routeWaypoints.length >= 2) scheduleAutoCompute();
@@ -768,13 +950,24 @@ function setupRouteBar(): void {
     });
 
     document.getElementById('rs-save-key')?.addEventListener('click', () => {
-        const key = (document.getElementById('rs-ors-key') as HTMLInputElement)?.value.trim();
+        const key = (
+            document.getElementById('rs-ors-key') as HTMLInputElement
+        )?.value.trim();
         if (key && key.length > 10) {
             state.ORS_KEY = key;
-            try { localStorage.setItem(STORAGE_KEYS.ORS_KEY, key); } catch { /* ignore */ }
-            void showToast(i18n.t('routePlanner.toast.keySaved') || 'Clé ORS enregistrée');
+            try {
+                localStorage.setItem(STORAGE_KEYS.ORS_KEY, key);
+            } catch {
+                /* ignore */
+            }
+            void showToast(
+                i18n.t('routePlanner.toast.keySaved') || 'Clé ORS enregistrée'
+            );
         } else {
-            void showToast(i18n.t('routePlanner.toast.invalidKey') || 'Clé invalide (minimum 10 caractères)');
+            void showToast(
+                i18n.t('routePlanner.toast.invalidKey') ||
+                    'Clé invalide (minimum 10 caractères)'
+            );
         }
     });
 }

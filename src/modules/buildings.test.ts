@@ -6,11 +6,11 @@ import { Tile } from './terrain';
 
 // Mocks hoisted
 vi.mock('./landcover', () => ({
-    fetchLandcoverPBF: vi.fn()
+    fetchLandcoverPBF: vi.fn(),
 }));
 
 vi.mock('./analysis', () => ({
-    getAltitudeAt: vi.fn(() => 1000)
+    getAltitudeAt: vi.fn(() => 1000),
 }));
 
 import { fetchLandcoverPBF } from './landcover';
@@ -23,7 +23,7 @@ describe('buildings.ts', () => {
         // Mock global fetch
         global.fetch = vi.fn().mockResolvedValue({
             ok: false,
-            status: 404
+            status: 404,
         });
     });
 
@@ -52,11 +52,18 @@ describe('buildings.ts', () => {
         (fetchLandcoverPBF as any).mockResolvedValue({
             buildings: [
                 {
-                    geometry: [[{ x: 100, y: 100 }, { x: 200, y: 100 }, { x: 200, y: 200 }, { x: 100, y: 200 }]],
+                    geometry: [
+                        [
+                            { x: 100, y: 100 },
+                            { x: 200, y: 100 },
+                            { x: 200, y: 200 },
+                            { x: 100, y: 200 },
+                        ],
+                    ],
                     properties: { levels: 2 },
-                    extent: 4096
-                }
-            ]
+                    extent: 4096,
+                },
+            ],
         });
 
         await loadBuildingsForTile(tile);

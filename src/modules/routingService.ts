@@ -1,5 +1,9 @@
 import { state } from './state';
-import { addGPXLayer, removeGPXLayer, recalcLayerStatsFromTerrain } from './gpxLayers';
+import {
+    addGPXLayer,
+    removeGPXLayer,
+    recalcLayerStatsFromTerrain,
+} from './gpxLayers';
 import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
 import { haversineDistance, isPositionInSwitzerland } from './geo';
@@ -15,7 +19,11 @@ export interface RouteWaypoint {
     name?: string;
 }
 
-export type RoutingProfile = 'foot-hiking' | 'foot-walking' | 'cycling-regular' | 'cycling-mountain';
+export type RoutingProfile =
+    | 'foot-hiking'
+    | 'foot-walking'
+    | 'cycling-regular'
+    | 'cycling-mountain';
 
 interface ORSResponse {
     features: Array<{
@@ -61,14 +69,17 @@ function getORSEndpoint(profile: RoutingProfile): string {
 }
 
 function waypointsToORSFormat(waypoints: RouteWaypoint[]): [number, number][] {
-    return waypoints.map(wp => [wp.lon, wp.lat]);
+    return waypoints.map((wp) => [wp.lon, wp.lat]);
 }
 
 function waypointsToOSRMFormat(waypoints: RouteWaypoint[]): string {
-    return waypoints.map(wp => `${wp.lon},${wp.lat}`).join(';');
+    return waypoints.map((wp) => `${wp.lon},${wp.lat}`).join(';');
 }
 
-async function fetchFromORS(waypoints: RouteWaypoint[], profile: RoutingProfile): Promise<ORSResponse> {
+async function fetchFromORS(
+    waypoints: RouteWaypoint[],
+    profile: RoutingProfile
+): Promise<ORSResponse> {
     const key = getORSKey();
     const body = JSON.stringify({
         coordinates: waypointsToORSFormat(waypoints),
@@ -79,7 +90,7 @@ async function fetchFromORS(waypoints: RouteWaypoint[], profile: RoutingProfile)
     const response = await fetch(getORSEndpoint(profile), {
         method: 'POST',
         headers: {
-            'Authorization': key,
+            Authorization: key,
             'Content-Type': 'application/json',
         },
         body,
@@ -93,7 +104,9 @@ async function fetchFromORS(waypoints: RouteWaypoint[], profile: RoutingProfile)
     return response.json();
 }
 
-async function fetchFromOSRM(waypoints: RouteWaypoint[]): Promise<OSRMResponse> {
+async function fetchFromOSRM(
+    waypoints: RouteWaypoint[]
+): Promise<OSRMResponse> {
     const coords = waypointsToOSRMFormat(waypoints);
     const url = `${getOSRMEndpoint()}${coords}?geometries=geojson&overview=full`;
 
@@ -107,9 +120,13 @@ async function fetchFromOSRM(waypoints: RouteWaypoint[]): Promise<OSRMResponse> 
     return response.json();
 }
 
-function orsResponseToPoints(response: ORSResponse): Array<{ lat: number; lon: number; ele: number }> {
+function orsResponseToPoints(
+    response: ORSResponse
+): Array<{ lat: number; lon: number; ele: number }> {
     if (!response.features || response.features.length === 0) {
-        throw new Error(i18n.t('routePlanner.error.noRoute') || 'No route found');
+        throw new Error(
+            i18n.t('routePlanner.error.noRoute') || 'No route found'
+        );
     }
     const coords = response.features[0].geometry.coordinates;
     return coords.map(([lon, lat]) => ({
@@ -119,9 +136,17 @@ function orsResponseToPoints(response: ORSResponse): Array<{ lat: number; lon: n
     }));
 }
 
-function osrmResponseToPoints(response: OSRMResponse): Array<{ lat: number; lon: number; ele: number }> {
-    if (response.code !== 'Ok' || !response.routes || response.routes.length === 0) {
-        throw new Error(i18n.t('routePlanner.error.noRoute') || 'No route found');
+function osrmResponseToPoints(
+    response: OSRMResponse
+): Array<{ lat: number; lon: number; ele: number }> {
+    if (
+        response.code !== 'Ok' ||
+        !response.routes ||
+        response.routes.length === 0
+    ) {
+        throw new Error(
+            i18n.t('routePlanner.error.noRoute') || 'No route found'
+        );
     }
     const coords = response.routes[0].geometry.coordinates;
     return coords.map(([lon, lat]) => ({
@@ -141,16 +166,20 @@ interface GPXCompatibleData {
     }>;
 }
 
-function buildGPXCompatibleData(points: Array<{ lat: number; lon: number; ele: number }>): GPXCompatibleData {
+function buildGPXCompatibleData(
+    points: Array<{ lat: number; lon: number; ele: number }>
+): GPXCompatibleData {
     return {
-        tracks: [{
-            points: points.map(p => ({
-                lat: p.lat,
-                lon: p.lon,
-                ele: p.ele,
-                // pas de time → addGPXLayer utilise i*1000 (timestamps uniques, évite la déduplication)
-            })),
-        }],
+        tracks: [
+            {
+                points: points.map((p) => ({
+                    lat: p.lat,
+                    lon: p.lon,
+                    ele: p.ele,
+                    // pas de time → addGPXLayer utilise i*1000 (timestamps uniques, évite la déduplication)
+                })),
+            },
+        ],
     };
 }
 
@@ -160,21 +189,39 @@ export function getActiveProfile(): RoutingProfile {
 
 export async function computeRoute(
     waypoints: RouteWaypoint[],
-    profile?: RoutingProfile,
-): Promise<{ name: string; distance: number; duration: number; ascent: number; descent: number }> {
+    profile?: RoutingProfile
+): Promise<{
+    name: string;
+    distance: number;
+    duration: number;
+    ascent: number;
+    descent: number;
+}> {
     if (waypoints.length < 2) {
-        throw new Error(i18n.t('routePlanner.error.minWaypoints') || 'At least 2 waypoints required');
+        throw new Error(
+            i18n.t('routePlanner.error.minWaypoints') ||
+                'At least 2 waypoints required'
+        );
     }
 
     const maxKm = isProActive() ? 500 : 25;
     let totalKm = 0;
     for (let i = 1; i < waypoints.length; i++) {
-        totalKm += haversineDistance(waypoints[i-1].lat, waypoints[i-1].lon, waypoints[i].lat, waypoints[i].lon);
+        totalKm += haversineDistance(
+            waypoints[i - 1].lat,
+            waypoints[i - 1].lon,
+            waypoints[i].lat,
+            waypoints[i].lon
+        );
     }
     if (totalKm > maxKm) {
-        throw new Error(isProActive()
-            ? i18n.t('routePlanner.error.tooLong') || 'Distance maximale de 500 km dépassée'
-            : i18n.t('routePlanner.error.upgradeDistance') || 'Limite de 25 km atteinte (version gratuite)');
+        throw new Error(
+            isProActive()
+                ? i18n.t('routePlanner.error.tooLong') ||
+                      'Distance maximale de 500 km dépassée'
+                : i18n.t('routePlanner.error.upgradeDistance') ||
+                      'Limite de 25 km atteinte (version gratuite)'
+        );
     }
 
     state.routeLoading = true;
@@ -185,13 +232,20 @@ export async function computeRoute(
     const useORS = hasORSKey();
     const activeProfile = profile || getActiveProfile();
 
-    const loopedWaypoints = (state.routeLoopEnabled && waypoints.length >= 2)
-        ? [...waypoints, waypoints[0]]
-        : waypoints;
+    const loopedWaypoints =
+        state.routeLoopEnabled && waypoints.length >= 2
+            ? [...waypoints, waypoints[0]]
+            : waypoints;
 
     // Suggestion ORS pour la Suisse (sentiers de randonnée non priorisés par OSRM générique)
-    if (!useORS && waypoints.some(wp => isPositionInSwitzerland(wp.lat, wp.lon))) {
-        void showToast(i18n.t('routePlanner.hint.orsSwiss') || 'Pour les sentiers suisses, ajoutez une clé OpenRouteService');
+    if (
+        !useORS &&
+        waypoints.some((wp) => isPositionInSwitzerland(wp.lat, wp.lon))
+    ) {
+        void showToast(
+            i18n.t('routePlanner.hint.orsSwiss') ||
+                'Pour les sentiers suisses, ajoutez une clé OpenRouteService'
+        );
     }
 
     const _computeDrapedResult = (layer: ReturnType<typeof addGPXLayer>) => {
@@ -201,16 +255,28 @@ export async function computeRoute(
     try {
         if (useORS) {
             const response = await fetchFromORS(loopedWaypoints, activeProfile);
-            if (generation !== _routeGeneration) throw new Error('Route cancelled');
+            if (generation !== _routeGeneration)
+                throw new Error('Route cancelled');
             const points = orsResponseToPoints(response);
 
             const rawData = buildGPXCompatibleData(points);
             const routeName = buildRouteName(waypoints, state.routeLoopEnabled);
 
-            if (_currentRouteLayerId) { removeGPXLayer(_currentRouteLayerId); _currentRouteLayerId = null; }
-            const layer = _computeDrapedResult(addGPXLayer(rawData, routeName, { silent: true, forceVisible: true, isManualRoute: true }));
+            if (_currentRouteLayerId) {
+                removeGPXLayer(_currentRouteLayerId);
+                _currentRouteLayerId = null;
+            }
+            const layer = _computeDrapedResult(
+                addGPXLayer(rawData, routeName, {
+                    silent: true,
+                    forceVisible: true,
+                    isManualRoute: true,
+                })
+            );
             _currentRouteLayerId = layer.id;
-            void showToast(i18n.t('routePlanner.toast.computed') || 'Route computed');
+            void showToast(
+                i18n.t('routePlanner.toast.computed') || 'Route computed'
+            );
 
             return {
                 name: routeName,
@@ -228,10 +294,21 @@ export async function computeRoute(
         const rawData = buildGPXCompatibleData(points);
         const routeName = buildRouteName(waypoints, state.routeLoopEnabled);
 
-        if (_currentRouteLayerId) { removeGPXLayer(_currentRouteLayerId); _currentRouteLayerId = null; }
-        const layer = _computeDrapedResult(addGPXLayer(rawData, routeName, { silent: true, forceVisible: true, isManualRoute: true }));
+        if (_currentRouteLayerId) {
+            removeGPXLayer(_currentRouteLayerId);
+            _currentRouteLayerId = null;
+        }
+        const layer = _computeDrapedResult(
+            addGPXLayer(rawData, routeName, {
+                silent: true,
+                forceVisible: true,
+                isManualRoute: true,
+            })
+        );
         _currentRouteLayerId = layer.id;
-        void showToast(i18n.t('routePlanner.toast.computed') || 'Route computed');
+        void showToast(
+            i18n.t('routePlanner.toast.computed') || 'Route computed'
+        );
 
         return {
             name: routeName,
@@ -245,7 +322,10 @@ export async function computeRoute(
             state.routeLoading = false;
             throw error;
         }
-        const message = error?.message || (i18n.t('routePlanner.error.generic') || 'Routing failed');
+        const message =
+            error?.message ||
+            i18n.t('routePlanner.error.generic') ||
+            'Routing failed';
         state.routeError = message;
         void showToast(message);
         throw error;
@@ -257,12 +337,15 @@ export async function computeRoute(
 function buildRouteName(waypoints: RouteWaypoint[], isLoop: boolean): string {
     const first = waypoints[0];
     const last = waypoints[waypoints.length - 1];
-    const firstName = first.name || `${first.lat.toFixed(3)}, ${first.lon.toFixed(3)}`;
-    const lastName = last.name || `${last.lat.toFixed(3)}, ${last.lon.toFixed(3)}`;
+    const firstName =
+        first.name || `${first.lat.toFixed(3)}, ${first.lon.toFixed(3)}`;
+    const lastName =
+        last.name || `${last.lat.toFixed(3)}, ${last.lon.toFixed(3)}`;
     let base: string;
     if (firstName === lastName && waypoints.length > 2) {
         const mid = waypoints[Math.floor(waypoints.length / 2)];
-        const midName = mid.name || `${mid.lat.toFixed(3)}, ${mid.lon.toFixed(3)}`;
+        const midName =
+            mid.name || `${mid.lat.toFixed(3)}, ${mid.lon.toFixed(3)}`;
         base = `${firstName} → ${midName} → ${lastName}`;
     } else {
         base = `${firstName} → ${lastName}`;
@@ -286,7 +369,10 @@ export function addRouteWaypoint(wp: RouteWaypoint): void {
 }
 
 export function clearRouteWaypoints(): void {
-    if (_currentRouteLayerId) { removeGPXLayer(_currentRouteLayerId); _currentRouteLayerId = null; }
+    if (_currentRouteLayerId) {
+        removeGPXLayer(_currentRouteLayerId);
+        _currentRouteLayerId = null;
+    }
     state.routeWaypoints = [];
     state.routeError = null;
 }

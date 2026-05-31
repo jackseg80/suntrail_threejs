@@ -1,4 +1,20 @@
-## [5.56.3] - 2026-05-31
+## [5.56.4] - 2026-05-31
+
+### Added
+- **ESLint + Prettier configurés** : `eslint.config.mjs` + `.prettierrc`. 3 nouveaux scripts npm (`lint`, `lint:fix`, `format`). Le check CI inclut désormais la vérification de formatage et de lint.
+- **Tests tileSources** (+26) : Couverture exhaustive des 16 builders d'URL et de la config `COUNTRY_SOURCES`.
+- **Tests benchmark** (+5) : Validation des seuils de scoring (ultra/performance/balanced/eco).
+- **Tests GPX import** (+2) : Détection des imports en double + acceptation de GPX différents.
+- **Détection doublon GPX** : `handleGPXImport()` calcule un hash des points (first/last 5 + count). Si un layer existant a le même hash, toast + refus sans importer.
+- **i18n `gpx.alreadyImported`** : Clé de traduction dans les 4 locales (fr/en/de/it).
+
+### Changed
+- **Refactoring SolarProbeSheet** : Extraction de `SolarTimeline.ts` et `SolarLockedItem.ts` dans `solarprobe/` (préparation pour extraction complète).
+- **Corrections qualité code** (42 erreurs ESLint) : empty catch blocks documentés, `@ts-ignore` avec descriptions, `no-useless-assignment` nettoyés, `no-case-declarations` fixés, `no-unused-expressions` corrigés, `no-self-assign` supprimé.
+- **`check` script** : Inclut désormais `prettier --check` et `eslint` en plus de `tsc --noEmit`.
+
+### Tests
+- **903 tests passent** (+33 vs v5.56.3). Zéro régression.
 
 ### Added
 - **Bouton refresh météo** (🔄) : Dans le header du bulletin, icône SVG synchro. Force `fetchWeather()` sur la position caméra actuelle. Re-fetch auto à l'ouverture du bulletin.

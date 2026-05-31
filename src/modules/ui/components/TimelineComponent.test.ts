@@ -4,10 +4,15 @@ import { state } from '../../state';
 const mockUpdateSunPosition = vi.fn();
 
 vi.mock('../../sun', () => ({ updateSunPosition: mockUpdateSunPosition }));
-vi.mock('../../iap', () => ({ showUpgradePrompt: vi.fn(), isProActive: vi.fn().mockReturnValue(false) }));
+vi.mock('../../iap', () => ({
+    showUpgradePrompt: vi.fn(),
+    isProActive: vi.fn().mockReturnValue(false),
+}));
 vi.mock('../../haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../../toast', () => ({ showToast: vi.fn() }));
-vi.mock('../../geo', () => ({ worldToLngLat: vi.fn().mockReturnValue({ lat: 46.8, lon: 8.2 }) }));
+vi.mock('../../geo', () => ({
+    worldToLngLat: vi.fn().mockReturnValue({ lat: 46.8, lon: 8.2 }),
+}));
 vi.mock('../../state', async () => {
     const { createReactiveState } = await import('../../ui/core/ReactiveState');
     const initial = {
@@ -32,12 +37,16 @@ vi.mock('../../state', async () => {
         saveLastView: vi.fn(),
     };
 });
-vi.mock('../draggablePanel', () => ({ attachDraggablePanel: vi.fn().mockReturnValue(() => {}) }));
+vi.mock('../draggablePanel', () => ({
+    attachDraggablePanel: vi.fn().mockReturnValue(() => {}),
+}));
 vi.mock('../../../i18n/I18nService', () => ({
     i18n: { t: (k: string) => k },
 }));
 vi.mock('suncalc', () => ({
-    default: { getPosition: vi.fn().mockReturnValue({ altitude: 0.5, azimuth: 1.2 }) },
+    default: {
+        getPosition: vi.fn().mockReturnValue({ altitude: 0.5, azimuth: 1.2 }),
+    },
 }));
 
 function buildDOM() {
@@ -71,7 +80,9 @@ describe('TimelineComponent', () => {
         it('met à jour le slider même quand isSunAnimating est true', async () => {
             const { TimelineComponent } = await import('./TimelineComponent');
             const comp = new TimelineComponent();
-            const slider = document.getElementById('time-slider') as HTMLInputElement;
+            const slider = document.getElementById(
+                'time-slider'
+            ) as HTMLInputElement;
 
             state.isSunAnimating = true;
             state.simDate = new Date(2024, 5, 21, 14, 30, 0);
@@ -86,7 +97,9 @@ describe('TimelineComponent', () => {
         it('met à jour le slider quand isSunAnimating est false', async () => {
             const { TimelineComponent } = await import('./TimelineComponent');
             const comp = new TimelineComponent();
-            const slider = document.getElementById('time-slider') as HTMLInputElement;
+            const slider = document.getElementById(
+                'time-slider'
+            ) as HTMLInputElement;
 
             state.isSunAnimating = false;
             state.simDate = new Date(2024, 5, 21, 8, 15, 0);

@@ -8,13 +8,15 @@ function extractGistKeys(data: any): string[] {
     const raw = data?.maptiler_keys;
     if (!raw || !Array.isArray(raw) || raw.length === 0) return [];
     return raw
-        .filter((k: any) => typeof k === 'string' ? true : k.enabled !== false)
-        .map((k: any) => typeof k === 'string' ? k : k.key)
+        .filter((k: any) =>
+            typeof k === 'string' ? true : k.enabled !== false
+        )
+        .map((k: any) => (typeof k === 'string' ? k : k.key))
         .filter((k: string) => k && k.length > 10);
 }
 
 let availableKeys: string[] = [];
-let bannedKeys = new Set<string>();
+const bannedKeys = new Set<string>();
 let banTimestamp = 0;
 
 /**
@@ -30,11 +32,13 @@ export async function resolveMapTilerKey(): Promise<void> {
     const userDefinedKey = localStorage.getItem(STORAGE_KEYS.MAPTILER_KEY);
     const bundledKey = import.meta.env.VITE_MAPTILER_KEY as string | undefined;
 
-    const GIST_URL = 'https://gist.githubusercontent.com/jackseg80/c4f2e5e99c1efb9d736736cb65fce862/raw/suntrail_config.json';
+    const GIST_URL =
+        'https://gist.githubusercontent.com/jackseg80/c4f2e5e99c1efb9d736736cb65fce862/raw/suntrail_config.json';
 
     if (userDefinedKey) {
         state.MK = userDefinedKey;
-        if (state.DEBUG_MODE) console.log(`[Config] MapTiler key: localStorage (manual)`);
+        if (state.DEBUG_MODE)
+            console.log(`[Config] MapTiler key: localStorage (manual)`);
         return;
     }
 
@@ -42,28 +46,38 @@ export async function resolveMapTilerKey(): Promise<void> {
     try {
         const ctrl = new AbortController();
         const tid = setTimeout(() => ctrl.abort(), 4000); // v5.29.35 : Timeout 4s pour ne pas bloquer le démarrage
-        const r = await fetch(GIST_URL, { cache: 'no-cache', signal: ctrl.signal });
+        const r = await fetch(GIST_URL, {
+            cache: 'no-cache',
+            signal: ctrl.signal,
+        });
         clearTimeout(tid);
         if (r.ok) {
             const data = await r.json();
             availableKeys = extractGistKeys(data);
             if (availableKeys.length > 0) {
                 // On choisit une clé au hasard parmi celles non bannies
-                const validKeys = availableKeys.filter(k => !bannedKeys.has(k));
+                const validKeys = availableKeys.filter(
+                    (k) => !bannedKeys.has(k)
+                );
                 if (validKeys.length > 0) {
                     const idx = Math.floor(Math.random() * validKeys.length);
                     state.MK = validKeys[idx];
-                    if (state.DEBUG_MODE) console.log(`[Config] MapTiler key: Gist rotation active (${validKeys.length} valides)`);
+                    if (state.DEBUG_MODE)
+                        console.log(
+                            `[Config] MapTiler key: Gist rotation active (${validKeys.length} valides)`
+                        );
                 } else if (bundledKey) {
                     state.MK = bundledKey;
-                    if (state.DEBUG_MODE) console.log(`[Config] MapTiler key: .env fallback`);
+                    if (state.DEBUG_MODE)
+                        console.log(`[Config] MapTiler key: .env fallback`);
                 }
             }
         }
     } catch (e) {
         if (bundledKey) {
             state.MK = bundledKey;
-            if (state.DEBUG_MODE) console.log(`[Config] MapTiler key: .env (bundled)`);
+            if (state.DEBUG_MODE)
+                console.log(`[Config] MapTiler key: .env (bundled)`);
         }
     }
 }
@@ -74,12 +88,12 @@ export async function resolveMapTilerKey(): Promise<void> {
  */
 export function rotateMapTilerKey(): boolean {
     if (!state.MK) return false;
-    
+
     if (state.DEBUG_MODE) console.warn(`[Config] Clé MapTiler bannie (403)`);
     bannedKeys.add(state.MK);
     banTimestamp = Date.now();
 
-    const validKeys = availableKeys.filter(k => !bannedKeys.has(k));
+    const validKeys = availableKeys.filter((k) => !bannedKeys.has(k));
     if (validKeys.length > 0) {
         state.MK = validKeys[Math.floor(Math.random() * validKeys.length)];
         if (state.DEBUG_MODE) console.log(`[Config] Rotation effectuée.`);
@@ -90,17 +104,24 @@ export function rotateMapTilerKey(): boolean {
     // (Brave may temporarily strip Referer, causing 403 on valid keys)
     const BAN_COOLDOWN_MS = 120_000;
     if (Date.now() - banTimestamp > BAN_COOLDOWN_MS) {
-        if (state.DEBUG_MODE) console.log("[Config] Reset MapTiler bans after cooldown — retrying...");
+        if (state.DEBUG_MODE)
+            console.log(
+                '[Config] Reset MapTiler bans after cooldown — retrying...'
+            );
         bannedKeys.clear();
         state.isMapTilerDisabled = false;
         if (availableKeys.length > 0) {
-            state.MK = availableKeys[Math.floor(Math.random() * availableKeys.length)];
-            if (state.DEBUG_MODE) console.log(`[Config] Retry avec clé : ${state.MK.substring(0, 8)}...`);
+            state.MK =
+                availableKeys[Math.floor(Math.random() * availableKeys.length)];
+            if (state.DEBUG_MODE)
+                console.log(
+                    `[Config] Retry avec clé : ${state.MK.substring(0, 8)}...`
+                );
             return true;
         }
     }
 
-    console.error("[Config] Toutes les clés MapTiler ont été bannies.");
+    console.error('[Config] Toutes les clés MapTiler ont été bannies.');
     state.isMapTilerDisabled = true;
     return false;
 }

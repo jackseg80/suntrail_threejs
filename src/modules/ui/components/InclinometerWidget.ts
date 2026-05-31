@@ -23,7 +23,7 @@ import * as THREE from 'three';
 const SAMPLE_DELTA_M = 4;
 const UPDATE_INTERVAL_MS = 200;
 const MIN_ZOOM_DISPLAY = 13;
-const DRAG_HOLD_MS = 200;       // Délai avant activation du drag (distingue tap vs drag)
+const DRAG_HOLD_MS = 200; // Délai avant activation du drag (distingue tap vs drag)
 const ANTICIPATION_DISTANCE_M = 8; // Distance devant l'utilisateur en mode suivi (réduit v5.40.28)
 
 const COMPASS_DIRS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
@@ -43,7 +43,7 @@ export class InclinometerWidget {
     private _dragHoldTimer: ReturnType<typeof setTimeout> | null = null;
     private _lastTapTimeWidget = 0;
     private _lastTapTimeReticle = 0;
-    
+
     // Position du réticule en coordonnées écran (px)
     private _reticleX = window.innerWidth / 2;
     private _reticleY = window.innerHeight / 2;
@@ -109,40 +109,54 @@ export class InclinometerWidget {
         ].join(';');
         // Petit point au centre du réticule
         const centerDot = document.createElement('div');
-        centerDot.style.cssText = 'position:absolute;left:50%;top:50%;width:4px;height:4px;background:#fff;border-radius:50%;transform:translate(-50%,-50%)';
+        centerDot.style.cssText =
+            'position:absolute;left:50%;top:50%;width:4px;height:4px;background:#fff;border-radius:50%;transform:translate(-50%,-50%)';
         this.reticle.appendChild(centerDot);
         document.body.appendChild(this.reticle);
 
         // Événements Widget
         this.el.addEventListener('pointerdown', (e) => this.onWidgetDown(e));
-        
+
         // Événements Réticule
-        this.reticle.addEventListener('pointerdown', (e) => this.onReticleDown(e));
+        this.reticle.addEventListener('pointerdown', (e) =>
+            this.onReticleDown(e)
+        );
 
         // Événements globaux pour le drag
         const onMove = (e: PointerEvent) => this.onPointerMove(e);
         const onUp = (e: PointerEvent) => this.onPointerUp(e);
-        
+
         window.addEventListener('pointermove', onMove);
         window.addEventListener('pointerup', onUp);
-        
+
         this.unsubscribers.push(() => {
             window.removeEventListener('pointermove', onMove);
             window.removeEventListener('pointerup', onUp);
         });
 
         // Abonnements
-        this.unsubscribers.push(state.subscribe('isPro', () => this.syncVisibility()));
-        this.unsubscribers.push(state.subscribe('ZOOM', () => this.syncVisibility()));
-        this.unsubscribers.push(state.subscribe('SHOW_INCLINOMETER', () => this.syncVisibility()));
-        this.unsubscribers.push(state.subscribe('isFollowingUser', (val) => {
-            if (val) this.resetReticle(); // Recentrer si on clique sur le bouton position
-            this.syncVisibility();
-        }));
+        this.unsubscribers.push(
+            state.subscribe('isPro', () => this.syncVisibility())
+        );
+        this.unsubscribers.push(
+            state.subscribe('ZOOM', () => this.syncVisibility())
+        );
+        this.unsubscribers.push(
+            state.subscribe('SHOW_INCLINOMETER', () => this.syncVisibility())
+        );
+        this.unsubscribers.push(
+            state.subscribe('isFollowingUser', (val) => {
+                if (val) this.resetReticle(); // Recentrer si on clique sur le bouton position
+                this.syncVisibility();
+            })
+        );
 
         // v5.38.4 : Synchronisation avec l'ouverture de la timeline
         const observer = new MutationObserver(() => this.syncPosition());
-        observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        observer.observe(document.body, {
+            attributes: true,
+            attributeFilter: ['class'],
+        });
         this.unsubscribers.push(() => observer.disconnect());
 
         this.syncVisibility();
@@ -152,8 +166,9 @@ export class InclinometerWidget {
     private syncPosition(): void {
         if (!this.el || this._isCustomWidgetPos) return;
 
-        const isTimelineOpen = document.body.classList.contains('timeline-open');
-        
+        const isTimelineOpen =
+            document.body.classList.contains('timeline-open');
+
         if (isTimelineOpen) {
             // v5.40.27 : Reste en BAS mais décalé au dessus de la timeline
             this.el.style.top = 'auto';
@@ -167,14 +182,16 @@ export class InclinometerWidget {
     }
 
     private syncVisibility(): void {
-        const shouldShow = state.ZOOM >= MIN_ZOOM_DISPLAY && state.SHOW_INCLINOMETER;
+        const shouldShow =
+            state.ZOOM >= MIN_ZOOM_DISPLAY && state.SHOW_INCLINOMETER;
         if (this.el) this.el.style.display = shouldShow ? 'block' : 'none';
-        
+
         // Réticule visible uniquement en mode libre
         if (this.reticle) {
-            this.reticle.style.display = (shouldShow && !state.isFollowingUser) ? 'block' : 'none';
+            this.reticle.style.display =
+                shouldShow && !state.isFollowingUser ? 'block' : 'none';
         }
-        
+
         if (shouldShow) this.startPolling();
         else {
             this.stopPolling();
@@ -188,34 +205,46 @@ export class InclinometerWidget {
     }
 
     private stopPolling(): void {
-        if (this.intervalId !== null) { clearInterval(this.intervalId); this.intervalId = null; }
+        if (this.intervalId !== null) {
+            clearInterval(this.intervalId);
+            this.intervalId = null;
+        }
     }
 
     private update(): void {
-        if (!this.el || !state.controls || !state.camera || !state.originTile) return;
+        if (!this.el || !state.controls || !state.camera || !state.originTile)
+            return;
 
         // Si pas Pro : on affiche juste le verrou (v5.54)
         if (!isProActive()) {
             this.el.style.borderColor = 'var(--border)';
             this.el.innerHTML = `<span style="display:flex; align-items:center; gap:8px;">⛰ —° (—%) <span style="display:inline-flex; align-items:center; opacity:0.6;">${ICON_LOCK}</span></span>`;
             const svg = this.el.querySelector('svg');
-            if (svg) { svg.setAttribute('width', '14'); svg.setAttribute('height', '14'); }
+            if (svg) {
+                svg.setAttribute('width', '14');
+                svg.setAttribute('height', '14');
+            }
             if (this.reticle) {
                 this.reticle.style.borderColor = 'var(--border)';
-                (this.reticle.firstChild as HTMLElement).style.background = 'rgba(255,255,255,0.2)';
+                (this.reticle.firstChild as HTMLElement).style.background =
+                    'rgba(255,255,255,0.2)';
             }
             return;
         }
 
-        let targetX = 0;
-        let targetZ = 0;
+        let targetX: number;
+        let targetZ: number;
 
         if (state.isFollowingUser && state.userLocation && state.originTile) {
             // MODE SUIVI : Position utilisateur + anticipation
-            const pos = lngLatToWorld(state.userLocation.lon, state.userLocation.lat, state.originTile);
+            const pos = lngLatToWorld(
+                state.userLocation.lon,
+                state.userLocation.lat,
+                state.originTile
+            );
             const heading = state.userHeading || 0;
             const headingRad = (heading * Math.PI) / 180;
-            
+
             // On projette à 15m devant (0° = Nord = -Z, 90° = Est = +X)
             targetX = pos.x + Math.sin(headingRad) * ANTICIPATION_DISTANCE_M;
             targetZ = pos.z - Math.cos(headingRad) * ANTICIPATION_DISTANCE_M;
@@ -223,10 +252,13 @@ export class InclinometerWidget {
             // MODE LIBRE : Sous le réticule écran via Raycasting
             const ndcX = (this._reticleX / window.innerWidth) * 2 - 1;
             const ndcY = -(this._reticleY / window.innerHeight) * 2 + 1;
-            
+
             const raycaster = new THREE.Raycaster();
-            raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), state.camera);
-            
+            raycaster.setFromCamera(
+                new THREE.Vector2(ndcX, ndcY),
+                state.camera
+            );
+
             const hit = findTerrainIntersection(raycaster.ray);
             if (hit) {
                 targetX = hit.x;
@@ -251,32 +283,38 @@ export class InclinometerWidget {
         // En Mercator, les distances horizontales sont dilatées par 1/cos(lat).
         // Pour retrouver la pente réelle, on doit diviser la pente apparente par cos(lat).
         const { lat } = worldToLngLat(targetX, targetZ, state.originTile);
-        const latFactor = Math.cos(lat * Math.PI / 180);
+        const latFactor = Math.cos((lat * Math.PI) / 180);
         if (latFactor > 0.01) {
             realDHdX /= latFactor;
             realDHdZ /= latFactor;
         }
 
-        const maxSlopeRad = Math.atan(Math.sqrt(realDHdX * realDHdX + realDHdZ * realDHdZ));
+        const maxSlopeRad = Math.atan(
+            Math.sqrt(realDHdX * realDHdX + realDHdZ * realDHdZ)
+        );
         this._lastSlopeDeg = Math.round(maxSlopeRad * (180 / Math.PI));
         this._lastSlopePct = Math.round(Math.tan(maxSlopeRad) * 100);
-        this._lastAspectDeg = Math.round(((Math.atan2(realDHdX, realDHdZ) * 180 / Math.PI) + 360) % 360);
+        this._lastAspectDeg = Math.round(
+            ((Math.atan2(realDHdX, realDHdZ) * 180) / Math.PI + 360) % 360
+        );
 
         // Mise à jour UI
-        const labelKey = state.isFollowingUser ? 'inclinometer.label_following' : 'inclinometer.label';
+        const labelKey = state.isFollowingUser
+            ? 'inclinometer.label_following'
+            : 'inclinometer.label';
         const label = i18n.t(labelKey);
 
         if (state.isFollowingUser) {
             // MODE SUIVI : Tout en % pour plus de clarté intuitive (v5.40.27)
-            const headingRad = (state.userHeading || 0) * Math.PI / 180;
+            const headingRad = ((state.userHeading || 0) * Math.PI) / 180;
             const dirX = Math.sin(headingRad);
             const dirZ = -Math.cos(headingRad);
-            
+
             // v5.40.28 : La pente projetée doit aussi être corrigée par la latitude
             const pathSlope = realDHdX * dirX + realDHdZ * dirZ;
             const pathSlopePct = Math.round(pathSlope * 100);
             const sign = pathSlopePct > 0 ? '+' : '';
-            
+
             // Format : 📈 +3% (max. 45%)
             this.el.textContent = `📈 ${sign}${pathSlopePct}% (max. ${this._lastSlopePct}%) — ${label}`;
         } else {
@@ -287,8 +325,10 @@ export class InclinometerWidget {
 
         // Couleurs selon danger (seuil avalanche Swisstopo)
         let color = '#a0a4bc'; // Gris par défaut
-        if      (this._lastSlopeDeg >= 40) color = '#ef4444'; // Rouge
-        else if (this._lastSlopeDeg >= 35) color = '#f97316'; // Orange
+        if (this._lastSlopeDeg >= 40)
+            color = '#ef4444'; // Rouge
+        else if (this._lastSlopeDeg >= 35)
+            color = '#f97316'; // Orange
         else if (this._lastSlopeDeg >= 30) color = '#eab308'; // Jaune
 
         this.el.style.borderColor = color;
@@ -304,7 +344,7 @@ export class InclinometerWidget {
 
     private onReticleDown(e: PointerEvent): void {
         if (!this.reticle) return;
-        
+
         // Double-tap reset
         const now = Date.now();
         if (now - this._lastTapTimeReticle < 300) {
@@ -319,7 +359,7 @@ export class InclinometerWidget {
         const rect = this.reticle.getBoundingClientRect();
         this._reticleStartLeft = rect.left + rect.width / 2;
         this._reticleStartTop = rect.top + rect.height / 2;
-        
+
         this.reticle.setPointerCapture(e.pointerId);
         this.reticle.style.opacity = '0.7';
     }
@@ -362,7 +402,12 @@ export class InclinometerWidget {
     }
 
     private onPointerMove(e: PointerEvent): void {
-        if (!this._isDraggingReticle && !this._isDraggingWidget && !this._dragHoldTimer) return;
+        if (
+            !this._isDraggingReticle &&
+            !this._isDraggingWidget &&
+            !this._dragHoldTimer
+        )
+            return;
 
         const dx = e.clientX - this._dragStartX;
         const dy = e.clientY - this._dragStartY;
@@ -378,15 +423,26 @@ export class InclinometerWidget {
 
         requestAnimationFrame(() => {
             if (this._isDraggingReticle && this.reticle) {
-                this._reticleX = Math.max(20, Math.min(window.innerWidth - 20, this._reticleStartLeft + dx));
-                this._reticleY = Math.max(20, Math.min(window.innerHeight - 20, this._reticleStartTop + dy));
+                this._reticleX = Math.max(
+                    20,
+                    Math.min(
+                        window.innerWidth - 20,
+                        this._reticleStartLeft + dx
+                    )
+                );
+                this._reticleY = Math.max(
+                    20,
+                    Math.min(
+                        window.innerHeight - 20,
+                        this._reticleStartTop + dy
+                    )
+                );
                 this.reticle.style.left = `${this._reticleX}px`;
                 this.reticle.style.top = `${this._reticleY}px`;
-            } 
-            else if (this._isDraggingWidget && this.el) {
+            } else if (this._isDraggingWidget && this.el) {
                 let left = this._widgetStartLeft + dx;
                 let top = this._widgetStartTop + dy;
-                
+
                 const w = this.el.offsetWidth;
                 const h = this.el.offsetHeight;
                 left = Math.max(8, Math.min(window.innerWidth - w - 8, left));
@@ -471,12 +527,17 @@ export class InclinometerWidget {
         document.body.appendChild(this.detailEl);
         this.positionDetail();
 
-        requestAnimationFrame(() => { if (this.detailEl) this.detailEl.style.opacity = '1'; });
+        requestAnimationFrame(() => {
+            if (this.detailEl) this.detailEl.style.opacity = '1';
+        });
     }
 
     private closeDetail(): void {
         this._isExpanded = false;
-        if (this.detailEl) { this.detailEl.remove(); this.detailEl = null; }
+        if (this.detailEl) {
+            this.detailEl.remove();
+            this.detailEl = null;
+        }
     }
 
     private positionDetail(): void {
@@ -498,9 +559,16 @@ export class InclinometerWidget {
 
         let dangerKey = 'low';
         let dangerColor = '#a0a4bc';
-        if (this._lastSlopeDeg >= 40) { dangerKey = 'extreme'; dangerColor = '#ef4444'; }
-        else if (this._lastSlopeDeg >= 35) { dangerKey = 'high'; dangerColor = '#f97316'; }
-        else if (this._lastSlopeDeg >= 30) { dangerKey = 'moderate'; dangerColor = '#eab308'; }
+        if (this._lastSlopeDeg >= 40) {
+            dangerKey = 'extreme';
+            dangerColor = '#ef4444';
+        } else if (this._lastSlopeDeg >= 35) {
+            dangerKey = 'high';
+            dangerColor = '#f97316';
+        } else if (this._lastSlopeDeg >= 30) {
+            dangerKey = 'moderate';
+            dangerColor = '#eab308';
+        }
 
         this.detailEl.innerHTML = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -517,7 +585,7 @@ export class InclinometerWidget {
     public dispose(): void {
         this.stopPolling();
         this.closeDetail();
-        this.unsubscribers.forEach(u => u());
+        this.unsubscribers.forEach((u) => u());
         this.unsubscribers = [];
         this.el?.remove();
         this.reticle?.remove();

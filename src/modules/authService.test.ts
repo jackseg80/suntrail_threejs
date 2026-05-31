@@ -8,9 +8,9 @@ describe('AuthService', () => {
 
     it('should initialize with null user when no session exists', async () => {
         const mockGetSession = vi.mocked(supabase.auth.getSession);
-        mockGetSession.mockResolvedValueOnce({ 
-            data: { session: null }, 
-            error: null 
+        mockGetSession.mockResolvedValueOnce({
+            data: { session: null },
+            error: null,
         } as any);
 
         // On recrée l'instance pour forcer l'init avec le mock
@@ -25,16 +25,19 @@ describe('AuthService', () => {
     it('should set user when session exists', async () => {
         const mockUser = { id: 'test-uid', email: 'test@suntrail.app' };
         const mockGetSession = vi.mocked(supabase.auth.getSession);
-        mockGetSession.mockResolvedValueOnce({ 
-            data: { session: { user: mockUser } }, 
-            error: null 
+        mockGetSession.mockResolvedValueOnce({
+            data: { session: { user: mockUser } },
+            error: null,
         } as any);
 
         const { AuthService } = await import('./authService');
         const service = new (AuthService as any)();
         await service.waitForInit();
 
-        expect(service.user).toEqual({ id: 'test-uid', email: 'test@suntrail.app' });
+        expect(service.user).toEqual({
+            id: 'test-uid',
+            email: 'test@suntrail.app',
+        });
         expect(service.isAuthenticated).toBe(true);
     });
 
@@ -48,18 +51,30 @@ describe('AuthService', () => {
     });
 
     it('should call supabase.rpc delete_user_account on deleteAccount()', async () => {
-        vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: null, error: null } as any);
-        vi.mocked(supabase.auth.signOut).mockResolvedValueOnce({ error: null } as any);
+        vi.mocked(supabase.rpc).mockResolvedValueOnce({
+            data: null,
+            error: null,
+        } as any);
+        vi.mocked(supabase.auth.signOut).mockResolvedValueOnce({
+            error: null,
+        } as any);
 
         const { error } = await authService.deleteAccount();
 
-        expect(vi.mocked(supabase.rpc)).toHaveBeenCalledWith('delete_user_account');
+        expect(vi.mocked(supabase.rpc)).toHaveBeenCalledWith(
+            'delete_user_account'
+        );
         expect(error).toBeNull();
     });
 
     it('should sign out and remove rc_web_user_id after successful deletion', async () => {
-        vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: null, error: null } as any);
-        vi.mocked(supabase.auth.signOut).mockResolvedValueOnce({ error: null } as any);
+        vi.mocked(supabase.rpc).mockResolvedValueOnce({
+            data: null,
+            error: null,
+        } as any);
+        vi.mocked(supabase.auth.signOut).mockResolvedValueOnce({
+            error: null,
+        } as any);
         const removeSpy = vi.spyOn(window.localStorage, 'removeItem');
 
         await authService.deleteAccount();
@@ -70,7 +85,10 @@ describe('AuthService', () => {
 
     it('should return error without signing out on RPC failure', async () => {
         const rpcError = new Error('RPC failed');
-        vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: null, error: rpcError } as any);
+        vi.mocked(supabase.rpc).mockResolvedValueOnce({
+            data: null,
+            error: rpcError,
+        } as any);
 
         const { error } = await authService.deleteAccount();
 
@@ -88,7 +106,9 @@ describe('AuthService', () => {
 
             await authService.signInWithGoogle();
 
-            expect(vi.mocked(supabase.auth.signInWithOAuth)).toHaveBeenCalledWith(
+            expect(
+                vi.mocked(supabase.auth.signInWithOAuth)
+            ).toHaveBeenCalledWith(
                 expect.objectContaining({ provider: 'google' })
             );
             expect(vi.mocked(Browser.open)).not.toHaveBeenCalled();
@@ -101,7 +121,9 @@ describe('AuthService', () => {
                 error: oauthError,
             } as any);
 
-            await expect(authService.signInWithGoogle()).rejects.toThrow('OAuth failed');
+            await expect(authService.signInWithGoogle()).rejects.toThrow(
+                'OAuth failed'
+            );
         });
     });
 

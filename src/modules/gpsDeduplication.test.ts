@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { cleanGPSTrack } from './gpsDeduplication';
 
 describe('GPS Deduplication (v5.28.5)', () => {
-
     it('should remove duplicate points with same timestamp', () => {
         const points = [
             { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 10000 },
@@ -10,9 +9,9 @@ describe('GPS Deduplication (v5.28.5)', () => {
             { lat: 46.5002, lon: 7.5002, alt: 1010, timestamp: 30000 },
             { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 10000 }, // Duplicate
         ];
-        
+
         const uniquePoints = cleanGPSTrack(points);
-        
+
         expect(uniquePoints.length).toBe(3);
         expect(uniquePoints[0].timestamp).toBe(10000);
         expect(uniquePoints[1].timestamp).toBe(20000);
@@ -21,31 +20,31 @@ describe('GPS Deduplication (v5.28.5)', () => {
 
     it('should apply 5-point moving average to altitude (v5.29.28)', () => {
         const points = [
-            { lat: 46.5000, lon: 7.5000, alt: 1000, timestamp: 10000 },
+            { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 10000 },
             { lat: 46.5001, lon: 7.5001, alt: 1010, timestamp: 20000 },
             { lat: 46.5002, lon: 7.5002, alt: 1020, timestamp: 30000 },
             { lat: 46.5003, lon: 7.5003, alt: 1010, timestamp: 40000 },
             { lat: 46.5004, lon: 7.5004, alt: 1000, timestamp: 50000 },
         ];
-        
+
         const smoothed = cleanGPSTrack(points);
-        
+
         expect(smoothed.length).toBe(5);
-        
+
         // Point 2 (index 2) : Moyenne de [1000, 1010, 1020, 1010, 1000] / 5 = 5040 / 5 = 1008
         expect(smoothed[2].alt).toBeCloseTo(1008, 1);
-        
+
         // Point 1 (index 1) : Moyenne de [1000, 1010, 1020, 1010] / 4 = 1010
         expect(smoothed[1].alt).toBeCloseTo(1010, 1);
     });
 
     it('should reject altitude outliers (jumps)', () => {
         const points = [
-            { lat: 46.5000, lon: 7.5000, alt: 1000, timestamp: 10000 },
+            { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 10000 },
             { lat: 46.5001, lon: 7.5001, alt: 1300, timestamp: 11000 }, // +300m in 1s -> Rejected
             { lat: 46.5002, lon: 7.5002, alt: 1005, timestamp: 20000 }, // OK
         ];
-        
+
         const cleaned = cleanGPSTrack(points);
         // Point at 11000 should be removed, but with smoothing it might be tricky
         // Actually since we only have 2 points left after filtering, smoothing might not run or be trivial
@@ -56,11 +55,11 @@ describe('GPS Deduplication (v5.28.5)', () => {
 
     it('should reject extreme speed outliers', () => {
         const points = [
-            { lat: 46.5000, lon: 7.5000, alt: 1000, timestamp: 10000 },
-            { lat: 47.5000, lon: 8.5000, alt: 1000, timestamp: 11000 }, // ~150km in 1s -> Rejected
+            { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 10000 },
+            { lat: 47.5, lon: 8.5, alt: 1000, timestamp: 11000 }, // ~150km in 1s -> Rejected
             { lat: 46.5001, lon: 7.5001, alt: 1000, timestamp: 20000 }, // OK
         ];
-        
+
         const cleaned = cleanGPSTrack(points);
         expect(cleaned.length).toBe(2);
         expect(cleaned[1].timestamp).toBe(20000);

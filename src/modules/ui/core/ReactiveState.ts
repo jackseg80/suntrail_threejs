@@ -20,7 +20,9 @@ function isPlainObject(value: any): boolean {
  * @param initialState The initial state object.
  * @returns A proxied state object with a .subscribe(path, callback) method.
  */
-export function createReactiveState<T extends object>(initialState: T): T & { subscribe: (path: string, cb: Listener) => () => void } {
+export function createReactiveState<T extends object>(
+    initialState: T
+): T & { subscribe: (path: string, cb: Listener) => () => void } {
     const listeners = new Map<string, Set<Listener>>();
     const changedPaths = new Set<string>();
     let isQueued = false;
@@ -33,15 +35,18 @@ export function createReactiveState<T extends object>(initialState: T): T & { su
         const pathsToNotify = Array.from(changedPaths);
         changedPaths.clear();
 
-        pathsToNotify.forEach(path => {
+        pathsToNotify.forEach((path) => {
             const pathListeners = listeners.get(path);
             if (pathListeners) {
                 const value = getDeepValue(proxy, path);
-                pathListeners.forEach(cb => {
+                pathListeners.forEach((cb) => {
                     try {
                         cb(value);
                     } catch (e) {
-                        console.error(`Error in ReactiveState listener for path "${path}":`, e);
+                        console.error(
+                            `Error in ReactiveState listener for path "${path}":`,
+                            e
+                        );
                     }
                 });
             }
@@ -86,7 +91,10 @@ export function createReactiveState<T extends object>(initialState: T): T & { su
 
                 const value = Reflect.get(target, prop, receiver);
                 if (isPlainObject(value)) {
-                    return createProxy(value, path ? `${path}.${String(prop)}` : String(prop));
+                    return createProxy(
+                        value,
+                        path ? `${path}.${String(prop)}` : String(prop)
+                    );
                 }
                 return value;
             },
@@ -94,7 +102,7 @@ export function createReactiveState<T extends object>(initialState: T): T & { su
                 const propName = String(prop);
                 const fullPath = path ? `${path}.${propName}` : propName;
                 const oldValue = Reflect.get(target, prop, receiver);
-                
+
                 // Only trigger if value actually changed
                 if (oldValue === value) return true;
 
@@ -102,17 +110,20 @@ export function createReactiveState<T extends object>(initialState: T): T & { su
 
                 if (result) {
                     queueNotify(fullPath);
-                    
+
                     // Also notify parent paths
                     let parentPath = path;
                     while (parentPath) {
                         queueNotify(parentPath);
                         const lastDot = parentPath.lastIndexOf('.');
-                        parentPath = lastDot !== -1 ? parentPath.substring(0, lastDot) : '';
+                        parentPath =
+                            lastDot !== -1
+                                ? parentPath.substring(0, lastDot)
+                                : '';
                     }
                 }
                 return result;
-            }
+            },
         };
 
         const proxy = new Proxy(obj, handler);

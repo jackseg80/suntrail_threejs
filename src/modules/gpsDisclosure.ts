@@ -43,13 +43,16 @@ function _show(resolve: (v: boolean) => void): void {
     overlay.setAttribute('aria-describedby', 'gps-disclosure-body');
 
     // Textes traduits
-    const title  = i18n.t('gps.disclosure.title');
-    const body   = i18n.t('gps.disclosure.body');
-    const allow  = i18n.t('gps.disclosure.allow');
+    const title = i18n.t('gps.disclosure.title');
+    const body = i18n.t('gps.disclosure.body');
+    const allow = i18n.t('gps.disclosure.allow');
     const decline = i18n.t('gps.disclosure.decline');
 
     // Les \n du body deviennent des <br>
-    const bodyHtml = body.split('\n').map(l => l ? `<p>${l}</p>` : '').join('');
+    const bodyHtml = body
+        .split('\n')
+        .map((l) => (l ? `<p>${l}</p>` : ''))
+        .join('');
 
     overlay.innerHTML = `
         <div class="gps-disc-card" role="document">
@@ -65,15 +68,15 @@ function _show(resolve: (v: boolean) => void): void {
 
     // ── Styles inline minimaux (pour éviter les conflits avec le CSS global) ──
     Object.assign(overlay.style, {
-        position:        'fixed',
-        inset:           '0',
-        background:      'var(--overlay-bg)',
-        display:         'flex',
-        alignItems:      'center',
-        justifyContent:  'center',
-        zIndex:          '9999',
-        padding:         '16px',
-        paddingBottom:   'calc(16px + env(safe-area-inset-bottom, 0px))',
+        position: 'fixed',
+        inset: '0',
+        background: 'var(--overlay-bg)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: '9999',
+        padding: '16px',
+        paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
     });
 
     document.body.appendChild(overlay);
@@ -84,40 +87,61 @@ function _show(resolve: (v: boolean) => void): void {
     });
 
     // ── Trap focus (Tab / Shift+Tab) ──────────────────────────────────────────
-    const focusable = () => Array.from(
-        overlay.querySelectorAll<HTMLElement>('button, [tabindex]:not([tabindex="-1"])')
-    );
+    const focusable = () =>
+        Array.from(
+            overlay.querySelectorAll<HTMLElement>(
+                'button, [tabindex]:not([tabindex="-1"])'
+            )
+        );
 
     const onKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') { _close(overlay, onKeyDown); resolve(false); return; }
+        if (e.key === 'Escape') {
+            _close(overlay, onKeyDown);
+            resolve(false);
+            return;
+        }
         if (e.key !== 'Tab') return;
         const els = focusable();
         if (els.length === 0) return;
-        const first = els[0], last = els[els.length - 1];
+        const first = els[0],
+            last = els[els.length - 1];
         if (e.shiftKey) {
-            if (document.activeElement === first) { last.focus(); e.preventDefault(); }
+            if (document.activeElement === first) {
+                last.focus();
+                e.preventDefault();
+            }
         } else {
-            if (document.activeElement === last) { first.focus(); e.preventDefault(); }
+            if (document.activeElement === last) {
+                first.focus();
+                e.preventDefault();
+            }
         }
     };
 
     overlay.addEventListener('keydown', onKeyDown);
 
     // ── Handlers boutons ──────────────────────────────────────────────────────
-    overlay.querySelector('#gps-disc-allow-btn')?.addEventListener('click', () => {
-        localStorage.setItem(STORAGE_KEY, '1');
-        _close(overlay, onKeyDown);
-        resolve(true);
-    });
+    overlay
+        .querySelector('#gps-disc-allow-btn')
+        ?.addEventListener('click', () => {
+            localStorage.setItem(STORAGE_KEY, '1');
+            _close(overlay, onKeyDown);
+            resolve(true);
+        });
 
-    overlay.querySelector('#gps-disc-decline-btn')?.addEventListener('click', () => {
-        localStorage.setItem(STORAGE_KEY, '1');
-        _close(overlay, onKeyDown);
-        resolve(false);
-    });
+    overlay
+        .querySelector('#gps-disc-decline-btn')
+        ?.addEventListener('click', () => {
+            localStorage.setItem(STORAGE_KEY, '1');
+            _close(overlay, onKeyDown);
+            resolve(false);
+        });
 }
 
-function _close(overlay: HTMLElement, onKeyDown: (e: KeyboardEvent) => void): void {
+function _close(
+    overlay: HTMLElement,
+    onKeyDown: (e: KeyboardEvent) => void
+): void {
     overlay.removeEventListener('keydown', onKeyDown);
     overlay.remove();
 }

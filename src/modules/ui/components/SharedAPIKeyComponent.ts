@@ -14,8 +14,10 @@ export class SharedAPIKeyComponent extends BaseComponent {
     }
 
     public render(): void {
-        const form = this.element?.querySelector<HTMLFormElement>('.api-key-form');
-        const input = this.element?.querySelector<HTMLInputElement>('.api-key-input');
+        const form =
+            this.element?.querySelector<HTMLFormElement>('.api-key-form');
+        const input =
+            this.element?.querySelector<HTMLInputElement>('.api-key-input');
         if (!form || !input) return;
 
         // Initial value

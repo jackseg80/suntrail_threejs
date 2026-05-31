@@ -22,12 +22,37 @@ interface Slide {
 }
 
 const SLIDES: Slide[] = [
-    { type: 'tilt', titleKey: 'onboarding.slide1.title', descKey: 'onboarding.slide1.desc' },
-    { type: 'solar', titleKey: 'onboarding.slide2.title', descKey: 'onboarding.slide2.desc' },
-    { type: 'track', titleKey: 'onboarding.slide3.title', descKey: 'onboarding.slide3.desc' },
-    { type: 'solar-analysis', titleKey: 'onboarding.slide4.title', descKey: 'onboarding.slide4.desc' },
-    { type: 'expert', titleKey: 'onboarding.slide5.title', descKey: 'onboarding.slide5.desc' },
-    { type: 'safety', titleKey: 'onboarding.slide6.title', descKey: 'onboarding.slide6.desc', special: 'final-menu' },
+    {
+        type: 'tilt',
+        titleKey: 'onboarding.slide1.title',
+        descKey: 'onboarding.slide1.desc',
+    },
+    {
+        type: 'solar',
+        titleKey: 'onboarding.slide2.title',
+        descKey: 'onboarding.slide2.desc',
+    },
+    {
+        type: 'track',
+        titleKey: 'onboarding.slide3.title',
+        descKey: 'onboarding.slide3.desc',
+    },
+    {
+        type: 'solar-analysis',
+        titleKey: 'onboarding.slide4.title',
+        descKey: 'onboarding.slide4.desc',
+    },
+    {
+        type: 'expert',
+        titleKey: 'onboarding.slide5.title',
+        descKey: 'onboarding.slide5.desc',
+    },
+    {
+        type: 'safety',
+        titleKey: 'onboarding.slide6.title',
+        descKey: 'onboarding.slide6.desc',
+        special: 'final-menu',
+    },
 ];
 
 /**
@@ -98,7 +123,8 @@ function _getSvgIcon(type: string): string {
                     <circle cx="50" cy="50" r="20" fill="none" stroke="var(--accent)" stroke-width="1" class="anim-pulse" style="animation-delay: 0.5s" />
                     <path d="M50 35 V65 M35 50 H65" stroke="#ef4444" stroke-width="6" stroke-linecap="round" />
                 </svg>`;
-        default: return '';
+        default:
+            return '';
     }
 }
 
@@ -166,7 +192,8 @@ function _getMockup(type: string): string {
                         <strong style="font-size:14px; letter-spacing:1px;">SOS</strong>
                     </div>
                 </div>`;
-        default: return '';
+        default:
+            return '';
     }
 }
 
@@ -357,19 +384,23 @@ function _show(resolve: () => void): void {
 
         title.textContent = i18n.t(slide.titleKey);
         desc.textContent = i18n.t(slide.descKey);
-        
+
         const mockupHtml = _getMockup(slide.type);
-        
+
         visual.innerHTML = `
             <div class="ob-svg-container">
                 ${_getSvgIcon(slide.type)}
             </div>
-            ${mockupHtml ? `
+            ${
+                mockupHtml
+                    ? `
                 <div class="ob-mockup-container">
                     <span class="ob-mockup-label">Interface</span>
                     ${mockupHtml}
                 </div>
-            ` : ''}
+            `
+                    : ''
+            }
         `;
 
         // Dots
@@ -380,7 +411,9 @@ function _show(resolve: () => void): void {
 
         // Buttons
         skipBtn.textContent = i18n.t('onboarding.skip');
-        nextBtn.textContent = isLast ? i18n.t('onboarding.start') : i18n.t('onboarding.next');
+        nextBtn.textContent = isLast
+            ? i18n.t('onboarding.start')
+            : i18n.t('onboarding.next');
         skipBtn.style.display = isLast ? 'none' : 'block';
 
         // Special Menu
@@ -410,7 +443,7 @@ function _show(resolve: () => void): void {
             `;
             special.appendChild(grid);
 
-            grid.querySelectorAll('.ob-menu-item').forEach(item => {
+            grid.querySelectorAll('.ob-menu-item').forEach((item) => {
                 item.addEventListener('click', () => {
                     const action = (item as HTMLElement).dataset.action;
                     _handleFinalAction(action);
@@ -430,7 +463,9 @@ function _show(resolve: () => void): void {
         } else if (action === 'search') {
             document.querySelector<HTMLElement>('[data-tab="search"]')?.click();
             setTimeout(() => {
-                document.querySelector<HTMLInputElement>('#search-sheet input')?.focus();
+                document
+                    .querySelector<HTMLInputElement>('#search-sheet input')
+                    ?.focus();
             }, 500);
         }
     }
@@ -461,7 +496,10 @@ function _show(resolve: () => void): void {
 
     // Swipe handling
     let startX = 0;
-    overlay.addEventListener('touchstart', (e) => startX = e.touches[0].clientX);
+    overlay.addEventListener(
+        'touchstart',
+        (e) => (startX = e.touches[0].clientX)
+    );
     overlay.addEventListener('touchend', (e) => {
         const diff = startX - e.changedTouches[0].clientX;
         if (Math.abs(diff) > 50) {
@@ -477,4 +515,3 @@ function _show(resolve: () => void): void {
 
     renderSlide();
 }
-

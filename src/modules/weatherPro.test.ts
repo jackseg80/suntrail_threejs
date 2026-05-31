@@ -11,7 +11,8 @@ import { describe, it, expect, vi } from 'vitest';
 
 // weather.ts importe Three.js — on mock le module mais on garde la vraie getWeatherIcon
 vi.mock('./weather', async () => {
-    const actual = await vi.importActual<typeof import('./weather')>('./weather');
+    const actual =
+        await vi.importActual<typeof import('./weather')>('./weather');
     return { getWeatherIcon: actual.getWeatherIcon };
 });
 
@@ -92,7 +93,7 @@ describe('getComfortIndex', () => {
             getComfortIndex(30, 0, 0),
             getComfortIndex(18, 0, 0),
         ];
-        scores.forEach(s => {
+        scores.forEach((s) => {
             expect(s).toBeGreaterThanOrEqual(0);
             expect(s).toBeLessThanOrEqual(10);
         });
@@ -125,7 +126,20 @@ describe('getFreezingAlert', () => {
 
 describe('parseDaily (simulation données API)', () => {
     // On simule le parsing tel qu'il serait fait dans fetchWeather
-    function parseDaily(data: { daily: { time: string[]; temperature_2m_max: number[]; temperature_2m_min: number[]; precipitation_sum: number[]; precipitation_probability_max: number[]; wind_speed_10m_max: number[]; wind_gusts_10m_max: number[]; wind_direction_10m_dominant: number[]; uv_index_max: number[]; weather_code: number[] } }) {
+    function parseDaily(data: {
+        daily: {
+            time: string[];
+            temperature_2m_max: number[];
+            temperature_2m_min: number[];
+            precipitation_sum: number[];
+            precipitation_probability_max: number[];
+            wind_speed_10m_max: number[];
+            wind_gusts_10m_max: number[];
+            wind_direction_10m_dominant: number[];
+            uv_index_max: number[];
+            weather_code: number[];
+        };
+    }) {
         return data.daily.time.map((date, i) => ({
             date,
             tempMax: data.daily.temperature_2m_max[i],
@@ -173,7 +187,17 @@ describe('parseDaily (simulation données API)', () => {
 
 describe('hourly enrichi avec precip', () => {
     // Simulation de l'enrichissement hourly
-    function buildHourly(apiData: { hourly: { time: string[]; temperature_2m: number[]; weather_code: number[]; precipitation_probability: number[] } }, startIndex: number) {
+    function buildHourly(
+        apiData: {
+            hourly: {
+                time: string[];
+                temperature_2m: number[];
+                weather_code: number[];
+                precipitation_probability: number[];
+            };
+        },
+        startIndex: number
+    ) {
         const result = [];
         for (let i = startIndex; i < startIndex + 24; i++) {
             if (apiData.hourly.time[i]) {
@@ -190,10 +214,16 @@ describe('hourly enrichi avec precip', () => {
 
     const mockHourly = {
         hourly: {
-            time: Array.from({ length: 30 }, (_, i) => `2024-03-15T${String(i % 24).padStart(2, '0')}:00`),
+            time: Array.from(
+                { length: 30 },
+                (_, i) => `2024-03-15T${String(i % 24).padStart(2, '0')}:00`
+            ),
             temperature_2m: Array.from({ length: 30 }, (_, i) => 10 + i * 0.2),
             weather_code: Array(30).fill(0),
-            precipitation_probability: Array.from({ length: 30 }, (_, i) => i * 3),
+            precipitation_probability: Array.from(
+                { length: 30 },
+                (_, i) => i * 3
+            ),
         },
     };
 
@@ -232,7 +262,7 @@ describe('fmtWindDir', () => {
 });
 
 describe('État Pro : weatherData null → aucune erreur (graceful)', () => {
-    it('getComfortIndex avec valeurs limites ne lève pas d\'erreur', () => {
+    it("getComfortIndex avec valeurs limites ne lève pas d'erreur", () => {
         expect(() => getComfortIndex(0, 0, 0)).not.toThrow();
     });
 

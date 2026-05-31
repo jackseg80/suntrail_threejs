@@ -6,8 +6,16 @@ import { sheetManager } from '../core/SheetManager';
 import { showUpgradePrompt } from '../../iap';
 import { haptic } from '../../haptics';
 import { i18n } from '../../../i18n/I18nService';
-import { clearInterruptedRecording, stopRecordingService } from '../../foregroundService';
-import { removeGPXLayer, toggleGPXLayer, addGPXLayer, updateRecordedTrackMesh } from '../../gpxLayers';
+import {
+    clearInterruptedRecording,
+    stopRecordingService,
+} from '../../foregroundService';
+import {
+    removeGPXLayer,
+    toggleGPXLayer,
+    addGPXLayer,
+    updateRecordedTrackMesh,
+} from '../../gpxLayers';
 import { updateElevationProfile, closeElevationProfile } from '../../profile';
 import { eventBus } from '../../eventBus';
 import { Capacitor } from '@capacitor/core';
@@ -16,7 +24,12 @@ import { ICON_CLOSE, ICON_LOCK } from '../icons';
 import { recordingService } from '../../recordingService';
 import { gpxService } from '../../gpxService';
 import { fmtDuration } from '../../utils';
-import { loadHistory, removeFromHistory, updateHistoryEntryLocation, type GPXHistoryEntry } from '../../gpxHistoryService';
+import {
+    loadHistory,
+    removeFromHistory,
+    updateHistoryEntryLocation,
+    type GPXHistoryEntry,
+} from '../../gpxHistoryService';
 import { lngLatToWorld, getCountryCode, COUNTRY_NAMES } from '../../geo';
 import { getPlaceName } from '../../geocodingService';
 import templateHTML from '../templates/track.html?raw';
@@ -45,7 +58,9 @@ export class TrackSheet extends BaseComponent {
             sheetManager.close();
         });
 
-        const recBtn = document.getElementById('rec-btn-sheet') as HTMLButtonElement;
+        const recBtn = document.getElementById(
+            'rec-btn-sheet'
+        ) as HTMLButtonElement;
         recBtn?.setAttribute('aria-label', i18n.t('track.aria.rec'));
         recBtn?.addEventListener('click', async () => {
             if (!state.isRecording) {
@@ -54,10 +69,14 @@ export class TrackSheet extends BaseComponent {
             } else {
                 // STOP
                 if (state.recordedPoints.length >= 2 && isProActive()) {
-                    const suggestedName = await recordingService.generateSuggestedName();
-                    const finalName = await this.showSaveTrackPrompt(suggestedName);
+                    const suggestedName =
+                        await recordingService.generateSuggestedName();
+                    const finalName =
+                        await this.showSaveTrackPrompt(suggestedName);
                     // On arrête et sauvegarde avec le nom choisi
-                    await recordingService.stopRecording(finalName || suggestedName);
+                    await recordingService.stopRecording(
+                        finalName || suggestedName
+                    );
                 } else {
                     // Pour les Free ou tracés trop courts, stop direct
                     await recordingService.stopRecording();
@@ -68,8 +87,10 @@ export class TrackSheet extends BaseComponent {
 
         const importBtn = document.getElementById('import-gpx-sheet');
         importBtn?.setAttribute('aria-label', i18n.t('track.aria.import'));
-        const gpxUpload = document.getElementById('gpx-upload') as HTMLInputElement;
-        
+        const gpxUpload = document.getElementById(
+            'gpx-upload'
+        ) as HTMLInputElement;
+
         // Enable multi-file selection
         if (gpxUpload) gpxUpload.setAttribute('multiple', '');
 
@@ -82,27 +103,36 @@ export class TrackSheet extends BaseComponent {
             if (!files || files.length === 0) return;
             importBtn?.classList.add('btn-loading');
             importBtn?.setAttribute('aria-busy', 'true');
-            
+
             const promises: Promise<void>[] = [];
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                promises.push(new Promise<void>((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = async (ev) => {
-                        try {
-                            await gpxService.handleGPXImport(ev.target!.result as string, file.name);
-                        } catch (e) {
-                            console.error('[GPX] Import error:', e);
-                            const { showToast } = await import('../../toast');
-                            void showToast(i18n.t('gpx.importError') || 'Erreur lors de l\'import GPX');
-                        }
-                        resolve();
-                    };
-                    reader.onerror = () => resolve();
-                    reader.readAsText(file);
-                }));
+                promises.push(
+                    new Promise<void>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = async (ev) => {
+                            try {
+                                await gpxService.handleGPXImport(
+                                    ev.target!.result as string,
+                                    file.name
+                                );
+                            } catch (e) {
+                                console.error('[GPX] Import error:', e);
+                                const { showToast } =
+                                    await import('../../toast');
+                                void showToast(
+                                    i18n.t('gpx.importError') ||
+                                        "Erreur lors de l'import GPX"
+                                );
+                            }
+                            resolve();
+                        };
+                        reader.onerror = () => resolve();
+                        reader.readAsText(file);
+                    })
+                );
             }
-            
+
             Promise.all(promises).then(() => {
                 importBtn?.classList.remove('btn-loading');
                 importBtn?.removeAttribute('aria-busy');
@@ -111,36 +141,52 @@ export class TrackSheet extends BaseComponent {
             });
         });
 
-        this.addSubscription(state.subscribe('isRecording', () => this.updateRecUI()));
-        this.addSubscription(state.subscribe('isPro', () => this.updateRecUI()));
-        this.addSubscription(state.subscribe('trialEnd', () => this.updateRecUI()));
-        this.addSubscription(state.subscribe('recordedPoints', () => {
-            this.updateStats();
-            this.updateEmptyState();
-        }));
-        this.addSubscription(state.subscribe('gpxLayers', () => {
-            this.renderUnifiedTrackList();
-            this.updateStats();
-            this.updateEmptyState();
-        }));
+        this.addSubscription(
+            state.subscribe('isRecording', () => this.updateRecUI())
+        );
+        this.addSubscription(
+            state.subscribe('isPro', () => this.updateRecUI())
+        );
+        this.addSubscription(
+            state.subscribe('trialEnd', () => this.updateRecUI())
+        );
+        this.addSubscription(
+            state.subscribe('recordedPoints', () => {
+                this.updateStats();
+                this.updateEmptyState();
+            })
+        );
+        this.addSubscription(
+            state.subscribe('gpxLayers', () => {
+                this.renderUnifiedTrackList();
+                this.updateStats();
+                this.updateEmptyState();
+            })
+        );
 
         // v5.29.43 : Mettre à jour les tuiles de stats quand on change de calque actif
-        this.addSubscription(state.subscribe('activeGPXLayerId', () => {
-            this.updateStats();
-        }));
-        
+        this.addSubscription(
+            state.subscribe('activeGPXLayerId', () => {
+                this.updateStats();
+            })
+        );
+
         this.updateRecUI();
         this.updateStats();
 
         // Écouter la récupération d'un enregistrement interrompu (v5.19.1)
         const onRecovered = () => this.showRecoveryPrompt();
         eventBus.on('recordingRecovered', onRecovered);
-        this.addSubscription(() => eventBus.off('recordingRecovered', onRecovered));
+        this.addSubscription(() =>
+            eventBus.off('recordingRecovered', onRecovered)
+        );
 
         // Écouter les mises à jour de localisation dans l'historique
         const onHistoryUpdated = () => this.renderUnifiedTrackList();
         eventBus.on('gpxHistoryUpdated', onHistoryUpdated);
-        this.addSubscription(() => eventBus.off('gpxHistoryUpdated', onHistoryUpdated));
+        this.addSubscription(() =>
+            eventBus.off('gpxHistoryUpdated', onHistoryUpdated)
+        );
 
         // Recovery peut avoir été détectée avant que cette sheet soit rendue (timing main.ts)
         if (state.recoveredPoints && state.recoveredPoints.length >= 2) {
@@ -155,7 +201,7 @@ export class TrackSheet extends BaseComponent {
                 void startLocationTracking();
             }
         }
-        
+
         // v5.28.25 : Encart PRO permanent pour les gratuits (même au 1er lancement)
         const updateUpsellVisibility = () => {
             const banner = document.getElementById('rec-upsell-banner');
@@ -167,15 +213,21 @@ export class TrackSheet extends BaseComponent {
         };
 
         updateUpsellVisibility();
-        
+
         // S'abonner aux changements de statut PRO pour masquer l'encart dynamiquement
         this.addSubscription(state.subscribe('isPro', updateUpsellVisibility));
-        this.addSubscription(state.subscribe('trialEnd', updateUpsellVisibility));
+        this.addSubscription(
+            state.subscribe('trialEnd', updateUpsellVisibility)
+        );
     }
 
-    private createGlassModal(innerHTML: string, width = '340px'): HTMLDivElement {
+    private createGlassModal(
+        innerHTML: string,
+        width = '340px'
+    ): HTMLDivElement {
         const overlay = document.createElement('div');
-        overlay.style.cssText = 'position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);';
+        overlay.style.cssText =
+            'position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);';
         const panel = document.createElement('div');
         panel.style.cssText = `
             background: var(--glass-bg, rgba(30,30,50,0.95));
@@ -194,7 +246,9 @@ export class TrackSheet extends BaseComponent {
         return overlay;
     }
 
-    private async showSaveTrackPrompt(suggestedName: string): Promise<string | null> {
+    private async showSaveTrackPrompt(
+        suggestedName: string
+    ): Promise<string | null> {
         return new Promise((resolve) => {
             const overlay = this.createGlassModal(`
                 <div style="font-size:var(--text-lg,18px);font-weight:700;margin-bottom:var(--space-2,12px)">
@@ -220,20 +274,26 @@ export class TrackSheet extends BaseComponent {
                 </div>
             `);
 
-            const input = document.getElementById('rec-save-name') as HTMLInputElement;
+            const input = document.getElementById(
+                'rec-save-name'
+            ) as HTMLInputElement;
             input?.focus();
             input?.select();
 
-            document.getElementById('rec-save-confirm')?.addEventListener('click', () => {
-                const name = input.value.trim() || suggestedName;
-                overlay.remove();
-                resolve(name);
-            });
+            document
+                .getElementById('rec-save-confirm')
+                ?.addEventListener('click', () => {
+                    const name = input.value.trim() || suggestedName;
+                    overlay.remove();
+                    resolve(name);
+                });
 
-            document.getElementById('rec-save-cancel')?.addEventListener('click', () => {
-                overlay.remove();
-                resolve(null);
-            });
+            document
+                .getElementById('rec-save-cancel')
+                ?.addEventListener('click', () => {
+                    overlay.remove();
+                    resolve(null);
+                });
 
             // Handle Enter key
             input?.addEventListener('keydown', (e) => {
@@ -251,11 +311,15 @@ export class TrackSheet extends BaseComponent {
         const pts = state.recoveredPoints;
         if (!pts || pts.length < 2) return;
 
-        const mins = pts.length > 0
-            ? Math.round((pts[pts.length - 1].timestamp - pts[0].timestamp) / 60000)
-            : 0;
+        const mins =
+            pts.length > 0
+                ? Math.round(
+                      (pts[pts.length - 1].timestamp - pts[0].timestamp) / 60000
+                  )
+                : 0;
 
-        const overlay = this.createGlassModal(`
+        const overlay = this.createGlassModal(
+            `
             <div style="font-size:var(--text-lg,18px);font-weight:700;margin-bottom:var(--space-2,8px)">
                 ${i18n.t('track.recovery.title')}
             </div>
@@ -272,31 +336,47 @@ export class TrackSheet extends BaseComponent {
                     background:transparent;color:var(--text-2,#a0a4bc);font-weight:600;cursor:pointer;
                 ">${i18n.t('track.recovery.discard')}</button>
             </div>
-        `, '320px');
+        `,
+            '320px'
+        );
 
-        document.getElementById('rec-recovery-restore')?.addEventListener('click', async () => {
-            // Injecter les points récupérés dans state et sauvegarder
-            state.recordedPoints = pts.map(p => ({ lat: p.lat, lon: p.lon, alt: p.alt, timestamp: p.timestamp }));
-            const suggestedName = await recordingService.generateSuggestedName();
-            await recordingService.saveCurrentRecording(suggestedName);
-            
-            state.recordedPoints = [];
-            updateRecordedTrackMesh();
-            state.recoveredPoints = null;
-            clearInterruptedRecording();
-            void stopRecordingService();
-            overlay.remove();
-            void haptic('success');
-            showToast(i18n.t('track.recovery.restored', { count: String(pts.length) }));
-        });
+        document
+            .getElementById('rec-recovery-restore')
+            ?.addEventListener('click', async () => {
+                // Injecter les points récupérés dans state et sauvegarder
+                state.recordedPoints = pts.map((p) => ({
+                    lat: p.lat,
+                    lon: p.lon,
+                    alt: p.alt,
+                    timestamp: p.timestamp,
+                }));
+                const suggestedName =
+                    await recordingService.generateSuggestedName();
+                await recordingService.saveCurrentRecording(suggestedName);
 
-        document.getElementById('rec-recovery-discard')?.addEventListener('click', () => {
-            state.recoveredPoints = null;
-            clearInterruptedRecording();
-            void stopRecordingService();
-            overlay.remove();
-            showToast(i18n.t('track.recovery.discarded'));
-        });
+                state.recordedPoints = [];
+                updateRecordedTrackMesh();
+                state.recoveredPoints = null;
+                clearInterruptedRecording();
+                void stopRecordingService();
+                overlay.remove();
+                void haptic('success');
+                showToast(
+                    i18n.t('track.recovery.restored', {
+                        count: String(pts.length),
+                    })
+                );
+            });
+
+        document
+            .getElementById('rec-recovery-discard')
+            ?.addEventListener('click', () => {
+                state.recoveredPoints = null;
+                clearInterruptedRecording();
+                void stopRecordingService();
+                overlay.remove();
+                showToast(i18n.t('track.recovery.discarded'));
+            });
     }
 
     private createEmptyState(): void {
@@ -331,7 +411,10 @@ export class TrackSheet extends BaseComponent {
         }
     }
 
-    private renderMiniMap(entry: GPXHistoryEntry, canvas: HTMLCanvasElement): void {
+    private renderMiniMap(
+        entry: GPXHistoryEntry,
+        canvas: HTMLCanvasElement
+    ): void {
         const dpr = window.devicePixelRatio || 1;
         const w = canvas.clientWidth || 100;
         const h = canvas.clientHeight || 70;
@@ -348,8 +431,18 @@ export class TrackSheet extends BaseComponent {
         // Grid pattern fallback
         ctx.strokeStyle = 'rgba(255,255,255,0.06)';
         ctx.lineWidth = 0.5;
-        for (let x = 0; x < w; x += 12) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
-        for (let y = 0; y < h; y += 12) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+        for (let x = 0; x < w; x += 12) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, h);
+            ctx.stroke();
+        }
+        for (let y = 0; y < h; y += 12) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(w, y);
+            ctx.stroke();
+        }
 
         // Try loading tile (OpenTopoMap) — non-blocking
         const bounds = entry.bounds;
@@ -357,12 +450,23 @@ export class TrackSheet extends BaseComponent {
         const latExtent = (bounds.maxLat - bounds.minLat) * padding;
         const lonExtent = (bounds.maxLon - bounds.minLon) * padding;
         const extent = Math.max(latExtent, lonExtent);
-        const zoom = Math.min(14, Math.max(6, Math.floor(Math.log2(360 / extent))));
+        const zoom = Math.min(
+            14,
+            Math.max(6, Math.floor(Math.log2(360 / extent)))
+        );
         const centerLat = entry.centerLat;
         const centerLon = entry.centerLon;
         const tileCount = Math.pow(2, zoom);
-        const tileX = (centerLon + 180) / 360 * tileCount;
-        const tileY = (1 - Math.log(Math.tan(centerLat * Math.PI / 180) + 1 / Math.cos(centerLat * Math.PI / 180)) / Math.PI) / 2 * tileCount;
+        const tileX = ((centerLon + 180) / 360) * tileCount;
+        const tileY =
+            ((1 -
+                Math.log(
+                    Math.tan((centerLat * Math.PI) / 180) +
+                        1 / Math.cos((centerLat * Math.PI) / 180)
+                ) /
+                    Math.PI) /
+                2) *
+            tileCount;
         const tx = Math.floor(tileX);
         const ty = Math.floor(tileY);
 
@@ -379,17 +483,25 @@ export class TrackSheet extends BaseComponent {
         img.src = `https://tile.opentopomap.org/${zoom}/${tx}/${ty}.png`;
     }
 
-    private drawPolylineOnCanvas(ctx: CanvasRenderingContext2D, entry: GPXHistoryEntry, w: number, h: number): void {
+    private drawPolylineOnCanvas(
+        ctx: CanvasRenderingContext2D,
+        entry: GPXHistoryEntry,
+        w: number,
+        h: number
+    ): void {
         const pts = entry.simplifiedPoints;
         if (pts.length < 2) return;
 
         const bounds = entry.bounds;
         const pad = 0.08;
-        const latRange = (bounds.maxLat - bounds.minLat) || 0.01;
-        const lonRange = (bounds.maxLon - bounds.minLon) || 0.01;
+        const latRange = bounds.maxLat - bounds.minLat || 0.01;
+        const lonRange = bounds.maxLon - bounds.minLon || 0.01;
 
-        const toX = (lon: number) => ((lon - bounds.minLon) / lonRange) * (1 - 2 * pad) * w + pad * w;
-        const toY = (lat: number) => h - (((lat - bounds.minLat) / latRange) * (1 - 2 * pad) * h + pad * h);
+        const toX = (lon: number) =>
+            ((lon - bounds.minLon) / lonRange) * (1 - 2 * pad) * w + pad * w;
+        const toY = (lat: number) =>
+            h -
+            (((lat - bounds.minLat) / latRange) * (1 - 2 * pad) * h + pad * h);
 
         ctx.beginPath();
         ctx.moveTo(toX(pts[0].lon), toY(pts[0].lat));
@@ -410,7 +522,13 @@ export class TrackSheet extends BaseComponent {
 
         // End dot
         ctx.beginPath();
-        ctx.arc(toX(pts[pts.length - 1].lon), toY(pts[pts.length - 1].lat), 3, 0, Math.PI * 2);
+        ctx.arc(
+            toX(pts[pts.length - 1].lon),
+            toY(pts[pts.length - 1].lat),
+            3,
+            0,
+            Math.PI * 2
+        );
         ctx.fillStyle = '#ef4444';
         ctx.fill();
     }
@@ -427,14 +545,20 @@ export class TrackSheet extends BaseComponent {
         }));
 
         const rawData = {
-            tracks: [{
-                name: entry.name,
-                points,
-            }],
+            tracks: [
+                {
+                    name: entry.name,
+                    points,
+                },
+            ],
         };
 
         try {
-            addGPXLayer(rawData, entry.name, { source: entry.source, forceVisible: true, id: entry.id });
+            addGPXLayer(rawData, entry.name, {
+                source: entry.source,
+                forceVisible: true,
+                id: entry.id,
+            });
         } catch (e) {
             console.error('[History] Failed to load entry:', e);
             showToast(i18n.t('gpx.importError') || 'Erreur lors du chargement');
@@ -449,29 +573,41 @@ export class TrackSheet extends BaseComponent {
 
         // Lazy geocoding for entries missing locationName
         for (const entry of history) {
-            if (!entry.locationName && !entry.countryName && !pendingGeocode.has(entry.id)) {
+            if (
+                !entry.locationName &&
+                !entry.countryName &&
+                !pendingGeocode.has(entry.id)
+            ) {
                 pendingGeocode.add(entry.id);
-                const countryCode = getCountryCode(entry.centerLat, entry.centerLon);
-                const country = countryCode ? (COUNTRY_NAMES[countryCode] || countryCode) : '';
+                const countryCode = getCountryCode(
+                    entry.centerLat,
+                    entry.centerLon
+                );
+                const country = countryCode
+                    ? COUNTRY_NAMES[countryCode] || countryCode
+                    : '';
                 if (country) {
                     updateHistoryEntryLocation(entry.id, country);
                 }
-                getPlaceName(entry.centerLat, entry.centerLon).then(loc => {
-                    if (loc) {
-                        updateHistoryEntryLocation(entry.id, loc);
-                    }
-                }).catch(() => {}).finally(() => {
-                    pendingGeocode.delete(entry.id);
-                    if (document.getElementById('gpx-layers-list')) {
-                        this.renderUnifiedTrackList();
-                    }
-                });
+                getPlaceName(entry.centerLat, entry.centerLon)
+                    .then((loc) => {
+                        if (loc) {
+                            updateHistoryEntryLocation(entry.id, loc);
+                        }
+                    })
+                    .catch(() => {})
+                    .finally(() => {
+                        pendingGeocode.delete(entry.id);
+                        if (document.getElementById('gpx-layers-list')) {
+                            this.renderUnifiedTrackList();
+                        }
+                    });
             }
         }
 
         const loadedLayers = state.gpxLayers;
-        const manualRoutes = loadedLayers.filter(l => l.isManualRoute);
-        const nonManualLoaded = loadedLayers.filter(l => !l.isManualRoute);
+        const manualRoutes = loadedLayers.filter((l) => l.isManualRoute);
+        const nonManualLoaded = loadedLayers.filter((l) => !l.isManualRoute);
         const hasImportedGpx = nonManualLoaded.length > 0;
 
         // Build a merged list: history entries first (with their loaded state), then manual routes
@@ -480,7 +616,13 @@ export class TrackSheet extends BaseComponent {
             id: string;
             name: string;
             color: string;
-            stats: { distance: number; dPlus: number; dMinus: number; pointCount: number; estimatedTime?: number };
+            stats: {
+                distance: number;
+                dPlus: number;
+                dMinus: number;
+                pointCount: number;
+                estimatedTime?: number;
+            };
             isLoaded: boolean;
             isLocked: boolean;
             visible: boolean;
@@ -496,9 +638,12 @@ export class TrackSheet extends BaseComponent {
         // History entries
         for (let i = 0; i < history.length; i++) {
             const entry = history[i];
-            const loadedLayer = loadedLayers.find(l => l.id === entry.id);
+            const loadedLayer = loadedLayers.find((l) => l.id === entry.id);
             const isLoaded = !!loadedLayer;
-            const isFirstOrPro = isProActive() || !hasImportedGpx || (loadedLayer && nonManualLoaded.indexOf(loadedLayer) === 0);
+            const isFirstOrPro =
+                isProActive() ||
+                !hasImportedGpx ||
+                (loadedLayer && nonManualLoaded.indexOf(loadedLayer) === 0);
             const isLocked = !isFirstOrPro && !isLoaded;
 
             mergedRows.push({
@@ -511,7 +656,12 @@ export class TrackSheet extends BaseComponent {
                 isLocked,
                 visible: loadedLayer ? loadedLayer.visible : false,
                 isActive: !!loadedLayer && state.activeGPXLayerId === entry.id,
-                isProfileActive: !!loadedLayer && state.activeGPXLayerId === entry.id && !!document.getElementById('elevation-profile')?.classList.contains('is-open'),
+                isProfileActive:
+                    !!loadedLayer &&
+                    state.activeGPXLayerId === entry.id &&
+                    !!document
+                        .getElementById('elevation-profile')
+                        ?.classList.contains('is-open'),
                 entry,
                 entryIndex: i,
             });
@@ -528,10 +678,15 @@ export class TrackSheet extends BaseComponent {
                     color: layer.color,
                     stats: layer.stats,
                     isLoaded: true,
-                    isLocked: !isProActive() && nonManualLoaded.indexOf(layer) > 0,
+                    isLocked:
+                        !isProActive() && nonManualLoaded.indexOf(layer) > 0,
                     visible: layer.visible,
                     isActive: state.activeGPXLayerId === layer.id,
-                    isProfileActive: state.activeGPXLayerId === layer.id && !!document.getElementById('elevation-profile')?.classList.contains('is-open'),
+                    isProfileActive:
+                        state.activeGPXLayerId === layer.id &&
+                        !!document
+                            .getElementById('elevation-profile')
+                            ?.classList.contains('is-open'),
                 });
             }
         }
@@ -549,7 +704,11 @@ export class TrackSheet extends BaseComponent {
                 isLocked: false,
                 visible: layer.visible,
                 isActive: state.activeGPXLayerId === layer.id,
-                isProfileActive: state.activeGPXLayerId === layer.id && !!document.getElementById('elevation-profile')?.classList.contains('is-open'),
+                isProfileActive:
+                    state.activeGPXLayerId === layer.id &&
+                    !!document
+                        .getElementById('elevation-profile')
+                        ?.classList.contains('is-open'),
             });
         }
 
@@ -572,8 +731,11 @@ export class TrackSheet extends BaseComponent {
                 html += `<div class="gpx-layers-header" style="margin-top:var(--space-3)">${i18n.t('track.manual.title') || 'Itinéraire planifié'}</div>`;
             }
 
-            const duration = row.stats.estimatedTime ? fmtDuration(row.stats.estimatedTime) : '—';
-            const truncName = row.name.length > 20 ? row.name.slice(0, 20) + '...' : row.name;
+            const duration = row.stats.estimatedTime
+                ? fmtDuration(row.stats.estimatedTime)
+                : '—';
+            const truncName =
+                row.name.length > 20 ? row.name.slice(0, 20) + '...' : row.name;
             const layerClass = row.isActive ? ' active' : '';
             const lockedClass = row.isLocked ? ' gpx-layer-locked' : '';
 
@@ -594,11 +756,27 @@ export class TrackSheet extends BaseComponent {
                 </div>`;
             } else {
                 // History entry: mini-map instead of color dot
-                entryMap.set(i, row.entry || history.find(e => e.id === row.id)!);
-                const locName = row.entry?.locationName || row.entry?.countryName || '';
-                const countrySuffix = row.entry?.locationName && row.entry?.countryName ? ` (${row.entry.countryName})` : '';
-                const dateStr = new Date(row.entry?.timestamp || Date.now()).toLocaleDateString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-                const subInfo = locName ? `${locName}${countrySuffix} · ${dateStr}` : dateStr;
+                entryMap.set(
+                    i,
+                    row.entry || history.find((e) => e.id === row.id)!
+                );
+                const locName =
+                    row.entry?.locationName || row.entry?.countryName || '';
+                const countrySuffix =
+                    row.entry?.locationName && row.entry?.countryName
+                        ? ` (${row.entry.countryName})`
+                        : '';
+                const dateStr = new Date(
+                    row.entry?.timestamp || Date.now()
+                ).toLocaleDateString(undefined, {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
+                const subInfo = locName
+                    ? `${locName}${countrySuffix} · ${dateStr}`
+                    : dateStr;
                 html += `
                 <div class="gpx-layer-item${layerClass}${lockedClass}" data-layer-id="${row.id}" data-row-idx="${i}" style="${row.isLocked ? 'opacity:0.5;' : ''}">
                     <canvas class="gpx-layer-minimap" data-history-idx="${row.entryIndex ?? i}" width="120" height="84"></canvas>
@@ -611,12 +789,16 @@ export class TrackSheet extends BaseComponent {
                             aria-label="${i18n.t('track.imported.showProfile')}" title="${i18n.t('track.imported.showProfile')}">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="${row.isProfileActive ? 'var(--accent)' : 'none'}" stroke="${row.isProfileActive ? 'var(--accent)' : 'currentColor'}" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                     </button>
-                    ${row.isLoaded ? `
+                    ${
+                        row.isLoaded
+                            ? `
                     <button class="gpx-layer-toggle" data-action="toggle" data-id="${row.id}" data-visible="${row.visible}"
                             aria-label="${i18n.t('track.imported.toggleVisible')}" title="${i18n.t('track.imported.toggleVisible')}">
-                        ${row.visible
-                            ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
-                            : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`}
+                        ${
+                            row.visible
+                                ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
+                                : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+                        }
                     </button>
                     <button class="gpx-layer-export" data-action="export" data-id="${row.id}"
                             aria-label="${i18n.t('track.imported.export') || 'Exporter GPX'}" title="${i18n.t('track.imported.export') || 'Exporter GPX'}"
@@ -624,7 +806,9 @@ export class TrackSheet extends BaseComponent {
                         ${row.isLocked ? ICON_LOCK : ''}
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     </button>
-                    ` : ''}
+                    `
+                            : ''
+                    }
                     <button class="gpx-layer-remove" data-action="${row.isLoaded ? 'remove' : 'history-remove'}" data-id="${row.id}"
                             aria-label="${row.isLoaded ? i18n.t('track.imported.remove') : i18n.t('track.history.remove')}"
                             title="${row.isLoaded ? i18n.t('track.imported.remove') : i18n.t('track.history.remove')}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -635,8 +819,10 @@ export class TrackSheet extends BaseComponent {
         container.innerHTML = html;
 
         // Bind row clicks: load (if history + not loaded) or select (if loaded)
-        container.querySelectorAll('.gpx-layer-item').forEach(item => {
-            const rowIdx = parseInt((item as HTMLElement).dataset.rowIdx || '-1');
+        container.querySelectorAll('.gpx-layer-item').forEach((item) => {
+            const rowIdx = parseInt(
+                (item as HTMLElement).dataset.rowIdx || '-1'
+            );
             if (rowIdx < 0 || rowIdx >= mergedRows.length) return;
             const row = mergedRows[rowIdx];
 
@@ -650,16 +836,25 @@ export class TrackSheet extends BaseComponent {
                         return;
                     }
                     if (state.gpxLayers.length >= 10) {
-                        showToast(i18n.t('gpx.limitPro') || 'Maximum 10 tracks reached');
+                        showToast(
+                            i18n.t('gpx.limitPro') ||
+                                'Maximum 10 tracks reached'
+                        );
                         return;
                     }
                     if (row.entry) this.loadHistoryEntry(row.entry);
                 } else if (row.isLoaded) {
                     // Select loaded layer
-                    const layer = state.gpxLayers.find(l => l.id === row.id);
+                    const layer = state.gpxLayers.find((l) => l.id === row.id);
                     if (!layer) return;
-                    const importedLayers = state.gpxLayers.filter(l => !l.isManualRoute);
-                    if (!isProActive() && !layer.isManualRoute && importedLayers.indexOf(layer) > 0) {
+                    const importedLayers = state.gpxLayers.filter(
+                        (l) => !l.isManualRoute
+                    );
+                    if (
+                        !isProActive() &&
+                        !layer.isManualRoute &&
+                        importedLayers.indexOf(layer) > 0
+                    ) {
                         showUpgradePrompt('multi_gpx');
                         return;
                     }
@@ -667,12 +862,23 @@ export class TrackSheet extends BaseComponent {
                     updateElevationProfile(row.id);
                     if (state.originTile && row.entry) {
                         const e = row.entry;
-                        const wpos = lngLatToWorld(e.centerLon, e.centerLat, state.originTile);
+                        const wpos = lngLatToWorld(
+                            e.centerLon,
+                            e.centerLat,
+                            state.originTile
+                        );
                         const span = Math.max(
                             (e.bounds.maxLat - e.bounds.minLat) * 111320,
-                            (e.bounds.maxLon - e.bounds.minLon) * 111320 * Math.cos(e.centerLat * Math.PI / 180)
+                            (e.bounds.maxLon - e.bounds.minLon) *
+                                111320 *
+                                Math.cos((e.centerLat * Math.PI) / 180)
                         );
-                        eventBus.emit('flyTo', { worldX: wpos.x, worldZ: wpos.z, targetElevation: 0, targetDistance: Math.max(span * 1.5, 3000) });
+                        eventBus.emit('flyTo', {
+                            worldX: wpos.x,
+                            worldZ: wpos.z,
+                            targetElevation: 0,
+                            targetDistance: Math.max(span * 1.5, 3000),
+                        });
                     }
                     this.renderUnifiedTrackList();
                 }
@@ -680,24 +886,38 @@ export class TrackSheet extends BaseComponent {
         });
 
         // Profile buttons (toggle open/close)
-        container.querySelectorAll('[data-action="profile"]').forEach(btn => {
+        container.querySelectorAll('[data-action="profile"]').forEach((btn) => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const id = (btn as HTMLElement).dataset.id;
                 if (!id) return;
-                const row = mergedRows.find(r => r.id === id);
+                const row = mergedRows.find((r) => r.id === id);
                 if (!row) return;
 
                 if (!row.isLoaded && row.type === 'history') {
-                    if (!isProActive() && hasImportedGpx) { showUpgradePrompt('multi_gpx'); return; }
-                    if (state.gpxLayers.length >= 10) { showToast(i18n.t('gpx.limitPro') || 'Maximum 10 tracks reached'); return; }
+                    if (!isProActive() && hasImportedGpx) {
+                        showUpgradePrompt('multi_gpx');
+                        return;
+                    }
+                    if (state.gpxLayers.length >= 10) {
+                        showToast(
+                            i18n.t('gpx.limitPro') ||
+                                'Maximum 10 tracks reached'
+                        );
+                        return;
+                    }
                     if (row.entry) this.loadHistoryEntry(row.entry);
                     return;
                 }
 
-                if (row.isLocked) { showUpgradePrompt('multi_gpx'); return; }
+                if (row.isLocked) {
+                    showUpgradePrompt('multi_gpx');
+                    return;
+                }
 
-                const panelOpen = !!document.getElementById('elevation-profile')?.classList.contains('is-open');
+                const panelOpen = !!document
+                    .getElementById('elevation-profile')
+                    ?.classList.contains('is-open');
                 const isSameTrack = state.activeGPXLayerId === id;
 
                 if (panelOpen && isSameTrack) {
@@ -711,13 +931,16 @@ export class TrackSheet extends BaseComponent {
         });
 
         // Toggle visibility
-        container.querySelectorAll('[data-action="toggle"]').forEach(btn => {
+        container.querySelectorAll('[data-action="toggle"]').forEach((btn) => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const id = (btn as HTMLElement).dataset.id;
                 if (!id) return;
-                const row = mergedRows.find(r => r.id === id);
-                if (row?.isLocked) { showUpgradePrompt('multi_gpx'); return; }
+                const row = mergedRows.find((r) => r.id === id);
+                if (row?.isLocked) {
+                    showUpgradePrompt('multi_gpx');
+                    return;
+                }
                 if (id) {
                     toggleGPXLayer(id);
                     this.renderUnifiedTrackList();
@@ -726,22 +949,29 @@ export class TrackSheet extends BaseComponent {
         });
 
         // Export
-        container.querySelectorAll('[data-action="export"]').forEach(btn => {
+        container.querySelectorAll('[data-action="export"]').forEach((btn) => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const id = (btn as HTMLElement).dataset.id;
                 if (!id) return;
-                const row = mergedRows.find(r => r.id === id);
-                if (row?.isLocked) { showUpgradePrompt('export_gpx'); return; }
-                const layerToExport = state.gpxLayers.find(l => l.id === id);
+                const row = mergedRows.find((r) => r.id === id);
+                if (row?.isLocked) {
+                    showUpgradePrompt('export_gpx');
+                    return;
+                }
+                const layerToExport = state.gpxLayers.find((l) => l.id === id);
                 if (!layerToExport || !layerToExport.rawData) return;
-                const gpxString = gpxService.buildGPXStringFromLayer(layerToExport);
-                await recordingService.saveToFile(layerToExport.name, gpxString);
+                const gpxString =
+                    gpxService.buildGPXStringFromLayer(layerToExport);
+                await recordingService.saveToFile(
+                    layerToExport.name,
+                    gpxString
+                );
             });
         });
 
         // Remove (loaded layers) or history-remove (history entries)
-        container.querySelectorAll('[data-action="remove"]').forEach(btn => {
+        container.querySelectorAll('[data-action="remove"]').forEach((btn) => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const id = (btn as HTMLElement).dataset.id;
@@ -751,46 +981,64 @@ export class TrackSheet extends BaseComponent {
                 }
             });
         });
-        container.querySelectorAll('[data-action="history-remove"]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const id = (btn as HTMLElement).dataset.id;
-                if (id) {
-                    removeFromHistory(id);
-                    state.gpxHistory = loadHistory();
-                    this.renderUnifiedTrackList();
-                }
+        container
+            .querySelectorAll('[data-action="history-remove"]')
+            .forEach((btn) => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = (btn as HTMLElement).dataset.id;
+                    if (id) {
+                        removeFromHistory(id);
+                        state.gpxHistory = loadHistory();
+                        this.renderUnifiedTrackList();
+                    }
+                });
             });
-        });
 
         // Render mini-maps
         requestAnimationFrame(() => {
-            container.querySelectorAll<HTMLCanvasElement>('.gpx-layer-minimap').forEach(canvas => {
-                const hIdx = parseInt(canvas.dataset.historyIdx || '-1');
-                const entry = entryMap.get(hIdx);
-                if (!entry) {
-                    const entryById = history.find(e => e.id === (canvas.closest('[data-layer-id]') as HTMLElement)?.dataset.layerId);
-                    if (entryById) this.renderMiniMap(entryById, canvas);
-                } else {
-                    this.renderMiniMap(entry, canvas);
-                }
-            });
+            container
+                .querySelectorAll<HTMLCanvasElement>('.gpx-layer-minimap')
+                .forEach((canvas) => {
+                    const hIdx = parseInt(canvas.dataset.historyIdx || '-1');
+                    const entry = entryMap.get(hIdx);
+                    if (!entry) {
+                        const entryById = history.find(
+                            (e) =>
+                                e.id ===
+                                (
+                                    canvas.closest(
+                                        '[data-layer-id]'
+                                    ) as HTMLElement
+                                )?.dataset.layerId
+                        );
+                        if (entryById) this.renderMiniMap(entryById, canvas);
+                    } else {
+                        this.renderMiniMap(entry, canvas);
+                    }
+                });
         });
-    }    private updateEmptyState(): void {
+    }
+    private updateEmptyState(): void {
         const emptyEl = document.getElementById('track-empty-state');
-        const statsEl = this.element?.querySelector('.track-stats') as HTMLElement | null;
+        const statsEl = this.element?.querySelector(
+            '.track-stats'
+        ) as HTMLElement | null;
         if (!emptyEl) return;
 
-        const hasData = state.gpxLayers.length > 0 || state.recordedPoints.length > 0;
+        const hasData =
+            state.gpxLayers.length > 0 || state.recordedPoints.length > 0;
         emptyEl.style.display = hasData ? 'none' : 'flex';
         if (statsEl) statsEl.style.display = hasData ? '' : 'none';
     }
 
     private updateRecUI() {
-        const recBtn = document.getElementById('rec-btn-sheet') as HTMLButtonElement;
+        const recBtn = document.getElementById(
+            'rec-btn-sheet'
+        ) as HTMLButtonElement;
         const navTab = document.querySelector('.nav-tab[data-tab="track"]');
         if (!recBtn) return;
-        
+
         if (state.isRecording) {
             recBtn.classList.add('active');
             recBtn.innerHTML = `
@@ -798,10 +1046,14 @@ export class TrackSheet extends BaseComponent {
                     <rect x="2" y="2" width="6" height="6" rx="1" fill="white"/>
                 </svg> ${i18n.t('track.btn.stop')}`;
             navTab?.classList.add('has-notif');
-            
-            document.getElementById('import-gpx-sheet')?.style.setProperty('display', 'none');
-            document.getElementById('gpx-layers-list')?.style.setProperty('display', 'none');
-            
+
+            document
+                .getElementById('import-gpx-sheet')
+                ?.style.setProperty('display', 'none');
+            document
+                .getElementById('gpx-layers-list')
+                ?.style.setProperty('display', 'none');
+
             // Upsell Pro permanent pendant l'enregistrement pour les gratuits
             if (!isProActive()) {
                 this.showRecordingUpsell();
@@ -817,8 +1069,10 @@ export class TrackSheet extends BaseComponent {
                 </svg> ${i18n.t('track.btn.rec')}`;
             navTab?.classList.remove('has-notif');
             document.getElementById('rec-recording-upsell')?.remove();
-            
-            document.getElementById('import-gpx-sheet')?.style.removeProperty('display');
+
+            document
+                .getElementById('import-gpx-sheet')
+                ?.style.removeProperty('display');
             this.renderUnifiedTrackList();
         }
     }
@@ -826,30 +1080,35 @@ export class TrackSheet extends BaseComponent {
     /** Bannière PRO visible en permanence pendant le REC pour les gratuits */
     private showRecordingUpsell(): void {
         if (document.getElementById('rec-recording-upsell')) return;
-        
+
         const banner = document.createElement('div');
         banner.id = 'rec-recording-upsell';
         banner.className = 'rec-upsell-banner';
-        banner.style.cssText = 'display:flex; flex-direction:column; gap:var(--space-2); padding:var(--space-3); margin:var(--space-3) 0; background:rgba(255,215,0,0.08); border:1px solid var(--gold); border-radius:var(--radius-md); font-size:12px; color:var(--text-1);';
-        
+        banner.style.cssText =
+            'display:flex; flex-direction:column; gap:var(--space-2); padding:var(--space-3); margin:var(--space-3) 0; background:rgba(255,215,0,0.08); border:1px solid var(--gold); border-radius:var(--radius-md); font-size:12px; color:var(--text-1);';
+
         const title = document.createElement('div');
-        title.style.cssText = 'display:flex; align-items:center; gap:8px; font-weight:700; color:var(--gold);';
+        title.style.cssText =
+            'display:flex; align-items:center; gap:8px; font-weight:700; color:var(--gold);';
         title.innerHTML = `<span>✨</span> <span>SunTrail PRO</span>`;
-        
+
         const text = document.createElement('p');
-        text.style.cssText = 'margin:0; opacity:0.9; font-size:11px; line-height:1.4;';
+        text.style.cssText =
+            'margin:0; opacity:0.9; font-size:11px; line-height:1.4;';
         text.textContent = i18n.t('track.upsell.postRec'); // On réutilise cette clé qui parle du passage Pro
-        
+
         const proBtn = document.createElement('button');
         proBtn.className = 'btn-go';
-        proBtn.style.cssText = 'padding:6px; font-size:11px; margin-top:4px; width:100%;';
-        proBtn.textContent = i18n.t('upgrade.trial.cta') || 'Essayer Pro Gratuitement';
+        proBtn.style.cssText =
+            'padding:6px; font-size:11px; margin-top:4px; width:100%;';
+        proBtn.textContent =
+            i18n.t('upgrade.trial.cta') || 'Essayer Pro Gratuitement';
         proBtn.onclick = () => sheetManager.open('upgrade-sheet');
-        
+
         banner.appendChild(title);
         banner.appendChild(text);
         banner.appendChild(proBtn);
-        
+
         const trackActions = this.element?.querySelector('.track-actions');
         if (trackActions) {
             this.element?.insertBefore(banner, trackActions.nextSibling);
@@ -860,7 +1119,7 @@ export class TrackSheet extends BaseComponent {
 
     private updateStats() {
         if (!this.element) return;
-        
+
         const distEl = document.getElementById('track-dist');
         const pointsEl = document.getElementById('track-points');
         const dplusEl = document.getElementById('track-dplus');
@@ -876,35 +1135,53 @@ export class TrackSheet extends BaseComponent {
 
         // v5.29.41 : Priorité à l'affichage du calque actif si on n'enregistre pas
         if (!state.isRecording && state.activeGPXLayerId) {
-            const activeLayer = state.gpxLayers.find(l => l.id === state.activeGPXLayerId);
+            const activeLayer = state.gpxLayers.find(
+                (l) => l.id === state.activeGPXLayerId
+            );
             if (activeLayer) {
                 const s = activeLayer.stats;
-                if (distEl) distEl.innerHTML = `${s.distance.toFixed(2)} <span class="trk-stat-unit">km</span>`;
-                if (dplusEl) dplusEl.innerHTML = `+${Math.round(s.dPlus)} <span class="trk-stat-unit-plain">m</span>`;
-                if (dminusEl) dminusEl.innerHTML = `−${Math.round(s.dMinus)} <span class="trk-stat-unit-plain">m</span>`;
+                if (distEl)
+                    distEl.innerHTML = `${s.distance.toFixed(2)} <span class="trk-stat-unit">km</span>`;
+                if (dplusEl)
+                    dplusEl.innerHTML = `+${Math.round(s.dPlus)} <span class="trk-stat-unit-plain">m</span>`;
+                if (dminusEl)
+                    dminusEl.innerHTML = `−${Math.round(s.dMinus)} <span class="trk-stat-unit-plain">m</span>`;
                 if (pointsEl) pointsEl.textContent = s.pointCount.toString();
-                if (durationEl) durationEl.textContent = s.estimatedTime ? fmtDuration(s.estimatedTime) : '—';
+                if (durationEl)
+                    durationEl.textContent = s.estimatedTime
+                        ? fmtDuration(s.estimatedTime)
+                        : '—';
                 return;
             }
         }
 
         // Sinon, affichage des stats de l'enregistrement en cours
-        if (pointsEl) pointsEl.textContent = state.recordedPoints.length.toString();
-        
+        if (pointsEl)
+            pointsEl.textContent = state.recordedPoints.length.toString();
+
         if (state.recordedPoints.length < 2) {
-            if (distEl) distEl.innerHTML = `0.0 <span class="trk-stat-unit">km</span>`;
-            if (dplusEl) dplusEl.innerHTML = `+0 <span class="trk-stat-unit-plain">m</span>`;
-            if (dminusEl) dminusEl.innerHTML = `−0 <span class="trk-stat-unit-plain">m</span>`;
+            if (distEl)
+                distEl.innerHTML = `0.0 <span class="trk-stat-unit">km</span>`;
+            if (dplusEl)
+                dplusEl.innerHTML = `+0 <span class="trk-stat-unit-plain">m</span>`;
+            if (dminusEl)
+                dminusEl.innerHTML = `−0 <span class="trk-stat-unit-plain">m</span>`;
             if (durationEl) durationEl.textContent = '—';
             return;
         }
 
         const stats = calculateTrackStats(state.recordedPoints);
 
-        if (distEl) distEl.innerHTML = `${stats.distance.toFixed(2)} <span class="trk-stat-unit">km</span>`;
-        if (dplusEl) dplusEl.innerHTML = `+${Math.round(stats.dPlus)} <span class="trk-stat-unit-plain">m</span>`;
-        if (dminusEl) dminusEl.innerHTML = `−${Math.round(stats.dMinus)} <span class="trk-stat-unit-plain">m</span>`;
-        if (durationEl) durationEl.textContent = stats.estimatedTime ? fmtDuration(stats.estimatedTime) : '—';
+        if (distEl)
+            distEl.innerHTML = `${stats.distance.toFixed(2)} <span class="trk-stat-unit">km</span>`;
+        if (dplusEl)
+            dplusEl.innerHTML = `+${Math.round(stats.dPlus)} <span class="trk-stat-unit-plain">m</span>`;
+        if (dminusEl)
+            dminusEl.innerHTML = `−${Math.round(stats.dMinus)} <span class="trk-stat-unit-plain">m</span>`;
+        if (durationEl)
+            durationEl.textContent = stats.estimatedTime
+                ? fmtDuration(stats.estimatedTime)
+                : '—';
     }
 
     private showPostRecUpsell(): void {
@@ -912,25 +1189,29 @@ export class TrackSheet extends BaseComponent {
         const banner = document.createElement('div');
         banner.id = 'rec-upsell-banner';
         banner.className = 'rec-upsell-banner';
-        banner.style.cssText = 'display:flex; align-items:center; gap:var(--space-2); padding:var(--space-3); margin-top:var(--space-3); background:rgba(var(--accent-rgb,59,126,248),0.12); border:1px solid rgba(var(--accent-rgb,59,126,248),0.3); border-radius:var(--radius-md); font-size:12px; color:var(--text-2);';
-        
+        banner.style.cssText =
+            'display:flex; align-items:center; gap:var(--space-2); padding:var(--space-3); margin-top:var(--space-3); background:rgba(var(--accent-rgb,59,126,248),0.12); border:1px solid rgba(var(--accent-rgb,59,126,248),0.3); border-radius:var(--radius-md); font-size:12px; color:var(--text-2);';
+
         const text = document.createElement('span');
-        text.style.cssText = 'flex:1; min-width:0; overflow-wrap:break-word; word-break:break-word;';
+        text.style.cssText =
+            'flex:1; min-width:0; overflow-wrap:break-word; word-break:break-word;';
         text.textContent = i18n.t('track.upsell.postRec');
-        
+
         const proBtn = document.createElement('button');
         proBtn.className = 'btn-go solar-upsell-btn';
-        proBtn.style.cssText = 'flex-shrink:0; font-size:11px; padding:4px 10px;';
+        proBtn.style.cssText =
+            'flex-shrink:0; font-size:11px; padding:4px 10px;';
         proBtn.textContent = i18n.t('track.upsell.proBtn');
         proBtn.onclick = () => showUpgradePrompt('rec_stats');
-        
+
         banner.appendChild(text);
         banner.appendChild(proBtn);
 
         if (isProActive()) {
             const closeBtn = document.createElement('button');
             closeBtn.setAttribute('aria-label', i18n.t('common.close'));
-            closeBtn.style.cssText = 'flex-shrink:0; background:none; border:none; color:var(--text-3); cursor:pointer; font-size:16px; line-height:1; padding:0 4px;';
+            closeBtn.style.cssText =
+                'flex-shrink:0; background:none; border:none; color:var(--text-3); cursor:pointer; font-size:16px; line-height:1; padding:0 4px;';
             closeBtn.innerHTML = ICON_CLOSE;
             closeBtn.onclick = () => banner.remove();
             banner.appendChild(closeBtn);

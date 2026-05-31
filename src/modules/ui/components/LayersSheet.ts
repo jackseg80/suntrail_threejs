@@ -22,7 +22,7 @@ export class LayersSheet extends BaseComponent {
         const layerItems = this.element.querySelectorAll('.layer-item');
         // ARIA: role="listbox" et role="option" déjà présents dans le HTML statique
 
-        layerItems.forEach(item => {
+        layerItems.forEach((item) => {
             item.addEventListener('click', () => {
                 const source = (item as HTMLElement).dataset.source;
                 if (source) {
@@ -41,32 +41,48 @@ export class LayersSheet extends BaseComponent {
             });
         });
 
-        const trailsToggle = this.element.querySelector('#layers-trails-toggle') as HTMLInputElement;
+        const trailsToggle = this.element.querySelector(
+            '#layers-trails-toggle'
+        ) as HTMLInputElement;
         if (trailsToggle) {
             trailsToggle.checked = state.SHOW_TRAILS;
             // ARIA: toggle as switch
             trailsToggle.setAttribute('role', 'switch');
-            trailsToggle.setAttribute('aria-checked', String(trailsToggle.checked));
+            trailsToggle.setAttribute(
+                'aria-checked',
+                String(trailsToggle.checked)
+            );
 
             trailsToggle.addEventListener('change', (e) => {
                 state.SHOW_TRAILS = (e.target as HTMLInputElement).checked;
-                trailsToggle.setAttribute('aria-checked', String((e.target as HTMLInputElement).checked));
+                trailsToggle.setAttribute(
+                    'aria-checked',
+                    String((e.target as HTMLInputElement).checked)
+                );
                 void haptic('light');
                 saveSettings();
                 refreshTerrain();
             });
         }
 
-        const slopesToggle = this.element.querySelector('#layers-slopes-toggle') as HTMLInputElement;
+        const slopesToggle = this.element.querySelector(
+            '#layers-slopes-toggle'
+        ) as HTMLInputElement;
         if (slopesToggle) {
             slopesToggle.checked = state.SHOW_SLOPES;
             // ARIA: toggle as switch
             slopesToggle.setAttribute('role', 'switch');
-            slopesToggle.setAttribute('aria-checked', String(slopesToggle.checked));
+            slopesToggle.setAttribute(
+                'aria-checked',
+                String(slopesToggle.checked)
+            );
 
             slopesToggle.addEventListener('change', (e) => {
                 state.SHOW_SLOPES = (e.target as HTMLInputElement).checked;
-                slopesToggle.setAttribute('aria-checked', String((e.target as HTMLInputElement).checked));
+                slopesToggle.setAttribute(
+                    'aria-checked',
+                    String((e.target as HTMLInputElement).checked)
+                );
                 void haptic('light');
                 updateSlopeVisibility(state.SHOW_SLOPES);
                 saveSettings();
@@ -74,29 +90,40 @@ export class LayersSheet extends BaseComponent {
         }
 
         // Badge Pro sur la tuile satellite — masquer si isPro
-        const satelliteBadge = this.element.querySelector('[data-source="satellite"] .layer-pro-badge') as HTMLElement | null;
+        const satelliteBadge = this.element.querySelector(
+            '[data-source="satellite"] .layer-pro-badge'
+        ) as HTMLElement | null;
         const syncSatelliteBadge = () => {
-            if (satelliteBadge) satelliteBadge.classList.toggle('hidden', isProActive());
+            if (satelliteBadge)
+                satelliteBadge.classList.toggle('hidden', isProActive());
         };
         syncSatelliteBadge();
         this.addSubscription(state.subscribe('isPro', syncSatelliteBadge));
         this.addSubscription(state.subscribe('trialEnd', syncSatelliteBadge));
 
-        this.addSubscription(state.subscribe('MAP_SOURCE', () => this.updateActiveLayer()));
-        this.addSubscription(state.subscribe('SHOW_TRAILS', (val: boolean) => {
-            if (trailsToggle) {
-                trailsToggle.checked = val;
-                trailsToggle.setAttribute('aria-checked', String(val));
-            }
-        }));
-        this.addSubscription(state.subscribe('SHOW_SLOPES', (val: boolean) => {
-            if (slopesToggle) {
-                slopesToggle.checked = val;
-                slopesToggle.setAttribute('aria-checked', String(val));
-            }
-        }));
+        this.addSubscription(
+            state.subscribe('MAP_SOURCE', () => this.updateActiveLayer())
+        );
+        this.addSubscription(
+            state.subscribe('SHOW_TRAILS', (val: boolean) => {
+                if (trailsToggle) {
+                    trailsToggle.checked = val;
+                    trailsToggle.setAttribute('aria-checked', String(val));
+                }
+            })
+        );
+        this.addSubscription(
+            state.subscribe('SHOW_SLOPES', (val: boolean) => {
+                if (slopesToggle) {
+                    slopesToggle.checked = val;
+                    slopesToggle.setAttribute('aria-checked', String(val));
+                }
+            })
+        );
 
-        this.addSubscription(state.subscribe('ZOOM', () => this.updateLODAvailability()));
+        this.addSubscription(
+            state.subscribe('ZOOM', () => this.updateLODAvailability())
+        );
 
         this.updateActiveLayer();
         this.updateLODAvailability();
@@ -108,11 +135,19 @@ export class LayersSheet extends BaseComponent {
         const isAvailable = state.ZOOM >= MIN_DATA_LOD;
 
         const rows = ['trails', 'slopes'];
-        rows.forEach(type => {
-            const row = this.element?.querySelector(`#row-${type}`) as HTMLElement;
-            const toggle = this.element?.querySelector(`#layers-${type}-toggle`) as HTMLInputElement;
-            const warning = this.element?.querySelector(`#row-${type} .lod-warning`) as HTMLElement;
-            const infoIcon = this.element?.querySelector(`#row-${type} .info-icon`) as HTMLElement;
+        rows.forEach((type) => {
+            const row = this.element?.querySelector(
+                `#row-${type}`
+            ) as HTMLElement;
+            const toggle = this.element?.querySelector(
+                `#layers-${type}-toggle`
+            ) as HTMLInputElement;
+            const warning = this.element?.querySelector(
+                `#row-${type} .lod-warning`
+            ) as HTMLElement;
+            const infoIcon = this.element?.querySelector(
+                `#row-${type} .info-icon`
+            ) as HTMLElement;
 
             if (row && toggle && warning && infoIcon) {
                 if (isAvailable) {
@@ -132,8 +167,9 @@ export class LayersSheet extends BaseComponent {
 
     private updateActiveLayer() {
         if (!this.element) return;
-        this.element.querySelectorAll('.layer-item').forEach(item => {
-            const isActive = (item as HTMLElement).dataset.source === state.MAP_SOURCE;
+        this.element.querySelectorAll('.layer-item').forEach((item) => {
+            const isActive =
+                (item as HTMLElement).dataset.source === state.MAP_SOURCE;
             if (isActive) {
                 item.classList.add('active');
             } else {

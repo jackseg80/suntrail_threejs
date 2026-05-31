@@ -12,17 +12,17 @@ import { sheetManager } from './ui/core/SheetManager';
 
 // Messages par feature (sera remplacé par i18n quand les clés seront ajoutées)
 const FEATURE_LABELS: Record<string, string> = {
-    lod_18:           'LOD 18 (détail max)',
-    satellite:        'Couche Satellite',
-    multi_gpx:        'Tracés GPX illimités — comparez vos sorties côte à côte',
-    export_gpx:       'Export GPX',
-    rec_unlimited:    'Enregistrement illimité',
-    offline_multi:    'Zones offline illimitées',
-    solar_calendar:   'Calendrier solaire — simulez n\'importe quelle date',
-    rec_stats:        'Stats avancées REC (VAM, Naismith) + Export GPX',
+    lod_18: 'LOD 18 (détail max)',
+    satellite: 'Couche Satellite',
+    multi_gpx: 'Tracés GPX illimités — comparez vos sorties côte à côte',
+    export_gpx: 'Export GPX',
+    rec_unlimited: 'Enregistrement illimité',
+    offline_multi: 'Zones offline illimitées',
+    solar_calendar: "Calendrier solaire — simulez n'importe quelle date",
+    rec_stats: 'Stats avancées REC (VAM, Naismith) + Export GPX',
     weather_extended: 'Prévisions 3-5 jours + alertes montagne',
-    weather_pro:      'Station Météo Pro complète',
-    inclinometer:     'Inclinomètre numérique PRO',
+    weather_pro: 'Station Météo Pro complète',
+    inclinometer: 'Inclinomètre numérique PRO',
 };
 
 /**
@@ -41,14 +41,14 @@ export function showUpgradePrompt(feature: string): void {
  */
 export function grantProAccess(): void {
     if (state.isPro) return; // Éviter les appels multiples
-    
+
     state.isPro = true;
-    
+
     // Activer toutes les fonctionnalités Pro par défaut
     state.SHOW_BUILDINGS = true;
     state.SHOW_INCLINOMETER = true;
     state.SHOW_WEATHER_PRO = true;
-    
+
     saveProStatus();
     showToast('✅ Accès Pro activé !');
 }

@@ -1,6 +1,11 @@
 import * as THREE from 'three';
 import { BaseComponent } from '../core/BaseComponent';
-import { state, saveSettings, saveProStatus, type ThemePreference } from '../../state';
+import {
+    state,
+    saveSettings,
+    saveProStatus,
+    type ThemePreference,
+} from '../../state';
 import { applyPreset, getGpuInfo, detectBestPreset } from '../../performance';
 import { runBenchmark } from '../../benchmark';
 import { updateHydrologyVisibility, refreshTerrain } from '../../terrain';
@@ -35,7 +40,7 @@ export class SettingsSheet extends BaseComponent {
         closePanel?.addEventListener('click', () => sheetManager.close());
 
         // Presets
-        this.element.querySelectorAll('.preset-btn').forEach(btn => {
+        this.element.querySelectorAll('.preset-btn').forEach((btn) => {
             btn.addEventListener('click', () => {
                 applyPreset((btn as HTMLElement).dataset.preset as any);
             });
@@ -44,20 +49,37 @@ export class SettingsSheet extends BaseComponent {
         // Sliders
         this.bindSlider('res-slider', 'RESOLUTION', 'res-disp', refreshTerrain);
         this.bindSlider('range-slider', 'RANGE', 'range-disp', refreshTerrain);
-        this.bindSlider('exag-slider', 'RELIEF_EXAGGERATION', 'exag-disp', refreshTerrain);
-        this.bindSlider('veg-density-slider', 'VEGETATION_DENSITY', 'veg-density-disp', refreshTerrain);
+        this.bindSlider(
+            'exag-slider',
+            'RELIEF_EXAGGERATION',
+            'exag-disp',
+            refreshTerrain
+        );
+        this.bindSlider(
+            'veg-density-slider',
+            'VEGETATION_DENSITY',
+            'veg-density-disp',
+            refreshTerrain
+        );
 
         // Sub-options expand/collapse
         this.bindExpandToggle('veg-expand-btn', 'veg-suboptions');
         this.bindExpandToggle('weather-expand-btn', 'weather-suboptions');
 
         // Toggles
-        this.bindToggle('energy-saver-toggle', 'ENERGY_SAVER', (val: boolean) => {
-            showToast(val 
-                ? i18n.t('settings.toast.energySaverOn') || 'Mode Éco activé (FPS limités)' 
-                : i18n.t('settings.toast.energySaverOff') || 'Mode Éco désactivé'
-            );
-        });
+        this.bindToggle(
+            'energy-saver-toggle',
+            'ENERGY_SAVER',
+            (val: boolean) => {
+                showToast(
+                    val
+                        ? i18n.t('settings.toast.energySaverOn') ||
+                              'Mode Éco activé (FPS limités)'
+                        : i18n.t('settings.toast.energySaverOff') ||
+                              'Mode Éco désactivé'
+                );
+            }
+        );
         this.bindToggle('stats-toggle', 'SHOW_STATS', (val: boolean) => {
             // setVisible(val) synchronise exactement l'état du toggle avec l'affichage
             state.vramPanel?.setVisible?.(val);
@@ -69,45 +91,79 @@ export class SettingsSheet extends BaseComponent {
             if (compass) compass.style.display = val ? 'block' : 'none';
         });
         this.bindToggle('veg-toggle', 'SHOW_VEGETATION', refreshTerrain);
-        this.bindToggle('hydro-toggle', 'SHOW_HYDROLOGY', (val: boolean) => updateHydrologyVisibility(val));
-        this.bindToggle('weather-toggle', 'SHOW_WEATHER', (val: boolean) => updateWeatherVisibility(val));
-        this.bindSlider('weather-density-slider', 'WEATHER_DENSITY', 'weather-density-disp');
-        this.bindSlider('weather-speed-slider', 'WEATHER_SPEED', 'weather-speed-disp');
+        this.bindToggle('hydro-toggle', 'SHOW_HYDROLOGY', (val: boolean) =>
+            updateHydrologyVisibility(val)
+        );
+        this.bindToggle('weather-toggle', 'SHOW_WEATHER', (val: boolean) =>
+            updateWeatherVisibility(val)
+        );
+        this.bindSlider(
+            'weather-density-slider',
+            'WEATHER_DENSITY',
+            'weather-density-disp'
+        );
+        this.bindSlider(
+            'weather-speed-slider',
+            'WEATHER_SPEED',
+            'weather-speed-disp'
+        );
         this.bindToggle('poi-toggle', 'SHOW_SIGNPOSTS', refreshTerrain);
-        
+
         // Inclinomètre — feature Pro
-        this.setupProFeatureToggle('inclinometer-toggle', 'SHOW_INCLINOMETER', 'inclinometer', 'row-inclinometer');
-        
+        this.setupProFeatureToggle(
+            'inclinometer-toggle',
+            'SHOW_INCLINOMETER',
+            'inclinometer',
+            'row-inclinometer'
+        );
+
         // Météo Avancée — feature Pro
-        this.setupProFeatureToggle('weather-pro-toggle', 'SHOW_WEATHER_PRO', 'weather_pro', 'row-weather-pro');
-        
+        this.setupProFeatureToggle(
+            'weather-pro-toggle',
+            'SHOW_WEATHER_PRO',
+            'weather_pro',
+            'row-weather-pro'
+        );
+
         // Bâtiments 3D — feature Pro (déjà existant, déplacé dans section PRO)
-        this.setupProFeatureToggle('buildings-toggle', 'SHOW_BUILDINGS', 'buildings_3d', 'row-buildings', () => {
-            refreshTerrain();
-        });
-        
+        this.setupProFeatureToggle(
+            'buildings-toggle',
+            'SHOW_BUILDINGS',
+            'buildings_3d',
+            'row-buildings',
+            () => {
+                refreshTerrain();
+            }
+        );
+
         this.bindToggle('shadow-toggle', 'SHADOWS', (val: boolean) => {
             if (state.sunLight) state.sunLight.castShadow = val;
         });
-        
+
         // Bouton "Passer à Pro"
-        const upgradeBtn = this.element.querySelector('#btn-upgrade-pro') as HTMLButtonElement;
+        const upgradeBtn = this.element.querySelector(
+            '#btn-upgrade-pro'
+        ) as HTMLButtonElement;
         if (upgradeBtn) {
             upgradeBtn.addEventListener('click', () => {
                 if (!isProActive()) {
                     showUpgradePrompt('settings_pro_section');
                 }
             });
-            
+
             // Mettre à jour le texte du bouton selon le statut Pro
-            this.addSubscription(state.subscribe('isPro', () => {
-                this.updateProButtonState(upgradeBtn);
-            }));
+            this.addSubscription(
+                state.subscribe('isPro', () => {
+                    this.updateProButtonState(upgradeBtn);
+                })
+            );
             this.updateProButtonState(upgradeBtn);
         }
 
         // Fog
-        const fogSlider = this.element.querySelector('#fog-slider') as HTMLInputElement;
+        const fogSlider = this.element.querySelector(
+            '#fog-slider'
+        ) as HTMLInputElement;
         if (fogSlider) {
             // ARIA: fog slider attributes
             fogSlider.setAttribute('aria-label', 'FOG_FAR');
@@ -116,9 +172,13 @@ export class SettingsSheet extends BaseComponent {
             fogSlider.setAttribute('aria-valuenow', fogSlider.value);
 
             fogSlider.addEventListener('input', (e) => {
-                state.FOG_FAR = parseFloat((e.target as HTMLInputElement).value) * 1000;
+                state.FOG_FAR =
+                    parseFloat((e.target as HTMLInputElement).value) * 1000;
                 // ARIA: sync valuenow
-                fogSlider.setAttribute('aria-valuenow', (e.target as HTMLInputElement).value);
+                fogSlider.setAttribute(
+                    'aria-valuenow',
+                    (e.target as HTMLInputElement).value
+                );
                 if (state.scene?.fog && state.scene.fog instanceof THREE.Fog) {
                     state.scene.fog.far = state.FOG_FAR;
                 }
@@ -127,49 +187,82 @@ export class SettingsSheet extends BaseComponent {
         }
 
         // Trail follow
-        const trailFollowToggle = this.element.querySelector('#trail-follow-toggle') as HTMLInputElement;
+        const trailFollowToggle = this.element.querySelector(
+            '#trail-follow-toggle'
+        ) as HTMLInputElement;
         if (trailFollowToggle) {
             // ARIA: toggle as switch
             trailFollowToggle.setAttribute('role', 'switch');
-            trailFollowToggle.setAttribute('aria-checked', String(trailFollowToggle.checked));
+            trailFollowToggle.setAttribute(
+                'aria-checked',
+                String(trailFollowToggle.checked)
+            );
 
             trailFollowToggle.addEventListener('change', (e) => {
                 state.isFollowingTrail = (e.target as HTMLInputElement).checked;
                 // ARIA: sync aria-checked
-                trailFollowToggle.setAttribute('aria-checked', String((e.target as HTMLInputElement).checked));
+                trailFollowToggle.setAttribute(
+                    'aria-checked',
+                    String((e.target as HTMLInputElement).checked)
+                );
             });
         }
 
         // Subscribe to state changes to update UI
         const keysToSubscribe = [
-            'RESOLUTION', 'RANGE', 'RELIEF_EXAGGERATION', 'VEGETATION_DENSITY',
-            'FOG_FAR', 'ENERGY_SAVER',
-            'SHOW_STATS', 'SHOW_DEBUG', 'SHOW_VEGETATION', 'SHOW_BUILDINGS',
-            'SHOW_HYDROLOGY', 'SHOW_SIGNPOSTS', 'SHADOWS',
-            'isFollowingTrail', 'SHOW_TRAILS', 'SHOW_SLOPES', 'PERFORMANCE_PRESET',
-            'WEATHER_DENSITY', 'WEATHER_SPEED', 'SHOW_INCLINOMETER', 'SHOW_WEATHER_PRO'
+            'RESOLUTION',
+            'RANGE',
+            'RELIEF_EXAGGERATION',
+            'VEGETATION_DENSITY',
+            'FOG_FAR',
+            'ENERGY_SAVER',
+            'SHOW_STATS',
+            'SHOW_DEBUG',
+            'SHOW_VEGETATION',
+            'SHOW_BUILDINGS',
+            'SHOW_HYDROLOGY',
+            'SHOW_SIGNPOSTS',
+            'SHADOWS',
+            'isFollowingTrail',
+            'SHOW_TRAILS',
+            'SHOW_SLOPES',
+            'PERFORMANCE_PRESET',
+            'WEATHER_DENSITY',
+            'WEATHER_SPEED',
+            'SHOW_INCLINOMETER',
+            'SHOW_WEATHER_PRO',
         ];
 
-        keysToSubscribe.forEach(key => {
-            this.addSubscription(state.subscribe(key, (value: any) => {
-                this.updateUIFromState(key, value);
-            }));
+        keysToSubscribe.forEach((key) => {
+            this.addSubscription(
+                state.subscribe(key, (value: any) => {
+                    this.updateUIFromState(key, value);
+                })
+            );
         });
 
         // Benchmark button
-        const benchBtn = this.element.querySelector('#run-benchmark-btn') as HTMLButtonElement;
+        const benchBtn = this.element.querySelector(
+            '#run-benchmark-btn'
+        ) as HTMLButtonElement;
         if (benchBtn) {
             benchBtn.addEventListener('click', async () => {
                 benchBtn.disabled = true;
                 const originalText = benchBtn.textContent;
-                benchBtn.textContent = i18n.t('benchmark.running') || 'Optimisation...';
+                benchBtn.textContent =
+                    i18n.t('benchmark.running') || 'Optimisation...';
                 void haptic('light');
-                
+
                 try {
                     const result = await runBenchmark();
                     applyPreset(result.recommendedPreset);
                     void haptic('success');
-                    showToast(i18n.t('benchmark.result', { preset: result.recommendedPreset.toUpperCase() }) || `Profil ${result.recommendedPreset.toUpperCase()} appliqué.`);
+                    showToast(
+                        i18n.t('benchmark.result', {
+                            preset: result.recommendedPreset.toUpperCase(),
+                        }) ||
+                            `Profil ${result.recommendedPreset.toUpperCase()} appliqué.`
+                    );
                 } catch (e) {
                     showToast('Erreur benchmark');
                 } finally {
@@ -206,7 +299,9 @@ export class SettingsSheet extends BaseComponent {
     private updateBenchmarkResults(): void {
         if (!this.element) return;
         const results = state.benchmarkResults;
-        const area = this.element.querySelector('#benchmark-results-area') as HTMLElement;
+        const area = this.element.querySelector(
+            '#benchmark-results-area'
+        ) as HTMLElement;
         if (!results || !area) return;
 
         area.style.display = 'block';
@@ -293,7 +388,12 @@ export class SettingsSheet extends BaseComponent {
     }
     */
 
-    private bindSlider(id: string, stateKey: keyof typeof state, dispId: string, onChange?: () => void) {
+    private bindSlider(
+        id: string,
+        stateKey: keyof typeof state,
+        dispId: string,
+        onChange?: () => void
+    ) {
         if (!this.element) return;
         const slider = this.element.querySelector(`#${id}`) as HTMLInputElement;
         const disp = this.element.querySelector(`#${dispId}`);
@@ -317,7 +417,11 @@ export class SettingsSheet extends BaseComponent {
         }
     }
 
-    private bindToggle(id: string, stateKey: keyof typeof state, onChange?: (val: boolean) => void) {
+    private bindToggle(
+        id: string,
+        stateKey: keyof typeof state,
+        onChange?: (val: boolean) => void
+    ) {
         if (!this.element) return;
         const toggle = this.element.querySelector(`#${id}`) as HTMLInputElement;
         if (toggle) {
@@ -349,12 +453,19 @@ export class SettingsSheet extends BaseComponent {
                 this.updateSlider('exag-slider', 'exag-disp', value);
                 break;
             case 'VEGETATION_DENSITY':
-                this.updateSlider('veg-density-slider', 'veg-density-disp', value);
+                this.updateSlider(
+                    'veg-density-slider',
+                    'veg-density-disp',
+                    value
+                );
                 break;
-            case 'FOG_FAR':
-                const fogSlider = this.element.querySelector('#fog-slider') as HTMLInputElement;
+            case 'FOG_FAR': {
+                const fogSlider = this.element.querySelector(
+                    '#fog-slider'
+                ) as HTMLInputElement;
                 if (fogSlider) fogSlider.value = (value / 1000).toString();
                 break;
+            }
             case 'ENERGY_SAVER':
                 this.updateToggle('energy-saver-toggle', value);
                 break;
@@ -382,16 +493,22 @@ export class SettingsSheet extends BaseComponent {
             case 'isFollowingTrail':
                 this.updateToggle('trail-follow-toggle', value);
                 break;
-            case 'SHOW_TRAILS':
-                const trailsToggle = document.getElementById('trails-toggle') as HTMLInputElement;
+            case 'SHOW_TRAILS': {
+                const trailsToggle = document.getElementById(
+                    'trails-toggle'
+                ) as HTMLInputElement;
                 if (trailsToggle) trailsToggle.checked = value;
                 break;
-            case 'SHOW_SLOPES':
-                const slopesToggle = document.getElementById('slopes-toggle') as HTMLInputElement;
+            }
+            case 'SHOW_SLOPES': {
+                const slopesToggle = document.getElementById(
+                    'slopes-toggle'
+                ) as HTMLInputElement;
                 if (slopesToggle) slopesToggle.checked = value;
                 break;
+            }
             case 'PERFORMANCE_PRESET':
-                this.element.querySelectorAll('.preset-btn').forEach(btn => {
+                this.element.querySelectorAll('.preset-btn').forEach((btn) => {
                     if ((btn as HTMLElement).dataset.preset === value) {
                         btn.classList.add('active');
                     } else {
@@ -400,10 +517,18 @@ export class SettingsSheet extends BaseComponent {
                 });
                 break;
             case 'WEATHER_DENSITY':
-                this.updateSlider('weather-density-slider', 'weather-density-disp', value);
+                this.updateSlider(
+                    'weather-density-slider',
+                    'weather-density-disp',
+                    value
+                );
                 break;
             case 'WEATHER_SPEED':
-                this.updateSlider('weather-speed-slider', 'weather-speed-disp', value);
+                this.updateSlider(
+                    'weather-speed-slider',
+                    'weather-speed-disp',
+                    value
+                );
                 break;
             case 'SHOW_INCLINOMETER':
                 this.updateToggle('inclinometer-toggle', value);
@@ -439,7 +564,10 @@ export class SettingsSheet extends BaseComponent {
     private updateAllUI() {
         this.updateUIFromState('RESOLUTION', state.RESOLUTION);
         this.updateUIFromState('RANGE', state.RANGE);
-        this.updateUIFromState('RELIEF_EXAGGERATION', state.RELIEF_EXAGGERATION);
+        this.updateUIFromState(
+            'RELIEF_EXAGGERATION',
+            state.RELIEF_EXAGGERATION
+        );
         this.updateUIFromState('VEGETATION_DENSITY', state.VEGETATION_DENSITY);
         this.updateUIFromState('FOG_FAR', state.FOG_FAR);
         this.updateUIFromState('ENERGY_SAVER', state.ENERGY_SAVER);
@@ -466,20 +594,26 @@ export class SettingsSheet extends BaseComponent {
         if (!selector) return;
 
         const updateActive = () => {
-            selector.querySelectorAll('.theme-btn').forEach(btn => {
-                btn.classList.toggle('active', (btn as HTMLElement).dataset.theme === state.themePreference);
+            selector.querySelectorAll('.theme-btn').forEach((btn) => {
+                btn.classList.toggle(
+                    'active',
+                    (btn as HTMLElement).dataset.theme === state.themePreference
+                );
             });
         };
 
-        selector.querySelectorAll('.theme-btn').forEach(btn => {
+        selector.querySelectorAll('.theme-btn').forEach((btn) => {
             btn.addEventListener('click', () => {
-                state.themePreference = (btn as HTMLElement).dataset.theme as ThemePreference;
+                state.themePreference = (btn as HTMLElement).dataset
+                    .theme as ThemePreference;
             });
         });
 
         this.addSubscription(state.subscribe('themePreference', updateActive));
         // Rafraîchir aussi à chaque ouverture de la sheet (couverture lazy-hydration)
-        const onSheetOpened = ({ id }: { id: string }) => { if (id === 'settings') updateActive(); };
+        const onSheetOpened = ({ id }: { id: string }) => {
+            if (id === 'settings') updateActive();
+        };
         eventBus.on('sheetOpened', onSheetOpened);
         this.addSubscription(() => eventBus.off('sheetOpened', onSheetOpened));
         updateActive();
@@ -504,7 +638,9 @@ export class SettingsSheet extends BaseComponent {
         `;
         panel.appendChild(section);
 
-        const langSelect = section.querySelector('#lang-select') as HTMLSelectElement;
+        const langSelect = section.querySelector(
+            '#lang-select'
+        ) as HTMLSelectElement;
         if (langSelect) {
             langSelect.value = i18n.getLocale();
             langSelect.addEventListener('change', () => {
@@ -545,17 +681,26 @@ export class SettingsSheet extends BaseComponent {
         panel.appendChild(section);
 
         // Charger l'ID depuis RevenueCat (async)
-        void iapService.getAppUserID().then(id => {
+        void iapService.getAppUserID().then((id) => {
             const el = section.querySelector('#tester-id-value') as HTMLElement;
             if (el) el.textContent = id || 'Non disponible (web)';
 
-            section.querySelector('#tester-id-copy')?.addEventListener('click', () => {
-                if (!id) return;
-                void navigator.clipboard.writeText(id).then(() => {
-                    const btn = section.querySelector('#tester-id-copy') as HTMLButtonElement;
-                    if (btn) { btn.innerHTML = `${ICON_CHECK} Copié`; setTimeout(() => { btn.textContent = 'Copier'; }, 1500); }
+            section
+                .querySelector('#tester-id-copy')
+                ?.addEventListener('click', () => {
+                    if (!id) return;
+                    void navigator.clipboard.writeText(id).then(() => {
+                        const btn = section.querySelector(
+                            '#tester-id-copy'
+                        ) as HTMLButtonElement;
+                        if (btn) {
+                            btn.innerHTML = `${ICON_CHECK} Copié`;
+                            setTimeout(() => {
+                                btn.textContent = 'Copier';
+                            }, 1500);
+                        }
+                    });
                 });
-            });
         });
     }
 
@@ -588,9 +733,11 @@ export class SettingsSheet extends BaseComponent {
         `;
         panel.appendChild(section);
 
-        section.querySelector('#tutorial-btn')?.addEventListener('click', () => {
-            void showOnboarding();
-        });
+        section
+            .querySelector('#tutorial-btn')
+            ?.addEventListener('click', () => {
+                void showOnboarding();
+            });
     }
 
     private createHardwareInfoSection(): void {
@@ -618,7 +765,9 @@ export class SettingsSheet extends BaseComponent {
      * Taps 4-6 : haptic light + clignotement. Tap 7 : haptic success + toast + couleur accent.
      */
     private setupVersionTapEgg(): void {
-        const versionEl = this.element?.querySelector('#settings-version') as HTMLElement | null;
+        const versionEl = this.element?.querySelector(
+            '#settings-version'
+        ) as HTMLElement | null;
         if (!versionEl) return;
 
         versionEl.textContent = `v${__APP_VERSION__}`;
@@ -631,21 +780,25 @@ export class SettingsSheet extends BaseComponent {
 
             // Réinitialise le compteur après 3s d'inactivité
             if (tapTimer) clearTimeout(tapTimer);
-            tapTimer = setTimeout(() => { tapCount = 0; }, 3000);
+            tapTimer = setTimeout(() => {
+                tapCount = 0;
+            }, 3000);
 
             if (tapCount >= 4 && tapCount < 7) {
                 // Feedback discret sur les taps 4-6
                 void haptic('light');
                 versionEl.style.opacity = tapCount % 2 === 0 ? '1' : '0.2';
-                setTimeout(() => { versionEl.style.opacity = '0.5'; }, 200);
+                setTimeout(() => {
+                    versionEl.style.opacity = '0.5';
+                }, 200);
             } else if (tapCount === 7) {
                 // Toggle Pro au 7e tap (Debug uniquement, non persistant pour tests rapides)
                 tapCount = 0;
                 if (tapTimer) clearTimeout(tapTimer);
-                
+
                 state.isPro = !state.isPro;
                 saveProStatus();
-                
+
                 if (state.isPro) {
                     state.SHOW_BUILDINGS = true;
                     state.SHOW_INCLINOMETER = true;
@@ -656,7 +809,7 @@ export class SettingsSheet extends BaseComponent {
                     void haptic('warning');
                     showToast('🔒 Mode Testeur : Pro désactivé', 3000);
                 }
-                
+
                 versionEl.style.color = isProActive() ? 'var(--accent)' : '';
                 versionEl.style.opacity = isProActive() ? '0.9' : '0.5';
             }
@@ -665,8 +818,12 @@ export class SettingsSheet extends BaseComponent {
 
     private bindExpandToggle(btnId: string, contentId: string): void {
         if (!this.element) return;
-        const btn = this.element.querySelector(`#${btnId}`) as HTMLButtonElement;
-        const content = this.element.querySelector(`#${contentId}`) as HTMLElement;
+        const btn = this.element.querySelector(
+            `#${btnId}`
+        ) as HTMLButtonElement;
+        const content = this.element.querySelector(
+            `#${contentId}`
+        ) as HTMLElement;
         if (!btn || !content) return;
         btn.addEventListener('click', () => {
             const isOpen = content.classList.toggle('open');
@@ -683,19 +840,21 @@ export class SettingsSheet extends BaseComponent {
      * @param onChange Callback optionnel quand la valeur change (et que Pro)
      */
     private setupProFeatureToggle(
-        toggleId: string, 
-        stateKey: keyof typeof state, 
+        toggleId: string,
+        stateKey: keyof typeof state,
         upgradeFeatureKey: string,
         rowId?: string,
         onChange?: (val: boolean) => void
     ): void {
         if (!this.element) return;
-        
-        const toggle = this.element.querySelector(`#${toggleId}`) as HTMLInputElement;
+
+        const toggle = this.element.querySelector(
+            `#${toggleId}`
+        ) as HTMLInputElement;
         if (!toggle) return;
-        
+
         const row = rowId ? this.element.querySelector(`#${rowId}`) : null;
-        
+
         const updateVisuals = () => {
             const isPro = isProActive();
             toggle.checked = isPro && !!(state as any)[stateKey];
@@ -703,13 +862,14 @@ export class SettingsSheet extends BaseComponent {
                 row.classList.toggle('pro-feature-locked', !isPro);
                 (row as HTMLElement).style.opacity = isPro ? '1' : '0.6';
                 const check = row.querySelector('.pro-check') as HTMLElement;
-                if (check) check.style.color = isPro ? '#22c55e' : 'var(--gold)';
+                if (check)
+                    check.style.color = isPro ? '#22c55e' : 'var(--gold)';
             }
         };
-        
+
         // v5.54 : Plus de 'disabled' physique pour permettre le clic et l'upsell teaser
         updateVisuals();
-        
+
         // Gérer le changement
         toggle.addEventListener('change', (_e) => {
             if (!isProActive()) {
@@ -722,13 +882,17 @@ export class SettingsSheet extends BaseComponent {
             saveSettings();
             if (onChange) onChange(toggle.checked);
         });
-        
+
         // Gérer les clics sur la ligne entière (si rowId fourni)
         if (row) {
             row.addEventListener('click', (e) => {
                 // Ne pas déclencher si on a cliqué directement sur le toggle (géré par listener change)
-                if (e.target === toggle || (e.target as HTMLElement).tagName === 'INPUT') return;
-                
+                if (
+                    e.target === toggle ||
+                    (e.target as HTMLElement).tagName === 'INPUT'
+                )
+                    return;
+
                 if (!isProActive()) {
                     showUpgradePrompt(upgradeFeatureKey);
                     return;
@@ -740,18 +904,20 @@ export class SettingsSheet extends BaseComponent {
                 if (onChange) onChange(toggle.checked);
             });
         }
-        
+
         // Mettre à jour si isPro change
-        this.addSubscription(state.subscribe('isPro', () => {
-            if (!isProActive()) {
-                (state as any)[stateKey] = false;
-                saveSettings();
-                if (onChange) onChange(false);
-            }
-            updateVisuals();
-        }));
+        this.addSubscription(
+            state.subscribe('isPro', () => {
+                if (!isProActive()) {
+                    (state as any)[stateKey] = false;
+                    saveSettings();
+                    if (onChange) onChange(false);
+                }
+                updateVisuals();
+            })
+        );
     }
-    
+
     /**
      * Met à jour l'état du bouton "Passer à Pro"
      */
@@ -759,23 +925,27 @@ export class SettingsSheet extends BaseComponent {
         if (!btn) return;
 
         if (isProActive()) {
-            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="settings.pro.active">Pro Actif</span>';
+            btn.innerHTML =
+                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="settings.pro.active">Pro Actif</span>';
             btn.style.background = `linear-gradient(135deg, var(--success) 0%, ${document.documentElement.dataset.theme === 'light' ? '#15803d' : '#16a34a'} 100%)`;
             btn.style.cursor = 'default';
             btn.disabled = true;
         } else {
-            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0"/></svg><span data-i18n="settings.pro.cta">Passer à Pro</span>';
-            btn.style.background = 'linear-gradient(135deg, var(--accent) 0%, var(--accent-btn) 100%)';
+            btn.innerHTML =
+                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0"/></svg><span data-i18n="settings.pro.cta">Passer à Pro</span>';
+            btn.style.background =
+                'linear-gradient(135deg, var(--accent) 0%, var(--accent-btn) 100%)';
             btn.style.cursor = 'pointer';
             btn.disabled = false;
         }
 
         // Met à jour les lignes informatives Pro (opacité + couleur check)
         const infoRows = this.element?.querySelectorAll('.pro-info-row');
-        infoRows?.forEach(row => {
+        infoRows?.forEach((row) => {
             (row as HTMLElement).style.opacity = isProActive() ? '1' : '0.7';
             const check = row.querySelector('.pro-check') as HTMLElement;
-            if (check) check.style.color = isProActive() ? '#22c55e' : 'var(--gold)';
+            if (check)
+                check.style.color = isProActive() ? '#22c55e' : 'var(--gold)';
         });
     }
 }

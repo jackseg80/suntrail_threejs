@@ -25,7 +25,9 @@ describe('showToast()', () => {
 
     it('affiche le message correct', () => {
         showToast('Mon message');
-        expect(document.querySelector('.toast')?.textContent).toBe('Mon message');
+        expect(document.querySelector('.toast')?.textContent).toBe(
+            'Mon message'
+        );
     });
 
     it('supprime le toast après la durée par défaut (3000ms)', () => {

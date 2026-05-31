@@ -9,18 +9,21 @@ export interface ResultClassification {
 }
 
 export const CLASSIFICATIONS: Record<string, ResultClassification> = {
-    country:  { type: 'country', zoom: 6,  camDist: 2_000_000 },
-    region:   { type: 'region',  zoom: 8,  camDist: 700_000 },
-    city:     { type: 'city',    zoom: 11, camDist: 90_000 },
-    village:  { type: 'village', zoom: 13, camDist: 45_000 },
-    peak:     { type: 'peak',    zoom: 14, camDist: 12_000 },
-    poi:      { type: 'poi',     zoom: 13, camDist: 45_000 },
+    country: { type: 'country', zoom: 6, camDist: 2_000_000 },
+    region: { type: 'region', zoom: 8, camDist: 700_000 },
+    city: { type: 'city', zoom: 11, camDist: 90_000 },
+    village: { type: 'village', zoom: 13, camDist: 45_000 },
+    peak: { type: 'peak', zoom: 14, camDist: 12_000 },
+    poi: { type: 'poi', zoom: 13, camDist: 45_000 },
 };
 
 /**
  * Classifie une entité géographique selon son type pour définir le zoom et la distance caméra idéaux.
  */
-export function classifyFeature(feature: any, isPeak = false): ResultClassification {
+export function classifyFeature(
+    feature: any,
+    isPeak = false
+): ResultClassification {
     if (isPeak) return CLASSIFICATIONS.peak;
 
     // MapTiler GeoJSON: place_type array
@@ -28,16 +31,20 @@ export function classifyFeature(feature: any, isPeak = false): ResultClassificat
     if (pt === 'country') return CLASSIFICATIONS.country;
     if (pt === 'region' || pt === 'state') return CLASSIFICATIONS.region;
     if (pt === 'place' || pt === 'city') return CLASSIFICATIONS.city;
-    if (pt === 'locality' || pt === 'neighborhood') return CLASSIFICATIONS.village;
+    if (pt === 'locality' || pt === 'neighborhood')
+        return CLASSIFICATIONS.village;
     if (pt === 'poi') return CLASSIFICATIONS.poi;
 
     // Nominatim: type + class
     const t = feature.type;
     if (t === 'country' || t === 'continent') return CLASSIFICATIONS.country;
-    if (t === 'state' || t === 'region' || t === 'county') return CLASSIFICATIONS.region;
+    if (t === 'state' || t === 'region' || t === 'county')
+        return CLASSIFICATIONS.region;
     if (t === 'city' || t === 'town') return CLASSIFICATIONS.city;
-    if (t === 'village' || t === 'hamlet' || t === 'suburb') return CLASSIFICATIONS.village;
-    if (t === 'peak' || t === 'mountain' || t === 'volcano') return CLASSIFICATIONS.peak;
+    if (t === 'village' || t === 'hamlet' || t === 'suburb')
+        return CLASSIFICATIONS.village;
+    if (t === 'peak' || t === 'mountain' || t === 'volcano')
+        return CLASSIFICATIONS.peak;
 
     return CLASSIFICATIONS.poi;
 }
@@ -45,7 +52,9 @@ export function classifyFeature(feature: any, isPeak = false): ResultClassificat
 /**
  * Recherche des sommets (peaks) par nom via Overpass API.
  */
-export async function searchPeaksByName(query: string): Promise<Array<{ name: string; lat: number; lon: number; ele: number }>> {
+export async function searchPeaksByName(
+    query: string
+): Promise<Array<{ name: string; lat: number; lon: number; ele: number }>> {
     const q = query.replace(/"/g, '\\"');
     const overpassQuery = `[out:json][timeout:5];node["natural"="peak"]["name"~"${q}",i];out 10;`;
     const urls = [
@@ -54,7 +63,9 @@ export async function searchPeaksByName(query: string): Promise<Array<{ name: st
     ];
     for (const url of urls) {
         try {
-            const resp = await fetch(url, { signal: AbortSignal.timeout(5000) });
+            const resp = await fetch(url, {
+                signal: AbortSignal.timeout(5000),
+            });
             if (!resp.ok) continue;
             const data = await resp.json();
             return (data.elements || [])
@@ -67,7 +78,9 @@ export async function searchPeaksByName(query: string): Promise<Array<{ name: st
                 }))
                 .sort((a: any, b: any) => b.ele - a.ele)
                 .slice(0, 10);
-        } catch { continue; }
+        } catch {
+            continue;
+        }
     }
     return [];
 }
@@ -85,23 +98,36 @@ export interface GeocodingResult {
  * Récupère le nom d'un lieu (ville, village ou localité) à partir de coordonnées.
  * Utilisé pour le nommage automatique des tracés GPX.
  */
-export async function getPlaceName(lat: number, lon: number, signal?: AbortSignal): Promise<string | null> {
+export async function getPlaceName(
+    lat: number,
+    lon: number,
+    signal?: AbortSignal
+): Promise<string | null> {
     const data = await fetchGeocoding({ lat, lon }, signal);
     if (!data) return null;
 
-    const features = Array.isArray(data) ? data : (data.features || []);
+    const features = Array.isArray(data) ? data : data.features || [];
 
     if (features.length > 0) {
         const types = ['place', 'locality', 'city', 'village', 'neighborhood'];
         for (const type of types) {
-            const feat = features.find((f: any) => f.place_type?.includes(type));
+            const feat = features.find((f: any) =>
+                f.place_type?.includes(type)
+            );
             if (feat) return feat.text_fr || feat.text || feat.place_name;
         }
         return features[0]?.text || features[0]?.place_name;
     }
 
     if (data.address) {
-        return data.address.city || data.address.town || data.address.village || data.address.hamlet || data.address.suburb || data.address.municipality;
+        return (
+            data.address.city ||
+            data.address.town ||
+            data.address.village ||
+            data.address.hamlet ||
+            data.address.suburb ||
+            data.address.municipality
+        );
     }
 
     return null;
@@ -110,12 +136,15 @@ export async function getPlaceName(lat: number, lon: number, signal?: AbortSigna
 /**
  * Service de recherche unifié (MapTiler / Nominatim).
  */
-export async function searchLocations(query: string, signal?: AbortSignal): Promise<GeocodingResult[]> {
+export async function searchLocations(
+    query: string,
+    signal?: AbortSignal
+): Promise<GeocodingResult[]> {
     const geoData = await fetchGeocoding({ query }, signal);
     if (!geoData) return [];
 
     const results: GeocodingResult[] = [];
-    const features = Array.isArray(geoData) ? geoData : (geoData.features || []);
+    const features = Array.isArray(geoData) ? geoData : geoData.features || [];
 
     features.forEach((f: any) => {
         let lat: number, lon: number, label: string;
@@ -130,14 +159,19 @@ export async function searchLocations(query: string, signal?: AbortSignal): Prom
         else if (f.geometry?.coordinates) {
             lon = parseFloat(f.geometry.coordinates[0]);
             lat = parseFloat(f.geometry.coordinates[1]);
-            label = f.place_name_fr || f.place_name || i18n.t('search.unknownPlace');
+            label =
+                f.place_name_fr ||
+                f.place_name ||
+                i18n.t('search.unknownPlace');
         } else return;
 
         if (isNaN(lat) || isNaN(lon)) return;
 
         results.push({
-            lat, lon, label,
-            classification: classifyFeature(f)
+            lat,
+            lon,
+            label,
+            classification: classifyFeature(f),
         });
     });
 

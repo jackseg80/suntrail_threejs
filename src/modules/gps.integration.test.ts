@@ -9,7 +9,7 @@ describe('GPS Integration - Track Cleaning', () => {
             { lat: 46.501, lon: 7.501, alt: 1005, timestamp: 20000 },
             { lat: 46.502, lon: 7.502, alt: 1010, timestamp: 30000 },
         ];
-        
+
         const cleaned = cleanGPSTrack(points);
         expect(cleaned.length).toBe(3);
     });
@@ -20,7 +20,7 @@ describe('GPS Integration - Track Cleaning', () => {
             { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 10000 }, // Duplicate
             { lat: 46.501, lon: 7.501, alt: 1005, timestamp: 20000 },
         ];
-        
+
         const cleaned = cleanGPSTrack(points);
         expect(cleaned.length).toBe(2);
         expect(cleaned[0].timestamp).toBe(10000);
@@ -33,7 +33,7 @@ describe('GPS Integration - Track Cleaning', () => {
             { lat: 46.500001, lon: 7.500001, alt: 1000, timestamp: 15000 }, // ~0.1m away, 5s later
             { lat: 46.501, lon: 7.501, alt: 1005, timestamp: 30000 },
         ];
-        
+
         const cleaned = cleanGPSTrack(points);
         expect(cleaned.length).toBe(2);
         expect(cleaned[0].timestamp).toBe(10000);
@@ -46,7 +46,7 @@ describe('GPS Integration - Track Cleaning', () => {
             { lat: 47.5, lon: 8.5, alt: 1000, timestamp: 20000 }, // Huge jump (10s to travel ~100km)
             { lat: 46.501, lon: 7.501, alt: 1005, timestamp: 30000 },
         ];
-        
+
         const cleaned = cleanGPSTrack(points);
         expect(cleaned.length).toBe(2);
         expect(cleaned[0].lat).toBe(46.5);
@@ -60,7 +60,7 @@ describe('GPS Integration - Track Cleaning', () => {
             { lat: 46.501, lon: 7.501, alt: 1005, timestamp: 100000 }, // Back on track (long time later)
             { lat: 46.502, lon: 7.502, alt: 1010, timestamp: 200000 },
         ];
-        
+
         const cleaned = cleanGPSTrack(points);
         expect(cleaned.length).toBe(3);
         expect(cleaned[1].lat).toBe(46.501);
@@ -71,7 +71,7 @@ describe('GPS Integration - Track Cleaning', () => {
             { lat: 46.501, lon: 7.501, alt: 1005, timestamp: 20000 },
             { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 10000 },
         ];
-        
+
         const cleaned = cleanGPSTrack(points);
         expect(cleaned.length).toBe(2);
         expect(cleaned[0].timestamp).toBe(10000);

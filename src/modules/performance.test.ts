@@ -4,7 +4,12 @@ import { detectBestPreset, applyPreset } from './performance';
 import { refreshTerrain } from './terrain';
 
 // Mocks des dépendances lourdes de performance.ts
-vi.mock('./terrain', () => ({ resetTerrain: vi.fn(), updateVisibleTiles: vi.fn(), refreshTerrain: vi.fn(), refreshTracks: vi.fn() }));
+vi.mock('./terrain', () => ({
+    resetTerrain: vi.fn(),
+    updateVisibleTiles: vi.fn(),
+    refreshTerrain: vi.fn(),
+    refreshTracks: vi.fn(),
+}));
 vi.mock('./sun', () => ({ updateShadowMapResolution: vi.fn() }));
 vi.mock('./utils', () => ({ isMobileDevice: vi.fn(() => false) }));
 vi.mock('./toast', () => ({ showToast: vi.fn() }));
@@ -13,17 +18,31 @@ vi.mock('../i18n/I18nService', () => ({ i18n: { t: (_k: string) => _k } }));
 
 // --- Helpers ---
 const setUA = (ua: string) =>
-    Object.defineProperty(navigator, 'userAgent', { value: ua, configurable: true });
+    Object.defineProperty(navigator, 'userAgent', {
+        value: ua,
+        configurable: true,
+    });
 
 const setInnerWidth = (w: number) =>
-    Object.defineProperty(window, 'innerWidth', { value: w, configurable: true, writable: true });
+    Object.defineProperty(window, 'innerWidth', {
+        value: w,
+        configurable: true,
+        writable: true,
+    });
 
 const setDevicePixelRatio = (dpr: number) =>
-    Object.defineProperty(window, 'devicePixelRatio', { value: dpr, configurable: true, writable: true });
+    Object.defineProperty(window, 'devicePixelRatio', {
+        value: dpr,
+        configurable: true,
+        writable: true,
+    });
 
-const DESKTOP_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0';
-const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36';
-const IOS_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobi/15E148';
+const DESKTOP_UA =
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0';
+const ANDROID_UA =
+    'Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36';
+const IOS_UA =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobi/15E148';
 
 describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
     beforeEach(() => {
@@ -80,7 +99,7 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
             expect(state.ENERGY_SAVER).toBe(false);
         });
 
-        it('ne touche PAS ENERGY_SAVER sur desktop (reste false si désactivé par l\'utilisateur)', () => {
+        it("ne touche PAS ENERGY_SAVER sur desktop (reste false si désactivé par l'utilisateur)", () => {
             state.ENERGY_SAVER = false;
             // UA desktop + grand écran → isMobilePreset = false
             applyPreset('performance');
@@ -96,14 +115,20 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
         // On teste la logique via le fallback CPU (hardwareConcurrency)
 
         it('GPU inconnu + ≥8 cores CPU → balanced (fallback PC moyen)', () => {
-            Object.defineProperty(navigator, 'hardwareConcurrency', { value: 8, configurable: true });
+            Object.defineProperty(navigator, 'hardwareConcurrency', {
+                value: 8,
+                configurable: true,
+            });
             const preset = detectBestPreset();
             // 'unknown' ne matche rien → hardwareConcurrency ≥8 → balanced
             expect(preset).toBe('balanced');
         });
 
         it('GPU inconnu + 4 cores CPU → eco (vieux device ou mobile faible)', () => {
-            Object.defineProperty(navigator, 'hardwareConcurrency', { value: 4, configurable: true });
+            Object.defineProperty(navigator, 'hardwareConcurrency', {
+                value: 4,
+                configurable: true,
+            });
             const preset = detectBestPreset();
             expect(preset).toBe('eco');
         });
@@ -135,7 +160,8 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
         });
 
         it('desktop UA + large écran → isMobile=false (pas de faux-positif)', () => {
-            const isMobile = /Mobi|Android/i.test(DESKTOP_UA) || window.innerWidth <= 768;
+            const isMobile =
+                /Mobi|Android/i.test(DESKTOP_UA) || window.innerWidth <= 768;
             expect(isMobile).toBe(false);
         });
     });

@@ -20,7 +20,12 @@ import {
 
 // --- Helpers ---
 
-function makeEntry(tileId: number, offset: number, length: number, runLength = 1): TileEntry {
+function makeEntry(
+    tileId: number,
+    offset: number,
+    length: number,
+    runLength = 1
+): TileEntry {
     return { tileId, offset, length, runLength };
 }
 
@@ -74,7 +79,7 @@ describe('zxyToTileId', () => {
 // --- serializeDirectory ---
 
 describe('serializeDirectory', () => {
-    it('encode le nombre d\'entrées en varint', () => {
+    it("encode le nombre d'entrées en varint", () => {
         const result = serializeDirectory([makeEntry(0, 0, 100)]);
         // Premier byte = varint(1)
         expect(result[0]).toBe(1);
@@ -86,7 +91,7 @@ describe('serializeDirectory', () => {
         expect(bytes.byteLength).toBeGreaterThan(0);
     });
 
-    it('plusieurs entrées → taille croît avec le nombre d\'entrées', () => {
+    it("plusieurs entrées → taille croît avec le nombre d'entrées", () => {
         const one = serializeDirectory([makeEntry(0, 0, 100)]);
         const three = serializeDirectory([
             makeEntry(0, 0, 100),
@@ -140,7 +145,8 @@ describe('buildTwoLevelDirectory', () => {
 
 describe('deduplicateTiles', () => {
     it('entrée vide → résultat vide', () => {
-        const { entries, dataChunks, savedTiles, savedBytes } = deduplicateTiles([]);
+        const { entries, dataChunks, savedTiles, savedBytes } =
+            deduplicateTiles([]);
         expect(entries).toHaveLength(0);
         expect(dataChunks).toHaveLength(0);
         expect(savedTiles).toBe(0);
@@ -159,10 +165,11 @@ describe('deduplicateTiles', () => {
     });
 
     it('2 tuiles consécutives identiques → 1 entrée runLength=2', () => {
-        const { entries, dataChunks, savedTiles, savedBytes } = deduplicateTiles([
-            makeTile(5, 'same-content'),
-            makeTile(6, 'same-content'),
-        ]);
+        const { entries, dataChunks, savedTiles, savedBytes } =
+            deduplicateTiles([
+                makeTile(5, 'same-content'),
+                makeTile(6, 'same-content'),
+            ]);
         expect(entries).toHaveLength(1);
         expect(dataChunks).toHaveLength(1);
         expect(entries[0].runLength).toBe(2);
@@ -250,7 +257,7 @@ describe('deduplicateTiles', () => {
         expect(entries[1].offset).toBe(tileSize);
     });
 
-    it('savedBytes = savedTiles × taille d\'un blob', () => {
+    it("savedBytes = savedTiles × taille d'un blob", () => {
         const content = 'pixel-data-xyz';
         const size = Buffer.from(content).length;
         const { savedTiles, savedBytes } = deduplicateTiles([
@@ -273,7 +280,7 @@ describe('deduplicateTiles', () => {
         expect(savedTiles).toBe(1);
     });
 
-    it('contenu binaire différent d\'un seul byte → pas de run', () => {
+    it("contenu binaire différent d'un seul byte → pas de run", () => {
         const a = Buffer.alloc(256, 0x42);
         const b = Buffer.alloc(256, 0x42);
         b[128] = 0x43; // un seul byte différent

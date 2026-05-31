@@ -24,7 +24,10 @@ export class UpgradeSheet extends BaseComponent {
 
         // Charger les prix depuis RevenueCat — cache 5min, retry si échoué
         const now = Date.now();
-        if (!this._pricesLoaded || (now - this._pricesCacheTime > UpgradeSheet.PRICES_TTL)) {
+        if (
+            !this._pricesLoaded ||
+            now - this._pricesCacheTime > UpgradeSheet.PRICES_TTL
+        ) {
             void this.loadPrices();
         }
 
@@ -50,16 +53,27 @@ export class UpgradeSheet extends BaseComponent {
         };
 
         // CTA — achat annuel (offre mise en avant)
-        const ctaBtn = this.element.querySelector<HTMLButtonElement>('#upgrade-cta-btn');
-        ctaBtn?.addEventListener('click', () => { void handlePurchase(ctaBtn, 'yearly'); });
+        const ctaBtn =
+            this.element.querySelector<HTMLButtonElement>('#upgrade-cta-btn');
+        ctaBtn?.addEventListener('click', () => {
+            void handlePurchase(ctaBtn, 'yearly');
+        });
 
         // Bouton mensuel
-        const monthlyBtn = this.element.querySelector<HTMLButtonElement>('#upgrade-monthly-btn');
-        monthlyBtn?.addEventListener('click', () => { void handlePurchase(monthlyBtn, 'monthly'); });
+        const monthlyBtn = this.element.querySelector<HTMLButtonElement>(
+            '#upgrade-monthly-btn'
+        );
+        monthlyBtn?.addEventListener('click', () => {
+            void handlePurchase(monthlyBtn, 'monthly');
+        });
 
         // Bouton lifetime
-        const lifetimeBtn = this.element.querySelector<HTMLButtonElement>('#upgrade-lifetime-btn');
-        lifetimeBtn?.addEventListener('click', () => { void handlePurchase(lifetimeBtn, 'lifetime'); });
+        const lifetimeBtn = this.element.querySelector<HTMLButtonElement>(
+            '#upgrade-lifetime-btn'
+        );
+        lifetimeBtn?.addEventListener('click', () => {
+            void handlePurchase(lifetimeBtn, 'lifetime');
+        });
 
         // Restaurer les achats
         const restoreBtn = this.element.querySelector('#upgrade-restore-btn');
@@ -90,9 +104,15 @@ export class UpgradeSheet extends BaseComponent {
         }
 
         // Mettre à jour les prix affichés si les éléments existent
-        const yearlyPriceEl = this.element?.querySelector('#upgrade-yearly-price');
-        const monthlyPriceEl = this.element?.querySelector('#upgrade-monthly-price');
-        const lifetimePriceEl = this.element?.querySelector('#upgrade-lifetime-price');
+        const yearlyPriceEl = this.element?.querySelector(
+            '#upgrade-yearly-price'
+        );
+        const monthlyPriceEl = this.element?.querySelector(
+            '#upgrade-monthly-price'
+        );
+        const lifetimePriceEl = this.element?.querySelector(
+            '#upgrade-lifetime-price'
+        );
         const yearlySub = this.element?.querySelector('#upgrade-yearly-sub');
         if (yearlyPriceEl) yearlyPriceEl.textContent = prices.yearly;
         if (monthlyPriceEl) monthlyPriceEl.textContent = prices.monthly;

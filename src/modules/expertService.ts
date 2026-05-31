@@ -13,7 +13,6 @@ import { worldToLngLat } from './geo';
 import { getAltitudeAt, type SolarAnalysisResult } from './analysis';
 
 export class ExpertService {
-    
     /**
      * Generates a formatted text report for weather data.
      */
@@ -31,15 +30,17 @@ export class ExpertService {
             `${i18n.t('weather.visibility')}: ${Math.round(wd.visibility ?? 0)} km`,
             `${i18n.t('weather.stat.comfortIndex')}: ${Math.round(getComfortIndex(wd.temp, wd.windSpeed, wd.uvIndex ?? 0) * 10) / 10}/10`,
         ];
-        
+
         if (wd.daily) {
             lines.push('');
             lines.push(i18n.t('weather.section.forecast3d') + ':');
-            wd.daily.slice(0, 3).forEach(d => {
-                lines.push(`  ${d.date}: ${Math.round(d.tempMax)}°/${Math.round(d.tempMin)}° · 💧${d.precipSum.toFixed(1)}mm · UV${Math.round(d.uvIndexMax)} · 💨${Math.round(d.windSpeedMax)}km/h`);
+            wd.daily.slice(0, 3).forEach((d) => {
+                lines.push(
+                    `  ${d.date}: ${Math.round(d.tempMax)}°/${Math.round(d.tempMin)}° · 💧${d.precipSum.toFixed(1)}mm · UV${Math.round(d.uvIndexMax)} · 💨${Math.round(d.windSpeedMax)}km/h`
+                );
             });
         }
-        
+
         return lines.join('\n');
     }
 
@@ -75,20 +76,30 @@ export class ExpertService {
             lon = state.userLocation.lon;
             alt = state.userLocation.alt;
         } else {
-            const gps = worldToLngLat(state.controls?.target.x || 0, state.controls?.target.z || 0, state.originTile);
+            const gps = worldToLngLat(
+                state.controls?.target.x || 0,
+                state.controls?.target.z || 0,
+                state.originTile
+            );
             lat = gps.lat;
             lon = gps.lon;
-            alt = getAltitudeAt(state.controls?.target.x || 0, state.controls?.target.z || 0) / state.RELIEF_EXAGGERATION;
+            alt =
+                getAltitudeAt(
+                    state.controls?.target.x || 0,
+                    state.controls?.target.z || 0
+                ) / state.RELIEF_EXAGGERATION;
         }
 
-        let bat = "??";
+        let bat = '??';
         if (batteryLevel !== undefined) {
             bat = Math.round(batteryLevel * 100).toString();
         } else {
             try {
                 const battery = await (navigator as any).getBattery();
                 bat = Math.round(battery.level * 100).toString();
-            } catch(e) {}
+            } catch {
+                /* ignore battery API errors */
+            }
         }
 
         const now = new Date();
@@ -99,9 +110,14 @@ export class ExpertService {
 
     getMoonEmoji(name: string): string {
         const map: Record<string, string> = {
-            new: '🌑', waxing_crescent: '🌒', first_quarter: '🌓',
-            waxing_gibbous: '🌔', full: '🌕', waning_gibbous: '🌖',
-            last_quarter: '🌗', waning_crescent: '🌘',
+            new: '🌑',
+            waxing_crescent: '🌒',
+            first_quarter: '🌓',
+            waxing_gibbous: '🌔',
+            full: '🌕',
+            waning_gibbous: '🌖',
+            last_quarter: '🌗',
+            waning_crescent: '🌘',
         };
         return map[name] ?? '🌙';
     }

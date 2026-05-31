@@ -1,824 +1,825 @@
 {
-  "nav": {
-    "tab": {
-      "search": "Ricerca",
-      "layers": "Livelli",
-      "track": "Percorso",
-      "routePlanner": "Itinerario",
-      "route-planner-sheet": "Itinerario",
-      "settings": "Impostazioni",
-      "toggle2d": "2D",
-      "toggle3d": "3D"
-    }
-  },
-  "track": {
-    "title": "Percorso",
-    "empty": {
-      "title": "Nessun percorso",
-      "subtitle": "Importa un file GPX or avvia la registrazione GPS"
+    "nav": {
+        "tab": {
+            "search": "Ricerca",
+            "layers": "Livelli",
+            "track": "Percorso",
+            "routePlanner": "Itinerario",
+            "route-planner-sheet": "Itinerario",
+            "settings": "Impostazioni",
+            "toggle2d": "2D",
+            "toggle3d": "3D"
+        }
     },
-    "btn": {
-      "rec": "REC",
-      "stop": "STOP",
-      "import": "Importa GPX",
-      "export": "Esporta"
+    "track": {
+        "title": "Percorso",
+        "empty": {
+            "title": "Nessun percorso",
+            "subtitle": "Importa un file GPX or avvia la registrazione GPS"
+        },
+        "btn": {
+            "rec": "REC",
+            "stop": "STOP",
+            "import": "Importa GPX",
+            "export": "Esporta"
+        },
+        "toast": {
+            "recStarted": "🔴 Registrazione avviata",
+            "recStopped": "⏹️ Registrazione fermata",
+            "recWarning5min": "⏱ Limite 30 min — ancora 5 minuti di registrazione",
+            "freeLimit": "💡 Registrazione temporanea: la traccia verrà eliminata alla chiusura dell'app. Passa a PRO per esportarla.",
+            "tooShort": "Traccia troppo corta per l'esportazione",
+            "exported": "GPX scaricato",
+            "exportError": "Errore esportazione GPX"
+        },
+        "recovery": {
+            "title": "Registrazione recuperata",
+            "body": "{{count}} punti ({{mins}} min) da una registrazione interrotta sono stati recuperati.",
+            "restore": "Ripristina",
+            "discard": "Elimina",
+            "restored": "✅ {{count}} punti ripristinati come traccia",
+            "discarded": "Registrazione eliminata"
+        },
+        "aria": {
+            "close": "Chiudi percorso",
+            "rec": "Registra un percorso",
+            "import": "Importa file GPX",
+            "export": "Esporta come GPX"
+        },
+        "stats": {
+            "distance": "Distanza",
+            "points": "Punti",
+            "dplus": "Dislivello+",
+            "dminus": "Dislivello−",
+            "duration": "Tempo stim."
+        },
+        "imported": {
+            "title": "Tracce importate",
+            "empty": "Nessuna traccia importata",
+            "toggleVisible": "Mostra/nascondi traccia",
+            "remove": "Rimuovi traccia",
+            "setActive": "Mostra il profilo altimetrico di questa traccia",
+            "showProfile": "Visualizza profilo altimetrico",
+            "export": "Esporta GPX"
+        },
+        "history": {
+            "title": "Recenti",
+            "rec": "Registrazione",
+            "import": "Import",
+            "select": "Seleziona",
+            "reload": "Ricarica",
+            "remove": "Rimuovi"
+        },
+        "recording": {
+            "title": "Registrazione GPS"
+        },
+        "upsell": {
+            "postRec": "Traccia effimera (solo RAM). Passa a Pro per esportare il file GPX sul tuo telefono.",
+            "proBtn": "Vedi Pro ↗"
+        },
+        "save": {
+            "title": "Salva percorso",
+            "body": "Dai un nome alla tua escursione:"
+        }
     },
-    "toast": {
-      "recStarted": "🔴 Registrazione avviata",
-      "recStopped": "⏹️ Registrazione fermata",
-      "recWarning5min": "⏱ Limite 30 min — ancora 5 minuti di registrazione",
-      "freeLimit": "💡 Registrazione temporanea: la traccia verrà eliminata alla chiusura dell'app. Passa a PRO per esportarla.",
-      "tooShort": "Traccia troppo corta per l'esportazione",
-      "exported": "GPX scaricato",
-      "exportError": "Errore esportazione GPX"
+    "routePlanner": {
+        "title": "Pianificatore di itinerario",
+        "hint": {
+            "orsSwiss": "Per i sentieri svizzeri, aggiungi una chiave OpenRouteService"
+        },
+        "profile": "Profilo",
+        "profiles": {
+            "hiking": "Escursionismo",
+            "walking": "Camminata",
+            "cycling": "Bicicletta",
+            "mtb": "Mountain Bike"
+        },
+        "btn": {
+            "add": "+ Point",
+            "reverse": "↺ Inverti",
+            "clear": "✕ Cancella",
+            "compute": "▶ Calcola percorso",
+            "loop": "↻ Anello (ritorno al punto di partenza)"
+        },
+        "loop": "anello",
+        "loading": "Calcolo del percorso...",
+        "stats": {
+            "distance": "Distanza",
+            "ascent": "Dislivello +",
+            "descent": "Dislivello −",
+            "duration": "Tempo stimato"
+        },
+        "noKey": {
+            "title": "Chiave ORS consigliata",
+            "body": "Senza una chiave OpenRouteService, il routing utilizza OSRM (profilo camminata, senza dati di elevazione). Ottieni una chiave gratuita su openrouteservice.org per il profilo escursionismo con dislivello.",
+            "placeholder": "Incolla la tua chiave ORS qui...",
+            "save": "Salva chiave"
+        },
+        "toast": {
+            "computed": "Percorso calcolato",
+            "tapMap": "Tocca la mappa per aggiungere un punto",
+            "keySaved": "Chiave ORS salvata",
+            "invalidKey": "Chiave non valida (minimo 10 caratteri)"
+        },
+        "error": {
+            "minWaypoints": "Aggiungi almeno 2 waypoint",
+            "maxWaypoints": "Massimo 10 waypoint raggiunto",
+            "noRoute": "Nessun percorso trovato",
+            "generic": "Errore di calcolo del percorso",
+            "tooLong": "Distanza massima di 500 km superata",
+            "upgradeDistance": "Limite 25 km raggiunto (versione gratuita). Passa a Pro per 500 km."
+        },
+        "aria": {
+            "close": "Chiudi pianificatore",
+            "removeWaypoint": "Rimuovi waypoint"
+        }
     },
-    "recovery": {
-      "title": "Registrazione recuperata",
-      "body": "{{count}} punti ({{mins}} min) da una registrazione interrotta sono stati recuperati.",
-      "restore": "Ripristina",
-      "discard": "Elimina",
-      "restored": "✅ {{count}} punti ripristinati come traccia",
-      "discarded": "Registrazione eliminata"
+    "routeBar": {
+        "computing": "Calcolo…",
+        "onePoint": "1 punto · aggiungine un 2º"
     },
-    "aria": {
-      "close": "Chiudi percorso",
-      "rec": "Registra un percorso",
-      "import": "Importa file GPX",
-      "export": "Esporta come GPX"
+    "benchmark": {
+        "running": "Ottimizzazione per il tuo dispositivo...",
+        "result": "Profilo {{preset}} applicato in base alle prestazioni."
     },
-    "stats": {
-      "distance": "Distanza",
-      "points": "Punti",
-      "dplus": "Dislivello+",
-      "dminus": "Dislivello−",
-      "duration": "Tempo stim."
+    "gpx": {
+        "alreadyImported": "Questa traccia è già stata importata",
+        "limitPro": "Limite di 10 tracce raggiunto"
     },
-    "imported": {
-      "title": "Tracce importate",
-      "empty": "Nessuna traccia importata",
-      "toggleVisible": "Mostra/nascondi traccia",
-      "remove": "Rimuovi traccia",
-      "setActive": "Mostra il profilo altimetrico di questa traccia",
-      "showProfile": "Visualizza profilo altimetrico",
-      "export": "Esporta GPX"
+    "settings": {
+        "title": "Impostazioni",
+        "advanced": {
+            "benchmarkTitle": "Test delle Prestazioni",
+            "benchmarkDesc": "Analizza la potenza di CPU/GPU per calibrare le impostazioni ottimali.",
+            "benchmarkBtn": "Riavvia Ottimizzazione"
+        },
+        "aria": {
+            "close": "Chiudi impostazioni"
+        },
+        "section": {
+            "presets": "Profilo prestazioni",
+            "rendering": "Rendering 3D & Dettagli",
+            "density": "Densità dettagli",
+            "advanced": "⚙️ Impostazioni avanzate",
+            "dataManagement": "Gestione dati",
+            "language": "Lingua",
+            "sources": "Fonti dati & Legale",
+            "pro": "Funzionalità PRO",
+            "theme": "Tema"
+        },
+        "pro": {
+            "description": "Sblocca tutte le funzionalità premium con SunTrail Pro",
+            "buildingsDesc": "Architettura realistica sul terrain",
+            "inclinometerDesc": "Pendenza del terreno in tempo reale (°, %)",
+            "weatherDesc": "Grafico 24h + Previsioni 3 giorni",
+            "cta": "Passa a Pro",
+            "active": "Pro Attivo",
+            "includedLabel": "Incluso con Pro",
+            "solarCalLabel": "Calendario solare",
+            "solarCalDesc": "Ombre per qualsiasi giorno dell'anno",
+            "solarAnalLabel": "Analisi solare Pro",
+            "solarAnalDesc": "Azimut, elevazione, grafico 24h, fase lunare",
+            "lodLabel": "Zoom LOD 18 + Satellite",
+            "lodDesc": "Dettaglio massimo — sentieri, edifici, vegetazione",
+            "gpxLabel": "Multi-tracce + Export GPX",
+            "gpxDesc": "Importa ed esporta tutte le escursioni che vuoi",
+            "offlineLabel": "Zone offline illimitate",
+            "offlineDesc": "Scarica tutte le regioni che vuoi"
+        },
+        "preset": {
+            "eco": "Eco",
+            "balanced": "Std",
+            "performance": "High",
+            "ultra": "Ultra",
+            "custom": "Personalizzato"
+        },
+        "theme": {
+            "light": "Chiaro",
+            "dark": "Scuro",
+            "auto": "Auto"
+        },
+        "label": {
+            "resolution": "Risoluzione (LOD)",
+            "range": "Raggio di rendering",
+            "exaggeration": "Esagerazione del rilievo",
+            "vegDensity": "Densità vegetazione",
+            "loadSpeed": "Velocità di caricamento",
+            "fogDistance": "Distanza nebbia",
+            "energySaver": "Risparmio energetico",
+            "stats": "Statistiche prestazioni (FPS)",
+            "debug": "Info debug",
+            "vegetation": "Foreste & Vegetazione",
+            "buildings": "Edifici OSM",
+            "hydrology": "Laghi & Fiumi",
+            "signposts": "Segnaletica 3D",
+            "inclinometer": "Inclinometro",
+            "shadows": "Ombre",
+            "weather": "Meteo",
+            "weatherPro": "Meteo Avanzato",
+            "trailFollow": "Segui sentiero"
+        },
+        "storage": {
+            "clearCache": "Svuota Cache",
+            "downloadZone": "Scarica Zona",
+            "pmtiles": "Carica file .pmtiles"
+        },
+        "lang": {
+            "label": "Lingua",
+            "fr": "Français",
+            "de": "Deutsch",
+            "it": "Italiano",
+            "en": "English"
+        },
+        "account": {
+            "loggedInAs": "Connesso come",
+            "guest": "Modalità ospite",
+            "logout": "Disconnettiti",
+            "login": "Accedi / Registrati",
+            "loginHint": "Accedi per sincronizzare Pro",
+            "deleteAccount": "Elimina il mio account SunTrail",
+            "deleteConfirmMsg": "Eliminare definitivamente l'account e tutti i dati? Nota: questa azione non annulla il tuo abbonamento Google Play. Per annullarlo, vai su Impostazioni Google Play → Abbonamenti. Questa azione è irreversibile.",
+            "deleteError": "Errore durante l'eliminazione. Riprova o contatta il supporto.",
+            "continueWithGoogle": "Continua con Google",
+            "linkGoogle": "Collega il mio account Google",
+            "linkGoogleSuccess": "Account Google collegato"
+        },
+        "legal": {
+            "disclaimer": "SunTrail 3D è un'applicazione indipendente, non affiliata ad alcun ente governativo (né swisstopo né IGN). I dati cartografici ufficiali sono utilizzati in conformità alle rispettive licenze open-data.",
+            "swisstopoLabel": "SwissTopo — swisstopo.admin.ch",
+            "ignLabel": "IGN Géoplateforme — geoportail.gouv.fr",
+            "osmLabel": "OpenStreetMap — openstreetmap.org",
+            "openmeteoLabel": "Open-Meteo — open-meteo.com"
+        },
+        "tutorial": {
+            "btn": "❓ Aiuto & Tutorial"
+        },
+        "toast": {
+            "energySaverOn": "Risparmio energetico attivato",
+            "energySaverOff": "Risparmio energetico disattivato"
+        }
     },
-    "history": {
-      "title": "Recenti",
-      "rec": "Registrazione",
-      "import": "Import",
-      "select": "Seleziona",
-      "reload": "Ricarica",
-      "remove": "Rimuovi"
+    "search": {
+        "title": "Ricerca",
+        "aria": {
+            "close": "Chiudi ricerca",
+            "input": "Cerca un luogo",
+            "results": "Risultati di ricerca"
+        },
+        "placeholder": "Cerca un luogo...",
+        "empty": {
+            "subtitle": "Cerca un luogo, una vetta o un comune"
+        },
+        "noResults": {
+            "title": "Nessun risultato",
+            "subtitle": "Prova un altro nome di luogo o vetta"
+        },
+        "loading": "Ricerca...",
+        "error": "Errore di ricerca",
+        "unknownPlace": "Luogo sconosciuto",
+        "peak": "Vetta",
+        "type": {
+            "country": "Paese",
+            "region": "Regione",
+            "city": "Città",
+            "village": "Villaggio",
+            "peak": "Vetta",
+            "poi": "Luogo"
+        },
+        "filter": {
+            "all": "Tutto",
+            "cities": "Città",
+            "mountains": "Montagne",
+            "countries": "Paesi"
+        }
     },
-    "recording": {
-      "title": "Registrazione GPS"
+    "layers": {
+        "title": "Livelli mappa",
+        "aria": {
+            "close": "Chiudi livelli"
+        },
+        "source": {
+            "swisstopo": "Topo (Auto)",
+            "satellite": "Satellite",
+            "topo": "OpenTopo",
+            "osm": "OpenStreetMap",
+            "ign": "IGN Francia"
+        },
+        "overlay": {
+            "trails": "Sentieri",
+            "trailsUnavailable": "Non disponibile a questo zoom",
+            "slopes": "Pendii > 30°",
+            "slopesUnavailable": "Non disponibile a questo zoom"
+        },
+        "warning": {
+            "zoomRequired": "Zoom {{minZoom}}+ richiesto"
+        }
+    },
+    "topbar": {
+        "aria": {
+            "weather": "Meteo",
+            "network": "Stato rete",
+            "recording": "Registrazione in corso",
+            "sos": "SOS emergenza"
+        },
+        "lod": {
+            "swiss": "SWISS",
+            "ign": "IGN FR",
+            "italy": "ITALY",
+            "world": "WORLD",
+            "sat": "SAT"
+        }
     },
     "upsell": {
-      "postRec": "Traccia effimera (solo RAM). Passa a Pro per esportare il file GPX sul tuo telefono.",
-      "proBtn": "Vedi Pro ↗"
+        "lod": "🔍 Dettaglio massimo raggiunto — passa a Pro per il LOD 18",
+        "timeline": "📅 Accedi a qualsiasi data con Pro"
     },
-    "save": {
-      "title": "Salva percorso",
-      "body": "Dai un nome alla tua escursione:"
-    }
-  },
-  "routePlanner": {
-    "title": "Pianificatore di itinerario",
-    "hint": {
-      "orsSwiss": "Per i sentieri svizzeri, aggiungi una chiave OpenRouteService"
+    "connectivity": {
+        "title": "Sistema & Dati",
+        "aria": {
+            "close": "Chiudi connettività"
+        },
+        "status": {
+            "online": "ONLINE",
+            "offline": "OFFLINE"
+        },
+        "section": {
+            "signal": "Stato segnale",
+            "cache": "Gestione cache",
+            "external": "Servizi esterni",
+            "network": "Rete",
+            "gps": "GPS",
+            "api": "Chiave API"
+        },
+        "label": {
+            "offlineMode": "Modalità offline",
+            "offlineHint": "Forza uso solo cache",
+            "gpsAccuracy": "Segnale GPS",
+            "network": "Rete",
+            "pmtiles": "Archiviazione locale (.pmtiles)",
+            "zonesUsed": "zona utilizzata",
+            "tiles": "tessere"
+        },
+        "btn": {
+            "clearCache": "Svuota Cache",
+            "downloadZone": "Scarica Zona"
+        },
+        "toast": {
+            "cacheCleared": "Cache svuotata"
+        },
+        "download": {
+            "progress": "Caricamento {{percent}}%",
+            "done": "⬇️ Zona scaricata"
+        }
     },
-    "profile": "Profilo",
-    "profiles": {
-      "hiking": "Escursionismo",
-      "walking": "Camminata",
-      "cycling": "Bicicletta",
-      "mtb": "Mountain Bike"
+    "network": {
+        "toast": {
+            "online": "Connessione ripristinata",
+            "offline": "Connessione persa"
+        },
+        "overlay": {
+            "title": "Nessuna connessione",
+            "subtitle": "La mappa verrà caricata dalla cache se disponibile"
+        },
+        "type": {
+            "wifi": "WiFi",
+            "cellular": "Dati mobili",
+            "none": "Nessuna rete",
+            "unknown": "Sconosciuto"
+        },
+        "status": {
+            "manualOffline": "Offline (manuale)"
+        }
     },
-    "btn": {
-      "add": "+ Point",
-      "reverse": "↺ Inverti",
-      "clear": "✕ Cancella",
-      "compute": "▶ Calcola percorso",
-      "loop": "↻ Anello (ritorno al punto di partenza)"
+    "gps": {
+        "aria": {
+            "locate": "Localizza"
+        },
+        "toast": {
+            "centered": "📍 Posizione centrata",
+            "followOn": "🚶 Tracciamento continuo attivato",
+            "followOff": "📍 Tracciamento continuo disattivato",
+            "permissionDenied": "Permesso GPS negato. Controlla le impostazioni del browser.",
+            "error": "Errore GPS o timeout",
+            "interrupted": "Tracciamento interrotto",
+            "disabled": "GPS disattivato"
+        },
+        "disclosure": {
+            "title": "Accesso alla tua posizione",
+            "body": "SunTrail utilizza la tua posizione GPS per centrare la mappa sulla tua posizione e registrare i tuoi percorsi escursionistici.\n\nLe tue coordinate rimangono sul tuo dispositivo e non vengono mai inviate ai server SunTrail. Possono essere trasmesse ai servizi cartografici (MapTiler, OpenStreetMap) unicamente per caricare le tessere corrispondenti alla tua posizione.",
+            "allow": "Consenti la localizzazione",
+            "decline": "Continua senza GPS"
+        }
     },
-    "loop": "anello",
-    "loading": "Calcolo del percorso...",
-    "stats": {
-      "distance": "Distanza",
-      "ascent": "Dislivello +",
-      "descent": "Dislivello −",
-      "duration": "Tempo stimato"
+    "compass": {
+        "aria": {
+            "reset": "Reimposta al Nord"
+        },
+        "toast": {
+            "northAligned": "🧭 Nord riallineato"
+        }
     },
-    "noKey": {
-      "title": "Chiave ORS consigliata",
-      "body": "Senza una chiave OpenRouteService, il routing utilizza OSRM (profilo camminata, senza dati di elevazione). Ottieni una chiave gratuita su openrouteservice.org per il profilo escursionismo con dislivello.",
-      "placeholder": "Incolla la tua chiave ORS qui...",
-      "save": "Salva chiave"
+    "weather": {
+        "title": "Bollettino Meteo",
+        "noData": "Nessun dato meteo",
+        "temp": "Temperatura",
+        "feelsLike": "Percepita",
+        "humidity": "Umidità",
+        "wind": "Vento",
+        "location": "Luogo",
+        "unknown": "Sconosciuto",
+        "expert": {
+            "title": "Dati Avanzati"
+        },
+        "gusts": "Raffiche",
+        "clouds": "Copertura nuvolosa",
+        "dewPoint": "Punto di rugiada",
+        "freezingLevel": "Limite dello zero",
+        "uvIndex": "Indice UV",
+        "uv": {
+            "low": "Basso",
+            "moderate": "Moderato",
+            "high": "Alto",
+            "veryHigh": "Molto alto",
+            "extreme": "Estremo"
+        },
+        "visibility": "Visibilità",
+        "precipitation": "Probabilità di precipitazioni",
+        "forecast": "Previsioni",
+        "label": {
+            "intensity": "INTENSITÀ",
+            "speed": "VELOCITÀ"
+        },
+        "btn": {
+            "expert": "📊 Stazione Meteo Expert"
+        },
+        "upsell": {
+            "pro": "🌡️ Previsioni 3 giorni + avvisi montagna disponibili con Pro"
+        },
+        "section": {
+            "current": "Condizioni attuali",
+            "forecast24h": "Previsioni 24h",
+            "forecast3d": "Previsioni 3 giorni",
+            "mountain": "Avviso Montagna",
+            "mountainTitle": "Meteo Montagna"
+        },
+        "stat": {
+            "windDir": "Direzione vento",
+            "cloudCover": "Copertura nuvolosa",
+            "uvIndex": "Indice UV",
+            "precipProb": "Precipitazioni",
+            "comfortIndex": "Comfort escursione"
+        },
+        "mountain": {
+            "aboveFreezing": "Sei sopra lo zero termico",
+            "nearFreezing": "Neve possibile vicino a te (zero termico a",
+            "belowFreezing": "Zero termico",
+            "comfort": "Comfort escursione",
+            "title": "Avviso Montagna"
+        },
+        "daily": {
+            "precip": "Precip.",
+            "uvMax": "UV max",
+            "windMax": "Vento max"
+        },
+        "aria": {
+            "close": "Chiudi meteo",
+            "refresh": "Aggiorna meteo"
+        },
+        "toast": {
+            "timeout": "Meteo offline (Timeout)"
+        }
     },
-    "toast": {
-      "computed": "Percorso calcolato",
-      "tapMap": "Tocca la mappa per aggiungere un punto",
-      "keySaved": "Chiave ORS salvata",
-      "invalidKey": "Chiave non valida (minimo 10 caratteri)"
+    "solar": {
+        "title": "Analisi Solare",
+        "phase": {
+            "day": "☀️ Pieno giorno",
+            "golden": "🌅 Ora d'oro",
+            "twilight": "🌌 Crepuscolo",
+            "night": "🌙 Notte"
+        },
+        "status": {
+            "done": "Analisi completata"
+        },
+        "section": {
+            "dayData": "Dati del giorno",
+            "realtime": "Tempo reale"
+        },
+        "stat": {
+            "sunlight": "Soleggiamento",
+            "firstRay": "Primo raggio",
+            "evolution": "Evoluzione 24h",
+            "sunrise": "Alba",
+            "sunset": "Tramonto",
+            "noon": "Mezzogiorno solare",
+            "goldenMorning": "Ora d'oro mattina",
+            "goldenEvening": "Ora d'oro sera",
+            "dayDuration": "Durata del giorno",
+            "azimuth": "Azimut",
+            "elevation": "Elevazione",
+            "moonPhase": "Fase lunare",
+            "elevationChart": "Curva di elevazione 24h",
+            "maxElevation": "Elevazione max"
+        },
+        "upsell": {
+            "solar": "☀️ Dati solari completi disponibili con Pro"
+        },
+        "btn": {
+            "copy": "📋 Copia rapporto"
+        },
+        "toast": {
+            "copied": "📋 Rapporto copiato",
+            "clickFirst": "Clicca prima sul terreno",
+            "notIn2D": "Simulazione solare disponibile solo in modalità 3D"
+        },
+        "aria": {
+            "close": "Chiudi analisi solare"
+        }
     },
-    "error": {
-      "minWaypoints": "Aggiungi almeno 2 waypoint",
-      "maxWaypoints": "Massimo 10 waypoint raggiunto",
-      "noRoute": "Nessun percorso trovato",
-      "generic": "Errore di calcolo del percorso",
-      "tooLong": "Distanza massima di 500 km superata",
-      "upgradeDistance": "Limite 25 km raggiunto (versione gratuita). Passa a Pro per 500 km."
+    "sos": {
+        "title": "EMERGENZA SOS",
+        "subtitle": "Ecco le tue coordinate esatte da trasmettere ai soccorsi.",
+        "locating": "⌛ Localizzazione in corso...",
+        "copy": "Copia messaggio",
+        "sms": "📱 Invia SMS",
+        "close": "Chiudi"
     },
-    "aria": {
-      "close": "Chiudi pianificatore",
-      "removeWaypoint": "Rimuovi waypoint"
-    }
-  },
-  "routeBar": {
-    "computing": "Calcolo…",
-    "onePoint": "1 punto · aggiungine un 2º"
-  },
-  "benchmark": {
-    "running": "Ottimizzazione per il tuo dispositivo...",
-    "result": "Profilo {{preset}} applicato in base alle prestazioni."
-  },
-  "gpx": {
-    "limitPro": "Limite di 10 tracce raggiunto"
-  },
-  "settings": {
-    "title": "Impostazioni",
-    "advanced": {
-      "benchmarkTitle": "Test delle Prestazioni",
-      "benchmarkDesc": "Analizza la potenza di CPU/GPU per calibrare le impostazioni ottimali.",
-      "benchmarkBtn": "Riavvia Ottimizzazione"
+    "setup": {
+        "title": "Configurazione iniziale",
+        "subtitle": "Inserisci la tua chiave API MapTiler per iniziare",
+        "btn": {
+            "start": "Avvia"
+        },
+        "error": {
+            "invalidKey": "Chiave MapTiler non valida."
+        },
+        "label": {
+            "apiKey": "Chiave API MapTiler"
+        }
     },
-    "aria": {
-      "close": "Chiudi impostazioni"
-    },
-    "section": {
-      "presets": "Profilo prestazioni",
-      "rendering": "Rendering 3D & Dettagli",
-      "density": "Densità dettagli",
-      "advanced": "⚙️ Impostazioni avanzate",
-      "dataManagement": "Gestione dati",
-      "language": "Lingua",
-      "sources": "Fonti dati & Legale",
-      "pro": "Funzionalità PRO",
-      "theme": "Tema"
-    },
-    "pro": {
-      "description": "Sblocca tutte le funzionalità premium con SunTrail Pro",
-      "buildingsDesc": "Architettura realistica sul terrain",
-      "inclinometerDesc": "Pendenza del terreno in tempo reale (°, %)",
-      "weatherDesc": "Grafico 24h + Previsioni 3 giorni",
-      "cta": "Passa a Pro",
-      "active": "Pro Attivo",
-      "includedLabel": "Incluso con Pro",
-      "solarCalLabel": "Calendario solare",
-      "solarCalDesc": "Ombre per qualsiasi giorno dell'anno",
-      "solarAnalLabel": "Analisi solare Pro",
-      "solarAnalDesc": "Azimut, elevazione, grafico 24h, fase lunare",
-      "lodLabel": "Zoom LOD 18 + Satellite",
-      "lodDesc": "Dettaglio massimo — sentieri, edifici, vegetazione",
-      "gpxLabel": "Multi-tracce + Export GPX",
-      "gpxDesc": "Importa ed esporta tutte le escursioni che vuoi",
-      "offlineLabel": "Zone offline illimitate",
-      "offlineDesc": "Scarica tutte le regioni che vuoi"
+    "performance": {
+        "autoEco": "🚀 Prestazioni limitate — passaggio alla modalità Eco per fluidità",
+        "adaptiveActive": "⚙️ Risoluzione ridotta per stabilizzare il rendering"
     },
     "preset": {
-      "eco": "Eco",
-      "balanced": "Std",
-      "performance": "High",
-      "ultra": "Ultra",
-      "custom": "Personalizzato"
+        "applied": "Profilo applicato: {{preset}}",
+        "lowBattery": "🔋 Batteria scarica: Modalità Eco attivata"
     },
-    "theme": {
-      "light": "Chiaro",
-      "dark": "Scuro",
-      "auto": "Auto"
+    "coords": {
+        "solar": "☀️ Solare"
     },
-    "label": {
-      "resolution": "Risoluzione (LOD)",
-      "range": "Raggio di rendering",
-      "exaggeration": "Esagerazione del rilievo",
-      "vegDensity": "Densità vegetazione",
-      "loadSpeed": "Velocità di caricamento",
-      "fogDistance": "Distanza nebbia",
-      "energySaver": "Risparmio energetico",
-      "stats": "Statistiche prestazioni (FPS)",
-      "debug": "Info debug",
-      "vegetation": "Foreste & Vegetazione",
-      "buildings": "Edifici OSM",
-      "hydrology": "Laghi & Fiumi",
-      "signposts": "Segnaletica 3D",
-      "inclinometer": "Inclinometro",
-      "shadows": "Ombre",
-      "weather": "Meteo",
-      "weatherPro": "Meteo Avanzato",
-      "trailFollow": "Segui sentiero"
+    "apiKey": {
+        "label": "Chiave MapTiler",
+        "placeholder": "Incolla la chiave qui...",
+        "link": "Ottieni una chiave gratuita ↗"
     },
-    "storage": {
-      "clearCache": "Svuota Cache",
-      "downloadZone": "Scarica Zona",
-      "pmtiles": "Carica file .pmtiles"
+    "profile": {
+        "title": "📈 Profilo altimetrico & Pendii",
+        "info": "Distanza: 0km | Alt: 0m | Pendenza: 0%"
     },
-    "lang": {
-      "label": "Lingua",
-      "fr": "Français",
-      "de": "Deutsch",
-      "it": "Italiano",
-      "en": "English"
+    "timeline": {
+        "sunPhase": "☀️ Pieno giorno",
+        "requires3D": "Simulazione solare disponibile in modalità 3D"
     },
-    "account": {
-      "loggedInAs": "Connesso come",
-      "guest": "Modalità ospite",
-      "logout": "Disconnettiti",
-      "login": "Accedi / Registrati",
-      "loginHint": "Accedi per sincronizzare Pro",
-      "deleteAccount": "Elimina il mio account SunTrail",
-      "deleteConfirmMsg": "Eliminare definitivamente l'account e tutti i dati? Nota: questa azione non annulla il tuo abbonamento Google Play. Per annullarlo, vai su Impostazioni Google Play → Abbonamenti. Questa azione è irreversibile.",
-      "deleteError": "Errore durante l'eliminazione. Riprova o contatta il supporto.",
-      "continueWithGoogle": "Continua con Google",
-      "linkGoogle": "Collega il mio account Google",
-      "linkGoogleSuccess": "Account Google collegato"
+    "vram": {
+        "label": "Statistiche GPU (VRAM)",
+        "geometries": "Geometrie",
+        "textures": "Texture GPU",
+        "drawCalls": "Draw Calls",
+        "triangles": "Triangoli",
+        "tiles": "Tile attive",
+        "workers": "Workers",
+        "alert": {
+            "textures": "Numero elevato di texture GPU"
+        }
     },
-    "legal": {
-      "disclaimer": "SunTrail 3D è un'applicazione indipendente, non affiliata ad alcun ente governativo (né swisstopo né IGN). I dati cartografici ufficiali sono utilizzati in conformità alle rispettive licenze open-data.",
-      "swisstopoLabel": "SwissTopo — swisstopo.admin.ch",
-      "ignLabel": "IGN Géoplateforme — geoportail.gouv.fr",
-      "osmLabel": "OpenStreetMap — openstreetmap.org",
-      "openmeteoLabel": "Open-Meteo — open-meteo.com"
+    "onboarding": {
+        "skip": "Salta",
+        "next": "Avanti",
+        "start": "Inizia",
+        "explore": "Esplora la mappa",
+        "importGpx": "Importa GPX",
+        "searchPeak": "Cerca una vetta",
+        "slide1": {
+            "title": "Immersione e Libertà",
+            "desc": "Scopri la montagna in vero 3D. Usa il pulsante 2D/3D in basso a destra per alternare. Inclina la vista con 2 dita per attivare il rilievo."
+        },
+        "slide2": {
+            "title": "Padroneggia la Luce",
+            "desc": "Anticipa l'illuminazione con la barra del tempo in basso (solo 3D). Le ombre seguono l'ora solare reale."
+        },
+        "slide3": {
+            "title": "Traccia la tua Avventura",
+            "desc": "Pianifica il tuo itinerario (clic sulla mappa o inserimento manuale), importa i file GPX tramite la scheda 'Track' o registra la tua traccia GPS dal vivo."
+        },
+        "slide4": {
+            "title": "Analisi Solare",
+            "desc": "Funzione esclusiva: tocca un punto qualsiasi per ottenere un rapporto solare completo. Essenziale per bivacchi ed escursioni invernali."
+        },
+        "slide5": {
+            "title": "Esperti e Condizioni",
+            "desc": "Analizza la pendenza esatta (PRO) e controlla il meteo in vetta. Mappe HD automatiche (CH, FR, AT, DE, ES) tramite la scheda 'Livelli'."
+        },
+        "slide6": {
+            "title": "Sicurezza e Autonomia",
+            "desc": "Il pulsante SOS in alto a destra mostra le tue coordinate di emergenza. Scarica i Pacchetti Paesi nelle Impostazioni per la modalità offline."
+        }
     },
-    "tutorial": {
-      "btn": "❓ Aiuto & Tutorial"
+    "upgrade": {
+        "title": "Passa a Pro",
+        "hero": {
+            "title": "Simulazione solare unica al mondo",
+            "subtitle": "Scopri esattamente quando il sole illumina il tuo sentiero. Ombre reali sul terreno 3D — per qualsiasi giorno dell'anno."
+        },
+        "feature": {
+            "maxDetail": "Zoom LOD 18 massimo",
+            "satellite": "Vista Satellite HD",
+            "buildings": "Edifici 3D realistici",
+            "solarCalendar": "Calendario solare illimitato",
+            "solarAnalysis": "Analisi solare completa",
+            "weatherStation": "Meteo 3 giorni + allerte",
+            "inclinometer": "Inclinometro pendenza",
+            "multiGpx": "Multi-tracce GPX",
+            "exportStats": "Esporta GPX + statistiche",
+            "offlineZones": "Offline illimitato"
+        },
+        "plan": {
+            "monthly": "Mensile",
+            "yearly": "Annuale",
+            "lifetime": "A vita",
+            "perMonth": "al mese",
+            "perYear": "all'anno",
+            "oneTime": "pagamento unico",
+            "badge": "7 giorni gratis",
+            "monthShort": "mese"
+        },
+        "restore": "Ripristina un acquisto",
+        "trial": {
+            "cta": "Prova Pro (3 giorni) — Gratis"
+        },
+        "legal": "Abbonamento con rinnovo automatico · Annullabile in qualsiasi momento nel Play Store.",
+        "web": {
+            "playStore": "Disponibile su Google Play",
+            "note": "L'upgrade Pro è disponibile tramite l'app Android su Google Play."
+        },
+        "toast": {
+            "purchaseFailed": "Acquisto non riuscito — controlla la connessione e riprova.",
+            "restoring": "Ripristino acquisti in corso…",
+            "restored": "✅ Acquisti ripristinati!",
+            "noRestore": "Nessun acquisto da ripristinare."
+        }
     },
-    "toast": {
-      "energySaverOn": "Risparmio energetico attivato",
-      "energySaverOff": "Risparmio energetico disattivato"
+    "inclinometer": {
+        "label": "pendenza al centro",
+        "aspect": "Direzione",
+        "danger": {
+            "low": "Terreno moderato",
+            "moderate": "Terreno ripido",
+            "high": "Molto ripido — zona valanghe",
+            "extreme": "Pendenza estrema"
+        },
+        "hint": "Zona critica valanghe: 30-45°",
+        "directions": {
+            "N": "N",
+            "NE": "NE",
+            "E": "E",
+            "SE": "SE",
+            "S": "S",
+            "SW": "SO",
+            "W": "O",
+            "NW": "NO"
+        },
+        "label_following": "pendenza attuale"
+    },
+    "common": {
+        "close": "Chiudi",
+        "save": "Salva",
+        "cancel": "Annulla",
+        "confirm": "Conferma",
+        "loading": "Caricamento...",
+        "error": "Errore",
+        "errorWebglLost": "Contesto grafico perso. Si prega di aggiornare l'applicazione.",
+        "unit": {
+            "km": "km",
+            "m": "m",
+            "ms": "m/s",
+            "kmh": "km/h",
+            "celsius": "°C",
+            "percent": "%"
+        }
+    },
+    "a11y": {
+        "skipToContent": "Vai al contenuto",
+        "canvas3d": "Mappa topografica 3D interattiva",
+        "resetNorth": "Reimposta al Nord",
+        "changeMapType": "Cambia tipo di mappa",
+        "locateMe": "Localizza la mia posizione",
+        "toggle2d3d": "Alterna 2D/3D"
+    },
+    "acceptance": {
+        "title": "Informazioni importanti prima dell'uso",
+        "item1": {
+            "title": "Strumento di supporto alla pianificazione",
+            "desc": "SunTrail non è un dispositivo di salvataggio. In caso di emergenza, contattare il 112."
+        },
+        "item2": {
+            "title": "Dati GPS e 3D approssimativi",
+            "desc": "Il segnale GPS può essere impreciso in montagna. Il terreno 3D è basato su modelli digitali con una risoluzione di 5–25m."
+        },
+        "item3": {
+            "title": "Simulazione solare indicativa",
+            "desc": "I calcoli non tengono conto del meteo, delle nuvole o degli ostacoli locali non modellati."
+        },
+        "item4": {
+            "title": "Pendenze e rischio valanghe",
+            "desc": "La colorazione delle pendenze (>30°) non sostituisce l'analisi del terreno e il metodo 3×3 per la riduzione del rischio valanghe."
+        },
+        "item5": {
+            "title": "Prevedere una batteria esterna",
+            "desc": "L'uso intensivo del GPS e del rendering 3D consuma rapidamente la batteria. Portare sempre con sé una mappa cartacea."
+        },
+        "legal": "Continuando, accetti le condizioni d'uso di SunTrail e confermi di aver letto queste informazioni di sicurezza.",
+        "btn": "Ho capito — Continua"
+    },
+    "packs": {
+        "title": "Pacchetti Paese",
+        "storage": "Archiviazione",
+        "storageEmpty": "Nessun pacchetto installato",
+        "free": "disponible",
+        "lodInfo": "Pro: LOD 12-14 · Gratis: LOD 12",
+        "btn": {
+            "buy": "Acquista",
+            "download": "Scarica",
+            "delete": "Elimina",
+            "cancel": "Annulla",
+            "update": "Aggiorna",
+            "retry": "Riprova",
+            "restore": "Ripristina acquisti"
+        },
+        "status": {
+            "notPurchased": "Non acquistato",
+            "online": "☁ Online",
+            "purchased": "Pronto per il download",
+            "downloading": "Download in corso...",
+            "installed": "Installato",
+            "updateAvailable": "Aggiornamento disponibile",
+            "error": "Errore"
+        },
+        "error": {
+            "storageFull": "Spazio di archiviazione insufficiente",
+            "downloadFailed": "Download fallito. Tocca per riprovare.",
+            "purchaseFailed": "Acquisto fallito",
+            "catalogFailed": "Impossibile caricare il catalogo"
+        },
+        "toast": {
+            "installed": "Pacchetto installato!",
+            "deleted": "Pacchetto eliminato",
+            "downloadCancelled": "Download annullato"
+        },
+        "description": {
+            "switzerland": "Mappe SwissTopo ad alta risoluzione",
+            "france_alps": "Mappe IGN ad alta risoluzione"
+        },
+        "aria": {
+            "close": "Chiudi pacchetti"
+        }
+    },
+    "peaks": {
+        "toast": {
+            "timeout": "Server vette non disponibile (Timeout)",
+            "error": "Errore caricamento vette"
+        }
+    },
+    "solarRoute": {
+        "section": {
+            "title": "Analisi solare del percorso"
+        },
+        "stat": {
+            "sunPct": "Al sole",
+            "sunKm": "Km al sole",
+            "shadowKm": "Km in ombra",
+            "totalKm": "Totale"
+        },
+        "rec": {
+            "snapshotSun": "{{pct}}% del percorso attualmente al sole",
+            "shadeSegment": "Tratto ombreggiato: km {{start}} → {{end}}",
+            "hikerSun": "A {{speed}} km/h, {{pct}}% al sole",
+            "hikerShade": "Ombra fresca km {{start}}–{{end}} — arrivo ~{{time}}",
+            "optimalDeparture": "Partenza ideale {{time}} → {{pct}}% al sole",
+            "goldenHour": "Ora d'oro in vetta ({{alt}}m): {{start}}–{{end}}",
+            "strongExposure": "⚠️ Forte esposizione: km {{start}}–{{end}} ({{duration}} min)",
+            "estimatedArrival": "Arrivo stimato: {{time}}"
+        },
+        "speed": {
+            "label": "Andatura:",
+            "unit": "km/h"
+        },
+        "status": {
+            "analyzing": "Calcolo partenza ottimale…",
+            "noRoute": "Traccia un percorso o importa un GPX"
+        },
+        "upsell": {
+            "pro": "Analisi timeline e partenza ottimale con Pro",
+            "btn": "Pro ↗"
+        }
     }
-  },
-  "search": {
-    "title": "Ricerca",
-    "aria": {
-      "close": "Chiudi ricerca",
-      "input": "Cerca un luogo",
-      "results": "Risultati di ricerca"
-    },
-    "placeholder": "Cerca un luogo...",
-    "empty": {
-      "subtitle": "Cerca un luogo, una vetta o un comune"
-    },
-    "noResults": {
-      "title": "Nessun risultato",
-      "subtitle": "Prova un altro nome di luogo o vetta"
-    },
-    "loading": "Ricerca...",
-    "error": "Errore di ricerca",
-    "unknownPlace": "Luogo sconosciuto",
-    "peak": "Vetta",
-    "type": {
-      "country": "Paese",
-      "region": "Regione",
-      "city": "Città",
-      "village": "Villaggio",
-      "peak": "Vetta",
-      "poi": "Luogo"
-    },
-    "filter": {
-      "all": "Tutto",
-      "cities": "Città",
-      "mountains": "Montagne",
-      "countries": "Paesi"
-    }
-  },
-  "layers": {
-    "title": "Livelli mappa",
-    "aria": {
-      "close": "Chiudi livelli"
-    },
-    "source": {
-      "swisstopo": "Topo (Auto)",
-      "satellite": "Satellite",
-      "topo": "OpenTopo",
-      "osm": "OpenStreetMap",
-      "ign": "IGN Francia"
-    },
-    "overlay": {
-      "trails": "Sentieri",
-      "trailsUnavailable": "Non disponibile a questo zoom",
-      "slopes": "Pendii > 30°",
-      "slopesUnavailable": "Non disponibile a questo zoom"
-    },
-    "warning": {
-      "zoomRequired": "Zoom {{minZoom}}+ richiesto"
-    }
-  },
-  "topbar": {
-    "aria": {
-      "weather": "Meteo",
-      "network": "Stato rete",
-      "recording": "Registrazione in corso",
-      "sos": "SOS emergenza"
-    },
-    "lod": {
-      "swiss": "SWISS",
-      "ign": "IGN FR",
-      "italy": "ITALY",
-      "world": "WORLD",
-      "sat": "SAT"
-    }
-  },
-  "upsell": {
-    "lod": "🔍 Dettaglio massimo raggiunto — passa a Pro per il LOD 18",
-    "timeline": "📅 Accedi a qualsiasi data con Pro"
-  },
-  "connectivity": {
-    "title": "Sistema & Dati",
-    "aria": {
-      "close": "Chiudi connettività"
-    },
-    "status": {
-      "online": "ONLINE",
-      "offline": "OFFLINE"
-    },
-    "section": {
-      "signal": "Stato segnale",
-      "cache": "Gestione cache",
-      "external": "Servizi esterni",
-      "network": "Rete",
-      "gps": "GPS",
-      "api": "Chiave API"
-    },
-    "label": {
-      "offlineMode": "Modalità offline",
-      "offlineHint": "Forza uso solo cache",
-      "gpsAccuracy": "Segnale GPS",
-      "network": "Rete",
-      "pmtiles": "Archiviazione locale (.pmtiles)",
-      "zonesUsed": "zona utilizzata",
-      "tiles": "tessere"
-    },
-    "btn": {
-      "clearCache": "Svuota Cache",
-      "downloadZone": "Scarica Zona"
-    },
-    "toast": {
-      "cacheCleared": "Cache svuotata"
-    },
-    "download": {
-      "progress": "Caricamento {{percent}}%",
-      "done": "⬇️ Zona scaricata"
-    }
-  },
-  "network": {
-    "toast": {
-      "online": "Connessione ripristinata",
-      "offline": "Connessione persa"
-    },
-    "overlay": {
-      "title": "Nessuna connessione",
-      "subtitle": "La mappa verrà caricata dalla cache se disponibile"
-    },
-    "type": {
-      "wifi": "WiFi",
-      "cellular": "Dati mobili",
-      "none": "Nessuna rete",
-      "unknown": "Sconosciuto"
-    },
-    "status": {
-      "manualOffline": "Offline (manuale)"
-    }
-  },
-  "gps": {
-    "aria": {
-      "locate": "Localizza"
-    },
-    "toast": {
-      "centered": "📍 Posizione centrata",
-      "followOn": "🚶 Tracciamento continuo attivato",
-      "followOff": "📍 Tracciamento continuo disattivato",
-      "permissionDenied": "Permesso GPS negato. Controlla le impostazioni del browser.",
-      "error": "Errore GPS o timeout",
-      "interrupted": "Tracciamento interrotto",
-      "disabled": "GPS disattivato"
-    },
-    "disclosure": {
-      "title": "Accesso alla tua posizione",
-      "body": "SunTrail utilizza la tua posizione GPS per centrare la mappa sulla tua posizione e registrare i tuoi percorsi escursionistici.\n\nLe tue coordinate rimangono sul tuo dispositivo e non vengono mai inviate ai server SunTrail. Possono essere trasmesse ai servizi cartografici (MapTiler, OpenStreetMap) unicamente per caricare le tessere corrispondenti alla tua posizione.",
-      "allow": "Consenti la localizzazione",
-      "decline": "Continua senza GPS"
-    }
-  },
-  "compass": {
-    "aria": {
-      "reset": "Reimposta al Nord"
-    },
-    "toast": {
-      "northAligned": "🧭 Nord riallineato"
-    }
-  },
-  "weather": {
-    "title": "Bollettino Meteo",
-    "noData": "Nessun dato meteo",
-    "temp": "Temperatura",
-    "feelsLike": "Percepita",
-    "humidity": "Umidità",
-    "wind": "Vento",
-    "location": "Luogo",
-    "unknown": "Sconosciuto",
-    "expert": {
-      "title": "Dati Avanzati"
-    },
-    "gusts": "Raffiche",
-    "clouds": "Copertura nuvolosa",
-    "dewPoint": "Punto di rugiada",
-    "freezingLevel": "Limite dello zero",
-    "uvIndex": "Indice UV",
-    "uv": {
-      "low": "Basso",
-      "moderate": "Moderato",
-      "high": "Alto",
-      "veryHigh": "Molto alto",
-      "extreme": "Estremo"
-    },
-    "visibility": "Visibilità",
-    "precipitation": "Probabilità di precipitazioni",
-    "forecast": "Previsioni",
-    "label": {
-      "intensity": "INTENSITÀ",
-      "speed": "VELOCITÀ"
-    },
-    "btn": {
-      "expert": "📊 Stazione Meteo Expert"
-    },
-    "upsell": {
-      "pro": "🌡️ Previsioni 3 giorni + avvisi montagna disponibili con Pro"
-    },
-    "section": {
-      "current": "Condizioni attuali",
-      "forecast24h": "Previsioni 24h",
-      "forecast3d": "Previsioni 3 giorni",
-      "mountain": "Avviso Montagna",
-      "mountainTitle": "Meteo Montagna"
-    },
-    "stat": {
-      "windDir": "Direzione vento",
-      "cloudCover": "Copertura nuvolosa",
-      "uvIndex": "Indice UV",
-      "precipProb": "Precipitazioni",
-      "comfortIndex": "Comfort escursione"
-    },
-    "mountain": {
-      "aboveFreezing": "Sei sopra lo zero termico",
-      "nearFreezing": "Neve possibile vicino a te (zero termico a",
-      "belowFreezing": "Zero termico",
-      "comfort": "Comfort escursione",
-      "title": "Avviso Montagna"
-    },
-    "daily": {
-      "precip": "Precip.",
-      "uvMax": "UV max",
-      "windMax": "Vento max"
-    },
-    "aria": {
-      "close": "Chiudi meteo",
-      "refresh": "Aggiorna meteo"
-    },
-    "toast": {
-      "timeout": "Meteo offline (Timeout)"
-    }
-  },
-  "solar": {
-    "title": "Analisi Solare",
-    "phase": {
-      "day": "☀️ Pieno giorno",
-      "golden": "🌅 Ora d'oro",
-      "twilight": "🌌 Crepuscolo",
-      "night": "🌙 Notte"
-    },
-    "status": {
-      "done": "Analisi completata"
-    },
-    "section": {
-      "dayData": "Dati del giorno",
-      "realtime": "Tempo reale"
-    },
-    "stat": {
-      "sunlight": "Soleggiamento",
-      "firstRay": "Primo raggio",
-      "evolution": "Evoluzione 24h",
-      "sunrise": "Alba",
-      "sunset": "Tramonto",
-      "noon": "Mezzogiorno solare",
-      "goldenMorning": "Ora d'oro mattina",
-      "goldenEvening": "Ora d'oro sera",
-      "dayDuration": "Durata del giorno",
-      "azimuth": "Azimut",
-      "elevation": "Elevazione",
-      "moonPhase": "Fase lunare",
-      "elevationChart": "Curva di elevazione 24h",
-      "maxElevation": "Elevazione max"
-    },
-    "upsell": {
-      "solar": "☀️ Dati solari completi disponibili con Pro"
-    },
-    "btn": {
-      "copy": "📋 Copia rapporto"
-    },
-    "toast": {
-      "copied": "📋 Rapporto copiato",
-      "clickFirst": "Clicca prima sul terreno",
-      "notIn2D": "Simulazione solare disponibile solo in modalità 3D"
-    },
-    "aria": {
-      "close": "Chiudi analisi solare"
-    }
-  },
-  "sos": {
-    "title": "EMERGENZA SOS",
-    "subtitle": "Ecco le tue coordinate esatte da trasmettere ai soccorsi.",
-    "locating": "⌛ Localizzazione in corso...",
-    "copy": "Copia messaggio",
-    "sms": "📱 Invia SMS",
-    "close": "Chiudi"
-  },
-  "setup": {
-    "title": "Configurazione iniziale",
-    "subtitle": "Inserisci la tua chiave API MapTiler per iniziare",
-    "btn": {
-      "start": "Avvia"
-    },
-    "error": {
-      "invalidKey": "Chiave MapTiler non valida."
-    },
-    "label": {
-      "apiKey": "Chiave API MapTiler"
-    }
-  },
-  "performance": {
-    "autoEco": "🚀 Prestazioni limitate — passaggio alla modalità Eco per fluidità",
-    "adaptiveActive": "⚙️ Risoluzione ridotta per stabilizzare il rendering"
-  },
-  "preset": {
-    "applied": "Profilo applicato: {{preset}}",
-    "lowBattery": "🔋 Batteria scarica: Modalità Eco attivata"
-  },
-  "coords": {
-    "solar": "☀️ Solare"
-  },
-  "apiKey": {
-    "label": "Chiave MapTiler",
-    "placeholder": "Incolla la chiave qui...",
-    "link": "Ottieni una chiave gratuita ↗"
-  },
-  "profile": {
-    "title": "📈 Profilo altimetrico & Pendii",
-    "info": "Distanza: 0km | Alt: 0m | Pendenza: 0%"
-  },
-  "timeline": {
-    "sunPhase": "☀️ Pieno giorno",
-    "requires3D": "Simulazione solare disponibile in modalità 3D"
-  },
-  "vram": {
-    "label": "Statistiche GPU (VRAM)",
-    "geometries": "Geometrie",
-    "textures": "Texture GPU",
-    "drawCalls": "Draw Calls",
-    "triangles": "Triangoli",
-    "tiles": "Tile attive",
-    "workers": "Workers",
-    "alert": {
-      "textures": "Numero elevato di texture GPU"
-    }
-  },
-  "onboarding": {
-    "skip": "Salta",
-    "next": "Avanti",
-    "start": "Inizia",
-    "explore": "Esplora la mappa",
-    "importGpx": "Importa GPX",
-    "searchPeak": "Cerca una vetta",
-    "slide1": {
-      "title": "Immersione e Libertà",
-      "desc": "Scopri la montagna in vero 3D. Usa il pulsante 2D/3D in basso a destra per alternare. Inclina la vista con 2 dita per attivare il rilievo."
-    },
-    "slide2": {
-      "title": "Padroneggia la Luce",
-      "desc": "Anticipa l'illuminazione con la barra del tempo in basso (solo 3D). Le ombre seguono l'ora solare reale."
-    },
-    "slide3": {
-      "title": "Traccia la tua Avventura",
-      "desc": "Pianifica il tuo itinerario (clic sulla mappa o inserimento manuale), importa i file GPX tramite la scheda 'Track' o registra la tua traccia GPS dal vivo."
-    },
-    "slide4": {
-      "title": "Analisi Solare",
-      "desc": "Funzione esclusiva: tocca un punto qualsiasi per ottenere un rapporto solare completo. Essenziale per bivacchi ed escursioni invernali."
-    },
-    "slide5": {
-      "title": "Esperti e Condizioni",
-      "desc": "Analizza la pendenza esatta (PRO) e controlla il meteo in vetta. Mappe HD automatiche (CH, FR, AT, DE, ES) tramite la scheda 'Livelli'."
-    },
-    "slide6": {
-      "title": "Sicurezza e Autonomia",
-      "desc": "Il pulsante SOS in alto a destra mostra le tue coordinate di emergenza. Scarica i Pacchetti Paesi nelle Impostazioni per la modalità offline."
-    }
-  },
-  "upgrade": {
-    "title": "Passa a Pro",
-    "hero": {
-      "title": "Simulazione solare unica al mondo",
-      "subtitle": "Scopri esattamente quando il sole illumina il tuo sentiero. Ombre reali sul terreno 3D — per qualsiasi giorno dell'anno."
-    },
-    "feature": {
-      "maxDetail": "Zoom LOD 18 massimo",
-      "satellite": "Vista Satellite HD",
-      "buildings": "Edifici 3D realistici",
-      "solarCalendar": "Calendario solare illimitato",
-      "solarAnalysis": "Analisi solare completa",
-      "weatherStation": "Meteo 3 giorni + allerte",
-      "inclinometer": "Inclinometro pendenza",
-      "multiGpx": "Multi-tracce GPX",
-      "exportStats": "Esporta GPX + statistiche",
-      "offlineZones": "Offline illimitato"
-    },
-    "plan": {
-      "monthly": "Mensile",
-      "yearly": "Annuale",
-      "lifetime": "A vita",
-      "perMonth": "al mese",
-      "perYear": "all'anno",
-      "oneTime": "pagamento unico",
-      "badge": "7 giorni gratis",
-      "monthShort": "mese"
-    },
-    "restore": "Ripristina un acquisto",
-    "trial": {
-      "cta": "Prova Pro (3 giorni) — Gratis"
-    },
-    "legal": "Abbonamento con rinnovo automatico · Annullabile in qualsiasi momento nel Play Store.",
-    "web": {
-      "playStore": "Disponibile su Google Play",
-      "note": "L'upgrade Pro è disponibile tramite l'app Android su Google Play."
-    },
-    "toast": {
-      "purchaseFailed": "Acquisto non riuscito — controlla la connessione e riprova.",
-      "restoring": "Ripristino acquisti in corso…",
-      "restored": "✅ Acquisti ripristinati!",
-      "noRestore": "Nessun acquisto da ripristinare."
-    }
-  },
-  "inclinometer": {
-    "label": "pendenza al centro",
-    "aspect": "Direzione",
-    "danger": {
-      "low": "Terreno moderato",
-      "moderate": "Terreno ripido",
-      "high": "Molto ripido — zona valanghe",
-      "extreme": "Pendenza estrema"
-    },
-    "hint": "Zona critica valanghe: 30-45°",
-    "directions": {
-      "N": "N",
-      "NE": "NE",
-      "E": "E",
-      "SE": "SE",
-      "S": "S",
-      "SW": "SO",
-      "W": "O",
-      "NW": "NO"
-    },
-    "label_following": "pendenza attuale"
-  },
-  "common": {
-    "close": "Chiudi",
-    "save": "Salva",
-    "cancel": "Annulla",
-    "confirm": "Conferma",
-    "loading": "Caricamento...",
-    "error": "Errore",
-    "errorWebglLost": "Contesto grafico perso. Si prega di aggiornare l'applicazione.",
-    "unit": {
-      "km": "km",
-      "m": "m",
-      "ms": "m/s",
-      "kmh": "km/h",
-      "celsius": "°C",
-      "percent": "%"
-    }
-  },
-  "a11y": {
-    "skipToContent": "Vai al contenuto",
-    "canvas3d": "Mappa topografica 3D interattiva",
-    "resetNorth": "Reimposta al Nord",
-    "changeMapType": "Cambia tipo di mappa",
-    "locateMe": "Localizza la mia posizione",
-    "toggle2d3d": "Alterna 2D/3D"
-  },
-  "acceptance": {
-    "title": "Informazioni importanti prima dell'uso",
-    "item1": {
-      "title": "Strumento di supporto alla pianificazione",
-      "desc": "SunTrail non è un dispositivo di salvataggio. In caso di emergenza, contattare il 112."
-    },
-    "item2": {
-      "title": "Dati GPS e 3D approssimativi",
-      "desc": "Il segnale GPS può essere impreciso in montagna. Il terreno 3D è basato su modelli digitali con una risoluzione di 5–25m."
-    },
-    "item3": {
-      "title": "Simulazione solare indicativa",
-      "desc": "I calcoli non tengono conto del meteo, delle nuvole o degli ostacoli locali non modellati."
-    },
-    "item4": {
-      "title": "Pendenze e rischio valanghe",
-      "desc": "La colorazione delle pendenze (>30°) non sostituisce l'analisi del terreno e il metodo 3×3 per la riduzione del rischio valanghe."
-    },
-    "item5": {
-      "title": "Prevedere una batteria esterna",
-      "desc": "L'uso intensivo del GPS e del rendering 3D consuma rapidamente la batteria. Portare sempre con sé una mappa cartacea."
-    },
-    "legal": "Continuando, accetti le condizioni d'uso di SunTrail e confermi di aver letto queste informazioni di sicurezza.",
-    "btn": "Ho capito — Continua"
-  },
-  "packs": {
-    "title": "Pacchetti Paese",
-    "storage": "Archiviazione",
-    "storageEmpty": "Nessun pacchetto installato",
-    "free": "disponible",
-    "lodInfo": "Pro: LOD 12-14 · Gratis: LOD 12",
-    "btn": {
-      "buy": "Acquista",
-      "download": "Scarica",
-      "delete": "Elimina",
-      "cancel": "Annulla",
-      "update": "Aggiorna",
-      "retry": "Riprova",
-      "restore": "Ripristina acquisti"
-    },
-    "status": {
-      "notPurchased": "Non acquistato",
-      "online": "☁ Online",
-      "purchased": "Pronto per il download",
-      "downloading": "Download in corso...",
-      "installed": "Installato",
-      "updateAvailable": "Aggiornamento disponibile",
-      "error": "Errore"
-    },
-    "error": {
-      "storageFull": "Spazio di archiviazione insufficiente",
-      "downloadFailed": "Download fallito. Tocca per riprovare.",
-      "purchaseFailed": "Acquisto fallito",
-      "catalogFailed": "Impossibile caricare il catalogo"
-    },
-    "toast": {
-      "installed": "Pacchetto installato!",
-      "deleted": "Pacchetto eliminato",
-      "downloadCancelled": "Download annullato"
-    },
-    "description": {
-      "switzerland": "Mappe SwissTopo ad alta risoluzione",
-      "france_alps": "Mappe IGN ad alta risoluzione"
-    },
-    "aria": {
-      "close": "Chiudi pacchetti"
-    }
-  },
-  "peaks": {
-    "toast": {
-      "timeout": "Server vette non disponibile (Timeout)",
-      "error": "Errore caricamento vette"
-    }
-  },
-  "solarRoute": {
-    "section": {
-      "title": "Analisi solare del percorso"
-    },
-    "stat": {
-      "sunPct": "Al sole",
-      "sunKm": "Km al sole",
-      "shadowKm": "Km in ombra",
-      "totalKm": "Totale"
-    },
-    "rec": {
-      "snapshotSun": "{{pct}}% del percorso attualmente al sole",
-      "shadeSegment": "Tratto ombreggiato: km {{start}} → {{end}}",
-      "hikerSun": "A {{speed}} km/h, {{pct}}% al sole",
-      "hikerShade": "Ombra fresca km {{start}}–{{end}} — arrivo ~{{time}}",
-      "optimalDeparture": "Partenza ideale {{time}} → {{pct}}% al sole",
-      "goldenHour": "Ora d'oro in vetta ({{alt}}m): {{start}}–{{end}}",
-      "strongExposure": "⚠️ Forte esposizione: km {{start}}–{{end}} ({{duration}} min)",
-      "estimatedArrival": "Arrivo stimato: {{time}}"
-    },
-    "speed": {
-      "label": "Andatura:",
-      "unit": "km/h"
-    },
-    "status": {
-      "analyzing": "Calcolo partenza ottimale…",
-      "noRoute": "Traccia un percorso o importa un GPX"
-    },
-    "upsell": {
-      "pro": "Analisi timeline e partenza ottimale con Pro",
-      "btn": "Pro ↗"
-    }
-  }
 }

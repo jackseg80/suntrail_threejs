@@ -9,9 +9,9 @@
  * Utilisé par TimelineComponent et le profil d'élévation.
  */
 
-const HOLD_MS = 300;            // Délai avant activation du repositionnement
-const DISMISS_THRESHOLD = 60;   // px vers le bas pour dismiss
-const DISMISS_VELOCITY = 0.3;   // px/ms
+const HOLD_MS = 300; // Délai avant activation du repositionnement
+const DISMISS_THRESHOLD = 60; // px vers le bas pour dismiss
+const DISMISS_VELOCITY = 0.3; // px/ms
 
 export interface DraggablePanelOptions {
     /** L'élément panel à repositionner */
@@ -25,10 +25,15 @@ export interface DraggablePanelOptions {
 }
 
 export function attachDraggablePanel(opts: DraggablePanelOptions): () => void {
-    const { panel, handle, onDismiss, customPosClass = 'panel-custom-pos' } = opts;
+    const {
+        panel,
+        handle,
+        onDismiss,
+        customPosClass = 'panel-custom-pos',
+    } = opts;
 
     // ── État ────────────────────────────────────────────────────────────
-    let isActive = false;           // true uniquement entre pointerdown et pointerup
+    let isActive = false; // true uniquement entre pointerdown et pointerup
     let startX = 0;
     let startY = 0;
     let startTime = 0;
@@ -41,7 +46,10 @@ export function attachDraggablePanel(opts: DraggablePanelOptions): () => void {
     let isCustomPos = false;
 
     function clearHold(): void {
-        if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+        if (holdTimer) {
+            clearTimeout(holdTimer);
+            holdTimer = null;
+        }
     }
 
     // ── Pointer Down ────────────────────────────────────────────────────
@@ -78,7 +86,11 @@ export function attachDraggablePanel(opts: DraggablePanelOptions): () => void {
             holdTimer = null;
             if (!isActive) return;
             // Capturer le pointer MAINTENANT (drag confirmé)
-            try { handle.setPointerCapture(_activePointerId); } catch { /* déjà relâché */ }
+            try {
+                handle.setPointerCapture(_activePointerId);
+            } catch {
+                /* déjà relâché */
+            }
             isRepositioning = true;
             panel.style.transition = 'none';
             handle.style.cursor = 'grabbing';
@@ -87,7 +99,7 @@ export function attachDraggablePanel(opts: DraggablePanelOptions): () => void {
 
     // ── Pointer Move ────────────────────────────────────────────────────
     const onMove = (e: PointerEvent): void => {
-        if (!isActive) return;      // ← Guard critique : ignore les pointermove sans pointerdown
+        if (!isActive) return; // ← Guard critique : ignore les pointermove sans pointerdown
 
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
@@ -98,13 +110,19 @@ export function attachDraggablePanel(opts: DraggablePanelOptions): () => void {
             let newTop = panelStartTop + dy;
 
             const w = panel.offsetWidth;
-            newLeft = Math.max(-w + 40, Math.min(window.innerWidth - 40, newLeft));
+            newLeft = Math.max(
+                -w + 40,
+                Math.min(window.innerWidth - 40, newLeft)
+            );
             // Empêcher le panel de passer sous la nav bar (bas) ou la top bar (haut)
             const navBar = document.getElementById('nav-bar');
             const navH = navBar ? navBar.offsetHeight : 72;
             const topBar = document.getElementById('top-status-bar');
             const topH = topBar ? topBar.offsetHeight : 52;
-            newTop = Math.max(topH + 8, Math.min(window.innerHeight - navH - 40, newTop));
+            newTop = Math.max(
+                topH + 8,
+                Math.min(window.innerHeight - navH - 40, newTop)
+            );
 
             panel.style.left = `${newLeft}px`;
             panel.style.top = `${newTop}px`;
@@ -121,7 +139,11 @@ export function attachDraggablePanel(opts: DraggablePanelOptions): () => void {
         if (!isDismissing && dy > 10 && Math.abs(dy) > Math.abs(dx) * 2) {
             clearHold();
             // Capturer le pointer MAINTENANT (dismiss confirmé)
-            try { handle.setPointerCapture(_activePointerId); } catch { /* déjà relâché */ }
+            try {
+                handle.setPointerCapture(_activePointerId);
+            } catch {
+                /* déjà relâché */
+            }
             isDismissing = true;
             panel.style.transition = 'none';
         }
@@ -143,7 +165,7 @@ export function attachDraggablePanel(opts: DraggablePanelOptions): () => void {
 
     // ── Pointer Up / Cancel ─────────────────────────────────────────────
     const onEnd = (e: PointerEvent): void => {
-        if (!isActive) return;      // ← Ignore si pas de pointerdown actif (ou double-tap reset)
+        if (!isActive) return; // ← Ignore si pas de pointerdown actif (ou double-tap reset)
         isActive = false;
         clearHold();
         handle.style.cursor = '';
@@ -188,7 +210,9 @@ export function attachDraggablePanel(opts: DraggablePanelOptions): () => void {
         panel.style.transform = '';
         isCustomPos = false;
         panel.classList.remove(customPosClass);
-        setTimeout(() => { panel.style.transition = ''; }, 350);
+        setTimeout(() => {
+            panel.style.transition = '';
+        }, 350);
     }
 
     // ── Bindingdes listeners ────────────────────────────────────────────

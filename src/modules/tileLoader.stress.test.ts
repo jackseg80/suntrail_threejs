@@ -7,16 +7,22 @@ vi.mock('./workerManager', () => ({
         loadTile: vi.fn(() => {
             const delay = Math.random() * 50;
             return {
-                promise: new Promise(resolve => setTimeout(() => resolve({
-                    elevBitmap: {},
-                    colorBitmap: {},
-                    pixelData: new Uint8ClampedArray(10).buffer
-                }), delay)),
-                taskId: Math.floor(Math.random() * 1000)
+                promise: new Promise((resolve) =>
+                    setTimeout(
+                        () =>
+                            resolve({
+                                elevBitmap: {},
+                                colorBitmap: {},
+                                pixelData: new Uint8ClampedArray(10).buffer,
+                            }),
+                        delay
+                    )
+                ),
+                taskId: Math.floor(Math.random() * 1000),
             };
         }),
-        cancelTile: vi.fn()
-    }
+        cancelTile: vi.fn(),
+    },
 }));
 
 import { loadTileData } from './tileLoader';
@@ -36,8 +42,10 @@ describe('TileLoader Stress Test', () => {
 
         const resultsWrappers = await Promise.all(requests);
         expect(resultsWrappers.length).toBe(100);
-        
-        const results = await Promise.all(resultsWrappers.map(w => w.promise));
+
+        const results = await Promise.all(
+            resultsWrappers.map((w) => w.promise)
+        );
         results.forEach((res: any) => {
             expect(res).not.toBeNull();
             expect(res.elevBitmap).toBeDefined();
@@ -50,7 +58,9 @@ describe('TileLoader Stress Test', () => {
             requests.push(loadTileData(100, 100, 10, true));
         }
         const resultsWrappers = await Promise.all(requests);
-        const results = await Promise.all(resultsWrappers.map(w => w.promise));
+        const results = await Promise.all(
+            resultsWrappers.map((w) => w.promise)
+        );
         expect(results.every((r: any) => r !== null)).toBe(true);
     });
 });

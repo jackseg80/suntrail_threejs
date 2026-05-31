@@ -35,7 +35,9 @@ class IAPService {
         try {
             await Promise.race([
                 this._initPromise,
-                new Promise<void>((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs)),
+                new Promise<void>((_, reject) =>
+                    setTimeout(() => reject(new Error('timeout')), timeoutMs)
+                ),
             ]);
             return this.initialized;
         } catch {
@@ -58,15 +60,21 @@ class IAPService {
     }
 
     private async _doInitializeNative(): Promise<void> {
-        const sdkKey = import.meta.env.VITE_REVENUECAT_KEY as string | undefined;
+        const sdkKey = import.meta.env.VITE_REVENUECAT_KEY as
+            | string
+            | undefined;
         if (!sdkKey || sdkKey.length < 10) {
-            console.warn('[IAP] VITE_REVENUECAT_KEY manquante — achats désactivés.');
+            console.warn(
+                '[IAP] VITE_REVENUECAT_KEY manquante — achats désactivés.'
+            );
             return;
         }
         if (this.initialized) return;
 
         try {
-            await Purchases.setLogLevel({ level: state.DEBUG_MODE ? LOG_LEVEL.INFO : LOG_LEVEL.ERROR });
+            await Purchases.setLogLevel({
+                level: state.DEBUG_MODE ? LOG_LEVEL.INFO : LOG_LEVEL.ERROR,
+            });
             await Purchases.configure({ apiKey: sdkKey });
             this.initialized = true;
 
@@ -79,7 +87,8 @@ class IAPService {
                 }
             });
 
-            if (state.DEBUG_MODE) console.log('[IAP] RevenueCat (Android) initialisé.');
+            if (state.DEBUG_MODE)
+                console.log('[IAP] RevenueCat (Android) initialisé.');
         } catch (e) {
             console.warn('[IAP] Erreur initialisation RevenueCat:', e);
         }
@@ -90,14 +99,21 @@ class IAPService {
      * et fusionne les achats anonymes existants si nécessaire.
      */
     public async identify(supabaseUserId: string): Promise<void> {
-        if (state.DEBUG_MODE) console.log(`[IAP] Identification RevenueCat : ${supabaseUserId}`);
+        if (state.DEBUG_MODE)
+            console.log(`[IAP] Identification RevenueCat : ${supabaseUserId}`);
 
         if (!Capacitor.isNativePlatform()) {
-            const webKey = import.meta.env.VITE_REVENUECAT_WEB_KEY as string | undefined;
+            const webKey = import.meta.env.VITE_REVENUECAT_WEB_KEY as
+                | string
+                | undefined;
             if (!webKey) return;
             try {
-                const { Purchases: PurchasesWeb } = await import('@revenuecat/purchases-js');
-                PurchasesWeb.configure({ apiKey: webKey, appUserId: supabaseUserId });
+                const { Purchases: PurchasesWeb } =
+                    await import('@revenuecat/purchases-js');
+                PurchasesWeb.configure({
+                    apiKey: webKey,
+                    appUserId: supabaseUserId,
+                });
                 this._webPurchases = PurchasesWeb.getSharedInstance();
                 await this.syncProStatus();
             } catch (e) {
@@ -114,24 +130,31 @@ class IAPService {
     }
 
     private async _doInitializeWeb(): Promise<void> {
-        const webKey = import.meta.env.VITE_REVENUECAT_WEB_KEY as string | undefined;
+        const webKey = import.meta.env.VITE_REVENUECAT_WEB_KEY as
+            | string
+            | undefined;
         if (!webKey || webKey.length < 10) {
-            if (state.DEBUG_MODE) console.log('[IAP] VITE_REVENUECAT_WEB_KEY manquante — achats web désactivés.');
+            if (state.DEBUG_MODE)
+                console.log(
+                    '[IAP] VITE_REVENUECAT_WEB_KEY manquante — achats web désactivés.'
+                );
             return;
         }
         if (this.initialized) return;
 
         try {
             // Import dynamique : ne charge pas le SDK web sur Android (et inversement)
-            const { Purchases: PurchasesWeb } = await import('@revenuecat/purchases-js');
+            const { Purchases: PurchasesWeb } =
+                await import('@revenuecat/purchases-js');
             const { authService } = await import('./authService');
 
             // Attendre que la session Supabase soit chargée
             await authService.waitForInit();
 
             // On utilise l'UID Supabase si l'utilisateur est connecté, sinon l'ID anonyme habituel
-            const appUserId = authService.user?.id || this._getOrCreateWebUserId();
-            
+            const appUserId =
+                authService.user?.id || this._getOrCreateWebUserId();
+
             PurchasesWeb.configure({ apiKey: webKey, appUserId });
             this._webPurchases = PurchasesWeb.getSharedInstance();
             this.initialized = true;
@@ -144,9 +167,13 @@ class IAPService {
                     void this._pollProStatusWeb();
                 }
             };
-            document.addEventListener('visibilitychange', this._visibilityHandler);
+            document.addEventListener(
+                'visibilitychange',
+                this._visibilityHandler
+            );
 
-            if (state.DEBUG_MODE) console.log('[IAP] RevenueCat Web (Stripe) initialisé.');
+            if (state.DEBUG_MODE)
+                console.log('[IAP] RevenueCat Web (Stripe) initialisé.');
         } catch (e) {
             console.warn('[IAP] Erreur initialisation RevenueCat Web:', e);
         }
@@ -155,7 +182,7 @@ class IAPService {
     /** Polling post-paiement Stripe : vérifie le statut Pro jusqu'à confirmation (max 30s) */
     private async _pollProStatusWeb(maxAttempts = 6): Promise<void> {
         for (let i = 0; i < maxAttempts; i++) {
-            await new Promise(r => setTimeout(r, 2000));
+            await new Promise((r) => setTimeout(r, 2000));
             const isPro = await this.syncProStatus();
             if (isPro) return;
         }
@@ -180,7 +207,8 @@ class IAPService {
     }
 
     private updateStateFromCustomerInfo(customerInfo: ICustomerInfo): boolean {
-        const isPro = customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined;
+        const isPro =
+            customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined;
         if (isPro && !state.isPro) {
             grantProAccess();
         } else if (!isPro && state.isPro) {
@@ -191,7 +219,9 @@ class IAPService {
 
     // ── Achat ─────────────────────────────────────────────────────────────────
 
-    async purchase(packageType: 'monthly' | 'yearly' | 'lifetime'): Promise<boolean> {
+    async purchase(
+        packageType: 'monthly' | 'yearly' | 'lifetime'
+    ): Promise<boolean> {
         if (!this.initialized) {
             console.warn('[IAP] RevenueCat non initialisé.');
             return false;
@@ -205,7 +235,11 @@ class IAPService {
                     let resolved = false;
                     const isProd = window.location.hostname !== 'localhost';
                     const base = isProd ? '/suntrail_threejs/' : '/';
-                    const win = window.open(`${base}guest-purchase-modal.html`, '_blank', 'width=500,height=550');
+                    const win = window.open(
+                        `${base}guest-purchase-modal.html`,
+                        '_blank',
+                        'width=500,height=550'
+                    );
 
                     const cleanup = () => {
                         clearInterval(checkClosed);
@@ -230,12 +264,17 @@ class IAPService {
                         }
                     }, 500);
 
-                    window.addEventListener('pagehide', cleanup, { once: true });
+                    window.addEventListener('pagehide', cleanup, {
+                        once: true,
+                    });
                     this._purchaseCleanup = cleanup;
                 });
 
                 if (proceed !== true) {
-                    if (state.DEBUG_MODE) console.log('[IAP] Achat invité annulé ou fenêtre fermée.');
+                    if (state.DEBUG_MODE)
+                        console.log(
+                            '[IAP] Achat invité annulé ou fenêtre fermée.'
+                        );
                     return false;
                 }
             }
@@ -246,37 +285,45 @@ class IAPService {
             if (!offering) return false;
 
             // RevenueCat utilise 'ANNUAL' (pas 'YEARLY') — on normalise
-            const normalized = packageType === 'yearly' ? 'annual' : packageType;
+            const normalized =
+                packageType === 'yearly' ? 'annual' : packageType;
             const pkg = offering.availablePackages.find(
-                (p: any) => p.packageType.toLowerCase() === normalized ||
-                     p.packageType.toLowerCase() === packageType ||
-                     p.identifier.toLowerCase().includes(normalized) ||
-                     p.identifier.toLowerCase().includes(packageType)
+                (p: any) =>
+                    p.packageType.toLowerCase() === normalized ||
+                    p.packageType.toLowerCase() === packageType ||
+                    p.identifier.toLowerCase().includes(normalized) ||
+                    p.identifier.toLowerCase().includes(packageType)
             );
             if (!pkg) {
-                console.warn(`[IAP] Package '${packageType}' introuvable dans l'offering.`);
+                console.warn(
+                    `[IAP] Package '${packageType}' introuvable dans l'offering.`
+                );
                 return false;
             }
 
             if (Capacitor.isNativePlatform()) {
-                const { customerInfo } = await Purchases.purchasePackage({ aPackage: pkg });
+                const { customerInfo } = await Purchases.purchasePackage({
+                    aPackage: pkg,
+                });
                 const granted = this.updateStateFromCustomerInfo(customerInfo);
                 // Retry si la validation serveur est en attente (Service Account absent)
                 if (!granted) {
-                    await new Promise(r => setTimeout(r, 2000));
-                    const { customerInfo: ci2 } = await Purchases.getCustomerInfo();
+                    await new Promise((r) => setTimeout(r, 2000));
+                    const { customerInfo: ci2 } =
+                        await Purchases.getCustomerInfo();
                     return this.updateStateFromCustomerInfo(ci2);
                 }
                 return granted;
             } else {
                 // Web : ouvre le checkout Stripe (overlay in-page, pas de redirect)
-                const { customerInfo } = await this._webPurchases.purchase({ rcPackage: pkg });
+                const { customerInfo } = await this._webPurchases.purchase({
+                    rcPackage: pkg,
+                });
                 return this.updateStateFromCustomerInfo(customerInfo);
             }
-
         } catch (e: any) {
             if (e?.userCancelled) {
-                console.log('[IAP] Achat annulé par l\'utilisateur.');
+                console.log("[IAP] Achat annulé par l'utilisateur.");
             } else {
                 console.error('[IAP] Erreur achat:', e);
             }
@@ -294,7 +341,8 @@ class IAPService {
                 return this.updateStateFromCustomerInfo(customerInfo);
             } else {
                 // purchases-js retourne CustomerInfo directement (sans wrapper)
-                const customerInfo = await this._webPurchases.restorePurchases();
+                const customerInfo =
+                    await this._webPurchases.restorePurchases();
                 return this.updateStateFromCustomerInfo(customerInfo);
             }
         } catch (e) {
@@ -339,7 +387,11 @@ class IAPService {
     }
 
     /** Prix formatés pour l'UpgradeSheet (cache 5min via caller) */
-    async getPrices(): Promise<{ monthly: string; yearly: string; lifetime: string }> {
+    async getPrices(): Promise<{
+        monthly: string;
+        yearly: string;
+        lifetime: string;
+    }> {
         const defaults = { monthly: '—', yearly: '—', lifetime: '—' };
         if (!this.initialized) await this.waitForInit();
         if (!this.initialized) return defaults;
@@ -351,15 +403,25 @@ class IAPService {
                 const id = pkg.identifier.toLowerCase();
                 // Capacitor SDK : pkg.product.priceString
                 // Web SDK      : pkg.rcBillingProduct.currentPrice.formattedPrice
-                const raw = pkg.product?.priceString ??
-                            pkg.rcBillingProduct?.currentPrice?.formattedPrice ?? '';
+                const raw =
+                    pkg.product?.priceString ??
+                    pkg.rcBillingProduct?.currentPrice?.formattedPrice ??
+                    '';
                 const price = raw
-                    .replace(/\s*(for|per|pour|durch|para|in)\s*\d+\s*(minutes?|min\.?)/gi, '')
-                    .replace(/\s*\/\s*(mois|an|month|year|mes|monat|jahr|anno)/gi, '')
+                    .replace(
+                        /\s*(for|per|pour|durch|para|in)\s*\d+\s*(minutes?|min\.?)/gi,
+                        ''
+                    )
+                    .replace(
+                        /\s*\/\s*(mois|an|month|year|mes|monat|jahr|anno)/gi,
+                        ''
+                    )
                     .trim();
                 if (id.includes('monthly')) prices.monthly = price || '—';
-                else if (id.includes('yearly') || id.includes('annual')) prices.yearly = price || '—';
-                else if (id.includes('lifetime')) prices.lifetime = price || '—';
+                else if (id.includes('yearly') || id.includes('annual'))
+                    prices.yearly = price || '—';
+                else if (id.includes('lifetime'))
+                    prices.lifetime = price || '—';
             }
             return prices;
         } catch {
@@ -370,13 +432,13 @@ class IAPService {
     // ── Country Packs (non-consumable) ───────────────────────────────────────
 
     private static readonly PACK_ENTITLEMENTS: Record<string, string> = {
-        'switzerland': 'SunTrail Pack Switzerland',
-        'france_alps': 'SunTrail Pack France Alps',
+        switzerland: 'SunTrail Pack Switzerland',
+        france_alps: 'SunTrail Pack France Alps',
     };
 
     private static readonly PACK_PRODUCT_IDS: Record<string, string> = {
-        'switzerland': 'suntrail_pack_switzerland',
-        'france_alps': 'suntrail_pack_france_alps',
+        switzerland: 'suntrail_pack_switzerland',
+        france_alps: 'suntrail_pack_france_alps',
     };
 
     async purchasePack(packId: string): Promise<boolean> {
@@ -390,25 +452,33 @@ class IAPService {
                 let targetPkg = null;
                 for (const offering of Object.values(offerings.all ?? {})) {
                     targetPkg = offering.availablePackages.find(
-                        p => p.identifier.toLowerCase().includes(productId) ||
-                             p.product.identifier === productId
+                        (p) =>
+                            p.identifier.toLowerCase().includes(productId) ||
+                            p.product.identifier === productId
                     );
                     if (targetPkg) break;
                 }
                 if (!targetPkg) {
-                    console.warn(`[IAP] Pack product '${productId}' introuvable.`);
+                    console.warn(
+                        `[IAP] Pack product '${productId}' introuvable.`
+                    );
                     return false;
                 }
-                const { customerInfo } = await Purchases.purchasePackage({ aPackage: targetPkg });
+                const { customerInfo } = await Purchases.purchasePackage({
+                    aPackage: targetPkg,
+                });
                 return this.hasPackEntitlement(customerInfo, packId);
             } else {
                 const offerings = await this._webPurchases.getOfferings();
                 let targetPkg: any = null;
-                for (const offering of Object.values((offerings.all ?? {}) as Record<string, any>)) {
+                for (const offering of Object.values(
+                    (offerings.all ?? {}) as Record<string, any>
+                )) {
                     targetPkg = offering.availablePackages?.find(
-                        (p: any) => p.identifier?.toLowerCase().includes(productId) ||
-                                    p.product?.identifier === productId ||
-                                    p.rcBillingProduct?.identifier === productId
+                        (p: any) =>
+                            p.identifier?.toLowerCase().includes(productId) ||
+                            p.product?.identifier === productId ||
+                            p.rcBillingProduct?.identifier === productId
                     );
                     if (targetPkg) break;
                 }
@@ -416,7 +486,9 @@ class IAPService {
                     console.warn(`[IAP] Pack web '${productId}' introuvable.`);
                     return false;
                 }
-                const { customerInfo } = await this._webPurchases.purchase({ rcPackage: targetPkg });
+                const { customerInfo } = await this._webPurchases.purchase({
+                    rcPackage: targetPkg,
+                });
                 return this.hasPackEntitlement(customerInfo, packId);
             }
         } catch (e: any) {
@@ -445,7 +517,9 @@ class IAPService {
                 const customerInfo = await this._webPurchases.getCustomerInfo();
                 return this.hasPackEntitlement(customerInfo, packId);
             }
-        } catch { return false; }
+        } catch {
+            return false;
+        }
     }
 
     async getPackPrice(packId: string): Promise<string> {
@@ -457,20 +531,27 @@ class IAPService {
             const offeringsData = Capacitor.isNativePlatform()
                 ? await Purchases.getOfferings()
                 : await this._webPurchases.getOfferings();
-            for (const offering of Object.values((offeringsData.all ?? {}) as Record<string, any>)) {
+            for (const offering of Object.values(
+                (offeringsData.all ?? {}) as Record<string, any>
+            )) {
                 const pkg = offering.availablePackages?.find(
-                    (p: any) => p.identifier?.toLowerCase().includes(productId) ||
-                                p.product?.identifier === productId ||
-                                p.rcBillingProduct?.identifier === productId
+                    (p: any) =>
+                        p.identifier?.toLowerCase().includes(productId) ||
+                        p.product?.identifier === productId ||
+                        p.rcBillingProduct?.identifier === productId
                 );
                 if (pkg) {
-                    return pkg.product?.priceString ??
-                           pkg.rcBillingProduct?.currentPrice?.formattedPrice ??
-                           '—';
+                    return (
+                        pkg.product?.priceString ??
+                        pkg.rcBillingProduct?.currentPrice?.formattedPrice ??
+                        '—'
+                    );
                 }
             }
             return '—';
-        } catch { return '—'; }
+        } catch {
+            return '—';
+        }
     }
 
     async checkAllPackPurchases(): Promise<string[]> {
@@ -490,14 +571,20 @@ class IAPService {
                 }
             }
             return purchased;
-        } catch { return []; }
+        } catch {
+            return [];
+        }
     }
 
     /** ID anonyme stable pour le SDK web (persisted in localStorage) */
     private _getOrCreateWebUserId(): string {
         let id = localStorage.getItem(STORAGE_KEYS.RC_WEB_USER_ID);
         if (!id) {
-            id = 'web_' + Math.random().toString(36).slice(2, 9) + '_' + Date.now().toString(36);
+            id =
+                'web_' +
+                Math.random().toString(36).slice(2, 9) +
+                '_' +
+                Date.now().toString(36);
             localStorage.setItem(STORAGE_KEYS.RC_WEB_USER_ID, id);
         }
         return id;
@@ -509,7 +596,10 @@ class IAPService {
         this._initPromise = null;
         this._webPurchases = null;
         if (this._visibilityHandler) {
-            document.removeEventListener('visibilitychange', this._visibilityHandler);
+            document.removeEventListener(
+                'visibilitychange',
+                this._visibilityHandler
+            );
             this._visibilityHandler = null;
         }
         if (this._purchaseCleanup) {

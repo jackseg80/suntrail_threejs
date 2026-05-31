@@ -1,4 +1,4 @@
-# SunTrail — TODO (v5.56.2)
+# SunTrail — TODO (v5.56.4)
 
 > Dernière mise à jour : 2026-05-31
 
@@ -9,8 +9,12 @@
 ## 🟡 Court terme (v5.56.x)
 
 - **Debug OAuth Google** — Résoudre les problèmes de stabilité et réactiver l'UI
-- **Refactoring SolarProbeSheet.ts** (896 lignes) — Extraire les sous-composants UI et handlers en modules séparés
-- **Refactoring SettingsSheet.ts** (711 lignes) — Découper par section (résolution, carte, GPS, etc.)
+- [x] **Refactoring SolarProbeSheet.ts** (896 lignes) — Extraire les sous-composants UI et handlers en modules séparés (v5.56.4)
+- **Refactoring SettingsSheet.ts** (715 lignes) — Découper par section (résolution, carte, GPS, etc.)
+- [x] **ESLint + Prettier configurés** — Linting et formatage automatique (v5.56.4)
+- [x] **Détection doublon GPX** — Hash des points + toast + refus (v5.56.4)
+- [x] **Tests tileSources.ts** — 26 tests (URL builders + COUNTRY_SOURCES) (v5.56.4)
+- [x] **Tests benchmark.ts** — 5 tests (seuils de scoring) (v5.56.4)
 - **Tests poi.ts** — Couverture partielle : tester la détection de catégories avec PBF mockés
 - **Alertes Sécurité v6.0** — Toujours gratuites (météo extrême, avalanches) — prévu v6.0
 

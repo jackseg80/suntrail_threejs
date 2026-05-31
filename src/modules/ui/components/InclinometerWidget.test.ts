@@ -5,18 +5,18 @@ import { getAltitudeAt } from '../../analysis';
 
 vi.mock('../../analysis', () => ({
     getAltitudeAt: vi.fn(() => 1000),
-    findTerrainIntersection: vi.fn(() => ({ x: 0, y: 1000, z: 0 }))
+    findTerrainIntersection: vi.fn(() => ({ x: 0, y: 1000, z: 0 })),
 }));
 
 vi.mock('../../iap', () => ({
-    showUpgradePrompt: vi.fn()
+    showUpgradePrompt: vi.fn(),
 }));
 
 vi.mock('../../geo', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../../geo')>();
     return {
         ...actual,
-        lngLatToWorld: vi.fn(() => ({ x: 0, z: 0 }))
+        lngLatToWorld: vi.fn(() => ({ x: 0, z: 0 })),
     };
 });
 
@@ -31,11 +31,17 @@ describe('InclinometerWidget', () => {
         state.isFollowingUser = false;
         state.camera = { position: { x: 0, y: 100, z: 0 } } as any;
         state.controls = { target: { x: 0, y: 0, z: 0 } } as any;
-        state.originTile = { x: 0, y: 0, worldX: 0, worldZ: 0, tileSizeMeters: 1000 } as any;
+        state.originTile = {
+            x: 0,
+            y: 0,
+            worldX: 0,
+            worldZ: 0,
+            tileSizeMeters: 1000,
+        } as any;
         state.userLocation = { lat: 45, lon: 6, alt: 1000 };
         state.userHeading = 0;
         state.RELIEF_EXAGGERATION = 1.0;
-        
+
         widget = new InclinometerWidget();
         widget.init();
     });
@@ -55,41 +61,41 @@ describe('InclinometerWidget', () => {
 
     it('should display correct format in Free Look mode', () => {
         (getAltitudeAt as any).mockImplementation((x: number, _z: number) => {
-            if (x > 0.1) return 1002; 
-            if (x < -0.1) return 998;  
+            if (x > 0.1) return 1002;
+            if (x < -0.1) return 998;
             return 1000;
         });
 
         vi.advanceTimersByTime(200);
-        
+
         const el = document.getElementById('inclinometer-widget')!;
         expect(el.textContent).toContain('⛰ 45° (100%)');
     });
 
     it('should display correct format in Follow Mode with path slope', () => {
         state.isFollowingUser = true;
-        state.userHeading = 90; 
-        
+        state.userHeading = 90;
+
         (getAltitudeAt as any).mockImplementation((_x: number, z: number) => {
-            if (z > 0.1) return 1002; 
-            if (z < -0.1) return 998;  
+            if (z > 0.1) return 1002;
+            if (z < -0.1) return 998;
             return 1000;
         });
 
         vi.advanceTimersByTime(200);
-        
+
         const el = document.getElementById('inclinometer-widget')!;
         expect(el.textContent).toContain('📈 0% (max. 100%)');
     });
 
     it('should update positioning when timeline is open', async () => {
         const el = document.getElementById('inclinometer-widget')!;
-        
+
         // Mock style.bottom setter because JSDOM doesn't store complex values like calc() well
         const spy = vi.spyOn(el.style, 'bottom', 'set');
 
         document.body.classList.remove('timeline-open');
-        (widget as any).syncPosition(); 
+        (widget as any).syncPosition();
         expect(spy).toHaveBeenCalledWith(expect.stringContaining('16px'));
 
         document.body.classList.add('timeline-open');
@@ -99,8 +105,10 @@ describe('InclinometerWidget', () => {
 
     it('should stay open when clicked (persistent detail)', () => {
         const el = document.getElementById('inclinometer-widget')!;
-        
-        el.dispatchEvent(new PointerEvent('pointerdown', { clientX: 0, clientY: 0 }));
+
+        el.dispatchEvent(
+            new PointerEvent('pointerdown', { clientX: 0, clientY: 0 })
+        );
         vi.advanceTimersByTime(250);
         window.dispatchEvent(new PointerEvent('pointerup'));
 

@@ -44,7 +44,8 @@ function swissWorldCoords(): { x: number; z: number } {
     const yNorm =
         (1 -
             Math.log(
-                Math.tan((lat * Math.PI) / 180) + 1 / Math.cos((lat * Math.PI) / 180),
+                Math.tan((lat * Math.PI) / 180) +
+                    1 / Math.cos((lat * Math.PI) / 180)
             ) /
                 Math.PI) /
         2;
@@ -94,16 +95,22 @@ describe('runSolarProbe — Swiss coordinates (lat:46.8, lon:8.2)', () => {
         expect(result.sunrise).not.toBeNull();
         expect(result.solarNoon).not.toBeNull();
         expect(result.sunset).not.toBeNull();
-        expect(result.sunrise!.getTime()).toBeLessThan(result.solarNoon!.getTime());
-        expect(result.solarNoon!.getTime()).toBeLessThan(result.sunset!.getTime());
+        expect(result.sunrise!.getTime()).toBeLessThan(
+            result.solarNoon!.getTime()
+        );
+        expect(result.solarNoon!.getTime()).toBeLessThan(
+            result.sunset!.getTime()
+        );
     });
 
     it('4. dayDurationMinutes ≈ sunset − sunrise en minutes (±30 min)', () => {
         const result = runSolarProbe(x, z, altitude)!;
         const expectedMinutes = Math.round(
-            (result.sunset!.getTime() - result.sunrise!.getTime()) / 60000,
+            (result.sunset!.getTime() - result.sunrise!.getTime()) / 60000
         );
-        expect(Math.abs(result.dayDurationMinutes - expectedMinutes)).toBeLessThanOrEqual(30);
+        expect(
+            Math.abs(result.dayDurationMinutes - expectedMinutes)
+        ).toBeLessThanOrEqual(30);
     });
 
     it('5. elevationCurve a exactement 144 éléments', () => {
@@ -147,7 +154,7 @@ describe('runSolarProbe — Swiss coordinates (lat:46.8, lon:8.2)', () => {
         const result = runSolarProbe(x, z, altitude)!;
         if (result.goldenHourMorningStart && result.goldenHourMorningEnd) {
             expect(result.goldenHourMorningStart.getTime()).toBeLessThan(
-                result.goldenHourMorningEnd.getTime(),
+                result.goldenHourMorningEnd.getTime()
             );
         }
     });

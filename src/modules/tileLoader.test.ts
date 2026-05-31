@@ -3,7 +3,7 @@ import { state } from './state';
 import { getColorUrl, getOverlayUrl, getElevationUrl } from './tileLoader';
 
 vi.mock('./utils', () => ({
-    showToast: vi.fn()
+    showToast: vi.fn(),
 }));
 
 vi.mock('./geo', async (importOriginal) => {
@@ -15,22 +15,24 @@ vi.mock('./geo', async (importOriginal) => {
         }),
         isPositionInItaly: vi.fn((lat, lon) => {
             return lon >= 6.6 && lon <= 18.6 && lat >= 35 && lat <= 47.1;
-        })
+        }),
     };
 });
 
 vi.mock('./workerManager', () => ({
     tileWorkerManager: {
-        loadTile: vi.fn(() => Promise.resolve({
-            elevBitmap: {},
-            colorBitmap: {},
-            overlayBitmap: {},
-            normalBitmap: {},
-            pixelData: new Uint8ClampedArray(100).buffer,
-            cacheHits: 0,
-            networkRequests: 1
-        }))
-    }
+        loadTile: vi.fn(() =>
+            Promise.resolve({
+                elevBitmap: {},
+                colorBitmap: {},
+                overlayBitmap: {},
+                normalBitmap: {},
+                pixelData: new Uint8ClampedArray(100).buffer,
+                cacheHits: 0,
+                networkRequests: 1,
+            })
+        ),
+    },
 }));
 
 describe('tileLoader.ts URLs', () => {
@@ -58,7 +60,7 @@ describe('tileLoader.ts URLs', () => {
         state.MK = '';
         const url = getColorUrl(0, 0, 11);
         expect(url).toContain('opentopomap.org');
-        
+
         const url12 = getColorUrl(0, 0, 12);
         expect(url12).toContain('opentopomap.org');
     });
@@ -74,12 +76,15 @@ describe('tileLoader.ts URLs', () => {
         // Issenheim tile (~47.90, ~7.25) — hors CH selon le polygone
         // Les coordonnées tx/ty pour Issenheim au LOD 15
         // LOD 15: n=32768, tx≈4258, ty≈14369
-        const issenheimX = 4258, issenheimY = 14369;
+        const issenheimX = 4258,
+            issenheimY = 14369;
         const url = getColorUrl(issenheimX, issenheimY, 15);
         // Ne doit PAS contenir swisstopo (car hors-CH + LOD>14)
         expect(url).not.toContain('ch.swisstopo');
         // Doit utiliser IGN (France) ou fallback
-        expect(url).toMatch(/geopf\.fr|opentopomap\.org|maptiler\.com|openstreetmap\.org/);
+        expect(url).toMatch(
+            /geopf\.fr|opentopomap\.org|maptiler\.com|openstreetmap\.org/
+        );
     });
 
     it('should prioritize Switzerland over Italy and France', () => {
@@ -163,9 +168,15 @@ describe('tileLoader.ts URLs', () => {
     });
 
     it('should return SwissTopo overlay at LOD 16-18 for Swiss tiles', () => {
-        expect(getOverlayUrl(34160, 23128, 16)).toContain('ch.swisstopo.swisstlm3d-wanderwege');
-        expect(getOverlayUrl(68320, 46256, 17)).toContain('ch.swisstopo.swisstlm3d-wanderwege');
-        expect(getOverlayUrl(136640, 92512, 18)).toContain('ch.swisstopo.swisstlm3d-wanderwege');
+        expect(getOverlayUrl(34160, 23128, 16)).toContain(
+            'ch.swisstopo.swisstlm3d-wanderwege'
+        );
+        expect(getOverlayUrl(68320, 46256, 17)).toContain(
+            'ch.swisstopo.swisstlm3d-wanderwege'
+        );
+        expect(getOverlayUrl(136640, 92512, 18)).toContain(
+            'ch.swisstopo.swisstlm3d-wanderwege'
+        );
     });
 
     it('should return null for Swiss overlay at LOD 19', () => {
@@ -173,8 +184,12 @@ describe('tileLoader.ts URLs', () => {
     });
 
     it('should return Waymarked Trails overlay at LOD 16-17 outside Switzerland', () => {
-        expect(getOverlayUrl(4240, 2915, 16)).toContain('tile.waymarkedtrails.org');
-        expect(getOverlayUrl(4240, 2915, 17)).toContain('tile.waymarkedtrails.org');
+        expect(getOverlayUrl(4240, 2915, 16)).toContain(
+            'tile.waymarkedtrails.org'
+        );
+        expect(getOverlayUrl(4240, 2915, 17)).toContain(
+            'tile.waymarkedtrails.org'
+        );
     });
 
     it('should return null for Waymarked overlay at LOD 18 outside Switzerland', () => {
@@ -193,7 +208,15 @@ describe('tileLoader.ts URLs', () => {
             const { tileWorkerManager } = await import('./workerManager');
             await loadTileData(0, 0, 10, true);
             expect(tileWorkerManager.loadTile).toHaveBeenCalledWith(
-                0, 0, null, expect.any(String), null, 10, 10, expect.any(Object), true
+                0,
+                0,
+                null,
+                expect.any(String),
+                null,
+                10,
+                10,
+                expect.any(Object),
+                true
             );
         });
 
@@ -204,7 +227,15 @@ describe('tileLoader.ts URLs', () => {
             state.IS_2D_MODE = false;
             await loadTileData(0, 0, 14, false);
             expect(tileWorkerManager.loadTile).toHaveBeenCalledWith(
-                0, 0, expect.any(String), expect.any(String), expect.any(String), 14, 14, expect.any(Object), false
+                0,
+                0,
+                expect.any(String),
+                expect.any(String),
+                expect.any(String),
+                14,
+                14,
+                expect.any(Object),
+                false
             );
         });
     });

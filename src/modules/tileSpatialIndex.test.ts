@@ -1,18 +1,38 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { insertTile, removeTile, queryTiles, clearIndex, CELL_SIZE } from './tileSpatialIndex';
+import {
+    insertTile,
+    removeTile,
+    queryTiles,
+    clearIndex,
+    CELL_SIZE,
+} from './tileSpatialIndex';
 
-function makeTile(worldX: number, worldZ: number, tileSizeMeters: number, key: string, zoom = 14) {
+function makeTile(
+    worldX: number,
+    worldZ: number,
+    tileSizeMeters: number,
+    key: string,
+    zoom = 14
+) {
     return {
-        worldX, worldZ, tileSizeMeters, key, zoom,
+        worldX,
+        worldZ,
+        tileSizeMeters,
+        key,
+        zoom,
         status: 'loaded',
         pixelData: new Uint8ClampedArray(4),
         bounds: {
             containsPoint(p: { x: number; y: number; z: number }) {
                 const half = tileSizeMeters / 2;
-                return p.x >= worldX - half && p.x <= worldX + half &&
-                       p.z >= worldZ - half && p.z <= worldZ + half;
-            }
-        }
+                return (
+                    p.x >= worldX - half &&
+                    p.x <= worldX + half &&
+                    p.z >= worldZ - half &&
+                    p.z <= worldZ + half
+                );
+            },
+        },
     };
 }
 
@@ -105,7 +125,7 @@ describe('tileSpatialIndex', () => {
         const results = queryTiles(1000, 1000);
         // Both should be returned — caller selects by zoom
         expect(results.length).toBeGreaterThanOrEqual(1);
-        const best = results.reduce((a, b) => a.zoom > b.zoom ? a : b);
+        const best = results.reduce((a, b) => (a.zoom > b.zoom ? a : b));
         expect(best.zoom).toBe(16);
     });
 });

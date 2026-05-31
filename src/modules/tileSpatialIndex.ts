@@ -37,7 +37,10 @@ export function insertTile(tile: SpatialTile): void {
     const maxCZ = Math.floor((tile.worldZ + half) / CELL_SIZE);
 
     // Guard: tiles spanning too many cells (low zoom) go to largeTiles
-    if ((maxCX - minCX) > MAX_CELLS_PER_DIM || (maxCZ - minCZ) > MAX_CELLS_PER_DIM) {
+    if (
+        maxCX - minCX > MAX_CELLS_PER_DIM ||
+        maxCZ - minCZ > MAX_CELLS_PER_DIM
+    ) {
         largeTiles.add(tile);
         tileCells.set(tile.key, []); // empty = marker for largeTiles
         return;
@@ -48,7 +51,10 @@ export function insertTile(tile: SpatialTile): void {
         for (let cz = minCZ; cz <= maxCZ; cz++) {
             const ck = `${cx},${cz}`;
             let set = grid.get(ck);
-            if (!set) { set = new Set(); grid.set(ck, set); }
+            if (!set) {
+                set = new Set();
+                grid.set(ck, set);
+            }
             set.add(tile);
             cells.push(ck);
         }

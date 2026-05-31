@@ -7,11 +7,11 @@ import { fetchWeather } from '../../weather';
 import { i18n } from '../../../i18n/I18nService';
 import { eventBus } from '../../eventBus';
 import { sheetManager } from '../core/SheetManager';
-import { 
-    searchLocations, 
-    searchPeaksByName, 
-    CLASSIFICATIONS, 
-    ResultClassification 
+import {
+    searchLocations,
+    searchPeaksByName,
+    CLASSIFICATIONS,
+    ResultClassification,
 } from '../../geocodingService';
 import templateHTML from '../templates/search.html?raw';
 
@@ -49,24 +49,40 @@ export class SearchSheet extends BaseComponent {
         closeBtn?.setAttribute('aria-label', i18n.t('search.aria.close'));
         closeBtn?.addEventListener('click', () => sheetManager.close());
 
-        this.geoInput = this.element.querySelector('#geo-input') as HTMLInputElement;
-        this.geoResults = this.element.querySelector('#geo-results') as HTMLElement;
+        this.geoInput = this.element.querySelector(
+            '#geo-input'
+        ) as HTMLInputElement;
+        this.geoResults = this.element.querySelector(
+            '#geo-results'
+        ) as HTMLElement;
 
         if (this.geoInput && this.geoResults) {
-            this.geoInput.setAttribute('aria-label', i18n.t('search.aria.input'));
+            this.geoInput.setAttribute(
+                'aria-label',
+                i18n.t('search.aria.input')
+            );
             this.geoInput.placeholder = i18n.t('search.placeholder');
-            const onLocale = () => { if (this.geoInput) this.geoInput.placeholder = i18n.t('search.placeholder'); };
+            const onLocale = () => {
+                if (this.geoInput)
+                    this.geoInput.placeholder = i18n.t('search.placeholder');
+            };
             eventBus.on('localeChanged', onLocale);
             this.addSubscription(() => eventBus.off('localeChanged', onLocale));
 
             this.geoResults.setAttribute('role', 'listbox');
             this.geoResults.setAttribute('aria-live', 'polite');
-            this.geoResults.setAttribute('aria-label', i18n.t('search.aria.results'));
+            this.geoResults.setAttribute(
+                'aria-label',
+                i18n.t('search.aria.results')
+            );
 
             this.createFilterChips();
             this.createEmptyStates();
 
-            this.geoInput.addEventListener('input', this.handleInput.bind(this));
+            this.geoInput.addEventListener(
+                'input',
+                this.handleInput.bind(this)
+            );
 
             const focusTimer = setInterval(() => {
                 if (this.element?.classList.contains('is-open')) {
@@ -87,7 +103,9 @@ export class SearchSheet extends BaseComponent {
                 }
             };
             eventBus.on('sheetClosed', onSheetClosed);
-            this.addSubscription(() => eventBus.off('sheetClosed', onSheetClosed));
+            this.addSubscription(() =>
+                eventBus.off('sheetClosed', onSheetClosed)
+            );
         }
     }
 
@@ -105,8 +123,13 @@ export class SearchSheet extends BaseComponent {
         chipContainer.setAttribute('role', 'radiogroup');
         chipContainer.setAttribute('aria-label', 'Filtres de recherche');
 
-        const filters: FilterKey[] = ['all', 'cities', 'mountains', 'countries'];
-        filters.forEach(key => {
+        const filters: FilterKey[] = [
+            'all',
+            'cities',
+            'mountains',
+            'countries',
+        ];
+        filters.forEach((key) => {
             const chip = document.createElement('button');
             chip.className = `search-chip${key === 'all' ? ' search-chip-active' : ''}`;
             chip.textContent = i18n.t(`search.filter.${key}`);
@@ -115,7 +138,7 @@ export class SearchSheet extends BaseComponent {
             chip.setAttribute('aria-checked', key === 'all' ? 'true' : 'false');
             chip.addEventListener('click', () => {
                 this.activeFilter = key;
-                chipContainer.querySelectorAll('.search-chip').forEach(c => {
+                chipContainer.querySelectorAll('.search-chip').forEach((c) => {
                     c.classList.remove('search-chip-active');
                     c.setAttribute('aria-checked', 'false');
                 });
@@ -128,7 +151,10 @@ export class SearchSheet extends BaseComponent {
             chipContainer.appendChild(chip);
         });
 
-        this.geoInput.parentElement?.insertAdjacentElement('afterend', chipContainer);
+        this.geoInput.parentElement?.insertAdjacentElement(
+            'afterend',
+            chipContainer
+        );
     }
 
     private handleInput(): void {
@@ -154,11 +180,20 @@ export class SearchSheet extends BaseComponent {
         this.geoResults.textContent = '';
         let localMatches: typeof state.localPeaks = [];
         if (this.activeFilter === 'all' || this.activeFilter === 'mountains') {
-            localMatches = state.localPeaks.filter(p => p.name.toLowerCase().includes(q)).slice(0, 5);
+            localMatches = state.localPeaks
+                .filter((p) => p.name.toLowerCase().includes(q))
+                .slice(0, 5);
             if (localMatches.length > 0) {
-                localMatches.forEach(p => {
+                localMatches.forEach((p) => {
                     this.geoResults!.appendChild(
-                        this.createGeoItem(p.lat, p.lon, p.name, CLASSIFICATIONS.peak, p.name, p.ele)
+                        this.createGeoItem(
+                            p.lat,
+                            p.lon,
+                            p.name,
+                            CLASSIFICATIONS.peak,
+                            p.name,
+                            p.ele
+                        )
                     );
                 });
                 this.geoResults.style.display = 'block';
@@ -181,29 +216,48 @@ export class SearchSheet extends BaseComponent {
                 const shouldSearchGeo = this.activeFilter !== 'mountains';
 
                 const [locations, overpassPeaks] = await Promise.all([
-                    shouldSearchGeo ? searchLocations(q, signal) : Promise.resolve([]),
-                    shouldSearchPeaks ? searchPeaksByName(q) : Promise.resolve([]),
+                    shouldSearchGeo
+                        ? searchLocations(q, signal)
+                        : Promise.resolve([]),
+                    shouldSearchPeaks
+                        ? searchPeaksByName(q)
+                        : Promise.resolve([]),
                 ]);
 
                 if (signal.aborted) return;
                 loadingEl.remove();
 
-                const localNames = new Set(localMatches.map(p => p.name.toLowerCase()));
+                const localNames = new Set(
+                    localMatches.map((p) => p.name.toLowerCase())
+                );
                 if (overpassPeaks && overpassPeaks.length > 0) {
                     overpassPeaks
-                        .filter(p => !localNames.has(p.name.toLowerCase()))
-                        .forEach(p => {
+                        .filter((p) => !localNames.has(p.name.toLowerCase()))
+                        .forEach((p) => {
                             this.geoResults!.appendChild(
-                                this.createGeoItem(p.lat, p.lon, p.name, CLASSIFICATIONS.peak, p.name, p.ele)
+                                this.createGeoItem(
+                                    p.lat,
+                                    p.lon,
+                                    p.name,
+                                    CLASSIFICATIONS.peak,
+                                    p.name,
+                                    p.ele
+                                )
                             );
                         });
                 }
 
                 if (locations) {
-                    locations.forEach(res => {
-                        if (!this.matchesFilter(res.classification.type)) return;
+                    locations.forEach((res) => {
+                        if (!this.matchesFilter(res.classification.type))
+                            return;
                         this.geoResults!.appendChild(
-                            this.createGeoItem(res.lat, res.lon, res.label, res.classification)
+                            this.createGeoItem(
+                                res.lat,
+                                res.lon,
+                                res.label,
+                                res.classification
+                            )
                         );
                     });
                 }
@@ -217,7 +271,7 @@ export class SearchSheet extends BaseComponent {
                     this.showSearchEmptyState('no-results');
                 }
             } catch (e) {
-                console.warn("Geocoding error:", e);
+                console.warn('Geocoding error:', e);
                 loadingEl.remove();
                 if (localMatches.length === 0) {
                     this.geoResults!.innerHTML = `<div class="loading-inline">${i18n.t('search.error')}</div>`;
@@ -230,8 +284,10 @@ export class SearchSheet extends BaseComponent {
     private matchesFilter(type: string): boolean {
         if (this.activeFilter === 'all') return true;
         if (this.activeFilter === 'mountains') return type === 'peak';
-        if (this.activeFilter === 'cities') return type === 'city' || type === 'village';
-        if (this.activeFilter === 'countries') return type === 'country' || type === 'region';
+        if (this.activeFilter === 'cities')
+            return type === 'city' || type === 'village';
+        if (this.activeFilter === 'countries')
+            return type === 'country' || type === 'region';
         return true;
     }
 
@@ -264,17 +320,25 @@ export class SearchSheet extends BaseComponent {
         searchEl.appendChild(noResultsDiv);
     }
 
-    private showSearchEmptyState(which: 'initial' | 'no-results' | 'none'): void {
+    private showSearchEmptyState(
+        which: 'initial' | 'no-results' | 'none'
+    ): void {
         const initialEl = document.getElementById('search-initial-state');
         const noResultsEl = document.getElementById('search-no-results');
-        if (initialEl) initialEl.style.display = which === 'initial' ? 'flex' : 'none';
-        if (noResultsEl) noResultsEl.style.display = which === 'no-results' ? 'flex' : 'none';
+        if (initialEl)
+            initialEl.style.display = which === 'initial' ? 'flex' : 'none';
+        if (noResultsEl)
+            noResultsEl.style.display =
+                which === 'no-results' ? 'flex' : 'none';
     }
 
     private createGeoItem(
-        lat: number, lon: number, label: string,
+        lat: number,
+        lon: number,
+        label: string,
         classification: ResultClassification,
-        name = '', ele = 0
+        name = '',
+        ele = 0
     ): HTMLElement {
         const isPeak = classification.type === 'peak';
         const div = document.createElement('div');
@@ -324,7 +388,7 @@ export class SearchSheet extends BaseComponent {
 
     private attachListeners() {
         if (!this.geoResults) return;
-        this.geoResults.querySelectorAll('.geo-item').forEach(item => {
+        this.geoResults.querySelectorAll('.geo-item').forEach((item) => {
             (item as HTMLElement).onclick = (e) => {
                 e.stopPropagation();
                 const el = item as HTMLElement;
@@ -332,25 +396,40 @@ export class SearchSheet extends BaseComponent {
                 const lon = parseFloat(el.dataset.lon!);
 
                 if (isNaN(lat) || isNaN(lon)) {
-                    console.error("Invalid coordinates in search result");
+                    console.error('Invalid coordinates in search result');
                     return;
                 }
 
                 const resultType = el.dataset.resultType || 'poi';
                 const targetZoom = parseInt(el.dataset.zoom || '13');
                 const camDist = parseInt(el.dataset.camDist || '45000');
-                const name = el.dataset.name || el.querySelector('.geo-label')?.textContent || '';
+                const name =
+                    el.dataset.name ||
+                    el.querySelector('.geo-label')?.textContent ||
+                    '';
                 const ele = parseFloat(el.dataset.ele!) || 0;
 
-                this.handleResultClick(lat, lon, resultType, targetZoom, camDist, name, isNaN(ele) ? 0 : ele);
+                this.handleResultClick(
+                    lat,
+                    lon,
+                    resultType,
+                    targetZoom,
+                    camDist,
+                    name,
+                    isNaN(ele) ? 0 : ele
+                );
             };
         });
     }
 
     private handleResultClick(
-        lat: number, lon: number,
-        resultType: string, targetZoom: number, camDist: number,
-        name: string = '', ele: number = 0
+        lat: number,
+        lon: number,
+        resultType: string,
+        targetZoom: number,
+        camDist: number,
+        name: string = '',
+        ele: number = 0
     ) {
         if (!this.geoResults || !this.geoInput) return;
 
@@ -375,13 +454,14 @@ export class SearchSheet extends BaseComponent {
         refreshTerrain();
 
         const isPeak = resultType === 'peak';
-        const flyDuration = targetZoom <= 8 ? 2000 : targetZoom <= 11 ? 3000 : 3500;
+        const flyDuration =
+            targetZoom <= 8 ? 2000 : targetZoom <= 11 ? 3000 : 3500;
 
         setTimeout(async () => {
             const wp = lngLatToWorld(lon, lat, state.originTile);
             const flyAlt = isPeak ? ele * state.RELIEF_EXAGGERATION : 0;
             await flyTo(wp.x, wp.z, flyAlt, camDist, flyDuration);
-            
+
             // v5.28.25 : Force le LOD immédiatement après l'arrivée
             forceImmediateLODUpdate();
         }, 100);

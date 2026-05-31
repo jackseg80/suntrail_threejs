@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { getUVCategory, getComfortIndex, getFreezingAlert, fmtWindDir } from './weatherUtils';
+import {
+    getUVCategory,
+    getComfortIndex,
+    getFreezingAlert,
+    fmtWindDir,
+} from './weatherUtils';
 
 describe('getUVCategory()', () => {
     it('retourne "low" pour UV ≤ 2', () => {

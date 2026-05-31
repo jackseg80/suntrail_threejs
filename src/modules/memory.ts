@@ -1,7 +1,7 @@
 /**
  * Nettoie proprement un objet Three.js (Géométrie, Matériaux, Textures)
  * pour éviter les fuites de mémoire (VRAM).
- * 
+ *
  * @param obj L'objet Three.js à nettoyer
  */
 export function disposeObject(obj: any): void {
@@ -18,7 +18,9 @@ export function disposeObject(obj: any): void {
     }
 
     if (obj.material) {
-        const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
+        const materials = Array.isArray(obj.material)
+            ? obj.material
+            : [obj.material];
         for (const mat of materials) {
             if (typeof mat.dispose === 'function') {
                 // Ne PAS disposer les textures ici car elles sont désormais partagées via tileCache.ts.
@@ -30,7 +32,10 @@ export function disposeObject(obj: any): void {
     }
 
     // Gère le cas spécifique des matériaux de profondeur personnalisés
-    if (obj.customDepthMaterial && typeof obj.customDepthMaterial.dispose === 'function') {
+    if (
+        obj.customDepthMaterial &&
+        typeof obj.customDepthMaterial.dispose === 'function'
+    ) {
         obj.customDepthMaterial.dispose();
     }
 }

@@ -3,29 +3,29 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mocks avec vi.hoisted
 const { mockAnalysis, mockGeo } = vi.hoisted(() => ({
     mockAnalysis: {
-        getAltitudeAt: vi.fn(() => 2000)
+        getAltitudeAt: vi.fn(() => 2000),
     },
     mockGeo: {
-        worldToLngLat: vi.fn(() => ({ lat: 45.12345, lon: 6.12345 }))
-    }
+        worldToLngLat: vi.fn(() => ({ lat: 45.12345, lon: 6.12345 })),
+    },
 }));
 
 vi.mock('./toast', () => ({ showToast: vi.fn() }));
 vi.mock('../i18n/I18nService', () => ({
     i18n: {
-        t: vi.fn((key) => key)
-    }
+        t: vi.fn((key) => key),
+    },
 }));
 
 vi.mock('./analysis', () => ({
-    getAltitudeAt: mockAnalysis.getAltitudeAt
+    getAltitudeAt: mockAnalysis.getAltitudeAt,
 }));
 
 vi.mock('./geo', async (importOriginal) => {
     const actual = await importOriginal<typeof import('./geo')>();
     return {
         ...actual,
-        worldToLngLat: mockGeo.worldToLngLat
+        worldToLngLat: mockGeo.worldToLngLat,
     };
 });
 
@@ -51,11 +51,11 @@ describe('ExpertService (v5.29.37)', () => {
             uvIndex: 5,
             freezingLevel: 3200,
             visibility: 10,
-            locationName: 'Chamonix'
+            locationName: 'Chamonix',
         } as any;
 
         const report = expertService.generateWeatherReport(wd);
-        
+
         expect(report).toContain('SunTrail Weather Report');
         expect(report).toContain('Chamonix');
         expect(report).toContain('15°C');
@@ -64,9 +64,9 @@ describe('ExpertService (v5.29.37)', () => {
 
     it('doit générer un message SOS correct avec localisation utilisateur', async () => {
         state.userLocation = { lat: 46, lon: 7, alt: 2500 };
-        
+
         const msg = await expertService.generateSOSMessage(0.85); // 85% batterie
-        
+
         expect(msg).toContain('🆘 SOS SUNTRAIL');
         expect(msg).toContain('46.00000,7.00000');
         expect(msg).toContain('ALT:2500m');
@@ -76,9 +76,9 @@ describe('ExpertService (v5.29.37)', () => {
     it('doit générer un message SOS basé sur le curseur si pas de GPS', async () => {
         state.userLocation = null;
         state.controls = { target: { x: 100, z: 200 } } as any;
-        
-        const msg = await expertService.generateSOSMessage(0.50);
-        
+
+        const msg = await expertService.generateSOSMessage(0.5);
+
         expect(msg).toContain('45.12345,6.12345'); // Mock geo
         expect(msg).toContain('ALT:2000m'); // Mock altitude
         expect(msg).toContain('BAT:50%');

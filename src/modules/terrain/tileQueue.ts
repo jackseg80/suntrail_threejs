@@ -3,7 +3,7 @@ import { state } from '../state';
 import type { Tile } from './Tile';
 import { activeTiles } from '../terrain';
 
-export let loadQueue: Set<Tile> = new Set<Tile>();
+export const loadQueue: Set<Tile> = new Set<Tile>();
 let isProcessingQueue = false;
 
 const buildQueue: Tile[] = [];
@@ -31,9 +31,12 @@ export function queueBuildMesh(tile: Tile) {
 function processBuildQueue() {
     const BUILD_BUDGET_MS = 10;
     const start = performance.now();
-    
+
     let first = true;
-    while (buildQueue.length > 0 && (first || (performance.now() - start < BUILD_BUDGET_MS))) {
+    while (
+        buildQueue.length > 0 &&
+        (first || performance.now() - start < BUILD_BUDGET_MS)
+    ) {
         first = false;
         const tile = buildQueue.shift()!;
         buildQueueKeys.delete(tile.key);
@@ -41,7 +44,7 @@ function processBuildQueue() {
             tile.buildMesh(state.RESOLUTION);
         }
     }
-    
+
     if (buildQueue.length > 0) {
         state.isProcessingTiles = true;
         requestAnimationFrame(processBuildQueue);
@@ -62,18 +65,26 @@ export async function processLoadQueue() {
     state.isProcessingTiles = true;
     try {
         let frameFrustum: THREE.Frustum | null = null;
-        if (state.camera && state.camera.projectionMatrix && state.camera.matrixWorldInverse) {
-            const proj = new THREE.Matrix4().multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
+        if (
+            state.camera &&
+            state.camera.projectionMatrix &&
+            state.camera.matrixWorldInverse
+        ) {
+            const proj = new THREE.Matrix4().multiplyMatrices(
+                state.camera.projectionMatrix,
+                state.camera.matrixWorldInverse
+            );
             frameFrustum = new THREE.Frustum();
             frameFrustum.setFromProjectionMatrix(proj);
         }
         const visCache = new Map<Tile, boolean>();
-        const isVis = (t: Tile) => { 
-            let v = visCache.get(t); 
-            if (v === undefined) { 
-                v = t.isVisible(frameFrustum ?? undefined); 
-                visCache.set(t, v); 
-            } return v; 
+        const isVis = (t: Tile) => {
+            let v = visCache.get(t);
+            if (v === undefined) {
+                v = t.isVisible(frameFrustum ?? undefined);
+                visCache.set(t, v);
+            }
+            return v;
         };
 
         // v5.28.48 : Filtrage immédiat des tuiles qui ne sont plus dans activeTiles (LOD obsolète)
@@ -89,34 +100,40 @@ export async function processLoadQueue() {
         // v5.31.1 : Amortized sort — only re-sort every 200ms or when queue changes significantly
         // v5.32.4 : Re-sort IMMEDIATELY if cache is empty to avoid "performance holes"
         const now = performance.now();
-        if (!sortedCache || sortedCache.length === 0 || (now - lastSortTime) > SORT_INTERVAL_MS) {
+        if (
+            !sortedCache ||
+            sortedCache.length === 0 ||
+            now - lastSortTime > SORT_INTERVAL_MS
+        ) {
             sortedCache = Array.from(loadQueue).sort((a, b) => {
                 if (!state.camera) return 0;
                 const camPos = state.camera.position;
                 const aVis = isVis(a) ? 1 : 0;
                 const bVis = isVis(b) ? 1 : 0;
                 if (aVis !== bVis) return bVis - aVis;
-                const da = (a.worldX - camPos.x) ** 2 + (a.worldZ - camPos.z) ** 2;
-                const db = (b.worldX - camPos.x) ** 2 + (b.worldZ - camPos.z) ** 2;
+                const da =
+                    (a.worldX - camPos.x) ** 2 + (a.worldZ - camPos.z) ** 2;
+                const db =
+                    (b.worldX - camPos.x) ** 2 + (b.worldZ - camPos.z) ** 2;
                 return da - db;
             });
             lastSortTime = now;
         }
 
-        const visiblePending = sortedCache.filter(t => isVis(t)).length;
+        const visiblePending = sortedCache.filter((t) => isVis(t)).length;
         const isTransitioning = visiblePending >= 4;
         const targetInFlight = isTransitioning
             ? Math.max(1, state.MAX_BUILDS_PER_CYCLE + 2)
             : Math.max(1, state.MAX_BUILDS_PER_CYCLE);
-        
+
         // v5.34.5 : Calcul des slots disponibles dans le "pool" de connexion
         const availableSlots = Math.max(0, targetInFlight - loadingCount);
         if (availableSlots <= 0) {
             return; // On attend que des tuiles finissent de charger
         }
-        
+
         const batch = sortedCache.splice(0, availableSlots);
-        batch.forEach(t => loadQueue.delete(t));
+        batch.forEach((t) => loadQueue.delete(t));
 
         // On lance le chargement de manière asynchrone (fire-and-forget pour la file).
         // Le statut 'loaded' déclenchera automatiquement queueBuildMesh() à la fin du chargement réel.
@@ -124,13 +141,16 @@ export async function processLoadQueue() {
             if (tile.status === 'idle' && activeTiles.has(tile.key)) {
                 loadingCount++;
                 state.isProcessingTiles = true;
-                tile.load().finally(() => {
-                    loadingCount--;
-                    // Si on vient de finir une tuile, on relance immédiatement la queue pour boucher le trou
-                    if (!isProcessingQueue && loadQueue.size > 0) processLoadQueue();
-                }).catch(() => {
-                    tile.status = 'failed';
-                });
+                tile.load()
+                    .finally(() => {
+                        loadingCount--;
+                        // Si on vient de finir une tuile, on relance immédiatement la queue pour boucher le trou
+                        if (!isProcessingQueue && loadQueue.size > 0)
+                            processLoadQueue();
+                    })
+                    .catch(() => {
+                        tile.status = 'failed';
+                    });
             }
         });
     } finally {
@@ -139,7 +159,9 @@ export async function processLoadQueue() {
             // Intervalle réduit (16ms) pour saturer les workers plus vite si slots dispo
             setTimeout(processLoadQueue, 16);
         } else {
-            setTimeout(() => { if (loadingCount === 0) state.isProcessingTiles = false; }, 100);
+            setTimeout(() => {
+                if (loadingCount === 0) state.isProcessingTiles = false;
+            }, 100);
         }
     }
 }

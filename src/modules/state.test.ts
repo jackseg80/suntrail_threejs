@@ -46,9 +46,9 @@ describe('state.ts', () => {
         });
 
         it('balanced (STD) — Galaxy A53 : valeurs calibrées actuelles', () => {
-            expect(PRESETS.balanced.RESOLUTION).toBe(64);             // v5.40.18: 96 -> 64 (Performance optimization)
-            expect(PRESETS.balanced.RANGE).toBe(5);                  // v5.40.18: 4 -> 5 (Horizon optimization)
-            expect(PRESETS.balanced.VEGETATION_DENSITY).toBe(1500);   // v5.21: 500 → 1500
+            expect(PRESETS.balanced.RESOLUTION).toBe(64); // v5.40.18: 96 -> 64 (Performance optimization)
+            expect(PRESETS.balanced.RANGE).toBe(5); // v5.40.18: 4 -> 5 (Horizon optimization)
+            expect(PRESETS.balanced.VEGETATION_DENSITY).toBe(1500); // v5.21: 500 → 1500
 
             expect(PRESETS.balanced.WEATHER_DENSITY).toBe(1000);
         });
@@ -98,18 +98,18 @@ describe('state persistance (v5.7)', () => {
         state.MAP_SOURCE = 'satellite';
         state.SHOW_TRAILS = true;
         state.IS_2D_MODE = false;
-        
+
         saveSettings();
         vi.advanceTimersByTime(300);
-        
+
         state.MAP_SOURCE = 'opentopomap'; // change to something else
         state.SHOW_TRAILS = false;
         state.IS_2D_MODE = true;
-        
+
         const loaded = loadSettings();
         expect(loaded).not.toBeNull();
         expect(loaded?.MAP_SOURCE).toBe('satellite');
-        
+
         // Ensure state was modified
         expect(state.MAP_SOURCE).toBe('satellite');
         expect(state.SHOW_TRAILS).toBe(true);
@@ -120,17 +120,17 @@ describe('state persistance (v5.7)', () => {
         state.TARGET_LAT = 45.0;
         state.TARGET_LON = 6.0;
         state.ZOOM = 14.5;
-        
+
         saveSettings();
         vi.advanceTimersByTime(300);
-        
+
         // Reset state
         state.TARGET_LAT = 0;
         state.TARGET_LON = 0;
         state.ZOOM = 6;
-        
+
         loadSettings();
-        
+
         expect(state.TARGET_LAT).toBe(45.0);
         expect(state.TARGET_LON).toBe(6.0);
         expect(state.ZOOM).toBe(14.5);
@@ -140,7 +140,7 @@ describe('state persistance (v5.7)', () => {
 
     it('should return null and clear if data is corrupted', () => {
         localStorage.setItem('suntrail_settings', '{ invalid_json: ');
-        
+
         const loaded = loadSettings();
         expect(loaded).toBeNull();
         expect(localStorage.getItem('suntrail_settings')).toBeNull();
@@ -150,16 +150,16 @@ describe('state persistance (v5.7)', () => {
         state.PERFORMANCE_PRESET = 'custom';
         state.RESOLUTION = 999;
         state.RANGE = 10;
-        
+
         saveSettings();
         vi.advanceTimersByTime(300);
-        
+
         state.RESOLUTION = 64; // Reset to default
         state.RANGE = 4;
-        
+
         const loaded = loadSettings();
         expect(loaded?.PERFORMANCE_PRESET).toBe('custom');
-        
+
         // Ensure state was properly modified
         expect(state.RESOLUTION).toBe(999);
         expect(state.RANGE).toBe(10);
@@ -168,15 +168,15 @@ describe('state persistance (v5.7)', () => {
     it('should not override custom performance settings if preset is not custom', () => {
         state.PERFORMANCE_PRESET = 'balanced';
         state.RESOLUTION = 999; // even if set manually, balanced shouldn't use it on load
-        
+
         saveSettings();
         vi.advanceTimersByTime(300);
-        
+
         state.RESOLUTION = 64; // Reset
-        
+
         const loaded = loadSettings();
         expect(loaded?.PERFORMANCE_PRESET).toBe('balanced');
-        
+
         // loadSettings only restores these on 'custom', so it shouldn't modify state.RESOLUTION here
         expect(state.RESOLUTION).toBe(64);
     });

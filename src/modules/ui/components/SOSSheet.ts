@@ -19,10 +19,11 @@ export class SOSSheet extends BaseComponent {
         const sosCopyBtn = document.getElementById('sos-copy-btn');
         sosCopyBtn?.setAttribute('aria-label', i18n.t('sos.copy'));
         sosCopyBtn?.addEventListener('click', () => {
-            const txt = document.getElementById('sos-text-container')?.textContent;
-            if (txt) { 
-                navigator.clipboard.writeText(txt); 
-                showToast("🆘 Message copié"); 
+            const txt =
+                document.getElementById('sos-text-container')?.textContent;
+            if (txt) {
+                navigator.clipboard.writeText(txt);
+                showToast('🆘 Message copié');
             }
         });
 
@@ -31,7 +32,7 @@ export class SOSSheet extends BaseComponent {
 
         const sosCloseBtn = document.getElementById('sos-close-btn');
         sosCloseBtn?.setAttribute('aria-label', i18n.t('sos.close'));
-        sosCloseBtn?.addEventListener('click', () => { 
+        sosCloseBtn?.addEventListener('click', () => {
             sheetManager.close();
         });
 
@@ -71,13 +72,15 @@ export class SOSSheet extends BaseComponent {
         const textContainer = document.getElementById('sos-text-container');
         if (!textContainer) return;
 
-        textContainer.textContent = "⌛ Localisation en cours...";
+        textContainer.textContent = '⌛ Localisation en cours...';
 
         try {
             const message = await expertService.generateSOSMessage();
             textContainer.textContent = message;
 
-            const smsBtn = document.getElementById('sos-sms-btn') as HTMLButtonElement | null;
+            const smsBtn = document.getElementById(
+                'sos-sms-btn'
+            ) as HTMLButtonElement | null;
             if (smsBtn) {
                 smsBtn.disabled = false;
                 smsBtn.onclick = () => {
@@ -85,7 +88,8 @@ export class SOSSheet extends BaseComponent {
                 };
             }
         } catch (e) {
-            textContainer.textContent = "Erreur lors de la génération du message SOS";
+            textContainer.textContent =
+                'Erreur lors de la génération du message SOS';
             console.error('[SOS] Failed to generate message:', e);
         }
     }

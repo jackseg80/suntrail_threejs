@@ -1,22 +1,81 @@
 <div id="widgets-inner-container">
     <div id="bottom-stack">
         <div id="bottom-bar">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <div style="font-weight:700; font-size:18px;"><span id="time-disp">12:00</span></div>
-                    <div id="sun-phase" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-left:5px;">☀️ Plein jour</div>
-                    <input type="date" id="date-input" style="font-size:12px; padding:8px 12px; border-radius:10px; cursor:pointer; font-family: inherit; -webkit-appearance: none; display: flex; align-items: center; min-height: 35px;">
+            <div
+                style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                "
+            >
+                <div style="display: flex; align-items: center; gap: 12px">
+                    <div style="font-weight: 700; font-size: 18px">
+                        <span id="time-disp">12:00</span>
+                    </div>
+                    <div
+                        id="sun-phase"
+                        style="
+                            font-size: 11px;
+                            font-weight: 700;
+                            text-transform: uppercase;
+                            letter-spacing: 1px;
+                            margin-left: 5px;
+                        "
+                    >
+                        ☀️ Plein jour
+                    </div>
+                    <input
+                        type="date"
+                        id="date-input"
+                        style="
+                            font-size: 12px;
+                            padding: 8px 12px;
+                            border-radius: 10px;
+                            cursor: pointer;
+                            font-family: inherit;
+                            -webkit-appearance: none;
+                            display: flex;
+                            align-items: center;
+                            min-height: 35px;
+                        "
+                    />
                 </div>
-                <div style="display:flex; gap:10px;">
-                    <button id="play-btn" style="background:none; border:none; color:var(--text); font-size:18px; cursor:pointer;">▶</button>
-                    <select id="speed-select" style="background:none; border:none; color:var(--text-2); font-size:12px;">
+                <div style="display: flex; gap: 10px">
+                    <button
+                        id="play-btn"
+                        style="
+                            background: none;
+                            border: none;
+                            color: var(--text);
+                            font-size: 18px;
+                            cursor: pointer;
+                        "
+                    >
+                        ▶
+                    </button>
+                    <select
+                        id="speed-select"
+                        style="
+                            background: none;
+                            border: none;
+                            color: var(--text-2);
+                            font-size: 12px;
+                        "
+                    >
                         <option value="1">1x</option>
                         <option value="5">5x</option>
                         <option value="10">10x</option>
                     </select>
                 </div>
             </div>
-            <input type="range" id="time-slider" min="0" max="1439" value="720" aria-label="Heure de simulation">
+            <input
+                type="range"
+                id="time-slider"
+                min="0"
+                max="1439"
+                value="720"
+                aria-label="Heure de simulation"
+            />
         </div>
     </div>
     <div id="elevation-profile">
@@ -25,17 +84,39 @@
             <div class="profile-header-content">
                 <div class="profile-title-row">
                     <h3 class="profile-title">📈 Profil & Pentes</h3>
-                    <button id="profile-solar-btn" class="profile-solar-btn" style="display:none;">☀️ Analyse</button>
+                    <button
+                        id="profile-solar-btn"
+                        class="profile-solar-btn"
+                        style="display: none"
+                    >
+                        ☀️ Analyse
+                    </button>
                 </div>
                 <div class="profile-controls">
-                    <div id="profile-info" class="profile-info-text">Distance : 0km | Alt : 0m | Pente : 0%</div>
-                    <button id="close-profile" class="profile-close-btn">&times;</button>
+                    <div id="profile-info" class="profile-info-text">
+                        Distance : 0km | Alt : 0m | Pente : 0%
+                    </div>
+                    <button id="close-profile" class="profile-close-btn">
+                        &times;
+                    </button>
                 </div>
             </div>
         </div>
         <div id="profile-chart-container">
-            <svg id="profile-svg" style="width:100%; height:100%;"></svg>
-            <div id="profile-cursor" style="display:none; position:absolute; top:0; height:100%; width:2px; background:cyan; pointer-events:none; box-shadow:0 0 10px cyan;"></div>
+            <svg id="profile-svg" style="width: 100%; height: 100%"></svg>
+            <div
+                id="profile-cursor"
+                style="
+                    display: none;
+                    position: absolute;
+                    top: 0;
+                    height: 100%;
+                    width: 2px;
+                    background: cyan;
+                    pointer-events: none;
+                    box-shadow: 0 0 10px cyan;
+                "
+            ></div>
         </div>
     </div>
 </div>

@@ -65,7 +65,9 @@ class SheetManager {
         sheet.setAttribute('tabindex', '-1');
 
         // ARIA: labelledby — find a .sheet-title or first heading as fallback
-        const title = sheet.querySelector('.sheet-title') ?? sheet.querySelector('h1, h2, h3');
+        const title =
+            sheet.querySelector('.sheet-title') ??
+            sheet.querySelector('h1, h2, h3');
         if (title) {
             if (!title.id) {
                 title.id = `sheet-title-${id}`;
@@ -101,7 +103,9 @@ class SheetManager {
         // trapFocus() focus le premier élément focusable à +50ms → le navigateur
         // scroll automatiquement vers cet élément, annulant tout reset antérieur.
         // On contre-carre à +55ms pour garantir scroll=0 après le focus.
-        setTimeout(() => { sheet.scrollTop = 0; }, 55);
+        setTimeout(() => {
+            sheet.scrollTop = 0;
+        }, 55);
     }
 
     /**
@@ -118,7 +122,7 @@ class SheetManager {
 
             this.closeActiveSheet();
             document.body.classList.remove('sheet-open');
-            
+
             // Hide overlay
             const overlay = this.getOverlay();
             if (overlay) {
@@ -217,21 +221,29 @@ class SheetManager {
     // ─── Accessibility: Focus Trap ──────────────────────────────
 
     private trapFocus(sheet: HTMLElement): void {
-        const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), a[href]';
+        const FOCUSABLE =
+            'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), a[href]';
 
         const getFocusable = (): HTMLElement[] =>
-            [...sheet.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(el => !el.closest('[hidden]'));
+            [...sheet.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
+                (el) => !el.closest('[hidden]')
+            );
 
         this.focusTrapHandler = (e: KeyboardEvent) => {
             if (e.key !== 'Tab') return;
             const elements = getFocusable();
-            if (!elements.length) { e.preventDefault(); return; }
+            if (!elements.length) {
+                e.preventDefault();
+                return;
+            }
             const first = elements[0];
             const last = elements[elements.length - 1];
             if (e.shiftKey && document.activeElement === first) {
-                e.preventDefault(); last.focus();
+                e.preventDefault();
+                last.focus();
             } else if (!e.shiftKey && document.activeElement === last) {
-                e.preventDefault(); first.focus();
+                e.preventDefault();
+                first.focus();
             }
         };
         document.addEventListener('keydown', this.focusTrapHandler);

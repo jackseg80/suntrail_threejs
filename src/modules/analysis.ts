@@ -14,25 +14,42 @@ export function resetAnalysisCache(): void {
     lastUsedTile = null;
 }
 
-export function getAltitudeAt(worldX: number, worldZ: number, hintTile: any = null): number {
+export function getAltitudeAt(
+    worldX: number,
+    worldZ: number,
+    hintTile: any = null
+): number {
     _queryPoint.set(worldX, 0, worldZ);
     let tile = hintTile;
 
     if (!tile) {
-        if (lastUsedTile && lastUsedTile.status === 'loaded' && lastUsedTile.bounds && lastUsedTile.bounds.containsPoint(_queryPoint)) {
+        if (
+            lastUsedTile &&
+            lastUsedTile.status === 'loaded' &&
+            lastUsedTile.bounds &&
+            lastUsedTile.bounds.containsPoint(_queryPoint)
+        ) {
             tile = lastUsedTile;
         } else {
             // O(1) spatial index lookup instead of O(n) activeTiles iteration
             const candidates = queryTiles(worldX, worldZ);
             for (const t of candidates) {
-                if (t.status === 'loaded' && t.bounds && t.bounds.containsPoint(_queryPoint)) {
+                if (
+                    t.status === 'loaded' &&
+                    t.bounds &&
+                    t.bounds.containsPoint(_queryPoint)
+                ) {
                     if (!tile || t.zoom > tile.zoom) tile = t;
                 }
             }
             // Fallback to full scan if spatial index is empty (e.g. during init)
             if (!tile) {
                 for (const t of activeTiles.values()) {
-                    if (t.status === 'loaded' && t.bounds && t.bounds.containsPoint(_queryPoint)) {
+                    if (
+                        t.status === 'loaded' &&
+                        t.bounds &&
+                        t.bounds.containsPoint(_queryPoint)
+                    ) {
                         if (!tile || t.zoom > tile.zoom) tile = t;
                     }
                 }
@@ -48,8 +65,8 @@ export function getAltitudeAt(worldX: number, worldZ: number, hintTile: any = nu
     let relZ = (worldZ - tile.worldZ) / tile.tileSizeMeters + 0.5;
 
     if (tile.elevScale < 1.0) {
-        relX = tile.elevOffset.x + (relX * tile.elevScale);
-        relZ = tile.elevOffset.y + (relZ * tile.elevScale);
+        relX = tile.elevOffset.x + relX * tile.elevScale;
+        relZ = tile.elevOffset.y + relZ * tile.elevScale;
     }
 
     const fx = relX * res;
@@ -62,10 +79,13 @@ export function getAltitudeAt(worldX: number, worldZ: number, hintTile: any = nu
     const dz = fz - z0;
 
     const getH = (x: number, z: number) => {
-        const i = (Math.max(0, Math.min(res - 1, z)) * res + Math.max(0, Math.min(res - 1, x))) * 4;
+        const i =
+            (Math.max(0, Math.min(res - 1, z)) * res +
+                Math.max(0, Math.min(res - 1, x))) *
+            4;
         const r = tile.pixelData[i];
-        const g = tile.pixelData[i+1];
-        const b = tile.pixelData[i+2];
+        const g = tile.pixelData[i + 1];
+        const b = tile.pixelData[i + 2];
         return decodeTerrainRGB(r, g, b, state.RELIEF_EXAGGERATION);
     };
 
@@ -74,7 +94,12 @@ export function getAltitudeAt(worldX: number, worldZ: number, hintTile: any = nu
     const h01 = getH(x0, z1);
     const h11 = getH(x1, z1);
 
-    return (h00 * (1 - dx) * (1 - dz) + h10 * dx * (1 - dz) + h01 * (1 - dx) * dz + h11 * dx * dz);
+    return (
+        h00 * (1 - dx) * (1 - dz) +
+        h10 * dx * (1 - dz) +
+        h01 * (1 - dx) * dz +
+        h11 * dx * dz
+    );
 }
 
 export interface SolarAnalysisResult {
@@ -122,10 +147,14 @@ export function getMoonPhaseName(phase: number): string {
  * Analyse solaire avancée (v5.4.2 → enrichie v5.12)
  * Retourne les données pour affichage dans l'UI
  */
-export function runSolarProbe(worldX: number, worldZ: number, altitude: number): SolarAnalysisResult | null {
+export function runSolarProbe(
+    worldX: number,
+    worldZ: number,
+    altitude: number
+): SolarAnalysisResult | null {
     if (!state.simDate) return null;
     const gps = worldToLngLat(worldX, worldZ, state.originTile);
-    const steps = 48; 
+    const steps = 48;
 
     let totalSunlightMinutes = 0;
     let firstSunTime: Date | null = null;
@@ -136,10 +165,14 @@ export function runSolarProbe(worldX: number, worldZ: number, altitude: number):
         const date = new Date(state.simDate);
         date.setHours(0, i * 30, 0, 0);
         const sunPos = SunCalc.getPosition(date, gps.lat, gps.lon);
-        const sunPosVector = new THREE.Vector3().setFromSphericalCoords(100000, Math.PI/2 - sunPos.altitude, sunPos.azimuth + Math.PI);
-        
+        const sunPosVector = new THREE.Vector3().setFromSphericalCoords(
+            100000,
+            Math.PI / 2 - sunPos.altitude,
+            sunPos.azimuth + Math.PI
+        );
+
         const inShadow = isAtShadow(worldX, worldZ, altitude, sunPosVector);
-        const hasSun = (sunPos.altitude > 0) && !inShadow;
+        const hasSun = sunPos.altitude > 0 && !inShadow;
 
         if (hasSun) {
             totalSunlightMinutes += 30;
@@ -148,7 +181,7 @@ export function runSolarProbe(worldX: number, worldZ: number, altitude: number):
 
         timeline.push({
             isNight: sunPos.altitude <= 0,
-            inShadow: inShadow
+            inShadow: inShadow,
         });
     }
 
@@ -157,18 +190,19 @@ export function runSolarProbe(worldX: number, worldZ: number, altitude: number):
     baseDate.setHours(12, 0, 0, 0); // Use noon as reference date for getTimes
     const times = SunCalc.getTimes(baseDate, gps.lat, gps.lon);
 
-    const toValidDate = (d: Date): Date | null => (d && !isNaN(d.getTime()) ? d : null);
+    const toValidDate = (d: Date): Date | null =>
+        d && !isNaN(d.getTime()) ? d : null;
 
-    const sunrise   = toValidDate(times.sunrise);
-    const sunset    = toValidDate(times.sunset);
+    const sunrise = toValidDate(times.sunrise);
+    const sunset = toValidDate(times.sunset);
     const solarNoon = toValidDate(times.solarNoon);
 
     // Morning golden hour: sunrise → goldenHourEnd
     const goldenHourMorningStart = toValidDate(times.sunrise);
-    const goldenHourMorningEnd   = toValidDate(times.goldenHourEnd);
+    const goldenHourMorningEnd = toValidDate(times.goldenHourEnd);
     // Evening golden hour: goldenHour → sunset
     const goldenHourEveningStart = toValidDate(times.goldenHour);
-    const goldenHourEveningEnd   = toValidDate(times.sunset);
+    const goldenHourEveningEnd = toValidDate(times.sunset);
 
     const dayDurationMinutes =
         sunrise && sunset
@@ -179,11 +213,12 @@ export function runSolarProbe(worldX: number, worldZ: number, altitude: number):
     const nowPos = SunCalc.getPosition(state.simDate, gps.lat, gps.lon);
     const currentElevationDeg = nowPos.altitude * (180 / Math.PI);
     // SunCalc azimuth is measured from south, clockwise → normalize to 0-360° from north
-    const currentAzimuthDeg   = ((nowPos.azimuth * (180 / Math.PI)) + 180 + 360) % 360;
+    const currentAzimuthDeg =
+        (nowPos.azimuth * (180 / Math.PI) + 180 + 360) % 360;
 
     // ── Moon ──────────────────────────────────────────────────────────────────
-    const moonIllum  = SunCalc.getMoonIllumination(baseDate);
-    const moonPhase  = moonIllum.phase;
+    const moonIllum = SunCalc.getMoonIllumination(baseDate);
+    const moonPhase = moonIllum.phase;
     const moonPhaseName = getMoonPhaseName(moonPhase);
 
     // ── 24h elevation curve (144 pts × 10 min) ────────────────────────────────
@@ -222,7 +257,12 @@ export function runSolarProbe(worldX: number, worldZ: number, altitude: number):
 
 const _rayPoint = new THREE.Vector3();
 
-export function isAtShadow(worldX: number, worldZ: number, altitude: number, sunPos: THREE.Vector3): boolean {
+export function isAtShadow(
+    worldX: number,
+    worldZ: number,
+    altitude: number,
+    sunPos: THREE.Vector3
+): boolean {
     _rayPoint.set(worldX, altitude + 2, worldZ);
     const ray = new THREE.Ray(_rayPoint.clone(), sunPos.clone().normalize());
     const hit = findTerrainIntersection(ray);
@@ -232,7 +272,7 @@ export function isAtShadow(worldX: number, worldZ: number, altitude: number, sun
 export function findTerrainIntersection(ray: THREE.Ray): THREE.Vector3 | null {
     const maxDist = 500000;
     const p = new THREE.Vector3();
-    let hintTile: any = null;
+    const hintTile: any = null;
     let dist = 100;
     while (dist < maxDist) {
         ray.at(dist, p);
@@ -255,8 +295,8 @@ export function findTerrainIntersection(ray: THREE.Ray): THREE.Vector3 | null {
  * v5.28.4 : Centralisation de la logique autrefois dupliquée dans terrain.ts.
  */
 export function drapeToTerrain(
-    points: Array<{lon: number; lat: number; ele?: number; alt?: number}>,
-    originTile: {x: number; y: number; z: number},
+    points: Array<{ lon: number; lat: number; ele?: number; alt?: number }>,
+    originTile: { x: number; y: number; z: number },
     densifySteps = 4,
     surfaceOffset = 12
 ): THREE.Vector3[] {
@@ -267,13 +307,16 @@ export function drapeToTerrain(
     for (let i = 0; i < points.length; i++) {
         const p = points[i];
         const pos = lngLatToWorld(p.lon, p.lat, originTile);
-        const rawAlt = (p.ele !== undefined ? p.ele : (p.alt !== undefined ? p.alt : 0));
+        const rawAlt =
+            p.ele !== undefined ? p.ele : p.alt !== undefined ? p.alt : 0;
         const elevGPX = rawAlt * state.RELIEF_EXAGGERATION;
         const terrainY = is2D ? 0 : getAltitudeAt(pos.x, pos.z);
-        
+
         // On prend le max entre l'altitude GPS et le terrain pour éviter que le trait s'enterre
         // En 2D, on force à 0 + offset
-        const y = is2D ? surfaceOffset : Math.max(terrainY, elevGPX) + surfaceOffset;
+        const y = is2D
+            ? surfaceOffset
+            : Math.max(terrainY, elevGPX) + surfaceOffset;
         const currentPos = new THREE.Vector3(pos.x, y, pos.z);
 
         // v5.28.5: Filtrage anti-frétillement (jitter) au niveau du draping
@@ -284,22 +327,29 @@ export function drapeToTerrain(
 
         result.push(currentPos);
         lastPos = currentPos;
-        
+
         if (i < points.length - 1 && densifySteps > 0) {
             const pNext = points[i + 1];
-            const nextRawAlt = (pNext.ele !== undefined ? pNext.ele : (pNext.alt !== undefined ? pNext.alt : 0));
-            
+            const nextRawAlt =
+                pNext.ele !== undefined
+                    ? pNext.ele
+                    : pNext.alt !== undefined
+                      ? pNext.alt
+                      : 0;
+
             for (let s = 1; s < densifySteps; s++) {
                 const t = s / densifySteps;
                 const iLon = p.lon + (pNext.lon - p.lon) * t;
                 const iLat = p.lat + (pNext.lat - p.lat) * t;
                 const iEle = rawAlt + (nextRawAlt - rawAlt) * t;
-                
+
                 const iPos = lngLatToWorld(iLon, iLat, originTile);
                 const iElevGPX = iEle * state.RELIEF_EXAGGERATION;
                 const iTerrainY = is2D ? 0 : getAltitudeAt(iPos.x, iPos.z);
-                const iY = is2D ? surfaceOffset : Math.max(iTerrainY, iElevGPX) + surfaceOffset;
-                
+                const iY = is2D
+                    ? surfaceOffset
+                    : Math.max(iTerrainY, iElevGPX) + surfaceOffset;
+
                 const currentIPos = new THREE.Vector3(iPos.x, iY, iPos.z);
                 if (lastPos && currentIPos.distanceTo(lastPos) < 1.0) {
                     continue;

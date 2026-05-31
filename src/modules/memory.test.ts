@@ -7,11 +7,11 @@ describe('Memory Module', () => {
         const geometry = new THREE.BufferGeometry();
         const material = new THREE.MeshBasicMaterial();
         const mesh = new THREE.Mesh(geometry, material);
-        
+
         const childGeom = new THREE.BufferGeometry();
         const childMat = new THREE.MeshBasicMaterial();
         const childMesh = new THREE.Mesh(childGeom, childMat);
-        
+
         mesh.add(childMesh);
 
         // Espions sur les méthodes dispose
@@ -35,7 +35,10 @@ describe('Memory Module', () => {
 
     it('should dispose arrays of materials', () => {
         const geometry = new THREE.BufferGeometry();
-        const materials = [new THREE.MeshBasicMaterial(), new THREE.MeshBasicMaterial()];
+        const materials = [
+            new THREE.MeshBasicMaterial(),
+            new THREE.MeshBasicMaterial(),
+        ];
         const mesh = new THREE.Mesh(geometry, materials);
 
         const mat0Spy = vi.spyOn(materials[0], 'dispose');

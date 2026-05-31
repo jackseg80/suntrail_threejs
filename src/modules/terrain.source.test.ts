@@ -16,26 +16,26 @@ describe('Terrain Source Keys (v5.29.28)', () => {
     it('SHOULD respect hasManualSource flag and NOT auto-switch if true', () => {
         state.hasManualSource = true;
         state.MAP_SOURCE = 'satellite';
-        
+
         // Coordonnées en Suisse (Normalement force swisstopo)
-        const lat = 46.5; 
+        const lat = 46.5;
         const lon = 6.6;
-        
+
         autoSelectMapSource(lat, lon);
-        
+
         expect(state.MAP_SOURCE).toBe('satellite');
     });
 
     it('SHOULD auto-switch if hasManualSource is false', () => {
         state.hasManualSource = false;
         state.MAP_SOURCE = 'opentopomap';
-        
+
         // Coordonnées en Suisse
-        const lat = 46.5; 
+        const lat = 46.5;
         const lon = 6.6;
-        
+
         autoSelectMapSource(lat, lon);
-        
+
         expect(state.MAP_SOURCE).toBe('swisstopo');
     });
 
@@ -87,7 +87,7 @@ describe('Terrain Source Keys (v5.29.28)', () => {
 
         // Madrid, Espagne
         const lat = 40.42;
-        const lon = -3.70;
+        const lon = -3.7;
 
         autoSelectMapSource(lat, lon);
 
@@ -112,8 +112,8 @@ describe('Terrain Source Keys (v5.29.28)', () => {
         state.MAP_SOURCE = 'opentopomap';
 
         // Rome, Italie (pas encore de source HD native)
-        const lat = 41.90;
-        const lon = 12.50;
+        const lat = 41.9;
+        const lon = 12.5;
 
         autoSelectMapSource(lat, lon);
 
