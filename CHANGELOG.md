@@ -1,3 +1,23 @@
+## [5.56.6] - 2026-05-31
+
+### Added
+- **Module tooltip enrichi** (`tooltip.ts`) : Nouveau paramètre `trigger: 'auto' | 'click' | 'hover'` — détection automatique (hover desktop, click tactile). Accessibilité clavier (focus/blur), délai anti-flicker 150ms, fermeture au `touchstart` extérieur. 32 tests (+9).
+- **Info-bulles ⓘ WeatherSheet** : Isotherme 0°C, point de rosée, visibilité, index UV (échelle 0-11+).
+- **Info-bulles ⓘ SolarProbeSheet** : Azimut (direction du soleil) et élévation (hauteur au-dessus de l'horizon).
+- **Info-bulles ⓘ TrackSheet** : D+ (dénivelé positif), D− (dénivelé négatif), durée estimée (4 km/h), points GPS.
+- **Info-bulles ⓘ SettingsSheet** : Exagération relief, distance de brouillard, résolution LOD, rayon de rendu, densité végétation, économie d'énergie, intensité/vitesse/opacité météo.
+- **Info-bulle ⓘ TopStatusBar** : Badge LOD — source cartographique et niveau de zoom.
+- **i18n** (4 locales) : 20 nouvelles clés tooltip (`weather.mountain.*`, `solar.stat.*`, `track.stats.*`, `settings.label.*`, `topbar.*`).
+
+### Changed
+- `tooltip.ts` : `show()` annule désormais le `hideTimer` en attente avant l'early return (anti-flicker renforcé).
+- `WeatherSheet.ts` : Le listener click manuel sur la rangée Confort Rando est supprimé — le module tooltip gère son propre déclenchement.
+- `SolarProbeSheet.ts` : Ajout `disposeStatTooltips()` sur re-render et `dispose()`.
+
+### Tests
+- 965 tests passants (95 test files, 5 skipped).
+- Lint et TypeScript : clean.
+
 ## [5.56.5] - 2026-05-31
 
 ### Added

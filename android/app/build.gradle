@@ -1,6 +1,6 @@
-apply plugin: 'com.android.application'
+﻿apply plugin: 'com.android.application'
 
-// Chargement des propriétés du keystore (fichier NON committé dans Git)
+// Chargement des propriÃ©tÃ©s du keystore (fichier NON committÃ© dans Git)
 def keystorePropertiesFile = rootProject.file("keystore.properties")
 def keystoreProperties = new Properties()
 if (keystorePropertiesFile.exists()) {
@@ -14,9 +14,9 @@ android {
         applicationId "com.suntrail.threejs"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 820
+        versionCode 821
 
-        versionName "5.56.5"
+        versionName "5.56.6"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
@@ -45,7 +45,7 @@ android {
     }
 }
 
-// v5.32.14 : Forcer la toolchain pour le CI (évite la recherche JetBrains jbr-21)
+// v5.32.14 : Forcer la toolchain pour le CI (Ã©vite la recherche JetBrains jbr-21)
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
@@ -64,7 +64,7 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
-    // GPS natif dans RecordingService (FusedLocationProviderClient) — v5.23
+    // GPS natif dans RecordingService (FusedLocationProviderClient) â€” v5.23
     implementation "com.google.android.gms:play-services-location:21.3.0"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
