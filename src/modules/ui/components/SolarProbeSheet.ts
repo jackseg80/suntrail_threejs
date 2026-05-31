@@ -296,7 +296,8 @@ export class SolarProbeSheet extends BaseComponent {
             rtAz.className = 'solar-rt-stat-item';
             const rtAzLabel = document.createElement('span');
             rtAzLabel.className = 'exp-probe-label';
-            rtAzLabel.style.cssText = 'display:flex;align-items:center;gap:3px;';
+            rtAzLabel.style.cssText =
+                'display:flex;align-items:center;gap:3px;';
             rtAzLabel.innerHTML = `${i18n.t('solar.stat.azimuth')} <span style="font-size:10px;opacity:0.45;cursor:pointer;">ⓘ</span>`;
             rtAz.appendChild(rtAzLabel);
             const rtAzVal = document.createElement('div');
@@ -306,13 +307,18 @@ export class SolarProbeSheet extends BaseComponent {
             const azIcon = rtAzLabel.querySelector('span')!;
             const azContent = document.createElement('div');
             azContent.innerHTML = i18n.t('solar.stat.tooltipAzimuth');
-            this.statTooltips.push(createTooltip(azIcon as HTMLElement, azContent, { trigger: 'click' }));
+            this.statTooltips.push(
+                createTooltip(azIcon as HTMLElement, azContent, {
+                    trigger: 'click',
+                })
+            );
 
             const rtEl = document.createElement('div');
             rtEl.className = 'solar-rt-stat-item';
             const rtElLabel = document.createElement('span');
             rtElLabel.className = 'exp-probe-label';
-            rtElLabel.style.cssText = 'display:flex;align-items:center;gap:3px;';
+            rtElLabel.style.cssText =
+                'display:flex;align-items:center;gap:3px;';
             rtElLabel.innerHTML = `${i18n.t('solar.stat.elevation')} <span style="font-size:10px;opacity:0.45;cursor:pointer;">ⓘ</span>`;
             rtEl.appendChild(rtElLabel);
             const rtElVal = document.createElement('div');
@@ -322,7 +328,11 @@ export class SolarProbeSheet extends BaseComponent {
             const elIcon = rtElLabel.querySelector('span')!;
             const elContent = document.createElement('div');
             elContent.innerHTML = i18n.t('solar.stat.tooltipElevation');
-            this.statTooltips.push(createTooltip(elIcon as HTMLElement, elContent, { trigger: 'click' }));
+            this.statTooltips.push(
+                createTooltip(elIcon as HTMLElement, elContent, {
+                    trigger: 'click',
+                })
+            );
 
             const rtMoon = document.createElement('div');
             rtMoon.className = 'solar-rt-stat-item';

@@ -325,7 +325,9 @@ describe('createTooltip', () => {
     it('trigger: "hover" sets tabIndex=0 on anchor', () => {
         const anchorNoTab = createAnchor();
         anchorNoTab.tabIndex = -1;
-        const tooltip = createTooltip(anchorNoTab, content, { trigger: 'hover' });
+        const tooltip = createTooltip(anchorNoTab, content, {
+            trigger: 'hover',
+        });
         expect(anchorNoTab.tabIndex).toBe(0);
         tooltip.dispose();
         expect(anchorNoTab.tabIndex).toBe(-1);

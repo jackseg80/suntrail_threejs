@@ -61,12 +61,17 @@ export function getComfortIndex(
 
     // Weather code — penalize severe conditions
     if (weatherCode !== undefined) {
-        if (weatherCode >= 95) score -= 3;        // thunderstorm
-        else if (weatherCode >= 85) score -= 1;   // snow showers
-        else if (weatherCode >= 80) score -= 2;   // rain showers
-        else if (weatherCode >= 71) score -= 1;   // snow
-        else if (weatherCode >= 61) score -= 2;   // heavy/moderate rain
-        else if (weatherCode >= 51) score -= 1;   // drizzle
+        if (weatherCode >= 95)
+            score -= 3; // thunderstorm
+        else if (weatherCode >= 85)
+            score -= 1; // snow showers
+        else if (weatherCode >= 80)
+            score -= 2; // rain showers
+        else if (weatherCode >= 71)
+            score -= 1; // snow
+        else if (weatherCode >= 61)
+            score -= 2; // heavy/moderate rain
+        else if (weatherCode >= 51) score -= 1; // drizzle
     }
 
     // Visibility — penalize low visibility (fog, heavy rain)

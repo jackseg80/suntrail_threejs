@@ -81,12 +81,26 @@ describe('getComfortIndex()', () => {
 });
 
 describe('getComfortIndex() — extended parameters', () => {
-    const BASE = { temp: 18, wind: 9, uv: 3, humidity: 81, precProb: 53, windGusts: 21 };
+    const BASE = {
+        temp: 18,
+        wind: 9,
+        uv: 3,
+        humidity: 81,
+        precProb: 53,
+        windGusts: 21,
+    };
 
     it('orage (code 95) + visibilité 1km + couverture 100% → score faible', () => {
         const score = getComfortIndex(
-            BASE.temp, BASE.wind, BASE.uv, BASE.humidity, BASE.precProb,
-            BASE.windGusts, 95, 1, 100
+            BASE.temp,
+            BASE.wind,
+            BASE.uv,
+            BASE.humidity,
+            BASE.precProb,
+            BASE.windGusts,
+            95,
+            1,
+            100
         );
         expect(score).toBeLessThan(3);
     });
@@ -99,14 +113,33 @@ describe('getComfortIndex() — extended parameters', () => {
     });
 
     it('visibilité < 0.5 km → -2 points', () => {
-        const lowVis = getComfortIndex(18, 0, 0, 50, 0, undefined, undefined, 0.3);
+        const lowVis = getComfortIndex(
+            18,
+            0,
+            0,
+            50,
+            0,
+            undefined,
+            undefined,
+            0.3
+        );
         const clearVis = getComfortIndex(18, 0, 0, 50, 0);
         expect(lowVis).toBeLessThan(clearVis);
         expect(lowVis).toBe(8);
     });
 
     it('couverture nuageuse > 90% → -1 point', () => {
-        const overcast = getComfortIndex(18, 0, 0, 50, 0, undefined, undefined, undefined, 100);
+        const overcast = getComfortIndex(
+            18,
+            0,
+            0,
+            50,
+            0,
+            undefined,
+            undefined,
+            undefined,
+            100
+        );
         const clear = getComfortIndex(18, 0, 0, 50, 0);
         expect(overcast).toBeLessThan(clear);
         expect(overcast).toBe(9);

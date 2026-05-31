@@ -324,7 +324,9 @@ export class SettingsSheet extends BaseComponent {
             'settings.section.density': 'settings.label.tooltipVegDensity',
         };
 
-        const labels = this.element.querySelectorAll('.setting-label, [data-i18n]');
+        const labels = this.element.querySelectorAll(
+            '.setting-label, [data-i18n]'
+        );
         labels.forEach((el) => {
             const key = (el as HTMLElement).dataset.i18n;
             if (!key || !tooltipMap[key]) return;

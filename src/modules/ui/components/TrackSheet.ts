@@ -48,17 +48,17 @@ export class TrackSheet extends BaseComponent {
         this.statTooltips = [];
     }
 
-    private attachStatTooltip(
-        labelEl: Element,
-        htmlContent: string
-    ): void {
+    private attachStatTooltip(labelEl: Element, htmlContent: string): void {
         const info = document.createElement('span');
         info.textContent = 'ⓘ';
-        info.style.cssText = 'font-size:10px;opacity:0.45;cursor:pointer;margin-left:3px;';
+        info.style.cssText =
+            'font-size:10px;opacity:0.45;cursor:pointer;margin-left:3px;';
         labelEl.appendChild(info);
         const content = document.createElement('div');
         content.innerHTML = htmlContent;
-        this.statTooltips.push(createTooltip(info, content, { trigger: 'click' }));
+        this.statTooltips.push(
+            createTooltip(info, content, { trigger: 'click' })
+        );
     }
 
     public override dispose(): void {

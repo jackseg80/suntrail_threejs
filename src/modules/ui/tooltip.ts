@@ -69,11 +69,7 @@ export function createTooltip(
 
     const trigger = options?.trigger ?? 'auto';
     const resolvedTrigger: 'click' | 'hover' =
-        trigger === 'auto'
-            ? isTouchDevice()
-                ? 'click'
-                : 'hover'
-            : trigger;
+        trigger === 'auto' ? (isTouchDevice() ? 'click' : 'hover') : trigger;
 
     const position = () => {
         const anchorRect = anchor.getBoundingClientRect();
@@ -152,10 +148,7 @@ export function createTooltip(
                 outsideClickHandler = null;
             }
             if (outsideTouchHandler) {
-                document.removeEventListener(
-                    'touchstart',
-                    outsideTouchHandler
-                );
+                document.removeEventListener('touchstart', outsideTouchHandler);
                 outsideTouchHandler = null;
             }
         },

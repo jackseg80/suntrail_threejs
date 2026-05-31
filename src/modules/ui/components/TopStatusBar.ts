@@ -43,7 +43,8 @@ export class TopStatusBar extends BaseComponent {
         });
 
         // LOD tooltip icon
-        const topLeftContainer = this.element.querySelector('.top-left-widgets');
+        const topLeftContainer =
+            this.element.querySelector('.top-left-widgets');
         const lodInfoIcon = document.createElement('span');
         lodInfoIcon.textContent = 'ⓘ';
         lodInfoIcon.style.cssText =
@@ -51,7 +52,9 @@ export class TopStatusBar extends BaseComponent {
         topLeftContainer?.appendChild(lodInfoIcon);
         const lodContent = document.createElement('div');
         lodContent.innerHTML = i18n.t('topbar.tooltipLOD');
-        this.lodTooltip = createTooltip(lodInfoIcon, lodContent, { trigger: 'click' });
+        this.lodTooltip = createTooltip(lodInfoIcon, lodContent, {
+            trigger: 'click',
+        });
 
         // ARIA: icon buttons need aria-label
         this.netStatusIcon?.setAttribute(
