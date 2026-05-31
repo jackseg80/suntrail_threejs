@@ -41,6 +41,14 @@ describe('getWeatherIcon', () => {
         expect(getWeatherIcon(3)).toBe('🌤️');
     });
 
+    it('code 45 → 🌫️ (brouillard)', () => {
+        expect(getWeatherIcon(45)).toBe('🌫️');
+    });
+
+    it('code 48 → 🌫️ (brouillard givrant)', () => {
+        expect(getWeatherIcon(48)).toBe('🌫️');
+    });
+
     it('code 71 → ❄️ (neige légère)', () => {
         expect(getWeatherIcon(71)).toBe('❄️');
     });
@@ -130,6 +138,23 @@ describe('getComfortIndex', () => {
     it('conditions parfaites (18°C, 0km/h, UV2, 50% humidity, 0% rain) → score proche de 10', () => {
         const score = getComfortIndex(18, 0, 2, 50, 0);
         expect(score).toBeGreaterThan(8);
+    });
+
+    it('orage (code 95) + visibilité 1km + couverture 100% → score dégradé', () => {
+        const score = getComfortIndex(18, 9, 3, 81, 53, 21, 95, 1, 100);
+        expect(score).toBeLessThan(3);
+    });
+
+    it('code météo 95 (orage) → -3 points', () => {
+        const base = getComfortIndex(18, 0, 0, 50, 0);
+        const storm = getComfortIndex(18, 0, 0, 50, 0, undefined, 95);
+        expect(storm).toBe(base - 3);
+    });
+
+    it('visibilité 0.3km → -2 points', () => {
+        const base = getComfortIndex(18, 0, 0, 50, 0);
+        const fog = getComfortIndex(18, 0, 0, 50, 0, undefined, undefined, 0.3);
+        expect(fog).toBe(base - 2);
     });
 });
 

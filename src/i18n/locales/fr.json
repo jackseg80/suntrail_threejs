@@ -489,15 +489,19 @@
         "mountain": {
             "title": "Météo Montagne",
             "aboveFreezing": "Vous êtes au-dessus de l'isotherme 0°C",
-            "nearFreezing": "Neige possible près de votre position (isotherme à",
+            "nearFreezing": "Neige possible près de votre position — isotherme à",
             "belowFreezing": "Isotherme 0°C",
             "comfort": "Confort rando",
-            "comfortTooltip": "Calculé selon la température, l'humidité, le vent, les précipitations et l'UV.",
+            "comfortTooltip": "Calculé selon la température, l'humidité, le vent, les précipitations, l'UV, la visibilité et le code météo.",
             "comfortFormulaCold": "froid (<5°C) : −0.25/°C",
             "comfortFormulaHot": "chaud (>22°C) : −0.5/°C (amplifié par l'humidité)",
             "comfortFormulaWind": "vent effectif / 20 (rafales comprises à 30%)",
             "comfortFormulaRain": "pluie : probabilité × 4",
             "comfortFormulaUV": "UV > 3 : (UV−3) × 0.4",
+            "comfortFormulaStorm": "orage : −3 pts, pluie forte : −2, neige : −1",
+            "comfortFormulaVis": "visibilité < 10km : jusqu'à −2 pts",
+            "comfortFormulaCloud": "couverture > 70% : jusqu'à −1 pt",
+            "comfortFormulaHumidity": "humidité > 70% : −0.03/%% excédentaire",
             "comfortScale": "Note sur 10 — plus c'est haut, mieux c'est"
         },
         "daily": {

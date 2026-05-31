@@ -472,16 +472,20 @@
         },
         "mountain": {
             "aboveFreezing": "Sei sopra lo zero termico",
-            "nearFreezing": "Neve possibile vicino a te (zero termico a",
+            "nearFreezing": "Neve possibile vicino a te — zero termico a",
             "belowFreezing": "Zero termico",
             "comfort": "Comfort escursione",
             "title": "Avviso Montagna",
-            "comfortTooltip": "Calcolato in base a temperatura, umidità, vento, precipitazioni e UV.",
+            "comfortTooltip": "Calcolato in base a temperatura, umidità, vento, precipitazioni, UV, visibilità e codice meteo.",
             "comfortFormulaCold": "freddo (<5°C): −0,25/°C",
             "comfortFormulaHot": "caldo (>22°C): −0,5/°C (amplificato dall'umidità)",
             "comfortFormulaWind": "vento effettivo / 20 (raffiche al 30%)",
             "comfortFormulaRain": "pioggia: probabilità × 4",
             "comfortFormulaUV": "UV > 3: (UV−3) × 0,4",
+            "comfortFormulaStorm": "temporale: −3 pt, pioggia forte: −2, neve: −1",
+            "comfortFormulaVis": "visibilità < 10km: fino a −2 pt",
+            "comfortFormulaCloud": "copertura > 70%: fino a −1 pt",
+            "comfortFormulaHumidity": "umidità > 70%: −0,03/%% in eccesso",
             "comfortScale": "Punteggio su 10 — più alto è, meglio è"
         },
         "daily": {

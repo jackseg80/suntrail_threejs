@@ -1,3 +1,28 @@
+## [5.56.5] - 2026-05-31
+
+### Added
+- **Confort Rando enrichi** (`weatherUtils.ts`) : Nouveaux paramètres optionnels `weatherCode`, `visibility`, `cloudCover`. Le score intègre désormais le code météo WMO (orage −3, pluie forte −2, neige −1), la visibilité (<10km jusqu'à −2), la couverture nuageuse (>70% jusqu'à −1) et une pénalité humidité directe au-delà de 70% (−0.03/% excédentaire). Tooltip i18n mis à jour (4 locales, +3 lignes formule).
+- **Couverture nuageuse** affichée dans les stat grids (free + pro) — `weather.clouds` déjà traduit.
+- **Isotherme 0°C** affiché en version gratuite (utile pour la sécurité en montagne).
+- **Spinner de chargement** météo quand `weatherData` est null (feedback utilisateur immédiat).
+- **Accessibilité** : Bouton fermeture météo `<div>` → `<button>` focusable au clavier, `padding:0` reset.
+- **i18n** (4 locales) : 4 nouvelles clés `weather.mountain.comfortFormula{Storm,Vis,Cloud,Humidity}`.
+
+### Fixed
+- **Flèche vent inversée** (`WeatherSheet.ts:672`) : `+180°` — la flèche pointe désormais dans la direction où le vent souffle (convention météo standard).
+- **WMO brouillard (45, 48)** (`weather.ts:220`) : Icône `🌫️` au lieu de `☁️`.
+- **Texte nearFreezing** : Parenthèse ouvrante retirée des 4 locales (fr: `"Neige possible près de votre position — isotherme à"`, sans `(`).
+- **Coordonnées sunrise/sunset** (`WeatherSheet.ts:120`) : Utilise `lastWeatherLat/Lon` au lieu de `lastClickedCoords` (incohérent avec la zone météo fetchée).
+- **Valeurs manquantes stats Pro** : `"—"` affiché quand dewPoint/gusts/visibility sont absents (évite "0 km" trompeur).
+- **Seuil précipitations graphique** : 30% → 10% (barres visibles dès les faibles probabilités).
+- **Locale dates quotidiennes** : `i18n.getLocale()` au lieu de `undefined` (browser locale par défaut).
+- **Altitude fallback montagne** (`WeatherSheet.ts:417`) : `controls.target.y` au lieu de `0` quand `hasLastClicked` est false.
+- **SunCalc non protégé** : Wrappé dans `try/catch` pour éviter un crash du rendu.
+- **Confort rando désormais réaliste** : Exemple 18°C, orage, visibilité 1km → 1.4/10 (était 7.2/10).
+
+### Tests
+- 956 (+11) tests passants. Nouveaux tests : codes brouillard (×2), confort étendu paramètres optionnels (×5), weatherCode penalty (×2), visibilité (×2). 5 tests `weatherPro.test.ts` ajoutés.
+
 ## [5.56.4] - 2026-05-31
 
 ### Added

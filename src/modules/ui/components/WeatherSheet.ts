@@ -117,16 +117,20 @@ export class WeatherSheet extends BaseComponent {
 
         // Simple helper to find sunrise/sunset for the current day
         const now = new Date();
-        const { lat, lon } = worldToLngLat(
-            state.lastClickedCoords.x,
-            state.lastClickedCoords.z,
-            state.originTile
-        );
-        const sun = SunCalc.getTimes(now, lat, lon);
-        const sunEvents = [
-            { time: sun.sunrise, icon: '🌅', label: 'Sunrise' },
-            { time: sun.sunset, icon: '🌇', label: 'Sunset' },
-        ];
+        const sunLat = state.lastWeatherLat;
+        const sunLon = state.lastWeatherLon;
+        let sunEvents: { time: Date; icon: string; label: string }[] = [];
+        if (sunLat !== 0 || sunLon !== 0) {
+            try {
+                const sun = SunCalc.getTimes(now, sunLat, sunLon);
+                sunEvents = [
+                    { time: sun.sunrise, icon: '🌅', label: 'Sunrise' },
+                    { time: sun.sunset, icon: '🌇', label: 'Sunset' },
+                ];
+            } catch {
+                // silently skip sun events if SunCalc fails
+            }
+        }
 
         items.forEach((h) => {
             const hDiv = document.createElement('div');
@@ -212,7 +216,7 @@ export class WeatherSheet extends BaseComponent {
 
         // Precipitation bars (blue rects)
         hourly.forEach((h, i) => {
-            if ((h.precip ?? 0) > 30) {
+            if ((h.precip ?? 0) > 10) {
                 const rect = document.createElementNS(
                     'http://www.w3.org/2000/svg',
                     'rect'
@@ -313,7 +317,7 @@ export class WeatherSheet extends BaseComponent {
             const dateEl = document.createElement('span');
             dateEl.classList.add('weather-daily-date');
             const dt = new Date(d.date);
-            dateEl.textContent = dt.toLocaleDateString(undefined, {
+            dateEl.textContent = dt.toLocaleDateString(i18n.getLocale(), {
                 weekday: 'short',
                 day: 'numeric',
                 month: 'short',
@@ -372,7 +376,7 @@ export class WeatherSheet extends BaseComponent {
             const dateEl = document.createElement('span');
             dateEl.classList.add('weather-daily-date');
             const dt = new Date(d.date);
-            dateEl.textContent = dt.toLocaleDateString(undefined, {
+            dateEl.textContent = dt.toLocaleDateString(i18n.getLocale(), {
                 weekday: 'short',
                 day: 'numeric',
                 month: 'short',
@@ -410,14 +414,16 @@ export class WeatherSheet extends BaseComponent {
         container.classList.add('weather-mountain-alert');
 
         const freezingLevel = wd.freezingLevel ?? 0;
-        const alt = state.hasLastClicked ? state.lastClickedCoords.alt : 0;
+        const alt = state.hasLastClicked
+            ? state.lastClickedCoords.alt
+            : (state.controls?.target.y ?? 0);
 
         // Freezing level alert
         if (freezingLevel > 0) {
             const alertKey = getFreezingAlert(alt, freezingLevel);
             const alertTexts: Record<string, string> = {
                 aboveFreezing: `❄️ ${i18n.t('weather.mountain.aboveFreezing')} (${Math.round(freezingLevel)}m)`,
-                nearFreezing: `⚠️ ${i18n.t('weather.mountain.nearFreezing')} (${Math.round(freezingLevel)}m)`,
+                nearFreezing: `⚠️ ${i18n.t('weather.mountain.nearFreezing')} ${Math.round(freezingLevel)}m`,
                 belowFreezing: `✅ ${i18n.t('weather.mountain.belowFreezing')} — ${Math.round(freezingLevel)}m`,
             };
             const alertDiv = document.createElement('div');
@@ -427,13 +433,17 @@ export class WeatherSheet extends BaseComponent {
         }
 
         // Comfort index with tooltip
+        const currentCode = wd.hourly?.[0]?.code;
         const score = getComfortIndex(
             wd.temp,
             wd.windSpeed,
             wd.uvIndex ?? 0,
             wd.humidity,
             wd.precProb ?? 0,
-            wd.windGusts
+            wd.windGusts,
+            currentCode,
+            wd.visibility,
+            wd.cloudCover
         );
         const scoreRounded = Math.round(score * 10) / 10;
         const comfortText =
@@ -496,6 +506,10 @@ export class WeatherSheet extends BaseComponent {
                 <div class="comfort-tooltip-line">${i18n.t('weather.mountain.comfortFormulaWind')}</div>
                 <div class="comfort-tooltip-line">${i18n.t('weather.mountain.comfortFormulaRain')}</div>
                 <div class="comfort-tooltip-line">${i18n.t('weather.mountain.comfortFormulaUV')}</div>
+                <div class="comfort-tooltip-line">${i18n.t('weather.mountain.comfortFormulaStorm')}</div>
+                <div class="comfort-tooltip-line">${i18n.t('weather.mountain.comfortFormulaVis')}</div>
+                <div class="comfort-tooltip-line">${i18n.t('weather.mountain.comfortFormulaCloud')}</div>
+                <div class="comfort-tooltip-line">${i18n.t('weather.mountain.comfortFormulaHumidity')}</div>
             </div>
             <div class="comfort-tooltip-scale">${i18n.t('weather.mountain.comfortScale')}</div>
         `;
@@ -508,8 +522,8 @@ export class WeatherSheet extends BaseComponent {
 
         this.contentEl.textContent = '';
 
-        // ── 0. Unavailable State ─────────────────────────────────────────────
-        if (state.weatherUnavailable || (!wd && !state.weatherData)) {
+        // ── 0. Unavailable / Loading State ──────────────────────────────────────
+        if (state.weatherUnavailable) {
             const msgContainer = document.createElement('div');
             msgContainer.className = 'weather-unavailable-message';
             msgContainer.style.cssText =
@@ -518,14 +532,28 @@ export class WeatherSheet extends BaseComponent {
                 <div style="font-size: 32px; margin-bottom: var(--space-3);">🌤️</div>
                 <div style="font-weight: 600; color: var(--text);">${i18n.t('weather.noData')}</div>
                 <div style="font-size: var(--text-sm); margin-top: var(--space-2); opacity: 0.7;">
-                    ${state.weatherUnavailable ? 'Service météo temporairement indisponible.' : 'Localisation en cours...'}
+                    Service météo temporairement indisponible.
                 </div>
             `;
             this.contentEl.appendChild(msgContainer);
             return;
         }
 
-        if (!wd) return;
+        if (!wd) {
+            const loadingContainer = document.createElement('div');
+            loadingContainer.className = 'weather-unavailable-message';
+            loadingContainer.style.cssText =
+                'padding: var(--space-8) var(--space-4); text-align: center; color: var(--text-3);';
+            loadingContainer.innerHTML = `
+                <div style="font-size: 32px; margin-bottom: var(--space-3);">🌤️</div>
+                <div style="font-weight: 600; color: var(--text);">Chargement...</div>
+                <div style="margin-top: var(--space-2);">
+                    <div class="spinner"></div>
+                </div>
+            `;
+            this.contentEl.appendChild(loadingContainer);
+            return;
+        }
 
         // Header (v5.30.16 : Affichage du lieu)
         const locName = wd.locationName || i18n.t('weather.mountain.title');
@@ -568,6 +596,16 @@ export class WeatherSheet extends BaseComponent {
                 basicGrid,
                 i18n.t('weather.humidity'),
                 `${wd.humidity}%`
+            );
+            this.makeStat(
+                basicGrid,
+                i18n.t('weather.clouds'),
+                `${wd.cloudCover}%`
+            );
+            this.makeStat(
+                basicGrid,
+                i18n.t('weather.freezingLevel'),
+                `${Math.round(wd.freezingLevel ?? 0)} m`
             );
             this.contentEl.appendChild(basicGrid);
 
@@ -639,7 +677,7 @@ export class WeatherSheet extends BaseComponent {
             );
             arrow.setAttribute('d', 'M50 15 L60 85 L50 75 L40 85 Z');
             arrow.setAttribute('fill', '#60a5fa');
-            arrow.setAttribute('transform', `rotate(${wd.windDir}, 50, 50)`);
+            arrow.setAttribute('transform', `rotate(${wd.windDir + 180}, 50, 50)`);
             windSvg.appendChild(arrow);
             windBox.appendChild(windSvg);
             const windSpd = document.createElement('div');
@@ -677,18 +715,23 @@ export class WeatherSheet extends BaseComponent {
             grid2.classList.add('exp-stat-grid', 'exp-stat-grid-mb');
             this.makeStat(
                 grid2,
+                i18n.t('weather.clouds'),
+                `${wd.cloudCover}%`
+            );
+            this.makeStat(
+                grid2,
                 i18n.t('weather.dewPoint'),
-                `${Math.round(wd.dewPoint ?? 0)}°C`
+                wd.dewPoint !== undefined && wd.dewPoint !== null ? `${Math.round(wd.dewPoint)}°C` : '—'
             );
             this.makeStat(
                 grid2,
                 i18n.t('weather.gusts'),
-                `${Math.round(wd.windGusts ?? 0)} km/h`
+                wd.windGusts !== undefined && wd.windGusts !== null ? `${Math.round(wd.windGusts)} km/h` : '—'
             );
             this.makeStat(
                 grid2,
                 i18n.t('weather.visibility'),
-                `${Math.round(wd.visibility ?? 0)} km`
+                wd.visibility !== undefined && wd.visibility !== null && wd.visibility > 0 ? `${Math.round(wd.visibility)} km` : '—'
             );
             this.makeStat(
                 grid2,

@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.56.4)
+# SunTrail — Guide IA (v5.56.5)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-31 — v5.56.4 : ESLint+Prettier, refactoring SolarProbeSheet, détection GPX, audit météo complet (null check, icônes WMO 78-79, angle vent +90, tickWeatherTime, slider opacité pluie, nettoyage dead code), Confort rando amélioré (formule asymétrique, humidité, pluie, UV progressif, rafales), utilitaire tooltip générique +23 tests (945 total).
+> Mis à jour le 2026-05-31 — v5.56.5 : Confort rando enrichi (code météo, visibilité, couverture nuageuse, humidité directe), flèche vent +180°, WMO brouillard 45/48 → 🌫️, spinner chargement, couverture nuageuse + isotherme 0°C en gratuite, accessibilité close-weather, locale i18n dates, 6 bugs fixes + 11 améliorations (956 tests).
 
 ## Projet
 

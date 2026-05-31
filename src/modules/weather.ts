@@ -217,6 +217,7 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
 export function getWeatherIcon(code: number): string {
     if (code === 0) return '☀️';
     if (code <= 3) return '🌤️';
+    if (code === 45 || code === 48) return '🌫️';
     if (code <= 48) return '☁️';
     if (code <= 67) return '🌧️';
     if (code <= 77) return '❄️';

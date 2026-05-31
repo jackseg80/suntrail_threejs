@@ -483,16 +483,20 @@
         },
         "mountain": {
             "aboveFreezing": "You are above the 0°C isotherm",
-            "nearFreezing": "Snow possible near your position (isotherm at",
+            "nearFreezing": "Snow possible near your position — isotherm at",
             "belowFreezing": "0°C isotherm",
             "comfort": "Hiking comfort",
             "title": "Mountain Alert",
-            "comfortTooltip": "Calculated from temperature, humidity, wind, precipitation and UV.",
+            "comfortTooltip": "Calculated from temperature, humidity, wind, precipitation, UV, visibility and weather code.",
             "comfortFormulaCold": "cold (<5°C): −0.25/°C",
             "comfortFormulaHot": "hot (>22°C): −0.5/°C (amplified by humidity)",
             "comfortFormulaWind": "effective wind / 20 (gusts at 30%)",
             "comfortFormulaRain": "rain: probability × 4",
             "comfortFormulaUV": "UV > 3: (UV−3) × 0.4",
+            "comfortFormulaStorm": "storm: −3 pts, heavy rain: −2, snow: −1",
+            "comfortFormulaVis": "visibility < 10km: up to −2 pts",
+            "comfortFormulaCloud": "cloud cover > 70%: up to −1 pt",
+            "comfortFormulaHumidity": "humidity > 70%: −0.03/%% excess",
             "comfortScale": "Score out of 10 — higher is better"
         },
         "daily": {

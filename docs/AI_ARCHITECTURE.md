@@ -1,4 +1,4 @@
-# AI Architecture Guide (v5.56.3)
+# AI Architecture Guide (v5.56.5)
 
 This document maps the core reactive logic and rendering systems to help AI agents understand how modules interact.
 
