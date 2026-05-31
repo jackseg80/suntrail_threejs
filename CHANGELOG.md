@@ -1,3 +1,22 @@
+## [5.56.3] - 2026-05-31
+
+### Added
+- **Bouton refresh météo** (🔄) : Dans le header du bulletin, icône SVG synchro. Force `fetchWeather()` sur la position caméra actuelle. Re-fetch auto à l'ouverture du bulletin.
+- **Format GPX `Ville (Pays)`** : La liste des parcours importés affiche désormais le pays entre parenthèses quand la ville et le pays sont connus.
+
+### Changed
+- **Unification geocoding** : `fetchWeather()` utilise `getPlaceName()` + `getCountryName()` au lieu de `fetchGeocoding()` + `extractLocationName()` directement. Suppression de `extractLocationName()` (code mort). `COUNTRY_NAMES` déplacé de `gpxHistoryService.ts` vers `geo.ts`.
+- **Seuil re-fetch météo** : 5 km → 3 km pour une meilleure réactivité en montagne.
+- **`getPlaceName()`** : Corrigé — gérait mal le format retourné par `fetchGeocoding()` pour MapTiler (chemin Nominatim seulement fonctionnel).
+
+### Fixed
+- **Label source carte bloqué** : Le badge LOD en haut à gauche (`Swiss · LVL 14`) ne se mettait pas à jour après le clic GPS si le zoom restait identique. Ajout des souscriptions `MAP_SOURCE` et `TARGET_LAT` dans `TopStatusBar.ts`.
+- **Bouton refresh écrasé par i18n** : `data-i18n` remplaçait le SVG par le texte de traduction. Passage à une attribution via JS dans `WeatherSheet.ts`.
+
+### Tests
+- **-15 tests** : `extractLocationName()` supprimé (code mort, 9 cas de test retirés de `weather.test.ts`).
+- **920 tests passent** : Aucune régression. Tests `gpxHistoryService.test.ts` adaptés au déplacement de `COUNTRY_NAMES`.
+
 ## [5.56.2] - 2026-05-31
 
 ### Added
