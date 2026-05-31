@@ -52,7 +52,11 @@
             "points": "Points",
             "dplus": "Elev+",
             "dminus": "Elev−",
-            "duration": "Est. Time"
+            "duration": "Est. Time",
+            "tooltipDplus": "<b>Elevation gain (D+)</b>: cumulative ascent over the route. Indicates total climbing effort.",
+            "tooltipDminus": "<b>Elevation loss (D-)</b>: cumulative descent over the route.",
+            "tooltipDuration": "<b>Estimated time</b>: based on an average speed of 4 km/h in the mountains, adjusted for elevation changes.",
+            "tooltipPoints": "<b>GPS Points</b>: number of positions recorded during tracking. More points means a more accurate trace."
         },
         "imported": {
             "title": "Imported tracks",
@@ -217,7 +221,16 @@
             "shadows": "Cast shadows",
             "weather": "Weather",
             "weatherPro": "Advanced Weather",
-            "trailFollow": "Trail follow"
+            "trailFollow": "Trail follow",
+            "tooltipExaggeration": "<b>Relief exaggeration</b>: visually amplifies elevation to better read the terrain. 1x = realistic, 1.5x = pronounced, 3x = very exaggerated.",
+            "tooltipFogDistance": "<b>Fog distance</b>: visual range of the 3D fog. Reducing this value improves performance on less powerful devices.",
+            "tooltipResolution": "<b>Resolution (LOD)</b>: terrain mesh detail level. 16 = very low (fast), 256 = ultra fine (performance-heavy).",
+            "tooltipRange": "<b>Render radius</b>: number of terrain tiles loaded around the camera. Larger radius = wider view but higher memory usage.",
+            "tooltipVegDensity": "<b>Vegetation density</b>: number of 3D trees rendered in forest areas. 0 = no trees, 15000 = dense forest.",
+            "tooltipEnergySaver": "<b>Energy saver</b>: caps FPS at 30 and reduces battery consumption. Useful for long hikes.",
+            "tooltipWeatherDensity": "<b>Weather intensity</b>: number of rain/snow particles visible in 3D. Affects graphics performance.",
+            "tooltipWeatherSpeed": "<b>Weather speed</b>: movement speed of rain/snow particles. 1.0 = normal.",
+            "tooltipWeatherOpacity": "<b>Weather opacity</b>: visual transparency of rain particles. 0.1 = nearly invisible, 1.0 = opaque."
         },
         "storage": {
             "clearCache": "Clear Cache",
@@ -328,7 +341,8 @@
             "italy": "ITALY",
             "world": "WORLD",
             "sat": "SAT"
-        }
+        },
+        "tooltipLOD": "<b>Detail level</b>: current zoom level and map source. Swiss = Swisstopo (Switzerland), IGN = Geoportail (France), Italy = Italian mapping. LVL = zoom level (1-18)."
     },
     "upsell": {
         "lod": "🔍 Maximum detail reached — upgrade to Pro for LOD 18",
@@ -497,7 +511,11 @@
             "comfortFormulaVis": "visibility < 10km: up to −2 pts",
             "comfortFormulaCloud": "cloud cover > 70%: up to −1 pt",
             "comfortFormulaHumidity": "humidity > 70%: −0.03/%% excess",
-            "comfortScale": "Score out of 10 — higher is better"
+            "comfortScale": "Score out of 10 — higher is better",
+            "tooltipFreezingLevel": "<b>Freezing level</b>: altitude above which temperatures drop below 0°C. Risk of snow and ice if your route exceeds this altitude.",
+            "tooltipDewPoint": "<b>Dew point</b>: temperature at which humidity condenses. The closer the dew point is to the temperature, the more humid and uncomfortable the air.",
+            "tooltipVisibility": "<b>Visibility</b>: distance at which objects can be distinguished. <1 km = dense fog, <5 km = mist, >10 km = good visibility.",
+            "tooltipUV": "<b>UV Index</b>: 0-11+ scale measuring solar radiation intensity. 0-2 = low, 3-5 = moderate, 6-7 = high, 8-10 = very high, 11+ = extreme. Sun protection recommended from index 3."
         },
         "daily": {
             "precip": "Precip.",
@@ -538,7 +556,9 @@
             "elevation": "Elevation",
             "maxElevation": "Max Elevation",
             "moonPhase": "Moon phase",
-            "elevationChart": "24h elevation curve"
+            "elevationChart": "24h elevation curve",
+            "tooltipAzimuth": "<b>Azimuth</b>: sun direction relative to north (0°=N, 90°=E, 180°=S, 270°=W). Helps anticipate which slopes will be sunlit.",
+            "tooltipElevation": "<b>Elevation</b>: sun height above horizon (0°=horizon, 90°=zenith). Elevation determines light intensity and ground-level heat."
         },
         "upsell": {
             "solar": "☀️ Full solar data available with Pro"

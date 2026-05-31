@@ -51,7 +51,11 @@
             "points": "Punti",
             "dplus": "Dislivello+",
             "dminus": "Dislivello−",
-            "duration": "Tempo stim."
+            "duration": "Tempo stim.",
+            "tooltipDplus": "<b>Dislivello positivo (D+)</b>: cumulo delle salite sul percorso. Indica lo sforzo totale in salita.",
+            "tooltipDminus": "<b>Dislivello negativo (D-)</b>: cumulo delle discese sul percorso.",
+            "tooltipDuration": "<b>Tempo stimato</b>: basato su una velocità media di 4 km/h in montagna, regolata in base al dislivello.",
+            "tooltipPoints": "<b>Punti GPS</b>: numero di posizioni registrate durante il tracciamento. Più punti significano una traccia più precisa."
         },
         "imported": {
             "title": "Tracce importate",
@@ -216,7 +220,16 @@
             "shadows": "Ombre",
             "weather": "Meteo",
             "weatherPro": "Meteo Avanzato",
-            "trailFollow": "Segui sentiero"
+            "trailFollow": "Segui sentiero",
+            "tooltipExaggeration": "<b>Esagerazione del rilievo</b>: amplifica visivamente i dislivelli per leggere meglio il terreno. 1x = realistico, 1,5x = accentuato, 3x = molto esagerato.",
+            "tooltipFogDistance": "<b>Distanza nebbia</b>: portata visiva della nebbia 3D. Ridurre questo valore migliora le prestazioni sui dispositivi meno potenti.",
+            "tooltipResolution": "<b>Risoluzione (LOD)</b>: livello di dettaglio della mesh del terreno. 16 = molto basso (veloce), 256 = ultra fine (pesante).",
+            "tooltipRange": "<b>Raggio di rendering</b>: numero di tessere del terreno caricate intorno alla telecamera. Raggio maggiore = vista più ampia ma maggior uso di memoria.",
+            "tooltipVegDensity": "<b>Densità vegetazione</b>: numero di alberi 3D renderizzati nelle aree forestali. 0 = nessun albero, 15000 = foresta densa.",
+            "tooltipEnergySaver": "<b>Risparmio energetico</b>: limita gli FPS a 30 e riduce il consumo della batteria. Utile per lunghe escursioni.",
+            "tooltipWeatherDensity": "<b>Intensità meteo</b>: numero di particelle di pioggia/neve visibili in 3D. Influisce sulle prestazioni grafiche.",
+            "tooltipWeatherSpeed": "<b>Velocità meteo</b>: velocità di movimento delle particelle di pioggia/neve. 1.0 = normale.",
+            "tooltipWeatherOpacity": "<b>Opacità meteo</b>: trasparenza visiva delle particelle di pioggia. 0.1 = quasi invisibile, 1.0 = opaco."
         },
         "storage": {
             "clearCache": "Svuota Cache",
@@ -327,7 +340,8 @@
             "italy": "ITALY",
             "world": "WORLD",
             "sat": "SAT"
-        }
+        },
+        "tooltipLOD": "<b>Livello di dettaglio</b>: zoom attuale e fonte cartografica. Swiss = Swisstopo (Svizzera), IGN = Geoportail (Francia), Italy = cartografia italiana. LVL = livello di zoom (1-18)."
     },
     "upsell": {
         "lod": "🔍 Dettaglio massimo raggiunto — passa a Pro per il LOD 18",
@@ -486,7 +500,11 @@
             "comfortFormulaVis": "visibilità < 10km: fino a −2 pt",
             "comfortFormulaCloud": "copertura > 70%: fino a −1 pt",
             "comfortFormulaHumidity": "umidità > 70%: −0,03/%% in eccesso",
-            "comfortScale": "Punteggio su 10 — più alto è, meglio è"
+            "comfortScale": "Punteggio su 10 — più alto è, meglio è",
+            "tooltipFreezingLevel": "<b>Isoterma 0°C</b>: altitudine sopra la quale le temperature scendono sotto 0°C. Rischio di neve e ghiaccio se il percorso supera questa altitudine.",
+            "tooltipDewPoint": "<b>Punto di rugiada</b>: temperatura alla quale l'umidità si condensa. Più il punto di rugiada è vicino alla temperatura, più l'aria è umida e sgradevole.",
+            "tooltipVisibility": "<b>Visibilità</b>: distanza alla quale si possono distinguere gli oggetti. <1 km = nebbia fitta, <5 km = foschia, >10 km = buona visibilità.",
+            "tooltipUV": "<b>Indice UV</b>: scala 0-11+ che misura l'intensità della radiazione solare. 0-2 = basso, 3-5 = moderato, 6-7 = alto, 8-10 = molto alto, 11+ = estremo. Protezione solare raccomandata dall'indice 3."
         },
         "daily": {
             "precip": "Precip.",
@@ -530,7 +548,9 @@
             "elevation": "Elevazione",
             "moonPhase": "Fase lunare",
             "elevationChart": "Curva di elevazione 24h",
-            "maxElevation": "Elevazione max"
+            "maxElevation": "Elevazione max",
+            "tooltipAzimuth": "<b>Azimut</b>: direzione del sole rispetto al nord (0°=N, 90°=E, 180°=S, 270°=O). Aiuta ad anticipare quali pendii saranno soleggiati.",
+            "tooltipElevation": "<b>Elevazione</b>: altezza del sole sopra l'orizzonte (0°=orizzonte, 90°=zenit). L'elevazione determina l'intensità luminosa e il calore al suolo."
         },
         "upsell": {
             "solar": "☀️ Dati solari completi disponibili con Pro"

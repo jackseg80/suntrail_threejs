@@ -19,6 +19,7 @@ import {
     type RouteSolarAnalysis,
 } from '../../solarRoute';
 import { ICON_LOCK } from '../icons';
+import { createTooltip, type TooltipHandle } from '../tooltip';
 import templateHTML from '../templates/solar-probe.html?raw';
 import { buildTimeline } from './solarprobe/SolarTimeline';
 import { makeLockedItem } from './solarprobe/SolarLockedItem';
@@ -26,6 +27,7 @@ import { makeLockedItem } from './solarprobe/SolarLockedItem';
 export class SolarProbeSheet extends BaseComponent {
     private contentEl: HTMLElement | null = null;
     private currentResult: SolarAnalysisResult | null = null;
+    private statTooltips: TooltipHandle[] = [];
     // Elements updated in real-time
     private realtimeAzimuthEl: HTMLElement | null = null;
     private realtimeElevationEl: HTMLElement | null = null;
@@ -141,6 +143,7 @@ export class SolarProbeSheet extends BaseComponent {
 
     private updateUI(result: SolarAnalysisResult) {
         if (!this.contentEl) return;
+        this.disposeStatTooltips();
         this.contentEl.textContent = '';
         // Reset real-time refs
         this.realtimeAzimuthEl = null;
@@ -291,19 +294,35 @@ export class SolarProbeSheet extends BaseComponent {
 
             const rtAz = document.createElement('div');
             rtAz.className = 'solar-rt-stat-item';
-            rtAz.innerHTML = `<span class="exp-probe-label">${i18n.t('solar.stat.azimuth')}</span>`;
+            const rtAzLabel = document.createElement('span');
+            rtAzLabel.className = 'exp-probe-label';
+            rtAzLabel.style.cssText = 'display:flex;align-items:center;gap:3px;';
+            rtAzLabel.innerHTML = `${i18n.t('solar.stat.azimuth')} <span style="font-size:10px;opacity:0.45;cursor:pointer;">ⓘ</span>`;
+            rtAz.appendChild(rtAzLabel);
             const rtAzVal = document.createElement('div');
             rtAzVal.className = 'exp-probe-value';
             this.realtimeAzimuthEl = rtAzVal;
             rtAz.appendChild(rtAzVal);
+            const azIcon = rtAzLabel.querySelector('span')!;
+            const azContent = document.createElement('div');
+            azContent.innerHTML = i18n.t('solar.stat.tooltipAzimuth');
+            this.statTooltips.push(createTooltip(azIcon as HTMLElement, azContent, { trigger: 'click' }));
 
             const rtEl = document.createElement('div');
             rtEl.className = 'solar-rt-stat-item';
-            rtEl.innerHTML = `<span class="exp-probe-label">${i18n.t('solar.stat.elevation')}</span>`;
+            const rtElLabel = document.createElement('span');
+            rtElLabel.className = 'exp-probe-label';
+            rtElLabel.style.cssText = 'display:flex;align-items:center;gap:3px;';
+            rtElLabel.innerHTML = `${i18n.t('solar.stat.elevation')} <span style="font-size:10px;opacity:0.45;cursor:pointer;">ⓘ</span>`;
+            rtEl.appendChild(rtElLabel);
             const rtElVal = document.createElement('div');
             rtElVal.className = 'exp-probe-value';
             this.realtimeElevationEl = rtElVal;
             rtEl.appendChild(rtElVal);
+            const elIcon = rtElLabel.querySelector('span')!;
+            const elContent = document.createElement('div');
+            elContent.innerHTML = i18n.t('solar.stat.tooltipElevation');
+            this.statTooltips.push(createTooltip(elIcon as HTMLElement, elContent, { trigger: 'click' }));
 
             const rtMoon = document.createElement('div');
             rtMoon.className = 'solar-rt-stat-item';
@@ -613,6 +632,16 @@ export class SolarProbeSheet extends BaseComponent {
         const report = expertService.generateSolarReport(result);
         navigator.clipboard.writeText(report);
         showToast(i18n.t('solar.toast.copied'));
+    }
+
+    private disposeStatTooltips(): void {
+        for (const t of this.statTooltips) t.dispose();
+        this.statTooltips = [];
+    }
+
+    public override dispose(): void {
+        this.disposeStatTooltips();
+        super.dispose();
     }
 
     private renderRouteOnlyMode(): void {

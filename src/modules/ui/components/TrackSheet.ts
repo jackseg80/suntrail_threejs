@@ -32,13 +32,58 @@ import {
 } from '../../gpxHistoryService';
 import { lngLatToWorld, getCountryCode, COUNTRY_NAMES } from '../../geo';
 import { getPlaceName } from '../../geocodingService';
+import { createTooltip, type TooltipHandle } from '../tooltip';
 import templateHTML from '../templates/track.html?raw';
 
 const pendingGeocode = new Set<string>();
 
 export class TrackSheet extends BaseComponent {
+    private statTooltips: TooltipHandle[] = [];
     constructor() {
         super('template-track', 'sheet-container', templateHTML);
+    }
+
+    private disposeStatTooltips(): void {
+        for (const t of this.statTooltips) t.dispose();
+        this.statTooltips = [];
+    }
+
+    private attachStatTooltip(
+        labelEl: Element,
+        htmlContent: string
+    ): void {
+        const info = document.createElement('span');
+        info.textContent = 'ⓘ';
+        info.style.cssText = 'font-size:10px;opacity:0.45;cursor:pointer;margin-left:3px;';
+        labelEl.appendChild(info);
+        const content = document.createElement('div');
+        content.innerHTML = htmlContent;
+        this.statTooltips.push(createTooltip(info, content, { trigger: 'click' }));
+    }
+
+    public override dispose(): void {
+        this.disposeStatTooltips();
+        super.dispose();
+    }
+
+    private attachStatTooltips(): void {
+        if (!this.element) return;
+        this.disposeStatTooltips();
+
+        const labelMap: Record<string, string> = {
+            'track.stats.dplus': i18n.t('track.stats.tooltipDplus'),
+            'track.stats.dminus': i18n.t('track.stats.tooltipDminus'),
+            'track.stats.duration': i18n.t('track.stats.tooltipDuration'),
+            'track.stats.points': i18n.t('track.stats.tooltipPoints'),
+        };
+
+        const labels = this.element.querySelectorAll('.stat-card-label');
+        labels.forEach((label) => {
+            const key = (label as HTMLElement).dataset.i18n;
+            if (key && labelMap[key]) {
+                this.attachStatTooltip(label, labelMap[key]);
+            }
+        });
     }
 
     public render(): void {
@@ -57,6 +102,8 @@ export class TrackSheet extends BaseComponent {
         closeBtn?.addEventListener('click', () => {
             sheetManager.close();
         });
+
+        this.attachStatTooltips();
 
         const recBtn = document.getElementById(
             'rec-btn-sheet'

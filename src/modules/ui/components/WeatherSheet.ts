@@ -21,8 +21,51 @@ import templateHTML from '../templates/weather.html?raw';
 export class WeatherSheet extends BaseComponent {
     private contentEl: HTMLElement | null = null;
     private comfortTooltip: TooltipHandle | null = null;
+    private statTooltips: TooltipHandle[] = [];
     constructor() {
         super('template-weather', 'sheet-container', templateHTML);
+    }
+
+    private disposeAllStatTooltips(): void {
+        for (const t of this.statTooltips) t.dispose();
+        this.statTooltips = [];
+    }
+
+    private makeStatWithTooltip(
+        parent: HTMLElement,
+        label: string,
+        value: string,
+        tooltipHtml: string,
+        cssClass = 'exp-stat-card'
+    ): HTMLElement {
+        const div = document.createElement('div');
+        div.classList.add(cssClass);
+        const labelRow = document.createElement('div');
+        labelRow.style.cssText = 'display:flex;align-items:center;gap:3px;margin-bottom:2px;';
+
+        const lbl = document.createElement('div');
+        lbl.classList.add('exp-stat-label');
+        lbl.textContent = label;
+
+        const info = document.createElement('span');
+        info.textContent = 'ⓘ';
+        info.style.cssText = 'font-size:10px;opacity:0.45;cursor:pointer;';
+
+        const val = document.createElement('div');
+        val.classList.add('exp-stat-value');
+        val.textContent = value;
+
+        const tooltipContent = document.createElement('div');
+        tooltipContent.innerHTML = tooltipHtml;
+        const tooltip = createTooltip(info, tooltipContent, { trigger: 'click' });
+        this.statTooltips.push(tooltip);
+
+        labelRow.appendChild(lbl);
+        labelRow.appendChild(info);
+        div.appendChild(labelRow);
+        div.appendChild(val);
+        parent.appendChild(div);
+        return val;
     }
 
     public render(): void {
@@ -476,18 +519,12 @@ export class WeatherSheet extends BaseComponent {
         comfortDiv.appendChild(comfortScore);
         comfortDiv.appendChild(infoIcon);
 
-        // Clean up previous tooltip if re-rendering
         if (this.comfortTooltip) {
             this.comfortTooltip.dispose();
             this.comfortTooltip = null;
         }
         const tooltipContent = this.buildComfortTooltip(scoreRounded);
-        this.comfortTooltip = createTooltip(comfortDiv, tooltipContent);
-
-        comfortDiv.addEventListener('click', (e: MouseEvent) => {
-            e.stopPropagation();
-            this.comfortTooltip?.toggle();
-        });
+        this.comfortTooltip = createTooltip(comfortDiv, tooltipContent, { trigger: 'click' });
 
         container.appendChild(comfortDiv);
 
@@ -521,6 +558,7 @@ export class WeatherSheet extends BaseComponent {
         if (!this.contentEl) return;
 
         this.contentEl.textContent = '';
+        this.disposeAllStatTooltips();
 
         // ── 0. Unavailable / Loading State ──────────────────────────────────────
         if (state.weatherUnavailable) {
@@ -602,10 +640,11 @@ export class WeatherSheet extends BaseComponent {
                 i18n.t('weather.clouds'),
                 `${wd.cloudCover}%`
             );
-            this.makeStat(
+            this.makeStatWithTooltip(
                 basicGrid,
                 i18n.t('weather.freezingLevel'),
-                `${Math.round(wd.freezingLevel ?? 0)} m`
+                `${Math.round(wd.freezingLevel ?? 0)} m`,
+                i18n.t('weather.mountain.tooltipFreezingLevel')
             );
             this.contentEl.appendChild(basicGrid);
 
@@ -700,10 +739,22 @@ export class WeatherSheet extends BaseComponent {
                 `${Math.round(wd.apparentTemp)}°C`
             );
             addRt(i18n.t('weather.humidity'), `${wd.humidity}%`);
-            addRt(
-                i18n.t('weather.stat.uvIndex'),
-                `${Math.round(wd.uvIndex ?? 0)}`
-            );
+            const uvRow = document.createElement('div');
+            uvRow.className = 'weather-rt-row';
+            const uvLabel = document.createElement('span');
+            uvLabel.className = 'exp-stat-label';
+            uvLabel.style.cssText = 'display:flex;align-items:center;gap:3px;';
+            uvLabel.innerHTML = `${i18n.t('weather.stat.uvIndex')} <span style="font-size:10px;opacity:0.45;cursor:pointer;">ⓘ</span>`;
+            const uvVal = document.createElement('span');
+            uvVal.className = 'exp-stat-value';
+            uvVal.textContent = `${Math.round(wd.uvIndex ?? 0)}`;
+            uvRow.appendChild(uvLabel);
+            uvRow.appendChild(uvVal);
+            rightStats.appendChild(uvRow);
+            const uvInfoIcon = uvLabel.querySelector('span')!;
+            const uvTooltipContent = document.createElement('div');
+            uvTooltipContent.innerHTML = i18n.t('weather.mountain.tooltipUV');
+            this.statTooltips.push(createTooltip(uvInfoIcon as HTMLElement, uvTooltipContent, { trigger: 'click' }));
 
             rtContainer.appendChild(leftBox);
             rtContainer.appendChild(windBox);
@@ -718,20 +769,22 @@ export class WeatherSheet extends BaseComponent {
                 i18n.t('weather.clouds'),
                 `${wd.cloudCover}%`
             );
-            this.makeStat(
+            this.makeStatWithTooltip(
                 grid2,
                 i18n.t('weather.dewPoint'),
-                wd.dewPoint !== undefined && wd.dewPoint !== null ? `${Math.round(wd.dewPoint)}°C` : '—'
+                wd.dewPoint !== undefined && wd.dewPoint !== null ? `${Math.round(wd.dewPoint)}°C` : '—',
+                i18n.t('weather.mountain.tooltipDewPoint')
             );
             this.makeStat(
                 grid2,
                 i18n.t('weather.gusts'),
                 wd.windGusts !== undefined && wd.windGusts !== null ? `${Math.round(wd.windGusts)} km/h` : '—'
             );
-            this.makeStat(
+            this.makeStatWithTooltip(
                 grid2,
                 i18n.t('weather.visibility'),
-                wd.visibility !== undefined && wd.visibility !== null && wd.visibility > 0 ? `${Math.round(wd.visibility)} km` : '—'
+                wd.visibility !== undefined && wd.visibility !== null && wd.visibility > 0 ? `${Math.round(wd.visibility)} km` : '—',
+                i18n.t('weather.mountain.tooltipVisibility')
             );
             this.makeStat(
                 grid2,
@@ -787,6 +840,7 @@ export class WeatherSheet extends BaseComponent {
             this.comfortTooltip.dispose();
             this.comfortTooltip = null;
         }
+        this.disposeAllStatTooltips();
         super.dispose();
     }
 }

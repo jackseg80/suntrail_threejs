@@ -21,9 +21,11 @@ import { iapService } from '../../iapService';
 import { showToast } from '../../toast';
 import { haptic } from '../../haptics';
 import { showUpgradePrompt, isProActive } from '../../iap';
+import { createTooltip, type TooltipHandle } from '../tooltip';
 import templateHTML from '../templates/settings.html?raw';
 
 export class SettingsSheet extends BaseComponent {
+    private settingTooltips: TooltipHandle[] = [];
     constructor() {
         super('template-settings', 'sheet-container', templateHTML);
     }
@@ -300,6 +302,51 @@ export class SettingsSheet extends BaseComponent {
         // Initial UI update
         this.updateAllUI();
         this.updateBenchmarkResults();
+
+        this.attachSettingTooltips();
+    }
+
+    private attachSettingTooltips(): void {
+        if (!this.element) return;
+        this.settingTooltips.forEach((t) => t.dispose());
+        this.settingTooltips = [];
+
+        // Mapping from data-i18n label key to i18n tooltip key
+        const tooltipMap: Record<string, string> = {
+            'settings.label.resolution': 'settings.label.tooltipResolution',
+            'settings.label.range': 'settings.label.tooltipRange',
+            'settings.label.exaggeration': 'settings.label.tooltipExaggeration',
+            'settings.label.vegDensity': 'settings.label.tooltipVegDensity',
+            'settings.label.energySaver': 'settings.label.tooltipEnergySaver',
+            'weather.label.intensity': 'settings.label.tooltipWeatherDensity',
+            'weather.label.speed': 'settings.label.tooltipWeatherSpeed',
+            'weather.label.opacity': 'settings.label.tooltipWeatherOpacity',
+            'settings.section.density': 'settings.label.tooltipVegDensity',
+        };
+
+        const labels = this.element.querySelectorAll('.setting-label, [data-i18n]');
+        labels.forEach((el) => {
+            const key = (el as HTMLElement).dataset.i18n;
+            if (!key || !tooltipMap[key]) return;
+
+            const infoIcon = document.createElement('span');
+            infoIcon.textContent = 'ⓘ';
+            infoIcon.style.cssText =
+                'font-size:10px;opacity:0.45;cursor:pointer;margin-left:3px;';
+            el.appendChild(infoIcon);
+
+            const content = document.createElement('div');
+            content.innerHTML = i18n.t(tooltipMap[key]);
+            this.settingTooltips.push(
+                createTooltip(infoIcon, content, { trigger: 'click' })
+            );
+        });
+    }
+
+    public override dispose(): void {
+        this.settingTooltips.forEach((t) => t.dispose());
+        this.settingTooltips = [];
+        super.dispose();
     }
 
     private updateBenchmarkResults(): void {

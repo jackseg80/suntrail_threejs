@@ -51,7 +51,11 @@
             "points": "Punkte",
             "dplus": "Hm+",
             "dminus": "Hm−",
-            "duration": "Gesch. Zeit"
+            "duration": "Gesch. Zeit",
+            "tooltipDplus": "<b>Höhenmeter Aufstieg (D+)</b>: kumulierte Anstiege auf der Strecke. Zeigt den gesamten Aufstiegsaufwand.",
+            "tooltipDminus": "<b>Höhenmeter Abstieg (D-)</b>: kumulierte Abstiege auf der Strecke.",
+            "tooltipDuration": "<b>Geschätzte Zeit</b>: basierend auf einer Durchschnittsgeschwindigkeit von 4 km/h im Gebirge, angepasst an die Höhenunterschiede.",
+            "tooltipPoints": "<b>GPS-Punkte</b>: Anzahl der während der Aufzeichnung erfassten Positionen. Mehr Punkte bedeuten eine genauere Spur."
         },
         "imported": {
             "title": "Importierte Touren",
@@ -216,7 +220,16 @@
             "shadows": "Schatten",
             "weather": "Wetter",
             "weatherPro": "Erweitertes Wetter",
-            "trailFollow": "Routenverfolgung"
+            "trailFollow": "Routenverfolgung",
+            "tooltipExaggeration": "<b>Reliefüberhöhung</b>: verstärkt die Höhenunterschiede visuell für bessere Lesbarkeit. 1x = realistisch, 1,5x = betont, 3x = stark überhöht.",
+            "tooltipFogDistance": "<b>Nebelentfernung</b>: Sichtweite des 3D-Nebels. Eine Verringerung verbessert die Leistung auf schwächeren Geräten.",
+            "tooltipResolution": "<b>Auflösung (LOD)</b>: Detailstufe des Geländenetzmodells. 16 = sehr niedrig (schnell), 256 = ultra fein (leistungsintensiv).",
+            "tooltipRange": "<b>Render-Radius</b>: Anzahl der um die Kamera geladenen Geländekacheln. Größerer Radius = weitere Sicht, aber höherer Speicherverbrauch.",
+            "tooltipVegDensity": "<b>Vegetationsdichte</b>: Anzahl der 3D-Bäume in Waldgebieten. 0 = keine Bäume, 15000 = dichter Wald.",
+            "tooltipEnergySaver": "<b>Energiesparmodus</b>: begrenzt FPS auf 30 und reduziert den Akkuverbrauch. Nützlich für lange Wanderungen.",
+            "tooltipWeatherDensity": "<b>Wetterintensität</b>: Anzahl der sichtbaren Regen-/Schneepartikel in 3D. Beeinflusst die Grafikleistung.",
+            "tooltipWeatherSpeed": "<b>Wettergeschwindigkeit</b>: Bewegungsgeschwindigkeit der Regen-/Schneepartikel. 1,0 = normal.",
+            "tooltipWeatherOpacity": "<b>Wetteropazität</b>: visuelle Transparenz der Regenpartikel. 0,1 = fast unsichtbar, 1,0 = undurchsichtig."
         },
         "storage": {
             "clearCache": "Cache leeren",
@@ -327,7 +340,8 @@
             "italy": "ITALY",
             "world": "WORLD",
             "sat": "SAT"
-        }
+        },
+        "tooltipLOD": "<b>Detailstufe</b>: aktuelle Zoomstufe und Kartenquelle. Swiss = Swisstopo (Schweiz), IGN = Geoportail (Frankreich), Italy = italienische Kartierung. LVL = Zoomstufe (1-18)."
     },
     "upsell": {
         "lod": "🔍 Maximale Detailstufe erreicht — mit Pro bis LOD 18 zoomen",
@@ -486,7 +500,11 @@
             "comfortFormulaVis": "Sicht < 10km: bis zu −2 Pkt",
             "comfortFormulaCloud": "Bewölkung > 70%: bis zu −1 Pkt",
             "comfortFormulaHumidity": "Luftfeuchte > 70%: −0,03/%% Überschuss",
-            "comfortScale": "Wert von 10 — je höher, desto besser"
+            "comfortScale": "Wert von 10 — je höher, desto besser",
+            "tooltipFreezingLevel": "<b>Nullgradgrenze</b>: Höhe, ab der die Temperaturen unter 0°C fallen. Schnee- und Eisrisiko, wenn Ihre Route diese Höhe überschreitet.",
+            "tooltipDewPoint": "<b>Taupunkt</b>: Temperatur, bei der die Luftfeuchtigkeit kondensiert. Je näher der Taupunkt an der Temperatur liegt, desto feuchter und unangenehmer ist die Luft.",
+            "tooltipVisibility": "<b>Sichtweite</b>: Entfernung, in der Objekte erkennbar sind. <1 km = dichter Nebel, <5 km = Dunst, >10 km = gute Sicht.",
+            "tooltipUV": "<b>UV-Index</b>: Skala 0-11+ zur Messung der Sonnenstrahlung. 0-2 = niedrig, 3-5 = mittel, 6-7 = hoch, 8-10 = sehr hoch, 11+ = extrem. Sonnenschutz ab Index 3 empfohlen."
         },
         "daily": {
             "precip": "Nied.",
@@ -530,7 +548,9 @@
             "elevation": "Elevation",
             "moonPhase": "Mondphase",
             "elevationChart": "24h-Höhenverlauf",
-            "maxElevation": "Max. Erhöhung"
+            "maxElevation": "Max. Erhöhung",
+            "tooltipAzimuth": "<b>Azimut</b>: Sonnenrichtung relativ zum Norden (0°=N, 90°=O, 180°=S, 270°=W). Hilft, sonnenbeschienene Hänge vorherzusehen.",
+            "tooltipElevation": "<b>Elevation</b>: Sonnenhöhe über dem Horizont (0°=Horizont, 90°=Zenit). Die Elevation bestimmt die Lichtintensität und die Bodenwärme."
         },
         "upsell": {
             "solar": "☀️ Vollständige Sonnendaten mit Pro verfügbar"

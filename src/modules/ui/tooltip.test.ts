@@ -277,6 +277,85 @@ describe('createTooltip', () => {
         expect(tooltip.element.textContent).toContain('Tooltip content');
     });
 
+    // ── Trigger modes ──
+
+    it('trigger: "click" adds click listener on anchor', async () => {
+        const tooltip = createTooltip(anchor, content, { trigger: 'click' });
+        anchor.click();
+        // wait for stopPropagation + setTimeout in toggle/show
+        await new Promise((r) => setTimeout(r, 10));
+        expect(tooltip.element.style.display).toBe('block');
+        tooltip.dispose();
+    });
+
+    it('trigger: "hover" shows on mouseenter', () => {
+        const tooltip = createTooltip(anchor, content, { trigger: 'hover' });
+        anchor.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+        expect(tooltip.element.style.display).toBe('block');
+        tooltip.dispose();
+    });
+
+    it('trigger: "hover" hides on mouseleave after delay', async () => {
+        const tooltip = createTooltip(anchor, content, { trigger: 'hover' });
+        anchor.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+        anchor.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+        // Still visible during delay
+        expect(tooltip.element.style.display).toBe('block');
+        // After delay
+        await new Promise((r) => setTimeout(r, 200));
+        expect(tooltip.element.style.display).toBe('none');
+        tooltip.dispose();
+    });
+
+    it('trigger: "hover" shows on focus', () => {
+        const tooltip = createTooltip(anchor, content, { trigger: 'hover' });
+        anchor.dispatchEvent(new FocusEvent('focus', { bubbles: true }));
+        expect(tooltip.element.style.display).toBe('block');
+        tooltip.dispose();
+    });
+
+    it('trigger: "hover" hides on blur', () => {
+        const tooltip = createTooltip(anchor, content, { trigger: 'hover' });
+        anchor.dispatchEvent(new FocusEvent('focus', { bubbles: true }));
+        anchor.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+        expect(tooltip.element.style.display).toBe('none');
+        tooltip.dispose();
+    });
+
+    it('trigger: "hover" sets tabIndex=0 on anchor', () => {
+        const anchorNoTab = createAnchor();
+        anchorNoTab.tabIndex = -1;
+        const tooltip = createTooltip(anchorNoTab, content, { trigger: 'hover' });
+        expect(anchorNoTab.tabIndex).toBe(0);
+        tooltip.dispose();
+        expect(anchorNoTab.tabIndex).toBe(-1);
+    });
+
+    it('trigger: "hover" dispose cleans up listeners', () => {
+        const tooltip = createTooltip(anchor, content, { trigger: 'hover' });
+        tooltip.dispose();
+        // Should not throw when events fire after dispose
+        anchor.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+        expect(tooltip.element.style.display).toBe('none');
+    });
+
+    it('explicit trigger: "click" ignores hover events', () => {
+        const tooltip = createTooltip(anchor, content, { trigger: 'click' });
+        anchor.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+        expect(tooltip.element.style.display).toBe('none');
+        tooltip.dispose();
+    });
+
+    it('cancels hide delay when re-entering during hover', async () => {
+        const tooltip = createTooltip(anchor, content, { trigger: 'hover' });
+        anchor.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+        anchor.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+        anchor.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 200));
+        expect(tooltip.element.style.display).toBe('block');
+        tooltip.dispose();
+    });
+
     // ── Z-index ──
 
     it('has z-index >= 1000', () => {

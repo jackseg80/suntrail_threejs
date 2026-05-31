@@ -52,7 +52,11 @@
             "points": "Points",
             "dplus": "Dénivelé +",
             "dminus": "Dénivelé −",
-            "duration": "Temps estimé"
+            "duration": "Temps estimé",
+            "tooltipDplus": "<b>Dénivelé positif (D+)</b> : cumul des montées sur le parcours. Indique l'effort total en ascension.",
+            "tooltipDminus": "<b>Dénivelé négatif (D-)</b> : cumul des descentes sur le parcours.",
+            "tooltipDuration": "<b>Temps estimé</b> : calculé sur la base d'une vitesse moyenne de 4 km/h en montagne, ajustée selon le dénivelé.",
+            "tooltipPoints": "<b>Points GPS</b> : nombre de positions enregistrées pendant le suivi. Plus il y a de points, plus le tracé est précis."
         },
         "imported": {
             "title": "Tracés importés",
@@ -231,7 +235,16 @@
             "shadows": "Ombres portées",
             "weather": "Météo",
             "weatherPro": "Météo Avancée",
-            "trailFollow": "Suivi du sentier"
+            "trailFollow": "Suivi du sentier",
+            "tooltipExaggeration": "<b>Exagération du relief</b> : amplifie visuellement les dénivelés pour mieux lire le terrain. 1x = réaliste, 1.5x = accentué, 3x = très exagéré.",
+            "tooltipFogDistance": "<b>Distance de brouillard</b> : portée visuelle du brouillard 3D. Réduire cette valeur améliore les performances sur les appareils moins puissants.",
+            "tooltipResolution": "<b>Résolution (LOD)</b> : niveau de détail du maillage terrain. 16 = très basse (rapide), 256 = ultra fine (coûteuse en performance).",
+            "tooltipRange": "<b>Rayon de rendu</b> : nombre de tuiles de terrain chargées autour de la caméra. Plus le rayon est grand, plus la vue est étendue mais plus la mémoire est sollicitée.",
+            "tooltipVegDensity": "<b>Densité de végétation</b> : nombre d'arbres 3D rendus dans les zones forestières. 0 = aucun arbre, 15000 = forêt dense.",
+            "tooltipEnergySaver": "<b>Économie d'énergie</b> : limite les FPS à 30 et réduit la consommation batterie. Activable pour les longues randonnées.",
+            "tooltipWeatherDensity": "<b>Intensité météo</b> : nombre de particules de pluie/neige visibles en 3D. Affecte les performances graphiques.",
+            "tooltipWeatherSpeed": "<b>Vitesse météo</b> : vitesse de déplacement des particules de pluie/neige. 1.0 = normal.",
+            "tooltipWeatherOpacity": "<b>Opacité météo</b> : transparence visuelle des particules de pluie. 0.1 = quasi invisible, 1.0 = opaque."
         },
         "storage": {
             "clearCache": "Vider Cache",
@@ -329,7 +342,8 @@
             "italy": "ITALY",
             "world": "WORLD",
             "sat": "SAT"
-        }
+        },
+        "tooltipLOD": "<b>Niveau de détail</b> : zoom et source cartographique actuelle. Swiss = Swisstopo (Suisse), IGN = Géoportail (France), Italy = cartographie italienne. LVL = niveau de zoom (1-18)."
     },
     "upsell": {
         "lod": "🔍 Détail maximum atteint — passez à Pro pour voir jusqu'au LOD 18",
@@ -502,7 +516,11 @@
             "comfortFormulaVis": "visibilité < 10km : jusqu'à −2 pts",
             "comfortFormulaCloud": "couverture > 70% : jusqu'à −1 pt",
             "comfortFormulaHumidity": "humidité > 70% : −0.03/%% excédentaire",
-            "comfortScale": "Note sur 10 — plus c'est haut, mieux c'est"
+            "comfortScale": "Note sur 10 — plus c'est haut, mieux c'est",
+            "tooltipFreezingLevel": "<b>Isotherme 0°C</b> : altitude au-dessus de laquelle les températures passent sous 0°C. Risque de neige et verglas si votre itinéraire dépasse cette altitude.",
+            "tooltipDewPoint": "<b>Point de rosée</b> : température à laquelle l'humidité se condense. Plus le point de rosée est proche de la température, plus l'air est humide et inconfortable.",
+            "tooltipVisibility": "<b>Visibilité</b> : distance à laquelle on peut distinguer les objets. <1 km = brouillard dense, <5 km = brume, >10 km = bonne visibilité.",
+            "tooltipUV": "<b>Index UV</b> : échelle 0-11+ mesurant l'intensité du rayonnement solaire. 0-2 = faible, 3-5 = modéré, 6-7 = élevé, 8-10 = très élevé, 11+ = extrême. Protection solaire recommandée dès l'index 3."
         },
         "daily": {
             "precip": "Précip.",
@@ -539,7 +557,9 @@
             "elevation": "Élévation",
             "maxElevation": "Élévation Max",
             "moonPhase": "Phase lunaire",
-            "elevationChart": "Courbe d'élévation 24h"
+            "elevationChart": "Courbe d'élévation 24h",
+            "tooltipAzimuth": "<b>Azimut</b> : direction du soleil par rapport au nord (0°=N, 90°=E, 180°=S, 270°=O). Permet d'anticiper l'orientation des pentes ensoleillées.",
+            "tooltipElevation": "<b>Élévation</b> : hauteur du soleil au-dessus de l'horizon (0°=horizon, 90°=zénith). L'élévation détermine l'intensité lumineuse et la chaleur reçue au sol."
         },
         "upsell": {
             "solar": "☀️ Données solaires complètes disponibles avec Pro"

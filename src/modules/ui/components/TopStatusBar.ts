@@ -5,6 +5,7 @@ import { eventBus } from '../../eventBus';
 import { sheetManager } from '../core/SheetManager';
 import { getWeatherIcon } from '../../weather';
 import { getCountryCode } from '../../geo';
+import { createTooltip, type TooltipHandle } from '../tooltip';
 import templateHTML from '../templates/top-status-bar.html?raw';
 
 export class TopStatusBar extends BaseComponent {
@@ -15,6 +16,7 @@ export class TopStatusBar extends BaseComponent {
     private recWidget: HTMLElement | null = null;
     private recTimer: HTMLElement | null = null;
     private recInterval: any = null;
+    private lodTooltip: TooltipHandle | null = null;
 
     constructor() {
         super('template-top-status-bar', 'top-status-bar', templateHTML);
@@ -39,6 +41,17 @@ export class TopStatusBar extends BaseComponent {
         mainPill?.addEventListener('click', () => {
             sheetManager.toggle('weather');
         });
+
+        // LOD tooltip icon
+        const topLeftContainer = this.element.querySelector('.top-left-widgets');
+        const lodInfoIcon = document.createElement('span');
+        lodInfoIcon.textContent = 'ⓘ';
+        lodInfoIcon.style.cssText =
+            'font-size:11px;opacity:0.4;cursor:pointer;margin-left:2px;align-self:center;';
+        topLeftContainer?.appendChild(lodInfoIcon);
+        const lodContent = document.createElement('div');
+        lodContent.innerHTML = i18n.t('topbar.tooltipLOD');
+        this.lodTooltip = createTooltip(lodInfoIcon, lodContent, { trigger: 'click' });
 
         // ARIA: icon buttons need aria-label
         this.netStatusIcon?.setAttribute(
@@ -202,6 +215,10 @@ export class TopStatusBar extends BaseComponent {
 
     public override dispose(): void {
         this.stopTimer();
+        if (this.lodTooltip) {
+            this.lodTooltip.dispose();
+            this.lodTooltip = null;
+        }
         super.dispose();
     }
 

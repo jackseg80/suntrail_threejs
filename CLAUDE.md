@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.56.5)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-31 — v5.56.5 : Confort rando enrichi (code météo, visibilité, couverture nuageuse, humidité directe), flèche vent +180°, WMO brouillard 45/48 → 🌫️, spinner chargement, couverture nuageuse + isotherme 0°C en gratuite, accessibilité close-weather, locale i18n dates, 6 bugs fixes + 11 améliorations (956 tests).
+> Mis à jour le 2026-05-31 — v5.56.6 : Module tooltip enrichi (hover/click auto-détection), info-bulles ⓘ dans 6 composants, 20 clés i18n en 4 langues, 1 bug fix + 1 amélioration (965 tests).
 
 ## Projet
 
@@ -122,7 +122,7 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - `src/modules/gpxHistoryService.ts` : (v5.56.2) **NOUVEAU** — Persistance historique GPX (max 5, localStorage, déduplication, cache mémoire).
 - `src/modules/gpxTypes.ts` : (v5.56.2) **NOUVEAU** — Types centralisés `GeoPoint`, `GPXRawData`, utilitaires `isValidGeoPoint`, `getElevation`.
 - `src/modules/routeManager.ts` : (v5.51.0) Gestionnaire d'itinéraire "zero-mode" — markers 3D (Sprite orange cliquable), auto-compute debounce 800ms, mise à jour barre + panel réglages.
-- `src/modules/ui/tooltip.ts` : (v5.56.4) **NOUVEAU** — Utilitaire d'info-bulle réutilisable. `createTooltip(anchor, content)` → `{ show, hide, toggle, dispose }`. Auto-positionnement (haut/bas selon espace disponible), `position: fixed` sur `<body>`, fermeture au clic extérieur. Utilisé par l'info-bulle Confort Rando dans WeatherSheet. Voir `src/modules/ui/tooltip.test.ts` (23 tests).
+- `src/modules/ui/tooltip.ts` : (v5.56.6) Utilitaire d'info-bulle réutilisable. `createTooltip(anchor, content, options?)` → `{ show, hide, toggle, dispose }`. Options : `trigger: 'auto' | 'click' | 'hover'` (auto = hover sur desktop, clic sur tactile), `position: 'auto' | 'top' | 'bottom'`. Auto-positionnement, `position: fixed` sur `<body>`, fermeture au clic/touch extérieur, accessibilité clavier (focus/blur). Utilisé par 6 composants : WeatherSheet (Confort Rando, isotherme, rosée, visibilité, UV), SolarProbeSheet (azimut, élévation), TrackSheet (D+, D−, durée, points), SettingsSheet (exagération, fog, résolution, rayon, végétation, éco, météo), TopStatusBar (LOD). Voir `src/modules/ui/tooltip.test.ts` (32 tests).
 - `src/modules/appInit.ts` : (v5.51.0) Orchestration du démarrage. `setupLongPress()` (500ms + SVG feedback), `setupRouteBar()` (⚙ profil/boucle/ORS + ✕ effacer).
 - `src/modules/environment.ts` : (v5.40.20) Ambiance 3D, Fog, Sky, Lights (ex-scene.ts).
 - `src/modules/config.ts` : Résolution centralisée des clés API (Gist/Env).
@@ -133,7 +133,7 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - `src/modules/solarRoute.ts` : (v5.52.9) Analyse solaire des itinéraires — **deux modes distincts** : Snapshot (ombre à l'heure du slider, Free) et Hiker Timeline (ombre à l'heure d'arrivée estimée, Pro). **Overlay 3D** : DataTexture 256×1 mappée sur TubeGeometry pour colorisation 4 états (soleil or / forêt vert / ombre bleu / nuit bleu-nuit) live (~200ms cache hit). **Détection forêt globale** (v5.52.9) : `prefetchLandcoverForPoints()` pré-charge toutes tuiles Z14 (CH) / Z10 (monde) avant analyse — élimine cache-froid. Fallback silencieux si MapTiler indisponible. **Sampling adaptatif** : max 200 points, step dynamique. **Cache** : clé `${routeHash}|${date}|${slot30}|${mode}|${speed}`, invalide sur changement route ou date. **RAF keepalive** pour fluidité 2D. **Ombre précise** : utilise `getAltitudeAt()` au moment de l'analyse. **Recommandations** : grille 2×2 stats + info forêt + segments ombragés + alerte exposition forte (excl. forêt). **Speed** : [3, 4, 6] km/h sélectionnable, auto-bascule en hikerTimeline.
 
 ## Tests & Qualité
-- **Unitaires (Vitest)** : `npm test` (945 passants). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`, `solarRoute.ts`, `authService.ts`, `haptics.ts`, `theme.ts`, `toast.ts`, `weatherUtils.ts`, `nativeGPSService.ts`, `weather.ts`, `tooltip.ts`. Solar route analysis valide (27 tests dédies).
+- **Unitaires (Vitest)** : `npm test` (965 passants). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`, `solarRoute.ts`, `authService.ts`, `haptics.ts`, `theme.ts`, `toast.ts`, `weatherUtils.ts`, `nativeGPSService.ts`, `weather.ts`, `tooltip.ts`. Solar route analysis valide (27 tests dédies).
 - **Hardening (v5.54.1)** : Fuites mémoire Capacitor (nativeGPSService, iapService), logging fire-and-forget, centralization clés localStorage (`src/constants/storage.ts`), npm audit fix (7 vulnérabilités).
 - **E2E (Playwright)** : `npx playwright test --ui` (Onboarding, GPS, Expert).
 - **Mocks** : `src/test/setup.ts` pour WebGL. `ui.test.ts` utilise des timers fictifs.
