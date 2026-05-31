@@ -447,7 +447,8 @@
         "forecast": "Previsioni",
         "label": {
             "intensity": "INTENSITÀ",
-            "speed": "VELOCITÀ"
+            "speed": "VELOCITÀ",
+            "opacity": "OPACITÀ"
         },
         "btn": {
             "expert": "📊 Stazione Meteo Expert"

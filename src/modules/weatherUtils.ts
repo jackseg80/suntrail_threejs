@@ -49,7 +49,7 @@ export function getFreezingAlert(
  * Returns abbreviations suitable for display.
  */
 export function fmtWindDir(deg: number): string {
-    const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+    const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
     const idx = Math.round((((deg % 360) + 360) % 360) / 45) % 8;
     return dirs[idx];
 }

@@ -83,9 +83,9 @@ describe('fmtWindDir()', () => {
     it('retourne "E" pour 90°', () => expect(fmtWindDir(90)).toBe('E'));
     it('retourne "SE" pour 135°', () => expect(fmtWindDir(135)).toBe('SE'));
     it('retourne "S" pour 180°', () => expect(fmtWindDir(180)).toBe('S'));
-    it('retourne "SO" pour 225°', () => expect(fmtWindDir(225)).toBe('SO'));
-    it('retourne "O" pour 270°', () => expect(fmtWindDir(270)).toBe('O'));
-    it('retourne "NO" pour 315°', () => expect(fmtWindDir(315)).toBe('NO'));
+    it('retourne "SW" pour 225°', () => expect(fmtWindDir(225)).toBe('SW'));
+    it('retourne "W" pour 270°', () => expect(fmtWindDir(270)).toBe('W'));
+    it('retourne "NW" pour 315°', () => expect(fmtWindDir(315)).toBe('NW'));
     it('gère les angles > 360°', () => expect(fmtWindDir(360)).toBe('N'));
-    it('gère les angles négatifs', () => expect(fmtWindDir(-45)).toBe('NO'));
+    it('gère les angles négatifs', () => expect(fmtWindDir(-45)).toBe('NW'));
 });

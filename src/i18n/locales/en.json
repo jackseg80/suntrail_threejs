@@ -450,7 +450,8 @@
         "forecast": "Forecast",
         "label": {
             "intensity": "INTENSITY",
-            "speed": "SPEED"
+            "speed": "SPEED",
+            "opacity": "OPACITY"
         },
         "btn": {
             "expert": "📊 Expert Weather Station"

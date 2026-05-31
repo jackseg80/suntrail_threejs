@@ -33,6 +33,7 @@ import { initVegetationResources } from './vegetation';
 import {
     initWeatherSystem,
     updateWeatherSystem,
+    tickWeatherTime,
     fetchWeather,
     disposeWeatherSystem,
 } from './weather';
@@ -737,6 +738,8 @@ export async function initScene(): Promise<void> {
                 0,
                 weatherTimeAccum - WEATHER_THROTTLE_MS
             );
+
+        tickWeatherTime(delta);
 
         if (now - lastCompassTime >= 33) {
             lastCompassTime = now;

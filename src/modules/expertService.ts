@@ -23,7 +23,7 @@ export class ExpertService {
             `${i18n.t('weather.temp')}: ${Math.round(wd.temp)}°C`,
             `${i18n.t('weather.feelsLike')}: ${Math.round(wd.apparentTemp)}°C`,
             `${i18n.t('weather.humidity')}: ${wd.humidity}%`,
-            `${i18n.t('weather.wind')}: ${Math.round(wd.windSpeed)} km/h ${fmtWindDir(wd.windDirDeg ?? wd.windDir)}`,
+            `${i18n.t('weather.wind')}: ${Math.round(wd.windSpeed)} km/h ${fmtWindDir(wd.windDir)}`,
             `${i18n.t('weather.gusts')}: ${Math.round(wd.windGusts ?? 0)} km/h`,
             `${i18n.t('weather.stat.uvIndex')}: ${Math.round(wd.uvIndex ?? 0)}`,
             `${i18n.t('weather.freezingLevel')}: ${Math.round(wd.freezingLevel ?? 0)} m`,

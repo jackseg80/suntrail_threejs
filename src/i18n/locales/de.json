@@ -447,7 +447,8 @@
         "forecast": "Vorhersage",
         "label": {
             "intensity": "INTENSITÄT",
-            "speed": "GESCHWINDIGKEIT"
+            "speed": "GESCHWINDIGKEIT",
+            "opacity": "DECKRAFT"
         },
         "btn": {
             "expert": "📊 Experten-Wetterstation"

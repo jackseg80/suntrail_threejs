@@ -590,7 +590,7 @@ export class WeatherSheet extends BaseComponent {
             arrow.setAttribute('fill', '#60a5fa');
             arrow.setAttribute(
                 'transform',
-                `rotate(${wd.windDirDeg ?? wd.windDir}, 50, 50)`
+                `rotate(${wd.windDir}, 50, 50)`
             );
             windSvg.appendChild(arrow);
             windBox.appendChild(windSvg);

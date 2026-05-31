@@ -80,6 +80,7 @@ export interface PerformanceSettings {
     SHOW_WEATHER: boolean;
     WEATHER_DENSITY: number;
     WEATHER_SPEED: number;
+    WEATHER_RAIN_OPACITY: number;
     FOG_FAR: number;
     SHOW_SLOPES: boolean;
 }
@@ -109,6 +110,7 @@ export const PRESETS: Record<
         SHOW_WEATHER: false,
         WEATHER_DENSITY: 0,
         WEATHER_SPEED: 1.0,
+        WEATHER_RAIN_OPACITY: 0.55,
         FOG_FAR: 25000,
         SHOW_SLOPES: false,
         VEGETATION_CAST_SHADOW: false,
@@ -135,6 +137,7 @@ export const PRESETS: Record<
         SHOW_WEATHER: true,
         WEATHER_DENSITY: 1000,
         WEATHER_SPEED: 1.0,
+        WEATHER_RAIN_OPACITY: 0.55,
         FOG_FAR: 40000,
         SHOW_SLOPES: false,
     },
@@ -160,6 +163,7 @@ export const PRESETS: Record<
         SHOW_WEATHER: true,
         WEATHER_DENSITY: 5000,
         WEATHER_SPEED: 1.2,
+        WEATHER_RAIN_OPACITY: 0.55,
         FOG_FAR: 60000,
         SHOW_SLOPES: false,
     },
@@ -187,6 +191,7 @@ export const PRESETS: Record<
         SHOW_WEATHER: true,
         WEATHER_DENSITY: 15000,
         WEATHER_SPEED: 1.5,
+        WEATHER_RAIN_OPACITY: 0.55,
         FOG_FAR: 100000,
         SHOW_SLOPES: false,
     } as PerformanceSettings,
@@ -261,15 +266,14 @@ export interface State {
     lastWeatherLat: number;
     lastWeatherLon: number;
     currentWeather: 'clear' | 'rain' | 'snow';
-    weatherIntensity: number;
     WEATHER_DENSITY: number;
     WEATHER_SPEED: number;
+    WEATHER_RAIN_OPACITY: number;
     weatherData: {
         temp: number;
         apparentTemp: number;
         windSpeed: number;
         windDir: number;
-        windDirDeg?: number;
         windGusts?: number;
         dewPoint?: number;
         humidity: number;
@@ -283,7 +287,7 @@ export interface State {
             time: string;
             temp: number;
             code: number;
-            precip?: number;
+            precip: number;
         }[];
         daily?: {
             date: string;
@@ -425,9 +429,9 @@ const initialState: State = {
     lastWeatherLat: 0,
     lastWeatherLon: 0,
     currentWeather: 'clear',
-    weatherIntensity: 0,
     WEATHER_DENSITY: PRESETS.balanced.WEATHER_DENSITY,
     WEATHER_SPEED: PRESETS.balanced.WEATHER_SPEED,
+    WEATHER_RAIN_OPACITY: 0.55,
     weatherData: null,
     weatherUnavailable: false,
     ephemeris: null,
@@ -511,6 +515,7 @@ export interface SavedSettings {
     VEGETATION_DENSITY: number;
     WEATHER_DENSITY: number;
     WEATHER_SPEED: number;
+    WEATHER_RAIN_OPACITY: number;
     IS_2D_MODE?: boolean;
     LAST_LAT?: number;
     LAST_LON?: number;
@@ -546,6 +551,7 @@ export function saveSettings(): void {
             VEGETATION_DENSITY: state.VEGETATION_DENSITY,
             WEATHER_DENSITY: state.WEATHER_DENSITY,
             WEATHER_SPEED: state.WEATHER_SPEED,
+            WEATHER_RAIN_OPACITY: state.WEATHER_RAIN_OPACITY,
             IS_2D_MODE: state.IS_2D_MODE,
             LAST_LAT: state.TARGET_LAT,
             LAST_LON: state.TARGET_LON,
@@ -629,6 +635,8 @@ export function loadSettings(): SavedSettings | null {
                 state.WEATHER_DENSITY = parsed.WEATHER_DENSITY;
             if (parsed.WEATHER_SPEED !== undefined)
                 state.WEATHER_SPEED = parsed.WEATHER_SPEED;
+            if (parsed.WEATHER_RAIN_OPACITY !== undefined)
+                state.WEATHER_RAIN_OPACITY = parsed.WEATHER_RAIN_OPACITY;
         }
         if (parsed.LAST_LAT !== undefined) {
             state.TARGET_LAT = parsed.LAST_LAT;

@@ -127,4 +127,63 @@ describe('Weather Module (fetchWeather)', () => {
         await fetchWeather(46.8, 8.2);
         expect(state.currentWeather).toBe('snow');
     });
+
+    it('should classify WMO 82 (violent rain shower) as rain', async () => {
+        vi.mocked(getPlaceName).mockResolvedValue(null);
+        globalThis.fetch = mockWeatherApi(20, 82);
+
+        await fetchWeather(46.8, 8.2);
+        expect(state.currentWeather).toBe('rain');
+    });
+
+    it('should set WEATHER_DENSITY to 10000 for heavy codes 57, 65, 67, 75, 82', async () => {
+        vi.mocked(getPlaceName).mockResolvedValue(null);
+        for (const code of [57, 65, 67, 75, 82]) {
+            state.currentWeather = 'clear';
+            globalThis.fetch = mockWeatherApi(10, code);
+            await fetchWeather(46.8, 8.2);
+            expect(state.WEATHER_DENSITY).toBe(10000);
+        }
+    });
+
+    it('should survive missing data.hourly without crashing', async () => {
+        vi.mocked(getPlaceName).mockResolvedValue(null);
+        globalThis.fetch = vi.fn().mockImplementation((url: string) => {
+            if (url.includes('open-meteo')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: () =>
+                        Promise.resolve({
+                            current: {
+                                temperature_2m: 15,
+                                weather_code: 61,
+                                apparent_temperature: 13,
+                                relative_humidity_2m: 60,
+                                wind_speed_10m: 5,
+                                wind_direction_10m: 90,
+                                cloud_cover: 80,
+                            },
+                            // hourly is missing entirely
+                        }),
+                });
+            }
+            return Promise.reject(new Error('Unknown URL'));
+        });
+
+        await expect(
+            fetchWeather(46.8, 8.2)
+        ).resolves.not.toThrow();
+        expect(state.currentWeather).toBe('rain');
+    });
+
+    it('should set WEATHER_RAIN_OPACITY from state when raining', async () => {
+        vi.mocked(getPlaceName).mockResolvedValue(null);
+        state.WEATHER_RAIN_OPACITY = 0.42;
+        globalThis.fetch = mockWeatherApi(15, 61);
+
+        await fetchWeather(46.8, 8.2);
+        expect(state.currentWeather).toBe('rain');
+        // WEATHER_RAIN_OPACITY is preserved (not overwritten by fetchWeather)
+        expect(state.WEATHER_RAIN_OPACITY).toBe(0.42);
+    });
 });

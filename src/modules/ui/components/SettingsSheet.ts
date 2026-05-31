@@ -107,6 +107,11 @@ export class SettingsSheet extends BaseComponent {
             'WEATHER_SPEED',
             'weather-speed-disp'
         );
+        this.bindSlider(
+            'weather-opacity-slider',
+            'WEATHER_RAIN_OPACITY',
+            'weather-opacity-disp'
+        );
         this.bindToggle('poi-toggle', 'SHOW_SIGNPOSTS', refreshTerrain);
 
         // Inclinomètre — feature Pro
@@ -229,6 +234,7 @@ export class SettingsSheet extends BaseComponent {
             'PERFORMANCE_PRESET',
             'WEATHER_DENSITY',
             'WEATHER_SPEED',
+            'WEATHER_RAIN_OPACITY',
             'SHOW_INCLINOMETER',
             'SHOW_WEATHER_PRO',
         ];
@@ -530,6 +536,13 @@ export class SettingsSheet extends BaseComponent {
                     value
                 );
                 break;
+            case 'WEATHER_RAIN_OPACITY':
+                this.updateSlider(
+                    'weather-opacity-slider',
+                    'weather-opacity-disp',
+                    value
+                );
+                break;
             case 'SHOW_INCLINOMETER':
                 this.updateToggle('inclinometer-toggle', value);
                 break;
@@ -583,6 +596,7 @@ export class SettingsSheet extends BaseComponent {
         this.updateUIFromState('SHOW_SLOPES', state.SHOW_SLOPES);
         this.updateUIFromState('WEATHER_DENSITY', state.WEATHER_DENSITY);
         this.updateUIFromState('WEATHER_SPEED', state.WEATHER_SPEED);
+        this.updateUIFromState('WEATHER_RAIN_OPACITY', state.WEATHER_RAIN_OPACITY);
         this.updateUIFromState('SHOW_INCLINOMETER', state.SHOW_INCLINOMETER);
         this.updateUIFromState('SHOW_WEATHER_PRO', state.SHOW_WEATHER_PRO);
         this.updateUIFromState('PERFORMANCE_PRESET', state.PERFORMANCE_PRESET);

@@ -7,18 +7,30 @@
 - **Tests GPX import** (+2) : Détection des imports en double + acceptation de GPX différents.
 - **Détection doublon GPX** : `handleGPXImport()` calcule un hash des points (first/last 5 + count). Si un layer existant a le même hash, toast + refus sans importer.
 - **i18n `gpx.alreadyImported`** : Clé de traduction dans les 4 locales (fr/en/de/it).
-- **Tests météo (+5)** : WMO 80 (rain shower → rain), WMO 95 (thunderstorm → rain), WMO 71 à -3°C (snow), WMO 71 à 8°C (rain par temp), WMO 71 à 2°C (snow).
+- **Tests météo (+11)** : WMO 80/82/95 → rain, WMO 71 températures, codes lourds 57/67/82 density, hourly null safety, WEATHER_RAIN_OPACITY.
+- **Tests getWeatherIcon (+8)** : Codes 78, 79, 80, 82, 85, 86, 99 — couverture complète des plages WMO.
+- **Slider opacité pluie** : Nouveau slider `OPACITÉ` dans Réglages → Météo (range 0.1–1.0, défaut 0.55). Contrôle la transparence des particules de pluie. `state.WEATHER_RAIN_OPACITY`.
 
 ### Fixed
-- **Particules météo affichant de la neige à 19°C avec pluie** : Les codes WMO 80-82 (averses) et 95-99 (orages) étaient classés comme `snow` car le test `code >= 71` les incluait. Mapping corrigé en plages explicites. Ajout d'un garde-fou température (>5°C → pluie forcée). `src/modules/weather.ts:136-147`.
+- **Particules météo affichant de la neige à 19°C avec pluie** : Les codes WMO 80-82 (averses) et 95-99 (orages) étaient classés comme `snow`. Mapping corrigé en plages explicites + garde-fou température (>5°C → pluie forcée). `weather.ts:136-147`.
+- **Crash potentiel `data.hourly` null** : `data.hourly?.time?.findIndex(...) ?? -1`. `weather.ts:85`.
+- **Icônes WMO 78-79** : `getWeatherIcon()` mappait 78-79 sur `🌦️` (pluie) au lieu de `🌨️` (neige). `weather.ts:214`.
+- **Angle du vent inversé** : `windDir - 90` → `windDir + 90` (le vent du Nord poussait vers -Z/Nord au lieu de +Z/Sud). `weather.ts:346`.
+- **Particules saccadées** : `tickWeatherTime()` jamais appelée → ajoutée à la render loop chaque frame. `scene.ts:742`.
+- **Opacité pluie trop faible** : 0.4 → pilotée par `state.WEATHER_RAIN_OPACITY` (défaut 0.55).
+- **Codes lourds ignorés** : 57 (freezing drizzle), 67 (freezing rain), 82 (violent rain) → 10000 particules au lieu de 4000. `weather.ts:149-152`.
+
+### Changed
+- **`fmtWindDir`** : `SO` → `SW`, `O` → `W`, `NO` → `NW` (abréviations anglaises standard). `weatherUtils.ts:52`.
+- **Nettoyage state.ts** : Suppression `weatherIntensity` (dead code) et `windDirDeg` (redondant avec `windDir`). `precip?: number` → `precip: number`.
+
+### Tests
+- **919 tests passent** (+11 vs v5.56.4). Zéro régression.
 
 ### Changed
 - **Refactoring SolarProbeSheet** : Extraction de `SolarTimeline.ts` et `SolarLockedItem.ts` dans `solarprobe/` (préparation pour extraction complète).
 - **Corrections qualité code** (42 erreurs ESLint) : empty catch blocks documentés, `@ts-ignore` avec descriptions, `no-useless-assignment` nettoyés, `no-case-declarations` fixés, `no-unused-expressions` corrigés, `no-self-assign` supprimé.
 - **`check` script** : Inclut désormais `prettier --check` et `eslint` en plus de `tsc --noEmit`.
-
-### Tests
-- **908 tests passent** (+38 vs v5.56.3, +5 vs v5.56.4). Zéro régression.
 
 ### Added
 - **Bouton refresh météo** (🔄) : Dans le header du bulletin, icône SVG synchro. Force `fetchWeather()` sur la position caméra actuelle. Re-fetch auto à l'ouverture du bulletin.

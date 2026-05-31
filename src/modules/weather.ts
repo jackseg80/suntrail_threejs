@@ -82,10 +82,10 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
 
         const date = new Date();
         const nowISO = date.toISOString().split(':')[0] + ':00';
-        let startIndex = data.hourly.time.findIndex((t: string) =>
+        let startIndex = data.hourly?.time?.findIndex((t: string) =>
             t.startsWith(nowISO)
-        );
-        if (startIndex === -1) startIndex = date.getHours();
+        ) ?? -1;
+        if (startIndex === -1) startIndex = date.getHours() % (data.hourly?.time?.length || 24);
 
         const hourlyForecast = [];
         for (let i = startIndex; i < startIndex + 24; i++) {
@@ -146,7 +146,10 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
                 state.currentWeather = 'rain';
             }
 
-            targetDensity = code === 65 || code === 75 ? 10000 : 4000;
+            targetDensity =
+                code === 57 || code === 65 || code === 67 || code === 75 || code === 82
+                    ? 10000
+                    : 4000;
             speedMult = code >= 65 ? 1.3 : 1.0;
         } else {
             state.currentWeather = 'clear';
@@ -162,7 +165,6 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
                 dewPoint: data.current.dew_point_2m,
                 windSpeed: data.current.wind_speed_10m,
                 windDir: data.current.wind_direction_10m,
-                windDirDeg: data.current.wind_direction_10m,
                 windGusts: data.current.wind_gusts_10m,
                 humidity: data.current.relative_humidity_2m,
                 cloudCover: data.current.cloud_cover,
@@ -211,6 +213,7 @@ export function getWeatherIcon(code: number): string {
     if (code <= 48) return '☁️';
     if (code <= 67) return '🌧️';
     if (code <= 77) return '❄️';
+    if (code <= 79) return '🌨️';
     if (code <= 82) return '🌦️';
     if (code <= 86) return '🌨️';
     return '⛈️';
@@ -343,7 +346,7 @@ export function updateWeatherSystem(
     const windVec = new THREE.Vector3(0, 0, 0);
     if (state.weatherData) {
         windMultiplier = 1.0 + state.weatherData.windSpeed / 60.0;
-        const angleRad = (state.weatherData.windDir - 90) * (Math.PI / 180);
+        const angleRad = (state.weatherData.windDir + 90) * (Math.PI / 180);
         const windForce = state.weatherData.windSpeed * 20.0;
         windVec.set(
             Math.cos(angleRad) * windForce,
@@ -359,7 +362,7 @@ export function updateWeatherSystem(
             4000.0 * state.WEATHER_SPEED * windMultiplier;
         weatherMaterial.uniforms.uSize.value = 50.0;
         weatherMaterial.uniforms.uColor.value.setHex(0xaaaaee);
-        weatherMaterial.uniforms.uOpacity.value = 0.4;
+        weatherMaterial.uniforms.uOpacity.value = state.WEATHER_RAIN_OPACITY;
     } else {
         weatherMaterial.uniforms.uIsRain.value = 0.0;
         weatherMaterial.uniforms.uSpeed.value =

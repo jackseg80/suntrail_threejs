@@ -48,6 +48,34 @@ describe('getWeatherIcon', () => {
     it('code 95 → ⛈️ (orage)', () => {
         expect(getWeatherIcon(95)).toBe('⛈️');
     });
+
+    it('code 78 → 🌨️ (neige forte)', () => {
+        expect(getWeatherIcon(78)).toBe('🌨️');
+    });
+
+    it('code 79 → 🌨️ (neige forte)', () => {
+        expect(getWeatherIcon(79)).toBe('🌨️');
+    });
+
+    it('code 80 → 🌦️ (averse de pluie légère)', () => {
+        expect(getWeatherIcon(80)).toBe('🌦️');
+    });
+
+    it('code 82 → 🌦️ (averse de pluie violente)', () => {
+        expect(getWeatherIcon(82)).toBe('🌦️');
+    });
+
+    it('code 85 → 🌨️ (averse de neige légère)', () => {
+        expect(getWeatherIcon(85)).toBe('🌨️');
+    });
+
+    it('code 86 → 🌨️ (averse de neige forte)', () => {
+        expect(getWeatherIcon(86)).toBe('🌨️');
+    });
+
+    it('code 99 → ⛈️ (orage avec grêle)', () => {
+        expect(getWeatherIcon(99)).toBe('⛈️');
+    });
 });
 
 describe('getUVCategory', () => {
@@ -248,8 +276,8 @@ describe('fmtWindDir', () => {
         expect(fmtWindDir(180)).toBe('S');
     });
 
-    it('270° → O (Ouest)', () => {
-        expect(fmtWindDir(270)).toBe('O');
+    it('270° → W (West)', () => {
+        expect(fmtWindDir(270)).toBe('W');
     });
 
     it('90° → E (Est)', () => {
@@ -276,7 +304,7 @@ describe('État Pro : weatherData null → aucune erreur (graceful)', () => {
 
     it('fmtWindDir avec valeur négative → retourne un cardinal valide', () => {
         const result = fmtWindDir(-90);
-        const validDirs = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+        const validDirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
         expect(validDirs).toContain(result);
     });
 });
