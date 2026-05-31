@@ -1,4 +1,4 @@
-# SunTrail — Navigation & Modules Fonctionnels (v5.40.39)
+# SunTrail — Navigation & Modules Fonctionnels (v5.56.3)
 
 > Référence détaillée pour agents IA. Point d'entrée : [CLAUDE.md](../CLAUDE.md)
 
@@ -85,11 +85,29 @@
 ### Météo (`weather.ts`)
 - **Source** : Open-Meteo API (sans clé) — courant, horaire 24h, prévisions 3 jours.
 - ShaderMaterial sur Points (15 000 particules max). Pluie = traits verticaux (4000 u/s). Neige = flocons 6 branches avec dérive sinusoïdale (700 u/s). Vent issu de l'API.
+- **Rate limit** : 15s minimum entre appels.
+- **Déclencheurs** : démarrage, pan/zoom (debounce 1s, seuil 3 km), bouton GPS, recherche, ouverture du bulletin.
+- **Bouton refresh** (🔄) : dans le header du bulletin, SVG icône synchro, force `fetchWeather()` sur la position actuelle de la caméra.
+- **Géocodage** : `getPlaceName()` (geocodingService.ts) + `getCountryName()` (geo.ts) pour le label `Ville, Pays`.
 - **Exports** : `fetchWeather()`, `initWeatherSystem()`, `updateWeatherSystem()`, `getWeatherIcon()`.
+
+### Géocodage (`geocodingService.ts`)
+- **Reverse geocoding** : `getPlaceName(lat, lon)` → nom de ville/village via MapTiler (primaire) / Nominatim (fallback).
+- **Forward geocoding** : `searchLocations(query)` → résultats avec classification (`classifyFeature()`).
+- **Backoff** : 429 → 60s, 403 → 5min, réseau → 30s (dans `utils.ts`).
+
+### Historique GPX (`gpxHistoryService.ts`)
+- Persistance localStorage des 5 derniers tracés (imports + REC).
+- Reverse geocoding automatique : `countryName` via `COUNTRY_NAMES[getCountryCode()]`, `locationName` via `getPlaceName()`.
+- `GPXHistoryEntry` : `id`, `name`, `stats`, `simplifiedPoints`, `centerLat/Lon`, `bounds`, `locationName?`, `countryName?`.
+- Affichage dans `TrackSheet.ts` : `Ville (Pays) · date heure`.
 
 ### Géo-utilitaires (`geo.ts`)
 - Web Mercator : `lngLatToWorld()`, `worldToLngLat()`, `lngLatToTile()`, `getTileBounds()`.
 - `clampTargetToBounds()` pour clamping caméra.
+- `getCountryCode(lat, lon)` → code ISO (55 pays, polygones Natural Earth 1:10m).
+- `getCountryName(lat, lon)` → nom français via `COUNTRY_NAMES`.
+- `haversineDistance()` → distance km entre 2 points.
 
 ### Worker Pool (`workerManager.ts`)
 - **Singleton `tileWorkerManager`** : 4 workers (mobile) / 8 workers (desktop).

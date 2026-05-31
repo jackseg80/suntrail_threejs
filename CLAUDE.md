@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.56.2)
+# SunTrail — Guide IA (v5.56.3)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-31 — v5.56.2 : Historique GPX persistant, fusion panneaux, reverse geocoding, types centralisés, dette technique.
+> Mis à jour le 2026-05-31 — v5.56.3 : Unification geocoding, bouton refresh météo, fix label source carte, format GPX Ville (Pays).
 
 ## Projet
 
@@ -16,7 +16,7 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **Végétation v5.33.1** : Détection sémantique vectorielle (SwissTopo/MapTiler), filtrage par BBox optimisé (v5.34.0).
 - **Frontières v5.56.0** : Système data-driven Europe entière (Natural Earth 1:10m, 55 pays). Voir `src/modules/geo.ts`, `src/data/countries.ts`, `src/modules/tileSources.ts`.
   - **Données** : `src/data/countries.ts` — 55 pays, polygones simplifiés (~1.6 km). Généré par `scripts/ingest-natural-earth.ts`. CH utilise un polygone OSM indépendant (54 pts, plus précis aux frontières). → [src/data/countries.ts](src/data/countries.ts) | [scripts/ingest-natural-earth.ts](scripts/ingest-natural-earth.ts)
-  - **Détection** : `getCountryCode(lat, lon)` → code ISO ou `null`. `getCountryAtTile(tx, ty, zoom)` → pays majoritaire dans une tuile. BBox pre-filter → ray-casting (O(n), zéro allocation). Micro-états testés en premier (priorité). → [src/modules/geo.ts](src/modules/geo.ts)
+  - **Détection** : `getCountryCode(lat, lon)` → code ISO ou `null`. `getCountryName(lat, lon)` → nom français via `COUNTRY_NAMES` (50 pays). `getCountryAtTile(tx, ty, zoom)` → pays majoritaire dans une tuile. BBox pre-filter → ray-casting (O(n), zéro allocation). Micro-états testés en premier (priorité). → [src/modules/geo.ts](src/modules/geo.ts)
   - **Sources de tuiles** : `COUNTRY_SOURCES` (data-driven). Sources actives : CH (SwissTopo), FR (IGN), AT (basemap.at — CC-BY 4.0), DE (BKG — dl-de/by-2-0), ES (IGN España — CC-BY 4.0 scne.es). NO (Kartverket topo4 — CC-BY 4.0) codé mais désactivé. Pour ajouter la source HD d'un pays : une entrée dans `COUNTRY_SOURCES`. Sans config → fallback global (MapTiler → OpenTopoMap → OSM). → [src/modules/tileSources.ts](src/modules/tileSources.ts)
   - **Backward compat** : `isPositionInSwitzerland/France/Italy`, `isTileInSwitzerland/Strict` conservés comme wrappers.
 - **Sources HD Pays (v5.56.1)** : 5 sources actives, 6 prêtes à activer après vérification locale.
@@ -25,7 +25,8 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
   - **Endpoints inaccessibles** : CZ (ČÚZK), PL (Geoportal), SK (ZBGIS), FI (MML), SE (Lantmäteriet) — 401/404/503 depuis l'étranger. URLs documentées dans `tileSources.ts:145-160`.
   - **Hors Europe (nécessite extension Natural Earth)** : JP (GSI Maps) — URL fonctionnelle, mais JP absent du dataset Europe. Voir `ROADMAP.md` pour les URLs exactes.
 - **Foreground Service v5.53.0** : Architecture processus séparé `:tracking`
-- **Historique GPX v5.56.2** : Persistance des 5 derniers tracés (imports + REC) en localStorage. Mini-carte canvas OpenTopoMap. Reverse geocoding ville/pays auto. Fusion en liste unifiée avec les layers actifs.
+- **Historique GPX v5.56.2** : Persistance des 5 derniers tracés (imports + REC) en localStorage. Mini-carte canvas OpenTopoMap. Reverse geocoding ville/pays auto. Fusion en liste unifiée avec les layers actifs. Affichage `Ville (Pays) · date` dans l'UI.
+- **Geocoding unifié v5.56.3** : `getPlaceName(lat, lon)` (`geocodingService.ts`) dédié au reverse/forward geocoding (via `fetchGeocoding` dans `utils.ts`, MapTiler → Nominatim). `weather.ts` utilise maintenant `getPlaceName()` + `getCountryName()` au lieu de sa propre fonction `extractLocationName()` (supprimée). Seuil re-fetch météo réduit à 3 km.
 - **Types GPX v5.56.2** : Module centralisé `gpxTypes.ts` — `GeoPoint`, `GPXRawData`, `isValidGeoPoint()`, `getElevation()`. Remplace `Record<string, any>` dans tout le pipeline.
   - `RecordingService` dans `android:process=":tracking"` — survit au kill de l'app principale
   - `TrackingActivity` transparente dans `:tracking` — point d'entrée du processus isolé

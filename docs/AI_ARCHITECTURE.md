@@ -1,4 +1,4 @@
-# AI Architecture Guide (v5.40.38)
+# AI Architecture Guide (v5.56.3)
 
 This document maps the core reactive logic and rendering systems to help AI agents understand how modules interact.
 
@@ -12,6 +12,8 @@ To improve testability and keep UI components lean, business logic is extracted 
 | `recordingService`| Orchestration of GPS recording, permissions, and file saving. | `toggleRecording`, `stopRecording`, `saveToFile` |
 | `gpxService` | GPX data handling, parsing, and string generation. | `handleGPXImport`, `buildGPXStringFromLayer` |
 | `gpxLayers` | (v5.40.19) 3D rendering and management of GPX track layers. | `addGPXLayer`, `updateAllGPXMeshes` |
+| `geocodingService` | Reverse/forward geocoding via MapTiler + Nominatim fallback. | `getPlaceName`, `searchLocations`, `classifyFeature` |
+| `gpxHistoryService` | GPX history persistence (max 5, localStorage). | `saveToHistory`, `loadHistory`, `updateHistoryEntryLocation` |
 | `iapService` | RevenueCat integration, Pro status synchronization. | `initialize`, `purchase`, `syncProStatus` |
 | `appInit` | (v5.40.19) Centralized application bootstrap and UI hydration. | `appInit` |
 
@@ -58,6 +60,9 @@ The terrain uses `MeshStandardMaterial` modified via `onBeforeCompile` for perfo
 - **System**: `THREE.Points` (15,000 particles).
 - **Uniforms**: `uWindVec` (Vector3 from Open-Meteo), `uIsRain` (0.0=Snow, 1.0=Rain).
 - **Logic**: Particle recycling in a 15,000 unit box around camera. Rain = vertical streaks; Snow = sinewave drift.
+- **Data**: `fetchWeather(lat, lon)` → Open-Meteo API (courant, horaire 24h, prévisions 3j). **Rate limit**: 15s min between calls.
+- **Geocoding**: `getPlaceName()` from `geocodingService.ts` + `getCountryName()` from `geo.ts` for the location label.
+- **Triggers**: App startup, camera pan/zoom (`debouncedFetchWeather`, 1s debounce, 3km threshold), GPS center, search result, sheet open.
 
 ## 3. Proxy State System (`src/modules/state.ts`)
 

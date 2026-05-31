@@ -1,4 +1,4 @@
-# AI Performance & Constants Guide (v5.40.37)
+# AI Performance & Constants Guide (v5.56.3)
 
 Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 
@@ -58,6 +58,7 @@ Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 | Constant | Value | File | Rationale |
 | :--- | :--- | :--- | :--- |
 | `MIN_FETCH_INTERVAL` | 15s | `weather.ts` | API Rate Limiting. Prevents Open-Meteo IP bans on fast camera moves. |
+| `WEATHER_FETCH_DISTANCE` | 3 km | `scene.ts` | Min camera displacement to re-fetch weather. Reduced from 5 km for mountain reactivity. |
 | `WEATHER_THROTTLE` | 50ms (20fps) | `scene.ts` | Render throttle for weather uniforms. Saves battery on non-essential visuals. |
 | `DEEP_SLEEP_DELAY` | 30s | `scene.ts` | Time before dropping to 1.5 FPS when app is idle. |
 

@@ -1,4 +1,4 @@
-# SunTrail — Guide de Débogage (v5.40.37)
+# SunTrail — Guide de Débogage (v5.56.3)
 
 > Référence détaillée pour agents IA. Point d'entrée : [CLAUDE.md](../CLAUDE.md)
 > Consulter ce fichier quand un bug est signalé ou qu'un symptôme visuel est observé.
@@ -83,7 +83,7 @@ Pour tester des cas complexes sans attendre les conditions réelles, utilisez la
 | Recherche très lente (Overpass bloque) | `searchPeaksByName()` lancé sur filtre "Tout" | Overpass **uniquement** sur filtre "Montagnes". Timeout 5s. (v5.18.0) |
 | Sheets ne se ferment pas au clic carte | `handleMapClick()` ne fermait que `layers-sheet` | Ferme tout sheet actif via `sheetManager.getActiveSheetId()`. (v5.18.0) |
 | Panneau PRO invisible PC/web | `renderWebFallback()` injecte dans `.sheet-content` au lieu de `.upgrade-content` | Sélecteur corrigé. (v5.18.0) |
-| Météo affiche numéro de rue | `locationName.split(',')[0]` garde la rue | `extractLocationName()` parse contexte structuré MapTiler. (v5.19.1) |
+| Météo affiche numéro de rue | `locationName.split(',')[0]` garde la rue | `getPlaceName()` (geocodingService.ts) parse `place_type` MapTiler ou `address` Nominatim. (v5.56.3) |
 | Soleil/ombres fixes sur la Suisse | `sun.ts:37` utilisait `state.TARGET_LAT/LON` fixe | `updateSunPosition()` dérive depuis `worldToLngLat(controls.target)`. Throttle 1s. (v5.19.1) |
 | Spam 429 MapTiler épuise quota | `fetchGeocoding` sans backoff + `fetchWeather` pendant pan | Backoff global 30-60s, `fetchWeather` bloqué pendant interaction, 429 séparé du 403. (v5.19.0) |
 | 3D plate mobile (terrain sans relief) | WebView cache les réponses 429 MapTiler | Vider cache Android : Paramètres → Applis → SunTrail → Stockage → Vider le cache. (v5.19.2) |
