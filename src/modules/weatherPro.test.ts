@@ -105,21 +105,21 @@ describe('getUVCategory', () => {
 });
 
 describe('getComfortIndex', () => {
-    it('18°C, 5km/h, UV3 → score élevé (>=7)', () => {
-        const score = getComfortIndex(18, 5, 3);
+    it('18°C, 5km/h, UV3, 50% humidity, 0% rain → score élevé (>=7)', () => {
+        const score = getComfortIndex(18, 5, 3, 50, 0);
         expect(score).toBeGreaterThanOrEqual(7);
     });
 
-    it('2°C, 80km/h, UV8 → score faible (<4)', () => {
-        const score = getComfortIndex(2, 80, 8);
+    it('2°C, 80km/h, UV8, 80% humidity, 60% rain → score faible (<4)', () => {
+        const score = getComfortIndex(2, 80, 8, 80, 60);
         expect(score).toBeLessThan(4);
     });
 
     it('score est toujours dans [0, 10]', () => {
         const scores = [
-            getComfortIndex(-20, 100, 15),
-            getComfortIndex(30, 0, 0),
-            getComfortIndex(18, 0, 0),
+            getComfortIndex(-20, 100, 15, 100, 100, 150),
+            getComfortIndex(30, 0, 0, 50, 0),
+            getComfortIndex(18, 0, 0, 50, 0),
         ];
         scores.forEach((s) => {
             expect(s).toBeGreaterThanOrEqual(0);
@@ -127,8 +127,8 @@ describe('getComfortIndex', () => {
         });
     });
 
-    it('conditions parfaites (18°C, 0km/h, UV2) → score proche de 10', () => {
-        const score = getComfortIndex(18, 0, 2);
+    it('conditions parfaites (18°C, 0km/h, UV2, 50% humidity, 0% rain) → score proche de 10', () => {
+        const score = getComfortIndex(18, 0, 2, 50, 0);
         expect(score).toBeGreaterThan(8);
     });
 });
@@ -291,7 +291,7 @@ describe('fmtWindDir', () => {
 
 describe('État Pro : weatherData null → aucune erreur (graceful)', () => {
     it("getComfortIndex avec valeurs limites ne lève pas d'erreur", () => {
-        expect(() => getComfortIndex(0, 0, 0)).not.toThrow();
+        expect(() => getComfortIndex(0, 0, 0, 50, 0)).not.toThrow();
     });
 
     it('getFreezingAlert avec freezingLevel 0 → belowFreezing', () => {

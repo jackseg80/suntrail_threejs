@@ -475,7 +475,14 @@
             "nearFreezing": "Neve possibile vicino a te (zero termico a",
             "belowFreezing": "Zero termico",
             "comfort": "Comfort escursione",
-            "title": "Avviso Montagna"
+            "title": "Avviso Montagna",
+            "comfortTooltip": "Calcolato in base a temperatura, umidità, vento, precipitazioni e UV.",
+            "comfortFormulaCold": "freddo (<5°C): −0,25/°C",
+            "comfortFormulaHot": "caldo (>22°C): −0,5/°C (amplificato dall'umidità)",
+            "comfortFormulaWind": "vento effettivo / 20 (raffiche al 30%)",
+            "comfortFormulaRain": "pioggia: probabilità × 4",
+            "comfortFormulaUV": "UV > 3: (UV−3) × 0,4",
+            "comfortScale": "Punteggio su 10 — più alto è, meglio è"
         },
         "daily": {
             "precip": "Precip.",

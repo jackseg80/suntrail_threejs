@@ -491,7 +491,14 @@
             "aboveFreezing": "Vous êtes au-dessus de l'isotherme 0°C",
             "nearFreezing": "Neige possible près de votre position (isotherme à",
             "belowFreezing": "Isotherme 0°C",
-            "comfort": "Confort rando"
+            "comfort": "Confort rando",
+            "comfortTooltip": "Calculé selon la température, l'humidité, le vent, les précipitations et l'UV.",
+            "comfortFormulaCold": "froid (<5°C) : −0.25/°C",
+            "comfortFormulaHot": "chaud (>22°C) : −0.5/°C (amplifié par l'humidité)",
+            "comfortFormulaWind": "vent effectif / 20 (rafales comprises à 30%)",
+            "comfortFormulaRain": "pluie : probabilité × 4",
+            "comfortFormulaUV": "UV > 3 : (UV−3) × 0.4",
+            "comfortScale": "Note sur 10 — plus c'est haut, mieux c'est"
         },
         "daily": {
             "precip": "Précip.",

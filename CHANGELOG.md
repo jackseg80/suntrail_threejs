@@ -1,6 +1,12 @@
 ## [5.56.4] - 2026-05-31
 
 ### Added
+- **Confort Rando amélioré** (`weatherUtils.ts`) : Nouvelle formule asymétrique. Température idéale 5-22°C (froid −0.25/°C, chaud −0.5/°C × facteur humidité), vent effectif /20 (rafales à 30%), pluie probabilité ×4, UV progressif (UV-3)×0.4. 4 nouveaux paramètres utilisés (humidity, precProb, windGusts) — déjà disponibles dans l'API Open-Meteo.
+- **Info-bulle Confort Rando** (`src/modules/ui/tooltip.ts`) : Clic sur le score ouvre un popover fixé sur `<body>` avec explication des 5 facteurs + formule détaillée. Positionnement auto (au-dessus si pas assez de place en bas). Fermeture au clic extérieur. Classes `.rich-tooltip` (wrapper générique) + `.comfort-tooltip-*` (contenu spécifique).
+- **Utilitaire tooltip réutilisable** : `createTooltip(anchor, content)` → `{ show, hide, toggle, dispose }`. Prêt à l'emploi pour toute future info-bulle dans l'app. `src/modules/ui/tooltip.ts`.
+- **i18n** (4 locales) : 6 clés sous `weather.mountain.*` pour le contenu de l'info-bulle (description, 5 lignes formule, échelle).
+- **Tooltip tests** (+23) : Création, show/hide/toggle, positionnement (haut/bas/forcé), clamp gauche, clic extérieur, dispose, coexistence multiple. `src/modules/ui/tooltip.test.ts`.
+- **Tests confort rando** mis à jour (+3) : asymétrie chaud/froid, amplification humidité, rafales, pluie progressive, UV progressif.
 - **ESLint + Prettier configurés** : `eslint.config.mjs` + `.prettierrc`. 3 nouveaux scripts npm (`lint`, `lint:fix`, `format`). Le check CI inclut désormais la vérification de formatage et de lint.
 - **Tests tileSources** (+26) : Couverture exhaustive des 16 builders d'URL et de la config `COUNTRY_SOURCES`.
 - **Tests benchmark** (+5) : Validation des seuils de scoring (ultra/performance/balanced/eco).

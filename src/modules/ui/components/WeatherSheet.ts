@@ -15,11 +15,12 @@ import { showUpgradePrompt } from '../../iap';
 import { showToast } from '../../toast';
 import { ICON_LOCK } from '../icons';
 import { eventBus } from '../../eventBus';
+import { createTooltip, type TooltipHandle } from '../tooltip';
 import templateHTML from '../templates/weather.html?raw';
 
 export class WeatherSheet extends BaseComponent {
     private contentEl: HTMLElement | null = null;
-
+    private comfortTooltip: TooltipHandle | null = null;
     constructor() {
         super('template-weather', 'sheet-container', templateHTML);
     }
@@ -425,16 +426,16 @@ export class WeatherSheet extends BaseComponent {
             container.appendChild(alertDiv);
         }
 
-        // Comfort index
-        const score = getComfortIndex(wd.temp, wd.windSpeed, wd.uvIndex ?? 0);
+        // Comfort index with tooltip
+        const score = getComfortIndex(
+            wd.temp,
+            wd.windSpeed,
+            wd.uvIndex ?? 0,
+            wd.humidity,
+            wd.precProb ?? 0,
+            wd.windGusts
+        );
         const scoreRounded = Math.round(score * 10) / 10;
-        const comfortDiv = document.createElement('div');
-        comfortDiv.style.marginTop = 'var(--space-2)';
-        const comfortLabel = document.createElement('span');
-        comfortLabel.classList.add('exp-stat-label');
-        comfortLabel.textContent = `${i18n.t('weather.mountain.comfort')}: `;
-        const comfortScore = document.createElement('span');
-        comfortScore.classList.add('weather-comfort-score');
         const comfortText =
             score >= 8
                 ? '😊 Excellent'
@@ -443,12 +444,62 @@ export class WeatherSheet extends BaseComponent {
                   : score >= 4
                     ? '😐 Moyen'
                     : '😟 Difficile';
+
+        const comfortDiv = document.createElement('div');
+        comfortDiv.style.cssText =
+            'display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; margin-top: var(--space-2);';
+
+        const comfortLabel = document.createElement('span');
+        comfortLabel.classList.add('exp-stat-label');
+        comfortLabel.textContent = `${i18n.t('weather.mountain.comfort')}: `;
+
+        const comfortScore = document.createElement('span');
+        comfortScore.classList.add('weather-comfort-score');
         comfortScore.textContent = `${comfortText} (${scoreRounded}/10)`;
+
+        const infoIcon = document.createElement('span');
+        infoIcon.textContent = 'ⓘ';
+        infoIcon.style.cssText =
+            'font-size: 12px; opacity: 0.5; margin-left: 2px;';
+
         comfortDiv.appendChild(comfortLabel);
         comfortDiv.appendChild(comfortScore);
+        comfortDiv.appendChild(infoIcon);
+
+        // Clean up previous tooltip if re-rendering
+        if (this.comfortTooltip) {
+            this.comfortTooltip.dispose();
+            this.comfortTooltip = null;
+        }
+        const tooltipContent = this.buildComfortTooltip(scoreRounded);
+        this.comfortTooltip = createTooltip(comfortDiv, tooltipContent);
+
+        comfortDiv.addEventListener('click', (e: MouseEvent) => {
+            e.stopPropagation();
+            this.comfortTooltip?.toggle();
+        });
+
         container.appendChild(comfortDiv);
 
         return container;
+    }
+
+    private buildComfortTooltip(score: number): HTMLElement {
+        const el = document.createElement('div');
+        el.innerHTML = `
+            <div class="comfort-tooltip-title">${i18n.t('weather.mountain.comfort')} — ${score}/10</div>
+            <div class="comfort-tooltip-desc">${i18n.t('weather.mountain.comfortTooltip')}</div>
+            <div class="comfort-tooltip-formula">
+                <div class="comfort-tooltip-formula-title">Formule</div>
+                <div class="comfort-tooltip-line">${i18n.t('weather.mountain.comfortFormulaCold')}</div>
+                <div class="comfort-tooltip-line">${i18n.t('weather.mountain.comfortFormulaHot')}</div>
+                <div class="comfort-tooltip-line">${i18n.t('weather.mountain.comfortFormulaWind')}</div>
+                <div class="comfort-tooltip-line">${i18n.t('weather.mountain.comfortFormulaRain')}</div>
+                <div class="comfort-tooltip-line">${i18n.t('weather.mountain.comfortFormulaUV')}</div>
+            </div>
+            <div class="comfort-tooltip-scale">${i18n.t('weather.mountain.comfortScale')}</div>
+        `;
+        return el;
     }
 
     private updateUI() {
@@ -588,10 +639,7 @@ export class WeatherSheet extends BaseComponent {
             );
             arrow.setAttribute('d', 'M50 15 L60 85 L50 75 L40 85 Z');
             arrow.setAttribute('fill', '#60a5fa');
-            arrow.setAttribute(
-                'transform',
-                `rotate(${wd.windDir}, 50, 50)`
-            );
+            arrow.setAttribute('transform', `rotate(${wd.windDir}, 50, 50)`);
             windSvg.appendChild(arrow);
             windBox.appendChild(windSvg);
             const windSpd = document.createElement('div');
@@ -689,5 +737,13 @@ export class WeatherSheet extends BaseComponent {
         const report = expertService.generateWeatherReport(wd);
         navigator.clipboard.writeText(report);
         showToast(i18n.t('solar.toast.copied'));
+    }
+
+    public override dispose(): void {
+        if (this.comfortTooltip) {
+            this.comfortTooltip.dispose();
+            this.comfortTooltip = null;
+        }
+        super.dispose();
     }
 }

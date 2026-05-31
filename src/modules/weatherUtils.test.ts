@@ -29,33 +29,54 @@ describe('getUVCategory()', () => {
     });
 });
 
+const PERFECT = { h: 50, pp: 0 }; // humidity 50%, precip 0%
+
 describe('getComfortIndex()', () => {
     it('retourne une valeur entre 0 et 10', () => {
-        const score = getComfortIndex(18, 0, 0);
+        const score = getComfortIndex(18, 0, 0, PERFECT.h, PERFECT.pp);
         expect(score).toBeGreaterThanOrEqual(0);
         expect(score).toBeLessThanOrEqual(10);
     });
-    it('est maximal à 18°C, vent nul, UV 0', () => {
-        expect(getComfortIndex(18, 0, 0)).toBe(10);
+    it('est maximal à 18°C, vent nul, UV 0, humidité 50%, pas de pluie', () => {
+        expect(getComfortIndex(18, 0, 0, PERFECT.h, PERFECT.pp)).toBe(10);
     });
-    it('pénalise les températures extrêmes', () => {
-        const hot = getComfortIndex(38, 0, 0);
-        const cold = getComfortIndex(-2, 0, 0);
-        expect(hot).toBeLessThan(10);
-        expect(cold).toBeLessThan(10);
+    it('pénalise la chaleur plus fortement que le froid (asymétrique)', () => {
+        const hot = getComfortIndex(38, 0, 0, 30, 0);
+        const cold = getComfortIndex(-2, 0, 0, PERFECT.h, PERFECT.pp);
+        expect(hot).toBeLessThan(cold);
+    });
+    it('amplifie la pénalité chaleur avec une humidité élevée', () => {
+        const dryHot = getComfortIndex(35, 0, 0, 30, 0);
+        const humidHot = getComfortIndex(35, 0, 0, 90, 0);
+        expect(humidHot).toBeLessThan(dryHot);
     });
     it('pénalise le vent fort', () => {
-        const calm = getComfortIndex(18, 0, 0);
-        const windy = getComfortIndex(18, 60, 0);
+        const calm = getComfortIndex(18, 0, 0, PERFECT.h, PERFECT.pp);
+        const windy = getComfortIndex(18, 60, 0, PERFECT.h, PERFECT.pp);
         expect(windy).toBeLessThan(calm);
     });
-    it('pénalise UV > 6', () => {
-        const lowUV = getComfortIndex(18, 0, 3);
-        const highUV = getComfortIndex(18, 0, 8);
-        expect(highUV).toBeLessThan(lowUV);
+    it('pénalise les rafales en plus du vent moyen', () => {
+        const steady = getComfortIndex(18, 20, 0, PERFECT.h, PERFECT.pp, 20);
+        const gusty = getComfortIndex(18, 20, 0, PERFECT.h, PERFECT.pp, 60);
+        expect(gusty).toBeLessThan(steady);
+    });
+    it('pénalise UV progressivement à partir de 3', () => {
+        const uv3 = getComfortIndex(18, 0, 3, PERFECT.h, PERFECT.pp);
+        const uv8 = getComfortIndex(18, 0, 8, PERFECT.h, PERFECT.pp);
+        const uv12 = getComfortIndex(18, 0, 12, PERFECT.h, PERFECT.pp);
+        expect(uv3).toBe(10); // seuil : 3 ne pénalise pas
+        expect(uv8).toBeLessThan(uv3);
+        expect(uv12).toBeLessThan(uv8);
+    });
+    it('pénalise la probabilité de pluie', () => {
+        const dry = getComfortIndex(18, 0, 0, PERFECT.h, 0);
+        const drizzle = getComfortIndex(18, 0, 0, PERFECT.h, 30);
+        const rain = getComfortIndex(18, 0, 0, PERFECT.h, 80);
+        expect(drizzle).toBeLessThan(dry);
+        expect(rain).toBeLessThan(drizzle);
     });
     it('ne descend jamais sous 0', () => {
-        expect(getComfortIndex(-50, 200, 20)).toBe(0);
+        expect(getComfortIndex(-50, 200, 20, 100, 100, 200)).toBe(0);
     });
 });
 

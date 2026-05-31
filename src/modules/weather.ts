@@ -82,10 +82,11 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
 
         const date = new Date();
         const nowISO = date.toISOString().split(':')[0] + ':00';
-        let startIndex = data.hourly?.time?.findIndex((t: string) =>
-            t.startsWith(nowISO)
-        ) ?? -1;
-        if (startIndex === -1) startIndex = date.getHours() % (data.hourly?.time?.length || 24);
+        let startIndex =
+            data.hourly?.time?.findIndex((t: string) => t.startsWith(nowISO)) ??
+            -1;
+        if (startIndex === -1)
+            startIndex = date.getHours() % (data.hourly?.time?.length || 24);
 
         const hourlyForecast = [];
         for (let i = startIndex; i < startIndex + 24; i++) {
@@ -135,19 +136,25 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
         let speedMult = 1.0;
         if (code >= 51) {
             const isRain =
-                code <= 67 ||
-                (code >= 80 && code <= 82) ||
-                code >= 95;
+                code <= 67 || (code >= 80 && code <= 82) || code >= 95;
             state.currentWeather = isRain ? 'rain' : 'snow';
 
             // Temperature sanity check: cannot snow above 5°C
             const temp = data.current?.temperature_2m;
-            if (temp !== undefined && temp > 5 && state.currentWeather === 'snow') {
+            if (
+                temp !== undefined &&
+                temp > 5 &&
+                state.currentWeather === 'snow'
+            ) {
                 state.currentWeather = 'rain';
             }
 
             targetDensity =
-                code === 57 || code === 65 || code === 67 || code === 75 || code === 82
+                code === 57 ||
+                code === 65 ||
+                code === 67 ||
+                code === 75 ||
+                code === 82
                     ? 10000
                     : 4000;
             speedMult = code >= 65 ? 1.3 : 1.0;

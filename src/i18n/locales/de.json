@@ -475,7 +475,14 @@
             "nearFreezing": "Schnee möglich in Ihrer Nähe (Nullgradgrenze bei",
             "belowFreezing": "Nullgradgrenze",
             "comfort": "Wanderkomfort",
-            "title": "Berg-Warnung"
+            "title": "Berg-Warnung",
+            "comfortTooltip": "Berechnet aus Temperatur, Luftfeuchtigkeit, Wind, Niederschlag und UV.",
+            "comfortFormulaCold": "kalt (<5°C): −0,25/°C",
+            "comfortFormulaHot": "heiß (>22°C): −0,5/°C (verstärkt durch Luftfeuchtigkeit)",
+            "comfortFormulaWind": "effektiver Wind / 20 (Böen zu 30%)",
+            "comfortFormulaRain": "Regen: Wahrscheinlichkeit × 4",
+            "comfortFormulaUV": "UV > 3: (UV−3) × 0,4",
+            "comfortScale": "Wert von 10 — je höher, desto besser"
         },
         "daily": {
             "precip": "Nied.",

@@ -28,7 +28,7 @@ export class ExpertService {
             `${i18n.t('weather.stat.uvIndex')}: ${Math.round(wd.uvIndex ?? 0)}`,
             `${i18n.t('weather.freezingLevel')}: ${Math.round(wd.freezingLevel ?? 0)} m`,
             `${i18n.t('weather.visibility')}: ${Math.round(wd.visibility ?? 0)} km`,
-            `${i18n.t('weather.stat.comfortIndex')}: ${Math.round(getComfortIndex(wd.temp, wd.windSpeed, wd.uvIndex ?? 0) * 10) / 10}/10`,
+            `${i18n.t('weather.stat.comfortIndex')}: ${Math.round(getComfortIndex(wd.temp, wd.windSpeed, wd.uvIndex ?? 0, wd.humidity, wd.precProb ?? 0, wd.windGusts) * 10) / 10}/10`,
         ];
 
         if (wd.daily) {

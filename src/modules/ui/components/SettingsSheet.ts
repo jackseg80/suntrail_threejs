@@ -596,7 +596,10 @@ export class SettingsSheet extends BaseComponent {
         this.updateUIFromState('SHOW_SLOPES', state.SHOW_SLOPES);
         this.updateUIFromState('WEATHER_DENSITY', state.WEATHER_DENSITY);
         this.updateUIFromState('WEATHER_SPEED', state.WEATHER_SPEED);
-        this.updateUIFromState('WEATHER_RAIN_OPACITY', state.WEATHER_RAIN_OPACITY);
+        this.updateUIFromState(
+            'WEATHER_RAIN_OPACITY',
+            state.WEATHER_RAIN_OPACITY
+        );
         this.updateUIFromState('SHOW_INCLINOMETER', state.SHOW_INCLINOMETER);
         this.updateUIFromState('SHOW_WEATHER_PRO', state.SHOW_WEATHER_PRO);
         this.updateUIFromState('PERFORMANCE_PRESET', state.PERFORMANCE_PRESET);

@@ -18,7 +18,7 @@ function mockWeatherApi(
     temperature: number,
     weatherCode: number,
     hourlyTemp = temperature,
-    hourlyCode = weatherCode,
+    hourlyCode = weatherCode
 ) {
     return vi.fn().mockImplementation((url: string) => {
         if (url.includes('open-meteo')) {
@@ -170,9 +170,7 @@ describe('Weather Module (fetchWeather)', () => {
             return Promise.reject(new Error('Unknown URL'));
         });
 
-        await expect(
-            fetchWeather(46.8, 8.2)
-        ).resolves.not.toThrow();
+        await expect(fetchWeather(46.8, 8.2)).resolves.not.toThrow();
         expect(state.currentWeather).toBe('rain');
     });
 
