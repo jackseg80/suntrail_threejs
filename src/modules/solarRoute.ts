@@ -5,6 +5,7 @@ import { isAtShadow, drapeToTerrain, getAltitudeAt, GPX_SURFACE_OFFSET } from '.
 import { worldToLngLat, haversineDistance } from './geo';
 import { isLatLonInForest, prefetchLandcoverForPoints } from './landcover';
 import { getSunDirection } from './sun';
+import { setSolarBandData } from './profile';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -469,11 +470,8 @@ export function updateOverlayTransform(sourceMesh: THREE.Mesh): void {
 // ─── Notification vers l'UI ───────────────────────────────────────────────────
 
 function notifySolarRouteUpdate(): void {
-    // Importer dynamiquement pour éviter les dépendances circulaires
-    void import('./profile').then(({ setSolarBandData }) => {
-        if (_currentAnalysis) setSolarBandData(_currentAnalysis);
-        else setSolarBandData(null);
-    });
+    if (_currentAnalysis) setSolarBandData(_currentAnalysis);
+    else setSolarBandData(null);
     // Déclencher un re-render de SolarProbeSheet si ouvert
     window.dispatchEvent(new CustomEvent('solarRouteUpdated'));
 }
