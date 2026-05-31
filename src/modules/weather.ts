@@ -134,7 +134,18 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
         let targetDensity = 2500;
         let speedMult = 1.0;
         if (code >= 51) {
-            state.currentWeather = code >= 71 ? 'snow' : 'rain';
+            const isRain =
+                code <= 67 ||
+                (code >= 80 && code <= 82) ||
+                code >= 95;
+            state.currentWeather = isRain ? 'rain' : 'snow';
+
+            // Temperature sanity check: cannot snow above 5°C
+            const temp = data.current?.temperature_2m;
+            if (temp !== undefined && temp > 5 && state.currentWeather === 'snow') {
+                state.currentWeather = 'rain';
+            }
+
             targetDensity = code === 65 || code === 75 ? 10000 : 4000;
             speedMult = code >= 65 ? 1.3 : 1.0;
         } else {

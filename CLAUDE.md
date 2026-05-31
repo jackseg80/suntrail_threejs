@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.56.4)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-31 — v5.56.4 : ESLint+Prettier configurés, refactoring SolarProbeSheet, détection doublon GPX, +33 tests, corrections qualité code.
+> Mis à jour le 2026-05-31 — v5.56.4 : ESLint+Prettier configurés, refactoring SolarProbeSheet, détection doublon GPX, +33 tests, corrections qualité code, fix particules météo (WMO 80-82/95-99 mal classées neige, garde-fou température >5°C).
 
 ## Projet
 
@@ -27,6 +27,7 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **Foreground Service v5.53.0** : Architecture processus séparé `:tracking`
 - **Historique GPX v5.56.2** : Persistance des 5 derniers tracés (imports + REC) en localStorage. Mini-carte canvas OpenTopoMap. Reverse geocoding ville/pays auto. Fusion en liste unifiée avec les layers actifs. Affichage `Ville (Pays) · date` dans l'UI.
 - **Geocoding unifié v5.56.3** : `getPlaceName(lat, lon)` (`geocodingService.ts`) dédié au reverse/forward geocoding (via `fetchGeocoding` dans `utils.ts`, MapTiler → Nominatim). `weather.ts` utilise maintenant `getPlaceName()` + `getCountryName()` au lieu de sa propre fonction `extractLocationName()` (supprimée). Seuil re-fetch météo réduit à 3 km.
+- **Particules météo v5.56.4** : Système de particules 3D (pluie/neige) basé sur l'API Open-Meteo. Un seul `THREE.Points` avec `ShaderMaterial` — toggle pluie/neige via uniforme `uIsRain`. Les **WMO codes** déterminent le type de précipitation. Mapping corrigé : codes 51-67 (pluie), 71-77/85-86 (neige), 80-82/95-99 (pluie, étaient classés neige). **Garde-fou température** : si `temp > 5°C`, la neige est forcée en pluie. Voir `src/modules/weather.ts:136-147`.
 - **Types GPX v5.56.2** : Module centralisé `gpxTypes.ts` — `GeoPoint`, `GPXRawData`, `isValidGeoPoint()`, `getElevation()`. Remplace `Record<string, any>` dans tout le pipeline.
   - `RecordingService` dans `android:process=":tracking"` — survit au kill de l'app principale
   - `TrackingActivity` transparente dans `:tracking` — point d'entrée du processus isolé
@@ -131,7 +132,7 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - `src/modules/solarRoute.ts` : (v5.52.9) Analyse solaire des itinéraires — **deux modes distincts** : Snapshot (ombre à l'heure du slider, Free) et Hiker Timeline (ombre à l'heure d'arrivée estimée, Pro). **Overlay 3D** : DataTexture 256×1 mappée sur TubeGeometry pour colorisation 4 états (soleil or / forêt vert / ombre bleu / nuit bleu-nuit) live (~200ms cache hit). **Détection forêt globale** (v5.52.9) : `prefetchLandcoverForPoints()` pré-charge toutes tuiles Z14 (CH) / Z10 (monde) avant analyse — élimine cache-froid. Fallback silencieux si MapTiler indisponible. **Sampling adaptatif** : max 200 points, step dynamique. **Cache** : clé `${routeHash}|${date}|${slot30}|${mode}|${speed}`, invalide sur changement route ou date. **RAF keepalive** pour fluidité 2D. **Ombre précise** : utilise `getAltitudeAt()` au moment de l'analyse. **Recommandations** : grille 2×2 stats + info forêt + segments ombragés + alerte exposition forte (excl. forêt). **Speed** : [3, 4, 6] km/h sélectionnable, auto-bascule en hikerTimeline.
 
 ## Tests & Qualité
-- **Unitaires (Vitest)** : `npm test` (859 tests). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`, `solarRoute.ts`, `authService.ts`, `haptics.ts`, `theme.ts`, `toast.ts`, `weatherUtils.ts`, `nativeGPSService.ts`. Solar route analysis valide (27 tests dédies).
+- **Unitaires (Vitest)** : `npm test` (908 passants, 913 total). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`, `solarRoute.ts`, `authService.ts`, `haptics.ts`, `theme.ts`, `toast.ts`, `weatherUtils.ts`, `nativeGPSService.ts`, `weather.ts`. Solar route analysis valide (27 tests dédies).
 - **Hardening (v5.54.1)** : Fuites mémoire Capacitor (nativeGPSService, iapService), logging fire-and-forget, centralization clés localStorage (`src/constants/storage.ts`), npm audit fix (7 vulnérabilités).
 - **E2E (Playwright)** : `npx playwright test --ui` (Onboarding, GPS, Expert).
 - **Mocks** : `src/test/setup.ts` pour WebGL. `ui.test.ts` utilise des timers fictifs.

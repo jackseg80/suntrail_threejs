@@ -7,6 +7,10 @@
 - **Tests GPX import** (+2) : Détection des imports en double + acceptation de GPX différents.
 - **Détection doublon GPX** : `handleGPXImport()` calcule un hash des points (first/last 5 + count). Si un layer existant a le même hash, toast + refus sans importer.
 - **i18n `gpx.alreadyImported`** : Clé de traduction dans les 4 locales (fr/en/de/it).
+- **Tests météo (+5)** : WMO 80 (rain shower → rain), WMO 95 (thunderstorm → rain), WMO 71 à -3°C (snow), WMO 71 à 8°C (rain par temp), WMO 71 à 2°C (snow).
+
+### Fixed
+- **Particules météo affichant de la neige à 19°C avec pluie** : Les codes WMO 80-82 (averses) et 95-99 (orages) étaient classés comme `snow` car le test `code >= 71` les incluait. Mapping corrigé en plages explicites. Ajout d'un garde-fou température (>5°C → pluie forcée). `src/modules/weather.ts:136-147`.
 
 ### Changed
 - **Refactoring SolarProbeSheet** : Extraction de `SolarTimeline.ts` et `SolarLockedItem.ts` dans `solarprobe/` (préparation pour extraction complète).
@@ -14,7 +18,7 @@
 - **`check` script** : Inclut désormais `prettier --check` et `eslint` en plus de `tsc --noEmit`.
 
 ### Tests
-- **903 tests passent** (+33 vs v5.56.3). Zéro régression.
+- **908 tests passent** (+38 vs v5.56.3, +5 vs v5.56.4). Zéro régression.
 
 ### Added
 - **Bouton refresh météo** (🔄) : Dans le header du bulletin, icône SVG synchro. Force `fetchWeather()` sur la position caméra actuelle. Re-fetch auto à l'ouverture du bulletin.
