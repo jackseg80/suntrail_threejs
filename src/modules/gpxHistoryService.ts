@@ -1,24 +1,11 @@
 import { STORAGE_KEYS } from '../constants/storage';
 import type { GPXLayer } from './state';
 import { eventBus } from './eventBus';
-import { getCountryCode } from './geo';
+import { getCountryCode, COUNTRY_NAMES } from './geo';
 import { getElevation } from './gpxTypes';
 
 const MAX_HISTORY = 5;
 const MAX_SIMPLIFIED_POINTS = 200;
-
-export const COUNTRY_NAMES: Record<string, string> = {
-    CH: 'Suisse', FR: 'France', IT: 'Italie', DE: 'Allemagne', AT: 'Autriche',
-    ES: 'Espagne', PT: 'Portugal', BE: 'Belgique', NL: 'Pays-Bas', LU: 'Luxembourg',
-    GB: 'Royaume-Uni', IE: 'Irlande', DK: 'Danemark', NO: 'Norvège', SE: 'Suède',
-    FI: 'Finlande', PL: 'Pologne', CZ: 'Tchéquie', SK: 'Slovaquie', HU: 'Hongrie',
-    SI: 'Slovénie', HR: 'Croatie', BA: 'Bosnie', RS: 'Serbie', ME: 'Monténégro',
-    MK: 'Macédoine', AL: 'Albanie', GR: 'Grèce', BG: 'Bulgarie', RO: 'Roumanie',
-    UA: 'Ukraine', BY: 'Biélorussie', LT: 'Lituanie', LV: 'Lettonie', EE: 'Estonie',
-    MD: 'Moldavie', RU: 'Russie', TR: 'Turquie', AD: 'Andorre', LI: 'Liechtenstein',
-    MC: 'Monaco', SM: 'Saint-Marin', VA: 'Vatican', MT: 'Malte', IS: 'Islande',
-    CY: 'Chypre', XK: 'Kosovo', MA: 'Maroc', DZ: 'Algérie', TN: 'Tunisie',
-};
 
 export interface GPXHistoryEntry {
     id: string;

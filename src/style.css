@@ -434,6 +434,27 @@ body.mode-2d .mode-icon-2d { display: none; }
     cursor: pointer; font-size: var(--text-md); color: var(--text-2);
 }
 
+.sheet-header-actions {
+    display: flex; align-items: center; gap: 8px;
+}
+
+.btn-icon-mini {
+    min-width: 32px; min-height: 32px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-2);
+    padding: 0;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.btn-icon-mini:hover, .btn-icon-mini:focus-visible {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
 /* SEARCH SPECIFIC */
 .search-input-wrap {
     background: var(--surface-subtle);

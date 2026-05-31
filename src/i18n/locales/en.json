@@ -492,7 +492,8 @@
       "windMax": "Max wind"
     },
     "aria": {
-      "close": "Close weather"
+      "close": "Close weather",
+      "refresh": "Refresh weather"
     }
   },
   "solar": {

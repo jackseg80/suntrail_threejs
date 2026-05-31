@@ -304,7 +304,7 @@ export async function initScene(): Promise<void> {
         autoSelectMapSource(gpsCenter.lat, gpsCenter.lon);
 
         const distToLastWeather = haversineDistance(gpsCenter.lat, gpsCenter.lon, state.lastWeatherLat, state.lastWeatherLon);
-        if (distToLastWeather > 5) debouncedFetchWeather(gpsCenter.lat, gpsCenter.lon);
+        if (distToLastWeather > 3) debouncedFetchWeather(gpsCenter.lat, gpsCenter.lon);
 
         const distFromOrigin = Math.sqrt(dx*dx + dz*dz);
 

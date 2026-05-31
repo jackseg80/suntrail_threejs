@@ -2,16 +2,30 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fetchWeather, extractLocationName } from './weather';
 import { state } from './state';
 
-describe('Weather Module', () => {
+vi.mock('./geocodingService', () => ({
+    getPlaceName: vi.fn()
+}));
+
+vi.mock('./geo', async () => {
+    const actual = await vi.importActual<typeof import('./geo')>('./geo');
+    return { ...actual, getCountryName: vi.fn(() => '') };
+});
+
+import { getPlaceName } from './geocodingService';
+import { getCountryName } from './geo';
+
+describe('Weather Module (fetchWeather)', () => {
     beforeEach(() => {
         state.weatherData = null;
         state.currentWeather = 'clear';
         state.weatherUnavailable = false;
-        vi.restoreAllMocks();
+        vi.clearAllMocks();
     });
 
     it('should set currentWeather to rain for WMO code 61 and get location name', async () => {
-        // Mock global fetch for Weather API and MapTiler Geocoding
+        vi.mocked(getPlaceName).mockResolvedValue('Delémont');
+        vi.mocked(getCountryName).mockReturnValue('Suisse');
+
         globalThis.fetch = vi.fn().mockImplementation((url) => {
             if (url.includes('open-meteo')) {
                 return Promise.resolve({
@@ -38,23 +52,6 @@ describe('Weather Module', () => {
                     })
                 });
             }
-            if (url.includes('api.maptiler.com/geocoding')) {
-                return Promise.resolve({
-                    ok: true,
-                    json: () => Promise.resolve({
-                        features: [{ place_name_fr: 'Delémont' }]
-                    })
-                });
-            }
-            if (url.includes('nominatim.openstreetmap.org')) {
-                return Promise.resolve({
-                    ok: true,
-                    json: () => Promise.resolve({
-                        display_name: 'Rue de la Gare, Delémont, Jura, Suisse',
-                        address: { city: 'Delémont', country: 'Suisse' }
-                    })
-                });
-            }
             return Promise.reject(new Error('Unknown URL'));
         });
 
@@ -71,7 +68,8 @@ describe('Weather Module', () => {
     });
 
     it('should reset weatherUnavailable flag to false on success', async () => {
-        // Mock success
+        vi.mocked(getPlaceName).mockResolvedValue(null);
+
         globalThis.fetch = vi.fn().mockResolvedValue({
             ok: true,
             json: () => Promise.resolve({
@@ -88,7 +86,7 @@ describe('Weather Module', () => {
             })
         });
         
-        state.weatherUnavailable = true; // start as true
+        state.weatherUnavailable = true;
         await fetchWeather(46.8, 8.2);
         expect(state.weatherUnavailable).toBe(false);
         expect(state.weatherData?.temp).toBe(20);

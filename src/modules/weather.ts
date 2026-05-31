@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { state } from './state';
-import { fetchGeocoding } from './utils';
+import { getPlaceName } from './geocodingService';
+import { getCountryName } from './geo';
 
 let weatherPoints: THREE.Points | null = null;
 let weatherMaterial: THREE.ShaderMaterial | null = null;
@@ -88,12 +89,12 @@ export async function fetchWeather(lat: number, lon: number): Promise<void> {
 
         let locationName = `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
         try {
-            const geoData = await fetchGeocoding({ lat, lon });
-            if (geoData) {
-                const feature = Array.isArray(geoData) ? geoData[0] : (geoData.features ? geoData.features[0] : geoData);
-                if (feature) {
-                    locationName = extractLocationName(feature, locationName);
-                }
+            const placeName = await getPlaceName(lat, lon);
+            const countryName = getCountryName(lat, lon);
+            if (placeName) {
+                locationName = countryName ? `${placeName}, ${countryName}` : placeName;
+            } else if (countryName) {
+                locationName = countryName;
             }
         } catch (geoErr) { console.warn('[Weather] Geolocation reverse-geocoding failed silently:', geoErr); }
         

@@ -64,6 +64,8 @@ export class TopStatusBar extends BaseComponent {
         this.updateRecStatus(state.isRecording);
 
         this.addSubscription(state.subscribe('ZOOM', (val: number) => this.updateLOD(val)));
+        this.addSubscription(state.subscribe('MAP_SOURCE', () => this.updateLOD(state.ZOOM)));
+        this.addSubscription(state.subscribe('TARGET_LAT', () => this.updateLOD(state.ZOOM)));
         this.addSubscription(state.subscribe('weatherData', (val: any) => this.updateWeather(val)));
         this.addSubscription(state.subscribe('IS_OFFLINE', () => this.updateNetwork()));
         this.addSubscription(state.subscribe('isNetworkAvailable', () => this.updateNetwork()));

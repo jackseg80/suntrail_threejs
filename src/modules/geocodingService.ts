@@ -89,18 +89,17 @@ export async function getPlaceName(lat: number, lon: number, signal?: AbortSigna
     const data = await fetchGeocoding({ lat, lon }, signal);
     if (!data) return null;
 
-    // MapTiler format
-    if (data.features) {
-        // Chercher dans l'ordre de précision décroissante
+    const features = Array.isArray(data) ? data : (data.features || []);
+
+    if (features.length > 0) {
         const types = ['place', 'locality', 'city', 'village', 'neighborhood'];
         for (const type of types) {
-            const feat = data.features.find((f: any) => f.place_type?.includes(type));
+            const feat = features.find((f: any) => f.place_type?.includes(type));
             if (feat) return feat.text_fr || feat.text || feat.place_name;
         }
-        return data.features[0]?.text || data.features[0]?.place_name;
+        return features[0]?.text || features[0]?.place_name;
     }
 
-    // Nominatim format (reverse)
     if (data.address) {
         return data.address.city || data.address.town || data.address.village || data.address.hamlet || data.address.suburb || data.address.municipality;
     }

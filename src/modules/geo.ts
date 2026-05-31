@@ -399,3 +399,21 @@ export function haversineDistance(lat1: number, lon1: number, lat2: number, lon2
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c;
 }
+
+export const COUNTRY_NAMES: Record<string, string> = {
+    CH: 'Suisse', FR: 'France', IT: 'Italie', DE: 'Allemagne', AT: 'Autriche',
+    ES: 'Espagne', PT: 'Portugal', BE: 'Belgique', NL: 'Pays-Bas', LU: 'Luxembourg',
+    GB: 'Royaume-Uni', IE: 'Irlande', DK: 'Danemark', NO: 'Norvège', SE: 'Suède',
+    FI: 'Finlande', PL: 'Pologne', CZ: 'Tchéquie', SK: 'Slovaquie', HU: 'Hongrie',
+    SI: 'Slovénie', HR: 'Croatie', BA: 'Bosnie', RS: 'Serbie', ME: 'Monténégro',
+    MK: 'Macédoine', AL: 'Albanie', GR: 'Grèce', BG: 'Bulgarie', RO: 'Roumanie',
+    UA: 'Ukraine', BY: 'Biélorussie', LT: 'Lituanie', LV: 'Lettonie', EE: 'Estonie',
+    MD: 'Moldavie', RU: 'Russie', TR: 'Turquie', AD: 'Andorre', LI: 'Liechtenstein',
+    MC: 'Monaco', SM: 'Saint-Marin', VA: 'Vatican', MT: 'Malte', IS: 'Islande',
+    CY: 'Chypre', XK: 'Kosovo', MA: 'Maroc', DZ: 'Algérie', TN: 'Tunisie',
+};
+
+export function getCountryName(lat: number, lon: number): string {
+    const code = getCountryCode(lat, lon);
+    return code ? (COUNTRY_NAMES[code] || code) : '';
+}

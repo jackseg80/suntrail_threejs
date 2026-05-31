@@ -481,7 +481,8 @@
       "windMax": "Vento max"
     },
     "aria": {
-      "close": "Chiudi meteo"
+      "close": "Chiudi meteo",
+      "refresh": "Aggiorna meteo"
     },
     "toast": {
       "timeout": "Meteo offline (Timeout)"

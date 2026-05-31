@@ -16,8 +16,8 @@ import { ICON_CLOSE, ICON_LOCK } from '../icons';
 import { recordingService } from '../../recordingService';
 import { gpxService } from '../../gpxService';
 import { fmtDuration } from '../../utils';
-import { loadHistory, removeFromHistory, updateHistoryEntryLocation, COUNTRY_NAMES, type GPXHistoryEntry } from '../../gpxHistoryService';
-import { lngLatToWorld, getCountryCode } from '../../geo';
+import { loadHistory, removeFromHistory, updateHistoryEntryLocation, type GPXHistoryEntry } from '../../gpxHistoryService';
+import { lngLatToWorld, getCountryCode, COUNTRY_NAMES } from '../../geo';
 import { getPlaceName } from '../../geocodingService';
 import templateHTML from '../templates/track.html?raw';
 
@@ -596,8 +596,9 @@ export class TrackSheet extends BaseComponent {
                 // History entry: mini-map instead of color dot
                 entryMap.set(i, row.entry || history.find(e => e.id === row.id)!);
                 const locName = row.entry?.locationName || row.entry?.countryName || '';
+                const countrySuffix = row.entry?.locationName && row.entry?.countryName ? ` (${row.entry.countryName})` : '';
                 const dateStr = new Date(row.entry?.timestamp || Date.now()).toLocaleDateString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-                const subInfo = locName ? `${locName} · ${dateStr}` : dateStr;
+                const subInfo = locName ? `${locName}${countrySuffix} · ${dateStr}` : dateStr;
                 html += `
                 <div class="gpx-layer-item${layerClass}${lockedClass}" data-layer-id="${row.id}" data-row-idx="${i}" style="${row.isLocked ? 'opacity:0.5;' : ''}">
                     <canvas class="gpx-layer-minimap" data-history-idx="${row.entryIndex ?? i}" width="120" height="84"></canvas>

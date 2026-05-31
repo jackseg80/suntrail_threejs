@@ -1,7 +1,7 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { state, isProActive } from '../../state';
 import { worldToLngLat } from '../../geo';
-import { getWeatherIcon } from '../../weather';
+import { getWeatherIcon, fetchWeather } from '../../weather';
 import { getUVCategory, getComfortIndex, getFreezingAlert } from '../../weatherUtils';
 import { sheetManager } from '../core/SheetManager';
 import { i18n } from '../../../i18n/I18nService';
@@ -10,6 +10,7 @@ import { expertService } from '../../expertService';
 import { showUpgradePrompt } from '../../iap';
 import { showToast } from '../../toast';
 import { ICON_LOCK } from '../icons';
+import { eventBus } from '../../eventBus';
 import templateHTML from '../templates/weather.html?raw';
 
 export class WeatherSheet extends BaseComponent {
@@ -30,6 +31,34 @@ export class WeatherSheet extends BaseComponent {
         closeWeather?.addEventListener('click', () => {
             sheetManager.close();
         });
+
+        const refreshBtn = document.getElementById('weather-refresh-btn');
+        if (refreshBtn) {
+            const refreshLabel = i18n.t('weather.aria.refresh') || 'Rafraîchir la météo';
+            refreshBtn.setAttribute('title', refreshLabel);
+            refreshBtn.setAttribute('aria-label', refreshLabel);
+        }
+        refreshBtn?.addEventListener('click', () => {
+            const { lat, lon } = worldToLngLat(
+                state.controls?.target.x ?? 0,
+                state.controls?.target.z ?? 0,
+                state.originTile
+            );
+            void fetchWeather(lat, lon);
+        });
+
+        const onSheetOpened = ({ id }: { id: string }) => {
+            if (id === 'weather') {
+                const { lat, lon } = worldToLngLat(
+                    state.controls?.target.x ?? 0,
+                    state.controls?.target.z ?? 0,
+                    state.originTile
+                );
+                void fetchWeather(lat, lon);
+            }
+        };
+        eventBus.on('sheetOpened', onSheetOpened);
+        this.addSubscription(() => eventBus.off('sheetOpened', onSheetOpened));
 
         // Subscriptions
         this.addSubscription(state.subscribe('weatherData', () => this.updateUI()));

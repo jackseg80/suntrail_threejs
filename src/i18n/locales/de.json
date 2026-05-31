@@ -481,7 +481,8 @@
       "windMax": "Wind max"
     },
     "aria": {
-      "close": "Wetter schließen"
+      "close": "Wetter schließen",
+      "refresh": "Wetter aktualisieren"
     },
     "toast": {
       "timeout": "Wetter offline (Timeout)"

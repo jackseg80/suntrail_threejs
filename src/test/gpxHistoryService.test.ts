@@ -10,7 +10,7 @@ const { mockEventBusEmit, mockGetCountryCode } = vi.hoisted(() => {
 });
 
 vi.mock('../modules/eventBus', () => ({ eventBus: { emit: mockEventBusEmit, on: vi.fn(), off: vi.fn() } }));
-vi.mock('../modules/geo', () => ({ getCountryCode: mockGetCountryCode }));
+vi.mock('../modules/geo', () => ({ getCountryCode: mockGetCountryCode, COUNTRY_NAMES: { CH: 'Suisse', FR: 'France', IT: 'Italie', DE: 'Allemagne', AT: 'Autriche', ES: 'Espagne' } }));
 
 import {
     saveToHistory,
