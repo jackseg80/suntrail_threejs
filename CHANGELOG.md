@@ -1,3 +1,10 @@
+## [5.56.9] - 2026-06-01
+
+### Fixed
+- **Slider timeline bloqué en 3D** (`touchControls.ts:258-267`) : `onPointerDown` ne vérifiait pas `event.target` et interceptait tous les pointerdown via `{ capture: true }` sur le canvas. Quand l'utilisateur touchait le slider (`<input type="range">`), les touch controls pannaient la carte en même temps → conflit → slider inutilisable.
+  - Fix : `e.target.closest('input, button, select, textarea')` → les éléments de formulaire sont ignorés par touchControls.
+  - Fonctionne aussi pour les boutons et selects de l'UI.
+
 ## [5.56.8] - 2026-06-01
 
 ### Performance (Audit complet 7 optimisations)

@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.56.8)
+# SunTrail — Guide IA (v5.56.9)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-01 — v5.56.8 : Audit performance — 7 optimisations zero-allocation, 970 tests.
+> Mis à jour le 2026-06-01 — v5.56.9 : Fix slider timeline 3D — conflit pointer touchControls.
 
 ## Projet
 
