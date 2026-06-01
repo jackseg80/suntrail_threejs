@@ -12,7 +12,8 @@ const BOX_SIZE = 15000.0;
 
 let lastRequestId = 0;
 export let lastFetchTime = 0;
-const MIN_FETCH_INTERVAL = 15000; // 15 secondes minimum entre requêtes
+const MIN_FETCH_INTERVAL = 15000;
+const _windVec = new THREE.Vector3();
 
 export async function fetchWeather(lat: number, lon: number): Promise<void> {
     const requestId = ++lastRequestId;
@@ -321,7 +322,7 @@ export function initWeatherSystem(scene: THREE.Scene): void {
  * Découplé de updateWeatherSystem (uniforms cosmétiques, throttlé à 20fps).
  */
 export function tickWeatherTime(delta: number): void {
-    if (!weatherMaterial || !weatherPoints?.visible) return;
+    if (!weatherMaterial) return;
     weatherMaterial.uniforms.uTime.value += delta;
     weatherMaterial.uniformsNeedUpdate = true;
 }
@@ -351,18 +352,18 @@ export function updateWeatherSystem(
     geometry.setDrawRange(0, Math.min(state.WEATHER_DENSITY, MAX_PARTICLES));
 
     let windMultiplier = 1.0;
-    const windVec = new THREE.Vector3(0, 0, 0);
+    _windVec.set(0, 0, 0);
     if (state.weatherData) {
         windMultiplier = 1.0 + state.weatherData.windSpeed / 60.0;
         const angleRad = (state.weatherData.windDir + 90) * (Math.PI / 180);
         const windForce = state.weatherData.windSpeed * 20.0;
-        windVec.set(
+        _windVec.set(
             Math.cos(angleRad) * windForce,
             0,
             Math.sin(angleRad) * windForce
         );
     }
-    weatherMaterial.uniforms.uWindVec.value.copy(windVec);
+    weatherMaterial.uniforms.uWindVec.value.copy(_windVec);
 
     if (state.currentWeather === 'rain') {
         weatherMaterial.uniforms.uIsRain.value = 1.0;
