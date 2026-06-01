@@ -39,6 +39,7 @@
 - **Altitude fallback montagne** (`WeatherSheet.ts:417`) : `controls.target.y` au lieu de `0` quand `hasLastClicked` est false.
 - **SunCalc non protégé** : Wrappé dans `try/catch` pour éviter un crash du rendu.
 - **Confort rando désormais réaliste** : Exemple 18°C, orage, visibilité 1km → 1.4/10 (était 7.2/10).
+- **Particules météo bloquées visibles** (`scene.ts:850`) : `updateWeatherSystem` n'était appelée que quand `isWeatherActive` était vrai. Si la météo passait de "pluie" à "clair", les particules restaient visibles indéfiniment. Correction : `updateWeatherSystem` appelée à chaque `weatherFrameDue`, sans condition. `weatherFrameDue` ajouté à `needsUpdate` (ligne 830) pour garantir que le rendu se déclenche même en météo claire.
 
 ### Tests
 - 956 (+11) tests passants. Nouveaux tests : codes brouillard (×2), confort étendu paramètres optionnels (×5), weatherCode penalty (×2), visibilité (×2). 5 tests `weatherPro.test.ts` ajoutés.

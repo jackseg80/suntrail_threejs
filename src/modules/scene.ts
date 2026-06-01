@@ -827,7 +827,7 @@ export async function initScene(): Promise<void> {
             state.isSunAnimating ||
             state.isInteractingWithUI ||
             state.isProcessingTiles ||
-            (isWeatherActive && weatherFrameDue) ||
+            weatherFrameDue ||
             isCompassAnimating() ||
             tilesFading ||
             needsInitialRender > 0 ||
@@ -847,7 +847,7 @@ export async function initScene(): Promise<void> {
                 terrainUniforms.uTime.value += WATER_THROTTLE_MS / 1000;
             tilesFading = animateTiles(delta);
             if (needsInitialRender > 0) needsInitialRender--;
-            if (weatherFrameDue && isWeatherActive) {
+            if (weatherFrameDue) {
                 updateWeatherSystem(weatherAccumDelta, state.camera.position);
                 weatherAccumDelta = 0;
             }

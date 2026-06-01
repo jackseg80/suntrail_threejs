@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.56.5)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-05-31 — v5.56.6 : Module tooltip enrichi (hover/click auto-détection), info-bulles ⓘ dans 6 composants, 20 clés i18n en 4 langues, 1 bug fix + 1 amélioration (965 tests).
+> Mis à jour le 2026-05-31 — v5.56.6 : Module tooltip enrichi, info-bulles ⓘ 6 composants, 20 clés i18n, bug particules bloquées visibles (fix scene.ts), 966 tests.
 
 ## Projet
 
