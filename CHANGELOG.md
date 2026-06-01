@@ -1,3 +1,17 @@
+## [5.56.7] - 2026-05-31
+
+### Fixed
+- **Particules météo bloquées visibles** (`scene.ts:850`) : `updateWeatherSystem` n'était appelée que quand `isWeatherActive` était vrai. Si la météo passait de "pluie" à "clair", les particules restaient visibles indéfiniment. Correction : `updateWeatherSystem` appelée à chaque `weatherFrameDue`, sans condition.
+- **Particules météo `uTime` figé entre activations** (`weather.ts:323`) : `tickWeatherTime()` retournait tôt si `weatherPoints.visible === false`. Supprimé le guard — `uTime` avance en continu pour des transitions fluides.
+- **Allocation Vector3 évitée** (`weather.ts:355`) : `new THREE.Vector3()` à chaque appel → hoisté en module scope (`_windVec`).
+
+### Changed
+- **`updateWeatherSystem` déclenché** : `weatherFrameDue` ajouté à `needsUpdate` (ligne 830) pour garantir que le rendu se déclenche même sans `isWeatherActive`.
+
+### Tests
+- 965 tests passants (95 test files, 5 skipped).
+- Lint et TypeScript : clean.
+
 ## [5.56.6] - 2026-05-31
 
 ### Added
@@ -17,10 +31,6 @@
 ### Tests
 - 965 tests passants (95 test files, 5 skipped).
 - Lint et TypeScript : clean.
-
-### Fixed
-- **Particules météo `uTime` figé entre activations** (`weather.ts:323`) : `tickWeatherTime()` retournait tôt si `weatherPoints.visible === false`, ce qui figeait `uTime` entre les périodes de pluie. Supprimé le guard — `uTime` avance en continu pour des transitions fluides.
-- **Allocation Vector3 évitée** (`weather.ts:355`) : `new THREE.Vector3()` à chaque appel `updateWeatherSystem()` (toutes les 50ms) → hoisté en module scope (`_windVec`).
 
 ## [5.56.5] - 2026-05-31
 
