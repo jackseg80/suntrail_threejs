@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchWeather } from './weather';
+import * as THREE from 'three';
+import { fetchWeather, tickWeatherTime, updateWeatherSystem } from './weather';
 import { state } from './state';
 
 vi.mock('./geocodingService', () => ({
@@ -183,5 +184,35 @@ describe('Weather Module (fetchWeather)', () => {
         expect(state.currentWeather).toBe('rain');
         // WEATHER_RAIN_OPACITY is preserved (not overwritten by fetchWeather)
         expect(state.WEATHER_RAIN_OPACITY).toBe(0.42);
+    });
+});
+
+describe('tickWeatherTime', () => {
+    it('should not throw when weather system is not initialized', () => {
+        expect(() => tickWeatherTime(0.016)).not.toThrow();
+    });
+
+    it('should not throw with zero delta', () => {
+        expect(() => tickWeatherTime(0)).not.toThrow();
+    });
+
+    it('should not throw with negative delta', () => {
+        expect(() => tickWeatherTime(-1)).not.toThrow();
+    });
+});
+
+describe('updateWeatherSystem', () => {
+    it('should not throw when weather system is not initialized', () => {
+        expect(() =>
+            updateWeatherSystem(0.016, new THREE.Vector3(0, 0, 0))
+        ).not.toThrow();
+    });
+
+    it('should not throw with default state values', () => {
+        state.currentWeather = 'clear';
+        state.WEATHER_DENSITY = 0;
+        expect(() =>
+            updateWeatherSystem(0.016, new THREE.Vector3(0, 0, 0))
+        ).not.toThrow();
     });
 });

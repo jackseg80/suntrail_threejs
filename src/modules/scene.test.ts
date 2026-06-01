@@ -69,6 +69,7 @@ vi.mock('./utils', () => ({
 vi.mock('./weather', () => ({
     initWeatherSystem: vi.fn(),
     updateWeatherSystem: vi.fn(),
+    tickWeatherTime: vi.fn(),
     fetchWeather: vi.fn(),
     disposeWeatherSystem: vi.fn(),
 }));
