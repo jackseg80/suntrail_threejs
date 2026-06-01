@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.56.12)
+# SunTrail — Guide IA (v5.56.13)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-01 — v5.56.12 : Fix REC save — verrou anti-doublon + toast "Parcours enregistré".
+> Mis à jour le 2026-06-01 — v5.56.13 : Test verrou _isSaving + bump test count 971.
 
 ## Projet
 
@@ -133,7 +133,7 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - `src/modules/solarRoute.ts` : (v5.52.9) Analyse solaire des itinéraires — **deux modes distincts** : Snapshot (ombre à l'heure du slider, Free) et Hiker Timeline (ombre à l'heure d'arrivée estimée, Pro). **Overlay 3D** : DataTexture 256×1 mappée sur TubeGeometry pour colorisation 4 états (soleil or / forêt vert / ombre bleu / nuit bleu-nuit) live (~200ms cache hit). **Détection forêt globale** (v5.52.9) : `prefetchLandcoverForPoints()` pré-charge toutes tuiles Z14 (CH) / Z10 (monde) avant analyse — élimine cache-froid. Fallback silencieux si MapTiler indisponible. **Sampling adaptatif** : max 200 points, step dynamique. **Cache** : clé `${routeHash}|${date}|${slot30}|${mode}|${speed}`, invalide sur changement route ou date. **RAF keepalive** pour fluidité 2D. **Ombre précise** : utilise `getAltitudeAt()` au moment de l'analyse. **Recommandations** : grille 2×2 stats + info forêt + segments ombragés + alerte exposition forte (excl. forêt). **Speed** : [3, 4, 6] km/h sélectionnable, auto-bascule en hikerTimeline.
 
 ## Tests & Qualité
-- **Unitaires (Vitest)** : `npm test` (970 passants). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`, `solarRoute.ts`, `authService.ts`, `haptics.ts`, `theme.ts`, `toast.ts`, `weatherUtils.ts`, `nativeGPSService.ts`, `weather.ts`, `tooltip.ts`. Solar route analysis valide (27 tests dédies).
+- **Unitaires (Vitest)** : `npm test` (971 passants). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`, `solarRoute.ts`, `authService.ts`, `haptics.ts`, `theme.ts`, `toast.ts`, `weatherUtils.ts`, `nativeGPSService.ts`, `weather.ts`, `tooltip.ts`. Solar route analysis valide (27 tests dédies).
 - **Hardening (v5.54.1)** : Fuites mémoire Capacitor (nativeGPSService, iapService), logging fire-and-forget, centralization clés localStorage (`src/constants/storage.ts`), npm audit fix (7 vulnérabilités).
 - **E2E (Playwright)** : `npx playwright test --ui` (Onboarding, GPS, Expert).
 - **Mocks** : `src/test/setup.ts` pour WebGL. `ui.test.ts` utilise des timers fictifs.

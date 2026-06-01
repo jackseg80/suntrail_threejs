@@ -1,3 +1,9 @@
+## [5.56.13] - 2026-06-01
+
+### Tests
+- +1 test pour le verrou `_isSaving` dans `recordingService.test.ts` (vérifie qu'un appel concurrent ne sauvegarde pas deux fois).
+- 971 tests passants.
+
 ## [5.56.12] - 2026-06-01
 
 ### Fixed

@@ -105,4 +105,19 @@ describe('RecordingService (v5.29.36)', () => {
         expect(state.isRecording).toBe(false);
         expect(mockFilesystem.writeFile).toHaveBeenCalled();
     });
+
+    it('ne doit pas sauvegarder deux fois — verrou _isSaving', async () => {
+        state.isRecording = true;
+        state.recordedPoints = [
+            { lat: 45, lon: 6, alt: 1000, timestamp: Date.now() - 1000 },
+            { lat: 45.1, lon: 6.1, alt: 1100, timestamp: Date.now() },
+        ];
+        const [r1, r2] = await Promise.all([
+            recordingService.stopRecording('Test'),
+            recordingService.stopRecording('Double'),
+        ]);
+        expect(r1).toBe('Test');
+        expect(r2).toBe('');
+        expect(mockFilesystem.writeFile).toHaveBeenCalledTimes(1);
+    });
 });
