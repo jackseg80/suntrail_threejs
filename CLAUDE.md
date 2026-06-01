@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.56.10)
+# SunTrail — Guide IA (v5.56.11)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-01 — v5.56.10 : Fix leak listeners SheetManager + profile, cleanup console.log.
+> Mis à jour le 2026-06-01 — v5.56.11 : Fix slider timeline 3D — touch-action:auto + revert leurre touchControls.
 
 ## Projet
 

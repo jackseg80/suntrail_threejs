@@ -258,14 +258,6 @@ function tickInertia(): void {
 function onPointerDown(e: PointerEvent): void {
     if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
 
-    const target = e.target as HTMLElement;
-    if (
-        target?.closest?.(
-            'input, button, select, textarea, [contenteditable="true"]'
-        )
-    )
-        return;
-
     // Détection Double Tap (v5.28.26)
     const now = performance.now();
     const dt = now - _lastTapTime;

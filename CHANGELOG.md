@@ -1,3 +1,10 @@
+## [5.56.11] - 2026-06-01
+
+### Fixed
+- **Slider timeline vraiment corrigé** : le fix v5.56.9 (check `EventTarget` dans `touchControls`) était un leurre — le canvas et le slider sont dans des branches DOM distinctes, la phase capture ne passe pas par le canvas pour les touches UI. La cause réelle est un conflit CSS : `.timeline-drag-handle` (`touch-action: none`) + `#bottom-bar` (`overflow: hidden`) interfèrent avec le comportement natif du `<input type="range">` sur Chrome mobile.
+  - Fix : `touch-action: auto` sur `input[type='range']` dans `style.css`.
+  - Revert du check `closest('input,...')` dans `touchControls.ts` (red herring).
+
 ## [5.56.10] - 2026-06-01
 
 ### Fixed

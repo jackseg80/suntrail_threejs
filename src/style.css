@@ -720,6 +720,7 @@ input[type='range'] {
     background: var(--border);
     border-radius: 3px;
     outline: none;
+    touch-action: auto;
 }
 input[type='range']::-webkit-slider-thumb {
     appearance: none;
