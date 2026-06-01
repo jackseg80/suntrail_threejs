@@ -56,6 +56,9 @@ export class InclinometerWidget {
     private _widgetStartLeft = 0;
     private _widgetStartTop = 0;
 
+    private _raycaster = new THREE.Raycaster();
+    private _ndc = new THREE.Vector2();
+
     // Dernières valeurs calculées
     private _lastSlopeDeg = 0;
     private _lastSlopePct = 0;
@@ -253,13 +256,10 @@ export class InclinometerWidget {
             const ndcX = (this._reticleX / window.innerWidth) * 2 - 1;
             const ndcY = -(this._reticleY / window.innerHeight) * 2 + 1;
 
-            const raycaster = new THREE.Raycaster();
-            raycaster.setFromCamera(
-                new THREE.Vector2(ndcX, ndcY),
-                state.camera
-            );
+            this._ndc.set(ndcX, ndcY);
+            this._raycaster.setFromCamera(this._ndc, state.camera);
 
-            const hit = findTerrainIntersection(raycaster.ray);
+            const hit = findTerrainIntersection(this._raycaster.ray);
             if (hit) {
                 targetX = hit.x;
                 targetZ = hit.z;

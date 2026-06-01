@@ -51,6 +51,7 @@ import { terrainUniforms } from './terrain/Tile';
 export const activeTiles = new Map<string, Tile>();
 export const activeLabels = new Map<string, any>();
 
+const _terrainMatrix = new THREE.Matrix4();
 export const fadingOutTiles = new Set<Tile>();
 let lastRenderedZoom: number = -1;
 let lastMapSource: string = '';
@@ -354,11 +355,11 @@ export async function updateVisibleTiles(
         const isCameraReady = Math.abs(state.camera.position.y) >= 1;
         if (isCameraReady) {
             state.camera.updateMatrixWorld();
-            const proj = new THREE.Matrix4().multiplyMatrices(
+            _terrainMatrix.multiplyMatrices(
                 state.camera.projectionMatrix,
                 state.camera.matrixWorldInverse
             );
-            sharedFrustum.setFromProjectionMatrix(proj);
+            sharedFrustum.setFromProjectionMatrix(_terrainMatrix);
             for (let dy = -range; dy <= range; dy++) {
                 for (let dx = -range; dx <= range; dx++) {
                     const tx = centerTile.x + dx;

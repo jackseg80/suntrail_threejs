@@ -9,6 +9,7 @@ export const GPX_SURFACE_OFFSET = 12;
 
 let lastUsedTile: any = null;
 const _queryPoint = new THREE.Vector3();
+const _hitPoint = new THREE.Vector3();
 
 export function resetAnalysisCache(): void {
     lastUsedTile = null;
@@ -271,17 +272,16 @@ export function isAtShadow(
 
 export function findTerrainIntersection(ray: THREE.Ray): THREE.Vector3 | null {
     const maxDist = 500000;
-    const p = new THREE.Vector3();
     const hintTile: any = null;
     let dist = 100;
     while (dist < maxDist) {
-        ray.at(dist, p);
-        const groundH = getAltitudeAt(p.x, p.z, hintTile);
-        if (p.y < groundH) {
-            return ray.at(dist - (dist > 1000 ? 50 : 25), new THREE.Vector3());
+        ray.at(dist, _hitPoint);
+        const groundH = getAltitudeAt(_hitPoint.x, _hitPoint.z, hintTile);
+        if (_hitPoint.y < groundH) {
+            return ray.at(dist - (dist > 1000 ? 50 : 25), _hitPoint).clone();
         }
         // Step adaptatif : grand pas en altitude, petit pas proche du terrain
-        const gap = p.y - groundH;
+        const gap = _hitPoint.y - groundH;
         if (gap > 5000) dist += 500;
         else if (gap > 1000) dist += 200;
         else dist += 100;

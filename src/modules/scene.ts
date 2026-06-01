@@ -587,6 +587,7 @@ export async function initScene(): Promise<void> {
     const WEATHER_THROTTLE_MS = 50;
     let weatherTimeAccum = 0;
     let weatherAccumDelta = 0;
+    let weatherWasActive = false;
 
     let dprRestoreTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -770,6 +771,8 @@ export async function initScene(): Promise<void> {
             state.SHOW_WEATHER &&
             state.currentWeather !== 'clear' &&
             state.WEATHER_DENSITY > 0;
+        const weatherStateChanged = isWeatherActive !== weatherWasActive;
+        if (weatherStateChanged) weatherWasActive = isWeatherActive;
         const idleTime = now - lastInteractionTime;
         const isIdleMode =
             !state.isUserInteracting &&
@@ -797,7 +800,6 @@ export async function initScene(): Promise<void> {
                 if (state.renderer.shadowMap.enabled !== state.SHADOWS) {
                     state.renderer.shadowMap.enabled = state.SHADOWS;
                 }
-                state.renderer.shadowMap.autoUpdate = true;
             }
         }
 
@@ -827,7 +829,8 @@ export async function initScene(): Promise<void> {
             state.isSunAnimating ||
             state.isInteractingWithUI ||
             state.isProcessingTiles ||
-            weatherFrameDue ||
+            (isWeatherActive && weatherFrameDue) ||
+            weatherStateChanged ||
             isCompassAnimating() ||
             tilesFading ||
             needsInitialRender > 0 ||
@@ -847,7 +850,7 @@ export async function initScene(): Promise<void> {
                 terrainUniforms.uTime.value += WATER_THROTTLE_MS / 1000;
             tilesFading = animateTiles(delta);
             if (needsInitialRender > 0) needsInitialRender--;
-            if (weatherFrameDue) {
+            if (weatherStateChanged || (weatherFrameDue && isWeatherActive)) {
                 updateWeatherSystem(weatherAccumDelta, state.camera.position);
                 weatherAccumDelta = 0;
             }
@@ -866,7 +869,7 @@ export async function initScene(): Promise<void> {
                             state.simDate.getMinutes() +
                             step) %
                         1440;
-                    const d = new Date(state.simDate);
+                    const d = new Date(+state.simDate);
                     d.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
                     state.simDate = d;
                     updateSunPosition(mins);

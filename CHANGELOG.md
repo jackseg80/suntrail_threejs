@@ -1,3 +1,19 @@
+## [5.56.8] - 2026-06-01
+
+### Performance (Audit complet 7 optimisations)
+
+- **`scene.ts:803`** — `shadowMap.autoUpdate = true` supprimé du render loop. Évitait un recompute GPU de shadow map à chaque frame rendue (impact Ultra: 4096² shadow map).
+- **`terrain.ts:53,357`** — `_terrainMatrix` singleton dans `updateVisibleTiles`. Élimine `new THREE.Matrix4()` par frame.
+- **`tileQueue.ts:19-21,73-80`** — `_queueMatrix`, `_queueFrustum`, `_visCache` singletons. Élimine 3 allocations par cycle de queue (impact Ultra: files 500+ tuiles).
+- **`tileQueue.ts:123`** — Compteur `for...of` remplace `.filter().length`. Élimine la création d'un tableau temporaire par cycle.
+- **`InclinometerWidget.ts:60-61,259-260`** — `_raycaster` + `_ndc` membres de classe. Élimine 2 allocations toutes les 200ms en mode libre.
+- **`scene.ts:873-875`** — `new Date(+state.simDate)` évite la conversion string interne (coût Date dans l'animation solaire).
+- **`analysis.ts:12,274-284`** — `_hitPoint` singleton + `.clone()`. Élimine jusqu'à 2 Vector3 par itération dans la boucle `findTerrainIntersection` (jusqu'à 5000 itérations).
+
+### Tests
+- 970 tests passants (95 test files, 5 skipped).
+- Lint et TypeScript : clean.
+
 ## [5.56.7] - 2026-05-31
 
 ### Fixed

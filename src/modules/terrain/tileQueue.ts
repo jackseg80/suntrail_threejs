@@ -16,6 +16,10 @@ let lastSortTime = 0;
 const SORT_INTERVAL_MS = 200;
 let loadingCount = 0; // v5.34.5 : True connection pool counter
 
+const _queueMatrix = new THREE.Matrix4();
+const _queueFrustum = new THREE.Frustum();
+let _visCache: Map<Tile, boolean> | null = null;
+
 export function queueBuildMesh(tile: Tile) {
     if (tile.status === 'disposed') return;
     if (buildQueueKeys.has(tile.key)) return;
@@ -70,14 +74,16 @@ export async function processLoadQueue() {
             state.camera.projectionMatrix &&
             state.camera.matrixWorldInverse
         ) {
-            const proj = new THREE.Matrix4().multiplyMatrices(
+            _queueMatrix.multiplyMatrices(
                 state.camera.projectionMatrix,
                 state.camera.matrixWorldInverse
             );
-            frameFrustum = new THREE.Frustum();
-            frameFrustum.setFromProjectionMatrix(proj);
+            _queueFrustum.setFromProjectionMatrix(_queueMatrix);
+            frameFrustum = _queueFrustum;
         }
-        const visCache = new Map<Tile, boolean>();
+        if (!_visCache) _visCache = new Map();
+        else _visCache.clear();
+        const visCache = _visCache;
         const isVis = (t: Tile) => {
             let v = visCache.get(t);
             if (v === undefined) {
@@ -120,7 +126,8 @@ export async function processLoadQueue() {
             lastSortTime = now;
         }
 
-        const visiblePending = sortedCache.filter((t) => isVis(t)).length;
+        let visiblePending = 0;
+        for (const t of sortedCache) if (isVis(t)) visiblePending++;
         const isTransitioning = visiblePending >= 4;
         const targetInFlight = isTransitioning
             ? Math.max(1, state.MAX_BUILDS_PER_CYCLE + 2)
