@@ -25,6 +25,8 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Geolocation } from '@capacitor/geolocation';
 
 export class RecordingService {
+    private _isSaving = false;
+
     /**
      * Toggles recording state and orchestrates necessary services.
      */
@@ -105,6 +107,8 @@ export class RecordingService {
      * @returns The name used for saving
      */
     async stopRecording(customName?: string): Promise<string> {
+        if (this._isSaving) return '';
+        this._isSaving = true;
         try {
             await nativeGPSService.stopCourse();
             await stopRecordingService();
@@ -116,7 +120,7 @@ export class RecordingService {
 
             if (state.recordedPoints.length >= 2) {
                 await this.saveCurrentRecording(nameToUse);
-                showToast(i18n.t('track.toast.recStopped'));
+                showToast(i18n.t('track.toast.recSaved'));
                 state.recordedPoints = [];
                 updateRecordedTrackMesh();
             } else {
@@ -126,11 +130,13 @@ export class RecordingService {
             }
 
             state.isRecording = false;
+            this._isSaving = false;
             return nameToUse;
         } catch (e) {
             console.error('[RecordingService] Erreur lors du STOP:', e);
             showToast("⚠️ Erreur lors de l'arrêt");
             state.isRecording = false;
+            this._isSaving = false;
             return '';
         }
     }

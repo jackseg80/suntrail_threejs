@@ -26,6 +26,7 @@
         "toast": {
             "recStarted": "🔴 Recording started",
             "recStopped": "⏹️ Recording stopped",
+            "recSaved": "✅ Track saved",
             "recWarning5min": "⏱ 30 min limit — 5 minutes of recording remaining",
             "freeLimit": "💡 GPX file export is reserved for the PRO version",
             "tooShort": "Track too short for export",

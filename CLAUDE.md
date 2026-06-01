@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.56.11)
+# SunTrail — Guide IA (v5.56.12)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-01 — v5.56.11 : Fix slider timeline 3D — touch-action:auto + revert leurre touchControls.
+> Mis à jour le 2026-06-01 — v5.56.12 : Fix REC save — verrou anti-doublon + toast "Parcours enregistré".
 
 ## Projet
 

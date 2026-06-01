@@ -26,6 +26,7 @@
         "toast": {
             "recStarted": "🔴 Registrazione avviata",
             "recStopped": "⏹️ Registrazione fermata",
+            "recSaved": "✅ Tracciato salvato",
             "recWarning5min": "⏱ Limite 30 min — ancora 5 minuti di registrazione",
             "freeLimit": "💡 Registrazione temporanea: la traccia verrà eliminata alla chiusura dell'app. Passa a PRO per esportarla.",
             "tooShort": "Traccia troppo corta per l'esportazione",

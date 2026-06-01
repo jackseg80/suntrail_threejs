@@ -1,3 +1,9 @@
+## [5.56.12] - 2026-06-01
+
+### Fixed
+- **Save REC — verrou anti-doublon** (`recordingService.ts`) : ajout de `_isSaving` flag dans `stopRecording()` pour empêcher les sauvegardes multiples quand l'utilisateur clique plusieurs fois sur le bouton.
+- **Save REC — toast de confirmation** (`recordingService.ts:119`) : remplace `⏹️ Recording stopped` par un toast clair `✅ Parcours enregistré` (i18n `track.toast.recSaved` dans les 4 locales).
+
 ## [5.56.11] - 2026-06-01
 
 ### Fixed
