@@ -1,3 +1,12 @@
+## [5.56.10] - 2026-06-01
+
+### Fixed
+- **Leak listeners `SheetManager`** (`ui/core/SheetManager.ts`) : `attachSwipeGesture()` ajoutait 4 listeners (`pointerdown/move/up/cancel`) à chaque `open()` sans jamais les retirer au `close()`. Accumulation silencieuse → comportement erratique après plusieurs ouvertures. Fix : stockage des callbacks + nouvelle méthode `detachSwipeGesture()` appelée au `close()`.
+- **Leak listeners `profile.ts`** (`closeElevationProfile`) : Les 5 listeners du profil (pointerdown/move/up/leave/cancel) n'étaient jamais retirés. Fix : stockage + cleanup dans `closeElevationProfile()` + reset `profileInteractionsAttached` / `swipeAttached`.
+
+### Changed
+- **`console.log` protégés** : `tileLoader.ts` (PMTiles source chargée) et `packManager.ts` (pack monté) — ajout `if (state.DEBUG_MODE)`.
+
 ## [5.56.9] - 2026-06-01
 
 ### Fixed

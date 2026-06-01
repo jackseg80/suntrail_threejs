@@ -425,6 +425,33 @@ function setupProfileInteractions(): void {
     container.addEventListener('pointerup', stopKeepAlive);
     container.addEventListener('pointerleave', stopKeepAlive);
     container.addEventListener('pointercancel', stopKeepAlive);
+    _profileListeners = [
+        {
+            el: container,
+            type: 'pointerdown',
+            fn: startKeepAlive as unknown as (e: Event) => void,
+        },
+        {
+            el: container,
+            type: 'pointermove',
+            fn: onMove as unknown as (e: Event) => void,
+        },
+        {
+            el: container,
+            type: 'pointerup',
+            fn: stopKeepAlive as unknown as (e: Event) => void,
+        },
+        {
+            el: container,
+            type: 'pointerleave',
+            fn: stopKeepAlive as unknown as (e: Event) => void,
+        },
+        {
+            el: container,
+            type: 'pointercancel',
+            fn: stopKeepAlive as unknown as (e: Event) => void,
+        },
+    ];
 
     container.onmouseleave = () => {
         cursor.style.display = 'none';
@@ -477,10 +504,24 @@ export function closeElevationProfile(): void {
         if (state.scene) state.scene.remove(state.profileMarker);
         state.profileMarker = null;
     }
+    // Cleanup profile interactions listeners
+    if (_profileListeners) {
+        for (const { el, type, fn } of _profileListeners) {
+            el.removeEventListener(type, fn as any);
+        }
+        _profileListeners = null;
+    }
+    profileInteractionsAttached = false;
+    swipeAttached = false;
 }
 
 let swipeAttached = false;
 let profileInteractionsAttached = false;
+let _profileListeners: Array<{
+    el: EventTarget;
+    type: string;
+    fn: (e: Event) => void;
+}> | null = null;
 
 function setupSwipeGesture(profileEl: HTMLElement): void {
     if (swipeAttached) return;

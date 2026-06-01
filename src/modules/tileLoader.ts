@@ -37,9 +37,10 @@ export async function setPMTilesSource(urlOrFile: string | File) {
         }
 
         const header = await archive.getHeader();
-        console.log(
-            `[PMTiles] Source chargée. Bounds: ${header.minLon},${header.minLat} to ${header.maxLon},${header.maxLat}`
-        );
+        if (state.DEBUG_MODE)
+            console.log(
+                `[PMTiles] Source chargée. Bounds: ${header.minLon},${header.minLat} to ${header.maxLon},${header.maxLat}`
+            );
         localPMTiles = archive;
         showToast('Carte locale PMTiles activée');
     } catch (e) {

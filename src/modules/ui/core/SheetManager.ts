@@ -16,6 +16,13 @@ class SheetManager {
     private focusTrapHandler: ((e: KeyboardEvent) => void) | null = null;
     private escapeHandler: ((e: KeyboardEvent) => void) | null = null;
 
+    // Swipe gesture cleanup — stored callbacks + handle element for detach
+    private swipeHandle: HTMLElement | null = null;
+    private swipeCallbacks: Array<{
+        type: string;
+        fn: (e: Event) => void;
+    }> | null = null;
+
     private constructor() {
         // Overlay will be initialized on first use if not already present
     }
@@ -119,6 +126,7 @@ class SheetManager {
             // Accessibility: release focus trap & escape handler
             this.releaseFocus();
             this.detachEscapeHandler();
+            this.detachSwipeGesture();
 
             this.closeActiveSheet();
             document.body.classList.remove('sheet-open');
@@ -173,6 +181,9 @@ class SheetManager {
     // ─── Swipe-to-Dismiss ────────────────────────────────────────
 
     private attachSwipeGesture(sheet: HTMLElement): void {
+        // Detach any previous swipe listeners (redundant guard for re-open)
+        this.detachSwipeGesture();
+
         const handle = sheet.querySelector<HTMLElement>('.sheet-drag-handle');
         if (!handle) return;
 
@@ -216,6 +227,32 @@ class SheetManager {
         handle.addEventListener('pointermove', onMove);
         handle.addEventListener('pointerup', onEnd);
         handle.addEventListener('pointercancel', onEnd);
+
+        this.swipeHandle = handle;
+        this.swipeCallbacks = [
+            {
+                type: 'pointerdown',
+                fn: onStart as unknown as (e: Event) => void,
+            },
+            {
+                type: 'pointermove',
+                fn: onMove as unknown as (e: Event) => void,
+            },
+            { type: 'pointerup', fn: onEnd as unknown as (e: Event) => void },
+            {
+                type: 'pointercancel',
+                fn: onEnd as unknown as (e: Event) => void,
+            },
+        ];
+    }
+
+    private detachSwipeGesture(): void {
+        if (!this.swipeHandle || !this.swipeCallbacks) return;
+        for (const { type, fn } of this.swipeCallbacks) {
+            this.swipeHandle.removeEventListener(type, fn);
+        }
+        this.swipeHandle = null;
+        this.swipeCallbacks = null;
     }
 
     // ─── Accessibility: Focus Trap ──────────────────────────────

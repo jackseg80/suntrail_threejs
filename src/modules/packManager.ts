@@ -464,9 +464,10 @@ class PackManager {
 
             // Warmup: read header pour vérifier l'archive
             const header = await archive.getHeader();
-            console.log(
-                `[Packs] ${packId} monté. LOD ${header.minZoom}-${header.maxZoom}, ${header.numTileEntries} tuiles`
-            );
+            if (state.DEBUG_MODE)
+                console.log(
+                    `[Packs] ${packId} monté. LOD ${header.minZoom}-${header.maxZoom}, ${header.numTileEntries} tuiles`
+                );
 
             this.mountedArchives.set(packId, archive);
             eventBus.emit('packMounted', { packId });
