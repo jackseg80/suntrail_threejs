@@ -1,5 +1,5 @@
 import { state } from './state';
-import { getCountryAtTile, isTileInCountry } from './geo';
+import { getCountryAtTile, isTileInCountry, countPointsInCountry } from './geo';
 import { COUNTRY_SOURCES } from './tileSources';
 import { showToast } from './toast';
 
@@ -344,7 +344,16 @@ export function getColorUrl(tx: number, ty: number, zoom: number): string {
 
     // Swisstopo / Topo (Auto) : data-driven via COUNTRY_SOURCES
     if (state.MAP_SOURCE === 'swisstopo') {
-        const code = getCountryAtTile(tx, ty, zoom, 3);
+        let code = getCountryAtTile(tx, ty, zoom, 3);
+
+        // v6.0 : Si la tuile a une présence CH, on préfère SwissTopo.
+        // Évite le patchwork IGN/OpenTopoMap aux frontières même quand
+        // le polygone OSM est imprécis (Bonfol, Damphreux, Aigle, Monthey).
+        if (code !== 'CH' && zoom > 10) {
+            const chPoints = countPointsInCountry(tx, ty, zoom, 'CH');
+            if (chPoints >= 1) code = 'CH';
+        }
+
         if (code) {
             const src = COUNTRY_SOURCES[code];
             if (
@@ -357,7 +366,7 @@ export function getColorUrl(tx: number, ty: number, zoom: number): string {
                     src.strictAtHighZoom?.useStrictAbove &&
                     zoom > src.strictAtHighZoom.thresholdZoom
                 ) {
-                    const inStrict = isTileInCountry(tx, ty, zoom, code, 5);
+                    const inStrict = isTileInCountry(tx, ty, zoom, code, 4);
                     if (inStrict) return src.colorTopo(zoom, tx, ty);
                     // Fallback : ne pas utiliser cette source, continuer la chaîne
                 } else {

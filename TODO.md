@@ -25,7 +25,14 @@
 - **Offline Alertes** — Système d'alertes sécurité hors-ligne (v6.0+)
 - **Abonnement familial** — Pack famille RevenueCat (v6.1+)
 
-## ✅ Récemment complété (v5.56.2)
+## ✅ Récemment complété (v5.56.15)
+
+- [x] **Fix double chargement démarrage** — Benchmark GPU attendu avant création scène (v5.56.15)
+- [x] **Fix tuiles frontières CH (Bonfol, Aigle, Monthey)** — Fusion polygones OSM+Natural Earth, logique pro-CH, strictAtHighZoom assoupli (v5.56.15)
+- [x] **Démarrage accéléré** — Clé MapTiler fast-path, fetchCatalog fire-and-forget (v5.56.15)
+- [x] **Fuite canvas DOM** — Nettoyage canvas dans disposeScene() (v5.56.15)
+
+## ✅ Récemment complété (v5.56.14)
 
 - [x] **Historique GPX persistant** — 5 derniers imports/REC en localStorage avec mini-carte (v5.56.2)
 - [x] **Fusion panneaux GPX** — Liste unifiée "Parcours" (historique + layers actifs + routes manuelles) (v5.56.2)

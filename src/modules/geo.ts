@@ -120,10 +120,12 @@ for (const [code, def] of Object.entries(COUNTRIES)) {
     COUNTRY_CODES.push(code);
 }
 
-// Remplacer CH par le polygone OSM (plus précis aux frontières)
-// et recalculer sa BBox
+// v6.0 : Fusion OSM + Natural Earth pour CH.
+// L'OSM (54 pts) couvre bien Chiasso/Tessin, Natural Earth (172 pts)
+// couvre mieux l'Ajoie (Bonfol) et le Chablais (Aigle/Monthey).
 if (COUNTRY_POLYGONS['CH']) {
-    COUNTRY_POLYGONS['CH'] = [SWITZERLAND_POLYGON_OSM];
+    const naturalEarthCH = COUNTRY_POLYGONS['CH'];
+    COUNTRY_POLYGONS['CH'] = [SWITZERLAND_POLYGON_OSM, ...naturalEarthCH];
     const poly = SWITZERLAND_POLYGON_OSM;
     let minLat = Infinity,
         maxLat = -Infinity,
@@ -240,6 +242,36 @@ export function isTileInCountry(
         if (isPointInCountry(lat, lon, countryCode)) inside++;
     }
     return inside >= threshold;
+}
+
+/**
+ * Compte le nombre de points d'échantillonnage (sur 5) qui
+ * tombent dans le pays spécifié. Utilisé pour la détection
+ * de tuiles frontalières (préférence CH).
+ */
+export function countPointsInCountry(
+    tx: number,
+    ty: number,
+    zoom: number,
+    countryCode: string
+): number {
+    const n = getPow2(zoom);
+    const points: [number, number][] = [
+        [tx + 0.5, ty + 0.5],
+        [tx, ty],
+        [tx + 1, ty],
+        [tx, ty + 1],
+        [tx + 1, ty + 1],
+    ];
+    let inside = 0;
+    for (const [px, py] of points) {
+        const lat =
+            (Math.atan(Math.sinh(Math.PI * (1 - (2 * py) / n))) * 180) /
+            Math.PI;
+        const lon = (px / n) * 360 - 180;
+        if (isPointInCountry(lat, lon, countryCode)) inside++;
+    }
+    return inside;
 }
 
 /**

@@ -79,11 +79,15 @@ export async function appInit(): Promise<void> {
         if (state.DEBUG_MODE) console.warn('[IAP] Init failed', e);
     });
 
-    // v5.29.35 : Résolution de la clé MapTiler et chargement du catalog des packs.
-    await Promise.all([
-        resolveMapTilerKey(),
-        import('./packManager').then((m) => m.packManager.fetchCatalog()),
-    ]);
+    // v6.0 : Clé bundled en fast-path immédiat, rotation Gist en arrière-plan
+    const bundledKey = import.meta.env.VITE_MAPTILER_KEY as string | undefined;
+    if (bundledKey) {
+        state.MK = bundledKey;
+        void resolveMapTilerKey();
+    } else {
+        await resolveMapTilerKey();
+    }
+    void import('./packManager').then((m) => m.packManager.fetchCatalog());
 
     const savedSettings = loadSettings();
     if (savedSettings) {
@@ -97,34 +101,31 @@ export async function appInit(): Promise<void> {
             applyPreset(savedSettings.PERFORMANCE_PRESET);
         }
     } else {
-        // Premier démarrage : Benchmark automatique
-        void (async () => {
-            try {
-                // Petit délai pour laisser le splash screen s'afficher proprement
-                await new Promise((resolve) => setTimeout(resolve, 500));
-                showToast(
-                    i18n.t('benchmark.running') ||
-                        'Optimisation pour votre appareil...',
-                    3000
-                );
+        // Premier démarrage : Benchmark automatique (attendu avant la scène pour éviter un double chargement)
+        try {
+            await new Promise((resolve) => setTimeout(resolve, 300));
+            showToast(
+                i18n.t('benchmark.running') ||
+                    'Optimisation pour votre appareil...',
+                3000
+            );
 
-                const { recommendedPreset } = await runBenchmark();
-                applyPreset(recommendedPreset);
+            const { recommendedPreset } = await runBenchmark();
+            applyPreset(recommendedPreset);
 
-                showToast(
-                    i18n.t('benchmark.result', {
-                        preset: recommendedPreset.toUpperCase(),
-                    }) || `Profil ${recommendedPreset.toUpperCase()} appliqué.`,
-                    4000
-                );
-            } catch (e) {
-                console.warn(
-                    '[AppInit] Benchmark failed, falling back to static detection',
-                    e
-                );
-                applyPreset(detectBestPreset());
-            }
-        })();
+            showToast(
+                i18n.t('benchmark.result', {
+                    preset: recommendedPreset.toUpperCase(),
+                }) || `Profil ${recommendedPreset.toUpperCase()} appliqué.`,
+                4000
+            );
+        } catch (e) {
+            console.warn(
+                '[AppInit] Benchmark failed, falling back to static detection',
+                e
+            );
+            applyPreset(detectBestPreset());
+        }
     }
 
     document.body.classList.toggle('mode-2d', state.IS_2D_MODE);
@@ -271,7 +272,7 @@ async function launchScene() {
                         hideOverlay();
                         unsub();
                     }
-                }, 2000);
+                }, 4000);
                 safetyTimer = setTimeout(() => {
                     if (mapOverlay.classList.contains('visible')) hideOverlay();
                 }, 15000);

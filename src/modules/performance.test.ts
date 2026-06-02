@@ -60,6 +60,7 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
 
     describe('applyPreset() — Side effects', () => {
         it('should call refreshTerrain(true) to force a refresh and avoid race conditions', () => {
+            state.renderer = { setPixelRatio: vi.fn() } as any;
             applyPreset('balanced');
             expect(refreshTerrain).toHaveBeenCalledWith(true);
         });

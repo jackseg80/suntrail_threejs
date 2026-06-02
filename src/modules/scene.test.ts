@@ -157,15 +157,17 @@ describe('scene.ts', () => {
     });
 
     describe('disposeScene', () => {
-        it('should cleanup all resources and listeners', async () => {
+        it('should cleanup all resources, remove canvas, and null renderer', async () => {
             const disposeSpy = vi.spyOn(state.renderer!, 'dispose');
             const sceneClearSpy = vi.spyOn(state.scene!, 'clear');
+            const removeSpy = vi.spyOn(state.renderer!.domElement, 'remove');
 
             await disposeScene();
 
             expect(disposeSpy).toHaveBeenCalled();
             expect(sceneClearSpy).toHaveBeenCalled();
-            expect(state.renderer?.setAnimationLoop).toHaveBeenCalledWith(null);
+            expect(removeSpy).toHaveBeenCalled();
+            expect(state.renderer).toBeNull();
         });
     });
 });

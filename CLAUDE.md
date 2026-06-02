@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.56.14)
+# SunTrail — Guide IA (v5.56.15)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-02 — v5.56.14 : Fix toast manquant export GPX depuis le panneau Parcours.
+> Mis à jour le 2026-06-02 — v5.56.15 : Fix démarrage + précision tuiles frontières CH.
 
 ## Projet
 

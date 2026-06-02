@@ -147,6 +147,8 @@ export async function disposeScene(): Promise<void> {
     if (state.renderer) {
         state.renderer.setAnimationLoop(null);
         state.renderer.dispose();
+        state.renderer.domElement.remove();
+        state.renderer = null;
     }
     disposeCompass();
     disposeWeatherSystem();
@@ -573,7 +575,7 @@ export async function initScene(): Promise<void> {
     let lastRenderTime = 0;
     window.addEventListener('resize', onWindowResize);
 
-    let needsInitialRender = 60;
+    let needsInitialRender = 20;
     let tilesFading = true;
     let lastInteractionTime = 0;
     let prevWasFlyingTo = false;

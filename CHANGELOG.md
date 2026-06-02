@@ -1,3 +1,19 @@
+## [5.56.15] - 2026-06-02
+
+### Fixed
+- **Double chargement carte au 1er démarrage** (`appInit.ts`) : le benchmark GPU/CPU s'exécutait en parallèle de la création de la scène. Quand il se terminait, `applyPreset()` détruisait toutes les tuiles via `refreshTerrain(true)` et les rechargeait — écran noir + "Chargement de la carte..." puis carte qui réapparaît. Fix : le benchmark est attendu avant `launchScene()`.
+- **Tuiles mélangées aux frontières CH à LOD12+** (`tileLoader.ts`, `geo.ts`) : le polygone OSM 54 pts coupait certaines zones hors de Suisse (Bonfol, Damphreux, Aigle, Monthey) → IGN ou OpenTopoMap appliqué au lieu de SwissTopo. Fix : fusion des polygones OSM + Natural Earth (172 pts), logique pro-CH (≥1 point CH → SwissTopo), strictAtHighZoom assoupli (5/5→4/5).
+
+### Changed
+- **Démarrage accéléré** (`appInit.ts`) : clé MapTiler `.env` en fast-path immédiat, `packManager.fetchCatalog()` en arrière-plan au lieu de bloquer la scène.
+- **Fuite canvas DOM** (`scene.ts`) : `disposeScene()` retire l'ancien `<canvas>` du DOM et nullifie `state.renderer`.
+- **needsInitialRender** 60→20 (`scene.ts`) : moins de rendus inutiles sur scène vide.
+- **Fallback overlay** 2s→4s (`appInit.ts`) : évite disparition prématurée de l'overlay de chargement.
+
+### Added
+- `countPointsInCountry()` dans `geo.ts` — compte les points d'échantillonnage dans un pays.
+- 3 tests `countPointsInCountry` dans `geo.test.ts` (total 26 tests).
+
 ## [5.56.14] - 2026-06-02
 
 ### Fixed

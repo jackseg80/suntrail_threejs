@@ -13,6 +13,7 @@ import {
     isTileInCountry,
     isTileInSwitzerland,
     isTileInSwitzerlandStrict,
+    countPointsInCountry,
 } from './geo';
 
 describe('Module Géo (geo.ts)', () => {
@@ -158,6 +159,21 @@ describe('Module Géo (geo.ts)', () => {
 
         it('isTileInCountry with unknown country returns false', () => {
             expect(isTileInCountry(4270, 2891, 13, 'XX', 3)).toBe(false);
+        });
+
+        it('countPointsInCountry should return 5/5 for central CH tile', () => {
+            const tile = lngLatToTile(8.54, 47.37, 13);
+            expect(countPointsInCountry(tile.x, tile.y, 13, 'CH')).toBe(5);
+        });
+
+        it('countPointsInCountry should return 0 for tile far outside CH', () => {
+            const tile = lngLatToTile(2.3, 48.8, 13);
+            expect(countPointsInCountry(tile.x, tile.y, 13, 'CH')).toBe(0);
+        });
+
+        it('countPointsInCountry should return 0 for unknown country code', () => {
+            const tile = lngLatToTile(8.54, 47.37, 13);
+            expect(countPointsInCountry(tile.x, tile.y, 13, 'XX')).toBe(0);
         });
     });
 

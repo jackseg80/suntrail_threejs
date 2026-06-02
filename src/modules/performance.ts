@@ -163,10 +163,11 @@ export function applyPreset(preset: PresetType): void {
     }
 
     updatePerformanceUI(preset);
-    refreshTerrain(true);
-    refreshTracks();
-
-    setTimeout(() => refreshTracks(), 500);
+    if (state.renderer) {
+        refreshTerrain(true);
+        refreshTracks();
+        setTimeout(() => refreshTracks(), 500);
+    }
 
     saveSettings();
     showToast(i18n.t('preset.applied', { preset: preset.toUpperCase() }));
