@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.56.13)
+# SunTrail — Guide IA (v5.56.14)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-01 — v5.56.13 : Test verrou _isSaving + bump test count 971.
+> Mis à jour le 2026-06-02 — v5.56.14 : Fix toast manquant export GPX depuis le panneau Parcours.
 
 ## Projet
 

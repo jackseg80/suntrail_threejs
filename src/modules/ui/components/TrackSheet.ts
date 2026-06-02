@@ -1010,10 +1010,15 @@ export class TrackSheet extends BaseComponent {
                 if (!layerToExport || !layerToExport.rawData) return;
                 const gpxString =
                     gpxService.buildGPXStringFromLayer(layerToExport);
-                await recordingService.saveToFile(
-                    layerToExport.name,
-                    gpxString
-                );
+                try {
+                    await recordingService.saveToFile(
+                        layerToExport.name,
+                        gpxString
+                    );
+                    showToast(i18n.t('track.toast.exported'));
+                } catch {
+                    showToast(i18n.t('track.toast.exportError'));
+                }
             });
         });
 

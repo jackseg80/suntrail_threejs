@@ -1,3 +1,8 @@
+## [5.56.14] - 2026-06-02
+
+### Fixed
+- **Toast manquant à l'export GPX** (`TrackSheet.ts:999-1018`) : le bouton d'export d'un tracé existant (icône flèche ↑) dans le panneau Parcours ne montrait aucun feedback. Fix : ajout de `showToast(i18n.t('track.toast.exported'))` après un export réussi, et `track.toast.exportError` en cas d'erreur. Les clés i18n (`exported`, `exportError`) existaient déjà dans les 4 locales mais n'étaient jamais utilisées.
+
 ## [5.56.13] - 2026-06-01
 
 ### Tests
