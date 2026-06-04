@@ -30,7 +30,7 @@
         <p>Cet achat sera lié uniquement à ce navigateur. Si vous changez d'appareil ou videz votre cache, vous perdrez l'accès Pro associé à cet achat.</p>
         <div class="btn-group">
             <button id="btn-continue" class="btn btn-primary">Continuer en mode invité</button>
-            <button id="btn-login" class="btn btn-secondary">Se connecter / S'inscrire</button>
+            <button id="btn-login" class="btn btn-secondary">Voir sur Google Play (Android)</button>
             <button id="btn-cancel" class="btn btn-link">Annuler</button>
         </div>
     </div>
@@ -44,7 +44,7 @@
         };
 
         document.getElementById('btn-login').onclick = () => {
-            window.location.href = './login.html';
+            window.open('https://play.google.com/store/apps/details?id=com.suntrail.threejs', '_blank');
         };
 
         document.getElementById('btn-cancel').onclick = () => {

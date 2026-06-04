@@ -49,12 +49,13 @@
                         window.location.href = 'app.html';
                     }, 500);
                 } else {
-                    // Pas de tokens → redirect vers app.html
-                    window.location.href = 'app.html';
+                    // Pas de tokens (pas un callback OAuth) → redirect vers le Play Store
+                    document.body.innerHTML = '<p>Redirecting to Google Play Store...</p>';
+                    window.location.href = 'https://play.google.com/store/apps/details?id=com.suntrail.threejs';
                 }
             } catch (e) {
                 console.error('OAuth callback error:', e);
-                setTimeout(() => { window.location.href = 'app.html'; }, 2000);
+                window.location.href = 'app.html';
             }
         }
 
