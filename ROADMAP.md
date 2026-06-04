@@ -153,6 +153,65 @@ superposés en sprites Three.js Canvas. Abandonné — problèmes non résolus :
 
 ---
 
+## Photography & Light Planning
+
+> Analyse des fonctionnalités utiles aux photographes utilisant SunTrail.
+
+Le moteur solaire 3D existant (ombres portées, azimut, heure dorée, phase lunaire) est un socle idéal pour des outils de planification photo. Voici les pistes identifiées, classées par effort/impact.
+
+### Shot Planner (Effort moyen — Impact fort)
+
+**Objectif :** Permettre au photographe de planifier précisément où et quand se tenir pour une photo, en utilisant les données terrain/soleil déjà disponibles.
+
+- **Golden Hour Explorer** — Afficher sur la carte les zones qui seront en plein soleil / ombre dorée à un instant T (déjà partiellement possible via l'overlay 3D solaire). Amélioration : filtrer par "uniquement les zones où le soleil rase le relief" (golden hour).
+- **Sunrise/Sunset Compass** — Overlay directionnel sur la carte montrant le point exact où le soleil se lève/couche par rapport au relief (intégré à la boussole Pro existante). Utile pour composer avec un pic ou un lac en silhouette.
+- **Altitude du soleil au premier plan** — Indiquer si le soleil sera visible depuis un point donné (pas masqué par une crête) à une date/heure donnée. Le raycasting `isAtShadow()` le fait déjà, mais il faudrait une UI dédiée "le soleil sera-t-il visible à cet endroit à cette heure ?".
+- **Carte des ombres projetées** — Snapshot de l'overlay 3D à un instant T exportable en image (pour préparer un shooting à l'avance).
+
+### Seasonal Planner (Effort important — Impact fort)
+
+**Objectif :** Aider à choisir la meilleure saison/période pour photographier un lieu.
+
+- **Calendrier lumineux** — Pour un point donné, visualiser sur l'année : heure du lever/coucher, azimut à chaque saison, durée du jour, position du soleil par rapport aux crêtes environnantes.
+- **Aide au choix saison** — Simulation rapide des ombres à différentes dates (solstice d'été → ombres courtes, soleil haut ; solstice d'hiver → ombres longues, soleil rasant). Les photographes de montagne cherchent souvent l'été pour les alpages en lumière ou l'hiver pour les effets de contraste.
+- **Éphémérides photo** — Tableau de bord avec : lever/coucher, heure dorée/début-fin, azimut au lever/coucher, phase lunaire, hauteur max du soleil. (Données déjà calculées dans `SolarAnalysisResult`, manque juste l'UI dédiée.)
+
+### Condition Tracker (Effort moyen — Impact moyen)
+
+**Objectif :** Anticiper les conditions atmosphériques qui font la différence entre une photo banale et une photo exceptionnelle.
+
+- **Visibilité météo** — Coupler les prévisions météo (déjà intégrées via Open-Meteo) avec l'analyse de terrain : probabilité de ciel dégagé à l'heure dorée, visibilité des pics lointains.
+- **Indice de turbidité** — Données sur la clarté de l'air (aérosols) pour estimer la qualité de la lumière. API Open-Meteo AQI / CAMS.
+- **Snow Line Tracker** — Altitude de la limite pluie/neige → savoir si les sommets seront enneigés (contexte photo hiver/printemps).
+- **Leaf Season Indicator** — Modèle empirique basé sur l'altitude et la latitude pour prédire les couleurs d'automne (rough, mais utile).
+
+### Astro Photography (Effort important — Impact niche)
+
+**Objectif :** Planification photo nocturne (voie lactée, stars trails).
+
+- **Milky Way Visibility** — Calendrier de visibilité de la Voie Lactée : lever/coucher, position par rapport au relief, phase lunaire (pas de lune = ciel noir). API SunCalc ne couvre pas ça — nécessite une lib externe ou calculs astronomiques.
+- **Dark Sky Map** — Superposition des zones de pollution lumineuse (couche tuile Light Pollution Map, VIIRS DNB). Identifier les meilleurs spots autour d'un refuge.
+- **Blue Hour Planner** — Heure exacte du coucher civil/nautique/astronomique pour la photo crépusculaire.
+
+### Technical Debt / Prérequis
+
+- L'API solaire (`runSolarProbe`) calcule déjà : azimut, élévation, heure dorée, phase lunaire, lever/coucher. Certaines données sont Pro-only dans l'UI mais disponibles en interne.
+- L'overlay 3D (`buildSolarOverlay`) colore déjà le tracé par ombre/soleil — pourrait être étendu en overlay plein écran pour la planification photo.
+- Les données météo (`weather.ts`, Open-Meteo) sont déjà intégrées et peuvent être croisées avec les données solaires.
+- Le raycasting `isAtShadow()` est la brique de base pour déterminer si un point est dans la lumière ou l'ombre à un instant donné.
+
+### Priorités suggérées
+
+| Priorité | Feature | Effort | Impact |
+|----------|---------|--------|--------|
+| P0 | Vue "Azimut lever/coucher" dans les stats point | Faible (données existantes) | Fort |
+| P1 | Export snapshot ombres (carte ou overlay) | Moyen | Fort |
+| P2 | Calendrier lumineux saisonnier | Important | Très fort |
+| P3 | Dark Sky Map / pollution lumineuse | Moyen | Niche |
+| P4 | Milky Way tracker | Important | Niche |
+
+---
+
 ## Notes
 
 - **RevenueCat :** Documenté [docs/MONETIZATION.md](docs/MONETIZATION.md)
