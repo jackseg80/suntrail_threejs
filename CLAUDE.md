@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.56.18)
+# SunTrail — Guide IA (v5.56.19)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-04 — v5.56.18 : Nuit tracée + cache solaire + légende profil. 994 tests.
+> Mis à jour le 2026-06-04 — v5.56.19 : Roadmap photo + Android versionCode 833.
 
 ## Projet
 
