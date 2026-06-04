@@ -1,3 +1,13 @@
+## [5.56.17] - 2026-06-04
+
+### Fixed
+- **Tuto mobile — boutons sous la navbar système** (`onboardingTutorial.ts`) : sur les mobiles avec barre de navigation capacitive/physique (Galaxy S8, etc.), les boutons "Passer" et "Suivant" apparaissaient en dessous des boutons système, les rendant inaccessibles. Fix : ajout de 72px de padding-bottom supplémentaire via `@media (max-width: 600px)` dans le `.ob-footer`.
+- **Labels pays manquants dans la top-bar** (`TopStatusBar.ts`) : les pays Allemagne (DE), Autriche (AT) et Espagne (ES) n'étaient pas reconnus et affichaient "WORLD" au lieu de leurs labels respectifs "GERMANY", "AUSTRIA", "SPAIN". Fix : ajout des cas `DE`/`AT`/`ES` dans le switch de `updateLOD()` + clés i18n `topbar.lod.{germany,spain,austria}` dans les 4 locales + tooltip LOD mis à jour.
+
+### Added
+- **Tests TopStatusBar** (`TopStatusBar.test.ts`) : 9 tests pour le mapping country code → label (CH, FR, IT, DE, AT, ES, XX, satellite, zoom).
+- **Tests onboarding mobile** (`onboardingTutorial.test.ts`) : 1 test pour vérifier le `@media` query et le padding 72px sur mobile.
+
 ## [5.56.16] - 2026-06-04
 
 ### Fixed

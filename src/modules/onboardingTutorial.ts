@@ -300,6 +300,11 @@ function _show(resolve: () => void): void {
                 align-items: center;
                 background: linear-gradient(to top, rgba(0,0,0,0.4), transparent);
             }
+            @media (max-width: 600px) {
+                .ob-footer {
+                    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px) + 72px);
+                }
+            }
             .ob-actions {
                 width: 100%;
                 max-width: 400px;

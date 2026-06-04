@@ -267,7 +267,8 @@
             "openmeteoLabel": "Open-Meteo — open-meteo.com"
         },
         "tutorial": {
-            "btn": "❓ Aide & Tutoriel"
+            "btn": "❓ Aide & Tutoriel",
+            "youtube": "📺 Vidéos & Démos"
         },
         "toast": {
             "energySaverOn": "🔋 Mode Éco activé (FPS limités)",
@@ -341,10 +342,13 @@
             "swiss": "SWISS",
             "ign": "IGN FR",
             "italy": "ITALY",
+            "germany": "GERMANY",
+            "spain": "SPAIN",
+            "austria": "AUSTRIA",
             "world": "WORLD",
             "sat": "SAT"
         },
-        "tooltipLOD": "<b>Niveau de détail</b> : zoom et source cartographique actuelle. Swiss = Swisstopo (Suisse), IGN = Géoportail (France), Italy = cartographie italienne. LVL = niveau de zoom (1-18)."
+        "tooltipLOD": "<b>Niveau de détail</b> : zoom et source cartographique actuelle. Swiss = Swisstopo (Suisse), IGN = Géoportail (France), Italy = cartographie italienne, Germany = BKG (Allemagne), Spain = IGN Espagne, Austria = basemap.at (Autriche). LVL = niveau de zoom (1-18)."
     },
     "upsell": {
         "lod": "🔍 Détail maximum atteint — passez à Pro pour voir jusqu'au LOD 18",

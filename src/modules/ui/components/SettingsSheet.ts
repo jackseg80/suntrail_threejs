@@ -776,25 +776,36 @@ export class SettingsSheet extends BaseComponent {
 
         const section = document.createElement('div');
         section.className = 'settings-section';
+        section.style.display = 'flex';
+        section.style.gap = '8px';
+        section.style.marginTop = '8px';
+
         section.innerHTML = `
             <style>
                 .tutorial-help-btn {
-                    width: 100%;
-                    padding: 12px 16px;
+                    flex: 1;
+                    padding: 12px 10px;
                     background: transparent;
                     border: 1px solid var(--border, rgba(255,255,255,0.1));
                     border-radius: var(--radius-md, 10px);
                     color: var(--text-2, rgba(255,255,255,0.75));
-                    font-size: var(--text-sm, 0.85rem);
+                    font-size: var(--text-xs, 0.75rem);
                     cursor: pointer;
                     text-align: center;
                     transition: opacity 0.15s;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    white-space: nowrap;
                 }
                 .tutorial-help-btn:hover { opacity: 0.8; }
                 .tutorial-help-btn:active { opacity: 0.7; }
             </style>
             <button id="tutorial-btn" class="tutorial-help-btn" data-i18n="settings.tutorial.btn">
                 ${i18n.t('settings.tutorial.btn')}
+            </button>
+            <button id="youtube-btn" class="tutorial-help-btn" data-i18n="settings.tutorial.youtube">
+                ${i18n.t('settings.tutorial.youtube')}
             </button>
         `;
         panel.appendChild(section);
@@ -804,6 +815,10 @@ export class SettingsSheet extends BaseComponent {
             ?.addEventListener('click', () => {
                 void showOnboarding();
             });
+
+        section.querySelector('#youtube-btn')?.addEventListener('click', () => {
+            window.open('https://www.youtube.com/@SunTrail3D', '_blank');
+        });
     }
 
     private createHardwareInfoSection(): void {

@@ -213,5 +213,21 @@ describe('onboardingTutorial', () => {
                 'padding: 24px 24px calc(24px + env(safe-area-inset-bottom, 0px))'
             );
         });
+
+        it('should have extra bottom padding on mobile to avoid system nav bar', async () => {
+            void showOnboarding();
+            await vi.waitFor(() => {
+                expect(
+                    document.getElementById('onboarding-overlay')
+                ).not.toBeNull();
+            });
+
+            const overlay = document.getElementById('onboarding-overlay')!;
+            const style = overlay.querySelector('style')!;
+            expect(style.textContent).toContain('@media (max-width: 600px)');
+            expect(style.textContent).toContain(
+                'padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px) + 72px)'
+            );
+        });
     });
 });

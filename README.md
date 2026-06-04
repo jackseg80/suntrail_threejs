@@ -48,6 +48,10 @@ Le cœur de SunTrail est son **module d'analyse solaire**. Contrairement aux aut
 
 Three.js r160 · TypeScript (strict) · Vite 5 · Capacitor 8 · RevenueCat · Vitest (600+ tests)
 
+## Ressources & Médias
+
+- 📺 **Chaîne YouTube Officielle** : [@SunTrail3D](https://www.youtube.com/@SunTrail3D) — Démonstrations vidéo des fonctionnalités (Solaire, Inclinomètre, 3D).
+
 ## Installation & Dev
 
 ```bash

@@ -271,7 +271,7 @@ Google indexe le **Titre**, la **Description courte** et les **premières lignes
     - Capture 3 : Les couches de cartes (SwissTopo, IGN, basemap.at, BKG vs Satellite).
     - Capture 4 : L'inclinomètre ou la météo animée.
     - *Texte sur les images :* Utilisez des gros titres lisibles sur les captures (ex: "Ombres 3D réelles").
-- **Vidéo de présentation :** Une vidéo de 15-30 secondes montrant le glissement du curseur temporel et l'ombre qui bouge est le meilleur outil de vente pour SunTrail.
+- **Vidéo de présentation :** Une vidéo de 15-30 secondes montrant le glissement du curseur temporel et l'ombre qui bouge est le meilleur outil de vente pour SunTrail. Retrouvez nos démos sur [@SunTrail3D](https://www.youtube.com/@SunTrail3D).
 
 ### 4. Localisation
 Même si vous visez le monde, remplissez les fiches en **Allemand** et **Italien**. Pour la Suisse, c'est crucial.
