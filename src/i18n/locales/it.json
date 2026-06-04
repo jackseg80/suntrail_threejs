@@ -533,7 +533,9 @@
             "night": "🌙 Notte"
         },
         "status": {
-            "done": "Analisi completata"
+            "done": "Analisi completata",
+            "noTerrain": "Analisi solare non disponibile",
+            "noTerrainHint": "I dati del terreno non sono ancora caricati. Ingrandisci sul terreno e riprova."
         },
         "section": {
             "dayData": "Dati del giorno",
@@ -832,8 +834,10 @@
         },
         "stat": {
             "sunPct": "Al sole",
+            "nightPct": "Notte",
             "sunKm": "Km al sole",
             "shadowKm": "Km in ombra",
+            "nightKm": "Km notturni",
             "totalKm": "Totale"
         },
         "rec": {
@@ -844,7 +848,9 @@
             "optimalDeparture": "Partenza ideale {{time}} → {{pct}}% al sole",
             "goldenHour": "Ora d'oro in vetta ({{alt}}m): {{start}}–{{end}}",
             "strongExposure": "⚠️ Forte esposizione: km {{start}}–{{end}} ({{duration}} min)",
-            "estimatedArrival": "Arrivo stimato: {{time}}"
+            "estimatedArrival": "Arrivo stimato: {{time}}",
+            "forestSection": "🌲 {{km}} km sotto la foresta",
+            "headlamp": "Portare una lampada frontale: {{km}} km di notte ({{pct}}% del percorso)"
         },
         "speed": {
             "label": "Andatura:",
@@ -852,7 +858,10 @@
         },
         "status": {
             "analyzing": "Calcolo partenza ottimale…",
-            "noRoute": "Traccia un percorso o importa un GPX"
+            "noRoute": "Traccia un percorso o importa un GPX",
+            "noTerrain": "Analisi non disponibile — dati del terreno non caricati. Ingrandisci sul percorso.",
+            "fullNight": "Percorso 100% notturno — cambia l'ora per vedere l'esposizione",
+            "partialNight": "{{pct}}% del percorso di notte"
         },
         "upsell": {
             "pro": "Analisi timeline e partenza ottimale con Pro",

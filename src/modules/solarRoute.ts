@@ -6,6 +6,9 @@ import {
     drapeToTerrain,
     getAltitudeAt,
     GPX_SURFACE_OFFSET,
+    hasTerrainData,
+    resetAnalysisTerrainCounter,
+    getAnalysisTerrainHits,
 } from './analysis';
 import { worldToLngLat, haversineDistance } from './geo';
 import { isLatLonInForest, prefetchLandcoverForPoints } from './landcover';
@@ -31,7 +34,9 @@ export interface RouteSolarAnalysis {
     sunExposedKm: number;
     shadowKm: number;
     forestKm: number;
-    sunPct: number; // 0–100 (soleil direct uniquement, forêt exclue)
+    nightKm: number;
+    sunPct: number;
+    nightPct: number;
     totalKm: number;
     shadowSegments: { startKm: number; endKm: number; lengthKm: number }[];
     optimalDepartureMinutes?: number;
@@ -41,6 +46,7 @@ export interface RouteSolarAnalysis {
         endMinutes: number;
         altitudeM: number;
     };
+    terrainAvailable: boolean;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -205,15 +211,16 @@ async function analyzeRouteSolar(
     signal: AbortSignal
 ): Promise<RouteSolarAnalysis> {
     const samples = sampleRoutePoints(points);
+    resetAnalysisTerrainCounter();
     if (samples.length === 0) {
-        return buildAnalysis([], mode);
+        return buildAnalysis([], mode, false);
     }
     const results: RouteSolarPoint[] = [];
     let cumulativeDistKm = 0;
 
     const midPt = samples[Math.floor(samples.length / 2)];
     const originTile = state.originTile;
-    if (!originTile) return buildAnalysis([], mode);
+    if (!originTile) return buildAnalysis([], mode, false);
     const midGps = worldToLngLat(midPt.x, midPt.z, originTile);
 
     const snapshotSunVec =
@@ -289,17 +296,23 @@ async function analyzeRouteSolar(
         await new Promise<void>((res) => setTimeout(res, 0));
     }
 
-    return buildAnalysis(results, mode);
+    return buildAnalysis(
+        results,
+        mode,
+        getAnalysisTerrainHits() > 0
+    );
 }
 
 export function buildAnalysis(
     points: RouteSolarPoint[],
-    mode: SolarRouteMode
+    mode: SolarRouteMode,
+    terrainAvailable: boolean
 ): RouteSolarAnalysis {
     const totalKm = points.at(-1)?.distKm ?? 0;
     let sunExposedKm = 0;
     let shadowKm = 0;
     let forestKm = 0;
+    let nightKm = 0;
     const shadowSegments: {
         startKm: number;
         endKm: number;
@@ -312,7 +325,9 @@ export function buildAnalysis(
         const cur = points[i];
         const segLen = cur.distKm - prev.distKm;
 
-        if (!cur.isNight) {
+        if (cur.isNight) {
+            nightKm += segLen;
+        } else {
             if (cur.inShadow) {
                 shadowKm += segLen;
             } else if (cur.inForest) {
@@ -345,6 +360,7 @@ export function buildAnalysis(
     // sunPct sur le total du parcours (km nuit inclus) — évite le 100% trompeur
     // quand tout le trajet est de nuit sauf 1 km final au soleil.
     const sunPct = totalKm > 0 ? Math.round((sunExposedKm / totalKm) * 100) : 0;
+    const nightPct = totalKm > 0 ? Math.round((nightKm / totalKm) * 100) : 0;
 
     return {
         mode,
@@ -352,9 +368,12 @@ export function buildAnalysis(
         sunExposedKm,
         shadowKm,
         forestKm,
+        nightKm,
         sunPct,
+        nightPct,
         totalKm,
         shadowSegments,
+        terrainAvailable,
     };
 }
 
@@ -647,10 +666,16 @@ async function runRouteSolarAnalysis(): Promise<void> {
 
     // Cache hit : juste mettre à jour la texture, pas de raymarching
     if (cacheKey === _cacheKey && _cachedAnalysis) {
-        _currentAnalysis = _cachedAnalysis;
-        updateSolarOverlay(_cachedAnalysis);
-        notifySolarRouteUpdate();
-        return;
+        // Si le cache date d'un moment où le terrain n'était pas dispo,
+        // et qu'il l'est maintenant → re-analyser
+        if (!_cachedAnalysis.terrainAvailable && hasTerrainData()) {
+            invalidateRouteCache();
+        } else {
+            _currentAnalysis = _cachedAnalysis;
+            updateSolarOverlay(_cachedAnalysis);
+            notifySolarRouteUpdate();
+            return;
+        }
     }
 
     // Annuler l'analyse précédente
@@ -667,8 +692,12 @@ async function runRouteSolarAnalysis(): Promise<void> {
         );
         if (signal.aborted) return;
 
-        _cacheKey = cacheKey;
-        _cachedAnalysis = analysis;
+        // Ne pas mettre en cache si le terrain n'était pas disponible
+        // → forcera une ré-analyse la prochaine fois
+        if (analysis.terrainAvailable) {
+            _cacheKey = cacheKey;
+            _cachedAnalysis = analysis;
+        }
         _currentAnalysis = analysis;
 
         // Overlay 3D

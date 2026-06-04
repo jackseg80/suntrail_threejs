@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getAltitudeAt, drapeToTerrain } from './analysis';
+import { getAltitudeAt, drapeToTerrain, hasTerrainData } from './analysis';
 import { state } from './state';
 
 describe('analysis.ts', () => {
@@ -13,6 +13,10 @@ describe('analysis.ts', () => {
     it('should return 0 altitude if no tile is loaded', () => {
         const alt = getAltitudeAt(0, 0);
         expect(alt).toBe(0);
+    });
+
+    it('hasTerrainData should return false when no tiles are loaded', () => {
+        expect(hasTerrainData()).toBe(false);
     });
 
     describe('drapeToTerrain', () => {

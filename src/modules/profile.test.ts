@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as THREE from 'three';
-import { updateElevationProfile } from './profile';
+import { updateElevationProfile, getSlopeCategory } from './profile';
 import { haversineDistance } from './geo';
 import { state } from './state';
 import type { GPXLayer } from './state';
@@ -14,6 +14,9 @@ describe("Profil d'altitude (Module Profile)", () => {
             <div id="profile-chart-container"></div>
             <svg id="profile-svg"></svg>
             <div id="profile-cursor"></div>
+            <div id="profile-legend" style="display: none"></div>
+            <button id="profile-expand-btn"></button>
+            <button id="profile-close-btn"></button>
             <div id="gpx-dist"></div>
             <div id="gpx-dplus"></div>
             <div id="gpx-dminus"></div>
@@ -261,6 +264,167 @@ describe("Profil d'altitude (Module Profile)", () => {
             // On peut s'assurer de cela indirectement en vérifiant que dPlus est correct
             const pEl = document.getElementById('gpx-dplus');
             expect(pEl?.textContent).toContain('200 m D+');
+        });
+    });
+
+    describe('getSlopeCategory (coloration pente)', () => {
+        it('devrait retourner 0 (vert) pour pente ≤ 3%', () => {
+            expect(getSlopeCategory(0)).toBe(0);
+            expect(getSlopeCategory(1)).toBe(0);
+            expect(getSlopeCategory(2.9)).toBe(0);
+        });
+
+        it('devrait retourner 1 (jaune) pour pente 3-6%', () => {
+            expect(getSlopeCategory(3)).toBe(1);
+            expect(getSlopeCategory(5)).toBe(1);
+            expect(getSlopeCategory(5.9)).toBe(1);
+        });
+
+        it('devrait retourner 2 (orange) pour pente 6-9%', () => {
+            expect(getSlopeCategory(6)).toBe(2);
+            expect(getSlopeCategory(7.5)).toBe(2);
+        });
+
+        it('devrait retourner 3 (rouge) pour pente 9-12%', () => {
+            expect(getSlopeCategory(9)).toBe(3);
+            expect(getSlopeCategory(10)).toBe(3);
+        });
+
+        it('devrait retourner 4 (rouge fonce) pour pente > 12%', () => {
+            expect(getSlopeCategory(12)).toBe(4);
+            expect(getSlopeCategory(20)).toBe(4);
+            expect(getSlopeCategory(100)).toBe(4);
+        });
+
+        it("devrait traiter les descentes sans remplissage (retourne -1)", () => {
+            expect(getSlopeCategory(-2)).toBe(-1);
+            expect(getSlopeCategory(-5)).toBe(-1);
+            expect(getSlopeCategory(-10)).toBe(-1);
+            expect(getSlopeCategory(-100)).toBe(-1);
+        });
+    });
+
+    describe('Rendu SVG de la pente', () => {
+        it('le SVG devrait contenir des paths de pente colores', () => {
+            const layer: GPXLayer = {
+                id: 'test-slope',
+                name: 'Test Slope',
+                color: '#3b7ef8',
+                visible: true,
+                rawData: {
+                    tracks: [
+                        {
+                            points: [
+                                { lat: 46.0, lon: 7.0, ele: 1000 },
+                                { lat: 46.1, lon: 7.1, ele: 1200 },
+                            ],
+                        },
+                    ],
+                },
+                points: [
+                    new THREE.Vector3(0, 2000, 0),
+                    new THREE.Vector3(100, 2400, 100),
+                ],
+                mesh: null,
+                stats: {
+                    distance: 10,
+                    dPlus: 200,
+                    dMinus: 0,
+                    pointCount: 2,
+                    estimatedTime: 180,
+                },
+            };
+            state.gpxLayers = [layer];
+            state.activeGPXLayerId = 'test-slope';
+
+            updateElevationProfile();
+
+            const svg = document.getElementById('profile-svg');
+            expect(svg?.innerHTML).toContain('path');
+            expect(svg?.innerHTML).toContain('fill-opacity');
+        });
+
+        it("ne devrait pas contenir l'ancien degradé bleu", () => {
+            const layer: GPXLayer = {
+                id: 'test-no-grad',
+                name: 'Test No Grad',
+                color: '#3b7ef8',
+                visible: true,
+                rawData: {
+                    tracks: [
+                        {
+                            points: [
+                                { lat: 46.0, lon: 7.0, ele: 1000 },
+                                { lat: 46.1, lon: 7.1, ele: 1100 },
+                            ],
+                        },
+                    ],
+                },
+                points: [
+                    new THREE.Vector3(0, 2000, 0),
+                    new THREE.Vector3(100, 2200, 100),
+                ],
+                mesh: null,
+                stats: {
+                    distance: 10,
+                    dPlus: 100,
+                    dMinus: 0,
+                    pointCount: 2,
+                    estimatedTime: 180,
+                },
+            };
+            state.gpxLayers = [layer];
+            state.activeGPXLayerId = 'test-no-grad';
+
+            updateElevationProfile();
+
+            const svg = document.getElementById('profile-svg');
+            expect(svg?.innerHTML).not.toContain('profile-grad');
+        });
+
+        it("devrait utiliser pos.y quand le GPX n'a pas d'elevation (fallback sans tuile)", () => {
+            const layer: GPXLayer = {
+                id: 'test-posy-fallback',
+                name: 'Test pos.y fallback',
+                color: '#3b7ef8',
+                visible: true,
+                rawData: {
+                    tracks: [
+                        {
+                            points: [
+                                { lat: 46.0, lon: 7.0 },
+                                { lat: 46.1, lon: 7.1 },
+                            ],
+                        },
+                    ],
+                },
+                points: [
+                    new THREE.Vector3(0, 1012, 0),
+                    new THREE.Vector3(100, 3012, 100),
+                ],
+                mesh: null,
+                stats: {
+                    distance: 10,
+                    dPlus: 1000,
+                    dMinus: 0,
+                    pointCount: 2,
+                    estimatedTime: 180,
+                },
+            };
+            state.gpxLayers = [layer];
+            state.activeGPXLayerId = 'test-posy-fallback';
+
+            updateElevationProfile();
+
+            const profileEl = document.getElementById('elevation-profile');
+            expect(profileEl?.classList.contains('is-open')).toBe(true);
+
+            const svg = document.getElementById('profile-svg');
+            expect(svg?.innerHTML).toContain('path');
+            expect(svg?.innerHTML).toContain('fill-opacity');
+
+            const pEl = document.getElementById('gpx-dplus');
+            expect(pEl?.textContent).toContain('1000 m D+');
         });
     });
 });

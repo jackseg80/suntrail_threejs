@@ -1512,19 +1512,25 @@ body.timeline-open #elevation-profile:not(.panel-custom-pos) {
 
 .profile-header-content {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     width: 100%;
     padding: 0 4px;
     gap: 8px;
 }
 
-.profile-title-row {
+.profile-header-actions {
     display: flex;
     align-items: center;
-    gap: 12px;
-    flex: 1;
-    min-width: 0;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.profile-info-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    padding: 2px 4px 0;
 }
 
 .profile-title {
@@ -1534,15 +1540,27 @@ body.timeline-open #elevation-profile:not(.panel-custom-pos) {
     text-transform: uppercase;
     letter-spacing: 2px;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    flex-shrink: 0;
 }
 
-.profile-controls {
+.profile-expand-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 10px;
-    min-width: 0;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.profile-expand-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text);
 }
 
 .profile-info-text {
@@ -1581,39 +1599,83 @@ body.timeline-open #elevation-profile:not(.panel-custom-pos) {
 #profile-chart-container {
     position: relative;
     width: 100%;
-    height: 100px; /* v5.51.4: Augmenté pour éviter chevauchement bande solaire */
+    height: 100px;
     background: rgba(255, 255, 255, 0.02);
     border-radius: 12px;
     overflow: hidden;
     cursor: crosshair;
     border: 1px solid rgba(255, 255, 255, 0.05);
     touch-action: none;
+    transition: height 0.3s ease;
+}
+
+#elevation-profile.is-expanded #profile-chart-container {
+    height: clamp(180px, 40vh, 340px);
+}
+
+.profile-legend {
+    display: none;
+    gap: 10px;
+    justify-content: center;
+    padding: 6px 0 0;
+    flex-wrap: wrap;
+}
+
+.legend-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.legend-group-label {
+    font-size: 9px;
+    color: var(--text-3);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 2px;
+}
+
+.legend-item {
+    font-size: 9px;
+    color: var(--text-2);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+}
+
+.legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    display: inline-block;
+    flex-shrink: 0;
 }
 
 @media (max-width: 600px) {
     .profile-header-content {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 6px;
-    }
-    .profile-title-row {
-        width: 100%;
-        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 4px;
     }
     .profile-title {
         font-size: 11px;
         letter-spacing: 1px;
     }
-    .profile-controls {
-        width: 100%;
-        justify-content: space-between;
-        border-top: 1px solid var(--border-subtle);
-        padding-top: 4px;
+    .profile-header-actions {
+        margin-left: auto;
     }
     .profile-info-text {
         font-size: 10px;
         flex: 1;
         text-align: left;
+    }
+    .profile-legend {
+        gap: 5px;
+    }
+    .legend-item {
+        font-size: 8px;
     }
 }
 

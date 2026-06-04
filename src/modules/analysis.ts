@@ -11,8 +11,24 @@ let lastUsedTile: any = null;
 const _queryPoint = new THREE.Vector3();
 const _hitPoint = new THREE.Vector3();
 
+let _analysisTerrainHits = 0;
+
+export function resetAnalysisTerrainCounter(): void {
+    _analysisTerrainHits = 0;
+}
+export function getAnalysisTerrainHits(): number {
+    return _analysisTerrainHits;
+}
+
 export function resetAnalysisCache(): void {
     lastUsedTile = null;
+}
+
+export function hasTerrainData(): boolean {
+    for (const tile of activeTiles.values()) {
+        if (tile.status === 'loaded' && tile.pixelData) return true;
+    }
+    return false;
 }
 
 export function getAltitudeAt(
@@ -61,6 +77,8 @@ export function getAltitudeAt(
 
     if (!tile || !tile.pixelData) return 0;
 
+    _analysisTerrainHits++;
+
     const res = Math.sqrt(tile.pixelData.length / 4);
     let relX = (worldX - tile.worldX) / tile.tileSizeMeters + 0.5;
     let relZ = (worldZ - tile.worldZ) / tile.tileSizeMeters + 0.5;
@@ -104,12 +122,10 @@ export function getAltitudeAt(
 }
 
 export interface SolarAnalysisResult {
-    // Existing
     totalSunlightMinutes: number;
     firstSunTime: Date | null;
     timeline: { isNight: boolean; inShadow: boolean }[];
     gps: { lat: number; lon: number };
-    // New — sun times
     sunrise: Date | null;
     sunset: Date | null;
     solarNoon: Date | null;
@@ -118,15 +134,13 @@ export interface SolarAnalysisResult {
     goldenHourEveningStart: Date | null;
     goldenHourEveningEnd: Date | null;
     dayDurationMinutes: number;
-    // New — real-time position (at state.simDate)
     currentAzimuthDeg: number;
     currentElevationDeg: number;
-    // New — moon
     moonPhase: number;
     moonPhaseName: string;
-    // New — 24h elevation curve (144 pts, one per 10 min)
     elevationCurve: number[];
     maxElevationDeg: number;
+    terrainAvailable: boolean;
 }
 
 /**
@@ -154,6 +168,7 @@ export function runSolarProbe(
     altitude: number
 ): SolarAnalysisResult | null {
     if (!state.simDate) return null;
+    resetAnalysisTerrainCounter();
     const gps = worldToLngLat(worldX, worldZ, state.originTile);
     const steps = 48;
 
@@ -161,7 +176,6 @@ export function runSolarProbe(
     let firstSunTime: Date | null = null;
     const timeline: { isNight: boolean; inShadow: boolean }[] = [];
 
-    // Simulation sur 24h
     for (let i = 0; i < steps; i++) {
         const date = new Date(state.simDate);
         date.setHours(0, i * 30, 0, 0);
@@ -186,9 +200,8 @@ export function runSolarProbe(
         });
     }
 
-    // ── Sun times ──────────────────────────────────────────────────────────────
     const baseDate = new Date(state.simDate);
-    baseDate.setHours(12, 0, 0, 0); // Use noon as reference date for getTimes
+    baseDate.setHours(12, 0, 0, 0);
     const times = SunCalc.getTimes(baseDate, gps.lat, gps.lon);
 
     const toValidDate = (d: Date): Date | null =>
@@ -198,10 +211,8 @@ export function runSolarProbe(
     const sunset = toValidDate(times.sunset);
     const solarNoon = toValidDate(times.solarNoon);
 
-    // Morning golden hour: sunrise → goldenHourEnd
     const goldenHourMorningStart = toValidDate(times.sunrise);
     const goldenHourMorningEnd = toValidDate(times.goldenHourEnd);
-    // Evening golden hour: goldenHour → sunset
     const goldenHourEveningStart = toValidDate(times.goldenHour);
     const goldenHourEveningEnd = toValidDate(times.sunset);
 
@@ -210,19 +221,15 @@ export function runSolarProbe(
             ? Math.round((sunset.getTime() - sunrise.getTime()) / 60000)
             : 0;
 
-    // ── Real-time sun position at state.simDate ────────────────────────────────
     const nowPos = SunCalc.getPosition(state.simDate, gps.lat, gps.lon);
     const currentElevationDeg = nowPos.altitude * (180 / Math.PI);
-    // SunCalc azimuth is measured from south, clockwise → normalize to 0-360° from north
     const currentAzimuthDeg =
         (nowPos.azimuth * (180 / Math.PI) + 180 + 360) % 360;
 
-    // ── Moon ──────────────────────────────────────────────────────────────────
     const moonIllum = SunCalc.getMoonIllumination(baseDate);
     const moonPhase = moonIllum.phase;
     const moonPhaseName = getMoonPhaseName(moonPhase);
 
-    // ── 24h elevation curve (144 pts × 10 min) ────────────────────────────────
     let maxElevationDeg = -90;
     const elevationCurve: number[] = [];
     for (let i = 0; i < 144; i++) {
@@ -253,6 +260,7 @@ export function runSolarProbe(
         moonPhaseName,
         elevationCurve,
         maxElevationDeg,
+        terrainAvailable: getAnalysisTerrainHits() > 0,
     };
 }
 

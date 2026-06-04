@@ -82,8 +82,8 @@
         <div class="profile-drag-handle">
             <div class="sheet-drag-indicator"></div>
             <div class="profile-header-content">
-                <div class="profile-title-row">
-                    <h3 class="profile-title">📈 Profil & Pentes</h3>
+                <h3 class="profile-title">Profil</h3>
+                <div class="profile-header-actions">
                     <button
                         id="profile-solar-btn"
                         class="profile-solar-btn"
@@ -91,14 +91,23 @@
                     >
                         ☀️ Analyse
                     </button>
-                </div>
-                <div class="profile-controls">
-                    <div id="profile-info" class="profile-info-text">
-                        Distance : 0km | Alt : 0m | Pente : 0%
-                    </div>
-                    <button id="close-profile" class="profile-close-btn">
+                    <button
+                        id="profile-expand-btn"
+                        class="profile-expand-btn"
+                        aria-label="Agrandir le profil"
+                    ></button>
+                    <button
+                        id="close-profile"
+                        class="profile-close-btn"
+                        aria-label="Fermer"
+                    >
                         &times;
                     </button>
+                </div>
+            </div>
+            <div class="profile-info-row">
+                <div id="profile-info" class="profile-info-text">
+                    Distance : 0km | Alt : 0m | Pente : 0%
                 </div>
             </div>
         </div>
@@ -117,6 +126,41 @@
                     box-shadow: 0 0 10px cyan;
                 "
             ></div>
+        </div>
+        <div id="profile-legend" class="profile-legend" style="display: none">
+            <div class="legend-group">
+                <span class="legend-group-label">Pentes</span>
+                <span class="legend-item">
+                    <span class="legend-swatch" style="background:#22c55e"></span>0–3%
+                </span>
+                <span class="legend-item">
+                    <span class="legend-swatch" style="background:#eab308"></span>3–6%
+                </span>
+                <span class="legend-item">
+                    <span class="legend-swatch" style="background:#f97316"></span>6–9%
+                </span>
+                <span class="legend-item">
+                    <span class="legend-swatch" style="background:#ef4444"></span>9–12%
+                </span>
+                <span class="legend-item">
+                    <span class="legend-swatch" style="background:#991b1b"></span>&gt;12%
+                </span>
+            </div>
+            <div id="solar-legend" class="legend-group" style="display:none">
+                <span class="legend-group-label">Solaire</span>
+                <span class="legend-item">
+                    <span class="legend-swatch" style="background:rgba(245,166,35,0.85)"></span>Soleil
+                </span>
+                <span class="legend-item">
+                    <span class="legend-swatch" style="background:rgba(71,85,120,0.8)"></span>Ombre
+                </span>
+                <span class="legend-item">
+                    <span class="legend-swatch" style="background:rgba(30,100,50,0.8)"></span>Forêt
+                </span>
+                <span class="legend-item">
+                    <span class="legend-swatch" style="background:rgba(10,15,30,0.6)"></span>Nuit
+                </span>
+            </div>
         </div>
     </div>
 </div>

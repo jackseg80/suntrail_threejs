@@ -187,6 +187,28 @@ export class SolarProbeSheet extends BaseComponent {
         locHeader.textContent = 'Analyse en cours...';
         this.contentEl.appendChild(locHeader);
 
+        if (!result.terrainAvailable) {
+            const warnSection = document.createElement('div');
+            warnSection.style.cssText =
+                'background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-md); padding:var(--space-4); margin-bottom:var(--space-3); text-align:center;';
+            const warnIcon = document.createElement('div');
+            warnIcon.style.cssText =
+                'font-size:28px; margin-bottom:var(--space-2);';
+            warnIcon.textContent = '⚠️';
+            const warnText = document.createElement('div');
+            warnText.style.cssText =
+                'font-size:13px; color:var(--text-2); margin-bottom:var(--space-1);';
+            warnText.textContent = i18n.t('solar.status.noTerrain');
+            const warnHint = document.createElement('div');
+            warnHint.style.cssText = 'font-size:11px; color:var(--text-3);';
+            warnHint.textContent = i18n.t('solar.status.noTerrainHint');
+            warnSection.appendChild(warnIcon);
+            warnSection.appendChild(warnText);
+            warnSection.appendChild(warnHint);
+            this.contentEl.appendChild(warnSection);
+            return;
+        }
+
         // ── Status ───────────────────────────────────────────────────────────
         const statusEl = document.createElement('div');
         statusEl.classList.add('exp-probe-status');
@@ -718,6 +740,21 @@ export class SolarProbeSheet extends BaseComponent {
         }
         section.appendChild(titleRow);
 
+        // ── Warning : pas de données terrain ────────────────────────────────
+        if (!routeData.terrainAvailable) {
+            const warnSection = document.createElement('div');
+            warnSection.style.cssText =
+                'background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-md); padding:var(--space-4); margin:var(--space-3) 0; text-align:center;';
+            const warnText = document.createElement('div');
+            warnText.style.cssText =
+                'font-size:13px; color:var(--text-2);';
+            warnText.textContent = i18n.t('solarRoute.status.noTerrain');
+            warnSection.appendChild(warnText);
+            section.appendChild(warnSection);
+            parent.appendChild(section);
+            return;
+        }
+
         // ── Contrôle heure/date autonome ─────────────────────────────────────
         const timeControl = document.createElement('div');
         timeControl.className = 'solar-route-time-control';
@@ -848,6 +885,10 @@ export class SolarProbeSheet extends BaseComponent {
 
         addCard(i18n.t('solarRoute.stat.sunPct'), `${routeData.sunPct}%`);
         addCard(
+            i18n.t('solarRoute.stat.nightPct'),
+            `${routeData.nightPct}%`
+        );
+        addCard(
             i18n.t('solarRoute.stat.sunKm'),
             `${routeData.sunExposedKm.toFixed(1)} km`
         );
@@ -856,10 +897,41 @@ export class SolarProbeSheet extends BaseComponent {
             `${routeData.shadowKm.toFixed(1)} km`
         );
         addCard(
+            i18n.t('solarRoute.stat.nightKm'),
+            `${routeData.nightKm.toFixed(1)} km`
+        );
+        addCard(
             i18n.t('solarRoute.stat.totalKm'),
             `${routeData.totalKm.toFixed(1)} km`
         );
         section.appendChild(grid);
+
+        // Indicateur nuit si pertinent
+        if (routeData.nightPct >= 90) {
+            const nightBanner = document.createElement('div');
+            nightBanner.className = 'solar-route-rec-item';
+            nightBanner.style.cssText =
+                'background:rgba(30,30,60,0.5); border:1px solid rgba(100,100,180,0.3); border-radius:var(--radius-md); padding:var(--space-2) var(--space-3); margin-top:var(--space-2); text-align:center; font-size:13px; color:var(--text-2);';
+            nightBanner.innerHTML = `🌙 ${i18n.t('solarRoute.status.fullNight')}`;
+            section.appendChild(nightBanner);
+        } else if (routeData.nightPct >= 50) {
+            const nightBanner = document.createElement('div');
+            nightBanner.className = 'solar-route-rec-item';
+            nightBanner.style.cssText =
+                'background:rgba(40,30,60,0.35); border:1px solid rgba(100,100,180,0.2); border-radius:var(--radius-md); padding:var(--space-2) var(--space-3); margin-top:var(--space-2); text-align:center; font-size:13px; color:var(--text-2);';
+            nightBanner.innerHTML = `🌙 ${i18n.t('solarRoute.status.partialNight', { pct: String(routeData.nightPct) })}`;
+            section.appendChild(nightBanner);
+        }
+
+        // Recommandation lampe frontale si partie nocturne
+        if (routeData.nightPct > 0) {
+            const headlampRec = document.createElement('div');
+            headlampRec.className = 'solar-route-rec-item solar-route-rec-gear';
+            headlampRec.style.cssText =
+                'background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.25); border-radius:var(--radius-md); padding:var(--space-2) var(--space-3); margin-top:var(--space-2); font-size:13px; color:var(--text-2);';
+            headlampRec.innerHTML = `🔦 ${i18n.t('solarRoute.rec.headlamp', { pct: String(routeData.nightPct), km: routeData.nightKm.toFixed(1) })}`;
+            section.appendChild(headlampRec);
+        }
 
         // Info forêt — affichée sous la grille si le tracé traverse une zone boisée
         if (routeData.forestKm > 0) {

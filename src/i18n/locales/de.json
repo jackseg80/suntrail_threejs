@@ -533,7 +533,9 @@
             "night": "🌙 Nacht"
         },
         "status": {
-            "done": "Analyse abgeschlossen"
+            "done": "Analyse abgeschlossen",
+            "noTerrain": "Sonnenanalyse nicht möglich",
+            "noTerrainHint": "Geländedaten sind noch nicht geladen. Zoomen Sie auf das Gelände und versuchen Sie es erneut."
         },
         "section": {
             "dayData": "Tagesdaten",
@@ -832,8 +834,10 @@
         },
         "stat": {
             "sunPct": "In der Sonne",
+            "nightPct": "Nacht",
             "sunKm": "Sonnen-km",
             "shadowKm": "Schatten-km",
+            "nightKm": "Nacht-km",
             "totalKm": "Gesamt"
         },
         "rec": {
@@ -844,7 +848,9 @@
             "optimalDeparture": "Beste Abfahrt {{time}} → {{pct}}% in der Sonne",
             "goldenHour": "Goldene Stunde am Gipfel ({{alt}}m): {{start}}–{{end}}",
             "strongExposure": "⚠️ Starke Exposition: km {{start}}–{{end}} ({{duration}} min)",
-            "estimatedArrival": "Geschätzte Ankunft: {{time}}"
+            "estimatedArrival": "Geschätzte Ankunft: {{time}}",
+            "forestSection": "🌲 {{km}} km unter Wald",
+            "headlamp": "Stirnlampe mitnehmen: {{km}} km bei Nacht ({{pct}}% der Route)"
         },
         "speed": {
             "label": "Tempo:",
@@ -852,7 +858,10 @@
         },
         "status": {
             "analyzing": "Optimalen Start berechnen…",
-            "noRoute": "Route eingeben oder GPX importieren"
+            "noRoute": "Route eingeben oder GPX importieren",
+            "noTerrain": "Analyse nicht möglich — Geländedaten nicht geladen. Auf die Route zoomen.",
+            "fullNight": "100% Nachtroute — Zeit ändern für Sonnenexposition",
+            "partialNight": "{{pct}}% der Route bei Nacht"
         },
         "upsell": {
             "pro": "Zeitanalyse und optimale Abfahrt mit Pro",

@@ -3,8 +3,9 @@ import { state } from './state';
 import type { GPXLayer } from './state';
 import { attachDraggablePanel } from './ui/draggablePanel';
 import { calculateHysteresis } from './geoStats';
-import { getAltitudeAt } from './analysis';
+import { getAltitudeAt, GPX_SURFACE_OFFSET } from './analysis';
 import type { RouteSolarAnalysis } from './solarRoute';
+import { ICON_EXPAND, ICON_COLLAPSE } from './ui/icons';
 
 interface ProfilePoint {
     dist: number; // Distance cumulée en km
@@ -13,8 +14,25 @@ interface ProfilePoint {
     slope: number; // Pente locale en %
 }
 
+const SLOPE_CATEGORIES = [
+    { max: 3, color: '#22c55e', label: '0–3%' },
+    { max: 6, color: '#eab308', label: '3–6%' },
+    { max: 9, color: '#f97316', label: '6–9%' },
+    { max: 12, color: '#ef4444', label: '9–12%' },
+    { max: Infinity, color: '#991b1b', label: '>12%' },
+];
+
+export function getSlopeCategory(slope: number): number {
+    if (slope < 0) return -1;
+    for (let i = 0; i < SLOPE_CATEGORIES.length; i++) {
+        if (slope < SLOPE_CATEGORIES[i].max) return i;
+    }
+    return SLOPE_CATEGORIES.length - 1;
+}
+
 let profileData: ProfilePoint[] = [];
 let _solarBandData: RouteSolarAnalysis | null = null;
+let profileExpanded = false;
 
 export function setSolarBandData(analysis: RouteSolarAnalysis | null): void {
     _solarBandData = analysis;
@@ -27,6 +45,11 @@ export function setSolarBandData(analysis: RouteSolarAnalysis | null): void {
         btn.style.display = analysis ? 'inline-flex' : 'none';
         btn.onclick = () =>
             window.dispatchEvent(new CustomEvent('openSolarProbeSheet'));
+    }
+    // Légende solaire
+    const solarLegend = document.getElementById('solar-legend');
+    if (solarLegend) {
+        solarLegend.style.display = analysis ? '' : 'none';
     }
 }
 
@@ -93,7 +116,12 @@ export function updateElevationProfile(
             );
             ele = rawPoints[rawIdx].ele || rawPoints[rawIdx].alt || 0;
         } else {
-            const h = getAltitudeAt(pos.x, pos.z);
+            // v5.56.18: Utiliser le max entre pos.y (drapé) et getAltitudeAt (tuiles actuelles).
+            // pos.y préserve l'altitude si les tuiles étaient chargées au moment du draping.
+            // getAltitudeAt sert de fallback si les tuiles sont disponibles maintenant.
+            const hPos = pos.y - GPX_SURFACE_OFFSET;
+            const hTile = getAltitudeAt(pos.x, pos.z);
+            const h = Math.max(hPos, hTile);
             ele = Math.max(0, h / state.RELIEF_EXAGGERATION);
         }
 
@@ -156,6 +184,7 @@ export function updateElevationProfile(
         void profileEl.offsetWidth;
         profileEl.classList.add('is-open');
         setupSwipeGesture(profileEl);
+        setupExpandToggle();
     }
 }
 
@@ -193,14 +222,13 @@ export function drawProfileSVG(): void {
     ) as unknown as SVGSVGElement;
     if (!svg || profileData.length === 0) return;
 
-    // v5.40.28: S'assurer que le conteneur est en display:block pour avoir une largeur réelle
     const profileEl = document.getElementById('elevation-profile');
     if (profileEl && profileEl.style.display === 'none') {
         profileEl.style.display = 'block';
     }
 
     const width = svg.clientWidth || window.innerWidth - 40 || 800;
-    const height = svg.clientHeight || 100; // v5.51.4: Base 100px
+    const height = svg.clientHeight || 100;
 
     const maxDist = profileData[profileData.length - 1].dist;
     const altitudes = profileData.map((p) => p.ele);
@@ -208,7 +236,6 @@ export function drawProfileSVG(): void {
     const maxEle = Math.max(...altitudes);
     const eleRange = maxEle - minEle || 1;
 
-    // v5.51.4: Marges asymétriques pour laisser de la place à la bande solaire en bas
     const padTop = 15;
     const padBottom = _solarBandData ? 24 : 10;
     const usableHeight = height - padTop - padBottom;
@@ -221,23 +248,79 @@ export function drawProfileSVG(): void {
         pointsStr += `${i === 0 ? 'M' : 'L'} ${x} ${y} `;
     });
 
-    const areaStr = pointsStr + `L ${width} ${height} L 0 ${height} Z`;
+    const slopeArea = buildSlopeAreaSVG(
+        width,
+        height,
+        padBottom,
+        usableHeight,
+        minEle,
+        eleRange,
+        maxDist
+    );
 
     const solarBand = _solarBandData
         ? buildSolarBandSVG(_solarBandData, width, height)
         : '';
 
     svg.innerHTML = `
-        <defs>
-            <linearGradient id="profile-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style="stop-color:var(--accent);stop-opacity:0.4" />
-                <stop offset="100%" style="stop-color:var(--accent);stop-opacity:0.0" />
-            </linearGradient>
-        </defs>
-        <path d="${areaStr}" fill="url(#profile-grad)" />
+        ${slopeArea}
         <path d="${pointsStr}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" />
         ${solarBand}
     `;
+}
+
+function buildSlopeAreaSVG(
+    width: number,
+    height: number,
+    padBottom: number,
+    usableHeight: number,
+    minEle: number,
+    eleRange: number,
+    maxDist: number
+): string {
+    if (profileData.length < 2) return '';
+
+    const botY = height;
+    let paths = '';
+
+    let groupStart = 0;
+    let currentCat = getSlopeCategory(profileData[1].slope);
+
+    for (let i = 2; i <= profileData.length; i++) {
+        const cat =
+            i < profileData.length
+                ? getSlopeCategory(profileData[i].slope)
+                : -1;
+        if (cat !== currentCat) {
+            const groupEnd = i - 1;
+            if (groupEnd > groupStart && currentCat >= 0) {
+                let pathD = '';
+                for (let j = groupStart; j <= groupEnd; j++) {
+                    const x =
+                        (profileData[j].dist / maxDist) * width;
+                    const y =
+                        height -
+                        (padBottom +
+                            ((profileData[j].ele - minEle) / eleRange) *
+                                usableHeight);
+                    pathD += `${j === groupStart ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)} `;
+                }
+                const lastX =
+                    (profileData[groupEnd].dist / maxDist) * width;
+                const firstX =
+                    (profileData[groupStart].dist / maxDist) * width;
+                pathD += `L ${lastX.toFixed(1)} ${botY} L ${firstX.toFixed(1)} ${botY} Z`;
+
+                paths += `<path d="${pathD}" fill="${SLOPE_CATEGORIES[currentCat].color}" fill-opacity="0.55" shape-rendering="crispEdges"/>`;
+            }
+            groupStart = i - 1;
+            if (i < profileData.length) {
+                currentCat = getSlopeCategory(profileData[i].slope);
+            }
+        }
+    }
+
+    return paths;
 }
 
 function buildSolarBandSVG(
@@ -488,7 +571,22 @@ function setupProfileInteractions(): void {
 export function closeElevationProfile(): void {
     document.body.classList.remove('profile-interacting');
     const profileEl = document.getElementById('elevation-profile');
-    if (profileEl) profileEl.classList.remove('is-open');
+    if (profileEl) {
+        profileEl.classList.remove('is-open');
+        profileEl.classList.remove('is-expanded');
+    }
+    const legend = document.getElementById('profile-legend');
+    if (legend) legend.style.display = 'none';
+    const expandBtn = document.getElementById('profile-expand-btn');
+    if (expandBtn) {
+        if (_expandToggleHandler) {
+            expandBtn.removeEventListener('click', _expandToggleHandler);
+            _expandToggleHandler = null;
+        }
+        expandBtn.innerHTML = ICON_EXPAND;
+    }
+    profileExpanded = false;
+    expandToggleAttached = false;
     if (state.profileMarker) {
         state.profileMarker.visible = false;
         state.profileMarker.traverse((child) => {
@@ -513,10 +611,54 @@ export function closeElevationProfile(): void {
     }
     profileInteractionsAttached = false;
     swipeAttached = false;
+    expandToggleAttached = false;
+}
+
+function setupExpandToggle(): void {
+    const btn = document.getElementById('profile-expand-btn');
+    if (!btn || expandToggleAttached) return;
+    expandToggleAttached = true;
+
+    if (_expandToggleHandler) {
+        btn.removeEventListener('click', _expandToggleHandler);
+    }
+
+    btn.innerHTML = profileExpanded ? ICON_COLLAPSE : ICON_EXPAND;
+
+    if (profileExpanded) {
+        const profileEl = document.getElementById('elevation-profile');
+        profileEl?.classList.add('is-expanded');
+        const legend = document.getElementById('profile-legend');
+        if (legend) legend.style.display = 'flex';
+    }
+
+    _expandToggleHandler = () => {
+        profileExpanded = !profileExpanded;
+        const profileEl = document.getElementById('elevation-profile');
+        const legend = document.getElementById('profile-legend');
+
+        if (profileExpanded) {
+            profileEl?.classList.add('is-expanded');
+            btn.innerHTML = ICON_COLLAPSE;
+            if (legend) legend.style.display = 'flex';
+        } else {
+            profileEl?.classList.remove('is-expanded');
+            btn.innerHTML = ICON_EXPAND;
+            if (legend) legend.style.display = 'none';
+        }
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => drawProfileSVG());
+        });
+    };
+
+    btn.addEventListener('click', _expandToggleHandler);
 }
 
 let swipeAttached = false;
 let profileInteractionsAttached = false;
+let expandToggleAttached = false;
+let _expandToggleHandler: (() => void) | null = null;
 let _profileListeners: Array<{
     el: EventTarget;
     type: string;

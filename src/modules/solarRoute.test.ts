@@ -230,12 +230,15 @@ describe('makeCacheKey', () => {
 
 describe('buildAnalysis', () => {
     it('returns zero stats for empty points', () => {
-        const result = buildAnalysis([], 'snapshot');
+        const result = buildAnalysis([], 'snapshot', false);
         expect(result.totalKm).toBe(0);
         expect(result.sunExposedKm).toBe(0);
         expect(result.shadowKm).toBe(0);
+        expect(result.nightKm).toBe(0);
         expect(result.sunPct).toBe(0);
+        expect(result.nightPct).toBe(0);
         expect(result.shadowSegments).toEqual([]);
+        expect(result.terrainAvailable).toBe(false);
     });
 
     it('counts sun-exposed km correctly', () => {
@@ -265,11 +268,13 @@ describe('buildAnalysis', () => {
                 inForest: false,
             },
         ];
-        const result = buildAnalysis(points, 'snapshot');
+        const result = buildAnalysis(points, 'snapshot', true);
         expect(result.totalKm).toBe(2);
         expect(result.sunExposedKm).toBe(2);
         expect(result.shadowKm).toBe(0);
+        expect(result.nightKm).toBe(0);
         expect(result.sunPct).toBe(100);
+        expect(result.nightPct).toBe(0);
     });
 
     it('counts shadow km correctly', () => {
@@ -299,7 +304,7 @@ describe('buildAnalysis', () => {
                 inForest: false,
             },
         ];
-        const result = buildAnalysis(points, 'snapshot');
+        const result = buildAnalysis(points, 'snapshot', true);
         expect(result.totalKm).toBe(5);
         expect(result.shadowKm).toBe(3);
         expect(result.sunExposedKm).toBe(2);
@@ -333,7 +338,7 @@ describe('buildAnalysis', () => {
                 inForest: false,
             },
         ];
-        const result = buildAnalysis(points, 'snapshot');
+        const result = buildAnalysis(points, 'snapshot', true);
         expect(result.totalKm).toBe(3);
         expect(result.sunExposedKm).toBe(1);
         // 1 km soleil / 3 km total = 33%
@@ -359,7 +364,7 @@ describe('buildAnalysis', () => {
                 inForest: false,
             },
         ];
-        const result = buildAnalysis(points, 'snapshot');
+        const result = buildAnalysis(points, 'snapshot', true);
         expect(result.sunPct).toBe(100);
     });
 
@@ -382,9 +387,12 @@ describe('buildAnalysis', () => {
                 inForest: false,
             },
         ];
-        const result = buildAnalysis(points, 'snapshot');
+        const result = buildAnalysis(points, 'snapshot', true);
         expect(result.sunPct).toBe(0);
         expect(result.sunExposedKm).toBe(0);
+        expect(result.nightKm).toBe(5);
+        expect(result.nightPct).toBe(100);
+        expect(result.shadowKm).toBe(0);
     });
 
     it('detects continuous shadow segments', () => {
@@ -422,7 +430,7 @@ describe('buildAnalysis', () => {
                 inForest: false,
             },
         ];
-        const result = buildAnalysis(points, 'snapshot');
+        const result = buildAnalysis(points, 'snapshot', true);
         expect(result.shadowSegments).toHaveLength(1);
         expect(result.shadowSegments[0]).toEqual({
             startKm: 0,
@@ -432,7 +440,7 @@ describe('buildAnalysis', () => {
     });
 
     it('preserves mode in result', () => {
-        const result = buildAnalysis([], 'hikerTimeline');
+        const result = buildAnalysis([], 'hikerTimeline', false);
         expect(result.mode).toBe('hikerTimeline');
     });
 
@@ -463,7 +471,7 @@ describe('buildAnalysis', () => {
                 inForest: false,
             },
         ];
-        const result = buildAnalysis(points, 'snapshot');
+        const result = buildAnalysis(points, 'snapshot', true);
         expect(result.forestKm).toBe(2);
         expect(result.sunExposedKm).toBe(2);
         expect(result.totalKm).toBe(4);
@@ -489,14 +497,46 @@ describe('buildAnalysis', () => {
                 inForest: true,
             },
         ];
-        const result = buildAnalysis(points, 'snapshot');
+        const result = buildAnalysis(points, 'snapshot', true);
         expect(result.forestKm).toBe(5);
         expect(result.sunExposedKm).toBe(0);
         expect(result.sunPct).toBe(0);
     });
 
-    it('returns forestKm=0 for empty points', () => {
-        expect(buildAnalysis([], 'snapshot').forestKm).toBe(0);
+    it('counts night km and computes nightPct', () => {
+        // 3 km soleil + 2 km nuit = 5 km total, 40% nuit
+        const points = [
+            {
+                worldPos: new THREE.Vector3(0, 0, 0),
+                distKm: 0,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: false,
+                inForest: false,
+            },
+            {
+                worldPos: new THREE.Vector3(1, 0, 0),
+                distKm: 3,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: false,
+                inForest: false,
+            },
+            {
+                worldPos: new THREE.Vector3(2, 0, 0),
+                distKm: 5,
+                evalDate: new Date(),
+                inShadow: false,
+                isNight: true,
+                inForest: false,
+            },
+        ];
+        const result = buildAnalysis(points, 'snapshot', true);
+        expect(result.totalKm).toBe(5);
+        expect(result.sunExposedKm).toBe(3);
+        expect(result.nightKm).toBe(2);
+        expect(result.nightPct).toBe(40);
+        expect(result.sunPct).toBe(60);
     });
 });
 

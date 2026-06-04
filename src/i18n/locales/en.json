@@ -541,7 +541,9 @@
             "night": "🌙 Night"
         },
         "status": {
-            "done": "Analysis complete"
+            "done": "Analysis complete",
+            "noTerrain": "Solar analysis unavailable",
+            "noTerrainHint": "Terrain data is not yet loaded. Zoom in on the terrain and try again."
         },
         "section": {
             "dayData": "Day data",
@@ -834,8 +836,10 @@
         },
         "stat": {
             "sunPct": "In sun",
+            "nightPct": "Night",
             "sunKm": "Sun km",
             "shadowKm": "Shade km",
+            "nightKm": "Night km",
             "totalKm": "Total"
         },
         "rec": {
@@ -847,7 +851,8 @@
             "goldenHour": "Golden hour at summit ({{alt}}m): {{start}}–{{end}}",
             "strongExposure": "⚠️ Strong exposure: km {{start}}–{{end}} ({{duration}} min)",
             "estimatedArrival": "Estimated arrival: {{time}}",
-            "forestSection": "🌲 {{km}} km under forest canopy"
+            "forestSection": "🌲 {{km}} km under forest canopy",
+            "headlamp": "Bring a headlamp: {{km}} km at night ({{pct}}% of the route)"
         },
         "speed": {
             "label": "Pace:",
@@ -855,7 +860,10 @@
         },
         "status": {
             "analyzing": "Computing optimal departure…",
-            "noRoute": "Trace a route or import a GPX to start the analysis"
+            "noRoute": "Trace a route or import a GPX to start the analysis",
+            "noTerrain": "Analysis unavailable — terrain data not loaded. Zoom in on the route.",
+            "fullNight": "100% night route — change the time to see sun exposure",
+            "partialNight": "{{pct}}% of the route at night"
         },
         "upsell": {
             "pro": "Timeline analysis and optimal departure with Pro",
