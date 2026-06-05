@@ -1,5 +1,9 @@
 ## [5.56.21] - 2026-06-05
 
+### Changed
+- **Fallback global réordonné** : OpenTopoMap (gratuit, optimisé rando) → MapTiler outdoor → OpenStreetMap. Avant : MapTiler topo-v2 → OpenTopoMap. OpenTopoMap est désormais prioritaire sur MapTiler (nécessite clé API).
+- **MapTiler outdoor remplace topo-v2** : Le style MapTiler passe de `topo-v2` (fade) à `outdoor` (sentiers, courbes de niveau, relief). La tuile d'élévation (Terrain-RGB) reste inchangée.
+
 ### Fixed
 - **OpenTopoMap écrasé par mode auto** (`appInit.ts`) : `opentopomap` retiré de `AUTO_SOURCES`. Le choix manuel OpenTopoMap est maintenant respecté — l'auto-détection ne l'écrase plus au moindre déplacement.
 - **Badge LOD affichait le pays même en OPENTOPO** (`TopStatusBar.ts`) : Ajout du cas `MAP_SOURCE === 'opentopomap'` → badge `OPENTOPO · LVL XX` au lieu de `SWISS · LVL XX`.
