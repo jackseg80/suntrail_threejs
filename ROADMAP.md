@@ -25,6 +25,7 @@ Natural Earth est automatique.
 - ✅ Autriche (basemap.at) — `mapsneu.wien.gv.at`
 - ✅ Allemagne (BKG TopPlusOpen) — `sgx.geodatenzentrum.de`
 - ✅ Espagne (IGN España) — `www.ign.es`
+- ✅ Norvège (Kartverket) — `cache.kartverket.no/v1/service` (nouveau CDN, accessible mondialement)
 
 ### Pays testés mais endpoints inaccessibles (à vérifier localement)
 
@@ -33,7 +34,6 @@ Testé le 2026-05-26 depuis l'étranger. Tous nécessitent une vérification loc
 
 | Pays | Source | Code | Cause probable |
 |------|--------|------|----------------|
-| 🇳🇴 Norvège | Kartverket topo4 | Timeout | Blocage géographique ? |
 | 🇨🇿 République Tchèque | ČÚZK ZM | 404 | Endpoint ArcGIS changé |
 | 🇵🇱 Pologne | Geoportal 2 | 404 | API migrée |
 | 🇸🇰 Slovaquie | ZBGIS | 404 | Endpoint changé |
@@ -49,6 +49,8 @@ l'entrée dans `COUNTRY_SOURCES` et le helper dans `tileSources.ts`.
 |------|--------|-----------|
 | 🇸🇮 Slovénie | GURS | URL WMTS à trouver (recherche docs GURS) |
 | 🇮🇹 Italie | Geoportale Nazionale | Pas de WMTS national de qualité rando |
+| 🇮🇹 Piémont | BDTRE (Région Piemonte) | EPSG:32632 uniquement (pas Web Mercator) — reprojection nécessaire |
+| 🇮🇹 Südtirol | MapProxy BZ | 60+ couches EPSG:3857 mais couverture régionale seulement |
 | 🇬🇧 Royaume-Uni | Ordnance Survey | Clé API gratuite à configurer |
 | 🇯🇵 Japon | GSI Maps | Étendre `countries.ts` à l'Asie (ingest Asia) |
 | 🇳🇿 Nouvelle-Zélande | LINZ Topo50 | Clé API gratuite à configurer |

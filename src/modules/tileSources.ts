@@ -76,11 +76,7 @@ export function ignSpainTopo(z: number, x: number, y: number): string {
 }
 
 export function kartverketTopo(z: number, x: number, y: number): string {
-    return `https://opencache.statkart.no/gatekeeper/gk/gk.open_wmts?service=WMTS&request=GetTile&version=1.0.0&layer=topo4&style=default&tilematrixset=EPSG:3857&tilematrix=${z}&tilerow=${y}&tilecol=${x}&format=image/png`;
-}
-
-export function kartverketSatellite(z: number, x: number, y: number): string {
-    return `https://opencache.statkart.no/gatekeeper/gk/gk.open_wmts?service=WMTS&request=GetTile&version=1.0.0&layer=norgeibilder&style=default&tilematrixset=EPSG:3857&tilematrix=${z}&tilerow=${y}&tilecol=${x}&format=image/jpeg`;
+    return `https://cache.kartverket.no/v1/service?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=topo&STYLE=default&FORMAT=image/png&tileMatrixSet=webmercator&tileMatrix=${z}&tileRow=${y}&tileCol=${x}`;
 }
 
 export function opentopomapUrl(z: number, x: number, y: number): string {
@@ -146,12 +142,10 @@ export const COUNTRY_SOURCES: Record<string, TileSourceConfig> = {
         colorTopo: (z, x, y) => ignSpainTopo(z, x, y),
         minZoom: 10,
     },
-    // NO: Kartverket topo4 — endpoint inaccessible (timeout), à vérifier localement
-    // NO: {
-    //     colorTopo: (z, x, y) => kartverketTopo(z, x, y),
-    //     colorSatellite: (z, x, y) => kartverketSatellite(z, x, y),
-    //     minZoom: 10,
-    // },
+    NO: {
+        colorTopo: (z, x, y) => kartverketTopo(z, x, y),
+        minZoom: 10,
+    },
     //
     // ── Pays à activer après vérification locale des endpoints ──
     // (tests 2026-05-26 : tous inaccessibles depuis l'étranger — 401/403/404/503)

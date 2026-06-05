@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.56.19)
+# SunTrail — Guide IA (v5.56.20)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-04 — v5.56.19 : Roadmap photo + Android versionCode 833.
+> Mis à jour le 2026-06-05 — v5.56.20 : Activation Norvège Kartverket (nouveau CDN mondial).
 
 ## Projet
 
@@ -18,11 +18,10 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **Frontières v5.56.0** : Système data-driven Europe entière (Natural Earth 1:10m, 55 pays). Voir `src/modules/geo.ts`, `src/data/countries.ts`, `src/modules/tileSources.ts`.
   - **Données** : `src/data/countries.ts` — 55 pays, polygones simplifiés (~1.6 km). Généré par `scripts/ingest-natural-earth.ts`. CH utilise un polygone OSM indépendant (54 pts, plus précis aux frontières). → [src/data/countries.ts](src/data/countries.ts) | [scripts/ingest-natural-earth.ts](scripts/ingest-natural-earth.ts)
   - **Détection** : `getCountryCode(lat, lon)` → code ISO ou `null`. `getCountryName(lat, lon)` → nom français via `COUNTRY_NAMES` (50 pays). `getCountryAtTile(tx, ty, zoom)` → pays majoritaire dans une tuile. BBox pre-filter → ray-casting (O(n), zéro allocation). Micro-états testés en premier (priorité). → [src/modules/geo.ts](src/modules/geo.ts)
-  - **Sources de tuiles** : `COUNTRY_SOURCES` (data-driven). Sources actives : CH (SwissTopo), FR (IGN), AT (basemap.at — CC-BY 4.0), DE (BKG — dl-de/by-2-0), ES (IGN España — CC-BY 4.0 scne.es). NO (Kartverket topo4 — CC-BY 4.0) codé mais désactivé. Pour ajouter la source HD d'un pays : une entrée dans `COUNTRY_SOURCES`. Sans config → fallback global (MapTiler → OpenTopoMap → OSM). → [src/modules/tileSources.ts](src/modules/tileSources.ts)
+  - **Sources de tuiles** : `COUNTRY_SOURCES` (data-driven). Sources actives : CH (SwissTopo), FR (IGN), AT (basemap.at — CC-BY 4.0), DE (BKG — dl-de/by-2-0), ES (IGN España — CC-BY 4.0 scne.es), NO (Kartverket — CC-BY 4.0, nouveau CDN `cache.kartverket.no` accessible mondialement). Pour ajouter la source HD d'un pays : une entrée dans `COUNTRY_SOURCES`. Sans config → fallback global (MapTiler → OpenTopoMap → OSM). → [src/modules/tileSources.ts](src/modules/tileSources.ts)
   - **Backward compat** : `isPositionInSwitzerland/France/Italy`, `isTileInSwitzerland/Strict` conservés comme wrappers.
-- **Sources HD Pays (v5.56.1)** : 5 sources actives, 6 prêtes à activer après vérification locale.
-  - **Actives** : CH (SwissTopo), FR (IGN), AT (basemap.at), DE (BKG), ES (IGN España).
-  - **Désactivée (code prêt)** : NO (Kartverket topo4) — timeout, à tester depuis un VPN/téléphone norvégien.
+- **Sources HD Pays (v5.56.1)** : 6 sources actives, 5 prêtes à activer après vérification locale.
+  - **Actives** : CH (SwissTopo), FR (IGN), AT (basemap.at), DE (BKG), ES (IGN España), NO (Kartverket — nouveau CDN `cache.kartverket.no`).
   - **Endpoints inaccessibles** : CZ (ČÚZK), PL (Geoportal), SK (ZBGIS), FI (MML), SE (Lantmäteriet) — 401/404/503 depuis l'étranger. URLs documentées dans `tileSources.ts:145-160`.
   - **Hors Europe (nécessite extension Natural Earth)** : JP (GSI Maps) — URL fonctionnelle, mais JP absent du dataset Europe. Voir `ROADMAP.md` pour les URLs exactes.
 - **Foreground Service v5.53.0** : Architecture processus séparé `:tracking`

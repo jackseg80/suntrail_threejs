@@ -10,7 +10,6 @@ import {
     bkgTopo,
     ignSpainTopo,
     kartverketTopo,
-    kartverketSatellite,
     opentopomapUrl,
     maptilerTopo,
     maptilerSatellite,
@@ -87,16 +86,10 @@ describe('tileSources — URL builders', () => {
         expect(url).toContain('IGNBaseTodo');
     });
 
-    it('kartverketTopo URL contains statkart.no', () => {
+    it('kartverketTopo URL contains cache.kartverket.no (new CDN)', () => {
         const url = kartverketTopo(10, 100, 200);
-        expect(url).toContain('opencache.statkart.no');
-        expect(url).toContain('topo4');
-    });
-
-    it('kartverketSatellite URL contains norgeibilder', () => {
-        const url = kartverketSatellite(10, 100, 200);
-        expect(url).toContain('opencache.statkart.no');
-        expect(url).toContain('norgeibilder');
+        expect(url).toContain('cache.kartverket.no');
+        expect(url).toContain('LAYER=topo');
     });
 
     it('opentopomapUrl cycles subdomain a,b,c based on (x+y)%3', () => {
@@ -183,8 +176,15 @@ describe('COUNTRY_SOURCES', () => {
         expect(es.minZoom).toBe(10);
     });
 
-    it('NO is NOT in COUNTRY_SOURCES (disabled)', () => {
-        expect(COUNTRY_SOURCES['NO']).toBeUndefined();
+    it('NO is in COUNTRY_SOURCES with Kartverket topo (new CDN)', () => {
+        const no = COUNTRY_SOURCES['NO'];
+        expect(no.colorTopo).toBeDefined();
+        expect(no.colorSatellite).toBeUndefined();
+        expect(no.minZoom).toBe(10);
+        const url = no.colorTopo!(10, 0, 0);
+        expect(url).toContain('cache.kartverket.no');
+        expect(url).toContain('LAYER=topo');
+        expect(url).toContain('tileMatrixSet=webmercator');
     });
 
     it('JP is NOT in COUNTRY_SOURCES (not in Europe dataset)', () => {

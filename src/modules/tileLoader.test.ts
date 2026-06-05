@@ -146,13 +146,14 @@ describe('tileLoader.ts URLs', () => {
         expect(url).toContain('GoogleMapsCompatible');
     });
 
-    it('SHOULD fallback to MapTiler/OpenTopo for Norway (Kartverket disabled)', () => {
+    it('SHOULD use Kartverket for Norway topo tiles', () => {
         state.MAP_SOURCE = 'swisstopo';
         state.MK = 'test_key_valid_12345';
-        // Oslo (10.75°E, 59.91°N) — LOD 13 — Kartverket non activé
+        // Oslo (10.75°E, 59.91°N) — LOD 13
         const url = getColorUrl(4341, 2384, 13);
-        expect(url).not.toContain('statkart.no');
-        expect(url).toContain('maptiler.com');
+        expect(url).toContain('cache.kartverket.no');
+        expect(url).toContain('LAYER=topo');
+        expect(url).toContain('tileMatrixSet=webmercator');
     });
 
     it('should generate correct Overlay URL for Switzerland (polygon-based)', () => {

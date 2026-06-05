@@ -345,10 +345,11 @@
             "germany": "GERMANY",
             "spain": "SPAIN",
             "austria": "AUSTRIA",
+            "norway": "KARTVERK",
             "world": "WORLD",
             "sat": "SAT"
         },
-        "tooltipLOD": "<b>Niveau de détail</b> : zoom et source cartographique actuelle. Swiss = Swisstopo (Suisse), IGN = Géoportail (France), Italy = cartographie italienne, Germany = BKG (Allemagne), Spain = IGN Espagne, Austria = basemap.at (Autriche). LVL = niveau de zoom (1-18)."
+        "tooltipLOD": "<b>Niveau de détail</b> : zoom et source cartographique actuelle. Swiss = Swisstopo (Suisse), IGN = Géoportail (France), Italy = cartographie italienne, Germany = BKG (Allemagne), Spain = IGN Espagne, Austria = basemap.at (Autriche), Kartverket = Norvège. LVL = niveau de zoom (1-18)."
     },
     "upsell": {
         "lod": "🔍 Détail maximum atteint — passez à Pro pour voir jusqu'au LOD 18",

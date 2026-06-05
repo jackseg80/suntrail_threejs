@@ -208,6 +208,9 @@ export class TopStatusBar extends BaseComponent {
                     case 'ES':
                         sourceKey = 'spain';
                         break;
+                    case 'NO':
+                        sourceKey = 'norway';
+                        break;
                 }
             }
 

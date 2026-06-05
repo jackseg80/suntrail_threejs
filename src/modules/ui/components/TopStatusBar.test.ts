@@ -116,6 +116,13 @@ describe('TopStatusBar — LOD label (country mapping)', () => {
         expect(badge?.textContent).toContain('SPAIN');
     });
 
+    it('shows KARTVERK when getCountryCode returns NO', () => {
+        mockGetCountryCode.mockReturnValue('NO');
+        createAndRender();
+        const badge = document.querySelector('.lod-badge');
+        expect(badge?.textContent).toContain('KARTVERK');
+    });
+
     it('shows WORLD when getCountryCode returns unknown country', () => {
         mockGetCountryCode.mockReturnValue('XX');
         createAndRender();

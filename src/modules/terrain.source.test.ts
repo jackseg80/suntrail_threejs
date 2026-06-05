@@ -94,17 +94,17 @@ describe('Terrain Source Keys (v5.29.28)', () => {
         expect(state.MAP_SOURCE).toBe('swisstopo');
     });
 
-    it('SHOULD keep opentopomap for Norway (Kartverket disabled)', () => {
+    it('SHOULD auto-switch to HD source for Norway (Kartverket new CDN)', () => {
         state.hasManualSource = false;
         state.MAP_SOURCE = 'opentopomap';
 
-        // Oslo, Norvège (Kartverket désactivé car endpoint inaccessible)
+        // Oslo, Norvège (Kartverket activé via nouveau CDN cache.kartverket.no)
         const lat = 59.91;
         const lon = 10.75;
 
         autoSelectMapSource(lat, lon);
 
-        expect(state.MAP_SOURCE).toBe('opentopomap');
+        expect(state.MAP_SOURCE).toBe('swisstopo');
     });
 
     it('SHOULD keep opentopomap for country without HD source', () => {
