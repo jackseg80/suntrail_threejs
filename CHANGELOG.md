@@ -1,5 +1,11 @@
 ## [5.56.20] - 2026-06-05
 
+### Added
+- **Norvège (Kartverket) — Nouveau CDN mondial** : Migration de `opencache.statkart.no` (timeout) vers `cache.kartverket.no/v1/service` (KVP, accessible mondialement). Helper `kartverketTopo()` mis à jour, `kartverketSatellite()` supprimée (plus de couche orthophoto sur le nouveau CDN). Activation de l'entrée `NO` dans `COUNTRY_SOURCES` (fallback satellite MapTiler automatique).
+- **TopStatusBar** : Ajout du label `KARTVERK` dans le badge LOD pour la Norvège + i18n 4 langues.
+- **Documentation & Legal** : Kartverket ajouté dans `index.html`, `settings.html`, `legal.html`, `privacy.html`, `STORE_LISTING.md` (4 langues), `MESSAGES_TESTEURS.md`, `FEATURES.md`, `CLAUDE.md`, `ROADMAP.md`, `AI_PERFORMANCE.md`, `MONETIZATION.md`.
+- **Tests** : 12 fichiers mis à jour, 994 tests pass (0 échec).
+
 ### Fixed
 - **Détection GPU Intel intégré sous-estimée** (`performance.ts:81-82`) : les Intel UHD Graphics avec device ID hex (`Intel(R) UHD Graphics (0x0000A788) Direct3D11 vs_5_0 ps_5_0`) ne matchaient pas les regex existantes (`6\d\d`/`5\d\d`). Le GPU tombait au fallback 8+ cores → `balanced`, puis le benchmark le poussait à `performance`. Fix : catch-all Intel intégré (HD/UHD/Graphics, hors Arc) → `balanced`.
 - **Iris Xe classé performance** (`performance.ts`) : GPU intégré Iris Xe classé `performance` (trop haut pour un iGPU). Rétrogradé en `balanced`.

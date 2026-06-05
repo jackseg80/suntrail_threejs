@@ -18,7 +18,7 @@ Simulation solaire 3D unique : planifiez vos randos selon l'ombre et le soleil.
 
 Que vous soyez un promeneur du dimanche cherchant le soleil ou un alpiniste pro anticipant les zones de glace, SunTrail 3D est la seule application qui projette les ombres du soleil en temps réel sur un vrai terrain 3D. 
 
-Cartographie HD officielle : SwissTopo (Suisse), IGN (France), basemap.at (Autriche), BKG (Allemagne), IGN (Espagne). Le monde entier est couvert via OpenTopoMap.
+Cartographie HD officielle : SwissTopo (Suisse), IGN (France), basemap.at (Autriche), BKG (Allemagne), IGN (Espagne), Kartverket (Norvège). Le monde entier est couvert via OpenTopoMap.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 ☀️ EXCLUSIF : LA TIMELINE DU RANDONNEUR (PRO)
@@ -31,7 +31,7 @@ Ne vous demandez plus si vous serez à l'ombre à l'arrivée au col.
 ━━━━━━━━━━━━━━━━━━━━━━━
 🏔️ LE MOTEUR 3D LE PLUS AVANCÉ
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Cartographie Haute Précision : SwissTopo (Suisse), IGN (France), basemap.at (Autriche), BKG (Allemagne), IGN (Espagne), Satellite HD.
+• Cartographie Haute Précision : SwissTopo (Suisse), IGN (France), basemap.at (Autriche), BKG (Allemagne), IGN (Espagne), Kartverket (Norvège), Satellite HD.
 • Immersion totale : Visualisez le relief sous tous les angles avec une fluidité exceptionnelle.
 • Météo en direct : Particules de pluie et neige animées directement sur la carte 3D.
 • Inclinomètre Numérique : Mesurez les pentes en direct pour votre sécurité (anti-avalanche).
@@ -55,7 +55,7 @@ Ne vous demandez plus si vous serez à l'ombre à l'arrivée au col.
 ━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️ INFOS PRATIQUES
 ━━━━━━━━━━━━━━━━━━━━━━━
-SunTrail 3D utilise les données officielles (swisstopo, IGN, basemap.at, BKG, IGN España) conformément à leurs licences open-data. L'application est indépendante de ces entités.
+SunTrail 3D utilise les données officielles (swisstopo, IGN, basemap.at, BKG, IGN España, Kartverket) conformément à leurs licences open-data. L'application est indépendante de ces entités.
 
 Disponible en Français, English, Deutsch et Italiano.
 ```
@@ -80,7 +80,7 @@ Unique 3D solar simulation: plan your hikes based on real shade and sunlight.
 
 Whether you're a casual walker looking for the sun or a pro alpinist avoiding morning ice, SunTrail 3D is the only app that projects real sun shadows onto actual 3D terrain in real-time.
 
-Official HD mapping: SwissTopo (Switzerland), IGN (France), basemap.at (Austria), BKG (Germany), IGN (Spain). Worldwide coverage via OpenTopoMap.
+Official HD mapping: SwissTopo (Switzerland), IGN (France), basemap.at (Austria), BKG (Germany), IGN (Spain), Kartverket (Norway). Worldwide coverage via OpenTopoMap.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 ☀️ EXCLUSIVE: HIKER TIMELINE (PRO)
@@ -93,7 +93,7 @@ Stop guessing if you'll be in the sun when you reach that mountain pass.
 ━━━━━━━━━━━━━━━━━━━━━━━
 🏔️ ADVANCED 3D ENGINE
 ━━━━━━━━━━━━━━━━━━━━━━━
-• High-Precision Maps: SwissTopo (Switzerland), IGN (France), basemap.at (Austria), BKG (Germany), IGN (Spain), HD Satellite.
+• High-Precision Maps: SwissTopo (Switzerland), IGN (France), basemap.at (Austria), BKG (Germany), IGN (Spain), Kartverket (Norway), HD Satellite.
 • Total Immersion: Visualize terrain from any angle with exceptional smoothness.
 • Live Weather: Animated rain and snow particles directly on the 3D map.
 • Digital Inclinometer: Measure slopes in real-time for your safety (avalanche risk).
@@ -117,7 +117,7 @@ Stop guessing if you'll be in the sun when you reach that mountain pass.
 ━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️ INFORMATION
 ━━━━━━━━━━━━━━━━━━━━━━━
-SunTrail 3D uses official data (swisstopo, IGN, basemap.at, BKG, IGN España) according to their open-data licenses. The app is independent of these entities.
+SunTrail 3D uses official data (swisstopo, IGN, basemap.at, BKG, IGN España, Kartverket) according to their open-data licenses. The app is independent of these entities.
 
 Available in English, Français, Deutsch, and Italiano.
 ```
@@ -142,7 +142,7 @@ Einzigartige 3D-Sonnensimulation: Planen Sie Ihre Touren nach Schatten und Sonne
 
 Ob Sie ein Genusswanderer auf der Suche nach Sonne sind oder ein Profi-Alpinist, der morgendliche Eispassagen vermeiden möchte – SunTrail 3D ist die einzige App, die echte Sonnenschatten in Echtzeit auf ein reales 3D-Gelände projiziert.
 
-Offizielle HD-Karten: SwissTopo (Schweiz), IGN (Frankreich), basemap.at (Österreich), BKG (Deutschland), IGN (Spanien). Weltweite Abdeckung via OpenTopoMap.
+Offizielle HD-Karten: SwissTopo (Schweiz), IGN (Frankreich), basemap.at (Österreich), BKG (Deutschland), IGN (Spanien), Kartverket (Norwegen). Weltweite Abdeckung via OpenTopoMap.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 ☀️ EXKLUSIV: DIE WANDERER-TIMELINE (PRO)
@@ -155,7 +155,7 @@ Fragen Sie sich nicht mehr, ob Sie bei der Ankunft am Pass im Schatten stehen we
 ━━━━━━━━━━━━━━━━━━━━━━━
 🏔️ DIE FORTSCHRITTLICHSTE 3D-ENGINE
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Hochpräzise Karten: SwissTopo (Schweiz), IGN (Frankreich), basemap.at (Österreich), BKG (Deutschland), IGN (Spanien), HD-Satellit.
+• Hochpräzise Karten: SwissTopo (Schweiz), IGN (Frankreich), basemap.at (Österreich), BKG (Deutschland), IGN (Spanien), Kartverket (Norwegen), HD-Satellit.
 • Volle Immersion: Visualisieren Sie das Gelände aus jedem Winkel mit außergewöhnlicher Flüssigkeit.
 • Live-Wetter: Animierte Regen- und Schneepartikel direkt auf der 3D-Karte.
 • Digitaler Neigungsmesser: Messen Sie Hangneigungen live für Ihre Sicherheit (Lawinenprävention).
@@ -179,7 +179,7 @@ Fragen Sie sich nicht mehr, ob Sie bei der Ankunft am Pass im Schatten stehen we
 ━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️ INFOS
 ━━━━━━━━━━━━━━━━━━━━━━━
-SunTrail 3D nutzt offizielle Daten (swisstopo, IGN, basemap.at, BKG, IGN España) gemäß deren Open-Data-Lizenzen. Die App ist unabhängig von diesen Stellen.
+SunTrail 3D nutzt offizielle Daten (swisstopo, IGN, basemap.at, BKG, IGN España, Kartverket) gemäß deren Open-Data-Lizenzen. Die App ist unabhängig von diesen Stellen.
 
 Verfügbar in Deutsch, Français, English und Italiano.
 
@@ -203,7 +203,7 @@ Simulazione solare 3D unica: pianifica i tuoi trekking in base a ombre e sole.
 
 Che tu sia un escursionista della domenica in cerca di sole o un alpinista esperto che vuole evitare il ghiaccio mattutino, SunTrail 3D è l'unica app che proietta ombre solari reali in tempo reale su un vero terreno 3D.
 
-Mappatura HD ufficiale: SwissTopo (Svizzera), IGN (Francia), basemap.at (Austria), BKG (Germania), IGN (Spagna). Copertura mondiale via OpenTopoMap.
+Mappatura HD ufficiale: SwissTopo (Svizzera), IGN (Francia), basemap.at (Austria), BKG (Germania), IGN (Spagna), Kartverket (Norvegia). Copertura mondiale via OpenTopoMap.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 ☀️ ESCLUSIVO: LA TIMELINE DELL'ESCURSIONISTA (PRO)
@@ -216,7 +216,7 @@ Non chiederti più se sarai all'ombra quando arriverai al colle.
 ━━━━━━━━━━━━━━━━━━━━━━━
 🏔️ IL MOTORE 3D PIÙ AVANZATO
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Cartografia ad Alta Precisione: SwissTopo (Svizzera), IGN (Francia), basemap.at (Austria), BKG (Germania), IGN (Spagna), Satellite HD.
+• Cartografia ad Alta Precisione: SwissTopo (Svizzera), IGN (Francia), basemap.at (Austria), BKG (Germania), IGN (Spagna), Kartverket (Norvegia), Satellite HD.
 • Immersione totale: Visualizza il rilievo da ogni angolazione con una fluidità eccezionale.
 • Meteo in diretta: Particelle di pioggia e neve animate direttamente sulla mappa 3D.
 • Inclinometro Digitale: Misura le pendenze in tempo reale per la tua sicurezza (prevenzione valanghe).
@@ -240,7 +240,7 @@ Non chiederti più se sarai all'ombra quando arriverai al colle.
 ━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️ INFORMAZIONI
 ━━━━━━━━━━━━━━━━━━━━━━━
-SunTrail 3D utilizza dati ufficiali (swisstopo, IGN, basemap.at, BKG, IGN España) in conformità con le loro licenze open-data. L'applicazione è indipendente da tali enti.
+SunTrail 3D utilizza dati ufficiali (swisstopo, IGN, basemap.at, BKG, IGN España, Kartverket) in conformità con le loro licenze open-data. L'applicazione è indipendente da tali enti.
 
 Disponibile in Italiano, Français, English e Deutsch.
 ```

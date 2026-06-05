@@ -21,7 +21,7 @@ SunTrail utilise un modèle **Freemium avec abonnement**. La sécurité est offe
 | **Enregistrement GPS**| **ILLIMITÉ (Libre)** | **ILLIMITÉ (Libre)** | — |
 | **Import GPX** | 1 tracé max | **Multi-tracés (illimité)** | `TrackSheet.ts` |
 | **Solaire** | Jour actuel (24h) | **Calendrier complet** | `TimelineComponent.ts` |
-| **Cartographie** | SwissTopo / IGN / basemap.at / BKG / IGN España / OSM | **Satellite HD** | `terrain.ts` |
+| **Cartographie** | SwissTopo / IGN / basemap.at / BKG / IGN España / Kartverket / OSM | **Satellite HD** | `terrain.ts` |
 | **Mode Hors-ligne** | 1 zone de 10km² | **Zones illimitées** | `ConnectivitySheet.ts` |
 | **Inclinomètre** | — | **Numérique (° / %)** | `InclinometerWidget.ts`|
 | **Alertes Sécurité** | **Toutes (Avalanche, etc.)** | **Toutes** | (FREE) |

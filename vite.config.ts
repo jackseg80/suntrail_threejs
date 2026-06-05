@@ -93,6 +93,20 @@ export default defineConfig({
                 statuses: [0, 200],
               }
             },
+          },
+          {
+            urlPattern: /^https:\/\/cache\.kartverket\.no\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'kartverket-cache-v5.20',
+              expiration: {
+                maxEntries: 1000,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 jours
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              }
+            },
           }
         ]
       },

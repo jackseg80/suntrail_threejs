@@ -51,8 +51,8 @@
     - [x] **Italie** : Implémentation du moteur OpenTopoMap et détection géographique IT.
     - [x] **Unification Frontalière** : Correction chirurgicale d'Aoste et unification LOD 11.
     - [x] **France** : Stabilisation via MapTiler Z10 (Abandon IGN Geoplateforme pour instabilité).
-     - [x] **Autriche, Allemagne, Espagne** : Sources HD gouvernementales ajoutées (basemap.at, BKG TopPlusOpen, IGN España) (v5.56.0)
-     - [ ] **Autres pays** : Slovénie (GURS), Italie, Norvège (Kartverket), UK (Ordnance Survey). Voir ROADMAP.md.
+     - [x] **Autriche, Allemagne, Espagne, Norvège** : Sources HD gouvernementales ajoutées (basemap.at, BKG TopPlusOpen, IGN España, Kartverket) (v5.56.0/v5.56.20)
+     - [ ] **Autres pays** : Slovénie (GURS), Italie, UK (Ordnance Survey). Voir ROADMAP.md.
 
 ---
 
