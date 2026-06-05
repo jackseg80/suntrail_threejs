@@ -93,8 +93,8 @@ export function updateSunPosition(minutes: number): void {
     if (altDeg > 0) {
         // --- JOUR (incluant Heure Dorée) ---
         const t = Math.sin(pos.altitude);
-        sunIntensity = 1.2 + t * 8.8;
-        ambientIntensity = 0.25 + t * 0.1;
+        sunIntensity = 1.5 + t * 3.5;
+        ambientIntensity = 0.6 + t * 0.1;
         const colorT = Math.min(1, (altDeg + 4) / 10);
         _sunColor.lerpColors(
             _lerpA.setHex(0xff4400),
@@ -114,14 +114,14 @@ export function updateSunPosition(minutes: number): void {
         phi = THREE.MathUtils.lerp(nightPhi, 0.02, t);
         az = THREE.MathUtils.lerp(moonPos.azimuth, pos.azimuth, t);
 
-        sunIntensity = THREE.MathUtils.lerp(nightSunIntensity, 1.2, t);
+        sunIntensity = THREE.MathUtils.lerp(nightSunIntensity, 0.6, t);
         _sunColor.lerpColors(
             _lerpA.setHex(0xadc7ff),
             _lerpB.setHex(0xff4400),
             t
         );
 
-        ambientIntensity = 0.2 + t * 0.05;
+        ambientIntensity = 0.45 + t * 0.1;
         _ambientColor.lerpColors(
             _nightAmbientColor,
             _lerpA.setHex(0xd0d8ff),
@@ -133,7 +133,7 @@ export function updateSunPosition(minutes: number): void {
         az = moonPos.azimuth;
         sunIntensity = nightSunIntensity;
         _sunColor.setHex(0xadc7ff);
-        ambientIntensity = 0.2;
+        ambientIntensity = 0.4;
         _ambientColor.copy(_nightAmbientColor);
     }
 

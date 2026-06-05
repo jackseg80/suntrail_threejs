@@ -19,11 +19,10 @@ export function initEnvironment(scene: THREE.Scene): void {
 
     // 3. Lights (Lumières)
     // Lumière ambiante pour déboucher les ombres
-    state.ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+    state.ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(state.ambientLight);
 
-    // Lumière directionnelle (Soleil)
-    const sunLight = new THREE.DirectionalLight(0xffffff, 6.0);
+    const sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
     sunLight.castShadow = state.SHADOWS;
 
     // Configuration des ombres (v5.31.1)

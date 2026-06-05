@@ -22,10 +22,11 @@ export function initControls(
     const controls = new MapControls(camera, domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.1;
-    controls.screenSpacePanning = false; // Important pour garder le pan sur le plan horizontal
+    controls.screenSpacePanning = false;
     controls.minDistance = 100;
-    controls.maxDistance = 4000000; // v5.28.21 : Augmenté pour permettre le dézoom LOD 6
+    controls.maxDistance = 4000000;
     controls.maxPolarAngle = Math.PI / 2.1;
+    controls.zoomSpeed = 3.0;
 
     // Position initiale : respecte le zoom chargé depuis les réglages (v5.34.2)
     const dist = getDistanceFromZoom(state.ZOOM);

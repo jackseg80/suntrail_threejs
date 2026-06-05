@@ -1,6 +1,6 @@
-# SunTrail — TODO (v5.56.17)
+# SunTrail — TODO (v5.56.22)
 
-> Dernière mise à jour : 2026-06-04
+> Dernière mise à jour : 2026-06-05
 
 ## 🔴 Critique (next release)
 

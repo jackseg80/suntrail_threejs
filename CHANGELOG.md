@@ -1,3 +1,14 @@
+## [5.56.22] - 2026-06-05
+
+### Changed
+- **Tone mapping** : `AgXToneMapping` → `NoToneMapping`. Les tuiles (sRGB) ne sont plus délavées par un tone mapping filmique. Couleurs fidèles à OpenTopoMap original.
+- **Éclairage solaire recalibré** : `sunIntensity` max réduite de 10.0→5.0 avec une courbe plus plate (`1.5 + t*3.5`) pour éviter le crâmage blanc à midi sans voile sombre matin/soir. `ambientIntensity` remontée de 0.25→0.6 pour garder les ombres lisibles.
+- **Zoom molette plus rapide** : `controls.zoomSpeed = 3.0` (×3 vs défaut).
+
+### Fixed
+- **3D surexposé au soleil** : Avec `NoToneMapping`, la DirectionalLight (max 10.0) clippait tout en blanc. Réduction + recalibrage de la courbe d'intensité diurne.
+- **Voile sombre matin/soir** : La base d'intensité à l'aube passée de 0.7→1.5 pour éviter le rendu terne aux heures basses.
+
 ## [5.56.21] - 2026-06-05
 
 ### Changed
