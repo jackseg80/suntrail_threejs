@@ -90,6 +90,7 @@ export async function appInit(): Promise<void> {
     void import('./packManager').then((m) => m.packManager.fetchCatalog());
 
     const savedSettings = loadSettings();
+    let firstLaunch = false;
     if (savedSettings) {
         const AUTO_SOURCES = ['swisstopo'];
         state.hasManualSource = !AUTO_SOURCES.includes(
@@ -101,6 +102,7 @@ export async function appInit(): Promise<void> {
             applyPreset(savedSettings.PERFORMANCE_PRESET);
         }
     } else {
+        firstLaunch = true;
         // Premier démarrage : Benchmark automatique (attendu avant la scène pour éviter un double chargement)
         try {
             await new Promise((resolve) => setTimeout(resolve, 300));
@@ -162,6 +164,26 @@ export async function appInit(): Promise<void> {
 
     // Lancer la scène
     await launchScene();
+
+    // Premier lancement : re-benchmark différé quand le système est stable
+    if (firstLaunch) {
+        setTimeout(async () => {
+            try {
+                const second = await runBenchmark();
+                const firstScore = state.benchmarkResults?.totalScore ?? 0;
+                const jump = firstScore > 0 ? second.totalScore - firstScore : 0;
+                const pct = firstScore > 0 ? Math.round((jump / firstScore) * 100) : 0;
+                if (pct >= 30 && second.recommendedPreset !== state.PERFORMANCE_PRESET) {
+                    applyPreset(second.recommendedPreset);
+                    console.log(`[AppInit] Re-benchmark upgraded ${state.PERFORMANCE_PRESET} → ${second.recommendedPreset.toUpperCase()} (+${pct}%)`);
+                } else {
+                    console.log(`[AppInit] Re-benchmark stable (${second.recommendedPreset.toUpperCase()}, ${pct >= 0 ? '+' : ''}${pct}%)`);
+                }
+            } catch (e) {
+                console.warn('[AppInit] Re-benchmark failed', e);
+            }
+        }, 8000);
+    }
 
     // Hydratation secondaire
     void initSecondaryUI().then(() => {
