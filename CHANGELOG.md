@@ -1,16 +1,12 @@
-## [5.56.20] - 2026-06-05
-
-### Added
-- **Norvège (Kartverket) — Nouveau CDN mondial** : Migration de `opencache.statkart.no` (timeout) vers `cache.kartverket.no/v1/service` (KVP, accessible mondialement). Helper `kartverketTopo()` mis à jour, `kartverketSatellite()` supprimée (plus de couche orthophoto sur le nouveau CDN). Activation de l'entrée `NO` dans `COUNTRY_SOURCES` (fallback satellite MapTiler automatique).
-- **TopStatusBar** : Ajout du label `KARTVERK` dans le badge LOD pour la Norvège + i18n 4 langues.
-- **Documentation & Legal** : Kartverket ajouté dans `index.html`, `settings.html`, `legal.html`, `privacy.html`, `STORE_LISTING.md` (4 langues), `MESSAGES_TESTEURS.md`, `FEATURES.md`, `CLAUDE.md`, `ROADMAP.md`, `AI_PERFORMANCE.md`, `MONETIZATION.md`.
-- **Tests** : 12 fichiers mis à jour, 994 tests pass (0 échec).
+## [5.56.21] - 2026-06-05
 
 ### Fixed
-- **Détection GPU Intel intégré sous-estimée** (`performance.ts:81-82`) : les Intel UHD Graphics avec device ID hex (`Intel(R) UHD Graphics (0x0000A788) Direct3D11 vs_5_0 ps_5_0`) ne matchaient pas les regex existantes (`6\d\d`/`5\d\d`). Le GPU tombait au fallback 8+ cores → `balanced`, puis le benchmark le poussait à `performance`. Fix : catch-all Intel intégré (HD/UHD/Graphics, hors Arc) → `balanced`.
-- **Iris Xe classé performance** (`performance.ts`) : GPU intégré Iris Xe classé `performance` (trop haut pour un iGPU). Rétrogradé en `balanced`.
-- **Benchmark — boucle de rétroaction** (`benchmark.ts:36-39`) : le score de détection statique comptait pour 20% du score total. Un GPU mal identifié comme `balanced` s'amplifiait via le benchmark. Fix : poids réduit à 10% (GPU 75%, CPU 15%).
-- **Benchmark — biais UMA** (`benchmark.ts:48-62`) : `gl.readPixels()` est quasi-gratuit sur les GPU intégrés (architecture UMA : CPU et GPU partagent la même RAM), ce qui gonflait artificiellement le score GPU. Fix : si le GPU est Intel intégré ET la détection statique ≤ `balanced`, cap à `balanced` (jamais `performance`/`ultra`).
+- **OpenTopoMap écrasé par mode auto** (`appInit.ts`) : `opentopomap` retiré de `AUTO_SOURCES`. Le choix manuel OpenTopoMap est maintenant respecté — l'auto-détection ne l'écrase plus au moindre déplacement.
+- **Badge LOD affichait le pays même en OPENTOPO** (`TopStatusBar.ts`) : Ajout du cas `MAP_SOURCE === 'opentopomap'` → badge `OPENTOPO · LVL XX` au lieu de `SWISS · LVL XX`.
+- **getColorUrl ignorait le mode opentopomap** (`tileLoader.ts`) : Ajout d'une branche explicite pour `MAP_SOURCE === 'opentopomap'` — utilise OpenTopoMap directement, sans passer par le fallback MapTiler visuellement identique à SwissTopo.
+- **autoSelectMapSource changeait MAP_SOURCE en opentopomap** (`terrain.ts`) : En mode auto, `MAP_SOURCE` reste toujours `'swisstopo'`. Le fallback vers les sources non-HD est géré en interne par `getColorUrl` via son data-driven `COUNTRY_SOURCES`. Suppression de la manipulation DOM directe (.layer-item) qui entrait en conflit avec le système réactif.
+- **Pack pays Suisse bypassait getColorUrl** (`tileLoader.ts:483`) : Le blob SwissTopo extrait du pack était injecté directement au worker (priorité absolue dans `fetchTile`), ignorant l'URL OpenTopoMap générée par `getColorUrl`. Fix : garde `state.MAP_SOURCE !== 'opentopomap'` — le pack est ignoré quand l'utilisateur a choisi OpenTopoMap.
+- **Packs/PMTiles inaccessibles pour les URLs KVP** (`tileLoader.ts`) : `fetchWithCache` parse désormais les coordonnées de tuile via paramètres explicites `(z, x, y)` au lieu d'une regex sur l'URL (qui échouait sur `?tileMatrix=14&tileRow=4757&...`). Tous les formats d'URL fonctionnent (XYZ, RESTful, KVP).
 
 ### Added
 - **Documentation des correctifs** (`docs/AI_PERFORMANCE.md`) : nouvelle section `1f. Benchmark v2.1 — Intel IGP & UMA Corrections`.

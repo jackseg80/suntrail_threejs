@@ -349,7 +349,7 @@
             "world": "WORLD",
             "sat": "SAT"
         },
-        "tooltipLOD": "<b>Detail level</b>: current zoom level and map source. Swiss = Swisstopo (Switzerland), IGN = Geoportail (France), Italy = Italian mapping, Germany = BKG (Germany), Spain = IGN Spain, Austria = basemap.at (Austria), Kartverket = Norway. LVL = zoom level (1-18)."
+        "tooltipLOD": "<b>Detail level</b>: current zoom level and map source. Swiss = Swisstopo (Switzerland), IGN = Geoportail (France), Italy = Italian mapping, Germany = BKG (Germany), Spain = IGN Spain, Austria = basemap.at (Austria), Kartverket = Norway, Opentopo = OpenTopoMap (world). LVL = zoom level (1-18)."
     },
     "upsell": {
         "lod": "🔍 Maximum detail reached — upgrade to Pro for LOD 18",
