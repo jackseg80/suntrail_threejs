@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { state, PresetType } from './state';
-import { detectBestPreset } from './performance';
+import { detectBestPreset, getGpuInfo } from './performance';
 
 export interface BenchmarkResult {
     cpuScore: number;
@@ -33,9 +33,9 @@ export async function runBenchmark(): Promise<BenchmarkResult> {
     const normalizedCPU = Math.min(cpuRaw * 0.8, 100);
     const normalizedGPU = Math.min(gpuRaw * 5, 100);
 
-    // Pondération : GPU (60%), CPU (20%), Liste GPU (20%)
+    // Pondération : GPU (75%), CPU (15%), Liste GPU (10%)
     const totalScore = Math.round(
-        normalizedCPU * 0.2 + normalizedGPU * 0.6 + baseWeight * 0.2
+        normalizedCPU * 0.15 + normalizedGPU * 0.75 + baseWeight * 0.1
     );
 
     let recommendedPreset: PresetType = 'eco';
@@ -44,6 +44,22 @@ export async function runBenchmark(): Promise<BenchmarkResult> {
     else if (totalScore >= 65)
         recommendedPreset = 'performance'; // S23 et mobiles premium
     else if (totalScore >= 30) recommendedPreset = 'balanced'; // A53 et mobiles moyens
+
+    // Cap : les GPU Intel intégrés (HD/UHD/Iris/Graphics hors Arc) ne peuvent pas dépasser balanced
+    const gpuRenderer = getGpuInfo().renderer.toLowerCase();
+    const isIntelIGP =
+        gpuRenderer.includes('intel') &&
+        (gpuRenderer.includes('hd') ||
+            gpuRenderer.includes('uhd') ||
+            gpuRenderer.includes('iris') ||
+            gpuRenderer.includes('graphics')) &&
+        !gpuRenderer.includes('arc');
+
+    if (isIntelIGP && (basePreset === 'balanced' || basePreset === 'eco')) {
+        if (recommendedPreset === 'ultra' || recommendedPreset === 'performance') {
+            recommendedPreset = 'balanced';
+        }
+    }
 
     const result = {
         cpuScore: Math.round(normalizedCPU),

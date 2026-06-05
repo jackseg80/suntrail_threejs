@@ -58,8 +58,6 @@ export function detectBestPreset(): PresetType {
     if (/gtx\s*9[78]\d/.test(gpu)) return 'performance';
     if (/radeon rx [45][4-6]\d/.test(gpu)) return 'performance';
     if (gpu.includes('radeon') && gpu.includes('r9')) return 'performance';
-    if (gpu.includes('iris') && gpu.includes('xe')) return 'performance';
-
     if (gpu.includes('adreno') && /6[0-9]\d|7[0-2]\d/.test(gpu))
         return 'balanced';
     if (gpu.includes('mali') && /g68|g76|g57|g72/.test(gpu)) return 'balanced';
@@ -80,6 +78,8 @@ export function detectBestPreset(): PresetType {
     )
         return 'balanced';
     if (gpu.includes('iris')) return 'balanced';
+    if (gpu.includes('intel') && (gpu.includes('hd') || gpu.includes('uhd') || gpu.includes('graphics')) && !gpu.includes('arc'))
+        return 'balanced';
     if ((navigator.hardwareConcurrency || 0) >= 8) return 'balanced';
 
     return 'eco';

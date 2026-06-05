@@ -1,12 +1,18 @@
-## [5.56.17] - 2026-06-04
+## [5.56.20] - 2026-06-05
 
 ### Fixed
-- **Tuto mobile — boutons sous la navbar système** (`onboardingTutorial.ts`) : sur les mobiles avec barre de navigation capacitive/physique (Galaxy S8, etc.), les boutons "Passer" et "Suivant" apparaissaient en dessous des boutons système, les rendant inaccessibles. Fix : ajout de 72px de padding-bottom supplémentaire via `@media (max-width: 600px)` dans le `.ob-footer`.
-- **Labels pays manquants dans la top-bar** (`TopStatusBar.ts`) : les pays Allemagne (DE), Autriche (AT) et Espagne (ES) n'étaient pas reconnus et affichaient "WORLD" au lieu de leurs labels respectifs "GERMANY", "AUSTRIA", "SPAIN". Fix : ajout des cas `DE`/`AT`/`ES` dans le switch de `updateLOD()` + clés i18n `topbar.lod.{germany,spain,austria}` dans les 4 locales + tooltip LOD mis à jour.
+- **Détection GPU Intel intégré sous-estimée** (`performance.ts:81-82`) : les Intel UHD Graphics avec device ID hex (`Intel(R) UHD Graphics (0x0000A788) Direct3D11 vs_5_0 ps_5_0`) ne matchaient pas les regex existantes (`6\d\d`/`5\d\d`). Le GPU tombait au fallback 8+ cores → `balanced`, puis le benchmark le poussait à `performance`. Fix : catch-all Intel intégré (HD/UHD/Graphics, hors Arc) → `balanced`.
+- **Iris Xe classé performance** (`performance.ts`) : GPU intégré Iris Xe classé `performance` (trop haut pour un iGPU). Rétrogradé en `balanced`.
+- **Benchmark — boucle de rétroaction** (`benchmark.ts:36-39`) : le score de détection statique comptait pour 20% du score total. Un GPU mal identifié comme `balanced` s'amplifiait via le benchmark. Fix : poids réduit à 10% (GPU 75%, CPU 15%).
+- **Benchmark — biais UMA** (`benchmark.ts:48-62`) : `gl.readPixels()` est quasi-gratuit sur les GPU intégrés (architecture UMA : CPU et GPU partagent la même RAM), ce qui gonflait artificiellement le score GPU. Fix : si le GPU est Intel intégré ET la détection statique ≤ `balanced`, cap à `balanced` (jamais `performance`/`ultra`).
 
 ### Added
-- **Tests TopStatusBar** (`TopStatusBar.test.ts`) : 9 tests pour le mapping country code → label (CH, FR, IT, DE, AT, ES, XX, satellite, zoom).
-- **Tests onboarding mobile** (`onboardingTutorial.test.ts`) : 1 test pour vérifier le `@media` query et le padding 72px sur mobile.
+- **Documentation des correctifs** (`docs/AI_PERFORMANCE.md`) : nouvelle section `1f. Benchmark v2.1 — Intel IGP & UMA Corrections`.
+
+## [5.56.19] - 2026-06-05
+
+### Added
+- Journée photo in Cube — ROADMAP.md section Photography & Light Planning
 
 ## [5.56.16] - 2026-06-04
 

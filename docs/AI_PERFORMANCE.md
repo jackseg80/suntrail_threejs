@@ -39,9 +39,18 @@ Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 
 | Optimization | File | Description |
 | :--- | :--- | :--- |
-| **Micro-Benchmark** | `benchmark.ts` | Fast (500ms) startup test. CPU: 1MB memory-intensive buffer traversal. GPU: 1024x1024 scene with 8 lights + `gl.readPixels` sync. Scores GPU(60%), CPU(20%), StaticBonus(20%). |
-| **Preset Calibration** | `benchmark.ts`, `performance.ts` | Thresholds: Eco (<30), Balanced (30-57), Performance (58-84), Ultra (85+). Manual recalibration enabled in Advanced Settings. |
+| **Micro-Benchmark** | `benchmark.ts` | Fast (500ms) startup test. CPU: 1MB memory-intensive buffer traversal. GPU: 1024x1024 scene with 8 lights + `gl.readPixels` sync. |
+| **Preset Calibration** | `benchmark.ts`, `performance.ts` | Thresholds: Eco (<30), Balanced (30-64), Performance (65-91), Ultra (92+). Weights: GPU 75%, CPU 15%, StaticBonus 10%. |
 | **Adreno 7xx Classification** | `performance.ts` | Adreno 740/750 (S23/S24) classified as Performance, reserved Ultra for high-end Desktop/M-series. |
+
+## 1f. Benchmark v2.1 — Intel IGP & UMA Corrections (v5.56.20)
+
+| Fix | File | Description |
+| :--- | :--- | :--- |
+| **Intel IGP Catch-all** | `performance.ts:81-82` | Nouvelle règle attrapant tous les GPU Intel intégrés (HD, UHD, Iris, Graphics) sans numéro de modèle — les strings ANGLE avec device ID hex (`0x0000A788`) ne matchaient plus les regex `6\d\d`/`5\d\d`. |
+| **Iris Xe downgraded** | `performance.ts` | Iris Xe retiré du tier `performance` (retourne `balanced`). C'est un GPU intégré, pas un discret. |
+| **Static weight reduced** | `benchmark.ts:36-39` | Poids de la détection statique dans le score total réduit de 20% → 10% pour casser la boucle de rétroaction. |
+| **Intel IGP Cap** | `benchmark.ts:48-62` | Si le GPU est Intel intégré ET la détection statique ≤ `balanced`, le benchmark ne peut pas recommander `performance` ou `ultra` (cap à `balanced`). Corrige le biais `gl.readPixels` sur architecture UMA où le transfert CPU↔GPU est quasi-gratuit. |
 
 
 ## 2. Navigation & GPS Logic
