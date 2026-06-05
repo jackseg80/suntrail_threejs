@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.56.24)
+# SunTrail — Guide IA (v5.56.25)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-05 — v5.56.24 : Fix boutons dialog save/cancel + tests.
+> Mis à jour le 2026-06-05 — v5.56.25 : Benchmark fiable + re-benchmark différé.
 
 ## Projet
 

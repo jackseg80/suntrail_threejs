@@ -1,3 +1,9 @@
+## [5.56.25] - 2026-06-05
+
+### Changed
+- **Benchmark plus fiable** : Durées de test doublées (CPU 100→200ms, GPU 150→300ms) + warmup CPU avant mesure + frame warmup GPU. Normalisation GPU ajustée (`*5`→`*2.5`) pour compensation.
+- **Re-benchmark automatique** (`appInit.ts`) : 8s après le lancement de la scène sur premier démarrage, si le score grimpe de ≥30% → upgrade automatique du preset.
+
 ## [5.56.24] - 2026-06-05
 
 ### Fixed
