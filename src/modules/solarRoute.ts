@@ -688,11 +688,19 @@ async function runRouteSolarAnalysis(): Promise<void> {
         );
         if (signal.aborted) return;
 
-        // Ne pas mettre en cache si le terrain n'était pas disponible
-        // → forcera une ré-analyse la prochaine fois
-        if (analysis.terrainAvailable) {
-            _cacheKey = cacheKey;
-            _cachedAnalysis = analysis;
+        // Toujours mettre en cache, même sans terrain → permet au retry
+        // (ligne 667) de détecter quand les données arrivent et re-analyser.
+        _cacheKey = cacheKey;
+        _cachedAnalysis = analysis;
+
+        if (!analysis.terrainAvailable) {
+            // Relancer l'analyse dans 3s si les données terrain arrivent
+            setTimeout(() => {
+                if (hasTerrainData() && !_abortController?.signal.aborted) {
+                    invalidateRouteCache();
+                    scheduleRouteSolarAnalysis(100);
+                }
+            }, 3000);
         }
         _currentAnalysis = analysis;
 
