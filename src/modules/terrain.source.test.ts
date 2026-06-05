@@ -107,17 +107,17 @@ describe('Terrain Source Keys (v5.29.28)', () => {
         expect(state.MAP_SOURCE).toBe('swisstopo');
     });
 
-    it('SHOULD keep opentopomap for country without HD source', () => {
+    it('SHOULD switch to swisstopo (auto mode) even without HD source', () => {
         state.hasManualSource = false;
         state.MAP_SOURCE = 'opentopomap';
 
-        // Rome, Italie (pas encore de source HD native)
+        // Rome, Italie (pas de source HD native — getColorUrl gère le fallback)
         const lat = 41.9;
         const lon = 12.5;
 
         autoSelectMapSource(lat, lon);
 
-        expect(state.MAP_SOURCE).toBe('opentopomap');
+        expect(state.MAP_SOURCE).toBe('swisstopo');
     });
 
     it('SHOULD include MAP_SOURCE in tileCache keys', () => {

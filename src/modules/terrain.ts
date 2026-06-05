@@ -5,10 +5,8 @@ import { isMobileDevice } from './utils';
 import {
     worldToLngLat,
     lngLatToTile,
-    getCountryCode,
     EARTH_CIRCUMFERENCE,
 } from './geo';
-import { COUNTRY_SOURCES } from './tileSources';
 import {
     getTileCacheKey,
     markCacheKeyInactive,
@@ -221,23 +219,13 @@ export function animateTiles(delta: number): boolean {
 export function autoSelectMapSource(lat: number, lon: number): void {
     if (state.hasManualSource || isNaN(lat) || lat === 0) return;
 
-    const code = getCountryCode(lat, lon);
-    let newSource: string = 'opentopomap';
-
-    if (state.ZOOM > 10 && code) {
-        const src = COUNTRY_SOURCES[code];
-        if (src?.colorTopo) {
-            newSource = 'swisstopo';
-        }
-    }
-
-    if (state.MAP_SOURCE !== newSource) {
-        state.MAP_SOURCE = newSource;
-        document.querySelectorAll('.layer-item').forEach((i) => {
-            i.classList.remove('active');
-            if ((i as HTMLElement).dataset.source === newSource)
-                i.classList.add('active');
-        });
+    // En mode auto, MAP_SOURCE est toujours 'swisstopo'.
+    // La source de tuiles reelle est determinee dans getColorUrl (data-driven),
+    // et le badge TopStatusBar affiche le nom du pays via getCountryCode.
+    // On ne manipule plus MAP_SOURCE pour eviter les conflits avec
+    // la selection manuelle (opentopomap, satellite).
+    if (state.MAP_SOURCE !== 'swisstopo') {
+        state.MAP_SOURCE = 'swisstopo';
         if (state.camera && state.controls) {
             updateVisibleTiles(
                 lat,
