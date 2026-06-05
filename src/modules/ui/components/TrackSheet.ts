@@ -109,24 +109,34 @@ export class TrackSheet extends BaseComponent {
             'rec-btn-sheet'
         ) as HTMLButtonElement;
         recBtn?.setAttribute('aria-label', i18n.t('track.aria.rec'));
+        let _saving = false;
         recBtn?.addEventListener('click', async () => {
+            if (_saving) return;
             if (!state.isRecording) {
                 // START
                 await recordingService.toggleRecording();
             } else {
                 // STOP
-                if (state.recordedPoints.length >= 2 && isProActive()) {
-                    const suggestedName =
-                        await recordingService.generateSuggestedName();
-                    const finalName =
-                        await this.showSaveTrackPrompt(suggestedName);
-                    // On arrête et sauvegarde avec le nom choisi
-                    await recordingService.stopRecording(
-                        finalName || suggestedName
-                    );
-                } else {
-                    // Pour les Free ou tracés trop courts, stop direct
-                    await recordingService.stopRecording();
+                _saving = true;
+                try {
+                    if (state.recordedPoints.length >= 2 && isProActive()) {
+                        const suggestedName =
+                            await recordingService.generateSuggestedName();
+                        const finalName =
+                            await this.showSaveTrackPrompt(suggestedName);
+                        if (finalName !== null) {
+                            await recordingService.stopRecording(
+                                finalName || suggestedName
+                            );
+                        } else {
+                            await recordingService.stopRecording();
+                        }
+                    } else {
+                        // Pour les Free ou tracés trop courts, stop direct
+                        await recordingService.stopRecording();
+                    }
+                } finally {
+                    _saving = false;
                 }
             }
             this.updateRecUI();
@@ -327,27 +337,41 @@ export class TrackSheet extends BaseComponent {
             input?.focus();
             input?.select();
 
+            const dismiss = (value: string | null) => {
+                overlay.remove();
+                document.removeEventListener('keydown', onEscape);
+                resolve(value);
+            };
+
             document
                 .getElementById('rec-save-confirm')
                 ?.addEventListener('click', () => {
                     const name = input.value.trim() || suggestedName;
-                    overlay.remove();
-                    resolve(name);
+                    dismiss(name);
                 });
 
             document
                 .getElementById('rec-save-cancel')
                 ?.addEventListener('click', () => {
-                    overlay.remove();
-                    resolve(null);
+                    dismiss(null);
                 });
+
+            // Clic sur le fond = annuler
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) dismiss(null);
+            });
+
+            // Touche Escape = annuler
+            const onEscape = (e: KeyboardEvent) => {
+                if (e.key === 'Escape') dismiss(null);
+            };
+            document.addEventListener('keydown', onEscape);
 
             // Handle Enter key
             input?.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     const name = input.value.trim() || suggestedName;
-                    overlay.remove();
-                    resolve(name);
+                    dismiss(name);
                 }
             });
         });

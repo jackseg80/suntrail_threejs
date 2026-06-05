@@ -1,3 +1,12 @@
+## [5.56.24] - 2026-06-05
+
+### Fixed
+- **Boutons Enregistrer/Annuler bloqués** (`TrackSheet.ts`) : Cancel utilisait `finalName || suggestedName` → null devenait le nom suggéré. Fix : `if (finalName !== null)` + garde anti-double-clic `_saving`.
+
+### Added
+- **Tests showSaveTrackPrompt** (`TrackSheet.test.ts`) : 7 tests unitaires (confirm, cancel, Escape, Entrée, input vide, clic fond, cleanup DOM).
+- **Dialog plus robuste** : Escape dismiss, clic sur fond = annuler, nettoyage des listeners.
+
 ## [5.56.23] - 2026-06-05
 
 ### Changed
