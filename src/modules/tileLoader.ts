@@ -480,7 +480,11 @@ export async function loadTileData(
             const cx = Math.floor(tx / cr);
             const cy = Math.floor(ty / cr);
             // v5.35.2 : N'utiliser les packs color que si on est strictement en zone CH ou FR (évite débordement Italie)
-            const inPackZone = (inCH || inFR) && !inIT;
+            // v5.56.20 : Ne pas utiliser les packs si l'utilisateur a choisi opentopomap manuellement
+            const inPackZone =
+                (inCH || inFR) &&
+                !inIT &&
+                state.MAP_SOURCE !== 'opentopomap';
             if (!blobs.color && inPackZone) {
                 blobs.color = await packManager.getTileFromPacks(
                     cz,
