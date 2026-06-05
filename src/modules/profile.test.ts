@@ -296,7 +296,7 @@ describe("Profil d'altitude (Module Profile)", () => {
             expect(getSlopeCategory(100)).toBe(4);
         });
 
-        it("devrait traiter les descentes sans remplissage (retourne -1)", () => {
+        it('devrait traiter les descentes sans remplissage (retourne -1)', () => {
             expect(getSlopeCategory(-2)).toBe(-1);
             expect(getSlopeCategory(-5)).toBe(-1);
             expect(getSlopeCategory(-10)).toBe(-1);

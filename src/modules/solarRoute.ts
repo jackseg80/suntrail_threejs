@@ -296,11 +296,7 @@ async function analyzeRouteSolar(
         await new Promise<void>((res) => setTimeout(res, 0));
     }
 
-    return buildAnalysis(
-        results,
-        mode,
-        getAnalysisTerrainHits() > 0
-    );
+    return buildAnalysis(results, mode, getAnalysisTerrainHits() > 0);
 }
 
 export function buildAnalysis(

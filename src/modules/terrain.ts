@@ -2,11 +2,7 @@ import * as THREE from 'three';
 import { disposeObject } from './memory';
 import { state, isProActive } from './state';
 import { isMobileDevice } from './utils';
-import {
-    worldToLngLat,
-    lngLatToTile,
-    EARTH_CIRCUMFERENCE,
-} from './geo';
+import { worldToLngLat, lngLatToTile, EARTH_CIRCUMFERENCE } from './geo';
 import {
     getTileCacheKey,
     markCacheKeyInactive,

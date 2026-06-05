@@ -78,7 +78,13 @@ export function detectBestPreset(): PresetType {
     )
         return 'balanced';
     if (gpu.includes('iris')) return 'balanced';
-    if (gpu.includes('intel') && (gpu.includes('hd') || gpu.includes('uhd') || gpu.includes('graphics')) && !gpu.includes('arc'))
+    if (
+        gpu.includes('intel') &&
+        (gpu.includes('hd') ||
+            gpu.includes('uhd') ||
+            gpu.includes('graphics')) &&
+        !gpu.includes('arc')
+    )
         return 'balanced';
     if ((navigator.hardwareConcurrency || 0) >= 8) return 'balanced';
 

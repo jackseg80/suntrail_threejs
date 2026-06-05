@@ -746,8 +746,7 @@ export class SolarProbeSheet extends BaseComponent {
             warnSection.style.cssText =
                 'background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-md); padding:var(--space-4); margin:var(--space-3) 0; text-align:center;';
             const warnText = document.createElement('div');
-            warnText.style.cssText =
-                'font-size:13px; color:var(--text-2);';
+            warnText.style.cssText = 'font-size:13px; color:var(--text-2);';
             warnText.textContent = i18n.t('solarRoute.status.noTerrain');
             warnSection.appendChild(warnText);
             section.appendChild(warnSection);
@@ -884,10 +883,7 @@ export class SolarProbeSheet extends BaseComponent {
         };
 
         addCard(i18n.t('solarRoute.stat.sunPct'), `${routeData.sunPct}%`);
-        addCard(
-            i18n.t('solarRoute.stat.nightPct'),
-            `${routeData.nightPct}%`
-        );
+        addCard(i18n.t('solarRoute.stat.nightPct'), `${routeData.nightPct}%`);
         addCard(
             i18n.t('solarRoute.stat.sunKm'),
             `${routeData.sunExposedKm.toFixed(1)} km`

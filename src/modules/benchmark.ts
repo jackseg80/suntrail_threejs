@@ -56,7 +56,10 @@ export async function runBenchmark(): Promise<BenchmarkResult> {
         !gpuRenderer.includes('arc');
 
     if (isIntelIGP && (basePreset === 'balanced' || basePreset === 'eco')) {
-        if (recommendedPreset === 'ultra' || recommendedPreset === 'performance') {
+        if (
+            recommendedPreset === 'ultra' ||
+            recommendedPreset === 'performance'
+        ) {
             recommendedPreset = 'balanced';
         }
     }

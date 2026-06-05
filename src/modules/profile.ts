@@ -296,8 +296,7 @@ function buildSlopeAreaSVG(
             if (groupEnd > groupStart && currentCat >= 0) {
                 let pathD = '';
                 for (let j = groupStart; j <= groupEnd; j++) {
-                    const x =
-                        (profileData[j].dist / maxDist) * width;
+                    const x = (profileData[j].dist / maxDist) * width;
                     const y =
                         height -
                         (padBottom +
@@ -305,10 +304,8 @@ function buildSlopeAreaSVG(
                                 usableHeight);
                     pathD += `${j === groupStart ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)} `;
                 }
-                const lastX =
-                    (profileData[groupEnd].dist / maxDist) * width;
-                const firstX =
-                    (profileData[groupStart].dist / maxDist) * width;
+                const lastX = (profileData[groupEnd].dist / maxDist) * width;
+                const firstX = (profileData[groupStart].dist / maxDist) * width;
                 pathD += `L ${lastX.toFixed(1)} ${botY} L ${firstX.toFixed(1)} ${botY} Z`;
 
                 paths += `<path d="${pathD}" fill="${SLOPE_CATEGORIES[currentCat].color}" fill-opacity="0.55" shape-rendering="crispEdges"/>`;
