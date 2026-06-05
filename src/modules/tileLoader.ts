@@ -327,6 +327,17 @@ export function getColorUrl(tx: number, ty: number, zoom: number): string {
         return `https://${sub}.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`;
     }
 
+    // --- MODE OPENTOPOMAP (manuel) ---
+    // L'utilisateur a explicitement choisi OpenTopoMap → on l'utilise toujours,
+    // sans passer par MapTiler (qui lui ressemble trop visuellement)
+    if (state.MAP_SOURCE === 'opentopomap') {
+        if (zoom <= 17) {
+            const sub = ['a', 'b', 'c'][(tx + ty) % 3];
+            return `https://${sub}.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`;
+        }
+        return `https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`;
+    }
+
     // Swisstopo / Topo (Auto) : data-driven via COUNTRY_SOURCES
     if (state.MAP_SOURCE === 'swisstopo') {
         let code = getCountryAtTile(tx, ty, zoom, 3);

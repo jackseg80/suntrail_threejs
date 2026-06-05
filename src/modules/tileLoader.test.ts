@@ -57,12 +57,19 @@ describe('tileLoader.ts URLs', () => {
 
     it('should generate correct Color URL for OpenTopoMap (Global Fallback)', () => {
         state.MAP_SOURCE = 'opentopomap';
-        state.MK = '';
+        state.MK = 'test_key_valid_12345';
         const url = getColorUrl(0, 0, 11);
         expect(url).toContain('opentopomap.org');
+        expect(url).not.toContain('maptiler.com');
 
         const url12 = getColorUrl(0, 0, 12);
         expect(url12).toContain('opentopomap.org');
+        expect(url12).not.toContain('maptiler.com');
+
+        // Sans clé API
+        state.MK = '';
+        const urlNoKey = getColorUrl(0, 0, 13);
+        expect(urlNoKey).toContain('opentopomap.org');
     });
 
     it('should generate correct Color URL for SwissTopo (when inside CH) — polygon-based', () => {

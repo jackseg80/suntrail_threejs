@@ -138,6 +138,14 @@ describe('TopStatusBar — LOD label (country mapping)', () => {
         expect(badge?.textContent).toContain('SAT');
     });
 
+    it('shows OPENTOPO when MAP_SOURCE is opentopomap', () => {
+        state.MAP_SOURCE = 'opentopomap';
+        mockGetCountryCode.mockReturnValue('CH');
+        createAndRender();
+        const badge = document.querySelector('.lod-badge');
+        expect(badge?.textContent).toContain('OPENTOPO');
+    });
+
     it('shows zoom level in badge', () => {
         state.ZOOM = 14.7;
         mockGetCountryCode.mockReturnValue('CH');

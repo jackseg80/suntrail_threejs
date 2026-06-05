@@ -182,7 +182,9 @@ export class TopStatusBar extends BaseComponent {
         if (this.lodBadge) {
             let sourceKey = 'world';
 
-            if (state.MAP_SOURCE === 'satellite') {
+            if (state.MAP_SOURCE === 'opentopomap') {
+                sourceKey = 'opentopo';
+            } else if (state.MAP_SOURCE === 'satellite') {
                 sourceKey = 'sat';
             } else {
                 const lat = state.TARGET_LAT;
