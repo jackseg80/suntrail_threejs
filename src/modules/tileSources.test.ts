@@ -101,9 +101,8 @@ describe('tileSources — URL builders', () => {
 
     it('maptilerTopo includes api key as query param', () => {
         const url = maptilerTopo(10, 100, 200, 'test-key-123');
-        expect(url).toContain('api.maptiler.com');
-        expect(url).toContain('topo-v2');
-        expect(url).toContain('?key=test-key-123');
+        expect(url).toContain('maptiler.com/maps/outdoor');
+        expect(url).toContain('key=test-key-123');
     });
 
     it('maptilerSatellite includes api key as query param', () => {

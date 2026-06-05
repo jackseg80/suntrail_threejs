@@ -42,8 +42,8 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
            │  (si trouvé dans plage zoom)
            │  → HD source (SwissTopo, IGN, Kartverket...)
            │
-           └─ fallback → MapTiler topo-v2 (si clé API)
-                         → OpenTopoMap (si LOD ≤ 17)
+           └─ fallback → OpenTopoMap (LOD ≤ 17, gratuit, optimisé rando)
+                         → MapTiler outdoor (si clé API)
                          → OpenStreetMap
     ```
   - **Flux d'élévation (`getElevationUrl`)** : MapTiler Terrain-RGB (sourceZoom = min(zoom, 14)). Sans clé → tuile plate.

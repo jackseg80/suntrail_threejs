@@ -90,7 +90,7 @@ export function maptilerTopo(
     y: number,
     apiKey: string
 ): string {
-    return `https://api.maptiler.com/maps/topo-v2/256/${z}/${x}/${y}@2x.webp?key=${apiKey}`;
+    return `https://api.maptiler.com/maps/outdoor/256/${z}/${x}/${y}@2x.webp?key=${apiKey}`;
 }
 
 export function maptilerSatellite(

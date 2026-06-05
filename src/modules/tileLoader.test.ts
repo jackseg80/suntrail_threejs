@@ -101,12 +101,12 @@ describe('tileLoader.ts URLs', () => {
         expect(url).toContain('ch.swisstopo.pixelkarte-farbe');
     });
 
-    it('should prioritize Italy over France', () => {
+    it('should prioritize OpenTopoMap over MapTiler for Italy (no HD)', () => {
         state.MAP_SOURCE = 'swisstopo';
         // Aoste (Italie à 7.34E) — détecté comme IT par les polygones Natural Earth
-        // IT n'a pas de source HD native → fallback global (MapTiler)
+        // IT n'a pas de source HD native → fallback OpenTopoMap (prioritaire sur MapTiler)
         const url = getColorUrl(4263, 2922, 13);
-        expect(url).toContain('maptiler.com');
+        expect(url).toContain('opentopomap.org');
     });
 
     it('SHOULD use basemap.at for Austrian tiles in Topo mode', () => {

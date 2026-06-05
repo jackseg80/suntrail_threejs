@@ -372,13 +372,14 @@ export function getColorUrl(tx: number, ty: number, zoom: number): string {
         }
     }
 
-    // Fallback Topo Global (MapTiler > OpenTopoMap > OSM)
-    if (hasKey)
-        return `https://api.maptiler.com/maps/topo-v2/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
+    // Fallback Topo Global (OpenTopoMap > MapTiler outdoor > OSM)
+    // OpenTopoMap est gratuit et optimise rando → prioritaire sur MapTiler
     if (zoom <= 17) {
         const sub = ['a', 'b', 'c'][(tx + ty) % 3];
         return `https://${sub}.tile.opentopomap.org/${zoom}/${tx}/${ty}.png`;
     }
+    if (hasKey)
+        return `https://api.maptiler.com/maps/outdoor/256/${zoom}/${tx}/${ty}@2x.webp?key=${state.MK}`;
     return `https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`;
 }
 
