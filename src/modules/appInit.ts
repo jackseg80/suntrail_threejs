@@ -91,7 +91,7 @@ export async function appInit(): Promise<void> {
 
     const savedSettings = loadSettings();
     if (savedSettings) {
-        const AUTO_SOURCES = ['swisstopo', 'opentopomap'];
+        const AUTO_SOURCES = ['swisstopo'];
         state.hasManualSource = !AUTO_SOURCES.includes(
             savedSettings.MAP_SOURCE
         );

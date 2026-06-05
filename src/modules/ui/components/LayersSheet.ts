@@ -32,7 +32,7 @@ export class LayersSheet extends BaseComponent {
                         return;
                     }
                     state.MAP_SOURCE = source;
-                    state.hasManualSource = true;
+                    state.hasManualSource = source !== 'swisstopo';
                     void haptic('light');
                     saveSettings();
                     refreshTerrain();
