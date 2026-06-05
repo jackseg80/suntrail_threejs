@@ -1,3 +1,8 @@
+## [5.56.23] - 2026-06-05
+
+### Changed
+- **Filtrage textures sans mipmap** : `colorTex` et `overlayTex` passent de `LinearMipmapLinearFilter` + mipmaps (défaut Three.js, flou) à `LinearFilter` sans mipmap. Texte et lignes nettement plus nets en 2D comme en 3D.
+
 ## [5.56.22] - 2026-06-05
 
 ### Changed

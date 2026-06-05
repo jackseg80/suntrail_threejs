@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.56.22)
+# SunTrail — Guide IA (v5.56.23)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-05 — v5.56.22 : NoToneMapping + recalibrage éclairage + zoomSpeed 3.0.
+> Mis à jour le 2026-06-05 — v5.56.23 : Filtrage textures sans mipmap (tuiles plus nettes).
 
 ## Projet
 
