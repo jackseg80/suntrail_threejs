@@ -190,40 +190,31 @@ export function updateStorageUI() {
 
 /**
  * Récupère une ressource via le cache persistant ou le réseau.
+ * Si z, x, y sont fournis, les chutes PMTiles, country packs et embedded overview
+ * fonctionnent quelle que soit la forme de l'URL (XYZ, KVP, RESTful...).
  */
 export async function fetchWithCache(
     url: string,
-    usePersistentCache: boolean = false
+    usePersistentCache: boolean = false,
+    z?: number,
+    x?: number,
+    y?: number
 ): Promise<Blob | null> {
-    // Les sources locales (PMTiles upload, country packs) sont consultées EN PREMIER,
-    // avant la garde offline — elles fonctionnent sans réseau.
-    const tileMatch = url.match(
-        /\/(\d+)\/(\d+)\/(\d+)(?:@2x)?\.(jpeg|jpg|png|webp)/i
-    );
+    const hasCoords = z !== undefined && x !== undefined && y !== undefined;
 
     // --- PMTILES INTERCEPTION (v5.7.0) ---
-    if (localPMTiles && tileMatch) {
-        const pmBlob = await getTileFromPMTiles(
-            parseInt(tileMatch[1]),
-            parseInt(tileMatch[2]),
-            parseInt(tileMatch[3])
-        );
+    if (localPMTiles && hasCoords) {
+        const pmBlob = await getTileFromPMTiles(z!, x!, y!);
         if (pmBlob) {
             if (state.DEBUG_MODE)
-                console.log(
-                    `[PMTiles] HIT pour ${tileMatch[1]}/${tileMatch[2]}/${tileMatch[3]}`
-                );
+                console.log(`[PMTiles] HIT pour ${z}/${x}/${y}`);
             return pmBlob;
         }
     }
 
     // --- COUNTRY PACKS INTERCEPTION (v5.21.0) — fonctionne offline ---
-    if (packManager.hasMountedPacks() && tileMatch) {
-        const packBlob = await packManager.getTileFromPacks(
-            parseInt(tileMatch[1]),
-            parseInt(tileMatch[2]),
-            parseInt(tileMatch[3])
-        );
+    if (packManager.hasMountedPacks() && hasCoords) {
+        const packBlob = await packManager.getTileFromPacks(z!, x!, y!);
         if (packBlob) return packBlob;
     }
 
@@ -241,18 +232,12 @@ export async function fetchWithCache(
             }
         }
         // Fallback embedded overview (LOD ≤ 11) — avant le réseau
-        if (embeddedPMTiles && tileMatch) {
-            const ez = parseInt(tileMatch[1]);
-            if (ez <= EMBEDDED_MAX_ZOOM) {
-                // v5.29.39 : Ne pas utiliser le fallback Topo si on est en mode satellite et online
+        if (embeddedPMTiles && hasCoords) {
+            if (z! <= EMBEDDED_MAX_ZOOM) {
                 const useLocal =
                     state.MAP_SOURCE !== 'satellite' || state.IS_OFFLINE;
                 if (useLocal) {
-                    const blob = await getTileFromEmbedded(
-                        ez,
-                        parseInt(tileMatch[2]),
-                        parseInt(tileMatch[3])
-                    );
+                    const blob = await getTileFromEmbedded(z!, x!, y!);
                     if (blob) return blob;
                 }
             }
@@ -578,23 +563,23 @@ export async function downloadVisibleZone(
     onProgress: (done: number, total: number) => void
 ): Promise<boolean> {
     const capped = tiles.slice(0, 300);
-    const urls: string[] = [];
+    const queue: { url: string; z: number; x: number; y: number }[] = [];
     for (const { tx, ty, zoom } of capped) {
         const colorUrl = getColorUrl(tx, ty, zoom);
         const { url: elevUrl } = getElevationUrl(tx, ty, zoom, false);
         const overlayUrl = getOverlayUrl(tx, ty, zoom);
-        urls.push(colorUrl);
-        if (elevUrl) urls.push(elevUrl);
-        if (overlayUrl) urls.push(overlayUrl);
+        queue.push({ url: colorUrl, z: zoom, x: tx, y: ty });
+        if (elevUrl) queue.push({ url: elevUrl, z: zoom, x: tx, y: ty });
+        if (overlayUrl) queue.push({ url: overlayUrl, z: zoom, x: tx, y: ty });
     }
 
-    const total = urls.length;
+    const total = queue.length;
     let done = 0;
     let successCount = 0;
 
-    for (const url of urls) {
+    for (const { url, z, x, y } of queue) {
         try {
-            const blob = await fetchWithCache(url, true);
+            const blob = await fetchWithCache(url, true, z, x, y);
             if (blob) successCount++;
         } catch (_) {
             /* silence */

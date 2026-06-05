@@ -32,7 +32,7 @@ describe('TileLoader Integration with Packs', () => {
         );
 
         const url = 'https://tile.openstreetmap.org/12/2133/1450.png';
-        const result = await fetchWithCache(url);
+        const result = await fetchWithCache(url, false, 12, 2133, 1450);
 
         // Vérifier que packManager a été consulté
         expect(packManager.getTileFromPacks).toHaveBeenCalledWith(
@@ -57,7 +57,7 @@ describe('TileLoader Integration with Packs', () => {
         );
 
         const url = 'https://tile.openstreetmap.org/12/2133/1450.png';
-        const result = await fetchWithCache(url);
+        const result = await fetchWithCache(url, false, 12, 2133, 1450);
 
         // Même en offline, le pack doit servir la tuile
         expect(packManager.getTileFromPacks).toHaveBeenCalled();
@@ -77,7 +77,7 @@ describe('TileLoader Integration with Packs', () => {
         (global.fetch as any).mockResolvedValue(mockResponse);
 
         const url = 'https://tile.openstreetmap.org/12/2133/1450.png';
-        const result = await fetchWithCache(url);
+        const result = await fetchWithCache(url, false, 12, 2133, 1450);
 
         // Vérifier que packManager a été consulté
         expect(packManager.getTileFromPacks).toHaveBeenCalled();
@@ -95,7 +95,7 @@ describe('TileLoader Integration with Packs', () => {
         );
 
         const url = 'https://tile.openstreetmap.org/12/2133/1450.png';
-        const result = await fetchWithCache(url);
+        const result = await fetchWithCache(url, false, 12, 2133, 1450);
 
         expect(result).toBeNull();
         expect(global.fetch).not.toHaveBeenCalled();
