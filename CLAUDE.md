@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.57.0)
+# SunTrail — Guide IA (v5.57.1)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-06 — v5.57.0 : Selection visuelle de zone offline + slider LOD.
+> Mis à jour le 2026-06-06 — v5.57.1 : Cadre 50%, comptage securise, lock Free.
 
 ## Projet
 

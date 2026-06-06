@@ -1,3 +1,12 @@
+## [5.57.1] - 2026-06-06
+
+### Changed
+- **Cadre reduit a 50% du viewport** (`ZoneSelector.ts`) : Le rectangle de selection est desormais centre a l'ecran avec des marges de ~25%, le rendant toujours visible en plein ecran. S'adapte automatiquement au format portrait/paysage via NDC.
+- **Comptage securise sans OOM** (`ZoneSelector.ts`) : `computeZoneSelection` compte d'abord les tuiles par arithmetique avant d'allouer les tableaux. Plus de crash en dezoomant avec slider max a LOD18.
+- **Bouton lock Free** (`ConnectivitySheet.ts`) : Si zone deja utilisee et non-Pro, le bouton affiche un cadenas 🔒 grise. Clic → upgrade prompt.
+- **tooLarge assoupli** : Les LODs excedentaires sont ignores, les autres restent telechargeables. Message "Certains niveaux ignores (limite 2000 tuiles)".
+- **Tests** : 2 nouveaux tests de verification du cadre de telechargement. Total : 1023 tests (99 fichiers).
+
 ## [5.57.0] - 2026-06-06
 
 ### Added
