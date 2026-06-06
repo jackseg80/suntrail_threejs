@@ -1,24 +1,25 @@
 import { BaseComponent } from '../core/BaseComponent';
-import { Capacitor } from '@capacitor/core';
 import { state, isProActive } from '../../state';
 import {
     deleteTerrainCache,
     setPMTilesSource,
-    downloadVisibleZone,
     getOfflineZoneCount,
-    incrementOfflineZoneCount,
-    estimateZoneSizeMB,
 } from '../../tileLoader';
-import { activeTiles } from '../../terrain';
-import { showUpgradePrompt } from '../../iap';
 import { showToast } from '../../toast';
 import { sheetManager } from '../core/SheetManager';
 import { resetTerrain, updateVisibleTiles } from '../../terrain';
 import { SharedAPIKeyComponent } from './SharedAPIKeyComponent';
-import { haptic } from '../../haptics';
 import { i18n } from '../../../i18n/I18nService';
 import { setManualOffline } from '../../networkMonitor';
 import templateHTML from '../templates/connectivity.html?raw';
+import { ZoneOverlay } from '../../ZoneOverlay';
+import { ZoneSelectToolbar } from './ZoneSelectToolbar';
+import { showUpgradePrompt } from '../../iap';
+import { getCachedZones, removeCachedZone } from '../../cachedZones';
+import { eventBus } from '../../eventBus';
+import { flyTo, getDistanceFromZoom } from '../../cameraManager';
+import { lngLatToWorld } from '../../geo';
+import { getAltitudeAt } from '../../analysis';
 
 export class ConnectivitySheet extends BaseComponent {
     constructor() {
@@ -61,82 +62,26 @@ export class ConnectivitySheet extends BaseComponent {
             showToast(i18n.t('connectivity.toast.cacheCleared'));
         });
 
-        // Zones offline non disponibles sur web (implémentation native OPFS uniquement)
-        if (!Capacitor.isNativePlatform()) {
-            const dlZoneBtn = this.element.querySelector<HTMLElement>(
-                '#conn-download-zone'
-            );
-            if (dlZoneBtn) dlZoneBtn.style.display = 'none';
-        }
-
         const downloadZoneBtn = this.element.querySelector(
             '#conn-download-zone'
         ) as HTMLButtonElement | null;
 
-        /** Met à jour le libellé du bouton avec le nombre de tuiles visibles et la taille estimée. */
-        const syncDownloadBtnLabel = () => {
-            const span = downloadZoneBtn?.querySelector('span');
-            if (!span) return;
-            const count = activeTiles.size;
-            if (count === 0) {
-                span.textContent = i18n.t('connectivity.btn.downloadZone');
-                return;
-            }
-            const size = estimateZoneSizeMB(count);
-            const zonesUsed = getOfflineZoneCount();
-            const limitStr = isProActive()
-                ? ''
-                : ` · ${zonesUsed}/1 ${i18n.t('connectivity.label.zonesUsed') || 'zone utilisée'}`;
-            span.textContent = `📥 ${count} ${i18n.t('connectivity.label.tiles') || 'tuiles'} · ${size}${limitStr}`;
-        };
-
-        // Met à jour le label quand le zoom change (= nouvelles tuiles à l'écran)
-        this.addSubscription(state.subscribe('ZOOM', syncDownloadBtnLabel));
-        this.addSubscription(state.subscribe('isPro', syncDownloadBtnLabel));
-        this.addSubscription(state.subscribe('trialEnd', syncDownloadBtnLabel));
-        syncDownloadBtnLabel();
-
         downloadZoneBtn?.addEventListener('click', async () => {
             if (!downloadZoneBtn) return;
 
-            // Gate Pro : 1 zone gratuite, illimité pour les Pro
             if (!isProActive() && getOfflineZoneCount() >= 1) {
                 showUpgradePrompt('offline_zones');
                 return;
             }
 
-            const tiles = Array.from(activeTiles.values()).map((t) => ({
-                tx: t.tx,
-                ty: t.ty,
-                zoom: t.zoom,
-            }));
-            if (tiles.length === 0) {
-                showToast('Aucune tuile visible à télécharger.');
-                return;
-            }
+            sheetManager.close();
+            state.zoneSelectionActive = true;
 
-            downloadZoneBtn.classList.add('btn-loading');
-            downloadZoneBtn.setAttribute('aria-busy', 'true');
-            downloadZoneBtn.disabled = true;
-            const span = downloadZoneBtn.querySelector('span');
-
-            try {
-                await downloadVisibleZone(tiles, (done, total) => {
-                    if (span)
-                        span.textContent = `⏬ ${Math.round((done / total) * 100)}%…`;
-                });
-                incrementOfflineZoneCount();
-                void haptic('success');
-                showToast('✅ Zone téléchargée !');
-                syncDownloadBtnLabel();
-            } catch (e) {
-                console.warn('[OfflineZone] Download error:', e);
-                syncDownloadBtnLabel();
-            } finally {
-                downloadZoneBtn.classList.remove('btn-loading');
-                downloadZoneBtn.removeAttribute('aria-busy');
-                downloadZoneBtn.disabled = false;
-            }
+            const overlay = new ZoneOverlay();
+            state.zoneOverlay = overlay;
+            const toolbar = new ZoneSelectToolbar();
+            toolbar.setOverlay(overlay);
+            toolbar.hydrate();
         });
 
         // PMTiles
@@ -196,6 +141,85 @@ export class ConnectivitySheet extends BaseComponent {
         // Initial update
         this.updateNetworkStatus();
         this.updateGPSInfo();
+
+        // Cached zones list
+        this.renderCachedZones();
+        const onSheetOpened = ({ id }: { id: string }) => {
+            if (id === 'connectivity') {
+                this.renderCachedZones();
+            }
+        };
+        eventBus.on('sheetOpened', onSheetOpened);
+        this.addSubscription(() => eventBus.off('sheetOpened', onSheetOpened));
+    }
+
+    private renderCachedZones(): void {
+        const container = this.element?.querySelector('#conn-cached-zones');
+        if (!container) return;
+
+        const zones = getCachedZones();
+        container.classList.toggle('visible', zones.length > 0);
+        container.innerHTML = '';
+
+        if (zones.length === 0) return;
+
+        const title = document.createElement('div');
+        title.className = 'setting-label';
+        title.style.cssText = 'font-size:11px;color:var(--text-3);margin-bottom:4px';
+        title.textContent = `💾 Zones en cache (${zones.length})`;
+        container.appendChild(title);
+
+        for (const zone of zones) {
+            const item = document.createElement('div');
+            item.className = 'cached-zone-item';
+
+            const info = document.createElement('div');
+            info.className = 'cached-zone-info';
+
+            const label = document.createElement('div');
+            label.className = 'cached-zone-label';
+            label.textContent = zone.label;
+
+            const detail = document.createElement('div');
+            detail.className = 'cached-zone-detail';
+            detail.textContent = `${zone.tileCount} tuiles · ${zone.sizeMB} · ${new Date(zone.timestamp).toLocaleDateString()}`;
+
+            info.appendChild(label);
+            info.appendChild(detail);
+
+            const del = document.createElement('button');
+            del.className = 'cached-zone-delete';
+            del.textContent = '✕';
+            del.setAttribute('aria-label', `Supprimer ${zone.label}`);
+            del.addEventListener('click', (e) => {
+                e.stopPropagation();
+                removeCachedZone(zone.id);
+                this.renderCachedZones();
+            });
+
+            item.addEventListener('click', () => {
+                const centerLat = (zone.bbox.minLat + zone.bbox.maxLat) / 2;
+                const centerLon = (zone.bbox.minLon + zone.bbox.maxLon) / 2;
+                const world = lngLatToWorld(centerLon, centerLat, state.originTile);
+                const elevation = getAltitudeAt(world.x, world.z);
+                const distance = getDistanceFromZoom(zone.maxLod);
+
+                sheetManager.close();
+                flyTo(world.x, world.z, elevation || 0, distance).then(() => {
+                    const overlay = new ZoneOverlay();
+                    overlay.show(zone.bbox, 'cached');
+                    state.zoneOverlay = overlay;
+                    setTimeout(() => {
+                        overlay.hide();
+                        if (state.zoneOverlay === overlay) state.zoneOverlay = null;
+                    }, 4000);
+                });
+            });
+
+            item.appendChild(info);
+            item.appendChild(del);
+            container.appendChild(item);
+        }
     }
 
     private updateNetworkStatus() {

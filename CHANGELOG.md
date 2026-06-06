@@ -1,3 +1,15 @@
+## [5.57.0] - 2026-06-06
+
+### Added
+- **Selection visuelle de zone offline** (`ZoneSelector.ts`, `ZoneOverlay.ts`, `ZoneSelectToolbar.ts`) : Nouveau mode de selection interactif avec rectangle vert semi-transparent sur le terrain, bordures blanches en mesh, et toolbar flottante avec slider LOD min-max (LOD 5→18).
+- **Viewport frustum** : La zone selectionnee correspond exactement a ce qui est visible a l'ecran (intersection frustum camera + plan du sol), pas a l'ensemble des tuiles chargees.
+- **Limites intelligentes** : 3 paliers — warning orange a 500 tuiles, hard warning a 1000, blocage a 2000 tuiles totales (tous LOD confondus).
+- **Cached zones** (`cachedZones.ts`) : Stockage en localStorage des zones telechargees (bbox, plage LOD, taille, date). Affichage dans le panneau Systeme & Donnees.
+- **Fly to cached zone** : Clic sur une zone en cache → la camera vole au centre de la zone au LOD max avec overlay bleu.
+- **Feedback visuel pendant download** : Opacite du calque augmentee (0.08→0.25) pendant le telechargement, puis passage en bleu (cached) pendant 3s.
+- **Tests** : `ZoneSelector.test.ts` (10 tests — bbox, comptage, paliers). `cachedZones.test.ts` (6 tests — CRUD localStorage).
+- **Bouton reordonne** : Telecharger Zone avant Vider le Cache dans le panneau.
+
 ## [5.56.26] - 2026-06-06
 
 ### Added

@@ -393,6 +393,17 @@
             "done": "⬇️ Zone downloaded"
         }
     },
+    "zoneSelect": {
+        "currentZone": "Visible zone",
+        "total": "Tiles to download",
+        "totalLODs": "Total (LOD",
+        "lodRange": "LOD Range",
+        "cancel": "Cancel",
+        "download": "Download",
+        "warning": "Over 500 tiles - long download",
+        "hardWarning": "Over 1000 tiles - very long download",
+        "tooLarge": "Over 2000 tiles - zone too large"
+    },
     "network": {
         "toast": {
             "online": "Back online",

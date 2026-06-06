@@ -29,6 +29,7 @@ import {
 import { throttle, debounce } from './utils';
 import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
+import { getViewportBBox } from './ZoneSelector';
 import { initVegetationResources } from './vegetation';
 import {
     initWeatherSystem,
@@ -837,7 +838,8 @@ export async function initScene(): Promise<void> {
             isCompassAnimating() ||
             tilesFading ||
             needsInitialRender > 0 ||
-            state.isFollowingUser;
+            state.isFollowingUser ||
+            state.zoneSelectionActive;
 
         if (needsUpdate) {
             if (state.camera) {
@@ -884,6 +886,13 @@ export async function initScene(): Promise<void> {
 
             updateTerrainPhysics(interacting);
             updateEnvironment(state.camera.position.y);
+
+            if (state.zoneSelectionActive && state.zoneOverlay) {
+                const viewportBBox = getViewportBBox();
+                if (viewportBBox) {
+                    state.zoneOverlay.updateFromBBox(viewportBBox);
+                }
+            }
 
             state.renderer.render(state.scene, state.camera);
             state.stats?.end();

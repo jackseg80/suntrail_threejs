@@ -392,6 +392,17 @@
             "done": "⬇️ Zona scaricata"
         }
     },
+    "zoneSelect": {
+        "currentZone": "Zona visibile",
+        "total": "Tile da scaricare",
+        "totalLODs": "Totale (LOD",
+        "lodRange": "Intervallo LOD",
+        "cancel": "Annulla",
+        "download": "Scarica",
+        "warning": "Oltre 500 tile - download lungo",
+        "hardWarning": "Oltre 1000 tile - download molto lungo",
+        "tooLarge": "Oltre 2000 tile - zona troppo grande"
+    },
     "network": {
         "toast": {
             "online": "Connessione ripristinata",

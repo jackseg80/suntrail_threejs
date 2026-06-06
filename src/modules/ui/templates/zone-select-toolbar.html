@@ -1,0 +1,28 @@
+<div id="zone-select-toolbar" class="zone-select-toolbar">
+    <div class="zone-select-info">
+        <div class="zone-select-tile-count" id="zst-tile-count" data-i18n="zoneSelect.currentZone">Zone: ...</div>
+        <div class="zone-select-lod-range" id="zst-total-info" data-i18n="zoneSelect.total"></div>
+        <div class="zone-select-warning" id="zst-warning"></div>
+    </div>
+
+    <div class="zone-select-slider-row">
+        <div class="zone-select-slider-labels">
+            <span id="zst-min-label">LOD 5</span>
+            <span class="zone-select-slider-current-label" id="zst-current-label" data-i18n="zoneSelect.lodRange">Plage LOD</span>
+            <span id="zst-max-label">LOD 14</span>
+        </div>
+        <div class="zone-select-range-wrap">
+            <input type="range" id="zst-min-slider" class="zone-select-slider" min="5" max="18" value="5" />
+            <input type="range" id="zst-max-slider" class="zone-select-slider" min="5" max="18" value="14" />
+        </div>
+    </div>
+
+    <div class="zone-select-actions">
+        <button id="zst-cancel" class="btn-go zone-select-btn-cancel" data-i18n="zoneSelect.cancel">
+            Annuler
+        </button>
+        <button id="zst-download" class="btn-go zone-select-btn-download" data-i18n="zoneSelect.download">
+            Telecharger
+        </button>
+    </div>
+</div>

@@ -96,6 +96,15 @@
         </div>
         <div style="display: flex; gap: 8px; margin-bottom: 15px">
             <button
+                id="conn-download-zone"
+                class="btn-go"
+                style="margin: 0; padding: 12px; flex: 1; font-size: 12px"
+            >
+                <span data-i18n="connectivity.btn.downloadZone"
+                    >Telecharger Zone</span
+                >
+            </button>
+            <button
                 id="conn-clear-cache"
                 class="btn-go"
                 style="
@@ -109,16 +118,9 @@
             >
                 Vider le Cache
             </button>
-            <button
-                id="conn-download-zone"
-                class="btn-go"
-                style="margin: 0; padding: 12px; flex: 1; font-size: 12px"
-            >
-                <span data-i18n="connectivity.btn.downloadZone"
-                    >Télécharger Zone</span
-                >
-            </button>
         </div>
+
+        <div id="conn-cached-zones" class="cached-zones"></div>
 
         <div class="setting-row">
             <div class="setting-label" data-i18n="connectivity.label.pmtiles">

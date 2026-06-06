@@ -392,6 +392,17 @@
             "done": "⬇️ Zone heruntergeladen"
         }
     },
+    "zoneSelect": {
+        "currentZone": "Sichtbare Zone",
+        "total": "Kacheln zum Download",
+        "totalLODs": "Gesamt (LOD",
+        "lodRange": "LOD Bereich",
+        "cancel": "Abbrechen",
+        "download": "Herunterladen",
+        "warning": "Uber 500 Kacheln - langer Download",
+        "hardWarning": "Uber 1000 Kacheln - sehr langer Download",
+        "tooLarge": "Uber 2000 Kacheln - Zone zu groB"
+    },
     "network": {
         "toast": {
             "online": "Wieder verbunden",

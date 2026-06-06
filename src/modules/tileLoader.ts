@@ -606,3 +606,70 @@ export async function downloadVisibleZone(
     onProgress(total, total);
     return successCount === total;
 }
+
+const MAX_ZONE_TILES = 2000;
+
+/**
+ * Télécharge toutes les tuiles d'une zone pour une plage de LOD.
+ * Version multi-LOD avec feedback par niveau.
+ */
+export async function downloadZoneMultiLOD(
+    tilesByLod: Map<number, VisibleTileRef[]>,
+    onProgress: (
+        done: number,
+        total: number,
+        currentLod: number,
+        lodLabel: string
+    ) => void
+): Promise<boolean> {
+    let totalTiles = 0;
+    for (const tiles of tilesByLod.values()) {
+        totalTiles += tiles.length;
+    }
+    if (totalTiles > MAX_ZONE_TILES) return false;
+
+    const allUrls: { url: string; z: number; x: number; y: number }[] = [];
+    const sortedLods = Array.from(tilesByLod.keys()).sort((a, b) => a - b);
+
+    const lodQueues: Map<
+        number,
+        { url: string; z: number; x: number; y: number }[]
+    > = new Map();
+
+    for (const lod of sortedLods) {
+        const tiles = tilesByLod.get(lod)!;
+        const queue: { url: string; z: number; x: number; y: number }[] = [];
+        for (const { tx, ty, zoom } of tiles) {
+            const colorUrl = getColorUrl(tx, ty, zoom);
+            const { url: elevUrl } = getElevationUrl(tx, ty, zoom, false);
+            const overlayUrl = getOverlayUrl(tx, ty, zoom);
+            queue.push({ url: colorUrl, z: zoom, x: tx, y: ty });
+            if (elevUrl) queue.push({ url: elevUrl, z: zoom, x: tx, y: ty });
+            if (overlayUrl)
+                queue.push({ url: overlayUrl, z: zoom, x: tx, y: ty });
+        }
+        lodQueues.set(lod, queue);
+        allUrls.push(...queue);
+    }
+
+    const total = allUrls.length;
+    let done = 0;
+
+    for (const lod of sortedLods) {
+        const queue = lodQueues.get(lod)!;
+        for (const { url, z, x, y } of queue) {
+            try {
+                await fetchWithCache(url, true, z, x, y);
+            } catch (_) {
+                /* silence */
+            }
+            done++;
+            if (done % 5 === 0) {
+                onProgress(done, total, lod, `LOD ${lod}`);
+            }
+        }
+    }
+
+    onProgress(total, total, -1, '');
+    return true;
+}

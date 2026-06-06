@@ -394,6 +394,17 @@
             "done": "⬇️ Zone Téléchargée"
         }
     },
+    "zoneSelect": {
+        "currentZone": "Zone visible",
+        "total": "Tuiles à télécharger",
+        "totalLODs": "Total (LOD",
+        "lodRange": "Plage LOD",
+        "cancel": "Annuler",
+        "download": "Télécharger",
+        "warning": "Plus de 500 tuiles - téléchargement long",
+        "hardWarning": "Plus de 1000 tuiles - téléchargement très long",
+        "tooLarge": "Plus de 2000 tuiles - zone trop grande"
+    },
     "network": {
         "toast": {
             "online": "Connexion rétablie",

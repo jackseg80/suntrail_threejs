@@ -3392,3 +3392,216 @@ body.profile-interacting #bottom-bar {
     background: rgba(239, 68, 68, 0.12);
     color: var(--danger, #ef4444);
 }
+
+/* --- Zone Selection Toolbar --- */
+
+#zone-select-toolbar {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2100;
+    background: rgba(20, 20, 22, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 16px;
+    min-width: 320px;
+    max-width: 420px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#zone-select-toolbar.active {
+    display: flex;
+}
+
+.zone-select-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.zone-select-tile-count {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.zone-select-total {
+    font-size: 12px;
+    color: var(--text-2);
+}
+
+.zone-select-warning {
+    font-size: 11px;
+    color: #f59e0b;
+    display: none;
+}
+
+.zone-select-warning.visible {
+    display: block;
+}
+
+.zone-select-slider-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.zone-select-slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-3);
+}
+
+.zone-select-slider-current-label {
+    font-weight: 600;
+    color: var(--text-2);
+}
+
+.zone-select-range-wrap {
+    position: relative;
+    height: 24px;
+}
+
+.zone-select-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    pointer-events: none;
+    height: 24px;
+    margin: 0;
+}
+
+.zone-select-slider::-webkit-slider-runnable-track {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+}
+
+.zone-select-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent, #3b7ef8);
+    border: 2px solid #000;
+    cursor: pointer;
+    pointer-events: auto;
+    margin-top: -8px;
+}
+
+.zone-select-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent, #3b7ef8);
+    border: 2px solid #000;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.zone-select-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.zone-select-btn-cancel {
+    flex: 1;
+    margin: 0;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 13px;
+    border-radius: 10px;
+    color: var(--text-2);
+}
+
+.zone-select-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.zone-select-btn-download {
+    flex: 1;
+    margin: 0;
+    padding: 10px;
+    font-size: 13px;
+    border-radius: 10px;
+}
+
+.zone-select-btn-download:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+/* --- Cached Zones List --- */
+
+.cached-zones {
+    margin-bottom: 15px;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cached-zones.visible {
+    display: flex;
+}
+
+.cached-zone-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: rgba(51, 102, 255, 0.06);
+    border: 1px solid rgba(51, 102, 255, 0.15);
+    border-radius: 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.cached-zone-item:hover {
+    background: rgba(51, 102, 255, 0.12);
+}
+
+.cached-zone-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cached-zone-label {
+    font-weight: 500;
+    color: var(--text);
+}
+
+.cached-zone-detail {
+    font-size: 10px;
+    color: var(--text-3);
+}
+
+.cached-zone-delete {
+    background: none;
+    border: none;
+    color: var(--text-3);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.cached-zone-delete:hover {
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--danger, #ef4444);
+}

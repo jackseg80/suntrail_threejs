@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.56.26)
+# SunTrail — Guide IA (v5.57.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-06 — v5.56.26 : LOD5 + qualité overview (WebP 90).
+> Mis à jour le 2026-06-06 — v5.57.0 : Selection visuelle de zone offline + slider LOD.
 
 ## Projet
 
@@ -167,8 +167,17 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - `src/modules/profile.ts` : (v5.56.18) Graphique d'élévation. **Légende solaire** dans le panneau profil déplié : carrés Soleil (or), Ombre (bleu-gris), Forêt (vert), Nuit (bleu sombre) avec `solar-legend` toggle via `setSolarBandData()`.
 - `src/style.css` : (v5.56.18) Nouveaux sélecteurs `.legend-group` et `.legend-group-label` pour grouper les légendes pentes + solaire.
 
+## Offline Zones v5.57.0
+- **Selection visuelle interactive** (`ZoneSelector.ts`, `ZoneOverlay.ts`) : L'utilisateur clique "Telecharger Zone" dans le panneau Systeme & Donnees → la sheet se ferme → un rectangle vert semi-transparent (bordure blanche) apparait sur le terrain, correspondant exactement a la zone visible (frustum camera).
+- **Toolbar flottante** (`ZoneSelectToolbar.ts`) : Affiche le nombre de tuiles et la taille estimee pour le LOD courant. Slider double LOD min-max (5→18) independant du zoom. Met a jour le compteur/taille en temps reel.
+- **Limites** : 500 tuiles → warning orange, 1000 → hard warning, 2000 → bouton grise.
+- **Telechargement multi-LOD** (`tileLoader.ts:downloadZoneMultiLOD`) : Toutes les tuiles de la plage LOD (couleur + elevation + overlay) via `fetchWithCache(usePersistentCache=true)`. Limite 2000 tuiles.
+- **Cached zones** (`cachedZones.ts`) : Stockage en localStorage (`suntrail-cached-zones`) — bbox, plage LOD, nombre, taille, timestamp. Affichage dans le panneau Systeme & Donnees avec possibilite de supprimer l'historique.
+- **Fly to cached** : Clic sur une zone en cache → `flyTo()` au centre de la zone au LOD max + overlay bleu temporaire (4s).
+- **Fichiers** : `ZoneSelector.ts` (logique pure), `ZoneOverlay.ts` (overlay Three.js), `cachedZones.ts` (persistance), `ZoneSelectToolbar.ts` (UI), `zone-select-toolbar.html` (template).
+
 ## Tests & Qualité
-- **Unitaires (Vitest)** : `npm test` (1005 passants, 97 fichiers). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`, `solarRoute.ts`, `authService.ts`, `haptics.ts`, `theme.ts`, `toast.ts`, `weatherUtils.ts`, `nativeGPSService.ts`, `weather.ts`, `tooltip.ts`, `TopStatusBar.ts`. Solar route analysis valide (31 tests dédiés). Nuit tracée : `nightKm`/`nightPct` testé.
+- **Unitaires (Vitest)** : `npm test` (1021 passants, 99 fichiers, 5 skipped). Securise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`, `solarRoute.ts`, `authService.ts`, `haptics.ts`, `theme.ts`, `toast.ts`, `weatherUtils.ts`, `nativeGPSService.ts`, `weather.ts`, `tooltip.ts`, `TopStatusBar.ts`, `ZoneSelector.ts`, `cachedZones.ts`. Solar route analysis valide (31 tests dedies). Nuit tracee : `nightKm`/`nightPct` teste.
 - **Hardening (v5.54.1)** : Fuites mémoire Capacitor (nativeGPSService, iapService), logging fire-and-forget, centralization clés localStorage (`src/constants/storage.ts`), npm audit fix (7 vulnérabilités).
 - **E2E (Playwright)** : `npx playwright test --ui` (Onboarding, GPS, Expert).
 - **Mocks** : `src/test/setup.ts` pour WebGL. `ui.test.ts` utilise des timers fictifs.

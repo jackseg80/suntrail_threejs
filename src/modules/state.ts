@@ -368,6 +368,8 @@ export interface State {
     routeError: string | null;
     activeRouteProfile: RoutingProfile;
     routeLoopEnabled: boolean;
+    zoneSelectionActive: boolean;
+    zoneOverlay: import('./ZoneOverlay').ZoneOverlay | null;
 }
 
 const initialState: State = {
@@ -486,6 +488,8 @@ const initialState: State = {
     routeError: null,
     activeRouteProfile: 'foot-hiking',
     routeLoopEnabled: false,
+    zoneSelectionActive: false,
+    zoneOverlay: null,
 };
 
 export const state = createReactiveState(initialState);

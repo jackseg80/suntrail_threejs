@@ -42,7 +42,7 @@ export function initControls(
  * Retourne la distance caméra-cible approximative pour un niveau de zoom donné.
  * Inverse de getIdealZoom().
  */
-function getDistanceFromZoom(zoom: number): number {
+export function getDistanceFromZoom(zoom: number): number {
     const boost =
         state.MAP_SOURCE === 'satellite'
             ? 2.0
