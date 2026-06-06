@@ -154,3 +154,61 @@ describe('TopStatusBar — LOD label (country mapping)', () => {
         expect(badge?.textContent).toContain('LVL 14');
     });
 });
+
+describe('TopStatusBar — REC indicator (v5.57.2)', () => {
+    let bar: TopStatusBar;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        document.body.innerHTML = `
+            <template id="template-top-status-bar">
+                <div class="top-status-bar-content">
+                    <div class="top-left-widgets">
+                        <div class="top-widget" id="top-pill-main">
+                            <span class="lod-badge">SWISS · LVL --</span>
+                        </div>
+                    </div>
+                    <div class="top-right-widgets">
+                        <div class="status-widget rec-indicator" style="display:none">
+                            <span class="rec-dot-css"></span>
+                            <span class="rec-timer">REC</span>
+                        </div>
+                        <div class="icon-btn-sm" id="net-status-icon"></div>
+                        <div class="icon-btn-sm danger" id="sos-main-btn"></div>
+                        <div class="status-widget" id="timeline-toggle-btn"></div>
+                    </div>
+                </div>
+            </template>
+            <div id="top-status-bar"></div>
+        `;
+        bar = new TopStatusBar();
+        bar.hydrate();
+        bar.render();
+    });
+
+    it('affiche le REC indicator quand isRecording devient true', async () => {
+        const widget = document.querySelector('.rec-indicator') as HTMLElement;
+        expect(widget.style.display).toBe('none');
+        state.isRecording = true;
+        await Promise.resolve();
+        expect(widget.style.display).toBe('flex');
+    });
+
+    it('cache le REC indicator quand isRecording devient false', async () => {
+        const widget = document.querySelector('.rec-indicator') as HTMLElement;
+        state.isRecording = true;
+        await Promise.resolve();
+        expect(widget.style.display).toBe('flex');
+        state.isRecording = false;
+        await Promise.resolve();
+        expect(widget.style.display).toBe('none');
+    });
+
+    it("affiche le timer pendant l'enregistrement", async () => {
+        const timer = document.querySelector('.rec-timer') as HTMLElement;
+        state.isRecording = true;
+        await Promise.resolve();
+        expect(timer.textContent).not.toBe('REC');
+        expect(timer.textContent).toMatch(/\d+:\d+/);
+    });
+});
