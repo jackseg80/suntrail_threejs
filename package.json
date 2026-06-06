@@ -1,6 +1,6 @@
 {
   "name": "suntrail_threejs",
-  "version": "5.57.2",
+  "version": "5.57.3",
   "scripts": {
     "dev": "vite",
     "check": "tsc --noEmit && prettier --check src/ && eslint src/",

@@ -1,19 +1,30 @@
+## [5.57.3] - 2026-06-06
+
+### Fixed
+- **STOP button sans clignotement ni mouvement panneau** (`TrackSheet.ts`, `track.html`, `style.css`) : Classe CSS `#track.recording` au lieu de DOM manipulation. Plus de reflow. Banner upsell en `visibility` (hauteur réservée) avec `max-height` animé.
+- **REC indicator ne pousse plus la timebar** (`style.css`) : Passage en `position: absolute` sous la barre de statut, à droite. Ne prend plus de place dans la rangée du haut (fix Galaxy A53).
+- **Bouton REC sans message PRO erroné** (`style.css`) : Retrait du `!important` qui empêchait le JS de cacher le banner pour les PRO.
+- **Timebar mémorise son état 3D** (`TimelineComponent.ts`) : Plus d'ouverture automatique en 3D, restaure l'état précédent.
+- **Bbox téléchargement = cadre orange** (`ZoneSelector.ts`, `ZoneOverlay.ts`) : Calcul depuis les pixels du cadre CSS + `getAltitudeAt` au centre écran. Plus de décalage orange/bleu.
+- **CacheStorage sur main thread** (`tileLoader.ts`) : Blobs des zones offline injectés directement au worker, bypass réseau même en online lent.
+- **Panneau zone-sélection remonté** (`style.css`) : Au-dessus de la nav-bar.
+
+### Tests
+- 4 tests `updateRecUI` (classe `.recording`, banner Free/Pro).
+- 3 tests REC indicator (affichage, cache, timer).
+- 4 tests mémorisation `IS_2D_MODE` timebar.
+- Total : 1036 tests (99 fichiers).
+
 ## [5.57.2] - 2026-06-06
 
 ### Fixed
-- **Bouton STOP sans micro-saccades ni clignotement** (`TrackSheet.ts`, `track.html`, `style.css`) : Les icônes SVG sont statiques dans le template, basculées via CSS. `updateRecUI` utilise des classes CSS (`#track.recording`) au lieu de manipuler le DOM (`innerHTML`, `createElement`, `remove()`). Plus de reflow, plus de clignotement, plus de mouvement du panneau.
-- **Cache respecté même en online lent** (`tileLoader.ts`) : Vérification CacheStorage sur le main thread avant dispatch worker. Les blobs des zones offline sont injectés directement, bypassant le réseau même si les slots worker sont saturés.
-- **Timebar ne s'ouvre plus automatiquement en 3D** (`TimelineComponent.ts`) : Mémorise l'état ouvert/fermé du dernier passage en 3D et le restaure.
-- **Rectangle de sélection unifié** (`ZoneOverlay.ts`, `ZoneSelectToolbar.ts`, `style.css`) : Cadre CSS fixe en espace écran (`#zone-select-viewport`) comme seul indicateur de sélection. Le remplissage 3D sur le terrain reste (sans bordure) comme repère géographique. Les bordures 3D n'apparaissent que pour les états `downloading`/`cached`. CSS overlay masqué en 3D (perspective).
-- **Bbox téléchargement = cadre orange** (`ZoneSelector.ts`) : Calcul du bbox depuis les pixels réels du cadre CSS (85%×55%, top:6%), avec `getAltitudeAt` au centre écran comme plan de projection commun avec le `ZoneOverlay` — élimine le décalage entre le cadre orange et la zone bleue téléchargée.
-- **Bouton REC sans message PRO erroné** (`style.css`) : Retrait du `!important` sur `display:flex` qui empêchait le JS de cacher le banner pour les utilisateurs PRO.
-- **REC indicator ne pousse plus la timebar** (`style.css`) : Passage en `position: absolute` sous la barre de statut, à droite. Ne prend plus de place dans la rangée du haut.
-- **Panneau zone-sélection remonté** (`style.css`) : Positionné au-dessus de la barre de navigation.
+- **Bouton STOP sans micro-saccades** (`TrackSheet.ts`, `track.html`, `style.css`) : Les icônes SVG sont statiques dans le template, basculées via CSS. `updateRecUI` ne remplace plus l'`innerHTML`.
+- **Cache respecté même en online lent** (`tileLoader.ts`) : Vérification CacheStorage sur le main thread avant dispatch worker.
+- **Rectangle de sélection unifié + cadre orange fixe** (`ZoneOverlay.ts`, `ZoneSelector.ts`, `ZoneSelectToolbar.ts`, `style.css`) : Cadre CSS 85%×55% comme indicateur unique. Bbox calculé depuis les pixels du cadre.
+- **Panneau zone-sélection remonté** (`style.css`) : Au-dessus de la nav-bar.
 
 ### Tests
-- 4 nouveaux tests pour `updateRecUI` (classe `.recording`, banner Free/Pro).
-- 3 nouveaux tests pour l'indicateur REC (affichage, cache, timer).
-- Total : 1036 tests (99 fichiers).
+- 4 tests mémorisation `IS_2D_MODE` timebar. Total : 1027 tests (99 fichiers).
 
 ## [5.57.1] - 2026-06-06
 
