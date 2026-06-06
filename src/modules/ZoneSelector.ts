@@ -40,14 +40,21 @@ export function getVisibleTilesBBox(
 }
 
 export function getViewportBBox(): BBox | null {
+    return _getViewportBBox(0.5);
+}
+
+function _getViewportBBox(scale: number): BBox | null {
     const camera = state.camera;
     if (!camera) return null;
 
+    const s = Math.max(0.1, Math.min(1, scale));
+    const r = (1 - s) / 2;
+
     const ndcCorners = [
-        new THREE.Vector3(-1, -1, 0.5),
-        new THREE.Vector3(1, -1, 0.5),
-        new THREE.Vector3(1, 1, 0.5),
-        new THREE.Vector3(-1, 1, 0.5),
+        new THREE.Vector3(-1 + r, -1 + r, 0.5),
+        new THREE.Vector3(1 - r, -1 + r, 0.5),
+        new THREE.Vector3(1 - r, 1 - r, 0.5),
+        new THREE.Vector3(-1 + r, 1 - r, 0.5),
     ];
 
     const origin = state.originTile;
