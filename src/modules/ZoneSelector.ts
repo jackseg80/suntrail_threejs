@@ -3,6 +3,7 @@ import { state } from './state';
 import type { BBox } from './geo';
 import { getPow2, getTileBounds, worldToLngLat } from './geo';
 import type { VisibleTileRef } from './tileLoader';
+import { getAltitudeAt } from './analysis';
 
 const MAX_TILES_TOTAL = 2000;
 const WARN_TILES = 500;
@@ -55,6 +56,25 @@ export function getViewportBBox(): BBox | null {
     const ow = w * OVERLAY_W;
     const oh = h * OVERLAY_H;
 
+    // Déterminer l'altitude terrain au centre de l'écran (pas camera.target.y !)
+    // pour que la projection et le ZoneOverlay utilisent le même plan de référence.
+    let baseY = state.controls?.target?.y ?? 0;
+    try {
+        const centerNdc = new THREE.Vector3(0, 0, 0.5);
+        const cv = centerNdc.clone().unproject(camera);
+        const cd = cv.sub(camera.position).normalize();
+        const ct = (baseY - camera.position.y) / cd.y;
+        if (ct > 0 && isFinite(ct)) {
+            const ch = camera.position.clone().addScaledVector(cd, ct);
+            baseY = getAltitudeAt(ch.x, ch.z);
+            if (!isFinite(baseY) || baseY < 1) {
+                baseY = state.controls?.target?.y ?? 0;
+            }
+        }
+    } catch {
+        // fallback already set
+    }
+
     const screenCorners = [
         { sx: left, sy: top },
         { sx: left + ow, sy: top },
@@ -63,7 +83,6 @@ export function getViewportBBox(): BBox | null {
     ];
 
     const origin = state.originTile;
-    const baseY = state.controls?.target?.y ?? 0;
     const worldPoints: Array<{ lat: number; lon: number }> = [];
 
     for (const { sx, sy } of screenCorners) {
@@ -94,16 +113,6 @@ export function getViewportBBox(): BBox | null {
         if (p.lon < minLon) minLon = p.lon;
         if (p.lon > maxLon) maxLon = p.lon;
     }
-
-    // Shrink de ~3% pour compenser le débordement de la projection perspective
-    // Le bbox projeté sur le terrain est toujours légèrement plus grand que le cadre CSS
-    const latRange = maxLat - minLat;
-    const lonRange = maxLon - minLon;
-    const shrink = 0.015;
-    minLat += latRange * shrink;
-    maxLat -= latRange * shrink;
-    minLon += lonRange * shrink;
-    maxLon -= lonRange * shrink;
 
     return { minLat, maxLat, minLon, maxLon };
 }
