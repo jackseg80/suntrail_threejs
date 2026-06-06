@@ -7,10 +7,13 @@
 - **Rectangle de sélection unifié** (`ZoneOverlay.ts`, `ZoneSelectToolbar.ts`, `style.css`) : Cadre CSS fixe en espace écran (`#zone-select-viewport`) comme seul indicateur de sélection. Le remplissage 3D sur le terrain reste (sans bordure) comme repère géographique. Les bordures 3D n'apparaissent que pour les états `downloading`/`cached`. CSS overlay masqué en 3D (perspective).
 - **Bbox téléchargement = cadre orange** (`ZoneSelector.ts`) : Calcul du bbox depuis les pixels réels du cadre CSS (85%×55%, top:6%), avec `getAltitudeAt` au centre écran comme plan de projection commun avec le `ZoneOverlay` — élimine le décalage entre le cadre orange et la zone bleue téléchargée.
 - **Bouton REC sans message PRO erroné** (`style.css`) : Retrait du `!important` sur `display:flex` qui empêchait le JS de cacher le banner pour les utilisateurs PRO.
+- **REC indicator ne pousse plus la timebar** (`style.css`) : Passage en `position: absolute` sous la barre de statut, à droite. Ne prend plus de place dans la rangée du haut.
 - **Panneau zone-sélection remonté** (`style.css`) : Positionné au-dessus de la barre de navigation.
 
 ### Tests
-- 4 nouveaux tests pour `updateRecUI` (classe `.recording`, banner Free/Pro). Total : 1031 tests (99 fichiers).
+- 4 nouveaux tests pour `updateRecUI` (classe `.recording`, banner Free/Pro).
+- 3 nouveaux tests pour l'indicateur REC (affichage, cache, timer).
+- Total : 1036 tests (99 fichiers).
 
 ## [5.57.1] - 2026-06-06
 
