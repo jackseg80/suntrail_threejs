@@ -38,7 +38,7 @@ export class ZoneSelectToolbar extends BaseComponent {
         el.id = 'zone-select-viewport';
         el.style.cssText =
             'position:fixed;top:6%;left:50%;transform:translateX(-50%);pointer-events:none;z-index:20000;' +
-            'border:3px solid rgba(255,160,0,0.85);border-radius:8px;background:rgba(255,160,0,0.12);' +
+            'border:3px solid rgba(255,160,0,0.85);border-radius:8px;background:rgba(255,160,0,0.2);' +
             'box-shadow:0 0 0 1px rgba(0,0,0,0.25);';
         this.updateViewportOverlaySize(el);
         return el;
@@ -129,6 +129,14 @@ export class ZoneSelectToolbar extends BaseComponent {
 
         this.addSubscription(
             state.subscribe('ZOOM', () => this.onZoomChanged())
+        );
+
+        // En 3D la projection perspective déforme la zone → utiliser le ZoneOverlay 3D plutôt que le cadre CSS
+        this.addSubscription(
+            state.subscribe('IS_2D_MODE', (is2D: boolean) => {
+                if (!this.viewportOverlay) return;
+                this.viewportOverlay.style.display = is2D ? 'block' : 'none';
+            })
         );
     }
 
