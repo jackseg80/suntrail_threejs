@@ -86,11 +86,7 @@ export function getViewportBBox(): BBox | null {
     const worldPoints: Array<{ lat: number; lon: number }> = [];
 
     for (const { sx, sy } of screenCorners) {
-        const ndc = new THREE.Vector3(
-            (sx / w) * 2 - 1,
-            -(sy / h) * 2 + 1,
-            0.5
-        );
+        const ndc = new THREE.Vector3((sx / w) * 2 - 1, -(sy / h) * 2 + 1, 0.5);
         const vec = ndc.clone().unproject(camera);
         const dir = vec.sub(camera.position).normalize();
         const t = (baseY - camera.position.y) / dir.y;
