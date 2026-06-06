@@ -197,7 +197,7 @@ describe('TimelineComponent', () => {
             comp.dispose();
         });
 
-        it('garde la timebar fermée en 3D si elle l\'était avant le passage en 2D', async () => {
+        it("garde la timebar fermée en 3D si elle l'était avant le passage en 2D", async () => {
             const { TimelineComponent } = await import('./TimelineComponent');
             const comp = new TimelineComponent();
             const bottomBar = document.getElementById('bottom-bar')!;
@@ -219,7 +219,7 @@ describe('TimelineComponent', () => {
             comp.dispose();
         });
 
-        it('restaure l\'état ouvert de la timebar en revenant en 3D', async () => {
+        it("restaure l'état ouvert de la timebar en revenant en 3D", async () => {
             const { TimelineComponent } = await import('./TimelineComponent');
             const comp = new TimelineComponent();
             const bottomBar = document.getElementById('bottom-bar')!;
@@ -242,7 +242,7 @@ describe('TimelineComponent', () => {
             comp.dispose();
         });
 
-        it('maintient l\'état à travers plusieurs transitions 2D↔3D', async () => {
+        it("maintient l'état à travers plusieurs transitions 2D↔3D", async () => {
             const { TimelineComponent } = await import('./TimelineComponent');
             const comp = new TimelineComponent();
             const bottomBar = document.getElementById('bottom-bar')!;
