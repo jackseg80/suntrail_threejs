@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.57.2)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-06 — v5.57.2 : STOP sans saccades, cache main-thread, timebar memoire, cadre selection unique.
+> Mis à jour le 2026-06-06 — v5.57.2 : STOP stable, cache offline, cadre selection unique, timebar memoire, 1031 tests.
 
 ## Projet
 
