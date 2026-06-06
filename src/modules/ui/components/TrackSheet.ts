@@ -1113,7 +1113,6 @@ export class TrackSheet extends BaseComponent {
         emptyEl.style.display = hasData ? 'none' : 'flex';
         if (statsEl) statsEl.style.display = hasData ? '' : 'none';
     }
-
     private updateRecUI() {
         const recBtn = document.getElementById(
             'rec-btn-sheet'
@@ -1125,16 +1124,13 @@ export class TrackSheet extends BaseComponent {
             '.trk-rec-label'
         ) as HTMLElement | null;
         const trackEl = document.getElementById('track');
-        const upsell = document.getElementById('rec-recording-upsell');
 
         if (state.isRecording) {
             recBtn.classList.add('active');
             if (label) label.textContent = i18n.t('track.btn.stop');
             navTab?.classList.add('has-notif');
             trackEl?.classList.add('recording');
-            if (upsell) {
-                upsell.style.display = !isProActive() ? 'flex' : 'none';
-            }
+            trackEl?.classList.toggle('is-pro', isProActive());
         } else {
             recBtn.classList.remove('active');
             if (label) label.textContent = i18n.t('track.btn.rec');

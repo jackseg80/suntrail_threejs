@@ -185,19 +185,39 @@ describe('TrackSheet — updateRecUI (v5.57.2)', () => {
         ).toBe(false);
     });
 
-    it('affiche le banner upsell pour les utilisateurs Free', () => {
-        state.isRecording = true;
-        mockIsProActive.mockReturnValue(false);
-        (sheet as any).updateRecUI();
-        const upsell = document.getElementById('rec-recording-upsell')!;
-        expect(upsell.style.display).toBe('flex');
-    });
-
-    it('cache le banner upsell pour les utilisateurs Pro', () => {
+    it("ajoute la classe is-pro pendant l'enregistrement si Pro", () => {
         state.isRecording = true;
         mockIsProActive.mockReturnValue(true);
         (sheet as any).updateRecUI();
-        const upsell = document.getElementById('rec-recording-upsell')!;
-        expect(upsell.style.display).toBe('none');
+        const track = document.getElementById('track')!;
+        expect(track.classList.contains('recording')).toBe(true);
+        expect(track.classList.contains('is-pro')).toBe(true);
+    });
+
+    it("n'ajoute pas is-pro pour les Free", () => {
+        state.isRecording = true;
+        mockIsProActive.mockReturnValue(false);
+        (sheet as any).updateRecUI();
+        const track = document.getElementById('track')!;
+        expect(track.classList.contains('recording')).toBe(true);
+        expect(track.classList.contains('is-pro')).toBe(false);
+    });
+
+    it('affiche le banner upsell pour Free via CSS class', () => {
+        state.isRecording = true;
+        mockIsProActive.mockReturnValue(false);
+        (sheet as any).updateRecUI();
+        const track = document.getElementById('track')!;
+        expect(track.classList.contains('recording')).toBe(true);
+        expect(track.classList.contains('is-pro')).toBe(false);
+    });
+
+    it('cache le banner upsell pour Pro via CSS class', () => {
+        state.isRecording = true;
+        mockIsProActive.mockReturnValue(true);
+        (sheet as any).updateRecUI();
+        const track = document.getElementById('track')!;
+        expect(track.classList.contains('recording')).toBe(true);
+        expect(track.classList.contains('is-pro')).toBe(true);
     });
 });
