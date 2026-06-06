@@ -167,5 +167,30 @@ describe('ZoneSelector', () => {
             const result = computeZoneSelection(smallBbox, 14, 14);
             expect(result.totalSizeMB).toMatch(/^~\d+[,.]?\d* (Ko|Mo)$/);
         });
+
+        it('should limit download to the provided bbox', () => {
+            const bboxA = { minLat: 46.9, maxLat: 47.0, minLon: 6.9, maxLon: 7.0 };
+            const resultA = computeZoneSelection(bboxA, 14, 14);
+            expect(resultA.totalTiles).toBeGreaterThan(0);
+
+            const bboxB = { minLat: 46.9, maxLat: 46.95, minLon: 6.9, maxLon: 6.95 };
+            const resultB = computeZoneSelection(bboxB, 14, 14);
+            expect(resultB.totalTiles).toBeGreaterThan(0);
+            expect(resultA.totalTiles).toBeGreaterThan(resultB.totalTiles);
+        });
+
+        it('should not include tiles from outside the bbox', () => {
+            const bbox = { minLat: 46.9, maxLat: 47.0, minLon: 6.9, maxLon: 7.0 };
+            const result = computeZoneSelection(bbox, 13, 13);
+
+            for (const tiles of result.tilesByLod.values()) {
+                for (const tile of tiles) {
+                    expect(tile.zoom).toBe(13);
+                    expect(tile.tx).toBeGreaterThanOrEqual(0);
+                    expect(tile.ty).toBeGreaterThanOrEqual(0);
+                }
+            }
+            expect(result.bbox).toEqual(bbox);
+        });
     });
 });
