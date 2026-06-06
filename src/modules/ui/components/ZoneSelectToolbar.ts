@@ -169,7 +169,7 @@ export class ZoneSelectToolbar extends BaseComponent {
             if (sel.tooLarge) {
                 warningEl.textContent =
                     i18n.t('zoneSelect.tooLarge') ||
-                    'Plus de 2000 tuiles - zone trop grande';
+                    'Certains niveaux de zoom ignores (limite 2000 tuiles)';
                 warningEl.classList.add('visible');
             } else if (sel.hardWarning) {
                 warningEl.textContent =
@@ -187,12 +187,12 @@ export class ZoneSelectToolbar extends BaseComponent {
         }
 
         if (downloadBtn && sel) {
-            downloadBtn.disabled = sel.tooLarge || sel.totalTiles === 0;
+            downloadBtn.disabled = sel.totalTiles === 0;
         }
     }
 
     private async download(btn: HTMLButtonElement): Promise<void> {
-        if (!this.currentSelection || this.currentSelection.tooLarge) return;
+        if (!this.currentSelection || this.currentSelection.totalTiles === 0) return;
 
         if (!isProActive() && getOfflineZoneCount() >= 1) {
             showUpgradePrompt('offline_zones');

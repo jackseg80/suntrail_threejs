@@ -3544,6 +3544,12 @@ body.profile-interacting #bottom-bar {
     cursor: default;
 }
 
+.btn-disabled {
+    opacity: 0.5;
+    cursor: default;
+    filter: grayscale(0.6);
+}
+
 /* --- Cached Zones List --- */
 
 .cached-zones {

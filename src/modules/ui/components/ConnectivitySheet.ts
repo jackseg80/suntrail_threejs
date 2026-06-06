@@ -66,6 +66,22 @@ export class ConnectivitySheet extends BaseComponent {
             '#conn-download-zone'
         ) as HTMLButtonElement | null;
 
+        const syncDownloadBtnGate = () => {
+            if (!downloadZoneBtn) return;
+            const isFreeAndUsed = !isProActive() && getOfflineZoneCount() >= 1;
+            const span = downloadZoneBtn.querySelector('span');
+            if (span) {
+                span.innerHTML = isFreeAndUsed
+                    ? `🔒 ${i18n.t('connectivity.btn.downloadZone')}`
+                    : i18n.t('connectivity.btn.downloadZone');
+            }
+            downloadZoneBtn.classList.toggle('btn-disabled', isFreeAndUsed);
+        };
+
+        this.addSubscription(state.subscribe('isPro', syncDownloadBtnGate));
+        this.addSubscription(state.subscribe('trialEnd', syncDownloadBtnGate));
+        syncDownloadBtnGate();
+
         downloadZoneBtn?.addEventListener('click', async () => {
             if (!downloadZoneBtn) return;
 

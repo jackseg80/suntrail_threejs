@@ -402,7 +402,7 @@
         "download": "Download",
         "warning": "Over 500 tiles - long download",
         "hardWarning": "Over 1000 tiles - very long download",
-        "tooLarge": "Over 2000 tiles - zone too large"
+        "tooLarge": "Some levels skipped (2000 tile limit)"
     },
     "network": {
         "toast": {

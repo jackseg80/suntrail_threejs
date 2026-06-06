@@ -97,7 +97,10 @@ function lngLatToTileExact(
     return { x, y };
 }
 
-function getTilesForBBox(bbox: BBox, zoom: number): VisibleTileRef[] {
+function getTileRange(
+    bbox: BBox,
+    zoom: number
+): { minTx: number; maxTx: number; minTy: number; maxTy: number } | null {
     const n = getPow2(zoom);
     const topLeft = lngLatToTileExact(bbox.minLon, bbox.maxLat, zoom);
     const bottomRight = lngLatToTileExact(bbox.maxLon, bbox.minLat, zoom);
@@ -107,13 +110,8 @@ function getTilesForBBox(bbox: BBox, zoom: number): VisibleTileRef[] {
     const minTy = Math.max(0, Math.floor(topLeft.y));
     const maxTy = Math.min(n - 1, Math.floor(bottomRight.y));
 
-    const tiles: VisibleTileRef[] = [];
-    for (let tx = minTx; tx <= maxTx; tx++) {
-        for (let ty = minTy; ty <= maxTy; ty++) {
-            tiles.push({ tx, ty, zoom });
-        }
-    }
-    return tiles;
+    if (minTx > maxTx || minTy > maxTy) return null;
+    return { minTx, maxTx, minTy, maxTy };
 }
 
 function estimateMultiLODSizeMB(totalTiles: number): string {
@@ -128,9 +126,24 @@ export function computeZoneSelection(
 ): ZoneSelection {
     const tilesByLod = new Map<number, VisibleTileRef[]>();
     let totalTiles = 0;
+    let tooLarge = false;
 
-    for (let lod = minLod; lod <= maxLod; lod++) {
-        const tiles = getTilesForBBox(bbox, lod);
+    for (let lod = maxLod; lod >= minLod; lod--) {
+        const range = getTileRange(bbox, lod);
+        if (!range) continue;
+
+        const count = (range.maxTx - range.minTx + 1) * (range.maxTy - range.minTy + 1);
+        if (totalTiles + count > MAX_TILES_TOTAL) {
+            tooLarge = true;
+            continue;
+        }
+
+        const tiles: VisibleTileRef[] = [];
+        for (let tx = range.minTx; tx <= range.maxTx; tx++) {
+            for (let ty = range.minTy; ty <= range.maxTy; ty++) {
+                tiles.push({ tx, ty, zoom: lod });
+            }
+        }
         tilesByLod.set(lod, tiles);
         totalTiles += tiles.length;
     }
@@ -140,7 +153,7 @@ export function computeZoneSelection(
         tilesByLod,
         totalTiles,
         totalSizeMB: estimateMultiLODSizeMB(totalTiles),
-        tooLarge: totalTiles > MAX_TILES_TOTAL,
+        tooLarge,
         hardWarning: totalTiles > WARN_TILES_HARD,
         warning: totalTiles > WARN_TILES,
     };

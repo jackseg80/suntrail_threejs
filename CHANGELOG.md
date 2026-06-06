@@ -10,6 +10,11 @@
 - **Tests** : `ZoneSelector.test.ts` (10 tests — bbox, comptage, paliers). `cachedZones.test.ts` (6 tests — CRUD localStorage).
 - **Bouton reordonne** : Telecharger Zone avant Vider le Cache dans le panneau.
 
+### Changed
+- **Limites securisees** (`ZoneSelector.ts`) : `computeZoneSelection` ne genere plus les tableaux de tuiles au-dela de 2000 — calcule d'abord le comptage par plage (arithmetique), evite le OOM quand on dezoome avec slider max a LOD18.
+- **Bouton lock Free** (`ConnectivitySheet.ts`) : Si deja 1 zone utilisee et non-Pro, le bouton affiche un cadenas 🔒 avec effet grise. Le clic ouvre l'ecran d'upgrade (comme bulletin meteo).
+- **tooLarge assoupli** : Le flag n'empeche plus le telechargement. Les LODs excedentaires sont ignores, les autres sont telechargeables. Message "Certains niveaux ignores (limite 2000 tuiles)".
+
 ## [5.56.26] - 2026-06-06
 
 ### Added

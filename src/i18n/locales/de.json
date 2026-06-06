@@ -401,7 +401,7 @@
         "download": "Herunterladen",
         "warning": "Uber 500 Kacheln - langer Download",
         "hardWarning": "Uber 1000 Kacheln - sehr langer Download",
-        "tooLarge": "Uber 2000 Kacheln - Zone zu groB"
+        "tooLarge": "Einige Ebenen ignoriert (2000 Kacheln Limit)"
     },
     "network": {
         "toast": {

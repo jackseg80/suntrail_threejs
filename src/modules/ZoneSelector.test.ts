@@ -137,11 +137,10 @@ describe('ZoneSelector', () => {
             const result = computeZoneSelection(midBbox, 14, 18);
             if (result.totalTiles > 1000 && result.totalTiles <= 2000) {
                 expect(result.hardWarning).toBe(true);
-                expect(result.tooLarge).toBe(false);
             }
         });
 
-        it('should show tooLarge when > 2000 tiles at high LOD', () => {
+        it('should flag tooLarge when LODs are skipped due to limit', () => {
             const midBbox = {
                 minLat: 46.9,
                 maxLat: 47.0,
@@ -149,10 +148,11 @@ describe('ZoneSelector', () => {
                 maxLon: 7.0,
             };
             const result = computeZoneSelection(midBbox, 14, 18);
-            if (result.totalTiles > 2000) {
+            if (result.totalTiles > 1500) {
                 expect(result.tooLarge).toBe(true);
+                expect(result.hardWarning).toBe(true);
             } else {
-                const result2 = computeZoneSelection(midBbox, 13, 18);
+                const result2 = computeZoneSelection(midBbox, 12, 18);
                 expect(result2.tooLarge).toBe(true);
             }
         });

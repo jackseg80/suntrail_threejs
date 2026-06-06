@@ -403,7 +403,7 @@
         "download": "Télécharger",
         "warning": "Plus de 500 tuiles - téléchargement long",
         "hardWarning": "Plus de 1000 tuiles - téléchargement très long",
-        "tooLarge": "Plus de 2000 tuiles - zone trop grande"
+        "tooLarge": "Certains niveaux ignores (limite 2000 tuiles)"
     },
     "network": {
         "toast": {

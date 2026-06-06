@@ -401,7 +401,7 @@
         "download": "Scarica",
         "warning": "Oltre 500 tile - download lungo",
         "hardWarning": "Oltre 1000 tile - download molto lungo",
-        "tooLarge": "Oltre 2000 tile - zona troppo grande"
+        "tooLarge": "Alcuni livelli ignorati (limite 2000 tile)"
     },
     "network": {
         "toast": {
