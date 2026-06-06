@@ -38,8 +38,8 @@ export class ZoneSelectToolbar extends BaseComponent {
         el.id = 'zone-select-viewport';
         el.style.cssText =
             'position:fixed;top:6%;left:50%;transform:translateX(-50%);pointer-events:none;z-index:20000;' +
-            'border:3px solid rgba(0,255,102,0.85);border-radius:8px;background:rgba(0,255,102,0.15);' +
-            'box-shadow:0 0 0 1px rgba(0,0,0,0.2);';
+            'border:3px solid rgba(255,160,0,0.85);border-radius:8px;background:rgba(255,160,0,0.12);' +
+            'box-shadow:0 0 0 1px rgba(0,0,0,0.25);';
         this.updateViewportOverlaySize(el);
         return el;
     }

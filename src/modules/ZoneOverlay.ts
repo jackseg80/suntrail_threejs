@@ -94,13 +94,18 @@ export class ZoneOverlay {
 
         this.disposeGeometries();
 
-        const color = this.mode === 'cached' ? 0x3366ff : 0x00ff66;
+        const color =
+            this.mode === 'selecting'
+                ? 0xff8800
+                : this.mode === 'cached'
+                  ? 0x3366ff
+                  : 0x00ff66;
         const fillOpacity =
             this.mode === 'downloading'
                 ? 0.25
                 : this.mode === 'cached'
                   ? 0.12
-                  : 0.06;
+                  : 0.08;
 
         const fillGeo = new THREE.PlaneGeometry(sizeX, sizeZ);
         const fillMat = new THREE.MeshBasicMaterial({
