@@ -1,4 +1,4 @@
-# AI UI Style Guide (v5.40.37)
+# AI UI Style Guide (v5.57.0)
 
 This guide defines the standardized UI patterns for SunTrail to ensure visual consistency across all panels (Expert Sheets, Settings, etc.).
 
@@ -10,7 +10,7 @@ To ensure readability on mobile, use the `exp-stat-grid` class. It automatically
 ```html
 <div class="exp-stat-grid exp-probe-grid-mb">
     <div class="exp-probe-card">
-        <span>☀️</span>
+        <div class="icon-svg-wrapper">...</div>
         <div class="exp-probe-label">Label</div>
         <div class="exp-probe-value">Value</div>
     </div>
@@ -24,7 +24,15 @@ To ensure readability on mobile, use the `exp-stat-grid` class. It automatically
 - `.exp-probe-label`: Small, dimmed text for the metric name.
 - `.exp-probe-value`: Bold, prominent text for the data.
 
-## 2. Instrument Panels (Real-time Data)
+## 2. Iconography & SVG (v5.53.8)
+
+SunTrail has transitioned from emojis to **dual-tone SVG icons** for critical UI controls and expert stats.
+
+- **Icon Module**: `src/modules/ui/icons.ts` contains standardized SVGs (close, play, pause, stop, record, check, lock, unlock, info).
+- **Colors**: Use `--accent` (blue) and `--gold` (mountain/sun) for primary visual elements.
+- **Backgrounds**: Use glassmorphism (`backdrop-filter: blur(10px)`) for floating toolbars and sheets.
+
+## 3. Instrument Panels (Real-time Data)
 
 For real-time instruments (Compass, Weather Vane), use the "Instrument" pattern which combines a visual SVG and a stats column.
 
@@ -34,7 +42,7 @@ For real-time instruments (Compass, Weather Vane), use the "Instrument" pattern 
 - `.solar-instrument-compass`: Fixed-size square for the SVG dial.
 - `.solar-instrument-stats`: Flexible column for RT metrics.
 
-## 3. SVG Charts (24h Trend)
+## 4. SVG Charts (24h Trend)
 
 Standardized dimensions for embedded charts:
 - **ViewBox**: Typically `0 0 320 120` (Solar) or `0 0 300 80` (Weather).
@@ -44,15 +52,15 @@ Standardized dimensions for embedded charts:
     - `var(--text-3)`: Grid lines and labels.
     - `rgba(239,68,68,0.15)`: Warning zones (Shadows/Freezing).
 
-## 4. Typography & Spacing
+## 5. Typography & Spacing
 
 Always use CSS variables for consistent look & feel:
 - **Fonts**: `var(--text-xs)` (8-10px) for labels, `var(--text-md)` (14-16px) for values.
 - **Spacing**: `var(--space-2)` (8px), `var(--space-4)` (16px).
 - **Gradients**: Use `var(--surface-subtle)` for panel backgrounds.
 
-## 5. Mobile Optimizations
+## 6. Mobile Optimizations
 
 - **Short Labels**: Prefer "Elev. Max" over "Maximum Elevation".
-- **Icons**: Use emojis or simple SVGs to reduce cognitive load.
-- **Click Targets**: Buttons (`btn-go`) must be full-width or clearly identified as Pro upgrades (`PRO ↗`).
+- **Click Targets**: Buttons must be full-width or clearly identified as Pro upgrades (`PRO ↗`).
+- **Touch Fix**: `touch-action: none` on interaction containers to prevent browser scroll interference.

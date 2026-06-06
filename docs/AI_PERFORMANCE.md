@@ -1,4 +1,4 @@
-# AI Performance & Constants Guide (v5.56.3)
+# AI Performance & Constants Guide (v5.57.0)
 
 Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 
@@ -14,43 +14,25 @@ Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 | `ZOOM_BOOST_OTHER_TOPO`| 0.5 | `scene.ts` | Magnification factor for IGN/basemap.at/BKG/IGN España/Kartverket/OpenTopo. Forces 1-LOD delay to double label size. |
 | `ZOOM_CAP_FREE` | 14 | `Tile.ts` | Technical ceiling for free users. Forces upsell for high-res maps. |
 
-## 1b. Rendering Optimizations (v5.31.1 — Audit Vague 1)
+## 1b. Rendering Optimizations (v5.56.23)
 
 | Optimization | File | Description |
 | :--- | :--- | :--- |
+| **No Tone Mapping** | `scene.ts` | `NoToneMapping` used instead of `AgXToneMapping` (v5.56.22). Prevents washed-out sRGB tiles. |
+| **Sharp Textures** | `Tile.ts` | `LinearFilter` without mipmaps for color/overlay textures (v5.56.23). Eliminates blur in 2D/3D. |
 | **Frustum cache per frame** | `Tile.ts`, `scene.ts`, `terrain.ts` | `sharedFrustum` computed once per frame with `camera.updateMatrixWorld()`. Passed to `Tile.isVisible(frustum?)`. Eliminates ~81 mat4 multiplies/frame. |
 | **buildQueue O(1) dedup** | `tileQueue.ts` | `buildQueueKeys: Set<string>` parallel to `buildQueue[]`. Replaces `Array.includes()` O(n) with `Set.has()` O(1). |
-| **Frozen shadows during interaction** | `scene.ts` | `renderer.shadowMap.autoUpdate = !isUserInteracting` instead of toggling `sunLight.castShadow`. Prevents shader recompilation (USE_SHADOWMAP macro toggle) and visual flash. Shadows freeze in place during pan/zoom, then auto-update resumes. |
-| **Pre-allocated query vector** | `analysis.ts` | `_queryPoint` Vector3 reused across `getAltitudeAt()` calls. Eliminates per-call allocation in hot path (~5-10 calls/frame). |
+| **Frozen shadows during interaction** | `scene.ts` | `renderer.shadowMap.autoUpdate = !isUserInteracting` instead of toggling `sunLight.castShadow`. Prevents shader recompilation and visual flash. |
 | **Shader pre-warming** | `scene.ts` | `renderer.compile(scene, camera)` called 200ms after init. Moves shader compilation cost from first interaction to startup. |
-| **Near plane** | `cameraManager.ts` | Kept at `near: 10` (not 50). Near=50 causes z-fighting at LOD 6 with the ground plane due to extreme near/far ratio (50/4M). |
 
-## 1c. Rendering Optimizations (v5.31.1 — Audit Vague 2)
-
-| Optimization | File | Description |
-| :--- | :--- | :--- |
-| **Aggressive pixelData purge** | `tileCache.ts` | LRU-based: keeps only N most recent pixelData (eco/balanced=10, performance=30, ultra=50). Frees ~15-20MB RAM on mobile. `getAltitudeAt()` falls back to 0 for purged tiles. |
-| **Shadow frustum per preset** | `scene.ts`, `sun.ts` | Balanced=15000m, Performance=25000m, Ultra=30000m max extent. `near=100`, `far=200000` (was near=1000, far=500000). Reduces shadow map GPU cost significantly on mobile. |
-| **Ground plane reduced** | `scene.ts` | 500km×500km → 100km×100km. Still covers viewport at LOD 6. Smaller bounding sphere improves frustum culling. |
-| **LOD logic unified** | `scene.ts` | Removed duplicated zoom-threshold if/else cascade (lines 286-298). Now uses `getIdealZoom()` exclusively with 5% hysteresis. |
-| **Fog dynamic altitude** | `scene.ts` | Linear fog with altitude-adaptive near/far: `fogNear = max(FOG_NEAR*0.3, FOG_NEAR - alt*0.3)`, `fogFar = FOG_FAR + alt*4.0`. FogExp2 was tested and reverted — unsuitable for 4Mm altitude range. |
-
-## 1e. Rendering Optimizations (v5.55.0 — Benchmark v2.0)
+## 1e. Rendering Optimizations (v5.56.25 — Benchmark v2.5)
 
 | Optimization | File | Description |
 | :--- | :--- | :--- |
-| **Micro-Benchmark** | `benchmark.ts` | Fast (500ms) startup test. CPU: 1MB memory-intensive buffer traversal. GPU: 1024x1024 scene with 8 lights + `gl.readPixels` sync. |
+| **Micro-Benchmark** | `benchmark.ts` | Fast startup test. CPU: buffer traversal. GPU: 1024x1024 scene with 8 lights + `gl.readPixels` sync. Durations doubled (CPU 200ms, GPU 300ms) for reliability (v5.56.25). |
+| **Delayed Re-benchmark**| `appInit.ts` | Auto-trigger re-benchmark 8s after start. If score improves ≥30% → auto-upgrade preset (v5.56.25). |
 | **Preset Calibration** | `benchmark.ts`, `performance.ts` | Thresholds: Eco (<30), Balanced (30-64), Performance (65-91), Ultra (92+). Weights: GPU 75%, CPU 15%, StaticBonus 10%. |
-| **Adreno 7xx Classification** | `performance.ts` | Adreno 740/750 (S23/S24) classified as Performance, reserved Ultra for high-end Desktop/M-series. |
-
-## 1f. Benchmark v2.1 — Intel IGP & UMA Corrections (v5.56.20)
-
-| Fix | File | Description |
-| :--- | :--- | :--- |
-| **Intel IGP Catch-all** | `performance.ts:81-82` | Nouvelle règle attrapant tous les GPU Intel intégrés (HD, UHD, Iris, Graphics) sans numéro de modèle — les strings ANGLE avec device ID hex (`0x0000A788`) ne matchaient plus les regex `6\d\d`/`5\d\d`. |
-| **Iris Xe downgraded** | `performance.ts` | Iris Xe retiré du tier `performance` (retourne `balanced`). C'est un GPU intégré, pas un discret. |
-| **Static weight reduced** | `benchmark.ts:36-39` | Poids de la détection statique dans le score total réduit de 20% → 10% pour casser la boucle de rétroaction. |
-| **Intel IGP Cap** | `benchmark.ts:48-62` | Si le GPU est Intel intégré ET la détection statique ≤ `balanced`, le benchmark ne peut pas recommander `performance` ou `ultra` (cap à `balanced`). Corrige le biais `gl.readPixels` sur architecture UMA où le transfert CPU↔GPU est quasi-gratuit. |
+| **Intel IGP Cap** | `benchmark.ts` | Intel integrated GPUs capped to `balanced` to avoid UMA bias in `gl.readPixels`. |
 
 
 ## 2. Navigation & GPS Logic
@@ -68,8 +50,8 @@ Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 | :--- | :--- | :--- | :--- |
 | `MIN_FETCH_INTERVAL` | 15s | `weather.ts` | API Rate Limiting. Prevents Open-Meteo IP bans on fast camera moves. |
 | `WEATHER_FETCH_DISTANCE` | 3 km | `scene.ts` | Min camera displacement to re-fetch weather. Reduced from 5 km for mountain reactivity. |
-| `WEATHER_THROTTLE` | 50ms (20fps) | `scene.ts` | Render throttle for weather uniforms. Saves battery on non-essential visuals. |
-| `DEEP_SLEEP_DELAY` | 30s | `scene.ts` | Time before dropping to 1.5 FPS when app is idle. |
+| `DEEP_SLEEP_DELAY` | 30s | `scene.ts` | Time before dropping to 1.5 FPS when app is idle (v5.29.7). |
+| `CACHE_NAME` | `suntrail-tiles-v30` | `tileLoader.ts` | Persistent cache versioning. |
 
 ## 4. UI & Interaction
 
@@ -77,3 +59,34 @@ Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 | :--- | :--- | :--- | :--- |
 | `LONG_PRESS_MS` | 500ms | `touchControls.ts` | Standard duration to differentiate tap from probe. |
 | `AUTO_HIDE_DELAY` | 3000ms | `autoHide.ts` | Delay for controls fade-out after user stops moving. |
+| `MAX_TILES_OFFLINE` | 2000 | `ZoneSelector.ts` | Hard limit for offline zone downloads (v5.57.0). |
+
+## 5. Data Flows (Tiles & Elevation)
+
+### A. Color Tiles Flow (`getColorUrl`)
+```
+LOD ≤ 10 → OpenTopoMap (Global overview)
+
+LOD ≥ 11 → MAP_SOURCE determines the source:
+  │
+  ├─ 'opentopomap' (Manual) → OpenTopoMap direct
+  │
+  ├─ 'satellite' (Manual) → MapTiler → ArcGIS Satellite
+  │
+  └─ 'swisstopo' (Auto) → data-driven COUNTRY_SOURCES[code].colorTopo
+       │  (if country HD config exists for current zoom)
+       │  → HD source (SwissTopo, IGN, Kartverket, etc.)
+       │
+       └─ fallback → OpenTopoMap (Optimized for hiking, LOD ≤ 17)
+                     → MapTiler Outdoor
+                     → OpenStreetMap
+```
+
+### B. Elevation Flow (`getElevationUrl`)
+- **Source**: MapTiler Terrain-RGB (Zoom capped at 14).
+- **Encoding**: `-10000.0 + ((r*65536 + g*256 + b)*0.1)`.
+- **Fallback**: Flat terrain (altitude 0) if tile is missing or MapTiler unavailable.
+
+### C. Overlays Flow (`getOverlayUrl`)
+- **Swiss**: SwissTopo Wanderwege (LOD 13-18).
+- **Global**: Waymarked Trails (LOD 11-17).

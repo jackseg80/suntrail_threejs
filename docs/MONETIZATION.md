@@ -1,17 +1,15 @@
-# SunTrail 3D — Stratégie de Monétisation (v5.40.37)
+# SunTrail 3D — Stratégie de Monétisation (v5.57.0)
 
 > Objectif : Offrir une valeur alpine gratuite indispensable (sécurité) tout en incitant à l'abonnement Pro pour l'analyse et le confort.
 
 ---
 
-## 1. Modèle Freemium (v5.29 — Hybride)
+## 1. Modèle Freemium (v5.57.0 — Hybride)
 
 SunTrail utilise un modèle **Freemium avec abonnement**. La sécurité est offerte à tous, l'expertise est réservée aux abonnés Pro.
 
-**Nouveau (v5.29) : Discovery Trial (3 jours)**
-*   **Objectif** : Permettre de tester les fonctions Pro immédiatement après installation sans saisir de carte bancaire (zéro friction).
-*   **Activation** : Locale, stockée dans `localStorage`.
-*   **Transition** : Une fois l'essai de 3 jours expiré, l'utilisateur est redirigé vers l'essai standard RevenueCat (7 jours avec CB).
+**Passage au Trial Natif (v5.53.7)**
+*   **Transition** : Suppression des trials locaux. Utilisation exclusive des essais gratuits natifs RevenueCat/Stores (7 jours avec CB).
 
 ### 📊 Comparaison Free / Pro (Gate Logic)
 
@@ -22,7 +20,7 @@ SunTrail utilise un modèle **Freemium avec abonnement**. La sécurité est offe
 | **Import GPX** | 1 tracé max | **Multi-tracés (illimité)** | `TrackSheet.ts` |
 | **Solaire** | Jour actuel (24h) | **Calendrier complet** | `TimelineComponent.ts` |
 | **Cartographie** | SwissTopo / IGN / basemap.at / BKG / IGN España / Kartverket / OSM | **Satellite HD** | `terrain.ts` |
-| **Mode Hors-ligne** | 1 zone de 10km² | **Zones illimitées** | `ConnectivitySheet.ts` |
+| **Mode Hors-ligne** | 1 zone gratuite (Sélection visuelle) | **Zones illimitées** | `ZoneSelector.ts` |
 | **Inclinomètre** | — | **Numérique (° / %)** | `InclinometerWidget.ts`|
 | **Alertes Sécurité** | **Toutes (Avalanche, etc.)** | **Toutes** | (FREE) |
 | **Analyse Trail** | Résumé (Munter) | **Segments, Physio, VAM** | `TrackSheet.ts` |
@@ -48,6 +46,7 @@ SunTrail utilise un modèle **Freemium avec abonnement**. La sécurité est offe
 - **D2 — Sécurité Gratuite** : Toutes les alertes vitales (avalanche, météo, nuit) sont gratuites. C'est le contrat de confiance.
 - **D3 — Verrou Solaire** : La simulation 24h démontre la puissance. Le calendrier (planification future) convertit.
 - **D4 — Upsells Contextuels** : Déclenchés au moment de la friction (ex: toast zoom 14, verrou calendrier).
+- **D5 — Offline Visuel** : La sélection visuelle de zone facilite l'usage hors-ligne. Limite à 1 zone pour les gratuits (v5.57.0).
 
 ---
 

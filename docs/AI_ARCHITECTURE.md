@@ -1,8 +1,8 @@
-# AI Architecture Guide (v5.56.5)
+# AI Architecture Guide (v5.57.0)
 
 This document maps the core reactive logic and rendering systems to help AI agents understand how modules interact.
 
-## 1. Service-Oriented Logic (v5.29.38+)
+## 1. Service-Oriented Logic (v5.57.0)
 
 To improve testability and keep UI components lean, business logic is extracted into stateless or singleton services.
 
@@ -11,11 +11,13 @@ To improve testability and keep UI components lean, business logic is extracted 
 | `expertService` | Weather reporting, Solar analysis, SOS message generation. | `generateSOSMessage`, `generateWeatherReport` |
 | `recordingService`| Orchestration of GPS recording, permissions, and file saving. | `toggleRecording`, `stopRecording`, `saveToFile` |
 | `gpxService` | GPX data handling, parsing, and string generation. | `handleGPXImport`, `buildGPXStringFromLayer` |
-| `gpxLayers` | (v5.40.19) 3D rendering and management of GPX track layers. | `addGPXLayer`, `updateAllGPXMeshes` |
+| `gpxLayers` | (v5.56.2) 3D rendering and management of GPX track layers. | `addGPXLayer`, `updateAllGPXMeshes` |
 | `geocodingService` | Reverse/forward geocoding via MapTiler + Nominatim fallback. | `getPlaceName`, `searchLocations`, `classifyFeature` |
-| `gpxHistoryService` | GPX history persistence (max 5, localStorage). | `saveToHistory`, `loadHistory`, `updateHistoryEntryLocation` |
+| `gpxHistoryService` | (v5.56.2) GPX history persistence (max 5, localStorage). | `saveToHistory`, `loadHistory` |
 | `iapService` | RevenueCat integration, Pro status synchronization. | `initialize`, `purchase`, `syncProStatus` |
-| `appInit` | (v5.40.19) Centralized application bootstrap and UI hydration. | `appInit` |
+| `ZoneSelector` | (v5.57.0) Logic for visual offline zone selection. | `getViewportBBox`, `getTilesForBBox` |
+| `cachedZones` | (v5.57.0) Persistence and management of offline zones. | `saveZone`, `deleteZone`, `getCachedZones` |
+| `appInit` | (v5.56.15) Centralized application bootstrap and UI hydration. | `appInit` |
 
 ## 2. EventBus Mapping
 
@@ -59,13 +61,23 @@ The terrain uses `MeshStandardMaterial` modified via `onBeforeCompile` for perfo
 ### B. Weather Shader (`src/modules/weather.ts`)
 - **System**: `THREE.Points` (15,000 particles).
 - **Uniforms**: `uWindVec` (Vector3 from Open-Meteo), `uIsRain` (0.0=Snow, 1.0=Rain).
-- **Logic**: Particle recycling in a 15,000 unit box around camera. Rain = vertical streaks; Snow = sinewave drift.
+- **Logic**: Particle recycling in a 15,000 unit box around camera. Rain = vertical streaks; Snow = sinewave drift. **ShaderMaterial** (v5.56.4) handles the rendering.
 - **Data**: `fetchWeather(lat, lon)` → Open-Meteo API (courant, horaire 24h, prévisions 3j). **Rate limit**: 15s min between calls.
 - **Geocoding**: `getPlaceName()` from `geocodingService.ts` + `getCountryName()` from `geo.ts` for the location label.
-- **Triggers**: App startup, camera pan/zoom (`debouncedFetchWeather`, 1s debounce, 3km threshold), GPS center, search result, sheet open.
 
 ## 3. Proxy State System (`src/modules/state.ts`)
 
 Use `state.subscribe(key, callback)` for reactive updates.
 - **Persistent Keys**: `IS_2D_MODE`, `PERFORMANCE_PRESET`, `UNIT_SYSTEM`.
 - **Volatile Keys**: `weatherData`, `simDate`, `lastClickedCoords`.
+
+## 4. Internationalization (i18n) Workflow
+
+- **Locales**: `src/i18n/locales/` contains JSON files (fr, en, de, it).
+- **Service**: `I18nService.ts` handles loading and switching.
+- **Audit**: Use `python scripts/audit_i18n.py` to:
+    - Identify missing keys in secondary languages compared to French (source of truth).
+    - Find unused keys in JSON files.
+    - Check for encoding/syntax errors.
+- **Key Pattern**: `category.subCategory.key` (e.g., `upgrade.plan.yearly`).
+- **Emojis**: Avoid emojis in critical text keys; prefer SVG icons from `src/modules/ui/icons.ts`.

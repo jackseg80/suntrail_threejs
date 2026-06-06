@@ -7,177 +7,60 @@
 
 App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacitor).
 - **Chaîne YouTube** : [@SunTrail3D](https://www.youtube.com/@SunTrail3D) (Démos & Tutoriels)
-- **Architecture Multi-Page (v5.53.5)** : Séparation en 3 pages : `index.html` (Landing SEO), `app.html` (App 3D), `login.html` (Supabase Auth). 
-- **Authentification (v5.53.5)** : Utilisation de Supabase pour l'identité utilisateur. Sync automatique des droits PRO via RevenueCat (`appUserId` = Supabase UID).
-- **Monétisation (v5.53.7)** : Passage aux essais gratuits (Free Trials) natifs RevenueCat/Stores. Suppression des trials locaux.
-- **Simulation Solaire Unique** : Calcul d'ombres portées en temps réel sur le relief, mais aussi sur les **forêts (InstancedMesh)** et les **bâtiments 3D**, offrant un réalisme topographique inégalé.
-- **Analyse Topographique** : Moteur d'analyse de profil, stats de précision (D+/D-, VAM) et inclinomètre numérique pro.
-- **Core** : LOD adaptatif, PMTiles, Offline-first, Support GPX.
-- **Hydrologie v5.34.0** : Refonte totale via Vector Tiles PBF (SwissTopo/MapTiler) et technique du "Texture Mask". Zéro Z-fighting, précision au pixel, adéquation relief parfaite.
-- **Végétation v5.33.1** : Détection sémantique vectorielle (SwissTopo/MapTiler), filtrage par BBox optimisé (v5.34.0).
-- **Frontières v5.56.0** : Système data-driven Europe entière (Natural Earth 1:10m, 55 pays). Voir `src/modules/geo.ts`, `src/data/countries.ts`, `src/modules/tileSources.ts`.
-  - **Données** : `src/data/countries.ts` — 55 pays, polygones simplifiés (~1.6 km). Généré par `scripts/ingest-natural-earth.ts`. CH utilise un polygone OSM indépendant (54 pts, plus précis aux frontières). → [src/data/countries.ts](src/data/countries.ts) | [scripts/ingest-natural-earth.ts](scripts/ingest-natural-earth.ts)
-  - **Détection** : `getCountryCode(lat, lon)` → code ISO ou `null`. `getCountryName(lat, lon)` → nom français via `COUNTRY_NAMES` (50 pays). `getCountryAtTile(tx, ty, zoom)` → pays majoritaire dans une tuile. BBox pre-filter → ray-casting (O(n), zéro allocation). Micro-états testés en premier (priorité). → [src/modules/geo.ts](src/modules/geo.ts)
-  - **Auto-détection source** : `autoSelectMapSource(lat, lon)` n'intervient que si `hasManualSource === false`. En mode auto, `MAP_SOURCE` reste toujours `'swisstopo'` — le choix de la source HD réelle est délégué à `getColorUrl` via `COUNTRY_SOURCES`. Ne change plus jamais `MAP_SOURCE` en `'opentopomap'`. → [src/modules/terrain.ts](src/modules/terrain.ts)
-  - `'opentopomap'` et `'satellite'` sont des choix manuels définitifs (`hasManualSource = true`) — respectés au moindre pixel.
-  - **Sources de tuiles** : `COUNTRY_SOURCES` (data-driven). Sources actives : CH (SwissTopo), FR (IGN), AT (basemap.at — CC-BY 4.0), DE (BKG — dl-de/by-2-0), ES (IGN España — CC-BY 4.0 scne.es), NO (Kartverket — CC-BY 4.0, nouveau CDN `cache.kartverket.no` accessible mondialement). Pour ajouter la source HD d'un pays : une entrée dans `COUNTRY_SOURCES`. Sans config → fallback global (MapTiler → OpenTopoMap → OSM). → [src/modules/tileSources.ts](src/modules/tileSources.ts)
-  - **Backward compat** : `isPositionInSwitzerland/France/Italy`, `isTileInSwitzerland/Strict` conservés comme wrappers.
-- **Sources HD Pays (v5.56.1)** : 6 sources actives, 5 prêtes à activer après vérification locale.
-  - **Actives** : CH (SwissTopo), FR (IGN), AT (basemap.at), DE (BKG), ES (IGN España), NO (Kartverket — nouveau CDN `cache.kartverket.no`).
-  - **Mode Auto** : `MAP_SOURCE='swisstopo'` → détection pays → HD si dispo, sinon fallback global. Le badge LOD affiche le nom du pays (jamais "OPENTOPO" en auto).
-  - **Mode Manuel** : clic sur OpenTopoMap/Satellite → `hasManualSource=true` → choix respecté définitivement. Cliquer sur "Topo (Auto)" réactive l'auto.
-  - **Endpoints inaccessibles** : CZ (ČÚZK), PL (Geoportal), SK (ZBGIS), FI (MML), SE (Lantmäteriet) — 401/404/503 depuis l'étranger. URLs documentées dans `tileSources.ts:145-160`.
-  - **Hors Europe (nécessite extension Natural Earth)** : JP (GSI Maps) — URL fonctionnelle, mais JP absent du dataset Europe. Voir `ROADMAP.md` pour les URLs exactes.
-  - **Flux des tuiles couleur (`getColorUrl`)** :
-    ```
-    LOD ≤ 10 → OpenTopoMap (pas de HD)
+- **Architecture Multi-Page (v5.53.5)** : `index.html` (Landing), `app.html` (App 3D), `login.html` (Auth).
+- **Authentification** : Supabase. Sync PRO via RevenueCat (`appUserId` = Supabase UID).
+- **Simulation Solaire** : Calcul d'ombres en temps réel sur relief, forêts (InstancedMesh) et bâtiments 3D.
+- **Analyse Topographique** : Profil d'élévation, stats (D+/D-, VAM) et inclinomètre numérique.
+- **Offline-first** : LOD adaptatif, PMTiles, zones mises en cache.
+- **Hydrologie & Végétation** : Vector Tiles PBF (SwissTopo/MapTiler). Zéro Z-fighting, précision pixel.
+- **Frontières & Sources HD (v5.56.0)** : Système data-driven (55 pays via Natural Earth).
+  - CH (SwissTopo), FR (IGN), AT (basemap.at), DE (BKG), ES (IGN España), NO (Kartverket).
+  - Auto-détection du pays → HD si dispo, sinon fallback global (OpenTopoMap).
+  - Détails des flux (Couleur/Elevation) : [docs/AI_PERFORMANCE.md](docs/AI_PERFORMANCE.md).
+- **Historique GPX (v5.56.2)** : 5 derniers tracés persistants avec mini-cartes et geocoding auto.
+- **Météo & Particules (v5.56.4)** : Particules 3D (pluie/neige) via `ShaderMaterial` + Open-Meteo.
+- **Offline Zones (v5.57.0)** : Sélection visuelle interactive (rectangle vert), slider LOD 5-18, toolbar avec compteur de tuiles. Détails : [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md).
+- **Foreground Service** : Architecture processus séparé `:tracking` pour GPS continu.
 
-    LOD ≥ 11 → MAP_SOURCE détermine la source :
-      │
-      ├─ 'opentopomap' (manuel) → OpenTopoMap direct (pas MapTiler)
-      │
-      ├─ 'satellite' (manuel) → colorSatellite pays → MapTiler → ArcGIS
-      │
-      └─ 'swisstopo' (auto) → data-driven COUNTRY_SOURCES[code].colorTopo
-           │  (si trouvé dans plage zoom)
-           │  → HD source (SwissTopo, IGN, Kartverket...)
-           │
-           └─ fallback → OpenTopoMap (LOD ≤ 17, gratuit, optimisé rando)
-                         → MapTiler outdoor (si clé API)
-                         → OpenStreetMap
-    ```
-  - **Flux d'élévation (`getElevationUrl`)** : MapTiler Terrain-RGB (sourceZoom = min(zoom, 14)). Sans clé → tuile plate.
-  - **Flux overlays sentiers (`getOverlayUrl`)** : SwissTopo wanderwege (CH, LOD 13-18) → Waymarked Trails (monde, LOD 11-17).
-  - **Badge LOD (`TopStatusBar.updateLOD`)** :
-    - `'opentopomap'` → `OPENTOPO · LVL X`
-    - `'satellite'` → `SAT · LVL X`
-    - `'swisstopo'` (auto) → nom du pays via `getCountryCode` :
-      `SWISS` / `IGN FR` / `ITALY` / `GERMANY` / `AUSTRIA` / `SPAIN` / `KARTVERK` / `WORLD`
-  - **Interception packs/PMTiles** : Le pack pays (SwissTopo/IGN) est consulté dans
-    `loadTileData()` avant l'envoi au worker. Le blob extrait est prioritaire sur l'URL.
-    Garde : ignoré si `MAP_SOURCE === 'opentopomap'`. `fetchWithCache` utilise
-    des coordonnées `(z, x, y)` explicites pour contourner les URLs KVP non-parseables.
-- **Foreground Service v5.53.0** : Architecture processus séparé `:tracking`
-- **Historique GPX v5.56.2** : Persistance des 5 derniers tracés (imports + REC) en localStorage. Mini-carte canvas OpenTopoMap. Reverse geocoding ville/pays auto. Fusion en liste unifiée avec les layers actifs. Affichage `Ville (Pays) · date` dans l'UI.
-- **Geocoding unifié v5.56.3** : `getPlaceName(lat, lon)` (`geocodingService.ts`) dédié au reverse/forward geocoding (via `fetchGeocoding` dans `utils.ts`, MapTiler → Nominatim). `weather.ts` utilise maintenant `getPlaceName()` + `getCountryName()` au lieu de sa propre fonction `extractLocationName()` (supprimée). Seuil re-fetch météo réduit à 3 km.
-- **Particules météo v5.56.4** : Système de particules 3D (pluie/neige) basé sur l'API Open-Meteo. Un seul `THREE.Points` avec `ShaderMaterial` — toggle pluie/neige via uniforme `uIsRain`. Les **WMO codes** déterminent le type de précipitation. Mapping corrigé : codes 51-67 (pluie), 71-77/85-86 (neige), 80-82/95-99 (pluie, étaient classés neige). **Garde-fou température** : si `temp > 5°C`, la neige est forcée en pluie. Voir `src/modules/weather.ts:136-147`.
-- **Types GPX v5.56.2** : Module centralisé `gpxTypes.ts` — `GeoPoint`, `GPXRawData`, `isValidGeoPoint()`, `getElevation()`. Remplace `Record<string, any>` dans tout le pipeline.
-  - `RecordingService` dans `android:process=":tracking"` — survit au kill de l'app principale
-  - `TrackingActivity` transparente dans `:tracking` — point d'entrée du processus isolé
-  - Communication Plugin ↔ Service : Broadcasts (`ACTION_POINTS_UPDATED`, `ACTION_SERVICE_STOPPED`)
-  - État partagé cross-processus : fichier `rec_state.json` dans `filesDir`
-  - Room SQLite : `enableMultiInstanceInvalidation()` pour synchronisation entre processus
-  - Impact : GPS continue même quand l'utilisateur swipe l'app des recents (killer foreground service) ✓
+## UI & Design (v5.53.8)
 
-## UI — Modernisation v5.53.8
-- **UpgradeSheet** (`src/modules/ui/templates/upgrade.html`) : Refonte complète du panneau "Passer à Pro".
-  - Icônes SVG vectorielles dual-tone (bleu `--accent` + doré `--gold` pour les éléments naturels) au lieu d'emojis
-  - Illustration SVG héro (soleil doré, montagnes, cône d'ombre bleu)
-  - Grille responsive 2→1 colonne sous 340px
-  - Plans tarifaires empilés verticalement sur très petits écrans
-  - Badge et bordure du plan "best" : `--accent` au lieu de `--gold`
-- **AcceptanceWall** (`src/modules/acceptanceWall.ts`) : Icônes SVG remplaçant les emojis, card plus compacte, hero mountain/sun SVG.
-- **SettingsSheet** (`src/modules/ui/components/SettingsSheet.ts`) : Bouton Pro avec SVGs (cadenas/check), gradient bleu au lieu de doré.
-- **i18n** (4 locales) : Emojis retirés des clés `upgrade.title`, `upgrade.plan.badge`.
-- **Icon module** (`src/modules/ui/icons.ts`) : Module centralisé avec 9 icônes SVG (close, play, pause, stop, record, check, lock, unlock, info) remplaçant les émojis dans tous les contrôles UI critiques.
-- **Consistance UI** : 32 emojis remplacés par des SVG — fermeture sheets (× dans 8 templates), play/pause timeline, record/stop VRAM, checkmarks PRO (×5), cadenas PRO, info layers, et boutons de suppression. Émojis météo, POI canvas, lune et i18n conservés (usage programmatique ou décoratif).
+- **Modernisation** : Icônes SVG vectorielles dual-tone remplaçant les emojis dans les contrôles critiques.
+- **Icon Module** : `src/modules/ui/icons.ts` centralise les SVGs standards.
+- **Consistance** : UpgradeSheet, AcceptanceWall et SettingsSheet refondus.
+- Guide de style complet : [docs/AI_UI_STYLE_GUIDE.md](docs/AI_UI_STYLE_GUIDE.md).
 
-### ⚠️ Règles de Modification de Fichiers (SÉCURITÉ)
-
-Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage et de syntaxe se produisent fréquemment lors de l'utilisation de commandes `replace` via Shell.
-1. **Zéro BOM (Byte Order Mark)** : Ne JAMAIS utiliser `Out-File` ou `Set-Content` sans précaution sur les fichiers système Android (`build.gradle`, etc.). Gradle échoue si un caractère invisible est présent au début du fichier.
-2. **Méthode .NET Garantie** : Pour modifier un fichier texte, préférer l'objet .NET en PowerShell qui garantit un UTF-8 sans signature :
-   `$p='path'; $c=[System.IO.File]::ReadAllText($p) -replace 'old','new'; [System.IO.File]::WriteAllText($p, $c, (New-Object System.Text.UTF8Encoding($false)))`
-3. **Double-Échappement** : Les guillemets dans les commandes Shell sous Windows nécessitent souvent un triple échappement (`\"\"\"` ou `\`). Si une modification échoue ou insère des antislashs indésirables, utiliser l'outil `write_file` pour réécrire le fichier complet proprement.
-4. **Validation Android Studio** : Après toute modification de `build.gradle`, vérifier la validité de la syntaxe.
-
+### ⚠️ Règles Windows/PowerShell (SÉCURITÉ)
+1. **Zéro BOM** : Ne jamais utiliser `Out-File` sans précaution sur les fichiers système Android.
+2. **Méthode .NET** : Préférer `[System.IO.File]::WriteAllText` pour l'UTF-8 sans signature.
+3. **Double-Échappement** : Attention aux guillemets dans les commandes Shell.
 
 ### 🚀 Protocole de Release (IMPÉRATIF)
-1. **Pre-check** : Exécuter `npm run check` et `npm test`.
-2. **Version Name** : Incrémenter dans `package.json` (ex: 5.27.5 → 5.27.6).
-3. **Version Code** : **OBLIGATOIRE** - Incrémenter le `versionCode` dans `android/app/build.gradle` (ex: 668 → 669). Google Play rejette tout doublon.
-4. **VersionName Android** : Synchroniser `versionName` dans `android/app/build.gradle` avec `package.json`.
-5. **Changelog** : Mettre à jour `CHANGELOG.md` et `TODO.md`.
-6. **IA Context** : Mettre à jour les headers de `CLAUDE.md` et `GEMINI.md`.
-7. **Git** : Committer les changements de version, taguer (`git tag vX.Y.Z`) et pusher (`git push origin main --follow-tags`).
+1. **Pre-check** : `npm run check` + `npm test`.
+2. **Version** : Incrémenter `package.json` ET `android/app/build.gradle` (`versionCode` + `versionName`).
+3. **Docs** : Update `CHANGELOG.md`, `TODO.md`, `CLAUDE.md`, `GEMINI.md`.
+4. **Git** : Commit, tag (`git tag vX.Y.Z`), push avec tags.
 
-### 📚 Index de Documentation (Essentiel pour l'IA)
+### 📚 Index de Documentation
 
 | Domaine | Document de Référence | Contenu |
 | :--- | :--- | :--- |
-| **État & Logique** | [docs/AI_ARCHITECTURE.md](docs/AI_ARCHITECTURE.md) | Proxy State, **Mapping EventBus**, Architecture Shaders. |
-| **Rendu & Batterie** | [docs/AI_PERFORMANCE.md](docs/AI_PERFORMANCE.md) | **Dictionnaire des Magic Numbers**, Deep Sleep, DPR Cap. |
-| **Design & UI** | [docs/AI_UI_STYLE_GUIDE.md](docs/AI_UI_STYLE_GUIDE.md) | **Grilles 2x2**, Instruments, Charts SVG, Variables CSS. |
-| **Business & Gates** | [docs/MONETIZATION.md](docs/MONETIZATION.md) | RevenueCat, Grille Free/Pro, Logique des verrous. |
-| **Interface & UX** | [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md) | TouchControls, SheetManager, DraggablePanels. |
-| **Débogage** | [docs/AI_DEBUGGING.md](docs/AI_DEBUGGING.md) | **Workflows de Simulation**, Troubleshooting visuel. |
-| **Historique** | [docs/archives/COMPLETED_HISTORY.md](docs/archives/COMPLETED_HISTORY.md) | Tout ce qui a été fait avant la v5.26.6. |
+| **État & Logique** | [docs/AI_ARCHITECTURE.md](docs/AI_ARCHITECTURE.md) | Proxy State, EventBus, Services. |
+| **Rendu & Batterie** | [docs/AI_PERFORMANCE.md](docs/AI_PERFORMANCE.md) | Magic Numbers, Data Flows, Benchmarking. |
+| **Design & UI** | [docs/AI_UI_STYLE_GUIDE.md](docs/AI_UI_STYLE_GUIDE.md) | Grilles, Icônes, Variables CSS. |
+| **Business & Gates** | [docs/MONETIZATION.md](docs/MONETIZATION.md) | RevenueCat, Grille Free/Pro, Offline limits. |
+| **Interface & UX** | [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md) | TouchControls, Offline interaction, Modules. |
+| **Débogage** | [docs/AI_DEBUGGING.md](docs/AI_DEBUGGING.md) | Simulation, Troubleshooting. |
 
-### Monétisation & Gates (Web vs Mobile)
-- **Pack Suisse HD** : **GRATUIT SUR LE WEB** (v5.27.6). Débloqué automatiquement pour tous les utilisateurs web pour garantir une expérience cartographique premium immédiate.
-- **Packs Pays (Android)** : Restent des achats In-App non-consumable (RevenueCat).
-- **REC GPS** : **ENTIÈREMENT GRATUIT**. Pas de limite de temps. Sécurité d'abord.
-- **Solaire** : Simulation 24h gratuite. Calendrier complet = PRO.
+### Monétisation & Gates (v5.57.0)
+- **Pack Suisse HD** : Gratuit sur le Web. PRO sur Android.
+- **Solaire** : 24h gratuit. Calendrier = PRO.
 - **Offline** : 1 zone gratuite. Illimité = PRO.
-- **LOD** : Plafond technique à 14 pour les gratuits (Toast d'upsell intégré).
-- **Inclinomètre** : Feature PRO active (v5.27.5 : Réticule mobile + anticipation 15m).
-- **Satellite** : Feature PRO active.
-- **Alertes Sécurité** : Seront TOUJOURS gratuites (v6.0+).
+- **LOD** : Plafond LOD 14 pour les gratuits (PRO → LOD 18).
+- **REC GPS** : Toujours gratuit (Sécurité).
 
 ### Calculs & Précision
-- **Distance** : Formule **Haversine** (précision < 0.5%) via `haversineDistance()`.
-- **D+ / D-** : Algorithme d'**Hystérésis avec seuil de 5m** (v5.29.30) via `calculateHysteresis()`. Optimisé pour les capteurs GPS sans baromètre (A53).
-- **Lissage** : Moyenne mobile **5 points** sur l'altitude GPS (v5.29.30).
-- **Filtrage GPS (v5.28.5)** : Rejeter tout point GPS avec saut vertical > 200m (si intervalle < 10s), distance horizontale < 2.5m (anti-champignon), ou vitesse > 600km/h.
-- **Moteur de Terrain (v5.29.30)** : 
-    - **Clé Unique** : Doit TOUJOURS inclure `MAP_SOURCE` (ex: `source_x_y_z`).
-    - **Switch de Source** : `resetTerrain()` systématique lors du changement de `MAP_SOURCE` + vidage de la file de chargement (anti-patchwork).
-    - **Gestion Mémoire** : Libération la VRAM via `texture.dispose()` UNIQUEMENT si la tuile n'est plus dans le `tileCache`.
-    - **Auto-Save Vue** : Persistance automatique de la position/zoom lors de l'arrêt de l'interaction.
-- **Rendu & Batterie (v5.29.7)** :
-    - **Deep Sleep** : Réduction à **~1.5 FPS** après 30s d'inactivité.
-    - **Auto-Throttle** : Réduction dynamique du DPR si FPS < 15.
-- **Démarrage & UI (v5.29.30)** :
-    - **Parallélisation** : Lancement de la scène 3D en parallèle de l'hydratation de l'UI secondaire pour éliminer l'écran blanc.
-    - **TubeGeometry Stabilité** : Utiliser `centripetal` pour les splines. Rendu temps réel à 1500 segments max.
-- **GPX Track Thickness (v5.40.40)** : Épaisseur exponentielle zoom-based (Komoot-style) : `base * 2^(max(0, 18-ZOOM))` avec cap 200m (import) / 250m (recording). Fonction partagée `computeTrackThickness()`. Rebuild déclenché par `controls.end` + throttle zoom + `touchControls` (`dispatchEvent('end')`).
-- **Surface Offset GPX (v5.40.40)** : `GPX_SURFACE_OFFSET = 12` utilisé partout (`drapeToTerrain`, `addGPXLayer`, rebuild) au lieu du 30 hardcodé dans `_doUpdateAllGPXMeshes`.
-- **Rebuild Robuste (v5.40.40)** : `_doUpdateAllGPXMeshes` utilise `for...of` + `try/catch` par layer au lieu de `.map()` qui faisait tout échouer si un layer plantait.
-- **Cache Unifié (v5.28.33)** : `suntrail-tiles-v28` synchronisé entre thread principal et workers.
-
-
-## Structure du Projet
-
-- `src/modules/iapService.ts` : Liaison RevenueCat ↔ Google Play.
-- `src/modules/recordingService.ts` : (v5.29.37) Logique orchestrée d'enregistrement GPS.
-- `src/modules/gpxService.ts` : (v5.29.37) Import/Export et utilitaires GPX.
-- `src/modules/gpxLayers.ts` : (v5.56.2) Gestion du rendu 3D des tracés. Extraction `disposeTrackMesh`, `getPerformanceEpsilonMultiplier`, build-before-dispose pour mesh REC.
-- `src/modules/gpxHistoryService.ts` : (v5.56.2) **NOUVEAU** — Persistance historique GPX (max 5, localStorage, déduplication, cache mémoire).
-- `src/modules/gpxTypes.ts` : (v5.56.2) **NOUVEAU** — Types centralisés `GeoPoint`, `GPXRawData`, utilitaires `isValidGeoPoint`, `getElevation`.
-- `src/modules/routeManager.ts` : (v5.51.0) Gestionnaire d'itinéraire "zero-mode" — markers 3D (Sprite orange cliquable), auto-compute debounce 800ms, mise à jour barre + panel réglages.
-- `src/modules/ui/tooltip.ts` : (v5.56.6) Utilitaire d'info-bulle réutilisable. `createTooltip(anchor, content, options?)` → `{ show, hide, toggle, dispose }`. Options : `trigger: 'auto' | 'click' | 'hover'` (auto = hover sur desktop, clic sur tactile), `position: 'auto' | 'top' | 'bottom'`. Auto-positionnement, `position: fixed` sur `<body>`, fermeture au clic/touch extérieur, accessibilité clavier (focus/blur). Utilisé par 6 composants : WeatherSheet (Confort Rando, isotherme, rosée, visibilité, UV), SolarProbeSheet (azimut, élévation), TrackSheet (D+, D−, durée, points), SettingsSheet (exagération, fog, résolution, rayon, végétation, éco, météo), TopStatusBar (LOD). Voir `src/modules/ui/tooltip.test.ts` (32 tests).
-- `src/modules/appInit.ts` : (v5.51.0) Orchestration du démarrage. `setupLongPress()` (500ms + SVG feedback), `setupRouteBar()` (⚙ profil/boucle/ORS + ✕ effacer).
-- `src/modules/environment.ts` : (v5.40.20) Ambiance 3D, Fog, Sky, Lights (ex-scene.ts).
-- `src/modules/config.ts` : Résolution centralisée des clés API (Gist/Env).
-- `src/modules/profile.ts` : (v5.52.3) Graphique d'élévation. Données GPX brutes prioritaires. **Bande solaire SVG 12px** (or/bleu-ombre/bleu-nuit) affichée sous le graphique. **Correction Mercator** : redimensionne distances/pentes via facteur `layer.stats.distance / cumulativeDist`. **Heure estimée au survol** : affiche `Distance | Alt | Pente | HHhMM` (depuis `_solarBandData.evalDate`). **RAF keepalive** : maintient renderer actif en 2D (state.isInteractingWithUI). **Touch fix v5.52.3** : `touch-action:none` sur conteneur empêche browser de capturer scroll/pointercancel.
-- `src/modules/scene.ts` : Moteur de rendu et boucle principale.
-- `src/modules/cameraManager.ts` : Gestion de la caméra, animations flyTo et resize.
-- `src/modules/poi.ts` : (v5.40.38) Détection et rendu 3D des POIs depuis tuiles vectorielles (SwissTopo/MapTiler). 8 catégories : trail (🔶 sentiers nommés), hut (🟤 refuges), rest (🟢 haltes), attraction (🔵 curiosités), viewpoint (🔭), shelter (🏠), info (i), guidepost (Signalisation). Détection unifiée SwissTopo (class/subclass) + MapTiler. Cache PBF zone-based.
-- `src/modules/solarRoute.ts` : (v5.56.18) Analyse solaire des itinéraires — **deux modes distincts** : Snapshot (ombre à l'heure du slider, Free) et Hiker Timeline (ombre à l'heure d'arrivée estimée, Pro). **Overlay 3D** : DataTexture 256×1 mappée sur TubeGeometry pour colorisation 4 états (soleil or / forêt vert / ombre bleu / nuit bleu-nuit) live (~200ms cache hit). **Détection forêt globale** (v5.52.9) : `prefetchLandcoverForPoints()` pré-charge toutes tuiles Z14 (CH) / Z10 (monde) avant analyse — élimine cache-froid. Fallback silencieux si MapTiler indisponible. **Sampling adaptatif** : max 200 points, step dynamique. **Cache** : clé `${routeHash}|${date}|${slot30}|${mode}|${speed}`, invalide sur changement route ou date. **RAF keepalive** pour fluidité 2D. **Ombre précise** : utilise `getAltitudeAt()` au moment de l'analyse. **Recommandations** : grille 3×2 stats (soleil, nuit, km soleil, km ombre, km nuit, total) + info forêt + segments ombragés + alerte exposition forte (excl. forêt) + **recommandation lampe frontale** si portion nocturne. **Nuit tracée (v5.56.18)** : `nightKm`/`nightPct` dans les résultats, bandeau 🌙 "parcours 100% nocturne" si ≥90%. **Cache résilient (v5.56.18)** : pas de cache si `terrainAvailable: false` → se relance quand les tuiles arrivent. Détection via compteur d'appels à `getAltitudeAt()` pendant l'analyse. **Speed** : [3, 4, 6] km/h sélectionnable, auto-bascule en hikerTimeline.
-- `src/modules/profile.ts` : (v5.56.18) Graphique d'élévation. **Légende solaire** dans le panneau profil déplié : carrés Soleil (or), Ombre (bleu-gris), Forêt (vert), Nuit (bleu sombre) avec `solar-legend` toggle via `setSolarBandData()`.
-- `src/style.css` : (v5.56.18) Nouveaux sélecteurs `.legend-group` et `.legend-group-label` pour grouper les légendes pentes + solaire.
-
-## Offline Zones v5.57.0
-- **Selection visuelle interactive** (`ZoneSelector.ts`, `ZoneOverlay.ts`) : L'utilisateur clique "Telecharger Zone" dans le panneau Systeme & Donnees → la sheet se ferme → un rectangle vert semi-transparent (bordure blanche) apparait sur le terrain, correspondant exactement a la zone visible (frustum camera).
-- **Toolbar flottante** (`ZoneSelectToolbar.ts`) : Affiche le nombre de tuiles et la taille estimee pour le LOD courant. Slider double LOD min-max (5→18) independant du zoom. Met a jour le compteur/taille en temps reel.
-- **Limites** : 500 tuiles → warning orange, 1000 → hard warning, 2000 → bouton grise.
-- **Telechargement multi-LOD** (`tileLoader.ts:downloadZoneMultiLOD`) : Toutes les tuiles de la plage LOD (couleur + elevation + overlay) via `fetchWithCache(usePersistentCache=true)`. Limite 2000 tuiles.
-- **Cached zones** (`cachedZones.ts`) : Stockage en localStorage (`suntrail-cached-zones`) — bbox, plage LOD, nombre, taille, timestamp. Affichage dans le panneau Systeme & Donnees avec possibilite de supprimer l'historique.
-- **Fly to cached** : Clic sur une zone en cache → `flyTo()` au centre de la zone au LOD max + overlay bleu temporaire (4s).
-- **Fichiers** : `ZoneSelector.ts` (logique pure), `ZoneOverlay.ts` (overlay Three.js), `cachedZones.ts` (persistance), `ZoneSelectToolbar.ts` (UI), `zone-select-toolbar.html` (template).
-
-## Tests & Qualité
-- **Unitaires (Vitest)** : `npm test` (1021 passants, 99 fichiers, 5 skipped). Securise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`, `solarRoute.ts`, `authService.ts`, `haptics.ts`, `theme.ts`, `toast.ts`, `weatherUtils.ts`, `nativeGPSService.ts`, `weather.ts`, `tooltip.ts`, `TopStatusBar.ts`, `ZoneSelector.ts`, `cachedZones.ts`. Solar route analysis valide (31 tests dedies). Nuit tracee : `nightKm`/`nightPct` teste.
-- **Hardening (v5.54.1)** : Fuites mémoire Capacitor (nativeGPSService, iapService), logging fire-and-forget, centralization clés localStorage (`src/constants/storage.ts`), npm audit fix (7 vulnérabilités).
-- **E2E (Playwright)** : `npx playwright test --ui` (Onboarding, GPS, Expert).
-- **Mocks** : `src/test/setup.ts` pour WebGL. `ui.test.ts` utilise des timers fictifs.
+- **Distance** : Haversine.
+- **D+ / D-** : Hystérésis 5m (v5.29.30).
+- **Lissage** : Moyenne mobile 5 pts.
+- **Thickness GPX** : Exponentiel zoom-based (v5.40.40).
+- **Deep Sleep** : ~1.5 FPS après 30s d'inactivité (v5.29.7).

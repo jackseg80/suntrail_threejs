@@ -1,4 +1,4 @@
-# SunTrail — Navigation & Modules Fonctionnels (v5.56.3)
+# SunTrail — Navigation & Modules Fonctionnels (v5.57.0)
 
 > Référence détaillée pour agents IA. Point d'entrée : [CLAUDE.md](../CLAUDE.md)
 
@@ -14,7 +14,7 @@
 
 ---
 
-## Navigation Tactile style Google Earth (v6.3)
+## Navigation Tactile style Google Earth
 
 `src/modules/touchControls.ts` — module autonome interceptant les **PointerEvents**.
 
@@ -37,93 +37,41 @@
 
 ## Modules Fonctionnels
 
+### Offline Zones (v5.57.0)
+- **Selection visuelle interactive** : Un rectangle vert semi-transparent (intersection frustum camera + sol) permet de définir la zone à télécharger.
+- **LOD Slider** : Slider double LOD indépendant du zoom (5→18).
+- **Toolbar** : Affiche le compteur de tuiles et la taille estimée. Warning orange > 500, rouge > 1000, bloqué > 2000 tuiles.
+- **Fichiers** : `ZoneSelector.ts`, `ZoneOverlay.ts`, `ZoneSelectToolbar.ts`.
+
 ### Recherche & Géocodage (`SearchSheet.ts`)
 - **BaseComponent** avec recherche hybride : filtrage local `state.localPeaks` + géocodage distant MapTiler/OSM Nominatim (debounce 400ms).
-- **Classification (v5.18.0)** : `classifyFeature()` → pays/région/ville/village/sommet/POI. Zoom adaptatif : pays → LOD 6, ville → LOD 11, sommet → LOD 14.
-- **Filtres chips** : `activeFilter: 'all' | 'cities' | 'mountains' | 'countries'`. Overpass `natural=peak` **uniquement** sur filtre "Montagnes" (timeout 5s). **Ne jamais lancer Overpass sur "Tout"**.
-- ARIA complet : `aria-label`, `role="listbox"`, live regions.
+- **Classification** : `classifyFeature()` → pays/région/ville/village/sommet/POI. Zoom adaptatif : pays → LOD 6, ville → LOD 11, sommet → LOD 14.
+- **Filtres chips** : `activeFilter: 'all' | 'cities' | 'mountains' | 'countries'`.
 
 ### Profil d'Élévation (`profile.ts`)
-- **SVG** avec gradient, redimensionnement responsive.
-- **Interaction** : survol affiche distance/altitude/pente%. Marqueur 3D cyan synchronisé.
-- **Calculs** : D+/D-, pente par segment, distance haversine.
-- **Tiroir swipe-to-dismiss (v5.16.8)** : Panel repositionné juste au-dessus du menu nav. Drag handle + swipe.
-- **Exports** : `updateElevationProfile()`, `closeElevationProfile()`, `haversineDistance()`.
-
-### Boussole 3D (`compass.ts`)
-- Scène Three.js dédiée (canvas 120×120px). Cône rouge (Nord) + blanc (Sud), lettres N/S/E/O en sprites.
-- Inverse le quaternion de la caméra principale. Animation reset-to-North 800ms.
-- **Exports** : `initCompass()`, `renderCompass()`, `resetToNorth()`, `updateCompassAnimation()`, `isCompassAnimating()`.
+- **Interaction** : survol affiche distance/alt/pente% + **heure estimée** (v5.52.3).
+- **Bande solaire SVG 12px** (v5.52.3) : Affichée sous le graphique (or/bleu-ombre/bleu-nuit).
+- **Touch fix** (v5.52.3) : `touch-action:none` sur conteneur pour éviter les conflits de scroll.
 
 ### POI & Signalisation (`poi.ts`)
-- **Source** : Vector Tiles PBF — SwissTopo (`ch.swisstopo.base.vt`) en CH via zoom 14, MapTiler v3 hors CH via zoom 12.
-- **Détection unifiée** (v5.40.38) : supporte le format SwissTopo (`class`/`subclass`, ex: `lodging`/`alpine_hut`) et MapTiler (`class` seule).
-- **8 catégories** : trail (🔶 sentiers nommés via `transportation_name`), hut (🟤 refuges/cabanes), rest (🟢 haltes/pique-nique/eau), attraction (🔵 cascades/grottes), viewpoint (🔭), shelter (🏠), info (i), guidepost.
-- Sprites Three.js à altitude terrain + 12m, échelle 24×24.
-- **Interaction** : clic → affiche le nom du POI dans `coords-pill` avec sa catégorie.
-- **Filtrage couches** : ignore `line`, `poly`, `water`, `landuse`, `building`, `transportation`, `road`, `highway` mais conserve `transportation_name`.
-- Cache mémoire + Cache API (zone-based, 200 entrées max). Cooldown 60s/zone en erreur.
+- **Détection unifiée** (v5.40.38) : supporte SwissTopo et MapTiler.
+- **8 catégories** : trail (🔶), hut (🟤), rest (🟢), attraction (🔵), viewpoint (🔭), shelter (🏠), info (i), guidepost.
+- Sprites Three.js à altitude terrain + 12m.
 
-### Sommets (`peaks.ts`)
-- **Source** : Overpass API (`natural=peak`, `ele > 1000m`), trié par altitude décroissante.
-- Cache localStorage 7 jours, invalidé si déplacement > 25km.
-- **Export** : `fetchLocalPeaks()` → `state.localPeaks`.
-
-### GPS & Localisation (`location.ts`)
-- Capacitor Geolocation (high accuracy, timeout 5s, maxAge 3s).
-- Filtres : bruit statique GPS (seuil ~50cm) + low-pass 10% sur boussole.
-- Marqueur : Group Three.js (anneau bleu + cône de vue 60° + dot canvas-texture HD). Rotation par `state.userHeading`.
-- **REC** : Enregistrement dans `state.recordedPoints` quand `state.isRecording=true`.
-- **Exports** : `startLocationTracking()`, `stopLocationTracking()`, `updateUserMarker()`, `centerOnUser()`.
-
-### Analyse Solaire (`analysis.ts`)
-- **`runSolarProbe()`** : `SolarAnalysisResult` — lever/coucher, midi solaire, golden hours, phase lunaire (nom + %), courbe élévation 24h (144 points), azimut/élévation courants, minutes totales d'ensoleillement.
-- **Détection d'ombre** : Ray-cast vers le soleil, pas adaptatif (500m base, 1km+ au-delà de 10km).
-- **Échantillonnage terrain** : Interpolation bilinéaire sur height maps (encodage Terrain-RGB).
-- Dépendance : SunCalc.
+### Analyse Solaire (`solarRoute.ts`)
+- **Deux modes** (v5.56.18) :
+    - **Snapshot** : Ombre à l'heure du slider (Free).
+    - **Hiker Timeline** : Ombre à l'heure d'arrivée estimée (Pro).
+- **Overlay 3D** : TubeGeometry coloré live (soleil or / forêt vert / ombre bleu / nuit bleu-nuit).
+- **Recommandations** : Grille 3×2 stats + alerte exposition forte + recommendation lampe frontale si nuit.
 
 ### Météo (`weather.ts`)
-- **Source** : Open-Meteo API (sans clé) — courant, horaire 24h, prévisions 3 jours.
-- ShaderMaterial sur Points (15 000 particules max). Pluie = traits verticaux (4000 u/s). Neige = flocons 6 branches avec dérive sinusoïdale (700 u/s). Vent issu de l'API.
-- **Rate limit** : 15s minimum entre appels.
-- **Déclencheurs** : démarrage, pan/zoom (debounce 1s, seuil 3 km), bouton GPS, recherche, ouverture du bulletin.
-- **Bouton refresh** (🔄) : dans le header du bulletin, SVG icône synchro, force `fetchWeather()` sur la position actuelle de la caméra.
-- **Géocodage** : `getPlaceName()` (geocodingService.ts) + `getCountryName()` (geo.ts) pour le label `Ville, Pays`.
-- **Exports** : `fetchWeather()`, `initWeatherSystem()`, `updateWeatherSystem()`, `getWeatherIcon()`.
-
-### Géocodage (`geocodingService.ts`)
-- **Reverse geocoding** : `getPlaceName(lat, lon)` → nom de ville/village via MapTiler (primaire) / Nominatim (fallback).
-- **Forward geocoding** : `searchLocations(query)` → résultats avec classification (`classifyFeature()`).
-- **Backoff** : 429 → 60s, 403 → 5min, réseau → 30s (dans `utils.ts`).
-
-### Historique GPX (`gpxHistoryService.ts`)
-- Persistance localStorage des 5 derniers tracés (imports + REC).
-- Reverse geocoding automatique : `countryName` via `COUNTRY_NAMES[getCountryCode()]`, `locationName` via `getPlaceName()`.
-- `GPXHistoryEntry` : `id`, `name`, `stats`, `simplifiedPoints`, `centerLat/Lon`, `bounds`, `locationName?`, `countryName?`.
-- Affichage dans `TrackSheet.ts` : `Ville (Pays) · date heure`.
-
-### Géo-utilitaires (`geo.ts`)
-- Web Mercator : `lngLatToWorld()`, `worldToLngLat()`, `lngLatToTile()`, `getTileBounds()`.
-- `clampTargetToBounds()` pour clamping caméra.
-- `getCountryCode(lat, lon)` → code ISO (55 pays, polygones Natural Earth 1:10m).
-- `getCountryName(lat, lon)` → nom français via `COUNTRY_NAMES`.
-- `haversineDistance()` → distance km entre 2 points.
-
-### Worker Pool (`workerManager.ts`)
-- **Singleton `tileWorkerManager`** : 4 workers (mobile) / 8 workers (desktop).
-- Gestion par ID avec Promises, déduplication, timeout 15s. Annulation via `cancelTile()` → `AbortController.abort()`.
-- Reporting erreurs 403 pour désactiver MapTiler globalement.
+- **Particules 3D** (v5.56.4) : Système `THREE.Points` avec `ShaderMaterial`. Toggle pluie/neige via uniforme `uIsRain`.
+- **Garde-fou température** : Si `temp > 5°C`, force pluie au lieu de neige.
 
 ---
 
-### Timeline / Simulation Solaire (`TimelineComponent.ts`)
-- **Toggle** : Bouton `#timeline-toggle-btn` dans la top status bar (🕒). Ouvert seulement en mode 3D.
-- **Auto-open/close** : La timeline s'ouvre automatiquement au passage en 3D, se ferme au passage en 2D.
-- **Drag** : Swipe down pour fermer, drag libre vers le haut pour repositionner. Chevauchement dynamique des widgets voisins.
-- **FAB stack** : Les boutons flottants restent visibles sur écrans larges (>600px). Masqués sur petits écrans où la timeline les chevauche.
-
-### Bouton 2D/3D (`NavigationBar.ts`)
-- **Emplacement** : FAB stack (bas-droite). Icône et label indiquent le **mode de destination** (appel à l'action).
-  - En mode 2D : icône cube isométrique + label "3D" → "cliquez pour la 3D"
-  - En mode 3D : icône plan quadrillé + label "2D" → "cliquez pour la 2D"
-- **Verrouillage LOD ≤ 10** : Forcé en 2D, bouton désactivé (0.35 opacité). Le mode précédent est restauré au dézoom > 10.
+### Navigation Bar & 2D/3D (`NavigationBar.ts`)
+- **Bouton Dynamique** : Affiche le mode de destination (Cube isométrique → 3D, Plan → 2D).
+- **Verrouillage LOD ≤ 10** : Forcé en 2D pour performance overview.
+- **Timeline Auto** : S'ouvre en 3D, se ferme en 2D.
