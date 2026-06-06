@@ -37,9 +37,9 @@ export class ZoneSelectToolbar extends BaseComponent {
         const el = document.createElement('div');
         el.id = 'zone-select-viewport';
         el.style.cssText =
-            'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:50;' +
-            'border:3px solid rgba(0,255,102,0.75);border-radius:6px;background:rgba(0,255,102,0.03);' +
-            'box-shadow:0 0 0 1px rgba(0,0,0,0.15);';
+            'position:fixed;top:6%;left:50%;transform:translateX(-50%);pointer-events:none;z-index:50;' +
+            'border:3px solid rgba(0,255,102,0.85);border-radius:8px;background:rgba(0,255,102,0.08);' +
+            'box-shadow:0 0 0 1px rgba(0,0,0,0.2);';
         this.updateViewportOverlaySize(el);
         return el;
     }
@@ -47,11 +47,8 @@ export class ZoneSelectToolbar extends BaseComponent {
     private updateViewportOverlaySize(el?: HTMLElement): void {
         const target = el || this.viewportOverlay;
         if (!target) return;
-        const w = window.innerWidth;
-        const h = window.innerHeight;
-        const size = Math.floor(Math.min(w, h) * 0.75);
-        target.style.width = `${size}px`;
-        target.style.height = `${size}px`;
+        target.style.width = `${Math.floor(window.innerWidth * 0.85)}px`;
+        target.style.height = `${Math.floor(window.innerHeight * 0.55)}px`;
     }
 
     setOverlay(overlay: import('../../ZoneOverlay').ZoneOverlay): void {
