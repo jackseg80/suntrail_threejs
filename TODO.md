@@ -8,6 +8,8 @@
 
 ## 🟡 Court terme (v5.56.x)
 
+- **Frontières AT/ES/NO — zones noires LOD 14+** — Les tuiles HD de ces pays ont des pixels noirs/opaques hors-frontière. Les solutions (strictAtHighZoom, compositing worker) n'ont pas fonctionné. À creuser : chroma key dans le worker ou fallback OpenTopoMap systématique pour ces pays au-delà de LOD 14.
+
 - **Debug OAuth Google** — Résoudre les problèmes de stabilité et réactiver l'UI
 - [x] **Refactoring SolarProbeSheet.ts** (896 lignes) — Extraire les sous-composants UI et handlers en modules séparés (v5.56.4)
 - **Refactoring SettingsSheet.ts** (715 lignes) — Découper par section (résolution, carte, GPS, etc.)
