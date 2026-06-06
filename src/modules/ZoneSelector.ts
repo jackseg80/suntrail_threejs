@@ -40,7 +40,9 @@ export function getVisibleTilesBBox(
 }
 
 export function getViewportBBox(): BBox | null {
-    return _getViewportBBox(0.85, 0.55, 0.12);
+    // s = 2*f - 1 pour que le rectangle NDC couvre la fraction f de l'écran
+    // hScale=0.70 → 85% largeur, vScale=0.10 → 55% hauteur, vOffset=0.33 → top:6%
+    return _getViewportBBox(0.7, 0.1, 0.33);
 }
 
 function _getViewportBBox(
