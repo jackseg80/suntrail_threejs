@@ -190,18 +190,13 @@ export class Tile {
             this.colorTex = cached.color;
             this.overlayTex = cached.overlay;
             this.normalTex = cached.normal;
-            const useMipmaps = this.zoom <= 10;
             if (this.colorTex) {
-                this.colorTex.generateMipmaps = useMipmaps;
-                this.colorTex.minFilter = useMipmaps
-                    ? THREE.LinearMipmapLinearFilter
-                    : THREE.LinearFilter;
+                this.colorTex.generateMipmaps = false;
+                this.colorTex.minFilter = THREE.LinearFilter;
             }
             if (this.overlayTex) {
-                this.overlayTex.generateMipmaps = useMipmaps;
-                this.overlayTex.minFilter = useMipmaps
-                    ? THREE.LinearMipmapLinearFilter
-                    : THREE.LinearFilter;
+                this.overlayTex.generateMipmaps = false;
+                this.overlayTex.minFilter = THREE.LinearFilter;
             }
             markCacheKeyActive(cacheKey);
 
@@ -253,13 +248,10 @@ export class Tile {
             }
 
             if (data.colorBitmap) {
-                const useColorMipmaps = this.zoom <= 10;
                 this.colorTex = new THREE.Texture(data.colorBitmap);
                 this.colorTex.flipY = false;
-                this.colorTex.generateMipmaps = useColorMipmaps;
-                this.colorTex.minFilter = useColorMipmaps
-                    ? THREE.LinearMipmapLinearFilter
-                    : THREE.LinearFilter;
+                this.colorTex.generateMipmaps = false;
+                this.colorTex.minFilter = THREE.LinearFilter;
                 this.colorTex.needsUpdate = true;
                 this.colorTex.colorSpace = THREE.SRGBColorSpace;
                 if (state.renderer) {
@@ -279,13 +271,10 @@ export class Tile {
             }
 
             if (data.overlayBitmap) {
-                const useOverlayMipmaps = this.zoom <= 10;
                 this.overlayTex = new THREE.Texture(data.overlayBitmap);
                 this.overlayTex.flipY = false;
-                this.overlayTex.generateMipmaps = useOverlayMipmaps;
-                this.overlayTex.minFilter = useOverlayMipmaps
-                    ? THREE.LinearMipmapLinearFilter
-                    : THREE.LinearFilter;
+                this.overlayTex.generateMipmaps = false;
+                this.overlayTex.minFilter = THREE.LinearFilter;
                 this.overlayTex.needsUpdate = true;
                 this.overlayTex.colorSpace = THREE.SRGBColorSpace;
                 if (state.renderer) {

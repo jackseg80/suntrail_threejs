@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.56.26)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-06 — v5.56.26 : LOD5 + qualité overview (WebP 95, mipmaps).
+> Mis à jour le 2026-06-06 — v5.56.26 : LOD5 + qualité overview (WebP 90).
 
 ## Projet
 

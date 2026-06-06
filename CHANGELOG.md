@@ -4,8 +4,7 @@
 - **LOD5 disponible** (`scene.ts`, `cameraManager.ts`) : Le zoom minimum passe de 6 à 5. Les tuiles LOD5 déjà présentes dans `europe-overview.pmtiles` sont désormais accessibles.
 
 ### Changed
-- **Qualité overview améliorée** (`build-overview-tiles.ts`) : WebP quality 80→95. Texte et écritures nettement plus lisibles.
-- **Mipmaps bas LOD** (`Tile.ts`) : `LinearMipmapLinearFilter` activé pour les tuiles ≤ LOD10, supprimant le flou de minification aux zooms éloignés.
+- **Qualité overview améliorée** (`build-overview-tiles.ts`) : WebP quality 80→90. Texte et écritures nettement plus lisibles.
 
 ## [5.56.25] - 2026-06-05
 
