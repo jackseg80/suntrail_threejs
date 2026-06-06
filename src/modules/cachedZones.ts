@@ -1,4 +1,5 @@
 import type { BBox } from './geo';
+import { decrementOfflineZoneCount } from './tileLoader';
 
 const CACHED_ZONES_KEY = 'suntrail-cached-zones';
 
@@ -37,4 +38,5 @@ export function addCachedZone(
 export function removeCachedZone(id: string): void {
     const zones = getCachedZones().filter((z) => z.id !== id);
     localStorage.setItem(CACHED_ZONES_KEY, JSON.stringify(zones));
+    decrementOfflineZoneCount();
 }

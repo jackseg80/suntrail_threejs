@@ -585,6 +585,17 @@ export function incrementOfflineZoneCount(): void {
     );
 }
 
+/** Décrémente le compteur de zones téléchargées (minimum 0). */
+export function decrementOfflineZoneCount(): void {
+    const current = getOfflineZoneCount();
+    if (current > 0) {
+        localStorage.setItem(
+            STORAGE_KEYS.OFFLINE_ZONES_COUNT,
+            String(current - 1)
+        );
+    }
+}
+
 /**
  * Estime la taille du téléchargement à partir du nombre de tuiles.
  * ~80 Ko par tuile (couleur + élévation + overlay).

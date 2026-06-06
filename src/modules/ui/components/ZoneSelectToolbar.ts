@@ -9,6 +9,7 @@ import {
     downloadZoneMultiLOD,
     getOfflineZoneCount,
     incrementOfflineZoneCount,
+    decrementOfflineZoneCount,
     estimateZoneSizeMB,
 } from '../../tileLoader';
 import { showUpgradePrompt } from '../../iap';
@@ -245,6 +246,9 @@ export class ZoneSelectToolbar extends BaseComponent {
         const capturedTotalTiles = this.currentSelection.totalTiles;
         const capturedSizeMB = this.currentSelection.totalSizeMB;
 
+        // Réserver le slot avant téléchargement (évite double-download si localStorage fail)
+        incrementOfflineZoneCount();
+
         btn.classList.add('btn-loading');
         btn.setAttribute('aria-busy', 'true');
         btn.disabled = true;
@@ -273,7 +277,6 @@ export class ZoneSelectToolbar extends BaseComponent {
                 }
             );
             if (ok) {
-                incrementOfflineZoneCount();
                 addCachedZone({
                     label: `${i18n.t('zoneSelect.currentZone') || 'Zone'} (LOD ${this.minLod}→${this.maxLod})`,
                     bbox: capturedBbox,
@@ -290,10 +293,13 @@ export class ZoneSelectToolbar extends BaseComponent {
                 showToast('✅ Zone telechargee !');
                 setTimeout(() => this.cancel(), 3000);
                 return;
-            } else {
-                showToast('⛔ Erreur telechargement zone');
             }
+            // Échec téléchargement — libérer le slot
+            decrementOfflineZoneCount();
+            showToast('⛔ Erreur telechargement zone');
         } catch (e) {
+            // Erreur réseau / technique — libérer le slot
+            decrementOfflineZoneCount();
             console.warn('[OfflineZone] Download error:', e);
         }
         this.cancel();

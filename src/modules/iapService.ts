@@ -10,7 +10,7 @@
 
 import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor';
 import { Capacitor } from '@capacitor/core';
-import { state } from './state';
+import { state, saveProStatus } from './state';
 import { grantProAccess, revokeProAccess } from './iap';
 import { STORAGE_KEYS } from '../constants/storage';
 
@@ -67,6 +67,10 @@ class IAPService {
             console.warn(
                 '[IAP] VITE_REVENUECAT_KEY manquante — achats désactivés.'
             );
+            if (state.isPro) {
+                state.isPro = false;
+                saveProStatus();
+            }
             return;
         }
         if (this.initialized) return;
@@ -138,6 +142,10 @@ class IAPService {
                 console.log(
                     '[IAP] VITE_REVENUECAT_WEB_KEY manquante — achats web désactivés.'
                 );
+            if (state.isPro) {
+                state.isPro = false;
+                saveProStatus();
+            }
             return;
         }
         if (this.initialized) return;
