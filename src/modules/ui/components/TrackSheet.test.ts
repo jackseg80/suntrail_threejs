@@ -64,6 +64,7 @@ vi.mock('@capacitor/core', () => ({
 }));
 
 import { TrackSheet } from './TrackSheet';
+import { state } from '../../state';
 
 describe('TrackSheet — showSaveTrackPrompt', () => {
     let sheet: TrackSheet;
@@ -134,5 +135,69 @@ describe('TrackSheet — showSaveTrackPrompt', () => {
         document.getElementById('rec-save-cancel')?.click();
         await promise;
         expect(document.getElementById('rec-save-cancel')).toBeNull();
+    });
+});
+
+describe('TrackSheet — updateRecUI (v5.57.2)', () => {
+    let sheet: TrackSheet;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        document.body.innerHTML = `
+            <div id="track">
+                <div class="nav-tab" data-tab="track"></div>
+                <button id="rec-btn-sheet" class="track-btn rec">
+                    <span class="trk-rec-label">REC</span>
+                </button>
+                <button id="import-gpx-sheet"></button>
+                <div id="rec-recording-upsell" style="display:none"></div>
+            </div>
+        `;
+        sheet = new TrackSheet();
+        (sheet as any).element = document.getElementById('track');
+    });
+
+    afterEach(() => {
+        document.body.innerHTML = '';
+    });
+
+    it("ajoute la classe recording pendant l'enregistrement", () => {
+        state.isRecording = true;
+        (sheet as any).updateRecUI();
+        const track = document.getElementById('track')!;
+        expect(track.classList.contains('recording')).toBe(true);
+        expect(
+            document
+                .getElementById('rec-btn-sheet')
+                ?.classList.contains('active')
+        ).toBe(true);
+    });
+
+    it("retire la classe recording quand l'enregistrement s'arrête", () => {
+        state.isRecording = false;
+        (sheet as any).updateRecUI();
+        const track = document.getElementById('track')!;
+        expect(track.classList.contains('recording')).toBe(false);
+        expect(
+            document
+                .getElementById('rec-btn-sheet')
+                ?.classList.contains('active')
+        ).toBe(false);
+    });
+
+    it('affiche le banner upsell pour les utilisateurs Free', () => {
+        state.isRecording = true;
+        mockIsProActive.mockReturnValue(false);
+        (sheet as any).updateRecUI();
+        const upsell = document.getElementById('rec-recording-upsell')!;
+        expect(upsell.style.display).toBe('flex');
+    });
+
+    it('cache le banner upsell pour les utilisateurs Pro', () => {
+        state.isRecording = true;
+        mockIsProActive.mockReturnValue(true);
+        (sheet as any).updateRecUI();
+        const upsell = document.getElementById('rec-recording-upsell')!;
+        expect(upsell.style.display).toBe('none');
     });
 });
