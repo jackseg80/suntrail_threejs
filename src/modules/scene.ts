@@ -203,7 +203,8 @@ function getIdealZoom(dist: number, currentZoom: number): number {
     if (effectiveDist < getThresh(700000, 9)) return 9;
     if (effectiveDist < getThresh(1200000, 8)) return 8;
     if (effectiveDist < getThresh(2000000, 7)) return 7;
-    return 6;
+    if (effectiveDist < getThresh(3200000, 6)) return 6;
+    return 5;
 }
 
 export async function initScene(): Promise<void> {

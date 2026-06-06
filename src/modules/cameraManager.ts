@@ -63,7 +63,8 @@ function getDistanceFromZoom(zoom: number): number {
     if (z === 9) return 550000;
     if (z === 8) return 1000000;
     if (z === 7) return 1800000;
-    return 4000000;
+    if (z === 6) return 2800000;
+    return 3800000;
 }
 
 export function onWindowResize(): void {

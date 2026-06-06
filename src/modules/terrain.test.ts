@@ -117,6 +117,12 @@ describe('terrain.ts', () => {
             expect(tile.tileSizeMeters).toBeGreaterThan(600000);
         });
 
+        it('should handle LOD 5 tiles', () => {
+            const tile = new Tile(16, 16, 5, '5/16/16');
+            expect(tile.zoom).toBe(5);
+            expect(tile.tileSizeMeters).toBeGreaterThan(1200000);
+        });
+
         it('should disable slopes in Eco mode', async () => {
             state.PERFORMANCE_PRESET = 'eco';
             state.SHOW_SLOPES = true;

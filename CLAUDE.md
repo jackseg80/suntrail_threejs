@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.56.25)
+# SunTrail — Guide IA (v5.56.26)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-05 — v5.56.25 : Benchmark fiable + re-benchmark différé.
+> Mis à jour le 2026-06-06 — v5.56.26 : LOD5 + qualité overview (WebP 95, mipmaps).
 
 ## Projet
 
@@ -168,7 +168,7 @@ Sur l'environnement de développement Windows/PowerShell, des erreurs d'encodage
 - `src/style.css` : (v5.56.18) Nouveaux sélecteurs `.legend-group` et `.legend-group-label` pour grouper les légendes pentes + solaire.
 
 ## Tests & Qualité
-- **Unitaires (Vitest)** : `npm test` (994 passants, 96 fichiers). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`, `solarRoute.ts`, `authService.ts`, `haptics.ts`, `theme.ts`, `toast.ts`, `weatherUtils.ts`, `nativeGPSService.ts`, `weather.ts`, `tooltip.ts`, `TopStatusBar.ts`. Solar route analysis valide (31 tests dédiés). Nuit tracée : `nightKm`/`nightPct` testé.
+- **Unitaires (Vitest)** : `npm test` (1005 passants, 97 fichiers). Sécurise `iapService.ts`, `recordingService.ts`, `scene.ts`, `appInit.ts`, `environment.ts`, `gpxService.ts`, `acceptanceWall.ts`, `gpsDisclosure.ts`, `onboardingTutorial.ts`, `workerManager.ts`, `gpxLayers.ts`, `solarRoute.ts`, `authService.ts`, `haptics.ts`, `theme.ts`, `toast.ts`, `weatherUtils.ts`, `nativeGPSService.ts`, `weather.ts`, `tooltip.ts`, `TopStatusBar.ts`. Solar route analysis valide (31 tests dédiés). Nuit tracée : `nightKm`/`nightPct` testé.
 - **Hardening (v5.54.1)** : Fuites mémoire Capacitor (nativeGPSService, iapService), logging fire-and-forget, centralization clés localStorage (`src/constants/storage.ts`), npm audit fix (7 vulnérabilités).
 - **E2E (Playwright)** : `npx playwright test --ui` (Onboarding, GPS, Expert).
 - **Mocks** : `src/test/setup.ts` pour WebGL. `ui.test.ts` utilise des timers fictifs.

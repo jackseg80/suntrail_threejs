@@ -51,6 +51,22 @@ describe('cameraManager.ts', () => {
         expect(state.controls).toBe(controls);
     });
 
+    it('should set correct camera distance for LOD 6 (v5.63)', () => {
+        const camera = new THREE.PerspectiveCamera();
+        const domElement = document.createElement('div');
+        state.ZOOM = 6;
+        initControls(camera, domElement);
+        expect(camera.position.y).toBe(2800000);
+    });
+
+    it('should set correct camera distance for LOD 5 (v5.63)', () => {
+        const camera = new THREE.PerspectiveCamera();
+        const domElement = document.createElement('div');
+        state.ZOOM = 5;
+        initControls(camera, domElement);
+        expect(camera.position.y).toBe(3800000);
+    });
+
     it('zoomToPoint should move camera towards the target', async () => {
         vi.useFakeTimers();
         const camera = new THREE.PerspectiveCamera();
