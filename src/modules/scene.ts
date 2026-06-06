@@ -888,8 +888,9 @@ export async function initScene(): Promise<void> {
             updateEnvironment(state.camera.position.y);
 
             if (state.zoneSelectionActive && state.zoneOverlay) {
+                // Ne pas écraser le bbox figé en mode cached (post-download)
                 const viewportBBox = getViewportBBox();
-                if (viewportBBox) {
+                if (viewportBBox && !state.zoneOverlay.isLocked) {
                     state.zoneOverlay.updateFromBBox(viewportBBox);
                 }
             }

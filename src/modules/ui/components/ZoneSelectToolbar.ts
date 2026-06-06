@@ -284,8 +284,7 @@ export class ZoneSelectToolbar extends BaseComponent {
                 });
                 // Forcer le bbox figé sur l'overlay 3D avant de passer en mode cached
                 if (this.zoneOverlay) {
-                    this.zoneOverlay.updateFromBBox(capturedBbox);
-                    this.zoneOverlay.setMode('cached');
+                    this.zoneOverlay.setMode('cached', capturedBbox);
                 }
                 void haptic('success');
                 showToast('✅ Zone telechargee !');

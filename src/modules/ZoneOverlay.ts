@@ -24,14 +24,21 @@ export class ZoneOverlay {
     private currentBbox: BBox | null = null;
     private mode: OverlayMode = 'selecting';
 
+    get isLocked(): boolean {
+        return this.mode === 'cached';
+    }
+
     show(bbox: BBox, mode: OverlayMode = 'selecting'): void {
         this.mode = mode;
         this.currentBbox = bbox;
         this.createOrUpdate(bbox);
     }
 
-    setMode(mode: OverlayMode): void {
+    setMode(mode: OverlayMode, overrideBbox?: BBox): void {
         this.mode = mode;
+        if (overrideBbox) {
+            this.currentBbox = overrideBbox;
+        }
         if (this.currentBbox) {
             this.createOrUpdate(this.currentBbox);
         }
