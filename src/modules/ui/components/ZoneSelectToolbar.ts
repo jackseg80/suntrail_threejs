@@ -49,7 +49,7 @@ export class ZoneSelectToolbar extends BaseComponent {
         if (!target) return;
         const w = window.innerWidth;
         const h = window.innerHeight;
-        const size = Math.floor(Math.min(w, h) * 0.5);
+        const size = Math.floor(Math.min(w, h) * 0.75);
         target.style.width = `${size}px`;
         target.style.height = `${size}px`;
     }

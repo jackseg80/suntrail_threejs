@@ -40,7 +40,7 @@ export function getVisibleTilesBBox(
 }
 
 export function getViewportBBox(): BBox | null {
-    return _getViewportBBox(0.5);
+    return _getViewportBBox(0.75);
 }
 
 function _getViewportBBox(scale: number): BBox | null {
