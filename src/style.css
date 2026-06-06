@@ -1140,7 +1140,7 @@ input[type='range']:focus-visible {
 
 /* States d'enregistrement — togglés via classe CSS, pas de DOM manipulation */
 #track.recording #rec-recording-upsell {
-    display: flex !important;
+    display: flex;
     flex-direction: column;
     gap: var(--space-2);
     padding: var(--space-3);
