@@ -2,13 +2,34 @@ import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('three', () => {
     class MockVector3 {
-        x: number; y: number; z: number;
-        constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; }
-        clone() { return new MockVector3(this.x, this.y, this.z); }
-        sub(v: MockVector3) { return new MockVector3(this.x - v.x, this.y - v.y, this.z - v.z); }
-        normalize() { const l = Math.sqrt(this.x ** 2 + this.y ** 2 + this.z ** 2) || 1; return new MockVector3(this.x / l, this.y / l, this.z / l); }
-        setFromSpherical() { return this; }
-        addScaledVector(dir: MockVector3, t: number) { return new MockVector3(this.x + dir.x * t, this.y + dir.y * t, this.z + dir.z * t); }
+        x: number;
+        y: number;
+        z: number;
+        constructor(x = 0, y = 0, z = 0) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+        clone() {
+            return new MockVector3(this.x, this.y, this.z);
+        }
+        sub(v: MockVector3) {
+            return new MockVector3(this.x - v.x, this.y - v.y, this.z - v.z);
+        }
+        normalize() {
+            const l = Math.sqrt(this.x ** 2 + this.y ** 2 + this.z ** 2) || 1;
+            return new MockVector3(this.x / l, this.y / l, this.z / l);
+        }
+        setFromSpherical() {
+            return this;
+        }
+        addScaledVector(dir: MockVector3, t: number) {
+            return new MockVector3(
+                this.x + dir.x * t,
+                this.y + dir.y * t,
+                this.z + dir.z * t
+            );
+        }
     }
     return {
         Vector3: MockVector3,
@@ -20,10 +41,22 @@ vi.mock('three', () => {
         Mesh: class {},
         BoxGeometry: class {},
         PlaneGeometry: class {},
-        BufferGeometry: class { setFromPoints() { return this; }; setAttribute() { return this; } },
-        BufferAttribute: class { constructor(_arr: any, _size: number) {} },
+        BufferGeometry: class {
+            setFromPoints() {
+                return this;
+            }
+            setAttribute() {
+                return this;
+            }
+        },
+        BufferAttribute: class {
+            constructor(_arr: any, _size: number) {}
+        },
         LineSegments: class {},
-        Group: class { add() {}; remove() {} },
+        Group: class {
+            add() {}
+            remove() {}
+        },
         DoubleSide: 0,
     };
 });
@@ -105,7 +138,9 @@ describe('ZoneSelector', () => {
 
         it('should compute tiles for multiple LODs', () => {
             const result = computeZoneSelection(bbox, 10, 14);
-            const lods = Array.from(result.tilesByLod.keys()).sort((a, b) => a - b);
+            const lods = Array.from(result.tilesByLod.keys()).sort(
+                (a, b) => a - b
+            );
             expect(lods).toEqual([10, 11, 12, 13, 14]);
             expect(result.totalTiles).toBeGreaterThan(0);
         });
@@ -124,7 +159,9 @@ describe('ZoneSelector', () => {
                 maxLon: 7.0,
             };
             const result = computeZoneSelection(midBbox, 14, 18);
-            expect(result.warning || result.hardWarning || result.tooLarge).toBe(true);
+            expect(
+                result.warning || result.hardWarning || result.tooLarge
+            ).toBe(true);
         });
 
         it('should show hardWarning between 1000 and 2000 tiles', () => {
@@ -169,18 +206,33 @@ describe('ZoneSelector', () => {
         });
 
         it('should limit download to the provided bbox', () => {
-            const bboxA = { minLat: 46.9, maxLat: 47.0, minLon: 6.9, maxLon: 7.0 };
+            const bboxA = {
+                minLat: 46.9,
+                maxLat: 47.0,
+                minLon: 6.9,
+                maxLon: 7.0,
+            };
             const resultA = computeZoneSelection(bboxA, 14, 14);
             expect(resultA.totalTiles).toBeGreaterThan(0);
 
-            const bboxB = { minLat: 46.9, maxLat: 46.95, minLon: 6.9, maxLon: 6.95 };
+            const bboxB = {
+                minLat: 46.9,
+                maxLat: 46.95,
+                minLon: 6.9,
+                maxLon: 6.95,
+            };
             const resultB = computeZoneSelection(bboxB, 14, 14);
             expect(resultB.totalTiles).toBeGreaterThan(0);
             expect(resultA.totalTiles).toBeGreaterThan(resultB.totalTiles);
         });
 
         it('should not include tiles from outside the bbox', () => {
-            const bbox = { minLat: 46.9, maxLat: 47.0, minLon: 6.9, maxLon: 7.0 };
+            const bbox = {
+                minLat: 46.9,
+                maxLat: 47.0,
+                minLon: 6.9,
+                maxLon: 7.0,
+            };
             const result = computeZoneSelection(bbox, 13, 13);
 
             for (const tiles of result.tilesByLod.values()) {

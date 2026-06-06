@@ -1,3 +1,15 @@
+## [5.57.2] - 2026-06-06
+
+### Fixed
+- **Bouton STOP sans micro-saccades** (`TrackSheet.ts`, `track.html`, `style.css`) : Les icônes SVG sont statiques dans le template, basculées via CSS. `updateRecUI` ne remplace plus l'`innerHTML` (évite la destruction DOM, le redémarrage de l'animation pulse et l'interférence clic).
+- **Cache respecté même en online lent** (`tileLoader.ts`) : Vérification CacheStorage sur le main thread avant dispatch worker. Les blobs des zones offline sont injectés directement, bypassant le réseau même si les slots worker sont saturés.
+- **Timebar ne s'ouvre plus automatiquement en 3D** (`TimelineComponent.ts`) : Mémorise l'état ouvert/fermé du dernier passage en 3D et le restaure.
+- **Rectangle de sélection unifié** (`ZoneOverlay.ts`, `ZoneSelectToolbar.ts`, `style.css`) : Cadre CSS fixe en espace écran (`#zone-select-viewport`) comme seul indicateur de sélection. Le remplissage 3D sur le terrain reste (sans bordure) comme repère géographique subtil. Les bordures 3D n'apparaissent que pour les états `downloading`/`cached`.
+- **Panneau zone-sélection remonté** (`style.css`) : Positionné au-dessus de la barre de navigation (`calc(var(--bar-h) + var(--safe-bottom) + 12px)`).
+
+### Tests
+- 4 nouveaux tests pour la mémorisation d'état `IS_2D_MODE` de la timebar. Total : 1027 tests (99 fichiers).
+
 ## [5.57.1] - 2026-06-06
 
 ### Changed

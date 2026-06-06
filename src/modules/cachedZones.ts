@@ -22,7 +22,9 @@ export function getCachedZones(): CachedZone[] {
     }
 }
 
-export function addCachedZone(zone: Omit<CachedZone, 'id' | 'timestamp'>): void {
+export function addCachedZone(
+    zone: Omit<CachedZone, 'id' | 'timestamp'>
+): void {
     const zones = getCachedZones();
     zones.push({
         ...zone,

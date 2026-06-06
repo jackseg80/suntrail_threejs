@@ -181,7 +181,8 @@ export class ConnectivitySheet extends BaseComponent {
 
         const title = document.createElement('div');
         title.className = 'setting-label';
-        title.style.cssText = 'font-size:11px;color:var(--text-3);margin-bottom:4px';
+        title.style.cssText =
+            'font-size:11px;color:var(--text-3);margin-bottom:4px';
         title.textContent = `💾 Zones en cache (${zones.length})`;
         container.appendChild(title);
 
@@ -216,7 +217,11 @@ export class ConnectivitySheet extends BaseComponent {
             item.addEventListener('click', () => {
                 const centerLat = (zone.bbox.minLat + zone.bbox.maxLat) / 2;
                 const centerLon = (zone.bbox.minLon + zone.bbox.maxLon) / 2;
-                const world = lngLatToWorld(centerLon, centerLat, state.originTile);
+                const world = lngLatToWorld(
+                    centerLon,
+                    centerLat,
+                    state.originTile
+                );
                 const elevation = getAltitudeAt(world.x, world.z);
                 const distance = getDistanceFromZoom(zone.maxLod);
 
@@ -227,7 +232,8 @@ export class ConnectivitySheet extends BaseComponent {
                     state.zoneOverlay = overlay;
                     setTimeout(() => {
                         overlay.hide();
-                        if (state.zoneOverlay === overlay) state.zoneOverlay = null;
+                        if (state.zoneOverlay === overlay)
+                            state.zoneOverlay = null;
                     }, 4000);
                 });
             });

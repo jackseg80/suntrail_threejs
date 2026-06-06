@@ -179,4 +179,92 @@ describe('TimelineComponent', () => {
             expect(() => comp.dispose()).not.toThrow();
         });
     });
+
+    describe('IS_2D_MODE — mémorisation état timebar (v5.57.2)', () => {
+        it('ferme la timebar en passant en 2D', async () => {
+            const { TimelineComponent } = await import('./TimelineComponent');
+            const comp = new TimelineComponent();
+            const bottomBar = document.getElementById('bottom-bar')!;
+
+            state.IS_2D_MODE = false;
+            await Promise.resolve();
+            bottomBar.classList.add('is-open');
+
+            state.IS_2D_MODE = true;
+            await Promise.resolve();
+
+            expect(bottomBar.classList.contains('is-open')).toBe(false);
+            comp.dispose();
+        });
+
+        it('garde la timebar fermée en 3D si elle l\'était avant le passage en 2D', async () => {
+            const { TimelineComponent } = await import('./TimelineComponent');
+            const comp = new TimelineComponent();
+            const bottomBar = document.getElementById('bottom-bar')!;
+            const toggleBtn = document.getElementById('timeline-toggle-btn')!;
+
+            state.IS_2D_MODE = false;
+            await Promise.resolve();
+            bottomBar.classList.remove('is-open');
+            toggleBtn.classList.remove('active');
+
+            state.IS_2D_MODE = true;
+            await Promise.resolve();
+
+            state.IS_2D_MODE = false;
+            await Promise.resolve();
+
+            expect(bottomBar.classList.contains('is-open')).toBe(false);
+            expect(toggleBtn.classList.contains('active')).toBe(false);
+            comp.dispose();
+        });
+
+        it('restaure l\'état ouvert de la timebar en revenant en 3D', async () => {
+            const { TimelineComponent } = await import('./TimelineComponent');
+            const comp = new TimelineComponent();
+            const bottomBar = document.getElementById('bottom-bar')!;
+            const toggleBtn = document.getElementById('timeline-toggle-btn')!;
+
+            state.IS_2D_MODE = false;
+            await Promise.resolve();
+            bottomBar.classList.add('is-open');
+            toggleBtn.classList.add('active');
+
+            state.IS_2D_MODE = true;
+            await Promise.resolve();
+            expect(bottomBar.classList.contains('is-open')).toBe(false);
+
+            state.IS_2D_MODE = false;
+            await Promise.resolve();
+
+            expect(bottomBar.classList.contains('is-open')).toBe(true);
+            expect(toggleBtn.classList.contains('active')).toBe(true);
+            comp.dispose();
+        });
+
+        it('maintient l\'état à travers plusieurs transitions 2D↔3D', async () => {
+            const { TimelineComponent } = await import('./TimelineComponent');
+            const comp = new TimelineComponent();
+            const bottomBar = document.getElementById('bottom-bar')!;
+
+            state.IS_2D_MODE = false;
+            await Promise.resolve();
+            bottomBar.classList.remove('is-open');
+
+            state.IS_2D_MODE = true;
+            await Promise.resolve();
+            state.IS_2D_MODE = false;
+            await Promise.resolve();
+            expect(bottomBar.classList.contains('is-open')).toBe(false);
+
+            bottomBar.classList.add('is-open');
+            state.IS_2D_MODE = true;
+            await Promise.resolve();
+            state.IS_2D_MODE = false;
+            await Promise.resolve();
+            expect(bottomBar.classList.contains('is-open')).toBe(true);
+
+            comp.dispose();
+        });
+    });
 });

@@ -1115,12 +1115,13 @@ export class TrackSheet extends BaseComponent {
         const navTab = document.querySelector('.nav-tab[data-tab="track"]');
         if (!recBtn) return;
 
+        const label = recBtn.querySelector(
+            '.trk-rec-label'
+        ) as HTMLElement | null;
+
         if (state.isRecording) {
             recBtn.classList.add('active');
-            recBtn.innerHTML = `
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" class="trk-rec-icon">
-                    <rect x="2" y="2" width="6" height="6" rx="1" fill="white"/>
-                </svg> ${i18n.t('track.btn.stop')}`;
+            if (label) label.textContent = i18n.t('track.btn.stop');
             navTab?.classList.add('has-notif');
 
             document
@@ -1130,7 +1131,6 @@ export class TrackSheet extends BaseComponent {
                 .getElementById('gpx-layers-list')
                 ?.style.setProperty('display', 'none');
 
-            // Upsell Pro permanent pendant l'enregistrement pour les gratuits
             if (!isProActive()) {
                 this.showRecordingUpsell();
             } else {
@@ -1138,11 +1138,7 @@ export class TrackSheet extends BaseComponent {
             }
         } else {
             recBtn.classList.remove('active');
-            recBtn.innerHTML = `
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" class="trk-rec-icon">
-                    <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.3"/>
-                    <circle cx="6" cy="6" r="3" fill="currentColor"/>
-                </svg> ${i18n.t('track.btn.rec')}`;
+            if (label) label.textContent = i18n.t('track.btn.rec');
             navTab?.classList.remove('has-notif');
             document.getElementById('rec-recording-upsell')?.remove();
 

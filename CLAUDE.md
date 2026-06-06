@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.57.1)
+# SunTrail — Guide IA (v5.57.2)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-06 — v5.57.1 : Cadre 50%, comptage securise, lock Free.
+> Mis à jour le 2026-06-06 — v5.57.2 : STOP sans saccades, cache main-thread, timebar memoire, cadre selection unique.
 
 ## Projet
 

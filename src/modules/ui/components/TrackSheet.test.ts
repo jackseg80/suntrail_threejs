@@ -15,21 +15,53 @@ vi.mock('../../state', () => ({
 
 vi.mock('../../haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../../toast', () => ({ showToast: vi.fn() }));
-vi.mock('../../eventBus', () => ({ eventBus: { on: vi.fn(), off: vi.fn(), emit: vi.fn() } }));
-vi.mock('../../foregroundService', () => ({ clearInterruptedRecording: vi.fn(), stopRecordingService: vi.fn() }));
-vi.mock('../../location', () => ({ startLocationTracking: vi.fn(), isWatchActive: vi.fn() }));
-vi.mock('../../profile', () => ({ updateElevationProfile: vi.fn(), closeElevationProfile: vi.fn() }));
-vi.mock('../../gpxLayers', () => ({ removeGPXLayer: vi.fn(), toggleGPXLayer: vi.fn(), addGPXLayer: vi.fn(), updateRecordedTrackMesh: vi.fn() }));
-vi.mock('../../gpxService', () => ({ gpxService: { handleGPXImport: vi.fn() } }));
-vi.mock('../../recordingService', () => ({ recordingService: { toggleRecording: vi.fn(), stopRecording: vi.fn(), generateSuggestedName: vi.fn() } }));
+vi.mock('../../eventBus', () => ({
+    eventBus: { on: vi.fn(), off: vi.fn(), emit: vi.fn() },
+}));
+vi.mock('../../foregroundService', () => ({
+    clearInterruptedRecording: vi.fn(),
+    stopRecordingService: vi.fn(),
+}));
+vi.mock('../../location', () => ({
+    startLocationTracking: vi.fn(),
+    isWatchActive: vi.fn(),
+}));
+vi.mock('../../profile', () => ({
+    updateElevationProfile: vi.fn(),
+    closeElevationProfile: vi.fn(),
+}));
+vi.mock('../../gpxLayers', () => ({
+    removeGPXLayer: vi.fn(),
+    toggleGPXLayer: vi.fn(),
+    addGPXLayer: vi.fn(),
+    updateRecordedTrackMesh: vi.fn(),
+}));
+vi.mock('../../gpxService', () => ({
+    gpxService: { handleGPXImport: vi.fn() },
+}));
+vi.mock('../../recordingService', () => ({
+    recordingService: {
+        toggleRecording: vi.fn(),
+        stopRecording: vi.fn(),
+        generateSuggestedName: vi.fn(),
+    },
+}));
 vi.mock('../../geoStats', () => ({ calculateTrackStats: vi.fn() }));
 vi.mock('../../utils', () => ({ fmtDuration: vi.fn(() => '00:00') }));
 vi.mock('../../iap', () => ({ showUpgradePrompt: vi.fn() }));
-vi.mock('../../gpxHistoryService', () => ({ gpxHistoryService: { getHistory: vi.fn(() => []), addEntry: vi.fn() } }));
-vi.mock('../../routeManager', () => ({ routeManager: { setWaypoints: vi.fn() } }));
+vi.mock('../../gpxHistoryService', () => ({
+    gpxHistoryService: { getHistory: vi.fn(() => []), addEntry: vi.fn() },
+}));
+vi.mock('../../routeManager', () => ({
+    routeManager: { setWaypoints: vi.fn() },
+}));
 vi.mock('../icons', () => ({ ICON_CLOSE: '✕', ICON_LOCK: '🔒' }));
-vi.mock('../core/SheetManager', () => ({ sheetManager: { open: vi.fn(), close: vi.fn() } }));
-vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: vi.fn(() => false) } }));
+vi.mock('../core/SheetManager', () => ({
+    sheetManager: { open: vi.fn(), close: vi.fn() },
+}));
+vi.mock('@capacitor/core', () => ({
+    Capacitor: { isNativePlatform: vi.fn(() => false) },
+}));
 
 import { TrackSheet } from './TrackSheet';
 
@@ -49,7 +81,9 @@ describe('TrackSheet — showSaveTrackPrompt', () => {
 
     it('resolve avec le nom saisi sur Enregistrer', async () => {
         const promise = (sheet as any).showSaveTrackPrompt('Defaut');
-        const input = document.getElementById('rec-save-name') as HTMLInputElement;
+        const input = document.getElementById(
+            'rec-save-name'
+        ) as HTMLInputElement;
         input.value = 'Ma Rando';
         document.getElementById('rec-save-confirm')?.click();
         await expect(promise).resolves.toBe('Ma Rando');
@@ -69,7 +103,9 @@ describe('TrackSheet — showSaveTrackPrompt', () => {
 
     it('resolve avec la valeur sur Entrée', async () => {
         const promise = (sheet as any).showSaveTrackPrompt('Defaut');
-        const input = document.getElementById('rec-save-name') as HTMLInputElement;
+        const input = document.getElementById(
+            'rec-save-name'
+        ) as HTMLInputElement;
         input.value = 'Saisie';
         input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
         await expect(promise).resolves.toBe('Saisie');
@@ -77,7 +113,9 @@ describe('TrackSheet — showSaveTrackPrompt', () => {
 
     it('resolve avec le nom suggéré si input vide sur Enregistrer', async () => {
         const promise = (sheet as any).showSaveTrackPrompt('Suggere');
-        const input = document.getElementById('rec-save-name') as HTMLInputElement;
+        const input = document.getElementById(
+            'rec-save-name'
+        ) as HTMLInputElement;
         input.value = '   ';
         document.getElementById('rec-save-confirm')?.click();
         await expect(promise).resolves.toBe('Suggere');

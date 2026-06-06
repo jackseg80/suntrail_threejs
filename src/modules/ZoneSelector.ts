@@ -139,7 +139,8 @@ export function computeZoneSelection(
         const range = getTileRange(bbox, lod);
         if (!range) continue;
 
-        const count = (range.maxTx - range.minTx + 1) * (range.maxTy - range.minTy + 1);
+        const count =
+            (range.maxTx - range.minTx + 1) * (range.maxTy - range.minTy + 1);
         if (totalTiles + count > MAX_TILES_TOTAL) {
             tooLarge = true;
             continue;

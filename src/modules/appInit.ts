@@ -171,13 +171,22 @@ export async function appInit(): Promise<void> {
             try {
                 const second = await runBenchmark();
                 const firstScore = state.benchmarkResults?.totalScore ?? 0;
-                const jump = firstScore > 0 ? second.totalScore - firstScore : 0;
-                const pct = firstScore > 0 ? Math.round((jump / firstScore) * 100) : 0;
-                if (pct >= 30 && second.recommendedPreset !== state.PERFORMANCE_PRESET) {
+                const jump =
+                    firstScore > 0 ? second.totalScore - firstScore : 0;
+                const pct =
+                    firstScore > 0 ? Math.round((jump / firstScore) * 100) : 0;
+                if (
+                    pct >= 30 &&
+                    second.recommendedPreset !== state.PERFORMANCE_PRESET
+                ) {
                     applyPreset(second.recommendedPreset);
-                    console.log(`[AppInit] Re-benchmark upgraded ${state.PERFORMANCE_PRESET} → ${second.recommendedPreset.toUpperCase()} (+${pct}%)`);
+                    console.log(
+                        `[AppInit] Re-benchmark upgraded ${state.PERFORMANCE_PRESET} → ${second.recommendedPreset.toUpperCase()} (+${pct}%)`
+                    );
                 } else {
-                    console.log(`[AppInit] Re-benchmark stable (${second.recommendedPreset.toUpperCase()}, ${pct >= 0 ? '+' : ''}${pct}%)`);
+                    console.log(
+                        `[AppInit] Re-benchmark stable (${second.recommendedPreset.toUpperCase()}, ${pct >= 0 ? '+' : ''}${pct}%)`
+                    );
                 }
             } catch (e) {
                 console.warn('[AppInit] Re-benchmark failed', e);

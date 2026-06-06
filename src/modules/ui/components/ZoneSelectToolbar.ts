@@ -26,9 +26,32 @@ export class ZoneSelectToolbar extends BaseComponent {
     private currentSelection: ZoneSelection | null = null;
     private minLod = 5;
     private maxLod = 14;
+    private viewportOverlay: HTMLElement | null = null;
+    private resizeHandler: (() => void) | null = null;
 
     constructor() {
         super('template-zone-select-toolbar', 'body', templateHTML);
+    }
+
+    private createViewportOverlay(): HTMLElement {
+        const el = document.createElement('div');
+        el.id = 'zone-select-viewport';
+        el.style.cssText =
+            'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:50;' +
+            'border:3px solid rgba(0,255,102,0.75);border-radius:6px;background:rgba(0,255,102,0.03);' +
+            'box-shadow:0 0 0 1px rgba(0,0,0,0.15);';
+        this.updateViewportOverlaySize(el);
+        return el;
+    }
+
+    private updateViewportOverlaySize(el?: HTMLElement): void {
+        const target = el || this.viewportOverlay;
+        if (!target) return;
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const size = Math.floor(Math.min(w, h) * 0.5);
+        target.style.width = `${size}px`;
+        target.style.height = `${size}px`;
     }
 
     setOverlay(overlay: import('../../ZoneOverlay').ZoneOverlay): void {
@@ -88,9 +111,18 @@ export class ZoneSelectToolbar extends BaseComponent {
             '#zst-download'
         ) as HTMLButtonElement;
 
-        downloadBtn?.addEventListener('click', () => this.download(downloadBtn));
+        downloadBtn?.addEventListener('click', () =>
+            this.download(downloadBtn)
+        );
 
         toolbar.classList.add('active');
+
+        // v5.57.2 : Overlay viewport fixe (écran) pour sélection visible sur mobile portrait
+        this.viewportOverlay = this.createViewportOverlay();
+        document.body.appendChild(this.viewportOverlay);
+        this.resizeHandler = () => this.updateViewportOverlaySize();
+        window.addEventListener('resize', this.resizeHandler);
+        window.addEventListener('orientationchange', this.resizeHandler);
 
         this.recomputeFromVisibleTiles();
 
@@ -153,7 +185,9 @@ export class ZoneSelectToolbar extends BaseComponent {
         }
 
         if (totalInfoEl) {
-            const zonesUsed = isProActive() ? '' : ` · ${getOfflineZoneCount()}/1`;
+            const zonesUsed = isProActive()
+                ? ''
+                : ` · ${getOfflineZoneCount()}/1`;
             totalInfoEl.textContent = sel
                 ? `${i18n.t('zoneSelect.totalLODs') || 'Total (LOD'} ${this.minLod}→${this.maxLod}) : ${sel.totalTiles} ${i18n.t('connectivity.label.tiles') || 'tuiles'} · ${sel.totalSizeMB}${zonesUsed}`
                 : '';
@@ -192,7 +226,8 @@ export class ZoneSelectToolbar extends BaseComponent {
     }
 
     private async download(btn: HTMLButtonElement): Promise<void> {
-        if (!this.currentSelection || this.currentSelection.totalTiles === 0) return;
+        if (!this.currentSelection || this.currentSelection.totalTiles === 0)
+            return;
 
         if (!isProActive() && getOfflineZoneCount() >= 1) {
             showUpgradePrompt('offline_zones');
@@ -217,7 +252,8 @@ export class ZoneSelectToolbar extends BaseComponent {
                 this.currentSelection.tilesByLod,
                 (done, total, _currentLod, lodLabel) => {
                     if (tileCountEl) {
-                        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                        const pct =
+                            total > 0 ? Math.round((done / total) * 100) : 0;
                         tileCountEl.textContent = `⏬ ${lodLabel}: ${pct}%…`;
                     }
                     if (totalInfoEl) {
@@ -254,6 +290,15 @@ export class ZoneSelectToolbar extends BaseComponent {
         state.zoneOverlay = null;
         if (this.zoneOverlay) {
             this.zoneOverlay.hide();
+        }
+        if (this.viewportOverlay) {
+            this.viewportOverlay.remove();
+            this.viewportOverlay = null;
+        }
+        if (this.resizeHandler) {
+            window.removeEventListener('resize', this.resizeHandler);
+            window.removeEventListener('orientationchange', this.resizeHandler);
+            this.resizeHandler = null;
         }
         this.dispose();
     }

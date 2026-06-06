@@ -277,27 +277,25 @@ export class TimelineComponent {
             })
         );
 
-        // Ouvrir/fermer la timeline automatiquement au changement de mode
+        // Mémorise l'état ouvert/fermé de la timebar en mode 3D
+        let _wasOpenIn3D = false;
         this.subscriptions.push(
             state.subscribe('IS_2D_MODE', (is2D: boolean) => {
-                if (
-                    is2D &&
-                    bottomBar &&
-                    bottomBar.classList.contains('is-open')
-                ) {
+                if (is2D && bottomBar) {
+                    // On quitte la 3D : sauvegarder l'état, fermer la timebar
+                    _wasOpenIn3D = bottomBar.classList.contains('is-open');
                     bottomBar.classList.remove('is-open');
                     document.body.classList.remove('timeline-open');
                     document.body.classList.remove('timeline-custom-pos');
                     if (toggleBtn) toggleBtn.classList.remove('active');
                 }
-                if (
-                    !is2D &&
-                    bottomBar &&
-                    !bottomBar.classList.contains('is-open')
-                ) {
-                    bottomBar.classList.add('is-open');
-                    document.body.classList.add('timeline-open');
-                    if (toggleBtn) toggleBtn.classList.add('active');
+                if (!is2D && bottomBar) {
+                    // On revient en 3D : restaurer l'état précédent
+                    if (_wasOpenIn3D) {
+                        bottomBar.classList.add('is-open');
+                        document.body.classList.add('timeline-open');
+                        if (toggleBtn) toggleBtn.classList.add('active');
+                    }
                 }
             })
         );

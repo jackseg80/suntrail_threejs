@@ -1112,6 +1112,21 @@ input[type='range']:focus-visible {
     animation: pulse-rec 1.2s ease-in-out infinite;
     pointer-events: none;
 }
+.trk-rec-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.rec-icon-active {
+    display: none;
+}
+.track-btn.rec.active .rec-icon-idle {
+    display: none;
+}
+.track-btn.rec.active .rec-icon-active {
+    display: inline-flex;
+}
 @keyframes pulse-rec {
     0% {
         transform: scale(1);
@@ -3397,7 +3412,7 @@ body.profile-interacting #bottom-bar {
 
 #zone-select-toolbar {
     position: fixed;
-    bottom: 20px;
+    bottom: calc(var(--bar-h) + var(--safe-bottom) + 12px);
     left: 50%;
     transform: translateX(-50%);
     z-index: 2100;

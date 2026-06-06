@@ -428,7 +428,29 @@ export function getElevationUrl(
 let _workerCache: Cache | null = null;
 
 /**
+ * Récupère un blob depuis le CacheStorage s'il existe (zones offline, cache normal).
+ * Retourne null si le cache n'est pas initialisé ou si l'entrée est absente/corrompue.
+ */
+async function getCachedBlob(url: string): Promise<Blob | null> {
+    if (!_workerCache) return null;
+    try {
+        const cached = await _workerCache.match(url);
+        if (!cached) return null;
+        const blob = await cached.blob();
+        if (blob.size < 100) {
+            _workerCache.delete(url);
+            return null;
+        }
+        return blob;
+    } catch {
+        return null;
+    }
+}
+
+/**
  * Lance le chargement d'une tuile via les Workers.
+ * v5.57.2 : Vérifie CacheStorage sur le main thread pour les zones offline.
+ * Les blobs trouvés sont passés directement au worker (bypass réseau même online lent).
  */
 export async function loadTileData(
     tx: number,
@@ -512,6 +534,13 @@ export async function loadTileData(
                 'overlay'
             );
     }
+
+    // v5.57.2 : CacheStorage main-thread pour zones offline.
+    // Les tiles cachées par l'utilisateur sont injectées en blob → le worker n'appelle jamais le réseau.
+    if (!blobs.color && colorUrl) blobs.color = await getCachedBlob(colorUrl);
+    if (!blobs.elev && elevUrl) blobs.elev = await getCachedBlob(elevUrl);
+    if (!blobs.overlay && overlayUrl)
+        blobs.overlay = await getCachedBlob(overlayUrl);
 
     return tileWorkerManager.loadTile(
         tx,

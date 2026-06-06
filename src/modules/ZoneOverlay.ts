@@ -5,7 +5,15 @@ import { lngLatToWorld } from './geo';
 import { getAltitudeAt } from './analysis';
 
 const OVERLAY_HEIGHT_OFFSET = 30;
-const BORDER_THICKNESS = 50;
+const BORDER_THICKNESS_BASE = 50;
+
+function computeBorderThickness(
+    worldSizeX: number,
+    worldSizeZ: number
+): number {
+    const minDim = Math.min(worldSizeX, worldSizeZ);
+    return Math.max(BORDER_THICKNESS_BASE, minDim * 0.01);
+}
 
 export type OverlayMode = 'selecting' | 'downloading' | 'cached';
 
@@ -88,7 +96,11 @@ export class ZoneOverlay {
 
         const color = this.mode === 'cached' ? 0x3366ff : 0x00ff66;
         const fillOpacity =
-            this.mode === 'downloading' ? 0.25 : this.mode === 'cached' ? 0.12 : 0.08;
+            this.mode === 'downloading'
+                ? 0.25
+                : this.mode === 'cached'
+                  ? 0.12
+                  : 0.06;
 
         const fillGeo = new THREE.PlaneGeometry(sizeX, sizeZ);
         const fillMat = new THREE.MeshBasicMaterial({
@@ -104,45 +116,60 @@ export class ZoneOverlay {
         this.fill.renderOrder = 998;
         this.fill.frustumCulled = false;
 
-        const borderColor = this.mode === 'cached' ? 0x6699ff : 0xffffff;
-        const borderMat = new THREE.MeshBasicMaterial({
-            color: borderColor,
-            transparent: false,
-            depthTest: false,
-        });
+        // Borders only for downloading/cached states — selection uses the CSS screen-space frame
+        if (this.mode !== 'selecting') {
+            const borderColor = this.mode === 'cached' ? 0x6699ff : 0xffffff;
+            const borderMat = new THREE.MeshBasicMaterial({
+                color: borderColor,
+                transparent: false,
+                depthTest: false,
+            });
 
-        const t = Math.max(BORDER_THICKNESS, Math.min(sizeX, sizeZ) * 0.005);
+            const t = computeBorderThickness(sizeX, sizeZ);
 
-        const bottomBorder = new THREE.Mesh(
-            new THREE.BoxGeometry(sizeX + t, 0.1, t),
-            borderMat
-        );
-        bottomBorder.position.set(centerX, y + 0.2, centerZ + sizeZ / 2);
+            const bottomBorder = new THREE.Mesh(
+                new THREE.BoxGeometry(sizeX + t, 0.1, t),
+                borderMat
+            );
+            bottomBorder.position.set(centerX, y + 0.2, centerZ + sizeZ / 2);
 
-        const topBorder = new THREE.Mesh(
-            new THREE.BoxGeometry(sizeX + t, 0.1, t),
-            borderMat
-        );
-        topBorder.position.set(centerX, y + 0.2, centerZ - sizeZ / 2);
+            const topBorder = new THREE.Mesh(
+                new THREE.BoxGeometry(sizeX + t, 0.1, t),
+                borderMat
+            );
+            topBorder.position.set(centerX, y + 0.2, centerZ - sizeZ / 2);
 
-        const rightBorder = new THREE.Mesh(
-            new THREE.BoxGeometry(t, 0.1, sizeZ + t),
-            borderMat
-        );
-        rightBorder.position.set(centerX + sizeX / 2, y + 0.2, centerZ);
+            const rightBorder = new THREE.Mesh(
+                new THREE.BoxGeometry(t, 0.1, sizeZ + t),
+                borderMat
+            );
+            rightBorder.position.set(centerX + sizeX / 2, y + 0.2, centerZ);
 
-        const leftBorder = new THREE.Mesh(
-            new THREE.BoxGeometry(t, 0.1, sizeZ + t),
-            borderMat
-        );
-        leftBorder.position.set(centerX - sizeX / 2, y + 0.2, centerZ);
+            const leftBorder = new THREE.Mesh(
+                new THREE.BoxGeometry(t, 0.1, sizeZ + t),
+                borderMat
+            );
+            leftBorder.position.set(centerX - sizeX / 2, y + 0.2, centerZ);
 
-        for (const m of [bottomBorder, topBorder, rightBorder, leftBorder]) {
-            m.renderOrder = 999;
-            m.frustumCulled = false;
+            for (const m of [
+                bottomBorder,
+                topBorder,
+                rightBorder,
+                leftBorder,
+            ]) {
+                m.renderOrder = 999;
+                m.frustumCulled = false;
+            }
+
+            this.borderMeshes = [
+                bottomBorder,
+                topBorder,
+                rightBorder,
+                leftBorder,
+            ];
+        } else {
+            this.borderMeshes = [];
         }
-
-        this.borderMeshes = [bottomBorder, topBorder, rightBorder, leftBorder];
 
         if (this.group) {
             if (state.scene) state.scene.remove(this.group);
