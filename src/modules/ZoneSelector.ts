@@ -40,37 +40,38 @@ export function getVisibleTilesBBox(
 }
 
 export function getViewportBBox(): BBox | null {
-    // s = 2*f - 1 pour que le rectangle NDC couvre la fraction f de l'écran
-    // Légèrement réduit (-1%) pour compenser l'erreur de projection terrain
-    return _getViewportBBox(0.68, 0.08, 0.34);
-}
+    // Dimensions du cadre CSS — doivent correspondre à ZoneSelectToolbar.createViewportOverlay()
+    const OVERLAY_W = 0.85;
+    const OVERLAY_H = 0.55;
+    const OVERLAY_TOP = 0.06;
 
-function _getViewportBBox(
-    hScale: number,
-    vScale: number,
-    vOffset: number = 0
-): BBox | null {
     const camera = state.camera;
     if (!camera) return null;
 
-    const hs = Math.max(0.1, Math.min(1, hScale));
-    const vs = Math.max(0.1, Math.min(1, vScale));
-    const hMargin = (1 - hs) / 2;
-    const vMargin = (1 - vs) / 2;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const left = (w * (1 - OVERLAY_W)) / 2;
+    const top = h * OVERLAY_TOP;
+    const ow = w * OVERLAY_W;
+    const oh = h * OVERLAY_H;
 
-    const ndcCorners = [
-        new THREE.Vector3(-1 + hMargin, -1 + vMargin + vOffset, 0.5),
-        new THREE.Vector3(1 - hMargin, -1 + vMargin + vOffset, 0.5),
-        new THREE.Vector3(1 - hMargin, 1 - vMargin + vOffset, 0.5),
-        new THREE.Vector3(-1 + hMargin, 1 - vMargin + vOffset, 0.5),
+    const screenCorners = [
+        { sx: left, sy: top },
+        { sx: left + ow, sy: top },
+        { sx: left + ow, sy: top + oh },
+        { sx: left, sy: top + oh },
     ];
 
     const origin = state.originTile;
     const baseY = state.controls?.target?.y ?? 0;
-
     const worldPoints: Array<{ lat: number; lon: number }> = [];
 
-    for (const ndc of ndcCorners) {
+    for (const { sx, sy } of screenCorners) {
+        const ndc = new THREE.Vector3(
+            (sx / w) * 2 - 1,
+            -(sy / h) * 2 + 1,
+            0.5
+        );
         const vec = ndc.clone().unproject(camera);
         const dir = vec.sub(camera.position).normalize();
         const t = (baseY - camera.position.y) / dir.y;
@@ -93,6 +94,16 @@ function _getViewportBBox(
         if (p.lon < minLon) minLon = p.lon;
         if (p.lon > maxLon) maxLon = p.lon;
     }
+
+    // Shrink de ~3% pour compenser le débordement de la projection perspective
+    // Le bbox projeté sur le terrain est toujours légèrement plus grand que le cadre CSS
+    const latRange = maxLat - minLat;
+    const lonRange = maxLon - minLon;
+    const shrink = 0.015;
+    minLat += latRange * shrink;
+    maxLat -= latRange * shrink;
+    minLon += lonRange * shrink;
+    maxLon -= lonRange * shrink;
 
     return { minLat, maxLat, minLon, maxLon };
 }
