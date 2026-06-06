@@ -239,6 +239,12 @@ export class ZoneSelectToolbar extends BaseComponent {
             return;
         }
 
+        // Figer le bbox au moment du clic — ne pas utiliser currentBbox (update continu de scene.ts)
+        const capturedBbox = this.currentSelection.bbox;
+        const capturedTilesByLod = this.currentSelection.tilesByLod;
+        const capturedTotalTiles = this.currentSelection.totalTiles;
+        const capturedSizeMB = this.currentSelection.totalSizeMB;
+
         btn.classList.add('btn-loading');
         btn.setAttribute('aria-busy', 'true');
         btn.disabled = true;
@@ -254,7 +260,7 @@ export class ZoneSelectToolbar extends BaseComponent {
 
         try {
             const ok = await downloadZoneMultiLOD(
-                this.currentSelection.tilesByLod,
+                capturedTilesByLod,
                 (done, total, _currentLod, lodLabel) => {
                     if (tileCountEl) {
                         const pct =
@@ -270,14 +276,18 @@ export class ZoneSelectToolbar extends BaseComponent {
                 incrementOfflineZoneCount();
                 addCachedZone({
                     label: `${i18n.t('zoneSelect.currentZone') || 'Zone'} (LOD ${this.minLod}→${this.maxLod})`,
-                    bbox: this.currentSelection.bbox,
+                    bbox: capturedBbox,
                     minLod: this.minLod,
                     maxLod: this.maxLod,
-                    tileCount: this.currentSelection.totalTiles,
-                    sizeMB: this.currentSelection.totalSizeMB,
+                    tileCount: capturedTotalTiles,
+                    sizeMB: capturedSizeMB,
                 });
+                // Forcer le bbox figé sur l'overlay 3D avant de passer en mode cached
+                if (this.zoneOverlay) {
+                    this.zoneOverlay.updateFromBBox(capturedBbox);
+                    this.zoneOverlay.setMode('cached');
+                }
                 void haptic('success');
-                this.zoneOverlay?.setMode('cached');
                 showToast('✅ Zone telechargee !');
                 setTimeout(() => this.cancel(), 3000);
                 return;
