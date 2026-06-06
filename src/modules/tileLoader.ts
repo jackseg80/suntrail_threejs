@@ -537,10 +537,14 @@ export async function loadTileData(
 
     // v5.57.2 : CacheStorage main-thread pour zones offline.
     // Les tiles cachées par l'utilisateur sont injectées en blob → le worker n'appelle jamais le réseau.
-    if (!blobs.color && colorUrl) blobs.color = await getCachedBlob(colorUrl);
-    if (!blobs.elev && elevUrl) blobs.elev = await getCachedBlob(elevUrl);
-    if (!blobs.overlay && overlayUrl)
-        blobs.overlay = await getCachedBlob(overlayUrl);
+    const [colorBlob, elevBlob, overlayBlob] = await Promise.all([
+        !blobs.color && colorUrl ? getCachedBlob(colorUrl) : null,
+        !blobs.elev && elevUrl ? getCachedBlob(elevUrl) : null,
+        !blobs.overlay && overlayUrl ? getCachedBlob(overlayUrl) : null,
+    ]);
+    if (colorBlob) blobs.color = colorBlob;
+    if (elevBlob) blobs.elev = elevBlob;
+    if (overlayBlob) blobs.overlay = overlayBlob;
 
     return tileWorkerManager.loadTile(
         tx,

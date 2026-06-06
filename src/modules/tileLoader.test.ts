@@ -35,6 +35,14 @@ vi.mock('./workerManager', () => ({
     },
 }));
 
+vi.mock('pmtiles', () => {
+    class MockPMTiles {
+        getHeader = vi.fn().mockResolvedValue(undefined);
+        getZxy = vi.fn().mockResolvedValue(null);
+    }
+    return { PMTiles: MockPMTiles };
+});
+
 describe('tileLoader.ts URLs', () => {
     beforeEach(() => {
         state.MK = 'test_key_valid_12345';
@@ -245,6 +253,63 @@ describe('tileLoader.ts URLs', () => {
                 expect.any(Object),
                 false
             );
+        });
+    });
+
+    describe('loadTileData — CacheStorage blobs (v5.57.3)', () => {
+        const makeFakeCache = (matchResult: Response | null) => ({
+            match: vi.fn().mockResolvedValue(matchResult),
+            delete: vi.fn(),
+        });
+
+        it('ne bloque pas et appelle le worker quand le cache est initialisé (chemin Promise.all)', async () => {
+            vi.stubGlobal('caches', {
+                open: vi.fn().mockResolvedValue(
+                    makeFakeCache(
+                        new Response(new Blob([new Uint8Array(200)]), {
+                            headers: { 'Content-Type': 'image/png' },
+                        })
+                    )
+                ),
+                keys: vi.fn().mockResolvedValue([]),
+                delete: vi.fn().mockResolvedValue(true),
+            });
+
+            const { initEmbeddedOverview, loadTileData } =
+                await import('./tileLoader');
+            await initEmbeddedOverview();
+
+            const { tileWorkerManager } = await import('./workerManager');
+            state.PERFORMANCE_PRESET = 'balanced';
+            state.IS_2D_MODE = false;
+            state.MAP_SOURCE = 'opentopomap';
+            state.MK = 'test_key_valid_12345';
+
+            await loadTileData(0, 0, 14, false);
+
+            expect(tileWorkerManager.loadTile).toHaveBeenCalled();
+        });
+
+        it('ne bloque pas et appelle le worker quand le cache ne contient pas les URLs', async () => {
+            vi.stubGlobal('caches', {
+                open: vi.fn().mockResolvedValue(makeFakeCache(null)),
+                keys: vi.fn().mockResolvedValue([]),
+                delete: vi.fn().mockResolvedValue(true),
+            });
+
+            const { initEmbeddedOverview, loadTileData } =
+                await import('./tileLoader');
+            await initEmbeddedOverview();
+
+            const { tileWorkerManager } = await import('./workerManager');
+            state.PERFORMANCE_PRESET = 'balanced';
+            state.IS_2D_MODE = false;
+            state.MAP_SOURCE = 'opentopomap';
+            state.MK = 'test_key_valid_12345';
+
+            await loadTileData(0, 0, 14, false);
+
+            expect(tileWorkerManager.loadTile).toHaveBeenCalled();
         });
     });
 });

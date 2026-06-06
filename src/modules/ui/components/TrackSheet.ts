@@ -139,7 +139,6 @@ export class TrackSheet extends BaseComponent {
                     _saving = false;
                 }
             }
-            this.updateRecUI();
         });
 
         const importBtn = document.getElementById('import-gpx-sheet');
@@ -1136,6 +1135,7 @@ export class TrackSheet extends BaseComponent {
             if (label) label.textContent = i18n.t('track.btn.rec');
             navTab?.classList.remove('has-notif');
             trackEl?.classList.remove('recording');
+            trackEl?.classList.remove('is-pro');
             this.renderUnifiedTrackList();
         }
     }

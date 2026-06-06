@@ -150,7 +150,7 @@ describe('TrackSheet — updateRecUI (v5.57.2)', () => {
                     <span class="trk-rec-label">REC</span>
                 </button>
                 <button id="import-gpx-sheet"></button>
-                <div id="rec-recording-upsell" style="display:none"></div>
+                <div id="rec-recording-upsell" class="rec-upsell-banner"></div>
             </div>
         `;
         sheet = new TrackSheet();
@@ -203,21 +203,29 @@ describe('TrackSheet — updateRecUI (v5.57.2)', () => {
         expect(track.classList.contains('is-pro')).toBe(false);
     });
 
-    it('affiche le banner upsell pour Free via CSS class', () => {
-        state.isRecording = true;
-        mockIsProActive.mockReturnValue(false);
-        (sheet as any).updateRecUI();
-        const track = document.getElementById('track')!;
-        expect(track.classList.contains('recording')).toBe(true);
-        expect(track.classList.contains('is-pro')).toBe(false);
-    });
-
-    it('cache le banner upsell pour Pro via CSS class', () => {
+    it("retire les classes recording et is-pro quand l'enregistrement s'arrête", () => {
         state.isRecording = true;
         mockIsProActive.mockReturnValue(true);
         (sheet as any).updateRecUI();
         const track = document.getElementById('track')!;
         expect(track.classList.contains('recording')).toBe(true);
         expect(track.classList.contains('is-pro')).toBe(true);
+
+        state.isRecording = false;
+        mockIsProActive.mockReturnValue(false);
+        (sheet as any).updateRecUI();
+        expect(track.classList.contains('recording')).toBe(false);
+        expect(track.classList.contains('is-pro')).toBe(false);
+    });
+
+    it("gère la classe has-notif sur l'onglet nav", () => {
+        state.isRecording = true;
+        (sheet as any).updateRecUI();
+        const navTab = document.querySelector('.nav-tab[data-tab="track"]')!;
+        expect(navTab.classList.contains('has-notif')).toBe(true);
+
+        state.isRecording = false;
+        (sheet as any).updateRecUI();
+        expect(navTab.classList.contains('has-notif')).toBe(false);
     });
 });
