@@ -198,6 +198,12 @@ export class TrackSheet extends BaseComponent {
             });
         });
 
+        // Bouton "Essayer Pro" du banner — attaché une fois à l'init
+        const upsellBtn = document.getElementById('rec-upsell-btn');
+        upsellBtn?.addEventListener('click', () =>
+            sheetManager.open('upgrade-sheet')
+        );
+
         this.addSubscription(
             state.subscribe('isRecording', () => this.updateRecUI())
         );
@@ -1118,74 +1124,23 @@ export class TrackSheet extends BaseComponent {
         const label = recBtn.querySelector(
             '.trk-rec-label'
         ) as HTMLElement | null;
+        const trackEl = document.getElementById('track');
+        const upsell = document.getElementById('rec-recording-upsell');
 
         if (state.isRecording) {
             recBtn.classList.add('active');
             if (label) label.textContent = i18n.t('track.btn.stop');
             navTab?.classList.add('has-notif');
-
-            document
-                .getElementById('import-gpx-sheet')
-                ?.style.setProperty('display', 'none');
-            document
-                .getElementById('gpx-layers-list')
-                ?.style.setProperty('display', 'none');
-
-            if (!isProActive()) {
-                this.showRecordingUpsell();
-            } else {
-                document.getElementById('rec-recording-upsell')?.remove();
+            trackEl?.classList.add('recording');
+            if (upsell) {
+                upsell.style.display = !isProActive() ? 'flex' : 'none';
             }
         } else {
             recBtn.classList.remove('active');
             if (label) label.textContent = i18n.t('track.btn.rec');
             navTab?.classList.remove('has-notif');
-            document.getElementById('rec-recording-upsell')?.remove();
-
-            document
-                .getElementById('import-gpx-sheet')
-                ?.style.removeProperty('display');
+            trackEl?.classList.remove('recording');
             this.renderUnifiedTrackList();
-        }
-    }
-
-    /** Bannière PRO visible en permanence pendant le REC pour les gratuits */
-    private showRecordingUpsell(): void {
-        if (document.getElementById('rec-recording-upsell')) return;
-
-        const banner = document.createElement('div');
-        banner.id = 'rec-recording-upsell';
-        banner.className = 'rec-upsell-banner';
-        banner.style.cssText =
-            'display:flex; flex-direction:column; gap:var(--space-2); padding:var(--space-3); margin:var(--space-3) 0; background:rgba(255,215,0,0.08); border:1px solid var(--gold); border-radius:var(--radius-md); font-size:12px; color:var(--text-1);';
-
-        const title = document.createElement('div');
-        title.style.cssText =
-            'display:flex; align-items:center; gap:8px; font-weight:700; color:var(--gold);';
-        title.innerHTML = `<span>✨</span> <span>SunTrail PRO</span>`;
-
-        const text = document.createElement('p');
-        text.style.cssText =
-            'margin:0; opacity:0.9; font-size:11px; line-height:1.4;';
-        text.textContent = i18n.t('track.upsell.postRec'); // On réutilise cette clé qui parle du passage Pro
-
-        const proBtn = document.createElement('button');
-        proBtn.className = 'btn-go';
-        proBtn.style.cssText =
-            'padding:6px; font-size:11px; margin-top:4px; width:100%;';
-        proBtn.textContent =
-            i18n.t('upgrade.trial.cta') || 'Essayer Pro Gratuitement';
-        proBtn.onclick = () => sheetManager.open('upgrade-sheet');
-
-        banner.appendChild(title);
-        banner.appendChild(text);
-        banner.appendChild(proBtn);
-
-        const trackActions = this.element?.querySelector('.track-actions');
-        if (trackActions) {
-            this.element?.insertBefore(banner, trackActions.nextSibling);
-        } else {
-            this.element?.appendChild(banner);
         }
     }
 
