@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.57.3)
+# SunTrail — Guide IA (v5.57.4)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-06 — v5.57.3 : STOP stable, cache offline, cadre selection, rec indicator, 1036 tests.
+> Mis à jour le 2026-06-06 — v5.57.4 : zones offline sécurisées, 1073 tests.
 
 ## Projet
 

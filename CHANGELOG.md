@@ -1,3 +1,23 @@
+## [5.57.4] - 2026-06-06
+
+### Fixed
+- **Leak classe `is-pro` au stop REC** (`TrackSheet.ts`) : La classe CSS `is-pro` n'était pas retirée quand l'enregistrement s'arrêtait.
+- **Pré-incrémentation du compteur zone offline** (`ZoneSelectToolbar.ts`) : Le slot gratuit est réservé avant téléchargement, libéré en cas d'échec. Plus de double-download possible si `localStorage.setItem` échoue.
+- **Suppression zone libère le slot gratuit** (`cachedZones.ts`) : `removeCachedZone()` décrémente désormais `getOfflineZoneCount()`.
+- **Stale Pro status si RevenueCat indisponible** (`iapService.ts`) : `state.isPro` est réinitialisé à `false` quand la clé API RevenueCat est manquante, évitant un faux Pro hérité du localStorage.
+- **Appel redondant `updateRecUI()` supprimé** (`TrackSheet.ts`) : La souscription `state.isRecording` le couvre déjà.
+
+### Performance
+- **Parallélisation CacheStorage** (`tileLoader.ts`) : Les 3 appels `getCachedBlob` (color, elev, overlay) s'exécutent en `Promise.all` au lieu de séquentiel.
+
+### Tests
+- **ZoneSelectToolbar.test.ts** : 21 tests (render, updateLabels, gate Pro/Free, slot pré-incrémentation, succès/échec/erreur, cancel).
+- **ZoneOverlay.test.ts** : 14 tests (show/modes, setMode, hide, updateFromBBox, isLocked, bordures).
+- **tileLoader.test.ts** : 2 tests CacheStorage (Promise.all, cache miss).
+- **TrackSheet.test.ts** : Nettoyage (-4 redondants, +2 nouveaux : cleanup is-pro, has-notif navTab).
+- **TopStatusBar.test.ts** : 3 tests REC indicator (affichage, cache, timer).
+- Total : **1073 tests** (101 fichiers).
+
 ## [5.57.3] - 2026-06-06
 
 ### Fixed
