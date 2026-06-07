@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.57.5)
+# SunTrail — Guide IA (v5.57.6)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-07 — v5.57.5 : panel Free stable, black screen update fix, loading error fallback.
+> Mis à jour le 2026-06-07 — v5.57.6 : panel Free stable, black screen update fix, loading error fallback. Nettoyage overengineering zone offline.
 
 ## Projet
 
