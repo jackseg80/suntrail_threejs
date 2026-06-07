@@ -1,13 +1,18 @@
-## [5.59.0] - 2026-06-07
+## [5.60.0] - 2026-06-07
 
 ### Fixed
-- **Zone offline Free : 1 LOD unique** (`ZoneSelectToolbar.ts`, `zone-select-toolbar.html`, `style.css`) : Les utilisateurs gratuits ne peuvent plus télécharger qu'un seul niveau de zoom (le zoom courant) au lieu de toute une plage LOD. Les sliders sont désactivés et un badge "🔒 Gratuit : 1 LOD unique" est affiché. Clic sur les sliders ou le badge → `showUpgradePrompt('offline_zones')`. Les utilisateurs Pro conservent la plage LOD complète.
+- **Zones noires aux frontières (AT, ES, NO)** : Ajout d'un seuil strict (`strictAtHighZoom`) pour le fallback vers OpenTopoMap au-delà du zoom 14, corrigeant l'affichage de tuiles vides/noires à haute résolution.
 
-### Added
-- **i18n** (`fr.json`, `en.json`, `de.json`, `it.json`) : Nouvelle clé `zoneSelect.freeSingle` traduite en 4 langues.
+### Changed
+- **Internationalisation (i18n)** : Correction de la structure JSON (suppression des doublons) et ajout des clés manquantes signalées par l'audit (`gpx.importError`, `gpx.imported`, `track.manual.title`).
+
+### Maintenance
+- **Qualité de code** : Formatage automatique avec Prettier sur les fichiers de configuration et modules UI.
+- **Audit i18n** : Vérification complète pour assurer la cohérence entre le code et les fichiers de traduction.
 
 ### Tests
-- Total : **1080 tests** (101 fichiers).
+- Tous les tests unitaires (1080) sont passants.
+
 
 ## [5.58.0] - 2026-06-07
 

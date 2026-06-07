@@ -13,6 +13,9 @@
     },
     "track": {
         "title": "Parcours",
+        "manual": {
+            "title": "Itinéraire manuel"
+        },
         "empty": {
             "title": "Aucun parcours",
             "subtitle": "Importez un fichier GPX ou démarrez l'enregistrement GPS"
@@ -150,7 +153,9 @@
     },
     "gpx": {
         "alreadyImported": "Ce tracé est déjà importé",
-        "limitPro": "Maximum 10 tracés atteint"
+        "limitPro": "Maximum 10 tracés atteint",
+        "importError": "Erreur lors de l'import GPX",
+        "imported": "Parcours importé"
     },
     "settings": {
         "title": "Réglages",
@@ -197,6 +202,7 @@
             "includedLabel": "Inclus avec Pro",
             "solarCalLabel": "Calendrier solaire",
             "solarCalDesc": "Ombres pour n'importe quel jour de l'année",
+            "solarCalBtn": "Acheter Pro",
             "solarAnalLabel": "Analyse solaire Pro",
             "solarAnalDesc": "Azimut, élévation, graphique 24h, phase lunaire",
             "lodLabel": "Zoom LOD 18 + Satellite",
@@ -399,6 +405,7 @@
         "total": "Tuiles à télécharger",
         "totalLODs": "Total (LOD",
         "lodRange": "Plage LOD",
+        "lodSingle": "LOD unique",
         "freeSingle": "Gratuit : 1 LOD unique",
         "cancel": "Annuler",
         "download": "Télécharger",
@@ -463,7 +470,7 @@
         "title": "Bulletin Météo",
         "noData": "Aucune donnée météo",
         "toast": {
-            "timeout": "Météo hors-ligne (Délai dépassé)"
+            "timeout": "Météo hors-ligne (Délai passé)"
         },
         "temp": "Température",
         "feelsLike": "Ressenti",

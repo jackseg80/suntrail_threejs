@@ -133,6 +133,7 @@ export const COUNTRY_SOURCES: Record<string, TileSourceConfig> = {
         colorTopo: (z, x, y) => basemapAtTopo(z, x, y),
         colorSatellite: (z, x, y) => basemapAtSatellite(z, x, y),
         minZoom: 10,
+        strictAtHighZoom: { thresholdZoom: 14, useStrictAbove: true },
     },
     DE: {
         colorTopo: (z, x, y) => bkgTopo(z, x, y),
@@ -141,10 +142,12 @@ export const COUNTRY_SOURCES: Record<string, TileSourceConfig> = {
     ES: {
         colorTopo: (z, x, y) => ignSpainTopo(z, x, y),
         minZoom: 10,
+        strictAtHighZoom: { thresholdZoom: 14, useStrictAbove: true },
     },
     NO: {
         colorTopo: (z, x, y) => kartverketTopo(z, x, y),
         minZoom: 10,
+        strictAtHighZoom: { thresholdZoom: 14, useStrictAbove: true },
     },
     //
     // ── Pays à activer après vérification locale des endpoints ──

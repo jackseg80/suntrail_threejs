@@ -13,6 +13,9 @@
     },
     "track": {
         "title": "Track",
+        "manual": {
+            "title": "Manual route"
+        },
         "empty": {
             "title": "No track",
             "subtitle": "Import a GPX file or start GPS recording"
@@ -150,7 +153,9 @@
     },
     "gpx": {
         "alreadyImported": "This track is already imported",
-        "limitPro": "Maximum 10 tracks reached"
+        "limitPro": "Maximum 10 tracks reached",
+        "importError": "Error importing GPX",
+        "imported": "Track imported"
     },
     "settings": {
         "title": "Settings",
@@ -169,6 +174,7 @@
             "advanced": "⚙️ Advanced Settings",
             "dataManagement": "Data management",
             "language": "Language",
+            "account": "Account",
             "sources": "Data Sources & Legal",
             "pro": "PRO Features",
             "theme": "Theme"
@@ -183,6 +189,7 @@
             "includedLabel": "Included with Pro",
             "solarCalLabel": "Solar calendar",
             "solarCalDesc": "Shadows for any day of the year",
+            "solarCalBtn": "Buy Pro",
             "solarAnalLabel": "Pro solar analysis",
             "solarAnalDesc": "Azimuth, elevation, 24h chart, moon phase",
             "lodLabel": "LOD 18 zoom + Satellite",
@@ -394,16 +401,17 @@
         }
     },
     "zoneSelect": {
-        "currentZone": "Visible zone",
+        "currentZone": "Visible area",
         "total": "Tiles to download",
         "totalLODs": "Total (LOD",
-        "lodRange": "LOD Range",
+        "lodRange": "LOD range",
+        "lodSingle": "Single LOD",
         "freeSingle": "Free: 1 single LOD",
         "cancel": "Cancel",
         "download": "Download",
         "warning": "Over 500 tiles - long download",
         "hardWarning": "Over 1000 tiles - very long download",
-        "tooLarge": "Some levels skipped (2000 tile limit)"
+        "tooLarge": "Some levels ignored (2000 tiles limit)"
     },
     "network": {
         "toast": {

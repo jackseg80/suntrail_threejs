@@ -13,6 +13,9 @@
     },
     "track": {
         "title": "Tour",
+        "manual": {
+            "title": "Manuelle Route"
+        },
         "empty": {
             "title": "Keine Tour",
             "subtitle": "Importieren Sie eine GPX-Datei oder starten Sie die GPS-Aufzeichnung"
@@ -31,7 +34,8 @@
             "freeLimit": "💡 Temporärer Track: Er wird beim Schliessen der App gelöscht. Wechseln Sie zu PRO, um ihn zu exportieren.",
             "tooShort": "Strecke zu kurz für Export",
             "exported": "GPX heruntergeladen",
-            "exportError": "GPX-Exportfehler"
+            "exportError": "GPX-Exportfehler",
+            "savedInternal": "Flüchtiger Track (nur RAM)"
         },
         "recovery": {
             "title": "Aufzeichnung wiederhergestellt",
@@ -149,7 +153,9 @@
     },
     "gpx": {
         "alreadyImported": "Dieser Track wurde bereits importiert",
-        "limitPro": "Maximum von 10 Tracks erreicht"
+        "limitPro": "Maximum von 10 Tracks erreicht",
+        "importError": "Fehler beim GPX-Import",
+        "imported": "Tour importiert"
     },
     "settings": {
         "title": "Einstellungen",
@@ -168,6 +174,7 @@
             "advanced": "⚙️ Erweiterte Einstellungen",
             "dataManagement": "Datenverwaltung",
             "language": "Sprache",
+            "account": "Konto",
             "sources": "Datenquellen & Rechtliches",
             "pro": "PRO-Funktionen",
             "theme": "Thema"
@@ -182,6 +189,7 @@
             "includedLabel": "In Pro enthalten",
             "solarCalLabel": "Sonnenkalender",
             "solarCalDesc": "Schatten für jeden Tag des Jahres",
+            "solarCalBtn": "Pro kaufen",
             "solarAnalLabel": "Pro-Sonnenanalyse",
             "solarAnalDesc": "Azimut, Höhe, 24h-Diagramm, Mondphase",
             "lodLabel": "Zoom LOD 18 + Satellit",
@@ -393,16 +401,17 @@
         }
     },
     "zoneSelect": {
-        "currentZone": "Sichtbare Zone",
-        "total": "Kacheln zum Download",
+        "currentZone": "Sichtbarer Bereich",
+        "total": "Kacheln zum Herunterladen",
         "totalLODs": "Gesamt (LOD",
-        "lodRange": "LOD Bereich",
-        "freeSingle": "Kostenlos: 1 einzelnes LOD",
+        "lodRange": "LOD-Bereich",
+        "lodSingle": "Einzelner LOD",
+        "freeSingle": "Kostenlos: 1 einzelner LOD",
         "cancel": "Abbrechen",
         "download": "Herunterladen",
-        "warning": "Uber 500 Kacheln - langer Download",
-        "hardWarning": "Uber 1000 Kacheln - sehr langer Download",
-        "tooLarge": "Einige Ebenen ignoriert (2000 Kacheln Limit)"
+        "warning": "Über 500 Kacheln - langer Download",
+        "hardWarning": "Über 1000 Kacheln - sehr langer Download",
+        "tooLarge": "Einige Stufen ignoriert (Limit 2000 Kacheln)"
     },
     "network": {
         "toast": {

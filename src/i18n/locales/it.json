@@ -13,6 +13,9 @@
     },
     "track": {
         "title": "Percorso",
+        "manual": {
+            "title": "Itinerario manuale"
+        },
         "empty": {
             "title": "Nessun percorso",
             "subtitle": "Importa un file GPX or avvia la registrazione GPS"
@@ -149,7 +152,9 @@
     },
     "gpx": {
         "alreadyImported": "Questa traccia è già stata importata",
-        "limitPro": "Limite di 10 tracce raggiunto"
+        "limitPro": "Limite di 10 tracce raggiunto",
+        "importError": "Errore durante l'importazione GPX",
+        "imported": "Percorso importato"
     },
     "settings": {
         "title": "Impostazioni",
@@ -393,11 +398,12 @@
         }
     },
     "zoneSelect": {
-        "currentZone": "Zona visibile",
+        "currentZone": "Area visibile",
         "total": "Tile da scaricare",
         "totalLODs": "Totale (LOD",
-        "lodRange": "Intervallo LOD",
-        "freeSingle": "Gratuito: 1 singolo LOD",
+        "lodRange": "Gamma LOD",
+        "lodSingle": "LOD singolo",
+        "freeSingle": "Gratis: 1 LOD singolo",
         "cancel": "Annulla",
         "download": "Scarica",
         "warning": "Oltre 500 tile - download lungo",
