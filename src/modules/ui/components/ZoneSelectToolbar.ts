@@ -29,6 +29,7 @@ export class ZoneSelectToolbar extends BaseComponent {
     private maxLod = 14;
     private viewportOverlay: HTMLElement | null = null;
     private resizeHandler: (() => void) | null = null;
+    private downloadAbort: AbortController | null = null;
 
     constructor() {
         super('template-zone-select-toolbar', 'body', templateHTML);
@@ -252,15 +253,23 @@ export class ZoneSelectToolbar extends BaseComponent {
         btn.classList.add('btn-loading');
         btn.setAttribute('aria-busy', 'true');
         btn.disabled = true;
+
+        // Basculer le bouton Annuler en bouton d'abandon
         const cancelBtn = this.element?.querySelector(
             '#zst-cancel'
         ) as HTMLButtonElement;
-        if (cancelBtn) cancelBtn.disabled = true;
+        if (cancelBtn) {
+            cancelBtn.textContent = '⏹ Annuler le téléchargement';
+            cancelBtn.classList.add('btn-abort');
+            cancelBtn.disabled = false;
+        }
 
         const tileCountEl = this.element?.querySelector('#zst-tile-count');
         const totalInfoEl = this.element?.querySelector('#zst-total-info');
 
         this.zoneOverlay?.setMode('downloading');
+
+        this.downloadAbort = new AbortController();
 
         try {
             const ok = await downloadZoneMultiLOD(
@@ -274,8 +283,15 @@ export class ZoneSelectToolbar extends BaseComponent {
                     if (totalInfoEl) {
                         totalInfoEl.textContent = `${done}/${total}`;
                     }
-                }
+                },
+                this.downloadAbort.signal
             );
+            // Restaurer le bouton Annuler
+            if (cancelBtn) {
+                cancelBtn.textContent = 'Annuler';
+                cancelBtn.classList.remove('btn-abort');
+            }
+
             if (ok) {
                 addCachedZone({
                     label: `${i18n.t('zoneSelect.currentZone') || 'Zone'} (LOD ${this.minLod}→${this.maxLod})`,
@@ -285,7 +301,6 @@ export class ZoneSelectToolbar extends BaseComponent {
                     tileCount: capturedTotalTiles,
                     sizeMB: capturedSizeMB,
                 });
-                // Forcer le bbox figé sur l'overlay 3D avant de passer en mode cached
                 if (this.zoneOverlay) {
                     this.zoneOverlay.setMode('cached', capturedBbox);
                 }
@@ -294,18 +309,34 @@ export class ZoneSelectToolbar extends BaseComponent {
                 setTimeout(() => this.cancel(), 3000);
                 return;
             }
-            // Échec téléchargement — libérer le slot
+            // Échec ou abandon — libérer le slot
             decrementOfflineZoneCount();
-            showToast('⛔ Erreur telechargement zone');
+            if (this.downloadAbort.signal.aborted) {
+                showToast('⛔ Telechargement annule');
+            } else {
+                showToast('⛔ Erreur telechargement zone');
+            }
         } catch (e) {
-            // Erreur réseau / technique — libérer le slot
             decrementOfflineZoneCount();
             console.warn('[OfflineZone] Download error:', e);
         }
+        if (cancelBtn) {
+            cancelBtn.textContent = 'Annuler';
+            cancelBtn.classList.remove('btn-abort');
+            cancelBtn.disabled = false;
+        }
+        this.downloadAbort = null;
         this.cancel();
     }
 
     private cancel(): void {
+        // Si un téléchargement est en cours, l'arrêter
+        if (this.downloadAbort) {
+            this.downloadAbort.abort();
+            this.downloadAbort = null;
+            decrementOfflineZoneCount();
+            showToast('⛔ Telechargement annule');
+        }
         state.zoneSelectionActive = false;
         state.zoneOverlay = null;
         if (this.zoneOverlay) {

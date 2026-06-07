@@ -682,7 +682,8 @@ export async function downloadZoneMultiLOD(
         total: number,
         currentLod: number,
         lodLabel: string
-    ) => void
+    ) => void,
+    abortSignal?: AbortSignal
 ): Promise<boolean> {
     let totalTiles = 0;
     for (const tiles of tilesByLod.values()) {
@@ -716,12 +717,16 @@ export async function downloadZoneMultiLOD(
 
     const total = allUrls.length;
     let done = 0;
+    const downloaded: string[] = [];
 
     for (const lod of sortedLods) {
+        if (abortSignal?.aborted) break;
         const queue = lodQueues.get(lod)!;
         for (const { url, z, x, y } of queue) {
+            if (abortSignal?.aborted) break;
             try {
                 await fetchWithCache(url, true, z, x, y);
+                downloaded.push(url);
             } catch (_) {
                 /* silence */
             }
@@ -733,5 +738,19 @@ export async function downloadZoneMultiLOD(
     }
 
     onProgress(total, total, -1, '');
+
+    if (abortSignal?.aborted) {
+        // Nettoyer les tuiles déjà téléchargées
+        try {
+            const cache = await caches.open(CACHE_NAME);
+            for (const url of downloaded) {
+                await cache.delete(url);
+            }
+        } catch {
+            /* ignore */
+        }
+        return false;
+    }
+
     return true;
 }

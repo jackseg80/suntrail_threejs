@@ -1354,7 +1354,7 @@ body.timeline-custom-pos .fab-stack.widget-overlap-hidden {
 
 /* MINI SHEETS (e.g. Layers) */
 #layers-sheet {
-    max-height: 38vh;
+    max-height: 55vh;
     box-shadow: 0 -10px 40px var(--shadow-md);
 }
 
@@ -3573,6 +3573,16 @@ body.profile-interacting #bottom-bar {
 
 .zone-select-btn-cancel:hover {
     background: rgba(255, 255, 255, 0.1);
+}
+
+.zone-select-btn-cancel.btn-abort {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: var(--danger, #ef4444);
+    font-weight: 700;
+}
+.zone-select-btn-cancel.btn-abort:hover {
+    background: rgba(239, 68, 68, 0.3);
 }
 
 .zone-select-btn-download {
