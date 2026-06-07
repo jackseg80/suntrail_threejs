@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.57.7)
+# SunTrail — Guide IA (v5.58.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-07 — v5.57.7 : annulation download, nommage geocode zones, 1080 tests.
+> Mis à jour le 2026-06-07 — v5.58.0 : rotation de clés ORS (Gist), fallback OSRM, 1080 tests.
 
 ## Projet
 

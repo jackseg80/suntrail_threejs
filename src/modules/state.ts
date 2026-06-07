@@ -340,6 +340,7 @@ export interface State {
     isNetworkAvailable: boolean;
     connectionType: string;
     isMapTilerDisabled: boolean;
+    isORSDisabled: boolean;
     networkRequests: number;
     cacheHits: number;
     uiVisible: boolean;
@@ -465,6 +466,7 @@ const initialState: State = {
     isNetworkAvailable: true,
     connectionType: 'unknown',
     isMapTilerDisabled: false,
+    isORSDisabled: false,
     networkRequests: 0,
     cacheHits: 0,
     uiVisible: true,

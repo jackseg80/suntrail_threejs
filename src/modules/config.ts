@@ -18,6 +18,11 @@ function extractGistKeys(data: any): string[] {
 let availableKeys: string[] = [];
 const bannedKeys = new Set<string>();
 let banTimestamp = 0;
+let gistData: any = null;
+
+let orsAvailableKeys: string[] = [];
+const orsBannedKeys = new Set<string>();
+let orsBanTimestamp = 0;
 
 /**
  * Résout la clé MapTiler à utiliser (v5.28.20).
@@ -53,7 +58,9 @@ export async function resolveMapTilerKey(): Promise<void> {
         clearTimeout(tid);
         if (r.ok) {
             const data = await r.json();
+            gistData = data;
             availableKeys = extractGistKeys(data);
+            orsAvailableKeys = extractORSGistKeys(data);
             if (availableKeys.length > 0) {
                 // On choisit une clé au hasard parmi celles non bannies
                 const validKeys = availableKeys.filter(
@@ -74,6 +81,8 @@ export async function resolveMapTilerKey(): Promise<void> {
             }
         }
     } catch (e) {
+        if (state.DEBUG_MODE)
+            console.warn('[Config] Échec du chargement du Gist MapTiler:', e);
         if (bundledKey) {
             state.MK = bundledKey;
             if (state.DEBUG_MODE)
@@ -123,5 +132,106 @@ export function rotateMapTilerKey(): boolean {
 
     console.error('[Config] Toutes les clés MapTiler ont été bannies.');
     state.isMapTilerDisabled = true;
+    return false;
+}
+
+function extractORSGistKeys(data: any): string[] {
+    const raw = data?.ors_keys;
+    if (!raw || !Array.isArray(raw) || raw.length === 0) return [];
+    return raw
+        .filter((k: any) =>
+            typeof k === 'string' ? true : k.enabled !== false
+        )
+        .map((k: any) => (typeof k === 'string' ? k : k.key))
+        .filter((k: string) => k && k.length > 10);
+}
+
+export async function resolveORSKey(): Promise<void> {
+    const userKey = localStorage.getItem(STORAGE_KEYS.ORS_KEY);
+    if (userKey && userKey.length > 10) {
+        state.ORS_KEY = userKey;
+        if (state.DEBUG_MODE)
+            console.log('[Config] ORS key: localStorage (manual)');
+        return;
+    }
+
+    const GIST_URL =
+        'https://gist.githubusercontent.com/jackseg80/c4f2e5e99c1efb9d736736cb65fce862/raw/suntrail_config.json';
+
+    if (!gistData) {
+        try {
+            const ctrl = new AbortController();
+            const tid = setTimeout(() => ctrl.abort(), 4000);
+            const r = await fetch(GIST_URL, {
+                cache: 'no-cache',
+                signal: ctrl.signal,
+            });
+            clearTimeout(tid);
+            if (r.ok) {
+                gistData = await r.json();
+                orsAvailableKeys = extractORSGistKeys(gistData);
+            }
+        } catch (e) {
+            if (state.DEBUG_MODE)
+                console.warn('[Config] Échec du chargement du Gist ORS:', e);
+        }
+    }
+
+    if (!orsAvailableKeys.length) return;
+
+    const validKeys = orsAvailableKeys.filter(
+        (k) => !orsBannedKeys.has(k)
+    );
+    if (validKeys.length > 0) {
+        state.ORS_KEY =
+            validKeys[Math.floor(Math.random() * validKeys.length)];
+        if (state.DEBUG_MODE)
+            console.log(
+                `[Config] ORS key: Gist rotation (${validKeys.length}/${orsAvailableKeys.length})`
+            );
+    }
+}
+
+export function rotateORSKey(): boolean {
+    if (!state.ORS_KEY || state.ORS_KEY.length <= 10) return false;
+
+    if (state.DEBUG_MODE) console.warn('[Config] ORS key banned (403/429)');
+    orsBannedKeys.add(state.ORS_KEY);
+    orsBanTimestamp = Date.now();
+
+    const validKeys = orsAvailableKeys.filter(
+        (k) => !orsBannedKeys.has(k)
+    );
+    if (validKeys.length > 0) {
+        state.ORS_KEY =
+            validKeys[Math.floor(Math.random() * validKeys.length)];
+        if (state.DEBUG_MODE)
+            console.log(
+                `[Config] ORS key rotated (${validKeys.length}/${orsAvailableKeys.length})`
+            );
+        return true;
+    }
+
+    const BAN_COOLDOWN_MS = 120_000;
+    if (Date.now() - orsBanTimestamp > BAN_COOLDOWN_MS) {
+        if (state.DEBUG_MODE)
+            console.log('[Config] Reset ORS bans after cooldown — retrying...');
+        orsBannedKeys.clear();
+        state.isORSDisabled = false;
+        if (orsAvailableKeys.length > 0) {
+            state.ORS_KEY =
+                orsAvailableKeys[
+                    Math.floor(Math.random() * orsAvailableKeys.length)
+                ];
+            if (state.DEBUG_MODE)
+                console.log(
+                    `[Config] ORS retry with key: ${state.ORS_KEY.substring(0, 8)}...`
+                );
+            return true;
+        }
+    }
+
+    console.error('[Config] All ORS keys banned.');
+    state.isORSDisabled = true;
     return false;
 }

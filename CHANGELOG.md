@@ -1,3 +1,19 @@
+## [5.58.0] - 2026-06-07
+
+### Features
+- **Rotation de clés ORS** (`config.ts`, `routingService.ts`, `appInit.ts`, `state.ts`) : Les clés OpenRouteService sont chargées depuis le GitHub Gist partagé, avec rotation automatique sur 403/429 et fallback silencieux vers OSRM quand toutes les clés sont épuisées. Priorité : localStorage (clé manuelle) > Gist rotation. Même mécanisme que la rotation MapTiler existante.
+
+### Changed
+- **computeRoute()** (`routingService.ts`) : Code ORS/OSRM dédupliqué en un seul bloc de traitement commun. Fallback OSRM transparent si ORS échoue.
+
+### Fixed
+- **Catch blocks JSON** (`config.ts`) : Les erreurs de parsing du Gist sont maintenant logguées en console au lieu d'être ignorées silencieusement.
+- **Race condition** (`appInit.ts`) : `resolveORSKey()` chaîné après `resolveMapTilerKey()` via `.finally()` pour garantir le partage de `gistData` sans double requête.
+
+### Tests
+- **routingService.test.ts** : Test `fall back to OSRM silently` mis à jour. Mock `rotateORSKey` ajouté.
+- Total : **1080 tests** (101 fichiers).
+
 ## [5.57.7] - 2026-06-07
 
 ### Features

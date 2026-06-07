@@ -35,7 +35,7 @@ import { fetchWeather } from './weather';
 import { fetchLocalPeaks } from './peaks';
 import { initTheme } from './theme';
 import { haptic } from './haptics';
-import { resolveMapTilerKey } from './config';
+import { resolveMapTilerKey, resolveORSKey } from './config';
 import { STORAGE_KEYS } from '../constants/storage';
 
 import { NavigationBar } from './ui/components/NavigationBar';
@@ -83,9 +83,10 @@ export async function appInit(): Promise<void> {
     const bundledKey = import.meta.env.VITE_MAPTILER_KEY as string | undefined;
     if (bundledKey) {
         state.MK = bundledKey;
-        void resolveMapTilerKey();
+        void resolveMapTilerKey().finally(() => resolveORSKey());
     } else {
         await resolveMapTilerKey();
+        void resolveORSKey();
     }
     void import('./packManager').then((m) => m.packManager.fetchCatalog());
 

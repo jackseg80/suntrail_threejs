@@ -27,6 +27,7 @@ vi.mock('./iapService', () => ({
 }));
 vi.mock('./config', () => ({
     resolveMapTilerKey: vi.fn().mockResolvedValue(undefined),
+    resolveORSKey: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('./scene', () => ({
     initScene: vi.fn().mockResolvedValue(undefined),

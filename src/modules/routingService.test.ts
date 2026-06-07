@@ -57,6 +57,10 @@ vi.mock('./geo', () => ({
     isPositionInSwitzerland: vi.fn(() => false),
 }));
 
+vi.mock('./config', () => ({
+    rotateORSKey: vi.fn(() => false),
+}));
+
 vi.mock('./geoStats', () => ({
     calculateTrackStats: vi.fn(() => ({
         distance: 8.5,
@@ -290,22 +294,27 @@ describe('routingService', () => {
             ).rejects.toThrow('routePlanner.error.minWaypoints');
         });
 
-        it('should handle ORS API error gracefully', async () => {
+        it('should fall back to OSRM silently when ORS returns 403', async () => {
             state.ORS_KEY = 'test-ors-key-1234567890';
-            mockFetch.mockResolvedValueOnce({
-                ok: false,
-                status: 403,
-                text: () => Promise.resolve('Forbidden'),
-            });
+            mockFetch
+                .mockResolvedValueOnce({
+                    ok: false,
+                    status: 403,
+                    text: () => Promise.resolve('Forbidden'),
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve(VALID_OSRM_RESPONSE),
+                });
 
-            await expect(
-                computeRoute([
-                    { lat: 46.0, lon: 7.0 },
-                    { lat: 46.1, lon: 7.1 },
-                ])
-            ).rejects.toThrow(/403/);
+            const result = await computeRoute([
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.1, lon: 7.1 },
+            ]);
 
-            expect(state.routeError).toBeTruthy();
+            expect(result.distance).toBeGreaterThan(0);
+            expect(state.routeError).toBeNull();
+            expect(mockFetch).toHaveBeenCalledTimes(2);
         });
 
         it('should handle OSRM no-route response', async () => {

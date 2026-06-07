@@ -1,4 +1,5 @@
 import { state } from './state';
+import { rotateORSKey } from './config';
 import {
     addGPXLayer,
     removeGPXLayer,
@@ -80,21 +81,34 @@ async function fetchFromORS(
     waypoints: RouteWaypoint[],
     profile: RoutingProfile
 ): Promise<ORSResponse> {
-    const key = getORSKey();
     const body = JSON.stringify({
         coordinates: waypointsToORSFormat(waypoints),
         elevation: true,
         instructions: false,
     });
 
-    const response = await fetch(getORSEndpoint(profile), {
-        method: 'POST',
-        headers: {
-            Authorization: key,
-            'Content-Type': 'application/json',
-        },
-        body,
-    });
+    const doFetch = async (): Promise<Response> => {
+        const key = getORSKey();
+        return fetch(getORSEndpoint(profile), {
+            method: 'POST',
+            headers: {
+                Authorization: key,
+                'Content-Type': 'application/json',
+            },
+            body,
+        });
+    };
+
+    let response = await doFetch();
+
+    if (response.status === 403 || response.status === 429) {
+        const hasMoreKeys = rotateORSKey();
+        if (hasMoreKeys) {
+            if (state.DEBUG_MODE)
+                console.log('[ORS] Key rotated, retrying...');
+            response = await doFetch();
+        }
+    }
 
     if (!response.ok) {
         const text = await response.text();
@@ -253,43 +267,31 @@ export async function computeRoute(
     };
 
     try {
+        let points!: Array<{ lat: number; lon: number; ele: number }>;
+        let usedORS = false;
+
         if (useORS) {
-            const response = await fetchFromORS(loopedWaypoints, activeProfile);
-            if (generation !== _routeGeneration)
-                throw new Error('Route cancelled');
-            const points = orsResponseToPoints(response);
-
-            const rawData = buildGPXCompatibleData(points);
-            const routeName = buildRouteName(waypoints, state.routeLoopEnabled);
-
-            if (_currentRouteLayerId) {
-                removeGPXLayer(_currentRouteLayerId);
-                _currentRouteLayerId = null;
+            try {
+                const response = await fetchFromORS(loopedWaypoints, activeProfile);
+                if (generation !== _routeGeneration)
+                    throw new Error('Route cancelled');
+                points = orsResponseToPoints(response);
+                usedORS = true;
+            } catch (e: any) {
+                if (state.DEBUG_MODE)
+                    console.warn(
+                        '[Routing] ORS failed, falling back to OSRM:',
+                        e.message
+                    );
             }
-            const layer = _computeDrapedResult(
-                addGPXLayer(rawData, routeName, {
-                    silent: true,
-                    forceVisible: true,
-                    isManualRoute: true,
-                })
-            );
-            _currentRouteLayerId = layer.id;
-            void showToast(
-                i18n.t('routePlanner.toast.computed') || 'Route computed'
-            );
-
-            return {
-                name: routeName,
-                distance: layer.stats.distance,
-                duration: layer.stats.estimatedTime ?? 0,
-                ascent: layer.stats.dPlus,
-                descent: layer.stats.dMinus,
-            };
         }
 
-        const response = await fetchFromOSRM(loopedWaypoints);
-        if (generation !== _routeGeneration) throw new Error('Route cancelled');
-        const points = osrmResponseToPoints(response);
+        if (!usedORS) {
+            const response = await fetchFromOSRM(loopedWaypoints);
+            if (generation !== _routeGeneration)
+                throw new Error('Route cancelled');
+            points = osrmResponseToPoints(response);
+        }
 
         const rawData = buildGPXCompatibleData(points);
         const routeName = buildRouteName(waypoints, state.routeLoopEnabled);
