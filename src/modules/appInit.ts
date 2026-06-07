@@ -233,15 +233,69 @@ function setupOrientationHandler() {
     });
 }
 
+export function showLoadingError(overlay: HTMLElement): void {
+    const spinner = overlay.querySelector(
+        '.map-loading-spinner'
+    ) as HTMLElement;
+    const text = overlay.querySelector('.map-loading-text') as HTMLElement;
+    const retryBtn = document.getElementById('map-loading-retry');
+    const offlineMsg = document.getElementById('map-loading-offline-msg');
+    if (spinner) spinner.style.display = 'none';
+    if (offlineMsg) offlineMsg.style.display = 'none';
+    if (text) {
+        text.textContent = 'Erreur de chargement';
+        text.style.color = 'var(--danger)';
+    }
+    if (retryBtn) {
+        retryBtn.style.display = 'block';
+        retryBtn.onclick = () => window.location.reload();
+    }
+    overlay.dataset.loadingError = 'true';
+}
+
+export function resetLoadingError(overlay: HTMLElement): void {
+    delete overlay.dataset.loadingError;
+    const retryBtn = document.getElementById('map-loading-retry');
+    const spinner = overlay.querySelector(
+        '.map-loading-spinner'
+    ) as HTMLElement;
+    const text = overlay.querySelector('.map-loading-text') as HTMLElement;
+    if (retryBtn) {
+        retryBtn.style.display = 'none';
+        retryBtn.onclick = null;
+    }
+    if (spinner) spinner.style.display = '';
+    if (text) {
+        text.textContent = 'Chargement de la carte...';
+        text.style.color = '';
+    }
+}
+
 async function launchScene() {
+    let sceneReady = false;
+
+    // Safety fallback : si la scene n'est jamais prete (bug cache / cle API / WebGL)
+    const initSafetyTimeout = setTimeout(() => {
+        if (!sceneReady) {
+            const mapOverlay = document.getElementById('map-loading-overlay');
+            if (mapOverlay && mapOverlay.classList.contains('visible')) {
+                showLoadingError(mapOverlay);
+            }
+        }
+    }, 10000);
+
     window.addEventListener(
         'suntrail:sceneReady',
         () => {
+            sceneReady = true;
             void requestAcceptance().then(() => requestOnboarding());
 
             const mapOverlay = document.getElementById('map-loading-overlay');
             if (mapOverlay) {
-                mapOverlay.classList.add('visible');
+                // Si un état d'erreur était affiché (timeout 10s), le nettoyer
+                if (mapOverlay.dataset.loadingError)
+                    resetLoadingError(mapOverlay);
+
                 let tilesStarted = false;
 
                 const offlineMsg = document.getElementById(
@@ -313,6 +367,8 @@ async function launchScene() {
     );
 
     await startApp();
+
+    if (sceneReady) clearTimeout(initSafetyTimeout);
 
     // Tile loading bar
     const bar = document.getElementById('tile-loading-bar');

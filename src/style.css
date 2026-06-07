@@ -492,7 +492,7 @@ body.mode-2d .mode-icon-2d {
     transform: translateY(100%);
     transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     max-height: 85dvh;
-    overflow-y: auto;
+    overflow-y: scroll;
     padding-left: var(--space-5);
     padding-right: var(--space-5);
 }
@@ -925,6 +925,7 @@ input[type='range']:focus-visible {
     font-size: var(--text-xl);
     font-weight: 700;
     margin-top: 2px;
+    min-height: 1.2em;
 }
 .stat-card-value.green {
     color: var(--success);

@@ -46,7 +46,7 @@ SunTrail utilise un modèle **Freemium avec abonnement**. La sécurité est offe
 - **D2 — Sécurité Gratuite** : Toutes les alertes vitales (avalanche, météo, nuit) sont gratuites. C'est le contrat de confiance.
 - **D3 — Verrou Solaire** : La simulation 24h démontre la puissance. Le calendrier (planification future) convertit.
 - **D4 — Upsells Contextuels** : Déclenchés au moment de la friction (ex: toast zoom 14, verrou calendrier).
-- **D5 — Offline Visuel** : La sélection visuelle de zone facilite l'usage hors-ligne. Limite à 1 zone pour les gratuits (v5.57.0).
+- **D5 — Offline Visuel** : La sélection visuelle de zone facilite l'usage hors-ligne. Limite à 1 zone pour les gratuits (v5.57.0). Le compteur est stocké en `localStorage` (soft limit client-side) et peut être réinitialisé lors d'une mise à jour de l'application ou d'un vidage de cache. L'objectif est l'incitation, pas le hard-gating.
 
 ---
 

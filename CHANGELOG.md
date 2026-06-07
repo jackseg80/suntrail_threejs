@@ -1,3 +1,18 @@
+## [5.57.5] - 2026-06-07
+
+### Fixed
+- **Panel Parcours Free ne saute plus** (`style.css`) : `overflow-y: auto` → `scroll` sur `.bottom-sheet` + `min-height: 1.2em` sur `.stat-card-value` pour éliminer l'oscillation scrollbar/reflow en mode Free.
+- **Écran noir après mise à jour Play Store** (`app.html`, `appInit.ts`, `main.ts`) : L'overlay `#map-loading-overlay` est désormais visible dès le chargement HTML. Un timeout 10s dans `launchScene()` affiche "Erreur de chargement" + bouton Réessayer si `suntrail:sceneReady` n'arrive jamais. Détection de changement de version dans `main.ts` avec nettoyage des précaches Workbox uniquement (préserve les caches runtimes tiles).
+- **Reset erreur si sceneReady arrive tard** (`appInit.ts`) : `resetLoadingError()` nettoie l'état d'erreur si la scène se prépare après le timeout.
+- **Nettoyage caches Workbox uniquement** (`main.ts`) : Filtre `k.startsWith('workbox-')` pour ne pas effacer les tuiles offline des caches runtimes (MapTiler, SwissTopo).
+
+### Docs
+- **MONETIZATION.md** : Précision que le compteur offline zones Free est un soft limit client-side (localStorage).
+
+### Tests
+- **appInit.test.ts** : 3 nouveaux tests pour `showLoadingError` / `resetLoadingError` (affichage erreur, restauration, no-op).
+- Total : **1076 tests** (101 fichiers).
+
 ## [5.57.4] - 2026-06-06
 
 ### Fixed

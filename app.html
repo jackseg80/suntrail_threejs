@@ -54,13 +54,14 @@
 <div id="tile-loading-bar" aria-hidden="true"></div>
 
 <!-- Overlay de chargement de la carte — bloqué tant que le moteur n'est pas prêt -->
-<div id="map-loading-overlay">
+<div id="map-loading-overlay" class="visible">
     <span class="spinner map-loading-spinner"></span>
     <span class="map-loading-text" data-i18n="loading.map">Chargement de la carte...</span>
     <div id="map-loading-offline-msg" style="display:none;">
         <span data-i18n="network.overlay.title">Pas de connexion</span>
         <span class="map-loading-offline-sub" data-i18n="network.overlay.subtitle">La carte sera chargée depuis le cache si disponible</span>   
     </div>
+    <button id="map-loading-retry" style="display:none;margin-top:var(--space-4);padding:10px 24px;border-radius:var(--radius-md);background:var(--accent-btn);color:var(--on-accent);border:none;font-weight:700;cursor:pointer;">Réessayer</button>
 </div>
 
 <main>

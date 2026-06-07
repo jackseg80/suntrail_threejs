@@ -11,6 +11,30 @@ import { state } from './modules/state';
 import { eventBus } from './modules/eventBus';
 import { sheetManager } from './modules/ui/core/SheetManager';
 
+// Détection de changement de version → nettoyage des caches SW (précaches uniquement)
+try {
+    const VERSION_KEY = 'suntrail_app_version';
+    const lastVersion = localStorage.getItem(VERSION_KEY);
+    if (lastVersion !== __APP_VERSION__) {
+        if ('caches' in window) {
+            caches.keys().then((keys) => {
+                const toDelete = keys.filter(
+                    (k) => k.startsWith('workbox-') // précaches uniquement, pas les runtimes (tiles offline)
+                );
+                return Promise.all(toDelete.map((k) => caches.delete(k)));
+            });
+        }
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker
+                .getRegistrations()
+                .then((regs) => Promise.all(regs.map((r) => r.unregister())));
+        }
+        localStorage.setItem(VERSION_KEY, __APP_VERSION__);
+    }
+} catch {
+    /* localStorage indisponible */
+}
+
 // Enregistrement du Service Worker pour le mode Hors-ligne (PWA)
 registerSW({
     onNeedRefresh() {

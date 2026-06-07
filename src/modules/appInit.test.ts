@@ -102,6 +102,73 @@ describe('appInit.ts — Initialization Sequence', () => {
     });
 });
 
+describe('showLoadingError / resetLoadingError', () => {
+    beforeEach(() => {
+        document.body.innerHTML = `
+            <div id="map-loading-overlay" class="visible">
+                <span class="spinner map-loading-spinner"></span>
+                <span class="map-loading-text">Chargement de la carte...</span>
+                <div id="map-loading-offline-msg" style="display:none;"></div>
+                <button id="map-loading-retry" style="display:none;">Réessayer</button>
+            </div>
+        `;
+    });
+
+    it('showLoadingError hides spinner, changes text, shows retry button, sets flag', async () => {
+        const { showLoadingError } = await import('./appInit');
+        const overlay = document.getElementById('map-loading-overlay')!;
+        const spinner = overlay.querySelector(
+            '.map-loading-spinner'
+        ) as HTMLElement;
+        const text = overlay.querySelector('.map-loading-text') as HTMLElement;
+        const retryBtn = document.getElementById('map-loading-retry')!;
+
+        showLoadingError(overlay);
+
+        expect(spinner.style.display).toBe('none');
+        expect(text.textContent).toBe('Erreur de chargement');
+        expect(retryBtn.style.display).toBe('block');
+        expect(typeof retryBtn.onclick).toBe('function');
+        expect(overlay.dataset.loadingError).toBe('true');
+    });
+
+    it('resetLoadingError restores original state and removes flag', async () => {
+        const { showLoadingError, resetLoadingError } =
+            await import('./appInit');
+        const overlay = document.getElementById('map-loading-overlay')!;
+        const spinner = overlay.querySelector(
+            '.map-loading-spinner'
+        ) as HTMLElement;
+        const text = overlay.querySelector('.map-loading-text') as HTMLElement;
+
+        // Set error state first
+        showLoadingError(overlay);
+        expect(overlay.dataset.loadingError).toBe('true');
+
+        // Reset
+        resetLoadingError(overlay);
+
+        expect(overlay.dataset.loadingError).toBeUndefined();
+        expect(spinner.style.display).toBe('');
+        expect(text.textContent).toBe('Chargement de la carte...');
+        expect(text.style.color).toBe('');
+        const retryBtn = document.getElementById('map-loading-retry')!;
+        expect(retryBtn.style.display).toBe('none');
+        expect(retryBtn.onclick).toBeNull();
+    });
+
+    it('resetLoadingError is no-op when no error state active', async () => {
+        const { resetLoadingError } = await import('./appInit');
+        const overlay = document.getElementById('map-loading-overlay')!;
+        const text = overlay.querySelector('.map-loading-text') as HTMLElement;
+
+        resetLoadingError(overlay);
+
+        expect(text.textContent).toBe('Chargement de la carte...');
+        expect(overlay.dataset.loadingError).toBeUndefined();
+    });
+});
+
 // Need to mock performance separately to track calls
 vi.mock('./performance', () => ({
     applyPreset: vi.fn(),
