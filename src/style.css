@@ -3555,6 +3555,35 @@ body.profile-interacting #bottom-bar {
     pointer-events: auto;
 }
 
+.zone-select-slider:disabled::-webkit-slider-thumb {
+    background: rgba(128, 128, 128, 0.5);
+    border-color: #555;
+    cursor: not-allowed;
+}
+
+.zone-select-slider:disabled::-moz-range-thumb {
+    background: rgba(128, 128, 128, 0.5);
+    border-color: #555;
+    cursor: not-allowed;
+}
+
+.zone-select-slider:disabled::-webkit-slider-runnable-track {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.zone-select-free-badge {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-3);
+    padding: 6px 0 2px;
+    opacity: 0.75;
+    cursor: pointer;
+}
+
+.zone-select-free-badge:hover {
+    opacity: 1;
+}
+
 .zone-select-actions {
     display: flex;
     gap: 10px;

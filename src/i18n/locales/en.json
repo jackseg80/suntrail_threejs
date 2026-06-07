@@ -398,6 +398,7 @@
         "total": "Tiles to download",
         "totalLODs": "Total (LOD",
         "lodRange": "LOD Range",
+        "freeSingle": "Free: 1 single LOD",
         "cancel": "Cancel",
         "download": "Download",
         "warning": "Over 500 tiles - long download",

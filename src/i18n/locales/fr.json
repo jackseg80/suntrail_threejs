@@ -399,6 +399,7 @@
         "total": "Tuiles à télécharger",
         "totalLODs": "Total (LOD",
         "lodRange": "Plage LOD",
+        "freeSingle": "Gratuit : 1 LOD unique",
         "cancel": "Annuler",
         "download": "Télécharger",
         "warning": "Plus de 500 tuiles - téléchargement long",

@@ -397,6 +397,7 @@
         "total": "Tile da scaricare",
         "totalLODs": "Totale (LOD",
         "lodRange": "Intervallo LOD",
+        "freeSingle": "Gratuito: 1 singolo LOD",
         "cancel": "Annulla",
         "download": "Scarica",
         "warning": "Oltre 500 tile - download lungo",

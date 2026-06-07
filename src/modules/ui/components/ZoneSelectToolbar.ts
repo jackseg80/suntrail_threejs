@@ -69,9 +69,17 @@ export class ZoneSelectToolbar extends BaseComponent {
         ) as HTMLInputElement;
 
         const currentZoom = state.ZOOM;
-        this.maxLod = Math.min(currentZoom + 4, MAX_LOD);
-        this.minLod = Math.min(MIN_LOD, currentZoom);
-        if (this.minLod > this.maxLod) this.minLod = MIN_LOD;
+
+        if (!isProActive()) {
+            this.minLod = currentZoom;
+            this.maxLod = currentZoom;
+            minSlider.disabled = true;
+            maxSlider.disabled = true;
+        } else {
+            this.maxLod = Math.min(currentZoom + 4, MAX_LOD);
+            this.minLod = Math.min(MIN_LOD, currentZoom);
+            if (this.minLod > this.maxLod) this.minLod = MIN_LOD;
+        }
 
         minSlider.min = String(MIN_LOD);
         minSlider.max = String(MAX_LOD);
@@ -117,6 +125,24 @@ export class ZoneSelectToolbar extends BaseComponent {
 
         toolbar.classList.add('active');
 
+        const freeBadge = toolbar.querySelector('#zst-free-badge') as HTMLElement;
+        if (freeBadge) {
+            freeBadge.style.display = isProActive() ? 'none' : 'block';
+        }
+
+        if (!isProActive()) {
+            const rangeWrap = toolbar.querySelector('.zone-select-range-wrap') as HTMLElement;
+            const clickHandler = () => showUpgradePrompt('offline_zones');
+            if (rangeWrap) {
+                rangeWrap.style.cursor = 'pointer';
+                rangeWrap.addEventListener('click', clickHandler);
+            }
+            if (freeBadge) {
+                freeBadge.style.cursor = 'pointer';
+                freeBadge.addEventListener('click', clickHandler);
+            }
+        }
+
         // v5.57.2 : Overlay viewport fixe (écran) pour sélection visible sur mobile portrait
         this.viewportOverlay = this.createViewportOverlay();
         document.body.appendChild(this.viewportOverlay);
@@ -150,6 +176,16 @@ export class ZoneSelectToolbar extends BaseComponent {
     private recomputeFromVisibleTiles(): void {
         const bbox = getViewportBBox();
         if (!bbox) return;
+
+        if (!isProActive()) {
+            this.minLod = state.ZOOM;
+            this.maxLod = state.ZOOM;
+            const toolbar = this.element as HTMLElement;
+            const minSlider = toolbar?.querySelector('#zst-min-slider') as HTMLInputElement;
+            const maxSlider = toolbar?.querySelector('#zst-max-slider') as HTMLInputElement;
+            if (minSlider) minSlider.value = String(state.ZOOM);
+            if (maxSlider) maxSlider.value = String(state.ZOOM);
+        }
 
         this.minLod = Math.min(this.minLod, this.maxLod);
         this.maxLod = Math.max(this.minLod, this.maxLod);
@@ -196,16 +232,20 @@ export class ZoneSelectToolbar extends BaseComponent {
             const zonesUsed = isProActive()
                 ? ''
                 : ` · ${getOfflineZoneCount()}/1`;
+            const lodInfo = isProActive()
+                ? `${this.minLod}→${this.maxLod}`
+                : `${this.minLod}`;
             totalInfoEl.textContent = sel
-                ? `${i18n.t('zoneSelect.totalLODs') || 'Total (LOD'} ${this.minLod}→${this.maxLod}) : ${sel.totalTiles} ${i18n.t('connectivity.label.tiles') || 'tuiles'} · ${sel.totalSizeMB}${zonesUsed}`
+                ? `${i18n.t('zoneSelect.totalLODs') || 'Total (LOD'} ${lodInfo}) : ${sel.totalTiles} ${i18n.t('connectivity.label.tiles') || 'tuiles'} · ${sel.totalSizeMB}${zonesUsed}`
                 : '';
         }
 
         if (minLabel) minLabel.textContent = `LOD ${this.minLod}`;
         if (maxLabel) maxLabel.textContent = `LOD ${this.maxLod}`;
         if (currentLabel)
-            currentLabel.textContent =
-                i18n.t('zoneSelect.lodRange') || 'Plage LOD';
+            currentLabel.textContent = isProActive()
+                ? i18n.t('zoneSelect.lodRange') || 'Plage LOD'
+                : i18n.t('zoneSelect.lodSingle') || 'LOD unique';
 
         if (warningEl && sel) {
             if (sel.tooLarge) {
@@ -298,7 +338,10 @@ export class ZoneSelectToolbar extends BaseComponent {
                     (capturedBbox.minLat + capturedBbox.maxLat) / 2;
                 const centerLon =
                     (capturedBbox.minLon + capturedBbox.maxLon) / 2;
-                const defaultLabel = `${i18n.t('zoneSelect.currentZone') || 'Zone'} (LOD ${this.minLod}→${this.maxLod})`;
+                const lodLabel = isProActive()
+                    ? ` (LOD ${this.minLod}→${this.maxLod})`
+                    : ` (LOD ${this.minLod})`;
+                const defaultLabel = `${i18n.t('zoneSelect.currentZone') || 'Zone'}${lodLabel}`;
 
                 let placeName: string | null = null;
                 try {
@@ -307,7 +350,7 @@ export class ZoneSelectToolbar extends BaseComponent {
                     /* ignore */
                 }
                 const label = placeName
-                    ? `${placeName} (LOD ${this.minLod}→${this.maxLod})`
+                    ? `${placeName}${lodLabel}`
                     : defaultLabel;
 
                 addCachedZone({

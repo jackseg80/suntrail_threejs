@@ -1,3 +1,14 @@
+## [5.59.0] - 2026-06-07
+
+### Fixed
+- **Zone offline Free : 1 LOD unique** (`ZoneSelectToolbar.ts`, `zone-select-toolbar.html`, `style.css`) : Les utilisateurs gratuits ne peuvent plus télécharger qu'un seul niveau de zoom (le zoom courant) au lieu de toute une plage LOD. Les sliders sont désactivés et un badge "🔒 Gratuit : 1 LOD unique" est affiché. Clic sur les sliders ou le badge → `showUpgradePrompt('offline_zones')`. Les utilisateurs Pro conservent la plage LOD complète.
+
+### Added
+- **i18n** (`fr.json`, `en.json`, `de.json`, `it.json`) : Nouvelle clé `zoneSelect.freeSingle` traduite en 4 langues.
+
+### Tests
+- Total : **1080 tests** (101 fichiers).
+
 ## [5.58.0] - 2026-06-07
 
 ### Features
