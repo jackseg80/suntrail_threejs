@@ -1,3 +1,12 @@
+## [5.57.6] - 2026-06-07
+
+### Fixed
+- **Gate zone offline contourné sur mobile** (`tileLoader.ts`) : `getOfflineZoneCount()` vérifie désormais la liste réelle `suntrail-cached-zones` quand le compteur localStorage est à 0, avec resynchronisation automatique du compteur. Le gate Free (1 zone) reste effectif même si le compteur localStorage est perdu sur Android WebView.
+
+### Tests
+- **tileLoader.test.ts** : 7 nouveaux tests pour `getOfflineZoneCount`, `incrementOfflineZoneCount`, `decrementOfflineZoneCount` — fallback, sync, floors.
+- Total : **1083 tests** (101 fichiers).
+
 ## [5.57.5] - 2026-06-07
 
 ### Fixed
