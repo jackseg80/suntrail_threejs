@@ -17,6 +17,7 @@ import { showToast } from '../../toast';
 import { haptic } from '../../haptics';
 import { i18n } from '../../../i18n/I18nService';
 import { addCachedZone } from '../../cachedZones';
+import { getPlaceName } from '../../geocodingService';
 import templateHTML from '../templates/zone-select-toolbar.html?raw';
 
 const MIN_LOD = 5;
@@ -293,8 +294,24 @@ export class ZoneSelectToolbar extends BaseComponent {
             }
 
             if (ok) {
+                const centerLat =
+                    (capturedBbox.minLat + capturedBbox.maxLat) / 2;
+                const centerLon =
+                    (capturedBbox.minLon + capturedBbox.maxLon) / 2;
+                const defaultLabel = `${i18n.t('zoneSelect.currentZone') || 'Zone'} (LOD ${this.minLod}→${this.maxLod})`;
+
+                let placeName: string | null = null;
+                try {
+                    placeName = await getPlaceName(centerLat, centerLon);
+                } catch {
+                    /* ignore */
+                }
+                const label = placeName
+                    ? `${placeName} (LOD ${this.minLod}→${this.maxLod})`
+                    : defaultLabel;
+
                 addCachedZone({
-                    label: `${i18n.t('zoneSelect.currentZone') || 'Zone'} (LOD ${this.minLod}→${this.maxLod})`,
+                    label,
                     bbox: capturedBbox,
                     minLod: this.minLod,
                     maxLod: this.maxLod,

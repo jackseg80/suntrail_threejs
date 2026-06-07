@@ -93,6 +93,14 @@ vi.mock('../../cachedZones', () => ({
     addCachedZone: mockAddCachedZone,
 }));
 
+const { mockGetPlaceName } = vi.hoisted(() => ({
+    mockGetPlaceName: vi.fn(() => Promise.resolve('TestCity')),
+}));
+
+vi.mock('../../geocodingService', () => ({
+    getPlaceName: mockGetPlaceName,
+}));
+
 vi.mock('../templates/zone-select-toolbar.html?raw', () => ({
     default: `<div id="zone-select-toolbar" class="zone-select-toolbar">
         <div class="zone-select-info">
@@ -380,13 +388,14 @@ describe('ZoneSelectToolbar', () => {
             expect(mockIncrementOfflineZoneCount).toHaveBeenCalled();
         });
 
-        it('enregistre la zone dans cachedZones après succès', async () => {
+        it('enregistre la zone dans cachedZones avec le nom du lieu', async () => {
             const btn = document.getElementById(
                 'zst-download'
             ) as HTMLButtonElement;
             await toolbar['download'](btn);
             expect(mockAddCachedZone).toHaveBeenCalledWith(
                 expect.objectContaining({
+                    label: expect.stringContaining('TestCity'),
                     bbox: expect.any(Object),
                     tileCount: 1,
                 })
