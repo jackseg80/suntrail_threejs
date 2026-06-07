@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { state } from './state';
-import { getColorUrl, getOverlayUrl, getElevationUrl } from './tileLoader';
+import {
+    getColorUrl,
+    getOverlayUrl,
+    getElevationUrl,
+    getOfflineZoneCount,
+    incrementOfflineZoneCount,
+    decrementOfflineZoneCount,
+} from './tileLoader';
 
 vi.mock('./utils', () => ({
     showToast: vi.fn(),
@@ -310,6 +317,75 @@ describe('tileLoader.ts URLs', () => {
             await loadTileData(0, 0, 14, false);
 
             expect(tileWorkerManager.loadTile).toHaveBeenCalled();
+        });
+    });
+
+    describe('getOfflineZoneCount — fallback robustness', () => {
+        beforeEach(() => {
+            localStorage.clear();
+        });
+
+        it('returns 0 when no counter and no cached zones', () => {
+            expect(getOfflineZoneCount()).toBe(0);
+        });
+
+        it('returns the counter when set', () => {
+            localStorage.setItem('suntrail-offline-zones-count', '3');
+            expect(getOfflineZoneCount()).toBe(3);
+        });
+
+        it('falls back to actual cached zones when counter is 0', () => {
+            localStorage.setItem(
+                'suntrail-cached-zones',
+                JSON.stringify([{ id: 'a' }, { id: 'b' }])
+            );
+            expect(getOfflineZoneCount()).toBe(2);
+            // Counter should be synced
+            expect(localStorage.getItem('suntrail-offline-zones-count')).toBe(
+                '2'
+            );
+        });
+
+        it('does not fall back when counter > 0', () => {
+            localStorage.setItem('suntrail-offline-zones-count', '1');
+            localStorage.setItem(
+                'suntrail-cached-zones',
+                JSON.stringify([{ id: 'a' }, { id: 'b' }, { id: 'c' }])
+            );
+            // Counter takes precedence, no sync to cached-zones count
+            expect(getOfflineZoneCount()).toBe(1);
+        });
+
+        it('handles invalid cached zones JSON gracefully', () => {
+            localStorage.setItem('suntrail-cached-zones', 'not-json');
+            expect(getOfflineZoneCount()).toBe(0);
+        });
+
+        it('incrementOfflineZoneCount works with fallback', () => {
+            localStorage.setItem(
+                'suntrail-cached-zones',
+                JSON.stringify([{ id: 'a' }, { id: 'b' }])
+            );
+            incrementOfflineZoneCount();
+            expect(localStorage.getItem('suntrail-offline-zones-count')).toBe(
+                '3'
+            );
+        });
+
+        it('decrementOfflineZoneCount works with fallback and floors at 0', () => {
+            localStorage.setItem(
+                'suntrail-cached-zones',
+                JSON.stringify([{ id: 'a' }])
+            );
+            decrementOfflineZoneCount();
+            expect(localStorage.getItem('suntrail-offline-zones-count')).toBe(
+                '0'
+            );
+            // 2nd decrement should not go below 0
+            decrementOfflineZoneCount();
+            expect(localStorage.getItem('suntrail-offline-zones-count')).toBe(
+                '0'
+            );
         });
     });
 });

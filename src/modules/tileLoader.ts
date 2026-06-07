@@ -571,10 +571,31 @@ export function cancelTileLoad(taskId: number): void {
 
 /** Nombre de zones hors-ligne téléchargées (toutes sessions confondues). */
 export function getOfflineZoneCount(): number {
-    return parseInt(
+    const counter = parseInt(
         localStorage.getItem(STORAGE_KEYS.OFFLINE_ZONES_COUNT) ?? '0',
         10
     );
+    // Fallback : si le compteur localStorage est perdu (ex. WebView Android après màj),
+    // compter les zones réellement présentes dans le cache metadata.
+    if (counter === 0) {
+        try {
+            const raw = localStorage.getItem('suntrail-cached-zones');
+            if (raw) {
+                const zones = JSON.parse(raw);
+                if (Array.isArray(zones) && zones.length > 0) {
+                    // Resynchroniser le compteur avec la réalité
+                    localStorage.setItem(
+                        STORAGE_KEYS.OFFLINE_ZONES_COUNT,
+                        String(zones.length)
+                    );
+                    return zones.length;
+                }
+            }
+        } catch {
+            /* ignore */
+        }
+    }
+    return counter;
 }
 
 /** Incrémente le compteur de zones téléchargées. */
