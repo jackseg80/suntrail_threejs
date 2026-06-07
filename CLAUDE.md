@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.57.6)
+# SunTrail — Guide IA (v5.57.7)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-07 — v5.57.6 : panel Free stable, black screen update fix, loading error fallback, annulation téléchargement zone, 1080 tests.
+> Mis à jour le 2026-06-07 — v5.57.7 : annulation download, nommage geocode zones, 1080 tests.
 
 ## Projet
 
