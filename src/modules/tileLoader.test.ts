@@ -7,6 +7,7 @@ import {
     getOfflineZoneCount,
     incrementOfflineZoneCount,
     decrementOfflineZoneCount,
+    _resetMemoryZoneCount,
 } from './tileLoader';
 
 vi.mock('./utils', () => ({
@@ -323,6 +324,7 @@ describe('tileLoader.ts URLs', () => {
     describe('getOfflineZoneCount — fallback robustness', () => {
         beforeEach(() => {
             localStorage.clear();
+            _resetMemoryZoneCount();
         });
 
         it('returns 0 when no counter and no cached zones', () => {
@@ -397,6 +399,16 @@ describe('tileLoader.ts URLs', () => {
             expect(
                 localStorage.getItem('suntrail-offline-zones-count')
             ).toBeNull();
+        });
+
+        it('memory counter tracks increment regardless of localStorage stale read', () => {
+            // Simule un stale read localStorage en vidant après increment
+            localStorage.setItem('suntrail_offline_zones_count', '0');
+            incrementOfflineZoneCount();
+            // Vider localStorage simule le stale read (WebView Samsung)
+            localStorage.removeItem('suntrail_offline_zones_count');
+            // Le compteur mémoire doit encore retourner 1
+            expect(getOfflineZoneCount()).toBe(1);
         });
 
         it('migrates cached zones from legacy hyphen key to underscore key', () => {

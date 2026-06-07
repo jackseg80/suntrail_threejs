@@ -573,6 +573,40 @@ const OLD_ZONES_COUNT_KEY = 'suntrail-offline-zones-count';
 const OLD_CACHED_ZONES_KEY = 'suntrail-cached-zones';
 const NEW_CACHED_ZONES_KEY = 'suntrail_cached_zones';
 
+/** Compteur en mémoire — garanti cohérent intra-session (contourne les bugs de stale read du WebView Samsung S23). */
+let _memoryZoneCount = 0;
+
+function _syncMemoryCount(): void {
+    try {
+        const stored = parseInt(
+            localStorage.getItem(STORAGE_KEYS.OFFLINE_ZONES_COUNT) ?? '0',
+            10
+        );
+        if (stored > _memoryZoneCount) _memoryZoneCount = stored;
+        if (_memoryZoneCount === 0) {
+            const raw = localStorage.getItem(NEW_CACHED_ZONES_KEY);
+            if (raw) {
+                const zones = JSON.parse(raw);
+                if (Array.isArray(zones) && zones.length > 0) {
+                    _memoryZoneCount = zones.length;
+                    localStorage.setItem(
+                        STORAGE_KEYS.OFFLINE_ZONES_COUNT,
+                        String(zones.length)
+                    );
+                }
+            }
+        }
+    } catch {
+        /* ignore */
+    }
+}
+
+/** Réservé aux tests : réinitialise le compteur mémoire. */
+export function _resetMemoryZoneCount(): void {
+    _memoryZoneCount = 0;
+    _syncMemoryCount();
+}
+
 /** Migre les clés localStorage avec tirets (−) vers des underscores (_) (compat WebView Android). */
 function migrateLegacyZoneKeys(): void {
     try {
@@ -602,20 +636,20 @@ function migrateLegacyZoneKeys(): void {
 
 /** Nombre de zones hors-ligne téléchargées (toutes sessions confondues). */
 export function getOfflineZoneCount(): number {
+    _syncMemoryCount();
     migrateLegacyZoneKeys();
-    const counter = parseInt(
+    const stored = parseInt(
         localStorage.getItem(STORAGE_KEYS.OFFLINE_ZONES_COUNT) ?? '0',
         10
     );
-    // Fallback : si le compteur localStorage est perdu (ex. WebView Android après màj),
-    // compter les zones réellement présentes dans le cache metadata.
-    if (counter === 0) {
+    const count = Math.max(stored, _memoryZoneCount);
+    if (count === 0) {
         try {
             const raw = localStorage.getItem(NEW_CACHED_ZONES_KEY);
             if (raw) {
                 const zones = JSON.parse(raw);
                 if (Array.isArray(zones) && zones.length > 0) {
-                    // Resynchroniser le compteur avec la réalité
+                    _memoryZoneCount = zones.length;
                     localStorage.setItem(
                         STORAGE_KEYS.OFFLINE_ZONES_COUNT,
                         String(zones.length)
@@ -627,21 +661,21 @@ export function getOfflineZoneCount(): number {
             /* ignore */
         }
     }
-    return counter;
+    return count;
 }
 
 /** Incrémente le compteur de zones téléchargées. */
 export function incrementOfflineZoneCount(): void {
-    localStorage.setItem(
-        STORAGE_KEYS.OFFLINE_ZONES_COUNT,
-        String(getOfflineZoneCount() + 1)
-    );
+    const next = getOfflineZoneCount() + 1;
+    _memoryZoneCount = next;
+    localStorage.setItem(STORAGE_KEYS.OFFLINE_ZONES_COUNT, String(next));
 }
 
 /** Décrémente le compteur de zones téléchargées (minimum 0). */
 export function decrementOfflineZoneCount(): void {
     const current = getOfflineZoneCount();
     if (current > 0) {
+        _memoryZoneCount = current - 1;
         localStorage.setItem(
             STORAGE_KEYS.OFFLINE_ZONES_COUNT,
             String(current - 1)
