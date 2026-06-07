@@ -8,7 +8,6 @@ import {
 import { showToast } from '../../toast';
 import { sheetManager } from '../core/SheetManager';
 import { resetTerrain, updateVisibleTiles } from '../../terrain';
-import { SharedAPIKeyComponent } from './SharedAPIKeyComponent';
 import { i18n } from '../../../i18n/I18nService';
 import { setManualOffline } from '../../networkMonitor';
 import templateHTML from '../templates/connectivity.html?raw';
@@ -121,12 +120,6 @@ export class ConnectivitySheet extends BaseComponent {
             sheetManager.close();
             setTimeout(() => sheetManager.open('packs'), 150);
         });
-
-        // API Key (shared component)
-        new SharedAPIKeyComponent('conn-api-key-slot', () => {
-            resetTerrain();
-            updateVisibleTiles();
-        }).hydrate();
 
         // Real-time updates
         this.addSubscription(

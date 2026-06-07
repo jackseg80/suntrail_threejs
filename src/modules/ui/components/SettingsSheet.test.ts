@@ -18,7 +18,7 @@ const { mockIap, mockAuthService } = vi.hoisted(() => ({
 
 vi.mock('../../performance', () => ({
     applyPreset: vi.fn(),
-    getGpuInfo: vi.fn(() => 'Mock GPU'),
+    getGpuInfo: vi.fn(() => ({ renderer: 'Mock GPU', vendor: 'Mock Vendor' })),
     detectBestPreset: vi.fn(() => 'balanced'),
 }));
 
@@ -31,6 +31,25 @@ vi.mock('../../iap', () => mockIap);
 
 vi.mock('../../authService', () => ({ authService: mockAuthService }));
 vi.mock('../../toast', () => ({ showToast: vi.fn() }));
+
+vi.mock('./SharedAPIKeyComponent', () => ({
+    SharedAPIKeyComponent: vi.fn().mockImplementation(function () {
+        this.hydrate = vi.fn();
+    }),
+}));
+
+vi.mock('../../iapService', () => ({
+    iapService: {
+        getAppUserID: vi.fn().mockResolvedValue('test-user-id-123'),
+    },
+}));
+
+vi.mock('../../../constants/storage', () => ({
+    STORAGE_KEYS: {
+        ORS_KEY: 'suntrail_ors_key',
+        MAPTILER_KEY: 'maptiler_key',
+    },
+}));
 
 import { state } from '../../state';
 import { SettingsSheet } from './SettingsSheet';
@@ -50,6 +69,16 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
                 <input type="checkbox" id="inclinometer-toggle">
                 <div id="row-inclinometer"></div>
                 <button id="btn-upgrade-pro"></button>
+                <div id="settings-maptiler-key-slot"></div>
+                <form id="settings-ors-form">
+                    <input id="settings-ors-key" type="password" value="">
+                    <button id="settings-save-ors-key" type="submit"></button>
+                </form>
+                <span id="hardware-gpu"></span>
+                <span id="hardware-cpu"></span>
+                <span id="hardware-preset"></span>
+                <code id="tester-id-value">Chargement…</code>
+                <button id="tester-id-copy">Copier</button>
             </div>
             <div id="sheet-container"></div>
         `;
@@ -90,6 +119,39 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
         toggle.dispatchEvent(new Event('change'));
         expect(toggle.checked).toBe(false);
         expect(mockIap.showUpgradePrompt).toHaveBeenCalledWith('inclinometer');
+    });
+
+    it('doit afficher les infos matériel GPU/CPU/preset depuis les mocks', () => {
+        const gpuEl = document.getElementById('hardware-gpu');
+        const cpuEl = document.getElementById('hardware-cpu');
+        const presetEl = document.getElementById('hardware-preset');
+        expect(gpuEl?.textContent).toBe('Mock GPU');
+        expect(cpuEl?.textContent).toBe(
+            (navigator.hardwareConcurrency || '?').toString()
+        );
+        expect(presetEl?.textContent).toBe('balanced');
+    });
+
+    it('doit sauvegarder la clé ORS dans state et localStorage au submit', () => {
+        const input = document.getElementById(
+            'settings-ors-key'
+        ) as HTMLInputElement;
+        const saveBtn = document.getElementById(
+            'settings-save-ors-key'
+        ) as HTMLButtonElement;
+        input.value = 'test-ors-key-12345';
+        saveBtn.click();
+        expect(state.ORS_KEY).toBe('test-ors-key-12345');
+        expect(localStorage.getItem('suntrail_ors_key')).toBe(
+            'test-ors-key-12345'
+        );
+    });
+
+    it('doit charger et afficher l\'ID Testeur depuis iapService', async () => {
+        await vi.waitFor(() => {
+            const valueEl = document.getElementById('tester-id-value');
+            expect(valueEl?.textContent).toBe('test-user-id-123');
+        });
     });
 });
 

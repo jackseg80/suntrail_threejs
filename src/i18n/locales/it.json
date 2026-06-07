@@ -161,7 +161,21 @@
         "advanced": {
             "benchmarkTitle": "Test delle Prestazioni",
             "benchmarkDesc": "Analizza la potenza di CPU/GPU per calibrare le impostazioni ottimali.",
-            "benchmarkBtn": "Riavvia Ottimizzazione"
+            "benchmarkBtn": "Riavvia Ottimizzazione",
+            "apiKeys": "🔑 Chiavi API",
+            "orsLabel": "Chiave ORS",
+            "orsPlaceholder": "Chiave ORS (opzionale)",
+            "orsLink": "Ottieni una chiave gratuita →",
+            "orsToastSaved": "Chiave ORS salvata",
+            "orsToastInvalid": "Chiave non valida (minimo 10 caratteri)",
+            "hardwareGpu": "GPU",
+            "hardwareCpu": "CPU",
+            "hardwareCores": "core",
+            "hardwarePreset": "Profilo rilevato",
+            "testerId": "🆔 ID Tester",
+            "testerIdCopy": "Copia",
+            "testerIdCopied": "Copiato",
+            "testerIdUnavailable": "Non disponibile (web)"
         },
         "aria": {
             "close": "Chiudi impostazioni"

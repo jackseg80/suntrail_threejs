@@ -1034,29 +1034,4 @@ function setupRouteBar(): void {
         if (state.routeWaypoints.length >= 2) scheduleAutoCompute();
     });
 
-    document.getElementById('rs-ors-form')?.addEventListener('submit', (e) => {
-        e.preventDefault();
-    });
-
-    document.getElementById('rs-save-key')?.addEventListener('click', () => {
-        const key = (
-            document.getElementById('rs-ors-key') as HTMLInputElement
-        )?.value.trim();
-        if (key && key.length > 10) {
-            state.ORS_KEY = key;
-            try {
-                localStorage.setItem(STORAGE_KEYS.ORS_KEY, key);
-            } catch {
-                /* ignore */
-            }
-            void showToast(
-                i18n.t('routePlanner.toast.keySaved') || 'Clé ORS enregistrée'
-            );
-        } else {
-            void showToast(
-                i18n.t('routePlanner.toast.invalidKey') ||
-                    'Clé invalide (minimum 10 caractères)'
-            );
-        }
-    });
 }

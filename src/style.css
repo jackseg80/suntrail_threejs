@@ -3323,45 +3323,6 @@ body.profile-interacting #bottom-bar {
     outline: none;
     transition: border-color var(--transition-fast);
 }
-.rs-key-row input[type='password']:focus {
-    border-color: var(--accent);
-}
-.rs-key-row span:first-child {
-    flex-shrink: 0;
-}
-
-#rs-save-key {
-    flex-shrink: 0;
-    width: 36px;
-    height: 36px;
-    border-radius: var(--radius-md, 8px);
-    border: none;
-    background: var(--accent);
-    color: var(--on-accent, #fff);
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: opacity var(--transition-fast);
-}
-#rs-save-key:hover {
-    opacity: 0.85;
-}
-
-.rs-key-hint {
-    padding: 4px 12px 0;
-    font-size: 11px;
-    text-align: center;
-}
-.rs-key-hint a {
-    color: var(--accent);
-    text-decoration: none;
-    opacity: 0.8;
-}
-.rs-key-hint a:hover {
-    opacity: 1;
-    text-decoration: underline;
-}
-
 /* Liste des waypoints dans le panel réglages */
 .rs-waypoints-list {
     display: flex;

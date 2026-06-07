@@ -22,6 +22,8 @@ import { showToast } from '../../toast';
 import { haptic } from '../../haptics';
 import { showUpgradePrompt, isProActive } from '../../iap';
 import { createTooltip, type TooltipHandle } from '../tooltip';
+import { SharedAPIKeyComponent } from './SharedAPIKeyComponent';
+import { STORAGE_KEYS } from '../../../constants/storage';
 import templateHTML from '../templates/settings.html?raw';
 
 export class SettingsSheet extends BaseComponent {
@@ -281,20 +283,28 @@ export class SettingsSheet extends BaseComponent {
             });
         }
 
+        // MapTiler API Key (SharedAPIKeyComponent)
+        new SharedAPIKeyComponent('settings-maptiler-key-slot', () => {
+            refreshTerrain();
+        }).hydrate();
+
+        // ORS Key binding
+        this.bindORSKeyForm();
+
         // Theme selector
         this.bindThemeSelector();
 
         // Language selector
         this.createLanguageSelector();
 
-        // ID Testeur (pour récupération récompense Closed Testing → Production)
-        this.createTesterIDSection();
-
         // Tutorial button
         this.createTutorialButton();
 
         // Hardware info (GPU/CPU/preset)
         this.createHardwareInfoSection();
+
+        // ID Testeur (pour récupération récompense Closed Testing → Production)
+        this.createTesterIDSection();
 
         // 7-tap easter egg → toggle Pro tester mode (RAM uniquement, non persisté)
         this.setupVersionTapEgg();
@@ -716,57 +726,53 @@ export class SettingsSheet extends BaseComponent {
         }
     }
 
+    private bindORSKeyForm(): void {
+        if (!this.element) return;
+        const form = this.element.querySelector('#settings-ors-form') as HTMLFormElement;
+        const input = this.element.querySelector('#settings-ors-key') as HTMLInputElement;
+        const saveBtn = this.element.querySelector('#settings-save-ors-key') as HTMLButtonElement;
+        if (!form || !input || !saveBtn) return;
+
+        input.value = state.ORS_KEY || '';
+
+        form.addEventListener('submit', (e) => { e.preventDefault(); });
+
+        saveBtn.addEventListener('click', () => {
+            const key = input.value.trim();
+            if (key && key.length > 10) {
+                state.ORS_KEY = key;
+                try { localStorage.setItem(STORAGE_KEYS.ORS_KEY, key); } catch { /* ignore */ }
+                void showToast(
+                    i18n.t('routePlanner.toast.keySaved') || 'Clé ORS enregistrée'
+                );
+            } else {
+                void showToast(
+                    i18n.t('routePlanner.toast.invalidKey') || 'Clé invalide (minimum 10 caractères)'
+                );
+            }
+        });
+    }
+
     private createTesterIDSection(): void {
         if (!this.element) return;
-        const panel = this.element.querySelector('#panel') || this.element;
+        const valueEl = this.element.querySelector('#tester-id-value') as HTMLElement;
+        const copyBtn = this.element.querySelector('#tester-id-copy') as HTMLButtonElement;
+        if (!valueEl) return;
 
-        const section = document.createElement('div');
-        section.className = 'settings-section';
-        section.id = 'tester-id-section';
-        section.innerHTML = `
-            <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:6px">
-                <div class="setting-label" style="font-size:var(--text-xs);color:var(--text-3)">
-                    ID Testeur
-                </div>
-                <div style="display:flex;align-items:center;gap:8px;width:100%">
-                    <code id="tester-id-value" style="
-                        flex:1;font-size:10px;color:var(--text-2);
-                        background:var(--surface-subtle);border-radius:var(--radius-sm);
-                        padding:6px 10px;overflow:hidden;text-overflow:ellipsis;
-                        white-space:nowrap;border:1px solid var(--border)
-                    ">Chargement…</code>
-                    <button id="tester-id-copy" style="
-                        background:transparent;border:1px solid var(--border);
-                        border-radius:var(--radius-sm);padding:6px 10px;
-                        color:var(--text-2);font-size:var(--text-xs);cursor:pointer;
-                        flex-shrink:0;white-space:nowrap
-                    ">Copier</button>
-                </div>
-            </div>
-        `;
-        panel.appendChild(section);
-
-        // Charger l'ID depuis RevenueCat (async)
         void iapService.getAppUserID().then((id) => {
-            const el = section.querySelector('#tester-id-value') as HTMLElement;
-            if (el) el.textContent = id || 'Non disponible (web)';
+            valueEl.textContent = id || 'Non disponible (web)';
+            if (!copyBtn) return;
 
-            section
-                .querySelector('#tester-id-copy')
-                ?.addEventListener('click', () => {
-                    if (!id) return;
-                    void navigator.clipboard.writeText(id).then(() => {
-                        const btn = section.querySelector(
-                            '#tester-id-copy'
-                        ) as HTMLButtonElement;
-                        if (btn) {
-                            btn.innerHTML = `${ICON_CHECK} Copié`;
-                            setTimeout(() => {
-                                btn.textContent = 'Copier';
-                            }, 1500);
-                        }
-                    });
+            const originalLabel = copyBtn.textContent || 'Copier';
+            copyBtn.addEventListener('click', () => {
+                if (!id) return;
+                void navigator.clipboard.writeText(id).then(() => {
+                    copyBtn.innerHTML = `${ICON_CHECK} ${i18n.t('settings.advanced.testerIdCopied') || 'Copié'}`;
+                    setTimeout(() => {
+                        copyBtn.textContent = originalLabel;
+                    }, 1500);
                 });
+            });
         });
     }
 
@@ -823,22 +829,18 @@ export class SettingsSheet extends BaseComponent {
 
     private createHardwareInfoSection(): void {
         if (!this.element) return;
-        const panel = this.element.querySelector('#panel') || this.element;
+        const gpuEl = this.element.querySelector('#hardware-gpu');
+        const cpuEl = this.element.querySelector('#hardware-cpu');
+        const presetEl = this.element.querySelector('#hardware-preset');
+        if (!gpuEl && !cpuEl && !presetEl) return;
 
         const gpuInfo = getGpuInfo();
         const cores = navigator.hardwareConcurrency || '?';
         const detectedPreset = detectBestPreset();
 
-        const section = document.createElement('div');
-        section.className = 'settings-section';
-        section.innerHTML = `
-            <div style="font-size:10px;color:var(--text-3);opacity:0.6;line-height:1.6;padding:4px 0">
-                <div><b>GPU</b> : ${gpuInfo.renderer}</div>
-                <div><b>CPU</b> : ${cores} cores</div>
-                <div><b>Preset détecté</b> : ${detectedPreset}</div>
-            </div>
-        `;
-        panel.appendChild(section);
+        if (gpuEl) gpuEl.textContent = gpuInfo.renderer;
+        if (cpuEl) cpuEl.textContent = cores.toString();
+        if (presetEl) presetEl.textContent = detectedPreset;
     }
 
     /**

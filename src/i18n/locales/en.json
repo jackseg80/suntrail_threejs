@@ -162,7 +162,21 @@
         "advanced": {
             "benchmarkTitle": "Performance Test",
             "benchmarkDesc": "Analyzes CPU/GPU power to calibrate optimal settings.",
-            "benchmarkBtn": "Relaunch Optimization"
+            "benchmarkBtn": "Relaunch Optimization",
+            "apiKeys": "🔑 API Keys",
+            "orsLabel": "ORS Key",
+            "orsPlaceholder": "ORS Key (optional)",
+            "orsLink": "Get a free key →",
+            "orsToastSaved": "ORS Key saved",
+            "orsToastInvalid": "Invalid key (minimum 10 characters)",
+            "hardwareGpu": "GPU",
+            "hardwareCpu": "CPU",
+            "hardwareCores": "cores",
+            "hardwarePreset": "Detected preset",
+            "testerId": "🆔 Tester ID",
+            "testerIdCopy": "Copy",
+            "testerIdCopied": "Copied",
+            "testerIdUnavailable": "Not available (web)"
         },
         "aria": {
             "close": "Close settings"

@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.60.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-07 — v5.60.0 : feedback STOP, inclinomètre offline, zone selection rotation, toast 3D relief, 1081 tests.
+> Mis à jour le 2026-06-07 — v5.60.1 : réorganisation des paramètres (Clés API, Infos Matériel, ID Testeur dans Paramètres Avancés), 1084 tests.
 
 ## Projet
 
@@ -27,6 +27,7 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **Modernisation** : Icônes SVG vectorielles dual-tone remplaçant les emojis dans les contrôles critiques.
 - **Icon Module** : `src/modules/ui/icons.ts` centralise les SVGs standards.
 - **Consistance** : UpgradeSheet, AcceptanceWall et SettingsSheet refondus.
+- **Réglages (v5.60.1)** : Clé MapTiler, Clé ORS, GPU/CPU/Preset, ID Testeur déplacés dans `⚙️ Paramètres Avancés`. Les clés API ont disparu de "Système & Données" et du panneau itinéraire.
 - Guide de style complet : [docs/AI_UI_STYLE_GUIDE.md](docs/AI_UI_STYLE_GUIDE.md).
 
 ### ⚠️ Règles Windows/PowerShell (SÉCURITÉ)

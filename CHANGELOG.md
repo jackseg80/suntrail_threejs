@@ -1,3 +1,13 @@
+## [5.60.1] - 2026-06-07
+
+### Changed
+- **Réorganisation des paramètres** (`settings.html`, `SettingsSheet.ts`) : Clé MapTiler, Clé ORS, GPU/CPU/Preset détecté et ID Testeur déplacés dans `⚙️ Paramètres Avancés`. Suppression des clés API de "Système & Données" et du panneau itinéraire.
+- **Nettoyage** (`connectivity.html`, `app.html`, `appInit.ts`, `style.css`) : Code et CSS orphelins retirés après le déplacement des formulaires de clés.
+
+### Tests
+- 3 nouveaux tests unitaires pour les infos matériel, la sauvegarde ORS et l'affichage ID Testeur.
+- Tous les tests unitaires (1084) sont passants.
+
 ## [5.60.0] - 2026-06-07
 
 ### Fixed
