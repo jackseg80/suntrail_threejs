@@ -119,4 +119,13 @@ describe('InclinometerWidget', () => {
         detail = document.getElementById('inclinometer-detail');
         expect(detail).not.toBeNull();
     });
+
+    it('should display --° when no elevation data is available', () => {
+        (getAltitudeAt as any).mockReturnValue(0);
+
+        vi.advanceTimersByTime(200);
+
+        const el = document.getElementById('inclinometer-widget')!;
+        expect(el.textContent).toContain('—°');
+    });
 });

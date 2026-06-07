@@ -190,6 +190,7 @@ export function updateStorageUI() {
 
 /**
  * Récupère une ressource via le cache persistant ou le réseau.
+ * Priorité de recherche : PMTiles locales > Country Packs > CacheStorage > Embedded Overview > Réseau.
  * Si z, x, y sont fournis, les chutes PMTiles, country packs et embedded overview
  * fonctionnent quelle que soit la forme de l'URL (XYZ, KVP, RESTful...).
  */
@@ -449,6 +450,13 @@ async function getCachedBlob(url: string): Promise<Blob | null> {
 
 /**
  * Lance le chargement d'une tuile via les Workers.
+ *
+ * Chaîne de priorité des sources (par ordre décroissant) :
+ *   1. embeddedPMTiles (overview LOD 5-11, embarqué dans l'APK)
+ *   2. PackManager packs (Pack HD Suisse/FR/etc. montés par l'utilisateur)
+ *   3. CacheStorage zones offline (téléchargements manuels via ZoneSelector)
+ *   4. Réseau (OpenTopoMap > MapTiler > OSM)
+ *
  * v5.57.2 : Vérifie CacheStorage sur le main thread pour les zones offline.
  * Les blobs trouvés sont passés directement au worker (bypass réseau même online lent).
  */

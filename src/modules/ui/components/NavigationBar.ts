@@ -11,7 +11,8 @@ import {
 import { haptic } from '../../haptics';
 import { forceImmediateLODUpdate } from '../../scene';
 import { updateUserMarker } from '../../location';
-import { getAltitudeAt } from '../../analysis';
+import { getAltitudeAt, hasTerrainData } from '../../analysis';
+import { showToast } from '../../toast';
 import templateHTML from '../templates/nav-bar.html?raw';
 
 export class NavigationBar extends BaseComponent {
@@ -91,6 +92,15 @@ export class NavigationBar extends BaseComponent {
                 state.isTiltTransitioning = true; // animation douce du tilt
                 document.body.classList.toggle('mode-2d', newMode);
                 syncToggleVisual();
+
+                // Toast si passage en 3D sans données de relief (offline / zone non téléchargée)
+                if (!newMode && !hasTerrainData()) {
+                    showToast(
+                        i18n.t('terrain.toast.noRelief3D') ||
+                            'Relief indisponible en 3D (données absentes)',
+                        3000
+                    );
+                }
 
                 // v5.29.28 : Rafraîchir les tracés immédiatement pour réactivité visuelle (altitude 0 ou surfaceOffset)
                 refreshTracks();

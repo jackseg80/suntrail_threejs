@@ -111,13 +111,16 @@ export class TrackSheet extends BaseComponent {
         recBtn?.setAttribute('aria-label', i18n.t('track.aria.rec'));
         let _saving = false;
         recBtn?.addEventListener('click', async () => {
-            if (_saving) return;
+            if (_saving || recBtn.disabled) return;
             if (!state.isRecording) {
                 // START
                 await recordingService.toggleRecording();
             } else {
-                // STOP
+                // STOP — feedback visuel immédiat (loading state)
                 _saving = true;
+                recBtn.classList.add('btn-loading');
+                recBtn.setAttribute('aria-busy', 'true');
+                recBtn.disabled = true;
                 try {
                     if (state.recordedPoints.length >= 2 && isProActive()) {
                         const suggestedName =
@@ -137,6 +140,9 @@ export class TrackSheet extends BaseComponent {
                     }
                 } finally {
                     _saving = false;
+                    recBtn.classList.remove('btn-loading');
+                    recBtn.removeAttribute('aria-busy');
+                    recBtn.disabled = false;
                 }
             }
         });

@@ -17,7 +17,7 @@ import { ZoneSelectToolbar } from './ZoneSelectToolbar';
 import { showUpgradePrompt } from '../../iap';
 import { getCachedZones, removeCachedZone } from '../../cachedZones';
 import { eventBus } from '../../eventBus';
-import { flyTo, getDistanceFromZoom } from '../../cameraManager';
+import { flyTo } from '../../cameraManager';
 import { lngLatToWorld } from '../../geo';
 import { getAltitudeAt } from '../../analysis';
 
@@ -223,7 +223,42 @@ export class ConnectivitySheet extends BaseComponent {
                     state.originTile
                 );
                 const elevation = getAltitudeAt(world.x, world.z);
-                const distance = getDistanceFromZoom(zone.maxLod);
+
+                // Calculer une distance qui montre la zone entière dans le viewport
+                // à partir de la diagonale de la zone en coordonnées world
+                const corners = [
+                    lngLatToWorld(
+                        zone.bbox.minLon,
+                        zone.bbox.minLat,
+                        state.originTile
+                    ),
+                    lngLatToWorld(
+                        zone.bbox.maxLon,
+                        zone.bbox.minLat,
+                        state.originTile
+                    ),
+                    lngLatToWorld(
+                        zone.bbox.maxLon,
+                        zone.bbox.maxLat,
+                        state.originTile
+                    ),
+                    lngLatToWorld(
+                        zone.bbox.minLon,
+                        zone.bbox.maxLat,
+                        state.originTile
+                    ),
+                ];
+                const minX = Math.min(...corners.map((c) => c.x));
+                const maxX = Math.max(...corners.map((c) => c.x));
+                const minZ = Math.min(...corners.map((c) => c.z));
+                const maxZ = Math.max(...corners.map((c) => c.z));
+                const zoneW = maxX - minX;
+                const zoneH = maxZ - minZ;
+                const fov = (45 * Math.PI) / 180;
+                const aspect = window.innerWidth / window.innerHeight;
+                const dW = zoneW / (2 * Math.tan(fov / 2) * aspect);
+                const dH = zoneH / (2 * Math.tan(fov / 2));
+                const distance = Math.max(dW, dH, 500) * 1.2;
 
                 sheetManager.close();
                 flyTo(world.x, world.z, elevation || 0, distance).then(() => {

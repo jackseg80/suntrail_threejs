@@ -3,7 +3,7 @@ import { state } from './state';
 import type { BBox } from './geo';
 import { getPow2, getTileBounds, worldToLngLat } from './geo';
 import type { VisibleTileRef } from './tileLoader';
-import { getAltitudeAt } from './analysis';
+import { findTerrainIntersection } from './analysis';
 
 const MAX_TILES_TOTAL = 2000;
 const WARN_TILES = 500;
@@ -56,25 +56,6 @@ export function getViewportBBox(): BBox | null {
     const ow = w * OVERLAY_W;
     const oh = h * OVERLAY_H;
 
-    // Déterminer l'altitude terrain au centre de l'écran (pas camera.target.y !)
-    // pour que la projection et le ZoneOverlay utilisent le même plan de référence.
-    let baseY = state.controls?.target?.y ?? 0;
-    try {
-        const centerNdc = new THREE.Vector3(0, 0, 0.5);
-        const cv = centerNdc.clone().unproject(camera);
-        const cd = cv.sub(camera.position).normalize();
-        const ct = (baseY - camera.position.y) / cd.y;
-        if (ct > 0 && isFinite(ct)) {
-            const ch = camera.position.clone().addScaledVector(cd, ct);
-            baseY = getAltitudeAt(ch.x, ch.z);
-            if (!isFinite(baseY) || baseY < 1) {
-                baseY = state.controls?.target?.y ?? 0;
-            }
-        }
-    } catch {
-        // fallback already set
-    }
-
     const screenCorners = [
         { sx: left, sy: top },
         { sx: left + ow, sy: top },
@@ -84,16 +65,26 @@ export function getViewportBBox(): BBox | null {
 
     const origin = state.originTile;
     const worldPoints: Array<{ lat: number; lon: number }> = [];
+    const raycaster = new THREE.Raycaster();
+    const ndc = new THREE.Vector2();
 
     for (const { sx, sy } of screenCorners) {
-        const ndc = new THREE.Vector3((sx / w) * 2 - 1, -(sy / h) * 2 + 1, 0.5);
-        const vec = ndc.clone().unproject(camera);
-        const dir = vec.sub(camera.position).normalize();
-        const t = (baseY - camera.position.y) / dir.y;
-        if (t > 0 && isFinite(t)) {
-            const hit = camera.position.clone().addScaledVector(dir, t);
+        ndc.set((sx / w) * 2 - 1, -(sy / h) * 2 + 1);
+        raycaster.setFromCamera(ndc, camera);
+        const hit = findTerrainIntersection(raycaster.ray);
+        if (hit) {
             const geo = worldToLngLat(hit.x, hit.z, origin);
             worldPoints.push(geo);
+        } else {
+            const vec = new THREE.Vector3(ndc.x, ndc.y, 0.5).unproject(camera);
+            const dir = vec.sub(camera.position).normalize();
+            const fallbackY = state.controls?.target?.y ?? 0;
+            const t = (fallbackY - camera.position.y) / dir.y;
+            if (t > 0 && isFinite(t)) {
+                const hitPt = camera.position.clone().addScaledVector(dir, t);
+                const geo = worldToLngLat(hitPt.x, hitPt.z, origin);
+                worldPoints.push(geo);
+            }
         }
     }
 

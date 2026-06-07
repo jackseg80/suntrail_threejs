@@ -2,6 +2,15 @@
 
 ### Fixed
 - **Zones noires aux frontières (AT, ES, NO)** : Ajout d'un seuil strict (`strictAtHighZoom`) pour le fallback vers OpenTopoMap au-delà du zoom 14, corrigeant l'affichage de tuiles vides/noires à haute résolution.
+- **Bouton STOP sans feedback** (`TrackSheet.ts`) : Ajout de `btn-loading` + `disabled` + `aria-busy` pendant l'arrêt, évite les doubles-clics sans retour visuel.
+- **Inclinomètre affichait 0° sans données** (`InclinometerWidget.ts`) : Affiche `—° (—%)` quand `getAltitudeAt` retourne 0 partout (offline / pas de relief), au lieu de `0°` trompeur.
+- **Zone selection — rotation non prise en compte** (`ZoneSelector.ts`) : Remplacement du plan horizontal unique `baseY` par `findTerrainIntersection()` par coin dans `getViewportBBox()`. La bbox correspond maintenant exactement au cadre orange, même avec la carte tournée.
+- **Fly to zone téléchargée trop proche** (`ConnectivitySheet.ts`) : Calcule la distance via la diagonale de la zone + FOV 45° pour voir tout le cadre bleu, au lieu d'utiliser `getDistanceFromZoom(zone.maxLod)` qui zoomait au LOD max.
+
+### Added
+- **Toast 3D sans relief** (`NavigationBar.ts`) : Affiche un toast "Relief indisponible en 3D" quand l'utilisateur passe en mode 3D sans données d'élévation (offline zone non téléchargée).
+- **Documentation chaîne de cache** (`tileLoader.ts`) : Priorité documentée : embeddedPMTiles > Pack HD > Cache manuel > Réseau.
+- **Test inclinomètre sans données** : Nouveau test `should display --° when no elevation data is available`.
 
 ### Changed
 - **Internationalisation (i18n)** : Correction de la structure JSON (suppression des doublons) et ajout des clés manquantes signalées par l'audit (`gpx.importError`, `gpx.imported`, `track.manual.title`).
@@ -11,7 +20,7 @@
 - **Audit i18n** : Vérification complète pour assurer la cohérence entre le code et les fichiers de traduction.
 
 ### Tests
-- Tous les tests unitaires (1080) sont passants.
+- Tous les tests unitaires (1081) sont passants.
 
 
 ## [5.58.0] - 2026-06-07

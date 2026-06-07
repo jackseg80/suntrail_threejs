@@ -275,6 +275,24 @@ export class InclinometerWidget {
         const hS = getAltitudeAt(targetX, targetZ + d);
         const hN = getAltitudeAt(targetX, targetZ - d);
 
+        // Vérifier si on a des données d'élévation valides (tous à 0 = pas de relief)
+        const hasElevation = hE !== 0 || hW !== 0 || hS !== 0 || hN !== 0;
+
+        if (!hasElevation) {
+            const labelKey = state.isFollowingUser
+                ? 'inclinometer.label_following'
+                : 'inclinometer.label';
+            const label = i18n.t(labelKey);
+            this.el.textContent = `⛰ —° (—%) — ${label}`;
+            this.el.style.borderColor = '#a0a4bc';
+            if (this.reticle) {
+                this.reticle.style.borderColor = 'var(--border)';
+                (this.reticle.firstChild as HTMLElement).style.background =
+                    'rgba(255,255,255,0.2)';
+            }
+            return;
+        }
+
         const exag = state.RELIEF_EXAGGERATION || 1;
         let realDHdX = (hE - hW) / exag / (2 * d);
         let realDHdZ = (hS - hN) / exag / (2 * d);
