@@ -104,8 +104,7 @@ async function fetchFromORS(
     if (response.status === 403 || response.status === 429) {
         const hasMoreKeys = rotateORSKey();
         if (hasMoreKeys) {
-            if (state.DEBUG_MODE)
-                console.log('[ORS] Key rotated, retrying...');
+            if (state.DEBUG_MODE) console.log('[ORS] Key rotated, retrying...');
             response = await doFetch();
         }
     }
@@ -272,7 +271,10 @@ export async function computeRoute(
 
         if (useORS) {
             try {
-                const response = await fetchFromORS(loopedWaypoints, activeProfile);
+                const response = await fetchFromORS(
+                    loopedWaypoints,
+                    activeProfile
+                );
                 if (generation !== _routeGeneration)
                     throw new Error('Route cancelled');
                 points = orsResponseToPoints(response);

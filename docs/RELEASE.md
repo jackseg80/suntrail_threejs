@@ -140,7 +140,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **762** | **5.40.13** | **v5.40.13** | **Production (Correctif Signalétique Suisse)** | **2026-04-27** |
 | 664 | 5.29.27 | v5.29.27 | Optimisations 2D Galaxy A53 et robustesse Zoom | 2026-04-16 |
 | **848** | **5.58.0** | **v5.58.0** | **Rotation de clés ORS via Gist (fallback OSRM silencieux)** | **2026-06-07** |
-| **849** | **5.59.0** | **v5.59.0** | **Zone offline Free : 1 LOD unique, clic → upgrade** | **2026-06-07** |
+| **850** | **5.59.0** | **v5.59.0** | **Zone offline Free : 1 LOD unique, clic → upgrade** | **2026-06-07** |
 
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.

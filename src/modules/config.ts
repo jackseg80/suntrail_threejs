@@ -179,12 +179,9 @@ export async function resolveORSKey(): Promise<void> {
 
     if (!orsAvailableKeys.length) return;
 
-    const validKeys = orsAvailableKeys.filter(
-        (k) => !orsBannedKeys.has(k)
-    );
+    const validKeys = orsAvailableKeys.filter((k) => !orsBannedKeys.has(k));
     if (validKeys.length > 0) {
-        state.ORS_KEY =
-            validKeys[Math.floor(Math.random() * validKeys.length)];
+        state.ORS_KEY = validKeys[Math.floor(Math.random() * validKeys.length)];
         if (state.DEBUG_MODE)
             console.log(
                 `[Config] ORS key: Gist rotation (${validKeys.length}/${orsAvailableKeys.length})`
@@ -199,12 +196,9 @@ export function rotateORSKey(): boolean {
     orsBannedKeys.add(state.ORS_KEY);
     orsBanTimestamp = Date.now();
 
-    const validKeys = orsAvailableKeys.filter(
-        (k) => !orsBannedKeys.has(k)
-    );
+    const validKeys = orsAvailableKeys.filter((k) => !orsBannedKeys.has(k));
     if (validKeys.length > 0) {
-        state.ORS_KEY =
-            validKeys[Math.floor(Math.random() * validKeys.length)];
+        state.ORS_KEY = validKeys[Math.floor(Math.random() * validKeys.length)];
         if (state.DEBUG_MODE)
             console.log(
                 `[Config] ORS key rotated (${validKeys.length}/${orsAvailableKeys.length})`

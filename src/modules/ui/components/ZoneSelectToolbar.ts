@@ -125,13 +125,17 @@ export class ZoneSelectToolbar extends BaseComponent {
 
         toolbar.classList.add('active');
 
-        const freeBadge = toolbar.querySelector('#zst-free-badge') as HTMLElement;
+        const freeBadge = toolbar.querySelector(
+            '#zst-free-badge'
+        ) as HTMLElement;
         if (freeBadge) {
             freeBadge.style.display = isProActive() ? 'none' : 'block';
         }
 
         if (!isProActive()) {
-            const rangeWrap = toolbar.querySelector('.zone-select-range-wrap') as HTMLElement;
+            const rangeWrap = toolbar.querySelector(
+                '.zone-select-range-wrap'
+            ) as HTMLElement;
             const clickHandler = () => showUpgradePrompt('offline_zones');
             if (rangeWrap) {
                 rangeWrap.style.cursor = 'pointer';
@@ -181,8 +185,12 @@ export class ZoneSelectToolbar extends BaseComponent {
             this.minLod = state.ZOOM;
             this.maxLod = state.ZOOM;
             const toolbar = this.element as HTMLElement;
-            const minSlider = toolbar?.querySelector('#zst-min-slider') as HTMLInputElement;
-            const maxSlider = toolbar?.querySelector('#zst-max-slider') as HTMLInputElement;
+            const minSlider = toolbar?.querySelector(
+                '#zst-min-slider'
+            ) as HTMLInputElement;
+            const maxSlider = toolbar?.querySelector(
+                '#zst-max-slider'
+            ) as HTMLInputElement;
             if (minSlider) minSlider.value = String(state.ZOOM);
             if (maxSlider) maxSlider.value = String(state.ZOOM);
         }
