@@ -15,6 +15,6 @@ export const STORAGE_KEYS = {
     UPSELL_LAST_SHOW: 'suntrail_upsell_last_show',
     RC_WEB_USER_ID: 'rc_web_user_id',
     MAPTILER_KEY: 'maptiler_key',
-    OFFLINE_ZONES_COUNT: 'suntrail-offline-zones-count',
+    OFFLINE_ZONES_COUNT: 'suntrail_offline_zones_count',
     GPX_HISTORY: 'suntrail_gpx_history_v1',
 } as const;

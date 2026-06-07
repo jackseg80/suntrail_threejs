@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { getCachedZones, addCachedZone, removeCachedZone } from './cachedZones';
 
-const ZONE_KEY = 'suntrail-cached-zones';
+const ZONE_KEY = 'suntrail_cached_zones';
 
 describe('cachedZones', () => {
     beforeEach(() => {

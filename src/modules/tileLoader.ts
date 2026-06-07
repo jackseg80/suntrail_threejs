@@ -569,8 +569,40 @@ export function cancelTileLoad(taskId: number): void {
 
 // ── Offline zone helpers ─────────────────────────────────────────────────────
 
+const OLD_ZONES_COUNT_KEY = 'suntrail-offline-zones-count';
+const OLD_CACHED_ZONES_KEY = 'suntrail-cached-zones';
+const NEW_CACHED_ZONES_KEY = 'suntrail_cached_zones';
+
+/** Migre les clés localStorage avec tirets (−) vers des underscores (_) (compat WebView Android). */
+function migrateLegacyZoneKeys(): void {
+    try {
+        const newCount = localStorage.getItem(STORAGE_KEYS.OFFLINE_ZONES_COUNT);
+        if (newCount === null) {
+            const oldCount = localStorage.getItem(OLD_ZONES_COUNT_KEY);
+            if (oldCount !== null) {
+                localStorage.setItem(
+                    STORAGE_KEYS.OFFLINE_ZONES_COUNT,
+                    oldCount
+                );
+                localStorage.removeItem(OLD_ZONES_COUNT_KEY);
+            }
+        }
+        const newZones = localStorage.getItem(NEW_CACHED_ZONES_KEY);
+        if (newZones === null) {
+            const oldZones = localStorage.getItem(OLD_CACHED_ZONES_KEY);
+            if (oldZones !== null) {
+                localStorage.setItem(NEW_CACHED_ZONES_KEY, oldZones);
+                localStorage.removeItem(OLD_CACHED_ZONES_KEY);
+            }
+        }
+    } catch {
+        /* ignore */
+    }
+}
+
 /** Nombre de zones hors-ligne téléchargées (toutes sessions confondues). */
 export function getOfflineZoneCount(): number {
+    migrateLegacyZoneKeys();
     const counter = parseInt(
         localStorage.getItem(STORAGE_KEYS.OFFLINE_ZONES_COUNT) ?? '0',
         10
@@ -579,7 +611,7 @@ export function getOfflineZoneCount(): number {
     // compter les zones réellement présentes dans le cache metadata.
     if (counter === 0) {
         try {
-            const raw = localStorage.getItem('suntrail-cached-zones');
+            const raw = localStorage.getItem(NEW_CACHED_ZONES_KEY);
             if (raw) {
                 const zones = JSON.parse(raw);
                 if (Array.isArray(zones) && zones.length > 0) {
