@@ -442,6 +442,91 @@ describe('ZoneSelectToolbar', () => {
         });
     });
 
+    describe('download — annulation', () => {
+        beforeEach(() => {
+            toolbar['currentSelection'] = makeFakeZoneSelection();
+        });
+
+        it('crée un AbortController pendant le téléchargement', async () => {
+            mockDownloadZoneMultiLOD.mockImplementation(
+                async (_tiles, _onProgress, signal: AbortSignal) => {
+                    expect(signal.aborted).toBe(false);
+                    return true;
+                }
+            );
+            const btn = document.getElementById(
+                'zst-download'
+            ) as HTMLButtonElement;
+            await toolbar['download'](btn);
+            expect(toolbar['downloadAbort']).toBeNull();
+        });
+
+        it('bascule le bouton Annuler en btn-abort pendant le téléchargement', async () => {
+            let resolveDownload: (v: boolean) => void;
+            mockDownloadZoneMultiLOD.mockReturnValue(
+                new Promise<boolean>((r) => {
+                    resolveDownload = r;
+                })
+            );
+            const btn = document.getElementById(
+                'zst-download'
+            ) as HTMLButtonElement;
+            const cancelBtn = document.getElementById(
+                'zst-cancel'
+            ) as HTMLButtonElement;
+
+            const promise = toolbar['download'](btn);
+
+            // Vérifier l'état pendant le téléchargement
+            expect(cancelBtn.textContent).toBe('⏹ Annuler le téléchargement');
+            expect(cancelBtn.classList.contains('btn-abort')).toBe(true);
+            expect(cancelBtn.disabled).toBe(false);
+
+            resolveDownload!(true);
+            await promise;
+        });
+
+        it('abandonne le téléchargement via cancel() et libère le slot', async () => {
+            let resolveDownload: (v: boolean) => void;
+            let abortSignal: AbortSignal | undefined;
+            mockDownloadZoneMultiLOD.mockImplementation(
+                async (_tiles, _onProgress, signal: AbortSignal) => {
+                    abortSignal = signal;
+                    return new Promise<boolean>((r) => {
+                        resolveDownload = r;
+                    });
+                }
+            );
+            const btn = document.getElementById(
+                'zst-download'
+            ) as HTMLButtonElement;
+            const promise = toolbar['download'](btn);
+
+            // Annuler pendant le téléchargement
+            toolbar['cancel']();
+
+            expect(abortSignal?.aborted).toBe(true);
+            expect(mockDecrementOfflineZoneCount).toHaveBeenCalled();
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.stringContaining('annule')
+            );
+
+            // Résoudre la promesse pour éviter unhandled rejection
+            resolveDownload!(false);
+            await promise.catch(() => {});
+        });
+
+        it("ne crée pas d'AbortController si le gate bloque", async () => {
+            mockIsProActive.mockReturnValue(false);
+            mockGetOfflineZoneCount.mockReturnValue(1);
+            const btn = document.getElementById(
+                'zst-download'
+            ) as HTMLButtonElement;
+            await toolbar['download'](btn);
+            expect(toolbar['downloadAbort']).toBeNull();
+        });
+    });
+
     describe('cancel', () => {
         it('réinitialise zoneSelectionActive et zoneOverlay', () => {
             const overlay = { hide: vi.fn() } as any;

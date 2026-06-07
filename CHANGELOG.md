@@ -1,10 +1,14 @@
 ## [5.57.6] - 2026-06-07
 
+### Features
+- **Annulation du téléchargement de zone** (`tileLoader.ts`, `ZoneSelectToolbar.ts`, `style.css`) : Pendant un téléchargement, le bouton "Annuler" devient "⏹ Annuler le téléchargement" (rouge). Un clic interrompt le téléchargement et nettoie toutes les tuiles déjà sauvegardées du CacheStorage. `cancel()` gère aussi l'interruption d'un téléchargement en cours. Nouveau style `.btn-abort`.
+
 ### Fixed
 - **Rien n'était cassé.** Toute l'investigation sur le gate zone offline Free (1 zone) a conclu que le code était correct depuis le début. Le comportement observé sur Galaxy S23 était dû à un accès Pro actif sur ce device (RevenueCat/Google Play). Nettoyage complet du overengineering (compteur mémoire, migrations de clés) : on conserve uniquement un fallback de sécurité dans `getOfflineZoneCount()` qui resynchronise le compteur depuis la liste réelle des zones en cache si le compteur localStorage est à 0.
 
 ### Tests
-- Total : **1076 tests** (101 fichiers).
+- **ZoneSelectToolbar.test.ts** : 4 nouveaux tests pour l'annulation (AbortController, UI btn-abort, cancel pendant download, gate pas d'AbortController).
+- Total : **1080 tests** (101 fichiers).
 
 ### Tests
 - **tileLoader.test.ts** : 7 nouveaux tests pour `getOfflineZoneCount`, `incrementOfflineZoneCount`, `decrementOfflineZoneCount` — fallback, sync, floors.

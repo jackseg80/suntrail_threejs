@@ -304,21 +304,26 @@ export class ZoneSelectToolbar extends BaseComponent {
                 if (this.zoneOverlay) {
                     this.zoneOverlay.setMode('cached', capturedBbox);
                 }
+                this.downloadAbort = null;
                 void haptic('success');
                 showToast('✅ Zone telechargee !');
                 setTimeout(() => this.cancel(), 3000);
                 return;
             }
             // Échec ou abandon — libérer le slot
-            decrementOfflineZoneCount();
-            if (this.downloadAbort.signal.aborted) {
-                showToast('⛔ Telechargement annule');
-            } else {
-                showToast('⛔ Erreur telechargement zone');
+            if (this.downloadAbort) {
+                decrementOfflineZoneCount();
+                if (this.downloadAbort.signal.aborted) {
+                    showToast('⛔ Telechargement annule');
+                } else {
+                    showToast('⛔ Erreur telechargement zone');
+                }
             }
         } catch (e) {
-            decrementOfflineZoneCount();
-            console.warn('[OfflineZone] Download error:', e);
+            if (this.downloadAbort) {
+                decrementOfflineZoneCount();
+                console.warn('[OfflineZone] Download error:', e);
+            }
         }
         if (cancelBtn) {
             cancelBtn.textContent = 'Annuler';
