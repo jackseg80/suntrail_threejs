@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.59.0)
+# SunTrail — Guide IA (v5.60.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-07 — v5.59.0 : zone offline 1 LOD unique en free, clic → upgrade, 1080 tests.
+> Mis à jour le 2026-06-07 — v5.60.0 : feedback STOP, inclinomètre offline, zone selection rotation, toast 3D relief, 1081 tests.
 
 ## Projet
 
