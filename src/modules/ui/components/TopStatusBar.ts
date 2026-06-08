@@ -79,12 +79,11 @@ export class TopStatusBar extends BaseComponent {
             sheetManager.toggle('sos');
         });
 
-        const collapseToggle = this.element.querySelector(
-            '.top-collapse-toggle'
-        );
+        const parent = this.element?.parentElement;
+        const collapseToggle = parent?.querySelector('.top-collapse-toggle');
         collapseToggle?.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.element!.classList.toggle('collapsed');
+            parent?.classList.toggle('collapsed');
         });
 
         this.updateLOD(state.ZOOM);
@@ -118,11 +117,6 @@ export class TopStatusBar extends BaseComponent {
             )
         );
 
-        // Always show collapse toggle
-        const toggle = this.element.querySelector(
-            '.top-collapse-toggle'
-        ) as HTMLElement | null;
-        if (toggle) toggle.style.display = 'flex';
         this.updateAriaLabels();
         const onLocaleChanged = () => this.updateAriaLabels();
         eventBus.on('localeChanged', onLocaleChanged);

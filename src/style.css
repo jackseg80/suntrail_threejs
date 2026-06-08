@@ -262,6 +262,7 @@ html {
     align-items: center;
     justify-content: space-between;
     padding: 0 var(--space-4);
+    gap: 6px;
     z-index: 2000;
     pointer-events: none;
     transition:
@@ -288,21 +289,33 @@ html {
     gap: 8px;
 }
 
-/* Mode tiroir : barre haute repliable */
+/* ── TIROIR BARRE HAUTE ──────────────────────────────────────────── */
+/* Contenu : glisse à droite pour se cacher */
 .top-status-bar-content {
-    position: relative;
-    padding-right: 48px; /* réserve l'espace pour le toggle absolu */
+    flex: 1;
+    min-width: 0;
+    transition:
+        transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 0.35s ease;
 }
+#top-status-bar.collapsed .top-status-bar-content {
+    transform: translateX(calc(100% + 48px));
+    opacity: 0;
+    pointer-events: none;
+}
+#top-status-bar.collapsed .top-left-widgets,
+#top-status-bar.collapsed .top-right-widgets {
+    display: none;
+}
+
+/* Bouton de repli : flèche gauche → barre visible, droite → barre cachée */
 .top-collapse-toggle {
-    position: absolute;
-    right: 4px;
-    top: 50%;
-    transform: translateY(-50%);
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     background: var(--surface);
     backdrop-filter: var(--glass);
     border: 1px solid var(--border);
@@ -310,23 +323,17 @@ html {
     cursor: pointer;
     pointer-events: auto;
     color: var(--text-2);
-    transition:
-        border-color var(--transition-fast),
-        transform 0.3s ease;
+    transition: border-color var(--transition-fast);
+    margin-right: 2px;
 }
 @media (hover: hover) {
     .top-collapse-toggle:hover {
         border-color: var(--border-active);
     }
 }
-.top-status-bar-content.collapsed .top-left-widgets,
-.top-status-bar-content.collapsed .top-right-widgets {
-    display: none;
-}
-.top-status-bar-content.collapsed .top-collapse-toggle svg {
+#top-status-bar.collapsed .top-collapse-toggle svg {
     transform: rotate(180deg);
 }
-/* Désactive backdrop-filter coûteux sur vieux GPU en mode éco */
 body.preset-eco .top-collapse-toggle {
     backdrop-filter: none !important;
 }
@@ -1899,11 +1906,8 @@ body.timeline-open #elevation-profile:not(.panel-custom-pos) {
         padding: 4px var(--space-2);
     }
     .top-collapse-toggle {
-        width: 36px;
-        height: 36px;
-    }
-    .top-status-bar-content {
-        padding-right: 44px;
+        width: 32px;
+        height: 32px;
     }
 }
 
