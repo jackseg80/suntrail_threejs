@@ -1,3 +1,25 @@
+## [5.61.0] - 2026-06-08
+
+### Added
+- **Zones tactiles 44px** (`.touch-hit-target`) pour les icônes ⓘ dans TrackSheet, SolarProbeSheet, WeatherSheet — accessibilité grand public.
+- **`role="button" tabindex="0" aria-label`** sur toutes les icônes info — navigation clavier + lecteurs d'écran.
+- **Bouton repli/dépliage barre haute** (tiroir) : flèche `>` quand la barre est visible (pousse à droite/ferme), `<` quand cachée (tire depuis la droite/ouvre). Animation GPU-composited (`translateX(100%)` + `opacity`).
+- **Masquage UI au déplacement** (`HIDE_UI_ON_MOVE`, ON par défaut) : masque toute l'interface pendant le drag/zoom molette/tactile. Option dans Paramètres Avancés.
+- **Skeleton shimmer** sur le titre de géocodage SolarProbeSheet (remplace le `...` statique).
+- **Support `prefers-reduced-motion`** : toutes les animations respectent la préférence utilisateur.
+
+### Changed
+- **Barre de chargement des tuiles** : 3px → 5px + `box-shadow` pour meilleure visibilité.
+- **`font-size` normalisée** : 14 occurrences de 9-11px inline → `var(--text-xs)` dans 7 composants.
+- **Section Clés API unifiée** : ORS utilise les mêmes classes CSS que MapTiler (`.api-key-form`, `.api-key-input`, `.api-key-hint`).
+- **`HIDE_UI_ON_MOVE`** déplacé dans Paramètres Avancés (supprime l'ancienne section Interface vide).
+- **Vue `.ui-moving`** : masquage sans `scale(0.92)` (optimisé pour vieux GPU), désactive `backdrop-filter` en mode éco.
+
+### Fixed
+- **Overlap toggle/timeline** : le bouton de repli n'était plus positionné en absolute mais en frère flex, plus de chevauchement.
+- **Animation slide-out** : suppression de `display:none` sur les enfants qui cassait le calcul de `translateX(100%)`.
+- **Fleche inversée** : `>` visible / `<` caché (logique tiroir).
+
 ## [5.60.2] - 2026-06-08
 
 ### Fixed

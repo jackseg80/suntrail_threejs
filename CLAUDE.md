@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.60.0)
+# SunTrail — Guide IA (v5.61.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-07 — v5.60.1 : réorganisation des paramètres (Clés API, Infos Matériel, ID Testeur dans Paramètres Avancés), 1084 tests.
+> Mis à jour le 2026-06-08 — v5.61.0 : UI Premium & Accessibilité Mobile (tiroir barre haute, hide-on-move, hit areas 44px, skeleton shimmer, unifi API keys). 1088 tests.
 
 ## Projet
 
