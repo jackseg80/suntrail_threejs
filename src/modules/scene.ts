@@ -778,7 +778,6 @@ export async function initScene(): Promise<void> {
             renderCompass();
         }
 
-        if (state.ENERGY_SAVER && now - lastRenderTime < 33) return;
         if (
             isMobile &&
             state.PERFORMANCE_PRESET !== 'ultra' &&
@@ -787,7 +786,6 @@ export async function initScene(): Promise<void> {
             return;
         if (
             state.isFollowingUser &&
-            !state.ENERGY_SAVER &&
             now - lastRenderTime < 33
         )
             return;

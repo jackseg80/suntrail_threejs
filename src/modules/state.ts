@@ -211,7 +211,6 @@ export type ThemePreference = 'light' | 'dark' | 'auto';
 export interface State {
     lang: AppLocale;
     themePreference: ThemePreference;
-    ENERGY_SAVER: boolean;
     MK: string;
     MAP_SOURCE: string;
     hasManualSource: boolean;
@@ -377,7 +376,6 @@ export interface State {
 const initialState: State = {
     lang: 'fr',
     themePreference: 'auto',
-    ENERGY_SAVER: false,
     MK: '',
     MAP_SOURCE: 'swisstopo',
     hasManualSource: false,
@@ -506,7 +504,6 @@ export interface SavedSettings {
     themePreference?: ThemePreference;
     PERFORMANCE_PRESET: PresetType;
     MAP_SOURCE: string;
-    ENERGY_SAVER: boolean;
     SHOW_TRAILS: boolean;
     SHOW_SLOPES: boolean;
     SHOW_SIGNPOSTS: boolean;
@@ -543,7 +540,6 @@ export function saveSettings(): void {
             themePreference: state.themePreference,
             PERFORMANCE_PRESET: state.PERFORMANCE_PRESET,
             MAP_SOURCE: state.MAP_SOURCE,
-            ENERGY_SAVER: state.ENERGY_SAVER,
             SHOW_TRAILS: state.SHOW_TRAILS,
             SHOW_SLOPES: state.SHOW_SLOPES,
             SHOW_SIGNPOSTS: state.SHOW_SIGNPOSTS,
@@ -620,7 +616,6 @@ export function loadSettings(): SavedSettings | null {
         if (parsed.themePreference)
             state.themePreference = parsed.themePreference;
         state.MAP_SOURCE = parsed.MAP_SOURCE;
-        state.ENERGY_SAVER = !!parsed.ENERGY_SAVER;
         state.SHOW_TRAILS = !!parsed.SHOW_TRAILS;
         state.SHOW_SLOPES = !!parsed.SHOW_SLOPES;
         if (parsed.IS_2D_MODE !== undefined)

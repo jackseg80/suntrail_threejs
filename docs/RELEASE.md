@@ -141,6 +141,8 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | 664 | 5.29.27 | v5.29.27 | Optimisations 2D Galaxy A53 et robustesse Zoom | 2026-04-16 |
 | **848** | **5.58.0** | **v5.58.0** | **Rotation de clés ORS via Gist (fallback OSRM silencieux)** | **2026-06-07** |
 | **850** | **5.59.0** | **v5.59.0** | **Zone offline Free : 1 LOD unique, clic → upgrade** | **2026-06-07** |
+| **854** | **5.61.0** | **v5.61.0** | **UI Premium (tiroir barre haute, hide-on-move, hit areas 44px, skeleton shimmer, unifi API keys)** | **2026-06-08** |
+| **855** | **5.61.1** | **v5.61.1** | **Suppression option Économie d'énergie (obsolète : idle throttle 20fps + deep sleep 1.5fps + mobile cap 60fps déjà en place)** | **2026-06-08** |
 
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.

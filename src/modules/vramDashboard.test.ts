@@ -230,7 +230,6 @@ describe('VRAMDashboard', () => {
             (state as any).ZOOM = 14;
             (state as any).isProcessingTiles = false;
             (state as any).isUserInteracting = false;
-            (state as any).ENERGY_SAVER = true;
             dashboard.start();
         });
 
@@ -260,7 +259,6 @@ describe('VRAMDashboard', () => {
             expect(s.geometries).toBe(42);
             expect(s.drawCalls).toBe(55);
             expect(s.zoom).toBe(14);
-            expect(s.energySaver).toBe(true);
             expect(s.t).toBeGreaterThanOrEqual(0);
         });
 

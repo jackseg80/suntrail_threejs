@@ -26,10 +26,6 @@ describe('state.ts', () => {
         expect(state.LOAD_DELAY_FACTOR).toBeDefined();
     });
 
-    it('should have battery optimization parameters defined (v4.5.52)', () => {
-        expect(state.ENERGY_SAVER).toBe(false);
-    });
-
     describe('PRESETS', () => {
         it('ultra — PC bureau / Snapdragon Elite : pleine qualité', () => {
             expect(PRESETS.ultra.RANGE).toBe(12);

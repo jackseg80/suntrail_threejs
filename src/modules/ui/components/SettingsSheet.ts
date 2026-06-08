@@ -71,19 +71,6 @@ export class SettingsSheet extends BaseComponent {
         this.bindExpandToggle('weather-expand-btn', 'weather-suboptions');
 
         // Toggles
-        this.bindToggle(
-            'energy-saver-toggle',
-            'ENERGY_SAVER',
-            (val: boolean) => {
-                showToast(
-                    val
-                        ? i18n.t('settings.toast.energySaverOn') ||
-                              'Mode Éco activé (FPS limités)'
-                        : i18n.t('settings.toast.energySaverOff') ||
-                              'Mode Éco désactivé'
-                );
-            }
-        );
         this.bindToggle('hide-ui-on-move-toggle', 'HIDE_UI_ON_MOVE');
         this.bindToggle('stats-toggle', 'SHOW_STATS', (val: boolean) => {
             // setVisible(val) synchronise exactement l'état du toggle avec l'affichage
@@ -225,7 +212,6 @@ export class SettingsSheet extends BaseComponent {
             'RELIEF_EXAGGERATION',
             'VEGETATION_DENSITY',
             'FOG_FAR',
-            'ENERGY_SAVER',
             'SHOW_STATS',
             'SHOW_DEBUG',
             'SHOW_VEGETATION',
@@ -328,7 +314,6 @@ export class SettingsSheet extends BaseComponent {
             'settings.label.range': 'settings.label.tooltipRange',
             'settings.label.exaggeration': 'settings.label.tooltipExaggeration',
             'settings.label.vegDensity': 'settings.label.tooltipVegDensity',
-            'settings.label.energySaver': 'settings.label.tooltipEnergySaver',
             'weather.label.intensity': 'settings.label.tooltipWeatherDensity',
             'weather.label.speed': 'settings.label.tooltipWeatherSpeed',
             'weather.label.opacity': 'settings.label.tooltipWeatherOpacity',
@@ -532,9 +517,6 @@ export class SettingsSheet extends BaseComponent {
                 if (fogSlider) fogSlider.value = (value / 1000).toString();
                 break;
             }
-            case 'ENERGY_SAVER':
-                this.updateToggle('energy-saver-toggle', value);
-                break;
             case 'HIDE_UI_ON_MOVE':
                 this.updateToggle('hide-ui-on-move-toggle', value);
                 break;
@@ -646,7 +628,6 @@ export class SettingsSheet extends BaseComponent {
         );
         this.updateUIFromState('VEGETATION_DENSITY', state.VEGETATION_DENSITY);
         this.updateUIFromState('FOG_FAR', state.FOG_FAR);
-        this.updateUIFromState('ENERGY_SAVER', state.ENERGY_SAVER);
         this.updateUIFromState('HIDE_UI_ON_MOVE', state.HIDE_UI_ON_MOVE);
         this.updateUIFromState('SHOW_STATS', state.SHOW_STATS);
         this.updateUIFromState('SHOW_DEBUG', state.SHOW_DEBUG);

@@ -229,7 +229,6 @@
             "vegDensity": "Densità vegetazione",
             "loadSpeed": "Velocità di caricamento",
             "fogDistance": "Distanza nebbia",
-            "energySaver": "Risparmio energetico",
             "stats": "Statistiche prestazioni (FPS)",
             "debug": "Info debug",
             "vegetation": "Foreste & Vegetazione",
@@ -247,7 +246,6 @@
             "tooltipResolution": "<b>Risoluzione (LOD)</b>: livello di dettaglio della mesh del terreno. 16 = molto basso (veloce), 256 = ultra fine (pesante).",
             "tooltipRange": "<b>Raggio di rendering</b>: numero di tessere del terreno caricate intorno alla telecamera. Raggio maggiore = vista più ampia ma maggior uso di memoria.",
             "tooltipVegDensity": "<b>Densità vegetazione</b>: numero di alberi 3D renderizzati nelle aree forestali. 0 = nessun albero, 15000 = foresta densa.",
-            "tooltipEnergySaver": "<b>Risparmio energetico</b>: limita gli FPS a 30 e riduce il consumo della batteria. Utile per lunghe escursioni.",
             "tooltipWeatherDensity": "<b>Intensità meteo</b>: numero di particelle di pioggia/neve visibili in 3D. Influisce sulle prestazioni grafiche.",
             "tooltipWeatherSpeed": "<b>Velocità meteo</b>: velocità di movimento delle particelle di pioggia/neve. 1.0 = normale.",
             "tooltipWeatherOpacity": "<b>Opacità meteo</b>: trasparenza visiva delle particelle di pioggia. 0.1 = quasi invisibile, 1.0 = opaco."
@@ -289,8 +287,6 @@
             "youtube": "📺 Video & Demo"
         },
         "toast": {
-            "energySaverOn": "Risparmio energetico attivato",
-            "energySaverOff": "Risparmio energetico disattivato"
         }
     },
     "search": {

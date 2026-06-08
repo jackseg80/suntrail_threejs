@@ -34,15 +34,10 @@ test.describe('Settings and Performance', () => {
     await page.click('.nav-tab[data-tab="settings"]');
     
     const shadowToggle = page.locator('#shadow-toggle');
-    const energyToggle = page.locator('#energy-saver-toggle');
 
     // Toggle shadows
     await shadowToggle.check();
     await expect(shadowToggle).toBeChecked();
-
-    // Toggle energy saver
-    await energyToggle.check();
-    await expect(energyToggle).toBeChecked();
 
     await page.click('#close-panel');
     await expect(page.locator('#settings')).not.toHaveClass(/is-open/);

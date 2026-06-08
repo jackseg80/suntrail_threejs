@@ -232,7 +232,6 @@
             "vegDensity": "Vegetation density",
             "loadSpeed": "Load speed",
             "fogDistance": "Fog distance",
-            "energySaver": "Energy saver",
             "stats": "Performance stats (FPS)",
             "debug": "Debug info",
             "vegetation": "Forests & Vegetation",
@@ -250,7 +249,6 @@
             "tooltipResolution": "<b>Resolution (LOD)</b>: terrain mesh detail level. 16 = very low (fast), 256 = ultra fine (performance-heavy).",
             "tooltipRange": "<b>Render radius</b>: number of terrain tiles loaded around the camera. Larger radius = wider view but higher memory usage.",
             "tooltipVegDensity": "<b>Vegetation density</b>: number of 3D trees rendered in forest areas. 0 = no trees, 15000 = dense forest.",
-            "tooltipEnergySaver": "<b>Energy saver</b>: caps FPS at 30 and reduces battery consumption. Useful for long hikes.",
             "tooltipWeatherDensity": "<b>Weather intensity</b>: number of rain/snow particles visible in 3D. Affects graphics performance.",
             "tooltipWeatherSpeed": "<b>Weather speed</b>: movement speed of rain/snow particles. 1.0 = normal.",
             "tooltipWeatherOpacity": "<b>Weather opacity</b>: visual transparency of rain particles. 0.1 = nearly invisible, 1.0 = opaque."
@@ -292,8 +290,6 @@
             "youtube": "📺 Videos & Demos"
         },
         "toast": {
-            "energySaverOn": "🔋 Eco Mode On (FPS limited)",
-            "energySaverOff": "⚡ Eco Mode Off"
         }
     },
     "search": {

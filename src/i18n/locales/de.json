@@ -232,7 +232,6 @@
             "vegDensity": "Vegetationsdichte",
             "loadSpeed": "Ladegeschwindigkeit",
             "fogDistance": "Nebeldistanz",
-            "energySaver": "Energiesparmodus",
             "stats": "Leistungsstatistiken (FPS)",
             "debug": "Debug-Infos",
             "vegetation": "Wälder & Vegetation",
@@ -250,7 +249,6 @@
             "tooltipResolution": "<b>Auflösung (LOD)</b>: Detailstufe des Geländenetzmodells. 16 = sehr niedrig (schnell), 256 = ultra fein (leistungsintensiv).",
             "tooltipRange": "<b>Render-Radius</b>: Anzahl der um die Kamera geladenen Geländekacheln. Größerer Radius = weitere Sicht, aber höherer Speicherverbrauch.",
             "tooltipVegDensity": "<b>Vegetationsdichte</b>: Anzahl der 3D-Bäume in Waldgebieten. 0 = keine Bäume, 15000 = dichter Wald.",
-            "tooltipEnergySaver": "<b>Energiesparmodus</b>: begrenzt FPS auf 30 und reduziert den Akkuverbrauch. Nützlich für lange Wanderungen.",
             "tooltipWeatherDensity": "<b>Wetterintensität</b>: Anzahl der sichtbaren Regen-/Schneepartikel in 3D. Beeinflusst die Grafikleistung.",
             "tooltipWeatherSpeed": "<b>Wettergeschwindigkeit</b>: Bewegungsgeschwindigkeit der Regen-/Schneepartikel. 1,0 = normal.",
             "tooltipWeatherOpacity": "<b>Wetteropazität</b>: visuelle Transparenz der Regenpartikel. 0,1 = fast unsichtbar, 1,0 = undurchsichtig."
@@ -292,8 +290,6 @@
             "youtube": "📺 Videos & Demos"
         },
         "toast": {
-            "energySaverOn": "Energiesparmodus aktiviert",
-            "energySaverOff": "Energiesparmodus deaktiviert"
         }
     },
     "search": {

@@ -46,7 +46,6 @@ Pour tester des cas complexes sans attendre les conditions réelles, utilisez la
 | Violation CSP `frame-ancestors` via `<meta>` | Directive valide uniquement en HTTP header | Supprimer du `<meta>` CSP. |
 | Stats de performance : toggle ON mais rien | `toggle()` = flip, désync au démarrage | Utiliser `setVisible(val)`. `VRAMDashboard.init()` appelle `setVisible(state.SHOW_STATS)`. (v5.11.0) |
 | FPS counter absent au démarrage | `VRAMDashboard.init()` avant `initScene()` → `state.stats` null | `initScene()` appelle `state.vramPanel?.setVisible(state.SHOW_STATS)` après Stats.js. (v5.11) |
-| `ENERGY_SAVER=false` malgré Phase 1 | `loadSettings()` restaure ancienne valeur avant `applyPreset()` | `applyPreset()` force `true` sur mobile (sauf Ultra). (v5.11) |
 | Timeline slider ne met pas à jour ombres | `needsUpdate = false` sans animation/mouvement | `state.isInteractingWithUI = true` dans handler `input` + debounce 150ms. (v5.11.0) |
 | App Android tuée en background pendant REC | Pas de Foreground Service | `RecordingService.java` (foregroundServiceType=location) + `RecordingPlugin.java`. (v5.11.0) |
 | Barre de statut Android visible plein écran | `onResume()` trop tôt | `onWindowFocusChanged(hasFocus=true)` pour `WindowInsetsController.hide(statusBars())`. (v5.11.0) |
@@ -62,7 +61,6 @@ Pour tester des cas complexes sans attendre les conditions réelles, utilisez la
 | Artefact ombre pulsante eau LOD 17-18 | Amplitude vague ±3.7m dépasse la surface | Amplitude réduite ±0.9m, base mesh à `baseAlt + 2.0m`. (v5.11.1) |
 | Tuiles blanches intermittentes | `trimCache()` évince tuiles en scène → `texture.dispose()` | `activeCacheKeys` Set — `trimCache()` cherche entrée non-active avant FIFO. (v5.11.1) |
 | Idle throttle désactivé après clic GPS | `isFollowingUser=true` au 1er clic (centrage unique) | `isFollowingUser=true` uniquement au 2e clic (suivi continu). (v5.11.1) |
-| GPS follow à 120fps sur flagship | Sans plafond propre quand `ENERGY_SAVER=false` | Guard `33ms` conditionnel `isFollowingUser && !ENERGY_SAVER`. (v5.11.1) |
 | App démarre en LOD 12 au lieu de LOD 6 | `camera.position` trop basse | Vérifier `camera.position.set(0, 2000000, 2000000)`. (v5.11.2) |
 | Bouton 2D non grisé au démarrage (LOD 6) | `syncLowZoomState()` non appelé en init | Appeler après `syncToggleVisual()` dans `NavigationBar.render()`. (v5.11.2) |
 | Mode 3D restauré mais meshes plats LOD 10→11 | `rebuildActiveTiles()` non appelé | `syncLowZoomState()` doit appeler `rebuildActiveTiles() + updateVisibleTiles()`. (v5.11.2) |

@@ -67,7 +67,6 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
                 <button id="close-panel"></button>
                 <input type="range" id="res-slider" min="1" max="100" value="50">
                 <span id="res-disp">50</span>
-                <input type="checkbox" id="energy-saver-toggle">
                 <input type="checkbox" id="hide-ui-on-move-toggle">
                 <input type="checkbox" id="inclinometer-toggle">
                 <div id="row-inclinometer"></div>
@@ -102,15 +101,6 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
 
         expect(state.RESOLUTION).toBe(75);
         expect(disp?.textContent).toBe('75');
-    });
-
-    it("doit mettre à jour le state lors du basculement d'un toggle", () => {
-        const toggle = document.getElementById(
-            'energy-saver-toggle'
-        ) as HTMLInputElement;
-        toggle.checked = true;
-        toggle.dispatchEvent(new Event('change'));
-        expect(state.ENERGY_SAVER).toBe(true);
     });
 
     it('doit bloquer les features PRO pour les utilisateurs gratuits', () => {
@@ -186,7 +176,6 @@ describe.skip('SettingsSheet - Delete Account button (RGPD)', () => {
             </div>
             <input type="range" id="res-slider" min="1" max="100" value="50">
             <span id="res-disp">50</span>
-            <input type="checkbox" id="energy-saver-toggle">
             <input type="checkbox" id="inclinometer-toggle">
             <div id="row-inclinometer"></div>
             <button id="btn-upgrade-pro"></button>
@@ -242,7 +231,6 @@ describe.skip('SettingsSheet - Google buttons', () => {
             </div>
             <input type="range" id="res-slider" min="1" max="100" value="50">
             <span id="res-disp">50</span>
-            <input type="checkbox" id="energy-saver-toggle">
             <input type="checkbox" id="inclinometer-toggle">
             <div id="row-inclinometer"></div>
             <button id="btn-upgrade-pro"></button>

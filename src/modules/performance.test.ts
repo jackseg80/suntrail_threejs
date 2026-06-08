@@ -46,7 +46,6 @@ const IOS_UA =
 
 describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
     beforeEach(() => {
-        state.ENERGY_SAVER = false;
         state.PIXEL_RATIO_LIMIT = 1.0;
         state.SHADOW_RES = 128;
         state.PERFORMANCE_PRESET = 'balanced';
@@ -63,48 +62,6 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
             state.renderer = { setPixelRatio: vi.fn() } as any;
             applyPreset('balanced');
             expect(refreshTerrain).toHaveBeenCalledWith(true);
-        });
-    });
-
-    // -------------------------------------------------------------------------
-    // detectBestPreset() — ENERGY_SAVER universel mobile
-    // -------------------------------------------------------------------------
-    describe('applyPreset() — ENERGY_SAVER par tier mobile (v5.11 design intent)', () => {
-        it('ne force PAS ENERGY_SAVER sur balanced Android — choix exclusif utilisateur', () => {
-            state.ENERGY_SAVER = false;
-            setUA(ANDROID_UA);
-            applyPreset('balanced');
-            expect(state.ENERGY_SAVER).toBe(false);
-        });
-
-        it('ne force PAS ENERGY_SAVER sur eco Android — choix exclusif utilisateur', () => {
-            state.ENERGY_SAVER = false;
-            setUA(ANDROID_UA);
-            applyPreset('eco');
-            expect(state.ENERGY_SAVER).toBe(false);
-        });
-
-        it('laisse ENERGY_SAVER=false pour performance sur Android (flagship → 60fps)', () => {
-            // Nouveau comportement v5.11 : performance mobile = 60fps par défaut
-            // L'utilisateur a un flagship et mérite les perfs
-            state.ENERGY_SAVER = false;
-            setUA(ANDROID_UA);
-            applyPreset('performance');
-            expect(state.ENERGY_SAVER).toBe(false);
-        });
-
-        it('laisse ENERGY_SAVER=false pour performance sur iOS (flagship → 60fps)', () => {
-            state.ENERGY_SAVER = false;
-            setUA(IOS_UA);
-            applyPreset('performance');
-            expect(state.ENERGY_SAVER).toBe(false);
-        });
-
-        it("ne touche PAS ENERGY_SAVER sur desktop (reste false si désactivé par l'utilisateur)", () => {
-            state.ENERGY_SAVER = false;
-            // UA desktop + grand écran → isMobilePreset = false
-            applyPreset('performance');
-            expect(state.ENERGY_SAVER).toBe(false);
         });
     });
 
@@ -135,31 +92,7 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
         });
     });
 
-    describe('detectBestPreset() — ENERGY_SAVER non forcé par preset (v5.21+)', () => {
-        // Depuis la refonte v5.21, applyPreset() ne touche jamais ENERGY_SAVER —
-        // c'est un choix exclusif de l'utilisateur, persisté indépendamment.
-
-        it('cycle complet UA Android → ENERGY_SAVER reste false (non forcé)', () => {
-            setUA(ANDROID_UA);
-            state.ENERGY_SAVER = false;
-            applyPreset(detectBestPreset());
-            expect(state.ENERGY_SAVER).toBe(false);
-        });
-
-        it('cycle complet UA iOS → ENERGY_SAVER reste false (non forcé)', () => {
-            setUA(IOS_UA);
-            state.ENERGY_SAVER = false;
-            applyPreset(detectBestPreset());
-            expect(state.ENERGY_SAVER).toBe(false);
-        });
-
-        it('cycle complet innerWidth 375 → ENERGY_SAVER reste false (non forcé)', () => {
-            setInnerWidth(375);
-            state.ENERGY_SAVER = false;
-            applyPreset(detectBestPreset());
-            expect(state.ENERGY_SAVER).toBe(false);
-        });
-
+    describe('detectBestPreset() — pas de faux-positif mobile', () => {
         it('desktop UA + large écran → isMobile=false (pas de faux-positif)', () => {
             const isMobile =
                 /Mobi|Android/i.test(DESKTOP_UA) || window.innerWidth <= 768;
@@ -290,15 +223,6 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
             expect(state.RANGE).toBe(12);
         });
 
-        it('Ultra mobile : ENERGY_SAVER=false (Snapdragon Elite capable de tenir)', () => {
-            setUA(ANDROID_UA);
-            state.ENERGY_SAVER = false;
-
-            applyPreset('ultra');
-
-            // Ultra mobile ne force pas ENERGY_SAVER
-            expect(state.ENERGY_SAVER).toBe(false);
-        });
     });
 
     describe('applyPreset() — Performance / High : valeurs baked-in, pas de caps', () => {

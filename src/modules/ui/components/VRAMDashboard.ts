@@ -38,7 +38,6 @@ export interface PerfSample {
     zoom: number;
     isProcessingTiles: boolean;
     isUserInteracting: boolean;
-    energySaver: boolean;
 }
 
 /** Métadonnées de session exportées avec les échantillons. */
@@ -263,7 +262,6 @@ export class VRAMDashboard {
                 zoom: state.ZOOM,
                 isProcessingTiles: state.isProcessingTiles,
                 isUserInteracting: state.isUserInteracting,
-                energySaver: state.ENERGY_SAVER,
             });
 
             // Buffer circulaire : évincer le plus ancien si plein

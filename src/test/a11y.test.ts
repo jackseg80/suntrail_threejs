@@ -172,7 +172,6 @@ describe('a11y — Settings Form Controls', () => {
             <div role="dialog" aria-modal="true" aria-labelledby="settings-title">
                 <h3 id="settings-title">Réglages</h3>
                 <div>
-                    <input type="checkbox" id="energy-saver-toggle" aria-label="Économie d'énergie" role="switch" aria-checked="false">
                     <input type="checkbox" id="veg-toggle" aria-label="Forêts & Végétation" role="switch" aria-checked="true">
                     <input type="checkbox" id="weather-toggle" aria-label="Météo" role="switch" aria-checked="true">
                     <input type="checkbox" id="hydro-toggle" aria-label="Lacs & Rivières" role="switch" aria-checked="true">

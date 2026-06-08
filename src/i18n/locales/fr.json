@@ -245,7 +245,6 @@
             "vegDensity": "Densité végétation",
             "loadSpeed": "Vitesse de chargement",
             "fogDistance": "Distance du brouillard",
-            "energySaver": "Économie d'énergie",
             "stats": "Stats de performance (FPS)",
             "debug": "Infos de debug",
             "vegetation": "Forêts & Végétation",
@@ -292,8 +291,6 @@
             "youtube": "📺 Vidéos & Démos"
         },
         "toast": {
-            "energySaverOn": "🔋 Mode Éco activé (FPS limités)",
-            "energySaverOff": "⚡ Mode Éco désactivé"
         }
     },
     "search": {
