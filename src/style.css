@@ -291,6 +291,7 @@ html {
 /* Mode tiroir : barre haute repliable */
 .top-status-bar-content {
     position: relative;
+    padding-right: 48px; /* réserve l'espace pour le toggle absolu */
 }
 .top-collapse-toggle {
     position: absolute;
@@ -1883,6 +1884,27 @@ body.timeline-open #elevation-profile:not(.panel-custom-pos) {
 .coords-btn.sos {
     background: rgba(239, 68, 68, 0.15);
     color: var(--danger);
+}
+
+/* ── RESPONSIVE : petits écrans ──────────────────────────────────────────────────── */
+/* Réduit la taille des widgets pour éviter les chevauchements */
+@media (max-width: 500px) {
+    .icon-btn-sm {
+        width: 40px;
+        height: 40px;
+    }
+    .status-widget,
+    .top-widget {
+        min-height: 40px;
+        padding: 4px var(--space-2);
+    }
+    .top-collapse-toggle {
+        width: 36px;
+        height: 36px;
+    }
+    .top-status-bar-content {
+        padding-right: 44px;
+    }
 }
 
 /* AUTO HIDE */
