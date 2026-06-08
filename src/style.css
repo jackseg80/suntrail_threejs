@@ -290,16 +290,16 @@ html {
 }
 
 /* ── TIROIR BARRE HAUTE ──────────────────────────────────────────── */
-/* Contenu : glisse à droite pour se cacher */
+/* Contenu : glisse à droite pour se cacher, revient par la droite */
 .top-status-bar-content {
     flex: 1;
     min-width: 0;
     transition:
-        transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-        opacity 0.35s ease;
+        transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 0.3s ease;
 }
 #top-status-bar.collapsed .top-status-bar-content {
-    transform: translateX(calc(100% + 48px));
+    transform: translateX(100%);
     opacity: 0;
     pointer-events: none;
 }
@@ -308,14 +308,14 @@ html {
     display: none;
 }
 
-/* Bouton de repli : flèche gauche → barre visible, droite → barre cachée */
+/* Bouton de repli : > quand barre visible (pousse à droite), < quand cachée (tire à gauche) */
 .top-collapse-toggle {
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     background: var(--surface);
     backdrop-filter: var(--glass);
     border: 1px solid var(--border);
@@ -1906,8 +1906,8 @@ body.timeline-open #elevation-profile:not(.panel-custom-pos) {
         padding: 4px var(--space-2);
     }
     .top-collapse-toggle {
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
     }
 }
 
