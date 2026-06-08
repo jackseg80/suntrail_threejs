@@ -244,6 +244,7 @@
             "weather": "Wetter",
             "weatherPro": "Erweitertes Wetter",
             "trailFollow": "Routenverfolgung",
+            "hideUiOnMove": "Oberfläche beim Bewegen ausblenden",
             "tooltipExaggeration": "<b>Reliefüberhöhung</b>: verstärkt die Höhenunterschiede visuell für bessere Lesbarkeit. 1x = realistisch, 1,5x = betont, 3x = stark überhöht.",
             "tooltipFogDistance": "<b>Nebelentfernung</b>: Sichtweite des 3D-Nebels. Eine Verringerung verbessert die Leistung auf schwächeren Geräten.",
             "tooltipResolution": "<b>Auflösung (LOD)</b>: Detailstufe des Geländenetzmodells. 16 = sehr niedrig (schnell), 256 = ultra fein (leistungsintensiv).",
@@ -903,6 +904,11 @@
         "upsell": {
             "pro": "Zeitanalyse und optimale Abfahrt mit Pro",
             "btn": "Pro ↗"
+        }
+    },
+    "ui": {
+        "aria": {
+            "info": "Info"
         }
     }
 }

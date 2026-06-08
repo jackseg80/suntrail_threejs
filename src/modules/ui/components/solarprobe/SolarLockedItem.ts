@@ -15,7 +15,7 @@ export function makeLockedItem(
     const badge = document.createElement('span');
     badge.className = 'pro-badge';
     badge.style.cssText =
-        'background:var(--accent);color:#fff;font-size:10px;font-weight:bold;padding:2px 6px;border-radius:4px;';
+        'background:var(--accent);color:#fff;font-size:var(--text-xs);font-weight:bold;padding:2px 6px;border-radius:4px;';
     badge.textContent = 'PRO';
     row.appendChild(badge);
 

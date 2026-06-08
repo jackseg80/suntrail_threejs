@@ -49,11 +49,17 @@ export class TrackSheet extends BaseComponent {
     }
 
     private attachStatTooltip(labelEl: Element, htmlContent: string): void {
+        const wrapper = document.createElement('span');
+        wrapper.className = 'touch-hit-target';
         const info = document.createElement('span');
         info.textContent = 'ⓘ';
         info.style.cssText =
-            'font-size:10px;opacity:0.45;cursor:pointer;margin-left:3px;';
-        labelEl.appendChild(info);
+            'font-size:var(--text-xs);opacity:0.45;cursor:pointer;';
+        info.setAttribute('role', 'button');
+        info.setAttribute('tabindex', '0');
+        info.setAttribute('aria-label', i18n.t('ui.aria.info') || 'Info');
+        wrapper.appendChild(info);
+        labelEl.appendChild(wrapper);
         const content = document.createElement('div');
         content.innerHTML = htmlContent;
         this.statTooltips.push(

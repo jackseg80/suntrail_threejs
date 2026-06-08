@@ -350,6 +350,7 @@ export interface State {
     IS_2D_MODE: boolean;
     currentFPS: number;
     lastUIInteraction: number;
+    HIDE_UI_ON_MOVE: boolean;
     benchmarkResults: {
         cpuScore: number;
         gpuScore: number;
@@ -476,6 +477,7 @@ const initialState: State = {
     IS_2D_MODE: true,
     currentFPS: 0,
     lastUIInteraction: Date.now(),
+    HIDE_UI_ON_MOVE: true,
     benchmarkResults: null,
     lastClickedCoords: { x: 0, z: 0, alt: 0 },
     hasLastClicked: false,
@@ -523,6 +525,7 @@ export interface SavedSettings {
     WEATHER_SPEED: number;
     WEATHER_RAIN_OPACITY: number;
     IS_2D_MODE?: boolean;
+    HIDE_UI_ON_MOVE?: boolean;
     LAST_LAT?: number;
     LAST_LON?: number;
     LAST_ZOOM?: number;
@@ -559,6 +562,7 @@ export function saveSettings(): void {
             WEATHER_SPEED: state.WEATHER_SPEED,
             WEATHER_RAIN_OPACITY: state.WEATHER_RAIN_OPACITY,
             IS_2D_MODE: state.IS_2D_MODE,
+            HIDE_UI_ON_MOVE: state.HIDE_UI_ON_MOVE,
             LAST_LAT: state.TARGET_LAT,
             LAST_LON: state.TARGET_LON,
             LAST_ZOOM: state.ZOOM,
@@ -621,6 +625,8 @@ export function loadSettings(): SavedSettings | null {
         state.SHOW_SLOPES = !!parsed.SHOW_SLOPES;
         if (parsed.IS_2D_MODE !== undefined)
             state.IS_2D_MODE = !!parsed.IS_2D_MODE;
+        if (parsed.HIDE_UI_ON_MOVE !== undefined)
+            state.HIDE_UI_ON_MOVE = !!parsed.HIDE_UI_ON_MOVE;
         if (parsed.PERFORMANCE_PRESET === 'custom') {
             state.SHOW_SIGNPOSTS = !!parsed.SHOW_SIGNPOSTS;
             state.SHOW_BUILDINGS = !!parsed.SHOW_BUILDINGS;

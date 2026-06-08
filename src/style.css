@@ -170,12 +170,13 @@ html {
     top: 0;
     left: 0;
     width: 100%;
-    height: 3px;
+    height: 5px;
     z-index: 10;
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.25s ease;
     background: var(--accent, #4a8ef8);
+    box-shadow: 0 0 6px var(--accent, #4a8ef8);
     overflow: hidden;
 }
 #tile-loading-bar::after {
@@ -197,6 +198,54 @@ html {
 @keyframes tile-loading-shimmer {
     to {
         transform: translateX(300%);
+    }
+}
+
+/* --- ACCESSIBILITÉ : zone tactile 44×44 pour icônes discrètes --- */
+.touch-hit-target {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin: -8px;
+    vertical-align: middle;
+}
+
+/* --- SKELETON LOADING (shimmer générique) --- */
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--surface-subtle) 25%,
+        var(--surface-solid) 50%,
+        var(--surface-subtle) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+    border-radius: 4px;
+    color: transparent !important;
+}
+.skeleton > * {
+    visibility: hidden;
+}
+/* Variante légère pour texte de chargement (garde le texte visible) */
+.loading-shimmer {
+    background: linear-gradient(
+        90deg,
+        var(--surface-subtle) 0%,
+        var(--surface-solid) 50%,
+        var(--surface-subtle) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+    border-radius: 4px;
+}
+@keyframes skeleton-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
     }
 }
 
@@ -237,6 +286,48 @@ html {
 .top-right-widgets {
     display: flex;
     gap: 8px;
+}
+
+/* Mode tiroir : barre haute repliable */
+.top-status-bar-content {
+    position: relative;
+}
+.top-collapse-toggle {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: var(--surface);
+    backdrop-filter: var(--glass);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    cursor: pointer;
+    pointer-events: auto;
+    color: var(--text-2);
+    transition:
+        border-color var(--transition-fast),
+        transform 0.3s ease;
+}
+@media (hover: hover) {
+    .top-collapse-toggle:hover {
+        border-color: var(--border-active);
+    }
+}
+.top-status-bar-content.collapsed .top-left-widgets,
+.top-status-bar-content.collapsed .top-right-widgets {
+    display: none;
+}
+.top-status-bar-content.collapsed .top-collapse-toggle svg {
+    transform: rotate(180deg);
+}
+/* Désactive backdrop-filter coûteux sur vieux GPU en mode éco */
+body.preset-eco .top-collapse-toggle {
+    backdrop-filter: none !important;
 }
 
 .status-widget,
@@ -1812,6 +1903,24 @@ body.ui-hidden #coords-pill,
 body.ui-hidden .fab-stack {
     transform: translateX(100px);
     opacity: 0;
+}
+
+/* HIDE ON MOVE — masque l'UI pendant le déplacement/zoom de la carte */
+body.ui-moving #top-status-bar,
+body.ui-moving #nav-bar,
+body.ui-moving #coords-pill,
+body.ui-moving #route-bar,
+body.ui-moving #route-settings,
+body.ui-moving .fab-stack,
+body.ui-moving #bottom-bar {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+/* Désactive backdrop-filter coûteux sur vieux mobiles en mode éco */
+body.preset-eco.ui-moving #top-status-bar,
+body.preset-eco.ui-moving #nav-bar {
+    backdrop-filter: none !important;
 }
 
 /* ── MODE 2D ─────────────────────────────────────────────────────────────────── */

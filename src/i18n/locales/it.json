@@ -241,6 +241,7 @@
             "weather": "Meteo",
             "weatherPro": "Meteo Avanzato",
             "trailFollow": "Segui sentiero",
+            "hideUiOnMove": "Nascondi interfaccia in movimento",
             "tooltipExaggeration": "<b>Esagerazione del rilievo</b>: amplifica visivamente i dislivelli per leggere meglio il terreno. 1x = realistico, 1,5x = accentuato, 3x = molto esagerato.",
             "tooltipFogDistance": "<b>Distanza nebbia</b>: portata visiva della nebbia 3D. Ridurre questo valore migliora le prestazioni sui dispositivi meno potenti.",
             "tooltipResolution": "<b>Risoluzione (LOD)</b>: livello di dettaglio della mesh del terreno. 16 = molto basso (veloce), 256 = ultra fine (pesante).",
@@ -900,6 +901,11 @@
         "upsell": {
             "pro": "Analisi timeline e partenza ottimale con Pro",
             "btn": "Pro ↗"
+        }
+    },
+    "ui": {
+        "aria": {
+            "info": "Info"
         }
     }
 }

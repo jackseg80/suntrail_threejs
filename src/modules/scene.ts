@@ -55,6 +55,7 @@ import {
 } from './cameraManager';
 import { isFeatureEnabled } from './featureFlags';
 import { checkPerformanceThrottle } from './performance';
+import { resetAutoHideTimer } from './ui/autoHide';
 import {
     initEnvironment,
     updateEnvironment,
@@ -272,6 +273,9 @@ export async function initScene(): Promise<void> {
 
     state.controls!.addEventListener('start', () => {
         state.isUserInteracting = true;
+        if (state.HIDE_UI_ON_MOVE) {
+            document.body.classList.add('ui-moving');
+        }
         if (isMobile && state.renderer) {
             if (dprRestoreTimer) {
                 clearTimeout(dprRestoreTimer);
@@ -283,6 +287,10 @@ export async function initScene(): Promise<void> {
     state.controls!.addEventListener('end', () => {
         state.isUserInteracting = false;
         lastInteractionTime = performance.now();
+        if (state.HIDE_UI_ON_MOVE) {
+            document.body.classList.remove('ui-moving');
+            resetAutoHideTimer();
+        }
 
         if (state.camera && state.controls) {
             const dx = state.controls.target.x,
@@ -349,12 +357,31 @@ export async function initScene(): Promise<void> {
         state.renderer.domElement,
         () => {
             state.isUserInteracting = true;
+            if (state.HIDE_UI_ON_MOVE) {
+                document.body.classList.add('ui-moving');
+            }
         },
         () => {
             state.isUserInteracting = false;
             lastInteractionTime = performance.now();
+            if (state.HIDE_UI_ON_MOVE) {
+                document.body.classList.remove('ui-moving');
+                resetAutoHideTimer();
+            }
         }
     );
+
+    let wheelHideTimer: ReturnType<typeof setTimeout> | null = null;
+    state.renderer.domElement.addEventListener('wheel', () => {
+        if (!state.HIDE_UI_ON_MOVE) return;
+        document.body.classList.add('ui-moving');
+        if (wheelHideTimer) clearTimeout(wheelHideTimer);
+        wheelHideTimer = setTimeout(() => {
+            document.body.classList.remove('ui-moving');
+            resetAutoHideTimer();
+            wheelHideTimer = null;
+        }, 250);
+    });
 
     let lastRecenterTime = 0;
 

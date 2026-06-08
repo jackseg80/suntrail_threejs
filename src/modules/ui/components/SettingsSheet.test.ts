@@ -68,6 +68,7 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
                 <input type="range" id="res-slider" min="1" max="100" value="50">
                 <span id="res-disp">50</span>
                 <input type="checkbox" id="energy-saver-toggle">
+                <input type="checkbox" id="hide-ui-on-move-toggle">
                 <input type="checkbox" id="inclinometer-toggle">
                 <div id="row-inclinometer"></div>
                 <button id="btn-upgrade-pro"></button>
@@ -154,6 +155,20 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
             const valueEl = document.getElementById('tester-id-value');
             expect(valueEl?.textContent).toBe('test-user-id-123');
         });
+    });
+
+    it('doit basculer HIDE_UI_ON_MOVE dans le state (v5.58)', () => {
+        const toggle = document.getElementById(
+            'hide-ui-on-move-toggle'
+        ) as HTMLInputElement;
+        expect(toggle).not.toBeNull();
+        toggle.checked = true;
+        toggle.dispatchEvent(new Event('change'));
+        expect(state.HIDE_UI_ON_MOVE).toBe(true);
+
+        toggle.checked = false;
+        toggle.dispatchEvent(new Event('change'));
+        expect(state.HIDE_UI_ON_MOVE).toBe(false);
     });
 });
 

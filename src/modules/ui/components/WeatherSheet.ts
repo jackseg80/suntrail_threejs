@@ -48,9 +48,16 @@ export class WeatherSheet extends BaseComponent {
         lbl.classList.add('exp-stat-label');
         lbl.textContent = label;
 
+        const wrapper = document.createElement('span');
+        wrapper.className = 'touch-hit-target';
         const info = document.createElement('span');
         info.textContent = 'ⓘ';
-        info.style.cssText = 'font-size:10px;opacity:0.45;cursor:pointer;';
+        info.style.cssText =
+            'font-size:var(--text-xs);opacity:0.45;cursor:pointer;';
+        info.setAttribute('role', 'button');
+        info.setAttribute('tabindex', '0');
+        info.setAttribute('aria-label', i18n.t('ui.aria.info') || 'Info');
+        wrapper.appendChild(info);
 
         const val = document.createElement('div');
         val.classList.add('exp-stat-value');
@@ -64,7 +71,7 @@ export class WeatherSheet extends BaseComponent {
         this.statTooltips.push(tooltip);
 
         labelRow.appendChild(lbl);
-        labelRow.appendChild(info);
+        labelRow.appendChild(wrapper);
         div.appendChild(labelRow);
         div.appendChild(val);
         parent.appendChild(div);
@@ -217,7 +224,7 @@ export class WeatherSheet extends BaseComponent {
                     evDiv.innerHTML = `
                         <div class="exp-hourly-time">${ev.time.getHours()}h${ev.time.getMinutes().toString().padStart(2, '0')}</div>
                         <div class="exp-hourly-icon">${ev.icon}</div>
-                        <div class="exp-hourly-temp" style="font-size:9px; color:var(--gold)">${ev.label}</div>
+                        <div class="exp-hourly-temp" style="font-size:var(--text-xs); color:var(--gold)">${ev.label}</div>
                     `;
                     container.appendChild(evDiv);
                 }
@@ -752,14 +759,14 @@ export class WeatherSheet extends BaseComponent {
             const uvLabel = document.createElement('span');
             uvLabel.className = 'exp-stat-label';
             uvLabel.style.cssText = 'display:flex;align-items:center;gap:3px;';
-            uvLabel.innerHTML = `${i18n.t('weather.stat.uvIndex')} <span style="font-size:10px;opacity:0.45;cursor:pointer;">ⓘ</span>`;
+            uvLabel.innerHTML = `${i18n.t('weather.stat.uvIndex')} <span class="touch-hit-target"><span style="font-size:var(--text-xs);opacity:0.45;cursor:pointer;" role="button" tabindex="0" aria-label="${i18n.t('ui.aria.info') || 'Info'}">ⓘ</span></span>`;
             const uvVal = document.createElement('span');
             uvVal.className = 'exp-stat-value';
             uvVal.textContent = `${Math.round(wd.uvIndex ?? 0)}`;
             uvRow.appendChild(uvLabel);
             uvRow.appendChild(uvVal);
             rightStats.appendChild(uvRow);
-            const uvInfoIcon = uvLabel.querySelector('span')!;
+            const uvInfoIcon = uvLabel.querySelector('.touch-hit-target span')!;
             const uvTooltipContent = document.createElement('div');
             uvTooltipContent.innerHTML = i18n.t('weather.mountain.tooltipUV');
             this.statTooltips.push(

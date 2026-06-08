@@ -244,6 +244,7 @@
             "weather": "Weather",
             "weatherPro": "Advanced Weather",
             "trailFollow": "Trail follow",
+            "hideUiOnMove": "Hide interface on move",
             "tooltipExaggeration": "<b>Relief exaggeration</b>: visually amplifies elevation to better read the terrain. 1x = realistic, 1.5x = pronounced, 3x = very exaggerated.",
             "tooltipFogDistance": "<b>Fog distance</b>: visual range of the 3D fog. Reducing this value improves performance on less powerful devices.",
             "tooltipResolution": "<b>Resolution (LOD)</b>: terrain mesh detail level. 16 = very low (fast), 256 = ultra fine (performance-heavy).",
@@ -904,6 +905,11 @@
         "upsell": {
             "pro": "Timeline analysis and optimal departure with Pro",
             "btn": "Pro ↗"
+        }
+    },
+    "ui": {
+        "aria": {
+            "info": "Info"
         }
     }
 }

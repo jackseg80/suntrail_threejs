@@ -48,7 +48,7 @@ export class TopStatusBar extends BaseComponent {
         const lodInfoIcon = document.createElement('span');
         lodInfoIcon.textContent = 'ⓘ';
         lodInfoIcon.style.cssText =
-            'font-size:11px;opacity:0.4;cursor:pointer;margin-left:2px;align-self:center;';
+            'font-size:var(--text-xs);opacity:0.4;cursor:pointer;margin-left:2px;align-self:center;';
         topLeftContainer?.appendChild(lodInfoIcon);
         const lodContent = document.createElement('div');
         lodContent.innerHTML = i18n.t('topbar.tooltipLOD');
@@ -77,6 +77,14 @@ export class TopStatusBar extends BaseComponent {
         sosBtn?.setAttribute('aria-label', i18n.t('topbar.aria.sos'));
         sosBtn?.addEventListener('click', () => {
             sheetManager.toggle('sos');
+        });
+
+        const collapseToggle = this.element.querySelector(
+            '.top-collapse-toggle'
+        );
+        collapseToggle?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.element!.classList.toggle('collapsed');
         });
 
         this.updateLOD(state.ZOOM);
@@ -110,7 +118,12 @@ export class TopStatusBar extends BaseComponent {
             )
         );
 
-        // Update aria-labels on locale change
+        // Always show collapse toggle
+        const toggle = this.element.querySelector(
+            '.top-collapse-toggle'
+        ) as HTMLElement | null;
+        if (toggle) toggle.style.display = 'flex';
+        this.updateAriaLabels();
         const onLocaleChanged = () => this.updateAriaLabels();
         eventBus.on('localeChanged', onLocaleChanged);
         this.addSubscription(() =>

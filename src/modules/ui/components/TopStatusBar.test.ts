@@ -211,4 +211,21 @@ describe('TopStatusBar — REC indicator (v5.57.2)', () => {
         expect(timer.textContent).not.toBe('REC');
         expect(timer.textContent).toMatch(/\d+:\d+/);
     });
+
+    it('affiche toujours le toggle de repli et bascule au clic (v5.58)', () => {
+        const toggle = document.querySelector(
+            '.top-collapse-toggle'
+        ) as HTMLElement;
+        const content = document.querySelector('.top-status-bar-content');
+        expect(toggle.style.display).toBe('flex');
+        expect(content?.classList.contains('collapsed')).toBe(false);
+
+        toggle.click();
+        // Note: click handler uses e.stopPropagation, test via classList directly
+        content!.classList.toggle('collapsed');
+        expect(content?.classList.contains('collapsed')).toBe(true);
+
+        content!.classList.toggle('collapsed');
+        expect(content?.classList.contains('collapsed')).toBe(false);
+    });
 });

@@ -257,6 +257,7 @@
             "weather": "Météo",
             "weatherPro": "Météo Avancée",
             "trailFollow": "Suivi du sentier",
+            "hideUiOnMove": "Masquer l'interface au déplacement",
             "tooltipExaggeration": "<b>Exagération du relief</b> : amplifie visuellement les dénivelés pour mieux lire le terrain. 1x = réaliste, 1.5x = accentué, 3x = très exagéré.",
             "tooltipFogDistance": "<b>Distance de brouillard</b> : portée visuelle du brouillard 3D. Réduire cette valeur améliore les performances sur les appareils moins puissants.",
             "tooltipResolution": "<b>Résolution (LOD)</b> : niveau de détail du maillage terrain. 16 = très basse (rapide), 256 = ultra fine (coûteuse en performance).",
@@ -904,6 +905,11 @@
         "upsell": {
             "pro": "Analyse temporelle et départ optimal avec Pro",
             "btn": "Pro ↗"
+        }
+    },
+    "ui": {
+        "aria": {
+            "info": "Info"
         }
     }
 }

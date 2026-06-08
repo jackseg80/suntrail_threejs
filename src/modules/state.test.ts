@@ -76,6 +76,10 @@ describe('state.ts', () => {
     it('should have IS_2D_MODE enabled by default (v5.34.2)', () => {
         expect(state.IS_2D_MODE).toBe(true);
     });
+
+    it('should have HIDE_UI_ON_MOVE enabled by default (v5.58)', () => {
+        expect(state.HIDE_UI_ON_MOVE).toBe(true);
+    });
 });
 
 import { saveSettings, loadSettings } from './state';
@@ -179,6 +183,19 @@ describe('state persistance (v5.7)', () => {
 
         // loadSettings only restores these on 'custom', so it shouldn't modify state.RESOLUTION here
         expect(state.RESOLUTION).toBe(64);
+    });
+
+    it('should save and restore HIDE_UI_ON_MOVE (v5.58)', () => {
+        state.HIDE_UI_ON_MOVE = true;
+
+        saveSettings();
+        vi.advanceTimersByTime(300);
+
+        state.HIDE_UI_ON_MOVE = false;
+
+        loadSettings();
+
+        expect(state.HIDE_UI_ON_MOVE).toBe(true);
     });
 
     describe('route planner state (v5.50.x)', () => {

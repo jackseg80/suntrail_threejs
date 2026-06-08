@@ -111,6 +111,7 @@ export class SolarProbeSheet extends BaseComponent {
                                     titleEl &&
                                     titleEl.textContent?.includes('...')
                                 ) {
+                                    titleEl.classList.remove('loading-shimmer');
                                     titleEl.textContent = `${result.gps.lat.toFixed(4)}, ${result.gps.lon.toFixed(4)}`;
                                 }
                             }, 3000);
@@ -121,13 +122,18 @@ export class SolarProbeSheet extends BaseComponent {
                                     result.gps.lon
                                 );
                                 clearTimeout(timer);
-                                if (locName && titleEl)
+                                if (locName && titleEl) {
+                                    titleEl.classList.remove('loading-shimmer');
                                     titleEl.textContent = locName;
-                                else if (titleEl)
+                                } else if (titleEl) {
+                                    titleEl.classList.remove('loading-shimmer');
                                     titleEl.textContent = `${result.gps.lat.toFixed(4)}, ${result.gps.lon.toFixed(4)}`;
+                                }
                             } catch (e) {
-                                if (titleEl)
+                                if (titleEl) {
+                                    titleEl.classList.remove('loading-shimmer');
                                     titleEl.textContent = `${result.gps.lat.toFixed(4)}, ${result.gps.lon.toFixed(4)}`;
+                                }
                             }
                         }
                     } else {
@@ -185,6 +191,7 @@ export class SolarProbeSheet extends BaseComponent {
         locHeader.style.cssText =
             'margin:0 0 var(--space-4); font-size:14px; color:var(--text-2); text-align:center;';
         locHeader.textContent = 'Analyse en cours...';
+        locHeader.classList.add('loading-shimmer');
         this.contentEl.appendChild(locHeader);
 
         if (!result.terrainAvailable) {
@@ -320,13 +327,13 @@ export class SolarProbeSheet extends BaseComponent {
             rtAzLabel.className = 'exp-probe-label';
             rtAzLabel.style.cssText =
                 'display:flex;align-items:center;gap:3px;';
-            rtAzLabel.innerHTML = `${i18n.t('solar.stat.azimuth')} <span style="font-size:10px;opacity:0.45;cursor:pointer;">ⓘ</span>`;
+            rtAzLabel.innerHTML = `${i18n.t('solar.stat.azimuth')} <span class="touch-hit-target"><span style="font-size:var(--text-xs);opacity:0.45;cursor:pointer;" role="button" tabindex="0" aria-label="${i18n.t('ui.aria.info') || 'Info'}">ⓘ</span></span>`;
             rtAz.appendChild(rtAzLabel);
             const rtAzVal = document.createElement('div');
             rtAzVal.className = 'exp-probe-value';
             this.realtimeAzimuthEl = rtAzVal;
             rtAz.appendChild(rtAzVal);
-            const azIcon = rtAzLabel.querySelector('span')!;
+            const azIcon = rtAzLabel.querySelector('.touch-hit-target span')!;
             const azContent = document.createElement('div');
             azContent.innerHTML = i18n.t('solar.stat.tooltipAzimuth');
             this.statTooltips.push(
@@ -341,13 +348,13 @@ export class SolarProbeSheet extends BaseComponent {
             rtElLabel.className = 'exp-probe-label';
             rtElLabel.style.cssText =
                 'display:flex;align-items:center;gap:3px;';
-            rtElLabel.innerHTML = `${i18n.t('solar.stat.elevation')} <span style="font-size:10px;opacity:0.45;cursor:pointer;">ⓘ</span>`;
+            rtElLabel.innerHTML = `${i18n.t('solar.stat.elevation')} <span class="touch-hit-target"><span style="font-size:var(--text-xs);opacity:0.45;cursor:pointer;" role="button" tabindex="0" aria-label="${i18n.t('ui.aria.info') || 'Info'}">ⓘ</span></span>`;
             rtEl.appendChild(rtElLabel);
             const rtElVal = document.createElement('div');
             rtElVal.className = 'exp-probe-value';
             this.realtimeElevationEl = rtElVal;
             rtEl.appendChild(rtElVal);
-            const elIcon = rtElLabel.querySelector('span')!;
+            const elIcon = rtElLabel.querySelector('.touch-hit-target span')!;
             const elContent = document.createElement('div');
             elContent.innerHTML = i18n.t('solar.stat.tooltipElevation');
             this.statTooltips.push(

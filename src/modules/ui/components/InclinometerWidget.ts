@@ -596,7 +596,7 @@ export class InclinometerWidget {
             <div style="color:${dangerColor};font-weight:600;font-size:12px;margin-bottom:4px">
                 ${i18n.t(`inclinometer.danger.${dangerKey}`)}
             </div>
-            <div style="font-size:11px;opacity:0.5">${i18n.t('inclinometer.hint')}</div>
+            <div style="font-size:var(--text-xs);opacity:0.5">${i18n.t('inclinometer.hint')}</div>
         `;
     }
 

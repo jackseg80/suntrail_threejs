@@ -84,6 +84,7 @@ export class SettingsSheet extends BaseComponent {
                 );
             }
         );
+        this.bindToggle('hide-ui-on-move-toggle', 'HIDE_UI_ON_MOVE');
         this.bindToggle('stats-toggle', 'SHOW_STATS', (val: boolean) => {
             // setVisible(val) synchronise exactement l'état du toggle avec l'affichage
             state.vramPanel?.setVisible?.(val);
@@ -344,7 +345,7 @@ export class SettingsSheet extends BaseComponent {
             const infoIcon = document.createElement('span');
             infoIcon.textContent = 'ⓘ';
             infoIcon.style.cssText =
-                'font-size:10px;opacity:0.45;cursor:pointer;margin-left:3px;';
+                'font-size:var(--text-xs);opacity:0.45;cursor:pointer;margin-left:3px;';
             el.appendChild(infoIcon);
 
             const content = document.createElement('div');
@@ -534,6 +535,9 @@ export class SettingsSheet extends BaseComponent {
             case 'ENERGY_SAVER':
                 this.updateToggle('energy-saver-toggle', value);
                 break;
+            case 'HIDE_UI_ON_MOVE':
+                this.updateToggle('hide-ui-on-move-toggle', value);
+                break;
             case 'SHOW_STATS':
                 this.updateToggle('stats-toggle', value);
                 break;
@@ -643,6 +647,7 @@ export class SettingsSheet extends BaseComponent {
         this.updateUIFromState('VEGETATION_DENSITY', state.VEGETATION_DENSITY);
         this.updateUIFromState('FOG_FAR', state.FOG_FAR);
         this.updateUIFromState('ENERGY_SAVER', state.ENERGY_SAVER);
+        this.updateUIFromState('HIDE_UI_ON_MOVE', state.HIDE_UI_ON_MOVE);
         this.updateUIFromState('SHOW_STATS', state.SHOW_STATS);
         this.updateUIFromState('SHOW_DEBUG', state.SHOW_DEBUG);
         this.updateUIFromState('SHOW_VEGETATION', state.SHOW_VEGETATION);
