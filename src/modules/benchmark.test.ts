@@ -22,7 +22,7 @@ describe('Benchmark scoring thresholds (logic validation)', () => {
         preset: BenchmarkResult['recommendedPreset'];
     }> = [
         { minScore: 92, preset: 'ultra' },
-        { minScore: 65, preset: 'performance' },
+        { minScore: 60, preset: 'performance' },
         { minScore: 30, preset: 'balanced' },
         { minScore: 0, preset: 'eco' },
     ];
@@ -32,16 +32,16 @@ describe('Benchmark scoring thresholds (logic validation)', () => {
         expect(pickPreset(100)).toBe('ultra');
     });
 
-    it('totalScore 65-91 → performance', () => {
-        expect(pickPreset(65)).toBe('performance');
+    it('totalScore 60-91 → performance', () => {
+        expect(pickPreset(60)).toBe('performance');
         expect(pickPreset(80)).toBe('performance');
         expect(pickPreset(91)).toBe('performance');
     });
 
-    it('totalScore 30-64 → balanced', () => {
+    it('totalScore 30-59 → balanced', () => {
         expect(pickPreset(30)).toBe('balanced');
         expect(pickPreset(50)).toBe('balanced');
-        expect(pickPreset(64)).toBe('balanced');
+        expect(pickPreset(59)).toBe('balanced');
     });
 
     it('totalScore < 30 → eco', () => {

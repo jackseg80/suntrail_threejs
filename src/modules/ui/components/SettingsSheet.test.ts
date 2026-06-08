@@ -33,7 +33,9 @@ vi.mock('../../authService', () => ({ authService: mockAuthService }));
 vi.mock('../../toast', () => ({ showToast: vi.fn() }));
 
 vi.mock('./SharedAPIKeyComponent', () => ({
-    SharedAPIKeyComponent: vi.fn().mockImplementation(function () {
+    SharedAPIKeyComponent: vi.fn().mockImplementation(function (this: {
+        hydrate: any;
+    }) {
         this.hydrate = vi.fn();
     }),
 }));
@@ -147,7 +149,7 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
         );
     });
 
-    it('doit charger et afficher l\'ID Testeur depuis iapService', async () => {
+    it("doit charger et afficher l'ID Testeur depuis iapService", async () => {
         await vi.waitFor(() => {
             const valueEl = document.getElementById('tester-id-value');
             expect(valueEl?.textContent).toBe('test-user-id-123');

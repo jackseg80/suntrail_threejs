@@ -32,9 +32,11 @@ export async function runBenchmark(): Promise<BenchmarkResult> {
     if (basePreset === 'performance') baseWeight = 60; // S23, High-end mobile
     if (basePreset === 'balanced') baseWeight = 35;
 
-    // Normalisation VÉRITÉ
-    const normalizedCPU = Math.min(cpuRaw * 0.8, 100);
-    const normalizedGPU = Math.min(gpuRaw * 2.5, 100);
+    // Normalisation : compensation durée x2 + calibration réelle
+    // CPU 200ms → 0.5 (S23 raw~142 → 71)
+    // GPU 300ms → 2.0 (S23 raw~39 → 78)
+    const normalizedCPU = Math.min(cpuRaw * 0.5, 100);
+    const normalizedGPU = Math.min(gpuRaw * 2.0, 100);
 
     // Pondération : GPU (75%), CPU (15%), Liste GPU (10%)
     const totalScore = Math.round(
@@ -44,8 +46,8 @@ export async function runBenchmark(): Promise<BenchmarkResult> {
     let recommendedPreset: PresetType = 'eco';
     if (totalScore >= 92)
         recommendedPreset = 'ultra'; // Desktop uniquement
-    else if (totalScore >= 65)
-        recommendedPreset = 'performance'; // S23 et mobiles premium
+    else if (totalScore >= 60)
+        recommendedPreset = 'performance'; // S23, Tab S8 et mobiles premium
     else if (totalScore >= 30) recommendedPreset = 'balanced'; // A53 et mobiles moyens
 
     // Cap : les GPU Intel intégrés (HD/UHD/Iris/Graphics hors Arc) ne peuvent pas dépasser balanced

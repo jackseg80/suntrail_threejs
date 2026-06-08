@@ -1,3 +1,18 @@
+## [5.60.2] - 2026-06-08
+
+### Fixed
+- **Calibration benchmark micro recalibrée** (`benchmark.ts:36-39`) : Facteurs de normalisation ajustés CPU `×0.8`→`×0.5`, GPU `×2.5`→`×2.0` pour éviter la saturation du S23 (CPU/GPU à 100). Les scores reflètent maintenant une vraie différenciation entre S23 (performance ~80), Tab S8 (performance ~62) et Snapdragon Elite (ultra ~99).
+- **Seuil performance abaissé** (`benchmark.ts:49`) : `65`→`60` pour stabiliser le Tab S8 qui oscillait entre balanced et performance (total ~62).
+- **Premier lancement sans micro-benchmark à froid** (`appInit.ts:107-131`) : La détection statique GPU (`detectBestPreset()`) est appliquée immédiatement au lieu d'attendre le benchmark qui donnait des scores bas en période d'initialisation. Le micro-benchmark réel est différé à +15s quand le système est stable.
+- **Benchmark différé simplifié** (`appInit.ts:169-195`) : Remplacé le re-benchmark à +8s avec seuil des 30% par un benchmark unique à +15s qui upgrade le preset si nécessaire.
+- **Fix TS2683** (`SettingsSheet.test.ts:36`) : `this` implicite typé dans `mockImplementation`.
+
+### Changed
+- **`AI_PERFORMANCE.md`** : Mise à jour des seuils et facteurs de normalisation.
+
+### Tests
+- 61 tests passants (benchmark, performance, state, appInit).
+
 ## [5.60.1] - 2026-06-07
 
 ### Changed

@@ -1100,9 +1100,23 @@
                         padding: 4px 0;
                     "
                 >
-                    <div><b data-i18n="settings.advanced.hardwareGpu">GPU</b> : <span id="hardware-gpu">—</span></div>
-                    <div><b data-i18n="settings.advanced.hardwareCpu">CPU</b> : <span id="hardware-cpu">—</span> <span data-i18n="settings.advanced.hardwareCores">cœurs</span></div>
-                    <div><b data-i18n="settings.advanced.hardwarePreset">Preset détecté</b> : <span id="hardware-preset">—</span></div>
+                    <div>
+                        <b data-i18n="settings.advanced.hardwareGpu">GPU</b> :
+                        <span id="hardware-gpu">—</span>
+                    </div>
+                    <div>
+                        <b data-i18n="settings.advanced.hardwareCpu">CPU</b> :
+                        <span id="hardware-cpu">—</span>
+                        <span data-i18n="settings.advanced.hardwareCores"
+                            >cœurs</span
+                        >
+                    </div>
+                    <div>
+                        <b data-i18n="settings.advanced.hardwarePreset"
+                            >Preset détecté</b
+                        >
+                        : <span id="hardware-preset">—</span>
+                    </div>
                 </div>
             </div>
 
@@ -1141,11 +1155,7 @@
                     </div>
                     <form id="settings-ors-form">
                         <div
-                            style="
-                                display: flex;
-                                align-items: center;
-                                gap: 6px;
-                            "
+                            style="display: flex; align-items: center; gap: 6px"
                         >
                             <span>🔑</span>
                             <input
@@ -1249,7 +1259,14 @@
                 >
                     🆔 ID Testeur
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px; width: 100%">
+                <div
+                    style="
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        width: 100%;
+                    "
+                >
                     <code
                         id="tester-id-value"
                         style="
@@ -1264,7 +1281,8 @@
                             white-space: nowrap;
                             border: 1px solid var(--border);
                         "
-                    >Chargement…</code>
+                        >Chargement…</code
+                    >
                     <button
                         id="tester-id-copy"
                         style="
@@ -1279,7 +1297,9 @@
                             white-space: nowrap;
                         "
                         data-i18n="settings.advanced.testerIdCopy"
-                    >Copier</button>
+                    >
+                        Copier
+                    </button>
                 </div>
             </div>
         </div>

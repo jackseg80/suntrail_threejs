@@ -1,4 +1,4 @@
-# AI Performance & Constants Guide (v5.57.0)
+# AI Performance & Constants Guide (v5.60.2)
 
 Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 
@@ -29,9 +29,9 @@ Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 
 | Optimization | File | Description |
 | :--- | :--- | :--- |
-| **Micro-Benchmark** | `benchmark.ts` | Fast startup test. CPU: buffer traversal. GPU: 1024x1024 scene with 8 lights + `gl.readPixels` sync. Durations doubled (CPU 200ms, GPU 300ms) for reliability (v5.56.25). |
-| **Delayed Re-benchmark**| `appInit.ts` | Auto-trigger re-benchmark 8s after start. If score improves ≥30% → auto-upgrade preset (v5.56.25). |
-| **Preset Calibration** | `benchmark.ts`, `performance.ts` | Thresholds: Eco (<30), Balanced (30-64), Performance (65-91), Ultra (92+). Weights: GPU 75%, CPU 15%, StaticBonus 10%. |
+| **Micro-Benchmark** | `benchmark.ts` | Fast startup test. CPU: buffer traversal. GPU: 1024x1024 scene with 8 lights + `gl.readPixels` sync. Durations: CPU 200ms, GPU 300ms (v5.56.25). |
+| **Delayed Benchmark**| `appInit.ts` | Benchmark différé +15s après le démarrage (v5.60.2). Détection statique GPU appliquée immédiatement pour éviter les scores bas à froid. |
+| **Preset Calibration** | `benchmark.ts`, `performance.ts` | Thresholds: Eco (<30), Balanced (30-59), Performance (60-91), Ultra (92+). Normalization: CPU `×0.5`, GPU `×2.0`. Weights: GPU 75%, CPU 15%, StaticBonus 10% (v5.60.2). |
 | **Intel IGP Cap** | `benchmark.ts` | Intel integrated GPUs capped to `balanced` to avoid UMA bias in `gl.readPixels`. |
 
 

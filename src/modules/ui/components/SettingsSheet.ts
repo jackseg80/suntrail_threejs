@@ -728,26 +728,40 @@ export class SettingsSheet extends BaseComponent {
 
     private bindORSKeyForm(): void {
         if (!this.element) return;
-        const form = this.element.querySelector('#settings-ors-form') as HTMLFormElement;
-        const input = this.element.querySelector('#settings-ors-key') as HTMLInputElement;
-        const saveBtn = this.element.querySelector('#settings-save-ors-key') as HTMLButtonElement;
+        const form = this.element.querySelector(
+            '#settings-ors-form'
+        ) as HTMLFormElement;
+        const input = this.element.querySelector(
+            '#settings-ors-key'
+        ) as HTMLInputElement;
+        const saveBtn = this.element.querySelector(
+            '#settings-save-ors-key'
+        ) as HTMLButtonElement;
         if (!form || !input || !saveBtn) return;
 
         input.value = state.ORS_KEY || '';
 
-        form.addEventListener('submit', (e) => { e.preventDefault(); });
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+        });
 
         saveBtn.addEventListener('click', () => {
             const key = input.value.trim();
             if (key && key.length > 10) {
                 state.ORS_KEY = key;
-                try { localStorage.setItem(STORAGE_KEYS.ORS_KEY, key); } catch { /* ignore */ }
+                try {
+                    localStorage.setItem(STORAGE_KEYS.ORS_KEY, key);
+                } catch {
+                    /* ignore */
+                }
                 void showToast(
-                    i18n.t('routePlanner.toast.keySaved') || 'Clé ORS enregistrée'
+                    i18n.t('routePlanner.toast.keySaved') ||
+                        'Clé ORS enregistrée'
                 );
             } else {
                 void showToast(
-                    i18n.t('routePlanner.toast.invalidKey') || 'Clé invalide (minimum 10 caractères)'
+                    i18n.t('routePlanner.toast.invalidKey') ||
+                        'Clé invalide (minimum 10 caractères)'
                 );
             }
         });
@@ -755,8 +769,12 @@ export class SettingsSheet extends BaseComponent {
 
     private createTesterIDSection(): void {
         if (!this.element) return;
-        const valueEl = this.element.querySelector('#tester-id-value') as HTMLElement;
-        const copyBtn = this.element.querySelector('#tester-id-copy') as HTMLButtonElement;
+        const valueEl = this.element.querySelector(
+            '#tester-id-value'
+        ) as HTMLElement;
+        const copyBtn = this.element.querySelector(
+            '#tester-id-copy'
+        ) as HTMLButtonElement;
         if (!valueEl) return;
 
         void iapService.getAppUserID().then((id) => {

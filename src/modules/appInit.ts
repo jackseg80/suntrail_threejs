@@ -104,30 +104,23 @@ export async function appInit(): Promise<void> {
         }
     } else {
         firstLaunch = true;
-        // Premier démarrage : Benchmark automatique (attendu avant la scène pour éviter un double chargement)
+        // Premier démarrage : détection statique immédiate (GPU connu, 0ms)
+        // Le benchmark micro est différé après le chargement de la scène pour des scores stables
         try {
-            await new Promise((resolve) => setTimeout(resolve, 300));
+            const staticPreset = detectBestPreset();
+            applyPreset(staticPreset);
             showToast(
-                i18n.t('benchmark.running') ||
-                    'Optimisation pour votre appareil...',
-                3000
-            );
-
-            const { recommendedPreset } = await runBenchmark();
-            applyPreset(recommendedPreset);
-
-            showToast(
-                i18n.t('benchmark.result', {
-                    preset: recommendedPreset.toUpperCase(),
-                }) || `Profil ${recommendedPreset.toUpperCase()} appliqué.`,
-                4000
+                i18n.t('preset.applied', {
+                    preset: staticPreset.toUpperCase(),
+                }) || `Profil ${staticPreset.toUpperCase()} appliqué.`,
+                2000
             );
         } catch (e) {
             console.warn(
-                '[AppInit] Benchmark failed, falling back to static detection',
+                '[AppInit] Static detection failed, falling back to eco',
                 e
             );
-            applyPreset(detectBestPreset());
+            applyPreset('eco');
         }
     }
 
@@ -166,33 +159,25 @@ export async function appInit(): Promise<void> {
     // Lancer la scène
     await launchScene();
 
-    // Premier lancement : re-benchmark différé quand le système est stable
+    // Premier lancement : benchmark micro différé (+15s) quand le système est stable
     if (firstLaunch) {
         setTimeout(async () => {
             try {
-                const second = await runBenchmark();
-                const firstScore = state.benchmarkResults?.totalScore ?? 0;
-                const jump =
-                    firstScore > 0 ? second.totalScore - firstScore : 0;
-                const pct =
-                    firstScore > 0 ? Math.round((jump / firstScore) * 100) : 0;
-                if (
-                    pct >= 30 &&
-                    second.recommendedPreset !== state.PERFORMANCE_PRESET
-                ) {
-                    applyPreset(second.recommendedPreset);
+                const { recommendedPreset } = await runBenchmark();
+                if (recommendedPreset !== state.PERFORMANCE_PRESET) {
+                    applyPreset(recommendedPreset);
                     console.log(
-                        `[AppInit] Re-benchmark upgraded ${state.PERFORMANCE_PRESET} → ${second.recommendedPreset.toUpperCase()} (+${pct}%)`
+                        `[AppInit] Delayed benchmark upgraded ${state.PERFORMANCE_PRESET} → ${recommendedPreset.toUpperCase()}`
                     );
                 } else {
                     console.log(
-                        `[AppInit] Re-benchmark stable (${second.recommendedPreset.toUpperCase()}, ${pct >= 0 ? '+' : ''}${pct}%)`
+                        `[AppInit] Delayed benchmark confirmed ${recommendedPreset.toUpperCase()}`
                     );
                 }
             } catch (e) {
-                console.warn('[AppInit] Re-benchmark failed', e);
+                console.warn('[AppInit] Delayed benchmark failed', e);
             }
-        }, 8000);
+        }, 15000);
     }
 
     // Hydratation secondaire
@@ -1033,5 +1018,4 @@ function setupRouteBar(): void {
         state.routeLoopEnabled = loopChk.checked;
         if (state.routeWaypoints.length >= 2) scheduleAutoCompute();
     });
-
 }
