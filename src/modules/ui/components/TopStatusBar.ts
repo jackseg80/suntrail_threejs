@@ -239,7 +239,25 @@ export class TopStatusBar extends BaseComponent {
             }
 
             const country = i18n.t(`topbar.lod.${sourceKey}`);
-            this.lodBadge.textContent = `${country} · LVL ${Math.floor(zoom)}`;
+
+            // Pack visual indicator
+            const lat = state.TARGET_LAT;
+            const lon = state.TARGET_LON;
+            const pack = packManager.findPackContaining(lat, lon);
+            const ps = pack ? packManager.getPackState(pack.id) : null;
+
+            let badgeText = `${country} · LVL ${Math.floor(zoom)}`;
+            if (ps?.status === 'installed' || ps?.status === 'update_available') {
+                badgeText = `\u2713 ${badgeText}`;
+                this.lodBadge.dataset.packState = 'installed';
+            } else if (pack) {
+                badgeText = `\u{1F4E6} ${badgeText}`;
+                delete this.lodBadge.dataset.packState;
+            } else {
+                delete this.lodBadge.dataset.packState;
+            }
+
+            this.lodBadge.textContent = badgeText;
             this.updatePillAriaLabel();
         }
     }

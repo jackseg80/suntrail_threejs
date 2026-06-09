@@ -30,6 +30,7 @@ vi.mock('../core/SheetManager', () => ({
 vi.mock('../../packManager', () => ({
     packManager: {
         findPackContaining: vi.fn(),
+        getPackState: vi.fn(),
     },
 }));
 
@@ -334,5 +335,92 @@ describe('TopStatusBar — LOD badge click handler', () => {
         expect(eventBus.emit).not.toHaveBeenCalled();
         expect(sheetManager.open).not.toHaveBeenCalled();
         expect(sheetManager.toggle).toHaveBeenCalledWith('layers-sheet');
+    });
+});
+
+describe('TopStatusBar — LOD badge pack visual indicator', () => {
+    const mockPack = {
+        id: 'switzerland',
+        name: { fr: 'Suisse HD', en: 'Switzerland HD' },
+        sizeMB: 716,
+        bounds: { minLat: 45.8, maxLat: 47.8, minLon: 5.9, maxLon: 10.5 },
+        regionCheck: 'CH',
+    } as any;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+
+        document.body.innerHTML = `
+            <template id="template-top-status-bar">
+                <div class="top-status-bar-content">
+                    <div class="top-left-widgets">
+                        <div class="top-widget" id="top-pill-weather" role="button" tabindex="0">
+                            <span class="weather-icon">☀️</span>
+                            <span class="weather-temp">--°C</span>
+                        </div>
+                        <div class="status-widget rec-indicator" style="display:none">
+                            <span class="rec-dot-css"></span>
+                            <span class="rec-timer">REC</span>
+                        </div>
+                    </div>
+                    <div class="top-center-widgets">
+                        <div class="top-widget" id="top-pill-lod" role="button" tabindex="0" aria-live="polite">
+                            <span class="lod-badge">SWISS · LVL --</span>
+                        </div>
+                    </div>
+                    <div class="top-right-widgets">
+                        <div class="icon-btn-sm" id="net-status-icon"></div>
+                        <div class="icon-btn-sm danger" id="sos-main-btn"></div>
+                        <div class="status-widget" id="timeline-toggle-btn"></div>
+                    </div>
+                </div>
+            </template>
+            <div id="top-status-bar"></div>
+        `;
+
+        state.MAP_SOURCE = 'swisstopo';
+        state.ZOOM = 14;
+        state.TARGET_LAT = 46.8;
+        state.TARGET_LON = 8.2;
+    });
+
+    function render() {
+        const bar = new TopStatusBar();
+        bar.hydrate();
+        bar.render();
+        return bar;
+    }
+
+    it('shows 📦 prefix when a pack is available but not installed', () => {
+        (packManager.findPackContaining as ReturnType<typeof vi.fn>).mockReturnValue(mockPack);
+        (packManager.getPackState as ReturnType<typeof vi.fn>).mockReturnValue(null);
+        render();
+
+        const badge = document.querySelector('.lod-badge') as HTMLElement;
+        expect(badge.textContent).toContain('📦');
+        expect(badge.textContent).toContain('SWISS');
+        expect(badge.dataset.packState).toBeUndefined();
+    });
+
+    it('shows ✓ prefix and green state when pack is installed', () => {
+        (packManager.findPackContaining as ReturnType<typeof vi.fn>).mockReturnValue(mockPack);
+        (packManager.getPackState as ReturnType<typeof vi.fn>).mockReturnValue({ status: 'installed' });
+        render();
+
+        const badge = document.querySelector('.lod-badge') as HTMLElement;
+        expect(badge.textContent).toContain('✓');
+        expect(badge.textContent).toContain('SWISS');
+        expect(badge.dataset.packState).toBe('installed');
+    });
+
+    it('shows no prefix when no pack covers the current zone', () => {
+        (packManager.findPackContaining as ReturnType<typeof vi.fn>).mockReturnValue(null);
+        render();
+
+        const badge = document.querySelector('.lod-badge') as HTMLElement;
+        expect(badge.textContent).not.toContain('📦');
+        expect(badge.textContent).not.toContain('✓');
+        expect(badge.textContent).toContain('SWISS');
+        expect(badge.dataset.packState).toBeUndefined();
     });
 });

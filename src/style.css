@@ -377,6 +377,11 @@ body.preset-eco .top-collapse-toggle {
     font-weight: 500;
     color: var(--accent);
     letter-spacing: 0.5px;
+    transition: color 0.3s;
+}
+
+.lod-badge[data-pack-state="installed"] {
+    color: #22c55e;
 }
 
 .icon-btn-sm {
