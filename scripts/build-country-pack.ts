@@ -1,13 +1,19 @@
 /**
- * build-country-pack.ts (v4 — Optimized Single File)
+ * build-country-pack.ts (v5 — Runtime géo partagé)
  *
  * Génère UN SEUL fichier PMTiles v3 optimisé (Taille réduite).
- * - Filtre strict sur les frontières (supprime ~50% de tuiles inutiles)
+ * - Filtre polygonal identique à l'app (isTileInCountry du runtime, OSM+Natural Earth)
+ * - Supporte les pays (countryCode) ET les régions (bbox seule)
  * - Qualité WebP adaptative
- * - Compression PNG maximale pour le relief
+ * - Compression PNG optimale pour le relief
  *
  * Usage :
  *   npx tsx scripts/build-country-pack.ts --pack switzerland --maptiler-key YOUR_KEY
+ *   npx tsx scripts/build-country-pack.ts --pack dolomites   --maptiler-key YOUR_KEY
+ *
+ * Ajouter un pack (pays ou région) : éditer PACKS ci-dessous
+ *   - countryCode = code ISO 2 lettres pour filtre polygone (ex: 'CH', 'FR')
+ *   - countryCode = absent pour région → bbox seule
  */
 
 import fs from 'node:fs';
@@ -18,7 +24,7 @@ import {
     serializeDirectory, buildTwoLevelDirectory, buildHeader, HEADER_SIZE,
     deduplicateTiles,
 } from './pmtiles-writer';
-import { COUNTRIES } from '../src/data/countries';
+import { isTileInCountry } from '../src/modules/geo';
 
 const OFFSET_ELEV = 100_000_000_000;
 const OFFSET_OVERLAY = 200_000_000_000;
@@ -30,7 +36,7 @@ interface PackDef {
     zooms: number[];
     source: 'swisstopo' | 'ign';
     version: number;
-    countryCode: string; // ISO 3166-1 alpha-2
+    countryCode?: string; // ISO 3166-1 alpha-2. Absent → région (bbox seule)
 }
 
 const PACKS: Record<string, PackDef> = {
@@ -55,38 +61,7 @@ const PACKS: Record<string, PackDef> = {
 };
 
 type TileType = 'color' | 'elevation' | 'overlay';
-const RATE_LIMIT_MS = 50; // Plus rapide pour le rebuild
-
-// --- Filtre géographique par polygones (Natural Earth 1:10m) ---
-
-function isPointInPolygon(px: number, py: number, polygon: number[][]): boolean {
-    let inside = false;
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-        const xi = polygon[i][0], yi = polygon[i][1];
-        const xj = polygon[j][0], yj = polygon[j][1];
-        if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) {
-            inside = !inside;
-        }
-    }
-    return inside;
-}
-
-function isTileInCountryPolygon(tx: number, ty: number, zoom: number, code: string): boolean {
-    const def = COUNTRIES[code];
-    if (!def) return false;
-    const n = Math.pow(2, zoom);
-    // Check 5 points (centre + 4 coins)
-    const points = [[tx + 0.5, ty + 0.5], [tx, ty], [tx + 1, ty], [tx, ty + 1], [tx + 1, ty + 1]];
-    let inside = 0;
-    for (const [px, py] of points) {
-        const lat = Math.atan(Math.sinh(Math.PI * (1 - 2 * py / n))) * 180 / Math.PI;
-        const lon = (px / n) * 360 - 180;
-        for (const ring of def.polygons) {
-            if (ring.length >= 3 && isPointInPolygon(lon, lat, ring)) { inside++; break; }
-        }
-    }
-    return inside >= 3;
-}
+const RATE_LIMIT_MS = 50;
 
 function getTileUrl(z: number, x: number, y: number, type: TileType, source: PackDef['source'], maptilerKey?: string): string {
     if (type === 'color') {
@@ -101,6 +76,16 @@ function getTileUrl(z: number, x: number, y: number, type: TileType, source: Pac
     throw new Error('Type inconnu');
 }
 
+/**
+ * Filtre une tuile : polygone partagé avec l'app si countryCode, sinon bbox seule (région).
+ */
+function includeTile(x: number, y: number, z: number, pack: PackDef): boolean {
+    if (pack.countryCode) {
+        return isTileInCountry(x, y, z, pack.countryCode);
+    }
+    return true;
+}
+
 async function main() {
     const packId = process.argv.find((_, i, arr) => arr[i - 1] === '--pack');
     const maptilerKey = process.argv.find((_, i, arr) => arr[i - 1] === '--maptiler-key');
@@ -108,6 +93,7 @@ async function main() {
 
     if (!packId || !PACKS[packId]) {
         console.error(`Usage: npx tsx scripts/build-country-pack.ts --pack <id> --maptiler-key <key>`);
+        console.error(`Packs disponibles : ${Object.keys(PACKS).join(', ')}`);
         process.exit(1);
     }
 
@@ -119,12 +105,16 @@ async function main() {
     if (cleanMode && fs.existsSync(cacheDir)) fs.rmSync(cacheDir, { recursive: true });
     fs.mkdirSync(cacheDir, { recursive: true });
 
-    console.log(`=== SunTrail Pack Builder: OPTIMIZED MODE ===`);
-    console.log(`Filtrage strict activé pour réduire la taille.`);
+    const mode = pack.countryCode
+        ? `Filtrage polygonal ${pack.countryCode} (identique runtime)`
+        : 'Bbox seule (région sans code pays)';
+    console.log(`=== SunTrail Pack Builder v5 ===`);
+    console.log(`Pack : ${pack.name} (${pack.id})`);
+    console.log(`Mode : ${mode}`);
 
     const types: TileType[] = ['color', 'elevation', 'overlay'];
     const refs: { z: number, x: number, y: number, type: TileType }[] = [];
-    
+
     for (const z of pack.zooms) {
         const xMin = lonToTileX(pack.bounds.minLon, z);
         const xMax = lonToTileX(pack.bounds.maxLon, z);
@@ -132,8 +122,7 @@ async function main() {
         const yMax = latToTileY(pack.bounds.minLat, z);
         for (let x = xMin; x <= xMax; x++) {
             for (let y = yMin; y <= yMax; y++) {
-                // Filtre polygonal strict (Natural Earth 1:10m)
-                if (isTileInCountryPolygon(x, y, z, pack.countryCode)) {
+                if (includeTile(x, y, z, pack)) {
                     for (const type of types) refs.push({ z, x, y, type });
                 }
             }
@@ -146,7 +135,7 @@ async function main() {
     for (const ref of refs) {
         const ext = ref.type === 'overlay' ? 'png' : 'webp';
         const cachePath = path.join(cacheDir, `${ref.type}_${ref.z}_${ref.x}_${ref.y}.${ext}`);
-        
+
         if (!fs.existsSync(cachePath)) {
             try {
                 const url = getTileUrl(ref.z, ref.x, ref.y, ref.type, pack.source, maptilerKey);
@@ -156,13 +145,10 @@ async function main() {
 
                 let final = buf;
                 if (ref.type === 'color') {
-                    // Réduire un peu la qualité pour gagner 30% de place (70 au lieu de 80)
                     final = await sharp(buf).webp({ quality: 70 }).toBuffer();
                 } else if (ref.type === 'elevation') {
-                    // WebP lossless : ~25-35% plus petit que PNG niveau 9, sans perte
                     final = await sharp(buf).webp({ lossless: true }).toBuffer();
                 } else {
-                    // Overlay en palette 8-bit (très léger)
                     final = await sharp(buf).png({ palette: true, colors: 64 }).toBuffer();
                 }
                 fs.writeFileSync(cachePath, final);
@@ -218,7 +204,7 @@ async function main() {
     });
 
     const headerView = new DataView(header);
-    headerView.setUint8(99, 0); 
+    headerView.setUint8(99, 0);
 
     const fd = fs.openSync(outputPath, 'w');
     fs.writeSync(fd, new Uint8Array(header));

@@ -66,13 +66,23 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **Format** : `PackMeta { id, productId, name, bounds, lodRange, version, sizeMB, cdnUrl, regionCheck }` — voir `packTypes.ts`.
 
 **Ajouter un nouveau pack** (pays ou région) :
-1. Générer l'archive PMTiles via `scripts/build-country-pack.ts`
+1. Générer l'archive PMTiles via `scripts/build-country-pack.ts` (filtrage polygone identique au runtime via `isTileInCountry`)
 2. Uploader sur Cloudflare R2 via `scripts/upload-to-r2.ts`
 3. Ajouter l'entrée dans l'`EMBEDDED_CATALOG` de `packManager.ts` avec :
    - `regionCheck` : code ISO 2 lettres (ex: `'IT'`) pour raffiner par polygone, ou absent pour région (bbox seule)
    - `bounds` : bbox de couverture
 4. Déployer le nouveau `catalog.json` sur CDN (url : `.env VITE_PACKS_CATALOG_URL`)
 5. Ajouter les clés i18n dans `fr.json`/`en.json`/`de.json`/`it.json` → `packs.*`
+
+**Ajouter une région** (pas un pays) : dans `PACKS` de `build-country-pack.ts`, omettre `countryCode` → la bbox seule délimite la zone. Exemple Dolomites :
+```ts
+dolomites: {
+    id: 'dolomites', name: 'Dolomites HD',
+    bounds: { minLat: 45.9, maxLat: 47.1, minLon: 10.5, maxLon: 12.5 },
+    zooms: [8..14], source: 'ign', version: 1,
+}
+```
+Le `regionCheck` dans l'`EMBEDDED_CATALOG` sera absent (détection automatique par bounds).
 
 **Détection automatique du pack courant** (`packManager.findPackContaining(lat, lon)`) :
 - Vérifie la bbox de chaque pack, puis raffine par polygone si `regionCheck` est un code ISO à 2 lettres
