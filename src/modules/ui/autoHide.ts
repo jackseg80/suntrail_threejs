@@ -1,12 +1,13 @@
 import { sheetManager } from './core/SheetManager';
+import { state } from '../state';
 
 let hideTimer: ReturnType<typeof setTimeout> | null = null;
 let _isInitialized = false;
 
 const hideUI = () => {
-    if (sheetManager.getActiveSheetId() === null) {
-        document.body.classList.add('ui-hidden');
-    }
+    if (sheetManager.getActiveSheetId() !== null) return;
+    if (state.hasLastClicked) return;
+    document.body.classList.add('ui-hidden');
 };
 
 const resetTimer = () => {

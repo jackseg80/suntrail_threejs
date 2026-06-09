@@ -144,6 +144,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **854** | **5.61.0** | **v5.61.0** | **UI Premium (tiroir barre haute, hide-on-move, hit areas 44px, skeleton shimmer, unifi API keys)** | **2026-06-08** |
 | **855** | **5.61.1** | **v5.61.1** | **Suppression option Économie d'énergie (obsolète : idle throttle 20fps + deep sleep 1.5fps + mobile cap 60fps déjà en place)** | **2026-06-08** |
 | **856** | **5.61.2** | **v5.61.2** | **Top bar : 3 zones séparées — météo à gauche (clic → panneau), MAP·LVL au centre, boutons à droite. fini le pill tout-en-un.** | **2026-06-08** |
+| **857** | **5.61.3** | **v5.61.3** | **Marqueur 3D orange au clic (sonde solaire visible sur la carte) + debounce 200ms hide-on-move (fini le flicker au clic) + auto-hide suspendu quand coords-pill visible.** | **2026-06-09** |
 
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.

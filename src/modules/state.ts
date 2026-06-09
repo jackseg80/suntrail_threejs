@@ -317,6 +317,7 @@ export interface State {
     activeGPXLayerId: string | null;
     recordedMesh: THREE.Mesh | null;
     profileMarker: THREE.Mesh | null;
+    clickMarker: THREE.Mesh | null;
     trailProgress: number;
     isFollowingTrail: boolean;
     isFlyingTo: boolean;
@@ -443,6 +444,7 @@ const initialState: State = {
     activeGPXLayerId: null,
     recordedMesh: null,
     profileMarker: null,
+    clickMarker: null,
     trailProgress: 0,
     isFollowingTrail: false,
     isFlyingTo: false,

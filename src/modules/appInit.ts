@@ -602,10 +602,40 @@ async function handleMapClick(e: MouseEvent) {
             const clickPoiName = document.getElementById('click-poi-name');
             if (clickPoiName) clickPoiName.style.display = 'none';
         }
+        placeClickMarker(hit.x, hit.z, state.lastClickedCoords.alt / state.RELIEF_EXAGGERATION);
     } else {
         state.hasLastClicked = false;
+        removeClickMarker();
         const cp = document.getElementById('coords-pill');
         if (cp) cp.classList.add('hidden');
+    }
+}
+
+function placeClickMarker(x: number, z: number, alt: number): void {
+    removeClickMarker();
+    if (!state.scene) return;
+
+    const scale = Math.max(20, 20 * Math.pow(2, Math.max(0, 17 - state.ZOOM)));
+    const radius = scale * 0.4;
+    const tube = scale * 0.06;
+    const geom = new THREE.TorusGeometry(radius, tube, 16, 32);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xff6b35 });
+    const ring = new THREE.Mesh(geom, mat);
+    ring.rotation.x = -Math.PI / 2;
+    const aboveTerrain = state.IS_2D_MODE ? 1 : Math.max(2, scale * 0.01);
+    ring.position.set(x, alt + aboveTerrain, z);
+    ring.userData = { type: 'click-marker' };
+    state.scene.add(ring);
+    state.clickMarker = ring;
+}
+
+function removeClickMarker(): void {
+    if (state.clickMarker) {
+        state.clickMarker.geometry?.dispose();
+        const mat = state.clickMarker.material as THREE.Material;
+        mat?.dispose();
+        state.clickMarker.removeFromParent();
+        state.clickMarker = null;
     }
 }
 
@@ -791,6 +821,7 @@ function setupCoordsPill() {
     document.getElementById('close-coords')?.addEventListener('click', () => {
         coordsPill.classList.add('hidden');
         state.hasLastClicked = false;
+        removeClickMarker();
     });
 
     attachDraggablePanel({
@@ -800,6 +831,7 @@ function setupCoordsPill() {
         onDismiss: () => {
             coordsPill.classList.add('hidden');
             state.hasLastClicked = false;
+            removeClickMarker();
         },
     });
 

@@ -271,10 +271,16 @@ export async function initScene(): Promise<void> {
     initCamera();
     initControls(state.camera!, state.renderer.domElement);
 
+    let wheelHideTimer: ReturnType<typeof setTimeout> | null = null;
+    let hideOnMoveTimer: ReturnType<typeof setTimeout> | null = null;
+
     state.controls!.addEventListener('start', () => {
         state.isUserInteracting = true;
         if (state.HIDE_UI_ON_MOVE) {
-            document.body.classList.add('ui-moving');
+            if (hideOnMoveTimer) clearTimeout(hideOnMoveTimer);
+            hideOnMoveTimer = setTimeout(() => {
+                document.body.classList.add('ui-moving');
+            }, 200);
         }
         if (isMobile && state.renderer) {
             if (dprRestoreTimer) {
@@ -288,6 +294,10 @@ export async function initScene(): Promise<void> {
         state.isUserInteracting = false;
         lastInteractionTime = performance.now();
         if (state.HIDE_UI_ON_MOVE) {
+            if (hideOnMoveTimer) {
+                clearTimeout(hideOnMoveTimer);
+                hideOnMoveTimer = null;
+            }
             document.body.classList.remove('ui-moving');
             resetAutoHideTimer();
         }
@@ -358,20 +368,25 @@ export async function initScene(): Promise<void> {
         () => {
             state.isUserInteracting = true;
             if (state.HIDE_UI_ON_MOVE) {
-                document.body.classList.add('ui-moving');
+                if (hideOnMoveTimer) clearTimeout(hideOnMoveTimer);
+                hideOnMoveTimer = setTimeout(() => {
+                    document.body.classList.add('ui-moving');
+                }, 200);
             }
         },
         () => {
             state.isUserInteracting = false;
             lastInteractionTime = performance.now();
             if (state.HIDE_UI_ON_MOVE) {
+                if (hideOnMoveTimer) {
+                    clearTimeout(hideOnMoveTimer);
+                    hideOnMoveTimer = null;
+                }
                 document.body.classList.remove('ui-moving');
                 resetAutoHideTimer();
             }
         }
     );
-
-    let wheelHideTimer: ReturnType<typeof setTimeout> | null = null;
     state.renderer.domElement.addEventListener('wheel', () => {
         if (!state.HIDE_UI_ON_MOVE) return;
         document.body.classList.add('ui-moving');
@@ -552,6 +567,10 @@ export async function initScene(): Promise<void> {
                         if (state.hasLastClicked) {
                             state.lastClickedCoords.x += offsetX;
                             state.lastClickedCoords.z += offsetZ;
+                        }
+                        if (state.clickMarker) {
+                            state.clickMarker.position.x += offsetX;
+                            state.clickMarker.position.z += offsetZ;
                         }
 
                         state.controls!.update();

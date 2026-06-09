@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.61.2)
+# SunTrail — Guide IA (v5.61.3)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-09 — v5.61.2 : Top bar refactored (3 zones séparées). 1077 tests.
+> Mis à jour le 2026-06-09 — v5.61.3 : Marqueur 3D orange au clic + debounce 200ms hide-on-move (fini le flicker). 1077 tests.
 
 ## Projet
 
