@@ -66,11 +66,11 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **Format** : `PackMeta { id, productId, name, bounds, lodRange, version, sizeMB, cdnUrl, regionCheck }` — voir `packTypes.ts`.
 
 **Ajouter un nouveau pack** (pays ou région) :
-1. Générer l'archive PMTiles via `scripts/build-country-pack.ts` (filtrage polygone identique au runtime via `isTileInCountry`)
+1. Générer l'archive PMTiles via `scripts/build-country-pack.ts` (filtre Natural Earth 1:10m conservateur, ~50% de filtrage)
 2. Uploader sur Cloudflare R2 via `scripts/upload-to-r2.ts`
 3. Ajouter l'entrée dans l'`EMBEDDED_CATALOG` de `packManager.ts` avec :
    - `regionCheck` : code ISO 2 lettres (ex: `'IT'`) pour raffiner par polygone, ou absent pour région (bbox seule)
-   - `bounds` : bbox de couverture
+   - `bounds` : bbox de couverture (identique à celle du PACKS dans le build script)
 4. Déployer le nouveau `catalog.json` sur CDN (url : `.env VITE_PACKS_CATALOG_URL`)
 5. Ajouter les clés i18n dans `fr.json`/`en.json`/`de.json`/`it.json` → `packs.*`
 
@@ -83,6 +83,8 @@ dolomites: {
 }
 ```
 Le `regionCheck` dans l'`EMBEDDED_CATALOG` sera absent (détection automatique par bounds).
+
+**Note** : Le build script utilise Natural Earth seul (conservateur). L'app runtime fusionne OSM + NE pour CH (plus précis). Les tuiles absentes du pack tombent sur le réseau.
 
 **Détection automatique du pack courant** (`packManager.findPackContaining(lat, lon)`) :
 - Vérifie la bbox de chaque pack, puis raffine par polygone si `regionCheck` est un code ISO à 2 lettres

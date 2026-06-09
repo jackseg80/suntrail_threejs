@@ -1,19 +1,22 @@
 /**
- * build-country-pack.ts (v5 — Runtime géo partagé)
+ * build-country-pack.ts (v6 — Filtre Natural Earth, régions supportées)
  *
  * Génère UN SEUL fichier PMTiles v3 optimisé (Taille réduite).
- * - Filtre polygonal identique à l'app (isTileInCountry du runtime, OSM+Natural Earth)
- * - Supporte les pays (countryCode) ET les régions (bbox seule)
- * - Qualité WebP adaptative
- * - Compression PNG optimale pour le relief
+ * - Filtre polygonal Natural Earth 1:10m (conservateur, ~50% de tuiles en moins)
+ * - Supporte les pays (countryCode) ET les régions (bbox seule, sans code pays)
+ * - Qualité WebP adaptative + compression PNG optimale
  *
  * Usage :
  *   npx tsx scripts/build-country-pack.ts --pack switzerland --maptiler-key YOUR_KEY
  *   npx tsx scripts/build-country-pack.ts --pack dolomites   --maptiler-key YOUR_KEY
  *
  * Ajouter un pack (pays ou région) : éditer PACKS ci-dessous
- *   - countryCode = code ISO 2 lettres pour filtre polygone (ex: 'CH', 'FR')
- *   - countryCode = absent pour région → bbox seule
+ *   - countryCode = code ISO 2 lettres → filtre polygone Natural Earth (ex: 'CH', 'FR')
+ *   - countryCode absent → bbox seule (région sans frontière administrative)
+ *
+ * Note : le filtre Natural Earth est plus conservateur que le runtime de l'app
+ * (qui fusionne OSM + NE pour CH). Les tuiles manquantes dans le pack tombent
+ * sur le réseau au runtime — pas d'impact utilisateur.
  */
 
 import fs from 'node:fs';
@@ -24,7 +27,7 @@ import {
     serializeDirectory, buildTwoLevelDirectory, buildHeader, HEADER_SIZE,
     deduplicateTiles,
 } from './pmtiles-writer';
-import { isTileInCountry } from '../src/modules/geo';
+import { COUNTRIES } from '../src/data/countries';
 
 const OFFSET_ELEV = 100_000_000_000;
 const OFFSET_OVERLAY = 200_000_000_000;
@@ -63,6 +66,38 @@ const PACKS: Record<string, PackDef> = {
 type TileType = 'color' | 'elevation' | 'overlay';
 const RATE_LIMIT_MS = 50;
 
+// ── Polygone Natural Earth 1:10m (conservateur, ~50% de filtrage) ──────────
+
+function isPointInPolygon(px: number, py: number, polygon: number[][]): boolean {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i][0], yi = polygon[i][1];
+        const xj = polygon[j][0], yj = polygon[j][1];
+        if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) {
+            inside = !inside;
+        }
+    }
+    return inside;
+}
+
+function isTileInCountryPolygon(tx: number, ty: number, zoom: number, code: string): boolean {
+    const def = COUNTRIES[code];
+    if (!def) return false;
+    const n = Math.pow(2, zoom);
+    const points = [[tx + 0.5, ty + 0.5], [tx, ty], [tx + 1, ty], [tx, ty + 1], [tx + 1, ty + 1]];
+    let inside = 0;
+    for (const [px, py] of points) {
+        const lat = Math.atan(Math.sinh(Math.PI * (1 - 2 * py / n))) * 180 / Math.PI;
+        const lon = (px / n) * 360 - 180;
+        for (const ring of def.polygons) {
+            if (ring.length >= 3 && isPointInPolygon(lon, lat, ring)) { inside++; break; }
+        }
+    }
+    return inside >= 3;
+}
+
+// ── URLs ────────────────────────────────────────────────────────────────────
+
 function getTileUrl(z: number, x: number, y: number, type: TileType, source: PackDef['source'], maptilerKey?: string): string {
     if (type === 'color') {
         if (source === 'swisstopo') return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${z}/${x}/${y}.jpeg`;
@@ -76,15 +111,7 @@ function getTileUrl(z: number, x: number, y: number, type: TileType, source: Pac
     throw new Error('Type inconnu');
 }
 
-/**
- * Filtre une tuile : polygone partagé avec l'app si countryCode, sinon bbox seule (région).
- */
-function includeTile(x: number, y: number, z: number, pack: PackDef): boolean {
-    if (pack.countryCode) {
-        return isTileInCountry(x, y, z, pack.countryCode);
-    }
-    return true;
-}
+// ── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
     const packId = process.argv.find((_, i, arr) => arr[i - 1] === '--pack');
@@ -106,9 +133,9 @@ async function main() {
     fs.mkdirSync(cacheDir, { recursive: true });
 
     const mode = pack.countryCode
-        ? `Filtrage polygonal ${pack.countryCode} (identique runtime)`
-        : 'Bbox seule (région sans code pays)';
-    console.log(`=== SunTrail Pack Builder v5 ===`);
+        ? `Polygone Natural Earth ${pack.countryCode}`
+        : 'Bbox seule (région)';
+    console.log(`=== SunTrail Pack Builder v6 ===`);
     console.log(`Pack : ${pack.name} (${pack.id})`);
     console.log(`Mode : ${mode}`);
 
@@ -122,14 +149,17 @@ async function main() {
         const yMax = latToTileY(pack.bounds.minLat, z);
         for (let x = xMin; x <= xMax; x++) {
             for (let y = yMin; y <= yMax; y++) {
-                if (includeTile(x, y, z, pack)) {
+                const include = pack.countryCode
+                    ? isTileInCountryPolygon(x, y, z, pack.countryCode)
+                    : true;
+                if (include) {
                     for (const type of types) refs.push({ z, x, y, type });
                 }
             }
         }
     }
 
-    console.log(`Tuiles à traiter (après filtrage) : ${refs.length}`);
+    console.log(`Tuiles a traiter (apres filtrage) : ${refs.length}`);
 
     let done = 0;
     for (const ref of refs) {
@@ -161,7 +191,7 @@ async function main() {
         }
     }
 
-    // Fusion
+    // Fusion dans un seul PMTiles
     console.log(`\nFusion dans ${outputPath}...`);
     const tileBuffers: { tileId: number; data: Buffer }[] = [];
     for (const ref of refs) {
@@ -214,7 +244,7 @@ async function main() {
     for (const chunk of dataChunks) fs.writeSync(fd, chunk);
     fs.closeSync(fd);
 
-    console.log(`\n✓ TERMINÉ : ${outputPath}`);
+    console.log(`\n✓ TERMINE : ${outputPath}`);
     console.log(`Taille finale : ${(fs.statSync(outputPath).size / 1024 / 1024).toFixed(1)} Mo`);
 }
 
