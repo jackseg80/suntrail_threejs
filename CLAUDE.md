@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.61.3)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-09 — v5.62.2 : Fix race condition cleanup caches au démarrage (écran noir après MAJ). 1087 tests.
+> Mis à jour le 2026-06-09 — v5.62.3 : Pastille REC déplacée à gauche. 1087 tests.
 
 ## Projet
 

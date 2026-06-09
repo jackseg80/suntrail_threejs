@@ -1,3 +1,8 @@
+## [5.62.3] - 2026-06-09
+
+### Changed
+- **Pastille REC** déplacée de la barre droite vers la gauche du top-bar.
+
 ## [5.62.2] - 2026-06-09
 
 ### Fixed

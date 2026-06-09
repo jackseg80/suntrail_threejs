@@ -46,6 +46,10 @@ describe('TopStatusBar — LOD label (country mapping)', () => {
                             <span class="weather-icon">☀️</span>
                             <span class="weather-temp">--°C</span>
                         </div>
+                        <div class="status-widget rec-indicator" style="display:none">
+                            <span class="rec-dot-css"></span>
+                            <span class="rec-timer">REC</span>
+                        </div>
                     </div>
                     <div class="top-center-widgets">
                         <div class="top-widget" id="top-pill-lod" aria-live="polite" aria-label="Carte et zoom">
@@ -53,10 +57,6 @@ describe('TopStatusBar — LOD label (country mapping)', () => {
                         </div>
                     </div>
                     <div class="top-right-widgets">
-                        <div class="status-widget rec-indicator" style="display:none">
-                            <span class="rec-dot-css"></span>
-                            <span class="rec-timer">REC</span>
-                        </div>
                         <div class="icon-btn-sm" id="net-status-icon"></div>
                         <div class="icon-btn-sm danger" id="sos-main-btn"></div>
                         <div class="status-widget" id="timeline-toggle-btn"></div>
@@ -172,6 +172,10 @@ describe('TopStatusBar — REC indicator (v5.57.2)', () => {
                             <span class="weather-icon">☀️</span>
                             <span class="weather-temp">--°C</span>
                         </div>
+                        <div class="status-widget rec-indicator" style="display:none">
+                            <span class="rec-dot-css"></span>
+                            <span class="rec-timer">REC</span>
+                        </div>
                     </div>
                     <div class="top-center-widgets">
                         <div class="top-widget" id="top-pill-lod" aria-live="polite" aria-label="Carte et zoom">
@@ -179,10 +183,6 @@ describe('TopStatusBar — REC indicator (v5.57.2)', () => {
                         </div>
                     </div>
                     <div class="top-right-widgets">
-                        <div class="status-widget rec-indicator" style="display:none">
-                            <span class="rec-dot-css"></span>
-                            <span class="rec-timer">REC</span>
-                        </div>
                         <div class="icon-btn-sm" id="net-status-icon"></div>
                         <div class="icon-btn-sm danger" id="sos-main-btn"></div>
                         <div class="status-widget" id="timeline-toggle-btn"></div>
