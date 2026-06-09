@@ -46,7 +46,7 @@ describe('TopStatusBar — LOD label (country mapping)', () => {
                             <span class="weather-icon">☀️</span>
                             <span class="weather-temp">--°C</span>
                         </div>
-                        <div class="status-widget rec-indicator" style="display:none">
+                        <div class="status-widget rec-indicator" style="visibility:hidden;opacity:0;pointer-events:none">
                             <span class="rec-dot-css"></span>
                             <span class="rec-timer">REC</span>
                         </div>
@@ -172,7 +172,7 @@ describe('TopStatusBar — REC indicator (v5.57.2)', () => {
                             <span class="weather-icon">☀️</span>
                             <span class="weather-temp">--°C</span>
                         </div>
-                        <div class="status-widget rec-indicator" style="display:none">
+                        <div class="status-widget rec-indicator" style="visibility:hidden;opacity:0;pointer-events:none">
                             <span class="rec-dot-css"></span>
                             <span class="rec-timer">REC</span>
                         </div>
@@ -198,20 +198,20 @@ describe('TopStatusBar — REC indicator (v5.57.2)', () => {
 
     it('affiche le REC indicator quand isRecording devient true', async () => {
         const widget = document.querySelector('.rec-indicator') as HTMLElement;
-        expect(widget.style.display).toBe('none');
+        expect(widget.style.visibility).toBe('hidden');
         state.isRecording = true;
         await Promise.resolve();
-        expect(widget.style.display).toBe('flex');
+        expect(widget.style.visibility).toBe('visible');
     });
 
     it('cache le REC indicator quand isRecording devient false', async () => {
         const widget = document.querySelector('.rec-indicator') as HTMLElement;
         state.isRecording = true;
         await Promise.resolve();
-        expect(widget.style.display).toBe('flex');
+        expect(widget.style.visibility).toBe('visible');
         state.isRecording = false;
         await Promise.resolve();
-        expect(widget.style.display).toBe('none');
+        expect(widget.style.visibility).toBe('hidden');
     });
 
     it("affiche le timer pendant l'enregistrement", async () => {

@@ -144,10 +144,14 @@ export class TopStatusBar extends BaseComponent {
         if (!this.recWidget) return;
 
         if (isRecording) {
-            this.recWidget.style.display = 'flex';
+            this.recWidget.style.visibility = 'visible';
+            this.recWidget.style.opacity = '1';
+            this.recWidget.style.pointerEvents = 'auto';
             this.startTimer();
         } else {
-            this.recWidget.style.display = 'none';
+            this.recWidget.style.visibility = 'hidden';
+            this.recWidget.style.opacity = '0';
+            this.recWidget.style.pointerEvents = 'none';
             this.stopTimer();
         }
     }
