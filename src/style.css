@@ -282,6 +282,7 @@ html {
 .top-left-widgets {
     display: flex;
     gap: 8px;
+    flex-wrap: wrap;
 }
 
 .top-center-widgets {
@@ -411,6 +412,7 @@ body.preset-eco .top-collapse-toggle {
 
 /* REC INDICATOR PULSE */
 .rec-indicator {
+    flex: 0 0 100%;
     border-color: var(--danger);
     color: var(--danger);
 }
