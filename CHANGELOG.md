@@ -1,3 +1,18 @@
+## [5.70.0] - 2026-06-09
+
+### Added
+- **Badge LOD cliquable** : clic sur `(#top-pill-lod)` ouvre PacksSheet si pack disponible sur la zone, sinon LayersSheet.
+- **Indicateur visuel pack** : badge affiche 📦 (disponible) ou ✓ vert (installé) devant le nom de la source.
+- **PackHighlight event** : `packHighlight: { packId }` → scroll + surlignage du pack dans PacksSheet.
+- **`packManager.findPackContaining(lat, lon)`** : détection publique du pack couvrant une position.
+- **Système & Données** : nouvelle section "Données embarquées" avec badge statut pack courant.
+- **Clé i18n** : `connectivity.section.embeddedData`, `connectivity.label.packAvailable`.
+
+### Changed
+- **TopStatusBar HTML** : `#top-pill-lod` passe en `role="button" tabindex="0"`.
+- **Style** : `.lod-badge` transition couleur + `[data-pack-state="installed"]` vert (`#22c55e`).
+- **EventMap** : nouveau type `packHighlight` pour le typage fort eventBus.
+
 ## [5.62.3] - 2026-06-09
 
 ### Changed

@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.61.3)
+# SunTrail — Guide IA (v5.70.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-09 — v5.62.3 : Pastille REC déplacée à gauche. 1091 tests.
+> Mis à jour le 2026-06-09 — v5.70.0 : Badge LOD cliquable + indicateur pack visuel. 1094 tests.
 
 ## Projet
 
@@ -78,9 +78,11 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - Vérifie la bbox de chaque pack, puis raffine par polygone si `regionCheck` est un code ISO à 2 lettres
 - Utilisée par : badge LOD (clic → PacksSheet si pack trouvé, sinon LayersSheet) et badge `Système & Données`
 
-**Badge LOD** (`#top-pill-lod`) : clic adaptatif
-- Pack disponible sur la zone → ouvre `PacksSheet` avec le pack surligné
-- Aucun pack → ouvre `layers-sheet` (Fonds de carte)
+**Badge LOD** (`#top-pill-lod`) : clic adaptatif + indicateur visuel
+- 📦 `SWISS · LVL 12` (bleu) → pack disponible sur la zone, non installé
+- ✓ `SWISS · LVL 12` (vert, `data-pack-state="installed"`) → pack installé
+- `SWISS · LVL 12` (défaut) → aucun pack
+- Clic → PacksSheet si pack trouvé, sinon `layers-sheet`
 
 **EventBus** : `packHighlight: { packId }` pour scroll/surligner un pack dans PacksSheet.
 
