@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { state } from './state';
 
 /**
  * Interface pour les uniforms du shader de terrain.
@@ -20,11 +21,22 @@ export interface TerrainUniforms {
 }
 
 /**
+ * Renvoie la taille max du pool selon le preset de performance (v5.62.0).
+ * Plus de matériaux en Ultra (plus de tuiles visibles), moins en Eco.
+ */
+function getMaxPoolSize(): number {
+    switch (state.PERFORMANCE_PRESET) {
+        case 'ultra': return 24;
+        case 'performance': return 18;
+        case 'balanced': return 12;
+        default: return 6; // eco
+    }
+}
+
+/**
  * Pool de matériaux pour optimiser les performances (v5.6.4).
  * Réutilise les matériaux Three.js pour éviter les micro-saccades de compilation de shaders.
  */
-const MAX_POOL_SIZE = 12;
-
 class MaterialPool {
     private standardPool: THREE.MeshStandardMaterial[] = [];
     private basicPool: THREE.MeshBasicMaterial[] = [];
@@ -100,11 +112,11 @@ class MaterialPool {
             }
 
             if (material instanceof THREE.MeshStandardMaterial) {
-                if (this.standardPool.length < MAX_POOL_SIZE)
+                if (this.standardPool.length < getMaxPoolSize())
                     this.standardPool.push(material);
                 else material.dispose();
             } else {
-                if (this.basicPool.length < MAX_POOL_SIZE)
+                if (this.basicPool.length < getMaxPoolSize())
                     this.basicPool.push(material);
                 else material.dispose();
             }
@@ -117,7 +129,7 @@ class MaterialPool {
                 if (shader.uniforms && shader.uniforms.uElevationMap)
                     shader.uniforms.uElevationMap.value = null;
             }
-            if (this.depthPool.length < MAX_POOL_SIZE)
+            if (this.depthPool.length < getMaxPoolSize())
                 this.depthPool.push(material);
             else material.dispose();
         }

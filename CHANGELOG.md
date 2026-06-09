@@ -1,4 +1,9 @@
-## [5.61.4] - 2026-06-09
+## [5.62.1] - 2026-06-09
+
+### Changed
+- **Pools adaptatifs par preset** : matériaux (eco:6 → ultra:24) et géométries (eco:32 → ultra:128). Évite la création/destruction de matériaux sur les presets élevés.
+
+## [5.62.0] - 2026-06-09
 
 ### Added
 - **Cache offline partitionné** : `OFFLINE_CACHE_NAME` séparé du cache navigation. Les zones hors-ligne ne peuvent plus être évincées par le cache normal (P1).

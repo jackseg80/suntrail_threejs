@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.61.3)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-09 — v5.62.0 : Cache offline partitionné, index CacheStorage O(1), Overview Q80, Élévation WebP lossless, Normalmap RG compact. 1087 tests.
+> Mis à jour le 2026-06-09 — v5.62.1 : Cache offline partitionné, index CacheStorage O(1), Overview Q80, Élévation WebP lossless, Normalmap RG compact, Pools adaptatifs. 1087 tests.
 
 ## Projet
 

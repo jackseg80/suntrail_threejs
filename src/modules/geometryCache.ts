@@ -1,11 +1,24 @@
 import * as THREE from 'three';
 import { BoundedCache } from './boundedCache';
+import { state } from './state';
+
+/**
+ * Renvoie la taille max du cache de géométries selon le preset (v5.62.0).
+ */
+function getGeometryCacheMaxSize(): number {
+    switch (state.PERFORMANCE_PRESET) {
+        case 'ultra': return 128;
+        case 'performance': return 96;
+        case 'balanced': return 64;
+        default: return 32; // eco
+    }
+}
 
 /**
  * Cache interne pour les géométries de plans avec skirt (v5.29.38 : LRU).
  */
 const geometryCache = new BoundedCache<string, THREE.BufferGeometry>({
-    maxSize: 64, // Garder les 64 dernières résolutions/tailles utilisées
+    maxSize: getGeometryCacheMaxSize(),
     onEvict: (_key, geometry) => {
         geometry.dispose();
     },
@@ -105,4 +118,11 @@ function createPlaneWithSkirt(res: number, size: number): THREE.BufferGeometry {
  */
 export function disposeAllGeometries(): void {
     geometryCache.clear();
+}
+
+/**
+ * Ajuste la taille max du cache de géométries selon le preset (v5.62.0).
+ */
+export function resizeGeometryCache(): void {
+    geometryCache.resize(getGeometryCacheMaxSize());
 }
