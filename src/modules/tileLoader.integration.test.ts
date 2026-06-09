@@ -37,7 +37,7 @@ function makeCacheSpy() {
             store.delete(url);
             return Promise.resolve(true);
         }),
-        keys: vi.fn(() => Promise.resolve([])),
+        keys: vi.fn<() => Promise<Request[]>>(() => Promise.resolve([])),
         _store: store,
     };
 }
