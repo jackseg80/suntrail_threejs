@@ -30,7 +30,7 @@ const OUTPUT = path.resolve(
     __dirname,
     '../public/tiles/europe-overview.pmtiles'
 );
-const WEBP_QUALITY = 90;
+const WEBP_QUALITY = 80;
 const RATE_LIMIT_MS = 100;
 const MAX_RETRIES = 3;
 

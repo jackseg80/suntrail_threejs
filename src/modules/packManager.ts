@@ -547,7 +547,7 @@ class PackManager {
 
                     if (tileData?.data) {
                         const mime =
-                            type === 'color' ? 'image/webp' : 'image/png';
+                            type === 'overlay' ? 'image/png' : 'image/webp';
                         return new Blob([tileData.data], { type: mime });
                     }
                 } catch {

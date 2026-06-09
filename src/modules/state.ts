@@ -364,6 +364,7 @@ export interface State {
     purchasedPacks: string[];
     installedPacks: string[];
     DEBUG_MODE: boolean; // v5.29.6 : Contrôle des logs sensibles
+    DEBUG_NORMALMAP_RG_COMPACT: boolean; // v5.61.4 : Mode normal map compact (RG 2 canaux, Z reconstruit GPU)
     ORS_KEY: string;
     routeWaypoints: RouteWaypoint[];
     routeLoading: boolean;
@@ -486,6 +487,7 @@ const initialState: State = {
     purchasedPacks: [],
     installedPacks: [],
     DEBUG_MODE: false,
+    DEBUG_NORMALMAP_RG_COMPACT: true,
     ORS_KEY: '',
     routeWaypoints: [],
     routeLoading: false,

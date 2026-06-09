@@ -165,7 +165,7 @@ describe('PackManager Integration', () => {
             y,
             'elevation'
         );
-        expect(elevBlob?.type).toBe('image/png');
+        expect(elevBlob?.type).toBe('image/webp');
 
         // Overlay
         const overlayBlob = await packManager.getTileFromPacks(

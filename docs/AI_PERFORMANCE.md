@@ -34,6 +34,13 @@ Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 | **Preset Calibration** | `benchmark.ts`, `performance.ts` | Thresholds: Eco (<30), Balanced (30-59), Performance (60-91), Ultra (92+). Normalization: CPU `×0.5`, GPU `×2.0`. Weights: GPU 75%, CPU 15%, StaticBonus 10% (v5.60.2). |
 | **Intel IGP Cap** | `benchmark.ts` | Intel integrated GPUs capped to `balanced` to avoid UMA bias in `gl.readPixels`. |
 
+## 1f. Rendering Optimizations (v5.62.0)
+
+| Optimization | File | Description |
+| :--- | :--- | :--- |
+| **Normal map RG compact** | `tileWorker.ts`, `Tile.ts` | Stockage 2 canaux (RG) au lieu de 4 (RGBA). Z reconstruit côté GPU via `sqrt(1 - x² - y²)` + signe. Gain VRAM ~50% sur les normal maps (6-12 Mo sur visible tiles). |
+| **Index mémoire CacheStorage** | `tileLoader.ts` | `Map<string, boolean>` pour lookups O(1) au lieu de `caches.match()` O(n). Évite 1-3ms de main thread par cycle de chargement. |
+| **Cache offline partitionné** | `tileLoader.ts` | `OFFLINE_CACHE_NAME` séparé. Les zones offline ne peuvent plus être évincées par le cache de navigation. |
 
 ## 2. Navigation & GPS Logic
 
@@ -51,7 +58,8 @@ Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 | `MIN_FETCH_INTERVAL` | 15s | `weather.ts` | API Rate Limiting. Prevents Open-Meteo IP bans on fast camera moves. |
 | `WEATHER_FETCH_DISTANCE` | 3 km | `scene.ts` | Min camera displacement to re-fetch weather. Reduced from 5 km for mountain reactivity. |
 | `DEEP_SLEEP_DELAY` | 30s | `scene.ts` | Time before dropping to 1.5 FPS when app is idle (v5.29.7). |
-| `CACHE_NAME` | `suntrail-tiles-v30` | `tileLoader.ts` | Persistent cache versioning. |
+| `CACHE_NAME` | `suntrail-tiles-v30` | `tileLoader.ts` | Persistent cache versioning (navigation). |
+| `OFFLINE_CACHE_NAME` | `suntrail-offline-zones` | `tileLoader.ts` | Cache séparé pour zones hors-ligne (v5.62.0). |
 
 ## 4. UI & Interaction
 

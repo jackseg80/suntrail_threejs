@@ -11,6 +11,7 @@ import { STORAGE_KEYS } from '../constants/storage';
 import type { TileWorkerResponse } from '../types/worker';
 
 export const CACHE_NAME = 'suntrail-tiles-v30';
+export const OFFLINE_CACHE_NAME = 'suntrail-offline-zones';
 
 // --- PMTILES SUPPORT (v5.7.0) ---
 let localPMTiles: pmtiles.PMTiles | null = null;
@@ -92,7 +93,8 @@ async function cleanupOldCaches(): Promise<void> {
         const deletions = cacheNames
             .filter(
                 (name) =>
-                    name.startsWith('suntrail-tiles-') && name !== CACHE_NAME
+                    (name.startsWith('suntrail-tiles-') && name !== CACHE_NAME) ||
+                    (name.startsWith('suntrail-offline-') && name !== OFFLINE_CACHE_NAME)
             )
             .map((name) => {
                 if (state.DEBUG_MODE)
@@ -118,9 +120,10 @@ export async function initEmbeddedOverview(): Promise<void> {
     try {
         const url = './tiles/europe-overview.pmtiles';
 
-        // Paralléliser l'ouverture du cache worker et l'init PMTiles
-        const [cache, archive] = await Promise.all([
+        // Paralléliser l'ouverture des caches et l'init PMTiles
+        const [cache, offlineCache, archive] = await Promise.all([
             caches.open(CACHE_NAME),
+            caches.open(OFFLINE_CACHE_NAME),
             (async () => {
                 const p = new pmtiles.PMTiles(url);
                 await p.getHeader();
@@ -129,7 +132,12 @@ export async function initEmbeddedOverview(): Promise<void> {
         ]);
 
         _workerCache = cache;
+        _offlineCache = offlineCache;
         embeddedPMTiles = archive;
+
+        // Warmup des index mémoire pour éviter caches.match() au premier tile lookup
+        warmupCacheIndex(cache, _cacheIndex);
+        warmupCacheIndex(offlineCache, _offlineCacheIndex);
 
         if (state.DEBUG_MODE) console.log(`[Embedded] Overview chargé.`);
 
@@ -170,9 +178,15 @@ async function getTileFromEmbedded(
  */
 export async function deleteTerrainCache(): Promise<void> {
     disposeAllCachedTiles();
+    _cacheIndex.clear();
+    _offlineCacheIndex.clear();
     try {
-        const success = await caches.delete(CACHE_NAME);
-        showToast(success ? 'Cache vidé' : 'Cache déjà vide');
+        const [deletedNormal, deletedOffline] = await Promise.all([
+            caches.delete(CACHE_NAME),
+            caches.delete(OFFLINE_CACHE_NAME),
+        ]);
+        _offlineCache = null;
+        showToast(deletedNormal || deletedOffline ? 'Cache vidé' : 'Cache déjà vide');
     } catch (e) {
         showToast('Erreur cache');
     }
@@ -190,16 +204,18 @@ export function updateStorageUI() {
 
 /**
  * Récupère une ressource via le cache persistant ou le réseau.
- * Priorité de recherche : PMTiles locales > Country Packs > CacheStorage > Embedded Overview > Réseau.
+ * Priorité de recherche : PMTiles locales > Country Packs > CacheStorage offline > CacheStorage normal > Embedded Overview > Réseau.
  * Si z, x, y sont fournis, les chutes PMTiles, country packs et embedded overview
  * fonctionnent quelle que soit la forme de l'URL (XYZ, KVP, RESTful...).
+ * @param storeInOfflineCache Si true, le blob téléchargé est stocké dans le cache offline (zones hors-ligne).
  */
 export async function fetchWithCache(
     url: string,
     usePersistentCache: boolean = false,
     z?: number,
     x?: number,
-    y?: number
+    y?: number,
+    storeInOfflineCache: boolean = false
 ): Promise<Blob | null> {
     const hasCoords = z !== undefined && x !== undefined && y !== undefined;
 
@@ -224,6 +240,19 @@ export async function fetchWithCache(
 
     try {
         if (usePersistentCache) {
+            // v5.61.4 : Vérifier d'abord le cache offline, puis le cache normal
+            if (_offlineCache) {
+                try {
+                    const cachedOffline = await _offlineCache.match(url);
+                    if (cachedOffline) {
+                        state.cacheHits++;
+                        updateStorageUI();
+                        return await cachedOffline.blob();
+                    }
+                } catch {
+                    /* fallthrough to normal cache */
+                }
+            }
             const cache = await caches.open(CACHE_NAME);
             const cached = await cache.match(url);
             if (cached) {
@@ -272,9 +301,18 @@ export async function fetchWithCache(
                 const blob = await r.blob();
                 state.networkRequests++;
                 updateStorageUI();
-                if (usePersistentCache && _workerCache) {
+                if (storeInOfflineCache) {
+                    try {
+                        const oc = await caches.open(OFFLINE_CACHE_NAME);
+                        await oc.put(url, new Response(blob.slice()));
+                        _offlineCacheIndex.set(url, true);
+                    } catch {
+                        /* cache write can fail */
+                    }
+                } else if (usePersistentCache && _workerCache) {
                     try {
                         await _workerCache.put(url, new Response(blob));
+                        _cacheIndex.set(url, true);
                     } catch {
                         /* cache write can fail */
                     }
@@ -427,23 +465,70 @@ export function getElevationUrl(
 
 // Référence cachée au CacheStorage worker — évite caches.open() à chaque tuile
 let _workerCache: Cache | null = null;
+let _offlineCache: Cache | null = null;
+
+// Index mémoire pour éviter O(n) caches.match() — v5.61.4
+// Ne remplace pas le cache : en cas de miss on retombe sur caches.match().
+let _cacheIndex = new Map<string, boolean>();
+let _offlineCacheIndex = new Map<string, boolean>();
 
 /**
- * Récupère un blob depuis le CacheStorage s'il existe (zones offline, cache normal).
- * Retourne null si le cache n'est pas initialisé ou si l'entrée est absente/corrompue.
+ * Peuple les index mémoire avec les URLs déjà présentes dans le cache.
+ * Appelé au démarrage pour éviter que la première navigation soit lente.
+ */
+async function warmupCacheIndex(cache: Cache, index: Map<string, boolean>): Promise<void> {
+    try {
+        const keys = await cache.keys();
+        for (const req of keys) index.set(req.url, true);
+        if (state.DEBUG_MODE && keys.length > 0)
+            console.log(`[Cache] Index warmup: ${keys.length} entrées`);
+    } catch {
+        /* warmup best-effort */
+    }
+}
+
+/**
+ * Récupère un blob depuis le CacheStorage s'il existe (zones offline vérifiées en priorité).
+ * Retourne null si l'entrée est absente/corrompue.
+ * v5.61.4 : Cherche d'abord dans le cache offline (zones téléchargées), puis dans le cache normal.
  */
 async function getCachedBlob(url: string): Promise<Blob | null> {
+    // 1. Cache offline (zones explicitement téléchargées par l'utilisateur)
+    // v5.61.4 : Vérifie l'index mémoire avant caches.match() pour éviter O(n)
+    if (_offlineCache && _offlineCacheIndex.has(url)) {
+        try {
+            const cached = await _offlineCache.match(url);
+            if (cached) {
+                const blob = await cached.blob();
+                if (blob.size >= 100) return blob;
+                _offlineCache.delete(url);
+                _offlineCacheIndex.delete(url);
+            } else {
+                _offlineCacheIndex.delete(url);
+            }
+        } catch {
+            _offlineCacheIndex.delete(url);
+        }
+    }
+
+    // 2. Cache normal (navigation quotidienne)
     if (!_workerCache) return null;
+    if (!_cacheIndex.has(url)) return null;
     try {
         const cached = await _workerCache.match(url);
-        if (!cached) return null;
+        if (!cached) {
+            _cacheIndex.delete(url);
+            return null;
+        }
         const blob = await cached.blob();
         if (blob.size < 100) {
             _workerCache.delete(url);
+            _cacheIndex.delete(url);
             return null;
         }
         return blob;
     } catch {
+        _cacheIndex.delete(url);
         return null;
     }
 }
@@ -663,7 +748,7 @@ export async function downloadVisibleZone(
 
     for (const { url, z, x, y } of queue) {
         try {
-            const blob = await fetchWithCache(url, true, z, x, y);
+            const blob = await fetchWithCache(url, true, z, x, y, true);
             if (blob) successCount++;
         } catch (_) {
             /* silence */
@@ -733,7 +818,7 @@ export async function downloadZoneMultiLOD(
         for (const { url, z, x, y } of queue) {
             if (abortSignal?.aborted) break;
             try {
-                await fetchWithCache(url, true, z, x, y);
+                await fetchWithCache(url, true, z, x, y, true);
                 downloaded.push(url);
             } catch (_) {
                 /* silence */
@@ -748,9 +833,9 @@ export async function downloadZoneMultiLOD(
     onProgress(total, total, -1, '');
 
     if (abortSignal?.aborted) {
-        // Nettoyer les tuiles déjà téléchargées
+        // Nettoyer les tuiles déjà téléchargées dans le cache offline
         try {
-            const cache = await caches.open(CACHE_NAME);
+            const cache = await caches.open(OFFLINE_CACHE_NAME);
             for (const url of downloaded) {
                 await cache.delete(url);
             }

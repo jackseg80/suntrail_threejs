@@ -1,3 +1,20 @@
+## [5.61.4] - 2026-06-09
+
+### Added
+- **Cache offline partitionné** : `OFFLINE_CACHE_NAME` séparé du cache navigation. Les zones hors-ligne ne peuvent plus être évincées par le cache normal (P1).
+- **Index mémoire CacheStorage** : `Map<string, boolean>` pour lookups O(1) au lieu de `caches.match()` O(n). Warmup au démarrage via `cache.keys()` (P2).
+- **Normal map RG compact** : stockage 2 canaux (RG) au lieu de 4 (RGBA). Z reconstruit côté GPU via `sqrt(1 - x² - y²)` + signe. Gain VRAM ~50% sur les normal maps (P5).
+
+### Changed
+- **Overview APK** : WebP qualité 80 au lieu de 90 → fichier généré ~20 Mo au lieu de ~30 (-34%) (P3).
+- **Country Packs (élévations)** : WebP lossless au lieu de PNG niveau 9 → ~25-35% plus petit pour les tuiles d'élévation (P4).
+
+### Performance (milieu de gamme)
+- **VRAM** : -6 à -12 Mo sur les normal maps visibles (P5)
+- **CPU** : -1 à -3 ms par cycle de chargement de tuile (P2)
+- **Stockage** : -10 Mo APK (P3), -80 Mo par pack pays (P4)
+- **Fiabilité** : zones offline protégées contre l'éviction par le navigateur (P1)
+
 ## [5.61.3] - 2026-06-09
 
 ### Added

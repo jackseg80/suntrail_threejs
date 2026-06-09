@@ -144,7 +144,7 @@ async function main() {
 
     let done = 0;
     for (const ref of refs) {
-        const ext = ref.type === 'color' ? 'webp' : 'png';
+        const ext = ref.type === 'overlay' ? 'png' : 'webp';
         const cachePath = path.join(cacheDir, `${ref.type}_${ref.z}_${ref.x}_${ref.y}.${ext}`);
         
         if (!fs.existsSync(cachePath)) {
@@ -159,8 +159,8 @@ async function main() {
                     // Réduire un peu la qualité pour gagner 30% de place (70 au lieu de 80)
                     final = await sharp(buf).webp({ quality: 70 }).toBuffer();
                 } else if (ref.type === 'elevation') {
-                    // PNG optimisé sans perte
-                    final = await sharp(buf).png({ compressionLevel: 9 }).toBuffer();
+                    // WebP lossless : ~25-35% plus petit que PNG niveau 9, sans perte
+                    final = await sharp(buf).webp({ lossless: true }).toBuffer();
                 } else {
                     // Overlay en palette 8-bit (très léger)
                     final = await sharp(buf).png({ palette: true, colors: 64 }).toBuffer();
@@ -179,7 +179,7 @@ async function main() {
     console.log(`\nFusion dans ${outputPath}...`);
     const tileBuffers: { tileId: number; data: Buffer }[] = [];
     for (const ref of refs) {
-        const ext = ref.type === 'color' ? 'webp' : 'png';
+        const ext = ref.type === 'overlay' ? 'png' : 'webp';
         const cachePath = path.join(cacheDir, `${ref.type}_${ref.z}_${ref.x}_${ref.y}.${ext}`);
         if (fs.existsSync(cachePath)) {
             let id = zxyToTileId(ref.z, ref.x, ref.y);

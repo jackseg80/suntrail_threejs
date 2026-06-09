@@ -82,6 +82,7 @@ export class SettingsSheet extends BaseComponent {
             if (zoomInd) zoomInd.style.display = val ? 'block' : 'none';
             if (compass) compass.style.display = val ? 'block' : 'none';
         });
+        this.bindToggle('debug-normalmap-rg-compact-toggle', 'DEBUG_NORMALMAP_RG_COMPACT');
         this.bindToggle('veg-toggle', 'SHOW_VEGETATION', refreshTerrain);
         this.bindToggle('hydro-toggle', 'SHOW_HYDROLOGY', (val: boolean) =>
             updateHydrologyVisibility(val)
@@ -228,6 +229,7 @@ export class SettingsSheet extends BaseComponent {
             'WEATHER_RAIN_OPACITY',
             'SHOW_INCLINOMETER',
             'SHOW_WEATHER_PRO',
+            'DEBUG_NORMALMAP_RG_COMPACT',
         ];
 
         keysToSubscribe.forEach((key) => {
@@ -594,6 +596,9 @@ export class SettingsSheet extends BaseComponent {
             case 'SHOW_WEATHER_PRO':
                 this.updateToggle('weather-pro-toggle', value);
                 break;
+            case 'DEBUG_NORMALMAP_RG_COMPACT':
+                this.updateToggle('debug-normalmap-rg-compact-toggle', value);
+                break;
         }
     }
 
@@ -647,6 +652,7 @@ export class SettingsSheet extends BaseComponent {
         );
         this.updateUIFromState('SHOW_INCLINOMETER', state.SHOW_INCLINOMETER);
         this.updateUIFromState('SHOW_WEATHER_PRO', state.SHOW_WEATHER_PRO);
+        this.updateUIFromState('DEBUG_NORMALMAP_RG_COMPACT', state.DEBUG_NORMALMAP_RG_COMPACT);
         this.updateUIFromState('PERFORMANCE_PRESET', state.PERFORMANCE_PRESET);
     }
 

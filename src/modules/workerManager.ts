@@ -265,6 +265,7 @@ class TileWorkerManager {
             elevBlob: blobs?.elev,
             colorBlob: blobs?.color,
             overlayBlob: blobs?.overlay,
+            useCompactNormalmap: state.DEBUG_NORMALMAP_RG_COMPACT,
         };
 
         const promise = new Promise<TileWorkerResponse | null>(

@@ -17,6 +17,7 @@ export interface TileWorkerRequest {
     elevBlob?: Blob | null;
     colorBlob?: Blob | null;
     overlayBlob?: Blob | null;
+    useCompactNormalmap?: boolean;
 }
 
 export interface TileWorkerResponse {
