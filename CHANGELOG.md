@@ -1,3 +1,20 @@
+## [5.61.3] - 2026-06-09
+
+### Added
+- **Marqueur 3D orange au clic** sur la carte (anneau TorusGeometry) — visible immédiatement pour savoir où la sonde solaire va être lancée.
+- **Debounce 200ms hide-on-move** : les clics simples ne déclenchent plus `ui-moving` → fini le flicker UI. Seuls les drags/zooms cachent l'interface.
+
+### Changed
+- **Auto-hide suspendu** quand le coords-pill est visible (`hasLastClicked`).
+
+### Fixed
+- **Redeclaration wheelHideTimer** dans scene.ts.
+
+## [5.61.2] - 2026-06-08
+
+### Changed
+- **Top bar refactored** : 3 zones séparées — météo à gauche (clic → panneau), MAP·LVL au centre (informatif), boutons à droite. Fini le pill tout-en-un.
+
 ## [5.61.0] - 2026-06-08
 
 ### Added
