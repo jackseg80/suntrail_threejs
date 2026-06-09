@@ -90,20 +90,21 @@ async function getTileFromPMTiles(
 async function cleanupOldCaches(): Promise<void> {
     try {
         const cacheNames = await caches.keys();
-        const deletions = cacheNames
-            .filter(
-                (name) =>
-                    (name.startsWith('suntrail-tiles-') && name !== CACHE_NAME) ||
-                    (name.startsWith('suntrail-offline-') && name !== OFFLINE_CACHE_NAME)
-            )
-            .map((name) => {
-                if (state.DEBUG_MODE)
-                    console.log(
-                        `[Cache] Suppression de l'ancienne version : ${name}`
-                    );
-                return caches.delete(name);
-            });
-        await Promise.all(deletions);
+        // v5.62.2 : Suppression séquentielle pour éviter la pression I/O sur mobile
+        for (const name of cacheNames) {
+            if (
+                (name.startsWith('suntrail-tiles-') && name !== CACHE_NAME) ||
+                (name.startsWith('suntrail-offline-') && name !== OFFLINE_CACHE_NAME)
+            ) {
+                try {
+                    if (state.DEBUG_MODE)
+                        console.log(`[Cache] Suppression de l'ancienne version : ${name}`);
+                    await caches.delete(name);
+                } catch {
+                    /* skip individual delete failures */
+                }
+            }
+        }
     } catch (e) {
         console.warn('[Cache] Échec du nettoyage des anciens caches', e);
     }
@@ -114,8 +115,9 @@ async function cleanupOldCaches(): Promise<void> {
  * Appelée une fois au démarrage, fire-and-forget.
  */
 export async function initEmbeddedOverview(): Promise<void> {
-    // Nettoyer les vieux résidus de cache avant de commencer
-    void cleanupOldCaches();
+    // Nettoyer les vieux résidus de cache AVANT d'ouvrir les nouveaux
+    // v5.62.2 : await pour éviter race condition avec caches.open()
+    await cleanupOldCaches();
 
     try {
         const url = './tiles/europe-overview.pmtiles';

@@ -1,3 +1,8 @@
+## [5.62.2] - 2026-06-09
+
+### Fixed
+- **Race condition cleanup caches** : `cleanupOldCaches()` passait en `void` (fire-and-forget) pendant que `caches.open()` créait les nouveaux caches → pouvait bloquer indéfiniment sur mobile après mise à jour Play Store. Remplacé par `await` + suppression séquentielle.
+
 ## [5.62.1] - 2026-06-09
 
 ### Changed
