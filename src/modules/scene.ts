@@ -803,11 +803,7 @@ export async function initScene(): Promise<void> {
             now - lastRenderTime < 16.0
         )
             return;
-        if (
-            state.isFollowingUser &&
-            now - lastRenderTime < 33
-        )
-            return;
+        if (state.isFollowingUser && now - lastRenderTime < 33) return;
 
         // Grace period : évite le throttle idle immédiatement après la fin d'un flyTo
         if (prevWasFlyingTo && !state.isFlyingTo) {

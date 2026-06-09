@@ -15,7 +15,10 @@ vi.mock('./packManager', () => ({
 vi.mock('pmtiles', () => {
     class MockPMTiles {
         getHeader = vi.fn().mockResolvedValue({
-            minLon: -25, maxLon: 45, minLat: 34, maxLat: 72,
+            minLon: -25,
+            maxLon: 45,
+            minLat: 34,
+            maxLat: 72,
         });
         getZxy = vi.fn().mockResolvedValue(null);
     }
@@ -165,9 +168,11 @@ describe('Cache partition — offline vs normal (v5.61.4)', () => {
     it('storeInOfflineCache=true doit stocker dans le cache offline, pas le cache normal', async () => {
         const mockResponse = {
             ok: true,
-            blob: vi.fn().mockResolvedValue(
-                new Blob(['offline-tile'], { type: 'image/webp' })
-            ),
+            blob: vi
+                .fn()
+                .mockResolvedValue(
+                    new Blob(['offline-tile'], { type: 'image/webp' })
+                ),
         };
         (global.fetch as any).mockResolvedValue(mockResponse);
 
@@ -175,15 +180,20 @@ describe('Cache partition — offline vs normal (v5.61.4)', () => {
         await fetchWithCache(url, true, 12, 2100, 1400, true);
 
         expect(offlineSpy.put).toHaveBeenCalledWith(url, expect.any(Response));
-        expect(normalSpy.put).not.toHaveBeenCalledWith(url, expect.any(Response));
+        expect(normalSpy.put).not.toHaveBeenCalledWith(
+            url,
+            expect.any(Response)
+        );
     });
 
     it('storeInOfflineCache=false doit stocker dans le cache normal', async () => {
         const mockResponse = {
             ok: true,
-            blob: vi.fn().mockResolvedValue(
-                new Blob(['normal-tile'], { type: 'image/webp' })
-            ),
+            blob: vi
+                .fn()
+                .mockResolvedValue(
+                    new Blob(['normal-tile'], { type: 'image/webp' })
+                ),
         };
         (global.fetch as any).mockResolvedValue(mockResponse);
 
@@ -197,9 +207,7 @@ describe('Cache partition — offline vs normal (v5.61.4)', () => {
         // Pré-remplir le cache offline
         offlineSpy._store.set(
             'https://opentopomap.org/12/2100/1400.png',
-            new Response(
-                new Blob(['cached-offline'], { type: 'image/webp' })
-            )
+            new Response(new Blob(['cached-offline'], { type: 'image/webp' }))
         );
 
         const url = 'https://opentopomap.org/12/2100/1400.png';
@@ -215,7 +223,9 @@ describe('Cache partition — offline vs normal (v5.61.4)', () => {
         await deleteTerrainCache();
 
         expect(vi.mocked(caches.delete)).toHaveBeenCalledWith(CACHE_NAME);
-        expect(vi.mocked(caches.delete)).toHaveBeenCalledWith(OFFLINE_CACHE_NAME);
+        expect(vi.mocked(caches.delete)).toHaveBeenCalledWith(
+            OFFLINE_CACHE_NAME
+        );
     });
 
     it('cleanupOldCaches ne doit pas supprimer CACHE_NAME ni OFFLINE_CACHE_NAME', async () => {
@@ -223,7 +233,9 @@ describe('Cache partition — offline vs normal (v5.61.4)', () => {
         await initEmbeddedOverview();
 
         expect(vi.mocked(caches.delete)).not.toHaveBeenCalledWith(CACHE_NAME);
-        expect(vi.mocked(caches.delete)).not.toHaveBeenCalledWith(OFFLINE_CACHE_NAME);
+        expect(vi.mocked(caches.delete)).not.toHaveBeenCalledWith(
+            OFFLINE_CACHE_NAME
+        );
     });
 
     // ── P2 : Index mémoire CacheStorage (v5.61.4) ──
@@ -242,7 +254,7 @@ describe('Cache partition — offline vs normal (v5.61.4)', () => {
         expect(normalSpy.keys).toHaveBeenCalled();
     });
 
-    it("un deuxième lookup fetchWithCache(usePersistentCache) sur la même URL ne refait pas caches.open(CACHE_NAME)", async () => {
+    it('un deuxième lookup fetchWithCache(usePersistentCache) sur la même URL ne refait pas caches.open(CACHE_NAME)', async () => {
         // Pré-remplir le store du cache normal
         normalSpy._store.set(
             'https://example.com/cached.png',
@@ -263,14 +275,14 @@ describe('Cache partition — offline vs normal (v5.61.4)', () => {
         expect(state.DEBUG_NORMALMAP_RG_COMPACT).toBe(true);
     });
 
-    it("la reconstruction sqrt(1-x²-y²) avec signe préserve la norme unitaire", () => {
+    it('la reconstruction sqrt(1-x²-y²) avec signe préserve la norme unitaire', () => {
         const reconstruct = (nx: number, ny: number, signB: number) => {
             const mag = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
             return signB > 0 ? mag : -mag;
         };
 
         const tests = [
-            [0.0, 0.0, 1.0],   // Z positif
+            [0.0, 0.0, 1.0], // Z positif
             [0.6, 0.4, 1.0],
             [-0.3, -0.7, -1.0], // Z négatif
             [0.9, 0.1, 1.0],
@@ -285,7 +297,7 @@ describe('Cache partition — offline vs normal (v5.61.4)', () => {
         }
     });
 
-    it("la formule protège contre les NaN (nx²+ny² > 1.0)", () => {
+    it('la formule protège contre les NaN (nx²+ny² > 1.0)', () => {
         const reconstructZ = (nx: number, ny: number) =>
             Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
 

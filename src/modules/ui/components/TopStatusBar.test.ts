@@ -308,9 +308,9 @@ describe('TopStatusBar — LOD badge click handler', () => {
     }
 
     it('opens PacksSheet with highlight when a pack covers the current position', () => {
-        (packManager.findPackContaining as ReturnType<typeof vi.fn>).mockReturnValue(
-            mockPack
-        );
+        (
+            packManager.findPackContaining as ReturnType<typeof vi.fn>
+        ).mockReturnValue(mockPack);
         render();
 
         const lodPill = document.querySelector('#top-pill-lod') as HTMLElement;
@@ -324,9 +324,9 @@ describe('TopStatusBar — LOD badge click handler', () => {
     });
 
     it('opens LayersSheet when no pack covers the current position', () => {
-        (packManager.findPackContaining as ReturnType<typeof vi.fn>).mockReturnValue(
-            null
-        );
+        (
+            packManager.findPackContaining as ReturnType<typeof vi.fn>
+        ).mockReturnValue(null);
         render();
 
         const lodPill = document.querySelector('#top-pill-lod') as HTMLElement;
@@ -392,8 +392,12 @@ describe('TopStatusBar — LOD badge pack visual indicator', () => {
     }
 
     it('shows 📦 prefix when a pack is available but not installed', () => {
-        (packManager.findPackContaining as ReturnType<typeof vi.fn>).mockReturnValue(mockPack);
-        (packManager.getPackState as ReturnType<typeof vi.fn>).mockReturnValue(null);
+        (
+            packManager.findPackContaining as ReturnType<typeof vi.fn>
+        ).mockReturnValue(mockPack);
+        (packManager.getPackState as ReturnType<typeof vi.fn>).mockReturnValue(
+            null
+        );
         render();
 
         const badge = document.querySelector('.lod-badge') as HTMLElement;
@@ -403,8 +407,12 @@ describe('TopStatusBar — LOD badge pack visual indicator', () => {
     });
 
     it('shows ✓ prefix and green state when pack is installed', () => {
-        (packManager.findPackContaining as ReturnType<typeof vi.fn>).mockReturnValue(mockPack);
-        (packManager.getPackState as ReturnType<typeof vi.fn>).mockReturnValue({ status: 'installed' });
+        (
+            packManager.findPackContaining as ReturnType<typeof vi.fn>
+        ).mockReturnValue(mockPack);
+        (packManager.getPackState as ReturnType<typeof vi.fn>).mockReturnValue({
+            status: 'installed',
+        });
         render();
 
         const badge = document.querySelector('.lod-badge') as HTMLElement;
@@ -414,7 +422,9 @@ describe('TopStatusBar — LOD badge pack visual indicator', () => {
     });
 
     it('shows no prefix when no pack covers the current zone', () => {
-        (packManager.findPackContaining as ReturnType<typeof vi.fn>).mockReturnValue(null);
+        (
+            packManager.findPackContaining as ReturnType<typeof vi.fn>
+        ).mockReturnValue(null);
         render();
 
         const badge = document.querySelector('.lod-badge') as HTMLElement;

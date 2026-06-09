@@ -26,10 +26,14 @@ export interface TerrainUniforms {
  */
 function getMaxPoolSize(): number {
     switch (state.PERFORMANCE_PRESET) {
-        case 'ultra': return 24;
-        case 'performance': return 18;
-        case 'balanced': return 12;
-        default: return 6; // eco
+        case 'ultra':
+            return 24;
+        case 'performance':
+            return 18;
+        case 'balanced':
+            return 12;
+        default:
+            return 6; // eco
     }
 }
 

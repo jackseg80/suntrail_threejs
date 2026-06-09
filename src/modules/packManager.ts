@@ -278,11 +278,7 @@ class PackManager {
             )
                 return pack;
             // Pas de code ISO reconnu : les bounds suffisent (régions, packs CDN avec packId)
-            if (
-                !pack.regionCheck ||
-                pack.regionCheck.length !== 2
-            )
-                return pack;
+            if (!pack.regionCheck || pack.regionCheck.length !== 2) return pack;
         }
         return null;
     }

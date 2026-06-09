@@ -198,7 +198,8 @@ self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
                                 // v5.61.4 : Mode compact RG — Z reconstruit côté GPU
                                 if (useCompactNormalmap) {
                                     // Encode seulement le signe de Z dans B (B=255 si Z≥0, B=0 si Z<0)
-                                    normalData[idx + 2] = vz * invLen >= 0 ? 255 : 0;
+                                    normalData[idx + 2] =
+                                        vz * invLen >= 0 ? 255 : 0;
                                 } else {
                                     normalData[idx + 2] =
                                         (vz * invLen * 0.5 + 0.5) * 255;

@@ -277,9 +277,9 @@ export class PacksSheet extends BaseComponent {
         if (!container) return;
 
         const cards = container.querySelectorAll('.pack-card');
-        const index = packManager.getAvailablePacks().findIndex(
-            (p) => p.id === packId
-        );
+        const index = packManager
+            .getAvailablePacks()
+            .findIndex((p) => p.id === packId);
         if (index < 0 || index >= cards.length) return;
 
         const card = cards[index] as HTMLElement;

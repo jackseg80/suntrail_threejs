@@ -7,10 +7,14 @@ import { state } from './state';
  */
 function getGeometryCacheMaxSize(): number {
     switch (state.PERFORMANCE_PRESET) {
-        case 'ultra': return 128;
-        case 'performance': return 96;
-        case 'balanced': return 64;
-        default: return 32; // eco
+        case 'ultra':
+            return 128;
+        case 'performance':
+            return 96;
+        case 'balanced':
+            return 64;
+        default:
+            return 32; // eco
     }
 }
 

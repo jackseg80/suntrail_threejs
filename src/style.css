@@ -380,7 +380,7 @@ body.preset-eco .top-collapse-toggle {
     transition: color 0.3s;
 }
 
-.lod-badge[data-pack-state="installed"] {
+.lod-badge[data-pack-state='installed'] {
     color: #22c55e;
 }
 

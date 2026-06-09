@@ -44,8 +44,7 @@ export class TopStatusBar extends BaseComponent {
         });
 
         // LOD tooltip icon on the LOD pill
-        const centerWidgets =
-            this.element.querySelector('.top-center-widgets');
+        const centerWidgets = this.element.querySelector('.top-center-widgets');
         const lodInfoIcon = document.createElement('span');
         lodInfoIcon.textContent = 'ⓘ';
         lodInfoIcon.style.cssText =
@@ -247,7 +246,10 @@ export class TopStatusBar extends BaseComponent {
             const ps = pack ? packManager.getPackState(pack.id) : null;
 
             let badgeText = `${country} · LVL ${Math.floor(zoom)}`;
-            if (ps?.status === 'installed' || ps?.status === 'update_available') {
+            if (
+                ps?.status === 'installed' ||
+                ps?.status === 'update_available'
+            ) {
                 badgeText = `\u2713 ${badgeText}`;
                 this.lodBadge.dataset.packState = 'installed';
             } else if (pack) {

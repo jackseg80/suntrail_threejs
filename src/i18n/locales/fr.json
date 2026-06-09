@@ -290,8 +290,7 @@
             "btn": "❓ Aide & Tutoriel",
             "youtube": "📺 Vidéos & Démos"
         },
-        "toast": {
-        }
+        "toast": {}
     },
     "search": {
         "title": "Exploration",

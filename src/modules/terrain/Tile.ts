@@ -343,7 +343,8 @@ export class Tile {
             shader.uniforms.uColorScale = { value: this.colorScale };
             shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
             shader.uniforms.uHasNormalMap = { value: !!this.normalTex };
-            shader.uniforms.uCompactNormalmap = terrainUniforms.uCompactNormalmap;
+            shader.uniforms.uCompactNormalmap =
+                terrainUniforms.uCompactNormalmap;
             shader.uniforms.uWaterMask = { value: this.waterMaskTex };
             shader.uniforms.uHasWaterMask = { value: !!this.waterMaskTex };
 

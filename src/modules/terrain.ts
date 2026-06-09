@@ -272,7 +272,8 @@ export async function updateVisibleTiles(
                 ? 1.0
                 : 0.0;
         terrainUniforms.uShowHydrology.value = state.SHOW_HYDROLOGY ? 1.0 : 0.0;
-        terrainUniforms.uCompactNormalmap.value = state.DEBUG_NORMALMAP_RG_COMPACT ? 1.0 : 0.0;
+        terrainUniforms.uCompactNormalmap.value =
+            state.DEBUG_NORMALMAP_RG_COMPACT ? 1.0 : 0.0;
         resizeGeometryCache();
 
         if (!state.camera) return Promise.resolve();

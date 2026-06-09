@@ -174,7 +174,9 @@ export class ConnectivitySheet extends BaseComponent {
     }
 
     private updatePackStatusBadge(): void {
-        const el = this.element?.querySelector('#conn-pack-status') as HTMLElement | null;
+        const el = this.element?.querySelector(
+            '#conn-pack-status'
+        ) as HTMLElement | null;
         if (!el) return;
 
         const pack = packManager.findPackContaining(
@@ -190,8 +192,8 @@ export class ConnectivitySheet extends BaseComponent {
         const lang = state.lang || 'fr';
         const name = pack.name[lang] || pack.name['fr'] || pack.id;
 
-        let statusText = '';
-        let statusColor = 'var(--text-2)';
+        let statusText: string;
+        let statusColor: string;
         if (ps?.status === 'installed') {
             statusText = `\u2713 ${name} \u00b7 ${i18n.t('packs.status.installed')}`;
             statusColor = '#22c55e';

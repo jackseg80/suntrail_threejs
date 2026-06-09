@@ -94,11 +94,14 @@ async function cleanupOldCaches(): Promise<void> {
         for (const name of cacheNames) {
             if (
                 (name.startsWith('suntrail-tiles-') && name !== CACHE_NAME) ||
-                (name.startsWith('suntrail-offline-') && name !== OFFLINE_CACHE_NAME)
+                (name.startsWith('suntrail-offline-') &&
+                    name !== OFFLINE_CACHE_NAME)
             ) {
                 try {
                     if (state.DEBUG_MODE)
-                        console.log(`[Cache] Suppression de l'ancienne version : ${name}`);
+                        console.log(
+                            `[Cache] Suppression de l'ancienne version : ${name}`
+                        );
                     await caches.delete(name);
                 } catch {
                     /* skip individual delete failures */
@@ -188,7 +191,9 @@ export async function deleteTerrainCache(): Promise<void> {
             caches.delete(OFFLINE_CACHE_NAME),
         ]);
         _offlineCache = null;
-        showToast(deletedNormal || deletedOffline ? 'Cache vidé' : 'Cache déjà vide');
+        showToast(
+            deletedNormal || deletedOffline ? 'Cache vidé' : 'Cache déjà vide'
+        );
     } catch (e) {
         showToast('Erreur cache');
     }
@@ -471,14 +476,17 @@ let _offlineCache: Cache | null = null;
 
 // Index mémoire pour éviter O(n) caches.match() — v5.61.4
 // Ne remplace pas le cache : en cas de miss on retombe sur caches.match().
-let _cacheIndex = new Map<string, boolean>();
-let _offlineCacheIndex = new Map<string, boolean>();
+const _cacheIndex = new Map<string, boolean>();
+const _offlineCacheIndex = new Map<string, boolean>();
 
 /**
  * Peuple les index mémoire avec les URLs déjà présentes dans le cache.
  * Appelé au démarrage pour éviter que la première navigation soit lente.
  */
-async function warmupCacheIndex(cache: Cache, index: Map<string, boolean>): Promise<void> {
+async function warmupCacheIndex(
+    cache: Cache,
+    index: Map<string, boolean>
+): Promise<void> {
     try {
         const keys = await cache.keys();
         for (const req of keys) index.set(req.url, true);

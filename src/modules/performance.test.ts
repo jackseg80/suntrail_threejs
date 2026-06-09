@@ -220,7 +220,6 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
 
             expect(state.RANGE).toBe(12);
         });
-
     });
 
     describe('applyPreset() — Performance / High : valeurs baked-in, pas de caps', () => {

@@ -602,7 +602,11 @@ async function handleMapClick(e: MouseEvent) {
             const clickPoiName = document.getElementById('click-poi-name');
             if (clickPoiName) clickPoiName.style.display = 'none';
         }
-        placeClickMarker(hit.x, hit.z, state.lastClickedCoords.alt / state.RELIEF_EXAGGERATION);
+        placeClickMarker(
+            hit.x,
+            hit.z,
+            state.lastClickedCoords.alt / state.RELIEF_EXAGGERATION
+        );
     } else {
         state.hasLastClicked = false;
         removeClickMarker();
