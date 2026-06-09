@@ -174,7 +174,8 @@ export class TimelineComponent {
 
             // Masquage dynamique des widgets couverts quand la timebar est déplacée
             const OVERLAP_TARGETS_TL = [
-                document.getElementById('top-pill-main'),
+                document.getElementById('top-pill-weather'),
+                document.getElementById('top-pill-lod'),
                 document.getElementById('rec-status-widget'),
                 document.getElementById('net-status-icon'),
                 document.getElementById('sos-main-btn'),

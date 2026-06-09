@@ -284,6 +284,14 @@ html {
     gap: 8px;
 }
 
+.top-center-widgets {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    justify-content: center;
+    min-width: 0;
+}
+
 .top-right-widgets {
     display: flex;
     gap: 8px;
@@ -1438,7 +1446,8 @@ body.timeline-custom-pos .fab-stack.widget-overlap-hidden {
     opacity: 0;
     pointer-events: none;
 }
-#top-pill-main.widget-overlap-hidden,
+#top-pill-weather.widget-overlap-hidden,
+#top-pill-lod.widget-overlap-hidden,
 #rec-status-widget.widget-overlap-hidden,
 #net-status-icon.widget-overlap-hidden,
 #sos-main-btn.widget-overlap-hidden,

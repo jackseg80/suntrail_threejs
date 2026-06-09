@@ -37,19 +37,19 @@ export class TopStatusBar extends BaseComponent {
         // ARIA: LOD badge is a live region (updates dynamically)
         this.lodBadge?.setAttribute('aria-live', 'polite');
 
-        const mainPill = this.element.querySelector('#top-pill-main');
-        mainPill?.addEventListener('click', () => {
+        const weatherPill = this.element.querySelector('#top-pill-weather');
+        weatherPill?.addEventListener('click', () => {
             sheetManager.toggle('weather');
         });
 
-        // LOD tooltip icon
-        const topLeftContainer =
-            this.element.querySelector('.top-left-widgets');
+        // LOD tooltip icon on the LOD pill
+        const centerWidgets =
+            this.element.querySelector('.top-center-widgets');
         const lodInfoIcon = document.createElement('span');
         lodInfoIcon.textContent = 'ⓘ';
         lodInfoIcon.style.cssText =
             'font-size:var(--text-xs);opacity:0.4;cursor:pointer;margin-left:2px;align-self:center;';
-        topLeftContainer?.appendChild(lodInfoIcon);
+        centerWidgets?.appendChild(lodInfoIcon);
         const lodContent = document.createElement('div');
         lodContent.innerHTML = i18n.t('topbar.tooltipLOD');
         this.lodTooltip = createTooltip(lodInfoIcon, lodContent, {
@@ -230,11 +230,16 @@ export class TopStatusBar extends BaseComponent {
     }
 
     private updatePillAriaLabel(): void {
-        const mainPill = this.element?.querySelector('#top-pill-main');
-        if (!mainPill) return;
-        const lod = this.lodBadge?.textContent ?? '';
-        const temp = this.weatherTemp?.textContent ?? '';
-        mainPill.setAttribute('aria-label', `${lod} ${temp}`.trim());
+        const weatherPill = this.element?.querySelector('#top-pill-weather');
+        if (weatherPill) {
+            const temp = this.weatherTemp?.textContent ?? '';
+            weatherPill.setAttribute('aria-label', `Météo ${temp}`.trim());
+        }
+        const lodPill = this.element?.querySelector('#top-pill-lod');
+        if (lodPill) {
+            const lod = this.lodBadge?.textContent ?? '';
+            lodPill.setAttribute('aria-label', lod.trim());
+        }
     }
 
     public override dispose(): void {

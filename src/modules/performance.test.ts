@@ -41,8 +41,6 @@ const DESKTOP_UA =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0';
 const ANDROID_UA =
     'Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36';
-const IOS_UA =
-    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobi/15E148';
 
 describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
     beforeEach(() => {

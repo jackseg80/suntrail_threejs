@@ -805,7 +805,8 @@ function setupCoordsPill() {
 
     const OVERLAP_TARGETS = [
         { el: document.querySelector('.fab-stack') as HTMLElement | null },
-        { el: document.getElementById('top-pill-main') },
+        { el: document.getElementById('top-pill-weather') },
+        { el: document.getElementById('top-pill-lod') },
         { el: document.getElementById('rec-status-widget') },
         { el: document.getElementById('net-status-icon') },
         { el: document.getElementById('sos-main-btn') },

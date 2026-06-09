@@ -143,6 +143,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **850** | **5.59.0** | **v5.59.0** | **Zone offline Free : 1 LOD unique, clic → upgrade** | **2026-06-07** |
 | **854** | **5.61.0** | **v5.61.0** | **UI Premium (tiroir barre haute, hide-on-move, hit areas 44px, skeleton shimmer, unifi API keys)** | **2026-06-08** |
 | **855** | **5.61.1** | **v5.61.1** | **Suppression option Économie d'énergie (obsolète : idle throttle 20fps + deep sleep 1.5fps + mobile cap 60fps déjà en place)** | **2026-06-08** |
+| **856** | **5.61.2** | **v5.61.2** | **Top bar : 3 zones séparées — météo à gauche (clic → panneau), MAP·LVL au centre, boutons à droite. fini le pill tout-en-un.** | **2026-06-08** |
 
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.

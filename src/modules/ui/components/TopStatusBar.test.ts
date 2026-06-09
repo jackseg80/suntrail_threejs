@@ -42,10 +42,14 @@ describe('TopStatusBar — LOD label (country mapping)', () => {
             <template id="template-top-status-bar">
                 <div class="top-status-bar-content">
                     <div class="top-left-widgets">
-                        <div class="top-widget" id="top-pill-main" role="button" tabindex="0">
-                            <span class="lod-badge">SWISS · LVL --</span>
+                        <div class="top-widget" id="top-pill-weather" role="button" tabindex="0" aria-label="Météo">
                             <span class="weather-icon">☀️</span>
                             <span class="weather-temp">--°C</span>
+                        </div>
+                    </div>
+                    <div class="top-center-widgets">
+                        <div class="top-widget" id="top-pill-lod" aria-live="polite" aria-label="Carte et zoom">
+                            <span class="lod-badge">SWISS · LVL --</span>
                         </div>
                     </div>
                     <div class="top-right-widgets">
@@ -164,7 +168,13 @@ describe('TopStatusBar — REC indicator (v5.57.2)', () => {
             <template id="template-top-status-bar">
                 <div class="top-status-bar-content">
                     <div class="top-left-widgets">
-                        <div class="top-widget" id="top-pill-main">
+                        <div class="top-widget" id="top-pill-weather" role="button" tabindex="0" aria-label="Météo">
+                            <span class="weather-icon">☀️</span>
+                            <span class="weather-temp">--°C</span>
+                        </div>
+                    </div>
+                    <div class="top-center-widgets">
+                        <div class="top-widget" id="top-pill-lod" aria-live="polite" aria-label="Carte et zoom">
                             <span class="lod-badge">SWISS · LVL --</span>
                         </div>
                     </div>
