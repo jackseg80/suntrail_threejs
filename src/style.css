@@ -412,7 +412,7 @@ body.preset-eco .top-collapse-toggle {
 .rec-indicator {
     position: absolute;
     top: 52px;
-    left: var(--space-4);
+    left: 0;
     z-index: 2001;
     border-color: var(--danger);
     color: var(--danger);
