@@ -20,6 +20,7 @@ type EventMap = {
     packStatusChanged: { packId: string; status: string };
     packMounted: { packId: string };
     packUnmounted: { packId: string };
+    packHighlight: { packId: string };
     themeChanged: { theme: 'light' | 'dark' };
     gpxHistoryUpdated: void;
 };

@@ -1,7 +1,7 @@
 # SunTrail — Guide IA (v5.61.3)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-09 — v5.62.3 : Pastille REC déplacée à gauche. 1087 tests.
+> Mis à jour le 2026-06-09 — v5.62.3 : Pastille REC déplacée à gauche. 1091 tests.
 
 ## Projet
 
@@ -58,6 +58,31 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **Offline** : 1 zone gratuite. Illimité = PRO.
 - **LOD** : Plafond LOD 14 pour les gratuits (PRO → LOD 18).
 - **REC GPS** : Toujours gratuit (Sécurité).
+
+### Packs Pays (Country Packs — v5.62.3)
+
+**Architecture** : Archives PMTiles régionales achetables (pays ou zones de rando).
+- **2 packs** : `switzerland` (CH, 716 MB) et `france_alps` (Alpes FR, 515 MB).
+- **Format** : `PackMeta { id, productId, name, bounds, lodRange, version, sizeMB, cdnUrl, regionCheck }` — voir `packTypes.ts`.
+
+**Ajouter un nouveau pack** (pays ou région) :
+1. Générer l'archive PMTiles via `scripts/build-country-pack.ts`
+2. Uploader sur Cloudflare R2 via `scripts/upload-to-r2.ts`
+3. Ajouter l'entrée dans l'`EMBEDDED_CATALOG` de `packManager.ts` avec :
+   - `regionCheck` : code ISO 2 lettres (ex: `'IT'`) pour raffiner par polygone, ou absent pour région (bbox seule)
+   - `bounds` : bbox de couverture
+4. Déployer le nouveau `catalog.json` sur CDN (url : `.env VITE_PACKS_CATALOG_URL`)
+5. Ajouter les clés i18n dans `fr.json`/`en.json`/`de.json`/`it.json` → `packs.*`
+
+**Détection automatique du pack courant** (`packManager.findPackContaining(lat, lon)`) :
+- Vérifie la bbox de chaque pack, puis raffine par polygone si `regionCheck` est un code ISO à 2 lettres
+- Utilisée par : badge LOD (clic → PacksSheet si pack trouvé, sinon LayersSheet) et badge `Système & Données`
+
+**Badge LOD** (`#top-pill-lod`) : clic adaptatif
+- Pack disponible sur la zone → ouvre `PacksSheet` avec le pack surligné
+- Aucun pack → ouvre `layers-sheet` (Fonds de carte)
+
+**EventBus** : `packHighlight: { packId }` pour scroll/surligner un pack dans PacksSheet.
 
 ### Calculs & Précision
 - **Distance** : Haversine.

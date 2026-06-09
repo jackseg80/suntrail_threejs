@@ -48,6 +48,11 @@ vi.mock('./iapService', () => ({
 }));
 
 describe('PackManager Integration', () => {
+    it('findPackContaining returns null when catalog is empty', () => {
+        const pack = packManager.findPackContaining(46.8, 8.2);
+        expect(pack).toBeNull();
+    });
+
     beforeEach(() => {
         localStorage.clear();
         vi.clearAllMocks();
@@ -72,6 +77,11 @@ describe('PackManager Integration', () => {
         (navigator as any).storage.getDirectory = vi
             .fn()
             .mockResolvedValue(mockRoot);
+    });
+
+    it('findPackContaining returns null when catalog is empty', () => {
+        const pack = packManager.findPackContaining(46.8, 8.2);
+        expect(pack).toBeNull();
     });
 
     it('should initialize and load persisted states from localStorage', async () => {

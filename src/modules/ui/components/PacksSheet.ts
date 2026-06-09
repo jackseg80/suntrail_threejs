@@ -11,6 +11,8 @@ import type { PackMeta, PackStatus } from '../../packTypes';
 import templateHTML from '../templates/packs.html?raw';
 
 export class PacksSheet extends BaseComponent {
+    private highlightPackId: string | null = null;
+
     constructor() {
         super('template-packs', 'sheet-container', templateHTML);
     }
@@ -44,6 +46,27 @@ export class PacksSheet extends BaseComponent {
         eventBus.on('packStatusChanged', onStatusChanged);
         this.subscriptions.push(() =>
             eventBus.off('packStatusChanged', onStatusChanged)
+        );
+
+        // Store packId to highlight when event is received before opening
+        const onPackHighlight = ({ packId }: { packId: string }) => {
+            this.highlightPackId = packId;
+        };
+        eventBus.on('packHighlight', onPackHighlight);
+        this.subscriptions.push(() =>
+            eventBus.off('packHighlight', onPackHighlight)
+        );
+
+        // Scroll to highlighted pack when this sheet opens
+        const onSheetOpened = ({ id }: { id: string }) => {
+            if (id === 'packs' && this.highlightPackId) {
+                this.scrollToPack(this.highlightPackId);
+                this.highlightPackId = null;
+            }
+        };
+        eventBus.on('sheetOpened', onSheetOpened);
+        this.subscriptions.push(() =>
+            eventBus.off('sheetOpened', onSheetOpened)
         );
 
         // Initial render — retenter le fetch catalog si pas encore chargé
@@ -240,6 +263,32 @@ export class PacksSheet extends BaseComponent {
             'text-align:center; padding:var(--space-4); color:var(--text-3); font-size:var(--text-sm);';
         fallback.textContent = i18n.t('packs.error.catalogFailed');
         container.appendChild(fallback);
+    }
+
+    // ── Highlight ─────────────────────────────────────────────────────────────
+
+    /**
+     * Scrolls to a specific pack card and adds a temporary highlight animation.
+     * Sets the container scroll position to bring the card into view, then
+     * applies a glowing border for 2 seconds.
+     */
+    private scrollToPack(packId: string): void {
+        const container = this.element?.querySelector('#packs-list');
+        if (!container) return;
+
+        const cards = container.querySelectorAll('.pack-card');
+        const index = packManager.getAvailablePacks().findIndex(
+            (p) => p.id === packId
+        );
+        if (index < 0 || index >= cards.length) return;
+
+        const card = cards[index] as HTMLElement;
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.style.transition = 'box-shadow 0.3s';
+        card.style.boxShadow = '0 0 12px 2px var(--accent, #3b7ef8)';
+        setTimeout(() => {
+            card.style.boxShadow = '';
+        }, 2000);
     }
 
     // ── Actions ──────────────────────────────────────────────────────────────

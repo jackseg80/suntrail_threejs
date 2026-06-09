@@ -254,6 +254,39 @@ class PackManager {
         return this.packStates.get(packId) ?? null;
     }
 
+    /**
+     * Trouve le premier pack du catalogue couvrant la position (lat, lon).
+     * Vérifie d'abord la bbox, puis raffine avec le polygone pays si regionCheck
+     * est un code ISO valide (2 lettres). Compatible packs pays ET régions.
+     * @returns PackMeta | null si aucun pack ne couvre cette position.
+     */
+    findPackContaining(lat: number, lon: number): PackMeta | null {
+        const packs = this.getAvailablePacks();
+        for (const pack of packs) {
+            if (
+                lat < pack.bounds.minLat ||
+                lat > pack.bounds.maxLat ||
+                lon < pack.bounds.minLon ||
+                lon > pack.bounds.maxLon
+            )
+                continue;
+            // regionCheck en code ISO (ex: 'CH') → raffine avec le polygone
+            if (
+                pack.regionCheck &&
+                pack.regionCheck.length === 2 &&
+                isPointInCountry(lat, lon, pack.regionCheck)
+            )
+                return pack;
+            // Pas de code ISO reconnu : les bounds suffisent (régions, packs CDN avec packId)
+            if (
+                !pack.regionCheck ||
+                pack.regionCheck.length !== 2
+            )
+                return pack;
+        }
+        return null;
+    }
+
     // ── Download & Install ───────────────────────────────────────────────────
 
     async downloadPack(

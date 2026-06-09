@@ -3,6 +3,7 @@ import { state } from '../../state';
 import { i18n } from '../../../i18n/I18nService';
 import { eventBus } from '../../eventBus';
 import { sheetManager } from '../core/SheetManager';
+import { packManager } from '../../packManager';
 import { getWeatherIcon } from '../../weather';
 import { getCountryCode } from '../../geo';
 import { createTooltip, type TooltipHandle } from '../tooltip';
@@ -54,6 +55,20 @@ export class TopStatusBar extends BaseComponent {
         lodContent.innerHTML = i18n.t('topbar.tooltipLOD');
         this.lodTooltip = createTooltip(lodInfoIcon, lodContent, {
             trigger: 'click',
+        });
+
+        // LOD badge click → adaptive: packs if pack covers current zone, else layers
+        const lodPill = this.element.querySelector('#top-pill-lod');
+        lodPill?.addEventListener('click', () => {
+            const lat = state.TARGET_LAT;
+            const lon = state.TARGET_LON;
+            const pack = packManager.findPackContaining(lat, lon);
+            if (pack) {
+                eventBus.emit('packHighlight', { packId: pack.id });
+                sheetManager.open('packs');
+            } else {
+                sheetManager.toggle('layers-sheet');
+            }
         });
 
         // ARIA: icon buttons need aria-label

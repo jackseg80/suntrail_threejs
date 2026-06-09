@@ -384,6 +384,7 @@
         },
         "section": {
             "signal": "Signalstatus",
+            "embeddedData": "Eingebettete Daten",
             "cache": "Cache-Verwaltung",
             "external": "Externe Dienste",
             "network": "Netzwerk",
@@ -392,11 +393,12 @@
         },
         "label": {
             "offlineMode": "Offline-Modus",
-            "offlineHint": "Nur Cache verwenden",
+            "offlineHint": "Nur Cache-Nutzung erzwingen",
             "gpsAccuracy": "GPS-Signal",
             "network": "Netzwerk",
             "pmtiles": "Lokaler Speicher (.pmtiles)",
-            "zonesUsed": "Zone verwendet",
+            "packAvailable": "Pack verfügbar",
+            "zonesUsed": "Zone genutzt",
             "tiles": "Kacheln"
         },
         "btn": {

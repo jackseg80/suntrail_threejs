@@ -384,6 +384,7 @@
         },
         "section": {
             "signal": "Signal Status",
+            "embeddedData": "Embedded Data",
             "cache": "Cache Management",
             "external": "External Services",
             "network": "Network",
@@ -396,6 +397,7 @@
             "gpsAccuracy": "GPS Signal",
             "network": "Network",
             "pmtiles": "Local storage (.pmtiles)",
+            "packAvailable": "Pack available",
             "zonesUsed": "zone used",
             "tiles": "tiles"
         },

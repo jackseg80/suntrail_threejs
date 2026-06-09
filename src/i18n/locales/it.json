@@ -381,6 +381,7 @@
         },
         "section": {
             "signal": "Stato segnale",
+            "embeddedData": "Dati incorporati",
             "cache": "Gestione cache",
             "external": "Servizi esterni",
             "network": "Rete",
@@ -389,10 +390,11 @@
         },
         "label": {
             "offlineMode": "Modalità offline",
-            "offlineHint": "Forza uso solo cache",
+            "offlineHint": "Forza l'uso della cache",
             "gpsAccuracy": "Segnale GPS",
             "network": "Rete",
-            "pmtiles": "Archiviazione locale (.pmtiles)",
+            "pmtiles": "Archivio locale (.pmtiles)",
+            "packAvailable": "Pacchetto disponibile",
             "zonesUsed": "zona utilizzata",
             "tiles": "tessere"
         },

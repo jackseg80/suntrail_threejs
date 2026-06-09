@@ -10,6 +10,7 @@ import { sheetManager } from '../core/SheetManager';
 import { resetTerrain, updateVisibleTiles } from '../../terrain';
 import { i18n } from '../../../i18n/I18nService';
 import { setManualOffline } from '../../networkMonitor';
+import { packManager } from '../../packManager';
 import templateHTML from '../templates/connectivity.html?raw';
 import { ZoneOverlay } from '../../ZoneOverlay';
 import { ZoneSelectToolbar } from './ZoneSelectToolbar';
@@ -150,16 +151,64 @@ export class ConnectivitySheet extends BaseComponent {
         // Initial update
         this.updateNetworkStatus();
         this.updateGPSInfo();
+        this.updatePackStatusBadge();
 
-        // Cached zones list
+        // Cached zones list + pack status badge refresh
         this.renderCachedZones();
         const onSheetOpened = ({ id }: { id: string }) => {
             if (id === 'connectivity') {
                 this.renderCachedZones();
+                this.updatePackStatusBadge();
             }
         };
         eventBus.on('sheetOpened', onSheetOpened);
         this.addSubscription(() => eventBus.off('sheetOpened', onSheetOpened));
+
+        // Pack status badge updates when position changes
+        this.addSubscription(
+            state.subscribe('TARGET_LAT', () => this.updatePackStatusBadge())
+        );
+        this.addSubscription(
+            state.subscribe('TARGET_LON', () => this.updatePackStatusBadge())
+        );
+    }
+
+    private updatePackStatusBadge(): void {
+        const el = this.element?.querySelector('#conn-pack-status') as HTMLElement | null;
+        if (!el) return;
+
+        const pack = packManager.findPackContaining(
+            state.TARGET_LAT,
+            state.TARGET_LON
+        );
+        if (!pack) {
+            el.style.display = 'none';
+            return;
+        }
+
+        const ps = packManager.getPackState(pack.id);
+        const lang = state.lang || 'fr';
+        const name = pack.name[lang] || pack.name['fr'] || pack.id;
+
+        let statusText = '';
+        let statusColor = 'var(--text-2)';
+        if (ps?.status === 'installed') {
+            statusText = `\u2713 ${name} \u00b7 ${i18n.t('packs.status.installed')}`;
+            statusColor = '#22c55e';
+        } else if (ps?.status === 'update_available') {
+            statusText = `${name} \u00b7 ${i18n.t('packs.status.updateAvailable')}`;
+            statusColor = '#f97316';
+        } else if (ps?.status === 'purchased') {
+            statusText = `${name} \u00b7 ${i18n.t('packs.status.online')}`;
+            statusColor = '#f59e0b';
+        } else {
+            statusText = `\u{1F4E6} ${name} \u00b7 ${i18n.t('connectivity.label.packAvailable')}`;
+            statusColor = 'var(--accent, #3b7ef8)';
+        }
+
+        el.style.display = 'block';
+        el.innerHTML = statusText;
+        el.style.color = statusColor;
     }
 
     private renderCachedZones(): void {

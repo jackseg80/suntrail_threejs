@@ -12,6 +12,7 @@ vi.mock('../../eventBus', () => ({
     eventBus: {
         on: vi.fn(),
         off: vi.fn(),
+        emit: vi.fn(),
     },
 }));
 
@@ -22,6 +23,13 @@ vi.mock('../../haptics', () => ({
 vi.mock('../core/SheetManager', () => ({
     sheetManager: {
         toggle: vi.fn(),
+        open: vi.fn(),
+    },
+}));
+
+vi.mock('../../packManager', () => ({
+    packManager: {
+        findPackContaining: vi.fn(),
     },
 }));
 
@@ -30,6 +38,9 @@ vi.mock('../tooltip', () => ({
 }));
 
 import { state } from '../../state';
+import { packManager } from '../../packManager';
+import { sheetManager } from '../core/SheetManager';
+import { eventBus } from '../../eventBus';
 import { TopStatusBar } from './TopStatusBar';
 
 describe('TopStatusBar — LOD label (country mapping)', () => {
@@ -52,7 +63,7 @@ describe('TopStatusBar — LOD label (country mapping)', () => {
                         </div>
                     </div>
                     <div class="top-center-widgets">
-                        <div class="top-widget" id="top-pill-lod" aria-live="polite" aria-label="Carte et zoom">
+                        <div class="top-widget" id="top-pill-lod" role="button" tabindex="0" aria-live="polite" aria-label="Carte et zoom">
                             <span class="lod-badge">SWISS · LVL --</span>
                         </div>
                     </div>
@@ -178,7 +189,7 @@ describe('TopStatusBar — REC indicator (v5.57.2)', () => {
                         </div>
                     </div>
                     <div class="top-center-widgets">
-                        <div class="top-widget" id="top-pill-lod" aria-live="polite" aria-label="Carte et zoom">
+                        <div class="top-widget" id="top-pill-lod" role="button" tabindex="0" aria-live="polite" aria-label="Carte et zoom">
                             <span class="lod-badge">SWISS · LVL --</span>
                         </div>
                     </div>
@@ -235,5 +246,93 @@ describe('TopStatusBar — REC indicator (v5.57.2)', () => {
 
         topBar?.classList.toggle('collapsed');
         expect(topBar?.classList.contains('collapsed')).toBe(false);
+    });
+});
+
+describe('TopStatusBar — LOD badge click handler', () => {
+    const mockPack = {
+        id: 'switzerland',
+        productId: 'suntrail_pack_switzerland',
+        name: { fr: 'Suisse HD', en: 'Switzerland HD' },
+        bounds: { minLat: 45.8, maxLat: 47.8, minLon: 5.9, maxLon: 10.5 },
+        lodRange: { min: 8, max: 14 },
+        version: 2,
+        sizeMB: 716,
+        cdnUrl: 'https://example.com/pack.pmtiles',
+        regionCheck: 'CH',
+    };
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+
+        document.body.innerHTML = `
+            <template id="template-top-status-bar">
+                <div class="top-status-bar-content">
+                    <div class="top-left-widgets">
+                        <div class="top-widget" id="top-pill-weather" role="button" tabindex="0">
+                            <span class="weather-icon">☀️</span>
+                            <span class="weather-temp">--°C</span>
+                        </div>
+                        <div class="status-widget rec-indicator" style="display:none">
+                            <span class="rec-dot-css"></span>
+                            <span class="rec-timer">REC</span>
+                        </div>
+                    </div>
+                    <div class="top-center-widgets">
+                        <div class="top-widget" id="top-pill-lod" role="button" tabindex="0" aria-live="polite">
+                            <span class="lod-badge">SWISS · LVL --</span>
+                        </div>
+                    </div>
+                    <div class="top-right-widgets">
+                        <div class="icon-btn-sm" id="net-status-icon"></div>
+                        <div class="icon-btn-sm danger" id="sos-main-btn"></div>
+                        <div class="status-widget" id="timeline-toggle-btn"></div>
+                    </div>
+                </div>
+            </template>
+            <div id="top-status-bar"></div>
+        `;
+
+        state.MAP_SOURCE = 'swisstopo';
+        state.ZOOM = 14;
+        state.TARGET_LAT = 46.8;
+        state.TARGET_LON = 8.2;
+    });
+
+    function render() {
+        const bar = new TopStatusBar();
+        bar.hydrate();
+        bar.render();
+        return bar;
+    }
+
+    it('opens PacksSheet with highlight when a pack covers the current position', () => {
+        (packManager.findPackContaining as ReturnType<typeof vi.fn>).mockReturnValue(
+            mockPack
+        );
+        render();
+
+        const lodPill = document.querySelector('#top-pill-lod') as HTMLElement;
+        lodPill.click();
+
+        expect(eventBus.emit).toHaveBeenCalledWith('packHighlight', {
+            packId: 'switzerland',
+        });
+        expect(sheetManager.open).toHaveBeenCalledWith('packs');
+        expect(sheetManager.toggle).not.toHaveBeenCalled();
+    });
+
+    it('opens LayersSheet when no pack covers the current position', () => {
+        (packManager.findPackContaining as ReturnType<typeof vi.fn>).mockReturnValue(
+            null
+        );
+        render();
+
+        const lodPill = document.querySelector('#top-pill-lod') as HTMLElement;
+        lodPill.click();
+
+        expect(eventBus.emit).not.toHaveBeenCalled();
+        expect(sheetManager.open).not.toHaveBeenCalled();
+        expect(sheetManager.toggle).toHaveBeenCalledWith('layers-sheet');
     });
 });

@@ -35,6 +35,7 @@ The `eventBus` is the central hub for module-to-module communication.
 | `packMounted` | `packManager` | `{ packId: string }` | A country pack (Mapbox/PMTiles) is active. |
 | `packUnmounted` | `packManager` | `{ packId: string }` | A country pack is deactivated. |
 | `packStatusChanged` | `packManager` | `{ packId, status }` | Tracks download/mounting progress. |
+| `packHighlight` | `TopStatusBar` | `{ packId: string }` | Scrolls to & highlights a specific pack in PacksSheet (LOD badge click → pack). |
 | `terrainReady` | `scene` | none | First batch of tiles is loaded and rendered. |
 | `recordingRecovered` | `main` | none | GPS recording resumed after app restart. |
 | `onServiceStopped` | `nativeGPSService` | none | Android Foreground Service stopped via notification. |
