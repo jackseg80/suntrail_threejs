@@ -282,7 +282,6 @@ html {
 .top-left-widgets {
     display: flex;
     gap: 8px;
-    flex-wrap: wrap;
 }
 
 .top-center-widgets {
@@ -410,9 +409,11 @@ body.preset-eco .top-collapse-toggle {
     color: var(--danger);
 }
 
-/* REC INDICATOR PULSE */
 .rec-indicator {
-    flex: 0 0 100%;
+    position: absolute;
+    top: 52px;
+    left: var(--space-4);
+    z-index: 2001;
     border-color: var(--danger);
     color: var(--danger);
 }
