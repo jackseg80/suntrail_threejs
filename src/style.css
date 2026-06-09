@@ -411,10 +411,6 @@ body.preset-eco .top-collapse-toggle {
 
 /* REC INDICATOR PULSE */
 .rec-indicator {
-    position: absolute;
-    top: 52px;
-    right: var(--space-4);
-    z-index: 2001;
     border-color: var(--danger);
     color: var(--danger);
 }
