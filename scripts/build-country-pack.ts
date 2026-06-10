@@ -193,9 +193,9 @@ async function main() {
             const buf = fs.readFileSync(srcPath);
             let final = buf;
             if (ref.type === 'color') {
-                final = await sharp(buf).webp({ quality: 65 }).toBuffer();
+                final = await sharp(buf).webp({ quality: 60 }).toBuffer();
             } else if (ref.type === 'elevation') {
-                final = await sharp(buf).webp({ quality: 90 }).toBuffer();
+                final = await sharp(buf).webp({ quality: 40 }).toBuffer();
             } else {
                 final = await sharp(buf).png({ palette: true, colors: 64 }).toBuffer();
             }
