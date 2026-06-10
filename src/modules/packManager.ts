@@ -34,7 +34,7 @@ const PACKS_DIR = 'packs';
 // Catalog embarqué — fallback si réseau absent ET localStorage vide.
 // À mettre à jour manuellement à chaque nouveau pack publié.
 const EMBEDDED_CATALOG: PackCatalog = {
-    version: 2,
+    version: 3,
     packs: [
         {
             id: 'switzerland',
@@ -47,9 +47,9 @@ const EMBEDDED_CATALOG: PackCatalog = {
             },
             bounds: { minLat: 45.8, maxLat: 47.8, minLon: 5.9, maxLon: 10.5 },
             lodRange: { min: 8, max: 14 },
-            version: 2,
-            sizeMB: 716,
-            cdnUrl: `${CDN_BASE_URL}/packs/suntrail-pack-switzerland-v2.pmtiles`,
+            version: 3,
+            sizeMB: 664,
+            cdnUrl: `${CDN_BASE_URL}/packs/suntrail-pack-switzerland-v3.pmtiles`,
             regionCheck: 'CH',
         },
         {
