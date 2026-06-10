@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.70.0)
+# SunTrail — Guide IA (v5.71.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-09 — v5.70.0 : Badge LOD cliquable + indicateur pack visuel. 1094 tests.
+> Mis à jour le 2026-06-09 — v5.71.0 : Badge LOD cliquable, pack Suisse v3 (664 Mo), build script v6. 1094 tests.
 
 ## Projet
 

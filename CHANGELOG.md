@@ -1,3 +1,15 @@
+## [5.71.0] - 2026-06-09
+
+### Changed
+- **Build script v6** : cache source `.raw` (re-encodage sans re-download), elevation lossy WebP Q40.
+- **Pack Suisse v3** : 664 Mo (down from 716 Mo v2), uploadé sur R2.
+- **Catalog.json** : version 3 déployée sur CDN, embedded catalog synchronisé.
+- **TileLoader mock** : fix type `Request[]` pour passer `tsc --noEmit`.
+
+### Fixed
+- **Build polygon filter** : Natural Earth seul (conservateur), plus de duplication OSM+NE.
+- **ESLint** : `no-useless-assignment` dans ConnectivitySheet, `prefer-const` dans tileLoader.
+
 ## [5.70.0] - 2026-06-09
 
 ### Added
