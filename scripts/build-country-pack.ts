@@ -161,47 +161,53 @@ async function main() {
 
     console.log(`Tuiles a traiter (apres filtrage) : ${refs.length}`);
 
-    let done = 0;
+    // Cache source : téléchargements bruts (peuvent être ré-encodés sans re-download)
+    // Extension .raw quel que soit le format — sharp détecte automatiquement
+    let dlDone = 0;
     for (const ref of refs) {
-        const ext = ref.type === 'overlay' ? 'png' : 'webp';
-        const cachePath = path.join(cacheDir, `${ref.type}_${ref.z}_${ref.x}_${ref.y}.${ext}`);
+        const srcPath = path.join(cacheDir, `${ref.type}_${ref.z}_${ref.x}_${ref.y}.raw`);
 
-        if (!fs.existsSync(cachePath)) {
+        if (!fs.existsSync(srcPath)) {
             try {
                 const url = getTileUrl(ref.z, ref.x, ref.y, ref.type, pack.source, maptilerKey);
                 const resp = await fetch(url);
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const buf = Buffer.from(await resp.arrayBuffer());
-
-                let final = buf;
-                if (ref.type === 'color') {
-                    final = await sharp(buf).webp({ quality: 65 }).toBuffer();
-                } else if (ref.type === 'elevation') {
-                    final = await sharp(buf).webp({ quality: 90 }).toBuffer();
-                } else {
-                    final = await sharp(buf).png({ palette: true, colors: 64 }).toBuffer();
-                }
-                fs.writeFileSync(cachePath, final);
+                fs.writeFileSync(srcPath, buf);
             } catch (e) {}
             await new Promise(r => setTimeout(r, RATE_LIMIT_MS));
         }
-        done++;
-        if (done % 500 === 0 || done === refs.length) {
-            process.stdout.write(`  Progress: ${done}/${refs.length}\r`);
+        dlDone++;
+        if (dlDone % 500 === 0 || dlDone === refs.length) {
+            process.stdout.write(`  Telechargement: ${dlDone}/${refs.length}\r`);
         }
     }
 
-    // Fusion dans un seul PMTiles
-    console.log(`\nFusion dans ${outputPath}...`);
+    // Fusion : re-encoder depuis les sources avec la compression courante
+    console.log(`\nCompression et fusion dans ${outputPath}...`);
     const tileBuffers: { tileId: number; data: Buffer }[] = [];
+    let encDone = 0;
     for (const ref of refs) {
-        const ext = ref.type === 'overlay' ? 'png' : 'webp';
-        const cachePath = path.join(cacheDir, `${ref.type}_${ref.z}_${ref.x}_${ref.y}.${ext}`);
-        if (fs.existsSync(cachePath)) {
+        const srcPath = path.join(cacheDir, `${ref.type}_${ref.z}_${ref.x}_${ref.y}.raw`);
+        if (fs.existsSync(srcPath)) {
+            const buf = fs.readFileSync(srcPath);
+            let final = buf;
+            if (ref.type === 'color') {
+                final = await sharp(buf).webp({ quality: 65 }).toBuffer();
+            } else if (ref.type === 'elevation') {
+                final = await sharp(buf).webp({ quality: 90 }).toBuffer();
+            } else {
+                final = await sharp(buf).png({ palette: true, colors: 64 }).toBuffer();
+            }
+
             let id = zxyToTileId(ref.z, ref.x, ref.y);
             if (ref.type === 'elevation') id += OFFSET_ELEV;
             else if (ref.type === 'overlay') id += OFFSET_OVERLAY;
-            tileBuffers.push({ tileId: id, data: fs.readFileSync(cachePath) });
+            tileBuffers.push({ tileId: id, data: final });
+        }
+        encDone++;
+        if (encDone % 500 === 0 || encDone === refs.length) {
+            process.stdout.write(`  Encodage: ${encDone}/${refs.length}\r`);
         }
     }
 
