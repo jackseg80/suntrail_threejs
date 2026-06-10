@@ -175,9 +175,9 @@ async function main() {
 
                 let final = buf;
                 if (ref.type === 'color') {
-                    final = await sharp(buf).webp({ quality: 70 }).toBuffer();
+                    final = await sharp(buf).webp({ quality: 65 }).toBuffer();
                 } else if (ref.type === 'elevation') {
-                    final = await sharp(buf).webp({ lossless: true }).toBuffer();
+                    final = await sharp(buf).webp({ quality: 90 }).toBuffer();
                 } else {
                     final = await sharp(buf).png({ palette: true, colors: 64 }).toBuffer();
                 }
