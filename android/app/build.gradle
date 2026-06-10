@@ -45,14 +45,6 @@ android {
     }
 }
 
-// v5.32.14 : Forcer la toolchain pour le CI (Ã©vite la recherche JetBrains jbr-21)
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-        vendor = JvmVendorSpec.ADOPTIUM
-    }
-}
-
 repositories {
     flatDir{
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
