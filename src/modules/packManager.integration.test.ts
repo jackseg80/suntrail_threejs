@@ -107,6 +107,19 @@ describe('PackManager Integration', () => {
         await packManager.initialize();
 
         expect(state.installedPacks).toContain('switzerland');
+
+        // CH
+        const pack = packManager.findPackContaining(46.8, 8.2);
+        expect(pack).not.toBeNull();
+        expect(pack!.id).toBe('switzerland');
+
+        // AT
+        const austria = packManager.findPackContaining(48.2, 16.3);
+        expect(austria).not.toBeNull();
+        expect(austria!.id).toBe('austria');
+
+        // Hors packs → null
+        expect(packManager.findPackContaining(48.13, 11.58)).toBeNull(); // Munich
     });
 
     it('should serve a tile from a mounted pack', async () => {

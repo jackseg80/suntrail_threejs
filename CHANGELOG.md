@@ -1,3 +1,13 @@
+## [5.72.0] - 2026-06-09
+
+### Added
+- **Pack Autriche v1** (980 Mo) : basemap.at, uploadé sur R2, catalog v4, locales.
+- **Timeout 30s** sur `tile.load()` : empêche le blocage infini si une tuile ne répond pas.
+
+### Fixed
+- **Drapeau pack** : PacksSheet affiche maintenant le bon drapeau via `countryCodeToFlag()`.
+- **Filtrage Autriche** : Natural Earth AT supporté, build script source `basemap_at` ajouté.
+
 ## [5.71.0] - 2026-06-09
 
 ### Changed

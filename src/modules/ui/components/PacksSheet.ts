@@ -8,6 +8,26 @@ import { haptic } from '../../haptics';
 import { eventBus } from '../../eventBus';
 import { i18n } from '../../../i18n/I18nService';
 import type { PackMeta, PackStatus } from '../../packTypes';
+
+/** Convertit un code ISO 3166-1 alpha-2 en drapeau emoji. Ex: 'CH' → 🇨🇭 */
+function countryCodeToFlag(code: string | undefined): string | null {
+    if (!code || code.length !== 2) return null;
+    const a = code.charCodeAt(0);
+    const b = code.charCodeAt(1);
+    if (a < 65 || a > 90 || b < 65 || b > 90) return null;
+    return String.fromCodePoint(a - 65 + 0x1f1e6, b - 65 + 0x1f1e6);
+}
+
+/** Fallback pour les packs dont regionCheck est un packId (ex: CDN v2). */
+const PACK_ID_TO_FLAG: Record<string, string> = {
+    switzerland: '\u{1f1e8}\u{1f1ed}',
+    france_alps: '\u{1f1eb}\u{1f1f7}',
+    austria: '\u{1f1e6}\u{1f1f9}',
+};
+
+function packIdToFlag(id: string): string {
+    return PACK_ID_TO_FLAG[id] ?? '\u{1F4CD}';
+}
 import templateHTML from '../templates/packs.html?raw';
 
 export class PacksSheet extends BaseComponent {
@@ -113,8 +133,8 @@ export class PacksSheet extends BaseComponent {
             'padding:var(--space-3); margin-bottom:var(--space-3); background:var(--glass-bg); border-radius:var(--radius-lg); border:1px solid var(--glass-border);';
 
         // Header: flag + name + size
-        const isSwiss = meta.regionCheck === 'CH' || meta.id === 'switzerland';
-        const flag = isSwiss ? '\u{1f1e8}\u{1f1ed}' : '\u{1f1eb}\u{1f1f7}';
+        const flag =
+            countryCodeToFlag(meta.regionCheck) || packIdToFlag(meta.id);
         const name = meta.name[lang] || meta.name['fr'] || meta.id;
 
         const header = document.createElement('div');
