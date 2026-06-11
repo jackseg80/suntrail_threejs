@@ -113,10 +113,8 @@ export class PacksSheet extends BaseComponent {
             'padding:var(--space-3); margin-bottom:var(--space-3); background:var(--glass-bg); border-radius:var(--radius-lg); border:1px solid var(--glass-border);';
 
         // Header: flag + name + size
-        const flag =
-            meta.regionCheck === 'switzerland'
-                ? '\u{1f1e8}\u{1f1ed}'
-                : '\u{1f1eb}\u{1f1f7}';
+        const isSwiss = meta.regionCheck === 'CH' || meta.id === 'switzerland';
+        const flag = isSwiss ? '\u{1f1e8}\u{1f1ed}' : '\u{1f1eb}\u{1f1f7}';
         const name = meta.name[lang] || meta.name['fr'] || meta.id;
 
         const header = document.createElement('div');

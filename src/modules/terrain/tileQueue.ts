@@ -148,10 +148,17 @@ export async function processLoadQueue() {
             if (tile.status === 'idle' && activeTiles.has(tile.key)) {
                 loadingCount++;
                 state.isProcessingTiles = true;
+                const TIMEOUT_MS = 30000;
+                const timer = setTimeout(() => {
+                    if (loadingCount > 0) loadingCount--;
+                    tile.status = 'failed';
+                    if (!isProcessingQueue && loadQueue.size > 0)
+                        processLoadQueue();
+                }, TIMEOUT_MS);
                 tile.load()
                     .finally(() => {
+                        clearTimeout(timer);
                         loadingCount--;
-                        // Si on vient de finir une tuile, on relance immédiatement la queue pour boucher le trou
                         if (!isProcessingQueue && loadQueue.size > 0)
                             processLoadQueue();
                     })

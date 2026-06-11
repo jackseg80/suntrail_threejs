@@ -826,7 +826,8 @@
         },
         "description": {
             "switzerland": "SwissTopo hochauflösende Karten",
-            "france_alps": "IGN hochauflösende Karten"
+            "france_alps": "IGN hochauflösende Karten",
+            "austria": "basemap.at hochauflösende Karten"
         },
         "aria": {
             "close": "Pakete schliessen"

@@ -68,6 +68,22 @@ const EMBEDDED_CATALOG: PackCatalog = {
             cdnUrl: `${CDN_BASE_URL}/packs/suntrail-pack-france_alps-v2.pmtiles`,
             regionCheck: 'FR',
         },
+        {
+            id: 'austria',
+            productId: 'suntrail_pack_austria',
+            name: {
+                fr: 'Autriche HD',
+                de: 'Österreich HD',
+                it: 'Austria HD',
+                en: 'Austria HD',
+            },
+            bounds: { minLat: 46.3, maxLat: 49.1, minLon: 9.4, maxLon: 17.3 },
+            lodRange: { min: 8, max: 14 },
+            version: 1,
+            sizeMB: 700,
+            cdnUrl: `${CDN_BASE_URL}/packs/suntrail-pack-austria-v1.pmtiles`,
+            regionCheck: 'AT',
+        },
     ],
 };
 

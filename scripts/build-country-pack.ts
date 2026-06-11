@@ -37,7 +37,7 @@ interface PackDef {
     name: string;
     bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number };
     zooms: number[];
-    source: 'swisstopo' | 'ign';
+    source: 'swisstopo' | 'ign' | 'basemap_at';
     version: number;
     countryCode?: string; // ISO 3166-1 alpha-2. Absent → région (bbox seule)
 }
@@ -60,6 +60,15 @@ const PACKS: Record<string, PackDef> = {
         source: 'ign',
         version: 3,
         countryCode: 'FR',
+    },
+    austria: {
+        id: 'austria',
+        name: 'Austria HD',
+        bounds: { minLat: 46.3, maxLat: 49.1, minLon: 9.4, maxLon: 17.3 },
+        zooms: [8, 9, 10, 11, 12, 13, 14],
+        source: 'basemap_at',
+        version: 1,
+        countryCode: 'AT',
     },
 };
 
@@ -101,6 +110,7 @@ function isTileInCountryPolygon(tx: number, ty: number, zoom: number, code: stri
 function getTileUrl(z: number, x: number, y: number, type: TileType, source: PackDef['source'], maptilerKey?: string): string {
     if (type === 'color') {
         if (source === 'swisstopo') return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${z}/${x}/${y}.jpeg`;
+        if (source === 'basemap_at') return `https://mapsneu.wien.gv.at/basemap/geolandbasemap/normal/google3857/${z}/${y}/${x}.png`;
         return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
     }
     if (type === 'elevation') return `https://api.maptiler.com/tiles/terrain-rgb-v2/${z}/${x}/${y}.png?key=${maptilerKey}`;

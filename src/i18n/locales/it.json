@@ -848,7 +848,8 @@
         },
         "description": {
             "switzerland": "Mappe SwissTopo ad alta risoluzione",
-            "france_alps": "Mappe IGN ad alta risoluzione"
+            "france_alps": "Mappe IGN ad alta risoluzione",
+            "austria": "Mappe basemap.at ad alta risoluzione"
         },
         "aria": {
             "close": "Chiudi pacchetti"

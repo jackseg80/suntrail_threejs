@@ -859,7 +859,8 @@
         },
         "description": {
             "switzerland": "Cartes SwissTopo haute résolution",
-            "france_alps": "Cartes IGN haute résolution"
+            "france_alps": "Cartes IGN haute résolution",
+            "austria": "Cartes basemap.at haute résolution"
         },
         "aria": {
             "close": "Fermer les packs"

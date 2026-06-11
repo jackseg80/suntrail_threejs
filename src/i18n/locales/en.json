@@ -858,7 +858,8 @@
         },
         "description": {
             "switzerland": "SwissTopo high-resolution maps",
-            "france_alps": "IGN high-resolution maps"
+            "france_alps": "IGN high-resolution maps",
+            "austria": "basemap.at high-resolution maps"
         },
         "aria": {
             "close": "Close packs"
