@@ -80,7 +80,7 @@ const EMBEDDED_CATALOG: PackCatalog = {
             bounds: { minLat: 46.3, maxLat: 49.1, minLon: 9.4, maxLon: 17.3 },
             lodRange: { min: 8, max: 14 },
             version: 1,
-            sizeMB: 700,
+            sizeMB: 980,
             cdnUrl: `${CDN_BASE_URL}/packs/suntrail-pack-austria-v1.pmtiles`,
             regionCheck: 'AT',
         },
