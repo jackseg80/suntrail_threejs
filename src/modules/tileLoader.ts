@@ -642,9 +642,15 @@ export async function loadTileData(
             const hasPack = packManager.hasInstalledPackForCountry(
                 tileCountry ?? ''
             );
+            // v5.73.1 : Ne jamais utiliser la couleur du pack en dessous de LOD 11.
+            // getColorUrl() force OpenTopoMap global pour LOD ≤ 10 (ligne 398).
+            // Le pack suit la même règle : LOD 11 pour tous les pays.
+            // Si le pack n'a pas la tuile à ce zoom, getTileFromPacks retourne null → fallback normal.
+            const srcMinZoom = 11;
             const inPackZone =
                 tileCountry !== null &&
                 hasPack &&
+                zoom >= srcMinZoom &&
                 !antiOverflowIT &&
                 state.MAP_SOURCE !== 'opentopomap';
             if (!blobs.color && inPackZone) {

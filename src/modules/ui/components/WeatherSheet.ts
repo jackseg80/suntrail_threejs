@@ -6,6 +6,8 @@ import {
     getUVCategory,
     getComfortIndex,
     getFreezingAlert,
+    computeTemperatureChartData,
+    getComfortCategory,
 } from '../../weatherUtils';
 import { sheetManager } from '../core/SheetManager';
 import { i18n } from '../../../i18n/I18nService';
@@ -239,10 +241,11 @@ export class WeatherSheet extends BaseComponent {
         const W = 300;
         const H = 80;
         const hourly = wd.hourly ? wd.hourly.slice(0, 24) : [];
-        const temps = hourly.map((h) => h.temp);
-        const minT = Math.min(...temps);
-        const maxT = Math.max(...temps);
-        const rangeT = maxT - minT || 1;
+        const chartData = computeTemperatureChartData(
+            hourly.map((h) => ({ temp: h.temp, precip: h.precip })),
+            H
+        );
+        const { minT, maxT, hasFreezeLine, yFor, precipBars } = chartData;
 
         const svg = document.createElementNS(
             'http://www.w3.org/2000/svg',
@@ -265,27 +268,23 @@ export class WeatherSheet extends BaseComponent {
         svg.appendChild(bg);
 
         const xStep = W / Math.max(hourly.length - 1, 1);
-        const yFor = (t: number) => H - 8 - ((t - minT) / rangeT) * (H - 16);
 
         // Precipitation bars (blue rects)
-        hourly.forEach((h, i) => {
-            if ((h.precip ?? 0) > 10) {
-                const rect = document.createElementNS(
-                    'http://www.w3.org/2000/svg',
-                    'rect'
-                );
-                const bh = ((h.precip ?? 0) / 100) * (H - 16);
-                rect.setAttribute('x', String(i * xStep));
-                rect.setAttribute('y', String(H - 8 - bh));
-                rect.setAttribute('width', String(xStep));
-                rect.setAttribute('height', String(bh));
-                rect.setAttribute('fill', 'rgba(96,165,250,0.25)');
-                svg.appendChild(rect);
-            }
-        });
+        for (const bar of precipBars) {
+            const rect = document.createElementNS(
+                'http://www.w3.org/2000/svg',
+                'rect'
+            );
+            rect.setAttribute('x', String(bar.index * xStep));
+            rect.setAttribute('y', String(bar.y));
+            rect.setAttribute('width', String(xStep));
+            rect.setAttribute('height', String(bar.height));
+            rect.setAttribute('fill', 'rgba(96,165,250,0.25)');
+            svg.appendChild(rect);
+        }
 
         // Isotherme 0°C line
-        if (minT < 0 && maxT > 0) {
+        if (hasFreezeLine) {
             const y0 = yFor(0);
             const line = document.createElementNS(
                 'http://www.w3.org/2000/svg',
@@ -499,14 +498,8 @@ export class WeatherSheet extends BaseComponent {
             wd.cloudCover
         );
         const scoreRounded = Math.round(score * 10) / 10;
-        const comfortText =
-            score >= 8
-                ? '😊 Excellent'
-                : score >= 6
-                  ? '👍 Bon'
-                  : score >= 4
-                    ? '😐 Moyen'
-                    : '😟 Difficile';
+        const { emoji, label } = getComfortCategory(score);
+        const comfortText = `${emoji} ${label}`;
 
         const comfortDiv = document.createElement('div');
         comfortDiv.style.cssText =

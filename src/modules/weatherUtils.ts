@@ -117,3 +117,84 @@ export function fmtWindDir(deg: number): string {
     const idx = Math.round((((deg % 360) + 360) % 360) / 45) % 8;
     return dirs[idx];
 }
+
+export interface HourlyWeatherPoint {
+    temp: number;
+    precip?: number;
+}
+
+export interface TemperatureChartData {
+    minT: number;
+    maxT: number;
+    rangeT: number;
+    hasFreezeLine: boolean;
+    points: Array<{ temp: number; y: number }>;
+    precipBars: Array<{ index: number; y: number; height: number }>;
+    /**
+     * Mappe une température à une coordonnée Y dans le graphique.
+     * Nécessaire pour le rendu SVG (isotherme, polyligne).
+     */
+    yFor: (temp: number) => number;
+}
+
+/**
+ * Calcule les données pures pour le graphique de température SVG.
+ * Sépare le calcul mathématique de la construction DOM.
+ */
+export function computeTemperatureChartData(
+    hourly: HourlyWeatherPoint[],
+    chartHeight: number = 80
+): TemperatureChartData {
+    if (hourly.length === 0) {
+        return {
+            minT: 0,
+            maxT: 0,
+            rangeT: 1,
+            hasFreezeLine: false,
+            points: [],
+            precipBars: [],
+            yFor: () => chartHeight - 8,
+        };
+    }
+
+    const temps = hourly.map((h) => h.temp);
+    const minT = Math.min(...temps);
+    const maxT = Math.max(...temps);
+    const rangeT = maxT - minT || 1;
+
+    const yFor = (t: number): number =>
+        chartHeight - 8 - ((t - minT) / rangeT) * (chartHeight - 16);
+
+    const points = hourly.map((h) => ({ temp: h.temp, y: yFor(h.temp) }));
+
+    const precipBars = hourly
+        .map((h, i) => {
+            if ((h.precip ?? 0) <= 10) return null;
+            const bh = ((h.precip ?? 0) / 100) * (chartHeight - 16);
+            return { index: i, y: chartHeight - 8 - bh, height: bh };
+        })
+        .filter((b): b is NonNullable<typeof b> => b !== null);
+
+    return {
+        minT,
+        maxT,
+        rangeT,
+        hasFreezeLine: minT < 0 && maxT > 0,
+        points,
+        precipBars,
+        yFor,
+    };
+}
+
+/**
+ * Retourne la catégorie de confort textuelle à partir du score 0-10.
+ */
+export function getComfortCategory(score: number): {
+    emoji: string;
+    label: string;
+} {
+    if (score >= 8) return { emoji: '😊', label: 'Excellent' };
+    if (score >= 6) return { emoji: '👍', label: 'Bon' };
+    if (score >= 4) return { emoji: '😐', label: 'Moyen' };
+    return { emoji: '😟', label: 'Difficile' };
+}

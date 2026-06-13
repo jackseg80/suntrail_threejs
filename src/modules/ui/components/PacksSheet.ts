@@ -1,6 +1,7 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { state } from '../../state';
 import { packManager } from '../../packManager';
+import { getAvailablePacks, fetchCatalog } from '../../packCatalog';
 import { iapService } from '../../iapService';
 import { sheetManager } from '../core/SheetManager';
 import { showToast } from '../../toast';
@@ -97,8 +98,8 @@ export class PacksSheet extends BaseComponent {
         this.renderPackList();
         this.updateStorageInfo();
         // Si le catalog est vide, retenter le fetch
-        if (packManager.getAvailablePacks().length === 0) {
-            await packManager.fetchCatalog();
+        if (getAvailablePacks().length === 0) {
+            await fetchCatalog();
             this.renderPackList();
             this.updateStorageInfo();
         }
@@ -108,7 +109,7 @@ export class PacksSheet extends BaseComponent {
         const container = this.element?.querySelector('#packs-list');
         if (!container) return;
 
-        const packs = packManager.getAvailablePacks();
+        const packs = getAvailablePacks();
         container.innerHTML = '';
 
         if (packs.length === 0) {
@@ -295,9 +296,7 @@ export class PacksSheet extends BaseComponent {
         if (!container) return;
 
         const cards = container.querySelectorAll('.pack-card');
-        const index = packManager
-            .getAvailablePacks()
-            .findIndex((p) => p.id === packId);
+        const index = getAvailablePacks().findIndex((p) => p.id === packId);
         if (index < 0 || index >= cards.length) return;
 
         const card = cards[index] as HTMLElement;
@@ -361,7 +360,7 @@ export class PacksSheet extends BaseComponent {
         if (!valueEl) return;
 
         // Afficher la taille totale des packs réellement présents sur le disque
-        const packs = packManager.getAvailablePacks();
+        const packs = getAvailablePacks();
         let installedMB = 0;
         for (const meta of packs) {
             const ps = packManager.getPackState(meta.id);

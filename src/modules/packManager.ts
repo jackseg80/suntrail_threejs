@@ -2,11 +2,11 @@
  * packManager.ts — Country Packs Manager
  *
  * Gère le cycle de vie complet des packs pays :
- *   - Catalogue CDN (fetch + cache localStorage + fallback embarqué)
  *   - Téléchargement vers OPFS (Android + PWA) avec progression
  *   - Montage d'archives PMTiles via FileSource (offline) ou CDN (purchased)
  *   - Serving des tuiles LOD 12-14 sans réseau
  *
+ * Le catalogue est délégué à packCatalog.ts.
  * Les packs sont des achats non-consumable indépendants de l'abonnement Pro.
  * Tout acheteur d'un pack accède aux LOD 12-14 complets.
  */
@@ -18,88 +18,33 @@ import { state } from './state';
 import { eventBus } from './eventBus';
 import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
-import type { PackMeta, PackState, PackCatalog, PackStatus } from './packTypes';
+import type { PackMeta, PackState, PackStatus } from './packTypes';
 import { iapService } from './iapService';
 import { isPointInCountry } from './geo';
 import { STORAGE_KEYS } from '../constants/storage';
+import {
+    fetchCatalog,
+    getAvailablePacks,
+    getPackMeta,
+    findPackContaining as catalogFindPackContaining,
+    checkForUpdates,
+} from './packCatalog';
 
-const CDN_BASE_URL = 'https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev';
-const CATALOG_URL = import.meta.env.VITE_PACKS_CATALOG_URL as
-    | string
-    | undefined;
 const PACK_STATES_KEY = STORAGE_KEYS.PACK_STATES;
-const CATALOG_CACHE_KEY = STORAGE_KEYS.PACK_CATALOG;
 const PACKS_DIR = 'packs';
 
-// Catalog embarqué — fallback si réseau absent ET localStorage vide.
-// À mettre à jour manuellement à chaque nouveau pack publié.
-const EMBEDDED_CATALOG: PackCatalog = {
-    version: 3,
-    packs: [
-        {
-            id: 'switzerland',
-            productId: 'suntrail_pack_switzerland',
-            name: {
-                fr: 'Suisse HD',
-                de: 'Schweiz HD',
-                it: 'Svizzera HD',
-                en: 'Switzerland HD',
-            },
-            bounds: { minLat: 45.8, maxLat: 47.8, minLon: 5.9, maxLon: 10.5 },
-            lodRange: { min: 8, max: 14 },
-            version: 3,
-            sizeMB: 664,
-            cdnUrl: `${CDN_BASE_URL}/packs/suntrail-pack-switzerland-v3.pmtiles`,
-            regionCheck: 'CH',
-        },
-        {
-            id: 'france_alps',
-            productId: 'suntrail_pack_france_alps',
-            name: {
-                fr: 'France Alpes HD',
-                de: 'Französische Alpen HD',
-                it: 'Alpi Francesi HD',
-                en: 'French Alps HD',
-            },
-            bounds: { minLat: 43.5, maxLat: 46.5, minLon: 4.5, maxLon: 7.8 },
-            lodRange: { min: 8, max: 14 },
-            version: 2,
-            sizeMB: 515,
-            cdnUrl: `${CDN_BASE_URL}/packs/suntrail-pack-france_alps-v2.pmtiles`,
-            regionCheck: 'FR',
-        },
-        {
-            id: 'austria',
-            productId: 'suntrail_pack_austria',
-            name: {
-                fr: 'Autriche HD',
-                de: 'Österreich HD',
-                it: 'Austria HD',
-                en: 'Austria HD',
-            },
-            bounds: { minLat: 46.3, maxLat: 49.1, minLon: 9.4, maxLon: 17.3 },
-            lodRange: { min: 8, max: 14 },
-            version: 2,
-            sizeMB: 985,
-            cdnUrl: `${CDN_BASE_URL}/packs/suntrail-pack-austria-v1.pmtiles`,
-            regionCheck: 'AT',
-        },
-    ],
-};
-
 class PackManager {
-    private catalog: PackCatalog | null = null;
     private packStates: Map<string, PackState> = new Map();
     private mountedArchives: Map<string, pmtiles.PMTiles> = new Map();
     private downloadControllers: Map<string, AbortController> = new Map();
-    private catalogFetchPromise: Promise<PackCatalog> | null = null;
 
     // ── Lifecycle ────────────────────────────────────────────────────────────
 
     async initialize(): Promise<void> {
         this.loadPersistedStates();
-        // Charger le catalog AVANT de monter (getPackMeta() a besoin du catalog)
-        await this.fetchCatalog();
+        await fetchCatalog();
+        this.runCheckForUpdates();
+        await this.syncDiskStates();
 
         // v5.28.2 : Tenter de restaurer les états 'installed' depuis les fichiers OPFS
         // si le localStorage a été vidé (très utile après une mise à jour système ou app).
@@ -118,7 +63,7 @@ class PackManager {
                 console.log(
                     '[Packs] Dev mode détecté : déblocage de tous les packs.'
                 );
-            for (const meta of this.getAvailablePacks()) {
+            for (const meta of getAvailablePacks()) {
                 this.markPurchased(meta.id);
             }
         }
@@ -149,7 +94,7 @@ class PackManager {
                 return;
             } // Répertoire inexistant
 
-            for (const meta of this.getAvailablePacks()) {
+            for (const meta of getAvailablePacks()) {
                 const ps = this.getOrCreateState(meta.id);
 
                 // Si l'état dit pas installé, mais que le fichier est là : on resync
@@ -211,92 +156,14 @@ class PackManager {
         }
     }
 
-    // ── Catalog ──────────────────────────────────────────────────────────────
+    // ── Catalog ── (délégué à packCatalog.ts)
 
-    async fetchCatalog(): Promise<PackCatalog> {
-        // Déduplication : si un fetch est déjà en vol, on réutilise la même promesse
-        if (this.catalogFetchPromise) return this.catalogFetchPromise;
-        this.catalogFetchPromise = this._doFetchCatalog().finally(() => {
-            this.catalogFetchPromise = null; // autoriser un refresh ultérieur
-        });
-        return this.catalogFetchPromise;
-    }
-
-    private async _doFetchCatalog(): Promise<PackCatalog> {
-        if (CATALOG_URL) {
-            try {
-                const ctrl = new AbortController();
-                const tid = setTimeout(() => ctrl.abort(), 3000);
-                const resp = await fetch(CATALOG_URL, {
-                    cache: 'no-cache',
-                    signal: ctrl.signal,
-                });
-                clearTimeout(tid);
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                const data = (await resp.json()) as PackCatalog;
-                this.catalog = data;
-                localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(data));
-                this.checkForUpdates();
-                return data;
-            } catch {
-                console.warn(
-                    '[Packs] Catalog réseau indisponible, fallback cache/embarqué.'
-                );
-            }
-        }
-        // Priorité : localStorage → catalog embarqué (jamais null)
-        this.catalog = this.getCachedCatalog() ?? EMBEDDED_CATALOG;
-        return this.catalog;
-    }
-
-    private getCachedCatalog(): PackCatalog | null {
-        try {
-            const raw = localStorage.getItem(CATALOG_CACHE_KEY);
-            return raw ? (JSON.parse(raw) as PackCatalog) : null;
-        } catch {
-            return null;
-        }
-    }
-
-    getAvailablePacks(): PackMeta[] {
-        return this.catalog?.packs ?? [];
-    }
-
-    getPackMeta(packId: string): PackMeta | undefined {
-        return this.catalog?.packs.find((p) => p.id === packId);
+    findPackContaining(lat: number, lon: number): PackMeta | null {
+        return catalogFindPackContaining(lat, lon, isPointInCountry);
     }
 
     getPackState(packId: string): PackState | null {
         return this.packStates.get(packId) ?? null;
-    }
-
-    /**
-     * Trouve le premier pack du catalogue couvrant la position (lat, lon).
-     * Vérifie d'abord la bbox, puis raffine avec le polygone pays si regionCheck
-     * est un code ISO valide (2 lettres). Compatible packs pays ET régions.
-     * @returns PackMeta | null si aucun pack ne couvre cette position.
-     */
-    findPackContaining(lat: number, lon: number): PackMeta | null {
-        const packs = this.getAvailablePacks();
-        for (const pack of packs) {
-            if (
-                lat < pack.bounds.minLat ||
-                lat > pack.bounds.maxLat ||
-                lon < pack.bounds.minLon ||
-                lon > pack.bounds.maxLon
-            )
-                continue;
-            // regionCheck en code ISO (ex: 'CH') → raffine avec le polygone
-            if (
-                pack.regionCheck &&
-                pack.regionCheck.length === 2 &&
-                isPointInCountry(lat, lon, pack.regionCheck)
-            )
-                return pack;
-            // Pas de code ISO reconnu : les bounds suffisent (régions, packs CDN avec packId)
-            if (!pack.regionCheck || pack.regionCheck.length !== 2) return pack;
-        }
-        return null;
     }
 
     // ── Download & Install ───────────────────────────────────────────────────
@@ -305,7 +172,7 @@ class PackManager {
         packId: string,
         onProgress?: (p: number) => void
     ): Promise<boolean> {
-        const meta = this.getPackMeta(packId);
+        const meta = getPackMeta(packId);
         if (!meta) return false;
 
         const ps = this.getOrCreateState(packId);
@@ -490,7 +357,7 @@ class PackManager {
                 } catch {
                     // Fichier OPFS absent (ancienne installation sur Filesystem.External ou cache vidé)
                     // → fallback CDN si possible, sinon reset
-                    const meta = this.getPackMeta(packId);
+                    const meta = getPackMeta(packId);
                     if (meta) {
                         console.warn(
                             `[Packs] ${packId}: fichier OPFS absent, fallback CDN streaming.`
@@ -502,7 +369,7 @@ class PackManager {
                 }
             } else {
                 // purchased (sans fichier local) → CDN streaming (requiert réseau)
-                const meta = this.getPackMeta(packId);
+                const meta = getPackMeta(packId);
                 if (!meta) return;
                 archive = new pmtiles.PMTiles(meta.cdnUrl);
             }
@@ -555,7 +422,7 @@ class PackManager {
     getMinPackZoom(): number {
         let min = 18;
         for (const [packId] of this.mountedArchives) {
-            const meta = this.getPackMeta(packId);
+            const meta = getPackMeta(packId);
             if (meta && meta.lodRange.min < min) min = meta.lodRange.min;
         }
         return min;
@@ -568,7 +435,7 @@ class PackManager {
     hasInstalledPackForCountry(code: string): boolean {
         if (!code || !this.mountedArchives.size) return false;
         for (const [packId] of this.mountedArchives) {
-            const meta = this.getPackMeta(packId);
+            const meta = getPackMeta(packId);
             if (meta?.regionCheck === code) return true;
         }
         return false;
@@ -583,7 +450,7 @@ class PackManager {
         // Deux passes : OPFS (installed) en premier, CDN (purchased) ensuite.
         for (const pass of [true, false]) {
             for (const [packId, archive] of this.mountedArchives) {
-                const meta = this.getPackMeta(packId);
+                const meta = getPackMeta(packId);
                 if (!meta) continue;
                 if (z < meta.lodRange.min || z > meta.lodRange.max) continue;
                 if (!this.isTileInPackRegion(x, y, z, meta)) continue;
@@ -680,21 +547,13 @@ class PackManager {
         }
     }
 
-    // ── Updates ──────────────────────────────────────────────────────────────
+    // ── Updates ── (délégué à packCatalog.ts)
 
-    private checkForUpdates(): void {
-        if (!this.catalog) return;
-        for (const meta of this.catalog.packs) {
-            const ps = this.packStates.get(meta.id);
-            if (
-                ps &&
-                ps.status === 'installed' &&
-                ps.installedVersion < meta.version
-            ) {
-                ps.status = 'update_available';
-                this.persistStates();
-                this.emitStatus(meta.id, 'update_available');
-            }
+    private runCheckForUpdates(): void {
+        const updated = checkForUpdates(this.packStates);
+        if (updated.length > 0) this.persistStates();
+        for (const packId of updated) {
+            this.emitStatus(packId, 'update_available');
         }
     }
 

@@ -1,24 +1,21 @@
-# SunTrail — TODO (v5.61.3)
+# SunTrail — TODO (v5.73.0)
 
-> Dernière mise à jour : 2026-06-09
+> Dernière mise à jour : 2026-06-13
 
 ## 🔴 Critique (next release)
 
-- [x] **Frontières vectorielles (polygones OSM)** — Polygone Suisse 54 points, multi-point tile check, LOD cap Swisstopo 14 (v5.55.4)
+- **Refactoring SettingsSheet.ts** (951 lignes) — Découper par section (résolution, carte, GPS, etc.)
+- **Refactoring WeatherSheet.ts** (867 lignes, 0% couverture) — Extraire logique météo en service et sous-composants
+- **Refactoring SolarProbeSheet.ts** (1190 lignes, 0% couverture) — Continuer l'extraction des sous-composants UI
+- **Tests UI components** — PacksSheet (1.8%), UpgradeSheet (1.7%), TrackSheet (10.7%), SolarProbeSheet (0%), WeatherSheet (0%)
 
-## 🟡 Court terme (v5.56.x)
+## 🟡 Court terme
 
-- **Frontières AT/ES/NO — zones noires LOD 14+** — Les tuiles HD de ces pays ont des pixels noirs/opaques hors-frontière. Les solutions (strictAtHighZoom, compositing worker) n'ont pas fonctionné. À creuser : chroma key dans le worker ou fallback OpenTopoMap systématique pour ces pays au-delà de LOD 14.
-
+- **Zones noires AT/ES/NO LOD 14+** — Pixel noirs hors-frontière sur basemap.at, IGN España, Kartvertek. Explorer chroma key dans le worker.
+- **Timeout retry (v5.72.0)** — Les tuiles timeoutées (30s) restent en statut `failed` sans retry automatique. Ajouter un mécanisme de retry progressif.
 - **Debug OAuth Google** — Résoudre les problèmes de stabilité et réactiver l'UI
-- [x] **Refactoring SolarProbeSheet.ts** (896 lignes) — Extraire les sous-composants UI et handlers en modules séparés (v5.56.4)
-- **Refactoring SettingsSheet.ts** (715 lignes) — Découper par section (résolution, carte, GPS, etc.)
-- [x] **ESLint + Prettier configurés** — Linting et formatage automatique (v5.56.4)
-- [x] **Détection doublon GPX** — Hash des points + toast + refus (v5.56.4)
-- [x] **Tests tileSources.ts** — 26 tests (URL builders + COUNTRY_SOURCES) (v5.56.4)
-- [x] **Tests benchmark.ts** — 5 tests (seuils de scoring) (v5.56.4)
+- **Paiements Web — Restauration par Email** — Un utilisateur qui paie via Stripe sur web perd l'accès s'il change de navigateur (App User ID aléatoire en localStorage).
 - **Tests poi.ts** — Couverture partielle : tester la détection de catégories avec PBF mockés
-- **Alertes Sécurité v6.0** — Toujours gratuites (météo extrême, avalanches) — prévu v6.0
 
 ## 🟢 Long terme (v6.x)
 
@@ -26,44 +23,37 @@
 - **Coverage pays** — Slovénie, Italie, Norvège, UK (voir ROADMAP.md)
 - **Offline Alertes** — Système d'alertes sécurité hors-ligne (v6.0+)
 - **Abonnement familial** — Pack famille RevenueCat (v6.1+)
+- **Refactoring packManager.ts** — Split en packCatalog + packDownloader + packMounter (770 lignes, 10% couverture)
+- **Refactoring tileLoader.ts** — Split logique métier en tileService.ts (912 lignes)
 
-## ✅ Récemment complété (v5.56.15)
+## ✅ Récemment complété (v5.73.0)
 
-- [x] **Fix double chargement démarrage** — Benchmark GPU attendu avant création scène (v5.56.15)
-- [x] **Fix tuiles frontières CH (Bonfol, Aigle, Monthey)** — Fusion polygones OSM+Natural Earth, logique pro-CH, strictAtHighZoom assoupli (v5.56.15)
-- [x] **Démarrage accéléré** — Clé MapTiler fast-path, fetchCatalog fire-and-forget (v5.56.15)
-- [x] **Fuite canvas DOM** — Nettoyage canvas dans disposeScene() (v5.56.15)
+- [x] **Pack Autriche v2 multi-source** — OpenTopoMap LOD 8-11 + basemap.at HD LOD 12-14
+- [x] **Data-driven inPackZone** — `hasInstalledPackForCountry()` remplace `(inCH||inFR)` codé en dur
+- [x] **Race condition cache** — `initCacheLayer()` appelé avant `loadTerrain()`
+- [x] **Seuil pack LOD 8** — `getMinPackZoom()` au lieu de LOD 12 hardcodé
+- [x] **npm audit fix** — 0 vulnérabilités (uuid via overrides)
+- [x] **i18n** — Clé `terrain.toast.noRelief3D` ajoutée dans fr/en/de/it
+- [x] **Tests P0** — `initCacheLayer`, `resetTileLoaderState`, `hasInstalledPackForCountry`, `getMinPackZoom`, `inPackZone` data-driven (+20 tests)
 
-## ✅ Récemment complété (v5.56.14)
+## ✅ Récemment complété (v5.72.0)
 
-- [x] **Historique GPX persistant** — 5 derniers imports/REC en localStorage avec mini-carte (v5.56.2)
-- [x] **Fusion panneaux GPX** — Liste unifiée "Parcours" (historique + layers actifs + routes manuelles) (v5.56.2)
-- [x] **Reverse geocoding GPX** — Nom de lieu automatique (MapTiler/Nominatim) + fallback pays 55 pays (v5.56.2)
-- [x] **Bouton profil toggle** — Icône active bleue, ouvrir/fermer le panneau d'élévation (v5.56.2)
-- [x] **Types GPX centralisés** — `gpxTypes.ts`, `GeoPoint`, `GPXRawData`, `getElevation()` (v5.56.2)
-- [x] **Robustesse mesh REC** — Build avant dispose, plus de perte si erreur (v5.56.2)
-- [x] **Dette technique** — Extraction `disposeTrackMesh`, `getPerformanceEpsilonMultiplier`, `createGlassModal`, cache localStorage, guard GPX_COLORS (v5.56.2)
+- [x] **Timeout 30s** sur `tile.load()` — empêche le blocage infini
+- [x] **Drapeau pack** — PacksSheet affiche le bon drapeau via `countryCodeToFlag()`
 
-## ✅ Récemment complété (v5.56.x)
+## ✅ Récemment complété (v5.71.0)
 
-- [x] **Sources HD pays** — Autriche (basemap.at), Allemagne (BKG TopPlusOpen), Espagne (IGN España) (v5.56.0)
-- [x] **Frontières vectorielles** — Polygone Suisse OSM 54 points, multi-point tile check, LOD cap Swisstopo 14 (v5.55.4)
-- [x] **Fix carte noire démarrage** — Résolution race condition benchmark/terrain (v5.55.1)
-- [x] **Fix initialLon typo** — Coordonnées de départ correctes (v5.55.1)
-- [x] **Auto-reload WebGL lost** : Récupération automatique sur perte de contexte GPU (v5.55.1)
-- [x] **Benchmark de performance v2.0** — Micro-benchmark matériel au 1er boot (v5.55.0)
-- [x] **Calibration presets** — Presets basés sur le score réel CPU/GPU (v5.55.0)
-- [x] **Masquage temporaire Auth Google** — UI et tests ignorés pour stabilité (v5.54.4)
-- [x] **Robustesse OAuth Supabase** — Redirection fragments + handshake localStorage (v5.54.4)
-- [x] **Sync cache tuiles v30** — Alignement worker et loader principal (v5.54.4)
-- [x] **Fix fuites listeners orientation** — Cleanup listeners DeviceOrientation (v5.54.4)
-- [x] **Profil/pentes cleanup au nettoyage GPX** — closeElevationProfile() + 6 tests removeGPXLayer (v5.54.3)
-- [x] **Hardening listeners Capacitor** — nativeGPSService._listenerHandles (v5.54.2)
-- [x] **iapService cleanup** — message listener + pagehide guard (v5.54.2)
-- [x] **Storage constants centralisés** — src/constants/storage.ts, 14 clés (v5.54.2)
-- [x] **Tests haptics, theme, toast, weatherUtils** — +66 tests (814 total) (v5.54.2)
-- [x] **npm audit** — 7 vulnérabilités corrigées → 0 (v5.54.2)
-- [x] **Freemium multi-tracés GPX** — index-based locking (v5.54.0)
-- [x] **Free Trials natifs RevenueCat** — Suppression trials locaux (v5.53.7)
-- [x] **Architecture multi-page** — index.html / app.html / login.html (v5.53.5)
-- [x] **Foreground Service** — RecordingService processus isolé :tracking (v5.53.0)
+- [x] **Pack Suisse v3** — 664 Mo, elevation lossy WebP Q40
+
+## ✅ Récemment complété (v5.70.0)
+
+- [x] **Badge LOD cliquable** — Packs/disponible détecté automatiquement
+- [x] **`packManager.findPackContaining(lat, lon)`** — détection publique du pack couvrant une position
+- [x] **Système & Données restructuré** — section "Données embarquées"
+
+## ✅ Récemment complété (v5.62.x)
+
+- [x] **Pools matériaux+géométries adaptatifs par preset** (v5.62.1)
+- [x] **Cache partitionné + index O(1) + Overview Q80 + Normalmap RG compact** (v5.62.0)
+- [x] **Race condition cleanup caches au démarrage** — `await` séquentiel (v5.62.2)
+- [x] **Pastille REC** — position corrigée (v5.62.3→v5.62.8)

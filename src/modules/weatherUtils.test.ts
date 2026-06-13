@@ -4,6 +4,9 @@ import {
     getComfortIndex,
     getFreezingAlert,
     fmtWindDir,
+    computeTemperatureChartData,
+    getComfortCategory,
+    type HourlyWeatherPoint,
 } from './weatherUtils';
 
 describe('getUVCategory()', () => {
@@ -188,4 +191,94 @@ describe('fmtWindDir()', () => {
     it('retourne "NW" pour 315°', () => expect(fmtWindDir(315)).toBe('NW'));
     it('gère les angles > 360°', () => expect(fmtWindDir(360)).toBe('N'));
     it('gère les angles négatifs', () => expect(fmtWindDir(-45)).toBe('NW'));
+});
+
+// ── computeTemperatureChartData ────────────────────────────────────────────
+describe('computeTemperatureChartData()', () => {
+    const makeHourly = (temps: number[]): HourlyWeatherPoint[] =>
+        temps.map((t) => ({ temp: t }));
+
+    it('calcule minT et maxT correctement', () => {
+        const hourly = makeHourly([-5, 0, 5, 10, 15, 20, 15, 10]);
+        const data = computeTemperatureChartData(hourly);
+        expect(data.minT).toBe(-5);
+        expect(data.maxT).toBe(20);
+        expect(data.rangeT).toBe(25);
+    });
+
+    it('détecte la ligne de gel (freeze line)', () => {
+        const hourly = makeHourly([-3, 5]);
+        expect(computeTemperatureChartData(hourly).hasFreezeLine).toBe(true);
+    });
+
+    it('ne détecte pas de freeze line si toutes les températures sont positives', () => {
+        const hourly = makeHourly([5, 10, 15]);
+        expect(computeTemperatureChartData(hourly).hasFreezeLine).toBe(false);
+    });
+
+    it('ne détecte pas de freeze line si toutes les températures sont négatives', () => {
+        const hourly = makeHourly([-10, -5, -2]);
+        expect(computeTemperatureChartData(hourly).hasFreezeLine).toBe(false);
+    });
+
+    it('gère rangeT = 0 (températures constantes)', () => {
+        const hourly = makeHourly([10, 10, 10]);
+        const data = computeTemperatureChartData(hourly);
+        expect(data.rangeT).toBe(1); // || 1 fallback
+        expect(data.minT).toBe(10);
+        expect(data.maxT).toBe(10);
+        expect(data.points).toHaveLength(3);
+    });
+
+    it('génère les barres de précipitation', () => {
+        const hourly: HourlyWeatherPoint[] = [
+            { temp: 10, precip: 50 },
+            { temp: 12, precip: 0 },
+            { temp: 11, precip: 5 },
+            { temp: 13, precip: 80 },
+        ];
+        const data = computeTemperatureChartData(hourly);
+        // precip > 10 → bar; precip 0 et 5 → pas de bar
+        expect(data.precipBars).toHaveLength(2); // index 0 (50) et index 3 (80)
+        expect(data.precipBars[0].index).toBe(0);
+        expect(data.precipBars[1].index).toBe(3);
+    });
+
+    it('gère un tableau vide', () => {
+        const data = computeTemperatureChartData([]);
+        expect(data.points).toHaveLength(0);
+        expect(data.precipBars).toHaveLength(0);
+        expect(data.rangeT).toBe(1); // fallback
+    });
+});
+
+// ── getComfortCategory ─────────────────────────────────────────────────────
+describe('getComfortCategory()', () => {
+    it('score >= 8 → Excellent', () => {
+        expect(getComfortCategory(8).label).toBe('Excellent');
+        expect(getComfortCategory(10).label).toBe('Excellent');
+    });
+
+    it('score 6-7.9 → Bon', () => {
+        expect(getComfortCategory(6).label).toBe('Bon');
+        expect(getComfortCategory(7.5).label).toBe('Bon');
+    });
+
+    it('score 4-5.9 → Moyen', () => {
+        expect(getComfortCategory(4).label).toBe('Moyen');
+        expect(getComfortCategory(5.9).label).toBe('Moyen');
+    });
+
+    it('score < 4 → Difficile', () => {
+        expect(getComfortCategory(3.9).label).toBe('Difficile');
+        expect(getComfortCategory(0).label).toBe('Difficile');
+        expect(getComfortCategory(-10).label).toBe('Difficile');
+    });
+
+    it('retourne les bons emojis', () => {
+        expect(getComfortCategory(9).emoji).toBe('😊');
+        expect(getComfortCategory(7).emoji).toBe('👍');
+        expect(getComfortCategory(5).emoji).toBe('😐');
+        expect(getComfortCategory(2).emoji).toBe('😟');
+    });
 });

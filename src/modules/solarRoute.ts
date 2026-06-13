@@ -732,3 +732,55 @@ export function clearSolarRouteAnalysis(): void {
     invalidateRouteCache();
     notifySolarRouteUpdate();
 }
+
+// ── Exposure Alerts (extracted from SolarProbeSheet) ─────────────────────────
+
+export interface ExposureSegment {
+    startKm: number;
+    endKm: number;
+    durationMin: number;
+}
+
+/**
+ * Trouve les segments en plein soleil entre 10h–16h durant ≥ 90 min.
+ * Fonction pure, sans dépendance DOM. Utilisée par SolarProbeSheet et testable.
+ */
+export function findStrongExposureSegments(
+    points: RouteSolarPoint[]
+): ExposureSegment[] {
+    const segments: ExposureSegment[] = [];
+    let segStart: number | null = null;
+    let segStartKm: number | null = null;
+
+    for (let i = 0; i < points.length; i++) {
+        const pt = points[i];
+        const h = pt.evalDate.getHours();
+        const isStrongSun =
+            !pt.isNight && !pt.inShadow && !pt.inForest && h >= 10 && h < 16;
+
+        if (isStrongSun && segStart === null) {
+            segStart = pt.evalDate.getTime();
+            segStartKm = pt.distKm;
+        }
+        if (
+            (!isStrongSun || i === points.length - 1) &&
+            segStart !== null &&
+            segStartKm !== null
+        ) {
+            const durationMin = Math.round(
+                (pt.evalDate.getTime() - segStart) / 60_000
+            );
+            if (durationMin >= 90) {
+                segments.push({
+                    startKm: segStartKm,
+                    endKm: pt.distKm,
+                    durationMin,
+                });
+            }
+            segStart = null;
+            segStartKm = null;
+        }
+    }
+
+    return segments;
+}

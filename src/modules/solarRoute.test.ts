@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as THREE from 'three';
+import { findStrongExposureSegments, type RouteSolarPoint } from './solarRoute';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
@@ -590,5 +591,112 @@ describe('clearSolarRouteAnalysis', () => {
         clearSolarRouteAnalysis();
         expect(getCurrentRouteSolarAnalysis()).toBeNull();
         expect(getOptimalDepartureData()).toBeNull();
+    });
+});
+
+// ── Tests: findStrongExposureSegments ────────────────────────────────────────
+
+function makePoint(
+    overrides: Partial<RouteSolarPoint> & { distKm: number; hour: number }
+): RouteSolarPoint {
+    return {
+        worldPos: new THREE.Vector3(0, 0, 0),
+        distKm: overrides.distKm,
+        evalDate: new Date(2024, 5, 21, overrides.hour, 0, 0), // heure locale
+        inShadow: overrides.inShadow ?? false,
+        isNight: overrides.isNight ?? false,
+        inForest: overrides.inForest ?? false,
+    };
+}
+
+describe('findStrongExposureSegments', () => {
+    it('retourne vide pour un tableau vide', () => {
+        expect(findStrongExposureSegments([])).toEqual([]);
+    });
+
+    it('retourne un segment quand 90+ min de plein soleil 10h-16h', () => {
+        const points = [
+            makePoint({ distKm: 0, hour: 10 }),
+            makePoint({ distKm: 1, hour: 11 }),
+            makePoint({ distKm: 2, hour: 12 }), // 120 min = 2h ≥ 90 min
+        ];
+        const segs = findStrongExposureSegments(points);
+        expect(segs).toHaveLength(1);
+        expect(segs[0].startKm).toBe(0);
+        expect(segs[0].endKm).toBe(2);
+        expect(segs[0].durationMin).toBe(120);
+    });
+
+    it('ignore les segments < 90 min', () => {
+        const points = [
+            makePoint({ distKm: 0, hour: 10 }),
+            makePoint({ distKm: 0.5, hour: 11 }), // 60 min < 90
+        ];
+        expect(findStrongExposureSegments(points)).toEqual([]);
+    });
+
+    it('exclut les points de nuit', () => {
+        const points = [
+            makePoint({ distKm: 0, hour: 11, isNight: true }),
+            makePoint({ distKm: 1, hour: 12, isNight: true }), // ≥ 90 min mais nuit
+        ];
+        expect(findStrongExposureSegments(points)).toEqual([]);
+    });
+
+    it("exclut les points dans l'ombre", () => {
+        const points = [
+            makePoint({ distKm: 0, hour: 11, inShadow: true }),
+            makePoint({ distKm: 1, hour: 12, inShadow: true }),
+        ];
+        expect(findStrongExposureSegments(points)).toEqual([]);
+    });
+
+    it('exclut les points en forêt', () => {
+        const points = [
+            makePoint({ distKm: 0, hour: 11, inForest: true }),
+            makePoint({ distKm: 1, hour: 12, inForest: true }),
+        ];
+        expect(findStrongExposureSegments(points)).toEqual([]);
+    });
+
+    it('exclut les heures avant 10h et après 16h', () => {
+        const early = [
+            makePoint({ distKm: 0, hour: 9 }),
+            makePoint({ distKm: 1, hour: 10 }), // 60 min
+        ];
+        expect(findStrongExposureSegments(early)).toEqual([]);
+
+        const late = [
+            makePoint({ distKm: 0, hour: 15 }),
+            makePoint({ distKm: 1, hour: 16 }), // heure=16 non incluse (h < 16)
+        ];
+        expect(findStrongExposureSegments(late)).toEqual([]);
+    });
+
+    it("détecte plusieurs segments séparés par une zone d'ombre", () => {
+        const points = [
+            makePoint({ distKm: 0, hour: 10 }),
+            makePoint({ distKm: 1, hour: 11 }),
+            makePoint({ distKm: 2, hour: 12 }), // fin segment 1 (120 min)
+            makePoint({ distKm: 3, hour: 13, inShadow: true }), // zone d'ombre
+            makePoint({ distKm: 4, hour: 14 }),
+            makePoint({ distKm: 5, hour: 15 }),
+            makePoint({ distKm: 6, hour: 16 }), // heure=16 non incluse, ferme segment 2 (120 min)
+        ];
+        const segs = findStrongExposureSegments(points);
+        expect(segs).toHaveLength(2);
+        expect(segs[0].startKm).toBe(0);
+        expect(segs[0].endKm).toBe(3); // fermé au point d'ombre (km=3)
+        expect(segs[1].startKm).toBe(4);
+        expect(segs[1].endKm).toBe(6);
+    });
+
+    it('termine le segment au dernier point si toujours ensoleillé', () => {
+        const points = [
+            makePoint({ distKm: 0, hour: 10 }),
+            makePoint({ distKm: 1, hour: 11 }),
+            makePoint({ distKm: 2, hour: 12 }), // dernier point, ≥ 90 min
+        ];
+        expect(findStrongExposureSegments(points)).toHaveLength(1);
     });
 });

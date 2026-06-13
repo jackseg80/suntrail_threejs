@@ -1,4 +1,4 @@
-# SunTrail — Roadmap
+# SunTrail — Roadmap (v5.73.0)
 
 ## v5.56.2 (2026-05-31) — ✅ Complété
 
@@ -95,6 +95,22 @@ superposés en sprites Three.js Canvas. Abandonné — problèmes non résolus :
 - Remplacer les sources raster avec labels par des sources raster sans labels + overlay
   vecto (nécessite des endpoints "no labels" que peu de fournisseurs proposent).
 - Améliorer la lisibilité des labels raster existants (upscaling @2x, sharpening shader).
+
+---
+
+---
+
+### v5.70.0 - v5.73.0 — ✅ Packs Pays & Optimisations
+
+- ✅ **Packs Pays** : Suisse v3 (664 Mo), France Alpes v2 (515 Mo), Autriche v2 multi-source (985 Mo)
+- ✅ **Data-driven inPackZone** : `hasInstalledPackForCountry()` remplace `(inCH||inFR)` codé en dur
+- ✅ **Badge LOD cliquable** : détection automatique du pack couvrant la position
+- ✅ **Cache partitionné** : `OFFLINE_CACHE_NAME` séparé + index O(1) + warmup au démarrage
+- ✅ **Pools matériaux/géométries adaptatifs** : eco:6→ultra:24 (matériaux), 32→128 (géométries)
+- ✅ **Normal map RG compact** : VRAM -50% pour les normales (stockage 2 canaux, reconstruction GPU)
+- ✅ **Timeout 30s** sur `tile.load()` : évite blocage indéfini
+- ✅ **Race condition cache** : `initCacheLayer()` appelé avant `loadTerrain()`
+- ✅ **Tests P0** : `initCacheLayer`, `resetTileLoaderState`, `hasInstalledPackForCountry`, `getMinPackZoom`, `inPackZone` (+20 tests)
 
 ---
 

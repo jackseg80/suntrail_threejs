@@ -5,7 +5,7 @@ const { mockIsProActive } = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../i18n/I18nService', () => ({
-    i18n: { t: (k: string) => k },
+    i18n: { t: (k: string) => k, getLocale: () => 'fr' },
 }));
 
 vi.mock('../../state', () => ({

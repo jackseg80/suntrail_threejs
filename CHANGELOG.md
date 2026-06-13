@@ -1,3 +1,21 @@
+## [5.74.0] - 2026-06-13
+
+### Added
+- **Tests P0** : `initCacheLayer`, `resetTileLoaderState`, `hasInstalledPackForCountry`, `getMinPackZoom`, `inPackZone` data-driven (+20 tests).
+- **Offline cache retention test** : vérifie que les tuiles offline survivent à l'éviction du cache normal (+3 tests).
+- **WeatherSheet** : `computeTemperatureChartData()` et `getComfortCategory()` extraites dans `weatherUtils.ts` (+12 tests).
+- **SolarProbeSheet** : `findStrongExposureSegments()` extrait dans `solarRoute.ts` (+9 tests).
+- **Tests UI** : UpgradeSheet (+4 tests) et PacksSheet (+3 tests).
+- **i18n** : clé `terrain.toast.noRelief3D` ajoutée (fr/en/de/it).
+
+### Changed
+- **Refactoring** : `packCatalog.ts` extrait de `packManager.ts` (770→629 lignes). Le catalogue est désormais un module séparé, testable.
+- **packManager.ts** : `getMinPackZoom()` et `hasInstalledPackForCountry()` délégués à la logique de pack.
+
+### Fixed
+- **Pack couleur LOD 8-10** : OpenTopoMap était remplacé par la source HD du pack (IGN France) dès LOD 8 au lieu de LOD 11. Le pack couleur suit maintenant la même règle que `getColorUrl()` : OpenTopoMap mondial jusqu'à LOD 10 inclus, pack couleur à partir de LOD 11.
+- **npm audit** : 9 vulnérabilités corrigées → 0. `uuid` ajouté aux `overrides` dans `package.json`.
+
 ## [5.73.0] - 2026-06-13
 
 ### Added

@@ -16,6 +16,7 @@ import {
     setSolarRouteMode,
     setAvgSpeedKmh,
     getAvgSpeedKmh as _getAvgSpeedKmh,
+    findStrongExposureSegments,
     type RouteSolarAnalysis,
 } from '../../solarRoute';
 import { ICON_LOCK } from '../icons';
@@ -1147,48 +1148,15 @@ export class SolarProbeSheet extends BaseComponent {
         parent: HTMLElement,
         routeData: RouteSolarAnalysis
     ): void {
-        // Trouver les segments en plein soleil entre 10h–16h durant plus de 90 min
-        let segStart: number | null = null;
-        let segStartKm: number | null = null;
-
-        for (let i = 0; i < routeData.points.length; i++) {
-            const pt = routeData.points[i];
-            const h = pt.evalDate.getHours();
-            const isStrongSun =
-                !pt.isNight &&
-                !pt.inShadow &&
-                !pt.inForest &&
-                h >= 10 &&
-                h < 16;
-
-            if (isStrongSun && segStart === null) {
-                segStart = pt.evalDate.getTime();
-                segStartKm = pt.distKm;
-            }
-            if (
-                (!isStrongSun || i === routeData.points.length - 1) &&
-                segStart !== null
-            ) {
-                const durationMin = Math.round(
-                    (pt.evalDate.getTime() - segStart) / 60_000
-                );
-                if (durationMin >= 90) {
-                    const alert = document.createElement('div');
-                    alert.className =
-                        'solar-route-rec-item solar-route-rec-alert';
-                    alert.textContent = i18n.t(
-                        'solarRoute.rec.strongExposure',
-                        {
-                            start: (segStartKm ?? 0).toFixed(1),
-                            end: pt.distKm.toFixed(1),
-                            duration: String(durationMin),
-                        }
-                    );
-                    parent.appendChild(alert);
-                }
-                segStart = null;
-                segStartKm = null;
-            }
+        for (const seg of findStrongExposureSegments(routeData.points)) {
+            const alert = document.createElement('div');
+            alert.className = 'solar-route-rec-item solar-route-rec-alert';
+            alert.textContent = i18n.t('solarRoute.rec.strongExposure', {
+                start: seg.startKm.toFixed(1),
+                end: seg.endKm.toFixed(1),
+                duration: String(seg.durationMin),
+            });
+            parent.appendChild(alert);
         }
     }
 }

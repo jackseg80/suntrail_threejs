@@ -910,5 +910,10 @@
         "aria": {
             "info": "Info"
         }
+    },
+    "terrain": {
+        "toast": {
+            "noRelief3D": "Relief 3D indisponible (données absentes)"
+        }
     }
 }

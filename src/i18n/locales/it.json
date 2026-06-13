@@ -905,5 +905,10 @@
         "aria": {
             "info": "Info"
         }
+    },
+    "terrain": {
+        "toast": {
+            "noRelief3D": "Rilievo 3D non disponibile (dati mancanti)"
+        }
     }
 }
