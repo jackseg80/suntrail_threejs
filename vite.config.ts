@@ -15,6 +15,9 @@ export default defineConfig({
   // Sur GitHub Pages on a besoin de /suntrail_threejs/, mais sur Capacitor on a besoin de ./ (relatif)
   base: isCapacitor ? './' : (isProd ? '/suntrail_threejs/' : '/'),
   server: {
+    host: true,
+    port: 5173,
+    strictPort: true,
     headers: {
       'Referrer-Policy': 'same-origin',
     },

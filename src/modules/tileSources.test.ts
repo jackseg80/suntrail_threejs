@@ -154,11 +154,11 @@ describe('COUNTRY_SOURCES', () => {
         expect(it.minZoom).toBe(10);
     });
 
-    it('AT has colorTopo and satellite', () => {
+    it('AT has colorTopo and satellite with minZoom 12 (aligned with pack LOD)', () => {
         const at = COUNTRY_SOURCES['AT'];
         expect(at.colorTopo).toBeDefined();
         expect(at.colorSatellite).toBeDefined();
-        expect(at.minZoom).toBe(10);
+        expect(at.minZoom).toBe(12);
     });
 
     it('DE has colorTopo but no satellite', () => {

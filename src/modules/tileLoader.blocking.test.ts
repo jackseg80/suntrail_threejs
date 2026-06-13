@@ -33,6 +33,8 @@ vi.mock('./packManager', () => ({
     packManager: {
         hasMountedPacks: vi.fn(),
         getTileFromPacks: vi.fn(),
+        hasInstalledPackForCountry: vi.fn(),
+        getMinPackZoom: vi.fn(),
     },
 }));
 
@@ -47,6 +49,8 @@ describe('TileLoader Blocking Analysis', () => {
         (packManager.getTileFromPacks as any).mockReturnValue(
             Promise.resolve(new Blob(['test-data']))
         );
+        (packManager.hasInstalledPackForCountry as any).mockReturnValue(true);
+        (packManager.getMinPackZoom as any).mockReturnValue(8);
     });
 
     it('SHOULD NOT wait for cache seeding before starting worker load', async () => {

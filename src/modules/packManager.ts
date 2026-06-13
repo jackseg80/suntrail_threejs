@@ -79,8 +79,8 @@ const EMBEDDED_CATALOG: PackCatalog = {
             },
             bounds: { minLat: 46.3, maxLat: 49.1, minLon: 9.4, maxLon: 17.3 },
             lodRange: { min: 8, max: 14 },
-            version: 1,
-            sizeMB: 980,
+            version: 2,
+            sizeMB: 985,
             cdnUrl: `${CDN_BASE_URL}/packs/suntrail-pack-austria-v1.pmtiles`,
             regionCheck: 'AT',
         },
@@ -546,6 +546,32 @@ class PackManager {
 
     hasMountedPacks(): boolean {
         return this.mountedArchives.size > 0;
+    }
+
+    /**
+     * Retourne le LOD minimum parmi tous les packs montés.
+     * Utilisé par tileLoader pour savoir à partir de quel zoom interroger les packs.
+     */
+    getMinPackZoom(): number {
+        let min = 18;
+        for (const [packId] of this.mountedArchives) {
+            const meta = this.getPackMeta(packId);
+            if (meta && meta.lodRange.min < min) min = meta.lodRange.min;
+        }
+        return min;
+    }
+
+    /**
+     * Vérifie si un pack installé/monté couvre le code pays donné.
+     * Utilisé par tileLoader pour savoir s'il faut extraire la couleur depuis le pack.
+     */
+    hasInstalledPackForCountry(code: string): boolean {
+        if (!code || !this.mountedArchives.size) return false;
+        for (const [packId] of this.mountedArchives) {
+            const meta = this.getPackMeta(packId);
+            if (meta?.regionCheck === code) return true;
+        }
+        return false;
     }
 
     async getTileFromPacks(

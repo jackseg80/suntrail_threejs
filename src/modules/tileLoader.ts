@@ -114,35 +114,62 @@ async function cleanupOldCaches(): Promise<void> {
 }
 
 /**
+ * Réinitialise l'état interne du tileLoader (caches, index, PMTiles).
+ * Utilisé par les tests pour isoler chaque scénario.
+ */
+export function resetTileLoaderState(): void {
+    _workerCache = null;
+    _offlineCache = null;
+    _cacheIndex.clear();
+    _offlineCacheIndex.clear();
+    embeddedPMTiles = null;
+}
+
+/**
+ * Initialise la couche CacheStorage (caches normal + offline + index mémoire).
+ * Doit être appelée AVANT le premier updateVisibleTiles() pour que les tiles
+ * en cache soient trouvées sans passer par le réseau.
+ *
+ * Séparée de initEmbeddedOverview() pour éviter la dépendance au chargement
+ * réseau des PMTiles (race condition au démarrage).
+ */
+export async function initCacheLayer(): Promise<void> {
+    if (_workerCache && _offlineCache) return; // déjà initialisé
+
+    await cleanupOldCaches();
+
+    const [cache, offlineCache] = await Promise.all([
+        caches.open(CACHE_NAME),
+        caches.open(OFFLINE_CACHE_NAME),
+    ]);
+
+    _workerCache = cache;
+    _offlineCache = offlineCache;
+
+    warmupCacheIndex(cache, _cacheIndex);
+    warmupCacheIndex(offlineCache, _offlineCacheIndex);
+
+    if (state.DEBUG_MODE)
+        console.log(
+            `[Cache] CacheStorage initialisé (${_cacheIndex.size} normal, ${_offlineCacheIndex.size} offline).`
+        );
+}
+
+/**
  * Monte l'archive PMTiles overview embarquée dans l'APK/PWA (LOD 5-11).
- * Appelée une fois au démarrage, fire-and-forget.
+ * Appelée une fois au démarrage. La couche CacheStorage est déjà initialisée
+ * par initCacheLayer() en amont.
  */
 export async function initEmbeddedOverview(): Promise<void> {
-    // Nettoyer les vieux résidus de cache AVANT d'ouvrir les nouveaux
-    // v5.62.2 : await pour éviter race condition avec caches.open()
-    await cleanupOldCaches();
+    // S'assurer que la couche cache est prête (idempotent si déjà appelé)
+    if (!_workerCache) await initCacheLayer();
 
     try {
         const url = './tiles/europe-overview.pmtiles';
 
-        // Paralléliser l'ouverture des caches et l'init PMTiles
-        const [cache, offlineCache, archive] = await Promise.all([
-            caches.open(CACHE_NAME),
-            caches.open(OFFLINE_CACHE_NAME),
-            (async () => {
-                const p = new pmtiles.PMTiles(url);
-                await p.getHeader();
-                return p;
-            })(),
-        ]);
-
-        _workerCache = cache;
-        _offlineCache = offlineCache;
+        const archive = new pmtiles.PMTiles(url);
+        await archive.getHeader();
         embeddedPMTiles = archive;
-
-        // Warmup des index mémoire pour éviter caches.match() au premier tile lookup
-        warmupCacheIndex(cache, _cacheIndex);
-        warmupCacheIndex(offlineCache, _offlineCacheIndex);
 
         if (state.DEBUG_MODE) console.log(`[Embedded] Overview chargé.`);
 
@@ -574,8 +601,6 @@ export async function loadTileData(
         cz,
         3
     );
-    const inCH = countryCode === 'CH';
-    const inFR = countryCode === 'FR';
     const inIT = countryCode === 'IT';
 
     const colorUrl = getColorUrl(Math.floor(tx / cr), Math.floor(ty / cr), cz);
@@ -602,19 +627,47 @@ export async function loadTileData(
             );
         }
 
-        if (packManager.hasMountedPacks() && zoom >= 12) {
+        if (
+            packManager.hasMountedPacks() &&
+            zoom >= packManager.getMinPackZoom()
+        ) {
             const cx = Math.floor(tx / cr);
             const cy = Math.floor(ty / cr);
-            // v5.35.2 : N'utiliser les packs color que si on est strictement en zone CH ou FR (évite débordement Italie)
-            // v5.56.20 : Ne pas utiliser les packs si l'utilisateur a choisi opentopomap manuellement
+            // v6.0 : Data-driven — tout pack installé couvrant le pays de la tuile est éligible.
+            // Anti-débordement Italie conservé pour CH/FR (polygones frontaliers imprécis).
+            // v5.56.20 : Ne pas utiliser les packs si l'utilisateur a choisi opentopomap manuellement.
+            const tileCountry = countryCode;
+            const antiOverflowIT =
+                inIT && (tileCountry === 'CH' || tileCountry === 'FR');
+            const hasPack = packManager.hasInstalledPackForCountry(
+                tileCountry ?? ''
+            );
             const inPackZone =
-                (inCH || inFR) && !inIT && state.MAP_SOURCE !== 'opentopomap';
+                tileCountry !== null &&
+                hasPack &&
+                !antiOverflowIT &&
+                state.MAP_SOURCE !== 'opentopomap';
             if (!blobs.color && inPackZone) {
                 blobs.color = await packManager.getTileFromPacks(
                     cz,
                     cx,
                     cy,
                     'color'
+                );
+                if (state.DEBUG_MODE) {
+                    if (blobs.color) {
+                        console.log(
+                            `[PackColor] HIT: ${cz}/${cx}/${cy} country=${tileCountry} size=${blobs.color.size}`
+                        );
+                    } else {
+                        console.warn(
+                            `[PackColor] MISS: ${cz}/${cx}/${cy} country=${tileCountry} hasPack=${hasPack} offline=${state.IS_OFFLINE}`
+                        );
+                    }
+                }
+            } else if (state.DEBUG_MODE && tileCountry) {
+                console.warn(
+                    `[PackColor] SKIP: ${cz}/${cx}/${cy} country=${tileCountry} hasPack=${hasPack} inPackZone=${inPackZone} hasColor=${!!blobs.color} offline=${state.IS_OFFLINE}`
                 );
             }
         }

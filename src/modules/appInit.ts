@@ -88,7 +88,12 @@ export async function appInit(): Promise<void> {
         await resolveMapTilerKey();
         void resolveORSKey();
     }
-    void import('./packManager').then((m) => m.packManager.fetchCatalog());
+    // v6.0 : Initialiser la couche cache ET les country packs AVANT le chargement
+    // du terrain. Lancés tôt pour tourner en parallèle du setup UI.
+    const cacheInitPromise = import('./tileLoader').then((m) =>
+        m.initCacheLayer()
+    );
+    void import('./packManager').then((m) => m.packManager.initialize());
 
     const savedSettings = loadSettings();
     let firstLaunch = false;
@@ -156,7 +161,8 @@ export async function appInit(): Promise<void> {
     initAutoHide();
     initMobileUI();
 
-    // Lancer la scène
+    // Lancer la scène — s'assurer que la couche cache est prête avant
+    await cacheInitPromise;
     await launchScene();
 
     // Premier lancement : benchmark micro différé (+15s) quand le système est stable

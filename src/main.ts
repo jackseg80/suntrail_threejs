@@ -3,7 +3,6 @@ import { initUI } from './modules/ui';
 import { initBatteryManager } from './modules/performance';
 import { initNetworkMonitor } from './modules/networkMonitor';
 import { initEmbeddedOverview } from './modules/tileLoader';
-import { packManager } from './modules/packManager';
 import { registerSW } from 'virtual:pwa-register';
 import { nativeGPSService } from './modules/nativeGPSService';
 import { showToast } from './modules/toast';
@@ -63,8 +62,9 @@ window.addEventListener(
         try {
             // Chargement asynchrone des services lents en arrière-plan
             void initNetworkMonitor();
+            // initCacheLayer() déjà appelé dans appInit.ts (avant loadTerrain)
+            // → initEmbeddedOverview() ne fait plus que charger le PMTiles
             void initEmbeddedOverview();
-            void packManager.initialize();
 
             // Initialisation unifiée (Natif + Preferences)
             await nativeGPSService.init();

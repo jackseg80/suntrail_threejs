@@ -37,9 +37,14 @@ interface PackDef {
     name: string;
     bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number };
     zooms: number[];
-    source: 'swisstopo' | 'ign' | 'basemap_at';
+    source: 'swisstopo' | 'ign' | 'basemap_at' | 'opentopomap';
     version: number;
     countryCode?: string; // ISO 3166-1 alpha-2. Absent → région (bbox seule)
+    /** Source de tuiles pour les zooms bas (overview), ex: OpenTopoMap */
+    overview?: {
+        source: 'opentopomap';
+        maxZoom: number; // exclusif
+    };
 }
 
 const PACKS: Record<string, PackDef> = {
@@ -69,6 +74,7 @@ const PACKS: Record<string, PackDef> = {
         source: 'basemap_at',
         version: 1,
         countryCode: 'AT',
+        overview: { source: 'opentopomap', maxZoom: 12 },
     },
 };
 
@@ -102,13 +108,17 @@ function isTileInCountryPolygon(tx: number, ty: number, zoom: number, code: stri
             if (ring.length >= 3 && isPointInPolygon(lon, lat, ring)) { inside++; break; }
         }
     }
-    return inside >= 3;
+    return inside >= 2;
 }
 
 // ── URLs ────────────────────────────────────────────────────────────────────
 
 function getTileUrl(z: number, x: number, y: number, type: TileType, source: PackDef['source'], maptilerKey?: string): string {
     if (type === 'color') {
+        if (source === 'opentopomap') {
+            const sub = ['a', 'b', 'c'][(x + y) % 3];
+            return `https://${sub}.tile.opentopomap.org/${z}/${x}/${y}.png`;
+        }
         if (source === 'swisstopo') return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${z}/${x}/${y}.jpeg`;
         if (source === 'basemap_at') return `https://mapsneu.wien.gv.at/basemap/geolandbasemap/normal/google3857/${z}/${y}/${x}.png`;
         return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
@@ -179,7 +189,11 @@ async function main() {
 
         if (!fs.existsSync(srcPath)) {
             try {
-                const url = getTileUrl(ref.z, ref.x, ref.y, ref.type, pack.source, maptilerKey);
+                const effectiveSource =
+                    pack.overview && ref.z < pack.overview.maxZoom
+                        ? pack.overview.source
+                        : pack.source;
+                const url = getTileUrl(ref.z, ref.x, ref.y, ref.type, effectiveSource, maptilerKey);
                 const resp = await fetch(url);
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const buf = Buffer.from(await resp.arrayBuffer());

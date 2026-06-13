@@ -132,7 +132,7 @@ export const COUNTRY_SOURCES: Record<string, TileSourceConfig> = {
     AT: {
         colorTopo: (z, x, y) => basemapAtTopo(z, x, y),
         colorSatellite: (z, x, y) => basemapAtSatellite(z, x, y),
-        minZoom: 10,
+        minZoom: 12,
         strictAtHighZoom: { thresholdZoom: 14, useStrictAbove: true },
     },
     DE: {

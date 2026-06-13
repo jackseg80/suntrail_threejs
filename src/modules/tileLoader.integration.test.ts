@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchWithCache, CACHE_NAME, OFFLINE_CACHE_NAME } from './tileLoader';
+import {
+    fetchWithCache,
+    CACHE_NAME,
+    OFFLINE_CACHE_NAME,
+    resetTileLoaderState,
+} from './tileLoader';
 import { packManager } from './packManager';
 import { state } from './state';
 
@@ -133,6 +138,7 @@ describe('Cache partition — offline vs normal (v5.61.4)', () => {
 
     beforeEach(async () => {
         vi.clearAllMocks();
+        resetTileLoaderState();
         state.IS_OFFLINE = false;
         state.DEBUG_MODE = false;
         state.MK = 'test_key_valid_12345';

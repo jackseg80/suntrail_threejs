@@ -1,3 +1,22 @@
+## [5.73.0] - 2026-06-13
+
+### Added
+- **Pack Autriche v2 multi-source** : OpenTopoMap LOD 8-11 + basemap.at HD LOD 12-14 dans le même PMTiles.
+- **Filtre polygone assoupli** : 2/5 points au lieu de 3/5 pour combler les trous frontaliers aux LOD 10-11.
+- **`packManager.hasInstalledPackForCountry()`** : détection data-driven des packs pays (plus de CH/FR codé en dur).
+
+### Changed
+- **`tileLoader.ts`** : `inPackZone` data-driven via `hasInstalledPackForCountry()` au lieu de `(inCH||inFR)`.
+- **`tileLoader.ts`** : seuil pack abaissé à `getMinPackZoom()` (LOD 8) au lieu de 12.
+- **`appInit.ts`** : `initCacheLayer()` appelé AVANT `loadTerrain()` pour éviter la race condition cache.
+- **AT `tileSources.ts`** : `minZoom` 10 → 12 (OpenTopoMap LOD 5-11, HD LOD 12+).
+
+### Fixed
+- **Race condition cache** : les caches étaient null au premier `loadTerrain()` → 100% réseau.
+- **Pack Autriche ignoré** : `inPackZone` ne permettait que CH/FR, AT était exclu.
+- **Trous LOD 10-11** : filtrage polygone trop strict (3/5) pour les tuiles frontalières, passé à 2/5.
+- **`tileLoader.blocking.test.ts`** : mock packManager incomplet.
+
 ## [5.72.0] - 2026-06-09
 
 ### Added
