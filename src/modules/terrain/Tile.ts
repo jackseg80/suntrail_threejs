@@ -46,6 +46,8 @@ export class Tile {
     zoom: number;
     key: string;
     status: 'idle' | 'loading' | 'loaded' | 'failed' | 'disposed' = 'idle';
+    /** Compteur de retry après timeout (v5.74.1). Réinitialisé au zoom change. */
+    retryCount: number = 0;
     activeTaskId: number = -1;
     mesh: THREE.Mesh | null = null;
     elevationTex: THREE.Texture | null = null;

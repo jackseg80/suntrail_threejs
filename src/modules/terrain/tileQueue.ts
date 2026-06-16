@@ -151,7 +151,15 @@ export async function processLoadQueue() {
                 const TIMEOUT_MS = 30000;
                 const timer = setTimeout(() => {
                     if (loadingCount > 0) loadingCount--;
-                    tile.status = 'failed';
+                    // v5.74.1 : Retry automatique jusqu'à 3 tentatives.
+                    // Évite les trous permanents sur connexion lente.
+                    if ((tile as any).retryCount < 3) {
+                        (tile as any).retryCount++;
+                        tile.status = 'idle';
+                        loadQueue.add(tile);
+                    } else {
+                        tile.status = 'failed';
+                    }
                     if (!isProcessingQueue && loadQueue.size > 0)
                         processLoadQueue();
                 }, TIMEOUT_MS);

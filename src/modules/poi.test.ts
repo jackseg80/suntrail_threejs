@@ -24,7 +24,14 @@ vi.mock('./geo', () => ({
 vi.mock('@mapbox/vector-tile', () => ({
     VectorTile: vi.fn(() => ({ layers: {} })),
 }));
-vi.mock('pbf', () => ({ default: vi.fn(() => ({})) }));
+vi.mock('pbf', () => {
+    class MockPbf {
+        constructor(_buffer: ArrayBuffer) {
+            /* no-op */
+        }
+    }
+    return { __esModule: true, default: MockPbf };
+});
 
 // BoundedCache simple pour isoler le module
 vi.mock('./boundedCache', () => ({
