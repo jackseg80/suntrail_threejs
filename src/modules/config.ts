@@ -36,6 +36,8 @@ function pickRandomFromPool(
     return valid[Math.floor(Math.random() * valid.length)];
 }
 
+const _allBannedReported = new Set<string>();
+
 interface KeyRotationState {
     availableKeys: string[];
     bannedKeys: Set<string>;
@@ -44,10 +46,11 @@ interface KeyRotationState {
     onAllBanned: () => void;
     onCooldownReset: () => void;
 }
-
 function rotateServiceKey(rs: KeyRotationState, label: string): boolean {
     const currentKey = label === 'MapTiler' ? state.MK : state.ORS_KEY;
     if (!currentKey) return false;
+    if (rs.bannedKeys.has(currentKey) && rs.availableKeys.length === 0)
+        return false;
     if (state.DEBUG_MODE) console.warn(`[Config] ${label} key banned (403)`);
     rs.bannedKeys.add(currentKey);
     rs.banTimestampRef.value = Date.now();
@@ -60,6 +63,7 @@ function rotateServiceKey(rs: KeyRotationState, label: string): boolean {
     }
 
     if (Date.now() - rs.banTimestampRef.value > BAN_COOLDOWN_MS) {
+        _allBannedReported.delete(label);
         if (state.DEBUG_MODE)
             console.log(
                 `[Config] Reset ${label} bans after cooldown — retrying...`
@@ -80,7 +84,10 @@ function rotateServiceKey(rs: KeyRotationState, label: string): boolean {
         }
     }
 
-    console.error(`[Config] All ${label} keys banned.`);
+    if (!_allBannedReported.has(label)) {
+        _allBannedReported.add(label);
+        console.error(`[Config] All ${label} keys banned.`);
+    }
     rs.onAllBanned();
     return false;
 }

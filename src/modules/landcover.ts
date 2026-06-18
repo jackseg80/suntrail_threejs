@@ -10,6 +10,7 @@ import {
     lonToXNorm,
     latToYNorm,
 } from './geo';
+import { rotateMapTilerKey } from './config';
 import type { Tile } from './terrain';
 
 export interface BBox {
@@ -118,8 +119,15 @@ export async function fetchLandcoverPBF(
         try {
             const res = await fetch(url, { referrerPolicy: 'same-origin' });
             if (!res.ok) {
-                if (res.status === 404)
+                if (
+                    url.includes('api.maptiler.com') &&
+                    (res.status === 403 || res.status === 429)
+                ) {
+                    const hasMoreKeys = rotateMapTilerKey();
+                    if (!hasMoreKeys) state.isMapTilerDisabled = true;
+                } else if (res.status === 404) {
                     console.warn(`[Landcover] Tile not found: ${url}`);
+                }
                 return null;
             }
             const buffer = await res.arrayBuffer();

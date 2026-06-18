@@ -3,6 +3,7 @@ import Pbf from 'pbf';
 import { VectorTile } from '@mapbox/vector-tile';
 import { state } from './state';
 import { getAltitudeAt } from './analysis';
+import { rotateMapTilerKey } from './config';
 import {
     isPositionInSwitzerland,
     getPow2,
@@ -297,6 +298,13 @@ async function fetchPOIsWithCache(
 
             const res = await fetch(url, { referrerPolicy: 'same-origin' });
             if (!res.ok) {
+                if (
+                    url.includes('api.maptiler.com') &&
+                    (res.status === 403 || res.status === 429)
+                ) {
+                    const hasMoreKeys = rotateMapTilerKey();
+                    if (!hasMoreKeys) state.isMapTilerDisabled = true;
+                }
                 zoneFailureCooldown.set(key, Date.now() + 60000);
                 return null;
             }

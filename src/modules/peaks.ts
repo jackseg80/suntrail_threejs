@@ -3,6 +3,7 @@ import { VectorTile } from '@mapbox/vector-tile';
 import { state, Peak } from './state';
 import { isPositionInSwitzerland } from './geo';
 import { BoundedCache } from './boundedCache';
+import { rotateMapTilerKey } from './config';
 
 /**
  * peaks.ts — Migration PBF (v5.38.4)
@@ -98,7 +99,16 @@ async function fetchPeaksWithCache(
 
     try {
         const res = await fetch(url, { referrerPolicy: 'same-origin' });
-        if (!res.ok) return null;
+        if (!res.ok) {
+            if (
+                url.includes('api.maptiler.com') &&
+                (res.status === 403 || res.status === 429)
+            ) {
+                const hasMoreKeys = rotateMapTilerKey();
+                if (!hasMoreKeys) state.isMapTilerDisabled = true;
+            }
+            return null;
+        }
         const buffer = await res.arrayBuffer();
 
         // @ts-ignore Pbf.default may not be in types
