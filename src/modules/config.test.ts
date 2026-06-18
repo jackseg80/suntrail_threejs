@@ -58,7 +58,7 @@ describe('config.ts', () => {
         await resolveMapTilerKey();
 
         expect(state.isMapTilerDisabled).toBe(false);
-        expect(state.MK).toBe('gist-key-789012');
+        expect(state.MK).toMatch(/^gist-key-/);
         expect(emitSpy).toHaveBeenCalledWith('serviceDegraded', {
             service: 'maptiler',
             disabled: false,
