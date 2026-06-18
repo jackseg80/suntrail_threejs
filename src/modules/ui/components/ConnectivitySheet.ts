@@ -11,12 +11,12 @@ import { resetTerrain, updateVisibleTiles } from '../../terrain';
 import { i18n } from '../../../i18n/I18nService';
 import { setManualOffline } from '../../networkMonitor';
 import { packManager } from '../../packManager';
+import { eventBus } from '../../eventBus';
 import templateHTML from '../templates/connectivity.html?raw';
 import { ZoneOverlay } from '../../ZoneOverlay';
 import { ZoneSelectToolbar } from './ZoneSelectToolbar';
 import { showUpgradePrompt } from '../../iap';
 import { getCachedZones, removeCachedZone } from '../../cachedZones';
-import { eventBus } from '../../eventBus';
 import { flyTo } from '../../cameraManager';
 import { lngLatToWorld } from '../../geo';
 import { getAltitudeAt } from '../../analysis';
@@ -140,6 +140,9 @@ export class ConnectivitySheet extends BaseComponent {
                 this.updateNetworkStatus()
             )
         );
+        const onDegraded = () => this.updateNetworkStatus();
+        eventBus.on('serviceDegraded', onDegraded);
+        this.addSubscription(() => eventBus.off('serviceDegraded', onDegraded));
 
         this.addSubscription(
             state.subscribe('userLocation', () => this.updateGPSInfo())
@@ -331,15 +334,29 @@ export class ConnectivitySheet extends BaseComponent {
             '#net-connection-type'
         ) as HTMLElement;
         const isOffline = state.IS_OFFLINE || !state.isNetworkAvailable;
+        const isDegraded = state.isMapTilerDisabled || state.isORSDisabled;
 
         if (statusEl) {
-            // ARIA: live region for dynamic network status
             statusEl.setAttribute('aria-live', 'polite');
-            statusEl.textContent = isOffline
-                ? i18n.t('connectivity.status.offline')
-                : i18n.t('connectivity.status.online');
+            let statusText: string;
+            let isOnline: boolean;
+            if (isOffline) {
+                statusText = i18n.t('connectivity.status.offline');
+                isOnline = false;
+            } else if (isDegraded) {
+                statusText = i18n.t('connectivity.status.degraded');
+                isOnline = false;
+            } else {
+                statusText = i18n.t('connectivity.status.online');
+                isOnline = true;
+            }
+            statusEl.textContent = statusText;
             statusEl.classList.toggle('conn-status-offline', isOffline);
-            statusEl.classList.toggle('conn-status-online', !isOffline);
+            statusEl.classList.toggle(
+                'conn-status-degraded',
+                isDegraded && !isOffline
+            );
+            statusEl.classList.toggle('conn-status-online', isOnline);
         }
 
         if (typeEl) {

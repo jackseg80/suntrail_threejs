@@ -1,6 +1,6 @@
-# SunTrail — TODO (v5.73.0)
+# SunTrail — TODO (v5.76.0)
 
-> Dernière mise à jour : 2026-06-13
+> Dernière mise à jour : 2026-06-18
 
 ## 🔴 Critique (next release)
 
@@ -26,34 +26,10 @@
 - **Refactoring packManager.ts** — Split en packCatalog + packDownloader + packMounter (770 lignes, 10% couverture)
 - **Refactoring tileLoader.ts** — Split logique métier en tileService.ts (912 lignes)
 
-## ✅ Récemment complété (v5.73.0)
+## ✅ Récemment complété (v5.76.0)
 
-- [x] **Pack Autriche v2 multi-source** — OpenTopoMap LOD 8-11 + basemap.at HD LOD 12-14
-- [x] **Data-driven inPackZone** — `hasInstalledPackForCountry()` remplace `(inCH||inFR)` codé en dur
-- [x] **Race condition cache** — `initCacheLayer()` appelé avant `loadTerrain()`
-- [x] **Seuil pack LOD 8** — `getMinPackZoom()` au lieu de LOD 12 hardcodé
-- [x] **npm audit fix** — 0 vulnérabilités (uuid via overrides)
-- [x] **i18n** — Clé `terrain.toast.noRelief3D` ajoutée dans fr/en/de/it
-- [x] **Tests P0** — `initCacheLayer`, `resetTileLoaderState`, `hasInstalledPackForCountry`, `getMinPackZoom`, `inPackZone` data-driven (+20 tests)
-
-## ✅ Récemment complété (v5.72.0)
-
-- [x] **Timeout 30s** sur `tile.load()` — empêche le blocage infini
-- [x] **Drapeau pack** — PacksSheet affiche le bon drapeau via `countryCodeToFlag()`
-
-## ✅ Récemment complété (v5.71.0)
-
-- [x] **Pack Suisse v3** — 664 Mo, elevation lossy WebP Q40
-
-## ✅ Récemment complété (v5.70.0)
-
-- [x] **Badge LOD cliquable** — Packs/disponible détecté automatiquement
-- [x] **`packManager.findPackContaining(lat, lon)`** — détection publique du pack couvrant une position
-- [x] **Système & Données restructuré** — section "Données embarquées"
-
-## ✅ Récemment complété (v5.62.x)
-
-- [x] **Pools matériaux+géométries adaptatifs par preset** (v5.62.1)
-- [x] **Cache partitionné + index O(1) + Overview Q80 + Normalmap RG compact** (v5.62.0)
-- [x] **Race condition cleanup caches au démarrage** — `await` séquentiel (v5.62.2)
-- [x] **Pastille REC** — position corrigée (v5.62.3→v5.62.8)
+- [x] **Race condition clé MapTiler/ORS** — `await resolveMapTilerKey()` au lieu de `void` ; `isMapTilerDisabled` reset sur succès Gist
+- [x] **État DÉGRADÉ carte Réseau** — 3ᵉ statut jaune entre ONLINE et OFFLINE
+- [x] **Tests config.ts** — Reset `isMapTilerDisabled` sur Gist valide + cas Gist vide
+- [x] **i18n** — Clés `connectivity.status.degraded` (fr/en)
+- [x] **CSS** — Classe `.conn-status-degraded` (warning)

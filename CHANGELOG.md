@@ -1,3 +1,24 @@
+## [5.76.0] - 2026-06-18
+
+### Fixed
+- **Race condition clé MapTiler/ORS** : le fast-path `.env` (quota exceeded) était appliqué avant le chargement du Gist de rotation :
+  - `appInit.ts` : `await resolveMapTilerKey()` au lieu de `void` — plus de 403 avant le Gist.
+  - `config.ts` : `resolveMapTilerKey()`/`resolveORSKey()` réinitialisent `isDisabled=false` et émettent `serviceDegraded:{disabled:false}` quand une clé valide est trouvée dans le pool Gist.
+  - Résultat : l'icône réseau jaune ne s'affiche plus au démarrage, le 3D fonctionne immédiatement.
+
+### Added
+- **État DÉGRADÉ dans la carte Réseau** : le statut `#net-status` affiche désormais 3 états :
+  - `ONLINE` (vert) → tout OK
+  - `DÉGRADÉ` (jaune) → `isMapTilerDisabled` ou `isORSDisabled` actif
+  - `OFFLINE` (rouge) → pas de réseau
+- **Tests config.ts** : 2 tests pour la récupération de `isMapTilerDisabled` après chargement Gist.
+
+### Changed
+- **i18n** : clés `connectivity.status.degraded` ajoutées (fr/en).
+- **CSS** : classe `.conn-status-degraded` avec `color: var(--warning)`.
+
+- Tous les tests passent : 1148/1148 (105 files, 5 skip flaky).
+
 ## [5.75.0] - 2026-06-18
 
 ### Changed

@@ -380,7 +380,8 @@
         },
         "status": {
             "online": "ONLINE",
-            "offline": "OFFLINE"
+            "offline": "OFFLINE",
+            "degraded": "DÉGRADÉ"
         },
         "section": {
             "signal": "État du Signal",

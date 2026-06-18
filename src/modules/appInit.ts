@@ -79,15 +79,14 @@ export async function appInit(): Promise<void> {
         if (state.DEBUG_MODE) console.warn('[IAP] Init failed', e);
     });
 
-    // v6.0 : Clé bundled en fast-path immédiat, rotation Gist en arrière-plan
+    // v6.1 : Gist awaited avant toute requête tuile pour éviter la race
+    // condition entre le fast-path .env (quota exceeded) et la rotation Gist
     const bundledKey = import.meta.env.VITE_MAPTILER_KEY as string | undefined;
     if (bundledKey) {
-        state.MK = bundledKey;
-        void resolveMapTilerKey().finally(() => resolveORSKey());
-    } else {
-        await resolveMapTilerKey();
-        void resolveORSKey();
+        state.MK = bundledKey; // fallback si Gist échoue
     }
+    await resolveMapTilerKey();
+    void resolveORSKey();
     // v6.0 : Initialiser la couche cache ET les country packs AVANT le chargement
     // du terrain. Lancés tôt pour tourner en parallèle du setup UI.
     const cacheInitPromise = import('./tileLoader').then((m) =>

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { state } from './state';
 import { resolveMapTilerKey } from './config';
+import { eventBus } from './eventBus';
 
 describe('config.ts', () => {
     const GIST_URL =
@@ -41,6 +42,40 @@ describe('config.ts', () => {
 
         // On vérifie que la clé finale est soit celle du Gist, soit celle de l'Env (qui est prioritaire)
         expect(state.MK).toMatch(/gist-key-789012|2we4vmXjb9QmNJIEKhih/);
+    });
+
+    it('should reset isMapTilerDisabled when Gist provides a valid key', async () => {
+        state.isMapTilerDisabled = true;
+        vi.mocked(global.fetch).mockResolvedValue({
+            ok: true,
+            json: () =>
+                Promise.resolve({
+                    maptiler_keys: ['gist-key-789012', 'gist-key-345678'],
+                }),
+        } as any);
+
+        const emitSpy = vi.spyOn(eventBus, 'emit');
+        await resolveMapTilerKey();
+
+        expect(state.isMapTilerDisabled).toBe(false);
+        expect(state.MK).toBe('gist-key-789012');
+        expect(emitSpy).toHaveBeenCalledWith('serviceDegraded', {
+            service: 'maptiler',
+            disabled: false,
+        });
+        emitSpy.mockRestore();
+    });
+
+    it('should not reset isMapTilerDisabled when Gist returns empty keys', async () => {
+        state.isMapTilerDisabled = true;
+        vi.mocked(global.fetch).mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ maptiler_keys: [] }),
+        } as any);
+
+        await resolveMapTilerKey();
+
+        expect(state.isMapTilerDisabled).toBe(true);
     });
 
     it('should handle Gist unavailability gracefully', async () => {

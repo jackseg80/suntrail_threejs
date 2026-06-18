@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.75.0)
+# SunTrail — Guide IA (v5.76.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-18 — v5.75.0 : Refactoring dette technique (config.ts, geo.ts, scene.ts, appInit.ts) + disposeEnvironment + 403 unifié + icône dégradé + templates UI.
+> Mis à jour le 2026-06-18 — v5.76.0 : Fix race condition clés MapTiler/ORS (fast-path .env vs Gist) + état DÉGRADÉ dans carte Réseau + appInit await resolveMapTilerKey.
 
 ## Projet
 

@@ -128,6 +128,13 @@ export async function resolveMapTilerKey(): Promise<void> {
         const key = pickRandomFromPool(availableKeys, bannedKeys);
         if (key) {
             state.MK = key;
+            if (state.isMapTilerDisabled) {
+                state.isMapTilerDisabled = false;
+                eventBus.emit('serviceDegraded', {
+                    service: 'maptiler',
+                    disabled: false,
+                });
+            }
             if (state.DEBUG_MODE)
                 console.log(
                     `[Config] MapTiler key: Gist rotation active (${availableKeys.length - bannedKeys.size}/${availableKeys.length})`
@@ -203,6 +210,13 @@ export async function resolveORSKey(): Promise<void> {
     const key = pickRandomFromPool(orsAvailableKeys, orsBannedKeys);
     if (key) {
         state.ORS_KEY = key;
+        if (state.isORSDisabled) {
+            state.isORSDisabled = false;
+            eventBus.emit('serviceDegraded', {
+                service: 'ors',
+                disabled: false,
+            });
+        }
         if (state.DEBUG_MODE)
             console.log(
                 `[Config] ORS key: Gist rotation (${orsAvailableKeys.length - orsBannedKeys.size}/${orsAvailableKeys.length})`
