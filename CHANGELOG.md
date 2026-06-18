@@ -11,6 +11,8 @@
 ### Fixed
 - **Fuites mémoire Three.js** : ajout de `disposeEnvironment()` dans `environment.ts` (dispose Sky, sunLight, ambientLight) + cleanup camera, controls, stats DOM dans `disposeScene()`.
 - **403 MapTiler incohérent** : `tileLoader.ts:fetchWithCache()` appelle désormais `rotateMapTilerKey()` avant de désactiver le service (aligné avec le worker path).
+- **403 gaps sites** : `peaks.ts`, `poi.ts`, `landcover.ts` appellent désormais `rotateMapTilerKey()` sur 403/429 au lieu du `return null` silencieux.
+- **Flood « All keys banned »** : `config.ts:rotateServiceKey()` ne retraite pas une clé déjà bannie sans alternative, et n'affiche le message qu'une seule fois (reset au cooldown 2min).
 - **Catch muet** : `fetchWithCache()` outer catch log désormais un `console.warn` au lieu de `return null` silencieux.
 - **Icône « Mode Dégradé »** : `TopStatusBar` affiche une icône réseau orange quand un service tiers (MapTiler/ORS) est indisponible, via `eventBus:serviceDegraded`.
 
