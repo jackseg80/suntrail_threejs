@@ -20,7 +20,7 @@ import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
 import type { PackMeta, PackState, PackStatus } from './packTypes';
 import { iapService } from './iapService';
-import { isPointInCountry } from './geo';
+import { isPointInCountry, tilePixelToLatLon } from './geo';
 import { STORAGE_KEYS } from '../constants/storage';
 import {
     fetchCatalog,
@@ -502,11 +502,11 @@ class PackManager {
         zoom: number,
         meta: PackMeta
     ): boolean {
-        const n = Math.pow(2, zoom);
-        const centerLat =
-            (Math.atan(Math.sinh(Math.PI * (1 - (2 * (ty + 0.5)) / n))) * 180) /
-            Math.PI;
-        const centerLon = ((tx + 0.5) / n) * 360 - 180;
+        const { lat: centerLat, lon: centerLon } = tilePixelToLatLon(
+            tx + 0.5,
+            ty + 0.5,
+            Math.pow(2, zoom)
+        );
         // Vérification polygone si le pays est connu, sinon fallback bbox
         if (
             meta.regionCheck &&

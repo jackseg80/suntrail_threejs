@@ -85,35 +85,9 @@ export function forceImmediateLODUpdate(): void {
 
     const dx = state.controls.target.x;
     const dz = state.controls.target.z;
-    const rawDist = state.camera.position.distanceTo(state.controls.target);
-    const cameraGroundH = getAltitudeAt(
-        state.camera.position.x,
-        state.camera.position.z
-    );
-    const heightAboveGround = Math.max(
-        45,
-        state.camera.position.y - cameraGroundH
-    );
+    const dist = computeEffectiveDistance();
 
-    let dist: number;
-    if (state.IS_2D_MODE) {
-        dist = heightAboveGround;
-    } else {
-        const polar = state.controls.getPolarAngle();
-        const tiltBlend = THREE.MathUtils.clamp(polar / 1.2, 0, 1);
-        dist = THREE.MathUtils.lerp(
-            heightAboveGround,
-            rawDist,
-            tiltBlend * 0.5
-        );
-    }
-
-    const idealZoom = getIdealZoom(dist, state.ZOOM);
-    const effectiveMaxZoom = isFeatureEnabled('lod_high')
-        ? state.MAX_ALLOWED_ZOOM || 18
-        : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
-
-    const targetZoom = Math.min(idealZoom, effectiveMaxZoom);
+    const targetZoom = computeTargetZoom(dist);
     if (targetZoom !== state.ZOOM) {
         state.ZOOM = targetZoom;
     }
@@ -207,6 +181,30 @@ function getIdealZoom(dist: number, currentZoom: number): number {
     if (effectiveDist < getThresh(2000000, 7)) return 7;
     if (effectiveDist < getThresh(3200000, 6)) return 6;
     return 5;
+}
+
+function computeEffectiveDistance(): number {
+    if (!state.controls || !state.camera) return 45000;
+    const rawDist = state.camera.position.distanceTo(state.controls.target);
+    const cameraGroundH = state.IS_2D_MODE
+        ? 0
+        : getAltitudeAt(state.camera.position.x, state.camera.position.z);
+    const heightAboveGround = Math.max(
+        45,
+        state.camera.position.y - cameraGroundH
+    );
+    if (state.IS_2D_MODE) return heightAboveGround;
+    const polar = state.controls.getPolarAngle();
+    const tiltBlend = THREE.MathUtils.clamp(polar / 1.2, 0, 1);
+    return THREE.MathUtils.lerp(heightAboveGround, rawDist, tiltBlend * 0.5);
+}
+
+function computeTargetZoom(dist: number): number {
+    const idealZoom = getIdealZoom(dist, state.ZOOM);
+    const effectiveMaxZoom = isFeatureEnabled('lod_high')
+        ? state.MAX_ALLOWED_ZOOM || 18
+        : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
+    return Math.min(idealZoom, effectiveMaxZoom);
 }
 
 export async function initScene(): Promise<void> {
@@ -305,37 +303,8 @@ export async function initScene(): Promise<void> {
         if (state.camera && state.controls) {
             const dx = state.controls.target.x,
                 dz = state.controls.target.z;
-            const rawDist = state.camera.position.distanceTo(
-                state.controls.target
-            );
-            const cameraGroundH = state.IS_2D_MODE
-                ? 0
-                : getAltitudeAt(
-                      state.camera.position.x,
-                      state.camera.position.z
-                  );
-            const heightAboveGround = Math.max(
-                45,
-                state.camera.position.y - cameraGroundH
-            );
-            let dist: number;
-            if (state.IS_2D_MODE) {
-                dist = heightAboveGround;
-            } else {
-                const polar = state.controls.getPolarAngle();
-                const tiltBlend = THREE.MathUtils.clamp(polar / 1.2, 0, 1);
-                dist = THREE.MathUtils.lerp(
-                    heightAboveGround,
-                    rawDist,
-                    tiltBlend * 0.5
-                );
-            }
-
-            const idealZoom = getIdealZoom(dist, state.ZOOM);
-            const effectiveMaxZoom = isFeatureEnabled('lod_high')
-                ? state.MAX_ALLOWED_ZOOM || 18
-                : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
-            const targetZoom = Math.min(idealZoom, effectiveMaxZoom);
+            const dist = computeEffectiveDistance();
+            const targetZoom = computeTargetZoom(dist);
 
             if (targetZoom !== state.ZOOM) {
                 state.ZOOM = targetZoom;
@@ -428,27 +397,7 @@ export async function initScene(): Promise<void> {
 
         const dx = state.controls.target.x,
             dz = state.controls.target.z;
-        const rawDist = state.camera.position.distanceTo(state.controls.target);
-
-        const cameraGroundH = state.IS_2D_MODE
-            ? 0
-            : getAltitudeAt(state.camera.position.x, state.camera.position.z);
-        const heightAboveGround = Math.max(
-            45,
-            state.camera.position.y - cameraGroundH
-        );
-        let dist: number;
-        if (state.IS_2D_MODE) {
-            dist = heightAboveGround;
-        } else {
-            const polar = state.controls.getPolarAngle();
-            const tiltBlend = THREE.MathUtils.clamp(polar / 1.2, 0, 1);
-            dist = THREE.MathUtils.lerp(
-                heightAboveGround,
-                rawDist,
-                tiltBlend * 0.5
-            );
-        }
+        const dist = computeEffectiveDistance();
 
         const idealZoom = getIdealZoom(dist, state.ZOOM);
         const effectiveMaxZoom = isFeatureEnabled('lod_high')

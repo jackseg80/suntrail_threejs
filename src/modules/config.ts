@@ -1,11 +1,13 @@
 import { state } from './state';
 import { STORAGE_KEYS } from '../constants/storage';
 
-/**
- * Extrait les clés actives depuis la réponse JSON du Gist.
- */
-function extractGistKeys(data: any): string[] {
-    const raw = data?.maptiler_keys;
+const GIST_URL =
+    'https://gist.githubusercontent.com/jackseg80/c4f2e5e99c1efb9d736736cb65fce862/raw/suntrail_config.json';
+const GIST_TIMEOUT_MS = 4000;
+const BAN_COOLDOWN_MS = 120_000;
+
+function extractKeys(data: any, propertyName: string): string[] {
+    const raw = data?.[propertyName];
     if (!raw || !Array.isArray(raw) || raw.length === 0) return [];
     return raw
         .filter((k: any) =>
@@ -15,19 +17,84 @@ function extractGistKeys(data: any): string[] {
         .filter((k: string) => k && k.length > 10);
 }
 
+async function fetchGistConfig(): Promise<any> {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), GIST_TIMEOUT_MS);
+    const r = await fetch(GIST_URL, { cache: 'no-cache', signal: ctrl.signal });
+    clearTimeout(tid);
+    if (r.ok) return r.json();
+    throw new Error(`Gist HTTP ${r.status}`);
+}
+
+function pickRandomFromPool(
+    available: string[],
+    banned: Set<string>
+): string | null {
+    const valid = available.filter((k) => !banned.has(k));
+    if (valid.length === 0) return null;
+    return valid[Math.floor(Math.random() * valid.length)];
+}
+
+interface KeyRotationState {
+    availableKeys: string[];
+    bannedKeys: Set<string>;
+    banTimestampRef: { value: number };
+    onNewKey: (key: string) => void;
+    onAllBanned: () => void;
+    onCooldownReset: () => void;
+}
+
+function rotateServiceKey(rs: KeyRotationState, label: string): boolean {
+    const currentKey = label === 'MapTiler' ? state.MK : state.ORS_KEY;
+    if (!currentKey) return false;
+    if (state.DEBUG_MODE) console.warn(`[Config] ${label} key banned (403)`);
+    rs.bannedKeys.add(currentKey);
+    rs.banTimestampRef.value = Date.now();
+
+    const newKey = pickRandomFromPool(rs.availableKeys, rs.bannedKeys);
+    if (newKey) {
+        rs.onNewKey(newKey);
+        if (state.DEBUG_MODE) console.log(`[Config] ${label} rotation done.`);
+        return true;
+    }
+
+    if (Date.now() - rs.banTimestampRef.value > BAN_COOLDOWN_MS) {
+        if (state.DEBUG_MODE)
+            console.log(
+                `[Config] Reset ${label} bans after cooldown — retrying...`
+            );
+        rs.bannedKeys.clear();
+        rs.onCooldownReset();
+        if (rs.availableKeys.length > 0) {
+            const retryKey =
+                rs.availableKeys[
+                    Math.floor(Math.random() * rs.availableKeys.length)
+                ];
+            rs.onNewKey(retryKey);
+            if (state.DEBUG_MODE)
+                console.log(
+                    `[Config] Retry with ${label} key: ${retryKey.substring(0, 8)}...`
+                );
+            return true;
+        }
+    }
+
+    console.error(`[Config] All ${label} keys banned.`);
+    rs.onAllBanned();
+    return false;
+}
+
+// ── MapTiler ─────────────────────────────────────────────────────────────────
+
 let availableKeys: string[] = [];
 const bannedKeys = new Set<string>();
-let banTimestamp = 0;
+const banTimestamp = { value: 0 };
 let gistData: any = null;
 
 let orsAvailableKeys: string[] = [];
 const orsBannedKeys = new Set<string>();
-let orsBanTimestamp = 0;
+const orsBanTimestamp = { value: 0 };
 
-/**
- * Résout la clé MapTiler à utiliser (v5.28.20).
- * Priorité : localStorage (manuel) > .env (build) > Gist (runtime rotation).
- */
 export async function resolveMapTilerKey(): Promise<void> {
     if (window.location.search.includes('mode=test')) {
         state.MK = 'test-key-bypass';
@@ -37,9 +104,6 @@ export async function resolveMapTilerKey(): Promise<void> {
     const userDefinedKey = localStorage.getItem(STORAGE_KEYS.MAPTILER_KEY);
     const bundledKey = import.meta.env.VITE_MAPTILER_KEY as string | undefined;
 
-    const GIST_URL =
-        'https://gist.githubusercontent.com/jackseg80/c4f2e5e99c1efb9d736736cb65fce862/raw/suntrail_config.json';
-
     if (userDefinedKey) {
         state.MK = userDefinedKey;
         if (state.DEBUG_MODE)
@@ -47,38 +111,23 @@ export async function resolveMapTilerKey(): Promise<void> {
         return;
     }
 
-    // Background update from Gist (rotation)
     try {
-        const ctrl = new AbortController();
-        const tid = setTimeout(() => ctrl.abort(), 4000); // v5.29.35 : Timeout 4s pour ne pas bloquer le démarrage
-        const r = await fetch(GIST_URL, {
-            cache: 'no-cache',
-            signal: ctrl.signal,
-        });
-        clearTimeout(tid);
-        if (r.ok) {
-            const data = await r.json();
-            gistData = data;
-            availableKeys = extractGistKeys(data);
-            orsAvailableKeys = extractORSGistKeys(data);
-            if (availableKeys.length > 0) {
-                // On choisit une clé au hasard parmi celles non bannies
-                const validKeys = availableKeys.filter(
-                    (k) => !bannedKeys.has(k)
+        const data = await fetchGistConfig();
+        gistData = data;
+        availableKeys = extractKeys(data, 'maptiler_keys');
+        orsAvailableKeys = extractKeys(data, 'ors_keys');
+
+        const key = pickRandomFromPool(availableKeys, bannedKeys);
+        if (key) {
+            state.MK = key;
+            if (state.DEBUG_MODE)
+                console.log(
+                    `[Config] MapTiler key: Gist rotation active (${availableKeys.length - bannedKeys.size}/${availableKeys.length})`
                 );
-                if (validKeys.length > 0) {
-                    const idx = Math.floor(Math.random() * validKeys.length);
-                    state.MK = validKeys[idx];
-                    if (state.DEBUG_MODE)
-                        console.log(
-                            `[Config] MapTiler key: Gist rotation active (${validKeys.length} valides)`
-                        );
-                } else if (bundledKey) {
-                    state.MK = bundledKey;
-                    if (state.DEBUG_MODE)
-                        console.log(`[Config] MapTiler key: .env fallback`);
-                }
-            }
+        } else if (bundledKey) {
+            state.MK = bundledKey;
+            if (state.DEBUG_MODE)
+                console.log(`[Config] MapTiler key: .env fallback`);
         }
     } catch (e) {
         if (state.DEBUG_MODE)
@@ -91,60 +140,27 @@ export async function resolveMapTilerKey(): Promise<void> {
     }
 }
 
-/**
- * Marque la clé actuelle comme invalide (403) et passe à la suivante.
- * Retourne true si une nouvelle clé a pu être trouvée.
- */
 export function rotateMapTilerKey(): boolean {
-    if (!state.MK) return false;
-
-    if (state.DEBUG_MODE) console.warn(`[Config] Clé MapTiler bannie (403)`);
-    bannedKeys.add(state.MK);
-    banTimestamp = Date.now();
-
-    const validKeys = availableKeys.filter((k) => !bannedKeys.has(k));
-    if (validKeys.length > 0) {
-        state.MK = validKeys[Math.floor(Math.random() * validKeys.length)];
-        if (state.DEBUG_MODE) console.log(`[Config] Rotation effectuée.`);
-        return true;
-    }
-
-    // v5.32.0 : Auto-recovery — reset bans after 2 minutes to retry
-    // (Brave may temporarily strip Referer, causing 403 on valid keys)
-    const BAN_COOLDOWN_MS = 120_000;
-    if (Date.now() - banTimestamp > BAN_COOLDOWN_MS) {
-        if (state.DEBUG_MODE)
-            console.log(
-                '[Config] Reset MapTiler bans after cooldown — retrying...'
-            );
-        bannedKeys.clear();
-        state.isMapTilerDisabled = false;
-        if (availableKeys.length > 0) {
-            state.MK =
-                availableKeys[Math.floor(Math.random() * availableKeys.length)];
-            if (state.DEBUG_MODE)
-                console.log(
-                    `[Config] Retry avec clé : ${state.MK.substring(0, 8)}...`
-                );
-            return true;
-        }
-    }
-
-    console.error('[Config] Toutes les clés MapTiler ont été bannies.');
-    state.isMapTilerDisabled = true;
-    return false;
+    return rotateServiceKey(
+        {
+            availableKeys,
+            bannedKeys,
+            banTimestampRef: banTimestamp,
+            onNewKey: (key) => {
+                state.MK = key;
+            },
+            onAllBanned: () => {
+                state.isMapTilerDisabled = true;
+            },
+            onCooldownReset: () => {
+                state.isMapTilerDisabled = false;
+            },
+        },
+        'MapTiler'
+    );
 }
 
-function extractORSGistKeys(data: any): string[] {
-    const raw = data?.ors_keys;
-    if (!raw || !Array.isArray(raw) || raw.length === 0) return [];
-    return raw
-        .filter((k: any) =>
-            typeof k === 'string' ? true : k.enabled !== false
-        )
-        .map((k: any) => (typeof k === 'string' ? k : k.key))
-        .filter((k: string) => k && k.length > 10);
-}
+// ── ORS ──────────────────────────────────────────────────────────────────────
 
 export async function resolveORSKey(): Promise<void> {
     const userKey = localStorage.getItem(STORAGE_KEYS.ORS_KEY);
@@ -155,22 +171,11 @@ export async function resolveORSKey(): Promise<void> {
         return;
     }
 
-    const GIST_URL =
-        'https://gist.githubusercontent.com/jackseg80/c4f2e5e99c1efb9d736736cb65fce862/raw/suntrail_config.json';
-
     if (!gistData) {
         try {
-            const ctrl = new AbortController();
-            const tid = setTimeout(() => ctrl.abort(), 4000);
-            const r = await fetch(GIST_URL, {
-                cache: 'no-cache',
-                signal: ctrl.signal,
-            });
-            clearTimeout(tid);
-            if (r.ok) {
-                gistData = await r.json();
-                orsAvailableKeys = extractORSGistKeys(gistData);
-            }
+            const data = await fetchGistConfig();
+            gistData = data;
+            orsAvailableKeys = extractKeys(data, 'ors_keys');
         } catch (e) {
             if (state.DEBUG_MODE)
                 console.warn('[Config] Échec du chargement du Gist ORS:', e);
@@ -179,53 +184,32 @@ export async function resolveORSKey(): Promise<void> {
 
     if (!orsAvailableKeys.length) return;
 
-    const validKeys = orsAvailableKeys.filter((k) => !orsBannedKeys.has(k));
-    if (validKeys.length > 0) {
-        state.ORS_KEY = validKeys[Math.floor(Math.random() * validKeys.length)];
+    const key = pickRandomFromPool(orsAvailableKeys, orsBannedKeys);
+    if (key) {
+        state.ORS_KEY = key;
         if (state.DEBUG_MODE)
             console.log(
-                `[Config] ORS key: Gist rotation (${validKeys.length}/${orsAvailableKeys.length})`
+                `[Config] ORS key: Gist rotation (${orsAvailableKeys.length - orsBannedKeys.size}/${orsAvailableKeys.length})`
             );
     }
 }
 
 export function rotateORSKey(): boolean {
-    if (!state.ORS_KEY || state.ORS_KEY.length <= 10) return false;
-
-    if (state.DEBUG_MODE) console.warn('[Config] ORS key banned (403/429)');
-    orsBannedKeys.add(state.ORS_KEY);
-    orsBanTimestamp = Date.now();
-
-    const validKeys = orsAvailableKeys.filter((k) => !orsBannedKeys.has(k));
-    if (validKeys.length > 0) {
-        state.ORS_KEY = validKeys[Math.floor(Math.random() * validKeys.length)];
-        if (state.DEBUG_MODE)
-            console.log(
-                `[Config] ORS key rotated (${validKeys.length}/${orsAvailableKeys.length})`
-            );
-        return true;
-    }
-
-    const BAN_COOLDOWN_MS = 120_000;
-    if (Date.now() - orsBanTimestamp > BAN_COOLDOWN_MS) {
-        if (state.DEBUG_MODE)
-            console.log('[Config] Reset ORS bans after cooldown — retrying...');
-        orsBannedKeys.clear();
-        state.isORSDisabled = false;
-        if (orsAvailableKeys.length > 0) {
-            state.ORS_KEY =
-                orsAvailableKeys[
-                    Math.floor(Math.random() * orsAvailableKeys.length)
-                ];
-            if (state.DEBUG_MODE)
-                console.log(
-                    `[Config] ORS retry with key: ${state.ORS_KEY.substring(0, 8)}...`
-                );
-            return true;
-        }
-    }
-
-    console.error('[Config] All ORS keys banned.');
-    state.isORSDisabled = true;
-    return false;
+    return rotateServiceKey(
+        {
+            availableKeys: orsAvailableKeys,
+            bannedKeys: orsBannedKeys,
+            banTimestampRef: orsBanTimestamp,
+            onNewKey: (key) => {
+                state.ORS_KEY = key;
+            },
+            onAllBanned: () => {
+                state.isORSDisabled = true;
+            },
+            onCooldownReset: () => {
+                state.isORSDisabled = false;
+            },
+        },
+        'ORS'
+    );
 }

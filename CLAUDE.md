@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.72.0)
+# SunTrail — Guide IA (v5.75.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-13 — v5.74.0 : Audit pack couleur LOD 11, refactoring packCatalog, npm audit fix.
+> Mis à jour le 2026-06-18 — v5.75.0 : Refactoring dette technique (config.ts, geo.ts, scene.ts, appInit.ts).
 
 ## Projet
 

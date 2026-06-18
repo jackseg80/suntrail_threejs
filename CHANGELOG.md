@@ -1,3 +1,14 @@
+## [5.75.0] - 2026-06-18
+
+### Changed
+- **Refactoring dette technique** : audit et corrections des doublons critiques :
+  - `config.ts` : extraction générique `extractKeys()`, `fetchGistConfig()`, `pickRandomFromPool()`, `rotateServiceKey()` (élimine 80% du miroir MapTiler/ORS, -50 lignes).
+  - `geo.ts` : `tilePixelToLatLon()` et `getFiveSamplePoints()` extraits, utilisés dans les 3 fonctions tile-in-country. `yNormToLat()` réutilisé dans `worldToLngLatTarget()`.
+  - `packManager.ts` : `isTileInPackRegion()` utilise `tilePixelToLatLon()` de `geo.ts` au lieu de sa copie inline.
+  - `scene.ts` : `computeEffectiveDistance()` et `computeTargetZoom()` extraits, utilisés dans `forceImmediateLODUpdate()`, `controls.end` et `throttledUpdate()`.
+  - `appInit.ts` : `resetCoordsPillPosition()` et `screenToRaycaster()` extraits ; fonction vide `handleGlobalClick()` supprimée.
+- Tous les tests passent : 1147/1147 (105 files).
+
 ## [5.74.0] - 2026-06-13
 
 ### Added

@@ -218,6 +218,27 @@ export function getCountryCode(lat: number, lon: number): string | null {
 
 // ── Tile-in-country ─────────────────────────────────────────────────────────
 
+export function tilePixelToLatLon(
+    px: number,
+    py: number,
+    n: number
+): { lat: number; lon: number } {
+    const lat =
+        (Math.atan(Math.sinh(Math.PI * (1 - (2 * py) / n))) * 180) / Math.PI;
+    const lon = (px / n) * 360 - 180;
+    return { lat, lon };
+}
+
+function getFiveSamplePoints(tx: number, ty: number): [number, number][] {
+    return [
+        [tx + 0.5, ty + 0.5],
+        [tx, ty],
+        [tx + 1, ty],
+        [tx, ty + 1],
+        [tx + 1, ty + 1],
+    ];
+}
+
 export function isTileInCountry(
     tx: number,
     ty: number,
@@ -226,19 +247,9 @@ export function isTileInCountry(
     threshold: number = 3
 ): boolean {
     const n = getPow2(zoom);
-    const points: [number, number][] = [
-        [tx + 0.5, ty + 0.5],
-        [tx, ty],
-        [tx + 1, ty],
-        [tx, ty + 1],
-        [tx + 1, ty + 1],
-    ];
     let inside = 0;
-    for (const [px, py] of points) {
-        const lat =
-            (Math.atan(Math.sinh(Math.PI * (1 - (2 * py) / n))) * 180) /
-            Math.PI;
-        const lon = (px / n) * 360 - 180;
+    for (const [px, py] of getFiveSamplePoints(tx, ty)) {
+        const { lat, lon } = tilePixelToLatLon(px, py, n);
         if (isPointInCountry(lat, lon, countryCode)) inside++;
     }
     return inside >= threshold;
@@ -256,19 +267,9 @@ export function countPointsInCountry(
     countryCode: string
 ): number {
     const n = getPow2(zoom);
-    const points: [number, number][] = [
-        [tx + 0.5, ty + 0.5],
-        [tx, ty],
-        [tx + 1, ty],
-        [tx, ty + 1],
-        [tx + 1, ty + 1],
-    ];
     let inside = 0;
-    for (const [px, py] of points) {
-        const lat =
-            (Math.atan(Math.sinh(Math.PI * (1 - (2 * py) / n))) * 180) /
-            Math.PI;
-        const lon = (px / n) * 360 - 180;
+    for (const [px, py] of getFiveSamplePoints(tx, ty)) {
+        const { lat, lon } = tilePixelToLatLon(px, py, n);
         if (isPointInCountry(lat, lon, countryCode)) inside++;
     }
     return inside;
@@ -288,19 +289,12 @@ export function getCountryAtTile(
     const n = getPow2(zoom);
     const sampleLats = new Float64Array(5);
     const sampleLons = new Float64Array(5);
-    const points: [number, number][] = [
-        [tx + 0.5, ty + 0.5],
-        [tx, ty],
-        [tx + 1, ty],
-        [tx, ty + 1],
-        [tx + 1, ty + 1],
-    ];
+    const points = getFiveSamplePoints(tx, ty);
     for (let i = 0; i < 5; i++) {
         const [px, py] = points[i];
-        sampleLats[i] =
-            (Math.atan(Math.sinh(Math.PI * (1 - (2 * py) / n))) * 180) /
-            Math.PI;
-        sampleLons[i] = (px / n) * 360 - 180;
+        const { lat, lon } = tilePixelToLatLon(px, py, n);
+        sampleLats[i] = lat;
+        sampleLons[i] = lon;
     }
 
     let bestCode: string | null = null;
@@ -478,9 +472,7 @@ export function worldToLngLatTarget<T extends { lat: number; lon: number }>(
     const yNorm = worldZ / EARTH_CIRCUMFERENCE + oyNorm;
 
     target.lon = xNorm * 360 - 180;
-    const n = Math.PI - 2 * Math.PI * yNorm;
-    target.lat =
-        (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+    target.lat = yNormToLat(yNorm);
     return target;
 }
 

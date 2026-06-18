@@ -151,7 +151,6 @@ export async function appInit(): Promise<void> {
 
     setupOrientationHandler();
 
-    document.addEventListener('click', handleGlobalClick);
     const canvasContainer = document.getElementById('canvas-container');
     if (canvasContainer)
         canvasContainer.addEventListener('click', handleMapClick);
@@ -466,8 +465,6 @@ async function initSecondaryUI(): Promise<void> {
     }
 }
 
-function handleGlobalClick(_e: MouseEvent) {}
-
 let _longPressJustFired = false;
 
 const POI_CATEGORY_LABELS: Record<string, string> = {
@@ -485,6 +482,25 @@ function getPOICategoryLabel(category: string): string {
     return POI_CATEGORY_LABELS[category] || '';
 }
 
+function resetCoordsPillPosition(cp: HTMLElement): void {
+    cp.classList.remove('panel-custom-pos');
+    cp.style.left = '';
+    cp.style.top = '';
+    cp.style.bottom = '';
+    cp.style.transform = '';
+    cp.classList.remove('hidden');
+}
+
+function screenToRaycaster(clientX: number, clientY: number): THREE.Raycaster {
+    const mouse = new THREE.Vector2(
+        (clientX / window.innerWidth) * 2 - 1,
+        -(clientY / window.innerHeight) * 2 + 1
+    );
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, state.camera!);
+    return raycaster;
+}
+
 async function handleMapClick(e: MouseEvent) {
     if (_longPressJustFired) {
         _longPressJustFired = false;
@@ -496,13 +512,8 @@ async function handleMapClick(e: MouseEvent) {
         sheetManager.close();
     }
 
-    const mouse = new THREE.Vector2(
-        (e.clientX / window.innerWidth) * 2 - 1,
-        -(e.clientY / window.innerHeight) * 2 + 1
-    );
-    const raycaster = new THREE.Raycaster();
+    const raycaster = screenToRaycaster(e.clientX, e.clientY);
     raycaster.params.Sprite = { threshold: 35 };
-    raycaster.setFromCamera(mouse, state.camera);
 
     const intersects = raycaster.intersectObjects(state.scene.children, true);
 
@@ -549,12 +560,7 @@ async function handleMapClick(e: MouseEvent) {
 
             const cp = document.getElementById('coords-pill');
             if (cp) {
-                cp.classList.remove('panel-custom-pos');
-                cp.style.left = '';
-                cp.style.top = '';
-                cp.style.bottom = '';
-                cp.style.transform = '';
-                cp.classList.remove('hidden');
+                resetCoordsPillPosition(cp);
                 const gps = worldToLngLat(
                     spriteWorldX,
                     spriteWorldZ,
@@ -592,12 +598,7 @@ async function handleMapClick(e: MouseEvent) {
 
         const cp = document.getElementById('coords-pill');
         if (cp) {
-            cp.classList.remove('panel-custom-pos');
-            cp.style.left = '';
-            cp.style.top = '';
-            cp.style.bottom = '';
-            cp.style.transform = '';
-            cp.classList.remove('hidden');
+            resetCoordsPillPosition(cp);
             const gps = worldToLngLat(hit.x, hit.z, state.originTile);
             const clickLatLon = document.getElementById('click-latlon');
             if (clickLatLon)
@@ -972,12 +973,7 @@ function placeWaypointAt(clientX: number, clientY: number): void {
     if (!state.renderer || !state.camera || !state.scene || !state.originTile)
         return;
 
-    const mouse = new THREE.Vector2(
-        (clientX / window.innerWidth) * 2 - 1,
-        -(clientY / window.innerHeight) * 2 + 1
-    );
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mouse, state.camera);
+    const raycaster = screenToRaycaster(clientX, clientY);
 
     const intersects = raycaster.intersectObjects(state.scene.children, true);
 
