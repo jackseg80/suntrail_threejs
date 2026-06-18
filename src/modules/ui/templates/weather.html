@@ -47,5 +47,69 @@
             </button>
         </span>
     </div>
-    <div id="weather-content"></div>
+    <div id="weather-content">
+        <!-- Chargement -->
+        <div id="weather-loading" class="exp-loading" style="display: none">
+            <div class="exp-loading-spinner"></div>
+            <div class="exp-loading-text"></div>
+        </div>
+        <!-- Indisponible -->
+        <div
+            id="weather-unavailable"
+            class="exp-msg-placeholder"
+            style="display: none"
+        ></div>
+        <!-- En-tête météo actuelle -->
+        <div id="weather-main" style="display: none">
+            <div class="exp-main-row">
+                <span id="weather-main-icon" class="exp-main-icon"></span>
+                <div class="exp-main-temps">
+                    <span id="weather-main-temp" class="exp-main-temp"></span>
+                    <span id="weather-main-feels" class="exp-main-feels"></span>
+                </div>
+            </div>
+            <div id="weather-main-desc" class="exp-main-desc"></div>
+            <div id="weather-main-location" class="exp-location-line"></div>
+        </div>
+        <!-- Grille de stats -->
+        <div id="weather-stats-grid" class="exp-stats-grid"></div>
+        <!-- Défilement horaire -->
+        <div id="weather-hourly-container"></div>
+        <!-- Prévisions journalières -->
+        <div id="weather-daily" class="exp-daily-forecast">
+            <h3
+                id="weather-daily-title"
+                class="exp-h3"
+                data-i18n="weather.dailyForecast"
+            >
+                Prévisions
+            </h3>
+            <div id="weather-daily-list"></div>
+        </div>
+        <!-- Alertes montagne -->
+        <div id="weather-alerts" class="exp-alerts-section"></div>
+        <!-- Section PRO -->
+        <div id="weather-pro-section" style="display: none">
+            <h3 class="exp-h3" data-i18n="weather.proTitle">
+                Tableau de Bord Expert
+            </h3>
+            <div id="weather-pro-stats" class="exp-stats-grid"></div>
+            <div id="weather-pro-charts" class="exp-pro-charts">
+                <div
+                    id="weather-pro-temp-chart"
+                    class="exp-pro-chart-card"
+                ></div>
+                <div
+                    id="weather-pro-wind-dial"
+                    class="exp-pro-chart-card"
+                ></div>
+            </div>
+        </div>
+        <!-- Section FREE upsell -->
+        <div
+            id="weather-free-upsell"
+            class="exp-pro-upsell"
+            style="display: none"
+        ></div>
+    </div>
 </div>

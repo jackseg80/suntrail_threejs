@@ -50,6 +50,29 @@ export function initEnvironment(scene: THREE.Scene): void {
     state.sunLight = sunLight;
 }
 
+export function disposeEnvironment(): void {
+    if (state.sunLight) {
+        if (state.sunLight.shadow.map) state.sunLight.shadow.map.dispose();
+        state.sunLight.shadow.camera?.removeFromParent();
+        if (state.scene) {
+            state.scene.remove(state.sunLight.target);
+            state.scene.remove(state.sunLight);
+        }
+        state.sunLight.dispose();
+        state.sunLight = null;
+    }
+    if (state.ambientLight) {
+        if (state.scene) state.scene.remove(state.ambientLight);
+        state.ambientLight.dispose();
+        state.ambientLight = null;
+    }
+    if (state.sky) {
+        if (state.scene) state.scene.remove(state.sky);
+        state.sky.material.dispose();
+        state.sky = null;
+    }
+}
+
 /**
  * Ajuste le brouillard dynamiquement selon l'altitude pour un rendu naturel (v5.31.1)
  */

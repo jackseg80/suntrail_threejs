@@ -164,25 +164,14 @@ export class SolarProbeSheet extends BaseComponent {
             value: string,
             icon?: string
         ) => {
+            const iconPart = icon
+                ? `<span style="font-size:14px;margin-right:4px;">${icon}</span>`
+                : '';
             const div = document.createElement('div');
             div.classList.add('exp-probe-card');
-            if (icon) {
-                const iconEl = document.createElement('span');
-                iconEl.style.fontSize = '14px';
-                iconEl.style.marginRight = '4px';
-                iconEl.textContent = icon;
-                div.appendChild(iconEl);
-            }
-            const lbl = document.createElement('div');
-            lbl.classList.add('exp-probe-label');
-            lbl.textContent = label;
-            const val = document.createElement('div');
-            val.classList.add('exp-probe-value');
-            val.textContent = value;
-            div.appendChild(lbl);
-            div.appendChild(val);
+            div.innerHTML = `${iconPart}<div class="exp-probe-label">${label}</div><div class="exp-probe-value">${value}</div>`;
             parent.appendChild(div);
-            return val;
+            return div.querySelector('.exp-probe-value') as HTMLElement;
         };
 
         // ── Header (Location) ────────────────────────────────────────────────

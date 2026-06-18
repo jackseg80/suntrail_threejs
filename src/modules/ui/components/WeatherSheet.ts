@@ -150,16 +150,9 @@ export class WeatherSheet extends BaseComponent {
     ) {
         const div = document.createElement('div');
         div.classList.add(cssClass);
-        const lbl = document.createElement('div');
-        lbl.classList.add('exp-stat-label');
-        lbl.textContent = label;
-        const val = document.createElement('div');
-        val.classList.add('exp-stat-value');
-        val.textContent = value;
-        div.appendChild(lbl);
-        div.appendChild(val);
+        div.innerHTML = `<div class="exp-stat-label">${label}</div><div class="exp-stat-value">${value}</div>`;
         parent.appendChild(div);
-        return val;
+        return div.querySelector('.exp-stat-value') as HTMLElement;
     }
 
     private buildHourlyScroll(

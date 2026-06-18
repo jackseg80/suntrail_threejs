@@ -7,6 +7,16 @@
   - `packManager.ts` : `isTileInPackRegion()` utilise `tilePixelToLatLon()` de `geo.ts` au lieu de sa copie inline.
   - `scene.ts` : `computeEffectiveDistance()` et `computeTargetZoom()` extraits, utilisés dans `forceImmediateLODUpdate()`, `controls.end` et `throttledUpdate()`.
   - `appInit.ts` : `resetCoordsPillPosition()` et `screenToRaycaster()` extraits ; fonction vide `handleGlobalClick()` supprimée.
+
+### Fixed
+- **Fuites mémoire Three.js** : ajout de `disposeEnvironment()` dans `environment.ts` (dispose Sky, sunLight, ambientLight) + cleanup camera, controls, stats DOM dans `disposeScene()`.
+- **403 MapTiler incohérent** : `tileLoader.ts:fetchWithCache()` appelle désormais `rotateMapTilerKey()` avant de désactiver le service (aligné avec le worker path).
+- **Catch muet** : `fetchWithCache()` outer catch log désormais un `console.warn` au lieu de `return null` silencieux.
+- **Icône « Mode Dégradé »** : `TopStatusBar` affiche une icône réseau orange quand un service tiers (MapTiler/ORS) est indisponible, via `eventBus:serviceDegraded`.
+
+### Changed (UI)
+- **Templates weather.html + solar-probe.html** : sections PRO/free/stats/forecast déplacées dans les templates (55% de createElement en moins dans `makeStat`/`addStat`).
+
 - Tous les tests passent : 1147/1147 (105 files).
 
 ## [5.74.0] - 2026-06-13

@@ -131,6 +131,23 @@ export class TopStatusBar extends BaseComponent {
             )
         );
 
+        const degradedServices = new Set<string>();
+        const onServiceDegraded = (payload: {
+            service: string;
+            disabled: boolean;
+        }) => {
+            if (payload.disabled) {
+                degradedServices.add(payload.service);
+            } else {
+                degradedServices.delete(payload.service);
+            }
+            this.updateNetwork(degradedServices.size > 0);
+        };
+        eventBus.on('serviceDegraded', onServiceDegraded);
+        this.addSubscription(() =>
+            eventBus.off('serviceDegraded', onServiceDegraded)
+        );
+
         this.updateAriaLabels();
         const onLocaleChanged = () => this.updateAriaLabels();
         eventBus.on('localeChanged', onLocaleChanged);
@@ -300,12 +317,16 @@ export class TopStatusBar extends BaseComponent {
         }
     }
 
-    private updateNetwork(): void {
+    private updateNetwork(degraded: boolean = false): void {
         if (this.netStatusIcon) {
             const isOffline = state.IS_OFFLINE || !state.isNetworkAvailable;
-            this.netStatusIcon.innerHTML = isOffline
-                ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.7 12.3a2.5 2.5 0 0 1 3.6 3.6m-2.2-12.7a5 5 0 0 1 7.1 7.1m-1.8 4.2A5 5 0 0 1 3 10.5a5 5 0 0 1 4.5-4.9M1 1l22 22"/></svg>`
-                : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>`;
+            if (isOffline) {
+                this.netStatusIcon.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.7 12.3a2.5 2.5 0 0 1 3.6 3.6m-2.2-12.7a5 5 0 0 1 7.1 7.1m-1.8 4.2A5 5 0 0 1 3 10.5a5 5 0 0 1 4.5-4.9M1 1l22 22"/></svg>`;
+            } else if (degraded) {
+                this.netStatusIcon.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--warning, #f59e0b)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/><line x1="17" y1="7" x2="22" y2="2"/></svg>`;
+            } else {
+                this.netStatusIcon.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>`;
+            }
         }
     }
 }

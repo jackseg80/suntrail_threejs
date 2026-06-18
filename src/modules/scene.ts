@@ -60,6 +60,7 @@ import {
     initEnvironment,
     updateEnvironment,
     createGroundPlane,
+    disposeEnvironment,
 } from './environment';
 
 export { flyTo };
@@ -128,12 +129,26 @@ export async function disposeScene(): Promise<void> {
     }
     disposeCompass();
     disposeWeatherSystem();
+    disposeEnvironment();
+    if (state.camera) {
+        if (state.scene) state.scene.remove(state.camera);
+        state.camera = null;
+    }
+    if (state.controls) {
+        state.controls.dispose();
+        state.controls = null;
+    }
     if (groundPlane) {
         groundPlane.geometry.dispose();
         (groundPlane.material as THREE.MeshBasicMaterial).dispose();
         groundPlane = null;
     }
+    if (state.stats?.dom) {
+        state.stats.dom.remove();
+        state.stats = null;
+    }
     if (state.scene) state.scene.clear();
+    state.scene = null;
     if (visibilityChangeHandler) {
         document.removeEventListener(
             'visibilitychange',

@@ -1,5 +1,6 @@
 import { state } from './state';
 import { STORAGE_KEYS } from '../constants/storage';
+import { eventBus } from './eventBus';
 
 const GIST_URL =
     'https://gist.githubusercontent.com/jackseg80/c4f2e5e99c1efb9d736736cb65fce862/raw/suntrail_config.json';
@@ -151,9 +152,17 @@ export function rotateMapTilerKey(): boolean {
             },
             onAllBanned: () => {
                 state.isMapTilerDisabled = true;
+                eventBus.emit('serviceDegraded', {
+                    service: 'maptiler',
+                    disabled: true,
+                });
             },
             onCooldownReset: () => {
                 state.isMapTilerDisabled = false;
+                eventBus.emit('serviceDegraded', {
+                    service: 'maptiler',
+                    disabled: false,
+                });
             },
         },
         'MapTiler'
@@ -205,9 +214,17 @@ export function rotateORSKey(): boolean {
             },
             onAllBanned: () => {
                 state.isORSDisabled = true;
+                eventBus.emit('serviceDegraded', {
+                    service: 'ors',
+                    disabled: true,
+                });
             },
             onCooldownReset: () => {
                 state.isORSDisabled = false;
+                eventBus.emit('serviceDegraded', {
+                    service: 'ors',
+                    disabled: false,
+                });
             },
         },
         'ORS'

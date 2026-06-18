@@ -2,7 +2,7 @@ import { state } from './state';
 import { getCountryAtTile, isTileInCountry, countPointsInCountry } from './geo';
 import { COUNTRY_SOURCES } from './tileSources';
 import { showToast } from './toast';
-
+import { rotateMapTilerKey } from './config';
 import { tileWorkerManager } from './workerManager';
 import { disposeAllCachedTiles } from './tileCache';
 import * as pmtiles from 'pmtiles';
@@ -322,10 +322,14 @@ export async function fetchWithCache(
             // v5.29.3 : Disjoncteur MapTiler (Rate Limit ou Clé invalide)
             if (url.includes('api.maptiler.com')) {
                 if (r.status === 403 || r.status === 429) {
-                    console.error(
-                        `[MapTiler] Erreur ${r.status}. Basculement sur les sources de secours (OSM/OpenTopo).`
-                    );
-                    state.isMapTilerDisabled = true;
+                    console.error(`[MapTiler] Erreur ${r.status}.`);
+                    const hasMoreKeys = rotateMapTilerKey();
+                    if (!hasMoreKeys) {
+                        console.warn(
+                            '[MapTiler] Aucune clé valide restante — basculement sur les sources de secours (OSM/OpenTopo).'
+                        );
+                        state.isMapTilerDisabled = true;
+                    }
                     disposeAllCachedTiles();
                     return null;
                 }
@@ -361,6 +365,10 @@ export async function fetchWithCache(
         }
         return null;
     } catch (e) {
+        console.warn(
+            `[tileLoader] fetchWithCache failed for ${url}:`,
+            (e as Error).message
+        );
         return null;
     }
 }

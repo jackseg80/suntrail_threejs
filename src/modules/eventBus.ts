@@ -17,6 +17,7 @@ type EventMap = {
     recordingRecovered: void;
     networkOnline: void;
     networkOffline: void;
+    serviceDegraded: { service: string; disabled: boolean };
     packStatusChanged: { packId: string; status: string };
     packMounted: { packId: string };
     packUnmounted: { packId: string };
