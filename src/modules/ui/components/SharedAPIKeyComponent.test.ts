@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const { mockState } = vi.hoisted(() => {
     const state: Record<string, any> = {
@@ -74,7 +74,9 @@ describe('SharedAPIKeyComponent', () => {
         mockState.MK = 'test-key-1234567890';
         const comp = new SharedAPIKeyComponent('test-api-container');
         comp.hydrate();
-        const input = container.querySelector('.api-key-input') as HTMLInputElement;
+        const input = container.querySelector(
+            '.api-key-input'
+        ) as HTMLInputElement;
         expect(input).not.toBeNull();
         expect(input.value).toBe('test-key-1234567890');
     });
@@ -82,15 +84,21 @@ describe('SharedAPIKeyComponent', () => {
     it('sets aria-label on the input', () => {
         const comp = new SharedAPIKeyComponent('test-api-container');
         comp.hydrate();
-        const input = container.querySelector('.api-key-input') as HTMLInputElement;
+        const input = container.querySelector(
+            '.api-key-input'
+        ) as HTMLInputElement;
         expect(input.getAttribute('aria-label')).toBe('Clé API MapTiler');
     });
 
     it('saves key on form submit', () => {
         const comp = new SharedAPIKeyComponent('test-api-container');
         comp.hydrate();
-        const input = container.querySelector('.api-key-input') as HTMLInputElement;
-        const form = container.querySelector('.api-key-form') as HTMLFormElement;
+        const input = container.querySelector(
+            '.api-key-input'
+        ) as HTMLInputElement;
+        const form = container.querySelector(
+            '.api-key-form'
+        ) as HTMLFormElement;
         input.value = 'valid-key-long-enough-12345';
         form.dispatchEvent(new Event('submit', { cancelable: true }));
         expect(mockState.MK).toBe('valid-key-long-enough-12345');
@@ -103,8 +111,12 @@ describe('SharedAPIKeyComponent', () => {
     it('rejects keys shorter than 10 characters', () => {
         const comp = new SharedAPIKeyComponent('test-api-container');
         comp.hydrate();
-        const input = container.querySelector('.api-key-input') as HTMLInputElement;
-        const form = container.querySelector('.api-key-form') as HTMLFormElement;
+        const input = container.querySelector(
+            '.api-key-input'
+        ) as HTMLInputElement;
+        const form = container.querySelector(
+            '.api-key-form'
+        ) as HTMLFormElement;
         input.value = 'short';
         form.dispatchEvent(new Event('submit', { cancelable: true }));
         expect(showToast).not.toHaveBeenCalled();
@@ -113,10 +125,17 @@ describe('SharedAPIKeyComponent', () => {
 
     it('calls onKeyChange callback after submit', () => {
         const onKeyChange = vi.fn();
-        const comp = new SharedAPIKeyComponent('test-api-container', onKeyChange);
+        const comp = new SharedAPIKeyComponent(
+            'test-api-container',
+            onKeyChange
+        );
         comp.hydrate();
-        const input = container.querySelector('.api-key-input') as HTMLInputElement;
-        const form = container.querySelector('.api-key-form') as HTMLFormElement;
+        const input = container.querySelector(
+            '.api-key-input'
+        ) as HTMLInputElement;
+        const form = container.querySelector(
+            '.api-key-form'
+        ) as HTMLFormElement;
         input.value = 'valid-key-long-enough-12345';
         form.dispatchEvent(new Event('submit', { cancelable: true }));
         expect(onKeyChange).toHaveBeenCalled();
@@ -141,8 +160,12 @@ describe('SharedAPIKeyComponent', () => {
     it('trims whitespace from the key', () => {
         const comp = new SharedAPIKeyComponent('test-api-container');
         comp.hydrate();
-        const input = container.querySelector('.api-key-input') as HTMLInputElement;
-        const form = container.querySelector('.api-key-form') as HTMLFormElement;
+        const input = container.querySelector(
+            '.api-key-input'
+        ) as HTMLInputElement;
+        const form = container.querySelector(
+            '.api-key-form'
+        ) as HTMLFormElement;
         input.value = '   trimmed-key-12345   ';
         form.dispatchEvent(new Event('submit', { cancelable: true }));
         expect(mockState.MK).toBe('trimmed-key-12345');
@@ -152,7 +175,9 @@ describe('SharedAPIKeyComponent', () => {
         mockState.MK = '';
         const comp = new SharedAPIKeyComponent('test-api-container');
         comp.hydrate();
-        const input = container.querySelector('.api-key-input') as HTMLInputElement;
+        const input = container.querySelector(
+            '.api-key-input'
+        ) as HTMLInputElement;
         expect(input.value).toBe('');
     });
 });

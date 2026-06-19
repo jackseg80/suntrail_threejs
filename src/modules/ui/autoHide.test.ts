@@ -41,7 +41,9 @@ describe('autoHide', () => {
         });
 
         it('does not add ui-hidden when a sheet is open', () => {
-            vi.mocked(sheetManager.getActiveSheetId).mockReturnValue('some-sheet');
+            vi.mocked(sheetManager.getActiveSheetId).mockReturnValue(
+                'some-sheet'
+            );
             initAutoHide();
             vi.advanceTimersByTime(10000);
             expect(document.body.classList.contains('ui-hidden')).toBe(false);

@@ -182,7 +182,9 @@ describe('LayersSheet', () => {
         mockState.MAP_SOURCE = 'opentopomap';
         const sheet = new LayersSheet();
         sheet.hydrate();
-        const active = document.querySelector('.layer-item.active') as HTMLElement;
+        const active = document.querySelector(
+            '.layer-item.active'
+        ) as HTMLElement;
         expect(active).not.toBeNull();
         expect(active.dataset.source).toBe('opentopomap');
     });

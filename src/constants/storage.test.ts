@@ -11,7 +11,11 @@ describe('STORAGE_KEYS', () => {
     it('all keys use the suntrail_ prefix', () => {
         const values = Object.values(STORAGE_KEYS);
         for (const v of values) {
-            expect(v.startsWith('suntrail_') || v.startsWith('rc_') || v === 'maptiler_key').toBe(true);
+            expect(
+                v.startsWith('suntrail_') ||
+                    v.startsWith('rc_') ||
+                    v === 'maptiler_key'
+            ).toBe(true);
         }
     });
 

@@ -106,10 +106,8 @@ describe('findPackContaining()', () => {
         const hasNoRegion = catalog.packs.some((p) => !p.regionCheck);
         if (hasNoRegion) {
             const pack = catalog.packs.find((p) => !p.regionCheck)!;
-            const centerLat =
-                (pack.bounds.minLat + pack.bounds.maxLat) / 2;
-            const centerLon =
-                (pack.bounds.minLon + pack.bounds.maxLon) / 2;
+            const centerLat = (pack.bounds.minLat + pack.bounds.maxLat) / 2;
+            const centerLon = (pack.bounds.minLon + pack.bounds.maxLon) / 2;
             const result = findPackContaining(
                 centerLat,
                 centerLon,

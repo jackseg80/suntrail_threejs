@@ -104,7 +104,9 @@ describe('UpsellModal.tryShow()', () => {
             value: true,
             configurable: true,
         });
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+        const consoleSpy = vi
+            .spyOn(console, 'log')
+            .mockImplementation(() => {});
         UpsellModal.tryShow();
         vi.advanceTimersByTime(3000);
         expect(sheetManager.open).not.toHaveBeenCalled();

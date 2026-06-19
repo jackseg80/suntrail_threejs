@@ -96,7 +96,8 @@ describe('NavigationBar', () => {
     it('sets role=tablist on the element', () => {
         const nav = new NavigationBar();
         nav.hydrate();
-        expect(nav.element?.getAttribute('role')).toBe('tablist');
+        const el = container.querySelector('#nav-bar') as HTMLElement;
+        expect(el.getAttribute('role')).toBe('tablist');
     });
 
     it('sets ARIA attributes on tabs', () => {
@@ -112,7 +113,9 @@ describe('NavigationBar', () => {
     it('opens sheet on tab click', () => {
         const nav = new NavigationBar();
         nav.hydrate();
-        const tab = container.querySelector('[data-tab="search"]') as HTMLElement;
+        const tab = container.querySelector(
+            '[data-tab="search"]'
+        ) as HTMLElement;
         tab.click();
         expect(sheetManager.open).toHaveBeenCalledWith('search');
     });
@@ -121,7 +124,9 @@ describe('NavigationBar', () => {
         vi.mocked(sheetManager.getActiveSheetId).mockReturnValue('layers');
         const nav = new NavigationBar();
         nav.hydrate();
-        const tab = container.querySelector('[data-tab="layers"]') as HTMLElement;
+        const tab = container.querySelector(
+            '[data-tab="layers"]'
+        ) as HTMLElement;
         tab.click();
         expect(sheetManager.close).toHaveBeenCalled();
     });

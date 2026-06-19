@@ -12,7 +12,9 @@ describe('buildTimeline()', () => {
         parent = document.createElement('div');
     });
 
-    function makeResult(timeline: Array<{ isNight: boolean; inShadow: boolean }>) {
+    function makeResult(
+        timeline: Array<{ isNight: boolean; inShadow: boolean }>
+    ) {
         return { timeline } as any;
     }
 
@@ -52,20 +54,14 @@ describe('buildTimeline()', () => {
     });
 
     it('sets red background for shadow bars', () => {
-        buildTimeline(
-            parent,
-            makeResult([{ isNight: false, inShadow: true }])
-        );
+        buildTimeline(parent, makeResult([{ isNight: false, inShadow: true }]));
         const bar = parent.querySelector('.exp-timeline-bar') as HTMLElement;
         const bg = bar.style.background.replace(/\s+/g, '');
         expect(bg).toBe('rgba(255,80,80,0.3)');
     });
 
     it('sets black background for night bars', () => {
-        buildTimeline(
-            parent,
-            makeResult([{ isNight: true, inShadow: false }])
-        );
+        buildTimeline(parent, makeResult([{ isNight: true, inShadow: false }]));
         const bar = parent.querySelector('.exp-timeline-bar') as HTMLElement;
         expect(bar.style.background).toBe('#000');
     });

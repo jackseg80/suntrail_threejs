@@ -123,16 +123,9 @@ describe('SOSSheet', () => {
     it('registers sheetOpened listener to resolveAndDisplay', async () => {
         const sheet = new SOSSheet();
         sheet.hydrate();
-
-        let onSheetOpened: Function = () => {};
-        vi.mocked(eventBus.on).mockImplementation((_event, fn) => {
-            onSheetOpened = fn as Function;
-        });
-
-        sheet.hydrate();
         expect(eventBus.on).toHaveBeenCalledWith(
             'sheetOpened',
-            expect.any(Function)
+            expect.anything()
         );
     });
 
@@ -142,9 +135,10 @@ describe('SOSSheet', () => {
 
         const textContainer = document.getElementById('sos-text-container')!;
 
-        let sheetOpenedHandler: Function = () => {};
+        let sheetOpenedHandler: (payload: { id: string }) => void = () => {};
         vi.mocked(eventBus.on).mockImplementation((_event, fn) => {
-            if (_event === 'sheetOpened') sheetOpenedHandler = fn as Function;
+            if (_event === 'sheetOpened')
+                sheetOpenedHandler = fn as (payload: { id: string }) => void;
         });
 
         sheet.hydrate();
@@ -159,9 +153,10 @@ describe('SOSSheet', () => {
         const sheet = new SOSSheet();
         sheet.hydrate();
 
-        let sheetOpenedHandler: Function = () => {};
+        let sheetOpenedHandler: (payload: { id: string }) => void = () => {};
         vi.mocked(eventBus.on).mockImplementation((_event, fn) => {
-            if (_event === 'sheetOpened') sheetOpenedHandler = fn as Function;
+            if (_event === 'sheetOpened')
+                sheetOpenedHandler = fn as (payload: { id: string }) => void;
         });
 
         sheet.hydrate();
@@ -178,9 +173,10 @@ describe('SOSSheet', () => {
         const sheet = new SOSSheet();
         sheet.hydrate();
 
-        let sheetOpenedHandler: Function = () => {};
+        let sheetOpenedHandler: (payload: { id: string }) => void = () => {};
         vi.mocked(eventBus.on).mockImplementation((_event, fn) => {
-            if (_event === 'sheetOpened') sheetOpenedHandler = fn as Function;
+            if (_event === 'sheetOpened')
+                sheetOpenedHandler = fn as (payload: { id: string }) => void;
         });
 
         sheet.hydrate();
@@ -196,9 +192,10 @@ describe('SOSSheet', () => {
         const sheet = new SOSSheet();
         sheet.hydrate();
 
-        let sheetOpenedHandler: Function = () => {};
+        let sheetOpenedHandler: (payload: { id: string }) => void = () => {};
         vi.mocked(eventBus.on).mockImplementation((_event, fn) => {
-            if (_event === 'sheetOpened') sheetOpenedHandler = fn as Function;
+            if (_event === 'sheetOpened')
+                sheetOpenedHandler = fn as (payload: { id: string }) => void;
         });
 
         sheet.hydrate();

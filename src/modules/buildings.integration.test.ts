@@ -114,7 +114,7 @@ describe('Buildings Integration', () => {
         vi.mocked(global.fetch).mockResolvedValue({
             ok: true,
             arrayBuffer: async () => new ArrayBuffer(0),
-        });
+        } as Response);
         const tile = makeTile();
         await loadBuildingsForTile(tile);
         expect(tile.buildingGroup).toBeNull();

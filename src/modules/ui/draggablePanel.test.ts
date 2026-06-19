@@ -37,16 +37,27 @@ describe('attachDraggablePanel()', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         panel = document.createElement('div');
-        Object.defineProperty(panel, 'offsetWidth', { value: 300, configurable: true });
-        Object.defineProperty(panel, 'offsetHeight', { value: 400, configurable: true });
-        panel.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translate(-50%,0);';
+        Object.defineProperty(panel, 'offsetWidth', {
+            value: 300,
+            configurable: true,
+        });
+        Object.defineProperty(panel, 'offsetHeight', {
+            value: 400,
+            configurable: true,
+        });
+        panel.style.cssText =
+            'position:fixed;bottom:20px;left:50%;transform:translate(-50%,0);';
         document.body.appendChild(panel);
 
         handle = document.createElement('div');
         panel.appendChild(handle);
 
         onDismiss = vi.fn();
-        cleanup = attachDraggablePanel({ panel, handle, onDismiss });
+        cleanup = attachDraggablePanel({
+            panel,
+            handle,
+            onDismiss: onDismiss as () => void,
+        });
     });
 
     afterEach(() => {
@@ -104,14 +115,18 @@ describe('attachDraggablePanel()', () => {
 
     it('cancels hold timer when movement exceeds 20px before hold completes', () => {
         handle.dispatchEvent(makePointerEvent('pointerdown', { clientY: 100 }));
-        handle.dispatchEvent(makePointerEvent('pointermove', { clientX: 120, clientY: 100 }));
+        handle.dispatchEvent(
+            makePointerEvent('pointermove', { clientX: 120, clientY: 100 })
+        );
         vi.advanceTimersByTime(350);
         expect(handle.style.cursor).toBe('');
     });
 
     it('ignores pointermove without active pointerdown', () => {
         expect(() =>
-            handle.dispatchEvent(makePointerEvent('pointermove', { clientY: 200 }))
+            handle.dispatchEvent(
+                makePointerEvent('pointermove', { clientY: 200 })
+            )
         ).not.toThrow();
         expect(onDismiss).not.toHaveBeenCalled();
     });
@@ -125,14 +140,18 @@ describe('attachDraggablePanel()', () => {
     it('handles pointercancel same as pointerup', () => {
         handle.dispatchEvent(makePointerEvent('pointerdown', { clientY: 100 }));
         handle.dispatchEvent(makePointerEvent('pointermove', { clientY: 165 }));
-        handle.dispatchEvent(makePointerEvent('pointercancel', { clientY: 165 }));
+        handle.dispatchEvent(
+            makePointerEvent('pointercancel', { clientY: 165 })
+        );
         expect(onDismiss).toHaveBeenCalledTimes(1);
     });
 
     it('adds customPosClass when entering reposition mode and moving', () => {
         handle.dispatchEvent(makePointerEvent('pointerdown', { clientY: 100 }));
         vi.advanceTimersByTime(350);
-        handle.dispatchEvent(makePointerEvent('pointermove', { clientX: 100, clientY: 200 }));
+        handle.dispatchEvent(
+            makePointerEvent('pointermove', { clientX: 100, clientY: 200 })
+        );
         expect(panel.classList.contains('panel-custom-pos')).toBe(true);
     });
 

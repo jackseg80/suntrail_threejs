@@ -70,7 +70,9 @@ describe('showUpgradePrompt()', () => {
         ];
         for (const key of keys) {
             showUpgradePrompt(key);
-            const callArgs = vi.mocked(showToast).mock.calls.at(-1)?.[0] as string;
+            const callArgs = vi
+                .mocked(showToast)
+                .mock.calls.at(-1)?.[0] as string;
             expect(callArgs).not.toContain(key);
         }
     });
