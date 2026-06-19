@@ -1,3 +1,21 @@
+## [5.77.0] - 2026-06-19
+
+### Fixed
+- **Sync REC bloquée (perf)** : `syncPoints()` re-nettoie désormais uniquement les nouveaux points avec contexte de bordure (2 derniers points), au lieu de re-traiter l'intégralité de `state.recordedPoints` via `cleanGPSTrack()` à chaque broadcast — évite la saturation du thread JS sur les longues randos.
+- **Mutex `syncPoints()`** : ajout d'un verrou `_syncing` pour empêcher les exécutions concurrentes (race condition sur broadcasts fréquents ~1 Hz).
+- **Normalisation de types** : `NativeGPSPoint→LocationPoint` avant stockage dans `state.recordedPoints` (filtrage des champs `id`/`accuracy`).
+- **Temps aberrant notification** : `getElapsedTimeString()` protégé contre `mStartTime=0`, négatif ou futur — retourne `"0min"` au lieu d'afficher des heures absurdes (fixe le bug `2543659875h`).
+- **`calculateTrackStats()`** : paramètre `skipCleaning=true` évite le re-calcul `cleanGPSTrack` complet toutes les 10s (utilisé par le interval notification).
+
+### Changed
+- **`geoStats.ts`** : `calculateTrackStats(points, threshold, skipCleaning)` — la déduplication par timestamp remplace `cleanGPSTrack` complet quand les points sont déjà nettoyés.
+
+### Tests
+- **`nativeGPSService.test.ts`** : +4 tests (lock concurrence, sync incrémental, normalisation types, gestion bordures).
+- **`geoStats.test.ts`** : +3 tests (skipCleaning distance/déduplication/D+/D-).
+
+- Tous les tests passent : 1157/1157 (105 files, 5 skip flaky).
+
 ## [5.76.0] - 2026-06-18
 
 ### Fixed

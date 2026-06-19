@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { calculateTrackStats, calculateEstimatedTime } from './geoStats';
+import type { LocationPoint } from './geo';
 
 describe('geoStats - Munter Method (v5.29.40)', () => {
     it('should estimate time correctly (4km/h base)', () => {
@@ -101,6 +102,70 @@ describe('geoStats - Hysteresis Algorithm', () => {
         ];
 
         const stats = calculateTrackStats(points);
+        expect(stats.dPlus).toBeGreaterThan(15);
+        expect(stats.dMinus).toBeGreaterThan(15);
+    });
+});
+
+describe('geoStats - skipCleaning (v5.76.0)', () => {
+    function makePoints(
+        pts: Array<{ lat: number; lon: number; alt: number; timestamp: number }>
+    ): LocationPoint[] {
+        return pts.map((p) => ({ ...p }));
+    }
+
+    it('should produce same distance with skipCleaning=true for pre-cleaned points', () => {
+        const points = makePoints([
+            { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 10000 },
+            { lat: 46.5001, lon: 7.5001, alt: 1005, timestamp: 20000 },
+            { lat: 46.5002, lon: 7.5002, alt: 1010, timestamp: 30000 },
+            { lat: 46.5003, lon: 7.5003, alt: 980, timestamp: 40000 },
+            { lat: 46.5004, lon: 7.5004, alt: 990, timestamp: 50000 },
+        ]);
+
+        const statsFull = calculateTrackStats(points, 5, false);
+        const statsSkip = calculateTrackStats(points, 5, true);
+
+        expect(statsSkip.distance).toBeCloseTo(statsFull.distance, 3);
+    });
+
+    it('should deduplicate by timestamp with skipCleaning=true', () => {
+        const points = makePoints([
+            { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 10000 },
+            { lat: 46.5001, lon: 7.5001, alt: 1005, timestamp: 20000 },
+            { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 10000 }, // Duplicate
+            { lat: 46.5002, lon: 7.5002, alt: 1010, timestamp: 30000 },
+        ]);
+
+        const stats = calculateTrackStats(points, 5, true);
+
+        expect(stats.distance).toBeGreaterThan(0);
+    });
+
+    it('should return zero stats for less than 2 points', () => {
+        const stats = calculateTrackStats(
+            [{ lat: 46.5, lon: 7.5, alt: 1000, timestamp: 10000 }],
+            5,
+            true
+        );
+
+        expect(stats.distance).toBe(0);
+        expect(stats.dPlus).toBe(0);
+        expect(stats.dMinus).toBe(0);
+    });
+
+    it('should handle D+/D- correctly with skipCleaning=true', () => {
+        const points = makePoints([
+            { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 10000 },
+            { lat: 46.5001, lon: 7.5001, alt: 1000, timestamp: 20000 },
+            { lat: 46.5002, lon: 7.5002, alt: 1030, timestamp: 30000 },
+            { lat: 46.5003, lon: 7.5003, alt: 1030, timestamp: 40000 },
+            { lat: 46.5004, lon: 7.5004, alt: 1000, timestamp: 50000 },
+            { lat: 46.5005, lon: 7.5005, alt: 1000, timestamp: 60000 },
+        ]);
+
+        const stats = calculateTrackStats(points, 5, true);
+
         expect(stats.dPlus).toBeGreaterThan(15);
         expect(stats.dMinus).toBeGreaterThan(15);
     });

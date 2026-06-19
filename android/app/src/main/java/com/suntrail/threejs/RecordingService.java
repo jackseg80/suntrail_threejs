@@ -500,7 +500,13 @@ public class RecordingService extends Service {
     }
 
     private String getElapsedTimeString() {
+        if (mStartTime <= 0 || mStartTime > System.currentTimeMillis()) {
+            return "0min";
+        }
         long elapsedMinutes = (System.currentTimeMillis() - mStartTime) / (60 * 1000L);
+        if (elapsedMinutes < 0 || elapsedMinutes > 365 * 24 * 60) {
+            return "0min";
+        }
         return (elapsedMinutes >= 60)
                 ? (elapsedMinutes / 60) + "h " + (elapsedMinutes % 60) + "min"
                 : elapsedMinutes + "min";

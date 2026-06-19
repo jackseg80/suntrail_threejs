@@ -71,6 +71,7 @@ class NativeGPSService {
     private pendingMeshUpdate = false;
     private statsUpdateInterval: number | null = null;
     private _listenerHandles: Array<{ remove(): void }> = [];
+    private _syncing = false;
 
     /**
      * Initialisation et récupération au démarrage (v5.28.1)
@@ -247,13 +248,7 @@ class NativeGPSService {
                 lastTimestamp
             );
             if (finalPoints.length > 0) {
-                const filtered = this.filterPointsConsistency(finalPoints);
-                const existingTimestamps = new Set(
-                    state.recordedPoints.map((p) => p.timestamp)
-                );
-                const uniqueNew = filtered.filter(
-                    (p) => !existingTimestamps.has(p.timestamp)
-                );
+                const uniqueNew = this.cleanNewPoints(finalPoints);
                 state.recordedPoints = [...state.recordedPoints, ...uniqueNew];
             }
         }
@@ -414,9 +409,14 @@ class NativeGPSService {
         }).then((h) => this._listenerHandles.push(h));
 
         // Intervalle de mise à jour des stats dans la notification (toutes les 10s)
+        // Points déjà nettoyés par syncPoints → skipCleaning pour éviter le re-calcul haversine
         this.statsUpdateInterval = window.setInterval(() => {
             if (state.isRecording && state.recordedPoints.length >= 2) {
-                const stats = calculateTrackStats(state.recordedPoints);
+                const stats = calculateTrackStats(
+                    state.recordedPoints,
+                    5,
+                    true
+                );
                 RecordingNative.updateNotificationStats({
                     distance: stats.distance,
                     elevation: stats.dPlus,
@@ -427,61 +427,86 @@ class NativeGPSService {
     }
 
     /**
-     * Synchronise les points enregistrés par le service natif (v5.34.9).
-     * Centralise le filtrage cleanGPSTrack pour éviter les artefacts de "champignons".
+     * Nettoie et normalise un lot de nouveaux points en incluant un contexte
+     * de bordure (derniers points existants) pour un filtrage cohérent.
+     * Évite de re-traiter l'intégralité de state.recordedPoints à chaque sync.
+     */
+    private cleanNewPoints(newPoints: NativeGPSPoint[]): LocationPoint[] {
+        const normalizedNew: LocationPoint[] = newPoints.map((p) => ({
+            lat: p.lat,
+            lon: p.lon,
+            alt: p.alt,
+            timestamp: p.timestamp,
+        }));
+
+        const boundaryPoints = state.recordedPoints.slice(-2);
+        const toClean = [...boundaryPoints, ...normalizedNew];
+        const cleaned = cleanGPSTrack(toClean);
+
+        const boundaryTimestamps = new Set(
+            boundaryPoints.map((p) => p.timestamp)
+        );
+        const existingTimestamps = new Set(
+            state.recordedPoints.map((p) => p.timestamp)
+        );
+
+        return cleaned.filter(
+            (p) =>
+                !boundaryTimestamps.has(p.timestamp) &&
+                !existingTimestamps.has(p.timestamp)
+        );
+    }
+
+    /**
+     * Synchronise les points enregistrés par le service natif (v5.76.0).
+     * Optimisé : nettoie uniquement les nouveaux points avec un contexte
+     * de bordure, plutôt que de re-traiter tout le dataset.
+     * Protégé contre les exécutions concurrentes via _syncing.
      */
     async syncPoints(): Promise<void> {
         if (!this.currentCourseId || !RecordingNative) return;
-
-        const lastTimestamp =
-            state.recordedPoints.length > 0
-                ? state.recordedPoints[state.recordedPoints.length - 1]
-                      .timestamp
-                : 0;
+        if (this._syncing) return;
+        this._syncing = true;
 
         try {
+            const lastTimestamp =
+                state.recordedPoints.length > 0
+                    ? state.recordedPoints[state.recordedPoints.length - 1]
+                          .timestamp
+                    : 0;
+
             const newPoints = await this.getAllPoints(
                 this.currentCourseId,
                 lastTimestamp
             );
-            if (newPoints.length > 0) {
-                // v5.28.1 : Unification du filtrage pour éviter les (0,0) injectés
-                const allPoints = [...state.recordedPoints, ...newPoints];
-                const cleanedAll = cleanGPSTrack(allPoints);
+            if (newPoints.length === 0) return;
 
-                const existingTimestamps = new Set(
-                    state.recordedPoints.map((p) => p.timestamp)
-                );
-                const uniqueNewPoints = cleanedAll.filter(
-                    (p) => !existingTimestamps.has(p.timestamp)
-                );
+            const uniqueNew = this.cleanNewPoints(newPoints);
 
-                if (uniqueNewPoints.length > 0) {
-                    state.recordedPoints = [
-                        ...state.recordedPoints,
-                        ...uniqueNewPoints,
-                    ];
-                    this.persistPoints();
+            if (uniqueNew.length > 0) {
+                state.recordedPoints = [...state.recordedPoints, ...uniqueNew];
+                this.persistPoints();
 
-                    const totalPoints = state.recordedPoints.length;
-                    if (totalPoints < 10) {
-                        updateRecordedTrackMesh();
-                    } else {
-                        this.pendingMeshUpdate = true;
-                        if (!this.meshUpdateTimeout) {
-                            this.meshUpdateTimeout = window.setTimeout(() => {
-                                if (this.pendingMeshUpdate) {
-                                    updateRecordedTrackMesh();
-                                    this.pendingMeshUpdate = false;
-                                }
-                                this.meshUpdateTimeout = null;
-                            }, 500);
-                        }
+                const totalPoints = state.recordedPoints.length;
+                if (totalPoints < 10) {
+                    updateRecordedTrackMesh();
+                } else {
+                    this.pendingMeshUpdate = true;
+                    if (!this.meshUpdateTimeout) {
+                        this.meshUpdateTimeout = window.setTimeout(() => {
+                            if (this.pendingMeshUpdate) {
+                                updateRecordedTrackMesh();
+                                this.pendingMeshUpdate = false;
+                            }
+                            this.meshUpdateTimeout = null;
+                        }, 500);
                     }
                 }
             }
         } catch (e) {
             console.error('[NativeGPSService] Sync failure:', e);
+        } finally {
+            this._syncing = false;
         }
     }
 

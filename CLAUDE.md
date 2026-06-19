@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.76.0)
+# SunTrail — Guide IA (v5.77.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-18 — v5.76.0 : Fix race condition clés MapTiler/ORS (fast-path .env vs Gist) + état DÉGRADÉ dans carte Réseau + appInit await resolveMapTilerKey.
+> Mis à jour le 2026-06-19 — v5.77.0 : Optimisation perf REC GPS — syncPoints incrémental, mutex, skipCleaning, protection temps aberrant notification.
 
 ## Projet
 

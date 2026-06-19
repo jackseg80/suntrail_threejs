@@ -32,6 +32,7 @@ vi.mock('./recordingService', () => ({
 
 import { state } from './state';
 import { nativeGPSService } from './nativeGPSService';
+import type { NativeGPSPoint } from './nativeGPSService';
 
 describe('NativeGPSService (v5.29.38)', () => {
     beforeEach(() => {
@@ -42,6 +43,7 @@ describe('NativeGPSService (v5.29.38)', () => {
         mockRecordingNative.getCurrentCourse.mockResolvedValue({
             isRunning: false,
         });
+        (nativeGPSService as any)._syncing = false;
     });
 
     it('should initialize correctly and recover active course', async () => {
@@ -102,5 +104,102 @@ describe('NativeGPSService (v5.29.38)', () => {
 
         expect(filtered.length).toBe(1);
         expect(filtered[0].alt).toBe(1000);
+    });
+});
+
+describe('NativeGPSService syncPoints (v5.76.0)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        state.recordedPoints = [];
+        state.isRecording = false;
+        (nativeGPSService as any)._syncing = false;
+        (nativeGPSService as any).currentCourseId = 'test-course';
+        mockPreferences.get.mockResolvedValue({ value: null });
+    });
+
+    function makeNativePoints(
+        pts: Array<{ lat: number; lon: number; alt: number; timestamp: number }>
+    ): NativeGPSPoint[] {
+        return pts.map((p, i) => ({ id: i + 1, accuracy: 5, ...p }));
+    }
+
+    it('should only clean new points, not the full dataset', async () => {
+        state.recordedPoints = [
+            { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 10000 },
+            { lat: 46.5001, lon: 7.5001, alt: 1005, timestamp: 20000 },
+            { lat: 46.5002, lon: 7.5002, alt: 1010, timestamp: 30000 },
+        ];
+
+        mockRecordingNative.getPoints.mockResolvedValue({
+            points: makeNativePoints([
+                { lat: 46.5003, lon: 7.5003, alt: 1015, timestamp: 40000 },
+                { lat: 46.5004, lon: 7.5004, alt: 1020, timestamp: 50000 },
+            ]),
+        });
+
+        await (nativeGPSService as any).syncPoints();
+
+        expect(state.recordedPoints.length).toBe(5);
+        expect(state.recordedPoints[4].timestamp).toBe(50000);
+    });
+
+    it('should block concurrent syncPoints calls', async () => {
+        state.recordedPoints = [
+            { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 10000 },
+        ];
+
+        let resolveFirst: (v: any) => void;
+        const firstCall = new Promise<any>((r) => {
+            resolveFirst = r;
+        });
+        mockRecordingNative.getPoints.mockReturnValueOnce(firstCall);
+
+        const sync1 = (nativeGPSService as any).syncPoints();
+        const sync2 = (nativeGPSService as any).syncPoints();
+
+        resolveFirst!({ points: [] });
+
+        await sync1;
+        await sync2;
+
+        // getPoints should have been called only once (sync2 skipped)
+        expect(mockRecordingNative.getPoints).toHaveBeenCalledTimes(1);
+    });
+
+    it('should normalize NativeGPSPoint to LocationPoint', () => {
+        const newPoints = makeNativePoints([
+            { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 10000 },
+            { lat: 46.5001, lon: 7.5001, alt: 1010, timestamp: 20000 },
+        ]);
+
+        const cleaned = (nativeGPSService as any).cleanNewPoints(newPoints);
+
+        expect(cleaned.length).toBeGreaterThan(0);
+        for (const p of cleaned) {
+            expect(p).toHaveProperty('lat');
+            expect(p).toHaveProperty('lon');
+            expect(p).toHaveProperty('alt');
+            expect(p).toHaveProperty('timestamp');
+            expect(p).not.toHaveProperty('id');
+            expect(p).not.toHaveProperty('accuracy');
+        }
+    });
+
+    it('should handle boundary between existing and new points', () => {
+        state.recordedPoints = [
+            { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 10000 },
+            { lat: 46.5001, lon: 7.5001, alt: 1005, timestamp: 20000 },
+        ];
+
+        const newPoints = makeNativePoints([
+            { lat: 46.5002, lon: 7.5002, alt: 1500, timestamp: 21000 },
+            { lat: 46.5003, lon: 7.5003, alt: 1010, timestamp: 30000 },
+        ]);
+
+        const cleaned = (nativeGPSService as any).cleanNewPoints(newPoints);
+
+        const timestamps = cleaned.map((p: any) => p.timestamp);
+        expect(timestamps).not.toContain(21000);
+        expect(timestamps).toContain(30000);
     });
 });

@@ -63,13 +63,28 @@ export function calculateHysteresis(
 /**
  * Calcule les statistiques d'un tracé GPS avec un algorithme d'hystérésis
  * Seuil par défaut : 5 mètres (v5.29.28 - compromis robustesse/précision)
+ * @param skipCleaning Si true, les points sont supposés déjà nettoyés (v5.76.0),
+ *   seule une déduplication par timestamp est appliquée.
  */
 export function calculateTrackStats(
     points: LocationPoint[],
-    threshold: number = 5
+    threshold: number = 5,
+    skipCleaning: boolean = false
 ): TrackStats {
-    // v5.28.2: Utilisation de la source de vérité unique pour le nettoyage
-    const uniquePoints = cleanGPSTrack(points);
+    let uniquePoints: LocationPoint[];
+    if (skipCleaning) {
+        const deduped = new Map<number, LocationPoint>();
+        for (const p of points) {
+            if (!deduped.has(p.timestamp)) {
+                deduped.set(p.timestamp, p);
+            }
+        }
+        uniquePoints = Array.from(deduped.values()).sort(
+            (a, b) => a.timestamp - b.timestamp
+        );
+    } else {
+        uniquePoints = cleanGPSTrack(points);
+    }
 
     if (uniquePoints.length < 2) {
         return { distance: 0, dPlus: 0, dMinus: 0 };
