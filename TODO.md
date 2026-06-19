@@ -1,6 +1,6 @@
-# SunTrail — TODO (v5.76.0)
+# SunTrail — TODO (v5.77.0)
 
-> Dernière mise à jour : 2026-06-18
+> Dernière mise à jour : 2026-06-19
 
 ## 🔴 Critique (next release)
 
@@ -25,6 +25,14 @@
 - **Abonnement familial** — Pack famille RevenueCat (v6.1+)
 - **Refactoring packManager.ts** — Split en packCatalog + packDownloader + packMounter (770 lignes, 10% couverture)
 - **Refactoring tileLoader.ts** — Split logique métier en tileService.ts (912 lignes)
+
+## ✅ Récemment complété (v5.77.0)
+
+- [x] **Sync REC bloquée (perf)** — `syncPoints()` incrémental (contexte de bordure au lieu de tout le dataset) + mutex `_syncing`
+- [x] **Normalisation types REC** — `NativeGPSPoint→LocationPoint` avant stockage
+- [x] **Temps aberrant notification REC** — Protection `getElapsedTimeString()` contre `mStartTime` corrompu
+- [x] **`calculateTrackStats()` skipCleaning** — Paramètre pour éviter le re-calcul `cleanGPSTrack` complet toutes les 10s
+- [x] **Tests REC** — +7 tests (lock, sync incrémental, normalisation, bordures, skipCleaning)
 
 ## ✅ Récemment complété (v5.76.0)
 
