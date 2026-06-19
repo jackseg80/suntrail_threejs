@@ -106,7 +106,9 @@ describe('TrackSheet — showSaveTrackPrompt', () => {
 
     it('resolve avec le nom saisi sur Enregistrer', async () => {
         const promise = (sheet as any).showSaveTrackPrompt('Defaut');
-        const input = document.getElementById('rec-save-name') as HTMLInputElement;
+        const input = document.getElementById(
+            'rec-save-name'
+        ) as HTMLInputElement;
         input.value = 'Ma Rando';
         document.getElementById('rec-save-confirm')?.click();
         await expect(promise).resolves.toBe('Ma Rando');
@@ -126,7 +128,9 @@ describe('TrackSheet — showSaveTrackPrompt', () => {
 
     it('resolve avec la valeur sur Entrée', async () => {
         const promise = (sheet as any).showSaveTrackPrompt('Defaut');
-        const input = document.getElementById('rec-save-name') as HTMLInputElement;
+        const input = document.getElementById(
+            'rec-save-name'
+        ) as HTMLInputElement;
         input.value = 'Saisie';
         input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
         await expect(promise).resolves.toBe('Saisie');
@@ -134,7 +138,9 @@ describe('TrackSheet — showSaveTrackPrompt', () => {
 
     it('resolve avec le nom suggéré si input vide sur Enregistrer', async () => {
         const promise = (sheet as any).showSaveTrackPrompt('Suggere');
-        const input = document.getElementById('rec-save-name') as HTMLInputElement;
+        const input = document.getElementById(
+            'rec-save-name'
+        ) as HTMLInputElement;
         input.value = '   ';
         document.getElementById('rec-save-confirm')?.click();
         await expect(promise).resolves.toBe('Suggere');
@@ -184,7 +190,11 @@ describe('TrackSheet — updateRecUI', () => {
         (sheet as any).updateRecUI();
         const track = document.getElementById('track')!;
         expect(track.classList.contains('recording')).toBe(true);
-        expect(document.getElementById('rec-btn-sheet')?.classList.contains('active')).toBe(true);
+        expect(
+            document
+                .getElementById('rec-btn-sheet')
+                ?.classList.contains('active')
+        ).toBe(true);
     });
 
     it("retire la classe recording quand l'enregistrement s'arrête", () => {
@@ -192,7 +202,11 @@ describe('TrackSheet — updateRecUI', () => {
         (sheet as any).updateRecUI();
         const track = document.getElementById('track')!;
         expect(track.classList.contains('recording')).toBe(false);
-        expect(document.getElementById('rec-btn-sheet')?.classList.contains('active')).toBe(false);
+        expect(
+            document
+                .getElementById('rec-btn-sheet')
+                ?.classList.contains('active')
+        ).toBe(false);
     });
 
     it("ajoute la classe is-pro pendant l'enregistrement si Pro", () => {

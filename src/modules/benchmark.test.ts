@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { mockState, mockDetectBestPreset, mockGetGpuInfo } = vi.hoisted(() => {
     const state: Record<string, any> = {
@@ -57,14 +57,19 @@ describe('BenchmarkResult type', () => {
 });
 
 describe('Benchmark scoring thresholds', () => {
-    const presetRules: Array<{ minScore: number; preset: BenchmarkResult['recommendedPreset'] }> = [
+    const presetRules: Array<{
+        minScore: number;
+        preset: BenchmarkResult['recommendedPreset'];
+    }> = [
         { minScore: 92, preset: 'ultra' },
         { minScore: 60, preset: 'performance' },
         { minScore: 30, preset: 'balanced' },
         { minScore: 0, preset: 'eco' },
     ];
 
-    function pickPreset(totalScore: number): BenchmarkResult['recommendedPreset'] {
+    function pickPreset(
+        totalScore: number
+    ): BenchmarkResult['recommendedPreset'] {
         for (const rule of presetRules) {
             if (totalScore >= rule.minScore) return rule.preset;
         }

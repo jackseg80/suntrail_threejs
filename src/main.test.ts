@@ -1,6 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
-vi.mock('./modules/ui', () => ({ initUI: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('./modules/ui', () => ({
+    initUI: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock('./modules/performance', () => ({
     initBatteryManager: vi.fn().mockResolvedValue(undefined),
 }));

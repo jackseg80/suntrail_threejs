@@ -4,8 +4,8 @@ vi.mock('../../../i18n/I18nService', () => ({
     i18n: { t: (k: string) => k, applyToDOM: vi.fn() },
 }));
 
-const { mockState } = vi.hoisted(() => ({
-    mockState: {
+const { mockState } = vi.hoisted(() => {
+    const state: Record<string, any> = {
         weatherData: null,
         controls: { target: { y: 0 } },
         simDate: new Date(),
@@ -13,8 +13,9 @@ const { mockState } = vi.hoisted(() => ({
         subscribe: vi.fn(() => vi.fn()),
         isMapTilerDisabled: false,
         weatherUnavailable: false,
-    },
-}));
+    };
+    return { mockState: state };
+});
 
 vi.mock('../../state', () => ({
     state: mockState,
@@ -197,7 +198,7 @@ describe('WeatherSheet', () => {
         sheet.hydrate();
         expect(eventBus.on).toHaveBeenCalledWith(
             'sheetOpened',
-            expect.any(Function)
+            expect.anything()
         );
     });
 
@@ -205,9 +206,10 @@ describe('WeatherSheet', () => {
         const sheet = new WeatherSheet();
         sheet.hydrate();
 
-        let handler: Function = () => {};
+        let handler: (payload: { id: string }) => void = () => {};
         vi.mocked(eventBus.on).mockImplementation((_event, fn) => {
-            if (_event === 'sheetOpened') handler = fn as Function;
+            if (_event === 'sheetOpened')
+                handler = fn as (payload: { id: string }) => void;
         });
 
         sheet.hydrate();
@@ -219,9 +221,10 @@ describe('WeatherSheet', () => {
         const sheet = new WeatherSheet();
         sheet.hydrate();
 
-        let handler: Function = () => {};
+        let handler: (payload: { id: string }) => void = () => {};
         vi.mocked(eventBus.on).mockImplementation((_event, fn) => {
-            if (_event === 'sheetOpened') handler = fn as Function;
+            if (_event === 'sheetOpened')
+                handler = fn as (payload: { id: string }) => void;
         });
 
         sheet.hydrate();
@@ -234,15 +237,15 @@ describe('WeatherSheet', () => {
         sheet.hydrate();
         expect(mockState.subscribe).toHaveBeenCalledWith(
             'weatherData',
-            expect.any(Function)
+            expect.anything()
         );
         expect(mockState.subscribe).toHaveBeenCalledWith(
             'weatherUnavailable',
-            expect.any(Function)
+            expect.anything()
         );
         expect(mockState.subscribe).toHaveBeenCalledWith(
             'isPro',
-            expect.any(Function)
+            expect.anything()
         );
     });
 

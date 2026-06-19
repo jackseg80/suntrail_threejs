@@ -138,7 +138,7 @@ describe('SearchSheet', () => {
         const sheet = new SearchSheet();
         sheet.hydrate();
         const chips = document.querySelectorAll('.search-chip');
-        const citiesChip = chips[1]; // cities
+        const citiesChip = chips[1] as HTMLElement;
         citiesChip.click();
         expect(citiesChip.classList.contains('search-chip-active')).toBe(true);
         expect(citiesChip.getAttribute('aria-checked')).toBe('true');

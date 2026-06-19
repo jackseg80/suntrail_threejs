@@ -2,9 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('@capacitor/app', () => ({
     App: {
-        addListener: vi
-            .fn()
-            .mockReturnValue({ catch: vi.fn() }),
+        addListener: vi.fn().mockReturnValue({ catch: vi.fn() }),
         exitApp: vi.fn(),
     },
 }));
@@ -80,8 +78,8 @@ describe('initMobileUI()', () => {
     describe('backButton handler', () => {
         it('closes sheet when a sheet is active', () => {
             initMobileUI();
-            const handler = vi.mocked(App.addListener).mock.calls.find(
-                (c) => c[0] === 'backButton'
+            const handler = (App.addListener as any).mock.calls.find(
+                (c: any[]) => c[0] === 'backButton'
             )![1] as (data: any) => void;
 
             vi.mocked(sheetManager.getActiveSheetId).mockReturnValue(
@@ -94,8 +92,8 @@ describe('initMobileUI()', () => {
 
         it('exits app when no sheet and cannot go back', () => {
             initMobileUI();
-            const handler = vi.mocked(App.addListener).mock.calls.find(
-                (c) => c[0] === 'backButton'
+            const handler = (App.addListener as any).mock.calls.find(
+                (c: any[]) => c[0] === 'backButton'
             )![1] as (data: any) => void;
 
             vi.mocked(sheetManager.getActiveSheetId).mockReturnValue(null);
@@ -107,8 +105,8 @@ describe('initMobileUI()', () => {
         it('goes back in history when no sheet and can go back', () => {
             const historyBack = vi.spyOn(window.history, 'back');
             initMobileUI();
-            const handler = vi.mocked(App.addListener).mock.calls.find(
-                (c) => c[0] === 'backButton'
+            const handler = (App.addListener as any).mock.calls.find(
+                (c: any[]) => c[0] === 'backButton'
             )![1] as (data: any) => void;
 
             vi.mocked(sheetManager.getActiveSheetId).mockReturnValue(null);
@@ -123,8 +121,8 @@ describe('initMobileUI()', () => {
         it('remembers recording state when app goes to background', () => {
             mockState.isRecording = true;
             initMobileUI();
-            const handler = vi.mocked(App.addListener).mock.calls.find(
-                (c) => c[0] === 'appStateChange'
+            const handler = (App.addListener as any).mock.calls.find(
+                (c: any[]) => c[0] === 'appStateChange'
             )![1] as (data: any) => void;
 
             handler({ isActive: false });
@@ -136,8 +134,8 @@ describe('initMobileUI()', () => {
             mockState.currentCourseId = 'course-1';
             initMobileUI();
 
-            const handler = vi.mocked(App.addListener).mock.calls.find(
-                (c) => c[0] === 'appStateChange'
+            const handler = (App.addListener as any).mock.calls.find(
+                (c: any[]) => c[0] === 'appStateChange'
             )![1] as (data: any) => void;
 
             // First: background
@@ -154,8 +152,8 @@ describe('initMobileUI()', () => {
             vi.mocked(isWatchActive).mockReturnValue(false);
             initMobileUI();
 
-            const handler = vi.mocked(App.addListener).mock.calls.find(
-                (c) => c[0] === 'appStateChange'
+            const handler = (App.addListener as any).mock.calls.find(
+                (c: any[]) => c[0] === 'appStateChange'
             )![1] as (data: any) => void;
 
             handler({ isActive: false });
@@ -170,8 +168,8 @@ describe('initMobileUI()', () => {
             vi.mocked(isWatchActive).mockReturnValue(true);
             initMobileUI();
 
-            const handler = vi.mocked(App.addListener).mock.calls.find(
-                (c) => c[0] === 'appStateChange'
+            const handler = (App.addListener as any).mock.calls.find(
+                (c: any[]) => c[0] === 'appStateChange'
             )![1] as (data: any) => void;
 
             handler({ isActive: false });
@@ -184,8 +182,8 @@ describe('initMobileUI()', () => {
             mockState.isRecording = false;
             initMobileUI();
 
-            const handler = vi.mocked(App.addListener).mock.calls.find(
-                (c) => c[0] === 'appStateChange'
+            const handler = (App.addListener as any).mock.calls.find(
+                (c: any[]) => c[0] === 'appStateChange'
             )![1] as (data: any) => void;
 
             await handler({ isActive: true });
@@ -197,8 +195,8 @@ describe('initMobileUI()', () => {
             mockState.currentCourseId = '';
             initMobileUI();
 
-            const handler = vi.mocked(App.addListener).mock.calls.find(
-                (c) => c[0] === 'appStateChange'
+            const handler = (App.addListener as any).mock.calls.find(
+                (c: any[]) => c[0] === 'appStateChange'
             )![1] as (data: any) => void;
 
             handler({ isActive: false });
