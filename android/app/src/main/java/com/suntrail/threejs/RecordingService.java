@@ -302,9 +302,9 @@ public class RecordingService extends Service {
                             mDao.insertAll(toInsert);
                             sendPointsBroadcast(courseId, newCount);
                         });
-                    } else {
-                        sendPointsBroadcast(mCurrentCourseId, newCount);
                     }
+                    // Broadcast uniquement au flush DB (batch ≥ 3 pts ou 10s) —
+                    // évite de spammer le JS à chaque fix GPS (~1 Hz)
 
                     mLastValidLocation  = loc;
                     mLastValidTimestamp = now;

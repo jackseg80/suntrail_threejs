@@ -520,7 +520,13 @@ function _doUpdateRecordedTrackMesh(): void {
         return;
     }
 
-    if (!state.camera || !state.scene || !state.originTile) return;
+    if (!state.camera || !state.scene || !state.originTile) {
+        console.warn(
+            '[GPX] Recorded mesh update skipped — missing:',
+            { camera: !!state.camera, scene: !!state.scene, originTile: !!state.originTile }
+        );
+        return;
+    }
 
     // v5.28.25 : Dédoublonnage strict par timestamp
     const uniquePointsMap = new Map<number, (typeof state.recordedPoints)[0]>();
