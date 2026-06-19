@@ -1,3 +1,38 @@
+## [5.78.7] - 2026-06-19
+
+### Tests
+- **`SolarProbeSheet.test.ts`** : 1→8 tests — hydrate, close click/aria, aria-live content, simDate sub, DOM sections, dispose
+- **`Tile.test.ts`** : +13 tests (nouveau) — constructor coords/status/retry/textures, isVisible, getBounds, dispose, startFadeOut guard
+- **`TrackSheet.test.ts`** : 13→18 tests — close aria+click, stats DOM, empty state, dispose
+- **`WeatherSheet.test.ts`** : 1→8 tests — hydrate, close, loading/unavailable/dashboard states, location display, dispose
+- **`SearchSheet.test.ts`** : +14 tests (nouveau) — hydrate, close, ARIA input/results, filter chips, empty states, matchesFilter
+- **`mobile.test.ts`** : +12 tests (nouveau) — back button (sheet/exit/history), appStateChange background/resume/sync/tracking
+- **`WidgetsComponent.test.ts`** : +3 tests (nouveau) — hydrate, insert, dispose
+- **`ConnectivitySheet.test.ts`** : +7 tests (nouveau) — hydrate, close, offline toggle on/off, aria-checked, clear cache, dispose
+- **`SOSSheet.test.ts`** : +13 tests (nouveau) — hydrate, ARIA, copy/clipboard, resolveAndDisplay, SMS enable, error, dispose
+- **`draggablePanel.test.ts`** : +13 tests (nouveau) — pointer state machine, dismiss threshold/velocity, hold timer, cleanup
+- **`NavigationBar.test.ts`** : +12 tests (nouveau) — role=tablist, tab click open/close, aria-selected, setActiveTab, dispose
+- **`LayersSheet.test.ts`** : +14 tests (nouveau) — layer selection, satellite Pro gate, trails/slopes toggles, LOD, aria
+- **`compass.test.ts`** : 2→14 tests — null guards, animation lifecycle, cancel, render sans crash
+- **`utils.test.ts`** : 2→16 tests — debounce args, throttle, fmtTime, fmtDuration, simplifyRDP
+- **`buildings.integration.test.ts`** : 1→6 tests — guard clauses (SHOW_BUILDINGS, zoom, disposed, cached)
+- **`hydrology.integration.test.ts`** : 1→7 tests — guard clauses, PBF null/vide
+- **`poi.integration.test.ts`** : 1→6 tests — guard clauses, fetch 404
+- **`tileQueue.test.ts`** : +14 tests (nouveau) — queue add/remove/clear, prioritizeNewZoom
+- **`gpxTypes.test.ts`** : +19 tests (nouveau)
+- **`iap.test.ts`** : +13 tests (nouveau)
+- **`packCatalog.test.ts`** : +21 tests (nouveau)
+- **`autoHide.test.ts`** : +9 tests (nouveau)
+- **`SharedAPIKeyComponent.test.ts`** : +10 tests (nouveau)
+- **`UpsellModal.test.ts`** : +9 tests (nouveau)
+- **`SolarLockedItem.test.ts`** : +6 tests (nouveau)
+- **`SolarTimeline.test.ts`** : +7 tests (nouveau)
+- **`packTypes.test.ts`** : +4 tests (nouveau)
+- **`storage.test.ts`** : +3 tests (nouveau)
+
+- Tous les tests passent : **1435/1435** (125 files, 5 skip flaky).
+- Couverture : **57.16% lines** (vs 50.3% avant audit), seuil 50% franchi.
+
 ## [5.78.2] - 2026-06-19
 
 ### Tests

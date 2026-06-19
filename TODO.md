@@ -1,22 +1,19 @@
-# SunTrail — TODO (v5.78.2)
+# SunTrail — TODO (v5.78.7)
 
 > Dernière mise à jour : 2026-06-19
 
 ## 🔴 Critique (next release)
 
 - **Refactoring SettingsSheet.ts** (951 lignes) — Découper par section (résolution, carte, GPS, etc.)
-- **Refactoring WeatherSheet.ts** (867 lignes, 0% couverture) — Extraire logique météo en service et sous-composants
-- **Refactoring SolarProbeSheet.ts** (1190 lignes, 0% couverture) — Continuer l'extraction des sous-composants UI
-- **Tests UI components** — PacksSheet (35%), UpgradeSheet (56%), TrackSheet (10%), SolarProbeSheet (2%), WeatherSheet (2%)
+- **Refactoring SolarProbeSheet.ts** (1190 lignes, 5% couverture) — Continuer l'extraction des sous-composants UI
+- **Refactoring tileLoader.ts** — Split logique métier en tileService.ts (912 lignes)
 
 ## 🟡 Court terme
 
 - **Zones noires AT/ES/NO LOD 14+** — Pixel noirs hors-frontière sur basemap.at, IGN España, Kartvertek. Explorer chroma key dans le worker.
 - **Timeout retry (v5.72.0)** — Les tuiles timeoutées (30s) restent en statut `failed` sans retry automatique. Ajouter un mécanisme de retry progressif.
-- **Debug OAuth Google** — Résoudre les problèmes de stabilité et réactiver l'UI
-- **Paiements Web — Restauration par Email** — Un utilisateur qui paie via Stripe sur web perd l'accès s'il change de navigateur (App User ID aléatoire en localStorage).
-- **Tests poi.ts** — Couverture partielle : tester la détection de catégories avec PBF mockés
-- **Rapport de couverture** — Atteindre 60% lignes (actuel 51.7%)
+- **Paiements Web — Restauration par Email** — Restauration de l'accès après changement de navigateur.
+- **Rapport de couverture** — Atteindre 60% lignes (actuel 57.16%)
 
 ## 🟢 Long terme (v6.x)
 
@@ -24,15 +21,17 @@
 - **Coverage pays** — Slovénie, Italie, Norvège, UK (voir ROADMAP.md)
 - **Offline Alertes** — Système d'alertes sécurité hors-ligne (v6.0+)
 - **Abonnement familial** — Pack famille RevenueCat (v6.1+)
-- **Refactoring packManager.ts** — Split en packCatalog + packDownloader + packMounter (770 lignes, 10% couverture)
-- **Refactoring tileLoader.ts** — Split logique métier en tileService.ts (912 lignes)
-- **Tests Tile.ts** — 671 lignes, 0% couverture, cœur du rendu 3D
-- **Tests draggablePanel.ts** — 230 lignes, 20% couverture, machine à états pointer
-- **Tests mobile.ts** — 141 lignes, 6% couverture, Capacitor lifecycle + OAuth
+- **Tests scene.ts** — 942 lignes, 7% couverture, cœur du rendu 3D
+- **Tests weather.ts** — 380 lignes, 55% couverture
+- **Tests SearchSheet.ts** — 422 lignes, 34% couverture
+- **E2E Playwright** — Météo, Solaire, GPX, Offline zones, REC
+- **CI Pipeline** — GitHub Actions avec npm test + npm run check
 
-## ✅ Récemment complété (v5.78.1)
+## ✅ Récemment complété (v5.78.x)
 
-- [x] **Bug getElevation()** — Retournait NaN si `ele=NaN` au lieu de fallback vers `alt` ou `0`
-- [x] **Bug revokeProAccess()** — Ne réinitialisait pas les flags Pro (buildings, inclinometer, weather_pro)
-- [x] **10 fichiers de tests ajoutés** (100 tests) : gpxTypes, iap, packCatalog, packTypes, storage, autoHide, SharedAPIKeyComponent, UpsellModal, SolarLockedItem, SolarTimeline
-- [x] **Couverture activée** : seuil 50% lignes, rapport HTML dans ./coverage/
+- [x] **Audit tests complet** — 20 fichiers de test, 277 tests ajoutés
+- [x] **Bug getElevation()** — Retournait NaN si `ele=NaN` au lieu de fallback
+- [x] **Bug revokeProAccess()** — Ne réinitialisait pas les flags Pro
+- [x] **Couverture activée** — seuil 50%, rapport HTML, 57.16% actuels
+- [x] **Tests ajoutés** : gpxTypes, iap, packCatalog, packTypes, storage, SolarLockedItem, SolarTimeline, autoHide, SharedAPIKeyComponent, UpsellModal, SOSSheet, draggablePanel, NavigationBar, LayersSheet, SearchSheet, mobile, WidgetsComponent, ConnectivitySheet, TrackSheet, WeatherSheet, SolarProbeSheet, Tile
+- [x] **Tests enrichis** : compass (2→14), utils (2→16), buildings.integration (1→6), hydrology.integration (1→7), poi.integration (1→6), tileQueue (+14)
