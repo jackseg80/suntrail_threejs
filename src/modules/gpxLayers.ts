@@ -521,10 +521,11 @@ function _doUpdateRecordedTrackMesh(): void {
     }
 
     if (!state.camera || !state.scene || !state.originTile) {
-        console.warn(
-            '[GPX] Recorded mesh update skipped — missing:',
-            { camera: !!state.camera, scene: !!state.scene, originTile: !!state.originTile }
-        );
+        console.warn('[GPX] Recorded mesh update skipped — missing:', {
+            camera: !!state.camera,
+            scene: !!state.scene,
+            originTile: !!state.originTile,
+        });
         return;
     }
 

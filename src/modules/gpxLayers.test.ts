@@ -358,4 +358,28 @@ describe('removeGPXLayer', () => {
 
         expect(state.activeGPXLayerId).toBeNull();
     });
+
+    it('log un avertissement si scene/camera/originTile est manquant', () => {
+        state.recordedPoints = [
+            { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 10000 },
+            { lat: 46.5001, lon: 7.5001, alt: 1010, timestamp: 20000 },
+        ];
+        state.originTile = undefined as any;
+        state.scene = undefined as any;
+        state.camera = undefined as any;
+
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        updateRecordedTrackMesh();
+        vi.runAllTimers();
+
+        expect(warnSpy).toHaveBeenCalledWith(
+            '[GPX] Recorded mesh update skipped — missing:',
+            expect.objectContaining({
+                camera: false,
+                scene: false,
+                originTile: false,
+            })
+        );
+        warnSpy.mockRestore();
+    });
 });
