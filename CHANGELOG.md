@@ -1,3 +1,14 @@
+## [5.78.0] - 2026-06-19
+
+### Fixed
+- **Mesh 3D gelé silencieusement** : `_doUpdateRecordedTrackMesh()` émet désormais un `console.warn` si `state.scene`/`camera`/`originTile` est null (ex: perte contexte WebGL), au lieu d'un retour silencieux.
+- **Spam broadcast GPS** : `sendPointsBroadcast` supprimé sur les fixes GPS individuels — le JS n'est notifié qu'aux flushs DB (batch 3 pts ou 10s), réduisant la charge du thread JS de ~1 Hz à ~0.1 Hz.
+
+### Tests
+- **`gpxLayers.test.ts`** : +1 test (vérifie le `console.warn` sur scene/camera/originTile manquant).
+
+- Tous les tests passent : 1158/1158 (105 files, 5 skip flaky).
+
 ## [5.77.0] - 2026-06-19
 
 ### Fixed

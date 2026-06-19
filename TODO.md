@@ -1,4 +1,4 @@
-# SunTrail — TODO (v5.77.0)
+# SunTrail — TODO (v5.78.0)
 
 > Dernière mise à jour : 2026-06-19
 
@@ -25,6 +25,11 @@
 - **Abonnement familial** — Pack famille RevenueCat (v6.1+)
 - **Refactoring packManager.ts** — Split en packCatalog + packDownloader + packMounter (770 lignes, 10% couverture)
 - **Refactoring tileLoader.ts** — Split logique métier en tileService.ts (912 lignes)
+
+## ✅ Récemment complété (v5.78.0)
+
+- [x] **Mesh 3D gelé silencieusement** — `console.warn` sur scene/camera/originTile null + test
+- [x] **Spam broadcast GPS** — Broadcast supprimé sur fixes individuels, notifié qu'aux flushs DB
 
 ## ✅ Récemment complété (v5.77.0)
 

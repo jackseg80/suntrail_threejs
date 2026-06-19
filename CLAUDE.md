@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.77.0)
+# SunTrail — Guide IA (v5.78.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-19 — v5.77.0 : Optimisation perf REC GPS — syncPoints incrémental, mutex, skipCleaning, protection temps aberrant notification.
+> Mis à jour le 2026-06-19 — v5.78.0 : Fix mesh 3D gelé silencieusement + spam broadcast GPS réduit.
 
 ## Projet
 
