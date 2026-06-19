@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.78.1)
+# SunTrail — Guide IA (v5.78.2)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-19 — v5.78.1 : Audit tests + bugs getElevation/revokeProAccess + couverture activée (51.7%).
+> Mis à jour le 2026-06-19 — v5.78.2 : Enrichissement tests (compass, utils, integrations, tileQueue).
 
 ## Projet
 

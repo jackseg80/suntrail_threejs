@@ -4,7 +4,6 @@ import { loadPOIsForTile } from './poi';
 import { state } from './state';
 import { Tile } from './terrain';
 
-// Mock global caches API
 (global as any).caches = {
     open: vi.fn().mockResolvedValue({
         match: vi.fn().mockResolvedValue(null),
@@ -12,7 +11,6 @@ import { Tile } from './terrain';
     }),
 };
 
-// Mock de @mapbox/vector-tile
 vi.mock('@mapbox/vector-tile', () => {
     return {
         VectorTile: class {
@@ -34,7 +32,6 @@ vi.mock('@mapbox/vector-tile', () => {
     };
 });
 
-// Mocks
 vi.mock('./analysis', () => ({
     getAltitudeAt: vi.fn(() => 1000),
 }));
@@ -49,6 +46,22 @@ vi.mock('./boundedCache', () => ({
     },
     boundedCacheSet: vi.fn(),
 }));
+
+function makeTile(zoom = 14): Tile {
+    const tile = new Tile(0, 0, zoom, `${zoom}/0/0`);
+    tile.mesh = new THREE.Mesh();
+    tile.status = 'loaded';
+    tile.lngLatToLocal = vi.fn().mockReturnValue({ x: 10, z: 10 });
+    tile.worldX = 1000;
+    tile.worldZ = 1000;
+    vi.spyOn(tile, 'getBounds').mockReturnValue({
+        north: 46.6,
+        south: 46.4,
+        east: 7.6,
+        west: 7.4,
+    });
+    return tile;
+}
 
 describe('POI Integration', () => {
     beforeEach(() => {
@@ -65,22 +78,7 @@ describe('POI Integration', () => {
     });
 
     it('should load POIs from PBF and add them to tile as sprites', async () => {
-        const tile = new Tile(0, 0, 14, '14/0/0');
-        tile.mesh = new THREE.Mesh();
-        tile.status = 'loaded';
-
-        // Mock tile bounds and coordinate conversion
-        vi.spyOn(tile, 'getBounds').mockReturnValue({
-            north: 46.6,
-            south: 46.4,
-            east: 7.6,
-            west: 7.4,
-        });
-
-        tile.lngLatToLocal = vi.fn().mockReturnValue({ x: 10, z: 10 });
-        tile.worldX = 1000;
-        tile.worldZ = 1000;
-
+        const tile = makeTile();
         await loadPOIsForTile(tile);
 
         expect(globalThis.fetch).toHaveBeenCalled();
@@ -90,5 +88,44 @@ describe('POI Integration', () => {
             expect(tile.poiGroup.children[0]).toBeInstanceOf(THREE.Sprite);
             expect(tile.poiGroup.children[0].userData.name).toBe('Test POI');
         }
+    });
+
+    it('should skip when SHOW_SIGNPOSTS is false', async () => {
+        state.SHOW_SIGNPOSTS = false;
+        const tile = makeTile();
+        await loadPOIsForTile(tile);
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('should skip when zoom below POI_ZOOM_THRESHOLD', async () => {
+        state.POI_ZOOM_THRESHOLD = 15;
+        const tile = makeTile(14);
+        await loadPOIsForTile(tile);
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('should skip when tile is disposed', async () => {
+        const tile = makeTile();
+        tile.status = 'disposed';
+        await loadPOIsForTile(tile);
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('should skip when poiGroup is already present', async () => {
+        const tile = makeTile();
+        tile.poiGroup = new THREE.Group();
+        await loadPOIsForTile(tile);
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('should handle fetch returning 404 gracefully', async () => {
+        globalThis.fetch = vi.fn().mockResolvedValue({
+            ok: false,
+            status: 404,
+            arrayBuffer: async () => new ArrayBuffer(0),
+        });
+        const tile = makeTile();
+        await loadPOIsForTile(tile);
+        expect(tile.poiGroup).toBeNull();
     });
 });

@@ -4,7 +4,6 @@ import { loadBuildingsForTile } from './buildings';
 import { state } from './state';
 import { Tile } from './terrain';
 
-// Mock global caches API
 (global as any).caches = {
     open: vi.fn().mockResolvedValue({
         match: vi.fn().mockResolvedValue(null),
@@ -12,14 +11,12 @@ import { Tile } from './terrain';
     }),
 };
 
-// Mocks
 vi.mock('./analysis', () => ({
     getAltitudeAt: vi.fn(() => 1000),
 }));
 
 vi.mock('./utils', () => ({}));
 
-// Mock de @mapbox/vector-tile
 vi.mock('@mapbox/vector-tile', () => {
     return {
         VectorTile: class {
@@ -47,6 +44,14 @@ vi.mock('@mapbox/vector-tile', () => {
     };
 });
 
+function makeTile(zoom = 15): Tile {
+    const tile = new Tile(0, 0, zoom, `${zoom}/0/0`);
+    tile.mesh = new THREE.Mesh();
+    tile.status = 'loaded';
+    tile.tileSizeMeters = 1000;
+    return tile;
+}
+
 describe('Buildings Integration', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -56,8 +61,8 @@ describe('Buildings Integration', () => {
         state.isMapTilerDisabled = false;
         state.RELIEF_EXAGGERATION = 1.0;
         state.scene = new THREE.Scene();
+        state.isUserInteracting = false;
 
-        // Mock global fetch for PBF
         global.fetch = vi.fn().mockResolvedValue({
             ok: true,
             arrayBuffer: async () => new ArrayBuffer(0),
@@ -65,13 +70,7 @@ describe('Buildings Integration', () => {
     });
 
     it('should load buildings from PBF and NOT use Overpass', async () => {
-        const tile = new Tile(0, 0, 15, '15/0/0');
-        tile.mesh = new THREE.Mesh();
-        tile.status = 'loaded';
-
-        // Mock tile.tileSizeMeters
-        tile.tileSizeMeters = 1000;
-
+        const tile = makeTile();
         await loadBuildingsForTile(tile);
 
         expect(global.fetch).toHaveBeenCalled();
@@ -80,5 +79,44 @@ describe('Buildings Integration', () => {
             expect(tile.buildingGroup.children.length).toBe(1);
             expect(tile.buildingGroup.children[0]).toBeInstanceOf(THREE.Mesh);
         }
+    });
+
+    it('should skip when SHOW_BUILDINGS is false', async () => {
+        state.SHOW_BUILDINGS = false;
+        const tile = makeTile();
+        await loadBuildingsForTile(tile);
+        expect(global.fetch).not.toHaveBeenCalled();
+        expect(tile.buildingGroup).toBeNull();
+    });
+
+    it('should skip when zoom is below 15', async () => {
+        const tile = makeTile(14);
+        await loadBuildingsForTile(tile);
+        expect(global.fetch).not.toHaveBeenCalled();
+        expect(tile.buildingGroup).toBeNull();
+    });
+
+    it('should skip when tile is disposed', async () => {
+        const tile = makeTile();
+        tile.status = 'disposed';
+        await loadBuildingsForTile(tile);
+        expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('should skip when buildingGroup is already present', async () => {
+        const tile = makeTile();
+        tile.buildingGroup = new THREE.Group();
+        await loadBuildingsForTile(tile);
+        expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('should handle fetch returning empty PBF gracefully', async () => {
+        vi.mocked(global.fetch).mockResolvedValue({
+            ok: true,
+            arrayBuffer: async () => new ArrayBuffer(0),
+        });
+        const tile = makeTile();
+        await loadBuildingsForTile(tile);
+        expect(tile.buildingGroup).toBeNull();
     });
 });

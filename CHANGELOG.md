@@ -1,3 +1,15 @@
+## [5.78.2] - 2026-06-19
+
+### Tests
+- **`compass.test.ts`** : 2→14 tests — null camera/controls, animation lifecycle, dispose/render sans crash
+- **`utils.test.ts`** : 2→16 tests — debounce args, throttle, fmtTime, fmtDuration, simplifyRDP
+- **`buildings.integration.test.ts`** : 1→6 tests — guard clauses (SHOW_BUILDINGS=false, zoom<15, disposed, déjà caché)
+- **`hydrology.integration.test.ts`** : 1→7 tests — SHOW_HYDROLOGY=false, zoom<14, disposed, déjà caché, PBF null/vide
+- **`poi.integration.test.ts`** : 1→6 tests — SHOW_SIGNPOSTS=false, zoom<seuil, disposed, déjà caché, fetch 404
+- **`tileQueue.test.ts`** : +14 tests (nouveau) — queueBuildMesh, add/remove/clear queues, prioritizeNewZoom, zoom parent préservé
+
+- Tous les tests passent : **1315/1315** (116 files, 5 skip flaky).
+
 ## [5.78.1] - 2026-06-19
 
 ### Fixed
