@@ -75,6 +75,8 @@ vi.mock('../templates/weather.html?raw', () => ({
 
 import { WeatherSheet } from './WeatherSheet';
 import { sheetManager } from '../core/SheetManager';
+import { eventBus } from '../../eventBus';
+import { fetchWeather } from '../../weather';
 
 describe('WeatherSheet', () => {
     let container: HTMLElement;
@@ -180,5 +182,81 @@ describe('WeatherSheet', () => {
         const sheet = new WeatherSheet();
         sheet.hydrate();
         expect(() => sheet.dispose()).not.toThrow();
+    });
+
+    it('refresh button calls fetchWeather', () => {
+        const sheet = new WeatherSheet();
+        sheet.hydrate();
+        const btn = document.getElementById('weather-refresh-btn')!;
+        btn.click();
+        expect(fetchWeather).toHaveBeenCalled();
+    });
+
+    it('subscribes to sheetOpened for auto-refresh', () => {
+        const sheet = new WeatherSheet();
+        sheet.hydrate();
+        expect(eventBus.on).toHaveBeenCalledWith(
+            'sheetOpened',
+            expect.any(Function)
+        );
+    });
+
+    it('triggers fetchWeather on sheetOpened with id=weather', () => {
+        const sheet = new WeatherSheet();
+        sheet.hydrate();
+
+        let handler: Function = () => {};
+        vi.mocked(eventBus.on).mockImplementation((_event, fn) => {
+            if (_event === 'sheetOpened') handler = fn as Function;
+        });
+
+        sheet.hydrate();
+        handler({ id: 'weather' });
+        expect(fetchWeather).toHaveBeenCalled();
+    });
+
+    it('ignores sheetOpened for other sheet ids', () => {
+        const sheet = new WeatherSheet();
+        sheet.hydrate();
+
+        let handler: Function = () => {};
+        vi.mocked(eventBus.on).mockImplementation((_event, fn) => {
+            if (_event === 'sheetOpened') handler = fn as Function;
+        });
+
+        sheet.hydrate();
+        handler({ id: 'other' });
+        expect(fetchWeather).not.toHaveBeenCalled();
+    });
+
+    it('subscribes to state changes', () => {
+        const sheet = new WeatherSheet();
+        sheet.hydrate();
+        expect(mockState.subscribe).toHaveBeenCalledWith(
+            'weatherData',
+            expect.any(Function)
+        );
+        expect(mockState.subscribe).toHaveBeenCalledWith(
+            'weatherUnavailable',
+            expect.any(Function)
+        );
+        expect(mockState.subscribe).toHaveBeenCalledWith(
+            'isPro',
+            expect.any(Function)
+        );
+    });
+
+    it('sets aria-live on weather content', () => {
+        const sheet = new WeatherSheet();
+        sheet.hydrate();
+        const content = document.getElementById('weather-content')!;
+        expect(content.getAttribute('aria-live')).toBe('polite');
+    });
+
+    it('sets aria-label on close button', () => {
+        const sheet = new WeatherSheet();
+        sheet.hydrate();
+        const btn = document.getElementById('close-weather')!;
+        expect(btn.getAttribute('aria-label')).toBe('weather.aria.close');
     });
 });

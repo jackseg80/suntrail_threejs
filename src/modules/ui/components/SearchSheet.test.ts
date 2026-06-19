@@ -197,4 +197,64 @@ describe('SearchSheet', () => {
         sheet.hydrate();
         expect(() => sheet.dispose()).not.toThrow();
     });
+
+    it('matchesFilter respects mountain filter', () => {
+        const sheet = new SearchSheet();
+        sheet.hydrate();
+        sheet['activeFilter'] = 'mountains';
+        expect(sheet['matchesFilter']('peak')).toBe(true);
+        expect(sheet['matchesFilter']('city')).toBe(false);
+        expect(sheet['matchesFilter']('country')).toBe(false);
+    });
+
+    it('matchesFilter respects cities filter', () => {
+        const sheet = new SearchSheet();
+        sheet.hydrate();
+        sheet['activeFilter'] = 'cities';
+        expect(sheet['matchesFilter']('city')).toBe(true);
+        expect(sheet['matchesFilter']('village')).toBe(true);
+        expect(sheet['matchesFilter']('peak')).toBe(false);
+        expect(sheet['matchesFilter']('country')).toBe(false);
+    });
+
+    it('matchesFilter respects countries filter', () => {
+        const sheet = new SearchSheet();
+        sheet.hydrate();
+        sheet['activeFilter'] = 'countries';
+        expect(sheet['matchesFilter']('country')).toBe(true);
+        expect(sheet['matchesFilter']('region')).toBe(true);
+        expect(sheet['matchesFilter']('city')).toBe(false);
+    });
+
+    it('handleInput hides results for queries < 2 chars', () => {
+        const sheet = new SearchSheet();
+        sheet.hydrate();
+        const input = document.getElementById('geo-input') as HTMLInputElement;
+        input.value = 'a';
+        sheet['handleInput']();
+        const results = document.getElementById('geo-results')!;
+        expect(results.style.display).toBe('none');
+    });
+
+    it('handleInput debounces remote search', () => {
+        vi.useFakeTimers();
+        const sheet = new SearchSheet();
+        sheet.hydrate();
+        const input = document.getElementById('geo-input') as HTMLInputElement;
+        input.value = 'Chamonix';
+        sheet['handleInput']();
+        vi.advanceTimersByTime(500);
+        const results = document.getElementById('geo-results')!;
+        expect(results).not.toBeNull();
+        vi.useRealTimers();
+    });
+
+    it('subscribes to sheetClosed for reset', () => {
+        const sheet = new SearchSheet();
+        sheet.hydrate();
+        expect(eventBus.on).toHaveBeenCalledWith(
+            'sheetClosed',
+            expect.any(Function)
+        );
+    });
 });
