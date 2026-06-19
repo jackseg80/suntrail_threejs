@@ -1,9 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { state } from './state';
-import { detectBestPreset, applyPreset } from './performance';
+import {
+    detectBestPreset,
+    applyPreset,
+    applyCustomSettings,
+} from './performance';
 import { refreshTerrain } from './terrain';
 
 // Mocks des dépendances lourdes de performance.ts
+const { mockDisposeAll } = vi.hoisted(() => ({
+    mockDisposeAll: vi.fn(),
+}));
+
 vi.mock('./terrain', () => ({
     resetTerrain: vi.fn(),
     updateVisibleTiles: vi.fn(),
@@ -15,6 +23,10 @@ vi.mock('./utils', () => ({ isMobileDevice: vi.fn(() => false) }));
 vi.mock('./toast', () => ({ showToast: vi.fn() }));
 // tileCache.ts (importé via trimCache) utilise aussi isMobileDevice depuis utils
 vi.mock('../i18n/I18nService', () => ({ i18n: { t: (_k: string) => _k } }));
+
+vi.mock('./materialPool', () => ({
+    materialPool: { disposeAll: mockDisposeAll },
+}));
 
 // --- Helpers ---
 const setUA = (ua: string) =>
@@ -60,6 +72,20 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
             state.renderer = { setPixelRatio: vi.fn() } as any;
             applyPreset('balanced');
             expect(refreshTerrain).toHaveBeenCalledWith(true);
+        });
+
+        it('should flush materialPool on preset change to force shader recompilation', () => {
+            state.renderer = { setPixelRatio: vi.fn() } as any;
+            mockDisposeAll.mockClear();
+            applyPreset('eco');
+            expect(mockDisposeAll).toHaveBeenCalledTimes(1);
+        });
+
+        it('should flush materialPool on custom settings apply', () => {
+            state.renderer = { setPixelRatio: vi.fn() } as any;
+            mockDisposeAll.mockClear();
+            applyCustomSettings({ SHADOWS: false });
+            expect(mockDisposeAll).toHaveBeenCalledTimes(1);
         });
     });
 

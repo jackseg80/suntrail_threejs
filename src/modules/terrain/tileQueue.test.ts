@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import * as THREE from 'three';
 
-const { mockState, mockActiveTiles } = vi.hoisted(() => {
+const { mockState, mockActiveTiles, mockCancelTileLoad } = vi.hoisted(() => {
     const state: Record<string, any> = {
         isProcessingTiles: false,
         RESOLUTION: 256,
@@ -11,6 +12,7 @@ const { mockState, mockActiveTiles } = vi.hoisted(() => {
     return {
         mockState: state,
         mockActiveTiles: activeTiles,
+        mockCancelTileLoad: vi.fn(),
     };
 });
 
@@ -20,6 +22,10 @@ vi.mock('../state', () => ({
 
 vi.mock('../terrain', () => ({
     activeTiles: mockActiveTiles,
+}));
+
+vi.mock('../tileLoader', () => ({
+    cancelTileLoad: mockCancelTileLoad,
 }));
 
 vi.mock('three', async () => {
@@ -43,6 +49,7 @@ import {
     removeFromLoadQueue,
     clearLoadQueue,
     prioritizeNewZoom,
+    processLoadQueue,
 } from './tileQueue';
 import type { Tile } from './Tile';
 
@@ -196,6 +203,30 @@ describe('tileQueue', () => {
 
             expect(loadQueue.has(tileOld)).toBe(false);
             expect(loadQueue.size).toBe(0);
+        });
+    });
+
+    describe('timeout — cancelTileLoad', () => {
+        it('should call cancelTileLoad when load times out', async () => {
+            vi.useFakeTimers();
+
+            const tile = makeFakeTile('14/0/0', 14);
+            (tile as any).activeTaskId = 42;
+            tile.load = vi.fn().mockReturnValue(new Promise(() => {}));
+            mockActiveTiles.add(tile.key);
+            mockState.camera = {
+                projectionMatrix: new THREE.Matrix4(),
+                matrixWorldInverse: new THREE.Matrix4(),
+                position: { x: 0, y: 0, z: 0 },
+            } as any;
+            addToLoadQueue(tile);
+
+            processLoadQueue();
+            await vi.advanceTimersByTimeAsync(30000);
+
+            expect(mockCancelTileLoad).toHaveBeenCalledWith(42);
+
+            vi.useRealTimers();
         });
     });
 });

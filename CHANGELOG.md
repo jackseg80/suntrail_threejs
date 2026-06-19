@@ -1,3 +1,16 @@
+## [5.78.9] - 2026-06-19
+
+### Fixed
+- **Double décrément `loadingCount` sur timeout (`tileQueue.ts`)** : Le callback `setTimeout` décrémentait `loadingCount` sans annuler la promesse sous-jacente. Quand celle-ci finissait par se résoudre, le `.finally()` décrémentait une seconde fois, faussant le compteur. Ajout de `cancelTileLoad(activeTaskId)` avant le retry.
+- **Shader stale sur changement de preset (`performance.ts`)** : `materialPool.disposeAll()` n'était jamais appelée lors d'un changement de preset. Les nouvelles tuiles réutilisaient des matériaux pré-compilés avec les macros d'ancien tier, causant un décalage rendu/lumière. Ajout des appels dans `applyPreset()` et `applyCustomSettings()`.
+
+### Tests
+- **`tileQueue.test.ts`** : +1 test — vérifie que `cancelTileLoad` est appelée quand le timeout 30s expire
+- **`performance.test.ts`** : +2 tests — vérifie que `materialPool.disposeAll()` est appelée par `applyPreset()` et `applyCustomSettings()`
+
+- Tous les tests passent : **1459/1459** (126 files, 5 skip).
+- Couverture : **58.25% lines**.
+
 ## [5.78.7] - 2026-06-19
 
 ### Tests

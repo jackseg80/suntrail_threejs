@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { state } from '../state';
 import type { Tile } from './Tile';
 import { activeTiles } from '../terrain';
+import { cancelTileLoad } from '../tileLoader';
 
 export const loadQueue: Set<Tile> = new Set<Tile>();
 let isProcessingQueue = false;
@@ -151,6 +152,7 @@ export async function processLoadQueue() {
                 const TIMEOUT_MS = 30000;
                 const timer = setTimeout(() => {
                     if (loadingCount > 0) loadingCount--;
+                    cancelTileLoad(tile.activeTaskId);
                     // v5.74.1 : Retry automatique jusqu'à 3 tentatives.
                     // Évite les trous permanents sur connexion lente.
                     if ((tile as any).retryCount < 3) {

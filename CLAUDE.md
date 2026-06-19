@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.78.7)
+# SunTrail — Guide IA (v5.78.9)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-19 — v5.78.7 : Audit tests complet — 1435 tests, 57% couverture, 2 bugs corrigés.
+> Mis à jour le 2026-06-19 — v5.78.9 : Fix double décrément loadingCount + flush materialPool au changement de preset. 1459 tests, 58% couverture.
 
 ## Projet
 

@@ -4,6 +4,7 @@ import { updateShadowMapResolution } from './sun';
 import { refreshTerrain, refreshTracks } from './terrain';
 import { trimCache } from './tileCache';
 import { i18n } from '../i18n/I18nService';
+import { materialPool } from './materialPool';
 
 /**
  * Détecte les informations du GPU
@@ -170,6 +171,7 @@ export function applyPreset(preset: PresetType): void {
 
     updatePerformanceUI(preset);
     if (state.renderer) {
+        materialPool.disposeAll();
         refreshTerrain(true);
         refreshTracks();
         setTimeout(() => refreshTracks(), 500);
@@ -212,6 +214,7 @@ export function applyCustomSettings(settings: any): void {
         state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
     }
 
+    materialPool.disposeAll();
     refreshTerrain(true);
     refreshTracks();
     setTimeout(() => refreshTracks(), 500);
