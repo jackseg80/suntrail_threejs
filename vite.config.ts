@@ -143,6 +143,23 @@ export default defineConfig({
     include: ['src/**/*.test.ts'],
     // On désactive les threads pour éviter les corruptions de mémoire en CI
     pool: 'forks',
-    clearMocks: true
+    clearMocks: true,
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.ts'],
+      exclude: [
+        'src/types/**',
+        'src/test/setup.ts',
+        'src/vite-env.d.ts',
+        'src/**/*.d.ts',
+        'src/**/*.test.ts',
+        'src/modules/vite-env.d.ts',
+      ],
+      thresholds: {
+        lines: 50,
+      },
+      reporter: ['text', 'text-summary', 'html'],
+      reportsDirectory: './coverage',
+    },
   }
 });

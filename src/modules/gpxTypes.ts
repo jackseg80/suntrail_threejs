@@ -19,7 +19,11 @@ export interface GPXRawData {
 }
 
 export function getElevation(p: { ele?: number; alt?: number }): number {
-    return p.ele !== undefined ? p.ele : p.alt !== undefined ? p.alt : 0;
+    const ele = p.ele;
+    if (ele !== undefined && !isNaN(ele)) return ele;
+    const alt = p.alt;
+    if (alt !== undefined && !isNaN(alt)) return alt;
+    return 0;
 }
 
 export function isValidGeoPoint(p: unknown): p is GeoPoint {

@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.78.0)
+# SunTrail — Guide IA (v5.78.1)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-19 — v5.78.0 : Fix mesh 3D gelé silencieusement + spam broadcast GPS réduit.
+> Mis à jour le 2026-06-19 — v5.78.1 : Audit tests + bugs getElevation/revokeProAccess + couverture activée (51.7%).
 
 ## Projet
 

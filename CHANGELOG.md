@@ -1,13 +1,29 @@
-## [5.78.0] - 2026-06-19
+## [5.78.1] - 2026-06-19
 
 ### Fixed
-- **Mesh 3D gelé silencieusement** : `_doUpdateRecordedTrackMesh()` émet désormais un `console.warn` si `state.scene`/`camera`/`originTile` est null (ex: perte contexte WebGL), au lieu d'un retour silencieux.
-- **Spam broadcast GPS** : `sendPointsBroadcast` supprimé sur les fixes GPS individuels — le JS n'est notifié qu'aux flushs DB (batch 3 pts ou 10s), réduisant la charge du thread JS de ~1 Hz à ~0.1 Hz.
+- **NaN altitude dans getElevation()** : `getElevation()` ignorait le cas `ele=NaN` (`NaN !== undefined` est true), retournant `NaN` au lieu de fallback vers `alt` ou `0`.
+- **Accès Pro révoqué partiel** : `revokeProAccess()` ne réinitialisait pas `SHOW_BUILDINGS`, `SHOW_INCLINOMETER`, `SHOW_WEATHER_PRO` à `false`. Un utilisateur révoqué gardait les features Pro actives jusqu'au rechargement.
+- **Code smell packCatalog.ts** : `checkForUpdates()` documentée comme immuable (le mutage du paramètre `packStates` est conservé car utilisé par l'appelant).
+
+### Added
+- **Coverage config** : Seuil 50% lignes via `@vitest/coverage-v8` activé dans `vite.config.ts`. Rapport HTML dans `./coverage/`.
 
 ### Tests
-- **`gpxLayers.test.ts`** : +1 test (vérifie le `console.warn` sur scene/camera/originTile manquant).
+- **`gpxTypes.test.ts`** : 19 tests — getElevation (NaN guard, fallbacks), isValidGeoPoint (null/NaN/objets)
+- **`iap.test.ts`** : 13 tests — showUpgradePrompt (labels), grantProAccess (idempotence), revokeProAccess (reset flags)
+- **`packCatalog.test.ts`** : 21 tests — embedded catalog, findPackContaining (bbox+country), checkForUpdates, fetchCatalog (promise cache)
+- **`autoHide.test.ts`** : 9 tests — init timer, reset, cleanup, idempotence, sheet guard, lastClicked guard
+- **`SharedAPIKeyComponent.test.ts`** : 10 tests — hydrate, submit, trim, rejection <10 chars, state.MK sync
+- **`UpsellModal.test.ts`** : 9 tests — 3s delay, Pro guard, 24h freq, test mode (webdriver/UA/IS_E2E)
+- **`SolarLockedItem.test.ts`** : 6 tests — DOM structure, badge, onClick, showUpgradePrompt fallback
+- **`SolarTimeline.test.ts`** : 7 tests — title, container, colors (sun/shadow/night), empty timeline
+- **`packTypes.test.ts`** : 4 tests — PackStatus, PackMeta, PackState, PackCatalog interfaces
+- **`storage.test.ts`** : 3 tests — unique keys, prefix convention, required keys
 
-- Tous les tests passent : 1158/1158 (105 files, 5 skip flaky).
+- Tous les tests passent : **1259/1259** (115 files, 5 skip flaky).
+- Couverture : **51.7% lines** (+1.4% vs v5.78.0), seuil 50% configuré.
+
+## [5.78.0] - 2026-06-19
 
 ## [5.77.0] - 2026-06-19
 

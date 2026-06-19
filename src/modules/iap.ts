@@ -58,5 +58,9 @@ export function grantProAccess(): void {
  */
 export function revokeProAccess(): void {
     state.isPro = false;
+    state.SHOW_BUILDINGS = false;
+    state.SHOW_INCLINOMETER = false;
+    state.SHOW_WEATHER_PRO = false;
     saveProStatus();
+    showToast('⚠️ Accès Pro révoqué');
 }

@@ -1,4 +1,4 @@
-# SunTrail — TODO (v5.78.0)
+# SunTrail — TODO (v5.78.1)
 
 > Dernière mise à jour : 2026-06-19
 
@@ -7,7 +7,7 @@
 - **Refactoring SettingsSheet.ts** (951 lignes) — Découper par section (résolution, carte, GPS, etc.)
 - **Refactoring WeatherSheet.ts** (867 lignes, 0% couverture) — Extraire logique météo en service et sous-composants
 - **Refactoring SolarProbeSheet.ts** (1190 lignes, 0% couverture) — Continuer l'extraction des sous-composants UI
-- **Tests UI components** — PacksSheet (1.8%), UpgradeSheet (1.7%), TrackSheet (10.7%), SolarProbeSheet (0%), WeatherSheet (0%)
+- **Tests UI components** — PacksSheet (35%), UpgradeSheet (56%), TrackSheet (10%), SolarProbeSheet (2%), WeatherSheet (2%)
 
 ## 🟡 Court terme
 
@@ -16,6 +16,7 @@
 - **Debug OAuth Google** — Résoudre les problèmes de stabilité et réactiver l'UI
 - **Paiements Web — Restauration par Email** — Un utilisateur qui paie via Stripe sur web perd l'accès s'il change de navigateur (App User ID aléatoire en localStorage).
 - **Tests poi.ts** — Couverture partielle : tester la détection de catégories avec PBF mockés
+- **Rapport de couverture** — Atteindre 60% lignes (actuel 51.7%)
 
 ## 🟢 Long terme (v6.x)
 
@@ -25,24 +26,13 @@
 - **Abonnement familial** — Pack famille RevenueCat (v6.1+)
 - **Refactoring packManager.ts** — Split en packCatalog + packDownloader + packMounter (770 lignes, 10% couverture)
 - **Refactoring tileLoader.ts** — Split logique métier en tileService.ts (912 lignes)
+- **Tests Tile.ts** — 671 lignes, 0% couverture, cœur du rendu 3D
+- **Tests draggablePanel.ts** — 230 lignes, 20% couverture, machine à états pointer
+- **Tests mobile.ts** — 141 lignes, 6% couverture, Capacitor lifecycle + OAuth
 
-## ✅ Récemment complété (v5.78.0)
+## ✅ Récemment complété (v5.78.1)
 
-- [x] **Mesh 3D gelé silencieusement** — `console.warn` sur scene/camera/originTile null + test
-- [x] **Spam broadcast GPS** — Broadcast supprimé sur fixes individuels, notifié qu'aux flushs DB
-
-## ✅ Récemment complété (v5.77.0)
-
-- [x] **Sync REC bloquée (perf)** — `syncPoints()` incrémental (contexte de bordure au lieu de tout le dataset) + mutex `_syncing`
-- [x] **Normalisation types REC** — `NativeGPSPoint→LocationPoint` avant stockage
-- [x] **Temps aberrant notification REC** — Protection `getElapsedTimeString()` contre `mStartTime` corrompu
-- [x] **`calculateTrackStats()` skipCleaning** — Paramètre pour éviter le re-calcul `cleanGPSTrack` complet toutes les 10s
-- [x] **Tests REC** — +7 tests (lock, sync incrémental, normalisation, bordures, skipCleaning)
-
-## ✅ Récemment complété (v5.76.0)
-
-- [x] **Race condition clé MapTiler/ORS** — `await resolveMapTilerKey()` au lieu de `void` ; `isMapTilerDisabled` reset sur succès Gist
-- [x] **État DÉGRADÉ carte Réseau** — 3ᵉ statut jaune entre ONLINE et OFFLINE
-- [x] **Tests config.ts** — Reset `isMapTilerDisabled` sur Gist valide + cas Gist vide
-- [x] **i18n** — Clés `connectivity.status.degraded` (fr/en)
-- [x] **CSS** — Classe `.conn-status-degraded` (warning)
+- [x] **Bug getElevation()** — Retournait NaN si `ele=NaN` au lieu de fallback vers `alt` ou `0`
+- [x] **Bug revokeProAccess()** — Ne réinitialisait pas les flags Pro (buildings, inclinometer, weather_pro)
+- [x] **10 fichiers de tests ajoutés** (100 tests) : gpxTypes, iap, packCatalog, packTypes, storage, autoHide, SharedAPIKeyComponent, UpsellModal, SolarLockedItem, SolarTimeline
+- [x] **Couverture activée** : seuil 50% lignes, rapport HTML dans ./coverage/
