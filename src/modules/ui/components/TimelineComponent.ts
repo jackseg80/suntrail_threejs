@@ -7,7 +7,7 @@ import { worldToLngLat } from '../../geo';
 import { showUpgradePrompt } from '../../iap';
 import { attachDraggablePanel } from '../draggablePanel';
 import { ICON_LOCK } from '../icons';
-import SunCalc from 'suncalc';
+import SunCalc from '../../suncalcCompat';
 
 export class TimelineComponent {
     private timeSlider: HTMLInputElement | null = null;

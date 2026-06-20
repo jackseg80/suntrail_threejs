@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import SunCalc from 'suncalc';
+import SunCalc from './suncalcCompat';
 import { state, isProActive } from './state';
 import {
     isAtShadow,

@@ -6,7 +6,7 @@ import { sheetManager } from '../core/SheetManager';
 import { i18n } from '../../../i18n/I18nService';
 import { showUpgradePrompt } from '../../iap';
 import { fmtTime, fmtDuration } from '../../utils';
-import SunCalc from 'suncalc';
+import SunCalc from '../../suncalcCompat';
 import { expertService } from '../../expertService';
 import { getPlaceName } from '../../geocodingService';
 import {

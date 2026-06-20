@@ -43,7 +43,7 @@ vi.mock('../draggablePanel', () => ({
 vi.mock('../../../i18n/I18nService', () => ({
     i18n: { t: (k: string) => k },
 }));
-vi.mock('suncalc', () => ({
+vi.mock('../../suncalcCompat', () => ({
     default: {
         getPosition: vi.fn().mockReturnValue({ altitude: 0.5, azimuth: 1.2 }),
     },

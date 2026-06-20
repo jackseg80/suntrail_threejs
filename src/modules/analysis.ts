@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import SunCalc from 'suncalc';
+import SunCalc from './suncalcCompat';
 import { state } from './state';
 import { activeTiles } from './terrain';
 import { queryTiles } from './tileSpatialIndex';

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import SunCalc from 'suncalc';
+import SunCalc from './suncalcCompat';
 import { state } from './state';
 import { terrainUniforms } from './terrain';
 import { i18n } from '../i18n/I18nService';

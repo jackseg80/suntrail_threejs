@@ -11,7 +11,7 @@ import {
 } from '../../weatherUtils';
 import { sheetManager } from '../core/SheetManager';
 import { i18n } from '../../../i18n/I18nService';
-import SunCalc from 'suncalc';
+import SunCalc from '../../suncalcCompat';
 import { expertService } from '../../expertService';
 import { showUpgradePrompt } from '../../iap';
 import { showToast } from '../../toast';
