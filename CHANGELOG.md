@@ -3,9 +3,18 @@
 ### Changed
 - **Three.js 0.160.1 → 0.184.0** (24 versions) : upgrade complet du renderer WebGL. Plan détaillé dans `docs/plans/UPGRADE_THREEJS_184.md`.
 - **`@types/three`** : 0.160.0 → 0.184.0 (synchronisé).
-- **Breaking changes gérés** : aucun impact sur SunTrail malgré 13 changements cassants audités dans les 12 domaines critiques (shaders, shadow maps, materials, textures, Sky, Clock, etc.).
+- **Breaking changes gérés** : aucun impact sur SunTrail malgré 13 changements cassants audités (shaders, shadow maps, materials, textures, Sky, Clock, etc.).
+- **Ombres r184** : `PCFSoftShadowMap` → `PCFShadowMap` + normalBias ajusté pour le nouveau backend.
+- **suncalc 1.9.0 → 2.0.0** : couche de compat `src/modules/suncalcCompat.ts` (auto-détection v1/v2, deg→rad, nord→sud).
+- **TypeScript 5.9.3 → 6.0.3** : `types:["node"]` dans tsconfig + déclarations globales.
+- **@mapbox/vector-tile 2.0.4 → 3.0.0** + **pbf 4.0.1 → 5.1.0** : `Pbf` → `PbfReader` dans 3 fichiers.
+- **@revenuecat/purchases-capacitor 12.3.0 → 13.2.0** : rétrocompatible (aucun changement de code).
 
-### Upgrade paliers
+### Fixed
+- **Ombre plaine (shadow bias r184)** : normalBias réduit de 0.02/0.01 → 0.005 pour le nouvel algorithme PCF.
+- **Soleil cassé post-upgrade suncalc v2** : cache Vite stale servait v1.9, la couche compat double-convertissait. Auto-détection v1/v2 ajoutée.
+
+### Upgrade paliers (Three.js)
 - Palier 1 : 0.160 → 0.165 ✅ Build, TypeScript, 1459 tests
 - Palier 2 : 0.165 → 0.170 ✅ Build, TypeScript, 1459 tests
 - Palier 3 : 0.170 → 0.175 ✅ Build, TypeScript, 1459 tests

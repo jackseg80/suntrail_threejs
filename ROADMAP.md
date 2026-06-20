@@ -160,14 +160,14 @@ Upgrade de Three.js de la version 0.160.1 à 0.184.0 (24 versions d'écart) en c
 | E | Release (version, changelog, docs, tag) | 0.5 j |
 | **Total** | | **7.0 j** |
 
-### MR séparées (post-upgrade)
+### MR séparées (post-upgrade ✅)
 
 | MR | Package | Actuel → Cible |
 |---|---|---|
-| MR-A | `suncalc` | 1.9.0 → 2.0.0 |
-| MR-B | `typescript` | 5.9.3 → 6.0.3 |
-| MR-C | `@mapbox/vector-tile` + `pbf` | 2.0.4 → 3.0.0 / 4.0.1 → 5.1.0 |
-| MR-D | `@revenuecat/purchases-capacitor` | 12.3.0 → 13.2.0 |
+| MR-A | `suncalc` | 1.9.0 → 2.0.0 ✅ |
+| MR-B | `typescript` | 5.9.3 → 6.0.3 ✅ |
+| MR-C | `@mapbox/vector-tile` + `pbf` | 2.0.4 → 3.0.0 / 4.0.1 → 5.1.0 ✅ |
+| MR-D | `@revenuecat/purchases-capacitor` | 12.3.0 → 13.2.0 ✅ |
 
 ### Points de vigilance
 
