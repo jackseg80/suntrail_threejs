@@ -12,48 +12,30 @@
 import * as SunCalc from 'suncalc';
 
 const DEG2RAD = Math.PI / 180;
-let _versionDetected: 'v1' | 'v2' | null = null;
-let _loggedOnce = false;
+let _isV2: boolean | null = null;
 
-function detectVersion(): 'v1' | 'v2' {
-    // Test avec une altitude extrême : si abs > 1.58 c'est forcément des degrés (v2)
-    // Car en radians l'altitude max est π/2 ≈ 1.57
-    const test = SunCalc.getPosition(new Date('2026-06-21T12:00:00Z'), 47, 8);
-    const isV2 = Math.abs(test.altitude) > 1.58;
-    return isV2 ? 'v2' : 'v1';
+function detectVersion(): void {
+    // La propriété `waxing: boolean` n'existe que dans suncalc v2
+    const moon = SunCalc.getMoonIllumination(new Date());
+    _isV2 = 'waxing' in moon;
 }
 
 const _getPosition = (date: Date, lat: number, lng: number) => {
-    if (!_versionDetected) _versionDetected = detectVersion();
-
+    if (_isV2 === null) detectVersion();
     const p = SunCalc.getPosition(date, lat, lng);
-    const isV2 = _versionDetected === 'v2';
-
-    if (!_loggedOnce) {
-        _loggedOnce = true;
-        console.warn(
-            '[suncalcCompat] version détectée : %s | raw altitude=%f° azimuth=%f°',
-            _versionDetected,
-            isV2 ? p.altitude : p.altitude * (180 / Math.PI),
-            isV2 ? p.azimuth : (p.azimuth * (180 / Math.PI) + 180 + 360) % 360
-        );
-    }
-
-    // v2 (degrés, nord-based) → v1 (radians, sud-based)
-    if (isV2) {
+    if (_isV2) {
         return {
             altitude: p.altitude * DEG2RAD,
             azimuth: (p.azimuth + 180) * DEG2RAD,
         };
     }
-    // v1 (déjà radians, sud-based) → retour direct
     return { altitude: p.altitude, azimuth: p.azimuth };
 };
 
 const _getMoonPosition = (date: Date, lat: number, lng: number) => {
+    if (_isV2 === null) detectVersion();
     const p = SunCalc.getMoonPosition(date, lat, lng);
-    const isV2 = _versionDetected === 'v2';
-    if (isV2) {
+    if (_isV2) {
         return {
             altitude: p.altitude * DEG2RAD,
             azimuth: (p.azimuth + 180) * DEG2RAD,
