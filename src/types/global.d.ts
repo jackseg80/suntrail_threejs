@@ -32,3 +32,10 @@ declare const __APP_VERSION__: string;
 interface DeviceOrientationEvent {
     readonly webkitCompassHeading?: number;
 }
+
+// ── Node.js globals pour les fichiers de test (TypeScript 6.0+) ─────────────────
+declare var global: typeof globalThis;
+declare var Buffer: typeof import('buffer').Buffer;
+declare var fs: typeof import('fs');
+declare var path: typeof import('path');
+declare var url: typeof import('url');
