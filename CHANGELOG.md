@@ -1,3 +1,8 @@
+## [5.80.0] - 2026-06-20
+
+### Fixed
+- **Benchmark GPU sous-évalué sur r184** : le per-frame overhead de Three.js r184 (NodeMaterial compatibility layer, textureUnits save/restore) réduisait le nombre de frames en 300ms. Facteur normalisé de `×2.0` → `×4.0` pour que le A53 retrouve `balanced` au lieu de `eco`.
+
 ## [5.79.0] - 2026-06-20
 
 ### Changed
