@@ -52,15 +52,29 @@ const _getMoonPosition = (date: Date, lat: number, lng: number) => {
 };
 
 interface TimesCompat {
-    sunrise: Date; sunriseEnd: Date; goldenHourEnd: Date; solarNoon: Date;
-    goldenHour: Date; sunsetStart: Date; sunset: Date; dusk: Date;
-    nauticalDusk: Date; night: Date; nadir: Date; nightEnd: Date;
-    nauticalDawn: Date; dawn: Date;
-    alwaysUp?: boolean; alwaysDown?: boolean;
+    sunrise: Date;
+    sunriseEnd: Date;
+    goldenHourEnd: Date;
+    solarNoon: Date;
+    goldenHour: Date;
+    sunsetStart: Date;
+    sunset: Date;
+    dusk: Date;
+    nauticalDusk: Date;
+    night: Date;
+    nadir: Date;
+    nightEnd: Date;
+    nauticalDawn: Date;
+    dawn: Date;
+    alwaysUp?: boolean;
+    alwaysDown?: boolean;
 }
 
 const _getTimes = (date: Date, lat: number, lng: number, height = 0) => {
-    const times = SunCalc.getTimes(date, lat, lng, height) as Record<string, Date | null | boolean>;
+    const times = SunCalc.getTimes(date, lat, lng, height) as Record<
+        string,
+        Date | null | boolean
+    >;
     const res: Record<string, Date | boolean> = {};
     for (const key of Object.keys(times)) {
         const val = times[key];
