@@ -1,4 +1,4 @@
-import Pbf from 'pbf';
+import { PbfReader } from 'pbf';
 import { VectorTile } from '@mapbox/vector-tile';
 import { BoundedCache } from './boundedCache';
 import { state } from './state';
@@ -132,9 +132,7 @@ export async function fetchLandcoverPBF(
             }
             const buffer = await res.arrayBuffer();
 
-            // @ts-ignore Pbf.default may not be in types
-            const PbfConstructor = Pbf.default || Pbf;
-            const vtile = new VectorTile(new PbfConstructor(buffer));
+            const vtile = new VectorTile(new PbfReader(buffer));
 
             const forests: any[] = [];
             const water: any[] = [];

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import Pbf from 'pbf';
+import { PbfReader } from 'pbf';
 import { VectorTile } from '@mapbox/vector-tile';
 import { state } from './state';
 import { getAltitudeAt } from './analysis';
@@ -312,9 +312,7 @@ async function fetchPOIsWithCache(
             void cache.put(key, new Response(buffer.slice(0)));
         }
 
-        // @ts-ignore Pbf.default may not be in types
-        const PbfConstructor = Pbf.default || Pbf;
-        const vtile = new VectorTile(new PbfConstructor(buffer));
+        const vtile = new VectorTile(new PbfReader(buffer));
 
         const elements: POIData[] = [];
         const layers = Object.keys(vtile.layers);
