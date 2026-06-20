@@ -141,6 +141,43 @@ superposés en sprites Three.js Canvas. Abandonné — problèmes non résolus :
 
 ---
 
+## v5.79.0 — Upgrade Three.js 0.160 → 0.184
+
+> Plan détaillé : [docs/plans/UPGRADE_THREEJS_184.md](docs/plans/UPGRADE_THREEJS_184.md)
+
+### Objectif
+
+Upgrade de Three.js de la version 0.160.1 à 0.184.0 (24 versions d'écart) en conservant `WebGLRenderer`. Prérequis indispensable pour la migration WebGPU ultérieure (v6.5/v7.0).
+
+### Phases
+
+| Phase | Description | Durée |
+|---|---|---|
+| A | Audit des changelogs r160→r184 (12 domaines critiques) | 0.5 j |
+| B | Upgrade par 5 paliers (r165→r170→r175→r180→r184) avec gate Android à chaque palier | 2.0 j |
+| C | Vérification visuelle des 23 systèmes de rendu | 1.5 j |
+| D | Tests 7 plateformes (desktop + mobile + WebView Capacitor) | 2.5 j |
+| E | Release (version, changelog, docs, tag) | 0.5 j |
+| **Total** | | **7.0 j** |
+
+### MR séparées (post-upgrade)
+
+| MR | Package | Actuel → Cible |
+|---|---|---|
+| MR-A | `suncalc` | 1.9.0 → 2.0.0 |
+| MR-B | `typescript` | 5.9.3 → 6.0.3 |
+| MR-C | `@mapbox/vector-tile` + `pbf` | 2.0.4 → 3.0.0 / 4.0.1 → 5.1.0 |
+| MR-D | `@revenuecat/purchases-capacitor` | 12.3.0 → 13.2.0 |
+
+### Points de vigilance
+
+- `logarithmicDepthBuffer` sur Mali G71/G72 (S9/S10) — bug connu `gl_FragDepth` ignoré → z-fighting
+- `onBeforeCompile` GLSL injection — noms de chunks internes (`#include <begin_vertex>`, etc.) peuvent avoir changé
+- `ShaderMaterial` météo — dépend de `logdepthbuf_*` chunks
+- `compass.ts` mini-renderer indépendant — contexte WebGL séparé à vérifier
+
+---
+
 ## v6.0+ (Moyen terme)
 
 ### Authentification Utilisateur Optionnelle
@@ -168,6 +205,54 @@ superposés en sprites Three.js Canvas. Abandonné — problèmes non résolus :
 - **Cloud Sync** : sauvegardes traces/marque-pages (Pro)
 - **API Publique** : accès données via webhook (Professionnel/B2B)
 - **Marque-pages Collaboratifs** : partage itinéraires entre randonneurs (Pro)
+
+---
+
+## v6.5 — WebGPU Expérimental (opt-in debug)
+
+> Prérequis : v5.79.0 (Three.js 0.184). Plan détaillé : [docs/plans/UPGRADE_THREEJS_184.md](docs/plans/UPGRADE_THREEJS_184.md)
+
+### Objectif
+
+Activer `WebGPURenderer` en mode expérimental pour les utilisateurs qui le souhaitent, avec fallback automatique `WebGLRenderer` si `navigator.gpu` est absent.
+
+### Implémentation
+
+- `state.USE_WEBGPU: boolean` (default `false`, persisté localStorage)
+- Détection `!!navigator.gpu` dans `performance.ts`
+- `initScene()` conditionnel : `WebGPURenderer` si dispo ET activé, sinon `WebGLRenderer`
+- Type `state.renderer: THREE.WebGLRenderer | THREE.WebGPURenderer | null`
+- Toggle `webgpu-toggle` dans `SettingsSheet.ts` → Paramètres Avancés (sous `debug-toggle`)
+- Si `navigator.gpu` absent → toggle grisé avec tooltip "WebGPU non supporté sur cet appareil"
+
+### Limitations connues
+
+- Shaders terrain (`onBeforeCompile`) restent en GLSL — rendu WebGL uniquement pour l'instant
+- Météo (`ShaderMaterial`) reste en GLSL — pas de rendu WebGPU
+- Ces shaders seront migrés en TSL en v7.0
+
+---
+
+## v7.0 — WebGPU Production (WebGPU-first)
+
+### Objectif
+
+WebGPU devient le renderer par défaut avec migration complète des shaders et fallback WebGL automatique.
+
+### Implémentation
+
+- Migration TSL des shaders terrain (remplace `onBeforeCompile` GLSL injection)
+- Migration TSL du shader météo (remplace `ShaderMaterial` GLSL)
+- Polyfill `logarithmicDepthBuffer` pour WebGPU (si disponible dans Three.js r185+)
+- `WebGPURenderer` par défaut, `WebGLRenderer` fallback automatique
+- Tests exhaustifs Android : Mali (G68, G71, G72, G77), Adreno 6xx/7xx, WebView Capacitor
+- Compass mini-renderer : migration CSS/Canvas2D ou unification contexte
+
+### Prérequis
+
+- Three.js r185+ (maturation WebGPU backend)
+- Support Android WebGPU élargi (Chrome 121+)
+- Retour utilisateur de la phase expérimentale v6.5
 
 ---
 
