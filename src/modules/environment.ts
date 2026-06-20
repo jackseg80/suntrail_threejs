@@ -37,12 +37,13 @@ export function initEnvironment(scene: THREE.Scene): void {
     // Biais pour éviter l'acné de surface (v5.32.22)
     const isMobile =
         window.innerWidth <= 768 || /Mobi|Android/i.test(navigator.userAgent);
+    // v5.79.0 : normalBias réduits pour le nouveau PCFShadowMap (r182+)
     if (isMobile) {
         sunLight.shadow.bias = -0.0005;
-        sunLight.shadow.normalBias = 0.02;
+        sunLight.shadow.normalBias = 0.005;
     } else {
         sunLight.shadow.bias = -0.0001;
-        sunLight.shadow.normalBias = 0.01;
+        sunLight.shadow.normalBias = 0.005;
     }
 
     scene.add(sunLight);

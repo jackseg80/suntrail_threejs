@@ -249,7 +249,7 @@ export async function initScene(): Promise<void> {
     state.renderer.setSize(window.innerWidth, window.innerHeight, false);
     state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
     state.renderer.shadowMap.enabled = state.SHADOWS;
-    state.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    state.renderer.shadowMap.type = THREE.PCFShadowMap;
     state.renderer.toneMapping = THREE.NoToneMapping;
     container.appendChild(state.renderer.domElement);
 
