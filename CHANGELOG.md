@@ -1,3 +1,21 @@
+## [5.79.0] - 2026-06-20
+
+### Changed
+- **Three.js 0.160.1 → 0.184.0** (24 versions) : upgrade complet du renderer WebGL. Plan détaillé dans `docs/plans/UPGRADE_THREEJS_184.md`.
+- **`@types/three`** : 0.160.0 → 0.184.0 (synchronisé).
+- **Breaking changes gérés** : aucun impact sur SunTrail malgré 13 changements cassants audités dans les 12 domaines critiques (shaders, shadow maps, materials, textures, Sky, Clock, etc.).
+
+### Upgrade paliers
+- Palier 1 : 0.160 → 0.165 ✅ Build, TypeScript, 1459 tests
+- Palier 2 : 0.165 → 0.170 ✅ Build, TypeScript, 1459 tests
+- Palier 3 : 0.170 → 0.175 ✅ Build, TypeScript, 1459 tests
+- Palier 4 : 0.175 → 0.180 ✅ Build, TypeScript, 1459 tests
+- Palier 5 : 0.180 → 0.184 ✅ Build, TypeScript, 1459 tests
+
+### Roadmap
+- **v6.5** : WebGPU expérimental (opt-in debug, toggle Paramètres Avancés)
+- **v7.0** : WebGPU production (TSL, WebGPU-first, fallback WebGL)
+
 ## [5.78.9] - 2026-06-19
 
 ### Fixed

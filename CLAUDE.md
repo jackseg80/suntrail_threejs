@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.78.9)
+# SunTrail — Guide IA (v5.79.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-19 — v5.78.9 : Fix double décrément loadingCount + flush materialPool au changement de preset. 1459 tests, 58% couverture.
+> Mis à jour le 2026-06-20 — v5.79.0 : Upgrade Three.js 0.160→0.184 (24 versions). Aucune régression. 1459 tests, 58% couverture.
 
 ## Projet
 

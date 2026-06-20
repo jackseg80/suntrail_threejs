@@ -141,7 +141,7 @@ superposés en sprites Three.js Canvas. Abandonné — problèmes non résolus :
 
 ---
 
-## v5.79.0 — Upgrade Three.js 0.160 → 0.184
+## v5.79.0 — Upgrade Three.js 0.160 → 0.184 ✅ (2026-06-20)
 
 > Plan détaillé : [docs/plans/UPGRADE_THREEJS_184.md](docs/plans/UPGRADE_THREEJS_184.md)
 
