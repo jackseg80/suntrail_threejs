@@ -12,9 +12,20 @@
 import * as SunCalc from 'suncalc';
 
 const DEG2RAD = Math.PI / 180;
+let _loggedOnce = false;
 
 const _getPosition = (date: Date, lat: number, lng: number) => {
     const p = SunCalc.getPosition(date, lat, lng);
+    if (!_loggedOnce) {
+        _loggedOnce = true;
+        console.warn(
+            '[suncalcCompat] v2→v1 active | raw alt=%.2f° az=%.2f° → converted alt=%.4f rad az=%.4f rad',
+            p.altitude,
+            p.azimuth,
+            p.altitude * DEG2RAD,
+            (p.azimuth + 180) * DEG2RAD
+        );
+    }
     return {
         altitude: p.altitude * DEG2RAD,
         azimuth: (p.azimuth + 180) * DEG2RAD,
