@@ -32,11 +32,12 @@ export async function runBenchmark(): Promise<BenchmarkResult> {
     if (basePreset === 'performance') baseWeight = 60; // S23, High-end mobile
     if (basePreset === 'balanced') baseWeight = 35;
 
-    // Normalisation : compensation durée x2 + calibration réelle
+    // Normalisation : compensation durée + calibration réelle
     // CPU 200ms → 0.5 (S23 raw~142 → 71)
-    // GPU 300ms → 2.0 (S23 raw~39 → 78)
+    // GPU 300ms → 4.0 (A53 r184 raw~6 → 24, S23 raw~35 → 100)
+    // v5.79.0 : GPU * 2.0→4.0 (r184 per-frame overhead : NodeMaterial compat + textureUnits save/restore)
     const normalizedCPU = Math.min(cpuRaw * 0.5, 100);
-    const normalizedGPU = Math.min(gpuRaw * 2.0, 100);
+    const normalizedGPU = Math.min(gpuRaw * 4.0, 100);
 
     // Pondération : GPU (75%), CPU (15%), Liste GPU (10%)
     const totalScore = Math.round(
