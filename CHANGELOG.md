@@ -1,14 +1,13 @@
-## [5.80.2] - 2026-06-21
-
-### Changed
-- **Parallélisation du démarrage** : `resolveMapTilerKey()` (fetch Gist) et `initCacheLayer()` (import dynamique + IndexedDB) sont maintenant lancés en parallèle avec le setup UI, au lieu d'être exécutés séquentiellement. Le `Promise.all()` remplace les deux `await` individuels. La clé `.env` est posée immédiatement en fallback. Gain mesuré : ~500ms-3s sur le TTI.
-
-## [5.80.1] - 2026-06-21
+## [5.81.0] - 2026-06-21
 
 ### Fixed
-- **Écran noir/bloqué au premier lancement après install/màj** : le `requestAnimationFrame` dans `main.ts` ne se déclenchait pas sur certains devices Android (WebView), empêchant toute initialisation JS. L'overlay "Chargement de la carte..." restait visible à l'infini, les boutons latéraux (CSS) étaient visibles mais sans handlers. Ajout d'un `setTimeout(lancement, 800)` de sécurité — si rAF ne s'est pas déclenché dans les 800ms, le démarrage est forcé.
-- **Animation CSS safety net** : `@keyframes loading-overlay-auto-hide` force la disparition de l'overlay après 20s, indépendamment de JavaScript.
-- **Nettoyage DOM `hideOverlay()`** : suppression explicite de la classe `visible` et de l'animation CSS, empêchant une éventuelle ré-apparition.
+- **Benchmark GPU sous-évalué sur A53 (Mali-G68)** : le multiplicateur GPU `×4.0` dans `runBenchmark()` laissait le raw~4 frames/300ms à 16pts normalisés → totalScore 25 (< seuil `balanced`=30). Passage à `×6.0` : GPU→24pts, total→31, `balanced` restitué.
+- **Double démarrage après install/màj** : le `onNeedRefresh` du Service Worker faisait `window.location.reload()` dès qu'un nouveau SW était détecté. Le version check + réinscription déclenchait un faux `onNeedRefresh` pendant le lancement. Ajout d'un cooldown de 5s — le reload ne peut plus survenir dans les 5 premières secondes.
+- **CSS animation safety net** : `@keyframes loading-overlay-auto-hide` force la disparition de l'overlay après 20s, indépendamment de JavaScript.
+- **Nettoyage DOM `hideOverlay()`** : suppression explicite de la classe `visible` et de l'animation CSS.
+
+### Changed
+- **Parallélisation du démarrage** : `resolveMapTilerKey()` (fetch Gist), `initCacheLayer()` (import + IndexedDB) et `initSecondaryUI()` (11 imports de sheets) sont maintenant lancés en parallèle du setup UI et de l'initialisation WebGL. La clé `.env` est posée immédiatement en fallback. Gain TTI : ~500ms-3s.
 
 ## [5.80.0] - 2026-06-20
 
