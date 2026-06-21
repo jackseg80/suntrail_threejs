@@ -80,15 +80,17 @@ export async function appInit(): Promise<void> {
     });
 
     // v6.1 : Gist awaited avant toute requête tuile pour éviter la race
-    // condition entre le fast-path .env (quota exceeded) et la rotation Gist
+    // condition entre le fast-path .env (quota exceeded) et la rotation Gist.
+    // v5.80.2 : Le Gist et le cache sont lancés en parallèle pour réduire le TTI
+    // (Time-To-Interactive). La clé bundled est posée immédiatement en fallback.
     const bundledKey = import.meta.env.VITE_MAPTILER_KEY as string | undefined;
     if (bundledKey) {
         state.MK = bundledKey; // fallback si Gist échoue
     }
-    await resolveMapTilerKey();
+    const gistPromise = resolveMapTilerKey();
     void resolveORSKey();
     // v6.0 : Initialiser la couche cache ET les country packs AVANT le chargement
-    // du terrain. Lancés tôt pour tourner en parallèle du setup UI.
+    // du terrain. Lancés tôt pour tourner en parallèle du setup UI et du Gist.
     const cacheInitPromise = import('./tileLoader').then((m) =>
         m.initCacheLayer()
     );
@@ -159,8 +161,9 @@ export async function appInit(): Promise<void> {
     initAutoHide();
     initMobileUI();
 
-    // Lancer la scène — s'assurer que la couche cache est prête avant
-    await cacheInitPromise;
+    // Lancer la scène — s'assurer que la couche cache et les clés Gist sont prêtes avant
+    // v5.80.2 : Parallélisme — le Gist et le cache tournent pendant tout le setup UI
+    await Promise.all([cacheInitPromise, gistPromise]);
     await launchScene();
 
     // Premier lancement : benchmark micro différé (+15s) quand le système est stable

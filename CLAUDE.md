@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.80.1)
+# SunTrail — Guide IA (v5.80.2)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-21 — v5.80.1 : Fix écran noir/bloqué au premier lancement (loading overlay infini). rAF fallback + CSS animation safety net. 1459 tests, 58% couverture.
+> Mis à jour le 2026-06-21 — v5.80.2 : Démarrage parallélisé (Gist + cache en //). Fix écran noir premier lancement. 1459 tests, 58% couverture.
 
 ## Projet
 

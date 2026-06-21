@@ -1,3 +1,8 @@
+## [5.80.2] - 2026-06-21
+
+### Changed
+- **Parallélisation du démarrage** : `resolveMapTilerKey()` (fetch Gist) et `initCacheLayer()` (import dynamique + IndexedDB) sont maintenant lancés en parallèle avec le setup UI, au lieu d'être exécutés séquentiellement. Le `Promise.all()` remplace les deux `await` individuels. La clé `.env` est posée immédiatement en fallback. Gain mesuré : ~500ms-3s sur le TTI.
+
 ## [5.80.1] - 2026-06-21
 
 ### Fixed
