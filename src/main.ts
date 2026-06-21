@@ -34,13 +34,21 @@ try {
     /* localStorage indisponible */
 }
 
+// v5.80.2 : Timestamp défini AVANT registerSW pour le cooldown onNeedRefresh
+const _bootStartTime = Date.now();
+
 // Enregistrement du Service Worker pour le mode Hors-ligne (PWA)
 registerSW({
     onNeedRefresh() {
-        // v5.80.2 : Ne plus recharger automatiquement — sur Android/Capacitor,
-        // une réinscription SW au démarrage (version check) cause un double boot.
-        // On log l'event ; l'utilisateur rechargera au prochain kill/relance naturel.
-        console.log('[SW] Nouvelle version détectée — sera appliquée au prochain lancement.');
+        // v5.80.2 : Cooldown 5s pour éviter un reload fantôme au 1er lancement
+        // (le version check + réinscription peut déclencher un faux onNeedRefresh
+        // après que la carte soit déjà affichée, surtout sur Android/Capacitor)
+        if (Date.now() - _bootStartTime < 5000) {
+            console.log('[SW] Nouvelle version différée — applied au prochain lancement.');
+            return;
+        }
+        console.log('[SW] Nouvelle version détectée — rechargement…');
+        window.location.reload();
     },
     onOfflineReady() {
         console.log('[SW] SunTrail est prêt à fonctionner hors-ligne.');
