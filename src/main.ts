@@ -44,7 +44,9 @@ registerSW({
         // (le version check + réinscription peut déclencher un faux onNeedRefresh
         // après que la carte soit déjà affichée, surtout sur Android/Capacitor)
         if (Date.now() - _bootStartTime < 5000) {
-            console.log('[SW] Nouvelle version différée — applied au prochain lancement.');
+            console.log(
+                '[SW] Nouvelle version différée — applied au prochain lancement.'
+            );
             return;
         }
         console.log('[SW] Nouvelle version détectée — rechargement…');
