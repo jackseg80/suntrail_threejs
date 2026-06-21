@@ -164,6 +164,11 @@ export async function appInit(): Promise<void> {
     // Lancer la scène — s'assurer que la couche cache et les clés Gist sont prêtes avant
     // v5.80.2 : Parallélisme — le Gist et le cache tournent pendant tout le setup UI
     await Promise.all([cacheInitPromise, gistPromise]);
+    // v5.80.2 : Lancer les imports des sheets secondaires en parallèle de la scène
+    // (tous les accès Three.js sont protégés par optional chaining / guards)
+    void initSecondaryUI().then(() => {
+        if (state.DEBUG_MODE) console.log('[UI] Secondary UI Hydrated');
+    });
     await launchScene();
 
     // Premier lancement : benchmark micro différé (+15s) quand le système est stable
@@ -186,11 +191,6 @@ export async function appInit(): Promise<void> {
             }
         }, 15000);
     }
-
-    // Hydratation secondaire
-    void initSecondaryUI().then(() => {
-        if (state.DEBUG_MODE) console.log('[UI] Secondary UI Hydrated');
-    });
 
     setupGpsButton();
     setupFabs();

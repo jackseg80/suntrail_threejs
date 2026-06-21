@@ -2700,8 +2700,17 @@ body.preset-eco #timeline-toggle-btn {
 
 /* Overlay chargement carte — caché à la 1ère tuile */
 @keyframes loading-overlay-auto-hide {
-    0%, 98% { visibility: visible; opacity: 1; pointer-events: auto; }
-    100% { visibility: hidden; opacity: 0; pointer-events: none; }
+    0%,
+    98% {
+        visibility: visible;
+        opacity: 1;
+        pointer-events: auto;
+    }
+    100% {
+        visibility: hidden;
+        opacity: 0;
+        pointer-events: none;
+    }
 }
 #map-loading-overlay {
     display: none;
