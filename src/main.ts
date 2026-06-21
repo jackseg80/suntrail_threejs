@@ -37,8 +37,10 @@ try {
 // Enregistrement du Service Worker pour le mode Hors-ligne (PWA)
 registerSW({
     onNeedRefresh() {
-        console.log('[SW] Nouvelle version détectée — rechargement…');
-        window.location.reload();
+        // v5.80.2 : Ne plus recharger automatiquement — sur Android/Capacitor,
+        // une réinscription SW au démarrage (version check) cause un double boot.
+        // On log l'event ; l'utilisateur rechargera au prochain kill/relance naturel.
+        console.log('[SW] Nouvelle version détectée — sera appliquée au prochain lancement.');
     },
     onOfflineReady() {
         console.log('[SW] SunTrail est prêt à fonctionner hors-ligne.');
