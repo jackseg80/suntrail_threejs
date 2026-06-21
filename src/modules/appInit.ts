@@ -324,6 +324,9 @@ async function launchScene() {
                         clearTimeout(safetyTimer);
                         safetyTimer = null;
                     }
+                    // v5.80.1 : Arrêter l'animation CSS de safety net et retirer la classe visible
+                    mapOverlay.style.animation = 'none';
+                    mapOverlay.classList.remove('visible');
                     mapOverlay.classList.add('fade-out');
                     setTimeout(() => {
                         mapOverlay.style.display = 'none';

@@ -2699,6 +2699,10 @@ body.preset-eco #timeline-toggle-btn {
 }
 
 /* Overlay chargement carte — caché à la 1ère tuile */
+@keyframes loading-overlay-auto-hide {
+    0%, 98% { visibility: visible; opacity: 1; pointer-events: auto; }
+    100% { visibility: hidden; opacity: 0; pointer-events: none; }
+}
 #map-loading-overlay {
     display: none;
     position: fixed;
@@ -2714,6 +2718,9 @@ body.preset-eco #timeline-toggle-btn {
 }
 #map-loading-overlay.visible {
     display: flex;
+    /* v5.80.1 : Safety net — l'overlay se cache automatiquement après 20s
+       même si JavaScript ne supprime jamais la classe visible (bug rAF/WebView Android) */
+    animation: loading-overlay-auto-hide 20s linear forwards;
 }
 #map-loading-overlay.fade-out {
     opacity: 0;

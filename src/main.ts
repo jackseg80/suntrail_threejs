@@ -46,14 +46,22 @@ registerSW({
 });
 
 // Lancement de l'initialisation globale de l'interface (v5.29.28)
+let _bootStarted = false;
+const _doBoot = async () => {
+    if (_bootStarted) return;
+    _bootStarted = true;
+    await initUI();
+    await initBatteryManager();
+};
 requestAnimationFrame(() => {
     // v5.29.28 : On utilise setTimeout 0 pour garantir que le splash screen / CSS est rendu
     // avant de lancer l'initialisation qui peut être bloquante sur certains navigateurs.
-    setTimeout(async () => {
-        await initUI();
-        await initBatteryManager();
-    }, 0);
+    setTimeout(_doBoot, 0);
 });
+// v5.80.1 : Safety fallback — sur certains devices Android (1er lancement après install/màj
+// depuis le Play Store), requestAnimationFrame peut ne jamais se déclencher. Ce setTimeout
+// garantit que l'app démarre même si rAF reste muet.
+setTimeout(_doBoot, 800);
 
 // Système unifié de recovery au démarrage (v5.28.1 - Unification native).
 window.addEventListener(

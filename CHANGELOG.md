@@ -1,3 +1,10 @@
+## [5.80.1] - 2026-06-21
+
+### Fixed
+- **Écran noir/bloqué au premier lancement après install/màj** : le `requestAnimationFrame` dans `main.ts` ne se déclenchait pas sur certains devices Android (WebView), empêchant toute initialisation JS. L'overlay "Chargement de la carte..." restait visible à l'infini, les boutons latéraux (CSS) étaient visibles mais sans handlers. Ajout d'un `setTimeout(lancement, 800)` de sécurité — si rAF ne s'est pas déclenché dans les 800ms, le démarrage est forcé.
+- **Animation CSS safety net** : `@keyframes loading-overlay-auto-hide` force la disparition de l'overlay après 20s, indépendamment de JavaScript.
+- **Nettoyage DOM `hideOverlay()`** : suppression explicite de la classe `visible` et de l'animation CSS, empêchant une éventuelle ré-apparition.
+
 ## [5.80.0] - 2026-06-20
 
 ### Fixed

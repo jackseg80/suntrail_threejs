@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.80.0)
+# SunTrail — Guide IA (v5.80.1)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-20 — v5.80.0 : Three.js 0.160→0.184, suncalc 2.0, TS 6.0, vector-tile 3.0, pbf 5.1, RevenueCat 13.2, benchmark r184 recalibré. 1459 tests, 58% couverture.
+> Mis à jour le 2026-06-21 — v5.80.1 : Fix écran noir/bloqué au premier lancement (loading overlay infini). rAF fallback + CSS animation safety net. 1459 tests, 58% couverture.
 
 ## Projet
 
