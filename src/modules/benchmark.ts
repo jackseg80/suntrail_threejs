@@ -34,10 +34,11 @@ export async function runBenchmark(): Promise<BenchmarkResult> {
 
     // Normalisation : compensation durée + calibration réelle
     // CPU 200ms → 0.5 (S23 raw~142 → 71)
-    // GPU 300ms → 4.0 (A53 r184 raw~6 → 24, S23 raw~35 → 100)
+    // GPU 300ms → 6.0 (A53 r184 raw~4 → 24, S23 r184 raw~17 → 100)
     // v5.79.0 : GPU * 2.0→4.0 (r184 per-frame overhead : NodeMaterial compat + textureUnits save/restore)
+    // v5.80.2 : GPU * 4.0→6.0 (le ×4.0 laissait l'A53 à 25pts au lieu de 31, sous le seuil 'balanced'=30)
     const normalizedCPU = Math.min(cpuRaw * 0.5, 100);
-    const normalizedGPU = Math.min(gpuRaw * 4.0, 100);
+    const normalizedGPU = Math.min(gpuRaw * 6.0, 100);
 
     // Pondération : GPU (75%), CPU (15%), Liste GPU (10%)
     const totalScore = Math.round(
