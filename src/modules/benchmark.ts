@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { state, PresetType } from './state';
-import { detectBestPreset, getGpuInfo } from './performance';
+import { detectBestPreset } from './performance';
 
 export interface BenchmarkResult {
     cpuScore: number;
@@ -46,31 +46,34 @@ export async function runBenchmark(): Promise<BenchmarkResult> {
     );
 
     let recommendedPreset: PresetType = 'eco';
-    // v5.81.1 : seuil 'ultra' passé de 92→95 pour éviter que le S23 (max~94pts
-    // avec ×6.0) ne soit classé ultra. Desktop RTX/RX reste ≥99pts. Le tier cap
-    // a été retiré : un GPU inconnu mais puissant doit être correctement classé.
-    if (totalScore >= 95)
+    if (totalScore >= 92)
         recommendedPreset = 'ultra'; // Desktop uniquement (RTX, RX, Apple M)
     else if (totalScore >= 60)
         recommendedPreset = 'performance'; // S23, Tab S8 et mobiles premium
     else if (totalScore >= 30) recommendedPreset = 'balanced'; // A53 et mobiles moyens
 
-    // Cap : les GPU Intel intégrés (HD/UHD/Iris/Graphics hors Arc) ne peuvent pas dépasser balanced
-    const gpuRenderer = getGpuInfo().renderer.toLowerCase();
-    const isIntelIGP =
-        gpuRenderer.includes('intel') &&
-        (gpuRenderer.includes('hd') ||
-            gpuRenderer.includes('uhd') ||
-            gpuRenderer.includes('iris') ||
-            gpuRenderer.includes('graphics')) &&
-        !gpuRenderer.includes('arc');
-
-    if (isIntelIGP && (basePreset === 'balanced' || basePreset === 'eco')) {
-        if (
-            recommendedPreset === 'ultra' ||
-            recommendedPreset === 'performance'
-        ) {
-            recommendedPreset = 'balanced';
+    // v5.81.1 : La détection statique (par modèle GPU) est plus fiable que 300ms
+    // de benchmark. Pour les GPU connus, on garde le tier statique.
+    // Le benchmark sert uniquement à monter le tier des GPU inconnus.
+    // Problèmes résolus :
+    //   - S23 (Adreno 740) : static='performance' → ne passe plus en 'ultra'
+    //   - Intel UHD : static='balanced' → ne descend plus en 'eco' (score 23 < 30)
+    //   - GTX 1050 : static='performance' → ne descend plus en 'balanced'
+    const TIER_ORDER: PresetType[] = [
+        'eco',
+        'balanced',
+        'performance',
+        'ultra',
+    ];
+    const recIdx = TIER_ORDER.indexOf(recommendedPreset);
+    if (basePreset !== 'eco') {
+        // GPU connu : la statique fait foi
+        recommendedPreset = basePreset;
+    } else {
+        // GPU inconnu : le benchmark monte jusqu'à 'performance' max
+        // 'ultra' nécessite un GPU nommément reconnu (RTX, RX, Apple M)
+        if (recIdx > TIER_ORDER.indexOf('performance')) {
+            recommendedPreset = 'performance';
         }
     }
 
