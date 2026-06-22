@@ -71,6 +71,16 @@ export async function runBenchmark(): Promise<BenchmarkResult> {
         }
     }
 
+    // v5.81.0 : Le micro-benchmark ne peut pas dépasser le tier détecté statiquement
+    // (×6.0 faisait passer le S23 Adreno 740 de 'performance'→92pts→'ultra',
+    // alors que le seuil 92 est calibré pour desktop uniquement)
+    const TIER_ORDER: PresetType[] = ['eco', 'balanced', 'performance', 'ultra'];
+    const baseIdx = TIER_ORDER.indexOf(basePreset);
+    const recIdx = TIER_ORDER.indexOf(recommendedPreset);
+    if (recIdx > baseIdx) {
+        recommendedPreset = basePreset;
+    }
+
     const result = {
         cpuScore: Math.round(normalizedCPU),
         gpuScore: Math.round(normalizedGPU),
