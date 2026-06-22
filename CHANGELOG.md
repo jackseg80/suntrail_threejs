@@ -1,7 +1,7 @@
 ## [5.81.1] - 2026-06-21
 
 ### Fixed
-- **S23 classé Ultra au lieu de Performance** : le multiplicateur GPU ×6.0 donnait un score total de 92pts au S23 (Adreno 740), déclenchant le seuil 'ultra' calibré pour desktop. Ajout d'un tier cap : le micro-benchmark ne peut plus dépasser le niveau détecté statiquement par GPU model. Le S23 reste en `performance`.
+- **S23 classé Ultra au lieu de Performance** : le seuil 'ultra' passe de 92 à 95. Le S23 (Adreno 740) plafonne à ~94pts même en pic CPU, donc reste en `performance`. Desktop RTX/RX reste à ~100pts → `ultra`. Le tier cap précédent a été retiré : un GPU inconnu mais puissant doit être correctement classé par le benchmark.
 
 ## [5.81.0] - 2026-06-21
 

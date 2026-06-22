@@ -46,8 +46,11 @@ export async function runBenchmark(): Promise<BenchmarkResult> {
     );
 
     let recommendedPreset: PresetType = 'eco';
-    if (totalScore >= 92)
-        recommendedPreset = 'ultra'; // Desktop uniquement
+    // v5.81.1 : seuil 'ultra' passé de 92→95 pour éviter que le S23 (max~94pts
+    // avec ×6.0) ne soit classé ultra. Desktop RTX/RX reste ≥99pts. Le tier cap
+    // a été retiré : un GPU inconnu mais puissant doit être correctement classé.
+    if (totalScore >= 95)
+        recommendedPreset = 'ultra'; // Desktop uniquement (RTX, RX, Apple M)
     else if (totalScore >= 60)
         recommendedPreset = 'performance'; // S23, Tab S8 et mobiles premium
     else if (totalScore >= 30) recommendedPreset = 'balanced'; // A53 et mobiles moyens
@@ -69,16 +72,6 @@ export async function runBenchmark(): Promise<BenchmarkResult> {
         ) {
             recommendedPreset = 'balanced';
         }
-    }
-
-    // v5.81.0 : Le micro-benchmark ne peut pas dépasser le tier détecté statiquement
-    // (×6.0 faisait passer le S23 Adreno 740 de 'performance'→92pts→'ultra',
-    // alors que le seuil 92 est calibré pour desktop uniquement)
-    const TIER_ORDER: PresetType[] = ['eco', 'balanced', 'performance', 'ultra'];
-    const baseIdx = TIER_ORDER.indexOf(basePreset);
-    const recIdx = TIER_ORDER.indexOf(recommendedPreset);
-    if (recIdx > baseIdx) {
-        recommendedPreset = basePreset;
     }
 
     const result = {
