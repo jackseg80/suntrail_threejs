@@ -2,6 +2,4 @@
 <resources>
     <string name="app_name">SunTrail 3D</string>
     <string name="title_activity_main">SunTrail 3D</string>
-    <string name="package_name">com.suntrail.threejs</string>
-    <string name="custom_url_scheme">com.suntrail.threejs</string>
 </resources>

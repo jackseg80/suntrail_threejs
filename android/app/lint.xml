@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Ressources chargées par Capacitor/Cordova au runtime, invisibles à l'analyse statique. -->
+    <issue id="UnusedResources">
+        <ignore path="src/main/res/layout/activity_main.xml" />
+        <ignore path="src/main/res/xml/config.xml" />
+    </issue>
+
+    <!-- Variantes générées par le pipeline Capacitor pour l'écran de lancement. -->
+    <issue id="IconDipSize">
+        <ignore path="src/main/res/**/splash.png" />
+    </issue>
+    <issue id="IconDuplicatesConfig">
+        <ignore path="src/main/res/**/splash.png" />
+    </issue>
+    <issue id="IconLocation">
+        <ignore path="src/main/res/drawable/splash.png" />
+    </issue>
+</lint>
