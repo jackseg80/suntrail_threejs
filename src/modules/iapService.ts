@@ -8,7 +8,6 @@
  * Offerings : monthly | yearly | lifetime
  */
 
-import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor';
 import { Capacitor } from '@capacitor/core';
 import { state, saveProStatus } from './state';
 import { grantProAccess, revokeProAccess } from './iap';
@@ -25,8 +24,20 @@ class IAPService {
     private initialized = false;
     private _initPromise: Promise<void> | null = null;
     private _webPurchases: any = null; // instance @revenuecat/purchases-js (web uniquement)
+    private _nativePurchasesPromise: Promise<
+        typeof import('@revenuecat/purchases-capacitor')
+    > | null = null;
     private _visibilityHandler: (() => void) | null = null;
     private _purchaseCleanup: (() => void) | null = null;
+
+    /** Charge le SDK natif uniquement lorsque Capacitor en a besoin. */
+    private getNativePurchases(): Promise<
+        typeof import('@revenuecat/purchases-capacitor')
+    > {
+        this._nativePurchasesPromise ??=
+            import('@revenuecat/purchases-capacitor');
+        return this._nativePurchasesPromise;
+    }
 
     /** Attend que l'init soit terminée (max 5s) */
     async waitForInit(timeoutMs = 5000): Promise<boolean> {
@@ -61,8 +72,7 @@ class IAPService {
 
     private async _doInitializeNative(): Promise<void> {
         const sdkKey = import.meta.env.VITE_REVENUECAT_KEY as
-            | string
-            | undefined;
+            string | undefined;
         if (!sdkKey || sdkKey.length < 10) {
             console.warn(
                 '[IAP] VITE_REVENUECAT_KEY manquante — achats désactivés.'
@@ -76,6 +86,7 @@ class IAPService {
         if (this.initialized) return;
 
         try {
+            const { Purchases, LOG_LEVEL } = await this.getNativePurchases();
             await Purchases.setLogLevel({
                 level: state.DEBUG_MODE ? LOG_LEVEL.INFO : LOG_LEVEL.ERROR,
             });
@@ -108,8 +119,7 @@ class IAPService {
 
         if (!Capacitor.isNativePlatform()) {
             const webKey = import.meta.env.VITE_REVENUECAT_WEB_KEY as
-                | string
-                | undefined;
+                string | undefined;
             if (!webKey) return;
             try {
                 const { Purchases: PurchasesWeb } =
@@ -125,6 +135,7 @@ class IAPService {
             }
         } else {
             try {
+                const { Purchases } = await this.getNativePurchases();
                 await Purchases.logIn({ appUserID: supabaseUserId });
                 await this.syncProStatus();
             } catch (e) {
@@ -135,8 +146,7 @@ class IAPService {
 
     private async _doInitializeWeb(): Promise<void> {
         const webKey = import.meta.env.VITE_REVENUECAT_WEB_KEY as
-            | string
-            | undefined;
+            string | undefined;
         if (!webKey || webKey.length < 10) {
             if (state.DEBUG_MODE)
                 console.log(
@@ -202,6 +212,7 @@ class IAPService {
         if (!this.initialized) return state.isPro;
         try {
             if (Capacitor.isNativePlatform()) {
+                const { Purchases } = await this.getNativePurchases();
                 const { customerInfo } = await Purchases.getCustomerInfo();
                 return this.updateStateFromCustomerInfo(customerInfo);
             } else {
@@ -310,6 +321,7 @@ class IAPService {
             }
 
             if (Capacitor.isNativePlatform()) {
+                const { Purchases } = await this.getNativePurchases();
                 const { customerInfo } = await Purchases.purchasePackage({
                     aPackage: pkg,
                 });
@@ -345,6 +357,7 @@ class IAPService {
         if (!this.initialized) return false;
         try {
             if (Capacitor.isNativePlatform()) {
+                const { Purchases } = await this.getNativePurchases();
                 const { customerInfo } = await Purchases.restorePurchases();
                 return this.updateStateFromCustomerInfo(customerInfo);
             } else {
@@ -365,6 +378,7 @@ class IAPService {
         if (!this.initialized) return null;
         try {
             if (Capacitor.isNativePlatform()) {
+                const { Purchases } = await this.getNativePurchases();
                 const offerings = await Purchases.getOfferings();
                 return offerings.current ?? null;
             } else {
@@ -383,6 +397,7 @@ class IAPService {
         if (!this.initialized) return '';
         try {
             if (Capacitor.isNativePlatform()) {
+                const { Purchases } = await this.getNativePurchases();
                 const result = await Purchases.getAppUserID();
                 return result.appUserID ?? '';
             } else {
@@ -456,6 +471,7 @@ class IAPService {
 
         try {
             if (Capacitor.isNativePlatform()) {
+                const { Purchases } = await this.getNativePurchases();
                 const offerings = await Purchases.getOfferings();
                 let targetPkg = null;
                 for (const offering of Object.values(offerings.all ?? {})) {
@@ -519,6 +535,7 @@ class IAPService {
         if (!this.initialized) return false;
         try {
             if (Capacitor.isNativePlatform()) {
+                const { Purchases } = await this.getNativePurchases();
                 const { customerInfo } = await Purchases.getCustomerInfo();
                 return this.hasPackEntitlement(customerInfo, packId);
             } else {
@@ -537,7 +554,9 @@ class IAPService {
         if (!productId) return '—';
         try {
             const offeringsData = Capacitor.isNativePlatform()
-                ? await Purchases.getOfferings()
+                ? await (
+                      await this.getNativePurchases()
+                  ).Purchases.getOfferings()
                 : await this._webPurchases.getOfferings();
             for (const offering of Object.values(
                 (offeringsData.all ?? {}) as Record<string, any>
@@ -567,6 +586,7 @@ class IAPService {
         try {
             let customerInfo: ICustomerInfo;
             if (Capacitor.isNativePlatform()) {
+                const { Purchases } = await this.getNativePurchases();
                 const result = await Purchases.getCustomerInfo();
                 customerInfo = result.customerInfo;
             } else {
