@@ -32,7 +32,7 @@ test.describe('First Launch Experience', () => {
     await expect(page.locator('#canvas-container canvas').first()).toBeVisible();
   });
 
-  test('should allow skipping onboarding directly', async ({ page }) => {
+  test('should allow skipping onboarding directly @smoke', async ({ page }) => {
     await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => (window as any).suntrailReady === true);
     

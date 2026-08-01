@@ -37,10 +37,10 @@ jobs:
 
       # ── 4. Install deps + build web ──────────────────────────────────────────
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Run Unit Tests
-        run: npm test
+      - name: Validate web quality
+        run: npm run check && npm run audit:i18n && npm run test:coverage
 
       - name: Build web (Vite)
         env:
@@ -51,6 +51,9 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
+
+      - name: Verify bundle budget
+        run: npm run check:bundle
 
       # ── 5. Capacitor sync ────────────────────────────────────────────────────
       - name: Capacitor sync Android

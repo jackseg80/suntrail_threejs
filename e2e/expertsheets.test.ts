@@ -33,7 +33,7 @@ test.describe('Expert Sheets and Widgets', () => {
     await expect(closeBtn).not.toBeVisible({ timeout: 3000 });
   });
 
-  test('should open connectivity sheet from network icon', async ({ page }) => {
+  test('should open connectivity sheet from network icon @smoke', async ({ page }) => {
     const netIcon = page.locator('#net-status-icon');
     await expect(netIcon).toBeVisible();
     

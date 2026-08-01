@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import path from 'path';
 
 test.describe('TrackSheet Functionality', () => {
-  test('should import a GPX file and display stats', async ({ page }) => {
+  test('should import a GPX file and display stats @smoke', async ({ page }) => {
     await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => (window as any).suntrailReady === true);
 

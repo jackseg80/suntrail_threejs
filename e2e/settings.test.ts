@@ -10,7 +10,7 @@ test.describe('Settings and Performance', () => {
     await page.waitForSelector('#top-pill-main', { state: 'visible', timeout: 15000 });
   });
 
-  test('should change performance presets', async ({ page }) => {
+  test('should change performance presets @smoke', async ({ page }) => {
     // Open settings
     await page.click('.nav-tab[data-tab="settings"]');
     await expect(page.locator('#settings')).toHaveClass(/is-open/);

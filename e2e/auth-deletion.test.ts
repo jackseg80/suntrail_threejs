@@ -39,7 +39,7 @@ test.describe('Account deletion (RGPD)', () => {
     await expect(deleteBtn).toBeHidden();
   });
 
-  test('account section should always be visible (fix compliance native)', async ({ page }) => {
+  test('account section should always be visible (fix compliance native) @smoke', async ({ page }) => {
     await setupApp(page);
     await page.click('.nav-tab[data-tab="settings"]');
 
