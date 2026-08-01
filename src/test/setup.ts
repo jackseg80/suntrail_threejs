@@ -1,4 +1,29 @@
-import { vi } from 'vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
+
+/**
+ * Unit tests must never issue real network requests. Apart from making tests
+ * flaky, pending Happy DOM fetches are reported as AbortError during teardown.
+ * Suites needing a response replace this deterministic 404 mock explicitly.
+ */
+function installDeterministicFetch(): void {
+    const fetchMock = vi
+        .fn()
+        .mockResolvedValue(new Response(null, { status: 404 }));
+    vi.stubGlobal('fetch', fetchMock);
+    if (typeof window !== 'undefined')
+        window.fetch = fetchMock as typeof window.fetch;
+}
+
+beforeEach(() => {
+    installDeterministicFetch();
+});
+
+afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    installDeterministicFetch();
+    document.body.replaceChildren();
+});
 
 // Mock Canvas API for Happy-DOM / JSDOM
 // @ts-ignore happy-dom lacks full Canvas types

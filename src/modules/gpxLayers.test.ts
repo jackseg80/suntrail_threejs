@@ -360,6 +360,7 @@ describe('removeGPXLayer', () => {
     });
 
     it('log un avertissement si scene/camera/originTile est manquant', () => {
+        vi.useFakeTimers();
         state.recordedPoints = [
             { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 10000 },
             { lat: 46.5001, lon: 7.5001, alt: 1010, timestamp: 20000 },

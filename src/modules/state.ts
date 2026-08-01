@@ -10,11 +10,7 @@ import type { GPXHistoryEntry } from './gpxHistoryService';
 import type { GPXRawData } from './gpxTypes';
 
 export type PresetType =
-    | 'eco'
-    | 'balanced'
-    | 'performance'
-    | 'ultra'
-    | 'custom';
+    'eco' | 'balanced' | 'performance' | 'ultra' | 'custom';
 
 export interface GPXLayer {
     id: string;
@@ -42,10 +38,7 @@ export interface RouteWaypoint {
 }
 
 export type RoutingProfile =
-    | 'foot-hiking'
-    | 'foot-walking'
-    | 'cycling-regular'
-    | 'cycling-mountain';
+    'foot-hiking' | 'foot-walking' | 'cycling-regular' | 'cycling-mountain';
 
 export const GPX_COLORS = [
     '#0066ff', // Blue (Vivid)

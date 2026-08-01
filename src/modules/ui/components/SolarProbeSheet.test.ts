@@ -5,6 +5,7 @@ const { mockState } = vi.hoisted(() => ({
         simDate: new Date(),
         controls: { target: { y: 0 } },
         hasLastClicked: false,
+        lastClickedCoords: { x: 0, z: 0, alt: 0 },
         subscribe: vi.fn(() => vi.fn()),
     },
 }));
@@ -21,7 +22,10 @@ vi.mock('../../toast', () => ({ showToast: vi.fn() }));
 vi.mock('../../iap', () => ({ showUpgradePrompt: vi.fn() }));
 vi.mock('../../utils', () => ({ fmtTime: vi.fn(), fmtDuration: vi.fn() }));
 vi.mock('../../expertService', () => ({
-    expertService: { generateSolarReport: vi.fn() },
+    expertService: {
+        generateSolarReport: vi.fn(),
+        getMoonEmoji: vi.fn(() => '🌙'),
+    },
 }));
 vi.mock('../../geocodingService', () => ({
     getPlaceName: vi.fn().mockResolvedValue('Lieu'),
@@ -145,4 +149,81 @@ describe('SolarProbeSheet', () => {
         sheet.hydrate();
         expect(() => sheet.dispose()).not.toThrow();
     });
+
+    it('renders the actionable free analysis and its upgrade action', async () => {
+        const { runSolarProbe } = await import('../../analysis');
+        const { showUpgradePrompt } = await import('../../iap');
+        mockState.hasLastClicked = true;
+        mockState.lastClickedCoords = { x: 1, z: 2, alt: 3 };
+        vi.mocked(runSolarProbe).mockReturnValue(makeResult());
+
+        const sheet = new SolarProbeSheet();
+        sheet.hydrate();
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            '<button id="probe-btn"></button>'
+        );
+        (sheet as any).render();
+        document.getElementById('probe-btn')!.click();
+
+        expect(runSolarProbe).toHaveBeenCalledWith(1, 2, 3);
+        expect(document.querySelector('.exp-probe-status')).not.toBeNull();
+        const upgrade = document.querySelector(
+            '.solar-upsell-btn'
+        ) as HTMLButtonElement;
+        upgrade.click();
+        expect(showUpgradePrompt).toHaveBeenCalledWith('solar_full');
+        sheet.dispose();
+    });
+
+    it('renders the detailed Pro analysis including chart and copy report', async () => {
+        const { isProActive } = await import('../../state');
+        const { expertService } = await import('../../expertService');
+        const { showToast } = await import('../../toast');
+        vi.mocked(isProActive).mockReturnValue(true);
+        vi.mocked(expertService.generateSolarReport).mockReturnValue('rapport');
+        const writeText = vi
+            .spyOn(navigator.clipboard, 'writeText')
+            .mockResolvedValue(undefined);
+
+        const sheet = new SolarProbeSheet();
+        sheet.hydrate();
+        (sheet as any).updateUI(makeResult());
+
+        expect(
+            document.querySelector('svg.solar-elevation-chart-v2')
+        ).not.toBeNull();
+        const copy = document.querySelector('.btn-go') as HTMLButtonElement;
+        copy.click();
+        expect(writeText).toHaveBeenCalledWith('rapport');
+        expect(showToast).toHaveBeenCalledWith('solar.toast.copied');
+        sheet.dispose();
+    });
 });
+
+function makeResult(overrides: Record<string, unknown> = {}) {
+    const time = new Date('2025-06-01T12:00:00');
+    return {
+        terrainAvailable: true,
+        gps: { lat: 46.5, lon: 7.5 },
+        totalSunlightMinutes: 360,
+        firstSunTime: time,
+        dayDurationMinutes: 720,
+        goldenHourMorningStart: time,
+        goldenHourMorningEnd: time,
+        goldenHourEveningStart: time,
+        goldenHourEveningEnd: time,
+        moonPhaseName: 'Pleine lune',
+        moonPhase: 0.5,
+        maxElevationDeg: 55,
+        elevationCurve: Array.from({ length: 144 }, (_, i) => i / 3),
+        timeline: Array.from({ length: 48 }, (_, i) => ({
+            isNight: false,
+            inShadow: i % 4 === 0,
+        })),
+        sunrise: time,
+        sunset: time,
+        solarNoon: time,
+        ...overrides,
+    } as any;
+}

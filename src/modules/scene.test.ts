@@ -1,7 +1,37 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+const { MockWebGLRenderer } = vi.hoisted(() => {
+    class MockWebGLRenderer {
+        static instances: MockWebGLRenderer[] = [];
+        domElement = document.createElement('canvas');
+        shadowMap: Record<string, unknown> = {};
+        dispose = vi.fn();
+        setAnimationLoop = vi.fn();
+        setSize = vi.fn();
+        setPixelRatio = vi.fn();
+        render = vi.fn();
+        compile = vi.fn();
+
+        constructor() {
+            MockWebGLRenderer.instances.push(this);
+        }
+    }
+    return { MockWebGLRenderer };
+});
+
+vi.mock('three', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('three')>()),
+    WebGLRenderer: MockWebGLRenderer,
+}));
+
 import * as THREE from 'three';
 import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
-import { flyTo, disposeScene } from './scene';
+import {
+    flyTo,
+    disposeScene,
+    forceImmediateLODUpdate,
+    initScene,
+} from './scene';
 import { state } from './state';
 
 // Mocks for Three.js examples (not available in standard THREE namespace in tests)
@@ -34,12 +64,12 @@ vi.mock('three/examples/jsm/objects/Sky.js', () => ({
 }));
 
 vi.mock('three/examples/jsm/libs/stats.module.js', () => ({
-    default: vi.fn().mockImplementation(() => ({
-        dom: document.createElement('div'),
-        begin: vi.fn(),
-        end: vi.fn(),
-        update: vi.fn(),
-    })),
+    default: class {
+        dom = document.createElement('div');
+        begin = vi.fn();
+        end = vi.fn();
+        update = vi.fn();
+    },
 }));
 
 // Mock other modules to avoid side effects
@@ -63,6 +93,7 @@ vi.mock('./tileCache', () => ({ disposeAllCachedTiles: vi.fn() }));
 vi.mock('./geometryCache', () => ({ disposeAllGeometries: vi.fn() }));
 vi.mock('./utils', () => ({
     throttle: (fn: any) => fn,
+    debounce: (fn: any) => fn,
     showToast: vi.fn(),
     isMobileDevice: false,
 }));
@@ -72,6 +103,12 @@ vi.mock('./weather', () => ({
     tickWeatherTime: vi.fn(),
     fetchWeather: vi.fn(),
     disposeWeatherSystem: vi.fn(),
+}));
+vi.mock('./environment', () => ({
+    initEnvironment: vi.fn(),
+    updateEnvironment: vi.fn(),
+    createGroundPlane: vi.fn(() => new THREE.Mesh()),
+    disposeEnvironment: vi.fn(),
 }));
 vi.mock('./compass', () => ({
     initCompass: vi.fn(),
@@ -88,6 +125,7 @@ vi.mock('./touchControls', () => ({
 describe('scene.ts', () => {
     beforeEach(() => {
         vi.useFakeTimers();
+        MockWebGLRenderer.instances = [];
         // Setup minimal state
         state.scene = new THREE.Scene();
         state.camera = new THREE.PerspectiveCamera();
@@ -168,6 +206,59 @@ describe('scene.ts', () => {
             expect(sceneClearSpy).toHaveBeenCalled();
             expect(removeSpy).toHaveBeenCalled();
             expect(state.renderer).toBeNull();
+        });
+    });
+
+    describe('forceImmediateLODUpdate', () => {
+        it('updates the tile source immediately and respects the free LOD cap', async () => {
+            const { updateVisibleTiles, autoSelectMapSource } =
+                await import('./terrain');
+            state.originTile = { x: 0, y: 0, z: 14 };
+            state.ZOOM = 12;
+            state.MAX_ALLOWED_ZOOM = 18;
+            state.camera!.position.set(0, 200, 0);
+            state.controls!.target.set(0, 0, 0);
+
+            forceImmediateLODUpdate();
+
+            expect(state.ZOOM).toBeLessThanOrEqual(14);
+            expect(autoSelectMapSource).toHaveBeenCalled();
+            expect(updateVisibleTiles).toHaveBeenCalledWith(
+                expect.any(Number),
+                expect.any(Number),
+                expect.any(Number),
+                0,
+                0,
+                true
+            );
+        });
+    });
+
+    describe('initScene', () => {
+        it('initializes the renderer, accessibility and first terrain refresh', async () => {
+            document.body.innerHTML = '<div id="canvas-container"></div>';
+            Object.assign(state, {
+                TARGET_LAT: 46.5,
+                TARGET_LON: 7.5,
+                ZOOM: 14,
+                PIXEL_RATIO_LIMIT: 1,
+                SHADOWS: true,
+                SHOW_STATS: false,
+                PERFORMANCE_PRESET: 'balanced',
+                simDate: new Date('2025-06-01T12:00:00'),
+            });
+
+            await initScene();
+
+            const renderer = MockWebGLRenderer.instances.at(-1)!;
+            expect(renderer.setSize).toHaveBeenCalled();
+            expect(renderer.setAnimationLoop).toHaveBeenCalledWith(
+                expect.any(Function)
+            );
+            expect(renderer.domElement.getAttribute('role')).toBe('img');
+            expect(
+                document.querySelector('#canvas-container canvas')
+            ).not.toBeNull();
         });
     });
 });

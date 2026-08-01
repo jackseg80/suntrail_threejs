@@ -1,12 +1,7 @@
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 
 export type HapticType =
-    | 'light'
-    | 'medium'
-    | 'heavy'
-    | 'success'
-    | 'warning'
-    | 'selection';
+    'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'selection';
 
 /**
  * Unified haptic feedback helper.

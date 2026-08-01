@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import * as THREE from 'three';
 import { appInit } from './appInit';
 
 // Mocking all external services called by appInit
@@ -101,6 +102,75 @@ describe('appInit.ts — Initialization Sequence', () => {
         const perf = await import('./performance');
         expect(perf.applyPreset).toHaveBeenCalledWith('ultra');
     });
+
+    it('wires map selection, coordinate dismissal and route controls', async () => {
+        document.body.innerHTML = `
+            <div id="canvas-container"></div>
+            <div id="coords-pill"><button id="close-coords"></button><span id="click-latlon"></span><span id="click-alt"></span><span id="click-poi-name"></span></div>
+            <div class="fab-stack"></div><button id="layers-fab"></button><button id="compass-fab"></button>
+            <button id="gps-main-btn"></button><span id="compass-svg"></span><span id="lp-indicator"></span>
+            <button id="rb-clear-btn"></button><button id="rb-settings-btn"></button>
+            <div id="route-settings" class="hidden"></div><select id="rs-profile"><option value="foot">foot</option></select><input id="rs-loop" type="checkbox" />
+            <div id="route-bar"></div><div id="nav-bar"></div><div id="top-status-bar"></div><div id="widgets-container"></div><div id="bottom-bar"></div>
+        `;
+        const { state } = await import('./state');
+        const { findTerrainIntersection, getAltitudeAt } =
+            await import('./analysis');
+        const { clearRoute, scheduleAutoCompute } =
+            await import('./routeManager');
+        const { sheetManager } = await import('./ui/core/SheetManager');
+        vi.mocked(findTerrainIntersection).mockReturnValue(
+            new THREE.Vector3(20, 0, 30)
+        );
+        vi.mocked(getAltitudeAt).mockReturnValue(1200);
+        vi.spyOn(sheetManager, 'toggle');
+        vi.spyOn(sheetManager, 'close');
+        Object.assign(state, {
+            renderer: {},
+            camera: new THREE.PerspectiveCamera(),
+            scene: new THREE.Scene(),
+            originTile: { x: 0, y: 0, z: 14 },
+            RELIEF_EXAGGERATION: 1,
+            routeWaypoints: [
+                { lat: 1, lon: 2, alt: 3 },
+                { lat: 4, lon: 5, alt: 6 },
+            ],
+        });
+
+        await appInit();
+        document
+            .getElementById('canvas-container')!
+            .dispatchEvent(
+                new MouseEvent('click', { clientX: 100, clientY: 100 })
+            );
+
+        expect(state.hasLastClicked).toBe(true);
+        expect(state.clickMarker).not.toBeNull();
+        expect(document.getElementById('click-alt')!.textContent).toBe(
+            '1200 m'
+        );
+
+        document.getElementById('close-coords')!.click();
+        expect(state.hasLastClicked).toBe(false);
+        expect(state.clickMarker).toBeNull();
+
+        document.getElementById('layers-fab')!.click();
+        expect(sheetManager.toggle).toHaveBeenCalledWith('layers-sheet');
+        document.getElementById('rb-settings-btn')!.click();
+        expect(
+            document
+                .getElementById('route-settings')!
+                .classList.contains('hidden')
+        ).toBe(false);
+        document
+            .getElementById('rs-profile')!
+            .dispatchEvent(new Event('change'));
+        (document.getElementById('rs-loop') as HTMLInputElement).checked = true;
+        document.getElementById('rs-loop')!.dispatchEvent(new Event('change'));
+        document.getElementById('rb-clear-btn')!.click();
+        expect(scheduleAutoCompute).toHaveBeenCalledTimes(2);
+        expect(clearRoute).toHaveBeenCalled();
+    });
 });
 
 describe('showLoadingError / resetLoadingError', () => {
@@ -196,6 +266,26 @@ vi.mock('./location', () => ({
     clearUserMarker: vi.fn(),
 }));
 vi.mock('./terrain', () => ({ refreshTerrain: vi.fn() }));
+vi.mock('./tileLoader', () => ({
+    initCacheLayer: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('./packManager', () => ({
+    packManager: { initialize: vi.fn().mockResolvedValue(undefined) },
+}));
+vi.mock('./routeManager', () => ({
+    initRouteManager: vi.fn(),
+    removeWaypointAt: vi.fn(),
+    scheduleAutoCompute: vi.fn(),
+    clearRoute: vi.fn(),
+}));
+vi.mock('./ui/core/SheetManager', () => ({
+    sheetManager: {
+        open: vi.fn(),
+        close: vi.fn(),
+        toggle: vi.fn(),
+        getActiveSheetId: vi.fn(() => null),
+    },
+}));
 vi.mock('./analysis', () => ({
     findTerrainIntersection: vi.fn(),
     getAltitudeAt: vi.fn(),
