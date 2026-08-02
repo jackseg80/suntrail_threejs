@@ -1,16 +1,16 @@
 import { test, expect } from '@playwright/test';
+import { APP_TEST_URL, waitForSheet } from './app';
 
 test.describe('Settings and Performance', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+    await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => (window as any).suntrailReady === true);
     await page.click('#aw-accept-btn');
     await page.click('#ob-skip');
-    // Wait for the app to be fully ready
-    await page.waitForSelector('#top-pill-main', { state: 'visible', timeout: 15000 });
+    await waitForSheet(page, '#settings');
   });
 
-  test('should change performance presets', async ({ page }) => {
+  test('should change performance presets @smoke', async ({ page }) => {
     // Open settings
     await page.click('.nav-tab[data-tab="settings"]');
     await expect(page.locator('#settings')).toHaveClass(/is-open/);

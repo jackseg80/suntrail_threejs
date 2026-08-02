@@ -1,14 +1,16 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
+import { APP_TEST_URL, waitForSheet } from './app';
 
 test.describe('TrackSheet Functionality', () => {
-  test('should import a GPX file and display stats', async ({ page }) => {
-    await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+  test('should import a GPX file and display stats @smoke', async ({ page }) => {
+    await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => (window as any).suntrailReady === true);
 
     // 1. Bypass Onboarding
     await page.click('#aw-accept-btn');
     await page.click('#ob-skip');
+    await waitForSheet(page, '#track');
 
     // 2. Open Track Tab
     const trackTab = page.locator('.nav-tab[data-tab="track"]');
@@ -42,10 +44,11 @@ test.describe('TrackSheet Functionality', () => {
   });
 
   test('should toggle GPX layer visibility', async ({ page }) => {
-    await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+    await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => (window as any).suntrailReady === true);
     await page.click('#aw-accept-btn');
     await page.click('#ob-skip');
+    await waitForSheet(page, '#track');
     await page.click('.nav-tab[data-tab="track"]');
 
     const filePath = path.join(__dirname, 'test-data', 'E2E-Test-Track.gpx');

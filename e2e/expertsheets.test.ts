@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { APP_TEST_URL, waitForSheet } from './app';
 
 test.describe('Expert Sheets and Widgets', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+    await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => localStorage.clear());
     
     // Wait for UI to be ready (listeners attached)
@@ -13,11 +14,11 @@ test.describe('Expert Sheets and Widgets', () => {
     await page.click('#ob-skip');
     
     // Wait for the app to be fully ready
-    await page.waitForSelector('#top-pill-main', { state: 'visible', timeout: 15000 });
+    await page.waitForSelector('#top-pill-weather', { state: 'visible', timeout: 15000 });
   });
 
   test('should open weather sheet from top pill', async ({ page }) => {
-    const mainPill = page.locator('#top-pill-main');
+    const mainPill = page.locator('#top-pill-weather');
     await expect(mainPill).toBeVisible();
     
     // Wait for JS event listeners to be attached after DOM hydration
@@ -33,7 +34,8 @@ test.describe('Expert Sheets and Widgets', () => {
     await expect(closeBtn).not.toBeVisible({ timeout: 3000 });
   });
 
-  test('should open connectivity sheet from network icon', async ({ page }) => {
+  test('should open connectivity sheet from network icon @smoke', async ({ page }) => {
+    await waitForSheet(page, '#connectivity');
     const netIcon = page.locator('#net-status-icon');
     await expect(netIcon).toBeVisible();
     
@@ -44,7 +46,7 @@ test.describe('Expert Sheets and Widgets', () => {
     await expect(closeBtn).toBeVisible({ timeout: 5000 });
     
     await closeBtn.click();
-    await expect(closeBtn).not.toBeVisible({ timeout: 3000 });
+    await expect(page.locator('#connectivity')).not.toHaveClass(/is-open/);
   });
 
   test('should open SOS sheet and display coordinates', async ({ page }) => {

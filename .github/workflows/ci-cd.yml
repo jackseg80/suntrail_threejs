@@ -23,24 +23,59 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Run Unit Tests (Vitest)
-        run: npm test
+      - name: TypeScript, formatting and lint
+        run: npm run check
+
+      - name: Audit production translations
+        run: npm run audit:i18n
+
+      - name: Unit tests with coverage
+        run: npm run test:coverage
+
+      - name: Build PWA and verify bundle budget
+        run: npm run build && npm run check:bundle
+
+  e2e-smoke:
+    name: Chromium smoke E2E
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e:smoke
+        env:
+          # Valeurs inertes : les scénarios E2E mockent l'authentification si nécessaire.
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: e2e-placeholder-anon-key
+      - name: Upload E2E diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-smoke-report
+          path: |
+            playwright-report
+            test-results
 
   # Étape 2 : Build & Deploy - Uniquement sur la branche MAIN
   deploy:
     name: Build & Deploy
-    needs: quality
+    needs: [quality, e2e-smoke]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
@@ -48,16 +83,16 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build
         env:

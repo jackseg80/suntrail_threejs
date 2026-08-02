@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { APP_TEST_URL, waitForSheet } from './app';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'https://placeholder.supabase.co';
 const SUPABASE_PROJECT_REF = SUPABASE_URL.replace('https://', '').split('.')[0];
@@ -21,11 +22,11 @@ const FAKE_SESSION = {
 };
 
 async function setupApp(page: import('@playwright/test').Page) {
-  await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+  await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => (window as any).suntrailReady === true);
   await page.click('#aw-accept-btn');
   await page.click('#ob-skip');
-  await page.waitForSelector('#top-pill-main', { state: 'visible', timeout: 15000 });
+  await waitForSheet(page, '#settings');
 }
 
 test.describe('Account deletion (RGPD)', () => {
@@ -39,7 +40,7 @@ test.describe('Account deletion (RGPD)', () => {
     await expect(deleteBtn).toBeHidden();
   });
 
-  test('account section should always be visible (fix compliance native)', async ({ page }) => {
+  test('account section should always be visible (fix compliance native) @smoke', async ({ page }) => {
     await setupApp(page);
     await page.click('.nav-tab[data-tab="settings"]');
 

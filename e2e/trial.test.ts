@@ -1,13 +1,15 @@
 import { test, expect } from '@playwright/test';
+import { APP_TEST_URL, waitForSheet } from './app';
 
 test.describe('Discovery Trial E2E', () => {
   test('should activate 3-day trial and unlock pro features', async ({ page }) => {
     // 1. Start App and bypass GPS disclosure
-    await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+    await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => localStorage.setItem('suntrail_gps_disclosure_v1', '1'));
     await page.waitForFunction(() => (window as any).suntrailReady === true);
     await page.click('#aw-accept-btn');
     await page.click('#ob-skip');
+    await waitForSheet(page, '#settings');
 
     // 2. Open Upgrade Sheet
     // We can open it via Settings or by waiting for the UpsellModal (which opens 'upgrade')
@@ -29,6 +31,7 @@ test.describe('Discovery Trial E2E', () => {
     
     // Check if Pro-only elements are now accessible/visible
     // e.g., Open Track sheet and check that the permanent upsell is GONE
+    await waitForSheet(page, '#track');
     await page.click('.nav-tab[data-tab="track"]');
     await page.click('#rec-btn-sheet'); // Start recording
     
@@ -48,10 +51,11 @@ test.describe('Discovery Trial E2E', () => {
   });
 
   test('Easter egg should activate 14-day tester trial', async ({ page }) => {
-    await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+    await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => (window as any).suntrailReady === true);
     await page.click('#aw-accept-btn');
     await page.click('#ob-skip');
+    await waitForSheet(page, '#settings');
 
     await page.click('.nav-tab[data-tab="settings"]');
     
