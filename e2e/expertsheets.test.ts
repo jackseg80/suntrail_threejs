@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { APP_TEST_URL } from './app';
 
 test.describe('Expert Sheets and Widgets', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+    await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => localStorage.clear());
     
     // Wait for UI to be ready (listeners attached)

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { APP_TEST_URL } from './app';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'https://placeholder.supabase.co';
 const SUPABASE_PROJECT_REF = SUPABASE_URL.replace('https://', '').split('.')[0];
@@ -21,7 +22,7 @@ const FAKE_SESSION = {
 };
 
 async function setupApp(page: import('@playwright/test').Page) {
-  await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+  await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => (window as any).suntrailReady === true);
   await page.click('#aw-accept-btn');
   await page.click('#ob-skip');

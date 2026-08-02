@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
+import { APP_TEST_URL } from './app';
 
 test.describe('TrackSheet Functionality', () => {
   test('should import a GPX file and display stats @smoke', async ({ page }) => {
-    await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+    await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => (window as any).suntrailReady === true);
 
     // 1. Bypass Onboarding
@@ -42,7 +43,7 @@ test.describe('TrackSheet Functionality', () => {
   });
 
   test('should toggle GPX layer visibility', async ({ page }) => {
-    await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+    await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => (window as any).suntrailReady === true);
     await page.click('#aw-accept-btn');
     await page.click('#ob-skip');

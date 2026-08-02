@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { APP_TEST_URL } from './app';
 
 test.describe('Discovery Trial E2E', () => {
   test('should activate 3-day trial and unlock pro features', async ({ page }) => {
     // 1. Start App and bypass GPS disclosure
-    await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+    await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => localStorage.setItem('suntrail_gps_disclosure_v1', '1'));
     await page.waitForFunction(() => (window as any).suntrailReady === true);
     await page.click('#aw-accept-btn');
@@ -48,7 +49,7 @@ test.describe('Discovery Trial E2E', () => {
   });
 
   test('Easter egg should activate 14-day tester trial', async ({ page }) => {
-    await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+    await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => (window as any).suntrailReady === true);
     await page.click('#aw-accept-btn');
     await page.click('#ob-skip');

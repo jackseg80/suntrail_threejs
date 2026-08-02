@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { APP_TEST_URL } from './app';
 
 test.describe('Settings and Performance', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/?mode=test', { waitUntil: 'domcontentloaded' });
+    await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => (window as any).suntrailReady === true);
     await page.click('#aw-accept-btn');
     await page.click('#ob-skip');
