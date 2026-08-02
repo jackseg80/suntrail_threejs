@@ -379,7 +379,8 @@
         },
         "status": {
             "online": "ONLINE",
-            "offline": "OFFLINE"
+            "offline": "OFFLINE",
+            "degraded": "EINGESCHRÄNKT"
         },
         "section": {
             "signal": "Signalstatus",

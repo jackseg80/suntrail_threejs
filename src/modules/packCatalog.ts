@@ -13,8 +13,7 @@ import type { PackMeta, PackCatalog } from './packTypes';
 
 const CDN_BASE_URL = 'https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev';
 const CATALOG_URL = import.meta.env.VITE_PACKS_CATALOG_URL as
-    | string
-    | undefined;
+    string | undefined;
 const CATALOG_CACHE_KEY = STORAGE_KEYS.PACK_CATALOG;
 
 const EMBEDDED_CATALOG: PackCatalog = {

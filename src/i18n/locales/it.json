@@ -187,6 +187,7 @@
             "advanced": "⚙️ Impostazioni avanzate",
             "dataManagement": "Gestione dati",
             "language": "Lingua",
+            "account": "Account",
             "sources": "Fonti dati & Legale",
             "pro": "Funzionalità PRO",
             "theme": "Tema"
@@ -376,7 +377,8 @@
         },
         "status": {
             "online": "ONLINE",
-            "offline": "OFFLINE"
+            "offline": "OFFLINE",
+            "degraded": "DEGRADATA"
         },
         "section": {
             "signal": "Stato segnale",

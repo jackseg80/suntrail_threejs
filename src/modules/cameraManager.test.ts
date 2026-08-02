@@ -81,17 +81,14 @@ describe('cameraManager.ts', () => {
 
         camera.position.set(0, 10000, 10000);
 
-        import('./cameraManager').then((m) => {
-            m.zoomToPoint(100, 200);
+        const { zoomToPoint } = await import('./cameraManager');
+        zoomToPoint(100, 200);
 
-            // On avance le temps pour voir si la position a changé
-            vi.advanceTimersByTime(200);
+        // On avance le temps pour voir si la position a changé
+        vi.advanceTimersByTime(200);
 
-            expect(controls.target.x).not.toBe(0);
-            expect(controls.target.z).not.toBe(0);
-            expect(camera.position.y).toBeLessThan(10000); // On doit avoir zoomé
-
-            vi.useRealTimers();
-        });
+        expect(controls.target.x).not.toBe(0);
+        expect(controls.target.z).not.toBe(0);
+        expect(camera.position.y).toBeLessThan(10000); // On doit avoir zoomé
     });
 });

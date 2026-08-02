@@ -10,7 +10,7 @@ import { applyPreset, getGpuInfo, detectBestPreset } from '../../performance';
 import { runBenchmark } from '../../benchmark';
 import { updateHydrologyVisibility, refreshTerrain } from '../../terrain';
 import { updateWeatherVisibility } from '../../weather';
-import { ICON_CHECK } from '../icons';
+import { ICON_CHECK, ICON_LOG_IN, ICON_LOG_OUT, ICON_USER } from '../icons';
 import { showOnboarding } from '../../onboardingTutorial';
 import type { Locale } from '../../../i18n/I18nService';
 import { i18n } from '../../../i18n/I18nService';
@@ -24,6 +24,7 @@ import { showUpgradePrompt, isProActive } from '../../iap';
 import { createTooltip, type TooltipHandle } from '../tooltip';
 import { SharedAPIKeyComponent } from './SharedAPIKeyComponent';
 import { STORAGE_KEYS } from '../../../constants/storage';
+import { authService } from '../../authService';
 import templateHTML from '../templates/settings.html?raw';
 
 export class SettingsSheet extends BaseComponent {
@@ -36,7 +37,7 @@ export class SettingsSheet extends BaseComponent {
         if (!this.element) return;
 
         // Account management (Web + Native — requis Play Store RGPD)
-        // this.updateAccountSection(); // CACHÉ v5.54.4 (bug OAuth)
+        this.updateAccountSection();
 
         // Close panel
         const closePanel = this.element.querySelector('#close-panel');
@@ -370,25 +371,42 @@ export class SettingsSheet extends BaseComponent {
         if (total) total.textContent = results.totalScore.toString();
     }
 
-    /* CACHÉ v5.54.4 (bug OAuth) - TS6133 unused member fix
     private updateAccountSection(): void {
         if (!this.element) return;
+        const sectionLabel = this.element.querySelector(
+            '[data-i18n="settings.section.account"]'
+        ) as HTMLElement | null;
+        const accountSection = this.element.querySelector(
+            '#account-section'
+        ) as HTMLElement | null;
         const statusEl = this.element.querySelector('#account-status');
         const emailEl = this.element.querySelector('#account-email');
-        const avatarEl = this.element.querySelector('#account-avatar') as HTMLElement | null;
-        const btn = this.element.querySelector('#account-action-btn') as HTMLButtonElement;
+        const avatarEl = this.element.querySelector(
+            '#account-avatar'
+        ) as HTMLElement | null;
+        const btn = this.element.querySelector(
+            '#account-action-btn'
+        ) as HTMLButtonElement;
 
-        if (!statusEl || !emailEl || !btn) return;
+        if (!statusEl || !emailEl || !btn || !accountSection) return;
 
-        const deleteBtn = this.element.querySelector('#account-delete-btn') as HTMLButtonElement | null;
-        const linkGoogleBtn = this.element.querySelector('#account-link-google-btn') as HTMLButtonElement | null;
+        accountSection.style.display = 'block';
+        if (sectionLabel) sectionLabel.style.display = 'block';
+
+        const deleteBtn = this.element.querySelector(
+            '#account-delete-btn'
+        ) as HTMLButtonElement | null;
+        const linkGoogleBtn = this.element.querySelector(
+            '#account-link-google-btn'
+        ) as HTMLButtonElement | null;
 
         if (authService.isAuthenticated) {
             if (avatarEl) avatarEl.innerHTML = ICON_CHECK;
             btn.style.background = 'var(--surface-subtle)';
             btn.style.color = 'var(--text-2)';
             btn.style.borderTop = '1px solid var(--border)';
-            statusEl.textContent = i18n.t('settings.account.loggedInAs') || 'Connecté';
+            statusEl.textContent =
+                i18n.t('settings.account.loggedInAs') || 'Connecté';
             emailEl.textContent = authService.user?.email || '';
             btn.innerHTML = `${ICON_LOG_OUT}<span>${i18n.t('settings.account.logout') || 'Se déconnecter'}</span>`;
             btn.onclick = async () => {
@@ -397,13 +415,22 @@ export class SettingsSheet extends BaseComponent {
             };
             if (deleteBtn) {
                 deleteBtn.style.display = 'block';
-                deleteBtn.textContent = i18n.t('settings.account.deleteAccount') || 'Supprimer mon compte';
+                deleteBtn.textContent =
+                    i18n.t('settings.account.deleteAccount') ||
+                    'Supprimer mon compte';
                 deleteBtn.onclick = async () => {
-                    const confirmed = confirm(i18n.t('settings.account.deleteConfirmMsg') || 'Supprimer définitivement votre compte et vos données ? Cette action ne résilie pas votre abonnement. Irréversible.');
+                    const confirmed = confirm(
+                        i18n.t('settings.account.deleteConfirmMsg') ||
+                            'Supprimer définitivement votre compte et vos données ? Cette action ne résilie pas votre abonnement. Irréversible.'
+                    );
                     if (!confirmed) return;
                     const { error } = await authService.deleteAccount();
                     if (error) {
-                        showToast(i18n.t('settings.account.deleteError') || 'Erreur lors de la suppression.', 4000);
+                        showToast(
+                            i18n.t('settings.account.deleteError') ||
+                                'Erreur lors de la suppression.',
+                            4000
+                        );
                     } else {
                         window.location.reload();
                     }
@@ -413,36 +440,49 @@ export class SettingsSheet extends BaseComponent {
                 const alreadyLinked = authService.isGoogleLinked();
                 linkGoogleBtn.style.display = alreadyLinked ? 'none' : 'flex';
                 if (!alreadyLinked) {
-                    linkGoogleBtn.textContent = i18n.t('settings.account.linkGoogle') || 'Lier mon compte Google';
+                    linkGoogleBtn.textContent =
+                        i18n.t('settings.account.linkGoogle') ||
+                        'Lier mon compte Google';
                     linkGoogleBtn.onclick = async () => {
                         try {
                             await authService.linkGoogleAccount();
                         } catch (e) {
-                            showToast(i18n.t('settings.account.deleteError') || 'Erreur de liaison.', 3000);
+                            showToast(
+                                i18n.t('settings.account.deleteError') ||
+                                    'Erreur de liaison.',
+                                3000
+                            );
                         }
                     };
                 }
             }
         } else {
             if (avatarEl) avatarEl.innerHTML = ICON_USER;
-            btn.style.background = 'linear-gradient(135deg, var(--accent) 0%, var(--accent-btn) 100%)';
+            btn.style.background =
+                'linear-gradient(135deg, var(--accent) 0%, var(--accent-btn) 100%)';
             btn.style.color = '#fff';
             btn.style.borderTop = '1px solid transparent';
-            statusEl.textContent = i18n.t('settings.account.guest') || 'Mode Invité';
-            emailEl.textContent = i18n.t('settings.account.loginHint') || 'Connectez-vous pour synchroniser Pro';
+            statusEl.textContent =
+                i18n.t('settings.account.guest') || 'Mode Invité';
+            emailEl.textContent =
+                i18n.t('settings.account.loginHint') ||
+                'Connectez-vous pour synchroniser Pro';
             btn.innerHTML = `${ICON_LOG_IN}<span>${i18n.t('settings.account.continueWithGoogle') || 'Continuer avec Google'}</span>`;
             btn.onclick = async () => {
                 try {
                     await authService.signInWithGoogle();
                 } catch (e) {
-                    showToast(i18n.t('settings.account.deleteError') || 'Erreur de connexion.', 3000);
+                    showToast(
+                        i18n.t('settings.account.deleteError') ||
+                            'Erreur de connexion.',
+                        3000
+                    );
                 }
             };
             if (deleteBtn) deleteBtn.style.display = 'none';
             if (linkGoogleBtn) linkGoogleBtn.style.display = 'none';
         }
     }
-    */
 
     private bindSlider(
         id: string,

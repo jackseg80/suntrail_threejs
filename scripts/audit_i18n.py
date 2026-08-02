@@ -12,7 +12,7 @@ def get_keys_from_json(data, prefix=''):
             keys.add(new_key)
     return keys
 
-def audit_i18n():
+def audit_i18n() -> bool:
     src_dir = 'src'
     locales_dir = os.path.join(src_dir, 'i18n', 'locales')
     languages = ['fr', 'en', 'de', 'it']
@@ -28,8 +28,11 @@ def audit_i18n():
     dynamic_patterns = re.compile(r"i18n\.t\(\s*[`]([^`]+)[`]")
 
     for root, dirs, files in os.walk(src_dir):
+        # Test fixtures intentionally exercise missing-key behaviour and must
+        # never make a production translation audit fail.
+        dirs[:] = [directory for directory in dirs if directory != 'test']
         for file in files:
-            if file.endswith('.ts'):
+            if file.endswith('.ts') and not file.endswith('.test.ts'):
                 path = os.path.join(root, file)
                 with open(path, 'r', encoding='utf-8') as f:
                     content = f.read()
@@ -103,5 +106,7 @@ def audit_i18n():
                 continue
             print(f"    - {k}")
 
+    return not missing_in_locales
+
 if __name__ == "__main__":
-    audit_i18n()
+    raise SystemExit(0 if audit_i18n() else 1)

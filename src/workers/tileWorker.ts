@@ -4,6 +4,9 @@
  * v5.6.7 : AbortController par task — fetch annulé dès que la tuile est disposée côté main.
  */
 
+import { isMapTilerUrl, MapTilerBackoff } from './tileWorkerCore';
+import type { TileWorkerRequest, TileWorkerResponse } from '../types/worker';
+
 // v30 : synchronized avec tileLoader.ts pour support seeding
 const CACHE_NAME = 'suntrail-tiles-v30';
 let _cacheStorage: Cache | null = null;
@@ -22,28 +25,7 @@ const activeControllers = new Map<number, AbortController>();
  * Backoff global MapTiler 429 — protège le quota.
  * Après un 429, on bloque toutes les requêtes MapTiler pendant un délai croissant.
  */
-let _maptilerBackoffUntil = 0;
-let _maptilerBackoffMs = 500; // Doubles à chaque 429 : 500 → 1000 → 2000 → 4000 (cap)
-const MAPTILER_BACKOFF_MAX = 4000;
-
-function isMapTilerUrl(url: string): boolean {
-    return url.includes('api.maptiler.com');
-}
-
-function isInMapTilerBackoff(): boolean {
-    return Date.now() < _maptilerBackoffUntil;
-}
-
-function triggerMapTilerBackoff(): void {
-    _maptilerBackoffUntil = Date.now() + _maptilerBackoffMs;
-    _maptilerBackoffMs = Math.min(_maptilerBackoffMs * 2, MAPTILER_BACKOFF_MAX);
-}
-
-function resetMapTilerBackoff(): void {
-    _maptilerBackoffMs = 500;
-}
-
-import type { TileWorkerRequest, TileWorkerResponse } from '../types/worker';
+const mapTilerBackoff = new MapTilerBackoff();
 
 // ... (backoff functions unchanged)
 
@@ -300,7 +282,7 @@ async function fetchTile(
         }
         if (isOffline) return null;
         // Backoff MapTiler : skip les requêtes pendant la période de cooldown
-        if (isMapTilerUrl(url) && isInMapTilerBackoff()) {
+        if (isMapTilerUrl(url) && mapTilerBackoff.isActive()) {
             return { bitmap: null as any, fromCache: false, rateLimited: true };
         }
         const response = await fetch(url, {
@@ -311,12 +293,12 @@ async function fetchTile(
         if (response.status === 403)
             return { bitmap: null as any, fromCache: false, forbidden: true };
         if (response.status === 429) {
-            triggerMapTilerBackoff();
+            mapTilerBackoff.trigger();
             return { bitmap: null as any, fromCache: false, rateLimited: true };
         }
         if (!response.ok) return null;
         // Requête MapTiler réussie → reset le backoff
-        if (isMapTilerUrl(url)) resetMapTilerBackoff();
+        if (isMapTilerUrl(url)) mapTilerBackoff.reset();
         const blob = await response.blob();
         cache.put(url, new Response(blob.slice()));
         const bitmap = await createImageBitmap(blob, {

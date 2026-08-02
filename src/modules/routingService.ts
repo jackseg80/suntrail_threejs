@@ -21,10 +21,7 @@ export interface RouteWaypoint {
 }
 
 export type RoutingProfile =
-    | 'foot-hiking'
-    | 'foot-walking'
-    | 'cycling-regular'
-    | 'cycling-mountain';
+    'foot-hiking' | 'foot-walking' | 'cycling-regular' | 'cycling-mountain';
 
 interface ORSResponse {
     features: Array<{
