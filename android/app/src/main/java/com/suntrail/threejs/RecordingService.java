@@ -20,6 +20,8 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.ServiceCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -38,6 +40,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -216,11 +219,8 @@ public class RecordingService extends Service {
             }
         };
         IntentFilter stopFilter = new IntentFilter(STOP_ACTION);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(mStopReceiver, stopFilter, Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            registerReceiver(mStopReceiver, stopFilter);
-        }
+        ContextCompat.registerReceiver(this, mStopReceiver, stopFilter,
+                ContextCompat.RECEIVER_NOT_EXPORTED);
 
         mLastMovementTime = System.currentTimeMillis();
 
@@ -252,7 +252,7 @@ public class RecordingService extends Service {
 
                     double altEllipsoidal = loc.getAltitude();
                     double altOrthometric;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && loc.hasMslAltitude()) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && loc.hasMslAltitude()) {
                         altOrthometric = loc.getMslAltitudeMeters();
                     } else {
                         altOrthometric = altEllipsoidal - estimateGeoIdHeight(loc.getLatitude(), loc.getLongitude());
@@ -357,7 +357,7 @@ public class RecordingService extends Service {
         bcast.setPackage(getPackageName());
         sendBroadcast(bcast);
 
-        stopForeground(true);
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
         super.onDestroy();
     }
 
@@ -429,8 +429,8 @@ public class RecordingService extends Service {
         if (pointCount == 0) {
             sb.append(" — En attente du GPS...");
         } else {
-            sb.append(String.format(" — %d pts — %.2f km", pointCount, mStatsDistance));
-            sb.append(String.format(" — +%dm / -%dm", (int) mStatsElevation, (int) mStatsElevationMinus));
+            sb.append(String.format(Locale.getDefault(), " — %d pts — %.2f km", pointCount, mStatsDistance));
+            sb.append(String.format(Locale.getDefault(), " — +%dm / -%dm", (int) mStatsElevation, (int) mStatsElevationMinus));
         }
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)

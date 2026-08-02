@@ -1,18 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Règles d'extraction de données Android 12+ (API 31+)
-    Remplace fullBackupContent (deprecated sur Android 12+) pour les transferts cloud et ADB.
-    Exclut les SharedPreferences (clé MapTiler + préférences utilisateur) des sauvegardes.
+    Règles d'extraction de données Android 12+ (API 31+).
+    Les traces GPS, l'historique WebView et les clés saisies par l'utilisateur
+    ne doivent jamais être envoyés vers le cloud. Le transfert local
+    appareil-à-appareil reste autorisé pour préserver l'historique.
     Référence : https://developer.android.com/about/versions/12/backup-restore
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- Exclure toutes les SharedPreferences (clé API MapTiler + snapshots GPS) -->
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
         <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
     </cloud-backup>
     <device-transfer>
-        <!-- Autoriser le transfert appareil-à-appareil des préférences (pratique pour l'utilisateur) -->
-        <!-- mais exclure les clés API par précaution -->
+        <!-- Les préférences peuvent contenir des clés API saisies manuellement. -->
         <exclude domain="sharedpref" path="." />
     </device-transfer>
 </data-extraction-rules>

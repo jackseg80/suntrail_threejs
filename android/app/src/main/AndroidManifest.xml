@@ -1,5 +1,23 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Permissions -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Foreground Service GPS (enregistrement de parcours en arrière-plan) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- Notifications (Android 13+ / API 33+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Google Play Billing — requis pour les achats In-App (RevenueCat) -->
+    <uses-permission android:name="com.android.vending.BILLING" />
+    <!-- Wake Lock — maintient le CPU actif pendant l'enregistrement GPS (v5.23) -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Exemption batterie — demandée au premier enregistrement GPS long (v5.53.2) -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
     <application
         android:allowBackup="true"
         android:fullBackupContent="@xml/backup_rules"
@@ -19,7 +37,6 @@
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
             android:exported="true"
-            android:enableOnBackInvokedCallback="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -59,34 +76,6 @@
             android:stopWithTask="false"
             android:exported="false" />
 
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
-        </provider>
-
         <!-- profileable retiré des builds production (audit sécurité v5.22.1) -->
     </application>
-
-    <!-- Permissions -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <!-- Foreground Service GPS (enregistrement de parcours en arrière-plan) -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
-    <!-- Notifications (Android 13+ / API 33+) -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Google Play Billing — requis pour les achats In-App (RevenueCat) -->
-    <uses-permission android:name="com.android.vending.BILLING" />
-    <!-- Wake Lock — maintient le CPU actif pendant l'enregistrement GPS (v5.23) -->
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <!-- AlarmManager pour relancer RecordingService si swipé par OEM agressif (v5.53.1) -->
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-    <!-- Exemption batterie — l'utilisateur est invité à désactiver l'optimisation batterie pour garantir le GPS long (v5.53.2) -->
-    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 </manifest>

@@ -2,6 +2,7 @@ package com.suntrail.threejs.data;
 
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
@@ -57,6 +58,7 @@ public class GPSPoint {
         // Required by Room
     }
     
+    @Ignore
     public GPSPoint(String courseId, double lat, double lon, double alt, 
                     long timestamp, float accuracy) {
         this.courseId = courseId;

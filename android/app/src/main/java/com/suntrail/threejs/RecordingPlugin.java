@@ -1,6 +1,7 @@
 package com.suntrail.threejs;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -116,11 +117,8 @@ public class RecordingPlugin extends Plugin {
         filter.addAction(RecordingService.ACTION_POINTS_UPDATED);
         filter.addAction(RecordingService.ACTION_SERVICE_STOPPED);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            getContext().registerReceiver(mReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            getContext().registerReceiver(mReceiver, filter);
-        }
+        ContextCompat.registerReceiver(getContext(), mReceiver, filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED);
     }
 
     private void unregisterBroadcastReceiver() {
@@ -283,14 +281,10 @@ public class RecordingPlugin extends Plugin {
      * Appelé une seule fois au premier REC (mémorisé côté JS dans localStorage).
      * Garantit que RecordingService n'est pas tué par l'OS pendant les longues randonnées.
      */
+    @SuppressLint("BatteryLife") // Usage explicitement demandé par l'utilisateur pour les suivis GPS longs.
     @PluginMethod
     public void requestBatteryOptimizationExemption(PluginCall call) {
         JSObject result = new JSObject();
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            result.put("granted", true);
-            call.resolve(result);
-            return;
-        }
         PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
         if (pm == null) {
             result.put("granted", false);
