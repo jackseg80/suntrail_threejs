@@ -14,6 +14,8 @@ import { grantProAccess, revokeProAccess } from './iap';
 import { STORAGE_KEYS } from '../constants/storage';
 
 const ENTITLEMENT_ID = 'SunTrail 3D Pro';
+// Réactiver uniquement après validation du retour OAuth et de la restauration.
+const GUEST_WEB_PURCHASE_ENABLED = false;
 
 // Interface commune aux deux SDKs (Capacitor et purchases-js partagent la même forme)
 interface ICustomerInfo {
@@ -246,10 +248,19 @@ class IAPService {
             return false;
         }
 
-        // Prévention mode invité sur le Web
+        // Le paiement invité Web est suspendu tant que la restauration de
+        // compte/OAuth n'est pas fiable. Les achats Android natifs restent
+        // disponibles et ne passent jamais par cette branche.
         if (!Capacitor.isNativePlatform()) {
             const { authService } = await import('./authService');
             if (!authService.isAuthenticated) {
+                if (!GUEST_WEB_PURCHASE_ENABLED) {
+                    console.info(
+                        '[IAP] Achat invité Web temporairement indisponible.'
+                    );
+                    return false;
+                }
+
                 const proceed = await new Promise<boolean>((resolve) => {
                     let resolved = false;
                     const isProd = window.location.hostname !== 'localhost';

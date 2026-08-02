@@ -244,7 +244,7 @@ describe('SettingsSheet - Google buttons', () => {
         mockAuthService.isGoogleLinked.mockReturnValue(false);
     });
 
-    it('should call signInWithGoogle when main button is clicked and not authenticated', async () => {
+    it('hides the account section when not authenticated', () => {
         mockAuthService.isAuthenticated = false;
         mockAuthService.user = null;
 
@@ -252,33 +252,17 @@ describe('SettingsSheet - Google buttons', () => {
         (sheet as any).element = document.getElementById('settings-panel');
         sheet.render();
 
-        const actionBtn = document.getElementById(
-            'account-action-btn'
-        ) as HTMLButtonElement;
-        await actionBtn.onclick?.(new MouseEvent('click') as any);
-
-        expect(mockAuthService.signInWithGoogle).toHaveBeenCalled();
+        const accountSection = document.getElementById(
+            'account-section'
+        ) as HTMLElement;
+        expect(accountSection.style.display).toBe('none');
+        expect(mockAuthService.signInWithGoogle).not.toHaveBeenCalled();
     });
 
-    it('should show link-google button when authenticated and google not linked', () => {
+    it('keeps the Google linking button hidden for authenticated users', () => {
         mockAuthService.isAuthenticated = true;
         mockAuthService.user = { email: 'test@test.com' };
         mockAuthService.isGoogleLinked.mockReturnValue(false);
-
-        const sheet = new SettingsSheet();
-        (sheet as any).element = document.getElementById('settings-panel');
-        sheet.render();
-
-        const linkBtn = document.getElementById(
-            'account-link-google-btn'
-        ) as HTMLButtonElement;
-        expect(linkBtn.style.display).toBe('flex');
-    });
-
-    it('should hide link-google button when authenticated and google already linked', () => {
-        mockAuthService.isAuthenticated = true;
-        mockAuthService.user = { email: 'test@test.com' };
-        mockAuthService.isGoogleLinked.mockReturnValue(true);
 
         const sheet = new SettingsSheet();
         (sheet as any).element = document.getElementById('settings-panel');

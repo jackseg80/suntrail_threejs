@@ -22,12 +22,22 @@
         </div>
     </div>
 
-    <!-- Section Compte / Authentification (requis Play Store RGPD) -->
-    <div class="section-label" data-i18n="settings.section.account">Compte</div>
+    <!--
+        L'authentification Google est temporairement masquée : le retour OAuth
+        n'est pas encore suffisamment fiable. La section est réactivée pour les
+        sessions déjà ouvertes par SettingsSheet.
+    -->
+    <div
+        class="section-label"
+        data-i18n="settings.section.account"
+        style="display: none"
+    >
+        Compte
+    </div>
     <div
         id="account-section"
         style="
-            display: block;
+            display: none;
             margin-bottom: 20px;
             border-radius: 14px;
             border: 1px solid var(--border);

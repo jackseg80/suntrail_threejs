@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.81.2)
+# SunTrail — Guide IA (v5.81.3)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-08-02 — v5.81.2 : démarrage carte progressif, RevenueCat différé, cache/packs/Gist optimisés. 1473 tests.
+> Mis à jour le 2026-08-02 — v5.81.3 : parcours invité/Google Web masqués jusqu'à fiabilisation OAuth et restauration d'achats. 1473 tests.
 
 ## Projet
 

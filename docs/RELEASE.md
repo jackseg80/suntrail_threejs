@@ -146,6 +146,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **856** | **5.61.2** | **v5.61.2** | **Top bar : 3 zones séparées — météo à gauche (clic → panneau), MAP·LVL au centre, boutons à droite. fini le pill tout-en-un.** | **2026-06-08** |
 | **857** | **5.61.3** | **v5.61.3** | **Marqueur 3D orange au clic (sonde solaire visible sur la carte) + debounce 200ms hide-on-move (fini le flicker au clic) + auto-hide suspendu quand coords-pill visible.** | **2026-06-09** |
 | **894** | **5.81.2** | **v5.81.2** | **Démarrage carte progressif : première tuile 3D visible sans attendre la vague complète ; RevenueCat différé, cache/packs/Gist optimisés.** | **2026-08-02** |
+| **895** | **5.81.3** | **v5.81.3** | **Parcours invité/Google Web masqués et achat invité suspendu jusqu'à fiabilisation OAuth/restauration ; Android natif inchangé.** | **2026-08-02** |
 
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.

@@ -1,3 +1,12 @@
+## [5.81.3] - 2026-08-02
+
+### Changed
+- **Parcours d'authentification suspendus** : la carte « Mode Invité / Continuer avec Google » et la liaison Google sont masquées tant que le retour OAuth mobile n'est pas fiable. Les comptes déjà connectés gardent les actions de déconnexion et de suppression.
+- **Achat invité Web suspendu** : la modale d'achat invité ne s'ouvre plus ; les achats Android natifs ne sont pas affectés.
+
+### Validation
+- Contrôles TypeScript, Prettier et ESLint, ainsi que les 1 473 tests, passent.
+
 ## [5.81.2] - 2026-08-02
 
 ### Changed

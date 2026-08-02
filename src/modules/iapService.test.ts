@@ -253,6 +253,21 @@ describe('IAPService - Blindage (v5.29.36)', () => {
         expect(success).toBe(false);
     });
 
+    it("ne doit pas ouvrir l'achat invité Web tant que le flux est suspendu", async () => {
+        mockCapacitor.isNativePlatform.mockReturnValue(false);
+        (iapService as any).initialized = true;
+        const openSpy = vi.spyOn(window, 'open');
+        const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+        const success = await iapService.purchase('monthly');
+
+        expect(success).toBe(false);
+        expect(openSpy).not.toHaveBeenCalled();
+        expect(infoSpy).toHaveBeenCalledWith(
+            '[IAP] Achat invité Web temporairement indisponible.'
+        );
+    });
+
     // --- Prix & Formattage ---
 
     it('getPrices doit formater les prix correctement', async () => {

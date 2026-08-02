@@ -10,7 +10,7 @@ import { applyPreset, getGpuInfo, detectBestPreset } from '../../performance';
 import { runBenchmark } from '../../benchmark';
 import { updateHydrologyVisibility, refreshTerrain } from '../../terrain';
 import { updateWeatherVisibility } from '../../weather';
-import { ICON_CHECK, ICON_LOG_IN, ICON_LOG_OUT, ICON_USER } from '../icons';
+import { ICON_CHECK, ICON_LOG_OUT } from '../icons';
 import { showOnboarding } from '../../onboardingTutorial';
 import type { Locale } from '../../../i18n/I18nService';
 import { i18n } from '../../../i18n/I18nService';
@@ -371,6 +371,11 @@ export class SettingsSheet extends BaseComponent {
         if (total) total.textContent = results.totalScore.toString();
     }
 
+    /**
+     * Google OAuth is kept in authService but hidden until its mobile return
+     * flow is reliable. Existing authenticated users still retain logout and
+     * account deletion controls.
+     */
     private updateAccountSection(): void {
         if (!this.element) return;
         const sectionLabel = this.element.querySelector(
@@ -390,6 +395,13 @@ export class SettingsSheet extends BaseComponent {
 
         if (!statusEl || !emailEl || !btn || !accountSection) return;
 
+        // Do not expose a broken "guest / sign in with Google" entry point.
+        if (!authService.isAuthenticated) {
+            accountSection.style.display = 'none';
+            if (sectionLabel) sectionLabel.style.display = 'none';
+            return;
+        }
+
         accountSection.style.display = 'block';
         if (sectionLabel) sectionLabel.style.display = 'block';
 
@@ -400,88 +412,43 @@ export class SettingsSheet extends BaseComponent {
             '#account-link-google-btn'
         ) as HTMLButtonElement | null;
 
-        if (authService.isAuthenticated) {
-            if (avatarEl) avatarEl.innerHTML = ICON_CHECK;
-            btn.style.background = 'var(--surface-subtle)';
-            btn.style.color = 'var(--text-2)';
-            btn.style.borderTop = '1px solid var(--border)';
-            statusEl.textContent =
-                i18n.t('settings.account.loggedInAs') || 'Connecté';
-            emailEl.textContent = authService.user?.email || '';
-            btn.innerHTML = `${ICON_LOG_OUT}<span>${i18n.t('settings.account.logout') || 'Se déconnecter'}</span>`;
-            btn.onclick = async () => {
-                await authService.signOut();
-                window.location.reload();
-            };
-            if (deleteBtn) {
-                deleteBtn.style.display = 'block';
-                deleteBtn.textContent =
-                    i18n.t('settings.account.deleteAccount') ||
-                    'Supprimer mon compte';
-                deleteBtn.onclick = async () => {
-                    const confirmed = confirm(
-                        i18n.t('settings.account.deleteConfirmMsg') ||
-                            'Supprimer définitivement votre compte et vos données ? Cette action ne résilie pas votre abonnement. Irréversible.'
-                    );
-                    if (!confirmed) return;
-                    const { error } = await authService.deleteAccount();
-                    if (error) {
-                        showToast(
-                            i18n.t('settings.account.deleteError') ||
-                                'Erreur lors de la suppression.',
-                            4000
-                        );
-                    } else {
-                        window.location.reload();
-                    }
-                };
-            }
-            if (linkGoogleBtn) {
-                const alreadyLinked = authService.isGoogleLinked();
-                linkGoogleBtn.style.display = alreadyLinked ? 'none' : 'flex';
-                if (!alreadyLinked) {
-                    linkGoogleBtn.textContent =
-                        i18n.t('settings.account.linkGoogle') ||
-                        'Lier mon compte Google';
-                    linkGoogleBtn.onclick = async () => {
-                        try {
-                            await authService.linkGoogleAccount();
-                        } catch (e) {
-                            showToast(
-                                i18n.t('settings.account.deleteError') ||
-                                    'Erreur de liaison.',
-                                3000
-                            );
-                        }
-                    };
-                }
-            }
-        } else {
-            if (avatarEl) avatarEl.innerHTML = ICON_USER;
-            btn.style.background =
-                'linear-gradient(135deg, var(--accent) 0%, var(--accent-btn) 100%)';
-            btn.style.color = '#fff';
-            btn.style.borderTop = '1px solid transparent';
-            statusEl.textContent =
-                i18n.t('settings.account.guest') || 'Mode Invité';
-            emailEl.textContent =
-                i18n.t('settings.account.loginHint') ||
-                'Connectez-vous pour synchroniser Pro';
-            btn.innerHTML = `${ICON_LOG_IN}<span>${i18n.t('settings.account.continueWithGoogle') || 'Continuer avec Google'}</span>`;
-            btn.onclick = async () => {
-                try {
-                    await authService.signInWithGoogle();
-                } catch (e) {
+        if (avatarEl) avatarEl.innerHTML = ICON_CHECK;
+        btn.style.background = 'var(--surface-subtle)';
+        btn.style.color = 'var(--text-2)';
+        btn.style.borderTop = '1px solid var(--border)';
+        statusEl.textContent =
+            i18n.t('settings.account.loggedInAs') || 'Connecté';
+        emailEl.textContent = authService.user?.email || '';
+        btn.innerHTML = `${ICON_LOG_OUT}<span>${i18n.t('settings.account.logout') || 'Se déconnecter'}</span>`;
+        btn.onclick = async () => {
+            await authService.signOut();
+            window.location.reload();
+        };
+        if (deleteBtn) {
+            deleteBtn.style.display = 'block';
+            deleteBtn.textContent =
+                i18n.t('settings.account.deleteAccount') ||
+                'Supprimer mon compte';
+            deleteBtn.onclick = async () => {
+                const confirmed = confirm(
+                    i18n.t('settings.account.deleteConfirmMsg') ||
+                        'Supprimer définitivement votre compte et vos données ? Cette action ne résilie pas votre abonnement. Irréversible.'
+                );
+                if (!confirmed) return;
+                const { error } = await authService.deleteAccount();
+                if (error) {
                     showToast(
                         i18n.t('settings.account.deleteError') ||
-                            'Erreur de connexion.',
-                        3000
+                            'Erreur lors de la suppression.',
+                        4000
                     );
+                } else {
+                    window.location.reload();
                 }
             };
-            if (deleteBtn) deleteBtn.style.display = 'none';
-            if (linkGoogleBtn) linkGoogleBtn.style.display = 'none';
         }
+        // The Google identity-linking button remains deliberately hidden.
+        if (linkGoogleBtn) linkGoogleBtn.style.display = 'none';
     }
 
     private bindSlider(
