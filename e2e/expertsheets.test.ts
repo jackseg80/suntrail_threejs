@@ -46,7 +46,7 @@ test.describe('Expert Sheets and Widgets', () => {
     await expect(closeBtn).toBeVisible({ timeout: 5000 });
     
     await closeBtn.click();
-    await expect(closeBtn).not.toBeVisible({ timeout: 3000 });
+    await expect(page.locator('#connectivity')).not.toHaveClass(/is-open/);
   });
 
   test('should open SOS sheet and display coordinates', async ({ page }) => {
