@@ -1,3 +1,16 @@
+## [5.81.2] - 2026-08-02
+
+### Changed
+- **Démarrage de la carte accéléré** : l'overlay est retiré dès la première tuile 3D construite, tandis que le chargement restant continue via la barre fine.
+- **RevenueCat réellement différé** : le SDK d'achat web (~210 Kio gzip) n'est plus préchargé avant la carte ; les règles PWA et le budget de bundle suivent ce chunk dynamique.
+
+### Fixed
+- **Travail de démarrage inutile supprimé** : double parcours du stockage des packs supprimé, nettoyage des anciens caches déplacé en arrière-plan et requêtes simultanées vers le Gist de configuration mutualisées.
+
+### Validation
+- Mesure production sans cache : affichage de la carte ~4,69 s → ~3,72 s sur la machine de référence (~21 %).
+- 1 473 tests passent, avec contrôles TypeScript, Prettier, ESLint et budget bundle/PWA.
+
 ## [5.81.1] - 2026-06-21
 
 ### Fixed

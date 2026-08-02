@@ -10,6 +10,7 @@ let isProcessingQueue = false;
 const buildQueue: Tile[] = [];
 const buildQueueKeys = new Set<string>();
 let isProcessingBuildQueue = false;
+let firstTileReadyEmitted = false;
 
 // v5.31.1 : Sort cache to amortize O(n log n) cost
 let sortedCache: Tile[] | null = null;
@@ -47,6 +48,10 @@ function processBuildQueue() {
         buildQueueKeys.delete(tile.key);
         if (tile.status !== 'disposed' && activeTiles.has(tile.key)) {
             tile.buildMesh(state.RESOLUTION);
+            if (!firstTileReadyEmitted) {
+                firstTileReadyEmitted = true;
+                window.dispatchEvent(new Event('suntrail:firstTileReady'));
+            }
         }
     }
 
@@ -217,6 +222,8 @@ export function clearLoadQueue() {
     sortedCache = null;
     buildQueue.length = 0;
     buildQueueKeys.clear();
+    isProcessingBuildQueue = false;
+    firstTileReadyEmitted = false;
 }
 
 export function addToLoadQueue(tile: Tile) {

@@ -98,6 +98,27 @@ describe('tileQueue', () => {
             queueBuildMesh(tile);
             expect(mockState.isProcessingTiles).toBe(firstState);
         });
+
+        it('signals when the first terrain tile is built', () => {
+            const raf = vi
+                .spyOn(window, 'requestAnimationFrame')
+                .mockImplementation((callback) => {
+                    callback(0);
+                    return 1;
+                });
+            const readyListener = vi.fn();
+            window.addEventListener('suntrail:firstTileReady', readyListener, {
+                once: true,
+            });
+            const tile = makeFakeTile('14/0/0', 14);
+            mockActiveTiles.add(tile.key);
+
+            queueBuildMesh(tile);
+
+            expect(tile.buildMesh).toHaveBeenCalledWith(256);
+            expect(readyListener).toHaveBeenCalledTimes(1);
+            raf.mockRestore();
+        });
     });
 
     describe('addToLoadQueue()', () => {

@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (v5.81.1)
+# SunTrail — Guide IA (v5.81.2)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-06-21 — v5.81.1 : Tier cap benchmark (S23→performance). 1459 tests, 58% couverture.
+> Mis à jour le 2026-08-02 — v5.81.2 : démarrage carte progressif, RevenueCat différé, cache/packs/Gist optimisés. 1473 tests.
 
 ## Projet
 

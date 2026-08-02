@@ -46,10 +46,6 @@ class PackManager {
         this.runCheckForUpdates();
         await this.syncDiskStates();
 
-        // v5.28.2 : Tenter de restaurer les états 'installed' depuis les fichiers OPFS
-        // si le localStorage a été vidé (très utile après une mise à jour système ou app).
-        await this.syncDiskStates();
-
         // Auto-débloquer TOUS les packs sur localhost (Dev mode) ou via paramètre URL
         const params = new URLSearchParams(window.location.search);
         const isDev =

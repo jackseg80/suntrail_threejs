@@ -1,8 +1,18 @@
-# AI Performance & Constants Guide (v5.60.2)
+# AI Performance & Constants Guide (v5.81.2)
 
 Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 
 ## 1. Map & Terrain Performance
+
+## 1a. Startup Path (v5.81.2)
+
+| Optimization | File | Description |
+| :--- | :--- | :--- |
+| **First terrain tile signal** | `tileQueue.ts`, `appInit.ts` | The loading overlay is dismissed when the first 3D tile mesh is built instead of waiting for the complete initial batch. The tile progress bar remains active. |
+| **Deferred RevenueCat web SDK** | `vite.config.mts` | The IAP web SDK stays in a dynamic chunk and is excluded from the initial module preload and PWA precache. |
+| **Non-blocking cache cleanup** | `tileLoader.ts` | Old-version cache deletion runs in the background; opening current caches remains on the critical path. |
+| **Single Gist request** | `config.ts` | Concurrent MapTiler and ORS configuration lookups share one in-flight request. |
+| **Single pack disk scan** | `packManager.ts` | Pack state restoration scans OPFS once during initialization. |
 
 | Constant | Value | File | Rationale |
 | :--- | :--- | :--- | :--- |

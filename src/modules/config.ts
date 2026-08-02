@@ -6,6 +6,7 @@ const GIST_URL =
     'https://gist.githubusercontent.com/jackseg80/c4f2e5e99c1efb9d736736cb65fce862/raw/suntrail_config.json';
 const GIST_TIMEOUT_MS = 4000;
 const BAN_COOLDOWN_MS = 120_000;
+let gistFetchPromise: Promise<any> | null = null;
 
 function extractKeys(data: any, propertyName: string): string[] {
     const raw = data?.[propertyName];
@@ -19,12 +20,28 @@ function extractKeys(data: any, propertyName: string): string[] {
 }
 
 async function fetchGistConfig(): Promise<any> {
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), GIST_TIMEOUT_MS);
-    const r = await fetch(GIST_URL, { cache: 'no-cache', signal: ctrl.signal });
-    clearTimeout(tid);
-    if (r.ok) return r.json();
-    throw new Error(`Gist HTTP ${r.status}`);
+    if (gistFetchPromise) return gistFetchPromise;
+
+    gistFetchPromise = (async () => {
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), GIST_TIMEOUT_MS);
+        try {
+            const r = await fetch(GIST_URL, {
+                cache: 'no-cache',
+                signal: ctrl.signal,
+            });
+            if (r.ok) return r.json();
+            throw new Error(`Gist HTTP ${r.status}`);
+        } finally {
+            clearTimeout(tid);
+        }
+    })();
+
+    try {
+        return await gistFetchPromise;
+    } finally {
+        gistFetchPromise = null;
+    }
 }
 
 function pickRandomFromPool(

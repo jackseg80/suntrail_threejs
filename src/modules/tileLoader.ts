@@ -136,7 +136,10 @@ export function resetTileLoaderState(): void {
 export async function initCacheLayer(): Promise<void> {
     if (_workerCache && _offlineCache) return; // déjà initialisé
 
-    await cleanupOldCaches();
+    // Les anciens caches ne participent jamais aux lectures courantes. Leur
+    // suppression peut être coûteuse après une mise à jour, donc elle ne doit
+    // pas retarder l'ouverture des caches utilisés par la première carte.
+    void cleanupOldCaches();
 
     const [cache, offlineCache] = await Promise.all([
         caches.open(CACHE_NAME),

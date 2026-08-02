@@ -319,6 +319,10 @@ async function launchScene() {
                 let safetyTimer: ReturnType<typeof setTimeout> | null = null;
 
                 const hideOverlay = () => {
+                    window.removeEventListener(
+                        'suntrail:firstTileReady',
+                        onFirstTileReady
+                    );
                     if (fallbackTimer) {
                         clearTimeout(fallbackTimer);
                         fallbackTimer = null;
@@ -336,6 +340,13 @@ async function launchScene() {
                     }, 300);
                     unsubNet();
                 };
+
+                const onFirstTileReady = () => hideOverlay();
+                window.addEventListener(
+                    'suntrail:firstTileReady',
+                    onFirstTileReady,
+                    { once: true }
+                );
 
                 const unsub = state.subscribe(
                     'isProcessingTiles',

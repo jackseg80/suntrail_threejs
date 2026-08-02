@@ -45,8 +45,11 @@ export default defineConfig({
             output: {
                 manualChunks(id) {
                     if (id.includes('node_modules/three')) return 'three';
-                    if (id.includes('node_modules/@revenuecat'))
-                        return 'Purchases';
+                    // Capacitor is needed by the app at startup. Keep it out of
+                    // the much larger RevenueCat chunk so the purchase SDK can
+                    // remain lazy-loaded until IAP initialization.
+                    if (id.includes('node_modules/@capacitor'))
+                        return 'capacitor';
                     if (id.includes('node_modules/pmtiles')) return 'pmtiles';
                     if (
                         id.includes('node_modules/suncalc') ||
@@ -68,7 +71,7 @@ export default defineConfig({
                 // Exclure le chunk Three.js du précache (trop lourd, en runtime cache à la demande)
                 globIgnores: [
                     '**/three-*.js',
-                    '**/Purchases-*.js',
+                    '**/Purchases*.js',
                     '**/*.pmtiles',
                     '**/icon_*.png',
                 ],

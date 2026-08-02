@@ -1,7 +1,7 @@
-# SunTrail — Guide Développeur (v5.80.0)
+# SunTrail — Guide Développeur (v5.81.2)
 
 > Chaîne YouTube : [@SunTrail3D](https://www.youtube.com/@SunTrail3D)
-> Mis à jour le 2026-06-20 — v5.80.0
+> Mis à jour le 2026-08-02 — v5.81.2
 
 > La base de connaissance technique est maintenue dans **`CLAUDE.md`**.
 > Ce fichier sert de point d'entrée pour Gemini CLI.

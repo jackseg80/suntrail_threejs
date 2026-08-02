@@ -27,9 +27,8 @@ const failures = [];
 for (const file of files.filter((path) => path.endsWith('.js'))) {
     const name = relative(DIST, file).replaceAll('\\', '/');
     const size = statSync(file).size;
-    const isConstrainedThirdParty = /(^|\/)(three|Purchases)-[^/]+\.js$/.test(
-        name
-    );
+    const isConstrainedThirdParty =
+        /(^|\/)(three|Purchases(?:\.es)?)-[^/]+\.js$/.test(name);
     const limit = isConstrainedThirdParty
         ? limits.thirdParty
         : limits.application;
