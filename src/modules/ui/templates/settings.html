@@ -22,22 +22,12 @@
         </div>
     </div>
 
-    <!--
-        L'authentification Google est temporairement masquée : le retour OAuth
-        n'est pas encore suffisamment fiable. La section est réactivée pour les
-        sessions déjà ouvertes par SettingsSheet.
-    -->
-    <div
-        class="section-label"
-        data-i18n="settings.section.account"
-        style="display: none"
-    >
-        Compte
-    </div>
+    <!-- La section reste visible pour l'accès RGPD au compte. -->
+    <div class="section-label" data-i18n="settings.section.account">Compte</div>
     <div
         id="account-section"
         style="
-            display: none;
+            display: block;
             margin-bottom: 20px;
             border-radius: 14px;
             border: 1px solid var(--border);
@@ -90,7 +80,7 @@
                         margin-bottom: 1px;
                     "
                 >
-                    Mode Invité
+                    Connexion indisponible
                 </div>
                 <div
                     id="account-email"
@@ -103,7 +93,7 @@
                         overflow: hidden;
                     "
                 >
-                    Connectez-vous pour synchroniser Pro
+                    La connexion sera disponible prochainement
                 </div>
             </div>
         </div>
@@ -124,7 +114,7 @@
                 font-size: 13px;
                 font-weight: 600;
                 cursor: pointer;
-                display: flex;
+                display: none;
                 align-items: center;
                 justify-content: center;
                 gap: 8px;

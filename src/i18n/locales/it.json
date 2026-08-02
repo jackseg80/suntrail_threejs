@@ -266,6 +266,8 @@
         "account": {
             "loggedInAs": "Connesso come",
             "guest": "Modalità ospite",
+            "unavailable": "Accesso non disponibile",
+            "unavailableHint": "L'accesso sarà presto disponibile",
             "logout": "Disconnettiti",
             "login": "Accedi / Registrati",
             "loginHint": "Accedi per sincronizzare Pro",

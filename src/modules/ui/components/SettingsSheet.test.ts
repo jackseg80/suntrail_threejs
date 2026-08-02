@@ -244,7 +244,7 @@ describe('SettingsSheet - Google buttons', () => {
         mockAuthService.isGoogleLinked.mockReturnValue(false);
     });
 
-    it('hides the account section when not authenticated', () => {
+    it('keeps the account section visible without sign-in actions when not authenticated', () => {
         mockAuthService.isAuthenticated = false;
         mockAuthService.user = null;
 
@@ -255,8 +255,12 @@ describe('SettingsSheet - Google buttons', () => {
         const accountSection = document.getElementById(
             'account-section'
         ) as HTMLElement;
-        expect(accountSection.style.display).toBe('none');
+        expect(accountSection.style.display).toBe('block');
         expect(mockAuthService.signInWithGoogle).not.toHaveBeenCalled();
+        expect(
+            (document.getElementById('account-action-btn') as HTMLButtonElement)
+                .style.display
+        ).toBe('none');
     });
 
     it('keeps the Google linking button hidden for authenticated users', () => {

@@ -10,7 +10,7 @@ import { applyPreset, getGpuInfo, detectBestPreset } from '../../performance';
 import { runBenchmark } from '../../benchmark';
 import { updateHydrologyVisibility, refreshTerrain } from '../../terrain';
 import { updateWeatherVisibility } from '../../weather';
-import { ICON_CHECK, ICON_LOG_OUT } from '../icons';
+import { ICON_CHECK, ICON_LOG_OUT, ICON_USER } from '../icons';
 import { showOnboarding } from '../../onboardingTutorial';
 import type { Locale } from '../../../i18n/I18nService';
 import { i18n } from '../../../i18n/I18nService';
@@ -395,10 +395,28 @@ export class SettingsSheet extends BaseComponent {
 
         if (!statusEl || !emailEl || !btn || !accountSection) return;
 
-        // Do not expose a broken "guest / sign in with Google" entry point.
+        // Keep the RGPD account area visible without exposing the unavailable
+        // guest / Google sign-in flows.
         if (!authService.isAuthenticated) {
-            accountSection.style.display = 'none';
-            if (sectionLabel) sectionLabel.style.display = 'none';
+            accountSection.style.display = 'block';
+            if (sectionLabel) sectionLabel.style.display = 'block';
+            if (avatarEl) avatarEl.innerHTML = ICON_USER;
+            statusEl.textContent =
+                i18n.t('settings.account.unavailable') ||
+                'Connexion indisponible';
+            emailEl.textContent =
+                i18n.t('settings.account.unavailableHint') ||
+                'La connexion sera disponible prochainement';
+            btn.style.display = 'none';
+            btn.onclick = null;
+            const deleteBtn = this.element.querySelector(
+                '#account-delete-btn'
+            ) as HTMLButtonElement | null;
+            const linkGoogleBtn = this.element.querySelector(
+                '#account-link-google-btn'
+            ) as HTMLButtonElement | null;
+            if (deleteBtn) deleteBtn.style.display = 'none';
+            if (linkGoogleBtn) linkGoogleBtn.style.display = 'none';
             return;
         }
 
@@ -416,6 +434,7 @@ export class SettingsSheet extends BaseComponent {
         btn.style.background = 'var(--surface-subtle)';
         btn.style.color = 'var(--text-2)';
         btn.style.borderTop = '1px solid var(--border)';
+        btn.style.display = 'flex';
         statusEl.textContent =
             i18n.t('settings.account.loggedInAs') || 'Connecté';
         emailEl.textContent = authService.user?.email || '';

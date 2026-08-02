@@ -196,6 +196,8 @@
         "account": {
             "loggedInAs": "Connecté :",
             "guest": "Mode Invité",
+            "unavailable": "Connexion indisponible",
+            "unavailableHint": "La connexion sera disponible prochainement",
             "logout": "Se déconnecter",
             "login": "Se connecter / S'inscrire",
             "loginHint": "Connectez-vous pour synchroniser Pro",

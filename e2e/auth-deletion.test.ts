@@ -46,6 +46,8 @@ test.describe('Account deletion (RGPD)', () => {
 
     const accountSection = page.locator('#account-section');
     await expect(accountSection).toBeVisible();
+    await expect(page.locator('#account-action-btn')).toBeHidden();
+    await expect(page.locator('#account-link-google-btn')).toBeHidden();
   });
 
   test('delete button should be visible when user is authenticated', async ({ page }) => {
