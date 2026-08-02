@@ -1,4 +1,4 @@
-# SunTrail — TODO (v5.81.3)
+# SunTrail — TODO (v5.81.4)
 
 > Dernière mise à jour : 2026-08-02
 
@@ -27,7 +27,9 @@
 - **E2E Playwright** — Météo, Solaire, GPX, Offline zones, REC
 - **CI Pipeline** — GitHub Actions avec npm test + npm run check
 
-## ✅ Récemment complété (v5.81.3)
+## ✅ Récemment complété (v5.81.4)
+
+- [x] **Section Compte RGPD conservée** — La section reste visible sans session, avec un statut neutre ; les contrôles invité et Google restent masqués et sont couverts par le smoke E2E.
 
 - [x] **Parcours invité / Google masqués** — UI OAuth, liaison Google et achat invité Web suspendus jusqu'à la fiabilisation du retour OAuth et de la restauration d'achats ; Android natif inchangé.
 

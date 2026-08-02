@@ -147,6 +147,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **857** | **5.61.3** | **v5.61.3** | **Marqueur 3D orange au clic (sonde solaire visible sur la carte) + debounce 200ms hide-on-move (fini le flicker au clic) + auto-hide suspendu quand coords-pill visible.** | **2026-06-09** |
 | **894** | **5.81.2** | **v5.81.2** | **Démarrage carte progressif : première tuile 3D visible sans attendre la vague complète ; RevenueCat différé, cache/packs/Gist optimisés.** | **2026-08-02** |
 | **895** | **5.81.3** | **v5.81.3** | **Parcours invité/Google Web masqués et achat invité suspendu jusqu'à fiabilisation OAuth/restauration ; Android natif inchangé.** | **2026-08-02** |
+| **896** | **5.81.4** | **v5.81.4** | **Section Compte RGPD conservée visible ; contrôles invité/Google masqués, smoke E2E Chromium corrigé et renforcé.** | **2026-08-02** |
 
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.

@@ -1,3 +1,12 @@
+## [5.81.4] - 2026-08-02
+
+### Fixed
+- **Conformité RGPD et smoke E2E** : la section Compte reste visible lorsqu'aucune session n'est ouverte, tout en gardant masqués les boutons invité, connexion Google et liaison Google indisponibles.
+- **Protection de non-régression** : le smoke test Chromium vérifie désormais à la fois la visibilité de la section Compte et l'absence des contrôles Google/invité.
+
+### Validation
+- CI/CD complète validée : qualité, audit i18n, 1 473 tests unitaires, build PWA, budget bundle et smoke E2E Chromium.
+
 ## [5.81.3] - 2026-08-02
 
 ### Changed
