@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { APP_TEST_URL } from './app';
+import { APP_TEST_URL, waitForSheet } from './app';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'https://placeholder.supabase.co';
 const SUPABASE_PROJECT_REF = SUPABASE_URL.replace('https://', '').split('.')[0];
@@ -26,7 +26,7 @@ async function setupApp(page: import('@playwright/test').Page) {
   await page.waitForFunction(() => (window as any).suntrailReady === true);
   await page.click('#aw-accept-btn');
   await page.click('#ob-skip');
-  await page.waitForSelector('#top-pill-main', { state: 'visible', timeout: 15000 });
+  await waitForSheet(page, '#settings');
 }
 
 test.describe('Account deletion (RGPD)', () => {

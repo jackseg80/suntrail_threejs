@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { APP_TEST_URL } from './app';
+import { APP_TEST_URL, waitForSheet } from './app';
 
 test.describe('Expert Sheets and Widgets', () => {
   test.beforeEach(async ({ page }) => {
@@ -14,11 +14,11 @@ test.describe('Expert Sheets and Widgets', () => {
     await page.click('#ob-skip');
     
     // Wait for the app to be fully ready
-    await page.waitForSelector('#top-pill-main', { state: 'visible', timeout: 15000 });
+    await page.waitForSelector('#top-pill-weather', { state: 'visible', timeout: 15000 });
   });
 
   test('should open weather sheet from top pill', async ({ page }) => {
-    const mainPill = page.locator('#top-pill-main');
+    const mainPill = page.locator('#top-pill-weather');
     await expect(mainPill).toBeVisible();
     
     // Wait for JS event listeners to be attached after DOM hydration
@@ -35,6 +35,7 @@ test.describe('Expert Sheets and Widgets', () => {
   });
 
   test('should open connectivity sheet from network icon @smoke', async ({ page }) => {
+    await waitForSheet(page, '#connectivity');
     const netIcon = page.locator('#net-status-icon');
     await expect(netIcon).toBeVisible();
     

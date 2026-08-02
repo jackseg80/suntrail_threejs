@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { APP_TEST_URL } from './app';
+import { APP_TEST_URL, waitForSheet } from './app';
 
 test.describe('Settings and Performance', () => {
   test.beforeEach(async ({ page }) => {
@@ -7,8 +7,7 @@ test.describe('Settings and Performance', () => {
     await page.waitForFunction(() => (window as any).suntrailReady === true);
     await page.click('#aw-accept-btn');
     await page.click('#ob-skip');
-    // Wait for the app to be fully ready
-    await page.waitForSelector('#top-pill-main', { state: 'visible', timeout: 15000 });
+    await waitForSheet(page, '#settings');
   });
 
   test('should change performance presets @smoke', async ({ page }) => {
