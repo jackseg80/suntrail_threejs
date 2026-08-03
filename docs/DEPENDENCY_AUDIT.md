@@ -1,5 +1,5 @@
 # Audit des dépendances
 
-Audit exécuté le 2026-08-01 avec `npm audit`.
+Audit exécuté le 2026-08-03 avec `npm audit --audit-level=high` : aucune vulnérabilité.
 
-Deux vulnérabilités de sévérité élevée restent sans correctif compatible : elles concernent `sharp` et son consommateur `@capacitor/assets` avant `sharp` 0.35.0. `sharp` est une dépendance de développement utilisée uniquement pendant la génération des assets Android ; il n'est ni chargé par la PWA ni embarqué dans l'application distribuée. La mise à niveau majeure est volontairement hors du périmètre de cette remise à niveau et devra être validée séparément.
+`sharp` est maintenu en `^0.35.3`. L'override npm `"sharp": "$sharp"` applique aussi cette version corrigée à `@capacitor/assets@3.0.5`, qui déclare encore `sharp@0.32.6`. Ce paquet est un outil de développement dédié à la génération des assets Android ; il n'est ni chargé par la PWA ni embarqué dans l'application distribuée.
