@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { APP_TEST_URL, waitForSheet } from './app';
+import { dismissFirstLaunch, openFreshApp, waitForSheet } from './app';
 
 test.describe('Search Functionality', () => {
   test('should search for a location and show results', async ({ page }) => {
@@ -38,11 +38,8 @@ test.describe('Search Functionality', () => {
       });
     });
 
-    await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
-    await page.evaluate(() => localStorage.clear());
-    await page.waitForFunction(() => (window as any).suntrailReady === true);
-    await page.click('#aw-accept-btn');
-    await page.click('#ob-skip');
+    await openFreshApp(page);
+    await dismissFirstLaunch(page);
     await waitForSheet(page, '#search');
 
     // Open search tab (it's the first one by default, but let's click to be sure)

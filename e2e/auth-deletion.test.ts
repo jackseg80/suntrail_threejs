@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { APP_TEST_URL, waitForSheet } from './app';
+import { dismissFirstLaunch, openFreshApp, waitForSheet } from './app';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'https://placeholder.supabase.co';
 const SUPABASE_PROJECT_REF = SUPABASE_URL.replace('https://', '').split('.')[0];
@@ -21,11 +21,12 @@ const FAKE_SESSION = {
   user: FAKE_USER,
 };
 
-async function setupApp(page: import('@playwright/test').Page) {
-  await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => (window as any).suntrailReady === true);
-  await page.click('#aw-accept-btn');
-  await page.click('#ob-skip');
+async function setupApp(
+  page: import('@playwright/test').Page,
+  initialStorage: Record<string, string> = {}
+) {
+  await openFreshApp(page, initialStorage);
+  await dismissFirstLaunch(page);
   await waitForSheet(page, '#settings');
 }
 
@@ -51,11 +52,6 @@ test.describe('Account deletion (RGPD)', () => {
   });
 
   test('delete button should be visible when user is authenticated', async ({ page }) => {
-    // Inject fake Supabase session in localStorage before app init
-    await page.addInitScript(({ key, session }) => {
-      localStorage.setItem(key, JSON.stringify(session));
-    }, { key: FAKE_SESSION_KEY, session: FAKE_SESSION });
-
     // Intercept Supabase auth calls to return the fake user (avoids network call on expired token)
     await page.route('**/auth/v1/**', async route => {
       if (route.request().method() === 'GET') {
@@ -69,7 +65,7 @@ test.describe('Account deletion (RGPD)', () => {
       }
     });
 
-    await setupApp(page);
+    await setupApp(page, { [FAKE_SESSION_KEY]: JSON.stringify(FAKE_SESSION) });
     await page.click('.nav-tab[data-tab="settings"]');
 
     const deleteBtn = page.locator('#account-delete-btn');
@@ -78,11 +74,6 @@ test.describe('Account deletion (RGPD)', () => {
   });
 
   test('delete flow: confirm dialog → rpc call → reload', async ({ page }) => {
-    // Inject auth state
-    await page.addInitScript(({ key, session }) => {
-      localStorage.setItem(key, JSON.stringify(session));
-    }, { key: FAKE_SESSION_KEY, session: FAKE_SESSION });
-
     await page.route('**/auth/v1/**', async route => {
       if (route.request().method() === 'GET') {
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ user: FAKE_USER }) });
@@ -103,7 +94,7 @@ test.describe('Account deletion (RGPD)', () => {
       await route.fulfill({ status: 204 });
     });
 
-    await setupApp(page);
+    await setupApp(page, { [FAKE_SESSION_KEY]: JSON.stringify(FAKE_SESSION) });
     await page.click('.nav-tab[data-tab="settings"]');
 
     // Accept the confirm() dialog

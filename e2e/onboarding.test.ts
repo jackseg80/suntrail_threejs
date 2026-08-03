@@ -1,11 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { APP_TEST_URL } from './app';
+import { openFreshApp } from './app';
 
 test.describe('First Launch Experience', () => {
   test('should complete full onboarding and permissions flow', async ({ page }) => {
     // Start with a clean slate (no localStorage)
-    await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => (window as any).suntrailReady === true);
+    await openFreshApp(page);
 
     // 1. Acceptance Wall
     await expect(page.locator('#acceptance-wall-overlay')).toBeVisible();
@@ -34,8 +33,7 @@ test.describe('First Launch Experience', () => {
   });
 
   test('should allow skipping onboarding directly @smoke', async ({ page }) => {
-    await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => (window as any).suntrailReady === true);
+    await openFreshApp(page);
     
     // Accept wall
     await page.click('#aw-accept-btn');

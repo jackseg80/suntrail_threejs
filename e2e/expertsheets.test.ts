@@ -1,17 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { APP_TEST_URL, waitForSheet } from './app';
+import { dismissFirstLaunch, openFreshApp, waitForSheet } from './app';
 
 test.describe('Expert Sheets and Widgets', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
-    await page.evaluate(() => localStorage.clear());
-    
-    // Wait for UI to be ready (listeners attached)
-    await page.waitForFunction(() => (window as any).suntrailReady === true);
-
-    // Bypass initial walls
-    await page.click('#aw-accept-btn');
-    await page.click('#ob-skip');
+    await openFreshApp(page);
+    await dismissFirstLaunch(page);
     
     // Wait for the app to be fully ready
     await page.waitForSelector('#top-pill-weather', { state: 'visible', timeout: 15000 });
@@ -31,7 +24,7 @@ test.describe('Expert Sheets and Widgets', () => {
     
     // Close it
     await closeBtn.click();
-    await expect(closeBtn).not.toBeVisible({ timeout: 3000 });
+    await expect(page.locator('#weather')).not.toHaveClass(/is-open/);
   });
 
   test('should open connectivity sheet from network icon @smoke', async ({ page }) => {
@@ -63,7 +56,7 @@ test.describe('Expert Sheets and Widgets', () => {
     await expect(sosText).toBeVisible();
     
     await page.click('#sos-close-btn');
-    await expect(page.locator('#sos-close-btn')).not.toBeVisible({ timeout: 3000 });
+    await expect(page.locator('#sos')).not.toHaveClass(/is-open/);
   });
 
   test('should toggle solar timeline', async ({ page }) => {
