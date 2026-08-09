@@ -1,4 +1,4 @@
-# SunTrail — Roadmap produit révisée (version source v5.82.0)
+# SunTrail — Roadmap produit révisée (version source v5.83.0)
 
 > Révision : 2026-08-08, après audit critique et inspection du worktree.
 > Cette section fait foi. Le plan du 2026-08-03 est conservé plus bas uniquement comme
@@ -15,9 +15,9 @@ heure de passage et conditions.
 
 ## État réel au 2026-08-09
 
-- La version source et Android du worktree sont **v5.82.0** / **897**. Play Console a confirmé
-  que `896` est le maximum utilisé ; `897` est donc le prochain code valide. Aucune publication
-  Git, CI ou Play Store n'a encore été exécutée.
+- La version source et Android de référence est **v5.82.0** / **897**. La version est clôturée
+  et publiée ; le tag et la release GitHub publics pointent sur `e317e10` et contiennent l'AAB
+  signé. Le développement local v5.83 peut commencer.
 - Le mode Planifier, la nouvelle navigation, la recherche, l'onboarding et les réglages sont
   finalisés dans la portée Fondations UX.
 - `npm run check`, les **1 491 tests unitaires**, le build, le budget bundle, l'audit i18n,
@@ -28,8 +28,8 @@ heure de passage et conditions.
 - La validation terrain Galaxy S23 est clôturée le 2026-08-09 sans anomalie bloquante signalée.
   Les métriques détaillées du protocole n'ont pas été consignées ; elles ne sont pas déduites.
 - L'observation Sortie/Bibliothèque est une transition UX P2, explicitement portée par v5.83.
-- Le bundle Android signé v5.82.0 est prêt ; v5.83 attend la clôture complète de la release
-  v5.82 (commit, CI verte et publication Play).
+- Le bundle Android signé v5.82.0 est attaché à la release publique ; la clôture complète de
+  v5.82 autorise désormais le démarrage de v5.83.
 
 ## Séquence de livraison révisée
 
@@ -60,11 +60,14 @@ Validé le 2026-08-08 :
 - build, bundle, i18n, synchronisation Capacitor, tests/lint et APK Android debug ;
 - changelog, package et Android alignés seulement après les gates.
 
-**Gate automatisé et terrain :** verts dans le worktree ; validation S23 acceptée sans P0/P1.
-La publication, le tag et le déploiement restent des opérations manuelles soumises à accord
-explicite. v5.83 ne commence qu'après la clôture complète de cette release.
+**Gate automatisé et terrain :** verts ; validation S23 acceptée sans P0/P1. Le tag `v5.82.0`
+et la release GitHub publique ont été vérifiés le 2026-08-09. La release est clôturée et v5.83
+peut commencer.
 
 ## v5.83.0 — Planifier, évaluer et sauvegarder localement
+
+> **Worktree implémenté le 2026-08-09, publication non démarrée.** La release publiée reste
+> v5.82.0. Aucun travail v5.84 n'a commencé.
 
 ### Domaine
 
@@ -91,6 +94,25 @@ tard un `SyncEnvelope` séparé.
   importé actif à l'écran, Pro le multi-affichage ;
 - historique GPX legacy préservé ; conversion explicite en route « approximative » si seule la
   géométrie simplifiée subsiste, et reimport demandé avant guidage de confiance.
+
+### Contrat de sélection des traces
+
+- une seule route alimente l’atelier **Préparer** et son bandeau ; son nom et sa source
+  (brouillon manuel, GPX en préparation ou route sauvegardée) restent visibles ;
+- sélectionner une trace dans **Sortie/Bibliothèque** ne fait que la consulter : visibilité,
+  profil et cadrage. Le passage d’un GPX dans l’atelier demande l’action explicite
+  « Préparer cette trace » ;
+- un brouillon modifié n’est jamais remplacé silencieusement : sauvegarder, remplacer ou
+  annuler sont proposés avant l’ouverture d’une autre route ;
+- le REC reste un troisième flux indépendant. Pendant l’enregistrement, les statistiques de
+  Sortie restent celles du REC même si une trace de référence est consultée ;
+- la liste indique le nombre de traces affichées et permet de masquer les autres ou toutes les
+  traces chargées. Les routes IndexedDB non ouvertes ne sont pas rendues sur la carte ;
+- un GPX conserve tous ses points dans `geometry` sans transformer chaque point en waypoint. Une
+  boucle détectée expose départ, deux passages intermédiaires et arrivée au départ, et son profil
+  est restauré à l'ouverture depuis la Bibliothèque ;
+- la limite technique de calques chargés reste 10 et l’historique legacy reste limité à cinq
+  entrées. Free conserve un seul GPX importé actif ; aucun de ces contrôles ne masque le REC.
 
 ### Infrastructure
 

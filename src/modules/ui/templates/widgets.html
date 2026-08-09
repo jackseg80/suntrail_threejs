@@ -82,12 +82,13 @@
         <div class="profile-drag-handle">
             <div class="sheet-drag-indicator"></div>
             <div class="profile-header-content">
-                <h3 class="profile-title">Profil</h3>
+                <h3 class="profile-title" data-i18n="profile.title">Profil</h3>
                 <div class="profile-header-actions">
                     <button
                         id="profile-solar-btn"
                         class="profile-solar-btn"
                         style="display: none"
+                        data-i18n="profile.analysis"
                     >
                         ☀️ Analyse
                     </button>
@@ -95,11 +96,13 @@
                         id="profile-expand-btn"
                         class="profile-expand-btn"
                         aria-label="Agrandir le profil"
+                        data-i18n-aria-label="profile.expand"
                     ></button>
                     <button
                         id="close-profile"
                         class="profile-close-btn"
                         aria-label="Fermer"
+                        data-i18n-aria-label="common.close"
                     >
                         &times;
                     </button>
@@ -129,7 +132,9 @@
         </div>
         <div id="profile-legend" class="profile-legend" style="display: none">
             <div class="legend-group">
-                <span class="legend-group-label">Pentes</span>
+                <span class="legend-group-label" data-i18n="profile.slopes"
+                    >Pentes</span
+                >
                 <span class="legend-item">
                     <span
                         class="legend-swatch"
@@ -167,34 +172,36 @@
                 </span>
             </div>
             <div id="solar-legend" class="legend-group" style="display: none">
-                <span class="legend-group-label">Solaire</span>
+                <span class="legend-group-label" data-i18n="profile.solar"
+                    >Solaire</span
+                >
                 <span class="legend-item">
                     <span
                         class="legend-swatch"
                         style="background: rgba(245, 166, 35, 0.85)"
                     ></span
-                    >Soleil
+                    ><span data-i18n="profile.sun">Soleil</span>
                 </span>
                 <span class="legend-item">
                     <span
                         class="legend-swatch"
                         style="background: rgba(71, 85, 120, 0.8)"
                     ></span
-                    >Ombre
+                    ><span data-i18n="profile.shade">Ombre</span>
                 </span>
                 <span class="legend-item">
                     <span
                         class="legend-swatch"
                         style="background: rgba(30, 100, 50, 0.8)"
                     ></span
-                    >Forêt
+                    ><span data-i18n="profile.forest">Forêt</span>
                 </span>
                 <span class="legend-item">
                     <span
                         class="legend-swatch"
                         style="background: rgba(10, 15, 30, 0.6)"
                     ></span
-                    >Nuit
+                    ><span data-i18n="profile.night">Nuit</span>
                 </span>
             </div>
         </div>

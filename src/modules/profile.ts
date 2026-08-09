@@ -6,6 +6,8 @@ import { calculateHysteresis } from './geoStats';
 import { getAltitudeAt, GPX_SURFACE_OFFSET } from './analysis';
 import type { RouteSolarAnalysis } from './solarRoute';
 import { ICON_EXPAND, ICON_COLLAPSE } from './ui/icons';
+import { i18n } from '../i18n/I18nService';
+import { eventBus } from './eventBus';
 
 interface ProfilePoint {
     dist: number; // Distance cumulée en km
@@ -33,6 +35,16 @@ export function getSlopeCategory(slope: number): number {
 let profileData: ProfilePoint[] = [];
 let _solarBandData: RouteSolarAnalysis | null = null;
 let profileExpanded = false;
+let lastProfileStats: { dist: number; dPlus: number; dMinus: number } | null =
+    null;
+
+function formatProfileStats(dist: number, dPlus: number, dMinus: number) {
+    return i18n.t('profile.summary', {
+        distance: dist.toFixed(2),
+        ascent: String(Math.round(dPlus)),
+        descent: String(Math.round(dMinus)),
+    });
+}
 
 export function setSolarBandData(analysis: RouteSolarAnalysis | null): void {
     _solarBandData = analysis;
@@ -41,7 +53,7 @@ export function setSolarBandData(analysis: RouteSolarAnalysis | null): void {
         'profile-solar-btn'
     ) as HTMLButtonElement | null;
     if (btn) {
-        btn.textContent = '☀️ Analyse';
+        btn.textContent = i18n.t('profile.analysis');
         btn.style.display = analysis ? 'inline-flex' : 'none';
         btn.onclick = () =>
             window.dispatchEvent(new CustomEvent('openSolarProbeSheet'));
@@ -198,9 +210,9 @@ function updateStatsUI(dist: number, dPlus: number, dMinus: number): void {
     if (pEl) pEl.textContent = `${Math.round(dPlus)} m D+`;
     if (mEl) mEl.textContent = `${Math.round(dMinus)} m D-`;
 
-    if (profileInfo) {
-        profileInfo.textContent = `Distance : ${dist.toFixed(2)}km | D+ : ${Math.round(dPlus)}m | D- : ${Math.round(dMinus)}m`;
-    }
+    lastProfileStats = { dist, dPlus, dMinus };
+    if (profileInfo)
+        profileInfo.textContent = formatProfileStats(dist, dPlus, dMinus);
 
     if (!state.isRecording) {
         const trackDist = document.getElementById('track-dist');
@@ -476,7 +488,12 @@ function setupProfileInteractions(): void {
             const m = String(closest.evalDate.getMinutes()).padStart(2, '0');
             timeStr = ` | ${h}h${m}`;
         }
-        info.textContent = `Distance : ${point.dist.toFixed(2)}km | Alt : ${Math.round(point.ele)}m | Pente : ${Math.round(point.slope)}%${timeStr}`;
+        info.textContent = i18n.t('profile.cursor', {
+            distance: point.dist.toFixed(2),
+            altitude: String(Math.round(point.ele)),
+            slope: String(Math.round(point.slope)),
+            time: timeStr,
+        });
 
         if (state.profileMarker) {
             // v5.53.6 : Échelle adaptative calquée sur computeTrackThickness
@@ -540,7 +557,9 @@ function setupProfileInteractions(): void {
             profileData.length > 0
                 ? profileData[profileData.length - 1].dist
                 : 0;
-        info.textContent = `Distance : ${maxDist.toFixed(2)}km | Alt : 0m`;
+        info.textContent = i18n.t('profile.cursorIdle', {
+            distance: maxDist.toFixed(2),
+        });
     };
 
     let _uiHideTimer: ReturnType<typeof setTimeout> | null = null;
@@ -564,6 +583,20 @@ function setupProfileInteractions(): void {
         profileEl.addEventListener('pointercancel', showUI);
     }
 }
+
+eventBus.on('localeChanged', () => {
+    const solarButton = document.getElementById('profile-solar-btn');
+    if (solarButton) solarButton.textContent = i18n.t('profile.analysis');
+    if (!lastProfileStats) return;
+    const info = document.getElementById('profile-info');
+    if (info) {
+        info.textContent = formatProfileStats(
+            lastProfileStats.dist,
+            lastProfileStats.dPlus,
+            lastProfileStats.dMinus
+        );
+    }
+});
 
 export function closeElevationProfile(): void {
     document.body.classList.remove('profile-interacting');

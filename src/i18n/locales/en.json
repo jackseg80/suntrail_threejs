@@ -72,6 +72,7 @@
             "title": "Imported tracks",
             "empty": "No imported tracks",
             "toggleVisible": "Show/hide track",
+            "unload": "Remove from this outing",
             "remove": "Remove track",
             "setActive": "Show profile for this track",
             "showProfile": "View elevation profile",
@@ -88,6 +89,22 @@
         "recording": {
             "title": "GPS Recording"
         },
+        "layers": {
+            "loadedTitle": "Tracks loaded for this outing",
+            "visibleCount": "Tracks shown: {{count}}",
+            "viewed": "Viewed: {{name}}",
+            "viewedHidden": "Viewed but hidden: {{name}}",
+            "noViewed": "No track being viewed",
+            "recIndependent": "REC is independent and remains separate.",
+            "hideOthers": "Hide others",
+            "hideAll": "Hide all"
+        },
+        "statsContext": {
+            "recording": "Statistics for the current REC recording",
+            "recorded": "Statistics for the latest REC recording",
+            "viewed": "Statistics for the viewed track: {{name}}",
+            "none": "No track selected"
+        },
         "upsell": {
             "postRec": "Ephemeral track (RAM only). Upgrade to Pro to export the GPX file to your phone.",
             "proBtn": "View Pro ↗"
@@ -95,6 +112,119 @@
         "save": {
             "title": "Save Track",
             "body": "Give your hike a name:"
+        }
+    },
+    "preparedRoutes": {
+        "actions": {
+            "save": "Save",
+            "create": "Plan a route",
+            "open": "Open",
+            "favorite": "Add or remove from favorites",
+            "duplicate": "Duplicate",
+            "delete": "Delete",
+            "undo": "Undo",
+            "redo": "Redo",
+            "saveFullGPX": "Save the full GPX as a route",
+            "prepareGPX": "Prepare this GPX track",
+            "convertLegacy": "Convert to an approximate route"
+        },
+        "source": {
+            "manualDraft": "Manual draft",
+            "gpxDraft": "GPX being prepared",
+            "savedRoute": "Saved route"
+        },
+        "draftConflict": {
+            "title": "A route is already being prepared",
+            "body": "Opening “{{name}}” will replace the current draft. You can save it first.",
+            "save": "Save, then open",
+            "replace": "Replace without saving"
+        },
+        "editor": {
+            "name": "Route name",
+            "start": "Start A",
+            "end": "Finish B",
+            "plannedStart": "Planned start",
+            "pace": "Pace km/h",
+            "details": "Details",
+            "notes": "Notes",
+            "tags": "Comma-separated tags",
+            "moveWaypoint": "Move waypoint",
+            "coordinatesPrompt": "New coordinates: latitude, longitude",
+            "invalidCoordinates": "Invalid coordinates",
+            "chooseStartFirst": "Choose start A first."
+        },
+        "summary": {
+            "distance": "Distance",
+            "duration": "Duration at your pace",
+            "difficulty": "Technical difficulty",
+            "effort": "Physical effort",
+            "daylightMargin": "Daylight margin",
+            "computing": "Calculating route…",
+            "routingError": "The calculation failed. Change the points without losing the last saved route.",
+            "offlineDraft": "Offline: saved routes remain available, but a new calculation needs a network connection.",
+            "addPoints": "Search A/B or place two points on the map."
+        },
+        "difficulty": {
+            "unknown": "Unknown",
+            "coverageExplanation": "SAC level supplied by ORS; coverage is the documented share of the route in OpenStreetMap.",
+            "reason": {
+                "complete": "ORS difficulty is available for the whole route.",
+                "partial": "ORS difficulty is partial; undocumented sections remain unknown.",
+                "osrm-fallback": "The OSRM fallback does not provide technical difficulty.",
+                "missing-data": "ORS returned no usable SAC tag for this route.",
+                "gpx-no-difficulty": "The GPX does not contain verifiable technical difficulty.",
+                "legacy-simplified": "The simplified history has no reliable technical difficulty."
+            }
+        },
+        "effort": {
+            "easy": "Easy",
+            "moderate": "Moderate",
+            "demanding": "Demanding",
+            "strenuous": "Strenuous",
+            "method": "Effort is separate from technical difficulty: distance + ascent + duration at the selected pace."
+        },
+        "light": {
+            "chooseStart": "Choose a time"
+        },
+        "quality": {
+            "approximateWarning": "Approximate route: reimport the original GPX or recalculate before any future trusted guidance."
+        },
+        "library": {
+            "scope": "Prepared routes and recent tracks stored on this device.",
+            "title": "Prepared routes",
+            "emptyTitle": "No prepared route",
+            "emptyBody": "Plan A/B and save the route to reopen it offline.",
+            "legacyTitle": "Recent tracks",
+            "legacyHelp": "The GPX history is unchanged. A conversion from its simplified geometry is always approximate."
+        },
+        "status": {
+            "disabled": "The route library is disabled by its release flag.",
+            "unsaved": "Unsaved draft",
+            "saved": "Route saved",
+            "new": "New route"
+        },
+        "toast": {
+            "saved": "Route saved on this device",
+            "duplicated": "Route duplicated",
+            "deleted": "Route deleted",
+            "imported": "Full GPX saved to the library",
+            "gpxPrepared": "This GPX track is now the route being prepared",
+            "legacyConverted": "Approximate copy created; original history preserved"
+        },
+        "confirm": {
+            "delete": "Delete this prepared route from this device?",
+            "convertLegacy": "This entry only contains simplified geometry. Create an explicitly approximate route without deleting the history?"
+        },
+        "error": {
+            "unavailable": "IndexedDB is unavailable on this device.",
+            "quota": "Not enough storage. Free some space and try again.",
+            "corrupt-record": "One local route is unreadable; the others remain available.",
+            "blocked": "Close other SunTrail tabs to complete the storage upgrade.",
+            "transaction": "Saving was interrupted; the previous version remains intact.",
+            "unknown": "Local storage error.",
+            "storage": "The route could not be saved. The last saved version remains intact.",
+            "notReady": "Calculate a complete route before saving it.",
+            "notFound": "This route is no longer on this device."
         }
     },
     "routePlanner": {
@@ -697,7 +827,18 @@
     },
     "profile": {
         "title": "📈 Elevation Profile & Slopes",
-        "info": "Distance: 0km | Alt: 0m | Slope: 0%"
+        "info": "Distance: 0 km | Elevation: 0 m | Slope: 0%",
+        "analysis": "☀️ Analysis",
+        "expand": "Expand profile",
+        "slopes": "Slopes",
+        "solar": "Solar",
+        "sun": "Sun",
+        "shade": "Shade",
+        "forest": "Forest",
+        "night": "Night",
+        "summary": "Distance: {{distance}} km | D+: {{ascent}} m | D-: {{descent}} m",
+        "cursor": "Distance: {{distance}} km | Elevation: {{altitude}} m | Slope: {{slope}}%{{time}}",
+        "cursorIdle": "Distance: {{distance}} km | Elevation: 0 m"
     },
     "timeline": {
         "sunPhase": "☀️ Full daylight",

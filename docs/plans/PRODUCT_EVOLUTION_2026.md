@@ -2,13 +2,14 @@
 
 > Autorité d'exécution de la [roadmap](../../ROADMAP.md).
 > Révision : 2026-08-08 après audit critique et inspection du worktree.
-> Production/tag : v5.81.4. v5.82.0 est finalisée dans le worktree, en validation terrain
-> Galaxy S23 et non publiée.
+> v5.82.0 / Android 897 est clôturée et publiée depuis le 2026-08-09. Le tag et la release
+> GitHub publics pointent sur `e317e10`. Le worktree v5.83.0 est implémenté mais non publié ;
+> aucune portée v5.84 n'a commencé.
 
 ## 1. Ordre de réalisation
 
 ```text
-v5.82 validation terrain S23 + publication
+v5.82 validation terrain S23 + publication ✓
    ↓
 v5.83 planifier + évaluer + sauvegarder localement
    ↓
@@ -46,6 +47,8 @@ SunTrail doit se différencier par le relief 3D, le soleil projeté et l'heure d
 
 ### Domaine local v5.83
 
+> Implémenté dans le worktree le 2026-08-09 avec le contrat ci-dessous, sans enveloppe cloud.
+
 ```ts
 interface PreparedRouteV1 {
   schemaVersion: 1;
@@ -70,6 +73,19 @@ interface PreparedRouteV1 {
 
 `plannedStartAt` et `plannedPaceKmh` sont des données métier : elles alimentent ETA et soleil.
 `syncState`, révision distante, curseur et tombstone n'appartiennent pas à ce contrat.
+
+Le contrat d’écran v5.83 distingue trois rôles sans introduire le guidage :
+
+- `routeWaypoints` + `routeComputation` forment l’unique route en préparation et alimentent
+  exclusivement le bandeau Préparer ;
+- `activeGPXLayerId` désigne la trace consultée pour le profil, la pente, la visibilité et le
+  cadrage, sans remplacer automatiquement la route en préparation ;
+- `recordedPoints` reste la source indépendante du REC et conserve la priorité dans les
+  statistiques de Sortie pendant l’enregistrement.
+
+Le passage consultation → préparation est explicite. Tout brouillon modifié est protégé par
+Sauvegarder / Remplacer / Annuler. La Bibliothèque compte uniquement les calques réellement
+affichés ; une route IndexedDB fermée n’est pas chargée ni rendue sur la carte.
 
 ### Sync v6.0
 

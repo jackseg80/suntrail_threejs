@@ -377,6 +377,31 @@ export function removeGPXLayer(id: string): void {
     } else updateElevationProfile();
 }
 
+/**
+ * Select a loaded GPX and guarantee that it is visible. Free users keep one
+ * imported GPX visible at a time; the layers and their localStorage history
+ * remain intact so switching never becomes a silent deletion.
+ */
+export function activateGPXLayer(id: string): GPXLayer | null {
+    const selected = state.gpxLayers.find((layer) => layer.id === id);
+    if (!selected) return null;
+    const exclusiveImported = !isProActive() && !selected.isManualRoute;
+
+    state.gpxLayers = state.gpxLayers.map((layer) => {
+        const visible =
+            layer.id === id
+                ? true
+                : exclusiveImported && !layer.isManualRoute
+                  ? false
+                  : layer.visible;
+        if (layer.mesh) layer.mesh.visible = visible;
+        return visible === layer.visible ? layer : { ...layer, visible };
+    });
+    state.activeGPXLayerId = id;
+    setOverlayVisible(true);
+    return state.gpxLayers.find((layer) => layer.id === id) ?? null;
+}
+
 export function toggleGPXLayer(id: string): void {
     const layers = state.gpxLayers;
     const idx = layers.findIndex((l) => l.id === id);
@@ -388,6 +413,35 @@ export function toggleGPXLayer(id: string): void {
     const updated = [...layers];
     updated[idx] = { ...layer, visible: newVisible };
     state.gpxLayers = updated;
+}
+
+/**
+ * Keep one reference trace visible without deleting any loaded layer.
+ * REC is intentionally outside this operation: it is an independent safety
+ * recording and must never be hidden as a side effect of library browsing.
+ */
+export function showOnlyGPXLayer(id: string): GPXLayer | null {
+    const selected = state.gpxLayers.find((layer) => layer.id === id);
+    if (!selected) return null;
+    state.gpxLayers = state.gpxLayers.map((layer) => {
+        const visible = layer.id === id;
+        if (layer.mesh) layer.mesh.visible = visible;
+        return visible === layer.visible ? layer : { ...layer, visible };
+    });
+    state.activeGPXLayerId = id;
+    setOverlayVisible(true);
+    return state.gpxLayers.find((layer) => layer.id === id) ?? null;
+}
+
+/** Hide every loaded reference/planning layer while preserving its data. */
+export function hideAllGPXLayers(): void {
+    state.gpxLayers = state.gpxLayers.map((layer) => {
+        if (layer.mesh) layer.mesh.visible = false;
+        return layer.visible ? { ...layer, visible: false } : layer;
+    });
+    state.activeGPXLayerId = null;
+    setOverlayVisible(false);
+    closeElevationProfile();
 }
 
 function getPerformanceEpsilonMultiplier(): number {

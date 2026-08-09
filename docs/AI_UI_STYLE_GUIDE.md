@@ -1,6 +1,6 @@
-# AI UI Style Guide (v5.82.0)
+# AI UI Style Guide (v5.83.0)
 
-> Référence du worktree v5.82.0 finalisé ; publication externe non exécutée.
+> Référence du worktree v5.83.0 non publié ; v5.82.0 reste la release publique.
 
 This guide defines the standardized UI patterns for SunTrail to ensure visual consistency across all panels (Expert Sheets, Settings, etc.).
 
@@ -19,6 +19,14 @@ This guide defines the standardized UI patterns for SunTrail to ensure visual co
   Developer lab.
 - Mobile uses four primary destinations. From 900 px, reuse the same functions in side
   rails/panels; never create a desktop-only preparation feature.
+
+### Prepared Routes v5.83
+
+- Keep the simple route summary first: distance, duration, difficulty plus coverage, effort,
+  ETA and daylight margin. Method/source explanations stay in secondary text or details.
+- “Difficulty unknown” is a valid, explained state; never replace it with a slope-derived SAC level.
+- A/B search and the keyboard waypoint list are the semantic alternative to the WebGL canvas.
+- Approximate legacy routes always retain a visible warning and are never presented as guide-ready.
 
 ### Settings information architecture
 

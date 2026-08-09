@@ -1,4 +1,4 @@
-# SunTrail 3D — Stratégie de Monétisation (v5.82.0)
+# SunTrail 3D — Stratégie de Monétisation (v5.83.0)
 
 > Objectif : Offrir une valeur alpine gratuite indispensable (sécurité) tout en incitant à l'abonnement Pro pour l'analyse et le confort.
 
@@ -28,7 +28,8 @@ SunTrail utilise un modèle **Freemium avec abonnement**. La sécurité est offe
 | **Alertes Sécurité** | **Toutes (Avalanche, etc.)** | **Toutes** | (FREE) |
 | **Analyse Trail** | Résumé (Munter) | **Segments, Physio, VAM** | `TrackSheet.ts` |
 
-> v5.82.0 ne modifie aucun gate ni prix. Dans l'interface grand public, les plafonds
+> v5.83.0 ne modifie aucun prix. Sauvegarder, rouvrir, dupliquer, mettre en favori et supprimer
+> une route locale reste disponible en Free comme en Pro. Dans l'interface grand public, les plafonds
 > techniques sont présentés comme des niveaux de détail cartographique ; les valeurs LOD
 > restent documentées ici et dans le Laboratoire développeur. Le mode Planifier, l'inversion,
 > l'effacement et le parcours débutant restent gratuits.

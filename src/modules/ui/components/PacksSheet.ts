@@ -90,6 +90,16 @@ export class PacksSheet extends BaseComponent {
             eventBus.off('sheetOpened', onSheetOpened)
         );
 
+        const onLocaleChanged = () => {
+            if (this.element) i18n.applyToDOM(this.element);
+            this.renderPackList();
+            this.updateStorageInfo();
+        };
+        eventBus.on('localeChanged', onLocaleChanged);
+        this.subscriptions.push(() =>
+            eventBus.off('localeChanged', onLocaleChanged)
+        );
+
         // Initial render — retenter le fetch catalog si pas encore chargé
         void this.loadAndRender();
     }

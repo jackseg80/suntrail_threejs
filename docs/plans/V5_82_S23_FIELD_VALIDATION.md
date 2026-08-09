@@ -1,7 +1,7 @@
 # Validation terrain Galaxy S23 — SunTrail v5.82.0
 
-> v5.82 est finalisée dans le worktree et ses gates automatisés sont verts. Ce protocole
-> clôt la validation réelle avant publication. Il ne couvre pas le futur guidage v5.84+.
+> v5.82 est clôturée et publiée. Ce protocole conserve la trace de la validation réelle
+> effectuée avant publication. Il ne couvre pas le futur guidage v5.84+.
 
 ## Bilan enregistré — 2026-08-09
 
@@ -10,9 +10,9 @@
   transition documentée et la bibliothèque locale durable est la portée de v5.83.
 - Les versions Android/WebView, durée, réseau, batterie, chauffe et captures détaillées n'ont
   pas été fournis : ils restent non renseignés, sans être présentés comme réussis.
-- Play Console confirme `896` comme maximum réellement utilisé ; le bundle v5.82.0 signé porte
-  donc valablement `versionCode 897`. Restent commit, tag, CI, test interne/fermé et déploiement
-  progressif. v5.83 attend la clôture de cette release.
+- Play Console confirmait `896` comme maximum réellement utilisé avant la release ; le bundle
+  v5.82.0 signé porte `versionCode 897`. Le tag et la release GitHub publics ont été vérifiés le
+  2026-08-09 ; la release est clôturée et v5.83 peut commencer.
 
 ## Informations à consigner
 

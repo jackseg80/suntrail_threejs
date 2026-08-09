@@ -72,6 +72,7 @@
             "title": "Importierte Touren",
             "empty": "Keine importierten Touren",
             "toggleVisible": "Tour ein-/ausblenden",
+            "unload": "Aus dieser Tour entfernen",
             "remove": "Tour entfernen",
             "setActive": "Höhenprofil dieser Tour anzeigen",
             "showProfile": "Höhenprofil anzeigen",
@@ -88,6 +89,22 @@
         "recording": {
             "title": "GPS-Aufzeichnung"
         },
+        "layers": {
+            "loadedTitle": "Für diese Tour geladene Tracks",
+            "visibleCount": "Angezeigte Tracks: {{count}}",
+            "viewed": "Angesehen: {{name}}",
+            "viewedHidden": "Angesehen, aber ausgeblendet: {{name}}",
+            "noViewed": "Kein Track wird angesehen",
+            "recIndependent": "REC ist unabhängig und bleibt getrennt.",
+            "hideOthers": "Andere ausblenden",
+            "hideAll": "Alle ausblenden"
+        },
+        "statsContext": {
+            "recording": "Statistik der laufenden REC-Aufzeichnung",
+            "recorded": "Statistik der letzten REC-Aufzeichnung",
+            "viewed": "Statistik des angesehenen Tracks: {{name}}",
+            "none": "Kein Track ausgewählt"
+        },
         "upsell": {
             "postRec": "Flüchtiger Track (nur RAM). Upgrade auf Pro, um die GPX-Datei auf Ihr Handy zu exportieren.",
             "proBtn": "Pro ansehen ↗"
@@ -95,6 +112,119 @@
         "save": {
             "title": "Tour speichern",
             "body": "Geben Sie Ihrer Wanderung einen Namen:"
+        }
+    },
+    "preparedRoutes": {
+        "actions": {
+            "save": "Speichern",
+            "create": "Route planen",
+            "open": "Öffnen",
+            "favorite": "Favorit hinzufügen oder entfernen",
+            "duplicate": "Duplizieren",
+            "delete": "Löschen",
+            "undo": "Rückgängig",
+            "redo": "Wiederholen",
+            "saveFullGPX": "Vollständiges GPX als Route speichern",
+            "prepareGPX": "Diesen GPX-Track vorbereiten",
+            "convertLegacy": "In ungefähre Route umwandeln"
+        },
+        "source": {
+            "manualDraft": "Manueller Entwurf",
+            "gpxDraft": "GPX in Vorbereitung",
+            "savedRoute": "Gespeicherte Route"
+        },
+        "draftConflict": {
+            "title": "Eine Route wird bereits vorbereitet",
+            "body": "Beim Öffnen von „{{name}}“ wird der aktuelle Entwurf ersetzt. Sie können ihn zuerst speichern.",
+            "save": "Speichern, dann öffnen",
+            "replace": "Ohne Speichern ersetzen"
+        },
+        "editor": {
+            "name": "Routenname",
+            "start": "Start A",
+            "end": "Ziel B",
+            "plannedStart": "Geplanter Start",
+            "pace": "Tempo km/h",
+            "details": "Details",
+            "notes": "Notizen",
+            "tags": "Tags durch Kommas getrennt",
+            "moveWaypoint": "Wegpunkt verschieben",
+            "coordinatesPrompt": "Neue Koordinaten: Breitengrad, Längengrad",
+            "invalidCoordinates": "Ungültige Koordinaten",
+            "chooseStartFirst": "Wählen Sie zuerst Start A."
+        },
+        "summary": {
+            "distance": "Distanz",
+            "duration": "Dauer bei Ihrem Tempo",
+            "difficulty": "Technische Schwierigkeit",
+            "effort": "Körperliche Anstrengung",
+            "daylightMargin": "Tageslichtreserve",
+            "computing": "Route wird berechnet…",
+            "routingError": "Die Berechnung ist fehlgeschlagen. Ändern Sie die Punkte, ohne die letzte Speicherung zu verlieren.",
+            "offlineDraft": "Offline: Gespeicherte Routen bleiben verfügbar, eine neue Berechnung benötigt jedoch Internet.",
+            "addPoints": "Suchen Sie A/B oder setzen Sie zwei Punkte auf der Karte."
+        },
+        "difficulty": {
+            "unknown": "Unbekannt",
+            "coverageExplanation": "SAC-Stufe von ORS; die Abdeckung zeigt den in OpenStreetMap dokumentierten Routenanteil.",
+            "reason": {
+                "complete": "ORS-Schwierigkeit ist für die gesamte Route verfügbar.",
+                "partial": "ORS-Schwierigkeit ist teilweise vorhanden; undokumentierte Abschnitte bleiben unbekannt.",
+                "osrm-fallback": "Der OSRM-Fallback liefert keine technische Schwierigkeit.",
+                "missing-data": "ORS liefert für diese Route keine nutzbaren SAC-Tags.",
+                "gpx-no-difficulty": "Das GPX enthält keine überprüfbare technische Schwierigkeit.",
+                "legacy-simplified": "Der vereinfachte Verlauf enthält keine zuverlässige technische Schwierigkeit."
+            }
+        },
+        "effort": {
+            "easy": "Leicht",
+            "moderate": "Mittel",
+            "demanding": "Anspruchsvoll",
+            "strenuous": "Sehr anspruchsvoll",
+            "method": "Anstrengung getrennt von technischer Schwierigkeit: Distanz + Aufstieg + Dauer beim gewählten Tempo."
+        },
+        "light": {
+            "chooseStart": "Zeit wählen"
+        },
+        "quality": {
+            "approximateWarning": "Ungefähre Route: Original-GPX erneut importieren oder neu berechnen, bevor später eine zuverlässige Führung möglich ist."
+        },
+        "library": {
+            "scope": "Vorbereitete Routen und aktuelle Tracks auf diesem Gerät.",
+            "title": "Vorbereitete Routen",
+            "emptyTitle": "Keine vorbereitete Route",
+            "emptyBody": "Planen Sie A/B und speichern Sie die Route für die Offline-Nutzung.",
+            "legacyTitle": "Aktuelle Tracks",
+            "legacyHelp": "Der GPX-Verlauf bleibt unverändert. Eine Konvertierung der vereinfachten Geometrie ist immer ungefähr."
+        },
+        "status": {
+            "disabled": "Die Routenbibliothek ist durch das Release-Flag deaktiviert.",
+            "unsaved": "Ungespeicherter Entwurf",
+            "saved": "Route gespeichert",
+            "new": "Neue Route"
+        },
+        "toast": {
+            "saved": "Route auf diesem Gerät gespeichert",
+            "duplicated": "Route dupliziert",
+            "deleted": "Route gelöscht",
+            "imported": "Vollständiges GPX in der Bibliothek gespeichert",
+            "gpxPrepared": "Dieser GPX-Track ist jetzt die Route in Vorbereitung",
+            "legacyConverted": "Ungefähre Kopie erstellt; Originalverlauf bleibt erhalten"
+        },
+        "confirm": {
+            "delete": "Diese vorbereitete Route von diesem Gerät löschen?",
+            "convertLegacy": "Dieser Eintrag enthält nur eine vereinfachte Geometrie. Eine ausdrücklich ungefähre Route erstellen, ohne den Verlauf zu löschen?"
+        },
+        "error": {
+            "unavailable": "IndexedDB ist auf diesem Gerät nicht verfügbar.",
+            "quota": "Nicht genügend Speicher. Geben Sie Speicherplatz frei und versuchen Sie es erneut.",
+            "corrupt-record": "Eine lokale Route ist unlesbar; die anderen bleiben verfügbar.",
+            "blocked": "Schließen Sie andere SunTrail-Tabs, um das Speicher-Upgrade abzuschließen.",
+            "transaction": "Speichern wurde unterbrochen; die vorherige Version bleibt erhalten.",
+            "unknown": "Lokaler Speicherfehler.",
+            "storage": "Die Route konnte nicht gespeichert werden. Die letzte Version bleibt erhalten.",
+            "notReady": "Berechnen Sie vor dem Speichern eine vollständige Route.",
+            "notFound": "Diese Route ist nicht mehr auf diesem Gerät vorhanden."
         }
     },
     "routePlanner": {
@@ -690,7 +820,18 @@
     },
     "profile": {
         "title": "📈 Höhenprofil & Hangneigung",
-        "info": "Distanz: 0km | Höhe: 0m | Neigung: 0%"
+        "info": "Distanz: 0 km | Höhe: 0 m | Neigung: 0%",
+        "analysis": "☀️ Analyse",
+        "expand": "Profil vergrößern",
+        "slopes": "Neigungen",
+        "solar": "Sonne",
+        "sun": "Sonnig",
+        "shade": "Schatten",
+        "forest": "Wald",
+        "night": "Nacht",
+        "summary": "Distanz: {{distance}} km | H+: {{ascent}} m | H-: {{descent}} m",
+        "cursor": "Distanz: {{distance}} km | Höhe: {{altitude}} m | Neigung: {{slope}}%{{time}}",
+        "cursorIdle": "Distanz: {{distance}} km | Höhe: 0 m"
     },
     "timeline": {
         "sunPhase": "☀️ Voller Tag",

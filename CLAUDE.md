@@ -1,11 +1,10 @@
-# SunTrail — Guide IA (version source v5.82.0)
+# SunTrail — Guide IA (version source v5.83.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-08-09 — v5.82.0 finalisée : 1 491 tests unitaires, six smoke Chromium,
-> build PWA, budget bundle, audit i18n et bundle Android signé passent. Validation terrain Galaxy
-> S23 clôturée sans anomalie bloquante signalée. Play Console confirme `896` comme versionCode
-> maximal : `897` est valide pour cette release. Git, CI de release et upload Play restent à faire
-> avant d'ouvrir v5.83.
+> Mis à jour le 2026-08-09 — v5.82.0 / Android `897` reste la release publiée (`e317e10`).
+> Le worktree v5.83.0 implémente Prepared Routes et la bibliothèque IndexedDB locale, sans compte,
+> cloud ni guidage. Il n'est ni committé, ni tagué, ni poussé, ni publié. Android `898` est
+> provisoire jusqu'au prochain contrôle Play Console.
 
 ## Projet
 
@@ -22,6 +21,8 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
   - Auto-détection du pays → HD si dispo, sinon fallback global (OpenTopoMap).
   - Détails des flux (Couleur/Elevation) : [docs/AI_PERFORMANCE.md](docs/AI_PERFORMANCE.md).
 - **Historique GPX (v5.56.2)** : 5 derniers tracés persistants avec mini-cartes et geocoding auto.
+- **Prepared Routes (v5.83.0)** : `PreparedRouteV1` et `RouteRepository` IndexedDB ; géométrie
+  complète, réouverture locale, difficulté/effort/ETA/soleil et legacy approximatif explicite.
 - **Météo & Particules (v5.56.4)** : Particules 3D (pluie/neige) via `ShaderMaterial` + Open-Meteo.
 - **Offline Zones (v5.57.0)** : Sélection visuelle interactive (rectangle vert), slider LOD 5-18, toolbar avec compteur de tuiles. Détails : [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md).
 - **Foreground Service** : Architecture processus séparé `:tracking` pour GPS continu.
@@ -31,7 +32,11 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **Modernisation** : Icônes SVG vectorielles dual-tone remplaçant les emojis dans les contrôles critiques.
 - **Icon Module** : `src/modules/ui/icons.ts` centralise les SVGs standards.
 - **Consistance** : UpgradeSheet, AcceptanceWall et SettingsSheet refondus ; catégories Réglages et compte/RGPD isolés en composants dédiés.
-- **Navigation (v5.82.0)** : quatre destinations principales ; `data-tab="track"` reste l'adaptateur de Sortie et `library` ouvre le même sheet en ciblant les traces récentes.
+- **Navigation (v5.83.0)** : quatre destinations principales ; `data-tab="track"` reste l'adaptateur
+  de Sortie et `library` ouvre le même `TrackSheet` avec routes préparées et traces récentes.
+- **Contrat des traces (v5.83.0)** : Préparer possède un unique brouillon nommé, la sélection
+  Bibliothèque/Sortie ne change que la trace consultée (carte/profil), et REC reste indépendant.
+  Toute substitution d'un brouillon modifié demande Sauvegarder, Remplacer ou Annuler.
 - **Planification (v5.82.0)** : `state.isRoutePlanningMode` rend l'ajout par tap explicite ; hors mode, le tap sélectionne et l'appui long reste un raccourci expert.
 - **Réglages (v5.60.1)** : Clé MapTiler, Clé ORS, GPU/CPU/Preset, ID Testeur déplacés dans `⚙️ Paramètres Avancés`. Les clés API ont disparu de "Système & Données" et du panneau itinéraire.
 - Guide de style complet : [docs/AI_UI_STYLE_GUIDE.md](docs/AI_UI_STYLE_GUIDE.md).

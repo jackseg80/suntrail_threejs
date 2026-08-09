@@ -24,6 +24,8 @@ type EventMap = {
     packHighlight: { packId: string };
     themeChanged: { theme: 'light' | 'dark' };
     gpxHistoryUpdated: void;
+    preparedRoutesUpdated: void;
+    trackDestinationChanged: { destination: 'outing' | 'library' };
 };
 
 type Listener<T> = (payload: T) => void;

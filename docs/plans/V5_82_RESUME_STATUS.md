@@ -1,11 +1,12 @@
 # État de reprise historique — v5.82.0 RC interrompue
 
-> Audit effectué le 2026-08-08. Ce document décrit le worktree, pas une release publiée.
+> Audit effectué le 2026-08-08. Ce document décrit l'état historique du worktree avant la
+> publication de v5.82.0.
 >
 > **Résolu le 2026-08-08 :** les blocages automatisés ci-dessous ont été corrigés, tous les
 > gates demandés passent et le worktree est aligné sur v5.82.0 / Android 897. La validation
-> terrain Galaxy S23 a été acceptée le 2026-08-09 sans P0/P1 signalé ; la version n'est pas
-> encore publiée. Voir `CHANGELOG.md` pour l'état courant et
+> terrain Galaxy S23 a été acceptée le 2026-08-09 sans P0/P1 signalé ; le tag et la release
+> GitHub v5.82.0 sont désormais publiés. Voir `CHANGELOG.md` pour l'état courant et
 > `V5_82_S23_FIELD_VALIDATION.md` pour la trace terrain.
 
 ## Référence au début de la reprise — archivée

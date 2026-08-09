@@ -30,7 +30,7 @@ vi.mock('../../../i18n/I18nService', () => ({
 }));
 
 vi.mock('../../eventBus', () => ({
-    eventBus: { on: vi.fn(), off: vi.fn() },
+    eventBus: { on: vi.fn(), off: vi.fn(), emit: vi.fn() },
 }));
 
 vi.mock('../../haptics', () => ({
@@ -96,6 +96,11 @@ describe('NavigationBar', () => {
         mockState.IS_2D_MODE = false;
         mockState.ZOOM = 14;
         mockState.isRoutePlanningMode = false;
+        mockState.gpxLayers = [];
+        mockState.activeGPXLayerId = null;
+        mockState.routeComputation = null;
+        mockState.activePreparedRouteId = null;
+        mockState.routeDraftSourceLayerId = null;
         delete document.body.dataset.trackDestination;
         container = document.createElement('div');
         container.id = 'nav-bar';
@@ -170,6 +175,24 @@ describe('NavigationBar', () => {
         expect(toggleRoutePlanningMode).toHaveBeenCalledOnce();
         expect(sheetManager.open).not.toHaveBeenCalled();
         expect(tab.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('does not replace the route draft when an imported GPX is only selected', () => {
+        const layer = { id: 'gpx-1', isManualRoute: false };
+        mockState.gpxLayers = [layer];
+        mockState.activeGPXLayerId = layer.id;
+        mockState.routeDraftDirty = true;
+        mockState.routeDraftName = 'Brouillon manuel';
+        const nav = new NavigationBar();
+        nav.hydrate();
+
+        (
+            container.querySelector('[data-tab="prepare"]') as HTMLButtonElement
+        ).click();
+
+        expect(toggleRoutePlanningMode).toHaveBeenCalledOnce();
+        expect(mockState.routeDraftName).toBe('Brouillon manuel');
+        expect(mockState.routeDraftDirty).toBe(true);
     });
 
     it('keeps the library destination on the legacy track sheet adapter', async () => {

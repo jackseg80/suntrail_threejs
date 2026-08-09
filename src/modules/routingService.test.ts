@@ -84,6 +84,7 @@ import {
     clearRouteWaypoints,
     reverseWaypoints,
     getActiveProfile,
+    displayPreparedRoute,
 } from './routingService';
 import { isProActive } from './state';
 
@@ -113,6 +114,21 @@ const VALID_ORS_RESPONSE = {
                 },
                 ascent: 350,
                 descent: 230,
+                extras: {
+                    traildifficulty: {
+                        values: [[0, 4, 2]],
+                        summary: [{ value: 2, distance: 6200, amount: 100 }],
+                    },
+                    steepness: {
+                        summary: [{ value: 1, amount: 100 }],
+                    },
+                    surface: {
+                        summary: [{ value: 2, amount: 80 }],
+                    },
+                    waytypes: {
+                        summary: [{ value: 4, amount: 100 }],
+                    },
+                },
             },
         },
     ],
@@ -154,6 +170,79 @@ describe('routingService', () => {
         state.gpxLayers = [];
         state.originTile = { x: 0, y: 0, z: 13 };
         state.routeLoopEnabled = false;
+        state.routeDraftSourceLayerId = null;
+    });
+
+    it('ouvre une route préparée avec un cadrage automatique', () => {
+        displayPreparedRoute({
+            id: 'prepared-1',
+            name: 'Tour sauvegardé',
+            source: 'manual',
+            activityProfile: 'foot-hiking',
+            loopEnabled: true,
+            waypoints: [
+                { lat: 46.5, lon: 7.5 },
+                { lat: 46.6, lon: 7.6 },
+            ],
+            geometry: [
+                { lat: 46.5, lon: 7.5, ele: 1000 },
+                { lat: 46.6, lon: 7.6, ele: 1100 },
+            ],
+            stats: {
+                distance: 8,
+                ascent: 300,
+                descent: 300,
+                duration: 150,
+                routingDuration: 140,
+                pointCount: 2,
+                technicalDifficulty: {
+                    status: 'unknown',
+                    source: 'osrm',
+                    sacLevel: null,
+                    coveragePercent: 0,
+                    reason: 'osrm-fallback',
+                },
+                dataCoverage: {
+                    trailDifficulty: 0,
+                    steepness: 0,
+                    surface: 0,
+                    wayType: 0,
+                },
+                effort: {
+                    score: 1,
+                    level: 'easy',
+                    method: 'distance-dplus-duration-v1',
+                },
+                light: {
+                    etaAt: null,
+                    sunsetAt: null,
+                    daylightMarginMinutes: null,
+                    status: 'unknown',
+                },
+            },
+            bounds: {
+                minLat: 46.5,
+                minLon: 7.5,
+                maxLat: 46.6,
+                maxLon: 7.6,
+            },
+            plannedStartAt: null,
+            plannedPaceKmh: 4,
+            favorite: false,
+            notes: '',
+            tags: [],
+            guidanceQuality: 'full',
+            createdAt: '2026-08-09T00:00:00.000Z',
+            updatedAt: '2026-08-09T00:00:00.000Z',
+            schemaVersion: 1,
+        });
+
+        expect(mockAddGPXLayer).toHaveBeenCalledWith(
+            expect.any(Object),
+            'Tour sauvegardé',
+            expect.objectContaining({ silent: false, forceVisible: true })
+        );
+        expect(state.routeDraftSourceLayerId).toBeNull();
     });
 
     describe('computeRoute (OSRM fallback - no ORS key)', () => {
@@ -231,6 +320,19 @@ describe('routingService', () => {
             expect(
                 (options.headers as Record<string, string>).Authorization
             ).toBe(state.ORS_KEY);
+            expect(JSON.parse(String(options.body))).toMatchObject({
+                extra_info: [
+                    'traildifficulty',
+                    'steepness',
+                    'surface',
+                    'waytype',
+                ],
+            });
+            expect(result.technicalDifficulty).toMatchObject({
+                status: 'known',
+                sacLevel: 2,
+                coveragePercent: 100,
+            });
             expect(mockAddGPXLayer).toHaveBeenCalledTimes(1);
         });
 
@@ -250,10 +352,10 @@ describe('routingService', () => {
             expect(points.length).toBe(5);
             expect(points[0].lat).toBe(46.0);
             expect(points[0].lon).toBe(7.0);
-            expect(points[0].ele).toBe(0);
+            expect(points[0].ele).toBe(1500);
             expect(points[4].lat).toBe(46.04);
             expect(points[4].lon).toBe(7.04);
-            expect(points[4].ele).toBe(0);
+            expect(points[4].ele).toBe(1620);
         });
 
         it('should handle missing elevation in ORS response', async () => {
@@ -371,9 +473,9 @@ describe('routingService', () => {
             expect(state.routeWaypoints[0].lat).toBe(46.0);
         });
 
-        it('should not add waypoint without coordinates', () => {
+        it('accepts valid equator and Greenwich coordinates', () => {
             addRouteWaypoint({ lat: 0, lon: 0 });
-            expect(state.routeWaypoints.length).toBe(0);
+            expect(state.routeWaypoints.length).toBe(1);
         });
 
         it('should remove a waypoint by index', () => {

@@ -1,3 +1,75 @@
+## [5.83.0] - 2026-08-09
+
+### État
+- Release GitHub `v5.83.0` clôturée et publiée le 2026-08-09.
+- Version source `5.83.0` et Android `versionName 5.83.0` / `versionCode 898` ; la vérification
+  du maximum Play Console avant un éventuel téléversement reste une action manuelle distincte.
+
+### Ajouté
+- `PreparedRouteV1` local sans état cloud, `RouteRepository` IndexedDB injecté et migrations
+  additives v1→v2 avec index `updatedAt`, `favorite` et `name`.
+- Atelier A/B accessible, métadonnées de départ/allure, sauvegarde, réouverture hors réseau,
+  duplication, favori, suppression et undo/redo des waypoints.
+- Difficulté ORS SAC avec couverture, résultat inconnu explicite pour données partielles/absentes
+  ou OSRM, effort physique séparé, ETA et marge avant coucher du soleil.
+- Registre de release flags distinct des entitlements Free/Pro, traductions FR/EN/DE/IT et tests
+  `fake-indexeddb` plus scénarios Chromium sur la vraie IndexedDB.
+
+### Compatibilité
+- Historique GPX `localStorage` (cinq entrées), traces REC, imports GPX complets, IDs et adaptateurs
+  v5.82 conservés. Toute conversion d'une géométrie legacy simplifiée reste explicite,
+  `legacy-conversion` et `guidanceQuality: approximate`.
+- Sortie et Bibliothèque utilisent toujours le même `TrackSheet`, avec des contenus fonctionnels
+  distincts. Aucun guidage, corridor, compte, Supabase ou synchronisation n'est ajouté.
+
+### Validation automatisée finale
+- `npm run check`, la suite unitaire complète, build Capacitor, budget PWA 2,20 MiB
+  et audit FR/EN/DE/IT passent.
+- Chromium réel : 4/4 scénarios Prepared Routes/IndexedDB/legacy/GPX boucle et 6/6 smoke passent.
+- `cap:sync` ne crée aucun diff suivi inattendu ; tests Android, lint et APK debug passent
+  (`BUILD SUCCESSFUL`, 430 tâches). La validation fonctionnelle Galaxy S23 est terminée.
+
+### Corrigé après validation terrain Galaxy S23
+- Séparation explicite des trois rôles : route en préparation, trace consultée pour carte/profil
+  et REC indépendant. Une simple sélection ne remplace plus le brouillon.
+- Le bandeau Préparer nomme maintenant sa source et sa route ; ses kilomètres et dénivelés ne
+  peuvent plus être confondus avec ceux d’un autre GPX consulté dans Profil/Pente.
+- Action « Préparer cette trace GPX » et protection Sauvegarder / Remplacer / Annuler avant tout
+  remplacement d’un brouillon modifié ou ouverture d’une autre route.
+- Compteur de traces affichées, nom de la trace consultée, Masquer les autres / Tout masquer et
+  contrôle de visibilité ajouté aussi aux routes manuelles, sans effet sur le REC.
+- Pendant REC, Sortie identifie explicitement les statistiques d’enregistrement ; la consultation
+  d’une référence reste possible sans mélanger les mesures.
+- Réouverture fiable d'une route préparée après import ou suppression d'un GPX : les calculs
+  différés obsolètes sont annulés et la géométrie, le profil et le panneau actif restent alignés.
+- Ouverture d'une route préparée avec le même cadrage automatique que les traces récentes.
+- Conservation du choix Boucle dans `PreparedRouteV1`, avec compatibilité additive pour les
+  premières entrées v5.83 qui ne possédaient pas encore ce champ.
+- Un GPX ouvert dans Préparer devient un brouillon explicite portant son propre nom et ses
+  extrémités ; les champs A/B affichent un nom connu ou, à défaut, les coordonnées.
+- L'état « difficulté technique inconnue » n'affiche plus un pourcentage trompeur ; effort,
+  ETA et marge avant la nuit restent disponibles.
+- Largeur mobile de la Bibliothèque contrainte à l'écran et textes dynamiques du profil,
+  de Préparer, du compte et des Packs Pays réactualisés lors d'un changement de langue.
+- Cartes, champs et actions internes de la Bibliothèque contraints aux bords du panneau mobile.
+- `MainActivity` utilise directement le thème Android d'exécution depuis le manifeste afin que
+  les sélecteurs, calendriers et confirmations natifs ne réutilisent jamais `Theme.SplashScreen`.
+- En Free, un nouvel import remplace uniquement l'ancien calque GPX chargé, sans supprimer son
+  historique local ; le nouveau tracé devient immédiatement actif et visible.
+- Identité du GPX brouillon suivie explicitement : un nouvel import remplace les anciennes
+  métadonnées et ses extrémités A/B ne recalculent jamais silencieusement sa géométrie complète.
+- Validation S23 de l'APK corrigée : menus natifs compacts, import GPX visible sans sauvegarde,
+  nom/statistiques immédiats et réouverture avec fly d'une route préparée après le GPX actif.
+- Les GPX en boucle conservent leur géométrie complète et exposent désormais quatre jalons
+  utiles (départ, deux passages intermédiaires, arrivée au départ), au lieu de deux extrémités
+  superposées qui donnaient l'impression d'un point unique.
+- Le profil est rouvert explicitement après fermeture de la Bibliothèque lors de l'ouverture
+  d'une route préparée ; les nouveaux boutons reprennent les surfaces, bordures, couleurs,
+  focus et états tactiles du reste de l'application.
+- Les imports d'un même GPX ne créent plus plusieurs entrées identiques dans l'historique local ;
+  les traces REC restent volontairement distinctes et la suppression depuis Sortie décharge
+  seulement le calque, tandis que la suppression depuis Bibliothèque efface l'historique.
+
 ## [5.82.0] - 2026-08-08
 
 ### État
@@ -8,8 +80,9 @@
 - Le scénario débutant Planifier passe isolément ; la synchronisation Capacitor, les tests,
   le lint et l'APK Android debug passent également.
 - Validation terrain Galaxy S23 clôturée le 2026-08-09 sans anomalie bloquante signalée.
-  L'observation Sortie/Bibliothèque est une transition UX P2 documentée pour v5.83. Aucun tag,
-  CI de release ni upload Play Store n'est encore déclaré effectué.
+  L'observation Sortie/Bibliothèque est une transition UX P2 documentée pour v5.83. Le tag
+  `v5.82.0` et la release GitHub publique avec AAB signé ont été vérifiés le 2026-08-09 ; la
+  release est clôturée et publiée.
 
 ### Ajouté
 - **Mode Planifier explicite** : un tap terrain ajoute un waypoint uniquement dans ce mode ; l'appui long hors mode reste le raccourci expert, annoncé une seule fois sans bloquer.

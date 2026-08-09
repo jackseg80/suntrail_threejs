@@ -1,6 +1,6 @@
-# SunTrail — Navigation & Modules Fonctionnels (v5.82.0)
+# SunTrail — Navigation & Modules Fonctionnels (v5.83.0)
 
-> Référence du worktree v5.82.0 finalisé. Point d'entrée :
+> Référence du worktree v5.83.0 non publié. Point d'entrée :
 > [CLAUDE.md](../CLAUDE.md).
 
 ---
@@ -27,6 +27,37 @@
 `rankSearchResults()` pondère correspondance du nom, pays de la vue et distance à la cible.
 Chaque résultat affiche son type, sa région, son pays, son altitude si disponible et sa
 distance. L'ordre fournisseur reste stable en cas d'égalité.
+
+## Prepared Routes v5.83.0
+
+- **Préparer** accepte taps carte ou recherche A/B, puis nom, heure prévue, allure, favori,
+  notes et tags. La liste de waypoints permet déplacement par coordonnées, ordre, suppression,
+  inversion et undo/redo.
+- **Bibliothèque** reste le même `TrackSheet` que **Sortie**, mais affiche les routes IndexedDB,
+  leurs actions locales et les cinq traces récentes legacy dans une section distincte.
+- Une route sauvegardée se rouvre sans appel routing : géométrie complète et statistiques sont
+  restaurées. Un brouillon en échec n'écrase pas le dernier snapshot validé.
+- Un GPX ouvert conserve chacun de ses points dans la géométrie, sans créer autant de marqueurs
+  éditables. Un GPX ouvert utilise A/B ; une boucle détectée utilise A, deux passages
+  intermédiaires et B revenu au départ, afin que les marqueurs ne semblent pas réduits à un point.
+- L'ouverture d'une route préparée ferme d'abord la Bibliothèque puis garantit l'affichage du
+  profil de sa géométrie restaurée.
+- ORS fournit SAC/couverture ; OSRM ou données absentes affichent une difficulté inconnue expliquée.
+  Un GPX importé sans données SAC vérifiables reste lui aussi « inconnu » ; effort, ETA et soleil
+  restent calculés indépendamment.
+- La sélection d’une trace récente est une consultation (carte, fly, profil/pente), pas un
+  changement de brouillon. « Préparer cette trace » est l’unique transition explicite d’un GPX
+  vers l’atelier.
+- Le bandeau Préparer affiche toujours le type et le nom de sa propre route. Si un autre profil
+  est consulté, ses données ne remplacent pas les kilomètres/dénivelés du brouillon.
+- Avant de remplacer un brouillon modifié, l’utilisateur choisit Sauvegarder puis ouvrir,
+  Remplacer sans sauvegarder ou Annuler.
+- Sortie affiche un compteur de traces réellement visibles, la trace consultée et des commandes
+  Masquer les autres / Tout masquer. Le REC est signalé comme indépendant et reste la source des
+  statistiques de Sortie pendant l’enregistrement.
+- Les routes PreparedRoute fermées restent uniquement dans IndexedDB. Elles ne créent aucun
+  calque Three.js avant leur ouverture ; l’historique récent reste limité à cinq entrées et les
+  calques chargés à dix.
 
 ## Mouvements de Caméra
 

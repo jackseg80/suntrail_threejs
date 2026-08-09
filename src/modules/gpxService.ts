@@ -3,9 +3,9 @@
  */
 
 import gpxParser from 'gpxparser';
-import { state, type GPXLayer } from './state';
+import { state, isProActive, type GPXLayer } from './state';
 import { haptic } from './haptics';
-import { addGPXLayer } from './gpxLayers';
+import { activateGPXLayer, addGPXLayer, removeGPXLayer } from './gpxLayers';
 import { updateVisibleTiles } from './terrain';
 import { lngLatToTile } from './geo';
 import { getElevation } from './gpxTypes';
@@ -40,13 +40,13 @@ export class GPXService {
     async handleGPXImport(
         xml: string,
         fileName: string = 'track.gpx'
-    ): Promise<void> {
+    ): Promise<GPXLayer | null> {
         try {
             const gpx = new gpxParser();
             gpx.parse(xml);
             if (!gpx.tracks?.length) {
                 void haptic('warning');
-                return;
+                return null;
             }
 
             // Détection de doublon : hash des points
@@ -62,8 +62,18 @@ export class GPXService {
                         i18n.t('gpx.alreadyImported') ||
                             `"${fileName.replace(/\.gpx$/i, '')}" déjà importé`
                     );
-                    return;
+                    return null;
                 }
+            }
+
+            const shouldRecenter = state.gpxLayers.length === 0;
+
+            // Free keeps exactly one imported GPX loaded/visible. Removing the
+            // previous scene layer does not touch its preserved local history.
+            if (!isProActive()) {
+                state.gpxLayers
+                    .filter((layer) => !layer.isManualRoute)
+                    .forEach((layer) => removeGPXLayer(layer.id));
             }
 
             // Limite technique : 10 tracés max (préserve les perfs mobiles)
@@ -74,13 +84,13 @@ export class GPXService {
                     i18n.t('gpx.limitPro') || 'Maximum 10 tracks reached'
                 );
                 void haptic('warning');
-                return;
+                return null;
             }
 
             const startPt = gpx.tracks[0].points[0];
 
             // Only recenter map on first import
-            if (state.gpxLayers.length === 0) {
+            if (shouldRecenter) {
                 state.TARGET_LAT = startPt.lat;
                 state.TARGET_LON = startPt.lon;
                 state.ZOOM = 13;
@@ -89,11 +99,15 @@ export class GPXService {
             }
 
             const name = fileName.replace(/\.gpx$/i, '');
-            addGPXLayer(gpx as unknown as GPXRawData, name);
+            const layer = addGPXLayer(gpx as unknown as GPXRawData, name, {
+                forceVisible: true,
+            });
+            activateGPXLayer(layer.id);
             void haptic('success');
             const { showToast } = await import('./toast');
             const { i18n } = await import('../i18n/I18nService');
             void showToast(i18n.t('gpx.imported') || `"${name}" importé`);
+            return layer;
         } catch (e) {
             void haptic('warning');
             throw e;

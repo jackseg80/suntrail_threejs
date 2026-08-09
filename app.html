@@ -167,6 +167,29 @@
                 ⚙
             </button>
             <button
+                class="rb-btn rb-save-btn"
+                id="rb-save-btn"
+                aria-label="Sauvegarder l’itinéraire"
+                data-i18n-aria-label="preparedRoutes.actions.save"
+                disabled
+            >
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                >
+                    <path d="M5 3h12l2 2v16H5z" />
+                    <path d="M8 3v6h8V3" />
+                    <path d="M8 21v-7h8v7" />
+                </svg>
+            </button>
+            <button
                 class="rb-btn"
                 id="rb-reverse-btn"
                 aria-label="Inverser le départ et l'arrivée"
@@ -241,6 +264,133 @@
                     data-i18n="planning.loop"
                     >Boucle</label
                 >
+            </div>
+            <div
+                class="rs-draft-status"
+                id="rs-draft-status"
+                aria-live="polite"
+            ></div>
+            <label
+                class="rs-field-label"
+                for="rs-route-name"
+                data-i18n="preparedRoutes.editor.name"
+                >Nom de la route</label
+            >
+            <input
+                id="rs-route-name"
+                class="rs-text-input"
+                type="text"
+                maxlength="120"
+                autocomplete="off"
+            />
+            <div class="rs-search-grid">
+                <div class="rs-search-field">
+                    <label
+                        for="rs-start-search"
+                        data-i18n="preparedRoutes.editor.start"
+                        >Départ A</label
+                    >
+                    <input
+                        id="rs-start-search"
+                        class="rs-text-input"
+                        type="search"
+                        autocomplete="off"
+                    />
+                    <div
+                        id="rs-start-results"
+                        class="rs-search-results"
+                        role="listbox"
+                    ></div>
+                </div>
+                <div class="rs-search-field">
+                    <label
+                        for="rs-end-search"
+                        data-i18n="preparedRoutes.editor.end"
+                        >Arrivée B</label
+                    >
+                    <input
+                        id="rs-end-search"
+                        class="rs-text-input"
+                        type="search"
+                        autocomplete="off"
+                    />
+                    <div
+                        id="rs-end-results"
+                        class="rs-search-results"
+                        role="listbox"
+                    ></div>
+                </div>
+            </div>
+            <div class="rs-row rs-plan-fields">
+                <label
+                    for="rs-planned-start"
+                    data-i18n="preparedRoutes.editor.plannedStart"
+                    >Départ prévu</label
+                >
+                <input id="rs-planned-start" type="datetime-local" />
+                <label for="rs-pace" data-i18n="preparedRoutes.editor.pace"
+                    >Allure km/h</label
+                >
+                <input
+                    id="rs-pace"
+                    type="number"
+                    min="1"
+                    max="12"
+                    step="0.1"
+                    value="4"
+                />
+            </div>
+            <div
+                id="rs-route-summary"
+                class="rs-route-summary"
+                aria-live="polite"
+            ></div>
+            <details class="rs-route-details">
+                <summary data-i18n="preparedRoutes.editor.details">
+                    Détails
+                </summary>
+                <label
+                    for="rs-route-notes"
+                    data-i18n="preparedRoutes.editor.notes"
+                    >Notes</label
+                >
+                <textarea id="rs-route-notes" rows="2"></textarea>
+                <label
+                    for="rs-route-tags"
+                    data-i18n="preparedRoutes.editor.tags"
+                    >Tags séparés par des virgules</label
+                >
+                <input id="rs-route-tags" class="rs-text-input" type="text" />
+            </details>
+            <div class="rs-row rs-editor-actions">
+                <button
+                    id="rs-undo-btn"
+                    type="button"
+                    data-i18n="preparedRoutes.actions.undo"
+                    disabled
+                >
+                    Annuler
+                </button>
+                <button
+                    id="rs-redo-btn"
+                    type="button"
+                    data-i18n="preparedRoutes.actions.redo"
+                    disabled
+                >
+                    Rétablir
+                </button>
+                <button id="rs-favorite-btn" type="button" aria-pressed="false">
+                    ☆
+                </button>
+                <button
+                    id="rs-save-btn"
+                    type="button"
+                    class="btn-primary"
+                    data-i18n="preparedRoutes.actions.save"
+                    disabled
+                >
+                    Sauvegarder
+                </button>
             </div>
             <!-- Liste des waypoints -->
             <div id="rs-waypoints-list" class="rs-waypoints-list"></div>

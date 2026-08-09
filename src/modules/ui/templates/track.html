@@ -21,16 +21,65 @@
             </svg>
         </button>
     </div>
-    <p
-        id="track-library-scope"
-        class="track-library-scope"
-        data-i18n="track.libraryScope"
+    <section
+        id="prepared-routes-section"
+        class="prepared-routes-section"
         hidden
     >
-        Traces récentes : imports GPX et sorties enregistrées sur cet appareil.
-        Les itinéraires manuels ne sont pas encore sauvegardés.
-    </p>
-    <div class="track-stats">
+        <p
+            id="track-library-scope"
+            class="track-library-scope"
+            data-i18n="preparedRoutes.library.scope"
+        >
+            Routes préparées et traces récentes conservées sur cet appareil.
+        </p>
+        <div class="prepared-library-header">
+            <h3 data-i18n="preparedRoutes.library.title">Routes préparées</h3>
+            <button
+                id="prepared-create-btn"
+                type="button"
+                data-i18n="preparedRoutes.actions.create"
+            >
+                Préparer une route
+            </button>
+        </div>
+        <div
+            id="prepared-storage-error"
+            class="prepared-storage-error"
+            role="alert"
+            hidden
+        ></div>
+        <div id="prepared-routes-list" class="prepared-routes-list"></div>
+        <div id="prepared-routes-empty" class="prepared-routes-empty">
+            <strong data-i18n="preparedRoutes.library.emptyTitle"
+                >Aucune route préparée</strong
+            >
+            <span data-i18n="preparedRoutes.library.emptyBody"
+                >Planifiez A/B puis sauvegardez la route pour la retrouver hors
+                ligne.</span
+            >
+        </div>
+        <h3
+            class="legacy-library-title"
+            data-i18n="preparedRoutes.library.legacyTitle"
+        >
+            Traces récentes
+        </h3>
+        <p
+            class="legacy-library-help"
+            data-i18n="preparedRoutes.library.legacyHelp"
+        >
+            L’historique GPX reste inchangé. Une conversion depuis sa géométrie
+            simplifiée est toujours approximative.
+        </p>
+        <div id="legacy-tracks-anchor"></div>
+    </section>
+    <div
+        id="track-stats-context"
+        class="track-stats-context track-outing-only"
+        aria-live="polite"
+    ></div>
+    <div class="track-stats track-outing-only">
         <div class="stat-card">
             <div class="stat-card-label" data-i18n="track.stats.distance">
                 Distance
@@ -69,7 +118,7 @@
             <div class="stat-card-value" id="track-duration">—</div>
         </div>
     </div>
-    <div class="track-actions">
+    <div class="track-actions track-outing-only">
         <button class="track-btn rec" id="rec-btn-sheet">
             <span class="trk-rec-icon rec-icon-idle">
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -121,7 +170,8 @@
             style="display: none"
         />
     </div>
-    <div id="rec-recording-upsell" class="rec-upsell-banner">
+    <div id="outing-tracks-anchor" class="track-outing-only"></div>
+    <div id="rec-recording-upsell" class="rec-upsell-banner track-outing-only">
         <div
             style="
                 display: flex;

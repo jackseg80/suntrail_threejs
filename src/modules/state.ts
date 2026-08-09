@@ -8,6 +8,13 @@ import { LocationPoint } from './geo';
 import { STORAGE_KEYS } from '../constants/storage';
 import type { GPXHistoryEntry } from './gpxHistoryService';
 import type { GPXRawData } from './gpxTypes';
+import type {
+    PreparedRouteV1,
+    RouteComputationSnapshot,
+    RouteWaypoint,
+} from './preparedRoutes/preparedRoute';
+
+export type { RouteWaypoint } from './preparedRoutes/preparedRoute';
 
 export type PresetType =
     'eco' | 'balanced' | 'performance' | 'ultra' | 'custom';
@@ -28,13 +35,6 @@ export interface GPXLayer {
         pointCount: number;
         estimatedTime?: number;
     };
-}
-
-export interface RouteWaypoint {
-    lat: number;
-    lon: number;
-    alt?: number;
-    name?: string;
 }
 
 export type RoutingProfile =
@@ -365,6 +365,18 @@ export interface State {
     routeError: string | null;
     activeRouteProfile: RoutingProfile;
     routeLoopEnabled: boolean;
+    preparedRoutes: PreparedRouteV1[];
+    activePreparedRouteId: string | null;
+    routeDraftSourceLayerId: string | null;
+    routeDraftName: string;
+    routePlannedStartAt: string | null;
+    routePlannedPaceKmh: number;
+    routeDraftFavorite: boolean;
+    routeDraftNotes: string;
+    routeDraftTags: string[];
+    routeDraftDirty: boolean;
+    routeLastSavedAt: string | null;
+    routeComputation: RouteComputationSnapshot | null;
     zoneSelectionActive: boolean;
     zoneOverlay: import('./ZoneOverlay').ZoneOverlay | null;
 }
@@ -489,6 +501,18 @@ const initialState: State = {
     routeError: null,
     activeRouteProfile: 'foot-hiking',
     routeLoopEnabled: false,
+    preparedRoutes: [],
+    activePreparedRouteId: null,
+    routeDraftSourceLayerId: null,
+    routeDraftName: '',
+    routePlannedStartAt: null,
+    routePlannedPaceKmh: 4,
+    routeDraftFavorite: false,
+    routeDraftNotes: '',
+    routeDraftTags: [],
+    routeDraftDirty: false,
+    routeLastSavedAt: null,
+    routeComputation: null,
     zoneSelectionActive: false,
     zoneOverlay: null,
 };

@@ -296,6 +296,7 @@ export class NavigationBar extends BaseComponent {
 
     private focusTrackDestination(destination: 'outing' | 'library'): void {
         document.body.dataset.trackDestination = destination;
+        eventBus.emit('trackDestinationChanged', { destination });
         window.setTimeout(() => {
             const track = document.getElementById('track');
             if (!track) return;
@@ -313,7 +314,7 @@ export class NavigationBar extends BaseComponent {
             }
             if (destination === 'library') {
                 document
-                    .getElementById('gpx-layers-list')
+                    .getElementById('prepared-routes-section')
                     ?.scrollIntoView({ block: 'start' });
             } else {
                 track.scrollTop = 0;

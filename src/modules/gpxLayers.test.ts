@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as THREE from 'three';
 import {
+    activateGPXLayer,
     addGPXLayer,
+    hideAllGPXLayers,
     removeGPXLayer,
+    showOnlyGPXLayer,
     updateAllGPXMeshes,
     updateRecordedTrackMesh,
 } from './gpxLayers';
@@ -82,6 +85,40 @@ describe('Multi-GPX Layers (v5.10)', () => {
         expect(layer.stats.pointCount).toBe(4);
         expect(layer.stats.dPlus).toBeGreaterThan(5);
         expect(state.scene!.add).toHaveBeenCalled();
+    });
+
+    it('showOnlyGPXLayer keeps exactly the selected loaded trace visible', () => {
+        const first = addGPXLayer(rawData, 'first', { forceVisible: true });
+        const second = addGPXLayer(rawData, 'second', { forceVisible: true });
+
+        const selected = showOnlyGPXLayer(first.id);
+
+        expect(selected?.id).toBe(first.id);
+        expect(state.activeGPXLayerId).toBe(first.id);
+        expect(
+            state.gpxLayers
+                .filter((layer) => layer.visible)
+                .map((layer) => layer.id)
+        ).toEqual([first.id]);
+        expect(first.mesh?.visible).toBe(true);
+        expect(second.mesh?.visible).toBe(false);
+    });
+
+    it('hideAllGPXLayers hides loaded traces without deleting them or REC', () => {
+        addGPXLayer(rawData, 'first', { forceVisible: true });
+        addGPXLayer(rawData, 'second', { forceVisible: true });
+        state.recordedPoints = [
+            { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 1000 },
+            { lat: 46.51, lon: 7.51, alt: 1010, timestamp: 2000 },
+        ];
+
+        hideAllGPXLayers();
+
+        expect(state.gpxLayers).toHaveLength(2);
+        expect(state.gpxLayers.every((layer) => !layer.visible)).toBe(true);
+        expect(state.activeGPXLayerId).toBeNull();
+        expect(state.recordedPoints).toHaveLength(2);
+        expect(mockCloseElevationProfile).toHaveBeenCalled();
     });
 
     it('addGPXLayer: should calculate stats (distance, D+, D-) with larger variations', () => {
@@ -348,6 +385,21 @@ describe('removeGPXLayer', () => {
         removeGPXLayer(layer1.id);
 
         expect(state.activeGPXLayerId).toBe(layer2.id);
+    });
+
+    it('active et rend visible un autre GPX en masquant le précédent pour Free', () => {
+        const first = addGPXLayer(rawData, 'layer-a');
+        const second = addGPXLayer(rawData, 'layer-b');
+        expect(second.visible).toBe(false);
+
+        const active = activateGPXLayer(second.id);
+
+        expect(active?.visible).toBe(true);
+        expect(state.activeGPXLayerId).toBe(second.id);
+        expect(
+            state.gpxLayers.find((layer) => layer.id === first.id)?.visible
+        ).toBe(false);
+        expect(second.mesh?.visible).toBe(true);
     });
 
     it('met activeGPXLayerId à null quand aucun layer ne reste', () => {

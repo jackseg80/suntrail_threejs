@@ -72,6 +72,7 @@
             "title": "Tracés importés",
             "empty": "Aucun tracé importé",
             "toggleVisible": "Masquer/afficher le tracé",
+            "unload": "Retirer de cette sortie",
             "remove": "Supprimer le tracé",
             "setActive": "Afficher le profil de ce tracé",
             "showProfile": "Voir le profil d'élévation",
@@ -88,6 +89,22 @@
         "recording": {
             "title": "Enregistrement GPS"
         },
+        "layers": {
+            "loadedTitle": "Traces chargées pour cette sortie",
+            "visibleCount": "Traces affichées : {{count}}",
+            "viewed": "Consultée : {{name}}",
+            "viewedHidden": "Consultée mais masquée : {{name}}",
+            "noViewed": "Aucune trace consultée",
+            "recIndependent": "REC indépendant : il reste visible et séparé.",
+            "hideOthers": "Masquer les autres",
+            "hideAll": "Tout masquer"
+        },
+        "statsContext": {
+            "recording": "Statistiques de l’enregistrement REC en cours",
+            "recorded": "Statistiques du dernier REC",
+            "viewed": "Statistiques de la trace consultée : {{name}}",
+            "none": "Aucune trace sélectionnée"
+        },
         "upsell": {
             "postRec": "Tracé éphémère (mémoire vive uniquement). Passez à Pro pour exporter le fichier GPX sur votre téléphone.",
             "proBtn": "Voir Pro ↗"
@@ -95,6 +112,119 @@
         "save": {
             "title": "Enregistrer le tracé",
             "body": "Donnez un nom à votre rando :"
+        }
+    },
+    "preparedRoutes": {
+        "actions": {
+            "save": "Sauvegarder",
+            "create": "Préparer une route",
+            "open": "Ouvrir",
+            "favorite": "Ajouter ou retirer des favoris",
+            "duplicate": "Dupliquer",
+            "delete": "Supprimer",
+            "undo": "Annuler",
+            "redo": "Rétablir",
+            "saveFullGPX": "Sauvegarder le GPX complet comme route",
+            "prepareGPX": "Préparer cette trace GPX",
+            "convertLegacy": "Convertir en route approximative"
+        },
+        "source": {
+            "manualDraft": "Brouillon manuel",
+            "gpxDraft": "GPX en préparation",
+            "savedRoute": "Route sauvegardée"
+        },
+        "draftConflict": {
+            "title": "Une route est déjà en préparation",
+            "body": "Ouvrir « {{name}} » remplacera le brouillon actuel. Vous pouvez d’abord le sauvegarder.",
+            "save": "Sauvegarder puis ouvrir",
+            "replace": "Remplacer sans sauvegarder"
+        },
+        "editor": {
+            "name": "Nom de la route",
+            "start": "Départ A",
+            "end": "Arrivée B",
+            "plannedStart": "Départ prévu",
+            "pace": "Allure km/h",
+            "details": "Détails",
+            "notes": "Notes",
+            "tags": "Tags séparés par des virgules",
+            "moveWaypoint": "Déplacer le point",
+            "coordinatesPrompt": "Nouvelles coordonnées : latitude, longitude",
+            "invalidCoordinates": "Coordonnées invalides",
+            "chooseStartFirst": "Choisissez d’abord le départ A."
+        },
+        "summary": {
+            "distance": "Distance",
+            "duration": "Durée selon votre allure",
+            "difficulty": "Difficulté technique",
+            "effort": "Effort physique",
+            "daylightMargin": "Marge avant la nuit",
+            "computing": "Calcul de la route…",
+            "routingError": "Le calcul a échoué. Modifiez les points sans perdre la dernière sauvegarde.",
+            "offlineDraft": "Hors ligne : une route sauvegardée reste ouvrable, mais un nouveau calcul demande le réseau.",
+            "addPoints": "Recherchez A/B ou placez deux points sur la carte."
+        },
+        "difficulty": {
+            "unknown": "Inconnue",
+            "coverageExplanation": "Niveau SAC fourni par ORS ; la couverture indique la part du tracé documentée dans OpenStreetMap.",
+            "reason": {
+                "complete": "Difficulté ORS disponible sur tout le tracé.",
+                "partial": "Difficulté ORS partielle : les portions non documentées restent inconnues.",
+                "osrm-fallback": "Le calcul de secours OSRM ne fournit pas de difficulté technique.",
+                "missing-data": "ORS ne fournit aucun tag SAC exploitable sur ce tracé.",
+                "gpx-no-difficulty": "Le GPX ne contient pas de difficulté technique vérifiable.",
+                "legacy-simplified": "L’historique simplifié ne contient pas de difficulté technique fiable."
+            }
+        },
+        "effort": {
+            "easy": "Facile",
+            "moderate": "Modéré",
+            "demanding": "Soutenu",
+            "strenuous": "Très soutenu",
+            "method": "Effort séparé de la difficulté technique : distance + D+ + durée calculée à l’allure choisie."
+        },
+        "light": {
+            "chooseStart": "Choisir l’heure"
+        },
+        "quality": {
+            "approximateWarning": "Route approximative : réimportez le GPX original ou recalculez avant tout futur guidage de confiance."
+        },
+        "library": {
+            "scope": "Routes préparées et traces récentes conservées sur cet appareil.",
+            "title": "Routes préparées",
+            "emptyTitle": "Aucune route préparée",
+            "emptyBody": "Planifiez A/B puis sauvegardez la route pour la retrouver hors ligne.",
+            "legacyTitle": "Traces récentes",
+            "legacyHelp": "L’historique GPX reste inchangé. Une conversion depuis sa géométrie simplifiée est toujours approximative."
+        },
+        "status": {
+            "disabled": "La bibliothèque de routes est désactivée par le flag de release.",
+            "unsaved": "Brouillon non sauvegardé",
+            "saved": "Route sauvegardée",
+            "new": "Nouvelle route"
+        },
+        "toast": {
+            "saved": "Route sauvegardée sur cet appareil",
+            "duplicated": "Route dupliquée",
+            "deleted": "Route supprimée",
+            "imported": "GPX complet sauvegardé dans la bibliothèque",
+            "gpxPrepared": "Cette trace GPX est maintenant la route en préparation",
+            "legacyConverted": "Copie approximative créée ; l’historique original est conservé"
+        },
+        "confirm": {
+            "delete": "Supprimer cette route préparée de cet appareil ?",
+            "convertLegacy": "Cette entrée ne contient qu’une géométrie simplifiée. Créer une route explicitement approximative sans supprimer l’historique ?"
+        },
+        "error": {
+            "unavailable": "IndexedDB n’est pas disponible sur cet appareil.",
+            "quota": "Stockage insuffisant. Libérez de l’espace puis réessayez.",
+            "corrupt-record": "Une route locale est illisible ; les autres restent disponibles.",
+            "blocked": "Fermez les autres onglets SunTrail pour terminer la migration du stockage.",
+            "transaction": "La sauvegarde a été interrompue ; la version précédente reste intacte.",
+            "unknown": "Erreur de stockage locale.",
+            "storage": "Impossible d’enregistrer la route. La dernière sauvegarde reste intacte.",
+            "notReady": "Calculez une route complète avant de la sauvegarder.",
+            "notFound": "Cette route n’existe plus sur cet appareil."
         }
     },
     "routePlanner": {
@@ -698,7 +828,18 @@
     },
     "profile": {
         "title": "📈 Profil & Pentes",
-        "info": "Distance : 0km | Alt : 0m | Pente : 0%"
+        "info": "Distance : 0 km | Altitude : 0 m | Pente : 0%",
+        "analysis": "☀️ Analyse",
+        "expand": "Agrandir le profil",
+        "slopes": "Pentes",
+        "solar": "Solaire",
+        "sun": "Soleil",
+        "shade": "Ombre",
+        "forest": "Forêt",
+        "night": "Nuit",
+        "summary": "Distance : {{distance}} km | D+ : {{ascent}} m | D- : {{descent}} m",
+        "cursor": "Distance : {{distance}} km | Altitude : {{altitude}} m | Pente : {{slope}}%{{time}}",
+        "cursorIdle": "Distance : {{distance}} km | Altitude : 0 m"
     },
     "timeline": {
         "sunPhase": "☀️ Plein jour",

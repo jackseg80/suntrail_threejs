@@ -1,4 +1,4 @@
-# SunTrail — TODO (version source v5.82.0)
+# SunTrail — TODO (version source v5.83.0)
 
 > Dernière mise à jour : 2026-08-09
 
@@ -19,12 +19,12 @@
 - [x] Observation Sortie/Bibliothèque classée P2 : redondance transitoire prévue, à résoudre
   fonctionnellement par la bibliothèque locale `PreparedRoute` de v5.83.
 
-## 🧭 Publication externe v5.82.0 — préparée
+## ✅ Publication externe v5.82.0 — clôturée
 
 - [x] Play Console vérifiée : le plus grand `versionCode` réellement utilisé est `896` ; `897` est
   donc attribué à v5.82.0 et le bundle signé a été généré.
-- [ ] Commit, tag, CI, test interne/fermé puis déploiement progressif.
-- [ ] Ne démarrer v5.83 qu'après la clôture complète de cette publication.
+- [x] Commit, tag `v5.82.0`, CI et release GitHub publique avec AAB signé vérifiés le 2026-08-09.
+- [x] Publication v5.82 clôturée ; v5.83 peut démarrer.
 
 Protocole : [docs/plans/V5_82_S23_FIELD_VALIDATION.md](docs/plans/V5_82_S23_FIELD_VALIDATION.md).
 Prompt de clôture :
@@ -32,9 +32,43 @@ Prompt de clôture :
 
 État détaillé : [docs/plans/V5_82_RESUME_STATUS.md](docs/plans/V5_82_RESUME_STATUS.md).
 
+## ✅ v5.83.0 — Prepared Routes implémentée localement
+
+- [x] `PreparedRouteV1`, `RouteRepository` IndexedDB et migration additive v1→v2.
+- [x] Bibliothèque locale : sauvegarder, rouvrir sans réseau externe, dupliquer, favori, supprimer.
+- [x] A/B accessible, waypoints éditables, inversion, ordre, suppression et undo/redo.
+- [x] Difficulté ORS complète/partielle, inconnue OSRM/absente, effort, ETA et soleil.
+- [x] Legacy localStorage préservé ; conversion explicite et approximative uniquement.
+- [x] Release flags séparés des entitlements et traductions FR/EN/DE/IT.
+- [x] 1 536 tests unitaires, build, bundle 2,20 MiB et audit i18n validés.
+- [x] Runner Playwright officiel Chromium : 6 smoke et 4 scénarios Prepared Routes validés.
+- [x] Correctifs terrain S23 : Boucle persistée, conflit GPX/route annulé, nom GPX et A/B
+  synchronisés, difficulté inconnue sans faux pourcentage, largeur mobile et traductions dynamiques.
+- [x] Deuxième passe terrain : cadrage des routes préparées, remplacement visible du GPX Free,
+  protection des boucles GPX contre le recalcul A/B et contenus Bibliothèque bornés au panneau.
+- [x] Build Android, tests unitaires, lint, APK debug et installation S23 (`versionCode 898`) validés.
+- [x] Retest S23 du thème natif : sélecteur, calendrier et confirmation de suppression compacts,
+  sans visuel SplashScreen ni contenu hors écran ; changements de langue validés sur appareil.
+- [x] Retest S23 du conflit GPX/Bibliothèque : import visible sans sauvegarde préalable,
+  nom/statistiques immédiats et réouverture d'une route préparée avec fly et géométrie correcte.
+- [x] Contrat de trace clarifié : brouillon Préparer, trace consultée et REC indépendant ; aucune
+  sélection de bibliothèque ne remplace automatiquement le brouillon.
+- [x] Bandeau Préparer nommé, action explicite « Préparer cette trace », protection
+  Sauvegarder/Remplacer/Annuler et commandes de visibilité avec compteur.
+- [x] Tests unitaires ciblés sur arbitrage, protection du brouillon, visibilité et priorité REC.
+- [x] E2E Chromium final : 4/4 Prepared Routes/IndexedDB/legacy/GPX boucle et 6/6 smoke.
+- [x] `cap:sync` sans diff suivi inattendu, puis tests Android, lint et APK debug validés.
+- [x] Contrat GPX clarifié : géométrie complète distincte des jalons ; boucle détectée avec
+  départ, deux passages intermédiaires et arrivée superposée au départ.
+- [x] Régression automatisée GPX boucle → sauvegarde → réouverture du profil ajoutée sur la
+  vraie IndexedDB Chromium ; boutons Prepared Routes/visibilité unifiés avec le thème.
+- [ ] Retest Galaxy S23 des jalons de boucle, de la réouverture du profil et des boutons unifiés.
+- [ ] Après autorisation explicite seulement : commit, tag, push, CI, AAB et publication.
+
 ## 🟡 Programme produit engagé
 
-- [ ] **v5.83.0** — planifier, évaluer et sauvegarder localement (`PreparedRoute`).
+- [ ] **v5.83.0** — planifier, évaluer et sauvegarder localement (`PreparedRoute`) ; validation
+  finale du contrat de traces en cours, publication non démarrée.
 - [ ] **v5.84.0 interne** — moteur de suivi TypeScript et fixtures, sans promesse Play publique.
 - [ ] **v5.85.0** — guidage Android natif robuste, écran éteint et récupération.
 - [ ] **v5.86.0** — rapport Prêt à partir et corridor cartographique hors ligne.

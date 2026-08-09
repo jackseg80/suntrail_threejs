@@ -293,6 +293,18 @@ export class SettingsSheet extends BaseComponent {
 
         // Language selector
         this.createLanguageSelector();
+        const onLocaleChanged = () => {
+            if (!this.element) return;
+            bindSettingsAccountSection(this.element);
+            const language = this.element.querySelector(
+                '#lang-select'
+            ) as HTMLSelectElement | null;
+            if (language) language.value = i18n.getLocale();
+        };
+        eventBus.on('localeChanged', onLocaleChanged);
+        this.addSubscription(() =>
+            eventBus.off('localeChanged', onLocaleChanged)
+        );
 
         // Tutorial button
         this.createTutorialButton();

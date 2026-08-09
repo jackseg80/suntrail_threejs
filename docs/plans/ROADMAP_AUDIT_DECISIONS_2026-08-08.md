@@ -2,8 +2,8 @@
 
 > **Instantané historique.** Les chiffres de la section « État vérifié » décrivent le premier
 > audit. Depuis, v5.82.0 est finalisée dans le worktree avec 1 491 tests et six smoke Chromium
-> verts ; validation terrain Galaxy S23 acceptée le 2026-08-09 sans P0/P1 signalé,
-> publication non exécutée. Les décisions produit restent applicables, avec l'ordre courant
+> verts ; validation terrain Galaxy S23 acceptée le 2026-08-09 sans P0/P1 signalé. v5.82.0
+> est désormais clôturée et publiée. Les décisions produit restent applicables, avec l'ordre courant
 > défini dans `ROADMAP.md`.
 
 ## Verdict

@@ -39,6 +39,19 @@ allure car elles alimentent ETA et soleil.
 - Free : un tracé importé actif affiché ; Pro : multi-affichage. Sauvegarder n'est pas payant.
 - Conserver IDs/adaptateurs v5.82 et faire évoluer le même onglet Bibliothèque.
 
+### Clarification fonctionnelle issue de la validation terrain
+
+- Distinguer une route en préparation, une trace consultée et le REC indépendant.
+- Une sélection de trace change carte/profil/pente, jamais le brouillon ni son bandeau.
+- Fournir une action explicite pour préparer un GPX et protéger tout brouillon modifié avant
+  remplacement par Sauvegarder / Remplacer / Annuler.
+- Afficher le nombre de traces réellement visibles et des actions rapides pour masquer les
+  autres ou toutes les traces chargées, sans masquer ni altérer le REC.
+- Ne charger sur la carte aucune des routes IndexedDB qui n’a pas été explicitement ouverte.
+- Conserver tous les points d'un GPX dans `geometry`, mais garder des waypoints éditables compacts :
+  A/B pour une trace ouverte ; A, deux passages intermédiaires et B au départ pour une boucle.
+  À la réouverture d'une route préparée, restaurer explicitement son profil complet.
+
 ## Adéquation débutant et différenciation SunTrail
 
 - Heure de départ, ETA et marge avant coucher du soleil dans le résumé principal.

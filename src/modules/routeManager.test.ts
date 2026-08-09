@@ -9,6 +9,11 @@ vi.mock('./state', () => ({
         gpxLayers: [] as any[],
         activeRouteProfile: 'foot-hiking',
         routeLoopEnabled: false,
+        routeDraftSourceLayerId: null,
+        routeDraftName: '',
+        routeDraftDirty: false,
+        activePreparedRouteId: null,
+        routeComputation: null,
         ORS_KEY: '',
         originTile: { x: 0, y: 0, z: 6 },
         scene: null,
@@ -83,6 +88,11 @@ describe('routeManager', () => {
         state.routeError = null;
         state.isRoutePlanningMode = false;
         state.gpxLayers = [];
+        state.routeDraftSourceLayerId = null;
+        state.routeDraftName = '';
+        state.routeDraftDirty = false;
+        state.activePreparedRouteId = null;
+        state.routeComputation = null;
         localStorage.clear();
         document.body.className = '';
         document.body.innerHTML = `
@@ -107,6 +117,28 @@ describe('routeManager', () => {
                 'isRoutePlanningMode',
                 expect.any(Function)
             );
+        });
+
+        it('ne recalcule pas la géométrie complète d’un brouillon GPX à partir de ses seules extrémités A/B', () => {
+            vi.useFakeTimers();
+            state.routeWaypoints = [
+                { lat: 46.5, lon: 7.5 },
+                { lat: 46.5, lon: 7.5 },
+            ];
+            state.routeDraftSourceLayerId = 'gpx-loop';
+            initRouteManager();
+            const waypointCallback = (
+                state.subscribe as ReturnType<typeof vi.fn>
+            ).mock.calls
+                .filter((call: any[]) => call[0] === 'routeWaypoints')
+                .slice(-1)[0]?.[1];
+
+            waypointCallback?.();
+            vi.advanceTimersByTime(2000);
+
+            expect(mockComputeRoute).not.toHaveBeenCalled();
+            expect(mockGetPlaceName).not.toHaveBeenCalled();
+            vi.useRealTimers();
         });
     });
 
@@ -266,6 +298,53 @@ describe('routeManager', () => {
                     document.body.classList.contains('route-planner-active')
                 ).toBe(false);
             }
+        });
+
+        it('nomme explicitement le brouillon dont elle affiche les statistiques', () => {
+            state.routeWaypoints = [
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.1, lon: 7.1 },
+            ];
+            state.routeDraftName = 'Boucle du lac';
+            state.routeComputation = {
+                name: 'Boucle du lac',
+                distance: 8.01,
+                ascent: 29,
+                descent: 33,
+                duration: 120,
+            } as any;
+
+            initRouteManager();
+
+            expect(document.getElementById('rb-info')?.textContent).toContain(
+                'preparedRoutes.source.manualDraft · Boucle du lac · 8.0 km'
+            );
+        });
+
+        it('distingue un GPX en préparation de la trace seulement consultée', () => {
+            state.routeWaypoints = [
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.1, lon: 7.1 },
+            ];
+            state.routeDraftSourceLayerId = 'gpx-prepared';
+            state.routeDraftName = 'GPX préparé';
+            state.activeGPXLayerId = 'gpx-viewed';
+            state.routeComputation = {
+                name: 'GPX préparé',
+                distance: 4.2,
+                ascent: 120,
+                descent: 80,
+                duration: 60,
+            } as any;
+
+            initRouteManager();
+
+            expect(document.getElementById('rb-info')?.textContent).toContain(
+                'preparedRoutes.source.gpxDraft · GPX préparé · 4.2 km'
+            );
+            expect(
+                document.getElementById('rb-info')?.textContent
+            ).not.toContain('gpx-viewed');
         });
     });
 

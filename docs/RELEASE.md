@@ -152,7 +152,8 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **894** | **5.81.2** | **v5.81.2** | **Démarrage carte progressif : première tuile 3D visible sans attendre la vague complète ; RevenueCat différé, cache/packs/Gist optimisés.** | **2026-08-02** |
 | **895** | **5.81.3** | **v5.81.3** | **Parcours invité/Google Web masqués et achat invité suspendu jusqu'à fiabilisation OAuth/restauration ; Android natif inchangé.** | **2026-08-02** |
 | **896** | **5.81.4** | **v5.81.4** | **Section Compte RGPD conservée visible ; contrôles invité/Google masqués, smoke E2E Chromium corrigé et renforcé.** | **2026-08-02** |
-| **897** | **5.82.0** | **—** | **Maximum Play vérifié à 896 ; bundle Android signé généré, validation Galaxy S23 acceptée sans P0/P1. CI et upload Play à exécuter.** | **2026-08-09** |
+| **897** | **5.82.0** | **v5.82.0** | **Release clôturée et publiée ; validation Galaxy S23 acceptée sans P0/P1, CI verte et AAB signé attaché à la release GitHub.** | **2026-08-09** |
+| **898** | **5.83.0** | **v5.83.0** | **Prepared Routes et bibliothèque locale : routes IndexedDB, compatibilité GPX/REC, difficulté expliquée, validation Galaxy S23 ; le tag déclenche la CI et l'AAB signé attaché à la release GitHub.** | **2026-08-09** |
 
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.

@@ -12,6 +12,13 @@ import { getPlaceName } from './geocodingService';
 import { scheduleRouteSolarAnalysis, invalidateRouteCache } from './solarRoute';
 import { showToast } from './toast';
 import { STORAGE_KEYS } from '../constants/storage';
+import {
+    getRouteDraftHistoryState,
+    mutateRouteWaypoints,
+    redoRouteWaypoints,
+    undoRouteWaypoints,
+} from './preparedRoutes/routeDraftHistory';
+import type { RouteWaypoint } from './preparedRoutes/preparedRoute';
 
 const waypointGroup = new THREE.Group();
 let autoComputeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -28,11 +35,24 @@ const _geocodeCache = new Map<string, string>();
 const GEOCODE_THROTTLE_MS = 1500;
 const _unsubscribers: (() => void)[] = [];
 
+function escapeHTML(value: string): string {
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
+
 export function initRouteManager(): void {
     _unsubscribers.push(
         state.subscribe('routeWaypoints', () => {
             rebuildMarkers();
             updateBar();
+            // Imported GPX geometry is already complete. Its A/B endpoints are
+            // an accessible summary, not a request to route again between two
+            // points (which is especially invalid for a loop: A === B).
+            if (state.routeDraftSourceLayerId) return;
             scheduleAutoCompute();
             scheduleGeocodeNames();
             invalidateRouteCache();
@@ -43,6 +63,11 @@ export function initRouteManager(): void {
         }),
         state.subscribe('routeLoading', () => updateBar()),
         state.subscribe('routeError', () => updateBar()),
+        state.subscribe('routeComputation', () => updateBar()),
+        state.subscribe('routeDraftName', () => updateBar()),
+        state.subscribe('routeDraftSourceLayerId', () => updateBar()),
+        state.subscribe('activePreparedRouteId', () => updateBar()),
+        state.subscribe('routeDraftDirty', () => updateBar()),
         state.subscribe('isRoutePlanningMode', () => {
             syncPlanningModeUI();
             updateBar();
@@ -193,6 +218,12 @@ export function scheduleAutoCompute(): void {
     }, 800);
 }
 
+export function cancelScheduledAutoCompute(): void {
+    if (!autoComputeTimer) return;
+    clearTimeout(autoComputeTimer);
+    autoComputeTimer = null;
+}
+
 export function scheduleGeocodeNames(): void {
     if (_geocodeTimer) clearTimeout(_geocodeTimer);
     _geocodeTimer = setTimeout(async () => {
@@ -226,7 +257,26 @@ export function scheduleGeocodeNames(): void {
 export function removeWaypointAt(index: number): void {
     const wps = [...state.routeWaypoints];
     wps.splice(index, 1);
-    state.routeWaypoints = wps;
+    mutateRouteWaypoints(wps);
+}
+
+export function moveWaypointAt(index: number, waypoint: RouteWaypoint): void {
+    if (index < 0 || index >= state.routeWaypoints.length) return;
+    const waypoints = [...state.routeWaypoints];
+    waypoints[index] = { ...waypoint };
+    mutateRouteWaypoints(waypoints);
+}
+
+export function undoRouteEdit(): boolean {
+    const changed = undoRouteWaypoints();
+    if (changed) scheduleAutoCompute();
+    return changed;
+}
+
+export function redoRouteEdit(): boolean {
+    const changed = redoRouteWaypoints();
+    if (changed) scheduleAutoCompute();
+    return changed;
 }
 
 export function clearRoute(): void {
@@ -235,7 +285,9 @@ export function clearRoute(): void {
     state.scene?.remove(waypointGroup);
     _lastWaypointCount = 0;
     _barStats = null;
-    document.body.classList.remove('route-planner-active');
+    if (!state.isRoutePlanningMode) {
+        document.body.classList.remove('route-planner-active');
+    }
 }
 
 export function setRoutePlanningMode(
@@ -290,15 +342,30 @@ function updateBar(): void {
 
 function updateBarFromLayerStats(): void {
     if (state.routeWaypoints.length < 2) return;
-    const currentLayer = state.gpxLayers.find((l) => l.stats.dPlus > 0);
-    if (currentLayer) {
+    const computation = state.routeComputation;
+    if (computation) {
         _barStats = {
-            distance: currentLayer.stats.distance,
-            ascent: currentLayer.stats.dPlus,
-            descent: currentLayer.stats.dMinus,
-            duration: currentLayer.stats.estimatedTime ?? 0,
+            distance: computation.distance,
+            ascent: computation.ascent,
+            descent: computation.descent,
+            duration: computation.duration,
         };
     }
+}
+
+function getRouteBarContext(): string {
+    const sourceKey = state.routeDraftSourceLayerId
+        ? 'preparedRoutes.source.gpxDraft'
+        : state.activePreparedRouteId && !state.routeDraftDirty
+          ? 'preparedRoutes.source.savedRoute'
+          : 'preparedRoutes.source.manualDraft';
+    const source = i18n.t(sourceKey);
+    const name = (
+        state.routeDraftName ||
+        state.routeComputation?.name ||
+        ''
+    ).trim();
+    return name ? `${source} · ${name}` : source;
 }
 
 function renderBar(): void {
@@ -328,7 +395,7 @@ function renderBar(): void {
             infoEl.textContent =
                 i18n.t('routeBar.error') || 'Itinéraire indisponible';
         } else if (_barStats) {
-            infoEl.textContent = `${_barStats.distance.toFixed(1)} km \u00b7 \u2191${Math.round(_barStats.ascent)}m \u00b7 \u2193${Math.round(_barStats.descent)}m \u00b7 ${fmt(_barStats.duration)}`;
+            infoEl.textContent = `${getRouteBarContext()} · ${_barStats.distance.toFixed(1)} km · ↑${Math.round(_barStats.ascent)}m · ↓${Math.round(_barStats.descent)}m · ${fmt(_barStats.duration)}`;
         } else if (count === 1) {
             infoEl.textContent =
                 i18n.t('routeBar.onePoint') || '1 point \u00b7 posez-en un 2e';
@@ -348,6 +415,13 @@ function renderSettingsWaypoints(): void {
     const container = document.getElementById('rs-waypoints-list');
     if (!container) return;
     const waypoints = state.routeWaypoints;
+    const historyState = getRouteDraftHistoryState();
+    document
+        .getElementById('rs-undo-btn')
+        ?.toggleAttribute('disabled', !historyState.canUndo);
+    document
+        .getElementById('rs-redo-btn')
+        ?.toggleAttribute('disabled', !historyState.canRedo);
     if (waypoints.length === 0) {
         container.innerHTML = '';
         return;
@@ -360,7 +434,8 @@ function renderSettingsWaypoints(): void {
                 wp.name || `${wp.lat.toFixed(4)}, ${wp.lon.toFixed(4)}`;
             return `<div class="rs-wp-item">
             <span class="rs-wp-num">${i + 1}</span>
-            <span class="rs-wp-label">${label}</span>
+            <span class="rs-wp-label">${escapeHTML(label)}</span>
+            <button class="rs-wp-edit" data-idx="${i}" aria-label="${i18n.t('preparedRoutes.editor.moveWaypoint') || 'Déplacer le point'}">✎</button>
             <button class="rs-wp-up" data-idx="${i}" ${i === 0 ? 'disabled' : ''} aria-label="Monter le point ${i + 1}">↑</button>
             <button class="rs-wp-dn" data-idx="${i}" ${i === last ? 'disabled' : ''} aria-label="Descendre le point ${i + 1}">↓</button>
             <button class="rs-wp-del" data-idx="${i}" aria-label="Supprimer le point ${i + 1}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -369,14 +444,43 @@ function renderSettingsWaypoints(): void {
         .join('');
 
     container
-        .querySelectorAll<HTMLButtonElement>('.rs-wp-up, .rs-wp-dn, .rs-wp-del')
+        .querySelectorAll<HTMLButtonElement>(
+            '.rs-wp-edit, .rs-wp-up, .rs-wp-dn, .rs-wp-del'
+        )
         .forEach((btn) => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const idx = parseInt(btn.dataset.idx ?? '', 10);
                 if (isNaN(idx)) return;
                 const wps = [...state.routeWaypoints];
-                if (btn.classList.contains('rs-wp-del')) {
+                if (btn.classList.contains('rs-wp-edit')) {
+                    const current = wps[idx];
+                    const raw = window.prompt(
+                        i18n.t('preparedRoutes.editor.coordinatesPrompt') ||
+                            'Latitude, longitude',
+                        `${current.lat.toFixed(6)}, ${current.lon.toFixed(6)}`
+                    );
+                    if (!raw) return;
+                    const [lat, lon] = raw
+                        .split(',')
+                        .map((value) => Number.parseFloat(value.trim()));
+                    if (
+                        !Number.isFinite(lat) ||
+                        !Number.isFinite(lon) ||
+                        lat < -90 ||
+                        lat > 90 ||
+                        lon < -180 ||
+                        lon > 180
+                    ) {
+                        showToast(
+                            i18n.t(
+                                'preparedRoutes.editor.invalidCoordinates'
+                            ) || 'Coordonnées invalides'
+                        );
+                        return;
+                    }
+                    wps[idx] = { ...current, lat, lon };
+                } else if (btn.classList.contains('rs-wp-del')) {
                     wps.splice(idx, 1);
                 } else if (btn.classList.contains('rs-wp-up') && idx > 0) {
                     [wps[idx - 1], wps[idx]] = [wps[idx], wps[idx - 1]];
@@ -386,7 +490,7 @@ function renderSettingsWaypoints(): void {
                 ) {
                     [wps[idx], wps[idx + 1]] = [wps[idx + 1], wps[idx]];
                 }
-                state.routeWaypoints = wps;
+                mutateRouteWaypoints(wps);
             });
         });
 }

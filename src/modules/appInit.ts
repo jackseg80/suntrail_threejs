@@ -35,6 +35,9 @@ import {
 } from './routeManager';
 import { fetchWeather } from './weather';
 import { fetchLocalPeaks } from './peaks';
+import { releaseFlags } from './releaseFlags';
+import { preparedRouteService } from './preparedRoutes/preparedRouteService';
+import { initPreparedRouteUI } from './preparedRoutes/preparedRouteUI';
 import { initTheme } from './theme';
 import { haptic } from './haptics';
 import { resolveMapTilerKey, resolveORSKey } from './config';
@@ -433,6 +436,9 @@ async function startApp() {
 
 async function initSecondaryUI(): Promise<void> {
     try {
+        if (releaseFlags.isEnabled('preparedRoutes')) {
+            await preparedRouteService.initialize();
+        }
         const [
             { SettingsSheet },
             { LayersSheet },
@@ -478,6 +484,7 @@ async function initSecondaryUI(): Promise<void> {
 
         new InclinometerWidget().init();
         initRouteManager();
+        initPreparedRouteUI();
     } catch (e) {
         console.error('[UI] Secondary hydration failed:', e);
     }

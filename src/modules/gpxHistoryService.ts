@@ -26,21 +26,28 @@ export interface GPXHistoryEntry {
     centerLat: number;
     centerLon: number;
     bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number };
+    /** Stable geometry fingerprint for imported-GPX deduplication. */
+    contentHash?: string;
 }
 
-function computeHash(
+function computeContentHash(
     points: Array<{ lat: number; lon: number; ele: number }>,
+    pointCount: number,
     distance: number
 ): string {
-    const first = points.slice(0, 10);
-    const last = points.slice(-10);
-    const sample = [...first, ...last, { lat: distance, lon: 0, ele: 0 }];
+    if (points.length < 2) return '';
+
+    // The persisted history keeps a simplified geometry. Its two endpoints,
+    // original point count and distance are stable between a full import and
+    // the persisted version, unlike intermediate samples.
+    const sample = [points[0], points[points.length - 1]];
     const raw = sample
         .map(
             (p) =>
-                `${p.lat.toFixed(5)},${p.lon.toFixed(5)},${(p.ele || 0).toFixed(0)}`
+                `${p.lat.toFixed(4)},${p.lon.toFixed(4)},${(p.ele || 0).toFixed(0)}`
         )
-        .join('|');
+        .join('|')
+        .concat(`|${pointCount}|${distance.toFixed(3)}`);
     let hash = 0;
     for (let i = 0; i < raw.length; i++) {
         const char = raw.charCodeAt(i);
@@ -68,7 +75,11 @@ export function saveToHistory(layer: GPXLayer, source: 'import' | 'rec'): void {
 
     const lats = simplified.map((p: { lat: number }) => p.lat);
     const lons = simplified.map((p: { lon: number }) => p.lon);
-    const newHash = computeHash(fullPoints, layer.stats.distance);
+    const contentHash = computeContentHash(
+        fullPoints,
+        layer.stats.pointCount,
+        layer.stats.distance
+    );
 
     const entryCenter = {
         lat: (Math.max(...lats) + Math.min(...lats)) / 2,
@@ -102,19 +113,13 @@ export function saveToHistory(layer: GPXLayer, source: 'import' | 'rec'): void {
             minLon: Math.min(...lons),
             maxLon: Math.max(...lons),
         },
+        contentHash,
     };
 
-    const history = loadHistory();
-
-    const existingIdx = history.findIndex((e) => {
-        if (e.id === entry.id) return true;
-        const eHash = computeHashFromEntry(e);
-        return eHash === newHash;
-    });
-
-    if (existingIdx >= 0) {
-        history.splice(existingIdx, 1);
-    }
+    const history = loadHistory().filter(
+        (existing) =>
+            existing.id !== entry.id && !isSameImportedContent(existing, entry)
+    );
 
     history.unshift(entry);
 
@@ -125,8 +130,40 @@ export function saveToHistory(layer: GPXLayer, source: 'import' | 'rec'): void {
     persistHistory(history);
 }
 
-function computeHashFromEntry(entry: GPXHistoryEntry): string {
-    return computeHash(entry.simplifiedPoints, entry.stats.distance);
+function getContentHash(entry: GPXHistoryEntry): string {
+    return (
+        entry.contentHash ||
+        computeContentHash(
+            entry.simplifiedPoints,
+            entry.stats.pointCount,
+            entry.stats.distance
+        )
+    );
+}
+
+function isSameImportedContent(
+    first: GPXHistoryEntry,
+    second: GPXHistoryEntry
+): boolean {
+    return (
+        first.source === 'import' &&
+        second.source === 'import' &&
+        getContentHash(first) !== '' &&
+        getContentHash(first) === getContentHash(second)
+    );
+}
+
+function removeDuplicateImportedEntries(
+    entries: GPXHistoryEntry[]
+): GPXHistoryEntry[] {
+    const seenHashes = new Set<string>();
+    return entries.filter((entry) => {
+        if (entry.source !== 'import') return true;
+        const hash = getContentHash(entry);
+        if (!hash || seenHashes.has(hash)) return !hash;
+        seenHashes.add(hash);
+        return true;
+    });
 }
 
 function simplifyPointsUniform(
@@ -167,13 +204,17 @@ export function loadHistory(): GPXHistoryEntry[] {
             _historyCache = [];
             return [];
         }
-        _historyCache = parsed.filter(
+        const validEntries = parsed.filter(
             (e: any) =>
                 e &&
                 typeof e.id === 'string' &&
                 Array.isArray(e.simplifiedPoints) &&
                 e.simplifiedPoints.length >= 2
         );
+        _historyCache = removeDuplicateImportedEntries(validEntries);
+        if (_historyCache.length !== validEntries.length) {
+            persistHistory(_historyCache);
+        }
         return _historyCache;
     } catch {
         _historyCache = [];

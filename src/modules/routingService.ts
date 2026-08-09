@@ -9,16 +9,26 @@ import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
 import { haversineDistance, isPositionInSwitzerland } from './geo';
 import { isProActive } from './state';
+import type {
+    PreparedRouteV1,
+    RouteComputationSnapshot,
+    RoutePoint,
+    RouteWaypoint,
+} from './preparedRoutes/preparedRoute';
+import {
+    analyzeORSDifficulty,
+    createOSRMDifficulty,
+    type ORSExtras,
+} from './preparedRoutes/routeDifficulty';
+import {
+    mutateRouteWaypoints,
+    resetRouteDraftHistory,
+} from './preparedRoutes/routeDraftHistory';
+
+export type { RouteWaypoint } from './preparedRoutes/preparedRoute';
 
 let _currentRouteLayerId: string | null = null;
 let _routeGeneration = 0;
-
-export interface RouteWaypoint {
-    lat: number;
-    lon: number;
-    alt?: number;
-    name?: string;
-}
 
 export type RoutingProfile =
     'foot-hiking' | 'foot-walking' | 'cycling-regular' | 'cycling-mountain';
@@ -35,6 +45,7 @@ interface ORSResponse {
             };
             ascent?: number;
             descent?: number;
+            extras?: ORSExtras;
         };
     }>;
 }
@@ -78,11 +89,20 @@ async function fetchFromORS(
     waypoints: RouteWaypoint[],
     profile: RoutingProfile
 ): Promise<ORSResponse> {
-    const body = JSON.stringify({
+    const payload: Record<string, unknown> = {
         coordinates: waypointsToORSFormat(waypoints),
         elevation: true,
         instructions: false,
-    });
+    };
+    if (profile === 'foot-hiking') {
+        payload.extra_info = [
+            'traildifficulty',
+            'steepness',
+            'surface',
+            'waytype',
+        ];
+    }
+    const body = JSON.stringify(payload);
 
     const doFetch = async (): Promise<Response> => {
         const key = getORSKey();
@@ -139,10 +159,10 @@ function orsResponseToPoints(
         );
     }
     const coords = response.features[0].geometry.coordinates;
-    return coords.map(([lon, lat]) => ({
+    return coords.map(([lon, lat, ele]) => ({
         lat,
         lon,
-        ele: 0,
+        ele: Number.isFinite(ele) ? Number(ele) : 0,
     }));
 }
 
@@ -200,13 +220,7 @@ export function getActiveProfile(): RoutingProfile {
 export async function computeRoute(
     waypoints: RouteWaypoint[],
     profile?: RoutingProfile
-): Promise<{
-    name: string;
-    distance: number;
-    duration: number;
-    ascent: number;
-    descent: number;
-}> {
+): Promise<RouteComputationSnapshot> {
     if (waypoints.length < 2) {
         throw new Error(
             i18n.t('routePlanner.error.minWaypoints') ||
@@ -265,6 +279,7 @@ export async function computeRoute(
     try {
         let points!: Array<{ lat: number; lon: number; ele: number }>;
         let usedORS = false;
+        let orsExtras: ORSExtras | undefined;
 
         if (useORS) {
             try {
@@ -275,6 +290,7 @@ export async function computeRoute(
                 if (generation !== _routeGeneration)
                     throw new Error('Route cancelled');
                 points = orsResponseToPoints(response);
+                orsExtras = response.features[0].properties.extras;
                 usedORS = true;
             } catch (e: any) {
                 if (state.DEBUG_MODE)
@@ -311,13 +327,27 @@ export async function computeRoute(
             i18n.t('routePlanner.toast.computed') || 'Route computed'
         );
 
-        return {
+        const difficulty = usedORS
+            ? analyzeORSDifficulty(orsExtras, points.length)
+            : createOSRMDifficulty();
+        const result: RouteComputationSnapshot = {
             name: routeName,
+            geometry: points.map((point) => ({ ...point })),
             distance: layer.stats.distance,
             duration: layer.stats.estimatedTime ?? 0,
             ascent: layer.stats.dPlus,
             descent: layer.stats.dMinus,
+            routingSource: usedORS ? 'ors' : 'osrm',
+            guidanceQuality: 'full',
+            technicalDifficulty: difficulty.difficulty,
+            dataCoverage: difficulty.coverage,
         };
+        state.routeComputation = result;
+        if (!(state.routeDraftName ?? '').trim()) {
+            state.routeDraftName = routeName;
+        }
+        state.routeDraftDirty = true;
+        return result;
     } catch (error: any) {
         if (error?.message === 'Route cancelled') {
             state.routeLoading = false;
@@ -361,23 +391,91 @@ function buildRouteName(waypoints: RouteWaypoint[], isLoop: boolean): string {
 export function removeRouteWaypoint(index: number): void {
     const waypoints = state.routeWaypoints;
     if (index < 0 || index >= waypoints.length) return;
-    state.routeWaypoints = waypoints.filter((_, i) => i !== index);
+    mutateRouteWaypoints(waypoints.filter((_, i) => i !== index));
 }
 
 export function addRouteWaypoint(wp: RouteWaypoint): void {
-    if (!wp.lat || !wp.lon) return;
-    state.routeWaypoints = [...state.routeWaypoints, wp];
+    if (!Number.isFinite(wp.lat) || !Number.isFinite(wp.lon)) return;
+    mutateRouteWaypoints([...state.routeWaypoints, wp]);
 }
 
 export function clearRouteWaypoints(): void {
+    cancelRouteComputation();
     if (_currentRouteLayerId) {
         removeGPXLayer(_currentRouteLayerId);
         _currentRouteLayerId = null;
     }
-    state.routeWaypoints = [];
+    mutateRouteWaypoints([]);
     state.routeError = null;
+    state.routeComputation = null;
+    state.activePreparedRouteId = null;
+    state.routeDraftSourceLayerId = null;
+    state.routeLastSavedAt = null;
+}
+
+export function cancelRouteComputation(): void {
+    _routeGeneration += 1;
+    state.routeLoading = false;
 }
 
 export function reverseWaypoints(): void {
-    state.routeWaypoints = [...state.routeWaypoints].reverse();
+    mutateRouteWaypoints([...state.routeWaypoints].reverse());
+}
+
+export function displayPreparedRoute(route: PreparedRouteV1): void {
+    cancelRouteComputation();
+    if (_currentRouteLayerId) removeGPXLayer(_currentRouteLayerId);
+    const rawData = {
+        tracks: [
+            {
+                name: route.name,
+                points: route.geometry.map((point, index) => ({
+                    lat: point.lat,
+                    lon: point.lon,
+                    ele: point.ele,
+                    time: new Date(index * 1000).toISOString(),
+                })),
+            },
+        ],
+    };
+    const layer = addGPXLayer(rawData, route.name, {
+        silent: false,
+        forceVisible: true,
+        isManualRoute: true,
+        id: `prepared-${route.id}`,
+    });
+    _currentRouteLayerId = layer.id;
+    resetRouteDraftHistory(
+        route.waypoints.map((waypoint) => ({
+            ...waypoint,
+            name:
+                waypoint.name ||
+                `${waypoint.lat.toFixed(5)}, ${waypoint.lon.toFixed(5)}`,
+        }))
+    );
+    state.activeRouteProfile = route.activityProfile as RoutingProfile;
+    state.routeLoopEnabled = route.loopEnabled;
+    state.routeDraftSourceLayerId = null;
+    state.routeComputation = {
+        name: route.name,
+        geometry: route.geometry.map((point: RoutePoint) => ({ ...point })),
+        distance: route.stats.distance,
+        duration: route.stats.routingDuration,
+        ascent: route.stats.ascent,
+        descent: route.stats.descent,
+        routingSource:
+            route.source === 'gpx-import'
+                ? 'gpx'
+                : route.source === 'legacy-conversion'
+                  ? 'legacy'
+                  : route.stats.technicalDifficulty.source === 'ors'
+                    ? 'ors'
+                    : 'osrm',
+        guidanceQuality: route.guidanceQuality,
+        technicalDifficulty: { ...route.stats.technicalDifficulty },
+        dataCoverage: { ...route.stats.dataCoverage },
+    };
+    state.routeError = null;
+    state.routeLoading = false;
+    state.activeGPXLayerId = layer.id;
 }

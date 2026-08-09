@@ -24,7 +24,11 @@ vi.mock('./state', () => ({
 
 vi.mock('./iap', () => ({ showUpgradePrompt: vi.fn() }));
 vi.mock('./haptics', () => ({ haptic: vi.fn() }));
-vi.mock('./gpxLayers', () => ({ addGPXLayer: vi.fn() }));
+vi.mock('./gpxLayers', () => ({
+    addGPXLayer: vi.fn(),
+    activateGPXLayer: vi.fn(),
+    removeGPXLayer: vi.fn(),
+}));
 vi.mock('./terrain', () => ({ updateVisibleTiles: vi.fn() }));
 vi.mock('./geo', () => ({
     lngLatToTile: vi.fn(() => ({ x: 2130, y: 1445, z: 13 })),
@@ -34,12 +38,14 @@ import { GPXService } from './gpxService';
 import { state, isProActive } from './state';
 import { showUpgradePrompt } from './iap';
 import { haptic } from './haptics';
-import { addGPXLayer } from './gpxLayers';
+import { activateGPXLayer, addGPXLayer, removeGPXLayer } from './gpxLayers';
 import { updateVisibleTiles } from './terrain';
 import { lngLatToTile } from './geo';
 
 const mockHaptic = haptic as ReturnType<typeof vi.fn>;
 const mockAddGPXLayer = addGPXLayer as ReturnType<typeof vi.fn>;
+const mockActivateGPXLayer = activateGPXLayer as ReturnType<typeof vi.fn>;
+const mockRemoveGPXLayer = removeGPXLayer as ReturnType<typeof vi.fn>;
 const mockUpdateVisibleTiles = updateVisibleTiles as ReturnType<typeof vi.fn>;
 const mockLngLatToTile = lngLatToTile as ReturnType<typeof vi.fn>;
 const mockIsProActive = isProActive as ReturnType<typeof vi.fn>;
@@ -77,6 +83,11 @@ describe('GPXService', () => {
         state.originTile = { x: 0, y: 0, z: 10 };
         mockIsProActive.mockReturnValue(false);
         mockLngLatToTile.mockReturnValue({ x: 2130, y: 1445, z: 13 });
+        mockAddGPXLayer.mockImplementation((_raw, name) => ({
+            id: `layer-${name}`,
+            name,
+            isManualRoute: false,
+        }));
 
         gpxService = new GPXService();
     });
@@ -93,7 +104,29 @@ describe('GPXService', () => {
             const gpxArg = mockAddGPXLayer.mock.calls[0][0];
             expect(gpxArg.tracks).toEqual(validTrack.tracks);
             expect(mockAddGPXLayer.mock.calls[0][1]).toBe('test');
+            expect(mockActivateGPXLayer).toHaveBeenCalledWith('layer-test');
             expect(mockHaptic).toHaveBeenCalledWith('success');
+        });
+
+        it('replaces only the loaded imported layer for Free and preserves manual layers', async () => {
+            mockParse.mockImplementation(function (this: any) {
+                this.tracks = validTrack.tracks;
+            });
+            state.gpxLayers = [
+                { id: 'old-gpx', isManualRoute: false } as any,
+                { id: 'manual-route', isManualRoute: true } as any,
+            ];
+
+            await gpxService.handleGPXImport('<gpx>...</gpx>', 'next.gpx');
+
+            expect(mockRemoveGPXLayer).toHaveBeenCalledTimes(1);
+            expect(mockRemoveGPXLayer).toHaveBeenCalledWith('old-gpx');
+            expect(mockRemoveGPXLayer).not.toHaveBeenCalledWith('manual-route');
+            expect(mockAddGPXLayer).toHaveBeenCalledWith(
+                expect.anything(),
+                'next',
+                { forceVisible: true }
+            );
         });
 
         it('should handle GPX with no tracks (invalid file)', async () => {

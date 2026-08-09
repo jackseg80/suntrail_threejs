@@ -1,6 +1,6 @@
-# AI Architecture Guide (v5.82.0)
+# AI Architecture Guide (v5.83.0)
 
-> Référence du worktree v5.82.0 finalisé ; publication externe non exécutée.
+> Référence du worktree v5.83.0 non publié ; v5.82.0 reste la release publique.
 
 This document maps the core reactive logic and rendering systems to help AI agents understand how modules interact.
 
@@ -16,6 +16,9 @@ To improve testability and keep UI components lean, business logic is extracted 
 | `gpxLayers` | (v5.56.2) 3D rendering and management of GPX track layers. | `addGPXLayer`, `updateAllGPXMeshes` |
 | `geocodingService` | Reverse/forward geocoding via MapTiler + Nominatim fallback, metadata and contextual ranking. | `getPlaceName`, `searchLocations`, `classifyFeature`, `rankSearchResults` |
 | `routeManager` | Explicit planning mode, waypoint/bar UI, route recompute and legacy-compatible controls. | `setRoutePlanningMode`, `reverseRoute`, `clearRoute` |
+| `PreparedRouteService` | Only UI-facing orchestration for local prepared routes and legacy/GPX conversion. | `saveCurrentDraft`, `load`, `duplicate`, `convertLegacy` |
+| `RouteRepository` | Sole IndexedDB access for `PreparedRouteV1`; injected `IDBFactory`, atomic writes and additive upgrades. | `list`, `get`, `saveMany`, `delete`, `close` |
+| `releaseFlags` | Release rollout decisions, separate from Free/Pro entitlements. | `isEnabled`, `refresh`, `setDeveloperOverride` |
 | `gpxHistoryService` | (v5.56.2) GPX history persistence (max 5, localStorage). | `saveToHistory`, `loadHistory` |
 | `iapService` | RevenueCat integration, Pro status synchronization. | `initialize`, `purchase`, `syncProStatus` |
 | `ZoneSelector` | (v5.57.0) Logic for visual offline zone selection. | `getViewportBBox`, `getTilesForBBox` |
@@ -41,6 +44,8 @@ The `eventBus` is the central hub for module-to-module communication.
 | `packHighlight` | `TopStatusBar` | `{ packId: string }` | Scrolls to & highlights a specific pack in PacksSheet (LOD badge click → pack). |
 | `terrainReady` | `scene` | none | First batch of tiles is loaded and rendered. |
 | `recordingRecovered` | `main` | none | GPS recording resumed after app restart. |
+| `preparedRoutesUpdated` | `PreparedRouteService` | none | Refreshes the local route library after storage changes. |
+| `trackDestinationChanged` | `NavigationBar` | `{ destination: 'outing' \| 'library' }` | Switches the shared `TrackSheet` between functional destinations. |
 | `onServiceStopped` | `nativeGPSService` | none | Android Foreground Service stopped via notification. |
 
 ## 2. Shader Architecture & Uniforms
@@ -74,19 +79,31 @@ The terrain uses `MeshStandardMaterial` modified via `onBeforeCompile` for perfo
 Use `state.subscribe(key, callback)` for reactive updates.
 - **Persistent Keys**: `IS_2D_MODE`, `PERFORMANCE_PRESET`, `UNIT_SYSTEM`.
 - **Volatile Keys**: `weatherData`, `simDate`, `lastClickedCoords`.
-- **Planning key**: `isRoutePlanningMode` is volatile and governs only tap semantics/UI.
-  Waypoints remain in the existing `routeWaypoints`; v5.82.0 deliberately adds no
-  `PreparedRoute` persistence model.
+- **Planning state**: `isRoutePlanningMode` still governs tap semantics. Draft metadata and the
+  current computation remain volatile; only validated `PreparedRouteV1` snapshots are persisted.
+- **Trace roles**: `routeWaypoints`/`routeComputation` are the sole Prepare draft source;
+  `activeGPXLayerId` is the viewed reference for map/profile; `recordedPoints` is the independent
+  REC source and keeps priority in Outing statistics while recording.
+- Selecting a GPX never mutates the Prepare draft. `PreparedRouteService.prepareGPXLayerAsDraft`
+  is called only by the explicit UI action after dirty-draft protection.
+- GPX `geometry` preserves every imported point. `waypoints` remains a compact editing model:
+  endpoints for an open trace, or start/two intermediate anchors/end for a detected loop. Opening
+  a prepared route explicitly refreshes the profile after the Library sheet closes.
+- **Prepared routes DB**: `suntrail-prepared-routes`, database version 2, `routes` object store,
+  data schema version 1, indexes `updatedAt`, `favorite`, `name`.
 
-### UI compatibility adapters (v5.82.0)
+### UI compatibility adapters (v5.83.0)
 
 - `NavigationBar` maps the visible Bibliothèque destination to the existing `track` sheet.
 - Existing DOM IDs (`#route-bar`, `#rb-clear-btn`, `#gpx-layers-list`, settings/account IDs)
   remain stable.
 - `SettingsAccountSection` owns optional-account/RGPD bindings and
   `SettingsCategoryNavigation` owns category focus/scroll, reducing `SettingsSheet` coupling.
-- No release feature flag was required: the change is isolated behind the navigation adapter
-  and the explicit false-by-default state key; rollback can remove the adapter without data migration.
+- `releaseFlags.ts` owns rollout flags only; `featureFlags.ts` remains authoritative for Pro.
+- GPX history stays under its existing localStorage key and is never bulk-migrated. A user-triggered
+  conversion stores a distinct approximate route while leaving the original entry intact.
+- `showOnlyGPXLayer` and `hideAllGPXLayers` alter loaded reference-layer visibility only. They
+  never delete a layer, mutate IndexedDB, or hide the independent REC mesh.
 
 ## 4. Internationalization (i18n) Workflow
 
